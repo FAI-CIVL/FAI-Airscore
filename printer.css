@@ -1,0 +1,301 @@
+body {
+  margin: 0;  
+  text-align: left;
+  font: 0.62em verdana, arial, sans-serif;  
+  line-height: 170%;
+  color: #FFFFFF;
+  overflow-y : visible;
+}
+p { 
+  padding-top: 10px !important;
+  padding-top: 3px;
+  padding-bottom: 10px !important;
+  padding-bottom: 3px;
+}
+a { color: #86E160; }
+a:visited { color: #000000; }
+a:hover { color: #666666; }
+table   { 
+    border: 2px none #000000;
+    #border-collapse: collapse; 
+    border-spacing: 1px 0px;
+    font-size: 11px;
+    margin: 10px 10px 10px 15px;
+}
+td  { 
+    border: hidden;
+    vertical-align: top;
+    }
+tr.l {
+	background-color: transparent;
+	color: black;
+}
+tr.l a { 
+    text-decoration: none;
+    color: #000000; 
+    }
+tr.l a:hover { color: #666666; }
+tr.h { 
+    background-color: #666666; 
+    }
+tr.d {
+	background-color: #DDDDDD;
+	color: black;
+}
+tr.d a { 
+    text-decoration: none;
+    color: #000000; 
+    }
+tr.d a:hover { color: #666666; }
+acronym {
+  cursor: help;
+  border-bottom: 1px solid #777;
+}
+textarea {
+  width: 100%;
+}
+input,
+textarea {
+  padding: 1px 3px;
+  margin: 5px 0;
+  font: 1em verdana, arial, sans-serif;
+  color: #333;
+  background-color: #CCC;
+  border: 1px solid #999;
+}
+
+input:hover,
+input:focus,
+textarea:hover,
+textarea:focus {
+  color: #000;
+  background-color: #FFF;
+  border: 1px solid #EEE;
+}
+h1 {
+  clear: both;
+  margin: 10px 0;
+  font: 700 1em verdana, sans-serif;
+  text-transform: uppercase;
+  color: #0000af; /*#7BD32C;*/
+  background: #686868 url(images/rounded_tr.gif) no-repeat top right;
+}
+h1 span {
+  display: block;
+  padding: 2px;
+  background: url(images/rounded_br.gif) no-repeat bottom right;
+}
+#sideBar h1 {
+  text-align: right;
+  background: #686868 url(images/rounded_tl.gif) no-repeat top left;
+}
+#sideBar h1 span {
+  display: block;
+  padding: 2px;
+  background: url(images/rounded_bl.gif) no-repeat bottom left;
+}
+#content ol li { color: #9BE4FF; }
+#content ol li span { color: #EEE; }
+#content ul { padding-bottom: 10px; }
+#content ul li {
+  list-style-image: url(images/li_bullet.gif);
+}
+blockquote {  
+  margin: 0;
+  background: #686868 url(images/rounded_tr.gif) no-repeat top right;
+} 
+blockquote span {
+  display: block;
+  padding: 5px;
+  background: url(images/rounded_br.gif) no-repeat bottom right;
+}
+
+#header {  
+  width: 100%;
+  height: 6em;
+  background: #999999; 
+}
+#menu {
+  width: 800px;
+  margin: 0 auto;
+  text-align: left;  
+}
+#menu ul {
+  display: none;
+  margin: 0;
+  padding: 0;
+  line-height: normal;  
+}
+#menu ul li {
+  width: 8em;
+  display: inline;
+  float: left;
+  padding-top: 0.8em;  
+  list-style: none;
+  text-align: left;
+}
+
+#menu ul li a {
+  display: block;
+  text-decoration: none;
+  text-transform: uppercase;
+  padding-bottom: 1.0em;
+  color: #222;
+}
+#menu ul li a:hover,
+#menu ul li a.active {
+  font-weight: bold;
+  color: #111;
+  background: url(images/menu_tab.gif) no-repeat bottom left;
+}
+
+
+/***************************************************
+  Site Title
+ ***************************************************/
+#title {
+  padding: 0.6em 15px 0.6em 15px;
+  margin-right: 0.5em;
+  float: left;
+}
+#title h1 {
+  display: inline;
+  color:  #000000;
+  font: 2.35em bold,verdana,arial,sans-serif;  
+  background-color: #999999; 
+  background-image: none;
+}
+#titler {
+  padding: 0.6em 15px 0.6em 15px;
+  margin-right: 0.5em;
+  float: right;
+}
+#titler h1 {
+  display: inline;
+  color:  #000000;
+  font: 1.35em bold,verdana,arial,sans-serif;  
+  background-color: #999999; 
+  background-image: none;
+}
+/***************************************************
+ Possible Page Content
+ 1. Left side text
+ 2. Dropdown image
+ 3. Right side bar 
+ ***************************************************/
+#content {  
+  clear: both;
+  width: 800px;
+  margin: 0 auto;
+  text-align: left;
+}
+#text {
+  float: center;
+  vertical-align: bottom;
+  width: 800px;
+  padding: 0;
+}
+#image {
+  float: left;
+  display: none;
+  width: 0;  
+}
+#sideBar {
+  float: left;
+  vertical-align: top;
+  display: none;
+  width: 800px;
+  padding: 0;
+}
+
+/***************************************************
+ Sidemenu Styles
+ ***************************************************/
+
+.sideMenu { padding: 10px 0; }
+.sideMenu a {
+  display: block;
+  text-align: right;
+  text-decoration: none;
+  margin-bottom: 1px;  
+}
+.sideMenu a span {
+  display: block;
+  padding: 1px;
+}
+.sideMenu a:hover {
+  background: #686868 url(images/rounded_tl.gif) no-repeat top left;
+}
+.sideMenu a:hover span {
+  background: url(images/rounded_bl.gif) no-repeat bottom left;
+}
+
+/***************************************************
+ Comment Styles
+ ***************************************************/
+
+#comments p {
+  padding: 0 5px;
+  margin-bottom: 0;
+  background: #686868 url(images/rounded_tl.gif) no-repeat top left;
+}
+#comments p span.author {
+  display: block;
+  margin-top: 5px;
+  text-align: right;
+  font-weight: 700;
+}
+#comments img { margin-top: -1px; }
+#comments a { color: #7BD32C; }
+#comments a:visited { color: #AAA; }
+#comments a:hover { color: #FFF; }
+
+/***************************************************
+ Footer
+ ***************************************************/
+
+#footer {
+  clear: both;
+  float: left;
+  display: none;
+  width: 500px;
+  padding: 10px 20px;
+  color: #888;
+}
+#footer p {
+  padding-top: 0 !important;
+  padding-top: 10px;
+}
+#footer a { color: #888; }
+#footer a:hover {
+  color: #EEE;
+}
+a.fullAhead {
+  float: left;
+  width: 30px;
+  height: 34px;  
+  margin-right: 10px;
+  background: url(images/logo_fullahead.gif) no-repeat 0 0;
+}
+
+a:hover.fullAhead  {
+  background-position: -30px 0;
+}
+/***************************************************
+ Generic Display Classes
+ ***************************************************/
+.center { text-align: center; }
+.noPad { padding: 0; margin: 0; }
+.left { float: left; }
+.right { float: right; }
+img.left {
+  padding: 5px 5px 5px 0;
+}
+img.right {
+  padding: 5px 0 5px 5px;
+}
+.button { width: auto; cursor: pointer; }
+.date { display: block; font-weight: 700; }
+.waypoint {background-color:#6666ff;color:#000000;font-size:11px;font-weight:bold;margin:0px;padding:0px;border:0px #006699 solid;}
+.clearwpt {background-color:#ffffff;color:#000000;font-size:12px;font-weight:bold;margin:0px;padding:0px;border:0px #006699 solid;}
+

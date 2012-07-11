@@ -1,0 +1,80 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+<title>Skyhigh Cup</title>
+<style type="text/css">
+v\:* {
+behavior:url(#default#VML);
+}
+</style>
+<script src="http://maps.google.com/maps?file=api&v=2&key=abcdefg" type="text/javascript">
+
+var map = new GMap2(document.getElementById("map"));
+map.addControl(new GSmallMapControl());
+map.addMapType(G_PHYSICAL_MAP);
+map.addControl(new GMapTypeControl());
+map.setCenter(new GLatLng(37.4419, -122.1419), 13); 
+
+// Add 10 markers in random locations on the map
+var bounds = map.getBounds();
+var southWest = bounds.getSouthWest();
+var northEast = bounds.getNorthEast();
+var lngSpan = northEast.lng() - southWest.lng();
+var latSpan = northEast.lat() - southWest.lat();
+for (var i = 0; i < 10; i++) 
+{
+  var point = new GLatLng(southWest.lat() + latSpan * Math.random(),
+                          southWest.lng() + lngSpan * Math.random());
+  map.addOverlay(new GMarker(point));
+}
+
+// Add a polyline with five random points. Sort the points by
+// longitude so that the line does not intersect itself.
+var points = [];
+for (var i = 0; i < 5; i++) 
+{
+  points.push(new GLatLng(southWest.lat() + latSpan * Math.random(),
+                          southWest.lng() + lngSpan * Math.random()));
+}
+points.sort(function(p1, p2) 
+{
+  return p1.lng() - p2.lng();
+});
+
+map.addOverlay(new GPolyline(points));
+
+</script>
+</head>
+
+<!-- icons
+
+var map = new GMap2(document.getElementById("map"));
+map.addControl(new GSmallMapControl());
+map.addControl(new GMapTypeControl());
+map.setCenter(new GLatLng(37.4419, -122.1419), 13);
+
+// Create our "tiny" marker icon
+var icon = new GIcon();
+icon.image = "http://labs.google.com/ridefinder/images/mm_20_red.png";
+icon.shadow = "http://labs.google.com/ridefinder/images/mm_20_shadow.png";
+icon.iconSize = new GSize(12, 20);
+icon.shadowSize = new GSize(22, 20);
+icon.iconAnchor = new GPoint(6, 20);
+icon.infoWindowAnchor = new GPoint(5, 1);
+
+// Add 10 markers to the map at random locations
+var bounds = map.getBounds();
+var southWest = bounds.getSouthWest();
+var northEast = bounds.getNorthEast();
+var lngSpan = northEast.lng() - southWest.lng();
+var latSpan = northEast.lat() - southWest.lat();
+for (var i = 0; i < 10; i++) {
+  var point = new GLatLng(southWest.lat() + latSpan * Math.random(),
+                          southWest.lng() + lngSpan * Math.random());
+  map.addOverlay(new GMarker(point, icon));
+}
+-->
+

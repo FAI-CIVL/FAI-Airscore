@@ -1,0 +1,244 @@
+TEST:
+
+Check awarded waypoints work
+
+Tracklog animation with multiple tracks 
+    + color each track separately
+    + have a timer / stepper (ala CompeGPS)
+    - add pilot initials on picture
+
+Automatic airspace violation checks
+    + import airspace files ..
+    + airspace management - add/delete
+    + link airspace(s) to a competition
+    + check track against linked airspace
+
+Track submission:
+    + note if track is not IGC format
+    + add KML support
+
+Check new task type (worked for NTVO - 400m cylinders only):
+    + accumulation of waypoints (airgain)
+
+BUGS:
+
+Automatic airspace violation checks
+    - check radiuses
+
+Make an "install" package for Cpanel
+    (basically create the database without a command line)
+
+Improve error messages for rejected track uploads
+
+Create a database update script for schema changes to be applied to older version
+
+Fix bug (with entry cylinder around take-off on jump .. weird):
+    wasinSS= taskss=4500 startss=2402 starttime=2402 interval=900
+    speedrun-interval .. startss=2402 taskss=4500
+    Jumped the start gate (0) (taskss=4500 finish=36000) (startss=2402: 2402)
+    Elasped entry jump: jumped 2098 secs
+    wcount=-1 wmade=0
+    Didn't make the start
+    ** Use of uninitialized value $z in cos at /usr/share/perl/5.10/Math/Complex.pm line 909.
+    ** Use of uninitialized value $z in sin at /usr/share/perl/5.10/Math/Complex.pm line 926.
+    No distance achieved
+
+Calculate short 'routes' for fixed-route "comps".
+
+Possible problem with leadout coeff for late start on race task (see Wes Manzke track corryong 2011)
+
+Possible bug with lead-out coefficient for start-gate jumpers (esp in elapsed-interval?)
+
+Implement independent start gates for teams properly
+
+Modifying waypoints in regions isn't working.
+
+TODO:
+
+Add a time bonus for height above goal arrival
+
+Conical ESS sections
+
+Peleton scoring
+
+Alternative lead-out point system
+
+Handle broken tracklogs better (allow more admin intervention)
+    - allow "time-shift"ing tracks for bad almanacs (?)
+    - allow merging of two tracks (from same pilot)
+
+Competition entry access restrictions (restricted + table or open)
+    - automatic 'abs' addition
+
+Launch open / close times (and checking of them)
+
+Finish fsdb export so its closer to compliant with fsdb
+    - link it to an admin page so admin users can download a copy for CIVL submission
+
+New task types
+    - open area enclosed (AAT)
+    + team/group time trial (separate air start gates, see above)
+    - fastest around fixed-distance course with large radius turnpoints
+
+Handle 'free-bearing scoring'
+    Check distance calculation back to course line (free-bearing especially)
+    specified via a waypoint(extend to 1000km away?) 
+    - need an initial task waypoint + bearing specified
+
+For 'olc' and 'free' tasks
+    ~ Handle included waypoints
+    (use track_verify_sr.pl, if all waypoints met then OLC/free score)
+
+Add a 'copy task' facility in task creation (from tasks on same day and previous day)
+
+Add other types of scoring with customisable bonuses:
+    FAI triangle, 
+    flat triangle,
+    Out & return 
+
+Automatic airspace violation checks
+    + import airspace files ..
+    + check track against nearby airspace
+    + airspace management - add/delete
+    + link airspace(s) to a competition
+    - check radiuses
+    - large airspace db handling
+
+Interpolate crossing times for intersection with start line & goal cylinder
+
+More info on tracklog maps as an overlay:
+    best free-distance distance ?
+    launch time, landing time
+    best climb / biggest sink
+    average speed on course/track
+    max height (?), min height ..
+    click to see details on a point
+    time thermalling vs gliding
+    left / right turning in thermals
+
+NICE TO HAVE:
+
+A software specification
+
+Thermal maps from tracklogs
+
+A "barograph" style trace with tracklogs
+
+Support GPSDump/KML waypoint format
+
+Clean up glider names with canonical ones
+
+Hack around the IE bug for button submits not sending the value (low)
+
+Improve CSS so that it "stretches" for wider screens,
+    provide more detail for scoring
+
+Verify track 'G' record
+    - need windows vali-XXX.exe or .dlls :-(
+    (vali-xdg, vali-bra, vali-xct, etc)
+    - apparently most do RSA/MD5 digest with a key (based on serial #?)
+    - perhaps reverse engineer GPSDumps dodgy G record ..
+    - and perhaps run windozes exes through wine / dosemu
+
+DONE:
+
+* Adding task waypoints should automatically assign the "next" value if none provided.
+
+* Bulk IGC import 
+
+* Show 'team' results somewhere if they're available
+
+* Track submission should report success immediately,
+    even with very slow google maps.
+
+* Interval start gates 
+    + need to have a specified number of gates somewhere ..
+
+* Check awarded waypoints work
+
+* Interval start gates 
+    
+* Create a user page for selecting a competition
+
+* Regional grouping of tracks for global viewing
+
+* Ozi explorer format waypoint download
+
+* Tracklog download
+
+* Color tracklog for height
+
+* Handling 'route' competitions with multiple tasks
+
+* Deal with tracklogs submitted before task creation
+
+* Competition time offset
+
+* Competition scoring types (ftv, all, round)
+
+* Show waypoint diameter circles
+
+* Add BO / DNF option for track submission
+
+* Task/GAP scoring.
+
+* Login security - limit access to specific competitions (ie. ones you create)
+
+* Add 'score' button to competition page
+
+* Link waypoint regions to tasks
+
+* Management page for users/fai nos
+
+* View the tasks 
+
+* View the overall results 
+
+* Create an open source web project for this (googlecode graxce)
+
+* Deal with changes to task creation
+    re-verify all tracks
+    warn on bad task creation (no goal) (add automatically)?
+
+* Makefile / install
+
+* Lead out points/coefficients
+
+* Scoring with arrival/depart turned off (rescale to day quality)
+
+* Check GAP 2002/2007  scoring without leadout coeffs (= GAP 2000)
+
+* Scoring.
+    + Test scoring API
+    + NZL scoring
+
+* Test more downloads with multiple tracks over multiple dates
+    (possibly resequence as time offset from first point)
+
+* Interval gate disappears on task admin page
+
+* Shortest route calculation (rather than to centre of waypoints)
+    + in a cartesian fashion at least ...
+
++ Pre-submitted tracklogs being picked up by the wrong tasks
+
++ Printable b/w CSS  (needs fixing for aggregate results)
+
++ Team handling / scoring
+    + team creation
+    + aggregate team flying results
+    + team flying gap scored 
+
+* Track submission should report success immediately,
+    even with very slow google maps.
+
+* Bulk pilot import
+
+* Show 'team' results somewhere if they're available
+
+* Tracklog animation with multiple tracks 
+    + color each track separately
+    - have a timer / stepper (ala CompeGPS)
+
+* Team handling / scoring
+    - or just aggregate individual results (for normal comp)

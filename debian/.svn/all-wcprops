@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 30
+/svn/!svn/ver/227/trunk/debian
+END
+compat
+K 25
+svn:wc:ra_dav:version-url
+V 37
+/svn/!svn/ver/208/trunk/debian/compat
+END
+postinst
+K 25
+svn:wc:ra_dav:version-url
+V 39
+/svn/!svn/ver/223/trunk/debian/postinst
+END
+changelog
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/svn/!svn/ver/212/trunk/debian/changelog
+END
+docs
+K 25
+svn:wc:ra_dav:version-url
+V 35
+/svn/!svn/ver/208/trunk/debian/docs
+END
+rules
+K 25
+svn:wc:ra_dav:version-url
+V 36
+/svn/!svn/ver/224/trunk/debian/rules
+END
+files
+K 25
+svn:wc:ra_dav:version-url
+V 36
+/svn/!svn/ver/208/trunk/debian/files
+END
+copyright
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/svn/!svn/ver/208/trunk/debian/copyright
+END
+control
+K 25
+svn:wc:ra_dav:version-url
+V 38
+/svn/!svn/ver/208/trunk/debian/control
+END

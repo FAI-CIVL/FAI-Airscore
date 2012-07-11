@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 37
+/svn/!svn/ver/208/trunk/debian/source
+END
+format
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/208/trunk/debian/source/format
+END
+include-binaries
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/208/trunk/debian/source/include-binaries
+END

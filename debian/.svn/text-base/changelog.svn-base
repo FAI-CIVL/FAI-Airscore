@@ -1,0 +1,12 @@
+airScore (0.94-1) squeeze; urgency=normal
+
+  * A bunch of little fixes to remove notifications, debian package stuff
+
+ -- Geoff Wong <geoff.wong@gmail.com>  Tue, 08 Nov 2011 10:07:37 +1100
+
+airScore (0.93-1) squeeze; urgency=normal
+
+  * Debian package building crud added
+
+ -- Geoff Wong <geoff.wong@gmail.com>  Wed, 26 Oct 2011 11:07:37 +1100
+

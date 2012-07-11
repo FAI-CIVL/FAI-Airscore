@@ -1,0 +1,37 @@
+<html>
+<head>
+<link HREF="xcstyle.css" REL="stylesheet" TYPE="text/css">
+</head>
+<body>
+<div id="container">
+<?php
+require 'authorisation.php';
+$restrict='';
+$comPk = intval($_REQUEST['comPk']);
+menubar($comPk);
+
+//$link = dbconnect();
+
+$return = $_REQUEST['return'];
+$action = $_REQUEST['action'];
+
+// Confirm buttons
+echo "<p><p><center>\n";
+echo "<form action=\"$return\" method=\"post\">";
+echo "<table><tr>\n";
+echo "<td><button type=\"submit\" name=\"$return?$action\" value=\"confirm\">Confirm $action</button></td>";
+echo "<td><button type=\"submit\" name=\"$return\" value=\"cancel\">Cancel</button></td>";
+echo "</tr></table>\n";
+foreach ($_REQUEST as $key => $value)
+{
+    echo "<input type=\"hidden\" name=\"$key\" value=\"$value\">";
+}
+echo "</form>\n";
+echo "</center>\n";
+
+// Closing connection
+//mysql_close($link);
+?> 
+</div></body>
+</html>
+
