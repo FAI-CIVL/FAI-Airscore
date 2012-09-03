@@ -142,6 +142,10 @@ sub task_totals
     {
         $maxdist = 0 + $ref->{'MaxDist'};
     }
+    if ($maxdist < 0.1)
+    {
+        $maxdist = 0.1;
+    }
 
     $sth = $dbh->prepare("select min(tarSS) as MinDept from tblTaskResult where tasPk=$tasPk and tarSS > 0 and tarGoal > 0");
     $sth->execute();

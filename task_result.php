@@ -177,10 +177,10 @@ echo "<div id=\"content\">";
 
 # Waypoint Info
 $winfo = array();
-$winfo[] = array(fb("#"), fb("ID"), fb("Type"), fb("Radius"), fb("Dist"), fb("Description"));
+$winfo[] = array(fb("#"), fb("ID"), fb("Type"), fb("Radius"), fb("Dist(k)"), fb("Description"));
 foreach ($waypoints as $row)
 {
-    $winfo[] = array($row['tawNumber'], $row['rwpName'], $row['tawType'] . " (" . $row['tawHow'] . ")", $row['tawRadius'] . "m", 0, $row['rwpDescription']);
+    $winfo[] = array($row['tawNumber'], $row['rwpName'], $row['tawType'] . " (" . $row['tawHow'] . ")", $row['tawRadius'] . "m", round($row['ssrCumulativeDist']/1000,1), $row['rwpDescription']);
 }
 echo ftable($winfo, "border=\"0\" cellpadding=\"2\" cellspacing=\"0\" alternate-colours=\"yes\" valign=\"top\" align=\"left\"", array('class="d"', 'class="l"'), '');
 

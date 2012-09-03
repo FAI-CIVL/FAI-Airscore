@@ -108,7 +108,7 @@ $dbh->do($sql);
 # Try to find an associated task if not specified
 if ($tasPk == 0)
 {
-    $sql = "select T.tasPk, T.tasTaskType, C.comType from tblTask T, tblTrack TL, tblCompetition C where C.comPk=T.comPk and T.comPk=$comPk and TL.traPk=$traPk and TL.traStart > date_sub(T.tasStartTime, interval C.comTimeOffset hour) and TL.traStart < date_sub(T.tasFinishDate, interval C.comTimeOffset hour)";
+    $sql = "select T.tasPk, T.tasTaskType, C.comType from tblTask T, tblTrack TL, tblCompetition C where C.comPk=T.comPk and T.comPk=$comPk and TL.traPk=$traPk and TL.traStart > date_sub(T.tasStartTime, interval C.comTimeOffset hour) and TL.traStart < date_sub(T.tasFinishTime, interval C.comTimeOffset hour)";
     $sth = $dbh->prepare($sql);
     $sth->execute();
     if  ($ref = $sth->fetchrow_hashref())

@@ -25,6 +25,7 @@ $link = db_connect();
 if (array_key_exists('delete', $_REQUEST))
 {
     $id = intval($_REQUEST['delete']);
+    echo "Delete track: $id<br>";
 
     $lco = -1;
     $comcl = '';
@@ -50,24 +51,23 @@ if (array_key_exists('delete', $_REQUEST))
         return;
     }
 
-    $query = "delete from tblComTaskTrack where traPk=$id and comPk=$comPk$comcl";
-    $result = mysql_query($query) or die('ComTaskTrack delete failed: ' . mysql_error());
     $query = "delete from tblTaskResult where traPk=$id";
     $result = mysql_query($query) or die('TaskResult delete failed: ' . mysql_error());
 
-    $query = "select * from tblComTaskTrack where traPk=$id";
-    $result = mysql_query($query) or die('ComTaskTrack check failed: ' . mysql_error());
-    if (mysql_num_rows($result) > 0)
-    {
-        $query = "delete from tblTrack where traPk=$id";
-        $result = mysql_query($query) or die('Track delete failed: ' . mysql_error());
-        $query = "delete from tblTrackLog where traPk=$id";
-        $result = mysql_query($query) or die('Tracklog delete failed: ' . mysql_error());
-        $query = "delete from tblWaypoint where traPk=$id";
-        $result = mysql_query($query) or die('Waypoint delete update failed: ' . mysql_error());
-        $query = "delete from tblBucket where traPk=$id";
-        $result = mysql_query($query) or die('Bucket delete failed: ' . mysql_error());
-    }
+    $query = "delete from tblTrack where traPk=$id";
+    $result = mysql_query($query) or die('Track delete failed: ' . mysql_error());
+
+    $query = "delete from tblTrackLog where traPk=$id";
+    $result = mysql_query($query) or die('Tracklog delete failed: ' . mysql_error());
+
+    $query = "delete from tblWaypoint where traPk=$id";
+    $result = mysql_query($query) or die('Waypoint delete update failed: ' . mysql_error());
+
+    $query = "delete from tblBucket where traPk=$id";
+    $result = mysql_query($query) or die('Bucket delete failed: ' . mysql_error());
+
+    $query = "delete from tblComTaskTrack where traPk=$id$comcl";
+    $result = mysql_query($query) or die('ComTaskTrack delete failed: ' . mysql_error());
 }
 
 if ($comPk > 0)

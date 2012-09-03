@@ -1,4 +1,5 @@
 #!/usr/bin/perl 
+##!/usr/bin/perl -I/home/geoff/bin
 #
 # Determine the shortest route using cartesian coords
 # 
@@ -334,13 +335,13 @@ sub task_update
         print "Dist wpt:$i to wpt:", $i+1, "=$dist\n";
         $dist = distance($closearr[$i], $closearr[$i+1]);
         print "Dist cls:$i to cls:", $i+1, "=$dist\n";
+        $sth = $dbh->prepare("insert into tblShortestRoute (tasPk,tawPk,ssrLatDecimal,ssrLongDecimal,ssrCumulativeDist,ssrNumber) values ($tasPk,".
+           $wpts->[$i]->{'key'}. ",". $closearr[$i]->{'dlat'}. ",". $closearr[$i]->{'dlong'}. ",". $totdist . "," . $wpts->[$i]->{'number'}. ")");
         $totdist = $totdist + $dist;
-        $sth = $dbh->prepare("insert into tblShortestRoute (tasPk,tawPk,ssrLatDecimal,ssrLongDecimal,ssrNumber) values ($tasPk,".
-           $wpts->[$i]->{'key'}. ",". $closearr[$i]->{'dlat'}. ",". $closearr[$i]->{'dlong'}. ",". $wpts->[$i]->{'number'}. ")");
         $sth->execute();
     }
 
-    $sth = $dbh->prepare("insert into tblShortestRoute (tasPk,tawPk,ssrLatDecimal,ssrLongDecimal,ssrNumber) values ($tasPk,".  $wpts->[$i]->{'key'}. ",". $closearr[$i]->{'dlat'}. ",". $closearr[$i]->{'dlong'}. ",". $wpts->[$i]->{'number'}. ")");
+    $sth = $dbh->prepare("insert into tblShortestRoute (tasPk,tawPk,ssrLatDecimal,ssrLongDecimal,ssrCumulativeDist,ssrNumber) values ($tasPk,".  $wpts->[$i]->{'key'}. ",". $closearr[$i]->{'dlat'}. ",". $closearr[$i]->{'dlong'}. ",". $totdist . "," . $wpts->[$i]->{'number'}. ")");
     $sth->execute();
 
     # Store it in tblTask
@@ -372,7 +373,7 @@ sub track_update
     for my $tpk (@tracks)
     {
         print "Verifying pre-submitted track: $tpk\n";
-        system($BIN_PATH . "track_verify_sr.pl $tpk");
+        system($TrackLib::BIN_PATH . "track_verify_sr.pl $tpk");
         $flag = 1;
     }
 

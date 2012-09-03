@@ -167,6 +167,14 @@ function accept_track($until, $contact)
     if ($route > 0)
     {
         $tasPk = $route;
+        $query = "select T.tasPk, T.tasTaskType, C.comType from tblTask T, tblTrack TL, tblCompetition C where C.comPk=T.comPk and T.comPk=$comid and TL.traPk=$maxPk and T.tasPk=$tasPk";
+        $result = mysql_query($query) or die('Query failed: ' . mysql_error());
+        if (mysql_num_rows($result) > 0)
+        {
+            //$tasPk=mysql_result($result,0,0);
+            $tasType=mysql_result($result,0,1);
+            $comType=mysql_result($result,0,2);
+        }
     }
     else
     {
@@ -274,11 +282,11 @@ if ($comType == 'Route')
     $routes = array();
     while($row = mysql_fetch_array($result))
     {
-        $routes[] = $row['tasName'];
+        $routes[$row['tasName']] = $row['tasPk'];
     }
 
     //echo '</td><td>';
-    $igcarr[] = array('Route', fselect('route', $comPk, $routes));
+    $igcarr[] = array('Route', fselect('route', 0, $routes));
 }
 
 $igcarr[] = array('Send IGC file', "<input name=\"userfile\" type=\"file\">");

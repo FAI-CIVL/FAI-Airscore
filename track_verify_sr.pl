@@ -14,6 +14,8 @@ use Data::Dumper;
 use POSIX qw(ceil floor);
 use TrackLib qw(:all);
 
+my $debug = 0;
+
 sub validate_olc
 {
     my ($flight, $task, $tps) = @_;
@@ -25,7 +27,7 @@ sub validate_olc
     
     $traPk = $flight->{'traPk'};
     $tasPk = $task->{'tasPk'};
-    $out = `optimise_track.pl $traPk $tasPk $tps`;
+    $out = `optimise_flight.pl $traPk $tasPk $tps`;
 
     $sth = $dbh->prepare("select * from tblTrack where traPk=$traPk");
     $sth->execute();
@@ -125,7 +127,13 @@ sub validate_task
     $coord = $coords->[0];
     if ($coord->{'time'} > $task->{'sfinish'})
     {
+        print "utcmod set at 86400\n";
         $utcmod = 86400;
+    }
+    elsif ($coord->{'time'}+43200 < $task->{'sstart'})
+    {
+        print "utcmod set at -86400\n";
+        $utcmod = -86400;
     }
 
     # Determine the start gate type
@@ -136,8 +144,7 @@ sub validate_task
         {
             $spt = $i;
         }
-    }
-
+    } 
     # Go through the coordinates and verify the track against the task
     for $coord (@$coords)
     {
@@ -227,13 +234,20 @@ sub validate_task
         $awarded = 0;
         if (defined($awards) && defined($awards->{$wpt->{'key'}}))
         {
-            #print "waypoint awarded\n";
+            if ($debug)
+            {
+                print "waypoint ($wcount) awarded\n";
+            }
             $awarded = 1;
             $awtime = $awards->{$wpt->{'key'}}->{'tadTime'};
         }
 
         # Ok - work out if we're in cylinder
-        #print "Cylinder check, dist=$dist type=", $wpt->{'type'}, "\n";
+        if ($debug)
+        {
+            print "Check ($wcount), dist=$dist type=", $wpt->{'type'}, "\n";
+        }
+
         if ($dist < $wpt->{'radius'} && ($wpt->{'type'} eq 'start'))
         {
             $wasinstart = $wcount;
@@ -278,7 +292,10 @@ sub validate_task
         {
             if (($dist < $wpt->{'radius'}) || $awarded == 1) 
             {
-                #print "made entry waypoint ", $wpt->{'number'}, "(", $wpt->{'type'}, ") radius ", $wpt->{'radius'}, " at ", $coord->{'time'}, "\n";
+                if ($debug) 
+                {
+                    print "made entry waypoint ", $wpt->{'number'}, "(", $wpt->{'type'}, ") radius ", $wpt->{'radius'}, " at ", $coord->{'time'}, "\n";
+                }
                 # Do task timing stuff
                 if (($wpt->{'type'} eq 'start') && ($starttime == 0) or
                     ($wpt->{'type'} eq 'speed'))
@@ -329,7 +346,10 @@ sub validate_task
     
                 $wcount++;
                 $wmade = $wcount;
-                print "inc entry wmade=$wmade\n";
+                if ($debug)
+                {
+                    print "inc entry wmade=$wmade\n";
+                }
                 #and (($task->{'type'} eq 'race') or ($task->{'type'} eq 'speedrun') or ($task->'type' eq 'speedrun-interval')))
                 if ($wcount == $allpoints) 
                 {
@@ -515,7 +535,7 @@ sub validate_task
     }
 
     # Jumped the start/speedss?
-    if ($starttime > 0 and (($starttime < $startss) or ($starttime < $taskss)) and ($wmade > $spt))
+    if ($task->{'type'} != 'route' and $starttime > 0 and (($starttime < $startss) or ($starttime < $taskss)) and ($wmade > $spt))
     {
         my $jump;
         print "Jumped the start gate ($spt) (taskss=$taskss finish=$finish) (startss=$startss: $starttime)\n";
@@ -532,8 +552,8 @@ sub validate_task
         }
         else
         {
-            # Otherwise it's a zero for elapsed
-            $coeff = $taskdist*($finish-$startss);
+            # Otherwise it's a zero for elapsed (?)
+            $coeff = $coeff + $taskdist*($finish-$startss);
             if ($waypoints->[$spt]->{'how'} eq 'entry')
             {
                 print "Elasped entry jump: $comment\n";

@@ -718,7 +718,7 @@ if ($class == "8")
         team_handicap_result($comPk,$how,$param);
     }
 }
-else if ($comType == 'RACE' || $comType == 'Team-RACE')
+else if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'Route')
 {
     $query = "select T.* from tblTask T where T.comPk=$comPk order by T.tasDate";
     $result = mysql_query($query) or die('Task query failed: ' . mysql_error());

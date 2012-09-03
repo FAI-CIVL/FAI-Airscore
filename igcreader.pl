@@ -126,7 +126,8 @@ sub extract_fix
     elsif ($loc{'time'} == $last_time)
     {
         # some leeway for bad points
-        $loc{'time'} = $last_time + 1;
+        #$loc{'time'} = $last_time + 1;
+        $loc{'fix'} = 'bad';
     }
     $last_time = $loc{'time'};
 

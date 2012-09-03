@@ -401,7 +401,7 @@ sub points_allocation
     # Get all pilots and process each of them 
     # pity it can't be done as a single update ...
     $dbh->do('set @x=0;');
-    $sth = $dbh->prepare("select \@x:=\@x+1 as Place, tarPk, tarDistance, tarSS, tarES, tarPenalty, tarResultType, tarLeadingCoeff from tblTaskResult where tasPk=$tasPk and tarResultType <> 'abs' order by tarDistance desc, tarES");
+    $sth = $dbh->prepare("select \@x:=\@x+1 as Place, tarPk, tarDistance, tarSS, tarES, tarPenalty, tarResultType, tarLeadingCoeff, tarGoal from tblTaskResult where tasPk=$tasPk and tarResultType <> 'abs' order by tarDistance desc, tarES");
     $sth->execute();
     while ($ref = $sth->fetchrow_hashref()) 
     {
@@ -423,6 +423,7 @@ sub points_allocation
         $taskres{'timeafter'} = $ref->{'tarES'} - $Tfarr;
         $taskres{'place'} = $ref->{'Place'};
         $taskres{'time'} = $taskres{'endSS'} - $taskres{'startSS'};
+        $taskres{'goal'} = $ref->{'tarGoal'};
         if ($taskres{'time'} < 0)
         {
             $taskres{'time'} = 0;
@@ -484,6 +485,13 @@ sub points_allocation
 
         $Pdepart = 0;
         $Parrival = 0;
+
+        # Penalty for not making goal ..
+        if ($pil->{'goal'} == 0)
+        {  
+            $Pspeed = $Pspeed - $Pspeed * $formula->{'sspenalty'};
+            $Parrival = $Parrival - $Parrival * $formula->{'sspenalty'};
+        }
 
         if (($pil->{'result'} eq 'dnf') or ($pil->{'result'} eq 'abs'))
         {

@@ -140,6 +140,7 @@ create table tblShortestRoute
     tawPk           integer not null,
     ssrLatDecimal   double not null,
     ssrLongDecimal  double not null,
+    ssrCumulativeDist  double default 0.0,
     ssrNumber       integer not null
 );
 
