@@ -25,7 +25,7 @@ sub validate_olc
     
     $traPk = $flight->{'traPk'};
     $tasPk = $task->{'tasPk'};
-    $out = `optimise_track.pl $traPk $tasPk`;
+    $out = `optimise_flight.pl $traPk $tasPk`;
 
     $sth = $dbh->prepare("select * from tblTrack where traPk=$traPk");
     $sth->execute();

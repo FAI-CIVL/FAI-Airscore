@@ -21,6 +21,7 @@ $query = "select *, unix_timestamp(date_sub(comDateTo, interval ComTimeOffset ho
 $result = mysql_query($query) or die('Query failed: ' . mysql_error());
 $title = 'highcloud.net';
 $comContact = '';
+$comEntryRestrict = 'open';
 if ($row=mysql_fetch_array($result))
 {
     $title = $row['comName'];
@@ -28,6 +29,7 @@ if ($row=mysql_fetch_array($result))
     $comClass = $row['comClass'];
     $comContact = $row['comContact'];
     $comUnixTo = $row['comUnixTo'];
+    $comEntryRestrict = $row['comEntryRestrict'];
 }
 
 if ($comContact == '')
@@ -45,7 +47,7 @@ if (array_key_exists('foo', $_REQUEST))
     fclose($fh);
 
     echo "<title>Track Accepted</title>\n";
-    $id = accept_track($comUnixTo, $comContact);
+    $id = accept_track($comUnixTo, $comContact, $comEntryRestrict);
     redirect("tracklog_map.php?trackid=$id&comPk=$comPk&ok=1");
     exit(0);
 }
@@ -112,7 +114,7 @@ function task_score($traPk)
     return $retv;
 }
 
-function accept_track($until, $contact)
+function accept_track($until, $contact, $restrict)
 {
     //$file = addslashes($_REQUEST['userfile']);
     $hgfa = addslashes($_REQUEST['hgfanum']);
@@ -134,6 +136,16 @@ function accept_track($until, $contact)
         }
     }
 
+    if ($restrict == 'registered')
+    {
+        $query = "select * from tblRegistration where comPk=$comid and pilPk=$pilPk";
+        $result = mysql_query($query) or die('Registration query failed: ' . mysql_error());
+        if (mysql_num_rows($result) == 0)
+        {
+            $member = 0;
+        }
+    }
+
     $gmtimenow = time() - (int)substr(date('O'),0,3)*60*60;
     if ($gmtimenow > ($until + 7*24*3600))
     {
@@ -144,7 +156,7 @@ function accept_track($until, $contact)
     }
     if ($member == 0)
     {
-        echo "<b>Only registered pilot may submit tracks.</b><br>\n";
+        echo "<b>Only registered pilots may submit tracks.</b><br>\n";
         echo "Contact $contact if you're having an access problem.<br>\n";
         echo "</div></body></html>\n";
         exit(0);
@@ -175,6 +187,7 @@ function accept_track($until, $contact)
             $tasType=mysql_result($result,0,1);
             $comType=mysql_result($result,0,2);
         }
+        // should check date of track is within tasStart/tasFinish time
     }
     else
     {
