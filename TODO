@@ -5,7 +5,7 @@ Check awarded waypoints work
 Tracklog animation with multiple tracks 
     + color each track separately
     + have a timer / stepper (ala CompeGPS)
-    - add pilot initials on picture
+    + add pilot initials on picture
 
 Automatic airspace violation checks
     + import airspace files ..
@@ -19,6 +19,12 @@ Track submission:
 
 Check new task type (worked for NTVO - 400m cylinders only):
     + accumulation of waypoints (airgain)
+
+Calculate short 'routes' for fixed-route "comps".
+    + fixed route comps more like race-comps now - even GAP scored
+
+Modifying waypoints in regions isn't working.
+    - should add a 'cancel' to reset a moved icon
 
 BUGS:
 
@@ -43,15 +49,12 @@ Fix bug (with entry cylinder around take-off on jump .. weird):
     ** Use of uninitialized value $z in sin at /usr/share/perl/5.10/Math/Complex.pm line 926.
     No distance achieved
 
-Calculate short 'routes' for fixed-route "comps".
-
 Possible problem with leadout coeff for late start on race task (see Wes Manzke track corryong 2011)
 
 Possible bug with lead-out coefficient for start-gate jumpers (esp in elapsed-interval?)
 
 Implement independent start gates for teams properly
 
-Modifying waypoints in regions isn't working.
 
 TODO:
 
@@ -119,6 +122,8 @@ More info on tracklog maps as an overlay:
 NICE TO HAVE:
 
 A software specification
+
+A guide for comp administrators
 
 Thermal maps from tracklogs
 

@@ -49,5 +49,4 @@ Helps to be experienced with Apache configurations and Mysql.
     . Test that the login page work .../airscore/login.php (user: admin, pass: admin)
 
 
-Get a Google Maps key, a bunch of files use it .. I need to fix the install to substitute a key in.
 
