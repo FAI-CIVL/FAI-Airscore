@@ -1,8 +1,8 @@
 <?php
-function fselect($name,$selected,$options)
+function fselect($name,$selected,$options,$extra='')
 {
     $resarr = array();
-    $resarr[] = "<select name=\"$name\" id=\"$name\">";
+    $resarr[] = "<select name=\"$name\" id=\"$name\"$extra>";
     foreach ($options as $key => $value)
     {
         if (is_int($key))
@@ -63,13 +63,10 @@ function frow($cellarr, $cdec)
 }
 function ftable($rowarr, $tdec, $rdec, $cdec)
 {
+    $allrows = array();
     foreach ($rowarr as $row)
     {
         $allrows[] = frow($row, $cdec);
-    }
-    if (!$allrows)
-    {
-        $allrows = array();
     }
 
     if ($rdec != '')
