@@ -9,14 +9,13 @@
 
 TARGET=airScore
 DIR=airscore
-VERSION=0.94
+VERSION=0.96
 
 MYSQLPASSWORD=xxxxx
-GMAPKEY=ABQIAAAAPyz1XxP2rM79ZhAH2EmgwxQ1ylNcivz9k-2ubmbv1YwdT5nh3RQJsyJo_kuVL1UAWoydxDkwo_zsKw
 INSTALL=install
-HTROOT=/var/www/html
-CGIBIN=/var/www/cgi-bin/
-TRACKDIR=/var/www/tracks/
+HTROOT=/var/www
+CGIBIN=/usr/lib/cgi
+TRACKDIR=/var/airscore/tracks/
 MAKE=make
 
 TARGET_OS=$(shell uname)
@@ -69,7 +68,6 @@ clean:
 
 passwords:
 	@./submacro.sh MYSQLPASSWORD $(MYSQLPASSWORD)
-	@./submacro.sh GMAPKEY $(GMAPKEY)
 	@./submacro.sh CGIBIN $(CGIBIN)
 	@./submacro.sh VERSION $(VERSION)
 
