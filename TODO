@@ -1,5 +1,8 @@
 TEST:
 
+Fix up installation so a normal person can do it ...
+    - /usr/local/lib/site-perl for perl modules
+
 Check awarded waypoints work
 
 Tracklog animation with multiple tracks 

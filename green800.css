@@ -164,7 +164,7 @@ blockquote span {
 #menu ul li a.active {
   font-weight: bold;
   color: #111;
-  /* background: url(images/menu_tab.gif) no-repeat bottom center; */
+  background: url(images/menu_tab_blue.gif) no-repeat bottom center;  
 }
 
 
@@ -356,6 +356,17 @@ img.right {
 }
 .button { width: auto; cursor: pointer; }
 .date { display: block; font-weight: 700; }
+.trackInfo
+{
+    border:solid black 2px;
+    background-color:white;
+    opacity: 0.80;
+    color:black;
+    font-family:Arial, Helvetica, Bold, sans-serif;
+    font-size:14px;
+    padding:5px;
+    text-align:left;
+}
 .htmlControl
 {
     border:solid black 2px;
@@ -375,4 +386,5 @@ img.right {
 /*.waypoint {background-color:#6666ff;color:#000000;font-size:11px;font-weight:bold;margin:0px;padding:0px;border:0px #006699 solid;}*/
 .waypoint {background-color:#ffffff;color:#000000;font-size:11px;font-weight:bold;margin:0px;padding:0px;border:1px #000000 solid;}
 .clearwpt {background-color:#ffffff;color:#000000;font-size:12px;font-weight:bold;margin:0px;padding:0px;border:1px #000000 solid;}
+.animate {background-color:none;color:yellow;font-size:10px;font-weight:bold;margin:0px;padding:0px;border:1px;}
 
