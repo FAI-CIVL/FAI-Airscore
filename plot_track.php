@@ -81,11 +81,11 @@ function get_track($trackid,$interval)
         $body['tasPk'] = $tasPk;    # get task name ...
         if ($ggoal && ($gtime > 0))
         {
-            $body['goal'] = sprintf("%d:%02d:%02d", ${ghour},${gmin},${gsec});
+            $body['goal'] = sprintf("%d:%02d:%02d", $ghour,$gmin,$gsec);
         }
         else
         {
-            $body['duration'] = sprintf("%02d:%02d:%02d", ${ghour},${gmin},${gsec});
+            $body['duration'] = sprintf("%02d:%02d:%02d", $ghour,$gmin,$gsec);
         }
         $body['glider'] = $glider;
         $body['comment'] = $comment;
