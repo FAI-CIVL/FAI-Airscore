@@ -11,7 +11,7 @@ require_once 'format.php';
 
 function waypoint($link,$tasPk, $tawPk, $num, $waypt, $type, $how, $shape, $radius)
 {
-    echo "<input type=\"text\" name=\"number$tawPk\" value=\"$num\" size=2>";
+    echo "<input type=\"text\" name=\"number$tawPk\" value=\"$num\" size=1>";
     echo "Way ";
     waypoint_select($link, $tasPk, "waypoint$tawPk", $waypt);
     echo "Type ";
@@ -20,7 +20,7 @@ function waypoint($link,$tasPk, $tawPk, $num, $waypt, $type, $how, $shape, $radi
     output_select("how$tawPk", $how, array('entry', 'exit')); 
     echo "Shape ";
     output_select("shape$tawPk", $shape, array('circle', 'semicircle', 'line')); 
-    echo "Size <input type=\"text\" name=\"radius$tawPk\" size=6 value=\"$radius\">";
+    echo "Size <input type=\"text\" name=\"radius$tawPk\" size=2 value=\"$radius\">";
 }
 
 function update_task($link,$tasPk, $old)
@@ -89,6 +89,19 @@ function update_tracks($link,$tasPk)
             exec(BINDIR . "track_verify.pl $tpk", $out, $retv);
         }
     }
+}
+
+function nice_date($today, $date)
+{
+    if ($today == substr($date, 0, 10))
+    {
+        $ret = substr($date, 11);
+    }
+    else
+    {
+        $ret = $date;
+    }
+    return $ret;
 }
 
 $usePk = auth('system');
@@ -198,25 +211,11 @@ if ($row)
     $tasDate = $row['tasDate'];
     $tasTaskType = $row['tasTaskType'];
 
-    if ($tasDate == substr($row['tasStartTime'], 0, 10))
-    {
-        $tasTaskStart = substr($row['tasTaskStart'], 11);
-    }
-    else
-    {
-        $tasTaskStart = $row['tasTaskStart'];
-    }
-    if ($tasDate == substr($row['tasFinishTime'], 0, 10))
-    {
-        $tasTaskFinish = substr($row['tasFinishTime'], 11);
-    }
-    else
-    {
-        $tasTaskFinish = $row['tasFinishTime'];
-    }
+    $tasTaskStart = nice_date($tasDate, $row['tasTaskStart']);
+    $tasTaskFinish = nice_date($tasDate, $row['tasFinishTime']);
 
     $tasStartTime = substr($row['tasStartTime'], 11);
-    $tasStartCloseTime = substr($row['tasStartCloseTime'], 11);
+    $tasStartCloseTime = nice_date($tasDate,$row['tasStartCloseTime']);
 
     $tasSSInterval = $row['tasSSInterval'];
     $tasDeparture = $row['tasDeparture'];
@@ -371,9 +370,9 @@ $result = mysql_query($sql,$link) or die('Can\'t determine task distance: ' . my
 $dist = round(floatval(mysql_result($result, 0, 0))/1000,2);
 echo "<p><b>Total distance: $dist kms</b><br>";
 
-if ($goal == 0 && $count > 0)
+if ($goal == 0 && $count > 0 && ($tasTaskType == 'race' || $tasTaskType == 'speedrun' || $tasTaskType == 'speedrun-interval'))
 {
-    echo "<i>Warning: task has no goal, it will not score correctly.</i><br>\n";
+    echo "<i>Warning: racing tasks require a start and a goal, it will not score correctly.</i><br>\n";
 }
 
 echo "<br>";
