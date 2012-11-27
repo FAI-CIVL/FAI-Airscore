@@ -1,7 +1,9 @@
 TEST:
 
 Fix up installation so a normal person can do it ...
+    - debian package
     - /usr/local/lib/site-perl for perl modules
+    - macro subs are not working - try to minimise
 
 Check awarded waypoints work
 

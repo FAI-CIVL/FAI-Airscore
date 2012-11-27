@@ -365,9 +365,12 @@ CREATE TABLE tblUserSession
     usePk       integer not null,
     useSession  varchar(128),
     useIP       varchar(32),
-    useSessTime DateTime,
-    useLastTime DateTime
+    useSessTime timestamp default CURRENT_TIMESTAMP,
+    useLastTime timestamp
 );
+
+--alter table tblUserSession modify column useSessTime DateTime default CURRENT_TIMESTAMP;
+--alter table tblUserSession modify column useLastTime timestamp;
 
 CREATE TABLE tblCompAuth
 (

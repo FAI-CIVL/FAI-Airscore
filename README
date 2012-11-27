@@ -52,6 +52,6 @@ Helps to be experienced with Apache configurations and Mysql.
 Other packages needed:
 php5
 mysql
+perl
 libxml-simple-perl
-
 

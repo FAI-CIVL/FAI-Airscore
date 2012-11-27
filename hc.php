@@ -70,7 +70,7 @@ echo "
     $regPk=reqival('regPk');
     if ($regPk > 0)
     {
-    echo "<li><a href=\"http://highcloud.net/xc/waypoint_map.php?regPk=$regPk\" title=\"Waypoints\"" . $clarr[3] . ">Waypoints</a></li>\n";
+    echo "<li><a href=\"xc/waypoint_map.php?regPk=$regPk\" title=\"Waypoints\"" . $clarr[3] . ">Waypoints</a></li>\n";
     }
     //echo "<li><a href=\"comp_result.php?comPk=$comPk&tmsc=1\" title=\"Teams\"" . $clarr[4] . ">Teams</a></li>\n";
     //echo "<li><a href=\"track.php\" title=\"submit tracks\"" . $clarr[4] . ">Tracks</a></li>";

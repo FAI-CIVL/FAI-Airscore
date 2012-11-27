@@ -50,7 +50,7 @@ echo "
     $regPk=intval($_REQUEST['regPk']);
     if ($regPk > 0)
     {
-    echo "<li><a href=\"http://highcloud.net/xc/waypoint_map.php?regPk=$regPk\" title=\"Waypoints\"" . $clarr[3] . ">Waypoints</a></li>\n";
+    echo "<li><a href=\"waypoint_map.php?regPk=$regPk\" title=\"Waypoints\"" . $clarr[3] . ">Waypoints</a></li>\n";
     }
     //echo "<li><a href=\"track.php\" title=\"submit tracks\"" . $clarr[4] . ">Tracks</a></li>";
 echo "</ul>\n
