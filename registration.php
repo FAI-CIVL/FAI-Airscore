@@ -1,6 +1,17 @@
 <html>
 <head>
 <link HREF="xcstyle.css" REL="stylesheet" TYPE="text/css">
+<link HREF="col2.css" REL="stylesheet" TYPE="text/css">
+<script src="microajax.minified.js" type="text/javascript"></script>
+<script type="text/javascript">
+//<![CDATA[
+var map;
+function add_pilot(pilPk)
+{
+    alert("add_pilot="+pilPk);
+}
+//]]>
+</script>
 </head>
 <body>
 <div id="container">
@@ -18,6 +29,10 @@ $query = "select comName, comEntryRestrict from tblCompetition where comPk=$comP
 $result = mysql_query($query) or die('Comp query failed: ' . mysql_error());
 $comName = mysql_result($result,0,0);
 $comRestricted = mysql_result($result,0,1);
+
+echo '<div id ="container2">';
+echo '<div id ="container1">';
+echo '<div id ="col1">';
 
 if ($comRestricted == 'open')
 {
@@ -49,8 +64,8 @@ if (array_key_exists('addpilot', $_REQUEST))
 
 if (array_key_exists('delpilot', $_REQUEST))
 {
-    $pilPk = intval($_REQUEST['pilPk']);
-    $query = "delete from tblRegistration where comPk=$comPk and pilPk=$regPk";
+    $pilPk = intval($_REQUEST['delpilot']);
+    $query = "delete from tblRegistration where comPk=$comPk and pilPk=$pilPk";
     $result = mysql_query($query) or die('Pilot delete failed: ' . mysql_error());
 }
 
@@ -71,22 +86,23 @@ if (sizeof($regpilots) > 0)
     foreach ($regpilots as $row)
     {
         $pilPk = intval($row['pilPk']);
-        $outreg[] = array($row['pilFirstName'], $row['pilLastName']);
+        $outreg[] = array(
+            "<button type=\"submit\" name=\"delpilot\" value=\"$pilPk\">del</button>", $row['pilFirstName'], $row['pilLastName']);
         //"<input type=\"text\" name=\"tepModifier$tepPk\" value=\"$tepMod\" size=3>", fbut('submit', 'uppilot', $tepPk, 'up')
     }
-    echo ftable($outreg,'','','');
+    echo ftable($outreg,'id="piltable"','','');
 }
 else
 {
     echo "<i>No pilots registered yet.</i>";
 }
 
-echo "<hr>";
+echo "</div>";
 
+echo '<div id="col2">';
 echo "<h2>Pilots by Name: $cat</h2><p>";
 $letters = array( 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',
-        'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
-        'Y', 'Z');
+        'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z');
 echo "<table><tr>";
 $count = 0;
 
@@ -116,13 +132,17 @@ if ($cat != '')
         $hgfa = $row['pilHGFA'];
         $sex = $row['pilSex'];
         echo "<li><button type=\"submit\" name=\"addpilot\" value=\"$id\">add</button>";
+        //echo "<li><button type=\"submit\" name=\"addpilot\" value=\"$id\" onclick=\"add_pilot($id);\">add</button>";
         echo "$hgfa $fname $lname ($sex).<br>\n";
         $count++;
     }
     echo "</ol>";
 }
-
 echo "</form>";
+echo '</div>';
+echo '</div>';
+echo '</div>';
+
 
 ?>
 </div>

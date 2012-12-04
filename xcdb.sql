@@ -50,7 +50,11 @@ create table tblFormula
     forLinearDist    double default 0.5,
     forDiffDist      double default 1.5,
     forDiffRamp      enum ( 'fixed', 'flexible' ) default 'fixed',
-    forDiffCalc      enum ( 'all', 'lo' ) default 'all'
+    forDiffCalc      enum ( 'all', 'lo' ) default 'all',
+    forStoppedGlideBonus double default 0.0,
+    forHeightArrBonus double default 0.0,
+    forHeightArrLower integer default 200,
+    forHeightArrUpper integer default 3000,
 );
 
 drop table if exists tblComTaskTrack;
@@ -510,7 +514,8 @@ create table tblRegistration
     comPk           integer,
     regPaid         integer default 0,
     gliPk           integer,
-    pilPk           integer
+    pilPk           integer,
+    regHours        integer default 200
 );
 
 drop table if exists tblTrackMarker;
@@ -523,10 +528,11 @@ create table tblTrackMarker
 
 create table schema_version
 (
-    svKey       varchar(32) not null primary key,
+    svKey       integer not null default 0,
     svWhen      timestamp not null default CURRENT_TIMESTAMP,
     svExtra     varchar(256)
 );
 
 
+insert into schema_version (svKey, svExtra) values (1, 'create')
 

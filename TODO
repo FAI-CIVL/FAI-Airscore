@@ -63,13 +63,25 @@ Implement independent start gates for teams properly
 
 TODO:
 
-Add a time bonus for height above goal arrival
+Scoring stuff:
+    Add a time bonus for height above goal arrival
 
-Conical ESS sections
+    Add a glide bonus for height above goal arrival
 
-Peleton scoring
+    Conical ESS sections
 
-Alternative lead-out point system
+    Peleton scoring
+
+    Alternative lead-out point system
+
+Add a new competition type (name:?)
+    Allow 'pin' entry for landing position (instead of tracklog).
+    Classes based upon inland hours (link to rego?)
+    Scoring multipliers by sex/hours/etc?
+    "Super-teams" (based on state somehow?)
+
+Restricted Registration
+    Split page into two columns for adding/removing pilots
 
 Handle broken tracklogs better (allow more admin intervention)
     - allow "time-shift"ing tracks for bad almanacs (?)
