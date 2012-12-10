@@ -22,7 +22,7 @@ function get_track($trackid,$interval)
     $ret = array();
     
     $result = mysql_query($sql,$link);
-    while($row = mysql_fetch_array($result))
+    while($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {
     
         $bucTime = 0 + $row['bucTime'];
@@ -39,7 +39,7 @@ function get_track($trackid,$interval)
             left outer join tblTask TK on TK.tasPk=TR.tasPk 
             where T.pilPk=P.pilPk and T.traPk=$trackid limit 1";
     $result = mysql_query($sql,$link) or die('Track info query failed: ' . mysql_error());
-    if ($row = mysql_fetch_array($result))
+    if ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {
         $name = $row['pilFirstName'] . " " . $row['pilLastName'];
         $date = $row['traDate'];
@@ -104,7 +104,7 @@ function get_task($tasPk, $trackid)
     $sql = "SELECT T.*,W.* FROM tblTaskWaypoint T, tblRegionWaypoint W where T.tasPk=$tasPk and W.rwpPk=T.rwpPk order by T.tawNumber";
     $ret = array();
     $result = mysql_query($sql,$link) or die('Task info query failed: ' . mysql_error());
-    while ($row = mysql_fetch_array($result))
+    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {
     
         $lasLat = 0.0 + $row['rwpLatDecimal'];
@@ -139,7 +139,7 @@ function get_region($regPk, $trackid)
     {
         $sql = "SELECT max(T.trlLatDecimal) as maxLat, max(T.trlLongDecimal) as maxLong, min(T.trlLatDecimal) as minLat, min(T.trlLongDecimal) as minLong from tblTrackLog T where T.traPk=$trackid";
         $result = mysql_query($sql,$link) or die('Track query failed: ' . mysql_error());
-        $row = mysql_fetch_array($result);
+        $row = mysql_fetch_array($result, MYSQL_ASSOC);
     
         $maxLat = $row['maxLat'] + 0.02;
         $maxLong = $row['maxLong'] + 0.02;
@@ -156,7 +156,7 @@ function get_region($regPk, $trackid)
     }
     $result = mysql_query($sql,$link) or die('Region waypoint query failed: ' . mysql_error());
     $ret = array();
-    while ($row = mysql_fetch_array($result))
+    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {
     
         $lasLat = 0.0 + $row['rwpLatDecimal'];
@@ -211,7 +211,7 @@ function get_track_wp($trackid)
     $sql = "SELECT * FROM tblWaypoint where traPk=$trackid order by wptTime";
     $ret = array();
     $result = mysql_query($sql,$link) or die('Task info query failed: ' . mysql_error());
-    while ($row = mysql_fetch_array($result))
+    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {
     
         $lasLat = 0.0 + $row['wptLatDecimal'];

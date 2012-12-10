@@ -134,7 +134,7 @@ function rjson_pack($data)
                 {
                     $last = $encoded[sizeof($encoded) - 1];
                 }
-                if (is_encoded($current) && is_array($last) && ($current[0] == $last[0])) 
+                if (is_encoded($current) && is_encoded($last) && ($current[0] == $last[0])) 
                 {
                     // current and previous object have same schema,
                     // so merge their values into one array
@@ -178,7 +178,7 @@ function rjson_pack($data)
             }
         }
     
-        print "SCHEMA ". var_dump($schemas);
+        //print "SCHEMA ". var_dump($schemas);
         return $encoded;
     };
 
@@ -192,111 +192,115 @@ function rjson_pack($data)
  * @param {*} data Packed javascript data.
  * @return {*} Original data.
  */
-function rjson_unpack($value) 
+function rjson_unpack($data) 
 {
 
     $maxSchemaIndex = 0;
     $schemas = array();
 
-    if (!$value || !is_array($value))
+    $decode = function($value) use(&$schemas, &$maxSchemaIndex, &$decode)
     {
-        // non-objects or null return as is
-        return $value;
-    }
-
-    if (!is_assoc($value)) 
-    {
-        $len = sizeof($value);
-        if ($len == 0) 
+        if (!$value || !is_array($value))
         {
-            $decoded = array();
-        } 
-        else if ($value[0] === 0 || !is_numeric($value[0]))
+            // non-objects or null return as is
+            return $value;
+        }
+    
+        if (!is_assoc($value)) 
         {
-            // decode array of something
-            $decoded = array(); 
-            for ($i = ($value[0] === 0 ? 1 : 0); $i < $len; $i++) 
+            $len = sizeof($value);
+            if ($len == 0) 
             {
-                $v = $value[$i];
-                $obj = rjson_unpack($v);
-                if (is_encoded($v) && !is_assoc($obj))
-                {
-                    // several objects was encoded into single array
-                    // FIX: $decoded = array_combine(XXX,$obj);
-                    //$decoded = decoded.concat(obj);
-                } 
-                else 
-                {
-                    $decoded[] = $obj;
-                }
-            }
-        } 
-        else 
-        {
-            $schemaKeys = $schemas[$value[0]];
-            $schemaLen = sizeof($schemaKeys);
-            $total = (sizeof($value) - 1) / $schemaLen;
-            if ($total > 1) 
+                $decoded = array();
+            } 
+            else if ($value[0] === 0 || !is_numeric($value[0]))
             {
-                $decoded = array(); // array of objects with same schema
-                for ($i = 0; $i < $total; $i++) 
+                // decode array of something
+                $decoded = array(); 
+                for ($i = ($value[0] === 0 ? 1 : 0); $i < $len; $i++) 
                 {
-                    $obj = array();
-                    foreach ($schemaKeys as $k)
+                    $v = $value[$i];
+                    $obj = $decode($v);
+                    if (is_encoded($v) && !is_assoc($obj))
                     {
-                        $obj[$k] = rjson_unpack($value[$i * $schemaLen + $j]);
+                        // several objects was encoded into single array
+                        // FIX: $decoded = array_combine(XXX,$obj);
+                        //$decoded = decoded.concat(obj);
+                    } 
+                    else 
+                    {
+                        $decoded[] = $obj;
                     }
-                    $decoded[] = $obj;
                 }
             } 
             else 
             {
-                $decoded = array();
-                foreach ($schemaKeys as $k)
+                $schemaKeys = $schemas[$value[0]];
+                $schemaLen = sizeof($schemaKeys);
+                $total = (sizeof($value) - 1) / $schemaLen;
+                if ($total > 1) 
                 {
-                    $decoded[$k] = rjson_unpack($value[$j]);
+                    $decoded = array(); // array of objects with same schema
+                    for ($i = 0; $i < $total; $i++) 
+                    {
+                        $obj = array();
+                        foreach ($schemaKeys as $k)
+                        {
+                            $obj[$k] = $decode($value[$i * $schemaLen + $j]);
+                        }
+                        $decoded[] = $obj;
+                    }
+                } 
+                else 
+                {
+                    $decoded = array();
+                    foreach ($schemaKeys as $k)
+                    {
+                        $decoded[$k] = $decode($value[$j]);
+                    }
                 }
             }
+    
+        } 
+        else 
+        { 
+            // new schema
+            $schemaKeys = array_keys($value);
+            if (sizeof($schemaKeys) == 0) 
+            {
+                return array();
+            }
+            $schemas[++$maxSchemaIndex] = $schemaKeys;
+            $decoded = array();
+            foreach ($schemaKeys as $k)
+            {
+                $decoded[$k] = $decode($value[$k]);
+            }
         }
+    };
 
-    } 
-    else 
-    { 
-        // new schema
-        $schemaKeys = array_keys($value);
-        if (sizeof($schemaKeys) == 0) 
-        {
-            return array();
-        }
-        $schemas[++$maxSchemaIndex] = $schemaKeys;
-        $decoded = array();
-        foreach ($schemaKeys as $k)
-        {
-            $decoded[$k] = rjson_unpack($value[$k]);
-        }
-    }
-
-    return $decoded;
+    $res = $decode(json_decode($data));
+    return $res;
     //return json_decode($decoded);
 }
 
 
-$tst = array(
-    "id" => 7,
-    "tags" => array("programming", "javascript"),
-    "users" => array(
-    array("first" => "Homer", "last" => "Simpson"),
-    array("first" => "Hank", "last" => "Hill"),
-    array("first" => "Peter", "last" => "Griffin")
-    ),
-    "books" => array(
-    array("title" => "JavaScript", "author" => "Flanagan", "year" => 2006),
-    array("title" => "Cascading Style Sheets", "author" => "Meyer", "year" => 2004)
-    )
-);
-
-$tstenc = rjson_pack($tst);
-print var_dump($tstenc);
+#$tst = array(
+#    "id" => 7,
+#    "tags" => array("programming", "javascript"),
+#    "users" => array(
+#    array("first" => "Homer", "last" => "Simpson"),
+#    array("first" => "Hank", "last" => "Hill"),
+#    array("first" => "Peter", "last" => "Griffin")
+#    ),
+#    "books" => array(
+#    array("title" => "JavaScript", "author" => "Flanagan", "year" => 2006),
+#    array("title" => "Cascading Style Sheets", "author" => "Meyer", "year" => 2004)
+#    )
+#);
+#
+#$tstenc = rjson_pack($tst);
+#print var_dump($tstenc);
 
 
 

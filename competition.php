@@ -48,7 +48,7 @@ if (array_key_exists('add', $_REQUEST))
     $query = "select CTT.traPk from tblComTaskTrack CTT, tblTask T, tblTrack TR, tblCompetition C where CTT.comPk=$comPk and C.comPk=CTT.comPk and T.tasPk=$tasPk and CTT.traPk=TR.traPk and CTT.tasPk is null and TR.traStart > date_sub(T.tasStartTime, interval C.comTimeOffset hour) and TR.traStart < date_sub(T.tasFinishTime, interval C.comTimeOffset hour)";
     $result = mysql_query($query,$link);
     $tracks = array();
-    while($row = mysql_fetch_array($result))
+    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {
         $tracks[] = $row['traPk'];
     }
@@ -241,7 +241,7 @@ echo "</form>\n";
 
 // Formula
 $version = 0;
-if ($ctype == 'RACE' || $ctype == 'Team-RACE')
+if ($ctype == 'RACE' || $ctype == 'Team-RACE' || $ctype == 'Route')
 {
     $sql = "SELECT F.* FROM tblFormula F where F.comPk=$comPk";
     $result = mysql_query($sql,$link);

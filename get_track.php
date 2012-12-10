@@ -29,7 +29,7 @@ else
 $ret = array();
 
 $result = mysql_query($sql,$link);
-while($row = mysql_fetch_array($result))
+while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
 {
 
     $bucTime = $row['bucTime'];

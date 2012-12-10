@@ -75,7 +75,7 @@ $count = 1;
 $sql = "SELECT C.* FROM tblCompetition C order by C.comDateFrom desc";
 $result = mysql_query($sql,$link);
 
-while($row = mysql_fetch_array($result))
+while($row = mysql_fetch_array($result, MYSQL_ASSOC))
 {
     $id = $row['comPk'];
     $name = $row['comName'];

@@ -20,7 +20,7 @@ function is_admin($what,$usePk,$comPk)
 {
     $query = "select useLevel from tblCompAuth where usePk=$usePk and comPk in ($comPk,-1)";
     $result = mysql_query($query) or die('Admin check failed: ' . mysql_error());
-    while($row = mysql_fetch_array($result))
+    while($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {
         $level = $row['useLevel'];
         if ($what == $level) 
@@ -218,7 +218,7 @@ function waypoint_select($link,$tasPk,$name,$selected)
     $query="select distinct RW.* from tblTask T, tblRegion R, tblRegionWaypoint RW where T.tasPk=$tasPk and RW.regPk=R.regPk and R.regPk=T.regPk order by RW.rwpName";
     $result = mysql_query($query) or die('Waypoint select failed: ' . mysql_error());
     $waypoints = array();
-    while($row = mysql_fetch_array($result))
+    while($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {
         $rwpPk = $row['rwpPk'];
         $rname = $row['rwpName'];
