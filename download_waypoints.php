@@ -36,12 +36,16 @@ if (array_key_exists('download', $_REQUEST))
     $regPk=intval($_REQUEST['download']);
     $format=addslashes($_REQUEST['format']);
 
-    $sql = "SELECT R.* from tblRegionWaypoint R where R.regPk=$regPk order by R.rwpName";
+    $sql = "SELECT N.*, R.* from tblRegion N, tblRegionWaypoint R where N.regPk=R.regPk and R.regPk=$regPk order by R.rwpName";
 
     $result = mysql_query($sql,$link);
+    $row = mysql_fetch_array($result, MYSQL_ASSOC);
+    $regname = $row['regDescription'];
+    $regname = preg_replace('/\s+/', '', $regname);
+
     # nuke normal header ..
     header("Content-type: text/wpt");
-    header("Content-Disposition: attachment; filename=\"waypoints-$regPk.wpt\"");
+    header("Content-Disposition: attachment; filename=\"$regname.wpt\"");
     header("Cache-Control: no-store, no-cache");
 
     if ($format == 'ozi')
@@ -54,7 +58,7 @@ if (array_key_exists('download', $_REQUEST))
     }
 
     $count = 1;
-    while($row = mysql_fetch_array($result))
+    do 
     {
         $name = $row['rwpName'];
         $lat = floatval($row['rwpLatDecimal']);
@@ -73,6 +77,7 @@ if (array_key_exists('download', $_REQUEST))
         }
         else
         {
+            // compegps
             if ($lat < 0)
             {
                 $alat = abs($lat);
@@ -95,6 +100,6 @@ if (array_key_exists('download', $_REQUEST))
         }
 
         $count++;
-    }
+    } while ($row = mysql_fetch_array($result, MYSQL_ASSOC));
 }
 ?>

@@ -312,7 +312,8 @@ insert into tblLaunchSite (lauLaunch, lauRegion, lauLatDecimal, lauLongDecimal, 
     ('Mt Elliot','Victoria',-36.186035,147.974553,940),
     ('Annecy','France',45.81405,6.24851666666667,900),
     ('Mt Tamborine','Queensland',-27.950278,153.181194,548),
-    ('Pedro Bernardo', 'Spain', 40.2564333333333,-4.90571666666667,1200)
+    ('Pedro Bernardo', 'Spain', 40.2564333333333,-4.90571666666667,1200),
+    ('Craigieburn', 'New Zealand', -43.1578, 171.6704, 1500)
     ;
 
 

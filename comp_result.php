@@ -385,7 +385,7 @@ function comp_result($comPk, $how, $param, $cls)
     $sql = "select TK.*,TR.*,P.*,T.traGlider from tblTaskResult TR, tblTask TK, tblTrack T, tblPilot P, tblCompetition C where C.comPk=$comPk and TK.comPk=C.comPk and TK.tasPk=TR.tasPk and TR.traPk=T.traPk and T.traPk=TR.traPk and P.pilPk=T.pilPk $cls order by P.pilPk, TK.tasPk";
     $result = mysql_query($sql) or die('Task result query failed: ' . mysql_error());
     $results = array();
-    while ($row = mysql_fetch_array($result))
+    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {
         $score = round($row['tarScore']);
         $validity = $row['tasQuality'] * 1000;
@@ -526,7 +526,7 @@ $title = 'highcloud.net';
 
 $query = "SELECT T.*,F.* FROM tblCompetition T left outer join tblFormula F on F.comPk=T.comPk where T.comPk=$comPk";
 $result = mysql_query($query) or die('Comp query failed: ' . mysql_error());
-$row = mysql_fetch_array($result);
+$row = mysql_fetch_array($result, MYSQL_ASSOC);
 if ($row)
 {
     $comName = $row['comName'];
@@ -722,7 +722,7 @@ else if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'Route')
 {
     $query = "select T.* from tblTask T where T.comPk=$comPk order by T.tasDate";
     $result = mysql_query($query) or die('Task query failed: ' . mysql_error());
-    while ($row = mysql_fetch_array($result))
+    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {
         $alltasks[] = $row['tasName'];
         $taskinfo[] = $row;
