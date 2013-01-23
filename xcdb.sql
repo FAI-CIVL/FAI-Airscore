@@ -401,7 +401,7 @@ create table tblAirspace
 (
     airPk           integer not null primary key auto_increment,
     airName         varchar(32),
-    airClass        enum ( "G", "C", "D", "E", "X" ) default "C",
+    airClass        enum ( "G", "C", "D", "E", "X", "R" ) default "C",
     airBase         integer,
     airTops         integer,
     airShape        enum ( "circle", "wedge", "polygon" ) default "circle",
@@ -415,7 +415,7 @@ create table tblAirspaceWaypoint
     awpPk           integer not null primary key auto_increment,
     airPk           integer not null,
     airOrder        integer not null,
-    awpConnect      enum ( "line", "arc" ) default "line",
+    awpConnect      enum ( "line", "arc+", "arc-" ) default "line",
     awpLatDecimal   double not null,
     awpLongDecimal  double not null,
     awpAngleStart   float,

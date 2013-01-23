@@ -168,8 +168,11 @@ if (array_key_exists('updateadmin', $_REQUEST))
     check_admin('admin',$usePk,$comPk);
 
     $adminPk = reqival('adminlogin');
-    $query = "insert into tblCompAuth (usePk,comPk,useLevel) values ($adminPk,$comPk, 'admin')";
-    $result = mysql_query($query) or die('Administrator addition failed: ' . mysql_error());
+    if ($adminPk > 0)
+    {
+        $query = "insert into tblCompAuth (usePk,comPk,useLevel) values ($adminPk,$comPk,'admin')";
+        $result = mysql_query($query) or die('Administrator addition failed: ' . mysql_error());
+    }
 }
 
 $forPk = 0;

@@ -14,6 +14,7 @@ if (!array_key_exists('pr', $_REQUEST))
 {
     $isadmin = is_admin('admin',$usePk,$comPk);
 }
+#echo "usePk=$usePk isadmin=$isadmin<br>";
 
 $fdhv= '';
 $classstr = '';
@@ -164,7 +165,7 @@ if ($row)
 $waypoints = get_taskwaypoints($link,$tasPk);
 
 // incorporate $tasTaskType / $tasDate in heading?
-if ($isadmin)
+if ($isadmin > 0)
 {
     $hdname = "<a href=\"task.php?comPk=$comPk&tasPk=$tasPk\">$tasName</a> - <a href=\"competition.php?comPk=$comPk\">$comName</a>";
 }
@@ -176,6 +177,7 @@ hcheader($hdname,2,"${classstr}${tasDate}");
 echo "<div id=\"content\">";
 
 # Waypoint Info
+echo "<div id=\"colone\">";
 $winfo = array();
 $winfo[] = array(fb("#"), fb("ID"), fb("Type"), fb("Radius"), fb("Dist(k)"), fb("Description"));
 foreach ($waypoints as $row)
@@ -183,14 +185,16 @@ foreach ($waypoints as $row)
     $winfo[] = array($row['tawNumber'], $row['rwpName'], $row['tawType'] . " (" . $row['tawHow'] . ")", $row['tawRadius'] . "m", round($row['ssrCumulativeDist']/1000,1), $row['rwpDescription']);
 }
 echo ftable($winfo, "border=\"0\" cellpadding=\"2\" cellspacing=\"0\" alternate-colours=\"yes\" valign=\"top\" align=\"left\"", array('class="d"', 'class="l"'), '');
+echo "</div>";
 
+echo "<div id=\"coltwo\">";
 $tinfo = array();
 $tinfo[] = array( fb("Date"), $tasDate, fb("Start"), "$tasStartTime", fb("End"), "$tasFinishTime" );
 $tinfo[] = array( fb("Quality"), number_format($tasQuality,2), fb("WP Dist"), "$tasDistance km", fb("Task Dist"), "$tasShortest km" );
 $tinfo[] = array( fb("DistQ"), number_format($tasDistQuality,2), fb("TimeQ"), number_format($tasTimeQuality,2), fb("LaunchQ"), number_format($tasLaunchQuality,2) );
 
-echo "<br><p>";
 echo ftable($tinfo, "border=\"0\" cellpadding=\"3\" cellspacing=\"0\" alternate-colours=\"yes\" valign=\"top\" align=\"right\"", array('class="d"', 'class="l"'), '');
+echo "</div>";
 echo "<br><p>";
 
 # Pilot Info

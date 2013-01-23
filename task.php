@@ -20,7 +20,7 @@ function waypoint($link,$tasPk, $tawPk, $num, $waypt, $type, $how, $shape, $radi
     output_select("how$tawPk", $how, array('entry', 'exit')); 
     echo "Shape ";
     output_select("shape$tawPk", $shape, array('circle', 'semicircle', 'line')); 
-    echo "Size <input type=\"text\" name=\"radius$tawPk\" size=2 value=\"$radius\">";
+    echo "Size <input type=\"text\" name=\"radius$tawPk\" size=3 value=\"$radius\">";
 }
 
 function update_task($link,$tasPk, $old)
@@ -37,7 +37,7 @@ function update_task($link,$tasPk, $old)
     $sql = "select T.*, TW.* from tblTask T left outer join tblTaskWaypoint TW on T.tasPk=TW.tasPk and TW.tawType='goal' where T.tasPk=$tasPk";
     $result = mysql_query($sql,$link) 
         or die('Task not associated correctly with a competition: ' . mysql_error());
-    $row = mysql_fetch_array($result);
+    $row = mysql_fetch_array($result, MYSQL_ASSOC);
 
     # we should re-verify all tracks if start/finish changed!
     $newstart = $row['tasStartTime'];
@@ -73,7 +73,7 @@ function update_tracks($link,$tasPk)
     $query = "select traPk from tblComTaskTrack where tasPk=$tasPk";
     $result = mysql_query($query,$link);
     $tracks = array();
-    while($row = mysql_fetch_array($result))
+    while($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {
         $tracks[] = $row['traPk'];
     }
@@ -145,6 +145,32 @@ if (array_key_exists('airdel', $_REQUEST))
     }
 }
 
+if (array_key_exists('trackcopy', $_REQUEST))
+{
+    $copyfrom = intval($_REQUEST['copyfrom']);
+    if ($copyfrom > 0)
+    {
+        echo "Copying from: $copyfrom<br>";
+        $query = "insert into tblComTaskTrack (comPk, tasPk, traPk) select $comPk, $tasPk, CT.traPk from tblComTaskTrack CT, tblTrack T, tblRegistration R where CT.tasPk=$copyfrom and T.traPk=CT.traPk and T.pilPk=R.pilPk and R.comPk=$comPk";
+        $result = mysql_query($query) or die('Failed to copy task tracks ' . mysql_error());
+        // task_up
+        exec(BINDIR . "task_up.pl $tasPk", $out, $retv);
+    }
+}
+
+if (array_key_exists('copytask', $_REQUEST))
+{
+    check_admin('admin',$usePk,$comPk);
+    $copytaskpk = intval($_REQUEST['copytaskpk']);
+
+    $query = "insert into tblTaskWaypoint (tasPk, rwpPk, tawNumber, tawType, tawHow, tawShape, tawTime, tawRadius) select $tasPk, rwpPk, tawNumber, tawType, tawHow, tawShape, tawTime, tawRadius from tblTaskWaypoint where tasPk=$copytaskpk";
+    //echo $query . "<br>";
+    $result = mysql_query($query) or die('Failed to copy task waypoints ' . mysql_error());
+    //$query = "update tblTask T set T.regPk=(select T2.regPk from tblTask T2 where T2.tasPk=$copytaskpk) where T.tasPk=$tasPk"
+    //$result = mysql_query($query) or die('Failed to update task region ' . mysql_error());
+    exec(BINDIR . "task_up.pl $tasPk", $out, $retv);
+}
+
 // Update the task itself 
 if (array_key_exists('updatetask', $_REQUEST))
 {
@@ -200,13 +226,14 @@ if (array_key_exists('updatetask', $_REQUEST))
     #update_tracks($link,$tasPk);
 }
 
-$query = "select C.comPk, C.comName, T.* from tblCompetition C, tblTask T where T.tasPk=$tasPk and T.comPk=C.comPk";
+$query = "select C.comPk, C.comName, C.comEntryRestrict, T.* from tblCompetition C, tblTask T where T.tasPk=$tasPk and T.comPk=C.comPk";
 $result = mysql_query($query) or die('Task select failed: ' . mysql_error());
-$row = mysql_fetch_array($result);
+$row = mysql_fetch_array($result, MYSQL_ASSOC);
 if ($row)
 {
     $comName = $row['comName'];
     $comPk = $row['comPk'];
+    $comEntryRestrict = $row['comEntryRestrict'];
     $tasName = $row['tasName'];
     $tasDate = $row['tasDate'];
     $tasTaskType = $row['tasTaskType'];
@@ -311,7 +338,7 @@ echo "<tr><td>Region:</td><td>";
 $regarr = array();
 $sql = "SELECT * FROM tblRegion R";
 $result = mysql_query($sql,$link);
-while ($row = mysql_fetch_array($result))
+while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
 {
     $regDesc = $row['regDescription'];
     $regarr["$regDesc"] = $row['regPk'];
@@ -341,7 +368,7 @@ $count = 1;
 $goal = 0;
 $sql = "select T.*, RW.* from tblTaskWaypoint T, tblRegionWaypoint RW where T.tasPk=$tasPk and RW.rwpPk=T.rwpPk order by T.tawNumber";
 $result = mysql_query($sql,$link) or die('Task Waypoint Selection failed: ' . mysql_error());
-while ($row = mysql_fetch_array($result))
+while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
 {
     $tawPk = $row['tawPk'];
     $number = $row['tawNumber'];
@@ -365,6 +392,7 @@ while ($row = mysql_fetch_array($result))
 
     $count++;
 }
+
 $sql = "select tasDistance from tblTask where tasPk=$tasPk";
 $result = mysql_query($sql,$link) or die('Can\'t determine task distance: ' . mysql_error());
 $dist = round(floatval(mysql_result($result, 0, 0))/1000,2);
@@ -375,9 +403,26 @@ if ($goal == 0 && $count > 0 && ($tasTaskType == 'race' || $tasTaskType == 'spee
     echo "<i>Warning: racing tasks require a start and a goal, it will not score correctly.</i><br>\n";
 }
 
+
 echo "<br>";
 echo fis('add', 'Add Waypoint', '');
 waypoint($link,$tasPk,'','','','waypoint','entry','circle','400');
+
+if ($count == 1)
+{
+    $copyarr = array();
+    // Copy from previous tasks same comp, others on same day ..
+    $sql = "select C.comName, T.* from tblCompetition C, tblTask T where C.comPk=T.comPk and (T.comPk=$comPk or T.tasDate='$tasDate') and T.tasPk <> $tasPk"; 
+    $result = mysql_query($sql,$link) or die('Task Copy Selection failed: ' . mysql_error());
+    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+    {
+        $copyarr[$row['comName'].$row['tasName']]= $row['tasPk'];
+    }
+    echo "<br>Or copy task from: ";
+    echo fselect("copytaskpk",'', $copyarr);
+    echo fis('copytask', 'Copy', '');
+    echo "<br>";
+}
 echo "</form>";
 echo "<br><hr>";
 echo "<form action=\"task_result.php?comPk=$comPk&tasPk=$tasPk\" name=\"taskscore\" method=\"post\">";
@@ -393,7 +438,7 @@ echo "<form action=\"task.php?tasPk=$tasPk\" name=\"taskadmin\" method=\"post\">
 $airarr = array();
 $query = "select TA.*, A.* from tblTaskAirspace TA, tblAirspace A where TA.tasPk=$tasPk and A.airPk=TA.airPk";
 $result = mysql_query($query) or die('TaskAirspace select failed: ' . mysql_error());
-while ($row = mysql_fetch_array($result))
+while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
 {
     $taPk = $row['taPk'];
     echo "Class: " . $row['airClass'] . " (from: " . $row['airBase'] . "m to: " . $row['airTops'] . "m) -- " . $row['airName'];
@@ -404,7 +449,7 @@ while ($row = mysql_fetch_array($result))
 $airarr = array();
 $query = "select * from tblAirspace order by airName";
 $result = mysql_query($query) or die('Task select failed: ' . mysql_error());
-while ($row = mysql_fetch_array($result))
+while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
 {
     $airarr[$row['airName']] = $row['airPk'];
 }
@@ -414,6 +459,26 @@ echo $sel;
 echo fis('addair', 'Add Airspace', '');
 echo "<br><br>";
 echo fis('airspace', 'Airspace Check', '');
+
+if ($comEntryRestrict == 'registered')
+{
+    $tasarr = array();
+    $sql = "select C.comName, T.* from tblTask T, tblCompetition C where T.tasPk<>$tasPk and T.tasDate='$tasDate' and T.regPk=$regPk and C.comPk=T.comPk";
+    $result = mysql_query($sql) or die('Task copy select failed: ' . mysql_error());
+    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+    {
+        $tasarr[$row['comName']] = $row['tasPk'];
+    }
+    if (sizeof($tasarr) > 0)
+    {
+        echo "<hr>";
+        echo "Copy registered tracks from: ";
+        $sel = fselect('copyfrom', '', $tasarr);
+        echo $sel;
+        echo fis('trackcopy', 'Copy', '');
+    }
+}
+
 echo "</form>";
 
 echo "<hr>Bulk tracklog uploads, should be a zip file containing multiple tracks (in top directory) named: FAINum_LastName_etc.igc<br>";

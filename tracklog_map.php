@@ -1,13 +1,21 @@
 <?php
+require_once 'Sajax.php';
 require 'authorisation.php';
 require 'format.php';
 require 'hc2v3.php';
 require 'plot_track.php';
+//sajax_init();
+//sajax_export("get_task");
+//sajax_export("get_track");
+//sajax_export("get_region");
+//sajax_export("get_track_wp");
+//sajax_export("award_waypoint");
+//sajax_handle_client_request();
 hchead();
 echo "<title>Tracklog Map</title>\n";
 hccss();
 hcmapjs();
-hcscripts(array('json2.js', 'sprintf.js', 'plot_trackv3.js'));
+hcscripts(array('json2.js', 'sprintf.js', 'plot_trackv3.js', 'microajax.minified.js'));
 echo '<script type="text/javascript">';
 sajax_show_javascript();
 echo "</script>\n";

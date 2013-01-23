@@ -1,6 +1,5 @@
 <?php
 require_once 'authorisation.php';
-require_once 'Sajax.php';
 function get_track($trackid,$interval)
 {
     $link = db_connect();
@@ -100,6 +99,8 @@ function get_task($tasPk, $trackid)
 {
     $link = db_connect();
 
+    $res = array();
+
     // task info ..
     $sql = "SELECT T.*,W.* FROM tblTaskWaypoint T, tblRegionWaypoint W where T.tasPk=$tasPk and W.rwpPk=T.rwpPk order by T.tawNumber";
     $ret = array();
@@ -117,16 +118,46 @@ function get_task($tasPk, $trackid)
     }
 
     $turnpoints = 0;
+    $merge = 0;
     if ($trackid > 0)
     {
+        // select * from tblTaskAward where traPk=$trackid
+//        $sql = "SELECT T.*,W.* FROM tblTaskWaypoint T 
+//                left join tblRegionWaypoint W on T.rwpPk=W.rwpPk
+//                left outer join on tblTaskAward TA on TA.traPk=$trackid
+//                where T.tasPk=$tasPk and W.rwpPk=T.rwpPk order by T.tawNumber";
+//        $ret = array();
+//        $result = mysql_query($sql,$link) or die('Task info query failed: ' . mysql_error());
+//        while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+//        {
+//        
+//            $lasLat = 0.0 + $row['rwpLatDecimal'];
+//            $lasLon = 0.0 + $row['rwpLongDecimal'];
+//            $cname = $row["rwpName"];
+//            $crad = $row["tawRadius"];
+//            $tawType = $row["tawType"];
+//            $tawPk = $row["tawPk"];
+//            $awarded = $row["tadPk"];
+//            $awardtm = $row["tarTime"];
+//            $ret[] = array( $lasLat, $lasLon, $cname, $crad, $tawType, $tawPk );
+//        }
+
         $sql = "select tarTurnpoints from tblTaskResult where traPk=$trackid";
         $result = mysql_query($sql,$link) or die('Task turnpoints failed: ' . mysql_error());
         $turnpoints = mysql_result($result, 0, 0);
+
+        $sql = "select T2.traPk from tblTrack T1, tblTrack T2 where T2.pilPk=T1.pilPk and T2.traStart between date_sub(T1.traStart, interval 6 hour) and date_add(T1.traStart, interval 6 hour) and T1.traPk=$trackid and T2.traPk<>T1.traPk";
+        $result = mysql_query($sql,$link) or die('Duplicate track select failed: ' . mysql_error());
+        if (mysql_num_rows($result) > 0)
+        {
+            $merge = mysql_result($result, 0, 0);
+        }
     }
 
-    $res = array();
+    $res['tasPk'] = $tasPk;
     $res['task'] = $ret;
     $res['turnpoints']= $turnpoints;
+    $res['merge']= $merge;
     $jret = json_encode($res);
     return $jret;
 }
@@ -170,13 +201,13 @@ function get_region($regPk, $trackid)
     $jret = json_encode($res);
     return $jret;
 }
-function award_waypoint($tawPk, $trackid, $wptime)
+function award_waypoint($tasPk, $tawPk, $trackid, $wptime)
 {
     // Did we award from turnpoints?
     // FIX: check auth?
-    $link = db_connect();
-    $usePk = 0; //check_auth('system');
-    $comPk = intval($_REQUEST['comPk']);
+     $usePk = check_auth('system');
+     $link = db_connect();
+     $comPk = intval($_REQUEST['comPk']);
     $isadmin = is_admin('admin',$usePk,$comPk);
     if (!$isadmin) 
     {
@@ -201,7 +232,7 @@ function award_waypoint($tawPk, $trackid, $wptime)
     # Re-verify with new awarded waypoint(s)
     $out = '';
     $retv = 0; 
-    exec( BINDIR . "track_verify.pl $trackid $tasPk", $out, $retv);
+    exec(BINDIR . "track_verify_sr.pl $trackid $tasPk", $out, $retv);
     return 0;
 }
 function get_track_wp($trackid)

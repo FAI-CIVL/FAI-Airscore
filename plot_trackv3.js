@@ -44,6 +44,10 @@ function done(x)
 {
     // do nothing
 }
+function merge_tracks(tasPk, traPk, incPk)
+{
+    microAjax("merge_track.php?tasPk="+tasPk+"&traPk="+traPk+"&incPk="+incPk, function(data) { var x; } );
+}
 function plot_track(jstr)
 {
     var track;
@@ -236,6 +240,7 @@ function plot_award_task(jstr)
     var task;
     var tps;
     var track;
+    var incpk;
     var ovlay;
     var ovhtml;
     var cnt;
@@ -245,8 +250,11 @@ function plot_award_task(jstr)
     ovhtml = "<div class=\"htmlControl\"><b>Award Points</b><br><form name=\"trackdown\" method=\"post\">\n";
     task = plot_task(jstr);
     track = task["task"];
+    tasPk = task["tasPk"];
     tps = 0 + task["turnpoints"];
+    incpk = task["merge"];
     cnt = 0;
+    // fix to show awarded points - unclick to unaward ..
     for (row in track)
     {
         cnt = cnt + 1;
@@ -257,18 +265,23 @@ function plot_award_task(jstr)
             tawPk = track[row][5];
             if ((end == 0) && (tawtype == 'endspeed' || tawtype == 'goal'))
             {
-                ovhtml = ovhtml +  cnt + ". <input onblur=\"x_award_waypoint(" + tawPk + "," + trackid + ",this.value,done)\" type=\"text\" name=\"goaltime\" size=5>&nbsp;" + name + "<br>";
+                ovhtml = ovhtml +  cnt + ". <input onblur=\"x_award_waypoint(" + tasPk + "," + tawPk + "," + trackid + ",this.value,done)\" type=\"text\" name=\"goaltime\" size=5>&nbsp;" + name + "<br>";
                 end = 1;
             }
             else if (tawtype == 'speed')
             {
-                ovhtml = ovhtml +  cnt + ". <input onblur=\"x_award_waypoint(" + tawPk + "," + trackid + ",this.value,done)\" type=\"text\" name=\"goaltime\" size=5>&nbsp;" + name + "<br>";
+                ovhtml = ovhtml +  cnt + ". <input onblur=\"x_award_waypoint(" + tasPk + "," + tawPk + "," + trackid + ",this.value,done)\" type=\"text\" name=\"goaltime\" size=5>&nbsp;" + name + "<br>";
             }
             else
             {
-                ovhtml = ovhtml +  cnt + ". <input type=\"checkbox\" name=\"turnpoint\" onclick=\"x_award_waypoint(" + tawPk + "," + trackid + "," + cnt + ",done)\">&nbsp;" + name + "<br>";
+                ovhtml = ovhtml +  cnt + ". <input type=\"checkbox\" name=\"turnpoint\" onclick=\"x_award_waypoint(" + tasPk + "," + tawPk + "," + trackid + "," + cnt + ",done)\">&nbsp;" + name + "<br>";
             }
         }
+    }
+    // add in a 'merge with' option?
+    if (incpk > 0)
+    {
+        ovhtml = ovhtml + "<br><center><input type=\"button\" name=\"domerge\" value=\"Merge "+incpk+"\" onclick=\"merge_tracks("+tasPk+","+trackid+","+incpk+");\"></center>";
     }
     ovhtml = ovhtml + "</form></div>";
     ovlay = document.createElement('DIV');
