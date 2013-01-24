@@ -9,7 +9,7 @@
 
 TARGET=airScore
 DIR=airscore
-VERSION=0.97
+VERSION=0.98
 
 MYSQLPASSWORD=xxxxx
 INSTALL=install
