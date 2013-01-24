@@ -1,5 +1,4 @@
 #!/usr/bin/perl 
-##!/usr/bin/perl -I/home/geoff/bin
 #
 # Determine the shortest route using cartesian coords
 # 
