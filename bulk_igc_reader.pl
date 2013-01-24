@@ -15,7 +15,7 @@ use File::Copy;
 use TrackLib qw(:all);
 
 local * DIR;
-my $FILEDIR = '/home/geoff/paragliding/tracks/';
+my $FILEDIR = '%TRACKDIR%';
 
 #
 # Extract files and read them all into the database 

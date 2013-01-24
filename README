@@ -55,3 +55,10 @@ mysql
 perl
 libxml-simple-perl
 
+3. Security
+
+    . Enable exec() functionality for php.
+    . Enable CGI (*pl *php) from the main installation directory for Apache
+
+
+
