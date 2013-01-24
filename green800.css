@@ -203,7 +203,7 @@ blockquote span {
  2. Dropdown image
  3. Right side bar 
  ***************************************************/
-#content {  
+#content {
   clear: both;
   width: 80%;
   min-height: 100%;
@@ -227,6 +227,20 @@ blockquote span {
 #content ul li {
   list-style-image: url(images/li_bullet.gif);
 }
+#twocol {
+    float: left;
+    width: 100%;
+}
+#colone {
+    float: left;
+    width: 45%;
+    display: inline;
+}
+#coltwo {
+    float: right;
+    width: 45%;
+    display: inline;
+}
 #text {
   float: left;
   text-align: left;
@@ -237,6 +251,7 @@ blockquote span {
   background-color: #444444; /*86E160;*/
   /*padding: 10px 5px 20px 20px !important; */
   padding: 10px 5px 20px 5px;
+  display:inline;
 }
 #image {
   vertical-align: top;
@@ -257,6 +272,7 @@ blockquote span {
   padding: 10px 15px 20px 0;
   background-color: #444444; /*86E160;*/
   height: 100%;
+  display:inline;
 }
 #sideBar h1 {
   text-align: right;
