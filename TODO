@@ -5,8 +5,6 @@ Fix up installation so a normal person can do it ...
     - /usr/local/lib/site-perl for perl modules
     - macro subs are not working - try to minimise
 
-Check awarded waypoints work
-
 Tracklog animation with multiple tracks 
     + color each track separately
     + have a timer / stepper (ala CompeGPS)
@@ -31,10 +29,17 @@ Calculate short 'routes' for fixed-route "comps".
 Modifying waypoints in regions isn't working.
     - should add a 'cancel' to reset a moved icon
 
-BUGS:
+Restricted Registration
+    Split page into two columns for adding/removing pilots
 
 Automatic airspace violation checks
-    - check radiuses
+    + import airspace files ..
+    + check track against nearby airspace
+    + airspace management - add/delete
+    + link airspace(s) to a competition
+    + check radiuses
+
+BUGS:
 
 Make an "install" package for Cpanel
     (basically create the database without a command line)
@@ -60,23 +65,27 @@ Possible bug with lead-out coefficient for start-gate jumpers (esp in elapsed-in
 
 Implement independent start gates for teams properly
 
-
 TODO:
 
 Scoring stuff:
     Add a time bonus for height above goal arrival
 
-    Add a glide bonus for height above goal arrival
+    Add a glide bonus for height above goal on stop
 
     Conical ESS sections
 
     Peleton scoring
 
-    Alternative lead-out point system
+    Alternative lead-out point system (partially done)
+
+Help popups (CSS?):
+    Add a 'help' link on admin pages which popups some useful help 
 
 G-record check automation (on demand?)
 
 Barograph/altitude trace pop-up for tracklog page.
+
+Improve waypoint awards so you can un-award too
 
 Launch management page (rather than just a table - modify waypoint page) 
 
@@ -87,9 +96,6 @@ Add a new competition type (name:?)
     Classes based upon inland hours (link to rego?)
     Scoring multipliers by sex/hours/etc?
     "Super-teams" (based on state somehow?)
-
-Restricted Registration
-    Split page into two columns for adding/removing pilots
 
 Handle broken tracklogs better (allow more admin intervention)
     - allow "time-shift"ing tracks for bad almanacs (?)
@@ -125,11 +131,6 @@ Add other types of scoring with customisable bonuses:
     Out & return 
 
 Automatic airspace violation checks
-    + import airspace files ..
-    + check track against nearby airspace
-    + airspace management - add/delete
-    + link airspace(s) to a competition
-    - check radiuses
     - large airspace db handling
 
 Interpolate crossing times for intersection with start line & goal cylinder
@@ -152,8 +153,6 @@ A guide for comp administrators
 
 Thermal maps from tracklogs
 
-A "barograph" style trace with tracklogs
-
 Support GPSDump/KML waypoint format
 
 Clean up glider names with canonical ones
@@ -164,13 +163,13 @@ Improve CSS so that it "stretches" for wider screens,
     provide more detail for scoring
 
 Verify track 'G' record
-    - need windows vali-XXX.exe or .dlls :-(
-    (vali-xdg, vali-bra, vali-xct, etc)
     - apparently most do RSA/MD5 digest with a key (based on serial #?)
     - perhaps reverse engineer GPSDumps dodgy G record ..
     - and perhaps run windozes exes through wine / dosemu
 
 DONE:
+
+* Check awarded waypoints work
 
 * Adding task waypoints should automatically assign the "next" value if none provided.
 
