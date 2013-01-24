@@ -1,4 +1,4 @@
-#!/usr/bin/perl -I/home/geoff/bin
+#!/usr/bin/perl
 
 
 #

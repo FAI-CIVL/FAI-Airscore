@@ -12,6 +12,7 @@ my $database = 'xcdb';
 my $hostname = 'localhost';
 my $port = 3306;
 
+$pi = atan2(1,1) * 4;    # accurate PI.
 local * FD;
 
 #
@@ -25,7 +26,7 @@ my $drh;
 sub db_connect
 {
     $dsn = "DBI:mysql:database=$database;host=$hostname;port=$port";
-    $dbh = DBI->connect( $dsn, 'xc', '%MYSQLPASSWORD%', { RaiseError => 1 } )
+    $dbh = DBI->connect( $dsn, 'xc', 'x323c', { RaiseError => 1 } )
             or die "Can't connect: $!\n";
     $drh = DBI->install_driver("mysql");
 }
@@ -113,6 +114,36 @@ sub oalatlong
     return \%point;
 }
 
+sub torad
+{
+    my ($v) = @_;
+    return $v * $pi / 180;
+}
+
+sub bearing
+{
+    my ($p1, $p2) = @_;
+    my ($x, $y);
+    my ($lat1, $lat2);
+    my $dLon;
+    my $brng;
+
+    #$dLat = torad($p2->{'lat'}-$p1->{'lat'}).toRad();
+    #print Dumper($p2);
+    $dLon = torad($p2->{'lon'}-$p1->{'lon'});
+    $lat1 = torad($p1->{'lat'});
+    $lat2 = torad($p2->{'lat'});
+
+    $y = sin($dLon)*cos($lat2);
+    $x = cos($lat1)*sin($lat2) - sin($lat1)*cos($lat2)*cos($dLon);
+
+    $brng = atan2($y, $x);
+
+    # convert back to degree?
+    print "bearing=" . ($brng*180/$pi) . "\n";
+
+    return $brng;
+}
 
 #****** OPEN AIR (tm) TERRAIN and AIRSPACE DESCRIPTION LANGUAGE *************
 #    Version 1.0
@@ -180,6 +211,8 @@ sub read_openair
     my $row;
     my $rec;
     my $dirn;
+    my $last;
+    my $point2;
 
     print "reading: $f\n";
     open(FD, "$f") or die "can't open $f: $!";
@@ -213,20 +246,21 @@ sub read_openair
                 $rec->{'class'} = $field[1];
             }
             $rec->{'class'} = $field[1];
+            $dirn = '+';
         }
         elsif ($field[0] eq "AL")
         {
-            $rec->{'base'} = 0.0 + (0+$field[1]) / 3.28;
+            $rec->{'base'} = int(0.5 + (0+$field[1]) / 3.28);
         }
         elsif ($field[0] eq "AH")
         {
             if (substr($field[1],0,2) eq "FL")
             {
-                $rec->{'tops'} = 0.0 + (0+substr($field[1],2))*100 / 3.28;
+                $rec->{'tops'} = int(0.5 + (0+substr($field[1],2))*100 / 3.28);
             }
             else
             {
-                $rec->{'tops'} = 0.0 + (0+$field[1]) / 3.28;
+                $rec->{'tops'} = int(0.5 + (0+$field[1]) / 3.28);
             }
         }
         elsif ($field[0] eq "DP")
@@ -234,14 +268,27 @@ sub read_openair
             # build a list ...
             my $point;
             $point = oalatlong($field[2] . $field[1], $field[4] . $field[3]);
-            if ($dirn eq '+')
+
+            if (defined($last))
             {
-                push @$points, $point;
+                # ignore wedge duplicate
+                if (($last->{'lat'} == $point->{'lat'}) and ($last->{'lon'} == $point->{'lon'}))
+                {
+                    print("Ignoring duplicate point\n");
+                    next;
+                }
             }
-            else
-            {
-                unshift @$points, $point;
-            }
+
+            $last = $point;
+            push @$points, $point;
+            #if ($dirn eq '+')
+            #{
+            #    push @$points, $point;
+            #}
+            #else
+            #{
+            #    unshift @$points, $point;
+            #}
         }
         elsif ($field[0] eq "DA")
         {
@@ -251,24 +298,44 @@ sub read_openair
         {
             # radius, point to point
             my $point;
+            my ($a1,$a2);
+            my @carr;
 
             $rec->{'shape'} = 'wedge';
 
             $field[4] = substr($field[4], 0, 1);
             $point = oalatlong($field[2] . $field[1], $field[4] . $field[3]);
-            $point->{'radius'} = $rec->{'radius'};
-            # handle the associated points
+            #$point->{'radius'} = $rec->{'radius'};
 
-            #$point2 = oalatlong($rest[0], $rest[1]);
+            # handle the associated point
+            @carr = split /,[ ]*/, $row, 2;
+            @rest = split /[ ]+/, $carr[1];
+            $rest[3] = substr($rest[3], 0, 1);
 
-            if ($dirn eq '+')
+            $point2 = oalatlong($rest[1] . $rest[0], $rest[3] . $rest[2]);
+            $a1 = bearing($rec->{'centreto'}, $point);
+            $a2 = bearing($rec->{'centreto'}, $point2);
+            $point2->{'astart'} = $a1;
+            $point2->{'aend'} = $a2;
+
+
+            if ($dirn eq '-')
             {
-                push @$points, $point;
+                $point2->{'connect'} = 'arc-';
             }
             else
             {
-                unshift @$points, $point;
+                $point2->{'connect'} = 'arc+';
             }
+
+            if (!(($last->{'lat'} == $point->{'lat'}) and ($last->{'lon'} == $point->{'lon'})))
+            {
+                push @$points, $point;
+            }
+            push @$points, $point2;
+
+
+            $last = $point2;
         }
         elsif ($field[0] eq "V")
         {
@@ -356,17 +423,17 @@ sub read_airspace
         }
         elsif ($field[0] eq "BASE")
         {
-            $rec{'base'} = (0+$field[1]) / 3.28;
+            $rec{'base'} = int(0.5+(0+$field[1]) / 3.28);
         }
         elsif ($field[0] eq "TOPS")
         {
             if (substr($field[1],0,2) eq "FL")
             {
-                $rec{'tops'} = (0+substr($field[1],2))*100 / 3.28;
+                $rec{'tops'} = int(0.5+(0+substr($field[1],2))*100 / 3.28);
             }
             else
             {
-                $rec{'tops'} = (0+$field[1]) / 3.28;
+                $rec{'tops'} = int(0.5+(0+$field[1]) / 3.28);
             }
         }
         elsif ($field[0] eq "POINT")
@@ -440,12 +507,21 @@ sub store_airspace
     my $count;
     my $pts;
     my $cwp;
+    my $sth;
 
     for my $air ( @$regions )
     {
-        #print "del ", $air->{'name'}, "\n";
-        $dbh->do("delete from tblAirspace where airName=? and airClass=? and airBase=? and airTops=?", undef,
-            $air->{'name'}, $air->{'class'}, $air->{'base'}, $air->{'tops'});
+        #print "select * from tblAirspace where airName='" . $air->{'name'} . "' and airClass='" . $air->{'class'} . "' and airBase=" . $air->{'base'} . " and airTops=" . $air->{'tops'} . "\n";
+        $sth = $dbh->prepare("select * from tblAirspace where airName='" . $air->{'name'} . "' and airClass='" . $air->{'class'} . "' and airBase=" . $air->{'base'} . " and airTops=" . $air->{'tops'});
+        $sth->execute();
+        if ($ref = $sth->fetchrow_hashref())
+        {
+            print "del ", $ref->{'airName'}, "\n";
+            $dbh->do("delete from tblAirspaceWaypoint where airPk=?", undef, $ref->{'airPk'});
+            $dbh->do("delete from tblAirspace where airPk=?", undef, $ref->{'airPk'});
+        }
+
+        # AirspaceWaypoint too?
         print "insert ", $air->{'name'}, "\n";
         $dbh->do("insert into tblAirspace (airName,airClass,airBase,airTops,airShape) values (?,?,?,?,?)", undef, $air->{'name'}, $air->{'class'}, $air->{'base'}, $air->{'tops'}, $air->{'shape'});
         $id = $dbh->last_insert_id(undef, undef, "tblAirspace", undef);
@@ -465,7 +541,14 @@ sub store_airspace
         {
             #print "insert wp ", $air->{'name'}, "\n";
             #print Dumper($wp);
-            $dbh->do("insert into tblAirspaceWaypoint (airPk, airOrder, awpLatDecimal, awpLongDecimal) values (?,?,?,?)", undef, $id, $count, 0.0 + $wp->{'lat'}, 0.0 + $wp->{'lon'});
+            if ($wp->{'connect'} eq 'arc+' or $wp->{'connect'} eq 'arc-')
+            {
+                $dbh->do("insert into tblAirspaceWaypoint (airPk, airOrder, awpLatDecimal, awpLongDecimal, awpConnect, awpAngleStart, awpAngleEnd) values (?,?,?,?,?,?,?)", undef, $id, $count, 0.0 + $wp->{'lat'}, 0.0 + $wp->{'lon'}, $wp->{'connect'}, $wp->{'astart'}, $wp->{'aend'});
+            }
+            else
+            {
+                $dbh->do("insert into tblAirspaceWaypoint (airPk, airOrder, awpLatDecimal, awpLongDecimal) values (?,?,?,?)", undef, $id, $count, 0.0 + $wp->{'lat'}, 0.0 + $wp->{'lon'});
+            }
             $count++;
         }
 

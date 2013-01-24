@@ -17,7 +17,8 @@ use TrackLib qw(:all);
 
 my $dbh;
 
-my $max_height = 3048;  # 10000' limit in oz 
+#my $max_height = 3048;  # 10000' limit in oz 
+my $max_height = 2591;  # 10000' limit in oz 
 
 #
 # Read an abbreviated tracklog from the database 
@@ -95,6 +96,7 @@ sub airspace_check
                 if ($coord->{'alt'} - $space->{'base'} > $violation)
                 {
                     $violation = $coord->{'alt'} - $max_height;
+                    print "PV: max_height (8500') violation\n";
                 }
             }
 
@@ -106,16 +108,29 @@ sub airspace_check
                     $dst = distance($coord, $space->{'centre'});
                     if ($dst < $space->{'radius'})
                     {
-                        print "PV:  alt=", $coord->{'alt'}, " dlat=", $coord->{'dlat'}, " dlong=", $coord->{'dlong'}, "\n";
+                        print "PV(circle):  alt=", $coord->{'alt'}, " dlat=", $coord->{'dlat'}, " dlong=", $coord->{'dlong'}, "\n";
                         $violation = $coord->{'alt'} - $space->{'base'};
                     }
 
                 }
+#                if ($space->{'shape'} eq 'wedge')
+#                {
+#                    if (in_wedge($coord, $space->{'points'}))
+#                    {
+#                    }
+#                    $dst = distance($coord, $space->{'centre'});
+#                    if ($dst < $space->{'radius'})
+#                    {
+#                        # Find bearing and check if between anglestart/end
+#                        print "PV:  alt=", $coord->{'alt'}, " dlat=", $coord->{'dlat'}, " dlong=", $coord->{'dlong'}, "\n";
+#                        $violation = $coord->{'alt'} - $space->{'base'};
+#                    }
+#                }
                 elsif (in_polygon($coord, $space->{'points'}))
                 {
                     if ($coord->{'alt'} - $space->{'base'} > $violation)
                     {
-                        print "PV:  alt=", $coord->{'alt'}, " dlat=", $coord->{'dlat'}, " dlong=", $coord->{'dlong'}, "\n";
+                        print "PV(poly):  alt=", $coord->{'alt'}, " dlat=", $coord->{'dlat'}, " dlong=", $coord->{'dlong'}, "\n";
                         $violation = $coord->{'alt'} - $space->{'base'};
                     }
                 }
@@ -174,6 +189,83 @@ sub in_polygon
     return ($c % 2);
 }
 
+# radius should be maximum wedge radius
+#
+sub in_wedge
+{
+    my ($wpt, $poly) = @_;
+    my ($i, $j);
+    my $dst;
+    my $nvert;
+
+    $dst = distance($coord, $space->{'centre'});
+    if ($dst < $space->{'radius'})
+    {
+        $nvert = scalar @$poly;
+        for ($i = 0, $j = $nvert-1; $i < $nvert; $j = $i++) 
+        {
+            # Find bearing and check if between anglestart/end
+            #print "PV:  alt=", $coord->{'alt'}, " dlat=", $coord->{'dlat'}, " dlong=", $coord->{'dlong'}, "\n";
+            #$violation = $coord->{'alt'} - $space->{'base'};
+        }
+    }
+}
+
+sub make_wedge
+{
+    my ($center, $alpha, $beta, $radius, $dirn) = @_;
+
+    my $points = 16;
+    my $earth = 6378137.0;
+    my $delta;
+    my @Cpoints;
+    my ($nlat,$nlon);
+    my $nbrg;
+
+    #print "make_wedge $alpha $beta $radius $dirn\n";
+    #print "center = ", Dumper($center);
+
+    # to radians
+    if ($dirn eq "arc-")
+    {
+        # anti
+        $delta = ($beta - $alpha) / $points;
+    }
+    else
+    {
+        # clock
+        $delta = - (($alpha - $beta) / $points);
+    }
+
+    $nbrg = $alpha;
+    for (my $i=0; $i < $points; $i++) 
+    {
+        my %coord;
+
+        $nlat = asin(sin($center->{'lat'})*cos($radius/$earth) + 
+                cos($center->{'lat'})*sin($radius/$earth)*cos($nbrg) );
+
+        $nlon = $center->{'long'} + atan2(sin($nbrg)*sin($radius/$earth)*cos($center->{'lat'}), cos($radius/$earth)-sin($center->{'lat'})*sin($nlat));
+
+        # back to degrees ..
+        $nlat = $nlat * 180 / $pi;
+        $nlon = $nlon * 180 / $pi;
+
+        #print "added lat=$nlat lon=$nlon\n";
+
+        $coord{'dlat'} = $nlat;
+        $coord{'dlong'} = $nlon;
+        $coord{'lat'} = $nlat * $pi / 180;
+        $coord{'long'} = $nlon * $pi / 180;
+        $coord{'cart'} = polar2cartesian(\%coord);
+
+        push @Cpoints, \%coord;
+
+        $nbrg = $nbrg + $delta;
+    }
+
+    return \@Cpoints;
+}
 
 # 
 # Don't bother with great circle for checking
@@ -249,6 +341,9 @@ sub find_nearby_airspace
         $coord{'lat'} = $ref->{'awpLatDecimal'} * $pi / 180;
         $coord{'long'} = $ref->{'awpLongDecimal'} * $pi / 180;
         $coord{'cart'} = polar2cartesian(\%coord);
+        $coord{'astart'} = $ref->{'awpAngleStart'};
+        $coord{'aend'} = $ref->{'awpAngleEnd'};
+        $coord{'connect'} = $ref->{'awpConnect'};
         #print "coord=",Dumper($coord), "\n";
 
         push @points, \%coord;
@@ -312,12 +407,27 @@ sub find_task_airspace
         $nearair{'shape'} = $ref->{'airShape'};
         $nearair{'radius'} = $ref->{'airRadius'};
 
+        # else ...
         $coord{'dlat'} = $ref->{'awpLatDecimal'};
         $coord{'dlong'} = $ref->{'awpLongDecimal'};
         $coord{'lat'} = $ref->{'awpLatDecimal'} * $pi / 180;
         $coord{'long'} = $ref->{'awpLongDecimal'} * $pi / 180;
         $coord{'cart'} = polar2cartesian(\%coord);
-        #print "coord=",Dumper($coord), "\n";
+
+        if (($ref->{'awpConnect'} eq 'arc+') or ($ref->{'awpConnect'} eq 'arc-'))
+        {
+            # add in 
+            my $radius;
+            my $ext;
+            
+            $radius = distance(\%coord, $points[0]);
+            $extra = make_wedge($points[0], 0.0+$ref->{'awpAngleStart'}, 0.0+$ref->{'awpAngleEnd'}, $radius, $ref->{'awpConnect'});
+            shift @$extra;
+            foreach $ext (@$extra)
+            {
+                push @points, $ext;
+            }
+        }
 
         push @points, \%coord;
     }

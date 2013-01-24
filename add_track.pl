@@ -185,6 +185,14 @@ else
     }
 }
 
+# G-record check
+#select correct vali for IGC file.
+#$res = `wine $vali $igc`
+#if ($res ne 'PASSED')
+#{
+#}
+
+
 # stored track pk
 print "traPk=$traPk\n";
 

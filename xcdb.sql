@@ -176,6 +176,8 @@ create table tblTrack
     traSafety   enum ('safe', 'maybe', 'unsafe' ) default 'safe',
     traOriginal varchar(128),
     traDuration integer default 0,
+    traGRecordOk integer default 0,
+    traInAir    integer default 0,
     index indPilot (pilPk)
 );
 
@@ -535,5 +537,5 @@ create table schema_version
 );
 
 
-insert into schema_version (svKey, svExtra) values (1, 'create')
+insert into schema_version (svKey, svExtra) values (2, 'create')
 
