@@ -46,7 +46,10 @@ function done(x)
 }
 function merge_tracks(tasPk, traPk, incPk)
 {
-    microAjax("merge_track.php?tasPk="+tasPk+"&traPk="+traPk+"&incPk="+incPk, function(data) { var x; } );
+    microAjax("merge_track.php?tasPk="+tasPk+"&traPk="+traPk+"&incPk="+incPk, function(data) 
+        { 
+            window.location.href="tracklog_map.php?trackid="+traPk;
+        } );
 }
 function plot_track(jstr)
 {
