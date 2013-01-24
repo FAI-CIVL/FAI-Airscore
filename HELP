@@ -17,13 +17,26 @@ You might want to modify this directly in tblUser.
 
 2. RACE Formula 
 
+Typical formula might be GAP 2007, 40km nom dist, 5km min dist.
+
 
 3. Creating Tasks.
 
+Adding tasks is done in the task creation are on the competition page.
+Before you can enter a task you need to have a region with waypoints (see 3.2).
+
+Waypoints should be numbered (1,2,3,4,etc). You should always have a 'start' waypoint,
+probably a 'speed' waypoint, then other waypoints and an 'endspeed' and a 'goal'. 
+Incorrect waypoint entry may result in incorrect scoring.
 
 3.1 Adding Regions/Waypoints
 
+Click on the region tab enables you to create a new region and add waypoints.
+They can also be imported from a GPSDump or CompeGPS file.
+
+
 3.2 Adding Pilots
+
 
 
 4.0 Scoring
