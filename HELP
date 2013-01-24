@@ -1,0 +1,46 @@
+
+Getting Started
+~~~~~~~~~~~~~~~
+
+
+http://server/login.php
+
+This should be straight-forward, the initial user and password is 'admin', 'admin'.
+You might want to modify this directly in tblUser.
+
+
+1. Creating a Competition.
+
+
+1.1 Linking to the 'submit' page.
+
+
+2. RACE Formula 
+
+
+3. Creating Tasks.
+
+
+3.1 Adding Regions/Waypoints
+
+3.2 Adding Pilots
+
+
+4.0 Scoring
+
+4.1 Adding Airspace
+
+
+4.2 Manual additions and penalties
+
+5. Track Management
+
+
+6. Registration
+
+
+
+
+
+
+

@@ -91,6 +91,7 @@ sub validate_task
     my ($furthest, $furthestwpt);
     my $taskss;
     my %result;
+    my (%s1, %s2, %s3);
 
     #print Dumper($task);
 
@@ -116,8 +117,9 @@ sub validate_task
 
     # Stuff for leadout coeff calculation
     # against starttime (rather than first start time)
-    my ($taskdist, $maxdist, $cwdist, $coeff);
+    my ($taskdist, $maxdist, $cwdist, $coeff, $essdist);
     $taskdist = $task->{'short_distance'};
+    $essdist = $task->{'short_distance'};
     $cwdist = 0;
     $coeff = 0;
     $maxdist = 0;
@@ -136,7 +138,7 @@ sub validate_task
         $utcmod = -86400;
     }
 
-    # Determine the start gate type
+    # Determine the start gate type and ESS dist
     for (my $i = 0; $i < $allpoints; $i++)
     {
         if (( $waypoints->[$i]->{'type'} eq 'start') or 
@@ -144,7 +146,27 @@ sub validate_task
         {
             $spt = $i;
         }
+        if ($waypoints->[$i]->{'type'} eq 'speed') 
+        {
+            $cwdist = 0;
+        }
+        if ($waypoints->[$i]->{'type'} eq 'endspeed') 
+        {
+            $essdist = $cwdist;
+            print "speed section dist=$essdist\n";
+        }
+
+        if ($i < $allpoints-1)
+        {
+            $s1{'lat'} = $waypoints->[$i]->{'short_lat'};
+            $s1{'long'} = $waypoints->[$i]->{'short_long'};
+            $s2{'lat'} = $waypoints->[$i+1]->{'short_lat'};
+            $s2{'long'} = $waypoints->[$i+1]->{'short_long'};
+            $cwdist = $cwdist + distance(\%s1, \%s2);
+        }
     } 
+    $cwdist = 0;
+
     # Go through the coordinates and verify the track against the task
     for $coord (@$coords)
     {
@@ -222,8 +244,11 @@ sub validate_task
         # Work out leadout coeff if we've moved on
         if ($starttime != 0 and ($cwdist - $sdist > $maxdist))
         {
-            $coeff = $coeff + 
+            if (!defined($endss))
+            {
+                $coeff = $coeff + 
                     ($cwdist-$sdist-$maxdist)*($coord->{'time'}-$starttime);
+            }
             #print "new coeff=$coeff, dist delta (cw=$cwdist,sd=$sdist,md=$maxdist)=", $cwdist-$sdist-$maxdist, "\n",
             #    " time delta (coord time-$startss)=", $coord->{'time'} - $startss,
             #    " coeff/taskdist=", $coeff/$taskdist, "\n";
@@ -342,6 +367,7 @@ sub validate_task
                     {
                         $endss = $awtime;
                     }
+                    print $wpt->{'name'}, " endss=$endss at $dist\n";
                 }
     
                 $wcount++;
@@ -553,7 +579,7 @@ sub validate_task
         else
         {
             # Otherwise it's a zero for elapsed (?)
-            $coeff = $coeff + $taskdist*($finish-$startss);
+            $coeff = $coeff + $essdist*($finish-$startss);
             if ($waypoints->[$spt]->{'how'} eq 'entry')
             {
                 print "Elasped entry jump: $comment\n";
@@ -631,8 +657,8 @@ sub validate_task
             $dist = 0;
         }
         print "wcount=0 dist=$dist\n";
-        #$coeff = $coeff + ($taskdist - $dist)*($task->{'sfinish'}-$startss);
-        $coeff = $taskdist * ($task->{'sfinish'}-$task->{'sstart'});
+        #$coeff = $coeff + ($essdist - $dist)*($task->{'sfinish'}-$startss);
+        $coeff = $essdist * ($task->{'sfinish'}-$task->{'sstart'});
     }
     elsif ($wcount == 0)
     {
@@ -645,7 +671,7 @@ sub validate_task
         #$s3{'long'} = $waypoints->[$closestwpt]->{'short_long'};
         $dist = distance(\%s1, \%s2); # - distance($closestcoord, \%s2);
         print "wcount=0 dist=$dist\n";
-        $coeff = $coeff + ($taskdist - $dist)*($task->{'sfinish'}-$startss);
+        $coeff = $coeff + ($essdist - $dist)*($task->{'sfinish'}-$startss);
     }
     elsif ($wcount != $allpoints)
     {
@@ -663,7 +689,7 @@ sub validate_task
         #print Dumper($closestcoord);
         # add rest of (distance_short * $task->{'sfinish'}) to coeff
         #print "incomplete coeff=", ($taskdist - $dist)*($task->{'sfinish'}-$startss), "\n";
-        $coeff = $coeff + ($taskdist - $dist)*($task->{'sfinish'}-$startss);
+        $coeff = $coeff + ($essdist - $dist)*($task->{'sfinish'}-$startss);
     }
     #elsif ($task->{'type'} eq 'free' or $task->{'type'} eq 'free-bearing') 
     #   {
@@ -685,7 +711,7 @@ sub validate_task
     $result{'distance'} = $dist;
     $result{'penalty'} = $penalty;
     $result{'comment'} = $comment;
-    $result{'coeff'} = $coeff / $taskdist;
+    $result{'coeff'} = $coeff / $essdist;
     if ($closestcoord)
     {
         # FIX: arc it back to the course line to get distance?

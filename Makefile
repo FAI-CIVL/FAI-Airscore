@@ -35,7 +35,7 @@ all: passwords install
 
 database: passwords
 	@echo Creating the database for the first time
-	mysql -u root -p < foo.sql
+	mysql -u root -p < xcdb.sql
 
 install: 
 	mkdir -p $(CGIBIN)
@@ -48,15 +48,15 @@ install:
 
 package:
 	-rm ../$(DIR)-$(VERSION)
-	cd ..; ln -s app $(DIR)-$(VERSION)
-	cd ..; tar zcfh $(DIR)_$(VERSION).tar.gz $(DIR)-$(VERSION) --exclude debian --exclude .svn --exclude bin --exclude build
-	cd ..; tar zcfh $(DIR)_$(VERSION).orig.tar.gz $(DIR)-$(VERSION) --exclude debian --exclude .svn --exclude bin --exclude build
-	pwd; debuild -m$(MAINTAINER) -aarmel -i.svn -I.svn -us -uc
+	cd ..; ln -s airscore $(DIR)-$(VERSION)
+	cd ..; tar zcfh $(DIR)_$(VERSION).tar.gz $(DIR)-$(VERSION) --exclude debian --exclude .git --exclude bin --exclude build
+	cd ..; tar zcfh $(DIR)_$(VERSION).orig.tar.gz $(DIR)-$(VERSION) --exclude debian --exclude .git --exclude bin --exclude build
+	pwd; debuild -m$(MAINTAINER) -aarmel -i.git -I.git -us -uc
 	-rm ../$(DIR)-$(VERSION)
 	-cd ..; mv $(DEBS) package
 
 release:
-	$(shell cd ..; tar jcf $(TARGET)-$(VERSION).tar.bz2 airscore --exclude=.svn)
+	$(shell cd ..; tar jcf $(TARGET)-$(VERSION).tar.bz2 airscore --exclude=.git)
 
 tags: $(SRC)
 	ctags $^
