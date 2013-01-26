@@ -529,6 +529,47 @@ create table tblTrackMarker
     tmTime          integer
 );
 
+create table tblLadder
+(
+    ladPk           integer not null primary key auto_increment,
+    ladName         varchar(100) not null, 
+    ladStart        date,
+    ladEnd          date,
+    ladNationCode   varchar(3),
+    ladHow          enum ('fixed', 'ftv', 'comp') default 'fixed',
+    ladParam        integer default 10,
+    ladIncExternal  integer default 0
+);
+
+create table tblLadderComp
+(
+    lcPk        integer not null primary key auto_increment,
+    lcValue     integer default 450,
+    ladPk       integer,
+    comPk       integer
+);
+
+create table tblExtTask
+(
+    extPk       integer not null primary key auto_increment,
+    comName     varchar(64),
+    comDateTo   date,
+    tasName     varchar(32),
+    lcValue     integer default 450,
+    tasQuality  double, 
+    tasTopScore integer,
+    extURL      varchar(128)
+
+);
+
+create table tblExtResult
+(
+    etrPk       integer not null primary key auto_increment,
+    pilPk       integer,
+    extPk       integer,
+    etrScore    integer
+);
+
 create table schema_version
 (
     svKey       integer not null default 0,
