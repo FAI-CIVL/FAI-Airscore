@@ -23,12 +23,72 @@ function done(x)
 {
     // do nothing
 }
+function dist(p1, p2)
+{
+    var earth = 6378137.0;
+    var p1lat = p1[1] * Math.PI / 180;
+    var p1lon = p1[2] * Math.PI / 180;
+    var p2lat = p2[1] * Math.PI / 180;
+    var p2lon = p2[2] * Math.PI / 180;
+    var dlat = (p2lat - p1lat);
+    var dlon = (p2lon - p1lon);
+
+
+    var a = Math.sin(dlat/2) * Math.sin(dlat/2) + Math.cos(p1lat) * Math.cos(p2lat) * Math.sin(dlon/2) * Math.sin(dlon/2);
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return earth * c;
+}
+function make_wedge(center, alpha, beta, radius, dirn)
+{
+    var points = 16;
+    var earth = 6378137.0;
+    var delta;
+    var Cpoints = [];
+    var nlat,nlon;
+    var nbrg;
+
+    // to radians
+    var Clat = center[1] * Math.PI / 180;
+    var Clng = center[2] * Math.PI / 180;
+
+    if (dirn == "arc-")
+    {
+        // anti
+        delta = (beta - alpha) / points;
+    }
+    else
+    {
+        // clock
+        delta = - ((alpha - beta) / points);
+    }
+
+    nbrg = alpha;
+    for (var i=0; i < points+1; i++) 
+    {
+        nlat = Math.asin(Math.sin(Clat)*Math.cos(radius/earth) + 
+                Math.cos(Clat)*Math.sin(radius/earth)*Math.cos(nbrg) );
+
+        nlon = Clng + Math.atan2(Math.sin(nbrg)*Math.sin(radius/earth)*Math.cos(Clat),
+                Math.cos(radius/earth)-Math.sin(Clat)*Math.sin(nlat));
+
+        // back to degrees ..
+        nlat = nlat * 180 / Math.PI;
+        nlon = nlon * 180 / Math.PI;
+
+        Cpoints.push(new google.maps.LatLng(nlat,nlon));
+        
+        nbrg = nbrg + delta;
+    }
+
+    return Cpoints;
+}
 function plot_air(jstr)
 {
     var track;
     var row;
     var line;
-    var trklog;
+    //var trklog;
     var polyline;
     var gll;
     var count;
@@ -37,12 +97,13 @@ function plot_air(jstr)
     var sz;
     var label;
     var circle;
+    var center;
 
     count = 1;
     track = JSON.parse(jstr)
     line = Array();
     segments = Array();
-    trklog = Array();
+    //trklog = Array();
     bounds = new google.maps.LatLngBounds();
 
     shape = track[0][5];
@@ -82,6 +143,12 @@ function plot_air(jstr)
         return track;
     }
 
+    if (shape == "wedge")
+    {
+        center = track[0];
+        track.shift();
+    }
+
     // otherwise polygon (wedge not handled properly)
     for (row in track)
     {
@@ -96,15 +163,27 @@ function plot_air(jstr)
             map.setCenter(new google.maps.LatLng(lasLat, lasLon), 9);
         }
 
-        if (connect == "arc")
+        //alert("connect="+connect);
+        if (connect == "arc+" || connect == "arc-")
         {
-            continue;
+            // add an arc of polylines
+            var radius = dist(center, track[row]);
+
+            wline = make_wedge(center, parseFloat(track[row][8]), parseFloat(track[row][9]), radius, connect);
+            for (pt in wline)
+            {
+                line.push(wline[pt]);
+                bounds.extend(wline[pt]);
+            }
+            gll = wline[pt];
         }
-    
-        gll = new google.maps.LatLng(lasLat, lasLon);
-        line.push(gll);
-        bounds.extend(gll);
-        trklog.push(track[row]);
+        else
+        {
+            gll = new google.maps.LatLng(lasLat, lasLon);
+            line.push(gll);
+            bounds.extend(gll);
+            //trklog.push(track[row]);
+        }
     
         if (count % 10 == 0)
         {
@@ -121,12 +200,11 @@ function plot_air(jstr)
         count = count + 1;    
 
         pos = new google.maps.LatLng(lasLat,lasLon);
-        label  = new ELabel(map, pos, cname, "waypoint", new google.maps.Size(0,0), 60);
+        label  = new ELabel(map, pos, row, "waypoint", new google.maps.Size(0,0), 60);
         map.fitBounds(bounds);
 
         //sz = GSizeFromMeters(map, pos, crad*2,crad*2);
         //map.addOverlay(new EInsert(pos, "circle.png", sz, 13));
-
     }
 
     if (line.length > 0)
