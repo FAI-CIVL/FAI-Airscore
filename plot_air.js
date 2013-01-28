@@ -55,12 +55,24 @@ function make_wedge(center, alpha, beta, radius, dirn)
     if (dirn == "arc-")
     {
         // anti
-        delta = (beta - alpha) / points;
+        delta = alpha - beta;
     }
     else
     {
         // clock
-        delta = - ((alpha - beta) / points);
+        delta = beta - alpha;
+    }
+
+    if (delta < 0) 
+    {
+        delta = delta + Math.PI * 2;
+    }
+
+    delta = delta / points;
+
+    if (dirn == "arc-")
+    {
+        delta = -delta;
     }
 
     nbrg = alpha;
@@ -143,11 +155,11 @@ function plot_air(jstr)
         return track;
     }
 
-    if (shape == "wedge")
-    {
-        center = track[0];
-        track.shift();
-    }
+    //if (shape == "wedge")
+    //{
+    //    center = track[0];
+    //    track.shift();
+    //}
 
     // otherwise polygon (wedge not handled properly)
     for (row in track)
@@ -167,9 +179,9 @@ function plot_air(jstr)
         if (connect == "arc+" || connect == "arc-")
         {
             // add an arc of polylines
-            var radius = dist(center, track[row]);
+            var radius = dist(track[row], track[row-1]);
 
-            wline = make_wedge(center, parseFloat(track[row][8]), parseFloat(track[row][9]), radius, connect);
+            wline = make_wedge(track[row], parseFloat(track[row][8]), parseFloat(track[row][9]), radius, connect);
             for (pt in wline)
             {
                 line.push(wline[pt]);
@@ -199,8 +211,11 @@ function plot_air(jstr)
         }
         count = count + 1;    
 
-        pos = new google.maps.LatLng(lasLat,lasLon);
-        label  = new ELabel(map, pos, row, "waypoint", new google.maps.Size(0,0), 60);
+        if (!(connect == "arc+" || connect == "arc-"))
+        {
+            pos = new google.maps.LatLng(lasLat,lasLon);
+            label  = new ELabel(map, pos, row, "waypoint", new google.maps.Size(0,0), 60);
+        }
         map.fitBounds(bounds);
 
         //sz = GSizeFromMeters(map, pos, crad*2,crad*2);

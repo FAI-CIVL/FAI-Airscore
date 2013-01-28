@@ -211,7 +211,9 @@ sub read_openair
     my $row;
     my $rec;
     my $dirn;
+    my $centre;
     my $last;
+    my $lastfield;
     my $point2;
 
     print "reading: $f\n";
@@ -236,6 +238,10 @@ sub read_openair
             # new record?
             if (exists $rec->{'class'})
             {
+                #if ($lastfield eq "DB")
+                #{
+                #    push @$points, $last;
+                #}
                 $rec->{'points'} = $points;
                 push @regions, $rec;
                 # store it into the database?
@@ -298,6 +304,7 @@ sub read_openair
         {
             # radius, point to point
             my $point;
+            my $point3;
             my ($a1,$a2);
             my @carr;
 
@@ -312,9 +319,11 @@ sub read_openair
             @rest = split /[ ]+/, $carr[1];
             $rest[3] = substr($rest[3], 0, 1);
 
-            $point2 = oalatlong($rest[1] . $rest[0], $rest[3] . $rest[2]);
-            $a1 = bearing($rec->{'centreto'}, $point);
-            $a2 = bearing($rec->{'centreto'}, $point2);
+            $point3 = oalatlong($rest[1] . $rest[0], $rest[3] . $rest[2]);
+
+            $point2 = $centre;
+            $a1 = bearing($point2, $point);
+            $a2 = bearing($point2, $point3);
             $point2->{'astart'} = $a1;
             $point2->{'aend'} = $a2;
 
@@ -328,12 +337,12 @@ sub read_openair
                 $point2->{'connect'} = 'arc+';
             }
 
-            if (!(($last->{'lat'} == $point->{'lat'}) and ($last->{'lon'} == $point->{'lon'})))
+            if ( ($last->{'connect'} eq 'arc-' || $last->{'connect'} eq 'arc+')
+                || !(($last->{'lat'} == $point->{'lat'}) and ($last->{'lon'} == $point->{'lon'})))
             {
                 push @$points, $point;
             }
             push @$points, $point2;
-
 
             $last = $point2;
         }
@@ -343,7 +352,8 @@ sub read_openair
             if (substr($field[1],0,1) eq "X")
             {
                 # set center of following description 
-                $rec->{'centreto'} = oalatlong($field[2] . substr($field[1],2), $field[4] . $field[3]);
+                $centre = oalatlong($field[2] . substr($field[1],2), $field[4] . $field[3]);
+                #$rec->{'centreto'} = oalatlong($field[2] . substr($field[1],2), $field[4] . $field[3]);
             
             }
             elsif (substr($field[1],0,1) eq "D")
@@ -354,10 +364,18 @@ sub read_openair
         }
         elsif ($field[0] eq "DC")
         {
+            $rec->{'centreto'} = $centre;
             $rec->{'radius'} = $field[1] * 1852;   # Nautical Miles
             $rec->{'shape'} = 'circle';
         }
+
+        $lastfield = $field[0];
     }
+
+    #if ($lastfield eq "DB")
+    #{
+    #    push @$points, $last;
+    #}
 
     $rec->{'points'} = $points;
 

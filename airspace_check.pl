@@ -17,8 +17,8 @@ use TrackLib qw(:all);
 
 my $dbh;
 
-#my $max_height = 3048;  # 10000' limit in oz 
-my $max_height = 2591;  # 10000' limit in oz 
+my $max_height = 3048;  # 10000' limit in oz 
+#my $max_height = 2591;  # 10000' limit in oz 
 
 #
 # Read an abbreviated tracklog from the database 
@@ -229,12 +229,24 @@ sub make_wedge
     if ($dirn eq "arc-")
     {
         # anti
-        $delta = ($beta - $alpha) / $points;
+        $delta = $alpha - $beta;
     }
     else
     {
         # clock
-        $delta = - (($alpha - $beta) / $points);
+        $delta = $beta - $alpha;
+    }
+
+    if ($delta < 0)
+    {
+        $delta = $delta + $pi * 2;
+    }
+
+    $delta = $delta / $points;
+
+    if ($dirn eq "arc-")
+    {
+        $delta = - $delta;
     }
 
     $nbrg = $alpha;
@@ -420,8 +432,8 @@ sub find_task_airspace
             my $radius;
             my $ext;
             
-            $radius = distance(\%coord, $points[0]);
-            $extra = make_wedge($points[0], 0.0+$ref->{'awpAngleStart'}, 0.0+$ref->{'awpAngleEnd'}, $radius, $ref->{'awpConnect'});
+            $radius = distance(\%coord, $points[scalar(@points)-1]);
+            $extra = make_wedge(\%coord, 0.0+$ref->{'awpAngleStart'}, 0.0+$ref->{'awpAngleEnd'}, $radius, $ref->{'awpConnect'});
             shift @$extra;
             foreach $ext (@$extra)
             {

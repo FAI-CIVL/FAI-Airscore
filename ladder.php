@@ -89,7 +89,7 @@ function ladder_result($ladPk, $ladder, $restrict)
     }
 
     // Select from the main database of results
-    $sql = "select TR.tarScore,
+    $sql = "select 0 as extPk, TR.tarScore,
         TP.pilPk, TP.pilLastName, TP.pilFirstName, TP.pilNationCode, TP.pilHGFA, TP.pilSex,
         TK.tasPk, TK.tasName, TK.tasDate, TK.tasQuality, 
         C.comName, C.comDateTo, LC.lcValue, 
@@ -321,7 +321,7 @@ if (array_key_exists('class', $_REQUEST))
     }
 }
 
-hcheader($title, 2, "$classstr $comDateFrom - $comDateTo");
+hcheader($title, 2, "$classstr " . $ladder['ladStart'] . " - " . $ladder['ladEnd']);
 
 echo "<div id=\"content\">";
 //echo "<div id=\"text\" style=\"overflow: auto; max-width: 600px;\">";
@@ -330,37 +330,6 @@ echo "<div id=\"text\" style=\"overflow: auto;\">";
 //echo "<h1>Details</h1>";
 // Determine scoring params / details ..
 
-$tasTotal = 0;
-$query = "select count(*) from tblTask where comPk=$comPk";
-$result = mysql_query($query); // or die('Task total failed: ' . mysql_error());
-if ($result)
-{
-    $tasTotal = mysql_result($result, 0, 0);
-}
-if ($comOverall == 'all')
-{
-    # total # of tasks
-    $comOverallParam = $tasTotal;
-    $overstr = "All rounds";
-}
-else if ($comOverall == 'round')
-{
-    $overstr = "$comOverallParam rounds";
-}
-else if ($comOverall == 'round-perc')
-{
-    $comOverallParam = round($tasTotal * $comOverallParam / 100, 0);
-    $overstr = "$comOverallParam rounds";
-}
-else if ($comOverall == 'ftv')
-{
-    $sql = "select sum(tasQuality) as totValidity from tblTask where comPk=$comPk";
-    $result = mysql_query($sql) or die('Task validity query failed: ' . mysql_error());
-    $totalvalidity = round(mysql_result($result, 0, 0) * $comOverallParam * 10,0);
-    $overstr = "FTV $comOverallParam% ($totalvalidity pts)";
-    $comOverallParam = $totalvalidity;
-}
-
 
 $today = getdate();
 $tdate = sprintf("%04d-%02d-%02d", $today['year'], $today['mon'], $today['mday']);
@@ -368,12 +337,12 @@ $tdate = sprintf("%04d-%02d-%02d", $today['year'], $today['mon'], $today['mday']
 $rtable = array();
 $rdec = array();
 
-if ($comClass == "HG")
-{
-    $classopts = array ( 'open' => '', 'floater' => '&class=0', 'kingpost' => '&class=1', 
-        'hg-open' => '&class=2', 'rigid' => '&class=3', 'women' => '&class=4' );
-}
-else
+//if ($comClass == "HG")
+//{
+//    $classopts = array ( 'open' => '', 'floater' => '&class=0', 'kingpost' => '&class=1', 
+//        'hg-open' => '&class=2', 'rigid' => '&class=3', 'women' => '&class=4' );
+//}
+//else
 {
     $classopts = array ( 'open' => '', 'fun' => '&class=0', 'sports' => '&class=1', 
         'serial' => '&class=2', 'women' => '&class=4' );
@@ -438,13 +407,16 @@ foreach ($sorted as $pil => $arr)
     foreach ($arr as $key => $sarr)
     { 
         $score = 0;
-        $perc = 100;
-        if (array_key_exists('score', $sarr))
+        $perc = 0;
+        if (is_array($sarr) && array_key_exists('score', $sarr))
         {
             $score = $sarr['score'];
             $tname = $sarr['tname'];
             $tpk = $sarr['taspk'];
-            $perc = round($sarr['perc'], 0);
+            if (array_key_exists('perc', $sarr))
+            {
+                $perc = round($sarr['perc'], 0);
+            }
             if (!$score)
             {
                 $score = 0;
@@ -485,7 +457,7 @@ echo ftable($rtable, "border=\"0\" cellpadding=\"3\" alternate-colours=\"yes\" a
 //echo "</table>";
 if ($ladder['ladHow'] == 'ftv')
 {
-    echo "1. Click <a href=\"ftv.php?comPk=$comPk\">here</a> for an explanation of FTV<br>";
+    echo "1. Click <a href=\"ftv.php\">here</a> for an explanation of FTV<br>";
     echo "2. Highlighted scores 100%, or indicated %, other scores not included<br>";
 }
 
@@ -505,6 +477,12 @@ if ($embed == '')
 
     echo ftable($detarr, 'border="0" cellpadding="0" width="185"', '', array('', 'align="right"'));
     hcincludedcomps($link,$ladPk);
+
+    if ($ladPk == 1)
+    {
+        echo "<h1>National Champion</h1>";
+        echo "<img src=\"images/gareth_bucket_small.jpg\">"; 
+    }
     //hcclosedcomps($link);
     echo "</div>";
     //if (sizeof($taskinfo) > 8)

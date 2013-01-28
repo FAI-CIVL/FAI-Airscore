@@ -538,7 +538,9 @@ create table tblLadder
     ladNationCode   varchar(3),
     ladHow          enum ('fixed', 'ftv', 'comp') default 'fixed',
     ladParam        integer default 10,
-    ladIncExternal  integer default 0
+    ladIncExternal  integer default 0,
+    ladImageM       varchar(128),
+    ladImageF       varchar(128),
 );
 
 create table tblLadderComp

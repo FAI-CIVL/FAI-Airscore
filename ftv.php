@@ -40,12 +40,12 @@ The net effect of this scoring is that a pilot who flies well on bad days can in
 <?php
 echo "</div>";
 //echo "<div id=\"image\"><img src=\"images/pilots.jpg\" alt=\"Pilots Flying\"/></div>";
-hcimage($link,$comp);
 echo "<div id=\"sideBar\">";
 hcregion($link);
 hcopencomps($link);
 hcclosedcomps($link);
 echo "</div>";
+hcimage($link,$comp);
 hcfooter();
 ?>
 </div>
