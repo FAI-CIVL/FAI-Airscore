@@ -9,13 +9,15 @@
 
 TARGET=airScore
 DIR=airscore
-VERSION=0.98
-
-MYSQLPASSWORD=xxxxx
-INSTALL=install
+VERSION=0.99
 HTROOT=/var/www
+
+# Configure these
+MYSQLPASSWORD=xxxxx
 CGIBIN=/usr/lib/cgi
 TRACKDIR=/var/airscore/tracks/
+
+INSTALL=install
 MAKE=make
 
 TARGET_OS=$(shell uname)
@@ -70,4 +72,5 @@ passwords:
 	@./submacro.sh MYSQLPASSWORD $(MYSQLPASSWORD)
 	@./submacro.sh CGIBIN $(CGIBIN)
 	@./submacro.sh VERSION $(VERSION)
+	@./submacro.sh TRACKDIR $(TRACKDIR)
 
