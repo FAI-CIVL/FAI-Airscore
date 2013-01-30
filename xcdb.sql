@@ -3,7 +3,7 @@ DROP database IF EXISTS xcdb;
 CREATE database xcdb;
 use xcdb;
 
-grant all on xcdb.* to xc@localhost identified by '%MYSQLPASSWORD%';
+grant all on txcdb.* to xc@localhost identified by '%MYSQLPASSWORD%';
 
 drop table if exists tblCompetition;
 create table tblCompetition
@@ -54,7 +54,7 @@ create table tblFormula
     forStoppedGlideBonus double default 0.0,
     forHeightArrBonus double default 0.0,
     forHeightArrLower integer default 200,
-    forHeightArrUpper integer default 3000,
+    forHeightArrUpper integer default 3000
 );
 
 drop table if exists tblComTaskTrack;
@@ -376,8 +376,8 @@ CREATE TABLE tblUserSession
     useLastTime timestamp
 );
 
---alter table tblUserSession modify column useSessTime DateTime default CURRENT_TIMESTAMP;
---alter table tblUserSession modify column useLastTime timestamp;
+-- alter table tblUserSession modify column useSessTime DateTime default CURRENT_TIMESTAMP;
+-- alter table tblUserSession modify column useLastTime timestamp;
 
 CREATE TABLE tblCompAuth
 (
@@ -484,7 +484,7 @@ create table tblTeamPilot
     tepModifier     float
 );
 
---DROP TABLE tblTeamScoring;
+-- DROP TABLE tblTeamScoring;
 drop table if exists tblTeamResult;
 create table tblTeamResult
 (
@@ -540,7 +540,7 @@ create table tblLadder
     ladParam        integer default 10,
     ladIncExternal  integer default 0,
     ladImageM       varchar(128),
-    ladImageF       varchar(128),
+    ladImageF       varchar(128)
 );
 
 create table tblLadderComp
