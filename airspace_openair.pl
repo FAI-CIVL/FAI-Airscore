@@ -26,7 +26,7 @@ my $drh;
 sub db_connect
 {
     $dsn = "DBI:mysql:database=$database;host=$hostname;port=$port";
-    $dbh = DBI->connect( $dsn, 'xc', 'x323c', { RaiseError => 1 } )
+    $dbh = DBI->connect( $dsn, 'xc', '%MYSQLPASSWORD%', { RaiseError => 1 } )
             or die "Can't connect: $!\n";
     $drh = DBI->install_driver("mysql");
 }

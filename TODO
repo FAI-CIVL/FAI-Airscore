@@ -67,6 +67,8 @@ Implement independent start gates for teams properly
 
 TODO:
 
+Add a git commit check to stop me warn/fix hardcoded password.
+
 Scoring stuff:
     Add a time bonus for height above goal arrival
 

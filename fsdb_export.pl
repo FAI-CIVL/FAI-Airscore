@@ -112,7 +112,7 @@ $fsx{'Fs'} = $fsdb;
 $fsx{'Fs'}->{'version'} = "3.4";
 $fsx{'Fs'}->{'comment'} = "Supports only a single Fs element in a .fsdb file which must be the root element.";
 
-$dbh = db_connect('xcdb', 'xc', 'x323c');
+$dbh = db_connect('xcdb', 'xc', '%MYSQLPASSWORD%');
 
 $sth = $dbh->prepare("select * from tblCompetition where comPk=$comPk");
 $sth->execute();

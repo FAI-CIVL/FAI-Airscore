@@ -11,7 +11,7 @@ function redirect($loc)
 }
 function db_connect()
 {
-    $link = mysql_connect('localhost', 'xc', 'x323c')
+    $link = mysql_connect('localhost', 'xc', '%MYSQLPASSWORD%')
     or die('Could not connect: ' . mysql_error());
     mysql_select_db('xcdb') or die('Could not select database');
     return $link;
