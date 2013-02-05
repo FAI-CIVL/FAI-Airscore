@@ -32,7 +32,7 @@ SQL=$(shell grep -l MYSQLPASSWORD *.php *.pl *.pm *.sql)
 LIBS=
 
 all: passwords install
-	$echo Installing scripts in $(HTROOT) and $(CGIBIN)
+	@echo Installing scripts in $(HTROOT) and $(CGIBIN)
 
 
 database: passwords
