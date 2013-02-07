@@ -1,4 +1,4 @@
-#!/usr/bin/perl 
+#!/usr/bin/perl -I/home/geoff/bin
 
 #
 # Reads in an IGC file
@@ -25,7 +25,8 @@ my $min_dist = 10;
 my $first_time = 0;
 my $last_time = 0;
 
-my $debug = 1;
+my $debug = 0;
+my $allowjumps = 0;
 my $max_errors = 5;
 my $DEGREESTOINT = 46603;
 
@@ -526,12 +527,17 @@ sub is_flying
 
     #print "is flying dist=$dist altdif=$altdif timdif=$timdif\n";
     # allow breaks of up to 5 mins ..
+    if ($allowjumps) 
+    {
+        return 0;
+    }
+
     if ($timdif > 300)
     {
         if ($debug) { print "Not flying: time gap=$timdif secs\n"; }
         return 1;
     }
-
+   
     if ($dist > 5000)
     {
         if ($debug) { print "Not flying: big dist jump=$dist m\n"; }
@@ -737,7 +743,7 @@ sub determine_filetype
     open(FD, "$f") or die "can't open $f: $!";
 
     $row = <FD>;
-    print "first row=$row";
+    if ($debug) { print "first row=$row"; }
     if ((substr $row, 0, 1) eq 'A')
     {
         return "igc";
@@ -782,13 +788,19 @@ $TrackLib::dbh = db_connect();
 
 if (scalar @ARGV < 1)
 {
-    print "igcreader.pl [-d|-x] <file> [pilPk]\n";
+    print "igcreader.pl [-d|-x|-j] <file> [pilPk]\n";
     exit 0;
 }
 
 if ($ARGV[0] eq '-d')
 {
     $debug = 1;
+    shift @ARGV;
+}
+
+if ($ARGV[0] eq '-j')
+{
+    $allowjumps = 1;
     shift @ARGV;
 }
 
@@ -833,7 +845,7 @@ if (!defined($flight))
 
 $coords = $flight->{'coords'};
 $numc = scalar @$coords;
-print "num coords=$numc\n";
+if ($debug) { print "num coords=$numc\n"; }
 
 # Trim off silly points ...
 $flight = trim_flight($flight, $pilPk);
@@ -857,7 +869,7 @@ $flight->{'duration'} = flight_duration($flight->{'coords'});
 
 if ($flight->{'duration'} == 0)
 {
-    print "Flight of 0 duration found ($traPk) - rejected\n";
+    print "flight of 0 duration found, the track contains no flight, track rejected.\n";
     exit(1);
 }
 

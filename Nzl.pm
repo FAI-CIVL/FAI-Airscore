@@ -1,4 +1,4 @@
-#!/usr/bin/perl 
+#!/usr/bin/perl -I/home/geoff/bin
 
 
 #
@@ -121,7 +121,7 @@ sub task_totals
     $sth->execute();
     while ($ref = $sth->fetchrow_hashref()) 
     {
-        if ($ref->{'Place'} <= $self->round($launched * 0.90))
+        if ($ref->{'Place'} <= $self->round($pilots * 0.90))
         {
             $topnine = $topnine + $ref->{'tarDistance'};
         }
@@ -172,7 +172,7 @@ sub day_quality
         $launch = 0;
     }
 
-    $distance = $taskt->{'topninety'} / $self->round($taskt->{'launched'} * 0.9) 
+    $distance = $taskt->{'topninety'} / $self->round($taskt->{'pilots'} * 0.9) 
             / ($formula->{'nomdist'} / 1000) / 1000;
     #print "top90=", $taskt->{'topninety'}, " launched=", $self->round($taskt->{'launched'} * 0.9), " nomdist=", $formula->{'nomdist'} / 1000;
     print "distance quality=$distance\n";
