@@ -1,20 +1,8 @@
 #!/usr/bin/perl
 
 #
-# Verify a track against a task
-# Used for Race competitions and Routes.
-#
-# Geoff Wong 2011
-#
-
-require DBD::mysql;
-
-use Math::Trig;
-use Data::Dumper;
-use POSIX qw(ceil floor);
-use TrackLib qw(:all);
-
-#
+# Airgain
+# 
 # Name: validate_airgain
 #
 # Put waypoints into km(?) buckets that represent distance from centre
@@ -29,6 +17,16 @@ use TrackLib qw(:all);
 #
 # IDEA: could use a 2d tree instead
 #
+# Geoff Wong 2011
+#
+
+require DBD::mysql;
+
+use Math::Trig;
+use Data::Dumper;
+use POSIX qw(ceil floor);
+use TrackLib qw(:all);
+
 sub validate_airgain
 {
     my ($task, $flight, $reg) = @_;
