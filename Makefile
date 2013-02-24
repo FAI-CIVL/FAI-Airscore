@@ -16,6 +16,7 @@ HTROOT=/var/www
 MYSQLPASSWORD=xxxxx
 CGIBIN=/usr/lib/cgi
 TRACKDIR=/var/airscore/tracks/
+DATABASE=xcdb
 
 INSTALL=install
 MAKE=make

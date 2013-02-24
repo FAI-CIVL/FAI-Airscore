@@ -21,10 +21,12 @@ With the exception of the following code:
 
 einsert.js (http://econym.googlepages.com - copyright Mike Williams)
 elabel.js  (http://econym.googlepages.com - copyright Mike Williams)
-markermanager.js (Google Maps Utility Library - Apache License v2.0)
+Simple.pm (http://search.cpan.org/~grantm/XML-Simple-2.20/lib/XML/Simple.pm 
+    - copyright Grant McLean distributed under GPL License version 2)
 
-All rest of the code is provided under the GPL License
-verion 2 described in the file "Copying".
+All rest of the code is provided under the GPL License version 2 
+described in the file "Copying".
+
 If this is not present please download from www.gnu.org.
 
 Geoff Wong, 2007/8.

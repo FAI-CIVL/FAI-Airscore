@@ -15,7 +15,8 @@ require DBD::mysql;
 use Time::Local;
 use Math::Trig;
 use Data::Dumper;
-use XML::Simple;
+#use XML::Simple;
+use Simple;
 
 use TrackLib qw(:ALL);
 
