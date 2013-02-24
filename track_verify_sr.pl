@@ -90,6 +90,7 @@ sub validate_task
     my ($wasinstart, $wasinSS);
     my ($furthest, $furthestwpt);
     my $taskss;
+    my $stopalt;
     my %result;
     my (%s1, %s2, %s3);
 
@@ -99,6 +100,7 @@ sub validate_task
     $closest = 9999999999;
     $wcount = 0;
     $wmade = 0;
+    $stopalt = 0;
     $starttime = 0;
     $startss = 0;
     $lastin = -1;
@@ -172,10 +174,15 @@ sub validate_task
     {
         # Check the task isn't finished ..
         $coord->{'time'} = $coord->{'time'} - $utcmod;
+        if (defined($task->{'stopped'}) && ($coord->{'time'} > $task->{'stopped'}))
+        {
+            print "Coordinate after stopped time: ", $coord->{'time'}, " ", $task->{'stopped'}, ".\n";
+            $stopalt = $coord->{'alt'};
+            last;
+        }
         if ($coord->{'time'} > $task->{'sfinish'})
         {
-            print "Coordinate after task finish: ",
-                $coord->{'time'}, " ", $task->{'sfinish'}, ".\n";
+            print "Coordinate after task finish: ", $coord->{'time'}, " ", $task->{'sfinish'}, ".\n";
             last;
         }
 
@@ -711,6 +718,7 @@ sub validate_task
     $result{'distance'} = $dist;
     $result{'penalty'} = $penalty;
     $result{'comment'} = $comment;
+    $result{'stopalt'} = $stopalt;
     $result{'coeff'} = $coeff / $essdist;
     if ($closestcoord)
     {

@@ -64,6 +64,8 @@ sub task_trim
         $count++;
     }
 
+    # Check the waypoints are made?
+
     return $flight;
 }
 

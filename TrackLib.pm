@@ -448,6 +448,7 @@ sub store_result
     my $penalty;
     my $comment;
     my $turnpoints;
+    my $stopalt;
 
     $tasPk = $track->{'tasPk'};
     $traPk = $track->{'traPk'};
@@ -457,6 +458,7 @@ sub store_result
     $coeff = $result->{'coeff'};
     $penalty = 0 + $result->{'penalty'};
     $comment = $result->{'comment'};
+    $stopalt = $result->{'stopalt'};
     if (!$goal)
     {
         $goal = 0;
@@ -480,7 +482,7 @@ sub store_result
     #print "insert into tblTaskResult (tasPk,traPk,tarDistance,tarSpeed,tarStart,tarGoal,tarSS,tarES,tarTurnpoints) values ($tasPk,$traPk,$dist,$speed,$start,$goal,$ss,$endss,$turnpoints)";
     $dbh->do("delete from tblTaskResult where traPk=? and tasPk=?", undef, $traPk, $tasPk);
     print("insert into tblTaskResult (tasPk,traPk,tarDistance,tarSpeed,tarStart,tarGoal,tarSS,tarES,tarTurnpoints,tarLeadingCoeff,tarPenalty,tarComment) values ($tasPk,$traPk,$dist,$speed,$start,$goal,$ss,$endss,$turnpoints,$coeff,$penalty,'$comment')\n");
-    $sth = $dbh->prepare("insert into tblTaskResult (tasPk,traPk,tarDistance,tarSpeed,tarStart,tarGoal,tarSS,tarES,tarTurnpoints,tarLeadingCoeff,tarPenalty,tarComment) values ($tasPk,$traPk,$dist,$speed,$start,$goal,$ss,$endss,$turnpoints,$coeff,$penalty,'$comment')");
+    $sth = $dbh->prepare("insert into tblTaskResult (tasPk,traPk,tarDistance,tarSpeed,tarStart,tarGoal,tarSS,tarES,tarTurnpoints,tarLeadingCoeff,tarPenalty,tarComment,tarLastAltitude) values ($tasPk,$traPk,$dist,$speed,$start,$goal,$ss,$endss,$turnpoints,$coeff,$penalty,'$comment',$stopalt)");
     $sth->execute();
 
     if (defined($result->{'kmtime'}))
