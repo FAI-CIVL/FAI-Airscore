@@ -2,6 +2,11 @@
 require 'format.php';
 require 'dbextra.php';
 
+echo "<html><head>";
+echo "<meta http-equiv=\"cache-control\" content=\"no-cache\">";
+echo "<meta http-equiv=\"pragma\" content=\"no-cache\">";
+echo "<link HREF=\"xcstyle.css\" REL=\"stylesheet\" TYPE=\"text/css\">";
+
 if (array_key_exists('createdb', $_REQUEST))
 {
     
@@ -57,6 +62,17 @@ if (array_key_exists('createdb', $_REQUEST))
     echo "Execute xcdb.sql - complete<br>";
     // Closing connection
     mysql_close($link);
+
+    mkdir("./Tracks", 0775);
+    mkdir("./Tracks/2013", 0775);
+    mkdir("./Tracks/2014", 0775);
+    mkdir("./Tracks/2015", 0775);
+    mkdir("./Tracks/2016", 0775);
+    mkdir("./Tracks/2017", 0775);
+    mkdir("./Tracks/2018", 0775);
+    mkdir("./Tracks/2019", 0775);
+    mkdir("./Tracks/2020", 0775);
+
     echo "</head><body>";
     echo "<div id=\"container\"><div id=\"vhead\">";
     echo "<h1>airScore admin - Database created</h1></div>";
@@ -68,11 +84,6 @@ else
         echo "<h1>airScore Admin - Database creation</h1></div>";
 }
 ?>
-<html>
-<head>
-<meta http-equiv="cache-control" content="no-cache">
-<meta http-equiv="pragma" content="no-cache">
-<link HREF="xcstyle.css" REL="stylesheet" TYPE="text/css">
 <?php
 if (array_key_exists('message', $_REQUEST))
 {
