@@ -13,6 +13,7 @@ VERSION=0.99
 HTROOT=/var/www
 
 # Configure these
+MYSQLUSER=xc
 MYSQLPASSWORD=xxxxx
 CGIBIN=/usr/lib/cgi
 TRACKDIR=/var/airscore/tracks/

@@ -1,6 +1,5 @@
 <?php
-define('BINDIR', '%CGIBIN%');
-define('FILEDIR', '%TRACKDIR%');
+require_once('defines.php');
 function redirect($loc)
 {
     echo "<script language=\"JavaScript\" type=\"text/javascript\">";
@@ -11,9 +10,9 @@ function redirect($loc)
 }
 function db_connect()
 {
-    $link = mysql_connect('localhost', 'xc', '%MYSQLPASSWORD%')
+    $link = mysql_connect('localhost', MYSQLUSER, MYSQLPASSWORD)
     or die('Could not connect: ' . mysql_error());
-    mysql_select_db('xcdb') or die('Could not select database');
+    mysql_select_db(DATABASE) or die('Could not select database');
     return $link;
 }
 function is_admin($what,$usePk,$comPk)
