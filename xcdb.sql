@@ -32,7 +32,6 @@ create table tblCompetition
     comLocked               integer default 0
 );
 
-
 drop table if exists tblFormula;
 create table tblFormula
 (
@@ -85,7 +84,7 @@ create table tblTask
     tasFirstArrTime         integer, 
     tasMaxDistance          double, 
     tasResultsType          varchar(20),
-    tasTaskType             enum ('free', 'speedrun', 'race', 'olc', 'free-bearing', 'speedrun-interval', 'airgain', 'aat'),
+    tasTaskType             enum ('free', 'speedrun', 'race', 'olc', 'free-bearing', 'speedrun-interval', 'airgain', 'aat', 'free-pin'),
     tasDistance             Double, 
     tasShortRouteDistance   Double, 
     tasSSDistance           Double, 
@@ -255,7 +254,6 @@ create table tblRegion
     regDescription  varchar(64) not null
 );
 
-
 drop table if exists tblRegionWaypoint;
 create table tblRegionWaypoint
 (
@@ -269,6 +267,7 @@ create table tblRegionWaypoint
 );
 
 insert into tblRegionWaypoint (rwpName,rwpLatDecimal,rwpLongDecimal,rwpAltitude,rwpDescription) values ('mys080', -36.757881, 146.965393, 799, 'Mystic');
+
 insert into tblRegion (regCentre, regDescription) values (1, 'Bright');
 
 drop table if exists tblLaunchSite;
@@ -318,7 +317,6 @@ insert into tblLaunchSite (lauLaunch, lauRegion, lauLatDecimal, lauLongDecimal, 
     ('Craigieburn', 'New Zealand', -43.1578, 171.6704, 1500)
     ;
 
-
 drop table if exists tblPilot;
 create table tblPilot
 (
@@ -337,7 +335,6 @@ create table tblPilot
     pilYearStarted  varchar(8),
     pilNationCode   varchar(3)
 );
-
 
 drop table if exists tblCompPilot;
 create table tblCompPilot
@@ -444,7 +441,6 @@ create table tblHandicap
     hanTasks        integer
 );
 
-
 drop table if exists tblPilMap;
 create table tblPilMap
 (
@@ -529,6 +525,7 @@ create table tblTrackMarker
     tmTime          integer
 );
 
+drop table if exists tblLadder;
 create table tblLadder
 (
     ladPk           integer not null primary key auto_increment,
@@ -561,7 +558,6 @@ create table tblExtTask
     tasQuality  double, 
     tasTopScore integer,
     extURL      varchar(128)
-
 );
 
 create table tblExtResult
@@ -579,6 +575,5 @@ create table schema_version
     svExtra     varchar(256)
 );
 
-
-insert into schema_version (svKey, svExtra) values (2, 'create')
+insert into schema_version (svKey, svExtra) values (2, 'create');
 

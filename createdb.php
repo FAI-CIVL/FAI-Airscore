@@ -1,33 +1,60 @@
 <?php
+require 'format.php';
+require 'dbextra.php';
 
-if (array_key_exists('Create Database', $_REQUEST))
+if (array_key_exists('createdb', $_REQUEST))
 {
     
-    $user = $_REQUEST['dbuser'];
-    $pass = $_REQUEST['dbpassword'];
-    $link = mysql_connect('localhost', $user, $pass);
-    or die('Could not connect: ' . mysql_error());
+    echo "Execute xcdb.sql - start<br>";
+    
+    $user = esc($_REQUEST['dbuser']);
+    $pass = esc($_REQUEST['dbpassword']);
+    $db = esc($_REQUEST['database']);
+    $link = mysql_connect('localhost', $user, $pass)
+        or die('Could not connect: ' . mysql_error());
 
-    $file = file_get_contents('./xcdb.sql', false);
-    foreach ($file as $com)
+    if (!mysql_select_db($db))
     {
-        if (stripos("create database", $com))
+        mysql_query("create database $db")
+            or die("Unable to create $db: " . mysql_error());
+        mysql_select_db($db) or die("Failed to create $db");
+    }
+
+    # write a config file for later use
+
+    # get the SQL and run it
+    $file = file_get_contents('./xcdb.sql', false);
+    $arr = explode("\n\n", $file);
+    foreach ($arr as $com)
+    {
+        //echo $com . "<br>";
+        $n = stripos($com, "create database");
+        if ($n !== false)
         {
-            $result = mysql_query($com) or die('Create database failed: ' . mysql_error());
-            mysql_select_db('xcdb');
+            // ignore since we've asked for it.
+            echo "Ignoring create database: $com<br>";
+            next;
+            //$result = mysql_query($com) or die('Create database failed: ' . mysql_error());
+            //mysql_select_db($db);
         }
-        else if (stripos("create table", $com))
+
+        $n = stripos($com, "create table");
+        if ($n !== false)
         {
-            $result = mysql_query($com) or die('Create table failed: ' . mysql_error());
+            //echo substr($com,$n) . "<br>";
+            $result = mysql_query(substr($com,$n)) or die("Create table failed ($com): " . mysql_error());
+            next;
         }
-        else if (stripos("insert into", $com))
+
+        $n = stripos($com, "insert into");
+        if ($n !== false)
         {
-            $result = mysql_query($com) or die('Insert failed: ' . mysql_error());
+            //echo substr($com,$n) . "<br>";
+            $result = mysql_query(substr($com,$n)) or die("Insert failed ($com): " . mysql_error());
         }
     }
 
     echo "Execute xcdb.sql - complete<br>";
-
     // Closing connection
     mysql_close($link);
     echo "</head><body>";
@@ -58,12 +85,16 @@ else
 }
 ?>
 <form action="createdb.php" name="xcdbform" method="post">
-Enter your details to create the initial database. Only do this once (providing it succeeds!):
-<form><center><table>
+Enter database details to create the initial tables for AirScore. <i>Only do this once (providing it succeeds!).</i>
+<p>
+<form>
+<center>
+<table>
+<tr><td><b>Database</b></td><td><input type="text" name="database"></td></tr>
 <tr><td><b>Database User</b></td><td><input type="text" name="dbuser"></td></tr>
 <tr><td><b>Password</b></td><td><input type="password" name="dbpassword"></td></tr>
 </table>
-<input type="submit" value="Create Database">
+<input type="submit" name="createdb" value="Create Database">
 </center>
 </form>
 </div>
