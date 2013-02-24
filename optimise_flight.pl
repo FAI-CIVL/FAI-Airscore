@@ -3,6 +3,12 @@
 #
 # Verify a track against a task
 # 
+# Basic algorithm:
+#   - segment the flight into 'buckets' (size depends on length of flight)
+#   - segment the flights into 'line segments' (sections of the flight that were straight)
+#   - put all segments into a combination generator and determine the maximum distance
+#   - go back and find 'best' points in each bucket that ends up in the best combination
+#
 # Geoff Wong 2007
 #
 
