@@ -1,4 +1,8 @@
 <?php
+function esc($val)
+{
+    return mysql_real_escape_string($val);
+}
 function quote($val)
 {
     if (is_numeric($val))

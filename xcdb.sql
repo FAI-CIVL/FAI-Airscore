@@ -203,7 +203,7 @@ create table tblTaskResult
     tarDeparture    double,
     tarScore        double,
     tarLeadingCoeff double,
-    tarLastAltitude integer
+    tarLastAltitude integer default 0
 );
 
 drop table if exists tblTrackLog;

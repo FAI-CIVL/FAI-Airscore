@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-
 #
 # Reads in a .sua airspace file
 #
