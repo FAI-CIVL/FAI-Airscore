@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl 
 
 #
 # Reads in an OpenAir airspace file
@@ -7,9 +7,8 @@
 
 require DBD::mysql;
 use Data::Dumper;
+use Defines qw(:all);
 
-my $database = 'xcdb';
-my $hostname = 'localhost';
 my $port = 3306;
 
 $pi = atan2(1,1) * 4;    # accurate PI.
@@ -25,8 +24,8 @@ my $drh;
 
 sub db_connect
 {
-    $dsn = "DBI:mysql:database=$database;host=$hostname;port=$port";
-    $dbh = DBI->connect( $dsn, 'xc', '%MYSQLPASSWORD%', { RaiseError => 1 } )
+    $dsn = "DBI:mysql:database=$DATABASE;host=$MYSQLHOST;port=$port";
+    $dbh = DBI->connect( $dsn, $MYSQLUSER, $MYSQLPASSWORD, { RaiseError => 1 } )
             or die "Can't connect: $!\n";
     $drh = DBI->install_driver("mysql");
 }
