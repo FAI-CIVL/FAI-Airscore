@@ -1,4 +1,5 @@
-#!/usr/bin/perl
+#!/usr/bin/perl 
+##!/usr/bin/perl -I/home/geoff/bin
 #
 # Determine the shortest route using cartesian coords
 # 
@@ -63,8 +64,8 @@
 require DBD::mysql;
 
 use POSIX qw(ceil floor);
-use Math::Trig;
-use Data::Dumper;
+#use Math::Trig;
+#use Data::Dumper;
 use TrackLib qw(:all);
 use strict;
 
@@ -239,8 +240,8 @@ sub find_closest
         $CL = vvplus($O, $C3);
     }
 
-    print "Centre=", Dumper($C3), "\n";
-    print "Closest=", Dumper($CL), "\n";
+    #print "Centre=", Dumper($C3), "\n";
+    #print "Closest=", Dumper($CL), "\n";
     return cartesian2polar($CL);
 }
 
@@ -302,7 +303,7 @@ sub task_update
         push @it1, $newcl;
     }
     # FIX: special case for end point ..
-    print "newcl=", Dumper($newcl);
+    #print "newcl=", Dumper($newcl);
     $newcl = find_closest($newcl, $wpts->[$num-1], undef);
     push @it1, $newcl;
 
@@ -372,7 +373,7 @@ sub track_update
     for my $tpk (@tracks)
     {
         print "Verifying pre-submitted track: $tpk\n";
-        system($TrackLib::BIN_PATH . "track_verify_sr.pl $tpk");
+        system($TrackLib::BINDIR . "track_verify_sr.pl $tpk");
         $flag = 1;
     }
 
@@ -397,7 +398,7 @@ $dist = task_update($task);
 #if (track_update($task) == 1)
 #{
 #    # tracks re-verified - now rescore.
-#    system($TrackLib::BIN_PATH . "task_score.pl $tpk");
+#    system($TrackLib::BINDIR . "task_score.pl $tpk");
 #}
 
 #print "Task dist=$dist\n";

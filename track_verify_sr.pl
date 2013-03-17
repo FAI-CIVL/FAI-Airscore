@@ -9,8 +9,8 @@
 
 require DBD::mysql;
 
-use Math::Trig;
-use Data::Dumper;
+#use Math::Trig;
+#use Data::Dumper;
 use POSIX qw(ceil floor);
 use TrackLib qw(:all);
 
@@ -131,12 +131,12 @@ sub validate_task
     $coord = $coords->[0];
     if ($coord->{'time'} > $task->{'sfinish'})
     {
-        print "utcmod set at 86400\n";
+        if (debug) { print "utcmod set at 86400\n"; }
         $utcmod = 86400;
     }
     elsif ($coord->{'time'}+43200 < $task->{'sstart'})
     {
-        print "utcmod set at -86400\n";
+        if (debug) { print "utcmod set at -86400\n"; }
         $utcmod = -86400;
     }
 
@@ -174,9 +174,9 @@ sub validate_task
     {
         # Check the task isn't finished ..
         $coord->{'time'} = $coord->{'time'} - $utcmod;
-        if (defined($task->{'stopped'}) && ($coord->{'time'} > $task->{'stopped'}))
+        if (defined($task->{'sstopped'}) && ($coord->{'time'} > $task->{'sstopped'}))
         {
-            print "Coordinate after stopped time: ", $coord->{'time'}, " ", $task->{'stopped'}, ".\n";
+            print "Coordinate after stopped time: ", $coord->{'time'}, " ", $task->{'sstopped'}, ".\n";
             $stopalt = $coord->{'alt'};
             last;
         }
@@ -370,6 +370,10 @@ sub validate_task
                     # FIX: time should be estimated for the actual
                     # line crossing on speed from last two waypoints ..
                     $endss = 0 + $coord->{'time'};
+                    if ($stopalt == 0)
+                    {
+                        $stopalt = $coord->{'alt'};
+                    }
                     if ($awarded == 1 && $awtime > 0)
                     {
                         $endss = $awtime;
@@ -457,6 +461,10 @@ sub validate_task
                     # FIX: time should be estimated for the actual
                     # line crossing on speed from last two waypoints ..
                     $endss = 0 + $coord->{'time'};
+                    if ($stopalt == 0)
+                    {
+                        $stopalt = $coord->{'alt'};
+                    }
                     if ($awarded == 1 && $awtime > 0)
                     {
                         $endss = $awtime;
@@ -653,10 +661,17 @@ sub validate_task
         $s2{'long'} = $waypoints->[$wcount+1]->{'short_long'};
         #$s3{'lat'} = $waypoints->[$closestwpt]->{'short_lat'};
         #$s3{'long'} = $waypoints->[$closestwpt]->{'short_long'};
-        $dist = distance(\%s1, \%s2) - distance($closestcoord, \%s2);
-        if ($dist > $waypoints->[0]->{'radius'})
+        if ($closestcoord != 0)
         {
-            $dist = $waypoints->[0]->{'radius'};
+            $dist = distance(\%s1, \%s2) - distance($closestcoord, \%s2);
+            if ($dist > $waypoints->[0]->{'radius'})
+            {
+                $dist = $waypoints->[0]->{'radius'};
+            }
+        }
+        else
+        {
+            $dist = 0;
         }
         if ($dist < 0)
         {
@@ -778,7 +793,7 @@ else
 {
     $info = validate_task($flight, $task);
 }
-print Dumper($info);
+#print Dumper($info);
 
 # Store results in DB
 store_result($flight,$info);
