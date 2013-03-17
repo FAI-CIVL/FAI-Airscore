@@ -3,7 +3,7 @@ DROP database IF EXISTS xcdb;
 CREATE database xcdb;
 use xcdb;
 
-grant all on xcdb.* to xc@localhost identified by '%MYSQLPASSWORD%';
+grant all on xcdb.* to '%MYSQLUSER%'@'%MYSQLHOST%' identified by '%MYSQLPASSWORD%';
 
 drop table if exists tblCompetition;
 create table tblCompetition

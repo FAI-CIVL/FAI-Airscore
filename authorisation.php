@@ -10,7 +10,7 @@ function redirect($loc)
 }
 function db_connect()
 {
-    $link = mysql_connect('localhost', MYSQLUSER, MYSQLPASSWORD)
+    $link = mysql_connect(MYSQLHOST, MYSQLUSER, MYSQLPASSWORD)
     or die('Could not connect: ' . mysql_error());
     mysql_select_db(DATABASE) or die('Could not select database');
     return $link;

@@ -7,9 +7,8 @@
 
 require DBD::mysql;
 use Data::Dumper;
+use Defines qw(:all);
 
-my $database = 'xcdb';
-my $hostname = 'localhost';
 my $port = 3306;
 
 local * FD;
@@ -25,8 +24,8 @@ my $drh;
 
 sub db_connect
 {
-    $dsn = "DBI:mysql:database=$database;host=$hostname;port=$port";
-    $dbh = DBI->connect( $dsn, 'xc', '%MYSQLPASSWORD%', { RaiseError => 1 } )
+    $dsn = "DBI:mysql:database=$DATABASE;host=$MYSQLHOST;port=$port";
+    $dbh = DBI->connect( $dsn, $MYSQLUSER, $MYSQLPASSWORD, { RaiseError => 1 } )
             or die "Can't connect: $!\n";
     $drh = DBI->install_driver("mysql");
 }
@@ -70,6 +69,13 @@ my $coords;
 my $numc;
 my $numb;
 my $score;
+
+
+if (scalar @ARGV < 1)
+{
+    print("membreader.pl <csv file>\n");
+    exit(1);
+}
 
 db_connect();
 

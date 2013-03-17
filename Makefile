@@ -13,6 +13,7 @@ VERSION=0.99
 HTROOT=/var/www
 
 # Configure these
+MYSQLHOST=localhost
 MYSQLUSER=xc
 MYSQLPASSWORD=xxxxx
 CGIBIN=/usr/lib/cgi
@@ -71,6 +72,8 @@ clean:
 .PHONY:
 
 passwords:
+	@./submacro.sh MYSQLHOST $(MYSQLHOST)
+	@./submacro.sh MYSQLUSER $(MYSQLUSER)
 	@./submacro.sh MYSQLPASSWORD $(MYSQLPASSWORD)
 	@./submacro.sh CGIBIN $(CGIBIN)
 	@./submacro.sh VERSION $(VERSION)
