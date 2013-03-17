@@ -13,9 +13,9 @@ use File::Temp;
 use File::Copy;
 
 use TrackLib qw(:all);
+use Defines qw(:all);
 
 local * DIR;
-my $FILEDIR = '%TRACKDIR%';
 
 #
 # Extract files and read them all into the database 
@@ -125,8 +125,8 @@ sub read_all_tracks
     {
         $file = $tracks->{$pilPk};
         #print "Track read ($file) for pilot=$pilPk\n";
-        print ("${BIN_PATH}add_track.pl $pilPk \"$file\" $comPk $tasPk\n");
-        $res = `${BIN_PATH}add_track.pl $pilPk \"$file\" $comPk $tasPk`;
+        print ("${BINDIR}add_track.pl $pilPk \"$file\" $comPk $tasPk\n");
+        $res = `${BINDIR}add_track.pl $pilPk \"$file\" $comPk $tasPk`;
         print $res;
         #print "Track read ($pilPk:$file) may have failed: $out\n";
 

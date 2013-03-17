@@ -1,4 +1,4 @@
-#!/usr/bin/perl 
+#!/usr/bin/perl
 #
 # pilot# igc task
 #
@@ -7,6 +7,7 @@ require DBD::mysql;
 use Time::Local;
 use Data::Dumper;
 
+use Defines qw(:all);
 use TrackLib qw(:all);
 #use strict;
 
@@ -85,7 +86,7 @@ else
 
 
 # Load the track 
-$res = `${BIN_PATH}igcreader.pl $igc $pilPk`;
+$res = `${BINDIR}igcreader.pl $igc $pilPk`;
 
 # Parse for traPk ..
 if ($res =~ m/traPk=(.*)/)
@@ -148,20 +149,20 @@ if ($tasPk > 0)
 
     if (($tasType eq 'free') or ($tasType eq 'olc'))
     {
-        `${BIN_PATH}optimise_flight.pl $traPk $tasPk 0`;
+        `${BINDIR}optimise_flight.pl $traPk $tasPk 0`;
         # also verify for optional points in 'free' task?
     }
     elsif ($tasType eq 'airgain')
     {
-        `${BIN_PATH}optimise_flight.pl $traPk $tasPk 3`;
-        `${BIN_PATH}airgain_verify.pl $traPk $comPk $tasPk`;
+        `${BINDIR}optimise_flight.pl $traPk $tasPk 3`;
+        `${BINDIR}airgain_verify.pl $traPk $comPk $tasPk`;
     }
     elsif ($tasType eq 'speedrun' or $tasType eq 'race' or $tasType eq 'speedrun-interval')
     {
         # Optional really ...
-        `${BIN_PATH}optimise_flight.pl $traPk $tasPk 3`;
-        print "${BIN_PATH}track_verify_sr.pl $traPk $tasPk\n";
-        `${BIN_PATH}track_verify_sr.pl $traPk $tasPk`;
+        `${BINDIR}optimise_flight.pl $traPk $tasPk 3`;
+        print "${BINDIR}track_verify_sr.pl $traPk $tasPk\n";
+        `${BINDIR}track_verify_sr.pl $traPk $tasPk`;
     }
     else
     {
@@ -177,11 +178,11 @@ else
     # FIX: should optimise differently for different comp types
     if ($comType eq 'Free')
     {
-        `${BIN_PATH}optimise_flight.pl $traPk 0 0`;
+        `${BINDIR}optimise_flight.pl $traPk 0 0`;
     }
     else
     {
-        `${BIN_PATH}optimise_flight.pl $traPk`;
+        `${BINDIR}optimise_flight.pl $traPk`;
     }
 }
 

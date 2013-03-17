@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-
 #
 # Verify a track against a task
 # 
@@ -14,10 +13,7 @@
 
 require DBD::mysql;
 
-use Math::Trig;
-use Data::Dumper;
-use Time::Local;
-use POSIX qw(ceil floor);
+#use Data::Dumper;
 use TrackLib qw(:all);
 
 my $debug = 0;
@@ -504,10 +500,11 @@ sub maximise_endpoint
 
 my $maxdist;
 my @best;
+my @limit;
 
 sub combo_generator
 {
-    my ($flight, $dist, $base, $basearr, $min, $max, $num) = @_;
+    my ($flight, $dist, $base, $basearr, $min, $max, $num, $lim) = @_;
     my $copy;
     my $tdist;
     my $i;
@@ -521,27 +518,38 @@ sub combo_generator
         }
         print ")\n";
     }
+
     for ($i = $min; $i < $max; $i++)
     {
         my @copy;
         
         if ($num > 1)
         {
-            if ( ($max-($i)) >= $num)
+            if ( ($max-($i)) >= $num )
             {
-                @copy = @$basearr;
-                push @copy, $i;
-
-                if ($base > -1)
+                if (!defined($limit[$lim]) || $i < $limit[$lim])
                 {
-                    $tdist = $dist + qckdist2($flight->[$base]->{'entry'}->{'centre'}, $flight->[$i]->{'entry'}->{'centre'});
+                    @copy = @$basearr;
+                    push @copy, $i;
+                    if ($base > -1)
+                    {
+                        $tdist = $dist + qckdist2($flight->[$base]->{'entry'}->{'centre'}, $flight->[$i]->{'entry'}->{'centre'});
+                    }
+                    combo_generator($flight, $tdist, $i, \@copy, $i+1, $max, $num-1, $lim);
                 }
-
-                # FIX: only recurse if tdist sensible value (>400m?)
-                combo_generator($flight, $tdist, $i, \@copy, $i+1, $max, $num-1);
+                elsif ($i == $limit[$lim])
+                {
+                    @copy = @$basearr;
+                    push @copy, $i;
+                    if ($base > -1)
+                    {
+                        $tdist = $dist + qckdist2($flight->[$base]->{'entry'}->{'centre'}, $flight->[$i]->{'entry'}->{'centre'});
+                    }
+                    combo_generator($flight, $tdist, $i, \@copy, $i+1, $max, $num-1, $lim+1);
+                }
             }
         }
-        else
+        elsif (!defined($limit[$lim]) || $i == $limit[$lim])
         {
             $tdist = $dist + qckdist2($flight->[$base]->{'entry'}->{'centre'}, $flight->[$i]->{'entry'}->{'centre'});
 
@@ -624,7 +632,17 @@ sub bf_select_segments
     $tempseg{'length'} = distance($tempseg{'entry'}->{'centre'}, $tempseg{'exit'}->{'centre'});
     push @$flight, \%tempseg;
 
-    combo_generator($flight, 0, -1, \@none, 0, $num+1, $segments+1);
+    @limit = ( undef );
+    combo_generator($flight, 0, -1, \@none, 0, $num+1, 2, 0);
+
+    @limit = @best;
+    push @limit, undef;
+    #print Dumper(\@limit);
+
+    if ($segments > 0)
+    {
+        combo_generator($flight, 0, -1, \@none, 0, $num+1, $segments+1, 0);
+    }
     #print "longest=", $maxdist, "\n";
 
     # return actual segments in a list rather than indices?
@@ -788,10 +806,10 @@ sub maximise_dist
     $maxdist = 0;
     foreach my $p2 (@$bucket)
     {
-        $d1 = distance($entry->{'centre'}, $p2);
+        $d1 = qckdist2($entry->{'centre'}, $p2);
         if ($nextend)
         {
-            $d1 = $d1 + distance($p2, $nextend->{'centre'});
+            $d1 = $d1 + qckdist2($p2, $nextend->{'centre'});
         }
         if ($d1 > $maxdist)
         {
@@ -862,14 +880,19 @@ sub store_waypoints
     my $i;
     my $sz;
 
-    #$sth = $dbh->prepare("select max(traPk) from tblTrack");
-    #$sth->execute();
-    #$traPk  = $sth->fetchrow_array();
-
     $dbh->do("delete from tblWaypoint where traPk=?", undef, $traPk);
 
+    my $affected;
+    my @arr;
+    my $query = qq{INSERT INTO tblWaypoint (traPk, wptLatDecimal, wptLongDecimal, wptTime, wptPosition) VALUES };
+    my $rest;
+
     $sz = scalar @$flight;
-    #print "Flight length=$sz\n";
+    if ($sz < 1)
+    {
+        return;
+    }
+
     for ($i = 0; $i < $sz; $i++)
     {
         $seg = $flight->[$i];
@@ -877,14 +900,16 @@ sub store_waypoints
         {
             next;
         }
-        $dbh->do("INSERT INTO tblWaypoint (traPk, wptLatDecimal, wptLongDecimal, wptTime, wptPosition) VALUES (?,?,?,?,?)", undef, $traPk, $seg->{'entry'}->{'centre'}->{'dlat'}, $seg->{'entry'}->{'centre'}->{'dlong'}, $seg->{'entry'}->{'centre'}->{'time'}, $i);
-        #$dbh->do("INSERT INTO tblWaypoint (traPk, wptLatDecimal, wptLongDecimal, wptTime) VALUES (?,?,?,?)", undef, $traPk, $seg->{'exit'}->{'centre'}->{'dlat'}, $seg->{'exit'}->{'centre'}->{'dlong'}, $seg->{'exit'}->{'centre'}->{'time'});
+
+        push @arr, join (",", ( $traPk, $seg->{'entry'}->{'centre'}->{'dlat'}, $seg->{'entry'}->{'centre'}->{'dlong'}, $seg->{'entry'}->{'centre'}->{'time'}, $i ));
     }
 
-    $i = $sz - 1;
-    $seg = $flight->[$i];
     # Add the exit of the last segment too ...
-    $dbh->do("INSERT INTO tblWaypoint (traPk, wptLatDecimal, wptLongDecimal, wptTime, wptPosition) VALUES (?,?,?,?,?)", undef, $traPk, $seg->{'exit'}->{'centre'}->{'dlat'}, $seg->{'exit'}->{'centre'}->{'dlong'}, $seg->{'exit'}->{'centre'}->{'time'}, $i);
+    $seg = $flight->[$sz-1];
+    push @arr, join(",", ( $traPk, $seg->{'exit'}->{'centre'}->{'dlat'}, $seg->{'exit'}->{'centre'}->{'dlong'}, $seg->{'exit'}->{'centre'}->{'time'}, $i ));
+
+    $rest = '(' . join('),(', @arr) . ')';
+    $affected = $dbh->do($query . $rest);
 }
 
 sub store_segments
@@ -902,18 +927,26 @@ sub store_segments
 
     $dbh->do("delete from tblSegment where traPk=?", undef, $traPk);
 
+    my $affected;
+    my @arr;
+    my $query = qq{INSERT INTO tblSegment (traPk, wptLatDecimal, wptLongDecimal, wptTime) VALUES };
+    my $rest;
+
+    # blocks of 100 to speed it up
     $sz = scalar @$flight;
     for ($i = 0; $i < $sz; $i++)
     {
         $seg = $flight->[$i];
-        $dbh->do("INSERT INTO tblSegment (traPk, wptLatDecimal, wptLongDecimal, wptTime) VALUES (?,?,?,?)", undef, $traPk, $seg->{'entry'}->{'centre'}->{'dlat'}, $seg->{'entry'}->{'centre'}->{'dlong'}, $seg->{'entry'}->{'centre'}->{'time'});
-        #$dbh->do("INSERT INTO tblSegment (traPk, wptLatDecimal, wptLongDecimal, wptTime) VALUES (?,?,?,?)", undef, $traPk, $seg->{'exit'}->{'centre'}->{'dlat'}, $seg->{'exit'}->{'centre'}->{'dlong'}, $seg->{'exit'}->{'centre'}->{'time'});
+
+        push @arr, '(' . join(',', ($traPk, $seg->{'entry'}->{'centre'}->{'dlat'}, $seg->{'entry'}->{'centre'}->{'dlong'}, $seg->{'entry'}->{'centre'}->{'time'})) . ')';
     }
 
-    $i = $sz - 1;
-    $seg = $flight->[$i];
     # Add the exit of the last segment too ...
-    $dbh->do("INSERT INTO tblSegment (traPk, wptLatDecimal, wptLongDecimal, wptTime) VALUES (?,?,?,?)", undef, $traPk, $seg->{'exit'}->{'centre'}->{'dlat'}, $seg->{'exit'}->{'centre'}->{'dlong'}, $seg->{'exit'}->{'centre'}->{'time'});
+    $seg = $flight->[$sz-1];
+    push @arr, '(' . join(',', ($traPk, $seg->{'exit'}->{'centre'}->{'dlat'}, $seg->{'exit'}->{'centre'}->{'dlong'}, $seg->{'exit'}->{'centre'}->{'time'})) . ')';
+
+    $rest = join(',', @arr);
+    $affected = $dbh->do($query . $rest);
 }
 
 #
@@ -1021,8 +1054,8 @@ if ($track_width > $max_radius)
     $track_width = $max_radius;
 }
 
-print "read traPk=", $flight->{'traPk'}, "\n";
-print "bucket_radius=$bucket_radius track_width=$track_width\n";
+#print "read traPk=", $flight->{'traPk'}, "\n";
+#print "bucket_radius=$bucket_radius track_width=$track_width\n";
 
 if ($tasPk > 0)
 {
@@ -1045,10 +1078,10 @@ if ($numb == 1)
     $reduced = reduce_flight($flight, $pilPk, $bucket_radius/4);
 }
 #print Dumper($reduced);
-print "num buckets=$numb\n";
+#print "num buckets=$numb\n";
 
 $traPk = $flight->{'traPk'};
-store_buckets($traPk, $reduced);
+#store_buckets($traPk, $reduced);
 
 # Reduce into line segments
 $segmented = segment_flight($reduced);
@@ -1057,8 +1090,7 @@ if (!defined($segmented) || scalar @$segmented == 0)
     print "Unable to segment flight\n";
     exit(1);
 }
-print "Number of unreduced segments=", scalar @$segmented, "\n";
-#store_waypoints($traPk, $segmented);
+#print "Number of unreduced segments=", scalar @$segmented, "\n";
 
 # Ok .. work out total length
 foreach my $seg (@$segmented)
@@ -1067,10 +1099,9 @@ foreach my $seg (@$segmented)
     $totlen = $totlen + $seg->{'length'};
 }
 $numb = scalar @$segmented;
-print "Total flight length of un-reduced segments($numb)=$totlen\n";
+#print "Total flight length of un-reduced segments($numb)=$totlen\n";
 store_segments($traPk, $segmented);
 
-# Reduce segments to numbers of required segments
 if (scalar(@$segmented) > $turnpoints)
 {
     $segmented = bf_select_segments($segmented,$turnpoints+1);
@@ -1080,17 +1111,17 @@ if (scalar(@$segmented) > $turnpoints)
 }
 store_waypoints($traPk, $segmented);
 
+# Reduce segments to numbers of required segments
 # Ok .. output flight segments for a looksy
 $totlen=0;
 foreach my $seg (@$segmented)
 {
-    #print Dumper($seg);
     #print "seg=", $seg->{'length'}, "\n";
     $totlen = $totlen + $seg->{'length'};
 }
-print "Total flight length of $turnpoints reduced segments=$totlen\n";
-
+#print "Total flight length of $turnpoints reduced segments=$totlen\n";
 #print Dumper($segmented);
+
 $score = score_track($segmented,$totlen);
 
 if ($tasPk > 0 and ($task->{'type'} ne 'airgain'))
@@ -1109,8 +1140,7 @@ if ($tasPk > 0 and ($task->{'type'} ne 'airgain'))
     store_result($flight, \%result);
 }
 
-$dbh->do("update tblTrack set traLength=?, traScore=? where traPk=?",
-    undef, $totlen, $score, $traPk);
+$dbh->do("update tblTrack set traLength=?, traScore=? where traPk=?", undef, $totlen, $score, $traPk);
 
 print "traPk=$traPk\n";
 

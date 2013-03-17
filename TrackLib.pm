@@ -14,16 +14,15 @@ require DBD::mysql;
 use Math::Trig;
 use Time::Local;
 use Data::Dumper;
+use Defines qw(:all);
 
 our @ISA       = qw(Exporter);
 our @EXPORT = qw{:ALL};
 
 *VERSION=\'%VERSION%';
-*BIN_PATH=\'%CGIBIN%';
+
 $pi = atan2(1,1) * 4;    # accurate PI.
 
-my $database = 'xcdb';
-my $hostname = 'localhost';
 my $port = 3306;
 
 local * FD;
@@ -38,8 +37,8 @@ my $drh;
 
 sub db_connect
 {
-    $dsn = "DBI:mysql:database=$database;host=$hostname;port=$port";
-    $dbh = DBI->connect( $dsn, 'xc', '%MYSQLPASSWORD%', { RaiseError => 1 } )
+    $dsn = "DBI:mysql:database=$DATABASE;host=$MYSQLHOST;port=$port";
+    $dbh = DBI->connect( $dsn, $MYSQLUSER, $MYSQLPASSWORD, { RaiseError => 1 } )
             or die "Can't connect: $!\n";
     $drh = DBI->install_driver("mysql");
     return $dbh;
@@ -108,27 +107,63 @@ sub insertup
 # Store the tracklog in the database
 # Take 'standard' form (see read_track) and save it
 #
+
 sub store_track
 {
     my ($flight, $pilPk) = @_;
     my $traPk;
     my $coords;
     my $sth;
+    my $num;
+    my $rem;
+    my $man;
+    my $off = 0;
+    my ($i, $j);
 
-        
     # set to UTC since tracklogs record in UTC
     $dbh->do("set time_zone='+0:00'");
     $dbh->do("INSERT INTO tblTrack (pilPk, traDate, traStart, traDuration, traGlider) VALUES (?,?,from_unixtime(?),?,?)", undef, $pilPk, $flight->{'header'}->{'date'}, $flight->{'header'}->{'start'}, $flight->{'duration'}, $flight->{'glider'});
-    #$sth = $dbh->prepare("select max(traPk) from tblTrack");
-    #$sth->execute();
-    #$traPk  = $sth->fetchrow_array();
     $traPk = $dbh->last_insert_id(undef, undef, "tblTrack", undef);
-    print "max track=$traPk\n";
+    #print "max track=$traPk\n";
 
     $coords = $flight->{'coords'};
-    foreach $pla (@$coords)
+    $num = scalar @$coords;
+    $rem = $num % 500;
+    $man = int($num / 500);
+    $i = 0;
+
+    my $start;
+    my $affected;
+    my @arr;
+    my $query = qq{INSERT INTO tblTrackLog (traPk, trlLatDecimal, trlLongDecimal, trlTime, trlAltitude) VALUES };
+    my $rest;
+
+    # blocks of 200 to speed it up
+    for ($i = 0; $i < $man; $i++)
     {
-        $dbh->do("INSERT INTO tblTrackLog (traPk, trlLatDecimal, trlLongDecimal, trlTime, trlAltitude) VALUES (?,?,?,?,?)", undef, $traPk, $pla->{'dlat'}, $pla->{'dlong'}, $pla->{'time'}, $pla->{'altitude'});
+        @arr = ();
+        for ($j = 0; $j < 500; $j++)
+        {
+            push @arr, join(',', ( $traPk, $coords->[$off]->{'dlat'}, $coords->[$off]->{'dlong'}, $coords->[$off]->{'time'}, $coords->[$off]->{'altitude'} ));
+            $off++;
+        }
+
+        $rest = '(' . join('),(', @arr) . ')';
+        $affected = $dbh->do($query . $rest);
+    }
+
+    # the rest
+    if ($rem > 0)
+    {
+        @arr = ();
+        for ($j = 0; $j < $rem; $j++)
+        {
+            push @arr, join(',', ( $traPk, $coords->[$off]->{'dlat'}, $coords->[$off]->{'dlong'}, $coords->[$off]->{'time'}, $coords->[$off]->{'altitude'} ));
+            $off++;
+        }
+
+        $rest = '(' . join('),(', @arr) . ')';
+        $affected = $dbh->do($query . $rest);
     }
 
     return $traPk;
@@ -146,6 +181,7 @@ sub read_track
     my %awards;
     my $ref;
     my $c1;
+    my $rows;
 
     $sth = $dbh->prepare("select unix_timestamp(T.traDate) as udate,T.*,CTT.* from tblTrack T left outer join tblComTaskTrack CTT on T.traPk=CTT.traPk where T.traPk=$traPk");
     $sth->execute();
@@ -169,24 +205,26 @@ sub read_track
         }
     }
 
-    $sth = $dbh->prepare("select * from tblTrackLog where traPk=$traPk order by trlTime");
+    $sth = $dbh->prepare("select trlLatDecimal, trlLongDecimal, trlAltitude, trlTime from tblTrackLog where traPk=$traPk order by trlTime");
     $sth->execute();
-    while ($ref = $sth->fetchrow_hashref()) 
+    $rows = $sth->fetchall_arrayref();
+
+    for my $ref ( @$rows )
     {
         #print "Found a row: time = $ref->{'trlTime'}\n";
         my %coord;
         %coord = ();
 
-        $coord{'dlat'} = $ref->{'trlLatDecimal'};
-        $coord{'dlong'} = $ref->{'trlLongDecimal'};
+        $coord{'dlat'} = $ref->[0];
+        $coord{'dlong'} = $ref->[1];
 
         # radians
-        $coord{'lat'} = $ref->{'trlLatDecimal'} * $pi / 180;
-        $coord{'long'} = $ref->{'trlLongDecimal'} * $pi / 180;
+        $coord{'lat'} = $ref->[0] * $pi / 180;
+        $coord{'long'} = $ref->[1] * $pi / 180;
 
         # alt / time  / pressure?
-        $coord{'alt'} = $ref->{'trlAltitude'};
-        $coord{'time'} = $ref->{'trlTime'};
+        $coord{'alt'} = $ref->[2];
+        $coord{'time'} = $ref->[3];
 
         # and cartesian ..
         $c1 = polar2cartesian(\%coord);
@@ -260,8 +298,19 @@ sub read_task
         {
             $task{'sfinish'} = $task{'sfinish'} + 24*3600;
         }
+        if (defined($ref->{'tasStoppedTime'}))
+        {
+            $task{'stopped'} = $ref->{'tasStoppedTime'};
+            $task{'sstopped'} = (24*3600 + substr($ref->{'tasStoppedTime'},11,2) * 3600 +
+                            substr($ref->{'tasStoppedTime'},14,2) * 60 +
+                            substr($ref->{'tasStoppedTime'},17,2) - 
+                            $ref->{'comTimeOffset'} * 3600) % (24*3600);
+            if ($task{'sstopped'} < $task{'sstart'})
+            {
+                $task{'sstopped'} = $task{'sstopped'} + 24*3600;
+            }
+        }
         $task{'interval'} = $ref->{'tasSSInterval'};
-        $task{'stop'} = $ref->{'tasStoppedTime'};
         $task{'type'} = $ref->{'tasTaskType'};
         $task{'distance'} = $ref->{'tasDistance'};
         $task{'short_distance'} = $ref->{'tasShortRouteDistance'};
@@ -1028,6 +1077,7 @@ sub qckdist2
 
     $m = 6371009.0 * sqrt($x*$x + $y*$y);
     #print "qckdist2=$m (no sqrt=)",6371009.0*($x*$x+$y*$y), "\n";
+
     return $m;
 }
 

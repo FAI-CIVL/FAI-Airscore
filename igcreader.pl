@@ -13,9 +13,7 @@
 require DBD::mysql;
 
 use Time::Local;
-use Math::Trig;
-use Data::Dumper;
-#use XML::Simple;
+#use Data::Dumper;
 use Simple;
 
 use TrackLib qw(:ALL);
@@ -175,8 +173,9 @@ sub extract_fix
         $loc{'altitude'} = 0;
     }
 
-    $c1 = polar2cartesian(\%loc);
-    $loc{'cart'} = $c1;
+    # Unused for simple track reading
+    #$c1 = polar2cartesian(\%loc);
+    #$loc{'cart'} = $c1;
 
     return \%loc;
 }
@@ -377,7 +376,7 @@ sub read_kml
     {
         #print "coord=", $coordarr[$c], "\n";
         push @coords, kml_make_coord($coordarr[$c], $tmo + $timearr[$c], $pressurearr[$c]);
-        print Dumper($coords[$c]);
+        #print Dumper($coords[$c]);
     }
 
     $flight{'coords'} = \@coords;
@@ -522,7 +521,7 @@ sub is_flying
     my $altdif;
     my $timdif;
 
-    $dist = abs(distance($c1, $c2));
+    $dist = abs(qckdist2($c1, $c2));
     $altdif = $c2->{'altitude'} - $c1->{'altitude'};
     $timdif = $c2->{'time'} - $c1->{'time'};
 
@@ -823,7 +822,7 @@ if ($ftype eq "igc")
 elsif ($ftype eq "live")
 {
     $flight = read_live($ARGV[0]);
-    print Dumper($flight);
+    #print Dumper($flight);
 }
 elsif ($ftype eq "kml")
 {
