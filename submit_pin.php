@@ -2,6 +2,7 @@
 require 'authorisation.php';
 require 'format.php';
 require 'hc2v3.php';
+require 'dbextra.php';
 
 hchead();
 echo '<title>Submit Landing Pin</title>';
@@ -54,57 +55,35 @@ function add_label(map,auth,lat,lon,name,alt,desc,key)
 <?php
 
 $link = db_connect();
-$regPk = intval($_REQUEST['comPk']);
+$comPk = intval($_REQUEST['comPk']);
 $regPk = intval($_REQUEST['regPk']);
+$tasPk = 0;
 
-if (array_key_exists('submitpin', $_REQUEST))
+if (array_key_exists('tasPk', $_REQUEST))
 {
-    $hgfa = addslashes($_REQUEST['hgfanum']);
-    $name = addslashes(strtolower($_REQUEST['lastname']));
-    $route = reqival('route');
-    $comid = reqival('comid');
+    $tasPk = intval($_REQUEST['tasPk']);
+}
 
-    $link = db_connect();
-    $query = "select pilPk, pilHGFA from tblPilot where pilLastName='$name'";
-    $result = mysql_query($query) or die('Query failed: ' . mysql_error());
+$tasks = array();
+if ($tasPk == 0)
+{
 
-    $member = 0;
-    while ($row=mysql_fetch_array($result))
+    $today = getdate();
+    $tdate = sprintf("%04d-%02d-%02d", $today['year'], $today['mon'], $today['mday']);
+
+    $query = "select * from tblTask where comPk=$comPk and tasTaskType='free-pin' and tasDate <= '$tdate' order by tasDate";
+    $result = mysql_query($query) or die('Task query failed: ' . mysql_error());
+    while ($row=mysql_fetch_array($result, MYSQL_ASSOC))
     {
-        if ($hgfa == $row['pilHGFA'])
+        $tasks[$row['tasName']] = $row['tasPk'];
+        if ($row['regPk'] > 0)
         {
-            $pilPk = $row['pilPk'];
-            $member = 1;
+            $regPk = $row['regPk'];
         }
-    }
-
-#    if ($restrict == 'registered')
-#    {
-#        $query = "select * from tblRegistration where comPk=$comid and pilPk=$pilPk";
-#        $result = mysql_query($query) or die('Registration query failed: ' . mysql_error());
-#        if (mysql_num_rows($result) == 0)
-##        {
-#            $member = 0;
-#        }
-#    }
-##
-
-    $gmtimenow = time() - (int)substr(date('O'),0,3)*60*60;
-    if ($gmtimenow > ($until + 7*24*3600))
-    {
-        echo "<b>The submission period for tracks has closed ($until).</b><br>\n";
-        echo "Contact $contact if you're having an access problem.<br>\n";
-        echo "</div></body></html>\n";
-        exit(0);
-    }
-    if ($member == 0)
-    {
-        echo "<b>Only registered pilots may submit tracks.</b><br>\n";
-        echo "Contact $contact if you're having an access problem.<br>\n";
-        echo "</div></body></html>\n";
-        exit(0);
+        $tasPk = $row['tasPk'];
     }
 }
+
 
 $sql = "SELECT * FROM tblRegion WHERE regPk=$regPk";
 $result = mysql_query($sql,$link);
@@ -187,19 +166,119 @@ $first = 1;
 //echo "var next_point = $count;\n";
 
 // mysql_close($link);
+
+    //ovlay = new HtmlControl(ovhtml, { visible:false, selectable:true, printable:true } );
+    //map.addControl(ovlay, new GControlPosition(G_ANCHOR_BOTTOM_RIGHT, new GSize(10, 10)));
+    //ovlay.setVisible(true);
+
 echo "}\n";
 echo "google.maps.event.addDomListener(window, 'load', initialize);";
 echo "    //]]>
 </script>
 </head>
 <body>\n";
+
+if (array_key_exists('submitpin', $_REQUEST))
+{
+    $hgfa = reqsval('hgfanum');
+    $name = addslashes(strtolower($_REQUEST['lastname']));
+    $route = reqival('route');
+
+    $lat = addslashes($_REQUEST["lat"]);
+    $lon = addslashes($_REQUEST["lon"]);
+
+    $query = "select pilPk, pilHGFA from tblPilot where pilLastName='$name'";
+    $result = mysql_query($query) or die('Pilot query failed: ' . mysql_error());
+
+    $member = 0;
+    while ($row=mysql_fetch_array($result))
+    {
+        if ($hgfa == $row['pilHGFA'])
+        {
+            $pilPk = $row['pilPk'];
+            $member = 1;
+        }
+    }
+
+#    if ($restrict == 'registered')
+#    {
+#        $query = "select * from tblRegistration where comPk=$comid and pilPk=$pilPk";
+#        $result = mysql_query($query) or die('Registration query failed: ' . mysql_error());
+#        if (mysql_num_rows($result) == 0)
+##        {
+#            $member = 0;
+#        }
+#    }
+##
+
+#    $gmtimenow = time() - (int)substr(date('O'),0,3)*60*60;
+#    if ($gmtimenow > ($until + 7*24*3600))
+#    {
+#        echo "<b>The submission period for tracks has closed ($until).</b><br>\n";
+#        echo "Contact $contact if you're having an access problem.<br>\n";
+#        echo "</div></body></html>\n";
+#        exit(0);
+#    }
+
+    if ($member == 0)
+    {
+        echo "<b>Only registered pilots may submit tracks.</b><br>\n";
+        echo "Contact $contact if you're having an access problem.<br>\n";
+        echo "</div></body></html>\n";
+        exit(0);
+    }
+
+    // add two point track (start+end).
+    $task = reqival('task');
+    $query = "select tasDate from tblTask where tasPk=$task";
+    $result = mysql_query($query) or die('Task date failed: ' . mysql_error());
+    if (mysql_num_rows($result) == 0)
+    {
+        echo "Unable to submit pin to unknown task<br>\n";
+        exit(0);
+    }
+    $tasDate=mysql_result($result,0,0);
+    $glider = reqsval('glider');
+    $dhv = reqsval('dhv');
+
+    $query = "insert into tblTrack (pilPk,traGlider,traDHV,traDate,traStart,traLength) values ($pilPk,'$glider','$dhv','$tasDate','$tasDate',0)";
+    $result = mysql_query($query) or die('Track Insert result failed: ' . mysql_error());
+    $maxPk = mysql_insert_id();
+
+    $t1 = 43200;
+    $t2 = 46800;
+    $query = "insert into tblTrackLog (traPk, trlLatDecimal, trlLongDecimal, trlTime) VALUES ($maxPk,$xlat,$xlon,$t1),($maxPk,$lat,$lon,$t2)";
+    $result = mysql_query($query) or die('Tracklog insert failed: ' . mysql_error());
+
+    $query = "insert into tblWaypoint (traPk, wptLatDecimal, wptLongDecimal, wptTime, wptPosition) VALUES ($maxPk,$xlat,$xlon,$t1,1),($maxPk,$lat,$lon,$t2,2)";
+    $result = mysql_query($query) or die('Waypoint insert failed: ' . mysql_error());
+
+
+    $query = "insert into tblComTaskTrack (comPk,tasPk,traPk) values ($comPk,$tasPk,$maxPk)";
+    $result = mysql_query($query) or die('ComTaskTrack failed: ' . mysql_error());
+
+    $out = '';
+    $retv = 0;
+    exec(BINDIR . "optimise_flight.pl $maxPk $tasPk 0", $out, $retv);
+
+    $query = "select * from tblTrack where traPk=$maxPk";
+    $result = mysql_query($query) or die('Select length failed: ' . mysql_error());
+    $row=mysql_fetch_array($result);
+    $flown = $row['traLength'];
+
+    $query = "insert into tblTaskResult (tasPk,traPk,tarDistance,tarPenalty,tarResultType) values ($tasPk,$maxPk,$flown,0,'lo')";
+    $result = mysql_query($query) or die('Result insert failed: ' . mysql_error());
+
+    redirect("tracklog_map.php?trackid=$maxPk&comPk=$comPk&ok=1");
+}
+
 hcheadbar("$regdesc Waypoints",3);
 echo "<div id=\"content\">";
 // Put the map on ..
 echo "<div id=\"map\" style=\"width: 100%; height: 600px\"></div>";
 
-echo "<form action=\"submit_pin.php?comPk=$comPk\" name=\"wayptadmin\" method=\"post\">";
-$igcarr[] = array('HGFA Number', "<input name=\"hgfanum\" type=\"text\">", 'Last Name', "<input name=\"lastname\" type=\"text\">");
+echo "<div id='htmlControl'><form action=\"submit_pin.php?comPk=$comPk&regPk=$regPk\" name=\"wayptadmin\" method=\"post\">";
+$igcarr[] = array('Task', fselect('task',$tasPk,$tasks), 'HGFA Number', "<input name=\"hgfanum\" type=\"text\">", 'Last Name', "<input name=\"lastname\" type=\"text\">");
 
 if ($comClass == 'PG')
 {
@@ -213,10 +292,12 @@ else
 {
     $classarr = fselect('dhv', '2', array('pg-novice' => '1', 'pg-fun' => '1/2', 'pg-sport' => '2', 'pg-serial' => '2/3', 'pg-comp' => 'competition', 'hg-floater' => 'floater', 'hg-kingpost' => 'kingpost', 'hg-open' => 'open', 'hg-rigid' => 'rigid' ));
 }
-$igcarr[] = array('Glider', '<input name="glider" type="text">', '', $classarr, fis("submitpin", "Submit PIN", 10));
+$igcarr[] = array('Glider', '<input name="glider" type="text">', '', $classarr, '', fis("submitpin", "Submit PIN", 10));
+
+$igcarr[] = array(fih('lat',0), fih('lon',0));
 
 echo ftable($igcarr, '', '', '');
-echo "</form>";
+echo "</form></div>";
 ?>
 
 </div>

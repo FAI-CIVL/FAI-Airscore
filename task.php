@@ -32,6 +32,7 @@ function update_task($link,$tasPk, $old)
     $oldstart = $old['tasStartTime'];
     $oldclose = $old['tasStartCloseTime'];
     $oldfinish = $old['tasFinishTime'];
+    $oldstop = $old['tasStoppedTime'];
     $oldtype = $old['tasTaskType'];
 
     $sql = "select T.*, TW.* from tblTask T left outer join tblTaskWaypoint TW on T.tasPk=TW.tasPk and TW.tawType='goal' where T.tasPk=$tasPk";
@@ -43,6 +44,7 @@ function update_task($link,$tasPk, $old)
     $newstart = $row['tasStartTime'];
     $newclose = $row['tasStartCloseTime'];
     $newfinish = $row['tasFinishTime'];
+    $newstop = $row['tasStoppedTime'];
     $newtype = $row['tasTaskType'];
     $goal = $row['tawType'];
 
@@ -59,7 +61,7 @@ function update_task($link,$tasPk, $old)
         $retv = 0;
         exec(BINDIR . "task_up.pl $tasPk 3", $out, $retv);
     }
-    elseif ($goal == 'goal' && ($newstart != $oldstart or $newfinish != $oldfinish or $oldtype != $newtype or $oldclose != $newclose))
+    elseif ($goal == 'goal' && ($newstart != $oldstart or $newfinish != $oldfinish or $oldtype != $newtype or $oldclose != $newclose or $oldstop != $newstop))
     {
         $out = '';
         $retv = 0;
@@ -218,8 +220,19 @@ if (array_key_exists('updatetask', $_REQUEST))
     $arrival = addslashes($_REQUEST['arrival']);
 
     $query = "update tblTask set tasName='$Name', tasDate='$Date', tasTaskStart='$TaskStart', tasStartTime='$StartTime', tasStartCloseTime='$StartClose', tasFinishTime='$FinishTime', tasTaskType='$TaskType', regPk=$regPk, tasSSInterval=$Interval, tasDeparture='$departure', tasArrival='$arrival' where tasPk=$tasPk";
-
     $result = mysql_query($query) or die('Task add failed: ' . mysql_error());
+
+    $TaskStopped = addslashes($_REQUEST['taskstopped']);
+    if (strlen($TaskStopped) < 10 && strlen($TaskStopped) > 2)
+    {
+        $TaskStopped = $Date . ' ' . $TaskStopped;
+    }
+
+    if (strlen($TaskStopped) > 2)
+    {
+        $query = "update tblTask set tasStoppedTime='$TaskStopped' where tasPk=$tasPk";
+        $result = mysql_query($query) or die('Task add failed: ' . mysql_error());
+    }
 
     update_task($link, $tasPk, $old);
 
@@ -240,6 +253,14 @@ if ($row)
 
     $tasTaskStart = nice_date($tasDate, $row['tasTaskStart']);
     $tasTaskFinish = nice_date($tasDate, $row['tasFinishTime']);
+    if ($row['tasStoppedTime'])
+    {
+        $tasStopped = nice_date($tasDate, $row['tasStoppedTime']);
+    }
+    else
+    {
+        $tasStopped = '';
+    }
 
     $tasStartTime = substr($row['tasStartTime'], 11);
     $tasStartCloseTime = nice_date($tasDate,$row['tasStartCloseTime']);
@@ -320,20 +341,21 @@ if (array_key_exists('update', $_REQUEST))
 }
 
 $tasktypes = array (
-    'olc' => 'olc',
     'RACE' => 'race',
+    'olc' => 'olc',
     'speedrun' => 'speedrun',
     'speedrun-interval' => 'speedrun-interval',
     'free' => 'free',
     'free-bearing' => 'free-bearing',
+    'free-pin' => 'free-pin',
     'airgain' => 'airgain',
     'aat' => 'aat'
 );
 
 echo "<form action=\"task.php?tasPk=$tasPk\" name=\"taskadmin\" method=\"post\">";
 echo "<p><table>";
-echo "<tr><td>Name:</td><td><input type=\"text\" name=\"taskname\" value=\"$tasName\" size=10></td>";
-echo "<td>Date:</td><td><input type=\"text\" name=\"date\" value=\"$tasDate\" size=10></td></tr>";
+echo "<tr><td>Name:</td><td><input type=\"text\" name=\"taskname\" value=\"$tasName\" size=9></td>";
+echo "<td>Date:</td><td><input type=\"text\" name=\"date\" value=\"$tasDate\" size=9></td></tr>";
 echo "<tr><td>Region:</td><td>";
 $regarr = array();
 $sql = "SELECT * FROM tblRegion R";
@@ -348,12 +370,13 @@ echo "</td>";
 echo "<td>Task Type:</td><td>";
 output_select('tasktype', $tasTaskType, $tasktypes);
 echo "</td></tr>";
-echo "<tr><td>Task Start:</td><td><input type=\"text\" name=\"taskstart\" value=\"$tasTaskStart\" size=10></td>";
-echo "<td>Task Finish:</td><td><input type=\"text\" name=\"taskfinish\" value=\"$tasTaskFinish\" size=10></td>";
+echo "<tr><td>Task Start:</td><td><input type=\"text\" name=\"taskstart\" value=\"$tasTaskStart\" size=9></td>";
+echo "<td>Task Finish:</td><td><input type=\"text\" name=\"taskfinish\" value=\"$tasTaskFinish\" size=9></td>";
+echo "<td>Task Stopped:</td><td><input type=\"text\" name=\"taskstopped\" value=\"$tasStopped\" size=8></td>";
 echo "</tr>";
-echo "<tr><td>Start Open:</td><td><input type=\"text\" name=\"starttime\" value=\"$tasStartTime\" size=10></td>";
-echo "<td>Start Close:</td><td><input type=\"text\" name=\"startclose\" value=\"$tasStartCloseTime\" size=10></td>";
-echo "<td>Gate Interval(s):</td><td><input type=\"text\" name=\"interval\" value=\"$tasSSInterval\" size=3></td>";
+echo "<tr><td>Start Open:</td><td><input type=\"text\" name=\"starttime\" value=\"$tasStartTime\" size=9></td>";
+echo "<td>Start Close:</td><td><input type=\"text\" name=\"startclose\" value=\"$tasStartCloseTime\" size=9></td>";
+echo "<td>Gate Interval(s):</td><td><input type=\"text\" name=\"interval\" value=\"$tasSSInterval\" size=4></td>";
 echo "</tr>";
 echo "<tr><td>Depart Bonus:</td><td>";
 output_select('departure', $tasDeparture, array( 'on', 'off', 'leadout' ));
