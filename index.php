@@ -16,7 +16,7 @@ require 'format.php';
         }
         else
         {
-            $sql = "select T.*, P.*, CTT.* from tblTrack T, tblPilot P, tblComTaskTrack CTT where CTT.traPk=T.traPk and T.pilPk=P.pilPk $order";
+            $sql = "select T.*, P.*, CTT.* from tblTrack T, tblPilot P, tblComTaskTrack CTT where CTT.traPk=T.traPk and T.traLength > 0 and T.pilPk=P.pilPk $order";
         }
         $result = mysql_query($sql,$link) or die("Invalid track table " . mysql_error());
         $num = mysql_num_rows($result);

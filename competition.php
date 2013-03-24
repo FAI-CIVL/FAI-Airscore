@@ -204,7 +204,7 @@ if ($row)
 
     $out = ftable(
         array(
-            array('Name:', fin('comname', $cname, 14), 'Type:', fselect('comptype', $ctype, array('OLC', 'RACE', 'Free', 'Route', 'Team-RACE' )), 'Class:', fselect('compclass', $cclass, array('PG','HG','mixed'))),
+            array('Name:', fin('comname', $cname, 14), 'Type:', fselect('comptype', $ctype, array('OLC', 'RACE', 'Free', 'Route', 'Team-RACE')), 'Class:', fselect('compclass', $cclass, array('PG','HG','mixed'))),
             array('Date From:', fin('datefrom', $cdfrom, 10), 'Date To:', fin('dateto', $cdto, 10), 'Pilot Entry:', fselect('entry', $entry, array('open', 'registered'))),
             array('Director:', fin('director', $cdirector, 14), 'Location:', fin('location', $clocation, 10)),
             array('Abbrev:', fin('code', $ccode, 10), 'Time Offset:', fin('timeoffset', $ctimeoffset, 10)),
@@ -267,7 +267,7 @@ if ($ctype == 'RACE' || $ctype == 'Team-RACE' || $ctype == 'Route')
     echo "<form action=\"competition.php?comPk=$comPk\" name=\"formulaadmin\" method=\"post\">";
     $out = ftable(
         array(
-          array('Formula:', fselect('formula', $class, array('gap', 'ozgap', 'pwc', 'sahpa', 'nzl', 'ggap', 'nogap' )), 'Year:', fin('version', $version, 4)),
+          array('Formula:', fselect('formula', $class, array('gap', 'ozgap', 'pwc', 'sahpa', 'nzl', 'ggap', 'nogap', 'jtgap' )), 'Year:', fin('version', $version, 4)),
           array('Nom Dist (km):', fin('nomdist',$nomdist,4), 'Min Dist (km):', fin('mindist', $mindist, 4), 'Nom Goal (%):', fin('nomgoal',$nomgoal,4)),
           array('Nom Time (min):', fin('nomtime', $nomtime, 4), 'Goal/SS Penalty (0-1):', fin('sspenalty', $sspenalty, 4)),
           array('Linear Dist (0-1):', fin('lineardist', $lineardist, 4),'Diff Dist (km):', fin('diffdist', $diffdist, 4), 'Diff Ramp:', fselect('difframp', $difframp, array('fixed', 'flexible')), 'Diff Calc:', fselect('diffcalc', $diffcalc, array('all', 'lo')))

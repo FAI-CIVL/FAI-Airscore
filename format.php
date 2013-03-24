@@ -125,6 +125,10 @@ function fib($type,$name,$value,$size)
 
     return "<input $type$name$value$size>";
 }
+function fih($name,$value)
+{
+    return fib('hidden',$name,$value,1);
+}
 function fin($name,$value,$size)
 {
     return fib('text',$name,$value,$size);

@@ -9,8 +9,7 @@
 require DBD::mysql;
 
 use POSIX qw(ceil floor);
-use Math::Trig;
-use Data::Dumper;
+#use Data::Dumper;
 use TrackLib qw(:all);
 
 my $dbh;
@@ -87,7 +86,7 @@ sub track_update
             print "Re-optimise pre-submitted track: $tpk\n";
             $out = '';
             $retv = 0;
-            $out = `${BIN_PATH}optimise_flight.pl $tpk $tasPk $opt`;
+            $out = `${BINDIR}optimise_flight.pl $tpk $tasPk $opt`;
             print $out;
         }
     }
@@ -97,7 +96,7 @@ sub track_update
     {
         print "Verifying pre-submitted track: $tpk\n";
         $retv = 0;
-        $out = `${BIN_PATH}track_verify_sr.pl $tpk $tasPk`;
+        $out = `${BINDIR}track_verify_sr.pl $tpk $tasPk`;
         print $out;
         $flag = 1;
     }
@@ -115,22 +114,29 @@ my $quality;
 my $pth;
 my $out;
 
-$dbh = db_connect();
+
+if (scalar @ARGV < 1)
+{
+    print "task_up.pl <tasPk> [olc-pts]\n";
+    exit 1;
+}
 
 $task = $ARGV[0];
 $opt = $ARGV[1];
 
+$dbh = db_connect();
+
 # Work out all the task totals to make it easier later
 $dist = task_update($task);
-#if (system($BIN_PATH . "short_route.pl $task") == -1)
-$pth = $BIN_PATH . 'short_route.pl';
+#if (system($BINDIR . "short_route.pl $task") == -1)
+$pth = $BINDIR . 'short_route.pl';
 $out = `$pth $task`;
 print $out;
 
 if (track_update($task, $opt) == 1)
 {
     # tracks re-verified - now rescore.
-    $pth = $BIN_PATH . 'task_score.pl';
+    $pth = $BINDIR . 'task_score.pl';
     $out = `$pth $task`;
     #print $out;
 }

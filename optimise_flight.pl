@@ -1067,6 +1067,28 @@ if ($tasPk > 0)
     {
         $flight = task_trim($task, $flight);
     }
+
+    if ($task->{'type'} eq 'free-pin')
+    {
+        my $coords;
+        my $numcoords;
+        my $totlen;
+        my $query = qq{insert into tblTaskResult (tasPk,traPk,tarDistance,tarPenalty,tarResultType) values };
+        
+        $coords = $flight->{'coords'};
+        $numcoords = scalar @$coords;
+
+        if ($numcoords == 2)
+        {
+            $totlen = distance($coords->[0], $coords->[1]);
+            $dbh->do("update tblTrack set traLength=?, traScore=? where traPk=?", undef, $totlen, $totlen, $traPk);
+            $dbh->do("delete from tblTaskResult where tasPk=$tasPk and traPk=$traPk");
+            $dbh->do($query .  "($tasPk,$traPk,$totlen,0,'lo')");
+
+            print "traPk=$traPk dist=$totlen\n";
+            exit(0);
+        }
+    }
 }
 
 # Reduce into buckets
