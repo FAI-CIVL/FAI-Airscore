@@ -49,13 +49,13 @@ function update_task($link,$tasPk, $old)
     $goal = $row['tawType'];
 
     # FIX: how about Free-bearing?
-    if ($oldtype == 'OLC' && $newtype == 'Free')
+    if ($oldtype == 'olc' && ($newtype == 'free' || $newtype == 'free-pin'))
     {
         $out = '';
         $retv = 0;
         exec(BINDIR . "task_up.pl $tasPk 0", $out, $retv);
     }
-    elseif ($oldtype == 'Free' && $newtype == 'OLC')
+    elseif (($oldtype == 'free' || $newtype == 'free-pin') && $newtype == 'olc')
     {
         $out = '';
         $retv = 0;
@@ -91,6 +91,16 @@ function update_tracks($link,$tasPk)
             exec(BINDIR . "track_verify.pl $tpk", $out, $retv);
         }
     }
+}
+
+function sane_date($date)
+{
+    $year = substr($date, 0, 4);
+    if ($year < 2000 || $year > 2100)
+    {
+        return false;
+    }
+    return true;
 }
 
 function nice_date($today, $date)
@@ -132,14 +142,14 @@ if (array_key_exists('airspace', $_REQUEST))
 if (array_key_exists('addair', $_REQUEST))
 {
     check_admin('admin',$usePk,$comPk);
-    $airPk = intval($_REQUEST['airnew']);
+    $airPk = reqival('airnew');
     $query = "insert into tblTaskAirspace (tasPk, airPk) values ($tasPk, $airPk)";
     $result = mysql_query($query) or die('Failed to connect airspace to task ' . mysql_error());
 }
 
 if (array_key_exists('airdel', $_REQUEST))
 {
-    $taPk = intval($_REQUEST['airnew']);
+    $taPk = reqival('airdel');
     if ($taPk > 0)
     {
         $query = "delete from tblTaskAirspace where taPk=$taPk";
@@ -149,7 +159,7 @@ if (array_key_exists('airdel', $_REQUEST))
 
 if (array_key_exists('trackcopy', $_REQUEST))
 {
-    $copyfrom = intval($_REQUEST['copyfrom']);
+    $copyfrom = reqival('copyfrom');
     if ($copyfrom > 0)
     {
         echo "Copying from: $copyfrom<br>";
@@ -163,7 +173,7 @@ if (array_key_exists('trackcopy', $_REQUEST))
 if (array_key_exists('copytask', $_REQUEST))
 {
     check_admin('admin',$usePk,$comPk);
-    $copytaskpk = intval($_REQUEST['copytaskpk']);
+    $copytaskpk = reqival('copytaskpk');
 
     $query = "insert into tblTaskWaypoint (tasPk, rwpPk, tawNumber, tawType, tawHow, tawShape, tawTime, tawRadius) select $tasPk, rwpPk, tawNumber, tawType, tawHow, tawShape, tawTime, tawRadius from tblTaskWaypoint where tasPk=$copytaskpk";
     //echo $query . "<br>";
@@ -186,6 +196,10 @@ if (array_key_exists('updatetask', $_REQUEST))
 
     $Name = addslashes($_REQUEST['taskname']);
     $Date = addslashes($_REQUEST['date']);
+    if (!sane_date($Date))
+    {
+        die("Unable to update task with illegal date: $Date");
+    }
 
     // Task Start/Finish
     $TaskStart = addslashes($_REQUEST['taskstart']);
@@ -355,7 +369,7 @@ $tasktypes = array (
 echo "<form action=\"task.php?tasPk=$tasPk\" name=\"taskadmin\" method=\"post\">";
 echo "<p><table>";
 echo "<tr><td>Name:</td><td><input type=\"text\" name=\"taskname\" value=\"$tasName\" size=9></td>";
-echo "<td>Date:</td><td><input type=\"text\" name=\"date\" value=\"$tasDate\" size=9></td></tr>";
+echo "<td>Date:</td><td><input type=\"text\" name=\"date\" value=\"$tasDate\" size=10></td></tr>";
 echo "<tr><td>Region:</td><td>";
 $regarr = array();
 $sql = "SELECT * FROM tblRegion R";
@@ -465,13 +479,30 @@ while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
 {
     $taPk = $row['taPk'];
     echo "Class: " . $row['airClass'] . " (from: " . $row['airBase'] . "m to: " . $row['airTops'] . "m) -- " . $row['airName'];
-    echo "<button type=\"submit\" name=\"airdel\" value=\"$taPk\">del</button><br>";
+    echo fbut('submit', 'airdel', $taPk, 'del') . '<br>';
 }
 
 // in future limit to "nearby" airspace ..
 $airarr = array();
-$query = "select * from tblAirspace order by airName";
-$result = mysql_query($query) or die('Task select failed: ' . mysql_error());
+$query = "select regCentre from tblRegion where regPk=$regPk";
+$result = mysql_query($query) or die('Region centre select failed: ' . mysql_error());
+if (mysql_num_rows($result) > 0)
+{
+    $cenPk = mysql_result($result, 0, 0);
+    $query = "select * from tblAirspace R 
+        where R.airPk in (
+            select airPk from tblAirspaceWaypoint W, tblRegionWaypoint R where
+            R.rwpPk=$cenPk and
+            W.awpLatDecimal between (R.rwpLatDecimal-1.5) and (R.rwpLatDecimal+1.5) and
+            W.awpLongDecimal between (R.rwpLongDecimal-1.5) and (R.rwpLongDecimal+1.5)
+            group by (airPk))
+        order by R.airName";
+}
+else
+{
+    $query = "select * from tblAirspace R order by R.airName";
+}
+$result = mysql_query($query) or die('Airspace select failed: ' . mysql_error());
 while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
 {
     $airarr[$row['airName']] = $row['airPk'];

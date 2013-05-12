@@ -1,28 +1,152 @@
-<html>
-<head>
+<?php
+require 'authorisation.php';
+require 'format.php';
+
+auth('system');
+$argPk = reqival('argPk');
+
+if (reqexists('download'))
+{
+    //AC Q
+    //AT 
+    //AD 
+    //AR1 
+    //AN PARA 128.55
+    //WD 400
+    //AL 0
+    //AH 40000
+    //CO 
+    //V D=+
+    //V X=53:15.100 N 007:07.333 W
+    //DB 53:18.098 N 007:07.333 W , 53:18.098 N 007:07.333 W
+
+    //$format=addslashes($_REQUEST['format']);
+    $link = db_connect();
+    $sql = "select * from tblAirspaceRegion where argPk=$argPk";
+    $row = mysql_fetch_array($result, MYSQL_ASSOC);
+    $regname = $row['argRegion'];
+
+    # nuke normal header ..
+    header("Content-type: text/air");
+    header("Content-Disposition: attachment; filename=\"$regname.air\"");
+    header("Cache-Control: no-store, no-cache");
+
+    $sql = "select * from tblAirspace A 
+            where A.airPk in (             
+                select airPk from tblAirspaceWaypoint W, tblAirspaceRegion R where
+                R.argPk=$argPk and
+                W.awpLatDecimal between (R.argLatDecimal-R.argSize) and (R.argLatDecimal+R.argSize) and
+                W.awpLongDecimal between (R.argLongDecimal-R.argSize) and (R.argLongDecimal+R.argSize)
+                group by (airPk))
+            order by A.airName";
+    $result = mysql_query($sql,$link);
+
+    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+    {
+        $class = $air['airClass'];
+        $name = $air['airName'];
+        $base = $air['airBase'];
+        $tops = $air['airTops'];
+
+        echo "AC $class\n";
+        echo "AN $name\n";
+        echo "AL $base\n";
+        echo "AH $tops\n";
+        echo "CO\n";
+        // do waypoints ...
+    }
+}
+
+function display_airspace_region($link, $argPk)
+{
+    $count = 1;
+    $airtab = array();
+    $airtab[] =  array(fb('Id'), fb('Name'), fb('Class'), fb('Shape'), fb('Base(m)'), fb('Top(m)'), '');
+
+    if ($argPk == -1)
+    {
+        $sql = "select * from tblAirspace R order by R.airName";
+    }
+    else
+    {
+        $sql = "select * from tblAirspace R 
+            where R.airPk in (             
+                select airPk from tblAirspaceWaypoint W, tblAirspaceRegion R where
+                R.argPk=$argPk and
+                W.awpLatDecimal between (R.argLatDecimal-R.argSize) and (R.argLatDecimal+R.argSize) and
+                W.awpLongDecimal between (R.argLongDecimal-R.argSize) and (R.argLongDecimal+R.argSize)
+                group by (airPk))
+            order by R.airName";
+    }
+
+    $result = mysql_query($sql,$link);
+    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+    {
+        $id = $row['airPk'];
+        $name = $row['airName'];
+        $airtab[] = array($id . ".",
+         //fbut('submit', 'update', $id, 'up'),
+         //fbut('submit', 'download', $id, 'download'),
+         "<a href=\"airspace_map.php?airPk=$id&argPk=$argPk\">$name</a>",
+         fb($row['airClass']),
+         fb($row['airShape']),
+         fb($row['airBase']),
+         fb($row['airTops']),
+         fbut('submit', 'delete', $id, 'del')
+        );
+
+        //waypoint_select($link, $tasPk, "waypoint$tawPk", $waypt);
+        //echo " centre: $centname</a>";
+        $count++;
+    }
+    echo ftable($airtab, '', '', '');
+}
+
+function display_regions($link)
+{
+    $count = 1;
+    $airtab = array();
+    $airtab[] =  array(fb('Id'), fb('Region Name'), fb('Latitude'), fb('Longitude'), fb('Size'));
+    $sql = "SELECT * from tblAirspaceRegion R order by R.argRegion";
+    $result = mysql_query($sql,$link);
+    while($row = mysql_fetch_array($result))
+    {
+        $id = $row['argPk'];
+        $name = "<a href=\"airspace_admin.php?argPk=$id\">" . $row['argRegion'] . '</a>';
+        $airtab[] = array($count . ".",
+         //fbut('submit', 'update', $id, 'up'),
+         //fbut('submit', 'delete', $id, 'del'),
+         //fbut('submit', 'download', $id, 'download'),
+         fb($name),
+         fb($row['argLatDecimal']),
+         fb($row['argLongDecimal']),
+         fb($row['argSize'])
+        );
+
+        //waypoint_select($link, $tasPk, "waypoint$tawPk", $waypt);
+        //echo " centre: $centname</a>";
+        $count++;
+    }
+    echo ftable($airtab, '', '', '');
+}
+?>
+<html><head>
 <link HREF="xcstyle.css" REL="stylesheet" TYPE="text/css">
 </head>
 <body>
 <div id="container">
 <div id="vhead"><h1>airScore admin</h1></div>
 <?php
-require 'authorisation.php';
-require 'format.php';
-
 adminbar(0);
-?>
-<p><h2>Airspace Administration</h2></p>
-<?php
-
-auth('system');
 $link = db_connect();
+echo '<p><h2>Airspace Administration</h2></p>';
 
 if (array_key_exists('add', $_REQUEST))
 {
-    $region = $_FILES['waypoints']['tmp_name'];
+    $upfile = $_FILES['waypoints']['tmp_name'];
     $out = '';
     $retv = 0;
-    exec(BINDIR . "airspace_openair.pl $region", $out, $retv);
+    exec(BINDIR . "airspace_openair.pl $upfile", $out, $retv);
 
     if ($retv)
     {
@@ -44,68 +168,73 @@ if (array_key_exists('add', $_REQUEST))
 if (array_key_exists('delete', $_REQUEST))
 {
     // implement a nice 'confirm'
-    $regPk = intval($_REQUEST['delete']);
-    $query = "select * from tblAirspace where airPk=$regPk";
+    $delPk = reqival('delete');
+    $query = "select * from tblAirspace where airPk=$delPk";
     $result = mysql_query($query) or die('Airspace check failed: ' . mysql_error());
     $row = mysql_fetch_array($result);
-    $region = $row['airName'];
-    #$query = "select * from tblTaskWaypoint T, tblRegionWaypoint W, tblRegion R where R.regPk=W.regPk and R.regPk=$regPk limit 1";
+    $subregion = $row['airName'];
+
+    #$query = "select * from tblTaskWaypoint T, tblRegionWaypoint W, tblRegion R where R.regPk=W.regPk and R.regPk=$delPk limit 1";
     #$result = mysql_query($query) or die('Delete check failed: ' . mysql_error());
     #if (mysql_num_rows($result) > 0)
     #{
-    #    echo "Unable to delete $region ($regPk) as it is in use.\n";
+    #    echo "Unable to delete $region ($delPk) as it is in use.\n";
     #    return;
     #}
 
-    $query = "delete from tblAirspaceWaypoint where airPk=$regPk";
+    $query = "delete from tblAirspaceWaypoint where airPk=$delPk";
     $result = mysql_query($query) or die('AirspaceWaypoint delete failed: ' . mysql_error());
-    $query = "delete from tblAirspace where airPk=$regPk";
+    $query = "delete from tblAirspace where airPk=$delPk";
     $result = mysql_query($query) or die('Airspace delete failed: ' . mysql_error());
-    echo "Airspace $region deleted\n";
+
+    echo "Airspace $subregion deleted<br>";
 }
 
-if (array_key_exists('download', $_REQUEST))
+if (array_key_exists('create', $_REQUEST))
 {
-    // implement a nice 'confirm'
-    $id=intval($_REQUEST['download']);
-    // airspace_openair.pl      
+    $region = reqsval('regname');
+    $rlat = reqfval('reglat');
+    $rlon = reqfval('reglon');
+    $rsize = reqfval('regsize');
+
+    $sql = "insert into tblAirspaceRegion (argRegion, argLatDecimal, argLongDecimal, argSize ) values ('$region', $rlat, $rlon, $rsize)";
+    $result = mysql_query($sql) or die('AirspaceRegion creation failed: ' . mysql_error());
+
+    echo "Region $region added<br>";
 }
 
-echo "<form enctype=\"multipart/form-data\" action=\"airspace_admin.php\" name=\"waypoint\" method=\"post\">";
+$extra = "";
+if ($argPk > 0)
+{
+    $extra = "?argPk=$argPk";
+}
+echo "<form enctype=\"multipart/form-data\" action=\"airspace_admin.php$extra\" name=\"waypoint\" method=\"post\">";
 echo "<input type=\"hidden\" name=\"MAX_FILE_SIZE\" value=\"1000000000\">";
-$count = 1;
 
-$airtab = array();
-
-$airtab[] =  array(fb('Id'), '', '', '', fb('Name'), fb('Class'), fb('Shape'), fb('Base(m)'), fb('Top(m)'));
-$sql = "SELECT * from tblAirspace R order by R.airName";
-$result = mysql_query($sql,$link);
-while($row = mysql_fetch_array($result))
+if ($argPk == 0)
 {
-    $id = $row['airPk'];
-    $name = $row['airName'];
-    $airtab[] = array($id,
-        fbut('submit', 'update', $id, 'up'),
-        fbut('submit', 'delete', $id, 'del'),
-        fbut('submit', 'download', $id, 'download'),
-        "<a href=\"airspace_map.php?airPk=$id\">$name</a>",
-        fb($row['airClass']),
-        fb($row['airShape']),
-        fb($row['airBase']),
-        fb($row['airTops'])
-        );
+    display_regions($link, $argPk);
 
-    //waypoint_select($link, $tasPk, "waypoint$tawPk", $waypt);
-    //echo " centre: $centname</a>";
-    $count++;
+    echo "<hr>";
+    echo "Create Region: " . fin('regname', '', 10);
+    echo "Latitude: " . fin('reglat', '', 8);
+    echo "Longitude: " . fin('reglon', '', 8);
+    echo "Size(deg): " . fin('regsize', '', 4);
+    echo fis('create', 'Create', 4);
 }
-echo ftable($airtab, '', '', '');
-echo "<hr>";
+else
+{
+    display_airspace_region($link, $argPk);
+    echo "<hr>";
+    echo "Download Region Airspace (OpenAir Format): " . fis('download', 'Download', 10);
+}
 
+echo "<hr>";
 echo "Load Airspace: " . fin('region', '', 10);
 echo "OpenAir File: <input type=\"file\" name=\"waypoints\">";
 echo fis('add', 'Add Airspace', 10);
-echo "<br>";
+echo "<hr>";
+
 echo "</form>";
 ?>
 </div>

@@ -226,11 +226,30 @@ function waypoint_select($link,$tasPk,$name,$selected)
     //ksort($waypoints);
     output_select($name,$selected,$waypoints);
 }
+function reqexists($key)
+{
+    if (array_key_exists($key, $_REQUEST))
+    {
+        return 1;
+    }
+    return 0;
+}
 function reqival($key)
 {
     if (array_key_exists($key, $_REQUEST))
     {
         return intval($_REQUEST[$key]);
+    }
+    else
+    {
+        return 0;
+    }
+}
+function reqfval($key)
+{
+    if (array_key_exists($key, $_REQUEST))
+    {
+        return floatval($_REQUEST[$key]);
     }
     else
     {
