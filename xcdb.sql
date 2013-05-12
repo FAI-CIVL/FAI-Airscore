@@ -401,7 +401,7 @@ create table tblAirspace
 (
     airPk           integer not null primary key auto_increment,
     airName         varchar(32),
-    airClass        enum ( "G", "C", "D", "E", "X", "R" ) default "C",
+    airClass        enum ( "G", "C", "D", "E", "X", "R", "P", "Q", "W", "GP", "CTR" ) default "C",
     airBase         integer,
     airTops         integer,
     airShape        enum ( "circle", "wedge", "polygon" ) default "circle",
@@ -421,6 +421,16 @@ create table tblAirspaceWaypoint
     awpAngleStart   float,
     awpAngleEnd     float,
     awpRadius       float
+);
+
+drop table if exists tblAirspaceRegion;
+create table tblAirspaceRegion
+(
+    argPk           integer not null primary key auto_increment,
+    argRegion       varchar(32) not null,
+    argLatDecimal   double not null,
+    argLongDecimal  double not null,
+    argSize         integer not null
 );
 
 drop table if exists tblTaskAirspace;
@@ -576,5 +586,5 @@ create table schema_version
     svExtra     varchar(256)
 );
 
-insert into schema_version (svKey, svExtra) values (2, 'create');
+insert into schema_version (svKey, svExtra) values (3, 'create');
 

@@ -19,6 +19,7 @@ function add_pilot(pilPk)
 <?php
 require 'authorisation.php';
 require 'format.php';
+require 'dbextra.php';
 
 $comPk = intval($_REQUEST['comPk']);
 $teaPk = intval($_REQUEST['teaPk']);
@@ -60,6 +61,8 @@ if (array_key_exists('addpilot', $_REQUEST))
     $pilPk = intval($_REQUEST['addpilot']);
     $query = "insert into tblRegistration (comPk, pilPk) value ($comPk,$pilPk)";
     $result = mysql_query($query) or die('Pilot insert failed: ' . mysql_error());
+    $query = "insert into tblHandicap (comPk, pilPk, hanHandicap) value ($comPk,$pilPk,1)";
+    $result = mysql_query($query) or die('Pilot handicap insert failed: ' . mysql_error());
 }
 
 if (array_key_exists('delpilot', $_REQUEST))
@@ -67,11 +70,29 @@ if (array_key_exists('delpilot', $_REQUEST))
     $pilPk = intval($_REQUEST['delpilot']);
     $query = "delete from tblRegistration where comPk=$comPk and pilPk=$pilPk";
     $result = mysql_query($query) or die('Pilot delete failed: ' . mysql_error());
+    $query = "delete from tblHandicap where comPk=$comPk and pilPk=$pilPk";
+    $result = mysql_query($query) or die('Delete handicap failed: ' . mysql_error());
+}
+
+if (array_key_exists('uppilot', $_REQUEST))
+{
+    $id = reqival('uppilot');
+    $fai = reqsval("fai$id");
+    $handi = reqfval("han$id");
+    $query = "update tblPilot set pilHGFA='$fai' where pilPk=$id";
+    $result = mysql_query($query) or die('Pilot ID update failed: ' . mysql_error());
+
+    $regarr = array();
+    $regarr['pilPk'] = $id;
+    $regarr['comPk'] = $comPk;
+    $regarr['hanHandicap'] = $handi;
+    $clause = "comPk=$comPk and pilPk=$id";
+    insertup($link, 'tblHandicap', 'regPk', $clause, $regarr);
 }
 
 echo "<form action=\"registration.php?comPk=$comPk&cat=$cat$tsel\" name=\"regadmin\" method=\"post\">";
 
-$query = "select P.* from tblRegistration R, tblPilot P where P.pilPk=R.pilPk and R.comPk=$comPk order by P.pilFirstName";
+$query = "select P.*,H.hanHandicap from tblRegistration R left join tblPilot P on P.pilPk=R.pilPk left outer join tblHandicap H on H.pilPk=P.pilPk and H.comPk=$comPk where R.comPk=$comPk order by P.pilLastName";
 
 $regpilots = array();
 $result = mysql_query($query) or die('Team pilots query failed: ' . mysql_error());
@@ -86,8 +107,11 @@ if (sizeof($regpilots) > 0)
     foreach ($regpilots as $row)
     {
         $pilPk = intval($row['pilPk']);
-        $outreg[] = array(
-            "<button type=\"submit\" name=\"delpilot\" value=\"$pilPk\">del</button>", $row['pilFirstName'], $row['pilLastName']);
+        #if ($row['hanHandicap'] == '')
+        #{
+        #    $row['hanHandicap'] = 1;
+        #}
+        $outreg[] = array("<button type=\"submit\" name=\"uppilot\" value=\"$pilPk\">up</button>", fin("fai$pilPk", $row['pilHGFA'], 5), $row['pilFirstName'], $row['pilLastName'], fin("han$pilPk", $row['hanHandicap'], 1), fbut('submit', 'delpilot', $pilPk, 'del'));
         //"<input type=\"text\" name=\"tepModifier$tepPk\" value=\"$tepMod\" size=3>", fbut('submit', 'uppilot', $tepPk, 'up')
     }
     echo ftable($outreg,'id="piltable"','','');
