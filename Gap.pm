@@ -1,4 +1,4 @@
-#!/usr/bin/perl 
+#!/usr/bin/perl -I/home/bin/geoff
 
 
 #
@@ -324,6 +324,81 @@ sub points_weight
 
 }
 
+sub calc_kmdiff
+{
+    my ($self, $dbh, $task, $taskt, $formula) = @_;
+    my $tasPk;
+    my $kmdiff = [];
+    my $Nlo;
+
+    $tasPk = $task->{'tasPk'};
+    $Nlo = $taskt->{'launched'}-$taskt->{'goal'};
+
+    # KM difficulty
+    for my $it ( 0 .. floor($taskt->{'maxdist'} / 100.0) )
+    {
+        $kmdiff->[$it] = 0;
+    }
+
+    if ($formula->{'diffcalc'} eq 'lo')
+    {
+        $sth = $dbh->prepare("select truncate(tarDistance/100,0) as Distance, count(truncate(tarDistance/100,0)) as Difficulty from tblTaskResult where tasPk=$tasPk and tarResultType not in ('abs','dnf') and (tarGoal=0 or tarGoal is null) group by truncate(tarDistance/100,0)");
+    }
+    else
+    {
+        $sth = $dbh->prepare("select truncate(tarDistance/100,0) as Distance, count(truncate(tarDistance/100,0)) as Difficulty from tblTaskResult where tasPk=$tasPk and tarResultType not in ('abs','dnf') group by truncate(tarDistance/100,0)");
+    }
+    $sth->execute();
+
+    $debc = 0;
+    while ($ref = $sth->fetchrow_hashref()) 
+    {
+        # populate kmdiff
+        # At half the difficulty dist back they get all the points
+        $difdist = 0 + $ref->{'Distance'} - ($formula->{'diffdist'}/200);
+        if ($difdist < 0) 
+        {
+            $difdist = 0;
+        }
+        $kmdiff->[$difdist] = 0 + $kmdiff->[$difdist] + $ref->{'Difficulty'};
+        $debc = $debc + $ref->{'Difficulty'};
+        #print "dist($difdist): ", $ref->{'Distance'}, " diff: ", $kmdiff->[$difdist], "\n";
+        #$kmdiff->[(0+$ref->{'Distance'})] = 0+$ref->{'Difficulty'};
+    }
+
+    # Then smooth it out (non-linearly) for the other half
+    #print Dumper($kmdiff);
+    for my $it ( 0 .. ($formula->{'diffdist'}/200))
+    {
+        $kmdiff = $self->spread($kmdiff);
+    }
+    #print Dumper($kmdiff);
+
+    # Determine cumulative distance difficulty 
+    $x = 0.0;
+    for my $dif (0 .. scalar @$kmdiff-1)
+    {
+        my $rdif;
+
+        $rdif = 0.0;
+
+        $x = $x + $kmdiff->[$dif];
+        # Use only landed-out pilots or all pilots for difficulty?
+        if ($formula->{'diffcalc'} eq 'lo' && $Nlo > 0)
+        {
+            $rdif = $x/$Nlo;
+        }
+        else
+        {
+            $rdif = $x/$taskt->{'launched'};
+        }
+        $kmdiff->[$dif] = ($rdif);
+    }
+    print "debc=$debc x=$x (vs $Nlo)\n";
+
+    return $kmdiff;
+}
+
 
 #    POINTS ALLOCATION
 #    Points Allocation:
@@ -373,7 +448,7 @@ sub points_allocation
     my ($self, $dbh, $task, $taskt, $formula) = @_;
     my $tasPk;
     my $quality;
-    my ($Ngoal,$Nfly,$Nlo);
+    my $Ngoal;
     my ($Tmin);
     my $Tfarr;
     my $Cmin;
@@ -393,7 +468,7 @@ sub points_allocation
     my $debc;
 
     my @pilots;
-    my $kmdiff = [];
+    my $kmdiff;
 
     # Find fastest pilot into goal and calculate leading coefficients
     # for each track .. (GAP2002 only?)
@@ -401,8 +476,6 @@ sub points_allocation
     $tasPk = $task->{'tasPk'};
     $quality = $taskt->{'quality'};
     $Ngoal = $taskt->{'goal'};
-    $Nfly = $taskt->{'launched'};
-    $Nlo = $Nfly - $Ngoal;
     $Tmin = $taskt->{'fastest'};
     $Tfarr = $taskt->{'firstarrival'};
     $Cmin = $taskt->{'mincoeff'};
@@ -413,66 +486,7 @@ sub points_allocation
     # Some GAP basics
     ($Adistance, $Aspeed, $Astart, $Aarrival) = $self->points_weight($task, $taskt, $formula);
 
-    # KM difficulty
-    for my $it ( 0 .. floor($taskt->{'maxdist'} / 100.0) )
-    {
-        $kmdiff->[$it] = 0;
-    }
-
-    if ($formula->{'diffcalc'} eq 'lo')
-    {
-        $sth = $dbh->prepare("select truncate(tarDistance/100,0) as Distance, count(truncate(tarDistance/100,0)) as Difficulty from tblTaskResult where tasPk=$tasPk and tarResultType not in ('abs','dnf') and (tarGoal=0 or tarGoal is null) group by truncate(tarDistance/100,0)");
-    }
-    else
-    {
-        $sth = $dbh->prepare("select truncate(tarDistance/100,0) as Distance, count(truncate(tarDistance/100,0)) as Difficulty from tblTaskResult where tasPk=$tasPk and tarResultType not in ('abs','dnf') group by truncate(tarDistance/100,0)");
-    }
-    $sth->execute();
-    $debc = 0;
-    while ($ref = $sth->fetchrow_hashref()) 
-    {
-        # populate kmdiff
-        # At half the difficulty dist back they get all the points
-        $difdist = 0 + $ref->{'Distance'} - ($formula->{'diffdist'}/200);
-        if ($difdist < 0) 
-        {
-            $difdist = 0;
-        }
-        $kmdiff->[$difdist] = 0 + $kmdiff->[$difdist] + $ref->{'Difficulty'};
-        $debc = $debc + $ref->{'Difficulty'};
-        #print "dist($difdist): ", $ref->{'Distance'}, " diff: ", $kmdiff->[$difdist], "\n";
-        #$kmdiff->[(0+$ref->{'Distance'})] = 0+$ref->{'Difficulty'};
-    }
-
-    # Then smooth it out (non-linearly) for the other half
-    #print Dumper($kmdiff);
-    for my $it ( 0 .. ($formula->{'diffdist'}/200))
-    {
-        $kmdiff = $self->spread($kmdiff);
-    }
-    #print Dumper($kmdiff);
-
-    # Determine cumulative distance difficulty 
-    $x = 0.0;
-    for my $dif (0 .. scalar @$kmdiff-1)
-    {
-        my $rdif;
-
-        $rdif = 0.0;
-
-        $x = $x + $kmdiff->[$dif];
-        # Use only landed-out pilots or all pilots for difficulty?
-        if ($formula->{'diffcalc'} eq 'lo')
-        {
-            $rdif = $x/$Nlo;
-        }
-        else
-        {
-            $rdif = $x/$Nfly;
-        }
-        $kmdiff->[$dif] = ($rdif);
-    }
-    print "debc=$debc x=$x (vs $Nlo)\n";
+    $kmdiff = $self->calc_kmdiff($dbh, $task, $taskt, $formula);
 
     # Get all pilots and process each of them 
     # pity it can't be done as a single update ...

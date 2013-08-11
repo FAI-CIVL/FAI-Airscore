@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -I/home/geoff/bin
 
 #
 # Determines how much of a task (and time) is completed
@@ -12,6 +12,8 @@ require Gap; # qw(:all);
 require OzGap; # qw(:all);
 require NoGap; # qw(:all);
 require Nzl; # qw(:all);
+require JTGap; # qw(:all);
+require GGap; # qw(:all);
 
 use POSIX qw(ceil floor);
 use TrackLib qw(:all);
@@ -65,6 +67,16 @@ elsif ($formula->{'class'} eq 'nogap')
 {
     print "NoGap scoring\n";
     $scr = NoGap->new();
+}
+elsif ($formula->{'class'} eq 'jtgap')
+{
+    print "JTGap scoring\n";
+    $scr = JTGap->new();
+}
+elsif ($formula->{'class'} eq 'ggap')
+{
+    print "GGap scoring\n";
+    $scr = GGap->new();
 }
 else
 {
