@@ -26,18 +26,21 @@ sub round
 #
 sub task_update
 {
-    my ($tasPk) = @_;
+    my ($task) = @_;
+    my $tasPk;
     my $wpts;
     my $dist;
-    my ($totdist,$srdist);
+    my ($totdist,$srdist,$ssdist);
     my $i = 0;
+    my $essflag = 0;
     my $num;
     my (%s1, %s2);
 
     $totdist = 0.0;
     $srdist = 0.0;
-    $task = read_task($tasPk);
+    $ssdist = 0.0;
     $wpts = $task->{'waypoints'};
+    $tasPk = $task->{'tasPk'};
 
     # Ok work out non-optimal distance for now
     # FIX: work out shortest route!
@@ -47,16 +50,28 @@ sub task_update
     {
         #print "From ", $wpts->[$i]->{'name'}, "\n";
         $totdist = $totdist + distance($wpts->[$i], $wpts->[$i+1]);
+        if ($wpts->[$i]->{'type'} eq 'speed')
+        {
+            $ssdist = 0.0;
+        }
+        elsif ($wpts->[$i]->{'type'} eq 'endspeed')
+        {
+            $essflag = 1;
+        }
 
         $s1{'lat'} = $wpts->[$i]->{'short_lat'};
         $s1{'long'} = $wpts->[$i]->{'short_long'};
         $s2{'lat'} = $wpts->[$i+1]->{'short_lat'};
         $s2{'long'} = $wpts->[$i+1]->{'short_long'};
         $srdist = $srdist + distance(\%s1, \%s2);
+        if ($essflag == 0)
+        {
+            $ssdist = $ssdist + distance(\%s1, \%s2);
+        }
     }
 
     # Store it in tblTask
-    $sth = $dbh->prepare("update tblTask set tasDistance=$totdist, tasShortRouteDistance=$srdist where tasPk=$tasPk");
+    $sth = $dbh->prepare("update tblTask set tasDistance=$totdist, tasShortRouteDistance=$srdist, tasSSDistance=$ssdist where tasPk=$tasPk");
     $sth->execute();
 
     return $totdist;
@@ -64,10 +79,12 @@ sub task_update
 
 sub track_update
 {
-    my ($tasPk, $opt) = @_;
+    my ($task, $opt) = @_;
     my @tracks;
     my $flag;
+    my $tasPk;
 
+    $tasPk = $task->{'tasPk'};
     # Now check for pre-submitted tracks ..
     $sth = $dbh->prepare("select traPk from tblComTaskTrack where tasPk=$tasPk");
     $sth->execute();
@@ -91,14 +108,22 @@ sub track_update
         }
     }
 
-    # Now verify the pre-submitted tracks against the task
-    for my $tpk (@tracks)
+
+    if ($task->{'type'} ne 'free-pin')
     {
-        print "Verifying pre-submitted track: $tpk\n";
-        $retv = 0;
-        $out = `${BINDIR}track_verify_sr.pl $tpk $tasPk`;
-        print $out;
-        $flag = 1;
+        # Now verify the pre-submitted tracks against the task
+        for my $tpk (@tracks)
+        {
+            print "Verifying pre-submitted track: $tpk\n";
+            $retv = 0;
+            $out = `${BINDIR}track_verify_sr.pl $tpk $tasPk`;
+            print $out;
+            $flag = 1;
+        }
+    }
+    else
+    {
+        return 1;
     }
 
     return $flag;
@@ -109,6 +134,7 @@ sub track_update
 #
 
 my $dist;
+my $tasPk;
 my $task;
 my $quality;
 my $pth;
@@ -121,23 +147,39 @@ if (scalar @ARGV < 1)
     exit 1;
 }
 
-$task = $ARGV[0];
-$opt = $ARGV[1];
+$tasPk = $ARGV[0];
 
-$dbh = db_connect();
 
 # Work out all the task totals to make it easier later
+$dbh = db_connect();
+$task = read_task($tasPk);
+if (scalar @ARGV == 2)
+{
+    $opt = $ARGV[1];
+}
+else
+{
+    if (($task->{'type'} eq 'free') or ($task->{'type'} eq 'free-pin'))
+    {
+        $opt = "0";
+    }
+    elsif ($task->{'type'} eq 'olc')
+    {
+        $opt = "3";
+    }
+}
+
 $dist = task_update($task);
-#if (system($BINDIR . "short_route.pl $task") == -1)
+#if (system($BINDIR . "short_route.pl $tasPk") == -1)
 $pth = $BINDIR . 'short_route.pl';
-$out = `$pth $task`;
+$out = `$pth $tasPk`;
 print $out;
 
 if (track_update($task, $opt) == 1)
 {
     # tracks re-verified - now rescore.
     $pth = $BINDIR . 'task_score.pl';
-    $out = `$pth $task`;
+    $out = `$pth $tasPk`;
     #print $out;
 }
 

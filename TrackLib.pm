@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -I/home/geoff/bin
 
 #
 # Some track/database handling stuff
@@ -19,7 +19,7 @@ use Defines qw(:all);
 our @ISA       = qw(Exporter);
 our @EXPORT = qw{:ALL};
 
-*VERSION=\'%VERSION%';
+*VERSION=\'0.99';
 
 $pi = atan2(1,1) * 4;    # accurate PI.
 
@@ -267,6 +267,7 @@ sub read_task
     if  ($ref = $sth->fetchrow_hashref()) 
     {
         $task{'tasPk'} = $tasPk;
+        $task{'comPk'} = $ref->{'comPk'};
         $task{'date'} = $ref->{'tasDate'};
         $task{'region'} = $ref->{'regPk'};
         $task{'start'} = $ref->{'tasStartTime'};
@@ -313,6 +314,7 @@ sub read_task
         $task{'interval'} = $ref->{'tasSSInterval'};
         $task{'type'} = $ref->{'tasTaskType'};
         $task{'distance'} = $ref->{'tasDistance'};
+        $task{'ssdistance'} = $ref->{'tasSSDistance'};
         $task{'short_distance'} = $ref->{'tasShortRouteDistance'};
         $task{'arrival'} = $ref->{'tasArrival'};
         $task{'departure'} = $ref->{'tasDeparture'};
@@ -507,7 +509,7 @@ sub store_result
     $coeff = $result->{'coeff'};
     $penalty = 0 + $result->{'penalty'};
     $comment = $result->{'comment'};
-    $stopalt = $result->{'stopalt'};
+    $stopalt = 0 + $result->{'stopalt'};
     if (!$goal)
     {
         $goal = 0;
@@ -530,7 +532,7 @@ sub store_result
 
     #print "insert into tblTaskResult (tasPk,traPk,tarDistance,tarSpeed,tarStart,tarGoal,tarSS,tarES,tarTurnpoints) values ($tasPk,$traPk,$dist,$speed,$start,$goal,$ss,$endss,$turnpoints)";
     $dbh->do("delete from tblTaskResult where traPk=? and tasPk=?", undef, $traPk, $tasPk);
-    print("insert into tblTaskResult (tasPk,traPk,tarDistance,tarSpeed,tarStart,tarGoal,tarSS,tarES,tarTurnpoints,tarLeadingCoeff,tarPenalty,tarComment) values ($tasPk,$traPk,$dist,$speed,$start,$goal,$ss,$endss,$turnpoints,$coeff,$penalty,'$comment')\n");
+    print("insert into tblTaskResult (tasPk,traPk,tarDistance,tarSpeed,tarStart,tarGoal,tarSS,tarES,tarTurnpoints,tarLeadingCoeff,tarPenalty,tarComment,tarLastAltitude) values ($tasPk,$traPk,$dist,$speed,$start,$goal,$ss,$endss,$turnpoints,$coeff,$penalty,'$comment',$stopalt)\n");
     $sth = $dbh->prepare("insert into tblTaskResult (tasPk,traPk,tarDistance,tarSpeed,tarStart,tarGoal,tarSS,tarES,tarTurnpoints,tarLeadingCoeff,tarPenalty,tarComment,tarLastAltitude) values ($tasPk,$traPk,$dist,$speed,$start,$goal,$ss,$endss,$turnpoints,$coeff,$penalty,'$comment',$stopalt)");
     $sth->execute();
 

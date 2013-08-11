@@ -45,7 +45,7 @@ create table tblFormula
     forNomDistance   double default 40,
     forNomTime       double default 90,
     forArrival       enum ('none', 'place', 'timed') default 'place',
-    forDeparture     enum ('none', 'departure', 'leadout') default 'leadout',
+    forDeparture     enum ('none', 'departure', 'leadout', 'kmbonus') default 'leadout',
     forLinearDist    double default 0.5,
     forDiffDist      double default 1.5,
     forDiffRamp      enum ( 'fixed', 'flexible' ) default 'fixed',
@@ -103,7 +103,7 @@ create table tblTask
     tasPilotsES             integer, 
     tasPilotsLO             integer, 
     tasPilotsGoal           integer, 
-    tasDeparture            enum ( 'off', 'on', 'leadout' ) default 'on',
+    tasDeparture            enum ( 'off', 'on', 'leadout', 'kmbonus' ) default 'on',
     tasArrival              enum ( 'off', 'on' ) default 'on',
     forPk                   integer
 );
