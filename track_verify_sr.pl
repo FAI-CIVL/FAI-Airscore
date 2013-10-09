@@ -77,7 +77,6 @@ sub determine_start
 
     $allpoints = scalar @$waypoints;
     $cwdist = 0;
-    $ssdist = $task->{'ssdistance'};
     for (my $i = 0; $i < $allpoints; $i++)
     {
         if (( $waypoints->[$i]->{'type'} eq 'start') or 
@@ -95,12 +94,16 @@ sub determine_start
             $ssdist = $cwdist;
             print "speed section dist=$ssdist\n";
         }
-
         if ($i < $allpoints-1)
         {
             $cwdist = $cwdist + short_dist($waypoints->[$i], $waypoints->[$i+1]);
         }
     } 
+    if (!defined($ssdist)) 
+    {
+        $ssdist = $cwdist;
+        print "speed section dist=$ssdist\n";
+    }
 
     return ($spt, $ssdist, $startssdist);
 }

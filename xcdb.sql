@@ -37,7 +37,7 @@ create table tblFormula
 (
     forPk            integer not null PRIMARY KEY auto_increment,
     comPk            integer,
-    forClass         enum ('gap', 'ozgap', 'pwc', 'sahpa', 'nzl', 'ggap', 'nogap', 'jtgap' ),
+    forClass         enum ('gap', 'ozgap', 'pwc', 'sahpa', 'nzl', 'ggap', 'nogap', 'jtgap', 'rtgap', 'timegap' ),
     forVersion       varchar(32),
     forGoalSSpenalty double default 1.0,
     forNomGoal       double default 0.3,

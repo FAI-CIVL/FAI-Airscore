@@ -1,332 +1,4 @@
 <?php
-function taskcmp($a, $b)
-{
-    if (!is_array($a)) return 0;
-    if (!is_array($b)) return 0;
-
-    if ($a['tname'] == $b['tname']) 
-    {
-        return 0;
-    }
-    return ($a['tname'] < $b['tname']) ? -1 : 1;
-}
-function olc_result($link,$top,$restrict)
-{
-    $lastpil = 0;
-    $toptasks = array();
-    $topscores = array();
-
-    $sql = "SELECT P.*, T.traPk, T.traScore FROM tblTrack T, tblPilot P, tblComTaskTrack CTT, tblCompetition C where CTT.comPk=C.comPk and CTT.traPk=T.traPk and T.pilPk=P.pilPk and T.traScore is not null $restrict order by P.pilPk, T.traScore desc";
-    $result = mysql_query($sql,$link) or die('Top score: ' . mysql_error());
-
-    while ($row = mysql_fetch_array($result))
-    {
-        // another pilot .. finish it off
-        $pilPk = $row['pilPk'];
-        if (!array_key_exists($pilPk, $toptasks))
-        {
-            $toptasks[$pilPk] = array();
-        }
-        array_push($toptasks[$pilPk], $row);
-    }
-
-    // do the totals ...
-    foreach ($toptasks as $pilPk => $scores)
-    {
-        // cut to max ..
-        $scores = array_slice($scores,0,$top);
-        $total = 0;
-
-        foreach ($scores as $row)
-        {
-            $total = $total + $row['traScore'];
-            $first = $row['pilFirstName'];
-            $last = $row['pilLastName'];
-        }
-
-        $total = $total . $last;
-        $topscores[$total] = array( 
-                    'total' => $total,
-                    'tasks' => $scores,
-                    'pilpk' => $pilPk,
-                    'firstname' => $first,
-                    'lastname' => $last
-            );
-    }
-
-    krsort($topscores, SORT_NUMERIC);
-
-    return $topscores;
-}
-
-function team_gap_result($comPk, $how, $param)
-{
-    $sql = "select TK.*,TR.*,P.* from tblTeamResult TR, tblTask TK, tblTeam P, tblCompetition C where C.comPk=$comPk and TR.tasPk=TK.tasPk and TK.comPk=C.comPk and P.teaPk=TR.teaPk order by P.teaPk, TK.tasPk";
-    $result = mysql_query($sql) or die('Task result query failed: ' . mysql_error());
-    $results = array();
-    while ($row = mysql_fetch_array($result))
-    {
-        $score = round($row['terScore']);
-        $validity = $row['tasQuality'] * 1000;
-        $pilPk = $row['teaPk'];
-        $tasName = $row['tasName'];
-    
-        if (!$results[$pilPk])
-        {
-            $results[$pilPk] = array();
-            $results[$pilPk]['name'] = $row['teaName'];
-        }
-        //echo "pilPk=$pilPk tasname=$tasName, result=$score<br>\n";
-        $perf = 0;
-        if ($how == 'ftv') 
-        {
-            $perf = 0;
-            if ($validity > 0)
-            {
-                $perf = round($score / $validity, 3) * 1000;
-            }
-        }
-        else
-        {
-            $perf = round($score, 0);
-        }
-        $results[$pilPk]["${perf}${tasName}"] = array('score' => $score, 'validity' => $validity, 'tname' => $tasName);
-    }
-
-    // Do the scoring totals (FTV/X or Y tasks etc)
-    $sorted = array();
-    foreach ($results as $pil => $arr)
-    {
-        krsort($arr, SORT_NUMERIC);
-
-        $pilscore = 0;
-        if ($how != 'ftv')
-        {
-            # Max rounds scoring
-            $count = 0;
-            foreach ($arr as $perf => $taskresult)
-            {
-                if ($perf == 'name') 
-                {
-                    continue;
-                }
-                if ($count < $param)
-                {
-                    $arr[$perf]['perc'] = 100;
-                    $pilscore = $pilscore + $taskresult['score'];
-                }
-                else
-                {
-                    $arr[$perf]['perc'] = 0;
-                }
-                $count++;
-                
-            }
-        }
-        else
-        {
-            # FTV scoring
-            $pilvalid = 0;
-            foreach ($arr as $perf => $taskresult)
-            {
-                if ($perf == 'name') 
-                {
-                    continue;
-                }
-
-                //echo "pil=$pil perf=$perf valid=", $taskresult['validity'], " score=", $taskresult['score'], "<br>";
-                if ($pilvalid < $param)
-                {
-                    $gap = $param - $pilvalid;
-                    $perc = 0;
-                    if ($taskresult['validity'] > 0)
-                    {
-                        $perc = $gap / $taskresult['validity'];
-                    }
-                    if ($perc > 1)
-                    {
-                        $perc = 1;
-                    }
-                    $pilvalid = $pilvalid + $taskresult['validity'] * $perc;
-                    $pilscore = $pilscore + $taskresult['score'] * $perc;
-                    $arr[$perf]['perc'] = $perc * 100;
-                }
-            }   
-        }
-        // resort arr by task?
-        uasort($arr, "taskcmp");
-        #echo "pil=$pil pilscore=$pilscore<br>";
-        foreach ($arr as $key => $res)
-        {
-            if ($key != 'name')
-            {
-                $arr[$res['tname']] = $res;
-                unset($arr[$key]);
-            }
-        }
-        $pilscore = round($pilscore,0);
-        $sorted["${pilscore}!${pil}"] = $arr;
-    }
-
-    krsort($sorted, SORT_NUMERIC);
-    return $sorted;
-}
-
-
-function team_agg_result($comPk, $teamsize)
-{
-    $query = "select TM.teaPk,TK.tasPk,TK.tasName,TM.teaName,P.pilLastName,P.pilFirstName,P.pilPk,TR.tarScore*TP.tepModifier as tepscore from tblTaskResult TR, tblTask TK, tblTrack K, tblPilot P, tblTeam TM, tblTeamPilot TP, tblCompetition C where TP.teaPk=TM.teaPk and P.pilPk=TP.pilPk and C.comPk=TK.comPk and K.traPk=TR.traPk and K.pilPk=P.pilPk and TR.tasPk=TK.tasPk and TM.comPk=C.comPk and C.comPk=$comPk order by TM.teaPk,TK.tasPk,TR.tarScore*TP.tepModifier desc";
-    $result = mysql_query($query) or die('Team aggregate query failed: ' . mysql_error());
-    $row = mysql_fetch_array($result);
-    $htable = array();
-    $hres = array();
-    $sorted = array();
-    $teaPk = 0;
-    $tasPk = 0;
-    $tastot = 0;
-    $total = 0;
-    $size = 0;
-    while ($row)
-    {
-        //$tasName = $row['tasName'];
-        if ($tasPk != $row['tasPk'])
-        {
-            if ($size != 0)
-            {
-                $arr["${tasName}"] = array('score' => round($tastotal,0), 'perc' => 100, 'tname' => $tasName);
-            }
-            $tasName = $row['tasName'];
-            $size = 0;
-            $tastotal = 0;
-            $tasPk = $row['tasPk'];
-            //$arr = array();
-        }
-        if ($teaPk != $row['teaPk'])
-        {
-            if ($teaPk == 0)
-            {
-                $teaPk = $row['teaPk'];
-                $tasPk = $tow['tasPk'];
-                $arr = array();
-                $arr['name'] = $row['teaName'];
-            }
-            else
-            {
-                // wrap up last one
-                $total = round($total,0);
-                $sorted["${total}!${teaPk}"] = $arr;
-                $tastotal = 0;
-                $total = 0;
-                $size = 0;
-                $arr = array();
-                $arr['name'] = $row['teaName'];
-                $teaPk = $row['teaPk'];
-            }
-        }
-
-        if ($size < $teamsize)
-        {
-            $total = round($total + $row['tepscore'],2);
-            $tastotal = round($tastotal + $row['tepscore'],2);
-            $size = $size + 1;
-        }
-        $row = mysql_fetch_array($result);
-    }
-
-    // wrap up last one
-    $total = round($total,0);
-    $arr["${tasName}"] = array('score' => round($tastotal,0), 'perc' => 100, 'tname' => $tasName);
-    $sorted["${total}!${teaPk}"] = $arr;
-
-    krsort($sorted, SORT_NUMERIC);
-    return $sorted;
-}
-
-function team_handicap_result($comPk,$how,$param)
-{
-    $query = "select T.tasPk, T.tasName, max(TR.tarScore) as maxScore from tblTaskResult TR, tblTask T where T.tasPk=TR.tasPk and T.comPk=$comPk group by TR.tasPk";
-    $result = mysql_query($query) or die('Team aggregate query failed: ' . mysql_error());
-    $row = mysql_fetch_array($result);
-    $tinfo = array();
-    while ($row)
-    {
-        $tinfo[$row['tasPk']] = array( 'name' => "<a href=\"team_task_result.php?tasPk=" . $row['tasPk'] . "\">" . $row['tasName'] . "</a>", 'maxscore' => $row['maxScore']);
-        $row = mysql_fetch_array($result);
-    }
-
-    $hteams = array();
-    $count = 0;
-    foreach ($tinfo as $task => $tasinfo)
-    {
-        $maxscore = intval($tasinfo['maxscore']);
-        if ($maxscore < 1)
-        {
-            next;
-        }
-        $query = "select TM.teaPk,TK.tasPk,TK.tasName,TM.teaName,sum(TR.tarScore-H.hanHandicap*$maxscore) as handiscore from tblTaskResult TR, tblTask TK, tblTrack K, tblPilot P, tblTeam TM, tblTeamPilot TP, tblHandicap H, tblCompetition C where TP.teaPk=TM.teaPk and P.pilPk=TP.pilPk and C.comPk=TK.comPk and K.traPk=TR.traPk and K.pilPk=P.pilPk and H.pilPk=P.pilPk and TR.tasPk=TK.tasPk and TM.comPk=C.comPk and TK.tasPk=$task and H.comPk=$comPk group by TM.teaPk";
-        $result = mysql_query($query) or die('Team handicap query failed: ' . mysql_error());
-        $row = mysql_fetch_array($result);
-        while ($row)
-        {
-            //echo "task=$task teaPk=" . $row['teaPk'] . "=" . $row['handiscore'] . "<br>";
-            if (array_key_exists($row['teaPk'], $hteams))
-            {
-                $htable = $hteams[$row['teaPk']];
-                $htable['scores'][$count] = $row['handiscore'];
-                $htable['total'] = round($htable['total'] + $row['handiscore'],0);
-                $hteams[$row['teaPk']] = $htable;
-            }
-            else
-            {
-                $htable = array();
-                $htable['team'] = $row['teaName'];
-                $htable['scores'] = array();
-                for ($i = 0; $i < $count; $i++)
-                {
-                    $htable['scores'][$i] = 0;
-                }
-                $htable['scores'][$count] = $row['handiscore'];
-                $htable['total'] =  round($row['handiscore'],0);
-                $hteams[$row['teaPk']] = $htable;
-            }
-
-            $row = mysql_fetch_array($result);
-        }
-        $count++;
-    
-    }
-    $hres = array();
-    foreach ($hteams as $res)
-    {
-        $total = $res['total'];
-        $team = $res['team'];
-        $hres["${total}${team}"] = $res;
-    }
-    krsort($hres, SORT_NUMERIC);
-
-    $sorted = array();
-    $place = 1;
-    $htable = array();
-    $title = array( fb("Res"), fb("Team"), fb("Total"));
-    foreach ($tinfo as $task => $tasinfo)
-    {
-        $title[] = fb($tasinfo['name']);
-    }
-    $htable[] = $title;
-
-    foreach ($hres as $res => $pils)
-    {
-        $row = array( fb("$place"), $pils['team'], $pils['total'] );
-        foreach ($pils['scores'] as $tas => $sco)
-        {
-            $row[] = round($sco,0);
-        }
-        $htable[] = $row;
-        $place = $place + 1;
-    }
-
-    echo ftable($htable, "border=\"0\" cellpadding=\"3\" alternate-colours=\"yes\" align=\"center\"", array('class="l"', 'class="d"'), '');
-}
 
 function overall_handicap($comPk, $how, $param, $cls)
 {
@@ -512,6 +184,8 @@ function filter_results($comPk, $how, $param, $results)
 
 require_once 'authorisation.php';
 require_once 'format.php';
+require_once 'olc.php';
+require_once 'team.php';
 require 'hc.php';
 
 $comPk = intval($_REQUEST['comPk']);
@@ -579,6 +253,10 @@ if (array_key_exists('class', $_REQUEST))
     else if ($cval == 6)
     {
         $fdhv = "and P.pilBirthdate > date_sub(C.comDateFrom, INTERVAL 35 YEAR)";
+    }
+    else if ($cval == 9)
+    {
+        $fdhv = '';
     }
     else
     {
@@ -649,7 +327,7 @@ else
 
 $today = getdate();
 $tdate = sprintf("%04d-%02d-%02d", $today['year'], $today['mon'], $today['mday']);
-if ($tdate == $comDateTo)
+if (0 && $tdate == $comDateTo)
 {
     $usePk = check_auth('system');
     $link = db_connect();
@@ -754,7 +432,15 @@ else if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'Route')
     foreach ($taskinfo as $row)
     {
         $tasPk = $row['tasPk'];
-        $hdr2[] = "<a href=\"route_map.php?comPk=$comPk&tasPk=$tasPk\">Map</a>";
+        if ($row['tasTaskType'] == 'airgain')
+        {
+            $treg = $row['regPk'];
+            $hdr2[] = "<a href=\"waypoint_map.php?regPk=$treg\">Map</a>";
+        }
+        else
+        {
+            $hdr2[] = "<a href=\"route_map.php?comPk=$comPk&tasPk=$tasPk\">Map</a>";
+        }
     }
     $rtable[] = $hdr;
     $rtable[] = $hdr2;
@@ -829,8 +515,9 @@ else if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'Route')
 }
 else
 {
-    $rtable[] = $hdr;
-    $rtable[] = $hdr2;
+    // OLC Result
+    $rtable[] = array( fb('Res'),  fselect('class', "comp_result.php?comPk=$comPk$cind", $copts, ' onchange="document.location.href=this.value"'), fb('Total') );
+    $rtable[] = array( '', '', '' );
     $top = 25;
     if (!$comOverallParam)
     {
@@ -845,44 +532,20 @@ else
     {
         $restrict = " and CTT.comPk=$comPk $fdhv";
     }
-    $sorted = olc_result($link, $comOverallParam, $restrict);
+    if ($class == "9")
+    {
+        $sorted = olc_handicap_result($link, $comOverallParam, $restrict);
+    }
+    else
+    {
+        $sorted = olc_result($link, $comOverallParam, $restrict);
+    }
     $size = sizeof($sorted);
 
-    #echo "<tr class=\"h\"><td><b>Place</b></td><td><b>Pilot</b></td><td><b>Total</b></td><td><b>Task 1</b1></td><td><b>Task 2</b></td><td><b>Task 3</b></td><td><b>Task 4</b></td></tr>\n";
     $count = $start+1;
     $sorted = array_slice($sorted,$start,$top+2);
-    foreach ($sorted as $total => $row)
-    {
-        $nxt = array();
-        if ($count % 2)
-        {
-            $rdec[] = 'class="d"';
-        }
-        else
-        {
-            $rdec[] = 'class="l"';
-        }
-        $name = $row['firstname'] . " " . $row['lastname'];
-        $key = $row['pilpk'];
-        $total = round($total/1000,2);
-        $nxt[] = $count;
-        $nxt[] = "<a href=\"index.php?pil=$key\">$name</a>";
-        $nxt[] = $total;
-        foreach ($row['tasks'] as $task)
-        {
-            $score = round($task['traScore']/1000,1);
-            $id = $task['traPk'];
-            $nxt[] = "<a href=\"tracklog_map.php?comPk=$comPk&trackid=$id\">$score</a>";
-        }
-        $count++;
-        if ($count >= $top + $start + 2) 
-        {
-            break;
-        }
-        $rtable[] = $nxt;
-    }
-    echo ftable($rtable, "border=\"0\" cellpadding=\"1\" alternate-colours=\"yes\" align=\"center\"", $rdec, '');
-    
+    $count = display_olc_result($comPk,$rtable,$sorted,$top,$count);
+
     if ($count == 1)
     {
         echo "<b>No tracks submitted for $comName yet.</b>\n";
