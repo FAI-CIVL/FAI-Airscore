@@ -7,6 +7,7 @@
 <div id="vhead"><h1>airScore admin</h1></div>
 <?php
 require 'authorisation.php';
+require 'format.php';
 adminbar(0);
 ?>
 <p><h2>Competition Administration</h2></p>
@@ -69,12 +70,21 @@ if (array_key_exists('update', $_REQUEST))
     $result = mysql_query($query) or die('Competition update failed: ' . mysql_error());
 }
 
-echo "<form action=\"comp_admin.php\" name=\"compadmin\" method=\"post\">";
-echo "<ol>";
-$count = 1;
-$sql = "SELECT C.* FROM tblCompetition C order by C.comDateFrom desc";
-$result = mysql_query($sql,$link);
+$comparr = array();
+$comparr[] = array ('', fb('Date Range'), fb('Name'), fb('Location'), fb('Director') );
 
+echo "<form action=\"comp_admin.php\" name=\"compadmin\" method=\"post\">";
+$count = 1;
+
+if (is_admin('admin', $usePk, -1))
+{
+    $sql = "SELECT C.* FROM tblCompetition C order by C.comDateTo desc";
+}
+else
+{
+    $sql = "SELECT C.* FROM tblCompAuth A, tblCompetition C where A.comPk=C.comPk and A.usePk=$usePk order by C.comDateTo desc";
+}
+$result = mysql_query($sql,$link);
 while($row = mysql_fetch_array($result, MYSQL_ASSOC))
 {
     $id = $row['comPk'];
@@ -83,25 +93,22 @@ while($row = mysql_fetch_array($result, MYSQL_ASSOC))
     $dateto = substr($row['comDateTo'], 0, 10);
     $location = $row['comLocation'];
     $director = $row['comMeetDirName'];
-    echo "<li><a href=\"competition.php?comPk=$id\">$name ($datefrom - $dateto) in $location directed by $director.</a>\n";
-
+    $comparr[] = array("$count.", "$datefrom - $dateto", "<a href=\"competition.php?comPk=$id\">" . $name . "</a>", $location, $director);
     $count++;
 }
-echo "</ol><hr>";
+echo ftable($comparr, "border=\"0\" cellpadding=\"2\" cellspacing=\"0\" alternate-colours=\"yes\" valign=\"top\" align=\"left\"", array('class="d"', 'class="l"'), '');
 
-echo "<table>";
-echo "<tr><td>Name:</td><td><input type=\"text\" name=\"comname\" size=20></td>";
-echo "<td>Type:</td><td>";
-output_select('comptype', 'RACE', array('OLC', 'RACE', 'Free', 'Route' ));
-echo "</td></tr>";
-echo "<tr><td>Date From:</td><td><input type=\"text\" name=\"datefrom\" size=10>";
-echo "</td><td>Date To:</td><td><input type=\"text\" name=\"dateto\" size=10></td></tr>";
-echo "<tr><td>Director:</td><td><input type=\"text\" name=\"director\" size=10>";
-echo "</td><td>Location:</td><td><input type=\"text\" name=\"location\" size=10></td></tr>";
-echo "<tr><td>Abbrevation:</td><td><input type=\"text\" name=\"code\" size=10></td>";
-echo "<td>Time Offset:</td><td><input type=\"text\" name=\"timeoffset\" size=7></td></tr>";
-echo "</table>\n";
-echo "<input type=\"submit\" name=\"add\" value=\"Create Competition\">";
+echo "<br><hr>";
+echo "<h2>Add Competition</h2>";
+
+echo ftable(array(
+    array('Name', fin('comname', '', 20), 'Type:', fselect('comptype', 'RACE', array('OLC', 'RACE', 'Free', 'Route', 'Team-RACE'))),
+    array('Date From:', fin('datefrom', '', 10), 'Date To:', fin('dateto', '', 10)),
+    array('Director:', fin('director', '', 10), 'Location:', fin('location', '', 10)),
+    array('Abbreviation:', fin('code', '', 10), 'Time Offset:', fin('timeoffset', '', 7))
+    ), '', '', ''
+);
+echo fis('add', 'Create Competition', '');
 
 echo "</form>";
 ?>

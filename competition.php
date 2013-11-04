@@ -230,12 +230,12 @@ echo "<hr><h3>Administrators: ", implode(", ", $admin), "</h3>";
 echo "<form action=\"competition.php?comPk=$comPk\" name=\"adminedit\" method=\"post\">";
 
 echo 'Add Administrator: ';
-$sql = "select U.*, A.* FROM tblUser U left outer join tblCompAuth A on A.usePk=U.usePk where A.comPk is null or A.comPk<>$comPk group by U.useLogin order by U.useLogin";
+$sql = "select U.usePk as user, U.*, A.* FROM tblUser U left outer join tblCompAuth A on A.usePk=U.usePk where A.comPk is null or A.comPk<>$comPk group by U.useLogin order by U.useLogin";
 $admin = array();
 $result = mysql_query($sql,$link);
 while ($row = mysql_fetch_array($result))
 {
-    $admin[$row['useLogin']] = intval($row['usePk']);
+    $admin[$row['useLogin']] = intval($row['user']);
 }
 echo fselect('adminlogin', '', $admin);
 echo fis('updateadmin', 'Add', '');
@@ -267,7 +267,7 @@ if ($ctype == 'RACE' || $ctype == 'Team-RACE' || $ctype == 'Route')
     echo "<form action=\"competition.php?comPk=$comPk\" name=\"formulaadmin\" method=\"post\">";
     $out = ftable(
         array(
-          array('Formula:', fselect('formula', $class, array('gap', 'ozgap', 'pwc', 'sahpa', 'nzl', 'ggap', 'nogap', 'jtgap' )), 'Year:', fin('version', $version, 4)),
+          array('Formula:', fselect('formula', $class, array('gap', 'ozgap', 'pwc', 'sahpa', 'nzl', 'ggap', 'nogap', 'jtgap', 'rtgap', 'tmgap' )), 'Year:', fin('version', $version, 4)),
           array('Nom Dist (km):', fin('nomdist',$nomdist,4), 'Min Dist (km):', fin('mindist', $mindist, 4), 'Nom Goal (%):', fin('nomgoal',$nomgoal,4)),
           array('Nom Time (min):', fin('nomtime', $nomtime, 4), 'Goal/SS Penalty (0-1):', fin('sspenalty', $sspenalty, 4)),
           array('Linear Dist (0-1):', fin('lineardist', $lineardist, 4),'Diff Dist (km):', fin('diffdist', $diffdist, 4), 'Diff Ramp:', fselect('difframp', $difframp, array('fixed', 'flexible')), 'Diff Calc:', fselect('diffcalc', $diffcalc, array('all', 'lo')))
@@ -286,7 +286,7 @@ if ($ctype == 'RACE' || $ctype == 'Team-RACE' || $ctype == 'Route')
 echo "<hr><h3>Tasks</h3><form action=\"competition.php?comPk=$comPk\" name=\"taskadmin\" method=\"post\">";
 echo "<ol>";
 $count = 1;
-$sql = "SELECT T.*, count(*) as Tadded FROM tblTask T left outer join tblComTaskTrack CTT on CTT.tasPk=T.tasPk where T.comPk=$comPk group by T.tasPk order by T.tasDate";
+$sql = "SELECT T.*, traPk as Tadded FROM tblTask T left outer join tblComTaskTrack CTT on CTT.tasPk=T.tasPk where T.comPk=$comPk group by T.tasPk order by T.tasDate";
 $result = mysql_query($sql,$link);
 
 while($row = mysql_fetch_array($result))
@@ -308,7 +308,7 @@ while($row = mysql_fetch_array($result))
     $tasDistFlown = $row['tasTotalDistanceFlown'];
 
     echo "<li>";
-    if ($row['Tadded'] < 2)
+    if ($row['Tadded'] < 1)
     {
         echo "<button type=\"submit\" name=\"delete\" value=\"$tasPk\">del</button>";
     }
@@ -350,7 +350,7 @@ $out = ftable(
         array('Region:', fselect('region', $defregion, $regions), 'Task Type:', fselect('tasktype', 'race', array('olc', 'race', 'speedrun', 'speedrun-interval', 'free', 'free-bearing', 'airgain', 'aat'))),
         array('Task Start:', fin('taskstart', '', 10), 'Task Finish:', fin('taskfinish', '', 10)), 
         array('Start Open:', fin('starttime', '', 10), 'Start Close:', fin('startclose', '', 10), 'Gate Interval:', fin('interval', '', 4)), 
-        array('Depart Bonus:', fselect('departure', $depdef, array('on', 'off', 'leadout')), 'Arrival Bonus:', fselect('arrival', 'on', array('on', 'off')))
+        array('Depart Bonus:', fselect('departure', $depdef, array('on', 'off', 'leadout', 'kmbonus')), 'Arrival Bonus:', fselect('arrival', 'on', array('on', 'off')))
     ), '', '', '');
 
 echo $out;
