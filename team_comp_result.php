@@ -192,6 +192,7 @@ function team_agg_result($comPk, $teamsize)
 require 'authorisation.php';
 require 'format.php';
 require 'hc.php';
+require 'olc.php';
 
 $comPk = intval($_REQUEST['comPk']);
 $start = reqival($_REQUEST['start']);
@@ -375,7 +376,7 @@ elseif ($comType != 'RACE')
     {
         $restrict = " and CTT.comPk=$comPk";
     }
-    //FIX:$sorted = olc_result($link,$comOverallParam, $restrict);
+    $sorted = olc_result($link, $comOverallParam, $restrict);
     $size = sizeof($sorted);
 
     #echo "<tr class=\"h\"><td><b>Place</b></td><td><b>Team</b></td><td><b>Total</b></td><td><b>Task 1</b1></td><td><b>Task 2</b></td><td><b>Task 3</b></td><td><b>Task 4</b></td></tr>\n";

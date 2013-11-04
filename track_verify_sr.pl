@@ -71,6 +71,7 @@ sub determine_start
     my ($task, $waypoints) = @_;
     my $cwdist;
     my $spt;
+    my $ept;
     my $ssdist;
     my $allpoints;
     my $startssdist;
@@ -91,6 +92,7 @@ sub determine_start
         }
         if ($waypoints->[$i]->{'type'} eq 'endspeed') 
         {
+            $ept = $i;
             $ssdist = $cwdist;
             print "speed section dist=$ssdist\n";
         }
@@ -105,13 +107,14 @@ sub determine_start
         print "speed section dist=$ssdist\n";
     }
 
-    return ($spt, $ssdist, $startssdist);
+    return ($spt, $ept, $ssdist, $startssdist);
 }
 
 sub compute_waypoint_dist
 {
     my ($waypoints, $wcount) = @_;
     my $dist;
+    my (%s1, %s2);
 
     $dist = 0.0;
     for my $i (0 .. $wcount-1)
@@ -122,6 +125,40 @@ sub compute_waypoint_dist
         $s2{'long'} = $waypoints->[$i+1]->{'short_long'};
         $dist = $dist + distance(\%s1, \%s2);
         print "$i dist $dist\n";
+    }
+
+    return $dist;
+}
+
+sub compute_remaining_dist
+{
+    my ($waypoints, $wcount, $ept) = @_;
+    my $dist;
+    my (%s1, %s2);
+
+    $dist = 0.0;
+    #print "wcount=$wcount\n";
+    #print "scalar=", scalar(@$waypoints), "\n";
+    if ($wcount == $ept)
+    {
+        return 0.0;
+    }
+    for my $i ($wcount .. $ept)
+    {
+        #print Dumper($waypoints->[i+1]);
+        $s1{'lat'} = $waypoints->[$i]->{'short_lat'};
+        $s1{'long'} = $waypoints->[$i]->{'short_long'};
+        $s2{'lat'} = $waypoints->[$i+1]->{'short_lat'};
+        $s2{'long'} = $waypoints->[$i+1]->{'short_long'};
+        if (($s1{'lat'} != $s2{'lat'}) || ($s1{'long'} != $s2{'long'}))
+        {
+            $dist = $dist + distance(\%s1, \%s2);
+        }
+    }
+
+    if ($debug)
+    {
+        print "remaining dist=$dist\n";
     }
 
     return $dist;
@@ -182,7 +219,7 @@ sub determine_utcmod
 sub validate_task
 {
     my ($flight, $task) = @_;
-    my ($wpt, $rpt, $spt);
+    my ($wpt, $rpt, $spt, $ept);
     my $coord;
     my ($lastcoord, $preSScoord);
     my $closest;
@@ -245,7 +282,7 @@ sub validate_task
     $utcmod = determine_utcmod($task, $coords->[0]);
 
     # Determine the start gate type and ESS dist
-    ($spt, $essdist, $startssdist) = determine_start($task, $waypoints);
+    ($spt, $ept, $essdist, $startssdist) = determine_start($task, $waypoints);
 
     print "ssdist=$essdist\n";
 
@@ -764,19 +801,20 @@ sub validate_task
         print "wcount=0 dist=$dist\n";
         $coeff = $coeff + ($essdist - $dist)*($task->{'sfinish'}-$startss);
     }
-    elsif ($wcount != $allpoints)
+    elsif ($wcount < $ept+1)
     {
         # we didn't make it in.
-        print "Didn't make goal (closest=$closestwpt)\n";
-        $s1{'lat'} = $waypoints->[$wcount-1]->{'short_lat'};
-        $s1{'long'} = $waypoints->[$wcount-1]->{'short_long'};
-        $dist = $dist + 
-                distance(\%s1, $waypoints->[$wcount]) - distance($closestcoord, $waypoints->[$closestwpt]);
-        print "closest dist=", distance($closestcoord, $waypoints->[$closestwpt]), " vs closest=$closest\n";
-        #print Dumper($closestcoord);
+        my $remaining;
+
+        print "Didn't make goal (wcount=$wcount closestwpt=$closestwpt closest=$closest)\n";
+        $dist = compute_waypoint_dist($waypoints, $wcount) - $closest;
+        $remaining = compute_remaining_dist($waypoints, $closestwpt, $ept) + $closest;
         # add rest of (distance_short * $task->{'sfinish'}) to coeff
-        #print "incomplete coeff=", ($essdist - $dist)*($task->{'sfinish'}-$startss), "\n";
-        $coeff = $coeff + ($essdist - $dist)*($task->{'sfinish'}-$startss);
+        if ($debug)
+        {
+            print "incomplete coeff dist=$dist remaining=$remaining: ", $remaining*($task->{'sfinish'}-$startss), "\n";
+        }
+        $coeff = $coeff + $remaining*($task->{'sfinish'}-$startss);
     }
     #elsif ($task->{'type'} eq 'free' or $task->{'type'} eq 'free-bearing') 
     #   {
@@ -834,6 +872,12 @@ if (scalar @ARGV < 1)
 }
 
 $dbh = db_connect();
+
+if ($ARGV[0] eq '-d')
+{
+    $debug = 1;
+    shift @ARGV;
+}
 
 # Read the flight
 $flight = read_track($ARGV[0]);
