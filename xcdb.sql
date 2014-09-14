@@ -53,7 +53,9 @@ create table tblFormula
     forStoppedGlideBonus double default 0.0,
     forHeightArrBonus double default 0.0,
     forHeightArrLower integer default 200,
-    forHeightArrUpper integer default 3000
+    forHeightArrUpper integer default 3000,
+    forOLCPoints    integer default 3,
+    forOLCBase      double default 1.4
 );
 
 drop table if exists tblComTaskTrack;
@@ -105,6 +107,7 @@ create table tblTask
     tasPilotsGoal           integer, 
     tasDeparture            enum ( 'off', 'on', 'leadout', 'kmbonus' ) default 'on',
     tasArrival              enum ( 'off', 'on' ) default 'on',
+    tasComment              text,
     forPk                   integer
 );
 
@@ -586,5 +589,5 @@ create table schema_version
     svExtra     varchar(256)
 );
 
-insert into schema_version (svKey, svExtra) values (3, 'create');
+insert into schema_version (svKey, svExtra) values (4, 'create');
 

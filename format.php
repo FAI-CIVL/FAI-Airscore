@@ -112,12 +112,10 @@ function fib($type,$name,$value,$size)
 {
     $type = "type=\"$type\"";
     $name = " name=\"$name\"";
-
     if ($value != '')
     {
         $value = " value=\"$value\"";
     }
-    
     if ($size != '')
     {
         $size = " size=\"$size\"";
@@ -132,6 +130,10 @@ function fih($name,$value)
 function fin($name,$value,$size)
 {
     return fib('text',$name,$value,$size);
+}
+function farea($name,$value,$rows,$cols)
+{
+    return "<textarea name=\"$name\" rows=\"$rows\" cols=\"$cols\">$value</textarea>";
 }
 function fis($name,$value,$size)
 {

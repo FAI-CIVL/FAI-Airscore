@@ -23,6 +23,15 @@ function do_add_track(x)
     }
     x_get_track(trackid, interval, plot_track);
 }
+function do_track_speed(x,intv) 
+{
+    trackid = x;
+    x_get_track_speed(trackid, intv, plot_track);
+}
+function do_add_track_bounds(trackid) 
+{
+    x_get_track(trackid, interval, plot_track_bounds);
+}
 function do_add_track_wp(trackid) 
 {
     x_get_track_wp(trackid, plot_track_wp);
@@ -63,12 +72,17 @@ function plot_track(jstr)
     var count;
     var color;
     var initials;
+    var pngclass;
+    var offset;
 
     count = 1;
+    offset = 0;
     body = JSON.parse(jstr)
     plot_track_header(body);
     track = body["track"];
     initials = body["initials"];
+    pngclass = body["class"];
+
     line = Array();
     segments = Array();
     trklog = Array();
@@ -78,7 +92,16 @@ function plot_track(jstr)
         lasTme = track[row][0];
         lasLat = track[row][1];
         lasLon = track[row][2];
-        lasAlt = (track[row][3]/10)%256;
+        lasAlt = (track[row][3]/10);
+        if (lasAlt > 255)
+        {
+            lasAlt = 255;
+        }
+
+        if (lasTme < -7200)
+        {
+            continue;
+        }
 
         //if (count == 1) 
         //{ 
@@ -123,6 +146,23 @@ function plot_track(jstr)
     onscreen[trackid]["track"] = trklog;
     onscreen[trackid]["segments"] = segments;
     onscreen[trackid]["initials"] = initials;
+    onscreen[trackid]["class"] = pngclass;
+}
+function plot_track_bounds(jstr)
+{
+    var trk;
+
+    plot_track(jstr);
+    bounds = new google.maps.LatLngBounds();
+    trk = onscreen[trackid]["track"];
+    for (row in trk)
+    {
+        lasLat = trk[row][1];
+        lasLon = trk[row][2];
+        gll = new google.maps.LatLng(lasLat, lasLon);
+        bounds.extend(gll);
+    }
+    map.fitBounds(bounds);
 }
 function plot_task(jstr)
 {
@@ -382,6 +422,10 @@ function format_seconds(tm)
 {
     var h, m, s;
 
+    if (tm < 0) 
+    { 
+        tm = tm + 86400; 
+    }
     h = (tm / 3600) % 24;
     m = (tm / 60) % 60;
     s = tm % 60;
@@ -401,7 +445,7 @@ function plot_glider(glider,lat,lon,alt)
     //para.iconAnchor = new google.maps.Point(10,20)
 
     // load image ...
-    html = "<center>" + onscreen[glider]["initials"] + "<br><img src=\"pger" + (onscreen[glider]["ic"]%7) + ".png\"></img><br>"+Math.floor(alt/10)+"</center>";
+    html = "<center>" + onscreen[glider]["initials"] + "<br><img src=\"" + onscreen[glider]["class"] + (onscreen[glider]["ic"]%7) + ".png\"></img><br>"+Math.floor(alt/10)+"</center>";
     if (alt > 999)
     {
         off = new google.maps.Size(-8,16);
@@ -442,6 +486,7 @@ function animate_update()
         if (count < track.length)
         {
             lasTme = track[count][0];
+            flag = 1;
             //document.getElementById("foo").value = "l"+lasTme;
             while (lasTme < current && count < track.length)
             {
@@ -450,7 +495,6 @@ function animate_update()
                 lasLon = track[count][2];
                 lasAlt = track[count][3];
                 //lasAlt = (track[row][3]/10)%256;
-                flag = 1;
                 count++;
             }
             if (lasLat != 0)

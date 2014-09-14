@@ -21,13 +21,15 @@ sub validate_olc
     my ($flight, $task, $tps) = @_;
     my $traPk;
     my $tasPk;
+    my $comPk;
     my %result;
     my $dist;
     my $out;
     
     $traPk = $flight->{'traPk'};
     $tasPk = $task->{'tasPk'};
-    $out = `optimise_flight.pl $traPk $tasPk $tps`;
+    $comPk = $task->{'comPk'};
+    $out = `optimise_flight.pl $traPk $comPk $tasPk $tps`;
 
     $sth = $dbh->prepare("select * from tblTrack where traPk=$traPk");
     $sth->execute();
@@ -70,8 +72,7 @@ sub determine_start
 {
     my ($task, $waypoints) = @_;
     my $cwdist;
-    my $spt;
-    my $ept;
+    my ($spt, $ept, $gpt);
     my $ssdist;
     my $allpoints;
     my $startssdist;
@@ -94,20 +95,30 @@ sub determine_start
         {
             $ept = $i;
             $ssdist = $cwdist;
-            print "speed section dist=$ssdist\n";
+        }
+        if ($waypoints->[$i]->{'type'} eq 'goal') 
+        {
+            $gpt = $i;
         }
         if ($i < $allpoints-1)
         {
             $cwdist = $cwdist + short_dist($waypoints->[$i], $waypoints->[$i+1]);
         }
     } 
+    if (!defined($ept))
+    {
+        $ept = $i;
+    }
+    if (!defined($gpt))
+    {
+        $gpt = $allpoints;
+    }
     if (!defined($ssdist)) 
     {
         $ssdist = $cwdist;
-        print "speed section dist=$ssdist\n";
     }
 
-    return ($spt, $ept, $ssdist, $startssdist);
+    return ($spt, $ept, $gpt, $ssdist, $startssdist);
 }
 
 sub compute_waypoint_dist
@@ -124,7 +135,10 @@ sub compute_waypoint_dist
         $s2{'lat'} = $waypoints->[$i+1]->{'short_lat'};
         $s2{'long'} = $waypoints->[$i+1]->{'short_long'};
         $dist = $dist + distance(\%s1, \%s2);
-        print "$i dist $dist\n";
+        if ($debug)
+        {
+            print "$i dist $dist\n";
+        }
     }
 
     return $dist;
@@ -137,15 +151,20 @@ sub compute_remaining_dist
     my (%s1, %s2);
 
     $dist = 0.0;
-    #print "wcount=$wcount\n";
     #print "scalar=", scalar(@$waypoints), "\n";
-    if ($wcount == $ept)
+    if ($wcount >= $ept-1)
     {
         return 0.0;
     }
-    for my $i ($wcount .. $ept)
+    if ($debug)
     {
-        #print Dumper($waypoints->[i+1]);
+        print "compute_remaining: wcount=$wcount ept=$ept\n";
+    }
+
+    for my $i ($wcount .. $ept-1)
+    {
+        print Dumper($waypoints->[$i]);
+        print Dumper($waypoints->[$i+1]);
         $s1{'lat'} = $waypoints->[$i]->{'short_lat'};
         $s1{'long'} = $waypoints->[$i]->{'short_long'};
         $s2{'lat'} = $waypoints->[$i+1]->{'short_lat'};
@@ -219,7 +238,7 @@ sub determine_utcmod
 sub validate_task
 {
     my ($flight, $task) = @_;
-    my ($wpt, $rpt, $spt, $ept);
+    my ($wpt, $rpt, $spt, $ept, $gpt);
     my $coord;
     my ($lastcoord, $preSScoord);
     my $closest;
@@ -234,7 +253,7 @@ sub validate_task
     my $comment;
     my $utcmod;
     my ($reenter, $reflag);
-    my ($closest, $closestwpt);
+    my ($closest, $srclosest, $closestwpt);
     my ($startss, $endss);
     my ($starttime, $goaltime);
     my ($wasinstart, $wasinSS);
@@ -282,9 +301,9 @@ sub validate_task
     $utcmod = determine_utcmod($task, $coords->[0]);
 
     # Determine the start gate type and ESS dist
-    ($spt, $ept, $essdist, $startssdist) = determine_start($task, $waypoints);
+    ($spt, $ept, $gpt, $essdist, $startssdist) = determine_start($task, $waypoints);
 
-    print "ssdist=$essdist\n";
+    print "spt=$spt ept=$ept gpt=$gpt ssdist=$essdist startssdist=$startssdist\n";
 
     # Go through the coordinates and verify the track against the task
     for $coord (@$coords)
@@ -544,6 +563,7 @@ sub validate_task
                 $closest = $dist;
                 $closestcoord = $coord;
                 $closestwpt = $wcount;
+                $srclosest = $sdist;
                 #print "new closest $closestwpt:$closest\n";
             }
         }
@@ -621,6 +641,7 @@ sub validate_task
                     $closest = 9999999999;
                     $closestcoord = $waypoints->[$wcount-1];
                     $closestwpt = $wcount;
+                    $srclosest = $sdist;
                     #print "closestwpt $closestwpt:$closest\n";
                 }
             }
@@ -634,6 +655,7 @@ sub validate_task
                     $closest = $edist;
                     $closestcoord = $coord;
                     $closestwpt = $wcount;
+                    $srclosest = $edist;
                     #print "new closest $closestwpt:$closest\n";
                 }
             }
@@ -761,7 +783,7 @@ sub validate_task
     #
     $dist = compute_waypoint_dist($waypoints, $wcount-1);
 
-    print "wcount=$wcount wmade=$wmade\n";
+    print "wcount=$wcount wmade=$wmade waypoint_dist=$dist\n";
     
     if ($wcount < $wmade)
     {
@@ -801,20 +823,21 @@ sub validate_task
         print "wcount=0 dist=$dist\n";
         $coeff = $coeff + ($essdist - $dist)*($task->{'sfinish'}-$startss);
     }
-    elsif ($wcount < $ept+1)
+    elsif ($wcount < $allpoints)
     {
-        # we didn't make it in.
-        my $remaining;
+        # we didn't make it into goal
+        my $remainingss;
+        my $cwclosest;
 
-        print "Didn't make goal (wcount=$wcount closestwpt=$closestwpt closest=$closest)\n";
-        $dist = compute_waypoint_dist($waypoints, $wcount) - $closest;
-        $remaining = compute_remaining_dist($waypoints, $closestwpt, $ept) + $closest;
+        print "Didn't make ESS (wcount=$wcount closestwpt=$closestwpt closest=$closest srclosest=$srclosest)\n";
+        $dist = compute_waypoint_dist($waypoints, $wcount) - $srclosest;
+        $remainingss = compute_remaining_dist($waypoints, $closestwpt, $ept) + $closest;
         # add rest of (distance_short * $task->{'sfinish'}) to coeff
         if ($debug)
         {
-            print "incomplete coeff dist=$dist remaining=$remaining: ", $remaining*($task->{'sfinish'}-$startss), "\n";
+            print "incomplete coeff dist=$dist remainingss=$remainingss: ", $remainingss*($task->{'sfinish'}-$startss), "\n";
         }
-        $coeff = $coeff + $remaining*($task->{'sfinish'}-$startss);
+        $coeff = $coeff + $remainingss*($task->{'sfinish'}-$startss);
     }
     #elsif ($task->{'type'} eq 'free' or $task->{'type'} eq 'free-bearing') 
     #   {

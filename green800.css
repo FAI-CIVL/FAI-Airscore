@@ -4,9 +4,6 @@
        DATE: 2005.11.30
   COPYRIGHT: none
  ***************************************************/
-/***************************************************
-   HTML Element Styles
- ***************************************************/
 html, body {
   margin: 0;  
   padding: 0;
@@ -17,7 +14,8 @@ html, body {
   height: 100%;
   color: #EEE;
   min-width: 1000px;
-  background: #585858 url(images/bg_body800.jpg) repeat-y top center;
+  /*background: #585858 url(images/bg_body800.jpg) repeat-y top center;*/
+  background: #585858 url(images/dgrey013.gif) repeat;
 }
 p { 
   padding-top: 10px !important;
@@ -48,31 +46,41 @@ tr.d {
 }
 tr.d a { color: #CCCC33; }
 tr.d a:hover { color: #F67769; }
+#alth tr a
+{
+    color: #CCCC33; 
+}
+#alth tr a:hover
+{
+    color: #F67769; 
+}
+#alth tr:nth-child(2n+1)
+{
+	background-color: #666666;
+}
+#alth tr:nth-child(1)
+{
+    background-color: #009999;
+}
+#alt tr a
+{
+    color: #CCCC33; 
+}
+#alt tr a:hover
+{
+    color: #F67769; 
+}
+#alt tr:nth-child(2n+1)
+{
+	background-color: #666666;
+}
 acronym {
   cursor: help;
   border-bottom: 1px solid #777;
 }
-/*
-input {
-  width: 70%;
-}
-*/
 textarea {
   width: 100%;
-  /* 
-    IE specific to eliminate scroll bar when not needed. 
-    Uncomment if wanted, but it is not valid CSS
-     
-  scrollbar-3dlight-color : #777;
-  scrollbar-arrow-color : #EEE;
-  scrollbar-darkshadow-color : #777;
-  scrollbar-face-color : #777;
-  scrollbar-highlight-color : #777;
-  scrollbar-shadow-color : #777;
-  scrollbar-track-color : #777;    
-  */
 }
-
 input,
 textarea {
   padding: 1px 3px;
@@ -82,7 +90,6 @@ textarea {
   background-color: #CCC;
   border: 1px solid #999;
 }
-
 input:hover,
 input:focus,
 textarea:hover,
@@ -113,9 +120,7 @@ blockquote span {
   padding: 5px;
   background: url(images/rounded_br.gif) no-repeat bottom right;
 }
-/***************************************************
-  Layout Element Styles
- ***************************************************/
+/*  Layout Element Styles */
 #header {  
   width: 80%;
   margin: 0px 10% 0px 10%;
@@ -127,11 +132,7 @@ blockquote span {
   /* text-align: center; */
   /*background: #585858 url(images/bluehead800.jpg) repeat-y top center;  */
 }
-
-/***************************************************
-  Header Menu
- ***************************************************/
-
+/*  Header Menu */
 #menu {
   width: 80%;
   margin: 0 auto;
@@ -166,11 +167,7 @@ blockquote span {
   color: #111;
   background: url(images/menu_tab_blue.gif) no-repeat bottom center;  
 }
-
-
-/***************************************************
-  Site Title
- ***************************************************/
+/* Site Title */
 #title {
   padding: 0.6em 5px 0.6em 0;
   margin-right: 0.5em;
@@ -197,12 +194,12 @@ blockquote span {
   background-color: #999999;
   background-image: none;
 }
-/***************************************************
+/*
  Possible Page Content
  1. Left side text
  2. Dropdown image
  3. Right side bar 
- ***************************************************/
+ */
 #content {
   clear: both;
   width: 80%;
@@ -231,15 +228,23 @@ blockquote span {
     float: left;
     width: 100%;
 }
+#infobar {
+    background: #444444 url(images/airscore_horiz.png) no-repeat bottom right;
+    width: 100%;
+    min-height: 50px;
+    overflow: auto;
+}
 #colone {
     float: left;
-    width: 45%;
-    display: inline;
+    width: 50%;
 }
 #coltwo {
     float: right;
-    width: 45%;
-    display: inline;
+    width: 50%;
+}
+#comment {
+    float: right;
+    width: 50%;
 }
 #text {
   float: left;
@@ -283,11 +288,11 @@ blockquote span {
   padding: 2px;
   background: url(images/rounded_bl.gif) no-repeat bottom left;
 }
-
-/***************************************************
- Sidemenu Styles
- ***************************************************/
-
+/* table styles */
+.olc td {
+    padding: 1px 4px 1px 4px;
+}
+/* Sidemenu Styles */
 .sideMenu { padding: 10px 0; }
 .sideMenu a {
   display: block;
@@ -305,11 +310,7 @@ blockquote span {
 .sideMenu a:hover span {
   background: url(images/rounded_bl.gif) no-repeat bottom left;
 }
-
-/***************************************************
- Comment Styles
- ***************************************************/
-
+/* Comment Styles */
 #comments p {
   padding: 0 5px;
   margin-bottom: 0;
@@ -325,11 +326,7 @@ blockquote span {
 #comments a { color: #7BD32C; }
 #comments a:visited { color: #AAA; }
 #comments a:hover { color: #FFF; }
-
-/***************************************************
- Footer
- ***************************************************/
-
+/* Footer */
 #footer {
   clear: both;
   float: left;
@@ -357,9 +354,7 @@ a.fullAhead {
 a:hover.fullAhead  {
   background-position: -30px 0;
 }
-/***************************************************
- Generic Display Classes
- ***************************************************/
+/* Generic Display Classes */
 .center { text-align: center; }
 .noPad { padding: 0; margin: 0; }
 .left { float: left; }
@@ -400,6 +395,7 @@ img.right {
     padding:1px;
 }
 /*.waypoint {background-color:#6666ff;color:#000000;font-size:11px;font-weight:bold;margin:0px;padding:0px;border:0px #006699 solid;}*/
+.pilot {background-color:yellow;color:#000000;font-size:11px;font-weight:bold;margin:0px;padding:0px;border:1px #000000 solid;}
 .waypoint {background-color:#ffffff;color:#000000;font-size:11px;font-weight:bold;margin:0px;padding:0px;border:1px #000000 solid;}
 .clearwpt {background-color:#ffffff;color:#000000;font-size:12px;font-weight:bold;margin:0px;padding:0px;border:1px #000000 solid;}
 .animate {background-color:none;color:yellow;font-size:10px;font-weight:bold;margin:0px;padding:0px;border:1px;}

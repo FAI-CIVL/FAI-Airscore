@@ -7,13 +7,13 @@ require DBD::mysql;
 use Time::Local;
 use Data::Dumper;
 
-use Defines qw(:all);
 use TrackLib qw(:all);
 #use strict;
 
 my ($pil,$igc,$comPk);
 my $tasPk;
 my $traPk;
+my $traStart;
 my $tasType;
 my $comType;
 my $pilPk;
@@ -23,6 +23,7 @@ my $sth;
 my $ref;
 my $res;
 my ($glider,$dhv);
+my ($comFrom, $comTo);
 
 $pil = $ARGV[0];
 $igc = $ARGV[1];
@@ -87,6 +88,11 @@ else
 
 # Load the track 
 $res = `${BINDIR}igcreader.pl $igc $pilPk`;
+if ($?)
+{
+    print $res;
+    exit($?);
+}
 
 # Parse for traPk ..
 if ($res =~ m/traPk=(.*)/)
@@ -109,7 +115,7 @@ $dbh->do($sql);
 # Try to find an associated task if not specified
 if ($tasPk == 0)
 {
-    $sql = "select T.tasPk, T.tasTaskType, C.comType from tblTask T, tblTrack TL, tblCompetition C where C.comPk=T.comPk and T.comPk=$comPk and TL.traPk=$traPk and TL.traStart > date_sub(T.tasStartTime, interval C.comTimeOffset hour) and TL.traStart < date_sub(T.tasFinishTime, interval C.comTimeOffset hour)";
+    $sql = "select T.tasPk, T.tasTaskType, C.comType, unix_timestamp(C.comDateFrom) as CFrom, unix_timestamp(C.comDateTo) as CTo from tblTask T, tblTrack TL, tblCompetition C where C.comPk=T.comPk and T.comPk=$comPk and TL.traPk=$traPk and TL.traStart > date_sub(T.tasStartTime, interval C.comTimeOffset hour) and TL.traStart < date_sub(T.tasFinishTime, interval C.comTimeOffset hour)";
     $sth = $dbh->prepare($sql);
     $sth->execute();
     if  ($ref = $sth->fetchrow_hashref())
@@ -123,7 +129,7 @@ else
 {
     # For routes
     #print "Task pk: $tasPk\n";
-    $sql = "select T.tasTaskType, C.comType from tblTask T, tblCompetition C where C.comPk=T.comPk and T.tasPk=$tasPk";
+    $sql = "select T.tasTaskType, C.comType, unix_timestamp(C.comDateFrom) as CFrom, unix_timestamp(C.comDateTo) as CTo from tblTask T, tblCompetition C where C.comPk=T.comPk and T.tasPk=$tasPk";
     $sth = $dbh->prepare($sql);
     $sth->execute();
     if  ($ref = $sth->fetchrow_hashref())
@@ -131,6 +137,8 @@ else
         #print Dumper($ref);
         $tasType = $ref->{'tasTaskType'};
         $comType = $ref->{'comType'};
+        $comFrom = $ref->{'CFrom'};
+        $comTo = $ref->{'CTo'};
     }
     else
     {
@@ -138,6 +146,30 @@ else
     }
 }
 
+$traStart = 0;
+$sql = "select unix_timestamp(T.traStart) as TStart, unix_timestamp(C.comDateFrom) as CFrom, unix_timestamp(C.comDateTo) as CTo from tblTrack T, tblCompetition C where traPk=$traPk and C.comPk=$comPk";
+$sth = $dbh->prepare($sql);
+$sth->execute();
+if  ($ref = $sth->fetchrow_hashref())
+{
+    $traStart = $ref->{'TStart'};
+    $comFrom = $ref->{'CFrom'};
+    $comTo = $ref->{'CTo'};
+}
+
+if ($traStart < $comFrom)
+{
+    print "Track from before the competition opened ($traStart:$comFrom)\n";
+    print "traPk=$traPk\n";
+    exit(1);
+}
+
+if ($traStart > ($comTo+86400))
+{
+    print "Track from after the competition ended ($traStart:$comTo)\n";
+    print "traPk=$traPk\n";
+    exit(1);
+}
 
 if ($tasPk > 0)
 {
@@ -147,10 +179,14 @@ if ($tasPk > 0)
     #print "add track=$sql\n";
     $dbh->do($sql);
 
-    if (($tasType eq 'free') or ($tasType eq 'olc'))
+    if (($tasType eq 'free') or ($tasType eq 'free-pin'))
     {
         `${BINDIR}optimise_flight.pl $traPk $tasPk 0`;
         # also verify for optional points in 'free' task?
+    }
+    elsif ($tasType eq 'olc')
+    {
+        `${BINDIR}optimise_flight.pl $traPk $tasPk 3`;
     }
     elsif ($tasType eq 'airgain')
     {
@@ -161,21 +197,19 @@ if ($tasPk > 0)
     {
         # Optional really ...
         `${BINDIR}optimise_flight.pl $traPk $tasPk 3`;
-        print "${BINDIR}track_verify_sr.pl $traPk $tasPk\n";
         `${BINDIR}track_verify_sr.pl $traPk $tasPk`;
     }
     else
     {
-        print "Unknown task $tasType\n";
+        print "Unknown task: $tasType\n";
     }
 }
 else
 {
     $sql = "insert into tblComTaskTrack (comPk,traPk) values ($comPk,$traPk)";
-    #print "add track=$sql\n";
     $dbh->do($sql);
+
     # Nothing else to do but verify ...
-    # FIX: should optimise differently for different comp types
     if ($comType eq 'Free')
     {
         `${BINDIR}optimise_flight.pl $traPk 0 0`;
