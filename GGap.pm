@@ -129,6 +129,7 @@ sub points_allocation
     my @tmarker;
     my $kmdiff = [];
     my ($sub, $sref);
+    my $hbess;
 
     # Find fastest pilot into goal and calculate leading coefficients
     # for each track .. (GAP2002 only?)
@@ -157,7 +158,7 @@ sub points_allocation
     # Get all pilots and process each of them 
     # pity it can't be done as a single update ...
     $dbh->do('set @x=0;');
-    $sth = $dbh->prepare("select \@x:=\@x+1 as Place, tarPk, traPk, tarDistance, tarSS, tarES, tarPenalty, tarResultType, tarLeadingCoeff, tarGoal from tblTaskResult where tasPk=$tasPk and tarResultType <> 'abs' order by tarDistance desc, tarES");
+    $sth = $dbh->prepare("select \@x:=\@x+1 as Place, tarPk, traPk, tarDistance, tarSS, tarES, tarPenalty, tarResultType, tarLeadingCoeff, tarGoal, tarLastAltitude from tblTaskResult where tasPk=$tasPk and tarResultType <> 'abs' order by tarDistance desc, tarES");
     $sth->execute();
     while ($ref = $sth->fetchrow_hashref()) 
     {
@@ -181,6 +182,31 @@ sub points_allocation
         $taskres{'place'} = $ref->{'Place'};
         $taskres{'time'} = $taskres{'endSS'} - $taskres{'startSS'};
         $taskres{'goal'} = $ref->{'tarGoal'};
+        $taskres{'lastalt'} = $ref->{'tarLastAltitude'};
+        # Determine ESS time bonus against goal height
+        $hbess = 0;
+        if ($taskres{'goal'} > 0)
+        {
+            my $habove = $taskres{'lastalt'} - $taskt->{'goalalt'};
+            print "habove: $habove (", $taskt->{'goalalt'}, ")\n";
+            if ($habove > 400)
+            {
+                $habove = 400;
+            }
+            if ($habove > 50)
+            {
+                print "oldtime=", $taskres{'time'};
+                $hbess = 20.0*(($habove-50.0)**0.40);
+                $taskres{'time'} = $taskres{'time'} - $hbess;
+                print " hbess=$hbess time=", $taskres{'time'}, "\n";
+                if ($taskres{'time'} < $Tmin)
+                {
+                    $Tmin = $taskres{'time'};
+                }
+            }
+        }
+        $taskres{'hbess'} = $hbess;
+
         if ($taskres{'time'} < 0)
         {
             $taskres{'time'} = 0;
@@ -323,36 +349,36 @@ sub points_allocation
         }
 
         # Penalty is in seconds .. convert for OzGap penalty.
-        if ($penalty > 0) 
-        {
-            $penspeed = $penalty;
-            if ($penspeed > 90)
-            {
-                $penspeed = 90;
-            };
-            $penspeed = ($penspeed + 10) / 100;
-            $penspeed = ($Pdepart + $Pspeed) * $penspeed;
-
-            $pendist = 0;
-            $penalty = $penalty - 90;
-            if ($penalty > 0)
-            {
-                if ($penalty > $Tnom / 3)
-                {
-                    $pendist = $Pdist;
-                }
-                else
-                {
-                    $pendist = ((($penalty + 30) / 60) * 2) / 100;
-                    $pendist = $Pdist * $penalty;
-                }
-            }
-
-            print "jumped=$penalty penspeed=$penspeed pendist=$pendist\n";
-
-            $penalty = round($penspeed + $pendist);
-            print "computed penalty=$penalty\n";
-        }
+#        if ($penalty > 0) 
+#        {
+#            $penspeed = $penalty;
+#            if ($penspeed > 90)
+#            {
+#                $penspeed = 90;
+#            };
+#            $penspeed = ($penspeed + 10) / 100;
+#            $penspeed = ($Pdepart + $Pspeed) * $penspeed;
+#
+#            $pendist = 0;
+#            $penalty = $penalty - 90;
+#            if ($penalty > 0)
+#            {
+#                if ($penalty > $Tnom / 3)
+#                {
+#                    $pendist = $Pdist;
+#                }
+#                else
+#                {
+#                    $pendist = ((($penalty + 30) / 60) * 2) / 100;
+#                    $pendist = $Pdist * $penalty;
+#                }
+#            }
+#
+#            print "jumped=$penalty penspeed=$penspeed pendist=$pendist\n";
+#
+#            $penalty = int($penspeed + $pendist + 0.5);
+#            print "computed penalty=$penalty\n";
+#        }
 
         $Pscore = $Pdist + $Pspeed + $Parrival + $Pdepart - $penalty;
 

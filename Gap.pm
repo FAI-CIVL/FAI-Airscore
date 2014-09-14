@@ -68,10 +68,14 @@ sub task_totals
     my $pilots;
     my $mindist;
     my $goal;
+    my $goalalt;
     my %taskt;
     my $tasPk;
     my ($minarr, $fastest, $firstdep, $mincoeff, $tqtime);
     my $launchvalid;
+    my $waypoints;
+    my $numpoints;
+    my @distspread;
 
     $tasPk = $task->{'tasPk'};
     $launchvalid = $task->{'launchvalid'};
@@ -154,6 +158,32 @@ sub task_totals
         $mindept = $ref->{'MinDept'};
     }
 
+    $waypoints = $task->{'waypoints'};
+    $numpoints = scalar @$waypoints;
+    for (my $i = 0; $i < $numpoints; $i++)
+    {
+        if ($waypoints->[$i]->{'type'} eq 'goal')
+        {
+            $goalalt = $waypoints->[$i]->{'alt'};
+        }
+    }
+    
+    if ($formula->{'diffcalc'} eq 'lo')
+    {
+        $sth = $dbh->prepare("select truncate(tarDistance/100,0) as Distance, count(truncate(tarDistance/100,0)) as Difficulty from tblTaskResult where tasPk=$tasPk and tarResultType not in ('abs','dnf') and (tarGoal=0 or tarGoal is null) group by truncate(tarDistance/100,0)");
+    }
+    else
+    {
+        $sth = $dbh->prepare("select truncate(tarDistance/100,0) as Distance, count(truncate(tarDistance/100,0)) as Difficulty from tblTaskResult where tasPk=$tasPk and tarResultType not in ('abs','dnf') group by truncate(tarDistance/100,0)");
+    }
+    $sth->execute();
+
+    $debc = 0;
+    while ($ref = $sth->fetchrow_hashref()) 
+    {
+        push @distspread, $ref;
+    }
+
     # task quality 
     $taskt{'pilots'} = $pilots;
     $taskt{'maxdist'} = $maxdist;
@@ -168,6 +198,8 @@ sub task_totals
     $taskt{'firstdepart'} = $mindept;
     $taskt{'firstarrival'} = $minarr;
     $taskt{'mincoeff'} = $mincoeff;
+    $taskt{'goalalt'} = $goalalt;
+    $taskt{'distspread'} = \@distspread;
 
     return \%taskt;
 }
@@ -330,6 +362,7 @@ sub calc_kmdiff
     my $tasPk;
     my $kmdiff = [];
     my $Nlo;
+    my $distspread;
 
     $tasPk = $task->{'tasPk'};
     $Nlo = $taskt->{'launched'}-$taskt->{'goal'};
@@ -340,18 +373,9 @@ sub calc_kmdiff
         $kmdiff->[$it] = 0;
     }
 
-    if ($formula->{'diffcalc'} eq 'lo')
-    {
-        $sth = $dbh->prepare("select truncate(tarDistance/100,0) as Distance, count(truncate(tarDistance/100,0)) as Difficulty from tblTaskResult where tasPk=$tasPk and tarResultType not in ('abs','dnf') and (tarGoal=0 or tarGoal is null) group by truncate(tarDistance/100,0)");
-    }
-    else
-    {
-        $sth = $dbh->prepare("select truncate(tarDistance/100,0) as Distance, count(truncate(tarDistance/100,0)) as Difficulty from tblTaskResult where tasPk=$tasPk and tarResultType not in ('abs','dnf') group by truncate(tarDistance/100,0)");
-    }
-    $sth->execute();
-
     $debc = 0;
-    while ($ref = $sth->fetchrow_hashref()) 
+    $distspread = $taskt->{'distspread'};
+    for my $ref ( @$distspread )
     {
         # populate kmdiff
         # At half the difficulty dist back they get all the points

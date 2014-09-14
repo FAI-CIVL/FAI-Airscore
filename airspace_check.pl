@@ -75,7 +75,7 @@ sub airspace_check
 
     foreach $space (@$airspaces)
     {
-        print "Checking airspace ", $space->{'name'}, " with base=", $space->{'base'}, "\n";
+        #print "Checking airspace ", $space->{'name'}, " with base=", $space->{'base'}, "\n";
         #print Dumper($space);
 
         for my $coord ( @$full )
@@ -96,7 +96,7 @@ sub airspace_check
                 if ($coord->{'alt'} - $space->{'base'} > $violation)
                 {
                     $violation = $coord->{'alt'} - $max_height;
-                    print "PV: max_height (8500') violation\n";
+                    print "# Max height violation max=", $max_height, "m alt=", $coord->{'alt'}, " dlat=", $coord->{'dlat'}, " dlong=", $coord->{'dlong'}, "\n";
                 }
             }
 
@@ -107,8 +107,8 @@ sub airspace_check
                 {
                     $dst = distance($coord, $space->{'centre'});
                     if ($dst < $space->{'radius'})
-                    {
-                        print "PV(circle):  alt=", $coord->{'alt'}, " dlat=", $coord->{'dlat'}, " dlong=", $coord->{'dlong'}, "\n";
+                    { 
+                        print "# ", $space->{'name'}, " (circle:", $space->{'base'}, "m) @ Alt=", $coord->{'alt'}, "m dlat=", $coord->{'dlat'}, " dlong=", $coord->{'dlong'}, "\n";
                         $violation = $coord->{'alt'} - $space->{'base'};
                     }
 
@@ -130,7 +130,7 @@ sub airspace_check
                 {
                     if ($coord->{'alt'} - $space->{'base'} > $violation)
                     {
-                        print "PV(poly):  alt=", $coord->{'alt'}, " dlat=", $coord->{'dlat'}, " dlong=", $coord->{'dlong'}, "\n";
+                        print "# ", $space->{'name'}, " (poly:", $space->{'base'}, "m) @ Alt=", $coord->{'alt'}, " dlat=", $coord->{'dlat'}, " dlong=", $coord->{'dlong'}, "\n";
                         $violation = $coord->{'alt'} - $space->{'base'};
                     }
                 }
@@ -458,7 +458,7 @@ sub get_all_tracks
     my ($sth,$ref);
     my %ret;
 
-    $sth = $dbh->prepare("select CTT.traPk, P.* from tblComTaskTrack CTT, tblTrack T, tblPilot P where CTT.traPk=T.traPk and P.pilPk=T.pilPk and CTT.tasPk=$tasPk");
+    $sth = $dbh->prepare("select CTT.traPk, P.* from tblComTaskTrack CTT, tblTrack T, tblPilot P where CTT.traPk=T.traPk and P.pilPk=T.pilPk and CTT.tasPk=$tasPk order by P.pilLastName");
     $sth->execute();
     while ($ref = $sth->fetchrow_hashref())
     {
@@ -480,7 +480,7 @@ my $name;
 
 $dbh = db_connect();
 $tracks = get_all_tracks($tasPk);
-#$tracks = [ 821, 823, 865 ];
+#$tracks = [ 10352 ];
 #$airspace = find_nearby_airspace($regPk, 100000.0);
 $airspace = find_task_airspace($tasPk);
 #print Dumper($airspace);
@@ -490,9 +490,9 @@ $airspace = find_task_airspace($tasPk);
 
 for my $track (keys %$tracks)
 {
-    print "Airspace check for track: $track\n";
     $dist = 0;
     $name = $tracks->{$track}->{'pilFirstName'} . " " . $tracks->{$track}->{'pilLastName'};
+    print "\nAirspace check for $name (traPk=$track)\n";
     if (($dist = airspace_check($track,$airspace)) > 0)
     {
         print "   Maximum violation of $dist metres ($name).\n";

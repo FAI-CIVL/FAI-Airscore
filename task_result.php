@@ -14,6 +14,12 @@ if (!array_key_exists('pr', $_REQUEST))
 {
     $isadmin = is_admin('admin',$usePk,$comPk);
 }
+
+$rnd = 0;
+if (array_key_exists('rnd', $_REQUEST))
+{
+    $rnd = intval($_REQUEST['rnd']);
+}
 #echo "usePk=$usePk isadmin=$isadmin<br>";
 
 $fdhv= '';
@@ -143,6 +149,7 @@ if ($row)
 {
     $comName = $row['comName'];
     $comPk = $row['comPk'];
+    $_REQUEST['comPk'] = $comPk;
     $comTOffset = $row['comTimeOffset'] * 3600;
     $tasName = $row['tasName'];
     $tasDate = $row['tasDate'];
@@ -152,13 +159,28 @@ if ($row)
     $tasDistance = round($row['tasDistance']/1000,2);
     $tasShortest = round($row['tasShortRouteDistance']/1000,2);
     $tasQuality = round($row['tasQuality'],2);
+    $tasComment = $row['tasComment'];
     $tasDistQuality = round($row['tasDistQuality'],2);
     $tasTimeQuality = round($row['tasTimeQuality'],2);
     $tasLaunchQuality = round($row['tasLaunchQuality'],2);
+    $tasArrival = $row['tasArrival'];
+    $tasHeightBonus = $row['tasHeightBonus'];
 
     if ($row['tasDeparture'] == 'leadout')
     {
         $depcol = 'Ldo';
+    }
+    elseif ($row['tasDeparture'] == 'kmbonus')
+    {
+        $depcol = 'Lkm';
+    }
+    elseif ($row['tasDeparture'] == 'on')
+    {
+        $depcol = 'Dpt';
+    }
+    else
+    {
+        $depcol = 'off';
     }
 }
 
@@ -177,14 +199,20 @@ hcheader($hdname,2,"${classstr}${tasDate}");
 echo "<div id=\"content\">";
 
 # Waypoint Info
+echo "<div id=\"infobar\">";
 echo "<div id=\"colone\">";
+$goalalt = 0;
 $winfo = array();
 $winfo[] = array(fb("#"), fb("ID"), fb("Type"), fb("Radius"), fb("Dist(k)"), fb("Description"));
 foreach ($waypoints as $row)
 {
     $winfo[] = array($row['tawNumber'], $row['rwpName'], $row['tawType'] . " (" . $row['tawHow'] . ")", $row['tawRadius'] . "m", round($row['ssrCumulativeDist']/1000,1), $row['rwpDescription']);
+    if ($row['tawType'] == 'goal')
+    {
+        $goalalt = $row['rwpAltitude'];
+    }
 }
-echo ftable($winfo, "border=\"0\" cellpadding=\"2\" cellspacing=\"0\" alternate-colours=\"yes\" valign=\"top\" align=\"left\"", array('class="d"', 'class="l"'), '');
+echo ftable($winfo, "id=\"alt\" border=\"0\" cellpadding=\"2\" cellspacing=\"0\" valign=\"top\" align=\"left\"", '', '');
 echo "</div>";
 
 echo "<div id=\"coltwo\">";
@@ -192,10 +220,15 @@ $tinfo = array();
 $tinfo[] = array( fb("Date"), $tasDate, fb("Start"), "$tasStartTime", fb("End"), "$tasFinishTime" );
 $tinfo[] = array( fb("Quality"), number_format($tasQuality,2), fb("WP Dist"), "$tasDistance km", fb("Task Dist"), "$tasShortest km" );
 $tinfo[] = array( fb("DistQ"), number_format($tasDistQuality,2), fb("TimeQ"), number_format($tasTimeQuality,2), fb("LaunchQ"), number_format($tasLaunchQuality,2) );
-
-echo ftable($tinfo, "border=\"0\" cellpadding=\"3\" cellspacing=\"0\" alternate-colours=\"yes\" valign=\"top\" align=\"right\"", array('class="d"', 'class="l"'), '');
+echo ftable($tinfo, "id=\"alt\" border=\"0\" cellpadding=\"3\" cellspacing=\"0\" valign=\"top\" align=\"right\"", '', '');
 echo "</div>";
-echo "<br><p>";
+echo "</div>";
+if ($tasComment != '')
+{
+    echo "<div id=\"comment\" width=\"50%\" align=\"right\">";
+    echo $tasComment;
+    echo "</div>";
+}
 
 # Pilot Info
 $pinfo = array();
@@ -220,14 +253,34 @@ if ($isadmin)
     echo "<form action=\"task_result.php?comPk=$comPk&tasPk=$tasPk\" name=\"resultupdate\" method=\"post\">"; 
 }
 // add in country from tblCompPilot if we have entries ...
-echo "<table border=\"0\" width=\"100%\" cellpadding=\"2\" cellspacing=\"0\" alternate-colours=\"yes\" align=\"left\">";
-echo "<tr class=\"h\"><td><b>Place</b></td><td><b>Pilot</b></td><td>Nat</td><td><b>Glider</b></td>";
+$trtab = array();
+
+$header = array(fb("Place"), fb("Pilot"), fb("Nat"), fb("Glider"));
 if ($isadmin)
 {
-    echo "<td><b>DHV</b></td>";
+    $header[] = fb("DHV");
 }
-echo "<td><b>SS</b></td><td><b>ES</b></td><td><b>Time</b></td><td><b>Kms</b></td><td><b>Pen</b></td>";
-echo "<td><b>$depcol</b></td><td><b>Arv<b></td><td><b>Spd</b></td><td><b>Dst</b></td><td><b>Total</b></td></tr>\n";
+$header[] = fb("SS");
+$header[] = fb("ES");
+$header[] = fb("Time");
+if ($tasHeightBonus == 'on')
+{
+    $header[] = fb("HBs");
+}
+$header[] = fb("Kms");
+$header[] = fb("Pen");
+if ($depcol != 'off')
+{
+    $header[] = fb($depcol);
+}
+if ($tasArrival == 'on')
+{
+    $header[] = fb("Arv");
+}
+$header[] = fb("Spd");
+$header[] = fb("Dst");
+$header[] = fb("Total");
+$trtab[] = $header;
 $count = 1;
 
 $sql = "select TR.*, T.*, P.* from tblTaskResult TR, tblTrack T, tblPilot P where TR.tasPk=$tasPk $fdhv and T.traPk=TR.traPk and P.pilPk=T.pilPk order by TR.tarScore desc, P.pilFirstName";
@@ -242,15 +295,15 @@ while ($row = mysql_fetch_array($result))
     $nation = $row['pilNationCode'];
     $tarPk = $row['tarPk'];
     $traPk = $row['traPk'];
-    $dist = round($row['tarDistanceScore']);
-    $dep = round($row['tarDeparture']);
-    $arr = round($row['tarArrival']);
-    $speed = round($row['tarSpeedScore']);
-    $score = round($row['tarScore']);
+    $dist = round($row['tarDistanceScore'], $rnd);
+    $dep = round($row['tarDeparture'], $rnd);
+    $arr = round($row['tarArrival'], $rnd);
+    $speed = round($row['tarSpeedScore'], $rnd);
+    $score = round($row['tarScore'], $rnd);
+    $lastalt = round($row['tarLastAltitude']);
     $resulttype = $row['tarResultType'];
     $start = $row['tarSS'];
     $end = $row['tarES'];
-    $startf = 0;
     $endf = 0;
     if ($end)
     {
@@ -300,35 +353,74 @@ while ($row = mysql_fetch_array($result))
         $class = "l";
     }
 
-    echo "<tr class=\"$class\"><td><b>$place</b></td><td><a href=\"tracklog_map.php?trackid=$traPk&comPk=$comPk\">$name</a></td><td>$nation</td>";
+    $trrow = array(fb($place), "<a href=\"tracklog_map.php?trackid=$traPk&comPk=$comPk\">$name</a>", $nation );
     if ($isadmin)
     {
-        echo "<td><input name=\"track$tarPk\" type=\"hidden\" value=\"$traPk\"><input name=\"glider$tarPk\" type=\"text\" value=\"$glider\" size=18></td><td><input name=\"dhv$tarPk\" type=\"text\" value=\"$dhv\" size=3></td>";
+        $trrow[] = fih("track$tarPk", $traPk) . fin("glider$tarPk", $glider, 18);
+        $trrow[] = fin("dhv$tarPk", $dhv, 3);
     }
     else
     {
-        echo "<td>$glider ($dhv)</td>";
+        $trrow[] = "$glider ($dhv)";
     }
-    echo "<td>$startf</td><td>$endf</td>";
+    $trrow[] = $startf;
+    $trrow[] = $endf;
+    $trrow[] = $timeinair;
+    if ($tasHeightBonus == 'on')
+    {
+        if ($lastalt > 0)
+        {
+            $habove = $lastalt - $goalalt;
+            if ($habove > 400)
+            {
+                $habove = 400;
+            }
+            if ($habove > 50)
+            {
+                $trrow[] = round(20.0*pow(($habove-50.0),0.40));
+            }
+            else
+            {
+                $trrow[] = 0;
+            }
+        }
+        else
+        {
+            $trrow[] = '';
+        }
+    }
     if ($isadmin) 
     {
-        echo "<td>$timeinair</td><td><input name=\"flown$tarPk\" type=\"text\" value=\"$tardist\" size=4></td><td><input name=\"penalty$tarPk\" type=\"text\" value=\"$penalty\" size=4></td>\n";
+        $trrow[] = fin("flown$tarPk", $tardist, 4);
+        $trrow[] = fin("penalty$tarPk", $penalty, 4);
     }
     else
     {
-        echo "<td>$timeinair</td><td>$tardist</td><td>$penalty</td>\n";
+        $trrow[] = $tardist;
+        $trrow[] = $penalty;
     }
 
-    echo "<td>$dep</td><td>$arr</td><td>$speed</td><td>$dist</td><td align=\"right\"><b>$score</b></td>";
+    if ($depcol != 'off')
+    {
+        $trrow[] = $dep;
+    }
+    if ($tasArrival == 'on')
+    {
+        $trrow[] = $arr;
+    }
+    $trrow[] = $speed;
+    $trrow[] = $dist;
+    $trrow[] = $score;
     if ($isadmin) 
     {
-        echo "<td><button type=\"submit\" name=\"tarup\" value=\"$tarPk\">up</button></td>";     
+        $trrow[] = fbut("submit", "tarup",  $tarPk, "up");
     }
-    echo "</tr>\n";
+
+    $trtab[] = $trrow;
 
     $count++;
 }
-echo "</table>";
+echo ftable($trtab, "id=\"alth\" border=\"0\" width=\"100%\" cellpadding=\"2\" cellspacing=\"0\" align=\"left\"", '' , '');
 if ($isadmin)
 {
     // FIX: enable 'manual' pilot flight addition

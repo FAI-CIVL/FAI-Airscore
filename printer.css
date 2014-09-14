@@ -47,6 +47,26 @@ tr.d a {
     color: #000000; 
     }
 tr.d a:hover { color: #666666; }
+#alth tr:nth-child(2n+1)
+{
+	background-color: #DDDDDD;
+}
+#alth tr:nth-child(1)
+{
+    background-color: #666666;
+}
+#alt tr a
+{
+    color: #000000; 
+}
+#alt tr a:hover
+{
+    color: #666666; 
+}
+#alt tr:nth-child(2n+1)
+{
+	background-color: #DDDDDD;
+}
 acronym {
   cursor: help;
   border-bottom: 1px solid #777;
@@ -188,6 +208,20 @@ blockquote span {
   width: 800px;
   margin: 0 auto;
   text-align: left;
+}
+#twocol {
+    float: left;
+    width: 100%;
+}
+#colone {
+    float: left;
+    width: 45%;
+    display: inline;
+}
+#coltwo {
+    float: right;
+    width: 45%;
+    display: inline;
 }
 #text {
   float: center;

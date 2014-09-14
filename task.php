@@ -162,8 +162,18 @@ if (array_key_exists('trackcopy', $_REQUEST))
     $copyfrom = reqival('copyfrom');
     if ($copyfrom > 0)
     {
+        $query = "select comEntryRestrict from tblCompetition where comPk=$comPk";
+        $result = mysql_query($query) or die('Failed to query tblRegistration ' . mysql_error());
+        $reged = mysql_result($result,0,0);
         echo "Copying from: $copyfrom<br>";
-        $query = "insert into tblComTaskTrack (comPk, tasPk, traPk) select $comPk, $tasPk, CT.traPk from tblComTaskTrack CT, tblTrack T, tblRegistration R where CT.tasPk=$copyfrom and T.traPk=CT.traPk and T.pilPk=R.pilPk and R.comPk=$comPk";
+        if ($reged == "registered")
+        {
+            $query = "insert into tblComTaskTrack (comPk, tasPk, traPk) select $comPk, $tasPk, CT.traPk from tblComTaskTrack CT, tblTrack T, tblRegistration R where CT.tasPk=$copyfrom and T.traPk=CT.traPk and T.pilPk=R.pilPk and R.comPk=$comPk";
+        }
+        else
+        {
+            $query = "insert into tblComTaskTrack (comPk, tasPk, traPk) select $comPk, $tasPk, CT.traPk from tblComTaskTrack CT where CT.tasPk=$copyfrom";
+        }
         $result = mysql_query($query) or die('Failed to copy task tracks ' . mysql_error());
         // task_up
         exec(BINDIR . "task_up.pl $tasPk", $out, $retv);
@@ -214,7 +224,6 @@ if (array_key_exists('updatetask', $_REQUEST))
     }
 
     // FIX: Launch Close
-
     // Start gate open/close
     $StartTime = addslashes($_REQUEST['starttime']);
     if (strlen($StartTime) < 10)
@@ -232,8 +241,9 @@ if (array_key_exists('updatetask', $_REQUEST))
     $regPk = addslashes($_REQUEST['region']);
     $departure = addslashes($_REQUEST['departure']);
     $arrival = addslashes($_REQUEST['arrival']);
+    $comment = addslashes($_REQUEST['taskcomment']);
 
-    $query = "update tblTask set tasName='$Name', tasDate='$Date', tasTaskStart='$TaskStart', tasStartTime='$StartTime', tasStartCloseTime='$StartClose', tasFinishTime='$FinishTime', tasTaskType='$TaskType', regPk=$regPk, tasSSInterval=$Interval, tasDeparture='$departure', tasArrival='$arrival' where tasPk=$tasPk";
+    $query = "update tblTask set tasName='$Name', tasDate='$Date', tasTaskStart='$TaskStart', tasStartTime='$StartTime', tasStartCloseTime='$StartClose', tasFinishTime='$FinishTime', tasTaskType='$TaskType', regPk=$regPk, tasSSInterval=$Interval, tasDeparture='$departure', tasArrival='$arrival', tasComment='$comment' where tasPk=$tasPk";
     $result = mysql_query($query) or die('Task add failed: ' . mysql_error());
 
     $TaskStopped = addslashes($_REQUEST['taskstopped']);
@@ -249,7 +259,6 @@ if (array_key_exists('updatetask', $_REQUEST))
     }
 
     update_task($link, $tasPk, $old);
-
     #update_tracks($link,$tasPk);
 }
 
@@ -264,6 +273,7 @@ if ($row)
     $tasName = $row['tasName'];
     $tasDate = $row['tasDate'];
     $tasTaskType = $row['tasTaskType'];
+    $tasComment = $row['tasComment'];
 
     $tasTaskStart = nice_date($tasDate, $row['tasTaskStart']);
     $tasTaskFinish = nice_date($tasDate, $row['tasFinishTime']);
@@ -282,6 +292,7 @@ if ($row)
     $tasSSInterval = $row['tasSSInterval'];
     $tasDeparture = $row['tasDeparture'];
     $tasArrival = $row['tasArrival'];
+    $tasHeightBonus = $row['tasHeightBonus'];
     $regPk = $row['regPk'];
 }
 
@@ -393,12 +404,18 @@ echo "<td>Start Close:</td><td><input type=\"text\" name=\"startclose\" value=\"
 echo "<td>Gate Interval(s):</td><td><input type=\"text\" name=\"interval\" value=\"$tasSSInterval\" size=4></td>";
 echo "</tr>";
 echo "<tr><td>Depart Bonus:</td><td>";
-output_select('departure', $tasDeparture, array( 'on', 'off', 'leadout' ));
+output_select('departure', $tasDeparture, array( 'on', 'off', 'leadout', 'kmbonus' ));
 echo "</td>";
 echo "<td>Arrival Bonus:</td><td>";
 output_select('arrival', $tasArrival, array( 'on', 'off' ));
-echo "</td></tr></table>";
-echo "<button type=\"submit\" name=\"updatetask\" value=\"$tasPk\">Update Task</button>";
+echo "</td>";
+echo "<td>Height Bonus:</td><td>";
+output_select('height', $tasHeightBonus, array( 'on', 'off' ));
+echo "</td>";
+echo "</tr></table>";
+echo "Comment:<br>";
+echo farea("taskcomment", $tasComment, 2, 80);
+echo "<br><button type=\"submit\" name=\"updatetask\" value=\"$tasPk\">Update Task</button>";
 echo "<hr>";
 // Ok - output the waypoints nicely
 $count = 1;
@@ -514,7 +531,7 @@ echo fis('addair', 'Add Airspace', '');
 echo "<br><br>";
 echo fis('airspace', 'Airspace Check', '');
 
-if ($comEntryRestrict == 'registered')
+//if ($comEntryRestrict == 'registered')
 {
     $tasarr = array();
     $sql = "select C.comName, T.* from tblTask T, tblCompetition C where T.tasPk<>$tasPk and T.tasDate='$tasDate' and T.regPk=$regPk and C.comPk=T.comPk";

@@ -5,6 +5,31 @@ require 'format.php';
 auth('system');
 $argPk = reqival('argPk');
 
+function dms($pos, $ext)
+{
+    $h = floor($pos);
+    $m = floor(($pos - $h) * 60);
+    $s = floor( ((($pos - $h) * 60)  - $m) * 60 );
+
+    if ($h < 0) 
+    {
+        $h = - $h;
+    }
+
+    $ret = sprintf("%02d:%02d:%02d ", $h, $m, $s);
+
+    if ($pos > 0)
+    {
+        return $ret . substr($ext, 0, 1);
+    }
+    return $ret . substr($ext, 1, 1);
+}
+
+function nautical_miles($km)
+{
+    return $km / 1852.0;
+}
+
 if (reqexists('download'))
 {
     //AC Q
@@ -23,15 +48,16 @@ if (reqexists('download'))
     //$format=addslashes($_REQUEST['format']);
     $link = db_connect();
     $sql = "select * from tblAirspaceRegion where argPk=$argPk";
+    $result = mysql_query($sql,$link);
     $row = mysql_fetch_array($result, MYSQL_ASSOC);
     $regname = $row['argRegion'];
 
     # nuke normal header ..
     header("Content-type: text/air");
-    header("Content-Disposition: attachment; filename=\"$regname.air\"");
+    header("Content-Disposition: attachment; filename=\"CTR-$regname.txt\"");
     header("Cache-Control: no-store, no-cache");
 
-    $sql = "select * from tblAirspace A 
+    $sql = "select * from tblAirspace A, tblAirspaceRegion R
             where A.airPk in (             
                 select airPk from tblAirspaceWaypoint W, tblAirspaceRegion R where
                 R.argPk=$argPk and
@@ -41,20 +67,47 @@ if (reqexists('download'))
             order by A.airName";
     $result = mysql_query($sql,$link);
 
-    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+    $first = 0;
+    while ($air = mysql_fetch_array($result, MYSQL_ASSOC))
     {
+        $airPk = $air['airPk'];
         $class = $air['airClass'];
         $name = $air['airName'];
         $base = $air['airBase'];
         $tops = $air['airTops'];
+        $shape = $air['airShape'];
+        $centrepk = $air['airCentreWP'];
+        $radius = $air['airRadius'];
 
-        echo "AC $class\n";
+        echo "\nAC $class\n";
         echo "AN $name\n";
         echo "AL $base\n";
         echo "AH $tops\n";
-        echo "CO\n";
-        // do waypoints ...
+
+        if ($shape == "circle")
+        {
+            $subsql = "SELECT AW.* from tblAirspaceWaypoint AW where AW.awpPk=$centrepk by AW.airOrder";
+            $subresult = mysql_query($subsql,$link);
+            $subrow = mysql_fetch_array($subresult, MYSQL_ASSOC);
+            $lat = $subrow['awpLatDecimal'];
+            $lon = $subrow['awpLongDecimal'];
+            echo "V X=" . dms($lat, "NS") . " " . dms($lon, "EW") . "\n";
+            echo "DC " . nautical_miles($radius) . "\n";
+        }
+        else
+        {
+            // do waypoints ...
+            $subsql = "SELECT A.*, AW.* from tblAirspace A, tblAirspaceWaypoint AW where A.airPk=$airPk and AW.airPk=A.airPk order by AW.airOrder";
+            $subresult = mysql_query($subsql,$link);
+            while ($subrow = mysql_fetch_array($subresult, MYSQL_ASSOC))
+            {
+                $lat = $subrow['awpLatDecimal'];
+                $lon = $subrow['awpLongDecimal'];
+                echo "V X=" . dms($lat, "NS") . " " . dms($lon, "EW") . "\n";
+            }
+        }
     }
+
 }
 
 function display_airspace_region($link, $argPk)
