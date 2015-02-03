@@ -47,15 +47,19 @@ create table tblFormula
     forArrival       enum ('none', 'place', 'timed') default 'place',
     forDeparture     enum ('none', 'departure', 'leadout', 'kmbonus') default 'leadout',
     forLinearDist    double default 0.5,
-    forDiffDist      double default 1.5,
+    forDiffDist      double default 3.0,
+    forDistMeasure   enum ( 'average', 'median' ) default 'average', 
     forDiffRamp      enum ( 'fixed', 'flexible' ) default 'fixed',
     forDiffCalc      enum ( 'all', 'lo' ) default 'all',
     forStoppedGlideBonus double default 0.0,
     forHeightArrBonus double default 0.0,
     forHeightArrLower integer default 200,
     forHeightArrUpper integer default 3000,
-    forOLCPoints    integer default 3,
-    forOLCBase      double default 1.4
+    forOLCPoints     integer default 3,
+    forOLCBase       double default 1.4,
+    forWeightStart   double default 0.125,
+    forWeightArrival double default 0.175,
+    forWeightSpeed   double default 0.7
 );
 
 drop table if exists tblComTaskTrack;
@@ -337,7 +341,15 @@ create table tblPilot
     pilPhoneHome    varchar(24),
     pilPhoneMobile  varchar(24),
     pilYearStarted  varchar(8),
-    pilNationCode   varchar(3)
+    pilNationCode   varchar(3),
+    pilSponsor      varchar(128),
+    pilInlandHours  varchar(128),
+    pilTShirt       enum("XS", "S", "M", "L", "XL"),
+    pilDietary      varchar(128),
+    pilEmergencyContact varchar(128),
+    pilEmergencyPhone varchar(24),
+    pilGlider       varchar(32),
+    gliGliderClass  enum('1','1/2','2','2/3','competition','floater','kingpost','open','rigid') default 'competition'
 );
 
 drop table if exists tblCompPilot;

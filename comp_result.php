@@ -67,6 +67,7 @@ function comp_result($comPk, $how, $param, $cls)
         $pilnum = $row['pilHGFA'];
         $civlnum = $row['pilCIVL'];
         $glider = $row['traGlider'];
+        $gender = $row['pilSex'];
     
         if (!array_key_exists($pilPk,$results) || !$results[$pilPk])
         {
@@ -76,6 +77,7 @@ function comp_result($comPk, $how, $param, $cls)
             $results[$pilPk]['civl'] = $civlnum;
             $results[$pilPk]['nation'] = $nation;
             $results[$pilPk]['glider'] = $glider;
+            $results[$pilPk]['gender'] = $gender;
         }
         //echo "pilPk=$pilPk tasname=$tasName, result=$score<br>\n";
         $perf = 0;
@@ -213,6 +215,7 @@ if ($row)
     $comDirector = $row['comMeetDirName'];
     $comLocation = $row['comLocation'];
     $comFormula = $row['forClass'] . ' ' . $row['forVersion'];
+    $forOLCPoints = $row['forOLCPoints'];
     $comSanction = $row['comSanction'];
     $comOverall = $row['comOverallScore'];
     $comTeamScoring = $row['comTeamScoring'];
@@ -327,7 +330,8 @@ else
 
 $today = getdate();
 $tdate = sprintf("%04d-%02d-%02d", $today['year'], $today['mon'], $today['mday']);
-if (0 && $tdate == $comDateTo)
+// Fix: make this configurable
+if ($tdate == $comDateTo)
 {
     $usePk = check_auth('system');
     $link = db_connect();
@@ -376,8 +380,8 @@ $rdec[] = 'class="h"';
 $rdec[] = 'class="h"';
 if (reqival('id') == 1)
 {
-    $hdr = array( fb('Res'),  fselect('class', "comp_result.php?comPk=$comPk$cind", $copts, ' onchange="document.location.href=this.value"'), fb('Nation'), fb('FAI'), fb('CIVL'), fb('Total') );
-    $hdr2 = array( '', '', '', '', '', '' );
+    $hdr = array( fb('Res'),  fselect('class', "comp_result.php?comPk=$comPk$cind", $copts, ' onchange="document.location.href=this.value"'), fb('Nation'), fb('Sex'), fb('FAI'), fb('CIVL'), fb('Total') );
+    $hdr2 = array( '', '', '', '', '', '', '' );
 }
 else
 {
@@ -472,6 +476,7 @@ else if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'Route')
         if (array_key_exists('id', $_REQUEST) and ($_REQUEST['id'] == '1'))
         {
             $nxt[] = $arr['nation'];
+            $nxt[] = $arr['gender'];
             $nxt[] = $arr['hgfa'];
             $nxt[] = $arr['civl'];
         }
@@ -511,7 +516,7 @@ else if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'Route')
         $rtable[] = $nxt;
         $count++;
     }
-    echo ftable($rtable, "border=\"0\" cellpadding=\"1\" alternate-colours=\"yes\" align=\"center\"", $rdec, '');
+    echo ftable($rtable, "border=\"0\" cellpadding=\"2\" cellspacing=\"0\" alternate-colours=\"yes\" align=\"center\"", $rdec, '');
 }
 else
 {
@@ -598,7 +603,14 @@ if ($embed == '')
     }
     else
     {
-        $detarr[] = array("<b>Type</b> ", "<i>$comType ($comFormula)</i>");
+        if ($comType == 'OLC')
+        {
+            $detarr[] = array("<b>Type</b> ", "<i>$comType ($forOLCPoints)</i>");
+        }
+        else
+        {
+            $detarr[] = array("<b>Type</b> ", "<i>$comType ($comFormula)</i>");
+        }
         $detarr[] = array("<b>Scoring</b> ","<i>$overstr</i>");
         echo ftable($detarr, 'border="0" cellpadding="0" width="185"', '', array('', 'align="right"'));
     }

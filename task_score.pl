@@ -14,6 +14,7 @@ require NoGap; # qw(:all);
 require Nzl; # qw(:all);
 require JTGap; # qw(:all);
 require GGap; # qw(:all);
+require RTGap; # qw(:all);
 
 use POSIX qw(ceil floor);
 use TrackLib qw(:all);
@@ -43,7 +44,7 @@ $tasPk = $ARGV[0];
 $task = read_task($tasPk);
 
 # Read the formula 
-$formula = read_formula($tasPk);
+$formula = read_formula($task->{'comPk'});
 
 print Dumper($formula);
 
@@ -77,6 +78,11 @@ elsif ($formula->{'class'} eq 'ggap')
 {
     print "GGap scoring\n";
     $scr = GGap->new();
+}
+elsif ($formula->{'class'} eq 'rtgap')
+{
+    print "RTGap scoring\n";
+    $scr = RTGap->new();
 }
 else
 {

@@ -241,9 +241,10 @@ if (array_key_exists('updatetask', $_REQUEST))
     $regPk = addslashes($_REQUEST['region']);
     $departure = addslashes($_REQUEST['departure']);
     $arrival = addslashes($_REQUEST['arrival']);
+    $height = addslashes($_REQUEST['height']);
     $comment = addslashes($_REQUEST['taskcomment']);
 
-    $query = "update tblTask set tasName='$Name', tasDate='$Date', tasTaskStart='$TaskStart', tasStartTime='$StartTime', tasStartCloseTime='$StartClose', tasFinishTime='$FinishTime', tasTaskType='$TaskType', regPk=$regPk, tasSSInterval=$Interval, tasDeparture='$departure', tasArrival='$arrival', tasComment='$comment' where tasPk=$tasPk";
+    $query = "update tblTask set tasName='$Name', tasDate='$Date', tasTaskStart='$TaskStart', tasStartTime='$StartTime', tasStartCloseTime='$StartClose', tasFinishTime='$FinishTime', tasTaskType='$TaskType', regPk=$regPk, tasSSInterval=$Interval, tasDeparture='$departure', tasArrival='$arrival', tasHeightBonus='$height', tasComment='$comment' where tasPk=$tasPk";
     $result = mysql_query($query) or die('Task add failed: ' . mysql_error());
 
     $TaskStopped = addslashes($_REQUEST['taskstopped']);
@@ -447,10 +448,11 @@ while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     $count++;
 }
 
-$sql = "select tasDistance from tblTask where tasPk=$tasPk";
+$sql = "select tasDistance, tasShortRouteDistance from tblTask where tasPk=$tasPk";
 $result = mysql_query($sql,$link) or die('Can\'t determine task distance: ' . mysql_error());
 $dist = round(floatval(mysql_result($result, 0, 0))/1000,2);
-echo "<p><b>Total distance: $dist kms</b><br>";
+$shortdist = round(floatval(mysql_result($result, 0, 1))/1000,2);
+echo "<p><b>Total distance: $dist ($shortdist) kms</b><br>";
 
 if ($goal == 0 && $count > 0 && ($tasTaskType == 'race' || $tasTaskType == 'speedrun' || $tasTaskType == 'speedrun-interval'))
 {
@@ -505,7 +507,7 @@ $query = "select regCentre from tblRegion where regPk=$regPk";
 $result = mysql_query($query) or die('Region centre select failed: ' . mysql_error());
 if (mysql_num_rows($result) > 0)
 {
-    $cenPk = mysql_result($result, 0, 0);
+    $cenPk = 0+mysql_result($result, 0, 0);
     $query = "select * from tblAirspace R 
         where R.airPk in (
             select airPk from tblAirspaceWaypoint W, tblRegionWaypoint R where

@@ -81,16 +81,34 @@ sub points_weight
     if ($task->{'departure'} eq 'off')
     {
         $Astart = 0;
-        $Aarrival = 0; 
-        $Adistance = 1000 * $quality * $distweight;
-        $Aspeed = 1000 * $quality * (1-$distweight);
+        if ($task->{'arrival'} eq 'on')
+        {
+            $Adistance = 1000 * $quality * $distweight;
+            $Aspeed = 1000 * $quality * (1-$distweight) * 3/4;
+            $Aarrival = 1000 * $quality * (1-$distweight) * 1/4;
+        }
+        else
+        {
+            $Aarrival = 0; 
+            $Adistance = 1000 * $quality * $distweight;
+            $Aspeed = 1000 * $quality * (1-$distweight);
+        }
     }
     else
     {
         $Astart = 250 * $quality;
-        $Aarrival = 0; 
-        $Adistance = 750 * $quality * $distweight;
-        $Aspeed = 750 * $quality * (1-$distweight);
+        if ($task->{'arrival'} eq 'on')
+        {
+            $Adistance = 750 * $quality * $distweight;
+            $Aspeed = 750 * $quality * (1-$distweight) * 3/4;
+            $Aarrival = 750 * $quality * (1-$distweight) * 1/4;
+        }
+        else
+        {
+            $Aarrival = 0; 
+            $Adistance = 750 * $quality * $distweight;
+            $Aspeed = 750 * $quality * (1-$distweight);
+        }
     }
 
 
