@@ -10,12 +10,6 @@ Tracklog animation with multiple tracks
     + have a timer / stepper (ala CompeGPS)
     + add pilot initials on picture
 
-Automatic airspace violation checks
-    + import airspace files ..
-    + airspace management - add/delete
-    + link airspace(s) to a competition
-    + check track against linked airspace
-
 Track submission:
     + note if track is not IGC format
     + add KML support
@@ -44,6 +38,8 @@ BUGS:
 Make an "install" package for Cpanel
     (basically create the database without a command line)
 
+Change the formula stuff so it's self populating with "sensible" values for each "norm"
+
 Improve error messages for rejected track uploads
 
 Create a database update script for schema changes to be applied to older version
@@ -70,15 +66,12 @@ TODO:
 Add a git commit check to stop me warn/fix hardcoded password.
 
 Scoring stuff:
-    Add a time bonus for height above goal arrival
 
     Add a glide bonus for height above goal on stop
 
     Conical ESS sections
 
     Peleton scoring
-
-    Alternative lead-out point system (partially done)
 
 Help popups (CSS?):
     Add a 'help' link on admin pages which popups some useful help 
@@ -170,6 +163,10 @@ Verify track 'G' record
     - and perhaps run windozes exes through wine / dosemu
 
 DONE:
+
+* Add a time bonus for height above goal arrival
+
+* Alternative lead-out point system 
 
 * Check awarded waypoints work
 

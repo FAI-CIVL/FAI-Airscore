@@ -1,5 +1,5 @@
 var onscreen = Array();
-var trackid;
+var airspaceid;
 
 String.prototype.format = function()
 {
@@ -11,13 +11,13 @@ function do_add_air(x)
 {
     if (!x || x == 0)
     {   
-        trackid = document.getElementById("trackid").value;
+        airspaceid = document.getElementById("airspaceid").value;
     }
     else
     {   
-        trackid = x;
+        airspaceid = x;
     }
-    x_get_airspace(trackid, plot_air);
+    x_get_airspace(airspaceid, plot_air);
 }
 function done(x)
 {
@@ -151,7 +151,7 @@ function plot_air(jstr)
         label = new ELabel(map, pos, cname, "waypoint", new google.maps.Size(0,0), 60);
         bounds.extend(pos);
 
-        onscreen[trackid] = track;
+        onscreen[airspaceid] = track;
         return track;
     }
 
@@ -233,7 +233,7 @@ function plot_air(jstr)
         segments.push(polyline);
     }
 
-    onscreen[trackid] = track;
+    onscreen[airspaceid] = track;
     return track;
 }
 

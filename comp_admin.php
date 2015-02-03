@@ -8,6 +8,7 @@
 <?php
 require 'authorisation.php';
 require 'format.php';
+require 'dbextra.php';
 adminbar(0);
 ?>
 <p><h2>Competition Administration</h2></p>
@@ -18,15 +19,14 @@ $link = db_connect();
 
 if (array_key_exists('add', $_REQUEST))
 {
-    $comname = addslashes($_REQUEST['comname']);
-    $datefrom = addslashes($_REQUEST['datefrom']);
-    $dateto = addslashes($_REQUEST['dateto']);
-    $location = addslashes($_REQUEST['location']);
-    $director = addslashes($_REQUEST['director']);
-    //$sanction = addslashes($_REQUEST['sanction']);
-    $comptype = addslashes($_REQUEST['comptype']);
-    $comcode = addslashes($_REQUEST['code']);
-    $timeoffset = floatval($_REQUEST['timeoffset']);
+    $comname = reqsval('comname');
+    $datefrom = reqsval('datefrom');
+    $dateto = reqsval('dateto');
+    $location = reqsval('location');
+    $director = reqsval('director');
+    $comptype = reqsval('comptype');
+    $comcode = reqsval('code');
+    $timeoffset = reqfval('timeoffset');
 
     if ($comname == '')
     {
@@ -34,16 +34,34 @@ if (array_key_exists('add', $_REQUEST))
     }
     else
     {
-        $forPk = 0;
+        $regarr = array();
+        $regarr['comPk'] = $comPk;
+        $regarr['forClass'] = 'gap';
+        $regarr['forVersion'] = '2007';
+        $regarr['forNomDistance'] = 35.0;
+        $regarr['forMinDistance'] = 5.0;
+        $regarr['forNomTime'] = 90;
+        $regarr['forNomGoal'] = 30.0;
+        $regarr['forGoalSSPenalty'] = 1.0;
+        $regarr['forLinearDist'] = 0.5;
+        $regarr['forDiffDist'] = 3.0;
+        $regarr['forDiffRamp'] = 'flexible';
+        $regarr['forDiffCalc'] = 'lo';
+        $regarr['forDistMeasure'] = 'average';
+        if (array_key_exists('weightstart', $_REQUEST))
+        {
+            $regarr['forWeightStart'] = 0.125;
+            $regarr['forWeightArrival'] = 0.175;
+            $regarr['forWeightSpeed'] = 0.7;
+        }
+
+        $clause = "comPk=$comPk";
+        $forPk = insertup($link, 'tblFormula', 'forPk', $clause,  $regarr);
+
         $query = "insert into tblCompetition (comName, comLocation, comDateFrom, comDateTo, comMeetDirName, forPk, comType, comCode, comTimeOffset) values ('$comname','$location', '$datefrom', '$dateto', '$director', $forPk, '$comptype', '$comcode', $timeoffset)";
     
         $result = mysql_query($query) or die('Competition addition failed: ' . mysql_error());
-    
         $comPk = mysql_insert_id();
-    
-        #$query = "select max(comPk) from tblCompetition";
-        #$result = mysql_query($query) or die('Cant get max comPk: ' . mysql_error());
-        #$comPk = mysql_result($result,0,0);
     
         $query = "insert into tblCompAuth values ($usePk, $comPk, 'admin')";
         $result = mysql_query($query) or die('CompAuth addition failed: ' . mysql_error());
@@ -52,17 +70,17 @@ if (array_key_exists('add', $_REQUEST))
 
 if (array_key_exists('update', $_REQUEST))
 {
-    $comPk = intval($_REQUEST['comPk']);
-    $comname = addslashes($_REQUEST['comname']);
-    $datefrom = addslashes($_REQUEST['datefrom']);
-    $dateto = addslashes($_REQUEST['dateto']);
-    $location = addslashes($_REQUEST['location']);
-    $director = addslashes($_REQUEST['director']);
-    $formula = addslashes($_REQUEST['formula']);
-    $sanction = addslashes($_REQUEST['sanction']);
-    $comptype = addslashes($_REQUEST['comptype']);
-    $comcode = addslashes($_REQUEST['code']);
-    $timeoffset = floatval($_REQUEST['timeoffset']);
+    $comPk = reqival('comPk');
+    $comname = reqsval('comname');
+    $datefrom = reqsval('datefrom');
+    $dateto = reqsval('dateto');
+    $location = reqsval('location');
+    $director = reqsval('director');
+    $sanction = reqsval('sanction');
+    $formula = reqsval('formula');
+    $comptype = reqsval('comptype');
+    $comcode = reqsval('code');
+    $timeoffset = reqfval('timeoffset');
 
     check_admin('admin',$usePk,$comPk);
 
@@ -78,11 +96,11 @@ $count = 1;
 
 if (is_admin('admin', $usePk, -1))
 {
-    $sql = "SELECT C.* FROM tblCompetition C order by C.comDateTo desc";
+    $sql = "SELECT C.* FROM tblCompetition C order by C.comName like '%test%', C.comDateTo desc";
 }
 else
 {
-    $sql = "SELECT C.* FROM tblCompAuth A, tblCompetition C where A.comPk=C.comPk and A.usePk=$usePk order by C.comDateTo desc";
+    $sql = "SELECT C.* FROM tblCompAuth A, tblCompetition C where (A.comPk=C.comPk and A.usePk=$usePk) or (C.comName like '%test%') group by C.comName order by C.comName like '%test%', C.comDateTo desc";
 }
 $result = mysql_query($sql,$link);
 while($row = mysql_fetch_array($result, MYSQL_ASSOC))
@@ -91,9 +109,20 @@ while($row = mysql_fetch_array($result, MYSQL_ASSOC))
     $name = $row['comName'];
     $datefrom = substr($row['comDateFrom'], 0, 10);
     $dateto = substr($row['comDateTo'], 0, 10);
+    $today = time();
+    $fromdate = strtotime($datefrom);
+    $todate = strtotime($dateto);
+    if ($today>=$fromdate && $today<=$todate)
+    {
+        $datestr = fb("$datefrom - $dateto");
+    }
+    else
+    {
+        $datestr = "$datefrom - $dateto";
+    }
     $location = $row['comLocation'];
     $director = $row['comMeetDirName'];
-    $comparr[] = array("$count.", "$datefrom - $dateto", "<a href=\"competition.php?comPk=$id\">" . $name . "</a>", $location, $director);
+    $comparr[] = array("$count.", $datestr, "<a href=\"competition.php?comPk=$id\">" . $name . "</a>", $location, $director);
     $count++;
 }
 echo ftable($comparr, "border=\"0\" cellpadding=\"2\" cellspacing=\"0\" alternate-colours=\"yes\" valign=\"top\" align=\"left\"", array('class="d"', 'class="l"'), '');

@@ -75,6 +75,7 @@ sub task_totals
     my $launchvalid;
     my $waypoints;
     my $numpoints;
+    my $median;
     my @distspread;
 
     $tasPk = $task->{'tasPk'};
@@ -167,7 +168,19 @@ sub task_totals
             $goalalt = $waypoints->[$i]->{'alt'};
         }
     }
+
+    # Find the median distance flown
+    $dbh->do('set @rownum=-1;');
+    $sth = $dbh->prepare("select avg(TM.dist) as median from ( select \@rownum:=\@rownum+1 AS rownum, TR.tarDistance AS dist FROM tblTaskResult TR where tasPk=$tasPk and tarResultType not in ('abs', 'dnf') ORDER BY tarDistance ) AS TM WHERE TM.rownum IN ( CEIL(\@rownum/2), FLOOR(\@rownum/2))");
+    $sth->execute();
+    if ($ref = $sth->fetchrow_hashref()) 
+    {
+        $median = $ref->{'median'};
+    }
+    print "Median=$median\n";
+
     
+    # Find the distance spread
     if ($formula->{'diffcalc'} eq 'lo')
     {
         $sth = $dbh->prepare("select truncate(tarDistance/100,0) as Distance, count(truncate(tarDistance/100,0)) as Difficulty from tblTaskResult where tasPk=$tasPk and tarResultType not in ('abs','dnf') and (tarGoal=0 or tarGoal is null) group by truncate(tarDistance/100,0)");
@@ -275,7 +288,7 @@ sub day_quality
     {
         $time = 1;
     }
-    print "time quality=$time\n";
+    print "time quality (tmin=$tmin x=$x)=$time\n";
     if ($time > 1) 
     {
         $time = 1;

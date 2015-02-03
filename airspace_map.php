@@ -45,9 +45,10 @@ function initialise()
 
 <?php
 $link = db_connect();
-$airPk = intval($_REQUEST['airPk']);
-$interval = intval($_REQUEST['int']);
-$action = addslashes($_REQUEST['action']);
+$airPk = reqival('airPk');
+$argPk = reqival('argPk');
+$interval = reqival('int');
+$action = reqsval('action');
 $extra = 0;
 
 $comName='Highcloud OLC';
@@ -71,15 +72,30 @@ hcheadbar("Airspace Map",2);
 echo "<div id=\"content\">";
 echo "<div id=\"map\" style=\"width: 100%; height: 600px\"></div>";
 
-$sql = "select A.* from tblAirspace A";
+if ($argPk != 0)
+{
+    $sql = "select * from tblAirspace R 
+            where R.airPk in (             
+                select airPk from tblAirspaceWaypoint W, tblAirspaceRegion R where
+                R.argPk=$argPk and
+                W.awpLatDecimal between (R.argLatDecimal-R.argSize) and (R.argLatDecimal+R.argSize) and
+                W.awpLongDecimal between (R.argLongDecimal-R.argSize) and (R.argLongDecimal+R.argSize)
+                group by (airPk))
+            order by R.airName";
+}
+else
+{
+    $sql = "select A.* from tblAirspace A order by airName";
+}
 $result = mysql_query($sql,$link) or die('Airspace selection failed: ' . mysql_error());
+
 $addable = Array();
 while ($row = mysql_fetch_array($result))
 {   
     $addable[$row['airName']] = $row['airPk'];
 }
-echo fselect('trackid', '', $addable);
-//echo "<input type=\"text\" name=\"trackid\" id=\"trackid\" size=\"8\"\">";
+echo fselect('airspaceid', '', $addable);
+//echo "<input type=\"text\" name=\"airspaceid\" id=\"airspaceid\" size=\"8\"\">";
 echo "<input type=\"button\" name=\"check\" value=\"Add Track\" onclick=\"do_add_air(0); return false;\">";
 echo "<br><input type=\"text\" name=\"foo\" id=\"foo\" size=\"8\"\">";
 echo "</div>\n";

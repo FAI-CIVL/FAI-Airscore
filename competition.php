@@ -8,6 +8,7 @@
 <?php
 require 'authorisation.php';
 require 'format.php';
+require 'dbextra.php';
 $comPk = intval($_REQUEST['comPk']);
 adminbar($comPk);
 
@@ -36,6 +37,14 @@ if (array_key_exists('add', $_REQUEST))
 
     check_admin('admin',$usePk,$comPk);
 
+    $query = "select * from tblTask where tasDate='$Date' and comPk=$comPk";
+    $result = mysql_query($query) or die('Task check failed: ' . mysql_error());
+    if (mysql_num_rows($result) > 0)
+    {
+        echo "Unable to add task with duplicate date: $Date<br>";
+        exit(1);
+    }
+
     $query = "insert into tblTask (comPk, tasName, tasDate, tasTaskStart, tasFinishTime, tasStartTime, tasStartCloseTime, tasSSInterval, tasTaskType, regPk, tasDeparture, tasArrival) values ($comPk, '$Name', '$Date', '$Date $TaskStart', '$Date $TaskFinish', '$Date $StartOpen', '$Date $StartClose', $Interval, '$TaskType', $regPk, '$depart', '$arrival')";
     $result = mysql_query($query) or die('Task add failed: ' . mysql_error());
 
@@ -45,7 +54,7 @@ if (array_key_exists('add', $_REQUEST))
     // Now check for pre-submitted tracks ..
     // FIX: check for task / track date match!
     // $query = "select traPk from tblComTaskTrack where comPk=$comPk and tasPk is null";
-    $query = "select CTT.traPk from tblComTaskTrack CTT, tblTask T, tblTrack TR, tblCompetition C where CTT.comPk=$comPk and C.comPk=CTT.comPk and T.tasPk=$tasPk and CTT.traPk=TR.traPk and CTT.tasPk is null and TR.traStart > date_sub(T.tasStartTime, interval C.comTimeOffset hour) and TR.traStart < date_sub(T.tasFinishTime, interval C.comTimeOffset hour)";
+    $query = "select CTT.traPk from tblComTaskTrack CTT, tblTask T, tblTrack TR, tblCompetition C where CTT.comPk=$comPk and C.comPk=CTT.comPk and T.tasPk=$tasPk and CTT.traPk=TR.traPk and CTT.tasPk is null and TR.traStart > date_sub(T.tasStartTime, interval C.comTimeOffset+1 hour) and TR.traStart < date_sub(T.tasFinishTime, interval C.comTimeOffset hour)";
     $result = mysql_query($query,$link);
     $tracks = array();
     while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
@@ -130,37 +139,31 @@ if (array_key_exists('update', $_REQUEST))
 // Add/update the formula
 if (array_key_exists('upformula', $_REQUEST))
 {
-    $forPk = intval($_REQUEST['forPk']) + 0;
-    $formula = addslashes($_REQUEST['formula']);
-    $version = addslashes($_REQUEST['version']);
-    $nomdist = floatval($_REQUEST['nomdist']);
-    $mindist = floatval($_REQUEST['mindist']);
-    $nomtime = floatval($_REQUEST['nomtime']);
-    $nomgoal = floatval($_REQUEST['nomgoal']);
-    $sspenalty = floatval($_REQUEST['sspenalty']);
-    $lineardist = floatval($_REQUEST['lineardist']);
-    $diffdist = floatval($_REQUEST['diffdist']);
-    $difframp = addslashes($_REQUEST['difframp']);
-    $diffcalc = addslashes($_REQUEST['diffcalc']);
-
-    if ($forPk < 1)
+    $regarr = array();
+    $regarr['comPk'] = $comPk;
+    $regarr['forClass'] = reqsval('formula');
+    $regarr['forVersion'] = reqsval('version');
+    $regarr['forNomDistance'] = reqfval('nomdist');
+    $regarr['forMinDistance'] = reqfval('mindist');
+    $regarr['forNomTime'] = reqfval('nomtime');
+    $regarr['forNomGoal'] = reqfval('nomgoal');
+    $regarr['forGoalSSPenalty'] = reqfval('sspenalty');
+    $regarr['forLinearDist'] = reqfval('lineardist');
+    $regarr['forDiffDist'] = reqfval('diffdist');
+    $regarr['forDiffRamp'] = reqsval('difframp');
+    $regarr['forDiffCalc'] = reqsval('diffcalc');
+    $regarr['forDistMeasure'] = reqsval('distmeasure');
+    if (array_key_exists('weightstart', $_REQUEST))
     {
-        $query = "insert into tblFormula (forClass, forVersion, forNomDistance, forMinDistance, forNomTime, forNomGoal, comPk, forLinearDist, forDiffDist, forDiffRamp, forDiffCalc, forGoalSSPenalty) values ('$formula', '$version', $nomdist, $mindist, $nomtime, $nomgoal, $comPk, $lineardist, $diffdist, '$difframp', '$diffcalc', $sspenalty)";
-        $result = mysql_query($query) or die('Formula addition failed: ' . mysql_error());
-        $forPk = mysql_insert_id();
-
-        #$query = "select max(forPk) from tblFormula";
-        #$result = mysql_query($query) or die('Cant get max forPk: ' . mysql_error());
-        #$forPk = mysql_result($result,0,0);
-
-        $query = "update tblCompetition set forPk=$forPk where comPk=$comPk";
-        $result = mysql_query($query) or die('Competition formula addition failed: ' . mysql_error());
+        $regarr['forWeightStart'] = reqfval('weightstart');
+        $regarr['forWeightArrival'] = reqfval('weightarrival');
+        $regarr['forWeightSpeed'] = reqfval('weightspeed');
     }
-    else
-    {
-        $query = "update tblFormula set forClass='$formula', forVersion='$version', forNomDistance=$nomdist, forMinDistance=$mindist, forNomTime=$nomtime, forNomGoal=$nomgoal, forLinearDist=$lineardist, forDiffDist=$diffdist, forDiffRamp='$difframp', forDiffCalc='$diffcalc', forGoalSSPenalty=$sspenalty where comPk=$comPk";
-        $result = mysql_query($query) or die('Formula update failed: ' . mysql_error());
-    }
+
+    //$forPk = reqival('forPk');
+    $clause = "comPk=$comPk";
+
+    insertup($link, 'tblFormula', 'forPk', $clause,  $regarr);
 }
 
 if (array_key_exists('updateadmin', $_REQUEST))
@@ -262,15 +265,20 @@ if ($ctype == 'RACE' || $ctype == 'Team-RACE' || $ctype == 'Route')
         $diffdist = $row['forDiffDist'];
         $difframp = $row['forDiffRamp'];
         $diffcalc = $row['forDiffCalc'];
+        $distmeasure = $row['forDistMeasure'];
+        $weightstart = $row['forWeightStart'];
+        $weightarrival = $row['forWeightArrival'];
+        $weightspeed = $row['forWeightSpeed'];
     }
     echo "<hr><h3>RACE Formula</h3>";
     echo "<form action=\"competition.php?comPk=$comPk\" name=\"formulaadmin\" method=\"post\">";
     $out = ftable(
         array(
           array('Formula:', fselect('formula', $class, array('gap', 'ozgap', 'pwc', 'sahpa', 'nzl', 'ggap', 'nogap', 'jtgap', 'rtgap', 'tmgap' )), 'Year:', fin('version', $version, 4)),
-          array('Nom Dist (km):', fin('nomdist',$nomdist,4), 'Min Dist (km):', fin('mindist', $mindist, 4), 'Nom Goal (%):', fin('nomgoal',$nomgoal,4)),
-          array('Nom Time (min):', fin('nomtime', $nomtime, 4), 'Goal/SS Penalty (0-1):', fin('sspenalty', $sspenalty, 4)),
-          array('Linear Dist (0-1):', fin('lineardist', $lineardist, 4),'Diff Dist (km):', fin('diffdist', $diffdist, 4), 'Diff Ramp:', fselect('difframp', $difframp, array('fixed', 'flexible')), 'Diff Calc:', fselect('diffcalc', $diffcalc, array('all', 'lo')))
+          array('Nom Dist (km):', fin('nomdist',$nomdist,4), 'Min Dist (km):', fin('mindist', $mindist, 4), 'Distance Measure:', fselect('distmeasure', $distmeasure, array('average', 'median'))),
+          array('Nom Time (min):', fin('nomtime', $nomtime, 4), 'Goal/SS Penalty (0-1):', fin('sspenalty', $sspenalty, 4), 'Nom Goal (%):', fin('nomgoal',$nomgoal,4)),
+          array('Linear Dist (0-1):', fin('lineardist', $lineardist, 4),'Diff Dist (km):', fin('diffdist', $diffdist, 4), 'Diff Ramp:', fselect('difframp', $difframp, array('fixed', 'flexible')), 'Diff Calc:', fselect('diffcalc', $diffcalc, array('all', 'lo'))),
+          array('Speed weighting:', fin('weightspeed', $weightspeed, 4), 'Start weighting:', fin('weightstart', $weightstart, 4), 'Arrival weighting:', fin('weightarrival', $weightarrival, 4))
         ), '', '', ''
       );
     echo $out;
@@ -347,7 +355,7 @@ if ($version > 2000)
 $out = ftable(
     array(
         array('Task Name:', fin('taskname', '', 10), 'Date:', fin('date', '', 10)),
-        array('Region:', fselect('region', $defregion, $regions), 'Task Type:', fselect('tasktype', 'race', array('olc', 'race', 'speedrun', 'speedrun-interval', 'free', 'free-bearing', 'airgain', 'aat'))),
+        array('Region:', fselect('region', $defregion, $regions), 'Task Type:', fselect('tasktype', 'race', array('olc', 'race', 'speedrun', 'speedrun-interval', 'free', 'free-bearing', 'free-pin', 'airgain', 'aat'))),
         array('Task Start:', fin('taskstart', '', 10), 'Task Finish:', fin('taskfinish', '', 10)), 
         array('Start Open:', fin('starttime', '', 10), 'Start Close:', fin('startclose', '', 10), 'Gate Interval:', fin('interval', '', 4)), 
         array('Depart Bonus:', fselect('departure', $depdef, array('on', 'off', 'leadout', 'kmbonus')), 'Arrival Bonus:', fselect('arrival', 'on', array('on', 'off')))

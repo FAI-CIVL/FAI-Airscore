@@ -18,7 +18,8 @@ use TrackLib qw(:all);
 my $dbh;
 
 my $max_height = 3048;  # 10000' limit in oz 
-#my $max_height = 2591;  # 10000' limit in oz 
+#my $max_height = 2591;  # 8500' limit in oz 
+#my $max_height = 1666;  # 5000' limit in oz 
 
 #
 # Read an abbreviated tracklog from the database 
@@ -108,7 +109,7 @@ sub airspace_check
                     $dst = distance($coord, $space->{'centre'});
                     if ($dst < $space->{'radius'})
                     { 
-                        print "# ", $space->{'name'}, " (circle:", $space->{'base'}, "m) @ Alt=", $coord->{'alt'}, "m dlat=", $coord->{'dlat'}, " dlong=", $coord->{'dlong'}, "\n";
+                        print "# ", $space->{'name'}, " (circle:", $space->{'base'}, "m) @ Alt=", $coord->{'alt'}, "m Horiz=", floor($space->{'radius'}-$dst) , "m dlat=", $coord->{'dlat'}, " dlong=", $coord->{'dlong'}, "\n";
                         $violation = $coord->{'alt'} - $space->{'base'};
                     }
 
