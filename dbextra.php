@@ -52,7 +52,7 @@ function insertnullup($link,$table,$key,$clause,$map)
         {
             $fields = join(",", $keystr);
             $sql = "update $table set $fields where $clause";
-            echo $sql . "<br>";
+            // echo $sql . "<br>";
             $result = mysql_query($sql,$link) 
                 or die ("insertnullup (update): $table ($clause) query failed: " . mysql_error());
         }
@@ -125,7 +125,7 @@ function insertup($link,$table,$key,$clause,$map)
         $valstr = join(',', $values);
         $sql = "INSERT INTO $table ($fields) VALUES ($valstr)";
         # get last key insert for primary key value ..
-        echo $sql . "<br>";
+        // echo $sql . "<br>";
         $result = mysql_query($sql,$link) 
             or die ("insertup (insert): $table ($clause) query failed: " . mysql_error());
         return mysql_insert_id($link);
