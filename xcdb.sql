@@ -445,7 +445,7 @@ create table tblAirspaceRegion
     argRegion       varchar(32) not null,
     argLatDecimal   double not null,
     argLongDecimal  double not null,
-    argSize         integer not null
+    argSize         float not null
 );
 
 drop table if exists tblTaskAirspace;

@@ -69,6 +69,7 @@ sub task_totals
     my $mindist;
     my $goal;
     my $goalalt;
+    my $glidebonus;
     my %taskt;
     my $tasPk;
     my ($minarr, $fastest, $firstdep, $mincoeff, $tqtime);
@@ -81,6 +82,12 @@ sub task_totals
     $tasPk = $task->{'tasPk'};
     $launchvalid = $task->{'launchvalid'};
     $mindist = $formula->{'mindist'};
+    $glidebonus = 0;
+    if ($task->{'sstopped'} > 0)
+    {
+        print "F: glidebonus=$glidebonus\n";
+        $glidebonus = $formula->{'glidebonus'};
+    }
 
     $sth = $dbh->prepare("select count(tarPk) as TotalPilots, sum(if(tarDistance < $mindist, $mindist, tarDistance)) as TotalDistance, sum((tarDistance > 0) or (tarResultType='lo')) as TotalLaunched FROM tblTaskResult where tasPk=$tasPk and tarResultType <> 'abs'");
 
@@ -138,10 +145,12 @@ sub task_totals
     {
         $mincoeff = $ref->{'MinCoeff'};
     }
+    print "TTT: min leading coeff=$mincoeff\n";
 
     $maxdist = 0;
     $mindept = 0;
-    $sth = $dbh->prepare("select max(tarDistance) as MaxDist from tblTaskResult where tasPk=$tasPk");
+    #$sth = $dbh->prepare("select max(tarDistance) as MaxDist from tblTaskResult where tasPk=$tasPk");
+    $sth = $dbh->prepare("select max(tarDistance+tarLastAltitude*$glidebonus) as MaxDist from tblTaskResult where tasPk=$tasPk");
     $sth->execute();
     if ($ref = $sth->fetchrow_hashref())
     {
@@ -151,6 +160,7 @@ sub task_totals
     {
         $maxdist = 0.1;
     }
+    #print "TT: glidebonus=$glidebonus maxdist=$maxdist\n";
 
     $sth = $dbh->prepare("select min(tarSS) as MinDept from tblTaskResult where tasPk=$tasPk and tarSS > 0 and tarGoal > 0");
     $sth->execute();
@@ -201,6 +211,7 @@ sub task_totals
     $taskt{'pilots'} = $pilots;
     $taskt{'maxdist'} = $maxdist;
     $taskt{'distance'} = $totdist;
+    $taskt{'median'} = $median;
     #$taskt{'taskdist'} = $taskdist;
     $taskt{'launched'} = $launched;
     $taskt{'launchvalid'} = $launchvalid;
@@ -528,7 +539,7 @@ sub points_allocation
     # Get all pilots and process each of them 
     # pity it can't be done as a single update ...
     $dbh->do('set @x=0;');
-    $sth = $dbh->prepare("select \@x:=\@x+1 as Place, tarPk, tarDistance, tarSS, tarES, tarPenalty, tarResultType, tarLeadingCoeff, tarGoal from tblTaskResult where tasPk=$tasPk and tarResultType <> 'abs' order by tarDistance desc, tarES");
+    $sth = $dbh->prepare("select \@x:=\@x+1 as Place, tarPk, tarDistance, tarSS, tarES, tarPenalty, tarResultType, tarLeadingCoeff, tarGoal, tarLastAltitude from tblTaskResult where tasPk=$tasPk and tarResultType <> 'abs' order by tarDistance desc, tarES");
     $sth->execute();
     while ($ref = $sth->fetchrow_hashref()) 
     {
@@ -538,7 +549,18 @@ sub points_allocation
         $taskres{'tarPk'} = $ref->{'tarPk'};
         $taskres{'penalty'} = $ref->{'tarPenalty'};
         $taskres{'distance'} = $ref->{'tarDistance'};
+        $taskres{'stopalt'} = $ref->{'tarLastAltitude'};
         # set pilot to min distance if they're below that ..
+        print "sstopped=", $task->{'sstopped'}, " stopalt=", $taskres{'stopalt'}, " glidebonus=", $formula->{'glidebonus'}, "\n";
+        if ($task->{'sstopped'} > 0 && $taskres{'stopalt'} > 0 && $formula->{'glidebonus'} > 0)
+        {
+            print "Stopped height bonus: ", $formula->{'glidebonus'} * $taskres{'stopalt'}, "\n";
+            $taskres{'distance'} = $taskres{'distance'} + $formula->{'glidebonus'} * $taskres{'stopalt'};
+            if ($taskres{'distance'} > $task->{'ssdistance'})
+            {
+                $taskres{'distance'} = $task->{'ssdistance'};
+            }
+        }
         if ($taskres{'distance'} < $formula->{'mindist'})
         {
             $taskres{'distance'} = $formula->{'mindist'};
@@ -622,7 +644,7 @@ sub points_allocation
                 # adjust for late starters
                 $pil->{'coeff'} = $pil->{'coeff'} + ($pil->{'startSS'} - $taskt->{'firstdepart'});
             }
-            print "$traPk leadout: ", $pil->{'coeff'}, ", $Cmin\n";
+            print "$tarPk leadout: ", $pil->{'coeff'}, ", $Cmin\n";
             if ($pil->{'coeff'} > 0)
             {
                 if ($pil->{'coeff'} <= $Cmin)
@@ -639,6 +661,10 @@ sub points_allocation
                 }
                 print "$tarPk Pdepart: $Pdepart\n";
             }
+        }
+        elsif ($task->{'departure'} eq 'off')
+        {
+            $Pdepart = 0;
         }
         else
         {

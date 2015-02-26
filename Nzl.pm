@@ -39,14 +39,16 @@ sub task_totals
     my ($minarr, $fastest, $firstdep, $mincoeff);
     my $mindist;
     my $topnine;
+    my $stop;
 
     $mindist = 0;
     $tasPk = $task->{'tasPk'};
-    $sth = $dbh->prepare("select F.* from tblTask T, tblCompetition C, tblFormula F where T.tasPk=$tasPk and C.comPk=T.comPk and F.forPk=C.forPk");
+    $sth = $dbh->prepare("select F.*, T.tasStoppedTime from tblTask T, tblCompetition C, tblFormula F where T.tasPk=$tasPk and C.comPk=T.comPk and F.forPk=C.forPk");
     $sth->execute();
     if ($ref = $sth->fetchrow_hashref()) 
     {
         # convert to metres ...
+        $stop = $ref->{'tasStoppedTime'};
         $mindist = $ref->{'forMinDistance'} * 1000;
     }
 
@@ -117,10 +119,15 @@ sub task_totals
     # Get the top 90% dist ...
     $topnine = 0;
     $dbh->do('set @x=0;');
-    $sth = $dbh->prepare("select \@x:=\@x+1 as Place, tarDistance from tblTaskResult where tasPk=$tasPk and (tarResultType='lo' or tarResultType='goal') order by tarDistance desc");
+    $sth = $dbh->prepare("select \@x:=\@x+1 as Place, tarDistance, (tarLastTime - tarSS) as airTime from tblTaskResult where tasPk=$tasPk and (tarResultType='lo' or tarResultType='goal') order by tarDistance desc");
     $sth->execute();
     while ($ref = $sth->fetchrow_hashref()) 
     {
+        if ($fastest == 0 && $ref->{'Place'} == 1)
+        {
+            $fastest = $ref->{'airTime'};
+        }
+
         if ($ref->{'Place'} <= $self->round($pilots * 0.90))
         {
             $topnine = $topnine + $ref->{'tarDistance'};
@@ -141,6 +148,7 @@ sub task_totals
     $taskt{'firstarrival'} = $minarr;
     $taskt{'mincoeff'} = $mincoeff;
     $taskt{'topninety'} = $topnine;
+    $taskt{'stopped'} = $stop;
 
     return \%taskt;
 }
@@ -174,7 +182,7 @@ sub day_quality
 
     $distance = $taskt->{'topninety'} / $self->round($taskt->{'pilots'} * 0.9) 
             / ($formula->{'nomdist'} / 1000) / 1000;
-    #print "top90=", $taskt->{'topninety'}, " launched=", $self->round($taskt->{'launched'} * 0.9), " nomdist=", $formula->{'nomdist'} / 1000;
+    print "top90=", $taskt->{'topninety'}, " launched=", $self->round($taskt->{'launched'} * 0.9), " nomdist=", $formula->{'nomdist'} / 1000;
     print "distance quality=$distance\n";
     if ($distance > 1.2) 
     {
@@ -401,7 +409,7 @@ sub points_allocation
     # Get all pilots and process each of them 
     # pity it can't be done as a single update ...
     $dbh->do('set @x=0;');
-    $sth = $dbh->prepare("select \@x:=\@x+1 as Place, tarPk, tarDistance, tarSS, tarES, tarPenalty, tarResultType, tarLeadingCoeff, tarGoal from tblTaskResult where tasPk=$tasPk and tarResultType <> 'abs' order by tarDistance desc, tarES");
+    $sth = $dbh->prepare("select \@x:=\@x+1 as Place, tarPk, tarDistance, tarSS, tarES, tarPenalty, tarResultType, tarLeadingCoeff, tarGoal, tarLastAltitude from tblTaskResult where tasPk=$tasPk and tarResultType <> 'abs' order by tarDistance desc, tarES");
     $sth->execute();
     while ($ref = $sth->fetchrow_hashref()) 
     {
