@@ -35,6 +35,13 @@ Automatic airspace violation checks
 
 BUGS:
 
+Task scoring issue:
+    Launch inside WP1
+    1st -> WP1 exit 2000m
+    2nd -> WP1 entry 400m
+        (in & out multiple times - seems to restart at 1st TP )
+    3rd -> WP3 endspeed somewhere
+
 Make an "install" package for Cpanel
     (basically create the database without a command line)
 
@@ -62,6 +69,8 @@ Possible bug with lead-out coefficient for start-gate jumpers (esp in elapsed-in
 Implement independent start gates for teams properly
 
 TODO:
+
+Rewrite the web interface into a more modern web page layout (bootstrap perhaps).
 
 Add a git commit check to stop me warn/fix hardcoded password.
 
