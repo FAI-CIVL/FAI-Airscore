@@ -270,6 +270,11 @@ sub read_task
         $task{'comPk'} = $ref->{'comPk'};
         $task{'date'} = $ref->{'tasDate'};
         $task{'region'} = $ref->{'regPk'};
+        $task{'launchopen'} = $ref->{'tasTaskStart'};
+        $task{'slaunch'} = (24*3600 + substr($ref->{'tasTaskStart'},11,2) * 3600 +
+                            substr($ref->{'TaskStart'},14,2) * 60 +
+                            substr($ref->{'TaskStart'},17,2) - 
+                            $ref->{'comTimeOffset'} * 3600) % (24*3600);
         $task{'start'} = $ref->{'tasStartTime'};
         $task{'gmstart'} = $ref->{'ustime'} - $ref->{'comTimeOffset'} * 3600;
         $task{'sstart'} = (24*3600 + substr($ref->{'tasStartTime'},11,2) * 3600 +
@@ -306,7 +311,7 @@ sub read_task
                             substr($ref->{'tasStoppedTime'},14,2) * 60 +
                             substr($ref->{'tasStoppedTime'},17,2) - 
                             $ref->{'comTimeOffset'} * 3600) % (24*3600);
-            if ($task{'sstopped'} < $task{'sstart'})
+            if ($task{'sstopped'} < $task{'slaunch'})
             {
                 $task{'sstopped'} = $task{'sstopped'} + 24*3600;
             }
@@ -372,20 +377,6 @@ sub read_task
 
     $task{'waypoints'} = \@waypoints;
 
-    # calculate shortest route distance ..
-    #my (%s1, %s2);
-    #my $dist;
-    #for my $i (0 .. $#waypoints-1)
-    #{
-    #    $s1{'lat'} = $waypoints[$i]->{'short_lat'};
-    #    $s1{'long'} = $waypoints[$i]->{'short_long'};
-    #    $s2{'lat'} = $waypoints[$i+1]->{'short_lat'};
-    #    $s2{'long'} = $waypoints[$i+1]->{'short_long'};
-    #    $dist = $dist + distance(\%s1, \%s2);
-    #}
-    #print "short_distance=$dist\n";
-    #$task{'short_distance'} = $dist;
-
     return \%task;
 }
 
@@ -394,7 +385,7 @@ sub read_task
 #
 sub read_formula
 {
-    my ($task) = @_;
+    my ($comPk) = @_;
     my $mindist = 0;
     my %formula;
 
@@ -412,7 +403,7 @@ sub read_formula
     $formula{'diffcalc'} = 'all';
     $formula{'lineardist'} = 0.5;
 
-    $sth = $dbh->prepare("select F.* from tblTask T, tblCompetition C, tblFormula F where T.tasPk=$task and C.comPk=T.comPk and F.forPk=C.forPk");
+    $sth = $dbh->prepare("select F.* from tblCompetition C, tblFormula F where C.comPk=$comPk and F.forPk=C.forPk");
     $sth->execute();
     if ($ref = $sth->fetchrow_hashref()) 
     {
@@ -428,6 +419,13 @@ sub read_formula
         $formula{'difframp'} = $ref->{'forDiffRamp'};
         $formula{'diffdist'} = $ref->{'forDiffDist'} * 1000;
         $formula{'diffcalc'} = $ref->{'forDiffCalc'};
+        $formula{'distmeasure'} = $ref->{'forDistMeasure'};
+        $formula{'olcpoints'} = $ref->{'forOLCPoints'};
+        $formula{'olcbase'} = $ref->{'forOLCBase'};
+        $formula{'weightstart'} = $ref->{'forWeightStart'};
+        $formula{'weightspeed'} = $ref->{'forWeightSpeed'};
+        $formula{'weightarrival'} = $ref->{'forWeightArrival'};
+        $formula{'glidebonus'} = $ref->{'forStoppedGlideBonus'};
     }
 
     # FIX: add failsafe checking?
@@ -500,6 +498,7 @@ sub store_result
     my $comment;
     my $turnpoints;
     my $stopalt;
+    my $stoptime;
 
     $tasPk = $track->{'tasPk'};
     $traPk = $track->{'traPk'};
@@ -510,6 +509,7 @@ sub store_result
     $penalty = 0 + $result->{'penalty'};
     $comment = $result->{'comment'};
     $stopalt = 0 + $result->{'stopalt'};
+    $stoptime = 0 + $result->{'stoptime'};
     if (!$goal)
     {
         $goal = 0;
@@ -532,8 +532,8 @@ sub store_result
 
     #print "insert into tblTaskResult (tasPk,traPk,tarDistance,tarSpeed,tarStart,tarGoal,tarSS,tarES,tarTurnpoints) values ($tasPk,$traPk,$dist,$speed,$start,$goal,$ss,$endss,$turnpoints)";
     $dbh->do("delete from tblTaskResult where traPk=? and tasPk=?", undef, $traPk, $tasPk);
-    print("insert into tblTaskResult (tasPk,traPk,tarDistance,tarSpeed,tarStart,tarGoal,tarSS,tarES,tarTurnpoints,tarLeadingCoeff,tarPenalty,tarComment,tarLastAltitude) values ($tasPk,$traPk,$dist,$speed,$start,$goal,$ss,$endss,$turnpoints,$coeff,$penalty,'$comment',$stopalt)\n");
-    $sth = $dbh->prepare("insert into tblTaskResult (tasPk,traPk,tarDistance,tarSpeed,tarStart,tarGoal,tarSS,tarES,tarTurnpoints,tarLeadingCoeff,tarPenalty,tarComment,tarLastAltitude) values ($tasPk,$traPk,$dist,$speed,$start,$goal,$ss,$endss,$turnpoints,$coeff,$penalty,'$comment',$stopalt)");
+    print("insert into tblTaskResult (tasPk,traPk,tarDistance,tarSpeed,tarStart,tarGoal,tarSS,tarES,tarTurnpoints,tarLeadingCoeff,tarPenalty,tarComment,tarLastAltitude,tarLastTime) values ($tasPk,$traPk,$dist,$speed,$start,$goal,$ss,$endss,$turnpoints,$coeff,$penalty,'$comment',$stopalt,$stoptime)\n");
+    $sth = $dbh->prepare("insert into tblTaskResult (tasPk,traPk,tarDistance,tarSpeed,tarStart,tarGoal,tarSS,tarES,tarTurnpoints,tarLeadingCoeff,tarPenalty,tarComment,tarLastAltitude,tarLastTime) values ($tasPk,$traPk,$dist,$speed,$start,$goal,$ss,$endss,$turnpoints,$coeff,$penalty,'$comment',$stopalt,$stoptime)");
     $sth->execute();
 
     if (defined($result->{'kmtime'}))
@@ -887,6 +887,19 @@ sub cartesian2polar
     $pol{'dlong'} = $pol{'long'} * 180 / $pi;
 
     return \%pol;
+}
+
+sub ddequal
+{
+    my ($wp1, $wp2) = @_;
+
+    if ($wp1->{'dlat'} == $wp2->{'dlat'} &&
+        $wp1->{'dlon'} == $wp2->{'dlon'})
+    {  
+        return 1;
+    }
+
+    return 0;
 }
 
 #
