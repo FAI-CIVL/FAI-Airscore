@@ -1,4 +1,4 @@
-#!/usr/bin/perl 
+#!/usr/bin/perl -I/home/geoff/bin
 
 
 #
@@ -36,7 +36,7 @@ sub points_weight
     $quality = $taskt->{'quality'};
 
     #print "distweight=$distweight($Ngoal/$Nfly)\n";
-    $x = $taskt->{'goal'} / $taskt->{'launched'};
+    $x = $taskt->{'ess'} / $taskt->{'launched'};
     $distweight = 1-0.8*sqrt($x);
     $Adistance = 1000 * $quality * $distweight;
 
@@ -58,9 +58,9 @@ sub points_weight
     else
     {
         # Allocate some to leadout
-        $Aspeed = 1000 * $quality * (1-$distweight) * 4.6/8;
-        $Astart = 1000 * $quality * (1-$distweight) * 1.4/8;
-        $Aarrival = 1000 * $quality * (1-$distweight) * 2/8;
+        $Aspeed = $quality * (1-$distweight) * 4.6/8 * 1000;
+        $Astart = $quality * (1-$distweight) * 1.4/8 * 1000;
+        $Aarrival = $quality * (1-$distweight) * 2/8 * 1000;
     }
 
     print "points_weight (0): ($Fversion) Quality=$quality Adist=$Adistance, Aspeed=$Aspeed, Astart=$Astart, Aarrival=$Aarrival\n";

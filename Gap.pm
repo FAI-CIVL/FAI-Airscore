@@ -68,6 +68,7 @@ sub task_totals
     my $pilots;
     my $mindist;
     my $goal;
+    my $ess;
     my $goalalt;
     my $glidebonus;
     my %taskt;
@@ -104,6 +105,15 @@ sub task_totals
     if ($ref = $sth->fetchrow_hashref())
     {
         $goal = $ref->{'GoalPilots'};
+    }
+
+    # pilots in ESS
+    $sth = $dbh->prepare("select count(tarPk) as ESSPilots from tblTaskResult where tasPk=$tasPk and (tarES-tarSS) > 0");
+    $sth->execute();
+    $goal = 0;
+    if ($ref = $sth->fetchrow_hashref())
+    {
+        $ess  = $ref->{'ESSPilots'};
     }
 
     $sth = $dbh->prepare("select min(tarES) as MinArr from tblTaskResult where tasPk=$tasPk and (tarES-tarSS) > 0");
@@ -217,6 +227,7 @@ sub task_totals
     $taskt{'launchvalid'} = $launchvalid;
     #$taskt{'quality'} = $quality;
     $taskt{'goal'} = $goal;
+    $taskt{'ess'} = $ess;
     $taskt{'fastest'} = $fastest;
     $taskt{'tqtime'} = $tqtime;
     $taskt{'firstdepart'} = $mindept;
@@ -279,7 +290,7 @@ sub day_quality
         $distance = 0;
     }
             
-    if ($taskt->{'goal'} > 0)
+    if ($taskt->{'ess'} > 0)
     {
         $tmin = $taskt->{'tqtime'};
         $x = $tmin / ($formula->{'nomtime'});
@@ -339,6 +350,13 @@ sub points_weight
         $Astart = 1000 * $quality * (1-$distweight) * 1/8;
         $Aarrival = 1000 * $quality * (1-$distweight) * 1/8;
     }
+    elsif ($formula->{'version'} eq 'hg2013')
+    {
+        $Adistance = 1000 * (0.9-1.665*$x+1.713*$x*$x-0.587*$x*$x*$x) * $quality;
+        $Astart = 1000 * $quality * (1-$distweight) * 1.4/8;
+        $Aarrival = 1000 * $quality * (1-$distweight) * 1/8;
+        $Aspeed = 1000 - $Adistance - $Astart - $Aarrival;
+    }
     else
     {
         # 2000, 2002, 2007
@@ -358,11 +376,19 @@ sub points_weight
     }
     elsif ($task->{'arrival'} eq 'off')
     {
-        $dem = $Adistance + $Aspeed + $Astart;
-        $Adistance = 1000 * $quality *($Adistance / $dem);
-        $Aspeed = 1000 * $quality * ($Aspeed / $dem);
-        $Astart =  1000 * $quality * ($Astart / $dem);
-        $Aarrival = 0; 
+        if ($formula->{'version'} eq 'hg2013')
+        {
+            $Aarrival = 0; 
+            $Aspeed = 1000 - $Adistance - $Astart - $Aarrival;
+        }
+        else
+        {
+            $dem = $Adistance + $Aspeed + $Astart;
+            $Adistance = 1000 * $quality *($Adistance / $dem);
+            $Aspeed = 1000 * $quality * ($Aspeed / $dem);
+            $Astart =  1000 * $quality * ($Astart / $dem);
+            $Aarrival = 0; 
+        }
     }
     elsif ($task->{'departure'} eq 'off')
     {
@@ -448,6 +474,117 @@ sub calc_kmdiff
 }
 
 
+# Calculate pilot arrival score
+sub pilot_arrival
+{
+
+    my ($formula, $taskt, $pil, $Aarrival) = @_;
+    my $x = 0;
+    my $Parrival = 0;
+
+    if ($pil->{'time'} > 0)
+    {
+        if ($formula->{'class'} eq 'ozgap' && $formula->{'version'} ne '2000')
+        {
+            # OzGAP / Timed arrival
+            print "    time arrival ", $pil->{'timeafter'}, ", $Ngoal\n";
+            $x = 1-$pil->{'timeafter'}/(90*60);
+            $Parrival = $Aarrival*(0.2+0.037*$x+0.13*($x*$x)+0.633*($x*$x*$x));
+        }
+        else
+        {   
+            # Place arrival
+            print "    place arrival ", $pil->{'place'}, ", ",$taskt->{'ess'}, "\n";
+            if ($taskt->{'ess'} > 0)
+            {
+                $x = 1 - ($pil->{'place'}-1)/$taskt->{'ess'};
+                $Parrival = $Aarrival*(0.2+0.037*$x+0.13*($x*$x)+0.633*($x*$x*$x));
+            }
+            else
+            {
+                $Parrival = 0;
+            }
+        }
+
+        if ($Parrival < 0)
+        {
+            $Parrival = 0;
+        }
+
+        print "x=$x parrive=$Parrival\n";
+    }
+
+    return $Parrival;
+}
+
+
+sub pilot_departure_leadout
+{
+    my ($formula, $task, $taskt, $pil, $astart, $aspeed) = @_;
+    my $x = 0;
+    my $Parrival = 0;
+    my $Cmin = $taskt->{'mincoeff'};
+
+    # Pilot departure score
+    print "    pil->startSS=", $pil->{'startSS'}, "\n";
+    print "    pil->endSS=", $pil->{'endSS'}, "\n";
+    print "    taskt->first=", $taskt->{'firstdepart'}, "\n";
+
+    $Pdepart = 0;
+    if ($task->{'departure'} eq 'leadout')
+    {
+        # Leadout point (instead of departure)
+        if ($pil->{'startSS'} > $taskt->{'firstdepart'})
+        {
+            # adjust for late starters
+            $pil->{'coeff'} = $pil->{'coeff'} + ($pil->{'startSS'} - $taskt->{'firstdepart'});
+        }
+        print "    leadout: ", $pil->{'coeff'}, ", $Cmin\n";
+        if ($pil->{'coeff'} > 0)
+        {
+            if ($pil->{'coeff'} <= $Cmin)
+            {
+                $Pdepart = $astart;
+            }
+            elsif ($Cmin <= 0)
+            {
+                $Pdepart = 0;
+            }
+            else
+            {
+                $Pdepart = $astart * (1-(($pil->{'coeff'}-$Cmin)/3600/sqrt($Cmin/3600))**(2/3));
+            }
+        }
+    }
+    elsif ($task->{'departure'} eq 'off')
+    {
+        $Pdepart = 0;
+        print "    depart off\n";
+    }
+    else
+    {
+        # Normal departure points ..
+        print "    normal departure\n";
+        $x = ($pil->{'startSS'} - $taskt->{'firstdepart'})/$formula->{'nomtime'};
+        if ($x < 1/2 && $pil->{'time'} > 0)
+        {
+            $Pdepart = $Pspeed*$astart/$aspeed*(1-6.312*$x+10.932*($x*$x)-2.990*($x*$x*$x));
+            #$Pdepart = $astart*(1-6.312*$x+10.932*($x*$x)-2.990*($x*$x*$x));
+            #$Pdepart = $aspeed/6*(1-6.312*$x+10.932*($x*$x)-2.990*($x*$x*$x));
+        }
+    }
+
+    # Sanity
+    if ($Pdepart < 0)
+    {
+        $Pdepart = 0;
+    }
+
+    print "    Pdepart: $Pdepart\n";
+    return $Pdepart;
+}
+
+
 #    POINTS ALLOCATION
 #    Points Allocation:
 #    x=Ngoal/Nfly
@@ -528,8 +665,6 @@ sub points_allocation
     $Tfarr = $taskt->{'firstarrival'};
     $Cmin = $taskt->{'mincoeff'};
     print Dumper($taskt);
-
-    print "Nfly=$Nfly Nlo=$Nlo\n";
 
     # Some GAP basics
     ($Adistance, $Aspeed, $Astart, $Aarrival) = $self->points_weight($task, $taskt, $formula);
@@ -630,85 +765,11 @@ sub points_allocation
             $Pspeed = 0;
         }
 
-        # Pilot departure score
-        print "$tarPk pil->startSS=", $pil->{'startSS'}, "\n";
-        print "$tarPk pil->endSS=", $pil->{'endSS'}, "\n";
-        print "$tarPk tast->first=", $taskt->{'firstdepart'}, "\n";
-
-        $Pdepart = 0;
-        if ($task->{'departure'} eq 'leadout')
-        {
-            # Leadout point (instead of departure)
-            if ($pil->{'startSS'} > $taskt->{'firstdepart'})
-            {
-                # adjust for late starters
-                $pil->{'coeff'} = $pil->{'coeff'} + ($pil->{'startSS'} - $taskt->{'firstdepart'});
-            }
-            print "$tarPk leadout: ", $pil->{'coeff'}, ", $Cmin\n";
-            if ($pil->{'coeff'} > 0)
-            {
-                if ($pil->{'coeff'} <= $Cmin)
-                {
-                    $Pdepart = $Astart;
-                }
-                elsif ($Cmin <= 0)
-                {
-                    $Pdepart = 0;
-                }
-                else
-                {
-                    $Pdepart = $Astart * (1-(($pil->{'coeff'}-$Cmin)/3600/sqrt($Cmin/3600))**(2/3));
-                }
-                print "$tarPk Pdepart: $Pdepart\n";
-            }
-        }
-        elsif ($task->{'departure'} eq 'off')
-        {
-            $Pdepart = 0;
-        }
-        else
-        {
-            # Normal departure points ..
-            $x = ($pil->{'startSS'} - $taskt->{'firstdepart'})/$formula->{'nomtime'};
-            if ($x < 1/2 && $pil->{'time'} > 0)
-            {
-                $Pdepart = $Pspeed*$Astart/$Aspeed*(1-6.312*$x+10.932*($x*$x)-2.990*($x*$x*$x));
-                #$Pdepart = $Astart*(1-6.312*$x+10.932*($x*$x)-2.990*($x*$x*$x));
-                #$Pdepart = $Aspeed/6*(1-6.312*$x+10.932*($x*$x)-2.990*($x*$x*$x));
-            }
-        }
-
-        # Sanity
-        if ($Pdepart < 0)
-        {
-            $Pdepart = 0;
-        }
-
+        # Pilot departure/leading points
+        $Pdepart = pilot_departure_leadout($formula, $task, $taskt, $pil, $Astart, $Aspeed);
 
         # Pilot arrival score
-        $Parrival = 0;
-        if ($pil->{'time'} > 0)
-        {
-            if ($formula->{'class'} eq 'ozgap' && $formula->{'version'} ne '2000')
-            {
-                # OzGAP / Timed arrival
-                print "$tarPk time arrival ", $pil->{'timeafter'}, ", $Ngoal\n";
-                $x = 1-$pil->{'timeafter'}/(90*60);
-            }
-            else
-            {   
-                # Place arrival
-                print "$tarPk place arrival ", $pil->{'place'}, ", $Ngoal\n";
-                $x = 1-($pil->{'place'}-1)/($Ngoal);
-            }
-
-            $Parrival = $Aarrival*(0.2+0.037*$x+0.13*($x*$x)+0.633*($x*$x*$x));
-            print "x=$x parrive=$Parrival\n";
-        }
-        if ($Parrival < 0)
-        {
-            $Parrival = 0;
-        }
+        $Parrival = pilot_arrival($formula, $taskt, $pil, $Aarrival);
 
         # Penalty for not making goal ..
         if ($pil->{'goal'} == 0)
