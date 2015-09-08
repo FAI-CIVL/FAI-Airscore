@@ -359,8 +359,7 @@ sub validate_task
 
     # Stuff for leadout coeff calculation
     # against starttime (rather than first start time)
-    my ($maxdist, $cwdist, $coeff, $essdist);
-    $cwdist = 0;
+    my ($maxdist, $coeff, $essdist);
     $coeff = 0;
     $kmtime = init_kmtime($task->{'ssdistance'});
     $maxdist = 0;
@@ -432,7 +431,6 @@ sub validate_task
                     $wcount = $lastin;
                     #$wmade = $lastin;
                     #printf "dec wmade=$wmade\n";
-                    $cwdist = 0; # perhaps should be sum to wcount?
                     $wpt = $waypoints->[$wcount];
                     $reflag = -1;
                 }
@@ -458,7 +456,7 @@ sub validate_task
         $s1{'long'} = $wpt->{'short_long'};
         #$sdist = distance($coord, \%s1);
 
-        #print "wcount=$wcount wmade=$wmade cwdist=$cwdist newdist=$newdist maxdist=$maxdist time=", $coord->{'time'}, "\n";
+        #print "wcount=$wcount wmade=$wmade newdist=$newdist maxdist=$maxdist time=", $coord->{'time'}, "\n";
 
         # Work out leadout coeff / maxdist if we've moved on
         if ($starttime != 0 and ($newdist > $maxdist))
@@ -595,7 +593,6 @@ sub validate_task
                     last;
                 }
                 $wpt = $waypoints->[$wcount];
-                $cwdist = $cwdist + short_dist($waypoints->[$wcount-1], $wpt);
     
                 if ($closestwpt < $wcount)
                 {
@@ -687,7 +684,6 @@ sub validate_task
     
                 # Are we any closer?
                 $wpt = $waypoints->[$wcount];
-                $cwdist = $cwdist + short_dist($waypoints->[$wcount-1], $wpt);
                 if ($closestwpt < $wcount)
                 {
                     $closest = 9999999999;
