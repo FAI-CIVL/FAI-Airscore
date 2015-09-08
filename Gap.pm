@@ -584,6 +584,45 @@ sub pilot_departure_leadout
     return $Pdepart;
 }
 
+sub pilot_penalty
+{
+    my ($formula, $task, $taskt, $pil, $astart, $aspeed) = @_;
+    my $penalty = 0;
+
+# Penalty is in seconds .. convert for OzGap penalty.
+#        if ($penalty > 0) 
+#        {
+#            $penspeed = $penalty;
+#            if ($penspeed > 90)
+#            {
+#                $penspeed = 90;
+#            };
+#            $penspeed = ($penspeed + 10) / 100;
+#            $penspeed = ($Pdepart + $Pspeed) * $penspeed;
+#
+#            $pendist = 0;
+#            $penalty = $penalty - 90;
+#            if ($penalty > 0)
+#            {
+#                if ($penalty > $Tnom / 3)
+#                {
+#                    $pendist = $Pdist;
+#                }
+#                else
+#                {
+#                    $pendist = ((($penalty + 30) / 60) * 2) / 100;
+#                    $pendist = $Pdist * $penalty;
+#                }
+#            }
+#
+#            print "jumped=$penalty penspeed=$penspeed pendist=$pendist\n";
+#
+#            $penalty = round($penspeed + $pendist);
+#            print "computed penalty=$penalty\n";
+#        }
+
+    return $penalty;
+}
 
 #    POINTS ALLOCATION
 #    Points Allocation:
@@ -778,6 +817,7 @@ sub points_allocation
             $Parrival = $Parrival - $Parrival * $formula->{'sspenalty'}; 
         }
 
+        # Sanity
         if (($pil->{'result'} eq 'dnf') or ($pil->{'result'} eq 'abs'))
         {
             $Pdist = 0;
@@ -792,37 +832,7 @@ sub points_allocation
             $Pdepart = 0;
         }
 
-        # Penalty is in seconds .. convert for OzGap penalty.
-#        if ($penalty > 0) 
-#        {
-#            $penspeed = $penalty;
-#            if ($penspeed > 90)
-#            {
-#                $penspeed = 90;
-#            };
-#            $penspeed = ($penspeed + 10) / 100;
-#            $penspeed = ($Pdepart + $Pspeed) * $penspeed;
-#
-#            $pendist = 0;
-#            $penalty = $penalty - 90;
-#            if ($penalty > 0)
-#            {
-#                if ($penalty > $Tnom / 3)
-#                {
-#                    $pendist = $Pdist;
-#                }
-#                else
-#                {
-#                    $pendist = ((($penalty + 30) / 60) * 2) / 100;
-#                    $pendist = $Pdist * $penalty;
-#                }
-#            }
-#
-#            print "jumped=$penalty penspeed=$penspeed pendist=$pendist\n";
-#
-#            $penalty = round($penspeed + $pendist);
-#            print "computed penalty=$penalty\n";
-#        }
+        # $penalty = pilot_penalty($formula, $task, $taskt, $pil, $Astart, $Aspeed);
 
         $Pscore = $Pdist + $Pspeed + $Parrival + $Pdepart - $penalty;
 
