@@ -110,7 +110,7 @@ sub task_totals
     # pilots in ESS
     $sth = $dbh->prepare("select count(tarPk) as ESSPilots from tblTaskResult where tasPk=$tasPk and (tarES-tarSS) > 0");
     $sth->execute();
-    $goal = 0;
+    $ess = 0;
     if ($ref = $sth->fetchrow_hashref())
     {
         $ess  = $ref->{'ESSPilots'};
@@ -155,7 +155,7 @@ sub task_totals
     {
         $mincoeff = $ref->{'MinCoeff'};
     }
-    print "TTT: min leading coeff=$mincoeff\n";
+    #print "TTT: min leading coeff=$mincoeff\n";
 
     $maxdist = 0;
     $mindept = 0;
