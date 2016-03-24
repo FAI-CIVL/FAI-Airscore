@@ -95,10 +95,10 @@ sub determine_start
         {
             $spt = $i;
             $startssdist = $cwdist;
-            #if ($waypoints->[$i]->{'how'} eq 'exit' && )
-            #{
-            #    $startssdist += $waypoints->[$i]->{'radius'};
-            #}
+            if ($startssdist == 0 && ($waypoints->[$i]->{'how'} eq 'exit'))
+            {
+                $startssdist += $waypoints->[$i]->{'radius'};
+            }
         }
         if ($waypoints->[$i]->{'type'} eq 'speed') 
         {
@@ -147,14 +147,16 @@ sub determine_start
 sub precompute_waypoint_dist
 {
     my ($waypoints) = @_;
-    my $wptdistcache = [];
     my $wcount = scalar @$waypoints;
 
     my $dist;
     my (%s1, %s2);
+    
+    $wptdistcache = [];
 
     $dist = 0.0;
-    for my $i (0 .. $wcount-1)
+    $wptdistcache->[0] = 0.0;
+    for my $i (0 .. $wcount-2)
     {
         $s1{'lat'} = $waypoints->[$i]->{'short_lat'};
         $s1{'long'} = $waypoints->[$i]->{'short_long'};
@@ -162,18 +164,36 @@ sub precompute_waypoint_dist
         $s2{'long'} = $waypoints->[$i+1]->{'short_long'};
         $dist = $dist + distance(\%s1, \%s2);
         $wptdistcache->[$i+1] = $dist;
+        print "$i: $dist\n";
+
+        my $sdist = qckdist2(\%s1, $waypoints->[$i]);
+        if ($waypoints->[$i]->{'radius'} > $sdist+100)
+        {
+            $waypoints->[$i]->{'inside'} = 1;
+        }
+        else
+        {
+            $waypoints->[$i]->{'inside'} = 0;
+        }
     }
+    print "precompute dist=$dist\n";
 }
 
 sub compute_waypoint_dist
 {
     my ($waypoints, $wcount) = @_;
     my $dist;
+    my $wpdist = -1;
     my (%s1, %s2);
 
     if (defined($wptdistcache))
     {
         return $wptdistcache->[$wcount];
+    }
+
+    if ($debug)
+    {
+        print "compute_waypoint_dist (wcount=$wcount\n";
     }
 
     $dist = 0.0;
@@ -183,11 +203,23 @@ sub compute_waypoint_dist
         $s1{'long'} = $waypoints->[$i]->{'short_long'};
         $s2{'lat'} = $waypoints->[$i+1]->{'short_lat'};
         $s2{'long'} = $waypoints->[$i+1]->{'short_long'};
-        $dist = $dist + distance(\%s1, \%s2);
+        $wpdist = distance(\%s1, \%s2);
+        $dist = $dist + $wpdist;
+
         if ($debug)
         {
-            print "compute_waypoint_dist (wcount=$wcount): $i dist $dist\n";
+            print "   compute_waypoint_dist (wcount=$wcount): $i: dist=$dist ($wpdist)\n";
         }
+    }
+    
+    if ($wcount > -1 && $wpdist == 0)
+    {
+        $dist = $dist + $waypoints->[$wcount-1]->{'radius'};
+    }
+
+    if ($debug)
+    {
+        print "    compute_waypoint_dist (wcount=$wcount): $i final dist $dist\n";
     }
 
     return $dist;
@@ -229,12 +261,12 @@ sub determine_utcmod
     $utcmod = 0;
     if ($coord->{'time'} > $task->{'sfinish'})
     {
-        if (debug) { print "utcmod set at 86400\n"; }
+        if ($debug) { print "utcmod set at 86400\n"; }
         $utcmod = 86400;
     }
     elsif ($coord->{'time'}+43200 < $task->{'sstart'})
     {
-        if (debug) { print "utcmod set at -86400\n"; }
+        if ($debug) { print "utcmod set at -86400\n"; }
         $utcmod = -86400;
     }
 
@@ -250,26 +282,57 @@ sub distance_flown
     my $allpoints = scalar @$waypoints;
     my $cwdist = 0;
     my $nwdist = 0;
+    my $exitflag = 0;
     my $rdist;
+    my %s1;
 
     if ($wmade > 0)
     {
         $cwdist = compute_waypoint_dist($waypoints, $wmade-1);
+        if ($nextwpt->{'how'} eq 'exit')
+        {
+            $exitflag = 1;
+        }
     }
+
+
     $nwdist = compute_waypoint_dist($waypoints, $wmade);
 
-    if ($nextwpt->{'how'} eq 'exit')
+    if ($exitflag && $nwdist == 0)
     {
         # Same centre .. is this correct?
-        $rdist = $nextwpt->{'radius'} - qckdist2($coord, $nextwpt);
-        $dist = $nwdist - $rdist;
+        #$rdist = $nextwpt->{'radius'} - qckdist2($coord, $nextwpt);
+        #$dist = $nwdist - $rdist;
+        $dist = qckdist2($coord, $nextwpt) + $cwdist;
     }
     else
     {
-        $rdist = qckdist2($coord, $nextwpt) - $nextwpt->{'radius'};;
+        $s1{'lat'} = $nextwpt->{'short_lat'};
+        $s1{'long'} = $nextwpt->{'short_long'};
+        my $sdist = qckdist2(\%s1, $nextwpt);
+        #if ($nextwpt->{'radius'} > $sdist+100)
+        if ($nextwpt->{'type'} ne 'goal' && $nextwpt->{'type'} ne 'endspeed')
+        {
+            $rdist = qckdist2($coord, \%s1);
+            #my $sdist = qckdist2($coord, $nextwpt) - $nextwpt->{'radius'};
+            #if ($sdist < $rdist)
+            #{
+            #    $rdist = $sdist;
+            #}
+        }
+        else
+        {
+            $rdist = qckdist2($coord, $nextwpt) - $nextwpt->{'radius'};
+        }
         $dist = $nwdist - $rdist;
     }
 
+    if ($debug)
+    {
+        # print "wmade=$wmade cwdist=$cwdist nwdist=$nwdist rdist=$rdist dist=$dist\n";
+    }
+
+    $dist = 0 + $dist;
     if ($dist < $cwdist)
     {
         $dist = $cwdist;
@@ -339,12 +402,13 @@ sub validate_task
     $wmade = 0;
     $stopalt = 0;
     $stoptime = 0;
-    $starttime = 0;
+    $starttime = undef;
     $startss = 0;
     $lastin = -1;
     $reflag = -1;
 
     $waypoints = $task->{'waypoints'};
+    precompute_waypoint_dist($waypoints);
     $dist = compute_waypoint_dist($waypoints, $wcount-1);
     $coords = $flight->{'coords'};
     $awards = $flight->{'awards'};
@@ -456,10 +520,10 @@ sub validate_task
         $s1{'long'} = $wpt->{'short_long'};
         #$sdist = distance($coord, \%s1);
 
-        #print "wcount=$wcount wmade=$wmade newdist=$newdist maxdist=$maxdist time=", $coord->{'time'}, "\n";
+        #print "wcount=$wcount wmade=$wmade newdist=$newdist maxdist=$maxdist starttime=$starttime time=", $coord->{'time'}, "\n";
 
         # Work out leadout coeff / maxdist if we've moved on
-        if ($starttime != 0 and ($newdist > $maxdist))
+        if (defined($starttime) and ($newdist > $maxdist))
         {
             if (!defined($endss))
             {
@@ -468,7 +532,10 @@ sub validate_task
                     $coeff = $coeff + $maxdist*($coord->{'time'}-$lastmaxcoord->{'time'});
                 }
                 $lastmaxcoord = $coord;
-                #print "newdist=$newdist maxdist=$maxdist ctime=", $coord->{'time'}, " last ctime=", $lastmaxcoord->{'time'}, " ncoeff=$coeff\n";
+                if ($debug)
+                {
+                    print "newdist=$newdist maxdist=$maxdist ctime=", $coord->{'time'}, " last ctime=", $lastmaxcoord->{'time'}, " ncoeff=$coeff\n";
+                }
             }
 
             $maxdist = $newdist;
@@ -521,7 +588,7 @@ sub validate_task
                     print "made entry waypoint ", $wpt->{'number'}, "(", $wpt->{'type'}, ") radius ", $wpt->{'radius'}, " at ", $coord->{'time'}, "\n";
                 }
                 # Do task timing stuff
-                if (($wpt->{'type'} eq 'start') && ($starttime == 0) or
+                if (($wpt->{'type'} eq 'start') && (!defined($starttime)) or
                     ($wpt->{'type'} eq 'speed'))
                 {
                     # get last start time ..
@@ -775,6 +842,7 @@ sub validate_task
     }
 
     # Can't start later than start close time
+    print "sstartclose=", $task->{'sstartclose'}, " sstart=", $task->{'sstart'}, "\n";
     if (($task->{'sstartclose'} > $task->{'sstart'}) and ($startss > $task->{'sstartclose'}))
     {
         $startss = $task->{'sstartclose'};
@@ -787,7 +855,7 @@ sub validate_task
     }
 
     # Jumped the start/speedss?
-    if ($task->{'type'} != 'route' and $starttime > 0 and (($starttime < $startss) or ($starttime < $taskss)) and ($wmade > $spt))
+    if ($task->{'type'} != 'route' and defined($starttime) and (($starttime < $startss) or ($starttime < $taskss)) and ($wmade > $spt))
     {
         my $jump;
         print "Jumped the start gate ($spt) (taskss=$taskss finish=$finish) (startss=$startss: $starttime)\n";
@@ -892,7 +960,7 @@ sub validate_task
         my $cwclosest;
 
         $dist = distance_flown($waypoints, $wmade, $closestcoord);
-        $remainingss = $essdist - $dist;
+        $remainingss = $essdist - $dist + $startssdist;
 
         # add rest of (distance_short * $task->{'sfinish'}) to coeff
         print "Incomplete ESS wcount=$wcount dist=$dist remainingss=$remainingss: ", $remainingss*($task->{'sfinish'}-$startss), "\n";
@@ -917,7 +985,7 @@ sub validate_task
         $dist = 0;
     }
 
-    $result{'start'} = $starttime;
+    $result{'start'} = 0+$starttime;
     $result{'goal'} = $goaltime;
     $result{'startSS'} = $startss;
     $result{'endSS'} = $endss;
@@ -949,6 +1017,77 @@ sub validate_task
     #print Dumper($kmtime);
 
     return \%result;
+}
+
+sub apply_handicap
+{
+    my ($task, $flight, $result) = @_;
+    my $handicap = 0;
+    my $ref;
+    my $origdist = $result->{'distance'};
+    
+    my $sth = $dbh->prepare("select hanHandicap from tblHandicap where pilPk=? and comPk=?");
+    $sth->execute($flight->{'pilPk'}, $task->{'comPk'});
+    if ($ref = $sth->fetchrow_hashref())
+    {
+        $handicap = 0.0 + $ref->{'hanHandicap'};
+    }
+
+    #if ($debug)
+    {
+        print "    handicap=$handicap, ", $flight->{'pilPk'}," ",  $task->{'comPk'}, "\n";
+    }
+
+    if ($handicap == 0)
+    {
+        return $result;
+    }
+
+    if ($result->{'endSS'} > 0)
+    {
+        my $tmdif = $result->{'endSS'} - $result->{'startSS'} - 3600;
+        if ($tmdif > 0)
+        {
+            $tmdif = $tmdif / $handicap + 3600;
+            $result->{'endSS'} = $result->{'startSS'} + $tmdif;
+        }
+
+        if ($result->{'distance'} < $task->{'short_distance'})
+        {
+            $result->{'distance'} *= $handicap ;
+        }
+    }
+    else
+    {
+        $result->{'distance'} *= $handicap;
+        $result{'coeff'} *= $handicap;
+    }
+
+    if ($result->{'distance'} > $task->{'short_distance'})
+    {
+        my ($spt, $ept, $gpt, $essdist, $startssdist) = determine_start($task, $task->{'waypoints'});
+        my $ssdist = $essdist - $startssdist;
+
+        print "    handicap essdist=$essdist startssdist=$startssdist ssdist=$ssdist result dist=", $result->{'distance'}, "\n";
+        my $multi =  $ssdist / ($origdist - $startssdist);
+
+        $result->{'distance'} = $task->{'short_distance'};
+        if ($result->{'endSS'} == 0)
+        {
+            # Calculate a time
+            print "    handicap time multi=$multi stoptime=", $result->{'stoptime'}, " startSS=", $result->{'startSS'}, "\n";
+            $result->{'endSS'} = ($result->{'stoptime'} - $result->{'startSS'}) * $multi + $result->{'startSS'};
+            $result->{'goal'} = $result->{'endSS'};
+        }
+    }
+
+    # No leadout 
+    $result{'kmtime'} = undef;
+
+#    $result{'closest'} = distance($closestcoord, $waypoints->[$closestwpt]);
+#    $result{'waypoints_made'} = $wcount;
+
+    return $result;
 }
 
 #
@@ -1002,6 +1141,12 @@ else
     $info = validate_task($flight, $task);
 }
 #print Dumper($info);
+
+my $comp = read_competition($task->{'comPk'});
+if ($comp->{'type'} eq 'RACE-handicap')
+{
+    $info = apply_handicap($task, $flight, $info);
+}
 
 # Store results in DB
 store_result($flight,$info);

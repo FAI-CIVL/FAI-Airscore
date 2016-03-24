@@ -185,6 +185,9 @@ if (array_key_exists('copytask', $_REQUEST))
     check_admin('admin',$usePk,$comPk);
     $copytaskpk = reqival('copytaskpk');
 
+    $query = "update tblTask T1, tblTask T2 set T1.tasName=T2.tasName, T1.tasTaskStart=T2.tasTaskStart, T1.tasStartTime=T2.tasStartTime, T1.tasStartCloseTime=T2.tasStartCloseTime, T1.tasFinishTime=T2.tasFinishTime, T1.tasTaskType=T2.tasTaskType, T1.regPk=T2.regPk, T1.tasSSInterval=T2.tasSSInterval, T1.tasDeparture=T2.tasDeparture, T1.tasArrival=T2.tasArrival, T1.tasHeightBonus=T2.tasHeightBonus, T1.tasComment=T2.tasComment where T1.tasPk=$tasPk and T2.tasPk=$copytaskpk";
+    $result = mysql_query($query) or die('Failed to copy task times ' . mysql_error());
+
     $query = "insert into tblTaskWaypoint (tasPk, rwpPk, tawNumber, tawType, tawHow, tawShape, tawTime, tawRadius) select $tasPk, rwpPk, tawNumber, tawType, tawHow, tawShape, tawTime, tawRadius from tblTaskWaypoint where tasPk=$copytaskpk";
     //echo $query . "<br>";
     $result = mysql_query($query) or die('Failed to copy task waypoints ' . mysql_error());
@@ -536,7 +539,8 @@ echo fis('airspace', 'Airspace Check', '');
 //if ($comEntryRestrict == 'registered')
 {
     $tasarr = array();
-    $sql = "select C.comName, T.* from tblTask T, tblCompetition C where T.tasPk<>$tasPk and T.tasDate='$tasDate' and T.regPk=$regPk and C.comPk=T.comPk";
+    #$sql = "select C.comName, T.* from tblTask T, tblCompetition C where T.tasPk<>$tasPk and T.tasDate='$tasDate' and T.regPk=$regPk and C.comPk=T.comPk";
+    $sql = "select C.comName, T.* from tblTask T, tblCompetition C where T.tasPk<>$tasPk and T.tasDate='$tasDate' and C.comPk=T.comPk";
     $result = mysql_query($sql) or die('Task copy select failed: ' . mysql_error());
     while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {

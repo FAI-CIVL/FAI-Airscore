@@ -124,7 +124,7 @@ sub task_totals
         $minarr = $ref->{'MinArr'};
     }
 
-    $sth = $dbh->prepare("select (tarES-tarSS) as MinTime from tblTaskResult where tasPk=$tasPk and (tarES-tarSS) > 0 order by (tarES-tarSS) asc limit 2");
+    $sth = $dbh->prepare("select (tarES-tarSS) as MinTime from tblTaskResult where tasPk=$tasPk and tarES > 0 and (tarES-tarSS) > 0 order by (tarES-tarSS) asc limit 2");
     $sth->execute();
     $fastest = 0;
     while ($ref = $sth->fetchrow_hashref())
@@ -187,6 +187,10 @@ sub task_totals
         {
             $goalalt = $waypoints->[$i]->{'alt'};
         }
+    }
+    if ($goalalt < 0)
+    {
+        $goalalt = 0;
     }
 
     # Find the median distance flown
@@ -713,7 +717,7 @@ sub points_allocation
     # Get all pilots and process each of them 
     # pity it can't be done as a single update ...
     $dbh->do('set @x=0;');
-    $sth = $dbh->prepare("select \@x:=\@x+1 as Place, tarPk, tarDistance, tarSS, tarES, tarPenalty, tarResultType, tarLeadingCoeff, tarGoal, tarLastAltitude from tblTaskResult where tasPk=$tasPk and tarResultType <> 'abs' order by tarDistance desc, tarES");
+    $sth = $dbh->prepare("select \@x:=\@x+1 as Place, tarPk, tarDistance, tarSS, tarES, tarPenalty, tarResultType, tarLeadingCoeff, tarGoal, tarLastAltitude from tblTaskResult where tasPk=$tasPk and tarResultType <> 'abs' order by case when tarES=0 or tarES is null then 99999999 else tarES end, tarDistance desc");
     $sth->execute();
     while ($ref = $sth->fetchrow_hashref()) 
     {
