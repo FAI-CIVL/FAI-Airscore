@@ -50,13 +50,29 @@ if (array_key_exists('score', $_REQUEST))
     exec(BINDIR . "task_score.pl $tasPk", $out, $retv);
 }
 
+if (array_key_exists('tardel', $_REQUEST))
+{
+    $tarPk = intval($_REQUEST['tardel']);
+    $out = '';
+    $retv = 0;
+    exec(BINDIR . "del_track.pl $tarPk", $out, $retv);
+    if ($retv == 0)
+    {
+        echo "Deleted: $tarPk<br>";
+    }
+    else
+    {
+        echo "$out<br>";
+    }
+}
+
 if (array_key_exists('tarup', $_REQUEST))
 {
     $tarPk = intval($_REQUEST['tarup']);
     $glider = addslashes($_REQUEST["glider$tarPk"]);
     $dhv = addslashes($_REQUEST["dhv$tarPk"]);
     $flown = addslashes($_REQUEST["flown$tarPk"]);
-    $penalty = addslashes($_REQUEST["penalty$tarPk"]);
+    $penalty = intval($_REQUEST["penalty$tarPk"]);
     $traPk = intval($_REQUEST["track$tarPk"]);
     $resulttype = 'lo';
     if ($flown == 'abs' || $flown == 'dnf' || $flown == 'lo')
@@ -148,6 +164,7 @@ $row = get_comtask($link,$tasPk);
 if ($row)
 {
     $comName = $row['comName'];
+    $comClass = $row['comClass'];
     $comPk = $row['comPk'];
     $_REQUEST['comPk'] = $comPk;
     $comTOffset = $row['comTimeOffset'] * 3600;
@@ -165,6 +182,7 @@ if ($row)
     $tasLaunchQuality = round($row['tasLaunchQuality'],2);
     $tasArrival = $row['tasArrival'];
     $tasHeightBonus = $row['tasHeightBonus'];
+    $tasStoppedTime = substr($row['tasStoppedTime'],11);
 
     if ($row['tasDeparture'] == 'leadout')
     {
@@ -215,9 +233,40 @@ foreach ($waypoints as $row)
 echo ftable($winfo, "id=\"alt\" border=\"0\" cellpadding=\"2\" cellspacing=\"0\" valign=\"top\" align=\"left\"", '', '');
 echo "</div>";
 
+if ($comClass == "HG")
+{
+    $classopts = array ( 'open' => '', 'floater' => '&class=0', 'kingpost' => '&class=1', 
+        'hg-open' => '&class=2', 'rigid' => '&class=3', 'women' => '&class=4', 'masters' => '&class=5' );
+}
+else
+{
+    $classopts = array ( 'open' => '', 'fun' => '&class=0', 'sports' => '&class=1', 
+        'serial' => '&class=2', 'women' => '&class=4', 'masters' => '&class=5' );
+}
+$cind = '';
+if ($class != '')
+{
+    $cind = "&class=$class";
+}
+$copts = array();
+foreach ($classopts as $text => $url)
+{
+    $copts[$text] = "task_result.php?comPk=$comPk&tasPk=$tasPk$url";
+}
+
+$classfilter = fselect('class', "task_result.php?comPk=$comPk&tasPk=$tasPk$cind", $copts, ' onchange="document.location.href=this.value"');
+
 echo "<div id=\"coltwo\">";
 $tinfo = array();
-$tinfo[] = array( fb("Date"), $tasDate, fb("Start"), "$tasStartTime", fb("End"), "$tasFinishTime" );
+$tinfo[] = array( fb("Task Type"), $tasTaskType, "", "", fb("Class"), $classfilter );
+if ($tasStoppedTime == "")
+{
+    $tinfo[] = array( fb("Date"), $tasDate, fb("Start"), "$tasStartTime", fb("End"), "$tasFinishTime" );
+}
+else
+{
+    $tinfo[] = array( fb("Date"), $tasDate, fb("Start"), "$tasStartTime", fb("Stopped"), "$tasStoppedTime" );
+}
 $tinfo[] = array( fb("Quality"), number_format($tasQuality,2), fb("WP Dist"), "$tasDistance km", fb("Task Dist"), "$tasShortest km" );
 $tinfo[] = array( fb("DistQ"), number_format($tasDistQuality,2), fb("TimeQ"), number_format($tasTimeQuality,2), fb("LaunchQ"), number_format($tasLaunchQuality,2) );
 echo ftable($tinfo, "id=\"alt\" border=\"0\" cellpadding=\"3\" cellspacing=\"0\" valign=\"top\" align=\"right\"", '', '');
@@ -263,6 +312,10 @@ if ($isadmin)
 $header[] = fb("SS");
 $header[] = fb("ES");
 $header[] = fb("Time");
+if ($tasStoppedTime != '')
+{
+    $header[] = fb("S.Alt");
+}
 if ($tasHeightBonus == 'on')
 {
     $header[] = fb("HBs");
@@ -304,7 +357,9 @@ while ($row = mysql_fetch_array($result))
     $resulttype = $row['tarResultType'];
     $start = $row['tarSS'];
     $end = $row['tarES'];
-    $endf = 0;
+    $endf = "";
+    $startf = "";
+    $timeinair = "";
     if ($end)
     {
         $hh = floor(($end - $start) / 3600);
@@ -322,7 +377,21 @@ while ($row = mysql_fetch_array($result))
     }
     else
     {
-        $timeinair = 0;
+        $timeinair = "";
+        if ($tasTaskType == 'speedrun-interval')
+        {
+            $hh = floor(($comTOffset + $start) / 3600) % 24;
+            $mm = floor((($comTOffset + $start) % 3600) / 60);
+            $ss = ($comTOffset + $start) % 60;
+            if ($hh >= 0 && $mm >= 0 && $ss >= 0)
+            {
+                $startf = sprintf("%02d:%02d:%02d", $hh,$mm,$ss);
+            }
+            else
+            {
+                $startf = "";
+            }
+        }
     }
     $time = ($end - $start) / 60;
     $tardist = round($row['tarDistance']/1000,2);
@@ -366,6 +435,10 @@ while ($row = mysql_fetch_array($result))
     $trrow[] = $startf;
     $trrow[] = $endf;
     $trrow[] = $timeinair;
+    if ($tasStoppedTime != '')
+    {
+        $trrow[] = $lastalt;
+    }
     if ($tasHeightBonus == 'on')
     {
         if ($lastalt > 0)
@@ -413,6 +486,7 @@ while ($row = mysql_fetch_array($result))
     $trrow[] = $score;
     if ($isadmin) 
     {
+        $trrow[] = fbut("submit", "tardel",  $traPk, "del");
         $trrow[] = fbut("submit", "tarup",  $tarPk, "up");
     }
 

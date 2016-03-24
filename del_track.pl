@@ -13,7 +13,7 @@ my $traPk;
 
 if (scalar(@ARGV) < 1)
 {
-    print "add_track.pl <traPk#>\n";
+    print "del_track.pl <traPk#>\n";
     exit(1);
 }
 
@@ -22,7 +22,7 @@ $dbh = db_connect();
 
 if ($traPk < 1)
 {
-    print "add_track.pl <traPk#>\n";
+    print "del_track.pl <traPk#>\n";
     exit(1);
 }
 
@@ -37,7 +37,11 @@ $dbh->do("delete from tblWaypoint where traPk=$traPk");
 
 $dbh->do("delete from tblBucket where traPk=$traPk");
 
-$query = "delete from tblComTaskTrack where traPk=$id$comcl";
+$dbh->do("delete from tblTrackMarker where traPk=$traPk");
+
+$dbh->do("delete from tblComTaskTrack where traPk=$traPk");
+
+#$query = "delete from tblComTaskTrack where traPk=$id$comcl";
 
 print "Deleted track $traPk\n";
 

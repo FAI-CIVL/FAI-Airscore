@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -I/home/geoff/bin
 
 #
 # Reads in an IGC file
@@ -47,11 +47,16 @@ sub extract_header
 
     if ($rowtype eq "FDTE")
     {
+        my $off = 0;
         # date
+        if (substr($row, 5, 1) eq 'D')
+        {
+            $off = 5;
+        }
         if (!defined($header->{'date'}))
         {
-            $header->{'date'} = substr($row, 9, 2) . substr($row, 7, 2) . substr($row, 5, 2);
-            $header->{'start'} = timegm(0, 0, 0, 0+substr($row, 5, 2), 0+substr($row, 7, 2)-1,0+substr($row, 9, 2));
+            $header->{'date'} = substr($row, $off + 9, 2) . substr($row, $off + 7, 2) . substr($row, $off + 5, 2);
+            $header->{'start'} = timegm(0, 0, 0, 0+substr($row, $off + 5, 2), 0+substr($row, $off + 7, 2)-1,0+substr($row, $off + 9, 2));
         }
     }
     elsif ($rowtype eq "FPLT")

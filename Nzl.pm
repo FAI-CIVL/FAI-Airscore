@@ -40,6 +40,7 @@ sub task_totals
     my $mindist;
     my $topnine;
     my $stop;
+    my $goalalt;
 
     $mindist = 0;
     $tasPk = $task->{'tasPk'};
@@ -116,6 +117,20 @@ sub task_totals
         $mindept = $ref->{'MinDept'};
     }
 
+    my $waypoints = $task->{'waypoints'};
+    my $numpoints = scalar @$waypoints;
+    for (my $i = 0; $i < $numpoints; $i++)
+    {
+        if ($waypoints->[$i]->{'type'} eq 'goal')
+        {
+            $goalalt = $waypoints->[$i]->{'alt'};
+        }
+    }
+    if ($goalalt < 0)
+    {
+        $goalalt = 0;
+    }
+
     # Get the top 90% dist ...
     $topnine = 0;
     $dbh->do('set @x=0;');
@@ -147,6 +162,7 @@ sub task_totals
     $taskt{'firstdepart'} = $mindept;
     $taskt{'firstarrival'} = $minarr;
     $taskt{'mincoeff'} = $mincoeff;
+    $taskt{'goalalt'} = $goalalt;
     $taskt{'topninety'} = $topnine;
     $taskt{'stopped'} = $stop;
 
@@ -419,6 +435,20 @@ sub points_allocation
         $taskres{'tarPk'} = $ref->{'tarPk'};
         $taskres{'penalty'} = $ref->{'tarPenalty'};
         $taskres{'distance'} = $ref->{'tarDistance'};
+        $taskres{'stopalt'} = $ref->{'tarLastAltitude'};
+
+        # set pilot to min distance if they're below that ..
+        print "sstopped=", $task->{'sstopped'}, " stopalt=", $taskres{'stopalt'}, " goalalt=", $task->{'goalalt'}, " glidebonus=", $formula->{'glidebonus'}, "\n";
+        if ($task->{'sstopped'} > 0 && $taskres{'stopalt'} > $task->{'goalalt'} && $formula->{'glidebonus'} > 0)
+        {
+            print "Stopped height bonus: ", $formula->{'glidebonus'} * ($taskres{'stopalt'}-$task->{'goalalt'}), "\n";
+            $taskres{'distance'} = $taskres{'distance'} + $formula->{'glidebonus'} * ( $taskres{'stopalt'}-$task->{'goalalt'} );
+            if ($taskres{'distance'} > $task->{'ssdistance'})
+            {
+                $taskres{'distance'} = $task->{'ssdistance'};
+            }
+        }
+
         # set pilot to min distance if they're below that ..
         if ($taskres{'distance'} < $Tmindist)
         {

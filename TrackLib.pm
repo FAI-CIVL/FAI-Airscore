@@ -256,6 +256,7 @@ sub read_task
     my ($tasPk) = @_;
     my @waypoints;
     my %task;
+    my $goalalt = 0;
 
     if (0+$tasPk < 1)
     {
@@ -298,6 +299,10 @@ sub read_task
         {
             $task{'startclose'} = $task{'finish'};
             $task{'sstartclose'} = $task{'sfinish'};
+        }
+        if ($task{'sstartclose'} < $task{'sstart'})
+        {
+            $task{'sstartclose'} += 24*3600;
         }
         $task{'gmfinish'} = $ref->{'uftime'} - $ref->{'comTimeOffset'} * 3600;
         if ($task{'sfinish'} < $task{'sstart'})
@@ -371,13 +376,60 @@ sub read_task
         $wpt{'short_lat'} = (0.0 + $ref->{'ssrLatDecimal'}) * $pi / 180;
         $wpt{'short_long'} = (0.0 + $ref->{'ssrLongDecimal'}) * $pi / 180;
         $wpt{'alt'} = $ref->{'rwpAltitude'};
+        if ($ref->{'tawType'} eq 'goal')
+        {
+            $goalalt = $wpt{'alt'};
+        }
 
         push @waypoints, \%wpt;
     }
+    $task{'goalalt'} = $goalalt;
 
     $task{'waypoints'} = \@waypoints;
 
     return \%task;
+}
+
+sub read_competition
+{
+    my ($comPk) = @_;
+    my @tasks;
+    my %comp;
+
+    if (0+$comPk < 1)
+    {
+        print "No valid competition ($comPk)\n";
+        exit 1; 
+    }
+    $sth = $dbh->prepare("select C.* from tblCompetition C where C.comPk=$comPk");
+    $sth->execute();
+    if  ($ref = $sth->fetchrow_hashref()) 
+    {
+        $comp{'comPk'} = $ref->{'comPk'};
+        $comp{'name'} = $ref->{'comName'};
+        $comp{'location'} = $ref->{'comLocation'};
+        $comp{'region'} = $ref->{'regPk'};
+        $comp{'datefrom'} = $ref->{'comDateFrom'};
+        $comp{'dateto'} = $ref->{'comDateTo'};
+        $comp{'meetdirname'} = $ref->{'comMeetDirName'};
+        $comp{'contact'} = $ref->{'comContact'};
+        $comp{'forPk'} = $ref->{'forPk'};
+        $comp{'sanction'} = $ref->{'comSanction'};
+        $comp{'type'} = $ref->{'comType'};
+        $comp{'code'} = $ref->{'comCode'};
+        $comp{'entryrestrict'} = $ref->{'comEntryRestrict'};
+        $comp{'timeoffset'} = $ref->{'comTimeOffset'};
+        $comp{'overallscore'} = $ref->{'comOverallScore'};
+        $comp{'overallparam'} = $ref->{'comOverallParam'};
+        $comp{'teamsize'} = $ref->{'comTeamSize'};
+        $comp{'teamscoring'} = $ref->{'comTeamScoring'};
+        $comp{'teamover'} = $ref->{'comTeamOver'};
+        $comp{'class'} = $ref->{'comClass'};
+        $comp{'stylesheet'} = $ref->{'comStyleSheet'};
+        $comp{'locked'} = $ref->{'comLocked'};
+    }
+
+    return \%comp;
 }
 
 #

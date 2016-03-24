@@ -18,7 +18,7 @@ create table tblCompetition
     comContact              varchar(100),
     forPk                   integer, 
     comSanction             varchar(100), 
-    comType                 enum ('unknown', 'OLC', 'Free', 'RACE', 'Route', 'Team-RACE' ),
+    comType                 enum ('unknown', 'OLC', 'Free', 'RACE', 'Route', 'Team-RACE', 'RACE-handicap' ),
     comCode                 varchar(8),
     comEntryRestrict        enum ('open', 'registered') default 'open',
     comTimeOffset           double default 11.0,
@@ -31,6 +31,8 @@ create table tblCompetition
     comStyleSheet           varchar(128),
     comLocked               integer default 0
 );
+
+-- alter table tblCompetition modify column comType  enum ('unknown', 'OLC', 'Free', 'RACE', 'Route', 'Team-RACE', 'RACE-handicap' );
 
 drop table if exists tblFormula;
 create table tblFormula
@@ -211,6 +213,28 @@ create table tblTaskResult
     tarScore        double,
     tarLeadingCoeff double,
     tarLastAltitude integer default 0
+);
+
+drop table if exists tblHandicapResult;
+create table tblHandicapResult
+(
+    hcrPk           integer not null primary key auto_increment,
+    tasPk           integer,
+    tarPk           integer,
+    hcrDistance     double,
+    hcrSpeed        double,
+    hcrStart        integer,
+    hcrGoal         integer,
+    hcrResultType   enum ( 'abs', 'dnf', 'lo', 'goal' ) default 'lo',
+    hcrES           integer,
+    hcrTurnpoints   integer,
+    hcrPlace        integer,
+    hcrSpeedScore   double,
+    hcrDistanceScore double,
+    hcrArrival      double,
+    hcrDeparture    double,
+    hcrScore        double,
+    hcrLeadingCoeff double
 );
 
 drop table if exists tblTrackLog;

@@ -159,11 +159,14 @@ if (array_key_exists('upformula', $_REQUEST))
         $regarr['forWeightArrival'] = reqfval('weightarrival');
         $regarr['forWeightSpeed'] = reqfval('weightspeed');
     }
+    $regarr['forStoppedGlideBonus'] = reqfval('glidebonus');
 
     //$forPk = reqival('forPk');
     $clause = "comPk=$comPk";
 
-    insertup($link, 'tblFormula', 'forPk', $clause,  $regarr);
+    $forPk = insertup($link, 'tblFormula', 'forPk', $clause,  $regarr);
+    $sql = "update tblCompetition set forPk=$forPk where comPk=$comPk";
+    $result = mysql_query($sql,$link);
 }
 
 if (array_key_exists('updateadmin', $_REQUEST))
@@ -207,7 +210,7 @@ if ($row)
 
     $out = ftable(
         array(
-            array('Name:', fin('comname', $cname, 14), 'Type:', fselect('comptype', $ctype, array('OLC', 'RACE', 'Free', 'Route', 'Team-RACE')), 'Class:', fselect('compclass', $cclass, array('PG','HG','mixed'))),
+            array('Name:', fin('comname', $cname, 14), 'Type:', fselect('comptype', $ctype, array('OLC', 'RACE', 'Free', 'Route', 'Team-RACE', 'RACE-handicap')), 'Class:', fselect('compclass', $cclass, array('PG','HG','mixed'))),
             array('Date From:', fin('datefrom', $cdfrom, 10), 'Date To:', fin('dateto', $cdto, 10), 'Pilot Entry:', fselect('entry', $entry, array('open', 'registered'))),
             array('Director:', fin('director', $cdirector, 14), 'Location:', fin('location', $clocation, 10)),
             array('Abbrev:', fin('code', $ccode, 10), 'Time Offset:', fin('timeoffset', $ctimeoffset, 10)),
@@ -247,7 +250,9 @@ echo "</form>\n";
 
 // Formula
 $version = 0;
-if ($ctype == 'RACE' || $ctype == 'Team-RACE' || $ctype == 'Route')
+$has_formula = array('RACE', 'Team-RACE', 'Route', 'RACE-handicap');
+
+if (in_array($ctype, $has_formula))
 {
     $sql = "SELECT F.* FROM tblFormula F where F.comPk=$comPk";
     $result = mysql_query($sql,$link);
@@ -269,6 +274,7 @@ if ($ctype == 'RACE' || $ctype == 'Team-RACE' || $ctype == 'Route')
         $weightstart = $row['forWeightStart'];
         $weightarrival = $row['forWeightArrival'];
         $weightspeed = $row['forWeightSpeed'];
+        $glidebonus = $row['forStoppedGlideBonus'];
     }
     echo "<hr><h3>RACE Formula</h3>";
     echo "<form action=\"competition.php?comPk=$comPk\" name=\"formulaadmin\" method=\"post\">";
@@ -278,7 +284,8 @@ if ($ctype == 'RACE' || $ctype == 'Team-RACE' || $ctype == 'Route')
           array('Nom Dist (km):', fin('nomdist',$nomdist,4), 'Min Dist (km):', fin('mindist', $mindist, 4), 'Distance Measure:', fselect('distmeasure', $distmeasure, array('average', 'median'))),
           array('Nom Time (min):', fin('nomtime', $nomtime, 4), 'Goal/SS Penalty (0-1):', fin('sspenalty', $sspenalty, 4), 'Nom Goal (%):', fin('nomgoal',$nomgoal,4)),
           array('Linear Dist (0-1):', fin('lineardist', $lineardist, 4),'Diff Dist (km):', fin('diffdist', $diffdist, 4), 'Diff Ramp:', fselect('difframp', $difframp, array('fixed', 'flexible')), 'Diff Calc:', fselect('diffcalc', $diffcalc, array('all', 'lo'))),
-          array('Speed weighting:', fin('weightspeed', $weightspeed, 4), 'Start weighting:', fin('weightstart', $weightstart, 4), 'Arrival weighting:', fin('weightarrival', $weightarrival, 4))
+          array('Speed weighting:', fin('weightspeed', $weightspeed, 4), 'Start weighting:', fin('weightstart', $weightstart, 4), 'Arrival weighting:', fin('weightarrival', $weightarrival, 4)),
+          array('Stopped Glide Bonus:', fin('glidebonus', $glidebonus, 4))
         ), '', '', ''
       );
     echo $out;
@@ -288,7 +295,7 @@ if ($ctype == 'RACE' || $ctype == 'Team-RACE' || $ctype == 'Route')
 }
 
 
-if ($ctype == 'RACE' || $ctype == 'Team-RACE' || $ctype == 'Route')
+if (in_array($ctype, $has_formula))
 {
 // Tasks
 echo "<hr><h3>Tasks</h3><form action=\"competition.php?comPk=$comPk\" name=\"taskadmin\" method=\"post\">";

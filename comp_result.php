@@ -331,7 +331,7 @@ else
 $today = getdate();
 $tdate = sprintf("%04d-%02d-%02d", $today['year'], $today['mon'], $today['mday']);
 // Fix: make this configurable
-if ($tdate == $comDateTo)
+if (0 && $tdate == $comDateTo)
 {
     $usePk = check_auth('system');
     $link = db_connect();
@@ -400,7 +400,7 @@ if ($class == "8")
         team_handicap_result($comPk,$how,$param);
     }
 }
-else if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'Route')
+else if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'Route' || $comType == 'RACE-handicap')
 {
     $query = "select T.* from tblTask T where T.comPk=$comPk order by T.tasDate";
     $result = mysql_query($query) or die('Task query failed: ' . mysql_error());
@@ -588,18 +588,18 @@ if ($embed == '')
         array("<i>$comDateFrom</i>", "<i>$comDateTo</i>")
     );
 
-    if ($comType == 'RACE' || $comType == 'Team-RACE')
+    if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'RACE-handicap')
     {
         $scarr = array();
         $scarr[] = array("<b>Type</b> ", "<i>$comType ($comFormula)</i>");
         $scarr[] = array("<b>Scoring</b> ","<i>$overstr</i>");
-        $scarr[] = array("<b>Min Dist</b>", "<i>$forMinDistance kms</i>");
-        $scarr[] = array("<b>Nom Dist</b>", "<i>$forNomDistance kms</i>");
-        $scarr[] = array("<b>Nom Time</b>", "<i>$forNomTime mins</i>");
-        $scarr[] = array("<b>Nom Goal</b>", "<i>$forNomGoal%</i>");
-        echo ftable($detarr, 'border="0" cellpadding="0" width="185"', '', array('', 'align="right"'));
+        $scarr[] = array("<b>Min&nbsp;Dist</b>", "<i>$forMinDistance kms</i>");
+        $scarr[] = array("<b>Nom&nbsp;Dist</b>", "<i>$forNomDistance kms</i>");
+        $scarr[] = array("<b>Nom&nbsp;Time</b>", "<i>$forNomTime mins</i>");
+        $scarr[] = array("<b>Nom&nbsp;Goal</b>", "<i>$forNomGoal%</i>");
+        echo ftable($detarr, 'border="0" cellpadding="0" width="200"', '', array('', 'align="right"'));
         echo "<h1>Scoring Parameters</h1>";
-        echo ftable($scarr, 'border="0" cellpadding="0" width="185"', '', array('', 'align="right"'));
+        echo ftable($scarr, 'border="0" cellpadding="0" width="200"', '', array('', 'align="right"'));
     }
     else
     {
@@ -612,7 +612,7 @@ if ($embed == '')
             $detarr[] = array("<b>Type</b> ", "<i>$comType ($comFormula)</i>");
         }
         $detarr[] = array("<b>Scoring</b> ","<i>$overstr</i>");
-        echo ftable($detarr, 'border="0" cellpadding="0" width="185"', '', array('', 'align="right"'));
+        echo ftable($detarr, 'border="0" cellpadding="0" width="200"', '', array('', 'align="right"'));
     }
 
 
