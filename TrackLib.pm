@@ -544,6 +544,7 @@ sub store_result
     my $start;
     my $goal;
     my $coeff;
+    my $coeff2;
     my $ss;
     my $endss;
     my $penalty;
@@ -558,6 +559,7 @@ sub store_result
     $start = $result->{'start'};
     $goal = $result->{'goal'};
     $coeff = $result->{'coeff'};
+    $coeff2 = 0+$result->{'coeff2'};
     $penalty = 0 + $result->{'penalty'};
     $comment = $result->{'comment'};
     $stopalt = 0 + $result->{'stopalt'};
@@ -584,8 +586,8 @@ sub store_result
 
     #print "insert into tblTaskResult (tasPk,traPk,tarDistance,tarSpeed,tarStart,tarGoal,tarSS,tarES,tarTurnpoints) values ($tasPk,$traPk,$dist,$speed,$start,$goal,$ss,$endss,$turnpoints)";
     $dbh->do("delete from tblTaskResult where traPk=? and tasPk=?", undef, $traPk, $tasPk);
-    print("insert into tblTaskResult (tasPk,traPk,tarDistance,tarSpeed,tarStart,tarGoal,tarSS,tarES,tarTurnpoints,tarLeadingCoeff,tarPenalty,tarComment,tarLastAltitude,tarLastTime) values ($tasPk,$traPk,$dist,$speed,$start,$goal,$ss,$endss,$turnpoints,$coeff,$penalty,'$comment',$stopalt,$stoptime)\n");
-    $sth = $dbh->prepare("insert into tblTaskResult (tasPk,traPk,tarDistance,tarSpeed,tarStart,tarGoal,tarSS,tarES,tarTurnpoints,tarLeadingCoeff,tarPenalty,tarComment,tarLastAltitude,tarLastTime) values ($tasPk,$traPk,$dist,$speed,$start,$goal,$ss,$endss,$turnpoints,$coeff,$penalty,'$comment',$stopalt,$stoptime)");
+    print("insert into tblTaskResult (tasPk,traPk,tarDistance,tarSpeed,tarStart,tarGoal,tarSS,tarES,tarTurnpoints,tarLeadingCoeff,tarLeadingCoeff2,tarPenalty,tarComment,tarLastAltitude,tarLastTime) values ($tasPk,$traPk,$dist,$speed,$start,$goal,$ss,$endss,$turnpoints,$coeff,$coeff2,$penalty,'$comment',$stopalt,$stoptime)\n");
+    $sth = $dbh->prepare("insert into tblTaskResult (tasPk,traPk,tarDistance,tarSpeed,tarStart,tarGoal,tarSS,tarES,tarTurnpoints,tarLeadingCoeff,tarLeadingCoeff2,tarPenalty,tarComment,tarLastAltitude,tarLastTime) values ($tasPk,$traPk,$dist,$speed,$start,$goal,$ss,$endss,$turnpoints,$coeff,$coeff2,$penalty,'$comment',$stopalt,$stoptime)");
     $sth->execute();
 
     if (defined($result->{'kmtime'}))

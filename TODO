@@ -2,8 +2,17 @@ TEST:
 
 Fix up installation so a normal person can do it ...
     - debian package
+    - rpm package
     - /usr/local/lib/site-perl for perl modules
     - macro subs are not working - try to minimise
+
+Task distance computation:
+    - consider scoring distance to go rather than awarding nominal waypoint distance if you make a waypoint
+      (of course that could mean people making the same waypoint have different distances)
+    - where optimal waypoint inside a cylinder, choose the cylinder boundary closest to start as SR distance?
+
+UI:
+    - update to use bootstrap - more mobile friendly? (although JS heavy)
 
 Tracklog animation with multiple tracks 
     + color each track separately
