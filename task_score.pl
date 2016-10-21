@@ -15,6 +15,7 @@ require Nzl; # qw(:all);
 require JTGap; # qw(:all);
 require GGap; # qw(:all);
 require RTGap; # qw(:all);
+require PWC; # qw(:all);
 
 use POSIX qw(ceil floor);
 use TrackLib qw(:all);
@@ -83,6 +84,11 @@ elsif ($formula->{'class'} eq 'rtgap')
 {
     print "RTGap scoring\n";
     $scr = RTGap->new();
+}
+elsif ($formula->{'class'} eq 'pwc')
+{
+    print "PWC scoring\n";
+    $scr = PWC->new();
 }
 else
 {

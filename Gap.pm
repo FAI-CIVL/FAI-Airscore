@@ -34,6 +34,17 @@ sub round
     return int($number + .5);
 }
 
+sub min
+{
+    my ($self, $list) = @_;
+    my $x = ~0 >> 1;
+    foreach $y (@$list)
+    {
+        $x = $y if $y < $x;
+    }
+    return $x;
+}
+
 sub spread
 {
     my ($self, $buc) = @_;
@@ -552,11 +563,13 @@ sub pilot_departure_leadout
             }
             elsif ($Cmin <= 0)
             {
+                # this shouldn't happen
                 $Pdepart = 0;
             }
             else
             {
-                $Pdepart = $astart * (1-(($pil->{'coeff'}-$Cmin)/3600/sqrt($Cmin/3600))**(2/3));
+                #$Pdepart = $astart * (1-(($pil->{'coeff'}-$Cmin)/3600/sqrt($Cmin/3600))**(2/3));
+                $Pdepart = $astart * (1-(($pil->{'coeff'}-$Cmin)/sqrt($Cmin))**(2/3));
             }
         }
     }
@@ -852,7 +865,6 @@ sub points_allocation
         }
     }
 }
-
 
 1;
 

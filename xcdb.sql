@@ -212,6 +212,7 @@ create table tblTaskResult
     tarDeparture    double,
     tarScore        double,
     tarLeadingCoeff double,
+    tarLeadingCoeff2 double,
     tarLastAltitude integer default 0
 );
 
