@@ -365,7 +365,7 @@ sub points_weight
         $Astart = 1000 * $quality * (1-$distweight) * 1/8;
         $Aarrival = 1000 * $quality * (1-$distweight) * 1/8;
     }
-    elsif ($formula->{'version'} eq 'hg2013')
+    elsif ($formula->{'version'} eq 'hg2013' || $formula->{'version'} eq 'hg2015')
     {
         $Adistance = 1000 * (0.9-1.665*$x+1.713*$x*$x-0.587*$x*$x*$x) * $quality;
         $Astart = 1000 * $quality * (1-$distweight) * 1.4/8;
@@ -391,7 +391,7 @@ sub points_weight
     }
     elsif ($task->{'arrival'} eq 'off')
     {
-        if ($formula->{'version'} eq 'hg2013')
+        if ($formula->{'version'} eq 'hg2013' || $formula->{'version'} eq 'hg2015')
         {
             $Aarrival = 0; 
             $Aspeed = 1000 - $Adistance - $Astart - $Aarrival;
@@ -499,7 +499,7 @@ sub pilot_arrival
 
     if ($pil->{'time'} > 0)
     {
-        if ($formula->{'class'} eq 'ozgap' && $formula->{'version'} ne '2000')
+        if ($formula->{'arrival'} eq 'timed')
         {
             # OzGAP / Timed arrival
             print "    time arrival ", $pil->{'timeafter'}, ", $Ngoal\n";
@@ -548,12 +548,12 @@ sub pilot_departure_leadout
     $Pdepart = 0;
     if ($task->{'departure'} eq 'leadout')
     {
-        # Leadout point (instead of departure)
-        if ($pil->{'startSS'} > $taskt->{'firstdepart'})
-        {
-            # adjust for late starters
-            $pil->{'coeff'} = $pil->{'coeff'} + ($pil->{'startSS'} - $taskt->{'firstdepart'});
-        }
+#        # Leadout point (instead of departure)
+#        if ($pil->{'startSS'} > $taskt->{'firstdepart'})
+#        {
+#            # adjust for late starters
+#            $pil->{'coeff'} = $pil->{'coeff'} + ($pil->{'startSS'} - $taskt->{'firstdepart'});
+#        }
         print "    leadout: ", $pil->{'coeff'}, ", $Cmin\n";
         if ($pil->{'coeff'} > 0)
         {

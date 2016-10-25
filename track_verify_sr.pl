@@ -550,7 +550,7 @@ sub validate_task
             {
                 if (defined($lastmaxcoord) && !defined($endss))
                 {
-                    $coeff = $coeff + ($coord->{'time'} - $startss) * ( ($essdist - $maxdist) - ($essdist - $newdist) );
+                    $coeff = $coeff + ($coord->{'time'} - $taskss) * ( ($essdist - $maxdist) - ($essdist - $newdist) );
                     $coeff2 = $coeff2 + ($coord->{'time'} - $startss) * ( ($essdist - $maxdist)*($essdist - $maxdist) - ($essdist - $newdist)*($essdist - $newdist) );
                 }
                 $lastmaxcoord = $coord;

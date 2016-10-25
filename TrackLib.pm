@@ -478,6 +478,7 @@ sub read_formula
         $formula{'weightspeed'} = $ref->{'forWeightSpeed'};
         $formula{'weightarrival'} = $ref->{'forWeightArrival'};
         $formula{'glidebonus'} = $ref->{'forStoppedGlideBonus'};
+        $formula{'arrival'} = $ref->{'forArrival'};
     }
 
     # FIX: add failsafe checking?
