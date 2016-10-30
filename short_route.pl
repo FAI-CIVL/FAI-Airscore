@@ -98,15 +98,27 @@ sub find_closest
     $C1 = polar2cartesian($P1);
     $C3 = polar2cartesian($P2);
 
+    if ($P2->{'shape'} eq 'line')
+    {
+        return $P2;
+    }
+
     if (!defined($P3))
     {
         # End of line case ..
         $O = vvminus($C1, $C3);
         $vl = vector_length($O);
-        $O->{'x'} = $O->{'x'} * $P2->{'radius'} / $vl;
-        $O->{'y'} = $O->{'y'} * $P2->{'radius'} / $vl;
-        $O->{'z'} = $O->{'z'} * $P2->{'radius'} / $vl;
-        $CL = vvplus($O, $C3);
+        if ($vl != 0)
+        {
+            $O->{'x'} = $O->{'x'} * $P2->{'radius'} / $vl;
+            $O->{'y'} = $O->{'y'} * $P2->{'radius'} / $vl;
+            $O->{'z'} = $O->{'z'} * $P2->{'radius'} / $vl;
+            $CL = vvplus($O, $C3);
+        }
+        else
+        {
+            return $P2;
+        }
 
         return cartesian2polar($CL);
     }
@@ -291,8 +303,7 @@ sub task_update
     for ($i = 0; $i < $num-2; $i++)
     {
         print "From $i: ", $wpts->[$i]->{'name'}, "\n";
-        if ($wpts->[$i+1]->{'dlat'} == $wpts->[$i+2]->{'dlat'} &&
-            $wpts->[$i+1]->{'dlong'} == $wpts->[$i+2]->{'dlong'})
+        if (ddequal($wpts->[$i+1], $wpts->[$i+2]))
         {
             $newcl = find_closest($newcl, $wpts->[$i+1], undef);
         }
@@ -352,32 +363,105 @@ sub task_update
     return $totdist;
 }
 
-sub track_update
+sub short_dist
 {
-    my ($tasPk) = @_;
-    my @tracks;
-    my $flag;
-    my $ref;
+    my ($w1, $w2) = @_;
+    my $dist;
+    my (%s1, %s2);
 
-    # Now check for pre-submitted tracks ..
-    $sth = $dbh->prepare("select traPk from tblComTaskTrack where tasPk=$tasPk");
+    $s1{'lat'} = $w1->{'short_lat'};
+    $s1{'long'} = $w1->{'short_long'};
+    $s2{'lat'} = $w2->{'short_lat'};
+    $s2{'long'} = $w2->{'short_long'};
+
+    $dist = distance(\%s1, \%s2);
+    return $dist;
+}
+#
+# Determine the distances to startss / endss / ss distance
+#
+sub determine_distances
+{
+    my ($task) = @_;
+    my $waypoints;
+    my $cwdist;
+    my ($spt, $ept, $gpt);
+    my $ssdist;
+    my $allpoints;
+    my $endssdist;
+    my $startssdist;
+    my $tasPk;
+
+    $waypoints = $task->{'waypoints'};
+    $tasPk = $task->{'tasPk'};
+    $allpoints = scalar @$waypoints;
+    $cwdist = 0;
+    for (my $i = 0; $i < $allpoints; $i++)
+    {
+        # Margins
+        my $margin = $waypoints->[$i]->{'radius'} * 0.0005;
+        if ($margin < 5.0)
+        {
+            $margin = 5.0;
+        }
+        $waypoints->[$i]->{'margin'} = $margin;
+
+        if (( $waypoints->[$i]->{'type'} eq 'start') or 
+             ($waypoints->[$i]->{'type'} eq 'speed') )
+        {
+            $spt = $i;
+            $startssdist = $cwdist;
+            if ($startssdist == 0 && ($waypoints->[$i]->{'how'} eq 'exit'))
+            {
+                $startssdist += $waypoints->[$i]->{'radius'};
+            }
+        }
+        if ($waypoints->[$i]->{'type'} eq 'speed') 
+        {
+            $cwdist = 0;
+        }
+        if ($waypoints->[$i]->{'type'} eq 'endspeed') 
+        {
+            $ept = $i;
+            $endssdist = $cwdist;
+            if ($waypoints->[$i]->{'how'} eq 'exit')
+            {
+                $endssdist += $waypoints->[$i]->{'radius'};
+            }
+        }
+        if ($waypoints->[$i]->{'type'} eq 'goal') 
+        {
+            $gpt = $i;
+        }
+        if ($i < $allpoints-1)
+        {
+            $cwdist = $cwdist + short_dist($waypoints->[$i], $waypoints->[$i+1]);
+        }
+    }
+    if (!defined($gpt))
+    {
+        $gpt = $allpoints;
+    }
+    if (!defined($ept))
+    {
+        $ept = $gpt;
+    }
+    if (!defined($endssdist)) 
+    {
+        $endssdist = $cwdist;
+        if ($waypoints->[$gpt]->{'how'} eq 'exit')
+        {   
+            $endssdist += $waypoints->[$gpt]->{'radius'};
+        }   
+    }
+
+    $ssdist = $endssdist - $startssdist;
+    print "spt=$spt ept=$ept gpt=$gpt ssdist=$ssdist startssdist=$startssdist endssdist=$endssdist\n";
+    print "update tblTask set tasSSDistance=$ssdist, tasEndSSDistance=$endssdist, tasStartSSDistance=$startssdist where tasPk=$tasPk\n";
+    $sth = $dbh->prepare("update tblTask set tasSSDistance=$ssdist, tasEndSSDistance=$endssdist, tasStartSSDistance=$startssdist where tasPk=$tasPk");
     $sth->execute();
-    @tracks = ();
-    $flag = 0;
-    while  ($ref = $sth->fetchrow_hashref()) 
-    {
-        push @tracks, $ref->{'traPk'};
-    }
 
-    # Now verify the pre-submitted tracks against the task
-    for my $tpk (@tracks)
-    {
-        print "Verifying pre-submitted track: $tpk\n";
-        system($TrackLib::BINDIR . "track_verify_sr.pl $tpk");
-        $flag = 1;
-    }
-
-    return $flag;
+    return ($spt, $ept, $gpt, $ssdist, $startssdist, $endssdist);
 }
 
 #
@@ -385,21 +469,24 @@ sub track_update
 #
 
 my $dist;
+my $taskno;
 my $task;
-my $quality;
 
 $dbh = db_connect();
 
-$task = $ARGV[0];
+if (scalar @ARGV == 0)
+{
+    print "short_route.pl <tasPk>\n";
+    exit(0);
+}
+$taskno = $ARGV[0];
 
-# Work out all the task totals to make it easier later
-$dist = task_update($task);
+# Work out the shortest route through task
+$dist = task_update($taskno);
 
-#if (track_update($task) == 1)
-#{
-#    # tracks re-verified - now rescore.
-#    system($TrackLib::BINDIR . "task_score.pl $tpk");
-#}
+# Work out some distances
+$task = read_task($taskno);
+determine_distances($task);
 
 #print "Task dist=$dist\n";
 

@@ -84,7 +84,7 @@ sub task_totals
     my $glidebonus;
     my %taskt;
     my $tasPk;
-    my ($minarr, $fastest, $firstdep, $mincoeff, $tqtime);
+    my ($minarr, $maxarr, $fastest, $firstdep, $mincoeff, $tqtime);
     my $launchvalid;
     my $waypoints;
     my $numpoints;
@@ -127,12 +127,13 @@ sub task_totals
         $ess  = $ref->{'ESSPilots'};
     }
 
-    $sth = $dbh->prepare("select min(tarES) as MinArr from tblTaskResult where tasPk=$tasPk and (tarES-tarSS) > 0");
+    $sth = $dbh->prepare("select min(tarES) as MinArr, max(tarES) as MaxArr from tblTaskResult where tasPk=$tasPk and (tarES-tarSS) > 0");
     $sth->execute();
-    $minarr = 0;
+    $maxarr = 0;
     if ($ref = $sth->fetchrow_hashref())
     {
         $minarr = $ref->{'MinArr'};
+        $maxarr = $ref->{'MaxArr'};
     }
 
     $sth = $dbh->prepare("select (tarES-tarSS) as MinTime from tblTaskResult where tasPk=$tasPk and tarES > 0 and (tarES-tarSS) > 0 order by (tarES-tarSS) asc limit 2");
@@ -247,6 +248,7 @@ sub task_totals
     $taskt{'tqtime'} = $tqtime;
     $taskt{'firstdepart'} = $mindept;
     $taskt{'firstarrival'} = $minarr;
+    $taskt{'lastarrival'} = $maxarr;
     $taskt{'mincoeff'} = $mincoeff;
     $taskt{'goalalt'} = $goalalt;
     $taskt{'distspread'} = \@distspread;
@@ -692,7 +694,6 @@ sub points_allocation
     my $Ngoal;
     my ($Tmin);
     my $Tfarr;
-    my $Cmin;
 
     my $x;
     my $distweight;
@@ -719,7 +720,6 @@ sub points_allocation
     $Ngoal = $taskt->{'goal'};
     $Tmin = $taskt->{'fastest'};
     $Tfarr = $taskt->{'firstarrival'};
-    $Cmin = $taskt->{'mincoeff'};
     print Dumper($taskt);
 
     # Some GAP basics
@@ -771,6 +771,19 @@ sub points_allocation
         # Leadout Points
         $taskres{'coeff'} = $ref->{'tarLeadingCoeff'};
         # FIX: adjust against fastest ..
+        if ($ref->{'tarES'} - $ref-{'tarSS'} < 1)
+        {
+            # adjust for late starters
+            print "No goal, adjust pilot coeff from: ", $pil->{'coeff'};
+            $pil->{'coeff'} = $pil->{'coeff'} - ($task->{'sfinish'} - $taskt->{'lastarrival'}) * ($task->{'endssdistance'} - $ref->{'tarDistance'}) / 1800 / $task->{'ssdistance'} ;
+            
+            print " to: ", $pil->{'coeff'}, "\n";
+            # adjust mincoeff?
+            if ($pil->{'coeff'} < $task->{'mincoeff'})
+            {
+                $task->{'mincoeff'} = $pil->{'coeff'};
+            }
+        }
 
         push @pilots, \%taskres;
     }

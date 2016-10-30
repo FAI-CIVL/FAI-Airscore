@@ -325,6 +325,8 @@ sub read_task
         $task{'type'} = $ref->{'tasTaskType'};
         $task{'distance'} = $ref->{'tasDistance'};
         $task{'ssdistance'} = $ref->{'tasSSDistance'};
+        $task{'endssdistance'} = $ref->{'tasEndSSDistance'};
+        $task{'startssdistance'} = $ref->{'tasStartSSDistance'};
         $task{'short_distance'} = $ref->{'tasShortRouteDistance'};
         $task{'arrival'} = $ref->{'tasArrival'};
         $task{'departure'} = $ref->{'tasDeparture'};
@@ -477,6 +479,8 @@ sub read_formula
         $formula{'weightstart'} = $ref->{'forWeightStart'};
         $formula{'weightspeed'} = $ref->{'forWeightSpeed'};
         $formula{'weightarrival'} = $ref->{'forWeightArrival'};
+        $formula{'weightdist'} = $ref->{'forWeightDist'};
+        $formula{'scaletovalidity'} = $ref->{'forScaleToValidity'};
         $formula{'glidebonus'} = $ref->{'forStoppedGlideBonus'};
         $formula{'arrival'} = $ref->{'forArrival'};
     }

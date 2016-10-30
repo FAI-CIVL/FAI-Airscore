@@ -61,7 +61,9 @@ create table tblFormula
     forOLCBase       double default 1.4,
     forWeightStart   double default 0.125,
     forWeightArrival double default 0.175,
-    forWeightSpeed   double default 0.7
+    forWeightSpeed   double default 0.7,
+    forWeightDist    enum ( 'pre2014', 'post2014' ) default 'pre2014',
+    forScaleToValidity integer default 0
 );
 
 drop table if exists tblComTaskTrack;
@@ -95,6 +97,8 @@ create table tblTask
     tasTaskType             enum ('free', 'speedrun', 'race', 'olc', 'free-bearing', 'speedrun-interval', 'airgain', 'aat', 'free-pin'),
     tasDistance             Double, 
     tasShortRouteDistance   Double, 
+    tasStartSSDistance      Double, 
+    tasEndSSDistance        Double, 
     tasSSDistance           Double, 
     tasSSInterval           Integer default 0,
     tasSSOpen               DateTime, 

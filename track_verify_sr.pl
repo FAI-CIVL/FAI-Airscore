@@ -322,7 +322,14 @@ sub distance_flown
         }
         else
         {
-            $rdist = qckdist2($coord, $nextwpt) - $nextwpt->{'radius'};
+            if ($nextwpt->{'shape'} eq 'line')
+            {
+                $rdist = qckdist2($coord, $nextwpt);
+            }
+            else
+            {
+                $rdist = qckdist2($coord, $nextwpt) - $nextwpt->{'radius'};
+            }
         }
         $dist = $nwdist - $rdist;
     }
@@ -339,6 +346,75 @@ sub distance_flown
     }
 
     return $dist;
+}
+
+sub in_semicircle
+{
+    my ($waypoints, $wmade, $coord) = @_;
+    my ($bvec, $pvec);
+    my $wpt = $waypoints->[$wmade];
+
+    my $prev = $wmade - 1;
+    while ($prev > 0 and ddequal($wpt, $waypoints->[$prev]))
+    {
+        $prev--;
+    }
+    
+    my $c = polar2cartesian($wpt); 
+    my $p = polar2cartesian($waypoints->[$prev]); 
+
+    # vector that bisects the semi-circle pointing into occupied half plane
+    $bvec = vvminus($c, $p);
+    $pvec = vvminus($coord->{'cart'}, $c);
+
+    # dot product 
+    my $dot = dot_product($bvec, $pvec);
+    if ($dot > 0)
+    {
+        return 1;
+    }
+
+    return 0;
+}
+
+sub made_entry_waypoint
+{
+    my ($waypoints, $wmade, $coord, $dist, $awarded) = @_;
+    my $made = 0;
+    my $wpt = $waypoints->[$wmade];
+
+    if ($awarded)
+    {
+        return 1;
+    }
+
+    if ($wpt->{'shape'} eq 'circle')
+    {
+        if ($dist < ($wpt->{'radius'}+$wpt->{'margin'})) 
+        {
+            $made = 1;
+        }
+    }
+    elsif ($wmade > 0 && $wpt->{'shape'} eq 'line')
+    {
+        # does the track intersect with the semi-circle
+        if ($dist < ($wpt->{'radius'}+$wpt->{'margin'}) and (in_semicircle($waypoints, $wmade, $coord)))
+        {
+            $made = 1;
+        }
+    }
+    
+    if ($made == 0) 
+    {
+        return 0;
+    }
+
+    if ($debug)
+    {
+        print "made entry waypoint ", $wpt->{'number'}, "(", $wpt->{'type'}, ") radius ", $wpt->{'radius'}, " at ", $coord->{'time'}, "\n";
+    }
+
+    return 1;
 }
 
 #
@@ -603,12 +679,9 @@ sub validate_task
         #
         if ($wpt->{'how'} eq 'entry')
         {
-            if (($dist < ($wpt->{'radius'}+$wpt->{'margin'})) || $awarded == 1) 
+            if (made_entry_waypoint($waypoints, $wmade, $coord, $dist, $awarded))
             {
-                if ($debug) 
-                {
-                    print "made entry waypoint ", $wpt->{'number'}, "(", $wpt->{'type'}, ") radius ", $wpt->{'radius'}, " at ", $coord->{'time'}, "\n";
-                }
+
                 # Do task timing stuff
                 if (($wpt->{'type'} eq 'start') && (!defined($starttime)) or
                     ($wpt->{'type'} eq 'speed'))
