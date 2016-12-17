@@ -34,7 +34,7 @@ my $quality;
 my $scr;
 my $sth;
 my $sql;
-my ($dist,$time,$launch);
+my ($dist,$time,$launch,$stop);
 
 $TrackLib::dbh = db_connect();
 
@@ -125,13 +125,13 @@ $sth->execute();
 
 # Work out the quality factors (distance, time, launch)
 
-($dist,$time,$launch) = $scr->day_quality($taskt, $formula);
-$quality = $dist * $time * $launch;
+($dist,$time,$launch, $stop) = $scr->day_quality($taskt, $formula);
+$quality = $dist * $time * $launch * $stop;
 if ($quality > 1.0)
 {
     $quality = 1.0;
 }
-$sth = $TrackLib::dbh->prepare("update tblTask set tasQuality=$quality, tasDistQuality=$dist, tasTimeQuality=$time, tasLaunchQuality=$launch where tasPk=$tasPk");
+$sth = $TrackLib::dbh->prepare("update tblTask set tasQuality=$quality, tasDistQuality=$dist, tasTimeQuality=$time, tasLaunchQuality=$launch, tasStopQuality=$stop where tasPk=$tasPk");
 $sth->execute();
 $taskt->{'quality'} = $quality;
 

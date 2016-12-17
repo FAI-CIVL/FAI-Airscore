@@ -30,17 +30,16 @@ use TrackLib qw(:all);
 sub task_totals
 {
     my ($self, $dbh, $task, $formula) = @_;
-    my $totdist;
-    my $launched;
     my $pilots;
-    my $goal;
-    my %taskt;
+    my $taskt;
     my $tasPk;
     my ($minarr, $fastest, $firstdep, $mincoeff);
     my $mindist;
     my $topnine;
     my $stop;
-    my $goalalt;
+    my $stddev;
+
+    $taskt = Gap::task_totals(@_);
 
     $mindist = 0;
     $tasPk = $task->{'tasPk'};
@@ -60,23 +59,6 @@ sub task_totals
         $mindist = 5000;
     }
 
-    $sth = $dbh->prepare("select count(tarPk) as TotalPilots, sum(if(tarDistance < $mindist, $mindist, tarDistance)) as TotalDistance, sum((tarDistance > 0) or (tarResultType='lo')) as TotalLaunched FROM tblTaskResult where tasPk=$tasPk and tarResultType <> 'abs'");
-
-    $sth->execute();
-    $ref = $sth->fetchrow_hashref();
-    $totdist = $ref->{'TotalDistance'};
-    $launched = $ref->{'TotalLaunched'};
-    $pilots = $ref->{'TotalPilots'};
-
-    # pilots in goal?
-    $sth = $dbh->prepare("select count(tarPk) as GoalPilots from tblTaskResult where tasPk=$tasPk and tarGoal > 0");
-    $sth->execute();
-    $goal = 0;
-    if ($ref = $sth->fetchrow_hashref())
-    {
-        $goal = $ref->{'GoalPilots'};
-    }
-
     # fastest?
     $sth = $dbh->prepare("select min(tarES-tarSS) as MinTime, min(tarES) as MinArr from tblTaskResult where tasPk=$tasPk and tarES > 0");
     $sth->execute();
@@ -92,15 +74,6 @@ sub task_totals
         $minarr = 0;
     }
 
-    # FIX: lead out coeff - first departure in goal and adjust min coeff 
-    $sth = $dbh->prepare("select min(tarLeadingCoeff) as MinCoeff from tblTaskResult where tasPk=$tasPk and tarLeadingCoeff is not NULL");
-    $sth->execute();
-    $mincoeff = 0;
-    if ($ref = $sth->fetchrow_hashref())
-    {
-        $mincoeff = $ref->{'MinCoeff'};
-    }
-
     $maxdist = 0;
     $mindept = 0;
     $sth = $dbh->prepare("select max(tarDistance) as MaxDist from tblTaskResult where tasPk=$tasPk");
@@ -108,27 +81,6 @@ sub task_totals
     if ($ref = $sth->fetchrow_hashref())
     {
         $maxdist = 0 + $ref->{'MaxDist'};
-    }
-
-    $sth = $dbh->prepare("select min(tarSS) as MinDept from tblTaskResult where tasPk=$tasPk and tarSS > 0 and tarGoal > 0");
-    $sth->execute();
-    if ($ref = $sth->fetchrow_hashref())
-    {
-        $mindept = $ref->{'MinDept'};
-    }
-
-    my $waypoints = $task->{'waypoints'};
-    my $numpoints = scalar @$waypoints;
-    for (my $i = 0; $i < $numpoints; $i++)
-    {
-        if ($waypoints->[$i]->{'type'} eq 'goal')
-        {
-            $goalalt = $waypoints->[$i]->{'alt'};
-        }
-    }
-    if ($goalalt < 0)
-    {
-        $goalalt = 0;
     }
 
     # Get the top 90% dist ...
@@ -143,7 +95,7 @@ sub task_totals
             $fastest = $ref->{'airTime'};
         }
 
-        if ($ref->{'Place'} <= $self->round($pilots * 0.90))
+        if ($ref->{'Place'} <= $self->round($taskt->{'pilots'} * 0.90))
         {
             $topnine = $topnine + $ref->{'tarDistance'};
         }
@@ -151,22 +103,15 @@ sub task_totals
     print "distance=$totdist 90%dist=$topnine\n";
 
     # task quality 
-    $taskt{'pilots'} = $pilots;
-    $taskt{'maxdist'} = $maxdist;
-    $taskt{'distance'} = $totdist;
-    #$taskt{'taskdist'} = $taskdist;
-    $taskt{'launched'} = $launched;
-    #$taskt{'quality'} = $quality;
-    $taskt{'goal'} = $goal;
-    $taskt{'fastest'} = $fastest;
-    $taskt{'firstdepart'} = $mindept;
-    $taskt{'firstarrival'} = $minarr;
-    $taskt{'mincoeff'} = $mincoeff;
-    $taskt{'goalalt'} = $goalalt;
-    $taskt{'topninety'} = $topnine;
-    $taskt{'stopped'} = $stop;
+    $taskt->{'maxdist'} = $maxdist;
+    $taskt->{'fastest'} = $fastest;
+    $taskt->{'firstdepart'} = $mindept;
+    $taskt->{'firstarrival'} = $minarr;
+    $taskt->{'mincoeff'} = $mincoeff;
+    $taskt->{'topninety'} = $topnine;
+    $taskt->{'stopped'} = $stop;
 
-    return \%taskt;
+    return $taskt;
 }
 
 #
@@ -229,7 +174,7 @@ sub day_quality
         $time = 0.1;
     }
 
-    return ($distance,$time,$launch);
+    return ($distance,$time,$launch,1);
 }
 
 
@@ -244,21 +189,34 @@ sub points_weight
     my $Astart;
     my $Aarrival;
     my $x;
+    my $leading;
 
-
-    $quality = $taskt->{'quality'};
-    $Fversion = $formula->{'version'};
-
+    
     # Way simple for NZ (no departure / leadout or arrival)
-    #print "distweight=$distweight($Ngoal/$Nfly)\n";
     $x = $taskt->{'goal'} / $taskt->{'launched'};
     $distweight = 1-0.6*sqrt($x);
 
-    $Adistance = 1000 * $quality * $distweight;
-    $Aspeed = 1000 * $quality * (1-$distweight);
-    $Astart = 0;
-    $Aarrival = 0;
-    
+    $quality = $taskt->{'quality'};
+    $Fversion = $formula->{'version'};
+    $leading = $formula->{'weightstart'} * 1000;
+
+    # need to rescale if depart / arrival are "off"
+    if ($task->{'departure'} eq 'off')
+    {
+        $Astart = 0;
+        $Aarrival = 0; 
+        $Adistance = 1000 * $quality * $distweight;
+        $Aspeed = 1000 * $quality * (1-$distweight);
+    }
+    else
+    {
+        $Astart = $leading * $quality;
+        $Aarrival = 0; 
+        $Adistance = (1000 - $leading) * $quality * $distweight;
+        $Aspeed = (1000 - $leading)* $quality * (1-$distweight);
+    }
+
+
     print "points_weight: ($Fversion) Adist=$Adistance, Aspeed=$Aspeed, Astart=$Astart, Aarrival=$Aarrival\n";
 
     return ($Adistance, $Aspeed, $Astart, $Aarrival);
@@ -333,7 +291,7 @@ sub points_allocation
 
     my $difdist;
 
-    my @pilots;
+    my $sorted_pilots;
     my $kmdiff = [];
 
     # Find fastest pilot into goal and calculate leading coefficients
@@ -360,8 +318,11 @@ sub points_allocation
         return;
     }
 
+    my $sorted_pilots = $self->ordered_results($dbh, $task, $taskt, $formula);
+
     # Some GAP basics
     ($Adistance, $Aspeed, $Astart, $Aarrival) = $self->points_weight($task, $taskt, $formula);
+
 
     # KM difficulty
     for my $it ( 0 .. floor($taskt->{'maxdist'} / 100.0) )
@@ -422,59 +383,9 @@ sub points_allocation
         #print "$dif - sdif=$sdif rdif=$rdif kmdif = ", $kmdiff[$dif], "\n";
     }
 
-    # Get all pilots and process each of them 
-    # pity it can't be done as a single update ...
-    $dbh->do('set @x=0;');
-    $sth = $dbh->prepare("select \@x:=\@x+1 as Place, tarPk, tarDistance, tarSS, tarES, tarPenalty, tarResultType, tarLeadingCoeff, tarGoal, tarLastAltitude from tblTaskResult where tasPk=$tasPk and tarResultType <> 'abs' order by tarDistance desc, tarES");
-    $sth->execute();
-    while ($ref = $sth->fetchrow_hashref()) 
-    {
-        my %taskres;
-
-        %taskres = ();
-        $taskres{'tarPk'} = $ref->{'tarPk'};
-        $taskres{'penalty'} = $ref->{'tarPenalty'};
-        $taskres{'distance'} = $ref->{'tarDistance'};
-        $taskres{'stopalt'} = $ref->{'tarLastAltitude'};
-
-        # set pilot to min distance if they're below that ..
-        print "sstopped=", $task->{'sstopped'}, " stopalt=", $taskres{'stopalt'}, " goalalt=", $task->{'goalalt'}, " glidebonus=", $formula->{'glidebonus'}, "\n";
-        if ($task->{'sstopped'} > 0 && $taskres{'stopalt'} > $task->{'goalalt'} && $formula->{'glidebonus'} > 0)
-        {
-            print "Stopped height bonus: ", $formula->{'glidebonus'} * ($taskres{'stopalt'}-$task->{'goalalt'}), "\n";
-            $taskres{'distance'} = $taskres{'distance'} + $formula->{'glidebonus'} * ( $taskres{'stopalt'}-$task->{'goalalt'} );
-            if ($taskres{'distance'} > $task->{'ssdistance'})
-            {
-                $taskres{'distance'} = $task->{'ssdistance'};
-            }
-        }
-
-        # set pilot to min distance if they're below that ..
-        if ($taskres{'distance'} < $Tmindist)
-        {
-            $taskres{'distance'} = $Tmindist;
-        }
-        $taskres{'result'} = $ref->{'tarResultType'};
-        $taskres{'startSS'} = $ref->{'tarSS'};
-        $taskres{'endSS'} = $ref->{'tarES'};
-        # OZGAP2005 
-        $taskres{'timeafter'} = $ref->{'tarES'} - $Tfarr;
-        $taskres{'place'} = $ref->{'Place'};
-        $taskres{'time'} = $taskres{'endSS'} - $taskres{'startSS'};
-        $taskres{'goal'} = $ref->{'tarGoal'};
-        if ($taskres{'time'} < 0)
-        {
-            $taskres{'time'} = 0;
-        }
-        # Leadout Points
-        $taskres{'coeff'} = $ref->{'tarLeadingCoeff'};
-        # FIX: adjust against fastest ..
-
-        push @pilots, \%taskres;
-    }
 
     # Score each pilot now 
-    for my $pil ( @pilots )
+    for my $pil ( @$sorted_pilots )
     {
         my $Pdist;
         my $Pspeed;
@@ -487,12 +398,12 @@ sub points_allocation
         $tarPk = $pil->{'tarPk'};
         $penalty = $pil->{'penalty'};
 
-        # Pilot distance score 
         #print "task->maxdist=", $taskt->{'maxdist'}, "\n";
         #print "pil->distance/(2*maxdist)=", $pil->{'distance'}/(2*$taskt->{'maxdist'}), "\n";
         #print "kmdiff=", $kmdiff[floor($pil->{'distance'}/1000.0)], "\n";
+
+        # Pilot distance score 
         $Pdist = $Adistance * sqrt($pil->{'distance'}/$taskt->{'maxdist'});
-                    # $kmdiff->[floor($pil->{'distance'}/100.0)]);
 
         # Pilot speed score
         print "$tarPk speed: ", $pil->{'time'}, ", $Tmin\n";
@@ -512,16 +423,18 @@ sub points_allocation
 
         if (0+$Pspeed != $Pspeed)
         {
-            print "Pdepart is nan for $tarPk, pil->{'time'}=", $pil->{'time'}, "\n";
+            print "Pspeed is nan for $tarPk, pil->{'time'}=", $pil->{'time'}, "\n";
             $Pspeed = 0;
         }
 
-        # Pilot departure score
-        print "$tarPk pil->startSS=", $pil->{'startSS'}, "\n";
-        print "$tarPk pil->endSS=", $pil->{'endSS'}, "\n";
-        print "$tarPk tast->first=", $taskt->{'firstdepart'}, "\n";
+        #print "$tarPk pil->startSS=", $pil->{'startSS'}, "\n";
+        #print "$tarPk pil->endSS=", $pil->{'endSS'}, "\n";
+        #print "$tarPk tast->first=", $taskt->{'firstdepart'}, "\n";
 
-        $Pdepart = 0;
+        # Pilot departure/leading points
+        $Pdepart = $self->pilot_departure_leadout($formula, $task, $taskt, $pil, $Astart, $Aspeed);
+
+        # No arrival NZ
         $Parrival = 0;
 
         # Penalty for not making goal ..

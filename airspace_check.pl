@@ -18,6 +18,7 @@ use TrackLib qw(:all);
 my $dbh;
 
 my $max_height = 3048;  # 10000' limit in oz 
+my $start_below = 20;
 #my $max_height = 2591;  # 8500' limit in oz 
 #my $max_height = 1666;  # 5000' limit in oz 
 
@@ -26,36 +27,70 @@ my $max_height = 3048;  # 10000' limit in oz
 #
 sub read_short_track
 {
-    my ($traPk) = @_;
+    my ($traPk,$bucket) = @_;
     my %track;
     my @coords;
     my %awards;
     my $ref;
     my $c1;
 
-    $sth = $dbh->prepare("select *, floor(trlTime/60) as trlMinTime, max(trlAltitude) as maxAlt from tblTrackLog where traPk=$traPk group by floor(trlTime/60) order by trlTime");
+    $sth = $dbh->prepare("select *, floor(trlTime/$bucket) as trlMinTime, max(trlAltitude) as maxAlt, min(trlLatDecimal) as minLatDecimal, min(trlLongDecimal) as minLongDecimal, max(trlLatDecimal) as maxLatDecimal, max(trlLongDecimal) as maxLongDecimal from tblTrackLog where traPk=$traPk group by floor(trlTime/$bucket) order by trlTime");
     $sth->execute();
     while ($ref = $sth->fetchrow_hashref()) 
     {
         #print "Found a row: time = $ref->{'trlTime'}\n";
-        my %coord;
+        my %coordll;
+        my %coordlm;
+        my %coordml;
+        my %coordmm;
 
-        $coord{'dlat'} = $ref->{'trlLatDecimal'};
-        $coord{'dlong'} = $ref->{'trlLongDecimal'};
+        # coords - decimal / radians / alt/time / cartesian for the region
+        $coordll{'dlat'} = $ref->{'minLatDecimal'};
+        $coordll{'dlong'} = $ref->{'minLongDecimal'};
+        $coordll{'lat'} = $ref->{'minLatDecimal'} * $pi / 180;
+        $coordll{'long'} = $ref->{'minLongDecimal'} * $pi / 180;
+        $coordll{'alt'} = $ref->{'maxAlt'};
+        $coordll{'time'} = $ref->{'trlTime'};
+        $c1 = polar2cartesian(\%coordll);
+        $coordll{'cart'} = $c1;
+        push @coords, \%coordll;
 
-        # radians
-        $coord{'lat'} = $ref->{'trlLatDecimal'} * $pi / 180;
-        $coord{'long'} = $ref->{'trlLongDecimal'} * $pi / 180;
+        if ($bucket > 1)
+        {
+            # coord - decimal / radians / alt/time
+            $coordlm{'dlat'} = $ref->{'minLatDecimal'};
+            $coordlm{'dlong'} = $ref->{'maxLongDecimal'};
+            $coordlm{'lat'} = $ref->{'minLatDecimal'} * $pi / 180;
+            $coordlm{'long'} = $ref->{'maxLongDecimal'} * $pi / 180;
+            $coordlm{'alt'} = $ref->{'maxAlt'};
+            $coordlm{'time'} = $ref->{'trlTime'};
+            $c1 = polar2cartesian(\%coordlm);
+            $coordlm{'cart'} = $c1;
+            push @coords, \%coordlm;
+    
+            # coord - decimal / radians / alt/time
+            $coordml{'dlat'} = $ref->{'maxLatDecimal'};
+            $coordml{'dlong'} = $ref->{'minLongDecimal'};
+            $coordml{'lat'} = $ref->{'maxLatDecimal'} * $pi / 180;
+            $coordml{'long'} = $ref->{'minLongDecimal'} * $pi / 180;
+            $coordml{'alt'} = $ref->{'maxAlt'};
+            $coordml{'time'} = $ref->{'trlTime'};
+            $c1 = polar2cartesian(\%coordml);
+            $coordml{'cart'} = $c1;
+            push @coords, \%coordml;
+    
+            # coord - decimal / radians / alt/time
+            $coordmm{'dlat'} = $ref->{'maxLatDecimal'};
+            $coordmm{'dlong'} = $ref->{'maxLongDecimal'};
+            $coordmm{'lat'} = $ref->{'maxLatDecimal'} * $pi / 180;
+            $coordmm{'long'} = $ref->{'maxLongDecimal'} * $pi / 180;
+            $coordmm{'alt'} = $ref->{'maxAlt'};
+            $coordmm{'time'} = $ref->{'trlTime'};
+            $c1 = polar2cartesian(\%coordmm);
+            $coordmm{'cart'} = $c1;
+            push @coords, \%coordmm;
+        }
 
-        # alt / time  / pressure?
-        $coord{'alt'} = $ref->{'maxAlt'};
-        $coord{'time'} = $ref->{'trlTime'};
-
-        # and cartesian ..
-        $c1 = polar2cartesian(\%coord);
-        $coord{'cart'} = $c1;
-
-        push @coords, \%coord;
     }
 
     $track{'coords'} = \@coords;
@@ -63,21 +98,28 @@ sub read_short_track
     return \%track;
 }
 
-sub airspace_check
+sub cln
 {
-    my ($traPk, $airspaces) = @_;
-    my $flight;
-    my $violation;
-    my $dst;
+    my ($fix) = @_;
+    #$fix =~ s/[\d001-\d037]//g;
+    $fix =~ s/[^[:print:]]//g;
+    return $fix;
+}
 
-    $violation = 0;
-    $flight = read_short_track($traPk);
+sub flight_check
+{
+    my ($quick, $flight, $airspaces) = @_;
+    my $full;
+    my $violation = 0;
+
     $full = $flight->{'coords'};
-
     foreach $space (@$airspaces)
     {
-        #print "Checking airspace ", $space->{'name'}, " with base=", $space->{'base'}, "\n";
         #print Dumper($space);
+        if (!defined($space->{'centre'}))
+        {
+            $space->{'centre'} = $space->{'points'}->[0];
+        }
 
         for my $coord ( @$full )
         {
@@ -92,25 +134,39 @@ sub airspace_check
             }
 
             # stupid max height (10000ft) check for oz pilots
-            if ($coord->{'alt'} > $max_height)
+            if ($coord->{'alt'} > $max_height - $start_below)
             {
-                if ($coord->{'alt'} - $space->{'base'} > $violation)
+                if (($coord->{'alt'} - ($max_height - $start_below)) > $violation)
                 {
-                    $violation = $coord->{'alt'} - $max_height;
-                    print "# Max height violation max=", $max_height, "m alt=", $coord->{'alt'}, " dlat=", $coord->{'dlat'}, " dlong=", $coord->{'dlong'}, "\n";
+                    $violation = $coord->{'alt'} - ( $max_height - $start_below );
+                    if ($quick)
+                    {
+                        return $violation;
+                    }
+                    else
+                    {
+                        print "\n    MaxAltitude (", cln($space->{'name'}), ") max=", $max_height, "m alt=", $coord->{'alt'}, " dlat=", $coord->{'dlat'}, " dlong=", $coord->{'dlong'};
+                    }
                 }
             }
 
-            if ($coord->{'alt'} > $space->{'base'})
-            { 
+            if ($coord->{'alt'} > $space->{'base'} - $start_below)
+            {
                 # potential violation ..
                 if ($space->{'shape'} eq 'circle')
                 {
                     $dst = distance($coord, $space->{'centre'});
-                    if ($dst < $space->{'radius'})
+                    if ($dst < $space->{'radius'} + $start_below)
                     { 
-                        print "# ", $space->{'name'}, " (circle:", $space->{'base'}, "m) @ Alt=", $coord->{'alt'}, "m Horiz=", floor($space->{'radius'}-$dst) , "m dlat=", $coord->{'dlat'}, " dlong=", $coord->{'dlong'}, "\n";
-                        $violation = $coord->{'alt'} - $space->{'base'};
+                        $violation = $coord->{'alt'} - ( $space->{'base'} - $start_below );
+                        if ($quick)
+                        {
+                            return $violation;
+                        }
+                        else
+                        {
+                            print "\n    Circle (", cln($space->{'name'}), ") base=", $space->{'base'}, "m @ alt=", $coord->{'alt'}, "m horiz=", floor($space->{'radius'}-$dst+$start_below) , "m dlat=", $coord->{'dlat'}, " dlong=", $coord->{'dlong'};
+                        }
                     }
 
                 }
@@ -129,15 +185,42 @@ sub airspace_check
 #                }
                 elsif (in_polygon($coord, $space->{'points'}))
                 {
-                    if ($coord->{'alt'} - $space->{'base'} > $violation)
+                    if ($coord->{'alt'} - ( $space->{'base'} - $start_below ) > $violation)
                     {
-                        print "# ", $space->{'name'}, " (poly:", $space->{'base'}, "m) @ Alt=", $coord->{'alt'}, " dlat=", $coord->{'dlat'}, " dlong=", $coord->{'dlong'}, "\n";
-                        $violation = $coord->{'alt'} - $space->{'base'};
+                        $violation = $coord->{'alt'} - ( $space->{'base'} - $start_below );
+                        if ($quick)
+                        {
+                            return $violation;
+                        }
+                        else
+                        {
+                            print "\n    Polygon (", cln($space->{'name'}), ") base=", $space->{'base'}, "m) @ alt=", $coord->{'alt'}, " dlat=", $coord->{'dlat'}, " dlong=", $coord->{'dlong'};
+                        }
                     }
                 }
             }
         }
     }
+
+    return $violation;
+}
+
+sub airspace_check
+{
+    my ($traPk, $airspaces) = @_;
+    my $flight;
+    my $violation;
+    my $dst;
+
+    $violation = 0;
+    $flight = read_short_track($traPk,200);
+    $violation = flight_check(1, $flight, $airspaces);
+    if ($violation > 0)
+    {
+        $flight = read_short_track($traPk,1);
+        $violation = flight_check(0, $flight, $airspaces);
+    }
+
     return $violation;
 }
 
@@ -469,23 +552,65 @@ sub get_all_tracks
     return \%ret;
 }
 
+sub get_one_track
+{
+    my ($traPk) = @_;
+    my ($sth,$ref);
+    my %ret;
+
+    $sth = $dbh->prepare("select CTT.traPk, P.* from tblComTaskTrack CTT, tblTrack T, tblPilot P where T.traPk=$traPk and CTT.traPk=T.traPk and P.pilPk=T.pilPk");
+    $sth->execute();
+    while ($ref = $sth->fetchrow_hashref())
+    {
+        $ret{$ref->{'traPk'}} = $ref;
+    }
+
+    return \%ret;
+}
+
 #
 # Verify an entire task ...
 #
 
+if ($#ARGV < 0)
+{
+    print "airspace_check <tasPk> [<traPk>]\n";
+    exit 1;
+}
+
+my $traPk;
 my $tasPk = 0 + $ARGV[0];
+
+if ($#ARGV == 1)
+{
+    $traPk = 0 + $ARGV[1];
+}
+
 my $tracks;
 my $airspace;
 my $dist;
 my $name;
 
 $dbh = db_connect();
-$tracks = get_all_tracks($tasPk);
-#$tracks = [ 10352 ];
+
+if ($traPk > 0)
+{
+    $tracks = get_one_track($traPk);
+}
+else
+{
+    $tracks = get_all_tracks($tasPk);
+}
+#$tracks = [ 13010 ];
 #$airspace = find_nearby_airspace($regPk, 100000.0);
 $airspace = find_task_airspace($tasPk);
-#print Dumper($airspace);
+print "Airspaces checked:\n";
+foreach $space (@$airspace)
+{
+    print "   ", cln($space->{'name'}), " with base=", cln($space->{'base'}), "\n";
+}
 
+#print Dumper($airspace);
 # Go through all the tracks ..
 # might be more useful to print the names :-)
 
@@ -493,15 +618,17 @@ for my $track (keys %$tracks)
 {
     $dist = 0;
     $name = $tracks->{$track}->{'pilFirstName'} . " " . $tracks->{$track}->{'pilLastName'};
-    print "\nAirspace check for $name (traPk=$track)\n";
+    print "\n$name ($track): ";
     if (($dist = airspace_check($track,$airspace)) > 0)
     {
-        print "   Maximum violation of $dist metres ($name).\n";
+        print "\n    Maximum violation of $dist metres ($name).";
     }
     else
     {
-        print "   No violation ($name).\n";
+        print "No violation.";
     }
 }
+print "\n";
+
 
 
