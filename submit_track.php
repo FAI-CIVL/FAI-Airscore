@@ -1,7 +1,9 @@
 <?php
-require 'authorisation.php';
-require 'format.php';
-require 'hc.php';
+require_once 'authorisation.php';
+require_once 'format.php';
+require_once 'hc.php';
+header('Cache-Control: no-cache, must-revalidate');
+header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
 
 $comPk = reqival('comPk');
 $embed = reqsval('embed');
@@ -30,6 +32,14 @@ if ($row=mysql_fetch_array($result))
     $comContact = $row['comContact'];
     $comUnixTo = $row['comUnixTo'];
     $comEntryRestrict = $row['comEntryRestrict'];
+}
+
+$freepin = 0;
+$query = "select * from tblTask where comPk=$comPk and tasTaskType='free-pin'";
+$result = mysql_query($query);
+if (mysql_num_rows($result) > 0)
+{
+   $freepin = 1; 
 }
 
 if ($comContact == '')
@@ -71,22 +81,31 @@ programs shown on the right.  Then you're ready to upload the
 .IGC file created to this website using the form here!
 <br><br>
 <?php
-function upload_track($file,$pilPk,$contact)
+//function upload_track($file,$pilPk,$contact)
+function upload_track($hgfa, $file, $comid, $tasPk, $contact)
 {
     # Let the Perl program do it!
     $out = '';
     $retv = 0;
     $traPk = 0;
-    exec(BINDIR . "igcreader.pl $file $pilPk", $out, $retv);
+    #exec(BINDIR . "igcreader.pl $file $pilPk", $out, $retv);
+    exec(BINDIR . "add_track.pl $hgfa $file $comid $tasPk", $out, $retv);
 
     if ($retv)
     {
-        echo "<b>Failed to upload your track, it appears to have been submitted previously.</b><br>\n";
-        echo "Contact $contact if this was a valid track.<br>\n";
-        foreach ($out as $txt)
+        echo "<b>Failed to upload your track: </b>";
+        if ($out)
         {
-            echo "$txt<br>\n";
+            foreach ($out as $txt)
+            {
+                echo "$txt<br>\n";
+            }
         }
+        else
+        {
+            echo " it appears to have been submitted previously.<br>\n";
+        }
+        echo "Contact $contact if this was a valid track.<br>\n";
         echo "</div></body></html>\n";
         exit(0);
     }
@@ -136,16 +155,16 @@ function accept_track($until, $contact, $restrict)
         }
     }
 
-    if ($restrict == 'registered')
-    {
-        $query = "select * from tblRegistration where comPk=$comid and pilPk=$pilPk";
-        $result = mysql_query($query) or die('Registration query failed: ' . mysql_error());
-        if (mysql_num_rows($result) == 0)
-        {
-            $member = 0;
-        }
-    }
-
+#    if ($restrict == 'registered')
+#    {
+#        $query = "select * from tblRegistration where comPk=$comid and pilPk=$pilPk";
+#        $result = mysql_query($query) or die('Registration query failed: ' . mysql_error());
+#        if (mysql_num_rows($result) == 0)
+##        {
+#            $member = 0;
+#        }
+#    }
+##
     $gmtimenow = time() - (int)substr(date('O'),0,3)*60*60;
     if ($gmtimenow > ($until + 7*24*3600))
     {
@@ -170,95 +189,23 @@ function accept_track($until, $contact, $restrict)
     chmod($copyname, 0644);
 
     // Process the file
-    $maxPk = upload_track($_FILES['userfile']['tmp_name'], $pilPk, $comContact);
+    //$maxPk = upload_track($_FILES['userfile']['tmp_name'], $pilPk, $comContact);
+    $maxPk = upload_track($hgfa, $_FILES['userfile']['tmp_name'], $comid, $route, $contact);
+
     $tasPk = 'null';
     $tasType = '';
     $comType = '';
     $turnpoints = '';
 
-    if ($route > 0)
-    {
-        $tasPk = $route;
-        $query = "select T.tasPk, T.tasTaskType, C.comType from tblTask T, tblTrack TL, tblCompetition C where C.comPk=T.comPk and T.comPk=$comid and TL.traPk=$maxPk and T.tasPk=$tasPk";
-        $result = mysql_query($query) or die('Query failed: ' . mysql_error());
-        if (mysql_num_rows($result) > 0)
-        {
-            //$tasPk=mysql_result($result,0,0);
-            $tasType=mysql_result($result,0,1);
-            $comType=mysql_result($result,0,2);
-        }
-        // should check date of track is within tasStart/tasFinish time
-    }
-    else
-    {
-        $query = "select T.tasPk, T.tasTaskType, C.comType from tblTask T, tblTrack TL, tblCompetition C where C.comPk=T.comPk and T.comPk=$comid and TL.traPk=$maxPk and TL.traStart > date_sub(T.tasDate, interval C.comTimeOffset hour) and TL.traStart < date_add(T.tasDate, interval (24-C.comTimeOffset) hour)";
-        $result = mysql_query($query) or die('Query failed: ' . mysql_error());
-        if (mysql_num_rows($result) > 0)
-        {
-            $tasPk=mysql_result($result,0,0);
-            $tasType=mysql_result($result,0,1);
-            $comType=mysql_result($result,0,2);
-        }
-    }
-
-    $query = "insert into tblComTaskTrack (comPk,tasPk,traPk) values ($comid,$tasPk,$maxPk)";
-    $result = mysql_query($query) or die('ComTaskTrack failed: ' . mysql_error());
-
     $out = '';
     $retv = 0;
 
-    if ($tasPk != 'null')
-    {   
-        $turnpoints = '3';
-        if ($tasType == 'free')
-        {
-            $turnpoints = '0';
-        }
-
-        exec(BINDIR . "optimise_flight.pl $maxPk $tasPk $turnpoints", $out, $retv);
-    }
-    else
-    {
-        if ($comType == 'Free')
-        {
-            $turnpoints = '0';
-            exec(BINDIR . "optimise_flight.pl $maxPk 0 $turnpoints", $out, $retv);
-        }
-        else
-        {
-            echo "optimise_flight.pl $maxPk<br>";
-            exec(BINDIR . "optimise_flight.pl $maxPk", $out, $retv);
-        }
-    }
-
-    if ($retv)
-    {
-        echo "<b>Failed to optimise your track correctly.</b><br>\n";
-        echo "Contact $contact if this was a valid track.<br>\n";
-        foreach ($out as $txt)
-        {
-            echo "$txt<br>\n";
-        }
-        echo "</div></body></html>\n";
-        exit(0);
-    }
-
-    $glider = addslashes($_REQUEST['glider']);
-    $dhv = addslashes($_REQUEST['dhv']);
-    $query = "update tblTrack set traGlider='$glider', traDHV='$dhv' where traPk=$maxPk";
+    $glider = reqsval('glider');
+    $dhv = reqsval('dhv');
+    $safety = reqsval('pilotsafety');
+    $quality = reqival('pilotquality');
+    $query = "update tblTrack set traGlider='$glider', traDHV='$dhv', traSafety='$safety', traConditions='$quality' where traPk=$maxPk";
     $result = mysql_query($query) or die('Update tblTrack failed: ' . mysql_error());
-
-    if ($tasPk != 'null') 
-    {
-        if ($tasType == 'speedrun' || $tasType == 'race' || $tasType =='speedrun-interval')
-        {
-            task_score($maxPk);
-        }
-        elseif ($tasType == 'airgain')
-        {
-            exec(BINDIR . "airgain_verify.pl $maxPk $comid $tasPk", $out, $retv);
-        }
-    }
 
     return $maxPk;
 }
@@ -272,7 +219,7 @@ $igcarr = array();
 if ($offerall)
 {
     $comps = array();
-    $query = "select * from tblCompetition where curdate() < date_add(comDateTo, interval 3 day)";
+    $query = "select * from tblCompetition where curdate() < date_add(comDateTo, interval 3 day) and comName not like '%test%'";
     $result = mysql_query($query) or die('Query failed: ' . mysql_error());
     while($row = mysql_fetch_array($result))
     {
@@ -293,7 +240,7 @@ if ($comType == 'Route')
     $query = "select * from tblTask where comPk=$comPk";
     $result = mysql_query($query) or die('Route query failed: ' . mysql_error());
     $routes = array();
-    while($row = mysql_fetch_array($result))
+    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {
         $routes[$row['tasName']] = $row['tasPk'];
     }
@@ -302,23 +249,35 @@ if ($comType == 'Route')
     $igcarr[] = array('Route', fselect('route', 0, $routes));
 }
 
-$igcarr[] = array('Send IGC file', "<input name=\"userfile\" type=\"file\">");
-$igcarr[] = array('HGFA Number', "<input name=\"hgfanum\" type=\"text\">");
-$igcarr[] = array('Last Name', "<input name=\"lastname\" type=\"text\">");
+if ($freepin)
+{
+    $igcarr[] = array('Send IGC file', "<input name=\"userfile\" type=\"file\">", '<center>or</center>', "<a href=\"submit_pin.php?comPk=$comPk\"><b>PIN drop</b></a>");
+}
+else
+{
+    $igcarr[] = array('Send IGC file', "<input name=\"userfile\" type=\"file\">");
+}
+$igcarr[] = [ 'HGFA Number', "<input name=\"hgfanum\" type=\"text\">" ];
+$igcarr[] = [ 'Last Name', "<input name=\"lastname\" type=\"text\">" ];
 
 if ($comClass == 'PG')
 {
-    $classarr = fselect('dhv', 'competition', array('novice' => '1', 'fun' => '1/2', 'sports' => '2', 'serial' => '2/3', 'competition' => 'competition' ));
+    $classarr = fselect('dhv', '2/3', [ 'novice' => '1', 'fun' => '1/2', 'sports' => '2', 'serial' => '2/3', 'competition' => 'competition' ]);
 }
 elseif ($comClass == 'HG')
 {
-    $classarr = fselect('dhv', 'open', array('floater' => 'floater', 'kingpost' => 'kingpost', 'open' => 'open', 'rigid' => 'rigid' ));
+    $classarr = fselect('dhv', 'open', [ 'floater' => 'floater', 'kingpost' => 'kingpost', 'open' => 'open', 'rigid' => 'rigid' ]);
 }
 else 
 {
-    $classarr = fselect('dhv', '2', array('pg-novice' => '1', 'pg-fun' => '1/2', 'pg-sport' => '2', 'pg-serial' => '2/3', 'pg-comp' => 'competition', 'hg-floater' => 'floater', 'hg-kingpost' => 'kingpost', 'hg-open' => 'open', 'hg-rigid' => 'rigid' ));
+    $classarr = fselect('dhv', '2', [ 'pg-novice' => '1', 'pg-fun' => '1/2', 'pg-sport' => '2', 'pg-serial' => '2/3', 'pg-comp' => 'competition', 'hg-floater' => 'floater', 'hg-kingpost' => 'kingpost', 'hg-open' => 'open', 'hg-rigid' => 'rigid' ]);
 }
-$igcarr[] = array('Glider', '<input name="glider" type="text">', $classarr);
+$igcarr[] = [ 'Glider', '<input name="glider" type="text">', $classarr ];
+
+if ($comType == 'RACE' || $comType == 'RACE-handicap' || $comType == 'Team-RACE')
+{
+    $igcarr[] = [ 'Conditions', fselect( 'pilotsafety', 'safe', [ 'safe' => 'safe', 'not safe for me' => 'maybe', 'not safe for all' => 'unsafe' ]), fselect('pilotquality', 5, [ 'completely unfair' => 1, 'random racing' => 2, 'passable racing' => 3, 'good racing' => 4 , 'great racing' => 5 ]) ];
+}
 
 echo ftable($igcarr, '', '', '');
 echo '<br><center><input type="submit" name="foo" value="Send Tracklog"></center>';
@@ -333,6 +292,7 @@ if ($embed == '')
         "<a href=\"http://www.gethome.no/stein.sorensen/body_gpsdump.htm\">GPSDump</a>",
         "<a href=\"http://flighttrack.sourceforge.net/\">FlightTrack (MacOS X)</a>",
         "<a href=\"http://www.gpsbabel.org/\">GPS Babel</a>",
+        "<a href=\"http://www.xcsoar.org/\">XCSoar</a>",
         "<b><a href=\"http://www.freethinker.com/iphone/livetrack24/index.html\">Livetrack 24 (*iOS*)</a></b>",
         );
     echo fnl($gpsarr);
