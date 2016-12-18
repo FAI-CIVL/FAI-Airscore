@@ -340,12 +340,7 @@ sub points_allocation
             $Pdepart = 0;
         }
 
-        if (0+$Pdepart != $Pdepart)
-        {
-            print "Pdepart is nan for $tarPk\n";
-            $Pdepart = 0;
-        }
-
+        # Totals
         $Pscore = $Pdist + $Pspeed + $Parrival + $Pdepart - $penalty;
 
         # Store back into tblTaskResult ...
