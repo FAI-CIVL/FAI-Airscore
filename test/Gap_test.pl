@@ -98,25 +98,25 @@ $taskt->{'firstdepart'} = 36000;
 
 # Allocated pilot speed points
 $pil->{'time'} = $taskt->{'fastest'};
-my $Pspeed = $gap->round($gap->pilot_speed($formula, $taskt, $pil, 371));
+my $Pspeed = $gap->round($gap->pilot_speed($formula, $task, $taskt, $pil, 371));
 is($Pspeed, 371, "Pilot speed points 1");
 
 $pil->{'time'} = $taskt->{'fastest'} + 300;
-$Pspeed = $gap->round($gap->pilot_speed($formula, $taskt, $pil, 371));
+$Pspeed = $gap->round($gap->pilot_speed($formula, $task, $taskt, $pil, 371));
 is($Pspeed, 309, "Pilot speed points 2");
 
 # Allocated pilot arrival points (place, timed)
-my $Parrival = $gap->round($gap->pilot_arrival($formula, $taskt, $pil, 93));
+my $Parrival = $gap->round($gap->pilot_arrival($formula, $task, $taskt, $pil, 93));
 is($Parrival, 38, "Pilot arrival points - place");
 $pil->{'place'} = 2;
-$Parrival = $gap->round($gap->pilot_arrival($formula, $taskt, $pil, 93));
+$Parrival = $gap->round($gap->pilot_arrival($formula, $task, $taskt, $pil, 93));
 is($Parrival, 74, "Pilot arrival points - place");
 
 $formula->{'arrival'} = 'timed';
-$Parrival = $gap->round($gap->pilot_arrival($formula, $taskt, $pil, 93));
+$Parrival = $gap->round($gap->pilot_arrival($formula, $task, $taskt, $pil, 93));
 is($Parrival, 82, "Pilot arrival points - timed");
 $pil->{'timeafter'} = 1200;
-$Parrival = $gap->round($gap->pilot_arrival($formula, $taskt, $pil, 93));
+$Parrival = $gap->round($gap->pilot_arrival($formula, $task, $taskt, $pil, 93));
 is($Parrival, 56, "Pilot arrival points - timed");
 
 # Allocated pilot departure/leadout points (departure, leadout, kmbonus, off)
