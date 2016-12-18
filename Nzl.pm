@@ -115,10 +115,7 @@ sub task_totals
 }
 
 #
-# Calculate Task Validity - GAP
-#
-#  Distance Validity - is the ratio between the area under the ActDistrib and 
-#     the area under the NomDistrib. Only the areas above MinDist considered. 
+# Calculate Task Validity - NZ
 #
 sub day_quality
 {
@@ -223,50 +220,6 @@ sub points_weight
 
 }
 
-
-#    POINTS ALLOCATION
-#    Points Allocation:
-#    x=Ngoal/Nfly
-#    distweight =  1-0.8*x^0.5
-#
-#    A.distance   = 1000 * DayQuality * distweight
-#    A.speed       = 1000 * DayQuality * (1-distweight) * 5.6/8
-#    A.start          = 1000 * DayQuality * (1-distweight) * 1.4/8
-#    A.position    = 1000 * DayQuality * (1-distweight) * 1/8
-#
-#
-# Pilot Distance Score:
-# half of the available distance points is assigned linearly with the 
-# distance flown; the other half is assigned considering the relative 
-# difficulty of each km flown.
-# DistancePoints = 
-#   Available DistancePoints *(PilotDistance/(2*MaxDistance) + KmDiff)
-#
-# To calculate KmDiff first calculate range used for the moving average 
-# Range = round(Dmax/(Nfly-Ngoal))          Range>=3
-# second make an array with a column with 100 meters, another column 
-# with number of pilots landed in that 100 m, a third column with the 
-# difficulty i.e. the number of pilots landed in that 100m plus  Range  km.
-# The Relative Difficulty of each 100 is: Difficulty/(2*sum(Difficulty))
-# Score% is the sum of the Linear difficulty plus the Rel.Difficulty 
-# of all the previous 100 
-# Of course all the pilots with less than Dmin will score  Dmin.
-#
-# Pilot speed score:
-# P.speed = 1-((PilotTime-Tmin)/radq(Tmin))^(2/3)
-#
-# Pilot departure score:
-# x = Tdelay / Tnom
-# if x>1/3 departure points =0
-#  else
-#  P.start = SpeedPoints/6*(1-6.312*X+10.932*X^2-2.990*X^3)
-#
-#  Pilot arrival score
-#  X= 1-(PilotPos-1)/(Ngoal)
-#  Pposition = 0.2+0.037*X+0.13*X^2+0.633*X^3
-#
-# Should be separate one of these for each type/version combo?
-#
 sub points_allocation
 {
     my ($self, $dbh, $task, $taskt, $formula) = @_;
@@ -323,67 +276,6 @@ sub points_allocation
     # Some GAP basics
     ($Adistance, $Aspeed, $Astart, $Aarrival) = $self->points_weight($task, $taskt, $formula);
 
-
-    # KM difficulty
-    for my $it ( 0 .. floor($taskt->{'maxdist'} / 100.0) )
-    {
-        $kmdiff->[$it] = 0;
-    }
-
-    $sth = $dbh->prepare("select truncate(tarDistance/100,0) as Distance, count(truncate(tarDistance/100,0)) as Difficulty from tblTaskResult where tasPk=$tasPk and tarResultType not in ('abs','dnf') group by truncate(tarDistance/100,0)");
-    $sth->execute();
-    while ($ref = $sth->fetchrow_hashref()) 
-    {
-        # populate kmdiff - set back 1km to stop dangerous overflying
-        $difdist = 0 + $ref->{'Distance'} - 10;
-        if ($difdist < 0) 
-        {
-            $difdist = 0;
-        }
-
-        $kmdiff->[$difdist] = 0+$ref->{'Difficulty'};
-    }
-    # Smooth it out 
-    for my $it ( 0 .. 4 )
-    {
-        $kmdiff = $self->spread($kmdiff);
-    }
-
-    $x = 0;
-    for my $dif (0 .. scalar @$kmdiff-1)
-    {
-        my $sdif;
-        my $landed;
-        my $rdif;
-        my $range;
-        my $ddif;
-
-        # FIX: currently assuming a range of 1km
-        # not using this
-        # $range = round($Dmax/($Nfly-$Ngoal));
-
-        $landed = $kmdiff->[$dif];
-        #print "landed $dif=$landed\n";
-        $x = $x + $landed;
-        $ddif = $dif;
-        if ($ddif < $Tmindist)
-        {
-            $ddif = $Tmindist;
-        }
-        $sdif = $ddif/$Dmax * 0.5;
-        $rdif = 0;
-        if ($x > 0)
-        {
-            $rdif = $x/(2*$Nfly);
-        }
-        # CHECK: distance component handled below?
-        #   just need relative difficulty and not distance diff?
-        #$kmdiff[$dif] = ($sdif + $rdif) / 2;
-        $kmdiff->[$dif] = ($rdif);
-        #print "$dif - sdif=$sdif rdif=$rdif kmdif = ", $kmdiff[$dif], "\n";
-    }
-
-
     # Score each pilot now 
     for my $pil ( @$sorted_pilots )
     {
@@ -397,10 +289,6 @@ sub points_allocation
 
         $tarPk = $pil->{'tarPk'};
         $penalty = $pil->{'penalty'};
-
-        #print "task->maxdist=", $taskt->{'maxdist'}, "\n";
-        #print "pil->distance/(2*maxdist)=", $pil->{'distance'}/(2*$taskt->{'maxdist'}), "\n";
-        #print "kmdiff=", $kmdiff[floor($pil->{'distance'}/1000.0)], "\n";
 
         # Pilot distance score 
         $Pdist = $Adistance * sqrt($pil->{'distance'}/$taskt->{'maxdist'});
