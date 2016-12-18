@@ -5,8 +5,17 @@
 # Determines how much of a task (and time) is completed
 # given a particular competition / task 
 # 
-# Geoff Wong 2007
+# Geoff Wong 2016
 #
+# PWC differences
+# 1. No arrival points (go to time) if ESS != Goal
+# 1a. Altitude Arrival points if ESS == Goal (wtf?)
+# 2. LC2
+# 3. Launch validity altered?
+# 4. Stopped task different
+#       - if in goal - subtract time points == goal at ESS task stop time
+#       - if pilot has made ESS, then complete flight is scored even after task stop time
+#       - if not a race, then every pilot scored for the time in the air of the last pilot to start
 
 package PWC;
 
@@ -18,6 +27,7 @@ require Gap;
 #use Math::Trig;
 #use Data::Dumper;
 #use TrackLib qw(:all);
+
 
 #
 # Points weight
@@ -130,14 +140,89 @@ sub day_quality
     print "time quality (tmin=$tmin x=$x)=$time\n";
 
     # Stop Validity
-    $x = ($taskt->{'landed'}/ $taskt->{'launched'});
-    my $stopv = sqrt( ($taskt->{'maxdist'} - $avgdist) / ($distlaunchtoess - $taskt->{'maxdist'}+1) * sqrt($stddevdist / 5) + $x*$x*$x );
+    # Fix - need $distlaunchtoess, $landed
+    my $avgdist = $taskt->{'distance'} / $taskt->{'launched'};
+    my $distlaunchtoess = $taskt->{'distance'} / $taskt->{'launched'};
+
+    $x = ($taskt->{'landed'} / $taskt->{'launched'});
+    my $stopv = sqrt( ($taskt->{'maxdist'} - $avgdist) / ($distlaunchtoess - $taskt->{'maxdist'}+1) * sqrt($taskt->{'stddev'} / 5) + $x*$x*$x );
     $stopv = $self->min([1, $stopv]);
 
     return ($distance,$time,$launch,$stopv);
 }
 
-# Fix - need $stddevdest, $distlaunchess, $avgdist
+
+sub ordered_results
+{
+    my ($self, $dbh, $task, $taskt, $formula) = @_;
+    my @pilots;
+
+    # Get all pilots and process each of them 
+    # pity it can't be done as a single update ...
+    $dbh->do('set @x=0;');
+    $sth = $dbh->prepare("select \@x:=\@x+1 as Place, tarPk, tarDistance, tarSS, tarES, tarPenalty, tarResultType, tarLeadingCoeff, tarGoal, tarLastAltitude from tblTaskResult where tasPk=$tasPk and tarResultType <> 'abs' order by case when tarGoal=0 or tarES is null then -999999 else tarLastAltitude end, tarDistance desc");
+    $sth->execute();
+    while ($ref = $sth->fetchrow_hashref()) 
+    {
+        my %taskres;
+
+        %taskres = ();
+        $taskres{'tarPk'} = $ref->{'tarPk'};
+        $taskres{'penalty'} = $ref->{'tarPenalty'};
+        $taskres{'distance'} = $ref->{'tarDistance'};
+        $taskres{'stopalt'} = $ref->{'tarLastAltitude'};
+        # set pilot to min distance if they're below that ..
+        print "sstopped=", $task->{'sstopped'}, " stopalt=", $taskres{'stopalt'}, " glidebonus=", $formula->{'glidebonus'}, "\n";
+        if ($task->{'sstopped'} > 0 && $taskres{'stopalt'} > 0 && $formula->{'glidebonus'} > 0)
+        {
+            print "Stopped height bonus: ", $formula->{'glidebonus'} * $taskres{'stopalt'}, "\n";
+            $taskres{'distance'} = $taskres{'distance'} + $formula->{'glidebonus'} * $taskres{'stopalt'};
+            if ($taskres{'distance'} > $task->{'ssdistance'})
+            {
+                $taskres{'distance'} = $task->{'ssdistance'};
+            }
+        }
+        if ($taskres{'distance'} < $formula->{'mindist'})
+        {
+            $taskres{'distance'} = $formula->{'mindist'};
+        }
+        $taskres{'result'} = $ref->{'tarResultType'};
+        $taskres{'startSS'} = $ref->{'tarSS'};
+        $taskres{'endSS'} = $ref->{'tarES'};
+        $taskres{'timeafter'} = $ref->{'tarES'} - $Tfarr;
+        $taskres{'place'} = $ref->{'Place'};
+        $taskres{'time'} = $taskres{'endSS'} - $taskres{'startSS'};
+        $taskres{'goal'} = $ref->{'tarGoal'};
+        if ($taskres{'time'} < 0)
+        {
+            $taskres{'time'} = 0;
+        }
+        # Leadout Points
+        $taskres{'coeff'} = $ref->{'tarLeadingCoeff'};
+        # FIX: adjust against fastest ..
+        if ((($ref->{'tarES'} - $ref->{'tarSS'}) < 1) and ($ref->{'tarSS'} > 0))
+        {
+            # Fix - busted if no one is in goal?
+            if ($taskt->{'goal'} > 0)
+            {
+                # adjust for late starters
+                print "No goal, adjust pilot coeff from: ", $ref->{'tarLeadingCoeff'};
+                $taskres{'coeff'} = $ref->{'tarLeadingCoeff'} - ($task->{'sfinish'} - $taskt->{'lastarrival'}) * ($task->{'endssdistance'} - $ref->{'tarDistance'}) / 1800 / $task->{'ssdistance'} ;
+            
+                print " to: ", $taskres{'coeff'}, "\n";
+                # adjust mincoeff?
+                if ($taskres{'coeff'} < $task->{'mincoeff'})
+                {
+                    $task->{'mincoeff'} = $taskres{'coeff'};
+                }
+            }
+        }
+
+        push @pilots, \%taskres;
+    }
+
+    return \@pilots;
+}
 
 1;
 
