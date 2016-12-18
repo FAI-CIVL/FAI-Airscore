@@ -425,7 +425,7 @@ sub points_weight
 
 sub calc_kmdiff
 {
-    my ($self, $dbh, $task, $taskt, $formula) = @_;
+    my ($self, $task, $taskt, $formula) = @_;
     my $tasPk;
     my $kmdiff = [];
     my $Nlo;
@@ -495,7 +495,7 @@ sub calc_kmdiff
 # Calculate pilot arrival score
 sub pilot_arrival
 {
-    my ($self, $formula, $taskt, $pil, $Aarrival) = @_;
+    my ($self, $formula, $task, $taskt, $pil, $Aarrival) = @_;
     my $x = 0;
     my $Parrival = 0;
 
@@ -607,7 +607,7 @@ sub pilot_departure_leadout
         print "    normal departure x=$x\n";
         if ($x < 1/2 && $pil->{'time'} > 0)
         {
-            my $Pspeed = $self->pilot_speed($formula, $taskt, $pil, $Aspeed);
+            my $Pspeed = $self->pilot_speed($formula, $task, $taskt, $pil, $Aspeed);
 
             $Pdepart = $Pspeed*$Astart/$Aspeed*(1-6.312*$x+10.932*($x*$x)-2.990*($x*$x*$x));
             #$Pdepart = $Astart*(1-6.312*$x+10.932*($x*$x)-2.990*($x*$x*$x));
@@ -616,6 +616,12 @@ sub pilot_departure_leadout
     }
 
     # Sanity
+    if (0+$Pdepart != $Pdepart)
+    {
+        print "    Pdepart is nan\n";
+        $Pdepart = 0;
+    }
+
     if ($Pdepart < 0)
     {
         $Pdepart = 0;
@@ -627,10 +633,12 @@ sub pilot_departure_leadout
 
 sub pilot_speed
 {
-    my ($self, $formula, $taskt, $pil, $Aspeed) = @_;
+    my ($self, $formula, $task, $taskt, $pil, $Aspeed) = @_;
 
     my $Tmin = $taskt->{'fastest'};
     my $Pspeed;
+
+    print $pil->{'tarPk'}, " speed: ", $pil->{'time'}, ", $Tmin\n";
 
     if ($pil->{'time'} > 0)
     {
@@ -655,9 +663,23 @@ sub pilot_speed
     return $Pspeed;
 }
 
+sub pilot_distance
+{
+    my ($self, $formula, $task, $taskt, $pil, $Adistance) = @_;
+
+    my $kmdiff = $self->calc_kmdiff($task, $taskt, $formula);
+    my $Pdist = $Adistance * 
+            (($pil->{'distance'}/$taskt->{'maxdist'}) * $formula->{'lineardist'}
+            + $kmdiff->[floor($pil->{'distance'}/100.0)] * (1-$formula->{'lineardist'}));
+
+    print $pil->{'tarPk'}, " lin dist: ", $Adistance * ($pil->{'distance'}/$taskt->{'maxdist'}) * $formula->{'lineardist'}, " dif dist: ", $Adistance * $kmdiff->[floor($pil->{'distance'}/100.0)] * (1-$formula->{'lineardist'});
+
+    return $Pdist;
+}
+
 sub pilot_penalty
 {
-    my ($formula, $task, $taskt, $pil, $astart, $aspeed) = @_;
+    my ($self, $formula, $task, $taskt, $pil, $astart, $aspeed) = @_;
     my $penalty = 0;
     my $penspeed;
     my $pendist;
@@ -850,43 +872,27 @@ sub points_allocation
 
     # Get basic GAP allocation values
     my ($Adistance, $Aspeed, $Astart, $Aarrival) = $self->points_weight($task, $taskt, $formula);
-    my $kmdiff = $self->calc_kmdiff($dbh, $task, $taskt, $formula);
 
     # Score each pilot now 
     for my $pil ( @$sorted_pilots )
     {
-        my $Pdist;
-        my $Pspeed;
-        my $Parrival;
-        my $Pdepart;
-        my $Pscore;
-        my $tarPk;
-        my $penalty;
-        my $pilrdist;
-
-        $tarPk = $pil->{'tarPk'};
-        $penalty = $pil->{'penalty'};
+        my $tarPk = $pil->{'tarPk'};
+        my $penalty = $pil->{'penalty'};
 
         # Pilot distance score 
         # FIX: should round $pil->distance properly?
-        # $pilrdist = round($pil->{'distance'}/100.0) * 100;
+        # my $pilrdist = round($pil->{'distance'}/100.0) * 100;
 
-        $Pdist = $Adistance * 
-            (($pil->{'distance'}/$taskt->{'maxdist'}) * $formula->{'lineardist'}
-            + $kmdiff->[floor($pil->{'distance'}/100.0)] * (1-$formula->{'lineardist'}));
-
-        print "$tarPk lin dist: ", $Adistance * ($pil->{'distance'}/$taskt->{'maxdist'}) * $formula->{'lineardist'}, " dif dist: ", $Adistance * $kmdiff->[floor($pil->{'distance'}/100.0)] * (1-$formula->{'lineardist'});
+        my $Pdist = $self->pilot_distance($formula, $task, $taskt, $pil, $Adistance);
 
         # Pilot speed score
-        print "$tarPk speed: ", $pil->{'time'}, ", $Tmin\n";
-        $Pspeed = $self->pilot_speed($formula, $taskt, $pil, $Aspeed);
-
+        my $Pspeed = $self->pilot_speed($formula, $task, $taskt, $pil, $Aspeed);
 
         # Pilot departure/leading points
-        $Pdepart = $self->pilot_departure_leadout($formula, $task, $taskt, $pil, $Astart, $Aspeed);
+        my $Pdepart = $self->pilot_departure_leadout($formula, $task, $taskt, $pil, $Astart, $Aspeed);
 
         # Pilot arrival score
-        $Parrival = $self->pilot_arrival($formula, $taskt, $pil, $Aarrival);
+        my $Parrival = $self->pilot_arrival($formula, $task, $taskt, $pil, $Aarrival);
 
         # Penalty for not making goal ..
         if ($pil->{'goal'} == 0)
@@ -904,15 +910,11 @@ sub points_allocation
             $Pdepart = 0;
         }
 
-        if (0+$Pdepart != $Pdepart)
-        {
-            print "Pdepart is nan for $tarPk\n";
-            $Pdepart = 0;
-        }
+        # Penalties
+        # $penalty = $self->pilot_penalty($formula, $task, $taskt, $pil, $Astart, $Aspeed);
 
-        # $penalty = pilot_penalty($formula, $task, $taskt, $pil, $Astart, $Aspeed);
-
-        $Pscore = $Pdist + $Pspeed + $Parrival + $Pdepart - $penalty;
+        # Total score
+        my $Pscore = $Pdist + $Pspeed + $Parrival + $Pdepart - $penalty;
 
         # Store back into tblTaskResult ...
         if (defined($tarPk))
