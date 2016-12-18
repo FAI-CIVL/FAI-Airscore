@@ -55,6 +55,13 @@ sub points_weight
         $Astart = 1000 * $quality * (1-$distweight) * 1/4;
         $Aarrival = 1000 * $quality * (1-$distweight) * 1/4;
     }
+    elsif ($formula->{'version'} eq 'hg2013')
+    {
+        $Adistance = 1000 * (0.9-1.665*$x+1.713*$x*$x-0.587*$x*$x*$x) * $quality;
+        $Astart = 1000 * $quality * (1-$distweight) * 1.4/8;
+        $Aarrival = 1000 * $quality * (1-$distweight) * 1/8;
+        $Aspeed = 1000 - $Adistance - $Astart - $Aarrival;
+    }
     else
     {
         # Allocate some to leadout
@@ -79,14 +86,22 @@ sub points_weight
     }
     elsif ($task->{'arrival'} eq 'off')
     {
-        $dem = $Adistance + $Aspeed + $Astart;
-        if ($dem > 0)
+        if ($formula->{'version'} eq 'hg2013')
         {
-            $Adistance = 1000 * $quality *($Adistance / $dem);
-            $Aspeed = 1000 * $quality * ($Aspeed / $dem);
-            $Astart =  1000 * $quality * ($Astart / $dem);
+            $Aarrival = 0;
+            $Aspeed = 1000 - $Adistance - $Astart - $Aarrival;
         }
-        $Aarrival = 0; 
+        else
+        {
+            $dem = $Adistance + $Aspeed + $Astart;
+            if ($dem > 0)
+            {
+                $Adistance = 1000 * $quality *($Adistance / $dem);
+                $Aspeed = 1000 * $quality * ($Aspeed / $dem);
+                $Astart =  1000 * $quality * ($Astart / $dem);
+            }
+            $Aarrival = 0; 
+        }
     }
     elsif ($task->{'departure'} eq 'off')
     {

@@ -83,7 +83,7 @@ sub day_quality
         $distance = 0;
     }
             
-    return ($distance,$time,$launch);
+    return ($distance,$time,$launch,1);
 }
 
 #    POINTS ALLOCATION
@@ -136,7 +136,6 @@ sub points_allocation
     $Tmin = $taskt->{'fastest'};
     $Tfarr = $taskt->{'firstarrival'};
     $Cmin = $taskt->{'mincoeff'};
-    print Dumper($taskt);
 
     print "Nfly=$Nfly Nlo=$Nlo\n";
 
@@ -200,7 +199,7 @@ sub points_allocation
         # FIX: should round $pil->distance properly?
         # $pilrdist = round($pil->{'distance'}/100.0) * 100;
 
-        $Pdist = $Adistance * (($pil->{'distance'}/$taskt->{'maxdist'});
+        $Pdist = $Adistance * ($pil->{'distance'}/$taskt->{'maxdist'});
 
         # Pilot speed score
         print "$tarPk speed: ", $pil->{'time'}, ", $Tmin\n";
@@ -237,7 +236,6 @@ sub points_allocation
         if ($pil->{'goal'} == 0)
         {
             $Pspeed = $Pspeed - $Pspeed * $formula->{'sspenalty'};
-            $Parrival = $Parrival - $Parrival * $formula->{'sspenalty'}; 
         }
 
         if (($pil->{'result'} eq 'dnf') or ($pil->{'result'} eq 'abs'))
