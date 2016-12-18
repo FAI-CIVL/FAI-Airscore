@@ -16,6 +16,7 @@ require Gap;
 #require DBD::mysql;
 use POSIX qw(ceil floor);
 use Data::Dumper;
+use strict;
 #use Math::Trig;
 #use TrackLib qw(:all);
 
@@ -76,6 +77,7 @@ sub day_quality
     }
     print "distance quality=$distance\n";
             
+    my $tmin;
     if ($taskt->{'goal'} > 0)
     {
         $tmin = $taskt->{'tqtime'};
@@ -148,24 +150,21 @@ sub day_quality
 sub points_weight
 {
     my ($self, $task, $taskt, $formula) = @_;
-    my $Fversion;
-    my $quality;
     my $distweight;
     my $Adistance;
     my $Aspeed;
     my $Astart;
-    my $Aarrival;
+    my $Aarrival = 0;
     my $x;
 
-    $quality = $taskt->{'quality'};
+    my $quality = $taskt->{'quality'};
 
     #print "distweight=$distweight($Ngoal/$Nfly)\n";
-    $leading = $formula->{'weightstart'} * 1000;
-    $Aarrival = 0; 
+    my $leading = $formula->{'weightstart'} * 1000;
 
     $x = $taskt->{'goal'} / $taskt->{'launched'};
     $distweight = 1-0.8*sqrt($x);
-    $Fversion = $formula->{'version'};
+    my $Fversion = $formula->{'version'};
     
     # need to rescale if depart / arrival are "off"
     if ($task->{'departure'} eq 'off')
@@ -225,9 +224,7 @@ sub points_allocation
     my $distweight;
 
     my $Adistance;
-    my $Aspeed;
-    my $Astart;
-    my $Arival;
+    my ($Aspeed, $Astart, $Aarrival);
 
     my $penspeed;
     my $pendist;
@@ -266,8 +263,9 @@ sub points_allocation
     # Get all pilots and process each of them 
     # pity it can't be done as a single update ...
     $dbh->do('set @x=0;');
-    $sth = $dbh->prepare("select \@x:=\@x+1 as Place, tarPk, traPk, tarDistance, tarSS, tarES, tarPenalty, tarResultType, tarLeadingCoeff, tarGoal, tarLastAltitude from tblTaskResult where tasPk=$tasPk and tarResultType <> 'abs' order by tarDistance desc, tarES");
+    my $sth = $dbh->prepare("select \@x:=\@x+1 as Place, tarPk, traPk, tarDistance, tarSS, tarES, tarPenalty, tarResultType, tarLeadingCoeff, tarGoal, tarLastAltitude from tblTaskResult where tasPk=$tasPk and tarResultType <> 'abs' order by tarDistance desc, tarES");
     $sth->execute();
+    my $ref;
     while ($ref = $sth->fetchrow_hashref()) 
     {
         my %taskres;
@@ -333,7 +331,7 @@ sub points_allocation
         $taskres{'coeff'} = $ref->{'tarLeadingCoeff'};
         $taskres{'kmmarker'} = [];
         # FIX: adjust against fastest ..
-        $kt = $taskres{'kmmarker'};
+        my $kt = $taskres{'kmmarker'};
         $sub = $dbh->prepare("select * from tblTrackMarker where traPk=" . $taskres{'traPk'} . " order by tmDistance");
         $sub->execute();
         while ($sref = $sub->fetchrow_hashref()) 

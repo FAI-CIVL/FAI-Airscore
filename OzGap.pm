@@ -13,6 +13,7 @@ package OzGap;
 require Gap;
 @ISA = ( "Gap" );
 
+use strict;
 #require DBD::mysql;
 #use POSIX qw(ceil floor);
 #use Math::Trig;
