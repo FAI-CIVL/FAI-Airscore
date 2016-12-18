@@ -15,13 +15,14 @@ use Math::Trig;
 use Time::Local;
 use Data::Dumper;
 use Defines qw(:all);
+#use strict;
 
 our @ISA       = qw(Exporter);
 our @EXPORT = qw{:ALL};
 
 *VERSION=\'0.99';
 
-$pi = atan2(1,1) * 4;    # accurate PI.
+our $pi = atan2(1,1) * 4;    # accurate PI.
 
 my $port = 3306;
 
@@ -183,7 +184,7 @@ sub read_track
     my $c1;
     my $rows;
 
-    $sth = $dbh->prepare("select unix_timestamp(T.traDate) as udate,T.*,CTT.* from tblTrack T left outer join tblComTaskTrack CTT on T.traPk=CTT.traPk where T.traPk=$traPk");
+    my $sth = $dbh->prepare("select unix_timestamp(T.traDate) as udate,T.*,CTT.* from tblTrack T left outer join tblComTaskTrack CTT on T.traPk=CTT.traPk where T.traPk=$traPk");
     $sth->execute();
 
     $track{'traPk'} = $traPk;
@@ -257,13 +258,14 @@ sub read_task
     my @waypoints;
     my %task;
     my $goalalt = 0;
+    my $ref;
 
     if (0+$tasPk < 1)
     {
         print "No valid task for this track ($tasPk)\n";
         exit 1; 
     }
-    $sth = $dbh->prepare("select unix_timestamp(T.tasStartTime) as ustime, unix_timestamp(T.tasFinishTime) as uftime,T.*, C.comTimeOffset from tblTask T, tblCompetition C where T.tasPk=$tasPk and T.comPk=C.comPk");
+    my $sth = $dbh->prepare("select unix_timestamp(T.tasStartTime) as ustime, unix_timestamp(T.tasFinishTime) as uftime,T.*, C.comTimeOffset from tblTask T, tblCompetition C where T.tasPk=$tasPk and T.comPk=C.comPk");
     $sth->execute();
     if  ($ref = $sth->fetchrow_hashref()) 
     {
@@ -397,13 +399,14 @@ sub read_competition
     my ($comPk) = @_;
     my @tasks;
     my %comp;
+    my $ref;
 
     if (0+$comPk < 1)
     {
         print "No valid competition ($comPk)\n";
         exit 1; 
     }
-    $sth = $dbh->prepare("select C.* from tblCompetition C where C.comPk=$comPk");
+    my $sth = $dbh->prepare("select C.* from tblCompetition C where C.comPk=$comPk");
     $sth->execute();
     if  ($ref = $sth->fetchrow_hashref()) 
     {
@@ -442,6 +445,7 @@ sub read_formula
     my ($comPk) = @_;
     my $mindist = 0;
     my %formula;
+    my $ref;
 
     # some sensible defaults 
     $formula{'mindist'} = 5000;
@@ -457,7 +461,7 @@ sub read_formula
     $formula{'diffcalc'} = 'all';
     $formula{'lineardist'} = 0.5;
 
-    $sth = $dbh->prepare("select F.* from tblCompetition C, tblFormula F where C.comPk=$comPk and F.forPk=C.forPk");
+    my $sth = $dbh->prepare("select F.* from tblCompetition C, tblFormula F where C.comPk=$comPk and F.forPk=C.forPk");
     $sth->execute();
     if ($ref = $sth->fetchrow_hashref()) 
     {
@@ -503,8 +507,9 @@ sub read_region
     my $centre = 0;
     my %region;
     my @waypoints;
+    my $ref;
 
-    $sth = $dbh->prepare("select R.* from tblRegion R where R.regPk=$regPk");
+    my $sth = $dbh->prepare("select R.* from tblRegion R where R.regPk=$regPk");
     $sth->execute();
     if ($ref = $sth->fetchrow_hashref()) 
     {
@@ -592,7 +597,7 @@ sub store_result
     #print "insert into tblTaskResult (tasPk,traPk,tarDistance,tarSpeed,tarStart,tarGoal,tarSS,tarES,tarTurnpoints) values ($tasPk,$traPk,$dist,$speed,$start,$goal,$ss,$endss,$turnpoints)";
     $dbh->do("delete from tblTaskResult where traPk=? and tasPk=?", undef, $traPk, $tasPk);
     print("insert into tblTaskResult (tasPk,traPk,tarDistance,tarSpeed,tarStart,tarGoal,tarSS,tarES,tarTurnpoints,tarLeadingCoeff,tarLeadingCoeff2,tarPenalty,tarComment,tarLastAltitude,tarLastTime) values ($tasPk,$traPk,$dist,$speed,$start,$goal,$ss,$endss,$turnpoints,$coeff,$coeff2,$penalty,'$comment',$stopalt,$stoptime)\n");
-    $sth = $dbh->prepare("insert into tblTaskResult (tasPk,traPk,tarDistance,tarSpeed,tarStart,tarGoal,tarSS,tarES,tarTurnpoints,tarLeadingCoeff,tarLeadingCoeff2,tarPenalty,tarComment,tarLastAltitude,tarLastTime) values ($tasPk,$traPk,$dist,$speed,$start,$goal,$ss,$endss,$turnpoints,$coeff,$coeff2,$penalty,'$comment',$stopalt,$stoptime)");
+    my $sth = $dbh->prepare("insert into tblTaskResult (tasPk,traPk,tarDistance,tarSpeed,tarStart,tarGoal,tarSS,tarES,tarTurnpoints,tarLeadingCoeff,tarLeadingCoeff2,tarPenalty,tarComment,tarLastAltitude,tarLastTime) values ($tasPk,$traPk,$dist,$speed,$start,$goal,$ss,$endss,$turnpoints,$coeff,$coeff2,$penalty,'$comment',$stopalt,$stoptime)");
     $sth->execute();
 
     if (defined($result->{'kmtime'}))
@@ -672,10 +677,9 @@ sub round
 sub dot_product
 {
     my ($v, $w) = @_;
-    my $tl;
 
-    $tl = $v->{'x'} * $w->{'x'} + $v->{'y'} * $w->{'y'} + $v->{'z'} * $w->{'z'};
-    $bl = vector_length($v) * vector_length($w);
+    my $tl = $v->{'x'} * $w->{'x'} + $v->{'y'} * $w->{'y'} + $v->{'z'} * $w->{'z'};
+    my $bl = vector_length($v) * vector_length($w);
 
     if ($bl == 0) 
     {
@@ -1063,6 +1067,7 @@ sub distance
     my $sinSigma;
     my $cosSigma;
     my $sinLambda;
+    my $cosLambda;
     my $sigma;
     my $sinAlpha;
     my $cos2SigmaM;
@@ -1076,7 +1081,8 @@ sub distance
     my $sinU2 = sin($U2);
     my $cosU2 = cos($U2);
   
-    my $lambda = $L, $lambdaP = 2*$pi;
+    my $lambda = $L;
+    my $lambdaP = 2*$pi;
     my $iterLimit = 20;
 
     #print "U1=$U1 U2=$U2 L=$L\n";
