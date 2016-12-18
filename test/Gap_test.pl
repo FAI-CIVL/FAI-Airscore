@@ -91,9 +91,19 @@ my $pil = {};
 $pil->{'timeafter'} = 300;
 $pil->{'place'} = 5;
 $taskt->{'fastest'} = 90*60;
-$pil->{'time'} = $taskt->{'fastest'} + 300;
 $taskt->{'ess'} = 10;
 $formula->{'arrival'} = 'place';
+$pil->{'startSS'} = 36600;
+$taskt->{'firstdepart'} = 36000;
+
+# Allocated pilot speed points
+$pil->{'time'} = $taskt->{'fastest'};
+my $Pspeed = $gap->round($gap->pilot_speed($formula, $taskt, $pil, 371));
+is($Pspeed, 371, "Pilot speed points 1");
+
+$pil->{'time'} = $taskt->{'fastest'} + 300;
+$Pspeed = $gap->round($gap->pilot_speed($formula, $taskt, $pil, 371));
+is($Pspeed, 309, "Pilot speed points 2");
 
 # Allocated pilot arrival points (place, timed)
 my $Parrival = $gap->round($gap->pilot_arrival($formula, $taskt, $pil, 93));
@@ -117,8 +127,6 @@ my $Pdepart = $gap->round($gap->pilot_departure_leadout($formula, $task, $taskt,
 is($Pdepart, 14, "Pilot departure points - leadout");
 
 $task->{'departure'} = 'departure';
-$pil->{'startSS'} = 36600;
-$taskt->{'firstdepart'} = 36000;
 $Pdepart = $gap->round($gap->pilot_departure_leadout($formula, $task, $taskt, $pil, 66, 371));
 is($Pdepart, 24, "Pilot departure points (normal)");
 
