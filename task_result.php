@@ -45,9 +45,27 @@ if (array_key_exists('class', $_REQUEST))
 
 if (array_key_exists('score', $_REQUEST))
 {
-    $out = '';
-    $retv = 0;
-    exec(BINDIR . "task_score.pl $tasPk", $out, $retv);
+    $changeok = 1;
+    $row = get_comtask($link,$tasPk);
+    if ($row)
+    {
+        $dateto = $row['comDateTo'];
+        $today = date('Y-m-d');
+        if ($today > $dateto)
+        {
+            $changeok = 0;
+        }
+    }
+    if ($changeok == 1)
+    {
+        $out = '';
+        $retv = 0;
+        exec(BINDIR . "task_score.pl $tasPk", $out, $retv);
+    }
+    else
+    {
+        echo "Unable to rescore a closed competition.\n";
+    }
 }
 
 if (array_key_exists('tardel', $_REQUEST))
@@ -175,7 +193,7 @@ if ($row)
     $tasFinishTime = substr($row['tasFinishTime'],11);
     $tasDistance = round($row['tasDistance']/1000,2);
     $tasShortest = round($row['tasShortRouteDistance']/1000,2);
-    $tasQuality = round($row['tasQuality'],2);
+    $tasQuality = round($row['tasQuality'],3);
     $tasComment = $row['tasComment'];
     $tasDistQuality = round($row['tasDistQuality'],2);
     $tasTimeQuality = round($row['tasTimeQuality'],2);
@@ -201,7 +219,6 @@ if ($row)
         $depcol = 'off';
     }
 }
-
 $waypoints = get_taskwaypoints($link,$tasPk);
 
 // incorporate $tasTaskType / $tasDate in heading?
