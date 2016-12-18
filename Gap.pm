@@ -18,6 +18,7 @@ use POSIX qw(ceil floor);
 use Math::Trig;
 use Data::Dumper;
 use TrackLib qw(:all);
+use strict;
 
 sub new
 {
@@ -38,7 +39,8 @@ sub min
 {
     my ($self, $list) = @_;
     my $x = ~0 >> 1;
-    foreach $y (@$list)
+
+    foreach my $y (@$list)
     {
         $x = $y if $y < $x;
     }
@@ -93,6 +95,8 @@ sub task_totals
     my @distspread;
     my $landed;
     my $kmmarker;
+    my $sth;
+    my $ref;
 
     $tasPk = $task->{'tasPk'};
     $launchvalid = $task->{'launchvalid'};
@@ -178,8 +182,8 @@ sub task_totals
     }
     #print "TTT: min leading coeff=$mincoeff\n";
 
-    $maxdist = 0;
-    $mindept = 0;
+    my $maxdist = 0;
+    my $mindept = 0;
     #$sth = $dbh->prepare("select max(tarDistance) as MaxDist from tblTaskResult where tasPk=$tasPk");
     $sth = $dbh->prepare("select max(tarDistance+tarLastAltitude*$glidebonus) as MaxDist from tblTaskResult where tasPk=$tasPk");
     $sth->execute();
@@ -236,7 +240,6 @@ sub task_totals
     }
     $sth->execute();
 
-    $debc = 0;
     while ($ref = $sth->fetchrow_hashref()) 
     {
         push @distspread, $ref;
@@ -328,6 +331,7 @@ sub day_quality
         $distance = 0;
     }
             
+    my $tmin;
     if ($taskt->{'ess'} > 0)
     {
         $tmin = $taskt->{'tqtime'};
@@ -389,6 +393,7 @@ sub points_weight
     # 2000 - 2007 - (5.6 / 1.4 / 1) / 8
     $Adistance = 1000 * $quality * $distweight;
     $Astart = 1000 * $quality * (1-$distweight) * $formula->{'weightstart'};
+    $Aarrival = 1000 * $quality * (1-$distweight) * $formula->{'weightarrival'};
     $speedweight = $formula->{'weightspeed'};
 
     if ($task->{'arrival'} eq 'off')
@@ -399,7 +404,7 @@ sub points_weight
 
     if ($task->{'departure'} eq 'off')
     {
-        $start = 0;
+        $Astart = 0;
         $speedweight += $formula->{'weightstart'};
     }
     $Aspeed = 1000 * $quality * (1-$distweight) * $speedweight;
@@ -426,7 +431,7 @@ sub calc_kmdiff
     my $Nlo;
     my $distspread;
     my $difdist;
-    my $debc;
+    my $debc = 0;
 
     $tasPk = $task->{'tasPk'};
     $Nlo = $taskt->{'launched'}-$taskt->{'goal'};
@@ -437,7 +442,6 @@ sub calc_kmdiff
         $kmdiff->[$it] = 0;
     }
 
-    $debc = 0;
     $distspread = $taskt->{'distspread'};
     for my $ref ( @$distspread )
     {
@@ -463,7 +467,7 @@ sub calc_kmdiff
     #print Dumper($kmdiff);
 
     # Determine cumulative distance difficulty 
-    $x = 0.0;
+    my $x = 0.0;
     for my $dif (0 .. scalar @$kmdiff-1)
     {
         my $rdif;
@@ -491,7 +495,6 @@ sub calc_kmdiff
 # Calculate pilot arrival score
 sub pilot_arrival
 {
-
     my ($self, $formula, $taskt, $pil, $Aarrival) = @_;
     my $x = 0;
     my $Parrival = 0;
@@ -501,7 +504,7 @@ sub pilot_arrival
         if ($formula->{'arrival'} eq 'timed')
         {
             # OzGAP / Timed arrival
-            print "    time arrival ", $pil->{'timeafter'}, ", $Ngoal\n";
+            print "    time arrival ", $pil->{'timeafter'}, ", ", $taskt->{'goal'}, "\n";
             $x = 1-$pil->{'timeafter'}/(90*60);
             $Parrival = $Aarrival*(0.2+0.037*$x+0.13*($x*$x)+0.633*($x*$x*$x));
         }
@@ -534,7 +537,7 @@ sub pilot_arrival
 
 sub pilot_departure_leadout
 {
-    my ($self, $formula, $task, $taskt, $pil, $astart, $aspeed) = @_;
+    my ($self, $formula, $task, $taskt, $pil, $Astart, $Aspeed) = @_;
     my $x = 0;
     my $Parrival = 0;
     my $Cmin = $taskt->{'mincoeff'};
@@ -542,7 +545,7 @@ sub pilot_departure_leadout
     # Pilot departure score
     # print Dumper($pil);
 
-    $Pdepart = 0;
+    my $Pdepart = 0;
     if ($task->{'departure'} eq 'leadout')
     {
         print "    leadout: ", $pil->{'coeff'}, ", $Cmin\n";
@@ -550,7 +553,7 @@ sub pilot_departure_leadout
         {
             if ($pil->{'coeff'} <= $Cmin)
             {
-                $Pdepart = $astart;
+                $Pdepart = $Astart;
             }
             elsif ($Cmin <= 0)
             {
@@ -559,7 +562,7 @@ sub pilot_departure_leadout
             }
             else
             {
-                $Pdepart = $astart * (1-(($pil->{'coeff'}-$Cmin)/sqrt($Cmin))**(2/3));
+                $Pdepart = $Astart * (1-(($pil->{'coeff'}-$Cmin)/sqrt($Cmin))**(2/3));
             }
         }
     }
@@ -572,7 +575,7 @@ sub pilot_departure_leadout
         # KmBonus award points
         if (scalar(@tmarker) > 0)
         {
-            #print "Astart=$astart PKM=", Dumper($pil->{'kmmarker'});
+            #print "Astart=$Astart PKM=", Dumper($pil->{'kmmarker'});
             for my $km (1..scalar(@tmarker))
             {
                 if ($pil->{'kmmarker'}->[$km] > 0 && $tmarker[$km] > 0)
@@ -585,7 +588,7 @@ sub pilot_departure_leadout
                     }
                 }
             }
-            $Pdepart = $Pdepart * $astart / floor($task->{'ssdistance'}/1000.0);
+            $Pdepart = $Pdepart * $Astart / floor($task->{'ssdistance'}/1000.0);
         }
         else
         {
@@ -600,13 +603,15 @@ sub pilot_departure_leadout
     else
     {
         # Normal departure points ..
-        print "    normal departure\n";
         $x = ($pil->{'startSS'} - $taskt->{'firstdepart'})/$formula->{'nomtime'};
+        print "    normal departure x=$x\n";
         if ($x < 1/2 && $pil->{'time'} > 0)
         {
-            $Pdepart = $Pspeed*$astart/$aspeed*(1-6.312*$x+10.932*($x*$x)-2.990*($x*$x*$x));
-            #$Pdepart = $astart*(1-6.312*$x+10.932*($x*$x)-2.990*($x*$x*$x));
-            #$Pdepart = $aspeed/6*(1-6.312*$x+10.932*($x*$x)-2.990*($x*$x*$x));
+            my $Pspeed = $self->pilot_speed($formula, $taskt, $pil, $Aspeed);
+
+            $Pdepart = $Pspeed*$Astart/$Aspeed*(1-6.312*$x+10.932*($x*$x)-2.990*($x*$x*$x));
+            #$Pdepart = $Astart*(1-6.312*$x+10.932*($x*$x)-2.990*($x*$x*$x));
+            #$Pdepart = $Aspeed/6*(1-6.312*$x+10.932*($x*$x)-2.990*($x*$x*$x));
         }
     }
 
@@ -618,6 +623,36 @@ sub pilot_departure_leadout
 
     print "    Pdepart: $Pdepart\n";
     return $Pdepart;
+}
+
+sub pilot_speed
+{
+    my ($self, $formula, $taskt, $pil, $Aspeed) = @_;
+
+    my $Tmin = $taskt->{'fastest'};
+    my $Pspeed;
+
+    if ($pil->{'time'} > 0)
+    {
+        $Pspeed = $Aspeed * (1-(($pil->{'time'}-$Tmin)/3600/sqrt($Tmin/3600))**(2/3));
+    }
+    else
+    {
+        $Pspeed = 0;
+    }
+
+    if ($Pspeed < 0)
+    {
+        $Pspeed = 0;
+    }
+
+    if (0+$Pspeed != $Pspeed)
+    {
+        print "Pspeed is nan for tarPk=", $pil->{'tarPk'}, " pil->{'time'}=", $pil->{'time'}, "\n";
+        $Pspeed = 0;
+    }
+
+    return $Pspeed;
 }
 
 sub pilot_penalty
@@ -666,7 +701,10 @@ sub ordered_results
 {
     my ($self, $dbh, $task, $taskt, $formula) = @_;
     my $tasPk = $task->{'tasPk'};
+    my $Tfarr = $taskt->{'firstarrival'};
     my @pilots;
+    my $ref;
+    my $sth;
 
     # Get all pilots and process each of them 
     # pity it can't be done as a single update ...
@@ -734,9 +772,10 @@ sub ordered_results
         # KMBonus markers
         # @todo adjust against fastest?
         $taskres{'kmmarker'} = [];
-        $kt = $taskres{'kmmarker'};
-        $sub = $dbh->prepare("select * from tblTrackMarker where traPk=" . $taskres{'traPk'} . " order by tmDistance");
+        my $kt = $taskres{'kmmarker'};
+        my $sub = $dbh->prepare("select * from tblTrackMarker where traPk=" . $taskres{'traPk'} . " order by tmDistance");
         $sub->execute();
+        my $sref;
         while ($sref = $sub->fetchrow_hashref())
         {
             push @$kt, $sref->{'tmTime'};
@@ -794,21 +833,16 @@ sub ordered_results
 sub points_allocation
 {
     my ($self, $dbh, $task, $taskt, $formula) = @_;
-    my $tasPk;
-    my $quality;
-    my $Ngoal;
-    my ($Tmin);
-    my $Tfarr;
     my @pilots;
 
     # Find fastest pilot into goal and calculate leading coefficients
     # for each track .. (GAP2002 only?)
 
-    $tasPk = $task->{'tasPk'};
-    $quality = $taskt->{'quality'};
-    $Ngoal = $taskt->{'goal'};
-    $Tmin = $taskt->{'fastest'};
-    $Tfarr = $taskt->{'firstarrival'};
+    my $tasPk = $task->{'tasPk'};
+    my $quality = $taskt->{'quality'};
+    my $Ngoal = $taskt->{'goal'};
+    my $Tmin = $taskt->{'fastest'};
+    my $Tfarr = $taskt->{'firstarrival'};
     print Dumper($taskt);
 
 
@@ -845,25 +879,8 @@ sub points_allocation
 
         # Pilot speed score
         print "$tarPk speed: ", $pil->{'time'}, ", $Tmin\n";
-        if ($pil->{'time'} > 0)
-        {
-            $Pspeed = $Aspeed * (1-(($pil->{'time'}-$Tmin)/3600/sqrt($Tmin/3600))**(2/3));
-        }
-        else
-        {
-            $Pspeed = 0;
-        }
+        $Pspeed = $self->pilot_speed($formula, $taskt, $pil, $Aspeed);
 
-        if ($Pspeed < 0)
-        {
-            $Pspeed = 0;
-        }
-
-        if (0+$Pspeed != $Pspeed)
-        {
-            print "Pdepart is nan for $tarPk, pil->{'time'}=", $pil->{'time'}, "\n";
-            $Pspeed = 0;
-        }
 
         # Pilot departure/leading points
         $Pdepart = $self->pilot_departure_leadout($formula, $task, $taskt, $pil, $Astart, $Aspeed);
@@ -901,7 +918,7 @@ sub points_allocation
         if (defined($tarPk))
         {
             print "update $tarPk: d:$Pdist, s:$Pspeed, p: $penalty, a:$Parrival, g:$Pdepart\n";
-            $sth = $dbh->prepare("update tblTaskResult set
+            my $sth = $dbh->prepare("update tblTaskResult set
                 tarDistanceScore=$Pdist, tarSpeedScore=$Pspeed, 
                 tarArrival=$Parrival, tarDeparture=$Pdepart, tarScore=$Pscore
                 where tarPk=$tarPk");
