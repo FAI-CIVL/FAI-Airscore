@@ -62,7 +62,7 @@ create table tblFormula
     forWeightStart   double default 0.125,
     forWeightArrival double default 0.175,
     forWeightSpeed   double default 0.7,
-    forWeightDist    enum ( 'pre2014', 'post2014' ) default 'pre2014',
+    forWeightDist    enum ( 'pre2014', 'post2014' ) default 'post2014',
     forScaleToValidity integer default 0
 );
 
