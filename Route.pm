@@ -157,10 +157,8 @@ sub find_closest
             + ($C2->{'y'} - $C1->{'y'})*($C2->{'y'} - $C1->{'y'}) 
             + ($C2->{'z'} - $C1->{'z'})*($C2->{'z'} - $C1->{'z'})); 
 
-    print "u=$u\n";
     $T = vvminus($C1,$C3);
-    print "cart dist=", vector_length($T), "\n";
-    print "polar dist=", distance($P1, $P2), "\n";
+    #print "u=$u cart dist=", vector_length($T), "polar dist=", distance($P1, $P2), "\n";
 
     $N = vvplus($C1, cvmult($u, vvminus($C2, $C1)));
     $CL = $N;
@@ -209,7 +207,7 @@ sub find_closest
         $w = plane_normal($C2, $C3);
         $phi = acos(dot_product($v,$w));
         $phideg = $phi * 180 / $pi;
-        print "angle between in/out=$phideg\n";
+        #print "angle between in/out=$phideg\n";
         
         # div angle / 2 add to one of them to create new
         # vector and scale to cylinder radius for new point 
@@ -291,7 +289,7 @@ sub find_shortest_route
     $newcl = $wpts->[0];
     for ($i = 0; $i < $num-2; $i++)
     {
-        print "From $i: ", $wpts->[$i]->{'name'}, "\n";
+        #print "From $i: ", $wpts->[$i]->{'name'}, "\n";
         if (ddequal($wpts->[$i+1], $wpts->[$i+2]))
         {
             $newcl = find_closest($newcl, $wpts->[$i+1], undef);
@@ -307,7 +305,6 @@ sub find_shortest_route
     $newcl = find_closest($newcl, $wpts->[$num-1], undef);
     push @it1, $newcl;
 
-    print "Iteration 2\n";
     $num = scalar @it1;
     push @it2, $it1[0];
     $newcl = $it1[0];
@@ -318,7 +315,6 @@ sub find_shortest_route
     }
     push @it2, $it1[$num-1];
 
-    print "Iteration 3\n";
     $num = scalar @it2;
     push @closearr, $it2[0];
     $newcl = $it2[0];
@@ -389,19 +385,14 @@ sub short_dist
 sub task_distance
 {
     my ($task) = @_;
-    my $waypoints;
-    my $cwdist;
     my ($spt, $ept, $gpt);
     my $ssdist;
-    my $allpoints;
     my $endssdist;
     my $startssdist;
-    my $tasPk;
 
-    $waypoints = $task->{'waypoints'};
-    $tasPk = $task->{'tasPk'};
-    $allpoints = scalar @$waypoints;
-    $cwdist = 0;
+    my $waypoints = $task->{'waypoints'};
+    my $allpoints = scalar @$waypoints;
+    my $cwdist = 0;
     for (my $i = 0; $i < $allpoints; $i++)
     {
         # Margins
@@ -463,8 +454,36 @@ sub task_distance
 
     $ssdist = $endssdist - $startssdist;
 
-    return ($spt, $ept, $gpt, $ssdist, $startssdist, $endssdist);
+    return ($spt, $ept, $gpt, $ssdist, $startssdist, $endssdist, $cwdist);
 }
 
+sub in_semicircle
+{
+    my ($waypoints, $wmade, $coord) = @_;
+    my ($bvec, $pvec);
+    my $wpt = $waypoints->[$wmade];
+
+    my $prev = $wmade - 1;
+    while ($prev > 0 and ddequal($wpt, $waypoints->[$prev]))
+    {
+        $prev--;
+    }
+    
+    my $c = polar2cartesian($wpt); 
+    my $p = polar2cartesian($waypoints->[$prev]); 
+
+    # vector that bisects the semi-circle pointing into occupied half plane
+    $bvec = vvminus($c, $p);
+    $pvec = vvminus($coord->{'cart'}, $c);
+
+    # dot product 
+    my $dot = dot_product($bvec, $pvec);
+    if ($dot > 0)
+    {
+        return 1;
+    }
+
+    return 0;
+}
 
 1;
