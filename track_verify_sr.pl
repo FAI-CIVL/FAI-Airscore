@@ -12,7 +12,7 @@ require DBD::mysql;
 #use Math::Trig;
 #use Data::Dumper;
 use POSIX qw(ceil floor);
-use TrackLib qw(:all);
+use Route qw(:all);
 use strict;
 
 my $dbh;
@@ -52,100 +52,6 @@ sub validate_olc
     $result{'waypoints_made'} = 0;
 
     return \%result;
-}
-
-sub short_dist
-{
-    my ($w1, $w2) = @_;
-    my $dist;
-    my (%s1, %s2);
-
-    $s1{'lat'} = $w1->{'short_lat'};
-    $s1{'long'} = $w1->{'short_long'};
-    $s2{'lat'} = $w2->{'short_lat'};
-    $s2{'long'} = $w2->{'short_long'};
-
-    $dist = distance(\%s1, \%s2);
-    return $dist;
-}
-
-#
-# Determine the start gate type and ESS dist
-#
-sub determine_start
-{
-    my ($task, $waypoints) = @_;
-    my $cwdist;
-    my ($spt, $ept, $gpt);
-    my $ssdist;
-    my $allpoints;
-    my $startssdist;
-    my $i;
-
-    $allpoints = scalar @$waypoints;
-    $cwdist = 0;
-    for ($i = 0; $i < $allpoints; $i++)
-    {
-        # Margins
-        my $margin = $waypoints->[$i]->{'radius'} * 0.0005;
-        if ($margin < 5.0)
-        {
-            $margin = 5.0;
-        }
-        $waypoints->[$i]->{'margin'} = $margin;
-
-        if (( $waypoints->[$i]->{'type'} eq 'start') or 
-             ($waypoints->[$i]->{'type'} eq 'speed') )
-        {
-            $spt = $i;
-            $startssdist = $cwdist;
-            if ($startssdist == 0 && ($waypoints->[$i]->{'how'} eq 'exit'))
-            {
-                $startssdist += $waypoints->[$i]->{'radius'};
-            }
-        }
-        if ($waypoints->[$i]->{'type'} eq 'speed') 
-        {
-            $cwdist = 0;
-        }
-        if ($waypoints->[$i]->{'type'} eq 'endspeed') 
-        {
-            $ept = $i;
-            $ssdist = $cwdist;
-            if ($waypoints->[$i]->{'how'} eq 'exit')
-            {
-                $ssdist += $waypoints->[$i]->{'radius'};
-            }
-        }
-        if ($waypoints->[$i]->{'type'} eq 'goal') 
-        {
-            $gpt = $i;
-        }
-        if ($i < $allpoints-1)
-        {
-            $cwdist = $cwdist + short_dist($waypoints->[$i], $waypoints->[$i+1]);
-        }
-    }
-    if (!defined($gpt))
-    {
-        $gpt = $allpoints;
-    }
-    if (!defined($ept))
-    {
-        $ept = $gpt;
-    }
-    if (!defined($ssdist)) 
-    {
-        $ssdist = $cwdist;
-        if ($waypoints->[$gpt]->{'how'} eq 'exit')
-        {   
-            $ssdist += $waypoints->[$gpt]->{'radius'};
-        }   
-    }
-
-    $ssdist = $ssdist - $startssdist;
-    print "spt=$spt ept=$ept gpt=$gpt ssdist=$ssdist startssdist=$startssdist\n";
-    return ($spt, $ept, $gpt, $ssdist, $startssdist);
 }
 
 sub precompute_waypoint_dist
@@ -301,7 +207,6 @@ sub distance_flown
         }
     }
 
-
     $nwdist = compute_waypoint_dist($waypoints, $wmade);
 
     if ($exitflag && $nwdist == 0)
@@ -352,35 +257,6 @@ sub distance_flown
     }
 
     return $dist;
-}
-
-sub in_semicircle
-{
-    my ($waypoints, $wmade, $coord) = @_;
-    my ($bvec, $pvec);
-    my $wpt = $waypoints->[$wmade];
-
-    my $prev = $wmade - 1;
-    while ($prev > 0 and ddequal($wpt, $waypoints->[$prev]))
-    {
-        $prev--;
-    }
-    
-    my $c = polar2cartesian($wpt); 
-    my $p = polar2cartesian($waypoints->[$prev]); 
-
-    # vector that bisects the semi-circle pointing into occupied half plane
-    $bvec = vvminus($c, $p);
-    $pvec = vvminus($coord->{'cart'}, $c);
-
-    # dot product 
-    my $dot = dot_product($bvec, $pvec);
-    if ($dot > 0)
-    {
-        return 1;
-    }
-
-    return 0;
 }
 
 sub made_entry_waypoint
@@ -445,13 +321,12 @@ sub made_entry_waypoint
 sub validate_task
 {
     my ($flight, $task, $formula) = @_;
-    my ($wpt, $rpt, $spt, $ept, $gpt);
+    my ($wpt, $rpt);
     my $coord;
     my ($lastcoord, $preSScoord);
     my $lastmaxcoord;
     my ($awarded,$awtime);
     my ($dist, $rdist, $edist);
-    my $startssdist;
     my $penalty;
     my $comment;
     my ($wasinstart, $wasinSS);
@@ -459,11 +334,6 @@ sub validate_task
     my $kmmark;
     my %result;
     my (%s1, %s2, %s3);
-
-    if ($debug)
-    {
-        print Dumper($task);
-    }
 
     # Initialise some working variables
     my $closest = 9999999999;
@@ -478,6 +348,12 @@ sub validate_task
     my $lastin = -1;
     my $reflag = -1;
 
+    if ($debug)
+    {
+        print Dumper($task);
+    }
+
+    # Get some key times
     my $taskss = 0 + $task->{'sstart'};
     my $finish = 0 + $task->{'sfinish'};
     my $interval = 0 + $task->{'interval'};
@@ -498,7 +374,7 @@ sub validate_task
 
     # Stuff for leadout coeff calculation
     # against starttime (rather than first start time)
-    my ($maxdist, $coeff, $coeff2, $essdist);
+    my ($maxdist, $coeff, $coeff2);
     $coeff = 0; $coeff2 = 0; 
     $kmtime = init_kmtime($task->{'ssdistance'});
     $maxdist = 0;
@@ -507,7 +383,7 @@ sub validate_task
     my $utcmod = determine_utcmod($task, $coords->[0]);
 
     # Determine the start gate type and ESS dist
-    ($spt, $ept, $gpt, $essdist, $startssdist) = determine_start($task, $waypoints);
+    my ($spt, $ept, $gpt, $essdist, $startssdist, $totdist) = determine_start($task);
 
     # Go through the coordinates and verify the track against the task
     for $coord (@$coords)
@@ -829,7 +705,7 @@ sub validate_task
                     }
                 }
     
-                if ($count == $ept and (!defined($endss)))
+                if ($wcount == $ept and (!defined($endss)))
                 {
                     # @todo time should be estimated for the actual
                     # line crossing on speed from last two waypoints ..
@@ -902,32 +778,6 @@ sub validate_task
 
         $lastcoord = $coord;
     } # end of main coordinate loop
-
-    # We made goal?
-#    if (defined($goaltime))
-#    {
-#        # FIX: time should be estimated for the actual
-#        # line crossing on speed from last two waypoints ..
-#        # get first goal time ..
-#        #$goaltime = 0 + $coord->{'time'};
-#        #print "goal: lat = ", $coord->{'lat'} * 180 / $pi;
-#        #print " long = ", $coord->{'long'} * 180 / $pi, "\n";
-#        #if ($awarded == 1 && $awtime > 0)
-#        #{
-#        #    print "goaltime=$goaltime awtime=$awtime\n";
-#        #    $goaltime = $awtime;
-#        #}
-#
-#        if (!defined($endss))
-#        {
-#            $endss = $goaltime;
-#            if ($awarded == 1 && $awtime > 0)
-#            {
-#                print "endss=$endss awtime=$awtime\n";
-#                $endss = $awtime;
-#            }
-#        }
-#    }
 
     # Some startss corrections and checks
     #   starttime -  actual start time
@@ -1172,7 +1022,7 @@ sub apply_handicap
 
     if ($result->{'distance'} > $task->{'short_distance'})
     {
-        my ($spt, $ept, $gpt, $essdist, $startssdist) = determine_start($task, $task->{'waypoints'});
+        my ($spt, $ept, $gpt, $essdist, $startssdist) = determine_start($task);
         my $ssdist = $essdist - $startssdist;
 
         print "    handicap essdist=$essdist startssdist=$startssdist ssdist=$ssdist result dist=", $result->{'distance'}, "\n";
