@@ -45,6 +45,10 @@ sub db_connect
     return $dbh;
 }
 
+sub PI
+{
+    return $pi;
+}
 
 sub insertup
 {
