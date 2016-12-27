@@ -266,6 +266,13 @@ if (array_key_exists('updatetask', $_REQUEST))
     #update_tracks($link,$tasPk);
 }
 
+if (array_key_exists('fullrescore', $_REQUEST))
+{
+    $out = '';
+    $retv = 0;
+    exec(BINDIR . "task_up.pl $tasPk", $out, $retv);
+}
+
 $query = "select C.comPk, C.comName, C.comEntryRestrict, T.* from tblCompetition C, tblTask T where T.tasPk=$tasPk and T.comPk=C.comPk";
 $result = mysql_query($query) or die('Task select failed: ' . mysql_error());
 $row = mysql_fetch_array($result, MYSQL_ASSOC);
@@ -487,7 +494,10 @@ echo "<br><hr>";
 echo "<form action=\"task_result.php?comPk=$comPk&tasPk=$tasPk\" name=\"taskscore\" method=\"post\">";
 echo fis('score', 'Score Task', '');
 echo "</form>";
-echo "<form action=\"team_task_result.php?comPk=$comPk&tasPk=$tasPk\" name=\"taskscore\" method=\"post\">";
+echo "<form action=\"task.php?comPk=$comPk&tasPk=$tasPk\" name=\"fullrescore\" method=\"post\">";
+echo fis('fullrescore', 'Full Re-Score', '');
+echo "</form>";
+echo "<form action=\"team_task_result.php?comPk=$comPk&tasPk=$tasPk\" name=\"teamtaskscore\" method=\"post\">";
 echo fis('score', 'Team Score', '');
 echo "</form>";
 

@@ -333,6 +333,19 @@ sub read_task
         $task{'arrival'} = $ref->{'tasArrival'};
         $task{'departure'} = $ref->{'tasDeparture'};
         $task{'launchvalid'} = $ref->{'tasLaunchValid'};
+
+        $task{'laststart'} = $task{'sstart'};
+        if (defined($ref->{'tasLastStartTime'}))
+        {
+            if ($task{'type'} ne 'race')
+            {
+                $task{'laststart'} = (24*3600 + substr($ref->{'tasLastStartTime'},11,2) * 3600 +
+                            substr($ref->{'tasLastStartTime'},14,2) * 60 +
+                            substr($ref->{'tasLastStartTime'},17,2) - 
+                            $ref->{'comTimeOffset'} * 3600) % (24*3600);
+            }
+        }
+
     }
 
     $sth = $dbh->prepare("select T.*,R.*,S.ssrLatDecimal,S.ssrLongDecimal,S.ssrNumber from tblRegionWaypoint R, tblTaskWaypoint T left outer join tblShortestRoute S on S.tasPk=$tasPk and S.ssrNumber=T.tawNumber where T.tasPk=$tasPk and T.rwpPk=R.rwpPk order by T.tawNumber");
@@ -487,6 +500,7 @@ sub read_formula
         $formula{'scaletovalidity'} = $ref->{'forScaleToValidity'};
         $formula{'glidebonus'} = $ref->{'forStoppedGlideBonus'};
         $formula{'arrival'} = $ref->{'forArrival'};
+        $formula{'stoppedelapsedcalc'} = $ref->{'forStoppedElapsedCalc'};
     }
 
     # FIX: add failsafe checking?

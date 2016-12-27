@@ -14,15 +14,25 @@ use Data::Dumper;
 use strict;
 use Tracklib qw(:all);
 
-my $gap;
-
-$gap =  new_ok( "Gap" );
-
 # Helper function tests
+
+my $pi = atan2(1,1) * 4;
 
 is(round(1.3), 1.0, "Rounding 1");
 is(round(1.5), 2.0, "Rounding 2");
 is(round(1.8), 2.0, "Rounding 3");
+
+my $p1 = { 'dlat' => -36.0, 'dlong' => 110.0 };
+$p1->{'lat'} = -36.0 *  $pi / 180;
+$p1->{'long'} = 110.0 * $pi / 180;
+
+my $c1 = polar2cartesian($p1);
+my $p2 = cartesian2polar($c1);
+
+is_deeply($p2, $p1, "polar2cartesian2polar");
+
+done_testing
+
 
 #is($gap->min([ 1.1, 2.3 ]), 1.1, "Min 1");
 #is_deeply(\@pw, [ 494, 354, 63, 89 ], "Points Weight");

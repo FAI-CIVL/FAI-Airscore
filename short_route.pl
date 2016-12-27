@@ -64,8 +64,6 @@
 require DBD::mysql;
 
 use POSIX qw(ceil floor);
-#use Math::Trig;
-#use Data::Dumper;
 use TrackLib qw(:all);
 use strict;
 
