@@ -13,9 +13,8 @@ use strict;
 # Main program here ..
 #
 
-my $dist;
+my $short_route;
 my $taskno;
-my $task;
 
 my $dbh = db_connect();
 
@@ -27,7 +26,12 @@ if (scalar @ARGV == 0)
 $taskno = $ARGV[0];
 
 # Work out the shortest route through task
-$dist = task_update($taskno);
+my $task = read_task($taskno);
+$short_route = find_shortest_route($task);
+if (defined($short_route))
+{
+    store_short_route($task, $short_route);
+}
 
 # Work out some distances
 $task = read_task($taskno);

@@ -255,38 +255,34 @@ sub find_closest
 #   tasTotalDistanceFlown, tasPilotsLaunched, tasPilotsTotal
 #   tasPilotsGoal, tasPilotsLaunched, 
 #
-sub task_update
+sub find_shortest_route
 {
-    my ($tasPk) = @_;
-    my $wpts;
+    my ($task) = @_;
     my $dist;
-    my $totdist;
     my $i = 0;
-    my $num;
     my @it1;
     my @it2;
     my @closearr;
     my $newcl;
-    my $task;
 
-    $totdist = 0.0;
-    $dbh->do("delete from tblShortestRoute where tasPk=$tasPk");
-    $task = read_task($tasPk);
+    my $tasPk = $task->{'tasPk'};
+    my $wpts = $task->{'waypoints'};
+    my $num = scalar @$wpts;
 
-    $wpts = $task->{'waypoints'};
 
     # Ok work out non-optimal distance for now
-    $num = scalar @$wpts;
     print "task $tasPk with $num waypoints\n";
 
-    if ($num < 2)
+    if ($num < 1)
     {
-        if ($num == 1)
-        {
-            $sth = $dbh->prepare("insert into tblShortestRoute (tasPk,tawPk,ssrLatDecimal,ssrLongDecimal,ssrNumber) values ($tasPk,".  $wpts->[0]->{'key'}. ",". $wpts->[0]->{'dlat'}. ",". $wpts->[0]->{'dlong'}. ",". $wpts->[0]->{'number'}. ")");
-            $sth->execute();
-        }
-        return 0;
+        return undef;
+    }
+
+    if ($num == 1)
+    {
+        my $first = cartesian2polar(polar2cartesian($wpts->[0]));
+        push @closearr, $first;
+        return \@closearr;
     }
 
     # Work out shortest route!
@@ -333,28 +329,45 @@ sub task_update
     }
     push @closearr, $it2[$num-1];
 
+    return \@closearr;
+}
+
+sub store_short_route
+{
+    my ($task, $closearr) = @_;
+    my $totdist = 0.0;
+    my $wpts = $task->{'waypoints'};
+    my $tasPk = $task->{'tasPk'};
+    my $num = scalar @$closearr;
+    my $i = 0;
+    my $dist;
+
+    # Clean up
+    $dbh->do("delete from tblShortestRoute where tasPk=$tasPk");
+
+    # Insert each short route waypoint
     for ($i = 0; $i < $num-1; $i++)
     {
         $dist = distance($wpts->[$i], $wpts->[$i+1]);
         print "Dist wpt:$i to wpt:", $i+1, "=$dist\n";
-        $dist = distance($closearr[$i], $closearr[$i+1]);
+        $dist = distance($closearr->[$i], $closearr->[$i+1]);
         print "Dist cls:$i to cls:", $i+1, "=$dist\n";
-        $sth = $dbh->prepare("insert into tblShortestRoute (tasPk,tawPk,ssrLatDecimal,ssrLongDecimal,ssrCumulativeDist,ssrNumber) values ($tasPk,".
-           $wpts->[$i]->{'key'}. ",". $closearr[$i]->{'dlat'}. ",". $closearr[$i]->{'dlong'}. ",". $totdist . "," . $wpts->[$i]->{'number'}. ")");
-        $totdist = $totdist + $dist;
+        $sth = $dbh->prepare("insert into tblShortestRoute (tasPk,tawPk,ssrLatDecimal,ssrLongDecimal,ssrCumulativeDist,ssrNumber) values (?,?,?,?,?,?)",
+            undef, $tasPk,$wpts->[$i]->{'key'}, $closearr->[$i]->{'dlat'}, $closearr->[$i]->{'dlong'}, $totdist,  $wpts->[$i]->{'number'});
         $sth->execute();
+        $totdist = $totdist + $dist;
     }
 
-    $sth = $dbh->prepare("insert into tblShortestRoute (tasPk,tawPk,ssrLatDecimal,ssrLongDecimal,ssrCumulativeDist,ssrNumber) values ($tasPk,".  $wpts->[$i]->{'key'}. ",". $closearr[$i]->{'dlat'}. ",". $closearr[$i]->{'dlong'}. ",". $totdist . "," . $wpts->[$i]->{'number'}. ")");
+    $sth = $dbh->prepare("insert into tblShortestRoute (tasPk,tawPk,ssrLatDecimal,ssrLongDecimal,ssrCumulativeDist,ssrNumber) values (?,?,?,?,?,?)",
+            undef, $tasPk,$wpts->[$i]->{'key'}, $closearr->[$i]->{'dlat'}, $closearr->[$i]->{'dlong'}, $totdist,  $wpts->[$i]->{'number'});
     $sth->execute();
 
     # Store it in tblTask
     print "update tblTask set tasShortRouteDistance=$totdist where tasPk=$tasPk\n";
-    $sth = $dbh->prepare("update tblTask set tasShortRouteDistance=$totdist where tasPk=$tasPk");
+    $sth = $dbh->prepare("update tblTask set tasShortRouteDistance=? where tasPk=?", undef, $totdist, $tasPk);
     $sth->execute();
-
-    return $totdist;
 }
+
 
 sub short_dist
 {
