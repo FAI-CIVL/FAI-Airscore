@@ -54,6 +54,7 @@ create table tblFormula
     forDiffRamp      enum ( 'fixed', 'flexible' ) default 'fixed',
     forDiffCalc      enum ( 'all', 'lo' ) default 'all',
     forStoppedGlideBonus double default 0.0,
+    forStoppedElapsedCalc enum ( 'atstopped', 'shortesttime' ) default 'atstopped',
     forHeightArrBonus double default 0.0,
     forHeightArrLower integer default 200,
     forHeightArrUpper integer default 3000,
@@ -89,6 +90,7 @@ create table tblTask
     tasStartTime            DateTime, 
     tasStartCloseTime       DateTime, 
     tasStoppedTime          DateTime, 
+    tasLastStartTime        DateTime, 
     tasFastestTime          integer, 
     tasFirstDepTime         integer, 
     tasFirstArrTime         integer, 
@@ -632,5 +634,5 @@ create table schema_version
     svExtra     varchar(256)
 );
 
-insert into schema_version (svKey, svExtra) values (4, 'create');
+insert into schema_version (svKey, svExtra) values (5, 'create');
 

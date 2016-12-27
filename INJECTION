@@ -8,7 +8,7 @@ Common injection attacks:
     * add an sql_escape() function ...
 
 2. HTML: cross-site scripting attacks
-    * Prevent out of < and > from selected/unknown strings. 
+    * Prevent output of < and > from selected/unknown strings. 
         Refusing to output the input if it contains < and >, 
         Use htmlspecialchars() to replace
 

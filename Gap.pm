@@ -184,6 +184,7 @@ sub task_totals
 
     my $maxdist = 0;
     my $mindept = 0;
+    my $lastdept = 0;
     #$sth = $dbh->prepare("select max(tarDistance) as MaxDist from tblTaskResult where tasPk=$tasPk");
     $sth = $dbh->prepare("select max(tarDistance+tarLastAltitude*$glidebonus) as MaxDist from tblTaskResult where tasPk=$tasPk");
     $sth->execute();
@@ -197,11 +198,12 @@ sub task_totals
     }
     #print "TT: glidebonus=$glidebonus maxdist=$maxdist\n";
 
-    $sth = $dbh->prepare("select min(tarSS) as MinDept from tblTaskResult where tasPk=$tasPk and tarSS > 0 and tarGoal > 0");
+    $sth = $dbh->prepare("select min(tarSS) as MinDept, max(tarSS) as LastDept from tblTaskResult where tasPk=$tasPk and tarSS > 0 and tarGoal > 0");
     $sth->execute();
     if ($ref = $sth->fetchrow_hashref())
     {
         $mindept = $ref->{'MinDept'};
+        $lastdept = $ref->{'LastDept'};
     }
 
     $waypoints = $task->{'waypoints'};
@@ -270,6 +272,7 @@ sub task_totals
     $taskt{'fastest'} = $fastest;
     $taskt{'tqtime'} = $tqtime;
     $taskt{'firstdepart'} = $mindept;
+    $taskt{'lastdepart'} = $lastdept;
     $taskt{'firstarrival'} = $minarr;
     $taskt{'lastarrival'} = $maxarr;
     $taskt{'mincoeff'} = $mincoeff;

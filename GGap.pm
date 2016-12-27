@@ -111,42 +111,6 @@ sub day_quality
     return ($distance,$time,$launch,1);
 }
 
-#
-# Find the task totals and update ..
-#   tasTotalDistanceFlown, tasPilotsLaunched, tasPilotsTotal
-#   tasPilotsGoal, tasPilotsLaunched, 
-#
-# FIX: TotalDistance wrong with 'lo' type results?
-#
-#sub task_totals
-#{
-#    my ($self, $dbh, $task, $formula) = @_;
-#    my $taskt;
-#    my $tasPk;
-#    my ($minarr, $fastest, $firstdep, $mincoeff);
-#    my $mindist;
-#    my $kmmarker;
-#
-#    $kmmarker = [];
-#    $tasPk = $task->{'tasPk'};
-#
-#    $taskt = Gap::task_totals(@_);
-#
-#    # Determine first to reach each 'KM' marker
-#    $sth = $dbh->prepare("select M.tmDistance, min(M.tmTime) as FirstArrival from 
-#            tblTrackMarker M, tblComTaskTrack C where C.tasPk=$tasPk and M.traPk=C.traPk and M.tmTime > 0 group by M.tmDistance order by M.tmDistance");
-#    $sth->execute();
-#    while ($ref = $sth->fetchrow_hashref())
-#    {
-#        $kmmarker->[$ref->{'tmDistance'}] = $ref->{'FirstArrival'};
-#    }
-#
-#    $taskt->{'kmmarker'} = $kmmarker;
-#
-#    print Dumper($taskt);
-#    return $taskt;
-#}
-
 sub points_weight
 {
     my ($self, $task, $taskt, $formula) = @_;
