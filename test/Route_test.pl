@@ -36,6 +36,20 @@ my $task2 =
         ]
     };
 
+my $task3 = 
+    { 
+        'tasPk' => 3,
+        'waypoints' => 
+[
+{ 'key' => 3383, 'number' => 1, 'type' => 'start', 'how' => 'exit', 'shape' => 'circle', 'radius' => 400, name => 'wk2', 'lat' => -44.63759987 * PI() / 180, 'long' => 168.90910026 * PI() / 180 },
+{ 'key' => 3378, 'number' => 2, 'type' => 'speed', 'how' => 'exit', 'shape' => 'circle', 'radius' => 1000, name => 'wk2', 'lat' => -44.63759987 * PI() / 180, 'long' => 168.90910026 * PI() / 180 },
+{ 'key' => 3379, 'number' => 3, 'type' => 'waypoint', 'how' => 'exit', 'shape' => 'circle', 'radius' => 8000, name => 'wk2', 'lat' => -44.63759987 * PI() / 180, 'long' => 168.90910026 * PI() / 180 },
+{ 'key' => 3380, 'number' => 4, 'type' => 'waypoint', 'how' => 'entry', 'shape' => 'circle', 'radius' => 400, name => 'wk2', 'lat' => -44.63759987 * PI() / 180, 'long' => 168.90910026 * PI() / 180 },
+{ 'key' => 3381, 'number' => 5, 'type' => 'waypoint', 'how' => 'entry', 'shape' => 'circle', 'radius' => 1000, name => 'wk3', 'lat' => -44.59199997 * PI() / 180, 'long' => 169.33140015 * PI() / 180 },
+{ 'key' => 3382, 'number' => 6, 'type' => 'goal', 'how' => 'entry', 'shape' => 'circle', 'radius' => 1000, name => 'wk4', 'lat' => -44.68069995 * PI() / 180, 'long' => 169.19040011 * PI() / 180 }
+]
+    };
+
 
 my ($spt, $ept, $gpt, $ssdist, $startssdist, $endssdist, $totdist);
 my $sr1 = find_shortest_route($task1);
@@ -89,6 +103,24 @@ is(sprintf("%.1f", $ssdist), "117933.4", "speed section distance");
 is($startssdist, 5000, "start speed distance");
 is(sprintf("%.1f", $endssdist), "122933.4", "end speed section distance");
 is(sprintf("%.1f", $totdist), "124927.2", "total distance");
+
+
+my $sr4 = find_shortest_route($task3);
+for (my $i = 0; $i < scalar @$sr4; $i++)
+{
+    $task3->{'waypoints'}->[$i]->{'short_lat'} = $sr4->[$i]->{'lat'};
+    $task3->{'waypoints'}->[$i]->{'short_long'} = $sr4->[$i]->{'long'};
+}
+
+($spt, $ept, $gpt, $ssdist, $startssdist, $endssdist, $totdist) = task_distance($task3);
+
+is($spt, 1, "start speed point");
+is($ept, 5, "end speed point");
+is($gpt, 5, "goal point");
+is(sprintf("%.1f", $ssdist), "45080.6", "speed section distance");
+is($startssdist, 1000, "start speed distance");
+is(sprintf("%.1f", $endssdist), "61000.4", "end speed section distance");
+is(sprintf("%.1f", $totdist), "61000.4", "total distance");
 
 # add a test for in_semicircle
 

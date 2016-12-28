@@ -165,20 +165,19 @@ sub find_closest
         # Ok - we have a 180deg? connect
         print "180 deg connect: u=$u\n";
 
-        #if ($P1->{'how'} eq 'exit' && $u == 0)
-        if ($u == 0)
-        {
-            $O = vvminus($C3, $C2);
-            $vl = vector_length($O);
-            print "short route point must be on the cylinder\n";
-            if ($vl > 0)
-            {
-                $O = cvmult($P2->{'radius'} / $vl, $O);
-            }
-            $CL = vvplus($O, $C2);
-            $PR = cartesian2polar($CL);
-        }
-#
+#        if ($P2->{'how'} eq 'exit' && $u == 0)
+#        {
+#            $O = vvminus($C3, $C2);
+#            $vl = vector_length($O);
+#            print "short route point must be on the cylinder\n";
+#            if ($vl > 0)
+#            {
+#                $O = cvmult($P2->{'radius'} / $vl, $O);
+#            }
+#            $CL = vvplus($O, $C2);
+#            $PR = cartesian2polar($CL);
+#        }
+
         # find the intersection points (maybe in cylinder)
         #$v = plane_normal($C1, $C2);
         #$w = plane_normal($C3, $C2);
@@ -277,7 +276,7 @@ sub find_shortest_route
 
     # Ok work out non-optimal distance for now
     print "task $tasPk with $num waypoints\n";
-    print Dumper($wpts);
+    #print Dumper($wpts);
 
     if ($num < 1)
     {
@@ -297,7 +296,7 @@ sub find_shortest_route
     $newcl = $wpts->[0];
     for ($i = 0; $i < $num-2; $i++)
     {
-        print "From it1: $i: ", $wpts->[$i]->{'name'}, "\n";
+        #print "From it1: $i: ", $wpts->[$i]->{'name'}, "\n";
         if (ddequal($wpts->[$i+1], $wpts->[$i+2]))
         {
             $newcl = find_closest($newcl, $wpts->[$i+1], undef);
@@ -310,35 +309,44 @@ sub find_shortest_route
     }
     # FIX: special case for end point ..
     #print "newcl=", Dumper($newcl);
-    print "From it1: $i: ", $wpts->[$i]->{'name'}, "\n";
+    #print "From it1: $i: ", $wpts->[$i]->{'name'}, "\n";
     $newcl = find_closest($newcl, $wpts->[$num-1], undef);
     push @it1, $newcl;
 
-    print Dumper(@it1);
+    print "IT1=", Dumper(\@it1);
 
     $num = scalar @it1;
     push @it2, $it1[0];
     $newcl = $it1[0];
     for ($i = 0; $i < $num-2; $i++)
     {
-        print "From it2: $i: ", $wpts->[$i]->{'name'}, "\n";
+        #print "From it2: $i: ", $wpts->[$i]->{'name'}, "\n";
         $newcl = find_closest($newcl, $it1[$i+1], $it1[$i+2]);
         push @it2, $newcl;
     }
     push @it2, $it1[$num-1];
 
-    print Dumper(@it2);
+    print "IT2=", Dumper(\@it2);
 
     $num = scalar @it2;
     push @closearr, $it2[0];
     $newcl = $it2[0];
     for ($i = 0; $i < $num-2; $i++)
     {
-        print "From it3: $i: ", $wpts->[$i]->{'name'}, "\n";
+        #print "From it3: $i: ", $wpts->[$i]->{'name'}, "\n";
         $newcl = find_closest($newcl, $it2[$i+1], $it2[$i+2]);
         push @closearr, $newcl;
     }
     push @closearr, $it2[$num-1];
+
+    print "closearr=", Dumper(\@closearr);
+
+    for (my $i = 0; $i < scalar @closearr-1; $i++)
+    {
+        my $dist = distance($wpts->[$i], $wpts->[$i+1]);
+        my $cdist = distance($closearr[$i], $closearr[$i+1]);
+        print "Dist wpt:$i to wpt:", $i+1, "=$dist srdist=$cdist\n";
+    }
 
     return \@closearr;
 }
@@ -429,7 +437,7 @@ sub task_distance
         {
             $spt = $i;
             $startssdist = $cwdist;
-            if ($startssdist == 0 && ($waypoints->[$i]->{'how'} eq 'exit'))
+            if ($startssdist < 1 && ($waypoints->[$i]->{'how'} eq 'exit'))
             {
                 $startssdist += $waypoints->[$i]->{'radius'};
             }
@@ -453,7 +461,18 @@ sub task_distance
         }
         if ($i < $allpoints-1)
         {
-            $cwdist = $cwdist + short_dist($waypoints->[$i], $waypoints->[$i+1]);
+            if (ddequal($waypoints->[$i], $waypoints->[$i+1]) && $waypoints->[$i+1]->{'how'} eq 'exit')
+            {
+                $cwdist = $cwdist + $waypoints->[$i+1]->{'radius'};
+                if ($waypoints->[$i]->{'type'} ne 'start')
+                {
+                    $cwdist = $cwdist - $waypoints->[$i]->{'radius'};
+                }
+            }
+            else
+            {
+                $cwdist = $cwdist + short_dist($waypoints->[$i], $waypoints->[$i+1]);
+            }
         }
     }
     if (!defined($gpt))

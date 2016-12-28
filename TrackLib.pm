@@ -1021,7 +1021,7 @@ sub acos
     my ($x) = @_;
     my $ret;
 
-    if ($x >= 1)
+    if ($x >= 1 or $x <= -1)
     {
         return 0;
     }
