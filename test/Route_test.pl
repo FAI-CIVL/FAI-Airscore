@@ -117,10 +117,10 @@ for (my $i = 0; $i < scalar @$sr4; $i++)
 is($spt, 1, "start speed point");
 is($ept, 5, "end speed point");
 is($gpt, 5, "goal point");
-is(sprintf("%.1f", $ssdist), "45080.6", "speed section distance");
+is(sprintf("%.1f", $ssdist), "60130.6", "speed section distance");
 is($startssdist, 1000, "start speed distance");
-is(sprintf("%.1f", $endssdist), "61000.4", "end speed section distance");
-is(sprintf("%.1f", $totdist), "61000.4", "total distance");
+is(sprintf("%.1f", $endssdist), "61130.4", "end speed section distance");
+is(sprintf("%.1f", $totdist), "61130.4", "total distance");
 
 # add a test for in_semicircle
 
