@@ -45,7 +45,6 @@ if (reqexists('download'))
     //V X=53:15.100 N 007:07.333 W
     //DB 53:18.098 N 007:07.333 W , 53:18.098 N 007:07.333 W
 
-    //$format=addslashes($_REQUEST['format']);
     $link = db_connect();
     $sql = "select * from tblAirspaceRegion where argPk=$argPk";
     $result = mysql_query($sql,$link);
@@ -162,7 +161,7 @@ function display_regions($link)
     $airtab[] =  array(fb('Id'), fb('Region Name'), fb('Latitude'), fb('Longitude'), fb('Size'));
     $sql = "SELECT * from tblAirspaceRegion R order by R.argRegion";
     $result = mysql_query($sql,$link);
-    while($row = mysql_fetch_array($result))
+    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {
         $id = $row['argPk'];
         $name = "<a href=\"airspace_admin.php?argPk=$id\">" . $row['argRegion'] . '</a>';
@@ -194,7 +193,7 @@ adminbar(0);
 $link = db_connect();
 echo '<p><h2>Airspace Administration</h2></p>';
 
-if (array_key_exists('add', $_REQUEST))
+if (reqexists('add'))
 {
     $upfile = $_FILES['waypoints']['tmp_name'];
     $out = '';
@@ -218,7 +217,7 @@ if (array_key_exists('add', $_REQUEST))
     }
 }
 
-if (array_key_exists('delete', $_REQUEST))
+if (reqexists('delete'))
 {
     // implement a nice 'confirm'
     $delPk = reqival('delete');
@@ -243,7 +242,7 @@ if (array_key_exists('delete', $_REQUEST))
     echo "Airspace $subregion deleted<br>";
 }
 
-if (array_key_exists('create', $_REQUEST))
+if (reqexists('create'))
 {
     $region = reqsval('regname');
     $rlat = reqfval('reglat');

@@ -26,9 +26,9 @@ if ($cat == '')
 }
 $ozimp = reqsval('ozimp');
 
-if (array_key_exists('addcomp', $_REQUEST))
+if (reqexists('addcomp'))
 {
-    $comp = intval($_REQUEST['compid']);
+    $comp = reqival('compid');
     $xmltxt = file_get_contents("http://ozparaglidingcomps.com/scoringExport.php?password=$ozimp&comp_id=$comp");
     $xml = new SimpleXMLElement($xmltxt);
     foreach ($xml->pilot as $pilot)
@@ -83,17 +83,17 @@ if (array_key_exists('addcomp', $_REQUEST))
     }
 }
 
-if (array_key_exists('addpilot', $_REQUEST))
+if (reqexists('addpilot'))
 {
-    $fai = intval($_REQUEST['fai']);
-    $lname = addslashes($_REQUEST['lname']);
-    $fname = addslashes($_REQUEST['fname']);
-    $sex = addslashes($_REQUEST['sex']);
+    $fai = reqival('fai');
+    $lname = reqsval('lname');
+    $fname = reqsval('fname');
+    $sex = reqsval('sex');
     $query = "insert into tblPilot (pilHGFA, pilLastName, pilFirstName, pilSex, pilNationCode) value ($fai,'$lname','$fname','$sex','AUS')";
     $result = mysql_query($query) or die('Pilot insert failed: ' . mysql_error());
 }
 
-if (array_key_exists('bulkadd', $_REQUEST))
+if (reqexists('bulkadd'))
 {
     $out = '';
     $retv = 0;
@@ -109,22 +109,22 @@ if (array_key_exists('bulkadd', $_REQUEST))
     }
 }
 
-if (array_key_exists('update', $_REQUEST))
+if (reqexists('update'))
 {
-    $id = intval($_REQUEST['update']);
-    $fai = intval($_REQUEST["fai$id"]);
-    $lname = addslashes($_REQUEST["lname$id"]);
-    $fname = addslashes($_REQUEST["fname$id"]);
-    $sex = addslashes($_REQUEST["sex$id"]);
-    $nat = addslashes($_REQUEST["nation$id"]);
+    $id = reqival('update');
+    $fai = reqival("fai$id");
+    $lname = reqsval("lname$id");
+    $fname = reqsval("fname$id");
+    $sex = reqsval("sex$id");
+    $nat = reqsval("nation$id");
     $query = "update tblPilot set pilHGFA=$fai, pilLastName='$lname', pilFirstName='$fname', pilSex='$sex', pilNationCode='$nat' where pilPk=$id";
     $result = mysql_query($query) or die('Pilot update failed: ' . mysql_error());
 }
 
-if (array_key_exists('delete', $_REQUEST))
+if (reqexists('delete'))
 {
     check_admin('admin',$usePk,-1);
-    $id = intval($_REQUEST['delete']);
+    $id = reqival('delete');
     $query = "delete from tblPilot where pilPk=$id";
     $result = mysql_query($query) or die('Config update failed: ' . mysql_error());
 }
