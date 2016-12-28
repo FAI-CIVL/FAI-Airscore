@@ -975,7 +975,7 @@ sub ddequal
     my ($wp1, $wp2) = @_;
 
     if ($wp1->{'dlat'} == $wp2->{'dlat'} &&
-        $wp1->{'dlon'} == $wp2->{'dlon'})
+        $wp1->{'dlong'} == $wp2->{'dlong'})
     {  
         return 1;
     }
