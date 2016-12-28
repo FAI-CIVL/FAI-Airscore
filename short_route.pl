@@ -30,7 +30,7 @@ my $task = read_task($taskno);
 $short_route = find_shortest_route($task);
 if (defined($short_route))
 {
-    store_short_route($task, $short_route);
+    store_short_route($dbh, $task, $short_route);
 }
 
 # Work out some distances
