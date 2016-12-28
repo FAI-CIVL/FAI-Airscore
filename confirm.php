@@ -7,7 +7,7 @@
 <?php
 require 'authorisation.php';
 $restrict='';
-$comPk = intval($_REQUEST['comPk']);
+$comPk = reqival('comPk');
 menubar($comPk);
 
 //$link = dbconnect();

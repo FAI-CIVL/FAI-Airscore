@@ -17,7 +17,7 @@ adminbar(0);
 $usePk=auth('system');
 $link = db_connect();
 
-if (array_key_exists('add', $_REQUEST))
+if (reqexists('add'))
 {
     $comname = reqsval('comname');
     $datefrom = reqsval('datefrom');
@@ -53,7 +53,7 @@ if (array_key_exists('add', $_REQUEST))
         $regarr['forDiffRamp'] = 'flexible';
         $regarr['forDiffCalc'] = 'lo';
         $regarr['forDistMeasure'] = 'average';
-        if (array_key_exists('weightstart', $_REQUEST))
+        if (reqexists('weightstart'))
         {
             $regarr['forWeightStart'] = 0.125;
             $regarr['forWeightArrival'] = 0.175;
@@ -70,7 +70,7 @@ if (array_key_exists('add', $_REQUEST))
     }
 }
 
-if (array_key_exists('update', $_REQUEST))
+if (reqexists('update'))
 {
     $comPk = reqival('comPk');
     $comname = reqsval('comname');

@@ -118,7 +118,7 @@ function nice_date($today, $date)
 
 $usePk = auth('system');
 $link = db_connect();
-$tasPk = intval($_REQUEST['tasPk']);
+$tasPk = reqival('tasPk');
 
 $query = "select comPk from tblTask where tasPk=$tasPk";
 $result = mysql_query($query) or die('Task not associated with a competition: ' . mysql_error());
@@ -127,7 +127,7 @@ adminbar($comPk);
 $link = db_connect();
 
 
-if (array_key_exists('airspace', $_REQUEST))
+if (reqexists('airspace'))
 {
     check_admin('admin',$usePk,$comPk);
     $out = '';
@@ -139,7 +139,7 @@ if (array_key_exists('airspace', $_REQUEST))
     }
 }
 
-if (array_key_exists('addair', $_REQUEST))
+if (reqexists('addair'))
 {
     check_admin('admin',$usePk,$comPk);
     $airPk = reqival('airnew');
@@ -147,7 +147,7 @@ if (array_key_exists('addair', $_REQUEST))
     $result = mysql_query($query) or die('Failed to connect airspace to task ' . mysql_error());
 }
 
-if (array_key_exists('airdel', $_REQUEST))
+if (reqexists('airdel'))
 {
     $taPk = reqival('airdel');
     if ($taPk > 0)
@@ -157,7 +157,7 @@ if (array_key_exists('airdel', $_REQUEST))
     }
 }
 
-if (array_key_exists('trackcopy', $_REQUEST))
+if (reqexists('trackcopy'))
 {
     $copyfrom = reqival('copyfrom');
     if ($copyfrom > 0)
@@ -180,7 +180,7 @@ if (array_key_exists('trackcopy', $_REQUEST))
     }
 }
 
-if (array_key_exists('copytask', $_REQUEST))
+if (reqexists('copytask'))
 {
     check_admin('admin',$usePk,$comPk);
     $copytaskpk = reqival('copytaskpk');
@@ -197,9 +197,8 @@ if (array_key_exists('copytask', $_REQUEST))
 }
 
 // Update the task itself 
-if (array_key_exists('updatetask', $_REQUEST))
+if (reqexists('updatetask'))
 {
-    #$tasPk = intval($_REQUEST['updatetask']);
     check_admin('admin',$usePk,$comPk);
 
     $query = "select tasStartTime, tasStartCloseTime, tasFinishTime, tasTaskType from tblTask where tasPk=$tasPk";
@@ -207,20 +206,20 @@ if (array_key_exists('updatetask', $_REQUEST))
         or die('Task not associated with a competition: ' . mysql_error());
     $old = mysql_fetch_array($result);
 
-    $Name = addslashes($_REQUEST['taskname']);
-    $Date = addslashes($_REQUEST['date']);
+    $Name = reqsval('taskname');
+    $Date = reqsval('date');
     if (!sane_date($Date))
     {
         die("Unable to update task with illegal date: $Date");
     }
 
     // Task Start/Finish
-    $TaskStart = addslashes($_REQUEST['taskstart']);
+    $TaskStart = reqsval('taskstart');
     if (strlen($TaskStart) < 10)
     {
         $TaskStart = $Date . ' ' . $TaskStart;
     }
-    $FinishTime = addslashes($_REQUEST['taskfinish']);
+    $FinishTime = reqsval('taskfinish');
     if (strlen($FinishTime) < 10)
     {
         $FinishTime = $Date . ' ' . $FinishTime;
@@ -228,29 +227,29 @@ if (array_key_exists('updatetask', $_REQUEST))
 
     // FIX: Launch Close
     // Start gate open/close
-    $StartTime = addslashes($_REQUEST['starttime']);
+    $StartTime = reqsval('starttime');
     if (strlen($StartTime) < 10)
     {
         $StartTime = $Date . ' ' . $StartTime;
     }
-    $StartClose = addslashes($_REQUEST['startclose']);
+    $StartClose = reqsval('startclose');
     if (strlen($StartClose) < 10)
     {
         $StartClose = $Date . ' ' . $StartClose;
     }
 
-    $TaskType = addslashes($_REQUEST['tasktype']);
-    $Interval = intval($_REQUEST['interval']);
+    $TaskType = reqsval('tasktype');
+    $Interval = reqival('interval');
     $regPk = addslashes($_REQUEST['region']);
     $departure = addslashes($_REQUEST['departure']);
     $arrival = addslashes($_REQUEST['arrival']);
     $height = addslashes($_REQUEST['height']);
-    $comment = addslashes($_REQUEST['taskcomment']);
+    $comment = reqsval('taskcomment');
 
     $query = "update tblTask set tasName='$Name', tasDate='$Date', tasTaskStart='$TaskStart', tasStartTime='$StartTime', tasStartCloseTime='$StartClose', tasFinishTime='$FinishTime', tasTaskType='$TaskType', regPk=$regPk, tasSSInterval=$Interval, tasDeparture='$departure', tasArrival='$arrival', tasHeightBonus='$height', tasComment='$comment' where tasPk=$tasPk";
     $result = mysql_query($query) or die('Task add failed: ' . mysql_error());
 
-    $TaskStopped = addslashes($_REQUEST['taskstopped']);
+    $TaskStopped = reqsval('taskstopped');
     if (strlen($TaskStopped) < 10 && strlen($TaskStopped) > 2)
     {
         $TaskStopped = $Date . ' ' . $TaskStopped;
@@ -266,7 +265,7 @@ if (array_key_exists('updatetask', $_REQUEST))
     #update_tracks($link,$tasPk);
 }
 
-if (array_key_exists('fullrescore', $_REQUEST))
+if (reqexists('fullrescore'))
 {
     $out = '';
     $retv = 0;
@@ -311,14 +310,14 @@ echo "<p><h2><a href=\"task_result.php?comPk=$comPk&tasPk=$tasPk\">$comName - $t
 
 
 // Manage waypoints for task ..
-if (array_key_exists('add', $_REQUEST))
+if (reqexists('add'))
 {
     check_admin('admin',$usePk,$comPk);
 
     $waynum = addslashes($_REQUEST['number']);
-    $waytype = addslashes($_REQUEST['waytype']);
-    $how = addslashes($_REQUEST['how']);
-    $shape = addslashes($_REQUEST['shape']);
+    $waytype = reqsval('waytype');
+    $how = reqsval('how');
+    $shape = reqsval('shape');
     $radius = addslashes($_REQUEST['radius']);
     $rwppk = addslashes($_REQUEST['waypoint']);
     if ($waynum == '')
@@ -337,11 +336,11 @@ if (array_key_exists('add', $_REQUEST))
     update_task($link, $tasPk, $old);
 }
 
-if (array_key_exists('delete', $_REQUEST))
+if (reqexists('delete'))
 {
     check_admin('admin',$usePk,$comPk);
 
-    $tawPk = intval($_REQUEST['delete']);
+    $tawPk = reqival('delete');
     $query = "delete from tblTaskWaypoint where tawPk=$tawPk";
     $out = '';
     $retv = 0;
@@ -349,11 +348,11 @@ if (array_key_exists('delete', $_REQUEST))
     $result = mysql_query($query) or die('Delete TaskWaypoint failed: ' . mysql_error());
 }
 
-if (array_key_exists('update', $_REQUEST))
+if (reqexists('update'))
 {
     check_admin('admin',$usePk,$comPk);
 
-    $tawPk = intval($_REQUEST['update']);
+    $tawPk = reqival('update');
     $waypt = addslashes($_REQUEST["waypoint$tawPk"]);
     $waynum = addslashes($_REQUEST["number$tawPk"]);
     $waytype = addslashes($_REQUEST["waytype$tawPk"]);
@@ -367,7 +366,7 @@ if (array_key_exists('update', $_REQUEST))
     $out = '';
     $retv = 0;
     exec(BINDIR . "task_up.pl $tasPk", $out, $retv);
-    if (array_key_exists('debug', $_REQUEST))
+    if (reqexists('debug'))
     {
         foreach ($out as $row)
         {

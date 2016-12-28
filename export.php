@@ -56,7 +56,7 @@ function insert_map($table,$map,$valmap)
     return $sql;
 }
 
-$comPk=intval($_REQUEST['comPk']);
+$comPk=reqival('comPk');
 if ($debug)
 {
     $comPk = 7;
