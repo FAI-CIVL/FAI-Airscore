@@ -379,8 +379,17 @@ sub short_dist
     $dist = distance(\%s1, \%s2);
     return $dist;
 }
+
 #
 # Determine the distances to startss / endss / ss distance
+# Returns a tuple containing:
+#   $spt - index of start speed point
+#   $ept - index of end speed point
+#   $gpt - index of goal point
+#   $ssdist - speed section distance
+#   $startssdist - distance to start of speed section
+#   $endssdist - distane to end of speed section
+#   $totdist - total task distance
 #
 sub task_distance
 {

@@ -23,6 +23,20 @@ function parse_latlong($str, $neg)
     return $val;
 }
 
+function parse_gpsd_latlong($str, $neg)
+{
+    $fields = explode(" ", $str);
+    $val = floatval($fields[1]) + floatval($fields[2] + floatval($fields[3])/60) / 60;
+
+    $ns = $fields[0];
+    if ($ns == $neg)
+    {
+        $val = -$val;
+    }
+
+    return $val;
+}
+
 # Add support for:
 # OziExplorer Waypoint File Version 1.0
 # WGS 84
@@ -51,11 +65,38 @@ function parse_oziwpts($regPk, $link, $lines)
         $sql = "insert into tblRegionWaypoint (regPk, rwpName, rwpLatDecimal, rwpLongDecimal, rwpAltitude, rwpDescription) values ($regPk,'$name',$lat,$long,$alt,'$desc')";
         $result = mysql_query($sql,$link) or die('Insert RegionWaypoint failed: ' . mysql_error());
     }
+
+    return $count;
+}
+
+function parse_gpsdump($regPk, $link, $lines)
+{
+    $count = 1;
+    for ($i = 0; $i < count($lines); $i++)
+    {
+        // waypoint
+        $fields = $lines[$i];
+        $name = addslashes(rtrim(substr($fields,0, 10)));
+        $lat = parse_gpsd_latlong(substr($fields,10,13), "S");
+        $long = parse_gpsd_latlong(substr($fields,27,14), "W");
+        $alt = floatval(substr($fields,43,5));
+        $desc = addslashes(rtrim(substr($fields,49)));
+        echo "$name,$lat,$long,$alt,$desc<br>";
+        if ($lat > 0.0)
+        {
+            $sql = "insert into tblRegionWaypoint (regPk, rwpName, rwpLatDecimal, rwpLongDecimal, rwpAltitude, rwpDescription) values ($regPk,'$name',$lat,$long,$alt,'$desc')";
+            $result = mysql_query($sql,$link) or die('Insert RegionWaypoint failed: ' . mysql_error());
+            $count++;
+        }
+    }
+
+    return $count;
 }
 
 
 function parse_waypoints($filen, $regPk, $link)
 {
+    $count = 0;
     $fh = fopen($filen, 'r');
     if (!$fh)
     {
@@ -69,10 +110,19 @@ function parse_waypoints($filen, $regPk, $link)
     fclose($fh);
 
     $lines = explode("\n", $data);
+    if (substr($lines[0],0,10) == '$FormatGEO')
+    {
+        return parse_gpsdump($regPk, $link, array_slice($lines,1));
+    }
+
     if (substr($lines[0],0,3) == "Ozi")
     {
         return parse_oziwpts($regPk, $link, $lines);
     }
+
+    //if (substr($lines[0],0,4) == "<?xml")
+    //{
+    //}
 
     $param = array();
     for ($i = 0; $i < count($lines); $i++)
@@ -89,6 +139,7 @@ function parse_waypoints($filen, $regPk, $link)
             echo "$name $lat $long $alt $desc<br>";
             $sql = "insert into tblRegionWaypoint (regPk, rwpName, rwpLatDecimal, rwpLongDecimal, rwpAltitude, rwpDescription) values ($regPk,'$name',$lat,$long,$alt,'$desc')";
             $result = mysql_query($sql,$link) or die('Insert RegionWaypoint failed: ' . mysql_error());
+            $count++;
         }
         else if ($fields[0] == "G")
         {
@@ -103,7 +154,8 @@ function parse_waypoints($filen, $regPk, $link)
             // ignore?
         }
     }
-    return 0;
+
+    return $count;
 }
 
 function accept_waypoints($region,$link)
@@ -127,13 +179,17 @@ function accept_waypoints($region,$link)
         chmod($copyname, 0644);
 
         // Process the file
-        if (parse_waypoints($copyname, $regPk, $link))
+        if (!parse_waypoints($copyname, $regPk, $link))
         {
             echo "<b>Failed to upload your waypoints correctly.</b><br>\n";
             echo "Contact the site maintainer if this was a valid waypoint file.<br>\n";
             echo "</div></body></html>\n";
             exit(0);
         }
+
+        $lastid = mysql_insert_id();
+        $query = "update tblRegion set regCentre=$lastid where regPk=$regPk";
+        $result = mysql_query($query) or die('Centre update failed: ' . mysql_error());
     }
 
     return $regPk;
@@ -147,15 +203,22 @@ adminbar(0);
 auth('system');
 $link = db_connect();
 
-if (array_key_exists('add', $_REQUEST))
+if (reqexists('add'))
 {
-    $region = $_REQUEST['region'];
+    if (!$_FILES)
+    {
+        global $argv;
+        $_FILES = [];
+        $_FILES['waypoints'] = [];
+        $_FILES['waypoints']['tmp_name'] = $argv[2];
+    }
+    $region = reqsval('region');
     accept_waypoints($region,$link);
 }
 
-if (array_key_exists('create', $_REQUEST))
+if (reqexists('create'))
 {
-    $region = $_REQUEST['region'];
+    $region = reqsval('region');
 
     $query = "insert into tblRegion (regDescription) values ('$region')";
     $result = mysql_query($query) or die('Create region failed: ' . mysql_error());
@@ -164,10 +227,10 @@ if (array_key_exists('create', $_REQUEST))
     echo "Region $region ($regPk) created<br>";
 }
 
-if (array_key_exists('delete', $_REQUEST))
+if (reqexists('delete'))
 {
     // implement a nice 'confirm'
-    $regPk = intval($_REQUEST['delete']);
+    $regPk = reqival('delete');
     $query = "select * from tblRegion where regPk=$regPk";
     $result = mysql_query($query) or die('Region check failed: ' . mysql_error());
     $row = mysql_fetch_array($result);
@@ -187,10 +250,10 @@ if (array_key_exists('delete', $_REQUEST))
     echo "Region $region deleted\n";
 }
 
-if (array_key_exists('download', $_REQUEST))
+if (reqexists('download'))
 {
     // implement a nice 'confirm'
-    $id=intval($_REQUEST['download']);
+    $id=reqival('download');
     redirect("download_waypoints.php?download=$id");
 }
 

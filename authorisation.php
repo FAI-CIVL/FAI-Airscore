@@ -144,8 +144,9 @@ function menubar($comPk)
 }
 function adminbar($comPk)
 {
+    echo "<div id=\"container-eyecatcher\">";
     echo "<div id=\"menu\">";
-    echo "<ul>";
+    echo "<ul id=\"navigation\">";
     if (check_auth("system"))
     {
         echo "<li><a href=\"login.php?logout=1\">Logout</a></li>";
@@ -191,6 +192,7 @@ function adminbar($comPk)
     echo "<li><a href=\"airspace_admin.php\">Airspace</a></li>";
     echo "</ul>";
     echo "</div>";
+    echo "</div>";
 }
 function output_select($name,$selected,$options)
 {
@@ -226,8 +228,21 @@ function waypoint_select($link,$tasPk,$name,$selected)
     //ksort($waypoints);
     output_select($name,$selected,$waypoints);
 }
+function cmdlinecheck()
+{
+    if (!$_REQUEST)
+    {
+        if (!isset($_SERVER["HTTP_HOST"])) 
+        {
+            global $argv;
+            parse_str($argv[1], $_REQUEST);
+            //parse_str($argv[1], $_POST);
+        }
+    }
+}
 function reqexists($key)
 {
+    cmdlinecheck();
     if (array_key_exists($key, $_REQUEST))
     {
         return 1;
@@ -236,6 +251,7 @@ function reqexists($key)
 }
 function reqival($key)
 {
+    cmdlinecheck();
     if (array_key_exists($key, $_REQUEST))
     {
         return intval($_REQUEST[$key]);
@@ -247,6 +263,7 @@ function reqival($key)
 }
 function reqfval($key)
 {
+    cmdlinecheck();
     if (array_key_exists($key, $_REQUEST))
     {
         return floatval($_REQUEST[$key]);
@@ -258,6 +275,7 @@ function reqfval($key)
 }
 function reqsval($key)
 {
+    cmdlinecheck();
     if (array_key_exists($key, $_REQUEST))
     {
         return addslashes($_REQUEST[$key]);

@@ -5,8 +5,28 @@ header('Content-type: application/json');
 
 require 'authorisation.php';
 
-function comp_result($comPk, $how, $param, $cls)
+function taskcmp($a, $b)
 {
+    if (!is_array($a)) return 0;
+    if (!is_array($b)) return 0;
+
+    if ($a['tname'] == $b['tname']) 
+    {
+        return 0;
+    }
+    return ($a['tname'] < $b['tname']) ? -1 : 1;
+}
+
+function comp_result($comPk, $cls)
+{
+    $sql = "select C.* from tblCompetition C where C.comPk=$comPk";
+    $result = mysql_query($sql) or die('Comp info query failed: ' . mysql_error());
+    if ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+    {
+        $how = $row['comOverallScore'];
+        $param = $row['comOverallParam'];
+    }
+
     $sql = "select TK.*,TR.*,P.*,T.traGlider from tblTaskResult TR, tblTask TK, tblTrack T, tblPilot P, tblCompetition C where C.comPk=$comPk and TK.comPk=C.comPk and TK.tasPk=TR.tasPk and TR.traPk=T.traPk and T.traPk=TR.traPk and P.pilPk=T.pilPk $cls order by P.pilPk, TK.tasPk";
     $result = mysql_query($sql) or die('Task result query failed: ' . mysql_error());
     $results = array();
@@ -72,7 +92,7 @@ function filter_results($comPk, $how, $param, $results)
                 {
                     continue;
                 }
-                if ($count < $param)
+                if ($how == 'all' || $count < $param)
                 {
                     $arr[$perf]['perc'] = 100;
                     $pilscore = $pilscore + $taskresult['score'];
@@ -118,7 +138,7 @@ function filter_results($comPk, $how, $param, $results)
         }
         // resort arr by task?
         uasort($arr, "taskcmp");
-        #echo "pil=$pil pilscore=$pilscore<br>";
+        #echo "pil=$pil pilscore=$pilscore\n";
         foreach ($arr as $key => $res)
         {
             #echo "key=$key<br>";
@@ -137,10 +157,44 @@ function filter_results($comPk, $how, $param, $results)
     return $sorted;
 }
 
+# <th>Name</th> <th>NAT</th> <th>Score</th> <th>Gender</th> <th>Birthdate</th> <th>FAI License</th> <th>Glider</th> <th>Sponsor</th> <th>CIVL ID</th>
+function civl_result($sorted)
+{
+    $count = 1;
+    $lasttot = -1;
+    $rtable = array();
+    foreach ($sorted as $pil => $arr)
+    {
+        $nxt = array();
+        $tot = 0 + $pil;
+        if ($tot != $lasttot)
+        {
+            $nxt[] = $count;
+            $nxt[] = $arr['name'];
+        }
+        else
+        {
+            $nxt[] = '';
+            $nxt[] = $arr['name'];
+        }
+        $nxt[] = $arr['nation'];
+        $nxt[] = $tot;
+        $nxt[] = $arr['gender'];
+        $nxt[] = $arr['birthdate'];
+        $nxt[] = $arr['hgfa'];
+        $nxt[] = $arr['glider'];
+        $nxt[] = $arr['sponsor'];
+        $nxt[] = $arr['civl'];
+        $lasttot = $tot;
+        $rtable[] = $nxt;
+        $count++;
+    }
+
+    return $rtable;
+}
+
 $link = db_connect();
 $comPk = reqival('comPk');
-$comOverall = reqsval('overall');
-$comOverallParam = reqival('param');
 $class = reqival('class');
 $carr = array();
 
@@ -155,7 +209,7 @@ if ($class > 0)
     {
         $carr = array ( "'1/2'", "'2'", "'2/3'", "'competition'"       );
     }
-    $classstr = "<b>" . $cstr[intval($_REQUEST['class'])] . "</b> - ";
+    $classstr = "<b>" . $cstr[reqival('class')] . "</b> - ";
     if ($cval == 4)
     {
         $fdhv = "and P.pilSex='F'";
@@ -179,6 +233,8 @@ if ($class > 0)
     }
 }
 
-$sorted = comp_result($comPk, $comOverall, $comOverallParam, $fdhv);
-print json_encode($sorted);
+$sorted = comp_result($comPk, $fdhv);
+$civilised = civl_result($sorted);
+$data = array( 'data' => $civilised );
+print json_encode($data);
 ?>

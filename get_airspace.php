@@ -39,7 +39,7 @@ function get_airspace($airPk)
 }
 
 
-$airPk = intval($_REQUEST['airPk']);
+$airPk = reqival('airPk');
 $retarr = get_airspace($airPk);
 $jret = rjson_pack($retarr);
 
