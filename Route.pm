@@ -111,7 +111,9 @@ sub find_closest
             return $P2;
         }
 
-        return cartesian2polar($CL);
+        my $result = cartesian2polar($CL);
+        #$result->{'radius'} = $P2->{'radius'};
+        return $result;
     }
 
 #    Same point repeated?
@@ -235,15 +237,13 @@ sub find_closest
 
         if ($phideg < 180)
         {
-            $O->{'x'} = $O->{'x'} * $P2->{'radius'} / $vl;
-            $O->{'y'} = $O->{'y'} * $P2->{'radius'} / $vl;
-            $O->{'z'} = $O->{'z'} * $P2->{'radius'} / $vl;
+            print "p2->radius=", $P2->{'radius'}, "\n";
+            $O = cvmult($P2->{'radius'} / $vl, $O);
         }
         else
         {
-            $O->{'x'} = -$O->{'x'} * $P2->{'radius'} / $vl;
-            $O->{'y'} = -$O->{'y'} * $P2->{'radius'} / $vl;
-            $O->{'z'} = -$O->{'z'} * $P2->{'radius'} / $vl;
+            print "-p2->radius=", $P2->{'radius'}, "\n";
+            $O = cvmult(-$P2->{'radius'} / $vl, $O);
         }
 
         $CL = vvplus($O, $C2);
@@ -251,7 +251,9 @@ sub find_closest
 
     #print "Centre=", Dumper($C2), "\n";
     #print "Closest=", Dumper($CL), "\n";
-    return cartesian2polar($CL);
+    my $result = cartesian2polar($CL);
+    $result->{'radius'} = $P2->{'radius'};
+    return $result;
 }
 
 #
