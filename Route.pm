@@ -141,7 +141,9 @@ sub find_closest
         }
         $CL = vvplus($O, $C2);
 
-        return cartesian2polar($CL);
+        my $result = cartesian2polar($CL);
+        $result->{'radius'} = $P2->{'radius'};
+        return $result;
     }
 
     $u = (($C2->{'x'} - $C1->{'x'})*($C3->{'x'} - $C1->{'x'}) 
@@ -153,6 +155,21 @@ sub find_closest
 
     $T = vvminus($C1,$C2);
     print "u=$u cart dist=", vector_length($T), " polar dist=", distance($P1, $P2), "\n";
+
+    if (vector_length($T) < 0.01)
+    {
+        $O = vvminus($C3, $C2);
+        $vl = vector_length($O);
+        if ($vl > 0)
+        {
+            $O = cvmult($P2->{'radius'} / $vl, $O);
+        }
+        $CL = vvplus($O, $C2);
+
+        my $result = cartesian2polar($CL);
+        $result->{'radius'} = $P2->{'radius'};
+        return $result;
+    }
 
     $N = vvplus($C1, cvmult($u, vvminus($C3, $C1)));
     $CL = $N;
