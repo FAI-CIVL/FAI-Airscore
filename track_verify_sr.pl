@@ -218,12 +218,11 @@ sub distance_flown
     }
     else
     {
-        $s1{'lat'} = $nextwpt->{'short_lat'};
-        $s1{'long'} = $nextwpt->{'short_long'};
-        my $sdist = qckdist2(\%s1, $nextwpt);
-        #if ($nextwpt->{'radius'} > $sdist+100)
         if ($nextwpt->{'type'} ne 'goal' && $nextwpt->{'type'} ne 'endspeed')
         {
+            # Distance to shortest route waypoint, but should this be shortest distance to make the waypoint?
+            $s1{'lat'} = $nextwpt->{'short_lat'};
+            $s1{'long'} = $nextwpt->{'short_long'};
             $rdist = qckdist2($coord, \%s1);
             #my $sdist = qckdist2($coord, $nextwpt) - $nextwpt->{'radius'};
             #if ($sdist < $rdist)
@@ -235,6 +234,7 @@ sub distance_flown
         {
             if ($nextwpt->{'shape'} eq 'line')
             {
+                # @todo: should really be distance to the goal line (not centre), if route to goal goes through back of semi, then subtract radius
                 $rdist = qckdist2($coord, $nextwpt);
             }
             else
@@ -245,10 +245,10 @@ sub distance_flown
         $dist = $nwdist - $rdist;
     }
 
-    if ($debug)
-    {
-        # print "wmade=$wmade cwdist=$cwdist nwdist=$nwdist rdist=$rdist dist=$dist\n";
-    }
+    #if ($debug)
+    #{
+    #    print "wmade=$wmade cwdist=$cwdist nwdist=$nwdist rdist=$rdist dist=$dist\n";
+    #}
 
     $dist = 0 + $dist;
     if ($dist < $cwdist)
@@ -297,6 +297,69 @@ sub made_entry_waypoint
     }
 
     return 1;
+}
+
+sub re_entered_start
+{
+    my ($waypoints, $coord, $lastin, $reflag) = @_;
+    my $wcount = undef;
+    my $reset = undef;
+    my $newreflag = undef;
+
+    # Might re-enter start/speed section for elapsed time tasks 
+    # Check if we did re-enter and set the task "back"
+    my $rpt = $waypoints->[$lastin];
+
+    # Re-entered start cyclinder?
+    $rdist = distance($coord, $rpt);
+    if ($rpt->{'how'} eq 'entry')
+    {
+        #print "Repeat check ", $rpt->{'type'}, " (reflag=$reflag lastin=$lastin): dist=$rdist\n";
+        if (($rdist < ($rpt->{'radius'}+5)) and ($reflag == $lastin))
+        {
+            # last point inside ..
+            #$starttime = 0 + $coord->{'time'};
+            #if (($task->{'type'} eq 'race') && ($starttime > $task->{'sstart'}))
+            #{
+            #    $starttime = 0 + $task->{'sstart'};
+            #}
+            #if (($task->{'type'} eq 'speedrun-interval') && ($starttime > $taskss))
+            #{
+            #    $starttime = 0 + $taskss + floor(($starttime-$taskss)/$interval)*$interval;
+            #}
+            #$startss = $starttime;
+            #$coeff = 0; $coeff2 = 0; 
+            #if ($debug)
+            #{
+            #    print "made startss(entry)=$startss\n";
+            #}
+            $newreflag = -1;
+            $reset = 1;
+        }
+        elsif ($rdist >= ($rpt->{'radius'}-2))
+        {
+            #print "Exited entry start/speed cylinder\n";
+            $newreflag = $lastin;
+        }
+    }
+
+    if ($rpt->{'how'} eq 'exit') 
+    {
+        if (($rdist < ($rpt->{'radius'}+5)) and ($reflag == $lastin))
+        {
+            #print "re-entered (exit) speed/startss ($lastin) at " . $coord->{'time'} . " maxdist=$maxdist\n";
+            $wcount = $lastin;
+            #$wpt = $waypoints->[$wcount];
+            $newreflag = -1;
+        }
+        elsif ($rdist >= ($rpt->{'radius'}-2) and ($reflag == -1))
+        {
+            #print "exited (exit) speed/startss ($lastin) at " . $coord->{'time'} . " maxdist=$maxdist\n";
+            $newreflag = $lastin;
+            $reset = 1;
+        }
+    }
+    return ($reset, $newreflag, $wcount);
 }
 
 #
@@ -422,7 +485,8 @@ sub validate_task
 
         # Might re-enter start/speed section for elapsed time tasks 
         # Check if we did re-enter and set the task "back"
-        if ($lastin == $spt)
+        if (($lastin == $spt)
+                and ((($task->{'type'} eq 'race') and ($starttime < $task->{'sstart'})) or ($task->{'type'} ne 'race')))
         {
             $rpt = $waypoints->[$lastin];
             # Re-entered start cyclinder?
@@ -440,14 +504,12 @@ sub validate_task
                     }
                     if (($task->{'type'} eq 'speedrun-interval') && ($starttime > $taskss))
                     {
-                            $starttime = 0 + $taskss + floor(($starttime-$taskss)/$interval)*$interval;
+                        $starttime = 0 + $taskss + floor(($starttime-$taskss)/$interval)*$interval;
                     }
 
                     $startss = $starttime;
                     $coeff = 0; $coeff2 = 0; 
                     $reflag = -1;
-                    # reset $wpt?
-                    #print "re-entered (entry) startss=$startss\n";
                     if ($debug)
                     {
                         print "made startss(entry)=$startss\n";
@@ -484,7 +546,7 @@ sub validate_task
                     }
                     if (($task->{'type'} eq 'speedrun-interval') && ($starttime > $taskss))
                     {
-                            $starttime = 0 + $taskss + floor(($starttime-$taskss)/$interval)*$interval;
+                        $starttime = 0 + $taskss + floor(($starttime-$taskss)/$interval)*$interval;
                     }
                     $startss = $starttime;
                     $coeff = 0; $coeff2 = 0; 

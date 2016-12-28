@@ -3,11 +3,11 @@ require 'authorisation.php';
 
 $usePk = check_auth('system');
 $link = db_connect();
-$trackid = intval($_REQUEST['trackid']);
-$comPk = intval($_REQUEST['comPk']);
+$trackid = reqival('trackid');
+$comPk = reqival('comPk');
 $isadmin = is_admin('admin',$usePk,$comPk);
-$interval = intval($_REQUEST['int']);
-$action = addslashes($_REQUEST['action']);
+$interval = reqival('int');
+$action = reqsval('action');
 $extra = 0;
 
 
