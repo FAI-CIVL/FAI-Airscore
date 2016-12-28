@@ -60,21 +60,42 @@ sub precompute_waypoint_dist
     my $wcount = scalar @$waypoints;
 
     my $dist;
+    my $exdist;
     my (%s1, %s2);
     
     $wptdistcache = [];
 
     $dist = 0.0;
     $wptdistcache->[0] = 0.0;
+    print Dumper($waypoints);
     for my $i (0 .. $wcount-2)
     {
         $s1{'lat'} = $waypoints->[$i]->{'short_lat'};
         $s1{'long'} = $waypoints->[$i]->{'short_long'};
         $s2{'lat'} = $waypoints->[$i+1]->{'short_lat'};
         $s2{'long'} = $waypoints->[$i+1]->{'short_long'};
-        $dist = $dist + distance(\%s1, \%s2);
+        $exdist = distance(\%s1, \%s2);
+        print "exdist $i=$exdist\n";
+        if ($exdist > 0.0)
+        {
+            $dist = $dist + $exdist;
+        }
+        elsif ($waypoints->[$i]->{'how'} eq 'exit' && $waypoints->[$i+1]->{'how'} eq 'exit')
+        {
+            # Check centres?
+            print Dumper($waypoints->[$i]);
+            print Dumper($waypoints->[$i+1]);
+            if ($i > 0 && (ddequal($waypoints->[$i], $waypoints->[$i-1]) && $waypoints->[$i-1]->{'how'} eq 'exit'))
+            {
+                $dist = $dist + $waypoints->[$i]->{'radius'} - $waypoints->[$i-1]->{'radius'};
+            }
+            else
+            {
+                $dist = $dist + $waypoints->[$i]->{'radius'};
+            }
+        }
         $wptdistcache->[$i+1] = $dist;
-        print "$i: $dist\n";
+        print "$i: cumdist=$dist\n";
 
         my $sdist = qckdist2(\%s1, $waypoints->[$i]);
         if ($waypoints->[$i]->{'radius'} > $sdist+100)
@@ -311,7 +332,7 @@ sub re_entered_start
     my $rpt = $waypoints->[$lastin];
 
     # Re-entered start cyclinder?
-    $rdist = distance($coord, $rpt);
+    my $rdist = distance($coord, $rpt);
     if ($rpt->{'how'} eq 'entry')
     {
         #print "Repeat check ", $rpt->{'type'}, " (reflag=$reflag lastin=$lastin): dist=$rdist\n";
@@ -446,7 +467,7 @@ sub validate_task
     my $utcmod = determine_utcmod($task, $coords->[0]);
 
     # Determine the start gate type and ESS dist
-    my ($spt, $ept, $gpt, $essdist, $startssdist, $totdist) = determine_start($task);
+    my ($spt, $ept, $gpt, $essdist, $startssdist, $totdist) = task_distance($task);
 
     # Go through the coordinates and verify the track against the task
     for $coord (@$coords)
@@ -1084,7 +1105,7 @@ sub apply_handicap
 
     if ($result->{'distance'} > $task->{'short_distance'})
     {
-        my ($spt, $ept, $gpt, $essdist, $startssdist) = determine_start($task);
+        my ($spt, $ept, $gpt, $essdist, $startssdist, $totdist) = task_distance($task);
         my $ssdist = $essdist - $startssdist;
 
         print "    handicap essdist=$essdist startssdist=$startssdist ssdist=$ssdist result dist=", $result->{'distance'}, "\n";
