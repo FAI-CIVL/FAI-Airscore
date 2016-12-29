@@ -158,6 +158,7 @@ sub find_closest
 
     if (vector_length($T) < 0.01)
     {
+        print "vl < 0.01\n";
         $O = vvminus($C3, $C2);
         $vl = vector_length($O);
         if ($vl > 0)
@@ -295,7 +296,7 @@ sub find_shortest_route
 
     # Ok work out non-optimal distance for now
     print "task $tasPk with $num waypoints\n";
-    #print Dumper($wpts);
+    print Dumper($wpts);
 
     if ($num < 1)
     {
