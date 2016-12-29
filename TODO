@@ -33,7 +33,7 @@ Modifying waypoints in regions isn't working.
     - should add a 'cancel' to reset a moved icon
 
 Restricted Registration
-    Split page into two columns for adding/removing pilots
+    + Split page into two columns for adding/removing pilots
 
 Automatic airspace violation checks
     + import airspace files ..
@@ -44,12 +44,9 @@ Automatic airspace violation checks
 
 BUGS:
 
-Task scoring issue:
-    Launch inside WP1
-    1st -> WP1 exit 2000m
-    2nd -> WP1 entry 400m
-        (in & out multiple times - seems to restart at 1st TP )
-    3rd -> WP3 endspeed somewhere
+
+Shortest route iterative improvement:
+    Should the find_closest segment be C1 -> P2 -> C3 always?
 
 Make an "install" package for Cpanel
     (basically create the database without a command line)
@@ -78,6 +75,9 @@ Possible bug with lead-out coefficient for start-gate jumpers (esp in elapsed-in
 Implement independent start gates for teams properly
 
 TODO:
+
+Distance_flown (track_verify_sr.pl)
+    + Should we compute distance away from centre for all exit cylinders (ignoring best route?)
 
 Rewrite the web interface into a more modern web page layout (bootstrap perhaps).
 
@@ -181,6 +181,13 @@ Verify track 'G' record
     - and perhaps run windozes exes through wine / dosemu
 
 DONE:
+
+* Task scoring issue:
+    + Launch inside WP1
+    + 1st -> WP1 exit 2000m
+    + 2nd -> WP1 entry 400m
+        (in & out multiple times - seems to restart at 1st TP )
+    + 3rd -> WP3 endspeed somewhere
 
 * Add a time bonus for height above goal arrival
 
