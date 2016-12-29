@@ -39,7 +39,7 @@ if (reqexists('add'))
         $result = mysql_query($query) or die('Competition addition failed: ' . mysql_error());
         $comPk = mysql_insert_id();
 
-        $regarr = array();
+        $regarr = [];
         $regarr['comPk'] = $comPk;
         $regarr['forClass'] = 'gap';
         $regarr['forVersion'] = '2007';
@@ -90,7 +90,7 @@ if (reqexists('update'))
     $result = mysql_query($query) or die('Competition update failed: ' . mysql_error());
 }
 
-$comparr = array();
+$comparr = [];
 $comparr[] = array ('', fb('Date Range'), fb('Name'), fb('Location'), fb('Director') );
 
 echo "<form action=\"comp_admin.php\" name=\"compadmin\" method=\"post\">";

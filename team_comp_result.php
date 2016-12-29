@@ -11,7 +11,7 @@ function team_comp_result($comPk, $how, $param)
 {
     $sql = "select TK.*,TR.*,P.* from tblTeamResult TR, tblTask TK, tblTeam P, tblCompetition C where C.comPk=$comPk and TR.tasPk=TK.tasPk and TK.comPk=C.comPk and P.teaPk=TR.teaPk order by P.teaPk, TK.tasPk";
     $result = mysql_query($sql) or die('Task result query failed: ' . mysql_error());
-    $results = array();
+    $results = [];
     while ($row = mysql_fetch_array($result))
     {
         $score = round($row['terScore']);
@@ -21,7 +21,7 @@ function team_comp_result($comPk, $how, $param)
     
         if (!$results[$pilPk])
         {
-            $results[$pilPk] = array();
+            $results[$pilPk] = [];
             $results[$pilPk]['name'] = $row['teaName'];
         }
         //echo "pilPk=$pilPk tasname=$tasName, result=$score<br>\n";
@@ -42,7 +42,7 @@ function team_comp_result($comPk, $how, $param)
     }
 
     // Do the scoring totals (FTV/X or Y tasks etc)
-    $sorted = array();
+    $sorted = [];
     foreach ($results as $pil => $arr)
     {
         krsort($arr, SORT_NUMERIC);
@@ -125,9 +125,9 @@ function team_agg_result($comPk, $teamsize)
     $query = "select TM.teaPk,TK.tasPk,TK.tasName,TM.teaName,P.pilLastName,P.pilFirstName,P.pilPk,TR.tarScore*TP.tepModifier as tepscore from tblTaskResult TR, tblTask TK, tblTrack K, tblPilot P, tblTeam TM, tblTeamPilot TP, tblCompetition C where TP.teaPk=TM.teaPk and P.pilPk=TP.pilPk and C.comPk=TK.comPk and K.traPk=TR.traPk and K.pilPk=P.pilPk and TR.tasPk=TK.tasPk and TM.comPk=C.comPk and C.comPk=$comPk order by TM.teaPk,TK.tasPk,TR.tarScore*TP.tepModifier desc";
     $result = mysql_query($query) or die('Team aggregate query failed: ' . mysql_error());
     $row = mysql_fetch_array($result);
-    $htable = array();
-    $hres = array();
-    $sorted = array();
+    $htable = [];
+    $hres = [];
+    $sorted = [];
     $teaPk = 0;
     $tasPk = 0;
     $tastot = 0;
@@ -146,7 +146,7 @@ function team_agg_result($comPk, $teamsize)
             $size = 0;
             $tastotal = 0;
             $tasPk = $row['tasPk'];
-            //$arr = array();
+            //$arr = [];
         }
         if ($teaPk != $row['teaPk'])
         {
@@ -154,7 +154,7 @@ function team_agg_result($comPk, $teamsize)
             {
                 $teaPk = $row['teaPk'];
                 $tasPk = $tow['tasPk'];
-                $arr = array();
+                $arr = [];
                 $arr['name'] = $row['teaName'];
             }
             else
@@ -165,7 +165,7 @@ function team_agg_result($comPk, $teamsize)
                 $tastotal = 0;
                 $total = 0;
                 $size = 0;
-                $arr = array();
+                $arr = [];
                 $arr['name'] = $row['teaName'];
                 $teaPk = $row['teaPk'];
             }
@@ -287,9 +287,9 @@ echo "<table border=\"2\" cellpadding=\"1\" alternate-colours=\"yes\" align=\"ce
 echo "<tr class=\"h\"><td><b>Res</b></td><td><b>Team</b></td><td><b>Total</b></td>";
 
 # find each task details
-$alltasks = array();
-$taskinfo = array();
-$sorted = array();
+$alltasks = [];
+$taskinfo = [];
+$sorted = [];
 if ($tasTotal > 0)
 {
     $query = "select T.* from tblTask T where T.comPk=$comPk order by T.tasDate";
@@ -451,7 +451,7 @@ if ($embed == '')
 
     if ($comType == 'RACE')
     {
-        $scarr = array();
+        $scarr = [];
         $scarr[] = array("<b>Type</b> ", "<i>$comType ($comFormula)</i>");
         $scarr[] = array("<b>Scoring</b> ","<i>$overstr</i>");
         $scarr[] = array("<b>Min Dist</b>", "<i>$forMinDistance kms</i>");

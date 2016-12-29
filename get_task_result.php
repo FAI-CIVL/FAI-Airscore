@@ -72,7 +72,7 @@ $hdname =  "$comName - $tasName";
 
 $goalalt = 0;
 
-$tinfo = array();
+$tinfo = [];
 $tinfo["Task Type"] = $tasTaskType;
 $tsinfo["Class"] = $classfilter;
 $tsinfo["Date"] = $tasDate;
@@ -88,7 +88,7 @@ $tsinfo["LaunchQ"] = number_format($tasLaunchQuality,3);
 $tsinfo["Comment"] = $tasComment;
 
 # Pilot Info
-$pinfo = array();
+$pinfo = [];
 # total, launched, absent, goal, es?
 
 # Formula / Quality Info

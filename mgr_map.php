@@ -90,7 +90,7 @@ $result = mysql_query($sql,$link);
 
 $first = 0;
 $count = 0;
-$waylist = array();
+$waylist = [];
 while($row = mysql_fetch_array($result))
 {
     $clat = $row["${prefix}LatDecimal"];

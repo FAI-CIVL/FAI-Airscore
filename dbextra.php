@@ -27,7 +27,7 @@ function insertnullup($link,$table,$key,$clause,$map)
         $nrows = mysql_num_rows($result);
     }
 
-    $keystr = array();
+    $keystr = [];
     if ($nrows > 0)
     {
         $ref = mysql_fetch_array($result, MYSQL_ASSOC);
@@ -89,7 +89,7 @@ function insertup($link,$table,$key,$clause,$map)
         $nrows = mysql_num_rows($result);
     }
 
-    $keystr = array();
+    $keystr = [];
     if ($nrows > 0)
     {
         $ref = mysql_fetch_array($result, MYSQL_ASSOC);

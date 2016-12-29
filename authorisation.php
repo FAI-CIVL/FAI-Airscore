@@ -218,7 +218,7 @@ function waypoint_select($link,$tasPk,$name,$selected)
 {
     $query="select distinct RW.* from tblTask T, tblRegion R, tblRegionWaypoint RW where T.tasPk=$tasPk and RW.regPk=R.regPk and R.regPk=T.regPk order by RW.rwpName";
     $result = mysql_query($query) or die('Waypoint select failed: ' . mysql_error());
-    $waypoints = array();
+    $waypoints = [];
     while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {
         $rwpPk = $row['rwpPk'];

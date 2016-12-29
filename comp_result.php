@@ -4,7 +4,7 @@ function overall_handicap($comPk, $how, $param, $cls)
 {
     $sql = "select T.tasPk, max(TR.tarScore) as maxScore from tblTask T, tblTaskResult TR where T.tasPk=TR.tasPk and T.comPk=$comPk group by T.tasPk";
     $result = mysql_query($sql) or die('Handicap maxscore failed: ' . mysql_error());
-    $maxarr = array();
+    $maxarr = [];
     while ($row = mysql_fetch_array($result))
     {
         $maxarr[$row['tasPk']] = $row['maxScore'];
@@ -14,7 +14,7 @@ function overall_handicap($comPk, $how, $param, $cls)
     #$sql = "select TK.*,TR.*,P.* from tblTaskResult TR, tblTask TK, tblTrack T, tblPilot P, tblCompetition C where C.comPk=$comPk and TK.comPk=C.comPk and TK.tasPk=TR.tasPk and TR.traPk=T.traPk and T.traPk=TR.traPk and P.pilPk=T.pilPk $cls order by P.pilPk, TK.tasPk";
 
     $result = mysql_query($sql) or die('Task result query failed: ' . mysql_error());
-    $results = array();
+    $results = [];
     while ($row = mysql_fetch_array($result))
     {
         $tasPk = $row['tasPk'];
@@ -29,7 +29,7 @@ function overall_handicap($comPk, $how, $param, $cls)
     
         if (!$results[$pilPk])
         {
-            $results[$pilPk] = array();
+            $results[$pilPk] = [];
             $results[$pilPk]['name'] = $row['pilFirstName'] . ' ' . $row['pilLastName'];
         }
         //echo "pilPk=$pilPk tasname=$tasName, result=$score<br>\n";
@@ -56,7 +56,7 @@ function comp_result($comPk, $how, $param, $cls)
 {
     $sql = "select TK.*,TR.*,P.*,T.traGlider from tblTaskResult TR, tblTask TK, tblTrack T, tblPilot P, tblCompetition C where C.comPk=$comPk and TK.comPk=C.comPk and TK.tasPk=TR.tasPk and TR.traPk=T.traPk and T.traPk=TR.traPk and P.pilPk=T.pilPk $cls order by P.pilPk, TK.tasPk";
     $result = mysql_query($sql) or die('Task result query failed: ' . mysql_error());
-    $results = array();
+    $results = [];
     while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {
         $score = round($row['tarScore']);
@@ -71,7 +71,7 @@ function comp_result($comPk, $how, $param, $cls)
     
         if (!array_key_exists($pilPk,$results) || !$results[$pilPk])
         {
-            $results[$pilPk] = array();
+            $results[$pilPk] = [];
             $results[$pilPk]['name'] = $row['pilFirstName'] . ' ' . $row['pilLastName'];
             $results[$pilPk]['hgfa'] = $pilnum;
             $results[$pilPk]['civl'] = $civlnum;
@@ -102,7 +102,7 @@ function comp_result($comPk, $how, $param, $cls)
 function filter_results($comPk, $how, $param, $results)
 {
     // Do the scoring totals (FTV/X or Y tasks etc)
-    $sorted = array();
+    $sorted = [];
     foreach ($results as $pil => $arr)
     {
         krsort($arr, SORT_NUMERIC);
@@ -344,8 +344,8 @@ if (0 && $tdate == $comDateTo)
     }
 }
 
-$rtable = array();
-$rdec = array();
+$rtable = [];
+$rdec = [];
 
 if ($comClass == "HG")
 {
@@ -362,7 +362,7 @@ if ($class != '')
 {
     $cind = "&class=$class";
 }
-$copts = array();
+$copts = [];
 foreach ($classopts as $text => $url)
 {
     if ($text == 'teams' && $comTeamScoring == 'aggregate')
@@ -390,9 +390,9 @@ else
 }
 
 # find each task details
-$alltasks = array();
-$taskinfo = array();
-$sorted = array();
+$alltasks = [];
+$taskinfo = [];
+$sorted = [];
 if ($class == "8")
 {
     if ($comTeamScoring == 'handicap')
@@ -453,7 +453,7 @@ else if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'Route' ||
     $count = 1;
     foreach ($sorted as $pil => $arr)
     {
-        $nxt = array();
+        $nxt = [];
         if ($count % 2)
         {
             $rdec[] = 'class="d"';
@@ -590,7 +590,7 @@ if ($embed == '')
 
     if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'RACE-handicap')
     {
-        $scarr = array();
+        $scarr = [];
         $scarr[] = array("<b>Type</b> ", "<i>$comType ($comFormula)</i>");
         $scarr[] = array("<b>Scoring</b> ","<i>$overstr</i>");
         $scarr[] = array("<b>Min&nbsp;Dist</b>", "<i>$forMinDistance kms</i>");

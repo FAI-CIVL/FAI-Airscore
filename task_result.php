@@ -237,7 +237,7 @@ echo "<div id=\"content\">";
 echo "<div id=\"infobar\">";
 echo "<div id=\"colone\">";
 $goalalt = 0;
-$winfo = array();
+$winfo = [];
 $winfo[] = array(fb("#"), fb("ID"), fb("Type"), fb("Radius"), fb("Dist(k)"), fb("Description"));
 foreach ($waypoints as $row)
 {
@@ -265,7 +265,7 @@ if ($class != '')
 {
     $cind = "&class=$class";
 }
-$copts = array();
+$copts = [];
 foreach ($classopts as $text => $url)
 {
     $copts[$text] = "task_result.php?comPk=$comPk&tasPk=$tasPk$url";
@@ -274,7 +274,7 @@ foreach ($classopts as $text => $url)
 $classfilter = fselect('class', "task_result.php?comPk=$comPk&tasPk=$tasPk$cind", $copts, ' onchange="document.location.href=this.value"');
 
 echo "<div id=\"coltwo\">";
-$tinfo = array();
+$tinfo = [];
 $tinfo[] = array( fb("Task Type"), $tasTaskType, "", "", fb("Class"), $classfilter );
 if ($tasStoppedTime == "")
 {
@@ -297,15 +297,15 @@ if ($tasComment != '')
 }
 
 # Pilot Info
-$pinfo = array();
+$pinfo = [];
 # total, launched, absent, goal, es?
 
 # Formula / Quality Info
-$finfo = array();
+$finfo = [];
 # gap, min dist, nom dist, nom time, nom goal ?
 
 # quality, dist, time, launch, available dist, available time, available lead, arrival
-#$qinfo = array();
+#$qinfo = [];
 #$qinfo[] = array( fb("Quality"), fb("$tasQuality"));
 #$qinfo[] = array( fb("Dist"), $tasDistQuality, fb("Time"), $tasTimeQuality, fb("Launch"), $tasLaunchQuality );
 #echo ftable($qinfo, "border=\"2\" cellpadding=\"3\" cellspacing=\"0\" alternate-colours=\"yes\" valign=\"top\" align=\"right\"", array('class="d"', 'class="l"'), '');
@@ -319,7 +319,7 @@ if ($isadmin)
     echo "<form action=\"task_result.php?comPk=$comPk&tasPk=$tasPk\" name=\"resultupdate\" method=\"post\">"; 
 }
 // add in country from tblCompPilot if we have entries ...
-$trtab = array();
+$trtab = [];
 
 $header = array(fb("Place"), fb("Pilot"), fb("Nat"), fb("Glider"));
 if ($isadmin)
@@ -516,7 +516,7 @@ if ($isadmin)
 {
     // FIX: enable 'manual' pilot flight addition
     
-    $piladd = array();
+    $piladd = [];
     $piladd[] =  array(fb("FAI"), fin("fai",'',6), fb("Type"), fselect('resulttype', 'lo', array('abs', 'dnf', 'lo', 'goal' )),
         fb("Dist"), fin("flown",'',4), fb("Glider"), fin("glider",'',6), fb("Class"), fselect('dhv', 'competition', array('1', '1/2', '2', '2/3', 'competition')), fb("Penalty"),fin("penalty",'',4), fbut("submit","addflight", "$tarPk", "Manual Addition"));
     echo ftable($piladd, "border=\"0\" cellpadding=\"2\" cellspacing=\"0\" valign=\"bottom\" align=\"left\"", '', '');

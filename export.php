@@ -12,7 +12,7 @@ function insert_map($table,$map,$valmap)
     $sql = "insert into $table (";
 
     $count = 0;
-    $fieldarr = array();
+    $fieldarr = [];
     #print_r($valmap);
     foreach ($valmap as $key => $val)
     {
@@ -159,7 +159,7 @@ else
     $sql ="SELECT P.pilPk, P.pilHGFA, P.pilNationCode, P.pilFirstName as fname, P.pilLastName as lname, P.pilSex as sex,HP.pilPk as HpilPk,HP.pilLastName,HP.pilFirstName,HP.pilIDGlobal from tblTaskResult TR, tblTrack TL, tblTask T, tblPilot P left outer join hgfa_ladder.tblPilot HP on HP.pilIDGlobal=P.pilHGFA where TL.traPk=TR.traPk and P.pilPk=TL.pilPk and T.tasPk=TR.tasPk and T.comPk=$comPk group by P.pilPk";
 }
 $result = mysql_query($sql,$link) or die("Unable to find pilots: " . mysql_error() . "\n");
-$pilmap = array();
+$pilmap = [];
 while($row = mysql_fetch_array($result, MYSQL_ASSOC))
 {
     #echo "pilmap: " . $row['pilPk'] . " => " . $row['HpilPk'] . "<br>";
@@ -205,7 +205,7 @@ foreach ($pilmap as $pilPk => $row)
 }
 
 # insert new tasks / make tasPk map 
-$taskmap = array();
+$taskmap = [];
 $sql = "select comPk, tasPk, tasDate, tasName, tasResultsType, (tasDistance/1000) as tasDistance, tasSSDistance, tasSSOpen, tasSSClose, tasESClose, (tasTotalDistanceFlown/1000) as tasTotalDistanceFlown, tasQuality, tasPilotsLaunched, tasPilotsTotal, (tasMaxDistance/1000) as tasMaxDistance, tasFastestTime from xcdb.tblTask where comPk=$comPk";
 $result = mysql_query($sql,$link) or die("Unable to select tasks: " . mysql_error() . "\n");
 while($row = mysql_fetch_array($result, MYSQL_ASSOC))
@@ -321,7 +321,7 @@ else
     $sql = "select TL.pilPk,T.tasPk,T.tarResultType,T.tarTurnpoints,TIMESTAMPADD(SECOND,T.tarSS,TK.tasDate) as tarSS,TIMESTAMPADD(SECOND,T.tarES,TK.tasDate) as tarES,T.tarPenalty,T.tarComment,round(T.tarScore) as tarScore,T.tarPlace,T.tarSpeed,(T.tarDistance/1000) as tarDistance,T.tarArrival,T.tarDeparture,T.tarSpeedScore,T.tarDistanceScore,T.tarLeadingCoeff from xcdb.tblTaskResult T, xcdb.tblTrack TL, xcdb.tblTask TK where TL.traPk=T.traPk and TK.tasPk=T.tasPk and T.tasPk in (select tasPk from xcdb.tblComTaskTrack where comPk=$comPk)";
 }
 $result = mysql_query($sql,$link) or die("Unable query task results: " . mysql_error() . "\n");
-$taskresult = array();
+$taskresult = [];
 $count = 1;
 while($row = mysql_fetch_array($result, MYSQL_ASSOC))
 {

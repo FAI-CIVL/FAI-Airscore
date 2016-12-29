@@ -56,7 +56,7 @@ if (array_key_exists('add', $_REQUEST))
     // $query = "select traPk from tblComTaskTrack where comPk=$comPk and tasPk is null";
     $query = "select CTT.traPk from tblComTaskTrack CTT, tblTask T, tblTrack TR, tblCompetition C where CTT.comPk=$comPk and C.comPk=CTT.comPk and T.tasPk=$tasPk and CTT.traPk=TR.traPk and CTT.tasPk is null and TR.traStart > date_sub(T.tasStartTime, interval C.comTimeOffset+1 hour) and TR.traStart < date_sub(T.tasFinishTime, interval C.comTimeOffset hour)";
     $result = mysql_query($query,$link);
-    $tracks = array();
+    $tracks = [];
     while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {
         $tracks[] = $row['traPk'];
@@ -139,7 +139,7 @@ if (array_key_exists('update', $_REQUEST))
 // Add/update the formula
 if (array_key_exists('upformula', $_REQUEST))
 {
-    $regarr = array();
+    $regarr = [];
     $regarr['comPk'] = $comPk;
     $regarr['forClass'] = reqsval('formula');
     $regarr['forVersion'] = reqsval('version');
@@ -227,7 +227,7 @@ if ($row)
 // Administrators 
 $sql = "select U.*, A.* FROM tblCompAuth A, tblUser U where U.usePk=A.usePk and A.comPk=$comPk";
 $result = mysql_query($sql,$link);
-$admin = array();
+$admin = [];
 while ($row = mysql_fetch_array($result))
 {
     $admin[] = $row['useLogin'];
@@ -237,7 +237,7 @@ echo "<form action=\"competition.php?comPk=$comPk\" name=\"adminedit\" method=\"
 
 echo 'Add Administrator: ';
 $sql = "select U.usePk as user, U.*, A.* FROM tblUser U left outer join tblCompAuth A on A.usePk=U.usePk where A.comPk is null or A.comPk<>$comPk group by U.useLogin order by U.useLogin";
-$admin = array();
+$admin = [];
 $result = mysql_query($sql,$link);
 while ($row = mysql_fetch_array($result))
 {
@@ -335,7 +335,7 @@ echo "</ol>";
 
 $sql = "SELECT * FROM tblRegion R";
 $result = mysql_query($sql,$link);
-$regions = array();
+$regions = [];
 while ($row = mysql_fetch_array($result))
 {
     $regPk = $row['regPk'];

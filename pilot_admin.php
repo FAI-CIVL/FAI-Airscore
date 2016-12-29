@@ -33,7 +33,7 @@ if (reqexists('addcomp'))
     $xml = new SimpleXMLElement($xmltxt);
     foreach ($xml->pilot as $pilot)
     {
-        $pilarr = array();
+        $pilarr = [];
         $namarr = explode(" ", $pilot->name, 2);
         $pil['pilLastName'] = $namarr[1];
         $pil['pilFirstName'] = $namarr[0];
@@ -51,7 +51,7 @@ if (reqexists('addcomp'))
 
             if ($comPk > 0)
             {
-                $regarr = array();
+                $regarr = [];
                 $reg['pilPk'] = $pilPk;
                 $reg['comPk'] = $comPk;
                 $clause = "comPk=$comPk and pilPk=$pilPk";
@@ -69,7 +69,7 @@ if (reqexists('addcomp'))
 
             if ($comPk > 0)
             {
-                $regarr = array();
+                $regarr = [];
                 $reg['pilPk'] = $pilPk;
                 $reg['comPk'] = $comPk;
                 $clause = "comPk=$comPk and pilPk=$pilPk";
@@ -151,7 +151,7 @@ echo fis('bulkadd', 'Bulk Submit', 5);
 if ($ozimp)
 {
     echo "<p>";
-    $comparr = array();
+    $comparr = [];
     $xmltxt = file_get_contents("http://ozparaglidingcomps.com/compListXml.php");
     $xml = new SimpleXMLElement($xmltxt);
     foreach ($xml->comp as $comp)

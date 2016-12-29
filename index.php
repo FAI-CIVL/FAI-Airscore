@@ -8,7 +8,7 @@ require 'format.php';
         //<div id=\"comments\"><ol>";
 
         $count = $start+1;
-        $long = array();
+        $long = [];
         if ($pilot > 0)
         {
             $sql = "select T.*, P.*, CTT.*, L.* from tblTrack T, tblPilot P, tblComTaskTrack CTT, tblWaypoint W, tblLaunchSite L where W.wptPosition=0 and (abs(W.wptLatDecimal-L.lauLatDecimal)+abs(W.wptLongDecimal-L.lauLongDecimal)) < 1.0 and T.traPk=W.traPk and CTT.traPk=T.traPk and T.pilPk=P.pilPk $order";

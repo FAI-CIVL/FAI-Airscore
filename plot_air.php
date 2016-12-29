@@ -7,7 +7,7 @@ function get_airspace($trackid)
     $sql = "SELECT A.*, AW.* from tblAirspace A, tblAirspaceWaypoint AW where A.airPk=$trackid and AW.airPk=A.airPk order by AW.airOrder";
     
     $result = mysql_query($sql,$link);
-    $ret = array();
+    $ret = [];
     while($row = mysql_fetch_array($result))
     {
     

@@ -14,7 +14,7 @@ function team_gap_result($comPk, $how, $param)
 {
     $sql = "select TK.*,TR.*,P.* from tblTeamResult TR, tblTask TK, tblTeam P, tblCompetition C where C.comPk=$comPk and TR.tasPk=TK.tasPk and TK.comPk=C.comPk and P.teaPk=TR.teaPk order by P.teaPk, TK.tasPk";
     $result = mysql_query($sql) or die('Task result query failed: ' . mysql_error());
-    $results = array();
+    $results = [];
     while ($row = mysql_fetch_array($result))
     {
         $score = round($row['terScore']);
@@ -24,7 +24,7 @@ function team_gap_result($comPk, $how, $param)
     
         if (!$results[$pilPk])
         {
-            $results[$pilPk] = array();
+            $results[$pilPk] = [];
             $results[$pilPk]['name'] = $row['teaName'];
         }
         //echo "pilPk=$pilPk tasname=$tasName, result=$score<br>\n";
@@ -45,7 +45,7 @@ function team_gap_result($comPk, $how, $param)
     }
 
     // Do the scoring totals (FTV/X or Y tasks etc)
-    $sorted = array();
+    $sorted = [];
     foreach ($results as $pil => $arr)
     {
         krsort($arr, SORT_NUMERIC);
@@ -129,9 +129,9 @@ function team_agg_result($comPk, $teamsize)
     $query = "select TM.teaPk,TK.tasPk,TK.tasName,TM.teaName,P.pilLastName,P.pilFirstName,P.pilPk,TR.tarScore*TP.tepModifier as tepscore from tblTaskResult TR, tblTask TK, tblTrack K, tblPilot P, tblTeam TM, tblTeamPilot TP, tblCompetition C where TP.teaPk=TM.teaPk and P.pilPk=TP.pilPk and C.comPk=TK.comPk and K.traPk=TR.traPk and K.pilPk=P.pilPk and TR.tasPk=TK.tasPk and TM.comPk=C.comPk and C.comPk=$comPk order by TM.teaPk,TK.tasPk,TR.tarScore*TP.tepModifier desc";
     $result = mysql_query($query) or die('Team aggregate query failed: ' . mysql_error());
     $row = mysql_fetch_array($result);
-    $htable = array();
-    $hres = array();
-    $sorted = array();
+    $htable = [];
+    $hres = [];
+    $sorted = [];
     $teaPk = 0;
     $tasPk = 0;
     $tastot = 0;
@@ -150,7 +150,7 @@ function team_agg_result($comPk, $teamsize)
             $size = 0;
             $tastotal = 0;
             $tasPk = $row['tasPk'];
-            //$arr = array();
+            //$arr = [];
         }
         if ($teaPk != $row['teaPk'])
         {
@@ -158,7 +158,7 @@ function team_agg_result($comPk, $teamsize)
             {
                 $teaPk = $row['teaPk'];
                 $tasPk = $tow['tasPk'];
-                $arr = array();
+                $arr = [];
                 $arr['name'] = $row['teaName'];
             }
             else
@@ -169,7 +169,7 @@ function team_agg_result($comPk, $teamsize)
                 $tastotal = 0;
                 $total = 0;
                 $size = 0;
-                $arr = array();
+                $arr = [];
                 $arr['name'] = $row['teaName'];
                 $teaPk = $row['teaPk'];
             }
@@ -198,14 +198,14 @@ function team_handicap_result($comPk,$how,$param)
     $query = "select T.tasPk, T.tasName, max(TR.tarScore) as maxScore from tblTaskResult TR, tblTask T where T.tasPk=TR.tasPk and T.comPk=$comPk group by TR.tasPk";
     $result = mysql_query($query) or die('Team aggregate query failed: ' . mysql_error());
     $row = mysql_fetch_array($result);
-    $tinfo = array();
+    $tinfo = [];
     while ($row)
     {
         $tinfo[$row['tasPk']] = array( 'name' => "<a href=\"team_task_result.php?tasPk=" . $row['tasPk'] . "\">" . $row['tasName'] . "</a>", 'maxscore' => $row['maxScore']);
         $row = mysql_fetch_array($result);
     }
 
-    $hteams = array();
+    $hteams = [];
     $count = 0;
     foreach ($tinfo as $task => $tasinfo)
     {
@@ -229,9 +229,9 @@ function team_handicap_result($comPk,$how,$param)
             }
             else
             {
-                $htable = array();
+                $htable = [];
                 $htable['team'] = $row['teaName'];
-                $htable['scores'] = array();
+                $htable['scores'] = [];
                 for ($i = 0; $i < $count; $i++)
                 {
                     $htable['scores'][$i] = 0;
@@ -246,7 +246,7 @@ function team_handicap_result($comPk,$how,$param)
         $count++;
     
     }
-    $hres = array();
+    $hres = [];
     foreach ($hteams as $res)
     {
         $total = $res['total'];
@@ -255,9 +255,9 @@ function team_handicap_result($comPk,$how,$param)
     }
     krsort($hres, SORT_NUMERIC);
 
-    $sorted = array();
+    $sorted = [];
     $place = 1;
-    $htable = array();
+    $htable = [];
     $title = array( fb("Res"), fb("Team"), fb("Total"));
     foreach ($tinfo as $task => $tasinfo)
     {

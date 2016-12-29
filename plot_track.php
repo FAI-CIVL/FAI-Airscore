@@ -17,8 +17,8 @@ function get_track($trackid,$interval)
         $sql = "SELECT *, trlTime div $interval as bucTime FROM tblTrackLog where traPk=$trackid group by trlTime div $interval order by trlTime";
     }
     
-    $body = array();
-    $ret = array();
+    $body = [];
+    $ret = [];
     
     $result = mysql_query($sql,$link);
     while($row = mysql_fetch_array($result, MYSQL_ASSOC))
@@ -99,11 +99,11 @@ function get_task($tasPk, $trackid)
 {
     $link = db_connect();
 
-    $res = array();
+    $res = [];
 
     // task info ..
     $sql = "SELECT T.*,W.* FROM tblTaskWaypoint T, tblRegionWaypoint W where T.tasPk=$tasPk and W.rwpPk=T.rwpPk order by T.tawNumber";
-    $ret = array();
+    $ret = [];
     $result = mysql_query($sql,$link) or die('Task info query failed: ' . mysql_error());
     while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {
@@ -126,7 +126,7 @@ function get_task($tasPk, $trackid)
 //                left join tblRegionWaypoint W on T.rwpPk=W.rwpPk
 //                left outer join on tblTaskAward TA on TA.traPk=$trackid
 //                where T.tasPk=$tasPk and W.rwpPk=T.rwpPk order by T.tawNumber";
-//        $ret = array();
+//        $ret = [];
 //        $result = mysql_query($sql,$link) or die('Task info query failed: ' . mysql_error());
 //        while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
 //        {
@@ -186,7 +186,7 @@ function get_region($regPk, $trackid)
         $sql = "SELECT W.* FROM tblRegionWaypoint W where W.regPk=$regPk";
     }
     $result = mysql_query($sql,$link) or die('Region waypoint query failed: ' . mysql_error());
-    $ret = array();
+    $ret = [];
     while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {
     
@@ -196,7 +196,7 @@ function get_region($regPk, $trackid)
         $ret[] = array( $lasLat, $lasLon, $cname, $crad, '', 0 );
     }
 
-    $res = array();
+    $res = [];
     $res['region'] = $ret;
     $jret = json_encode($res);
     return $jret;
@@ -240,7 +240,7 @@ function get_track_wp($trackid)
     $link = db_connect();
 
     $sql = "SELECT * FROM tblWaypoint where traPk=$trackid order by wptTime";
-    $ret = array();
+    $ret = [];
     $result = mysql_query($sql,$link) or die('Task info query failed: ' . mysql_error());
     while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {

@@ -82,7 +82,7 @@ if (array_key_exists('uppilot', $_REQUEST))
     $query = "update tblPilot set pilHGFA='$fai' where pilPk=$id";
     $result = mysql_query($query) or die('Pilot ID update failed: ' . mysql_error());
 
-    $regarr = array();
+    $regarr = [];
     $regarr['pilPk'] = $id;
     $regarr['comPk'] = $comPk;
     $regarr['hanHandicap'] = $handi;
@@ -94,7 +94,7 @@ echo "<form action=\"registration.php?comPk=$comPk&cat=$cat$tsel\" name=\"regadm
 
 $query = "select P.*,H.hanHandicap from tblRegistration R left join tblPilot P on P.pilPk=R.pilPk left outer join tblHandicap H on H.pilPk=P.pilPk and H.comPk=$comPk where R.comPk=$comPk order by P.pilLastName";
 
-$regpilots = array();
+$regpilots = [];
 $result = mysql_query($query) or die('Team pilots query failed: ' . mysql_error());
 while ($row = mysql_fetch_array($result))
 {
@@ -103,7 +103,7 @@ while ($row = mysql_fetch_array($result))
 
 if (sizeof($regpilots) > 0)
 {
-    $outreg = array();
+    $outreg = [];
     foreach ($regpilots as $row)
     {
         $pilPk = intval($row['pilPk']);

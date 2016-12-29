@@ -64,7 +64,7 @@ if (array_key_exists('tasPk', $_REQUEST))
     $tasPk = intval($_REQUEST['tasPk']);
 }
 
-$tasks = array();
+$tasks = [];
 if ($tasPk == 0)
 {
 

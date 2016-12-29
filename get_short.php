@@ -13,8 +13,8 @@ $retarr = get_taskwaypoints($link,$tasPk);
 #$sql = "SELECT T.* FROM tblShortestRoute T where T.tasPk=$tasPk order by T.ssrNumber";
 #$result = mysql_query($sql,$link) or die('Query failed: ' . mysql_error());
 #
-#$retarr = array();
-#$srarr = array();
+#$retarr = [];
+#$srarr = [];
 #while($row = mysql_fetch_array($result))
 #{
 #    $srarr[] = $row;

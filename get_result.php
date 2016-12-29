@@ -29,7 +29,7 @@ function comp_result($comPk, $cls)
 
     $sql = "select TK.*,TR.*,P.*,T.traGlider from tblTaskResult TR, tblTask TK, tblTrack T, tblPilot P, tblCompetition C where C.comPk=$comPk and TK.comPk=C.comPk and TK.tasPk=TR.tasPk and TR.traPk=T.traPk and T.traPk=TR.traPk and P.pilPk=T.pilPk $cls order by P.pilPk, TK.tasPk";
     $result = mysql_query($sql) or die('Task result query failed: ' . mysql_error());
-    $results = array();
+    $results = [];
     while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {
         $score = round($row['tarScore']);
@@ -44,7 +44,7 @@ function comp_result($comPk, $cls)
     
         if (!array_key_exists($pilPk,$results) || !$results[$pilPk])
         {
-            $results[$pilPk] = array();
+            $results[$pilPk] = [];
             $results[$pilPk]['name'] = $row['pilFirstName'] . ' ' . $row['pilLastName'];
             $results[$pilPk]['hgfa'] = $pilnum;
             $results[$pilPk]['civl'] = $civlnum;
@@ -75,7 +75,7 @@ function comp_result($comPk, $cls)
 function filter_results($comPk, $how, $param, $results)
 {
     // Do the scoring totals (FTV/X or Y tasks etc)
-    $sorted = array();
+    $sorted = [];
     foreach ($results as $pil => $arr)
     {
         krsort($arr, SORT_NUMERIC);
@@ -162,10 +162,10 @@ function civl_result($sorted)
 {
     $count = 1;
     $lasttot = -1;
-    $rtable = array();
+    $rtable = [];
     foreach ($sorted as $pil => $arr)
     {
-        $nxt = array();
+        $nxt = [];
         $tot = 0 + $pil;
         if ($tot != $lasttot)
         {
@@ -196,7 +196,7 @@ function civl_result($sorted)
 $link = db_connect();
 $comPk = reqival('comPk');
 $class = reqival('class');
-$carr = array();
+$carr = [];
 
 $fdhv= '';
 if ($class > 0)

@@ -8,7 +8,7 @@
         //<div id=\"comments\"><ol>";
 
         $count = $start+1;
-        $long = array();
+        $long = [];
         $sql = "select T.*, P.*, CTT.* from tblTrack T, tblPilot P, tblComTaskTrack CTT, tblWaypoint W, (select traPk,min(wptTime) as minTime from tblWaypoint group by traPk) as MW where W.wptTime=MW.minTime and W.traPk=MW.traPk and T.traPk=W.traPk and CTT.traPk=T.traPk and T.pilPk=P.pilPk $order";
         $result = mysql_query($sql,$link) or die("Invalid track table " . mysql_error());
         $num = mysql_num_rows($result);

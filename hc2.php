@@ -126,7 +126,7 @@ function hcregion($link)
     echo "<h1><span>Tracks by Region</span></h1>\n";
     $sql = "select R.*, RW.* from tblRegion R, tblRegionWaypoint RW where R.regCentre=RW.rwpPk and R.regDescription not like '%test%'";
     $result = mysql_query($sql,$link);
-    $regions = array();
+    $regions = [];
     while($row = mysql_fetch_array($result))
     {
         $regPk=$row['regPk'];
@@ -140,7 +140,7 @@ function hcopencomps($link)
     echo "<h1><span>Open Competitions</span></h1>";
     $sql = "select * from tblCompetition where comName not like '%test%' and comDateTo > now() order by comDateTo";
     $result = mysql_query($sql,$link);
-    $comps = array();
+    $comps = [];
     while($row = mysql_fetch_array($result))
     {
         // FIX: if not finished & no tracks then submit_track page ..
@@ -155,7 +155,7 @@ function hcclosedcomps($link)
     echo "<h1><span>Closed Competitions</span></h1>";
     $sql = "select * from tblCompetition where comName not like '%test%' and comDateTo <= now() order by comDateTo desc";
     $result = mysql_query($sql,$link);
-    $comps = array();
+    $comps = [];
     while($row = mysql_fetch_array($result))
     {
         // FIX: if not finished & no tracks then submit_track page ..
