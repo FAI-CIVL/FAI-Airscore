@@ -15,7 +15,7 @@ if (mysql_num_rows($result) > 0)
 
 $altarr = [];
 
-$altarr[0] = array(
+$altarr[0] = [
 #    "alter table tblCompetition add column comEntryRestrict        enum ('open', 'registered') default 'open'",
 #    "alter table tblCompetition add column comLocked        integer default 0",
 #    "alter table tblFormula modify column     forClass         enum ('gap', 'ozgap', 'pwc', 'sahpa', 'nzl', 'ggap', 'nogap')",
@@ -32,32 +32,32 @@ $altarr[0] = array(
     "alter table tblAirspaceWaypoint add column      awpAngleEnd     float",
     "alter table tblAirspaceWaypoint add column      awpRadius       float",
     "alter table tblRegistration add column gliPk           integer",
-    );
+    ];
 
-$altarr[1] = array(
+$altarr[1] = [
     'alter table tblFormula add column forStoppedGlideBonus double default 0.0',
     'alter table tblFormula add column forHeightArrBonus double default 0.0',
     'alter table tblFormula add column forHeightArrLower integer default 200',
     'alter table tblFormula add column forHeightArrUpper integer default 3000',
     'alter table tblRegistration add column regHours integer default 200',
 
-);
+];
 
-$altarr[2] = array(
+$altarr[2] = [
     'create table tblAirspaceRegion ( argPk integer not null primary key auto_increment, argRegion varchar(32) not null, argLatDecimal   double not null, argLongDecimal  double not null, argSize integer not null)',
     'alter table tblAirspace modify column airClass enum ( "G", "C", "D", "E", "X", "R", "P", "Q", "W", "GP", "CTR" ) default "C"',
-);
+];
 
-$altarr[3] = array(
+$altarr[3] = [
     'alter table tblFormula add column forOLCPoints integer default 3',
     'alter table tblFormula add column forOLCBase double default 1.4'
-);
+];
 
-$altarr[4] = array(
+$altarr[4] = [
     'alter table tblTask add column tasComment text'
-);
+];
 
-$altarr[5] = array(
+$altarr[5] = [
     'alter table tblFormula add column forDistMeasure   enum ( "average", "median" ) default "average"',
     'alter table tblFormula add column forWeightStart   double default 0.125',
     'alter table tblFormula add column forWeightArrival double default 0.175',
@@ -67,7 +67,7 @@ $altarr[5] = array(
     "update tblFormula set forWeightStart=0 ,    forWeightArrival=.25,  forWeightSpeed=0.75 where forVersion='2005' and forClass='ozgap'",
     "update tblFormula set forWeightStart=.175 , forWeightArrival=.25,  forWeightSpeed=0.575 where forVersion not in ('2000','2005') and forClass='ozgap'",
     "update tblFormula set forWeightStart=0.0 ,  forWeightArrival=0.0,  forWeightSpeed=1.0 where forClass in ('nzl', 'jtgap', 'rtgap', 'nogap')"
-);
+];
 
 
 mysql_query('delete from schema_version');

@@ -35,14 +35,14 @@ if (!check_admin('admin',$usePk,$comPk))
     return 0;
 }
 
-if (array_key_exists('addpilot', $_REQUEST))
+if (reqexists('addpilot'))
 {
     $pilPk = intval($_REQUEST['addpilot']);
     $query = "insert into tblTeamPilot (teaPk, pilPk, tepModifier) value ($teaPk,$pilPk,1.0)";
     $result = mysql_query($query) or die('Pilot insert failed: ' . mysql_error());
 }
 
-if (array_key_exists('delpilot', $_REQUEST))
+if (reqexists('delpilot'))
 {
     $pilPk = intval($_REQUEST['pilPk']);
     $tepPk = intval($_REQUEST['tepPk']);
@@ -50,7 +50,7 @@ if (array_key_exists('delpilot', $_REQUEST))
     $result = mysql_query($query) or die('Pilot delete failed: ' . mysql_error());
 }
 
-if (array_key_exists('uppilot', $_REQUEST))
+if (reqexists('uppilot'))
 {
     $tepPk = intval($_REQUEST['uppilot']);
     $mod = floatval($_REQUEST["tepModifier$tepPk"]);
@@ -74,7 +74,7 @@ if (array_key_exists('uppilot', $_REQUEST))
     $result = mysql_query($query) or die('Pilot update failed: ' . mysql_error());
 }
 
-if (array_key_exists('addteam', $_REQUEST))
+if (reqexists('addteam'))
 {
     $pilPk = intval($_REQUEST['pilPk']);
     $tname = addslashes($_REQUEST['teamname']);
@@ -83,13 +83,13 @@ if (array_key_exists('addteam', $_REQUEST))
     $teaPk = mysql_insert_id();
 }
 
-if (array_key_exists('upteam', $_REQUEST))
+if (reqexists('upteam'))
 {
     // update team name
 }
 
 
-if (array_key_exists('delteam', $_REQUEST))
+if (reqexists('delteam'))
 {
     $query = "delete from tblTeam where teaPk=$teaPk";
     $result = mysql_query($query) or die('Delete team failed: ' . mysql_error());
