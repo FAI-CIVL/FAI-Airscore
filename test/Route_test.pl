@@ -81,10 +81,10 @@ for (my $i = 0; $i < scalar @$sr2; $i++)
 is($spt, 1, "start speed point");
 is($ept, 3, "end speed point");
 is($gpt, 4, "goal point");
-is(sprintf("%.1f", $ssdist), "117933.4", "speed section distance");
+is(sprintf("%.1f", $ssdist), "112947.8", "speed section distance");
 is($startssdist, 5000, "start speed distance");
-is(sprintf("%.1f", $endssdist), "122933.4", "end speed section distance");
-is(sprintf("%.1f", $totdist), "123927.2", "total distance");
+is(sprintf("%.1f", $endssdist), "117947.8", "end speed section distance");
+is(sprintf("%.1f", $totdist), "123930.3", "total distance");
 
 $task2->{'waypoints'}->[4]->{'shape'} = 'line';
 my $sr3 = find_shortest_route($task2);
@@ -99,10 +99,10 @@ for (my $i = 0; $i < scalar @$sr3; $i++)
 is($spt, 1, "start speed point");
 is($ept, 3, "end speed point");
 is($gpt, 4, "goal point");
-is(sprintf("%.1f", $ssdist), "117933.4", "speed section distance");
+is(sprintf("%.1f", $ssdist), "112947.8", "speed section distance");
 is($startssdist, 5000, "start speed distance");
-is(sprintf("%.1f", $endssdist), "122933.4", "end speed section distance");
-is(sprintf("%.1f", $totdist), "124927.2", "total distance");
+is(sprintf("%.1f", $endssdist), "117947.8", "end speed section distance");
+is(sprintf("%.1f", $totdist), "124930.3", "total distance");
 
 
 my $sr4 = find_shortest_route($task3);
@@ -117,10 +117,10 @@ for (my $i = 0; $i < scalar @$sr4; $i++)
 is($spt, 1, "start speed point");
 is($ept, 5, "end speed point");
 is($gpt, 5, "goal point");
-is(sprintf("%.1f", $ssdist), "60130.6", "speed section distance");
+is(sprintf("%.1f", $ssdist), "59179.6", "speed section distance");
 is($startssdist, 1000, "start speed distance");
-is(sprintf("%.1f", $endssdist), "61130.4", "end speed section distance");
-is(sprintf("%.1f", $totdist), "61130.4", "total distance");
+is(sprintf("%.1f", $endssdist), "60179.6", "end speed section distance");
+is(sprintf("%.1f", $totdist), "60179.6", "total distance");
 
 # add a test for in_semicircle
 

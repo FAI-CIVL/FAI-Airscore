@@ -75,8 +75,8 @@ my $dbh;
 my $sth;
 
 #
-# Line segment P1 to P3
-# P2 is centre of circle ..
+# Input: Line segment P1 -> P2 -> P3
+# Return: optimised P2 
 #
 sub find_closest
 {
@@ -135,30 +135,26 @@ sub find_closest
     {
         $O = vvminus($C1, $C2);
         $vl = vector_length($O);
-        if ($vl > 0)
+        if ($vl < 0.01)
         {
-            $O = cvmult($P2->{'radius'} / $vl, $O);
+            # They're all the same point .. not much we can do until next iteration
+            return $P2;
         }
+
+        $O = cvmult($P2->{'radius'} / $vl, $O);
         $CL = vvplus($O, $C2);
 
         my $result = cartesian2polar($CL);
+        # Keep radius for next iteration
         $result->{'radius'} = $P2->{'radius'};
         return $result;
     }
 
-    $u = (($C2->{'x'} - $C1->{'x'})*($C3->{'x'} - $C1->{'x'}) 
-            + ($C2->{'y'} - $C1->{'y'})*($C3->{'y'} - $C1->{'y'}) 
-            + ($C2->{'z'} - $C1->{'z'})*($C3->{'z'} - $C1->{'z'})) / 
-        (($C3->{'x'} - $C1->{'x'})*($C3->{'x'} - $C1->{'x'}) +
-            + ($C3->{'y'} - $C1->{'y'})*($C3->{'y'} - $C1->{'y'}) 
-            + ($C3->{'z'} - $C1->{'z'})*($C3->{'z'} - $C1->{'z'})); 
 
+    # What if the 1st and 2nd have the same centre?
     $T = vvminus($C1,$C2);
-    print "u=$u cart dist=", vector_length($T), " polar dist=", distance($P1, $P2), "\n";
-
     if (vector_length($T) < 0.01)
     {
-        print "vl < 0.01\n";
         $O = vvminus($C3, $C2);
         $vl = vector_length($O);
         if ($vl > 0)
@@ -168,9 +164,16 @@ sub find_closest
         $CL = vvplus($O, $C2);
 
         my $result = cartesian2polar($CL);
-        $result->{'radius'} = $P2->{'radius'};
         return $result;
     }
+
+    $u = (($C2->{'x'} - $C1->{'x'})*($C3->{'x'} - $C1->{'x'}) 
+            + ($C2->{'y'} - $C1->{'y'})*($C3->{'y'} - $C1->{'y'}) 
+            + ($C2->{'z'} - $C1->{'z'})*($C3->{'z'} - $C1->{'z'})) / 
+        (($C3->{'x'} - $C1->{'x'})*($C3->{'x'} - $C1->{'x'}) +
+            + ($C3->{'y'} - $C1->{'y'})*($C3->{'y'} - $C1->{'y'}) 
+            + ($C3->{'z'} - $C1->{'z'})*($C3->{'z'} - $C1->{'z'})); 
+    #print "u=$u cart dist=", vector_length($T), " polar dist=", distance($P1, $P2), "\n";
 
     $N = vvplus($C1, cvmult($u, vvminus($C3, $C1)));
     $CL = $N;
@@ -183,8 +186,9 @@ sub find_closest
         my $vn;
 
         # Ok - we have a 180deg? connect
-        print "180 deg connect: u=$u\n";
-
+        print "180 deg connect: u=$u radius=", $P2->{'radius'}, "\n";
+        return $P2;
+    
 #        if ($P2->{'how'} eq 'exit' && $u == 0)
 #        {
 #            $O = vvminus($C3, $C2);
@@ -227,27 +231,29 @@ sub find_closest
     }
     else
     {
-        # find the angle between in/out line
+        my $vla;
+        my $vlb;
 
+        # find the angle between in/out line
         $v = plane_normal($C1, $C2);
         $w = plane_normal($C3, $C2);
         $phi = acos(dot_product($v,$w));
         $phideg = $phi * 180 / $pi;
-        print "angle between in/out=$phideg\n";
+        #print "    angle between in/out=$phideg\n";
         
         # div angle / 2 add to one of them to create new
         # vector and scale to cylinder radius for new point 
         $a = vvminus($C1, $C2);
-        $vl = vector_length($a);
-        if ($vl > 0)
+        $vla = vector_length($a);
+        if ($vla > 0)
         {
-            $a = vcdiv($a, $vl);
+            $a = vcdiv($a, $vla);
         }
         $b = vvminus($C3, $C2);
-        $vl = vector_length($b);
-        if ($vl > 0)
+        $vlb = vector_length($b);
+        if ($vlb > 0)
         {
-            $b = vcdiv($b, $vl);
+            $b = vcdiv($b, $vlb);
         }
 
         $O = vvplus($a, $b);
@@ -255,12 +261,12 @@ sub find_closest
 
         if ($phideg < 180)
         {
-            print "p2->radius=", $P2->{'radius'}, "\n";
+            #print "    p2->radius=", $P2->{'radius'}, "\n";
             $O = cvmult($P2->{'radius'} / $vl, $O);
         }
         else
         {
-            print "-p2->radius=", $P2->{'radius'}, "\n";
+            #print "    -p2->radius=", $P2->{'radius'}, "\n";
             $O = cvmult(-$P2->{'radius'} / $vl, $O);
         }
 
@@ -270,7 +276,6 @@ sub find_closest
     #print "Centre=", Dumper($C2), "\n";
     #print "Closest=", Dumper($CL), "\n";
     my $result = cartesian2polar($CL);
-    $result->{'radius'} = $P2->{'radius'};
     return $result;
 }
 
@@ -296,7 +301,7 @@ sub find_shortest_route
 
     # Ok work out non-optimal distance for now
     print "task $tasPk with $num waypoints\n";
-    print Dumper($wpts);
+    #print Dumper($wpts);
 
     if ($num < 1)
     {
@@ -332,8 +337,7 @@ sub find_shortest_route
     #print "From it1: $i: ", $wpts->[$i]->{'name'}, "\n";
     $newcl = find_closest($newcl, $wpts->[$num-1], undef);
     push @it1, $newcl;
-
-    print "IT1=", Dumper(\@it1);
+    #print "IT1=", Dumper(\@it1);
 
     $num = scalar @it1;
     push @it2, $it1[0];
@@ -345,8 +349,7 @@ sub find_shortest_route
         push @it2, $newcl;
     }
     push @it2, $it1[$num-1];
-
-    print "IT2=", Dumper(\@it2);
+    #print "IT2=", Dumper(\@it2);
 
     $num = scalar @it2;
     push @closearr, $it2[0];
@@ -358,15 +361,15 @@ sub find_shortest_route
         push @closearr, $newcl;
     }
     push @closearr, $it2[$num-1];
+    #print "closearr=", Dumper(\@closearr);
 
-    print "closearr=", Dumper(\@closearr);
-
-    for (my $i = 0; $i < scalar @closearr-1; $i++)
-    {
-        my $dist = distance($wpts->[$i], $wpts->[$i+1]);
-        my $cdist = distance($closearr[$i], $closearr[$i+1]);
-        print "Dist wpt:$i to wpt:", $i+1, "=$dist srdist=$cdist\n";
-    }
+    #for (my $i = 0; $i < scalar @closearr-1; $i++)
+    #{
+    #    my $dist = distance($wpts->[$i], $wpts->[$i+1]);
+    #    my $cdist = distance($closearr[$i], $closearr[$i+1]);
+    #    my $radius = 0 + $closearr[$i]->{'radius'};
+    #    print "Dist wpt:$i ($radius) to wpt:", $i+1, "=$dist srdist=$cdist\n";
+    #}
 
     return \@closearr;
 }
@@ -380,6 +383,7 @@ sub store_short_route
     my $num = scalar @$closearr;
     my $i = 0;
     my $dist;
+    my $cdist;
 
     # Clean up
     $dbh->do("delete from tblShortestRoute where tasPk=$tasPk");
@@ -388,12 +392,11 @@ sub store_short_route
     for ($i = 0; $i < $num-1; $i++)
     {
         $dist = distance($wpts->[$i], $wpts->[$i+1]);
-        print "Dist wpt:$i to wpt:", $i+1, "=$dist\n";
-        $dist = distance($closearr->[$i], $closearr->[$i+1]);
-        print "Dist cls:$i to cls:", $i+1, "=$dist\n";
+        $cdist = distance($closearr->[$i], $closearr->[$i+1]);
+        print "Dist wpt:$i to wpt:", $i+1, " dist=$dist short_dist=$cdist\n";
         $sth = $dbh->do("insert into tblShortestRoute (tasPk,tawPk,ssrLatDecimal,ssrLongDecimal,ssrCumulativeDist,ssrNumber) values (?,?,?,?,?,?)",
             undef,$tasPk,$wpts->[$i]->{'key'}, $closearr->[$i]->{'dlat'}, $closearr->[$i]->{'dlong'}, $totdist,  $wpts->[$i]->{'number'});
-        $totdist = $totdist + $dist;
+        $totdist = $totdist + $cdist;
     }
 
     $sth = $dbh->do("insert into tblShortestRoute (tasPk,tawPk,ssrLatDecimal,ssrLongDecimal,ssrCumulativeDist,ssrNumber) values (?,?,?,?,?,?)",
