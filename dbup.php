@@ -13,7 +13,7 @@ if (mysql_num_rows($result) > 0)
     $key = mysql_result($result,0);
 }
 
-$altarr = array();
+$altarr = [];
 
 $altarr[0] = array(
 #    "alter table tblCompetition add column comEntryRestrict        enum ('open', 'registered') default 'open'",

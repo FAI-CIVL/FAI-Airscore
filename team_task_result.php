@@ -18,8 +18,8 @@ function  handicap_result($tasPk)
     $query = "select TM.teaPk,TM.teaName,P.pilLastName,P.pilFirstName,P.pilPk,TR.tarScore-H.hanHandicap*$maxscore as handiscore from tblTaskResult TR, tblTask TK, tblTrack K, tblPilot P, tblTeam TM, tblTeamPilot TP, tblHandicap H, tblCompetition C where TP.teaPk=TM.teaPk and P.pilPk=TP.pilPk and H.comPk=C.comPk and C.comPk=TK.comPk and K.traPk=TR.traPk and K.pilPk=P.pilPk and H.pilPk=P.pilPk and TK.tasPk=$tasPk and TR.tasPk=TK.tasPk and TM.comPk=C.comPk order by TM.teaPk";
     $result = mysql_query($query) or die('Team handicap query failed: ' . mysql_error());
     $row = mysql_fetch_array($result);
-    $htable = array();
-    $hres = array();
+    $htable = [];
+    $hres = [];
     $teaPk = 0;
     $total = 0;
     // FIX: sort team results ..
@@ -40,7 +40,7 @@ function  handicap_result($tasPk)
                 $team = $row['teaName'];
                 $hres["${total}${team}"] = $htable;
                 $total = 0;
-                $htable = array();
+                $htable = [];
                 $teaPk = $row['teaPk'];
             }
         }
@@ -63,7 +63,7 @@ function  handicap_result($tasPk)
     $hres["${total}${team}"] = $htable;
     krsort($hres, SORT_NUMERIC);
 
-    $htable = array();
+    $htable = [];
     foreach ($hres as $res => $pils)
     {
         foreach ($pils as $row)
@@ -80,8 +80,8 @@ function aggregate_result($tasPk,$teamsize)
     $query = "select TM.teaPk,TM.teaName,P.pilLastName,P.pilFirstName,P.pilPk,TR.tarScore*TP.tepModifier as tepscore from tblTaskResult TR, tblTask TK, tblTrack K, tblPilot P, tblTeam TM, tblTeamPilot TP, tblCompetition C where TP.teaPk=TM.teaPk and P.pilPk=TP.pilPk and C.comPk=TK.comPk and K.traPk=TR.traPk and K.pilPk=P.pilPk and TK.tasPk=$tasPk and TR.tasPk=TK.tasPk and TM.comPk=C.comPk order by TM.teaPk,TR.tarScore*TP.tepModifier desc";
     $result = mysql_query($query) or die('Team aggregate query failed: ' . mysql_error());
     $row = mysql_fetch_array($result);
-    $htable = array();
-    $hres = array();
+    $htable = [];
+    $hres = [];
     $teaPk = 0;
     $total = 0;
     $size = 0;
@@ -102,7 +102,7 @@ function aggregate_result($tasPk,$teamsize)
                 $hres["${total}${team}"] = $htable;
                 $total = 0;
                 $size = 0;
-                $htable = array();
+                $htable = [];
                 $teaPk = $row['teaPk'];
             }
         }
@@ -129,7 +129,7 @@ function aggregate_result($tasPk,$teamsize)
     $hres["${total}${team}"] = $htable;
     krsort($hres, SORT_NUMERIC);
 
-    $htable = array();
+    $htable = [];
     foreach ($hres as $res => $pils)
     {
         foreach ($pils as $row)
@@ -252,7 +252,7 @@ else
 hcheader($hdname,2, "<b>Teams</b> - $tasDate");
 echo "<div id=\"content\">";
 
-$tinfo = array();
+$tinfo = [];
 $tinfo[] = array( fb("Date"), $tasDate, fb("Start"), "$tasStartTime UTC", fb("End"), "$tasFinishTime UTC" );
 $tinfo[] = array( fb("Type"), $tasTaskType,fb("WP Dist"), "$tasDistance km", fb("Short Dist"), "$tasShortest km" );
 $tinfo[] = array( fb("Quality Dist"), $tasDistQuality, fb("Time"), $tasTimeQuality, fb("Launch"), $tasLaunchQuality );
@@ -277,7 +277,7 @@ if ($isadmin)
     echo "<form action=\"team_task_result.php?comPk=$comPk&tasPk=$tasPk\" name=\"resultupdate\" method=\"post\">"; 
 }
 
-$htable = array();
+$htable = [];
 $htable[] = array( fb("Team"), fb("Pilot"), fb("Time"), fb("Dist"), fb("Total") );
 $count = 1;
 

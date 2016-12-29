@@ -26,7 +26,7 @@ else
     $sql = "SELECT *, trlTime div $interval as bucTime FROM tblTrackLog where traPk=$trackid group by trlTime div $interval order by trlTime";
 }
 
-$ret = array();
+$ret = [];
 
 $result = mysql_query($sql,$link);
 while ($row = mysql_fetch_array($result, MYSQL_ASSOC))

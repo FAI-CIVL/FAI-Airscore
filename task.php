@@ -74,7 +74,7 @@ function update_tracks($link,$tasPk)
     // Now check for pre-submitted tracks ..
     $query = "select traPk from tblComTaskTrack where tasPk=$tasPk";
     $result = mysql_query($query,$link);
-    $tracks = array();
+    $tracks = [];
     while($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {
         $tracks[] = $row['traPk'];
@@ -332,7 +332,7 @@ if (reqexists('add'))
 
     $result = mysql_query($query) or die('Add Task waypoint failed: ' . mysql_error());
     // update tasDistance ...
-    $old = array();
+    $old = [];
     update_task($link, $tasPk, $old);
 }
 
@@ -392,7 +392,7 @@ echo "<p><table>";
 echo "<tr><td>Name:</td><td><input type=\"text\" name=\"taskname\" value=\"$tasName\" size=9></td>";
 echo "<td>Date:</td><td><input type=\"text\" name=\"date\" value=\"$tasDate\" size=10></td></tr>";
 echo "<tr><td>Region:</td><td>";
-$regarr = array();
+$regarr = [];
 $sql = "SELECT * FROM tblRegion R";
 $result = mysql_query($sql,$link);
 while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
@@ -475,7 +475,7 @@ waypoint($link,$tasPk,'','','','waypoint','entry','circle','400');
 
 if ($count == 1)
 {
-    $copyarr = array();
+    $copyarr = [];
     // Copy from previous tasks same comp, others on same day ..
     $sql = "select C.comName, T.* from tblCompetition C, tblTask T where C.comPk=T.comPk and (T.comPk=$comPk or T.tasDate='$tasDate') and T.tasPk <> $tasPk"; 
     $result = mysql_query($sql,$link) or die('Task Copy Selection failed: ' . mysql_error());
@@ -503,7 +503,7 @@ echo "</form>";
 echo "<hr>";
 echo "<form action=\"task.php?tasPk=$tasPk\" name=\"taskadmin\" method=\"post\">";
 // List all associated airspace
-$airarr = array();
+$airarr = [];
 $query = "select TA.*, A.* from tblTaskAirspace TA, tblAirspace A where TA.tasPk=$tasPk and A.airPk=TA.airPk";
 $result = mysql_query($query) or die('TaskAirspace select failed: ' . mysql_error());
 while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
@@ -514,7 +514,7 @@ while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
 }
 
 // in future limit to "nearby" airspace ..
-$airarr = array();
+$airarr = [];
 $query = "select regCentre from tblRegion where regPk=$regPk";
 $result = mysql_query($query) or die('Region centre select failed: ' . mysql_error());
 if (mysql_num_rows($result) > 0)
@@ -547,7 +547,7 @@ echo fis('airspace', 'Airspace Check', '');
 
 //if ($comEntryRestrict == 'registered')
 {
-    $tasarr = array();
+    $tasarr = [];
     #$sql = "select C.comName, T.* from tblTask T, tblCompetition C where T.tasPk<>$tasPk and T.tasDate='$tasDate' and T.regPk=$regPk and C.comPk=T.comPk";
     $sql = "select C.comName, T.* from tblTask T, tblCompetition C where T.tasPk<>$tasPk and T.tasDate='$tasDate' and C.comPk=T.comPk";
     $result = mysql_query($sql) or die('Task copy select failed: ' . mysql_error());

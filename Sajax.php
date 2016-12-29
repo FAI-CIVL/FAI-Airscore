@@ -7,7 +7,7 @@ if (!isset($SAJAX_INCLUDED)) {
 	 */ 
 	$GLOBALS['sajax_version'] = '0.12';	
 	$GLOBALS['sajax_debug_mode'] = 0;
-	$GLOBALS['sajax_export_list'] = array();
+	$GLOBALS['sajax_export_list'] = [];
 	$GLOBALS['sajax_request_type'] = 'GET';
 	$GLOBALS['sajax_remote_uri'] = '';
 	$GLOBALS['sajax_failure_redirect'] = '';
@@ -102,14 +102,14 @@ if (!isset($SAJAX_INCLUDED)) {
 			if (! empty($_GET["rsargs"])) 
 				$args = $_GET["rsargs"];
 			else
-				$args = array();
+				$args = [];
 		}
 		else {
 			$func_name = $_POST["rs"];
 			if (! empty($_POST["rsargs"])) 
 				$args = $_POST["rsargs"];
 			else
-				$args = array();
+				$args = [];
 		}
 		
 		if (! in_array($func_name, $sajax_export_list))

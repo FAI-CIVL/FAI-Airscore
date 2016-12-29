@@ -8,7 +8,7 @@ function hcincludedcomps($link,$ladPk)
     echo "<h1><span>Included Competitions</span></h1>";
     $sql = "select C.* from tblLadderComp LC, tblCompetition C where LC.comPk=C.comPk and ladPk=$ladPk order by comDateTo";
     $result = mysql_query($sql,$link);
-    $comps = array();
+    $comps = [];
     while($row = mysql_fetch_array($result))
     {
         // FIX: if not finished & no tracks then submit_track page ..
@@ -41,7 +41,7 @@ function add_result(&$results, $row, $topnat, $how)
 
     if (!array_key_exists($pilPk,$results) || !$results[$pilPk])
     {
-        $results[$pilPk] = array();
+        $results[$pilPk] = [];
         $results[$pilPk]['name'] = $row['pilFirstName'] . ' ' . $row['pilLastName'];
         $results[$pilPk]['hgfa'] = $row['pilHGFA'];
         //$results[$pilPk]['civl'] = $civlnum;
@@ -77,7 +77,7 @@ function ladder_result($ladPk, $ladder, $restrict)
     $nat = $ladder['ladNationCode'];
     $ladParam = $ladder['ladParam'];
 
-    $topnat = array();
+    $topnat = [];
     $sql = "select T.tasPk, max(T.tarScore) as topNat 
             from tblTaskResult T, tblTrack TL, tblPilot P
             where T.traPk=TL.traPk and TL.pilPk=P.pilPk and P.pilNationCode='$nat'
@@ -110,7 +110,7 @@ WHERE LC.ladPk=$ladPk and TK.tasDate > '$start' and TK.tasDate < '$end'
     order by TP.pilPk, C.comPk, (TR.tarScore * LC.lcValue * TK.tasQuality) desc";
 
     $result = mysql_query($sql) or die('Ladder query failed: ' . mysql_error());
-    $results = array();
+    $results = [];
     while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {
         add_result($results, $row, $topnat[$row['tasPk']], $how);
@@ -158,7 +158,7 @@ WHERE TK.comDateTo > '$start' and TK.comDateTo < '$end'
 function filter_results($ladPk, $how, $param, $extpar, $results)
 {
     // Do the scoring totals (FTV/X or Y tasks etc)
-    $sorted = array();
+    $sorted = [];
     foreach ($results as $pil => $arr)
     {
         krsort($arr, SORT_NUMERIC);
@@ -334,8 +334,8 @@ echo "<div id=\"text\" style=\"overflow: auto;\">";
 $today = getdate();
 $tdate = sprintf("%04d-%02d-%02d", $today['year'], $today['mon'], $today['mday']);
 
-$rtable = array();
-$rdec = array();
+$rtable = [];
+$rdec = [];
 
 //if ($comClass == "HG")
 //{
@@ -352,7 +352,7 @@ if ($class != '')
 {
     $cind = "&class=$class";
 }
-$copts = array();
+$copts = [];
 foreach ($classopts as $text => $url)
 {
     $copts[$text] = "ladder.php?ladPk=$ladPk$url";
@@ -364,9 +364,9 @@ $hdr = array( fb('Res'),  fselect('class', "ladder.php?ladPk=$ladPk$cind", $copt
 $hdr2 = array( '', '', '', '' );
 
 # find each task details
-$alltasks = array();
-$taskinfo = array();
-$sorted = array();
+$alltasks = [];
+$taskinfo = [];
+$sorted = [];
 
 $sorted = ladder_result($ladPk, $ladder, $fdhv);
 $subtask = '';
@@ -378,7 +378,7 @@ $lasttot = 0;
 $count = 1;
 foreach ($sorted as $pil => $arr)
 {
-    $nxt = array();
+    $nxt = [];
     if ($count % 2)
     {
         $rdec[] = 'class="d"';

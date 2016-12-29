@@ -102,7 +102,7 @@ function rjson_pack($data)
 {
     // encoded, i, j, k, v, current, last, len, schema, schemaKeys, schemaIndex;
     $maxSchemaIndex = 0;
-    $schemas = array();
+    $schemas = [];
 
     $encode = function($value) use(&$schemas, &$maxSchemaIndex, &$encode)
     {
@@ -117,10 +117,10 @@ function rjson_pack($data)
             $len = sizeof($value);
             if ($len == 0) 
             {
-                return array();
+                return [];
             }
     
-            $encoded = array();
+            $encoded = [];
             if (is_numeric($value[0])) 
             {
                 $encoded[] = 0;  // 0 is schema index for Array
@@ -150,7 +150,7 @@ function rjson_pack($data)
         {
             if (sizeof($value) == 0) 
             {
-                return array();
+                return [];
             }
     
             $schemaKeys = array_keys($value); //getKeys(value).sort();
@@ -170,7 +170,7 @@ function rjson_pack($data)
             {    
                 // new schema
                 $schemas[$schema] = ++$maxSchemaIndex;
-                $encoded = array();
+                $encoded = [];
                 foreach ($schemaKeys as $k) 
                 {
                     $encoded[$k] = $encode($value[$k]);
@@ -196,7 +196,7 @@ function rjson_unpack($data)
 {
 
     $maxSchemaIndex = 0;
-    $schemas = array();
+    $schemas = [];
 
     $decode = function($value) use(&$schemas, &$maxSchemaIndex, &$decode)
     {
@@ -211,12 +211,12 @@ function rjson_unpack($data)
             $len = sizeof($value);
             if ($len == 0) 
             {
-                $decoded = array();
+                $decoded = [];
             } 
             else if ($value[0] === 0 || !is_numeric($value[0]))
             {
                 // decode array of something
-                $decoded = array(); 
+                $decoded = []; 
                 for ($i = ($value[0] === 0 ? 1 : 0); $i < $len; $i++) 
                 {
                     $v = $value[$i];
@@ -240,10 +240,10 @@ function rjson_unpack($data)
                 $total = (sizeof($value) - 1) / $schemaLen;
                 if ($total > 1) 
                 {
-                    $decoded = array(); // array of objects with same schema
+                    $decoded = []; // array of objects with same schema
                     for ($i = 0; $i < $total; $i++) 
                     {
-                        $obj = array();
+                        $obj = [];
                         foreach ($schemaKeys as $k)
                         {
                             $obj[$k] = $decode($value[$i * $schemaLen + $j]);
@@ -253,7 +253,7 @@ function rjson_unpack($data)
                 } 
                 else 
                 {
-                    $decoded = array();
+                    $decoded = [];
                     foreach ($schemaKeys as $k)
                     {
                         $decoded[$k] = $decode($value[$j]);
@@ -268,10 +268,10 @@ function rjson_unpack($data)
             $schemaKeys = array_keys($value);
             if (sizeof($schemaKeys) == 0) 
             {
-                return array();
+                return [];
             }
             $schemas[++$maxSchemaIndex] = $schemaKeys;
-            $decoded = array();
+            $decoded = [];
             foreach ($schemaKeys as $k)
             {
                 $decoded[$k] = $decode($value[$k]);

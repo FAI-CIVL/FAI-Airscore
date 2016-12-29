@@ -2,8 +2,8 @@
 function olc_sort($result,$top)
 {
     $lastpil = 0;
-    $topscores = array();
-    $toptasks = array();
+    $topscores = [];
+    $toptasks = [];
 
     // fetch the rows from the db
     while ($row = mysql_fetch_array($result,MYSQL_ASSOC))
@@ -12,7 +12,7 @@ function olc_sort($result,$top)
         $pilPk = $row['pilPk'];
         if (!array_key_exists($pilPk, $toptasks))
         {
-            $toptasks[$pilPk] = array();
+            $toptasks[$pilPk] = [];
         }
         array_push($toptasks[$pilPk], $row);
     }
@@ -68,13 +68,13 @@ function olc_handicap_result($link,$top,$restrict)
 }
 function display_olc_result($comPk, $rtable, $sorted, $top, $count)
 {
-    $rdec = array();
+    $rdec = [];
     $rdec[] = 'class="h"';
     $rdec[] = 'class="h"';
 
     foreach ($sorted as $total => $row)
     {
-        $nxt = array();
+        $nxt = [];
         if ($count % 2)
         {
             $rdec[] = 'class="d"';

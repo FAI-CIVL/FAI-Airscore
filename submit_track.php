@@ -215,11 +215,12 @@ echo '
 <input type="hidden" name="MAX_FILE_SIZE" value="1000000000">
 ';
 
-$igcarr = array();
+$igcarr = [];
 if ($offerall)
 {
-    $comps = array();
-    $query = "select * from tblCompetition where curdate() < date_add(comDateTo, interval 3 day) and comName not like '%test%'";
+    $comps = [];
+    $comps['-- select an option --'] = '';
+    $query = "select * from tblCompetition where curdate() < date_add(comDateTo, interval 3 day) and comName not like '%test%' order by comName";
     $result = mysql_query($query) or die('Query failed: ' . mysql_error());
     while($row = mysql_fetch_array($result))
     {
@@ -228,7 +229,7 @@ if ($offerall)
         $comps[$comName] = $compid;
     }
 
-    $igcarr[] = array('Competition', fselect('comid', $comPk, $comps));
+    $igcarr[] = ['Competition', fselect('comid', $comPk, $comps)];
 }
 else
 {
@@ -239,7 +240,7 @@ if ($comType == 'Route')
 {
     $query = "select * from tblTask where comPk=$comPk";
     $result = mysql_query($query) or die('Route query failed: ' . mysql_error());
-    $routes = array();
+    $routes = [];
     while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {
         $routes[$row['tasName']] = $row['tasPk'];

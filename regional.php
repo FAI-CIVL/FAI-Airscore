@@ -9,7 +9,7 @@
         //<div id=\"comments\"><ol>";
 
         $count = $start+1;
-        $long = array();
+        $long = [];
         $sql = "select T.*, P.*, CTT.* from tblTrack T, tblPilot P, tblComTaskTrack CTT, tblWaypoint W where W.wptPosition=0 and (abs(W.wptLatDecimal-$lat)+abs(W.wptLongDecimal-$lon)) < 1.0 and T.traPk=W.traPk and CTT.traPk=T.traPk and T.pilPk=P.pilPk $order";
         $result = mysql_query($sql,$link) or die("Invalid track table " . mysql_error());
         $num = mysql_num_rows($result);

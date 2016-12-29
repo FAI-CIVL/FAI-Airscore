@@ -1,7 +1,7 @@
 <?php
 function fselect($name,$selected,$options,$extra='')
 {
-    $resarr = array();
+    $resarr = [];
     $resarr[] = "<select name=\"$name\" id=\"$name\"$extra>";
     foreach ($options as $key => $value)
     {
@@ -25,7 +25,7 @@ function fwaypoint($link,$tasPk,$name,$selected)
 {
     $query="select distinct RW.* from tblTask T, tblRegion R, tblRegionWaypoint RW where T.tasPk=$tasPk and RW.regPk=R.regPk and R.regPk=T.regPk order by RW.rwpName";
     $result = mysql_query($query) or die('Waypoint select failed: ' . mysql_error());
-    $waypoints = array();
+    $waypoints = [];
     while($row = mysql_fetch_array($result))
     {
         $rwpPk = $row['rwpPk'];
@@ -63,7 +63,7 @@ function frow($cellarr, $cdec)
 }
 function ftable($rowarr, $tdec, $rdec, $cdec)
 {
-    $allrows = array();
+    $allrows = [];
     foreach ($rowarr as $row)
     {
         $allrows[] = frow($row, $cdec);
@@ -74,7 +74,7 @@ function ftable($rowarr, $tdec, $rdec, $cdec)
         $count = 0;
         if (is_array($rdec))
         {
-            $resrows = array();
+            $resrows = [];
             foreach ($allrows as $row)
             {
                 $rsel = $rdec[$count];

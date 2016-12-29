@@ -124,7 +124,7 @@ function parse_waypoints($filen, $regPk, $link)
     //{
     //}
 
-    $param = array();
+    $param = [];
     for ($i = 0; $i < count($lines); $i++)
     {
         $fields = explode(" ", $lines[$i]);

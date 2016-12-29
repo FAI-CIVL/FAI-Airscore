@@ -9,7 +9,7 @@ require 'rjson.php';
 
 function get_airspace($airPk)
 {
-    $ret = array();
+    $ret = [];
     $link = db_connect();
 
     $sql = "SELECT A.*, AW.* from tblAirspace A, tblAirspaceWaypoint AW where A.airPk=$airPk and AW.airPk=A.airPk order by AW.airOrder";

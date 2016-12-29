@@ -78,7 +78,7 @@ else
 
 echo "var polyline = new GPolyline(["; 
 $count = 0;
-$wayptarr = array();
+$wayptarr = [];
 while($row = mysql_fetch_array($result))
 {
     if ($first)

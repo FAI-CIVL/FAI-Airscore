@@ -112,7 +112,7 @@ if (reqexists('download'))
 function display_airspace_region($link, $argPk)
 {
     $count = 1;
-    $airtab = array();
+    $airtab = [];
     $airtab[] =  array(fb('Id'), fb('Name'), fb('Class'), fb('Shape'), fb('Base(m)'), fb('Top(m)'), '');
 
     if ($argPk == -1)
@@ -157,7 +157,7 @@ function display_airspace_region($link, $argPk)
 function display_regions($link)
 {
     $count = 1;
-    $airtab = array();
+    $airtab = [];
     $airtab[] =  array(fb('Id'), fb('Region Name'), fb('Latitude'), fb('Longitude'), fb('Size'));
     $sql = "SELECT * from tblAirspaceRegion R order by R.argRegion";
     $result = mysql_query($sql,$link);

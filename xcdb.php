@@ -12,7 +12,7 @@ function get_taskwaypoints($link,$tasPk)
     $sql = "SELECT T.*,SR.*,W.* FROM tblTaskWaypoint T, tblShortestRoute SR, tblRegionWaypoint W where T.tasPk=$tasPk and SR.tawPk=T.tawPk and W.rwpPk=T.rwpPk order by T.tawNumber";
     $result = mysql_query($sql,$link) or die('get_task failed: ' . mysql_error());
 
-    $ret = array();
+    $ret = [];
     while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {
         $ret[] = $row;

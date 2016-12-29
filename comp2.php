@@ -45,7 +45,7 @@ if (array_key_exists('add', $_REQUEST))
     // Now check for pre-submitted tracks ..
     $query = "select traPk from tblComTaskTrack where comPk=$comPk and tasPk is null";
     $result = mysql_query($query,$link);
-    $tracks = array();
+    $tracks = [];
     while($row = mysql_fetch_array($result))
     {
         $tracks[] = $row['traPk'];
@@ -249,7 +249,7 @@ echo "</ol>";
 
 $sql = "SELECT * FROM tblRegion R";
 $result = mysql_query($sql,$link);
-$regions = array();
+$regions = [];
 while ($row = mysql_fetch_array($result))
 {
     $regPk = $row['regPk'];

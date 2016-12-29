@@ -11,8 +11,8 @@ require 'authorisation.php';
 function generate_ladder($top,$restrict,$link)
 {
     $lastpil = 0;
-    $toptasks = array();
-    $topscores = array();
+    $toptasks = [];
+    $topscores = [];
 
     $sql = "SELECT P.*, T.traPk, T.traScore FROM tblTrack T, tblPilot P, tblComTaskTrack CTT where CTT.traPk=T.traPk and T.pilPk=P.pilPk and T.traScore is not null $restrict order by P.pilPk, T.traScore desc";
     $result = mysql_query($sql,$link) or die('Top score: ' . mysql_error());
@@ -24,7 +24,7 @@ function generate_ladder($top,$restrict,$link)
         $pilPk = $row['pilPk'];
         if (!$toptasks[$pilPk])
         {
-            $toptasks[$pilPk] = array();
+            $toptasks[$pilPk] = [];
         }
         array_push($toptasks[$pilPk], $row);
     }
