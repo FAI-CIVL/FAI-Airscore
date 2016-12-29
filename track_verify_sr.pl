@@ -228,9 +228,7 @@ sub distance_flown
         }
     }
 
-    $nwdist = compute_waypoint_dist($waypoints, $wmade);
-
-    if ($exitflag && $nwdist == 0)
+    if ($exitflag) # && $nwdist == 0)
     {
         # Same centre .. is this correct?
         #$rdist = $nextwpt->{'radius'} - qckdist2($coord, $nextwpt);
@@ -239,6 +237,8 @@ sub distance_flown
     }
     else
     {
+        $nwdist = compute_waypoint_dist($waypoints, $wmade);
+
         if ($nextwpt->{'type'} ne 'goal' && $nextwpt->{'type'} ne 'endspeed')
         {
             # Distance to shortest route waypoint, but should this be shortest distance to make the waypoint?
@@ -268,7 +268,7 @@ sub distance_flown
 
     #if ($debug)
     #{
-    #    print "wmade=$wmade cwdist=$cwdist nwdist=$nwdist rdist=$rdist dist=$dist\n";
+    #    print "wmade=$wmade cwdist=$cwdist rdist=$rdist dist=$dist\n";
     #}
 
     $dist = 0 + $dist;
