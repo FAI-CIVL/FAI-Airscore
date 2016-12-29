@@ -465,10 +465,6 @@ sub task_distance
                 $startssdist += $waypoints->[$i]->{'radius'};
             }
         }
-        if ($waypoints->[$i]->{'type'} eq 'speed') 
-        {
-            $cwdist = 0;
-        }
         if ($waypoints->[$i]->{'type'} eq 'endspeed') 
         {
             $ept = $i;
@@ -497,6 +493,7 @@ sub task_distance
                 $cwdist = $cwdist + short_dist($waypoints->[$i], $waypoints->[$i+1]);
             }
         }
+        print "wpt $i: $cwdist\n";
     }
     if (!defined($gpt))
     {
