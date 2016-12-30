@@ -18,7 +18,7 @@ echo "
 <body>
 ";
 }
-function hcheader($title,$active,$titler)
+function hcheader($title,$active,$titler,$css="green800.css")
 {
 echo "
 <?xml version=\"1.0\" encoding=\"UTF-8\"?>
@@ -40,7 +40,7 @@ echo "
   <meta name=\"description\" content=\"A free web template designed by Fullahead.org and hosted on OpenWebDesign.org\" />
   <meta name=\"robots\" content=\"index, follow, noarchive\" />
   <meta name=\"googlebot\" content=\"noarchive\" />
-  <link rel=\"stylesheet\" type=\"text/css\" href=\"green800.css\" media=\"screen\" />
+  <link rel=\"stylesheet\" type=\"text/css\" href=\"$css\" media=\"screen\" />
   <link rel=\"stylesheet\" type=\"text/css\" href=\"printer.css\" media=\"print\" />
 </head>
 <body>
@@ -63,6 +63,7 @@ echo "
     echo "<li><a href=\"index.php?comPk=$comPk\" title=\"About\"" . $clarr[0]. ">About</a></li>\n";
     if (!$comPk)
     {
+        echo "<li><a href=\"ladder.php\" title=\"Ladders\"" . $clarr[1] . ">Ladders</a></li>\n";
         $comPk = 1;
     }
     echo "<li><a href=\"submit_track.php?comPk=$comPk\" title=\"Submit\"" . $clarr[1] . ">Submit</a></li>\n";
@@ -70,7 +71,7 @@ echo "
     $regPk=reqival('regPk');
     if ($regPk > 0)
     {
-    echo "<li><a href=\"xc/waypoint_map.php?regPk=$regPk\" title=\"Waypoints\"" . $clarr[3] . ">Waypoints</a></li>\n";
+    echo "<li><a href=\"http://highcloud.net/xc/waypoint_map.php?regPk=$regPk\" title=\"Waypoints\"" . $clarr[3] . ">Waypoints</a></li>\n";
     }
     //echo "<li><a href=\"comp_result.php?comPk=$comPk&tmsc=1\" title=\"Teams\"" . $clarr[4] . ">Teams</a></li>\n";
     //echo "<li><a href=\"track.php\" title=\"submit tracks\"" . $clarr[4] . ">Tracks</a></li>";
@@ -96,7 +97,7 @@ function hcimage($link,$comPk)
             $comClass = $row['comClass'];
             if ($comClass != 'PG')
             {
-                $image = "images/pilots_hg.jpg";
+                $image = "images/pilots_$comClass.jpg";
             }
         }
     }
@@ -147,7 +148,7 @@ echo "<img src=\"images/comment_bg.gif\" alt=\"comment bottom\"/>
 function hcregion($link)
 {
     echo "<h1><span>Tracks by Region</span></h1>\n";
-    $sql = "select R.*, RW.* from tblRegion R, tblRegionWaypoint RW where R.regCentre=RW.rwpPk and R.regDescription not like '%test%'";
+    $sql = "select R.*, RW.* from tblRegion R, tblRegionWaypoint RW where R.regCentre=RW.rwpPk and R.regDescription not like '%test%' order by R.regDescription";
     $result = mysql_query($sql,$link);
     $regions = [];
     while($row = mysql_fetch_array($result))
@@ -174,13 +175,23 @@ function hcopencomps($link)
     }
     echo fnl($comps);
 }
-function hcclosedcomps($link)
+function hcclosedcomps($link, $like = '')
 {
     echo "<h1><span>Closed Competitions</span></h1>";
-    $sql = "select * from tblCompetition where comName not like '%test%' and comDateTo < date_sub(now(), interval 1 day) order by comDateTo desc limit 15";
+
+    if ($like != '')
+    {
+        $arr = explode (" ", $like);
+        $first = $arr[0];
+        $sql = "select * from tblCompetition where comName not like '%test%' and comName like '%$first%' and comDateTo < date_sub(now(), interval 1 day) order by comDateTo desc limit 15";
+    }
+    else
+    {
+        $sql = "select * from tblCompetition where comName not like '%test%' and comDateTo < date_sub(now(), interval 1 day) order by comDateTo desc limit 15";
+    }
     $result = mysql_query($sql,$link);
     $comps = [];
-    while($row = mysql_fetch_array($result))
+    while ($row = mysql_fetch_array($result))
     {
         // FIX: if not finished & no tracks then submit_track page ..
         // FIX: if finished no tracks don't list!
