@@ -52,7 +52,7 @@ echo "
         $regPk=intval($_REQUEST['regPk']);
         if ($regPk > 0)
         {
-        echo "<li><a href=\"waypoint_map.php?regPk=$regPk\" title=\"Waypoints\"" . $clarr[3] . ">Waypoints</a></li>\n";
+        echo "<li><a href=\"http://highcloud.net/xc/waypoint_map.php?regPk=$regPk\" title=\"Waypoints\"" . $clarr[3] . ">Waypoints</a></li>\n";
         }
         //echo "<li><a href=\"track.php\" title=\"submit tracks\"" . $clarr[4] . ">Tracks</a></li>";
     }
@@ -76,7 +76,7 @@ function hcimage($link,$comPk)
             $comClass = $row['comClass'];
             if ($comClass != 'PG')
             {
-                $image = "images/pilots_hg.jpg";
+                $image = "images/pilots_$comClass.jpg";
             }
         }
     }
@@ -127,7 +127,7 @@ echo "<img src=\"images/comment_bg.gif\" alt=\"comment bottom\"/>
 function hcregion($link)
 {
     echo "<h1><span>Tracks by Region</span></h1>\n";
-    $sql = "select R.*, RW.* from tblRegion R, tblRegionWaypoint RW where R.regCentre=RW.rwpPk and R.regDescription not like '%test%'";
+    $sql = "select R.*, RW.* from tblRegion R, tblRegionWaypoint RW where R.regCentre=RW.rwpPk and R.regDescription not like '%test%' order by R.regDescription";
     $result = mysql_query($sql,$link);
     $regions = [];
     while($row = mysql_fetch_array($result))
