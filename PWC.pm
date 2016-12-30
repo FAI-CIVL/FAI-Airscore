@@ -25,56 +25,9 @@ require Gap;
 #require DBD::mysql;
 #use POSIX qw(ceil floor);
 #use Math::Trig;
-#use Data::Dumper;
+use Data::Dumper;
 #use TrackLib qw(:all);
 
-
-#
-# Points weight
-#
-
-sub points_weight
-{
-    my ($self, $task, $taskt, $formula) = @_;
-    my $quality;
-    my $distweight;
-    my $Adistance;
-    my $Aspeed;
-    my $Astart;
-    my $Aarrival;
-    my $x;
-    my $dem;
-    my $ess = 0;
-
-
-    $quality = $taskt->{'quality'};
-
-    #print "distweight=$distweight($Ngoal/$Nfly)\n";
-    $x = $taskt->{'goal'} / $taskt->{'launched'};
-    $distweight = 1-0.8*sqrt($x);
-
-    $Adistance = 1000 * (0.9-1.665*$x+1.713*$x*$x-0.587*$x*$x*$x) * $quality;
-    $Astart = 1000 * $quality * (1-$distweight) * 1.4/8;
-
-    my $allpoints = scalar @$waypoints;
-    for (my $i = 0; $i < $allpoints; $i++)
-    {
-        if ($waypoints->[$i]->{'type'} eq 'ess')
-        {
-            $ess = 1;
-        }
-    }
-    if ($ess)
-    {
-        $Aarrival = 0;
-    }
-    else
-    {
-        $Aarrival = 1000 * $quality * (1-$distweight) * 1/8;
-    }
-    $Aspeed = 1000 - $Adistance - $Astart - $Aarrival;
-
-}
 
 #
 # Calculate Task Validity - PWC 2016
@@ -142,9 +95,10 @@ sub day_quality
     # Stop Validity
     # Fix - need $distlaunchtoess, $landed
     my $avgdist = $taskt->{'distance'} / $taskt->{'launched'};
-    my $distlaunchtoess = $taskt->{'distance'} / $taskt->{'launched'};
+    my $distlaunchtoess = $taskt->{'endssdistance'};
 
     $x = ($taskt->{'landed'} / $taskt->{'launched'});
+    print "sqrt( ($taskt->{'maxdist'} - $avgdist) / ($distlaunchtoess - $taskt->{'maxdist'}+1) * sqrt($taskt->{'stddev'} / 5) + $x*$x*$x )\n";
     my $stopv = sqrt( ($taskt->{'maxdist'} - $avgdist) / ($distlaunchtoess - $taskt->{'maxdist'}+1) * sqrt($taskt->{'stddev'} / 5) + $x*$x*$x );
     $stopv = $self->min([1, $stopv]);
 
@@ -160,8 +114,8 @@ sub ordered_results
     # Get all pilots and process each of them 
     # pity it can't be done as a single update ...
     $dbh->do('set @x=0;');
-    $sth = $dbh->prepare("select \@x:=\@x+1 as Place, tarPk, tarDistance, tarSS, tarES, tarPenalty, tarResultType, tarLeadingCoeff, tarGoal, tarLastAltitude from tblTaskResult where tasPk=$tasPk and tarResultType <> 'abs' order by case when tarGoal=0 or tarES is null then -999999 else tarLastAltitude end, tarDistance desc");
-    $sth->execute();
+    $sth = $dbh->prepare("select \@x:=\@x+1 as Place, tarPk, tarDistance, tarSS, tarES, tarPenalty, tarResultType, tarLeadingCoeff, tarGoal, tarLastAltitude from tblTaskResult where tasPk=? and tarResultType <> 'abs' order by case when (tarGoal=0 or tarES is null) then -999999 else tarLastAltitude end, tarDistance desc");
+    $sth->execute($task->{'tasPk'});
     while ($ref = $sth->fetchrow_hashref()) 
     {
         my %taskres;
