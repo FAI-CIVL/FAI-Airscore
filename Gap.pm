@@ -279,6 +279,7 @@ sub task_totals
     $taskt{'goalalt'} = $goalalt;
     $taskt{'distspread'} = \@distspread;
     $taskt{'kmmarker'} = $kmmarker;
+    $taskt{'endssdistance'} = $task->{'endssdistance'};
 
     return \%taskt;
 }
