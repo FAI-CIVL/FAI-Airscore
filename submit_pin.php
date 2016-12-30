@@ -55,13 +55,13 @@ function add_label(map,auth,lat,lon,name,alt,desc,key)
 <?php
 
 $link = db_connect();
-$comPk = intval($_REQUEST['comPk']);
-$regPk = intval($_REQUEST['regPk']);
+$comPk = reqival('comPk');
+$regPk = reqival('regPk');
 $tasPk = 0;
 
-if (array_key_exists('tasPk', $_REQUEST))
+if (reqexists('tasPk'))
 {
-    $tasPk = intval($_REQUEST['tasPk']);
+    $tasPk = reqival('tasPk');
 }
 
 $tasks = [];
@@ -178,7 +178,7 @@ echo "    //]]>
 </head>
 <body>\n";
 
-if (array_key_exists('submitpin', $_REQUEST))
+if (reqexists('submitpin'))
 {
     $hgfa = reqsval('hgfanum');
     $name = addslashes(strtolower($_REQUEST['lastname']));
@@ -254,20 +254,19 @@ if (array_key_exists('submitpin', $_REQUEST))
     $result = mysql_query($query) or die('Waypoint insert failed: ' . mysql_error());
 
 
-    $query = "insert into tblComTaskTrack (comPk,tasPk,traPk) values ($comPk,$tasPk,$maxPk)";
+    $query = "insert into tblComTaskTrack (comPk,tasPk,traPk) values ($comPk,$task,$maxPk)";
     $result = mysql_query($query) or die('ComTaskTrack failed: ' . mysql_error());
 
     $out = '';
     $retv = 0;
-    exec(BINDIR . "optimise_flight.pl $maxPk $tasPk 0", $out, $retv);
+    exec(BINDIR . "optimise_flight.pl $maxPk $comPk $task 0", $out, $retv);
 
-    $query = "select * from tblTrack where traPk=$maxPk";
-    $result = mysql_query($query) or die('Select length failed: ' . mysql_error());
-    $row=mysql_fetch_array($result);
-    $flown = $row['traLength'];
-
-    $query = "insert into tblTaskResult (tasPk,traPk,tarDistance,tarPenalty,tarResultType) values ($tasPk,$maxPk,$flown,0,'lo')";
-    $result = mysql_query($query) or die('Result insert failed: ' . mysql_error());
+    #$query = "select * from tblTrack where traPk=$maxPk";
+    #$result = mysql_query($query) or die('Select length failed: ' . mysql_error());
+    #$row=mysql_fetch_array($result);
+    #$flown = $row['traLength'];
+    #$query = "insert into tblTaskResult (tasPk,traPk,tarDistance,tarPenalty,tarResultType) values ($tasPk,$maxPk,$flown,0,'lo')";
+    #$result = mysql_query($query) or die('Result insert failed: ' . mysql_error());
 
     redirect("tracklog_map.php?trackid=$maxPk&comPk=$comPk&ok=1");
 }

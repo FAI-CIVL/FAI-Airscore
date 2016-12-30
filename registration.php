@@ -21,8 +21,8 @@ require 'authorisation.php';
 require 'format.php';
 require 'dbextra.php';
 
-$comPk = intval($_REQUEST['comPk']);
-$teaPk = intval($_REQUEST['teaPk']);
+$comPk = reqival('comPk');
+$teaPk = reqival('teaPk');
 adminbar($comPk);
 
 $link = db_connect();
@@ -59,10 +59,20 @@ if (!check_admin('admin',$usePk,$comPk))
 if (array_key_exists('addpilot', $_REQUEST))
 {
     $pilPk = intval($_REQUEST['addpilot']);
-    $query = "insert into tblRegistration (comPk, pilPk) value ($comPk,$pilPk)";
-    $result = mysql_query($query) or die('Pilot insert failed: ' . mysql_error());
-    $query = "insert into tblHandicap (comPk, pilPk, hanHandicap) value ($comPk,$pilPk,1)";
-    $result = mysql_query($query) or die('Pilot handicap insert failed: ' . mysql_error());
+    $addarr = [];
+    $addarr['pilPk'] = $pilPk;
+    $addarr['comPk'] = $comPk;
+    $clause = "comPk=$comPk and pilPk=$pilPk";
+    insertup($link, 'tblRegistration', 'regPk', $clause, $addarr);
+
+    $query = "select H.* from tblHandicap H where H.comPk=$comPk and H.pilPk=$pilPk";
+    $result = mysql_query($query) or die('Handicap query failed: ' . mysql_error());
+
+    if (mysql_num_rows($result) == 0)
+    {
+        $query = "insert into tblHandicap (comPk, pilPk, hanHandicap) value ($comPk,$pilPk,1)";
+        $result = mysql_query($query) or die('Pilot handicap insert failed: ' . mysql_error());
+    }
 }
 
 if (array_key_exists('delpilot', $_REQUEST))
@@ -87,7 +97,7 @@ if (array_key_exists('uppilot', $_REQUEST))
     $regarr['comPk'] = $comPk;
     $regarr['hanHandicap'] = $handi;
     $clause = "comPk=$comPk and pilPk=$id";
-    insertup($link, 'tblHandicap', 'regPk', $clause, $regarr);
+    insertup($link, 'tblHandicap', 'hanPk', $clause, $regarr);
 }
 
 echo "<form action=\"registration.php?comPk=$comPk&cat=$cat$tsel\" name=\"regadmin\" method=\"post\">";
@@ -114,6 +124,7 @@ if (sizeof($regpilots) > 0)
         $outreg[] = array("<button type=\"submit\" name=\"uppilot\" value=\"$pilPk\">up</button>", fin("fai$pilPk", $row['pilHGFA'], 5), $row['pilFirstName'], $row['pilLastName'], fin("han$pilPk", $row['hanHandicap'], 1), fbut('submit', 'delpilot', $pilPk, 'del'));
         //"<input type=\"text\" name=\"tepModifier$tepPk\" value=\"$tepMod\" size=3>", fbut('submit', 'uppilot', $tepPk, 'up')
     }
+    echo "<i>" . sizeof($regpilots) . " pilots registered</i>";
     echo ftable($outreg,'id="piltable"','','');
 }
 else

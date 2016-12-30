@@ -87,7 +87,7 @@ function display_olc_result($comPk, $rtable, $sorted, $top, $count)
         $key = $row['pilpk'];
         $total = round($total/1000,0);
         $nxt[] = $count;
-        $nxt[] = "<a href=\"index.php?pil=$key\">$name</a>";
+        $nxt[] = "<a href=\"pilot.php?pil=$key\">$name</a>";
         $nxt[] = "<b>$total</b>";
         foreach ($row['tasks'] as $task)
         {
@@ -105,5 +105,12 @@ function display_olc_result($comPk, $rtable, $sorted, $top, $count)
     echo ftable($rtable, "class=\"olc\" alternate-colours=\"yes\" align=\"center\"", $rdec, '');
 
     return $count;
+}
+function olc_team_result($link,$top,$restrict)
+{
+    $sql = "SELECT M.teaPk as pilPk, M.teaName as pilFirstName, T.traPk, T.traScore as adjScore FROM tblTrack T, tblComTaskTrack CTT, tblCompetition C, tblTeam M, tblTeamPilot TP, tblPilot P where M.comPk=C.comPk and TP.teaPk=M.teaPk and P.pilPk=TP.pilPk and CTT.comPk=C.comPk and CTT.traPk=T.traPk and T.pilPk=P.pilPk and T.traScore is not null $restrict order by M.teaPk, T.traScore desc";
+    $result = mysql_query($sql,$link) or die('olc_result: ' . mysql_error());
+
+    return olc_sort($result,$top);
 }
 ?>

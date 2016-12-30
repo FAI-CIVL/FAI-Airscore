@@ -1,12 +1,20 @@
 <?php
 require_once 'authorisation.php';
 require_once 'format.php';
+require_once 'dbextra.php';
 require 'hc.php';
 
 function hcincludedcomps($link,$ladPk)
 {
     echo "<h1><span>Included Competitions</span></h1>";
-    $sql = "select C.* from tblLadderComp LC, tblCompetition C where LC.comPk=C.comPk and ladPk=$ladPk order by comDateTo";
+    if ($ladPk > 0)
+    {
+        $sql = "select C.* from tblLadderComp LC, tblCompetition C where LC.comPk=C.comPk and ladPk=$ladPk order by LC.lcValue desc, comDateTo";
+    }
+    else
+    {
+        $sql = "select distinct C.* from tblLadderComp LC, tblCompetition C where LC.comPk=C.comPk and LC.lcValue > 0 order by comDateTo desc";
+    }
     $result = mysql_query($sql,$link);
     $comps = [];
     while($row = mysql_fetch_array($result))
@@ -36,8 +44,8 @@ function add_result(&$results, $row, $topnat, $how)
     $validity = $row['tasQuality'] * 1000;
     $pilPk = $row['pilPk'];
     // $row['tasName'];
-    $tasName = substr($row['comName'], 0, 2) . ' ' . substr($row['comDateTo'],0,4);
-    $fullName = substr($row['comName'], 0, 2) . substr($row['comDateTo'],2,2) . '&nbsp;' . substr($row['tasName'],0,1) . substr($row['tasName'], -1, 1);
+    $tasName = substr($row['comName'], 0, 5) . ' ' . substr($row['comDateTo'],0,4);
+    $fullName = substr($row['comName'], 0, 3) . substr($row['comDateTo'],2,2) . '&nbsp;' . substr($row['tasName'],0,1) . substr($row['tasName'], -1, 1);
 
     if (!array_key_exists($pilPk,$results) || !$results[$pilPk])
     {
@@ -205,26 +213,33 @@ function filter_results($ladPk, $how, $param, $extpar, $results)
                 if ($pilvalid < $param)
                 {
                     // if external
-                    if ((0+$taskresult['extpk'] > 0) && ($pilext < $extpar)) 
+                    if (0+$taskresult['extpk'] > 0) 
                     {
-                        $gap = $extpar - $pilext;
-                        if ($gap > $param - $pilvalid)
+                        if ($pilext < $extpar)
                         {
-                          $gap = $param - $pilvalid;
+                            $gap = $extpar - $pilext;
+                            if ($gap > $param - $pilvalid)
+                            {
+                              $gap = $param - $pilvalid;
+                            }
+                            $perc = 0;
+                            if ($taskresult['validity'] > 0)
+                            {
+                                $perc = $gap / $taskresult['validity'];
+                            }
+                            if ($perc > 1)
+                            {
+                                $perc = 1;
+                            }
+                            $pilext = $pilext + $taskresult['validity'] * $perc;
+                            $pilvalid = $pilvalid + $taskresult['validity'] * $perc;
+                            $pilscore = $pilscore + $taskresult['score'] * $perc;
+                            $arr[$perf]['perc'] = $perc * 100;
                         }
-                        $perc = 0;
-                        if ($taskresult['validity'] > 0)
+                        else
                         {
-                            $perc = $gap / $taskresult['validity'];
+                            // ignore
                         }
-                        if ($perc > 1)
-                        {
-                            $perc = 1;
-                        }
-                        $pilext = $pilext + $taskresult['validity'] * $perc;
-                        $pilvalid = $pilvalid + $taskresult['validity'] * $perc;
-                        $pilscore = $pilscore + $taskresult['score'] * $perc;
-                        $arr[$perf]['perc'] = $perc * 100;
                     }
                     else
                     {
@@ -269,6 +284,167 @@ function filter_results($ladPk, $how, $param, $extpar, $results)
     return $sorted;
 }
 
+function output_ladder($ladPk, $ladder, $fdhv, $class)
+{
+    $today = getdate();
+    $tdate = sprintf("%04d-%02d-%02d", $today['year'], $today['mon'], $today['mday']);
+    
+    $rtable = [];
+    $rdec = [];
+    
+    //if ($comClass == "HG")
+    //{
+    //    $classopts = array ( 'open' => '', 'floater' => '&class=0', 'kingpost' => '&class=1', 
+    //        'hg-open' => '&class=2', 'rigid' => '&class=3', 'women' => '&class=4' );
+    //}
+    //else
+    {
+        $classopts = array ( 'open' => '', 'fun' => '&class=0', 'sports' => '&class=1', 
+            'serial' => '&class=2', 'women' => '&class=4' );
+    }
+    $cind = '';
+    if ($class != '')
+    {
+        $cind = "&class=$class";
+    }
+    $copts = [];
+    foreach ($classopts as $text => $url)
+    {
+        $copts[$text] = "ladder.php?ladPk=$ladPk$url";
+    }
+    
+    $rdec[] = 'class="h"';
+    $rdec[] = 'class="h"';
+    $hdr = array( fb('Res'),  fselect('class', "ladder.php?ladPk=$ladPk$cind", $copts, ' onchange="document.location.href=this.value"'), fb('HGFA'), fb('Total') );
+    $hdr2 = array( '', '', '', '' );
+    
+    # find each task details
+    $alltasks = [];
+    $taskinfo = [];
+    $sorted = [];
+    
+    $sorted = ladder_result($ladPk, $ladder, $fdhv);
+    $subtask = '';
+    
+    $rtable[] = $hdr;
+    $rtable[] = $hdr2;
+    
+    $lasttot = 0;
+    $count = 1;
+    foreach ($sorted as $pil => $arr)
+    {
+        $nxt = [];
+        if ($count % 2)
+        {
+            $rdec[] = 'class="d"';
+        }
+        else
+        {
+            $rdec[] = 'class="l"';
+        }
+        $tot = 0 + $pil;
+        if ($tot != $lasttot)
+        {
+            $nxt[] = $count;
+            $nxt[] = $arr['name'];
+        }
+        else
+        {
+            $nxt[] = '';
+            $nxt[] = $arr['name'];
+        }
+    
+        $nxt[] = $arr['hgfa'];
+        $nxt[] = fb($tot);
+        $lasttot = $tot;
+    
+        //if (ctype_digit(substr($key,0,1)))
+        foreach ($arr as $key => $sarr)
+        { 
+            $score = 0;
+            $perc = 0;
+            if (is_array($sarr) && array_key_exists('score', $sarr))
+            {
+                $score = $sarr['score'];
+                $tname = $sarr['tname'];
+                $tpk = $sarr['taspk'];
+                if (array_key_exists('perc', $sarr))
+                {
+                    $perc = round($sarr['perc'], 0);
+                }
+                if (!$score)
+                {
+                    $score = 0;
+                }
+                if ($perc == 100)
+                {
+                    if ($tpk > 0)
+                    {
+                        $nxt[] = "<a href=\"task_result.php?tasPk=$tpk\">$tname $score</a>";
+                    }
+                    else
+                    {
+                        $nxt[] = "<a href=\"$tpk\">$tname $score</a>";
+                    }
+                }
+                else if ($perc > 0)
+                {
+                    if ($tpk > 0)
+                    {
+                        $nxt[] = "<a href=\"task_result.php?tasPk=$tpk\">$tname $score $perc%</a>";
+                    }
+                    else
+                    {
+                        $nxt[] = "<a href=\"$tpk\">$tname $score $perc%</a>";
+                    }
+                }
+                else
+                {
+                    //$nxt[] = "<del>$tname $score</del>";
+                }
+            }
+        }
+        $rtable[] = $nxt;
+        $count++;
+    }
+    echo ftable($rtable, "border=\"0\" cellpadding=\"3\" alternate-colours=\"yes\" align=\"center\"", $rdec, '');
+    
+    //echo "</table>";
+    if ($ladder['ladHow'] == 'ftv')
+    {
+        echo "1. Click <a href=\"ftv.php\">here</a> for an explanation of FTV<br>";
+        echo "2. Highlighted scores 100%, or indicated %, other scores not included<br>";
+    }
+}
+
+function output_ladder_list($ladder, $fdhv, $class)
+{
+    $rtable = [];
+    $rdec = [];
+
+    $hdr = array( fb('Name'),  fb('Nation'), fb('Start'), fb('End'), fb('Method') );
+    $rtable[] = $hdr;
+    $rdec[] = 'class="h"';
+    $max = sizeof($ladder);
+
+    foreach ($ladder as $row)
+    {
+        $ladPk = $row['ladPk'];
+        $rtable[] = array( "<a href=\"ladder.php?ladPk=$ladPk\">" . $row['ladName'] . "</a>", $row['ladNationCode'], $row['ladStart'], $row['ladEnd'], $row['ladHow']);
+        if ($count % 2)
+        {
+            $rdec[] = 'class="d"';
+        }
+        else
+        {
+            $rdec[] = 'class="l"';
+        }
+        $count++;
+    }
+
+    echo ftable($rtable, "border=\"0\" cellpadding=\"3\" alternate-colours=\"yes\" align=\"center\"", $rdec, '');
+}
+
 //
 // Main Body Here
 //
@@ -280,25 +456,48 @@ if ($start < 0)
 {
     $start = 0;
 }
+$usePk = check_auth('system');
 $link = db_connect();
+$isadmin = is_admin('admin',$usePk,-1);
 $title = 'highcloud.net';
 
-$query = "SELECT L.* from tblLadder L where ladPk=$ladPk";
-$result = mysql_query($query) or die('Ladder query failed: ' . mysql_error());
-$row = mysql_fetch_array($result, MYSQL_ASSOC);
-if ($row)
+
+if (reqexists('addladder'))
 {
-    $ladName = $row['ladName'];
-    $title = $ladName;
-    $ladder = $row;
+    check_admin('admin',$usePk,-1);
+    $lname = reqsval('lname');
+    $nation = reqsval('nation');
+    $start = reqsval('sdate');
+    $end = reqsval('edate');
+    $method = reqsval('method');
+    $param = reqival('param');
+
+    $query = "insert into tblLadder (ladName, ladNationCode, ladStart, ladEnd, ladHow, ladParam) value ('$lname','$nation', '$start', '$end', '$method', $param)";
+    $result = mysql_query($query) or die('Ladder insert failed: ' . mysql_error());
 }
 
+if (reqexists('addladcomp'))
+{
+    check_admin('admin',$usePk,-1);
+    $sanction = reqival('sanction');
+    $comPk = reqival('comp');
+
+    if ($comPk == 0 || $ladPk == 0)
+    {
+        echo "Failed: unknown comPk=$comPk ladPk=$ladPk<br>";
+    }
+    else
+    {
+        $query = "insert into tblLadderComp (lcValue, ladPk, comPk) value ($sanction, $ladPk, $comPk)";
+        $result = mysql_query($query) or die('LadderComp insert failed: ' . mysql_error());
+    }
+}
 
 $fdhv= '';
 $classstr = '';
-if (array_key_exists('class', $_REQUEST))
+if (reqexists('class'))
 {
-    $cval = intval($_REQUEST['class']);
+    $cval = reqival('class');
     if ($comClass == "HG")
     {
         $carr = array ( "'floater'", "'kingpost'", "'open'", "'rigid'"       );
@@ -309,157 +508,99 @@ if (array_key_exists('class', $_REQUEST))
         $carr = array ( "'1/2'", "'2'", "'2/3'", "'competition'"       );
         $cstr = array ( "Fun", "Sport", "Serial", "Open", "Women", "Seniors", "Juniors" );
     }
-    $classstr = "<b>" . $cstr[intval($_REQUEST['class'])] . "</b> - ";
+    $classstr = "<b>" . $cstr[reqival('class')] . "</b> - ";
     if ($cval == 4)
     {
         $fdhv = "and TP.pilSex='F'";
     }
     else
     {
-        $fdhv = $carr[intval($_REQUEST['class'])];
+        $fdhv = $carr[reqival('class')];
         $fdhv = "and TT.traDHV<=$fdhv ";
     }
 }
 
-hcheader($title, 2, "$classstr " . $ladder['ladStart'] . " - " . $ladder['ladEnd']);
+$all_ladders = [];
+if ($ladPk < 1)
+{
+    $query = "SELECT L.* from tblLadder L order by ladEnd desc";
+    $result = mysql_query($query) or die('Ladder query failed: ' . mysql_error());
+    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+    {
+        $all_ladders[] = $row;
+    }
+    hcheader("All Ladders", 2, "$classstr ");
+}
+else
+{
+    $query = "SELECT L.* from tblLadder L where ladPk=$ladPk";
+    $result = mysql_query($query) or die('Ladder query failed: ' . mysql_error());
+    $row = mysql_fetch_array($result, MYSQL_ASSOC);
+    if ($row)
+    {
+        $ladName = $row['ladName'];
+        $title = $ladName;
+        $ladder = $row;
+    }
+    hcheader($title, 2, "$classstr " . $ladder['ladStart'] . " - " . $ladder['ladEnd']);
+}
+
 
 echo "<div id=\"content\">";
 //echo "<div id=\"text\" style=\"overflow: auto; max-width: 600px;\">";
 echo "<div id=\"text\" style=\"overflow: auto;\">";
 
-//echo "<h1>Details</h1>";
-// Determine scoring params / details ..
-
-
-$today = getdate();
-$tdate = sprintf("%04d-%02d-%02d", $today['year'], $today['mon'], $today['mday']);
-
-$rtable = [];
-$rdec = [];
-
-//if ($comClass == "HG")
-//{
-//    $classopts = array ( 'open' => '', 'floater' => '&class=0', 'kingpost' => '&class=1', 
-//        'hg-open' => '&class=2', 'rigid' => '&class=3', 'women' => '&class=4' );
-//}
-//else
+if ($ladPk > 0)
 {
-    $classopts = array ( 'open' => '', 'fun' => '&class=0', 'sports' => '&class=1', 
-        'serial' => '&class=2', 'women' => '&class=4' );
-}
-$cind = '';
-if ($class != '')
-{
-    $cind = "&class=$class";
-}
-$copts = [];
-foreach ($classopts as $text => $url)
-{
-    $copts[$text] = "ladder.php?ladPk=$ladPk$url";
-}
+    output_ladder($ladPk, $ladder, $fdhv, $class);
 
-$rdec[] = 'class="h"';
-$rdec[] = 'class="h"';
-$hdr = array( fb('Res'),  fselect('class', "ladder.php?ladPk=$ladPk$cind", $copts, ' onchange="document.location.href=this.value"'), fb('HGFA'), fb('Total') );
-$hdr2 = array( '', '', '', '' );
-
-# find each task details
-$alltasks = [];
-$taskinfo = [];
-$sorted = [];
-
-$sorted = ladder_result($ladPk, $ladder, $fdhv);
-$subtask = '';
-
-$rtable[] = $hdr;
-$rtable[] = $hdr2;
-
-$lasttot = 0;
-$count = 1;
-foreach ($sorted as $pil => $arr)
-{
-    $nxt = [];
-    if ($count % 2)
+    if ($isadmin)
     {
-        $rdec[] = 'class="d"';
-    }
-    else
-    {
-        $rdec[] = 'class="l"';
-    }
-    $tot = 0 + $pil;
-    if ($tot != $lasttot)
-    {
-        $nxt[] = $count;
-        $nxt[] = $arr['name'];
-    }
-    else
-    {
-        $nxt[] = '';
-        $nxt[] = $arr['name'];
-    }
-
-    $nxt[] = $arr['hgfa'];
-    $nxt[] = fb($tot);
-    $lasttot = $tot;
-
-    //if (ctype_digit(substr($key,0,1)))
-    foreach ($arr as $key => $sarr)
-    { 
-        $score = 0;
-        $perc = 0;
-        if (is_array($sarr) && array_key_exists('score', $sarr))
+        echo "<br><br>";
+        echo "<form action=\"ladder.php?ladPk=$ladPk\" name=\"ladadmin\" method=\"post\">";
+        $query = "select C.comPk, C.comName from tblCompetition C, tblLadder L where L.ladPk=$ladPk and C.comDateFrom between L.ladStart and L.ladEnd";
+        $result = mysql_query($query) or die('Ladder query failed: ' . mysql_error());
+        $comparr = [];
+        while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
         {
-            $score = $sarr['score'];
-            $tname = $sarr['tname'];
-            $tpk = $sarr['taspk'];
-            if (array_key_exists('perc', $sarr))
-            {
-                $perc = round($sarr['perc'], 0);
-            }
-            if (!$score)
-            {
-                $score = 0;
-            }
-            if ($perc == 100)
-            {
-                if ($tpk > 0)
-                {
-                    $nxt[] = "<a href=\"task_result.php?tasPk=$tpk\">$tname $score</a>";
-                }
-                else
-                {
-                    $nxt[] = "<a href=\"$tpk\">$tname $score</a>";
-                }
-            }
-            else if ($perc > 0)
-            {
-                if ($tpk > 0)
-                {
-                    $nxt[] = "<a href=\"task_result.php?tasPk=$tpk\">$tname $score $perc%</a>";
-                }
-                else
-                {
-                    $nxt[] = "<a href=\"$tpk\">$tname $score $perc%</a>";
-                }
-            }
-            else
-            {
-                //$nxt[] = "<del>$tname $score</del>";
-            }
+            $comparr[$row['comName']] = $row['comPk'];
         }
-    }
-    $rtable[] = $nxt;
-    $count++;
-}
-echo ftable($rtable, "border=\"0\" cellpadding=\"3\" alternate-colours=\"yes\" align=\"center\"", $rdec, '');
 
-//echo "</table>";
-if ($ladder['ladHow'] == 'ftv')
-{
-    echo "1. Click <a href=\"ftv.php\">here</a> for an explanation of FTV<br>";
-    echo "2. Highlighted scores 100%, or indicated %, other scores not included<br>";
+        $out = ftable(
+            array(
+                array('Comp:', fselect('comp', '', $comparr), 'Value:', fin('sanction',0, 6), fis('addladcomp', 'Associate Comp', ''))
+            ), '', '', ''
+        );
+    
+        echo $out;
+        echo "</form>";
+    }
 }
+else
+{
+    output_ladder_list($all_ladders, $fdhv, $class);
+
+    echo "<br><br>";
+    echo "<b>Older ladders may be found <a href=\"http://highcloud.net/ladder/\">here</a></b>";
+
+    if ($isadmin)
+    {
+        echo "<br><br>";
+        echo "<form action=\"ladder.php\" name=\"ladadmin\" method=\"post\">";
+        $out = ftable(
+            array(
+                array('Name:', fin('lname','', 20), 'Nation:', fselect('nation', '', array('AUS', 'NZL'))),
+                array('Start Date:', fin('sdate', '', 10), 'End Date:', fin('edate', '', 10) ),
+                array('Scoring:', fselect('method', '', array('all', 'ftv', 'round', 'round-perc' )), 'Score param:', fin('param',0, 10)),
+            ), '', '', ''
+        );
+    
+        echo $out;
+        echo fis('addladder', 'Add Ladder', '');
+        echo "</form>";
+    }
+}
+
 
 if ($embed == '')
 {
@@ -478,7 +619,7 @@ if ($embed == '')
     echo ftable($detarr, 'border="0" cellpadding="0" width="185"', '', array('', 'align="right"'));
     hcincludedcomps($link,$ladPk);
 
-    if ($ladPk == 1)
+    if ($ladPk == 9)
     {
         echo "<h1>National Champion</h1>";
         echo "<img src=\"images/gareth_bucket_small.jpg\">"; 

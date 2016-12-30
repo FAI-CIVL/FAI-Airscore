@@ -1,38 +1,14 @@
 <?php
 require_once 'authorisation.php';
-function get_track($trackid,$interval)
+function get_track_body($trackid,$interval)
 {
     $link = db_connect();
 
-    if ($interval < 1)
-    {
-        $interval = 5;
-    }
-    if ($interval == 1)
-    {
-        $sql = "SELECT *, trlTime as bucTime FROM tblTrackLog where traPk=$trackid order by trlTime";
-    }
-    else
-    {
-        $sql = "SELECT *, trlTime div $interval as bucTime FROM tblTrackLog where traPk=$trackid group by trlTime div $interval order by trlTime";
-    }
-    
     $body = [];
     $ret = [];
     
-    $result = mysql_query($sql,$link);
-    while($row = mysql_fetch_array($result, MYSQL_ASSOC))
-    {
-    
-        $bucTime = 0 + $row['bucTime'];
-        $lasLat = 0.0 + $row['trlLatDecimal'];
-        $lasLon = 0.0 + $row['trlLongDecimal'];
-        $lasAlt = 0 + $row['trlAltitude'];
-        $ret[] = array( $bucTime, $lasLat, $lasLon, $lasAlt );
-    }
-    $body['track'] = $ret;
-
     // track info ..
+    $offset = 0;
     $sql = "SELECT T.*, P.*, TR.*, TK.* FROM tblPilot P, tblTrack T 
             left outer join tblTaskResult TR on TR.traPk=T.traPk 
             left outer join tblTask TK on TK.tasPk=TR.tasPk 
@@ -44,12 +20,9 @@ function get_track($trackid,$interval)
         $date = $row['traDate'];
         $glider = $row['traGlider'];
         $tasPk = $row['tasPk'];
+        $comPk = $row['comPk'];
         $tasname = $row['tasName'];
         $comment = $row['tarComment'];
-        if ($tasPk > 0)
-        {
-            $date = $row['tasDate'];
-        }
         $turnpoints = $row['tarTurnpoints'];
         $gtime = 0;
         $ggoal = 0;
@@ -69,6 +42,13 @@ function get_track($trackid,$interval)
             }
             $dist = round($row['tarDistance'] / 1000, 2);
             $date = $row['tasDate'];
+
+            $dt1 = new DateTime($row["traDate"]);
+            $dt2 = new DateTime($row["tasDate"]);
+            if ($dt1 < $dt2) 
+            { 
+                $offset = -86400; 
+            }
         }
         $ghour = floor($gtime / 3600);
         $gmin = floor($gtime / 60) - $ghour*60;
@@ -76,6 +56,7 @@ function get_track($trackid,$interval)
 
         $body['name'] = $name;
         $body['date'] = $date;
+        $body['startdate'] = $row["traDate"];
         $body['dist'] = $dist;
         $body['tasPk'] = $tasPk;    # get task name ...
         if ($ggoal && ($gtime > 0))
@@ -89,9 +70,84 @@ function get_track($trackid,$interval)
         $body['glider'] = $glider;
         $body['comment'] = $comment;
         $body['initials'] = substr($row['pilFirstName'],0,1) . substr($row['pilLastName'],0,1);
+
+        $sql = "select C.comClass from tblCompetition C, tblComTaskTrack T where C.comPk=T.comPk and T.traPk=$trackid";
+        $result = mysql_query($sql,$link) or die('Com class query failed: ' . mysql_error());
+        $srow = mysql_fetch_array($result, MYSQL_ASSOC);
+        if ($srow['comClass'] == 'sail')
+        {
+            $body['class'] = 'sail';
+        }
+        else
+        {
+            $body['class'] = 'pger';
+        }
     }
 
+    if ($interval < 1)
+    {
+        $interval = 5;
+    }
+    if ($interval == 1)
+    {
+        $sql = "SELECT *, trlTime as bucTime FROM tblTrackLog where traPk=$trackid order by trlTime";
+    }
+    else
+    {
+        $sql = "SELECT *, trlTime div $interval as bucTime FROM tblTrackLog where traPk=$trackid group by trlTime div $interval order by trlTime";
+        $offset = (int) ($offset / $interval);
+    }
     
+    // Get some track points
+    $result = mysql_query($sql,$link);
+    while($row = mysql_fetch_array($result, MYSQL_ASSOC))
+    {
+        $bucTime = $offset + $row['bucTime'];
+        $lasLat = 0.0 + $row['trlLatDecimal'];
+        $lasLon = 0.0 + $row['trlLongDecimal'];
+        $lasAlt = 0 + $row['trlAltitude'];
+        $ret[] = array( $bucTime, $lasLat, $lasLon, $lasAlt );
+    }
+    $body['track'] = $ret;
+
+    return $body;
+}
+function get_track($trackid,$interval)
+{
+    $body = get_track_body($trackid, $interval);
+    $jret = json_encode($body);
+    return $jret;
+}
+function qckdist2($p1,$p2)
+{
+    # array( $bucTime, $lasLat, $lasLon, $lasAlt );
+    $x = ($p2[1] - $p1[1]);
+    $y = ($p2[2] - $p1[2]) * cos(($p1[1] + $p2[1])/2);
+
+    $m = 6371009.0 * sqrt($x*$x + $y*$y);
+    #print "qckdist2=$m (no sqrt=)",6371009.0*($x*$x+$y*$y), "\n";
+    return $m;
+}
+function get_track_speed($trackid,$interval)
+{
+    $body = get_track_body($trackid, $interval);
+    $track = $body['track'];
+    $max = sizeof($track);
+    $track[0][3] = 0;
+    $nsp = 0;
+    for ($i = 1; $i < $max; $i++)
+    {
+        $dst = qckdist2($track[$i], $track[$i-1]);
+        $tm = ($track[$i][0] - $track[$i-1][0]) * $interval * 5;
+        if ($tm > 0)
+        {
+            // knots ..
+            $sp = ($dst / $tm) * 1.94384449;
+            $nsp = ($sp * 0.50 + $nsp * 0.50);
+        }
+        $track[$i][3] = $nsp;
+    }
+    $body['track'] = $track;
     $jret = json_encode($body);
     return $jret;
 }
@@ -205,9 +261,9 @@ function award_waypoint($tasPk, $tawPk, $trackid, $wptime)
 {
     // Did we award from turnpoints?
     // FIX: check auth?
-     $usePk = check_auth('system');
-     $link = db_connect();
-     $comPk = intval($_REQUEST['comPk']);
+    $usePk = check_auth('system');
+    $link = db_connect();
+    $comPk = reqival('comPk');
     $isadmin = is_admin('admin',$usePk,$comPk);
     if (!$isadmin) 
     {
@@ -258,6 +314,7 @@ function get_track_wp($trackid)
 sajax_init();
 sajax_export("get_task");
 sajax_export("get_track");
+sajax_export("get_track_speed");
 sajax_export("get_region");
 sajax_export("get_track_wp");
 sajax_export("award_waypoint");
