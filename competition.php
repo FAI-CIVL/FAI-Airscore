@@ -37,6 +37,12 @@ if (array_key_exists('add', $_REQUEST))
 
     check_admin('admin',$usePk,$comPk);
 
+    if ($TaskType == 'speedrun-interval' && $Interval == 0)
+    {
+        echo "Unable to add task a speedrun-interval task with no gate interval times<br>";
+        exit(1);
+    }
+
     $query = "select * from tblTask where tasDate='$Date' and comPk=$comPk";
     $result = mysql_query($query) or die('Task check failed: ' . mysql_error());
     if (mysql_num_rows($result) > 0)
@@ -153,6 +159,7 @@ if (array_key_exists('upformula', $_REQUEST))
     $regarr['forDiffRamp'] = reqsval('difframp');
     $regarr['forDiffCalc'] = reqsval('diffcalc');
     $regarr['forDistMeasure'] = reqsval('distmeasure');
+    $regarr['forArrival'] = reqsval('arrivalmethod');
     if (array_key_exists('weightstart', $_REQUEST))
     {
         $regarr['forWeightStart'] = reqfval('weightstart');
@@ -275,6 +282,7 @@ if (in_array($ctype, $has_formula))
         $weightarrival = $row['forWeightArrival'];
         $weightspeed = $row['forWeightSpeed'];
         $glidebonus = $row['forStoppedGlideBonus'];
+        $arrival = $row['forArrival'];
     }
     echo "<hr><h3>RACE Formula</h3>";
     echo "<form action=\"competition.php?comPk=$comPk\" name=\"formulaadmin\" method=\"post\">";
@@ -284,7 +292,7 @@ if (in_array($ctype, $has_formula))
           array('Nom Dist (km):', fin('nomdist',$nomdist,4), 'Min Dist (km):', fin('mindist', $mindist, 4), 'Distance Measure:', fselect('distmeasure', $distmeasure, array('average', 'median'))),
           array('Nom Time (min):', fin('nomtime', $nomtime, 4), 'Goal/SS Penalty (0-1):', fin('sspenalty', $sspenalty, 4), 'Nom Goal (%):', fin('nomgoal',$nomgoal,4)),
           array('Linear Dist (0-1):', fin('lineardist', $lineardist, 4),'Diff Dist (km):', fin('diffdist', $diffdist, 4), 'Diff Ramp:', fselect('difframp', $difframp, array('fixed', 'flexible')), 'Diff Calc:', fselect('diffcalc', $diffcalc, array('all', 'lo'))),
-          array('Speed weighting:', fin('weightspeed', $weightspeed, 4), 'Start weighting:', fin('weightstart', $weightstart, 4), 'Arrival weighting:', fin('weightarrival', $weightarrival, 4)),
+          array('Speed weighting:', fin('weightspeed', $weightspeed, 4), 'Start weighting:', fin('weightstart', $weightstart, 4), 'Arrival weighting:', fin('weightarrival', $weightarrival, 4), 'Method:', fselect('arrivalmethod', $arrival, [ 'place', 'timed' ])),
           array('Stopped Glide Bonus:', fin('glidebonus', $glidebonus, 4))
         ), '', '', ''
       );

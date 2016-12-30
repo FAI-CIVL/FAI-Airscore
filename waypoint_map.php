@@ -184,6 +184,13 @@ while($row = mysql_fetch_array($result))
             $xlon = $clon;
         }
         //echo "map.setCenter(new google.maps.LatLng($xlat, $xlong), 10);\n";
+    }
+
+    $waylist[$cname] = array( 'lat' => $clat, 'lon' => $clon, 'alt' => $calt, 'desc' => $cdesc );
+    echo "points[\"$cname\"] = add_label(map,$authorised,$clat,$clon,\"$cname\",\"$calt\",\"$cdesc\",\"$crwppk\");\n";
+}
+
+
         if ($authorised)
         {
             echo "marker = new google.maps.Marker({
@@ -214,11 +221,6 @@ while($row = mysql_fetch_array($result))
             });\n";
             $first = 1;
         }
-    }
-
-    $waylist[$cname] = array( 'lat' => $clat, 'lon' => $clon, 'alt' => $calt, 'desc' => $cdesc );
-    echo "points[\"$cname\"] = add_label(map,$authorised,$clat,$clon,\"$cname\",\"$calt\",\"$cdesc\",\"$crwppk\");\n";
-}
 //echo "var next_point = $count;\n";
 
 // mysql_close($link);

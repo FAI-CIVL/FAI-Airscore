@@ -194,8 +194,8 @@ require 'format.php';
 require 'hc.php';
 require 'olc.php';
 
-$comPk = intval($_REQUEST['comPk']);
-$start = reqival($_REQUEST['start']);
+$comPk = reqival('comPk');
+$start = reqival('start');
 if ($start < 0)
 {
     $start = 0;
@@ -230,7 +230,7 @@ if ($row)
     $forNomTime = $row['forNomTime'];
 }
 
-$embed = reqsval($_REQUEST['embed']);
+$embed = reqsval('embed');
 if ($embed == '')
 {
     hcheader($title, 2, "$comDateFrom - $comDateTo");
@@ -283,8 +283,6 @@ else if ($comOverall == 'ftv')
 
 echo "<h1>Results</h1>";
 
-echo "<table border=\"2\" cellpadding=\"1\" alternate-colours=\"yes\" align=\"center\">";
-echo "<tr class=\"h\"><td><b>Res</b></td><td><b>Team</b></td><td><b>Total</b></td>";
 
 # find each task details
 $alltasks = [];
@@ -292,6 +290,8 @@ $taskinfo = [];
 $sorted = [];
 if ($tasTotal > 0)
 {
+    echo "<table border=\"2\" cellpadding=\"1\" alternate-colours=\"yes\" align=\"center\">";
+    echo "<tr class=\"h\"><td><b>Res</b></td><td><b>Team</b></td><td><b>Total</b></td>";
     $query = "select T.* from tblTask T where T.comPk=$comPk order by T.tasDate";
     $result = mysql_query($query) or die('Task query failed: ' . mysql_error());
     while ($row = mysql_fetch_array($result))
@@ -363,9 +363,31 @@ if ($tasTotal > 0)
         echo "</tr>\n";
         $count++;
     }
+    echo "</table>";
 }
 elseif ($comType != 'RACE')
 {
+    $classopts = array ( 'open' => '', 'fun' => '&class=0', 'sports' => '&class=1',
+        'serial' => '&class=2', 'women' => '&class=4', 'masters' => '&class=5', 'teams' => '&class=8', 'handicap' => '&class=9' );
+
+    $copts = [];
+    foreach ($classopts as $text => $url)
+    {
+        if ($text == 'teams' && $comTeamScoring == 'aggregate')
+        {
+            # Hack for now
+            $copts[$text] = "team_comp_result.php?comPk=$comPk";
+        }
+        else
+        {
+            $copts[$text] = "comp_result.php?comPk=$comPk$url";
+        }
+    }
+    
+
+    $rtable[] = array( fb('Res'), fselect('class', "team_comp_result.php?comPk=$comPk", $copts, ' onchange="document.location.href=this.value"'), fb('Total') );
+    $rtable[] = array( '', '', '' );
+
     $top = 25;
     if (!$comOverallParam)
     {
@@ -376,41 +398,16 @@ elseif ($comType != 'RACE')
     {
         $restrict = " and CTT.comPk=$comPk";
     }
-    $sorted = olc_result($link, $comOverallParam, $restrict);
-    $size = sizeof($sorted);
+    $sorted = olc_team_result($link,$comOverallParam, $restrict);
 
-    #echo "<tr class=\"h\"><td><b>Place</b></td><td><b>Team</b></td><td><b>Total</b></td><td><b>Task 1</b1></td><td><b>Task 2</b></td><td><b>Task 3</b></td><td><b>Task 4</b></td></tr>\n";
+    $size = sizeof($sorted);
     $count = $start+1;
-    $sorted = array_slice($sorted,$start,$top);
-    foreach ($sorted as $total => $row)
-    {
-        if ($count % 2)
-        {
-            echo "<tr class=\"d\">";
-        }
-        else
-        {
-            echo "<tr class=\"l\">";
-        }
-        $name = $row['firstname'] . " " . $row['lastname'];
-        $key = $row['pilpk'];
-        $total = round($total/1000,2);
-        echo "<td>$count</td><td><a href=\"index.php?pil=$key\">$name</a></td><td>$total</td>\n";
-        foreach ($row['tasks'] as $task)
-        {
-            $score = round($task['traScore']/1000,1);
-            $id = $task['traPk'];
-            echo "<td><a href=\"tracklog_map.php?comPk=$comPk&trackid=$id\">$score</a></td>";
-        }
-        $count++;
-        if ($count >= $top + $start) 
-        {
-            break;
-        }
-        echo "</tr>";
-    }
-    echo "</table>";
-    
+    //$sorted = array_slice($sorted,$start,$top);
+    $sorted = array_slice($sorted,$start,$top+2);
+
+    // FIX: change this to be a bit more user friendly - see team_task_result
+    $count = display_olc_result($comPk,$rtable,$sorted,$top,$count);
+
     if ($count == 1)
     {
         echo "<b>No tracks submitted for $comName yet.</b>\n";
@@ -429,7 +426,6 @@ elseif ($comType != 'RACE')
 
 }
 
-echo "</table>";
 if ($comOverall == 'ftv')
 {
     echo "1. Click <a href=\"ftv.php?comPk=$comPk\">here</a> for an explanation of FTV<br>";
@@ -439,7 +435,6 @@ if ($embed == '')
 {
     // Only emit image if results table is "narrow"
     echo "</div>";
-    hcimage($link,$comPk);
     echo "<div id=\"sideBar\">";
 
     echo "<h1>Comp Details</h1>";
@@ -471,8 +466,9 @@ if ($embed == '')
 
 
     hcopencomps($link);
-    hcclosedcomps($link);
+    //hcclosedcomps($link);
     echo "</div>";
+    hcimage($link,$comPk);
     hcfooter();
 }
 ?>

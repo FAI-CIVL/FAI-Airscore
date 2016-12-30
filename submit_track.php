@@ -229,7 +229,7 @@ if ($offerall)
         $comps[$comName] = $compid;
     }
 
-    $igcarr[] = ['Competition', fselect('comid', $comPk, $comps)];
+    $igcarr[] = ['Competition', fselect('comid', 0, $comps)];
 }
 else
 {

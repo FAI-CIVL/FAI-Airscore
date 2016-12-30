@@ -19,9 +19,11 @@ function get_airspace($trackid)
         $class = $row['airClass'];
         $shape = $row['airShape'];
         $connect = $row['awpConnect'];
+        $astart = $row['awpAngleStart'];
+        $aend = $row['awpAngleEnd'];
     
         #$ret[] = array( 'class' => $class, 'latitude' => $lasLat, 'longitude' => $lasLon, 'base' => $base, 'tops' => $tops, 'shape' => $shape, 'radius' => $radius );
-        $ret[] = array( $class, $lasLat, $lasLon, $base, $tops, $shape, $radius, $connect );
+        $ret[] = array( $class, $lasLat, $lasLon, $base, $tops, $shape, $radius, $connect, $astart, $aend );
     }
     
     $jret = json_encode($ret);

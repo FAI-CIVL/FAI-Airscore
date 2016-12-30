@@ -52,7 +52,7 @@ function overall_handicap($comPk, $how, $param, $cls)
     return filter_results($comPk, $how, $param, $results);
 }
 
-function comp_result($comPk, $how, $param, $cls)
+function comp_result($comPk, $how, $param, $cls, $tasktot)
 {
     $sql = "select TK.*,TR.*,P.*,T.traGlider from tblTaskResult TR, tblTask TK, tblTrack T, tblPilot P, tblCompetition C where C.comPk=$comPk and TK.comPk=C.comPk and TK.tasPk=TR.tasPk and TR.traPk=T.traPk and T.traPk=TR.traPk and P.pilPk=T.pilPk $cls order by P.pilPk, TK.tasPk";
     $result = mysql_query($sql) or die('Task result query failed: ' . mysql_error());
@@ -94,6 +94,11 @@ function comp_result($comPk, $how, $param, $cls)
             $perf = round($score, 0);
         }
         $results[$pilPk]["${perf}${tasName}"] = array('score' => $score, 'validity' => $validity, 'tname' => $tasName);
+    }
+
+    if ($how == 'ftv' && $tasktot < 2)
+    {
+        $param = 1000;
     }
 
     return filter_results($comPk, $how, $param, $results);
@@ -422,7 +427,7 @@ else if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'Route' ||
     }
     else
     {
-        $sorted = comp_result($comPk, $comOverall, $comOverallParam, $fdhv);
+        $sorted = comp_result($comPk, $comOverall, $comOverallParam, $fdhv, $tasTotal);
         $subtask = '';
     }
 
