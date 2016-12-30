@@ -148,7 +148,7 @@ echo "<img src=\"images/comment_bg.gif\" alt=\"comment bottom\"/>
 function hcregion($link)
 {
     echo "<h1><span>Tracks by Region</span></h1>\n";
-    $sql = "select R.*, RW.* from tblRegion R, tblRegionWaypoint RW where R.regCentre=RW.rwpPk and R.regDescription not like '%test%' order by R.regDescription";
+    $sql = "select R.*, RW.* from tblCompetition C, tblTask T, tblRegion R, tblRegionWaypoint RW where T.comPk=C.comPk and T.regPk=R.regPk and C.comDateTo > date_sub(now(), interval 1 year) and R.regCentre=RW.rwpPk and R.regDescription not like '%test%' and R.regDescription not like '' group by R.regPk order by R.regDescription";
     $result = mysql_query($sql,$link);
     $regions = [];
     while($row = mysql_fetch_array($result))
