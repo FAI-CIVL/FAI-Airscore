@@ -47,19 +47,22 @@ echo "
     }
     echo "<li><a href=\"submit_track.php?comPk=$comPk\" title=\"Submit\"" . $clarr[1] . ">Submit</a></li>\n";
     echo "<li><a href=\"comp_result.php?comPk=$comPk\" title=\"Results\"" . $clarr[2] . ">Results</a></li>\n";
-    $regPk=intval($_REQUEST['regPk']);
-    if ($regPk > 0)
+    if (array_key_exists('regPk', $_REQUEST))
     {
-    echo "<li><a href=\"waypoint_map.php?regPk=$regPk\" title=\"Waypoints\"" . $clarr[3] . ">Waypoints</a></li>\n";
+        $regPk=intval($_REQUEST['regPk']);
+        if ($regPk > 0)
+        {
+        echo "<li><a href=\"http://highcloud.net/xc/waypoint_map.php?regPk=$regPk\" title=\"Waypoints\"" . $clarr[3] . ">Waypoints</a></li>\n";
+        }
+        //echo "<li><a href=\"track.php\" title=\"submit tracks\"" . $clarr[4] . ">Tracks</a></li>";
     }
-    //echo "<li><a href=\"track.php\" title=\"submit tracks\"" . $clarr[4] . ">Tracks</a></li>";
 echo "</ul>\n
-      <div id=\"title\">
-        <h1>$title</h1>\n
+          <div id=\"title\">
+            <h1>$title</h1>\n
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-";
+    ";
 }
 function hcimage($link,$comPk)
 {
@@ -73,7 +76,7 @@ function hcimage($link,$comPk)
             $comClass = $row['comClass'];
             if ($comClass != 'PG')
             {
-                $image = "images/pilots_hg.jpg";
+                $image = "images/pilots_$comClass.jpg";
             }
         }
     }
@@ -124,7 +127,7 @@ echo "<img src=\"images/comment_bg.gif\" alt=\"comment bottom\"/>
 function hcregion($link)
 {
     echo "<h1><span>Tracks by Region</span></h1>\n";
-    $sql = "select R.*, RW.* from tblRegion R, tblRegionWaypoint RW where R.regCentre=RW.rwpPk and R.regDescription not like '%test%'";
+    $sql = "select R.*, RW.* from tblRegion R, tblRegionWaypoint RW where R.regCentre=RW.rwpPk and R.regDescription not like '%test%' order by R.regDescription";
     $result = mysql_query($sql,$link);
     $regions = [];
     while($row = mysql_fetch_array($result))
@@ -138,7 +141,7 @@ function hcregion($link)
 function hcopencomps($link)
 {
     echo "<h1><span>Open Competitions</span></h1>";
-    $sql = "select * from tblCompetition where comName not like '%test%' and comDateTo > now() order by comDateTo";
+    $sql = "select * from tblCompetition where comName not like '%test%' and comDateTo > date_sub(now(), interval 1 day) order by comDateTo";
     $result = mysql_query($sql,$link);
     $comps = [];
     while($row = mysql_fetch_array($result))
@@ -153,7 +156,7 @@ function hcopencomps($link)
 function hcclosedcomps($link)
 {
     echo "<h1><span>Closed Competitions</span></h1>";
-    $sql = "select * from tblCompetition where comName not like '%test%' and comDateTo <= now() order by comDateTo desc";
+    $sql = "select * from tblCompetition where comName not like '%test%' and comDateTo < date_sub(now(), interval 1 day) order by comDateTo desc";
     $result = mysql_query($sql,$link);
     $comps = [];
     while($row = mysql_fetch_array($result))
@@ -182,7 +185,7 @@ function hcfooter()
 }
 function hcmapjs()
 {
-    echo '<script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key=%GMAPKEY%" type="text/javascript"></script>';
+    echo '<script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key=ABQIAAAAPyz1XxP2rM79ZhAH2EmgwxQ1ylNcivz9k-2ubmbv1YwdT5nh3RQJsyJo_kuVL1UAWoydxDkwo_zsKw" type="text/javascript"></script>';
     echo "\n";
     echo '<script src="elabel.js" type="text/javascript"></script>';
     echo "\n";
@@ -196,7 +199,8 @@ function hccss()
 }
 function hchead()
 {
-    echo "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n";
+    echo "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"
+        \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n";
     echo "<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:v=\"urn:schemas-microsoft-com:vml\">\n";
     echo "<head>\n";
     echo '<meta http-equiv="content-type" content="text/html; charset=utf-8"/>';
