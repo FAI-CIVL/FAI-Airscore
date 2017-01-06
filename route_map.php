@@ -7,87 +7,11 @@ hchead();
 echo "<title>Task Map</title>\n";
 hccss();
 hcmapjs();
-hcscripts(array('json2.js', 'sprintf.js', 'plot_trackv3.js', 'microajax.minified.js'));
+hcscripts([ 'rjson.js', 'json2.js', 'sprintf.js', 'plot_trackv4.js', 'microajax.minified.js', 'uair.js', 'plot_task.js' ]);
 ?>
 <script type="text/javascript">
 var map;
 //<![CDATA[
-function plot_task(tasPk)
-{
-    microAjax("get_short.php?tasPk="+tasPk,
-	  function(data) {
-          var task, track, row;
-          var line, sline, polyline;
-          var gll, count, color;
-          var pos, sz;
-          var ihtml, ovlay;
-        
-    
-          // Got a good response, create the map objects
-          //alert("complete: " + data);
-    
-          var ssr = JSON.parse(data);
-    
-          line = Array();
-          sline = Array();
-          bounds = new google.maps.LatLngBounds();
-
-          count = 1;
-          ihtml = "<div class=\"trackInfo\"><table>";
-          for (row in ssr)
-          {
-              var overlay;
-              lasLat = ssr[row]["rwpLatDecimal"];
-              lasLon = ssr[row]["rwpLongDecimal"];
-              sLat = ssr[row]["ssrLatDecimal"];
-              sLon = ssr[row]["ssrLongDecimal"];
-              cname = "" + count + "*" + ssr[row]["rwpName"];
-              crad = ssr[row]["tawRadius"];
-
-              ihtml = ihtml + "<tr><td><b>" + ssr[row]["rwpName"] + "<b></td><td>" + ssr[row]["tawType"] + "</td><td>" + ssr[row]["tawRadius"] + "m</td><td>" + ssr[row]["tawHow"] + "</td><td>" + sprintf("%0.2f", ssr[row]["ssrCumulativeDist"]/1000) + "km</td></tr>";
-      
-              //alert("lasLat="+lasLat+" lasLon="+lasLon);
-              gll = new google.maps.LatLng(lasLat, lasLon);
-              line.push(gll);
-              bounds.extend(gll);
-
-              gll = new google.maps.LatLng(sLat, sLon);
-              sline.push(gll);
-          
-              count = count + 1;    
-      
-              pos = new google.maps.LatLng(lasLat,lasLon);
-              overlay = new ELabel(map, pos, cname, "waypoint", new google.maps.Size(0,0), 60);
-      
-              sz = GSizeFromMeters(map, pos, crad*2,crad*2);
-              overlay = new EInsert(map, pos, "circle.png", sz, map.getZoom());
-          }
-        
-          polyline = new google.maps.Polyline({   
-                    path: line, 
-                    strokeColor: "#ff0000",
-                    strokeWeight: 2, 
-                    strokeOpacity: 1
-                });
-          polyline.setMap(map);
-
-          polyline = new google.maps.Polyline({   
-                    path: sline, 
-                    strokeColor: "#0000ff",
-                    strokeWeight: 2, 
-                    strokeOpacity: 1
-                });
-          polyline.setMap(map);
-          map.fitBounds(bounds);
-
-          ihtml = ihtml + "</table></div>";
-          ovlay = document.createElement('DIV');
-          ovlay.style.padding = "5px";
-          ovlay.innerHTML = ihtml;
-          map.controls[google.maps.ControlPosition.RIGHT_TOP].push(ovlay);
-    });
-}
-
 function initialize() 
 {
     var moptions =
@@ -170,7 +94,14 @@ if ($tasPk > 0 || $trackid > 0)
 
 if ($tasPk > 0)
 {
-    echo "plot_task($tasPk);\n";
+    if ($tasType == 'free-pin' || $tasType == 'free' || $tasType == 'olc')
+    {
+        echo "plot_task($tasPk,1,0);\n";
+    }
+    else
+    {
+        echo "plot_task($tasPk,1,0);\n";
+    }
     // task header ..
 }
 
