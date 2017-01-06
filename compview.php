@@ -19,7 +19,7 @@
             $name = $row['pilFirstName'] . ' ' . $row['pilLastName'];
             $comPk = $row['comPk'];
             $pilPk = $row['pilPk'];
-            $long[] = array ("$count.", "<a href=\"tracklog_map.php?trackid=$id&comPk=$comPk\">$dist kms</a>", $row['traDate'], "<a href=\"index.php?pil=$pilPk\">$name<a>");
+            $long[] = [ "$count.", "<a href=\"tracklog_map.php?trackid=$id&comPk=$comPk\">$dist kms</a>", $row['traDate'], "<a href=\"index.php?pil=$pilPk\">$name<a>" ];
             $count++;
         }
         echo ftable($long, '', '', '');
@@ -83,10 +83,11 @@
     echo "<div id=\"text\">";
 
     echo "<h1><span>Details</span></h1>\n";
-    $detarr = array(
-        array("Location:", "<i>$clocation</i>", "Director:", "<i>$cdirector</i>"),
-        array("From:", "<i>$cdfrom</i>", "To:", "<i>$cdto</i>"),
-        array("Type:", "<i>$ctype ($cformula)</i>", "Overall Score:","<i>$coverall</i>"));
+    $detarr = [
+         [ "Location:", "<i>$clocation</i>", "Director:", "<i>$cdirector</i>" ],
+         [ "From:", "<i>$cdfrom</i>", "To:", "<i>$cdto</i>" ],
+         [ "Type:", "<i>$ctype ($cformula)</i>", "Overall Score:","<i>$coverall</i>" ]
+        ];
     echo ftable($detarr, '', '', '');
 
     $num = 20;
