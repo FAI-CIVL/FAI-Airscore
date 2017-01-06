@@ -8,8 +8,6 @@ require 'hc.php';
 require 'format.php';
 require 'xcdb.php';
 
-$comPk = reqival('comPk');
-
 $usePk = check_auth('system');
 $link = db_connect();
 $tasPk = reqival('tasPk');
@@ -99,7 +97,7 @@ $finfo = [];
 // add in country from tblCompPilot if we have entries ...
 
 
-function task_result($tasPk, $fdhv)
+function task_result($link, $tasPk, $fdhv)
 {
     $count = 1;
     $sql = "select TR.*, T.*, P.* from tblTaskResult TR, tblTrack T, tblPilot P where TR.tasPk=$tasPk $fdhv and T.traPk=TR.traPk and P.pilPk=T.pilPk order by TR.tarScore desc, P.pilFirstName";
@@ -172,14 +170,15 @@ function task_result($tasPk, $fdhv)
         if ($lastscore != $score)
         {
             $place = "$count";
+            $lastplace = $place;
         }
         else
         {
-            $place = '';
+            $place = $lastplace;
         }
         $lastscore = $score;
     
-        $trrow = array(fb($place), "<a href=\"tracklog_map.php?trackid=$traPk&comPk=$comPk\">$name</a>", $nation );
+        $trrow = [fb($place), "<a href=\"tracklog_map.php?trackid=$traPk&comPk=$comPk\">$name</a>", $nation ];
         $trrow[] = "$glider ($dhv)";
         $trrow[] = $startf;
         $trrow[] = $endf;
@@ -227,9 +226,8 @@ function task_result($tasPk, $fdhv)
 }
 
 
-$sorted = comp_result($comPk, $fdhv);
-$civilised = civl_result($sorted);
-$data = [ 'task' => $tsinfo, 'result' => $trtab ];
+$sorted = task_result($link, $tasPk, $fdhv);
+$data = [ 'task' => $tsinfo, 'data' => $sorted ];
 print json_encode($data);
 
 ?>
