@@ -36,10 +36,6 @@ function do_add_track_wp(trackid)
 {
     x_get_track_wp(trackid, plot_track_wp);
 }
-function do_add_task(tasPk) 
-{
-    x_get_task(tasPk, 0, plot_task);
-}
 function do_add_region(regPk,trackid) 
 {
     x_get_region(regPk, trackid, plot_region);
@@ -164,79 +160,8 @@ function plot_track_bounds(jstr)
     }
     map.fitBounds(bounds);
 }
-function plot_task(jstr)
-{
-    var task;
-    var track;
-    var row;
-    var line;
-    var trklog;
-    var polyline;
-    var gll;
-    var count;
-    var color;
-    var pos;
-    var sz;
-
-    count = 1;
-    task = JSON.parse(jstr)
-    track = task["task"];
-    line = Array();
-    segments = Array();
-    trklog = Array();
-    bounds = new google.maps.LatLngBounds();
-    for (row in track)
-    {
-        var overlay;
-        lasLat = track[row][0];
-        lasLon = track[row][1];
-        cname = "" + count + "*" + track[row][2];
-        crad = track[row][3];
-
-        //if (count == 1)
-        //{
-        //    map.setCenter(new google.maps.LatLng(lasLat, lasLon), 13);
-        //}
-    
-        gll = new google.maps.LatLng(lasLat, lasLon);
-        bounds.extend(gll);
-        line.push(gll);
-        trklog.push(track[row]);
-    
-        if (count % 10 == 0)
-        {
-            polyline = new google.maps.Polyline({   
-                    path: line, 
-                    strokeColor: "#ff0000",
-                    strokeWeight: 2, 
-                    strokeOpacity: 1
-                });
-            polyline.setMap(map);
-            segments.push(polyline);
-            line = Array();
-            line.push(gll);
-        }
-        count = count + 1;    
-
-        pos = new google.maps.LatLng(lasLat,lasLon);
-        overlay = new ELabel(map, pos, cname, "waypoint", new google.maps.Size(0,0), 60);
-
-        sz = GSizeFromMeters(map, pos, crad*2,crad*2);
-        overlay = new EInsert(map, pos, "circle.png", sz, map.getZoom());
-    }
-
-    polyline = new google.maps.Polyline({   
-            path: line, 
-            strokeColor: "#ff0000",
-            strokeWeight: 2, 
-            strokeOpacity: 1
-        });
-    polyline.setMap(map);
-    segments.push(polyline);
-    //document.getElementById("foo").value = trackid;
-    map.fitBounds(bounds);
-    return task;
-}
+//    microAjax("get_region.php?regPk="+regPk,
+//          function(data) { }
 function plot_region(jstr)
 {
     var task;
@@ -278,8 +203,11 @@ function plot_region(jstr)
     //document.getElementById("foo").value = trackid;
     return task;
 }
-function plot_award_task(jstr)
+function plot_award_task(tasPk, trackid)
 {
+    // FIX: should show already awarded ones ...
+    microAjax("get_track_progress.php?tasPk="+tasPk+"&trackid="+trackid,
+    function(data) {
     var task;
     var tps;
     var track;
@@ -289,23 +217,22 @@ function plot_award_task(jstr)
     var cnt;
     var end = 0;
 
-    // FIX: should show already awarded ones ...
+    var task = JSON.parse(data);
     ovhtml = "<div class=\"htmlControl\"><b>Award Points</b><br><form name=\"trackdown\" method=\"post\">\n";
-    task = plot_task(jstr);
     track = task["task"];
-    tasPk = task["tasPk"];
     tps = 0 + task["turnpoints"];
     incpk = task["merge"];
     cnt = 0;
+    plot_waypoints(track);
     // fix to show awarded points - unclick to unaward ..
     for (row in track)
     {
         cnt = cnt + 1;
         if (cnt > tps)
         {
-            name = track[row][2];
-            tawtype = track[row][4];
-            tawPk = track[row][5];
+            name = track[row]['rwpName'];
+            tawtype = track[row]['tawType'];
+            tawPk = track[row]['tawPk'];
             if ((end == 0) && (tawtype == 'endspeed' || tawtype == 'goal'))
             {
                 ovhtml = ovhtml +  cnt + ". <input onblur=\"x_award_waypoint(" + tasPk + "," + tawPk + "," + trackid + ",this.value,done)\" type=\"text\" name=\"goaltime\" size=5>&nbsp;" + name + "<br>";
@@ -335,6 +262,7 @@ function plot_award_task(jstr)
     map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(ovlay);
     //map.addControl(ovlay, new google.maps.ControlPosition(G_ANCHOR_BOTTOM_RIGHT, new google.maps.Size(10, 10)));
     //ovlay.setVisible(true);
+    });
 }
 function plot_track_header(body)
 {
