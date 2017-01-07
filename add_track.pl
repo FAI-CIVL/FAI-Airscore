@@ -10,8 +10,6 @@ use Data::Dumper;
 use TrackLib qw(:all);
 #use strict;
 
-my ($pil,$igc,$comPk);
-my $tasPk;
 my $traPk;
 my $traStart;
 my $tasType;
@@ -25,10 +23,10 @@ my $res;
 my ($glider,$dhv);
 my ($comFrom, $comTo);
 
-$pil = $ARGV[0];
-$igc = $ARGV[1];
-$comPk = 0 + $ARGV[2];
-$tasPk = 0 + $ARGV[3];
+my $pil = $ARGV[0];
+my $igc = $ARGV[1];
+my $comPk = 0 + $ARGV[2];
+my $tasPk = 0 + $ARGV[3];
 
 
 if (scalar(@ARGV) < 2)
