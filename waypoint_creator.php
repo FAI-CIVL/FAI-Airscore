@@ -47,7 +47,7 @@ while($row = mysql_fetch_array($result))
         $first = 1;
     }
 
-    echo "var label = new ELabel(new GLatLng($clat,$clong), \"$cname\", \"waypoint\", new GSize(-40,0), 60);\n";
+    echo "var label = new ELabel(new GLatLng($clat,$clong), \"$cname\", \"waypoint\", new GSize(0,0), 60);\n";
     echo "map.addOverlay(label);\n";
 }
 
