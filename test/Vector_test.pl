@@ -27,5 +27,13 @@ is($v2 == $v4, 1, "Vector comparison 2");
 
 is(sprintf("%.3f", $v3 . $v5), "0.889", "Vector dot product");
 
+my $resmult = 2 * $v1;
+my $vm = Vector->new(6,8,4);
+is($resmult, $vm, "Vector constant multiplication");
+
+my $resdiv = $v5 / 2;
+my $vd = Vector->new(1,2,2);
+is($resdiv, $vd, "Vector constant division");
+
 done_testing;
 
