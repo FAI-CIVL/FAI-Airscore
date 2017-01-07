@@ -31,6 +31,18 @@ my $p2 = cartesian2polar($c1);
 
 is_deeply($p2, $p1, "polar2cartesian2polar");
 
+my $p2 = { 'lat' => -36.0 * $pi / 180, 'long' => 110.0 * $pi / 180 };
+my $p3 = { 'lat' => -36.2 * $pi / 180, 'long' => 110.2  * $pi / 180};
+my $p4 = { 'lat' => -36.0001 * $pi / 180, 'long' => 110.0001  * $pi / 180};
+my $p5 = { 'lat' => -36.001 * $pi / 180, 'long' => 110.001  * $pi / 180};
+
+is(sprintf("%.2f", distance($p2, $p3)), "28580.58", "Distance 1");
+is(distance($p3, $p2), distance($p2, $p3), "Distance 2");
+is(sprintf("%.2f", distance($p2, $p4)), "14.30", "Distance 3");
+is(sprintf("%.0f", qckdist2($p3, $p2)), "28591", "Quick Distance 1");
+is(sprintf("%.2f", distance($p2, $p4)), sprintf("%.2f", qckdist2($p2, $p4)), "Quick Distance 2");
+is(sprintf("%.0f", distance($p2, $p5)), sprintf("%.0f", qckdist2($p2, $p5)), "Quick Distance 3");
+
 done_testing
 
 
