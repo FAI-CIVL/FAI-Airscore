@@ -9,8 +9,8 @@
 require 'authorisation.php';
 require 'format.php';
 
-$comPk = intval($_REQUEST['comPk']);
-$teaPk = intval($_REQUEST['teaPk']);
+$comPk = reqival('comPk');
+$teaPk = reqival('teaPk');
 adminbar($comPk);
 
 $link = db_connect();
@@ -37,22 +37,28 @@ if (!check_admin('admin',$usePk,$comPk))
 
 if (reqexists('addpilot'))
 {
-    $pilPk = intval($_REQUEST['addpilot']);
+    $pilPk = reqival('addpilot');
     $query = "insert into tblTeamPilot (teaPk, pilPk, tepModifier) value ($teaPk,$pilPk,1.0)";
     $result = mysql_query($query) or die('Pilot insert failed: ' . mysql_error());
 }
 
 if (reqexists('delpilot'))
 {
-    $pilPk = intval($_REQUEST['pilPk']);
-    $tepPk = intval($_REQUEST['tepPk']);
-    $query = "delete from tblTeamPilot where teaPk=$teaPk and tepPk=$tepPk";
-    $result = mysql_query($query) or die('Pilot delete failed: ' . mysql_error());
+    $tepPk = reqival('delpilot');
+    if ($tepPk < 1)
+    {
+        echo "Unknown team pilot index: $tepPk<br>";
+    }
+    else
+    {
+        $query = "delete from tblTeamPilot where tepPk=$tepPk";
+        $result = mysql_query($query) or die('Pilot delete failed: ' . mysql_error());
+    }
 }
 
 if (reqexists('uppilot'))
 {
-    $tepPk = intval($_REQUEST['uppilot']);
+    $tepPk = reqival('uppilot');
     $mod = floatval($_REQUEST["tepModifier$tepPk"]);
     #echo "tepPk=$tepPk mod=$mod<br>";
     if ($comTeamScoring == 'handicap')
@@ -76,7 +82,7 @@ if (reqexists('uppilot'))
 
 if (reqexists('addteam'))
 {
-    $pilPk = intval($_REQUEST['pilPk']);
+    $pilPk = reqival('pilPk');
     $tname = addslashes($_REQUEST['teamname']);
     $query = "insert into tblTeam (comPk, teaName) value ($comPk,'$tname')";
     $result = mysql_query($query) or die('Team create failed: ' . mysql_error());
@@ -163,7 +169,7 @@ if ($teaPk > 0)
     }
     else
     {
-        $query = "select T.*, TP.*, P.* from tblTeam T,tblTeamPilot TP,tblPilot P where TP.teaPk=T.teaPk and P.pilPk=TP.pilPk and T.teaPk=$teaPk";
+        $query = "select T.*, TP.*, P.* from tblTeam T,tblTeamPilot TP,tblPilot P where TP.teaPk=T.teaPk and P.pilPk=TP.pilPk and T.teaPk=$teaPk order by P.pilLastName";
     }
     $result = mysql_query($query) or die('Team pilots query failed: ' . mysql_error());
     $row = mysql_fetch_array($result);
@@ -191,9 +197,10 @@ if ($teaPk > 0)
                 // Huh?
                 $tepPk = -(intval($row['pilPk']));
             }
-            $outteam[] = Array($row['pilFirstName'], $row['pilLastName'], 
+            $outteam[] = Array($row['pilPk'] . ".", $row['pilFirstName'], $row['pilLastName'], 
                 "<input type=\"text\" name=\"tepModifier$tepPk\" value=\"$tepMod\" size=3>",
-                "<button type=\"submit\" name=\"uppilot\" value=\"$tepPk\">up</button>");
+                fbut('submit', 'uppilot', $tepPk, "up"),
+                fbut('submit', 'delpilot', $tepPk, "del"));
         }
         echo ftable($outteam,'','','');
     }
@@ -238,7 +245,8 @@ if ($cat != '')
         $fname = $row['pilFirstName'];
         $hgfa = $row['pilHGFA'];
         $sex = $row['pilSex'];
-        echo "<li><button type=\"submit\" name=\"addpilot\" value=\"$id\">add</button>";
+        $pilid = sprintf("%04d", $row['pilPk']);
+        echo "$pilid.<button type=\"submit\" name=\"addpilot\" value=\"$id\">add</button>";
         echo "$hgfa $fname $lname ($sex).<br>\n";
         $count++;
     }

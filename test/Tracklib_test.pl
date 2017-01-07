@@ -1,18 +1,9 @@
 #!/usr/bin/perl -I..
 
-#sub new
-#sub round 
-#sub spread
-#sub task_totals
-#sub day_quality
-#sub points_weight
-#sub calc_kmdiff
-#sub points_allocation
-
+use TrackLib qw(:all);
 use Test::More;
 use Data::Dumper;
 use strict;
-use Tracklib qw(:all);
 
 # Helper function tests
 
@@ -22,9 +13,8 @@ is(round(1.3), 1.0, "Rounding 1");
 is(round(1.5), 2.0, "Rounding 2");
 is(round(1.8), 2.0, "Rounding 3");
 
-my $p1 = { 'dlat' => -36.0, 'dlong' => 110.0 };
-$p1->{'lat'} = -36.0 *  $pi / 180;
-$p1->{'long'} = 110.0 * $pi / 180;
+my $p1 = { 'dlat' => -36.0, 'dlong' => 110.0, 
+            'lat' => -36.0 * PI() / 180, 'long' => 110.0 * PI() / 180 };
 
 my $c1 = polar2cartesian($p1);
 my $p2 = cartesian2polar($c1);
@@ -42,6 +32,17 @@ is(sprintf("%.2f", distance($p2, $p4)), "14.30", "Distance 3");
 is(sprintf("%.0f", qckdist2($p3, $p2)), "28591", "Quick Distance 1");
 is(sprintf("%.2f", distance($p2, $p4)), sprintf("%.2f", qckdist2($p2, $p4)), "Quick Distance 2");
 is(sprintf("%.0f", distance($p2, $p5)), sprintf("%.0f", qckdist2($p2, $p5)), "Quick Distance 3");
+
+my $p6 = { 'lat' => -36.002 * PI() / 180, 'long' => 110.002 * PI() / 180 };
+my $accurate_dist = distance($p1, $p6);
+is(sprintf("%.3f", $accurate_dist), "285.945", "Accurate Distance");
+my $qdist = qckdist2($p1, $p6);
+is(sprintf("%.0f", $qdist), "286", "Quick Distance");
+
+my $p7 = { 'lat' => -36.0005 * PI() / 180, 'long' => 110.0008 * PI() / 180 };
+my $adist17 = distance($p1, $p7);
+my $qdist17 = qckdist2($p1, $p7);
+is(sprintf("%.0f",$adist17),sprintf("%.0f",$qdist17),"Short distance comparison");
 
 done_testing
 

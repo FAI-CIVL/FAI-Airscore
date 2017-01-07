@@ -15,7 +15,7 @@ hchead();
 echo "<title>Tracklog Map</title>\n";
 hccss();
 hcmapjs();
-hcscripts(array('json2.js', 'sprintf.js', 'plot_trackv3.js', 'microajax.minified.js'));
+hcscripts(['json2.js', 'rjson.js', 'sprintf.js', 'plot_trackv4.js', 'microajax.minified.js', 'uair.js', 'plot_task.js' ]);
 echo '<script type="text/javascript">';
 sajax_show_javascript();
 echo "</script>\n";
@@ -68,11 +68,15 @@ if ($tasPk > 0 || $trackid > 0)
 {
     if ($tasPk > 0)
     {
-        $sql = "SELECT C.*, T.*,T.regPk as tregPk FROM tblCompetition C, tblTask T where T.tasPk=$tasPk and C.comPk=T.comPk";
+        $sql = "SELECT C.*, T.*,T.regPk as tregPk FROM tblCompetition C, tblTask T where T.tasPk=$tasPk and C.comPk=T.comPk and C.comPk=$comPk";
     }
     else
     {
-        $sql = "SELECT CTT.tasPk as ctask,C.*,CTT.*,T.*,T.regPk as tregPk FROM tblCompetition C, tblComTaskTrack CTT left outer join tblTask T on T.tasPk=CTT.tasPk where C.comPk=CTT.comPk and CTT.traPk=$trackid";
+        if ($comPk > 0)
+        {
+            $comextra = "and C.comPk=$comPk";
+        }
+        $sql = "SELECT CTT.tasPk as ctask,C.*,CTT.*,T.*,T.regPk as tregPk FROM tblCompetition C, tblComTaskTrack CTT left outer join tblTask T on T.tasPk=CTT.tasPk where C.comPk=CTT.comPk and CTT.traPk=$trackid $comextra";
     }
 
     $result = mysql_query($sql,$link) or die('Query failed: ' . mysql_error());
@@ -87,6 +91,7 @@ if ($tasPk > 0 || $trackid > 0)
             $comPk = $row['comPk'];
         }
         $comName = $row['comName'];
+        $comClass = $row['comClass'];
         $tasName = $row['tasName'];
         $tasDate = $row['tasDate'];
         $tasType = $row['tasTaskType'];
@@ -107,7 +112,14 @@ if (($tasPk > 0) and ($tasType == 'race' || $tasType == 'speedrun' || $tasType =
 {
     if ($trackid > 0)
     {
-        echo "do_add_track($trackid);\n";
+        if ($comClass == 'sail')
+        {
+            echo "do_track_speed($trackid,5);\n";
+        }
+        else
+        {
+            echo "do_add_track($trackid);\n";
+        }
     }
 
     if ($tasType == 'airgain')
@@ -118,11 +130,11 @@ if (($tasPk > 0) and ($tasType == 'race' || $tasType == 'speedrun' || $tasType =
     {
         if ($isadmin)
         {
-            echo "do_award_task($tasPk,$trackid);\n";
+            echo "plot_task($tasPk, 0, $trackid);\n";
         }
         else
         {
-            echo "do_add_task($tasPk);\n";
+            echo "plot_task($tasPk, 0, 0);\n";
         }
     }
 }
@@ -162,7 +174,7 @@ echo "<div id=\"map\" style=\"width: 100%; height: 600px\"></div>";
 echo "<input type=\"text\" name=\"foo\" id=\"foo\" size=\"8\"\">";
 if ($tasPk > 0)
 {
-    $sql = "select TR.*, T.*, P.* from tblTaskResult TR, tblTrack T, tblPilot P where TR.tasPk=$tasPk and T.traPk=TR.traPk and P.pilPk=T.pilPk order by TR.tarScore desc limit 10";
+    $sql = "select TR.*, T.*, P.* from tblTaskResult TR, tblTrack T, tblPilot P where TR.tasPk=$tasPk and T.traPk=TR.traPk and P.pilPk=T.pilPk order by TR.tarScore desc limit 20";
     $result = mysql_query($sql,$link) or die('Task Result selection failed: ' . mysql_error());
     $addable = Array();
     while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
@@ -199,6 +211,45 @@ echo "<input type=\"button\" name=\"back\" id=\"back\" value=\"<\" onclick=\"bac
 echo "<input type=\"button\" name=\"forward\" id=\"forward\" value=\">\" onclick=\"forward(); return false;\">";
 echo "&nbsp;&nbsp;";
 echo "<input type=\"button\" name=\"clear\" value=\"Clear\" onclick=\"clear_map(); return false;\">";
+echo "<br>";
+
+$airspaces = array();
+if ($tasPk > 0)
+{
+    $sql = "select * from tblTaskAirspace TA, tblAirspace A, tblAirspaceWaypoint AW where TA.tasPk=$tasPk and A.airPk=TA.airPk and A.airPk=AW.airPk order by A.airPk,AW.airOrder";
+}
+else
+{
+    $sql = "SELECT *, trlTime as bucTime FROM tblTrackLog where traPk=$trackid order by trlTime limit 1";
+    $result = mysql_query($sql,$link) or die('Tracklog location failed: ' . mysql_error());
+    $row = mysql_fetch_array($result, MYSQL_ASSOC);
+    $tracklat = $row['trlLatDecimal'];
+    $tracklon = $row['trlLongDecimal'];
+
+    $sql = "select * from tblAirspace R 
+                where R.airPk in (             
+                    select airPk from tblAirspaceWaypoint W, tblAirspaceRegion R where
+                    $tracklat between (R.argLatDecimal-R.argSize) and (R.argLatDecimal+R.argSize) and
+                    $tracklon between (R.argLongDecimal-R.argSize) and (R.argLongDecimal+R.argSize) and
+                    W.awpLatDecimal between (R.argLatDecimal-R.argSize) and (R.argLatDecimal+R.argSize) and
+                    W.awpLongDecimal between (R.argLongDecimal-R.argSize) and (R.argLongDecimal+R.argSize)
+                    group by (airPk))
+                order by R.airName";
+}
+$result = mysql_query($sql,$link) or die('Airspace selection failed: ' . mysql_error());
+$addable = Array();
+while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+{   
+    $airspaces[$row['airName']] = $row['airPk'];
+}
+if (sizeof($airspaces) > 0)
+{
+    echo fselect('airspaceid', '', $airspaces);
+    //echo "<input type=\"text\" name=\"airspaceid\" id=\"airspaceid\" size=\"8\"\">";
+    echo "<input type=\"button\" name=\"check\" value=\"Add Airspace\" onclick=\"do_add_air(0); return false;\">";
+}
+
+
 if ($trackid > 0)
 {
     echo "<form action=\"download_tracks.php?traPk=$trackid\" name=\"trackdown\" method=\"post\">";
