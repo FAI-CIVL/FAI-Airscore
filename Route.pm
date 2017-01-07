@@ -91,26 +91,24 @@ sub find_closest
     $C1 = polar2cartesian($P1);
     $C2 = polar2cartesian($P2);
 
-    #if ($P2->{'shape'} eq 'line')
-    #{
-    #    print "P2 is a line\n";
-    #    return $P2;
-    #}
+    if ($P2->{'shape'} eq 'line')
+    {
+        return $P2;
+    }
 
     if (!defined($P3))
     {
         # End of line case ..
-        print "P3 not defined, P2 = ", Dumper($P2);
-        $O = vvminus($C1, $C2);
-        $vl = vector_length($O);
-        if ($vl < 0.01 or $P2->{'shape'} eq 'line')
+        $O = $C1 - $C2;
+        $vl = $O->length();
+        if ($vl != 0)
         {
-            return $P2;
+            $O = ($P2->{'radius'} / $vl) * $O;
+            $CL = $O + $C2;
         }
         else
         {
-            $O = cvmult($P2->{'radius'} / $vl, $O);
-            $CL = vvplus($O, $C2);
+            return $P2;
         }
 
         my $result = cartesian2polar($CL);
@@ -118,22 +116,33 @@ sub find_closest
         return $result;
     }
 
+#    Same point repeated?
+#    if (ddequal($P1, $P2))
+#    {
+#        # same centre .. just do a radius check ..
+#        $a = vvminus($C1, $C3);
+#        $vl = vector_length($a);
+#        $O = vvminus($N, $C3);
+#        $vl = vector_length($O);
+#        $O = cvmult($P2->{'radius'} / $vl, $O);
+#        $CL = vvplus($O, $C3);
+#    }
+
     $C3 = polar2cartesian($P3);
 
     # What if they have the same centre?
-    if (vvequal($C1,$C3) == 1)
+    if ($C1 == $C3)
     {
-        print "C1 == C3\n";
-        $O = vvminus($C1, $C2);
-        $vl = vector_length($O);
+        $O = $C1 - $C2;
+        $vl = $O->length();
         if ($vl < 0.01)
         {
             # They're all the same point .. not much we can do until next iteration
             return $P2;
         }
 
-        $O = cvmult($P2->{'radius'} / $vl, $O);
-        $CL = vvplus($O, $C2);
+        $O = ($P2->{'radius'} / $vl) * $O;
+        $CL = $O + $C2;
 
         my $result = cartesian2polar($CL);
         # Keep radius for next iteration
@@ -143,17 +152,16 @@ sub find_closest
 
 
     # What if the 1st and 2nd have the same centre?
-    $T = vvminus($C1,$C2);
-    if (vector_length($T) < 0.01)
+    $T = $C1 - $C2;
+    if ($T->length() < 0.01)
     {
-        print "C1 == C2\n";
-        $O = vvminus($C3, $C2);
-        $vl = vector_length($O);
+        $O = $C3 - $C2;
+        $vl = $O->length();
         if ($vl > 0)
         {
-            $O = cvmult($P2->{'radius'} / $vl, $O);
+            $O = ($P2->{'radius'} / $vl) * $O;
         }
-        $CL = vvplus($O, $C2);
+        $CL = $O + $C2;
 
         my $result = cartesian2polar($CL);
         return $result;
@@ -167,7 +175,7 @@ sub find_closest
             + ($C3->{'z'} - $C1->{'z'})*($C3->{'z'} - $C1->{'z'})); 
     #print "u=$u cart dist=", vector_length($T), " polar dist=", distance($P1, $P2), "\n";
 
-    $N = vvplus($C1, cvmult($u, vvminus($C3, $C1)));
+    $N = $C1 + ($u * ($C3 - $C1));
     $CL = $N;
     $PR = cartesian2polar($CL);
     if (($u >= 0 && $u <= 1)
@@ -178,8 +186,48 @@ sub find_closest
         my $vn;
 
         # Ok - we have a 180deg? connect
-        print "    180 deg connect: u=$u radius=", $P2->{'radius'}, "\n";
+        print "180 deg connect: u=$u radius=", $P2->{'radius'}, "\n";
         return $P2;
+    
+#        if ($P2->{'how'} eq 'exit' && $u == 0)
+#        {
+#            $O = vvminus($C3, $C2);
+#            $vl = vector_length($O);
+#            print "short route point must be on the cylinder\n";
+#            if ($vl > 0)
+#            {
+#                $O = cvmult($P2->{'radius'} / $vl, $O);
+#            }
+#            $CL = vvplus($O, $C2);
+#            $PR = cartesian2polar($CL);
+#        }
+
+        # find the intersection points (maybe in cylinder)
+        #$v = plane_normal($C1, $C2);
+        #$w = plane_normal($C3, $C2);
+
+        #print "dot_prod=",dot_product($a,$b), "\n";
+        #print "theta=$theta\n";
+        #$a = vvminus($C1, $C2);
+        #$vl = vector_length($a);
+        #if ($vl > 0)
+        #{
+        #    $a = vcdiv($a, $vl);
+        #}
+        #$b = vvminus($C3, $C2);
+        #$vl = vector_length($b);
+        #if ($vl > 0)
+        #{
+        #    $b = vcdiv($b, $vl);
+        #}
+        #$theta = acos(dot_product($a,$b));
+
+        #$vn = vvplus($a,$b);
+        #$vl = vector_length($vn);
+        #$vn = vcdiv($vn,$vl);
+        #$O = cvmult($P2->{'radius'},$vn);
+        #print "vec_len=", vector_length($O), "\n";
+        #$CL = vvplus($O,$C2);
     }
     else
     {
@@ -189,40 +237,40 @@ sub find_closest
         # find the angle between in/out line
         $v = plane_normal($C1, $C2);
         $w = plane_normal($C3, $C2);
-        $phi = acos(dot_product($v,$w));
+        $phi = acos($v . $w);
         $phideg = $phi * 180 / $pi;
-        print "    angle between in/out=$phideg\n";
+        #print "    angle between in/out=$phideg\n";
         
         # div angle / 2 add to one of them to create new
         # vector and scale to cylinder radius for new point 
-        $a = vvminus($C1, $C2);
-        $vla = vector_length($a);
+        $a = $C1 - $C2;
+        $vla = $a->length();
         if ($vla > 0)
         {
-            $a = vcdiv($a, $vla);
+            $a = $a / $vla;
         }
-        $b = vvminus($C3, $C2);
-        $vlb = vector_length($b);
+        $b = $C3 - $C2;
+        $vlb = $b->length();
         if ($vlb > 0)
         {
-            $b = vcdiv($b, $vlb);
+            $b = $b / $vlb;
         }
 
-        $O = vvplus($a, $b);
-        $vl = vector_length($O);
+        $O = $a + $b;
+        $vl = $O->length();
 
         if ($phideg < 180)
         {
             #print "    p2->radius=", $P2->{'radius'}, "\n";
-            $O = cvmult($P2->{'radius'} / $vl, $O);
+            $O = ($P2->{'radius'} / $vl) * $O;
         }
         else
         {
             #print "    -p2->radius=", $P2->{'radius'}, "\n";
-            $O = cvmult(-$P2->{'radius'} / $vl, $O);
+            $O = (-$P2->{'radius'} / $vl) * $O;
         }
 
-        $CL = vvplus($O, $C2);
+        $CL = $O + $C2;
     }
 
     #print "Centre=", Dumper($C2), "\n";
@@ -285,10 +333,10 @@ sub find_shortest_route
         push @it1, $newcl;
     }
     # FIX: special case for end point ..
-    #print "From it1-last: $i: ", $wpts->[$i]->{'name'}, "\n";
+    #print "newcl=", Dumper($newcl);
+    #print "From it1: $i: ", $wpts->[$i]->{'name'}, "\n";
     $newcl = find_closest($newcl, $wpts->[$num-1], undef);
     push @it1, $newcl;
-
     #print "IT1=", Dumper(\@it1);
 
     $num = scalar @it1;
@@ -297,8 +345,7 @@ sub find_shortest_route
     for ($i = 0; $i < $num-2; $i++)
     {
         #print "From it2: $i: ", $wpts->[$i]->{'name'}, "\n";
-        #$newcl = find_closest($newcl, $it1[$i+1], $it1[$i+2]);
-        $newcl = find_closest($newcl, $wpts->[$i+1], $it1[$i+2]);
+        $newcl = find_closest($newcl, $it1[$i+1], $it1[$i+2]);
         push @it2, $newcl;
     }
     push @it2, $it1[$num-1];
@@ -310,20 +357,19 @@ sub find_shortest_route
     for ($i = 0; $i < $num-2; $i++)
     {
         #print "From it3: $i: ", $wpts->[$i]->{'name'}, "\n";
-        #$newcl = find_closest($newcl, $it2[$i+1], $it2[$i+2]);
-        $newcl = find_closest($newcl, $wpts->[$i+1], $it2[$i+2]);
+        $newcl = find_closest($newcl, $it2[$i+1], $it2[$i+2]);
         push @closearr, $newcl;
     }
     push @closearr, $it2[$num-1];
     #print "closearr=", Dumper(\@closearr);
 
-    for (my $i = 0; $i < scalar @closearr-1; $i++)
-    {
-        my $dist = distance($wpts->[$i], $wpts->[$i+1]);
-        my $cdist = distance($closearr[$i], $closearr[$i+1]);
-        my $radius = 0 + $closearr[$i]->{'radius'};
-        print "Dist wpt:$i ($radius) to wpt:", $i+1, "=$dist srdist=$cdist\n";
-    }
+    #for (my $i = 0; $i < scalar @closearr-1; $i++)
+    #{
+    #    my $dist = distance($wpts->[$i], $wpts->[$i+1]);
+    #    my $cdist = distance($closearr[$i], $closearr[$i+1]);
+    #    my $radius = 0 + $closearr[$i]->{'radius'};
+    #    print "Dist wpt:$i ($radius) to wpt:", $i+1, "=$dist srdist=$cdist\n";
+    #}
 
     return \@closearr;
 }
@@ -487,11 +533,11 @@ sub in_semicircle
     my $p = polar2cartesian($waypoints->[$prev]); 
 
     # vector that bisects the semi-circle pointing into occupied half plane
-    $bvec = vvminus($c, $p);
-    $pvec = vvminus($coord->{'cart'}, $c);
+    $bvec = $c - $p;
+    $pvec = $coord->{'cart'} - $c;
 
     # dot product 
-    my $dot = dot_product($bvec, $pvec);
+    my $dot = $bvec . $pvec;
     if ($dot > 0)
     {
         return 1;

@@ -22,6 +22,7 @@ use overload
     '*' => \&vecmult,
     '/' => \&vecdiv,
     '==' => \&vecequal,
+    'eq' => \&vecequal,
     '.' => \&vecdot;
 
 sub new
@@ -44,58 +45,50 @@ sub vecadd
 {
     my ($self, $other, $swap) = @_;
 
-    my $cart = {};
-    #my $result = $$self - $other;
+    my $cart = Vector->new(
+        $self->{'x'} + $other->{'x'},
+        $self->{'y'} + $other->{'y'},
+        $self->{'z'} + $other->{'z'});
 
-    $cart->{'x'} = $self->{'x'} + $other->{'x'};
-    $cart->{'y'} = $self->{'y'} + $other->{'y'};
-    $cart->{'z'} = $self->{'z'} + $other->{'z'};
-
-    #my $result = -$result if $swap;
-    ref $cart ? $cart : bless \$cart;
+    return $cart;
 }
 
 sub vecsub
 {
     my ($self, $other, $swap) = @_;
 
-    my $cart = {};
     #my $result = $$self - $other;
 
-    $cart->{'x'} = $self->{'x'} - $other->{'x'};
-    $cart->{'y'} = $self->{'y'} - $other->{'y'};
-    $cart->{'z'} = $self->{'z'} - $other->{'z'};
+    my $cart = Vector->new(
+        $self->{'x'} - $other->{'x'},
+        $self->{'y'} - $other->{'y'},
+        $self->{'z'} - $other->{'z'});
 
-    #my $result = -$result if $swap;
-    ref $cart ? $cart : bless \$cart;
+    return $cart;
 }
 
 sub vecmult
 {
     my ($self, $other, $swap) = @_;
 
-    my $cart = {};
+    my $cart = Vector->new(
+        $self->{'x'} * $other,
+        $self->{'y'} * $other,
+        $self->{'z'} * $other);
 
-    if ($swap)
-    {
-        $cart = $other * $$self;
-    }
-    else
-    {
-        $cart->{'x'} = $self->{'x'} * $other;
-        $cart->{'y'} = $self->{'y'} * $other;
-        $cart->{'z'} = $self->{'z'} * $other;
-    }
-    ref $cart ? $cart : bless \$cart;
+    return $cart;
 }
 
 sub vecdiv
 {
     my ($self, $other, $swap) = @_;
 
-    my $result = $$self - $other;
-    my $result = -$result if $swap;
-    ref $result ? $result : bless \$result;
+    my $cart = Vector->new(
+        $self->{'x'} / $other,
+        $self->{'y'} / $other,
+        $self->{'z'} / $other);
+
+    return $cart;
 }
 
 sub vecdot
