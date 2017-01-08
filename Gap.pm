@@ -82,14 +82,11 @@ sub task_totals
     my $mindist;
     my $goal;
     my $ess;
-    my $goalalt;
     my $glidebonus;
     my %taskt;
     my $tasPk;
     my ($minarr, $maxarr, $fastest, $firstdep, $mincoeff, $tqtime);
     my $launchvalid;
-    my $waypoints;
-    my $numpoints;
     my $median;
     my $stddev;
     my @distspread;
@@ -118,7 +115,6 @@ sub task_totals
     {
         print "F: glidebonus=$glidebonus\n";
         $glidebonus = $formula->{'glidebonus'};
-        # @todo - find goal altitude 
         $landed = 0 + $ref->{'Landed'};
     }
 
@@ -206,20 +202,6 @@ sub task_totals
         $lastdept = $ref->{'LastDept'};
     }
 
-    $waypoints = $task->{'waypoints'};
-    $numpoints = scalar @$waypoints;
-    for (my $i = 0; $i < $numpoints; $i++)
-    {
-        if ($waypoints->[$i]->{'type'} eq 'goal')
-        {
-            $goalalt = $waypoints->[$i]->{'alt'};
-        }
-    }
-    if ($goalalt < 0)
-    {
-        $goalalt = 0;
-    }
-
     # Find the median distance flown
     $dbh->do('set @rownum=-1;');
     $sth = $dbh->prepare("select avg(TM.dist) as median from ( select \@rownum:=\@rownum+1 AS rownum, TR.tarDistance AS dist FROM tblTaskResult TR where tasPk=$tasPk and tarResultType not in ('abs', 'dnf') ORDER BY tarDistance ) AS TM WHERE TM.rownum IN ( CEIL(\@rownum/2), FLOOR(\@rownum/2))");
@@ -276,7 +258,6 @@ sub task_totals
     $taskt{'firstarrival'} = $minarr;
     $taskt{'lastarrival'} = $maxarr;
     $taskt{'mincoeff'} = $mincoeff;
-    $taskt{'goalalt'} = $goalalt;
     $taskt{'distspread'} = \@distspread;
     $taskt{'kmmarker'} = $kmmarker;
     $taskt{'endssdistance'} = $task->{'endssdistance'};
@@ -752,10 +733,13 @@ sub ordered_results
         if ($task->{'sstopped'} > 0 && $taskres{'stopalt'} > 0 && $formula->{'glidebonus'} > 0)
         {
             print "Stopped height bonus: ", $formula->{'glidebonus'} * $taskres{'stopalt'}, "\n";
-            $taskres{'distance'} = $taskres{'distance'} + $formula->{'glidebonus'} * $taskres{'stopalt'};
-            if ($taskres{'distance'} > $task->{'ssdistance'})
+            if ($taskres{'stopalt'} > $task->{'goalalt'})
             {
-                $taskres{'distance'} = $task->{'ssdistance'};
+                $taskres{'distance'} = $taskres{'distance'} + $formula->{'glidebonus'} * ($taskres{'stopalt'} - $task->{'goalalt'});
+                if ($taskres{'distance'} > $task->{'ssdistance'})
+                {
+                    $taskres{'distance'} = $task->{'ssdistance'};
+                }
             }
         }
         if ($taskres{'distance'} < $formula->{'mindist'})
