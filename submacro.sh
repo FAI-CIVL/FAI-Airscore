@@ -15,12 +15,13 @@ then
 fi
 
 # Restore originals
-all=`ls *.b4sub`
-for i in $all
-do
-    orig=`echo $i | cut -d. -f1-2`
-    cp $i $orig 
-done
+# @todo - make this an option?
+#all=`ls *.b4sub`
+#for i in $all
+#do
+#    orig=`echo $i | cut -d. -f1-2`
+#    cp $i $orig 
+#done
 
 # If we have a string for substitution
 if [ z$2 != z ];
