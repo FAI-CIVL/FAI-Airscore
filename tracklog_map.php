@@ -176,7 +176,7 @@ if ($tasPk > 0)
 {
     $sql = "select TR.*, T.*, P.* from tblTaskResult TR, tblTrack T, tblPilot P where TR.tasPk=$tasPk and T.traPk=TR.traPk and P.pilPk=T.pilPk order by TR.tarScore desc limit 20";
     $result = mysql_query($sql,$link) or die('Task Result selection failed: ' . mysql_error());
-    $addable = Array();
+    $addable = [];
     while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {
         $addable[$row['pilLastName']] = $row['traPk'];
@@ -187,7 +187,7 @@ else if ($trackid > 0)
 {
     $sql = "select T2.*, P.* from tblTrack T, tblTrack T2, tblPilot P where T2.traStart>date_sub(T.traStart, interval 6 hour) and T2.traStart<date_add(T.traStart, interval 6 hour) and T.traPk=$trackid and P.pilPk=T2.pilPk order by T2.traLength desc limit 10";
     $result = mysql_query($sql,$link) or die('Task Result selection failed: ' . mysql_error());
-    $addable = Array();
+    $addable = [];
     while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     {
         $addable[$row['pilLastName']] = $row['traPk'];
@@ -236,11 +236,14 @@ else
                     group by (airPk))
                 order by R.airName";
 }
-$result = mysql_query($sql,$link) or die('Airspace selection failed: ' . mysql_error());
-$addable = Array();
-while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
-{   
-    $airspaces[$row['airName']] = $row['airPk'];
+$result = mysql_query($sql,$link); // or die('Airspace selection failed: ' . mysql_error());
+if ($result)
+{
+    $addable = [];
+    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+    {   
+        $airspaces[$row['airName']] = $row['airPk'];
+    }
 }
 if (sizeof($airspaces) > 0)
 {
@@ -248,8 +251,7 @@ if (sizeof($airspaces) > 0)
     //echo "<input type=\"text\" name=\"airspaceid\" id=\"airspaceid\" size=\"8\"\">";
     echo "<input type=\"button\" name=\"check\" value=\"Add Airspace\" onclick=\"do_add_air(0); return false;\">";
 }
-
-
+    
 if ($trackid > 0)
 {
     echo "<form action=\"download_tracks.php?traPk=$trackid\" name=\"trackdown\" method=\"post\">";
