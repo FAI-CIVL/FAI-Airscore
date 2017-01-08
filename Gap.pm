@@ -188,9 +188,9 @@ sub task_totals
     {
         $maxdist = 0 + $ref->{'MaxDist'};
     }
-    if ($maxdist < 0.1)
+    if ($maxdist < $mindist)
     {
-        $maxdist = 0.1;
+        $maxdist = $mindist;
     }
     #print "TT: glidebonus=$glidebonus maxdist=$maxdist\n";
 
@@ -471,7 +471,7 @@ sub calc_kmdiff
         }
         $kmdiff->[$dif] = ($rdif);
     }
-    print "debc=$debc x=$x (vs $Nlo)\n";
+    # print "debc=$debc x=$x (vs $Nlo)\n";
 
     return $kmdiff;
 }
@@ -583,13 +583,13 @@ sub pilot_departure_leadout
     elsif ($task->{'departure'} eq 'off')
     {
         $Pdepart = 0;
-        print "    depart off\n";
+        # print "    depart off\n";
     }
     else
     {
         # Normal departure points ..
         $x = ($pil->{'startSS'} - $taskt->{'firstdepart'})/$formula->{'nomtime'};
-        print "    normal departure x=$x\n";
+        # print "    normal departure x=$x\n";
         if ($x < 1/2 && $pil->{'time'} > 0)
         {
             my $Pspeed = $self->pilot_speed($formula, $task, $taskt, $pil, $Aspeed);
@@ -603,7 +603,7 @@ sub pilot_departure_leadout
     # Sanity
     if (0+$Pdepart != $Pdepart)
     {
-        print "    Pdepart is nan\n";
+        # print "    Pdepart is nan\n";
         $Pdepart = 0;
     }
 
@@ -612,7 +612,7 @@ sub pilot_departure_leadout
         $Pdepart = 0;
     }
 
-    print "    Pdepart: $Pdepart\n";
+    # print "    Pdepart: $Pdepart\n";
     return $Pdepart;
 }
 
@@ -623,7 +623,7 @@ sub pilot_speed
     my $Tmin = $taskt->{'fastest'};
     my $Pspeed;
 
-    print $pil->{'tarPk'}, " speed: ", $pil->{'time'}, ", $Tmin\n";
+    # print $pil->{'tarPk'}, " speed: ", $pil->{'time'}, ", $Tmin\n";
 
     if ($pil->{'time'} > 0)
     {
@@ -657,7 +657,8 @@ sub pilot_distance
             (($pil->{'distance'}/$taskt->{'maxdist'}) * $formula->{'lineardist'}
             + $kmdiff->[floor($pil->{'distance'}/100.0)] * (1-$formula->{'lineardist'}));
 
-    print $pil->{'tarPk'}, " lin dist: ", $Adistance * ($pil->{'distance'}/$taskt->{'maxdist'}) * $formula->{'lineardist'}, " dif dist: ", $Adistance * $kmdiff->[floor($pil->{'distance'}/100.0)] * (1-$formula->{'lineardist'});
+    # print $pil->{'tarPk'}, " Adist=$Adistance pil->dist=", $pil->{'distance'}, " maxdist=", $taskt->{'maxdist'}, " kmdiff=", $kmdiff->[floor($pil->{'distance'}/100.0)], "\n";
+    # print $pil->{'tarPk'}, " lin dist: ", $Adistance * ($pil->{'distance'}/$taskt->{'maxdist'}) * $formula->{'lineardist'}, " dif dist: ", $Adistance * $kmdiff->[floor($pil->{'distance'}/100.0)] * (1-$formula->{'lineardist'});
 
     return $Pdist;
 }
@@ -729,7 +730,7 @@ sub ordered_results
         $taskres{'distance'} = $ref->{'tarDistance'};
         $taskres{'stopalt'} = $ref->{'tarLastAltitude'};
         # set pilot to min distance if they're below that ..
-        print "sstopped=", $task->{'sstopped'}, " stopalt=", $taskres{'stopalt'}, " glidebonus=", $formula->{'glidebonus'}, "\n";
+        # print "sstopped=", $task->{'sstopped'}, " stopalt=", $taskres{'stopalt'}, " glidebonus=", $formula->{'glidebonus'}, "\n";
         if ($task->{'sstopped'} > 0 && $taskres{'stopalt'} > 0 && $formula->{'glidebonus'} > 0)
         {
             print "Stopped height bonus: ", $formula->{'glidebonus'} * $taskres{'stopalt'}, "\n";
@@ -853,7 +854,7 @@ sub points_allocation
     my $Ngoal = $taskt->{'goal'};
     my $Tmin = $taskt->{'fastest'};
     my $Tfarr = $taskt->{'firstarrival'};
-    print Dumper($taskt);
+    # print Dumper($taskt);
 
 
     my $sorted_pilots = $self->ordered_results($dbh, $task, $taskt, $formula);
