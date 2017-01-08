@@ -20,6 +20,7 @@ my $sql;
 my $sth;
 my $ref;
 my $res;
+my $ex;
 my ($glider,$dhv);
 my ($comFrom, $comTo);
 
@@ -38,9 +39,9 @@ if (scalar(@ARGV) < 2)
 $dbh = db_connect();
 
 # Find the pilPk
-if (0 + $pil > 0)
+if ((0 + $pil) > 0)
 {
-    $sql = "select * from tblPilot where pilHGFA='$pil' or pilCIVL='$pil'";
+    $sql = "select * from tblPilot where pilHGFA='$pil'"; #or pilCIVL='$pil'";
 }
 else
 {
@@ -86,10 +87,12 @@ else
 
 # Load the track 
 $res = `${BINDIR}igcreader.pl $igc $pilPk`;
-if ($?)
+$ex = $?;
+print $res;
+if ($ex > 0)
 {
     print $res;
-    exit($?);
+    exit(1);
 }
 
 # Parse for traPk ..
@@ -107,13 +110,13 @@ if (0+$traPk < 1)
 # FIX: Copy the track somewhere permanent?
 # FIX: Update tblTrack to point to that
 
-$sql = "update tblTrack set traGlider='$glider', traDHV='$dhv' where traPk=$traPk";
-$dbh->do($sql);
+$dbh->do("update tblTrack set traGlider=?, traDHV=? where traPk=?", undef, $glider, $dhv, $traPk);
 
 # Try to find an associated task if not specified
 if ($tasPk == 0)
 {
-    $sql = "select T.tasPk, T.tasTaskType, C.comType, unix_timestamp(C.comDateFrom) as CFrom, unix_timestamp(C.comDateTo) as CTo from tblTask T, tblTrack TL, tblCompetition C where C.comPk=T.comPk and T.comPk=$comPk and TL.traPk=$traPk and TL.traStart > date_sub(T.tasStartTime, interval C.comTimeOffset hour) and TL.traStart < date_sub(T.tasFinishTime, interval C.comTimeOffset hour)";
+    #$sql = "select T.tasPk, T.tasTaskType, C.comType, unix_timestamp(C.comDateFrom) as CFrom, unix_timestamp(C.comDateTo) as CTo from tblTask T, tblTrack TL, tblCompetition C where C.comPk=T.comPk and T.comPk=$comPk and TL.traPk=$traPk and TL.traStart > date_sub(T.tasStartTime, interval C.comTimeOffset hour) and TL.traStart < date_sub(T.tasFinishTime, interval C.comTimeOffset hour)";
+    $sql = "select T.tasPk, T.tasTaskType, C.comType from tblTask T, tblTrack TL, tblCompetition C where C.comPk=T.comPk and T.comPk=$comPk and TL.traPk=$traPk and TL.traStart > date_sub(T.tasDate, interval C.comTimeOffset hour) and TL.traStart < date_add(T.tasDate, interval (24-C.comTimeOffset) hour)";
     $sth = $dbh->prepare($sql);
     $sth->execute();
     if  ($ref = $sth->fetchrow_hashref())
@@ -145,7 +148,7 @@ else
 }
 
 $traStart = 0;
-$sql = "select unix_timestamp(T.traStart) as TStart, unix_timestamp(C.comDateFrom) as CFrom, unix_timestamp(C.comDateTo) as CTo from tblTrack T, tblCompetition C where traPk=$traPk and C.comPk=$comPk";
+$sql = "select unix_timestamp(T.traStart) as TStart, unix_timestamp(C.comDateFrom) as CFrom, unix_timestamp(C.comDateTo) as CTo, C.comTimeOffset from tblTrack T, tblCompetition C where traPk=$traPk and C.comPk=$comPk";
 $sth = $dbh->prepare($sql);
 $sth->execute();
 if  ($ref = $sth->fetchrow_hashref())
@@ -153,9 +156,10 @@ if  ($ref = $sth->fetchrow_hashref())
     $traStart = $ref->{'TStart'};
     $comFrom = $ref->{'CFrom'};
     $comTo = $ref->{'CTo'};
+    $comTimeOffset = $ref->{'comTimeOffset'};
 }
 
-if ($traStart < $comFrom)
+if ($traStart < ($comFrom-$comTimeOffset*3600))
 {
     print "Track from before the competition opened ($traStart:$comFrom)\n";
     print "traPk=$traPk\n";
@@ -179,27 +183,32 @@ if ($tasPk > 0)
 
     if (($tasType eq 'free') or ($tasType eq 'free-pin'))
     {
-        `${BINDIR}optimise_flight.pl $traPk $tasPk 0`;
+        `${BINDIR}optimise_flight.pl $traPk $comPk $tasPk 0`;
         # also verify for optional points in 'free' task?
     }
     elsif ($tasType eq 'olc')
     {
-        `${BINDIR}optimise_flight.pl $traPk $tasPk 3`;
+        `${BINDIR}optimise_flight.pl $traPk $comPk $tasPk 3`;
     }
     elsif ($tasType eq 'airgain')
     {
-        `${BINDIR}optimise_flight.pl $traPk $tasPk 3`;
+        `${BINDIR}optimise_flight.pl $traPk $comPk $tasPk 3`;
         `${BINDIR}airgain_verify.pl $traPk $comPk $tasPk`;
     }
     elsif ($tasType eq 'speedrun' or $tasType eq 'race' or $tasType eq 'speedrun-interval')
     {
         # Optional really ...
-        `${BINDIR}optimise_flight.pl $traPk $tasPk 3`;
+        `${BINDIR}optimise_flight.pl $traPk $comPk $tasPk 3`;
         `${BINDIR}track_verify_sr.pl $traPk $tasPk`;
     }
     else
     {
         print "Unknown task: $tasType\n";
+    }
+    if ($? > 0)
+    {
+        print("Flight/task optimisation failed\n");
+        exit(1);
     }
 }
 else
@@ -210,11 +219,16 @@ else
     # Nothing else to do but verify ...
     if ($comType eq 'Free')
     {
-        `${BINDIR}optimise_flight.pl $traPk 0 0`;
+        `${BINDIR}optimise_flight.pl $traPk $comPk 0 0`;
     }
     else
     {
-        `${BINDIR}optimise_flight.pl $traPk`;
+        `${BINDIR}optimise_flight.pl $traPk $comPk`;
+    }
+    if ($? > 0)
+    {
+        print("Flight (free) optimisation failed\n");
+        exit(1);
     }
 }
 
@@ -224,6 +238,10 @@ else
 #if ($res ne 'PASSED')
 #{
 #}
+# From: http://vali.fai-civl.org/webservice.html
+# $ /usr/bin/curl -F igcfile=@YourSample.igc vali.fai-civl.org/api/vali/json
+# Returns json
+#
 
 
 # stored track pk
