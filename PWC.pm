@@ -9,8 +9,8 @@
 #
 # PWC differences
 # 1. No arrival points (go to time) if ESS != Goal
-# 1a. Altitude Arrival points if ESS == Goal (wtf?)
-# 2. LC2
+# 1a. Altitude Arrival points if ESS == Goal (wtf?) (@todo)
+# 2. LC2 - lead coeff^2
 # 3. Launch validity altered?
 # 4. Stopped task different
 #       - if in goal - subtract time points == goal at ESS task stop time
