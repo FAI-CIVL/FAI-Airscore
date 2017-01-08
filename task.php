@@ -88,7 +88,7 @@ function update_tracks($link,$tasPk)
             #echo "Verifying effected track: $tpk<br>";
             $out = '';
             $retv = 0;
-            exec(BINDIR . "track_verify.pl $tpk", $out, $retv);
+            exec(BINDIR . "track_verify_sr.pl $tpk $tasPk", $out, $retv);
         }
     }
 }
