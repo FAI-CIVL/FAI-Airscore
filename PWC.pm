@@ -129,11 +129,14 @@ sub ordered_results
         print "sstopped=", $task->{'sstopped'}, " stopalt=", $taskres{'stopalt'}, " glidebonus=", $formula->{'glidebonus'}, "\n";
         if ($task->{'sstopped'} > 0 && $taskres{'stopalt'} > 0 && $formula->{'glidebonus'} > 0)
         {
-            print "Stopped height bonus: ", $formula->{'glidebonus'} * $taskres{'stopalt'}, "\n";
-            $taskres{'distance'} = $taskres{'distance'} + $formula->{'glidebonus'} * $taskres{'stopalt'};
-            if ($taskres{'distance'} > $task->{'ssdistance'})
-            {
-                $taskres{'distance'} = $task->{'ssdistance'};
+           if ($taskres{'stopalt'} > $task->{'goalalt'})
+           {
+                print "Stopped height bonus: ", $formula->{'glidebonus'} * $taskres{'stopalt'}, "\n";
+                $taskres{'distance'} = $taskres{'distance'} + $formula->{'glidebonus'} * ($taskres{'stopalt'} - $task->{'goalalt'});
+                if ($taskres{'distance'} > $task->{'ssdistance'})
+                {
+                    $taskres{'distance'} = $task->{'ssdistance'};
+                }
             }
         }
         if ($taskres{'distance'} < $formula->{'mindist'})
