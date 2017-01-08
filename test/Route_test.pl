@@ -50,6 +50,15 @@ my $task3 =
 ]
     };
 
+my $task4 =
+{
+        'tasPk' => 4,
+        'waypoints' => 
+[
+{ 'key' => 1, 'number' => 1, 'type' => 'start', 'how' => 'exit', 'shape' => 'circle', 'radius' => 5000, name => 'ELLIOT', 'lat' => -36.185833 * PI() / 180, 'long' => 147.976667 * PI() / 180 },
+{ 'key' => 2, 'number' => 2, 'type' => 'goal', 'how' => 'entry', 'shape' => 'circle', 'radius' => 1000, name => 'KHANCO', 'lat' => -36.216217 * PI() / 180, 'long' => 148.109783 * PI() / 180 }
+]
+};
 
 my ($spt, $ept, $gpt, $ssdist, $startssdist, $endssdist, $totdist);
 my $sr1 = find_shortest_route($task1);
@@ -123,5 +132,23 @@ is(sprintf("%.1f", $endssdist), "61179.6", "end speed section distance");
 is(sprintf("%.1f", $totdist), "61179.6", "total distance");
 
 # add a test for in_semicircle
+
+# super simple 2 point task
+my $sr5 = find_shortest_route($task4);
+for (my $i = 0; $i < scalar @$sr5; $i++)
+{
+    $task4->{'waypoints'}->[$i]->{'short_lat'} = $sr5->[$i]->{'lat'};
+    $task4->{'waypoints'}->[$i]->{'short_long'} = $sr5->[$i]->{'long'};
+}
+
+($spt, $ept, $gpt, $ssdist, $startssdist, $endssdist, $totdist) = task_distance($task4);
+
+is($spt, 0, "start speed point");
+is($ept, 1, "end speed point");
+is($gpt, 1, "goal point");
+is(sprintf("%.1f", $ssdist), "6437.2", "speed section distance");
+is($startssdist, 5000, "start speed distance");
+is(sprintf("%.1f", $endssdist), "11437.2", "end speed section distance");
+is(sprintf("%.1f", $totdist), "11437.2", "total distance");
 
 done_testing
