@@ -20,7 +20,7 @@ function waypoint($link,$tasPk, $tawPk, $num, $waypt, $type, $how, $shape, $radi
     output_select("how$tawPk", $how, array('entry', 'exit')); 
     echo "Shape ";
     output_select("shape$tawPk", $shape, array('circle', 'semicircle', 'line')); 
-    echo "Size <input type=\"text\" name=\"radius$tawPk\" size=3 value=\"$radius\">";
+    echo "Size <input type=\"text\" name=\"radius$tawPk\" size=5 value=\"$radius\">";
 }
 
 function update_task($link,$tasPk, $old)

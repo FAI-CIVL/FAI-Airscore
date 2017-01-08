@@ -195,6 +195,7 @@ if ($cat != '')
         $hgfa = $row['pilHGFA'];
         $sex = $row['pilSex'];
         $nat = $row['pilNationCode'];
+        $civlid = $row['pilCIVL'];
         echo "<li><button type=\"submit\" name=\"delete\" value=\"$id\">del</button>";
         echo "<button type=\"submit\" name=\"update\" value=\"$id\">up</button>";
         //echo " $hgfa $name ($sex).<br>\n";
@@ -202,6 +203,7 @@ if ($cat != '')
         echo "<input type=\"text\" name=\"lname$id\" value=\"$lname\" size=10>";
         echo "<input type=\"text\" name=\"fname$id\" value=\"$fname\" size=10>";
         echo "<input type=\"text\" name=\"sex$id\" value=\"$sex\" size=3>";
+        echo "<input type=\"text\" name=\"civl$id\" value=\"$civlid\" size=5>";
         echo "<input type=\"text\" name=\"nation$id\" value=\"$nat\" size=3> <br>";
         # echo a delete button ...
     

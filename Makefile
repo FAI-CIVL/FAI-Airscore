@@ -78,4 +78,5 @@ passwords:
 	@./submacro.sh CGIBIN $(CGIBIN)
 	@./submacro.sh VERSION $(VERSION)
 	@./submacro.sh TRACKDIR $(TRACKDIR)
+	@./submacro.sh DATABASE $(DATABASE)
 

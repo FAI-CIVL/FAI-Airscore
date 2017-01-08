@@ -120,6 +120,7 @@ create table tblTask
     tasPilotsGoal           integer, 
     tasDeparture            enum ( 'off', 'on', 'leadout', 'kmbonus' ) default 'on',
     tasArrival              enum ( 'off', 'on' ) default 'on',
+    tasHeightBonus          enum ( 'off', 'on' ) default 'on',
     tasComment              text,
     forPk                   integer
 );
@@ -221,7 +222,8 @@ create table tblTaskResult
     tarScore        double,
     tarLeadingCoeff double,
     tarLeadingCoeff2 double,
-    tarLastAltitude integer default 0
+    tarLastAltitude integer default 0,
+    tarLastTime     integer
 );
 
 drop table if exists tblHandicapResult;
