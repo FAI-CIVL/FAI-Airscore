@@ -60,6 +60,20 @@ my $task4 =
 ]
 };
 
+my $task5 =
+{
+    'tasPk' => 5,
+    'waypoints' =>
+[
+{ 'key' => '36', 'number' => '10', 'radius' => '400', 'lat' => '-0.641546052379078', 'long' => '2.56502999548934', 'how' => 'exit', 'shape' => 'circle', 'type' => 'start', 'name' => 'mys080' },
+{ 'key' => '37', 'number' => '20', 'radius' => '7000', 'lat' => '-0.642631371708502', 'long' => '2.56455616565003', 'how' => 'entry', 'shape' => 'circle', 'name' => 'dem102', 'type' => 'speed' },
+{ 'key' => '38', 'number' => '30', 'radius' => '2000', 'lat' => '-0.642631371708502', 'long' => '2.56455616565003', 'name' => 'dem102', 'type' => 'waypoint', 'shape' => 'circle', 'how' => 'entry' },
+{ 'key' => '41', 'number' => '35', 'radius' => '13000', 'lat' => '-0.634883222805168', 'long' => '2.56638767501934', 'type' => 'waypoint', 'name' => '7C-025', 'shape' => 'circle', 'how' => 'entry' },
+{ 'key' => '39', 'number' => '40', 'radius' => '2000', 'lat' => '-0.64075822274863', 'long' => '2.56811819708995', 'name' => '8E-042', 'type' => 'endspeed', 'shape' => 'circle', 'how' => 'entry' },
+{ 'key' => '42', 'number' => '50', 'radius' => '1000', 'lat' => '-0.641087855513216', 'long' => '2.56856853764241', 'type' => 'goal', 'name' => '8F-034', 'shape' => 'circle', 'how' => 'entry' }
+]
+};
+
 my ($spt, $ept, $gpt, $ssdist, $startssdist, $endssdist, $totdist);
 my $sr1 = find_shortest_route($task1);
 for (my $i = 0; $i < scalar @$sr1; $i++)
@@ -150,5 +164,15 @@ is(sprintf("%.1f", $ssdist), "6437.2", "speed section distance");
 is($startssdist, 5000, "start speed distance");
 is(sprintf("%.1f", $endssdist), "11437.2", "end speed section distance");
 is(sprintf("%.1f", $totdist), "11437.2", "total distance");
+
+my $sr6 = find_shortest_route($task5);
+for (my $i = 0; $i < scalar @$sr6; $i++)
+{
+    $task5->{'waypoints'}->[$i]->{'short_lat'} = $sr6->[$i]->{'lat'};
+    $task5->{'waypoints'}->[$i]->{'short_long'} = $sr6->[$i]->{'long'};
+}
+
+($spt, $ept, $gpt, $ssdist, $startssdist, $endssdist, $totdist) = task_distance($task5);
+print "($spt, $ept, $gpt, $ssdist, $startssdist, $endssdist, $totdist)\n";
 
 done_testing
