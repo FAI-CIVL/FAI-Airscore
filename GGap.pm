@@ -196,7 +196,6 @@ sub points_allocation
 
     my @pilots;
     my @tmarker;
-    my $kmdiff = [];
     my ($sub, $sref);
     my $hbess;
 
@@ -221,8 +220,8 @@ sub points_allocation
     # Some GAP basics
     ($Adistance, $Aspeed, $Astart, $Aarrival) = $self->points_weight($task, $taskt, $formula);
 
-    $kmdiff = $self->calc_kmdiff($dbh, $task, $taskt, $formula);
-    print Dumper($kmdiff);
+    #$kmdiff = $self->calc_kmdiff($dbh, $task, $taskt, $formula);
+    #print Dumper($kmdiff);
 
     # Get all pilots and process each of them 
     # pity it can't be done as a single update ...
@@ -337,32 +336,16 @@ sub points_allocation
         # Pilot distance score 
         #print "task->maxdist=", $taskt->{'maxdist'}, "\n";
         #print "pil->distance/(2*maxdist)=", $pil->{'distance'}/(2*$taskt->{'maxdist'}), "\n";
-        #print "kmdiff=", $kmdiff[floor($pil->{'distance'}/1000.0)], "\n";
+        #print "kmdiff=", $kmdiff->[floor($pil->{'distance'}/1000.0)], "\n";
+        #print "$Pdist = $Adistance * (( pildist/maxdist", $pil->{'distance'}/$taskt->{'maxdist'}, " * lindist=", $formula->{'lineardist'}, " + kmdiff=" , $kmdiff->[floor($pil->{'distance'}/100.0)], " * lindist=", (1-$formula->{'lineardist'}), "\n";
 
-        $Pdist = $Adistance * (($pil->{'distance'}/$taskt->{'maxdist'}) * $formula->{'lineardist'}
-                + $kmdiff->[floor($pil->{'distance'}/100.0)] * (1-$formula->{'lineardist'}));
+        #$Pdist = $Adistance * (($pil->{'distance'}/$taskt->{'maxdist'}) * $formula->{'lineardist'}
+        #        + $kmdiff->[floor($pil->{'distance'}/100.0)] * (1-$formula->{'lineardist'}));
+
+        my $Pdist = $self->pilot_distance($formula, $task, $taskt, $pil, $Adistance);
 
         # Pilot speed score
-        print "$tarPk speed: ", $pil->{'time'}, ", $Tmin\n";
-        if ($pil->{'time'} > 0)
-        {
-            $Pspeed = $Aspeed * (1-(($pil->{'time'}-$Tmin)/3600/sqrt($Tmin/3600))**(2/3)) - $stopped_reduction;
-        }
-        else
-        {
-            $Pspeed = 0;
-        }
-
-        if ($Pspeed < 0)
-        {
-            $Pspeed = 0;
-        }
-
-        if (0+$Pspeed != $Pspeed)
-        {
-            print "Pdepart is nan for $tarPk, pil->{'time'}=", $pil->{'time'}, "\n";
-            $Pspeed = 0;
-        }
+        my $Pspeed = $self->pilot_speed($formula, $task, $taskt, $pil, $Aspeed);
 
         # Pilot departure score
         print "$tarPk pil->startSS=", $pil->{'startSS'}, "\n";
