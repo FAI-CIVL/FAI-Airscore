@@ -486,7 +486,7 @@ sub validate_task
     my $utcmod = determine_utcmod($task, $coords->[0]);
 
     # Determine the start gate type and ESS dist
-    my ($spt, $ept, $gpt, $essdist, $startssdist, $totdist) = task_distance($task);
+    my ($spt, $ept, $gpt, $essdist, $startssdist, $endssdist, $totdist) = task_distance($task);
 
     # Go through the coordinates and verify the track against the task
     for $coord (@$coords)
@@ -1035,6 +1035,7 @@ sub validate_task
     else
     {
         # Goal
+        print "goal (dist=$totdist)\n";
         $dist_flown = $totdist; # compute_waypoint_dist($waypoints, $wcount-1);
     }
 
