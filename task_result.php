@@ -86,12 +86,12 @@ if (array_key_exists('tardel', $_REQUEST))
 
 if (array_key_exists('tarup', $_REQUEST))
 {
-    $tarPk = intval($_REQUEST['tarup']);
-    $glider = addslashes($_REQUEST["glider$tarPk"]);
-    $dhv = addslashes($_REQUEST["dhv$tarPk"]);
-    $flown = addslashes($_REQUEST["flown$tarPk"]);
-    $penalty = intval($_REQUEST["penalty$tarPk"]);
-    $traPk = intval($_REQUEST["track$tarPk"]);
+    $tarPk = reqival('tarup');
+    $glider = reqsval("glider$tarPk");
+    $dhv = reqsval("dhv$tarPk");
+    $flown = reqsval("flown$tarPk");
+    $penalty = reqival("penalty$tarPk");
+    $traPk = reqival("track$tarPk");
     $resulttype = 'lo';
     if ($flown == 'abs' || $flown == 'dnf' || $flown == 'lo')
     {
@@ -253,12 +253,12 @@ echo "</div>";
 if ($comClass == "HG")
 {
     $classopts = array ( 'open' => '', 'floater' => '&class=0', 'kingpost' => '&class=1', 
-        'hg-open' => '&class=2', 'rigid' => '&class=3', 'women' => '&class=4', 'masters' => '&class=5' );
+        'hg-open' => '&class=2', 'rigid' => '&class=3', 'women' => '&class=4', 'masters' => '&class=5', 'teams' => '&class=6' );
 }
 else
 {
     $classopts = array ( 'open' => '', 'fun' => '&class=0', 'sports' => '&class=1', 
-        'serial' => '&class=2', 'women' => '&class=4', 'masters' => '&class=5' );
+        'serial' => '&class=2', 'women' => '&class=4', 'masters' => '&class=5', 'teams' => '&class=6' );
 }
 $cind = '';
 if ($class != '')
@@ -268,7 +268,15 @@ if ($class != '')
 $copts = [];
 foreach ($classopts as $text => $url)
 {
-    $copts[$text] = "task_result.php?comPk=$comPk&tasPk=$tasPk$url";
+    if ($text == 'teams')
+    {
+        # Hack for now
+        $copts[$text] = "team_task_result.php?comPk=$comPk&tasPk=$tasPk$url";
+    }
+    else
+    {
+        $copts[$text] = "task_result.php?comPk=$comPk&tasPk=$tasPk$url";
+    }
 }
 
 $classfilter = fselect('class', "task_result.php?comPk=$comPk&tasPk=$tasPk$cind", $copts, ' onchange="document.location.href=this.value"');
@@ -372,6 +380,7 @@ while ($row = mysql_fetch_array($result))
     $score = round($row['tarScore'], $rnd);
     $lastalt = round($row['tarLastAltitude']);
     $resulttype = $row['tarResultType'];
+    $comment = $row['tarComment'];
     $start = $row['tarSS'];
     $end = $row['tarES'];
     $endf = "";
@@ -505,6 +514,7 @@ while ($row = mysql_fetch_array($result))
     {
         $trrow[] = fbut("submit", "tardel",  $traPk, "del");
         $trrow[] = fbut("submit", "tarup",  $tarPk, "up");
+        $trrow[] = $comment;
     }
 
     $trtab[] = $trrow;

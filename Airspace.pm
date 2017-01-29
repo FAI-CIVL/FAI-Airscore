@@ -34,7 +34,7 @@ my $start_below = 20;
 #
 sub read_short_track
 {
-    my ($traPk,$bucket) = @_;
+    my ($dbh, $traPk,$bucket) = @_;
     my %track;
     my @coords;
     my %awards;
@@ -158,7 +158,7 @@ sub flight_check
                 }
             }
 
-            if ($coord->{'alt'} > $space->{'base'} - $start_below)
+            if (($coord->{'alt'} > $space->{'base'} - $start_below) && $coord->{'alt'} < $space->{'tops'})
             {
                 # potential violation ..
                 if ($space->{'shape'} eq 'circle')
@@ -215,17 +215,17 @@ sub flight_check
 
 sub airspace_check
 {
-    my ($traPk, $airspaces) = @_;
+    my ($dbh, $traPk, $airspaces) = @_;
     my $flight;
     my $violation;
     my $dst;
 
     $violation = 0;
-    $flight = read_short_track($traPk,200);
+    $flight = read_short_track($dbh,$traPk,200);
     $violation = flight_check(1, $flight, $airspaces);
     if ($violation > 0)
     {
-        $flight = read_short_track($traPk,1);
+        $flight = read_short_track($dbh, $traPk,1);
         $violation = flight_check(0, $flight, $airspaces);
     }
 
@@ -464,7 +464,7 @@ sub find_nearby_airspace
 
 sub find_task_airspace
 {
-    my ($tasPk) = @_;
+    my ($dbh, $tasPk) = @_;
     my @allair;
     my $ref;
     my %nearair;
@@ -547,7 +547,7 @@ sub find_task_airspace
 
 sub get_all_tracks
 {
-    my ($tasPk) = @_;
+    my ($dbh, $tasPk) = @_;
     my $ref;
     my %ret;
 
@@ -563,7 +563,7 @@ sub get_all_tracks
 
 sub get_one_track
 {
-    my ($traPk) = @_;
+    my ($dbh, $traPk) = @_;
     my $ref;
     my %ret;
 
