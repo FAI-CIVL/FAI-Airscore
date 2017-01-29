@@ -43,15 +43,15 @@ $Airspace::dbh = db_connect();
 
 if ($traPk > 0)
 {
-    $tracks = get_one_track($traPk);
+    $tracks = get_one_track($Airspace::dbh, $traPk);
 }
 else
 {
-    $tracks = get_all_tracks($tasPk);
+    $tracks = get_all_tracks($Airspace::dbh, $tasPk);
 }
 #$tracks = [ 13010 ];
 #$airspace = find_nearby_airspace($regPk, 100000.0);
-$airspace = find_task_airspace($tasPk);
+$airspace = find_task_airspace($Airspace::dbh, $tasPk);
 print "Airspaces checked:\n";
 foreach $space (@$airspace)
 {
@@ -67,7 +67,7 @@ for my $track (keys %$tracks)
     $dist = 0;
     $name = $tracks->{$track}->{'pilFirstName'} . " " . $tracks->{$track}->{'pilLastName'};
     print "\n$name ($track): ";
-    if (($dist = airspace_check($track,$airspace)) > 0)
+    if (($dist = airspace_check($Airspace::dbh, $track,$airspace)) > 0)
     {
         print "\n    Maximum violation of $dist metres ($name).";
     }

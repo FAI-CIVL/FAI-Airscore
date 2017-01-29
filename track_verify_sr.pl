@@ -913,12 +913,14 @@ sub validate_task
     }
 
     # Jumped the start/speedss?
-    if ($task->{'type'} != 'route' and defined($starttime) and (($starttime < $startss) or ($starttime < $taskss)) and ($wmade > $spt))
+    if (($task->{'type'} ne 'route') and defined($starttime) and (($starttime < $startss) or ($starttime < $taskss)) and ($wmade > $spt))
     {
         my $jump;
         print "Jumped the start gate ($spt) (taskss=$taskss finish=$finish) (startss=$startss: $starttime)\n";
         $jump = $taskss - $startss;
         $comment = "jumped $jump secs";
+        # clear leadout markers
+        $kmtime = init_kmtime($task->{'ssdistance'});
         if ($task->{'type'} eq 'race')
         {
             print "Race start jump: $comment\n";
