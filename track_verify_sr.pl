@@ -431,7 +431,7 @@ sub validate_task
     my ($awarded,$awtime);
     my ($dist, $rdist, $edist);
     my $penalty;
-    my $comment;
+    my $comment = '';
     my ($wasinstart, $wasinSS);
     my $kmtime = [];
     my $kmmark;
@@ -864,18 +864,18 @@ sub validate_task
                         }
                         $nextwp++;
                     }
-                }
-                #print "wcount=$wcount nextwp=$nextwp\n";
+                    #print "wcount=$wcount nextwp=$nextwp\n";
 
-                $edist = distance($coord, $waypoints->[$nextwp]);
-                if (($edist < $closest) && ($wcount >= $closestwpt))
-                {
-                    $closest = $edist;
-                    $closestcoord = $coord;
-                    $closestwpt = $wcount;
-                    if ($debug)
+                    $edist = distance($coord, $waypoints->[$nextwp]);
+                    if (($edist < $closest) && ($wcount >= $closestwpt))
                     {
-                        print "Exit(edist): new closest closestwpt=$closestwpt:closest=$closest\n";
+                        $closest = $edist;
+                        $closestcoord = $coord;
+                        $closestwpt = $wcount;
+                        if ($debug)
+                        {
+                            print "Exit(edist): new closest closestwpt=$closestwpt:closest=$closest\n";
+                        }
                     }
                 }
             }
@@ -1131,7 +1131,7 @@ sub apply_handicap
 
     if ($result->{'distance'} > $task->{'short_distance'})
     {
-        my ($spt, $ept, $gpt, $essdist, $startssdist, $totdist) = task_distance($task);
+        my ($spt, $ept, $gpt, $essdist, $startssdist, $endssdist, $totdist) = task_distance($task);
         my $ssdist = $essdist - $startssdist;
 
         print "    handicap essdist=$essdist startssdist=$startssdist ssdist=$ssdist result dist=", $result->{'distance'}, "\n";
