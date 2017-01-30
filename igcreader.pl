@@ -30,13 +30,14 @@ my $pilPk;
 my $earlyexit;
 my $flightstart;
 my $ftype;
+my $ignore_breaks = 0;
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst);
 
 # Options ..
 
 if (scalar @ARGV < 1)
 {
-    print "igcreader.pl [-d|-x|-j] <file> [pilPk]\n";
+    print "igcreader.pl [-d|-x|-j|-i] <file> [pilPk]\n";
     exit 0;
 }
 
@@ -55,6 +56,12 @@ if ($ARGV[0] eq '-j')
 if ($ARGV[0] eq '-x')
 {
     $earlyexit = 1;
+    shift @ARGV;
+}
+
+if ($ARGV[0] eq '-i')
+{
+    $ignore_breaks = 1;
     shift @ARGV;
 }
 
@@ -96,7 +103,7 @@ $numc = scalar @$coords;
 if ($IGC::debug) { print "num coords=$numc\n"; }
 
 # Trim off silly points ...
-$flight = trim_flight($flight, $pilPk);
+$flight = trim_flight($flight, $pilPk, $ignore_breaks);
 
 # Is it a duplicate (and other checks)?
 ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = gmtime($flight->{'header'}->{'start'});
