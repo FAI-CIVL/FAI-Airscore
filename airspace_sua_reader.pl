@@ -7,8 +7,8 @@
 require DBD::mysql;
 use Data::Dumper;
 
-my $database = 'xcdb';
-my $hostname = 'localhost';
+my $database = '%DATABASE%';
+my $hostname = '%MYSQLHOST%';
 my $port = 3306;
 
 local * FD;
@@ -24,7 +24,7 @@ my $drh;
 sub db_connect
 {
     $dsn = "DBI:mysql:database=$database;host=$hostname;port=$port";
-    $dbh = DBI->connect( $dsn, 'xc', '%MYSQLPASSWORD%', { RaiseError => 1 } )
+    $dbh = DBI->connect( $dsn, '%MYSQLUSER%', '%MYSQLPASSWORD%', { RaiseError => 1 } )
             or die "Can't connect: $!\n";
     $drh = DBI->install_driver("mysql");
 }
