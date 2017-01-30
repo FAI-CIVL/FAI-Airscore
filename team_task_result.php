@@ -45,6 +45,10 @@ function  handicap_result($tasPk)
             }
         }
 
+        if ($row['handiscore'] > $maxscore)
+        {
+            $row['handiscore'] = $maxscore;
+        }
         if ($total == 0)
         {
             $htable[] = array( fb($row['teaName']),  $row['pilFirstName'] . ' ' . $row['pilLastName'], round($row['handiscore'],2));
@@ -107,6 +111,10 @@ function aggregate_result($tasPk,$teamsize)
             }
         }
 
+        if ($row['tepscore'] > 1000)
+        {
+            $row['tepscore'] = 1000;
+        }
         if ($total == 0)
         {
             $htable[] = array( fb($row['teaName']),  $row['pilFirstName'] . ' ' . $row['pilLastName'], round($row['tepscore'],2));

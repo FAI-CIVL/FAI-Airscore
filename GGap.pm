@@ -266,7 +266,7 @@ sub points_allocation
         $hbess = 0;
         if ($taskres{'goal'} > 0)
         {
-            my $habove = $taskres{'lastalt'} - $taskt->{'goalalt'};
+            my $habove = $taskres{'lastalt'} - $task->{'goalalt'};
             print "habove: $habove (", $taskt->{'goalalt'}, ")\n";
             if ($habove > 400)
             {
@@ -281,6 +281,7 @@ sub points_allocation
                 if ($taskres{'time'} < $Tmin)
                 {
                     $Tmin = $taskres{'time'};
+                    $taskt->{'fastest'} = $Tmin;
                 }
             }
         }
