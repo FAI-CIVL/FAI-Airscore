@@ -1131,7 +1131,7 @@ sub apply_handicap
 
     if ($result->{'distance'} > $task->{'short_distance'})
     {
-        my ($spt, $ept, $gpt, $essdist, $startssdist, $totdist) = task_distance($task);
+        my ($spt, $ept, $gpt, $essdist, $startssdist, $endssdist, $totdist) = task_distance($task);
         my $ssdist = $essdist - $startssdist;
 
         print "    handicap essdist=$essdist startssdist=$startssdist ssdist=$ssdist result dist=", $result->{'distance'}, "\n";
