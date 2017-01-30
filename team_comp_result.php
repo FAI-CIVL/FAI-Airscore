@@ -173,6 +173,10 @@ function team_agg_result($comPk, $teamsize)
 
         if ($size < $teamsize)
         {
+            if ($row['tepscore'] > 1000)
+            {
+                $row['tepscore'] = 1000;
+            }
             $total = round($total + $row['tepscore'],2);
             $tastotal = round($tastotal + $row['tepscore'],2);
             $size = $size + 1;
