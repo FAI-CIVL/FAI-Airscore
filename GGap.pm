@@ -348,57 +348,11 @@ sub points_allocation
         # Pilot speed score
         my $Pspeed = $self->pilot_speed($formula, $task, $taskt, $pil, $Aspeed);
 
-        # Pilot departure score
-        print "$tarPk pil->startSS=", $pil->{'startSS'}, "\n";
-        print "$tarPk pil->endSS=", $pil->{'endSS'}, "\n";
-        print "$tarPk tast->first=", $taskt->{'firstdepart'}, "\n";
-
-        $Pdepart = 0;
-
-        # KmBonus award points
-        if (scalar(@tmarker) > 0)
-        {
-            for my $km (1..scalar(@tmarker))
-            {
-                #print Dumper($pil->{'kmmarker'});
-                if ($pil->{'kmmarker'}->[$km] > 0 && $tmarker[$km] > 0)
-                {
-                    #$x = 1 - ($pil->{'kmmarker'}->[$km] - $tmarker[$km]) / ($tmarker[$km]/4);
-                    $x = 1 - ($pil->{'kmmarker'}->[$km] - $tmarker[$km]) / 600;
-                    if ($x > 0)
-                    {
-                        $Pdepart = $Pdepart + (0.2+0.037*$x+0.13*($x*$x)+0.633*($x*$x*$x));
-                    }
-                }
-            }
-            $Pdepart = $Pdepart * $Astart / floor($task->{'ssdistance'}/1000.0);
-        }
-        else
-        {
-            $Pdepart = 0;
-        }
-
-        # Sanity
-        if ($Pdepart < 0)
-        {
-            $Pdepart = 0;
-        }
+        # Pilot departure/leading points
+        my $Pdepart = $self->pilot_departure_leadout($formula, $task, $taskt, $pil, $Astart, $Aspeed);
 
         # Pilot arrival score
-        $Parrival = 0;
-        if ($pil->{'time'} > 0)
-        {
-            # OzGAP / Timed arrival
-            print "$tarPk time arrival ", $pil->{'timeafter'}, ", $Ngoal\n";
-            $x = 1-$pil->{'timeafter'}/(90*60);
-
-            $Parrival = $Aarrival*(0.2+0.037*$x+0.13*($x*$x)+0.633*($x*$x*$x));
-            print "x=$x parrive=$Parrival\n";
-        }
-        if ($Parrival < 0)
-        {
-            $Parrival = 0;
-        }
+        my $Parrival = $self->pilot_arrival($formula, $task, $taskt, $pil, $Aarrival);
 
         # Penalty for not making goal ..
         if ($pil->{'goal'} == 0)
@@ -419,43 +373,8 @@ sub points_allocation
             $Pdepart = 0;
         }
 
-        if (0+$Pdepart != $Pdepart)
-        {
-            print "Pdepart is nan for $tarPk\n";
-            $Pdepart = 0;
-        }
-
-        # Penalty is in seconds .. convert for OzGap penalty.
-#        if ($penalty > 0) 
-#        {
-#            $penspeed = $penalty;
-#            if ($penspeed > 90)
-#            {
-#                $penspeed = 90;
-#            };
-#            $penspeed = ($penspeed + 10) / 100;
-#            $penspeed = ($Pdepart + $Pspeed) * $penspeed;
-#
-#            $pendist = 0;
-#            $penalty = $penalty - 90;
-#            if ($penalty > 0)
-#            {
-#                if ($penalty > $Tnom / 3)
-#                {
-#                    $pendist = $Pdist;
-#                }
-#                else
-#                {
-#                    $pendist = ((($penalty + 30) / 60) * 2) / 100;
-#                    $pendist = $Pdist * $penalty;
-#                }
-#            }
-#
-#            print "jumped=$penalty penspeed=$penspeed pendist=$pendist\n";
-#
-#            $penalty = int($penspeed + $pendist + 0.5);
-#            print "computed penalty=$penalty\n";
-#        }
+        # Penalties
+        # $penalty = $self->pilot_penalty($formula, $task, $taskt, $pil, $Astart, $Aspeed);
 
         $Pscore = $Pdist + $Pspeed + $Parrival + $Pdepart - $penalty;
 
