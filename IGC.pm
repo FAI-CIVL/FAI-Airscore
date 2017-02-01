@@ -575,7 +575,7 @@ sub is_flying
 
 sub trim_flight
 {
-    my ($flight, $pilPk) = @_;
+    my ($flight, $pilPk, $ignore_breaks) = @_;
     my $full;
     my @reduced;
     my $dist;
@@ -626,6 +626,11 @@ sub trim_flight
         #if ($debug) { print "trim at start\n"; }
         $coord = $next;
         $next = shift @$full; 
+    }
+
+    if ($ignore_breaks == 1)
+    {
+        return $flight;
     }
 
     # TODO: only take "latest" track if "broken"?
