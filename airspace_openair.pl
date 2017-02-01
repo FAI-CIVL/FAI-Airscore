@@ -255,7 +255,14 @@ sub read_openair
         }
         elsif ($field[0] eq "AL")
         {
-            $rec->{'base'} = int(0.5 + (0+$field[1]) / 3.28);
+            if (substr($field[1],0,2) eq "FL")
+            {
+                $rec->{'base'} = int(0.5 + (0+substr($field[1],2))*100 / 3.28);
+            }
+            else
+            {
+                $rec->{'base'} = int(0.5 + (0+$field[1]) / 3.28);
+            }
         }
         elsif ($field[0] eq "AH")
         {
