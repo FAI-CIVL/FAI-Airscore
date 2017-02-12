@@ -28,6 +28,7 @@ sub task_update
 {
     my ($task) = @_;
     my $tasPk;
+    my $comPk;
     my $wpts;
     my $dist;
     my ($totdist,$srdist,$ssdist);
@@ -41,6 +42,7 @@ sub task_update
     $ssdist = 0.0;
     $wpts = $task->{'waypoints'};
     $tasPk = $task->{'tasPk'};
+    $comPk = $task->{'comPk'};
 
     # Ok work out non-optimal distance for now
     # FIX: work out shortest route!
@@ -52,7 +54,14 @@ sub task_update
         $totdist = $totdist + distance($wpts->[$i], $wpts->[$i+1]);
         if ($wpts->[$i]->{'type'} eq 'speed')
         {
-            $ssdist = 0.0;
+            if ($wpts->[$i]->{'how'} eq 'exit' && $srdist == 0)
+            {
+                $ssdist = - $wpts->[$i]->{'radius'};
+            }
+            else
+            {
+                $ssdist = - $srdist;
+            }
         }
         elsif ($wpts->[$i]->{'type'} eq 'endspeed')
         {
@@ -71,6 +80,7 @@ sub task_update
     }
 
     # Store it in tblTask
+    print("update tblTask set tasDistance=$totdist, tasShortRouteDistance=$srdist, tasSSDistance=$ssdist where tasPk=$tasPk");
     $sth = $dbh->prepare("update tblTask set tasDistance=$totdist, tasShortRouteDistance=$srdist, tasSSDistance=$ssdist where tasPk=$tasPk");
     $sth->execute();
 
@@ -83,8 +93,10 @@ sub track_update
     my @tracks;
     my $flag;
     my $tasPk;
+    my $comPk;
 
     $tasPk = $task->{'tasPk'};
+    $comPk = $task->{'comPk'};
     # Now check for pre-submitted tracks ..
     $sth = $dbh->prepare("select traPk from tblComTaskTrack where tasPk=$tasPk");
     $sth->execute();
@@ -103,7 +115,7 @@ sub track_update
             print "Re-optimise pre-submitted track: $tpk\n";
             $out = '';
             $retv = 0;
-            $out = `${BINDIR}optimise_flight.pl $tpk $tasPk $opt`;
+            $out = `${BINDIR}optimise_flight.pl $tpk $comPk $tasPk $opt`;
             print $out;
         }
     }

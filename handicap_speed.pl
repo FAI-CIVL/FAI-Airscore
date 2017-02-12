@@ -26,7 +26,7 @@ sub do_hgfa_handicaps
     $dbh->do("delete from tblHandicap where comPk=$comPk");
 
     $dbh->do("insert into tblHandicap (comPk, pilPk, hanTasks, hanHandicap) 
-        select  ?, TP.pilPk, count(*)/2, round((sum(if (tarES > 0, ((TR.tarES - TR.tarSS -3600) / (TK.tasFastestTime - 3600)), (TK.tasMaxDistance / TR.tarDistance)))+6)/(count(*)+6),1) as Handicap
+        select  ?, TP.pilPk, count(*)/2, round((sum(if (tarES > 0, ((TR.tarES - TR.tarSS - 3600) / (TK.tasFastestTime - 3600)), (TK.tasMaxDistance / TR.tarDistance)))+4)/(count(*)+4),1) as Handicap
 from    tblLadderComp LC
         join tblLadder L on L.ladPk=LC.ladPk
         join tblCompetition C on LC.comPk=C.comPk
@@ -42,6 +42,10 @@ WHERE
 group by
         TP.pilPk", undef, $comPk, $comPk);
 }
+
+
+# (7200 * TK.tasSSDistance / (TR.tarES - tarSS)) / (7200 * TK.tasSSDistance / TK.tasFastestTime)  
+
 
 sub store_handicaps
 {

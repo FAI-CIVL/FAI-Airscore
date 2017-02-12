@@ -66,6 +66,44 @@ sub task_trim
 }
 
 #
+# Simply find the max distance from the given point
+# Linear search through coordinate list
+#
+sub max_distance_from
+{
+    my ($start, $coords) = @_;
+    my $num;
+    my $dist;
+    my $max = 0;
+    my $maxnum;
+
+    #print Dumper($start);
+    #print Dumper($coords);
+
+    # reduce into buckets
+    $num = scalar @$coords;
+
+    for ($i = 0; $i < $num-1; $i++)
+    {
+        $dist = qckdist2($start, $coords->[$i]);
+        if ($dist > $max)
+        {
+            $max = $dist;
+            $maxnum = $i;
+        }
+    }
+
+    # get the real distance
+    $max = distance($start, $coords->[$maxnum]);
+
+    if ($debug)
+    {
+        print "max_distance_from=$max\n";
+    }
+    return $max;
+}
+
+#
 # Reduce the flight into sequential Xm (radius) blobs
 # Also trim off wild GPS points and determine start/end of track.
 #
@@ -502,6 +540,9 @@ my $maxdist;
 my @best;
 my @limit;
 
+#
+# Generate all the segment combinations possible 
+#
 sub combo_generator
 {
     my ($flight, $dist, $base, $basearr, $min, $max, $num, $lim) = @_;
@@ -1023,7 +1064,9 @@ sub score_track
 #
 
 my $flight;
+my $formula;
 my $task;
+my $comPk;
 my $traPk;
 my $turnpoints;
 my $unreduced;
@@ -1031,17 +1074,20 @@ my $numb;
 
 if (scalar(@ARGV) < 1)
 {
-    print "optimise_flight.pl <traPk> [tasPk] [turnpoints]\n";
+    print "optimise_flight.pl <traPk> <comPk> [tasPk] [turnpoints]\n";
     exit(1);
 }
 $traPk = $ARGV[0];
-$tasPk = $ARGV[1];
-$turnpoints = $ARGV[2];
+$comPk = $ARGV[1];
+$tasPk = $ARGV[2];
+$turnpoints = $ARGV[3];
+
+$dbh = db_connect();
+$formula = read_formula($comPk);
 if ($turnpoints eq '')
 {
-    $turnpoints = 3;
+    $turnpoints = $formula->{'olcpoints'}; 
 }
-$dbh = db_connect();
 $flight = read_track($traPk);
 $bucket_radius = $flight->{'traDuration'} / 20 + 50;
 $track_width = $track_width + $flight->{'traDuration'} / 40;
@@ -1059,6 +1105,10 @@ if ($track_width > $max_radius)
 
 if ($tasPk > 0)
 {
+    my $startg;
+    my $totlen;
+    my $sth;
+
     $flight->{'tasPk'} = $tasPk;
     $task = read_task($tasPk);
     if ($task->{'type'} eq 'olc' or 
@@ -1068,27 +1118,56 @@ if ($tasPk > 0)
         $flight = task_trim($task, $flight);
     }
 
+    $sth = $dbh->prepare("insert into tblTaskResult (tasPk,traPk,tarDistance,tarPenalty,tarResultType) values (?,?,?,?,?)")
+        or die "Couldn't insert tblTaskResult";
+
     if ($task->{'type'} eq 'free-pin')
     {
         my $coords;
         my $numcoords;
-        my $totlen;
-        my $query = qq{insert into tblTaskResult (tasPk,traPk,tarDistance,tarPenalty,tarResultType) values };
         
         $coords = $flight->{'coords'};
         $numcoords = scalar @$coords;
+        $startg = $task->{'waypoints'}->[0];
 
         if ($numcoords == 2)
         {
+            my $query = qq{insert into tblTaskResult (tasPk,traPk,tarDistance,tarPenalty,tarResultType) values };
+
             $totlen = distance($coords->[0], $coords->[1]);
+
             $dbh->do("update tblTrack set traLength=?, traScore=? where traPk=?", undef, $totlen, $totlen, $traPk);
             $dbh->do("delete from tblTaskResult where tasPk=$tasPk and traPk=$traPk");
-            $dbh->do($query .  "($tasPk,$traPk,$totlen,0,'lo')");
+            $sth->execute($tasPk,$traPk,$totlen,0,'lo');
 
             print "traPk=$traPk dist=$totlen\n";
             exit(0);
         }
     }
+
+    # 'Free' distance from an anchored launch point
+    if ($tasPk > 0 && $turnpoints < 1)
+    {
+        my $wpt;
+    
+        $wpt = $task->{'waypoints'};
+        if (scalar @$wpt > 0)
+        {
+            my $query = qq{insert into tblTaskResult (tasPk,traPk,tarDistance,tarPenalty,tarResultType) values };
+
+            #print "free anchored dist\n";
+            $startg = $task->{'waypoints'}->[0];
+            $totlen = max_distance_from($startg, $flight->{'coords'});
+
+            $dbh->do("update tblTrack set traLength=?, traScore=? where traPk=?", undef, $totlen, $totlen, $traPk);
+            $dbh->do("delete from tblTaskResult where tasPk=$tasPk and traPk=$traPk");
+            $sth->execute($tasPk,$traPk,$totlen,0,'lo');
+            print "traPk=$traPk dist=$totlen\n";
+
+            exit(0);
+        }
+    }
+    
 }
 
 # Reduce into buckets
