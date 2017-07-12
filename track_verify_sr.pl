@@ -291,10 +291,10 @@ sub distance_flown
         }
     }
 
-    #if ($debug)
-    #{
-    #    print "wmade=$wmade cwdist=$cwdist rdist=$rdist dist=$dist\n";
-    #}
+    if ($debug)
+    {
+        print "wmade=$wmade cwdist=$cwdist nwdist=$nwdist dist=$dist\n";
+    }
 
     return $dist;
 }
@@ -627,6 +627,7 @@ sub validate_task
                 $kmtime->[floor(($maxdist-$startssdist)/1000)] = $coord->{'time'};
                 print "kmtime ($maxdist): ", floor(($maxdist-$startssdist)/1000), ":", $coord->{'time'}, "\n";
             }
+            # else { print "new max ($maxdist)\n"; }
 
             # @todo: Do closestwpt / closestcoord here too?
         }
@@ -645,11 +646,11 @@ sub validate_task
 
         # Ok - work out if we're in cylinder
         $dist = distance($coord, $wpt);
-        if ($dist < $wpt->{'radius'} && ($wpt->{'type'} eq 'start'))
+        if ($dist < $wpt->{'radius'} and ($wpt->{'type'} eq 'start'))
         {
             $wasinstart = $wcount;
         }
-        if ($dist < $wpt->{'radius'} && ($wpt->{'type'} eq 'speed'))
+        if ($dist < $wpt->{'radius'} and ($wpt->{'type'} eq 'speed'))
         {
             #print "wasinSS=$wcount\n";
             $wasinSS = $wcount;
@@ -669,7 +670,7 @@ sub validate_task
             {
 
                 # Do task timing stuff
-                if (($wpt->{'type'} eq 'start') && (!defined($starttime)) or
+                if (($wpt->{'type'} eq 'start') and (!defined($starttime)) or
                     ($wpt->{'type'} eq 'speed'))
                 {
                     # get last start time ..

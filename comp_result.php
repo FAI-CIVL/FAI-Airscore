@@ -231,6 +231,7 @@ if ($row)
     $forMinDistance = $row['forMinDistance'];
     $forNomDistance = $row['forNomDistance'];
     $forNomTime = $row['forNomTime'];
+    $forDiscreteClasses = $row['forDiscreteClasses'];
 }
 
 
@@ -268,8 +269,12 @@ if (array_key_exists('class', $_REQUEST))
     }
     else
     {
-        $fdhv = $carr[intval($_REQUEST['class'])];
+        $fdhv = $carr[reqival('class')];
         $fdhv = "and T.traDHV<=$fdhv ";
+        if ($forDiscreteClasses == 1)
+        {
+            $fdhv = "and T.traDHV=$fdhv ";
+        }
     }
 }
 

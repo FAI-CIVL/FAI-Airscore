@@ -24,21 +24,19 @@ if (array_key_exists('rnd', $_REQUEST))
 
 $fdhv= '';
 $classstr = '';
-if (array_key_exists('class', $_REQUEST))
+if (reqexists('class'))
 {
-    $cval = intval($_REQUEST['class']);
-    $carr = array (
-        "'1/2'", "'2'", "'2/3'", "'competition'"       
-        );
-    $cstr = array ( "Fun", "Sport", "Serial", "Open", "Women" );
-    $classstr = "<b>" . $cstr[intval($_REQUEST['class'])] . "</b> - ";
+    $cval = reqival('class');
+    $carr = [ "'1/2'", "'2'", "'2/3'", "'competition'" ];
+    $cstr = ["Fun", "Sport", "Serial", "Open", "Women" ];
+    $classstr = "<b>" . $cstr[reqival('class')] . "</b> - ";
     if ($cval == 4)
     {
         $fdhv = "and P.pilSex='F'";
     }
     else
     {
-        $fdhv = $carr[intval($_REQUEST['class'])];
+        $fdhv = $carr[reqival('class')];
         $fdhv = "and traDHV=$fdhv ";
     }
 }
@@ -261,9 +259,9 @@ else
         'serial' => '&class=2', 'women' => '&class=4', 'masters' => '&class=5', 'teams' => '&class=6' );
 }
 $cind = '';
-if ($class != '')
+if ($cval != '')
 {
-    $cind = "&class=$class";
+    $cind = "&class=$cval";
 }
 $copts = [];
 foreach ($classopts as $text => $url)

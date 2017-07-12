@@ -113,7 +113,7 @@ while($row = mysql_fetch_array($result, MYSQL_ASSOC))
     $dateto = substr($row['comDateTo'], 0, 10);
     $today = time();
     $fromdate = strtotime($datefrom);
-    $todate = strtotime($dateto);
+    $todate = strtotime($dateto) + 24*3600;
     if ($today>=$fromdate && $today<=$todate)
     {
         $datestr = fb("$datefrom - $dateto");

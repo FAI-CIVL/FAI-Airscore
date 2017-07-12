@@ -72,6 +72,7 @@ function parse_oziwpts($regPk, $link, $lines)
 function parse_gpsdump($regPk, $link, $lines)
 {
     $count = 1;
+    echo "region=$regPk<br>";
     for ($i = 0; $i < count($lines); $i++)
     {
         // waypoint
@@ -82,7 +83,7 @@ function parse_gpsdump($regPk, $link, $lines)
         $alt = floatval(substr($fields,43,5));
         $desc = addslashes(rtrim(substr($fields,49)));
         echo "$name,$lat,$long,$alt,$desc<br>";
-        if ($lat > 0.0)
+        if ($lat != 0.0)
         {
             $sql = "insert into tblRegionWaypoint (regPk, rwpName, rwpLatDecimal, rwpLongDecimal, rwpAltitude, rwpDescription) values ($regPk,'$name',$lat,$long,$alt,'$desc')";
             $result = mysql_query($sql,$link) or die('Insert RegionWaypoint failed: ' . mysql_error());
@@ -91,6 +92,25 @@ function parse_gpsdump($regPk, $link, $lines)
     }
 
     return $count;
+}
+
+function parse_kml($regPk, $link, $xml)
+{
+    for ($n = 0; $n < count($xml->Document->Folder->Placemark); $n++)
+    {
+        $placemark = $xml->Document->Folder->Placemark[$n];
+        $name = $placemark->name;
+        $arr = explode(",",$placemark->Point->coordinates);
+        $lat = $arr[1];
+        $long = $arr[0];
+        $alt = $arr[2];
+        $desc = $placemark->description;
+        echo "$name $lat $long $alt $desc<br>";
+        $sql = "insert into tblRegionWaypoint (regPk, rwpName, rwpLatDecimal, rwpLongDecimal, rwpAltitude, rwpDescription) values ($regPk,'$name',$lat,$long,$alt,'$desc')";
+        $result = mysql_query($sql,$link) or die('Insert RegionWaypoint failed: ' . mysql_error());
+    }
+
+    return $n;
 }
 
 
@@ -120,9 +140,11 @@ function parse_waypoints($filen, $regPk, $link)
         return parse_oziwpts($regPk, $link, $lines);
     }
 
-    //if (substr($lines[0],0,4) == "<?xml")
-    //{
-    //}
+    if (substr($lines[0],0,5) == "<?xml")
+    {
+        $xml = new SimpleXMLElement($data);
+        return parse_kml($regPk, $link, $xml);
+    }
 
     $param = [];
     for ($i = 0; $i < count($lines); $i++)

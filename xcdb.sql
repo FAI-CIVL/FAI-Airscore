@@ -64,7 +64,8 @@ create table tblFormula
     forWeightArrival double default 0.175,
     forWeightSpeed   double default 0.7,
     forWeightDist    enum ( 'pre2014', 'post2014' ) default 'post2014',
-    forScaleToValidity integer default 0
+    forScaleToValidity integer default 0,
+    forDiscreteClasses integer default 0
 );
 
 drop table if exists tblComTaskTrack;
@@ -514,10 +515,11 @@ create table tblPilMap
 drop table if exists tblTeam;
 create table tblTeam
 (
-    teaPk               Integer not null PRIMARY KEY auto_increment,
+    teaPk               integer not null PRIMARY KEY auto_increment,
     comPk               integer,
     teaName             varchar(64),
-    teaScoring          integer    
+    teaScoring          integer,
+    index indComPk (comPk)
 );
 
 -- task specific stuff for a team
@@ -538,7 +540,8 @@ create table tblTeamPilot
     teaPk           integer,
     pilPk           Integer,
     tepPreference   Integer not null default 1, 
-    tepModifier     float
+    tepModifier     float,
+    index indTeamPilot (teaPk,pilPk)
 );
 
 -- DROP TABLE tblTeamScoring;
