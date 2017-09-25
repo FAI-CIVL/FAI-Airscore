@@ -7,7 +7,7 @@ body
 	color: #000000;
 	font-family:Verdana, Arial, Helvetica, sans-serif;
 	font-size: 12px;
-    background: #a8a8a8 url(images/bg_body800.jpg) repeat-y top center;
+    background: #0000a8 url(images/cloud_tile.jpg);
 }
 v\:* 
 {
@@ -70,9 +70,14 @@ tr.d a:hover
 	text-align: left;
 	padding: 0px 0px 0px 0px;
 	color: #ffffff;
-	background: #000000;
 	height: 30px;	
 	overflow: hidden;
+	background: #000066;
+    background: -webkit-linear-gradient(top,#000066,#3333aa);
+    background: -moz-linear-gradient(top,#000066,#3333aa);
+    background: -ms-linear-gradient(top,#000066,#3333aa);
+    background: -o-linear-gradient(top,#000066,#3333aa);
+    background: linear-gradient(top,#000066,#3333aa);
 }
 #vhead body
 {
@@ -96,7 +101,7 @@ tr.d a:hover
 	margin-top: 0px;
 	width: 100%;
 	list-style-type: none;
-	height: 18px;
+	height: 25px;
 	padding: 0.0em;
 	font-family: luxi-sans, helvetica, sans-serif, verdana, arial;
 	color: #81191a;
@@ -121,15 +126,19 @@ tr.d a:hover
 	color: #81191a;
 	background-color: transparent;
 }
+#navigation
+{
+    height: 24px;
+}
 #menu
 {
 	/* background-image:url(/zen_main.jpg); */
 	background-repeat:no-repeat;
 	text-align: left;
 	padding: 0px 0px 0px 0px;
-	margin: 0;
-	background: #FFCC33;
-	height:19px;	
+	margin: 0 0 0 0;
+	background: #3333AA;
+	height: 24px;	
     overflow: hidden;
 }
 #menu body
@@ -139,12 +148,12 @@ tr.d a:hover
 }
 #menu ul
 {
-	padding: 0;
-	margin-top: 0px;
+	padding: 0px;
+	margin: 0px;
 	width: auto;
 	list-style-type: none;
-	height: 20px;
-	padding: 0.0em;
+	height: 24px;
+	padding: 0px;
 	font-family: luxi-sans, helvetica, sans-serif, verdana, arial;
 	color: #81191a;
 	font-size: 13px;
@@ -152,20 +161,27 @@ tr.d a:hover
 	background-color: transparent;
 	text-align: right;
 }
-#menu ul li { display: inline; }
+#menu ul li 
+{ 
+    display: inline; 
+	height: 24px;
+    border-left: 1px #000000;
+    vertical-align: middle;
+}
 #menu ul li a
 {
 	margin-left: 0px;
-	height: 18px;
+	height: 24px;
 	color: #ffffcc;
 	background-color: #81191a;
-	padding: 0.2em 1em;
+	padding: 7px 1em;
 	text-decoration: none;
-	border-left: 0px solid #000000;
+	border-left: 1px solid #000000;
 }
 #menu ul li a:hover
 {
 	color: #81191a;
+	height: 25px;
 	background-color: transparent;
 }
 #rightbox
@@ -194,19 +210,22 @@ h2
 }
 #container
 {
+    display: block;
+    overflow: auto;
     clear: both;
-	width: 800px;
+	width: 80%;
 	margin: 0 auto;
-	background-color: #a8a8a8;
 	padding: 0px 0px 0px 0px;
 	text-align: left;
 	padding-bottom: 40px;
-	background-repeat: repeat-y;
-	background-attachment: fixed;
-	background-position: top left;
+    border: 2px solid #303030;
+    border-top: none; 
+    box-shadow: 0px 0px 3px 5px #303030;
+    background: #c8c8c8 url(images/airscore_logo.png) no-repeat right top;
+    min-height: 100%;
 }
 * html #container{
-	width: 800px;
+	width: 900px;
 }
 #container h2
 {
