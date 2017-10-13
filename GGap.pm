@@ -252,7 +252,7 @@ sub points_allocation
         {
             $taskres{'distance'} = $formula->{'mindist'};
         }
-        print "   (", $ref->{'traPk'}, ") effective dist=", $taskres{'distance'}, " stopped height bonus: ", $formula->{'glidebonus'} * ($taskres{'stopalt'} -$task->{'goalalt'}), "\n";
+        print $ref->{'traPk'}, " effective dist=", $taskres{'distance'}, " glide bonus=", $formula->{'glidebonus'} * ($taskres{'stopalt'} -$task->{'goalalt'}), "\n";
         $taskres{'result'} = $ref->{'tarResultType'};
         $taskres{'startSS'} = $ref->{'tarSS'};
         $taskres{'endSS'} = $ref->{'tarES'};
@@ -264,17 +264,17 @@ sub points_allocation
         $taskres{'lastalt'} = $ref->{'tarLastAltitude'};
         # Determine ESS time bonus against goal height
         $hbess = 0;
-        if ($taskres{'goal'} > 0)
+        if ($task->{'heightbonus'} eq 'on' and $taskres{'goal'} > 0)
         {
             my $habove = $taskres{'lastalt'} - $task->{'goalalt'};
-            print "habove: $habove (", $taskt->{'goalalt'}, ")\n";
+            print "    habove: $habove (", $task->{'goalalt'}, ")\n";
             if ($habove > 400)
             {
                 $habove = 400;
             }
             if ($habove > 50)
             {
-                print "oldtime=", $taskres{'time'};
+                print "    oldtime=", $taskres{'time'};
                 $hbess = 20.0*(($habove-50.0)**0.40);
                 $taskres{'time'} = $taskres{'time'} - $hbess;
                 print " hbess=$hbess time=", $taskres{'time'}, "\n";

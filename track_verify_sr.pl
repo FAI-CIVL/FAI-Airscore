@@ -934,8 +934,8 @@ sub validate_task
         else
         {
             # Otherwise it's a zero for elapsed (?)
-            $coeff = $coeff + $essdist*($finish-$startss);
-            $coeff2 = $coeff2 + $essdist*$essdist*($finish-$startss);
+            $coeff = $coeff + $essdist*($startss-$taskss);
+            $coeff2 = $coeff2 + $essdist*$essdist*($startss-$taskss);
             if ($waypoints->[$spt]->{'how'} eq 'entry')
             {
                 print "Elasped entry jump: $comment\n";
@@ -1031,8 +1031,8 @@ sub validate_task
         print "Incomplete ESS wcount=$wcount dist=$dist_flown remainingss=$remainingss: ", $remainingss*($task->{'sfinish'}-$startss), "\n";
         if (!defined($endss))
         {
-            $coeff = $coeff + $remainingss * ($task->{'sfinish'}-$startss);
-            $coeff2 = $coeff2 + $remainingss * $remainingss * ($task->{'sfinish'}-$coord->{'time'});
+            $coeff = $coeff + $essdist * ($startss - $taskss) + $remainingss * ($task->{'sfinish'}-$coord->{'time'});
+            $coeff2 = $coeff2 + $essdist * $essdist * ($startss - $taskss) / 2 + $remainingss * $remainingss * ($task->{'sfinish'}-$coord->{'time'});
         }
     }
     else

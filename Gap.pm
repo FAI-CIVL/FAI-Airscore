@@ -573,7 +573,11 @@ sub pilot_departure_leadout
                     }
                 }
             }
-            $Pdepart = $Pdepart * $Astart / floor($task->{'ssdistance'}/1000.0);
+            $Pdepart = $Pdepart * $Astart * 1.25 / floor($task->{'ssdistance'}/1000.0);
+            if ($Pdepart > $Astart)
+            {
+                $Pdepart = $Astart;
+            }
         }
         else
         {
@@ -622,12 +626,18 @@ sub pilot_speed
 
     my $Tmin = $taskt->{'fastest'};
     my $Pspeed;
-
-    # print $pil->{'tarPk'}, " speed: ", $pil->{'time'}, ", $Tmin\n";
+    my $Ptime = 0;
 
     if ($pil->{'time'} > 0)
     {
-        $Pspeed = $Aspeed * (1-(($pil->{'time'}-$Tmin)/3600/sqrt($Tmin/3600))**(2/3));
+        $Ptime = $pil->{'time'}; 
+    }
+
+    print $pil->{'traPk'}, " Ptime: $Ptime, Tmin=$Tmin\n";
+
+    if ($Ptime > 0)
+    {
+        $Pspeed = $Aspeed * (1-(($Ptime-$Tmin)/3600/sqrt($Tmin/3600))**(2/3));
     }
     else
     {
@@ -641,7 +651,7 @@ sub pilot_speed
 
     if (0+$Pspeed != $Pspeed)
     {
-        print "Pspeed is nan for tarPk=", $pil->{'tarPk'}, " pil->{'time'}=", $pil->{'time'}, "\n";
+        print $pil->{'traPk'} , " Pspeed is nan: pil->{'time'}=", $Ptime, "\n";
         $Pspeed = 0;
     }
 
@@ -658,7 +668,7 @@ sub pilot_distance
             + $kmdiff->[floor($pil->{'distance'}/100.0)] * (1-$formula->{'lineardist'}));
 
     # print $pil->{'tarPk'}, " Adist=$Adistance pil->dist=", $pil->{'distance'}, " maxdist=", $taskt->{'maxdist'}, " kmdiff=", $kmdiff->[floor($pil->{'distance'}/100.0)], "\n";
-    # print $pil->{'tarPk'}, " lin dist: ", $Adistance * ($pil->{'distance'}/$taskt->{'maxdist'}) * $formula->{'lineardist'}, " dif dist: ", $Adistance * $kmdiff->[floor($pil->{'distance'}/100.0)] * (1-$formula->{'lineardist'});
+    print $pil->{'traPk'}, " lin dist: ", $Adistance * ($pil->{'distance'}/$taskt->{'maxdist'}) * $formula->{'lineardist'}, " dif dist: ", $Adistance * $kmdiff->[floor($pil->{'distance'}/100.0)] * (1-$formula->{'lineardist'}), "\n";
 
     return $Pdist;
 }
