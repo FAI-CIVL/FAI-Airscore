@@ -68,7 +68,7 @@ if (reqexists('addcomp'))
             $handi = 1;
         }
 
-        if ($paid == "on" && $pilot->paid != "1") 
+        if ($paid == "on" && $pilot->paid != "1")
         {
             // skip non-payers
             continue;
@@ -142,6 +142,7 @@ if (reqexists('addpilot'))
     $lname = reqsval('lname');
     $fname = reqsval('fname');
     $sex = reqsval('sex');
+	$xcid = reqsval('xcontest');
 
     $query = "select * from tblPilot where pilHGFA=$fai";
     $result = mysql_query($query) or die('Pilot select failed: ' . mysql_error());
@@ -151,7 +152,7 @@ if (reqexists('addpilot'))
     }
     else
     {
-        $query = "insert into tblPilot (pilHGFA, pilCIVL, pilLastName, pilFirstName, pilSex, pilNationCode) value ($fai, $civl,'$lname','$fname','$sex','AUS')";
+        $query = "insert into tblPilot (pilHGFA, pilCIVL, pilLastName, pilFirstName, pilSex, pilNationCode, xcontestUser) value ($fai, $civl,'$lname','$fname','$sex','ITA','$xcid')";
         $result = mysql_query($query) or die('Pilot insert failed: ' . mysql_error());
     }
 }
@@ -167,7 +168,7 @@ if (reqexists('bulkadd'))
 
     exec(BINDIR . "bulk_pilot_import.pl $copyname", $out, $retv);
     foreach ($out as $txt)
-    {  
+    {
         echo "$txt<br>\n";
     }
 }
@@ -180,6 +181,8 @@ if (reqexists('update'))
     $fname = reqsval("fname$id");
     $sex = reqsval("sex$id");
     $nat = reqsval("nation$id");
+	$xcid = reqsval("xcontest$id");
+
     $query = "select * from tblPilot where pilHGFA=$fai and pilPk<>$id";
     $result = mysql_query($query) or die('Pilot update select failed: ' . mysql_error());
     if ($fai < 1000 or mysql_num_rows($result) > 0)
@@ -188,7 +191,7 @@ if (reqexists('update'))
     }
     else
     {
-        $query = "update tblPilot set pilHGFA=$fai, pilLastName='$lname', pilFirstName='$fname', pilSex='$sex', pilNationCode='$nat' where pilPk=$id";
+        $query = "update tblPilot set pilHGFA=$fai, pilLastName='$lname', pilFirstName='$fname', pilSex='$sex', pilNationCode='$nat' , xcontestUser='$xcid'  where pilPk=$id";
         $result = mysql_query($query) or die('Pilot update failed: ' . mysql_error());
     }
 }
@@ -223,10 +226,11 @@ else
 echo "<input type=\"hidden\" name=\"MAX_FILE_SIZE\" value=\"1000000000\">";
 echo "HGFA/FAI: " . fin('fai', '', 5);
 echo "CIVL: " . fin('civl', '', 5);
-echo "LastName: " . fin('lname', '', 10); 
-echo "FirstName: " . fin('fname', '', 10); 
+echo "LastName: " . fin('lname', '', 10);
+echo "FirstName: " . fin('fname', '', 10);
 echo "Sex: " . fselect('sex', 'M', [ 'M' => 'M', 'F' => 'F' ]);
-echo fis('addpilot', "Add Pilot", 5); 
+echo "Xcontest ID:" . fin('xcontest', '' ,10);
+echo fis('addpilot', "Add Pilot", 5);
 echo "<br>";
 echo "CSV (Last,First,FAI#,Sex,CIVL#): <input type=\"file\" name=\"bulkpilots\">";
 echo fis('bulkadd', 'Bulk Submit', 5);
@@ -281,6 +285,7 @@ if ($cat != '')
         $civlid = $row['pilCIVL'];
         $sex = $row['pilSex'];
         $nat = $row['pilNationCode'];
+		$xcid = $row['xcontestUser'];
         echo "<li><button type=\"submit\" name=\"delete\" value=\"$id\">del</button>";
         echo "<button type=\"submit\" name=\"update\" value=\"$id\">up</button>";
         //echo " $hgfa $name ($sex).<br>\n";
@@ -289,9 +294,10 @@ if ($cat != '')
         echo "<input type=\"text\" name=\"lname$id\" value=\"$lname\" size=10>";
         echo "<input type=\"text\" name=\"fname$id\" value=\"$fname\" size=10>";
         echo "<input type=\"text\" name=\"sex$id\" value=\"$sex\" size=3>";
-        echo "<input type=\"text\" name=\"nation$id\" value=\"$nat\" size=3> <br>";
+        echo "<input type=\"text\" name=\"nation$id\" value=\"$nat\" size=3>";
+		echo "<input type=\"text\" name=\"xcontest$id\" value=\"$xcid\" size=3> <br>";
         # echo a delete button ...
-    
+
         $count++;
     }
     echo "</ol>";
@@ -303,4 +309,3 @@ echo "</form>";
 </div>
 </body>
 </html>
-
