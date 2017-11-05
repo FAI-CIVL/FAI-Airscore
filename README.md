@@ -1,4 +1,4 @@
-
+Adapting Airscore for use in the Italian League.
 # airScore
 
 
