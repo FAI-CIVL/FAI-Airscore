@@ -16,7 +16,7 @@ HTROOT=/var/www
 MYSQLHOST=localhost
 MYSQLUSER=xc
 MYSQLPASSWORD=xxxxx
-CGIBIN=/usr/lib/cgi
+CGIBIN=/usr/lib/cgi/
 TRACKDIR=/var/airscore/tracks/
 DATABASE=xcdb
 
@@ -27,7 +27,7 @@ TARGET_OS=$(shell uname)
 OBJPATH=obj/$(TARGET_OS)/
 DEFS=-D_REENTRANT -D$(TARGET_OS)
 
-HTML=$(shell echo *.html *.png *.css)
+HTML=$(shell echo *.png *.css)
 PHP_SRC=$(shell echo *.php *.js)
 BIN=$(shell echo *.pl *.pm)
 SQL=$(shell grep -l MYSQLPASSWORD *.php *.pl *.pm *.sql)
