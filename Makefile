@@ -10,7 +10,7 @@
 TARGET=airScore
 DIR=airscore
 VERSION=0.99
-HTROOT=/var/www
+HTROOT=/var/www/html
 
 # Configure these
 MYSQLHOST=localhost
