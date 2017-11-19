@@ -16,7 +16,7 @@ HTROOT=/var/www/html
 MYSQLHOST=localhost
 MYSQLUSER=xc
 MYSQLPASSWORD=xxxxx
-CGIBIN=/usr/lib/cgi/
+CGIBIN=/usr/lib/cgi-bin/
 TRACKDIR=/var/airscore/tracks/
 DATABASE=xcdb
 
