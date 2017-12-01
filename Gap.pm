@@ -85,7 +85,7 @@ sub task_totals
     my $glidebonus;
     my %taskt;
     my $tasPk;
-    my ($minarr, $maxarr, $fastest, $firstdep, $mincoeff, $tqtime);
+    my ($minarr, $maxarr, $fastest, $firstdep, $mincoeff, $mincoeff2, $tqtime);
     my $launchvalid;
     my $median;
     my $stddev;
@@ -176,6 +176,15 @@ sub task_totals
     {
         $mincoeff = $ref->{'MinCoeff'};
     }
+
+    # FIX: lead out coeff2 - first departure in goal and adjust min coeff 
+    $sth = $dbh->prepare("select min(tarLeadingCoeff2) as MinCoeff2 from tblTaskResult where tasPk=$tasPk and tarLeadingCoeff2 is not NULL");
+    $sth->execute();
+    $mincoeff2 = 0;
+    if ($ref = $sth->fetchrow_hashref())
+    {
+        $mincoeff2 = $ref->{'MinCoeff2'};
+    }
     #print "TTT: min leading coeff=$mincoeff\n";
 
     my $maxdist = 0;
@@ -188,6 +197,18 @@ sub task_totals
     {
         $maxdist = 0 + $ref->{'MaxDist'};
     }
+    #if someone got to goal, maxdist should be dist to goal (to avoid stopped glide creating a max dist > task dist)
+    if ($goal > 0)
+    {
+	
+   	$sth = $dbh->prepare("select tasShortRouteDistance as GoalDist from tblTask where tasPk=$tasPk");
+   	$sth->execute();
+ 	if ($ref = $sth->fetchrow_hashref())	
+	{
+		$maxdist = $ref->{'GoalDist'};
+    	}
+     }
+
     if ($maxdist < $mindist)
     {
         $maxdist = $mindist;
@@ -258,6 +279,7 @@ sub task_totals
     $taskt{'firstarrival'} = $minarr;
     $taskt{'lastarrival'} = $maxarr;
     $taskt{'mincoeff'} = $mincoeff;
+    $taskt{'mincoeff2'} = $mincoeff2;
     $taskt{'distspread'} = \@distspread;
     $taskt{'kmmarker'} = $kmmarker;
     $taskt{'endssdistance'} = $task->{'endssdistance'};
