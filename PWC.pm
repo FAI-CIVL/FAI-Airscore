@@ -96,15 +96,20 @@ sub day_quality
     # Fix - need $distlaunchtoess, $landed
     my $avgdist = $taskt->{'distance'} / $taskt->{'launched'};
     my $distlaunchtoess = $taskt->{'endssdistance'};
+    # when calculating $stopv, to avoid dividing by zero when max distance is greater than distlaunchtoess i.e. when someone reaches goal if statement added.
+    my $maxSSdist = 0;
+    if (0<($distlaunchtoess - $taskt->{'maxdist'}))
+    {
+	$maxSSdist = ($distlaunchtoess - $taskt->{'maxdist'});
+    }
 
     $x = ($taskt->{'landed'} / $taskt->{'launched'});
     print "sqrt( ($taskt->{'maxdist'} - $avgdist) / ($distlaunchtoess - $taskt->{'maxdist'}+1) * sqrt($taskt->{'stddev'} / 5) + $x*$x*$x )\n";
-    my $stopv = sqrt( ($taskt->{'maxdist'} - $avgdist) / ($distlaunchtoess - $taskt->{'maxdist'}+1) * sqrt($taskt->{'stddev'} / 5) + $x*$x*$x );
+    my $stopv = sqrt( ($taskt->{'maxdist'} - $avgdist) / ($maxSSdist+1) * sqrt($taskt->{'stddev'} / 5) + $x*$x*$x );
     $stopv = $self->min([1, $stopv]);
 
     return ($distance,$time,$launch,$stopv);
 }
-
 
 sub ordered_results
 {
@@ -114,7 +119,7 @@ sub ordered_results
     # Get all pilots and process each of them 
     # pity it can't be done as a single update ...
     $dbh->do('set @x=0;');
-    $sth = $dbh->prepare("select \@x:=\@x+1 as Place, tarPk, tarDistance, tarSS, tarES, tarPenalty, tarResultType, tarLeadingCoeff, tarGoal, tarLastAltitude from tblTaskResult where tasPk=? and tarResultType <> 'abs' order by case when (tarGoal=0 or tarES is null) then -999999 else tarLastAltitude end, tarDistance desc");
+    $sth = $dbh->prepare("select \@x:=\@x+1 as Place, tarPk, tarDistance, tarSS, tarES, tarPenalty, tarResultType, tarLeadingCoeff2, tarGoal, tarLastAltitude from tblTaskResult where tasPk=? and tarResultType <> 'abs' order by case when (tarGoal=0 or tarES is null) then -999999 else tarLastAltitude end, tarDistance desc");
     $sth->execute($task->{'tasPk'});
     while ($ref = $sth->fetchrow_hashref()) 
     {
@@ -155,22 +160,22 @@ sub ordered_results
             $taskres{'time'} = 0;
         }
         # Leadout Points
-        $taskres{'coeff'} = $ref->{'tarLeadingCoeff'};
+        $taskres{'coeff'} = $ref->{'tarLeadingCoeff2'};
         # FIX: adjust against fastest ..
-        if ((($ref->{'tarES'} - $ref->{'tarSS'}) < 1) and ($ref->{'tarSS'} > 0))
+        if ((($ref->{'tarES'} - $ref->{'tarSS'}) < 1) and ($ref->{'tarSS'} > 0)) #only pilots that started and didn't make ESS
         {
             # Fix - busted if no one is in goal?
             if ($taskt->{'goal'} > 0)
             {
                 # adjust for late starters
-                print "No goal, adjust pilot coeff from: ", $ref->{'tarLeadingCoeff'};
-                $taskres{'coeff'} = $ref->{'tarLeadingCoeff'} - ($task->{'sfinish'} - $taskt->{'lastarrival'}) * ($task->{'endssdistance'} - $ref->{'tarDistance'}) / 1800 / $task->{'ssdistance'} ;
+                print "No goal, adjust pilot coeff from: ", $ref->{'tarLeadingCoeff2'};
+                $taskres{'coeff'} = $ref->{'tarLeadingCoeff2'} - ($task->{'sfinish'} - $taskt->{'lastarrival'}) * ($task->{'endssdistance'} - $ref->{'tarDistance'}) / 1800 / $task->{'ssdistance'} ;
             
                 print " to: ", $taskres{'coeff'}, "\n";
                 # adjust mincoeff?
-                if ($taskres{'coeff'} < $task->{'mincoeff'})
+                if ($taskres{'coeff'} < $task->{'mincoeff2'})
                 {
-                    $task->{'mincoeff'} = $taskres{'coeff'};
+                    $task->{'mincoeff2'} = $taskres{'coeff'};
                 }
             }
         }
