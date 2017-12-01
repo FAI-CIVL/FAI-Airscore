@@ -285,7 +285,7 @@ if ($cat != '')
         $civlid = $row['pilCIVL'];
         $sex = $row['pilSex'];
         $nat = $row['pilNationCode'];
-		$xcid = $row['xcontestUser'];
+		$xcid = $row['pilXcontestUser'];
         echo "<li><button type=\"submit\" name=\"delete\" value=\"$id\">del</button>";
         echo "<button type=\"submit\" name=\"update\" value=\"$id\">up</button>";
         //echo " $hgfa $name ($sex).<br>\n";
