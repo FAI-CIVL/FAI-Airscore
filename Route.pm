@@ -448,7 +448,7 @@ sub task_distance
     for (my $i = 0; $i < $allpoints; $i++)
     {
         # Margins
-        my $margin = $waypoints->[$i]->{'radius'} * 0.0005;
+        my $margin = $waypoints->[$i]->{'radius'} * 0.005;
         if ($margin < 5.0)
         {
             $margin = 5.0;
