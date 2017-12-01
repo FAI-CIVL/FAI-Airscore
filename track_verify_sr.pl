@@ -611,7 +611,9 @@ sub validate_task
                 if (defined($lastmaxcoord) && !defined($endss))
                 {
                     $coeff = $coeff + ($coord->{'time'} - $taskss) * ( ($essdist - $maxdist) - ($essdist - $newdist) );
-                    $coeff2 = $coeff2 + ($coord->{'time'} - $startss) * ( ($essdist - $maxdist)*($essdist - $maxdist) - ($essdist - $newdist)*($essdist - $newdist) );
+                    #$coeff2 = $coeff2 + ($coord->{'time'} - $startss) * ( ($essdist - $maxdist)*($essdist - $maxdist) - ($essdist - $newdist)*($essdist - $newdist) );
+                    # distances should be in km
+		     $coeff2 = $coeff2 + ($coord->{'time'} - $startss) * ( (($essdist - $maxdist)/1000)*(($essdist - $maxdist)/1000) - ($essdist - $newdist)/1000 *($essdist - $newdist)/1000 );
                 }
                 $lastmaxcoord = $coord;
                 if ($debug)
@@ -935,7 +937,7 @@ sub validate_task
         {
             # Otherwise it's a zero for elapsed (?)
             $coeff = $coeff + $essdist*($startss-$taskss);
-            $coeff2 = $coeff2 + $essdist*$essdist*($startss-$taskss);
+            $coeff2 = $coeff2 + $essdist/1000*$essdist/1000*($startss-$taskss);
             if ($waypoints->[$spt]->{'how'} eq 'entry')
             {
                 print "Elasped entry jump: $comment\n";
@@ -1008,7 +1010,7 @@ sub validate_task
         print "wcount=0 dist=$dist_flown\n";
         #$coeff = $coeff + ($essdist - $dist_flown)*($task->{'sfinish'}-$startss);
         $coeff = $essdist * ($task->{'sfinish'}-$task->{'sstart'});
-        $coeff2 = $essdist * $essdist * ($task->{'sfinish'}-$task->{'sstart'});
+        $coeff2 = $essdist/1000 * $essdist/1000 * ($task->{'sfinish'}-$task->{'sstart'});
     }
     elsif ($wcount == 0)
     {
@@ -1016,7 +1018,7 @@ sub validate_task
         $dist_flown = $maxdist; # short_dist($waypoints->[$wcount], $waypoints->[$wcount+1]); # - distance($closestcoord, \%s2);
         print "wcount=0 dist=$dist_flown\n";
         $coeff = $essdist * ($task->{'sfinish'}-$task->{'sstart'});
-        $coeff2 = $essdist * $essdist * ($task->{'sfinish'}-$task->{'sstart'});
+        $coeff2 = $essdist/1000 * $essdist/1000 * ($task->{'sfinish'}-$task->{'sstart'});
     }
     elsif ($wcount < $allpoints)
     {
@@ -1032,7 +1034,7 @@ sub validate_task
         if (!defined($endss))
         {
             $coeff = $coeff + $essdist * ($startss - $taskss) + $remainingss * ($task->{'sfinish'}-$coord->{'time'});
-            $coeff2 = $coeff2 + $essdist * $essdist * ($startss - $taskss) / 2 + $remainingss * $remainingss * ($task->{'sfinish'}-$coord->{'time'});
+            $coeff2 = $coeff2 + $essdist/1000 * $essdist/1000 * ($startss - $taskss) / 2 + $remainingss * $remainingss * ($task->{'sfinish'}-$coord->{'time'});
         }
     }
     else
@@ -1067,7 +1069,7 @@ sub validate_task
     }
     print "## coeff=$coeff essdist=$essdist\n";
     $result{'coeff'} = $coeff / 1800 / $essdist;
-    $result{'coeff2'} = $coeff2 / 1800 / $essdist;
+    $result{'coeff2'} = $coeff2 / (1800 * ($essdist/1000 * $essdist/1000));
     print "    coeff=", $result{'coeff'}, " coeff2=", $result{'coeff2'}, "\n";
     if ($closestcoord)
     {
