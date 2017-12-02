@@ -165,10 +165,13 @@ function accept_track($until, $contact, $restrict)
 #        }
 #    }
 ##
+
+#changed 7 day track submission limit to 700 days for historical task testing
+
     $gmtimenow = time() - (int)substr(date('O'),0,3)*60*60;
-    if ($gmtimenow > ($until + 7*24*3600))
+    if ($gmtimenow > ($until + 700*24*3600))
     {
-        echo "<b>The submission period for tracks has closed ($until).</b><br>\n";
+        echo "<b>The submission period for tracks has closed ($until) ($gmtimenow).</b><br>\n";
         echo "Contact $contact if you're having an access problem.<br>\n";
         echo "</div></body></html>\n";
         exit(0);
