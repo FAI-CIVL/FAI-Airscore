@@ -1034,8 +1034,9 @@ sub validate_task
         if (!defined($endss))
         {
             $coeff = $coeff + $essdist * ($startss - $taskss) + $remainingss * ($task->{'sfinish'}-$coord->{'time'});
-            $coeff2 = $coeff2 + $essdist/1000 * $essdist/1000 * ($startss - $taskss) / 2 + $remainingss * $remainingss * ($task->{'sfinish'}-$coord->{'time'});
-        }
+            #$coeff2 = $coeff2 + $essdist/1000 * $essdist/1000 * ($startss - $taskss) / 2 + $remainingss * $remainingss * ($task->{'sfinish'}-$coord->{'time'});
+        	$coeff2 = $coeff2 +  $remainingss/1000 * $remainingss/1000 *  ($task->{'sfinish'} -$startss );
+		}
     }
     else
     {

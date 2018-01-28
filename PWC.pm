@@ -174,7 +174,7 @@ sub pilot_departure_leadout
     my $x = 0;
     my $Parrival = 0;
     my $Cmin = $taskt->{'mincoeff2'};
-
+	my $lfactor;
     # Pilot departure score
     # print Dumper($pil);
 
@@ -187,6 +187,7 @@ sub pilot_departure_leadout
             if ($pil->{'coeff'} <= $Cmin)
             {
                 $Pdepart = $Astart;
+				print "coeff less than min";
             }
             elsif ($Cmin <= 0)
             {
@@ -195,8 +196,20 @@ sub pilot_departure_leadout
             }
             else
             {
-                $Pdepart = $Astart * (1-(($pil->{'coeff'}-$Cmin)*($pil->{'coeff'}-$Cmin)/sqrt($Cmin))**(1/3));
-            }
+				$lfactor = (1-(($pil->{'coeff'}-$Cmin)*($pil->{'coeff'}-$Cmin)/sqrt($Cmin))**(1/3));
+				
+				#get the minimum of zero and lead factor as per PWCA rules 2016 C.6.3
+				
+				if ($lfactor > 0) 
+				{
+                 $Pdepart = $Astart * $lfactor;
+				}
+				else
+				{
+				$Pdepart = 0;
+				}
+				print "pdepart: ", $Pdepart, "\n";
+			}
         }
     }
     elsif ($task->{'departure'} eq 'kmbonus')
@@ -311,6 +324,7 @@ sub ordered_results
 {
     my ($self, $dbh, $task, $taskt, $formula) = @_;
     my @pilots;
+	my $maxtime =0;
 
     # Get all pilots and process each of them
     # pity it can't be done as a single update ...
@@ -363,10 +377,15 @@ sub ordered_results
             # Fix - busted if no one is in goal?
             if ($taskt->{'goal'} > 0)
             {
+				$maxtime = $taskt->{'lastarrival'};
+				if ($ref->{'tarLastTime'}>$taskt->{'lastarrival'})
+				{
+				$maxtime = $ref->{'tarLastTime'};
+				}
                 # adjust for late starters
                 print "No goal, adjust pilot coeff from: ", $ref->{'tarLeadingCoeff2'};
-                $taskres{'coeff'} = $ref->{'tarLeadingCoeff2'} - ($task->{'sfinish'} - $taskt->{'lastarrival'}) * ($task->{'endssdistance'} - $ref->{'tarDistance'}) / 1800 / $task->{'ssdistance'} ;
-            
+                #$taskres{'coeff'} = $ref->{'tarLeadingCoeff2'} - ($task->{'sfinish'} - $taskt->{'lastarrival'}) * ($task->{'endssdistance'} - $ref->{'tarDistance'}) / 1800 / $task->{'ssdistance'} ;
+            	$taskres{'coeff'} = $ref->{'tarLeadingCoeff2'} - (($task->{'sfinish'} - $maxtime) * (($task->{'endssdistance'}/1000 - $ref->{'tarDistance'}/1000) *($task->{'endssdistance'}/1000 - $ref->{'tarDistance'}/1000)) / (1800 *($task->{'ssdistance'}/1000)* ($task->{'ssdistance'}/1000))) ;
                 print " to: ", $taskres{'coeff'}, "\n";
                 # adjust mincoeff?
                 if ($taskres{'coeff'} < $task->{'mincoeff2'})
