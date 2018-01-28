@@ -23,6 +23,8 @@ my $allowjumps = 0;
 my $max_errors = 5;
 my $DEGREESTOINT = 46603;
 
+my $max_time_break = 300;
+
 # this probably should be dynamic based on total # points
 my $goodchunk = 500;        
 
@@ -534,13 +536,13 @@ sub is_flying
         return 0;
     }
 
-    if ($timdif > 300)
+    if ($timdif > $max_time_break)
     {
         if ($debug) { print "Not flying: time gap=$timdif secs\n"; }
         return 1;
     }
    
-    if ($dist > 5000)
+    if ($dist > 20 * $max_time_break)
     {
         if ($debug) { print "Not flying: big dist jump=$dist m\n"; }
         return 10;
