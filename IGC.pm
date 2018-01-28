@@ -158,7 +158,10 @@ sub extract_fix
     $loc{'dlong'} = 0.0 + $loc{'long'};
     $loc{'long'} = $loc{'long'} * PI() / 180;
 
-    $loc{'fix'} = substr $row, 24, 1;
+    if (!defined($loc{'fix'}))
+    {
+        $loc{'fix'} = substr $row, 24, 1;
+    }
     $loc{'pressure'} = 0 + substr $row, 25, 5;
     $loc{'altitude'} = 0 + substr $row, 30, 5;
     
@@ -575,7 +578,7 @@ sub is_flying
 
 sub trim_flight
 {
-    my ($flight, $pilPk, $ignore_breaks) = @_;
+    my ($flight, $pilPk) = @_;
     my $full;
     my @reduced;
     my $dist;
@@ -626,11 +629,6 @@ sub trim_flight
         #if ($debug) { print "trim at start\n"; }
         $coord = $next;
         $next = shift @$full; 
-    }
-
-    if ($ignore_breaks == 1)
-    {
-        return $flight;
     }
 
     # TODO: only take "latest" track if "broken"?
