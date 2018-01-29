@@ -17,8 +17,11 @@ require DBD::mysql;
 use POSIX qw(ceil floor);
 use Math::Trig;
 use Data::Dumper;
-use TrackLib qw(:all);
 use strict;
+
+# Add currect bin directory to @INC
+use lib '/var/www/cgi-bin';
+use TrackLib qw(:all);
 
 sub new
 {
@@ -43,6 +46,18 @@ sub min
     foreach my $y (@$list)
     {
         $x = $y if $y < $x;
+    }
+    return $x;
+}
+
+sub max
+{
+    my ($self, $list) = @_;
+    my $x = 0;
+
+    foreach my $y (@$list)
+    {
+        $x = $y if $y > $x;
     }
     return $x;
 }
@@ -940,7 +955,7 @@ sub points_allocation
         # Store back into tblTaskResult ...
         if (defined($tarPk))
         {
-            print "update $tarPk: d:$Pdist, s:$Pspeed, p: $penalty, a:$Parrival, g:$Pdepart\n";
+            print "update $tarPk: dP:$Pdist, sP:$Pspeed, LeadP:$Pdepart - score $Pscore\n";
             my $sth = $dbh->prepare("update tblTaskResult set
                 tarDistanceScore=$Pdist, tarSpeedScore=$Pspeed, 
                 tarArrival=$Parrival, tarDeparture=$Pdepart, tarScore=$Pscore
@@ -951,4 +966,3 @@ sub points_allocation
 }
 
 1;
-
