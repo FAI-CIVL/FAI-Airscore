@@ -63,6 +63,7 @@ if (reqexists('download'))
                 W.awpLatDecimal between (R.argLatDecimal-R.argSize) and (R.argLatDecimal+R.argSize) and
                 W.awpLongDecimal between (R.argLongDecimal-R.argSize) and (R.argLongDecimal+R.argSize)
                 group by (airPk))
+            group by A.airName
             order by A.airName";
     $result = mysql_query($sql,$link);
 
@@ -107,6 +108,7 @@ if (reqexists('download'))
         }
     }
 
+    exit(0);
 }
 
 function display_airspace_region($link, $argPk)
