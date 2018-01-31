@@ -330,6 +330,7 @@ sub read_task
         $task{'arrival'} = $ref->{'tasArrival'};
         $task{'departure'} = $ref->{'tasDeparture'};
         $task{'launchvalid'} = $ref->{'tasLaunchValid'};
+        $task{'heightbonus'} = $ref->{'tasHeightBonus'};
 
         $task{'laststart'} = $task{'sstart'};
         if (defined($ref->{'tasLastStartTime'}))
@@ -345,7 +346,7 @@ sub read_task
 
     }
 
-    $sth = $dbh->prepare("select T.*,R.*,S.ssrLatDecimal,S.ssrLongDecimal,S.ssrNumber from tblRegionWaypoint R, tblTaskWaypoint T left outer join tblShortestRoute S on S.tasPk=$tasPk and S.ssrNumber=T.tawNumber where T.tasPk=$tasPk and T.rwpPk=R.rwpPk order by T.tawNumber");
+    $sth = $dbh->prepare("select T.*,R.*,S.ssrLatDecimal,S.ssrLongDecimal,S.ssrNumber from tblRegionWaypoint R, tblTaskWaypoint T left outer join tblShortestRoute S on S.tasPk=$tasPk and S.ssrNumber=T.tawNumber where T.tasPk=$tasPk and T.rwpPk=R.rwpPk group by T.tawNumber order by T.tawNumber");
     $sth->execute();
     while ($ref = $sth->fetchrow_hashref()) 
     {

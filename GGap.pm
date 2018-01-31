@@ -111,6 +111,44 @@ sub day_quality
     return ($distance,$time,$launch,1);
 }
 
+sub pilot_speed
+{
+    my ($self, $formula, $task, $taskt, $pil, $Aspeed) = @_;
+
+    my $Tmin = $taskt->{'fastest'};
+    my $Pspeed;
+    my $Ptime = 0;
+
+    if ($pil->{'time'} > 0)
+    {
+        $Ptime = $pil->{'time'}; 
+    }
+
+    print $pil->{'traPk'}, " Ptime: $Ptime, Tmin=$Tmin\n";
+
+    if ($Ptime > 0)
+    {
+        $Pspeed = $Aspeed * (1-(($Ptime-$Tmin)/3600/sqrt($Tmin/1800))**(2/3));
+    }
+    else
+    {
+        $Pspeed = 0;
+    }
+
+    if ($Pspeed < 0)
+    {
+        $Pspeed = 0;
+    }
+
+    if (0+$Pspeed != $Pspeed)
+    {
+        print $pil->{'traPk'} , " Pspeed is nan: pil->{'time'}=", $Ptime, "\n";
+        $Pspeed = 0;
+    }
+
+    return $Pspeed;
+}
+
 sub points_weight
 {
     my ($self, $task, $taskt, $formula) = @_;

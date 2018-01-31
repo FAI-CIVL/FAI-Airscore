@@ -11,6 +11,7 @@ require DBD::mysql;
 use Data::Dumper;
 use File::Temp;
 use File::Copy;
+use File::Basename;
 
 use TrackLib qw(:all);
 use Defines qw(:all);
@@ -104,6 +105,7 @@ sub read_all_tracks
 {
     my ($comPk,$tasPk,$tracks) = @_;
     my $file;
+    my $nfile;
     my $traPk;
     my @fields;
     my $out;
@@ -125,8 +127,12 @@ sub read_all_tracks
     {
         $file = $tracks->{$pilPk};
         #print "Track read ($file) for pilot=$pilPk\n";
-        print ("${BINDIR}add_track.pl $pilPk \"$file\" $comPk $tasPk\n");
-        $res = `${BINDIR}add_track.pl $pilPk \"$file\" $comPk $tasPk`;
+        
+        $nfile = dirname($file) . "\/$pilPk";
+        rename($file, $nfile);
+
+        print ("${BINDIR}add_track.pl $pilPk \"$nfile\" $comPk $tasPk\n");
+        $res = `${BINDIR}add_track.pl $pilPk \"$nfile\" $comPk $tasPk`;
         print $res;
         #print "Track read ($pilPk:$file) may have failed: $out\n";
 
@@ -135,7 +141,7 @@ sub read_all_tracks
         $name = lc($sth->fetchrow_array());
 
         $copyname = $FILEDIR . $year . "/" . $name . "_" . $pilPk . "_" . $dte;
-        print "cp $file $copyname\n";
+        print "cp $nfile $copyname\n";
         copy($file, $copyname);
         chmod 0644, $copyname;
     }

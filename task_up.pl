@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -I/home/geoff/bin
 
 #
 # Task is updated - work out what to do.
@@ -161,6 +161,13 @@ if (scalar @ARGV < 1)
 
 $tasPk = $ARGV[0];
 
+# Drop a mutex/lock - only do one at a time
+if (-e "/var/lock/task_$tasPk")
+{
+    print "Task $tasPk already updating\n";
+    exit 1;
+}
+`touch /var/lock/task_$tasPk`;
 
 # Work out all the task totals to make it easier later
 $dbh = db_connect();
@@ -194,6 +201,8 @@ if (track_update($task, $opt) == 1)
     $out = `$pth $tasPk`;
     #print $out;
 }
+
+`rm -f /var/lock/task_$tasPk`;
 
 #print "Task dist=$dist\n";
 

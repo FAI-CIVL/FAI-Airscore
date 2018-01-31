@@ -137,7 +137,7 @@ function accept_track($until, $contact, $restrict)
 {
     //$file = addslashes($_REQUEST['userfile']);
     $hgfa = addslashes($_REQUEST['hgfanum']);
-    $name = addslashes(strtolower($_REQUEST['lastname']));
+    $name = addslashes(strtolower(trim($_REQUEST['lastname'])));
     $route = reqival('route');
     $comid = reqival('comid');
 
