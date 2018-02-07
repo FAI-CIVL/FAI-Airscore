@@ -20,7 +20,7 @@ function waypoint($link,$tasPk, $tawPk, $num, $waypt, $type, $how, $shape, $radi
     output_select("how$tawPk", $how, array('entry', 'exit')); 
     echo "Shape ";
     output_select("shape$tawPk", $shape, array('circle', 'semicircle', 'line')); 
-    echo "Size <input type=\"text\" name=\"radius$tawPk\" size=5 value=\"$radius\">";
+    echo "Size <input type=\"text\" name=\"radius$tawPk\" size=3 value=\"$radius\">";
 }
 
 function update_task($link,$tasPk, $old)
@@ -569,10 +569,12 @@ echo "</form>";
 
 echo "<hr>Bulk tracklog uploads, should be a zip file containing multiple tracks (in top directory) named: FAINum_LastName_etc.igc<br>";
 echo "<form enctype=\"multipart/form-data\" action=\"bulk_submit.php?tasPk=$tasPk&comPk=$comPk\" method=\"post\">";
+echo "<input type=\"hidden\" name=\"MAX_FILE_SIZE\" value=\"1000000000\">";
+echo "<input name=\"userfile\" type=\"file\">";
+echo "<input type=\"submit\" name=\"foo\" value=\"Send Tracklog\"></form>.";
+echo "<hr><form enctype=\"multipart/form-data\" action=\"download_task_tracks.php?tasPk=$tasPk&comPk=$comPk\" method=\"post\">";
+echo "<input type=\"submit\" name=\"foo\" value=\"Download All Tracks\"></form>";
 ?>
-<input type="hidden" name="MAX_FILE_SIZE" value="1000000000">
-<input name="userfile" type="file">
-<input type="submit" name="foo" value="Send Tracklog"></form>
 </div>
 </body>
 </html>
