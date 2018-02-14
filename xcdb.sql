@@ -54,6 +54,7 @@ create table tblFormula
     forDiffRamp      enum ( 'fixed', 'flexible' ) default 'fixed',
     forDiffCalc      enum ( 'all', 'lo' ) default 'all',
     forStoppedGlideBonus double default 0.0,
+    forMargin        double default 0.5,
     forStoppedElapsedCalc enum ( 'atstopped', 'shortesttime' ) default 'atstopped',
     forHeightArrBonus double default 0.0,
     forHeightArrLower integer default 200,
@@ -108,6 +109,7 @@ create table tblTask
     tasSSClose              DateTime,
     tasESClose              DateTime,
     tasTotalDistanceFlown   Double,
+    tasTotDistOverMin       Double,
     tasQuality              Double,
     tasDistQuality          double,
     tasTimeQuality          double,
@@ -217,7 +219,7 @@ create table tblTaskResult
     tarComment      Text,
     tarPlace        integer,
     tarSpeedScore   double,
-    tarDistanceScore double,
+    tarDistanceScore double,                                       
     tarArrival      double,
     tarDeparture    double,
     tarScore        double,
@@ -307,7 +309,9 @@ create table tblRegionWaypoint
     rwpLatDecimal   double not null,
     rwpLongDecimal  double not null,
     rwpAltitude     double not null,
-    rwpDescription  varchar(64)
+    rwpDescription  varchar(64),
+    rwpXcSite_id    integer,
+    rwpXcTakeoff_id integer
 );
 
 insert into tblRegionWaypoint (rwpName,rwpLatDecimal,rwpLongDecimal,rwpAltitude,rwpDescription) values ('mys080', -36.757881, 146.965393, 799, 'Mystic');
@@ -385,7 +389,8 @@ create table tblPilot
     pilEmergencyContact varchar(128),
     pilEmergencyPhone varchar(24),
     pilGlider       varchar(32),
-    gliGliderClass  enum('1','1/2','2','2/3','competition','floater','kingpost','open','rigid') default 'competition'
+    gliGliderClass  enum('1','1/2','2','2/3','competition','floater','kingpost','open','rigid') default 'competition',
+    pilXcontestUser varchar(50)
 );
 
 drop table if exists tblCompPilot;
