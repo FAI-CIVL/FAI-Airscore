@@ -66,7 +66,7 @@ sub extract_igcs
 
         if ($pilPk > 0)
         {
-            $sth = $dbh->prepare("select pilHGFA from tblPilot where pilPk=$pilPk" );
+            $sth = $dbh->prepare("select pilHGFA from tblPilot where pilHGFA=$pilPk" );
         }
         else
         {
