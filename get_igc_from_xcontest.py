@@ -10,20 +10,20 @@ python3 get_igc_from_xcontest.py <tasPk>
 
 import requests, lxml.html , time ,logging, zipfile, MySQLdb, subprocess, os, sys, shutil
 
-def get_missing_tracks_list(task_id):
+def get_missing_tracks_list(task_id, DB_User, DB_Password, DB):
     """Get pilot details (pilots in task without tracks) returns a dictionary of pilXcontestUser:pilPK."""
 
-    db=MySQLdb.connect(user="phpmyadmin",passwd="airscore",db="xcdb")
-    c=db.cursor()
+    db = MySQLdb.connect(user = DB_User, passwd = DB_Password, db = DB)
+    c = db.cursor()
     c.execute("SELECT pilXcontestUser, p.pilHGFA FROM tblPilot p join tblCompPilot b on p.pilPk = b.pilPk left outer join (SELECT comPk, tasPk, c.traPk, pilPk FROM tblComTaskTrack c join tblTrack t on c.traPk = t.traPk where tasPk= %s) as a on b.pilPk = a.pilPK and b.comPk = a.comPk where pilXcontestUser is NOT null and a.traPk is null", (task_id,))
     pilot_list = dict((xc, pilpk) for xc, pilpk in c.fetchall())
     return pilot_list
 
-def get_xc_parameters(task_id):
+def get_xc_parameters(task_id, DB_User, DB_Password, DB):
     """Get site info and date from database """
 
-    db=MySQLdb.connect(user="phpmyadmin",passwd="airscore",db="xcdb")
-    c=db.cursor()
+    db = MySQLdb.connect(user = DB_User, passwd = DB_Password, db = DB)
+    c = db.cursor()
     c.execute("SELECT rwpXcSite_id, rwpXcTakeoff_id, tasDate FROM tblTaskWaypoint JOIN tblTask ON tblTaskWaypoint.tasPk = tblTask.tasPk JOIN tblRegionWaypoint ON tblRegionWaypoint.rwpPk = tblTaskWaypoint.rwpPk WHERE tblTask.tasPk =%s AND tawType = 'start'", (task_id,))
     site_id, takeoff_id, date = c.fetchone()
     logging.info("site_id:%s takeoff_id:%s date:%s", site_id, takeoff_id, date)
@@ -105,6 +105,12 @@ def search_and_zip_files(directory, pilot_list, zip_directory, zip_for_submit_na
                     files_to_submit.append(newname)
                     pilots_to_submit.append(pilot)
                     break
+
+    ##did we find anything?
+    if len(files_to_submit) == 0:
+        logging.info("No relevant tracks found.")
+        return 0
+
     zip_files(zip_directory, files_to_submit, zip_directory, zip_for_submit_name)
     return pilots_to_submit
 
@@ -122,7 +128,10 @@ def delete_igc_zip(directory):
 
 def main():
     """Main module. Takes tasPk as parameter"""
-    login_name = 'XXXXX'  #xcontest login
+    DB_User = 'XXXXX' #mysql db user
+    DB_Password = 'XXXXX' #mysql db password
+    DB = 'xcdb'  #mysql db name
+    login_name = 'XXXXX' #xcontest login
     password = 'XXXXX' #xcontest password
     task_id = 0
     xc_zip_destination = '/var/www/xcontest/'
@@ -145,15 +154,16 @@ def main():
     delete_igc_zip(xc_zip_destination)
     delete_igc_zip(submit_zip_directory)
     
-    pilot_list = get_missing_tracks_list(task_id)
+    pilot_list = get_missing_tracks_list(task_id, DB_User, DB_Password, DB)
     if len(pilot_list) == 0:
         logging.info("No pilots to get")
         exit()
 
-    site_id, takeoff_id, date = get_xc_parameters(task_id)
+    site_id, takeoff_id, date = get_xc_parameters(task_id, DB_User, DB_Password, DB)
     get_zip(site_id, takeoff_id, date, login_name, password, xc_zip_destination, zip_name)
-    search_and_zip_files(xc_zip_destination, pilot_list, submit_zip_directory, zip_for_submit_name)
-    submit_tracks(task_id, submit_zip_directory+zip_for_submit_name, script_dir)
+
+    if search_and_zip_files(xc_zip_destination, pilot_list, submit_zip_directory, zip_for_submit_name):
+        submit_tracks(task_id, submit_zip_directory+zip_for_submit_name, script_dir)
 
 if __name__== "__main__":
   main()
