@@ -13,7 +13,11 @@ require DBD::mysql;
 
 use Time::Local;
 use Data::Dumper;
+
+# Add currect bin directory to @INC
+use lib '/var/www/cgi-bin';
 use Defines qw(:all);
+
 #use strict;
 
 our @ISA       = qw(Exporter);
@@ -262,7 +266,7 @@ sub read_task
         print "No valid task for this track ($tasPk)\n";
         exit 1; 
     }
-    my $sth = $dbh->prepare("select unix_timestamp(T.tasStartTime) as ustime, unix_timestamp(T.tasFinishTime) as uftime,T.*, C.comTimeOffset from tblTask T, tblCompetition C where T.tasPk=$tasPk and T.comPk=C.comPk");
+    my $sth = $dbh->prepare("select unix_timestamp(T.tasStartTime) as ustime, unix_timestamp(T.tasFinishTime) as uftime,T.*, C.comTimeOffset, C.comClass, F.forMargin from tblTask T, tblCompetition C, tblFormula F where T.tasPk=$tasPk and T.comPk=C.comPk and F.comPk=T.comPk");
     $sth->execute();
     if  ($ref = $sth->fetchrow_hashref()) 
     {
@@ -270,6 +274,7 @@ sub read_task
         $task{'comPk'} = $ref->{'comPk'};
         $task{'date'} = $ref->{'tasDate'};
         $task{'region'} = $ref->{'regPk'};
+        $task{'class'} = $ref->{'comClass'};
         $task{'launchopen'} = $ref->{'tasTaskStart'};
         $task{'slaunch'} = (24*3600 + substr($ref->{'tasTaskStart'},11,2) * 3600 +
                             substr($ref->{'TaskStart'},14,2) * 60 +
@@ -331,8 +336,9 @@ sub read_task
         $task{'departure'} = $ref->{'tasDeparture'};
         $task{'launchvalid'} = $ref->{'tasLaunchValid'};
         $task{'heightbonus'} = $ref->{'tasHeightBonus'};
-
         $task{'laststart'} = $task{'sstart'};
+        $task{'margin'} = $ref->{'forMargin'};
+        
         if (defined($ref->{'tasLastStartTime'}))
         {
             if ($task{'type'} ne 'race')
@@ -459,14 +465,13 @@ sub read_formula
     my $ref;
 
     # some sensible defaults 
-    $formula{'mindist'} = 5000;
-    $formula{'class'} = 'ozgap';
-    $formula{'version'} = '2005';
+    $formula{'class'} = 'pwc';
+    $formula{'version'} = '2016';
     $formula{'sspenalty'} = 1.0;
-    $formula{'nomgoal'} = 20;
+    $formula{'nomgoal'} = 30;
     $formula{'mindist'} = 5000;
-    $formula{'nomdist'} = 30000;
-    $formula{'nomtime'} = 7200;
+    $formula{'nomdist'} = 40000;
+    $formula{'nomtime'} = 5400;
     $formula{'difframp'} = 'fixed';
     $formula{'diffdist'} = 1500;
     $formula{'diffcalc'} = 'all';
@@ -497,6 +502,7 @@ sub read_formula
         $formula{'weightdist'} = $ref->{'forWeightDist'};
         $formula{'scaletovalidity'} = $ref->{'forScaleToValidity'};
         $formula{'glidebonus'} = $ref->{'forStoppedGlideBonus'};
+        $formula{'margin'} = $ref->{'forMargin'};
         $formula{'arrival'} = $ref->{'forArrival'};
         $formula{'stoppedelapsedcalc'} = $ref->{'forStoppedElapsedCalc'};
     }

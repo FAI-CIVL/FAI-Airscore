@@ -66,7 +66,6 @@ our @ISA       = qw(Exporter);
 our @EXPORT = qw{:ALL};
 
 use POSIX qw(ceil floor);
-use TrackLib qw(:all);
 use strict;
 
 my $pi = atan2(1,1) * 4; 
@@ -448,7 +447,7 @@ sub task_distance
     for (my $i = 0; $i < $allpoints; $i++)
     {
         # Margins
-        my $margin = $waypoints->[$i]->{'radius'} * 0.005;
+        my $margin = $waypoints->[$i]->{'radius'} * 0.005;  # I created input variable margin in Formula, already inserted in $Task should change to use that
         if ($margin < 5.0)
         {
             $margin = 5.0;

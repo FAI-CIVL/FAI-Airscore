@@ -23,8 +23,6 @@ my $allowjumps = 0;
 my $max_errors = 5;
 my $DEGREESTOINT = 46603;
 
-my $max_time_break = 300;
-
 # this probably should be dynamic based on total # points
 my $goodchunk = 500;        
 
@@ -160,10 +158,7 @@ sub extract_fix
     $loc{'dlong'} = 0.0 + $loc{'long'};
     $loc{'long'} = $loc{'long'} * PI() / 180;
 
-    if (!defined($loc{'fix'}))
-    {
-        $loc{'fix'} = substr $row, 24, 1;
-    }
+    $loc{'fix'} = substr $row, 24, 1;
     $loc{'pressure'} = 0 + substr $row, 25, 5;
     $loc{'altitude'} = 0 + substr $row, 30, 5;
     
@@ -536,13 +531,13 @@ sub is_flying
         return 0;
     }
 
-    if ($timdif > $max_time_break)
+    if ($timdif > 300)
     {
         if ($debug) { print "Not flying: time gap=$timdif secs\n"; }
         return 1;
     }
    
-    if ($dist > 20 * $max_time_break)
+    if ($dist > 5000)
     {
         if ($debug) { print "Not flying: big dist jump=$dist m\n"; }
         return 10;
@@ -580,7 +575,7 @@ sub is_flying
 
 sub trim_flight
 {
-    my ($flight, $pilPk) = @_;
+    my ($flight, $pilPk, $ignore_breaks) = @_;
     my $full;
     my @reduced;
     my $dist;
@@ -631,6 +626,11 @@ sub trim_flight
         #if ($debug) { print "trim at start\n"; }
         $coord = $next;
         $next = shift @$full; 
+    }
+
+    if ($ignore_breaks == 1)
+    {
+        return $flight;
     }
 
     # TODO: only take "latest" track if "broken"?

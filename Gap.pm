@@ -117,7 +117,7 @@ sub task_totals
     $landed = 0;
 
     # @todo: 'Landed' misses people who made ESS but actually landed before goal
-    $sth = $dbh->prepare("select count(tarPk) as TotalPilots, sum(if(tarDistance < $mindist, $mindist, tarDistance)) as TotalDistance, sum((tarDistance > 0) or (tarResultType='lo')) as TotalLaunched, std(if(tarDistance < $mindist, $mindist, tarDistance)) as Deviation, sum(if((tarLastAltitude=0 and (tarDistance>0 or tarResultType='lo') or tarGoal>0),1,0)) as Landed FROM tblTaskResult where tasPk=$tasPk and tarResultType <> 'abs'");
+    $sth = $dbh->prepare("select count(tarPk) as TotalPilots, sum(if(tarDistance < $mindist, $mindist, tarDistance)) as TotalDistance, sum(if(tarDistance < $mindist, 0, (tarDistance - $mindist))) as TotDistOverMin, sum((tarDistance > 0) or (tarResultType='lo')) as TotalLaunched, std(if(tarDistance < $mindist, $mindist, tarDistance)) as Deviation, sum(if((tarLastAltitude=0 and (tarDistance>0 or tarResultType='lo') or tarGoal>0),1,0)) as Landed FROM tblTaskResult where tasPk=$tasPk and tarResultType <> 'abs'");
 
     $sth->execute();
     $ref = $sth->fetchrow_hashref();
@@ -125,6 +125,7 @@ sub task_totals
     $launched = 0 + $ref->{'TotalLaunched'};
     $pilots = 0 + $ref->{'TotalPilots'};
     $stddev = 0 + $ref->{'Deviation'};
+    my $totdistovermin = 0 + $ref->{'TotDistOverMin'};
 
     if ($task->{'sstopped'} > 0)
     {
@@ -278,6 +279,7 @@ sub task_totals
     $taskt{'pilots'} = $pilots;
     $taskt{'maxdist'} = $maxdist;
     $taskt{'distance'} = $totdist;
+    $taskt{'distovermin'} = $totdistovermin;
     $taskt{'median'} = $median;
     $taskt{'stddev'} = $stddev;
     #$taskt{'taskdist'} = $taskdist;
@@ -966,3 +968,4 @@ sub points_allocation
 }
 
 1;
+

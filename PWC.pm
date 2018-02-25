@@ -29,8 +29,8 @@ require Gap;
 use Data::Dumper;
 
 # Add currect bin directory to @INC
-#use lib '/var/www/cgi-bin';
-#use TrackLib qw(:all);
+# use lib '/var/www/cgi-bin';
+# use TrackLib qw(:all);
 
 
 #
@@ -76,9 +76,43 @@ sub day_quality
     # DVR = (Total flown Distance over MinDist) / [ (PilotsFlying / 2) * (NomGoal +1) * (NomDist - MinDist) * NomGoal * (BestDist - NomDist) ]
     # DistVal = min (1, DVR)
     
-    my $nomgoal = $formula->{'nomgoal'}/100;
-    $distance = 2*($taskt->{'distance'}-$taskt->{'launched'}*$formula->{'mindist'}) / ($taskt->{'launched'}*(1+$nomgoal)*($formula->{'nomdist'}-$formula->{'mindist'}))*($nomgoal*($taskt->{'maxdist'}-$formula{'nomdist'}));
+    my $nomgoal = $formula->{'nomgoal'}/100; # nom goal percentage
+    my $nomdist = $formula->{'nomdist'};	# nom distance
+    my $mindist = $formula->{'mindist'};	# min distance
+    my $totalflown = $taskt->{'distovermin'}; # total distance flown by pilots over min. distance
+    my $bestdistovermin = $taskt->{'maxdist'}-$formula->{'nomdist'}; # best distance flown ove minimum dist.
+    my $numlaunched = $taskt->{'launched'}; # Num Pilots flown
+    my $nomdistarea = 0;
+    
+    print "nom goal * best dist over min : " . $nomgoal * $bestdistovermin . "\n";
+    
+    # $distance = 2 * $totalflown / ( $taskt->{'launched'} * ( (1+$nomgoal) * (int( $formula->{'nomdist'}-$formula->{'mindist'}) + .5 ) ) * ($nomgoal * $bestdist) );
+    if ( ($nomgoal * $bestdistovermin) > 0 )
+    {
+    	print "It is positive\n";
+    	$nomdistarea = ( ($nomgoal + 1) * ($nomdist - $mindist) + ($nomgoal * $bestdistovermin) ) / 2;
+    	print "NomDistArea : $nomdistarea\n";
+    }
+    else
+    {
+    	print "It is negative or null";
+    	$nomdistarea = ($nomgoal + 1) * ($nomdist - $mindist) / 2;
+    }
+ 
+	print "Nom. Goal parameter: $nomgoal\n";
+    print "Min. Distance : $mindist\n";
+    print "Nom. Distance: $nomdist\n";
+    print "Total Flown Distance : $taskt->{'distance'}\n";
+    print "Total Flown Distance over min. dist. : $totalflown\n";
+    print "Pilots launched : $numlaunched\n";
+    print "Best Distance: $bestdistovermin\n";
+    print "NomDistArea : $nomdistarea\n";
+    
+    $distance = $totalflown / ($numlaunched * $nomdistarea);
     $distance = $self->min([1, $distance]);
+    
+
+    print "Total : ". $totalflown / ($numlaunched * $nomdistarea) . "\n";
     print "PWC distance validity = $distance\n";
 
     # C.4.3 Time Validity
@@ -120,7 +154,7 @@ sub day_quality
     my $distlaunchtoess = $taskt->{'endssdistance'};
     # when calculating $stopv, to avoid dividing by zero when max distance is greater than distlaunchtoess i.e. when someone reaches goal if statement added.
     my $maxSSdist = 0;
-    if ($taskt->{'maxdist'} > $distlaunchtoess) # Maybe better if ($taskt(ess) > 0) ??
+    if ( defined($taskt->{'fastest'} ) and $taskt->{'fastest'} > 0 )
     {
 		$stopv = 1;
     }
@@ -128,7 +162,7 @@ sub day_quality
 	{	
 		$x = ($taskt->{'landed'} / $taskt->{'launched'});
     	print "sqrt( ($taskt->{'maxdist'} - $avgdist) / ($distlaunchtoess - $taskt->{'maxdist'}+1) * sqrt($taskt->{'stddev'} / 5)) + $x*$x*$x \n";
-    	my $stopv = sqrt( ($taskt->{'maxdist'} - $avgdist) / ($maxSSdist+1) * sqrt($taskt->{'stddev'} / 5) ) + $x*$x*$x;
+    	my $stopv = sqrt( ($taskt->{'maxdist'} - $avgdist) / ($maxSSdist+1) * sqrt($taskt->{'stddev'} / 5) ) + $x**3 ;
     	$stopv = $self->min([1, $stopv]);
     }
 
@@ -253,7 +287,7 @@ sub pilot_departure_leadout
                 
                 # LeadingFactor = max (0, 1 - ( (LCp -LCmin) / sqrt(LCmin) )^(2/3))
                 # LeadingPoints = LeadingFactor * AvailLeadPoints
-                $LF = 1 - ( ($LCp - $LCmin) / sqrt($LCmin) )**(2/3);
+                $LF = 1 - ( ($LCp - $LCmin)**2 / sqrt($LCmin) )**(1/3);
                 print "LeadFactor = $LF \n";
                 if ($LF > 0)
                 {
@@ -344,9 +378,14 @@ sub pilot_speed
     my $Ptime = 0;
     my $SF = 0; # SpeedFraction
 
-    if ($pil->{'time'} > 0)
+    if ( $pil->{'time'} > 0 and $Tmin > 0 ) # checking that task has pilots in ESS, and that pilot is in ESS
     {
         $Ptime = $pil->{'time'};
+        $SF = 1 - ( ($Ptime-$Tmin)/3600 / sqrt($Tmin/3600) )**(5/6);
+		if ($SF > 0)
+		{
+			$Pspeed = $Aspeed * $SF;
+		}
     }
 
     print $pil->{'traPk'}, " Ptime: $Ptime, Tmin=$Tmin\n";
@@ -373,11 +412,7 @@ sub pilot_speed
 	
 	# SpeedFraction = max (0, 1 - ( (Time - BestTime) / sqrt(bestTime) )^(5/6) )
 	# TimePoints = SpeedFraction * AvailTimePoints
-	$SF = 1 - ( ($Ptime-$Tmin)/3600 / sqrt($Tmin/3600) )**(5/6);
-	if ($SF > 0)
-	{
-		$Pspeed = $Aspeed * $SF;
-	}
+
 
     return $Pspeed;
 }
@@ -387,7 +422,6 @@ sub ordered_results
 {
     my ($self, $dbh, $task, $taskt, $formula) = @_;
     my @pilots;
-    my $maxtime = 0; # Time of last pilot in ESS
 
     # Get all pilots and process each of them
     # pity it can't be done as a single update ...
@@ -435,26 +469,34 @@ sub ordered_results
         {
             $taskres{'time'} = 0;
         }
-        # Leadout Points
+        # Leadout Points Adjustment
         # C.6.3.1
         # 
-        $taskres{'coeff'} = $ref->{'tarLeadingCoeff2'};
+        $taskres{'coeff'} = $ref->{'tarLeadingCoeff2'}; #PWC LeadCoeff (with squared distances)
         # FIX: adjust against fastest ..
         if ((($ref->{'tarES'} - $ref->{'tarSS'}) < 1) and ($ref->{'tarSS'} > 0)) #only pilots that started and didn't make ESS
         {
             # Fix - busted if no one is in goal?
             if ($taskt->{'goal'} > 0)
             {
-				$maxtime = $taskt->{'lastarrival'};
-				if ($ref->{'tarLastTime'} > $taskt->{'lastarrival'})
+				my $maxtime = $taskt->{'lastarrival'};	# Time of the last in ESS
+				if ($ref->{'tarLastTime'} > $task->{'sfinish'})
 				{
-					$maxtime = $ref->{'tarLastTime'};
+					$maxtime = $task->{'sfinish'}; # If I was still flying after task deadline
+				}
+				elsif ($ref->{'tarLastTime'} > $taskt->{'lastarrival'})
+				{
+					$maxtime = $ref->{'tarLastTime'}; # If I was still flying after the last ESS time
 				}
                 # adjust for late starters
                 print "No goal, adjust pilot coeff from: ", $ref->{'tarLeadingCoeff2'};
-                #$taskres{'coeff'} = $ref->{'tarLeadingCoeff2'} - ($task->{'sfinish'} - $taskt->{'lastarrival'}) * ($task->{'endssdistance'} - $ref->{'tarDistance'}) / 1800 / $task->{'ssdistance'} ;
-            	$taskres{'coeff'} = $ref->{'tarLeadingCoeff2'} - (($task->{'sfinish'} - $maxtime) * (($task->{'endssdistance'}/1000 - $ref->{'tarDistance'}/1000) *($task->{'endssdistance'}/1000 - $ref->{'tarDistance'}/1000)) / (1800 *($task->{'ssdistance'}/1000)* ($task->{'ssdistance'}/1000))) ;
+                my $BestDistToESS = $task->{'endssdistance'}/1000 - $ref->{'tarDistance'}/1000; # PWC bestDistToESS in Km
+                # $taskres{'coeff'} = $ref->{'tarLeadingCoeff2'} - (($task->{'sfinish'} - $maxtime) * (($task->{'endssdistance'}/1000 - $ref->{'tarDistance'}/1000)**2 / ( 1800 * ($task->{'ssdistance'}/1000)**2 )) ; # I think it's wrong
+                $taskres{'coeff'} = $ref->{'tarLeadingCoeff2'} - ($task->{'sfinish'} - $maxtime) * $BestDistToESS**2 / ( 1800 * ($task->{'ssdistance'}/1000)**2 ) ;
                 print " to: ", $taskres{'coeff'}, "\n";
+                print "(maxtime - sstart)   =      ", ($maxtime - $task->{'sstart'});
+                print "ref->{'tarLeadingCoeff2'} = ", $ref->{'tarLeadingCoeff2'};
+                print "Result taskres{coeff}  =    ", $taskres{'coeff'};
                 # adjust mincoeff?
                 if ($taskres{'coeff'} < $task->{'mincoeff2'})
                 {

@@ -8,7 +8,11 @@
 #        metres, kms, kms/h, DDMMYY HHMMSSsss, true north,
 #        DDMM.MMMM (NSEW designators), hPascals
 #
+
 require Exporter;
+
+# Add currect bin directory to @INC
+use lib '/var/www/cgi-bin';
 require Vector;
 require TrackDb;
 
@@ -18,6 +22,7 @@ use Data::Dumper;
 #use Defines qw(:all);
 use Inline C;
 use strict;
+use GIS::Distance;
 
 our @ISA       = qw(Exporter);
 our @EXPORT = qw{:ALL};
@@ -451,8 +456,29 @@ sub acos
 sub distance
 {
     my ($p1, $p2) = @_;
+    my $dist = 0;
+    my ($d1, $d2);
 
-    return haversine_distance($p1->{'lat'}, $p1->{'long'}, $p2->{'lat'}, $p2->{'long'});
+    # return haversine_distance($p1->{'lat'}, $p1->{'long'}, $p2->{'lat'}, $p2->{'long'}); # OLD Using C procedure
+    
+    # Getting Cartesian Coords from Rad
+    $d1->{'lat'} = rad2deg($p1->{'lat'});
+    $d1->{'long'} = rad2deg($p1->{'long'});
+    $d2->{'lat'} = rad2deg($p2->{'lat'});
+    $d2->{'long'} = rad2deg($p2->{'long'});
+    $dist = WGS84Distance($d1->{'lat'}, $d1->{'long'}, $d2->{'lat'}, $d2->{'long'});
+    return $dist;
+}
+
+# Distance between two points over a WGS84 Ellipsoid
+sub WGS84Distance
+{
+	my ($lat1, $lon1, $lat2, $lon2) = @_;
+	my $gis = GIS::Distance->new();
+	$gis->formula( 'GeoEllipsoid', { ellipsoid => 'WGS84' } );  # Optional, default is Haversine.
+	
+	my $wgsdist = $gis->distance( $lat1, $lon1 => $lat2, $lon2 );
+	return $wgsdist->meters();		
 }
 
 sub perl_distance
