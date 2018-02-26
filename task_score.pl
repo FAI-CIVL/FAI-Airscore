@@ -18,9 +18,11 @@ require RTGap; # qw(:all);
 require PWC; # qw(:all);
 
 use POSIX qw(ceil floor);
-use TrackLib qw(:all);
 use strict;
 
+# Add currect bin directory to @INC
+use lib '/var/www/cgi-bin';
+use TrackLib qw(:all);
 
 #
 # Main program here ..
@@ -112,6 +114,7 @@ $taskt = $scr->task_totals($TrackLib::dbh,$task,$formula);
 
 # Store it in tblTask
 $sql = "update tblTask set tasTotalDistanceFlown=" . $taskt->{'distance'} . 
+			", tasTotDistOverMin=" . $taskt->{'distovermin'} . 
             ", tasPilotsTotal=" . $taskt->{'pilots'} . 
             ", tasPilotsLaunched=" . $taskt->{'launched'} . 
             ", tasPilotsGoal=" . $taskt->{'goal'} . 
@@ -126,12 +129,23 @@ $sth->execute();
 # Work out the quality factors (distance, time, launch)
 
 ($dist,$time,$launch, $stop) = $scr->day_quality($taskt, $formula);
-$quality = $dist * $time * $launch * $stop;
+
+# Check if task was stopped - No idea if this is done elsewhere, but without broke PWC.pm
+if ( $task->{'sstopped'} > 0 )
+{
+	$quality = $dist * $time * $launch * $stop;
+}
+else
+{
+	$quality = $dist * $time * $launch;
+}
+print "-- TASK_SCORE -- distQ = $dist | timeQ = $time | launchQ = $launch | stopQ = $stop \n";
+print "-- TASK_SCORE -- Day Quality = $quality \n";
 if ($quality > 1.0)
 {
     $quality = 1.0;
 }
-$sth = $TrackLib::dbh->prepare("update tblTask set tasQuality=$quality, tasDistQuality=$dist, tasTimeQuality=$time, tasLaunchQuality=$launch, tasStopQuality=$stop where tasPk=$tasPk");
+$sth = $TrackLib::dbh->prepare("UPDATE tblTask SET tasQuality='$quality', tasDistQuality='$dist', tasTimeQuality='$time', tasLaunchQuality='$launch', tasStopQuality='$stop' WHERE tasPk='$tasPk' ");
 $sth->execute();
 $taskt->{'quality'} = $quality;
 

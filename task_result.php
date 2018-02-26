@@ -14,12 +14,15 @@ $usePk = check_auth('system');
 $link = db_connect();
 $tasPk = intval($_REQUEST['tasPk']);
 $isadmin = 0;
+$cval = null;
+$tarPk = null;
+
 if (!array_key_exists('pr', $_REQUEST))
 {
     $isadmin = is_admin('admin',$usePk,$comPk);
 }
 
-$rnd = 0;
+$rnd = 1;
 if (array_key_exists('rnd', $_REQUEST))
 {
     $rnd = intval($_REQUEST['rnd']);
@@ -33,14 +36,16 @@ if (reqexists('class'))
     $cval = reqival('class');
     $carr = [ "'1/2'", "'2'", "'2/3'", "'competition'" ];
     $cstr = ["Fun", "Sport", "Serial", "Open", "Women" ];
-    $classstr = "<b>" . $cstr[reqival('class')] . "</b> - ";
+    #$classstr = "<b>" . $cstr[reqival('class')] . "</b> - ";
+    $classstr = "<b>" . (isset($cstr[reqival('class')]) ? $cstr[reqival('class')] : "") . "</b> - ";
     if ($cval == 4)
     {
         $fdhv = "and P.pilSex='F'";
     }
     else
     {
-        $fdhv = $carr[reqival('class')];
+        #$fdhv = $carr[reqival('class')];
+        $fdhv = isset($carr[reqival('class')]) ? $carr[reqival('class')] : "";
         $fdhv = "and traDHV=$fdhv ";
     }
 }
@@ -53,10 +58,15 @@ if (array_key_exists('score', $_REQUEST))
     {
         $dateto = $row['comDateTo'];
         $today = date('Y-m-d');
-        if ($today > $dateto)
-        {
-            $changeok = 0;
-        }
+
+//		Old Task Check
+//		Removed to debug and test
+//
+//         if ($today > $dateto)
+//         {
+//             $changeok = 0;
+//         }
+
     }
     if ($changeok == 1)
     {
@@ -215,6 +225,7 @@ if ($row)
     $tasArrival = $row['tasArrival'];
     $tasHeightBonus = $row['tasHeightBonus'];
     $tasStoppedTime = substr($row['tasStoppedTime'],11);
+    $ssDist = $row['tasSSDistance'];
 
     if ($row['tasDeparture'] == 'leadout')
     {
@@ -351,6 +362,7 @@ if ($isadmin)
 $header[] = fb("SS");
 $header[] = fb("ES");
 $header[] = fb("Time");
+$header[] = fb("Speed");
 if ($tasStoppedTime != '')
 {
     $header[] = fb("S.Alt");
@@ -392,7 +404,7 @@ while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     $dist = round($row['tarDistanceScore'], $rnd);
     $dep = round($row['tarDeparture'], $rnd);
     $arr = round($row['tarArrival'], $rnd);
-    $speed = round($row['tarSpeedScore'], $rnd);
+    $spd = round($row['tarSpeedScore'], $rnd);
     $score = round($row['tarScore'], $rnd);
     $lastalt = round($row['tarLastAltitude']);
     $resulttype = $row['tarResultType'];
@@ -402,6 +414,15 @@ while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     $endf = "";
     $startf = "";
     $timeinair = "";
+    $hh = floor(($comTOffset + $start) / 3600) % 24;
+	$mm = floor((($comTOffset + $start) % 3600) / 60);
+	$ss = ($comTOffset + $start) % 60;
+	$startf = sprintf("%02d:%02d:%02d", $hh,$mm,$ss);
+	# echo $startf." ".$tasStartTime;
+	if ( $startf < $tasStartTime ) # If pilot did not make the start, do not print start time
+	{
+		$startf = "";
+	}
     if ($end)
     {
         $hh = floor(($end - $start) / 3600);
@@ -416,10 +437,12 @@ while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
         $mm = floor((($comTOffset + $end) % 3600) / 60);
         $ss = ($comTOffset + $end) % 60;
         $endf = sprintf("%02d:%02d:%02d", $hh,$mm,$ss);
+        $speed = round($ssDist * 3.6 / ($end - $start), 2);
     }
     else
     {
         $timeinair = "";
+        $speed = "";
         if ($tasTaskType == 'speedrun-interval')
         {
             $hh = floor(($comTOffset + $start) / 3600) % 24;
@@ -477,6 +500,7 @@ while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     $trrow[] = $startf;
     $trrow[] = $endf;
     $trrow[] = $timeinair;
+    $trrow[] = $speed;
     if ($tasStoppedTime != '')
     {
         $trrow[] = $lastalt;
@@ -523,9 +547,9 @@ while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         $trrow[] = $arr;
     }
-    $trrow[] = $speed;
+    $trrow[] = $spd;
     $trrow[] = $dist;
-    $trrow[] = $score;
+    $trrow[] = round($score);
     if ($isadmin) 
     {
         $trrow[] = fbut("submit", "tardel",  $traPk, "del");

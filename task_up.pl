@@ -10,15 +10,10 @@ require DBD::mysql;
 
 use POSIX qw(ceil floor);
 #use Data::Dumper;
-use TrackLib qw(:all);
+use warnings;
 
 my $dbh;
 
-sub round 
-{
-    my ($number) = @_;
-    return int($number + .5);
-}
 #
 # Find the task totals and update ..
 #   tasTotalDistanceFlown, tasPilotsLaunched, tasPilotsTotal
@@ -100,7 +95,7 @@ sub track_update
     # Now check for pre-submitted tracks ..
     $sth = $dbh->prepare("select traPk from tblComTaskTrack where tasPk=$tasPk");
     $sth->execute();
-    $tracks = ();
+    @tracks = ();
     $flag = 0;
     while  ($ref = $sth->fetchrow_hashref()) 
     {
@@ -108,7 +103,7 @@ sub track_update
     }
 
     # Re-optimising pre-submitted tracks against the task
-    if ($opt ne '')
+    if( (defined $opt) and ($opt ne ''))
     {
         for my $tpk (@tracks)
         {
@@ -204,6 +199,6 @@ if (track_update($task, $opt) == 1)
 
 `rm -f /var/lock/task_$tasPk`;
 
-#print "Task dist=$dist\n";
+print "Task dist=$dist\n";
 
 
