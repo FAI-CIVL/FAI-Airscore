@@ -1,11 +1,16 @@
 <?php
 
 function overall_handicap($comPk, $how, $param, $cls)
+//
+// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
+//
 {
     $sql = "select T.tasPk, max(TR.tarScore) as maxScore from tblTask T, tblTaskResult TR where T.tasPk=TR.tasPk and T.comPk=$comPk group by T.tasPk";
-    $result = mysql_query($sql) or die('Handicap maxscore failed: ' . mysql_error());
+//    $result = mysql_query($sql) or die('Handicap maxscore failed: ' . mysql_error());
+    $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Handicap maxscore failed: ' . mysqli_connect_error());
     $maxarr = [];
-    while ($row = mysql_fetch_array($result))
+//    while ($row = mysql_fetch_array($result))
+    while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         $maxarr[$row['tasPk']] = $row['maxScore'];
     }
@@ -13,9 +18,11 @@ function overall_handicap($comPk, $how, $param, $cls)
     $sql = "select P.*,TK.*, TR.*, H.* from tblTaskResult TR, tblTask TK, tblTrack K, tblPilot P, tblHandicap H, tblCompetition C where H.comPk=C.comPk and C.comPk=TK.comPk and K.traPk=TR.traPk and K.pilPk=P.pilPk and H.pilPk=P.pilPk and H.comPk=TK.comPk and TK.comPk=$comPk and TR.tasPk=TK.tasPk order by P.pilPk, TK.tasPk";
     #$sql = "select TK.*,TR.*,P.* from tblTaskResult TR, tblTask TK, tblTrack T, tblPilot P, tblCompetition C where C.comPk=$comPk and TK.comPk=C.comPk and TK.tasPk=TR.tasPk and TR.traPk=T.traPk and T.traPk=TR.traPk and P.pilPk=T.pilPk $cls order by P.pilPk, TK.tasPk";
 
-    $result = mysql_query($sql) or die('Task result query failed: ' . mysql_error());
+//    $result = mysql_query($sql) or die('Task result query failed: ' . mysql_error());
+    $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task result query failed: ' . mysqli_connect_error());
     $results = [];
-    while ($row = mysql_fetch_array($result))
+//    while ($row = mysql_fetch_array($result))
+    while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         $tasPk = $row['tasPk'];
         $score = round($row['tarScore'] - $row['hanHandicap'] * $maxarr[$tasPk]);
@@ -206,36 +213,38 @@ $link = db_connect();
 $title = 'highcloud.net';
 
 $query = "SELECT T.*,F.* FROM tblCompetition T left outer join tblFormula F on F.comPk=T.comPk where T.comPk=$comPk";
-$result = mysql_query($query) or die('Comp query failed: ' . mysql_error());
-$row = mysql_fetch_array($result, MYSQL_ASSOC);
+//$result = mysql_query($query) or die('Comp query failed: ' . mysql_error());
+$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Comp query failed: ' . mysqli_connect_error());
+//$row = mysql_fetch_array($result, MYSQL_ASSOC);
+$row = mysqli_fetch_assoc($result);
 if ($row)
 {
-    $comName = $row['comName'];
-    $title = $row['comName'];
-    $comDateFrom = substr($row['comDateFrom'],0,10);
-    $comDateTo = substr($row['comDateTo'],0,10);
+    $comName = isset($row['comName']) ? $row['comName'] : '';
+    $title = isset($row['comName']) ? $row['comName'] : '';
+    $comDateFrom = substr(isset($row['comDateFrom']) ? $row['comDateFrom'] : '',0,10);
+    $comDateTo = substr(isset($row['comDateTo']) ? $row['comDateTo'] : '',0,10);
     #$comPk = $row['comPk'];
-    $comOverall = $row['comOverallScore'];
-    $comOverallParam = $row['comOverallParam'];
-    $comDirector = $row['comMeetDirName'];
-    $comLocation = $row['comLocation'];
-    $comFormula = $row['forClass'] . ' ' . $row['forVersion'];
-    $forOLCPoints = $row['forOLCPoints'];
-    $comSanction = $row['comSanction'];
-    $comOverall = $row['comOverallScore'];
-    $comTeamScoring = $row['comTeamScoring'];
-    $comCode = $row['comCode'];
-    $comClass = $row['comClass'];
-    $comType = $row['comType'];
-    $forNomGoal = $row['forNomGoal'];
-    $forMinDistance = $row['forMinDistance'];
-    $forNomDistance = $row['forNomDistance'];
-    $forNomTime = $row['forNomTime'];
-    $forDiscreteClasses = $row['forDiscreteClasses'];
+    $comOverall = isset($row['comOverallScore']) ? $row['comOverallScore'] : '';
+    $comOverallParam = isset($row['comOverallParam']) ? $row['comOverallParam'] : ''; # Discard Parameter, Ex. 75 = 75% eq normal FTV 0.25
+    $comDirector = isset($row['comMeetDirName']) ? $row['comMeetDirName'] : '';
+    $comLocation = isset($row['comLocation']) ? $row['comLocation'] : '';
+    $comFormula = ( isset($row['forClass']) ? $row['forClass'] : '' ) . ' ' . ( isset($row['forVersion']) ? $row['forVersion'] : '' );
+    $forOLCPoints = isset($row['forOLCPoints']) ? $row['forOLCPoints'] : '';
+    $comSanction = isset($row['comSanction']) ? $row['comSanction'] : '';
+    $comOverall = isset($row['comOverallScore']) ? $row['comOverallScore'] : '';  # Type of scoring discards: FTV, ...
+    $comTeamScoring = isset($row['comTeamScoring']) ? $row['comTeamScoring'] : '';
+    $comCode = isset($row['comCode']) ? $row['comCode'] : '';
+    $comClass = isset($row['comClass']) ? $row['comClass'] : '';
+    $comType = isset($row['comType']) ? $row['comType'] : '';
+    $forNomGoal = isset($row['forNomGoal']) ? $row['forNomGoal'] : '';
+    $forMinDistance = isset($row['forMinDistance']) ? $row['forMinDistance'] : '';
+    $forNomDistance = isset($row['forNomDistance']) ? $row['forNomDistance'] : '';
+    $forNomTime = isset($row['forNomTime']) ? $row['forNomTime'] : '';
+    $forDiscreteClasses = isset($row['forDiscreteClasses']) ? $row['forDiscreteClasses'] : '';
 }
 
 
-$fdhv= '';
+$fdhv= ''; #parameter to insert in mysql query in result calculations
 $classstr = '';
 if (array_key_exists('class', $_REQUEST))
 {
@@ -298,10 +307,12 @@ else
 
 $tasTotal = 0;
 $query = "select count(*) from tblTask where comPk=$comPk";
-$result = mysql_query($query); // or die('Task total failed: ' . mysql_error());
+//$result = mysql_query($query);
+$result = mysqli_query($link, $query); // or die('Task total failed: ' . mysql_error());
 if ($result)
 {
-    $tasTotal = mysql_result($result, 0, 0);
+//    $tasTotal = mysql_result($result, 0, 0);
+    $tasTotal = mysqli_result($result, 0, 0);
 }
 if ($comOverall == 'all')
 {
@@ -413,8 +424,10 @@ if ($class == "8")
 else if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'Route' || $comType == 'RACE-handicap')
 {
     $query = "select T.* from tblTask T where T.comPk=$comPk order by T.tasDate";
-    $result = mysql_query($query) or die('Task query failed: ' . mysql_error());
-    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+//    $result = mysql_query($query) or die('Task query failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task query failed: ' . mysqli_connect_error());
+//    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+    while ($row = mysqli_fetch_assoc($result))
     {
         $alltasks[] = $row['tasName'];
         $taskinfo[] = $row;

@@ -1,6 +1,10 @@
 <?php
 require 'authorisation.php';
 
+//
+// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
+//
+
 //auth('system');
 $link = db_connect();
 
@@ -38,8 +42,10 @@ if (array_key_exists('download', $_REQUEST))
 
     $sql = "SELECT N.*, R.* from tblRegion N, tblRegionWaypoint R where N.regPk=R.regPk and R.regPk=$regPk order by R.rwpName";
 
-    $result = mysql_query($sql,$link);
-    $row = mysql_fetch_array($result, MYSQL_ASSOC);
+//    $result = mysql_query($sql,$link);
+    $result = mysqli_query($link, $sql);
+//    $row = mysql_fetch_array($result, MYSQL_ASSOC);
+    $row = mysqli_fetch_assoc($result);
     $regname = $row['regDescription'];
     $regname = preg_replace('/\s+/', '', $regname);
 
@@ -100,6 +106,7 @@ if (array_key_exists('download', $_REQUEST))
         }
 
         $count++;
-    } while ($row = mysql_fetch_array($result, MYSQL_ASSOC));
+    }// while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+ 		while ($row = mysqli_fetch_assoc($result));
 }
 ?>

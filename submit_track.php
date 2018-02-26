@@ -2,6 +2,11 @@
 require_once 'authorisation.php';
 require_once 'format.php';
 require_once 'hc.php';
+
+//
+// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
+//
+
 header('Cache-Control: no-cache, must-revalidate');
 header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
 
@@ -20,11 +25,13 @@ if ($comPk < 2)
 
 $comUnixTo = time() - (int)substr(date('O'),0,3)*60*60;
 $query = "select *, unix_timestamp(date_sub(comDateTo, interval ComTimeOffset hour)) as comUnixTo  from tblCompetition where comPk=$comPk";
-$result = mysql_query($query) or die('Query failed: ' . mysql_error());
+//$result = mysql_query($query) or die('Query failed: ' . mysql_error());
+$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
 $title = 'highcloud.net';
 $comContact = '';
 $comEntryRestrict = 'open';
-if ($row=mysql_fetch_array($result))
+//if ($row=mysql_fetch_array($result))
+if ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {
     $title = $row['comName'];
     $comType = $row['comType'];
@@ -36,8 +43,10 @@ if ($row=mysql_fetch_array($result))
 
 $freepin = 0;
 $query = "select * from tblTask where comPk=$comPk and tasTaskType='free-pin'";
-$result = mysql_query($query);
-if (mysql_num_rows($result) > 0)
+// $result = mysql_query($query);
+$result = mysqli_query($link, $query);
+//if (mysql_num_rows($result) > 0)
+if (mysqli_num_rows($result) > 0)
 {
    $freepin = 1; 
 }
@@ -76,9 +85,9 @@ else
 }
 ?>
 <h1>Tracklog Submission</h1>
-Download your GPS track from your GPS using one of the free 
+<p>Download your GPS track from your GPS using one of the free 
 programs shown on the right.  Then you're ready to upload the 
-.IGC file created to this website using the form here!
+.IGC file created to this website using the form here!</p>
 <br><br>
 <?php
 //function upload_track($file,$pilPk,$contact)
@@ -143,10 +152,12 @@ function accept_track($until, $contact, $restrict)
 
     $link = db_connect();
     $query = "select pilPk, pilHGFA from tblPilot where pilLastName='$name'";
-    $result = mysql_query($query) or die('Query failed: ' . mysql_error());
+//    $result = mysql_query($query) or die('Query failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
 
     $member = 0;
-    while ($row=mysql_fetch_array($result))
+//    while ($row=mysql_fetch_array($result))
+    while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         if ($hgfa == $row['pilHGFA'])
         {
@@ -188,8 +199,9 @@ function accept_track($until, $contact, $restrict)
     $dte = date("Y-m-d_Hms");
     $yr = date("Y");
     $copyname = FILEDIR . $yr . "/" . $name . "_" . $hgfa . "_" . $dte;
-    copy($_FILES['userfile']['tmp_name'], $copyname);
-    chmod($copyname, 0644);
+    mkdir($copyname, 0755, true);
+    copy($_FILES['userfile']['tmp_name'], $copyname . basename($_FILES['userfile']['tmp_name']));
+    chmod($copyname . basename($_FILES['userfile']['tmp_name']), 0644);
 
     // Process the file
     //$maxPk = upload_track($_FILES['userfile']['tmp_name'], $pilPk, $comContact);
@@ -208,7 +220,8 @@ function accept_track($until, $contact, $restrict)
     $safety = reqsval('pilotsafety');
     $quality = reqival('pilotquality');
     $query = "update tblTrack set traGlider='$glider', traDHV='$dhv', traSafety='$safety', traConditions='$quality' where traPk=$maxPk";
-    $result = mysql_query($query) or die('Update tblTrack failed: ' . mysql_error());
+//    $result = mysql_query($query) or die('Update tblTrack failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Update tblTrack failed: ' . mysqli_connect_error());
 
     return $maxPk;
 }
@@ -223,9 +236,15 @@ if ($offerall)
 {
     $comps = [];
     $comps['-- select an option --'] = '';
-    $query = "select * from tblCompetition where curdate() < date_add(comDateTo, interval 3 day) and comName not like '%test%' order by comName";
-    $result = mysql_query($query) or die('Query failed: ' . mysql_error());
-    while($row = mysql_fetch_array($result))
+    
+    # query commented to be able to make TESTS
+    #$query = "select * from tblCompetition where curdate() < date_add(comDateTo, interval 3 day) and comName not like '%test%' order by comName";
+    $query = "select * from tblCompetition order by comName";
+    
+//    $result = mysql_query($query) or die('Query failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
+//    while($row = mysql_fetch_array($result))
+    while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         $comName = $row['comName'];
         $compid = $row['comPk'];
@@ -242,9 +261,11 @@ else
 if ($comType == 'Route')
 {
     $query = "select * from tblTask where comPk=$comPk";
-    $result = mysql_query($query) or die('Route query failed: ' . mysql_error());
+//    $result = mysql_query($query) or die('Route query failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Route query failed: ' . mysqli_connect_error());
     $routes = [];
-    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+//    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+    while ($row = mysqli_fetch_assoc($result))
     {
         $routes[$row['tasName']] = $row['tasPk'];
     }
@@ -312,7 +333,8 @@ else
 {
     echo "</div>";
 }
-mysql_close($link);
+// mysql_close($link);
+mysqli_close($link);
 echo "</body></html>\n";
 ?>
 

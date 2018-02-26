@@ -14,6 +14,10 @@ adminbar(0);
 <p><h2>Competition Administration</h2></p>
 <?php
 
+//
+// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
+//
+
 $usePk=auth('system');
 $link = db_connect();
 
@@ -36,8 +40,10 @@ if (reqexists('add'))
     {
         $query = "insert into tblCompetition (comName, comLocation, comDateFrom, comDateTo, comMeetDirName, forPk, comType, comCode, comTimeOffset) values ('$comname','$location', '$datefrom', '$dateto', '$director', 0, '$comptype', '$comcode', $timeoffset)";
     
-        $result = mysql_query($query) or die('Competition addition failed: ' . mysql_error());
-        $comPk = mysql_insert_id();
+//        $result = mysql_query($query) or die('Competition addition failed: ' . mysql_error());
+        $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Competition addition failed: ' . mysqli_connect_error());
+//        $comPk = mysql_insert_id();
+		$comPk = mysqli_insert_id($link);
 
         $regarr = [];
         $regarr['comPk'] = $comPk;
@@ -63,10 +69,12 @@ if (reqexists('add'))
         $forPk = insertup($link, 'tblFormula', 'forPk', $clause,  $regarr);
 
         $query = "update tblCompetition set forPk=$forPk where $clause";
-        $result = mysql_query($query) or die('Competition formula update failed: ' . mysql_error());
-    
+//        $result = mysql_query($query) or die('Competition formula update failed: ' . mysql_error());
+		$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Competition formula update failed: ' . mysqli_connect_error());
+		    
         $query = "insert into tblCompAuth values ($usePk, $comPk, 'admin')";
-        $result = mysql_query($query) or die('CompAuth addition failed: ' . mysql_error());
+//        $result = mysql_query($query) or die('CompAuth addition failed: ' . mysql_error());
+		$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' CompAuth addition failed: ' . mysqli_connect_error());
     }
 }
 
@@ -87,7 +95,8 @@ if (reqexists('update'))
     check_admin('admin',$usePk,$comPk);
 
     $query = "update tblCompetition set comName='$comname', comLocation='$comLocation', comDateFrom='$datefrom', comDateTo='$dateto', comDirector='$director', forPk='$formula', comSanction='$sanction', comType='$comptype', comCode='$comcode',  comTimeOffset=$timeoffset where comPk=$comPk";
-    $result = mysql_query($query) or die('Competition update failed: ' . mysql_error());
+//    $result = mysql_query($query) or die('Competition update failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Competition update failed: ' . mysqli_connect_error());
 }
 
 $comparr = [];
@@ -104,8 +113,10 @@ else
 {
     $sql = "SELECT C.* FROM tblCompAuth A, tblCompetition C where (A.comPk=C.comPk and A.usePk=$usePk) or (C.comName like '%test%') group by C.comName order by C.comName like '%test%', C.comDateTo desc";
 }
-$result = mysql_query($sql,$link);
-while($row = mysql_fetch_array($result, MYSQL_ASSOC))
+// $result = mysql_query($sql,$link);
+$result = mysqli_query($link, $sql);
+// while($row = mysql_fetch_array($result, MYSQL_ASSOC))
+while($row = mysqli_fetch_assoc($result))
 {
     $id = $row['comPk'];
     $name = $row['comName'];

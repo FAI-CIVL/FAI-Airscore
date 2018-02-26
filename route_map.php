@@ -1,14 +1,24 @@
 <?php
+require_once 'Sajax.php';
 require 'authorisation.php';
 require 'format.php';
 require 'hc2v3.php';
-//require 'plot_track.php';
+require 'plot_track.php';
+
+//
+// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
+//
+
 hchead();
 echo "<title>Task Map</title>\n";
 hccss();
 hcmapjs();
 hcscripts([ 'rjson.js', 'json2.js', 'sprintf.js', 'plot_trackv4.js', 'microajax.minified.js', 'uair.js', 'plot_task.js' ]);
+echo '<script type="text/javascript">';
+sajax_show_javascript();
+echo "</script>\n";
 ?>
+
 <script type="text/javascript">
 var map;
 //<![CDATA[
@@ -64,8 +74,10 @@ if ($tasPk > 0 || $trackid > 0)
         $sql = "SELECT CTT.tasPk as ctask,C.*,CTT.*,T.*,T.regPk as tregPk FROM tblCompetition C, tblComTaskTrack CTT left outer join tblTask T on T.tasPk=CTT.tasPk where C.comPk=CTT.comPk and CTT.traPk=$trackid";
     }
 
-    $result = mysql_query($sql,$link) or die('Query failed: ' . mysql_error());
-    if ($row = mysql_fetch_array($result))
+//    $result = mysql_query($sql,$link) or die('Query failed: ' . mysql_error());
+    $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
+//    if ($row = mysql_fetch_array($result))
+    if ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         if ($tasPk == 0)
         {
@@ -119,7 +131,8 @@ hcheadbar($comName,2);
 echo "<div id=\"content\">";
 echo "<div id=\"map\" style=\"width: 100%; height: 600px\"></div>";
 echo "</div>\n";
-mysql_close($link);
+// mysql_close($link);
+mysqli_close($link);
 ?>
 </body>
 </html>

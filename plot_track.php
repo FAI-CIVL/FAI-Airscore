@@ -1,5 +1,10 @@
 <?php
 require_once 'authorisation.php';
+
+//
+// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
+//
+
 function get_track_body($trackid,$interval)
 {
     $link = db_connect();
@@ -13,8 +18,10 @@ function get_track_body($trackid,$interval)
             left outer join tblTaskResult TR on TR.traPk=T.traPk 
             left outer join tblTask TK on TK.tasPk=TR.tasPk 
             where T.pilPk=P.pilPk and T.traPk=$trackid limit 1";
-    $result = mysql_query($sql,$link) or die('Track info query failed: ' . mysql_error());
-    if ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+//    $result = mysql_query($sql,$link) or die('Track info query failed: ' . mysql_error());
+    $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Track info query failed: ' . mysqli_connect_error());
+//    if ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+    if ($row = mysqli_fetch_assoc($result))
     {
         $name = $row['pilFirstName'] . " " . $row['pilLastName'];
         $date = $row['traDate'];
@@ -72,8 +79,10 @@ function get_track_body($trackid,$interval)
         $body['initials'] = substr($row['pilFirstName'],0,1) . substr($row['pilLastName'],0,1);
 
         $sql = "select C.comClass from tblCompetition C, tblComTaskTrack T where C.comPk=T.comPk and T.traPk=$trackid";
-        $result = mysql_query($sql,$link) or die('Com class query failed: ' . mysql_error());
-        $srow = mysql_fetch_array($result, MYSQL_ASSOC);
+//        $result = mysql_query($sql,$link) or die('Com class query failed: ' . mysql_error());
+        $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Com class query failed: ' . mysqli_connect_error());
+//        $srow = mysql_fetch_array($result, MYSQL_ASSOC);
+        $srow = mysqli_fetch_assoc($result);
         if ($srow['comClass'] == 'sail')
         {
             $body['class'] = 'sail';
@@ -99,8 +108,10 @@ function get_track_body($trackid,$interval)
     }
     
     // Get some track points
-    $result = mysql_query($sql,$link);
-    while($row = mysql_fetch_array($result, MYSQL_ASSOC))
+//    $result = mysql_query($sql,$link);
+    $result = mysqli_query($link, $sql);
+//    while($row = mysql_fetch_array($result, MYSQL_ASSOC))
+    while ($row = mysqli_fetch_assoc($result))
     {
         $bucTime = $offset + $row['bucTime'];
         $lasLat = 0.0 + $row['trlLatDecimal'];
@@ -160,8 +171,10 @@ function get_task($tasPk, $trackid)
     // task info ..
     $sql = "SELECT T.*,W.* FROM tblTaskWaypoint T, tblRegionWaypoint W where T.tasPk=$tasPk and W.rwpPk=T.rwpPk order by T.tawNumber";
     $ret = [];
-    $result = mysql_query($sql,$link) or die('Task info query failed: ' . mysql_error());
-    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+//    $result = mysql_query($sql,$link) or die('Task info query failed: ' . mysql_error());
+    $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task info query failed: ' . mysqli_connect_error());
+//    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+    while ($row = mysqli_fetch_assoc($result))
     {
     
         $lasLat = 0.0 + $row['rwpLatDecimal'];
@@ -199,14 +212,19 @@ function get_task($tasPk, $trackid)
 //        }
 
         $sql = "select tarTurnpoints from tblTaskResult where traPk=$trackid";
-        $result = mysql_query($sql,$link) or die('Task turnpoints failed: ' . mysql_error());
-        $turnpoints = mysql_result($result, 0, 0);
+//        $result = mysql_query($sql,$link) or die('Task turnpoints failed: ' . mysql_error());
+        $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task turnpoints failed: ' . mysqli_connect_error());
+//        $turnpoints = mysql_result($result, 0, 0);
+        $turnpoints = mysqli_result($result, 0, 0);
 
         $sql = "select T2.traPk from tblTrack T1, tblTrack T2 where T2.pilPk=T1.pilPk and T2.traStart between date_sub(T1.traStart, interval 6 hour) and date_add(T1.traStart, interval 6 hour) and T1.traPk=$trackid and T2.traPk<>T1.traPk";
-        $result = mysql_query($sql,$link) or die('Duplicate track select failed: ' . mysql_error());
-        if (mysql_num_rows($result) > 0)
+//        $result = mysql_query($sql,$link) or die('Duplicate track select failed: ' . mysql_error());
+        $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Duplicate track select failed: ' . mysqli_connect_error());
+//        if (mysql_num_rows($result) > 0)
+        if (mysqli_num_rows($result) > 0)
         {
-            $merge = mysql_result($result, 0, 0);
+//            $merge = mysql_result($result, 0, 0);
+            $merge = mysqli_result($result, 0, 0);
         }
     }
 
@@ -225,8 +243,10 @@ function get_region($regPk, $trackid)
     if ($trackid > 0)
     {
         $sql = "SELECT max(T.trlLatDecimal) as maxLat, max(T.trlLongDecimal) as maxLong, min(T.trlLatDecimal) as minLat, min(T.trlLongDecimal) as minLong from tblTrackLog T where T.traPk=$trackid";
-        $result = mysql_query($sql,$link) or die('Track query failed: ' . mysql_error());
-        $row = mysql_fetch_array($result, MYSQL_ASSOC);
+//        $result = mysql_query($sql,$link) or die('Track query failed: ' . mysql_error());
+        $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Track query failed: ' . mysqli_connect_error());
+//        $row = mysql_fetch_array($result, MYSQL_ASSOC);
+        $row = mysqli_fetch_assoc($result);
     
         $maxLat = $row['maxLat'] + 0.02;
         $maxLong = $row['maxLong'] + 0.02;
@@ -241,9 +261,11 @@ function get_region($regPk, $trackid)
         $crad = 0;
         $sql = "SELECT W.* FROM tblRegionWaypoint W where W.regPk=$regPk";
     }
-    $result = mysql_query($sql,$link) or die('Region waypoint query failed: ' . mysql_error());
+//    $result = mysql_query($sql,$link) or die('Region waypoint query failed: ' . mysql_error());
+    $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Region waypoint query failed: ' . mysqli_connect_error());
     $ret = [];
-    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+//    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+    while ($row = mysqli_fetch_assoc($result))
     {
     
         $lasLat = 0.0 + $row['rwpLatDecimal'];
@@ -280,10 +302,13 @@ function award_waypoint($tasPk, $tawPk, $trackid, $wptime)
 
     # Award the waypoint ..
     $sql = "insert into tblTaskAward (tawPk, traPk, tadTime) values ($tawPk, $trackid, $goaltime)";
-    $result = mysql_query($sql,$link) or die('Award waypoint failed: ' . mysql_error());
+//    $result = mysql_query($sql,$link) or die('Award waypoint failed: ' . mysql_error());
+    $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Award waypoint failed: ' . mysqli_connect_error());
     $sql = "select tasPk from tblComTaskTrack where traPk=$trackid";
-    $result = mysql_query($sql,$link) or die('Selec task failed: ' . mysql_error());
-    $tasPk = mysql_result($result, 0, 0);
+//    $result = mysql_query($sql,$link) or die('Selec task failed: ' . mysql_error());
+    $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Selec task failed: ' . mysqli_connect_error());
+//    $tasPk = mysql_result($result, 0, 0);
+    $tasPk = mysqli_result($result, 0, 0);
 
     # Re-verify with new awarded waypoint(s)
     $out = '';
@@ -297,8 +322,10 @@ function get_track_wp($trackid)
 
     $sql = "SELECT * FROM tblWaypoint where traPk=$trackid order by wptTime";
     $ret = [];
-    $result = mysql_query($sql,$link) or die('Task info query failed: ' . mysql_error());
-    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+//    $result = mysql_query($sql,$link) or die('Task info query failed: ' . mysql_error());
+    $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task info query failed: ' . mysqli_connect_error());
+//    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+    while ($row = mysqli_fetch_assoc($result))
     {
     
         $lasLat = 0.0 + $row['wptLatDecimal'];

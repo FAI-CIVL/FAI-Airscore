@@ -22,6 +22,7 @@ $retarr = get_taskwaypoints($link,$tasPk);
 #$retarr['short'] = $srarr;
 #$retarr['task'] = $srarr;
 
-mysql_close($link);
+#mysql_close($link);
+mysqli_close($link);
 print json_encode($retarr);
 ?>

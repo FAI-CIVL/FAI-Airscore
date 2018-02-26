@@ -3,6 +3,11 @@
 <link HREF="xcstyle.css" REL="stylesheet" TYPE="text/css">
 <?php
 require 'authorisation.php';
+
+//
+// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
+//
+
 if (array_key_exists('foo', $_REQUEST))
 {
     echo "<title>Track Accepted</title>\n";
@@ -62,8 +67,10 @@ function accept_track()
     $link = db_connect();
 
     $query = "select pilPk, pilHGFA from tblPilot where pilLastName='$name'";
-    $result = mysql_query($query) or die('Query failed: ' . mysql_error());
-    $row=mysql_fetch_array($result);
+//    $result = mysql_query($query) or die('Query failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
+//    $row=mysql_fetch_array($result);
+    $row = mysqli_fetch_array($result, MYSQLI_BOTH);
     $pilPk = $row['pilPk'];
 
     if ($hgfa != $row['pilHGFA'])
@@ -89,24 +96,31 @@ function accept_track()
     }
 
     $query = "select max(traPk) from tblTrack";
-    $result = mysql_query($query) or die('Query failed: ' . mysql_error());
-    $maxPk=mysql_result($result,0);
+//    $result = mysql_query($query) or die('Query failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
+//    $maxPk=mysql_result($result,0);
+    $maxPk = mysqli_result($result,0);
 
     $tasPk = 'null';
     $query = "select T.tasPk from tblTask T, tblTrack TL where T.comPk=$comPk and TL.traPk=$maxPk and T.tasDate=TL.traDate";
-    $result = mysql_query($query) or die('Query failed: ' . mysql_error());
-    if (mysql_num_rows($result) > 0)
+//    $result = mysql_query($query) or die('Query failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
+//    if (mysql_num_rows($result) > 0)
+    if (mysqli_num_rows($result) > 0)
     {
-        $tasPk=mysql_result($result,0);
+//        $tasPk=mysql_result($result,0);
+        $tasPk = mysqli_result($result,0);
     }
 
     $query = "insert into tblComTaskTrack (comPk,tasPk,traPk) values ($comPk,$tasPk,$maxPk)";
-    $result = mysql_query($query) or die('ComTaskTrack failed: ' . mysql_error());
+//    $result = mysql_query($query) or die('ComTaskTrack failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' ComTaskTrack failed: ' . mysqli_connect_error());
 
     $glider = addslashes($_REQUEST['glider']);
     $dhv = addslashes($_REQUEST['dhv']);
     $query = "update tblTrack set traGlider='$glider', traDHV='$dhv' where traPk=$maxPk";
-    $result = mysql_query($query) or die('Update tblTrack failed: ' . mysql_error());
+//    $result = mysql_query($query) or die('Update tblTrack failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Update tblTrack failed: ' . mysqli_connect_error());
 
     if ($tasPk != 'null')
     {

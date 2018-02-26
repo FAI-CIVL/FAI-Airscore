@@ -4,6 +4,11 @@ require 'authorisation.php';
 require 'format.php';
 require 'hc2v3.php';
 require 'plot_track.php';
+
+//
+// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
+//
+
 //sajax_init();
 //sajax_export("get_task");
 //sajax_export("get_track");
@@ -11,6 +16,7 @@ require 'plot_track.php';
 //sajax_export("get_track_wp");
 //sajax_export("award_waypoint");
 //sajax_handle_client_request();
+
 hchead();
 echo "<title>Tracklog Map</title>\n";
 hccss();
@@ -79,8 +85,10 @@ if ($tasPk > 0 || $trackid > 0)
         $sql = "SELECT CTT.tasPk as ctask,C.*,CTT.*,T.*,T.regPk as tregPk FROM tblCompetition C, tblComTaskTrack CTT left outer join tblTask T on T.tasPk=CTT.tasPk where C.comPk=CTT.comPk and CTT.traPk=$trackid $comextra";
     }
 
-    $result = mysql_query($sql,$link) or die('Query failed: ' . mysql_error());
-    if ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+//    $result = mysql_query($sql,$link) or die('Query failed: ' . mysql_error());
+    $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
+//    if ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+    if ($row = mysqli_fetch_assoc($result))
     {
         if ($tasPk == 0)
         {
@@ -143,8 +151,10 @@ else if ($trackid > 0)
     echo "do_add_track_wp($trackid);\n";
     echo "do_add_track($trackid);\n";
     $sql = "SELECT max(trlTime) - min(trlTime) FROM tblTrackLog where traPk=$trackid";
-    $result = mysql_query($sql,$link) or die('Time query failed: ' . mysql_error());
-    $gtime = mysql_result($result, 0, 0);
+//    $result = mysql_query($sql,$link) or die('Time query failed: ' . mysql_error());
+    $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Time query failed: ' . mysqli_connect_error());
+//    $gtime = mysql_result($result, 0, 0);
+    $gtime = mysqli_result($result, 0, 0);
 }
 
 
@@ -175,9 +185,11 @@ echo "<input type=\"text\" name=\"foo\" id=\"foo\" size=\"8\"\">";
 if ($tasPk > 0)
 {
     $sql = "select TR.*, T.*, P.* from tblTaskResult TR, tblTrack T, tblPilot P where TR.tasPk=$tasPk and T.traPk=TR.traPk and P.pilPk=T.pilPk order by TR.tarScore desc limit 20";
-    $result = mysql_query($sql,$link) or die('Task Result selection failed: ' . mysql_error());
+//    $result = mysql_query($sql,$link) or die('Task Result selection failed: ' . mysql_error());
+    $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task result selection failed: ' . mysqli_connect_error());
     $addable = [];
-    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+    // while ($row = mysql_fetch_array($result, MYSQL_ASSOC)) 
+    while ($row = mysqli_fetch_assoc($result))
     {
         $addable[$row['pilLastName']] = $row['traPk'];
     }
@@ -186,9 +198,11 @@ if ($tasPk > 0)
 else if ($trackid > 0)
 {
     $sql = "select T2.*, P.* from tblTrack T, tblTrack T2, tblPilot P where T2.traStart>date_sub(T.traStart, interval 6 hour) and T2.traStart<date_add(T.traStart, interval 6 hour) and T.traPk=$trackid and P.pilPk=T2.pilPk order by T2.traLength desc limit 10";
-    $result = mysql_query($sql,$link) or die('Task Result selection failed: ' . mysql_error());
+//    $result = mysql_query($sql,$link) or die('Task Result selection failed: ' . mysql_error());
+    $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task result selection failed: ' . mysqli_connect_error());
     $addable = [];
-    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+    // while ($row = mysql_fetch_array($result, MYSQL_ASSOC)) 
+    while ($row = mysqli_fetch_assoc($result))
     {
         $addable[$row['pilLastName']] = $row['traPk'];
     }
@@ -221,8 +235,10 @@ if ($tasPk > 0)
 else
 {
     $sql = "SELECT *, trlTime as bucTime FROM tblTrackLog where traPk=$trackid order by trlTime limit 1";
-    $result = mysql_query($sql,$link) or die('Tracklog location failed: ' . mysql_error());
-    $row = mysql_fetch_array($result, MYSQL_ASSOC);
+//    $result = mysql_query($sql,$link) or die('Tracklog location failed: ' . mysql_error());
+    $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Tracklog location failed: ' . mysqli_connect_error());
+//    $row = mysql_fetch_array($result, MYSQL_ASSOC);
+    $row = mysqli_fetch_assoc($result);
     $tracklat = $row['trlLatDecimal'];
     $tracklon = $row['trlLongDecimal'];
 
@@ -236,11 +252,13 @@ else
                     group by (airPk))
                 order by R.airName";
 }
-$result = mysql_query($sql,$link); // or die('Airspace selection failed: ' . mysql_error());
+// $result = mysql_query($sql,$link); // or die('Airspace selection failed: ' . mysql_error());
+$result = mysqli_query($link, $sql);
 if ($result)
 {
     $addable = [];
-    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+    // while ($row = mysql_fetch_array($result, MYSQL_ASSOC)) 
+    while ($row = mysqli_fetch_assoc($result))
     {   
         $airspaces[$row['airName']] = $row['airPk'];
     }
@@ -259,7 +277,8 @@ if ($trackid > 0)
     echo "</form>";
 }
 echo "</div>\n";
-mysql_close($link);
+// mysql_close($link);
+mysqli_close($link);
 ?>
 </body>
 </html>

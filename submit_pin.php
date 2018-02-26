@@ -4,6 +4,10 @@ require 'format.php';
 require 'hc2v3.php';
 require 'dbextra.php';
 
+//
+// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
+//
+
 hchead();
 echo '<title>Submit Landing Pin</title>';
 hccss();
@@ -72,8 +76,10 @@ if ($tasPk == 0)
     $tdate = sprintf("%04d-%02d-%02d", $today['year'], $today['mon'], $today['mday']);
 
     $query = "select * from tblTask where comPk=$comPk and tasTaskType='free-pin' and tasDate <= '$tdate' order by tasDate";
-    $result = mysql_query($query) or die('Task query failed: ' . mysql_error());
-    while ($row=mysql_fetch_array($result, MYSQL_ASSOC))
+//    $result = mysql_query($query) or die('Task query failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task query failed: ' . mysqli_connect_error());
+//    while ($row=mysql_fetch_array($result, MYSQL_ASSOC))
+    while ($row = mysqli_fetch_assoc($result))
     {
         $tasks[$row['tasName']] = $row['tasPk'];
         if ($row['regPk'] > 0)
@@ -86,8 +92,10 @@ if ($tasPk == 0)
 
 
 $sql = "SELECT * FROM tblRegion WHERE regPk=$regPk";
-$result = mysql_query($sql,$link);
-$row = mysql_fetch_array($result);
+//$result = mysql_query($sql,$link);
+$result = mysqli_query($link, $sql);
+//$row = mysql_fetch_array($result);
+$row = mysqli_fetch_array($result, MYSQLI_BOTH);
 $rcentre = intval($row['regCentre']);
 $regdesc = $row['regDescription'];
 
@@ -97,10 +105,14 @@ $xname = 'Somewhere';
 if ($rcentre != 0)
 {
     $sql = "SELECT rwpLatDecimal, rwpLongDecimal, rwpName FROM tblRegionWaypoint WHERE rwpPk=$rcentre";
-    $result = mysql_query($sql,$link) or die("Failed to get waypoint for region centre: " . mysql_error());
-    $xlat = mysql_result($result,0,0);
-    $xlon = mysql_result($result,0,1);
-    $xname = mysql_result($result,0,2);
+//    $result = mysql_query($sql,$link) or die("Failed to get waypoint for region centre: " . mysql_error());
+    $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Failed to get waypoint for region centre: ' . mysqli_connect_error());
+//    $xlat = mysql_result($result,0,0);
+    $xla = mysqli_result($result,0,0);
+//    $xlon = mysql_result($result,0,1);
+    $xlon = mysqli_result($result,0,1);
+//    $xname = mysql_result($result,0,2);
+    $xname = mysqli_result($result,0,2);
 }
 
 
@@ -188,10 +200,12 @@ if (reqexists('submitpin'))
     $lon = addslashes($_REQUEST["lon"]);
 
     $query = "select pilPk, pilHGFA from tblPilot where pilLastName='$name'";
-    $result = mysql_query($query) or die('Pilot query failed: ' . mysql_error());
+//    $result = mysql_query($query) or die('Pilot query failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot query failed: ' . mysqli_connect_error());
 
     $member = 0;
-    while ($row=mysql_fetch_array($result))
+//    while ($row=mysql_fetch_array($result))
+    while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         if ($hgfa == $row['pilHGFA'])
         {
@@ -231,31 +245,39 @@ if (reqexists('submitpin'))
     // add two point track (start+end).
     $task = reqival('task');
     $query = "select tasDate from tblTask where tasPk=$task";
-    $result = mysql_query($query) or die('Task date failed: ' . mysql_error());
-    if (mysql_num_rows($result) == 0)
+//    $result = mysql_query($query) or die('Task date failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task date failed: ' . mysqli_connect_error());
+//    if (mysql_num_rows($result) == 0)
+    if (mysqli_num_rows($result) == 0)
     {
         echo "Unable to submit pin to unknown task<br>\n";
         exit(0);
     }
-    $tasDate=mysql_result($result,0,0);
+//    $tasDate=mysql_result($result,0,0);
+    $tasDate = mysqli_result($result,0,0);
     $glider = reqsval('glider');
     $dhv = reqsval('dhv');
 
     $query = "insert into tblTrack (pilPk,traGlider,traDHV,traDate,traStart,traLength) values ($pilPk,'$glider','$dhv','$tasDate','$tasDate',0)";
-    $result = mysql_query($query) or die('Track Insert result failed: ' . mysql_error());
-    $maxPk = mysql_insert_id();
+//    $result = mysql_query($query) or die('Track Insert result failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Track Insert result failed: ' . mysqli_connect_error());
+//    $maxPk = mysql_insert_id();
+    $maxPk = mysqli_insert_id($link);
 
     $t1 = 43200;
     $t2 = 46800;
     $query = "insert into tblTrackLog (traPk, trlLatDecimal, trlLongDecimal, trlTime) VALUES ($maxPk,$xlat,$xlon,$t1),($maxPk,$lat,$lon,$t2)";
-    $result = mysql_query($query) or die('Tracklog insert failed: ' . mysql_error());
+//    $result = mysql_query($query) or die('Tracklog insert failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Tracklog insert failed: ' . mysqli_connect_error());
 
     $query = "insert into tblWaypoint (traPk, wptLatDecimal, wptLongDecimal, wptTime, wptPosition) VALUES ($maxPk,$xlat,$xlon,$t1,1),($maxPk,$lat,$lon,$t2,2)";
-    $result = mysql_query($query) or die('Waypoint insert failed: ' . mysql_error());
+//    $result = mysql_query($query) or die('Waypoint insert failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Waypoint insert failed: ' . mysqli_connect_error());
 
 
     $query = "insert into tblComTaskTrack (comPk,tasPk,traPk) values ($comPk,$task,$maxPk)";
-    $result = mysql_query($query) or die('ComTaskTrack failed: ' . mysql_error());
+//    $result = mysql_query($query) or die('ComTaskTrack failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' ComTaskTrack failed: ' . mysqli_connect_error());
 
     $out = '';
     $retv = 0;

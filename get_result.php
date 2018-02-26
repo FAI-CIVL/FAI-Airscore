@@ -5,6 +5,10 @@ header('Content-type: application/json');
 
 require 'authorisation.php';
 
+//
+// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
+//
+
 function taskcmp($a, $b)
 {
     if (!is_array($a)) return 0;
@@ -20,17 +24,21 @@ function taskcmp($a, $b)
 function comp_result($comPk, $cls)
 {
     $sql = "select C.* from tblCompetition C where C.comPk=$comPk";
-    $result = mysql_query($sql) or die('Comp info query failed: ' . mysql_error());
-    if ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+//    $result = mysql_query($sql) or die('Comp info query failed: ' . mysql_error());
+    $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Comp info query failed: ' . mysqli_connect_error());
+//    if ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+    if ($row = mysqli_fetch_assoc($result))
     {
         $how = $row['comOverallScore'];
         $param = $row['comOverallParam'];
     }
 
     $sql = "select TK.*,TR.*,P.*,T.traGlider from tblTaskResult TR, tblTask TK, tblTrack T, tblPilot P, tblCompetition C where C.comPk=$comPk and TK.comPk=C.comPk and TK.tasPk=TR.tasPk and TR.traPk=T.traPk and T.traPk=TR.traPk and P.pilPk=T.pilPk $cls order by P.pilPk, TK.tasPk";
-    $result = mysql_query($sql) or die('Task result query failed: ' . mysql_error());
+//    $result = mysql_query($sql) or die('Task result query failed: ' . mysql_error());
+    $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task result query failed: ' . mysqli_connect_error());
     $results = [];
-    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+//    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+    while ($row = mysqli_fetch_assoc($result))
     {
         $score = round($row['tarScore']);
         $validity = $row['tasQuality'] * 1000;

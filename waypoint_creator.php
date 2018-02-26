@@ -1,4 +1,9 @@
 <?php
+
+//
+// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
+//
+
 require 'authorisation.php';
 require 'hc2.php'
 
@@ -26,16 +31,21 @@ echo "map.addControl(new GSmallMapControl());\n";
 echo "map.addControl(new GMapTypeControl());\n";
 
 $sql = "SELECT * FROM tblRegion where regPk=$regPk";
-$result = mysql_query($sql,$link);
-$rcentre = mysql_result($result,0,1);
-$regdesc = mysql_result($result,0,3);
+// $result = mysql_query($sql,$link);
+$result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' MySQL connection failed: ' . mysqli_connect_error());
+// $rcentre = mysql_result($result,0,1);
+// $regdesc = mysql_result($result,0,3);
+$rcentre = mysqli_result($result,0,1);
+$regdesc = mysqli_result($result,0,3);
 
 $prefix = 'rwp';
 $sql = "SELECT * FROM tblRegionWaypoint where regPk=$regPk";
-$result = mysql_query($sql,$link);
+// $result = mysql_query($sql,$link);
+$result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' MySQL connection failed: ' . mysqli_connect_error());
 
 $first = 0;
-while($row = mysql_fetch_array($result))
+// while($row = mysql_fetch_array($result))
+while($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {
     $clat = $row["${prefix}LatDecimal"];
     $clong = $row["${prefix}LongDecimal"];
@@ -68,7 +78,8 @@ while($row = mysql_fetch_array($result))
 echo "<div id=\"vhead\"><h1>$regdesc Waypoints</h1></div>\n";
 adminbar(0);
 
-mysql_close($link);
+// mysql_close($link);
+mysqli_close($link);
 ?>
 <div id="map" style="width: 800px; height: 600px"></div>
 </div>

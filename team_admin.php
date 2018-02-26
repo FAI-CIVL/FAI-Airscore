@@ -6,6 +6,11 @@
 <div id="container">
 <div id="vhead"><h1>airScore admin</h1></div>
 <?php
+
+//
+// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
+//
+
 require 'authorisation.php';
 require 'format.php';
 
@@ -15,7 +20,8 @@ adminbar($comPk);
 
 $link = db_connect();
 $query = "select comName, comTeamScoring from tblCompetition where comPk=$comPk";
-$result = mysql_query($query) or die('Task add failed: ' . mysql_error());
+# $result = mysql_query($query) or die('Task add failed: ' . mysql_error());
+$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task add failed: ' . mysqli_connect_error());
 $comName = mysql_result($result,0,0);
 $comTeamScoring = mysql_result($result,0,1);
 
@@ -39,7 +45,8 @@ if (reqexists('addpilot'))
 {
     $pilPk = reqival('addpilot');
     $query = "insert into tblTeamPilot (teaPk, pilPk, tepModifier) value ($teaPk,$pilPk,1.0)";
-    $result = mysql_query($query) or die('Pilot insert failed: ' . mysql_error());
+//    $result = mysql_query($query) or die('Pilot insert failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot insert failed: ' . mysqli_connect_error());
 }
 
 if (reqexists('delpilot'))
@@ -52,7 +59,8 @@ if (reqexists('delpilot'))
     else
     {
         $query = "delete from tblTeamPilot where tepPk=$tepPk";
-        $result = mysql_query($query) or die('Pilot delete failed: ' . mysql_error());
+//        $result = mysql_query($query) or die('Pilot delete failed: ' . mysql_error());
+        $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot delete failed: ' . mysqli_connect_error());
     }
 }
 
@@ -77,7 +85,8 @@ if (reqexists('uppilot'))
     {
         $query = "update tblTeamPilot set tepModifier=$mod where tepPk=$tepPk";
     }
-    $result = mysql_query($query) or die('Pilot update failed: ' . mysql_error());
+//    $result = mysql_query($query) or die('Pilot update failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot update failed: ' . mysqli_connect_error());
 }
 
 if (reqexists('addteam'))
@@ -85,7 +94,8 @@ if (reqexists('addteam'))
     $pilPk = reqival('pilPk');
     $tname = addslashes($_REQUEST['teamname']);
     $query = "insert into tblTeam (comPk, teaName) value ($comPk,'$tname')";
-    $result = mysql_query($query) or die('Team create failed: ' . mysql_error());
+//    $result = mysql_query($query) or die('Team create failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Team create failed: ' . mysqli_connect_error());
     $teaPk = mysql_insert_id();
 }
 
@@ -98,14 +108,17 @@ if (reqexists('upteam'))
 if (reqexists('delteam'))
 {
     $query = "delete from tblTeam where teaPk=$teaPk";
-    $result = mysql_query($query) or die('Delete team failed: ' . mysql_error());
+//    $result = mysql_query($query) or die('Delete team failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Delete team failed: ' . mysqli_connect_error());
     $query = "delete from tblTeamPilot where teaPk=$teaPk";
-    $result = mysql_query($query) or die('Delete team pilot failed: ' . mysql_error());
+//    $result = mysql_query($query) or die('Delete team pilot failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Delete team pilot failed: ' . mysqli_connect_error());
     $teaPk = 0;
 }
 
 $query = "select teaName from tblTeam where teaPk=$teaPk";
-$result = mysql_query($query) or die('Team name query failed: ' . mysql_error());
+//$result = mysql_query($query) or die('Team name query failed: ' . mysql_error());
+$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Team name query failed: ' . mysqli_connect_error());
 if (mysql_num_rows($result) > 0)
 {
     $teamname = mysql_result($result,0,0);
@@ -126,7 +139,8 @@ echo "TeamName: <input type=\"text\" name=\"teamname\" size=10>";
 echo "<input type=\"submit\" name=\"addteam\" value=\"Create Team\">";
 
 $query = "select T.* from tblTeam T where comPk=$comPk";
-$result = mysql_query($query) or die('Team query failed: ' . mysql_error());
+//$result = mysql_query($query) or die('Team query failed: ' . mysql_error());
+$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Team query failed: ' . mysqli_connect_error());
 $teamarr = Array();
 while ($row = mysql_fetch_array($result))
 {
@@ -171,7 +185,8 @@ if ($teaPk > 0)
     {
         $query = "select T.*, TP.*, P.* from tblTeam T,tblTeamPilot TP,tblPilot P where TP.teaPk=T.teaPk and P.pilPk=TP.pilPk and T.teaPk=$teaPk order by P.pilLastName";
     }
-    $result = mysql_query($query) or die('Team pilots query failed: ' . mysql_error());
+//    $result = mysql_query($query) or die('Team pilots query failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Team pilots query failed: ' . mysqli_connect_error());
     $row = mysql_fetch_array($result);
     $selteaPk = $row['teaPk'];
     if ($row)
@@ -236,7 +251,8 @@ if ($cat != '')
     echo "<ol>";
     $count = 1;
     $sql = "SELECT P.* FROM tblPilot P where P.pilLastName like '$cat%' order by P.pilLastName";
-    $result = mysql_query($sql,$link) or die('Pilot select failed: ' . mysql_error());
+//    $result = mysql_query($sql,$link) or die('Pilot select failed: ' . mysql_error());
+    $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Pilot select failed: ' . mysqli_connect_error());
 
     while($row = mysql_fetch_array($result))
     {

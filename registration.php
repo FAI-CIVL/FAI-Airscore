@@ -21,15 +21,22 @@ require 'authorisation.php';
 require 'format.php';
 require 'dbextra.php';
 
+//
+// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
+//
+
 $comPk = reqival('comPk');
 $teaPk = reqival('teaPk');
 adminbar($comPk);
 
 $link = db_connect();
 $query = "select comName, comEntryRestrict from tblCompetition where comPk=$comPk";
-$result = mysql_query($query) or die('Comp query failed: ' . mysql_error());
-$comName = mysql_result($result,0,0);
-$comRestricted = mysql_result($result,0,1);
+//$result = mysql_query($query) or die('Comp query failed: ' . mysql_error());
+$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Comp query failed: ' . mysqli_connect_error());
+//$comName = mysql_result($result,0,0);
+$comName = mysqli_result($result,0,0);
+//$comRestricted = mysql_result($result,0,1);
+$comRestricted = mysqli_result($result,0,1);
 
 echo '<div id ="container2">';
 echo '<div id ="container1">';
@@ -66,12 +73,15 @@ if (array_key_exists('addpilot', $_REQUEST))
     insertup($link, 'tblRegistration', 'regPk', $clause, $addarr);
 
     $query = "select H.* from tblHandicap H where H.comPk=$comPk and H.pilPk=$pilPk";
-    $result = mysql_query($query) or die('Handicap query failed: ' . mysql_error());
+//    $result = mysql_query($query) or die('Handicap query failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Handicap query failed: ' . mysqli_connect_error());
 
-    if (mysql_num_rows($result) == 0)
+//    if (mysql_num_rows($result) == 0)
+    if (mysqli_num_rows($result) == 0)
     {
         $query = "insert into tblHandicap (comPk, pilPk, hanHandicap) value ($comPk,$pilPk,1)";
-        $result = mysql_query($query) or die('Pilot handicap insert failed: ' . mysql_error());
+//        $result = mysql_query($query) or die('Pilot handicap insert failed: ' . mysql_error());
+        $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot handicap insert failed: ' . mysqli_connect_error());
     }
 }
 
@@ -79,9 +89,11 @@ if (array_key_exists('delpilot', $_REQUEST))
 {
     $pilPk = intval($_REQUEST['delpilot']);
     $query = "delete from tblRegistration where comPk=$comPk and pilPk=$pilPk";
-    $result = mysql_query($query) or die('Pilot delete failed: ' . mysql_error());
+//    $result = mysql_query($query) or die('Pilot delete failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot delete failed: ' . mysqli_connect_error());
     $query = "delete from tblHandicap where comPk=$comPk and pilPk=$pilPk";
-    $result = mysql_query($query) or die('Delete handicap failed: ' . mysql_error());
+//    $result = mysql_query($query) or die('Delete handicap failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Delete handicap failed: ' . mysqli_connect_error());
 }
 
 if (array_key_exists('uppilot', $_REQUEST))
@@ -90,7 +102,8 @@ if (array_key_exists('uppilot', $_REQUEST))
     $fai = reqsval("fai$id");
     $handi = reqfval("han$id");
     $query = "update tblPilot set pilHGFA='$fai' where pilPk=$id";
-    $result = mysql_query($query) or die('Pilot ID update failed: ' . mysql_error());
+//    $result = mysql_query($query) or die('Pilot ID update failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot ID update failed: ' . mysqli_connect_error());
 
     $regarr = [];
     $regarr['pilPk'] = $id;
@@ -105,8 +118,10 @@ echo "<form action=\"registration.php?comPk=$comPk&cat=$cat$tsel\" name=\"regadm
 $query = "select P.*,H.hanHandicap from tblRegistration R left join tblPilot P on P.pilPk=R.pilPk left outer join tblHandicap H on H.pilPk=P.pilPk and H.comPk=$comPk where R.comPk=$comPk order by P.pilLastName";
 
 $regpilots = [];
-$result = mysql_query($query) or die('Team pilots query failed: ' . mysql_error());
-while ($row = mysql_fetch_array($result))
+//$result = mysql_query($query) or die('Team pilots query failed: ' . mysql_error());
+$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Team pilots query failed: ' . mysqli_connect_error());
+//while ($row = mysql_fetch_array($result))
+while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {
     $regpilots[] = $row;
 }
@@ -157,9 +172,11 @@ if ($cat != '')
     echo "<ol>";
     $count = 1;
     $sql = "SELECT P.* FROM tblPilot P where P.pilLastName like '$cat%' order by P.pilLastName";
-    $result = mysql_query($sql,$link) or die('Pilot select failed: ' . mysql_error());
+//    $result = mysql_query($sql,$link) or die('Pilot select failed: ' . mysql_error());
+    $result = mysqli_query($link, $sql,$link) or die('Error ' . mysqli_errno($link) . ' Pilot select failed: ' . mysqli_connect_error());
 
-    while($row = mysql_fetch_array($result))
+//    while($row = mysql_fetch_array($result))
+    while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         $id = $row['pilPk'];
         $lname = $row['pilLastName'];

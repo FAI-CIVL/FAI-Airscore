@@ -8,6 +8,10 @@ require 'hc.php';
 require 'format.php';
 require 'xcdb.php';
 
+//
+// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
+//
+
 $usePk = check_auth('system');
 $link = db_connect();
 $tasPk = reqival('tasPk');
@@ -101,12 +105,14 @@ function task_result($link, $tasPk, $fdhv)
 {
     $count = 1;
     $sql = "select TR.*, T.*, P.* from tblTaskResult TR, tblTrack T, tblPilot P where TR.tasPk=$tasPk $fdhv and T.traPk=TR.traPk and P.pilPk=T.pilPk order by TR.tarScore desc, P.pilFirstName";
-    $result = mysql_query($sql,$link) or die('Task Result selection failed: ' . mysql_error());
+//    $result = mysql_query($sql,$link) or die('Task Result selection failed: ' . mysql_error());
+    $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task Result selection failed: ' . mysqli_connect_error());
     $lastscore = 0;
     $hh = 0;
     $mm = 0;
     $ss = 0;
-    while ($row = mysql_fetch_array($result))
+//    while ($row = mysql_fetch_array($result))
+    while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         $name = $row['pilFirstName'] . ' ' . $row['pilLastName'];
         $nation = $row['pilNationCode'];

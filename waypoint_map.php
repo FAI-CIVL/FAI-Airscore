@@ -3,11 +3,17 @@ require 'authorisation.php';
 require 'format.php';
 require 'hc2v3.php';
 
+//
+// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
+//
+
 hchead();
 echo '<title>Waypoint Map</title>';
 hccss();
 hcmapjs();
+
 ?>
+
 <script type="text/javascript">
     //<![CDATA[
 var map;
@@ -68,7 +74,8 @@ if ($authorised && array_key_exists('add', $_REQUEST))
     $sql = "insert into tblRegionWaypoint (regPk, rwpName, rwpLatDecimal, rwpLongDecimal, rwpAltitude, rwpDescription) values ($regPk,'$name',$lat,$lon,$alt,'$desc')";
     if ($name != '' && $lat != 0)
     {
-        $result = mysql_query($sql,$link) or die("Failed to insert waypoint ($name): " . mysql_error());
+//        $result = mysql_query($sql,$link) or die("Failed to insert waypoint ($name): " . mysql_error());
+        $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Failed to insert waypoint ($name): ' . mysqli_connect_error());
     }
     else
     {
@@ -82,7 +89,8 @@ if ($authorised && array_key_exists('delete', $_REQUEST))
     if ($delname != '')
     {
         $sql = "delete from tblRegionWaypoint where regPk=$regPk and rwpName='$delname'";
-        $result = mysql_query($sql,$link) or die("Failed to delete waypoint ($delname): " . mysql_error());
+//        $result = mysql_query($sql,$link) or die("Failed to delete waypoint ($delname): " . mysql_error());
+        $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Failed to delete waypoint ($delname): ' . mysqli_connect_error());
 
     }
 }
@@ -98,7 +106,8 @@ if ($authorised && array_key_exists('update', $_REQUEST))
     $sql = "update tblRegionWaypoint set rwpName='$name', rwpLatDecimal=$lat, rwpLongDecimal=$lon, rwpAltitude=$alt, rwpDescription='$desc' where rwpPk=$rwpPk";
     if ($name != '' && $lat != 0)
     {
-        $result = mysql_query($sql,$link) or die("Failed to update waypoint ($name): " . mysql_error());
+//        $result = mysql_query($sql,$link) or die("Failed to update waypoint ($name): " . mysql_error());
+        $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Failed to update waypoint ($name): ' . mysqli_connect_error());
     }
     else
     {
@@ -110,12 +119,15 @@ if ($authorised && array_key_exists('centre', $_REQUEST))
 {
     $cent = intval($_REQUEST['centrerwp']);
     $sql = "update tblRegion set regCentre=$cent where regPk=$regPk";
-    $result = mysql_query($sql,$link) or die("Failed to update region centre: " . mysql_error());
+//    $result = mysql_query($sql,$link) or die("Failed to update region centre: " . mysql_error());
+    $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Failed to update region centre: ' . mysqli_connect_error());
 }
 
 $sql = "SELECT * FROM tblRegion WHERE regPk=$regPk";
-$result = mysql_query($sql,$link);
-$row = mysql_fetch_array($result);
+// $result = mysql_query($sql,$link);
+$result = mysqli_query($link, $sql);
+// $row = mysql_fetch_array($result);
+$row = mysqli_fetch_array($result, MYSQLI_BOTH);
 $rcentre = intval($row['regCentre']);
 $regdesc = $row['regDescription'];
 
@@ -124,9 +136,12 @@ $xlon = 143.644;
 if ($rcentre != 0)
 {
     $sql = "SELECT rwpLatDecimal, rwpLongDecimal FROM tblRegionWaypoint WHERE rwpPk=$rcentre";
-    $result = mysql_query($sql,$link) or die("Failed to get waypoint for region centre: " . mysql_error());
-    $xlat = mysql_result($result,0,0);
-    $xlon = mysql_result($result,0,1);
+//    $result = mysql_query($sql,$link) or die("Failed to get waypoint for region centre: " . mysql_error());
+    $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Failed to get waypoint for region centre: ' . mysqli_connect_error());
+//    $xlat = mysql_result($result,0,0);
+//    $xlon = mysql_result($result,0,1);
+    $xlat = mysqli_result($result,0,0);
+    $xlon = mysqli_result($result,0,1);
 }
 
 
@@ -160,12 +175,14 @@ function initialize()
 $waypoints = [];
 $prefix = 'rwp';
 $sql = "SELECT * FROM tblRegionWaypoint WHERE regPk=$regPk";
-$result = mysql_query($sql,$link);
+// $result = mysql_query($sql,$link);
+$result = mysqli_query($link, $sql);
 
 $first = 0;
 $count = 0;
 $waylist = [];
-while($row = mysql_fetch_array($result))
+// while($row = mysql_fetch_array($result))
+while($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {
     $clat = $row["${prefix}LatDecimal"];
     $clon = $row["${prefix}LongDecimal"];
@@ -243,14 +260,14 @@ echo "Desc:" . fin('desc', '', 15);
 echo "Lat:" . fin('lat', '0', 11);
 echo "Lon:" . fin('lon', '0', 11);
 echo "Alt:" . fin('alt', '100', 4) . "&nbsp;";
-echo fis('add', 'Add Waypoint') . "<br>";
+echo fis('add', 'Add Waypoint', '') . "<br>";
 echo "Name:" . fin('upname', '', 10);
 echo "<input type=\"hidden\" name=\"rwpPk\">";
 echo "Desc:" . fin('updesc', '', 15);
 echo "Lat:" . fin('uplat', '0', 11);
 echo "Lon:" . fin('uplon', '0', 11);
 echo "Alt:" . fin('upalt', '100', 4) . "&nbsp;";
-echo fis('update', 'Update') . fis('delete', 'Delete') . "<br>";
+echo fis('update', 'Update', '') . fis('delete', 'Delete', '') . "<br>";
 echo "Centre: ";
 ksort($waypoints);
 output_select('centrerwp',$rcentre,$waypoints);

@@ -16,12 +16,18 @@
 <?php
 require 'authorisation.php';
 
+//
+// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
+//
+
 $link = db_connect();
 echo "<ol>";
 $count = 1;
 $sql = "SELECT T.*, P.* FROM tblTrack T, tblPilot P where T.pilPk=P.pilPk order by T.traScore desc limit 10";
-$result = mysql_query($sql,$link);
-while($row = mysql_fetch_array($result))
+// $result = mysql_query($sql,$link);
+$result = mysqli_query($link, $sql);
+// while($row = mysql_fetch_array($result))
+while($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {
     $id = $row['traPk'];
     $dist = round($row['traLength']/1000,2);

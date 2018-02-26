@@ -2,6 +2,10 @@
 require 'authorisation.php';
 require 'format.php';
 
+//
+// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
+//
+
 auth('system');
 $argPk = reqival('argPk');
 
@@ -47,8 +51,10 @@ if (reqexists('download'))
 
     $link = db_connect();
     $sql = "select * from tblAirspaceRegion where argPk=$argPk";
-    $result = mysql_query($sql,$link);
-    $row = mysql_fetch_array($result, MYSQL_ASSOC);
+//    $result = mysql_query($sql,$link);
+    $result = mysqli_query($link, $sql);
+//    $row = mysql_fetch_array($result, MYSQL_ASSOC);
+    $row = mysqli_fetch_assoc($result);
     $regname = $row['argRegion'];
 
     # nuke normal header ..
@@ -65,10 +71,12 @@ if (reqexists('download'))
                 group by (airPk))
             group by A.airName
             order by A.airName";
-    $result = mysql_query($sql,$link);
+//    $result = mysql_query($sql,$link);
+    $result = mysqli_query($link, $sql);
 
     $first = 0;
-    while ($air = mysql_fetch_array($result, MYSQL_ASSOC))
+//    while ($air = mysql_fetch_array($result, MYSQL_ASSOC))
+    while ($air = mysqli_fetch_assoc($result))
     {
         $airPk = $air['airPk'];
         $class = $air['airClass'];
@@ -87,8 +95,10 @@ if (reqexists('download'))
         if ($shape == "circle")
         {
             $subsql = "SELECT AW.* from tblAirspaceWaypoint AW where AW.awpPk=$centrepk by AW.airOrder";
-            $subresult = mysql_query($subsql,$link);
-            $subrow = mysql_fetch_array($subresult, MYSQL_ASSOC);
+//            $subresult = mysql_query($subsql,$link);
+            $subresult = mysqli_query($link, $subsql);
+//            $subrow = mysql_fetch_array($subresult, MYSQL_ASSOC);
+            $subrow = mysqli_fetch_assoc($subresult);
             $lat = $subrow['awpLatDecimal'];
             $lon = $subrow['awpLongDecimal'];
             echo "V X=" . dms($lat, "NS") . " " . dms($lon, "EW") . "\n";
@@ -98,8 +108,10 @@ if (reqexists('download'))
         {
             // do waypoints ...
             $subsql = "SELECT A.*, AW.* from tblAirspace A, tblAirspaceWaypoint AW where A.airPk=$airPk and AW.airPk=A.airPk order by AW.airOrder";
-            $subresult = mysql_query($subsql,$link);
-            while ($subrow = mysql_fetch_array($subresult, MYSQL_ASSOC))
+//            $subresult = mysql_query($subsql,$link);
+            $subresult = mysqli_query($link, $subsql);
+//            while ($subrow = mysql_fetch_array($subresult, MYSQL_ASSOC))
+            while ($subrow = mysqli_fetch_assoc($subresult))
             {
                 $lat = $subrow['awpLatDecimal'];
                 $lon = $subrow['awpLongDecimal'];
@@ -107,8 +119,7 @@ if (reqexists('download'))
             }
         }
     }
-
-    exit(0);
+	exit(0);
 }
 
 function display_airspace_region($link, $argPk)
@@ -133,8 +144,10 @@ function display_airspace_region($link, $argPk)
             order by R.airName";
     }
 
-    $result = mysql_query($sql,$link);
-    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+//    $result = mysql_query($sql,$link);
+    $result = mysqli_query($link, $sql);
+//    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+    while ($row = mysqli_fetch_assoc($result))
     {
         $id = $row['airPk'];
         $name = $row['airName'];
@@ -162,8 +175,10 @@ function display_regions($link)
     $airtab = [];
     $airtab[] =  array(fb('Id'), fb('Region Name'), fb('Latitude'), fb('Longitude'), fb('Size'));
     $sql = "SELECT * from tblAirspaceRegion R order by R.argRegion";
-    $result = mysql_query($sql,$link);
-    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+//    $result = mysql_query($sql,$link);
+    $result = mysqli_query($link, $sql);
+//    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+    while ($row = mysqli_fetch_assoc($result))
     {
         $id = $row['argPk'];
         $name = "<a href=\"airspace_admin.php?argPk=$id\">" . $row['argRegion'] . '</a>';
@@ -224,8 +239,10 @@ if (reqexists('delete'))
     // implement a nice 'confirm'
     $delPk = reqival('delete');
     $query = "select * from tblAirspace where airPk=$delPk";
-    $result = mysql_query($query) or die('Airspace check failed: ' . mysql_error());
-    $row = mysql_fetch_array($result);
+//    $result = mysql_query($query) or die('Airspace check failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Airspace check failed: ' . mysqli_connect_error());
+//    $row = mysql_fetch_array($result);
+    $row = mysqli_fetch_array($result, MYSQLI_BOTH);
     $subregion = $row['airName'];
 
     #$query = "select * from tblTaskWaypoint T, tblRegionWaypoint W, tblRegion R where R.regPk=W.regPk and R.regPk=$delPk limit 1";
@@ -237,9 +254,11 @@ if (reqexists('delete'))
     #}
 
     $query = "delete from tblAirspaceWaypoint where airPk=$delPk";
-    $result = mysql_query($query) or die('AirspaceWaypoint delete failed: ' . mysql_error());
+//    $result = mysql_query($query) or die('AirspaceWaypoint delete failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' AirspaceWaypoint delete failed: ' . mysqli_connect_error());
     $query = "delete from tblAirspace where airPk=$delPk";
-    $result = mysql_query($query) or die('Airspace delete failed: ' . mysql_error());
+//    $result = mysql_query($query) or die('Airspace delete failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Airspace delete failed: ' . mysqli_connect_error());
 
     echo "Airspace $subregion deleted<br>";
 }
@@ -252,7 +271,8 @@ if (reqexists('create'))
     $rsize = reqfval('regsize');
 
     $sql = "insert into tblAirspaceRegion (argRegion, argLatDecimal, argLongDecimal, argSize ) values ('$region', $rlat, $rlon, $rsize)";
-    $result = mysql_query($sql) or die('AirspaceRegion creation failed: ' . mysql_error());
+//    $result = mysql_query($sql) or die('AirspaceRegion creation failed: ' . mysql_error());
+    $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' AirspaceRegion creation failed: ' . mysqli_connect_error());
 
     echo "Region $region added<br>";
 }

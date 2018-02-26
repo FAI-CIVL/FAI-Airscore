@@ -1,14 +1,20 @@
 <?php
 require_once 'Sajax.php';
 
+//
+// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
+//
+
 function get_airspace($trackid)
 {
     $link = db_connect();
     $sql = "SELECT A.*, AW.* from tblAirspace A, tblAirspaceWaypoint AW where A.airPk=$trackid and AW.airPk=A.airPk order by AW.airOrder";
     
-    $result = mysql_query($sql,$link);
+//    $result = mysql_query($sql,$link);
+    $result = mysqli_query($link, $sql);
     $ret = [];
-    while($row = mysql_fetch_array($result))
+//    while($row = mysql_fetch_array($result))
+    while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
     
         $lasLat = $row['awpLatDecimal'];

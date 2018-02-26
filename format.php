@@ -1,4 +1,9 @@
 <?php
+
+//
+// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
+//
+
 function fselect($name,$selected,$options,$extra='')
 {
     $resarr = [];
@@ -24,9 +29,11 @@ function fselect($name,$selected,$options,$extra='')
 function fwaypoint($link,$tasPk,$name,$selected)
 {
     $query="select distinct RW.* from tblTask T, tblRegion R, tblRegionWaypoint RW where T.tasPk=$tasPk and RW.regPk=R.regPk and R.regPk=T.regPk order by RW.rwpName";
-    $result = mysql_query($query) or die('Waypoint select failed: ' . mysql_error());
+//    $result = mysql_query($query) or die('Waypoint select failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task add failed: ' . mysqli_connect_error());
     $waypoints = [];
-    while($row = mysql_fetch_array($result))
+//    while($row = mysql_fetch_array($result))
+    while($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         $rwpPk = $row['rwpPk'];
         $rname = $row['rwpName'];
@@ -35,6 +42,7 @@ function fwaypoint($link,$tasPk,$name,$selected)
     //ksort($waypoints);
     return fselect($name,$selected,$waypoints);
 }
+
 function frow($cellarr, $cdec)
 {
     $count = 0;
@@ -61,6 +69,7 @@ function frow($cellarr, $cdec)
     }
     return implode("</td>\n", $allcols) . "</td>\n";
 }
+
 function ftable($rowarr, $tdec, $rdec, $cdec)
 {
     $allrows = [];
@@ -104,10 +113,12 @@ function ftable($rowarr, $tdec, $rdec, $cdec)
 
     return $result;
 }
+
 function fb($str)
 {
     return "<b>$str</b>";
 }
+
 function fib($type,$name,$value,$size)
 {
     $type = "type=\"$type\"";
@@ -123,6 +134,7 @@ function fib($type,$name,$value,$size)
 
     return "<input $type$name$value$size>";
 }
+
 function fih($name,$value)
 {
     return fib('hidden',$name,$value,1);
@@ -143,6 +155,7 @@ function fbut($type,$name,$value,$text)
 {
     return "<button type=\"$type\" name=\"$name\" value=\"$value\">$text</button>";
 }
+
 function flist($list)
 {
     $result = '';
@@ -152,6 +165,7 @@ function flist($list)
     }
     return $result;
 }
+
 function fol($list)
 {
     $result = "<ol>\n";
@@ -159,6 +173,7 @@ function fol($list)
     $result = $result . "</ol>\n";
     return $result;
 }
+
 function ful($list)
 {
     $result = "<ul>\n";
@@ -166,6 +181,7 @@ function ful($list)
     $result = $result . "</ul>\n";
     return $result;
 }
+
 function fnl($list)
 {
     $result = '';
@@ -175,6 +191,7 @@ function fnl($list)
     }
     return $result;
 }
+
 function ftime($sec)
 {
     if ($sec == '')

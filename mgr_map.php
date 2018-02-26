@@ -2,6 +2,10 @@
 require 'authorisation.php';
 require 'hc2.php';
 
+//
+// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
+//
+
 hchead();
 echo '<link HREF="xcstyle.css" REL="stylesheet" TYPE="text/css">';
 echo '<title>Waypoint Map</title>';
@@ -30,7 +34,8 @@ if ($authorised && array_key_exists('add', $_REQUEST))
     $sql = "insert into tblRegionWaypoint (regPk, rwpName, rwpLatDecimal, rwpLongDecimal, rwpAltitude, rwpDescription) values ($regPk,'$name',$lat,$lon,$alt,'$desc')";
     if ($name != '' && $lat != 0)
     {
-        $result = mysql_query($sql,$link) or die("Failed to insert waypoint ($name): " . mysql_error());
+//        $result = mysql_query($sql,$link) or die("Failed to insert waypoint ($name): " . mysql_error());
+        $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Failed to insert waypoint ($name): ' . mysqli_connect_error());
     }
     else
     {
@@ -44,7 +49,8 @@ if ($authorised && array_key_exists('delete', $_REQUEST))
     if ($delname != '')
     {
         $sql = "delete from tblRegionWaypoint where regPk=$regPk and rwpName='$delname'";
-        $result = mysql_query($sql,$link) or die("Failed to delete waypoint ($delname): " . mysql_error());
+//        $result = mysql_query($sql,$link) or die("Failed to delete waypoint ($delname): " . mysql_error());
+        $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Failed to delete waypoint ($delname): ' . mysqli_connect_error());
 
     }
 }
@@ -60,7 +66,8 @@ if ($authorised && array_key_exists('update', $_REQUEST))
     $sql = "update tblRegionWaypoint set rwpName='$name', rwpLatDecimal=$lat, rwpLongDecimal=$lon, rwpAltitude=$alt, rwpDescription='$desc' where rwpPk=$rwpPk";
     if ($name != '' && $lat != 0)
     {
-        $result = mysql_query($sql,$link) or die("Failed to update waypoint ($name): " . mysql_error());
+//        $result = mysql_query($sql,$link) or die("Failed to update waypoint ($name): " . mysql_error());
+        $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Failed to update waypoint ($name): ' . mysqli_connect_error());
     }
     else
     {
@@ -80,18 +87,23 @@ echo "map.addControl(new GScaleControl());\n";
 echo "var mgr = new GMarkerManager(map);\n";
 
 $sql = "SELECT * FROM tblRegion WHERE regPk=$regPk";
-$result = mysql_query($sql,$link);
-$rcentre = mysql_result($result,0,1);
-$regdesc = mysql_result($result,0,3);
+//$result = mysql_query($sql,$link);
+$result = mysqli_query($link, $sql);
+//$rcentre = mysql_result($result,0,1);
+$rcentre = mysqli_result($result,0,1);
+//$regdesc = mysql_result($result,0,3);
+$regdesc = mysqli_result($result,0,3);
 
 $prefix = 'rwp';
 $sql = "SELECT * FROM tblRegionWaypoint WHERE regPk=$regPk";
-$result = mysql_query($sql,$link);
+//$result = mysql_query($sql,$link);
+$result = mysqli_query($link, $sql);
 
 $first = 0;
 $count = 0;
 $waylist = [];
-while($row = mysql_fetch_array($result))
+//while($row = mysql_fetch_array($result))
+while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {
     $clat = $row["${prefix}LatDecimal"];
     $clong = $row["${prefix}LongDecimal"];

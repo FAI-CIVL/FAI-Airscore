@@ -2,6 +2,10 @@
 require_once 'authorisation.php';
 require_once 'format.php';
 
+//
+// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
+//
+
 // Just get all the submitted variables and store for reference
 $fh = fopen("/tmp/live24", "w");
 foreach ($_REQUEST as $k=>$v)
@@ -21,7 +25,8 @@ $password = reqsval('password');
 $session = reqsval('sessionID');
 
 $sql = "select pilPk from tblPilot where pilLastName='$username' and pilHGFA='$password'";
-$result = mysql_query($sql, $link);
+//$result = mysql_query($sql, $link);
+$result = mysqli_query($link, $sql);
 
 #if ($op eq 'login')
 #{

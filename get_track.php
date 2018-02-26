@@ -1,6 +1,10 @@
 <?php
 require 'authorisation.php';
 
+//
+// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
+//
+
 $usePk = check_auth('system');
 $link = db_connect();
 $trackid = reqival('trackid');
@@ -28,8 +32,10 @@ else
 
 $ret = [];
 
-$result = mysql_query($sql,$link);
-while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+//$result = mysql_query($sql,$link);
+$result = mysqli_query($link, $sql);
+//while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+while ($row = mysqli_fetch_assoc($result))
 {
 
     $bucTime = $row['bucTime'];

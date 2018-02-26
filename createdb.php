@@ -2,6 +2,10 @@
 require 'format.php';
 require 'dbextra.php';
 
+//
+// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
+//
+
 echo "<html><head>";
 echo "<meta http-equiv=\"cache-control\" content=\"no-cache\">";
 echo "<meta http-equiv=\"pragma\" content=\"no-cache\">";
@@ -15,14 +19,16 @@ if (array_key_exists('createdb', $_REQUEST))
     $user = esc($_REQUEST['dbuser']);
     $pass = esc($_REQUEST['dbpassword']);
     $db = esc($_REQUEST['database']);
-    $link = mysql_connect('localhost', $user, $pass)
-        or die('Could not connect: ' . mysql_error());
+//    $link = mysql_connect('localhost', $user, $pass) or die('Could not connect: ' . mysql_error());
+    $link = mysqli_connect('localhost', $user, $pass) or die('Error ' . mysqli_errno($link) . ' Could not connect: ' . mysqli_connect_error());
 
-    if (!mysql_select_db($db))
+//    if (!mysql_select_db($db))
+    if (!mysqli_select_db($link, $db))
     {
-        mysql_query("create database $db")
-            or die("Unable to create $db: " . mysql_error());
-        mysql_select_db($db) or die("Failed to create $db");
+//        mysql_query("create database $db") or die("Unable to create $db: " . mysql_error());
+//        mysql_select_db($db) or die("Failed to create $db");
+        mysqli_query($link, "create database $db") or die('Error ' . mysqli_errno($link) . ' Unable to create $db: ' . mysqli_connect_error());
+        mysqli_select_db($link, $db) or die("Failed to create $db");
     }
 
     # write a config file for later use
@@ -47,7 +53,8 @@ if (array_key_exists('createdb', $_REQUEST))
         if ($n !== false)
         {
             //echo substr($com,$n) . "<br>";
-            $result = mysql_query(substr($com,$n)) or die("Create table failed ($com): " . mysql_error());
+//            $result = mysql_query(substr($com,$n)) or die("Create table failed ($com): " . mysql_error());
+            $result = mysqli_query($link, substr($com,$n)) or die('Error ' . mysqli_errno($link) . ' Create table failed ($com): ' . mysqli_connect_error());
             next;
         }
 
@@ -55,13 +62,15 @@ if (array_key_exists('createdb', $_REQUEST))
         if ($n !== false)
         {
             //echo substr($com,$n) . "<br>";
-            $result = mysql_query(substr($com,$n)) or die("Insert failed ($com): " . mysql_error());
+//            $result = mysql_query(substr($com,$n)) or die("Insert failed ($com): " . mysql_error());
+            $result = mysqli_query($link, substr($com,$n)) or die('Error ' . mysqli_errno($link) . ' Insert failed  ($com): ' . mysqli_connect_error());
         }
     }
 
     echo "Execute xcdb.sql - complete<br>";
     // Closing connection
-    mysql_close($link);
+//    mysql_close($link);
+    mysqli_close($link);
 
     mkdir("./Tracks", 0775);
     mkdir("./Tracks/2013", 0775);

@@ -6,6 +6,11 @@
 <div id="container">
 <div id="vhead"><h1>airScore admin</h1></div>
 <?php
+
+//
+// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
+//
+
 require 'authorisation.php';
 require 'format.php';
 require 'dbextra.php';
@@ -15,8 +20,10 @@ adminbar($comPk);
 $usePk = auth('system');
 $link = db_connect();
 $query = "select comName from tblCompetition where comPk=$comPk";
-$result = mysql_query($query) or die('Task add failed: ' . mysql_error());
-$comName = mysql_result($result,0);
+// $result = mysql_query($query) or die('Task add failed: ' . mysql_error());
+$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task add failed: ' . mysqli_connect_error());
+// $comName = mysql_result($result,0);
+$comName = mysqli_result($result,0);
 
 echo "<p><h2><a href=\"comp_result.php?comPk=$comPk\">Competition - $comName</a></h2></p>";
 
@@ -44,26 +51,33 @@ if (array_key_exists('add', $_REQUEST))
     }
 
     $query = "select * from tblTask where tasDate='$Date' and comPk=$comPk";
-    $result = mysql_query($query) or die('Task check failed: ' . mysql_error());
-    if (mysql_num_rows($result) > 0)
+//    $result = mysql_query($query) or die('Task check failed: ' . mysql_error());
+	$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task check failed: ' . mysqli_connect_error());
+
+//    if (mysql_num_rows($result) > 0)
+	if (mysqli_num_rows($result) > 0)
     {
         echo "Unable to add task with duplicate date: $Date<br>";
         exit(1);
     }
 
     $query = "insert into tblTask (comPk, tasName, tasDate, tasTaskStart, tasFinishTime, tasStartTime, tasStartCloseTime, tasSSInterval, tasTaskType, regPk, tasDeparture, tasArrival) values ($comPk, '$Name', '$Date', '$Date $TaskStart', '$Date $TaskFinish', '$Date $StartOpen', '$Date $StartClose', $Interval, '$TaskType', $regPk, '$depart', '$arrival')";
-    $result = mysql_query($query) or die('Task add failed: ' . mysql_error());
+//    $result = mysql_query($query) or die('Task add failed: ' . mysql_error());
+	$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task add failed: ' . mysqli_connect_error());
 
     // Get the task we just inserted
-    $tasPk = mysql_insert_id();
+//    $tasPk = mysql_insert_id();
+	$tasPk = mysqli_insert_id($link);
 
     // Now check for pre-submitted tracks ..
     // FIX: check for task / track date match!
     // $query = "select traPk from tblComTaskTrack where comPk=$comPk and tasPk is null";
     $query = "select CTT.traPk from tblComTaskTrack CTT, tblTask T, tblTrack TR, tblCompetition C where CTT.comPk=$comPk and C.comPk=CTT.comPk and T.tasPk=$tasPk and CTT.traPk=TR.traPk and CTT.tasPk is null and TR.traStart > date_sub(T.tasStartTime, interval C.comTimeOffset+1 hour) and TR.traStart < date_sub(T.tasFinishTime, interval C.comTimeOffset hour)";
-    $result = mysql_query($query,$link);
-    $tracks = [];
-    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+//    $result = mysql_query($query,$link);
+ 	$result = mysqli_query($link, $query);
+	$tracks = [];
+//	while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+	while ($row = mysqli_fetch_assoc($result))
     {
         $tracks[] = $row['traPk'];
     }
@@ -72,7 +86,8 @@ if (array_key_exists('add', $_REQUEST))
     {
         // Give them a task number 
         $sql = "update tblComTaskTrack set tasPk=$tasPk where comPk=$comPk and traPk in (" . implode(",",$tracks) . ")";
-        $result = mysql_query($sql,$link);
+//        $result = mysql_query($sql,$link);
+	 	$result = mysqli_query($link, $query);
 
         // Now verify the pre-submitted tracks against the task
         foreach ($tracks as $tpk)
@@ -94,16 +109,20 @@ if (array_key_exists('delete', $_REQUEST))
     if ($id > 0)
     {
         $query = "delete from tblTask where tasPk=$id";
-        $result = mysql_query($query) or die('Task delete failed: ' . mysql_error());
+//        $result = mysql_query($query) or die('Task delete failed: ' . mysql_error());
+		$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task delete failed: ' . mysqli_connect_error());
     
         $query = "delete from tblComTaskTrack where tasPk=$id";
-        $result = mysql_query($query) or die('Task CTT delete failed: ' . mysql_error());
+//        $result = mysql_query($query) or die('Task CTT delete failed: ' . mysql_error());
+		$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task CTT deletefailed: ' . mysqli_connect_error());
     
         $query = "delete from tblTaskWaypoint where tasPk=$id";
-        $result = mysql_query($query) or die('Task TW delete failed: ' . mysql_error());
+//        $result = mysql_query($query) or die('Task TW delete failed: ' . mysql_error());
+		$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task TW delete failed: ' . mysqli_connect_error());
     
         $query = "delete from tblTaskResult where tasPk=$id";
-        $result = mysql_query($query) or die('Task TR delete failed: ' . mysql_error());
+//        $result = mysql_query($query) or die('Task TR delete failed: ' . mysql_error());
+		$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task TR delete failed: ' . mysqli_connect_error());
 
         echo "Task Removed\n";
     }
@@ -139,7 +158,9 @@ if (array_key_exists('update', $_REQUEST))
 
     # FIX: re-optimise tracks if change from Free to OLC and vice versa
 
-    $result = mysql_query($query) or die('Competition update failed: ' . mysql_error());
+//    $result = mysql_query($query) or die('Competition update failed: ' . mysql_error());
+	$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Competition update failed: ' . mysqli_connect_error());
+
 }
 
 // Add/update the formula
@@ -173,7 +194,8 @@ if (array_key_exists('upformula', $_REQUEST))
 
     $forPk = insertup($link, 'tblFormula', 'forPk', $clause,  $regarr);
     $sql = "update tblCompetition set forPk=$forPk where comPk=$comPk";
-    $result = mysql_query($sql,$link);
+//    $result = mysql_query($sql,$link);
+	$result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Competition update failed: ' . mysqli_connect_error());
 }
 
 if (array_key_exists('updateadmin', $_REQUEST))
@@ -184,15 +206,18 @@ if (array_key_exists('updateadmin', $_REQUEST))
     if ($adminPk > 0)
     {
         $query = "insert into tblCompAuth (usePk,comPk,useLevel) values ($adminPk,$comPk,'admin')";
-        $result = mysql_query($query) or die('Administrator addition failed: ' . mysql_error());
+//        $result = mysql_query($query) or die('Administrator addition failed: ' . mysql_error());
+        $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Adinistrator addition failed: ' . mysqli_connect_error());
     }
 }
 
 $forPk = 0;
 $ctype = '';
 $sql = "SELECT T.* FROM tblCompetition T where T.comPk=$comPk";
-$result = mysql_query($sql,$link);
-$row = mysql_fetch_array($result);
+// $result = mysql_query($sql,$link);
+$result = mysqli_query($link, $sql);
+// $row = mysql_fetch_array($result);
+$row = mysqli_fetch_array($result, MYSQLI_BOTH);
 if ($row)
 {
     echo "<form action=\"competition.php?comPk=$comPk\" name=\"comedit\" method=\"post\">";
@@ -233,9 +258,11 @@ if ($row)
 
 // Administrators 
 $sql = "select U.*, A.* FROM tblCompAuth A, tblUser U where U.usePk=A.usePk and A.comPk=$comPk";
-$result = mysql_query($sql,$link);
+// $result = mysql_query($sql,$link);
+$result = mysqli_query($link, $sql);
 $admin = [];
-while ($row = mysql_fetch_array($result))
+// while ($row = mysql_fetch_array($result))
+while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {
     $admin[] = $row['useLogin'];
 }
@@ -245,8 +272,10 @@ echo "<form action=\"competition.php?comPk=$comPk\" name=\"adminedit\" method=\"
 echo 'Add Administrator: ';
 $sql = "select U.usePk as user, U.*, A.* FROM tblUser U left outer join tblCompAuth A on A.usePk=U.usePk where A.comPk is null or A.comPk<>$comPk group by U.useLogin order by U.useLogin";
 $admin = [];
-$result = mysql_query($sql,$link);
-while ($row = mysql_fetch_array($result))
+//$result = mysql_query($sql,$link);
+$result = mysqli_query($link, $sql);
+// while ($row = mysql_fetch_array($result))
+while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {
     $admin[$row['useLogin']] = intval($row['user']);
 }
@@ -262,8 +291,11 @@ $has_formula = array('RACE', 'Team-RACE', 'Route', 'RACE-handicap');
 if (in_array($ctype, $has_formula))
 {
     $sql = "SELECT F.* FROM tblFormula F where F.comPk=$comPk";
-    $result = mysql_query($sql,$link);
-    $row = mysql_fetch_array($result);
+	// $result = mysql_query($sql,$link);
+	$result = mysqli_query($link, $sql);
+	// $row = mysql_fetch_array($result);
+	$row = mysqli_fetch_array($result, MYSQLI_BOTH);
+//	print_r($row);
     if ($row)
     {
         $class = $row['forClass'];
@@ -310,9 +342,10 @@ echo "<hr><h3>Tasks</h3><form action=\"competition.php?comPk=$comPk\" name=\"tas
 echo "<ol>";
 $count = 1;
 $sql = "SELECT T.*, traPk as Tadded FROM tblTask T left outer join tblComTaskTrack CTT on CTT.tasPk=T.tasPk where T.comPk=$comPk group by T.tasPk order by T.tasDate";
-$result = mysql_query($sql,$link);
-
-while($row = mysql_fetch_array($result))
+// $result = mysql_query($sql,$link);
+$result = mysqli_query($link, $sql);
+// while ($row = mysql_fetch_array($result))
+while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {
     $tasPk = $row['tasPk'];
     $tasDate = $row['tasDate'];
@@ -342,9 +375,11 @@ while($row = mysql_fetch_array($result))
 echo "</ol>";
 
 $sql = "SELECT * FROM tblRegion R";
-$result = mysql_query($sql,$link);
+// $result = mysql_query($sql,$link);
 $regions = [];
-while ($row = mysql_fetch_array($result))
+$result = mysqli_query($link, $sql);
+// while ($row = mysql_fetch_array($result))
+while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {
     $regPk = $row['regPk'];
     $regDesc = $row['regDescription'];
@@ -352,11 +387,14 @@ while ($row = mysql_fetch_array($result))
 }
 
 $sql = "SELECT T.* FROM tblCompetition C, tblTask T where T.comPk=C.comPk and C.comPk=$comPk order by T.tasPk limit 1";
-$result = mysql_query($sql,$link);
-$defregion = '';
-if (mysql_num_rows($result) > 0)
+// $result = mysql_query($sql,$link);
+$result = mysqli_query($link, $sql);
+// if (mysql_num_rows($result) > 0)
+$defregion = array();
+if (mysqli_num_rows($result) > 0)
 {
-    $row = mysql_fetch_array($result);
+//    $row = mysql_fetch_array($result);
+	$row = mysqli_fetch_array($result, MYSQLI_BOTH);
     $defregion = $row['regPk'];
 }
 
@@ -376,7 +414,7 @@ $out = ftable(
         array('Depart Bonus:', fselect('departure', $depdef, array('on', 'off', 'leadout', 'kmbonus')), 'Arrival Bonus:', fselect('arrival', 'on', array('on', 'off')))
     ), '', '', '');
 
-echo $out;
+print_r($out);
 echo "<input type=\"submit\" name=\"add\" value=\"Add Task\">";
 
 echo "</form>";

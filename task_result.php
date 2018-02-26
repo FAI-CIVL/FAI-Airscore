@@ -4,6 +4,10 @@ require 'hc.php';
 require 'format.php';
 require 'xcdb.php';
 
+//
+// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
+//
+
 $comPk = intval($_REQUEST['comPk']);
 
 $usePk = check_auth('system');
@@ -106,9 +110,11 @@ if (array_key_exists('tarup', $_REQUEST))
     }
 
     $query = "update tblTaskResult set tarDistance=$flown, tarPenalty=$penalty, tarResultType='$resulttype' where tarPk=$tarPk";
-    $result = mysql_query($query) or die('Task Result update failed: ' . mysql_error());
+    // $result = mysql_query($query) or die('Task Result update failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task Result update failed: ' . mysqli_connect_error());
     $query = "update tblTrack set traGlider='$glider', traDHV='$dhv' where traPk=$traPk";
-    $result = mysql_query($query) or die('Glider update failed: ' . mysql_error());
+    // $result = mysql_query($query) or die('Glider update failed: ' . mysql_error());
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Glider update failed: ' . mysqli_connect_error());
     # recompute every time?
     $out = '';
     $retv = 0;
@@ -121,10 +127,12 @@ if (array_key_exists('addflight', $_REQUEST))
     if ($fai > 0)
     {
         $query = "select pilPk from tblPilot where pilHGFA=$fai";
-        $result = mysql_query($query) or die('Query pilot (fai) failed: ' . mysql_error());
+        // $result = mysql_query($query) or die('Query pilot (fai) failed: ' . mysql_error());
+        $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query pilot (fai) failed: ' . mysqli_connect_error());
     }
 
-    if (mysql_num_rows($result) == 0)
+//    if (mysql_num_rows($result) == 0)
+    if (mysqli_num_rows($result) == 0)
     {
         $fai = addslashes($_REQUEST['fai']);
         $query = "select P.pilPk from tblComTaskTrack T, tblTrack TR, tblPilot P 
@@ -132,12 +140,15 @@ if (array_key_exists('addflight', $_REQUEST))
                         and T.traPk=TR.traPk 
                         and TR.pilPk=P.pilPk 
                         and P.pilLastName='$fai'";
-        $result = mysql_query($query) or die('Query pilot (name) failed: ' . mysql_error());
+        // $result = mysql_query($query) or die('Query pilot (name) failed: ' . mysql_error());
+        $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query pilot (name) failed: ' . mysqli_connect_error());
     }
 
-    if (mysql_num_rows($result) > 0)
+//    if (mysql_num_rows($result) > 0)
+    if (mysqli_num_rows($result) > 0)
     {
-        $pilPk = mysql_result($result,0,0);
+//        $pilPk = mysql_result($result,0,0);
+        $pilPk = mysqli_result($result,0,0);
         $flown = floatval($_REQUEST["flown"]) * 1000;
         $penalty = intval($_REQUEST["penalty"]);
         $glider = addslashes($_REQUEST["glider"]);
@@ -150,20 +161,25 @@ if (array_key_exists('addflight', $_REQUEST))
         }
 
         $query = "select tasDate from tblTask where tasPk=$tasPk";
-        $result = mysql_query($query) or die('Task date failed: ' . mysql_error());
-        $tasDate=mysql_result($result,0);
+        // $result = mysql_query($query) or die('Task date failed: ' . mysql_error());
+        $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task date failed: ' . mysqli_connect_error());
+//        $tasDate=mysql_result($result,0);
+        $tasDate=mysqli_result($result,0);
 
         $query = "insert into tblTrack (pilPk,traGlider,traDHV,traDate,traStart,traLength) values ($pilPk,'$glider','$dhv','$tasDate','$tasDate',$flown)";
-        $result = mysql_query($query) or die('Track Insert result failed: ' . mysql_error());
+        // $result = mysql_query($query) or die('Track Insert result failed: ' . mysql_error());
+        $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task insert result failed: ' . mysqli_connect_error());
 
-        $maxPk = mysql_insert_id();
+//        $maxPk = mysql_insert_id();
+        $maxPk = mysqli_insert_id($link);
 
         #$query = "select max(traPk) from tblTrack";
-        #$result = mysql_query($query) or die('Max track failed: ' . mysql_error());
+        #// $result = mysql_query($query) or die('Max track failed: ' . mysql_error());
         #$maxPk=mysql_result($result,0);
 
         $query = "insert into tblTaskResult (tasPk,traPk,tarDistance,tarPenalty,tarResultType) values ($tasPk,$maxPk,$flown,$penalty,'$resulttype')";
-        $result = mysql_query($query) or die('Insert result failed: ' . mysql_error());
+        // $result = mysql_query($query) or die('Insert result failed: ' . mysql_error());
+        $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Insert result failed: ' . mysqli_connect_error());
 
         $out = '';
         $retv = 0;
@@ -360,12 +376,14 @@ $trtab[] = $header;
 $count = 1;
 
 $sql = "select TR.*, T.*, P.* from tblTaskResult TR, tblTrack T, tblPilot P where TR.tasPk=$tasPk $fdhv and T.traPk=TR.traPk and P.pilPk=T.pilPk order by TR.tarScore desc, P.pilFirstName";
-$result = mysql_query($sql,$link) or die('Task Result selection failed: ' . mysql_error());
+// $result = mysql_query($sql,$link) or die('Task Result selection failed: ' . mysql_error());
+$result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task result selection failed: ' . mysqli_connect_error());
 $lastscore = 0;
 $hh = 0;
 $mm = 0;
 $ss = 0;
-while ($row = mysql_fetch_array($result))
+// while ($row = mysql_fetch_array($result))
+while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {
     $name = $row['pilFirstName'] . ' ' . $row['pilLastName'];
     $nation = $row['pilNationCode'];
