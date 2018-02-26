@@ -1,9 +1,16 @@
 <?php
 
-function overall_handicap($comPk, $how, $param, $cls)
+require_once 'authorisation.php';
+require_once 'format.php';
+require_once 'olc.php';
+require_once 'team.php';
+require 'hc.php';
+
 //
 // All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
 //
+
+function overall_handicap($link, $comPk, $how, $param, $cls)
 {
     $sql = "select T.tasPk, max(TR.tarScore) as maxScore from tblTask T, tblTaskResult TR where T.tasPk=TR.tasPk and T.comPk=$comPk group by T.tasPk";
 //    $result = mysql_query($sql) or die('Handicap maxscore failed: ' . mysql_error());
@@ -59,15 +66,18 @@ function overall_handicap($comPk, $how, $param, $cls)
     return filter_results($comPk, $how, $param, $results);
 }
 
-function comp_result($comPk, $how, $param, $cls, $tasktot)
+function comp_result($link, $comPk, $how, $param, $cls, $tasktot)
 {
-    $sql = "select TK.*,TR.*,P.*,T.traGlider from tblTaskResult TR, tblTask TK, tblTrack T, tblPilot P, tblCompetition C where C.comPk=$comPk and TK.comPk=C.comPk and TK.tasPk=TR.tasPk and TR.traPk=T.traPk and T.traPk=TR.traPk and P.pilPk=T.pilPk $cls order by P.pilPk, TK.tasPk";
-    $result = mysql_query($sql) or die('Task result query failed: ' . mysql_error());
+    # $sql = "select TK.*,TR.*,P.*,T.traGlider from tblTaskResult TR, tblTask TK, tblTrack T, tblPilot P, tblCompetition C where C.comPk=$comPk and TK.comPk=C.comPk and TK.tasPk=TR.tasPk and TR.traPk=T.traPk and T.traPk=TR.traPk and P.pilPk=T.pilPk $cls order by P.pilPk, TK.tasPk";
+    # New sql adding MaxScore for PWC FTV Calc
+    $sql = "select TK.*,TR.*,(SELECT MAX(tblTaskResult.tarScore) FROM tblTaskResult WHERE tblTaskResult.tasPk = TK.tasPk) AS maxScore,F.forClass,F.forVersion,P.*,T.traGlider from tblTaskResult TR, tblTask TK, tblTrack T, tblPilot P, tblFormula F, tblCompetition C where C.comPk=$comPk and TK.comPk=C.comPk and TK.tasPk=TR.tasPk and TR.traPk=T.traPk and T.traPk=TR.traPk and P.pilPk=T.pilPk and F.comPk=C.comPk $cls order by P.pilPk, TK.tasPk";
+//    $result = mysql_query($sql) or die('Task result query failed: ' . mysql_error());
+    $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task result query failed: ' . mysqli_connect_error());
     $results = [];
-    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+//    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+    while ($row = mysqli_fetch_assoc($result))
     {
         $score = round($row['tarScore']);
-        $validity = $row['tasQuality'] * 1000;
         $pilPk = $row['pilPk'];
         $tasName = $row['tasName'];
         $nation = $row['pilNationCode'];
@@ -75,6 +85,17 @@ function comp_result($comPk, $how, $param, $cls, $tasktot)
         $civlnum = $row['pilCIVL'];
         $glider = $row['traGlider'];
         $gender = $row['pilSex'];
+        $maxScore = $row['maxScore'];
+        $formula = $row['forClass'];
+        if ( $formula = 'pwc' ) # calculates FTV parameters based on winner score (PWC)
+        {
+        	$validity = $row['maxScore'];
+        }
+        else
+        {
+        	$validity = $row['tasQuality'] * 1000;
+        }
+
     
         if (!array_key_exists($pilPk,$results) || !$results[$pilPk])
         {
@@ -108,7 +129,7 @@ function comp_result($comPk, $how, $param, $cls, $tasktot)
         $param = 1000;
     }
 
-    return filter_results($comPk, $how, $param, $results);
+    return filter_results($comPk, $how, $param, $results); # Comp, score Type, score param (FTV perc), results array
 }
 
 function filter_results($comPk, $how, $param, $results)
@@ -157,7 +178,7 @@ function filter_results($comPk, $how, $param, $results)
                 }
 
                 //echo "pil=$pil perf=$perf valid=", $taskresult['validity'], " score=", $taskresult['score'], "<br>";
-                if ($pilvalid < $param)
+                if ($pilvalid < $param) # if I still have available validity
                 {
                     $gap = $param - $pilvalid;
                     $perc = 0;
@@ -170,8 +191,9 @@ function filter_results($comPk, $how, $param, $results)
                         $perc = 1;
                     }
                     $pilvalid = $pilvalid + $taskresult['validity'] * $perc;
-                    $pilscore = $pilscore + $taskresult['score'] * $perc;
+                    $pilscore = $pilscore + round(($taskresult['score'] * $perc),0);
                     $arr[$perf]['perc'] = $perc * 100;
+                    # echo "valid = ".$pilvalid.", score = ".$pilscore.", perc = ".$perc;
                 }
             }   
         }
@@ -196,11 +218,12 @@ function filter_results($comPk, $how, $param, $results)
     return $sorted;
 }
 
-require_once 'authorisation.php';
-require_once 'format.php';
-require_once 'olc.php';
-require_once 'team.php';
-require 'hc.php';
+// Main Code Begins HERE //
+
+# Initializing variables to avoid esceptions
+# Probabbly to remove when debugged and fully checked
+
+$overstr = '';
 
 $comPk = intval($_REQUEST['comPk']);
 $start = reqival('start');
@@ -209,6 +232,7 @@ if ($start < 0)
 {
     $start = 0;
 }
+
 $link = db_connect();
 $title = 'highcloud.net';
 
@@ -320,22 +344,38 @@ if ($comOverall == 'all')
     $comOverallParam = $tasTotal;
     $overstr = "All rounds";
 }
-else if ($comOverall == 'round')
+elseif ($comOverall == 'round')
 {
     $overstr = "$comOverallParam rounds";
 }
-else if ($comOverall == 'round-perc')
+elseif ($comOverall == 'round-perc')
 {
     $comOverallParam = round($tasTotal * $comOverallParam / 100, 0);
     $overstr = "$comOverallParam rounds";
 }
-else if ($comOverall == 'ftv')
+elseif ($comOverall == 'ftv')
 {
-    $sql = "select sum(tasQuality) as totValidity from tblTask where comPk=$comPk";
-    $result = mysql_query($sql) or die('Task validity query failed: ' . mysql_error());
-    $totalvalidity = round(mysql_result($result, 0, 0) * $comOverallParam * 10,0);
-    $overstr = "FTV $comOverallParam% ($totalvalidity pts)";
-    $comOverallParam = $totalvalidity;
+    if ( strstr($comFormula, 'pwc') ) # calculates FTV parameters based on winner score (PWC)
+    {
+    	$sql = "SELECT DISTINCT T.tasPk, (SELECT MAX(TR.tarScore) FROM tblTaskResult TR WHERE TR.tasPk=T.tasPk) AS maxScore FROM tblTask T, tblTaskResult TR WHERE T.comPk = $comPk";
+    	$result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task validity query failed: ' . mysqli_connect_error());
+    	$totalvalidity = 0;
+    	while ( $rows = mysqli_fetch_assoc($result) )
+    	{
+    		$totalvalidity += $rows{'maxScore'};
+    	}
+    	$totalvalidity = round($totalvalidity * $comOverallParam / 100, 0); # gives total amount of available points
+    	$overstr = "FTV $comOverallParam% ($totalvalidity pts)";
+    	$comOverallParam = $totalvalidity;
+    }
+    else # calculates FTV parameters based on task validity (FAI)
+    {
+    	$sql = "select sum(tasQuality) as totValidity from tblTask where comPk=$comPk";
+    	$result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task validity query failed: ' . mysqli_connect_error());
+    	$totalvalidity = round(mysqli_result($result, 0, 0) * $comOverallParam * 10,0);
+    	$overstr = "FTV $comOverallParam% ($totalvalidity pts)";
+    	$comOverallParam = $totalvalidity;
+    }
 }
 
 //echo ftable($detarr, '', '', '');
@@ -429,7 +469,7 @@ else if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'Route' ||
 //    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     while ($row = mysqli_fetch_assoc($result))
     {
-        $alltasks[] = $row['tasName'];
+        $alltasks[] = isset($row['tasName']) ? $row['tasName'] : '';
         $taskinfo[] = $row;
     }
 
@@ -440,20 +480,20 @@ else if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'Route' ||
     }
     else if ($class == "9")
     {
-        $sorted = overall_handicap($comPk, $comOverall, $comOverallParam, $fdhv);
+        $sorted = overall_handicap($link, $comPk, $comOverall, $comOverallParam, $fdhv);
         $subtask = '';
     }
     else
     {
-        $sorted = comp_result($comPk, $comOverall, $comOverallParam, $fdhv, $tasTotal);
+        $sorted = comp_result($link, $comPk, $comOverall, $comOverallParam, $fdhv, $tasTotal);
         $subtask = '';
     }
 
     foreach ($taskinfo as $row)
     {
-        $tasName = $row['tasName'];
+        $tasName = isset($row['tasName']) ? $row['tasName'] : '';
         $tasPk = $row['tasPk'];
-        $tasDate = substr($row['tasDate'],0,10);
+        $tasDate = substr(isset($row['tasDate']) ? $row['tasDate'] : '',0,10);
         $hdr[] = fb("<a href=\"${subtask}task_result.php?comPk=$comPk&tasPk=$tasPk\">$tasName</a>");
     }
     foreach ($taskinfo as $row)
@@ -517,7 +557,7 @@ else if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'Route' ||
             if (array_key_exists($name, $arr))
             {
                 $score = $arr[$name]['score'];
-                $perc = round($arr[$name]['perc'], 0);
+                $perc = round(isset($arr[$name]['perc']) ? $arr[$name]['perc'] : 0, 2); # I guess we need this because probably perc was not inizialized 0
             }
             if (!$score)
             {
@@ -527,9 +567,10 @@ else if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'Route' ||
             {
                 $nxt[] = $score;
             }
-            else if ($perc > 0)
+            elseif ($perc > 0)
             {
-                $nxt[] = "$score $perc%";
+                # $nxt[] = "$score $perc%";
+                $nxt[] = round($score*$perc/100)."/<del>".$score."</del>"; # I used 5 digits for perc to have the exact sum of scores as total result. Should work but if does not, here is the problem
             }
             else
             {
@@ -572,7 +613,7 @@ else
 
     $count = $start+1;
     $sorted = array_slice($sorted,$start,$top+2);
-    $count = display_olc_result($comPk,$rtable,$sorted,$top,$count);
+    $count = display_olc_result($comPk,$rtable,$sorted,$top,$count,$start);
 
     if ($count == 1)
     {
@@ -593,6 +634,8 @@ else
 }
 
 //echo "</table>";
+
+// FTV INFO
 if ($comOverall == 'ftv')
 {
     echo "1. Click <a href=\"ftv.php?comPk=$comPk\">here</a> for an explanation of FTV<br>";
@@ -611,6 +654,7 @@ if ($embed == '')
         array("<i>$comDateFrom</i>", "<i>$comDateTo</i>")
     );
 
+	// Right Info Column
     if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'RACE-handicap')
     {
         $scarr = [];

@@ -4,6 +4,8 @@ require 'hc.php';
 require 'format.php';
 
 $link = db_connect();
+$comPk = intval($_REQUEST['comPk']);
+
 hcheader("Scoring - Fixed Total Validity", 0, "");
 echo "<div id=\"content\">";
 echo "<div id=\"text\">";
@@ -45,7 +47,7 @@ hcregion($link);
 hcopencomps($link);
 hcclosedcomps($link);
 echo "</div>";
-hcimage($link,$comp);
+hcimage($link,$comPk);
 hcfooter();
 ?>
 </div>
