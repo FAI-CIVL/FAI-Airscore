@@ -316,7 +316,7 @@ sub made_entry_waypoint
 
     if ($wpt->{'shape'} eq 'circle')
     {
-        if ($dist < ($wpt->{'radius'}+$wpt->{'margin'}))
+        if ($dist < ($wpt->{'radius'}+$wpt->{'margin'})) 
         {
             $made = 1;
         }
@@ -471,6 +471,7 @@ sub validate_task
     my $coords = $flight->{'coords'};
     my $awards = $flight->{'awards'};
     my $allpoints = scalar @$waypoints;
+    # my $margin = $formula->{'margin'}/100; # Radius Tolerance from Formula, I think we don't need as we use wpt->{'margin'}
 
     # Next waypoint
     $wpt = $waypoints->[$wcount];
@@ -668,12 +669,13 @@ sub validate_task
         {
             $wasinstart = $wcount;
         }
-        if ($dist < $wpt->{'radius'} and ($wpt->{'type'} eq 'speed'))
+        # Start Check
+        if ( ($wpt->{'type'} eq 'speed') and ( ( $dist < ($wpt->{'radius'} + $wpt->{'margin'}) and $wpt->{'how'} eq 'exit' ) or ($dist < ($wpt->{'radius'} - $wpt->{'margin'}) and $wpt->{'how'} eq 'entry') ))		# Start Pilon : this could be a Exit point, I think inverted tolerances in this case should work correctly
         {
             #print "wasinSS=$wcount\n";
             $wasinSS = $wcount;
         }
-        if ($dist < ($wpt->{'radius'}+$wpt->{'margin'}) || $awarded)
+        if ($dist < ($wpt->{'radius'} + $wpt->{'margin'}) || $awarded)
         {
             #print "lastin=$wcount\n";
             $lastin = $wcount;
@@ -781,10 +783,10 @@ sub validate_task
                 #print "new closest $closestwpt:$closest\n";
             }
         } # entry
-        else
+        else 
         {
             # Handle exit cylinder
-            if ((($dist >= $wpt->{'radius'}) || $awarded == 1) and ($lastin == $wcount))
+            if ((($dist >= ($wpt->{'radius'} - $wpt->{'margin'})) || $awarded == 1) and ($lastin == $wcount)) # added margin
             {
                 #print "exited waypoint ($wasinstart,$wasinSS) ", $wpt->{'number'}, "(", $wpt->{'type'}, ") radius ", $wpt->{'radius'}, "\n";
                 if ((defined($wasinstart) and $wpt->{'type'} eq 'start')

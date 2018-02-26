@@ -188,6 +188,7 @@ if (array_key_exists('upformula', $_REQUEST))
         $regarr['forWeightSpeed'] = reqfval('weightspeed');
     }
     $regarr['forStoppedGlideBonus'] = reqfval('glidebonus');
+    $regarr['forMargin'] = reqfval('margin');
 
     //$forPk = reqival('forPk');
     $clause = "comPk=$comPk";
@@ -315,6 +316,7 @@ if (in_array($ctype, $has_formula))
         $weightspeed = $row['forWeightSpeed'];
         $glidebonus = $row['forStoppedGlideBonus'];
         $arrival = $row['forArrival'];
+        $margin = $row['forMargin']; # Radius tolerance
     }
     echo "<hr><h3>RACE Formula</h3>";
     echo "<form action=\"competition.php?comPk=$comPk\" name=\"formulaadmin\" method=\"post\">";
@@ -325,7 +327,7 @@ if (in_array($ctype, $has_formula))
           array('Nom Time (min):', fin('nomtime', $nomtime, 4), 'Goal/SS Penalty (0-1):', fin('sspenalty', $sspenalty, 4), 'Nom Goal (%):', fin('nomgoal',$nomgoal,4)),
           array('Linear Dist (0-1):', fin('lineardist', $lineardist, 4),'Diff Dist (km):', fin('diffdist', $diffdist, 4), 'Diff Ramp:', fselect('difframp', $difframp, array('fixed', 'flexible')), 'Diff Calc:', fselect('diffcalc', $diffcalc, array('all', 'lo'))),
           array('Speed weighting:', fin('weightspeed', $weightspeed, 4), 'Start weighting:', fin('weightstart', $weightstart, 4), 'Arrival weighting:', fin('weightarrival', $weightarrival, 4), 'Method:', fselect('arrivalmethod', $arrival, [ 'place', 'timed' ])),
-          array('Stopped Glide Bonus:', fin('glidebonus', $glidebonus, 4))
+          array('Stopped Glide Bonus:', fin('glidebonus', $glidebonus, 4), 'Radius Margin %:', fin('margin', $margin, 4))
         ), '', '', ''
       );
     echo $out;
@@ -362,13 +364,14 @@ while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     $tasSSClose = $row['tasSSClose'];
     $tasESClose = $row['tasESClose'];
     $tasDistFlown = $row['tasTotalDistanceFlown'];
+    $tasShortRoute = $row['tasShortRouteDistance'];
 
     echo "<li>";
     if ($row['Tadded'] < 1)
     {
         echo "<button type=\"submit\" name=\"delete\" value=\"$tasPk\">del</button>";
     }
-    echo "<a href=\"task.php?comPk=$comPk&tasPk=$tasPk\">$tasName: " . round($tasDistance/1000,1) . " kms on " . $tasDate . " (" . substr($tasTaskStart,11) . " - " . substr($tasFinishTime,11) . ")</a></li>\n";
+    echo "<a href=\"task.php?comPk=$comPk&tasPk=$tasPk\">$tasName: " . round($tasShortRoute/1000,1) . " kms on " . $tasDate . " (" . substr($tasTaskStart,11) . " - " . substr($tasFinishTime,11) . ")</a></li>\n";
 
     $count++;
 }
