@@ -1,25 +1,12 @@
-<html>
-<head>
-<link HREF="xcstyle.css" REL="stylesheet" TYPE="text/css">
-</head>
-<body>
-<div id="container">
-<div id="vhead"><h1>airScore admin</h1></div>
 <?php
 require 'authorisation.php';
 require 'format.php';
 require 'dbextra.php';
-adminbar(0);
-?>
-<p><h2>Competition Administration</h2></p>
-<?php
-
-//
-// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
-//
+require 'template.php';
 
 $usePk=auth('system');
 $link = db_connect();
+$file = __FILE__;	
 
 if (reqexists('add'))
 {
@@ -40,9 +27,7 @@ if (reqexists('add'))
     {
         $query = "insert into tblCompetition (comName, comLocation, comDateFrom, comDateTo, comMeetDirName, forPk, comType, comCode, comTimeOffset) values ('$comname','$location', '$datefrom', '$dateto', '$director', 0, '$comptype', '$comcode', $timeoffset)";
     
-//        $result = mysql_query($query) or die('Competition addition failed: ' . mysql_error());
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Competition addition failed: ' . mysqli_connect_error());
-//        $comPk = mysql_insert_id();
 		$comPk = mysqli_insert_id($link);
 
         $regarr = [];
@@ -69,11 +54,9 @@ if (reqexists('add'))
         $forPk = insertup($link, 'tblFormula', 'forPk', $clause,  $regarr);
 
         $query = "update tblCompetition set forPk=$forPk where $clause";
-//        $result = mysql_query($query) or die('Competition formula update failed: ' . mysql_error());
 		$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Competition formula update failed: ' . mysqli_connect_error());
 		    
         $query = "insert into tblCompAuth values ($usePk, $comPk, 'admin')";
-//        $result = mysql_query($query) or die('CompAuth addition failed: ' . mysql_error());
 		$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' CompAuth addition failed: ' . mysqli_connect_error());
     }
 }
@@ -95,14 +78,11 @@ if (reqexists('update'))
     check_admin('admin',$usePk,$comPk);
 
     $query = "update tblCompetition set comName='$comname', comLocation='$comLocation', comDateFrom='$datefrom', comDateTo='$dateto', comDirector='$director', forPk='$formula', comSanction='$sanction', comType='$comptype', comCode='$comcode',  comTimeOffset=$timeoffset where comPk=$comPk";
-//    $result = mysql_query($query) or die('Competition update failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Competition update failed: ' . mysqli_connect_error());
 }
 
 $comparr = [];
 $comparr[] = array ('', fb('Date Range'), fb('Name'), fb('Location'), fb('Director') );
-
-echo "<form action=\"comp_admin.php\" name=\"compadmin\" method=\"post\">";
 $count = 1;
 
 if (is_admin('admin', $usePk, -1))
@@ -113,9 +93,7 @@ else
 {
     $sql = "SELECT C.* FROM tblCompAuth A, tblCompetition C where (A.comPk=C.comPk and A.usePk=$usePk) or (C.comName like '%test%') group by C.comName order by C.comName like '%test%', C.comDateTo desc";
 }
-// $result = mysql_query($sql,$link);
 $result = mysqli_query($link, $sql);
-// while($row = mysql_fetch_array($result, MYSQL_ASSOC))
 while($row = mysqli_fetch_assoc($result))
 {
     $id = $row['comPk'];
@@ -125,6 +103,8 @@ while($row = mysqli_fetch_assoc($result))
     $today = time();
     $fromdate = strtotime($datefrom);
     $todate = strtotime($dateto) + 24*3600;
+    
+    # Makes dates Bold if Comp is Now
     if ($today>=$fromdate && $today<=$todate)
     {
         $datestr = fb("$datefrom - $dateto");
@@ -133,12 +113,19 @@ while($row = mysqli_fetch_assoc($result))
     {
         $datestr = "$datefrom - $dateto";
     }
+    
     $location = $row['comLocation'];
     $director = $row['comMeetDirName'];
-    $comparr[] = array("$count.", $datestr, "<a href=\"competition.php?comPk=$id\">" . $name . "</a>", $location, $director);
+    $comparr[] = array("$count.", $datestr, "<a href=\"competition_admin.php?comPk=$id\">" . $name . "</a>", $location, $director);
     $count++;
 }
-echo ftable($comparr, "border=\"0\" cellpadding=\"2\" cellspacing=\"0\" alternate-colours=\"yes\" valign=\"top\" align=\"left\"", array('class="d"', 'class="l"'), '');
+
+//initializing template header
+tpadmin($link,$file,$row);
+
+echo "<form action=\"comp_admin.php\" name=\"compadmin\" method=\"post\">";
+
+echo ftable($comparr, "", array('class="d"', 'class="l"'), '');
 
 echo "<br><hr>";
 echo "<h2>Add Competition</h2>";
@@ -153,8 +140,7 @@ echo ftable(array(
 echo fis('add', 'Create Competition', '');
 
 echo "</form>";
-?>
-</div>
-</body>
-</html>
 
+tpfooter($file);
+
+?>

@@ -4,10 +4,6 @@ require_once 'format.php';
 require_once 'dbextra.php';
 require 'hc.php';
 
-//
-// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
-//
-
 function hcincludedcomps($link,$ladPk)
 {
     echo "<h1><span>Included Competitions</span></h1>";
@@ -19,10 +15,8 @@ function hcincludedcomps($link,$ladPk)
     {
         $sql = "select distinct C.* from tblLadderComp LC, tblCompetition C where LC.comPk=C.comPk and LC.lcValue > 0 order by comDateTo desc";
     }
-//    $result = mysql_query($sql,$link);
     $result = mysqli_query($link, $sql);
     $comps = [];
-//    while($row = mysql_fetch_array($result))
     while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         // FIX: if not finished & no tracks then submit_track page ..
@@ -96,9 +90,7 @@ function ladder_result($ladPk, $ladder, $restrict)
             from tblTaskResult T, tblTrack TL, tblPilot P
             where T.traPk=TL.traPk and TL.pilPk=P.pilPk and P.pilNationCode='$nat'
             group by tasPk";
-//    $result = mysql_query($sql) or die('Top National Query: ' . mysql_error());
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Top National Query: ' . mysqli_connect_error());
-//    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     while ($row = mysqli_fetch_assoc($result))
     {
         $topnat[$row['tasPk']] = $row['topNat'];
@@ -125,10 +117,8 @@ WHERE LC.ladPk=$ladPk and TK.tasDate > '$start' and TK.tasDate < '$end'
     and TP.pilNationCode=L.ladNationCode $restrict
     order by TP.pilPk, C.comPk, (TR.tarScore * LC.lcValue * TK.tasQuality) desc";
 
-//    $result = mysql_query($sql) or die('Ladder query failed: ' . mysql_error());
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Ladder query failed: ' . mysqli_connect_error());
     $results = [];
-//    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     while ($row = mysqli_fetch_assoc($result))
     {
         add_result($results, $row, $topnat[$row['tasPk']], $how);
@@ -141,9 +131,7 @@ WHERE LC.ladPk=$ladPk and TK.tasDate > '$start' and TK.tasDate < '$end'
         join tblTask TK on C.comPk=TK.comPk
         WHERE LC.ladPk=$ladPk and TK.tasDate > '$start' and TK.tasDate < '$end'";
 
-//    $result = mysql_query($sql) or die('Total quality query failed: ' . mysql_error());
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Total quality query failed: ' . mysqli_connect_error());
-//    $param = mysql_result($result,0,0) * $ladParam / 100 ;
     $param = mysqli_result($result,0,0) * $ladParam / 100 ;
 
     // Add external task results (to 1/3 of validity)
@@ -163,9 +151,7 @@ WHERE LC.ladPk=$ladPk and TK.tasDate > '$start' and TK.tasDate < '$end'
 WHERE TK.comDateTo > '$start' and TK.comDateTo < '$end'
         $restrict
         order by TP.pilPk, TK.extPk, (ER.etrScore * TK.lcValue * TK.tasQuality) desc";
-//        $result = mysql_query($sql) or die('Ladder query failed: ' . mysql_error());
         $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Ladder query failed: ' . mysqli_connect_error());
-//        while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
         while ($row = mysqli_fetch_assoc($result))
         {
             $res = add_result($results, $row, $row['tasTopScore'], $how);
@@ -487,7 +473,6 @@ if (reqexists('addladder'))
     $param = reqival('param');
 
     $query = "insert into tblLadder (ladName, ladNationCode, ladStart, ladEnd, ladHow, ladParam) value ('$lname','$nation', '$start', '$end', '$method', $param)";
-//    $result = mysql_query($query) or die('Ladder insert failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Ladder insert failed: ' . mysqli_connect_error());
 }
 
@@ -504,7 +489,6 @@ if (reqexists('addladcomp'))
     else
     {
         $query = "insert into tblLadderComp (lcValue, ladPk, comPk) value ($sanction, $ladPk, $comPk)";
-//        $result = mysql_query($query) or die('LadderComp insert failed: ' . mysql_error());
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' LadderComp insert failed: ' . mysqli_connect_error());
     }
 }
@@ -540,9 +524,7 @@ $all_ladders = [];
 if ($ladPk < 1)
 {
     $query = "SELECT L.* from tblLadder L order by ladEnd desc";
-//    $result = mysql_query($query) or die('Ladder query failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Ladder query failed: ' . mysqli_connect_error());
-//    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     while ($row = mysqli_fetch_assoc($result))
     {
         $all_ladders[] = $row;
@@ -552,9 +534,7 @@ if ($ladPk < 1)
 else
 {
     $query = "SELECT L.* from tblLadder L where ladPk=$ladPk";
-//    $result = mysql_query($query) or die('Ladder query failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Ladder query failed: ' . mysqli_connect_error());
-//    $row = mysql_fetch_array($result, MYSQL_ASSOC);
     $row = mysqli_fetch_assoc($result);
     if ($row)
     {
@@ -579,10 +559,8 @@ if ($ladPk > 0)
         echo "<br><br>";
         echo "<form action=\"ladder.php?ladPk=$ladPk\" name=\"ladadmin\" method=\"post\">";
         $query = "select C.comPk, C.comName from tblCompetition C, tblLadder L where L.ladPk=$ladPk and C.comDateFrom between L.ladStart and L.ladEnd";
-//        $result = mysql_query($query) or die('Ladder query failed: ' . mysql_error());
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Ladder query failed: ' . mysqli_connect_error());
         $comparr = [];
-//        while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
         while ($row = mysqli_fetch_assoc($result))
         {
             $comparr[$row['comName']] = $row['comPk'];

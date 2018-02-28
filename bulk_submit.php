@@ -20,8 +20,16 @@ $link = db_connect();
 if (addslashes($_REQUEST['foo']) == 'Send Tracklog')
 {
     $copyname = tempnam(FILEDIR, "Task_");
-    copy($_FILES['userfile']['tmp_name'], $copyname);
-    chmod($copyname, 0644);
+
+    echo 'copyname: ' . $copyname . "<br />";
+    echo 'file name: ' . $_FILES['userfile']['tmp_name'] . "<br />";
+    
+    clearstatcache();
+    if (!file_exists($copyname)) {
+    	mkdir($copyname, 0755, true);
+    }
+    copy($_FILES['userfile']['tmp_name'], $copyname . basename($_FILES['userfile']['tmp_name']));
+    chmod($copyname . basename($_FILES['userfile']['tmp_name']), 0644);
 
     $tempnm = $_FILES['userfile']['tmp_name'];
 
@@ -40,4 +48,3 @@ echo "<b>Done</b><br>";
 </div>
 </body>
 </html>
-

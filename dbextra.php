@@ -1,13 +1,10 @@
 <?php
 
-//
-// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
-//
-
-function esc($val)
+function esc($link, $val)
 {
-    return mysql_real_escape_string($val);
+    return mysqli_real_escape_string($link, $val);
 }
+
 function quote($val)
 {
     if (is_numeric($val))
@@ -27,16 +24,13 @@ function insertnullup($link,$table,$key,$clause,$map)
     if ($clause != '')
     {
         $sql = "select * from $table where $clause";
-//        $result = mysql_query($sql,$link) or die ("insertup (select): $table ($clause) query failed: " . mysql_error());
         $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' insertup (select): $table ($clause) query failed: ' . mysqli_connect_error());
-//        $nrows = mysql_num_rows($result);
 		$nrows = mysqli_num_rows($result);
     }
 
     $keystr = [];
     if ($nrows > 0)
     {
-//        $ref = mysql_fetch_array($result, MYSQL_ASSOC);
 	$ref = mysqli_fetch_assoc($result);
 
         // update fields
@@ -60,7 +54,6 @@ function insertnullup($link,$table,$key,$clause,$map)
             $fields = join(",", $keystr);
             $sql = "update $table set $fields where $clause";
             // echo $sql . "<br>";
-//            $result = mysql_query($sql,$link) or die ("insertnullup (update): $table ($clause) query failed: " . mysql_error());
         	$result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' insertnullup (update): $table ($clause) query failed: ' . mysqli_connect_error());
         }
         return $ref[$key];
@@ -78,9 +71,7 @@ function insertnullup($link,$table,$key,$clause,$map)
         $sql = "INSERT INTO $table ($fields) VALUES ($valstr)";
         # get last key insert for primary key value ..
         //echo $sql . "<br>";
-//        $result = mysql_query($sql,$link) or die ("insertnullup (insert): $table ($clause) query failed: " . mysql_error());
     	$result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' insertnullup (update): $table ($clause) query failed: ' . mysqli_connect_error());
-//        return mysql_insert_id($link);
 		return mysqli_insert_id($link);
     }
 }
@@ -92,8 +83,6 @@ function insertup($link,$table,$key,$clause,$map)
     if ($clause != '')
     {
         $sql = "select * from $table where $clause";
-//        $result = mysql_query($sql,$link) or die ("insertup (select): $table ($clause) query failed: " . mysql_error());
-//        $nrows = mysql_num_rows($result);
         $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' insertup (select): $table ($clause) query failed: ' . mysqli_connect_error());
 		$nrows = mysqli_num_rows($result);
 
@@ -102,7 +91,6 @@ function insertup($link,$table,$key,$clause,$map)
     $keystr = [];
     if ($nrows > 0)
     {
-//        $ref = mysql_fetch_array($result, MYSQL_ASSOC);
 		$ref = mysqli_fetch_assoc($result);
 
         // update fields
@@ -120,7 +108,6 @@ function insertup($link,$table,$key,$clause,$map)
         $fields = join(",", $keystr);
         $sql = "update $table set $fields where $clause";
         //echo $sql . "<br>";
-//        $result = mysql_query($sql,$link) or die ("insertup (update): $table ($clause) query failed: " . mysql_error());
         $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' insertup (select): $table ($clause) query failed: ' . mysqli_connect_error());
         return $ref[$key];
     }
@@ -137,8 +124,6 @@ function insertup($link,$table,$key,$clause,$map)
         $sql = "INSERT INTO $table ($fields) VALUES ($valstr)";
         # get last key insert for primary key value ..
         // echo $sql . "<br>";
-//        $result = mysql_query($sql,$link) or die ("insertup (insert): $table ($clause) query failed: " . mysql_error());
-//        return mysql_insert_id($link);
         $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' insertup (select): $table ($clause) query failed: ' . mysqli_connect_error());
 		return mysqli_insert_id($link);
     }

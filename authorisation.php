@@ -1,25 +1,55 @@
 <?php
 require_once('defines.php');
-function redirect($loc)
-{
-    echo "<script language=\"JavaScript\" type=\"text/javascript\">";
-    echo "<!--\n";
-    echo "window.location.href=\"$loc\";";
-    echo "//-->\n";
-    echo "</script>\n";
+
+// function redirect($loc)
+// {
+//     echo "<script language=\"JavaScript\" type=\"text/javascript\">";
+//     echo "<!--\n";
+//     echo "window.location.href=\"$loc\";";
+//     echo "//-->\n";
+//     echo "</script>\n";
+// }
+
+// Function to substitute deprecated mysql_result, sure have to look for better solution
+function mysqli_result($res,$row=0,$col=0){ 
+    $numrows = mysqli_num_rows($res); 
+    if ($numrows && $row <= ($numrows-1) && $row >=0){
+        mysqli_data_seek($res,$row);
+        $resrow = (is_numeric($col)) ? mysqli_fetch_row($res) : mysqli_fetch_assoc($res);
+        if (isset($resrow[$col])){
+            return $resrow[$col];
+        }
+    }
+    return false;
 }
+//
+
+function redirect($url, $permanent = false) {
+	if($permanent) {
+		header('HTTP/1.1 301 Moved Permanently');
+	}
+	header('Location: '.$url);
+	exit();
+}
+
 function db_connect()
 {
-    $link = mysql_connect(MYSQLHOST, MYSQLUSER, MYSQLPASSWORD)
-    or die('Could not connect: ' . mysql_error());
-    mysql_select_db(DATABASE) or die('Could not select database');
+	$link = mysqli_connect(MYSQLHOST, MYSQLUSER, MYSQLPASSWORD, DATABASE);
+	if (!$link) {
+    	echo "Error: Unable to connect to MySQL." . PHP_EOL;
+    	echo "Debugging errno: " . mysqli_connect_errno() . PHP_EOL;
+    	echo "Debugging error: " . mysqli_connect_error() . PHP_EOL;
+    	exit;
+	}
     return $link;
 }
+
 function is_admin($what,$usePk,$comPk)
 {
+    $link = db_connect();
     $query = "select useLevel from tblCompAuth where usePk=$usePk and comPk in ($comPk,-1)";
-    $result = mysql_query($query) or die('Admin check failed: ' . mysql_error());
-    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+	$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Admin Check failed: ' . mysqli_connect_error());
+	while ($row = mysqli_fetch_assoc($result))
     {
         $level = $row['useLevel'];
         if ($what == $level) 
@@ -29,6 +59,7 @@ function is_admin($what,$usePk,$comPk)
     }
     return 0;
 }
+
 function check_admin($what,$usePk,$comPk)
 {
     if (is_admin($what,$usePk,$comPk))
@@ -39,6 +70,7 @@ function check_admin($what,$usePk,$comPk)
     //redirect('unauthorised.php');
     return 0;
 }
+
 function check_auth($region)
 {
     $link = db_connect();
@@ -51,13 +83,13 @@ function check_auth($region)
     }
     $magic = addslashes($_COOKIE['XCauth']);
     $query = "select usePk from tblUserSession where useSession='$magic'";
-    $result = mysql_query($query) or die('Query failed: ' . mysql_error());
+	$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
     $usePk = 0;
-    if (mysql_num_rows($result) > 0)
+	if (mysqli_num_rows($result) > 0)
     {
-        $usePk = mysql_result($result,0);
+		$usePk = mysqli_result($result,0,0);
     }
-    mysql_close($link);
+	mysqli_close($link);
 
     if (!$usePk) 
     {
@@ -66,6 +98,7 @@ function check_auth($region)
 
     return $usePk;
 }
+
 function auth($region)
 {
     $usePk = 0;
@@ -87,24 +120,27 @@ function auth($region)
 
     return $usePk;
 }
+
 function menubar($comPk)
 {
     if ($comPk != 0)
     {
         $link = db_connect();
         $query = "select comName,comType from tblCompetition where comPk=$comPk";
-        $result = mysql_query($query) or die('Query failed: ' . mysql_error());
-        if (mysql_num_rows($result) > 0)
+		$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
+
+        if (mysqli_num_rows($result) > 0)
         {
-            $comName = mysql_result($result,0,0);
-            $comType =  mysql_result($result,0,1);
+            $comName = mysqli_result($result,0,0);
+            $comType =  mysqli_result($result,0,1);
         }
         else
         {
             $comName = 'Unknown Competition';
             $comType = 'OLC';
         }
-        mysql_close($link);
+        mysqli_close($link);
+        
         echo "<div id=\"vhead\"><h1>$comName</h1></div>";
     }
     else
@@ -118,7 +154,7 @@ function menubar($comPk)
     {
         if ($comPk > 0)
         {
-        echo "<li><a href=\"competition.php?comPk=$comPk\">Admin</a></li>";
+        echo "<li><a href=\"competition_admin.php?comPk=$comPk\">Admin</a></li>";
         }
         else
         {
@@ -142,6 +178,7 @@ function menubar($comPk)
     echo "</ul>";
     echo "</div>\n";
 }
+
 function adminbar($comPk)
 {
     echo "<div id=\"container-eyecatcher\">";
@@ -161,19 +198,20 @@ function adminbar($comPk)
     {
         $link = db_connect();
         $query = "select comName,comType,comEntryRestrict from tblCompetition where comPk=$comPk";
-        $result = mysql_query($query) or die('Query failed: ' . mysql_error());
-        if (mysql_num_rows($result) > 0)
+		$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
+        if (mysqli_num_rows($result) > 0)
         {
-            $comName = mysql_result($result,0,0);
-            $comType =  mysql_result($result,0,1);
-            $comEntryRestrict =  mysql_result($result,0,2);
+            $comName = mysqli_result($result,0,0);
+            $comType =  mysqli_result($result,0,1);
+            $comEntryRestrict =  mysqli_result($result,0,2);
         }
         else
         {
             $comName = 'Unknown Competition';
             $comType = 'OLC';
         }
-        mysql_close($link);
+        mysqli_close($link);
+        
         echo "<li><a href=\"comp_result.php?comPk=$comPk\">Scores</a></li>";
         echo "<li><a href=\"track_admin.php?comPk=$comPk\">Track</a></li>";
         echo "<li><a href=\"team_admin.php?comPk=$comPk\">Teams</a></li>";
@@ -194,6 +232,7 @@ function adminbar($comPk)
     echo "</div>";
     echo "</div>";
 }
+
 function output_select($name,$selected,$options)
 {
     echo "<select name=\"$name\">";
@@ -214,12 +253,13 @@ function output_select($name,$selected,$options)
     }
     echo "</select>\n";
 }
+
 function waypoint_select($link,$tasPk,$name,$selected)
 {
     $query="select distinct RW.* from tblTask T, tblRegion R, tblRegionWaypoint RW where T.tasPk=$tasPk and RW.regPk=R.regPk and R.regPk=T.regPk order by RW.rwpName";
-    $result = mysql_query($query) or die('Waypoint select failed: ' . mysql_error());
+	$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Waypoint select failed: ' . mysqli_connect_error());
     $waypoints = [];
-    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
+	while ($row = mysqli_fetch_assoc($result))
     {
         $rwpPk = $row['rwpPk'];
         $rname = $row['rwpName'];
@@ -228,6 +268,7 @@ function waypoint_select($link,$tasPk,$name,$selected)
     //ksort($waypoints);
     output_select($name,$selected,$waypoints);
 }
+
 function cmdlinecheck()
 {
     if (!$_REQUEST)
@@ -240,6 +281,7 @@ function cmdlinecheck()
         }
     }
 }
+
 function reqexists($key)
 {
     cmdlinecheck();
@@ -249,6 +291,7 @@ function reqexists($key)
     }
     return 0;
 }
+
 function reqival($key)
 {
     cmdlinecheck();
@@ -261,6 +304,7 @@ function reqival($key)
         return 0;
     }
 }
+
 function reqfval($key)
 {
     cmdlinecheck();
@@ -273,6 +317,7 @@ function reqfval($key)
         return 0;
     }
 }
+
 function reqsval($key)
 {
     cmdlinecheck();
@@ -285,4 +330,5 @@ function reqsval($key)
         return '';
     }
 }
+
 ?>

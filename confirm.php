@@ -4,13 +4,12 @@
 </head>
 <body>
 <div id="container">
+
 <?php
 require 'authorisation.php';
 $restrict='';
 $comPk = reqival('comPk');
 menubar($comPk);
-
-//$link = dbconnect();
 
 $return = $_REQUEST['return'];
 $action = $_REQUEST['action'];
@@ -29,8 +28,6 @@ foreach ($_REQUEST as $key => $value)
 echo "</form>\n";
 echo "</center>\n";
 
-// Closing connection
-//mysql_close($link);
 ?> 
 </div></body>
 </html>

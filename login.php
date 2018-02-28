@@ -24,13 +24,10 @@ if (array_key_exists('login', $_REQUEST))
         $ip = $_SERVER['REMOTE_ADDR'];
 
         $query = "select usePk from tblUser where useLogin='$login' and usePassword='$passwd'";
-//      $result = mysql_query($query) or die('Query failed: ' . mysql_error());
 		$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
 			
-//      if (mysql_num_rows($result) > 0)
 		if (mysqli_num_rows($result) > 0)
         {
-//          $usePk = mysql_result($result,0,0);
 			$usePk = mysqli_result($result,0,0);
         }
         else
@@ -41,7 +38,6 @@ if (array_key_exists('login', $_REQUEST))
         {
             $magic = rand() % 100000000000;
             $query= "insert into tblUserSession (usePk, useSession, useIP) values ($usePk, '$magic', '$ip')";
-//          $result = mysql_query($query) or die('Query failed: ' . mysql_error());
 			$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
             # setCookie 
             if (setcookie("XCauth", $magic))
@@ -65,7 +61,6 @@ else if (array_key_exists('logout', $_REQUEST))
         $magic = addslashes($_COOKIE['XCauth']);
         $ip = addslashes($_SERVER['REMOTE_ADDR']);
         $query = "delete from tblUserSession where useSession='$magic' and useIP='$ip'";
-//      $result = mysql_query($query) or die('Query failed: ' . mysql_error());
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
 
         setcookie("XCauth", '');

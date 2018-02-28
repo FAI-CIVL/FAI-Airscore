@@ -3,10 +3,6 @@
     require 'hc.php';
     require 'format.php';
 
-//
-// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
-//
-
     function tracktable($link, $lat, $lon, $order, $start)
     {
         //<div id=\"comments\"><ol>";
@@ -14,11 +10,8 @@
         $count = $start+1;
         $long = [];
         $sql = "select T.*, P.*, CTT.* from tblTrack T, tblPilot P, tblComTaskTrack CTT, tblWaypoint W where W.wptPosition=0 and (abs(W.wptLatDecimal-$lat)+abs(W.wptLongDecimal-$lon)) < 1.0 and T.traPk=W.traPk and CTT.traPk=T.traPk and T.pilPk=P.pilPk $order";
-//        $result = mysql_query($sql,$link) or die("Invalid track table " . mysql_error());
         $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Invalid track table ' . mysqli_connect_error());
-//        $num = mysql_num_rows($result);
         $num = mysqli_num_rows($result);
-//        while($row = mysql_fetch_array($result))
         while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
         {
             $id = $row['traPk'];
@@ -40,9 +33,7 @@
     $start = reqival('start');
     $pilot = reqival('pil');
     $sql = "select RW.*,R.* from tblRegionWaypoint RW, tblRegion R where R.regPk=$regPk and RW.rwpPk=R.regCentre";
-//    $result = mysql_query($sql,$link);
     $result = mysqli_query($link, $sql);
-//    if ($row = mysql_fetch_array($result))
     if ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         $lat = $row['rwpLatDecimal'];
@@ -52,9 +43,7 @@
     if ($pilot > 0)
     {
         $sql = "select P.pilFirstName, P.pilLastName from tblPilot P where P.pilPk=$pilot";
-//        $result = mysql_query($sql,$link);
         $result = mysqli_query($link, $sql);
-//        if ($row = mysql_fetch_array($result))
         if ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
         {
             $name = $row['pilFirstName'] . ' ' . $row['pilLastName'];

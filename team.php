@@ -1,9 +1,5 @@
 <?php
 
-//
-// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
-//
-
 function taskcmp($a, $b)
 {
     if (!is_array($a)) return 0;
@@ -15,13 +11,12 @@ function taskcmp($a, $b)
     }
     return ($a['tname'] < $b['tname']) ? -1 : 1;
 }
+
 function team_gap_result($comPk, $how, $param)
 {
     $sql = "select TK.*,TR.*,P.* from tblTeamResult TR, tblTask TK, tblTeam P, tblCompetition C where C.comPk=$comPk and TR.tasPk=TK.tasPk and TK.comPk=C.comPk and P.teaPk=TR.teaPk order by P.teaPk, TK.tasPk";
-    // $result = mysql_query($sql) or die('Task result query failed: ' . mysql_error());
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task result query failed: ' . mysqli_connect_error());
     $results = [];
-//    while ($row = mysql_fetch_array($result))
     while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         $score = round($row['terScore']);
@@ -134,9 +129,7 @@ function team_gap_result($comPk, $how, $param)
 function team_agg_result($comPk, $teamsize)
 {
     $query = "select TM.teaPk,TK.tasPk,TK.tasName,TM.teaName,P.pilLastName,P.pilFirstName,P.pilPk,TR.tarScore*TP.tepModifier as tepscore from tblTaskResult TR, tblTask TK, tblTrack K, tblPilot P, tblTeam TM, tblTeamPilot TP, tblCompetition C where TP.teaPk=TM.teaPk and P.pilPk=TP.pilPk and C.comPk=TK.comPk and K.traPk=TR.traPk and K.pilPk=P.pilPk and TR.tasPk=TK.tasPk and TM.comPk=C.comPk and C.comPk=$comPk order by TM.teaPk,TK.tasPk,TR.tarScore*TP.tepModifier desc";
-    // $result = mysql_query($query) or die('Team aggregate query failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Team aggregate query failed: ' . mysqli_connect_error());
-//    $row = mysql_fetch_array($result);
     $row = mysqli_fetch_array($result, MYSQLI_BOTH);
     $htable = [];
     $hres = [];
@@ -190,7 +183,6 @@ function team_agg_result($comPk, $teamsize)
             $tastotal = round($tastotal + $row['tepscore'],2);
             $size = $size + 1;
         }
-        //    $row = mysql_fetch_array($result);
     	$row = mysqli_fetch_array($result, MYSQLI_BOTH);
     }
 
@@ -206,15 +198,12 @@ function team_agg_result($comPk, $teamsize)
 function team_handicap_result($comPk,$how,$param)
 {
     $query = "select T.tasPk, T.tasName, max(TR.tarScore) as maxScore from tblTaskResult TR, tblTask T where T.tasPk=TR.tasPk and T.comPk=$comPk group by TR.tasPk";
-    // $result = mysql_query($query) or die('Team aggregate query failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Team aggregate query failed: ' . mysqli_connect_error());
-    //    $row = mysql_fetch_array($result);
     $row = mysqli_fetch_array($result, MYSQLI_BOTH);
     $tinfo = [];
     while ($row)
     {
         $tinfo[$row['tasPk']] = array( 'name' => "<a href=\"team_task_result.php?tasPk=" . $row['tasPk'] . "\">" . $row['tasName'] . "</a>", 'maxscore' => $row['maxScore']);
-        //    $row = mysql_fetch_array($result);
     	$row = mysqli_fetch_array($result, MYSQLI_BOTH);
     }
 
@@ -228,9 +217,7 @@ function team_handicap_result($comPk,$how,$param)
             next;
         }
         $query = "select TM.teaPk,TK.tasPk,TK.tasName,TM.teaName,sum(TR.tarScore-H.hanHandicap*$maxscore) as handiscore from tblTaskResult TR, tblTask TK, tblTrack K, tblPilot P, tblTeam TM, tblTeamPilot TP, tblHandicap H, tblCompetition C where TP.teaPk=TM.teaPk and P.pilPk=TP.pilPk and C.comPk=TK.comPk and K.traPk=TR.traPk and K.pilPk=P.pilPk and H.pilPk=P.pilPk and TR.tasPk=TK.tasPk and TM.comPk=C.comPk and TK.tasPk=$task and H.comPk=$comPk group by TM.teaPk";
-        // $result = mysql_query($query) or die('Team handicap query failed: ' . mysql_error());
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Team handicap query failed: ' . mysqli_connect_error());
-        //    $row = mysql_fetch_array($result);
     	$row = mysqli_fetch_array($result, MYSQLI_BOTH);
         while ($row)
         {
@@ -256,7 +243,6 @@ function team_handicap_result($comPk,$how,$param)
                 $hteams[$row['teaPk']] = $htable;
             }
 
-            //    $row = mysql_fetch_array($result);
     		$row = mysqli_fetch_array($result, MYSQLI_BOTH);
         }
         $count++;

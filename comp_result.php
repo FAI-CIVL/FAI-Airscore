@@ -4,19 +4,13 @@ require_once 'authorisation.php';
 require_once 'format.php';
 require_once 'olc.php';
 require_once 'team.php';
-require 'hc.php';
-
-//
-// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
-//
+require 'template.php';
 
 function overall_handicap($link, $comPk, $how, $param, $cls)
 {
     $sql = "select T.tasPk, max(TR.tarScore) as maxScore from tblTask T, tblTaskResult TR where T.tasPk=TR.tasPk and T.comPk=$comPk group by T.tasPk";
-//    $result = mysql_query($sql) or die('Handicap maxscore failed: ' . mysql_error());
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Handicap maxscore failed: ' . mysqli_connect_error());
     $maxarr = [];
-//    while ($row = mysql_fetch_array($result))
     while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         $maxarr[$row['tasPk']] = $row['maxScore'];
@@ -25,10 +19,8 @@ function overall_handicap($link, $comPk, $how, $param, $cls)
     $sql = "select P.*,TK.*, TR.*, H.* from tblTaskResult TR, tblTask TK, tblTrack K, tblPilot P, tblHandicap H, tblCompetition C where H.comPk=C.comPk and C.comPk=TK.comPk and K.traPk=TR.traPk and K.pilPk=P.pilPk and H.pilPk=P.pilPk and H.comPk=TK.comPk and TK.comPk=$comPk and TR.tasPk=TK.tasPk order by P.pilPk, TK.tasPk";
     #$sql = "select TK.*,TR.*,P.* from tblTaskResult TR, tblTask TK, tblTrack T, tblPilot P, tblCompetition C where C.comPk=$comPk and TK.comPk=C.comPk and TK.tasPk=TR.tasPk and TR.traPk=T.traPk and T.traPk=TR.traPk and P.pilPk=T.pilPk $cls order by P.pilPk, TK.tasPk";
 
-//    $result = mysql_query($sql) or die('Task result query failed: ' . mysql_error());
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task result query failed: ' . mysqli_connect_error());
     $results = [];
-//    while ($row = mysql_fetch_array($result))
     while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         $tasPk = $row['tasPk'];
@@ -71,10 +63,8 @@ function comp_result($link, $comPk, $how, $param, $cls, $tasktot)
     # $sql = "select TK.*,TR.*,P.*,T.traGlider from tblTaskResult TR, tblTask TK, tblTrack T, tblPilot P, tblCompetition C where C.comPk=$comPk and TK.comPk=C.comPk and TK.tasPk=TR.tasPk and TR.traPk=T.traPk and T.traPk=TR.traPk and P.pilPk=T.pilPk $cls order by P.pilPk, TK.tasPk";
     # New sql adding MaxScore for PWC FTV Calc
     $sql = "select TK.*,TR.*,(SELECT MAX(tblTaskResult.tarScore) FROM tblTaskResult WHERE tblTaskResult.tasPk = TK.tasPk) AS maxScore,F.forClass,F.forVersion,P.*,T.traGlider from tblTaskResult TR, tblTask TK, tblTrack T, tblPilot P, tblFormula F, tblCompetition C where C.comPk=$comPk and TK.comPk=C.comPk and TK.tasPk=TR.tasPk and TR.traPk=T.traPk and T.traPk=TR.traPk and P.pilPk=T.pilPk and F.comPk=C.comPk $cls order by P.pilPk, TK.tasPk";
-//    $result = mysql_query($sql) or die('Task result query failed: ' . mysql_error());
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task result query failed: ' . mysqli_connect_error());
     $results = [];
-//    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     while ($row = mysqli_fetch_assoc($result))
     {
         $score = round($row['tarScore']);
@@ -221,7 +211,7 @@ function filter_results($comPk, $how, $param, $results)
 // Main Code Begins HERE //
 
 # Initializing variables to avoid esceptions
-# Probabbly to remove when debugged and fully checked
+# Probably to remove when debugged and fully checked
 
 $overstr = '';
 
@@ -233,21 +223,20 @@ if ($start < 0)
     $start = 0;
 }
 
+$file = __FILE__;
 $link = db_connect();
-$title = 'highcloud.net';
+$title = 'AirScore'; # default
 
 $query = "SELECT T.*,F.* FROM tblCompetition T left outer join tblFormula F on F.comPk=T.comPk where T.comPk=$comPk";
-//$result = mysql_query($query) or die('Comp query failed: ' . mysql_error());
 $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Comp query failed: ' . mysqli_connect_error());
-//$row = mysql_fetch_array($result, MYSQL_ASSOC);
 $row = mysqli_fetch_assoc($result);
 if ($row)
 {
     $comName = isset($row['comName']) ? $row['comName'] : '';
-    $title = isset($row['comName']) ? $row['comName'] : '';
+    $title = 'AirScore - '.isset($row['comName']) ? $row['comName'] : '';
     $comDateFrom = substr(isset($row['comDateFrom']) ? $row['comDateFrom'] : '',0,10);
     $comDateTo = substr(isset($row['comDateTo']) ? $row['comDateTo'] : '',0,10);
-    #$comPk = $row['comPk'];
+    $comPk = $row['comPk'];
     $comOverall = isset($row['comOverallScore']) ? $row['comOverallScore'] : '';
     $comOverallParam = isset($row['comOverallParam']) ? $row['comOverallParam'] : ''; # Discard Parameter, Ex. 75 = 75% eq normal FTV 0.25
     $comDirector = isset($row['comMeetDirName']) ? $row['comMeetDirName'] : '';
@@ -265,6 +254,7 @@ if ($row)
     $forNomDistance = isset($row['forNomDistance']) ? $row['forNomDistance'] : '';
     $forNomTime = isset($row['forNomTime']) ? $row['forNomTime'] : '';
     $forDiscreteClasses = isset($row['forDiscreteClasses']) ? $row['forDiscreteClasses'] : '';
+    
 }
 
 
@@ -312,30 +302,17 @@ if (array_key_exists('class', $_REQUEST))
 }
 
 $embed = reqsval('embed');
-if ($embed == '')
-{
-    hcheader($title, 2, "$classstr $comDateFrom - $comDateTo");
 
-    echo "<div id=\"content\">";
-    //echo "<div id=\"text\" style=\"overflow: auto; max-width: 600px;\">";
-    echo "<div id=\"text\" style=\"overflow: auto;\">";
-}
-else
-{
-    echo "<link HREF=\"$embed\" REL=\"stylesheet\" TYPE=\"text/css\">";
-    echo "</head><body>";
-}
+//initializing template header
+tpinit($link,$file,$row);
 
-//echo "<h1>Details</h1>";
 // Determine scoring params / details ..
 
 $tasTotal = 0;
 $query = "select count(*) from tblTask where comPk=$comPk";
-//$result = mysql_query($query);
-$result = mysqli_query($link, $query); // or die('Task total failed: ' . mysql_error());
+$result = mysqli_query($link, $query);
 if ($result)
 {
-//    $tasTotal = mysql_result($result, 0, 0);
     $tasTotal = mysqli_result($result, 0, 0);
 }
 if ($comOverall == 'all')
@@ -382,13 +359,8 @@ elseif ($comOverall == 'ftv')
 
 if ($class == "9")
 {
-    echo "<h1>Handicap Results</h1>";
+    echo "<h2>Handicap Results</h2>";
 }
-else
-{
-    echo "<h1>Results</h1>";
-}
-
 $today = getdate();
 $tdate = sprintf("%04d-%02d-%02d", $today['year'], $today['mon'], $today['mday']);
 // Fix: make this configurable
@@ -446,8 +418,8 @@ if (reqival('id') == 1)
 }
 else
 {
-    $hdr = array( fb('Res'),  fselect('class', "comp_result.php?comPk=$comPk$cind", $copts, ' onchange="document.location.href=this.value"'), fb('Glider'), fb('Total') );
-    $hdr2 = array( '', '', '', '' );
+    $hdr = array( fb('Class.'),  fselect('class', "comp_result.php?comPk=$comPk$cind", $copts, ' onchange="document.location.href=this.value"'), '', '', '');
+    $hdr2 = array( fb('Pos.'), fb('Name'), fb('Nat.'), fb('Glider'), fb('Total') );
 }
 
 # find each task details
@@ -464,9 +436,7 @@ if ($class == "8")
 else if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'Route' || $comType == 'RACE-handicap')
 {
     $query = "select T.* from tblTask T where T.comPk=$comPk order by T.tasDate";
-//    $result = mysql_query($query) or die('Task query failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task query failed: ' . mysqli_connect_error());
-//    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     while ($row = mysqli_fetch_assoc($result))
     {
         $alltasks[] = isset($row['tasName']) ? $row['tasName'] : '';
@@ -494,7 +464,7 @@ else if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'Route' ||
         $tasName = isset($row['tasName']) ? $row['tasName'] : '';
         $tasPk = $row['tasPk'];
         $tasDate = substr(isset($row['tasDate']) ? $row['tasDate'] : '',0,10);
-        $hdr[] = fb("<a href=\"${subtask}task_result.php?comPk=$comPk&tasPk=$tasPk\">$tasName</a>");
+        $hdr2[] = fb("<a href=\"${subtask}task_result.php?comPk=$comPk&tasPk=$tasPk\">$tasName</a>");
     }
     foreach ($taskinfo as $row)
     {
@@ -502,11 +472,11 @@ else if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'Route' ||
         if ($row['tasTaskType'] == 'airgain')
         {
             $treg = $row['regPk'];
-            $hdr2[] = "<a href=\"waypoint_map.php?regPk=$treg\">Map</a>";
+            $hdr[] = "<a href=\"waypoint_map.php?regPk=$treg\">Map</a>";
         }
         else
         {
-            $hdr2[] = "<a href=\"route_map.php?comPk=$comPk&tasPk=$tasPk\">Map</a>";
+            $hdr[] = "<a href=\"route_map.php?comPk=$comPk&tasPk=$tasPk\">Map</a>";
         }
     }
     $rtable[] = $hdr;
@@ -545,7 +515,8 @@ else if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'Route' ||
         }
         else
         {
-            $nxt[] = $arr['glider'];
+            $nxt[] = $arr['nation'];
+            $nxt[] = ( (stripos($arr['glider'], 'Unknown') !== false) ? '' : $arr['glider'] );
         }
         $nxt[] = fb($tot);
         $lasttot = $tot;
@@ -578,9 +549,11 @@ else if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'Route' ||
             }
         }
         $rtable[] = $nxt;
+        
         $count++;
     }
-    echo ftable($rtable, "border=\"0\" cellpadding=\"2\" cellspacing=\"0\" alternate-colours=\"yes\" align=\"center\"", $rdec, '');
+    //echo ftable($rtable, "border=\"0\" cellpadding=\"2\" cellspacing=\"0\" alternate-colours=\"yes\" align=\"center\"", $rdec, '');
+    echo ftable($rtable,'class=compresult', $rdec, '');
 }
 else
 {
@@ -639,64 +612,9 @@ else
 if ($comOverall == 'ftv')
 {
     echo "1. Click <a href=\"ftv.php?comPk=$comPk\">here</a> for an explanation of FTV<br>";
-    echo "2. Scores in bold 100%, or indicated %, other scores not counted<br>";
+    //echo "2. Scores in bold 100%, or indicated %, other scores not counted<br>";
 }
-if ($embed == '')
-{
-    // Only emit image if results table is "narrow"
-    echo "</div>";
-    echo "<div id=\"sideBar\">";
 
-    echo "<h1>Comp Details</h1>";
-    $detarr = array(
-        array("<b>Location</b> ", "<i>$comLocation</i>"),
-        array ("<b>Director</b> ", "<i>$comDirector</i>"),
-        array("<i>$comDateFrom</i>", "<i>$comDateTo</i>")
-    );
+tpfooter($file);
 
-	// Right Info Column
-    if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'RACE-handicap')
-    {
-        $scarr = [];
-        $scarr[] = array("<b>Type</b> ", "<i>$comType ($comFormula)</i>");
-        $scarr[] = array("<b>Scoring</b> ","<i>$overstr</i>");
-        $scarr[] = array("<b>Min&nbsp;Dist</b>", "<i>$forMinDistance kms</i>");
-        $scarr[] = array("<b>Nom&nbsp;Dist</b>", "<i>$forNomDistance kms</i>");
-        $scarr[] = array("<b>Nom&nbsp;Time</b>", "<i>$forNomTime mins</i>");
-        $scarr[] = array("<b>Nom&nbsp;Goal</b>", "<i>$forNomGoal%</i>");
-        echo ftable($detarr, 'border="0" cellpadding="0" width="200"', '', array('', 'align="right"'));
-        echo "<h1>Scoring Parameters</h1>";
-        echo ftable($scarr, 'border="0" cellpadding="0" width="200"', '', array('', 'align="right"'));
-    }
-    else
-    {
-        if ($comType == 'OLC')
-        {
-            $detarr[] = array("<b>Type</b> ", "<i>$comType ($forOLCPoints)</i>");
-        }
-        else
-        {
-            $detarr[] = array("<b>Type</b> ", "<i>$comType ($comFormula)</i>");
-        }
-        $detarr[] = array("<b>Scoring</b> ","<i>$overstr</i>");
-        echo ftable($detarr, 'border="0" cellpadding="0" width="200"', '', array('', 'align="right"'));
-    }
-
-
-    hcopencomps($link);
-    //hcclosedcomps($link);
-    echo "</div>";
-    //if (sizeof($taskinfo) > 8)
-    //{
-    //    echo "<div id=\"image\" background=\"images/pilots.jpg\"></div>";
-    //}
-    //else
-    {
-        hcimage($link,$comPk);
-    }
-    hcfooter();
-}
 ?>
-</body>
-</html>
-

@@ -3,20 +3,13 @@
 <?php
 require 'authorisation.php';
 
-//
-// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
-//
-
 $link = db_connect();
 
 $key = 0;
 
-// $result = mysql_query("select svKey from schema_version");
 $result = mysqli_query($link, "select svKey from schema_version");
-//if (mysql_num_rows($result) > 0)
 if (mysqli_num_rows($result) > 0)
 {
-//    $key = mysql_result($result,0);
     $key = mysqli_result($result,0);
 }
 
@@ -76,9 +69,6 @@ $altarr[5] = [
     "update tblFormula set forWeightStart=0.0 ,  forWeightArrival=0.0,  forWeightSpeed=1.0 where forClass in ('nzl', 'jtgap', 'rtgap', 'nogap')"
 ];
 
-
-// mysql_query('delete from schema_version');
-// mysql_query("insert into schema_version (svKey, svExtra) values (5, 'dbup')");
 mysqli_query($link, 'delete from schema_version');
 mysqli_query($link, "insert into schema_version (svKey, svExtra) values (5, 'dbup')");
 
@@ -86,7 +76,6 @@ for ($i = $key; $i < length($altarr); $i++)
 {
     foreach ($altarr[$i] as $row)
     {
-//        $result = mysql_query($row) or die('Alter failed: ' . mysql_error());
         $result = mysqli_query($link, $row) or die('Error ' . mysqli_errno($link) . ' Alter failed: ' . mysqli_connect_error());
     }
 }
@@ -99,7 +88,6 @@ if ($key < 1)
         svWhen      timestamp not null default CURRENT_TIMESTAMP,
         svExtra     varchar(256)
     )";
-//    $result = mysql_query($query) or die('Schema failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Schema failed: ' . mysqli_connect_error());
 }
 
@@ -113,7 +101,6 @@ if ($key < 5)
     lauLongDecimal  double not null,
     lauAltitude     double not null
     )";
-//    $result = mysql_query($query) or die('LaunchSite failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' LaunchSite failed: ' . mysqli_connect_error());
 
     $query = "insert into tblLaunchSite (lauLaunch, lauRegion, lauLatDecimal, lauLongDecimal, lauAltitude) values
@@ -151,7 +138,6 @@ if ($key < 5)
     ('Pedro Bernardo', 'Spain', 40.2564333333333,-4.90571666666667,1200)";
 
  
-//    $result = mysql_query($query) or die('insert launch failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' insert launch failed: ' . mysqli_connect_error());
 }
 

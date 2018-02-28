@@ -4,10 +4,6 @@ require 'format.php';
 require 'hc2v3.php';
 require 'plot_air.php';
 
-//
-// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
-//
-
 echo "<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:v=\"urn:schemas-microsoft-com:vml\">";
 echo "<head>";
 echo "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"
@@ -16,7 +12,7 @@ echo '<meta http-equiv="content-type" content="text/html; charset=utf-8"/>';
 echo "<title>Airspace Map</title>";
 hccss();
 hcmapjs();
-hcscripts(array('json2.js', 'sprintf.js', 'plot_air.js'));
+hcscripts(array('js/json2.js', 'js/sprintf.js', 'js/plot_air.js'));
 echo '<script type="text/javascript">';
 sajax_show_javascript();
 echo '</script>';
@@ -91,21 +87,17 @@ else
 {
     $sql = "select A.* from tblAirspace A order by airName";
 }
-//$result = mysql_query($sql,$link) or die('Airspace selection failed: ' . mysql_error());
 $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Airspace selection failed: ' . mysqli_connect_error());
 
 $addable = Array();
-//while ($row = mysql_fetch_array($result))
 while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {   
     $addable[$row['airName']] = $row['airPk'];
 }
 echo fselect('airspaceid', '', $addable);
-//echo "<input type=\"text\" name=\"airspaceid\" id=\"airspaceid\" size=\"8\"\">";
 echo "<input type=\"button\" name=\"check\" value=\"Add Track\" onclick=\"do_add_air(0); return false;\">";
 echo "<br><input type=\"text\" name=\"foo\" id=\"foo\" size=\"8\"\">";
 echo "</div>\n";
-// mysql_close($link);
 mysqli_close($link);
 ?>
 </body>

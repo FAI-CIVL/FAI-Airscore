@@ -1,9 +1,5 @@
 <?php
 
-//
-// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
-//
-
 function fselect($name,$selected,$options,$extra='')
 {
     $resarr = [];
@@ -16,23 +12,22 @@ function fselect($name,$selected,$options,$extra='')
         }
         if ($selected == $value)
         {
-            $resarr[] = "<option value=\"$value\" selected>$key</option>";
+            $resarr[] = "<option label=\"$key\" value=\"$value\" selected>$key</option>";
         }
         else
         {
-            $resarr[] = "<option value=\"$value\">$key</option>";
+            $resarr[] = "<option label=\"- $key\" value=\"$value\">$key</option>";
         }
     }
     $resarr[] = "</select>";
     return implode("\n", $resarr);
 }
+
 function fwaypoint($link,$tasPk,$name,$selected)
 {
     $query="select distinct RW.* from tblTask T, tblRegion R, tblRegionWaypoint RW where T.tasPk=$tasPk and RW.regPk=R.regPk and R.regPk=T.regPk order by RW.rwpName";
-//    $result = mysql_query($query) or die('Waypoint select failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task add failed: ' . mysqli_connect_error());
     $waypoints = [];
-//    while($row = mysql_fetch_array($result))
     while($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         $rwpPk = $row['rwpPk'];
@@ -119,38 +114,42 @@ function fb($str)
     return "<b>$str</b>";
 }
 
-function fib($type,$name,$value,$size)
+function fib($type,$name,$value=null,$class=null)
 {
     $type = "type=\"$type\"";
     $name = " name=\"$name\"";
-    if ($value != '')
+    if ( isset($value) )
     {
-        $value = " value=\"$value\"";
+        $value = "value=\"$value\"";
     }
-    if ($size != '')
+    if ( isset($class) )
     {
-        $size = " size=\"$size\"";
+        $class = "class=$class";
     }
 
-    return "<input $type$name$value$size>";
+    return "<input $type $name $value $class>"; // size is deprecated in html5
 }
 
 function fih($name,$value)
 {
-    return fib('hidden',$name,$value,1);
+    return fib('hidden',$name,$value);
 }
-function fin($name,$value,$size)
+
+function fin($name,$value,$class)
 {
-    return fib('text',$name,$value,$size);
+    return fib('text',$name,$value,$class);
 }
+
 function farea($name,$value,$rows,$cols)
 {
     return "<textarea name=\"$name\" rows=\"$rows\" cols=\"$cols\">$value</textarea>";
 }
+
 function fis($name,$value,$size)
 {
     return fib('submit',$name,$value,$size);
 }
+
 function fbut($type,$name,$value,$text)
 {
     return "<button type=\"$type\" name=\"$name\" value=\"$value\">$text</button>";

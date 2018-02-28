@@ -65,41 +65,6 @@ $info = get_comtask($link, $tasPk);
 $sql = "select T.traPk, T.traDate, P.pilLastName, P.pilHGFA from tblComTaskTrack C, tblTrack T, tblPilot P where C.tasPk=$tasPk and C.comPk=$comPk and C.traPk=T.traPk and P.pilPk=T.pilPk";
 $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Cannot get tracks associated with task: ' . mysqli_connect_error());
 
-
-// $tracks = [];
-// while($row = mysqli_fetch_array($result, MYSQLI_BOTH))
-// {
-//     $tracks[] = $row;
-// }
-// $ziplist = [];
-// $year = substr($info['tasDate'], 0, 4);
-// #echo getcwd() . "\n";
-// $dir = __DIR__ . "/../tracks/$year";
-// chdir($dir);
-// #echo getcwd() . "\n";
-// foreach ($tracks as $row)
-// {
-//     # Find the original tracks ..
-//     $basename =  strtolower($row['pilLastName']) . '_' . $row['pilHGFA'] . '_' . $row['traDate'];
-//     $result = match_file($year, $basename);
-//     if ($result)
-//     {
-//         $ziplist[] = $result;
-//         #echo $result . "\n";
-//     }
-// }
-// #print "Download tracks disabled at this time<br>\r\n";
-// #exit(0);
-// # zip them up ..
-// $allfiles = implode(' ', $ziplist);
-// $bname = strtolower(preg_replace('/[\s+\/]/', '_', $info['comName'] . '_' . $info['tasName'] . ".zip"));
-// $filename = '/tmp/' . $bname;
-// #echo ("zip \"$filename\" $allfiles 2>&1 > /dev/null");
-// system("zip \"$filename\" $allfiles 2>&1 > /dev/null");
-// header("Content-Type: application/zip");
-// header("Content-Disposition: attachment; filename=\"$bname\"");
-// header("Content-Length: " . filesize($filename));
-
 #Create Archive
 $zip = new ZipArchive();
 $bname = strtolower(preg_replace('/[\s+\/]/', '_', $info['comName'] . '_' . $info['tasName'] . ".zip"));
@@ -138,15 +103,6 @@ foreach ($tracks as $row)
     }
 }
 $zip->close();
-//echo "file closed " . "\n";
-
-// header($_SERVER['SERVER_PROTOCOL'].' 200 OK');
-// header("Content-Type: application/zip");
-// header("Content-Transfer-Encoding: Binary");
-// header("Content-Disposition: attachment; filename=\"$bname\"");
-// header("Content-Length: " . filesize($filename));
-// readfile($filename);
-// #unlink($filename);
 
 send_zip_file($filename);
 

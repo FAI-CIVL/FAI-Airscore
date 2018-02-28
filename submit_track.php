@@ -3,10 +3,6 @@ require_once 'authorisation.php';
 require_once 'format.php';
 require_once 'hc.php';
 
-//
-// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
-//
-
 header('Cache-Control: no-cache, must-revalidate');
 header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
 
@@ -15,6 +11,10 @@ $embed = reqsval('embed');
 $link = db_connect();
 $offerall = 0;
 
+# Initializing variables to avoid esceptions
+# Probabbly to remove when debugged and fully checked
+$comType = '';
+$comClass = '';
 
 if ($comPk < 2)
 {
@@ -25,12 +25,10 @@ if ($comPk < 2)
 
 $comUnixTo = time() - (int)substr(date('O'),0,3)*60*60;
 $query = "select *, unix_timestamp(date_sub(comDateTo, interval ComTimeOffset hour)) as comUnixTo  from tblCompetition where comPk=$comPk";
-//$result = mysql_query($query) or die('Query failed: ' . mysql_error());
 $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
 $title = 'highcloud.net';
 $comContact = '';
 $comEntryRestrict = 'open';
-//if ($row=mysql_fetch_array($result))
 if ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {
     $title = $row['comName'];
@@ -43,9 +41,7 @@ if ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 
 $freepin = 0;
 $query = "select * from tblTask where comPk=$comPk and tasTaskType='free-pin'";
-// $result = mysql_query($query);
 $result = mysqli_query($link, $query);
-//if (mysql_num_rows($result) > 0)
 if (mysqli_num_rows($result) > 0)
 {
    $freepin = 1; 
@@ -84,13 +80,15 @@ else
     echo "</head><body><div id=\"track_submit\">\n";
 }
 ?>
+
 <h1>Tracklog Submission</h1>
 <p>Download your GPS track from your GPS using one of the free 
 programs shown on the right.  Then you're ready to upload the 
 .IGC file created to this website using the form here!</p>
 <br><br>
+
 <?php
-//function upload_track($file,$pilPk,$contact)
+
 function upload_track($hgfa, $file, $comid, $tasPk, $contact)
 {
     # Let the Perl program do it!
@@ -152,11 +150,9 @@ function accept_track($until, $contact, $restrict)
 
     $link = db_connect();
     $query = "select pilPk, pilHGFA from tblPilot where pilLastName='$name'";
-//    $result = mysql_query($query) or die('Query failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
 
     $member = 0;
-//    while ($row=mysql_fetch_array($result))
     while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         if ($hgfa == $row['pilHGFA'])
@@ -220,7 +216,6 @@ function accept_track($until, $contact, $restrict)
     $safety = reqsval('pilotsafety');
     $quality = reqival('pilotquality');
     $query = "update tblTrack set traGlider='$glider', traDHV='$dhv', traSafety='$safety', traConditions='$quality' where traPk=$maxPk";
-//    $result = mysql_query($query) or die('Update tblTrack failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Update tblTrack failed: ' . mysqli_connect_error());
 
     return $maxPk;
@@ -241,9 +236,7 @@ if ($offerall)
     #$query = "select * from tblCompetition where curdate() < date_add(comDateTo, interval 3 day) and comName not like '%test%' order by comName";
     $query = "select * from tblCompetition order by comName";
     
-//    $result = mysql_query($query) or die('Query failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
-//    while($row = mysql_fetch_array($result))
     while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         $comName = $row['comName'];
@@ -261,10 +254,8 @@ else
 if ($comType == 'Route')
 {
     $query = "select * from tblTask where comPk=$comPk";
-//    $result = mysql_query($query) or die('Route query failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Route query failed: ' . mysqli_connect_error());
     $routes = [];
-//    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     while ($row = mysqli_fetch_assoc($result))
     {
         $routes[$row['tasName']] = $row['tasPk'];
@@ -333,7 +324,6 @@ else
 {
     echo "</div>";
 }
-// mysql_close($link);
 mysqli_close($link);
 echo "</body></html>\n";
 ?>

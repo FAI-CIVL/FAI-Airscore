@@ -1,17 +1,11 @@
 <?php
 require 'authorisation.php';
 
-//
-// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
-//
-
 $traPk=intval($_REQUEST['traPk']);
 
 $link = db_connect();
 $sql = "select comPk from tblComTaskTrack where traPk=$traPk";
-// $result = mysql_query($sql, $link) or die("can't get associated comp");
 $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' cannot get associated comp' . mysqli_connect_error());
-// $comPk = mysql_result($result,0,0);
 $comPk = mysqli_result($result,0,0);
 $usePk = check_auth('system');
 
@@ -29,14 +23,10 @@ if (1)
     # etc.
 
     $sql = "SELECT date_format(T.traStart,'%d%m%y'), P.pilFirstName, P.pilLastName, T.traDate from tblTrack T, tblPilot P where T.traPk=$traPk and T.pilPk=P.pilPk";
-//    $result = mysql_query($sql,$link) or die("Unable to find track: " . mysql_error() . "\n");
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Unable to find track: ' . mysqli_connect_error());
 
-//    $date = mysql_result($result, 0, 0);
     $date = mysqli_result($result, 0, 0);
-//    $pilot = mysql_result($result, 0, 1) . ' ' . mysql_result($result, 0, 2);
     $pilot = mysqli_result($result, 0, 1) . ' ' . mysqli_result($result, 0, 2);
-//    $ndate = mysql_result($result, 0, 3);
     $ndate = mysqli_result($result, 0, 3);
 
     header("Content-type: text/igc");
@@ -53,12 +43,10 @@ if (1)
     print "HFDTM100DATUM: WGS-1984\r\n";
 
     $sql = "SELECT TL.* from tblTrackLog TL where TL.traPk=$traPk order by TL.trlTime";
-//    $result = mysql_query($sql,$link) or die("Unable to find tracklog: " . mysql_error() . "\n");
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Unable to find tracklog: ' . mysqli_connect_error());
 
     # B0442223707362S14524802EA0000000650
     $cross = 0;
-//    while($row = mysql_fetch_array($result))
     while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         $time = 0 + $row['trlTime'];

@@ -1,9 +1,5 @@
 <?php
 
-//
-// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
-//
-
 function hcheader($title,$active)
 {
 echo "
@@ -75,9 +71,7 @@ function hcimage($link,$comPk)
     if (0+$comPk > 0)
     {
         $sql = "select comClass from tblCompetition where comPk=$comPk";
-//        $result = mysql_query($sql,$link);
         $result = mysqli_query($link, $sql);
-//        if ($row = mysql_fetch_array($result))
         if ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
         {
             $comClass = $row['comClass'];
@@ -98,9 +92,7 @@ echo "
       <div id=\"comments\"><ol>";
 $count = 1;
 $sql = "SELECT T.*, P.* FROM tblTrack T, tblPilot P, tblComTaskTrack CTT where T.pilPk=P.pilPk and CTT.traPk=T.traPk order by T.traLength desc limit 10";
-//$result = mysql_query($sql,$link);
 $result = mysqli_query($link, $sql);
-//while($row = mysql_fetch_array($result))
 while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {
     $id = $row['traPk'];
@@ -117,9 +109,7 @@ echo "
       <h1><span>Recent 10</span></h1><ol>";
 $count = 1;
 $sql = "SELECT T.*, P.* FROM tblTrack T, tblPilot P, tblComTaskTrack CTT where T.pilPk=P.pilPk and CTT.traPk=T.traPk order by T.traStart desc limit 10";
-//$result = mysql_query($sql,$link);
 $result = mysqli_query($link, $sql);
-//while($row = mysql_fetch_array($result))
 while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {
     $id = $row['traPk'];
@@ -139,10 +129,8 @@ function hcregion($link)
 {
     echo "<h1><span>Tracks by Region</span></h1>\n";
     $sql = "select R.*, RW.* from tblRegion R, tblRegionWaypoint RW where R.regCentre=RW.rwpPk and R.regDescription not like '%test%' order by R.regDescription";
-//    $result = mysql_query($sql,$link);
     $result = mysqli_query($link, $sql);
     $regions = [];
-//    while($row = mysql_fetch_array($result))
     while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         $regPk=$row['regPk'];
@@ -155,10 +143,8 @@ function hcopencomps($link)
 {
     echo "<h1><span>Open Competitions</span></h1>";
     $sql = "select * from tblCompetition where comName not like '%test%' and comDateTo > date_sub(now(), interval 1 day) order by comDateTo";
-//    $result = mysql_query($sql,$link);
     $result = mysqli_query($link, $sql);
     $comps = [];
-//    while($row = mysql_fetch_array($result))
     while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         // FIX: if not finished & no tracks then submit_track page ..
@@ -172,10 +158,8 @@ function hcclosedcomps($link)
 {
     echo "<h1><span>Closed Competitions</span></h1>";
     $sql = "select * from tblCompetition where comName not like '%test%' and comDateTo < date_sub(now(), interval 1 day) order by comDateTo desc";
-//    $result = mysql_query($sql,$link);
     $result = mysqli_query($link, $sql);
     $comps = [];
-//    while($row = mysql_fetch_array($result))
     while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         // FIX: if not finished & no tracks then submit_track page ..
@@ -204,9 +188,9 @@ function hcmapjs()
 {
     echo '<script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key=ABQIAAAAPyz1XxP2rM79ZhAH2EmgwxQ1ylNcivz9k-2ubmbv1YwdT5nh3RQJsyJo_kuVL1UAWoydxDkwo_zsKw" type="text/javascript"></script>';
     echo "\n";
-    echo '<script src="elabel.js" type="text/javascript"></script>';
+    echo '<script src="js/elabel.js" type="text/javascript"></script>';
     echo "\n";
-    echo '<script src="einsert.js" type="text/javascript"></script>';
+    echo '<script src="js/einsert.js" type="text/javascript"></script>';
     echo "\n";
 }
 function hccss()

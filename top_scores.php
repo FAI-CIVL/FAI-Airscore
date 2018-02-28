@@ -7,10 +7,6 @@
 <?php
 require 'authorisation.php';
 
-//
-// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
-//
-
 // Return a list of the pilots top (4) results 
 function generate_ladder($top,$restrict,$link)
 {
@@ -19,11 +15,9 @@ function generate_ladder($top,$restrict,$link)
     $topscores = [];
 
     $sql = "SELECT P.*, T.traPk, T.traScore FROM tblTrack T, tblPilot P, tblComTaskTrack CTT where CTT.traPk=T.traPk and T.pilPk=P.pilPk and T.traScore is not null $restrict order by P.pilPk, T.traScore desc";
-//    $result = mysql_query($sql,$link) or die('Top score: ' . mysql_error());
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Top score failed: ' . mysqli_connect_error());
     ;
 
-//    while ($row = mysql_fetch_array($result))
     while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         // another pilot .. finish it off
@@ -79,9 +73,7 @@ $link = db_connect();
 if ($comPk != 0)
 {
      $sql = "select C.comName from tblCompetition C where C.comPk=$comPk";
-//     $result = mysql_query($sql,$link) or die('Top scores: ' . mysql_error());
      $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Top scores failed: ' . mysqli_connect_error());
-//     $comName = mysql_result($result,0);
      $comName = mysqli_result($result,0);
      $title = " - $comName";
 }

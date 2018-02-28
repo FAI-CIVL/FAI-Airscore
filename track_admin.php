@@ -1,31 +1,27 @@
-<html>
-<head>
-<link HREF="xcstyle.css" REL="stylesheet" TYPE="text/css">
-</head>
-<body>
-<div id="container">
-<div id="vhead"><h1>airScore admin</h1></div>
 <?php
 require 'authorisation.php';
-
-//
-// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
-//
+require 'template.php';
 
 $comPk = reqival('comPk');
-adminbar($comPk);
+$file = __FILE__;
+$usePk=auth('system');
+$link = db_connect();
+
+//initializing template header
+$query = "SELECT * FROM tblCompetition where comPk=$comPk";
+$result = mysqli_query($link, $query);
+$row = mysqli_fetch_assoc($result);
+tpadmin($link,$file,$row);
 
 if ($comPk > 0)
 {
-    echo "<p><h2>Track Administration ($comPk)</h2></p>";
+    $comName = $row['comName'];
+    echo "<h3>Track Administration ($comName)</h3>\n";
 }
 else
 {
-    echo "<p><h2>Track Administration (global)</h2></p>";
+    echo "<h3>Track Administration (global)</h3>\n";
 }
-
-$usePk=auth('system');
-$link = db_connect();
 
 if (array_key_exists('delete', $_REQUEST))
 {
@@ -39,19 +35,14 @@ if (array_key_exists('delete', $_REQUEST))
         $comcl = " and comPk=$comPk";
     }
     $query = "SELECT TK.comPk FROM tblTask TK, tblTaskResult TR where TR.tasPk=TK.tasPk and TR.traPk=$id$comcl";
-//    $result = mysql_query($query) or die('Cant get track info: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Track Info failed: ' . mysqli_connect_error());
-//    if (mysql_num_rows($result) == 0)
     if (mysqli_num_rows($result) == 0)
     {
         $query = "SELECT comPk FROM tblComTaskTrack where traPk=$id$comcl";
-//        $result = mysql_query($query) or die('Cant get track info: ' . mysql_error());
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Track info failed: ' . mysqli_connect_error());
     }
-//    if (mysql_num_rows($result) > 0)
     if (mysqli_num_rows($result) > 0)
     {
-//        $lco = mysql_result($result,0,0);
         $lco = mysqli_result($result,0,0);
     }
 
@@ -62,36 +53,28 @@ if (array_key_exists('delete', $_REQUEST))
     }
 
     $query = "delete from tblTaskResult where traPk=$id";
-    // $result = mysql_query($query) or die('TaskResult delete failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' TaskResult delete failed: ' . mysqli_connect_error());
 
     $query = "delete from tblTrack where traPk=$id";
-    // $result = mysql_query($query) or die('Track delete failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Track delete failed: ' . mysqli_connect_error());
 
     $query = "delete from tblTrackLog where traPk=$id";
-    // $result = mysql_query($query) or die('Tracklog delete failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Tracklog delete failed: ' . mysqli_connect_error());
 
     $query = "delete from tblWaypoint where traPk=$id";
-    // $result = mysql_query($query) or die('Waypoint delete update failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' aypoint delete failed: ' . mysqli_connect_error());
 
     $query = "delete from tblBucket where traPk=$id";
-    // $result = mysql_query($query) or die('Bucket delete failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Bucket delete failed: ' . mysqli_connect_error());
 
     $query = "delete from tblComTaskTrack where traPk=$id$comcl";
-    // $result = mysql_query($query) or die('ComTaskTrack delete failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' ComTaskTrack delete failed: ' . mysqli_connect_error());
 }
 
 if ($comPk > 0)
 {
     $query = "select comType from tblCompetition where comPk=$comPk";
-    // $result = mysql_query($query) or die('Com type query failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Com type query failed: ' . mysqli_connect_error());
-//    $comType = mysql_result($result, 0, 0);
     $comType = mysqli_result($result, 0, 0);
 
     if ($comType == 'RACE')
@@ -155,12 +138,10 @@ else
     echo "<form action=\"track_admin.php\" name=\"trackadmin\" method=\"post\">";
 }
 
-// $result = mysql_query($sql,$link) or die ("Track query failed: " . mysql_error());
 $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Track query failed: ' . mysqli_connect_error());
 
 $count = 1;
 echo "<ol>";
-// while($row = mysql_fetch_array($result))
 while($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {
     $id = $row['traPk'];
@@ -184,8 +165,9 @@ while($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 }
 echo "</ol>";
 echo "</form>";
+
+tpfooter($file);
+
 ?>
-</div>
-</body>
-</html>
+
 

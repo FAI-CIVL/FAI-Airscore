@@ -1,27 +1,18 @@
-<html>
-<head>
-<link HREF="xcstyle.css" REL="stylesheet" TYPE="text/css">
-</head>
-<body>
-<div id="container">
-<div id="vhead"><h1>airScore admin</h1></div>
 <?php
 require_once 'authorisation.php';
 require_once 'format.php';
 require_once 'dbextra.php';
+require 'template.php';
 
 $comPk = reqival('comPk');
-adminbar($comPk);
-?>
-<p><h2>Pilot Administration</h2></p>
-<?php
-
-//
-// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
-//
-
 $usePk = auth('system');
 $link = db_connect();
+$file = __FILE__;
+
+//initializing template header
+tpadmin($link,$file);
+
+echo "<h3>Pilot Administration</h3>\n";
 
 $cat = reqsval('cat');
 if ($cat == '')
@@ -47,8 +38,6 @@ if (reqexists('addcomp'))
             echo "Skipping " . $pilot->name . "<br>";
             continue;
         }
-//        $pil['pilLastName'] = mysql_real_escape_string($namarr[1]);
-//        $pil['pilFirstName'] = mysql_real_escape_string($namarr[0]);
         $pil['pilLastName'] = mysqli_real_escape_string($link, $namarr[1]);
         $pil['pilFirstName'] = mysqli_real_escape_string($link, $namarr[0]);
         $pil['pilHGFA'] = $pilot->fai_id;
@@ -82,7 +71,6 @@ if (reqexists('addcomp'))
 
         if ($pilot->fai_id != '')
         {
-//            $clause = "pilHGFA=" . quote($pilot->fai_id) . " and pilLastName=" . quote(mysql_real_escape_string($namarr[1]));
             $clause = "pilHGFA=" . quote($pilot->fai_id) . " and pilLastName=" . quote(mysqli_real_escape_string($link, $namarr[1]));
             $pilPk = insertnullup($link, 'tblPilot', 'pilPk', $clause, $pil);
             echo "insertup: $clause<br>";
@@ -112,7 +100,6 @@ if (reqexists('addcomp'))
             {
                 $pil['pilHGFA'] = 1000000 + $pilot->civl_id;
             }
-//            $clause = " pilLastName=" . quote(mysql_real_escape_string($namarr[1])) . " and pilFirstName=" . quote(mysql_real_escape_string($namarr[0]));
             $clause = " pilLastName=" . quote(mysqli_real_escape_string($link, $namarr[1])) . " and pilFirstName=" . quote(mysqli_real_escape_string($link, $namarr[0]));
             echo "insertup: $clause<br>";
             $pilPk = insertnullup($link, 'tblPilot', 'pilPk', $clause, $pil);
@@ -153,9 +140,7 @@ if (reqexists('addpilot'))
 	$xcid = reqsval('xcontest');
 
     $query = "select * from tblPilot where pilHGFA=$fai";
-//    $result = mysql_query($query) or die('Pilot select failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot select failed: ' . mysqli_connect_error());
-//    if ($fai < 1000 or mysql_num_rows($result) > 0)
     if ($fai < 1000 or mysqli_num_rows($result) > 0)
     {
         echo "Pilot insert failed, HGFA/FAI number ($fai) already exists or is too low (<1000) <br>";
@@ -163,7 +148,6 @@ if (reqexists('addpilot'))
     else
     {
         $query = "insert into tblPilot (pilHGFA, pilCIVL, pilLastName, pilFirstName, pilSex, pilNationCode, xcontestUser) value ($fai, $civl,'$lname','$fname','$sex','ITA','$xcid')";
-//        $result = mysql_query($query) or die('Pilot insert failed: ' . mysql_error());
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot insert failed: ' . mysqli_connect_error());
     }
 }
@@ -197,9 +181,7 @@ if (reqexists('update'))
 	$xcid = reqsval("xcontest$id");
 
     $query = "select * from tblPilot where pilHGFA=$fai and pilPk<>$id";
-//    $result = mysql_query($query) or die('Pilot update select failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot update select failed: ' . mysqli_connect_error());
-//    if ($fai < 1000 or mysql_num_rows($result) > 0)
     if ($fai < 1000 or mysqli_num_rows($result) > 0)
     {
         echo "Pilot update failed, HGFA/FAI number ($fai) already exists or is too low (<1000) <br>";
@@ -207,7 +189,6 @@ if (reqexists('update'))
     else
     {
         $query = "update tblPilot set pilHGFA=$fai, pilLastName='$lname', pilFirstName='$fname', pilSex='$sex', pilNationCode='$nat' , xcontestUser='$xcid'  where pilPk=$id";
-//        $result = mysql_query($query) or die('Pilot update failed: ' . mysql_error());
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot update failed: ' . mysqli_connect_error());
     }
 }
@@ -217,9 +198,7 @@ if (reqexists('delete'))
     check_admin('admin',$usePk,-1);
     $id = reqival('delete');
     $query = "select count(*) as numtracks from tblTrack where pilPk=$id";
-//    $result = mysql_query($query) or die('Pilot delete check failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot delete check failed: ' . mysqli_connect_error());
-//    $row = mysql_fetch_array($result, MYSQL_ASSOC);
     $row = mysqli_fetch_assoc($result);
     if ((0+$row['numtracks']) > 0)
     {
@@ -228,7 +207,6 @@ if (reqexists('delete'))
     else
     {
         $query = "delete from tblPilot where pilPk=$id";
-//        $result = mysql_query($query) or die('Pilot delete failed: ' . mysql_error());
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot delete failed: ' . mysqli_connect_error());
     }
 }
@@ -282,21 +260,19 @@ foreach ($letters as $let)
 {
     $count++;
     echo "<td><a href=\"pilot_admin.php?cat=$let\">$let</a>&nbsp;</td>";
-    if ($count % 26 == 0)
-    {
-            echo "</tr><tr>";
-    }
+//     if ($count % 26 == 0)
+//     {
+//             echo "</tr><tr>";
+//     }
 }
-echo "</tr></table>";
+echo "</tr></table><br />\n";
 if ($cat != '')
 {
     echo "<ol>";
     $count = 1;
     $sql = "SELECT P.* FROM tblPilot P where P.pilLastName like '$cat%' order by P.pilLastName";
-//    $result = mysql_query($sql,$link) or die('Pilot select failed: ' . mysql_error());
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Pilot select failed: ' . mysqli_connect_error());
 
-//    while($row = mysql_fetch_array($result, MYSQL_ASSOC))
     while ($row = mysqli_fetch_assoc($result))
     {
         $id = $row['pilPk'];
@@ -326,7 +302,8 @@ if ($cat != '')
 
 
 echo "</form>";
+
+tpfooter($file);
+
 ?>
-</div>
-</body>
-</html>
+

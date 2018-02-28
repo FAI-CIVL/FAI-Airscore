@@ -1,9 +1,5 @@
 <?php
 
-//
-// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
-//
-
 function olc_sort($result,$top)
 {
     $lastpil = 0;
@@ -11,7 +7,6 @@ function olc_sort($result,$top)
     $toptasks = [];
 
     // fetch the rows from the db
-//    while ($row = mysql_fetch_array($result,MYSQL_ASSOC))
     while ($row = mysqli_fetch_assoc($result))
     {
         // another pilot .. finish it off
@@ -51,14 +46,15 @@ function olc_sort($result,$top)
 
     return $topscores;
 }
+
 function olc_result($link,$top,$restrict)
 {
     $sql = "SELECT P.*, T.traPk, T.traScore as adjScore FROM tblTrack T, tblPilot P, tblComTaskTrack CTT, tblCompetition C where CTT.comPk=C.comPk and CTT.traPk=T.traPk and T.pilPk=P.pilPk and T.traScore is not null $restrict order by P.pilPk, T.traScore desc";
-//    $result = mysql_query($sql,$link) or die('olc_result: ' . mysql_error());
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' olc_result: ' . mysqli_connect_error());
 
     return olc_sort($result,$top);
 }
+
 function olc_handicap_result($link,$top,$restrict)
 {
     $sql = "SELECT P.*, T.traPk, (T.traScore * H.hanHandicap) as adjScore FROM 
@@ -69,11 +65,11 @@ function olc_handicap_result($link,$top,$restrict)
                 CTT.comPk=C.comPk and CTT.traPk=T.traPk and T.pilPk=P.pilPk 
                 and T.traScore is not null $restrict 
             order by P.pilPk, T.traScore desc";
-//    $result = mysql_query($sql,$link) or die('Top score: ' . mysql_error());
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Top score: ' . mysqli_connect_error());
 
     return olc_sort($result,$top);
 }
+
 function display_olc_result($comPk, $rtable, $sorted, $top, $count, $start)
 {
     $rdec = [];
@@ -114,10 +110,10 @@ function display_olc_result($comPk, $rtable, $sorted, $top, $count, $start)
 
     return $count;
 }
+
 function olc_team_result($link,$top,$restrict)
 {
     $sql = "SELECT M.teaPk as pilPk, M.teaName as pilFirstName, T.traPk, T.traScore as adjScore FROM tblTrack T, tblComTaskTrack CTT, tblCompetition C, tblTeam M, tblTeamPilot TP, tblPilot P where M.comPk=C.comPk and TP.teaPk=M.teaPk and P.pilPk=TP.pilPk and CTT.comPk=C.comPk and CTT.traPk=T.traPk and T.pilPk=P.pilPk and T.traScore is not null $restrict order by M.teaPk, T.traScore desc";
-//    $result = mysql_query($sql,$link) or die('olc_result: ' . mysql_error());
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' olc_result: ' . mysqli_connect_error());
 
     return olc_sort($result,$top);

@@ -2,10 +2,6 @@
 require 'authorisation.php';
 require 'hc2.php';
 
-//
-// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
-//
-
 hchead();
 echo '<link HREF="xcstyle.css" REL="stylesheet" TYPE="text/css">';
 echo '<title>Skyhigh Cup Tracklog</title>';
@@ -34,18 +30,12 @@ $tasPk=0;
 $comName='airScore OLC';
 $tasName='';
 $sql = "SELECT CTT.tasPk,C.comName,T.tasName,T.tasTaskType FROM tblCompetition C, tblComTaskTrack CTT left outer join tblTask T on T.tasPk=CTT.tasPk where C.comPk=CTT.comPk and CTT.traPk=$trackid";
-//$result = mysql_query($sql,$link) or die('Query failed: ' . mysql_error());
 $result = mysqli_query($link, $sql,$link) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
-//if (mysql_num_rows($result) > 0)
 if (mysqli_num_rows($result) > 0)
 {
-//    $tasPk = mysql_result($result,0,0);
     $tasPk = mysqli_result($result,0,0);
-//    $comName = mysql_result($result,0,1);
     $comName = mysqli_result($result,0,1);
-//    $tasName = mysql_result($result,0,2);
     $tasName = mysqli_result($result,0,2);
-//    $tasTaskType = mysql_result($result,0,3);
     $tasTaskType = mysqli_result($result,0,3);
     if ($tasName)
     {
@@ -59,7 +49,6 @@ if (mysqli_num_rows($result) > 0)
 if ($tasPk > 0 && $tasTaskType == 'RACE')
 {
     $sql = "SELECT W.* FROM tblTaskWaypoint T, tblRegionWaypoint W where T.tasPk=$tasPk and W.rwpPk=T.rwpPk order by T.tawNumber";
-//    $result = mysql_query($sql,$link) or die('Query failed: ' . mysql_error());
     $result = mysqli_query($link, $sql,$link) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
     $prefix='rwp';
     $first = 1;
@@ -67,13 +56,11 @@ if ($tasPk > 0 && $tasTaskType == 'RACE')
 else
 {
     $sql = "SELECT * FROM tblSegment where traPk=$trackid order by wptTime";
-//    $result = mysql_query($sql,$link) or die('Query failed: ' . mysql_error());
     $result = mysqli_query($link, $sql,$link) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
     $prefix='wpt';
     $first = 1;
 }
 echo "var polyline = new GPolyline(["; 
-//while($row = mysql_fetch_array($result))
 while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {
     if ($first)
@@ -94,14 +81,12 @@ echo "map.setCenter(new GLatLng($clat, $clong), 13);\n";
 echo "map.addOverlay(polyline);\n\n";
 
 $sql = "SELECT * FROM tblBucket where traPk=$trackid order by bucTime";
-//$result = mysql_query($sql,$link);
 $result = mysqli_query($link, $sql);
 $first = 1;
 $clat=0;
 $clong=0;
 
 echo "var polyline = new GPolyline(["; 
-//while($row = mysql_fetch_array($result))
 while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {
     if ($first)
@@ -120,11 +105,9 @@ echo "map.addOverlay(polyline);\n\n";
 if ($tasPk > 0)
 {
     $sql = "SELECT W.* FROM tblTaskWaypoint T, tblRegionWaypoint W where T.tasPk=$tasPk and W.rwpPk=T.rwpPk order by T.tawNumber";
-//    $result = mysql_query($sql,$link) or die('Query failed: ' . mysql_error());
     $result = mysqli_query($link, $sql,$link) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
     $prefix='rwp';
     $first = 1;
-//    while($row = mysql_fetch_array($result))
     while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         $clat = $row["${prefix}LatDecimal"];
@@ -147,7 +130,7 @@ if ($tasPk > 0)
     }
 }
 
-// mysql_close($link);
+mysqli_close($link);
 ?>
     }
 }
@@ -167,9 +150,7 @@ menubar($comPk);
 $link = db_connect();
 
 $sql = "SELECT T.*, P.*, TR.* FROM tblPilot P, tblTrack T left outer join tblTaskResult TR on TR.traPk=T.traPk where T.pilPk=P.pilPk and T.traPk=$trackid limit 1";
-//$result = mysql_query($sql,$link);
 $result = mysqli_query($link, $sql);
-//if ($row = mysql_fetch_array($result))
 if ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {
     $name = $row['pilFirstName'] . " " . $row['pilLastName'];
@@ -193,7 +174,6 @@ if ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
         echo "<p><h2>$name at $date ($dist kms)</h2></p>";
     }
 }
-// mysql_close($link);
 mysqli_close($link);
 ?>
 <div id="map" style="width: 100%; height: 600px"></div>

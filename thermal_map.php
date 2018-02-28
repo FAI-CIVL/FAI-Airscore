@@ -6,8 +6,8 @@
 <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
 <title>Skyhigh Cup Tracklog</title>
 <script src="http://maps.google.com/maps?file=api&amp;v=2&amp;key=ABQIAAAAPyz1XxP2rM79ZhAH2EmgwxQ1ylNcivz9k-2ubmbv1YwdT5nh3RQJsyJo_kuVL1UAWoydxDkwo_zsKw" type="text/javascript"></script>
-<script src="elabel.js" type="text/javascript"></script>
-<script src="einsert.js" type="text/javascript"></script>
+<script src="js/elabel.js" type="text/javascript"></script>
+<script src="js/einsert.js" type="text/javascript"></script>
 <script type="text/javascript">
     //<![CDATA[
 
@@ -17,10 +17,6 @@ function load()
     {
 <?php
 require 'authorisation.php';
-
-//
-// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
-//
 
 echo "var map = new GMap2(document.getElementById(\"map\"));\n";
 echo "map.addMapType(G_PHYSICAL_MAP);\n";
@@ -42,16 +38,9 @@ $tasPk=0;
 $comName='Highcloud OLC';
 $tasName='';
 $sql = "SELECT CTT.tasPk,C.comName,T.tasName,C.comPk,T.tasTaskType FROM tblCompetition C, tblComTaskTrack CTT left outer join tblTask T on T.tasPk=CTT.tasPk where C.comPk=CTT.comPk and CTT.traPk=$trackid";
-// $result = mysql_query($sql,$link) or die('Query failed: ' . mysql_error());
 $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task add failed: ' . mysqli_connect_error());
-// if (mysql_num_rows($result) > 0)
 if (mysqli_num_rows($result) > 0)
 {
-//    $tasPk = mysql_result($result,0,0);
-//    $comName = mysql_result($result,0,1);
-//    $tasName = mysql_result($result,0,2);
-//    //$comPk = mysql_result($result,0,3);
-//    $tasType = mysql_result($result,0,4);
     $tasPk = mysqli_result($result,0,0);
     $comName = mysqli_result($result,0,1);
     $tasName = mysqli_result($result,0,2);
@@ -68,7 +57,6 @@ if (mysqli_num_rows($result) > 0)
 if (($tasPk > 0) and ($tasType == 'race' || $tasType == 'speedrun' || $tasType == 'speedrun-interval' ))
 {
     $sql = "SELECT T.*,W.* FROM tblTaskWaypoint T, tblRegionWaypoint W where T.tasPk=$tasPk and W.rwpPk=T.rwpPk order by T.tawNumber";
-    // $result = mysql_query($sql,$link) or die('Query failed: ' . mysql_error());
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
     $prefix='rwp';
     $first = 1;
@@ -77,13 +65,10 @@ if (($tasPk > 0) and ($tasType == 'race' || $tasType == 'speedrun' || $tasType =
 else
 {
     $sql = "SELECT max(trlTime) - min(trlTime) FROM tblTrackLog where traPk=$trackid";
-    // $result = mysql_query($sql,$link) or die('Time query failed: ' . mysql_error());
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Time query failed: ' . mysqli_connect_error());
-//    $gtime = mysql_result($result, 0, 0);
     $gtime = mysqli_result($result, 0, 0);
 
     $sql = "SELECT * FROM tblWaypoint where traPk=$trackid order by wptTime";
-    // $result = mysql_query($sql,$link) or die('Query failed: ' . mysql_error());
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
     $prefix='wpt';
     $first = 1;
@@ -93,7 +78,6 @@ else
 echo "var polyline = new GPolyline(["; 
 $count = 0;
 $wayptarr = [];
-// while($row = mysql_fetch_array($result))
 while($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {
     if ($first)
@@ -115,9 +99,7 @@ echo "],\"#0000ff\", 2, 1);\n";
 if ($action == 'award')
 {
     $sql = "select tarTurnpoints from tblTaskResult where traPk=$trackid";
-    // $result = mysql_query($sql,$link) or die('Task turnpoints failed: ' . mysql_error());
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task turnpoints failed: ' . mysqli_connect_error());
-//    $turnpoints = mysql_result($result, 0, 0);
     $turnpoints = mysqli_result($result, 0, 0);
 
     $upto = intval($_REQUEST['turnpoint']);
@@ -137,11 +119,9 @@ if ($action == 'award')
             $tadTime = $goaltime;
         }
         $sql = "insert into tblTaskAward (tawPk, traPk, tadTime) values ($tawPk, $trackid, $tadTime)";
-        // $result = mysql_query($sql,$link) or die('Award waypoint failed: ' . mysql_error());
         $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Award waypoint failed: ' . mysqli_connect_error());
     }
     $sql = "update tblTaskResult set tarTurnpoints=($upto+1) where traPk=$trackid";
-    // $result = mysql_query($sql,$link) or die('Task turnpoint award failed: ' . mysql_error());
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task turnpoint award failed: ' . mysqli_connect_error());
 
     # Re-verify with new awarded waypoint(s)
@@ -176,7 +156,6 @@ else
 {
     $sql = "SELECT *, trlTime div $interval as bucTime FROM tblTrackLog where traPk=$trackid group by trlTime div $interval order by trlTime";
 }
-// $result = mysql_query($sql,$link);
 $result = mysqli_query($link, $sql);
 $first = 1;
 $clat=0;
@@ -187,7 +166,6 @@ $lasLat = 0;
 $lasLon = 0;
 $lasAlt = "00";
 echo "var polyline;\n";
-// while($row = mysql_fetch_array($result))
 while($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {
 
@@ -275,9 +253,7 @@ $link = db_connect();
 $trackid = $_REQUEST['trackid'];
 
 $sql = "SELECT T.*, P.*, TR.* FROM tblPilot P, tblTrack T left outer join tblTaskResult TR on TR.traPk=T.traPk where T.pilPk=P.pilPk and T.traPk=$trackid limit 1";
-// $result = mysql_query($sql,$link);
 $result = mysqli_query($link, $sql);
-// if ($row = mysql_fetch_array($result))
 if ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {
     $name = $row['pilFirstName'] . " " . $row['pilLastName'];
@@ -354,7 +330,6 @@ if ($isadmin && $extra && $turnpoints < count($wayptarr))
 }
 
 echo "</div>\n";
-// mysql_close($link);
 mysqli_close($link);
 ?>
 </body>

@@ -1,17 +1,7 @@
-<html>
-<head>
-<link HREF="xcstyle.css" REL="stylesheet" TYPE="text/css">
-</head>
-<body>
-<div id="container">
-<div id="vhead"><h1>airScore admin</h1></div>
 <?php
 require 'authorisation.php';
 require 'format.php';
-
-//
-// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
-//
+require 'template.php';
 
 function parse_latlong($str, $neg)
 {
@@ -72,7 +62,6 @@ function parse_oziwpts($regPk, $link, $lines)
         $desc = rtrim(addslashes($fields[10]));
         echo "$name $lat $long $alt $desc<br>";
         $sql = "insert into tblRegionWaypoint (regPk, rwpName, rwpLatDecimal, rwpLongDecimal, rwpAltitude, rwpDescription) values ($regPk,'$name',$lat,$long,$alt,'$desc')";
-//        $result = mysql_query($sql,$link) or die('Insert RegionWaypoint failed: ' . mysql_error());
         $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Insert RegionWaypoint failed: ' . mysqli_connect_error());
     }
 
@@ -96,7 +85,6 @@ function parse_gpsdump($regPk, $link, $lines)
         if ($lat != 0.0)
         {
             $sql = "insert into tblRegionWaypoint (regPk, rwpName, rwpLatDecimal, rwpLongDecimal, rwpAltitude, rwpDescription) values ($regPk,'$name',$lat,$long,$alt,'$desc')";
-//            $result = mysql_query($sql,$link) or die('Insert RegionWaypoint failed: ' . mysql_error());
             $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Insert RegionWaypoint failed: ' . mysqli_connect_error());
             $count++;
         }
@@ -118,7 +106,6 @@ function parse_kml($regPk, $link, $xml)
         $desc = $placemark->description;
         echo "$name $lat $long $alt $desc<br>";
         $sql = "insert into tblRegionWaypoint (regPk, rwpName, rwpLatDecimal, rwpLongDecimal, rwpAltitude, rwpDescription) values ($regPk,'$name',$lat,$long,$alt,'$desc')";
-//        $result = mysql_query($sql,$link) or die('Insert RegionWaypoint failed: ' . mysql_error());
         $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Insert RegionWaypoint failed: ' . mysqli_connect_error());
     }
 
@@ -171,7 +158,6 @@ function parse_waypoints($filen, $regPk, $link)
             $desc = rtrim(addslashes($fields[9]));
             echo "$name $lat $long $alt $desc<br>";
             $sql = "insert into tblRegionWaypoint (regPk, rwpName, rwpLatDecimal, rwpLongDecimal, rwpAltitude, rwpDescription) values ($regPk,'$name',$lat,$long,$alt,'$desc')";
-//            $result = mysql_query($sql,$link) or die('Insert RegionWaypoint failed: ' . mysql_error());
             $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Insert RegionWaypoint failed: ' . mysqli_connect_error());
             $count++;
         }
@@ -198,14 +184,8 @@ function accept_waypoints($region,$link)
 
      // add the region ..
     $query = "insert into tblRegion (regDescription) values ('$region')";
-//    $result = mysql_query($query) or die('Query failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
-//    $regPk = mysql_insert_id();
 	$regPk = mysqli_insert_id($link);
-
-    #$query = "select max(regPk) from tblRegion";
-    #$result = mysql_query($query) or die('Query failed: ' . mysql_error());
-    #$regPk = mysql_result($result,0);
 
     // Copy the upload so I can use it later ..
     if ($_FILES['waypoints']['tmp_name'] != '')
@@ -223,24 +203,26 @@ function accept_waypoints($region,$link)
             exit(0);
         }
 
-//        $lastid = mysql_insert_id();
         $lastid = mysqli_insert_id($link);
         $query = "update tblRegion set regCentre=$lastid where regPk=$regPk";
-//        $result = mysql_query($query) or die('Centre update failed: ' . mysql_error());
 		$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Centre update failed: ' . mysqli_connect_error());
     }
 
     return $regPk;
 }
 
-adminbar(0);
-?>
-
-<p><h2>Waypoint Administration</h2></p>
-<?php
-
 auth('system');
 $link = db_connect();
+$usePk = auth('system');
+$comPk = reqival('comPk');
+$file = __FILE__;
+
+//initializing template header
+tpadmin($link,$file);
+
+echo "<h3>Waypoint Administration</h3>\n";
+
+
 
 if (reqexists('add'))
 {
@@ -260,9 +242,7 @@ if (reqexists('create'))
     $region = reqsval('region');
 
     $query = "insert into tblRegion (regDescription) values ('$region')";
-//    $result = mysql_query($query) or die('Create region failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Create region failed: ' . mysqli_connect_error());
-//    $regPk = mysql_insert_id();
 	$regPk = mysqli_insert_id($link);
 
     echo "Region $region ($regPk) created<br>";
@@ -273,15 +253,11 @@ if (reqexists('delete'))
     // implement a nice 'confirm'
     $regPk = reqival('delete');
     $query = "select * from tblRegion where regPk=$regPk";
-//    $result = mysql_query($query) or die('Region check failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Region check failed: ' . mysqli_connect_error());
-//    $row = mysql_fetch_array($result);
     $row = mysqli_fetch_array($result, MYSQLI_BOTH);
     $region = $row['regDescription'];
     $query = "select * from tblTaskWaypoint T, tblRegionWaypoint W, tblRegion R where T.rwpPk=W.rwpPk and R.regPk=W.regPk and R.regPk=$regPk limit 1";
-//    $result = mysql_query($query) or die('Delete check failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Delete check failed: ' . mysqli_connect_error());
-//    if (mysql_num_rows($result) > 0)
     if (mysqli_num_rows($result) > 0)
     {
         echo "Unable to delete $region ($regPk) as it is in use.\n";
@@ -289,10 +265,8 @@ if (reqexists('delete'))
     }
 
     $query = "delete from tblRegionWaypoint where regPk=$regPk";
-//    $result = mysql_query($query) or die('RegionWaypoint delete failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Waipoint delete failed: ' . mysqli_connect_error());
     $query = "delete from tblRegion where regPk=$regPk";
-//    $result = mysql_query($query) or die('Region delete failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Centre update failed: ' . mysqli_connect_error());
     echo "Region $region deleted\n";
 }
@@ -309,10 +283,8 @@ echo "<input type=\"hidden\" name=\"MAX_FILE_SIZE\" value=\"1000000000\">";
 echo "<ol>";
 $count = 1;
 $sql = "SELECT R.*, RW.rwpName, RW.rwpPk from tblRegion R left outer join tblRegionWaypoint RW on RW.rwpPk=R.regCentre order by R.regDescription";
-// $result = mysql_query($sql,$link);
 $result = mysqli_query($link, $sql);
 
-// while($row = mysql_fetch_array($result))
 while($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {
     $id = $row['regPk'];
@@ -338,11 +310,12 @@ echo "</form>";
 echo "<form enctype=\"multipart/form-data\" name=\"newregion\" onsubmit=\"find_address(this.region.value, this);\">";
 echo "New Region: " . fin('region', '', 10);
 echo fis('create', 'Create', 10);
-echo fib('hidden', 'lat', 0, 3);
+echo fib('hidden', 'lat', 1, 3);
 echo fib('hidden', 'lon', 0, 3);
 echo "</form>";
+
+tpfooter($file);
+
 ?>
-</div>
-</body>
-</html>
+
 

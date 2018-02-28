@@ -5,10 +5,6 @@ header('Content-type: application/json');
 
 require 'authorisation.php';
 
-//
-// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
-//
-
 function get_region($regPk, $trackid)
 {
     $link = db_connect();
@@ -17,9 +13,7 @@ function get_region($regPk, $trackid)
     if ($trackid > 0)
     {
         $sql = "SELECT max(T.trlLatDecimal) as maxLat, max(T.trlLongDecimal) as maxLong, min(T.trlLatDecimal) as minLat, min(T.trlLongDecimal) as minLong from tblTrackLog T where T.traPk=$trackid";
-//        $result = mysql_query($sql,$link) or die('Track query failed: ' . mysql_error());
         $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Track query failed: ' . mysqli_connect_error());
-//        $row = mysql_fetch_array($result, MYSQL_ASSOC);
         $row = mysqli_fetch_assoc($result);
     
         $maxLat = $row['maxLat'] + 0.02;
@@ -35,10 +29,8 @@ function get_region($regPk, $trackid)
         $crad = 0;
         $sql = "SELECT W.* FROM tblRegionWaypoint W where W.regPk=$regPk";
     }
-//    $result = mysql_query($sql,$link) or die('Region waypoint query failed: ' . mysql_error());
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Region waypoint query failed: ' . mysqli_connect_error());
     $ret = array();
-//    while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
     while ($row = mysqli_fetch_assoc($result))
     {
     

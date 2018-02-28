@@ -1,12 +1,8 @@
 <?php
 require 'authorisation.php';
-require 'hc.php';
+require 'template.php';
 require 'format.php';
 require 'xcdb.php';
-
-//
-// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
-//
 
 $comPk = intval($_REQUEST['comPk']);
 
@@ -16,6 +12,8 @@ $tasPk = intval($_REQUEST['tasPk']);
 $isadmin = 0;
 $cval = null;
 $tarPk = null;
+
+$file = __FILE__;
 
 if (!array_key_exists('pr', $_REQUEST))
 {
@@ -120,10 +118,8 @@ if (array_key_exists('tarup', $_REQUEST))
     }
 
     $query = "update tblTaskResult set tarDistance=$flown, tarPenalty=$penalty, tarResultType='$resulttype' where tarPk=$tarPk";
-    // $result = mysql_query($query) or die('Task Result update failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task Result update failed: ' . mysqli_connect_error());
     $query = "update tblTrack set traGlider='$glider', traDHV='$dhv' where traPk=$traPk";
-    // $result = mysql_query($query) or die('Glider update failed: ' . mysql_error());
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Glider update failed: ' . mysqli_connect_error());
     # recompute every time?
     $out = '';
@@ -137,11 +133,9 @@ if (array_key_exists('addflight', $_REQUEST))
     if ($fai > 0)
     {
         $query = "select pilPk from tblPilot where pilHGFA=$fai";
-        // $result = mysql_query($query) or die('Query pilot (fai) failed: ' . mysql_error());
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query pilot (fai) failed: ' . mysqli_connect_error());
     }
 
-//    if (mysql_num_rows($result) == 0)
     if (mysqli_num_rows($result) == 0)
     {
         $fai = addslashes($_REQUEST['fai']);
@@ -150,14 +144,11 @@ if (array_key_exists('addflight', $_REQUEST))
                         and T.traPk=TR.traPk 
                         and TR.pilPk=P.pilPk 
                         and P.pilLastName='$fai'";
-        // $result = mysql_query($query) or die('Query pilot (name) failed: ' . mysql_error());
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query pilot (name) failed: ' . mysqli_connect_error());
     }
 
-//    if (mysql_num_rows($result) > 0)
     if (mysqli_num_rows($result) > 0)
     {
-//        $pilPk = mysql_result($result,0,0);
         $pilPk = mysqli_result($result,0,0);
         $flown = floatval($_REQUEST["flown"]) * 1000;
         $penalty = intval($_REQUEST["penalty"]);
@@ -171,24 +162,15 @@ if (array_key_exists('addflight', $_REQUEST))
         }
 
         $query = "select tasDate from tblTask where tasPk=$tasPk";
-        // $result = mysql_query($query) or die('Task date failed: ' . mysql_error());
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task date failed: ' . mysqli_connect_error());
-//        $tasDate=mysql_result($result,0);
         $tasDate=mysqli_result($result,0);
 
         $query = "insert into tblTrack (pilPk,traGlider,traDHV,traDate,traStart,traLength) values ($pilPk,'$glider','$dhv','$tasDate','$tasDate',$flown)";
-        // $result = mysql_query($query) or die('Track Insert result failed: ' . mysql_error());
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task insert result failed: ' . mysqli_connect_error());
 
-//        $maxPk = mysql_insert_id();
         $maxPk = mysqli_insert_id($link);
 
-        #$query = "select max(traPk) from tblTrack";
-        #// $result = mysql_query($query) or die('Max track failed: ' . mysql_error());
-        #$maxPk=mysql_result($result,0);
-
         $query = "insert into tblTaskResult (tasPk,traPk,tarDistance,tarPenalty,tarResultType) values ($tasPk,$maxPk,$flown,$penalty,'$resulttype')";
-        // $result = mysql_query($query) or die('Insert result failed: ' . mysql_error());
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Insert result failed: ' . mysqli_connect_error());
 
         $out = '';
@@ -249,31 +231,15 @@ $waypoints = get_taskwaypoints($link,$tasPk);
 // incorporate $tasTaskType / $tasDate in heading?
 if ($isadmin > 0)
 {
-    $hdname = "<a href=\"task.php?comPk=$comPk&tasPk=$tasPk\">$tasName</a> - <a href=\"competition.php?comPk=$comPk\">$comName</a>";
+    $hdname = "<a href=\"task_admin.php?comPk=$comPk&tasPk=$tasPk\">$tasName</a> - <a href=\"competition_admin.php?comPk=$comPk\">$comName</a>";
 }
 else
 {
     $hdname =  "$comName - $tasName";
 }
-hcheader($hdname,2,"${classstr}${tasDate}");
-echo "<div id=\"content\">";
 
-# Waypoint Info
-echo "<div id=\"infobar\">";
-echo "<div id=\"colone\">";
-$goalalt = 0;
-$winfo = [];
-$winfo[] = array(fb("#"), fb("ID"), fb("Type"), fb("Radius"), fb("Dist(k)"), fb("Description"));
-foreach ($waypoints as $row)
-{
-    $winfo[] = array($row['tawNumber'], $row['rwpName'], $row['tawType'] . " (" . $row['tawHow'] . ")", $row['tawRadius'] . "m", round($row['ssrCumulativeDist']/1000,1), $row['rwpDescription']);
-    if ($row['tawType'] == 'goal')
-    {
-        $goalalt = $row['rwpAltitude'];
-    }
-}
-echo ftable($winfo, "id=\"alt\" border=\"0\" cellpadding=\"2\" cellspacing=\"0\" valign=\"top\" align=\"left\"", '', '');
-echo "</div>";
+//initializing template header
+tpinit($link,$file,$row);
 
 if ($comClass == "HG")
 {
@@ -306,22 +272,6 @@ foreach ($classopts as $text => $url)
 
 $classfilter = fselect('class', "task_result.php?comPk=$comPk&tasPk=$tasPk$cind", $copts, ' onchange="document.location.href=this.value"');
 
-echo "<div id=\"coltwo\">";
-$tinfo = [];
-$tinfo[] = array( fb("Task Type"), $tasTaskType, "", "", fb("Class"), $classfilter );
-if ($tasStoppedTime == "")
-{
-    $tinfo[] = array( fb("Date"), $tasDate, fb("Start"), "$tasStartTime", fb("End"), "$tasFinishTime" );
-}
-else
-{
-    $tinfo[] = array( fb("Date"), $tasDate, fb("Start"), "$tasStartTime", fb("Stopped"), "$tasStoppedTime" );
-}
-$tinfo[] = array( fb("Quality"), number_format($tasQuality,2), fb("WP Dist"), "$tasDistance km", fb("Task Dist"), "$tasShortest km" );
-$tinfo[] = array( fb("DistQ"), number_format($tasDistQuality,2), fb("TimeQ"), number_format($tasTimeQuality,2), fb("LaunchQ"), number_format($tasLaunchQuality,2) );
-echo ftable($tinfo, "id=\"alt\" border=\"0\" cellpadding=\"3\" cellspacing=\"0\" valign=\"top\" align=\"right\"", '', '');
-echo "</div>";
-echo "</div>";
 if ($tasComment != '')
 {
     echo "<div id=\"comment\" width=\"50%\" align=\"right\">";
@@ -337,19 +287,16 @@ $pinfo = [];
 $finfo = [];
 # gap, min dist, nom dist, nom time, nom goal ?
 
-# quality, dist, time, launch, available dist, available time, available lead, arrival
-#$qinfo = [];
-#$qinfo[] = array( fb("Quality"), fb("$tasQuality"));
-#$qinfo[] = array( fb("Dist"), $tasDistQuality, fb("Time"), $tasTimeQuality, fb("Launch"), $tasLaunchQuality );
-#echo ftable($qinfo, "border=\"2\" cellpadding=\"3\" cellspacing=\"0\" alternate-colours=\"yes\" valign=\"top\" align=\"right\"", array('class="d"', 'class="l"'), '');
-#echo "<br><p>";
-
-
 // FIX: Print out task quality information.
+
+$sql = "select SUM(ABS(TR.tarPenalty)) AS totalPenalty from tblTaskResult TR where TR.tasPk=$tasPk";
+$result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Penalty Sum failed: ' . mysqli_connect_error());
+$row = mysqli_fetch_assoc($result);
+$totalPenalty = $row['totalPenalty'];
 
 if ($isadmin)
 {
-    echo "<form action=\"task_result.php?comPk=$comPk&tasPk=$tasPk\" name=\"resultupdate\" method=\"post\">"; 
+    echo "<form action=\"task_result.php?comPk=$comPk&tasPk=$tasPk\" name=\"resultupdate\" method=\"post\"><p>"; 
 }
 // add in country from tblCompPilot if we have entries ...
 $trtab = [];
@@ -371,8 +318,12 @@ if ($tasHeightBonus == 'on')
 {
     $header[] = fb("HBs");
 }
-$header[] = fb("Kms");
-$header[] = fb("Pen");
+$header[] = fb("Distance");
+if ( $isadmin or ($totalPenalty != 0) )
+{
+	$header[] = fb("Pen");
+}
+$header[] = fb("Spd");
 if ($depcol != 'off')
 {
     $header[] = fb($depcol);
@@ -381,20 +332,19 @@ if ($tasArrival == 'on')
 {
     $header[] = fb("Arv");
 }
-$header[] = fb("Spd");
+// $header[] = fb("Spd");
 $header[] = fb("Dst");
 $header[] = fb("Total");
 $trtab[] = $header;
 $count = 1;
 
 $sql = "select TR.*, T.*, P.* from tblTaskResult TR, tblTrack T, tblPilot P where TR.tasPk=$tasPk $fdhv and T.traPk=TR.traPk and P.pilPk=T.pilPk order by TR.tarScore desc, P.pilFirstName";
-// $result = mysql_query($sql,$link) or die('Task Result selection failed: ' . mysql_error());
 $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task result selection failed: ' . mysqli_connect_error());
 $lastscore = 0;
 $hh = 0;
 $mm = 0;
 $ss = 0;
-// while ($row = mysql_fetch_array($result))
+
 while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {
     $name = $row['pilFirstName'] . ' ' . $row['pilLastName'];
@@ -411,6 +361,7 @@ while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     $comment = $row['tarComment'];
     $start = $row['tarSS'];
     $end = $row['tarES'];
+    $goal = $row['tarGoal'];
     $endf = "";
     $startf = "";
     $timeinair = "";
@@ -461,7 +412,7 @@ while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     $time = ($end - $start) / 60;
     $tardist = round($row['tarDistance']/1000,2);
     $penalty = round($row['tarPenalty']);
-    $glider = htmlspecialchars($row['traGlider']);
+    $glider = ( (stripos($row['traGlider'], 'Unknown') !== false) ? '' : htmlspecialchars($row['traGlider']) );
     $dhv = $row['traDHV'];
     if (0 + $tardist == 0)
     {
@@ -487,20 +438,20 @@ while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
         $class = "l";
     }
 
-    $trrow = array(fb($place), "<a href=\"tracklog_map.php?trackid=$traPk&comPk=$comPk\">$name</a>", $nation );
+    $trrow = array(fb($place), "<a href=\"tracklog_map.php?trackid=$traPk&tasPk=$tasPk&comPk=$comPk\">$name</a>", $nation );
     if ($isadmin)
     {
-        $trrow[] = fih("track$tarPk", $traPk) . fin("glider$tarPk", $glider, 18);
-        $trrow[] = fin("dhv$tarPk", $dhv, 3);
+        $trrow[] = fih("track$tarPk", $traPk) . fin("glider$tarPk", $glider, "wide");
+        $trrow[] = fin("dhv$tarPk", $dhv, "medium");
     }
     else
     {
-        $trrow[] = "$glider ($dhv)";
+        $trrow[] = $glider;
     }
     $trrow[] = $startf;
-    $trrow[] = $endf;
-    $trrow[] = $timeinair;
-    $trrow[] = $speed;
+    $trrow[] = ( $goal != 0 ? $endf : "<del>".$endf."</del>" );
+    $trrow[] = ( $goal != 0 ? $timeinair : "<del>".$timeinair."</del>" );
+    $trrow[] = ( $speed != 0 ? number_format((float)$speed,2) : "" );
     if ($tasStoppedTime != '')
     {
         $trrow[] = $lastalt;
@@ -530,25 +481,28 @@ while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     }
     if ($isadmin) 
     {
-        $trrow[] = fin("flown$tarPk", $tardist, 4);
-        $trrow[] = fin("penalty$tarPk", $penalty, 4);
+        $trrow[] = fin("flown$tarPk", $tardist, "short");
+        $trrow[] = fin("penalty$tarPk", $penalty, "short");
     }
     else
     {
-        $trrow[] = $tardist;
-        $trrow[] = $penalty;
+        $trrow[] = number_format((float)$tardist,2);
+        if ( $totalPenalty != 0 )
+    	{
+    		$trrow[] = $penalty;
+    	}
     }
-
+	$trrow[] = number_format($spd,1);
     if ($depcol != 'off')
     {
-        $trrow[] = $dep;
+        $trrow[] = number_format($dep,1);
     }
     if ($tasArrival == 'on')
     {
         $trrow[] = $arr;
     }
-    $trrow[] = $spd;
-    $trrow[] = $dist;
+//     $trrow[] = number_format($spd,1);
+    $trrow[] = number_format($dist,1);
     $trrow[] = round($score);
     if ($isadmin) 
     {
@@ -561,7 +515,8 @@ while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 
     $count++;
 }
-echo ftable($trtab, "id=\"alth\" border=\"0\" width=\"100%\" cellpadding=\"2\" cellspacing=\"0\" align=\"left\"", '' , '');
+echo ftable($trtab, 'class=taskresult', '' , '');
+
 if ($isadmin)
 {
     // FIX: enable 'manual' pilot flight addition
@@ -569,15 +524,12 @@ if ($isadmin)
     $piladd = [];
     $piladd[] =  array(fb("FAI"), fin("fai",'',6), fb("Type"), fselect('resulttype', 'lo', array('abs', 'dnf', 'lo', 'goal' )),
         fb("Dist"), fin("flown",'',4), fb("Glider"), fin("glider",'',6), fb("Class"), fselect('dhv', 'competition', array('1', '1/2', '2', '2/3', 'competition')), fb("Penalty"),fin("penalty",'',4), fbut("submit","addflight", "$tarPk", "Manual Addition"));
-    echo ftable($piladd, "border=\"0\" cellpadding=\"2\" cellspacing=\"0\" valign=\"bottom\" align=\"left\"", '', '');
+    echo ftable($piladd, 'class=taskpiladd', '', '');
 
     echo "</form>";
     echo "</p>";
 }
 
-?>
-</div>
-</div>
-</body>
-</html>
+tpfooter($file);
 
+?>

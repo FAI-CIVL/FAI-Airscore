@@ -1,10 +1,6 @@
 <?php
 require 'authorisation.php';
 
-//
-// All mysql_ are deprecated, need to change all to mysqli_ functions. I leave all here than we will clean up
-//
-
 //auth('system');
 $link = db_connect();
 
@@ -21,14 +17,11 @@ if (array_key_exists('tasPk', $_REQUEST))
     $tasPk=intval($_REQUEST['tasPk']);
 
     $sql = "SELECT T.tasName from tblTask T where T.tasPk=$tasPk";
-//    $result = mysql_query($sql,$link) or die("Can't get task: " . mysql_error());
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Cannot get task: ' . mysqli_connect_error());
-//    $tname = mysql_result($result, 0, 0);
     $tname = mysqli_result($result, 0, 0);
 
     $sql = "SELECT T.*, R.* from tblTaskWaypoint T, tblRegionWaypoint R where T.tasPk=$tasPk and R.rwpPk=T.rwpPk order by T.tawNumber";
 
-//    $result = mysql_query($sql,$link);
     $result = mysqli_query($link, $sql);
     # nuke normal header ..
     header("Content-type: text/wpt");
@@ -38,7 +31,6 @@ if (array_key_exists('tasPk', $_REQUEST))
     print "G  WGS 84\n";
     print "U  1\n";
     print "R  16711680,$tname,1,-1\n";
-//    while($row = mysql_fetch_array($result))
     while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         $name = $row['rwpName'];
