@@ -78,3 +78,7 @@ What do the perl scripts do:
 * team_score.pl - team scoring stuff
 * track_verify_sr.pl - verify an indivudal track against a task
 
+What do the python scripts do:
+
+* email_pilots.py - for a given task, sends an email to all or only pilots who haven't submitted tracks
+* get_igc_from_xcontest.py - for a given task, pulls tracks from xcontest and submits to airscore
