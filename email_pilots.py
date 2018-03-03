@@ -29,7 +29,7 @@ class send_mail():
 
     def send(self, email_to, subject, body):
         '''send email'''
-        header = 'To:' + email_to + '\n' + 'From: ' + \
+        header = 'To:' + ','.join(email_to) + '\n' + 'From: ' + \
             self.username + '\n' + 'Subject: ' + subject + '\n'
         msg = header + '\n\n ' + body + ' \n\n'
         self.smtpserver.sendmail(self.username, email_to, msg)
@@ -106,7 +106,7 @@ def main():
     send_list = list()
     confirm_email = ''
     confirm_mess = ''
-    email_to = ''
+    email_to = list()
 
     task_id, to_all, confirm_email, test, message_file = check_arg(sys.argv[
                                                                1:])
@@ -121,7 +121,7 @@ def main():
             if pilot_list[name] == None:
                 no_email.append(' ' + name)
             else:
-                email_to += pilot_list[name] + ', '
+                email_to.append(pilot_list[name])
                 send_list.append(name + ' ' + pilot_list[name])
 
         # check if we are in test mode (if so, we don't send email to pilots)
