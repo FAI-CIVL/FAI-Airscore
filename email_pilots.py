@@ -104,12 +104,13 @@ def main():
     body = ''
     no_email = list()
     send_list = list()
-    confirm_email = ''
+    confirm_email = list()
     confirm_mess = ''
     email_to = list()
 
-    task_id, to_all, confirm_email, test, message_file = check_arg(sys.argv[
-                                                               1:])
+    task_id, to_all, confirm, test, message_file = check_arg(sys.argv[
+                                                                   1:])
+    confirm_email.append(confirm)
     pilot_list = get_email_list(task_id, DB_User, DB_Password, DB, to_all)
     subject = get_task_details(task_id, DB_User, DB_Password, DB)
     # setup smtp connection
