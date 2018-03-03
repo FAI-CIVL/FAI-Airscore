@@ -71,9 +71,9 @@ def get_task_details(task_id, DB_User, DB_Password, DB):
     c.execute("SELECT tasDate, comLocation FROM `tblTask` t join "
               "tblCompetition c on t.comPk = c.comPk WHERE tasPk = %s", (task_id,))
     date, location = c.fetchone()
-    datestr = date.strftime('%Y-%m-%d')  # convert from datetime to string
-    return datestr + ' ' + location + ' '
-
+    datestr = date.strftime('%m-%d')  # convert from datetime to string
+    subject = datestr + ' ' + location
+    return subject
 
 def check_arg(args=None):
 
@@ -106,6 +106,7 @@ def main():
     send_list = list()
     confirm_email = ''
     confirm_mess = ''
+    email_to = ''
 
     task_id, to_all, confirm_email, test, message_file = check_arg(sys.argv[
                                                                1:])
@@ -128,7 +129,7 @@ def main():
             email_to = test
 
         with open(email_dir + message_file, 'r') as mess:
-            subject += mess.readline()
+            subject += ' '+ mess.readline()
             body = "".join(mess.readlines())
 
         mail.send(email_to, subject, body)
