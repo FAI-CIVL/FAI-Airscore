@@ -265,7 +265,20 @@ sub read_task
         print "No valid task for this track ($tasPk)\n";
         exit 1; 
     }
-    my $sth = $dbh->prepare("select unix_timestamp(T.tasStartTime) as ustime, unix_timestamp(T.tasFinishTime) as uftime,T.*, C.comTimeOffset, C.comClass, F.forMargin from tblTask T, tblCompetition C, tblFormula F where T.tasPk=$tasPk and T.comPk=C.comPk and F.comPk=T.comPk");
+    my $sth = $dbh->prepare("	SELECT 
+									unix_timestamp(T.tasStartTime) AS ustime, 
+									unix_timestamp(T.tasFinishTime) AS uftime, 
+									T.*, 
+									C.comTimeOffset, 
+									C.comClass, 
+									F.forMargin 
+								FROM 
+									tblTask T 
+									JOIN tblCompetition C USING (comPk) 
+									JOIN tblForComp FC USING (comPk) 
+									LEFT OUTER JOIN tblFormula F USING (forPk) 
+								WHERE 
+									T.tasPk = $tasPk ");
     $sth->execute();
     if  ($ref = $sth->fetchrow_hashref()) 
     {
@@ -276,8 +289,8 @@ sub read_task
         $task{'class'} = $ref->{'comClass'};
         $task{'launchopen'} = $ref->{'tasTaskStart'};
         $task{'slaunch'} = (24*3600 + substr($ref->{'tasTaskStart'},11,2) * 3600 +
-                            substr($ref->{'TaskStart'},14,2) * 60 +
-                            substr($ref->{'TaskStart'},17,2) - 
+                            substr($ref->{'tasTaskStart'},14,2) * 60 +
+                            substr($ref->{'tasTaskStart'},17,2) - 
                             $ref->{'comTimeOffset'} * 3600) % (24*3600);
         $task{'start'} = $ref->{'tasStartTime'};
         $task{'gmstart'} = $ref->{'ustime'} - $ref->{'comTimeOffset'} * 3600;
@@ -286,10 +299,10 @@ sub read_task
                             substr($ref->{'tasStartTime'},17,2) - 
                             $ref->{'comTimeOffset'} * 3600) % (24*3600);
         $task{'finish'} = $ref->{'tasFinishTime'};
-        $task{'sfinish'} = substr($ref->{'tasFinishTime'},11,2) * 3600 +
-                        substr($ref->{'tasFinishTime'},14,2) * 60 +
-                        substr($ref->{'tasFinishTime'},17,2) - 
-                        $ref->{'comTimeOffset'}*3600;
+        $task{'sfinish'} = (24*3600 + substr($ref->{'tasFinishTime'},11,2) * 3600 +
+							substr($ref->{'tasFinishTime'},14,2) * 60 +
+							substr($ref->{'tasFinishTime'},17,2) - 
+							$ref->{'comTimeOffset'} * 3600) % (24*3600);
         if (defined($ref->{'tasStartCloseTime'}))
         {
             $task{'startclose'} = $ref->{'tasStartCloseTime'};
@@ -337,6 +350,7 @@ sub read_task
         $task{'heightbonus'} = $ref->{'tasHeightBonus'};
         $task{'laststart'} = $task{'sstart'};
         $task{'margin'} = $ref->{'forMargin'};
+        $task{'checklaunch'} = $ref->{'tasCheckLaunch'};
         
         if (defined($ref->{'tasLastStartTime'}))
         {
@@ -469,14 +483,22 @@ sub read_formula
     $formula{'sspenalty'} = 1.0;
     $formula{'nomgoal'} = 30;
     $formula{'mindist'} = 5000;
-    $formula{'nomdist'} = 40000;
+    $formula{'nomdist'} = 45000;
     $formula{'nomtime'} = 5400;
     $formula{'difframp'} = 'fixed';
     $formula{'diffdist'} = 1500;
     $formula{'diffcalc'} = 'all';
     $formula{'lineardist'} = 0.5;
 
-    my $sth = $dbh->prepare("select F.* from tblCompetition C, tblFormula F where C.comPk=$comPk and F.forPk=C.forPk");
+    my $sth = $dbh->prepare("	SELECT 
+									F.*,
+									FC.* 
+								FROM 
+									tblCompetition C 
+									JOIN tblForComp FC USING (comPk) 
+									LEFT OUTER JOIN tblFormula F USING (forPk) 
+								WHERE 
+									C.comPk = $comPk ");
     $sth->execute();
     if ($ref = $sth->fetchrow_hashref()) 
     {
@@ -570,25 +592,25 @@ sub store_result
     my $speed;
     my $start;
     my $goal;
-    my $coeff;
-    my $coeff2;
+    my $coeff = 0;
+    my $coeff2 = 0;
     my $ss;
     my $endss;
-    my $penalty;
-    my $comment;
+    my $penalty = 0;
+    my $comment = '';
     my $turnpoints;
-    my $stopalt;
-    my $stoptime;
+    my $stopalt = 0;
+    my $stoptime = 0;
 
     $tasPk = $track->{'tasPk'};
     $traPk = $track->{'traPk'};
     $dist = $result->{'distance'};
     $start = $result->{'start'};
     $goal = $result->{'goal'};
-    $coeff = $result->{'coeff'};
-    $coeff2 = 0+$result->{'coeff2'};
+    $coeff = 0 + $result->{'coeff'};
+    $coeff2 = 0 + $result->{'coeff2'};
     $penalty = 0 + $result->{'penalty'};
-    $comment = $result->{'comment'};
+    $comment = '' . $result->{'comment'};
     $stopalt = 0 + $result->{'stopalt'};
     $stoptime = 0 + $result->{'stoptime'};
     if (!$goal)
@@ -613,8 +635,21 @@ sub store_result
 
     #print "insert into tblTaskResult (tasPk,traPk,tarDistance,tarSpeed,tarStart,tarGoal,tarSS,tarES,tarTurnpoints) values ($tasPk,$traPk,$dist,$speed,$start,$goal,$ss,$endss,$turnpoints)";
     $dbh->do("delete from tblTaskResult where traPk=? and tasPk=?", undef, $traPk, $tasPk);
-    print("insert into tblTaskResult (tasPk,traPk,tarDistance,tarSpeed,tarStart,tarGoal,tarSS,tarES,tarTurnpoints,tarLeadingCoeff,tarLeadingCoeff2,tarPenalty,tarComment,tarLastAltitude,tarLastTime) values ($tasPk,$traPk,$dist,$speed,$start,$goal,$ss,$endss,$turnpoints,$coeff,$coeff2,$penalty,'$comment',$stopalt,$stoptime)\n");
-    my $sth = $dbh->prepare("insert into tblTaskResult (tasPk,traPk,tarDistance,tarSpeed,tarStart,tarGoal,tarSS,tarES,tarTurnpoints,tarLeadingCoeff,tarLeadingCoeff2,tarPenalty,tarComment,tarLastAltitude,tarLastTime) values ($tasPk,$traPk,$dist,$speed,$start,$goal,$ss,$endss,$turnpoints,$coeff,$coeff2,$penalty,'$comment',$stopalt,$stoptime)");
+    # print("insert into tblTaskResult (tasPk,traPk,tarDistance,tarSpeed,tarStart,tarGoal,tarSS,tarES,tarTurnpoints,tarLeadingCoeff,tarLeadingCoeff2,tarPenalty,tarComment,tarLastAltitude,tarLastTime) values ($tasPk,$traPk,$dist,$speed,$start,$goal,$ss,$endss,$turnpoints,$coeff,$coeff2,$penalty,'$comment',$stopalt,$stoptime)\n");
+    my $sth = $dbh->prepare("	INSERT INTO tblTaskResult (
+									tasPk, traPk, tarDistance, tarSpeed, 
+									tarStart, tarGoal, tarSS, tarES, tarTurnpoints, 
+									tarLeadingCoeff, tarLeadingCoeff2, 
+									tarPenalty, tarComment, tarLastAltitude, 
+									tarLastTime
+								) 
+								VALUES 
+									(
+										$tasPk, $traPk, $dist, $speed, $start, 
+										$goal, $ss, $endss, $turnpoints, $coeff, 
+										$coeff2, $penalty, '$comment', $stopalt, 
+										$stoptime
+									)");
     $sth->execute();
 
     if (defined($result->{'kmtime'}))

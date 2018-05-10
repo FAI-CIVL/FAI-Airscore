@@ -26,7 +26,7 @@ my $coords;
 my $numc;
 my $duration;
 my $pilPk;
-my $earlyexit;
+my $earlyexit = 0;
 my $flightstart;
 my $ftype;
 my $ignore_breaks = 0;

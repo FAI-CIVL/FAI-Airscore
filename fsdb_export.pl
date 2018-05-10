@@ -275,11 +275,11 @@ while (defined($ref))
     $turn->{'radius'} = $ref->{'tawRadius'};
     $turn->{'open'} = '';
     $turn->{'close'} = '';
-    if ($ref->{'tawType'} eq 'start')
+    if ($ref->{'tawType'} eq 'launch')
     {
         $ss = $cnt;
     }
-    if ($ref->{'tawType'} eq 'start')
+    if ($ref->{'tawType'} eq 'speed')
     {
         $ss = $cnt;
     }

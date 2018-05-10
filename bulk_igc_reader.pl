@@ -22,20 +22,20 @@ local * DIR;
 #
 sub extract_igcs
 {
-    my ($f) = @_;
+    my ($f,$tmpdir) = @_;
 
     my @fields;
     my @names;
     my %tracks;
     my $row;
-    my $tmpdir;
+    #my $tmpdir;
     my $pilPk;
     my $pilFAI = 0;
     my $sth;
 
     # clean up and extract files ..
 
-    $tmpdir = mkdtemp("/tmp/bulkXXXX");
+    #$tmpdir = mkdtemp("/tmp/bulkXXXX");
     #system("/usr/bin/rm -rf $tmpdir");
     #mkdir($tmpdir, 0755);
     system("yes | /usr/bin/unzip $f -d $tmpdir");
@@ -160,23 +160,48 @@ sub read_all_tracks
     #print Dumper($tracks);
     for my $pilPk ( keys %$tracks )
     {
-        $file = $tracks->{$pilPk};
-        #print "Track read ($file) for pilot=$pilPk\n";
-        
-        $nfile = dirname($file) . "\/$pilPk";
-        rename($file, $nfile);
-
-        print ("${BINDIR}add_track.pl $pilPk \"$nfile\" $comPk $tasPk\n");
-        $res = `${BINDIR}add_track.pl $pilPk \"$nfile\" $comPk $tasPk`;
-        print $res;
-        #print "Track read ($pilPk:$file) may have failed: $out\n";
+        # Check if pilot is already scored
+        $traPk = 0;
+        $sth = $dbh->prepare("	SELECT 
+									T.traPk 
+								FROM 
+									tblTaskResult TR 
+									JOIN tblTrack T USING (traPk) 
+								WHERE 
+									T.pilPk = $pilPk 
+									AND TR.tasPk = $tasPk 
+								LIMIT 
+									1 ");
         $sth->execute();
-        $name = lc($sth->fetchrow_array());
+        $traPk = $sth->fetchrow_array();
+        
+        if ( $traPk > 0 )
+        {
+        	print "Pilot with ID = $pilPk already scored (track ID $traPk). \n";
+        }
+        else
+        {
+            # Pilot has not a valid track for the task yet
+            $file = $tracks->{$pilPk};
+			#print "Track read ($file) for pilot=$pilPk\n";
+		
+			$nfile = dirname($file) . "\/$pilPk";
+			rename($file, $nfile);
 
-        $copyname = $FILEDIR . $year . "/" . $name . "_" . $pilPk . "_" . $dte;
-        print "cp $nfile $copyname\n";
-        copy($file, $copyname);
-        chmod 0644, $copyname;
+			print ("${BINDIR}add_track.pl $pilPk \"$nfile\" $comPk $tasPk\n");
+			$res = `${BINDIR}add_track.pl $pilPk \"$nfile\" $comPk $tasPk`;
+			print $res;
+			#print "Track read ($pilPk:$file) may have failed: $out\n";
+
+			$sth = $dbh->prepare("SELECT pilLastName FROM tblPilot WHERE pilPk = '$pilPk'");
+			$sth->execute();
+			$name = lc($sth->fetchrow_array());
+
+			$copyname = $FILEDIR . $year . "/" . $name . "_" . $pilPk . "_" . $dte;
+			print "cp $nfile $copyname\n";
+			copy($file, $copyname);
+			chmod 0644, $copyname;
+        }
     }
 }
 
@@ -188,6 +213,7 @@ my $tracks;
 my $tasPk;
 my $comPk;
 my $sth;
+my $file;
 
 if (scalar @ARGV < 2)
 {
@@ -199,6 +225,7 @@ $dbh = db_connect();
 
 # Check the task stuff
 $tasPk = $ARGV[0] + 0;
+$file = $ARGV[1];
 
 $sth = $dbh->prepare("select comPk from tblTask where tasPk=$tasPk");
 $sth->execute();
@@ -210,11 +237,28 @@ if ($comPk == 0)
     exit 1;
 }
 
+# Create a temporary directory
+$tmpdir = mkdtemp("/tmp/bulkXXXX");
+#print "*** Temp Dir '$tmpdir' created ... *** \n";
+
 # Find all the tracks
-$tracks = extract_igcs($ARGV[1]);
+$tracks = extract_igcs($file,$tmpdir);
 
 # Read each of the tracks 
 read_all_tracks($comPk,$tasPk,$tracks);
+
+# Delete temp files
+#print "*** Deleting '$tmpdir' ... *** \n";
+rmtree $tmpdir;
+
+if ( -e $tmpdir ) 
+{
+	print "*** Directory '$tmpdir' still exists *** \n";
+}
+else 
+{
+	#print "* Directory '$tmpdir' deleted. * \n";
+}
 
 # Score the round ..
 #system("task_score.pl $tasPk");

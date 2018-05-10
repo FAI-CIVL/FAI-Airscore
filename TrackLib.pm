@@ -272,7 +272,7 @@ sub straight_on
     my $v = plane_normal($c1, $c2);
     my $w = plane_normal($c2, $c3);
 
-    my $phi = acos($v .$w);
+    my $phi = acos2($v .$w);
     my $phideg = $phi * 180 / $pi;
 
     # turned around it seems .. make new seg..
@@ -383,13 +383,13 @@ sub angle
 
     my $v = plane_normal($c1, $c2);
     my $w = plane_normal($c3, $c4);
-    $phi = acos($v . $w);
+    $phi = acos2($v . $w);
     $phideg = $phi * 180 / $pi;
 
     return $phideg;
 }
 
-# subroutine acos
+# subroutine acos2
 #
 # input: an angle in radians
 #
@@ -397,7 +397,7 @@ sub angle
 # description: this is needed because perl does not provide an 
 #   arc cosine function
 
-sub acos 
+sub acos2 
 {
     my ($x) = @_;
     my $ret;
@@ -421,7 +421,7 @@ sub acos
 # * p and a are the latitudes of P and A
 # * |dl| is the absolute value of the difference in longitude between P and A
 #
-# dist = acos(res) * 111.23km
+# dist = acos2(res) * 111.23km
 #
 # Other stuff:
 # Length of a degree of longitude = cos (latitude) * 111.325 kilometers
@@ -438,7 +438,7 @@ sub acos
 #       b = 6 356 752.3142 m    
 #       f = 1 / 298.257223563
 #
-#   return &acos(cos($a1)*cos($b1)*cos($a2)*cos($b2) + cos($a1)*sin($b1)*cos($a2)*sin($b2) + sin($a1)*sin($a2)) * $r;
+#   return &acos2(cos($a1)*cos($b1)*cos($a2)*cos($b2) + cos($a1)*sin($b1)*cos($a2)*sin($b2) + sin($a1)*sin($a2)) * $r;
 #
 #   Where:
 #
@@ -686,6 +686,10 @@ sub polygon_area
     # 'closing' segment (maybe 0)
     $seg = $track->[$sz-1]->{'centre'}->{'cart'};
     $seg1 = $track->[0]->{'centre'}->{'cart'};
+    $seg->{'x'} //= 0;  # default of 0 if undef
+    $seg->{'y'} //= 0;
+    $seg1->{'x'} //= 0;
+    $seg1->{'y'} //= 0;
     $totarea = $totarea + 
             ($seg->{'x'}*$seg1->{'y'} - $seg1->{'x'}*$seg->{'y'});
 

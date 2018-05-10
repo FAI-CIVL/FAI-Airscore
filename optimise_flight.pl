@@ -19,7 +19,7 @@ use TrackLib qw(:all);
 my $debug = 0;
 
 my $max_radius = 500;   # aggregation of points radius
-my $track_width;        # metres either side of middle lines
+my $track_width = 0;        # metres either side of middle lines
 my $bucket_radius;      # aggregation of points radius
 
 #
@@ -38,7 +38,7 @@ sub task_trim
     $waypoints = $task->{'waypoints'};
     $coords = $flight->{'coords'};
 
-    $allpoints = scalar @$waypoints;
+    #$allpoints = scalar @$waypoints;
 
     $count = 0;
     for $coord (@$coords)
@@ -356,7 +356,7 @@ sub reduce_segments
 
         # merge two segments ..
         # check if it's a start/finish segment properly ...
-        $mg = @skeys[0];
+        $mg = $skeys[0];
         $res = $possible{$mg};
         if (defined($res->{'offhead'}))
         {
@@ -408,7 +408,7 @@ sub reduce_segments
         $flight->[$mg]->{'length'} = $res->{'newseg'};
         $t1 = $flight->[$mg]->{'track'};
         $t2 = $flight->[$mg+1]->{'track'};
-        $flight->[$mg]->{'track'} = @$t1, @$t2;
+        $flight->[$mg]->{'track'} = @$t1;#, @$t2;     #unsure if this is correct..seems to fix warning
 
         splice @$flight, $mg+1, 1;
         $num--;
@@ -536,7 +536,7 @@ sub maximise_endpoint
     return \%maxdist;
 }
 
-my $maxdist;
+my $maxdist=0;
 my @best;
 my @limit;
 
@@ -549,6 +549,7 @@ sub combo_generator
     my $copy;
     my $tdist;
     my $i;
+    $dist //= 0;
 
     if ($debug)
     {
@@ -1025,7 +1026,7 @@ sub store_buckets
 sub score_track
 {
     my ($track,$totlen) = @_;
-    my $totlen;
+    #my $totlen;
     my $polarea;
     my $ascore;
     my $gap;
@@ -1081,6 +1082,9 @@ $traPk = $ARGV[0];
 $comPk = $ARGV[1];
 $tasPk = $ARGV[2];
 $turnpoints = $ARGV[3];
+$turnpoints //= '';
+$tasPk //= 0;
+$totlen=0;
 
 $dbh = db_connect();
 $formula = read_formula($comPk);

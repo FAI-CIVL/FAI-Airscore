@@ -11,6 +11,10 @@ use Data::Dumper;
 our @ISA    = qw(Exporter);
 our @EXPORT = qw{:ALL};
 
+# Add currect bin directory to @INC
+use File::Basename;
+use lib '/home/untps52y/perl5/lib/perl5';
+use lib dirname (__FILE__) . '/';
 use TrackLib qw(:ALL);
 
 use strict;
@@ -18,13 +22,14 @@ use strict;
 my $first_time = 0;
 my $last_time = 0;
 
+###
+# CONFIGURABLE VARIABLES
 my $debug = 0;
 my $allowjumps = 0;
-my $max_errors = 5;
+my $max_errors = 5;			# Maximum number of errors while extracting fixes
 my $DEGREESTOINT = 46603;
-
-# this probably should be dynamic based on total # points
-my $goodchunk = 500;        
+my $max_time_break = 600;	# Maximum Time gap between fixes, in seconds
+###
 
 local * FD;
 
@@ -158,7 +163,10 @@ sub extract_fix
     $loc{'dlong'} = 0.0 + $loc{'long'};
     $loc{'long'} = $loc{'long'} * PI() / 180;
 
-    $loc{'fix'} = substr $row, 24, 1;
+    if (!defined($loc{'fix'}))
+    {
+        $loc{'fix'} = substr $row, 24, 1;
+    }
     $loc{'pressure'} = 0 + substr $row, 25, 5;
     $loc{'altitude'} = 0 + substr $row, 30, 5;
     
@@ -530,29 +538,28 @@ sub is_flying
     {
         return 0;
     }
-
-    if ($timdif > 300)
-    {
-        if ($debug) { print "Not flying: time gap=$timdif secs\n"; }
-        return 1;
-    }
    
-    if ($dist > 5000)
+    if ($dist > 20 * $max_time_break)
     {
+        # Gap in the track with a distance bigger than 25 m/sec * max time break
         if ($debug) { print "Not flying: big dist jump=$dist m\n"; }
         return 10;
     }
 
-    # 
+    if ($timdif > $max_time_break)
+    {
+        if ($debug) { print "Not flying: time gap= $timdif secs\n"; }
+        return 5;
+    }
+ 
     if ($dist > (50.0*($timdif)))
     {
         # strange distance ....
-        # print "dist not flying\n";
         if ($debug) { print "Not flying: teleported=$dist metres\n"; }
         return 1;
     }
 
-    if ($altdif > (20.0*($timdif)))
+    if ($altdif > (25.0*($timdif)))
     {
         if ($debug) { print "Not flying: vertical teleport=$altdif metres\n"; }
         return 1;
@@ -575,25 +582,23 @@ sub is_flying
 
 sub trim_flight
 {
-    my ($flight, $pilPk, $ignore_breaks) = @_;
+    my ($flight, $pilPk) = @_;
     my $full;
-    my @reduced;
     my $dist;
     my $max;
     my $next;
-    my $last;
-    my $lasti;
-    my $timdif;
-    my $count = 0;
+    my $count = 0;		# Discontinuity counter
     my $coord;
     my $i;
+    
+    $debug = 1;
 
     $full = $flight->{'coords'};
 
     # trim crap off the end of the flight ..
     $coord = pop @$full;
     $next = pop @$full; 
-    while (defined($next) && ($count < 2))
+    while ( defined($next) && ($count < 2) )
     {
         #if ($debug) { print "Trim stuff from end\n"; }
         if (is_flying($next, $coord) > 0)
@@ -615,95 +620,127 @@ sub trim_flight
     $count = 0;
     $coord = shift @$full;
     $next = shift @$full; 
-    while (defined($next) && $coord->{'fix'} ne 'A')
+    while ( defined($next) && $coord->{'fix'} ne 'A' )
     {
         #if ($debug) { print "no fix at start\n"; }
         $coord = $next;
         $next = shift @$full; 
     }
-    while (defined($next) && is_flying($coord, $next) > 0)
+    while ( defined($next) && is_flying($coord, $next) > 0 )
     {
         #if ($debug) { print "trim at start\n"; }
         $coord = $next;
         $next = shift @$full; 
     }
 
-    if ($ignore_breaks == 1)
-    {
-        return $flight;
-    }
+	# After the cleanup at the beginning and the end of track,
+    # Checks again the remaining part looking for discontinuities
+    # Then saves the longest chunk between them
+    $max = (scalar @$full) - 1;
 
-    # TODO: only take "latest" track if "broken"?
-    # work backwards .. look for a !flying
-    #print "trim for last flying segment\n";
-    $timdif = 0;
-
-    # look for a segment of at least 10 mins ..
-    #if ($debug) { print "find best recent segment\n"; }
-    $max = scalar @$full;
-    while ($timdif < $goodchunk and $max > 2)
+    if ( $max > 20 )
     {
         my $isf;
+		my $timdif = 0;		# Length of chunk
+		my $bestdif = 0;	# Length of best chunk
+		my $bests = 0;		# Start fix of the best chunk we found
+		my $bestf = $max;	# Last fix of the best chunk we found
+		my $first = 0; 		# First fix of the chunk we are considering
+		my $loc = 0; 		# Pointer
 
-        $max = scalar @$full;
-        $count = 0;
-        $last = $full->[$max-1];
-        $lasti = $max - 1;
-        for ($i = $max-1; $i > 0; $i--)
+        for ( $i = 1; $i < $max; $i++ )
         {
-            if ($full->[$i-1]->{'fix'} ne 'A')
+            if ($debug) { print "Time(i): ", $full->[$i]->{'time'}, "; Time(loc): ", $full->[$loc]->{'time'}, "; Time(max): ", $full->[$max]->{'time'}, " \n"; }
+
+            if ( $full->[$i]->{'fix'} ne 'A' )
             {
                 # Only use good fixes ..
+                if ($debug) { print "Found bad fix at: ", $full->[$i]->{'time'}, " \n"; }
                 next;
             }
-            if ($last->{'time'} - $full->[$i-1]->{'time'} < 15)
+            if ( $full->[$i]->{'time'} - $full->[$loc]->{'time'} < 15 )
             {
                 # Only check points every 15 seconds or so ...
+                if ($debug) { print "Skipping fix at: ", $full->[$i]->{'time'}, " \n"; }
                 next;
             }
-            $isf = is_flying($full->[$i-1], $last);
-            if ($isf > 0)
+            
+            # Check if pilot is flying
+            $isf = is_flying($full->[$loc], $full->[$i]);
+
+            if ( $isf > 0 )
             {
-                print "!is_flying ($isf) at $i\n";
-                if ($last->{'time'} - $full->[$i-1]->{'time'} > 120)
-                {
-                    if ($debug) { print "Big time gap in tracklog: ", $last->{'time'}, ", previous: ", $full->[$i-1]->{'time'}, "\n"; }
-                    last;
+                # print "!is_flying ($isf) at $i\n";
+                if ( $full->[$i]->{'time'} - $full->[$loc]->{'time'} > 300 )
+                {                   
+                    if ($debug) { print "Big time gap in tracklog: ", $full->[$i]->{'time'}, ", previous: ", $full->[$loc]->{'time'}, "\n"; }
                 }
+
                 $count = $count + $isf;
+                if ($debug) { print "Error counter: ", $count, "\n"; }
+                
+                if ( $count > 8 )
+				{
+					# Reached maximum acceptable discontinuity in a chunk
+					if ($debug) { print "** Not flying: counted out at $i **\n"; }
+				
+					$timdif = $full->[$i]->{'time'} - $full->[$first]->{'time'}; # Length of this chunk
+				
+					# Compares chunk with the best one found yet
+					if ( ($timdif > $bestdif) )
+					{
+						# We found a better chunk
+						if ($debug) { print "*** Found new best chunk: from fix ", $first, " to fix ", $i, "; lenght: ", $timdif, " ***\n"; }
+						$bestdif = $timdif;
+						$bests = $first;
+						$bestf = $i;
+					}
+
+					if ( ($full->[$max]->{'time'} - $full->[$i]->{'time'}) < $bestdif )
+					{
+						# There is not enough time left in track to find a better chunk
+						if ($debug) { print "*** There is no time left to find a longer chunk; best: ", $bestdif, ", remaining: ",$full->[$max]->{'time'} - $full->[$i]->{'time'}, " ***\n"; }
+						last;
+					}
+				
+					# Start looking from here on
+					$first = $i; 
+					if ($debug) { print "** New Beginning of search: ", $first, " **\n"; }               	               
+				}			
             }
             else
             {
-                $count = 0;
+                # Pilot is flying, bring back the discontinuity counter to zero
+                if ($debug) { print "* Pilot still flying at ", $i, " *\n"; }
+                $count = 0;                
             }
 
-            if ($count > 8)
-            {
-                # only "not" flying after 3?
-                if ($debug) { print "Not flying: counted out at $i\n"; }
-                last;
-            }
-            $last = $full->[$i-1];
-            $lasti = $i-1;
+			# bring the pointer to last fix considered
+			if ($debug) { print "Moving pointer to ", $i, " - Error counter ", $count, " \n"; }
+			$loc = $i;
         }
-        $timdif = $full->[$max-1]->{'time'} - $full->[$lasti]->{'time'};
-        if (($timdif < $goodchunk) and ($i > 1))
+        
+        # I could reach EOF still flying, checking against last chunk if I found one
+        # Sure there would be a way to do this in the IF statement
+        if ( $bestdif > 0 and $i > $max - 5 )
         {
-            if ($debug) { print "Using start segment to: $i\n"; }
-            @$full = splice(@$full, 0, $i-1);
+			$timdif = $full->[$max]->{'time'} - $full->[$first]->{'time'}; # Length of last chunk of file
+			if ( ($timdif > $bestdif) )
+			{
+				# We found a better chunk
+				if ($debug) { print "*** Best chunk at the end of flight: from fix ", $first, " to fix ", $max, "; lenght: ", $timdif, " ***\n"; }
+				$bestdif = $timdif;
+				$bests = $first;
+				$bestf = $max;
+			}
         }
-        elsif (($timdif >= $goodchunk) and ($i > 1))
-        {
-            if ($debug) { print "Using end segment from: $lasti (to $max)\n"; }
-            @$full = splice(@$full, $lasti, $max-$lasti);
-        }
-
-        # don't loop forever if it's a good track!
-        if ($i == 0)
-        {
-            last;
-        }
+        
+        # We limit the track to the best chunk we found
+        if ($debug) { print "** ** Using segment from: $bests to: $bestf ** **\n"; }
+        @$full = splice(@$full, $bests, $bestf);
     }
+
+    # Adjusting track time
     $flight->{'header'}->{'start'} = $flight->{'header'}->{'start'} + $full->[0]->{'time'};
 
     return $flight;

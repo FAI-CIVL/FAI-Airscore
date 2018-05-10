@@ -20,7 +20,7 @@ $username = reqsval('username');
 $password = reqsval('password');
 $session = reqsval('sessionID');
 
-$sql = "select pilPk from tblPilot where pilLastName='$username' and pilHGFA='$password'";
+$sql = "select pilPk from tblPilot where pilLastName='$username' and pilFAI='$password'";
 $result = mysqli_query($link, $sql);
 
 #if ($op eq 'login')

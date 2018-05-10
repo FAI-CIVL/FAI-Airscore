@@ -225,7 +225,7 @@ sub find_closest
         #{
         #    $b = vcdiv($b, $vl);
         #}
-        #$theta = acos(dot_product($a,$b));
+        #$theta = acos2(dot_product($a,$b));
 
         #$vn = vvplus($a,$b);
         #$vl = vector_length($vn);
@@ -242,7 +242,7 @@ sub find_closest
         # find the angle between in/out line
         $v = plane_normal($C1, $C2);
         $w = plane_normal($C3, $C2);
-        $phi = acos($v . $w);
+        $phi = acos2($v . $w);
         $phideg = $phi * 180 / $pi;
         #print "    angle between in/out=$phideg\n";
         
@@ -438,14 +438,101 @@ sub short_dist
 #   $startssdist - distance to start of speed section
 #   $endssdist - distane to end of speed section
 #   $totdist - total task distance
-#
+
+
+# New sub below, changed naming
+# sub task_distance
+# {
+#     my ($task) = @_;
+#     my ($spt, $ept, $gpt);
+#     my $ssdist;
+#     my $endssdist;
+#     my $startssdist;
+#     my $tolerance = $task->{'margin'} / 100; # tolerance
+# 
+#     my $waypoints = $task->{'waypoints'};
+#     my $allpoints = scalar @$waypoints;
+#     my $cwdist = 0;
+#     for (my $i = 0; $i < $allpoints; $i++)
+#     {
+#         # Margins
+#         my $margin = $waypoints->[$i]->{'radius'} * $tolerance;  # I created input variable margin in Formula, already inserted in $Task should change to use that
+#         if ($margin < 5.0)
+#         {
+#             $margin = 5.0;
+#         }
+#         $waypoints->[$i]->{'margin'} = $margin;
+# 
+#         if (( $waypoints->[$i]->{'type'} eq 'launch') or 
+#              ($waypoints->[$i]->{'type'} eq 'speed') )
+#         {
+#             $spt = $i;
+#             $startssdist = $cwdist;
+#             if ($startssdist < 1 && ($waypoints->[$i]->{'how'} eq 'exit'))
+#             {
+#                 $startssdist += $waypoints->[$i]->{'radius'};
+#             }
+#         }
+#         if ($waypoints->[$i]->{'type'} eq 'endspeed') 
+#         {
+#             $ept = $i;
+#             $endssdist = $cwdist;
+#             if ($waypoints->[$i]->{'how'} eq 'exit')
+#             {
+#                 $endssdist += $waypoints->[$i]->{'radius'};
+#             }
+#         }
+#         if ($waypoints->[$i]->{'type'} eq 'goal') 
+#         {
+#             $gpt = $i;
+#         }
+#         if ($i < $allpoints-1)
+#         {
+#             if (ddequal($waypoints->[$i], $waypoints->[$i+1]) && $waypoints->[$i+1]->{'how'} eq 'exit')
+#             {
+#                 $cwdist = $cwdist + $waypoints->[$i+1]->{'radius'};
+#                 if ($waypoints->[$i]->{'type'} ne 'launch')
+#                 {
+#                     $cwdist = $cwdist - $waypoints->[$i]->{'radius'};
+#                 }
+#             }
+#             else
+#             {
+#                 $cwdist = $cwdist + short_dist($waypoints->[$i], $waypoints->[$i+1]);
+#             }
+#         }
+#         print "wpt $i: $cwdist\n";
+#     }
+#     if (!defined($gpt))
+#     {
+#         $gpt = $allpoints;
+#     }
+#     if (!defined($ept))
+#     {
+#         $ept = $gpt;
+#     }
+#     if (!defined($endssdist)) 
+#     {
+#         $endssdist = $cwdist;
+#         if ($waypoints->[$gpt]->{'how'} eq 'exit')
+#         {   
+#             $endssdist += $waypoints->[$gpt]->{'radius'};
+#         }   
+#     }
+# 
+#     $ssdist = $endssdist - $startssdist;
+# 
+#     return ($spt, $ept, $gpt, $ssdist, $startssdist, $endssdist, $cwdist);
+# }
+
 sub task_distance
 {
     my ($task) = @_;
     my ($spt, $ept, $gpt);
-    my $ssdist;
-    my $endssdist;
-    my $startssdist;
+    my $ssdist;				# Speed Section Distance
+    my $endssdist;			# Distance to ESS
+    my $launchssdist;		# Distance to SS
+    my $tolerance = $task->{'margin'} / 100; # tolerance
 
     my $waypoints = $task->{'waypoints'};
     my $allpoints = scalar @$waypoints;
@@ -453,21 +540,21 @@ sub task_distance
     for (my $i = 0; $i < $allpoints; $i++)
     {
         # Margins
-        my $margin = $waypoints->[$i]->{'radius'} * 0.005;  # I created input variable margin in Formula, already inserted in $Task should change to use that
+        my $margin = $waypoints->[$i]->{'radius'} * $tolerance;  # I created input variable margin in Formula, already inserted in $Task should change to use that
         if ($margin < 5.0)
         {
             $margin = 5.0;
         }
         $waypoints->[$i]->{'margin'} = $margin;
 
-        if (( $waypoints->[$i]->{'type'} eq 'start') or 
+        if (( $waypoints->[$i]->{'type'} eq 'launch') or 
              ($waypoints->[$i]->{'type'} eq 'speed') )
         {
             $spt = $i;
-            $startssdist = $cwdist;
-            if ($startssdist < 1 && ($waypoints->[$i]->{'how'} eq 'exit'))
+            $launchssdist = $cwdist;
+            if ($launchssdist < 1 && ($waypoints->[$i]->{'how'} eq 'exit'))
             {
-                $startssdist += $waypoints->[$i]->{'radius'};
+                $launchssdist += $waypoints->[$i]->{'radius'};
             }
         }
         if ($waypoints->[$i]->{'type'} eq 'endspeed') 
@@ -488,7 +575,7 @@ sub task_distance
             if (ddequal($waypoints->[$i], $waypoints->[$i+1]) && $waypoints->[$i+1]->{'how'} eq 'exit')
             {
                 $cwdist = $cwdist + $waypoints->[$i+1]->{'radius'};
-                if ($waypoints->[$i]->{'type'} ne 'start')
+                if ($waypoints->[$i]->{'type'} ne 'launch')
                 {
                     $cwdist = $cwdist - $waypoints->[$i]->{'radius'};
                 }
@@ -517,9 +604,9 @@ sub task_distance
         }   
     }
 
-    $ssdist = $endssdist - $startssdist;
+    $ssdist = $endssdist - $launchssdist;
 
-    return ($spt, $ept, $gpt, $ssdist, $startssdist, $endssdist, $cwdist);
+    return ($spt, $ept, $gpt, $ssdist, $launchssdist, $endssdist, $cwdist);
 }
 
 sub in_semicircle

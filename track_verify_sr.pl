@@ -31,7 +31,7 @@ sub validate_olc
     my %result;
     my $dist;
     my $out;
-
+    
     $traPk = $flight->{'traPk'};
     $tasPk = $task->{'tasPk'};
     $comPk = $task->{'comPk'};
@@ -65,7 +65,7 @@ sub precompute_waypoint_dist
     my $dist;
     my $exdist;
     my (%s1, %s2);
-
+    
     $wptdistcache = [];
 
     $dist = 0.0;
@@ -147,7 +147,7 @@ sub compute_waypoint_dist
             print "   compute_waypoint_dist (wcount=$wcount): $i: dist=$dist ($wpdist)\n";
         }
     }
-
+    
     if ($wcount > -1 && $wpdist == 0)
     {
         $dist = $dist + $waypoints->[$wcount-1]->{'radius'};
@@ -168,7 +168,7 @@ sub compare_centres
     my ($wp1, $wp2) = @_;
 
     if ($wp1->{'dlat'} == $wp2->{'dlat'} && 
-        $wp1->{'dlon'} == $wp2->{'dlon'})
+        $wp1->{'dlong'} == $wp2->{'dlong'})
     {
         return 1;
     }
@@ -260,7 +260,7 @@ sub distance_flown
     else
     {
         my $rdist;
-
+                        
         $nwdist = compute_waypoint_dist($waypoints, $wmade);
 
         if ($nextwpt->{'type'} ne 'goal' && $nextwpt->{'type'} ne 'endspeed')
@@ -434,9 +434,9 @@ sub validate_task
     my $lastmaxcoord;
     my ($awarded,$awtime);
     my ($dist, $rdist, $edist);
-    my $penalty;
+    my $penalty = 0;
     my $comment = '';
-    my ($wasinstart, $wasinSS);
+    my ($wasinlaunch, $wasinSS);
     my $kmtime = [];
     my $kmmark;
     my %result;
@@ -669,11 +669,24 @@ sub validate_task
 
         # Ok - work out if we're in cylinder
         $dist = distance($coord, $wpt);
-        # takeoff check
-        if ($dist < $wpt->{'radius'} and ($wpt->{'type'} eq 'start'))		# this is the takeoff, we should change name, very confusing
+ 
+        # takeoff check        
+        if ( $wpt->{'type'} eq 'launch' )
         {
-            $wasinstart = $wcount;
-        }
+			# We need to do this only if requested in task setup
+			if ( $task->{'checklaunch'} eq 'on' )
+			{
+				if ($dist < $wpt->{'radius'} and ())
+				{
+					$wasinlaunch = $wcount;
+				}
+			}
+			else
+			{
+				$wasinlaunch = $wcount;
+			}
+		}
+		
         # Start Check
         if ( ($wpt->{'type'} eq 'speed') and ( ( $dist < ($wpt->{'radius'} + $wpt->{'margin'}) and $wpt->{'how'} eq 'exit' ) or ($dist < ($wpt->{'radius'} - $wpt->{'margin'}) and $wpt->{'how'} eq 'entry') ))		# Start Pilon : this could be a Exit point, I think inverted tolerances in this case should work correctly
         {
@@ -695,7 +708,7 @@ sub validate_task
             {
 
                 # Do task timing stuff
-                if (($wpt->{'type'} eq 'start') and (!defined($starttime)) or
+                if (($wpt->{'type'} eq 'launch') and (!defined($starttime)) or
                     ($wpt->{'type'} eq 'speed'))
                 {
                     # get last start time ..
@@ -793,8 +806,8 @@ sub validate_task
             # Handle exit cylinder
             if ((($dist >= ($wpt->{'radius'} - $wpt->{'margin'})) || $awarded == 1) and ($lastin == $wcount)) # added margin
             {
-                #print "exited waypoint ($wasinstart,$wasinSS) ", $wpt->{'number'}, "(", $wpt->{'type'}, ") radius ", $wpt->{'radius'}, "\n";
-                if ((defined($wasinstart) and $wpt->{'type'} eq 'start')
+                #print "exited waypoint ($wasinlaunch,$wasinSS) ", $wpt->{'number'}, "(", $wpt->{'type'}, ") radius ", $wpt->{'radius'}, "\n";
+                if ((defined($wasinlaunch) and $wpt->{'type'} eq 'launch')
                     or (defined($wasinSS) and $wpt->{'type'} eq 'speed'))
                 {
                     #print "exit waypoint ", $wpt->{'number'}, "(", $wpt->{'type'}, ") radius ", $wpt->{'radius'}, " @ ", $coord->{'time'}, "\n";
