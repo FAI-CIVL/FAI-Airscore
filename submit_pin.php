@@ -187,13 +187,13 @@ if (reqexists('submitpin'))
     $lat = addslashes($_REQUEST["lat"]);
     $lon = addslashes($_REQUEST["lon"]);
 
-    $query = "select pilPk, pilHGFA from tblPilot where pilLastName='$name'";
+    $query = "select pilPk, pilFAI from tblPilot where pilLastName='$name'";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot query failed: ' . mysqli_connect_error());
 
     $member = 0;
     while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
-        if ($hgfa == $row['pilHGFA'])
+        if ($hgfa == $row['pilFAI'])
         {
             $pilPk = $row['pilPk'];
             $member = 1;

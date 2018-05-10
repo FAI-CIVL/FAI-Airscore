@@ -51,7 +51,7 @@ function add_result(&$results, $row, $topnat, $how)
     {
         $results[$pilPk] = [];
         $results[$pilPk]['name'] = $row['pilFirstName'] . ' ' . $row['pilLastName'];
-        $results[$pilPk]['hgfa'] = $row['pilHGFA'];
+        $results[$pilPk]['hgfa'] = $row['pilFAI'];
         //$results[$pilPk]['civl'] = $civlnum;
     }
     //echo "pilPk=$pilPk tasname=$tasName, result=$score<br>\n";
@@ -98,7 +98,7 @@ function ladder_result($ladPk, $ladder, $restrict)
 
     // Select from the main database of results
     $sql = "select 0 as extPk, TR.tarScore,
-        TP.pilPk, TP.pilLastName, TP.pilFirstName, TP.pilNationCode, TP.pilHGFA, TP.pilSex,
+        TP.pilPk, TP.pilLastName, TP.pilFirstName, TP.pilNationCode, TP.pilFAI, TP.pilSex,
         TK.tasPk, TK.tasName, TK.tasDate, TK.tasQuality, 
         C.comName, C.comDateTo, LC.lcValue, 
         case when date_sub('$end', INTERVAL 365 DAY) > C.comDateTo 
@@ -138,7 +138,7 @@ WHERE LC.ladPk=$ladPk and TK.tasDate > '$start' and TK.tasDate < '$end'
     if ($ladder['ladIncExternal'] > 0)
     {
         $sql = "select TK.extPk, TK.extURL as tasPk,
-        TP.pilPk, TP.pilLastName, TP.pilFirstName, TP.pilNationCode, TP.pilHGFA, TP.pilSex,
+        TP.pilPk, TP.pilLastName, TP.pilFirstName, TP.pilNationCode, TP.pilFAI, TP.pilSex,
         TK.tasName, TK.tasQuality, TK.comName, TK.comDateTo, TK.lcValue, TK.tasTopScore,
         case when date_sub('$end', INTERVAL 365 DAY) > TK.comDateTo 
         then (ER.etrScore * TK.lcValue * 0.90 * TK.tasQuality) 

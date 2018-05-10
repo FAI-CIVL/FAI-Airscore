@@ -62,7 +62,7 @@ $comPk=reqival('comPk');
 $link = db_connect();
 #$isadmin = is_admin('admin', $usePk, $comPk);
 $info = get_comtask($link, $tasPk);
-$sql = "select T.traPk, T.traDate, P.pilLastName, P.pilHGFA from tblComTaskTrack C, tblTrack T, tblPilot P where C.tasPk=$tasPk and C.comPk=$comPk and C.traPk=T.traPk and P.pilPk=T.pilPk";
+$sql = "select T.traPk, T.traDate, P.pilLastName, P.pilFAI from tblComTaskTrack C, tblTrack T, tblPilot P where C.tasPk=$tasPk and C.comPk=$comPk and C.traPk=T.traPk and P.pilPk=T.pilPk";
 $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Cannot get tracks associated with task: ' . mysqli_connect_error());
 
 #Create Archive
@@ -91,8 +91,8 @@ chdir($dir);
 foreach ($tracks as $row)
 {
     # Find the original tracks ..
-    $basename =  strtolower($row['pilLastName']) . '_' . $row['pilHGFA'] . '_' . $row['traDate'];
-    //echo "basename: " . $basename . "\n";
+    $basename =  strtolower($row['pilLastName']) . '_' . $row['pilFAI'] . '_' . $row['traDate'];
+    #echo "basename: " . $basename . "\n";
     $result = match_file($dir, $year, $basename);
     //echo "result: " . $result . "\n";
     if ($result)

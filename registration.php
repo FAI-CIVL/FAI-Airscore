@@ -21,14 +21,21 @@ require 'authorisation.php';
 require 'format.php';
 require 'dbextra.php';
 
+//
+
+//
+
 $comPk = reqival('comPk');
 $teaPk = reqival('teaPk');
 adminbar($comPk);
 
 $link = db_connect();
 $query = "select comName, comEntryRestrict from tblCompetition where comPk=$comPk";
+
 $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Comp query failed: ' . mysqli_connect_error());
+
 $comName = mysqli_result($result,0,0);
+
 $comRestricted = mysqli_result($result,0,1);
 
 echo '<div id ="container2">';
@@ -66,11 +73,14 @@ if (array_key_exists('addpilot', $_REQUEST))
     insertup($link, 'tblRegistration', 'regPk', $clause, $addarr);
 
     $query = "select H.* from tblHandicap H where H.comPk=$comPk and H.pilPk=$pilPk";
+
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Handicap query failed: ' . mysqli_connect_error());
+
 
     if (mysqli_num_rows($result) == 0)
     {
         $query = "insert into tblHandicap (comPk, pilPk, hanHandicap) value ($comPk,$pilPk,1)";
+
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot handicap insert failed: ' . mysqli_connect_error());
     }
 }
@@ -79,8 +89,10 @@ if (array_key_exists('delpilot', $_REQUEST))
 {
     $pilPk = intval($_REQUEST['delpilot']);
     $query = "delete from tblRegistration where comPk=$comPk and pilPk=$pilPk";
+
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot delete failed: ' . mysqli_connect_error());
     $query = "delete from tblHandicap where comPk=$comPk and pilPk=$pilPk";
+
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Delete handicap failed: ' . mysqli_connect_error());
 }
 
@@ -89,7 +101,8 @@ if (array_key_exists('uppilot', $_REQUEST))
     $id = reqival('uppilot');
     $fai = reqsval("fai$id");
     $handi = reqfval("han$id");
-    $query = "update tblPilot set pilHGFA='$fai' where pilPk=$id";
+    $query = "update tblPilot set pilFAI='$fai' where pilPk=$id";
+
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot ID update failed: ' . mysqli_connect_error());
 
     $regarr = [];
@@ -105,7 +118,9 @@ echo "<form action=\"registration.php?comPk=$comPk&cat=$cat$tsel\" name=\"regadm
 $query = "select P.*,H.hanHandicap from tblRegistration R left join tblPilot P on P.pilPk=R.pilPk left outer join tblHandicap H on H.pilPk=P.pilPk and H.comPk=$comPk where R.comPk=$comPk order by P.pilLastName";
 
 $regpilots = [];
+
 $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Team pilots query failed: ' . mysqli_connect_error());
+
 while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {
     $regpilots[] = $row;
@@ -121,7 +136,7 @@ if (sizeof($regpilots) > 0)
         #{
         #    $row['hanHandicap'] = 1;
         #}
-        $outreg[] = array("<button type=\"submit\" name=\"uppilot\" value=\"$pilPk\">up</button>", fin("fai$pilPk", $row['pilHGFA'], 5), $row['pilFirstName'], $row['pilLastName'], fin("han$pilPk", $row['hanHandicap'], 1), fbut('submit', 'delpilot', $pilPk, 'del'));
+        $outreg[] = array("<button type=\"submit\" name=\"uppilot\" value=\"$pilPk\">up</button>", fin("fai$pilPk", $row['pilFAI'], 5), $row['pilFirstName'], $row['pilLastName'], fin("han$pilPk", $row['hanHandicap'], 1), fbut('submit', 'delpilot', $pilPk, 'del'));
         //"<input type=\"text\" name=\"tepModifier$tepPk\" value=\"$tepMod\" size=3>", fbut('submit', 'uppilot', $tepPk, 'up')
     }
     echo "<i>" . sizeof($regpilots) . " pilots registered</i>";
@@ -157,14 +172,16 @@ if ($cat != '')
     echo "<ol>";
     $count = 1;
     $sql = "SELECT P.* FROM tblPilot P where P.pilLastName like '$cat%' order by P.pilLastName";
+
     $result = mysqli_query($link, $sql,$link) or die('Error ' . mysqli_errno($link) . ' Pilot select failed: ' . mysqli_connect_error());
+
 
     while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         $id = $row['pilPk'];
         $lname = $row['pilLastName'];
         $fname = $row['pilFirstName'];
-        $hgfa = $row['pilHGFA'];
+        $hgfa = $row['pilFAI'];
         $sex = $row['pilSex'];
         echo "<li><button type=\"submit\" name=\"addpilot\" value=\"$id\">add</button>";
         //echo "<li><button type=\"submit\" name=\"addpilot\" value=\"$id\" onclick=\"add_pilot($id);\">add</button>";

@@ -31,7 +31,7 @@ sub extract_igcs
     my $row;
     my $tmpdir;
     my $pilPk;
-    my $hgfa;
+    my $pilFAI = 0;
     my $sth;
 
     # clean up and extract files ..
@@ -51,48 +51,84 @@ sub extract_igcs
         {
             next;
         }
+        
+        # Exclude MacOS created files
+        if ( index($file, '__MACOSX') != -1 )
+        {
+            print "Ignoring $file ...\n";
+            next;
+        }
 
         @fields = split /\./, $file;
 
         # check size = 2
-        @names = split /_/, $fields[0];
+        @names = split /[_\s]/, $fields[0];
 
         if (scalar @names > 0)
         {
-            $pilPk = 0 + $fields[0];
-            
+            if ( looks_like_number($fields[0]) )
+            {
+            	$pilFAI = $fields[0];
+            }
             #print "found: $pilPk\n";
         }
 
-        if ($pilPk > 0)
+        if ( $pilFAI > 0 )
         {
-            $sth = $dbh->prepare("select pilHGFA from tblPilot where pilHGFA=$pilPk" );
+            $sth = $dbh->prepare("	SELECT pilPk FROM tblPilot WHERE pilFAI = $pilFAI" );
         }
         else
         {
             if (scalar @names > 1)
             {
                 #print "two found: ", $names[0], " ", $names[1], "\n";
-                $sth = $dbh->prepare("select pilHGFA from tblPilot where pilLastName='" . $names[0] . "' and pilFirstName='$names[1]'");
+                $sth = $dbh->prepare("	SELECT 
+											pilPk 
+										FROM 
+											tblPilot 
+										WHERE 
+											(
+												pilLastName = '$names[0]' 
+												AND pilFirstName = '$names[1]'
+											) 
+											OR (
+												pilLastName = '$names[1]' 
+												AND pilFirstName = '$names[0]'
+											) 
+											OR (
+												pilLastName = '$names[1]' 
+												AND pilFirstName = '$names[2]'
+											) 
+											OR (
+												pilLastName = '$names[2]' 
+												AND pilFirstName = '$names[1]'
+											)");
             }
             else
             {
-                $sth = $dbh->prepare("select pilHGFA from tblPilot where pilLastName='" . $names[0] . "'");
+                $sth = $dbh->prepare("	SELECT 
+											pilPk 
+										FROM 
+											tblPilot 
+										WHERE 
+											pilLastName = '$names[0]' 
+											OR pilLastName = '$names[1]' 
+											OR pilLastName = '$names[2]' ");
             }
         }
         $sth->execute();
 
         # add the pilot if they're not found?
-        $hgfa = $sth->fetchrow_array() + 0;
+        $pilPk = $sth->fetchrow_array() + 0;
 
-        if ($hgfa == 0)
+        if ($pilPk == 0)
         {
             print "Can't find pilot $file in database\n";
         }
         else
         {
-            print "Found: $file with hgfa=$hgfa\n";
-            $tracks{$hgfa} = $tmpdir . "/" .$file;
+            print "Found: $file with ID = $pilPk\n";
+            $tracks{$pilPk} = $tmpdir . "/" .$file;
         }
     }
 
@@ -135,8 +171,6 @@ sub read_all_tracks
         $res = `${BINDIR}add_track.pl $pilPk \"$nfile\" $comPk $tasPk`;
         print $res;
         #print "Track read ($pilPk:$file) may have failed: $out\n";
-
-        $sth = $dbh->prepare("select pilLastName from tblPilot where pilHGFA='$pilPk'");
         $sth->execute();
         $name = lc($sth->fetchrow_array());
 

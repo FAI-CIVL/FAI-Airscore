@@ -174,7 +174,7 @@ if ($tasPk > 0)
     $addable = [];
     while ($row = mysqli_fetch_assoc($result))
     {
-        $addable[$row['pilHGFA'].' : '.$row['pilFirstName'].' '.$row['pilLastName']] = $row['traPk'];
+        $addable[$row['pilFAI'].' : '.$row['pilFirstName'].' '.$row['pilLastName']] = $row['traPk'];
     }
     echo fselect('trackid', '', $addable);
 }
@@ -185,7 +185,7 @@ else if ($trackid > 0)
     $addable = [];
     while ($row = mysqli_fetch_assoc($result))
     {
-        $addable[$row['pilHGFA'].' : '.$row['pilFirstName'].' '.$row['pilLastName']] = $row['traPk'];
+        $addable[$row['pilFAI'].' : '.$row['pilFirstName'].' '.$row['pilLastName']] = $row['traPk'];
     }
 
     # Add others in region ..

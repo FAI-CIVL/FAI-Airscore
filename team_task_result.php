@@ -186,7 +186,7 @@ if (array_key_exists('tarup', $_REQUEST))
 if (array_key_exists('addflight', $_REQUEST))
 {
     $fai = addslashes($_REQUEST['fai']);
-    $query = "select pilPk from tblPilot where pilHGFA='$fai'";
+    $query = "select pilPk from tblPilot where pilFAI='$fai'";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query pilot failed: ' . mysqli_connect_error());
 
     if (mysqli_num_rows($result) > 0)

@@ -242,7 +242,7 @@ if ($cat != '')
         $id = $row['pilPk'];
         $lname = $row['pilLastName'];
         $fname = $row['pilFirstName'];
-        $hgfa = $row['pilHGFA'];
+        $hgfa = $row['pilFAI'];
         $sex = $row['pilSex'];
         $pilid = sprintf("%04d", $row['pilPk']);
         echo "<li>";

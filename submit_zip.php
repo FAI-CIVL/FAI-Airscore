@@ -65,12 +65,12 @@ function accept_track()
 
     $link = db_connect();
 
-    $query = "select pilPk, pilHGFA from tblPilot where pilLastName='$name'";
+    $query = "select pilPk, pilFAI from tblPilot where pilLastName='$name'";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
     $row = mysqli_fetch_array($result, MYSQLI_BOTH);
     $pilPk = $row['pilPk'];
 
-    if ($hgfa != $row['pilHGFA'])
+    if ($hgfa != $row['pilFAI'])
     {
         echo "<b>Only authorised pilots may submit tracks.</b><br>\n";
         echo "Contact your administrator if you're having an access problem.<br>\n";

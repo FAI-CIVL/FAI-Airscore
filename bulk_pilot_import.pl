@@ -1,5 +1,4 @@
-#!/usr/bin/perl
-
+#!/usr/bin/perl -w
 #
 # Reads in a CSV membership list
 #
@@ -7,6 +6,11 @@
 
 require DBD::mysql;
 use Data::Dumper;
+
+# Add currect bin directory to @INC
+use File::Basename;
+use lib '/home/untps52y/perl5/lib/perl5';
+use lib dirname (__FILE__) . '/';
 use TrackLib qw(:all);
 
 #
@@ -23,6 +27,7 @@ sub read_membership
 
     my @field;
     my $row;
+    my $nat;
 
     print "reading: $f\n";
     open(FD, "$f") or die "can't open $f: $!";
@@ -38,19 +43,40 @@ sub read_membership
         {
             next;
         }
-        print 'add name: ', $field[1], ' ', $field[0], "\n";
+        print 'add name: ', $field[1], ' ', $field[2], "\n";
+        
+        # Get Country ID
+        $nat = $field[3];
+        $sth = $dbh->prepare("	SELECT 
+									C.natID AS Code 
+								FROM 
+									tblCountryCodes C 
+								WHERE 
+									C.natIso3 = '$nat'");
+        $sth->execute();
+        if  ($ref = $sth->fetchrow_hashref())
+		{
+			$nat = $ref->{'Code'};
+		}
+		else
+		{
+			# Set Italy
+			$nat = 380;
+		}
+        
+
 
         # should be an insert/update ..
-        insertup('tblPilot', 'pilPk', "pilLastName='" . $field[0] . 
-                "' and pilHGFA='" . $field[2] . "'",
+        insertup('tblExtPilot', 'pilPk', "pilLastName='" . $field[2] . 
+                "' and pilFAI='" . $field[0] . "'",
             {
                 'pilFirstName' => $field[1],
-                'pilLastName' => $field[0],
-                'pilHGFA' => $field[2],
-                'pilSex' => $field[3],
-                'pilCIVL' => $field[4]
+                'pilLastName' => $field[2],
+                'pilFAI' => $field[0],
+                'pilSex' => $field[4],
+                'pilNat' => $nat
             });
-        #$dbh->do("INSERT INTO tblPilot (pilFirstName,pilLastName,pilHGFA,pilSex) VALUES (?,?,?,?)", undef, $field[1],$field[0],$field[2],'M');
+        #$dbh->do("INSERT INTO tblPilot (pilFirstName,pilLastName,pilFAI,pilSex) VALUES (?,?,?,?)", undef, $field[1],$field[0],$field[2],'M');
     }
 
 }
@@ -70,6 +96,8 @@ my $score;
 my $dbh;
 
 $dbh = db_connect();
+
+print 'Arg: ' . $ARGV[0];
 
 if (scalar @ARGV < 1)
 {

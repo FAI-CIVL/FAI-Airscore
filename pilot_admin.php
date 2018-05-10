@@ -40,7 +40,7 @@ if (reqexists('addcomp'))
         }
         $pil['pilLastName'] = mysqli_real_escape_string($link, $namarr[1]);
         $pil['pilFirstName'] = mysqli_real_escape_string($link, $namarr[0]);
-        $pil['pilHGFA'] = $pilot->fai_id;
+        $pil['pilFAI'] = $pilot->fai_id;
         $pil['pilCIVL'] = $pilot->civl_id;
         $pil['pilBirthdate'] = $pilot->birthday;
         $pil['pilSex'] = $pilot->gender;
@@ -71,7 +71,7 @@ if (reqexists('addcomp'))
 
         if ($pilot->fai_id != '')
         {
-            $clause = "pilHGFA=" . quote($pilot->fai_id) . " and pilLastName=" . quote(mysqli_real_escape_string($link, $namarr[1]));
+            $clause = "pilFAI=" . quote($pilot->fai_id) . " and pilLastName=" . quote(mysqli_real_escape_string($link, $namarr[1]));
             $pilPk = insertnullup($link, 'tblPilot', 'pilPk', $clause, $pil);
             echo "insertup: $clause<br>";
 
@@ -98,7 +98,7 @@ if (reqexists('addcomp'))
         {
             if (0 + $pilot->civl_id > 0)
             {
-                $pil['pilHGFA'] = 1000000 + $pilot->civl_id;
+                $pil['pilFAI'] = 1000000 + $pilot->civl_id;
             }
             $clause = " pilLastName=" . quote(mysqli_real_escape_string($link, $namarr[1])) . " and pilFirstName=" . quote(mysqli_real_escape_string($link, $namarr[0]));
             echo "insertup: $clause<br>";
@@ -137,18 +137,33 @@ if (reqexists('addpilot'))
     $lname = reqsval('lname');
     $fname = reqsval('fname');
     $sex = reqsval('sex');
+    $nat = reqsval('nation');
+    $brand = reqsval('brand');
+    $glider = reqsval('glider');
+    $cert = reqsval('cert');
 	$xcid = reqsval('xcontest');
-
-    $query = "select * from tblPilot where pilHGFA=$fai";
+	
+	#look for pilot in tblPilot
+    $query = "SELECT * from tblPilot WHERE pilLastName LIKE CONCAT('%', '$lname' ,'%') AND pilFirstName LIKE CONCAT('%', '$fname' ,'%') ";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot select failed: ' . mysqli_connect_error());
-    if ($fai < 1000 or mysqli_num_rows($result) > 0)
+    if ( mysqli_num_rows($result) > 0 )
     {
-        echo "Pilot insert failed, HGFA/FAI number ($fai) already exists or is too low (<1000) <br>";
+        echo "Pilot insert failed, already exists <br>";
     }
     else
     {
-        $query = "insert into tblPilot (pilHGFA, pilCIVL, pilLastName, pilFirstName, pilSex, pilNationCode, xcontestUser) value ($fai, $civl,'$lname','$fname','$sex','ITA','$xcid')";
-        $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot insert failed: ' . mysqli_connect_error());
+        $query = "	INSERT INTO tblExtPilot (
+						pilFAI, pilCIVL, pilLastName, pilFirstName, 
+						pilSex, pilGliderBrand, pilGlider, 
+						gliGliderCert, pilNat, pilXcontestUser
+					) 
+					VALUES 
+						(
+							$fai, $civl, '$lname', '$fname', '$sex', 
+							'$brand', '$glider', '$cert', $nat, 
+							'$xcid'
+						)";
+        mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot insert failed: ' . mysqli_connect_error());
     }
 }
 
@@ -178,9 +193,14 @@ if (reqexists('update'))
     $fname = reqsval("fname$id");
     $sex = reqsval("sex$id");
     $nat = reqsval("nation$id");
+    $brand = reqsval("brand$id");
+    $glider = reqsval("glider$id");
+    $cert = reqsval("cert$id");
 	$xcid = reqsval("xcontest$id");
+	
+	//echo " parameters: Id $id , FAI $fai , wing $brand $glider $cert , user $xcid \n";
 
-    $query = "select * from tblPilot where pilHGFA=$fai and pilPk<>$id";
+    $query = "SELECT * FROM tblPilot WHERE pilFAI=$fai AND pilPk<>$id";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot update select failed: ' . mysqli_connect_error());
     if ($fai < 1000 or mysqli_num_rows($result) > 0)
     {
@@ -188,7 +208,21 @@ if (reqexists('update'))
     }
     else
     {
-        $query = "update tblPilot set pilHGFA=$fai, pilLastName='$lname', pilFirstName='$fname', pilSex='$sex', pilNationCode='$nat' , xcontestUser='$xcid'  where pilPk=$id";
+        $query = "	UPDATE 
+						tblExtPilot 
+					SET 
+						pilFAI = $fai, 
+						pilLastName = '$lname', 
+						pilFirstName = '$fname', 
+						pilSex = '$sex', 
+						pilNat = '$nat', 
+						pilGliderBrand = '$brand', 
+						pilGlider = '$glider', 
+						gliGliderCert = '$cert', 
+						pilXcontestUser = '$xcid' 
+					WHERE 
+						pilPk = $id";
+		//echo $query . '\n';
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot update failed: ' . mysqli_connect_error());
     }
 }
@@ -220,16 +254,18 @@ else
     echo "<form enctype=\"multipart/form-data\" action=\"pilot_admin.php?comPk=$comPk&cat=$cat\" name=\"trackadmin\" method=\"post\">";
 }
 
+$country = get_countrylist($link, 'nation', 380);
 echo "<input type=\"hidden\" name=\"MAX_FILE_SIZE\" value=\"1000000000\">";
 echo "HGFA/FAI: " . fin('fai', '', 5);
 echo "CIVL: " . fin('civl', '', 5);
 echo "LastName: " . fin('lname', '', 10);
 echo "FirstName: " . fin('fname', '', 10);
 echo "Sex: " . fselect('sex', 'M', [ 'M' => 'M', 'F' => 'F' ]);
+echo "$country";
 echo "Xcontest ID:" . fin('xcontest', '' ,10);
 echo fis('addpilot', "Add Pilot", 5);
 echo "<br>";
-echo "CSV (Last,First,FAI#,Sex,CIVL#): <input type=\"file\" name=\"bulkpilots\">";
+echo "CSV (FAI#, First, Last, Nat, Sex): <input type=\"file\" name=\"bulkpilots\">";
 echo fis('bulkadd', 'Bulk Submit', 5);
 
 if ($ozimp)
@@ -278,21 +314,46 @@ if ($cat != '')
         $id = $row['pilPk'];
         $lname = $row['pilLastName'];
         $fname = $row['pilFirstName'];
-        $hgfa = $row['pilHGFA'];
+        $fai = $row['pilFAI'];
         $civlid = $row['pilCIVL'];
-        $sex = $row['pilSex'];
-        $nat = $row['pilNationCode'];
-		// $xcid = $row['pilXcontestUser'];
-        echo "<li><button type=\"submit\" name=\"delete\" value=\"$id\">del</button>";
-        echo "<button type=\"submit\" name=\"update\" value=\"$id\">up</button>";
+        $sex = ($row['pilSex']);
+        $nat = $row['pilNat'];
+        $brand = $row['pilGliderBrand'];
+        $glider = $row['pilGlider'];
+        $cert = $row['gliGliderCert'];
+		$xcid = $row['pilXcontestUser'];
+		
+		# Get Country Code
+		$countrycode = get_countrycode($link, $nat);
+		
+		# Let edit or Delete onlu if pilot is in Ext Table, not in CB db
+		if ( $id > 9999 )
+		{
+			echo "<li><button type=\"submit\" name=\"delete\" value=\"$id\">del</button>";
+			echo "<button type=\"submit\" name=\"update\" value=\"$id\">up</button>";
+			# Get Countries list
+			$country = get_countrylist($link, "nation$id", $nat);
+        }
+        else
+        {
+			echo "<li><button type=\"submit\" name=\"delete\" value=\"$id\" disabled>del</button>";
+			echo "<button type=\"submit\" name=\"update\" value=\"$id\" disabled>up</button>";
+			# Get Country Code
+			$countrycode = get_countrycode($link, $nat);
+			$country = "<input type=\"text\" name=\"nation$id\" value=\"$countrycode\" size=11>";
+        }
         //echo " $hgfa $name ($sex).<br>\n";
-        echo "<input type=\"text\" name=\"fai$id\" value=\"$hgfa\" size=7>";
+        echo "<input type=\"text\" name=\"fai$id\" value=\"$fai\" size=7>";
         echo "<input type=\"text\" name=\"civl$id\" value=\"$civlid\" size=5>";
-        echo "<input type=\"text\" name=\"lname$id\" value=\"$lname\" size=10>";
-        echo "<input type=\"text\" name=\"fname$id\" value=\"$fname\" size=10>";
+        echo "<input type=\"text\" name=\"lname$id\" value=\"$lname\" size=16>";
+        echo "<input type=\"text\" name=\"fname$id\" value=\"$fname\" size=16>";
         echo "<input type=\"text\" name=\"sex$id\" value=\"$sex\" size=3>";
-        echo "<input type=\"text\" name=\"nation$id\" value=\"$nat\" size=3>";
-		// echo "<input type=\"text\" name=\"xcontest$id\" value=\"$xcid\" size=3> <br>";
+        //echo "<input type=\"text\" name=\"nation$id\" value=\"$nat\" size=4>";
+        echo "$country";
+        echo "<input type=\"text\" name=\"brand$id\" value=\"$brand\" size=10>";
+        echo "<input type=\"text\" name=\"glider$id\" value=\"$glider\" size=12>";
+        echo "<input type=\"text\" name=\"cert$id\" value=\"$cert\" size=4>";
+		echo "<input type=\"text\" name=\"xcontest$id\" value=\"$xcid\" size=12> </li>";
         # echo a delete button ...
 
         $count++;

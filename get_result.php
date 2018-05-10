@@ -37,7 +37,7 @@ function comp_result($comPk, $cls)
         $pilPk = $row['pilPk'];
         $tasName = $row['tasName'];
         $nation = $row['pilNationCode'];
-        $pilnum = $row['pilHGFA'];
+        $pilnum = $row['pilFAI'];
         $civlnum = $row['pilCIVL'];
         $glider = $row['traGlider'];
         $gender = $row['pilSex'];

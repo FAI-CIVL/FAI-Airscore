@@ -153,11 +153,11 @@ $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Un
 if ($ctype == 'Team-RACE')
 {
     print "<br>Com-type=$ctype<br>";
-    $sql ="SELECT P.pilPk, P.pilHGFA, P.pilFirstName as fname, P.pilLastName as lname, P.pilSex as sex,HP.pilPk as HpilPk,HP.pilLastName,HP.pilFirstName,HP.pilIDGlobal from tblTeamResult TR, tblTeam TM, tblTeamPilot TP, tblTask T, tblPilot P left outer join hgfa_ladder.tblPilot HP on HP.pilIDGlobal=P.pilHGFA where TM.comPk=$comPk and TP.teaPk=TM.teaPk and P.pilPk=TP.pilPk and T.tasPk=TR.tasPk and T.comPk=$comPk group by P.pilPk";
+    $sql ="SELECT P.pilPk, P.pilFAI, P.pilFirstName as fname, P.pilLastName as lname, P.pilSex as sex,HP.pilPk as HpilPk,HP.pilLastName,HP.pilFirstName,HP.pilIDGlobal from tblTeamResult TR, tblTeam TM, tblTeamPilot TP, tblTask T, tblPilot P left outer join hgfa_ladder.tblPilot HP on HP.pilIDGlobal=P.pilFAI where TM.comPk=$comPk and TP.teaPk=TM.teaPk and P.pilPk=TP.pilPk and T.tasPk=TR.tasPk and T.comPk=$comPk group by P.pilPk";
 }
 else
 {
-    $sql ="SELECT P.pilPk, P.pilHGFA, P.pilNationCode, P.pilFirstName as fname, P.pilLastName as lname, P.pilSex as sex,HP.pilPk as HpilPk,HP.pilLastName,HP.pilFirstName,HP.pilIDGlobal from tblTaskResult TR, tblTrack TL, tblTask T, tblPilot P left outer join hgfa_ladder.tblPilot HP on HP.pilIDGlobal=P.pilHGFA where TL.traPk=TR.traPk and P.pilPk=TL.pilPk and T.tasPk=TR.tasPk and T.comPk=$comPk group by P.pilPk";
+    $sql ="SELECT P.pilPk, P.pilFAI, P.pilNationCode, P.pilFirstName as fname, P.pilLastName as lname, P.pilSex as sex,HP.pilPk as HpilPk,HP.pilLastName,HP.pilFirstName,HP.pilIDGlobal from tblTaskResult TR, tblTrack TL, tblTask T, tblPilot P left outer join hgfa_ladder.tblPilot HP on HP.pilIDGlobal=P.pilFAI where TL.traPk=TR.traPk and P.pilPk=TL.pilPk and T.tasPk=TR.tasPk and T.comPk=$comPk group by P.pilPk";
 }
 $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Unable to find pilots: ' . mysqli_connect_error());
 $pilmap = [];
@@ -175,7 +175,7 @@ foreach ($pilmap as $pilPk => $row)
         $fname = $row['fname'];
         $lname = $row['lname'];
         print "add missing pilot $fname $lname\n";
-        $fai = $row['pilHGFA'];
+        $fai = $row['pilFAI'];
         $natcode = $row['pilNationCode'];
         $oriPk = 2;
         if ($natcode != '')

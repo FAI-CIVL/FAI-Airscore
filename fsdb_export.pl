@@ -174,8 +174,8 @@ while (defined($ref))
     $pilot->{'FsParticipant'}->{'glider'} = '';
     $pilot->{'FsParticipant'}->{'color'} = '';
     $pilot->{'FsParticipant'}->{'sponsor'} = '';
-    $pilot->{'FsParticipant'}->{'CIVLID'} = $ref->{'pilHGFA'};
-    $pilot->{'FsParticipant'}->{'fai_license'} = $ref->{'pilHGFA'};
+    $pilot->{'FsParticipant'}->{'CIVLID'} = $ref->{'pilCIVL'};
+    $pilot->{'FsParticipant'}->{'fai_license'} = $ref->{'pilFAI'};
     $pilmap{$ref->{'pilPk'}} = $count;
     push @pilots, $pilot;
     $count++;
