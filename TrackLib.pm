@@ -1,5 +1,4 @@
-#!/usr/bin/perl -I/home/geoff/bin
-
+#!/usr/bin/perl -w
 #
 # Some track/database handling stuff
 # And a bunch of big circle geometry stuff

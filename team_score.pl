@@ -1,5 +1,4 @@
-#!/usr/bin/perl
-
+#!/usr/bin/perl -w
 #
 # Determines how much of a task (and time) is completed
 # given a particular competition / task 

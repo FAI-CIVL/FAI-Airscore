@@ -1,5 +1,4 @@
-#!/usr/bin/perl -I/home/bin/geoff
-
+#!/usr/bin/perl -w
 #
 # Basic mathematical vector class with some overloaded operators
 # Geoff Wong 2016

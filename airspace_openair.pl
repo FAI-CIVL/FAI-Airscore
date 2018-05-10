@@ -1,5 +1,4 @@
-#!/usr/bin/perl 
-
+#!/usr/bin/perl -w
 #
 # Reads in an OpenAir airspace file
 #

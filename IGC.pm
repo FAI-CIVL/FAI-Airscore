@@ -1,8 +1,8 @@
-#!/usr/bin/perl -I/home/geoff/bin
-
+#!/usr/bin/perl -w
 #
 # IGC (et al) parsing & tracking analysis stuff 
 #
+
 require Exporter;
 
 use Time::Local;

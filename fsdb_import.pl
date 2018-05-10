@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 #
 # An attempt to import a .fsdb xml into Airscore
 # Unfortunately the fsdb format isn't published so much of this is simply an

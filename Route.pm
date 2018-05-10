@@ -1,5 +1,5 @@
 #!/usr/bin/perl 
-##!/usr/bin/perl -I/home/geoff/bin
+##!/usr/bin/perl -w
 #
 # Determine the shortest route using cartesian coords
 # 
@@ -67,6 +67,12 @@ our @EXPORT = qw{:ALL};
 
 use POSIX qw(ceil floor);
 use strict;
+
+# Add currect bin directory to @INC
+use File::Basename;
+use lib '/home/untps52y/perl5/lib/perl5';
+use lib dirname (__FILE__) . '/';
+use TrackLib qw(:all);
 
 my $pi = atan2(1,1) * 4; 
 

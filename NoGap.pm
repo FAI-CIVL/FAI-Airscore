@@ -1,6 +1,4 @@
-#!/usr/bin/perl -I/home/geoff/bin
-
-
+#!/usr/bin/perl -w
 #
 # "NoGap"
 # Pilot score is the distance flown
@@ -17,6 +15,9 @@ require Gap;
 #require DBD::mysql;
 #use POSIX qw(ceil floor);
 #use Math::Trig;
+
+# Add currect bin directory to @INC
+#use lib '/var/www/cgi-bin';
 #use TrackLib qw(:all);
 
 sub day_quality

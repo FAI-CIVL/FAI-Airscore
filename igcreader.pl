@@ -1,5 +1,4 @@
-#!/usr/bin/perl -I/home/geoff/bin
-
+#!/usr/bin/perl -w
 #
 # Reads in an IGC file
 #

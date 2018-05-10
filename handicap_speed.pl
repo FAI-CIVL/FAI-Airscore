@@ -1,5 +1,4 @@
 #!/usr/bin/perl 
-
 #
 # Populate handicap scores from competition results (distance/speed), AUS tasks 3 years prior
 # 

@@ -1,6 +1,4 @@
-#!/usr/bin/perl -I/home/geoff/bin
-
-
+#!/usr/bin/perl -w
 #
 # Determines how much of a task (and time) is completed
 # given a particular competition / task 
@@ -19,26 +17,450 @@
 
 package PWC;
 
-require Gap;
-@ISA = ( "Gap" );
+require Exporter;
+our @ISA = qw(Exporter);
+#our @EXPORT = qw(:all);
 
-#require DBD::mysql;
-#use POSIX qw(ceil floor);
-#use Math::Trig;
-
+require DBD::mysql;
+use POSIX qw(ceil floor);
+use Math::Trig;
 use Data::Dumper;
+use strict;
 
 # Add currect bin directory to @INC
-# use lib '/var/www/cgi-bin';
-# use TrackLib qw(:all);
+use File::Basename;
+use lib '/home/untps52y/perl5/lib/perl5';
+use lib dirname (__FILE__) . '/';
+use TrackLib qw(:all);
+# require Scoring;
 
+sub new
+{
+    my $class = shift;
+    my $self = {};
+    # set any defaults here ...
+    bless ($self, $class);
+    return $self;
+}
+
+###########################################################
+# This part would be nice to be put in an external file, did not find how yet
+###########################################################
+sub round 
+{
+    my ($self, $number) = @_;
+    return int($number + .5);
+}
+
+sub min
+{
+    my ($self, $list) = @_;
+    my $x = ~0 >> 1;
+
+    foreach my $y (@$list)
+    {
+        $x = $y if $y < $x;
+    }
+    return $x;
+}
+
+sub max
+{
+    my ($self, $list) = @_;
+    my $x = 0;
+
+    foreach my $y (@$list)
+    {
+        $x = $y if $y > $x;
+    }
+    return $x;
+}
+
+sub spread
+{
+    my ($self, $buc) = @_;
+    my $nbuc = [];
+    my $sz;
+
+    $sz = scalar @$buc - 1;
+    #print "spread: $sz\n";
+    $nbuc->[0] = 0.0 + $buc->[0];
+    $nbuc->[1] = 0.0 + $buc->[1];
+    for my $j ( 1 .. $sz )
+    {
+        $nbuc->[$j] //= 0;
+        $nbuc->[$j-1] = $nbuc->[$j-1] + $buc->[$j] / 3;
+        $nbuc->[$j] = $nbuc->[$j] + $buc->[$j] * 2 / 3;
+        #$nbuc->[$j+1] = $buc->[$j] / 3;
+    }
+
+    return $nbuc;
+}
+
+sub calc_kmdiff
+{
+    my ($self, $task, $taskt, $formula) = @_;
+    my $tasPk;
+    my $kmdiff = [];
+    my $Nlo;
+    my $distspread;
+    my $difdist;
+    my $debc = 0;
+
+    $tasPk = $task->{'tasPk'};
+    $Nlo = $taskt->{'launched'}-$taskt->{'goal'};
+
+    # KM difficulty
+    for my $it ( 0 .. floor($taskt->{'maxdist'} / 100.0) )
+    {
+        $kmdiff->[$it] = 0;
+    }
+
+    $distspread = $taskt->{'distspread'};
+    for my $ref ( @$distspread )
+    {
+        # populate kmdiff
+        # At half the difficulty dist back they get all the points
+        $difdist = 0 + $ref->{'Distance'} - ($formula->{'diffdist'}/200);
+        if ($difdist < 0) 
+        {
+            $difdist = 0;
+        }
+        $kmdiff->[$difdist] = 0 + $kmdiff->[$difdist] + $ref->{'Difficulty'};
+        $debc = $debc + $ref->{'Difficulty'};
+        #print "dist($difdist): ", $ref->{'Distance'}, " diff: ", $kmdiff->[$difdist], "\n";
+        #$kmdiff->[(0+$ref->{'Distance'})] = 0+$ref->{'Difficulty'};
+    }
+
+    # Then smooth it out (non-linearly) for the other half
+    #print Dumper($kmdiff);
+    for my $it ( 0 .. ($formula->{'diffdist'}/200))
+    {
+        $kmdiff = $self->spread($kmdiff);
+    }
+    #print Dumper($kmdiff);
+
+    # Determine cumulative distance difficulty 
+    my $x = 0.0;
+    for my $dif (0 .. scalar @$kmdiff-1)
+    {
+        my $rdif;
+
+        $rdif = 0.0;
+
+        $x = $x + $kmdiff->[$dif];
+        # Use only landed-out pilots or all pilots for difficulty?
+        if ($formula->{'diffcalc'} eq 'lo' && $Nlo > 0)
+        {
+            $rdif = $x/$Nlo;
+        }
+        else
+        {
+            $rdif = $x/$taskt->{'launched'};
+        }
+        $kmdiff->[$dif] = ($rdif);
+    }
+    # print "debc=$debc x=$x (vs $Nlo)\n";
+
+    return $kmdiff;
+}
+
+sub pilot_distance
+{
+    my ($self, $formula, $task, $taskt, $pil, $Adistance) = @_;
+
+    my $kmdiff = $self->calc_kmdiff($task, $taskt, $formula);
+    my $Pdist = $Adistance * 
+            (($pil->{'distance'}/$taskt->{'maxdist'}) * $formula->{'lineardist'}
+            + $kmdiff->[floor($pil->{'distance'}/100.0)] * (1-$formula->{'lineardist'}));
+
+    # print $pil->{'tarPk'}, " Adist=$Adistance pil->dist=", $pil->{'distance'}, " maxdist=", $taskt->{'maxdist'}, " kmdiff=", $kmdiff->[floor($pil->{'distance'}/100.0)], "\n";
+    print $pil->{'traPk'}, " lin dist: ", $Adistance * ($pil->{'distance'}/$taskt->{'maxdist'}) * $formula->{'lineardist'}, " dif dist: ", $Adistance * $kmdiff->[floor($pil->{'distance'}/100.0)] * (1-$formula->{'lineardist'}), "\n";
+
+    return $Pdist;
+}
+
+sub pilot_penalty
+{
+    my ($self, $formula, $task, $taskt, $pil, $astart, $aspeed) = @_;
+    my $penalty = 0;
+    my $penspeed;
+    my $pendist;
+
+    return $penalty;
+}
+
+#####################################################
+
+#
+# Find the task totals and update ..
+#   tasTotalDistanceFlown, tasPilotsLaunched, tasPilotsTotal
+#   tasPilotsGoal, tasPilotsLaunched, 
+#
+# FIX: TotalDistance wrong with 'lo' type results?
+#
+sub task_totals
+{
+    my ($self, $dbh, $task, $formula) = @_;
+    my $totdist;
+    my $launched;
+    my $pilots;
+    my $mindist;
+    my $goal;
+    my $ess;
+    my $glidebonus;
+    my %taskt;
+    my $tasPk;
+    my ($minarr, $maxarr, $fastest, $firstdep, $mincoeff, $mincoeff2, $tqtime);
+    my $launchvalid;
+    my $median;
+    my $stddev;
+    my @distspread;
+    my $landed;
+    my $kmmarker;
+    my $sth;
+    my $ref;
+
+    $tasPk = $task->{'tasPk'};
+    $launchvalid = $task->{'launchvalid'};
+    $mindist = $formula->{'mindist'};
+    $glidebonus = 0;
+    $landed = 0;
+
+    # @todo: 'Landed' misses people who made ESS but actually landed before goal
+    $sth = $dbh->prepare("	SELECT 
+								COUNT(tarPk) as TotalPilots, 
+								SUM(
+									IF(
+										tarDistance < $mindist, $mindist, tarDistance
+									)
+								) AS TotalDistance, 
+								SUM(
+									IF(
+										tarDistance < $mindist, 
+										0, 
+										(tarDistance - $mindist)
+									)
+								) AS TotDistOverMin, 
+								SUM(
+									(tarDistance > 0) 
+									OR (tarResultType = 'lo')
+								) AS TotalLaunched, 
+								STD(
+									IF(
+										tarDistance < $mindist, $mindist, tarDistance
+									)
+								) AS Deviation, 
+								SUM(
+									IF(
+										(
+											tarLastAltitude = 0 
+											AND (
+												tarDistance > 0 
+												OR tarResultType = 'lo'
+											) 
+											OR tarGoal > 0
+										), 
+										1, 
+										0
+									)
+								) AS Landed 
+							FROM 
+								tblTaskResult 
+							WHERE 
+								tasPk = $tasPk 
+								AND tarResultType <> 'abs'");
+
+    $sth->execute();
+    $ref = $sth->fetchrow_hashref();
+    $totdist = 0.0 + $ref->{'TotalDistance'};
+    $launched = 0 + $ref->{'TotalLaunched'};
+    $pilots = 0 + $ref->{'TotalPilots'};
+    $stddev = 0 + $ref->{'Deviation'};
+    my $totdistovermin = 0 + $ref->{'TotDistOverMin'};
+    $task->{'sstopped'} //= 0;
+    if ($task->{'sstopped'} > 0)
+    {
+        print "F: glidebonus=$glidebonus\n";
+        $glidebonus = $formula->{'glidebonus'};
+        $landed = 0 + $ref->{'Landed'};
+    }
+
+    # pilots in goal?
+    $sth = $dbh->prepare("select count(tarPk) as GoalPilots from tblTaskResult where tasPk=$tasPk and tarGoal > 0");
+    $sth->execute();
+    $goal = 0;
+    if ($ref = $sth->fetchrow_hashref())
+    {
+        $goal = $ref->{'GoalPilots'};
+    }
+
+    # pilots in ESS
+    $sth = $dbh->prepare("select count(tarPk) as ESSPilots from tblTaskResult where tasPk=$tasPk and (tarES-tarSS) > 0");
+    $sth->execute();
+    $ess = 0;
+    if ($ref = $sth->fetchrow_hashref())
+    {
+        $ess  = $ref->{'ESSPilots'};
+    }
+
+    $sth = $dbh->prepare("select min(tarES) as MinArr, max(tarES) as MaxArr from tblTaskResult where tasPk=$tasPk and (tarES-tarSS) > 0");
+    $sth->execute();
+    $maxarr = 0;
+    if ($ref = $sth->fetchrow_hashref())
+    {
+        $minarr = $ref->{'MinArr'};
+        $maxarr = $ref->{'MaxArr'};
+    }
+
+    $sth = $dbh->prepare("select (tarES-tarSS) as MinTime from tblTaskResult where tasPk=$tasPk and tarES > 0 and (tarES-tarSS) > 0 order by (tarES-tarSS) asc limit 2");
+    $sth->execute();
+    $fastest = 0;
+    while ($ref = $sth->fetchrow_hashref())
+    {
+        if ($fastest == 0)
+        {
+            $fastest = $ref->{'MinTime'};
+            $tqtime = $fastest;
+        }
+        else
+        {
+            $tqtime = $ref->{'MinTime'};
+        }
+    }
+
+    # Sanity
+    if (!$fastest)
+    {
+        $fastest = 0;
+        $minarr = 0;
+    }
+
+    # FIX: lead out coeff - first departure in goal and adjust min coeff 
+    $sth = $dbh->prepare("select min(tarLeadingCoeff) as MinCoeff from tblTaskResult where tasPk=$tasPk and tarLeadingCoeff is not NULL");
+    $sth->execute();
+    $mincoeff = 0;
+    if ($ref = $sth->fetchrow_hashref())
+    {
+        $mincoeff = $ref->{'MinCoeff'};
+    }
+
+    # FIX: lead out coeff2 - first departure in goal and adjust min coeff 
+    $sth = $dbh->prepare("select min(tarLeadingCoeff2) as MinCoeff2 from tblTaskResult where tasPk=$tasPk and tarLeadingCoeff2 is not NULL");
+    $sth->execute();
+    $mincoeff2 = 0;
+    if ($ref = $sth->fetchrow_hashref())
+    {
+        $mincoeff2 = $ref->{'MinCoeff2'};
+    }
+    #print "TTT: min leading coeff=$mincoeff\n";
+
+    my $maxdist = 0;
+    my $mindept = 0;
+    my $lastdept = 0;
+    #$sth = $dbh->prepare("select max(tarDistance) as MaxDist from tblTaskResult where tasPk=$tasPk");
+    $sth = $dbh->prepare("select max(tarDistance+tarLastAltitude*$glidebonus) as MaxDist from tblTaskResult where tasPk=$tasPk");
+    $sth->execute();
+    if ($ref = $sth->fetchrow_hashref())
+    {
+        $maxdist = 0 + $ref->{'MaxDist'};
+    }
+    #if someone got to goal, maxdist should be dist to goal (to avoid stopped glide creating a max dist > task dist)
+    if ($goal > 0)
+    {
+	
+   	$sth = $dbh->prepare("select tasShortRouteDistance as GoalDist from tblTask where tasPk=$tasPk");
+   	$sth->execute();
+ 	if ($ref = $sth->fetchrow_hashref())	
+	{
+		$maxdist = $ref->{'GoalDist'};
+    	}
+     }
+
+    if ($maxdist < $mindist)
+    {
+        $maxdist = $mindist;
+    }
+    #print "TT: glidebonus=$glidebonus maxdist=$maxdist\n";
+
+    $sth = $dbh->prepare("select min(tarSS) as MinDept, max(tarSS) as LastDept from tblTaskResult where tasPk=$tasPk and tarSS > 0 and tarGoal > 0");
+    $sth->execute();
+    if ($ref = $sth->fetchrow_hashref())
+    {
+        $mindept = $ref->{'MinDept'};
+        $lastdept = $ref->{'LastDept'};
+    }
+
+    # Find the median distance flown
+    $dbh->do('set @rownum=-1;');
+    $sth = $dbh->prepare("select avg(TM.dist) as median from ( select \@rownum:=\@rownum+1 AS rownum, TR.tarDistance AS dist FROM tblTaskResult TR where tasPk=$tasPk and tarResultType not in ('abs', 'dnf') ORDER BY tarDistance ) AS TM WHERE TM.rownum IN ( CEIL(\@rownum/2), FLOOR(\@rownum/2))");
+    $sth->execute();
+    if ($ref = $sth->fetchrow_hashref()) 
+    {
+        $median = $ref->{'median'};
+    }
+    print "Median=$median\n";
+
+    
+    # Find the distance spread
+    if ($formula->{'diffcalc'} eq 'lo')
+    {
+        $sth = $dbh->prepare("select truncate(tarDistance/100,0) as Distance, count(truncate(tarDistance/100,0)) as Difficulty from tblTaskResult where tasPk=$tasPk and tarResultType not in ('abs','dnf') and (tarGoal=0 or tarGoal is null) group by truncate(tarDistance/100,0)");
+    }
+    else
+    {
+        $sth = $dbh->prepare("select truncate(tarDistance/100,0) as Distance, count(truncate(tarDistance/100,0)) as Difficulty from tblTaskResult where tasPk=$tasPk and tarResultType not in ('abs','dnf') group by truncate(tarDistance/100,0)");
+    }
+    $sth->execute();
+
+    while ($ref = $sth->fetchrow_hashref()) 
+    {
+        push @distspread, $ref;
+    }
+
+    # Determine first to reach each 'KM' marker
+    $sth = $dbh->prepare("select M.tmDistance, min(M.tmTime) as FirstArrival from 
+            tblTrackMarker M, tblComTaskTrack C where C.tasPk=$tasPk and M.traPk=C.traPk and M.tmTime > 0 group by M.tmDistance order by M.tmDistance");
+    $sth->execute();
+    while ($ref = $sth->fetchrow_hashref())
+    {
+        $kmmarker->[$ref->{'tmDistance'}] = $ref->{'FirstArrival'};
+    }
+
+    # task quality 
+    $taskt{'pilots'} = $pilots;
+    $taskt{'maxdist'} = $maxdist;
+    $taskt{'distance'} = $totdist;
+    $taskt{'distovermin'} = $totdistovermin;
+    $taskt{'median'} = $median;
+    $taskt{'stddev'} = $stddev;
+    #$taskt{'taskdist'} = $taskdist;
+    $taskt{'landed'} = $landed;
+    $taskt{'launched'} = $launched;
+    $taskt{'launchvalid'} = $launchvalid;
+    #$taskt{'quality'} = $quality;
+    $taskt{'goal'} = $goal;
+    $taskt{'ess'} = $ess;
+    $taskt{'fastest'} = $fastest;
+    $taskt{'tqtime'} = $tqtime;
+    $taskt{'firstdepart'} = $mindept;
+    $taskt{'lastdepart'} = $lastdept;
+    $taskt{'firstarrival'} = $minarr;
+    $taskt{'lastarrival'} = $maxarr;
+    $taskt{'mincoeff'} = $mincoeff;
+    $taskt{'mincoeff2'} = $mincoeff2;
+    $taskt{'distspread'} = \@distspread;
+    $taskt{'kmmarker'} = $kmmarker;
+    $taskt{'endssdistance'} = $task->{'endssdistance'};
+
+    return \%taskt;
+}
 
 #
 # Calculate Task Validity - PWC 2016
 # 
 # dayQ = launchV * distanceQ * timeV * stopV
 #
-
 sub day_quality
 {
     my ($self, $taskt, $formula) = @_;

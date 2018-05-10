@@ -1,5 +1,4 @@
-#!/usr/bin/perl
-
+#!/usr/bin/perl -w
 #
 # Reads in a zip file full of .igc files
 # should be named as such: FAINO.igc or LASTNAME_FIRSTNAME.igc

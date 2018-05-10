@@ -1,12 +1,16 @@
-#!/usr/bin/perl 
-##!/usr/bin/perl -I/home/geoff/bin
+#!/usr/bin/perl -w
 #
 # Determine the shortest route using cartesian coords
 # Geoff Wong 2008
 # 
 
-use POSIX qw(ceil floor);
+# Add currect bin directory to @INC
+use File::Basename;
+use lib '/home/untps52y/perl5/lib/perl5';
+use lib dirname (__FILE__) . '/';
 use Route qw(:all);
+
+use POSIX qw(ceil floor);
 use strict;
 
 #

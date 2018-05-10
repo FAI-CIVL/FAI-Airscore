@@ -1,5 +1,4 @@
-#!/usr/bin/perl
-
+#!/usr/bin/perl -w
 #
 # Verify a track against a task
 # Used for Race competitions and Routes.

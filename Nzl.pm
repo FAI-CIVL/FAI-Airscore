@@ -1,6 +1,4 @@
-#!/usr/bin/perl -I/home/geoff/bin
-
-
+#!/usr/bin/perl -w
 #
 # Determines how much of a task (and time) is completed
 # given a particular competition / task 
@@ -18,6 +16,11 @@ require DBD::mysql;
 use POSIX qw(ceil floor);
 use Math::Trig;
 use Data::Dumper;
+
+# Add currect bin directory to @INC
+use File::Basename;
+use lib '/home/untps52y/perl5/lib/perl5';
+use lib dirname (__FILE__) . '/';
 use TrackLib qw(:all);
 
 #

@@ -1,6 +1,4 @@
-#!/usr/bin/perl -I/home/geoff/bin
-
-
+#!/usr/bin/perl -w
 #
 # Determines how much of a task (and time) is completed
 # given a particular competition / task 
@@ -14,10 +12,14 @@ require Gap;
 @ISA = ( "Gap" );
 
 use strict;
+
 #require DBD::mysql;
 #use POSIX qw(ceil floor);
 #use Math::Trig;
 #use Data::Dumper;
+
+# Add currect bin directory to @INC
+#use lib '/var/www/cgi-bin';
 #use TrackLib qw(:all);
 
 sub points_weight
