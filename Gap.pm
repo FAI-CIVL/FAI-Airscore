@@ -8,7 +8,7 @@
 package Gap;
 
 require Exporter;
-our @ISA       = qw(Exporter);
+our @ISA = qw(Exporter);
 #our @EXPORT = qw(:all);
 
 require DBD::mysql;
@@ -18,8 +18,11 @@ use Data::Dumper;
 use strict;
 
 # Add currect bin directory to @INC
-use lib '/var/www/cgi-bin';
+use File::Basename;
+use lib '/home/untps52y/perl5/lib/perl5';
+use lib dirname (__FILE__) . '/';
 use TrackLib qw(:all);
+# use Scoring qw(:all);
 
 sub new
 {
@@ -30,6 +33,9 @@ sub new
     return $self;
 }
 
+###########################################################
+# This part would be nice to be put in an external file, did not find how yet
+###########################################################
 sub round 
 {
     my ($self, $number) = @_;
@@ -69,8 +75,10 @@ sub spread
     $sz = scalar @$buc - 1;
     #print "spread: $sz\n";
     $nbuc->[0] = 0.0 + $buc->[0];
+    $nbuc->[1] = 0.0 + $buc->[1];
     for my $j ( 1 .. $sz )
     {
+        $nbuc->[$j] //= 0;
         $nbuc->[$j-1] = $nbuc->[$j-1] + $buc->[$j] / 3;
         $nbuc->[$j] = $nbuc->[$j] + $buc->[$j] * 2 / 3;
         #$nbuc->[$j+1] = $buc->[$j] / 3;
@@ -78,6 +86,100 @@ sub spread
 
     return $nbuc;
 }
+
+sub calc_kmdiff
+{
+    my ($self, $task, $taskt, $formula) = @_;
+    my $tasPk;
+    my $kmdiff = [];
+    my $Nlo;
+    my $distspread;
+    my $difdist;
+    my $debc = 0;
+
+    $tasPk = $task->{'tasPk'};
+    $Nlo = $taskt->{'launched'}-$taskt->{'goal'};
+
+    # KM difficulty
+    for my $it ( 0 .. floor($taskt->{'maxdist'} / 100.0) )
+    {
+        $kmdiff->[$it] = 0;
+    }
+
+    $distspread = $taskt->{'distspread'};
+    for my $ref ( @$distspread )
+    {
+        # populate kmdiff
+        # At half the difficulty dist back they get all the points
+        $difdist = 0 + $ref->{'Distance'} - ($formula->{'diffdist'}/200);
+        if ($difdist < 0) 
+        {
+            $difdist = 0;
+        }
+        $kmdiff->[$difdist] = 0 + $kmdiff->[$difdist] + $ref->{'Difficulty'};
+        $debc = $debc + $ref->{'Difficulty'};
+        #print "dist($difdist): ", $ref->{'Distance'}, " diff: ", $kmdiff->[$difdist], "\n";
+        #$kmdiff->[(0+$ref->{'Distance'})] = 0+$ref->{'Difficulty'};
+    }
+
+    # Then smooth it out (non-linearly) for the other half
+    #print Dumper($kmdiff);
+    for my $it ( 0 .. ($formula->{'diffdist'}/200))
+    {
+        $kmdiff = $self->spread($kmdiff);
+    }
+    #print Dumper($kmdiff);
+
+    # Determine cumulative distance difficulty 
+    my $x = 0.0;
+    for my $dif (0 .. scalar @$kmdiff-1)
+    {
+        my $rdif;
+
+        $rdif = 0.0;
+
+        $x = $x + $kmdiff->[$dif];
+        # Use only landed-out pilots or all pilots for difficulty?
+        if ($formula->{'diffcalc'} eq 'lo' && $Nlo > 0)
+        {
+            $rdif = $x/$Nlo;
+        }
+        else
+        {
+            $rdif = $x/$taskt->{'launched'};
+        }
+        $kmdiff->[$dif] = ($rdif);
+    }
+     #print "debc=$debc x=$x (vs $Nlo)\n";
+    return $kmdiff;
+}
+
+sub pilot_distance
+{
+    my ($self, $formula, $task, $taskt, $pil, $Adistance) = @_;
+
+    my $kmdiff = $self->calc_kmdiff($task, $taskt, $formula);
+    my $Pdist = $Adistance * 
+            (($pil->{'distance'}/$taskt->{'maxdist'}) * $formula->{'lineardist'}
+            + $kmdiff->[floor($pil->{'distance'}/100.0)] * (1-$formula->{'lineardist'}));
+
+    # print $pil->{'tarPk'}, " Adist=$Adistance pil->dist=", $pil->{'distance'}, " maxdist=", $taskt->{'maxdist'}, " kmdiff=", $kmdiff->[floor($pil->{'distance'}/100.0)], "\n";
+    print $pil->{'traPk'}, " lin dist: ", $Adistance * ($pil->{'distance'}/$taskt->{'maxdist'}) * $formula->{'lineardist'}, " dif dist: ", $Adistance * $kmdiff->[floor($pil->{'distance'}/100.0)] * (1-$formula->{'lineardist'}), "\n";
+
+    return $Pdist;
+}
+
+sub pilot_penalty
+{
+    my ($self, $formula, $task, $taskt, $pil, $astart, $aspeed) = @_;
+    my $penalty = 0;
+    my $penspeed;
+    my $pendist;
+
+    return $penalty;
+}
+
+#####################################################
 
 #
 # Find the task totals and update ..
@@ -115,7 +217,48 @@ sub task_totals
     $landed = 0;
 
     # @todo: 'Landed' misses people who made ESS but actually landed before goal
-    $sth = $dbh->prepare("select count(tarPk) as TotalPilots, sum(if(tarDistance < $mindist, $mindist, tarDistance)) as TotalDistance, sum(if(tarDistance < $mindist, 0, (tarDistance - $mindist))) as TotDistOverMin, sum((tarDistance > 0) or (tarResultType='lo')) as TotalLaunched, std(if(tarDistance < $mindist, $mindist, tarDistance)) as Deviation, sum(if((tarLastAltitude=0 and (tarDistance>0 or tarResultType='lo') or tarGoal>0),1,0)) as Landed FROM tblTaskResult where tasPk=$tasPk and tarResultType <> 'abs'");
+    $sth = $dbh->prepare("	SELECT 
+								COUNT(tarPk) as TotalPilots, 
+								SUM(
+									IF(
+										tarDistance < $mindist, $mindist, tarDistance
+									)
+								) AS TotalDistance, 
+								SUM(
+									IF(
+										tarDistance < $mindist, 
+										0, 
+										(tarDistance - $mindist)
+									)
+								) AS TotDistOverMin, 
+								SUM(
+									(tarDistance > 0) 
+									OR (tarResultType = 'lo')
+								) AS TotalLaunched, 
+								STD(
+									IF(
+										tarDistance < $mindist, $mindist, tarDistance
+									)
+								) AS Deviation, 
+								SUM(
+									IF(
+										(
+											tarLastAltitude = 0 
+											AND (
+												tarDistance > 0 
+												OR tarResultType = 'lo'
+											) 
+											OR tarGoal > 0
+										), 
+										1, 
+										0
+									)
+								) AS Landed 
+							FROM 
+								tblTaskResult 
+							WHERE 
+								tasPk = $tasPk 
+								AND tarResultType <> 'abs'");
 
     $sth->execute();
     $ref = $sth->fetchrow_hashref();
@@ -124,7 +267,7 @@ sub task_totals
     $pilots = 0 + $ref->{'TotalPilots'};
     $stddev = 0 + $ref->{'Deviation'};
     my $totdistovermin = 0 + $ref->{'TotDistOverMin'};
-
+    $task->{'sstopped'} //= 0;
     if ($task->{'sstopped'} > 0)
     {
         print "F: glidebonus=$glidebonus\n";
@@ -342,7 +485,10 @@ sub day_quality
     }
     print "launch quality=$launch\n";
 
-    $distance = 2*($taskt->{'distance'}-$taskt->{'launched'}*$formula->{'mindist'}) / ($taskt->{'launched'}*(1+$formula->{'nomgoal'}/100)*($formula->{'nomdist'}-$formula->{'mindist'}));
+    #$distance = 2*($taskt->{'distance'}-$taskt->{'launched'}*$formula->{'mindist'}) / ($taskt->{'launched'}*(1+$formula->{'nomgoal'}/100)*($formula->{'nomdist'}-$formula->{'mindist'}));
+    # Nom. Goal should already be in percentage in tblForComp
+    $distance = 2*($taskt->{'distance'}-$taskt->{'launched'}*$formula->{'mindist'}) / ($taskt->{'launched'}*(1+$formula->{'nomgoal'})*($formula->{'nomdist'}-$formula->{'mindist'}));
+
     print "distance quality=$distance\n";
     if ($distance > 1) 
     {
@@ -400,16 +546,19 @@ sub points_weight
 
 
     $quality = $taskt->{'quality'};
+    
+    # GoalRatio
     $x = $taskt->{'goal'} / $taskt->{'launched'};
 
-    if ($formula->{'weightdist'} eq 'post2014')
-    {
+    #if ($formula->{'weightdist'} eq 'post2014') ###force always post2014
+    #{
+        # DistanceWeight = 0.9 - 1.665*GoalRatio + 1.713*GoalRatio^2 - 0.587*GoalRatio^3
         $distweight = 0.9-1.665*$x+1.713*$x*$x-0.587*$x*$x*$x;
-    }
-    else
-    {
-        $distweight = 1-0.8*sqrt($x);
-    }
+    #}
+    #else
+    #{
+    #    $distweight = 1-0.8*sqrt($x);
+    #}
 
     # 1998 - 1999 - (speed 6 / start 1 / arrival 1) / 8
     # 2000 - 2007 - (5.6 / 1.4 / 1) / 8
@@ -431,88 +580,20 @@ sub points_weight
     }
     $Aspeed = 1000 * $quality * (1-$distweight) * $speedweight;
 
-    if ($formula->{'scaletovalidity'})
-    {
-        $dem = $Adistance + $Aspeed + $Aarrival + $Astart;
-        $Adistance = 1000 * $quality * $Adistance / $dem;
-        $Aspeed = 1000 * $quality * $Aspeed / $dem;
-        $Aarrival = 1000 * $quality * $Aarrival / $dem;
-        $Astart =  1000 * $quality * $Astart / $dem;
-    }
+# ScaleToValidity Not implemented at the moment: what is it?
+#     if ($formula->{'scaletovalidity'})
+#     {
+#         $dem = $Adistance + $Aspeed + $Aarrival + $Astart;
+#         $Adistance = 1000 * $quality * $Adistance / $dem;
+#         $Aspeed = 1000 * $quality * $Aspeed / $dem;
+#         $Aarrival = 1000 * $quality * $Aarrival / $dem;
+#         $Astart =  1000 * $quality * $Astart / $dem;
+#     }
 
     print "points_weight: (", $formula->{'version'}, ") Adist=$Adistance, Aspeed=$Aspeed, Astart=$Astart, Aarrival=$Aarrival\n";
     return ($Adistance, $Aspeed, $Astart, $Aarrival);
 
 }
-
-sub calc_kmdiff
-{
-    my ($self, $task, $taskt, $formula) = @_;
-    my $tasPk;
-    my $kmdiff = [];
-    my $Nlo;
-    my $distspread;
-    my $difdist;
-    my $debc = 0;
-
-    $tasPk = $task->{'tasPk'};
-    $Nlo = $taskt->{'launched'}-$taskt->{'goal'};
-
-    # KM difficulty
-    for my $it ( 0 .. floor($taskt->{'maxdist'} / 100.0) )
-    {
-        $kmdiff->[$it] = 0;
-    }
-
-    $distspread = $taskt->{'distspread'};
-    for my $ref ( @$distspread )
-    {
-        # populate kmdiff
-        # At half the difficulty dist back they get all the points
-        $difdist = 0 + $ref->{'Distance'} - ($formula->{'diffdist'}/200);
-        if ($difdist < 0) 
-        {
-            $difdist = 0;
-        }
-        $kmdiff->[$difdist] = 0 + $kmdiff->[$difdist] + $ref->{'Difficulty'};
-        $debc = $debc + $ref->{'Difficulty'};
-        #print "dist($difdist): ", $ref->{'Distance'}, " diff: ", $kmdiff->[$difdist], "\n";
-        #$kmdiff->[(0+$ref->{'Distance'})] = 0+$ref->{'Difficulty'};
-    }
-
-    # Then smooth it out (non-linearly) for the other half
-    #print Dumper($kmdiff);
-    for my $it ( 0 .. ($formula->{'diffdist'}/200))
-    {
-        $kmdiff = $self->spread($kmdiff);
-    }
-    #print Dumper($kmdiff);
-
-    # Determine cumulative distance difficulty 
-    my $x = 0.0;
-    for my $dif (0 .. scalar @$kmdiff-1)
-    {
-        my $rdif;
-
-        $rdif = 0.0;
-
-        $x = $x + $kmdiff->[$dif];
-        # Use only landed-out pilots or all pilots for difficulty?
-        if ($formula->{'diffcalc'} eq 'lo' && $Nlo > 0)
-        {
-            $rdif = $x/$Nlo;
-        }
-        else
-        {
-            $rdif = $x/$taskt->{'launched'};
-        }
-        $kmdiff->[$dif] = ($rdif);
-    }
-    # print "debc=$debc x=$x (vs $Nlo)\n";
-
-    return $kmdiff;
-}
-
 
 # Calculate pilot arrival score
 sub pilot_arrival
@@ -570,6 +651,7 @@ sub pilot_departure_leadout
     my $Pdepart = 0;
     if ($task->{'departure'} eq 'leadout')
     {
+        $pil->{'coeff'} //= 0;
         print "    leadout: ", $pil->{'coeff'}, ", $Cmin\n";
         if ($pil->{'coeff'} > 0)
         {
@@ -695,63 +777,6 @@ sub pilot_speed
     return $Pspeed;
 }
 
-sub pilot_distance
-{
-    my ($self, $formula, $task, $taskt, $pil, $Adistance) = @_;
-
-    my $kmdiff = $self->calc_kmdiff($task, $taskt, $formula);
-    my $Pdist = $Adistance * 
-            (($pil->{'distance'}/$taskt->{'maxdist'}) * $formula->{'lineardist'}
-            + $kmdiff->[floor($pil->{'distance'}/100.0)] * (1-$formula->{'lineardist'}));
-
-    # print $pil->{'tarPk'}, " Adist=$Adistance pil->dist=", $pil->{'distance'}, " maxdist=", $taskt->{'maxdist'}, " kmdiff=", $kmdiff->[floor($pil->{'distance'}/100.0)], "\n";
-    print $pil->{'traPk'}, " lin dist: ", $Adistance * ($pil->{'distance'}/$taskt->{'maxdist'}) * $formula->{'lineardist'}, " dif dist: ", $Adistance * $kmdiff->[floor($pil->{'distance'}/100.0)] * (1-$formula->{'lineardist'}), "\n";
-
-    return $Pdist;
-}
-
-sub pilot_penalty
-{
-    my ($self, $formula, $task, $taskt, $pil, $astart, $aspeed) = @_;
-    my $penalty = 0;
-    my $penspeed;
-    my $pendist;
-
-# Penalty is in seconds .. convert for OzGap penalty.
-#        if ($penalty > 0) 
-#        {
-#            $penspeed = $penalty;
-#            if ($penspeed > 90)
-#            {
-#                $penspeed = 90;
-#            };
-#            $penspeed = ($penspeed + 10) / 100;
-#            $penspeed = ($Pdepart + $Pspeed) * $penspeed;
-#
-#            $pendist = 0;
-#            $penalty = $penalty - 90;
-#            if ($penalty > 0)
-#            {
-#                if ($penalty > $Tnom / 3)
-#                {
-#                    $pendist = $Pdist;
-#                }
-#                else
-#                {
-#                    $pendist = ((($penalty + 30) / 60) * 2) / 100;
-#                    $pendist = $Pdist * $penalty;
-#                }
-#            }
-#
-#            print "jumped=$penalty penspeed=$penspeed pendist=$pendist\n";
-#
-#            $penalty = round($penspeed + $pendist);
-#            print "computed penalty=$penalty\n";
-#        }
-
-    return $penalty;
-}
-
 sub ordered_results
 {
     my ($self, $dbh, $task, $taskt, $formula) = @_;
@@ -764,7 +789,29 @@ sub ordered_results
     # Get all pilots and process each of them 
     # pity it can't be done as a single update ...
     $dbh->do('set @x=0;');
-    $sth = $dbh->prepare("select \@x:=\@x+1 as Place, tarPk, traPk, tarDistance, tarSS, tarES, tarPenalty, tarResultType, tarLeadingCoeff, tarGoal, tarLastAltitude from tblTaskResult where tasPk=$tasPk and tarResultType <> 'abs' order by case when (tarES=0 or tarES is null) then 99999999 else tarES end, tarDistance desc");
+    $sth = $dbh->prepare("	SELECT 
+								\@x := \@x + 1 AS Place, 
+								tarPk, 
+								traPk, 
+								tarDistance, 
+								tarSS, 
+								tarES, 
+								tarPenalty, 
+								tarResultType, 
+								tarLeadingCoeff, 
+								tarGoal, 
+								tarLastAltitude 
+							FROM 
+								tblTaskResult 
+							WHERE 
+								tasPk = $tasPk 
+								AND tarResultType <> 'abs' 
+							ORDER BY 
+								CASE WHEN (
+									tarES = 0 
+									OR tarES IS null
+								) THEN 99999999 ELSE tarES END, 
+								tarDistance DESC");
     $sth->execute();
     while ($ref = $sth->fetchrow_hashref()) 
     {
@@ -778,6 +825,11 @@ sub ordered_results
         $taskres{'stopalt'} = $ref->{'tarLastAltitude'};
         # set pilot to min distance if they're below that ..
         # print "sstopped=", $task->{'sstopped'}, " stopalt=", $taskres{'stopalt'}, " glidebonus=", $formula->{'glidebonus'}, "\n";
+        $task->{'sstopped'} //= 0;
+        $taskres{'stopalt'} //= 0;
+        $formula->{'glidebonus'} //= 0;
+        $ref->{'tarES'} //= 0;
+        $ref->{'tarSS'} //= 0;
         if ($task->{'sstopped'} > 0 && $taskres{'stopalt'} > 0 && $formula->{'glidebonus'} > 0)
         {
             print "Stopped height bonus: ", $formula->{'glidebonus'} * $taskres{'stopalt'}, "\n";
@@ -820,6 +872,7 @@ sub ordered_results
             
                 print " to: ", $taskres{'coeff'}, "\n";
                 # adjust mincoeff?
+                $task->{'mincoeff'} //= 0;
                 if ($taskres{'coeff'} < $task->{'mincoeff'})
                 {
                     $task->{'mincoeff'} = $taskres{'coeff'};
@@ -888,6 +941,7 @@ sub ordered_results
 #
 # Should be separate one of these for each type/version combo?
 #
+
 sub points_allocation
 {
     my ($self, $dbh, $task, $taskt, $formula) = @_;
@@ -909,12 +963,19 @@ sub points_allocation
     # Get basic GAP allocation values
     my ($Adistance, $Aspeed, $Astart, $Aarrival) = $self->points_weight($task, $taskt, $formula);
 
+	# Update point weights in tblTask
+	my $sth = $dbh->prepare("UPDATE tblTask SET 
+		tasAvailDistPoints=$Adistance, tasAvailLeadPoints=$Astart, 
+		tasAvailTimePoints=$Aspeed 
+		WHERE tasPk=$tasPk");
+	$sth->execute();	
+
     # Score each pilot now 
     for my $pil ( @$sorted_pilots )
     {
         my $tarPk = $pil->{'tarPk'};
         my $penalty = $pil->{'penalty'};
-
+        $penalty //= 0;
         # Pilot distance score 
         # FIX: should round $pil->distance properly?
         # my $pilrdist = round($pil->{'distance'}/100.0) * 100;
@@ -930,7 +991,8 @@ sub points_allocation
         # Pilot arrival score
         my $Parrival = $self->pilot_arrival($formula, $task, $taskt, $pil, $Aarrival);
 
-        # Penalty for not making goal ..
+        # Penalty for not making goal .
+        $pil->{'goal'} //= 0;
         if ($pil->{'goal'} == 0)
         {
             $Pspeed = $Pspeed - $Pspeed * $formula->{'sspenalty'};
@@ -956,7 +1018,7 @@ sub points_allocation
         if (defined($tarPk))
         {
             print "update $tarPk: dP:$Pdist, sP:$Pspeed, LeadP:$Pdepart - score $Pscore\n";
-            my $sth = $dbh->prepare("update tblTaskResult set
+            $sth = $dbh->prepare("update tblTaskResult set
                 tarDistanceScore=$Pdist, tarSpeedScore=$Pspeed, 
                 tarArrival=$Parrival, tarDeparture=$Pdepart, tarScore=$Pscore
                 where tarPk=$tarPk");
@@ -966,4 +1028,3 @@ sub points_allocation
 }
 
 1;
-

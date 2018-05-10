@@ -7,20 +7,18 @@
 #
 
 require DBD::mysql;
+
 require Gap; # qw(:all);
-require OzGap; # qw(:all);
-require NoGap; # qw(:all);
-require Nzl; # qw(:all);
-require JTGap; # qw(:all);
-require GGap; # qw(:all);
-require RTGap; # qw(:all);
 require PWC; # qw(:all);
+require RTG; # qw(:all);
 
 use POSIX qw(ceil floor);
 use strict;
 
 # Add currect bin directory to @INC
-use lib '/var/www/cgi-bin';
+use File::Basename;
+use lib '/home/untps52y/perl5/lib/perl5';
+use lib dirname (__FILE__) . '/';
 use TrackLib qw(:all);
 
 #
@@ -56,58 +54,22 @@ if ($formula->{'class'} eq 'gap')
     print "GAP scoring\n";
     $scr = Gap->new();
 }
-elsif ($formula->{'class'} eq 'ozgap')
-{
-    print "OzGAP scoring\n";
-    $scr = OzGap->new();
-}
-elsif ($formula->{'class'} eq 'nzl')
-{
-    print "NZL scoring\n";
-    $scr = Nzl->new();
-}
-elsif ($formula->{'class'} eq 'nogap')
-{
-    print "NoGap scoring\n";
-    $scr = NoGap->new();
-}
-elsif ($formula->{'class'} eq 'jtgap')
-{
-    print "JTGap scoring\n";
-    $scr = JTGap->new();
-}
-elsif ($formula->{'class'} eq 'ggap')
-{
-    print "GGap scoring\n";
-    $scr = GGap->new();
-}
-elsif ($formula->{'class'} eq 'rtgap')
-{
-    print "RTGap scoring\n";
-    $scr = RTGap->new();
-}
 elsif ($formula->{'class'} eq 'pwc')
 {
     print "PWC scoring\n";
     $scr = PWC->new();
 }
+elsif ($formula->{'class'} eq 'RTG')
+{
+    print "RTG scoring\n";
+    $scr = RTG->new();
+}
+
 else
 {
     print "Unknown formula class ", $formula->{'class'}, "\n";
     exit 1;
 }
-
-# Work out all the task totals from task results, must return 
-# at least the followint:
-#    $taskt->{'pilots'}
-#    $taskt->{'maxdist'}
-#    $taskt->{'distance'}
-#    $taskt->{'launched'} 
-#    $taskt->{'goal'} 
-#    $taskt->{'fastest'} 
-#    $taskt->{'firstdepart'} 
-#    $taskt->{'firstarrival'}
-#    $taskt->{'mincoeff'}
 
 $taskt = $scr->task_totals($TrackLib::dbh,$task,$formula);
 
@@ -130,6 +92,7 @@ $sth->execute();
 ($dist,$time,$launch, $stop) = $scr->day_quality($taskt, $formula);
 
 # Check if task was stopped - No idea if this is done elsewhere, but without broke PWC.pm
+$task->{'sstopped'} //= 0;
 if ( $task->{'sstopped'} > 0 )
 {
 	$quality = $dist * $time * $launch * $stop;
@@ -144,7 +107,16 @@ if ($quality > 1.0)
 {
     $quality = 1.0;
 }
-$sth = $TrackLib::dbh->prepare("UPDATE tblTask SET tasQuality='$quality', tasDistQuality='$dist', tasTimeQuality='$time', tasLaunchQuality='$launch', tasStopQuality='$stop' WHERE tasPk='$tasPk' ");
+$sth = $TrackLib::dbh->prepare("UPDATE 
+									tblTask 
+								SET 
+									tasQuality = '$quality', 
+									tasDistQuality = '$dist', 
+									tasTimeQuality = '$time', 
+									tasLaunchQuality = '$launch', 
+									tasStopQuality = '$stop' 
+								WHERE 
+									tasPk = '$tasPk'");
 $sth->execute();
 $taskt->{'quality'} = $quality;
 
@@ -153,4 +125,3 @@ if ($taskt->{'pilots'} > 0)
     # Now allocate points to pilots ..
     $scr->points_allocation($TrackLib::dbh,$task,$taskt,$formula);
 }
-
