@@ -92,7 +92,15 @@ sub track_update
     $tasPk = $task->{'tasPk'};
     $comPk = $task->{'comPk'};
     # Now check for pre-submitted tracks ..
-    $sth = $dbh->prepare("select traPk from tblComTaskTrack where tasPk=$tasPk");
+    # Excluding pilots with manual set status DNF, ABS or MIN DIST 
+    $sth = $dbh->prepare("	SELECT 
+								TT.traPk 
+							FROM 
+								tblComTaskTrack TT 
+								JOIN tblTaskResult TR ON TT.traPk = TR.traPk 
+							WHERE 
+								TT.tasPk = $tasPk 
+								AND TR.tarResultType NOT IN ('abs', 'dnf', 'mindist')");
     $sth->execute();
     @tracks = ();
     $flag = 0;
@@ -155,13 +163,13 @@ if (scalar @ARGV < 1)
 
 $tasPk = $ARGV[0];
 
-# Drop a mutex/lock - only do one at a time
-if (-e "/var/lock/task_$tasPk")
-{
-    print "Task $tasPk already updating\n";
-    exit 1;
-}
-`touch /var/lock/task_$tasPk`;
+# # Drop a mutex/lock - only do one at a time
+# if (-e "/var/lock/task_$tasPk")
+# {
+#     print "Task $tasPk already updating\n";
+#     exit 1;
+# }
+# `touch /var/lock/task_$tasPk`;
 
 # Work out all the task totals to make it easier later
 $dbh = db_connect();
@@ -196,7 +204,7 @@ if (track_update($task, $opt) == 1)
     #print $out;
 }
 
-`rm -f /var/lock/task_$tasPk`;
+# `rm -f /var/lock/task_$tasPk`;
 
 print "Task dist=$dist\n";
 
