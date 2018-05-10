@@ -43,10 +43,11 @@ if (array_key_exists('download', $_REQUEST))
     $row = mysqli_fetch_assoc($result);
     $regname = $row['regDescription'];
     $regname = preg_replace('/\s+/', '', $regname);
+    $filename = $row['regWptFileName'];
 
     # nuke normal header ..
     header("Content-type: text/wpt");
-    header("Content-Disposition: attachment; filename=\"$regname.wpt\"");
+    header("Content-Disposition: attachment; filename=\"$filename.wpt\"");
     header("Cache-Control: no-store, no-cache");
 
     if ($format == 'ozi')

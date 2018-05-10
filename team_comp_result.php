@@ -208,7 +208,16 @@ if ($start < 0)
 $link = db_connect();
 $title = 'highcloud.net';
 
-$query = "SELECT T.*,F.* FROM tblCompetition T left outer join tblFormula F on F.comPk=T.comPk where T.comPk=$comPk";
+$query = "	SELECT 
+				T.*, 
+				FC.*, 
+				F.* 
+			FROM 
+				tblCompetition T 
+				JOIN tblForComp FC USING (comPk) 
+				LEFT OUTER JOIN tblFormula F USING (forPk) 
+			where 
+				T.comPk = $comPk";
 $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Comp query failed: ' . mysqli_connect_error());
 $row = mysqli_fetch_array($result, MYSQLI_BOTH);
 if ($row)

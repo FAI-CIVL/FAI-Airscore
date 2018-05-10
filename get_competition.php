@@ -16,13 +16,20 @@ adminbar($comPk);
 
 $usePk = auth('system');
 $link = db_connect();
-$query = "select comName from tblCompetition where comPk=$comPk";
+$query = "SELECT comName FROM tblCompetition WHERE comPk = $comPk";
 $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task add failed: ' . mysqli_connect_error());
 $comName = mysqli_result($result,0);
 
 $forPk = 0;
 $ctype = '';
-$sql = "SELECT T.* FROM tblCompetition T where T.comPk=$comPk";
+$sql = "SELECT 
+			T.*, 
+			FC.* 
+		FROM 
+			tblCompetition T 
+			LEFT JOIN tblForComp FC USING (comPk) 
+		WHERE 
+			T.comPk = $comPk";
 $result = mysqli_query($link, $sql);
 $row = mysqli_fetch_array($result, MYSQLI_BOTH);
 $competition = [];
@@ -35,7 +42,14 @@ if ($row)
 
 
 // Administrators 
-$sql = "select U.*, A.* FROM tblCompAuth A, tblUser U where U.usePk=A.usePk and A.comPk=$comPk";
+$sql = "SELECT 
+			U.*, 
+			A.* 
+		FROM 
+			tblCompAuth A 
+			LEFT JOIN tblUser U USING (usePk) 
+		WHERE 
+			A.comPk = $comPk";
 $result = mysqli_query($link, $sql);
 $admin = [];
 while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
@@ -50,7 +64,14 @@ $formula = [];
 
 if (in_array($ctype, $has_formula))
 {
-    $sql = "SELECT F.* FROM tblFormula F where F.comPk=$comPk";
+    $sql = "SELECT 
+				F.*, 
+				FC.*
+			FROM 
+				tblFormula F 
+				LEFT OUTER JOIN tblForComp FC USING (forPk) 
+			where 
+				FC.comPk = $comPk";
     $result = mysqli_query($link, $sql);
     $row = mysqli_fetch_array($result, MYSQLI_BOTH);
     if ($row)
@@ -64,7 +85,18 @@ if (in_array($ctype, $has_formula))
 {
 // Tasks
 $count = 1;
-$sql = "SELECT T.*, traPk as Tadded FROM tblTask T left outer join tblComTaskTrack CTT on CTT.tasPk=T.tasPk where T.comPk=$comPk group by T.tasPk order by T.tasDate";
+$sql = "SELECT 
+			T.*, 
+			traPk AS Tadded 
+		FROM 
+			tblTask T 
+			LEFT OUTER JOIN tblComTaskTrack CTT USING (tasPk) 
+		WHERE 
+			T.comPk = $comPk 
+		GROUP BY 
+			T.tasPk 
+		ORDER BY 
+			T.tasDate";
 $result = mysqli_query($link, $sql);
 
 $comp_tasks = [];
@@ -83,7 +115,18 @@ while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     $regions[$regDesc] = $regPk;
 }
 
-$sql = "SELECT T.* FROM tblCompetition C, tblTask T where T.comPk=C.comPk and C.comPk=$comPk order by T.tasPk limit 1";
+$sql = "SELECT 
+			T.* 
+		FROM 
+			tblCompetition C, 
+			tblTask T 
+		WHERE 
+			T.comPk = C.comPk 
+			AND C.comPk = $comPk 
+		ORDER BY 
+			T.tasPk 
+		LIMIT 
+			1";
 $result = mysqli_query($link, $sql);
 $defregion = '';
 if (mysqli_num_rows($result) > 0)

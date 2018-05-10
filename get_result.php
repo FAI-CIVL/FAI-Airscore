@@ -19,7 +19,13 @@ function taskcmp($a, $b)
 
 function comp_result($comPk, $cls)
 {
-    $sql = "select C.* from tblCompetition C where C.comPk=$comPk";
+    $sql = "SELECT 
+				FC.* 
+			FROM 
+				tblCompetition C 
+				JOIN tblForComp FC USING (comPk)  
+			WHERE 
+				C.comPk = $comPk";
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Comp info query failed: ' . mysqli_connect_error());
     if ($row = mysqli_fetch_assoc($result))
     {
@@ -27,7 +33,23 @@ function comp_result($comPk, $cls)
         $param = $row['comOverallParam'];
     }
 
-    $sql = "select TK.*,TR.*,P.*,T.traGlider from tblTaskResult TR, tblTask TK, tblTrack T, tblPilot P, tblCompetition C where C.comPk=$comPk and TK.comPk=C.comPk and TK.tasPk=TR.tasPk and TR.traPk=T.traPk and T.traPk=TR.traPk and P.pilPk=T.pilPk $cls order by P.pilPk, TK.tasPk";
+    $sql = "SELECT 
+				TK.*, 
+				TR.*, 
+				P.*, 
+				T.traGlider 
+			FROM 
+				tblCompetition C 
+				JOIN tblTask TK USING (comPk) 
+				JOIN tblTaskResult TR USING (tasPk) 
+				JOIN tblTrack T USING (traPk) 
+				JOIN tblPilot P USING (pilPk) 
+			WHERE 
+				C.comPk = $comPk 
+				$cls 
+			ORDER BY 
+				P.pilPk, 
+				TK.tasPk";
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task result query failed: ' . mysqli_connect_error());
     $results = [];
     while ($row = mysqli_fetch_assoc($result))

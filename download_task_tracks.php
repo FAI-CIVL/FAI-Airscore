@@ -6,20 +6,20 @@ function match_file($dir, $year, $base)
 {
     chdir($dir);
     # get the latest matching submission (or all?)
-  //  $file = $dir . '/' . $base . '*';
+    $file = $dir . '/' . $base . '*';
     $matches = glob($base . '*');
-  //  echo 'file: ' . $file . "\n";
- //   echo "matches: " . var_dump($matches) . "\n";
+	#echo 'file: ' . $file . "\n";
+    #echo "matches: " . var_dump($matches) . "\n";
     #print "match_file: $year $base"; #var_dump($matches); echo "<br>";
     if (sizeof($matches) > 0)
     {
         return $matches[sizeof($matches)-1];
-        //echo "size > 0 \n";
+        #echo "size > 0 \n";
     }
     else
     {
        return 0;
-       //echo "size = 0 \n";
+       #echo "size = 0 \n";
     }
 }
 
@@ -69,12 +69,15 @@ $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Ca
 $zip = new ZipArchive();
 $bname = strtolower(preg_replace('/[\s+\/]/', '_', $info['comName'] . '_' . $info['tasName'] . ".zip"));
 $filename = '/tmp/' . $bname;
-//echo $filename . "\n";
+#echo $filename . "\n";
 if ( true !== ( $zip->open($filename, ZipArchive::CREATE | ZipArchive::OVERWRITE)) )
 {
     exit("cannot open <$filename>\n");
 }
-//echo "File $filename created \n";
+#echo "File $filename created \n";
+
+#to avoid empty zip error
+$zip->addFromString('airscore.legapilotiparapendio.it','yes');
 
 #Get tracks
 $tracks = [];
@@ -85,7 +88,7 @@ while($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 
 $year = substr($info['tasDate'], 0, 4);
 $dir = __DIR__ . "/../tracks/$year";
-//echo "directory: " . $dir . "\n";
+#echo "directory: " . $dir . "\n";
 chdir($dir);
 
 foreach ($tracks as $row)
@@ -94,17 +97,20 @@ foreach ($tracks as $row)
     $basename =  strtolower($row['pilLastName']) . '_' . $row['pilFAI'] . '_' . $row['traDate'];
     #echo "basename: " . $basename . "\n";
     $result = match_file($dir, $year, $basename);
-    //echo "result: " . $result . "\n";
+    #echo "result: " . $result . "\n";
     if ($result)
     {
         $zip->addFile($result);
         $zip->renameName($result,$result.'.igc');
-        //echo "file: " . $result . "\n";
+        #echo "file: " . $result . "\n";
     }
 }
-$zip->close();
 
-send_zip_file($filename);
+// if ( file_exists($filename) && is_file($filename) )
+// {
+	$zip->close();
+	send_zip_file($filename);
+// }
 
 exit;
 ?>

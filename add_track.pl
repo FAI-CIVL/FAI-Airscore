@@ -14,70 +14,69 @@ my $traPk;
 my $traStart;
 my $tasType;
 my $comType;
-my $pilPk;
 my $dbh;
 my $sql;
 my $sth;
 my $ref;
 my $res;
 my $ex;
-my ($glider,$dhv);
+my ($glider,$cert);
 my ($comFrom, $comTo);
 
-my $pil = $ARGV[0];
+my $pilPk = 0 + $ARGV[0];
 my $igc = $ARGV[1];
 my $comPk = 0 + $ARGV[2];
 my $tasPk = 0 + $ARGV[3];
 
-
 if (scalar(@ARGV) < 2)
 {
-    print "add_track.pl <hgfa#> <igcfile> <comPk> [tasPk]\n";
+    print "add_track.pl <pilPk> <igcfile> <comPk> <tasPk>\n";
     exit(1);
 }
 
 $dbh = db_connect();
 
-# Find the pilPk
-if ((0 + $pil) > 0)
-{
-    $sql = "select * from tblPilot where pilHGFA='$pil'"; #or pilCIVL='$pil'";
-}
-else
-{
-    # Guess on last name ...
-    $sql = "select * from tblPilot where pilLastName='$pil' order by pilPk desc";
-}
-$sth = $dbh->prepare($sql);
-$sth->execute();
-if ($sth->rows() > 1)
-{
-    print "Pilot ambiguity for $pil, use pilot HGFA/FAI#\n";
-    while  ($ref = $sth->fetchrow_hashref())
-    {
-        print $ref->{'pilHGFA'}, " ", $ref->{'pilFirstName'}, " ", $ref->{'pilLastName'}, " ", $ref->{'pilBirthdate'}, "\n";
-    }
-    exit(1);
-}
-if ($ref = $sth->fetchrow_hashref())
-{   
-    $pilPk = $ref->{'pilPk'};
-}
-else
-{
-    print "Unable to identify pilot: $pil\n";
-    exit(1);
-}
+# 
+# # Find the pilPk
+# if ((0 + $pil) > 0)
+# {
+#     $sql = "select * from tblPilot where pilPk='$pil'";
+# }
+# else
+# {
+#     # Guess on last name ...
+#     $sql = "select * from tblPilot where pilLastName='$pil' order by pilPk desc";
+# }
+# $sth = $dbh->prepare($sql);
+# $sth->execute();
+# if ($sth->rows() > 1)
+# {
+#     print "Pilot ambiguity for $pil, use pilot HGFA/FAI#\n";
+#     while  ($ref = $sth->fetchrow_hashref())
+#     {
+#         print $ref->{'pilFAI'}, " ", $ref->{'pilFirstName'}, " ", $ref->{'pilLastName'}, " ", $ref->{'pilBirthdate'}, "\n";
+#     }
+#     exit(1);
+# }
+# if ($ref = $sth->fetchrow_hashref())
+# {   
+#     $pilPk = $ref->{'pilPk'};
+# }
+# else
+# {
+#     print "Unable to identify pilot: $pil\n";
+#     exit(1);
+# }
 
 
-# get last track info
-$sql = "select traGlider, traDHV from tblTrack where pilPk=$pilPk order by traPk desc";
+# get glider info
+$sql = "SELECT 	pilGlider, pilGliderBrand, gliGliderCert FROM tblPilot WHERE pilPk = $pilPk";
 $sth = $dbh->prepare($sql);
 $sth->execute();
 if  ($ref = $sth->fetchrow_hashref())
 {
-    $glider = $ref->{'traGlider'};
-    $dhv = $ref->{'traDHV'};
+    $glider = $ref->{'pilGliderBrand'} . " " . $ref->{'pilGlider'};
+    $cert = $ref->{'gliGliderCert'};
 }
 else
 {
@@ -109,8 +108,9 @@ if (0+$traPk < 1)
 
 # FIX: Copy the track somewhere permanent?
 # FIX: Update tblTrack to point to that
-
-$dbh->do("update tblTrack set traGlider=?, traDHV=? where traPk=?", undef, $glider, $dhv, $traPk);
+$dbh->do('UPDATE tblTrack SET traGlider=?, traDHV=? WHERE traPk=?', undef, $glider, $cert, $traPk);
+# $sql = "update tblTrack set traGlider='$glider', traDHV = '$cert' where traPk = $traPk";
+# $dbh->do($sql);
 
 # Try to find an associated task if not specified
 if ($tasPk == 0)
@@ -245,5 +245,5 @@ else
 
 
 # stored track pk
-print "traPk=$traPk\n";
+print "Stored track $traPk for pilot with ID $pilPk \n";
 

@@ -57,10 +57,19 @@ function getcomplist($link, $season, $list=0)
 		// FIX: if not finished & no tracks then submit_track page ..
 		// FIX: if finished no tracks don't list!
 		$cpk = $row['comPk'];
+		$registration = date_create($row['comDateFrom']);
 		$datefrom = date_format( date_create($row['comDateFrom']), 'd-m-Y ' );
 		$dateto = date_format( date_create($row['comDateTo']), 'd-m-Y ' );
 		//$comps[] = "<span class=\"list\"><a href=\"comp_result.php?comPk=$cpk\">" . $row['comName'] . "</span></a>";
-		$complist[] = array("<a href=\"comp_result.php?comPk=$cpk\">" . $row['comName'] . "</a>", $datefrom." - ".$dateto );
+		$today = new DateTime('now');
+		if ( $today < $registration )
+		{
+			$complist[] = array("<a href=\"registered_pilots.php?comPk=$cpk\">" . $row['comName'] . "</a>", $datefrom." - ".$dateto );
+		}
+		else
+		{
+			$complist[] = array("<a href=\"comp_result.php?comPk=$cpk\">" . $row['comName'] . "</a>", $datefrom." - ".$dateto );
+		}
 	}
 	return $complist;
 	

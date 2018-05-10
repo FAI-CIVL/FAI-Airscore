@@ -13,6 +13,12 @@ function tpinit($link,$file,$row=0,$active=0)
 		$mainheader = 'LP AirScore';
 		$contentheader = '';
 	}
+	elseif ( strpos($file, 'status') )
+	{
+		$title = 'AirScore - Check Status';
+		$mainheader = 'LP AirScore';
+		$contentheader = 'Check track status';
+	}
 	elseif ( strpos($file, 'comp') )
 	{
 		// Get Comp Info
@@ -25,6 +31,24 @@ function tpinit($link,$file,$row=0,$active=0)
 			$comPk = $row['comPk'];	
 			$mainheader = $comName;		
 			$contentheader = 'Results';			
+		}
+		else
+		{
+			echo "Sorry, no Competition found matching criteria.";
+		}						
+	}
+	elseif ( strpos($file, 'registered') )
+	{
+		// Get Comp Info
+		if ($row)
+		{
+			$comName = isset($row['comName']) ? $row['comName'] : '';
+			$title = 'AirScore - '.isset($row['comName']) ? $row['comName'] : '';
+			$comDateFrom = substr(isset($row['comDateFrom']) ? $row['comDateFrom'] : '',0,10);
+			$comDateTo = substr(isset($row['comDateTo']) ? $row['comDateTo'] : '',0,10);
+			$comPk = $row['comPk'];	
+			$mainheader = $comName;		
+			$contentheader = 'Registered Pilots';			
 		}
 		else
 		{
@@ -119,57 +143,6 @@ function tpinit($link,$file,$row=0,$active=0)
 
 function tpadmin($link,$file,$row=0,$active=0)
 {
-	// Retrieving correct Info to display in header
-// 	$comPk = intval($_REQUEST['comPk']);
-// 	$tasPk = intval($_REQUEST['tasPk']);
-// 	if ( isset($comPk) )
-// 	{
-// 		if ( isset($tasPk) )
-// 		{
-// 			// Get Task Info
-// 			if ($row)
-// 			{
-// 				$comName = $row['comName'];
-// 				$comUrl = '"comp_result.php?comPk='.$row['comPk'].'"';
-// 				$tasName = $row['tasName'];
-// 				$title = 'Administration - '.(isset($row['comName']) ? $row['comName'] : '').' '.$tasName;
-// 				$tasDate = $row['tasDate'];
-// 				$tasTaskType = $row['tasTaskType'];			
-// 				$mainheader = '<a href='.$comUrl.'>'.$comName.'</a> | '.$tasName;
-// 				$contentheader = $tasName.' : '.$tasDate;
-// 			}
-// 			else
-// 			{
-// 				echo "Sorry, no Task found matching criteria.";
-// 			}	
-// 
-// 		}
-// 		else
-// 		{
-// 			// Get Comp Info
-// 			if ($row)
-// 			{
-// 				$comName = isset($row['comName']) ? $row['comName'] : '';
-// 				$title = 'Administration - '.isset($row['comName']) ? $row['comName'] : '';
-// 				$comDateFrom = substr(isset($row['comDateFrom']) ? $row['comDateFrom'] : '',0,10);
-// 				$comDateTo = substr(isset($row['comDateTo']) ? $row['comDateTo'] : '',0,10);
-// 				$comPk = $row['comPk'];	
-// 				$mainheader = $comName;		
-// 				$contentheader = 'Results';			
-// 			}
-// 			else
-// 			{
-// 				echo "Sorry, no Competition found matching criteria.";
-// 			}
-// 		}
-// 	}
-// 	else
-// 	{
-// 		$title = 'AirScore - Administration';
-// 		$mainheader = 'LP AirScore Administration';
-// 		$contentheader = '';
-// 	}
-	
 	$title = 'LP AirScore Administration';
 	if ( isset($row['comPk']) )
 	{
@@ -191,6 +164,21 @@ function tpadmin($link,$file,$row=0,$active=0)
 		echo '<script>';
 		sajax_show_javascript();
 		echo "</script>\n";
+	}
+	elseif ( strpos($file, 'registration') )
+	{
+		echo "
+		<script src=\"js/microajax.minified.js\" type=\"text/javascript\"></script>
+		<script type=\"text/javascript\">
+		//<![CDATA[
+		var map;
+		function add_pilot(pilPk)
+		{
+			alert(\"add_pilot=\"+pilPk);
+		}
+		//]]>
+		</script>
+		";
 	}
 	echo "</head>";
 	echo "<body id=\"page-top\">";
@@ -229,14 +217,23 @@ function htmlhead($file,$title)
 	
 	<head>
 
-		<meta charset=\"utf-8\">
-		<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\">
-		<meta name=\"author\" content=\"fullahead.org\" />
-		<meta name=\"keywords\" content=\"AirScore, paragliding, hangliding, competition, scoring software\" />
-		<meta name=\"description\" content=\"A free opensource online scoring application for paragliding and hangliding competitions\" />
-		<meta name=\"robots\" content=\"index, follow, noarchive\" />
-		<meta name=\"googlebot\" content=\"noarchive\" />
+		<meta charset=\"utf-8\"> \n
+		<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\"> 
+		<meta name=\"author\" content=\"fullahead.org\" /> 
+		<meta name=\"keywords\" content=\"AirScore, paragliding, hangliding, competition, scoring software\" /> 
+		<meta name=\"description\" content=\"A free opensource online scoring application for paragliding and hangliding competitions\" /> 
+		<meta name=\"robots\" content=\"index, follow, noarchive\" /> 
+		<meta name=\"googlebot\" content=\"noarchive\" /> \n";
+	if ( strpos($file, 'bulk_submit') || strpos($file, 'task_scoring') )
+	{
+		# Reload page every $sec seconds
+		$page = $_SERVER['REQUEST_URI'];
+		$sec = "10";
+		echo "<meta http-equiv=\"refresh\" content=\"$sec;URL='$page'\"> \n";
+	}
+		
 
+	echo "
 		<title>$title</title>
 
 		<!-- Bootstrap core CSS -->
@@ -255,15 +252,15 @@ function htmlhead($file,$title)
 		
 		<!-- Styles added for AirScore -->
 		";
-		if ( strpos($file, 'admin') )
-		{
-			echo "<link href=\"css/airscore_admin.css\" rel=\"stylesheet\">";
-		}
-		else
-		{
-			echo "<link href=\"css/airscore.css\" rel=\"stylesheet\">";
-		}
-		echo "
+	if ( strpos($file, 'admin') )
+	{
+		echo "<link href=\"css/airscore_admin.css\" rel=\"stylesheet\">";
+	}
+	else
+	{
+		echo "<link href=\"css/airscore.css\" rel=\"stylesheet\">";
+	}
+	echo "
 		<!-- Custom styles for printing -->
 		<link rel=\"stylesheet\" type=\"text/css\" href=\"css/printer.css\" media=\"print\" />
 		";
@@ -333,6 +330,41 @@ function tpnavigator($link,$file,$row,$title,$active=0)
             </li>
             ";
     }
+
+        echo "
+    		<li class=\"nav-item mx-0 mx-lg-1\">
+              <a class=\"nav-link py-3 px-0 px-lg-3 rounded js-scroll-trigger\" href=\"check_status.php\">Check Status</a>
+            </li>
+            ";
+    
+    $user = JFactory::getUser();									// Get the user object
+	if ( ($user->id != 0) )
+	{
+		$page = "href=\"jlogin.php?logout=1\">Logout</a>";
+	}
+	else 
+	{
+		$page = "href=\"jlogin.php\">Login</a>";
+	}
+    {
+    	echo "
+            <li class=\"nav-item mx-0 mx-lg-1\">
+              <a class=\"nav-link py-3 px-0 px-lg-3 rounded js-scroll-trigger\" $page
+            </li>
+            ";
+    }
+    
+    $isAdmin = JFactory::getUser()->authorise('core.login.admin');	// Checks if Admin
+	if ( ($user->id != 0) && $isAdmin )
+	{
+		echo "
+		<li class=\"nav-item mx-0 mx-lg-1\">
+		<a class=\"nav-link py-3 px-0 px-lg-3 rounded js-scroll-trigger\" href=\"comp_admin.php\">Admin</a>
+		</li>
+		";
+
+	}
+
     echo "        
           </ul>
         </div>
@@ -355,23 +387,11 @@ function tpnavadmin($link,$file,$row,$title,$active=0)
         </button>
         <div class=\"collapse navbar-collapse\" id=\"navbarResponsive\">
           <ul class=\"navbar-nav ml-auto\">
-            <li class=\"nav-item mx-0 mx-lg-1\">
-    ";
-    if (check_auth("system"))
-    {
-        echo "<a class=\"nav-link py-3 px-0 px-lg-3 rounded js-scroll-trigger\" href=\"login.php?logout=1\">Logout</a>";
-    }
-    else
-    {
-        echo "<a class=\"nav-link py-3 px-0 px-lg-3 rounded js-scroll-trigger\" href=\"login.php?logout=1\">Logout</a>";
-    }
-    
-    echo "
-            </li>
 			<li class=\"nav-item mx-0 mx-lg-1\">
               <a class=\"nav-link py-3 px-0 px-lg-3 rounded js-scroll-trigger\" href=\"comp_admin.php\">Competitions</a>
             </li>
     ";
+
     if ( isset($comPk) )
 	{
         $comEntryRestrict = $row['comEntryRestrict'];
@@ -393,7 +413,7 @@ function tpnavadmin($link,$file,$row,$title,$active=0)
         {
             echo "
             	<li class=\"nav-item mx-0 mx-lg-1\">
-              		<a class=\"nav-link py-3 px-0 px-lg-3 rounded js-scroll-trigger\" href=\"registration.php?comPk=$comPk\">Registration</a>
+              		<a class=\"nav-link py-3 px-0 px-lg-3 rounded js-scroll-trigger\" href=\"registration_admin.php?comPk=$comPk\">Registration</a>
               	</li>
             ";
         }
@@ -404,20 +424,39 @@ function tpnavadmin($link,$file,$row,$title,$active=0)
 			<li class=\"nav-item mx-0 mx-lg-1\">
 			  <a class=\"nav-link py-3 px-0 px-lg-3 rounded js-scroll-trigger\" href=\"track_admin.php\">Tracks</a>
 			</li>
-			<li class=\"nav-item mx-0 mx-lg-1\">
-			  <a class=\"nav-link py-3 px-0 px-lg-3 rounded js-scroll-trigger\" href=\"pilot_admin.php\">Pilots</a>
-			</li>
-		";
+			";
+// 		echo "
+// 			<li class=\"nav-item mx-0 mx-lg-1\">
+// 			  <a class=\"nav-link py-3 px-0 px-lg-3 rounded js-scroll-trigger\" href=\"pilot_admin.php\">Pilots</a>
+// 			</li>
+// 		";
 
 	}
 	echo"    
             <li class=\"nav-item mx-0 mx-lg-1\">
-              <a class=\"nav-link py-3 px-0 px-lg-3 rounded js-scroll-trigger\" href=\"region_admin.php\">Waypoints</a>
+              <a class=\"nav-link py-3 px-0 px-lg-3 rounded js-scroll-trigger\" href=\"area_admin.php\">Areas</a>
             </li>
+            ";
+// 	echo"               
+//             <li class=\"nav-item mx-0 mx-lg-1\">
+//               <a class=\"nav-link py-3 px-0 px-lg-3 rounded js-scroll-trigger\" href=\"airspace_admin.php\">Airspace</a>
+//             </li>
+//             ";
+	echo"                        
             <li class=\"nav-item mx-0 mx-lg-1\">
-              <a class=\"nav-link py-3 px-0 px-lg-3 rounded js-scroll-trigger\" href=\"airspace_admin.php\">Airspace</a>
-            </li>
-          </ul>
+            ";
+
+    if (check_auth("system"))
+    {
+        echo "		<a class=\"nav-link py-3 px-0 px-lg-3 rounded js-scroll-trigger\" href=\"jlogin.php?logout=1\">Logout</a>";
+    }
+    else
+    {
+        echo "		<a class=\"nav-link py-3 px-0 px-lg-3 rounded js-scroll-trigger\" href=\"jlogin.php\">Login</a>";
+    }
+        
+   echo "    	</li>
+   			</ul>
         </div>
       </div>
     </nav>	
@@ -459,20 +498,25 @@ function tpheader($link,$file,$row,$page='')
 		</div>
 		";
 	}
-	elseif ( strpos($file, 'comp') )
+	elseif ( strpos($file, 'comp') || strpos($file, 'registered') )
 	{
 	    echo "	<div class=\"row\">
   					<div class=\"column\">
   			";
   		hccompinfo($row);
+  		if ( strpos($file, 'registered') )
+  		{
+  			$comPk = $row['comPk'];
+  			check_registration($link, $comPk);
+  		}
 	    echo "
-    		</div>
-  			<div class=\"column\">
+    				</div>
+  					<div class=\"column\">
 	  		";
 		hcscoreinfo($link,$row);
 		echo "
-			</div>
-		</div>
+					</div>
+				</div>
 		";
 	}
 	elseif ( strpos($file, 'task') )
@@ -485,7 +529,7 @@ function tpheader($link,$file,$row,$page='')
     		</div>
   			<div class=\"column\">
 	  	";
-		taskinfo($row);
+		taskinfo($link, $row);
 
 		echo "
 			</div>
@@ -537,15 +581,15 @@ function hccompinfo($row)
 function hcscoreinfo($link,$row)
 {
 	$comOverall = isset($row['comOverallScore']) ? $row['comOverallScore'] : '';
-	$comOverallParam = isset($row['comOverallParam']) ? $row['comOverallParam'] : ''; # Discard Parameter, Ex. 75 = 75% eq normal FTV 0.25
+	$comOverallParam = isset($row['comOverallParam']) ? $row['comOverallParam'] : ''; # Discard Parameter, Ex. 0.75 = 75% eq normal FTV 25%
 	$comType = isset($row['comType']) ? $row['comType'] : '';
-	$forNomGoal = isset($row['forNomGoal']) ? $row['forNomGoal'] : '';
+	$forNomGoal = isset($row['forNomGoal']) ? $row['forNomGoal']*100 : '';
 	$forMinDistance = isset($row['forMinDistance']) ? $row['forMinDistance'] : '';
 	$forNomDistance = isset($row['forNomDistance']) ? $row['forNomDistance'] : '';
 	$forNomTime = isset($row['forNomTime']) ? $row['forNomTime'] : '';
 	$comFormula = ( isset($row['forClass']) ? $row['forClass'] : '' ) . ' ' . ( isset($row['forVersion']) ? $row['forVersion'] : '' );
 	$comOverall = isset($row['comOverallScore']) ? $row['comOverallScore'] : '';  # Type of scoring discards: FTV, ...
-	
+	//echo "	comOverall = $comOverall , Param = $comOverallParam , \n Type = $comType . \n";
 	if ($comOverall == 'all')
 	{
 		$overstr = "All rounds";
@@ -564,14 +608,29 @@ function hcscoreinfo($link,$row)
 		$comPk = $row['comPk'];
 		if ( strstr($comFormula, 'pwc') ) # calculates FTV parameters based on winner score (PWC)
 		{
-			$sql = "SELECT DISTINCT T.tasPk, (SELECT MAX(TR.tarScore) FROM tblTaskResult TR WHERE TR.tasPk=T.tasPk) AS maxScore FROM tblTask T, tblTaskResult TR WHERE T.comPk = $comPk";
+			$sql = "SELECT 
+						DISTINCT T.tasPk, 
+						(
+							SELECT 
+								MAX(TR.tarScore) 
+							FROM 
+								tblTaskResult TR 
+							WHERE 
+								TR.tasPk = T.tasPk
+						) AS maxScore 
+					FROM 
+						tblTask T, 
+						tblTaskResult TR 
+					WHERE 
+						T.comPk = $comPk";
 			$result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task validity query failed: ' . mysqli_connect_error());
 			$totalvalidity = 0;
 			while ( $rows = mysqli_fetch_assoc($result) )
 			{
 				$totalvalidity += $rows{'maxScore'};
 			}
-			$totalvalidity = round($totalvalidity * $comOverallParam / 100, 0); # gives total amount of available points
+			$totalvalidity = round($totalvalidity * $comOverallParam, 0); # gives total amount of available points
+			$comOverallParam = 100 - $comOverallParam * 100;
 			$overstr = "FTV $comOverallParam% ($totalvalidity pts)";
 			$comOverallParam = $totalvalidity;
 		}
@@ -579,8 +638,10 @@ function hcscoreinfo($link,$row)
 		{
 			$sql = "select sum(tasQuality) as totValidity from tblTask where comPk=$comPk";
 			$result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task validity query failed: ' . mysqli_connect_error());
-			$totalvalidity = round(mysqli_result($result, 0, 0) * $comOverallParam * 10,0);
-			$overstr = "FTV $comOverallParam% ($totalvalidity pts)";
+			$totalvalidity = round(mysqli_result($result, 0, 0) * $comOverallParam,3);
+			echo " \n Total Validity = " . mysqli_result($result, 0, 0) . " x $comOverallParam ";
+			$comOverallParam = 100 - $comOverallParam * 100;
+			$overstr = "FTV $comOverallParam% ($totalvalidity total validity)";
 		}
 	}
 
@@ -606,28 +667,28 @@ function waypointlist($link,$row)
 	$i = 0;
 	foreach ($waypoints as $row)
 	{
-		if ( $row['tawType'] == 'start' )
+		if ( $row['tawType'] == 'launch' ) 
 		{
 			$winfo[] = array("", $row['rwpName'], "TakeOff", "", "", $row['rwpDescription']);
 		}
 		elseif ( $row['tawType'] == 'speed' )
 		{
-			$winfo[] = array($i, $row['rwpName'], "SS". " (" . $row['tawHow'] . ")", $row['tawRadius'] . "m", round($row['ssrCumulativeDist']/1000,1) . " Km", $row['rwpDescription']);
+			$winfo[] = array($i, $row['rwpName'], "SS". " (" . $row['tawHow'] . ")", $row['tawRadius'] . "m", round($row['ssrCumulativeDist']/1000,1) . " Km", strtoupper($row['rwpDescription']));
 		}
 		elseif ( $row['tawType'] == 'endspeed' )
 		{
 			$how = ( $row['tawHow'] == 'exit' ? " (" . $row['tawHow'] . ")" : "" );
-			$winfo[] = array($i, $row['rwpName'], "ESS". $how, $row['tawRadius'] . "m", round($row['ssrCumulativeDist']/1000,1) . " Km", $row['rwpDescription']);
+			$winfo[] = array($i, $row['rwpName'], "ESS". $how, $row['tawRadius'] . "m", round($row['ssrCumulativeDist']/1000,1) . " Km", strtoupper($row['rwpDescription']));
 		}
 		elseif ( $row['tawType'] == 'goal' )
 		{
 			$how = ( $row['tawShape'] == 'line' ? " (" . $row['tawShape'] . ")" : "" );
-			$winfo[] = array($i, $row['rwpName'], "Goal" . $how, $row['tawRadius'] . "m", round($row['ssrCumulativeDist']/1000,1) . " Km", $row['rwpDescription']);
+			$winfo[] = array($i, $row['rwpName'], "Goal" . $how, $row['tawRadius'] . "m", round($row['ssrCumulativeDist']/1000,1) . " Km", strtoupper($row['rwpDescription']));
 		}
 		else
 		{
 			$how = ( $row['tawHow'] == 'exit' ? " (" . $row['tawHow'] . ")" : "" );
-			$winfo[] = array($i, $row['rwpName'], $how, $row['tawRadius'] . " m", round($row['ssrCumulativeDist']/1000,1) . " Km", $row['rwpDescription']);
+			$winfo[] = array($i, $row['rwpName'], $how, $row['tawRadius'] . " m", round($row['ssrCumulativeDist']/1000,1) . " Km", strtoupper($row['rwpDescription']));
 		}
 		
 		$i++;
@@ -641,7 +702,7 @@ function waypointlist($link,$row)
 	echo ftable($winfo,'class=tasktable', '', '');
 }
 
-function taskinfo($row)
+function taskinfo($link, $row)
 {
 	# Task Info
 	
@@ -663,10 +724,18 @@ function taskinfo($row)
 	$tasDistQuality = round($row['tasDistQuality'],2);
 	$tasTimeQuality = round($row['tasTimeQuality'],2);
 	$tasLaunchQuality = round($row['tasLaunchQuality'],2);
+	$tasAvailDistPoints = round($row['tasAvailDistPoints'],1);
+	$tasAvailLeadPoints = round($row['tasAvailLeadPoints'],1);
+	$tasAvailTimePoints = round($row['tasAvailTimePoints'],1);
 	$tasArrival = $row['tasArrival'];
 	$tasHeightBonus = $row['tasHeightBonus'];
 	$tasStoppedTime = substr($row['tasStoppedTime'],11);
 	$ssDist = $row['tasSSDistance'];
+	$claPk = $row['claPk'];
+	if ( reqexists('class') )
+	{
+    	$cval = reqival('class');
+    }
 
 	if ($row['tasDeparture'] == 'leadout')
 	{
@@ -686,17 +755,19 @@ function taskinfo($row)
 	}	
 
 	$tinfo = [];
-	$tinfo[] = array( fb("Task Type:"), $tasTaskType, "", "", fb("Class:"), classselector($comPk,$tasPk,$comClass) );
+	//$tinfo[] = array( fb("Task Type:"), $tasTaskType, "", "", fb("Class:"), "<form enctype=\"multipart/form-data\" action=\"task_result.php?comPk=$comPk&tasPk=$tasPk\" name=\"classsel\" id=\"classsel\" method=\"post\"> \n" . classselector($link, $claPk, $cval) . " \n </form> \n" );
+	$tinfo[] = array( fb("Task Type:"), $tasTaskType, "", "", fb("Class:"), " \n" . classselector($link, $claPk, $cval) . " \n" );
 	if ($tasStoppedTime == "")
 	{
 		$tinfo[] = array( fb("Date:"), $tasDate, fb("Start:"), $tasStartTime, fb("End:"), $tasFinishTime );
 	}
 	else
 	{
-		$tinfo[] = array( fb("Date:"), $tasDate, fb("Start:"), $tasStartTime, fb("Stopped:"), $tasStoppedTime );
+		$tinfo[] = array( fb("Date:"), $tasDate, fb("Start:"), $tasStartTime, fb("STOPPED:"), fb($tasStoppedTime) );
 	}
 	$tinfo[] = array( fb("Quality:"), number_format($tasQuality,3), fb("WP Dist:"), "$tasDistance km", fb("Task Dist:"), "$tasShortest km" );
 	$tinfo[] = array( fb("DistQ:"), number_format($tasDistQuality,3), fb("TimeQ:"), number_format($tasTimeQuality,3), fb("LaunchQ:"), number_format($tasLaunchQuality,3) );
+	$tinfo[] = array( fb("DistP:"), number_format($tasAvailDistPoints,1), fb("TimeP:"), number_format($tasAvailTimePoints,1), fb("LeadP:"), number_format($tasAvailLeadPoints,1) );
 	echo "	<h3>Task Details</h3>";
 	echo ftable($tinfo, 'class=taskinfo', '', '');
 	echo "	<hr>
@@ -736,7 +807,30 @@ function tpcontent($title='AirScore - Online Scoring Tool', $page='')
 		<div class=\"container\">
 			<h2 class=\"text-center text-uppercase text-secondary mb-0\">$page</h2>
 			<hr class=\"star-dark mb-5\">
+			
 	";
+	if ( JFactory::getUser()->id !== 0 )
+	{
+		$user = "Pilot: " . str_replace('\' ', '\'', ucwords(str_replace('\'', '\' ', strtolower(JFactory::getUser()->name))));
+	}
+	else
+	{
+		$user = "You are in Guest Mode. Login if you need pilot's tools.";
+	}
+	echo "<p class='user'>$user</p>" . PHP_EOL;
+	
+// 	echo 'Logged in as "' . JFactory::getUser()->username . '"<br />';
+// 	echo 'Welcome "' . JFactory::getUser()->name . '"<br />';
+// 	echo 'email: "' . JFactory::getUser()->email . '"<br />';
+// 	echo 'ID: "' . JFactory::getUser()->id . '"<br />';
+// 	if ( JFactory::getUser()->authorise('core.admin') )
+// 	{
+// 		echo 'User is Super User <br />';
+// 	}
+// 	if ( JFactory::getUser()->authorise('core.login.admin') )
+// 	{
+// 		echo 'User is Administrator <br />';
+// 	}
 }
 
 function tpfooter($file)
@@ -814,45 +908,6 @@ function tpfooter($file)
   	</body>
 	</html>
 	";
-}
-
-function classselector($comPk,$tasPk,$comClass)
-{
-	if ($comClass == "HG")
-	{
-		$classopts = array ( 'open' => '', 'floater' => '&class=0', 'kingpost' => '&class=1', 
-			'hg-open' => '&class=2', 'rigid' => '&class=3', 'women' => '&class=4', 'masters' => '&class=5', 'teams' => '&class=6' );
-	}
-	else
-	{
-		$classopts = array ( 'open' => '', 'fun' => '&class=0', 'sports' => '&class=1', 
-			'serial' => '&class=2', 'women' => '&class=4', 'masters' => '&class=5', 'teams' => '&class=6' );
-	}
-	$cind = '';
-	if (reqexists('class'))
-	{
-		$cval = reqival('class');
-		if ($cval != '')
-		{
-			$cind = "&class=$cval";
-		}
-	}
-	$copts = [];
-	foreach ($classopts as $text => $url)
-	{
-		if ($text == 'teams')
-		{
-			# Hack for now
-			$copts[$text] = "team_task_result.php?comPk=$comPk&tasPk=$tasPk$url";
-		}
-		else
-		{
-			$copts[$text] = "task_result.php?comPk=$comPk&tasPk=$tasPk$url";
-		}
-	}
-
-	$classfilter = fselect('class', "task_result.php?comPk=$comPk&tasPk=$tasPk$cind", $copts, ' onchange="document.location.href=this.value"');
-	return $classfilter;
 }
 
 function seasoninfo($row)

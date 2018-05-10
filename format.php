@@ -114,6 +114,26 @@ function fb($str)
     return "<b>$str</b>";
 }
 
+function fic($name,$value=null,$checked=0,$class=null)
+{
+    $name = " name=\"$name\"";
+    //echo " name: " . $name . " checked: " . $checked . "\n";
+    if ( isset($value) )
+    {
+        $value = "value=\"$value\"";
+    }
+    if ( $checked == 1 )
+    {
+        $checked = "checked=\"checked\"";
+    }
+    if ( isset($class) )
+    {
+        $class = "class=\"$class\"";
+    }
+
+    return "<input type=\"checkbox\" $name $value $checked $class>";
+}
+
 function fib($type,$name,$value=null,$class=null)
 {
     $type = "type=\"$type\"";
@@ -124,7 +144,15 @@ function fib($type,$name,$value=null,$class=null)
     }
     if ( isset($class) )
     {
-        $class = "class=$class";
+        if ( is_numeric($class) )
+        {
+        	$class = "class=\"width$class\"";
+        }
+        else
+        {
+        	$class = "class=\"$class\"";
+        }
+
     }
 
     return "<input $type $name $value $class>"; // size is deprecated in html5

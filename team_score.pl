@@ -32,7 +32,17 @@ sub day_quality
     my $topspeed;
     my $x;
 
-    $sth = $dbh->prepare("SELECT TK.*, F.* FROM tblTask TK, tblFormula F, tblCompetition C WHERE TK.comPk=C.comPk AND F.forPk=C.forPk and TK.tasPk=$task");
+    $sth = $dbh->prepare("	SELECT 
+								TK.*, 
+								FC.*, 
+								F.* 
+							FROM 
+								tblTask TK 
+								JOIN tblCompetition C USING (comPk) 
+								JOIN tblForComp FC USING (comPk) 
+								LEFT OUTER JOIN tblFormula F USING (forPk)  
+							WHERE 
+								TK.tasPk = $task");
 
     $launch = 0;
     $distance = 0;
@@ -471,7 +481,17 @@ sub points_allocation
     $Cmin = $taskt->{'mincoeff'};
     $Dmax = $taskt->{'maxdist'}/1000.0;
 
-    $sth = $dbh->prepare("select T.*, F.* from tblTask T, tblCompetition C, tblFormula F where T.tasPk=$tasPk and C.comPk=T.comPk and F.forPk=C.forPk");
+    $sth = $dbh->prepare("	SELECT 
+								T.*,
+								FC.*, 
+								F.* 
+							FROM 
+								tblTask T
+								JOIN tblCompetition C USING (comPk) 
+								JOIN tblForComp FC USING (comPk) 
+								LEFT OUTER JOIN tblFormula F USING (forPk) 
+							WHERE 
+								T.tasPk = $tasPk ");
     $sth->execute();
     while ($ref = $sth->fetchrow_hashref()) 
     {

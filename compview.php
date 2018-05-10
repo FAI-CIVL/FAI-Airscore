@@ -37,7 +37,16 @@ $comp = intval($_REQUEST['comPk']);
 $title = 'highcloud.net';
 if ($comp > 0)
 {
-	$sql = "SELECT T.*,F.* FROM tblCompetition T left outer join tblFormula F on F.comPk=T.comPk where T.comPk=$comp";
+	$sql = "SELECT 
+				T.*,
+				FC.comOverallScore, 
+				F.* 
+			FROM 
+				tblCompetition T 
+				JOIN tblForComp FC USING (comPk) 
+				LEFT OUTER JOIN tblFormula F USING (forPk)  
+			WHERE 
+				T.comPk = $comPk";
 	$result = mysqli_query($link, $sql);
 	$row = mysqli_fetch_array($result, MYSQLI_BOTH);
 	if ($row)

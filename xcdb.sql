@@ -645,4 +645,3 @@ create table schema_version
 );
 
 insert into schema_version (svKey, svExtra) values (5, 'create');
-

@@ -8,7 +8,17 @@ require 'template.php';
 
 function overall_handicap($link, $comPk, $how, $param, $cls)
 {
-    $sql = "select T.tasPk, max(TR.tarScore) as maxScore from tblTask T, tblTaskResult TR where T.tasPk=TR.tasPk and T.comPk=$comPk group by T.tasPk";
+    $sql = "select 
+				T.tasPk, 
+				max(TR.tarScore) as maxScore 
+			from 
+				tblTask T, 
+				tblTaskResult TR 
+			where 
+				T.tasPk = TR.tasPk 
+				and T.comPk = $comPk 
+			group by 
+				T.tasPk";
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Handicap maxscore failed: ' . mysqli_connect_error());
     $maxarr = [];
     while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
@@ -16,7 +26,30 @@ function overall_handicap($link, $comPk, $how, $param, $cls)
         $maxarr[$row['tasPk']] = $row['maxScore'];
     }
 
-    $sql = "select P.*,TK.*, TR.*, H.* from tblTaskResult TR, tblTask TK, tblTrack K, tblPilot P, tblHandicap H, tblCompetition C where H.comPk=C.comPk and C.comPk=TK.comPk and K.traPk=TR.traPk and K.pilPk=P.pilPk and H.pilPk=P.pilPk and H.comPk=TK.comPk and TK.comPk=$comPk and TR.tasPk=TK.tasPk order by P.pilPk, TK.tasPk";
+    $sql = "select 
+				P.*, 
+				TK.*, 
+				TR.*, 
+				H.* 
+			from 
+				tblTaskResult TR, 
+				tblTask TK, 
+				tblTrack K, 
+				tblPilot P, 
+				tblHandicap H, 
+				tblCompetition C 
+			where 
+				H.comPk = C.comPk 
+				and C.comPk = TK.comPk 
+				and K.traPk = TR.traPk 
+				and K.pilPk = P.pilPk 
+				and H.pilPk = P.pilPk 
+				and H.comPk = TK.comPk 
+				and TK.comPk = $comPk 
+				and TR.tasPk = TK.tasPk 
+			order by 
+				P.pilPk, 
+				TK.tasPk";
     #$sql = "select TK.*,TR.*,P.* from tblTaskResult TR, tblTask TK, tblTrack T, tblPilot P, tblCompetition C where C.comPk=$comPk and TK.comPk=C.comPk and TK.tasPk=TR.tasPk and TR.traPk=T.traPk and T.traPk=TR.traPk and P.pilPk=T.pilPk $cls order by P.pilPk, TK.tasPk";
 
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task result query failed: ' . mysqli_connect_error());
@@ -62,7 +95,43 @@ function comp_result($link, $comPk, $how, $param, $cls, $tasktot)
 {
     # $sql = "select TK.*,TR.*,P.*,T.traGlider from tblTaskResult TR, tblTask TK, tblTrack T, tblPilot P, tblCompetition C where C.comPk=$comPk and TK.comPk=C.comPk and TK.tasPk=TR.tasPk and TR.traPk=T.traPk and T.traPk=TR.traPk and P.pilPk=T.pilPk $cls order by P.pilPk, TK.tasPk";
     # New sql adding MaxScore for PWC FTV Calc
-    $sql = "select TK.*,TR.*,(SELECT MAX(tblTaskResult.tarScore) FROM tblTaskResult WHERE tblTaskResult.tasPk = TK.tasPk) AS maxScore,F.forClass,F.forVersion,P.*,T.traGlider from tblTaskResult TR, tblTask TK, tblTrack T, tblPilot P, tblFormula F, tblCompetition C where C.comPk=$comPk and TK.comPk=C.comPk and TK.tasPk=TR.tasPk and TR.traPk=T.traPk and T.traPk=TR.traPk and P.pilPk=T.pilPk and F.comPk=C.comPk $cls order by P.pilPk, TK.tasPk";
+    $sql = "	SELECT 
+					TK.*, 
+					TR.*, 
+					(
+						SELECT 
+							MAX(tblTaskResult.tarScore) 
+						FROM 
+							tblTaskResult 
+						WHERE 
+							tblTaskResult.tasPk = TK.tasPk
+					) AS maxScore, 
+					F.forClass, 
+					F.forVersion, 
+					P.*, 
+					(
+						SELECT 
+							C.natIso3 
+						FROM 
+							tblCountryCodes C 
+						WHERE 
+							C.natID = P.pilNat
+					) AS pilNationCode, 
+					T.traGlider 
+				FROM 
+					tblCompetition C 
+					JOIN tblTask TK ON TK.comPk = C.comPk 
+					JOIN tblTaskResult TR ON TK.tasPk = TR.tasPk 
+					JOIN tblTrack T ON TR.traPk = T.traPk 
+					JOIN tblPilot P ON P.pilPk = T.pilPk 
+					JOIN tblForComp FC ON FC.comPk = C.comPk 
+					JOIN tblFormula F ON F.forPk = FC.forPk  
+	 
+				WHERE 
+					C.comPk = $comPk $cls 
+				ORDER BY 
+					P.pilPk, 
+					TK.tasPk";
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task result query failed: ' . mysqli_connect_error());
     $results = [];
     while ($row = mysqli_fetch_assoc($result))
@@ -71,9 +140,10 @@ function comp_result($link, $comPk, $how, $param, $cls, $tasktot)
         $pilPk = $row['pilPk'];
         $tasName = $row['tasName'];
         $nation = $row['pilNationCode'];
-        $pilnum = $row['pilHGFA'];
+        $pilnum = $row['pilFAI'];
         $civlnum = $row['pilCIVL'];
-        $glider = $row['traGlider'];
+        $glider = ( (stripos($row['traGlider'], 'Unknown') !== false) ? '' : htmlspecialchars(str_replace('\' ', '\'', ucwords(str_replace('\'', '\' ', strtolower(substr($row['traGlider'], 0, 25)))))) );
+    	$sponsor = isset($row['pilSponsor']) ? htmlspecialchars(str_replace('\' ', '\'', ucwords(str_replace('\'', '\' ', strtolower(substr($row['pilSponsor'], 0, 40)))))) : '';
         $gender = $row['pilSex'];
         $maxScore = $row['maxScore'];
         $formula = $row['forClass'];
@@ -95,6 +165,7 @@ function comp_result($link, $comPk, $how, $param, $cls, $tasktot)
             $results[$pilPk]['civl'] = $civlnum;
             $results[$pilPk]['nation'] = $nation;
             $results[$pilPk]['glider'] = $glider;
+            $results[$pilPk]['sponsor'] = $sponsor;
             $results[$pilPk]['gender'] = $gender;
         }
         //echo "pilPk=$pilPk tasname=$tasName, result=$score<br>\n";
@@ -217,7 +288,10 @@ $overstr = '';
 
 $comPk = intval($_REQUEST['comPk']);
 $start = reqival('start');
-$class = reqsval('class');
+if (reqexists('class'))
+{
+	$cval = reqival('class');
+}
 if ($start < 0)
 {
     $start = 0;
@@ -227,7 +301,16 @@ $file = __FILE__;
 $link = db_connect();
 $title = 'AirScore'; # default
 
-$query = "SELECT T.*,F.* FROM tblCompetition T left outer join tblFormula F on F.comPk=T.comPk where T.comPk=$comPk";
+$query = "	SELECT 
+				T.*,
+				FC.*, 
+				F.* 
+			FROM 
+				tblCompetition T 
+				JOIN tblForComp FC USING (comPk) 
+				LEFT OUTER JOIN tblFormula F USING (forPk) 
+			WHERE 
+				T.comPk = $comPk";
 $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Comp query failed: ' . mysqli_connect_error());
 $row = mysqli_fetch_assoc($result);
 if ($row)
@@ -238,7 +321,7 @@ if ($row)
     $comDateTo = substr(isset($row['comDateTo']) ? $row['comDateTo'] : '',0,10);
     $comPk = $row['comPk'];
     $comOverall = isset($row['comOverallScore']) ? $row['comOverallScore'] : '';
-    $comOverallParam = isset($row['comOverallParam']) ? $row['comOverallParam'] : ''; # Discard Parameter, Ex. 75 = 75% eq normal FTV 0.25
+    $comOverallParam = isset($row['comOverallParam']) ? $row['comOverallParam']*100 : ''; # Discard Parameter, Ex. 75 = 75% eq normal FTV 25%
     $comDirector = isset($row['comMeetDirName']) ? $row['comMeetDirName'] : '';
     $comLocation = isset($row['comLocation']) ? $row['comLocation'] : '';
     $comFormula = ( isset($row['forClass']) ? $row['forClass'] : '' ) . ' ' . ( isset($row['forVersion']) ? $row['forVersion'] : '' );
@@ -254,57 +337,27 @@ if ($row)
     $forNomDistance = isset($row['forNomDistance']) ? $row['forNomDistance'] : '';
     $forNomTime = isset($row['forNomTime']) ? $row['forNomTime'] : '';
     $forDiscreteClasses = isset($row['forDiscreteClasses']) ? $row['forDiscreteClasses'] : '';
-    
+    $claPk = $row['claPk'];
 }
 
+# Check if we have a classification request
+$sel = get_class_info($link, $comPk);
+$classstr = $sel['name'];
+$fdhv = $sel['fdhv'];
 
-$fdhv= ''; #parameter to insert in mysql query in result calculations
-$classstr = '';
-if (array_key_exists('class', $_REQUEST))
-{
-    $cval = intval($_REQUEST['class']);
-    if ($comClass == "HG")
-    {
-        $carr = array ( "'floater'", "'kingpost'", "'open'", "'rigid'"       );
-        $cstr = array ( "Floater", "Kingpost", "Open", "Rigid", "Women", "Seniors", "Juniors" );
-    }
-    else
-    {
-        $carr = array ( "'1/2'", "'2'", "'2/3'", "'competition'"       );
-        $cstr = array ( "Fun", "Sport", "Serial", "Open", "Women", "Seniors", "Juniors" );
-    }
-    $classstr = "<b>" . $cstr[intval($_REQUEST['class'])] . "</b> - ";
-    if ($cval == 4)
-    {
-        $fdhv = "and P.pilSex='F'";
-    }
-    else if ($cval == 5)
-    {
-        $fdhv = "and P.pilBirthdate < date_sub(C.comDateFrom, INTERVAL 50 YEAR)"; 
-    }
-    else if ($cval == 6)
-    {
-        $fdhv = "and P.pilBirthdate > date_sub(C.comDateFrom, INTERVAL 35 YEAR)";
-    }
-    else if ($cval == 9)
-    {
-        $fdhv = '';
-    }
-    else
-    {
-        $fdhv = $carr[reqival('class')];
-        $fdhv = "and T.traDHV<=$fdhv ";
-        if ($forDiscreteClasses == 1)
-        {
-            $fdhv = "and T.traDHV=$fdhv ";
-        }
-    }
-}
-
-$embed = reqsval('embed');
+// $embed = reqsval('embed');
 
 //initializing template header
 tpinit($link,$file,$row);
+
+# Messages
+if ( $message !== '')
+{
+	echo "<h4> <span style='color:red'>$message</span> </h4>";
+}
+
+# Classification - State (provisional / final YET TO IMPLEMENT)
+echo "<h5 class='classdef'> $classstr $state </h5> \n";
 
 // Determine scoring params / details ..
 
@@ -334,7 +387,21 @@ elseif ($comOverall == 'ftv')
 {
     if ( strstr($comFormula, 'pwc') ) # calculates FTV parameters based on winner score (PWC)
     {
-    	$sql = "SELECT DISTINCT T.tasPk, (SELECT MAX(TR.tarScore) FROM tblTaskResult TR WHERE TR.tasPk=T.tasPk) AS maxScore FROM tblTask T, tblTaskResult TR WHERE T.comPk = $comPk";
+    	$sql = "SELECT 
+					DISTINCT T.tasPk, 
+					(
+						SELECT 
+							MAX(TR.tarScore) 
+						FROM 
+							tblTaskResult TR 
+						WHERE 
+							TR.tasPk = T.tasPk
+					) AS maxScore 
+				FROM 
+					tblTask T, 
+					tblTaskResult TR 
+				WHERE 
+					T.comPk = $comPk";
     	$result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task validity query failed: ' . mysqli_connect_error());
     	$totalvalidity = 0;
     	while ( $rows = mysqli_fetch_assoc($result) )
@@ -347,7 +414,12 @@ elseif ($comOverall == 'ftv')
     }
     else # calculates FTV parameters based on task validity (FAI)
     {
-    	$sql = "select sum(tasQuality) as totValidity from tblTask where comPk=$comPk";
+    	$sql = "SELECT 
+					SUM(tasQuality) as totValidity 
+				FROM 
+					tblTask 
+				WHERE 
+					comPk = $comPk";
     	$result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task validity query failed: ' . mysqli_connect_error());
     	$totalvalidity = round(mysqli_result($result, 0, 0) * $comOverallParam * 10,0);
     	$overstr = "FTV $comOverallParam% ($totalvalidity pts)";
@@ -355,12 +427,6 @@ elseif ($comOverall == 'ftv')
     }
 }
 
-//echo ftable($detarr, '', '', '');
-
-if ($class == "9")
-{
-    echo "<h2>Handicap Results</h2>";
-}
 $today = getdate();
 $tdate = sprintf("%04d-%02d-%02d", $today['year'], $today['mon'], $today['mday']);
 // Fix: make this configurable
@@ -413,13 +479,14 @@ $rdec[] = 'class="h"';
 $rdec[] = 'class="h"';
 if (reqival('id') == 1)
 {
-    $hdr = array( fb('Res'),  fselect('class', "comp_result.php?comPk=$comPk$cind", $copts, ' onchange="document.location.href=this.value"'), fb('Nation'), fb('Sex'), fb('FAI'), fb('CIVL'), fb('Total') );
+    $hdr = array( fb('Res'), classselector($link, $claPk, $cval), fb('Nation'), fb('Sex'), fb('FAI'), fb('CIVL'), fb('Total') );
     $hdr2 = array( '', '', '', '', '', '', '' );
 }
 else
 {
-    $hdr = array( fb('Class.'),  fselect('class', "comp_result.php?comPk=$comPk$cind", $copts, ' onchange="document.location.href=this.value"'), '', '', '');
-    $hdr2 = array( fb('Pos.'), fb('Name'), fb('Nat.'), fb('Glider'), fb('Total') );
+    //$hdr = array( fb('Class.'),  fselect('class', "comp_result.php?comPk=$comPk$cind", $copts, ' onchange="document.location.href=this.value"'), '', '', '');
+    $hdr = array( fb('Class.'),  classselector($link, $claPk, $cval), '', '', '', '');
+    $hdr2 = array( fb('Pos.'), fb('Name'), fb('Nat.'), fb('Glider'), fb('Sponsor'), fb('Total') );
 }
 
 # find each task details
@@ -499,12 +566,12 @@ else if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'Route' ||
         if ($tot != $lasttot)
         {
             $nxt[] = $count;
-            $nxt[] = $arr['name'];
+            $nxt[] = str_replace('\' ', '\'', ucwords(str_replace('\'', '\' ', strtolower($arr['name']))));
         }
         else
         {
             $nxt[] = '';
-            $nxt[] = $arr['name'];
+            $nxt[] = ucfirst(strtolower($arr['name']));
         }
         if (array_key_exists('id', $_REQUEST) and ($_REQUEST['id'] == '1'))
         {
@@ -516,8 +583,9 @@ else if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'Route' ||
         else
         {
             $nxt[] = $arr['nation'];
-            $nxt[] = ( (stripos($arr['glider'], 'Unknown') !== false) ? '' : $arr['glider'] );
+            $nxt[] = ( (stripos($arr['glider'], 'Unknown') !== false) ? '' : str_replace('\' ', '\'', ucwords(str_replace('\'', '\' ', strtolower($arr['glider'])))) );
         }
+        $nxt[] = $arr['sponsor'];
         $nxt[] = fb($tot);
         $lasttot = $tot;
 
