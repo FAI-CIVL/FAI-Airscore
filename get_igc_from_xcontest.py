@@ -118,7 +118,7 @@ def search_and_submit_files(directory, pilot_list, zip_directory, zip_for_submit
                 del name_split[0]
                 #join up username (if more than one element i.e. it had a dot in it)
                 name_split = ".".join(name_split) 
-                if pilot == name_split:
+                if pilot.upper().strip() == name_split.upper().strip():    #change to all uppercase to avoid mismatches due to case sensitivity, also remove any leading or trailing spaces
                     #rename file
                     os.rename(directory+filename, directory+'tosubmit.igc')
                     logging.info("found pilot: %s" % pilot)
