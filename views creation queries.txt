@@ -1,0 +1,93 @@
+DROP VIEW IF EXISTS untps52y_airscore.tblPilot ;
+CREATE VIEW untps52y_airscore.tblPilot AS 
+SELECT 
+	C.user_id AS pilPk, 
+	C.firstname AS pilFirstName, 
+	C.lastname AS pilLastName, 
+	U.email AS pilEmail, 
+	C.cb_nazionalita AS pilNat, 
+	C.cb_cellulare AS pilPhoneMobile, 
+	IF(C.cb_sesso = 'Maschio', 'M', 'F') AS pilSex, 
+	C.cb_marcavela AS pilGliderBrand, 
+	C.cb_modellovela AS pilGlider, 
+	C.cb_velaen AS gliGliderCert, 
+	CASE C.cb_velaen 
+    	WHEN 'A' THEN 'Sport Class' 
+        WHEN 'B' THEN 'Sport Class' 
+        WHEN 'C' THEN 'Sport Class' 
+        WHEN 'D' THEN 'Serial Class' 
+        WHEN 'CCC' THEN 'Open Class' 
+        ELSE 'Open Class' 
+    END gliGliderClass, 
+	C.cb_sponsor AS pilSponsor, 
+	C.cb_licenzafai AS pilFAI, 
+	C.cb_numerocivl AS pilCIVL, 
+	C.cb_lt24_user AS pilLT24User, 
+	C.cb_at_user AS pilATUser, 
+	C.cb_xcontest_user AS pilXcontestUser 
+FROM 
+	untps52y_CMS.mn7g1_comprofiler C 
+	INNER JOIN untps52y_CMS.mn7g1_users U ON C.id = U.id 
+UNION 
+SELECT 
+	P.pilPk AS pilPk, 
+	P.pilFirstName AS pilFirstName, 
+	P.pilLastName AS pilLastName, 
+	P.pilEmail AS pilEmail, 
+	P.pilNat AS pilNat, 
+	P.pilPhoneMobile AS pilPhoneMobile, 
+	P.pilSex AS pilSex, 
+	P.pilGliderBrand AS pilGliderBrand, 
+	P.pilGlider AS pilGlider, 
+	P.gliGliderCert AS gliGliderCert, 
+	CASE P.gliGliderCert 
+    	WHEN 'A' THEN 'Sport Class' 
+        WHEN 'B' THEN 'Sport Class' 
+        WHEN 'C' THEN 'Sport Class' 
+        WHEN 'D' THEN 'Serial Class' 
+        WHEN 'CCC' THEN 'Open Class' 
+        ELSE 'Open Class' 
+    END gliGliderClass, 
+	P.pilSponsor AS pilSponsor, 
+	P.pilFAI AS pilFAI, 
+	P.pilCIVL AS pilCIVL, 
+	P.pilLT24User AS pilLT24User, 
+	P.pilATUser AS pilATUser, 
+	P.pilXcontestUser AS pilXcontestUser 
+FROM 
+	untps52y_airscore.tblExtPilot P
+
+
+DROP VIEW IF EXISTS untps52y_airscore.tblUser ;
+CREATE VIEW untps52y_airscore.tblUser AS 
+SELECT 
+	G.user_id AS usePk, 
+	U.name AS useName, 
+	U.username AS useLogin, 
+	U.email AS useEmail 
+FROM 
+	untps52y_CMS.mn7g1_users U 
+	JOIN untps52y_CMS.mn7g1_user_usergroup_map G ON U.id = G.user_id 
+WHERE 
+	G.group_id IN (8, 7, 34) 
+	AND G.user_id NOT IN (63)
+
+
+SELECT 
+	U.usePk as user, 
+	U.* 
+FROM 
+	tblUser U 
+WHERE 
+	(
+		U.usePk <> 63 
+		AND NOT EXISTS (
+			SELECT 
+				A.* 
+			FROM 
+				tblCompAuth A 
+			WHERE 
+				A.usePk = U.usePk 
+				AND A.comPk = $comPk
+		)
+	)
