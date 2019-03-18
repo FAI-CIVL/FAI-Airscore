@@ -7,7 +7,7 @@ auth('system');
 $link = db_connect();
 $usePk = auth('system');
 $comPk = reqival('comPk');
-$delreg= reqsval('del');
+$delreg = reqsval('del');
 $file = __FILE__;
 $message = '';
 

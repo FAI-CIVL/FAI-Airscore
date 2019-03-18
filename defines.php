@@ -1,9 +1,8 @@
 <?php
-define('BINDIR', '%CGIBIN%');
-define('FILEDIR', '%TRACKDIR%');
-define('DATABASE', '%DATABASE%');
-define('MYSQLHOST', '%MYSQLHOST%');
-define('MYSQLUSER', '%MYSQLUSER%');
-define('MYSQLPASSWORD', '%MYSQLPASSWORD%');
+define('BINDIR', '/web/stag/airscore/cgi-bin/');
+define('FILEDIR', '/web/stag/airscore/tracks/');
+define('DATABASE', 'airscore_stag');
+define('MYSQLHOST', 'mysql.legapiloti.dreamhosters.com');
+define('MYSQLUSER', 'airscore_db');
+define('MYSQLPASSWORD', 'Tantobuchi01');
 ?>
-

@@ -287,14 +287,16 @@ function filter_results($comPk, $how, $param, $results)
 $overstr = '';
 
 $comPk = intval($_REQUEST['comPk']);
+
 $start = reqival('start');
-if (reqexists('class'))
-{
-	$cval = reqival('class');
-}
 if ($start < 0)
 {
     $start = 0;
+}
+
+if (reqexists('class'))
+{
+	$cval = reqival('class');
 }
 
 $file = __FILE__;
@@ -446,34 +448,34 @@ if (0 && $tdate == $comDateTo)
 $rtable = [];
 $rdec = [];
 
-if ($comClass == "HG")
-{
-    $classopts = array ( 'open' => '', 'floater' => '&class=0', 'kingpost' => '&class=1', 
-        'hg-open' => '&class=2', 'rigid' => '&class=3', 'women' => '&class=4', 'masters' => '&class=5', 'teams' => '&class=8' );
-}
-else
-{
-    $classopts = array ( 'open' => '', 'fun' => '&class=0', 'sports' => '&class=1', 
-        'serial' => '&class=2', 'women' => '&class=4', 'masters' => '&class=5', 'teams' => '&class=8', 'handicap' => '&class=9' );
-}
-$cind = '';
-if ($class != '')
-{
-    $cind = "&class=$class";
-}
-$copts = [];
-foreach ($classopts as $text => $url)
-{
-    if ($text == 'teams' && $comTeamScoring == 'aggregate')
-    {
-        # Hack for now
-        $copts[$text] = "team_comp_result.php?comPk=$comPk";
-    }
-    else
-    {
-        $copts[$text] = "comp_result.php?comPk=$comPk$url";
-    }
-}
+// if ($comClass == "HG")
+// {
+//     $classopts = array ( 'open' => '', 'floater' => '&class=0', 'kingpost' => '&class=1', 
+//         'hg-open' => '&class=2', 'rigid' => '&class=3', 'women' => '&class=4', 'masters' => '&class=5', 'teams' => '&class=8' );
+// }
+// else
+// {
+//     $classopts = array ( 'open' => '', 'fun' => '&class=0', 'sports' => '&class=1', 
+//         'serial' => '&class=2', 'women' => '&class=4', 'masters' => '&class=5', 'teams' => '&class=8', 'handicap' => '&class=9' );
+// }
+// $cind = '';
+// if ($class != '')
+// {
+//     $cind = "&class=$class";
+// }
+// $copts = [];
+// foreach ($classopts as $text => $url)
+// {
+//     if ($text == 'teams' && $comTeamScoring == 'aggregate')
+//     {
+//         # Hack for now
+//         $copts[$text] = "team_comp_result.php?comPk=$comPk";
+//     }
+//     else
+//     {
+//         $copts[$text] = "comp_result.php?comPk=$comPk$url";
+//     }
+// }
 
 $rdec[] = 'class="h"';
 $rdec[] = 'class="h"';
@@ -621,7 +623,7 @@ else if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'Route' ||
         $count++;
     }
     //echo ftable($rtable, "border=\"0\" cellpadding=\"2\" cellspacing=\"0\" alternate-colours=\"yes\" align=\"center\"", $rdec, '');
-    echo ftable($rtable,'class=compresult', $rdec, '');
+    echo ftable($rtable,"class='format format2 compresult'", $rdec, '');
 }
 else
 {

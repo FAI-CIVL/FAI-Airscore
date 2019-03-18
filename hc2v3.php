@@ -190,8 +190,10 @@ function hcfooter()
 }
 function hcmapjs()
 {
-  //insert a api key in the line below XXXXXXXXXXXXXXX
-    echo '<script src="http://maps.googleapis.com/maps/api/js?sensor=false&key=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" type="text/javascript"></script>';
+    //echo '<script src="http://maps.google.com/maps/api/js?v=3&sensor=false&key=ABQIAAAAPyz1XxP2rM79ZhAH2EmgwxQ1ylNcivz9k-2ubmbv1YwdT5nh3RQJsyJo_kuVL1UAWoydxDkwo_zsKw" type="text/javascript"></script>';
+//    echo '<script src="http://maps.googleapis.com/maps/api/js?sensor=false&key=AIzaSyCsqRjSnEx9F_W9aIE-CZhge1THMQ6lkjI" type="text/javascript"></script>';
+    echo '<script src="http://maps.googleapis.com/maps/api/js?sensor=false&key=AIzaSyDz6hWZmvUXC6fOGP8teoO5brJKT2FB_F8" type="text/javascript"></script>';
+//    echo '<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCsqRjSnEx9F_W9aIE-CZhge1THMQ6lkjI&callback=initMap" type="text/javascript"></script>';
     echo "\n";
     echo '<script src="js/elabelv3.js" type="text/javascript"></script>';
     echo "\n";

@@ -4,17 +4,6 @@ require 'authorisation.php';
 require 'template.php';
 require 'format.php';
 
-function gettodayseason()
-{
-	$today = date('md');
-	$season = date('Y');
-	if ( $today > 1031 )
-	{
-		$season++;
-	}
-	return $season;
-}
-
 function getseasoninfo($link, $season)
 {
 	$seasonstart = date(($season-1).'-11-01');
@@ -29,10 +18,9 @@ function getseasoninfo($link, $season)
 					(SELECT COUNT(comPk) FROM tblCompetition WHERE (comDatefrom > '$seasonstart' AND ('$today' BETWEEN comDatefrom AND comDateTo) AND comDateTo < '$seasonend') ) AS openCom 
 					FROM tblCompetition 
 					WHERE (comDateFrom BETWEEN '$seasonstart' AND '$seasonend')";
-	//$sql = "select * from tblCompetition where comDateTo > date_sub(now(), interval 1 day) order by comDateTo";
 	//echo 'sql = '.$sql;
 	$result = mysqli_query($link, $sql);
-	$row = mysqli_fetch_array($result, MYSQLI_BOTH);
+	$row = mysqli_fetch_assoc($result);
 
 	return $row;	
 }
@@ -41,34 +29,45 @@ function getseasoninfo($link, $season)
 function getcomplist($link, $season, $list=0)
 {
 	$seasonstart = date(($season-1).'-11-01');
-	//echo 'inizio stagione: '.$seasonstart;
 	$seasonend = date(($season).'-10-31');
-	//echo 'fine stagione: '.$seasonend;
 	$today = date('Y-m-d');
 	$complist = [];
-	$complist[] = array("Competition", "Period" );
+	$complist[] = array("Competition", "Class", "Location", "Period" );
 	
-	$sql = "select * from tblCompetition where (comDateFrom between '$seasonstart' and '$seasonend') order by comDateFrom Desc";
-	//$sql = "select * from tblCompetition where comDateTo > date_sub(now(), interval 1 day) order by comDateTo";
-	//echo 'sql = '.$sql;
+	$sql = "SELECT 
+				* 
+			FROM 
+				tblCompetition 
+			WHERE 
+				(
+					comDateFrom BETWEEN '$seasonstart' 
+					AND '$seasonend'
+				) 
+			ORDER BY 
+				comDateFrom DESC";
 	$result = mysqli_query($link, $sql);
 	while ( $row = mysqli_fetch_array($result, MYSQLI_BOTH) )
 	{
 		// FIX: if not finished & no tracks then submit_track page ..
 		// FIX: if finished no tracks don't list!
 		$cpk = $row['comPk'];
+		$name = $row['comName'];
+		$location = ucwords(strtolower($row['comLocation']));
 		$registration = date_create($row['comDateFrom']);
 		$datefrom = date_format( date_create($row['comDateFrom']), 'd-m-Y ' );
 		$dateto = date_format( date_create($row['comDateTo']), 'd-m-Y ' );
-		//$comps[] = "<span class=\"list\"><a href=\"comp_result.php?comPk=$cpk\">" . $row['comName'] . "</span></a>";
+		$class = $row['comClass'];
 		$today = new DateTime('now');
+		
+		# Get class image
+		$image = strtolower($class) . '.png';
 		if ( $today < $registration )
 		{
-			$complist[] = array("<a href=\"registered_pilots.php?comPk=$cpk\">" . $row['comName'] . "</a>", $datefrom." - ".$dateto );
+			$complist[] = array("<a href=\"registered_pilots.php?comPk=$cpk\">$name</a>", "<img src='./images/$image' alt='$class' class='compclass'>", $location, $datefrom." - ".$dateto );
 		}
 		else
 		{
-			$complist[] = array("<a href=\"comp_result.php?comPk=$cpk\">" . $row['comName'] . "</a>", $datefrom." - ".$dateto );
+			$complist[] = array("<a href=\"comp_result.php?comPk=$cpk\">$name</a>", "<img src='./images/$image' alt='$class' class='compclass'>", $location, $datefrom." - ".$dateto );
 		}
 	}
 	return $complist;
@@ -81,26 +80,27 @@ function getcomplist($link, $season, $list=0)
 
 $link = db_connect();
 $list = isset($_REQUEST['list']) ? $_REQUEST['list'] : null;
-$season = isset($_REQUEST['season']) ? $_REQUEST['season'] : gettodayseason();
+$season = isset($_REQUEST['season']) ? $_REQUEST['season'] : getseason(date('Ymd'));
 
 $file = __FILE__;
 
 $page = 'LP AirScore';
 $title = 'AirScore - Online Scoring Tool';
 
+# Season selector
+$stable = [];
+$stable[] = array("Season: ", fselect('season', $season, season_array($link), " onchange=\"document.getElementById('main').submit();\"") );
+
 $row = getseasoninfo($link,$season);
 
 //initializing template header
 tpinit($link,$file,$row);
 
-// if ( $season = gettodayseason() )
-// {
-// 	$period = [];
-// 	$period[] = array(fb("<a href=\"index.php?season=$season&list=past\">Closed</a>"), fb("<a href=\"index.php?season=$season&list=now\">Running</a>"), fb("<a href=\"index.php?season=$season&list=next\">Next</a>") );
-// 	echo ftable($period,'', '', '');
-// }
-
-echo ftable( getcomplist($link, $season, $list),'', '', '');
+echo "<form enctype='multipart/form-data' action=\"index.php\" name='main' id='main' method='post'>\n";
+echo ftable($stable,"class='selector'", '', '');
+echo "</form>\n";
+echo "<hr />\n";
+echo ftable(getcomplist($link, $season, $list),"class='format complist'", '', '');
 
 tpfooter($file);
 

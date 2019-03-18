@@ -22,7 +22,7 @@ function update_task($link,$tasPk, $old)
     $out = '';
     $retv = 0;
 
-    // Get the old values
+    # Get the old values
     $oldstart = isset($old['tasStartTime']) ? $old['tasStartTime'] : '';
     $oldclose = isset($old['tasStartCloseTime']) ? $old['tasStartCloseTime'] : '';
     $oldfinish = isset($old['tasFinishTime']) ? $old['tasFinishTime'] : '';
@@ -62,9 +62,20 @@ function update_task($link,$tasPk, $old)
     }
 }
 
+// function full_rescore($tasPk, $comPk, $type, $param=null)
+// {
+//     $out = '';
+//     $retv = 0;
+// 	$command = BINDIR . "task_up.pl $tasPk $param" . ' > /dev/null 2>&1 & echo $!; ';
+// 	
+//     $pid = exec($command, $out, $retv);
+//     $ptime = microtime(true);
+//     redirect("task_scoring_admin.php?tasPk=$tasPk&comPk=$comPk&pid=$pid&time=$ptime&type=$type");
+// }
+
 function update_tracks($link,$tasPk)
 {
-    // Now check for pre-submitted tracks ..
+    # Now check for pre-submitted tracks ..
     $query = "select traPk from tblComTaskTrack where tasPk=$tasPk";
     $result = mysqli_query($link, $query);
     $tracks = [];
@@ -75,7 +86,7 @@ function update_tracks($link,$tasPk)
 
     if (sizeof($tracks) > 0)
     {
-        // Now verify the pre-submitted tracks against the task
+        # Now verify the pre-submitted tracks against the task
         foreach ($tracks as $tpk)
         {
             #echo "Verifying effected track: $tpk<br>";
@@ -132,6 +143,11 @@ if (reqexists('airspace'))
     {  
         echo $row . "<br>";
     }
+}
+
+if (reqexists('updated'))
+{
+	$message = "Task updated succesfully";
 }
 
 if (reqexists('addair'))
@@ -205,7 +221,7 @@ if (reqexists('updatetask'))
         die("Unable to update task with illegal date: $Date");
     }
 
-    // Task Start/Finish
+    # Task Start/Finish
     $TaskStart = reqsval('taskstart');
     if (strlen($TaskStart) < 10)
     {
@@ -217,8 +233,8 @@ if (reqexists('updatetask'))
         $FinishTime = $Date . ' ' . $FinishTime;
     }
 
-    // FIX: Launch Close
-    // Start gate open/close
+    # FIX: Launch Close
+    # Start gate open/close
     $StartTime = reqsval('starttime');
     if (strlen($StartTime) < 10)
     {
@@ -260,14 +276,11 @@ if (reqexists('updatetask'))
 
 if (reqexists('fullrescore'))
 {
-    $out = '';
 	$command = BINDIR . "task_up.pl $tasPk" . ' > /dev/null 2>&1 & echo $!; ';
-    $pid = exec($command, $out, $retv);
-    $ptime = microtime(true);
-    redirect("task_scoring_admin.php?tasPk=$tasPk&comPk=$comPk&pid=$pid&time=$ptime");
+	safe_process($link, $command, $tasPk, $comPk, 'score');
 }
 
-// Manage waypoints for task ..
+# Manage waypoints for task ..
 if (reqexists('add'))
 {
     check_admin('admin',$usePk,$comPk);
@@ -287,7 +300,7 @@ if (reqexists('add'))
         $waynum = 1 + $row['maxNum'];
     }
     $query = "insert into tblTaskWaypoint (tasPk, rwpPk, tawNumber, tawType, tawHow, tawShape, tawTime, tawRadius) values ($tasPk, $rwppk, $waynum, '$waytype', '$how', '$shape', '$waytime', $radius)";
-    echo "$query <br>";
+    //echo "$query <br>";
 
     mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Add Task waypoint failed: ' . mysqli_connect_error());
     // update tasDistance ...
@@ -322,30 +335,12 @@ if (reqexists('update'))
     $radius = addslashes($_REQUEST["radius$tawPk"]);
 
     $query = "update tblTaskWaypoint set tawNumber=$waynum, rwpPk=$waypt, tawType='$waytype', tawHow='$how', tawShape='$shape', tawRadius=$radius where tawPk=$tawPk";
-    //echo "$query <br>";
-    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Update Task waypoint failed: ' . mysqli_connect_error());
-    $out = '';
-    $retv = 0;
-    exec(BINDIR . "task_up.pl $tasPk", $out, $retv);
-    if (reqexists('debug'))
-    {
-        foreach ($out as $row)
-        {
-            echo $row . "<br>";
-        }
-    }
+    mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Update Task waypoint failed: ' . mysqli_connect_error());
+	full_rescore($tasPk, $comPk, 'update');
 }
 # Upload a task file generated from xc-track
 elseif ( reqexists('XCTask') )
 {
-//     $copyname = tempnam(FILEDIR, "XCTask_");
-    //echo "copyname: $copyname \n";
-
-//     clearstatcache();
-//     if (!file_exists($copyname)) 
-//     {
-//     	mkdir($copyname, 0755, true);
-//     }
     copy($_FILES['taskfile']['tmp_name'], FILEDIR . basename($_FILES['taskfile']['name']));
     chmod(FILEDIR . basename($_FILES['taskfile']['name']), 0644);
 
@@ -380,7 +375,7 @@ elseif ( reqexists('XCTask') )
     	sleep(15);
     	if ( script_isRunning($pid) ) 
 		{
-			redirect("bulk_submit_admin.php?tasPk=$tasPk&comPk=$comPk&pid=$pid&time=$ptime&task=1");
+			redirect("safe_process_admin.php?tasPk=$tasPk&comPk=$comPk&pid=$pid&time=$ptime&task=1");
 		}
 		$content .= "A task has been set from XC-Track informations. <br />\n";
     }
@@ -436,16 +431,17 @@ $tasktypes = array (
 $regarr = [];
 $sql = "SELECT * FROM tblRegion R";
 $result = mysqli_query($link, $sql);
-while ($row = mysqli_fetch_assoc($result))
+while ($reg = mysqli_fetch_assoc($result))
 {
-    $regDesc = $row['regDescription'];
-    $regarr["$regDesc"] = $row['regPk'];
+    $regDesc = $reg['regDescription'];
+    $regarr["$regDesc"] = $reg['regPk'];
 }
 
 # Create Tables
 $ttable = [];
 $atable = [];
 $ftable = [];
+$ctable = [];
 $wtable = [];
 
 # Create Task Info table
@@ -455,8 +451,8 @@ $ttable[] = array("Window opens: ", fin('taskstart', $tasTaskStart, 'width8'), "
 $ttable[] = array("START opens: ", fin('starttime', $tasStartTime, 'width8'), "START closed: ", fin('startclose', $tasStartCloseTime, 'width8'), "Gate Interval(s): ", fin('interval', $tasSSInterval, 'width4'));
 
 # Create Advanced Options table
-$atable[] = array("Depart Bonus: ", fselect('departure', $tasDeparture, array( 'on', 'off', 'leadout', 'kmbonus' )), " default: leadout ", "Arrival Bonus: ", fselect('arrival', $tasArrival, array( 'on', 'off' )), " default: HG on / PG off ", "Height Bonus: ", fselect('height', $tasHeightBonus, array( 'on', 'off' )), " default: off ");
-$atable[] = array("Launch Check: ", fselect('checklaunch', $tasCheckLaunch, array( 'on', 'off' )), " default: off ", '', '', '', '', '', '');
+$atable[] = array("Depart Bonus: ", fselect('departure', $tasDeparture, array( 'on', 'off', 'leadout', 'kmbonus' )), " default: leadout ", "Arrival Bonus: ", fselect('arrival', $tasArrival, array( 'on', 'off' )), " default: HG on / PG off ");
+$atable[] = array("Height Bonus: ", fselect('height', $tasHeightBonus, array( 'on', 'off' )), " default: off ", "Launch Check: ", fselect('checklaunch', $tasCheckLaunch, array( 'on', 'off' )), " default: off ", '', '', '');
 
 # Create the task file upload table
 $ftable[] = array("	<input type=\"hidden\" name=\"MAX_FILE_SIZE\" value=\"1000000000\">", 
@@ -478,16 +474,16 @@ $sql = "SELECT
 		ORDER BY 
 			T.tawNumber";
 $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task waypoint selection failed: ' . mysqli_connect_error());
-while ($row = mysqli_fetch_assoc($result))
+while ($wpt = mysqli_fetch_assoc($result))
 {
-    $tawPk = $row['tawPk'];
-    $number = $row['tawNumber'];
-    $name = $row['rwpName'];
-    $rwpPk = $row['rwpPk'];
-    $wtype = $row['tawType'];
-    $how = $row['tawHow'];
-    $shape = $row['tawShape'];
-    $radius = $row['tawRadius'];
+    $tawPk = $wpt['tawPk'];
+    $number = $wpt['tawNumber'];
+    $name = $wpt['rwpName'];
+    $rwpPk = $wpt['rwpPk'];
+    $wtype = $wpt['tawType'];
+    $how = $wpt['tawHow'];
+    $shape = $wpt['tawShape'];
+    $radius = $wpt['tawRadius'];
     
     $wtable[] = array(	fbut('submit','delete',$tawPk,'Delete'), 
     					fin("number$tawPk", $number, 'width4'),
@@ -499,11 +495,6 @@ while ($row = mysqli_fetch_assoc($result))
     					fbut('submit','update',$tawPk,'Update')
     				);
 
-//     echo "<button type=\"submit\" name=\"update\" value=\"$tawPk\">up</button>";
-//     waypoint($link,$tasPk,$tawPk,$number,$rwpPk,$wtype,$how,$shape,$radius);
-//     echo "<button type=\"submit\" name=\"delete\" value=\"$tawPk\">del</button>";
-// 
-//     echo "<br>\n";
     if ($wtype == 'goal')
     {
         $goal = 1;
@@ -523,6 +514,32 @@ $wtable[] = array(	'',
 					fis('add', 'Add Waypoint', '')
 				);
 
+# Create the task copy from previous ones table
+if ($count == 1)
+{
+    $copyarr = [];
+    # Copy from previous tasks same comp, others on same day ..
+    $sql = "SELECT 
+				C.comName, 
+				T.* 
+			FROM 
+				tblCompetition C 
+				JOIN tblTask T USING (comPk) 
+			WHERE 
+				(
+					T.comPk = $comPk 
+					OR T.tasDate = '$tasDate'
+				) 
+				AND T.tasPk <> $tasPk"; 
+    $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task Copy selection failed: ' . mysqli_connect_error());
+	while ($task = mysqli_fetch_assoc($result))
+    {
+        $copyarr[$task['comName'] . ' | ' . $task['tasName']] = $task['tasPk'];
+    }
+    
+    $ctable[] = array("Copy Waypoints from Task: ", fselect("copytaskpk",'', $copyarr), fis('copytask', 'Copy', ''));
+}
+
 # Get Task Distances
 $sql = "select tasDistance, tasShortRouteDistance from tblTask where tasPk=$tasPk";
 $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task distance not determined: ' . mysqli_connect_error());
@@ -532,134 +549,109 @@ $shortdist = round(floatval(mysqli_result($result, 0, 1))/1000,2);
 //initializing template header
 tpadmin($link,$file,$row);
 
-
 echo "<h3>$tasName ($tasDate)</h3>\n";
 echo "<h4><a href=\"task_result.php?comPk=$comPk&tasPk=$tasPk\">Results</a></h4>\n";
 echo "<hr />\n";
+
+# Messages field
 if ( $message !== '')
 {
 	echo "<h4> <span style='color:red'>$message</span> </h4>" . PHP_EOL;
 	echo "<br />" . PHP_EOL;
 	echo "<hr />" . PHP_EOL;
 }
+
+# Content field
 if ( $content !== '')
 {
 	echo "$content" . PHP_EOL;
 	echo "<br />" . PHP_EOL;
 	echo "<hr />" . PHP_EOL;
 }
-echo "<h4>Task Info:</h4>\n";
 
+# Display task info
+echo "<h4>Task Info:</h4>\n";
 echo "<form enctype=\"multipart/form-data\" name=\"taskadmin\" action=\"task_admin.php?tasPk=$tasPk&comPk=$comPk\" method=\"post\">\n";
-echo ftable($ttable,'class=tinfotable', '', '');
-// echo "<p><table>";
-// echo "<tr><td>Name:</td><td><input type=\"text\" name=\"taskname\" value=\"$tasName\" size=9></td>\n";
-// echo "<td>Date:</td><td><input type=\"text\" name=\"date\" value=\"$tasDate\" size=10></td><td></td><td></td></tr>\n";
-// echo "<tr><td>Region:</td><td>\n";
-// output_select('region', $regPk, $regarr); 
-// echo "</td>\n";
-// echo "<td>Task Type:</td><td>\n";
-// output_select('tasktype', $tasTaskType, $tasktypes);
-// echo "</td><td></td><td></td></tr>\n";
-// echo "<tr><td>Task Start:</td><td><input type=\"text\" name=\"taskstart\" value=\"$tasTaskStart\" size=9></td>\n";
-// echo "<td>Task Finish:</td><td><input type=\"text\" name=\"taskfinish\" value=\"$tasTaskFinish\" size=9></td>\n";
-// echo "<td>Task Stopped:</td><td><input type=\"text\" name=\"taskstopped\" value=\"$tasStopped\" size=8></td>\n";
-// echo "</tr>\n";
-// echo "<tr><td>Start Open:</td><td><input type=\"text\" name=\"starttime\" value=\"$tasStartTime\" size=9></td>\n";
-// echo "<td>Start Close:</td><td><input type=\"text\" name=\"startclose\" value=\"$tasStartCloseTime\" size=9></td>\n";
-// echo "<td>Gate Interval(s):</td><td><input type=\"text\" name=\"interval\" value=\"$tasSSInterval\" size=4></td>\n";
-// echo "</tr></table>\n";
+echo ftable($ttable,"class='format tinfotable'", '', '');
 echo "<hr />\n";
-echo "<span style='color:red;'>advanced</span>\n";
-// echo "<table>\n";
-// echo "<tr><td>Depart Bonus:</td><td>\n";
-// output_select('departure', $tasDeparture, array( 'on', 'off', 'leadout', 'kmbonus' ));
-// echo " default: leadout ";
-// echo "</td>\n";
-// echo "<td>Arrival Bonus:</td><td>\n";
-// output_select('arrival', $tasArrival, array( 'on', 'off' ));
-// echo " default: HG on / PG off ";
-// echo "</td>\n";
-// echo "<td>Height Bonus:</td><td>\n";
-// output_select('height', $tasHeightBonus, array( 'on', 'off' ));
-// echo " default: off ";
-// echo "</td>\n";
-// echo "</tr>\n";
-// echo "<tr><td>Check Launch Cylinder:</td><td>\n";
-// output_select('checklaunch', $tasCheckLaunch, array( 'on', 'off' ));
-// echo " default: off ";
-// echo "</td>\n";
-// echo "</tr></table>\n";
-echo ftable($atable,'class=tadvtable', '', '');
+
+# Display Advanced setup
+echo "<p class='warning'>advanced</p>\n";
+echo "<p class='explanation'>This parameters are usually correct by default.<br>\n";
+echo ftable($atable,"class='format tadvtable'", '', '');
 echo "<hr />\n";
+
 echo "Comment:<br>";
 echo farea("taskcomment", $tasComment, 2, 80);
 echo "<br><button type=\"submit\" name=\"updatetask\" value=\"$tasPk\">Update Task</button>";
 echo "<hr>";
 
-// Ok - output the waypoints nicely
+# Display WPT Definistion
 echo "<h4>Task Definition:</h4>\n";
+# Upload xc-track task file
 echo "<p class='explanation'>You can upload the XCTSK file generated by XC-Track:<br>\n";
-echo ftable($ftable,'class=taskfiletable', '', '');
+echo "<p class='warning'>This will overwrite task definition without warning.<br>\n";
+echo ftable($ftable,"class='format taskfiletable'", '', '');
 echo "<hr>";
-echo ftable($wtable,'class=wpttable', '', '');
+#copy task from previous
+if ( !empty($ctable) )
+{
+	echo "<p class='explanation'>You can copy definition from a previous task:<br>\n";
+	echo ftable($ctable,"class='format taskfiletable'", '', '');
+	echo "<hr />";
+}
+echo "<p class='explanation'>Insert / Modify / Delete Waypoints:<br>\n";
+echo ftable($wtable,"class='format wpttable'", '', '');
+echo "<br /></form>";
+
 if ($goal == 0 && $count > 0 && ($tasTaskType == 'race' || $tasTaskType == 'speedrun' || $tasTaskType == 'speedrun-interval'))
 {
-    echo "<p class='warning'>Warning: racing tasks require a start and a goal, it will not score correctly.</p><br>\n";
+    echo "<p class='warning'>Warning: racing tasks require a launch and a goal, it will not score correctly otherwise.</p><br>\n";
 }
-echo "<hr>";
-echo "<p class='taskDistance'><b>Optimised Distance: $shortdist Km		| Distance through Centres: $dist Km</b><br>";
-
-
-
-
-echo "<br>";
-// echo fis('add', 'Add Waypoint', '');
-// waypoint($link,$tasPk,'','','','waypoint','entry','circle','400');
-
-if ($count == 1)
+elseif ( $goal == 1 )
 {
-    $copyarr = [];
-    // Copy from previous tasks same comp, others on same day ..
-    $sql = "select C.comName, T.* from tblCompetition C, tblTask T where C.comPk=T.comPk and (T.comPk=$comPk or T.tasDate='$tasDate') and T.tasPk <> $tasPk"; 
-    $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task Copy selection failed: ' . mysqli_connect_error());
-	while ($row = mysqli_fetch_assoc($result))
-    {
-        $copyarr[$row['comName'].$row['tasName']]= $row['tasPk'];
-    }
-    echo "<br>Or copy task from: ";
-    echo fselect("copytaskpk",'', $copyarr);
-    echo fis('copytask', 'Copy', '');
-    echo "<br>";
-}
-echo "</form>";
-echo "<br /><hr /> \n";
-echo "<form action=\"tasktrack_admin.php?comPk=$comPk&tasPk=$tasPk\" name=\"tasktrack\" method=\"post\"> \n";
-echo fis('trackmanager', 'Manage Tracks', '');
-echo "</form> \n";
-echo "<br><hr> \n";
-echo "<form action=\"task_result.php?comPk=$comPk&tasPk=$tasPk\" name=\"taskscore\" method=\"post\"> \n";
-echo fis('score', 'Score Task', '');
-echo "</form> \n";
-echo "<form action=\"task_admin.php?comPk=$comPk&tasPk=$tasPk\" name=\"fullrescore\" method=\"post\"> \n";
-echo fis('fullrescore', 'Full Re-Score', '');
-echo "</form> \n";
-echo "<form action=\"team_task_result.php?comPk=$comPk&tasPk=$tasPk\" name=\"teamtaskscore\" method=\"post\"> \n";
-echo fis('score', 'Team Score', '');
-echo "</form> \n";
+	# Display Task Distance, Track Management and Scoring if task is set
+	echo "<hr>";
+	echo "<p class='taskDistance'><span>Optimised Distance: $shortdist Km </span> <span>|  </span> <span> Distance through Centres: $dist Km </span><br>";
+	echo "<br /><hr /> \n";
 
+	# Display Track manager
+	echo "<form action=\"tasktrack_admin.php?comPk=$comPk&tasPk=$tasPk\" name=\"tasktrack\" method=\"post\"> \n";
+	echo "<h4>Track Manager:</h4>\n";
+	echo "<p class='explanation'>Permits to add or delete tracks, set pilots DNF or ABS, upload zip file or get tracks from XContest server.<br>\n";
+	echo fis('trackmanager', 'Manage Tracks', '');
+	echo "</form> \n";
+	echo "<br><hr> \n";
+
+	# Display Scoring Section
+	echo "<h4>Scoring:</h4>\n";
+	echo "<form action=\"task_result.php?comPk=$comPk&tasPk=$tasPk\" name=\"taskscore\" method=\"post\"> \n";
+	echo "<p class='explanation'>Score Task will add tracks not yet scored.<br>\n";
+	echo fis('score', 'Score Task', '');
+	echo "</form> \n";
+	echo "<form action=\"task_admin.php?comPk=$comPk&tasPk=$tasPk\" name=\"fullrescore\" method=\"post\"> \n";
+	echo "<p class='explanation'>Full Re-Score will recalculate task distance, and will verify all tracks. Could take a while.<br>\n";
+	echo fis('fullrescore', 'Full Re-Score', '');
+	echo "</form> \n";
+	echo "<form action=\"team_task_result.php?comPk=$comPk&tasPk=$tasPk\" name=\"teamtaskscore\" method=\"post\"> \n";
+	echo fis('score', 'Team Score', '');
+	echo "</form> \n";
+}
 echo "<hr>";
-echo '<h3> Email Notification to Pilots</h3>';
+
+# Email Notification
+echo '<h4> Email Notification to Pilots</h4>';
+echo "<p class='explanation'>Will send a remainder to all pilots yet without a valid track for the task.<br>\n";
 echo "<form action=\"email_admin.php?comPk=$comPk&tasPk=$tasPk\" name=\"sendmail\" method=\"post\"> \n";
 echo fis('sendmail', 'Send Email to missing Pilots', '');
 echo fis('sendmail', 'Send TEST Email to your address only', '');
 echo "</form>";
+echo "<hr />";
 
-
-echo "<hr>";
+# Airspace Section
 echo "<form action=\"task_admin.php?tasPk=$tasPk\" name=\"taskadmin\" method=\"post\">";
 
-// List all associated airspace
+# List all associated airspace
 $airarr = [];
 $query = "select TA.*, A.* from tblTaskAirspace TA, tblAirspace A where TA.tasPk=$tasPk and A.airPk=TA.airPk";
 $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task Airspace selection failed: ' . mysqli_connect_error());
@@ -677,18 +669,35 @@ $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' 
 if (mysqli_num_rows($result) > 0)
 {
     $cenPk = 0+mysqli_result($result, 0, 0);
-    $query = "select * from tblAirspace R 
-        where R.airPk in (
-            select airPk from tblAirspaceWaypoint W, tblRegionWaypoint R where
-            R.rwpPk=$cenPk and
-            W.awpLatDecimal between (R.rwpLatDecimal-1.5) and (R.rwpLatDecimal+1.5) and
-            W.awpLongDecimal between (R.rwpLongDecimal-1.5) and (R.rwpLongDecimal+1.5)
-            group by (airPk))
-        order by R.airName";
+    $query = "	SELECT 
+					A.* 
+				FROM 
+					tblAirspace A 
+				WHERE 
+					A.airPk IN (
+						SELECT 
+							W.airPk 
+						FROM 
+							tblAirspaceWaypoint W 
+							JOIN tblRegionWaypoint R ON (
+								W.awpLatDecimal BETWEEN (R.rwpLatDecimal - 1.5) 
+								AND (R.rwpLatDecimal + 1.5)
+							) 
+							AND (
+								W.awpLongDecimal BETWEEN (R.rwpLongDecimal - 1.5) 
+								AND (R.rwpLongDecimal + 1.5)
+							) 
+						WHERE 
+							R.rwpPk = $cenPk  
+						GROUP BY 
+							W.airPk
+					) 
+				ORDER BY 
+					A.airName";
 }
 else
 {
-    $query = "select * from tblAirspace R order by R.airName";
+    $query = "select * from tblAirspace A order by A.airName";
 }
 $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Airspace selection failed: ' . mysqli_connect_error());
 while ($row = mysqli_fetch_assoc($result))

@@ -203,7 +203,7 @@ if ($row)
 
     if ($row['tasDeparture'] == 'leadout')
     {
-        $depcol = 'Ldo';
+        $depcol = 'LO P';
     }
     elseif ($row['tasDeparture'] == 'kmbonus')
     {
@@ -320,7 +320,7 @@ if ( $isadmin or ($totalPenalty != 0) )
 {
 	$header[] = fb("Pen");
 }
-$header[] = fb("Spd");
+$header[] = fb("Spd P");
 if ($depcol != 'off')
 {
     $header[] = fb($depcol);
@@ -330,8 +330,8 @@ if ($tasArrival == 'on')
     $header[] = fb("Arv");
 }
 // $header[] = fb("Spd");
-$header[] = fb("Dst");
-$header[] = fb("Total");
+$header[] = fb("Dst P");
+$header[] = fb("Score");
 $trtab[] = $header;
 $count = 1;
 
@@ -570,7 +570,7 @@ while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 
     $count++;
 }
-echo ftable($trtab, 'class=taskresult', '' , '');
+echo ftable($trtab, "class='format taskresult'", '' , '');
 
 if ($isadmin)
 {

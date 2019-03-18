@@ -18,7 +18,7 @@ $altarr = [];
 $altarr[0] = [
 #    "alter table tblCompetition add column comEntryRestrict        enum ('open', 'registered') default 'open'",
 #    "alter table tblCompetition add column comLocked        integer default 0",
-#    "alter table tblFormula modify column     forClass         enum ('gap', 'ozgap', 'pwc', 'sahpa', 'nzl', 'ggap', 'nogap')",
+#    "alter table tblFormula_org modify column     forClass         enum ('gap', 'ozgap', 'pwc', 'sahpa', 'nzl', 'ggap', 'nogap')",
 #    "alter table tblTrack add index indTrack (traPk)",
 #    "alter table tblTask modify column tasTaskType             enum ('free', 'speedrun', 'race', 'olc', 'free-bearing', 'speedrun-interval', 'airgain', 'aat')",
 #    "alter table tblShortestRoute add column  ssrCumulativeDist  double default 0.0",
@@ -35,10 +35,10 @@ $altarr[0] = [
     ];
 
 $altarr[1] = [
-    'alter table tblFormula add column forStoppedGlideBonus double default 0.0',
-    'alter table tblFormula add column forHeightArrBonus double default 0.0',
-    'alter table tblFormula add column forHeightArrLower integer default 200',
-    'alter table tblFormula add column forHeightArrUpper integer default 3000',
+    'alter table tblFormula_org add column forStoppedGlideBonus double default 0.0',
+    'alter table tblFormula_org add column forHeightArrBonus double default 0.0',
+    'alter table tblFormula_org add column forHeightArrLower integer default 200',
+    'alter table tblFormula_org add column forHeightArrUpper integer default 3000',
     'alter table tblRegistration add column regHours integer default 200',
 
 ];
@@ -49,8 +49,8 @@ $altarr[2] = [
 ];
 
 $altarr[3] = [
-    'alter table tblFormula add column forOLCPoints integer default 3',
-    'alter table tblFormula add column forOLCBase double default 1.4'
+    'alter table tblFormula_org add column forOLCPoints integer default 3',
+    'alter table tblFormula_org add column forOLCBase double default 1.4'
 ];
 
 $altarr[4] = [
@@ -58,15 +58,15 @@ $altarr[4] = [
 ];
 
 $altarr[5] = [
-    'alter table tblFormula add column forDistMeasure   enum ( "average", "median" ) default "average"',
-    'alter table tblFormula add column forWeightStart   double default 0.125',
-    'alter table tblFormula add column forWeightArrival double default 0.175',
-    'alter table tblFormula add column forWeightSpeed   double default 0.7',
-    "update tblFormula set forWeightStart=.125 , forWeightArrival=.125, forWeightSpeed=0.75 where forVersion='1998' and forClass='gap'",
-    "update tblFormula set forWeightStart=.25  , forWeightArrival=.25,  forWeightSpeed=0.50 where forVersion='2000' and forClass='ozgap'",
-    "update tblFormula set forWeightStart=0 ,    forWeightArrival=.25,  forWeightSpeed=0.75 where forVersion='2005' and forClass='ozgap'",
-    "update tblFormula set forWeightStart=.175 , forWeightArrival=.25,  forWeightSpeed=0.575 where forVersion not in ('2000','2005') and forClass='ozgap'",
-    "update tblFormula set forWeightStart=0.0 ,  forWeightArrival=0.0,  forWeightSpeed=1.0 where forClass in ('nzl', 'jtgap', 'rtgap', 'nogap')"
+    'alter table tblFormula_org add column forDistMeasure   enum ( "average", "median" ) default "average"',
+    'alter table tblFormula_org add column forWeightStart   double default 0.125',
+    'alter table tblFormula_org add column forWeightArrival double default 0.175',
+    'alter table tblFormula_org add column forWeightSpeed   double default 0.7',
+    "update tblFormula_org set forWeightStart=.125 , forWeightArrival=.125, forWeightSpeed=0.75 where forVersion='1998' and forClass='gap'",
+    "update tblFormula_org set forWeightStart=.25  , forWeightArrival=.25,  forWeightSpeed=0.50 where forVersion='2000' and forClass='ozgap'",
+    "update tblFormula_org set forWeightStart=0 ,    forWeightArrival=.25,  forWeightSpeed=0.75 where forVersion='2005' and forClass='ozgap'",
+    "update tblFormula_org set forWeightStart=.175 , forWeightArrival=.25,  forWeightSpeed=0.575 where forVersion not in ('2000','2005') and forClass='ozgap'",
+    "update tblFormula_org set forWeightStart=0.0 ,  forWeightArrival=0.0,  forWeightSpeed=1.0 where forClass in ('nzl', 'jtgap', 'rtgap', 'nogap')"
 ];
 
 mysqli_query($link, 'delete from schema_version');

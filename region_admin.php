@@ -416,11 +416,11 @@ if ( reqexists('regdel') )
 	else
 	{
 		$query = "delete from tblRegionWaypoint where regPk=$regPk";
-		$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Waipoint delete failed: ' . mysqli_connect_error());
+		mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Waipoint delete failed: ' . mysqli_connect_error());
 		$query = "delete from tblRegionXCSites where regPk=$regPk";
-		$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' RegionXCSites delete failed: ' . mysqli_connect_error());
+		mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' RegionXCSites delete failed: ' . mysqli_connect_error());
 		$query = "delete from tblRegion where regPk=$regPk";
-		$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Region delete failed: ' . mysqli_connect_error());
+		mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Region delete failed: ' . mysqli_connect_error());
 		
 		redirect("area_admin.php?del=$region");
 	}    

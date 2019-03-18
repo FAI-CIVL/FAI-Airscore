@@ -1,84 +1,71 @@
-Adapting Airscore for use in the Italian League.
-# airScore
+# [Start Bootstrap - Freelancer](https://startbootstrap.com/template-overviews/freelancer/)
 
+[Freelancer](http://startbootstrap.com/template-overviews/freelancer/) is a one page freelancer portfolio theme for [Bootstrap](http://getbootstrap.com/) created by [Start Bootstrap](http://startbootstrap.com/). This theme features several content sections, a responsive portfolio grid with hover effects, full page portfolio item modals, and a working PHP contact form.
 
-A bunch of scripts and php pages to handle IGC files and store them into a mysql database, determine track distance, 
-do paragliding GAP RACE scoring, OLC-style scoring, etc. It also presents tracks on Google Maps for further viewing.
+## Preview
 
-The basic philosophy is to provide the scoring tools as a set of simple executable (perl scripts)
-that can be wrapped with any GUI. At this stage I've only provided a basic PHP/Google Maps  interface. 
+[![Freelancer Preview](https://startbootstrap.com/assets/img/templates/freelancer.jpg)](https://blackrockdigital.github.io/startbootstrap-freelancer/)
 
-The database schema maybe found in xcdb.sql.
+**[View Live Preview](https://blackrockdigital.github.io/startbootstrap-freelancer/)**
 
-### Copyright
+## Status
 
-With the exception of the following code:
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/BlackrockDigital/startbootstrap-freelancer/master/LICENSE)
+[![npm version](https://img.shields.io/npm/v/startbootstrap-freelancer.svg)](https://www.npmjs.com/package/startbootstrap-freelancer)
+[![Build Status](https://travis-ci.org/BlackrockDigital/startbootstrap-freelancer.svg?branch=master)](https://travis-ci.org/BlackrockDigital/startbootstrap-freelancer)
+[![dependencies Status](https://david-dm.org/BlackrockDigital/startbootstrap-freelancer/status.svg)](https://david-dm.org/BlackrockDigital/startbootstrap-freelancer)
+[![devDependencies Status](https://david-dm.org/BlackrockDigital/startbootstrap-freelancer/dev-status.svg)](https://david-dm.org/BlackrockDigital/startbootstrap-freelancer?type=dev)
 
-einsert.js (http://econym.googlepages.com - copyright Mike Williams)
-elabel.js  (http://econym.googlepages.com - copyright Mike Williams)
-Simple.pm (http://search.cpan.org/~grantm/XML-Simple-2.20/lib/XML/Simple.pm 
-    - copyright Grant McLean distributed under GPL License version 2)
+## Download and Installation
 
-All rest of the code is provided under the GPL License version 2 
-described in the file "Copying".
+To begin using this template, choose one of the following options to get started:
+* [Download the latest release on Start Bootstrap](https://startbootstrap.com/template-overviews/freelancer/)
+* Install via npm: `npm i startbootstrap-freelancer`
+* Clone the repo: `git clone https://github.com/BlackrockDigital/startbootstrap-freelancer.git`
+* [Fork, Clone, or Download on GitHub](https://github.com/BlackrockDigital/startbootstrap-freelancer)
 
-If this is not present please download from www.gnu.org.
+## Usage
 
-Geoff Wong, 2007-2016
-geoff.wong@gmail.com
+### Basic Usage
 
+After downloading, simply edit the HTML and CSS files included with the template in your favorite text editor to make changes. These are the only files you need to worry about, you can ignore everything else! To preview the changes you make to the code, you can open the `index.html` file in your web browser.
 
-## Installation
+### Advanced Usage
 
-Helps to be experienced with Apache configurations and Mysql.
+After installation, run `npm install` and then run `gulp dev` which will open up a preview of the template in your default browser, watch for changes to core template files, and live reload the browser when changes are saved. You can view the `gulpfile.js` to see which tasks are included with the dev environment.
 
-* Edit the "Makefile":
-    - set the mysql password you want to use for airscore
-    - set your CGI bin directory
-    - set your HTDOCS location (for the php files)
-* 'make database' if it's your first installation
-* Type 'make'
-* Ensure Apache is configured with mod-php, perl should be available too
-* Test that the login page work .../airscore/login.php (user: admin, pass: admin)
+#### Gulp Tasks
 
+- `gulp` the default task that builds everything
+- `gulp dev` browserSync opens the project in your default browser and live reloads when changes are made
+- `gulp sass` compiles SCSS files into CSS
+- `gulp minify-css` minifies the compiled CSS file
+- `gulp minify-js` minifies the themes JS file
+- `gulp copy` copies dependencies from node_modules to the vendor directory
 
-Other packages needed:
+## Bugs and Issues
 
-* php5
-* mysql
-* perl
-* libxml-simple-perl
+Have a bug or an issue with this template? [Open a new issue](https://github.com/BlackrockDigital/startbootstrap-freelancer/issues) here on GitHub or leave a comment on the [template overview page at Start Bootstrap](http://startbootstrap.com/template-overviews/freelancer/).
 
-### Web Security
+## Custom Builds
 
-* Enable exec() functionality for php.
-* Enable CGI (*pl *php) from the main installation directory for Apache
+You can hire Start Bootstrap to create a custom build of any template, or create something from scratch using Bootstrap. For more information, visit the **[custom design services page](https://startbootstrap.com/bootstrap-design-services/)**.
 
-## Script Notes
+## About
 
-What do the perl scripts do:
+Start Bootstrap is an open source library of free Bootstrap templates and themes. All of the free templates and themes on Start Bootstrap are released under the MIT license, which means you can use them for any purpose, even for commercial projects.
 
-* add_track.pl - adds an IGC track to the database
-* airgain_verify.pl - verify an 'airgain' task (collecting points in the region)
-* airspace_check.pl - check airpsace for a task
-* airspace_openair.pl - read in an Openair format airspace file 
-* airspace_sua_reader.pl - read in a SUA format airspace file
-* bulk_igc_reader.pl - read in a bunch of IGC files
-* bulk_pilot_import.pl - import pilot information from a CSV file
-* del_track.pl - delete a track
-* fsdb_export.pl - export to FS XML format (not fully functional)
-* fsdb_import.pl - import a FS XML format file (not fully functional)
-* handicap.pl - local handicap calculation
-* igcreader.pl - read an IGC file
-* igcr_nostrip.pl - read an IGC without doing a 'no-flying' strip
-* optimise_flight.pl - do an OLC optimisation on a flight
-* short_route.pl - compute the shortest-route through a task
-* task_score.pl - score a task
-* task_up.pl - re-verify all tracks assocaited with a task, and re-score it
-* team_score.pl - team scoring stuff
-* track_verify_sr.pl - verify an indivudal track against a task
+* https://startbootstrap.com
+* https://twitter.com/SBootstrap
 
-What do the python scripts do:
+Start Bootstrap was created by and is maintained by **[David Miller](http://davidmiller.io/)**, Owner of [Blackrock Digital](http://blackrockdigital.io/).
 
-* email_pilots.py - for a given task, sends an email to all or only pilots who haven't submitted tracks
-* get_igc_from_xcontest.py - for a given task, pulls tracks from xcontest and submits to airscore
+* http://davidmiller.io
+* https://twitter.com/davidmillerskt
+* https://github.com/davidtmiller
+
+Start Bootstrap is based on the [Bootstrap](http://getbootstrap.com/) framework created by [Mark Otto](https://twitter.com/mdo) and [Jacob Thorton](https://twitter.com/fat).
+
+## Copyright and License
+
+Copyright 2013-2018 Blackrock Digital LLC. Code released under the [MIT](https://github.com/BlackrockDigital/startbootstrap-freelancer/blob/gh-pages/LICENSE) license.

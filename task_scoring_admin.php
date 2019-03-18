@@ -16,10 +16,19 @@ if ( reqexists('pid') )
 {
 
 	$pid = reqival('pid');
+	$type = reqsval('type');
+	if ( $type == 'score' )
+		{
+			$url = "task_result.php?tasPk=$tasPk&comPk=$comPk";
+		}
+	elseif ( $type == 'update' )
+		{
+			$url = "task_admin.php?tasPk=$tasPk&comPk=$comPk&updated";
+		}
 
 	if ( !script_isRunning($pid) ) 
 	{
-		redirect("task_result.php?tasPk=$tasPk&comPk=$comPk");
+		redirect("$url");
 	}
 	
 	$header .= "Full Task Rescore: Task id  ($tasPk)";

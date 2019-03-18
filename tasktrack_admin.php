@@ -132,7 +132,7 @@ elseif (addslashes($_REQUEST['foo']) == 'Send Tracklog')
     $pid = exec($command, $out, $retv);
     $ptime = microtime(true);
     sleep(15);
-    redirect("bulk_submit_admin.php?tasPk=$tasPk&comPk=$comPk&pid=$pid&time=$ptime&bulk=1");
+    redirect("safe_process_admin.php?tasPk=$tasPk&comPk=$comPk&pid=$pid&time=$ptime&bulk=1");
 }
 elseif ( reqexists('getxcontest') )
 {
@@ -145,7 +145,7 @@ elseif ( reqexists('getxcontest') )
 		$pid = exec($command, $out, $retv);
 		$ptime = microtime(true);
 		sleep(5);
-		redirect("bulk_submit_admin.php?tasPk=$tasPk&comPk=$comPk&pid=$pid&time=$ptime&xcontest=1");
+		redirect("safe_process_admin.php?tasPk=$tasPk&comPk=$comPk&pid=$pid&time=$ptime&xcontest=1");
 	}
 	else
 	{

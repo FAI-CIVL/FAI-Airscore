@@ -1,22 +1,23 @@
 <?php
+session_start();
+
 require_once 'authorisation.php';
 
 function tpinit($link,$file,$row=0,$active=0)
 {
-	$title = '';
-	$mainheader = '';
+	# Default Info
+	$title = 'AirScore - Online Scoring Tool';
+	$mainheader = 'LP AirScore';
 	$contentheader = '';
-	// Retrieving correct Info to display in header
+	
+	# Retrieving correct Info to display in header
 	if ( strpos($file, 'index') )
 	{
-		$title = 'AirScore - Online Scoring Tool';
-		$mainheader = 'LP AirScore';
-		$contentheader = '';
+		$contentheader = 'Competition List';
 	}
 	elseif ( strpos($file, 'status') )
 	{
 		$title = 'AirScore - Check Status';
-		$mainheader = 'LP AirScore';
 		$contentheader = 'Check track status';
 	}
 	elseif ( strpos($file, 'comp') )
@@ -35,6 +36,30 @@ function tpinit($link,$file,$row=0,$active=0)
 		else
 		{
 			echo "Sorry, no Competition found matching criteria.";
+		}						
+	}
+	elseif ( strpos($file, 'league') )
+	{
+		$title = 'AirScore - Season League';
+		$contentheader = 'League List';
+	}	
+	elseif ( strpos($file, 'ladder') )
+	{
+		// Get Ladder Info
+		if ($row)
+		{
+			$ladName = isset($row['ladName']) ? $row['ladName'] : '';
+			$season = isset($row['seasonYear']) ? $row['seasonYear'] : '';
+			$title = "AirScore - $ladName $season";
+			$comDateFrom = substr(isset($row['comDateFrom']) ? $row['comDateFrom'] : '',0,10);
+			$comDateTo = substr(isset($row['comDateTo']) ? $row['comDateTo'] : '',0,10);
+			$ladPk = $row['ladPk'];	
+			$mainheader = "$ladName $season";		
+			$contentheader = "League Results";			
+		}
+		else
+		{
+			echo "Sorry, no League score found matching criteria.";
 		}						
 	}
 	elseif ( strpos($file, 'registered') )
@@ -224,7 +249,7 @@ function htmlhead($file,$title)
 		<meta name=\"description\" content=\"A free opensource online scoring application for paragliding and hangliding competitions\" /> 
 		<meta name=\"robots\" content=\"index, follow, noarchive\" /> 
 		<meta name=\"googlebot\" content=\"noarchive\" /> \n";
-	if ( strpos($file, 'bulk_submit') || strpos($file, 'task_scoring') )
+	if ( strpos($file, 'safe_process') || strpos($file, 'task_scoring') )
 	{
 		# Reload page every $sec seconds
 		$page = $_SERVER['REQUEST_URI'];
@@ -249,6 +274,9 @@ function htmlhead($file,$title)
 
 		<!-- Custom styles for this template -->
 		<!-- <link href=\"css/freelancer.min.css\" rel=\"stylesheet\"> -->
+		
+		<!-- Favicon -->
+		<link rel=\"icon\" href=\"./images/lpp-favicon.png\">
 		
 		<!-- Styles added for AirScore -->
 		";
@@ -277,33 +305,17 @@ function tptop($file,$link,$param,$title,$active=0,$page='')
 
 function tpnavigator($link,$file,$row,$title,$active=0)
 {
-	$comPk = isset($row['comPk']) ? $row['comPk'] : null;
-	$tasPk = isset($row['tasPk']) ? $row['tasPk'] : null;
-	$regPk = isset($row['regPk']) ? $row['regPk'] : null;
+// 	$comPk = isset($row['comPk']) ? $row['comPk'] : null;
+// 	$tasPk = isset($row['tasPk']) ? $row['tasPk'] : null;
+// 	$regPk = isset($row['regPk']) ? $row['regPk'] : null;
 	// echo "in row regpk = ".$row['regPk'];
 	// check if we have a comp and retrieves waypoints if not specified
-	if ( isset($comPk) and !isset($regPk) )
-	{
-    	// echo "faccio la query";
-    	$query = "SELECT DISTINCT T.regPk FROM tblTask T where T.comPk=$comPk";
-		$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Comp query failed: ' . mysqli_connect_error());
-		$reg = mysqli_fetch_assoc($result);
-		if ($reg)
-		{
-			$regPk = $reg['regPk'];
-			// echo "la query trova ".$reg['regPk'];
-		}
-	}
-	elseif ( isset($_REQUEST['regPk']) )
-	{
-		$regPk = intval($_REQUEST['regPk']);
-	}
-	// echo "regpk= ".$regPk;
+
 	echo "	
 	<!-- Navigation -->
     <nav class=\"navbar navbar-expand-lg bg-secondary fixed-top text-uppercase\" id=\"mainNav\">
       <div class=\"container\">
-        <a class=\"navbar-brand js-scroll-trigger\" href=\"#page-top\">LP AirScore</a>
+        <a class=\"navbar-brand js-scroll-trigger\" href=\"index.php\">LP AirScore</a>
         <button class=\"navbar-toggler navbar-toggler-right text-uppercase bg-primary text-white rounded\" type=\"button\" data-toggle=\"collapse\" data-target=\"#navbarResponsive\" aria-controls=\"navbarResponsive\" aria-expanded=\"false\" aria-label=\"Toggle navigation\">
           Menu
           <i class=\"fa fa-bars\"></i>
@@ -311,33 +323,58 @@ function tpnavigator($link,$file,$row,$title,$active=0)
         <div class=\"collapse navbar-collapse\" id=\"navbarResponsive\">
           <ul class=\"navbar-nav ml-auto\">
           	<li class=\"nav-item mx-0 mx-lg-1\">
-              <a class=\"nav-link py-3 px-0 px-lg-3 rounded js-scroll-trigger\" href=\"index.php\">Home</a>
+              <a class=\"nav-link py-3 px-0 px-lg-3 rounded js-scroll-trigger\" href=\"index.php\">Competitions</a>
             </li>
-            ";
-    if ( isset($comPk) )
+    ";
+	
+	if ( strpos($file, 'index') )
 	{
-    	echo "
-    		<li class=\"nav-item mx-0 mx-lg-1\">
-              <a class=\"nav-link py-3 px-0 px-lg-3 rounded js-scroll-trigger\" href=\"comp_result.php?comPk=$comPk\">Results</a>
-            </li>
+		echo "
+		    <li class=\"nav-item mx-0 mx-lg-1\">\n
+              <a class=\"nav-link py-3 px-0 px-lg-3 rounded js-scroll-trigger\" href=\"league.php\">League</a>\n
+            </li>\n
             ";
-    }
-    if ( isset($regPk) )
-    {
-    	echo "
+        echo "
+		    <li class=\"nav-item mx-0 mx-lg-1\">\n
+              <a class=\"nav-link py-3 px-0 px-lg-3 rounded js-scroll-trigger\" href=\"region.php\">Regions</a>\n
+            </li>\n
+            ";
+	}
+	if ( strpos($file, 'comp') || strpos($file, 'registered'))
+	{
+		$comPk = $row['comPk'];
+		# Look for waypoints
+		$query = "SELECT DISTINCT T.regPk FROM tblTask T WHERE T.comPk=$comPk LIMIT 1";
+		$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Comp query failed: ' . mysqli_connect_error());
+		if ( mysqli_num_rows($result) > 0 )
+        {
+            $regPk= mysqli_result($result,0,0);
+            echo "
             <li class=\"nav-item mx-0 mx-lg-1\">
               <a class=\"nav-link py-3 px-0 px-lg-3 rounded js-scroll-trigger\" href=\"waypoint_map.php?regPk=$regPk\">Waypoints Map</a>
             </li>
             ";
-    }
+        }
+		
+	}
+	if ( strpos($file, 'task') )
+	{
+		$comPk = $row['comPk'];
+		$tasPk = $row['tasPk'];
+		echo "
+		<li class=\"nav-item mx-0 mx-lg-1\">
+            <a class=\"nav-link py-3 px-0 px-lg-3 rounded js-scroll-trigger\" href=\"route_map.php?comPk=$comPk&tasPk=$tasPk\">Route Map</a>
+        </li>
+        ";
+	}
 
-        echo "
-    		<li class=\"nav-item mx-0 mx-lg-1\">
-              <a class=\"nav-link py-3 px-0 px-lg-3 rounded js-scroll-trigger\" href=\"check_status.php\">Check Status</a>
-            </li>
-            ";
+	echo "
+		<li class=\"nav-item mx-0 mx-lg-1\">
+		  <a class=\"nav-link py-3 px-0 px-lg-3 rounded js-scroll-trigger\" href=\"check_status.php\">Check Status</a>
+		</li>
+		";
     
-    $user = JFactory::getUser();									// Get the user object
+    $user = get_user();									// Get the user object
 	if ( ($user->id != 0) )
 	{
 		$page = "href=\"jlogin.php?logout=1\">Logout</a>";
@@ -354,8 +391,8 @@ function tpnavigator($link,$file,$row,$title,$active=0)
             ";
     }
     
-    $isAdmin = JFactory::getUser()->authorise('core.login.admin');	// Checks if Admin
-	if ( ($user->id != 0) && $isAdmin )
+    //$isAdmin = JFactory::getUser()->authorise('core.login.admin');	// Checks if Admin
+	if ( ($user->id != 0) && $user->isAdmin )
 	{
 		echo "
 		<li class=\"nav-item mx-0 mx-lg-1\">
@@ -519,6 +556,24 @@ function tpheader($link,$file,$row,$page='')
 				</div>
 		";
 	}
+	elseif ( strpos($file, 'ladder') )
+	{
+	    echo "	<div class=\"row\">
+  					<div class=\"column\">
+  			";
+  		$ladPk = $row['ladPk'];
+  		$season = $row['seasonYear'];
+  		ladderincludedcomps($link, $ladPk, $season);
+	    echo "
+    				</div>
+  					<div class=\"column\">
+	  		";
+		ladderinfo($row);
+		echo "
+					</div>
+				</div>
+		";
+	}
 	elseif ( strpos($file, 'task') )
 	{
 	    echo "	<div class=\"row\">
@@ -574,6 +629,41 @@ function hccompinfo($row)
         array("<hr>", "<hr>"),
         array("<b>Location:</b> ", "<i>$comLocation</i>"),
         array ("<b>Meet Director:</b> ", "<i>$comDirector</i>")
+    );
+    echo ftable($detarr, 'class=compinfo', '', array('', ''));
+}
+
+function ladderinfo($row)
+{
+    $start = date(($row['seasonYear']-1).'-11-01');
+	$end = date(($row['seasonYear']).'-10-31');
+	$ladOverallParam = isset($row['ladOverallParam']) ? $row['ladOverallParam'] : ''; # Discard Parameter, Ex. 0.75 = 75% eq normal FTV 25%
+	$ladOverall = isset($row['ladOverallScore']) ? $row['ladOverallScore'] : '';  # Type of scoring discards: FTV, ...
+	if ($ladOverall == 'all')
+	{
+		$overstr = "All rounds";
+	}
+	elseif ($ladOverall == 'round')
+	{
+		$overstr = "$comOverallParam rounds";
+	}
+	elseif ($ladOverall == 'round-perc')
+	{
+		$ladOverallParam = round($ladOverallParam / 100, 0);
+		$overstr = "$comOverallParam rounds";
+	}
+	elseif ($ladOverall == 'ftv')
+	{
+		$ladOverallParam = 100 - $ladOverallParam * 100;
+		$overstr = "FTV $ladOverallParam%";
+	}
+
+	
+    echo "<h3>League Details</h3>";
+    $detarr = array(
+    	array("<b>From:</b> <i>$start</i>", "<b>To:</b> <i>$end</i>"),
+        array("<hr>", "<hr>"),
+        array("<b>Scoring:</b> ", "<i>$overstr</i>"),
     );
     echo ftable($detarr, 'class=compinfo', '', array('', ''));
 }
@@ -809,15 +899,17 @@ function tpcontent($title='AirScore - Online Scoring Tool', $page='')
 			<hr class=\"star-dark mb-5\">
 			
 	";
-	if ( JFactory::getUser()->id !== 0 )
+	if ( get_user()->id !== 0 )
 	{
-		$user = "Pilot: " . str_replace('\' ', '\'', ucwords(str_replace('\'', '\' ', strtolower(JFactory::getUser()->name))));
+		$user = "Pilot: " . str_replace('\' ', '\'', ucwords(str_replace('\'', '\' ', strtolower(get_user()->name))));
+		$user .= " - id: ".get_user()->id;
 	}
 	else
 	{
 		$user = "You are in Guest Mode. Login if you need pilot's tools.";
 	}
 	echo "<p class='user'>$user</p>" . PHP_EOL;
+	//print_r(get_user());
 	
 // 	echo 'Logged in as "' . JFactory::getUser()->username . '"<br />';
 // 	echo 'Welcome "' . JFactory::getUser()->name . '"<br />';
@@ -926,6 +1018,33 @@ function seasoninfo($row)
 	}
 	echo "<h3>Season Info</h3>";
 	echo ftable($sinfo,'class=seasoninfo', '', '');		
+}
+
+function ladderincludedcomps($link, $ladPk, $season)
+{
+    echo "<h3><span>Included Competitions</span></h3>";
+	$start = date(($season-1).'-11-01');
+	$end = date(($season).'-10-31');
+	$sql = "SELECT 
+				C.* 
+			FROM 
+				tblLadderComp LC  
+				JOIN tblCompetition C USING (comPk) 
+			WHERE 
+				LC.ladPk = $ladPk 
+				AND C.comDateFrom BETWEEN '$start' AND '$end' 
+			ORDER BY 
+				C.comDateFrom";
+    $result = mysqli_query($link, $sql);
+    $comps = [];
+    while ($row = mysqli_fetch_assoc($result) )
+    {
+        // FIX: if not finished & no tracks then submit_track page ..
+        // FIX: if finished no tracks don't list!
+        $cpk = $row['comPk'];
+        $comps[] = "<a href=\"comp_result.php?comPk=$cpk\">" . $row['comName'] . "</a>";
+    }
+    echo fnl($comps);
 }
 
 function hcheadbar($title,$active,$titler)

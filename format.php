@@ -126,7 +126,11 @@ function fic($name,$value=null,$checked=0,$class=null)
     {
         $checked = "checked=\"checked\"";
     }
-    if ( isset($class) )
+    else
+    {
+    	$checked = "";
+    }
+    if ( isset($class) AND (strpos($class, "onchange") === false) )
     {
         $class = "class=\"$class\"";
     }
