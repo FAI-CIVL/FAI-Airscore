@@ -1,0 +1,18 @@
+##################
+#File created from install / settings
+#Use:   with open('config.yaml') as f:
+#           config = yaml.safe_load(f)
+#
+# ToDO: setup script to create this file"""
+##################
+
+db:
+  Server: xxxxxxxxxxx
+  Name: xxxxxxxxxxx
+  User: xxxxxxxxxxx
+  Pass: xxxxxxxxxxx
+
+dir:
+  bin: xxxxxxxxxxx/airscore/cgi-bin/
+  file: xxxxxxxxxxx/airscore/tracks/
+  log: xxxxxxxxxxx/airscore/log

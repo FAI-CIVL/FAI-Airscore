@@ -6,7 +6,19 @@ require 'xcdb.php';
 
 function get_goal_altitude($link, $taskPk)
 {
-	$query = "SELECT rwpAltitude FROM tblRegionWaypoint WHERE rwpPk = (SELECT TW.rwpPk FROM tblTaskWaypoint TW WHERE TW.tasPk = $taskPk AND TW.tawType = 'goal')";
+	$query = "  SELECT
+                    rwpAltitude
+                FROM
+                    tblRegionWaypoint
+                WHERE
+                    rwpPk = ( 
+                    SELECT
+                        TW.rwpPk
+                    FROM
+                        tblTaskWaypoint TW
+                    WHERE
+                        TW.tasPk = $taskPk AND TW.tawType = 'goal'
+                    )";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Cannot get Goal Altitude: ' . mysqli_connect_error());
     $alt = mysqli_result($result,0,0);
     return $alt;
@@ -22,6 +34,8 @@ $cval = null;
 $tarPk = null;
 
 $file = __FILE__;
+
+$message = '';
 
 if (!array_key_exists('pr', $_REQUEST))
 {
@@ -72,18 +86,22 @@ if (array_key_exists('score', $_REQUEST))
 
 if (array_key_exists('tardel', $_REQUEST))
 {
-    $tarPk = intval($_REQUEST['tardel']);
-    $out = '';
-    $retv = 0;
-    exec(BINDIR . "del_track.pl $tarPk", $out, $retv);
-    if ($retv == 0)
-    {
-        echo "Deleted: $tarPk<br>";
-    }
-    else
-    {
-        echo "$out<br>";
-    }
+    $traPk = intval($_REQUEST['tardel']);
+    # Using new python script
+	$command = "python3 " . BINDIR . "del_track.py $traPk";
+	$message .= nl2br(shell_exec($command));
+
+//     $out = '';
+//     $retv = 0;
+//     exec(BINDIR . "del_track.pl $traPk", $out, $retv);
+//     if ($retv == 0)
+//     {
+//         echo "Deleted: $traPk<br>";
+//     }
+//     else
+//     {
+//         echo "$out<br>";
+//     }
 }
 
 if (array_key_exists('tarup', $_REQUEST))
@@ -200,6 +218,7 @@ if ($row)
     $tasHeightBonus = $row['tasHeightBonus'];
     $tasStoppedTime = substr($row['tasStoppedTime'],11);
     $ssDist = $row['tasSSDistance'];
+    $extComp = $row['comExt'];
 
     if ($row['tasDeparture'] == 'leadout')
     {
@@ -233,37 +252,6 @@ else
 //initializing template header
 tpinit($link,$file,$row);
 
-// if ($comClass == "HG")
-// {
-//     $classopts = array ( 'open' => '', 'floater' => '&class=0', 'kingpost' => '&class=1', 
-//         'hg-open' => '&class=2', 'rigid' => '&class=3', 'women' => '&class=4', 'masters' => '&class=5', 'teams' => '&class=6' );
-// }
-// else
-// {
-//     $classopts = array ( 'open' => '', 'fun' => '&class=0', 'sports' => '&class=1', 
-//         'serial' => '&class=2', 'women' => '&class=4', 'masters' => '&class=5', 'teams' => '&class=6' );
-// }
-// $cind = '';
-// if ($cval != '')
-// {
-//     $cind = "&class=$cval";
-// }
-// $copts = [];
-// foreach ($classopts as $text => $url)
-// {
-//     if ($text == 'teams')
-//     {
-//         # Hack for now
-//         $copts[$text] = "team_task_result.php?comPk=$comPk&tasPk=$tasPk$url";
-//     }
-//     else
-//     {
-//         $copts[$text] = "task_result.php?comPk=$comPk&tasPk=$tasPk$url";
-//     }
-// }
-// 
-// $classfilter = fselect('class', "task_result.php?comPk=$comPk&tasPk=$tasPk$cind", $copts, ' onchange="document.location.href=this.value"');
-
 if ($tasComment != '')
 {
     echo "<div id=\"comment\" width=\"50%\" align=\"right\">";
@@ -284,20 +272,28 @@ $finfo = [];
 
 // FIX: Print out task quality information.
 
-$sql = "select SUM(ABS(TR.tarPenalty)) AS totalPenalty from tblTaskResult TR where TR.tasPk=$tasPk";
+// $sql = "select SUM(ABS(TR.tarPenalty)) AS totalPenalty from tblTaskResult TR where TR.tasPk=$tasPk";
+$sql = "select SUM(ABS(TR.tarPenalty)) AS totalPenalty from tblResult TR where TR.tasPk=$tasPk";
 $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Penalty Sum failed: ' . mysqli_connect_error());
 $row = mysqli_fetch_assoc($result);
 $totalPenalty = $row['totalPenalty'];
+//echo "TotalPenalty: $totalPenalty";
 
 if ($isadmin)
 {
+	# Messages field
+	if ( $message !== '')
+	{
+		echo "<h4> <span style='color:red'>$message</span> </h4>" . PHP_EOL;
+		echo "<hr />" . PHP_EOL;
+	}
     echo "<form action=\"task_result.php?comPk=$comPk&tasPk=$tasPk\" name=\"resultupdate\" method=\"post\"><p>"; 
 }
 // add in country from tblCompPilot if we have entries ...
 $trtab = [];
 
 $header = array(fb("Place"), fb("Pilot"), fb("Nat"), fb("Glider"));
-if ($isadmin)
+if ($isadmin and $extComp != 1)
 {
     $header[] = fb("DHV");
 }
@@ -316,7 +312,7 @@ if ($tasHeightBonus == 'on')
     $header[] = fb("HBs");
 }
 $header[] = fb("Distance");
-if ( $isadmin or ($totalPenalty != 0) )
+if ( ($isadmin and $extComp != 1) or ($totalPenalty != 0) )
 {
 	$header[] = fb("Pen");
 }
@@ -335,22 +331,38 @@ $header[] = fb("Score");
 $trtab[] = $header;
 $count = 1;
 
-$sql = "	SELECT 
-				TR.*, 
-				T.*, 
-				P.*,
-				( SELECT C.natIso3 FROM tblCountryCodes C WHERE C.natID = P.pilNat ) AS pilNationCode
-			FROM 
-				tblTaskResult TR, 
-				tblTrack T, 
-				tblPilot P 
-			WHERE 
-				TR.tasPk = $tasPk $fdhv 
-				AND T.traPk = TR.traPk 
-				AND P.pilPk = T.pilPk 
-			ORDER BY 
-				TR.tarScore DESC, 
-				P.pilFirstName";
+// $sql = "	SELECT 
+// 				TR.*, 
+// 				T.*, 
+// 				P.*,
+// 				( SELECT C.natIso3 FROM tblCountryCodes C WHERE C.natID = P.pilNat ) AS pilNationCode
+// 			FROM 
+// 				tblTaskResult TR, 
+// 				tblTrack T, 
+// 				tblPilot P 
+// 			WHERE 
+// 				TR.tasPk = $tasPk $fdhv 
+// 				AND T.traPk = TR.traPk 
+// 				AND P.pilPk = T.pilPk 
+// 			ORDER BY 
+// 				TR.tarScore DESC, 
+// 				P.pilFirstName";
+
+$sql = "SELECT 
+            R.*,
+            P.`pilFirstName`,
+            P.`pilLastName`,
+            P.`pilSponsor`,
+            ( SELECT C.natIso3 FROM tblCountryCodes C WHERE C.natID = P.pilNat ) AS pilNationCode
+        FROM
+            `tblResult` R
+            JOIN `tblPilot` P USING (`pilPk`) 
+        WHERE 
+            R.tasPk = $tasPk $fdhv 
+        ORDER BY 
+            R.tarScore DESC, 
+            P.pilFirstName";
+
 $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task result selection failed: ' . mysqli_connect_error());
 $lastscore = 0;
 $hh = 0;
@@ -372,7 +384,7 @@ while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     if ( $resulttype == 'ABS' || $resulttype == 'DNF' )
     {
     	$trrow = array(fb($place), $name, $nation);
-    	if ($isadmin)
+    	if ($isadmin and $extComp != 1)
 		{
 			$trrow[] = fih("track$tarPk", $traPk) . fin("glider$tarPk", $glider, "wide");
 			$trrow[] = fin("dhv$tarPk", $dhv, "medium");
@@ -402,8 +414,8 @@ while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     else
     {
 		$dist = round($row['tarDistanceScore'], $rnd);
-		$dep = round($row['tarDeparture'], $rnd);
-		$arr = round($row['tarArrival'], $rnd);
+		$dep = round($row['tarDepartureScore'], $rnd);
+		$arr = round($row['tarArrivalScore'], $rnd);
 		$spd = round($row['tarSpeedScore'], $rnd);
 		$score = round($row['tarScore'], $rnd);
 		$lastalt = round($row['tarLastAltitude']);
@@ -487,8 +499,16 @@ while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 			$class = "l";
 		}
 
-		$trrow = array(fb($place), "<a href=\"tracklog_map.php?trackid=$traPk&tasPk=$tasPk&comPk=$comPk\">$name</a>", $nation );
-		if ($isadmin)
+		if ( $extComp != 1 )
+		{
+		    $trrow = array(fb($place), "<a href=\"tracklog_map.php?trackid=$traPk&tasPk=$tasPk&comPk=$comPk\">$name</a>", $nation );
+		}
+		else
+		{
+		    $trrow = array(fb($place), $name, $nation );
+		}
+		//$trrow = array(fb($place), "<a href=\"tracklog_map.php?trackid=$traPk&tasPk=$tasPk&comPk=$comPk\">$name</a>", $nation );
+		if ($isadmin and $extComp != 1)
 		{
 			$trrow[] = fih("track$tarPk", $traPk) . fin("glider$tarPk", $glider, "wide");
 			$trrow[] = fin("dhv$tarPk", $dhv, "medium");
@@ -532,7 +552,7 @@ while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 				$trrow[] = '';
 			}
 		}
-		if ($isadmin) 
+		if ($isadmin and $extComp != 1) 
 		{
 			$trrow[] = fin("flown$tarPk", $tardist, "short");
 			$trrow[] = fin("penalty$tarPk", $penalty, "short");
@@ -559,7 +579,7 @@ while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 		$trrow[] = round($score);    
     }
     
-    if ($isadmin) 
+    if ($isadmin and $extComp != 1) 
     {
         $trrow[] = fbut("submit", "tardel",  $traPk, "del");
         $trrow[] = fbut("submit", "tarup",  $tarPk, "up");
@@ -572,7 +592,7 @@ while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 }
 echo ftable($trtab, "class='format taskresult'", '' , '');
 
-if ($isadmin)
+if ($isadmin and $extComp != 1)
 {
     // FIX: enable 'manual' pilot flight addition
     

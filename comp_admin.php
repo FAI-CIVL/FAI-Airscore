@@ -18,7 +18,7 @@ if (reqexists('add'))
     $comptype = reqsval('comptype');
     $comcode = reqsval('code');
     $timeoffset = reqfval('timeoffset');
-    $class = reqfval('comclass');
+    $class = reqsval('comclass');
 
     if ($comname == '')
     {
@@ -127,7 +127,7 @@ while($row = mysqli_fetch_assoc($result))
 # Create add comp form table
 $compadd = [];
 
-$compadd[] = array('Name', fin('comname', '', 20), 'Class:', fselect('compclass', 'PG', array('PG', 'HG', 'mixed')), 'Type:', fselect('comptype', 'RACE', array('RACE', 'Route', 'Team-RACE')));
+$compadd[] = array('Name', fin('comname', '', 20), 'Class:', fselect('comclass', 'PG', array('PG', 'HG', 'mixed')), 'Type:', fselect('comptype', 'RACE', array('RACE', 'Route', 'Team-RACE')));
 $compadd[] = array('Abbreviation:', fin('code', '', 10), 'Date From:', fin('datefrom', '', 10), 'Date To:', fin('dateto', '', 10));
 $compadd[] = array('Time Offset:', fin('timeoffset', '', 7), '', '', '', '');
 $compadd[] = array(fis('add', 'Create Competition', '', '', '', '', '', ''));

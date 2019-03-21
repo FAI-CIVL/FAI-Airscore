@@ -4,43 +4,36 @@ pip install mysqlclient
 sudo apt-get install python3-lxml
 
 needs to be run with python3.
-i.e. 
+i.e.
 python3 get_igc_from_xcontest.py <tasPk>
 '''
 
 import requests, lxml.html , time ,logging, zipfile, subprocess, os, sys, shutil
-
-try:
-    import pymysql
-    pymysql.install_as_MySQLdb()
-except ImportError:
-    pass
+from myconn import Database
 
 def get_missing_tracks_list(task_id, comp_id, DB_User, DB_Password, DB):
     """Get pilot details (pilots in task without tracks) returns a dictionary of pilXcontestUser:pilPK."""
 
-    db = pymysql.connect(user = DB_User, passwd = DB_Password, db = DB)
-    c = db.cursor()
-    c.execute("SELECT pilXcontestUser, p.pilPk FROM tblPilot p join "
-        "tblRegistration b on p.pilPk = b.pilPk left outer join "
-        "(SELECT comPk, tasPk, c.traPk, pilPk FROM tblComTaskTrack c "
-        "join tblTrack t on c.traPk = t.traPk where tasPk= %s) as a "
-        "on b.pilPk = a.pilPK and b.comPk = a.comPk "
-        "where pilXcontestUser is NOT null and pilXcontestUser <>'' "
-        "and a.traPk is null and b.comPk= %s", (task_id, comp_id))
-    pilot_list = dict((xc, pilpk) for xc, pilpk in c.fetchall())
+    query = ("SELECT pilXcontestUser, p.pilPk FROM tblPilot p join "
+            "tblRegistration b on p.pilPk = b.pilPk left outer join "
+            "(SELECT comPk, tasPk, c.traPk, pilPk FROM tblComTaskTrack c "
+            "join tblTrack t on c.traPk = t.traPk where tasPk= %s) as a "
+            "on b.pilPk = a.pilPK and b.comPk = a.comPk "
+            "where pilXcontestUser is NOT null and pilXcontestUser <>'' "
+            "and a.traPk is null and b.comPk= %s", (task_id, comp_id))
+    with Database() as db:
+        pilot_list = dict((xc, pilpk) for xc, pilpk in db.fetchall(query))
     return pilot_list
 
 def get_xc_parameters(task_id, DB_User, DB_Password, DB):
     """Get site info and date from database """
 
-    db = pymysql.connect(user = DB_User, passwd = DB_Password, db = DB)
-    c = db.cursor()
-    c.execute("SELECT xccSiteID, XccToID, tasDate FROM tblTaskWaypoint JOIN "
+    query = ("SELECT xccSiteID, XccToID, tasDate FROM tblTaskWaypoint JOIN "
                 "tblTask ON tblTaskWaypoint.tasPk = tblTask.tasPk JOIN "
                 "tblRegionWaypoint ON tblRegionWaypoint.rwpPk = tblTaskWaypoint.rwpPk "
                 "WHERE tblTask.tasPk =%s AND tawType = 'launch'", (task_id,))
-    site_id, takeoff_id, date = c.fetchone()
+    with Database() as db:
+        site_id, takeoff_id, date = c.fetchone(query)
     logging.info("site_id:%s takeoff_id:%s date:%s", site_id, takeoff_id, date)
     datestr = date.strftime('%Y-%m-%d') #convert from datetime to string
     return(site_id, takeoff_id, datestr)
@@ -55,7 +48,7 @@ def get_zip(site_id, takeoff_id, date, login_name, password, zip_destination, zi
     else:
         location_id = site_id
         site_launch = 'site'
-    #setup web stuff    
+    #setup web stuff
     form={}
     s=requests.session()
     form['login[username]'] = login_name
@@ -83,7 +76,7 @@ def get_zip(site_id, takeoff_id, date, login_name, password, zip_destination, zi
         f.write(zfile.content)
 
     ##extract files
-    with zipfile.ZipFile(zip_destination+zip_name) as zf: 
+    with zipfile.ZipFile(zip_destination+zip_name) as zf:
         zf.extractall(zip_destination)
 
 def submit_zipped_tracks(task_id, zip_for_submit_name, script_dir):
@@ -104,27 +97,27 @@ def search_and_submit_files(directory, pilot_list, zip_directory, zip_for_submit
     pilots_submited = []
     for pilot in pilot_list:
         for filename in os.listdir(directory):
-            if filename.upper().endswith(".IGC"): 
+            if filename.upper().endswith(".IGC"):
                 #split up the filename into parts (dot "." is the separator)
                 name_split = filename.split(".")
                 #count the pieces
                 name_elements = len(name_split)
 
                 #delete first 2 elements (name, surname) and last 3 (date, time, .igc) leaving just username. (even if username has a dot in middle)
-                del name_split[name_elements-1]   
+                del name_split[name_elements-1]
                 del name_split[name_elements-2]
                 del name_split[name_elements-3]
                 del name_split[1]
                 del name_split[0]
                 #join up username (if more than one element i.e. it had a dot in it)
-                name_split = ".".join(name_split) 
+                name_split = ".".join(name_split)
                 if pilot.upper().strip() == name_split.upper().strip():    #change to all uppercase to avoid mismatches due to case sensitivity, also remove any leading or trailing spaces
                     #rename file
                     os.rename(directory+filename, directory+'tosubmit.igc')
                     logging.info("found pilot: %s" % pilot)
                     print("found pilot: %s <br />" % pilot)
                     submit_track(task_id, directory+'tosubmit.igc', script_dir, str(pilot_list[pilot]), task_id, comp_id)
-                    logging.info("submitted track for %s", pilot) 
+                    logging.info("submitted track for %s", pilot)
                     print("submitted track for %s", pilot)
                     #delete file
                     os.remove(directory+'tosubmit.igc')
@@ -161,11 +154,9 @@ def main():
     print("starting..")
     """Main module. Takes tasPk as parameter"""
     app_dir = '/home/untps52y/domains/legapilotiparapendio.it/public_html/airscore/'
-    DB_User = 'untps52y'  # mysql db user
-    DB_Password = 'Tantobuchi01'  # mysql db password
-    DB = 'untps52y_airscore'  # mysql db name
-    login_name = 'es.em'
-    password = 'aprivoli' ########to remove before going to github!!!!
+
+    login_name = xxxxxx
+    password = xxxxxxx ########to remove before going to github!!!!
     task_id = 0
     xc_zip_destination = app_dir + 'xcontest/'
     zip_name = 'igc-from_xc.zip'
@@ -188,7 +179,7 @@ def main():
     ##clean up from last time.. could do this at the end but perhaps good for debugging
     delete_igc_zip(xc_zip_destination)
     #delete_igc_zip(submit_zip_directory)
-    
+
     pilot_list = get_missing_tracks_list(task_id, comp_id, DB_User, DB_Password, DB)
     if len(pilot_list) == 0:
         logging.info("No pilots to get")

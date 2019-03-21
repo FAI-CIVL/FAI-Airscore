@@ -89,7 +89,16 @@ if (array_key_exists('uppilot', $_REQUEST))
 
 echo "<form action=\"registration_admin.php?comPk=$comPk&cat=$cat$tsel\" name=\"regadmin\" method=\"post\">";
 
-$query = "select P.*,H.hanHandicap from tblRegistration R left join tblPilot P on P.pilPk=R.pilPk left outer join tblHandicap H on H.pilPk=P.pilPk and H.comPk=$comPk where R.comPk=$comPk order by P.pilLastName";
+$query = "  SELECT
+                P.*
+            FROM
+                tblRegistration R
+            JOIN tblPilot P USING(pilPk)
+            INNER JOIN tblHandicap H USING(comPk, pilPk)
+            WHERE
+                R.comPk = $comPk
+            ORDER BY
+                P.pilLastName";
 
 $regpilots = [];
 $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Team pilots query failed: ' . mysqli_connect_error());
@@ -109,7 +118,7 @@ if (sizeof($regpilots) > 0)
         #{
         #    $row['hanHandicap'] = 1;
         #}
-        $outreg[] = array("<button type=\"submit\" name=\"uppilot\" value=\"$pilPk\">up</button>", fin("fai$pilPk", $row['pilFAI'], 5), $row['pilFirstName'], $row['pilLastName'], isset($row['pilXcontestUser']) ? $row['pilXcontestUser'] : "<strong style='color: red'>NOT SET</strong>", fbut('submit', 'delpilot', $pilPk, 'del'));
+        $outreg[] = array("<button type=\"submit\" name=\"uppilot\" value=\"$pilPk\">up</button>", fin("fai$pilPk", $row['pilFAI'], 5), $row['pilFirstName'], $row['pilLastName'], isset($row['pilXContestUser']) ? $row['pilXContestUser'] : "<strong style='color: red'>NOT SET</strong>", fbut('submit', 'delpilot', $pilPk, 'del'));
         //"<input type=\"text\" name=\"tepModifier$tepPk\" value=\"$tepMod\" size=3>", fbut('submit', 'uppilot', $tepPk, 'up')
     }
     echo "<i>" . sizeof($regpilots) . " pilots registered</i>";
@@ -166,18 +175,29 @@ if ($cat != '')
     while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {
         $id = $row['pilPk'];
+        $ext = 'DB- ';
+        if ( $id > 9999 )
+        {
+            $ext = "<span style='text-weight:bold;color:red;'>EXT </span>";
+        }
         $lname = $row['pilLastName'];
         $fname = $row['pilFirstName'];
         $fai = $row['pilFAI'];
         $sex = $row['pilSex'];
         echo "<li><button type=\"submit\" name=\"addpilot\" value=\"$id\">add</button>";
         //echo "<li><button type=\"submit\" name=\"addpilot\" value=\"$id\" onclick=\"add_pilot($id);\">add</button>";
-        echo "$fai $fname $lname ($sex).<br>\n";
+        echo "$ext $fai $fname $lname ($sex).<br>\n";
         $count++;
     }
     echo "</ol>";
 }
 echo "</form>";
+
+echo "<br><br>";
+echo "<p>";
+echo "<a href='competition_admin.php?comPk=$comPk'>Back to Competition</a>";
+echo "</p>";
+
 echo '</div>';
 echo '</div>';
 echo '</div>';
@@ -185,9 +205,3 @@ echo '</div>';
 tpfooter($file);
 
 ?>
-<!-- 
-</div>
-</body>
-</html>
- -->
-

@@ -70,7 +70,7 @@ use strict;
 
 # Add currect bin directory to @INC
 use File::Basename;
-use lib '/home/untps52y/perl5/lib/perl5';
+#use lib '/home/ubuntu/perl5/lib/perl5';
 use lib dirname (__FILE__) . '/';
 use TrackLib qw(:all);
 
@@ -389,29 +389,38 @@ sub store_short_route
     my $i = 0;
     my $dist;
     my $cdist;
+    my $sql;
 
     # Clean up
-    $dbh->do("delete from tblShortestRoute where tasPk=$tasPk");
+    #$dbh->do("delete from tblShortestRoute where tasPk=$tasPk");
 
     # Insert each short route waypoint
-    for ($i = 0; $i < $num-1; $i++)
-    {
+    $sql = "UPDATE
+                `tblTaskWaypoint`
+            SET
+                `ssrLatDecimal` = ?, 
+                `ssrLongDecimal` = ?, 
+                `ssrCumulativeDist` = ? 
+            WHERE
+                `tawPk` = ?";
+    for ($i = 0; $i < $num-1; $i++) {
         $dist = distance($wpts->[$i], $wpts->[$i+1]);
         $cdist = distance($closearr->[$i], $closearr->[$i+1]);
         print "Dist wpt:$i to wpt:", $i+1, " dist=$dist short_dist=$cdist\n";
-        $sth = $dbh->do("insert into tblShortestRoute (tasPk,tawPk,ssrLatDecimal,ssrLongDecimal,ssrCumulativeDist,ssrNumber) values (?,?,?,?,?,?)",
-            undef,$tasPk,$wpts->[$i]->{'key'}, $closearr->[$i]->{'dlat'}, $closearr->[$i]->{'dlong'}, $totdist,  $wpts->[$i]->{'number'});
+#         $sth = $dbh->do("insert into tblShortestRoute (tasPk,tawPk,ssrLatDecimal,ssrLongDecimal,ssrCumulativeDist,ssrNumber) values (?,?,?,?,?,?)",
+#             undef,$tasPk,$wpts->[$i]->{'key'}, $closearr->[$i]->{'dlat'}, $closearr->[$i]->{'dlong'}, $totdist,  $wpts->[$i]->{'number'});
+        $sth = $dbh->do($sql, undef, $closearr->[$i]->{'dlat'}, $closearr->[$i]->{'dlong'}, $totdist, $wpts->[$i]->{'key'});
         $totdist = $totdist + $cdist;
     }
 
-    $sth = $dbh->do("insert into tblShortestRoute (tasPk,tawPk,ssrLatDecimal,ssrLongDecimal,ssrCumulativeDist,ssrNumber) values (?,?,?,?,?,?)",
-            undef, $tasPk,$wpts->[$i]->{'key'}, $closearr->[$i]->{'dlat'}, $closearr->[$i]->{'dlong'}, $totdist,  $wpts->[$i]->{'number'});
+#     $sth = $dbh->do("insert into tblShortestRoute (tasPk,tawPk,ssrLatDecimal,ssrLongDecimal,ssrCumulativeDist,ssrNumber) values (?,?,?,?,?,?)",
+#             undef, $tasPk,$wpts->[$i]->{'key'}, $closearr->[$i]->{'dlat'}, $closearr->[$i]->{'dlong'}, $totdist,  $wpts->[$i]->{'number'});
+    $sth = $dbh->do($sql, undef, $closearr->[$i]->{'dlat'}, $closearr->[$i]->{'dlong'}, $totdist, $wpts->[$i]->{'key'});
 
     # Store it in tblTask
     print "update tblTask set tasShortRouteDistance=$totdist where tasPk=$tasPk\n";
     $sth = $dbh->do("update tblTask set tasShortRouteDistance=? where tasPk=?", undef, $totdist, $tasPk);
 }
-
 
 sub short_dist
 {

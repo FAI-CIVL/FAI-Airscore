@@ -58,8 +58,10 @@ function update_task($link,$tasPk, $old)
     {
         $out = '';
         $retv = 0;
-        exec(BINDIR . "task_up.pl $tasPk", $out, $retv);
+        exec("python3 " . BINDIR . "update_task.py $tasPk", $out, $retv);
     }
+    return "Task succesfully updated. \n";
+
 }
 
 // function full_rescore($tasPk, $comPk, $type, $param=null)
@@ -203,6 +205,8 @@ if (reqexists('copytask'))
     //echo $query . "<br>";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Failed to copy task waypoints: ' . mysqli_connect_error());
     exec(BINDIR . "task_up.pl $tasPk", $out, $retv);
+    $message .= 'Task succesfully copied. \n';
+    $content .= "Information pulled from task ID $copytaskpk. \n";
 }
 
 # Update the task itself 
@@ -305,7 +309,8 @@ if (reqexists('add'))
     mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Add Task waypoint failed: ' . mysqli_connect_error());
     // update tasDistance ...
     $old = [];
-    update_task($link, $tasPk, $old);
+    $message .= update_task($link, $tasPk, $old);
+    $content .= "Waypoint added. \n";
 }
 
 if (reqexists('delete'))
@@ -319,7 +324,8 @@ if (reqexists('delete'))
     exec(BINDIR . "task_up.pl $tasPk", $out, $retv);
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Delete Task waypoint failed: ' . mysqli_connect_error());
     $old = [];
-    update_task($link, $tasPk, $old);
+    $message .= update_task($link, $tasPk, $old);
+    $content .= "Waypoint deleted. \n";
 }
 
 if (reqexists('update'))
@@ -336,8 +342,12 @@ if (reqexists('update'))
 
     $query = "update tblTaskWaypoint set tawNumber=$waynum, rwpPk=$waypt, tawType='$waytype', tawHow='$how', tawShape='$shape', tawRadius=$radius where tawPk=$tawPk";
     mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Update Task waypoint failed: ' . mysqli_connect_error());
-	full_rescore($tasPk, $comPk, 'update');
+// 	full_rescore($tasPk, $comPk, 'update');
+    $old = [];
+    $message .= update_task($link, $tasPk, $old);
+    $content .= "Waypoint updated. \n";
 }
+
 # Upload a task file generated from xc-track
 elseif ( reqexists('XCTask') )
 {
@@ -348,7 +358,7 @@ elseif ( reqexists('XCTask') )
     
     $out = '';
     $retv = 0;
-    $command = "/home/untps52y/opt/python-3.6.2/bin/python3 " . BINDIR . "import_xctrack_task.py $tasPk $tempnm > " . BINDIR . 'log/xctask.txt 2>&1 & echo $!; ';
+    $command = "python3 " . BINDIR . "import_xctrack_task.py $tasPk $tempnm > " . BINDIR . 'log/xctask.txt 2>&1 & echo $!; ';
     echo $command;
     $pid = exec($command, $out, $retv);
     if ($retv)
@@ -554,8 +564,10 @@ echo "<h4><a href=\"task_result.php?comPk=$comPk&tasPk=$tasPk\">Results</a></h4>
 echo "<hr />\n";
 
 # Messages field
+//$message .= 'prova funzionamento';
 if ( $message !== '')
 {
+	//echo "<h4> <span style='color:red'>Prova</span> </h4>" . PHP_EOL;
 	echo "<h4> <span style='color:red'>$message</span> </h4>" . PHP_EOL;
 	echo "<br />" . PHP_EOL;
 	echo "<hr />" . PHP_EOL;
@@ -731,6 +743,11 @@ if ($comEntryRestrict == 'registered')
 }
 
 echo "</form>";
+
+echo "<br><br>";
+echo "<p>";
+echo "<a href='competition_admin.php?comPk=$comPk'>Back to Competition</a>";
+echo "</p>";
 
 tpfooter($file);
 

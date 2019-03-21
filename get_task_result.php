@@ -113,8 +113,8 @@ function task_result($link, $tasPk, $fdhv)
         $tarPk = $row['tarPk'];
         $traPk = $row['traPk'];
         $dist = round($row['tarDistanceScore'], $rnd);
-        $dep = round($row['tarDeparture'], $rnd);
-        $arr = round($row['tarArrival'], $rnd);
+        $dep = round($row['tarDepartureScore'], $rnd);
+        $arr = round($row['tarArrivalScore'], $rnd);
         $speed = round($row['tarSpeedScore'], $rnd);
         $score = round($row['tarScore'], $rnd);
         $lastalt = round($row['tarLastAltitude']);

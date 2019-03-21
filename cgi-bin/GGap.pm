@@ -425,7 +425,7 @@ sub points_allocation
             print "update $tarPk: dst:$Pdist, spd:$Pspeed, pen:$penalty, arr:$Parrival, dep:$Pdepart\n";
             $sth = $dbh->prepare("update tblTaskResult set
                 tarDistanceScore=$Pdist, tarSpeedScore=$Pspeed, 
-                tarArrival=$Parrival, tarDeparture=$Pdepart, tarScore=$Pscore
+                tarArrivalScore=$Parrival, tarDepartureScore=$Pdepart, tarScore=$Pscore
                 where tarPk=$tarPk");
             $sth->execute();
         }

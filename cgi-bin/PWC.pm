@@ -29,7 +29,7 @@ use strict;
 
 # Add currect bin directory to @INC
 use File::Basename;
-use lib '/home/untps52y/perl5/lib/perl5';
+use lib '/home/ubuntu/perl5/lib/perl5';
 use lib dirname (__FILE__) . '/';
 use TrackLib qw(:all);
 # require Scoring;
@@ -166,15 +166,23 @@ sub calc_kmdiff
 }
 
 sub pilot_distance
+
+# LinearFraction = Dist / (2 * MaxDist)
+# iDist10 = int(Dist *10)
+# DiffFraction = DiffScoreiDist10p + ((DiffScoreiDist10p +1 − DiffScoreiDist10p )*(Distancep *10−iDist10p ))
 {
     my ($self, $formula, $task, $taskt, $pil, $Adistance) = @_;
 
     my $kmdiff = $self->calc_kmdiff($task, $taskt, $formula);
-    my $Pdist = $Adistance * 
-            (($pil->{'distance'}/$taskt->{'maxdist'}) * $formula->{'lineardist'}
-            + $kmdiff->[floor($pil->{'distance'}/100.0)] * (1-$formula->{'lineardist'}));
+    my $LinFract = ($pil->{'distance'}/$taskt->{'maxdist'}) * $formula->{'lineardist'};
+    my $DiffFract = $kmdiff->[floor($pil->{'distance'}/100.0)] * (1-$formula->{'lineardist'});
+    my $Pdist = $Adistance * ($LinFract + $DiffFract);
+#     my $Pdist = $Adistance * 
+#             (($pil->{'distance'}/$taskt->{'maxdist'}) * $formula->{'lineardist'}
+#             + $kmdiff->[floor($pil->{'distance'}/100.0)] * (1-$formula->{'lineardist'}));
 
     # print $pil->{'tarPk'}, " Adist=$Adistance pil->dist=", $pil->{'distance'}, " maxdist=", $taskt->{'maxdist'}, " kmdiff=", $kmdiff->[floor($pil->{'distance'}/100.0)], "\n";
+    print "DistPoints calculation: $Adistance * ( $LinFract + $DiffFract ) = $Pdist \n";
     print $pil->{'traPk'}, " lin dist: ", $Adistance * ($pil->{'distance'}/$taskt->{'maxdist'}) * $formula->{'lineardist'}, " dif dist: ", $Adistance * $kmdiff->[floor($pil->{'distance'}/100.0)] * (1-$formula->{'lineardist'}), "\n";
 
     return $Pdist;
@@ -608,7 +616,7 @@ sub points_weight
 
 
     $quality = $taskt->{'quality'};
-    $x = $taskt->{'ess'} / $taskt->{'launched'}; #GoalRatio
+    $x = $taskt->{'goal'} / $taskt->{'launched'}; #GoalRatio
 	
 	# DistWeight = 0.9 - 1.665* goalRatio + 1.713*GolalRatio^2 - 0.587*goalRatio^3
 	
@@ -1067,6 +1075,7 @@ sub points_allocation
         # Pilot distance score 
         # FIX: should round $pil->distance properly?
         # my $pilrdist = round($pil->{'distance'}/100.0) * 100;
+        print "\n\n\n-------------\npilot $pil\n-------------\n";
 
         my $Pdist = $self->pilot_distance($formula, $task, $taskt, $pil, $Adistance);
 
@@ -1108,7 +1117,7 @@ sub points_allocation
             print "update $tarPk: dP:$Pdist, sP:$Pspeed, LeadP:$Pdepart - score $Pscore\n";
             $sth = $dbh->prepare("update tblTaskResult set
                 tarDistanceScore=$Pdist, tarSpeedScore=$Pspeed, 
-                tarArrival=$Parrival, tarDeparture=$Pdepart, tarScore=$Pscore
+                tarArrivalScore=$Parrival, tarDepartureScore=$Pdepart, tarScore=$Pscore
                 where tarPk=$tarPk");
             $sth->execute();
         }

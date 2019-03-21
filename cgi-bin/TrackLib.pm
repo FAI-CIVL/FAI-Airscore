@@ -12,7 +12,7 @@ require Exporter;
 
 # Add currect bin directory to @INC
 use File::Basename;
-use lib '/home/untps52y/perl5/lib/perl5';
+#use lib '/home/ubuntu/perl5/lib/perl5';
 use lib dirname (__FILE__) . '/';
 require Vector;
 require TrackDb;
@@ -21,7 +21,7 @@ use Math::Trig;
 use Time::Local;
 use Data::Dumper;
 #use Defines qw(:all);
-use Inline C;
+#use Inline C;
 use strict;
 use GIS::Distance;
 
@@ -476,7 +476,8 @@ sub WGS84Distance
 {
 	my ($lat1, $lon1, $lat2, $lon2) = @_;
 	my $gis = GIS::Distance->new();
-	$gis->formula( 'GeoEllipsoid', { ellipsoid => 'WGS84' } );  # Optional, default is Haversine.
+# 	$gis->formula( 'GeoEllipsoid', { ellipsoid => 'WGS84' } );  # Optional, default is Haversine.
+    $gis->formula( 'GeoEllipsoid' );  # Optional, using WGS84. default is Haversine.
 	
 	my $wgsdist = $gis->distance( $lat1, $lon1 => $lat2, $lon2 );
 	return $wgsdist->meters();		

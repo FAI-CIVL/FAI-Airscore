@@ -91,10 +91,45 @@ function overall_handicap($link, $comPk, $how, $param, $cls)
     return filter_results($comPk, $how, $param, $results);
 }
 
-function comp_result($link, $comPk, $how, $param, $cls, $tasktot)
+function comp_result($link, $comPk, $how, $param, $cls, $tasktot, $ext)
 {
     # $sql = "select TK.*,TR.*,P.*,T.traGlider from tblTaskResult TR, tblTask TK, tblTrack T, tblPilot P, tblCompetition C where C.comPk=$comPk and TK.comPk=C.comPk and TK.tasPk=TR.tasPk and TR.traPk=T.traPk and T.traPk=TR.traPk and P.pilPk=T.pilPk $cls order by P.pilPk, TK.tasPk";
     # New sql adding MaxScore for PWC FTV Calc
+
+    $extsql = "SELECT 
+					TK.*, 
+					TR.*, 
+					(
+						SELECT 
+							MAX(tblExtResult.tarScore) 
+						FROM 
+							tblExtResult 
+						WHERE 
+							tblExtResult.tasPk = TK.tasPk
+					) AS maxScore, 
+					P.*, 
+					(
+						SELECT 
+							C.natIso3 
+						FROM 
+							tblCountryCodes C 
+						WHERE 
+							C.natID = P.pilNat
+					) AS pilNationCode, 
+					TR.traGlider 
+				FROM 
+					tblCompetition C 
+					JOIN tblTask TK ON TK.comPk = C.comPk 
+					JOIN tblExtResult TR ON TK.tasPk = TR.tasPk 
+					JOIN tblPilot P ON P.pilPk = TR.pilPk 
+					JOIN tblForComp FC ON FC.comPk = C.comPk 	 
+				WHERE 
+					C.comPk = $comPk $cls  
+				ORDER BY 
+					P.pilPk, 
+					TK.tasPk";
+
+
     $sql = "	SELECT 
 					TK.*, 
 					TR.*, 
@@ -132,6 +167,10 @@ function comp_result($link, $comPk, $how, $param, $cls, $tasktot)
 				ORDER BY 
 					P.pilPk, 
 					TK.tasPk";
+	if ( $ext )
+	{
+	    $sql = $extsql;
+	}
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task result query failed: ' . mysqli_connect_error());
     $results = [];
     while ($row = mysqli_fetch_assoc($result))
@@ -313,11 +352,14 @@ $query = "	SELECT
 				LEFT OUTER JOIN tblFormula F USING (forPk) 
 			WHERE 
 				T.comPk = $comPk";
+#echo $query;
 $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Comp query failed: ' . mysqli_connect_error());
 $row = mysqli_fetch_assoc($result);
 if ($row)
 {
     $comName = isset($row['comName']) ? $row['comName'] : '';
+    $comExt = $row['comExt'];
+    $comExtUrl = $row['comExtUrl'];
     $title = 'AirScore - '.isset($row['comName']) ? $row['comName'] : '';
     $comDateFrom = substr(isset($row['comDateFrom']) ? $row['comDateFrom'] : '',0,10);
     $comDateTo = substr(isset($row['comDateTo']) ? $row['comDateTo'] : '',0,10);
@@ -326,7 +368,18 @@ if ($row)
     $comOverallParam = isset($row['comOverallParam']) ? $row['comOverallParam']*100 : ''; # Discard Parameter, Ex. 75 = 75% eq normal FTV 25%
     $comDirector = isset($row['comMeetDirName']) ? $row['comMeetDirName'] : '';
     $comLocation = isset($row['comLocation']) ? $row['comLocation'] : '';
-    $comFormula = ( isset($row['forClass']) ? $row['forClass'] : '' ) . ' ' . ( isset($row['forVersion']) ? $row['forVersion'] : '' );
+    if ( isset($row['forClass']) )
+    {
+        $comFormula = $row['forClass'] . ' ' . ( isset($row['forVersion']) ? $row['forVersion'] : '' );
+    }
+    elseif ( isset($row['extForName']) )
+    {
+        $comFormula = $row['extForName'];
+    }
+    else
+    {
+        $comFormula = '';
+    }
     $forOLCPoints = isset($row['forOLCPoints']) ? $row['forOLCPoints'] : '';
     $comSanction = isset($row['comSanction']) ? $row['comSanction'] : '';
     $comOverall = isset($row['comOverallScore']) ? $row['comOverallScore'] : '';  # Type of scoring discards: FTV, ...
@@ -389,19 +442,25 @@ elseif ($comOverall == 'ftv')
 {
     if ( strstr($comFormula, 'pwc') ) # calculates FTV parameters based on winner score (PWC)
     {
+    	#check if external comp
+    	$tbl = 'tblTaskResult TR';
+    	if ( $comExt == 1 )
+    	{ 
+    	    $tbl = 'tblExtResult TR';
+    	}
     	$sql = "SELECT 
 					DISTINCT T.tasPk, 
 					(
 						SELECT 
 							MAX(TR.tarScore) 
 						FROM 
-							tblTaskResult TR 
+							$tbl 
 						WHERE 
 							TR.tasPk = T.tasPk
 					) AS maxScore 
 				FROM 
 					tblTask T, 
-					tblTaskResult TR 
+					$tbl 
 				WHERE 
 					T.comPk = $comPk";
     	$result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task validity query failed: ' . mysqli_connect_error());
@@ -524,7 +583,7 @@ else if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'Route' ||
     }
     else
     {
-        $sorted = comp_result($link, $comPk, $comOverall, $comOverallParam, $fdhv, $tasTotal);
+        $sorted = comp_result($link, $comPk, $comOverall, $comOverallParam, $fdhv, $tasTotal, $comExt);
         $subtask = '';
     }
 

@@ -15,7 +15,7 @@ use strict;
 
 # Add currect bin directory to @INC
 use File::Basename;
-use lib '/home/untps52y/perl5/lib/perl5';
+use lib '/home/ubuntu/perl5/lib/perl5';
 use lib dirname (__FILE__) . '/';
 use TrackLib;
 use LadderDB;
@@ -372,9 +372,9 @@ while (defined($ref))
     $taskr->{'FsResult'}->{'points'} = sprintf("%.0f", $ref->{'tarScore'});
     $taskr->{'FsResult'}->{'distance_points'} = sprintf("%.1f", $ref->{'tarDistanceScore'});
     $taskr->{'FsResult'}->{'time_points'} = sprintf("%.1f", $ref->{'tarSpeedScore'});
-    $taskr->{'FsResult'}->{'arrival_points'} = sprintf("%.1f", $ref->{'tarArrival'});
+    $taskr->{'FsResult'}->{'arrival_points'} = sprintf("%.1f", $ref->{'tarArrivalScore'});
     $taskr->{'FsResult'}->{'departure_points'} = 0;
-    $taskr->{'FsResult'}->{'leading_points'} = sprintf("%.1f", $ref->{'tarDeparture'});;
+    $taskr->{'FsResult'}->{'leading_points'} = sprintf("%.1f", $ref->{'tarDepartureScore'});;
     $taskr->{'FsResult'}->{'penalty'} = 0;
     $taskr->{'FsResult'}->{'penalty_points'} = $ref->{'tarPenalty'};
     $taskr->{'FsResult'}->{'penalty_reason'} = '';

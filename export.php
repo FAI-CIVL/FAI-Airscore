@@ -279,11 +279,11 @@ $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Un
 # Actual results ..
 if ($ctype == 'Team-RACE')
 {
-    $sql = "select TP.pilPk,T.tasPk,T.terResultType as tarResultType,T.terTurnpoints as tarTurnpoints,TIMESTAMPADD(SECOND,T.terSS,TK.tasDate) as tarSS,TIMESTAMPADD(SECOND,T.terES,TK.tasDate) as tarES,T.terPenalty as tarPenalty,T.terComment as tarComment,round(T.terScore) as tarScore,T.terPlace as tarPlace,T.terSpeed as tarSpeed,(T.terDistance/1000) as tarDistance,T.terArrival as tarArrival,T.terDeparture as tarDeparture,T.terSpeedScore as tarSpeedScore,T.terDistanceScore as tarDistanceScore,T.terLeadingCoeff as tarLeadingCoeff from xcdb.tblTeamResult T, xcdb.tblTeam TM, xcdb.tblTeamPilot TP, xcdb.tblTask TK where T.teaPk=TM.teaPk and TM.comPk=$comPk and TP.teaPk=TM.teaPk and TK.tasPk=T.tasPk and T.tasPk in (select tasPk from xcdb.tblComTaskTrack where comPk=$comPk)";
+    $sql = "select TP.pilPk,T.tasPk,T.terResultType as tarResultType,T.terTurnpoints as tarTurnpoints,TIMESTAMPADD(SECOND,T.terSS,TK.tasDate) as tarSS,TIMESTAMPADD(SECOND,T.terES,TK.tasDate) as tarES,T.terPenalty as tarPenalty,T.terComment as tarComment,round(T.terScore) as tarScore,T.terPlace as tarPlace,T.terSpeed as tarSpeed,(T.terDistance/1000) as tarDistance,T.terArrival as tarArrivalScore,T.terDeparture as tarDepartureScore,T.terSpeedScore as tarSpeedScore,T.terDistanceScore as tarDistanceScore,T.terLeadingCoeff as tarLeadingCoeff from xcdb.tblTeamResult T, xcdb.tblTeam TM, xcdb.tblTeamPilot TP, xcdb.tblTask TK where T.teaPk=TM.teaPk and TM.comPk=$comPk and TP.teaPk=TM.teaPk and TK.tasPk=T.tasPk and T.tasPk in (select tasPk from xcdb.tblComTaskTrack where comPk=$comPk)";
 }
 else
 {
-    $sql = "select TL.pilPk,T.tasPk,T.tarResultType,T.tarTurnpoints,TIMESTAMPADD(SECOND,T.tarSS,TK.tasDate) as tarSS,TIMESTAMPADD(SECOND,T.tarES,TK.tasDate) as tarES,T.tarPenalty,T.tarComment,round(T.tarScore) as tarScore,T.tarPlace,T.tarSpeed,(T.tarDistance/1000) as tarDistance,T.tarArrival,T.tarDeparture,T.tarSpeedScore,T.tarDistanceScore,T.tarLeadingCoeff from xcdb.tblTaskResult T, xcdb.tblTrack TL, xcdb.tblTask TK where TL.traPk=T.traPk and TK.tasPk=T.tasPk and T.tasPk in (select tasPk from xcdb.tblComTaskTrack where comPk=$comPk)";
+    $sql = "select TL.pilPk,T.tasPk,T.tarResultType,T.tarTurnpoints,TIMESTAMPADD(SECOND,T.tarSS,TK.tasDate) as tarSS,TIMESTAMPADD(SECOND,T.tarES,TK.tasDate) as tarES,T.tarPenalty,T.tarComment,round(T.tarScore) as tarScore,T.tarPlace,T.tarSpeed,(T.tarDistance/1000) as tarDistance,T.tarArrivalScore,T.tarDepartureScore,T.tarSpeedScore,T.tarDistanceScore,T.tarLeadingCoeff from xcdb.tblTaskResult T, xcdb.tblTrack TL, xcdb.tblTask TK where TL.traPk=T.traPk and TK.tasPk=T.tasPk and T.tasPk in (select tasPk from xcdb.tblComTaskTrack where comPk=$comPk)";
 }
 $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Unable query task results: ' . mysqli_connect_error());
 $taskresult = [];
@@ -302,8 +302,8 @@ $rowmap = array(
     'tarES' => 'resESTime',
     'tarSpeed' => 'resSpeed',
     'tarDistance' => 'resDistance',
-    'tarArrival' => 'resArrivalScore',
-    'tarDeparture' => 'resDepartureScore',
+    'tarArrivalScore' => 'resArrivalScore',
+    'tarDepartureScore' => 'resDepartureScore',
     'tarSpeedScore' => 'resSpeedScore',
     'tarDistanceScore' => 'resDistanceScore',
     'tarScore' => 'resScore',

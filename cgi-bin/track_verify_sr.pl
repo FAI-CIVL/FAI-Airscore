@@ -15,7 +15,7 @@ use strict;
 
 # Add currect bin directory to @INC
 use File::Basename;
-use lib '/home/untps52y/perl5/lib/perl5';
+#use lib '/home/ubuntu/perl5/lib/perl5';
 use lib dirname (__FILE__) . '/';
 use Route qw(:all);
 
@@ -500,7 +500,7 @@ sub validate_task
     	$gpt, 						# Goal type (entry, exit, line)
     	$essdist, 					# Distance to ESS
     	$startssdist, 				# Distance to start
-    	$endssdist, 				# speed section lenght
+    	$endssdist, 				# speed section length
     	$totdist) 					# total task distance
     	= task_distance($task);
 
@@ -1121,7 +1121,7 @@ sub validate_task
 #     	$result{'coeff2'} = $coeff2 / (1800 * ($essdist/1000)**2);
 #     }
 
-	$result{'coeff2'} = $coeff2 / (1800 * ($essdist/1000)**2);
+	$result{'coeff2'} = $coeff2 / (1800 * ($endssdist/1000)**2);
 	
     print "    coeff=", $result{'coeff'}, " coeff2=", $result{'coeff2'}, "\n";
     if ($closestcoord)

@@ -25,7 +25,16 @@ function fselect($name,$selected,$options,$extra='')
 
 function fwaypoint($link,$tasPk,$name,$selected)
 {
-    $query="select distinct RW.* from tblTask T, tblRegion R, tblRegionWaypoint RW where T.tasPk=$tasPk and RW.regPk=R.regPk and R.regPk=T.regPk order by RW.rwpName";
+    $query="SELECT DISTINCT
+                RW.* 
+            FROM
+                tblRegionWaypoint RW
+            JOIN tblRegion R ON R.regPk = RW.regPk
+            JOIN tblTask T ON T.regPk = R.regPk
+            WHERE
+                T.tasPk = $tasPk AND RW.rwpOld = 0
+            ORDER BY
+                RW.rwpName";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task add failed: ' . mysqli_connect_error());
     $waypoints = [];
     while($row = mysqli_fetch_array($result, MYSQLI_BOTH))

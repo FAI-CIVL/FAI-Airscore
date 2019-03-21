@@ -15,7 +15,7 @@ use Data::Dumper;
 
 # Add currect bin directory to @INC
 use File::Basename;
-use lib '/home/untps52y/perl5/lib/perl5';
+use lib '/home/ubuntu/perl5/lib/perl5';
 use lib dirname (__FILE__) . '/';
 use Defines qw(:all);
 
@@ -367,7 +367,20 @@ sub read_task
 
     }
 
-    $sth = $dbh->prepare("select T.*,R.*,S.ssrLatDecimal,S.ssrLongDecimal,S.ssrNumber from tblRegionWaypoint R, tblTaskWaypoint T left outer join tblShortestRoute S on S.tasPk=$tasPk and S.ssrNumber=T.tawNumber where T.tasPk=$tasPk and T.rwpPk=R.rwpPk group by T.tawNumber order by T.tawNumber");
+    $sql = "SELECT
+                T.*,
+                R.* 
+            FROM
+                tblRegionWaypoint R,
+                tblTaskWaypoint T 
+            WHERE
+                T.tasPk = $tasPk AND T.rwpPk = R.rwpPk
+            GROUP BY
+                T.tawNumber
+            ORDER BY
+                T.tawNumber";
+    #$sth = $dbh->prepare("select T.*,R.*,S.ssrLatDecimal,S.ssrLongDecimal,S.ssrNumber from tblRegionWaypoint R, tblTaskWaypoint T left outer join tblShortestRoute S on S.tasPk=$tasPk and S.ssrNumber=T.tawNumber where T.tasPk=$tasPk and T.rwpPk=R.rwpPk group by T.tawNumber order by T.tawNumber");
+    $sth = $dbh->prepare($sql);
     $sth->execute();
     while ($ref = $sth->fetchrow_hashref()) 
     {

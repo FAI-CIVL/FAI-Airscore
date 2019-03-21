@@ -638,9 +638,15 @@ function get_countrycode($link, $id)
 			WHERE 
 				C.natID = $id";
 	$result = mysqli_query($link, $sql);
-	$country = mysqli_fetch_assoc($result);
-	$code = $country['Code'];
-		
+	if ( !$result || mysqli_num_rows($result) == 0 )
+	{
+		$code = 'ITA'; #defaults to Italy
+	}
+	else
+	{	
+		$country = mysqli_fetch_assoc($result);
+		$code = $country['Code'];		
+	}	
 	return $code;
 }
 
