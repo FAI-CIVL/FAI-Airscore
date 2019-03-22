@@ -1,0 +1,6 @@
+defines.yaml
+defines.php
+/tracks
+/images
+*.igc
+*.json
