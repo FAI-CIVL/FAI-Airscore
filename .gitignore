@@ -1,1 +1,11 @@
-node_modules
+cgi-bin/defines.yaml
+admin/dreamhost*.*
+admin/host.it*
+cgi-bin/defines.yaml*
+cgi-bin/Defines.pm
+cgi-bin/py*
+cgi-bin/.ht*
+defines.php
+.ht*
+.travis*
+.DS*
