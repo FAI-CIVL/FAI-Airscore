@@ -1,0 +1,14 @@
+*** Temp Dir '/tmp/bulkSTsq' created ... *** 
+Archive:  /tmp/phpnpwyc4
+  inflating: /tmp/bulkSTsq/2018-02-10-XCT-AGO-01.igc  
+   creating: /tmp/bulkSTsq/__MACOSX/
+  inflating: /tmp/bulkSTsq/__MACOSX/._2018-02-10-XCT-AGO-01.igc  
+yes: standard output: Broken pipe
+yes: write error
+Use of uninitialized value in concatenation (.) or string at /home/untps52y/domains/legapilotiparapendio.it/public_html/airscore/cgi-bin/bulk_igc_reader.pl line 114.
+Use of uninitialized value in concatenation (.) or string at /home/untps52y/domains/legapilotiparapendio.it/public_html/airscore/cgi-bin/bulk_igc_reader.pl line 114.
+Use of uninitialized value in addition (+) at /home/untps52y/domains/legapilotiparapendio.it/public_html/airscore/cgi-bin/bulk_igc_reader.pl line 127.
+Ignoring __MACOSX ...
+Can't find pilot 2018-02-10-XCT-AGO-01.igc in database
+*** Deleting '/tmp/bulkSTsq' ... *** 
+* Directory '/tmp/bulkSTsq' deleted. * 
