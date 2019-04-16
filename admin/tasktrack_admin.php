@@ -308,7 +308,7 @@ else
 
 
 //initializing template header
-$query = "SELECT C.*, T.* FROM tblCompetition C JOIN tblTask T ON C.comPk = T.comPk where tasPk=$tasPk";
+$query = "SELECT C.*, T.* FROM `tblCompetition` C JOIN `tblTask` T USING(`comPk`) where `tasPk`=$tasPk";
 $result = mysqli_query($link, $query);
 $row = mysqli_fetch_assoc($result);
 $taskname = $row['tasName'];

@@ -2,7 +2,7 @@
 Module for operations on tracks
 Use:    import trackUtils
         pilPk = compUtils.get_track_pilot(filename)
-        
+
 Antonio Golfari - 2018
 """
 
@@ -10,8 +10,25 @@ import os, sys
 from shutil import copyfile
 import datetime
 
+import pwc
+from track import Track
+from task import Task
+from flight_result import Flight_result
+
 # Use your utility module.
 from myconn import Database
+
+def import_track(track, test = 0):
+    result = ''
+    result += track.add(test)
+    result += ("Track {} added for Pilot with ID {} for task with ID {} \n".format(track.filename, track.pilPk, track.tasPk))
+
+    if test:
+        print (result)
+
+def verify_track(track, task, test = 0):
+    task_result = Flight_result.check_flight(track.flight, task, pwc.parameters, 5) #check flight against task with min tolerance of 5m
+    task_result.store_result(track.traPk, task.tasPk)
 
 def get_non_scored_pilots(tasPk, test=0):
     """Gets list of registered pilots that still do not have a result"""
@@ -44,11 +61,11 @@ def get_non_scored_pilots(tasPk, test=0):
             if db.rows(query) > 0:
                 """create a list from results"""
                 message += ("creating a list of pilots...")
-                list = [{   'pilPk': row['pilPk'], 
-                            'pilFirstName': row['pilFirstName'], 
-                            'pilLastName': row['pilLastName'], 
-                            'pilFAI': row['pilFAI'], 
-                            'pilXContestUser': row['pilXContestUser']} 
+                list = [{   'pilPk': row['pilPk'],
+                            'pilFirstName': row['pilFirstName'],
+                            'pilLastName': row['pilLastName'],
+                            'pilFAI': row['pilFAI'],
+                            'pilXContestUser': row['pilXContestUser']}
                         for row in db.fetchall(query)]
             else:
                 message += ("No pilot found registered to the comp...")
@@ -87,12 +104,12 @@ def get_pilot_from_list(filename, list, test=0):
         print ("file {} contains pilot name \n".format(fields[0]))
         for row in list:
             print("XC User: {} | Name: {} {} ".format(row['pilXContestUser'], row['pilFirstName'], row['pilLastName']))
-            if (row['pilXContestUser']is not None 
+            if (row['pilXContestUser']is not None
                     and any(row['pilXContestUser'].lower() in str(name).lower() for name in names)):
                 print ("found a xcontest user")
                 pilot_id = row['pilPk']
                 break
-            elif (any(row['pilFirstName'].lower() in str(name).lower() for name in names) 
+            elif (any(row['pilFirstName'].lower() in str(name).lower() for name in names)
                     and any(row['pilLastName'].lower() in str(name).lower() for name in names)):
                 print ("found a pilot name")
                 pilot_id = row['pilPk']
@@ -109,14 +126,14 @@ def get_pil_track(pilPk, tasPk, test=0):
     message = ''
     traPk = 0
 
-    query = ("""    SELECT 
-                        traPk 
-                    FROM 
-                        tblResult 
-                    WHERE 
-                        pilPk = {} 
-                        AND tasPk = {} 
-                    LIMIT 
+    query = ("""    SELECT
+                        traPk
+                    FROM
+                        tblResult
+                    WHERE
+                        pilPk = {}
+                        AND tasPk = {}
+                    LIMIT
                         1""".format(pilPk, tasPk))
 
     message += ("Query: {}  \n".format(query))

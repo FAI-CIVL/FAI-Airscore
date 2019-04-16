@@ -31,6 +31,7 @@ class Track():
 
     def __init__(self, filename = None, pilot = None, task = None, glider = None, cert = None, type = None, test = 0):
         self.filename = filename
+        self.traPk = None
         self.type = type
         self.pilPk = pilot
         self.tasPk = task
@@ -121,7 +122,7 @@ class Track():
         result = ''
         message = ''
         message += ("track {} will be imported for pilot with ID {} and task with ID {} \n".format(self.filename, self.pilPk, self.tasPk))
-        traPk = None
+#        traPk = None
 #         print(self)
 #         """Get info on glider"""
 #         self.get_glider(test)
@@ -154,7 +155,7 @@ class Track():
         if not test:
             with Database() as db:
                 try:
-                    traPk = db.execute(query)
+                    self.traPk = db.execute(query)
                 except:
                     print('Error Inserting track into db:')
                     print(query)
@@ -175,7 +176,7 @@ class Track():
 #             """TEST MODE"""
 #             print (message)
 #         self.fixes = result['fix_records']
-        return traPk, result
+        return self.traPk, result
 
     @classmethod
     def read_file(cls, filename, pilot_id = None, test = 0):

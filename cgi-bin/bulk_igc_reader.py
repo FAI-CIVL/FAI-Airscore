@@ -122,8 +122,8 @@ def assign_tracks(files, task, test = 0):
             """pilot is registered and has no valid track yet
             moving file to correct folder and adding to the list of valid tracks"""
             mytrack.tasPk = task_id
-            mytracks.append(mytrack)
             mytrack.copy_track_file(test)
+            mytracks.append(mytrack)
             message += ("pilot {} associated with track {} \n".format(mytrack.pilPk, mytrack.filename))
 
     if test == 1:
@@ -132,29 +132,21 @@ def assign_tracks(files, task, test = 0):
 
     return mytracks
 
-def copy_tracks(tracks, test = 0):
-    for track in tracks.items():
-        track.copy_track_file(test)
-
 def import_tracks(mytracks, task, test = 0):
     """Import tracks in db"""
     message = ''
     result = ''
     for track in mytracks:
-        traPk, _ = track.add(test)
-        result += ("Track {} added for Pilot with ID {} for task with ID {} \n".format(track.filename, track.pilPk, track.tasPk))
-        verify_flight(track.flight, task, traPk)
+        """adding track to db"""
+        import_track(track, test)
+        """checking track against task"""
+        verify_track(track, task, test)
 
     if test == 1:
         """TEST MODE"""
         print (message)
 
     return result
-
-def verify_flight(flight, task, traPk):
-    task_result = Flight_result.check_flight(flight, task, pwc.parameters, 5) #check flight against task with min tolerance of 5m
-    task_result.store_result(traPk, task.tasPk)
-
 
 def main():
     """Main module"""
@@ -171,14 +163,13 @@ def main():
             print('Running in TEST MODE')
             test = 1
 
-        """Get comPk"""
-        comPk = get_comp(tasPk, test)
+        """Get Task object"""
         task = Task.read_task(tasPk)
         if task.ShortRouteDistance == 0:
             print('task not optimised.. optimising')
             task.calculate_optimised_task_length()
 
-        if comPk > 0:
+        if task.comPk > 0:
             """create a temporary directory"""
             with TemporaryDirectory() as tracksdir:
                 error = extract_tracks(zipfile, tracksdir, test)
