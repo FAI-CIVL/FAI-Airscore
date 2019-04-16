@@ -1,9 +1,0 @@
-Options +ExecCGI
-
-AddHandler server-parsed .html .htm
-
-AddHandler cgi-script .cgi .pl .pm
-
-AddType application/x-httpd-php .html .htm
-
-AddHandler application/x-httpd-php .html .htm
