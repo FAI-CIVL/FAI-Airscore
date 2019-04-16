@@ -1,3 +1,0 @@
-Options +ExecCGI
-SetHandler cgi-script
-AddHandler cgi-script .cgi .pl .pm .py
