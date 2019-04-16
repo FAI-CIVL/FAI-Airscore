@@ -150,20 +150,17 @@ class Task:
         if task_id < 1:
             print("task not present in database ", task_id)
 
-        query = """SELECT TIME_TO_SEC(T.tasStartTime) AS sstime,
-                           TIME_TO_SEC(T.tasFinishTime) AS endtime,
-                           TIME_TO_SEC(T.tasLastStartTime) as LastStartTime,
-                           TIME_TO_SEC(T.tasStartCloseTime) AS StartCloseTime,
-                           T.*,
-                           C.comTimeOffset,
-                           C.comClass,
-                           F.forMargin
-                           FROM
-                            tblTask T
-                            JOIN tblCompetition C USING (comPk)
-                            JOIN tblForComp FC USING (comPk)
-                            LEFT OUTER  JOIN tblFormula F USING (forPk)
-                            WHERE T.tasPk =  %s"""
+        query = """ SELECT
+                        TIME_TO_SEC(T.`tasStartTime`) AS sstime,
+                        TIME_TO_SEC(T.`tasFinishTime`) AS endtime,
+                        TIME_TO_SEC(T.`tasLastStartTime`) AS LastStartTime,
+                        TIME_TO_SEC(T.`tasStartCloseTime`) AS StartCloseTime,
+                        T.*
+                    FROM
+                        `tblTaskView` T
+                    WHERE
+                        T.`tasPk` = %s
+                    LIMIT 1"""
         with Database() as db:
             # get the task details.
             t = db.fetchone(query, [task_id])
@@ -193,7 +190,7 @@ class Task:
         task_start_time = t['tasStartTime']
         arrival = t['tasArrival']
         departure = t['tasDeparture']
-        tolerance = t['forMargin']
+        tolerance = t['tasMargin']
 
 
         comPk = t['comPk']
@@ -256,14 +253,15 @@ class Task:
 
         with Database() as db:
             '''add optimised and total distance to task'''
-            query = """update tblTask
-                        set tasDistance = %s,
-                        tasShortRouteDistance = %s,
-                        tasSSDistance = %s,
-                        tasEndSSDistance = %s,
-                        tasStartSSDistance= %s
-                    where
-                        tasPk = %s"""
+            query = """ UPDATE `tblTask`
+                        SET
+                            `tasDistance` = %s,
+                            `tasShortRouteDistance` = %s,
+                            `tasSSDistance` = %s,
+                            `tasEndSSDistance` = %s,
+                            `tasStartSSDistance` = %s
+                        WHERE
+                            `tasPk` = %s"""
             params = [self.Distance, self.ShortRouteDistance,   self.SSDistance, self.EndSSDistance, self.StartSSDistance, self.tasPk]
             #print (params)
             db.execute(query, params)
