@@ -11,3 +11,4 @@ defines.php
 .DS*
 admin/.DS*
 cgi-bin/.DS*
+tracks/*
