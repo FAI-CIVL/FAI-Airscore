@@ -9,3 +9,5 @@ defines.php
 .ht*
 .travis*
 .DS*
+admin/.DS*
+cgi-bin/.DS*
