@@ -71,7 +71,7 @@ def get_tracks(dir, test = 0):
 
     return files
 
-def assign_tracks(files, task_id, test = 0):
+def assign_tracks(files, task, test = 0):
     """Find pilots to associate with tracks"""
     from datetime import datetime
 
@@ -79,8 +79,9 @@ def assign_tracks(files, task_id, test = 0):
     mytracks = []
     list = []
     message += ("We have {} track to associate \n".format(len(files)))
-    comp_id = get_comp(task_id, test)
-    task_date = get_task_date(task_id, test)
+    task_id = task.tasPk
+    comp_id = task.comPk
+    task_date = task.date
     """checking if comp requires a regisration.
     Then we create a list of registered pilots to check against tracks filename.
     This should be much faster than checking against all pilots in database through a query"""
@@ -114,7 +115,8 @@ def assign_tracks(files, task_id, test = 0):
         """check result"""
         if not mytrack:
             message += ("Track {} is not a valid track file \n".format(filename))
-        elif not datetime.strptime(mytrack.date, "%Y-%m-%d") == task_date:
+        elif not mytrack.date == task_date:
+            message += ("dates: {}  |  {}  \n".format(task_date, mytrack.date))
             message += ("track {} has a different date from task \n".format(filename))
         else:
             """pilot is registered and has no valid track yet
@@ -160,12 +162,12 @@ def main():
     result = ''
     """check parameter is good."""
     if len(sys.argv) > 2:
-        """Get tasPk"""  
+        """Get tasPk"""
         tasPk = 0 + int(sys.argv[1])
-        """Get zip filename"""  
+        """Get zip filename"""
         zipfile = sys.argv[2]
         if len(sys.argv) > 3:
-            """Test Mode""" 
+            """Test Mode"""
             print('Running in TEST MODE')
             test = 1
 
@@ -185,7 +187,7 @@ def main():
                     tracks = get_tracks(tracksdir, test)
                     if tracks is not None:
                         """associate tracks to pilots"""
-                        mytracks = assign_tracks(tracks, tasPk, test)
+                        mytracks = assign_tracks(tracks, task, test)
                         """import tracks"""
                         result = import_tracks(mytracks, task, test)
                     else:

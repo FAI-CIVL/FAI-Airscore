@@ -5,7 +5,7 @@ Use:    import track
 
 This module reads IGC files using igc_lib library
 and creates an object containing all info about the flight
-        
+
 Antonio Golfari, Stuart Mackintosh - 2019
 """
 
@@ -22,7 +22,7 @@ class Track():
     """
     Create an object Track and
     a collection of functions to handle tracks.
-    
+
     var: filename, pilot
     """
 
@@ -36,8 +36,8 @@ class Track():
         self.tasPk = task
         self.glider = glider
         self.cert = cert
-        self.flight = None
-        self.date = None
+        self.flight = None      # igc_lib.Flight object
+        self.date = None        # in datetime.date format
 
     def get_pilot(self, list = None, test = 0):
         """Get pilot associated to a track from its filename
@@ -60,7 +60,7 @@ class Track():
                 """try to find xcontest user in filename
                 otherwise try to find pilot name from filename"""
                 message += ("file {} contains pilot name \n".format(fields[0]))
-                
+
                 s = []
                 t = []
                 u = []
@@ -71,20 +71,20 @@ class Track():
                 cond = ' OR '.join(s)
                 cond2 = ' OR '.join(t)
                 cond3 = ' OR '.join(u)
-#                 query = ("""    SELECT 
-#                                     pilPk 
-#                                 FROM 
-#                                     tblPilot 
-#                                 WHERE 
-#                                     ({}) 
-#                                 AND 
+#                 query = ("""    SELECT
+#                                     pilPk
+#                                 FROM
+#                                     tblPilot
+#                                 WHERE
+#                                     ({})
+#                                 AND
 #                                     ({})""".format(cond, cond2))
                 query =(""" SELECT
                                 pilPk
                             FROM
                                 tblPilot
                             WHERE
-                                ({}) 
+                                ({})
                             UNION ALL
                             SELECT
                                 pilPk
@@ -165,12 +165,12 @@ class Track():
 
 #         """creates a JSON data"""
 #          j = json.dumps(result, cls=DateTimeEncoder)
-# 
+#
 #         """writes a JSON file"""
 #         filename = FILEDIR + '/'+('.'.join(self.pilPk,self.tasPk,'json'))
 #         with open(filename, 'wb') as fp:
 #             fp.write(j.encode("utf-8"))
-# 
+#
 #         if test == 1:
 #             """TEST MODE"""
 #             print (message)
@@ -274,7 +274,7 @@ class Track():
 #             thermals.append( (thermal.enter_fix.lon,thermal.enter_fix.lat) )
 #     #        add_point(name="thermal_%02d_END" % i, fix=thermal.exit_fix)
 #             thermals.append( (thermal.exit_fix.lon,thermal.exit_fix.lat) )
-#         
+#
 #         thermals_multipoint = MultiPoint(thermals)
 #         features.append(Feature(geometry=thermals_multipoint))
 
@@ -303,12 +303,12 @@ class Track():
             if first_line[:1] == 'A':
                 """IGC: AXCT7cea4d3ae0df42a1"""
                 self.type = "igc"
-            elif first_line[:3] == '<?x': 
+            elif first_line[:3] == '<?x':
                 """KML: <?xml version="1.0" encoding="UTF-8"?>"""
                 self.type = "kml"
             elif first_line.contains("B  UTF"):
                 self.type = "ozi"
-            elif first_line[:3] == 'LIV': 
+            elif first_line[:3] == 'LIV':
                 self.type = "live"
             else:
                 self.type = None
@@ -319,13 +319,13 @@ class Track():
         message = ''
 
         if self.pilPk is not None:
-            query = ("""    SELECT 
-                                pilGlider, pilGliderBrand, gliGliderCert 
-                            FROM 
-                                tblPilot 
-                            WHERE 
-                                pilPk = {} 
-                            LIMIT 1""".format(self.pilPk))   
+            query = ("""    SELECT
+                                pilGlider, pilGliderBrand, gliGliderCert
+                            FROM
+                                tblPilot
+                            WHERE
+                                pilPk = {}
+                            LIMIT 1""".format(self.pilPk))
             #print ("get_glider Query: {}  \n".format(query))
             with Database() as db:
                 row = db.fetchone(query)

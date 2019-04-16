@@ -2,7 +2,7 @@
 Module for operations on tracks
 Use:    import trackUtils
         pilPk = compUtils.get_track_pilot(filename)
-        
+
 Antonio Golfari - 2018
 """
 
@@ -25,7 +25,7 @@ def get_int(str):
         return int(str)
     except:
         lstr = str.replace('.', ' ').replace('_', ' ').replace('-', ' ').split()
-        for i in lstr:  
+        for i in lstr:
             if i.isdigit():
                 return int(i)
         return None
@@ -53,7 +53,7 @@ def time_difference(t1, t2):
     dtB = datetime.combine(date.today(), t2)
     # Get the difference between datetimes (as timedelta)
     diff = dtB - dtA
-    
+
     return diff
 
 def get_datetime(str, test = 0):
@@ -70,7 +70,7 @@ def epoch_to_date(sec, offset = 0, test = 0):
         Transform string in datetime.datetime
     """
     try:
-        return datetime.fromtimestamp(sec).strftime('%Y-%m-%d')
+        return datetime.fromtimestamp(sec).date()
     except TypeError:
         print ("an error occurred")
     else:
@@ -103,5 +103,5 @@ def sec_to_str(sec, offset = 0, test = 0):
 #   def default(self, t1, t2):
 #       if isinstance(t1, time) and isinstance(t2, time):
 #           return o.isoformat()
-# 
+#
 #       return json.JSONEncoder.default(self, o)

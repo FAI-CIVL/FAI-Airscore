@@ -109,6 +109,7 @@ class Task:
                  check_launch='off'):
         self.tasPk = None
         self.comPk = None
+        self.date = None    # in datetime.date format
         self.turnpoints = turnpoints
         self.task_name = None
         self.task_start_time = None
@@ -150,18 +151,18 @@ class Task:
             print("task not present in database ", task_id)
 
         query = """SELECT TIME_TO_SEC(T.tasStartTime) AS sstime,
-                           TIME_TO_SEC(T.tasFinishTime) AS endtime, 
+                           TIME_TO_SEC(T.tasFinishTime) AS endtime,
                            TIME_TO_SEC(T.tasLastStartTime) as LastStartTime,
                            TIME_TO_SEC(T.tasStartCloseTime) AS StartCloseTime,
                            T.*,
-                           C.comTimeOffset, 
-                           C.comClass, 
-                           F.forMargin 
-                           FROM 
-                            tblTask T 
-                            JOIN tblCompetition C USING (comPk) 
-                            JOIN tblForComp FC USING (comPk) 
-                            LEFT OUTER  JOIN tblFormula F USING (forPk) 
+                           C.comTimeOffset,
+                           C.comClass,
+                           F.forMargin
+                           FROM
+                            tblTask T
+                            JOIN tblCompetition C USING (comPk)
+                            JOIN tblForComp FC USING (comPk)
+                            LEFT OUTER  JOIN tblFormula F USING (forPk)
                             WHERE T.tasPk =  %s"""
         with Database() as db:
             # get the task details.
@@ -170,6 +171,7 @@ class Task:
             print('Not a valid task')
             return
         time_offset = t['comTimeOffset']
+        task_date = t['tasDate']
         start_time = int(t['sstime'] - time_offset*60*60)
         end_time = t['endtime'] - time_offset*60*60
         task_type = t['tasTaskType'].upper()
@@ -206,7 +208,7 @@ class Task:
                         T.ssrLongDecimal,
                         R.rwpLatDecimal,
                         R.rwpLongDecimal,
-                        R.rwpName AS name 
+                        R.rwpName AS name
                     FROM
                         tblTaskWaypoint T
                     LEFT OUTER JOIN tblRegionWaypoint R USING(rwpPk)
@@ -233,6 +235,7 @@ class Task:
         task.launchvalid = launchvalid
         task.tasPk = task_id
         task.comPk = comPk
+        task.date = task_date
         task.distance = distance
         task.EndSSDistance = EndSSDistance
         task.SSDistance = SSDistance
@@ -250,16 +253,16 @@ class Task:
         return task
 
     def update_task(self):
-        
+
         with Database() as db:
             '''add optimised and total distance to task'''
-            query = """update tblTask 
-                        set tasDistance = %s, 
-                        tasShortRouteDistance = %s, 
+            query = """update tblTask
+                        set tasDistance = %s,
+                        tasShortRouteDistance = %s,
                         tasSSDistance = %s,
                         tasEndSSDistance = %s,
                         tasStartSSDistance= %s
-                    where 
+                    where
                         tasPk = %s"""
             params = [self.Distance, self.ShortRouteDistance,   self.SSDistance, self.EndSSDistance, self.StartSSDistance, self.tasPk]
             #print (params)
@@ -421,8 +424,8 @@ class Task:
 
         """formula info"""
         f = t.find('FsScoreFormula')
-        tas['tasHeightBonus'] = 'off' 
-        if ((f.get('use_arrival_altitude_points') is not None and float(f.get('use_arrival_altitude_points')) > 0) 
+        tas['tasHeightBonus'] = 'off'
+        if ((f.get('use_arrival_altitude_points') is not None and float(f.get('use_arrival_altitude_points')) > 0)
             or f.get('use_arrival_altitude_points') is 'aatb'):
             tas['tasHeightBonus'] = 'on'
         """Departure and Arrival from formula"""
@@ -689,4 +692,3 @@ class Task:
             distance_to_go.insert(0, d)
             t -= 1
         return distance_to_go
-
