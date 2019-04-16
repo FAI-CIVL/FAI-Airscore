@@ -5,35 +5,32 @@ require LIBDIR.'track_ops.php';
 function get_registered_pilots($link, $comPk, $tasPk)
 {
     # query to get all registered pilots for Comp, and data of available tracks for the Task
-    $query = "  SELECT 
-                    P.pilPk, 
-                    P.pilFirstName, 
-                    P.pilLastName, 
-                    TT.* 
-                FROM 
-                    tblRegistration R 
-                    JOIN tblPilot P ON P.pilPk = R.pilPk 
-                    LEFT OUTER JOIN (
-                        SELECT 
-                            T.pilPk AS ID, 
-                            TR.traPk,
-                            TR.tarResultType, 
-                            TR.tarGoal AS Goal, 
-                            (TR.tarDistance / 1000) AS Dist, 
-                            TR.tarES AS TimeES, 
-                            TR.tarSS AS TimeSS 
-                        FROM 
-                            tblTrack T 
-                            JOIN tblComTaskTrack CTT ON CTT.traPk = T.traPk 
-                            JOIN tblTaskResult TR ON TR.traPk = T.traPk 
-                        WHERE 
-                            CTT.tasPk = $tasPk
-                    ) AS TT ON TT.ID = R.pilPk 
-                WHERE 
-                    R.comPk = $comPk 
-                ORDER BY 
-                    P.pilLastName ASC, 
-                    P.pilFirstName ASC";
+    $query = "  SELECT
+                    P.`pilFirstName`,
+                    P.`pilLastName`,
+                    TT.*
+                FROM
+                    `tblRegistration` R
+                JOIN tblPilot P USING(`pilPk`)
+                LEFT OUTER JOIN(
+                    SELECT `pilPk`,
+                        `traPk`,
+                        `tarResultType`,
+                        `tarGoal` AS Goal,
+                        (`tarDistance` / 1000) AS Dist,
+                        `tarES` AS TimeES,
+                        `tarSS` AS TimeSS
+                    FROM
+                        `tblResult`
+                    WHERE
+                        `tasPk` = $tasPk
+                ) AS TT USING(`pilPk`)
+                WHERE
+                    R.`comPk` = $comPk
+                ORDER BY
+                    P.`pilLastName` ASC,
+                    P.`pilFirstName` ASC";
+
     $result = mysqli_query($link, $query);
 
     return $result;
@@ -65,7 +62,7 @@ if ( reqexists('addtrack') )
     {
         $message .= "Track accepted. <br /> \n";
     }
-    else 
+    else
     {
         $message .= "Error processing track <br /> \n";
     }
@@ -99,7 +96,7 @@ elseif (array_key_exists('delete', $_REQUEST))
 
         $query = "delete from tblComTaskTrack where traPk=$traPk";
         mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' ComTaskTrack delete failed: ' . mysqli_connect_error());
-        
+
         $message .= "Track succesfully deleted (ID = $traPk) <br /> \n";
     }
 }
@@ -120,21 +117,10 @@ elseif ( array_key_exists('mindist', $_REQUEST) )
 }
 elseif (addslashes($_REQUEST['foo']) == 'Send Tracklog')
 {
-    $copyname = tempnam(FILEDIR, "Task_");
-
-    clearstatcache();
-    if (!file_exists($copyname)) 
-    {
-        mkdir($copyname, 0755, true);
-    }
-    copy($_FILES['userfile']['tmp_name'], $copyname . basename($_FILES['userfile']['tmp_name']));
-    chmod($copyname . basename($_FILES['userfile']['tmp_name']), 0644);
-
     $tempnm = $_FILES['userfile']['tmp_name'];
-
     $out = '';
     $retv = 0;
-    $command = "perl " . BINDIR . "bulk_igc_reader.pl $tasPk $tempnm > " . BINDIR . 'log/output.txt 2>&1 & echo $!; ';
+    $command = "python3 " . BINDIR . "bulk_igc_reader.py $tasPk $tempnm > " . BINDIR . 'log/bulk_out.txt 2>&1 & echo $!; ';
     $pid = exec($command, $out, $retv);
     $ptime = microtime(true);
     sleep(15);
@@ -147,7 +133,7 @@ elseif ( reqexists('getxcontest') )
     # Check Task has been setup correctly
     if ( task_set($link, $tasPk) )
     {
-        $command = "python3 " . BINDIR . "get_igc_from_xcontest.py $comPk $tasPk > " . BINDIR . 'log/xcontest.txt 2>&1 & echo $!; ';
+        $command = "python3 " . BINDIR . "get_igc_from_xcontest.py $comPk $tasPk test > " . BINDIR . 'log/xcontest.txt 2>&1 & echo $!; ';
         $pid = exec($command, $out, $retv);
         $ptime = microtime(true);
         sleep(5);
@@ -161,23 +147,23 @@ elseif ( reqexists('getxcontest') )
 elseif ( array_key_exists('bulk', $_REQUEST) )
 {
     $message .= "Tracks Bulk Submission finished. \n";
-    
+
     # Define which lines of output file we are interested in
     $alreadyscored = "already scored";
     $notfound = "in database";
     $found = "Found:";
     $scored = "Stored track";
-    
+
     $matches = array();
 
     # Reads the output file
-    $handle = @fopen(BINDIR . "log/output.txt", "r");
+    $handle = @fopen(BINDIR . "log/bulk_out.txt", "r");
     if ( $handle )
     {
         while ( !feof($handle) )
         {
             $buffer = fgets($handle);
-            
+
             # Log success
             if ( (strpos($buffer, $found) !== FALSE) || (strpos($buffer, $scored) !== FALSE) )
             {
@@ -198,17 +184,17 @@ elseif ( array_key_exists('bulk', $_REQUEST) )
     {
         $content .= "$txt <br />\n";
     }
-    $content .= "</p>\n";    
+    $content .= "</p>\n";
 }
 elseif ( array_key_exists('xcontest', $_REQUEST) )
 {
     $message .= "Tracks retrieval from XContest finished. \n";
-    
+
     # Define which lines of output file we are interested in
     $notfound = "No relevant";
     $found = "found pilot:";
     $scored = "submitted track";
-    
+
     $matches = array();
 
     # Reads the output file
@@ -218,7 +204,7 @@ elseif ( array_key_exists('xcontest', $_REQUEST) )
         while ( !feof($handle) )
         {
             $buffer = fgets($handle);
-            
+
             # Log success
             if ( (strpos($buffer, $found) !== FALSE) || (strpos($buffer, $scored) !== FALSE) )
             {
@@ -240,7 +226,7 @@ elseif ( array_key_exists('xcontest', $_REQUEST) )
         $content .= "$txt <br />\n";
     }
     $content .= "</p>\n";
-    
+
 }
 
 
@@ -259,7 +245,7 @@ else
     $dtable = [];
     $btable = [];
     $xtable = [];
-    
+
     $dtable[] = array("There are " . mysqli_num_rows($result) . " pilots registered.", '', '', '', '', '');
     $dtable[] = array("<strong>NAME</strong>", "<strong>STATUS</strong>", "<strong>RESULT</strong>", '');
     while ( $row = mysqli_fetch_assoc($result) )
@@ -311,9 +297,9 @@ else
 
     # Create Bulk IGC ZIP Submit
     $btable[] = array(" <form enctype=\"multipart/form-data\" action=\"tasktrack_admin.php?tasPk=$tasPk&comPk=$comPk\" method=\"post\">
-                            <input type=\"hidden\" name=\"MAX_FILE_SIZE\" value=\"1000000000\">", 
+                            <input type=\"hidden\" name=\"MAX_FILE_SIZE\" value=\"1000000000\">",
                             "<input name=\"userfile\" type=\"file\">",  "<input type=\"submit\" name=\"foo\" value=\"Send Tracklog\"></form>");
-    
+
     # Create XContest Tracks Submit
     $xtable[] = array(" <form action=\"tasktrack_admin.php?tasPk=$tasPk&comPk=$comPk\" name=\"xcontest\" method=\"post\"> \n".
                             fbut('submit', 'getxcontest', $tasPk, 'Get Tracks fron XContest').
@@ -370,5 +356,3 @@ echo "<a href='task_admin.php?tasPk=$tasPk&comPk=$comPk'>Back to Task Administra
 tpfooter($file);
 
 ?>
-
-
