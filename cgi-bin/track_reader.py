@@ -69,7 +69,8 @@ def main():
                     """checking track against task"""
                     verify_track(track, task, test)
                     message += ("track {} verified with task {}\n".format(mytrack.traPk, mytrack.tasPk))
-                    result += ("track correctly imported and results generated \n".format(mytrack.traPk, mytrack.tasPk))
+                    result += ("track correctly imported and results generated \n")
+                    result += ("traPk={}".format(mytrack.traPk))
 
             else:
                 result = ("error: task ID {} does NOT belong to any Competition \n".format(tasPk))
