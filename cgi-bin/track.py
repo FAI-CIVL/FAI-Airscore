@@ -9,13 +9,10 @@ and creates an object containing all info about the flight
 Antonio Golfari, Stuart Mackintosh - 2019
 """
 
-# Use your utility module.
-import kml
-from myconn import Database
 from calcUtils import *
 from igc_lib import *
-
-import os, json, geojson
+# Use your utility module.
+from myconn import Database
 
 
 class Track():
@@ -40,7 +37,7 @@ class Track():
         self.flight = None      # igc_lib.Flight object
         self.date = None        # in datetime.date format
 
-    def get_pilot(self, list = None, test = 0):
+    def get_pilot(self, test = 0):
         """Get pilot associated to a track from its filename
         should be named as such: FAI.igc or LASTNAME_FIRSTNAME.igc
         """
@@ -72,14 +69,6 @@ class Track():
                 cond = ' OR '.join(s)
                 cond2 = ' OR '.join(t)
                 cond3 = ' OR '.join(u)
-#                 query = ("""    SELECT
-#                                     pilPk
-#                                 FROM
-#                                     tblPilot
-#                                 WHERE
-#                                     ({})
-#                                 AND
-#                                     ({})""".format(cond, cond2))
                 query =(""" SELECT
                                 pilPk
                             FROM
@@ -122,14 +111,6 @@ class Track():
         result = ''
         message = ''
         message += ("track {} will be imported for pilot with ID {} and task with ID {} \n".format(self.filename, self.pilPk, self.tasPk))
-#        traPk = None
-#         print(self)
-#         """Get info on glider"""
-#         self.get_glider(test)
-
-#         """read track file"""
-#         """IGC, KML, OZI, LIVE"""
-#         result = self.read(test)
 
         """get time of first fix of the track"""
         trastart = datetime.combine(datetime.strptime(self.date, "%Y-%m-%d"), datetime.strptime(sec_to_str(self.flight.fixes[0].rawtime),"%H:%M:%S").time())
@@ -149,13 +130,14 @@ class Track():
                     )
                     VALUES(
                         '{}','{}','{}','{}','{}','{}','{}','{}'
-                    );
-                    SELECT LAST_INSERT_ID();""".format(self.pilPk, traclass, self.glider, self.cert, self.date, trastart, traduration, self.filename))
+                    )
+                    """.format(self.pilPk, traclass, self.glider, self.cert, self.date, trastart, traduration, self.filename))
         message += query
         if not test:
             with Database() as db:
                 try:
-                    self.traPk = db.execute(query)
+                    db.execute(query)
+                    self.traPk = db.lastrowid()
                 except:
                     print('Error Inserting track into db:')
                     print(query)
@@ -164,19 +146,7 @@ class Track():
         else:
             print(message)
 
-#         """creates a JSON data"""
-#          j = json.dumps(result, cls=DateTimeEncoder)
-#
-#         """writes a JSON file"""
-#         filename = FILEDIR + '/'+('.'.join(self.pilPk,self.tasPk,'json'))
-#         with open(filename, 'wb') as fp:
-#             fp.write(j.encode("utf-8"))
-#
-#         if test == 1:
-#             """TEST MODE"""
-#             print (message)
-#         self.fixes = result['fix_records']
-        return self.traPk, result
+        return result
 
     @classmethod
     def read_file(cls, filename, pilot_id = None, test = 0):
@@ -298,7 +268,7 @@ class Track():
         message = ''
         if self.filename is not None:
             """read first line of file"""
-            with open(self.filename) as f:
+            with open(self.filename, encoding="ISO-8859-1") as f:
                 first_line = f.readline()
 
             if first_line[:1] == 'A':
@@ -331,7 +301,9 @@ class Track():
             with Database() as db:
                 row = db.fetchone(query)
             if row is not None:
-                self.glider = " ".join((row['pilGliderBrand'], row['pilGlider']))
+                brand = '' if row['pilGliderBrand'] is None else row['pilGliderBrand']
+                glider = '' if row['pilGlider'] is None else ' ' + row['pilGlider']
+                self.glider = brand + glider
                 self.cert = row['gliGliderCert']
 
         else:
@@ -347,7 +319,6 @@ class Track():
         """copy track file in the correct folder and with correct name
         name could be changed as the one XContest is sending, or rename that one, as we wish"""
         from shutil import copyfile
-        from datetime import datetime
         from Defines import FILEDIR
         import glob
 
