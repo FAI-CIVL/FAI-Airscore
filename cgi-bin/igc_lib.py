@@ -18,7 +18,7 @@ import datetime
 import math
 import re
 import xml.dom.minidom
-from pathlib2 import Path
+from pathlib import Path
 
 from collections import defaultdict
 
@@ -26,7 +26,7 @@ import lib.viterbi as viterbi
 import lib.geo as geo
 
 
-def _strip_non_printable_chars(string):
+def _strip_non_printable_chars(string: str):
     """Filters a string removing non-printable characters.
 
     Args:
@@ -509,7 +509,7 @@ class FlightParsingConfig(object):
     max_alt_change_rate = 50.0
 
     # Maximum number of fixes that exceed the altitude change limit.
-    max_alt_change_violations = 3
+    max_alt_change_violations = 10
 
     # Absolute maximum altitude, meters.
     max_alt = 10000.0
@@ -522,7 +522,7 @@ class FlightParsingConfig(object):
     #
 
     # Minimum ground speed to switch to flight mode, km/h.
-    min_gsp_flight = 20.0
+    min_gsp_flight = 10
 
     # Minimum bearing change to enter a thermal, deg/sec.
     min_bearing_change_circling = 6.0
@@ -589,7 +589,7 @@ class Flight:
         i_records = []
         h_records = []
         abs_filename = Path(filename).expanduser().absolute()
-        with abs_filename.open('r') as flight_file:
+        with open(abs_filename, 'r', encoding="ISO-8859-1") as flight_file:
             for line in flight_file:
                 line = line.replace('\n', '').replace('\r', '')
                 if not line:

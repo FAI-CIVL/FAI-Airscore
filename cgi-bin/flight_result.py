@@ -24,7 +24,7 @@ class Flight_result:
         Lead_coeff: lead points coeff (for GAP based systems)
         """
 
-    def __init__(self, Start_time=None, SSS_time=None, Start_time_str='', SSS_time_str='',
+    def __init__(self, Pilot_Start_time=None, SSS_time=0, Start_time_str='', SSS_time_str='',
                  Best_waypoint_achieved='No waypoints achieved', ESS_time_str='', total_time_str=None, ESS_time=None,
                  total_time=None, Lead_coeff=0, Distance_flown=0, Stopped_time = None, Stopped_altitude = 0, Jumped_the_gun=None):
         """
@@ -33,7 +33,7 @@ class Flight_result:
         """
         self.Start_time_str = Start_time_str
         self.SSS_time_str = SSS_time_str
-        self.Start_time = Start_time
+        self.Pilot_Start_time = Pilot_Start_time
         self.SSS_time = SSS_time
         self.Best_waypoint_achieved = Best_waypoint_achieved
         self.Waypoints_achieved = []
@@ -87,7 +87,7 @@ class Flight_result:
             result.Total_distance = float(r.get('distance')) * 1000 # in meters
             result.Distance_flown = float(r.get('real_distance')) * 1000 # in meters
             #print ("start_ss: {}".format(r.get('started_ss')))
-            result.Start_time = get_datetime(r.get('started_ss')).time() if r.get('started_ss') is not None else None
+            result.Pilot_Start_time = get_datetime(r.get('started_ss')).time() if r.get('started_ss') is not None else None
             result.SSS_time = float(r.get('ss_time_dec_hours'))
             if result.SSS_time > 0:
                 result.ESS_time = get_datetime(r.get('finished_ss')).time()
@@ -133,7 +133,7 @@ class Flight_result:
         result = cls()
         tolerance = Task.tolerance
 
-        result.Start_time = Task.start_time
+        result.SSS_time = Task.start_time
 
         started = False
         waypoint = 1
@@ -145,7 +145,7 @@ class Flight_result:
         distances2go = Task.distances_to_go
         for fix in Flight.fixes:
             fix.rawtime_local = fix.rawtime + Task.time_offset*3600  #local time for result times (SSS and ESS)
-            result.Stopped_time = fix.rawtime_local
+            result.Stopped_time = fix.rawtime
             # handle stopped task
             maxtime = None
             if Task.stopped_time is not None and result.ESS_time is None:
@@ -185,15 +185,16 @@ class Flight_result:
 
             # pilot must have at least 1 fix inside the start after the start time then exit
             if (Task.turnpoints[t].type == "speed" and Task.turnpoints[t].how == "exit") or \
-                    ((Task.task_type == 'SPEEDRUN' or Task.task_type == 'ELAPSED TIME') and
+                    (Task.task_type == 'ELAPSED TIME' and
                      (Task.turnpoints[t-1].type == "speed" and Task.turnpoints[t-1].how == "exit")):
 
                 if proceed_to_start:
                     if not Task.turnpoints[t].in_radius(fix, tolerance, min_tol_m):
                         result.Waypoints_achieved.append(["SSS",fix.rawtime_local])  # pilot has started
                         result.Best_waypoint_achieved = 'SSS made'
-                        result.SSS_time = fix.rawtime_local
-                        result.SSS_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(fix.rawtime_local))
+                        result.Pilot_Start_time = fix.rawtime
+                        result.Start_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(fix.rawtime_local))
+                        if Task.task_type == 'ELAPSED TIME': result.SSS_time = fix.rawtime
                         started = True
                         proceed_to_start = False
                         t += 1
@@ -206,15 +207,16 @@ class Flight_result:
 
             # pilot must have at least 1 fix outside the start after the start time then enter
             elif (Task.turnpoints[t].type == "speed" and Task.turnpoints[t].how == "entry") or \
-                ((Task.task_type == 'SPEEDRUN' or Task.task_type == 'ELAPSED TIME') and
+                (Task.task_type == 'ELAPSED TIME' and
                  (Task.turnpoints[t - 1].type == "speed" and Task.turnpoints[t - 1].how == "entry")):
 
                 if proceed_to_start:
                     if Task.turnpoints[t].in_radius(fix, tolerance, min_tol_m):
                         result.Waypoints_achieved.append(["SSS",fix.rawtime_local])  # pilot has started
                         result.Best_waypoint_achieved = 'SSS made'
-                        result.SSS_time = fix.rawtime_local
-                        result.SSS_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(fix.rawtime_local))
+                        result.Pilot_Start_time = fix.rawtime
+                        result.Start_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(fix.rawtime_local))
+                        if Task.task_type == 'ELAPSED TIME': result.SSS_time = fix.rawtime
                         started = True
                         proceed_to_start = False
                         t += 1
@@ -233,14 +235,14 @@ class Flight_result:
 
                         if Task.turnpoints[t].type == "endspeed":
                             result.Waypoints_achieved.append(["ESS",fix.rawtime_local])  # pilot has achieved turnpoint
-                            result.ESS_time = fix.rawtime_local
+                            result.ESS_time = fix.rawtime
                             result.ESS_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(fix.rawtime_local))
                             result.SSDistance = Task.SSDistance
                             if Task.task_type == 'RACE':
-                                result.total_time = fix.rawtime - result.Start_time
+                                result.total_time = fix.rawtime - result.SSS_time
 
                             if Task.task_type == 'SPEEDRUN' or Task.task_type == 'ELAPSED TIME':
-                                result.total_time = fix.rawtime - result.SSS_time
+                                result.total_time = fix.rawtime - result.Pilot_Start_time
                             result.total_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(result.total_time))
                         else:
                             result.Waypoints_achieved.append([waypoint,fix.rawtime_local])  # pilot has achieved turnpoint
@@ -253,13 +255,13 @@ class Flight_result:
                         result.Best_waypoint_achieved = 'waypoint ' + str(waypoint) + ' made'
                     if Task.turnpoints[t].type == "endspeed":
                         result.Waypoints_achieved.append(["ESS", fix.rawtime_local])  # pilot has achieved turnpoint
-                        result.ESS_time = fix.rawtime_local
+                        result.ESS_time = fix.rawtime
                         result.ESS_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(fix.rawtime_local))
                         result.SSDistance = Task.SSDistance
                         if Task.task_type == 'RACE':
-                            result.total_time = fix.rawtime - result.Start_time
-                        if Task.task_type == 'SPEEDRUN' or Task.task_type == 'ELAPSED TIME':
                             result.total_time = fix.rawtime - result.SSS_time
+                        if Task.task_type == 'SPEEDRUN' or Task.task_type == 'ELAPSED TIME':
+                            result.total_time = fix.rawtime - result.Pilot_Start_time
 
                         result.total_time_str = (
                                 ("%02d:%02d:%02d") % rawtime_float_to_hms(result.total_time))
@@ -322,7 +324,7 @@ class Flight_result:
         query = "INSERT INTO tblTaskResult_test (" \
                 "tasPk, traPk, tarDistance, tarSpeed, tarStart, tarGoal, tarSS, tarES, tarTurnpoints, " \
                 "tarLeadingCoeff, tarPenalty, tarComment, tarLastAltitude, tarLastTime ) " \
-                "VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})".format(tasPk, traPk, self.Distance_flown, self.speed, self.Start_time, self.goal_time, self.SSS_time , endss, len(self.Waypoints_achieved), self.Lead_coeff, self.Penalty, self.Comment, self.Stopped_altitude, self.Stopped_time)
+                "VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})".format(tasPk, traPk, self.Distance_flown, self.speed, self.Pilot_Start_time, self.goal_time, self.SSS_time, endss, len(self.Waypoints_achieved), self.Lead_coeff, self.Penalty, self.Comment, self.Stopped_altitude, self.Stopped_time)
         #print(query)
 
         query = "INSERT INTO tblTaskResult_test ( " \
@@ -331,7 +333,7 @@ class Flight_result:
                 "VALUES ( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s )"
         #, #%s, %s, %s)"
         num_wpts = len(self.Waypoints_achieved)
-        params = [tasPk, traPk, self.Distance_flown, self.speed, self.Start_time, self.goal_time, self.SSS_time , endss, num_wpts, self.Lead_coeff, self.Penalty, self.Stopped_time] #, self.Comment, self.Stopped_altitude, self.Stopped_time]
+        params = [tasPk, traPk, self.Distance_flown, self.speed, self.Pilot_Start_time, self.goal_time, self.SSS_time , endss, num_wpts, self.Lead_coeff, self.Penalty, self.Stopped_time] #, self.Comment, self.Stopped_altitude, self.Stopped_time]
 
         with Database() as db:
            r = db.execute(query, params)
@@ -353,7 +355,7 @@ class Flight_result:
         query = "INSERT INTO tblTaskResult (" \
                 "tasPk, traPk, tarDistance, tarSpeed, tarStart, tarGoal, tarSS, tarES, tarTurnpoints, " \
                 "tarLeadingCoeff2, tarPenalty, tarComment, tarLastAltitude, tarLastTime ) " \
-                "VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})".format(tasPk, traPk, self.Distance_flown, self.speed, self.Start_time, self.goal_time, self.SSS_time , endss, len(self.Waypoints_achieved), self.Lead_coeff, self.Penalty, self.Comment, self.Stopped_altitude, self.Stopped_time)
+                "VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})".format(tasPk, traPk, self.Distance_flown, self.speed, self.Pilot_Start_time, self.goal_time, self.SSS_time, endss, len(self.Waypoints_achieved), self.Lead_coeff, self.Penalty, self.Comment, self.Stopped_altitude, self.Stopped_time)
         #print(query)
 
         query = "INSERT INTO tblTaskResult ( " \
@@ -362,7 +364,7 @@ class Flight_result:
                 "VALUES ( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s )"
         # , #%s, %s, %s)"
         num_wpts = len(self.Waypoints_achieved)
-        params = [tasPk, traPk, self.Distance_flown, self.speed, self.Start_time, self.goal_time, self.SSS_time, endss,
+        params = [tasPk, traPk, self.Distance_flown, self.speed, self.Pilot_Start_time, self.goal_time, self.SSS_time, endss,
                   num_wpts, self.Lead_coeff, self.Penalty,
                   self.Stopped_time]  # , self.Comment, self.Stopped_altitude, self.Stopped_time]
 
