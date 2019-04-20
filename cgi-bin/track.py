@@ -138,11 +138,11 @@ class Track():
                 try:
                     db.execute(query)
                     self.traPk = db.lastrowid()
+                    result += ("track for pilot with id {} correctly stored in database".format(self.pilPk))
                 except:
                     print('Error Inserting track into db:')
                     print(query)
-                finally:
-                    result += ("track for pilot with id {} correctly stored in database".format(self.pilPk))
+                    result = ('Error inserting track for pilot with id {}'.format(self.pilPk))
         else:
             print(message)
 
