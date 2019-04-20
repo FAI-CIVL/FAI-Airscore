@@ -20,10 +20,16 @@ def get_xc_parameters(task_id, test = 0):
     site_id = 0
     takeoff_id = 0
     datestr = None
-    query = ("SELECT xccSiteID, XccToID, tasDate FROM tblTaskWaypoint JOIN "
-                "tblTask ON tblTaskWaypoint.tasPk = tblTask.tasPk JOIN "
-                "tblRegionWaypoint ON tblRegionWaypoint.rwpPk = tblTaskWaypoint.rwpPk "
-                "WHERE tblTask.tasPk =%s AND tawType = 'launch'", (task_id,))
+    query = ("""  SELECT
+                    R.`xccSiteID`,
+                    R.`XccToID`,
+                    T.`tasDate`
+                FROM
+                    `tblTaskWaypoint` TW
+                JOIN `tblTask` T USING(`tasPk`)
+                JOIN `tblRegionWaypoint` R USING(`rwpPk`)
+                WHERE
+                    T.`tasPk` = {} AND TW.`tawType` = 'launch'""".format(task_id))
     with Database() as db:
         if db.rows(query) > 0:
             site_id, takeoff_id, date = db.fetchone(query)
