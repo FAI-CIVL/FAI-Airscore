@@ -87,16 +87,16 @@ def epoch_to_datetime(sec, rawtime = 0, offset = 0, test = 0):
     else:
         return sec
 
-def sec_to_str(sec, offset = 0, test = 0):
-    """
-        Transform string in datetime.datetime
-    """
-    try:
-        return str(timedelta(seconds=sec+offset*3600))
-    except TypeError:
-        print ("an error occurred")
-    else:
-        return sec
+# def sec_to_str(sec, offset = 0, test = 0): #no longer used probably can remove
+#     """
+#         Transform string in datetime.datetime
+#     """
+#     try:
+#         return str(timedelta(seconds=sec+offset*3600))
+#     except TypeError:
+#         print ("an error occurred")
+#     else:
+#         return sec
 
 # class time_diff(timedelta):
 #   """Transfrom DateTme to string for JSON encoding"""

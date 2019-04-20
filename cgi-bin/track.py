@@ -41,10 +41,8 @@ class Track():
         """Get pilot associated to a track from its filename
         should be named as such: FAI.igc or LASTNAME_FIRSTNAME.igc
         """
-
+        message = ''
         if self.pilPk is None:
-            message = ''
-            names = []
 
             """Get string"""
             fields = os.path.splitext(os.path.basename(self.filename))
@@ -105,7 +103,7 @@ class Track():
             print (message)
 
     def add(self, test = 0):
-        from datetime import datetime
+        from datetime import timedelta
         from compUtils import get_class
         """Imports track to db"""
         result = ''
@@ -113,7 +111,8 @@ class Track():
         message += ("track {} will be imported for pilot with ID {} and task with ID {} \n".format(self.filename, self.pilPk, self.tasPk))
 
         """get time of first fix of the track"""
-        trastart = datetime.combine(datetime.strptime(self.date, "%Y-%m-%d"), datetime.strptime(sec_to_str(self.flight.fixes[0].rawtime),"%H:%M:%S").time())
+        trastart = self.date + timedelta(seconds= self.flight.fixes[0].rawtime)
+
         traclass = get_class(self.tasPk)
         traduration = self.flight.fixes[-1].rawtime - self.flight.fixes[0].rawtime
 
@@ -265,12 +264,10 @@ class Track():
 
     def get_type(self, test = 0):
         """determine if igc / kml / live / ozi"""
-        message = ''
         if self.filename is not None:
             """read first line of file"""
             with open(self.filename, encoding="ISO-8859-1") as f:
                 first_line = f.readline()
-
             if first_line[:1] == 'A':
                 """IGC: AXCT7cea4d3ae0df42a1"""
                 self.type = "igc"
@@ -364,7 +361,7 @@ class Track():
                 if we use flight date then we need an index for multiple tracks"""
                 #filename = pname+'_'+datetime.today().strftime('%Y%m%d-%H%M%S')+'.igc'
                 index = str(len(glob.glob(taskdir+'/'+pname+'*.igc')) + 1).zfill(2)
-                filename = '_'.join([pname,self.date,index]) + '.igc'
+                filename = '_'.join([pname,str(self.date),index]) + '.igc'
                 fullname = '/'.join([taskdir,filename])
                 message += "path to copy file: {}".format(fullname)
                 """copy file"""

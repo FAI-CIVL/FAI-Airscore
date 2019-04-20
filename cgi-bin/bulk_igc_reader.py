@@ -14,9 +14,8 @@ import os, sys
 from tempfile import TemporaryDirectory
 from zipfile import ZipFile
 from os.path import isfile
-import pwc
 from task import Task
-from flight_result import Flight_result
+
 
 def printf(format, *args):
     sys.stdout.write(format % args)
@@ -73,7 +72,6 @@ def get_tracks(dir, test = 0):
 
 def assign_tracks(files, task, test = 0):
     """Find pilots to associate with tracks"""
-    from datetime import datetime
 
     message = ''
     mytracks = []

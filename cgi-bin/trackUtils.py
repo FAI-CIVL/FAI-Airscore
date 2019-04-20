@@ -6,13 +6,8 @@ Use:    import trackUtils
 Antonio Golfari - 2018
 """
 
-import os, sys
-from shutil import copyfile
-import datetime
-
+import os
 import pwc
-from track import Track
-from task import Task
 from flight_result import Flight_result
 
 # Use your utility module.
@@ -29,6 +24,7 @@ def import_track(track, test = 0):
 def verify_track(track, task, test = 0):
     task_result = Flight_result.check_flight(track.flight, task, pwc.parameters, 5) #check flight against task with min tolerance of 5m
     task_result.store_result(track.traPk, task.tasPk)
+    print(track.flight.notes)
 
 def get_non_scored_pilots(tasPk, test=0):
     """Gets list of registered pilots that still do not have a result"""
@@ -80,13 +76,13 @@ def get_non_scored_pilots(tasPk, test=0):
 
 def get_pilot_from_list(filename, list, test=0):
     """check filename against a list of pilots"""
-    message = ''
     pilot_id = 0
     """Get string"""
     fields = os.path.splitext(filename)
     if fields[0].isdigit():
         """Gets pilot ID from FAI n."""
-        fai = 0 + int(fields[0])
+        # fai = 0 + int(fields[0])
+        fai = fields[0]
         print ("file {} contains FAI n. {} \n".format(filename, fai))
         for row in list:
             if fai == row['pilFAI']:
