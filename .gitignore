@@ -1,4 +1,4 @@
-cgi-bin/defines.yaml
+cgi-bin/*.yaml
 admin/dreamhost*.*
 admin/host.it*
 cgi-bin/defines.yaml*

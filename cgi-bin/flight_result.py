@@ -1,4 +1,5 @@
-from route import get_datetime, rawtime_float_to_hms, in_semicircle, distance_flown
+from calcUtils import get_datetime
+from route import rawtime_float_to_hms, in_semicircle, distance_flown
 from myconn import Database
 
 """
@@ -369,4 +370,3 @@ class Flight_result:
 
         with Database() as db:
            r = db.execute(query, params)
-
