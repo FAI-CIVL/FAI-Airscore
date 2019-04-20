@@ -26,10 +26,11 @@ add support for elapsed time tasks and also jump the gun for HG.
 
 '''
 
-from route import *
+from route import distance, polar, find_closest, cartesian2polar, polar2cartesian
 from myconn import Database
-from calcUtils import *
-from igc_lib import *
+from calcUtils import json, get_datetime, decimal_to_seconds, time_difference
+from igc_lib import defaultdict
+import  math
 import xml.dom.minidom
 
 
@@ -405,9 +406,6 @@ class Task:
             Unfortunately the fsdb format isn't published so much of this is simply an
             exercise in reverse engineering.
         """
-        import lxml.etree as ET
-        from flight_result import Flight_result
-
         tas = dict()
         stats = dict()
         turnpoints = []

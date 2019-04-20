@@ -74,7 +74,6 @@ class Flight_result:
             Unfortunately the fsdb format isn't published so much of this is simply an
             exercise in reverse engineering.
         """
-        import lxml.etree as ET
         from datetime import timedelta
 
         result = cls()

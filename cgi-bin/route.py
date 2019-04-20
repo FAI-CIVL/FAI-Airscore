@@ -12,7 +12,6 @@ import math
 import numpy as np
 from geopy.distance import geodesic, ELLIPSOIDS, vincenty
 from collections import namedtuple
-from calcUtils import *
 
 a = 6378137  # WSG84 major meters
 b = 6356752.3142  # WGS84 minor meters

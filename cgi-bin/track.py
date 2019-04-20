@@ -9,10 +9,11 @@ and creates an object containing all info about the flight
 Antonio Golfari, Stuart Mackintosh - 2019
 """
 
-from calcUtils import *
-from igc_lib import *
+from calcUtils import epoch_to_date
+from igc_lib import Flight
 # Use your utility module.
 from myconn import Database
+import os
 
 
 class Track():
@@ -178,10 +179,10 @@ class Track():
                 track.date = epoch_to_date(track.flight.date_timestamp)
                 if test == 1:
                     """TEST MODE"""
-                    print (message)
+                    print(message)
                 return track
         else:
-            message += ("File {} (pilot ID {}) is NOT a valid track file. \n".format(track, pilPk))
+            message += ("File {} (pilot ID {}) is NOT a valid track file. \n".format(track, pilot_id))
 
     @classmethod
     def read_db(cls, traPk, test = 0):

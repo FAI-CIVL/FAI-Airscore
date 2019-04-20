@@ -6,10 +6,7 @@ Use:    import trackUtils
 Antonio Golfari - 2018
 """
 
-# Use your utility module.
-import myconn
-
-import sys, os, json, string
+import json
 from datetime import date, time, datetime, timedelta
 
 class DateTimeEncoder(json.JSONEncoder):
@@ -61,7 +58,7 @@ def get_datetime(str, test = 0):
         Transform string in datetime.datetime
     """
     if str is not None:
-        return (datetime.strptime((str)[:19], '%Y-%m-%dT%H:%M:%S'))
+        return datetime.strptime((str)[:19], '%Y-%m-%dT%H:%M:%S')
     else:
         return str
 
@@ -72,8 +69,7 @@ def epoch_to_date(sec, offset = 0, test = 0):
     try:
         return datetime.fromtimestamp(sec).date()
     except TypeError:
-        print ("an error occurred")
-    else:
+        print("an error occurred")
         return sec
 
 def epoch_to_datetime(sec, rawtime = 0, offset = 0, test = 0):
@@ -83,8 +79,7 @@ def epoch_to_datetime(sec, rawtime = 0, offset = 0, test = 0):
     try:
         return datetime.fromtimestamp(sec+rawtime).strftime('%Y-%m-%d %H:%M:%S')
     except TypeError:
-        print ("an error occurred")
-    else:
+        print("an error occurred")
         return sec
 
 # def sec_to_str(sec, offset = 0, test = 0): #no longer used probably can remove

@@ -11,7 +11,6 @@ from myconn import Database
 
 def get_comp(tasPk, test = 0):
     """Get comPk from tasPk"""
-    comPk = 0
     if str(tasPk).isdigit() and tasPk > 0:
         with Database() as db:
             query = ("""    SELECT 
