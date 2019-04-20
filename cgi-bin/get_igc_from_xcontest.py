@@ -15,7 +15,7 @@ from myconn import Database
 
 def get_xc_parameters(task_id, test = 0):
     """Get site info and date from database """
-    from datetime import date
+    from datetime import datetime
 
     site_id = 0
     takeoff_id = 0
@@ -34,10 +34,11 @@ def get_xc_parameters(task_id, test = 0):
         if db.rows(query) > 0:
             site_id, takeoff_id, date = db.fetchone(query)
             logging.info("site_id:%s takeoff_id:%s date:%s", site_id, takeoff_id, date)
-            datestr = date.strftime('%Y-%m-%d') #convert from datetime to string
+            # datestr = date.strftime('%Y-%m-%d') #convert from datetime to string
         else:
             print('Error: no site found for the task')
-    return(site_id, takeoff_id, datestr)
+    # return(site_id, takeoff_id, datestr)
+    return(site_id, takeoff_id, date)
 
 def get_server_parameters(test = 0):
     import yaml, os
