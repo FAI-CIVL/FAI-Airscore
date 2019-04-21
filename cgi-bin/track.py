@@ -9,7 +9,7 @@ and creates an object containing all info about the flight
 Antonio Golfari, Stuart Mackintosh - 2019
 """
 
-from calcUtils import epoch_to_date
+from calcUtils import epoch_to_date, sec_to_time
 from igc_lib import Flight
 # Use your utility module.
 from myconn import Database
@@ -104,7 +104,7 @@ class Track():
             print (message)
 
     def add(self, test = 0):
-        from datetime import timedelta
+        import datetime
         from compUtils import get_class
         """Imports track to db"""
         result = ''
@@ -112,7 +112,8 @@ class Track():
         message += ("track {} will be imported for pilot with ID {} and task with ID {} \n".format(self.filename, self.pilPk, self.tasPk))
 
         """get time of first fix of the track"""
-        trastart = self.date + timedelta(seconds= self.flight.fixes[0].rawtime)
+        stime = sec_to_time(self.flight.fixes[0].rawtime)
+        trastart = datetime.datetime.combine(self.date, stime)
 
         traclass = get_class(self.tasPk)
         traduration = self.flight.fixes[-1].rawtime - self.flight.fixes[0].rawtime

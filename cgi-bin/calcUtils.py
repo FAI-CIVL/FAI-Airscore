@@ -81,6 +81,11 @@ def epoch_to_datetime(sec, rawtime = 0, offset = 0, test = 0):
     except TypeError:
         print("an error occurred")
         return sec
+def sec_to_time(sec):
+    seconds = int(sec)
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+    return time(hour=h, minute=m, second=s)
 
 # def sec_to_str(sec, offset = 0, test = 0): #no longer used probably can remove
 #     """
