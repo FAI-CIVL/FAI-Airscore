@@ -9,6 +9,7 @@ Antonio Golfari - 2018
 import os
 import pwc
 from flight_result import Flight_result
+from track import Track
 
 # Use your utility module.
 from myconn import Database
@@ -144,7 +145,7 @@ def verify_track(track, task, test = 0):
 def get_non_scored_pilots(tasPk, test=0):
     """Gets list of registered pilots that still do not have a result"""
     message = ''
-    list = []
+    pilot_list = []
     if tasPk:
         with Database() as db:
             query = ("""    SELECT
@@ -169,25 +170,25 @@ def get_non_scored_pilots(tasPk, test=0):
                                 LIMIT 1
                             ) AND S.`traPk` IS NULL""".format(tasPk))
             message += ("Query: {}  \n".format(query))
-            if db.rows(query) > 0:
-                """create a list from results"""
-                message += ("creating a list of pilots...")
-                list = [{   'pilPk': row['pilPk'],
-                            'pilFirstName': row['pilFirstName'],
-                            'pilLastName': row['pilLastName'],
-                            'pilFAI': row['pilFAI'],
-                            'pilXContestUser': row['pilXContestUser']}
-                        for row in db.fetchall(query)]
-            else:
-                message += ("No pilot found registered to the comp...")
+            pilot_list = db.fetchall(query)
+                        #     """create a list from results"""
+            #     message += ("creating a list of pilots...")
+            #     list = [{   'pilPk': row['pilPk'],
+            #                 'pilFirstName': row['pilFirstName'],
+            #                 'pilLastName': row['pilLastName'],
+            #                 'pilFAI': row['pilFAI'],
+            #                 'pilXContestUser': row['pilXContestUser']}
+            #             for row in db.fetchall(query)]
+            # else:
+            if list is None: message += ("No pilot found registered to the comp...")
     else:
         message += ("Registered List - Error: NOT a valid Comp ID \n")
 
     if test:
         """TEST MODE"""
-        print (message)
+        print(message)
 
-    return (list)
+    return pilot_list
 
 def get_pilot_from_list(filename, list, test=0):
     """check filename against a list of pilots"""
@@ -196,7 +197,6 @@ def get_pilot_from_list(filename, list, test=0):
     fields = os.path.splitext(filename)
     if fields[0].isdigit():
         """Gets pilot ID from FAI n."""
-        # fai = 0 + int(fields[0])
         fai = fields[0]
         print ("file {} contains FAI n. {} \n".format(filename, fai))
         for row in list:

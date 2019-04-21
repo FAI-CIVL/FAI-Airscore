@@ -191,7 +191,7 @@ class Task:
         task_start_time = t['tasStartTime']
         arrival = t['tasArrival']
         departure = t['tasDeparture']
-        tolerance = t['tasMargin']
+        tolerance = t['tasMargin'] * 0.01
 
 
         comPk = t['comPk']
@@ -264,7 +264,6 @@ class Task:
                         WHERE
                             `tasPk` = %s"""
             params = [self.Distance, self.ShortRouteDistance,   self.SSDistance, self.EndSSDistance, self.StartSSDistance, self.tasPk]
-            #print (params)
             db.execute(query, params)
 
             '''add opt legs to task wpt'''
