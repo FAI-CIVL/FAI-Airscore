@@ -6,15 +6,10 @@ Use: python3 bulk_igc_reader.py [taskPk] [zipfile] [opt. test]
 Antonio Golfari - 2018
 """
 # Use your utility module.
-from compUtils import *
 from trackUtils import *
-from track import Track
-
-import os, sys
 from tempfile import TemporaryDirectory
-from zipfile import ZipFile
 from task import Task
-
+import sys
 
 def printf(format, *args):
     sys.stdout.write(format % args)
@@ -31,7 +26,7 @@ def import_tracks(mytracks, task, test = 0):
 
     if test == 1:
         """TEST MODE"""
-        print (message)
+        print(message)
 
     return result
 
@@ -78,7 +73,7 @@ def main():
     else:
         print('error: Use: python3 dbulk_igc_reader.py [taskPk] [zipfile] [opt. test]')
 
-    print (result)
+    print(result)
 
 if __name__ == "__main__":
     main()
