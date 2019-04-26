@@ -1,7 +1,7 @@
 """
 Map definition
 Creates map from track GeoJSON and Task Definition JSON
-Use: design_map <traPk> <tasPk> <test>  
+Use: design_map <traPk> <tasPk> <test>
 
 Martino Boni - 2019
 """
@@ -13,7 +13,6 @@ import os,sys
 import folium
 from compUtils import read_formula
 from trackUtils import get_pil_track
-from calcUtils import sec_to_str
 from pprint import pprint
 
 import itertools
@@ -32,7 +31,7 @@ from track import Track
 
 ### select the library to parse the igc to geojson
 global IGC_LIB
-IGC_LIB = 'igc_lib' 
+IGC_LIB = 'igc_lib'
 
 # app = Flask(__name__)
 # app.secret_key = "A Super super uper secret key"
@@ -45,7 +44,7 @@ IGC_LIB = 'igc_lib'
 def style_function(feature):
     return {'fillColor': 'white','weight': 2,'opacity': 1,'color': 'red','fillOpacity': 0.5,"stroke-width":3}
 
-# function to return the bbox of geometries 
+# function to return the bbox of geometries
 def checkbbox(lat,lon,bbox):
     if lat < bbox[0][0]:
         bbox[0][0] = lat
@@ -55,14 +54,14 @@ def checkbbox(lat,lon,bbox):
         bbox[1][0] = lat
     if lon > bbox[1][1]:
         bbox[1][1] = lon
-    
+
     return bbox
 
 def get_bbox(flight):
     """Gets track boundaries """
 
     from geojson import Point, Feature, FeatureCollection, MultiPoint, MultiLineString, dump
-    
+
     assert flight.valid
 
     #TODO write objects to the geojson form the flight object
@@ -80,7 +79,7 @@ def get_bbox(flight):
 # function to create the map template with optional geojson, circles and points objects
 def make_map(layer_geojson=False,points=False,circles=False,polyline=False,margin=0):
     folium_map = folium.Map(location=[45.922207, 8.673952],zoom_start=13,tiles="Stamen Terrain",width='100%',height='75%')
-    
+
     """Design track"""
     if layer_geojson:
         geojson = layer_geojson["geojson"]
@@ -101,7 +100,7 @@ def make_map(layer_geojson=False,points=False,circles=False,polyline=False,margi
                 col = '#cc0000'
             else:
                 col = '#3186cc'
-            
+
             folium.Circle(
                 location    = [c['latitude'], c['longitude']],
                 radius      = 0.0 + c['radius'],
@@ -176,14 +175,14 @@ def extract_flight_details(flight):
         if thermal:
             flight_html+= "  thermal[" + str(x) + "]:" + str(thermal) + '\n'
     flight_html+= "Landing:" + str(flight.landing_fix)
-    
+
     return flight_html
 
 # dump flight object to geojson
 def dump_flight(track):
     geojson_file = track.to_geojson()
     bbox = get_bbox(track.flight)
-    
+
     return geojson_file, bbox
 
 # allowed uploads
@@ -204,7 +203,7 @@ def get_task(task):
         'name'      : obj.name
         })
 
-        turnpoints.append({ 
+        turnpoints.append({
         'radius'    : obj.radius,
         'longitude' : obj.lon,
         'latitude'  : obj.lat,
