@@ -360,16 +360,18 @@ def day_quality(taskt, formula):
     nomgoal = formula['forNomGoal']   # nom goal percentage
     nomdist = formula['forNomDistance']  # nom distance
     mindist = formula['forMinDistance']  # min distance
+    maxdist = taskt['maxdist']  # max distance
     totalflown = taskt['distovermin']  # total distance flown by pilots over min. distance
-    bestdistovermin = taskt['maxdist'] - mindist  # best distance flown ove minimum dist.
+    bestdistovernom = taskt['maxdist'] - nomdist  # best distance flown ove minimum dist.
+    # bestdistovermin = taskt['maxdist'] - mindist  # best distance flown ove minimum dist.
     numlaunched = taskt['launched'] # Num Pilots flown
 
-    print("nom goal * best dist over min : ",(nomgoal * bestdistovermin))
+    print("nom goal * best dist over nom : ", (nomgoal * bestdistovernom))
 
     # distance = 2 * totalflown / ( taskt['launched'] * ( (1+nomgoal) * (int( formula['nomdist']-formula['mindist']) + .5 ) ) * (nomgoal * bestdist) )
-    if (nomgoal * bestdistovermin) > 0:
+    if (nomgoal * bestdistovernom) > 0:
         print("It is positive")
-        nomdistarea = ((nomgoal + 1) * (nomdist - mindist) + (nomgoal * bestdistovermin)) / 2
+        nomdistarea = ((nomgoal + 1) * (nomdist - mindist) + (nomgoal * bestdistovernom)) / 2
         print("NomDistArea : ", nomdistarea)
     
     else:
@@ -383,7 +385,7 @@ def day_quality(taskt, formula):
     print("Total Flown Distance : ", taskt['distance'])
     print("Total Flown Distance over min. dist. : " , totalflown)
     print("Pilots launched : ", numlaunched)
-    print("Best Distance: ", bestdistovermin)
+    print("Best Distance: ", maxdist)
     print("NomDistArea : ", nomdistarea)
 
     distance = totalflown / (numlaunched * nomdistarea)
