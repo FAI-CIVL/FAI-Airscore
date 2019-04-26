@@ -6,6 +6,7 @@ Use: design_map <traPk> <tasPk> <test>
 Martino Boni - 2019
 """
 
+
 import os,sys
 
 #from flask import Flask, flash, request, redirect, url_for, session, json
@@ -220,7 +221,6 @@ def get_task(task):
     return task_coords,turnpoints,short_route
 
 def main():
-    print("starting..")
     """Main module. Takes pilPk and tasPk as parameter"""
 #     log_dir = d.LOGDIR
 #     print("log setup")
@@ -265,10 +265,14 @@ def main():
     html_string = map.get_root().render()
 
     if test:
+        print("starting..")
         print("TaskID: {} - CompID: {}".format(task.tasPk, task.comPk))
         print("pil ID: {} - task ID: {} - track ID: {}".format(pilot_id, task_id, track_id))
         print ("Tolerance: {} ".format(tolerance))
         pprint(html_string)
+
+    #test for srcdoc iframe source
+    print(html_string)
 
 
 if __name__== "__main__":

@@ -15,13 +15,24 @@ $row = get_comtask($link,$tasPk);
 
 $out = '';
 $retv = 0;
+
+$source = '';
 exec("python3 " . BINDIR . "design_map.py $trackid $tasPk", $out, $retv);
 
-$iframe = "<iframe src='map.html' scrolling='no' style='width:100%;min-width:800px;height:100%;min-height:800px;overflow:hidden; margin-top:-4px; margin-left:-4px; border:none;'></iframe>";
+if ($out)
+{
+    foreach ($out as $line)
+    {
+        $source .= htmlentities($line, ENT_COMPAT);
+    }
+}
+
+// $iframe = "<iframe id='map' src='map.html' scrolling='no' style='width:100%;min-width:800px;height:100%;min-height:800px;overflow:hidden; margin-top:-4px; margin-left:-4px; border:none;'></iframe>";
+$iframe = "<iframe id='map' srcdoc=\"$source\" scrolling='no' style='width:100%;min-width:800px;height:100%;min-height:800px;overflow:hidden; margin-top:-4px; margin-left:-4px; border:none;'></iframe>";
 
 //initializing template header
 tpinit($link,$file,$row);
-#echo "python3 " . BINDIR . "design_map.py $trackid $tasPk";
+
 echo $iframe;
 
 tpfooter($file);
