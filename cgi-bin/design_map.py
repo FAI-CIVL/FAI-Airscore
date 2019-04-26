@@ -232,6 +232,7 @@ def main():
     turnpoints = []
     short_route = []
     map = None
+    map_file = '../map.html'
 
     ##check parameter is good.
     if len(sys.argv) >= 3 and sys.argv[1].isdigit() and sys.argv[2].isdigit():
@@ -259,7 +260,8 @@ def main():
     layer={}
     layer['geojson'], layer['bbox'] = dump_flight(track)
     map = make_map(layer_geojson=layer, points=task_coords, circles=turnpoints, polyline=short_route, margin=tolerance)
-    map.save('../map.html')
+    map.save(map_file)
+    os.chown(map_file, 1000, 1000)
     html_string = map.get_root().render()
 
     if test:
