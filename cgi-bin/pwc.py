@@ -361,7 +361,7 @@ def day_quality(taskt, formula):
     nomdist = formula['forNomDistance']  # nom distance
     mindist = formula['forMinDistance']  # min distance
     totalflown = taskt['distovermin']  # total distance flown by pilots over min. distance
-    bestdistovermin = taskt['maxdist'] - formula['forNomDistance']  # best distance flown ove minimum dist.
+    bestdistovermin = taskt['maxdist'] - mindist  # best distance flown ove minimum dist.
     numlaunched = taskt['launched'] # Num Pilots flown
 
     print("nom goal * best dist over min : ",(nomgoal * bestdistovermin))

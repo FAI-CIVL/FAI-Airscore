@@ -36,7 +36,6 @@ def main():
                 "tasTotDistOverMin= %s, tasPilotsTotal=%s, " \
                 "tasPilotsLaunched=%s, tasPilotsGoal=%s, " \
                 "tasFastestTime=%s, tasMaxDistance=%s " \
-                ",tasName='test'" \
                 "where tasPk=%s"
 
         params = [totals['distance'], totals['distovermin'], totals['pilots'], totals['launched'],
