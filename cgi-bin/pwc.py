@@ -354,8 +354,8 @@ def day_quality(taskt, formula):
     print("PWC launch validity = launch")
 
     # C.4.2 Distance Validity
-    DVR = (Total flown Distance over MinDist) / [ (PilotsFlying / 2) * (NomGoal +1) * (NomDist - MinDist) * NomGoal * (BestDist - NomDist) ]
-    distance = min (1, DVR)
+    # DVR = (Total flown Distance over MinDist) / [ (PilotsFlying / 2) * (NomGoal +1) * (NomDist - MinDist) * NomGoal * (BestDist - NomDist) ]
+    # distance = min (1, DVR)
 
     nomgoal = formula['forNomGoal']   # nom goal percentage
     nomdist = formula['forNomDistance']  # nom distance
@@ -386,8 +386,8 @@ def day_quality(taskt, formula):
     print("Best Distance: ", bestdistovermin)
     print("NomDistArea : ", nomdistarea)
 
-    # distance = totalflown / (numlaunched * nomdistarea)
-    # distance = min(1, distance)
+    distance = totalflown / (numlaunched * nomdistarea)
+    distance = min(1, distance)
 
     print("Total : ", (totalflown / (numlaunched * nomdistarea)))
     print("PWC distance validity = ", distance)
