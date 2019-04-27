@@ -17,4 +17,6 @@ _pycache_
 *.pyc
 *.igc
 .idea/
+map.html
+
 
