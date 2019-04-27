@@ -15,3 +15,6 @@ tracks/*
 _pycache_/*
 _pycache_
 *.pyc
+*.igc
+.idea/
+
