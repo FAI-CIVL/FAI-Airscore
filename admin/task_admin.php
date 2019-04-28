@@ -242,13 +242,36 @@ if (reqexists('updatetask'))
         $checklaunch = addslashes($_REQUEST['checklaunch']);
         $height = addslashes($_REQUEST['height']);
         $comment = reqsval('taskcomment');
+        # check margin percentage
+        if ( reqfval('margin') <= 100 )
+        {
+            $margin = abs( reqfval('margin') ); 
+        }
+        else
+        {
+            $margin = 0.5;
+        }
 
-        $query = "  UPDATE tblTask SET 
-                        tasName='$Name', tasDate='$Date', tasTaskStart='$TaskStart', tasStartTime='$StartTime', 
-                        tasStartCloseTime='$StartClose', tasFinishTime='$FinishTime', tasTaskType='$TaskType', 
-                        regPk=$regPk, tasSSInterval=$Interval, tasDeparture='$departure', tasArrival='$arrival', 
-                        tasHeightBonus='$height', tasCheckLaunch='$checklaunch', tasComment='$comment' 
-                    WHERE tasPk=$tasPk";
+        $query = "  UPDATE
+                        `tblTask`
+                    SET
+                        `tasName` = '$Name',
+                        `tasDate` = '$Date',
+                        `tasTaskStart` = '$TaskStart',
+                        `tasStartTime` = '$StartTime',
+                        `tasStartCloseTime` = '$StartClose',
+                        `tasFinishTime` = '$FinishTime',
+                        `tasTaskType` = '$TaskType',
+                        `regPk` = $regPk,
+                        `tasSSInterval` = $Interval,
+                        `tasDeparture` = '$departure',
+                        `tasArrival` = '$arrival',
+                        `tasHeightBonus` = '$height',
+                        `tasCheckLaunch` = '$checklaunch',
+                        `tasComment` = '$comment',
+                        `tasMarginOverride` = $margin
+                    WHERE
+                        `tasPk` = $tasPk ";
 
         mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task update failed: ' . mysqli_connect_error());
 
@@ -394,15 +417,12 @@ elseif ( reqexists('XCTask') )
 }
 
 $query = "  SELECT
-                C.comName,
-                C.comEntryRestrict,
-                C.comExt,
-                T.*
+                *
             FROM
-                tblCompetition C
-            JOIN tblTask T USING(comPk)
+                tblTaskView
             WHERE
-                T.tasPk = $tasPk";
+                tasPk = $tasPk
+            LIMIT 1";
 $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task select failed: ' . mysqli_connect_error());
 $row = mysqli_fetch_assoc($result);
 if ($row)
@@ -435,6 +455,7 @@ if ($row)
     $tasArrival = $row['tasArrival'];
     $tasCheckLaunch = $row['tasCheckLaunch'];
     $tasHeightBonus = $row['tasHeightBonus'];
+    $tasMargin = $row['tasMargin'];
     $regPk = $row['regPk'];
 }
 
@@ -487,6 +508,7 @@ if ( !$ext )
 
     $atable[] = array("Depart Bonus: ", fselect('departure', $tasDeparture, array( 'on', 'off', 'leadout', 'kmbonus' )), " default: leadout ", "Arrival Bonus: ", fselect('arrival', $tasArrival, array( 'on', 'off' )), " default: HG on / PG off ");
     $atable[] = array("Height Bonus: ", fselect('height', $tasHeightBonus, array( 'on', 'off' )), " default: off ", "Launch Check: ", fselect('checklaunch', $tasCheckLaunch, array( 'on', 'off' )), " default: off ", '', '', '');
+    $atable[] = array('Radius Margin Override %: ', fin('margin', $tasMargin, 4), 'Default: Scoring Formula Margin', '', '', '', '', '', '', '', '', '');
 
     # Create the task file upload table
     $ftable[] = array(" <input type=\"hidden\" name=\"MAX_FILE_SIZE\" value=\"1000000000\">", 
