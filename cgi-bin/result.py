@@ -19,12 +19,13 @@ class Task_result:
         - in HTML format for AirTribune
     """
 
-    def __init__(self, info = None, formula = None, stats = None, date = None, results = None, test = 0):
+    def __init__(self, info = None, formula = None, stats = None, timestamp = None, results = None, filename = None, test = 0):
         self.info       = info
         self.formula    = formula
         self.stats      = stats
-        self.date       = date
+        self.timestamp  = timestamp
         self.results    = results
+        self.filename   = filename
 
     def __str__(self):
         out = ''
@@ -84,13 +85,15 @@ class Task_result:
     #         return result
 
     @classmethod
-    def read_db(cls, task_id, date = None, test = 0):
+    def read_db(cls, task_id, test = 0):
         """
             reads task result
         """
         #from task import Task
         #from formula import Task_formula
         #from flight_result import Flight_result
+        import time
+        from datetime import datetime
         from pprint import pprint
 
         info = dict()
@@ -167,7 +170,8 @@ class Task_result:
                         `tasPilotsLO`               AS pilots_lo,
                         `tasPilotsGoal`             AS pilots_goal,
                         `maxScore`                  AS max_score,
-                        `tasGoalAlt`                AS goal_altitude
+                        `tasGoalAlt`                AS goal_altitude,
+                        `tasCode`
                     FROM
                         `tblTaskView`
                     WHERE
@@ -248,10 +252,16 @@ class Task_result:
             info = {x:t[x] for x in info_data}
             formula = {x:t[x] for x in formula_data}
             stats = {x:t[x] for x in stats_data}
+            ts = int(time.time())
+            d = datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S')
+            filename = '_'.join([t['tasCode'],d]) + '.json'
             if test:
                 pprint(info)
                 pprint(formula)
                 pprint(stats)
+                print (ts)
+                print(d)
+                print(filename)
 
         '''read pilots result'''
         query = (""" SELECT
@@ -303,25 +313,34 @@ class Task_result:
             result.stats = stats
             result.results = t
             result.info = info
-            result.date = None
+            result.timestamp = ts
+            result.filename = filename
             return result
 
     def to_json(self, filename = None):
         """
         creates the JSON file of the result
         """
-        import json
+        import json, os
+        import Defines as d
         from calcUtils import DateTimeEncoder
 
         # '''create a dict for task info'''
         # info = {    'name':self.task.name}
 
         #data = {self.date, self.formula, self.stats, self.results}
-        result = [      self.info,
-                        self.formula,
-                        [res for res in self.results],
-                        self.stats ]
-        json_file = json.dumps(result, cls=DateTimeEncoder)
+        if not filename:
+            jsondir = d.JSONDIR
+            filename = jsondir + self.filename
+
+        result =  {     'info':     [self.info],
+                        'formula':  [self.formula],
+                        'results':  [res for res in self.results],
+                        'stats':    [self.stats] }
+        json_file = json.dumps(result, cls=DateTimeEncoder, indent = 4)
+        with open(filename, 'w') as f:
+            f.write(json_file)
+        os.chown(filename, 1000, 1000)
         return json_file
 
 class Comp_result:
