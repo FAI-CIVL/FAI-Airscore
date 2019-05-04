@@ -121,6 +121,51 @@ class Flight_result:
         return result
 
     @classmethod
+    def read_from_db(cls, res_id, test = 0):
+        """reads result from database"""
+        query = (""" SELECT
+                        *
+                    FROM
+                        tblResult
+                    WHERE
+                        tarPk = {}
+                    LIMIT 1
+                """.format(res_id))
+        if test:
+            print('Result query:')
+            print(query)
+
+        with Database() as db:
+            # get the task details.
+            t = db.fetchone(query)
+        if t is None:
+            print('Not a valid flight')
+            return
+        else:
+            result = cls()
+            result.pilPk = t['pilPk']
+            result.Pilot_Start_time = t['tarStart']
+            result.SSS_time = t['tarSS']
+            result.ESS_time = t['tarES']
+            result.goal_time = t['tarGoal']
+            result.total_time = t['tarLastTime'] - t['tarStart']
+            result.Lead_coeff = t['tarLeadingCoeff2']
+            result.Distance_flown = t['tarDistance']
+            result.Stopped_altitude = t['tarLastAltitude']
+            result.Jumped_the_gun = None
+            result.Score = t['tarScore']
+            result.Total_distance = t['tarDistance']
+            result.Departure_score = t['tarDepartureScore']
+            result.Arrival_score = t['tarArrivalScore']
+            result.Distance_score = t['tarDistanceScore']
+            result.Time_score = t['tarSpeedScore']
+            result.Penalty = t['tarPenalty']
+            result.Comment = t['tarComment']
+            result.ext_id = None
+            result.result_type = 'lo'
+            return result
+
+    @classmethod
     def check_flight(cls, Flight, Task, formula_parameters, min_tol_m=0):
         """ Checks a Flight object against the task.
             Args:
