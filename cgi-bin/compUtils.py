@@ -2,7 +2,7 @@
 Module for operations on comp / task / formulas
 Use:    import compUtils
         comPk = compUtils.get_comp(tasPk)
-        
+
 Antonio Golfari - 2018
 """
 
@@ -13,11 +13,11 @@ def get_comp(tasPk, test = 0):
     """Get comPk from tasPk"""
     if str(tasPk).isdigit() and tasPk > 0:
         with Database() as db:
-            query = ("""    SELECT 
-                                comPk 
-                            FROM 
-                                tblTask 
-                            WHERE 
+            query = ("""    SELECT
+                                comPk
+                            FROM
+                                tblTask
+                            WHERE
                                 tasPk = {} """.format(tasPk))
             if db.rows(query) > 0:
                 return db.fetchone(query)['comPk']
@@ -28,12 +28,12 @@ def get_class(tasPk, test = 0):
     """Get comPk from tasPk"""
     if str(tasPk).isdigit() and tasPk > 0:
         with Database() as db:
-            query = ("""    SELECT 
-                                comClass 
-                            FROM 
-                                tblTaskView 
-                            WHERE 
-                                tasPk = {} 
+            query = ("""    SELECT
+                                comClass
+                            FROM
+                                tblTaskView
+                            WHERE
+                                tasPk = {}
                             LIMIT 1""".format(tasPk))
             if db.rows(query) > 0:
                 return db.fetchone(query)['comClass']
@@ -44,12 +44,12 @@ def get_task_date(tasPk, test = 0):
     """Get date from tasPk in date format"""
     if str(tasPk).isdigit() and tasPk > 0:
         with Database() as db:
-            query = ("""    SELECT 
-                                tasDate 
-                            FROM 
-                                tblTaskView 
-                            WHERE 
-                                tasPk = {} 
+            query = ("""    SELECT
+                                tasDate
+                            FROM
+                                tblTaskView
+                            WHERE
+                                tasPk = {}
                             LIMIT 1""".format(tasPk))
             if db.rows(query) > 0:
                 date = db.fetchone(query)['tasDate']
@@ -71,7 +71,7 @@ def get_registration(comPk, test=0):
                             FROM
                                 `tblCompetition`
                             WHERE
-                                `comPk` = {} 
+                                `comPk` = {}
                             LIMIT 1""".format(comPk))
             message += ("Query: {}  \n".format(query))
             if db.rows(query) > 0:
@@ -106,11 +106,11 @@ def get_registered_pilots(comPk, test=0):
             if db.rows(query) > 0:
                 """create a list from results"""
                 message += ("creating a list of pilots...")
-                list = [{   'pilPk': row['pilPk'], 
-                            'pilFirstName': row['pilFirstName'], 
-                            'pilLastName': row['pilLastName'], 
-                            'pilFAI': row['pilFAI'], 
-                            'pilXContestUser': row['pilXContestUser']} 
+                list = [{   'pilPk': row['pilPk'],
+                            'pilFirstName': row['pilFirstName'],
+                            'pilLastName': row['pilLastName'],
+                            'pilFAI': row['pilFAI'],
+                            'pilXContestUser': row['pilXContestUser']}
                         for row in db.fetchall(query)]
             else:
                 message += ("No pilot found registered to the comp...")
@@ -129,13 +129,13 @@ def is_registered(pilPk, comPk, test = 0):
     regPk = 0
     if (pilPk > 0 and comPk > 0):
         with Database() as db:
-            query = ("""    SELECT 
-                                R.regPk 
-                            FROM 
-                                tblRegistration R 
-                            WHERE 
-                                R.comPk = {} 
-                                AND R.pilPk = {} 
+            query = ("""    SELECT
+                                R.regPk
+                            FROM
+                                tblRegistration R
+                            WHERE
+                                R.comPk = {}
+                                AND R.pilPk = {}
                             LIMIT 1""".format(comPk, pilPk))
             message += ("Query: {}  \n".format(query))
             if db.rows(query) > 0:
@@ -159,11 +159,11 @@ def get_glider(pilPk, test = 0):
 
     if (pilPk > 0):
         with Database() as db:
-            query = ("""    SELECT 
-                                pilGlider, pilGliderBrand, gliGliderCert 
-                            FROM 
-                                tblPilot 
-                            WHERE 
+            query = ("""    SELECT
+                                pilGlider, pilGliderBrand, gliGliderCert
+                            FROM
+                                tblPilot
+                            WHERE
                                 pilPk = {}
                             LIMIT 1""".format(pilPk))
             message += ("Query: {}  \n".format(query))
@@ -190,9 +190,9 @@ def get_nat_code(iso):
         cond = 'C.natIso' + str(len(iso))
         with Database() as db:
             #print("* get country *")
-            query = ("""SELECT 
-                            C.natID AS Code 
-                        FROM tblCountryCodes C 
+            query = ("""SELECT
+                            C.natID AS Code
+                        FROM tblCountryCodes C
                         WHERE {} = '{}' LIMIT 1""".format(cond, iso))
             try:
                 return 0 + db.fetchone(query)['Code']
@@ -201,27 +201,26 @@ def get_nat_code(iso):
 
 def read_formula(comPk):
 
-    query = """ SELECT 
+    query = """ SELECT
                     F.*,
-                    FC.* 
-                FROM 
-                    tblCompetition C 
-                    JOIN tblForComp FC USING (comPk) 
-                    LEFT OUTER JOIN tblFormula F USING (forPk) 
-                WHERE 
-                    C.comPk = %s 
+                    FC.*
+                FROM
+                    tblCompetition C
+                    JOIN tblForComp FC USING (comPk)
+                    LEFT OUTER JOIN tblFormula F USING (forPk)
+                WHERE
+                    C.comPk = %s
                 LIMIT 1"""
     with Database() as db:
         # get the formula details.
         formula = db.fetchone(query, [comPk])
     formula['forMinDistance'] *= 1000
-    formula['forNomDistance'] *=1000
+    formula['forNomDistance'] *= 1000
     formula['forNomTime'] *= 60
     formula['forDiffDist'] *= 1000
 #    formula['ScaleToValidity'] = formula['forScaleToValidity']
     # FIX: add failsafe checking?
     if formula['forMinDistance'] <= 0:
-
         print("WARNING: mindist <= 0, using 5000m instead")
         formula['forMinDistance'] = 5000
 

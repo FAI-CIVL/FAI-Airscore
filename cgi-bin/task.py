@@ -129,7 +129,7 @@ class Task:
         self.partial_distance = []  # distance from launch to waypoint
         self.legs = []  ##non optimised legs
         self.stats = dict()  #scored task statistics
-        self.results = []  #scored task results
+        #self.results = []  #scored task results
         self.stopped_time = stopped_time  # time task was stopped.
         self.last_start_time = last_start_time  # last start gate when there are more than 1
         self.check_launch = check_launch  # check launch flag. whether we check that pilots leave from launch.
@@ -148,19 +148,53 @@ class Task:
         takes tasPk as argument"""
         turnpoints = []
         short_route = []
+        partial_distance = []
+
         if task_id < 1:
             print("task not present in database ", task_id)
 
         query = """ SELECT
-                        TIME_TO_SEC(T.`tasStartTime`) AS sstime,
-                        TIME_TO_SEC(T.`tasFinishTime`) AS endtime,
-                        TIME_TO_SEC(T.`tasLastStartTime`) AS LastStartTime,
-                        TIME_TO_SEC(T.`tasStartCloseTime`) AS StartCloseTime,
-                        T.*
+                        TIME_TO_SEC(`tasStartTime`) AS sstime,
+                        TIME_TO_SEC(`tasFinishTime`) AS endtime,
+                        TIME_TO_SEC(`tasLastStartTime`) AS LastStartTime,
+                        TIME_TO_SEC(`tasStartCloseTime`) AS StartCloseTime,
+                        `tasPk`,
+                        `comPk`,
+                        `tasDate`,
+                        `tasName`,
+                        `tasTaskStart`,
+                        `tasFinishTime`,
+                        `tasLaunchClose`,
+                        `tasCheckLaunch`,
+                        `tasStartTime`,
+                        `tasStartCloseTime`,
+                        `tasStoppedTime`,
+                        `tasLastStartTime`,
+                        `tasFastestTime`,
+                        `tasFirstDepTime`,
+                        `tasFirstArrTime`,
+                        `tasMaxDistance`,
+                        `tasResultsType`,
+                        `tasTaskType`,
+                        `tasDistance`,
+                        `tasShortRouteDistance`,
+                        `tasStartSSDistance`,
+                        `tasEndSSDistance`,
+                        `tasSSDistance`,
+                        `tasSSInterval`,
+                        `tasDeparture`,
+                        `tasLaunchValid`,
+                        `tasArrival`,
+                        `tasHeightBonus`,
+                        `tasComment`,
+                        `tasGoalAlt`,
+                        `comTimeOffset`,
+                        `comClass`,
+                        `tasMargin`
                     FROM
-                        `tblTaskView` T
+                        `tblTaskView`
                     WHERE
-                        T.`tasPk` = %s
+                        `tasPk` = %s
                     LIMIT 1"""
         with Database() as db:
             # get the task details.
@@ -204,6 +238,7 @@ class Task:
                         T.tawType,
                         T.ssrLatDecimal,
                         T.ssrLongDecimal,
+                        T.ssrCumulativeDist AS partial_distance,
                         R.rwpLatDecimal,
                         R.rwpLongDecimal,
                         R.rwpName AS name
@@ -228,6 +263,7 @@ class Task:
             s_point = polar(lat=tp['ssrLatDecimal'],lon=tp['ssrLongDecimal'])
             #print ("short route fix: {}, {}".format(s_point.lon,s_point.lat))
             short_route.append(s_point)
+            partial_distance.append(tp['partial_distance'])
 
         task = Task(turnpoints, start_time, end_time, task_type, stopped_time, last_start_time, check_launch)
         task.launchvalid = launchvalid
@@ -239,6 +275,7 @@ class Task:
         task.SSDistance = SSDistance
         task.SSInterval = SSInterval
         task.ShortRouteDistance = ShortRouteDistance
+        task.partial_distance = partial_distance
         task.optimised_turnpoints = short_route
         task.start_close_time = start_close_time
         task.task_start_time = task_start_time

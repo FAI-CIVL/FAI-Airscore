@@ -18,5 +18,4 @@ _pycache_
 *.igc
 .idea/
 map.html
-
-
+*.pyc
