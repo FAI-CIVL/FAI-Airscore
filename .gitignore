@@ -12,6 +12,7 @@ defines.php
 admin/.DS*
 cgi-bin/.DS*
 tracks/*
+json/*
 _pycache_/*
 _pycache_
 *.pyc
