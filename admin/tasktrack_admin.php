@@ -21,7 +21,7 @@ function get_registered_pilots($link, $comPk, $tasPk)
                         `tarES` AS TimeES,
                         `tarSS` AS TimeSS
                     FROM
-                        `tblResult`
+                        `tblResultView`
                     WHERE
                         `tasPk` = $tasPk
                 ) AS TT USING(`pilPk`)

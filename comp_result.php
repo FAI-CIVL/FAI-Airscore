@@ -5,16 +5,16 @@ require 'startup.php';
 
 function overall_handicap($link, $comPk, $how, $param, $cls)
 {
-    $sql = "select 
-                T.tasPk, 
-                max(TR.tarScore) as maxScore 
-            from 
-                tblTask T, 
-                tblTaskResult TR 
-            where 
-                T.tasPk = TR.tasPk 
-                and T.comPk = $comPk 
-            group by 
+    $sql = "select
+                T.tasPk,
+                max(TR.tarScore) as maxScore
+            from
+                tblTask T,
+                tblTaskResult TR
+            where
+                T.tasPk = TR.tasPk
+                and T.comPk = $comPk
+            group by
                 T.tasPk";
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Handicap maxscore failed: ' . mysqli_connect_error());
     $maxarr = [];
@@ -23,29 +23,29 @@ function overall_handicap($link, $comPk, $how, $param, $cls)
         $maxarr[$row['tasPk']] = $row['maxScore'];
     }
 
-    $sql = "select 
-                P.*, 
-                TK.*, 
-                TR.*, 
-                H.* 
-            from 
-                tblTaskResult TR, 
-                tblTask TK, 
-                tblTrack K, 
-                tblPilot P, 
-                tblHandicap H, 
-                tblCompetition C 
-            where 
-                H.comPk = C.comPk 
-                and C.comPk = TK.comPk 
-                and K.traPk = TR.traPk 
-                and K.pilPk = P.pilPk 
-                and H.pilPk = P.pilPk 
-                and H.comPk = TK.comPk 
-                and TK.comPk = $comPk 
-                and TR.tasPk = TK.tasPk 
-            order by 
-                P.pilPk, 
+    $sql = "select
+                P.*,
+                TK.*,
+                TR.*,
+                H.*
+            from
+                tblTaskResult TR,
+                tblTask TK,
+                tblTrack K,
+                tblPilot P,
+                tblHandicap H,
+                tblCompetition C
+            where
+                H.comPk = C.comPk
+                and C.comPk = TK.comPk
+                and K.traPk = TR.traPk
+                and K.pilPk = P.pilPk
+                and H.pilPk = P.pilPk
+                and H.comPk = TK.comPk
+                and TK.comPk = $comPk
+                and TR.tasPk = TK.tasPk
+            order by
+                P.pilPk,
                 TK.tasPk";
     #$sql = "select TK.*,TR.*,P.* from tblTaskResult TR, tblTask TK, tblTrack T, tblPilot P, tblCompetition C where C.comPk=$comPk and TK.comPk=C.comPk and TK.tasPk=TR.tasPk and TR.traPk=T.traPk and T.traPk=TR.traPk and P.pilPk=T.pilPk $cls order by P.pilPk, TK.tasPk";
 
@@ -62,7 +62,7 @@ function overall_handicap($link, $comPk, $how, $param, $cls)
         $validity = $row['tasQuality'] * 1000;
         $pilPk = $row['pilPk'];
         $tasName = $row['tasName'];
-    
+
         if (!$results[$pilPk])
         {
             $results[$pilPk] = [];
@@ -70,7 +70,7 @@ function overall_handicap($link, $comPk, $how, $param, $cls)
         }
         //echo "pilPk=$pilPk tasname=$tasName, result=$score<br>\n";
         $perf = 0;
-        if ($how == 'ftv') 
+        if ($how == 'ftv')
         {
             $perf = 0;
             if ($validity > 0)
@@ -93,75 +93,75 @@ function comp_result($link, $comPk, $how, $param, $cls, $tasktot, $ext)
     # $sql = "select TK.*,TR.*,P.*,T.traGlider from tblTaskResult TR, tblTask TK, tblTrack T, tblPilot P, tblCompetition C where C.comPk=$comPk and TK.comPk=C.comPk and TK.tasPk=TR.tasPk and TR.traPk=T.traPk and T.traPk=TR.traPk and P.pilPk=T.pilPk $cls order by P.pilPk, TK.tasPk";
     # New sql adding MaxScore for PWC FTV Calc
 
-    $extsql = "SELECT 
-                    TK.*, 
-                    TR.*, 
+    $extsql = "SELECT
+                    TK.*,
+                    TR.*,
                     (
-                        SELECT 
-                            MAX(tblResult.tarScore) 
-                        FROM 
-                            tblResult 
-                        WHERE 
-                            tblResult.tasPk = TK.tasPk
-                    ) AS maxScore, 
-                    P.*, 
+                        SELECT
+                            MAX(tblResultView.tarScore)
+                        FROM
+                            tblResultView
+                        WHERE
+                            tblResultView.tasPk = TK.tasPk
+                    ) AS maxScore,
+                    P.*,
                     (
-                        SELECT 
-                            C.natIso3 
-                        FROM 
-                            tblCountryCodes C 
-                        WHERE 
+                        SELECT
+                            C.natIso3
+                        FROM
+                            tblCountryCodes C
+                        WHERE
                             C.natID = P.pilNat
-                    ) AS pilNationCode, 
-                    TR.traGlider 
-                FROM 
-                    tblCompetition C 
-                    JOIN tblTask TK ON TK.comPk = C.comPk 
-                    JOIN tblResult TR ON TK.tasPk = TR.tasPk 
-                    JOIN tblPilot P ON P.pilPk = TR.pilPk 
-                    JOIN tblForComp FC ON FC.comPk = C.comPk     
-                WHERE 
-                    C.comPk = $comPk  
-                ORDER BY 
-                    P.pilPk, 
+                    ) AS pilNationCode,
+                    TR.traGlider
+                FROM
+                    tblCompetition C
+                    JOIN tblTask TK ON TK.comPk = C.comPk
+                    JOIN tblResultView TR ON TK.tasPk = TR.tasPk
+                    JOIN tblPilot P ON P.pilPk = TR.pilPk
+                    JOIN tblForComp FC ON FC.comPk = C.comPk
+                WHERE
+                    C.comPk = $comPk
+                ORDER BY
+                    P.pilPk,
                     TK.tasPk";
 
 
-    $sql = "    SELECT 
-                    TK.*, 
-                    TR.*, 
+    $sql = "    SELECT
+                    TK.*,
+                    TR.*,
                     (
-                        SELECT 
-                            MAX(tblResult.tarScore) 
-                        FROM 
-                            tblResult 
-                        WHERE 
-                            tblResult.tasPk = TK.tasPk
-                    ) AS maxScore, 
-                    F.forClass, 
-                    F.forVersion, 
-                    P.*, 
+                        SELECT
+                            MAX(tblResultView.tarScore)
+                        FROM
+                            tblResultView
+                        WHERE
+                            tblResultView.tasPk = TK.tasPk
+                    ) AS maxScore,
+                    F.forClass,
+                    F.forVersion,
+                    P.*,
                     (
-                        SELECT 
-                            C.natIso3 
-                        FROM 
-                            tblCountryCodes C 
-                        WHERE 
+                        SELECT
+                            C.natIso3
+                        FROM
+                            tblCountryCodes C
+                        WHERE
                             C.natID = P.pilNat
-                    ) AS pilNationCode, 
-                    TR.traGlider 
-                FROM 
-                    tblCompetition C 
-                    JOIN tblTask TK ON TK.comPk = C.comPk 
-                    JOIN tblResult TR ON TK.tasPk = TR.tasPk 
-                    JOIN tblPilot P ON P.pilPk = TR.pilPk 
-                    JOIN tblForComp FC ON FC.comPk = C.comPk 
-                    JOIN tblFormula F ON F.forPk = FC.forPk  
-     
-                WHERE 
-                    C.comPk = $comPk $cls 
-                ORDER BY 
-                    P.pilPk, 
+                    ) AS pilNationCode,
+                    TR.traGlider
+                FROM
+                    tblCompetition C
+                    JOIN tblTask TK ON TK.comPk = C.comPk
+                    JOIN tblResultView TR ON TK.tasPk = TR.tasPk
+                    JOIN tblPilot P ON P.pilPk = TR.pilPk
+                    JOIN tblForComp FC ON FC.comPk = C.comPk
+                    JOIN tblFormula F ON F.forPk = FC.forPk
+
+                WHERE
+                    C.comPk = $comPk $cls
+                ORDER BY
+                    P.pilPk,
                     TK.tasPk";
     if ( $ext )
     {
@@ -191,7 +191,7 @@ function comp_result($link, $comPk, $how, $param, $cls, $tasktot, $ext)
             $validity = $row['tasQuality'] * 1000;
         }
 
-    
+
         if (!array_key_exists($pilPk,$results) || !$results[$pilPk])
         {
             $results[$pilPk] = [];
@@ -205,7 +205,7 @@ function comp_result($link, $comPk, $how, $param, $cls, $tasktot, $ext)
         }
         //echo "pilPk=$pilPk tasname=$tasName, result=$score<br>\n";
         $perf = 0;
-        if ($how == 'ftv') 
+        if ($how == 'ftv')
         {
             $perf = 0;
             if ($validity > 0)
@@ -243,7 +243,7 @@ function filter_results($comPk, $how, $param, $results)
             $count = 0;
             foreach ($arr as $perf => $taskresult)
             {
-                //if ($perf == 'name') 
+                //if ($perf == 'name')
                 if (ctype_alpha($perf))
                 {
                     continue;
@@ -258,7 +258,7 @@ function filter_results($comPk, $how, $param, $results)
                     $arr[$perf]['perc'] = 0;
                 }
                 $count++;
-                
+
             }
         }
         else
@@ -267,7 +267,7 @@ function filter_results($comPk, $how, $param, $results)
             $pilvalid = 0;
             foreach ($arr as $perf => $taskresult)
             {
-                //if ($perf == 'name') 
+                //if ($perf == 'name')
                 if (ctype_alpha($perf))
                 {
                     continue;
@@ -291,7 +291,7 @@ function filter_results($comPk, $how, $param, $results)
                     $arr[$perf]['perc'] = $perc * 100;
                     # echo "valid = ".$pilvalid.", score = ".$pilscore.", perc = ".$perc;
                 }
-            }   
+            }
         }
         // resort arr by task?
         uasort($arr, "taskcmp");
@@ -338,15 +338,15 @@ $file = __FILE__;
 $link = db_connect();
 $title = 'AirScore'; # default
 
-$query = "  SELECT 
+$query = "  SELECT
                 T.*,
-                FC.*, 
-                F.* 
-            FROM 
-                tblCompetition T 
-                JOIN tblForComp FC USING (comPk) 
-                LEFT OUTER JOIN tblFormula F USING (forPk) 
-            WHERE 
+                FC.*,
+                F.*
+            FROM
+                tblCompetition T
+                JOIN tblForComp FC USING (comPk)
+                LEFT OUTER JOIN tblFormula F USING (forPk)
+            WHERE
                 T.comPk = $comPk";
 #echo $query;
 $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Comp query failed: ' . mysqli_connect_error());
@@ -441,23 +441,23 @@ elseif ($comOverall == 'ftv')
         #check if external comp
         $tbl = 'tblTaskResult TR';
         if ( $comExt == 1 )
-        { 
+        {
             $tbl = 'tblExtResult TR';
         }
-        $sql = "SELECT 
-                    DISTINCT T.tasPk, 
+        $sql = "SELECT
+                    DISTINCT T.tasPk,
                     (
-                        SELECT 
-                            MAX(TR.tarScore) 
-                        FROM 
-                            $tbl 
-                        WHERE 
+                        SELECT
+                            MAX(TR.tarScore)
+                        FROM
+                            $tbl
+                        WHERE
                             TR.tasPk = T.tasPk
-                    ) AS maxScore 
-                FROM 
-                    tblTask T, 
-                    $tbl 
-                WHERE 
+                    ) AS maxScore
+                FROM
+                    tblTask T,
+                    $tbl
+                WHERE
                     T.comPk = $comPk";
         $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task validity query failed: ' . mysqli_connect_error());
         $totalvalidity = 0;
@@ -471,11 +471,11 @@ elseif ($comOverall == 'ftv')
     }
     else # calculates FTV parameters based on task validity (FAI)
     {
-        $sql = "SELECT 
-                    SUM(tasQuality) as totValidity 
-                FROM 
-                    tblTask 
-                WHERE 
+        $sql = "SELECT
+                    SUM(tasQuality) as totValidity
+                FROM
+                    tblTask
+                WHERE
                     comPk = $comPk";
         $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task validity query failed: ' . mysqli_connect_error());
         $totalvalidity = round(mysqli_result($result, 0, 0) * $comOverallParam * 10,0);
@@ -492,10 +492,10 @@ if (0 && $tdate == $comDateTo)
     $usePk = check_auth('system');
     $link = db_connect();
     $isadmin = is_admin('admin',$usePk,$comPk);
-    
+
     if ($isadmin == 0)
     {
-        echo "<h2>Results currently unavailable</h2>";    
+        echo "<h2>Results currently unavailable</h2>";
         exit(0);
     }
 }
@@ -505,12 +505,12 @@ $rdec = [];
 
 // if ($comClass == "HG")
 // {
-//     $classopts = array ( 'open' => '', 'floater' => '&class=0', 'kingpost' => '&class=1', 
+//     $classopts = array ( 'open' => '', 'floater' => '&class=0', 'kingpost' => '&class=1',
 //         'hg-open' => '&class=2', 'rigid' => '&class=3', 'women' => '&class=4', 'masters' => '&class=5', 'teams' => '&class=8' );
 // }
 // else
 // {
-//     $classopts = array ( 'open' => '', 'fun' => '&class=0', 'sports' => '&class=1', 
+//     $classopts = array ( 'open' => '', 'fun' => '&class=0', 'sports' => '&class=1',
 //         'serial' => '&class=2', 'women' => '&class=4', 'masters' => '&class=5', 'teams' => '&class=8', 'handicap' => '&class=9' );
 // }
 // $cind = '';
@@ -550,7 +550,7 @@ else
     {
         $hdr = array( '',  '', '', '', '', '');
     }
-    
+
     $hdr2 = array( fb('Pos.'), fb('Name'), fb('Nat.'), fb('Glider'), fb('Sponsor'), fb('Total') );
 }
 
@@ -655,7 +655,7 @@ else if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'Route' ||
         $lasttot = $tot;
 
         foreach ($alltasks as $num => $name)
-        { 
+        {
             $score = 0;
             $perc = 100;
             if (array_key_exists($name, $arr))
@@ -682,7 +682,7 @@ else if ($comType == 'RACE' || $comType == 'Team-RACE' || $comType == 'Route' ||
             }
         }
         $rtable[] = $nxt;
-        
+
         $count++;
     }
     //echo ftable($rtable, "border=\"0\" cellpadding=\"2\" cellspacing=\"0\" alternate-colours=\"yes\" align=\"center\"", $rdec, '');
@@ -725,7 +725,7 @@ else
     {
         echo "<b>No tracks submitted for $comName yet.</b>\n";
     }
-    else 
+    else
     {
         if ($start >= 0)
         {

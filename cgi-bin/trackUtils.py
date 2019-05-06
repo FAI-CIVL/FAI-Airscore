@@ -157,7 +157,7 @@ def get_non_scored_pilots(tasPk, test=0):
                             FROM
                                 `tblRegistration` R
                             JOIN `tblPilot` P USING(`pilPk`)
-                            LEFT OUTER JOIN `tblResult` S ON
+                            LEFT OUTER JOIN `tblResultView` S ON
                                 S.`pilPk` = P.`pilPk` AND S.`tasPk` = {0}
                             WHERE
                                 R.`comPk` =(
@@ -240,7 +240,7 @@ def get_pil_track(pilPk, tasPk, test=0):
     query = ("""    SELECT
                         traPk
                     FROM
-                        tblResult
+                        tblResultView
                     WHERE
                         pilPk = {}
                         AND tasPk = {}

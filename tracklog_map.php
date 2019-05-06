@@ -12,7 +12,7 @@ $link = db_connect();
 
 $file = __FILE__;
 $row = get_comtask($link,$tasPk);
-
+$comPk = $row['comPk'];
 $out = '';
 $retv = 0;
 
@@ -34,6 +34,11 @@ $iframe = "<iframe id='map' srcdoc=\"$source\" scrolling='no' style='width:100%;
 tpinit($link,$file,$row);
 
 echo $iframe;
+
+echo "<br>";
+echo "<p>";
+echo "<a href='task_result.php?comPk=$comPk&tasPk=$tasPk'>Back to Task Results</a>";
+echo "</p>";
 
 tpfooter($file);
 

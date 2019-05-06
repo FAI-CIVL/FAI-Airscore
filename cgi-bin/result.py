@@ -248,9 +248,12 @@ class Task_result:
 
         '''read pilots result'''
         query = (""" SELECT
+                        `traPk`             AS `track_id`,
                         `pilName`			AS `name`,
+                        `pilSex`            AS `sex`,
                         `pilNationCode`		AS `nat`,
                         `traGlider`			AS `glider`,
+                        `traDHV`            AS `class`,
                         `pilSponsor`		AS `sponsor`,
                         `tarDistance`		AS `distance`,
                         `tarSpeed`			AS `speed`,
@@ -271,7 +274,7 @@ class Task_result:
                         `tarLastAltitude`	AS `altitude`,
                         `tarLastTime`		AS `last_time`
                     FROM
-                        `tblResult`
+                        `tblResultView`
                     WHERE
                         `tasPk` = {}
                     ORDER BY

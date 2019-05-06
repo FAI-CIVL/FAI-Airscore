@@ -7,7 +7,7 @@ function get_track_body($trackid,$interval)
 
     $body = [];
     $ret = [];
-    
+
     // track info ..
     $offset = 0;
     $sql = "SELECT
@@ -20,7 +20,7 @@ function get_track_body($trackid,$interval)
                 T.traDuration,
                 T.traFile
             FROM
-                tblResult TR
+                tblResultView TR
             LEFT OUTER JOIN tblTrack T USING(traPk)
             LEFT OUTER JOIN tblTaskView TK USING(tasPk)
             WHERE
@@ -59,9 +59,9 @@ function get_track_body($trackid,$interval)
 
             $dt1 = new DateTime($row["traDate"]);
             $dt2 = new DateTime($row["tasDate"]);
-            if ($dt1 < $dt2) 
-            { 
-                $offset = -86400; 
+            if ($dt1 < $dt2)
+            {
+                $offset = -86400;
             }
         }
         $ghour = floor($gtime / 3600);
@@ -135,7 +135,7 @@ function get_track_body($trackid,$interval)
                     trlTime";
         $offset = (int) ($offset / $interval);
     }
-    
+
     // Get some track points
     $result = mysqli_query($link, $sql);
     while ($row = mysqli_fetch_assoc($result))
@@ -205,7 +205,7 @@ function get_task($tasPk, $trackid)
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task info query failed: ' . mysqli_connect_error());
     while ($row = mysqli_fetch_assoc($result))
     {
-    
+
         $lasLat = 0.0 + $row['rwpLatDecimal'];
         $lasLon = 0.0 + $row['rwpLongDecimal'];
         $cname = $row["rwpName"];
@@ -220,7 +220,7 @@ function get_task($tasPk, $trackid)
     if ($trackid > 0)
     {
         // select * from tblTaskAward where traPk=$trackid
-//        $sql = "SELECT T.*,W.* FROM tblTaskWaypoint T 
+//        $sql = "SELECT T.*,W.* FROM tblTaskWaypoint T
 //                left join tblRegionWaypoint W on T.rwpPk=W.rwpPk
 //                left outer join on tblTaskAward TA on TA.traPk=$trackid
 //                where T.tasPk=$tasPk and W.rwpPk=T.rwpPk order by T.tawNumber";
@@ -228,7 +228,7 @@ function get_task($tasPk, $trackid)
 //        $result = mysql_query($sql,$link) or die('Task info query failed: ' . mysql_error());
 //        while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
 //        {
-//        
+//
 //            $lasLat = 0.0 + $row['rwpLatDecimal'];
 //            $lasLon = 0.0 + $row['rwpLongDecimal'];
 //            $cname = $row["rwpName"];
@@ -270,13 +270,13 @@ function get_region($regPk, $trackid)
         $sql = "SELECT max(T.trlLatDecimal) as maxLat, max(T.trlLongDecimal) as maxLong, min(T.trlLatDecimal) as minLat, min(T.trlLongDecimal) as minLong from tblTrackLog T where T.traPk=$trackid";
         $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Track query failed: ' . mysqli_connect_error());
         $row = mysqli_fetch_assoc($result);
-    
+
         $maxLat = $row['maxLat'] + 0.02;
         $maxLong = $row['maxLong'] + 0.02;
         $minLat = $row['minLat'] - 0.02;
         $minLong = $row['minLong'] - 0.02;
         $crad = 400;
-    
+
         $sql = "SELECT W.* FROM tblRegionWaypoint W where W.regPk=$regPk and W.rwpLatDecimal between $minLat and $maxLat and W.rwpLongDecimal between $minLong and $maxLong";
     }
     else
@@ -288,7 +288,7 @@ function get_region($regPk, $trackid)
     $ret = [];
     while ($row = mysqli_fetch_assoc($result))
     {
-    
+
         $lasLat = 0.0 + $row['rwpLatDecimal'];
         $lasLon = 0.0 + $row['rwpLongDecimal'];
         $cname = $row["rwpName"];
@@ -309,7 +309,7 @@ function award_waypoint($tasPk, $tawPk, $trackid, $wptime)
     $link = db_connect();
     $comPk = reqival('comPk');
     $isadmin = is_admin('admin',$usePk,$comPk);
-    if (!$isadmin) 
+    if (!$isadmin)
     {
         return 0;
     }
@@ -331,7 +331,7 @@ function award_waypoint($tasPk, $tawPk, $trackid, $wptime)
 
     # Re-verify with new awarded waypoint(s)
     $out = '';
-    $retv = 0; 
+    $retv = 0;
     exec(BINDIR . "track_verify_sr.pl $trackid $tasPk", $out, $retv);
     return 0;
 }
@@ -345,7 +345,7 @@ function get_track_wp($trackid)
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task info query failed: ' . mysqli_connect_error());
     while ($row = mysqli_fetch_assoc($result))
     {
-    
+
         $lasLat = 0.0 + $row['wptLatDecimal'];
         $lasLon = 0.0 + $row['wptLongDecimal'];
         $ret[] = array( $lasLat, $lasLon );
@@ -365,4 +365,3 @@ sajax_export("get_track_wp");
 sajax_export("award_waypoint");
 sajax_handle_client_request();
 ?>
-
