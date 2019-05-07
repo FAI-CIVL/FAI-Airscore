@@ -1,8 +1,8 @@
 <?php
 
 // Function to substitute deprecated mysql_result, sure have to look for better solution
-function mysqli_result($res,$row=0,$col=0){ 
-    $numrows = mysqli_num_rows($res); 
+function mysqli_result($res,$row=0,$col=0){
+    $numrows = mysqli_num_rows($res);
     if ($numrows && $row <= ($numrows-1) && $row >=0){
         mysqli_data_seek($res,$row);
         $resrow = (is_numeric($col)) ? mysqli_fetch_row($res) : mysqli_fetch_assoc($res);
@@ -42,7 +42,7 @@ function is_admin($what,$usePk,$comPk)
     while ($row = mysqli_fetch_assoc($result))
     {
         $level = $row['useLevel'];
-        if ($what == $level) 
+        if ($what == $level)
         {
             return 1;
         }
@@ -70,7 +70,7 @@ function check_auth($region=0)
     {
         $usePk = $user->id;
     }
-    else 
+    else
     {
         // Redirect the user
         return 0;
@@ -135,7 +135,7 @@ function menubar($comPk)
             $comType = 'OLC';
         }
         mysqli_close($link);
-        
+
         echo "<div id=\"vhead\"><h1>$comName</h1></div>";
     }
     else
@@ -206,7 +206,7 @@ function adminbar($comPk)
             $comType = 'OLC';
         }
         mysqli_close($link);
-        
+
         echo "<li><a href=\"comp_result.php?comPk=$comPk\">Scores</a></li>";
         echo "<li><a href=\"track_admin.php?comPk=$comPk\">Track</a></li>";
         echo "<li><a href=\"team_admin.php?comPk=$comPk\">Teams</a></li>";
@@ -253,15 +253,15 @@ function check_old_task($link, $tasPk)
 {
     # We check if waypoints used in this task are old ones, not in use anymore
     $old = 0;
-    $query="SELECT 
-                RW.* 
-            FROM 
-                tblRegionWaypoint RW 
-                INNER JOIN tblTaskWaypoint TW ON RW.rwpPk = TW.rwpPk 
-            WHERE 
-                TW.tasPk = $tasPk 
-                AND RW.rwpOld = 1 
-            LIMIT 
+    $query="SELECT
+                RW.*
+            FROM
+                tblRegionWaypoint RW
+                INNER JOIN tblTaskWaypoint TW ON RW.rwpPk = TW.rwpPk
+            WHERE
+                TW.tasPk = $tasPk
+                AND RW.rwpOld = 1
+            LIMIT
                 1";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Check old Waypoint in task failed: ' . mysqli_connect_error());
     if (mysqli_num_rows($result) > 0)
@@ -269,7 +269,7 @@ function check_old_task($link, $tasPk)
         $old = 1;
     }
 
-    return $old;    
+    return $old;
 }
 
 function waypoint_select($link,$tasPk,$name,$selected)
@@ -277,15 +277,15 @@ function waypoint_select($link,$tasPk,$name,$selected)
     # If waypoints are an old version, we will display only old ones
     # otherwise, only new ones, to avoid doubles
     $old = check_old_task($link, $tasPk);
-    $query="SELECT 
-                DISTINCT RW.* 
-            FROM 
-                tblRegionWaypoint RW 
+    $query="SELECT
+                DISTINCT RW.*
+            FROM
+                tblRegionWaypoint RW
                 JOIN tblTask T ON RW.regPk = T.regPk
-            WHERE 
-                T.tasPk = $tasPk 
-                AND RW.rwpOld = $old 
-            ORDER BY 
+            WHERE
+                T.tasPk = $tasPk
+                AND RW.rwpOld = $old
+            ORDER BY
                 RW.rwpName";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Waypoint select failed: ' . mysqli_connect_error());
     $waypoints = [];
@@ -303,7 +303,7 @@ function cmdlinecheck()
 {
     if (!$_REQUEST)
     {
-        if (!isset($_SERVER["HTTP_HOST"])) 
+        if (!isset($_SERVER["HTTP_HOST"]))
         {
             global $argv;
             parse_str($argv[1], $_REQUEST);
@@ -361,17 +361,58 @@ function reqsval($key)
     }
 }
 
+#new class selector to be used with JSON scoring
+function class_selector($link, $rankings, $selected)
+{
+    if ( !isset($selected) ) {
+        $selected = 'Overall';
+    }
+
+    $list = '';
+    $myurl = trim($_SERVER['REQUEST_URI'], '/');
+
+    #order rankings array
+    $order = [];
+    foreach ($rankings as $key => $rank) {
+        if ($rank <= 1) {
+            $order[$key] = 0;
+        }
+        else {
+            $order[$key] = count($rank);
+        }
+    }
+    array_multisort($order,SORT_NUMERIC,SORT_DESC,$rankings);
+
+    $list .= "<form enctype=\"multipart/form-data\" action=\"$myurl\" name=\"classsel\" id=\"classsel\" method=\"post\">".PHP_EOL;
+    $list .= "<select name=\"class\" id=\"class\" onchange=\"document.getElementById('classsel').submit();\"\">".PHP_EOL;
+
+    foreach ($rankings as $key=>$value) {
+        if ($value != 0) {
+            $name = $key;
+            $list .= "<option value='$name'";
+            if ($selected == $name) {
+              $list .= " selected='selected'";
+            }
+            $list .= ">$name</option>".PHP_EOL;
+        }
+    }
+    $list .= "</select>".PHP_EOL;
+    $list .= "</form>".PHP_EOL;
+
+    return $list;
+}
+
 function classselector($link, $claPk, $selected)
-{   
+{
     //echo "selected: $selected \n";
     # Set the selected option
     if ( !isset($selected) )
     {
-        $sql = "SELECT 
-                    MAX(ranPk) AS maxid 
-                FROM 
-                    tblClasCertRank 
-                WHERE 
+        $sql = "SELECT
+                    MAX(ranPk) AS maxid
+                FROM
+                    tblClasCertRank
+                WHERE
                     claPk = $claPk";
         $result = mysqli_query($link, $sql);
         $id = mysqli_fetch_object($result);
@@ -379,25 +420,25 @@ function classselector($link, $claPk, $selected)
         //echo "selected: $selected \n";
     }
     //echo "selected: $selected \n";
-    
+
     # Create the select element
     $list = '';
     $myurl = trim($_SERVER['REQUEST_URI'], '/');
-    
+
         //$list = "<select name=\"class\" id=\"class\" onchange=\"document.location.href='$myurl&class=' + this.value;\"> \n";
     $list .= "<form enctype=\"multipart/form-data\" action=\"$myurl\" name=\"classsel\" id=\"classsel\" method=\"post\"> \n";
     $list .= "<select name=\"class\" id=\"class\" onchange=\"document.getElementById('classsel').submit();\"\"> \n";
-    $sql= " SELECT 
-                R.ranPk AS id, 
-                R.ranName AS name 
-            FROM 
-                tblRanking R 
-                JOIN tblClasCertRank CCR ON R.ranPk = CCR.ranPk 
-            WHERE 
-                CCR.cerPk > 0 
-                AND CCR.claPk = $claPk 
+    $sql= " SELECT
+                R.ranPk AS id,
+                R.ranName AS name
+            FROM
+                tblRanking R
+                JOIN tblClasCertRank CCR ON R.ranPk = CCR.ranPk
+            WHERE
+                CCR.cerPk > 0
+                AND CCR.claPk = $claPk
             ORDER BY CCR.ranPk DESC ";
-            
+
     $result = mysqli_query($link, $sql);
     while( $row = mysqli_fetch_assoc($result) )
     {
@@ -411,14 +452,14 @@ function classselector($link, $claPk, $selected)
         $list .= ">$name</option>\n";
     }
     #adding the Female and Team choices
-    $sql= " SELECT 
-                claFem, 
-                claTeam 
-            FROM 
-                tblClassification 
-            WHERE 
+    $sql= " SELECT
+                claFem,
+                claTeam
+            FROM
+                tblClassification
+            WHERE
                 claPk = $claPk";
-            
+
     $result = mysqli_query($link, $sql);
     $more = mysqli_fetch_object($result);
     $female = $more->claFem;
@@ -460,7 +501,7 @@ function get_class_info($link, $comPk)
         # Check Female and Team choices first
         if ( $cval == 0 )
         {
-            $classstr = "<b> Female Ranking </b> - "; 
+            $classstr = "<b> Female Ranking </b> - ";
             $fdhv = "and P.pilSex='F'";
         }
         elseif ( $cval == -1 )
@@ -470,19 +511,19 @@ function get_class_info($link, $comPk)
         # Check Classification Definition
         else
         {
-            $sql = "SELECT 
-                        R.ranName, 
-                        CCR.cerPk, 
-                        MAX(CCR2.ranPk) AS maxcval 
-                    FROM 
-                        tblCompetition C 
-                        JOIN tblClasCertRank CCR ON C.claPk = CCR.claPk 
-                        JOIN tblRanking R ON R.ranPk = CCR.ranPk, 
-                        tblClasCertRank CCR2 
-                    WHERE 
-                        C.comPk = $comPk 
-                        AND R.ranPk = $cval 
-                        AND CCR2.claPk = C.claPk 
+            $sql = "SELECT
+                        R.ranName,
+                        CCR.cerPk,
+                        MAX(CCR2.ranPk) AS maxcval
+                    FROM
+                        tblCompetition C
+                        JOIN tblClasCertRank CCR ON C.claPk = CCR.claPk
+                        JOIN tblRanking R ON R.ranPk = CCR.ranPk,
+                        tblClasCertRank CCR2
+                    WHERE
+                        C.comPk = $comPk
+                        AND R.ranPk = $cval
+                        AND CCR2.claPk = C.claPk
                         AND CCR2.cerPk > 0";
             $result = mysqli_query($link, $sql);
             $row = mysqli_fetch_object($result);
@@ -493,13 +534,13 @@ function get_class_info($link, $comPk)
             if ( $cval < $maxcval )
             {
                 # Get all certifications allowed in selected Ranking
-                $sql = "SELECT 
-                            CT.cerName 
-                        FROM 
-                            tblCertification CT 
-                            JOIN tblCompetition C ON CT.comClass = C.comClass 
-                        WHERE 
-                            CT.cerPk <= $cert 
+                $sql = "SELECT
+                            CT.cerName
+                        FROM
+                            tblCertification CT
+                            JOIN tblCompetition C ON CT.comClass = C.comClass
+                        WHERE
+                            CT.cerPk <= $cert
                             AND C.comPk = $comPk
                         ORDER BY CT.cerPk DESC";
                 $result2 = mysqli_query($link, $sql);
@@ -508,8 +549,8 @@ function get_class_info($link, $comPk)
                 {
                     $cats[] = $row['cerName'];
                 }
-                $fdhv = "AND traDHV IN ('" . implode("','",$cats) . "') ";  
-                //echo "cval < maxcval - fdhv = $fdhv \n";      
+                $fdhv = "AND traDHV IN ('" . implode("','",$cats) . "') ";
+                //echo "cval < maxcval - fdhv = $fdhv \n";
                 $classstr = "<b>" . $rank . "</b> - ";
             }
         }
@@ -530,7 +571,7 @@ function get_ladder_class_info($link, $ladPk, $cval, $season)
     # Check Female first
     if ( $cval === 0 )
     {
-        $classstr = "<b> Female Ranking </b> - "; 
+        $classstr = "<b> Female Ranking </b> - ";
         $fdhv = "and P.pilSex='F'";
     }
 //      elseif ( $cval == -1 )
@@ -540,20 +581,20 @@ function get_ladder_class_info($link, $ladPk, $cval, $season)
     # Check Classification Definition
     else
     {
-        $sql = "SELECT 
-                    R.ranName, 
-                    CCR.cerPk, 
-                    MAX(CCR2.ranPk) AS maxcval 
-                FROM 
-                    tblLadderSeason LS 
-                    JOIN tblClasCertRank CCR USING (claPk) 
-                    JOIN tblRanking R USING (ranPk), 
-                    tblClasCertRank CCR2 
-                WHERE 
-                    LS.ladPk = $ladPk 
-                    AND LS.seasonYear = $season 
-                    AND R.ranPk = $cval 
-                    AND CCR2.claPk = LS.claPk 
+        $sql = "SELECT
+                    R.ranName,
+                    CCR.cerPk,
+                    MAX(CCR2.ranPk) AS maxcval
+                FROM
+                    tblLadderSeason LS
+                    JOIN tblClasCertRank CCR USING (claPk)
+                    JOIN tblRanking R USING (ranPk),
+                    tblClasCertRank CCR2
+                WHERE
+                    LS.ladPk = $ladPk
+                    AND LS.seasonYear = $season
+                    AND R.ranPk = $cval
+                    AND CCR2.claPk = LS.claPk
                     AND CCR2.cerPk > 0";
         $result = mysqli_query($link, $sql);
         $row = mysqli_fetch_object($result);
@@ -564,15 +605,15 @@ function get_ladder_class_info($link, $ladPk, $cval, $season)
         if ( $cval < $maxcval )
         {
             # Get all certifications allowed in selected Ranking
-            $sql = "SELECT 
-                        CT.cerName 
-                    FROM 
-                        tblCertification CT 
-                        JOIN tblLadder L ON CT.comClass = L.ladComClass 
-                    WHERE 
-                        CT.cerPk <= $cert 
-                        AND L.ladPk = $ladPk 
-                    ORDER BY 
+            $sql = "SELECT
+                        CT.cerName
+                    FROM
+                        tblCertification CT
+                        JOIN tblLadder L ON CT.comClass = L.ladComClass
+                    WHERE
+                        CT.cerPk <= $cert
+                        AND L.ladPk = $ladPk
+                    ORDER BY
                         CT.cerPk DESC";
             $result2 = mysqli_query($link, $sql);
             $cats = array();
@@ -580,8 +621,8 @@ function get_ladder_class_info($link, $ladPk, $cval, $season)
             {
                 $cats[] = $row['cerName'];
             }
-            $fdhv = "AND traDHV IN ('" . implode("','",$cats) . "') ";  
-            //echo "cval < maxcval - fdhv = $fdhv \n";      
+            $fdhv = "AND traDHV IN ('" . implode("','",$cats) . "') ";
+            //echo "cval < maxcval - fdhv = $fdhv \n";
             $classstr = "<b>" . $rank . "</b> - ";
         }
     }
@@ -600,12 +641,12 @@ function check_registration($link, $comPk)
     else
     {
         # Check if pilot is already registered
-        $sql = "SELECT 
-                    R.regPk 
-                FROM 
-                    tblRegistration R 
-                WHERE 
-                    R.pilPk = $pilPk 
+        $sql = "SELECT
+                    R.regPk
+                FROM
+                    tblRegistration R
+                WHERE
+                    R.pilPk = $pilPk
                     AND R.comPk = $comPk";
         $reg =  mysqli_query($link, $sql);
         # besed on result, makes the register or cancel button
@@ -617,9 +658,9 @@ function check_registration($link, $comPk)
         {
             $button = "<button type=\"submit\" name=\"addpilot\" value=\"$comPk\">Register in This Competition</button>";
         }
-        echo "<form action=\"registered_pilots.php?comPk=$comPk\" name=\"pilreg\" method=\"post\">\n";          
+        echo "<form action=\"registered_pilots.php?comPk=$comPk\" name=\"pilreg\" method=\"post\">\n";
         echo "$button \n";
-        echo "</form>\n";       
+        echo "</form>\n";
     }
     echo "</div>\n";
 }
@@ -627,11 +668,11 @@ function check_registration($link, $comPk)
 function get_countrycode($link, $id)
 {
 
-    $sql = "SELECT 
-                C.natIso3 AS Code 
-            FROM 
-                tblCountryCodes C 
-            WHERE 
+    $sql = "SELECT
+                C.natIso3 AS Code
+            FROM
+                tblCountryCodes C
+            WHERE
                 C.natID = $id";
     $result = mysqli_query($link, $sql);
     if ( !$result || mysqli_num_rows($result) == 0 )
@@ -639,10 +680,10 @@ function get_countrycode($link, $id)
         $code = 'ITA'; #defaults to Italy
     }
     else
-    {   
+    {
         $country = mysqli_fetch_assoc($result);
-        $code = $country['Code'];       
-    }   
+        $code = $country['Code'];
+    }
     return $code;
 }
 
@@ -651,13 +692,13 @@ function get_countrylist($link, $selectname, $selected='')
     $list = '';
     $list = "<select name='$selectname' id='$selectname'\">\n";
     $list .= "<option value=''>Country...</option>\n";
-    
-    $sql = "    SELECT 
-                    DISTINCT C.natID AS id, 
-                    C.natIso3 AS name 
-                FROM 
+
+    $sql = "    SELECT
+                    DISTINCT C.natID AS id,
+                    C.natIso3 AS name
+                FROM
                     tblCountryCodes C
-                ORDER BY 
+                ORDER BY
                     C.natIso3 ASC";
     $result = mysqli_query($link, $sql);
     while( $country = mysqli_fetch_assoc($result) )
@@ -672,7 +713,7 @@ function get_countrylist($link, $selectname, $selected='')
         $list .= ">$name</option>\n";
     }
     $list .= "</select>\n";
-        
+
     return $list;
 }
 
@@ -681,13 +722,13 @@ function get_countries($link, $selected='')
     $list = '';
     $list = "<select name='country' id='country' onchange=\"document.getElementById('region1').submit();\">\n";
     $list .= "<option value=''>Country...</option>\n";
-    
-    $sql = "    SELECT 
-                    DISTINCT xccISO AS id, 
-                    xccCountryName AS name 
-                FROM 
-                    tblXContestCodes 
-                ORDER BY 
+
+    $sql = "    SELECT
+                    DISTINCT xccISO AS id,
+                    xccCountryName AS name
+                FROM
+                    tblXContestCodes
+                ORDER BY
                     xccCountryName ASC";
     $result = mysqli_query($link, $sql);
     while( $country = mysqli_fetch_assoc($result) )
@@ -702,7 +743,7 @@ function get_countries($link, $selected='')
         $list .= ">$name</option>\n";
     }
     $list .= "</select>\n";
-        
+
     return $list;
 }
 
@@ -712,24 +753,24 @@ function get_sites($link, $regPk, $country = '', $selected = 0)
     $list = '';
     $list = "<select name='xcsite' id='xcsite' onchange=\"document.getElementById('region1').submit();\">\n";
     $list .= "<option value=''>Site...</option>\n";
-    
-    $sql = "    SELECT 
-                    DISTINCT XC.xccSiteID AS id, 
-                    XC.xccSiteName AS name 
-                FROM 
-                    tblXContestCodes XC 
-                WHERE 
-                    XC.xccISO = '$country' 
+
+    $sql = "    SELECT
+                    DISTINCT XC.xccSiteID AS id,
+                    XC.xccSiteName AS name
+                FROM
+                    tblXContestCodes XC
+                WHERE
+                    XC.xccISO = '$country'
                     AND NOT EXISTS (
-                        SELECT 
-                            1 
-                        FROM 
-                            tblRegionXCSites RX 
-                        WHERE 
-                            RX.xccSiteID = XC.xccSiteID 
+                        SELECT
+                            1
+                        FROM
+                            tblRegionXCSites RX
+                        WHERE
+                            RX.xccSiteID = XC.xccSiteID
                             AND RX.regPk = $regPk
-                    ) 
-                ORDER BY 
+                    )
+                ORDER BY
                     xccSiteName ASC";
     $result = mysqli_query($link, $sql);
     while( $site = mysqli_fetch_assoc($result) )
@@ -744,7 +785,7 @@ function get_sites($link, $regPk, $country = '', $selected = 0)
         $list .= ">$name</option>\n";
     }
     $list .= "</select>\n";
-        
+
     return $list;
 }
 
@@ -753,16 +794,16 @@ function get_launches($link, $regPk, $id, $selected = 0)
     $list = '';
     $list = "<select name='xclaunch' id='xclaunch' onchange=\"document.getElementById('rwpPk$id').submit();\">\n";
     $list .= "<option value=''>Launch...</option>\n";
-    
-    $sql = "    SELECT 
-                    DISTINCT xccToID AS id, 
-                    xccToName AS name 
-                FROM 
-                    tblXContestCodes XC 
-                    INNER JOIN tblRegionXCSites RX ON XC.xccSiteID = RX.xccSiteID 
-                WHERE 
-                    RX.RegPk = $regPk 
-                ORDER BY 
+
+    $sql = "    SELECT
+                    DISTINCT xccToID AS id,
+                    xccToName AS name
+                FROM
+                    tblXContestCodes XC
+                    INNER JOIN tblRegionXCSites RX ON XC.xccSiteID = RX.xccSiteID
+                WHERE
+                    RX.RegPk = $regPk
+                ORDER BY
                     xccToName ASC";
     $result = mysqli_query($link, $sql);
     while( $launch = mysqli_fetch_assoc($result) )
@@ -777,25 +818,25 @@ function get_launches($link, $regPk, $id, $selected = 0)
         $list .= ">$name</option>\n";
     }
     $list .= "</select>\n";
-        
+
     return $list;
 }
 
-function mysql_update_array($table, $data, $id_field, $id_value) 
+function mysql_update_array($table, $data, $id_field, $id_value)
 {
     $link = db_connect();
-    
-    foreach ($data as $field=>$value) 
+
+    foreach ($data as $field=>$value)
     {
         $fields[] = sprintf("`%s` = '%s'", $field, mysqli_real_escape_string($link, $value));
     }
-    
+
     $field_list = join(',', $fields);
-    
+
     $query = sprintf("UPDATE `%s` SET %s WHERE `%s` = %s", $table, $field_list, $id_field, intval($id_value));
-    
+
     mysqli_close($link);
-    
+
     return $query;
 }
 
@@ -804,17 +845,17 @@ function get_formula($link, $cclass, $selected=0)
     $list = '';
     $list = "<select name='formula' id='formula'>\n";
     $list .= "<option value=''>Class...</option>\n";
-    
-    $sql = "    SELECT 
-                    DISTINCT forPk AS id, 
-                    forName AS name, 
-                    forClass AS type, 
-                    forVersion AS version 
-                FROM 
-                    tblFormula 
-                WHERE 
-                    forComClass = '$cclass' 
-                ORDER BY 
+
+    $sql = "    SELECT
+                    DISTINCT forPk AS id,
+                    forName AS name,
+                    forClass AS type,
+                    forVersion AS version
+                FROM
+                    tblFormula
+                WHERE
+                    forComClass = '$cclass'
+                ORDER BY
                     forPk ASC";
     $result = mysqli_query($link, $sql);
     while( $for = mysqli_fetch_assoc($result) )
@@ -829,8 +870,8 @@ function get_formula($link, $cclass, $selected=0)
         $list .= ">$name</option>\n";
     }
     $list .= "</select>\n";
-    
-    //echo $sql . "\n"; 
+
+    //echo $sql . "\n";
     return $list;
 }
 
@@ -857,12 +898,12 @@ function script_isRunning($pid)
 
 function task_set($link, $tasPk)
 {
-    $sql = "SELECT 
-                COUNT(tawPk) AS wpt 
-            FROM 
-                `tblTaskWaypoint` 
-            WHERE 
-                tasPk = $tasPk 
+    $sql = "SELECT
+                COUNT(tawPk) AS wpt
+            FROM
+                `tblTaskWaypoint`
+            WHERE
+                tasPk = $tasPk
                 AND tawType IN ('launch', 'goal')";
     $result = mysqli_query($link, $sql);
     if ( mysqli_result($result,0,0) < 2 )
@@ -870,8 +911,8 @@ function task_set($link, $tasPk)
         # we don't have a task properly set
         return 0;
     }
-    
-    return 1;   
+
+    return 1;
 }
 
 function get_classifications($link, $name, $cclass, $selected=0)
@@ -879,15 +920,15 @@ function get_classifications($link, $name, $cclass, $selected=0)
     $list = '';
     $list = "<select name='$name' id='classdef'>\n";
     $list .= "<option value=''>Class...</option>\n";
-    
-    $sql = "    SELECT 
-                    DISTINCT claPk AS id, 
-                    claName AS name 
-                FROM 
-                    tblClassification 
-                WHERE 
-                    comClass = '$cclass' 
-                ORDER BY 
+
+    $sql = "    SELECT
+                    DISTINCT claPk AS id,
+                    claName AS name
+                FROM
+                    tblClassification
+                WHERE
+                    comClass = '$cclass'
+                ORDER BY
                     claPk ASC";
     $result = mysqli_query($link, $sql);
     while( $class = mysqli_fetch_assoc($result) )
@@ -902,8 +943,8 @@ function get_classifications($link, $name, $cclass, $selected=0)
         $list .= ">$name</option>\n";
     }
     $list .= "</select>\n";
-    
-    //echo $sql . "\n"; 
+
+    //echo $sql . "\n";
     return $list;
 }
 
@@ -926,27 +967,27 @@ function getseason( $date=0 )
 function season_array($link, $seasonstart=0)
 {
     # Checks which is the oldest comp, and creates the seasons array
-    $query = "  SELECT 
-                    comDateFrom 
-                FROM 
-                    tblCompetition 
-                ORDER BY 
-                    comDateFrom ASC 
-                LIMIT 
+    $query = "  SELECT
+                    comDateFrom
+                FROM
+                    tblCompetition
+                ORDER BY
+                    comDateFrom ASC
+                LIMIT
                     1";
     $result = mysqli_query($link, $query);
     $oldest = mysqli_result($result,0,0);
-    
+
     # Checks which season was the oldest comp
     $firstseason = getseason($oldest);
     $lastseason = getseason();
-    
+
     $array = [];
     for ($i = $firstseason; $i <= $lastseason; $i++)
     {
         $array[] = $i;
     }
-    
+
     return $array;
 }
 
@@ -958,7 +999,7 @@ function safe_process($link, $command, $tasPk, $comPk, $type)
     //$command = BINDIR . "task_up.pl $tasPk $param" . ' > /dev/null 2>&1 & echo $!; ';
     $pid = exec($command, $out, $retv);
     sleep(10);
-    if ( script_isRunning($pid) ) 
+    if ( script_isRunning($pid) )
     {
         $ptime = microtime(true);
         redirect("safe_process_admin.php?tasPk=$tasPk&comPk=$comPk&pid=$pid&time=$ptime&$type=1");
