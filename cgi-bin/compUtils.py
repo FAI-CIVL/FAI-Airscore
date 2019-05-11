@@ -225,3 +225,25 @@ def read_formula(comPk):
         formula['forMinDistance'] = 5000
 
     return formula
+
+def get_task_file_path(tasPk):
+    """gets path to task tracks folder"""
+    from Defines import FILEDIR
+    path = None
+    query = "  SELECT LOWER(T.`comCode`) AS comCode, " \
+            "LOWER(T.`tasCode`) AS tasCode, " \
+            "YEAR(C.`comDateFrom`) AS comYear, " \
+            "DATE_FORMAT(T.`tasdate`, '%%Y%%m%%d') AS tasDate " \
+            " FROM `tblTaskView` T JOIN `tblCompetition` C USING(`comPk`) " \
+            "WHERE T.`tasPk` = %s"
+
+    param = tasPk
+    with Database() as db:
+        t = db.fetchone(query, params=param)
+        if t:
+            cname = t['comCode']
+            tname = t['tasCode']
+            year = str(t['comYear'])
+            tdate = str(t['tasDate'])
+            path = FILEDIR + ('/'.join([year, cname, ('_'.join([tname, tdate]))]))
+    return path

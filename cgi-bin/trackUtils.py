@@ -68,13 +68,12 @@ def get_tracks(dir, test = 0):
 
     return files
 
-def assign_tracks(files, task, test = 0):
+def assign_and_import_tracks(files, task, test = 0):
     """Find pilots to associate with tracks"""
-    from compUtils import get_registration
+    from compUtils import get_registration, get_task_file_path
 
     message = ''
-    mytracks = []
-    list = []
+    pilot_list = []
     message += ("We have {} track to associate \n".format(len(files)))
     task_id = task.tasPk
     comp_id = task.comPk
@@ -86,20 +85,23 @@ def assign_tracks(files, task, test = 0):
     if registration:
         """We add tracks for the registered pilots not yet scored"""
         message += "Comp with registration: files will be checked against registered pilots not yet scored \n"
-        list = get_non_scored_pilots(task_id, test)
+        pilot_list = get_non_scored_pilots(task_id, test)
+
+    track_path = get_task_file_path(task.tasPk)
+
     for file in files:
         mytrack = None
         filename = os.path.basename(file)
         if registration:
-            if len(list) > 0:
-                message += ("checking {} against {} pilots... \n".format(filename, len(list)))
+            if len(pilot_list) > 0:
+                message += ("checking {} against {} pilots... \n".format(filename, len(pilot_list)))
                 """check filenames to find pilots"""
-                pilot_id = get_pilot_from_list(filename, list, test)
+                pilot_id, full_name = get_pilot_from_list(filename, pilot_list, test)
                 if pilot_id:
                     """found a pilot for the track file.
                     dropping pilot from list and creating track obj"""
                     message += ("Found a pilot to associate with file. dropping {} from non scored list \n".format(pilot_id))
-                    list[:] = [d for d in list if d.get('pilPk') != pilot_id]
+                    pilot_list[:] = [d for d in pilot_list if d.get('pilPk') != pilot_id]
                     mytrack = Track.read_file(filename=file, pilot_id=pilot_id, test=test)
         else:
             """We add track if we find a pilot in database
@@ -119,15 +121,14 @@ def assign_tracks(files, task, test = 0):
             """pilot is registered and has no valid track yet
             moving file to correct folder and adding to the list of valid tracks"""
             mytrack.tasPk = task_id
-            mytrack.copy_track_file(test)
-            mytracks.append(mytrack)
+            mytrack.copy_track_file(path=track_path, pname=full_name)
             message += ("pilot {} associated with track {} \n".format(mytrack.pilPk, mytrack.filename))
+            import_track(mytrack)
+            verify_track(mytrack, task, test)
 
     if test == 1:
         """TEST MODE"""
         print (message)
-
-    return mytracks
 
 def import_track(track, test = 0):
     result = ''
@@ -171,15 +172,7 @@ def get_non_scored_pilots(tasPk, test=0):
                             ) AND S.`traPk` IS NULL""".format(tasPk))
             message += ("Query: {}  \n".format(query))
             pilot_list = db.fetchall(query)
-                        #     """create a list from results"""
-            #     message += ("creating a list of pilots...")
-            #     list = [{   'pilPk': row['pilPk'],
-            #                 'pilFirstName': row['pilFirstName'],
-            #                 'pilLastName': row['pilLastName'],
-            #                 'pilFAI': row['pilFAI'],
-            #                 'pilXContestUser': row['pilXContestUser']}
-            #             for row in db.fetchall(query)]
-            # else:
+
             if list is None: message += ("No pilot found registered to the comp...")
     else:
         message += ("Registered List - Error: NOT a valid Comp ID \n")
@@ -193,23 +186,25 @@ def get_non_scored_pilots(tasPk, test=0):
 def get_pilot_from_list(filename, list, test=0):
     """check filename against a list of pilots"""
     pilot_id = 0
+    fullname = None
     """Get string"""
     fields = os.path.splitext(filename)
     if fields[0].isdigit():
         """Gets pilot ID from FAI n."""
         fai = fields[0]
-        print ("file {} contains FAI n. {} \n".format(filename, fai))
+        print("file {} contains FAI n. {} \n".format(filename, fai))
         for row in list:
             if fai == row['pilFAI']:
                 print ("found a FAI number")
                 pilot_id = row['pilPk']
+                fullname = row['pilFirstName'].lower() + '_' + row['pilLastName'].lower()
                 break
     else:
         """Gets pilot ID from XContest User or name."""
         names = fields[0].replace('.', ' ').replace('_', ' ').replace('-', ' ').split()
         if test:
-            print ("filename: {} - parts: \n".format(filename))
-            print (', '.join(names))
+            print("filename: {} - parts: \n".format(filename))
+            print(', '.join(names))
         """try to find xcontest user in filename
         otherwise try to find pilot name from filename"""
         print ("file {} contains pilot name \n".format(fields[0]))
@@ -219,17 +214,19 @@ def get_pilot_from_list(filename, list, test=0):
                     and any(row['pilXContestUser'].lower() in str(name).lower() for name in names)):
                 print ("found a xcontest user")
                 pilot_id = row['pilPk']
+                fullname = row['pilFirstName'].lower() + '_' + row['pilLastName'].lower()
                 break
             elif (any(row['pilFirstName'].lower() in str(name).lower() for name in names)
                     and any(row['pilLastName'].lower() in str(name).lower() for name in names)):
                 print ("found a pilot name")
                 pilot_id = row['pilPk']
+                fullname = row['pilFirstName'].lower() + '_' + row['pilLastName'].lower()
                 break
 
     if test:
         print('pilot ID: {}'.format(pilot_id))
 
-    return pilot_id
+    return pilot_id, fullname
 
 
 def get_pil_track(pilPk, tasPk, test=0):

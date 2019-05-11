@@ -14,21 +14,21 @@ import sys
 def printf(format, *args):
     sys.stdout.write(format % args)
 
-def import_tracks(mytracks, task, test = 0):
-    """Import tracks in db"""
-    message = ''
-    result = ''
-    for track in mytracks:
-        """adding track to db"""
-        import_track(track, test)
-        """checking track against task"""
-        verify_track(track, task, test)
-
-    if test == 1:
-        """TEST MODE"""
-        print(message)
-
-    return result
+# def import_tracks(mytracks, task, test = 0):
+#     """Import tracks in db"""
+#     message = ''
+#     result = ''
+#     for track in mytracks:
+#         """adding track to db"""
+#         import_track(track, test)
+#         """checking track against task"""
+#         verify_track(track, task, test)
+#
+#     if test == 1:
+#         """TEST MODE"""
+#         print(message)
+#
+#     return result
 
 def main():
     """Main module"""
@@ -50,7 +50,6 @@ def main():
         if task.ShortRouteDistance == 0:
             print('task not optimised.. optimising')
             task.calculate_optimised_task_length()
-
         if task.comPk > 0:
             """create a temporary directory"""
             with TemporaryDirectory() as tracksdir:
@@ -59,10 +58,9 @@ def main():
                     """find valid tracks"""
                     tracks = get_tracks(tracksdir, test)
                     if tracks is not None:
-                        """associate tracks to pilots"""
-                        mytracks = assign_tracks(tracks, task, test)
-                        """import tracks"""
-                        result = import_tracks(mytracks, task, test)
+                        """associate tracks to pilots and import"""
+                        assign_and_import_tracks(tracks, task, test)
+
                     else:
                         result = ("There is no valid track in zipfile {} \n".format(zipfile))
                 else:

@@ -314,68 +314,54 @@ class Track():
             message += ("{}, cert. {} \n".format(self.glider, self.cert))
             print (message)
 
-    def copy_track_file(self, test=0):
+    def copy_track_file(self, path=None, pname=None):
         """copy track file in the correct folder and with correct name
-        name could be changed as the one XContest is sending, or rename that one, as we wish"""
+        name could be changed as the one XContest is sending, or rename that one, as we wish
+        if path or pname is None will calculate. note that if bulk importing it is better to pass these values
+        rather than query DB for each track"""
+
         from shutil import copyfile
-        from Defines import FILEDIR
         import glob
+        from compUtils import get_task_file_path
 
-        message = ''
         src_file = self.filename
+        if path is None:
+            path = get_task_file_path(self.tasPk)
 
-        """get comp and task info"""
-        query = ("""  SELECT
-                            LOWER(T.`comCode`) AS comCode,
-                            LOWER(T.`tasCode`) AS tasCode,
-                            YEAR(C.`comDateFrom`) AS comYear,
-                            DATE_FORMAT(T.`tasdate`, '%%Y%%m%%d') AS tasDate,
-                            CONCAT_WS(
-                                '_',
-                                LOWER(P.`pilFirstName`),
-                                LOWER(P.`pilLastName`)
-                            ) AS pilName
-                        FROM
-                            `tblPilot` P,
-                            `tblTaskView` T
-                        JOIN `tblCompetition` C USING(`comPk`)
-                        WHERE
-                            T.`tasPk` = '{}' AND P.`pilPk` = '{}'
-                        LIMIT 1""".format(self.tasPk, self.pilPk))
+        if pname is None:
+            query = "SELECT " \
+                    "   CONCAT_WS('_', LOWER(P.`pilFirstName`), LOWER(P.`pilLastName`) ) AS pilName" \
+                    "FROM `tblPilot` P " \
+                    "WHERE P.`pilPk` = %s"
+            param = self.pilPk
 
-        message += query
+            with Database() as db:
+                # get the task details.
+                t = db.fetchone(query, params=param)
+                if t:
+                    pname = t['pilName']
 
-        with Database() as db:
-            # get the task details.
-            if db.rows(query) > 0:
-                t = db.fetchone(query)
-                cname = str(t['comCode'])
-                tname = str(t['tasCode'])
-                pname = str(t['pilName'])
-                year  = str(t['comYear'])
-                tdate = str(t['tasDate'])
-                taskdir = FILEDIR + ('/'.join([year,cname,('_'.join([tname,tdate]))]))
-                """check if directory already exists"""
-                if not os.path.isdir(taskdir):
-                    os.makedirs(taskdir)
-                """creates a name for the track
-                name_surname_date_time_index.igc
-                if we use flight date then we need an index for multiple tracks"""
-                #filename = pname+'_'+datetime.today().strftime('%Y%m%d-%H%M%S')+'.igc'
-                index = str(len(glob.glob(taskdir+'/'+pname+'*.igc')) + 1).zfill(2)
-                filename = '_'.join([pname,str(self.date),index]) + '.igc'
-                fullname = '/'.join([taskdir,filename])
-                message += "path to copy file: {}".format(fullname)
-                """copy file"""
-                try:
-                    copyfile(src_file, fullname)
-                except:
-                    print('Error copying file')
-                finally:
-                    self.filename = fullname
-                    message += "file succesfully copied to : {}".format(self.filename)
-            else:
-                print('Error: track copy query to find comp info failed')
+        if path:
+            """check if directory already exists"""
+            if not os.path.isdir(path):
+                os.makedirs(path)
+            """creates a name for the track
+            name_surname_date_time_index.igc
+            if we use flight date then we need an index for multiple tracks"""
+
+            index = str(len(glob.glob(path+'/'+pname+'*.igc')) + 1).zfill(2)
+            filename = '_'.join([pname, str(self.date), index]) + '.igc'
+            fullname = '/'.join([path, filename])
+            # print(f'path to copy file: {fullname}')
+            """copy file"""
+            try:
+                copyfile(src_file, fullname)
+                self.filename = fullname
+                # print(f'file succesfully copied to : {self.filename}')
+            except:
+                print('Error copying file')
+        else:
+            print('error, path not created')
 
     @staticmethod
     def is_flying(p1, p2, test = 0):
