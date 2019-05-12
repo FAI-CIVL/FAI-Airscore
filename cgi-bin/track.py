@@ -352,12 +352,14 @@ class Track():
             index = str(len(glob.glob(path+'/'+pname+'*.igc')) + 1).zfill(2)
             filename = '_'.join([pname, str(self.date), index]) + '.igc'
             fullname = '/'.join([path, filename])
-            print(f'path to copy file: {fullname}')
+            # print(f'path to copy file: {fullname}')
+            print('path to copy file:',fullname)
             """copy file"""
             try:
                 copyfile(src_file, fullname)
                 self.filename = fullname
-                print(f'file succesfully copied to : {self.filename}')
+                # print(f'file succesfully copied to : {self.filename}')
+                print('file succesfully copied to :', self.filename)
             except:
                 print('Error copying file:', fullname)
         else:
