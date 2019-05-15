@@ -34,17 +34,16 @@ elseif (reqexists('delete'))
     }
     else
     {
-        $query = "DELETE FROM `tblResultFile` WHERE `refPk`=$refPk";
-        mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Result deletion failed: ' . mysqli_connect_error());
-
-        $message .= "Result succesfully deleted (ID = $refPk) <br /> \n";
+        $command = "python3 " . BINDIR . "del_result.py $refPk";
+        $message .= nl2br(shell_exec($command));
     }
 }
 elseif ( reqexists('chstatus') )
 {
     $refPk = reqival('refPk');
     $status = reqsval('status');
-    change_status($link, $refPk, $status);
+    $command = "python3 " . BINDIR . "update_result_status.py $refPk '$status'";
+    $message .= nl2br(shell_exec($command));
 }
 
 
@@ -67,7 +66,7 @@ else
     $count = 1;
 
     $out = 'There are ' . mysqli_num_rows($result) . ' results available';
-    $dtable[] = array('', '<strong>Created on</strong>', '<strong>File</strong>', '<strong>Status</strong>', '', '<strong>Visible</strong>');
+    $dtable[] = array('', '<strong>Created on</strong>', '<strong>File</strong>', '<strong>Status</strong>', '', '<strong>Active</strong>', '');
     while ( $row = mysqli_fetch_assoc($result) )
     {
         $refPk = $row['refPk'];
@@ -78,13 +77,13 @@ else
 
         #check if JSON file exists
         if (file_exists($json)) {
-            $file = "<a href='../test_task_result.php?refPk=$refPk' target='_blank'>".basename($json)."</a>";
+            $path = "<a href='../test_task_result.php?refPk=$refPk' target='_blank'>".basename($json)."</a>";
         }
         else {
-            $file = "<strong style='color:red'>".basename($json)."</strong>";
+            $path = "<strong style='color:red'>".basename($json)."</strong>";
         }
 
-        $dtable[] = array($count, $created, $file, "<form enctype='multipart/form-data' action='task_result_admin.php?comPk=$comPk&tasPk=$tasPk&refPk=$refPk' method='post' name='res-$refPk' id='res-$resPk'>".fin('status', $status, 14), fis('chstatus', 'Change Status', 12), fic("active$refPk", " ", $active, "onchange='this.form.submit()'"), fis('del', 'DELETE', 10) ."</form>");
+        $dtable[] = array($count, $created, $path, "<form enctype='multipart/form-data' action='task_result_admin.php?comPk=$comPk&tasPk=$tasPk&refPk=$refPk' method='post' name='res-$refPk' id='res-$resPk'>".fin('status', $status, 32), fis('chstatus', 'Change Status', 12), fic("active$refPk", " ", $active, "onchange='this.form.submit()'"), fis('delete', 'DELETE', 10) ."</form>");
         $count++;
 
     }
@@ -127,7 +126,7 @@ if ( $content !== '')
 
 echo "<br />" . PHP_EOL;
 echo "<hr />" . PHP_EOL;
-$out .= ftable($dtable,'class=regdtable', '', '');
+$out .= ftable($dtable,'class=task-json-table', '', '');
 echo $out;
 echo "<br />" . PHP_EOL;
 echo "<hr />" . PHP_EOL;

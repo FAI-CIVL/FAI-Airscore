@@ -1,4 +1,4 @@
-"""usage: python test_task_result.py task_id 'status' <test>"""
+"""usage: python create_task_result.py task_id 'status' <test>"""
 
 import sys, time
 from result import Task_result
@@ -11,7 +11,7 @@ def main():
     result = None
     test = 0
 
-    ##check parameter is good.
+    '''check parameters are good'''
     if len(sys.argv) >= 3 and sys.argv[1].isdigit():
         task_id = int(sys.argv[1])
         status = str(sys.argv[2])

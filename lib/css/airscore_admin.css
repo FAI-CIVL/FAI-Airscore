@@ -441,6 +441,14 @@ header a {
 
 /* Formatting forms */
 
+.width32 {
+	width: 320px;
+}
+
+.width24 {
+	width: 240px;
+}
+
 .width16 {
 	width: 160px;
 }
@@ -479,6 +487,15 @@ header a {
 	padding: 0 40px 0 10px;
 }
 
+.task-json-table {
+    width:100%;
+    border: 0px;
+}
+
+.task-json-table tr:nth-of-type(odd) {
+    background:#eee;
+    border: 0px;
+}
 
 /* Formatting tables */
 
