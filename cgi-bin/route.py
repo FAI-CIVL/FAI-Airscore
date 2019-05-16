@@ -213,6 +213,38 @@ def in_semicircle(self, wpts, wmade, coords):
 
     return 0
 
+def check_start (state, fix, tp, tolerance, min_tol_m):
+    '''check if pilot
+            is in correct position to take the start cylinder [state = 'ready'],
+            and if he takes the start [state = 'started']'''
+
+    if tp.how == "entry":
+        # pilot must have at least 1 fix outside the start after the start time then enter
+        condition = not(tp.in_radius(fix, -tolerance, -min_tol_m))
+        started = tp.in_radius(fix, tolerance, min_tol_m)
+    else:
+        # pilot must have at least 1 fix inside the start after the start time then exit
+        condition = tp.in_radius(fix, tolerance, min_tol_m)
+        started = not(tp.in_radius(fix, -tolerance, -min_tol_m))
+
+    if state == 'ready':
+        return condition
+    else:
+        return started
+
+def tp_made (fix, tp, tolerance, min_tol_m):
+    '''check if pilot is in correct position to take the cylinder'''
+
+    if tp.how == "entry":
+        # pilot must have at least 1 fix inside the cylinder
+        condition = tp.in_radius(fix, tolerance, min_tol_m)
+    else:
+        # pilot must have at least 1 fix outside the cylinder
+        condition = not(tp.in_radius(fix, -tolerance, -min_tol_m))
+
+    return condition
+
+
 def rawtime_float_to_hms(timef):
     """Converts time from floating point seconds to hours/minutes/seconds.
 
@@ -282,5 +314,3 @@ def fast_andoyer(p1, p2):
         G = (d - three_sin_d) / one_plus_cos_d
     dd = -(flattening / 4.0) * (H * K + G * L)
     return semi_major_axis * (d + dd)
-
-

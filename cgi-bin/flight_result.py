@@ -180,7 +180,6 @@ class Flight_result:
 
         result.SSS_time = Task.start_time
 
-        started = False
         waypoint = 1
         proceed_to_start = False
         t = 0
@@ -212,13 +211,14 @@ class Flight_result:
                 # Task has ended
                 break
 
+            '''launch turnpoint managing'''
             if Task.turnpoints[t].type == "launch":
                 # not checking launch yet
                 if Task.check_launch == 'on':
                     # Set radius to check to 200m (in the task def it will be 0)
                     # could set this in the DB or even formula if needed..???
-                    Task.turnpoints[t].radius = 0.2
-                    if Task.turnpoints[t].in_radius(fix, -tolerance, -min_tol_m):
+                    Task.turnpoints[t].radius = 200 #meters
+                    if Task.turnpoints[t].in_radius(fix, tolerance, min_tol_m):
                         result.Waypoints_achieved.append(["Left Launch",fix.rawtime_local])  # pilot has achieved turnpoint
                         t += 1
 
@@ -228,106 +228,62 @@ class Flight_result:
             # to do check for restarts for elapsed time tasks and those that allow jump the gun
             # if started and Task.task_type != 'race' or result.Jumped_the_gun is not None:
 
-            # pilot must have at least 1 fix inside the start after the start time then exit
-            if (Task.turnpoints[t].type == "speed" and Task.turnpoints[t].how == "exit") or \
-                    (Task.task_type == 'ELAPSED TIME' and
-                     (Task.turnpoints[t-1].type == "speed" and Task.turnpoints[t-1].how == "exit")):
+            '''start turnpoint managing'''
+            if (    Task.turnpoints[t].type == "speed" or
+                    (Task.task_type == 'ELAPSED TIME' and Task.turnpoints[t-1].type == "speed") ):
+                if Task.task_type == 'ELAPSED TIME' and Task.turnpoints[t-1].type == "speed":
+                    s_tp = Task.turnpoints[t-1]
+                    restarting = True
+                else:
+                    s_tp = Task.turnpoints[t]
+                    restarting = False
 
-                if proceed_to_start:
-                    if not Task.turnpoints[t].in_radius(fix, tolerance, min_tol_m):
-                        result.Waypoints_achieved.append(["SSS",fix.rawtime_local])  # pilot has started
-                        result.Best_waypoint_achieved = 'SSS made'
-                        result.Pilot_Start_time = fix.rawtime
-                        result.Start_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(fix.rawtime_local))
-                        if Task.task_type == 'ELAPSED TIME': result.SSS_time = fix.rawtime
-                        started = True
-                        proceed_to_start = False
+                if proceed_to_start and check_start('started', fix, s_tp, tolerance, min_tol_m):
+                    result.Waypoints_achieved.append(["SSS",fix.rawtime_local])  # pilot has started
+                    result.Best_waypoint_achieved = 'SSS made'
+                    result.Pilot_Start_time = fix.rawtime
+                    result.Start_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(fix.rawtime_local))
+                    if Task.task_type == 'ELAPSED TIME': result.SSS_time = fix.rawtime
+                    proceed_to_start = False
+                    if not restarting:
                         t += 1
 
                 if fix.rawtime > Task.start_time - formula_parameters.max_jump_the_gun and not proceed_to_start:
-                    if Task.turnpoints[t].in_radius(fix, tolerance, min_tol_m):
-                        proceed_to_start = True  # pilot is inside start after the start time.
+                    if check_start('ready', fix, tp, tolerance, min_tol_m):
+                        # pilot is on the right side of start after the start time.
+                        proceed_to_start = True  # pilot is alowed to start.
                         if fix.rawtime < Task.start_time:
                             result.Jumped_the_gun = Task.start_time - fix.rawtime
 
-            # pilot must have at least 1 fix outside the start after the start time then enter
-            elif (Task.turnpoints[t].type == "speed" and Task.turnpoints[t].how == "entry") or \
-                (Task.task_type == 'ELAPSED TIME' and
-                 (Task.turnpoints[t - 1].type == "speed" and Task.turnpoints[t - 1].how == "entry")):
+            '''Turnpoint managing'''
+            if Task.turnpoints[t].shape == "circle" and Task.turnpoints[t].type != "goal":
+                tp = Task.turnpoints[t]
 
-                if proceed_to_start:
-                    if Task.turnpoints[t].in_radius(fix, tolerance, min_tol_m):
-                        result.Waypoints_achieved.append(["SSS",fix.rawtime_local])  # pilot has started
-                        result.Best_waypoint_achieved = 'SSS made'
-                        result.Pilot_Start_time = fix.rawtime
-                        result.Start_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(fix.rawtime_local))
-                        if Task.task_type == 'ELAPSED TIME': result.SSS_time = fix.rawtime
-                        started = True
-                        proceed_to_start = False
-                        t += 1
-                if fix.rawtime > Task.start_time - formula_parameters.max_jump_the_gun and not proceed_to_start:
-                    if not Task.turnpoints[t].in_radius(fix, -tolerance,
-                                                        -min_tol_m):  # negative tolerance so radius is smaller.-tolerance applied always to pilots advantage
-                        proceed_to_start = True  # pilot is outside start after the start time.
-                        if fix.rawtime < Task.start_time:
-                            result.Jumped_the_gun = Task.start_time - fix.rawtime
+                if tp_made(fix, tp, tolerance, min_tol_m) and started:
+                    result.Best_waypoint_achieved = 'waypoint ' + str(waypoint) + ' made'
 
-
-            elif Task.turnpoints[t].shape == "circle" and Task.turnpoints[t].how == "entry" and Task.turnpoints[t].type != "goal":
-                if Task.turnpoints[t].in_radius(fix, tolerance, min_tol_m):
-                    if started:
-                        result.Best_waypoint_achieved = 'waypoint ' + str(waypoint) + ' made'
-
-                        if Task.turnpoints[t].type == "endspeed":
-                            result.Waypoints_achieved.append(["ESS",fix.rawtime_local])  # pilot has achieved turnpoint
-                            result.ESS_time = fix.rawtime
-                            result.ESS_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(fix.rawtime_local))
-                            result.SSDistance = Task.SSDistance
-                            if Task.task_type == 'RACE':
-                                result.total_time = fix.rawtime - result.SSS_time
-
-                            if Task.task_type == 'SPEEDRUN' or Task.task_type == 'ELAPSED TIME':
-                                result.total_time = fix.rawtime - result.Pilot_Start_time
-                            result.total_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(result.total_time))
-                        else:
-                            result.Waypoints_achieved.append([waypoint,fix.rawtime_local])  # pilot has achieved turnpoint
-                        waypoint += 1
-                    t += 1
-
-            elif Task.turnpoints[t].shape == "circle" and Task.turnpoints[t].how == "exit" and Task.turnpoints[t].type != "goal":
-                if Task.turnpoints[t].in_radius(fix, -tolerance, -min_tol_m):
-                    if started:
-                        result.Best_waypoint_achieved = 'waypoint ' + str(waypoint) + ' made'
-                    if Task.turnpoints[t].type == "endspeed":
-                        result.Waypoints_achieved.append(["ESS", fix.rawtime_local])  # pilot has achieved turnpoint
+                    if tp.type == "endspeed":
+                        result.Waypoints_achieved.append(["ESS",fix.rawtime_local])  # pilot has achieved turnpoint
                         result.ESS_time = fix.rawtime
                         result.ESS_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(fix.rawtime_local))
                         result.SSDistance = Task.SSDistance
                         if Task.task_type == 'RACE':
                             result.total_time = fix.rawtime - result.SSS_time
+
                         if Task.task_type == 'SPEEDRUN' or Task.task_type == 'ELAPSED TIME':
                             result.total_time = fix.rawtime - result.Pilot_Start_time
-
-                        result.total_time_str = (
-                                ("%02d:%02d:%02d") % rawtime_float_to_hms(result.total_time))
+                        result.total_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(result.total_time))
                     else:
-                        result.Waypoints_achieved.append([waypoint, fix.rawtime_local])  # pilot has achieved turnpoint
+                        result.Waypoints_achieved.append([waypoint,fix.rawtime_local])  # pilot has achieved turnpoint
                     waypoint += 1
                     t += 1
 
-            elif Task.turnpoints[t].type == "goal" and Task.turnpoints[t].shape == 'line':
-                if Task.turnpoints[t].in_radius(fix, tolerance, min_tol_m) and in_semicircle(Task, Task.turnpoints, t,
-                                                                                             fix):
-                    result.Waypoints_achieved.append(["Goal",fix.rawtime_local])  # pilot has achieved turnpoint
-                    if started:
-                        result.Best_waypoint_achieved = 'Goal made'
-                        result.Distance_flown = distances2go[0]
-                        result.goal_time = fix.rawtime_local
-                        break
+            elif Task.turnpoints[t].type == "goal":
+                goal_tp = Task.turnpoints[t]
+                if (started and
+                            ((goal_tp.shape == "circle" and tp_made(fix, tp, tolerance, min_tol_m))
+                            or (goal_tp.shape == "line" and in_semicircle(Task, Task.turnpoints, t,fix)))):
 
-            elif Task.turnpoints[t].type == "goal" and Task.turnpoints[t].shape == 'circle' and Task.turnpoints[
-                t].how == "entry":
-                if Task.turnpoints[t].in_radius(fix, tolerance, min_tol_m):
                     result.Waypoints_achieved.append(["Goal",fix.rawtime_local])  # pilot has achieved turnpoint
                     if started:
                         result.Best_waypoint_achieved = 'Goal made'
@@ -383,6 +339,7 @@ class Flight_result:
         with Database() as db:
            r = db.execute(query, params)
         print(r)
+
     def store_result(self, traPk, tasPk):
 
         if not self.goal_time:
