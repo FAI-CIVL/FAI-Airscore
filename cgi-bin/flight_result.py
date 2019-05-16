@@ -231,12 +231,22 @@ class Flight_result:
             '''start turnpoint managing'''
             if (    Task.turnpoints[t].type == "speed" or
                     (Task.task_type == 'ELAPSED TIME' and Task.turnpoints[t-1].type == "speed") ):
+
+                #we need to check if it is a restart, so to use correct tp
                 if Task.task_type == 'ELAPSED TIME' and Task.turnpoints[t-1].type == "speed":
                     s_tp = Task.turnpoints[t-1]
                     restarting = True
                 else:
                     s_tp = Task.turnpoints[t]
                     restarting = False
+
+                #check if we are on the right side of start radius
+                if fix.rawtime > Task.start_time - formula_parameters.max_jump_the_gun and not proceed_to_start:
+                    if check_start('ready', fix, tp, tolerance, min_tol_m):
+                        # pilot is on the right side of start after the start time.
+                        proceed_to_start = True  # pilot is alowed to start.
+                        if fix.rawtime < Task.start_time:
+                            result.Jumped_the_gun = Task.start_time - fix.rawtime
 
                 if proceed_to_start and check_start('started', fix, s_tp, tolerance, min_tol_m):
                     result.Waypoints_achieved.append(["SSS",fix.rawtime_local])  # pilot has started
@@ -246,14 +256,8 @@ class Flight_result:
                     if Task.task_type == 'ELAPSED TIME': result.SSS_time = fix.rawtime
                     proceed_to_start = False
                     if not restarting:
+                        #if it is a restart, t is already next waypoint
                         t += 1
-
-                if fix.rawtime > Task.start_time - formula_parameters.max_jump_the_gun and not proceed_to_start:
-                    if check_start('ready', fix, tp, tolerance, min_tol_m):
-                        # pilot is on the right side of start after the start time.
-                        proceed_to_start = True  # pilot is alowed to start.
-                        if fix.rawtime < Task.start_time:
-                            result.Jumped_the_gun = Task.start_time - fix.rawtime
 
             '''Turnpoint managing'''
             if Task.turnpoints[t].shape == "circle" and Task.turnpoints[t].type != "goal":
