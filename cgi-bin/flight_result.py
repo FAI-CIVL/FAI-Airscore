@@ -175,6 +175,8 @@ class Flight_result:
             Returns:
                     a list of GNSSFixes of when turnpoints were achieved.
         """
+        from route import check_start, tp_made
+
         result = cls()
         tolerance = Task.tolerance
 
@@ -186,6 +188,7 @@ class Flight_result:
         if not Task.optimised_turnpoints:
             Task.calculate_optimised_task_length()
 
+        started = False
         distances2go = Task.distances_to_go
         for fix in Flight.fixes:
             fix.rawtime_local = fix.rawtime + Task.time_offset*3600  #local time for result times (SSS and ESS)
@@ -254,6 +257,7 @@ class Flight_result:
                     result.Pilot_Start_time = fix.rawtime
                     result.Start_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(fix.rawtime_local))
                     if Task.task_type == 'ELAPSED TIME': result.SSS_time = fix.rawtime
+                    started = True
                     proceed_to_start = False
                     if not restarting:
                         #if it is a restart, t is already next waypoint
@@ -297,6 +301,8 @@ class Flight_result:
 
             else:
                 assert False, "Unknown turnpoint type: %s" % Task.turnpoints[t].type
+
+            '''create result data'''
             taskTime = fix.rawtime - Task.start_time
             best_dist_to_ess = (Task.EndSSDistance - result.Distance_flown) / 1000
             if result.Best_waypoint_achieved != 'Goal made':

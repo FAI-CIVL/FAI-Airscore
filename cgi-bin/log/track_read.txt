@@ -1,0 +1,9 @@
+/usr/local/lib/python3.5/dist-packages/pymysql/cursors.py:329: Warning: (1265, "Data truncated for column 'traDHV' at row 1")
+  self._do_get_result()
+  ** FILENAME: /tmp/tmpwzwedlwm/0215.igc TYPE: igc 
+
+path to copy file: /web/dev/airscore/tracks/2016/reupwc16/reupwc16_t6_20161008/luciano_xpagnoni_2016-10-08_03.igc
+file succesfully copied to : /web/dev/airscore/tracks/2016/reupwc16/reupwc16_t6_20161008/luciano_xpagnoni_2016-10-08_03.igc
+[]
+track correctly imported and results generated 
+traPk=1917

@@ -64,9 +64,24 @@
 
 function accept_track($link, $pilPk, $comPk, $tasPk)
 {
+    $fh = fopen("/tmp/submit24bis", "w");
+    foreach ($_REQUEST as $k=>$v)
+    {
+        fwrite($fh, "key=$k, value=$v\n");
+    }
+    foreach ($_FILES as $k=>$v)
+    {
+        fwrite($fh, "key=$k:\n");
+        foreach ($v as $key=>$val)
+        {
+            fwrite($fh, "    key=$key, value=$val\n");
+        }
+    }
+    fclose($fh);
     $traPk = 0;
     $filename = basename($_FILES['userfile']['name']);
-    $command = "python3 " . BINDIR . "track_reader.py $tasPk $filename $pilPk > " . BINDIR . 'log/track_read.txt 2>&1 & echo $!; ';
+    $tempnm = $_FILES['userfile']['tmp_name'];
+    $command = "python3 " . BINDIR . "track_reader.py $tasPk '$tempnm' '$filename' $pilPk > " . BINDIR . 'log/track_read.txt 2>&1 & echo $!; ';
     $pid = exec($command, $out, $retv);
 
     foreach ($out as $row)

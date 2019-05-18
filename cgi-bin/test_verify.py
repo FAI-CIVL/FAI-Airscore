@@ -8,9 +8,9 @@ from flight_result import Flight_result
 waypoint = namedtuple('waypoint', 'plat plon lat lon radius type shape direction')
 
 
-igc_file = './tests/test_igc/gafforini.igc'
+igc_file = './tests/test_igc/0215.igc'
 
-task = Task.read_task(59)
+task = Task.read_task(64)
 
 #task.calculate_optimised_task_length()
 
@@ -29,9 +29,9 @@ print(flight.valid)
 
 print(task.distances_to_go)
 
-task_result= Flight_result.check_flight(flight, task, pwc.parameters, 0.005, 5) #check flight against task with tolerance of 0.05% or 5m
+task_result= Flight_result.check_flight(flight, task, pwc.parameters, 5) #check flight against task with tolerance of 0.05% or 5m
 
-print(task_result.Waypoints_achieved)
+print('Waypoints achieved: {}'.format(task_result.Waypoints_achieved))
 print(task_result.SSS_time_str)
 print(task_result.ESS_time_str)
 print(task_result.total_time_str)

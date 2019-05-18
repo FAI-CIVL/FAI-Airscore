@@ -152,12 +152,14 @@ class Track():
     @classmethod
     def read_file(cls, filename, pilot_id = None, test = 0):
         """Reads track file and creates a track object"""
+        if test:
+            print('Track.read_file: filename: {} | pilot: {}'.format(filename, pilot_id))
         message = ''
         track = cls(filename)
         track.get_type(test)
         if track.type is not None:
             """file is a valid track format"""
-            message += ("File Type: {} \n".format(type))
+            message += ("File Type: {} \n".format(track.type))
             if track.type == "igc":
                 """using IGC reader from aerofile library"""
                 flight = Flight.create_from_file(filename)
@@ -183,7 +185,7 @@ class Track():
                     print(message)
                 return track
         else:
-            message += ("File {} (pilot ID {}) is NOT a valid track file. \n".format(track, pilot_id))
+            print("File {} (pilot ID {}) is NOT a valid track file. \n".format(track, pilot_id))
 
     @classmethod
     def read_db(cls, traPk, test = 0):
@@ -297,6 +299,8 @@ class Track():
                                 pilPk = {}
                             LIMIT 1""".format(self.pilPk))
             #print ("get_glider Query: {}  \n".format(query))
+            if test:
+                print(query)
             with Database() as db:
                 row = db.fetchone(query)
             if row is not None:
@@ -314,7 +318,7 @@ class Track():
             message += ("{}, cert. {} \n".format(self.glider, self.cert))
             print (message)
 
-    def copy_track_file(self, path=None, pname=None):
+    def copy_track_file(self, task_path=None, pname=None, test = 0):
         """copy track file in the correct folder and with correct name
         name could be changed as the one XContest is sending, or rename that one, as we wish
         if path or pname is None will calculate. note that if bulk importing it is better to pass these values
@@ -323,17 +327,27 @@ class Track():
         from shutil import copyfile
         import glob
         from compUtils import get_task_file_path
+        from os import path
 
         src_file = self.filename
-        if path is None:
-            path = get_task_file_path(self.tasPk)
+        if task_path is None:
+            task_path = get_task_file_path(self.tasPk, test)
+        if test:
+            print('Copy track file')
+            print('file name: {}'.format(src_file))
+            print('Task tracks path: {}'.format(task_path))
 
         if pname is None:
             query = "SELECT " \
-                    "   CONCAT_WS('_', LOWER(P.`pilFirstName`), LOWER(P.`pilLastName`) ) AS pilName" \
-                    "FROM `tblPilot` P " \
-                    "WHERE P.`pilPk` = %s"
+                    "   CONCAT_WS('_', LOWER(P.`pilFirstName`), LOWER(P.`pilLastName`) ) AS pilName " \
+                    "   FROM `tblPilot` P " \
+                    "   WHERE P.`pilPk` = %s" \
+                    "   LIMIT 1"
             param = self.pilPk
+
+            if test:
+                print('pname query:')
+                print(query)
 
             with Database() as db:
                 # get the task details.
@@ -341,17 +355,17 @@ class Track():
                 if t:
                     pname = t['pilName']
 
-        if path:
+        if task_path:
             """check if directory already exists"""
-            if not os.path.isdir(path):
-                os.makedirs(path)
+            if not path.isdir(task_path):
+                os.makedirs(task_path)
             """creates a name for the track
             name_surname_date_time_index.igc
             if we use flight date then we need an index for multiple tracks"""
 
-            index = str(len(glob.glob(path+'/'+pname+'*.igc')) + 1).zfill(2)
+            index = str(len(glob.glob(task_path+'/'+pname+'*.igc')) + 1).zfill(2)
             filename = '_'.join([pname, str(self.date), index]) + '.igc'
-            fullname = '/'.join([path, filename])
+            fullname = path.join(task_path, filename)
             # print(f'path to copy file: {fullname}')
             print('path to copy file:',fullname)
             """copy file"""

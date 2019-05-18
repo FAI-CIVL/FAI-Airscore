@@ -8,7 +8,13 @@ function get_registered_pilots($link, $comPk, $tasPk)
     $query = "  SELECT
                     P.`pilFirstName`,
                     P.`pilLastName`,
-                    TT.*
+                    P.`pilPk`,
+                    TT.`traPk`,
+                    TT.`tarResultType`,
+                    TT.`Goal`,
+                    TT.`Dist`,
+                    TT.`TimeSS`,
+                    TT.`TimeES`
                 FROM
                     `tblRegistration` R
                 JOIN tblPilot P USING(`pilPk`)
@@ -52,7 +58,15 @@ if ( reqexists('addtrack') )
     $fh = fopen("/tmp/submit24", "w");
     foreach ($_REQUEST as $k=>$v)
     {
-        fwrite($fh, "key=$k, value$v\n");
+        fwrite($fh, "key=$k, value=$v\n");
+    }
+    foreach ($_FILES as $k=>$v)
+    {
+        fwrite($fh, "key=$k:\n");
+        foreach ($v as $key=>$val)
+        {
+            fwrite($fh, "    key=$key, value=$val\n");
+        }
     }
     fclose($fh);
     $pilPk = reqival('pilPk');

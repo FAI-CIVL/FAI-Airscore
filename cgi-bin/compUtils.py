@@ -226,7 +226,7 @@ def read_formula(comPk):
 
     return formula
 
-def get_task_file_path(tasPk):
+def get_task_file_path(tasPk, test = 0):
     """gets path to task tracks folder"""
     from Defines import FILEDIR
     path = None
@@ -235,7 +235,7 @@ def get_task_file_path(tasPk):
             "YEAR(C.`comDateFrom`) AS comYear, " \
             "DATE_FORMAT(T.`tasdate`, '%%Y%%m%%d') AS tasDate " \
             " FROM `tblTaskView` T JOIN `tblCompetition` C USING(`comPk`) " \
-            "WHERE T.`tasPk` = %s"
+            "WHERE T.`tasPk` = %s LIMIT 1 "
 
     param = tasPk
     with Database() as db:
@@ -245,5 +245,9 @@ def get_task_file_path(tasPk):
             tname = t['tasCode']
             year = str(t['comYear'])
             tdate = str(t['tasDate'])
-            path = FILEDIR + ('/'.join([year, cname, ('_'.join([tname, tdate]))]))
+            path = str(FILEDIR + ('/'.join([year, cname, ('_'.join([tname, tdate]))])))
+    if test:
+        print('Get Task tracks folder:')
+        print(query)
+        print('task folder: {}'.format(path))
     return path
