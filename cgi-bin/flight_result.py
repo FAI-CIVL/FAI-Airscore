@@ -245,7 +245,7 @@ class Flight_result:
 
                 #check if we are on the right side of start radius
                 if fix.rawtime > Task.start_time - formula_parameters.max_jump_the_gun and not proceed_to_start:
-                    if check_start('ready', fix, tp, tolerance, min_tol_m):
+                    if check_start('ready', fix, s_tp, tolerance, min_tol_m):
                         # pilot is on the right side of start after the start time.
                         proceed_to_start = True  # pilot is alowed to start.
                         if fix.rawtime < Task.start_time:
