@@ -703,9 +703,9 @@ class Task:
         ess_wpt = 0
         for wpt in range(len(self.turnpoints)):
             if self.turnpoints[wpt].type == 'speed':
-                sss_wpt = wpt
+                sss_wpt = wpt+1
             if self.turnpoints[wpt].type == 'endspeed':
-                ess_wpt = wpt
+                ess_wpt = wpt+1
 
         # work out self.StartSSDistance, self.EndSSDistance, self.SSDistance
         self.StartSSDistance = sum(self.optimised_legs[0:sss_wpt])
