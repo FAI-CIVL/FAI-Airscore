@@ -26,50 +26,35 @@ def result_report(task_result):
 def main():
 
     waypoint = namedtuple('waypoint', 'plat plon lat lon radius type shape direction')
-    igc_file = './tests/test_igc/0215.igc'
+    tracks = ['0215', '0941']
+    #igc_file = './tests/test_igc/0941.igc'
     task = Task.read_task(64)
 
-    #task.calculate_optimised_task_length()
-
-    # total_dist = 0
-    # for waypoint in range(1,len(task.optimised_turnpoints)):
-    #     total_dist=total_dist+task.optimised_legs[waypoint-1]
-    #     print('waypoint:',waypoint )
-    #     print('radius:', task.turnpoints[waypoint].radius)
-    #     print(task.optimised_turnpoints[waypoint].lat, ' ' , task.optimised_turnpoints[waypoint].lon)
-    #     print('total distance:', total_dist, '  leg_distance:',task.optimised_legs[waypoint-1])
-
     print("starting..")
-    print('using task {} and track file {}'.format(task.tasPk, igc_file))
-
-    flight = igc_lib.Flight.create_from_file(igc_file) #load and process igc file
-
-    print('flight notes: {}'.format(flight.notes))
-    print('flight valid: {}'.format(flight.valid))
+    print('using task {}'.format(task.tasPk))
     print('partial distances:')
     print(task.distances_to_go)
 
-    print('\n ***  Using Original algorithm  ***')
+    for track in tracks:
+        igc_file = './tests/test_igc/'+track+'.igc'
+        flight = igc_lib.Flight.create_from_file(igc_file) #load and process igc file
 
-    task_result = orig_alg(flight, task, pwc.parameters, 5)
-    task_result.Lead_coeff = pwc.coef_scaled(task_result.Lead_coeff, task.SSDistance)
-    print(result_report(task_result))
+        print('***')
+        print('Pilot {}:'.format(track))
+        print('flight notes: {}'.format(flight.notes))
+        print('flight valid: {}'.format(flight.valid))
 
-    print('\n ***  Using CIVL algorithm  ***')
+        print('\n ***  Using Original algorithm  ***')
 
-    task_result = civl_alg(flight, task, pwc.parameters, 5)
-    task_result.Lead_coeff = pwc.coef_scaled(task_result.Lead_coeff, task.SSDistance)
-    print(result_report(task_result))
+        task_result = orig_alg(flight, task, pwc.parameters, 5)
+        task_result.Lead_coeff += pwc.coef_scaled(task_result.Lead_coeff, task.SSDistance)
+        print(result_report(task_result))
 
-    # task_result= Flight_result.check_flight(flight, task, pwc.parameters, 5) #check flight against task with tolerance of 0.05% or 5m
+        print('\n ***  Using CIVL algorithm  ***')
 
-    # print('Waypoints achieved: {}'.format(task_result.Waypoints_achieved))
-    # print('start: {}'.format(task_result.SSS_time_str))
-    # print('ESS: {}'.format(task_result.ESS_time_str))
-    # print('Time: {}'.format(task_result.total_time_str))
-    # print('Distance flown: {}'.format(task_result.Distance_flown))
-    # task_result.Lead_coeff = pwc.coef_scaled(task_result.Lead_coeff, task.SSDistance)
-    # print("lead_coeff:", task_result.Lead_coeff)
+        task_result = civl_alg(flight, task, pwc.parameters, 5)
+        task_result.Lead_coeff += pwc.coef_scaled(task_result.Lead_coeff, task.SSDistance)
+        print(result_report(task_result))
 
 if __name__== "__main__":
     main()

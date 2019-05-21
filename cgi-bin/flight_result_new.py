@@ -280,25 +280,11 @@ class Flight_result:
                     SS_tp = Task.turnpoints[t]
                     restarting = False
 
-                #check if we are on the right side of start radius
-                # if not proceed_to_start and check_start('ready', fix, SS_tp, tolerance, min_tol_m):
-                #     # pilot is on the right side of start after the start time.
-                #     proceed_to_start = True  # pilot is alowed to start.
-                #     if fix.rawtime < Task.start_time:
-                #         result.Jumped_the_gun = Task.start_time - fix.rawtime
-
                 if start_made_civl(fix, next, SS_tp, tolerance, min_tol_m):
                     time = round(tp_time_civl(fix, next, SS_tp), 0)
-                    # time_local = time + time_offset
                     result.Waypoints_achieved.append(["SSS",time])  # pilot has started
-                    # result.Pilot_Start_time = time
-                    # result.Start_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(time_local))
-                    # if Task.task_type == 'ELAPSED TIME': result.SSS_time = time
                     started = True
-                    # proceed_to_start = False
                     if not restarting:
-                        #if it is a restart, t is already next waypoint
-                        # result.Best_waypoint_achieved = 'SSS made'
                         t += 1
 
             if started:
@@ -311,20 +297,6 @@ class Flight_result:
                         name = 'ESS' if tp.type == 'endspeed' else 'Fix{:02}'.format(waypoint)
                         # result.Best_waypoint_achieved = 'waypoint ' + str(waypoint) + ' made'
                         result.Waypoints_achieved.append([name,time])  # pilot has achieved turnpoint
-
-                        # if tp.type == "endspeed":
-                        #     result.Waypoints_achieved.append(["ESS",fix.rawtime_local])  # pilot has achieved turnpoint
-                        #     result.ESS_time = fix.rawtime
-                        #     result.ESS_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(fix.rawtime_local))
-                        #     result.SSDistance = Task.SSDistance
-                        #     if Task.task_type == 'RACE':
-                        #         result.total_time = fix.rawtime - result.SSS_time
-                        #
-                        #     if Task.task_type == 'SPEEDRUN' or Task.task_type == 'ELAPSED TIME':
-                        #         result.total_time = fix.rawtime - result.Pilot_Start_time
-                        #     result.total_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(result.total_time))
-                        # else:
-                        #     result.Waypoints_achieved.append([waypoint,fix.rawtime_local])  # pilot has achieved turnpoint
                         waypoint += 1
                         t += 1
 
@@ -335,10 +307,6 @@ class Flight_result:
                                                             or in_semicircle(Task, Task.turnpoints, t,next)))):
 
                         result.Waypoints_achieved.append(['Goal',next.rawtime])  # pilot has achieved turnpoint
-                        # if started:
-                        #     result.Best_waypoint_achieved = 'Goal made'
-                        #     result.Distance_flown = distances2go[0]
-                        #     result.goal_time = fix.rawtime_local
                         break
 
             '''update result data'''
@@ -350,22 +318,10 @@ class Flight_result:
                 i : i ∈ TrackPoints In SS'''
             if started and not any(e[0] == 'ESS' for e in result.Waypoints_achieved):
                 taskTime = next.rawtime - Task.start_time
-                # launch2start = distances2go[0] - Task.EndSSDistance
-                # SS_flown = result.Distance_flown - launch2start
-                # best_dist_to_ess = Task.EndSSDistance - SS_flown
                 best_dist_to_ess.append((Task.EndSSDistance - result.Distance_flown)/1000)
                 result.Lead_coeff += formula_parameters.coef_func(taskTime, best_dist_to_ess[0], best_dist_to_ess[1])
-                # print('    best dist. to ESS {} : {} | Time {} \n'.format(round(best_dist_to_ess[0],1),round(best_dist_to_ess[1],1),taskTime))
+                #print('    best dist. to ESS {} : {} | Time {} | LC: {}'.format(round(best_dist_to_ess[0],1),round(best_dist_to_ess[1],1),taskTime, result.Lead_coeff))
                 best_dist_to_ess.pop(0)
-
-            # if result.Best_waypoint_achieved != 'Goal made':
-            #     result.Distance_flown = max(result.Distance_flown,
-            #                                        distance_flown(fix, t, Task.optimised_turnpoints, distances2go))
-
-
-                # if best_dist_to_ess > 0 and started:
-                #     result.Lead_coeff += formula_parameters.coef_func(taskTime, best_dist_to_ess, (
-                #                 Task.EndSSDistance - result.Distance_flown) / 1000)
 
         '''final results'''
         if started:
@@ -379,13 +335,14 @@ class Flight_result:
                     result.Pilot_Start_time = min([e[1] for e in result.Waypoints_achieved if e[0]=='SSS'])
                 else:
                     start_num = int((Task.start_close_time - Task.start_time) / (Task.SSInterval*60))
-                    #last_start = Task.start_time + Task.SSInterval*(start_num-1)
-                    for n in start_num-1:
-                        gate = Task.start_time + Task.SSInterval*n
+                    gate = Task.start_time + ((Task.SSInterval*60) * start_num) # last gate
+                    while gate >= Task.start_time:
                         if any([e for e in result.Waypoints_achieved if e[0]=='SSS' and e[1] >= gate]):
                             result.SSS_time = gate
                             result.Pilot_Start_time = min([e[1] for e in result.Waypoints_achieved if e[0]=='SSS' and e[1] >= gate])
                             break
+                        gate -= Task.SSInterval*60
+
             elif Task.task_type == 'ELAPSED TIME':
                 result.Pilot_Start_time = max([e[1] for e in result.Waypoints_achieved if e[0]=='SSS'])
                 result.SSS_time = result.Pilot_Start_time
@@ -396,6 +353,7 @@ class Flight_result:
             if any(e[0] == 'ESS' for e in result.Waypoints_achieved):
                 result.ESS_time = min([e[1] for e in result.Waypoints_achieved if e[0]=='ESS'])
                 result.ESS_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(result.ESS_time+time_offset))
+                result.total_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(result.ESS_time-result.SSS_time))
 
             '''Distnce flown'''
             ''' ∀p:p∈PilotsLandingBeforeGoal:bestDistancep = max(minimumDistance, taskDistance−min(∀trackp.pointi shortestDistanceToGoal(trackp.pointi)))
@@ -407,8 +365,10 @@ class Flight_result:
 
         if result.ESS_time is None: # we need to do this after other operations
             result.Lead_coeff += formula_parameters.coef_landout((Task.end_time - Task.start_time),((Task.EndSSDistance - result.Distance_flown) / 1000))
+            #print('    * Did not reach ESS LC: {}'.format(result.Lead_coeff))
 
         result.Lead_coeff = formula_parameters.coef_func_scaled(result.Lead_coeff, Task.EndSSDistance)
+        #print('    * Final LC: {} \n'.format(result.Lead_coeff))
         return result
 
     def store_result_test(self, traPk, tasPk):
