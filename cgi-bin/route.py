@@ -191,28 +191,6 @@ def find_closest(P1, P2, P3=None, method='fast_andoyer'):
     result = cartesian2polar(CL)
     return result
 
-def in_semicircle(self, wpts, wmade, coords):
-    wpt = wpts[wmade]
-    fcoords = namedtuple('fcoords', 'flat flon')  # wpts don't have flon/flat so make them for polar2cartesian
-    f = fcoords(coords.lat * math.pi / 180, coords.lon * math.pi / 180)
-    prev = wmade - 1
-    while prev > 0 and wpt.lat == wpts[prev].lat and wpt.lon == wpts[prev].lon:
-        prev -= prev
-
-    c = polar2cartesian(wpt)
-    p = polar2cartesian(wpts[prev])
-
-    # vector that bisects the semi-circle pointing into occupied half plane
-    bvec = c - p
-    pvec = polar2cartesian(f) - c
-
-    # dot product
-    dot = vecdot(bvec, pvec)
-    if (dot > 0):
-        return 1
-
-    return 0
-
 def check_start (state, fix, tp, tolerance, min_tol_m):
     '''check if pilot
             is in correct position to take the start cylinder [state = 'ready'],
@@ -244,6 +222,105 @@ def tp_made (fix, tp, tolerance, min_tol_m):
 
     return condition
 
+def start_made_civl (fix, next, start, tolerance, min_tol_m):
+    '''check if pilot is in correct position to take the start cylinder
+    This version is following the FAI Rules / CIVL Gap Rules 2018 8.1.1
+
+    CIVL rules do not make distinction between start and turnpoints, but this creates
+    problems in case of a tesk with enter cylinder and first turnpoint that differs from start wpt.
+    FS considers that a exit start.
+    We prefer to use XCTrack approach.
+    This version DOES USE a Entry/Exit flag (start only)
+    '''
+
+    if start.how == "entry":
+        #entry start cylinder
+        condition = not(start.in_radius(fix, -tolerance, -min_tol_m)) and start.in_radius(next, tolerance, min_tol_m)
+    else:
+        #exit start cylinder
+        condition = start.in_radius(fix, tolerance, min_tol_m) and not(start.in_radius(next, -tolerance, -min_tol_m))
+
+    return condition
+
+def tp_made_civl (fix, next, tp, tolerance, min_tol_m):
+    '''check if pilot is in correct position to take the cylinder
+    This version is following the FAI Rules / CIVL Gap Rules 2018 8.1.1
+    crossingturnpoint[i]: ∃j:
+    (distance(center[i],trackpoint[j]) >= innerRadius[i] ∧ distance(center[i] , trackpoint[j+1] ) <= outerRadius[i] )
+    ∨
+    (distance(center[i] , trackpoint[j+1] ) >= innerRadius[i] ∧ distance(center[i] , trackpoint[j] ) <= outerRadius[i] )
+
+    This version DOES NOT USE a Entry/Exit flag
+    '''
+
+    condition = (   (not(tp.in_radius(fix, -tolerance, -min_tol_m)) and (tp.in_radius(next, tolerance, min_tol_m)))
+                or
+                    (not(tp.in_radius(next, -tolerance, -min_tol_m)) and (tp.in_radius(fix, tolerance, min_tol_m))) )
+
+    return condition
+
+def tp_time_civl (fix, next, tp):
+
+    '''return correct time based on CIVL rules'''
+
+    '''
+    The time of a crossing depends on whether it actually cuts across the actual cylinder,
+    or whether both points lie within the tolerance band, but on the same side of the actual cylinder.
+
+    (distance(center , trackpoint[j] ) < radius ∧ distance(center , trackpoint[j+1] ) < radius )
+    ∨
+    (distance(center , trackpoint[j] ) > radius ∧ distance(center , trackpoint[j+1] ) > radius )
+    ∧
+    turnpoint = ESS: crossing.time = trackpoint[j+1].time
+
+    (distance(center , trackpoint[j] ) < radius ∧ distance(center , trackpoint[j+1] ) < radius )
+    ∨
+    (distance(center , trackpoint[j] ) > radius ∧ distance(center , trackpoint[j+1] ) > radius )
+    ∧
+    turnpoint ≠ ESS: crossing.time = trackpoint[j].time
+
+    (distance(center , trackpoint[j] ) < radius ∧ distance(center , trackpoint[j+1] ) > radius )
+    ∨
+    (distance(center , trackpoint[j] ) > radius ∧ distance(center , trackpoint[j+1] ) < radius )
+    crossing.time = interpolateTime(trackpoint[j],trackpoint[j+1])
+    '''
+
+    from route import distance
+
+    if (    (tp.in_radius(fix, 0, 0) and tp.in_radius(next, 0, 0))
+            or
+            (not(tp.in_radius(fix, 0, 0)) and not(tp.in_radius(next, 0, 0)))):
+        return (fix.rawtime if tp.type != 'endspeed' else next.rawtime)
+    else:
+        '''interpolate time:
+        Will use distance from radius of the two points, and the proportion of times'''
+        d1      = abs(distance(tp, fix)  - tp.radius)
+        d2      = abs(distance(tp, next) - tp.radius)
+        speed   = (d1+d2)/(next.rawtime - fix.rawtime)
+        t       = round((fix.rawtime + d1/speed), 2)
+        return t
+
+def in_semicircle(self, wpts, wmade, coords):
+    wpt = wpts[wmade]
+    fcoords = namedtuple('fcoords', 'flat flon')  # wpts don't have flon/flat so make them for polar2cartesian
+    f = fcoords(coords.lat * math.pi / 180, coords.lon * math.pi / 180)
+    prev = wmade - 1
+    while prev > 0 and wpt.lat == wpts[prev].lat and wpt.lon == wpts[prev].lon:
+        prev -= prev
+
+    c = polar2cartesian(wpt)
+    p = polar2cartesian(wpts[prev])
+
+    # vector that bisects the semi-circle pointing into occupied half plane
+    bvec = c - p
+    pvec = polar2cartesian(f) - c
+
+    # dot product
+    dot = vecdot(bvec, pvec)
+    if (dot > 0):
+        return 1
+
+    return 0
 
 def rawtime_float_to_hms(timef):
     """Converts time from floating point seconds to hours/minutes/seconds.
