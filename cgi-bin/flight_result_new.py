@@ -294,7 +294,7 @@ class Flight_result:
                     tp  = Task.turnpoints[t]
                     if tp_made_civl(fix, next, tp, tolerance, min_tol_m):
                         time = round(tp_time_civl(fix, next, tp), 0)
-                        name = 'ESS' if tp.type == 'endspeed' else 'Fix{:02}'.format(waypoint)
+                        name = 'ESS' if tp.type == 'endspeed' else 'TP{:02}'.format(waypoint)
                         # result.Best_waypoint_achieved = 'waypoint ' + str(waypoint) + ' made'
                         result.Waypoints_achieved.append([name,time])  # pilot has achieved turnpoint
                         waypoint += 1

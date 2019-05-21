@@ -17,16 +17,17 @@ def result_report(task_result):
     report = ''
     report +=   'Waypoints achieved: {} \n'.format(task_result.Waypoints_achieved)
     report +=   'start: {} \n'.format(task_result.Start_time_str)
+    report +=   'real start: {} \n'.format(task_result.Pilot_Start_time)
     report +=   'ESS: {} \n'.format(task_result.ESS_time_str)
     report +=   'Time: {} \n'.format(task_result.total_time_str)
-    report +=   'Distance flown: {} Km\n'.format(task_result.Distance_flown)
+    report +=   'Distance flown: {} ({} Km)\n'.format(task_result.Distance_flown, round(task_result.Distance_flown/1000, 2))
     report +=   'lead_coeff: {} \n'.format(task_result.Lead_coeff)
     return report
 
 def main():
 
     waypoint = namedtuple('waypoint', 'plat plon lat lon radius type shape direction')
-    tracks = ['0215', '0941']
+    tracks = ['0215', '0941', '0407']
     #igc_file = './tests/test_igc/0941.igc'
     task = Task.read_task(64)
 
