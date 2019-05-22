@@ -18,6 +18,7 @@ def lc_calc(res, t):
     trailing    = 0
     my_start    = res.Pilot_Start_time
     first_start = t.stats['tasFirstDepTime']
+    ss_start    = t.start_time
     SS_Distance = t.SSDistance
     '''add the leading part, from start time of first pilot to start, to my start time'''
     if my_start > first_start:
@@ -35,6 +36,9 @@ def lc_calc(res, t):
     print('*************')
     print('last time: {}'.format(res.Stopped_time))
     print('LC from result: {}'.format(res.Lead_coeff))
+    print('Start Time: {}'.format(ss_start))
+    print('First Start Time: {}'.format(first_start))
+    print('My Start Time: {}'.format(my_start))
     print('leading part: {}'.format(leading))
     print('landed early: {}'.format(bool(not any(e[0] == 'ESS' for e in res.Waypoints_achieved))))
     print('trailing part: {}'.format(trailing))
@@ -49,7 +53,7 @@ def result_report(task_result):
     report +=   'ESS: {} \n'.format(task_result.ESS_time_str)
     report +=   'Time: {} \n'.format(task_result.total_time_str)
     report +=   'Distance flown: {} ({} Km)\n'.format(task_result.Distance_flown, round(task_result.Distance_flown/1000, 2))
-    report +=   'lead_coeff: {} \n'.format(task_result.Lead_coeff)
+    report +=   'partial lead_coeff: {}'.format(task_result.Lead_coeff)
     return report
 
 def main():
@@ -83,7 +87,7 @@ def main():
         task_result = civl_alg(flight, task, pwc.parameters, 5)
         Lead_coeff = lc_calc(task_result, task)
         print(result_report(task_result))
-        print('calculated LC: {}'.format(Lead_coeff))
+        print('calculated LC: {} \n'.format(Lead_coeff))
 
 if __name__== "__main__":
     main()
