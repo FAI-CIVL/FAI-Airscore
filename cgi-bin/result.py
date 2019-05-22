@@ -201,7 +201,7 @@ def read_rankings(task_id, test = 0):
 
     with Database() as db:
         t = db.fetchall(query)
-    if t is None:
+    if not t:
         print('Task does not have rankings')
         #rank = {'Open Class':[]}
     else:
@@ -211,22 +211,23 @@ def read_rankings(task_id, test = 0):
             else:
                 rank[l['rank']] = [l['cert']]
 
-    '''add female and team choices'''
-    query = """ SELECT
-                    claFem      AS female,
-                    claTeam     AS team
-                FROM
-                    tblClassification
-                    JOIN tblTaskView USING (claPk)
-                WHERE
-                    tasPk = {}
-                LIMIT 1
-            """.format(task_id);
+        '''add female and team choices'''
+        query = """ SELECT
+                        claFem      AS female,
+                        claTeam     AS team
+                    FROM
+                        tblClassification
+                        JOIN tblTaskView USING (claPk)
+                    WHERE
+                        tasPk = {}
+                    LIMIT 1
+                """.format(task_id);
 
-    with Database() as db:
-        t = db.fetchone(query)
-    rank['Female'] = t['female']
-    rank['Team'] = t['team']
+        with Database() as db:
+            t = db.fetchone(query)
+        if t:
+            rank['Female'] = t['female']
+            rank['Team'] = t['team']
 
     if test:
         print('rankings list:')
