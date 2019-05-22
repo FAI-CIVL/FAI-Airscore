@@ -173,7 +173,9 @@ class Task:
                         `tasFastestTime`,
                         `tasFirstDepTime`,
                         `tasFirstArrTime`,
+                        `tasLastArrTime`,
                         `tasMaxDistance`,
+                        'tasTotalDistanceFlown',
                         `tasResultsType`,
                         `tasTaskType`,
                         `tasDistance`,
@@ -202,31 +204,39 @@ class Task:
         if t is None:
             print('Not a valid task')
             return
-        time_offset = t['comTimeOffset']
-        task_date = t['tasDate']
-        start_time = int(t['sstime'] - time_offset*60*60)
-        end_time = t['endtime'] - time_offset*60*60
-        task_type = t['tasTaskType'].upper()
+        time_offset         = t['comTimeOffset']
+        task_date           = t['tasDate']
+        start_time          = int(t['sstime'] - time_offset*60*60)
+        end_time            = t['endtime'] - time_offset*60*60
+        task_type           = t['tasTaskType'].upper()
         if t['tasStoppedTime']:
             t['tasStoppedTime'] -= time_offset * 60*60
 
-        stopped_time = t['tasStoppedTime']
+        stopped_time        = t['tasStoppedTime']
         if t['LastStartTime']:
             t['LastStartTime'] -= time_offset * 60*60
-        last_start_time = t['LastStartTime']
-        check_launch = t['tasCheckLaunch']
-        launchvalid = t['tasLaunchValid']
-        distance = t['tasDistance']
-        EndSSDistance = t['tasEndSSDistance']
-        SSDistance = t['tasSSDistance']
-        SSInterval = t['tasSSInterval']
-        ShortRouteDistance = t['tasShortRouteDistance']
-        start_close_time = t['StartCloseTime'] - time_offset*60*60
-        task_start_time = t['tasStartTime']
-        arrival = t['tasArrival']
-        departure = t['tasDeparture']
-        tolerance = t['tasMargin'] * 0.01
+        last_start_time     = t['LastStartTime']
+        check_launch        = t['tasCheckLaunch']
+        launchvalid         = t['tasLaunchValid']
+        distance            = t['tasDistance']
+        EndSSDistance       = t['tasEndSSDistance']
+        SSDistance          = t['tasSSDistance']
+        SSInterval          = t['tasSSInterval']
+        ShortRouteDistance  = t['tasShortRouteDistance']
+        start_close_time    = t['StartCloseTime'] - time_offset*60*60
+        task_start_time     = t['tasStartTime']
+        arrival             = t['tasArrival']
+        departure           = t['tasDeparture']
+        tolerance           = t['tasMargin'] * 0.01
 
+        if t['tasMaxDistance']:
+            '''task has been already scored'''
+            stats = dict()
+            stats['tasFirstDepTime']        = t['tasFirstDepTime']
+            stats['tasLastArrTime']         = t['tasLastArrTime']
+            stats['tasMaxDistance']         = t['tasMaxDistance']
+            stats['tasFastestTime']         = t['tasFastestTime']
+            stats['tasTotalDistanceFlown']  = t['tasTotalDistanceFlown']
 
         comPk = t['comPk']
 
@@ -283,6 +293,7 @@ class Task:
         task.departure = departure
         task.time_offset = time_offset
         task.tolerance = tolerance
+        task.stats = stats
 
 
         return task
