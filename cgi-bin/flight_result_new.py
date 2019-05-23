@@ -413,14 +413,13 @@ class Flight_result:
 
     def store_result(self, traPk, tasPk):
 
-        if not self.goal_time:
-            self.goal_time = 0
-
-        endss = self.ESS_time
-        if not endss:
-            endss = 0
+        if not self.goal_time: self.goal_time = 0
+        endss = 0 if not self.ESS_time else self.ESS_time
+        # endss = self.ESS_time
+        # if not endss:
+        #     endss = 0
         #print("turnponts", len(self.Waypoints_achieved))
-        query = "delete from tblTaskResult where traPk=%s and tasPk=%s"
+        query = "DELETE FROM `tblTaskResult` WHERE `traPk`=%s and `tasPk`=%s"
         params = [traPk, tasPk]
         with Database() as db:
             db.execute(query, params)
@@ -431,15 +430,14 @@ class Flight_result:
                 "VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})".format(tasPk, traPk, self.Distance_flown, self.speed, self.Pilot_Start_time, self.goal_time, self.SSS_time, endss, len(self.Waypoints_achieved), self.Lead_coeff, self.Penalty, self.Comment, self.Stopped_altitude, self.Stopped_time)
         #print(query)
 
-        query = "INSERT INTO tblTaskResult ( " \
-                "tasPk, traPk, tarDistance, tarSpeed, tarStart, tarGoal, tarSS, tarES, tarTurnpoints, " \
-                "tarLeadingCoeff2, tarPenalty, tarLastTime ) " \
-                "VALUES ( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s )"
+        query = "INSERT INTO `tblTaskResult` ( " \
+                "`tasPk`, `traPk`, `tarDistance`, `tarSpeed`, `tarStart`, `tarGoal`, `tarSS`, `tarES`, `tarTurnpoints`, " \
+                "`tarLeadingCoeff2`, `tarPenalty`, `tarLastAltitude`, `tarLastTime` ) " \
+                "VALUES ( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s )"
         # , #%s, %s, %s)"
         num_wpts = len(self.Waypoints_achieved)
-        params = [tasPk, traPk, self.Distance_flown, self.speed, self.Pilot_Start_time, self.goal_time, self.SSS_time, endss,
-                  num_wpts, self.Lead_coeff, self.Penalty,
-                  self.Stopped_time]  # , self.Comment, self.Stopped_altitude, self.Stopped_time]
+        params = [tasPk, traPk, self.Distance_flown, self.speed, self.Pilot_Start_time, self.goal_time, self.SSS_time, endss, num_wpts,
+                  self.Lead_coeff, self.Penalty, self.Stopped_altitude, self.Stopped_time]  # , self.Comment, self.Stopped_altitude, self.Stopped_time]
 
         with Database() as db:
            r = db.execute(query, params)

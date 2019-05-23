@@ -228,15 +228,16 @@ class Task:
         arrival             = t['tasArrival']
         departure           = t['tasDeparture']
         tolerance           = t['tasMargin'] * 0.01
+        goalalt             = t['tasGoalAlt']
 
         if t['tasMaxDistance']:
             '''task has been already scored'''
             stats = dict()
-            stats['tasFirstDepTime']        = t['tasFirstDepTime']
-            stats['tasLastArrTime']         = t['tasLastArrTime']
-            stats['tasMaxDistance']         = t['tasMaxDistance']
-            stats['tasFastestTime']         = t['tasFastestTime']
-            stats['tasTotalDistanceFlown']  = t['tasTotalDistanceFlown']
+            stats['firstdepart']    = t['tasFirstDepTime']
+            stats['lastarrival']    = t['tasLastArrTime']
+            stats['maxdist']        = t['tasMaxDistance']
+            stats['fastest']        = t['tasFastestTime']
+            stats['distovermin']    = t['tasTotalDistanceFlown']
 
         comPk = t['comPk']
 
@@ -277,23 +278,24 @@ class Task:
 
         task = Task(turnpoints, start_time, end_time, task_type, stopped_time, last_start_time, check_launch)
         task.launchvalid = launchvalid
-        task.tasPk = task_id
-        task.comPk = comPk
-        task.date = task_date
-        task.distance = distance
-        task.EndSSDistance = EndSSDistance
-        task.SSDistance = SSDistance
-        task.SSInterval = SSInterval
-        task.ShortRouteDistance = ShortRouteDistance
-        task.partial_distance = partial_distance
-        task.optimised_turnpoints = short_route
-        task.start_close_time = start_close_time
-        task.task_start_time = task_start_time
-        task.arrival = arrival
-        task.departure = departure
-        task.time_offset = time_offset
-        task.tolerance = tolerance
-        task.stats = stats
+        task.tasPk                  = task_id
+        task.comPk                  = comPk
+        task.date                   = task_date
+        task.distance               = distance
+        task.EndSSDistance          = EndSSDistance
+        task.SSDistance             = SSDistance
+        task.SSInterval             = SSInterval
+        task.ShortRouteDistance     = ShortRouteDistance
+        task.partial_distance       = partial_distance
+        task.optimised_turnpoints   = short_route
+        task.start_close_time       = start_close_time
+        task.task_start_time        = task_start_time
+        task.arrival                = arrival
+        task.departure              = departure
+        task.time_offset            = time_offset
+        task.tolerance              = tolerance
+        task.goalalt                = goalalt
+        task.stats                  = stats
 
 
         return task
@@ -322,6 +324,22 @@ class Task:
                 #print (query)
                 db.execute(query)
                 #print (self.optimised_turnpoints[idx].lat, self.optimised_turnpoints[idx].lon)
+
+    def update_totals(self):
+        '''store updated totals to task database'''
+
+        totals = self.stats
+        task_id = self.tasPk
+        with Database() as db:
+            query = "update tblTask set tasTotalDistanceFlown=%s, " \
+                    "tasTotDistOverMin= %s, tasPilotsTotal=%s, " \
+                    "tasPilotsLaunched=%s, tasPilotsGoal=%s, " \
+                    "tasFastestTime=%s, tasMaxDistance=%s " \
+                    "where tasPk=%s"
+
+            params = [totals['distance'], totals['distovermin'], totals['pilots'], totals['launched'],
+                         totals['goal'], totals['fastest'], totals['maxdist'], task_id]
+            db.execute(query, params)
 
     @staticmethod
     def create_from_xctrack_file(filename):
@@ -498,11 +516,11 @@ class Task:
                 tas['tasShortRouteDistance'] = float(p.get('task_distance'))
                 tas['tasDistance'] = float(p.get('task_distance')) #need to calculate distance through centers
                 tas['tasSSDistance'] = float(p.get('ss_distance'))
-                stats['tasPilotsTotal'] = int(p.get('no_of_pilots_present'))
-                stats['tasPilotsLaunched'] = int(p.get('no_of_pilots_flying'))
-                stats['tasPilotsGoal'] = int(p.get('no_of_pilots_reaching_goal'))
-                stats['tasMaxDistance'] = float(p.get('best_dist')) * 1000 # in meters
-                stats['tasTotalDistanceFlown'] = float(p.get('sum_flown_distance')) * 1000 # in meters
+                stats['pilots'] = int(p.get('no_of_pilots_present'))
+                stats['launched'] = int(p.get('no_of_pilots_flying'))
+                stats['goal'] = int(p.get('no_of_pilots_reaching_goal'))
+                stats['maxdist'] = float(p.get('best_dist')) * 1000 # in meters
+                stats['totdistovermin'] = float(p.get('sum_flown_distance')) * 1000 # in meters
                 try:
                     '''happens this values are error strings'''
                     stats['tasQuality'] = float(p.get('day_quality'))
@@ -522,7 +540,7 @@ class Task:
                     stats['tasAvailDistPoints'] = 0
                     stats['tasAvailLeadPoints'] = 0
                     stats['tasAvailTimePoints'] = 0
-                stats['tasFastestTime'] = decimal_to_seconds(float(p.get('best_time'))) if float(p.get('best_time')) > 0 else 0
+                stats['fastest'] = decimal_to_seconds(float(p.get('best_time'))) if float(p.get('best_time')) > 0 else 0
             for l in p.iter('FsTaskDistToTp'):
                 optimised_legs.append(float(l.get('distance'))*1000)
 

@@ -28,7 +28,7 @@ class FSDB:
         """ A XML reader to read FSDB files
             Unfortunately the fsdb format isn't published so much of this is simply an
             exercise in reverse engineering.
-        """ 
+        """
         import lxml.etree as ET
 
         message = ''
@@ -38,7 +38,7 @@ class FSDB:
             root = tree.getroot()
         except:
             print ("FSDB Read Error.")
-            sys.exit()          
+            sys.exit()
 
         info = dict()
         formula = dict()
@@ -90,7 +90,7 @@ class FSDB:
             pilots.append(pilot)
 
         """Tasks"""
-        print ("Getting Tasks Info...")     
+        print ("Getting Tasks Info...")
         t = root.find('FsCompetition').find('FsTasks')
         for tas in t.iter('FsTask'):
             '''create task obj'''
@@ -109,7 +109,7 @@ class FSDB:
     def add(self, test = 0):
         """
             Add comp to Airscore database
-        """ 
+        """
         from myconn import Database
 
         message = ''
@@ -121,13 +121,13 @@ class FSDB:
         with Database() as db:
             """insert comp"""
             message += ("*** Inserting Comp: ***\n ")
-            compquery = ("""INSERT INTO 
+            compquery = ("""INSERT INTO
                                 `tblCompetition`
-                                (`comName`, `comLocation`, `comDateFrom`, `comDateTo`, 
-                                `comEntryRestrict`, `comTimeOffset`, `comClass`, `comLocked`, `comExt`) 
-                            VALUES 
+                                (`comName`, `comLocation`, `comDateFrom`, `comDateTo`,
+                                `comEntryRestrict`, `comTimeOffset`, `comClass`, `comLocked`, `comExt`)
+                            VALUES
                                 ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')
-                                """.format(self.info['comName'], self.info['comLocation'], self.info['comDateFrom'].isoformat(), 
+                                """.format(self.info['comName'], self.info['comLocation'], self.info['comDateFrom'].isoformat(),
                                 self.info['comDateTo'].isoformat(), 'registered', self.info['comTimeOffset'], self.info['comClass'], '1', '1'))
 
             message += ("Comp Query: \n {}".format(compquery))
@@ -136,14 +136,14 @@ class FSDB:
                 try:
                     comPk = db.execute(compquery)
 
-                    formulaquery = ("""INSERT INTO 
+                    formulaquery = ("""INSERT INTO
                                         `tblForComp`
-                                        (`extForName`, `comPk`, `comOverallScore`, `comOverallParam`, 
-                                        `forNomGoal`, `forMinDistance`, `forNomDistance`, `forNomTime`, `forNomLaunch`) 
-                                    VALUES 
+                                        (`extForName`, `comPk`, `comOverallScore`, `comOverallParam`,
+                                        `forNomGoal`, `forMinDistance`, `forNomDistance`, `forNomTime`, `forNomLaunch`)
+                                    VALUES
                                         ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')
-                                        """.format(self.formula['forName'], comPk, self.formula['comOverallScore'], self.formula['comOverallParam'], 
-                                        self.formula['forNomGoal'], self.formula['forMinDistance'], self.formula['forNomDistance'], 
+                                        """.format(self.formula['forName'], comPk, self.formula['comOverallScore'], self.formula['comOverallParam'],
+                                        self.formula['forNomGoal'], self.formula['forMinDistance'], self.formula['forNomDistance'],
                                         self.formula['forNomTime'], self.formula['forNomLaunch']))
                     message += ("Formula Query: \n {}".format(formulaquery))
 
@@ -161,11 +161,11 @@ class FSDB:
                 if pil['pilPk'] is None:
                     """create new pilot"""
                     names = []
-                    names = pil['name'].replace("'", "''").replace('.', ' ').replace('_', ' ').replace('-', ' ').split(maxsplit=1)  
-                    createpilquery = ("""   INSERT INTO 
-                                                `tblExtPilot`(`pilFirstName`, `pilLastName`,  
-                                                `pilNat`, `pilSex`, `pilGlider`, `pilFAI`) 
-                                            VALUES 
+                    names = pil['name'].replace("'", "''").replace('.', ' ').replace('_', ' ').replace('-', ' ').split(maxsplit=1)
+                    createpilquery = ("""   INSERT INTO
+                                                `tblExtPilot`(`pilFirstName`, `pilLastName`,
+                                                `pilNat`, `pilSex`, `pilGlider`, `pilFAI`)
+                                            VALUES
                                                 ('{}', '{}', '{}', '{}', '{}', '{}')
                                     """.format(names[0], names[1], pil['pilNat'], pil['pilSex'], pil['glider'], pil['pilFAI']))
                     message += ("Pilot Creation Query: \n {}".format(createpilquery))
@@ -178,33 +178,33 @@ class FSDB:
                         print("Pilot {} inserted with id {}".format(names[0], pil['pilPk']))
 
             """DO WE NEED TO REGISTER PILOTS TO COMP??"""
-#             regpilquery = ("""  INSERT INTO 
-#                                     `tblRegistration`(`comPk`, `regPaid`, `gliPk`, `pilPk`) 
-#                                 VALUES 
+#             regpilquery = ("""  INSERT INTO
+#                                     `tblRegistration`(`comPk`, `regPaid`, `gliPk`, `pilPk`)
+#                                 VALUES
 #                                     ('{}', '{}', '{}', '{}')
 #                                 """.format(comPk, 0, pil['glider'], pil['pilPk']))
 
             """task info"""
             message += ("*** Task Info: ***\n ")
             for task in self.tasks:
-                tasquery = (""" INSERT INTO 
-                                    `tblTask`(`comPk`, `tasDate`, `tasName`, `tasTaskStart`, `tasFinishTime`, `tasStartTime`, 
-                                    `tasStartCloseTime`, `tasFastestTime`, `tasMaxDistance`, 
-                                    `tasTaskType`, `tasDistance`, `tasShortRouteDistance`, `tasSSDistance`, 
-                                    `tasSSInterval`, `tasTotalDistanceFlown`, `tasQuality`, `tasDistQuality`, `tasTimeQuality`, 
-                                    `tasLaunchQuality`, `tasAvailDistPoints`, `tasAvailLeadPoints`, `tasAvailTimePoints`, 
-                                    `tasLaunchValid`, `tasPilotsLaunched`, `tasPilotsTotal`, `tasPilotsGoal`, `tasDeparture`, 
-                                    `tasArrival`, `tasHeightBonus`, `tasComment`, `tasLocked`) 
-                                VALUES 
-                                    ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', 
+                tasquery = (""" INSERT INTO
+                                    `tblTask`(`comPk`, `tasDate`, `tasName`, `tasTaskStart`, `tasFinishTime`, `tasStartTime`,
+                                    `tasStartCloseTime`, `tasFastestTime`, `tasMaxDistance`,
+                                    `tasTaskType`, `tasDistance`, `tasShortRouteDistance`, `tasSSDistance`,
+                                    `tasSSInterval`, `tasTotalDistanceFlown`, `tasQuality`, `tasDistQuality`, `tasTimeQuality`,
+                                    `tasLaunchQuality`, `tasAvailDistPoints`, `tasAvailLeadPoints`, `tasAvailTimePoints`,
+                                    `tasLaunchValid`, `tasPilotsLaunched`, `tasPilotsTotal`, `tasPilotsGoal`, `tasDeparture`,
+                                    `tasArrival`, `tasHeightBonus`, `tasComment`, `tasLocked`)
+                                VALUES
+                                    ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}',
                                      '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}',
                                      '{}', '{}', '{}', '{}', '{}')
-                            """.format(comPk, task.task_start_time.date(), task.task_name, task.task_start_time, task.end_time, task.start_time, 
-                                        task.start_close_time, task.stats['tasFastestTime'], task.stats['tasMaxDistance'], 
-                                        task.task_type, task.Distance, task.ShortRouteDistance, task.SSDistance, 
-                                        task.SSInterval, task.stats['tasTotalDistanceFlown'], task.stats['tasQuality'], task.stats['tasDistQuality'], task.stats['tasTimeQuality'], 
-                                        task.stats['tasLaunchQuality'], task.stats['tasAvailDistPoints'], task.stats['tasAvailLeadPoints'], task.stats['tasAvailTimePoints'], 
-                                        '1', task.stats['tasPilotsLaunched'], task.stats['tasPilotsTotal'], task.stats['tasPilotsGoal'], task.departure, 
+                            """.format(comPk, task.task_start_time.date(), task.task_name, task.task_start_time, task.end_time, task.start_time,
+                                        task.start_close_time, task.stats['fastest'], task.stats['maxdist'],
+                                        task.task_type, task.Distance, task.ShortRouteDistance, task.SSDistance,
+                                        task.SSInterval, task.stats['distance'], task.stats['tasQuality'], task.stats['tasDistQuality'], task.stats['tasTimeQuality'],
+                                        task.stats['tasLaunchQuality'], task.stats['tasAvailDistPoints'], task.stats['tasAvailLeadPoints'], task.stats['tasAvailTimePoints'],
+                                        '1', task.stats['launched'], task.stats['pilots'], task.stats['goal'], task.departure,
                                         task.arrival, task.height_bonus, task.comment, '1'))
                 message += ("{} Query: \n {}".format(task.task_name, tasquery))
 
@@ -215,7 +215,7 @@ class FSDB:
                             stopquery = ("""UPDATE
                                                 `tblTask`
                                             SET
-                                                `tasStoppedTime` = '{}' 
+                                                `tasStoppedTime` = '{}'
                                             WHERE
                                                 `tasPk` = {}""".format(task.stopped_time, tasPk))
                             db.execute(stopquery)
@@ -230,7 +230,7 @@ class FSDB:
                 for wpt in task.turnpoints:
                     try:
                         rwpPk = None
-                        wptquery = (""" INSERT INTO 
+                        wptquery = (""" INSERT INTO
                                             `tblRegionWaypoint`(`rwpName`, `rwpLatDecimal`, `rwpLongDecimal`, `rwpAltitude`)
                                         VALUES ('{}', '{}', '{}', '{}')""".format(wpt.name, wpt.lat, wpt.lon, wpt.altitude))
                         message += ("WPT Query: \n {}".format(wptquery))
@@ -238,9 +238,9 @@ class FSDB:
                             rwpPk = db.execute(wptquery)
                         '''get optimised distance for leg'''
                         dist = legs.pop(0)
-                        routequery = ("""   INSERT INTO 
-                                                `tblTaskWaypoint`(`tasPk`, `rwpPk`, `tawNumber`, `tawType`, 
-                                                `tawHow`, `tawShape`, `tawRadius`, `ssrCumulativeDist`) 
+                        routequery = ("""   INSERT INTO
+                                                `tblTaskWaypoint`(`tasPk`, `rwpPk`, `tawNumber`, `tawType`,
+                                                `tawHow`, `tawShape`, `tawRadius`, `ssrCumulativeDist`)
                                             VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')
                                             """.format(tasPk, rwpPk, wpt.id, wpt.type,
                                                 wpt.how, wpt.shape, wpt.radius, dist))
@@ -271,15 +271,15 @@ class FSDB:
                         tarES = time_to_seconds(res.ESS_time) - tz if res.ESS_time is not None else 0
                         tarGoal = time_to_seconds(res.goal_time) - tz if res.goal_time is not None else 0
 
-                        resquery = (""" INSERT INTO 
-                                            `tblExtResult`(`tasPk`, `pilPk`, `tarDistance`, `tarSpeed`, `tarSS`, `tarES`, 
-                                            `tarGoal`, `tarPenalty`, `tarComment`, `tarSpeedScore`, `tarDistanceScore`, 
-                                            `tarArrivalScore`, `tarDepartureScore`, `tarScore`, `tarLastAltitude`, `tarResultType`, `traGlider`) 
-                                        VALUES 
-                                            ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', 
+                        resquery = (""" INSERT INTO
+                                            `tblExtResult`(`tasPk`, `pilPk`, `tarDistance`, `tarSpeed`, `tarSS`, `tarES`,
+                                            `tarGoal`, `tarPenalty`, `tarComment`, `tarSpeedScore`, `tarDistanceScore`,
+                                            `tarArrivalScore`, `tarDepartureScore`, `tarScore`, `tarLastAltitude`, `tarResultType`, `traGlider`)
+                                        VALUES
+                                            ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}',
                                              '{}', '{}', '{}', '{}', '{}')
-                                    """.format(tasPk, pilPk, res.Total_distance, speed, tarSS, tarES, 
-                                        tarGoal, res.Penalty, res.Comment, res.Time_score, res.Distance_score, 
+                                    """.format(tasPk, pilPk, res.Total_distance, speed, tarSS, tarES,
+                                        tarGoal, res.Penalty, res.Comment, res.Time_score, res.Distance_score,
                                         res.Arrival_score, res.Departure_score, res.Score, res.Stopped_altitude, res.result_type, traGlider))
                         message += ("Result Query: \n {}".format(resquery))
                         if test == 0:
@@ -313,13 +313,13 @@ class FSDB:
             t.append(" pilFirstName LIKE '%%{}%%' ".format(i))
         cond = ' OR '.join(s)
         cond2 = ' OR '.join(t)
-        query = ("""    SELECT 
-                            pilPk 
-                        FROM 
-                            tblPilot 
-                        WHERE 
-                            ({}) 
-                        AND 
+        query = ("""    SELECT
+                            pilPk
+                        FROM
+                            tblPilot
+                        WHERE
+                            ({})
+                        AND
                             ({})""".format(cond, cond2))
 
         #print ("get_pilot Query: {}  \n".format(query))
@@ -331,13 +331,13 @@ class FSDB:
                 return db.fetchone(query)['pilPk']
             except:
                 if fai is not None and fai > 0:
-                    query = ("""    SELECT 
-                                        pilPk 
-                                    FROM 
-                                        tblPilot 
-                                    WHERE 
-                                        ({}) 
-                                    AND 
+                    query = ("""    SELECT
+                                        pilPk
+                                    FROM
+                                        tblPilot
+                                    WHERE
+                                        ({})
+                                    AND
                                         pilFAI = {}""".format(cond, fai))
 
                     #print ("get_pilot Query: {}  \n".format(query))
@@ -364,10 +364,8 @@ class FSDB:
     def get_day(str, test = 0):
         """
             Transform string in datetime.day
-        """ 
+        """
         if str is not None:
             return (datetime.strptime((str)[:19], '%Y-%m-%dT%H:%M:%S')).date()
         else:
             return str
-
-

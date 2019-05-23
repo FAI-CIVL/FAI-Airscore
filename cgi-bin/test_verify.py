@@ -17,7 +17,7 @@ def lc_calc(res, t):
     leading     = 0
     trailing    = 0
     my_start    = res.Pilot_Start_time
-    first_start = t.stats['tasFirstDepTime']
+    first_start = t.stats['firstdepart']
     ss_start    = t.start_time
     SS_Distance = t.SSDistance
     '''add the leading part, from start time of first pilot to start, to my start time'''
@@ -28,7 +28,7 @@ def lc_calc(res, t):
         '''pilot did not make ESS'''
         best_dist_to_ess    = (t.EndSSDistance - res.Distance_flown)/1000
         my_last_time        = res.Stopped_time
-        last_ess            = t.stats['tasLastArrTime']
+        last_ess            = t.stats['lastarrival']
         task_time           = (max(my_last_time,last_ess) - my_start)
         trailing            = pwc.coef_landout(task_time, best_dist_to_ess)
         trailing            = pwc.coef_scaled(trailing, SS_Distance)

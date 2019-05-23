@@ -15,7 +15,7 @@ def lc_calc(res, t):
     leading     = 0
     trailing    = 0
     my_start    = res.Pilot_Start_time
-    first_start = t.stats['tasFirstDepTime']
+    first_start = t.stats['firstdepart']
     ss_start    = t.start_time
     SS_Distance = t.SSDistance
     '''add the leading part, from start time of first pilot to start, to my start time'''
@@ -26,7 +26,7 @@ def lc_calc(res, t):
         '''pilot did not make ESS'''
         best_dist_to_ess    = (t.EndSSDistance - res.Distance_flown)/1000
         my_last_time        = res.Stopped_time
-        last_ess            = t.stats['tasLastArrTime']
+        last_ess            = t.stats['lastarrival']
         task_time           = (max(my_last_time,last_ess) - my_start)
         trailing            = coef_landout(task_time, best_dist_to_ess)
         trailing            = coef_scaled(trailing, SS_Distance)
@@ -42,20 +42,26 @@ def lc_calc(res, t):
     print('trailing part: {}'.format(trailing))
     return leading + res.Lead_coeff + trailing
 
-def get_results(task):
+def rescore(task, formula):
+    from igc_lib import Flight
     from flight_result_new import Flight_result
-    query = "SELECT `R`.`tarPk` AS `id`, `R`.`pilName` AS `name`, `T`.`traFile` AS `file` " \
-            "FROM `tblTrack` `T` RIGHT OUTER JOIN `tblResultView` `R` USING(`traPk`) " \
-            "WHERE `R`.`tasPk` = %s"
-    params = [task.tasPk]
+    import pwc
+    from statistics import pstdev
+
+    query = "SELECT `T`.`traPk` AS `id`, `P`.`pilLastName` AS `name`, `T`.`traFile` AS `file` " \
+            "FROM `tblTrack` `T` JOIN `tblPilot` `P` USING(`pilPk`) " \
+            "WHERE `T`.`traDate` = %s"
+    params = [task.date]
 
     with Database() as db:
         t = db.fetchall(query, params)
 
     if t:
         results = []
-        taskt = dict()
-        min_dist = task.min_dist
+        index = []
+        std = []
+        #taskt = dict()
+        min_dist = formula['forMinDistance']
         pilots = 81
         totdist = 0
         totdistovermin = 0
@@ -70,81 +76,109 @@ def get_results(task):
         minarr = 0
         maxarr = 0
         mincoeff2 = 0
+        stddev = 0
 
         print('getting tracks...')
+        # with Database() as db:
         for track in t:
-            print('{} ({}) Result:'.format(t['name'], t['id']))
+            print('{} ({}) Result:'.format(track['name'], track['id']))
             igc_file = track['file']
-            flight = igc_lib.Flight.create_from_file(igc_file)
+            flight = Flight.create_from_file(igc_file)
             result = Flight_result.check_flight(flight, task, pwc.parameters, 5)
-            Lead_coeff = lc_calc(result, task)
-            result.Lead_coeff = Lead_coeff
+            # Lead_coeff = lc_calc(result, task)
+            # result.Lead_coeff = Lead_coeff
+            print('   Goal: {} | part. LC: {}'.format(bool(result.goal_time),result.Lead_coeff))
             results.append(result)
+            index.append(track['id'])
 
-            query = "UPDATE `tblTaskResult` " \
-                    "SET `tarDistance`=%s,`tarSpeed`=%s,`tarStart`=%s,`tarGoal`=%s, " \
-                    "`tarResultType`=%s,`tarSS`=%s,`tarES`=%s,`tarLeadingCoeff2`=%s, " \
-                    "`tarLastAltitude`=%s,`tarLastTime`=%s " \
-                    "WHERE `tarPk`=%s"
-
-            params = [result.Distance_flown, result.speed, tresult.pilot_start_time, result.goal_time,
-                         'lo', result.SS_time, result.ESS_time, result.Lead_coeff,
-                         result.Stopped_altitude, result.Stopped_time, 
-                         t['id']]
-
-            with Database() as db:
-                db.execute(query, params)
-
+            '''calculate task totals'''
             if result.Distance_flown:
                 launched += 1
                 totdist += result.Distance_flown
-                totDistOverMin += 0 if result.Distance_flown < min_dist else result.Distance_flown - min_dist
+                std.append((min_dist if result.Distance_flown < min_dist else result.Distance_flown))
+                totdistovermin += 0 if result.Distance_flown < min_dist else result.Distance_flown - min_dist
                 if result.Distance_flown > maxdist: maxdist = result.Distance_flown
-                if not mindept or result.pilot_start_time < mindept: mindept = result.pilot_start_time
-                if result.pilot_start_time > maxdept: maxdept = result.pilot_start_time
+                if not mindept or result.Pilot_Start_time < mindept: mindept = result.Pilot_Start_time
+                if result.Pilot_Start_time > lastdept: lastdept = result.Pilot_Start_time
                 if result.ESS_time:
                     ess += 1
                     if result.goal_time:
                         goal += 1
                         if not fastest:
-                            fastest = result.ESS_time
+                            fastest = result.ESS_time - result.SSS_time
                             tqtime = fastest
-                        elif result.ESS_time < fastest:
+                        elif (result.ESS_time - result.SSS_time) < fastest:
                             tqtime = fastest
-                            fastest = result.ESS_time
+                            fastest = result.ESS_time - result.SSS_time
                         if not minarr or result.ESS_time < minarr: minarr = result.ESS_time
                         if result.ESS_time > maxarr: maxarr = result.ESS_time
-                if not mincoeff2 or result.Lead_coeff < mincoeff2: mincoeff2 = result.Lead_coeff
 
-        taskt['pilots'] = pilots
-        taskt['maxdist'] = maxdist
-        taskt['distance'] = totdist
-        taskt['distovermin'] = totdistovermin
+        '''Update task totals'''
+        task.stats['pilots'] = pilots
+        task.stats['maxdist'] = maxdist
+        task.stats['distance'] = totdist
+        task.stats['distovermin'] = totdistovermin
         #taskt['median'] = median
         #taskt['stddev'] = stddev
-        taskt['landed'] = landed
-        taskt['launched'] = launched
-        taskt['launchvalid'] = 1
-        taskt['goal'] = goal
-        taskt['ess'] = ess
-        taskt['fastest'] = fastest
-        taskt['tqtime'] = tqtime
-        taskt['firstdepart'] = mindept
-        taskt['lastdepart'] = lastdept
-        taskt['firstarrival'] = minarr
-        taskt['lastarrival'] = maxarr
+        #taskt['landed'] = landed
+        task.stats['launched'] = launched
+        task.stats['launchvalid'] = 1
+        task.stats['goal'] = goal
+        task.stats['ess'] = ess
+        task.stats['fastest'] = fastest
+        task.stats['tqtime'] = tqtime
+        task.stats['firstdepart'] = mindept
+        task.stats['lastdepart'] = lastdept
+        task.stats['firstarrival'] = minarr
+        task.stats['lastarrival'] = maxarr
         #taskt['mincoeff'] = mincoeff
-        taskt['mincoeff2'] = mincoeff2
-        #taskt['distspread'] = distspread
+        #task.stats['distspread'] = distspread
         #taskt['kmmarker'] = kmmarker
-        taskt['endssdistance'] = task.EndSSDistance
-        taskt['quality'] = None
-        #
-        # return results, taskt
+        task.stats['endssdistance'] = task.EndSSDistance
+        task.stats['stddev'] = pstdev(std)
+        task.stats['quality'] = None
 
+        task.update_totals()
 
+        '''update LC with final part
+            which need all tracks to be processed and totals to be calculated'''
+        for result in results:
+            result.Lead_coeff = lc_calc(result, task)
+            #result.Lead_coeff = Lead_coeff
+            print('({}) Result:'.format(index[0]))
+            print('   * Goal: {} | Final LC: {}'.format(bool(result.goal_time),result.Lead_coeff))
 
-        return results
+            if not mincoeff2 or result.Lead_coeff < mincoeff2: mincoeff2 = result.Lead_coeff
+
+            '''store new result'''
+            result.store_result(index[0],task.tasPk)
+            print('* Result stored in DB \n\n')
+            index.pop(0)
+
+        task.stats['mincoeff2'] = mincoeff2
+
+            # query = "UPDATE `tblTaskResult` " \
+            #         "SET `tarDistance`=%s,`tarSpeed`=%s,`tarStart`=%s,`tarGoal`=%s, " \
+            #         "`tarResultType`=%s,`tarSS`=%s,`tarES`=%s,`tarLeadingCoeff2`=%s, " \
+            #         "`tarLastAltitude`=%s,`tarLastTime`=%s " \
+            #         "WHERE `tarPk`=%s"
+            #
+            # params = [result.Distance_flown, result.speed, result.Pilot_Start_time, (result.goal_time if not None else 0),
+            #              'lo', result.SSS_time, (result.ESS_time if not None else 0), result.Lead_coeff,
+            #              result.Stopped_altitude, result.Stopped_time,
+            #              index[0]]
+            #
+            # with Database() as db:
+            #     db.execute(query, params)
+            # print('Result updated: {}'.format(index[0]))
+            # index.pop(0)
+
+        print('\n *** Totals:')
+        print('Tot. Dist: {} | Tot. Dist. over Min.: {}'.format(totdist,totdistovermin))
+        print('Max Dist: {} | Fastest time: {}'.format(maxdist,fastest))
+        print('Goal: {} | Min. LC: {}'.format(goal,mincoeff2))
+
+        #return taskt
     else:
         print('No results found')
         exit()
@@ -159,8 +193,8 @@ def main(args):
     #args =str(args)
 
     ##check parameter is good.
-    if len(args)==2 and args[0].isdigit():
-        task_id = int(args[0])
+    if len(sys.argv)==2 and sys.argv[1].isdigit():
+        task_id = int(sys.argv[1])
 
     #else:
        # logging.error("number of arguments != 1 and/or task_id not a number")
@@ -169,26 +203,28 @@ def main(args):
     print(task_id)
 
     task = Task.read_task(task_id)
+    formula = read_formula(task.comPk)
 
     '''get all results for the task'''
-    results, totals = get_results(task)
-
-    formula = read_formula(task.comPk)
+    rescore(task, formula)
 
     if formula['forClass'] == 'pwc':
         #totals = task_totals(task, formula)
-        query = "update tblTask_test set tasTotalDistanceFlown=%s, " \
-                "tasTotDistOverMin= %s, tasPilotsTotal=%s, " \
-                "tasPilotsLaunched=%s, tasPilotsGoal=%s, " \
-                "tasFastestTime=%s, tasMaxDistance=%s " \
-                "where tasPk=%s"
 
-        params = [totals['distance'], totals['distovermin'], totals['pilots'], totals['launched'],
-                     totals['goal'], totals['fastest'], totals['maxdist'], task.tasPk]
+        # with Database() as db:
+        #     query = "update tblTask set tasTotalDistanceFlown=%s, " \
+        #             "tasTotDistOverMin= %s, tasPilotsTotal=%s, " \
+        #             "tasPilotsLaunched=%s, tasPilotsGoal=%s, " \
+        #             "tasFastestTime=%s, tasMaxDistance=%s " \
+        #             "where tasPk=%s"
+        #
+        #     params = [totals['distance'], totals['distovermin'], totals['pilots'], totals['launched'],
+        #                  totals['goal'], totals['fastest'], totals['maxdist'], task_id]
+        #
+        #     db.execute(query, params)
+        #     print('Updated Task totals')
 
-        with Database() as db:
-            db.execute(query, params)
-
+        totals = task.stats
         dist, time, launch, stop = day_quality(totals, formula)
 
         if task.stopped_time:
@@ -198,25 +234,25 @@ def main(args):
 
         print("-- TASK_SCORE -- distQ = {} | timeQ = {} | launchQ = {} | stopQ = {}".format(dist, time, launch, stop))
         print("-- TASK_SCORE -- Day Quality = ", quality)
-        if quality > 1.0:
-            quality = 1.0
+        quality = min(quality, 1.000)
 
-        query = "UPDATE tblTask_test " \
+        query = "UPDATE tblTask " \
                 "SET tasQuality = %s, " \
                 "tasDistQuality = %s, " \
                 "tasTimeQuality = %s, " \
                 "tasLaunchQuality = %s, " \
                 "tasStopQuality = %s " \
                 "WHERE tasPk = %s"
-        params = [quality, dist, time, launch, stop, task.tasPk]
+        params = [quality, dist, time, launch, stop, task_id]
 
         with Database() as db:
             db.execute(query, params)
+        print('Updated Task Quality')
 
         totals['quality'] = quality
 
         if totals['pilots'] > 0:
-            pwc_points_allocation(task, totals, formula)
+            points_allocation(task, totals, formula)
 
 
 if __name__== "__main__":
