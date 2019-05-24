@@ -341,6 +341,27 @@ class Task:
                          totals['goal'], totals['fastest'], totals['maxdist'], task_id]
             db.execute(query, params)
 
+    def update_quality(self):
+        '''store new task validities and quality'''
+        quality     = self.stats['quality']
+        dist        = self.stats['distval']
+        time        = self.stats['timeval']
+        launch      = self.stats['launchval']
+        stop        = self.stats['stopval']
+        task_id     = self.tasPk
+
+        query = "UPDATE tblTask " \
+                "SET tasQuality = %s, " \
+                "tasDistQuality = %s, " \
+                "tasTimeQuality = %s, " \
+                "tasLaunchQuality = %s, " \
+                "tasStopQuality = %s " \
+                "WHERE tasPk = %s"
+        params = [quality, dist, time, launch, stop, task_id]
+
+        with Database() as db:
+            db.execute(query, params)
+
     @staticmethod
     def create_from_xctrack_file(filename):
         """ Creates Task from xctrack file, which is in json format.
@@ -523,23 +544,25 @@ class Task:
                 stats['totdistovermin'] = float(p.get('sum_flown_distance')) * 1000 # in meters
                 try:
                     '''happens this values are error strings'''
-                    stats['tasQuality'] = float(p.get('day_quality'))
-                    stats['tasDistQuality'] = float(p.get('distance_validity'))
-                    stats['tasTimeQuality'] = float(p.get('time_validity'))
-                    stats['tasLaunchQuality'] = float(p.get('launch_validity'))
-                    stats['tasStopQuality'] = float(p.get('stop_validity'))
-                    stats['tasAvailDistPoints'] = float(p.get('available_points_distance'))
-                    stats['tasAvailLeadPoints'] = float(p.get('available_points_leading'))
-                    stats['tasAvailTimePoints'] = float(p.get('available_points_time'))
+                    stats['quality'] = float(p.get('day_quality'))
+                    stats['distval'] = float(p.get('distance_validity'))
+                    stats['timeval'] = float(p.get('time_validity'))
+                    stats['launchval'] = float(p.get('launch_validity'))
+                    stats['stopval'] = float(p.get('stop_validity'))
+                    stats['distp'] = float(p.get('available_points_distance'))
+                    stats['depp'] = float(p.get('available_points_leading'))
+                    stats['timep'] = float(p.get('available_points_time'))
+                    stats['arrp'] = float(p.get('available_points_arrival'))
                 except:
-                    stats['tasQuality'] = 0
-                    stats['tasDistQuality'] = 0
-                    stats['tasTimeQuality'] = 0
-                    stats['tasLaunchQuality'] = 0
-                    stats['tasStopQuality'] = 0
-                    stats['tasAvailDistPoints'] = 0
-                    stats['tasAvailLeadPoints'] = 0
-                    stats['tasAvailTimePoints'] = 0
+                    stats['quality'] = 0
+                    stats['distval'] = 0
+                    stats['timeval'] = 0
+                    stats['launchval'] = 0
+                    stats['stopval'] = 0
+                    stats['distp'] = 0
+                    stats['depp'] = 0
+                    stats['timep'] = 0
+                    stats['arrp'] = 0
                 stats['fastest'] = decimal_to_seconds(float(p.get('best_time'))) if float(p.get('best_time')) > 0 else 0
             for l in p.iter('FsTaskDistToTp'):
                 optimised_legs.append(float(l.get('distance'))*1000)

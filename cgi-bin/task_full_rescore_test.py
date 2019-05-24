@@ -157,22 +157,6 @@ def rescore(task, formula):
 
         task.stats['mincoeff2'] = mincoeff2
 
-            # query = "UPDATE `tblTaskResult` " \
-            #         "SET `tarDistance`=%s,`tarSpeed`=%s,`tarStart`=%s,`tarGoal`=%s, " \
-            #         "`tarResultType`=%s,`tarSS`=%s,`tarES`=%s,`tarLeadingCoeff2`=%s, " \
-            #         "`tarLastAltitude`=%s,`tarLastTime`=%s " \
-            #         "WHERE `tarPk`=%s"
-            #
-            # params = [result.Distance_flown, result.speed, result.Pilot_Start_time, (result.goal_time if not None else 0),
-            #              'lo', result.SSS_time, (result.ESS_time if not None else 0), result.Lead_coeff,
-            #              result.Stopped_altitude, result.Stopped_time,
-            #              index[0]]
-            #
-            # with Database() as db:
-            #     db.execute(query, params)
-            # print('Result updated: {}'.format(index[0]))
-            # index.pop(0)
-
         print('\n *** Totals:')
         print('Tot. Dist: {} | Tot. Dist. over Min.: {}'.format(totdist,totdistovermin))
         print('Max Dist: {} | Fastest time: {}'.format(maxdist,fastest))
@@ -182,6 +166,8 @@ def rescore(task, formula):
     else:
         print('No results found')
         exit()
+
+    return results
 
 def main(args):
     print("starting..")
@@ -206,7 +192,7 @@ def main(args):
     formula = read_formula(task.comPk)
 
     '''get all results for the task'''
-    rescore(task, formula)
+    results = rescore(task, formula)
 
     if formula['forClass'] == 'pwc':
         #totals = task_totals(task, formula)
@@ -224,8 +210,8 @@ def main(args):
         #     db.execute(query, params)
         #     print('Updated Task totals')
 
-        totals = task.stats
-        dist, time, launch, stop = day_quality(totals, formula)
+        #totals = task.stats
+        dist, time, launch, stop = day_quality(task.stats, formula)
 
         if task.stopped_time:
             quality = dist * time * launch * stop
@@ -236,23 +222,18 @@ def main(args):
         print("-- TASK_SCORE -- Day Quality = ", quality)
         quality = min(quality, 1.000)
 
-        query = "UPDATE tblTask " \
-                "SET tasQuality = %s, " \
-                "tasDistQuality = %s, " \
-                "tasTimeQuality = %s, " \
-                "tasLaunchQuality = %s, " \
-                "tasStopQuality = %s " \
-                "WHERE tasPk = %s"
-        params = [quality, dist, time, launch, stop, task_id]
+        task.stats['distval']   = dist
+        task.stats['timeval']   = time
+        task.stats['launchval'] = launch
+        task.stats['stopval']   = stop
+        task.stats['quality']   = quality
 
-        with Database() as db:
-            db.execute(query, params)
+        task.update_quality()
         print('Updated Task Quality')
 
-        totals['quality'] = quality
-
+        #totals = task.stats
         if totals['pilots'] > 0:
-            points_allocation(task, totals, formula)
+            points_allocation(task, task.stats, formula, results)
 
 
 if __name__== "__main__":

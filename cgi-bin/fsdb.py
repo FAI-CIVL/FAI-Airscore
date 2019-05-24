@@ -192,18 +192,18 @@ class FSDB:
                                     `tasStartCloseTime`, `tasFastestTime`, `tasMaxDistance`,
                                     `tasTaskType`, `tasDistance`, `tasShortRouteDistance`, `tasSSDistance`,
                                     `tasSSInterval`, `tasTotalDistanceFlown`, `tasQuality`, `tasDistQuality`, `tasTimeQuality`,
-                                    `tasLaunchQuality`, `tasAvailDistPoints`, `tasAvailLeadPoints`, `tasAvailTimePoints`,
+                                    `tasLaunchQuality`, `tasAvailDistPoints`, `tasAvailLeadPoints`, `tasAvailTimePoints`, `tasAvailArrPoints`
                                     `tasLaunchValid`, `tasPilotsLaunched`, `tasPilotsTotal`, `tasPilotsGoal`, `tasDeparture`,
                                     `tasArrival`, `tasHeightBonus`, `tasComment`, `tasLocked`)
                                 VALUES
                                     ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}',
-                                     '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}',
+                                     '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}'
                                      '{}', '{}', '{}', '{}', '{}')
                             """.format(comPk, task.task_start_time.date(), task.task_name, task.task_start_time, task.end_time, task.start_time,
                                         task.start_close_time, task.stats['fastest'], task.stats['maxdist'],
                                         task.task_type, task.Distance, task.ShortRouteDistance, task.SSDistance,
-                                        task.SSInterval, task.stats['distance'], task.stats['tasQuality'], task.stats['tasDistQuality'], task.stats['tasTimeQuality'],
-                                        task.stats['tasLaunchQuality'], task.stats['tasAvailDistPoints'], task.stats['tasAvailLeadPoints'], task.stats['tasAvailTimePoints'],
+                                        task.SSInterval, task.stats['distance'], task.stats['quality'], task.stats['distval'], task.stats['timeval'],
+                                        task.stats['launchval'], task.stats['distp'], task.stats['depp'], task.stats['timep'], task.stats['arrp']
                                         '1', task.stats['launched'], task.stats['pilots'], task.stats['goal'], task.departure,
                                         task.arrival, task.height_bonus, task.comment, '1'))
                 message += ("{} Query: \n {}".format(task.task_name, tasquery))
