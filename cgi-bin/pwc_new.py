@@ -38,79 +38,65 @@ parameters.coef_landout = coef_landout
 def task_totals(task, formula):
 
 
-    distspread = []
     tasPk = task.tasPk
     launchvalid = task.launchvalid
     mindist = formula['forMinDistance']
     glidebonus = 0
     landed = 0
     taskt = {}
-    median = 0
     tqtime = None
 
 
     #todo: 'Landed' misses people who made ESS but actually landed before goal
-    query ="""	SELECT
-                    COUNT(tarPk) as TotalPilots,
-                    SUM(
-                        IF(
-                            tarDistance < %s, %s, tarDistance
-                            )
-                        ) AS
-                    TotalDistance,
-                    SUM(
-                        IF(
-                            tarDistance < %s, 0, (tarDistance - %s)
-                            )
-                        ) AS
-                    TotDistOverMin,
-                    SUM(
-                        (tarDistance > 0)
-                        OR(tarResultType='lo')
-                        ) AS
-                    TotalLaunched,
-                    STD(
-                        IF(
-                            tarDistance < %s, %s, tarDistance
-                            )
-                        ) AS
-                    Deviation,
-                    SUM(
-                        IF(
-                            (tarLastAltitude = 0
-                            AND (
-                                tarDistance > 0
-                                OR tarResultType = 'lo'
-                                )
-                            OR
-                                tarGoal > 0
-                                ),
-                                1,
-                                0
-                                )
-                            ) AS
-                            Landed
-                    FROM
-                    tblTaskResult
-                    WHERE
-                    tasPk = %s
-                    AND
-                    tarResultType <> 'abs'"""
-    params = [mindist, mindist, mindist, mindist, mindist, mindist, tasPk]
+    query ="""  SELECT
+                    `TotalPilots`,
+                    `TotalDistance`,
+                    `TotDistOverMin`,
+                    `TotalLaunched`,
+                    `Deviation`,
+                    `TotalLanded`,
+                    `TotalESS`,
+                    `TotalGoal`,
+                    `maxDist`,
+                    `firstStart`,
+                    `lastStart`,
+                    `firstSS`,
+                    `lastSS`,
+                    `firstESS`,
+                    `lastESS`,
+                    `minTime`,
+                    `minLC`
+                FROM
+                    `TaskTotalsView`
+                WHERE
+                    `tasPk` = %s
+                LIMIT 1"""
+    params = [tasPk]
     with Database() as db:
         # get the formula details.
         t = db.fetchone(query, params)
 
     if not t:
         print(query)
-        print('No rows in tblTaskResult for task', tasPk)
+        print('No rows in tblTaskTotalsView for task ', tasPk)
         return
 
-    totdist =  t['TotalDistance']
-    launched = int(t['TotalLaunched'])
-    pilots =  t['TotalPilots']
-    stddev = t['Deviation']
-    totdistovermin = t['TotDistOverMin']
+    totdist         = t['TotalDistance']
+    launched        = int(t['TotalLaunched'])
+    pilots          = t['TotalPilots']
+    stddev          = t['Deviation']
+    totdistovermin  = t['TotDistOverMin']
+    ess             = t['TotalESS']
+    goal            = t['TotalGoal']
+    maxdist         = t['maxDist']
+    maxbonusdist    = t['maxBonusDistance']
+    minarr          = t['firstESS']
+    maxarr          = t['lastESS']
+    fastest         = t['minTime']
+    tqtime          = fastest # ???
+    mincoeff2       = t['minLC']
+    mindept         = t['firstStart']
+    lastdept        = t['lastStart']
 
     if task.stopped_time:     # Null is returned as None
         glidebonus = formula['glidebonus']
@@ -118,192 +104,78 @@ def task_totals(task, formula):
         landed = t['Landed']
 
 
-    # pilots in goal?
-    query="select count(tarPk) as GoalPilots" \
-          " from tblTaskResult " \
-          "where tasPk=%s and tarGoal > 0"
 
-    with Database() as db:
-        t = db.fetchone(query, [tasPk])
-
-    goal = 0
-    if t['GoalPilots']:
-        goal = t['GoalPilots']
-
-    # pilots in ESS
-    query="select count(tarPk) as ESSPilots " \
-          "from tblTaskResult " \
-          "where tasPk=%s and (tarES-tarSS) > 0"
-
-    with Database() as db:
-        t = db.fetchone(query, [tasPk])
-
-    ess = 0
-    if t['ESSPilots']:
-        ess = t['ESSPilots']
-
-    query="select min(tarES) as MinArr," \
-        " max(tarES) as MaxArr " \
-        "from tblTaskResult " \
-        "where tasPk=%s and (tarES-tarSS) > 0"
-
-    with Database() as db:
-        t = db.fetchone(query, [tasPk])
-
-    maxarr = 0
-    if t:
-        minarr = t['MinArr']
-        maxarr = t['MaxArr']
-
-    query="select (tarES-tarSS) as MinTime" \
-          " from tblTaskResult " \
-          "where tasPk=%s and tarES > 0 and (tarES-tarSS) > 0 " \
-          "order by (tarES-tarSS) asc limit 2"
-    with Database() as db:
-        t = db.fetchall(query, [tasPk])
-
-    fastest = 0
-    for row in t:
-
-        if fastest == 0:
-            fastest = row['MinTime']
-            tqtime = fastest
-        else:
-            tqtime = row['MinTime']
-
-    # Sanity
-    if fastest == 0:
-        minarr = 0
-
-    # FIX: lead out coeff - first departure in goal and adjust min coeff
-    query="select min(tarLeadingCoeff) as MinCoeff " \
-        "from tblTaskResult " \
-        "where tasPk=%s and tarLeadingCoeff is not NULL"
-
-    with Database() as db:
-        t = db.fetchone(query, [tasPk])
-
-    mincoeff = 0
-    if t['MinCoeff'] is not None:
-        mincoeff = t['MinCoeff']
-
-    # FIX: lead out coeff2 - first departure in goal and adjust min coeff
-    query="select min(tarLeadingCoeff2) as MinCoeff2 " \
-        "from tblTaskResult " \
-        "where tasPk=%s and tarLeadingCoeff2 is not NULL"
-
-    with Database() as db:
-        t = db.fetchone(query, [tasPk])
-
-    mincoeff2 = 0
-    if t['MinCoeff2'] is not None:
-        mincoeff2 = t['MinCoeff2']
-
-    # print "TTT: min leading coeff=mincoeff\n"
-
-    maxdist = 0
-    mindept = 0
-    lastdept = 0
-
-    query="select max(tarDistance+tarLastAltitude*%s) as MaxDist" \
-          " from tblTaskResult where tasPk=%s"
-
-    with Database() as db:
-        t = db.fetchone(query, [glidebonus, tasPk])
-
-    if t:
-        maxdist = 0 + t['MaxDist']
-
-    # if someone got to goal, maxdist should be dist to goal (to avoid stopped glide creating a max dist > task dist)
-    if goal > 0:
-        query="select tasShortRouteDistance as GoalDist from tblTask where tasPk=%s"
-
-        with Database() as db:
-            t = db.fetchone(query, [tasPk])
-        if t:
-            maxdist = t['GoalDist']
-
-    if maxdist < mindist:
-        maxdist = mindist
-
-    # print "TT: glidebonus=glidebonus maxdist=maxdist\n"
-
-    query="select min(tarSS) as MinDept, " \
-                "max(tarSS) as LastDept " \
-                "from tblTaskResult " \
-                "where tasPk=%s " \
-                "and tarSS > 0 " \
-                "and tarGoal > 0"
-
-    with Database() as db:
-        t = db.fetchone(query, [tasPk])
-
-    if t:
-        mindept = t['MinDept']
-        lastdept = t['LastDept']
-
-
-    # Find the median distance flown
-    query="select avg(TM.dist) as median from " \
-          "( select @rownum:=@rownum+1 AS rownum, TR.tarDistance AS dist " \
-          "FROM tblTaskResult TR , (SELECT @rownum:=-1) r " \
-          "where tasPk=%s and tarResultType not in ('abs', 'dnf') " \
-          "ORDER BY tarDistance ) AS TM " \
-          "WHERE TM.rownum IN ( CEIL(@rownum/2), FLOOR(@rownum/2))"
-
-    with Database() as db:
-        t = db.fetchone(query, [tasPk])
-    if t:
-        median = t['median']
-
-    # Find the distance spread
-    if formula['forDiffCalc'] == 'lo':
-        query="select truncate(tarDistance/100,0) as Distance, " \
-              "count(truncate(tarDistance/100,0)) as Difficulty " \
-              "from tblTaskResult where tasPk=%s " \
-              "and tarResultType not in ('abs','dnf') " \
-              "and (tarGoal=0 or tarGoal is null) " \
-              "group by truncate(tarDistance/100,0)"
-    else:
-        query="select truncate(tarDistance/100,0) as Distance, " \
-              "count(truncate(tarDistance/100,0)) as Difficulty " \
-              "from tblTaskResult where tasPk=%s " \
-              "and tarResultType not in ('abs','dnf') " \
-              "group by truncate(tarDistance/100,0)"
-
-    with Database() as db:
-        t = db.fetchall(query, [tasPk])
-
-    for row in t:
-
-        distspread.append(row)    #check this.
-
-    # # Determine first to reach each 'KM' marker  (I think this only for Austrailian Lead points)
-    # query="""select M.tmDistance,
-    #                 min(M.tmTime) as FirstArrival
-    #         from
-    #                 tblTrackMarker M,
-    #                 tblComTaskTrack C
-    #         where
-    #         C.tasPk =%s and M.traPk = C.traPk and M.tmTime > 0
-    #         group by
-    #             M.tmDistance
-    #         order by
-    # by
-    # M.tmDistance
-    # """
+    # query="select (tarES-tarSS) as MinTime" \
+    #       " from tblTaskResult " \
+    #       "where tasPk=%s and tarES > 0 and (tarES-tarSS) > 0 " \
+    #       "order by (tarES-tarSS) asc limit 2"
     # with Database() as db:
     #     t = db.fetchall(query, [tasPk])
     #
+    # fastest = 0
     # for row in t:
-    #     kmmarker.append([row['tmDistance'], row['FirstArrival']])  #check
+    #
+    #     if fastest == 0:
+    #         fastest = row['MinTime']
+    #         tqtime = fastest
+    #     else:
+    #         tqtime = row['MinTime']
+
+    # Sanity
+    if fastest == 0: minarr = 0
+
+    # FIX: lead out coeff2 - first departure in goal and adjust min coeff
+    # query="select min(tarLeadingCoeff2) as MinCoeff2 " \
+    #     "from tblTaskResult " \
+    #     "where tasPk=%s and tarLeadingCoeff2 is not NULL"
+    #
+    # with Database() as db:
+    #     t = db.fetchone(query, [tasPk])
+    #
+    # mincoeff2 = 0
+    # if t['MinCoeff2'] is not None:
+    #     mincoeff2 = t['MinCoeff2']
+
+    # print "TTT: min leading coeff=mincoeff\n"
+
+    # maxdist = 0
+    # mindept = 0
+    # lastdept = 0
+
+    # if someone got to goal, maxdist should be dist to goal (to avoid stopped glide creating a max dist > task dist)
+    # done in view's query
+    # if goal > 0:
+    #     query="select tasShortRouteDistance as GoalDist from tblTask where tasPk=%s"
+    #
+    #     with Database() as db:
+    #         t = db.fetchone(query, [tasPk])
+    #     if t:
+    #         maxdist = t['GoalDist']
+
+    # Sanity
+    # if maxdist < mindist: maxdist = mindist # done in view's query
+
+    # print "TT: glidebonus=glidebonus maxdist=maxdist\n"
+
+    # query="select min(tarSS) as MinDept, " \
+    #             "max(tarSS) as LastDept " \
+    #             "from tblTaskResult " \
+    #             "where tasPk=%s " \
+    #             "and tarSS > 0 " \
+    #             "and tarGoal > 0"
+    #
+    # with Database() as db:
+    #     t = db.fetchone(query, [tasPk])
+    #
+    # if t:
+    #     mindept = t['MinDept']
+    #     lastdept = t['LastDept']
 
     # task quality
     taskt['pilots'] = pilots
     taskt['maxdist'] = maxdist
     taskt['distance'] = totdist
     taskt['distovermin'] = totdistovermin
-    taskt['median'] = median
     taskt['stddev'] = stddev
     taskt['landed'] = landed
     taskt['launched'] = launched
@@ -316,10 +188,8 @@ def task_totals(task, formula):
     taskt['lastdepart'] = lastdept
     taskt['firstarrival'] = minarr
     taskt['lastarrival'] = maxarr
-    taskt['mincoeff'] = mincoeff
+    #taskt['mincoeff'] = mincoeff
     taskt['mincoeff2'] = mincoeff2
-    taskt['distspread'] = distspread
-    #taskt['kmmarker'] = kmmarker
     taskt['endssdistance'] = task.EndSSDistance
     taskt['quality'] = None
 
@@ -459,34 +329,6 @@ def points_weight(task, taskt, formula):
     print("Available Dist Points = ", Adistance)
     Astart = 1000 * quality * leadweight  # AvailLeadPoints
     print("Available Lead Points = ", Astart)
-
-    ## Old stuff - probably jettison
-    # $Astart = 1000 * $quality * (1-$distweight) * formula['weightstart']
-    # Aarrival = 1000 * quality * (1 -distweight) * formula['forWeightArrival']
-    speedweight = formula['forWeightSpeed']
-    #
-    if task.arrival == 'off':
-        Aarrival = 0
-        speedweight += formula['forWeightArrival']
-    #
-    # if task.departure == 'off':
-    #     Astart = 0
-    #     speedweight += formula['forWeightStart']
-    #
-    # Aspeed = 1000 * quality * (1-distweight) * speedweight
-    #
-    # quality=0
-    # distweight=0
-    # leadweight=0
-    # speedweight=0
-    # if formula['ScaleToValidity']:
-    #     dem = Adistance + Aspeed + Aarrival + Astart
-    #     Adistance = 1000 * quality * Adistance / dem
-    #     Aspeed = 1000 * quality * Aspeed / dem
-    #     Aarrival = 1000 * quality * Aarrival / dem
-    #     Astart =  1000 * quality * Astart / dem
-
-    ## old stuff end
 
     # resetting $speedweight and $Aspeed using PWC2016 formula
     speedweight = 1 - distweight - leadweight

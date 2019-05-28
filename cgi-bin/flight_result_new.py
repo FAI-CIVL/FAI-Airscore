@@ -180,7 +180,8 @@ class Flight_result:
 
         result = cls()
         tolerance   = Task.tolerance
-        time_offset = Task.time_offset*3600  #local time offset for result times (SSS and ESS)
+        time_offset = Task.time_offset*3600     #local time offset for result times (SSS and ESS)
+        goal_alt    = Task.goalalt              # Goal Altitude, will be used in Stooped_altitude above goal
 
         # result.SSS_time = Task.start_time
 
@@ -212,10 +213,11 @@ class Flight_result:
                 if formula_parameters.stopped_elapsed_calc == 'shortest_time':
                     maxtime = Task.stopped_time - Task.last_start_time
 
-                if fix.rawtime > Task.stopped_time or \
+                if ( next.rawtime > Task.stopped_time
+                        or
                         (maxtime is not None and result.SSS_time is not None
-                         and (fix.rawtime > result.SSS_time + maxtime)):
-                    result.Stopped_altitude = max(fix.gnss_alt, fix.press_alt)  # check the rules on this point..which alt to
+                            and (next.rawtime > result.SSS_time + maxtime))):
+                    result.Stopped_altitude = max(fix.gnss_alt, fix.press_alt) - goal_alt  # check the rules on this point..which alt to
                     break
 
             '''check if pilot has arrived in goal (last turnpoint) so we can stop.'''
@@ -223,7 +225,7 @@ class Flight_result:
                 break
 
             '''check if task deadline has passed'''
-            if Task.end_time < fix.rawtime:
+            if Task.end_time < next.rawtime:
                 # Task has ended
                 break
 
