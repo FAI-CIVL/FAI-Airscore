@@ -4,7 +4,7 @@ python3 score_task.py <taskid>
 """
 
 from task import Task
-from pwc_new import *
+from pwc import *
 from trackDB import read_formula
 from myconn import Database
 import logging

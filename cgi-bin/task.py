@@ -362,6 +362,17 @@ class Task:
         with Database() as db:
             db.execute(query, params)
 
+    def update_points_allocation(self):
+        '''store points allocation'''
+    query = "UPDATE tblTask SET tasAvailDistPoints=%s, " \
+            "tasAvailLeadPoints=%s, " \
+            "tasAvailTimePoints=%s " \
+            "WHERE tasPk=%s"
+    params = [self.stats['distp'], self.stats['depp'], self.stats['timep'], self.tasPk]
+
+    with Database() as db:
+        db.execute(query, params)
+
     @staticmethod
     def create_from_xctrack_file(filename):
         """ Creates Task from xctrack file, which is in json format.

@@ -229,6 +229,7 @@ def read_formula(comPk):
 def get_task_file_path(tasPk, test = 0):
     """gets path to task tracks folder"""
     from Defines import FILEDIR
+    from os import path
     path = None
     query = "  SELECT LOWER(T.`comCode`) AS comCode, " \
             "LOWER(T.`tasCode`) AS tasCode, " \
@@ -245,7 +246,7 @@ def get_task_file_path(tasPk, test = 0):
             tname = t['tasCode']
             year = str(t['comYear'])
             tdate = str(t['tasDate'])
-            path = str(FILEDIR + ('/'.join([year, cname, ('_'.join([tname, tdate]))])))
+            path = str(path.join(FILEDIR, year, cname, ('_'.join([tname, tdate]))))
     if test:
         print('Get Task tracks folder:')
         print(query)
