@@ -28,6 +28,18 @@ def main(args):
        # logging.error("number of arguments != 1 and/or task_id not a number")
      #   print("number of arguments != 1 and/or task_id not a number")
       #  exit()
+
+    '''
+    new logic:
+    totals are already available in taskTotalsView
+    create task.stats from taskTotalsView
+    create pilots array
+    we calculate total LC for each pilot
+    update minLC in task.stats
+    calculate Validities and Points
+    Score
+    '''
+
     print(task_id)
     task = Task.read_task(task_id)
     formula = read_formula(task.comPk)
@@ -60,12 +72,12 @@ def main(args):
         else:
             quality = dist * time * launch
 
-        self.stats['quality']   = quality
-
         print("-- TASK_SCORE -- distQ = {} | timeQ = {} | launchQ = {} | stopQ = {}".format(dist, time, launch, stop))
         print("-- TASK_SCORE -- Day Quality = ", quality)
         if quality > 1.0:
             quality = 1.0
+
+        self.stats['quality']   = quality
 
         task.update_quality()   #with new logic (multiple JSON result files for every task) this should no longer be needed
 

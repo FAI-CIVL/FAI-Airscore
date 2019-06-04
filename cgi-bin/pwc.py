@@ -27,7 +27,27 @@ parameters.coef_func = coef2
 parameters.coef_func_scaled = coef_scaled
 parameters.coef_landout = coef_landout
 
+def lc_calc(res, t):
+    leading     = 0
+    trailing    = 0
+    my_start    = res['start_time']
+    first_start = t.stats['firstdepart']
+    ss_start    = t.start_time
+    SS_Distance = t.SSDistance
+    '''add the leading part, from start time of first pilot to start, to my start time'''
+    if my_start > first_start:
+        leading = pwc.coef_landout((my_start - first_start), SS_Distance)
+        leading = pwc.coef_scaled(leading, SS_Distance)
+    if not res['endSS']:
+        '''pilot did not make ESS'''
+        best_dist_to_ess    = (t.EndSSDistance - res['distance'])
+        my_last_time        = res['last_time']          # should not need to check if < task deadline as we stop in Flight_result.check_flight()
+        last_ess            = t.stats['lastarrival']
+        task_time           = (max(my_last_time,last_ess) - my_start)
+        trailing            = pwc.coef_landout(task_time, best_dist_to_ess)
+        trailing            = pwc.coef_scaled(trailing, SS_Distance)
 
+    return leading + res.Lead_coeff + trailing
 
 #
 # Find the task totals and update ..
@@ -439,6 +459,7 @@ def ordered_results(task, taskt, formula, results):
                                 tarPk,
                                 traPk,
                                 tarDistance,
+                                tarStart,
                                 tarSS,
                                 tarES,
                                 tarPenalty,
@@ -487,21 +508,24 @@ def ordered_results(task, taskt, formula, results):
         if taskres['distance'] < formula['forMinDistance']:
             taskres['distance'] = formula['forMinDistance']
 
-        taskres['result'] = res['tarResultType']
-        taskres['startSS'] = res['tarSS']
-        taskres['endSS'] = res['tarES']
-        taskres['timeafter'] = res['tarES'] - taskt['firstarrival']
-        taskres['place'] = res['Place']
-        taskres['time'] = taskres['endSS'] - taskres['startSS']
-        taskres['goal'] = res['tarGoal']
+        taskres['result']       = res['tarResultType']
+        taskres['startSS']      = res['tarSS']
+        taskres['start']        = res['tarStart']
+        taskres['endSS']        = res['tarES']
+        taskres['timeafter']    = res['tarES'] - taskt['firstarrival']
+        taskres['place']        = res['Place']
+        taskres['time']         = taskres['endSS'] - taskres['startSS']
+        taskres['goal']         = res['tarGoal']
+        taskres['last_time']    = res['tarLastTime']
 
         if taskres['time'] < 0:
             taskres['time'] = 0
 
-        # Leadout Points Adjustment
-        # C.6.3.1
-        #
-        taskres['coeff'] = res['tarLeadingCoeff2']  # PWC LeadCoeff (with squared distances)
+        '''
+        Leadout Points Adjustment
+        C.6.3.1
+        '''
+        taskres['coeff'] = LC_calc(taskres, task) # PWC LeadCoeff (with squared distances)
         # # FIX: adjust against fastest ..
         # if ((res['tarES'] - res['tarSS']) < 1) and (res['tarSS'] > 0): # only pilots that started and didn't make ESS
         #     # Fix - busted if no one is in goal?
@@ -545,6 +569,11 @@ def points_allocation(task, taskt, formula, results = None):   # from PWC###
     Tfarr = taskt['firstarrival']
 
     sorted_pilots = ordered_results(task, taskt, formula, results)
+
+    '''
+    Update Min LC
+    '''
+    task.stats['mincoeff2'] = min(res['coeff'] for res in sorted_pilots)
 
     # Get basic GAP allocation values
     Adistance, Aspeed, Astart, Aarrival = points_weight(task, taskt, formula)
