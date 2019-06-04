@@ -260,8 +260,7 @@ class Flight_result:
             the time when the cylinder was reached is determined.
             turnpoint[i] = SSS : reachingTime[i] = crossing[n].time
             turnpoint[i] ≠ SSS : reachingTime[i] = crossing[0].time
-            '''
-            '''
+
             We need to check start in 3 cases:
             - pilot has not started yet
             - race has multiple starts
@@ -365,7 +364,7 @@ class Flight_result:
                 result.total_time       = result.ESS_time - result.SSS_time
                 result.total_time_str   = (("%02d:%02d:%02d") % rawtime_float_to_hms(result.ESS_time-result.SSS_time))
 
-                '''Distnce flown'''
+                '''Distance flown'''
                 ''' ∀p:p∈PilotsLandingBeforeGoal:bestDistancep = max(minimumDistance, taskDistance−min(∀trackp.pointi shortestDistanceToGoal(trackp.pointi)))
                     ∀p:p∈PilotsReachingGoal:bestDistancep = taskDistance
                 '''
@@ -434,10 +433,10 @@ class Flight_result:
         #         "VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})".format(tasPk, traPk, self.Distance_flown, self.speed, self.Pilot_Start_time, self.goal_time, self.SSS_time, endss, len(self.Waypoints_achieved), self.Lead_coeff, self.Penalty, self.Comment, self.Stopped_altitude, self.Stopped_time)
         #print(query)
 
-        query = "INSERT INTO `tblTaskResult` ( " \
-                "`tasPk`, `traPk`, `tarDistance`, `tarSpeed`, `tarStart`, `tarGoal`, `tarSS`, `tarES`, `tarTurnpoints`, " \
-                "`tarLeadingCoeff2`, `tarPenalty`, `tarLastAltitude`, `tarLastTime` ) " \
-                "VALUES ( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s )"
+        query = """INSERT INTO `tblTaskResult` (
+                `tasPk`, `traPk`, `tarDistance`, `tarSpeed`, `tarStart`, `tarGoal`, `tarSS`, `tarES`, `tarTurnpoints`,
+                `tarLeadingCoeff2`, `tarPenalty`, `tarLastAltitude`, `tarLastTime` )
+                VALUES ( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s ) """
         # , #%s, %s, %s)"
         params = [tasPk, traPk, self.Distance_flown, self.speed, self.Pilot_Start_time, self.goal_time, self.SSS_time, endss, num_wpts,
                   self.Lead_coeff, self.Penalty, self.Stopped_altitude, self.Stopped_time]  # , self.Comment, self.Stopped_altitude, self.Stopped_time]
