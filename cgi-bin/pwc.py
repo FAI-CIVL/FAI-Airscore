@@ -40,9 +40,11 @@ parameters.coef_landout = coef_landout
 #
 
 def task_totals(task, formula):
-    '''This new version uses a view to collect task totals.
+    '''
+    This new version uses a view to collect task totals.
     It means we do not need to store totals in task table anylonger,
-    as they are calculated on runtime from mySQL using all task results'''
+    as they are calculated on runtime from mySQL using all task results
+    '''
 
     tasPk = task.tasPk
     launchvalid = task.launchvalid
@@ -89,13 +91,13 @@ def task_totals(task, formula):
 
     totdist         = t['TotalDistance']
     launched        = int(t['TotalLaunched'])
-    pilots          = t['TotalPilots']
+    pilots          = int(t['TotalPilots'])
     stddev          = t['Deviation']
     totdistovermin  = t['TotDistOverMin']
-    ess             = t['TotalESS']
-    goal            = t['TotalGoal']
+    ess             = int(t['TotalESS'])
+    goal            = int(t['TotalGoal'])
     maxdist         = t['maxDist']
-    maxbonusdist    = t['maxBonusDistance']
+    #maxbonusdist    = t['maxBonusDistance']
     minarr          = t['firstESS']
     maxarr          = t['lastESS']
     fastest         = t['minTime']
@@ -108,8 +110,6 @@ def task_totals(task, formula):
         glidebonus = formula['glidebonus']
         print("F: glidebonus=", glidebonus)
         landed = t['Landed']
-
-
 
     # query="select (tarES-tarSS) as MinTime" \
     #       " from tblTaskResult " \
@@ -212,10 +212,12 @@ def day_quality(taskt, formula):
         return (distance, time, launch)
 
 
-    # C.4.1 Launch Validity
-    # LVR = min (1, (num pilots launched + nominal launch) / total pilots )
-    # Launch Validity = 0.028*LRV + 2.917*LVR^2 - 1.944*LVR^3
-    # Setting Nominal Launch = 10 (max number of DNF that still permit full validity)
+    '''
+    C.4.1 Launch Validity
+    LVR = min (1, (num pilots launched + nominal launch) / total pilots )
+    Launch Validity = 0.028*LRV + 2.917*LVR^2 - 1.944*LVR^3
+    Setting Nominal Launch = 10 (max number of DNF that still permit full validity)
+    '''
 
     nomlau = 10
     x = (taskt['launched'] + nomlau) / taskt['pilots']
@@ -229,9 +231,11 @@ def day_quality(taskt, formula):
 
     print("PWC launch validity = launch")
 
-    # C.4.2 Distance Validity
-    # DVR = (Total flown Distance over MinDist) / [ (PilotsFlying / 2) * (NomGoal +1) * (NomDist - MinDist) * NomGoal * (BestDist - NomDist) ]
-    # distance = min (1, DVR)
+    '''
+    C.4.2 Distance Validity
+    DVR = (Total flown Distance over MinDist) / [ (PilotsFlying / 2) * (NomGoal +1) * (NomDist - MinDist) * NomGoal * (BestDist - NomDist) ]
+    Dist. Validity = min (1, DVR)
+    '''
 
     nomgoal = formula['forNomGoal']   # nom goal percentage
     nomdist = formula['forNomDistance']  # nom distance
@@ -270,12 +274,14 @@ def day_quality(taskt, formula):
     print("Total : ", (totalflown / (numlaunched * nomdistarea)))
     print("PWC distance validity = ", distance)
 
-    # C.4.3 Time Validity
-    # if no pilot @ ESS
-    # TVR = min(1, BestDist/NomDist)
-    # else
-    # TVR = min(1, BestTime/NomTime)
-    # TimeVal = max(0, min(1, -0.271 + 2.912*TVR - 2.098*TVR^2 + 0.457*TVR^3))
+    '''
+    C.4.3 Time Validity
+    if no pilot @ ESS
+    TVR = min(1, BestDist/NomDist)
+    else
+    TVR = min(1, BestTime/NomTime)
+    TimeVal = max(0, min(1, -0.271 + 2.912*TVR - 2.098*TVR^2 + 0.457*TVR^3))
+    '''
 
     if taskt['ess'] > 0:
         tmin = taskt['tqtime']
@@ -297,9 +303,11 @@ def day_quality(taskt, formula):
 
     print("PWC time validity (tmin={} x={}) = {}".format(tmin, x, time))
 
-    # C.7.1 Stopped Task Validity
-    # If ESS > 0 -> StopVal = 1
-    # else StopVal = min (1, sqrt((bestDistFlown - avgDistFlown)/(TaskDistToESS-bestDistFlown+1)*sqrt(stDevDistFlown/5))+(pilotsLandedBeforeStop/pilotsLaunched)^3)
+    '''
+    C.7.1 Stopped Task Validity
+    If ESS > 0 -> StopVal = 1
+    else StopVal = min (1, sqrt((bestDistFlown - avgDistFlown)/(TaskDistToESS-bestDistFlown+1)*sqrt(stDevDistFlown/5))+(pilotsLandedBeforeStop/pilotsLaunched)^3)
+    '''
     # Fix - need distlaunchtoess, landed
     avgdist = taskt['distance'] / taskt['launched']
     distlaunchtoess = taskt['endssdistance']
@@ -322,13 +330,17 @@ def points_weight(task, taskt, formula):
     quality = taskt['quality']
     x = taskt['goal'] / taskt['launched']  # GoalRatio
 
-    # DistWeight = 0.9 - 1.665* goalRatio + 1.713*GolalRatio^2 - 0.587*goalRatio^3
+    '''
+    DistWeight = 0.9 - 1.665* goalRatio + 1.713*GolalRatio^2 - 0.587*goalRatio^3
+    '''
     distweight = 0.9 - 1.665 * x + 1.713 * x * x - 0.587 * x *x *x
     print("PWC 2016 Points Allocatiom distWeight = ", distweight)
     # distweight = 1 - 0.8 * sqrt(x)
     # print("NOT Using 2016 Points Allocatiom distWeight = ", distweight)
 
-    # leadingWeight = (1-distWeight)/8 * 1.4
+    '''
+    LeadingWeight = (1 - DistWeight)/8 * 1.4
+    '''
     leadweight = (1 - distweight) / 8 * 1.4
     print("LeadingWeight = ", leadweight)
     Adistance = 1000 * quality * distweight  # AvailDistPoints
@@ -336,7 +348,9 @@ def points_weight(task, taskt, formula):
     Astart = 1000 * quality * leadweight  # AvailLeadPoints
     print("Available Lead Points = ", Astart)
 
-    # resetting $speedweight and $Aspeed using PWC2016 formula
+    '''calculating speedweight and Aspeed using PWC2016 formula, without arrivalweight'''
+    # we could safely delete everything concerning Arrival Points in PWC GAP.
+    Aarrival = 0
     speedweight = 1 - distweight - leadweight
     Aspeed = 1000 * quality * speedweight  # AvailSpeedPoints
     print("Available Speed Points = ", Aspeed)
