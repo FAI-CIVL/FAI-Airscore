@@ -33,46 +33,58 @@ def main(args):
     formula = read_formula(task.comPk)
     if formula['forClass'] == 'pwc':
         totals = task_totals(task, formula)
-        query = "update tblTask_test set tasTotalDistanceFlown=%s, " \
-                "tasTotDistOverMin= %s, tasPilotsTotal=%s, " \
-                "tasPilotsLaunched=%s, tasPilotsGoal=%s, " \
-                "tasFastestTime=%s, tasMaxDistance=%s " \
-                "where tasPk=%s"
-
-        params = [totals['distance'], totals['distovermin'], totals['pilots'], totals['launched'],
-                     totals['goal'], totals['fastest'], totals['maxdist'], task.tasPk]
-
-        with Database() as db:
-            db.execute(query, params)
+        task.stats.update(totals)   #have to check that all keys are the same
+        task.update_totals()        #with new logic (totals in a view calculated from mysql) this should no longer be needed
+        # query = "update tblTask_test set tasTotalDistanceFlown=%s, " \
+        #         "tasTotDistOverMin= %s, tasPilotsTotal=%s, " \
+        #         "tasPilotsLaunched=%s, tasPilotsGoal=%s, " \
+        #         "tasFastestTime=%s, tasMaxDistance=%s " \
+        #         "where tasPk=%s"
+        #
+        # params = [totals['distance'], totals['distovermin'], totals['pilots'], totals['launched'],
+        #              totals['goal'], totals['fastest'], totals['maxdist'], task.tasPk]
+        #
+        # with Database() as db:
+        #     db.execute(query, params)
 
         dist, time, launch, stop = day_quality(totals, formula)
+
+
+        self.stats['distval']   = dist
+        self.stats['timeval']   = time
+        self.stats['launchval'] = launch
+        self.stats['stopval']   = stop
 
         if task.stopped_time:
             quality = dist * time * launch * stop
         else:
             quality = dist * time * launch
 
+        self.stats['quality']   = quality
+
         print("-- TASK_SCORE -- distQ = {} | timeQ = {} | launchQ = {} | stopQ = {}".format(dist, time, launch, stop))
         print("-- TASK_SCORE -- Day Quality = ", quality)
         if quality > 1.0:
             quality = 1.0
 
-        query = "UPDATE tblTask_test " \
-                "SET tasQuality = %s, " \
-                "tasDistQuality = %s, " \
-                "tasTimeQuality = %s, " \
-                "tasLaunchQuality = %s, " \
-                "tasStopQuality = %s " \
-                "WHERE tasPk = %s"
-        params = [quality, dist, time, launch, stop, task.tasPk]
+        task.update_quality()   #with new logic (multiple JSON result files for every task) this should no longer be needed
 
-        with Database() as db:
-            db.execute(query, params)
+        # query = "UPDATE tblTask_test " \
+        #         "SET tasQuality = %s, " \
+        #         "tasDistQuality = %s, " \
+        #         "tasTimeQuality = %s, " \
+        #         "tasLaunchQuality = %s, " \
+        #         "tasStopQuality = %s " \
+        #         "WHERE tasPk = %s"
+        # params = [quality, dist, time, launch, stop, task.tasPk]
+        #
+        # with Database() as db:
+        #     db.execute(query, params)
 
         totals['quality'] = quality
 
         if totals['pilots'] > 0:
-            points_allocation(task, totals, formula)
+            points_allocation(task, totals, formula)    #with new logic (totals in task.stats) totals parameter should no longer be needed
 
 
 if __name__== "__main__":
