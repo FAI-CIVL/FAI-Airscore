@@ -20,11 +20,11 @@ def lc_calc(res, t):
     SS_Distance = t.SSDistance
     '''add the leading part, from start time of first pilot to start, to my start time'''
     if my_start > first_start:
-        leading = coef_landout((my_start - first_start), SS_Distance/1000)
+        leading = coef_landout((my_start - first_start), SS_Distance)
         leading = coef_scaled(leading, SS_Distance)
     if not any(e[0] == 'ESS' for e in res.Waypoints_achieved):
         '''pilot did not make ESS'''
-        best_dist_to_ess    = (t.EndSSDistance - res.Distance_flown)/1000
+        best_dist_to_ess    = (t.EndSSDistance - res.Distance_flown)
         my_last_time        = res.Stopped_time
         last_ess            = t.stats['lastarrival']
         task_time           = (max(my_last_time,last_ess) - my_start)
