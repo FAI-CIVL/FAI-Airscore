@@ -36,16 +36,16 @@ def lc_calc(res, t):
     SS_Distance = t.SSDistance
     '''add the leading part, from start time of first pilot to start, to my start time'''
     if my_start > first_start:
-        leading = pwc.coef_landout((my_start - first_start), SS_Distance)
-        leading = pwc.coef_scaled(leading, SS_Distance)
+        leading = parameters.coef_landout((my_start - first_start), SS_Distance)
+        leading = parameters.coef_scaled(leading, SS_Distance)
     if not res['endSS']:
         '''pilot did not make ESS'''
         best_dist_to_ess    = (t.EndSSDistance - res['distance'])
         my_last_time        = res['last_time']          # should not need to check if < task deadline as we stop in Flight_result.check_flight()
         last_ess            = t.stats['lastarrival']
         task_time           = (max(my_last_time,last_ess) - my_start)
-        trailing            = pwc.coef_landout(task_time, best_dist_to_ess)
-        trailing            = pwc.coef_scaled(trailing, SS_Distance)
+        trailing            = parameters.coef_landout(task_time, best_dist_to_ess)
+        trailing            = parameters.coef_scaled(trailing, SS_Distance)
 
     return leading + res.Lead_coeff + trailing
 
