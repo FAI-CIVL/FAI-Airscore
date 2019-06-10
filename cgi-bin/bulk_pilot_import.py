@@ -45,7 +45,7 @@ def read_membership(file, test):
                     """Check if pilot exists in pilots main table"""
                     query = ("""SELECT 
                                     pilPK AS ID 
-                                FROM tblPilot 
+                                FROM PilotView 
                                 WHERE 
                                     (pilLastName LIKE '%%{0}%%' AND pilFirstName LIKE '%%{1}%%') 
                                 OR (pilLastName LIKE '%%{0}%%' AND pilFAI = {2}) 
@@ -60,7 +60,7 @@ def read_membership(file, test):
                         """Check if FAI exists"""
                         query = ("""SELECT 
                                         pilPK AS ID, pilLastName AS Name 
-                                    FROM tblPilot 
+                                    FROM PilotView 
                                     WHERE pilFAI = '{}' LIMIT 1""".format(pilFAI))
                         try:
                             """Pilot exists already"""

@@ -78,18 +78,18 @@ if ($comPk > 0)
 
     if ($comType == 'RACE')
     {
-        #$sql = "SELECT T.*, P.* FROM tblTaskResult CTT left join tblTrack T on CTT.traPk=T.traPk left outer join tblPilot P on T.pilPk=P.pilPk where CTT.tasPk in (select tasPk from tblTask TK where TK.comPk=$comPk) order by T.traStart desc";
+        #$sql = "SELECT T.*, P.* FROM tblTaskResult CTT left join tblTrack T on CTT.traPk=T.traPk left outer join PilotView P on T.pilPk=P.pilPk where CTT.tasPk in (select tasPk from tblTask TK where TK.comPk=$comPk) order by T.traStart desc";
         $sql = "(
                 SELECT T.*, P.* FROM tblTrack T 
                     left outer join tblTaskResult CTT on CTT.traPk=T.traPk 
-                    left outer join tblPilot P on T.pilPk=P.pilPk 
+                    left outer join PilotView P on T.pilPk=P.pilPk 
                 where CTT.tasPk in (select tasPk from tblTask TK where TK.comPk=$comPk)
             )
             union
             (
                 SELECT T.*, P.* FROM tblComTaskTrack CTT 
                     join tblTrack T on CTT.traPk=T.traPk 
-                    left outer join tblPilot P on T.pilPk=P.pilPk 
+                    left outer join PilotView P on T.pilPk=P.pilPk 
                 where CTT.comPk=$comPk
             ) 
             order by traStart desc";
@@ -100,7 +100,7 @@ if ($comPk > 0)
             FROM tblComTaskTrack CTT 
             join tblTrack T 
                 on CTT.traPk=T.traPk 
-            left outer join tblPilot P 
+            left outer join PilotView P 
                 on T.pilPk=P.pilPk 
             where CTT.comPk=$comPk order by T.traStart desc";
     }
@@ -124,14 +124,14 @@ else
 
     $sql = "SELECT T.*, P.*, CTT.comPk from
         tblTrack T
-        left outer join tblPilot P on T.pilPk=P.pilPk
+        left outer join PilotView P on T.pilPk=P.pilPk
         left outer join tblComTaskTrack CTT on CTT.traPk=T.traPk
         order by T.traPk desc$limit";
     
 #    $sql = "SELECT T.*, P.*, CTT.comPk 
 #            from tblComTaskTrack CTT 
 #            left join tblTrack T on CTT.traPk=T.traPk 
-#            left outer join tblPilot P on T.pilPk=P.pilPk 
+#            left outer join PilotView P on T.pilPk=P.pilPk 
 #            order by T.traPk desc$limit";
 
     echo "<form action=\"track_admin.php\" name=\"trackadmin\" method=\"post\">";

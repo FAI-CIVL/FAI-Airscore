@@ -157,15 +157,15 @@ def get_non_scored_pilots(tasPk, test=0):
                                 P.`pilXContestUser`
                             FROM
                                 `tblRegistration` R
-                            JOIN `tblPilot` P USING(`pilPk`)
-                            LEFT OUTER JOIN `tblResultView` S ON
+                            JOIN `PilotView` P USING(`pilPk`)
+                            LEFT OUTER JOIN `ResultView` S ON
                                 S.`pilPk` = P.`pilPk` AND S.`tasPk` = {0}
                             WHERE
                                 R.`comPk` =(
                                 SELECT
                                     `comPk`
                                 FROM
-                                    `tblTaskView`
+                                    `TaskView`
                                 WHERE
                                     `tasPk` = {0}
                                 LIMIT 1
@@ -237,7 +237,7 @@ def get_pil_track(pilPk, tasPk, test=0):
     query = ("""    SELECT
                         traPk
                     FROM
-                        tblResultView
+                        ResultView
                     WHERE
                         pilPk = {}
                         AND tasPk = {}

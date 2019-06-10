@@ -101,7 +101,7 @@ else
 
 
 //initializing template header
-$query = "SELECT * FROM `tblTaskView` WHERE `tasPk`=$tasPk";
+$query = "SELECT * FROM `TaskView` WHERE `tasPk`=$tasPk";
 $result = mysqli_query($link, $query);
 $row = mysqli_fetch_assoc($result);
 $taskname = $row['tasName'];

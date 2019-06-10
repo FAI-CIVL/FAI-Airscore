@@ -161,11 +161,11 @@ if ($teaPk > 0)
 {
     if ($comTeamScoring == 'handicap')
     {
-        $query = "select T.*, P.*, H.hanPk as tepPk, H.hanHandicap as tepModifier from tblTeam T,tblTeamPilot TP,tblPilot P left outer join tblHandicap H on H.pilPk = P.pilPk and H.comPk=$comPk where TP.teaPk=T.teaPk and P.pilPk=TP.pilPk and T.teaPk=$teaPk";
+        $query = "select T.*, P.*, H.hanPk as tepPk, H.hanHandicap as tepModifier from tblTeam T,tblTeamPilot TP,PilotView P left outer join tblHandicap H on H.pilPk = P.pilPk and H.comPk=$comPk where TP.teaPk=T.teaPk and P.pilPk=TP.pilPk and T.teaPk=$teaPk";
     }
     else
     {
-        $query = "select T.*, TP.*, P.* from tblTeam T,tblTeamPilot TP,tblPilot P where TP.teaPk=T.teaPk and P.pilPk=TP.pilPk and T.teaPk=$teaPk order by P.pilLastName";
+        $query = "select T.*, TP.*, P.* from tblTeam T,tblTeamPilot TP,PilotView P where TP.teaPk=T.teaPk and P.pilPk=TP.pilPk and T.teaPk=$teaPk order by P.pilLastName";
     }
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Team pilots query failed: ' . mysqli_connect_error());
     $row = mysqli_fetch_assoc($result);
@@ -231,7 +231,7 @@ if ($cat != '')
 {
     echo "<ol>";
     $count = 1;
-    $sql = "SELECT P.* FROM tblPilot P where P.pilLastName like '$cat%' order by P.pilLastName";
+    $sql = "SELECT P.* FROM PilotView P where P.pilLastName like '$cat%' order by P.pilLastName";
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Pilot select failed: ' . mysqli_connect_error());
 
     while($row = mysqli_fetch_assoc($result))

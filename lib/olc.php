@@ -49,7 +49,7 @@ function olc_sort($result,$top)
 
 function olc_result($link,$top,$restrict)
 {
-    $sql = "SELECT P.*, T.traPk, T.traScore as adjScore FROM tblTrack T, tblPilot P, tblComTaskTrack CTT, tblCompetition C where CTT.comPk=C.comPk and CTT.traPk=T.traPk and T.pilPk=P.pilPk and T.traScore is not null $restrict order by P.pilPk, T.traScore desc";
+    $sql = "SELECT P.*, T.traPk, T.traScore as adjScore FROM tblTrack T, PilotView P, tblComTaskTrack CTT, tblCompetition C where CTT.comPk=C.comPk and CTT.traPk=T.traPk and T.pilPk=P.pilPk and T.traScore is not null $restrict order by P.pilPk, T.traScore desc";
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' olc_result: ' . mysqli_connect_error());
 
     return olc_sort($result,$top);
@@ -58,7 +58,7 @@ function olc_result($link,$top,$restrict)
 function olc_handicap_result($link,$top,$restrict)
 {
     $sql = "SELECT P.*, T.traPk, (T.traScore * H.hanHandicap) as adjScore FROM 
-                tblTrack T, tblPilot P, tblComTaskTrack CTT, 
+                tblTrack T, PilotView P, tblComTaskTrack CTT, 
                 tblCompetition C, tblHandicap H
             where 
                 H.comPk=C.comPk and H.pilPk=P.pilPk and
@@ -113,7 +113,7 @@ function display_olc_result($comPk, $rtable, $sorted, $top, $count, $start)
 
 function olc_team_result($link,$top,$restrict)
 {
-    $sql = "SELECT M.teaPk as pilPk, M.teaName as pilFirstName, T.traPk, T.traScore as adjScore FROM tblTrack T, tblComTaskTrack CTT, tblCompetition C, tblTeam M, tblTeamPilot TP, tblPilot P where M.comPk=C.comPk and TP.teaPk=M.teaPk and P.pilPk=TP.pilPk and CTT.comPk=C.comPk and CTT.traPk=T.traPk and T.pilPk=P.pilPk and T.traScore is not null $restrict order by M.teaPk, T.traScore desc";
+    $sql = "SELECT M.teaPk as pilPk, M.teaName as pilFirstName, T.traPk, T.traScore as adjScore FROM tblTrack T, tblComTaskTrack CTT, tblCompetition C, tblTeam M, tblTeamPilot TP, PilotView P where M.comPk=C.comPk and TP.teaPk=M.teaPk and P.pilPk=TP.pilPk and CTT.comPk=C.comPk and CTT.traPk=T.traPk and T.pilPk=P.pilPk and T.traScore is not null $restrict order by M.teaPk, T.traScore desc";
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' olc_result: ' . mysqli_connect_error());
 
     return olc_sort($result,$top);

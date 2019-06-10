@@ -365,8 +365,8 @@ insert into tblLaunchSite (lauLaunch, lauRegion, lauLatDecimal, lauLongDecimal, 
     ('Craigieburn', 'New Zealand', -43.1578, 171.6704, 1500)
     ;
 
-drop table if exists tblPilot;
-create table tblPilot
+drop table if exists PilotView;
+create table PilotView
 (
     pilPk           integer not null primary key auto_increment,
     pilFirstName    varchar(40) not null,
@@ -411,7 +411,7 @@ create table tblCompPilot
     cpiComment      varchar(128) 
 );
 
-CREATE TABLE tblUser
+CREATE TABLE UserView
 (
     usePk       integer not null PRIMARY KEY auto_increment,
     useLogin    varchar(32) not null,
@@ -419,9 +419,9 @@ CREATE TABLE tblUser
     useEmail    varchar(64)
 );
 
-insert into tblUser (useLogin, usePassword) values ('admin', 'admin');
+insert into UserView (useLogin, usePassword) values ('admin', 'admin');
 
-CREATE TABLE tblUserSession
+CREATE TABLE UserViewSession
 (
     usePk       integer not null,
     useSession  varchar(128),
@@ -430,8 +430,8 @@ CREATE TABLE tblUserSession
     useLastTime timestamp
 );
 
--- alter table tblUserSession modify column useSessTime DateTime default CURRENT_TIMESTAMP;
--- alter table tblUserSession modify column useLastTime timestamp;
+-- alter table UserViewSession modify column useSessTime DateTime default CURRENT_TIMESTAMP;
+-- alter table UserViewSession modify column useLastTime timestamp;
 
 CREATE TABLE tblCompAuth
 (

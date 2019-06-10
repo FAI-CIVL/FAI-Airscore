@@ -72,7 +72,7 @@ if (reqexists('addcomp'))
         if ($pilot->fai_id != '')
         {
             $clause = "pilFAI=" . quote($pilot->fai_id) . " and pilLastName=" . quote(mysqli_real_escape_string($link, $namarr[1]));
-            $pilPk = insertnullup($link, 'tblPilot', 'pilPk', $clause, $pil);
+            $pilPk = insertnullup($link, 'PilotView', 'pilPk', $clause, $pil);
             echo "insertup: $clause<br>";
 
             if ($comPk > 0)
@@ -102,7 +102,7 @@ if (reqexists('addcomp'))
             }
             $clause = " pilLastName=" . quote(mysqli_real_escape_string($link, $namarr[1])) . " and pilFirstName=" . quote(mysqli_real_escape_string($link, $namarr[0]));
             echo "insertup: $clause<br>";
-            $pilPk = insertnullup($link, 'tblPilot', 'pilPk', $clause, $pil);
+            $pilPk = insertnullup($link, 'PilotView', 'pilPk', $clause, $pil);
 
             if ($comPk > 0)
             {
@@ -143,8 +143,8 @@ if (reqexists('addpilot'))
     $cert = reqsval('cert');
 	$xcid = reqsval('xcontest');
 	
-	#look for pilot in tblPilot
-    $query = "SELECT * from tblPilot WHERE pilLastName LIKE CONCAT('%', '$lname' ,'%') AND pilFirstName LIKE CONCAT('%', '$fname' ,'%') ";
+	#look for pilot in PilotView
+    $query = "SELECT * from PilotView WHERE pilLastName LIKE CONCAT('%', '$lname' ,'%') AND pilFirstName LIKE CONCAT('%', '$fname' ,'%') ";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot select failed: ' . mysqli_connect_error());
     if ( mysqli_num_rows($result) > 0 )
     {
@@ -207,7 +207,7 @@ if (reqexists('update'))
 	
 	//echo " parameters: Id $id , FAI $fai , wing $brand $glider $cert , user $xcid \n";
 
-    $query = "SELECT * FROM tblPilot WHERE pilFAI=$fai AND pilPk<>$id";
+    $query = "SELECT * FROM PilotView WHERE pilFAI=$fai AND pilPk<>$id";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot update select failed: ' . mysqli_connect_error());
     if ($fai < 1000 or mysqli_num_rows($result) > 0)
     {
@@ -330,7 +330,7 @@ if ($cat != '')
 {
     echo "<ol>";
     $count = 1;
-    $sql = "SELECT P.* FROM tblPilot P where P.pilLastName like '$cat%' order by P.pilLastName";
+    $sql = "SELECT P.* FROM PilotView P where P.pilLastName like '$cat%' order by P.pilLastName";
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Pilot select failed: ' . mysqli_connect_error());
 
     while ($row = mysqli_fetch_assoc($result))

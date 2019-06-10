@@ -32,7 +32,7 @@ function overall_handicap($link, $comPk, $how, $param, $cls)
                 tblTaskResult TR,
                 tblTask TK,
                 tblTrack K,
-                tblPilot P,
+                PilotView P,
                 tblHandicap H,
                 tblCompetition C
             where
@@ -47,7 +47,7 @@ function overall_handicap($link, $comPk, $how, $param, $cls)
             order by
                 P.pilPk,
                 TK.tasPk";
-    #$sql = "select TK.*,TR.*,P.* from tblTaskResult TR, tblTask TK, tblTrack T, tblPilot P, tblCompetition C where C.comPk=$comPk and TK.comPk=C.comPk and TK.tasPk=TR.tasPk and TR.traPk=T.traPk and T.traPk=TR.traPk and P.pilPk=T.pilPk $cls order by P.pilPk, TK.tasPk";
+    #$sql = "select TK.*,TR.*,P.* from tblTaskResult TR, tblTask TK, tblTrack T, PilotView P, tblCompetition C where C.comPk=$comPk and TK.comPk=C.comPk and TK.tasPk=TR.tasPk and TR.traPk=T.traPk and T.traPk=TR.traPk and P.pilPk=T.pilPk $cls order by P.pilPk, TK.tasPk";
 
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task result query failed: ' . mysqli_connect_error());
     $results = [];
@@ -90,7 +90,7 @@ function overall_handicap($link, $comPk, $how, $param, $cls)
 
 function comp_result($link, $comPk, $how, $param, $cls, $tasktot, $ext)
 {
-    # $sql = "select TK.*,TR.*,P.*,T.traGlider from tblTaskResult TR, tblTask TK, tblTrack T, tblPilot P, tblCompetition C where C.comPk=$comPk and TK.comPk=C.comPk and TK.tasPk=TR.tasPk and TR.traPk=T.traPk and T.traPk=TR.traPk and P.pilPk=T.pilPk $cls order by P.pilPk, TK.tasPk";
+    # $sql = "select TK.*,TR.*,P.*,T.traGlider from tblTaskResult TR, tblTask TK, tblTrack T, PilotView P, tblCompetition C where C.comPk=$comPk and TK.comPk=C.comPk and TK.tasPk=TR.tasPk and TR.traPk=T.traPk and T.traPk=TR.traPk and P.pilPk=T.pilPk $cls order by P.pilPk, TK.tasPk";
     # New sql adding MaxScore for PWC FTV Calc
 
     $extsql = "SELECT
@@ -98,11 +98,11 @@ function comp_result($link, $comPk, $how, $param, $cls, $tasktot, $ext)
                     TR.*,
                     (
                         SELECT
-                            MAX(tblResultView.tarScore)
+                            MAX(ResultView.tarScore)
                         FROM
-                            tblResultView
+                            ResultView
                         WHERE
-                            tblResultView.tasPk = TK.tasPk
+                            ResultView.tasPk = TK.tasPk
                     ) AS maxScore,
                     P.*,
                     (
@@ -117,8 +117,8 @@ function comp_result($link, $comPk, $how, $param, $cls, $tasktot, $ext)
                 FROM
                     tblCompetition C
                     JOIN tblTask TK ON TK.comPk = C.comPk
-                    JOIN tblResultView TR ON TK.tasPk = TR.tasPk
-                    JOIN tblPilot P ON P.pilPk = TR.pilPk
+                    JOIN ResultView TR ON TK.tasPk = TR.tasPk
+                    JOIN PilotView P ON P.pilPk = TR.pilPk
                     JOIN tblForComp FC ON FC.comPk = C.comPk
                 WHERE
                     C.comPk = $comPk
@@ -132,11 +132,11 @@ function comp_result($link, $comPk, $how, $param, $cls, $tasktot, $ext)
                     TR.*,
                     (
                         SELECT
-                            MAX(tblResultView.tarScore)
+                            MAX(ResultView.tarScore)
                         FROM
-                            tblResultView
+                            ResultView
                         WHERE
-                            tblResultView.tasPk = TK.tasPk
+                            ResultView.tasPk = TK.tasPk
                     ) AS maxScore,
                     F.forClass,
                     F.forVersion,
@@ -153,8 +153,8 @@ function comp_result($link, $comPk, $how, $param, $cls, $tasktot, $ext)
                 FROM
                     tblCompetition C
                     JOIN tblTask TK ON TK.comPk = C.comPk
-                    JOIN tblResultView TR ON TK.tasPk = TR.tasPk
-                    JOIN tblPilot P ON P.pilPk = TR.pilPk
+                    JOIN ResultView TR ON TK.tasPk = TR.tasPk
+                    JOIN PilotView P ON P.pilPk = TR.pilPk
                     JOIN tblForComp FC ON FC.comPk = C.comPk
                     JOIN tblFormula F ON F.forPk = FC.forPk
 

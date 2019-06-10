@@ -126,7 +126,7 @@ class Flight_result:
         query = (""" SELECT
                         *
                     FROM
-                        tblResultView
+                        ResultView
                     WHERE
                         tarPk = {}
                     LIMIT 1

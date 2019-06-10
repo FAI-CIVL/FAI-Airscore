@@ -22,7 +22,7 @@ if (1)
     #W  6S-034 A 36.7462000000ºS 146.9788500000ºE 27-MAR-62 00:00:00 1115.000000 MYSTIC LZ
     # etc.
 
-    $sql = "SELECT date_format(T.traStart,'%d%m%y'), P.pilFirstName, P.pilLastName, T.traDate from tblTrack T, tblPilot P where T.traPk=$traPk and T.pilPk=P.pilPk";
+    $sql = "SELECT date_format(T.traStart,'%d%m%y'), P.pilFirstName, P.pilLastName, T.traDate from tblTrack T, PilotView P where T.traPk=$traPk and T.pilPk=P.pilPk";
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Unable to find track: ' . mysqli_connect_error());
 
     $date = mysqli_result($result, 0, 0);

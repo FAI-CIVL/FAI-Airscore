@@ -67,7 +67,7 @@ function ladder_result($link, $ladPk, $ladder, $season, $restrict)
     # This query selects the Max score for a national pilot. I don't think we need this, FTV uses winner score anyway
 //     $topnat = [];
 //     $sql = "select T.tasPk, max(T.tarScore) as topNat
-//             from tblTaskResult T, tblTrack TL, tblPilot P
+//             from tblTaskResult T, tblTrack TL, PilotView P
 //             where T.traPk=TL.traPk and TL.pilPk=P.pilPk and P.pilNationCode='$nat'
 //             group by tasPk";
 //     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Top National Query: ' . mysqli_connect_error());
@@ -92,7 +92,7 @@ function ladder_result($link, $ladPk, $ladder, $season, $restrict)
 //         join tblTask TK on C.comPk=TK.comPk
 //         join tblTaskResult TR on TR.tasPk=TK.tasPk
 //         join tblTrack TT on TT.traPk=TR.traPk
-//         join tblPilot TP on TP.pilPk=TT.pilPk
+//         join PilotView TP on TP.pilPk=TT.pilPk
 // WHERE LC.ladPk=$ladPk and TK.tasDate > '$start' and TK.tasDate < '$end'
 //     and TP.pilNationCode=L.ladNationCode $restrict
 //     order by TP.pilPk, C.comPk, (TR.tarScore * LC.lcValue * TK.tasQuality) desc";
@@ -118,7 +118,7 @@ function ladder_result($link, $ladPk, $ladder, $season, $restrict)
 // 				JOIN tblTask T ON T.comPk = LC.comPk
 // 				JOIN tblTaskResult TR USING (tasPk)
 // 				JOIN tblTrack TT USING (traPk)
-// 				JOIN tblPilot P ON P.pilPk = TT.pilPk AND P.pilNat = L.ladNationCode
+// 				JOIN PilotView P ON P.pilPk = TT.pilPk AND P.pilNat = L.ladNationCode
 // 			WHERE
 // 				LC.ladPk = $ladPk
 // 				$restrict
@@ -135,11 +135,11 @@ function ladder_result($link, $ladPk, $ladder, $season, $restrict)
 				T.tasPk, T.tasName, T.tasQuality,
 				(
 					SELECT
-						MAX(tblResultView.tarScore)
+						MAX(ResultView.tarScore)
 					FROM
-						tblResultView
+						ResultView
 					WHERE
-						tblResultView.tasPk = T.tasPk
+						ResultView.tasPk = T.tasPk
 				) AS maxScore,
 				C.comName, C.comDateTo, C.comCode
 			FROM
@@ -147,8 +147,8 @@ function ladder_result($link, $ladPk, $ladder, $season, $restrict)
 				JOIN tblLadder L USING (ladPk)
 				JOIN tblCompetition C ON LC.comPk = C.comPk AND (C.comDateFrom BETWEEN '$start' AND '$end')
 				JOIN tblTask T ON T.comPk = LC.comPk
-				JOIN tblResultView TR USING (tasPk)
-				JOIN tblPilot P ON P.pilPk = TR.pilPk AND P.pilNat = L.ladNationCode
+				JOIN ResultView TR USING (tasPk)
+				JOIN PilotView P ON P.pilPk = TR.pilPk AND P.pilNat = L.ladNationCode
 			WHERE
 				LC.ladPk = $ladPk
                 $restrict
@@ -179,7 +179,7 @@ function ladder_result($link, $ladPk, $ladder, $season, $restrict)
 						tasPk,
 						MAX(tarScore) AS maxScore
 					FROM
-						tblResultView
+						ResultView
 					GROUP BY
 						tasPk
 				) TR using (tasPk)
@@ -208,7 +208,7 @@ function ladder_result($link, $ladPk, $ladder, $season, $restrict)
             then 0.90 else 1.0 end) / (TK.tasQuality * TK.lcValue)) as validity
         from tblExtTask TK
         join tblExtResult ER on ER.extPk=TK.extPk
-        join tblPilot TP on TP.pilPk=ER.pilPk
+        join PilotView TP on TP.pilPk=ER.pilPk
 WHERE TK.comDateTo > '$start' and TK.comDateTo < '$end'
         $restrict
         order by TP.pilPk, TK.extPk, (ER.etrScore * TK.lcValue * TK.tasQuality) desc";

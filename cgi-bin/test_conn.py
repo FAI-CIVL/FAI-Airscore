@@ -18,7 +18,7 @@ def main():
                             pilFirstName,
                             pilLastName 
                         FROM 
-                            tblPilot 
+                            PilotView 
                         WHERE 
                             pilPk = {} 
                         LIMIT 

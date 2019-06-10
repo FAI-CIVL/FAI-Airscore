@@ -47,7 +47,7 @@ $sql = "SELECT
 			A.* 
 		FROM 
 			tblCompAuth A 
-			LEFT JOIN tblUser U USING (usePk) 
+			LEFT JOIN UserView U USING (usePk) 
 		WHERE 
 			A.comPk = $comPk";
 $result = mysqli_query($link, $sql);

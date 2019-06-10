@@ -419,7 +419,7 @@ elseif ( reqexists('XCTask') )
 $query = "  SELECT
                 *
             FROM
-                tblTaskView
+                TaskView
             WHERE
                 tasPk = $tasPk
             LIMIT 1";

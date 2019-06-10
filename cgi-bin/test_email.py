@@ -39,7 +39,7 @@ def get_email_list(task_id, DB_User, DB_Password, DB, to_all):
                 "       P.pilLastName, "
                 "       P.pilEmail "
                 "   FROM "
-                "       tblPilot P "
+                "       PilotView P "
                 "       JOIN tblRegistration R ON P.pilPk = R.pilPk "
                 "       LEFT OUTER JOIN ("
                 "           SELECT "
@@ -75,7 +75,7 @@ def get_task_details(task_id, DB_User, DB_Password, DB):
 
 def get_admin_email(task_id, DB_User, DB_Password, DB):
     """Get admin email addresses"""
-    query = ("SELECT useEmail from tblUser U JOIN tblCompAuth A ON"
+    query = ("SELECT useEmail from UserView U JOIN tblCompAuth A ON"
                " U.usePk = A.usePk JOIN tblTask T on T.comPK = A.comPk "
                "WHERE T.tasPk = %s", (task_id,))
     with Database() as db:

@@ -6,7 +6,7 @@ def get_missing_tracks_list(task_id, DB_User, DB_Password, DB):
     """Get pilot details (pilots in task without tracks) returns a dictionary of pilXcontestUser:pilPK."""
 
     with Database() as db:
-        query = ("SELECT pilXcontestUser, p.pilFAI FROM tblPilot p join tblRegistration b on p.pilPk = b.pilPk left outer join (SELECT comPk, tasPk, c.traPk, pilPk FROM tblComTaskTrack c join tblTrack t on c.traPk = t.traPk where tasPk= %s) as a on b.pilPk = a.pilPK and b.comPk = a.comPk where pilXcontestUser is NOT null and a.traPk is null", (task_id,))
+        query = ("SELECT pilXcontestUser, p.pilFAI FROM PilotView p join tblRegistration b on p.pilPk = b.pilPk left outer join (SELECT comPk, tasPk, c.traPk, pilPk FROM tblComTaskTrack c join tblTrack t on c.traPk = t.traPk where tasPk= %s) as a on b.pilPk = a.pilPK and b.comPk = a.comPk where pilXcontestUser is NOT null and a.traPk is null", (task_id,))
         pilot_list = dict((xc, pilpk) for xc, pilpk in db.fetchall(query))
     return pilot_list
 

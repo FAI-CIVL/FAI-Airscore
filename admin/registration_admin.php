@@ -74,7 +74,7 @@ if (array_key_exists('uppilot', $_REQUEST))
     $id = reqival('uppilot');
     $fai = reqsval("fai$id");
     $handi = reqfval("han$id");
-    $query = "update tblPilot set pilFAI='$fai' where pilPk=$id";
+    $query = "update PilotView set pilFAI='$fai' where pilPk=$id";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot ID update failed: ' . mysqli_connect_error());
 
     $regarr = [];
@@ -91,7 +91,7 @@ $query = "  SELECT
                 P.*
             FROM
                 tblRegistration R
-            JOIN tblPilot P USING(pilPk)
+            JOIN PilotView P USING(pilPk)
             INNER JOIN tblHandicap H USING(comPk, pilPk)
             WHERE
                 R.comPk = $comPk
@@ -154,7 +154,7 @@ if ($cat != '')
     $sql = "SELECT 
 				P.* 
 			FROM 
-				tblPilot P 
+				PilotView P 
 			WHERE 
 				P.pilLastName like '$cat%' 
 				AND NOT EXISTS (

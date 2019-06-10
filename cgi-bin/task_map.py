@@ -359,7 +359,7 @@ def index():
                     make_map(layer_geojson=layer,points=task_coords,circles=turnpoints);
                     
                     #testing connection to DB
-                    q = "SELECT * FROM tblTaskView LIMIT 1"
+                    q = "SELECT * FROM TaskView LIMIT 1"
                     with Database() as db:
                         t = db.fetchall(q)
 #                    return render_template('home.html',flight_data=flight_results, igc_content=igc_object, mysql_query=t )

@@ -115,7 +115,7 @@ function hcsidebar($link)
 		<h1><span>Longest 10</span></h1>
 		<div id=\"comments\"><ol>";
 	$count = 1;
-	$sql = "SELECT T.*, P.* FROM tblTrack T, tblPilot P, tblComTaskTrack CTT where T.pilPk=P.pilPk and CTT.traPk=T.traPk order by T.traLength desc limit 10";
+	$sql = "SELECT T.*, P.* FROM tblTrack T, PilotView P, tblComTaskTrack CTT where T.pilPk=P.pilPk and CTT.traPk=T.traPk order by T.traLength desc limit 10";
 	$result = mysqli_query($link, $sql);
 	while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 	{
@@ -132,7 +132,7 @@ function hcsidebar($link)
 		</div>
 		<h1><span>Recent 10</span></h1><ol>";
 	$count = 1;
-	$sql = "SELECT T.*, P.* FROM tblTrack T, tblPilot P, tblComTaskTrack CTT where T.pilPk=P.pilPk and CTT.traPk=T.traPk order by T.traDate desc limit 10";
+	$sql = "SELECT T.*, P.* FROM tblTrack T, PilotView P, tblComTaskTrack CTT where T.pilPk=P.pilPk and CTT.traPk=T.traPk order by T.traDate desc limit 10";
 	$result = mysqli_query($link, $sql);
 	while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 	{

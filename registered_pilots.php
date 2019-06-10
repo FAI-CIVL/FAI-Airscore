@@ -100,7 +100,7 @@ $query = "	SELECT
 				H.hanHandicap 
 			FROM 
 				tblRegistration R 
-				LEFT JOIN tblPilot P on P.pilPk = R.pilPk 
+				LEFT JOIN PilotView P on P.pilPk = R.pilPk 
 				LEFT OUTER JOIN tblHandicap H ON H.pilPk = P.pilPk 
 				AND H.comPk = $comPk 
 			WHERE 

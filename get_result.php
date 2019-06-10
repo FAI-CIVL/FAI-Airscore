@@ -43,7 +43,7 @@ function comp_result($comPk, $cls)
 				JOIN tblTask TK USING (comPk) 
 				JOIN tblTaskResult TR USING (tasPk) 
 				JOIN tblTrack T USING (traPk) 
-				JOIN tblPilot P USING (pilPk) 
+				JOIN PilotView P USING (pilPk) 
 			WHERE 
 				C.comPk = $comPk 
 				$cls 

@@ -316,7 +316,7 @@ class FSDB:
         query = ("""    SELECT
                             pilPk
                         FROM
-                            tblPilot
+                            PilotView
                         WHERE
                             ({})
                         AND
@@ -334,7 +334,7 @@ class FSDB:
                     query = ("""    SELECT
                                         pilPk
                                     FROM
-                                        tblPilot
+                                        PilotView
                                     WHERE
                                         ({})
                                     AND

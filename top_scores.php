@@ -14,7 +14,7 @@ function generate_ladder($top,$restrict,$link)
     $toptasks = [];
     $topscores = [];
 
-    $sql = "SELECT P.*, T.traPk, T.traScore FROM tblTrack T, tblPilot P, tblComTaskTrack CTT where CTT.traPk=T.traPk and T.pilPk=P.pilPk and T.traScore is not null $restrict order by P.pilPk, T.traScore desc";
+    $sql = "SELECT P.*, T.traPk, T.traScore FROM tblTrack T, PilotView P, tblComTaskTrack CTT where CTT.traPk=T.traPk and T.pilPk=P.pilPk and T.traScore is not null $restrict order by P.pilPk, T.traScore desc";
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Top score failed: ' . mysqli_connect_error());
     ;
 

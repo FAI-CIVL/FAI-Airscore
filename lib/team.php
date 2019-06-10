@@ -116,7 +116,7 @@ function team_gap_result($comPk, $how, $param)
 
 function team_agg_result($comPk, $teamsize)
 {
-    $query = "select TM.teaPk,TK.tasPk,TK.tasName,TM.teaName,P.pilLastName,P.pilFirstName,P.pilPk,TR.tarScore*TP.tepModifier as tepscore from tblTaskResult TR, tblTask TK, tblTrack K, tblPilot P, tblTeam TM, tblTeamPilot TP, tblCompetition C where TP.teaPk=TM.teaPk and P.pilPk=TP.pilPk and C.comPk=TK.comPk and K.traPk=TR.traPk and K.pilPk=P.pilPk and TR.tasPk=TK.tasPk and TM.comPk=C.comPk and C.comPk=$comPk order by TM.teaPk,TK.tasPk,TR.tarScore*TP.tepModifier desc";
+    $query = "select TM.teaPk,TK.tasPk,TK.tasName,TM.teaName,P.pilLastName,P.pilFirstName,P.pilPk,TR.tarScore*TP.tepModifier as tepscore from tblTaskResult TR, tblTask TK, tblTrack K, PilotView P, tblTeam TM, tblTeamPilot TP, tblCompetition C where TP.teaPk=TM.teaPk and P.pilPk=TP.pilPk and C.comPk=TK.comPk and K.traPk=TR.traPk and K.pilPk=P.pilPk and TR.tasPk=TK.tasPk and TM.comPk=C.comPk and C.comPk=$comPk order by TM.teaPk,TK.tasPk,TR.tarScore*TP.tepModifier desc";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Team aggregate query failed: ' . mysqli_connect_error());
     $row = mysqli_fetch_array($result, MYSQLI_BOTH);
     $htable = [];
@@ -204,7 +204,7 @@ function team_handicap_result($comPk,$how,$param)
         {
             next;
         }
-        $query = "select TM.teaPk,TK.tasPk,TK.tasName,TM.teaName,sum(TR.tarScore-H.hanHandicap*$maxscore) as handiscore from tblTaskResult TR, tblTask TK, tblTrack K, tblPilot P, tblTeam TM, tblTeamPilot TP, tblHandicap H, tblCompetition C where TP.teaPk=TM.teaPk and P.pilPk=TP.pilPk and C.comPk=TK.comPk and K.traPk=TR.traPk and K.pilPk=P.pilPk and H.pilPk=P.pilPk and TR.tasPk=TK.tasPk and TM.comPk=C.comPk and TK.tasPk=$task and H.comPk=$comPk group by TM.teaPk";
+        $query = "select TM.teaPk,TK.tasPk,TK.tasName,TM.teaName,sum(TR.tarScore-H.hanHandicap*$maxscore) as handiscore from tblTaskResult TR, tblTask TK, tblTrack K, PilotView P, tblTeam TM, tblTeamPilot TP, tblHandicap H, tblCompetition C where TP.teaPk=TM.teaPk and P.pilPk=TP.pilPk and C.comPk=TK.comPk and K.traPk=TR.traPk and K.pilPk=P.pilPk and H.pilPk=P.pilPk and TR.tasPk=TK.tasPk and TM.comPk=C.comPk and TK.tasPk=$task and H.comPk=$comPk group by TM.teaPk";
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Team handicap query failed: ' . mysqli_connect_error());
     	$row = mysqli_fetch_array($result, MYSQLI_BOTH);
         while ($row)

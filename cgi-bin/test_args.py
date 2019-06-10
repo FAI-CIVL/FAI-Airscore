@@ -43,7 +43,7 @@ def get_email_list(task_id, DB_User, DB_Password, DB, to_all):
             "       P.pilLastName, "
             "       P.pilEmail "
             "   FROM "
-            "       tblPilot P "
+            "       PilotView P "
             "       JOIN tblRegistration R ON P.pilPk = R.pilPk "
             "       LEFT OUTER JOIN ("
             "           SELECT "

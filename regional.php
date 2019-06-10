@@ -8,7 +8,7 @@ function tracktable($link, $lat, $lon, $order, $start)
 
     $count = $start+1;
     $long = [];
-    $sql = "select T.*, P.*, CTT.* from tblTrack T, tblPilot P, tblComTaskTrack CTT, tblWaypoint W where W.wptPosition=0 and (abs(W.wptLatDecimal-$lat)+abs(W.wptLongDecimal-$lon)) < 1.0 and T.traPk=W.traPk and CTT.traPk=T.traPk and T.pilPk=P.pilPk $order";
+    $sql = "select T.*, P.*, CTT.* from tblTrack T, PilotView P, tblComTaskTrack CTT, tblWaypoint W where W.wptPosition=0 and (abs(W.wptLatDecimal-$lat)+abs(W.wptLongDecimal-$lon)) < 1.0 and T.traPk=W.traPk and CTT.traPk=T.traPk and T.pilPk=P.pilPk $order";
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Invalid track table ' . mysqli_connect_error());
     $num = mysqli_num_rows($result);
     while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
@@ -41,7 +41,7 @@ if ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 }
 if ($pilot > 0)
 {
-    $sql = "select P.pilFirstName, P.pilLastName from tblPilot P where P.pilPk=$pilot";
+    $sql = "select P.pilFirstName, P.pilLastName from PilotView P where P.pilPk=$pilot";
     $result = mysqli_query($link, $sql);
     if ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     {

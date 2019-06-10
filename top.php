@@ -30,7 +30,7 @@ echo "<p><h2>Top Tracks$title</h2></p>";
 
 echo "<ol>";
 $count = 1;
-$sql = "SELECT T.*, P.* FROM tblTrack T, tblPilot P, tblComTaskTrack CTT where T.pilPk=P.pilPk and CTT.traPk=T.traPk $restrict order by T.traScore desc limit 10";
+$sql = "SELECT T.*, P.* FROM tblTrack T, PilotView P, tblComTaskTrack CTT where T.pilPk=P.pilPk and CTT.traPk=T.traPk $restrict order by T.traScore desc limit 10";
 $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Top tracks failed: ' . mysqli_connect_error());
 
 while($row = mysqli_fetch_array($result, MYSQLI_BOTH))

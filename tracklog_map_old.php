@@ -167,7 +167,7 @@ echo "<div id=\"map\" style=\"width: 100%; height: 600px\"></div>";
 echo "<input type=\"text\" name=\"foo\" id=\"foo\" size=\"8\">";
 if ($tasPk > 0)
 {
-    $sql = "select TR.*, T.*, P.* from tblTaskResult TR, tblTrack T, tblPilot P where TR.tasPk=$tasPk and T.traPk=TR.traPk and P.pilPk=T.pilPk order by TR.tarScore desc limit 20";
+    $sql = "select TR.*, T.*, P.* from tblTaskResult TR, tblTrack T, PilotView P where TR.tasPk=$tasPk and T.traPk=TR.traPk and P.pilPk=T.pilPk order by TR.tarScore desc limit 20";
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task result selection failed: ' . mysqli_connect_error());
     $addable = [];
     while ($row = mysqli_fetch_assoc($result))
@@ -178,7 +178,7 @@ if ($tasPk > 0)
 }
 else if ($trackid > 0)
 {
-    $sql = "select T2.*, P.* from tblTrack T, tblTrack T2, tblPilot P where T2.traStart>date_sub(T.traStart, interval 6 hour) and T2.traStart<date_add(T.traStart, interval 6 hour) and T.traPk=$trackid and P.pilPk=T2.pilPk order by T2.traLength desc limit 10";
+    $sql = "select T2.*, P.* from tblTrack T, tblTrack T2, PilotView P where T2.traStart>date_sub(T.traStart, interval 6 hour) and T2.traStart<date_add(T.traStart, interval 6 hour) and T.traPk=$trackid and P.pilPk=T2.pilPk order by T2.traLength desc limit 10";
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task result selection failed: ' . mysqli_connect_error());
     $addable = [];
     while ($row = mysqli_fetch_assoc($result))

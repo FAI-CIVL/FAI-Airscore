@@ -106,7 +106,7 @@ class Task_formula:
                         `forScorebackTime`,
                         `tasMargin`
                     FROM
-                        `tblTaskView`
+                        `TaskView`
                     WHERE
                         `tasPk` = {}
                     LIMIT 1

@@ -17,8 +17,8 @@ function create_session($id)
 					) AS name,
 					IF(U.usePk > 0, TRUE, FALSE) AS isAdmin
 				FROM
-					tblPilot P
-				LEFT JOIN tblUser U ON
+					PilotView P
+				LEFT JOIN UserView U ON
 					P.pilPk = U.usePk
 				WHERE
 					pilPk = $id

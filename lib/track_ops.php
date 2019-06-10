@@ -21,8 +21,8 @@
 //                         LOWER(P.`pilLastName`)
 //                     ) AS pilName
 //                 FROM
-//                     `tblPilot` P,
-//                     `tblTaskView` T
+//                     `PilotView` P,
+//                     `TaskView` T
 //                 JOIN `tblCompetition` C USING(`comPk`)
 //                 WHERE
 //                     T.`tasPk` = $tasPk AND P.`pilPk` = $pilPk
@@ -195,7 +195,7 @@ function set_status($link, $pilPk, $comPk, $tasPk, $resulttype)
                     T.tasStartTime,
                     T.tasDate
                 FROM
-                    tblPilot P,
+                    PilotView P,
                     tblTask T
                     JOIN tblForComp FC USING (comPk)
                 WHERE

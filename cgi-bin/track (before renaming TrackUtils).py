@@ -42,7 +42,7 @@ class Track():
                 """Gets name from FAI n."""
                 fai = 0 + int(fields[0])
                 message += ("file {} contains FAI n. {} \n".format(fields[0], fai))
-                query = ("SELECT pilPk FROM tblPilot WHERE pilFAI = {}".format(fai))
+                query = ("SELECT pilPk FROM PilotView WHERE pilFAI = {}".format(fai))
             else:
                 """Gets name from string"""
                 message += ("file {} contains pilot name \n".format(fields[0]))
@@ -57,7 +57,7 @@ class Track():
                 query = ("""    SELECT 
                                     pilPk 
                                 FROM 
-                                    tblPilot 
+                                    PilotView 
                                 WHERE 
                                     ({}) 
                                 AND 
@@ -70,7 +70,7 @@ class Track():
                 self.pilPk = db.fetchone(query)['pilPk']
                 
 #               db = myconn.getConnection()
-#               query = ("SELECT pilPk FROM tblPilot WHERE pilFAI = {}".format(fai))
+#               query = ("SELECT pilPk FROM PilotView WHERE pilFAI = {}".format(fai))
 #               message += ("Query: {}  \n".format(query))
 #               try:
 #                   c = db.cursor()
@@ -90,7 +90,7 @@ class Track():
 #               query = ("""    SELECT 
 #                                   pilPk 
 #                               FROM 
-#                                   tblPilot 
+#                                   PilotView 
 #                               WHERE 
 #                                   pilLastName IN ( '{0}' ) 
 #                               AND 
@@ -206,7 +206,7 @@ class Track():
             query = ("""    SELECT 
                                 pilGlider, pilGliderBrand, gliGliderCert 
                             FROM 
-                                tblPilot 
+                                PilotView 
                             WHERE 
                                 pilPk = {}""".format(self.pilPk))   
             #print ("get_glider Query: {}  \n".format(query))
@@ -220,7 +220,7 @@ class Track():
 #           query = ("""    SELECT 
 #                               pilGlider, pilGliderBrand, gliGliderCert 
 #                           FROM 
-#                               tblPilot 
+#                               PilotView 
 #                           WHERE 
 #                               pilPk = {}""".format(self.pilPk))
 #           message += ("Query: {}  \n".format(query))

@@ -252,7 +252,7 @@ menubar($comPk);
 $link = db_connect();
 $trackid = $_REQUEST['trackid'];
 
-$sql = "SELECT T.*, P.*, TR.* FROM tblPilot P, tblTrack T left outer join tblTaskResult TR on TR.traPk=T.traPk where T.pilPk=P.pilPk and T.traPk=$trackid limit 1";
+$sql = "SELECT T.*, P.*, TR.* FROM PilotView P, tblTrack T left outer join tblTaskResult TR on TR.traPk=T.traPk where T.pilPk=P.pilPk and T.traPk=$trackid limit 1";
 $result = mysqli_query($link, $sql);
 if ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {

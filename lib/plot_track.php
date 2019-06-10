@@ -20,9 +20,9 @@ function get_track_body($trackid,$interval)
                 T.traDuration,
                 T.traFile
             FROM
-                tblResultView TR
+                ResultView TR
             LEFT OUTER JOIN tblTrack T USING(traPk)
-            LEFT OUTER JOIN tblTaskView TK USING(tasPk)
+            LEFT OUTER JOIN TaskView TK USING(tasPk)
             WHERE
                 T.traPk = $trackid
             LIMIT 1";

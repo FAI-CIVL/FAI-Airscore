@@ -141,14 +141,14 @@ if (array_key_exists('addflight', $_REQUEST))
     $fai = intval($_REQUEST['fai']);
     if ($fai > 0)
     {
-        $query = "select pilPk from tblPilot where pilFAI=$fai";
+        $query = "select pilPk from PilotView where pilFAI=$fai";
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query pilot (fai) failed: ' . mysqli_connect_error());
     }
 
     if (mysqli_num_rows($result) == 0)
     {
         $fai = addslashes($_REQUEST['fai']);
-        $query = "select P.pilPk from tblComTaskTrack T, tblTrack TR, tblPilot P
+        $query = "select P.pilPk from tblComTaskTrack T, tblTrack TR, PilotView P
                     where T.comPk=$comPk
                         and T.traPk=TR.traPk
                         and TR.pilPk=P.pilPk
@@ -272,7 +272,7 @@ $finfo = [];
 // FIX: Print out task quality information.
 
 // $sql = "select SUM(ABS(TR.tarPenalty)) AS totalPenalty from tblTaskResult TR where TR.tasPk=$tasPk";
-$sql = "select SUM(ABS(TR.tarPenalty)) AS totalPenalty from tblResultView TR where TR.tasPk=$tasPk";
+$sql = "select SUM(ABS(TR.tarPenalty)) AS totalPenalty from ResultView TR where TR.tasPk=$tasPk";
 $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Penalty Sum failed: ' . mysqli_connect_error());
 $row = mysqli_fetch_assoc($result);
 $totalPenalty = $row['totalPenalty'];
@@ -338,7 +338,7 @@ $count = 1;
 // 			FROM
 // 				tblTaskResult TR,
 // 				tblTrack T,
-// 				tblPilot P
+// 				PilotView P
 // 			WHERE
 // 				TR.tasPk = $tasPk $fdhv
 // 				AND T.traPk = TR.traPk
@@ -354,8 +354,8 @@ $sql = "SELECT
             P.`pilSponsor`,
             ( SELECT C.natIso3 FROM tblCountryCodes C WHERE C.natID = P.pilNat ) AS pilNationCode
         FROM
-            `tblResultView` R
-            JOIN `tblPilot` P USING (`pilPk`)
+            `ResultView` R
+            JOIN `PilotView` P USING (`pilPk`)
         WHERE
             R.tasPk = $tasPk $fdhv
         ORDER BY

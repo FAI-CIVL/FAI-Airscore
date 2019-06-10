@@ -19,7 +19,7 @@ require 'startup.php';
 $link = db_connect();
 echo "<ol>";
 $count = 1;
-$sql = "SELECT T.*, P.* FROM tblTrack T, tblPilot P where T.pilPk=P.pilPk order by T.traScore desc limit 10";
+$sql = "SELECT T.*, P.* FROM tblTrack T, PilotView P where T.pilPk=P.pilPk order by T.traScore desc limit 10";
 $result = mysqli_query($link, $sql);
 while($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {

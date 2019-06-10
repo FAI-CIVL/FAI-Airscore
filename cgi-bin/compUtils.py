@@ -31,7 +31,7 @@ def get_class(tasPk, test = 0):
             query = ("""    SELECT
                                 comClass
                             FROM
-                                tblTaskView
+                                TaskView
                             WHERE
                                 tasPk = {}
                             LIMIT 1""".format(tasPk))
@@ -47,7 +47,7 @@ def get_task_date(tasPk, test = 0):
             query = ("""    SELECT
                                 tasDate
                             FROM
-                                tblTaskView
+                                TaskView
                             WHERE
                                 tasPk = {}
                             LIMIT 1""".format(tasPk))
@@ -99,7 +99,7 @@ def get_registered_pilots(comPk, test=0):
                                 P.`pilXContestUser`
                             FROM
                                 `tblRegistration` R
-                            JOIN `tblPilot` P USING(`pilPk`)
+                            JOIN `PilotView` P USING(`pilPk`)
                             WHERE
                                 R.`comPk` = {}""".format(comPk))
             message += ("Query: {}  \n".format(query))
@@ -162,7 +162,7 @@ def get_glider(pilPk, test = 0):
             query = ("""    SELECT
                                 pilGlider, pilGliderBrand, gliGliderCert
                             FROM
-                                tblPilot
+                                PilotView
                             WHERE
                                 pilPk = {}
                             LIMIT 1""".format(pilPk))
@@ -235,7 +235,7 @@ def get_task_file_path(tasPk, test = 0):
             "LOWER(T.`tasCode`) AS tasCode, " \
             "YEAR(C.`comDateFrom`) AS comYear, " \
             "DATE_FORMAT(T.`tasdate`, '%%Y%%m%%d') AS tasDate " \
-            " FROM `tblTaskView` T JOIN `tblCompetition` C USING(`comPk`) " \
+            " FROM `TaskView` T JOIN `tblCompetition` C USING(`comPk`) " \
             "WHERE T.`tasPk` = %s LIMIT 1 "
 
     param = tasPk

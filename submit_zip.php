@@ -65,7 +65,7 @@ function accept_track()
 
     $link = db_connect();
 
-    $query = "select pilPk, pilFAI from tblPilot where pilLastName='$name'";
+    $query = "select pilPk, pilFAI from PilotView where pilLastName='$name'";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
     $row = mysqli_fetch_array($result, MYSQLI_BOTH);
     $pilPk = $row['pilPk'];

@@ -327,7 +327,7 @@ $sql = "SELECT
             U.useName AS name 
         FROM 
             tblCompAuth A 
-            JOIN tblUser U ON U.usePk = A.usePk 
+            JOIN UserView U ON U.usePk = A.usePk 
         WHERE 
             A.comPk = $comPk";
 $result = mysqli_query($link, $sql);
@@ -343,7 +343,7 @@ $sql = "SELECT
             U.usePk as user, 
             U.* 
         FROM 
-            tblUser U 
+            UserView U 
         WHERE 
             NOT EXISTS (
                 SELECT 

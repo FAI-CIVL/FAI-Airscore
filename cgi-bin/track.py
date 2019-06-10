@@ -51,7 +51,7 @@ class Track():
                 """Gets name from FAI n."""
                 fai = 0 + int(fields[0])
                 message += ("file {} contains FAI n. {} \n".format(fields[0], fai))
-                query = ("SELECT pilPk FROM tblPilot WHERE pilFAI = {}".format(fai))
+                query = ("SELECT pilPk FROM PilotView WHERE pilFAI = {}".format(fai))
             else:
                 names = fields[0].replace('.', ' ').replace('_', ' ').replace('-', ' ').split()
                 """try to find xcontest user in filename
@@ -71,14 +71,14 @@ class Track():
                 query =(""" SELECT
                                 pilPk
                             FROM
-                                tblPilot
+                                PilotView
                             WHERE
                                 ({})
                             UNION ALL
                             SELECT
                                 pilPk
                             FROM
-                                tblPilot
+                                PilotView
                             WHERE
                                 ({})
                             AND
@@ -294,7 +294,7 @@ class Track():
             query = ("""    SELECT
                                 pilGlider, pilGliderBrand, gliGliderCert
                             FROM
-                                tblPilot
+                                PilotView
                             WHERE
                                 pilPk = {}
                             LIMIT 1""".format(self.pilPk))
@@ -340,7 +340,7 @@ class Track():
         if pname is None:
             query = "SELECT " \
                     "   CONCAT_WS('_', LOWER(P.`pilFirstName`), LOWER(P.`pilLastName`) ) AS pilName " \
-                    "   FROM `tblPilot` P " \
+                    "   FROM `PilotView` P " \
                     "   WHERE P.`pilPk` = %s" \
                     "   LIMIT 1"
             param = self.pilPk

@@ -194,7 +194,7 @@ class Task:
                         `comClass`,
                         `tasMargin`
                     FROM
-                        `tblTaskView`
+                        `TaskView`
                     WHERE
                         `tasPk` = %s
                     LIMIT 1"""
