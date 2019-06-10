@@ -35,7 +35,7 @@ def main(args):
     create task.stats from taskTotalsView
     create pilots array
     we calculate total LC for each pilot
-    update minLC in task.stats
+    update LCmin in task.stats
     calculate Validities and Points
     Score
     '''
@@ -100,10 +100,10 @@ def main(args):
     # with Database() as db:
     #     db.execute(query, params)
 
-    totals['quality'] = quality
+    #totals['quality'] = quality
 
     if totals['pilots'] > 0:
-        f.points_allocation(task, totals, formula)    #with new logic (totals in task.stats) totals parameter should no longer be needed
+        f.points_allocation(task, formula)    #with new logic (totals in task.stats) totals parameter should no longer be needed
 
 
 if __name__== "__main__":

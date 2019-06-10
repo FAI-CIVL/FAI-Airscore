@@ -49,7 +49,7 @@ def rescore(task, formula):
     from statistics import pstdev
 
     query = "SELECT `T`.`traPk` AS `id`, `P`.`pilLastName` AS `name`, `T`.`traFile` AS `file` " \
-            "FROM `tblTrack` `T` JOIN `tblPilot` `P` USING(`pilPk`) " \
+            "FROM `tblTrack` `T` JOIN `PilotView` `P` USING(`pilPk`) " \
             "WHERE `T`.`traDate` = %s"
     params = [task.date]
 
@@ -75,7 +75,7 @@ def rescore(task, formula):
         lastdept = 0
         minarr = 0
         maxarr = 0
-        mincoeff2 = 0
+        LCmin = 0
         stddev = 0
 
         print('getting tracks...')
@@ -148,14 +148,14 @@ def rescore(task, formula):
             print('({}) Result:'.format(index[0]))
             print('   * Goal: {} | Final LC: {}'.format(bool(result.goal_time),result.Lead_coeff))
 
-            if not mincoeff2 or result.Lead_coeff < mincoeff2: mincoeff2 = result.Lead_coeff
+            if not LCmin or result.Lead_coeff < LCmin: LCmin = result.Lead_coeff
 
             '''store new result'''
             result.store_result(index[0],task.tasPk)
             print('* Result stored in DB \n\n')
             index.pop(0)
 
-        task.stats['mincoeff2'] = mincoeff2
+        task.stats['LCmin'] = LCmin
 
         print('\n *** Totals:')
         print('Tot. Dist: {} | Tot. Dist. over Min.: {}'.format(totdist,totdistovermin))

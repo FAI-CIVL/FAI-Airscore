@@ -27,7 +27,18 @@ parameters.coef_func = coef2
 parameters.coef_func_scaled = coef_scaled
 parameters.coef_landout = coef_landout
 
+def store_LC(res_id, lead_coeff):
+    '''store LC to database'''
+    query = """ UPDATE tblTaskResult
+                SET tarLeadingCoeff = %s
+                WHERE tarPk = %s """
+    params = [lead_coeff, res_id]
+
+    with Database() as db:
+        db.execute(query, params)
+
 def lc_calc(res, t):
+    LC          = 0
     leading     = 0
     trailing    = 0
     my_start    = res['start']
@@ -49,9 +60,17 @@ def lc_calc(res, t):
         trailing            = parameters.coef_landout(task_time, best_dist_to_ess)
         trailing            = parameters.coef_func_scaled(trailing, SS_Distance)
 
+    LC = leading + res['Lead_coeff'] + trailing
+
+    '''write final LC to tblTaskResult table in tarLeadingCoeff column'''
+    # making a def because I suppose that in the future we couls avoid storing total LC in DB
+    store_LC(res['tarPk, LC'])
+
     return leading + res['Lead_coeff'] + trailing
 
-def ordered_results(task, taskt, formula, results):
+def ordered_results(task, formula, results):
+
+    taskt = task.stats
 
     pilots=[]
 
@@ -130,57 +149,32 @@ def ordered_results(task, taskt, formula, results):
         Leadout Points Adjustment
         C.6.3.1
         '''
-        taskres['coeff'] = lc_calc(taskres, task) # PWC LeadCoeff (with squared distances)
-        # # FIX: adjust against fastest ..
-        # if ((res['tarES'] - res['tarSS']) < 1) and (res['tarSS'] > 0): # only pilots that started and didn't make ESS
-        #     # Fix - busted if no one is in goal?
-        #     #print(res['traPk'], " didn't make ess, adjusting leCof")
-        #     if taskt['goal'] > 0:
-        #         #print("goal > 0")
-        #         maxtime = taskt['lastarrival']  # Time of the last in ESS
-        #         if res['tarLastTime'] > task.end_time:
-        #             maxtime = task.end_time  # If I was still flying after task deadline
-        #
-        #         elif res['tarLastTime'] > taskt['lastarrival']:
-        #             maxtime = res['tarLastTime']  # If I was still flying after the last ESS time
-        #
-        #         # adjust for late starters
-        #         print("No goal, adjust pilot coeff from: ", res['tarLeadingCoeff2'])
-        #         BestDistToESS = task.EndSSDistance / 1000 - res['tarDistance'] / 1000  # PWC bestDistToESS in Km
-        #         taskres['coeff'] = res['tarLeadingCoeff2'] - (task.end_time - maxtime) * BestDistToESS ** 2 / ( 1800 * (task.SSDistance / 1000) ** 2 )
-        #
-        #         print(" to: ", taskres['coeff'])
-        #         print("(maxtime - sstart)   =      ", (maxtime - task.start_time))
-        #         print("ref->{'tarLeadingCoeff2'] = ", res['tarLeadingCoeff2'])
-        #         print("Result taskres{coeff}  =    ", taskres['coeff'])
-        #         # adjust mincoeff?
-        #         if taskres['coeff'] < taskt['mincoeff2']:
-        #             taskt['mincoeff2'] = taskres['coeff']
+        taskres['LC'] = lc_calc(taskres, task) # PWC LeadCoeff (with squared distances)
 
         pilots.append(taskres)
 
     return pilots
 
-def points_allocation(task, taskt, formula, results = None):   # from PWC###
+def points_allocation(task, formula, results = None):   # from PWC###
 
-    # Find fastest pilot into goal and calculate leading coefficients
-    # for each track .. (GAP2002 only?)
-
+    taskt = task.stats
     tasPk = task.tasPk
     quality = taskt['quality']
     Ngoal = taskt['goal']
     Tmin = taskt['fastest']
     Tfarr = taskt['firstarrival']
 
-    sorted_pilots = ordered_results(task, taskt, formula, results)
+    sorted_pilots = ordered_results(task, formula, results)
 
     '''
     Update Min LC
+    in ordered_results we calculate final LC
+    so we need to update LCmin for the task
     '''
-    task.stats['mincoeff2'] = min(res['coeff'] for res in sorted_pilots)
+    task.stats['LCmin'] = min(res['LC'] for res in sorted_pilots)
 
     # Get basic GAP allocation values
-    Adistance, Aspeed, Astart, Aarrival = points_weight(task, taskt, formula)
+    Adistance, Aspeed, Astart, Aarrival = points_weight(task, formula)
 
     # Update point weights in tblTask
     # query = "UPDATE tblTask SET tasAvailDistPoints=%s, " \
@@ -209,16 +203,16 @@ def points_allocation(task, taskt, formula, results = None):   # from PWC###
         # FIX: should round pil->distance properly?
         # my pilrdist = round(pil->{'distance'}/100.0) * 100
 
-        Pdist = pilot_distance(taskt, pil, Adistance)
+        Pdist = pilot_distance(task, pil, Adistance)
 
         # Pilot speed score
-        Pspeed = pilot_speed(formula, task, taskt, pil, Aspeed)
+        Pspeed = pilot_speed(task, pil, Aspeed)
 
         # Pilot departure/leading points
-        Pdepart = pilot_departure_leadout(task, taskt, pil, Astart)
+        Pdepart = pilot_departure_leadout(task, pil, Astart)
 
         # Pilot arrival score    this is always off in pwc
-        # Parrival = pilot_arrival(formula, task, taskt, pil, Aarrival)
+        # Parrival = pilot_arrival(formula, task, pil, Aarrival)
         Parrival=0
         # Penalty for not making goal .
         if not pil['goal']:
@@ -234,9 +228,6 @@ def points_allocation(task, taskt, formula, results = None):   # from PWC###
             Pspeed = 0
             Parrival = 0
             Pdepart = 0
-
-        # Penalties
-        # penalty = self->pilot_penalty(formula, task, taskt, pil, Astart, Aspeed)
 
         # Total score
         Pscore = Pdist + Pspeed + Parrival + Pdepart - penalty
@@ -255,4 +246,3 @@ def points_allocation(task, taskt, formula, results = None):   # from PWC###
             params = [Pdist, Pspeed, Parrival, Pdepart, Pscore, tarPk]
             with Database() as db:
                 db.execute(query, params)
-

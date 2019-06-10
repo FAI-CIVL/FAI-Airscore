@@ -18,7 +18,6 @@ def task_totals(task, formula):
     mindist = formula['forMinDistance']
     glidebonus = 0
     landed = 0
-    taskt = {}
     tqtime = None
 
 
@@ -56,121 +55,35 @@ def task_totals(task, formula):
         print('No rows in tblTaskTotalsView for task ', tasPk)
         return
 
-    totdist         = t['TotalDistance']
-    launched        = int(t['TotalLaunched'])
-    pilots          = int(t['TotalPilots'])
-    stddev          = t['Deviation']
-    totdistovermin  = t['TotDistOverMin']
-    ess             = int(t['TotalESS'])
-    goal            = int(t['TotalGoal'])
-    maxdist         = t['maxDist']
-    #maxbonusdist    = t['maxBonusDistance']
-    minarr          = t['firstESS']
-    maxarr          = t['lastESS']
-    fastest         = t['minTime']
-    tqtime          = fastest # ???
-    mincoeff2       = t['minLC']
-    mindept         = t['firstStart']
-    lastdept        = t['lastStart']
+    task.stats['distance']      = t['TotalDistance']
+    task.stats['launched']      = int(t['TotalLaunched'])
+    task.stats['pilots']        = int(t['TotalPilots'])
+    task.stats['stddev']        = t['Deviation']
+    task.stats['distovermin']   = t['TotDistOverMin']
+    task.stats['ess']           = int(t['TotalESS'])
+    task.stats['goal']          = int(t['TotalGoal'])
+    task.stats['maxdist']       = t['maxDist']
+    task.stats['fastest']       = t['minTime']
+    task.stats['minarr']        = t['firstESS'] if t['minTime'] > 0 else 0
+    task.stats['maxarr']        = t['lastESS']
+    task.stats['tqtime']        = t['minTime'] # ???
+    #task.stats['LCmin']         = t['minLC']   # not already calculated
+    task.stats['mindept']       = t['firstStart']
+    task.stats['lastdept']      = t['lastStart']
 
     if task.stopped_time:     # Null is returned as None
         glidebonus = formula['glidebonus']
         print("F: glidebonus=", glidebonus)
-        landed = t['Landed']
+        task.stats['landed'] = t['Landed']
 
-    # query="select (tarES-tarSS) as MinTime" \
-    #       " from tblTaskResult " \
-    #       "where tasPk=%s and tarES > 0 and (tarES-tarSS) > 0 " \
-    #       "order by (tarES-tarSS) asc limit 2"
-    # with Database() as db:
-    #     t = db.fetchall(query, [tasPk])
-    #
-    # fastest = 0
-    # for row in t:
-    #
-    #     if fastest == 0:
-    #         fastest = row['MinTime']
-    #         tqtime = fastest
-    #     else:
-    #         tqtime = row['MinTime']
-
-    # Sanity
-    if fastest == 0: minarr = 0
-
-    # FIX: lead out coeff2 - first departure in goal and adjust min coeff
-    # query="select min(tarLeadingCoeff2) as MinCoeff2 " \
-    #     "from tblTaskResult " \
-    #     "where tasPk=%s and tarLeadingCoeff2 is not NULL"
-    #
-    # with Database() as db:
-    #     t = db.fetchone(query, [tasPk])
-    #
-    # mincoeff2 = 0
-    # if t['MinCoeff2'] is not None:
-    #     mincoeff2 = t['MinCoeff2']
-
-    # print "TTT: min leading coeff=mincoeff\n"
-
-    # maxdist = 0
-    # mindept = 0
-    # lastdept = 0
-
-    # if someone got to goal, maxdist should be dist to goal (to avoid stopped glide creating a max dist > task dist)
-    # done in view's query
-    # if goal > 0:
-    #     query="select tasShortRouteDistance as GoalDist from tblTask where tasPk=%s"
-    #
-    #     with Database() as db:
-    #         t = db.fetchone(query, [tasPk])
-    #     if t:
-    #         maxdist = t['GoalDist']
-
-    # Sanity
-    # if maxdist < mindist: maxdist = mindist # done in view's query
-
-    # print "TT: glidebonus=glidebonus maxdist=maxdist\n"
-
-    # query="select min(tarSS) as MinDept, " \
-    #             "max(tarSS) as LastDept " \
-    #             "from tblTaskResult " \
-    #             "where tasPk=%s " \
-    #             "and tarSS > 0 " \
-    #             "and tarGoal > 0"
-    #
-    # with Database() as db:
-    #     t = db.fetchone(query, [tasPk])
-    #
-    # if t:
-    #     mindept = t['MinDept']
-    #     lastdept = t['LastDept']
-
-    # task quality
-    taskt['pilots'] = pilots
-    taskt['maxdist'] = maxdist
-    taskt['distance'] = totdist
-    taskt['distovermin'] = totdistovermin
-    taskt['stddev'] = stddev
-    taskt['landed'] = landed
-    taskt['launched'] = launched
-    taskt['launchvalid'] = launchvalid
-    taskt['goal'] = goal
-    taskt['ess'] = ess
-    taskt['fastest'] = fastest
-    taskt['tqtime'] = tqtime
-    taskt['firstdepart'] = mindept
-    taskt['lastdepart'] = lastdept
-    taskt['firstarrival'] = minarr
-    taskt['lastarrival'] = maxarr
-    #taskt['mincoeff'] = mincoeff
-    taskt['mincoeff2'] = mincoeff2
-    taskt['endssdistance'] = task.EndSSDistance
-    taskt['quality'] = None
-
-    return taskt
+    return task.stats
 
 
-def day_quality(taskt, formula):
+def day_quality(task, formula):
     from math import sqrt
+
+    taskt = task.stats
+
     tmin = None
     if taskt['pilots'] == 0:
         launch = 0
@@ -291,8 +204,10 @@ def day_quality(taskt, formula):
     return distance, time, launch, stopv
 
 
-def points_weight(task, taskt, formula):
+def points_weight(task, formula):
     from math import sqrt
+
+    taskt = task.stats
 
     quality = taskt['quality']
     x = taskt['goal'] / taskt['launched']  # GoalRatio
@@ -325,12 +240,14 @@ def points_weight(task, taskt, formula):
     return Adistance, Aspeed, Astart, Aarrival
 
 
-def pilot_departure_leadout(task, taskt, pil, Astart):
+def pilot_departure_leadout(task, pil, Astart):
     from math import sqrt
+
+    taskt = task.stats
     # C.6.3 Leading Points
 
-    LCmin = taskt['mincoeff2']  # min(tarLeadingCoeff2) as MinCoeff2 : is PWC's LCmin?
-    LCp = pil['coeff']  # Leadout coefficient
+    LCmin = taskt['LCmin']  # min(tarLeadingCoeff2) as LCmin : is PWC's LCmin?
+    LCp = pil['LC']  # Leadout coefficient
 
     # Pilot departure score
     Pdepart = 0
@@ -373,8 +290,10 @@ def pilot_departure_leadout(task, taskt, pil, Astart):
     return Pdepart
 
 
-def pilot_speed(formula, task, taskt, pil, Aspeed):
+def pilot_speed(task, pil, Aspeed):
     from math import sqrt
+
+    taskt = task.stats
 
     # C.6.2 Time Points
     Tmin = taskt['fastest']
@@ -394,11 +313,13 @@ def pilot_speed(formula, task, taskt, pil, Aspeed):
     return Pspeed
 
 
-def pilot_distance(taskt, pil, Adistance):
+def pilot_distance(task, pil, Adistance):
     """
 
     :type pil: object
     """
-    Pdist = Adistance * pil['distance']/taskt['maxdist']
+
+    maxdist = task.stats['maxdist']
+    Pdist = Adistance * pil['distance']/maxdist
 
     return Pdist
