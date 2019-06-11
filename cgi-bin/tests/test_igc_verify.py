@@ -41,8 +41,8 @@ print(task_result.SSS_time_str)
 print(task_result.ESS_time_str)
 print(task_result.total_time_str)
 print(task_result.Distance_flown)
-task_result.Lead_coeff = pwc.coef_scaled(task_result.Lead_coeff, task.SSDistance)
-print("lead_coeff:", task_result.Lead_coeff)
+#task_result.Lead_coeff = pwc.coef_scaled(task_result.Lead_coeff, task.SSDistance)
+print("fixed_lead_coeff:", task_result.Fixed_LC)
 print('----second igc------')
 
 waypoints_made, task_result = task.check_flight(flight2, pwc.parameters, 0.005, 5) #check flight against task with tolerance of 0.05% or 5m

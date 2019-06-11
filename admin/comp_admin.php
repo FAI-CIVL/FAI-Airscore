@@ -73,7 +73,7 @@ $count = 1;
 //             C.comName LIKE '%test%', 
 //             C.comDateTo DESC";
 
-$sql = "SELECT * FROM tblCompView";
+$sql = "SELECT * FROM CompetitionView";
 
 $result = mysqli_query($link, $sql);
 while($row = mysqli_fetch_assoc($result))

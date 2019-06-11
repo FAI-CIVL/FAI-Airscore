@@ -112,7 +112,8 @@ class Task_result:
         """
         creates the JSON file of the result
         """
-        import json, os
+        import os
+        import simplejson as json
         from calcUtils import DateTimeEncoder
 
         if filename:
@@ -221,7 +222,7 @@ def read_rankings(task_id, test = 0):
                     WHERE
                         tasPk = %s
                     LIMIT 1
-                """=
+                """
 
         with Database() as db:
             t = db.fetchone(query, [task_id])
@@ -310,75 +311,75 @@ def read_task(task_id, test = 0):
     #             LIMIT 1
     #         """.format(task_id))
 
-        query = (""" SELECT
-                        T.`comPk`                     AS comp_id,
-                        T.`comName`                   AS comp_name,
-                        T.`comClass`                  AS comp_class,
-                        DATE_FORMAT(T.`tasDate`, '%%Y-%%m-%%d') AS task_date,
-                        T.`tasName`                   AS task_name,
-                        T.`comTimeOffset`             AS time_offset,
-                        T.`tasComment`                AS task_comment,
-                        DATE_FORMAT(T.`tasTaskStart`, '%%T')   AS window_open_time,
-                        DATE_FORMAT(T.`tasFinishTime`, '%%T')  AS task_deadline,
-                        DATE_FORMAT(T.`tasLaunchClose`, '%%T') AS window_close_time,
-                        T.`tasCheckLaunch`            AS check_launch,
-                        DATE_FORMAT(T.`tasStartTime`, '%%T')   AS SS_time,
-                        DATE_FORMAT(T.`tasStartCloseTime`, '%%T') AS SS_close_time,
-                        T.`tasSSInterval`             AS SS_interval,
-                        DATE_FORMAT(T.`tasLastStartTime`, '%%T') AS last_start_time,
-                        T.`tasTaskType`               AS task_type,
-                        T.`tasDistance`               AS task_distance,
-                        T.`tasShortRouteDistance`     AS task_opt_dist,
-                        T.`tasSSDistance`             AS SS_distance,
-                        T.`forName`                   AS formula_name,
-                        T.`forDiffDist`               AS diff_distance,
-                        T.`forGoalSSpenalty`          AS no_goal_penalty,
-                        T.`forStoppedGlideBonus`      AS glide_bonus,
-                        T.`forStoppedElapsedCalc`     AS stopped_time_calc,
-                        T.`forNomGoal`                AS nominal_goal,
-                        T.`forMinDistance`            AS min_dist,
-                        T.`forNomDistance`            AS nominal_dist,
-                        T.`forNomTime`                AS nominal_time,
-                        T.`forNomLaunch`              AS nominal_launch,
-                        T.`forScorebackTime`          AS score_back_time,
-                        T.`tasDeparture`              AS departure,
-                        T.`tasArrival`                AS arrival,
-                        T.`tasHeightBonus`            AS height_bonus,
-                        T.`tasMargin`                 AS tolerance,
-                        DATE_FORMAT(T.`tasStoppedTime`, '%%T') AS task_stopped_time,
-                        TT.`minTime`                    AS fastest_time,
-                        TT.`firstStart`                 AS first_dep_time,
-                        TT.`firstESS`                   AS first_arr_time,
-                        TT.`maxDist`                    AS max_distance,
-                        T.`tasResultsType`            AS result_type,
-                        TT.`TotalDistance`              AS tot_dist_flown,
-                        TT.`TotDistOverMin`             AS tot_dist_over_min,
-                        T.`tasQuality`                AS day_quality,
-                        T.`tasDistQuality`            AS dist_validity,
-                        T.`tasTimeQuality`            AS time_validity,
-                        T.`tasLaunchQuality`          AS launch_validity,
-                        T.`tasStopQuality`            AS stop_validity,
-                        T.`tasAvailDistPoints`        AS avail_dist_points,
-                        T.`tasAvailLeadPoints`        AS avail_lead_points,
-                        T.`tasAvailTimePoints`        AS avail_time_points,
-                        T.`tasAvailArrPoints`         AS avail_arr_points,
-                        T.`tasLaunchValid`,
-                        T.`tasPilotsLaunched`         AS pilots_flying,
-                        T.`tasPilotsTotal`            AS pilots_present,
-                        TT.`TotalESS`                 AS pilots_es,
-                        T.`tasPilotsLO`               AS pilots_lo,
-                        TT.`TotalGoal`                AS pilots_goal,
-                        T.`maxScore`                  AS max_score,
-                        T.`tasGoalAlt`                AS goal_altitude,
-                        T.`tasCode`,
-                        TT.`LCmin`                      AS min_lead_coeff
-                    FROM
-                        `TaskView` T
-                        LEFT OUTER JOIN `TaskTotalsView` TT using(`tasPk`)
-                    WHERE
-                        T.`tasPk` = %s
-                    LIMIT 1
-                """
+    query = """ SELECT
+                    T.`comPk`                       AS comp_id,
+                    T.`comName`                     AS comp_name,
+                    T.`comClass`                    AS comp_class,
+                    DATE_FORMAT(T.`tasDate`, '%%Y-%%m-%%d') AS task_date,
+                    T.`tasName`                     AS task_name,
+                    T.`comTimeOffset`               AS time_offset,
+                    T.`tasComment`                  AS task_comment,
+                    DATE_FORMAT(T.`tasTaskStart`, '%%T')   AS window_open_time,
+                    DATE_FORMAT(T.`tasFinishTime`, '%%T')  AS task_deadline,
+                    DATE_FORMAT(T.`tasLaunchClose`, '%%T') AS window_close_time,
+                    T.`tasCheckLaunch`              AS check_launch,
+                    DATE_FORMAT(T.`tasStartTime`, '%%T')   AS SS_time,
+                    DATE_FORMAT(T.`tasStartCloseTime`, '%%T') AS SS_close_time,
+                    T.`tasSSInterval`               AS SS_interval,
+                    DATE_FORMAT(T.`tasLastStartTime`, '%%T') AS last_start_time,
+                    T.`tasTaskType`                 AS task_type,
+                    T.`tasDistance`                 AS task_distance,
+                    T.`tasShortRouteDistance`       AS task_opt_dist,
+                    T.`tasSSDistance`               AS SS_distance,
+                    T.`forName`                     AS formula_name,
+                    T.`forDiffDist`                 AS diff_distance,
+                    T.`forGoalSSpenalty`            AS no_goal_penalty,
+                    T.`forStoppedGlideBonus`        AS glide_bonus,
+                    T.`forStoppedElapsedCalc`       AS stopped_time_calc,
+                    T.`forNomGoal`                  AS nominal_goal,
+                    T.`forMinDistance`              AS min_dist,
+                    T.`forNomDistance`              AS nominal_dist,
+                    T.`forNomTime`                  AS nominal_time,
+                    T.`forNomLaunch`                AS nominal_launch,
+                    T.`forScorebackTime`            AS score_back_time,
+                    T.`tasDeparture`                AS departure,
+                    T.`tasArrival`                  AS arrival,
+                    T.`tasHeightBonus`              AS height_bonus,
+                    T.`tasMargin`                   AS tolerance,
+                    DATE_FORMAT(T.`tasStoppedTime`, '%%T') AS task_stopped_time,
+                    TT.`minTime`                    AS fastest_time,
+                    TT.`firstStart`                 AS first_dep_time,
+                    TT.`firstESS`                   AS first_arr_time,
+                    TT.`maxDist`                    AS max_distance,
+                    T.`tasResultsType`              AS result_type,
+                    TT.`TotalDistance`              AS tot_dist_flown,
+                    TT.`TotDistOverMin`             AS tot_dist_over_min,
+                    T.`tasQuality`                  AS day_quality,
+                    T.`tasDistQuality`              AS dist_validity,
+                    T.`tasTimeQuality`              AS time_validity,
+                    T.`tasLaunchQuality`            AS launch_validity,
+                    T.`tasStopQuality`              AS stop_validity,
+                    T.`tasAvailDistPoints`          AS avail_dist_points,
+                    T.`tasAvailLeadPoints`          AS avail_lead_points,
+                    T.`tasAvailTimePoints`          AS avail_time_points,
+                    T.`tasAvailArrPoints`           AS avail_arr_points,
+                    T.`tasLaunchValid`,
+                    T.`tasPilotsLaunched`           AS pilots_flying,
+                    TT.`TotalPilots`                AS pilots_present,
+                    TT.`TotalESS`                   AS pilots_es,
+                    T.`tasPilotsLO`                 AS pilots_lo,
+                    TT.`TotalGoal`                  AS pilots_goal,
+                    T.`maxScore`                    AS max_score,
+                    T.`tasGoalAlt`                  AS goal_altitude,
+                    T.`tasCode`,
+                    TT.`LCmin`                      AS min_lead_coeff
+                FROM
+                    `TaskView` T
+                    LEFT OUTER JOIN `TaskTotalsView` TT using(`tasPk`)
+                WHERE
+                    T.`tasPk` = %s
+                LIMIT 1
+            """
 
     if test:
         print('read task:')
@@ -492,7 +493,7 @@ def read_task_route(task_id, test = 0):
 
 def read_task_result(task_id, test = 0):
     '''gets pilots result from database'''
-    query = (""" SELECT
+    query = """ SELECT
                     `traPk`             AS `track_id`,
                     `pilName`			AS `name`,
                     `pilSex`            AS `sex`,

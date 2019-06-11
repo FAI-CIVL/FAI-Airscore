@@ -22,7 +22,7 @@ def main(args):
 
     ##check parameter is good.
     #if len(args)==2 and args[0].isdigit():
-    task_id = args
+    task_id = int(args[0])
 
     #else:
        # logging.error("number of arguments != 1 and/or task_id not a number")
@@ -31,7 +31,7 @@ def main(args):
 
     '''
     new logic:
-    totals are already available in taskTotalsView
+    totals are already available in TaskTotalsView
     create task.stats from taskTotalsView
     create pilots array
     we calculate total LC for each pilot
@@ -40,8 +40,8 @@ def main(args):
     Score
     '''
 
-    print(task_id)
-    task = Task.read_task(int(task_id[0]))
+    print('task id: {}'.format(task_id))
+    task = Task.read_task(int(task_id))
     formula =  read_formula(task.comPk)
     formula_file = 'formulas.' + formula['forClass']
 
@@ -66,7 +66,7 @@ def main(args):
     # with Database() as db:
     #     db.execute(query, params)
 
-    dist, time, launch, stop = f.day_quality(totals, formula)
+    dist, time, launch, stop = f.day_quality(task, formula)
 
 
     task.stats['distval']   = dist

@@ -6,43 +6,48 @@ from task import Task
 
 
 def orig_alg(f,task,param,min_tol):
-    from flight_result import Flight_result
+    from flight_result_old import Flight_result
     return Flight_result.check_flight(f, task, param, min_tol)
 
 def civl_alg(f,task,param,min_tol):
-    from flight_result_new import Flight_result
+    from flight_result import Flight_result
     return Flight_result.check_flight(f, task, param, min_tol)
 
 def lc_calc(res, t):
+    LC          = 0
     leading     = 0
     trailing    = 0
-    my_start    = res.Pilot_Start_time
+    my_start    = res['start']
     first_start = t.stats['firstdepart']
     ss_start    = t.start_time
     SS_Distance = t.SSDistance
     '''add the leading part, from start time of first pilot to start, to my start time'''
+    if not my_start:
+        my_start = 0  # this is to avoid my_start being none if pilot didn't make start and causing error below
     if my_start > first_start:
-        leading = pwc.coef_landout((my_start - first_start), SS_Distance)
-        leading = pwc.coef_scaled(leading, SS_Distance)
-    if not any(e[0] == 'ESS' for e in res.Waypoints_achieved):
+        leading = parameters.coef_landout((my_start - first_start), SS_Distance)
+        leading = parameters.coef_func_scaled(leading, SS_Distance)
+    if not res['endSS']:
         '''pilot did not make ESS'''
-        best_dist_to_ess    = (t.EndSSDistance - res.Distance_flown)
-        my_last_time        = res.Stopped_time
+        best_dist_to_ess    = (t.EndSSDistance - res['distance'])
+        my_last_time        = res['last_time']          # should not need to check if < task deadline as we stop in Flight_result.check_flight()
         last_ess            = t.stats['lastarrival']
         task_time           = (max(my_last_time,last_ess) - my_start)
-        trailing            = pwc.coef_landout(task_time, best_dist_to_ess)
-        trailing            = pwc.coef_scaled(trailing, SS_Distance)
+        trailing            = parameters.coef_landout(task_time, best_dist_to_ess)
+        trailing            = parameters.coef_func_scaled(trailing, SS_Distance)
+
+    LC = leading + res['fixed_LC'] + trailing
 
     print('*************')
     print('last time: {}'.format(res.Stopped_time))
-    print('LC from result: {}'.format(res.Lead_coeff))
+    print('LC from result: {}'.format(res.Fixed_LC))
     print('Start Time: {}'.format(ss_start))
     print('First Start Time: {}'.format(first_start))
     print('My Start Time: {}'.format(my_start))
     print('leading part: {}'.format(leading))
     print('landed early: {}'.format(bool(not any(e[0] == 'ESS' for e in res.Waypoints_achieved))))
     print('trailing part: {}'.format(trailing))
-    return leading + res.Lead_coeff + trailing
+    return LC
 
 
 def result_report(task_result):
@@ -87,7 +92,7 @@ def main():
         task_result = civl_alg(flight, task, pwc.parameters, 5)
         Lead_coeff = lc_calc(task_result, task)
         print(result_report(task_result))
-        print('calculated LC: {} \n'.format(Lead_coeff))
+        print('calculated Final LC: {} \n'.format(Lead_coeff))
 
 if __name__== "__main__":
     main()

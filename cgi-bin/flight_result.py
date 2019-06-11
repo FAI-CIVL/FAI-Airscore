@@ -17,50 +17,52 @@ Methods:
 class Flight_result:
     """Set of statistics about a flight with respect a task.
     Attributes:
-        Start_time: time the task was started . i.e relevant start gate. (local time)
-        SSS_time: array of time(s) the pilot started, i.e. crossed the start line (local time)
+        Start_time:     time the task was started . i.e relevant start gate. (local time)
+        SSS_time:       array of time(s) the pilot started, i.e. crossed the start line (local time)
         Waypoints achieved: the last waypoint achieved by the pilot, SSS, ESS, Goal or a waypoint number (wp1 is first wp after SSS)
-        ESS_time: the time the pilot crossed the ESS (local time)
-        total_time: the length of time the pilot took to complete the course. ESS- Start_time (for Race) or ESS - SSS_time (for elapsed)
-        Lead_coeff: lead points coeff (for GAP based systems)
+        ESS_time:       the time the pilot crossed the ESS (local time)
+        total_time:     the length of time the pilot took to complete the course. ESS- Start_time (for Race) or ESS - SSS_time (for elapsed)
+        Fixed_LC:       fixed part of Lead_coeff, indipendent from other tracks
+        Lead_coeff:     lead points coeff (for GAP based systems), sum of Fixed_LC and variable part calcullated during scoring
         """
 
     def __init__(self, Pilot_Start_time=None, SSS_time=0, Start_time_str='', SSS_time_str='',
                  Best_waypoint_achieved='No waypoints achieved', ESS_time_str='', total_time_str=None, ESS_time=None, last_time=None,
-                 total_time=None, Lead_coeff=0, Distance_flown=0, Stopped_time = None, Stopped_altitude = 0, Jumped_the_gun=None):
+                 total_time=None, Fixed_LC = 0, Lead_coeff=0, Distance_flown=0, Stopped_time = None, Stopped_altitude = 0, Jumped_the_gun=None):
         """
 
         :type Lead_coeff: int
         """
-        self.Start_time_str = Start_time_str
-        self.SSS_time_str = SSS_time_str
-        self.Pilot_Start_time = Pilot_Start_time
-        self.SSS_time = SSS_time
+        self.Start_time_str         = Start_time_str
+        self.SSS_time_str           = SSS_time_str
+        self.Pilot_Start_time       = Pilot_Start_time
+        self.SSS_time               = SSS_time
         self.Best_waypoint_achieved = Best_waypoint_achieved
-        self.Waypoints_achieved = []
-        self.ESS_time = ESS_time
-        self.total_time = total_time
-        self.last_time = last_time
-        self.ESS_time_str = ESS_time_str
-        self.total_time_str = total_time
-        self.Lead_coeff = Lead_coeff
-        self.Distance_flown = Distance_flown
-        self.Stopped_time = Stopped_time
-        self.Stopped_altitude = Stopped_altitude
-        self.Jumped_the_gun = Jumped_the_gun
-        self.Score = 0
-        self.Total_distance = 0
-        self.Departure_score = 0
-        self.Arrival_score = 0
-        self.Distance_score = 0
-        self.Time_score = 0
-        self.Penalty = 0
-        self.Comment = None
-        self.ext_id = None
-        self.pilPk = None
-        self.result_type = 'lo'
-        self.goal_time = None
-        self.SSDistance = None
+        self.Waypoints_achieved     = []
+        self.ESS_time               = ESS_time
+        self.total_time             = total_time
+        self.last_time              = last_time
+        self.ESS_time_str           = ESS_time_str
+        self.total_time_str         = total_time
+        self.Fixed_LC               = Fixed_LC
+        self.Lead_coeff             = Lead_coeff
+        self.Distance_flown         = Distance_flown
+        self.Stopped_time           = Stopped_time
+        self.Stopped_altitude       = Stopped_altitude
+        self.Jumped_the_gun         = Jumped_the_gun
+        self.Score                  = 0
+        self.Total_distance         = 0
+        self.Departure_score        = 0
+        self.Arrival_score          = 0
+        self.Distance_score         = 0
+        self.Time_score             = 0
+        self.Penalty                = 0
+        self.Comment                = None
+        self.ext_id                 = None
+        self.pilPk                  = None
+        self.result_type            = 'lo'
+        self.goal_time              = None
+        self.SSDistance             = None
 
 
     @property
@@ -150,7 +152,7 @@ class Flight_result:
             result.ESS_time = t['tarES']
             result.goal_time = t['tarGoal']
             result.total_time = t['tarLastTime'] - t['tarStart']
-            result.Lead_coeff = t['tarLeadingCoeff2']
+            result.Fixed_LC = t['tarLeadingCoeff2']
             result.Distance_flown = t['tarDistance']
             result.Stopped_altitude = t['tarLastAltitude']
             result.Jumped_the_gun = None
@@ -287,7 +289,7 @@ class Flight_result:
                     time = round(tp_time_civl(fix, next, SS_tp), 0)
                     result.Waypoints_achieved.append(["SSS",time])  # pilot has started
                     started = True
-                    result.Lead_coeff = 0   #resetting LC to last start time
+                    result.Fixed_LC = 0   #resetting LC to last start time
                     if not restarting:
                         t += 1
 
@@ -324,8 +326,8 @@ class Flight_result:
                 pilot_start_time = max([e[1] for e in result.Waypoints_achieved if e[0]=='SSS'])
                 taskTime = next.rawtime - pilot_start_time
                 best_dist_to_ess.append(Task.EndSSDistance - result.Distance_flown)
-                result.Lead_coeff += formula_parameters.coef_func(taskTime, best_dist_to_ess[0], best_dist_to_ess[1])
-                #print('    best dist. to ESS {} : {} | Time {} | LC: {}'.format(round(best_dist_to_ess[0],1),round(best_dist_to_ess[1],1),taskTime, result.Lead_coeff))
+                result.Fixed_LC += formula_parameters.coef_func(taskTime, best_dist_to_ess[0], best_dist_to_ess[1])
+                #print('    best dist. to ESS {} : {} | Time {} | LC: {}'.format(round(best_dist_to_ess[0],1),round(best_dist_to_ess[1],1),taskTime, result.Fixed_LC))
                 best_dist_to_ess.pop(0)
 
         # result.last_time = min(Flight.fixes[-1].rawtime, result.goal_time, Task.end_time, Task.stopped_time)
@@ -372,20 +374,20 @@ class Flight_result:
                     result.Distance_flown   = distances2go[0]
                     result.goal_time        = min([e[1] for e in result.Waypoints_achieved if e[0]=='Goal'])
 
-        self.Best_waypoint_achieved = str(result.Waypoints_achieved[-1][0])
+        result.Best_waypoint_achieved = str(result.Waypoints_achieved[-1][0])
 
         # if result.ESS_time is None: # we need to do this after other operations
-        #     result.Lead_coeff += formula_parameters.coef_landout((Task.end_time - Task.start_time),((Task.EndSSDistance - result.Distance_flown) / 1000))
-            #print('    * Did not reach ESS LC: {}'.format(result.Lead_coeff))
+        #     result.Fixed_LC += formula_parameters.coef_landout((Task.end_time - Task.start_time),((Task.EndSSDistance - result.Distance_flown) / 1000))
+            #print('    * Did not reach ESS LC: {}'.format(result.Fixed_LC))
 
-        result.Lead_coeff = formula_parameters.coef_func_scaled(result.Lead_coeff, Task.EndSSDistance)
-        #print('    * Final LC: {} \n'.format(result.Lead_coeff))
+        result.Fixed_LC = formula_parameters.coef_func_scaled(result.Fixed_LC, Task.EndSSDistance)
+        #print('    * Final LC: {} \n'.format(result.Fixed_LC))
         return result
 
     def store_result_test(self, traPk, tasPk):
 
-        goal_time = 0 if self.goal_time = None else self.goal_time
-        endss = 0 if self.ESS_time = None else self.ESS_time
+        goal_time = 0 if self.goal_time is None else self.goal_time
+        endss = 0 if self.ESS_time is None else self.ESS_time
 
         #print("turnponts", len(self.Waypoints_achieved))
         query = "DELETE FROM tblTaskResult_test where traPk=%s and tasPk=%s"
@@ -396,7 +398,7 @@ class Flight_result:
         # query = "INSERT INTO tblTaskResult_test (" \
         #         "tasPk, traPk, tarDistance, tarSpeed, tarStart, tarGoal, tarSS, tarES, tarTurnpoints, " \
         #         "tarLeadingCoeff, tarPenalty, tarComment, tarLastAltitude, tarLastTime ) " \
-        #         "VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})".format(tasPk, traPk, self.Distance_flown, self.speed, self.Pilot_Start_time, self.goal_time, self.SSS_time, endss, len(self.Waypoints_achieved), self.Lead_coeff, self.Penalty, self.Comment, self.Stopped_altitude, self.Stopped_time)
+        #         "VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})".format(tasPk, traPk, self.Distance_flown, self.speed, self.Pilot_Start_time, self.goal_time, self.SSS_time, endss, len(self.Waypoints_achieved), self.Fixed_LC, self.Penalty, self.Comment, self.Stopped_altitude, self.Stopped_time)
         #print(query)
 
         query = "INSERT INTO tblTaskResult_test ( " \
@@ -405,7 +407,7 @@ class Flight_result:
                 "VALUES ( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s )"
         #, #%s, %s, %s)"
         num_wpts = len(self.Waypoints_achieved)
-        params = [tasPk, traPk, self.Distance_flown, self.speed, self.Pilot_Start_time, goal_time, self.SSS_time , endss, num_wpts, self.Lead_coeff, self.Penalty, self.Stopped_time] #, self.Comment, self.Stopped_altitude, self.Stopped_time]
+        params = [tasPk, traPk, self.Distance_flown, self.speed, self.Pilot_Start_time, goal_time, self.SSS_time , endss, num_wpts, self.Fixed_LC, self.Penalty, self.Stopped_time] #, self.Comment, self.Stopped_altitude, self.Stopped_time]
 
         with Database() as db:
            r = db.execute(query, params)
@@ -430,16 +432,16 @@ class Flight_result:
         # query = "INSERT INTO tblTaskResult (" \
         #         "tasPk, traPk, tarDistance, tarSpeed, tarStart, tarGoal, tarSS, tarES, tarTurnpoints, " \
         #         "tarLeadingCoeff2, tarPenalty, tarComment, tarLastAltitude, tarLastTime ) " \
-        #         "VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})".format(tasPk, traPk, self.Distance_flown, self.speed, self.Pilot_Start_time, self.goal_time, self.SSS_time, endss, len(self.Waypoints_achieved), self.Lead_coeff, self.Penalty, self.Comment, self.Stopped_altitude, self.Stopped_time)
+        #         "VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})".format(tasPk, traPk, self.Distance_flown, self.speed, self.Pilot_Start_time, self.goal_time, self.SSS_time, endss, len(self.Waypoints_achieved), self.Fixed_LC, self.Penalty, self.Comment, self.Stopped_altitude, self.Stopped_time)
         #print(query)
 
         query = """INSERT INTO `tblTaskResult` (
                 `tasPk`, `traPk`, `tarDistance`, `tarSpeed`, `tarStart`, `tarGoal`, `tarSS`, `tarES`, `tarTurnpoints`,
-                `tarLeadingCoeff2`, `tarPenalty`, `tarLastAltitude`, `tarLastTime` )
-                VALUES ( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s ) """
+                `tarLeadingCoeff2`, `tarLeadingCoeff`, `tarPenalty`, `tarLastAltitude`, `tarLastTime` )
+                VALUES ( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s ) """
         # , #%s, %s, %s)"
         params = [tasPk, traPk, self.Distance_flown, self.speed, self.Pilot_Start_time, self.goal_time, self.SSS_time, endss, num_wpts,
-                  self.Lead_coeff, self.Penalty, self.Stopped_altitude, self.Stopped_time]  # , self.Comment, self.Stopped_altitude, self.Stopped_time]
+                  self.Fixed_LC, self.Lead_coeff, self.Penalty, self.Stopped_altitude, self.Stopped_time]  # , self.Comment, self.Stopped_altitude, self.Stopped_time]
 
         with Database() as db:
            r = db.execute(query, params)

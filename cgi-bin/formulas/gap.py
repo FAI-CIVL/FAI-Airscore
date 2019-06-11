@@ -39,7 +39,7 @@ def task_totals(task, formula):
                     `firstESS`,
                     `lastESS`,
                     `minTime`,
-                    `minLC`
+                    `LCmin`
                 FROM
                     `TaskTotalsView`
                 WHERE
@@ -52,12 +52,12 @@ def task_totals(task, formula):
 
     if not t:
         print(query)
-        print('No rows in tblTaskTotalsView for task ', tasPk)
+        print('No rows in TaskTotalsView for task ', tasPk)
         return
 
     task.stats['distance']      = t['TotalDistance']
     task.stats['launched']      = int(t['TotalLaunched'])
-    task.stats['pilots']        = int(t['TotalPilots'])
+    task.stats['pilots']        = int(t['TotalPilots'])     # pilots present on take-off, ABS are not counted
     task.stats['stddev']        = t['Deviation']
     task.stats['distovermin']   = t['TotDistOverMin']
     task.stats['ess']           = int(t['TotalESS'])
@@ -67,7 +67,7 @@ def task_totals(task, formula):
     task.stats['minarr']        = t['firstESS'] if t['minTime'] > 0 else 0
     task.stats['maxarr']        = t['lastESS']
     task.stats['tqtime']        = t['minTime'] # ???
-    #task.stats['LCmin']         = t['minLC']   # not already calculated
+    #task.stats['LCmin']         = t['LCmin']   # not already calculated
     task.stats['mindept']       = t['firstStart']
     task.stats['lastdept']      = t['lastStart']
 
@@ -96,20 +96,19 @@ def day_quality(task, formula):
     C.4.1 Launch Validity
     LVR = min (1, (num pilots launched + nominal launch) / total pilots )
     Launch Validity = 0.028*LRV + 2.917*LVR^2 - 1.944*LVR^3
-    Setting Nominal Launch = 10 (max number of DNF that still permit full validity)
+    ?? Setting Nominal Launch = 10 (max number of DNF that still permit full validity) ??
     '''
 
-    nomlau = 10
-    x = (taskt['launched'] + nomlau) / taskt['pilots']
-    x = min(1, x)
-    launch = 0.028 *x + 2.917 *x *x - 1.944 *x *x *x
-    launch = min(launch, 1)
-
-    if taskt['launchvalid'] == 0 or launch < 0:
+    if task.launchvalid == 0:
         print("Launch invalid - dist quality set to 0")
         launch = 0
-
-    print("PWC launch validity = launch")
+    else:
+        nomlau = taskt['pilots'] * (1 - formula['forNomLaunch'])
+        x = (taskt['launched'] + nomlau) / taskt['pilots']
+        x = min(1, x)
+        launch = 0.028 *x + 2.917 *x *x - 1.944 *x *x *x
+        launch = min(launch, 1) if launch > 0 else 0
+        print("Launch validity = launch")
 
     '''
     C.4.2 Distance Validity
@@ -190,7 +189,7 @@ def day_quality(task, formula):
     '''
     # Fix - need distlaunchtoess, landed
     avgdist = taskt['distance'] / taskt['launched']
-    distlaunchtoess = taskt['endssdistance']
+    distlaunchtoess = task.EndSSDistance
     # when calculating stopv, to avoid dividing by zero when max distance is greater than distlaunchtoess i.e. when someone reaches goal if statement added.
     maxSSdist = 0
     if taskt['fastest'] and taskt['fastest'] > 0:
@@ -251,6 +250,7 @@ def pilot_departure_leadout(task, pil, Astart):
 
     # Pilot departure score
     Pdepart = 0
+    '''Departure Points type = Leading Points'''
     if task.departure == 'leadout':  # In PWC is always the case, we can ignore else cases
         print("  - PWC  leadout: LC ", LCp, ", LCMin : ", LCmin)
         if LCp > 0:

@@ -26,12 +26,61 @@ add support for elapsed time tasks and also jump the gun for HG.
 
 '''
 
-from route import distance, polar, find_closest, cartesian2polar, polar2cartesian, calcBearing, opt_goal, opt_wp, opt_wp_exit, opt_wp_enter, Turnpoint
+from route import distance, polar, find_closest, cartesian2polar, polar2cartesian
 from myconn import Database
 from calcUtils import json, get_datetime, decimal_to_seconds, time_difference
 from igc_lib import defaultdict
 import  math
 import xml.dom.minidom
+
+
+
+class Turnpoint:
+    """ single turnpoint in a task.
+    Attributes:
+        id: progressive number
+        lat: a float, latitude in degrees
+        lon: a float, longitude in degrees
+        dlat: a float, latitude (for optimised route)
+        dlon: a float, longitude (for optimised route)
+        altitude: altitude amsl
+        radius: radius of cylinder or line in km
+        type: type of turnpoint; "launch",
+                                 "speed",
+                                 "cylinder",
+                                 "endspeed",
+                                 "goal"
+        shape: "line" or "circle"
+        how: "entry" or "exit"
+    """
+
+    def __init__(self, lat, lon, radius, type, shape, how):
+        self.name = None
+        self.id = None
+        self.lat = lat
+        self.lon = lon
+        self.flat = lat * math.pi / 180
+        self.flon = lon * math.pi / 180
+        self.radius = radius
+        self.type = type
+        self.shape = shape
+        self.how = how
+        self.altitude = None
+
+        assert type in ["launch", "speed", "waypoint", "endspeed", "goal"], \
+            "turnpoint type is not valid: %r" % type
+        assert shape in ["line", "circle"], "turnpoint shape is not valid: %r" % shape
+        assert how in ["entry", "exit"], "turnpoint how (direction) is not valid: %r" % how
+
+    def in_radius(self, fix, t, tm):
+        """Checks whether the provided GNSSFix is within the radius"""
+        if t < 0:
+            tol = min(tm, self.radius * t)
+        else:
+            tol = max(tm, self.radius * t)
+
+        return distance(self, fix) < self.radius + tol
+
 
 class Task:
     """Stores a task definition and checks if a flight has achieved the turnpoints in the task.
@@ -650,7 +699,7 @@ class Task:
             self.Distance += leg_dist
             #print ("leg dist.: {} - Dist.: {}".format(leg_dist, self.Distance))
 
-    def calculate_optimised_task_length_old(self, method="fast_andoyer"):
+    def calculate_optimised_task_length(self, method="fast_andoyer"):
 
         it1 = []
         it2 = []
@@ -726,122 +775,6 @@ class Task:
         self.EndSSDistance = sum(self.optimised_legs[0:ess_wpt])
         self.SSDistance = sum(self.optimised_legs[sss_wpt:ess_wpt])
         self.optimised_turnpoints = closearr
-
-    def calculate_optimised_task_length(self, method="fast_andoyer"):
-        from geographiclib.geodesic import Geodesic
-        geod = Geodesic.WGS84
-        wpts = self.turnpoints
-        self.ShortRouteDistance = 0  #reset in case of recalc.
-
-        closearr = []
-        num = len(wpts)
-
-        if num < 1:
-            return 0
-
-        if num == 1:
-            first = cartesian2polar(polar2cartesian(wpts[0]))
-            closearr.append(first)
-            return closearr
-
-        # Work out shortest route!
-        # End points don't vary?
-        optimised = []
-        t = 0
-
-        while t < len(self.turnpoints) - 1:
-
-            exit_same = False
-            exit_different = False
-            enter_same = False
-            enter_different = False
-
-            if t == 0:
-                t1 = self.turnpoints[t]
-                optimised.append(t1)
-            else:
-                t1 = opt
-
-            if t + 2 > len(self.turnpoints) - 1:
-                optimised.append(opt_goal(t1, self.turnpoints[-1]))
-                break
-            # next wpt has the same centre but a bigger exit radius  (and therefore we are in it)
-            if t1.lat == self.turnpoints[t + 1].lat and t1.lon == self.turnpoints[t + 1].lon:
-                t += 1
-                exit_same = True
-            #  we are in the next one but it does not have the same centre
-            elif self.turnpoints[t + 1].in_radius(t1, 0, 0):
-                t += 1
-                exit_different = True
-            # or it is the same as the following one (i.e entry large radius followed by smaller like ess and goal often are)
-            elif self.turnpoints[t + 2].lat == self.turnpoints[t + 1].lat and self.turnpoints[t + 2].lon == \
-                    self.turnpoints[t + 1].lon:
-                t += 1
-                enter_same = True
-            #  we are in the next one but it does not have the same centre
-            elif self.turnpoints[t + 2].in_radius(self.turnpoints[t + 1], 0, 0):
-                t += 1
-                enter_different = True
-
-            #print(f'{t} of{len(self.turnpoints)}')
-            t2 = self.turnpoints[t + 1]
-
-            if t + 2 > len(self.turnpoints)-1:
-                t3 = None
-            else:
-                t3 = self.turnpoints[t + 2]
-
-            opt = opt_wp(t1, t2, t3, t2.radius)
-
-            if exit_same:
-                p = geod.Direct(t1.lat, t1.lon, calcBearing(t1.lat, t1.lon, opt.lat, opt.lon),
-                                self.turnpoints[t].radius)
-                opt_exit = Turnpoint(lat=p['lat2'], lon=p['lon2'], type='optimised', radius=0, shape='optimised', how='optimised')
-                optimised.append(opt_exit)
-            if exit_different:
-                opt_exit = opt_wp_exit(opt, t1, self.turnpoints[t])
-                optimised.append(opt_exit)
-            if enter_same:
-                p = geod.Direct(t2.lat, t2.lon, calcBearing(t2.lat, t2.lon, t1.lat, t1.lon), self.turnpoints[t].radius)
-                opt_enter = Turnpoint(lat=p['lat2'], lon=p['lon2'], type='optimised', radius=0, shape='optimised', how='optimised')
-                optimised.append(opt_enter)
-            if enter_different:
-                opt_enter = opt_wp_enter(opt, t2, self.turnpoints[t + 1])
-                optimised.append(opt_enter)
-
-            optimised.append(opt)
-
-            t += 1
-        total = 0
-        for o in range(len(optimised) - 1):
-            d = geod.Inverse(optimised[o].lat, optimised[o].lon, optimised[o + 1].lat, optimised[o + 1].lon)['s12']
-            total += d
-
-        # calculate optimised route distance
-        self.optimised_legs.append(0)
-        self.partial_distance.append(0)
-        self.ShortRouteDistance = 0
-        for opt_wpt in range(1, len(optimised)):
-            leg_dist = distance(optimised[opt_wpt - 1], optimised[opt_wpt], method)
-            self.optimised_legs.append(leg_dist)
-            self.ShortRouteDistance += leg_dist
-            self.partial_distance.append(self.ShortRouteDistance)
-
-        # work out which turnpoints are SSS and ESS
-        sss_wpt = 0
-        ess_wpt = 0
-        for wpt in range(len(self.turnpoints)):
-            if self.turnpoints[wpt].type == 'speed':
-                sss_wpt = wpt+1
-            if self.turnpoints[wpt].type == 'endspeed':
-                ess_wpt = wpt+1
-
-        # work out self.StartSSDistance, self.EndSSDistance, self.SSDistance
-        self.StartSSDistance = sum(self.optimised_legs[0:sss_wpt])
-        self.EndSSDistance = sum(self.optimised_legs[0:ess_wpt])
-        self.SSDistance = sum(self.optimised_legs[sss_wpt:ess_wpt])
-        self.optimised_turnpoints = optimised
-
 
     @property
     def distances_to_go(self):

@@ -60,13 +60,13 @@ def lc_calc(res, t):
         trailing            = parameters.coef_landout(task_time, best_dist_to_ess)
         trailing            = parameters.coef_func_scaled(trailing, SS_Distance)
 
-    LC = leading + res['Lead_coeff'] + trailing
+    LC = leading + res['fixed_LC'] + trailing
 
     '''write final LC to tblTaskResult table in tarLeadingCoeff column'''
-    # making a def because I suppose that in the future we couls avoid storing total LC in DB
-    store_LC(res['tarPk, LC'])
+    # making a def because I suppose that in the future we could avoid storing total LC in DB
+    store_LC(res['tarPk'], LC)
 
-    return leading + res['Lead_coeff'] + trailing
+    return LC
 
 def ordered_results(task, formula, results):
 
@@ -135,12 +135,12 @@ def ordered_results(task, formula, results):
         taskres['startSS']      = res['tarSS']
         taskres['start']        = res['tarStart']
         taskres['endSS']        = res['tarES']
-        taskres['timeafter']    = res['tarES'] - taskt['firstarrival']
+        taskres['timeafter']    = res['tarES'] - taskt['minarr']
         taskres['place']        = res['Place']
         taskres['time']         = taskres['endSS'] - taskres['startSS']
         taskres['goal']         = res['tarGoal']
         taskres['last_time']    = res['tarLastTime']
-        taskres['Lead_coeff']   = res['tarLeadingCoeff2']
+        taskres['fixed_LC']   = res['tarLeadingCoeff2']
 
         if taskres['time'] < 0:
             taskres['time'] = 0
@@ -162,7 +162,7 @@ def points_allocation(task, formula, results = None):   # from PWC###
     quality = taskt['quality']
     Ngoal = taskt['goal']
     Tmin = taskt['fastest']
-    Tfarr = taskt['firstarrival']
+    Tfarr = taskt['minarr']
 
     sorted_pilots = ordered_results(task, formula, results)
 
@@ -224,10 +224,10 @@ def points_allocation(task, formula, results = None):   # from PWC###
 
         # Sanity
         if pil['result'] == 'dnf' or pil['result'] == 'abs':
-            Pdist = 0
-            Pspeed = 0
-            Parrival = 0
-            Pdepart = 0
+            Pdist       = 0
+            Pspeed      = 0
+            Parrival    = 0
+            Pdepart     = 0
 
         # Total score
         Pscore = Pdist + Pspeed + Parrival + Pdepart - penalty

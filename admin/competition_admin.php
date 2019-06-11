@@ -226,7 +226,7 @@ $ctype = '';
 //         WHERE 
 //             C.comPk = $comPk";
 
-$sql = "SELECT * FROM tblCompView WHERE comPk = $comPk";
+$sql = "SELECT * FROM CompetitionView WHERE comPk = $comPk";
 $result = mysqli_query($link, $sql);
 if ( $row = mysqli_fetch_assoc($result) )
 {
