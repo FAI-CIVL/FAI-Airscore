@@ -17,7 +17,7 @@ $out = '';
 $retv = 0;
 
 $source = '';
-exec("python3 " . BINDIR . "design_map.py $trackid $tasPk", $out, $retv);
+exec("python3 " . BINDIR . "design_map.py tracklog $tasPk $trackid ", $out, $retv);
 
 if ($out)
 {
@@ -32,7 +32,7 @@ $iframe = "<iframe id='map' srcdoc=\"$source\" scrolling='no' style='width:100%;
 
 //initializing template header
 tpinit($link,$file,$row);
-
+#echo "python3 " . BINDIR . "design_map.py $trackid $tasPk";
 echo $iframe;
 
 echo "<br>";

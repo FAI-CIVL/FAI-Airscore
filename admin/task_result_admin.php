@@ -77,7 +77,7 @@ else
 
         #check if JSON file exists
         if (file_exists($json)) {
-            $path = "<a href='../test_task_result.php?refPk=$refPk' target='_blank'>".basename($json)."</a>";
+            $path = "<a href='../test_task_result.php?refPk=$refPk&tasPk=$tasPk&comPk=$comPk' target='_blank'>".basename($json)."</a>";
         }
         else {
             $path = "<strong style='color:red'>".basename($json)."</strong>";

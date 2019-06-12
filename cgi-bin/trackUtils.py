@@ -7,7 +7,6 @@ Antonio Golfari - 2018
 """
 
 import os
-import pwc
 from flight_result import Flight_result
 from track import Track
 
@@ -138,8 +137,11 @@ def import_track(track, test = 0):
     if test:
         print (result)
 
-def verify_track(track, task, test = 0):
-    task_result = Flight_result.check_flight(track.flight, task, pwc.parameters, 5) #check flight against task with min tolerance of 5m
+def verify_track(track, task, f):
+    # import formula as For
+    #
+    # f = formula.get_formula_lib(task.comPk)
+    task_result = Flight_result.check_flight(track.flight, task, f.parameters, 5) #check flight against task with min tolerance of 5m
     task_result.store_result(track.traPk, task.tasPk)
     print(track.flight.notes)
 

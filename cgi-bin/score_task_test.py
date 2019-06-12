@@ -4,7 +4,7 @@ python3 score_task.py <taskid>
 """
 
 from task import Task
-import importlib
+import formula as For
 from trackDB import read_formula
 from myconn import Database
 import logging
@@ -43,12 +43,15 @@ def main(args):
     print('task id: {}'.format(task_id))
     task = Task.read_task(int(task_id))
     formula =  read_formula(task.comPk)
-    formula_file = 'formulas.' + formula['forClass']
 
-    try:
-        f = importlib.import_module(formula_file, package=None)
-    except:
-        print('formula file {} not found.'.format(formula))
+    f = For.get_formula_lib(formula)
+
+    # formula_file = 'formulas.' + formula['forClass']
+    #
+    # try:
+    #     f = importlib.import_module(formula_file, package=None)
+    # except:
+    #     print('formula file {} not found.'.format(formula))
 
 
     totals = f.task_totals(task, formula)

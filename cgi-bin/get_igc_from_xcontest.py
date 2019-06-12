@@ -12,6 +12,8 @@ By Stuart Mackintosh, Antonio Golfari, 2019
 import sys, logging
 from task import Task
 from myconn import Database
+import formula as For
+from trackDB import read_formula
 
 def get_xc_parameters(task_id, test = 0):
     """Get site info and date from database """
@@ -96,7 +98,7 @@ def get_zip(site_id, takeoff_id, date, login_name, password, zip_destination, zi
     # with zipfile.ZipFile(zip_destination+zip_name) as zf:
     #     zf.extractall(zip_destination)
 
-def import_tracks(mytracks, task, test = 0):
+def import_tracks(mytracks, task, f):
     """Import tracks in db"""
     message = ''
     result = ''
@@ -104,7 +106,7 @@ def import_tracks(mytracks, task, test = 0):
         """adding track to db"""
         import_track(track, test)
         """checking track against task"""
-        verify_track(track, task, test)
+        verify_track(track, task, f)
 
     if test == 1:
         """TEST MODE"""
@@ -113,6 +115,8 @@ def import_tracks(mytracks, task, test = 0):
     return result
 
 def main():
+    from trackUtils import *
+
     """Main module"""
     test = 0
     result = ''
@@ -136,6 +140,10 @@ def main():
             site_id, takeoff_id, date = get_xc_parameters(task_id, test)
             server, login_name, password = get_server_parameters(test)
             zip_name = 'igc_from_xc.zip'
+
+            formula =  read_formula(task.comPk)
+            f = For.get_formula_lib(formula)
+
             """create a temp dire for zip file"""
             with TemporaryDirectory() as zip_destination:
                 get_zip(site_id, takeoff_id, date, login_name, password, zip_destination, zip_name, test = 0)
@@ -150,7 +158,7 @@ def main():
                             """associate tracks to pilots"""
                             mytracks = assign_tracks(tracks, task, test)
                             """import tracks"""
-                            result = import_tracks(mytracks, task, test)
+                            result = import_tracks(mytracks, task, f)
                         else:
                             result = ("There is no valid track in zipfile {} \n".format(zipfile))
                     else:

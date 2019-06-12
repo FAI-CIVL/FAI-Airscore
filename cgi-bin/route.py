@@ -45,19 +45,20 @@ class Turnpoint:
     """
 
     def __init__(self, lat, lon, radius, type, shape, how):
-        self.name = None
-        self.id = None
-        self.lat = lat
-        self.lon = lon
-        self.flat = lat * math.pi / 180
-        self.flon = lon * math.pi / 180
-        self.radius = radius
-        self.type = type
-        self.shape = shape
-        self.how = how
-        self.altitude = None
+        self.name       = None
+        self.id         = None
+        self.lat        = lat
+        self.lon        = lon
+        self.flat       = lat * math.pi / 180
+        self.flon       = lon * math.pi / 180
+        self.radius     = radius
+        self.type       = type
+        self.shape      = shape
+        self.how        = how
+        self.altitude   = None
+        self.description = None
 
-        assert type in ["launch", "speed", "waypoint", "endspeed", "goal", "optimised"], \
+        assert type in ["launch", "speed", "waypoint", "endspeed", "goal", "optimised", "restricted"], \
             "turnpoint type is not valid: %r" % type
         assert shape in ["line", "circle", "optimised"], "turnpoint shape is not valid: %r" % shape
         assert how in ["entry", "exit", "optimised"], "turnpoint how (direction) is not valid: %r" % how

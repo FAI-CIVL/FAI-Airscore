@@ -3,11 +3,27 @@ Module for operations on formula
 Use:    import formula
         parameters = Formula.read(comPk, <test>)
 
-Antonio Golfari - 2018
+Antonio Golfari - 2019
 """
 
 # Use your utility module.
 from myconn import Database
+
+def get_formula_lib(formula):
+    import importlib
+    #from trackDB import read_formula
+
+    f = None
+
+    '''get formula library to use in scoring'''
+    #formula = read_formula(comp_id)
+    formula_file = 'formulas.' + formula['forClass']
+    try:
+        f = importlib.import_module(formula_file, package=None)
+        return f
+    except:
+        print('formula file {} not found.'.format(formula_file))
+        exit()
 
 class Formula:
     """

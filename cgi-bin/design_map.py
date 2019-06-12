@@ -61,8 +61,6 @@ def checkbbox(lat,lon,bbox):
 def get_bbox(flight):
     """Gets track boundaries """
 
-    from geojson import Point, Feature, FeatureCollection, MultiPoint, MultiLineString, dump
-
     assert flight.valid
 
     #TODO write objects to the geojson form the flight object
@@ -77,28 +75,64 @@ def get_bbox(flight):
         bbox = checkbbox(fix.lat,fix.lon,bbox)
     return bbox
 
+def get_route_bbox(task):
+    """Gets task boundaries """
+
+    #TODO write objects to the geojson form the flight object
+    min_lat = task.optimised_turnpoints[0].lat
+    min_lon = task.optimised_turnpoints[0].lon
+    max_lat = task.optimised_turnpoints[0].lat
+    max_lon = task.optimised_turnpoints[0].lon
+
+    bbox = [[min_lat,min_lon],[max_lat,max_lon]]
+
+    for fix in task.optimised_turnpoints:
+        bbox = checkbbox(fix.lat,fix.lon,bbox)
+    return bbox
+
+def get_region_bbox(region):
+    """Gets region map boundaries """
+
+    wpts = region.turnpoints
+    #TODO write objects to the geojson form the flight object
+    min_lat = wpts[0].lat
+    min_lon = wpts[0].lon
+    max_lat = wpts[0].lat
+    max_lon = wpts[0].lon
+
+    bbox = [[min_lat,min_lon],[max_lat,max_lon]]
+
+    for wpt in wpts:
+        bbox = checkbbox(wpt.lat,wpt.lon,bbox)
+    return bbox
+
 # function to create the map template with optional geojson, circles and points objects
 def make_map(layer_geojson=False,points=False,circles=False,polyline=False,margin=0):
     folium_map = folium.Map(location=[45.922207, 8.673952],zoom_start=13,tiles="Stamen Terrain",width='100%',height='75%')
 
-    """Design track"""
-    if layer_geojson:
-        geojson = layer_geojson["geojson"]
+    '''Define map borders'''
+    if layer_geojson["bbox"]:
         bbox = layer_geojson["bbox"]
+        folium_map.fit_bounds(bounds=bbox,max_zoom=13)
+
+    """Design track"""
+    if layer_geojson["geojson"]:
+        geojson = layer_geojson["geojson"]
         folium.GeoJson(geojson,name='Flight',style_function=style_function).add_to(folium_map)
 #        folium.GeoJson(geojson,name='Flight',style_function=style_function,tooltip=folium.features.GeoJsonTooltip(labels=True,sticky=False)).add_to(folium_map)
-        folium_map.fit_bounds(bounds=bbox,max_zoom=13)
 
     """Design cylinders"""
     if circles:
         for c in circles:
             """create design based on type"""
             if c['type'] == 'launch':
-                col = '#0000cc'
+                col = '#996633'
             elif c['type'] == 'speed':
                 col = '#00cc00'
             elif c['type'] == 'endspeed':
-                col = '#cc0000'
+                col = '#cc3333'
+            elif c['type'] == 'restricted':
+                col = '#ff0000'
             else:
                 col = '#3186cc'
 
@@ -220,60 +254,101 @@ def get_task(task):
 
     return task_coords,turnpoints,short_route
 
-def main():
-    """Main module. Takes pilPk and tasPk as parameter"""
+def get_region(region_id):
+    from region import Region as Reg
+
+    region = Reg.read_db(region_id)
+    wpt_coords = []
+    turnpoints = []
+
+    for obj in region.turnpoints:
+        wpt_coords.append({
+        'longitude' : obj.lon,
+        'latitude'  : obj.lat,
+        'name'      : obj.name
+        })
+
+        turnpoints.append({
+        'radius'    : obj.radius,
+        'longitude' : obj.lon,
+        'latitude'  : obj.lat,
+#         'altitude': obj.altitude,
+        'name'      : obj.name,
+        'type'      : obj.type,
+        'shape'     : obj.shape
+
+        })
+
+    return region, wpt_coords,turnpoints
+
+def main(mode, val, track_id):
+    """Main module"""
 #     log_dir = d.LOGDIR
 #     print("log setup")
 #     logging.basicConfig(filename=log_dir + 'main.log',level=logging.INFO,format='%(asctime)s %(message)s')
-    test = 0
-    pilot_id = 0
-    task_id = 0
-    task_coords = []
+    #test = 0
+    #pilot_id = 0
+    #task_id = 0
+    wpt_coords = []
     turnpoints = []
     short_route = []
+    tolerance = 0
     map = None
-    map_file = '../map.html'
-
-    ##check parameter is good.
-    if len(sys.argv) >= 3 and sys.argv[1].isdigit() and sys.argv[2].isdigit():
-
-        track_id = int(sys.argv[1])
-        task_id = int(sys.argv[2])
-        if len(sys.argv) > 3:
-            print ("Test Mode")
-            test = 1
-
-    else:
-        #logging.error("number of arguments != 1 and/or task_id not a number")
-        print("Error, uncorrect arguments type or number.")
-        print("usage: design_map pilPk tasPk <test>")
-        exit()
-
-    """create task and track objects"""
-    track = Track.read_db(track_id, test)
-
-    task = Task.read_task(task_id)
-    formula = read_formula(task.comPk)
-    tolerance = 0.000000 + formula['forMargin']/100
-    task_coords, turnpoints, short_route = get_task(task)
-    #flight_results = extract_flight_details(track.flight) #at the moment we have no takoff_fix, landing_fix or thermal in Flight Obj
     layer={}
-    layer['geojson'], layer['bbox'] = dump_flight(track)
-    map = make_map(layer_geojson=layer, points=task_coords, circles=turnpoints, polyline=short_route, margin=tolerance)
-    map.save(map_file)
-    os.chown(map_file, 1000, 1000)
+    #map_file = '../map.html'
+
+    if mode == 'region':
+        '''waypoints map'''
+        region_id = val
+        region, wpt_coords, turnpoints = get_region(region_id)
+        layer['geojson'] = None
+        layer['bbox'] = get_region_bbox(region)
+    else:
+        '''create the task map for route or tracklog maps'''
+        task_id = val
+        task = Task.read_task(task_id)
+        formula = read_formula(task.comPk)
+        tolerance = 0.000000 + formula['forMargin']/100
+        wpt_coords, turnpoints, short_route = get_task(task)
+        if mode == 'tracklog':
+            """create task and track objects"""
+            track = Track.read_db(track_id)
+            layer['geojson'], layer['bbox'] = dump_flight(track)
+        elif mode == 'route':
+            layer['geojson'] = None
+            layer['bbox'] = get_route_bbox(task)
+
+    #flight_results = extract_flight_details(track.flight) #at the moment we have no takoff_fix, landing_fix or thermal in Flight Obj
+
+    map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route, margin=tolerance)
+    #map.save(map_file)
+    #os.chown(map_file, 1000, 1000)
     html_string = map.get_root().render()
 
-    if test:
-        print("starting..")
-        print("TaskID: {} - CompID: {}".format(task.tasPk, task.comPk))
-        print("pil ID: {} - task ID: {} - track ID: {}".format(pilot_id, task_id, track_id))
-        print ("Tolerance: {} ".format(tolerance))
-        pprint(html_string)
+    # if test:
+    #     print("starting..")
+    #     print("TaskID: {} - CompID: {}".format(task.tasPk, task.comPk))
+    #     print("pil ID: {} - task ID: {} - track ID: {}".format(pilot_id, task_id, track_id))
+    #     print ("Tolerance: {} ".format(tolerance))
+    #     pprint(html_string)
 
     #test for srcdoc iframe source
     print(html_string)
 
 
 if __name__== "__main__":
-    main()
+    track_id    = None
+    val         = None
+    mode        = None
+    ##check parameter is good.
+    if len(sys.argv) >= 3 and sys.argv[2].isdigit():
+        mode    = str(sys.argv[1])
+        val     = int(sys.argv[2])
+        if mode == 'tracklog': track_id = int(sys.argv[3])
+
+    else:
+        #logging.error("number of arguments != 1 and/or task_id not a number")
+        print("Error, uncorrect arguments type or number.")
+        print("usage: design_map pilPk tasPk <test>")
+        exit()
+    main(mode, val, track_id)
