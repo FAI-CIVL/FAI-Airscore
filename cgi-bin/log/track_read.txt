@@ -1,9 +1,8 @@
-/usr/local/lib/python3.5/dist-packages/pymysql/cursors.py:329: Warning: (1265, "Data truncated for column 'traDHV' at row 1")
-  self._do_get_result()
-  ** FILENAME: /tmp/tmpwzwedlwm/0215.igc TYPE: igc 
+  ** FILENAME: /tmp/tmpjfrzc15e/2019-04-01-XCT-PPA-01.igc TYPE: igc 
 
-path to copy file: /web/dev/airscore/tracks/2016/reupwc16/reupwc16_t6_20161008/luciano_xpagnoni_2016-10-08_03.igc
-file succesfully copied to : /web/dev/airscore/tracks/2016/reupwc16/reupwc16_t6_20161008/luciano_xpagnoni_2016-10-08_03.igc
-[]
+filedir=/web/dev/airscore/tracks/, year=2019, cname=test, tname=test_t2, tdate=20190401
+path to copy file: /web/dev/airscore/tracks/2019/test/test_t2_20190401/giorgio_darra_2019-04-01_02.igc
+file succesfully copied to : /web/dev/airscore/tracks/2019/test/test_t2_20190401/giorgio_darra_2019-04-01_02.igc
+['Warning: average pressure altitude change between fixes is: 0.000000. It is lower than the minimum: 0.010000.']
 track correctly imported and results generated 
-traPk=1917
+traPk=1919

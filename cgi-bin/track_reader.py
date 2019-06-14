@@ -11,11 +11,12 @@ from trackUtils import *
 from track import Track
 from tempfile import TemporaryDirectory
 from shutil import copyfile
+from formula import get_formula_lib
+from trackDB import read_formula
 
 import os, sys
 from os import path
 from os.path import isfile
-import pwc
 from task import Task
 from flight_result import Flight_result
 
@@ -89,7 +90,9 @@ def main():
                         import_track(mytrack, test)
                         message += ("track imported to database with ID {}\n".format(mytrack.traPk))
                         """checking track against task"""
-                        verify_track(mytrack, task, test)
+                        formula =  read_formula(task.comPk)
+                        f = get_formula_lib(formula)
+                        verify_track(mytrack, task, f)
                         message += ("track {} verified with task {}\n".format(mytrack.traPk, mytrack.tasPk))
                         result += ("track correctly imported and results generated \n")
                         result += ("traPk={}".format(mytrack.traPk))

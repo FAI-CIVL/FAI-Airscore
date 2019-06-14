@@ -100,6 +100,7 @@ class Task:
         turnpoints = []
         short_route = []
         partial_distance = []
+        stats = []
 
         if task_id < 1:
             print("task not present in database ", task_id)

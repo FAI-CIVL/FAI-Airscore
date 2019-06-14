@@ -374,7 +374,7 @@ class Flight_result:
                     result.Distance_flown   = distances2go[0]
                     result.goal_time        = min([e[1] for e in result.Waypoints_achieved if e[0]=='Goal'])
 
-        result.Best_waypoint_achieved = str(result.Waypoints_achieved[-1][0])
+        result.Best_waypoint_achieved = str(result.Waypoints_achieved[-1][0]) if result.Waypoints_achieved else None
 
         # if result.ESS_time is None: # we need to do this after other operations
         #     result.Fixed_LC += formula_parameters.coef_landout((Task.end_time - Task.start_time),((Task.EndSSDistance - result.Distance_flown) / 1000))
