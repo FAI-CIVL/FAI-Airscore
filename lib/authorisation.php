@@ -631,7 +631,7 @@ function get_ladder_class_info($link, $ladPk, $cval, $season)
 
 function check_registration($link, $comPk)
 {
-    $pilPk = JFactory::getUser()->id;
+    $pilPk = get_user()->id;
     echo "<div class=\"register\">";
     if ($pilPk == 0)
     {
