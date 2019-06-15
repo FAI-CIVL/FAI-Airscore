@@ -147,7 +147,7 @@ elseif ( reqexists('getxcontest') )
     # Check Task has been setup correctly
     if ( task_set($link, $tasPk) )
     {
-        $command = "python3 " . BINDIR . "get_igc_from_xcontest.py $comPk $tasPk test > " . BINDIR . 'log/xcontest.txt 2>&1 & echo $!; ';
+        $command = "python3 " . BINDIR . "get_igc_from_xcontest.py $tasPk > " . BINDIR . 'log/xcontest.txt 2>&1 & echo $!; ';
         $pid = exec($command, $out, $retv);
         $ptime = microtime(true);
         sleep(5);

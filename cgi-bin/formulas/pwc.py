@@ -42,7 +42,7 @@ def lc_calc(res, t):
     leading     = 0
     trailing    = 0
     my_start    = res['start']
-    first_start = t.stats['firstdepart']
+    first_start = t.stats['mindept']
     ss_start    = t.start_time
     SS_Distance = t.SSDistance
     '''add the leading part, from start time of first pilot to start, to my start time'''

@@ -100,7 +100,7 @@ class Task:
         turnpoints = []
         short_route = []
         partial_distance = []
-        stats = []
+        stats = dict()
 
         if task_id < 1:
             print("task not present in database ", task_id)
@@ -226,7 +226,8 @@ class Task:
             s_point = polar(lat=tp['ssrLatDecimal'],lon=tp['ssrLongDecimal'])
             #print ("short route fix: {}, {}".format(s_point.lon,s_point.lat))
             short_route.append(s_point)
-            partial_distance.append(tp['partial_distance'])
+            if tp['partial_distance']: #this will be None in DB before we optimise route, but we append to this list so we should not fill it with Nones
+                partial_distance.append(tp['partial_distance'])
 
         task = Task(turnpoints, start_time, end_time, task_type, stopped_time, last_start_time, check_launch)
         task.launchvalid = launchvalid
@@ -662,6 +663,7 @@ class Task:
         num = len(wpts)
 
         if num < 1:
+            self.partial_distance.append(self.ShortRouteDistance)
             return 0
 
         if num == 1:
