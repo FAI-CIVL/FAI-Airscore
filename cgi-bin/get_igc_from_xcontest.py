@@ -44,19 +44,19 @@ def get_xc_parameters(task_id, test = 0):
     # return(site_id, takeoff_id, datestr)
     return(site_id, takeoff_id, date)
 
-def get_server_parameters(test = 0):
-    import yaml, os
-
-    abspath = os.path.abspath(__file__)
-    dname = os.path.dirname(abspath)
-    os.chdir(dname)
-    with open('xcontest.yaml', 'rb') as f:
-            """use safe_load instead load"""
-            config = yaml.safe_load(f)
-
-    login_name = config['xc']['User']  # mysql db user
-    password = config['xc']['Pass']  # mysql db password
-    server = config['xc']['Server'] # mysql host name
+# def get_server_parameters(test = 0):
+#     import yaml, os
+#
+#     abspath = os.path.abspath(__file__)
+#     dname = os.path.dirname(abspath)
+#     os.chdir(dname)
+#     with open('xcontest.yaml', 'rb') as f:
+#             """use safe_load instead load"""
+#             config = yaml.safe_load(f)
+#
+#     login_name = config['xc']['User']  # mysql db user
+#     password = config['xc']['Pass']  # mysql db password
+#     server = config['xc']['Server'] # mysql host name
 
 def get_zip(site_id, takeoff_id, date, login_name, password, zip_destination, zip_name, test = 0):
     """Get the zip of igc files from xcontest."""
@@ -119,6 +119,7 @@ def get_zip(site_id, takeoff_id, date, login_name, password, zip_destination, zi
 def main():
     from trackUtils import extract_tracks, get_tracks, assign_and_import_tracks
     from tempfile import TemporaryDirectory
+    import Defines
 
     """Main module"""
     test = 0
@@ -141,7 +142,8 @@ def main():
         if task.comPk > 0:
             """get zipfile from XContest server"""
             site_id, takeoff_id, date = get_xc_parameters(task_id, test)
-            server, login_name, password = get_server_parameters(test)
+            login_name = Defines.XC_LOGIN
+            password = Defines.XC_password
             zip_name = 'igc_from_xc.zip'
 
             formula =  read_formula(task.comPk)
