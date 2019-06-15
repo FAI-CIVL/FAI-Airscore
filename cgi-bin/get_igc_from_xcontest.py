@@ -60,7 +60,7 @@ def get_xc_parameters(task_id, test = 0):
 
 def get_zip(site_id, takeoff_id, date, login_name, password, zip_destination, zip_name, test = 0):
     """Get the zip of igc files from xcontest."""
-    import lxml
+    import lxml.html
 
     #determine if we have takeoff id or only site id. preferable to use more specific takeoff id.
     if takeoff_id:
