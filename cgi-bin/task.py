@@ -706,7 +706,9 @@ class Task:
         closearr.append(it2[num - 1])
 
         # calculate optimised route distance
+        self.optimised_legs = []
         self.optimised_legs.append(0)
+        self.partial_distance = []
         self.partial_distance.append(0)
         self.ShortRouteDistance = 0
         for opt_wpt in range(1, len(closearr)):
@@ -821,7 +823,9 @@ class Task:
             total += d
 
         # calculate optimised route distance
+        self.optimised_legs = []
         self.optimised_legs.append(0)
+        self.partial_distance = []
         self.partial_distance.append(0)
         self.ShortRouteDistance = 0
         for opt_wpt in range(1, len(optimised)):
