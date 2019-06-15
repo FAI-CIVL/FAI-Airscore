@@ -9,6 +9,8 @@ Antonio Golfari - 2018
 import os
 from flight_result import Flight_result
 from track import Track
+from trackDB import read_formula
+import formula as For
 
 # Use your utility module.
 from myconn import Database
@@ -120,7 +122,7 @@ def assign_and_import_tracks(files, task, test = 0):
             """pilot is registered and has no valid track yet
             moving file to correct folder and adding to the list of valid tracks"""
             mytrack.tasPk = task_id
-            mytrack.copy_track_file(path=track_path, pname=full_name)
+            mytrack.copy_track_file(task_path=track_path, pname=full_name)
             message += ("pilot {} associated with track {} \n".format(mytrack.pilPk, mytrack.filename))
             import_track(mytrack)
             verify_track(mytrack, task, test)
@@ -137,10 +139,10 @@ def import_track(track, test = 0):
     if test:
         print (result)
 
-def verify_track(track, task, f):
-    # import formula as For
-    #
-    # f = formula.get_formula_lib(task.comPk)
+def verify_track(track, task, test):
+    formula = read_formula(task.comPk)
+
+    f = For.get_formula_lib(formula)
     task_result = Flight_result.check_flight(track.flight, task, f.parameters, 5) #check flight against task with min tolerance of 5m
     task_result.store_result(track.traPk, task.tasPk)
     print(track.flight.notes)

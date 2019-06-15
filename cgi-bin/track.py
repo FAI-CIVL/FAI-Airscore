@@ -118,8 +118,8 @@ class Track():
         traclass = get_class(self.tasPk)
         traduration = self.flight.fixes[-1].rawtime - self.flight.fixes[0].rawtime
 
-        """add track entry into tblTrack table"""
-        query = ("""INSERT INTO `tblTrack`(
+        """add track entryassign_and_import_tracks(tracks, task, test) into tblTrack table"""
+        query = """INSERT INTO `tblTrack`(
                         `pilPk`,
                         `traClass`,
                         `traGlider`,
@@ -130,14 +130,15 @@ class Track():
                         `traFile`
                     )
                     VALUES(
-                        '{}','{}','{}','{}','{}','{}','{}','{}'
+                        %s, %s, %s, %s, %s, %s, %s, %s
                     )
-                    """.format(self.pilPk, traclass, self.glider, self.cert, self.date, trastart, traduration, self.filename))
+                    """
+        params = [self.pilPk, traclass, self.glider, self.cert, self.date, trastart, traduration, self.filename]
         message += query
         if not test:
             with Database() as db:
                 try:
-                    db.execute(query)
+                    db.execute(query, params)
                     self.traPk = db.lastrowid()
                     result += ("track for pilot with id {} correctly stored in database".format(self.pilPk))
                 except:
@@ -157,11 +158,13 @@ class Track():
         message = ''
         track = cls(filename)
         track.get_type(test)
+        print('type', track.type)
         if track.type is not None:
             """file is a valid track format"""
             message += ("File Type: {} \n".format(track.type))
             if track.type == "igc":
                 """using IGC reader from aerofile library"""
+                print('reading flight')
                 flight = Flight.create_from_file(filename)
             #if track.type == "kml":
                 """using KML reader created by Antonio Golfari
@@ -173,6 +176,7 @@ class Track():
             We could change this part if we find a way to gen non-valid flight with timestamp property
             '"""
             if flight.valid:
+                print('flight valid')
                 if not pilot_id:
                     track.get_pilot(test)
                 else:
@@ -184,6 +188,7 @@ class Track():
                     """TEST MODE"""
                     print(message)
                 return track
+            else: print(flight.notes)
         else:
             print("File {} (pilot ID {}) is NOT a valid track file. \n".format(track, pilot_id))
 
