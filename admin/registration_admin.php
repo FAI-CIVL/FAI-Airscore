@@ -92,7 +92,7 @@ $query = "  SELECT
             FROM
                 tblRegistration R
             JOIN PilotView P USING(pilPk)
-            INNER JOIN tblHandicap H USING(comPk, pilPk)
+            #INNER JOIN tblHandicap H USING(comPk, pilPk)
             WHERE
                 R.comPk = $comPk
             ORDER BY

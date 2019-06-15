@@ -14,6 +14,8 @@ from task import Task
 from myconn import Database
 import formula as For
 from trackDB import read_formula
+import time
+import requests
 
 def get_xc_parameters(task_id, test = 0):
     """Get site info and date from database """
@@ -98,24 +100,25 @@ def get_zip(site_id, takeoff_id, date, login_name, password, zip_destination, zi
     # with zipfile.ZipFile(zip_destination+zip_name) as zf:
     #     zf.extractall(zip_destination)
 
-def import_tracks(mytracks, task, f):
-    """Import tracks in db"""
-    message = ''
-    result = ''
-    for track in mytracks:
-        """adding track to db"""
-        import_track(track, test)
-        """checking track against task"""
-        verify_track(track, task, f)
-
-    if test == 1:
-        """TEST MODE"""
-        print (message)
-
-    return result
+# def import_tracks(mytracks, task, f):
+#     """Import tracks in db"""
+#     message = ''
+#     result = ''
+#     for track in mytracks:
+#         """adding track to db"""
+#         import_track(track, test)
+#         """checking track against task"""
+#         verify_track(track, task, f)
+#
+#     if test == 1:
+#         """TEST MODE"""
+#         print (message)
+#
+#     return result
 
 def main():
-    from trackUtils import *
+    from trackUtils import extract_tracks, get_tracks, assign_and_import_tracks
+    from tempfile import TemporaryDirectory
 
     """Main module"""
     test = 0
@@ -155,16 +158,14 @@ def main():
                         """find valid tracks"""
                         tracks = get_tracks(tracksdir, test)
                         if tracks is not None:
-                            """associate tracks to pilots"""
-                            mytracks = assign_tracks(tracks, task, test)
-                            """import tracks"""
-                            result = import_tracks(mytracks, task, f)
+                            """associate tracks to pilots and import"""
+                            assign_and_import_tracks(tracks, task, test=0)
                         else:
                             result = ("There is no valid track in zipfile {} \n".format(zipfile))
                     else:
                         result = ("An error occured while dealing with file {} \n".format(zipfile))
         else:
-            result = ("error: task ID {} does NOT belong to any Competition \n".format(tasPk))
+            result = ("error: task ID {} does NOT belong to any Competition \n".format(task.tasPk))
 
     else:
         print('error: Use: python3 get_igc_from_xcontest.py [taskPk] [opt. test]')
