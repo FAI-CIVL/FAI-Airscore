@@ -166,7 +166,7 @@ def get_non_scored_pilots(tasPk, xcontest=False, test=0):
                                 `tblRegistration` R
                             JOIN `PilotView` P USING(`pilPk`)
                             LEFT OUTER JOIN `ResultView` S ON
-                                S.`pilPk` = P.`pilPk` AND S.`tasPk` = {0}
+                                S.`pilPk` = P.`pilPk` AND S.`tasPk` = %s
                             WHERE
                                 R.`comPk` =(
                                 SELECT
@@ -177,7 +177,7 @@ def get_non_scored_pilots(tasPk, xcontest=False, test=0):
                                     `tasPk` = %s
                                 LIMIT 1
                             ) AND S.`traPk` IS NULL""" + where
-            params = [tasPk]
+            params = [tasPk, tasPk]
             message += ("Query: {}  \n".format(query))
             pilot_list = db.fetchall(query, params)
 
