@@ -50,7 +50,7 @@ def get_tracks(dir, test = 0):
     """check files in temporary directory, and get only tracks"""
     for file in os.listdir(dir):
         message += ("checking: {} \n".format(file))
-        if ( (not (file.startswith(".") or file.startswith("_"))) and file.endswith(".igc") ):
+        if ( (not (file.startswith(".") or file.startswith("_"))) and file.lower().endswith(".igc")):
             """file is a valid track"""
             message += ("valid filename: {} \n".format(file))
             """add file to tracks list"""

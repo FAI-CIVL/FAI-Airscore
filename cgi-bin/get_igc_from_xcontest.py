@@ -156,7 +156,7 @@ def main():
             with TemporaryDirectory() as zip_destination:
                 get_zip(site_id, takeoff_id, date, login_name, password, zip_destination, zip_name, test = 0)
                 """create a temporary directory for tracks"""
-                zipfile = zip_destination + zip_name
+                zipfile = zip_destination + '/' + zip_name
                 with TemporaryDirectory() as tracksdir:
                     error = extract_tracks(zipfile, tracksdir, test)
                     if not error:
