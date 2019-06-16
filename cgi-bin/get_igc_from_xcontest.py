@@ -164,7 +164,7 @@ def main():
                         tracks = get_tracks(tracksdir, test)
                         if tracks is not None:
                             """associate tracks to pilots and import"""
-                            assign_and_import_tracks(tracks, task, test=0)
+                            assign_and_import_tracks(tracks, task, xcontest=True, test=0)
                         else:
                             result = ("There is no valid track in zipfile {} \n".format(zipfile))
                     else:

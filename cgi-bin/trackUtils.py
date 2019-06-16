@@ -69,7 +69,7 @@ def get_tracks(dir, test = 0):
 
     return files
 
-def assign_and_import_tracks(files, task, test = 0):
+def assign_and_import_tracks(files, task, xcontest=False, test = 0):
     """Find pilots to associate with tracks"""
     from compUtils import get_registration, get_task_file_path
 
@@ -86,7 +86,7 @@ def assign_and_import_tracks(files, task, test = 0):
     if registration:
         """We add tracks for the registered pilots not yet scored"""
         message += "Comp with registration: files will be checked against registered pilots not yet scored \n"
-        pilot_list = get_non_scored_pilots(task_id, test)
+        pilot_list = get_non_scored_pilots(task_id, xcontest, test)
 
     track_path = get_task_file_path(task.tasPk)
 
@@ -147,13 +147,16 @@ def verify_track(track, task, test):
     task_result.store_result(track.traPk, task.tasPk)
     print(track.flight.notes)
 
-def get_non_scored_pilots(tasPk, test=0):
+def get_non_scored_pilots(tasPk, xcontest=False, test=0):
     """Gets list of registered pilots that still do not have a result"""
     message = ''
+    where = ""
     pilot_list = []
+    if xcontest:
+        where = " AND pilXContestUser is not null AND pilXContestUser <> ''"
     if tasPk:
         with Database() as db:
-            query = ("""    SELECT
+            query = """    SELECT
                                 R.`pilPk`,
                                 P.`pilFirstName`,
                                 P.`pilLastName`,
@@ -171,13 +174,14 @@ def get_non_scored_pilots(tasPk, test=0):
                                 FROM
                                     `TaskView`
                                 WHERE
-                                    `tasPk` = {0}
+                                    `tasPk` = %s
                                 LIMIT 1
-                            ) AND S.`traPk` IS NULL""".format(tasPk))
+                            ) AND S.`traPk` IS NULL""" + where
+            params = [tasPk]
             message += ("Query: {}  \n".format(query))
-            pilot_list = db.fetchall(query)
+            pilot_list = db.fetchall(query, params)
 
-            if list is None: message += ("No pilot found registered to the comp...")
+            if pilot_list is None: message += ("No pilots without tracks found registered to the comp...")
     else:
         message += ("Registered List - Error: NOT a valid Comp ID \n")
 
