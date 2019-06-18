@@ -110,6 +110,7 @@ class Task:
                         TIME_TO_SEC(`tasFinishTime`) AS endtime,
                         TIME_TO_SEC(`tasLastStartTime`) AS LastStartTime,
                         TIME_TO_SEC(`tasStartCloseTime`) AS StartCloseTime,
+                        TIME_TO_SEC(`tasTaskStart`) AS taskstart,
                         `tasPk`,
                         `comPk`,
                         `tasDate`,
@@ -176,7 +177,7 @@ class Task:
         SSInterval          = t['tasSSInterval']
         ShortRouteDistance  = t['tasShortRouteDistance']
         start_close_time    = t['StartCloseTime'] - time_offset*60*60
-        task_start_time     = t['tasStartTime']
+        task_start_time     = t['taskstart'] - time_offset*60*60
         arrival             = t['tasArrival']
         departure           = t['tasDeparture']
         tolerance           = t['tasMargin'] * 0.01
@@ -204,6 +205,7 @@ class Task:
                         T.ssrCumulativeDist AS partial_distance,
                         R.rwpLatDecimal,
                         R.rwpLongDecimal,
+                        R.rwpPk,
                         R.rwpName AS name
                     FROM
                         tblTaskWaypoint T
@@ -220,8 +222,9 @@ class Task:
         for tp in tps:
             turnpoint = Turnpoint(tp['rwpLatDecimal'], tp['rwpLongDecimal'], tp['tawRadius'], tp['tawType'].strip(),
                                   tp['tawShape'], tp['tawHow'])
-            turnpoint.name = tp['name']
-            turnpoint.id = tp['id']
+            turnpoint.name      = tp['name']
+            turnpoint.id        = tp['id']
+            turnpoint.rwpPk     = tp['rwpPk']
             turnpoints.append(turnpoint)
             s_point = polar(lat=tp['ssrLatDecimal'],lon=tp['ssrLongDecimal'])
             #print ("short route fix: {}, {}".format(s_point.lon,s_point.lat))
@@ -253,7 +256,7 @@ class Task:
 
         return task
 
-    def update_task(self):
+    def update_task_distance(self):
 
         with Database() as db:
             '''add optimised and total distance to task'''
@@ -277,6 +280,42 @@ class Task:
                 #print (query)
                 db.execute(query)
                 #print (self.optimised_turnpoints[idx].lat, self.optimised_turnpoints[idx].lon)
+
+    def update_task_info(self):
+        with Database() as db:
+            start_time          = self.start_time + self.time_offset * 3600
+            end_time            = self.end_time + self.time_offset * 3600
+            task_start          = self.task_start_time + self.time_offset * 3600
+            start_close_time    = self.start_close_time + self.time_offset * 3600
+            start_interval      = self.SSInterval
+            task_type           = self.task_type.lower()
+
+            sql = """  UPDATE
+                            `tblTask`
+                        SET
+                            `tasStartTime` = DATE_ADD(
+                                `tasDate`,
+                                INTERVAL %s SECOND
+                            ),
+                            `tasFinishTime` = DATE_ADD(
+                                `tasDate`,
+                                INTERVAL %s SECOND
+                            ),
+                            `tasTaskStart` = DATE_ADD(
+                                `tasDate`,
+                                INTERVAL %s SECOND
+                            ),
+                            `tasStartCloseTime` = DATE_ADD(
+                                `tasDate`,
+                                INTERVAL %s SECOND
+                            ),
+                            `tasSSInterval` = %s,
+                            `tasTaskType` = %s
+                        WHERE
+                            `tasPk` = %s """
+            params = [start_time, end_time, task_start, start_close_time, start_interval, task_type, self.tasPk]
+            #update start and deadline
+            db.execute(sql, params)
 
     def update_totals(self):
         '''store updated totals to task database'''
@@ -326,6 +365,89 @@ class Task:
         with Database() as db:
             db.execute(query, params)
 
+    def update_from_xctrack_file(self, filename):
+        """ Updates Task from xctrack file, which is in json format.
+        """
+        from compUtils import get_wpts
+        from calcUtils import string_to_seconds
+
+        offset = 0
+        task_file = filename
+
+        #turnpoints = []
+        with open(task_file, encoding='utf-8') as json_data:
+            # a bit more checking..
+            print("file: ", task_file)
+            try:
+                t = json.load(json_data)
+            except:
+                print("file is not a valid JSON object")
+                exit()
+
+        startopenzulu = t['sss']['timeGates'][0]
+        deadlinezulu = t['goal']['deadline']
+
+        self.start_time = string_to_seconds(startopenzulu)
+        self.end_time   = string_to_seconds(deadlinezulu)
+
+        '''check task start and start close times are ok for new start time
+        we will check to be at least 1 hour before and after'''
+        if not self.task_start_time or self.start_time - self.task_start_time < 3600:
+            self.task_start_time = self.start_time - 3600
+        if not self.start_close_time or self.start_close_time - self.start_time < 3600:
+            self.start_close_time = self.start_time + 3600
+
+        if t['sss']['type'] == 'ELAPSED-TIME': self.task_type = 'ELAPSED TIME'
+        else:
+            self.task_type = 'RACE'
+            '''manage multi start'''
+            self.SSInterval = 0
+            if len(t['sss']['timeGates']) > 1:
+                second_start            = string_to_seconds(t['sss']['timeGates'][1])
+                self.SSInterval         = int((second_start - self.start_time) / 60)    # interval in minutes
+                self.start_close_time   = int(self.start_time + len(t['sss']['timeGates']) * (second_start - self.start_time)) - 1
+
+        print('xct start:       {} '.format(self.start_time))
+        print('xct deadline:    {} '.format(self.end_time))
+
+        waypoint_list = get_wpts(self.tasPk)
+        print('n. waypoints: {}'.format(len(t['turnpoints'])))
+
+        for i, tp in enumerate(t['turnpoints']):
+            waytype = "waypoint"
+            shape = "circle"
+            how = "entry"  #default entry .. looks like xctrack doesn't support exit cylinders apart from SSS
+            wpID = waypoint_list[tp["waypoint"]["name"]]
+            #wpNum = i+1
+
+            if i < len(t['turnpoints']) -1:
+                if 'type' in tp :
+                    if tp['type'] == 'TAKEOFF':
+                        waytype = "launch"  #live
+                        #waytype = "start"  #aws
+                        how = "exit"
+                    elif tp['type'] == 'SSS':
+                        waytype = "speed"
+                        if t['sss']['direction'] == "EXIT":  #get the direction form the SSS section
+                            how = "exit"
+                    elif tp['type'] == 'ESS':
+                        waytype = "endspeed"
+            else:
+                waytype = "goal"
+                if t['goal']['type'] == 'LINE':
+                    shape = "line"
+
+            turnpoint = Turnpoint(tp['waypoint']['lat'], tp['waypoint']['lon'], tp['radius'], waytype, shape, how)
+            turnpoint.name  = tp["waypoint"]["name"]
+            turnpoint.rwpPk = wpID
+            self.turnpoints.append(turnpoint)
+
+        # print('obj start:       {} '.format(self.start_time))
+        # print('obj deadline:    {} '.format(self.end_time))
+        # print('obj. turnpoints:')
+        # for obj in self.turnpoints:
+        #     print(' {} | {}'.format(obj.name, obj.rwpPk))
+
     @staticmethod
     def create_from_xctrack_file(filename):
         """ Creates Task from xctrack file, which is in json format.
@@ -347,7 +469,7 @@ class Task:
 
         startopenzulu = t['sss']['timeGates'][0]
         deadlinezulu = t['goal']['deadline']
-        task_type = t['sss']['type']
+        task_type = 'RACE' if t['sss']['type'] == 'RACE' else 'ELAPSED TIME'
 
         startzulu_split = startopenzulu.split(":")  # separate hours, minutes and seconds.
         deadlinezulu_split = deadlinezulu.split(":")  # separate hours, minutes and seconds.
@@ -849,6 +971,37 @@ class Task:
         self.SSDistance = sum(self.optimised_legs[sss_wpt:ess_wpt])
         self.optimised_turnpoints = optimised
 
+    def clear_waypoints(self):
+        self.turnpoints.clear()
+        self.optimised_turnpoints.clear()
+        self.optimised_legs.clear()
+        self.partial_distance.clear()
+        self.legs.clear()
+
+        '''delete waypoints from database'''
+        with Database() as db:
+            query = """DELETE FROM `tblTaskWaypoint`
+                        WHERE `tasPk` = %s"""
+            db.execute(query, [self.tasPk])
+
+    def update_waypoints(self):
+        for idx, wp in enumerate(self.turnpoints):
+            wpNum = idx + 1
+            with Database() as db:
+                sql = """  INSERT INTO `tblTaskWaypoint`(
+                                `tasPk`,
+                                `rwpPk`,
+                                `tawNumber`,
+                                `tawType`,
+                                `tawHow`,
+                                `tawShape`,
+                                `tawTime`,
+                                `tawRadius`
+                                )
+                            VALUES(%s,%s,%s,%s,%s,%s,'0',%s)"""
+                params = [self.tasPk, wp.rwpPk, wpNum, wp.type, wp.how, wp.shape, wp.radius]
+                id = db.execute(sql, params)
+            self.turnpoints[idx].id = id
 
     @property
     def distances_to_go(self):

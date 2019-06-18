@@ -1,4 +1,9 @@
-"""usage: python create_task_result.py task_id 'status' <test>"""
+"""
+Script to create a task result JSON file, and create the row in database
+usage: python create_task_result.py task_id 'status' <test>
+
+Antonio Golfari - 2019
+"""
 
 import sys, time
 from result import Task_result
@@ -26,7 +31,7 @@ def main():
         print("usage: python test_task_result.py task_id 'status' <test>")
         exit()
 
-    """create result object using method 1"""
+    '''create result object using method 1'''
     start = time.time()
     result = Task_result.read_db(task_id=task_id, test=test)
     filename = result.to_json(status=status)

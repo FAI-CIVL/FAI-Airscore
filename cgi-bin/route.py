@@ -46,7 +46,8 @@ class Turnpoint:
 
     def __init__(self, lat, lon, radius, type, shape, how):
         self.name       = None
-        self.id         = None
+        self.id         = None                  # tawPk
+        self.rwpPk      = None
         self.lat        = lat
         self.lon        = lon
         self.flat       = lat * math.pi / 180

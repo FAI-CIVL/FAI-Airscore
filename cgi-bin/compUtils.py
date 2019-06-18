@@ -253,3 +253,25 @@ def get_task_file_path(tasPk, test = 0):
         print(query)
         print('task folder: {}'.format(path))
     return path
+
+def get_task_region(task_id):
+    with Database() as db:
+        query = """    SELECT `regPk` FROM `tblTask`
+                        WHERE `tasPk` = '%s' LIMIT 1"""
+        region_id = 0 + db.fetchone(query, [task_id])['regPk']
+    return region_id
+
+def get_area_wps(region_id):
+    """query db get all wpts names and pks for region of task and put into dictionary"""
+    with Database() as db:
+        query = """ SELECT `rwpName`, `rwpPk` FROM `tblRegionWaypoint`
+                    WHERE regPk = '%s' AND rwpOld = '0' ORDER BY rwpName"""
+        wps = dict()
+        for row in db.fetchall(query, [region_id]):
+            wps[row['rwpName']] = row['rwpPk']
+    return wps
+
+def get_wpts(task_id):
+    region_id   = get_task_region(task_id)
+    wps         = get_area_wps(region_id)
+    return wps

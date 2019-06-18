@@ -32,11 +32,15 @@ def decimal_to_seconds(time):
 
 def time_to_seconds(t):
     h, m, s = [int(i) for i in t.strftime("%H:%M:%S").split(':')]
-    return 3600*h + 60*m + s
+    return 3600*int(h) + 60*int(m) + int(s)
 
 def datetime_to_seconds(t):
     return (t - t.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
 
+def string_to_seconds(time_str):
+    time_str = time_str[0:8] #strip Z or Zulu or anything after seconds
+    h, m, s = time_str.split(':')
+    return int(h) * 3600 + int(m) * 60 + int(s)
 
 def decimal_to_time(time):
     hours = int(time)

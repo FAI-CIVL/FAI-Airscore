@@ -3,16 +3,16 @@ require 'admin_startup.php';
 
 function waypoint($link,$tasPk, $tawPk, $num, $waypt, $type, $how, $shape, $radius)
 {
-    
+
     echo "<input type=\"text\" name=\"number$tawPk\" value=\"$num\" size=1>";
     echo "Way ";
     waypoint_select($link, $tasPk, "waypoint$tawPk", $waypt);
     echo "Type ";
-    output_select("waytype$tawPk", $type, array('waypoint', 'launch', 'speed', 'endspeed', 'goal')); 
+    output_select("waytype$tawPk", $type, array('waypoint', 'launch', 'speed', 'endspeed', 'goal'));
     echo "How ";
-    output_select("how$tawPk", $how, array('entry', 'exit')); 
+    output_select("how$tawPk", $how, array('entry', 'exit'));
     echo "Shape ";
-    output_select("shape$tawPk", $shape, array('circle', 'semicircle', 'line')); 
+    output_select("shape$tawPk", $shape, array('circle', 'semicircle', 'line'));
     echo "Size <input type=\"text\" name=\"radius$tawPk\" size=5 value=\"$radius\">";
 }
 
@@ -68,7 +68,7 @@ function update_task($link,$tasPk, $old)
 //     $out = '';
 //     $retv = 0;
 //  $command = BINDIR . "task_up.pl $tasPk $param" . ' > /dev/null 2>&1 & echo $!; ';
-//  
+//
 //     $pid = exec($command, $out, $retv);
 //     $ptime = microtime(true);
 //     redirect("task_scoring_admin.php?tasPk=$tasPk&comPk=$comPk&pid=$pid&time=$ptime&type=$type");
@@ -124,7 +124,7 @@ if (reqexists('airspace'))
     $retv = 0;
     exec(BINDIR . "airspace_check.pl $tasPk", $out, $retv);
     foreach ($out as $row)
-    {  
+    {
         echo $row . "<br>";
     }
 }
@@ -191,7 +191,7 @@ if (reqexists('copytask'))
     $content .= "Information pulled from task ID $copytaskpk. \n";
 }
 
-# Update the task itself 
+# Update the task itself
 if (reqexists('updatetask'))
 {
     check_admin('admin',$usePk,$comPk);
@@ -201,7 +201,7 @@ if (reqexists('updatetask'))
     $old = mysqli_fetch_array($result, MYSQLI_BOTH);
 
     if ( !$ext )
-    {    
+    {
         $Name = reqsval('taskname');
         $Date = reqsval('date');
         if (!sane_date($Date))
@@ -245,7 +245,7 @@ if (reqexists('updatetask'))
         # check margin percentage
         if ( reqfval('margin') <= 100 )
         {
-            $margin = abs( reqfval('margin') ); 
+            $margin = abs( reqfval('margin') );
         }
         else
         {
@@ -298,7 +298,7 @@ if (reqexists('updatetask'))
         mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' External Task update failed: ' . mysqli_connect_error());
         $message .= "External Task successfully updated \n";
     }
-    
+
 
 
 }
@@ -380,12 +380,13 @@ elseif ( reqexists('XCTask') )
     chmod(FILEDIR . basename($_FILES['taskfile']['name']), 0644);
 
     $tempnm = FILEDIR . basename($_FILES['taskfile']['name']);
-    
+
     $out = '';
     $retv = 0;
     $command = "python3 " . BINDIR . "import_xctrack_task.py $tasPk $tempnm > " . BINDIR . 'log/xctask.txt 2>&1 & echo $!; ';
     echo $command;
     $pid = exec($command, $out, $retv);
+    sleep(25);
     if ($retv)
     {
         $message .= "Failed to upload your Task File.<br>\n";
@@ -400,15 +401,15 @@ elseif ( reqexists('XCTask') )
         {
             $content .= "$txt <br />\n";
         }
-        $content .= "</p>\n";    
+        $content .= "</p>\n";
         $out = '';
         $retv = 0;
-        $command = BINDIR . "task_up.pl $tasPk 2>&1 & echo $!; ";
+        $command = "python3 " . BINDIR . "score_task.py $tasPk > " . BINDIR . 'log/scoretask.txt 2>&1 & echo $!; ';
         $pid = exec($command, $out, $retv);
         $ptime = microtime(true);
         # redirect to avoid Timeout if script takes too long
         sleep(15);
-        if ( script_isRunning($pid) ) 
+        if ( script_isRunning($pid) )
         {
             redirect("safe_process_admin.php?tasPk=$tasPk&comPk=$comPk&pid=$pid&time=$ptime&task=1");
         }
@@ -511,7 +512,7 @@ if ( !$ext )
     $atable[] = array('Radius Margin Override %: ', fin('margin', $tasMargin, 4), 'Default: Scoring Formula Margin', '', '', '', '', '', '', '', '', '');
 
     # Create the task file upload table
-    $ftable[] = array(" <input type=\"hidden\" name=\"MAX_FILE_SIZE\" value=\"1000000000\">", 
+    $ftable[] = array(" <input type=\"hidden\" name=\"MAX_FILE_SIZE\" value=\"1000000000\">",
                             "<input name=\"taskfile\" type=\"file\">",  "<input type=\"submit\" name=\"XCTask\" value=\"Send XC-Track File\">");
 }
 
@@ -520,15 +521,15 @@ $wtable[] = array('', '', "Name: ", "Type: ", "How: ", "Shape: ", "Size (m): ", 
 
 $count = 1;
 $goal = 0;
-$sql = "SELECT 
-            T.*, 
-            RW.* 
-        FROM 
-            tblTaskWaypoint T 
-            JOIN tblRegionWaypoint RW USING (rwpPk) 
-        WHERE 
-            T.tasPk = $tasPk 
-        ORDER BY 
+$sql = "SELECT
+            T.*,
+            RW.*
+        FROM
+            tblTaskWaypoint T
+            JOIN tblRegionWaypoint RW USING (rwpPk)
+        WHERE
+            T.tasPk = $tasPk
+        ORDER BY
             T.tawNumber";
 $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task waypoint selection failed: ' . mysqli_connect_error());
 while ($wpt = mysqli_fetch_assoc($result))
@@ -544,7 +545,7 @@ while ($wpt = mysqli_fetch_assoc($result))
 
     if ( $ext )
     {
-        $wtable[] = array(  '', 
+        $wtable[] = array(  '',
                             $number,
                             $name,
                             $wtype,
@@ -556,7 +557,7 @@ while ($wpt = mysqli_fetch_assoc($result))
     }
     else
     {
-        $wtable[] = array(  fbut('submit','delete',$tawPk,'Delete'), 
+        $wtable[] = array(  fbut('submit','delete',$tawPk,'Delete'),
                             fin("number$tawPk", $number, 'width4'),
                             fwaypoint($link, $tasPk, "waypoint$tawPk", $rwpPk),
                             fselect("waytype$tawPk", $wtype, array('waypoint', 'launch', 'speed', 'endspeed', 'goal')),
@@ -579,7 +580,7 @@ $wtable[] = array("<hr />");
 
 if ( !$ext )
 {
-    $wtable[] = array(  '', 
+    $wtable[] = array(  '',
                         fin("number", '', 'width4'),
                         fwaypoint($link, $tasPk, "waypoint", ''),
                         fselect("waytype", "waypoint", array('waypoint', 'launch', 'speed', 'endspeed', 'goal')),
@@ -594,24 +595,24 @@ if ($count == 1)
 {
     $copyarr = [];
     # Copy from previous tasks same comp, others on same day ..
-    $sql = "SELECT 
-                C.comName, 
-                T.* 
-            FROM 
-                tblCompetition C 
-                JOIN tblTask T USING (comPk) 
-            WHERE 
+    $sql = "SELECT
+                C.comName,
+                T.*
+            FROM
+                tblCompetition C
+                JOIN tblTask T USING (comPk)
+            WHERE
                 (
-                    T.comPk = $comPk 
+                    T.comPk = $comPk
                     OR T.tasDate = '$tasDate'
-                ) 
-                AND T.tasPk <> $tasPk"; 
+                )
+                AND T.tasPk <> $tasPk";
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task Copy selection failed: ' . mysqli_connect_error());
     while ($task = mysqli_fetch_assoc($result))
     {
         $copyarr[$task['comName'] . ' | ' . $task['tasName']] = $task['tasPk'];
     }
-    
+
     $ctable[] = array("Copy Waypoints from Task: ", fselect("copytaskpk",'', $copyarr), fis('copytask', 'Copy', ''));
 }
 
@@ -757,30 +758,30 @@ if ( !$ext )
     if (mysqli_num_rows($result) > 0)
     {
         $cenPk = 0+mysqli_result($result, 0, 0);
-        $query = "  SELECT 
-                        A.* 
-                    FROM 
-                        tblAirspace A 
-                    WHERE 
+        $query = "  SELECT
+                        A.*
+                    FROM
+                        tblAirspace A
+                    WHERE
                         A.airPk IN (
-                            SELECT 
-                                W.airPk 
-                            FROM 
-                                tblAirspaceWaypoint W 
-                                JOIN tblRegionWaypoint R ON (
-                                    W.awpLatDecimal BETWEEN (R.rwpLatDecimal - 1.5) 
-                                    AND (R.rwpLatDecimal + 1.5)
-                                ) 
-                                AND (
-                                    W.awpLongDecimal BETWEEN (R.rwpLongDecimal - 1.5) 
-                                    AND (R.rwpLongDecimal + 1.5)
-                                ) 
-                            WHERE 
-                                R.rwpPk = $cenPk  
-                            GROUP BY 
+                            SELECT
                                 W.airPk
-                        ) 
-                    ORDER BY 
+                            FROM
+                                tblAirspaceWaypoint W
+                                JOIN tblRegionWaypoint R ON (
+                                    W.awpLatDecimal BETWEEN (R.rwpLatDecimal - 1.5)
+                                    AND (R.rwpLatDecimal + 1.5)
+                                )
+                                AND (
+                                    W.awpLongDecimal BETWEEN (R.rwpLongDecimal - 1.5)
+                                    AND (R.rwpLongDecimal + 1.5)
+                                )
+                            WHERE
+                                R.rwpPk = $cenPk
+                            GROUP BY
+                                W.airPk
+                        )
+                    ORDER BY
                         A.airName";
     }
     else

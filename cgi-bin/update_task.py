@@ -30,7 +30,7 @@ def main():
     tsk = task.Task.read_task(task_id)
     tsk.calculate_optimised_task_length()
     tsk.calculate_task_length()
-    tsk.update_task()
+    tsk.update_task_distance()
 
 if __name__== "__main__":
     main()
