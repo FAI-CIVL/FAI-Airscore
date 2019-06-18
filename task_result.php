@@ -52,37 +52,6 @@ $sel = get_class_info($link, $comPk);
 $classstr = $sel['name'];
 $fdhv = $sel['fdhv'];
 
-if (array_key_exists('score', $_REQUEST))
-{
-    $changeok = 1;
-    $row = get_comtask($link,$tasPk);
-    if ($row)
-    {
-        $dateto = $row['comDateTo'];
-        $today = date('Y-m-d');
-
-//		Old Task Check
-//		Removed to debug and test
-//
-//         if ($today > $dateto)
-//         {
-//             $changeok = 0;
-//         }
-
-    }
-    if ($changeok == 1)
-    {
-        $out = '';
-        $retv = 0;
-        // exec(BINDIR . "task_score.pl $tasPk", $out, $retv);
-        exec("python3 " . BINDIR . "score_task.py $tasPk", $out, $retv);
-    }
-    else
-    {
-        echo "Unable to rescore a closed competition.\n";
-    }
-}
-
 if (array_key_exists('tardel', $_REQUEST))
 {
     $traPk = intval($_REQUEST['tardel']);

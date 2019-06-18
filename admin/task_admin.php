@@ -309,6 +309,22 @@ if (reqexists('fullrescore'))
     safe_process($link, $command, $tasPk, $comPk, 'score');
 }
 
+if (reqexists('taskscore'))
+{
+    $out = '';
+    $retv = 0;
+    $command = "python3 " . BINDIR . "score_task.py $tasPk > " . BINDIR . 'log/scoretask.txt 2>&1 & echo $!; ';
+    $pid = exec($command, $out, $retv);
+    $ptime = microtime(true);
+    # redirect to avoid Timeout if script takes too long
+    sleep(25);
+    // if ( script_isRunning($pid) )
+    // {
+    //     redirect("safe_process_admin.php?tasPk=$tasPk&comPk=$comPk&pid=$pid&time=$ptime&task=1");
+    // }
+    $content .= "Task has been scored. <br />\n";
+}
+
 # Manage waypoints for task ..
 if (reqexists('add'))
 {
@@ -711,9 +727,9 @@ elseif ( $goal == 1 )
 
         # Display Scoring Section
         echo "<h4>Scoring:</h4>\n";
-        echo "<form action=\"../task_result.php?comPk=$comPk&tasPk=$tasPk\" name=\"taskscore\" method=\"post\"> \n";
+        echo "<form action=\"task_admin.php?comPk=$comPk&tasPk=$tasPk\" name=\"taskscore\" method=\"post\"> \n";
         echo "<p class='explanation'>Score Task will add tracks not yet scored.<br>\n";
-        echo fis('score', 'Score Task', '');
+        echo fis('taskscore', 'Score Task', '');
         echo "</form> \n";
         echo "<form action=\"task_admin.php?comPk=$comPk&tasPk=$tasPk\" name=\"fullrescore\" method=\"post\"> \n";
         echo "<p class='explanation'>Full Re-Score will recalculate task distance, and will verify all tracks. Could take a while.<br>\n";
