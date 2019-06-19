@@ -55,30 +55,38 @@ $content = '';
 # We check if there is a uploaded track
 if ( reqexists('addtrack') )
 {
-    $fh = fopen("/tmp/submit24", "w");
-    foreach ($_REQUEST as $k=>$v)
-    {
-        fwrite($fh, "key=$k, value=$v\n");
-    }
-    foreach ($_FILES as $k=>$v)
-    {
-        fwrite($fh, "key=$k:\n");
-        foreach ($v as $key=>$val)
-        {
-            fwrite($fh, "    key=$key, value=$val\n");
-        }
-    }
-    fclose($fh);
+    // $fh = fopen("/tmp/submit24", "w");
+    // foreach ($_REQUEST as $k=>$v)
+    // {
+    //     fwrite($fh, "key=$k, value=$v\n");
+    // }
+    // foreach ($_FILES as $k=>$v)
+    // {
+    //     fwrite($fh, "key=$k:\n");
+    //     foreach ($v as $key=>$val)
+    //     {
+    //         fwrite($fh, "    key=$key, value=$val\n");
+    //     }
+    // }
+    // fclose($fh);
     $pilPk = reqival('pilPk');
-    $traPk = accept_track($link, $pilPk, $comPk, $tasPk);
-    # check if we have a track or an error
-    if ( is_int($traPk) && $traPk > 0 )
-    {
-        $message .= "Track accepted. <br /> \n";
+    // $filename = basename($_FILES['userfile']['name']);
+    // $tempnm = $_FILES['userfile']['tmp_name'];
+    $filetype = strtolower(pathinfo(basename($_FILES['userfile']['name']),PATHINFO_EXTENSION));
+    if ( $filetype != 'igc' ) {
+        $message .= "Only IGC files are accepted. <br /> \n";
     }
-    else
-    {
-        $message .= "Error processing track <br /> \n";
+    else {
+        $traPk = accept_track($link, $pilPk, $comPk, $tasPk);
+        # check if we have a track or an error
+        if ( is_int($traPk) && $traPk > 0 )
+        {
+            $message .= "Track accepted. <br /> \n";
+        }
+        else
+        {
+            $message .= "Error processing track <br /> \n";
+        }
     }
 }
 elseif (array_key_exists('delete', $_REQUEST))

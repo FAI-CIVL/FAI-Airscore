@@ -1,5 +1,6 @@
 <?php
 
+
 // function accept_track($link, $pilPk, $comPk, $tasPk)
 // {
 //     $filename = basename($_FILES['userfile']['name']);
@@ -64,24 +65,26 @@
 
 function accept_track($link, $pilPk, $comPk, $tasPk)
 {
-    $fh = fopen("/tmp/submit24bis", "w");
-    foreach ($_REQUEST as $k=>$v)
-    {
-        fwrite($fh, "key=$k, value=$v\n");
-    }
-    foreach ($_FILES as $k=>$v)
-    {
-        fwrite($fh, "key=$k:\n");
-        foreach ($v as $key=>$val)
-        {
-            fwrite($fh, "    key=$key, value=$val\n");
-        }
-    }
-    fclose($fh);
+    // $fh = fopen("/tmp/submit24", "w");
+    // foreach ($_REQUEST as $k=>$v)
+    // {
+    //     fwrite($fh, "key=$k, value=$v\n");
+    // }
+    // foreach ($_FILES as $k=>$v)
+    // {
+    //     fwrite($fh, "key=$k:\n");
+    //     foreach ($v as $key=>$val)
+    //     {
+    //         fwrite($fh, "    key=$key, value=$val\n");
+    //     }
+    // }
+    // fclose($fh);
     $traPk = 0;
     $filename = basename($_FILES['userfile']['name']);
     $tempnm = $_FILES['userfile']['tmp_name'];
-    $command = "python3 " . BINDIR . "track_reader.py $tasPk '$tempnm' '$filename' $pilPk > " . BINDIR . 'log/track_read.txt 2>&1 & echo $!; ';
+
+    // $command = "python3 " . BINDIR . "track_reader.py $tasPk '$tempnm' '$filename' $pilPk > " . BINDIR . 'log/track_read.txt 2>&1 & echo $!; ';
+    $command = "python3 " . BINDIR . "track_reader.py $tasPk '$tempnm' '$filename' $pilPk ";
     $pid = exec($command, $out, $retv);
 
     foreach ($out as $row)
@@ -89,6 +92,7 @@ function accept_track($link, $pilPk, $comPk, $tasPk)
         if (substr_compare("traPk=6", $row, 0, 6) == 0)
         {
             $traPk = 0 + substr($row, 6);
+            echo $row . PHP_EOL;
             break;
         }
     }
