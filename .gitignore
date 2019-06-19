@@ -13,6 +13,8 @@ admin/.DS*
 cgi-bin/.DS*
 cgi-bin/log/*.txt
 cgi-bin/log/*.log
+log/*.txt
+log/*.log
 tracks/*
 json/*
 _pycache_/*

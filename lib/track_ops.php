@@ -89,10 +89,11 @@ function accept_track($link, $pilPk, $comPk, $tasPk)
 
     foreach ($out as $row)
     {
+        echo $row . PHP_EOL;
         if (substr_compare("traPk=6", $row, 0, 6) == 0)
         {
             $traPk = 0 + substr($row, 6);
-            echo $row . PHP_EOL;
+            //echo $row . PHP_EOL;
             break;
         }
     }
