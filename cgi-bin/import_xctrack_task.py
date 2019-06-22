@@ -1,4 +1,5 @@
 import json, sys
+from logger import Logger
 from myconn import Database
 from task import Task
 from compUtils import get_wpts
@@ -50,18 +51,22 @@ from compUtils import get_wpts
 #         #update start and deadline
 #         db.execute(sql)
 
-def main():
-    print("starting..")
+def main(args):
+
     """Main module. Takes tasPk and filename as parameters"""
     #wpNum = 0 #one or zero start???
 
     ##check parameter is good.
-    if (len(sys.argv)==3 and sys.argv[1].isdigit() and sys.argv[2][-6:] == '.xctsk'):
-        task_id = int(sys.argv[1])
-        task_file = sys.argv[2]
+    if (len(args)==2 and args[0].isdigit() and args[1][-6:] == '.xctsk'):
+        task_id = int(args[0])
+        task_file = args[1]
     else:
         print('task id is not a number or File is not a .xctsk file')
         exit()
+
+    '''create logging and disable output'''
+    Logger('ON', 'xct_task_import.txt')
+    print("starting..")
 
     '''get task'''
     task = Task.read_task(task_id)
@@ -73,20 +78,23 @@ def main():
 
     '''delete old waypoints in database'''
     task.clear_waypoints()
-    print('Waypoints after clear:')
-    for wp in task.turnpoints:
-        print('{} - {}'.format(wp.id, wp.name))
+    # print('Waypoints after clear:')
+    # for wp in task.turnpoints:
+    #     print('{} - {}'.format(wp.id, wp.name))
 
     '''get new task definition from xctrack file'''
     task.update_from_xctrack_file(task_file)
-    print('Waypoints after reading xct file:')
-    for wp in task.turnpoints:
-        print('{} - {}'.format(wp.rwpPk, wp.name))
+    # print('Waypoints after reading xct file:')
+    # for wp in task.turnpoints:
+    #     print('{} - {}'.format(wp.rwpPk, wp.name))
     task.update_task_info()
     task.update_waypoints()
     task.calculate_task_length()
     task.calculate_optimised_task_length()
     task.update_task_distance()
 
+    ''' now restore stdout function '''
+    Logger('OFF')
+
 if __name__== "__main__":
-    main()
+    main(sys.argv[1:])

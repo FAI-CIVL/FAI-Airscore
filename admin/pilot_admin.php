@@ -142,7 +142,7 @@ if (reqexists('addpilot'))
     $glider = reqsval('glider');
     $cert = reqsval('cert');
 	$xcid = reqsval('xcontest');
-	
+
 	#look for pilot in PilotView
     $query = "SELECT * from PilotView WHERE pilLastName LIKE CONCAT('%', '$lname' ,'%') AND pilFirstName LIKE CONCAT('%', '$fname' ,'%') ";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot select failed: ' . mysqli_connect_error());
@@ -153,14 +153,14 @@ if (reqexists('addpilot'))
     else
     {
         $query = "	INSERT INTO tblExtPilot (
-						pilFAI, pilCIVL, pilLastName, pilFirstName, 
-						pilSex, pilGliderBrand, pilGlider, 
+						pilFAI, pilCIVL, pilLastName, pilFirstName,
+						pilSex, pilGliderBrand, pilGlider,
 						gliGliderCert, pilNat, pilXContestUser
-					) 
-					VALUES 
+					)
+					VALUES
 						(
-							$fai, $civl, '$lname', '$fname', '$sex', 
-							'$brand', '$glider', '$cert', $nat, 
+							$fai, $civl, '$lname', '$fname', '$sex',
+							'$brand', '$glider', '$cert', $nat,
 							'$xcid'
 						)";
         mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot insert failed: ' . mysqli_connect_error());
@@ -172,7 +172,7 @@ if (reqexists('bulkadd'))
     $out = '';
     $retv = 0;
     $name = reqsval('name');
-    
+
     $copyname = tempnam(FILEDIR, $name . "_");
     copy($_FILES['bulkpilots']['tmp_name'], $copyname);
     //echo "bulk_pilot_import.pl $copyname<br>";
@@ -189,7 +189,7 @@ if (reqexists('bulkadd'))
 	$message .= "Bulk Add Result: <br />";
 	//$message .= "Command: $command <br />";
 	$content .= nl2br(shell_exec($command));
-	
+
 }
 
 if (reqexists('update'))
@@ -204,30 +204,30 @@ if (reqexists('update'))
     $glider = reqsval("glider$id");
     $cert = reqsval("cert$id");
 	$xcid = reqsval("xcontest$id");
-	
+
 	//echo " parameters: Id $id , FAI $fai , wing $brand $glider $cert , user $xcid \n";
 
     $query = "SELECT * FROM PilotView WHERE pilFAI=$fai AND pilPk<>$id";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot update select failed: ' . mysqli_connect_error());
-    if ($fai < 1000 or mysqli_num_rows($result) > 0)
+    if (($fai < 1000 or mysqli_num_rows($result) > 0) and $fai != 0)
     {
         echo "Pilot update failed, HGFA/FAI number ($fai) already exists or is too low (<1000) <br>";
     }
     else
     {
-        $query = "	UPDATE 
-						tblExtPilot 
-					SET 
-						pilFAI = $fai, 
-						pilLastName = '$lname', 
-						pilFirstName = '$fname', 
-						pilSex = '$sex', 
-						pilNat = '$nat', 
-						pilGliderBrand = '$brand', 
-						pilGlider = '$glider', 
-						gliGliderCert = '$cert', 
-						pilXContestUser = '$xcid' 
-					WHERE 
+        $query = "	UPDATE
+						tblExtPilot
+					SET
+						pilFAI = $fai,
+						pilLastName = '$lname',
+						pilFirstName = '$fname',
+						pilSex = '$sex',
+						pilNat = '$nat',
+						pilGliderBrand = '$brand',
+						pilGlider = '$glider',
+						gliGliderCert = '$cert',
+						pilXContestUser = '$xcid'
+					WHERE
 						pilPk = $id";
 		//echo $query . '\n';
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot update failed: ' . mysqli_connect_error());
@@ -346,10 +346,10 @@ if ($cat != '')
         $glider = $row['pilGlider'];
         $cert = $row['gliGliderCert'];
 		$xcid = $row['pilXContestUser'];
-		
+
 		# Get Country Code
 		$countrycode = get_countrycode($link, $nat);
-		
+
 		# Let edit or Delete onlu if pilot is in Ext Table, not in CB db
 		if ( $id > 9999 )
 		{
@@ -391,4 +391,3 @@ echo "</form>";
 tpfooter($file);
 
 ?>
-

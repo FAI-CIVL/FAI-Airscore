@@ -187,7 +187,7 @@ class Task:
             '''task has been already scored'''
             stats = dict()
             stats['firstdepart']    = t['tasFirstDepTime']
-            stats['lastarrival']    = t['tasLastArrTime']
+            stats['maxarr']         = t['tasLastArrTime']
             stats['maxdist']        = t['tasMaxDistance']
             stats['fastest']        = t['tasFastestTime']
             stats['distovermin']    = t['tasTotalDistanceFlown']

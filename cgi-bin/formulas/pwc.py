@@ -55,7 +55,7 @@ def lc_calc(res, t):
         '''pilot did not make ESS'''
         best_dist_to_ess    = (t.EndSSDistance - res['distance'])
         my_last_time        = res['last_time']          # should not need to check if < task deadline as we stop in Flight_result.check_flight()
-        last_ess            = t.stats['lastarrival']
+        last_ess            = t.stats['maxarr']
         task_time           = (max(my_last_time,last_ess) - my_start)
         trailing            = parameters.coef_landout(task_time, best_dist_to_ess)
         trailing            = parameters.coef_func_scaled(trailing, SS_Distance)

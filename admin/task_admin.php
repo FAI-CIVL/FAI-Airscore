@@ -16,6 +16,25 @@ function waypoint($link,$tasPk, $tawPk, $num, $waypt, $type, $how, $shape, $radi
     echo "Size <input type=\"text\" name=\"radius$tawPk\" size=5 value=\"$radius\">";
 }
 
+function update_task_distances($link, $tasPk)
+{
+    $dist = 0.0;
+    $command = "python3 " . BINDIR . "update_task.py $tasPk ";
+    $pid = exec($command, $out, $retv);
+
+    foreach ($out as $row)
+    {
+        // echo $row . PHP_EOL;
+        if (substr_compare("Opt. Dist. = 13", $row, 0, 13) == 0)
+        {
+            $dist = 0.0 + round(substr($row, 13)/1000, 2);
+            //echo $row . PHP_EOL;
+            return "Task Optimised Dist. Updated ($dist Km). \n";
+        }
+    }
+    return "There was an Error updating Task Distances. \n";
+}
+
 function update_task($link,$tasPk, $old)
 {
     $out = '';
@@ -40,39 +59,12 @@ function update_task($link,$tasPk, $old)
     $newtype = $row['tasTaskType'];
     $goal = $row['tawType'];
 
-    # FIX: how about Free-bearing?
-    if ($oldtype == 'olc' && ($newtype == 'free distance' || $newtype == 'distance with bearing'))
-    {
-        $out = '';
-        $retv = 0;
-        exec(BINDIR . "task_up.pl $tasPk 0", $out, $retv);
-    }
-    elseif (($oldtype == 'free distance' || $newtype == 'distance with bearing') && $newtype == 'olc')
-    {
-        $out = '';
-        $retv = 0;
-        exec(BINDIR . "task_up.pl $tasPk 3", $out, $retv);
-    }
-    elseif ($goal == 'goal' && ($newstart != $oldstart or $newfinish != $oldfinish or $oldtype != $newtype or $oldclose != $newclose or $oldstop != $newstop))
-    {
-        $out = '';
-        $retv = 0;
-        exec("python3 " . BINDIR . "update_task.py $tasPk", $out, $retv);
-    }
+    #Task Distances
+    update_task_distances($link,$tasPk);
+
     return "Task succesfully updated. \n";
 
 }
-
-// function full_rescore($tasPk, $comPk, $type, $param=null)
-// {
-//     $out = '';
-//     $retv = 0;
-//  $command = BINDIR . "task_up.pl $tasPk $param" . ' > /dev/null 2>&1 & echo $!; ';
-//
-//     $pid = exec($command, $out, $retv);
-//     $ptime = microtime(true);
-//     redirect("task_scoring_admin.php?tasPk=$tasPk&comPk=$comPk&pid=$pid&time=$ptime&type=$type");
-// }
 
 function sane_date($date)
 {
@@ -117,17 +109,17 @@ if ( $ext )
     $content = 'Event was imported. Editing options are disabled.';
 }
 
-if (reqexists('airspace'))
-{
-    check_admin('admin',$usePk,$comPk);
-    $out = '';
-    $retv = 0;
-    exec(BINDIR . "airspace_check.pl $tasPk", $out, $retv);
-    foreach ($out as $row)
-    {
-        echo $row . "<br>";
-    }
-}
+// if (reqexists('airspace'))
+// {
+//     check_admin('admin',$usePk,$comPk);
+//     $out = '';
+//     $retv = 0;
+//     exec(BINDIR . "airspace_check.pl $tasPk", $out, $retv);
+//     foreach ($out as $row)
+//     {
+//         echo $row . "<br>";
+//     }
+// }
 
 if (reqexists('updated'))
 {
@@ -152,43 +144,79 @@ if (reqexists('airdel'))
     }
 }
 
-if (reqexists('trackcopy'))
-{
-    $copyfrom = reqival('copyfrom');
-    if ($copyfrom > 0)
-    {
-        $query = "select comEntryRestrict from tblCompetition where comPk=$comPk";
-        $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Failed to query tbl registration: ' . mysqli_connect_error());
-        $reged = mysqli_result($result,0,0);
-        echo "Copying from: $copyfrom<br>";
-        if ($reged == "registered")
-        {
-            $query = "insert into tblComTaskTrack (comPk, tasPk, traPk) select $comPk, $tasPk, CT.traPk from tblComTaskTrack CT, tblTrack T, tblRegistration R where CT.tasPk=$copyfrom and T.traPk=CT.traPk and T.pilPk=R.pilPk and R.comPk=$comPk";
-        }
-        else
-        {
-            $query = "insert into tblComTaskTrack (comPk, tasPk, traPk) select $comPk, $tasPk, CT.traPk from tblComTaskTrack CT where CT.tasPk=$copyfrom";
-        }
-        $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Failed to copy task tracks: ' . mysqli_connect_error());
-        # task_up
-        exec(BINDIR . "task_up.pl $tasPk", $out, $retv);
-    }
-}
+// if (reqexists('trackcopy'))
+// {
+//     $copyfrom = reqival('copyfrom');
+//     if ($copyfrom > 0)
+//     {
+//         $query = "select comEntryRestrict from tblCompetition where comPk=$comPk";
+//         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Failed to query tbl registration: ' . mysqli_connect_error());
+//         $reged = mysqli_result($result,0,0);
+//         echo "Copying from: $copyfrom<br>";
+//         if ($reged == "registered")
+//         {
+//             $query = "insert into tblComTaskTrack (comPk, tasPk, traPk) select $comPk, $tasPk, CT.traPk from tblComTaskTrack CT, tblTrack T, tblRegistration R where CT.tasPk=$copyfrom and T.traPk=CT.traPk and T.pilPk=R.pilPk and R.comPk=$comPk";
+//         }
+//         else
+//         {
+//             $query = "insert into tblComTaskTrack (comPk, tasPk, traPk) select $comPk, $tasPk, CT.traPk from tblComTaskTrack CT where CT.tasPk=$copyfrom";
+//         }
+//         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Failed to copy task tracks: ' . mysqli_connect_error());
+//         # task_up
+//         exec(BINDIR . "task_up.pl $tasPk", $out, $retv);
+//     }
+// }
 
 if (reqexists('copytask'))
 {
     check_admin('admin',$usePk,$comPk);
     $copytaskpk = reqival('copytaskpk');
 
-    $query = "update tblTask T1, tblTask T2 set T1.tasName=T2.tasName, T1.tasTaskStart=T2.tasTaskStart, T1.tasStartTime=T2.tasStartTime, T1.tasStartCloseTime=T2.tasStartCloseTime, T1.tasFinishTime=T2.tasFinishTime, T1.tasTaskType=T2.tasTaskType, T1.regPk=T2.regPk, T1.tasSSInterval=T2.tasSSInterval, T1.tasDeparture=T2.tasDeparture, T1.tasArrival=T2.tasArrival, T1.tasHeightBonus=T2.tasHeightBonus, T1.tasComment=T2.tasComment where T1.tasPk=$tasPk and T2.tasPk=$copytaskpk";
+    $query = "  UPDATE
+                    `tblTask` `T1`,
+                    `tblTask` `T2`
+                SET
+                    `T1`.`tasName`              = `T2`.`tasName`,
+                    `T1`.`tasTaskStart`         = `T2`.`tasTaskStart`,
+                    `T1`.`tasStartTime`         = `T2`.`tasStartTime`,
+                    `T1`.`tasStartCloseTime`    = `T2`.`tasStartCloseTime`,
+                    `T1`.`tasFinishTime`        = `T2`.`tasFinishTime`,
+                    `T1`.`tasTaskType`          = `T2`.`tasTaskType`,
+                    `T1`.`regPk`                = `T2`.`regPk`,
+                    `T1`.`tasSSInterval`        = `T2`.`tasSSInterval`,
+                    `T1`.`tasDeparture`         = `T2`.`tasDeparture`,
+                    `T1`.`tasArrival`           = `T2`.`tasArrival`,
+                    `T1`.`tasHeightBonus`       = `T2`.`tasHeightBonus`,
+                    `T1`.`tasComment`           = `T2`.`tasComment`
+                WHERE
+                    `T1`.`tasPk` = $tasPk AND `T2`.`tasPk` = $copytaskpk";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Failed to copy task times: ' . mysqli_connect_error());
 
-    $query = "insert into tblTaskWaypoint (tasPk, rwpPk, tawNumber, tawType, tawHow, tawShape, tawTime, tawRadius) select $tasPk, rwpPk, tawNumber, tawType, tawHow, tawShape, tawTime, tawRadius from tblTaskWaypoint where tasPk=$copytaskpk";
+    $query = "  INSERT INTO `tblTaskWaypoint`(
+                    `tasPk`, `rwpPk`, `tawNumber`, `tawType`, `tawHow`,
+                    `tawShape`, `tawTime`, `tawRadius`
+                )
+                SELECT
+                    $tasPk, `rwpPk`,
+                    `tawNumber`, `tawType`, `tawHow`,
+                    `tawShape`, `tawTime`, `tawRadius`
+                FROM
+                    `tblTaskWaypoint`
+                WHERE
+                    `tasPk` = $copytaskpk";
     //echo $query . "<br>";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Failed to copy task waypoints: ' . mysqli_connect_error());
-    exec(BINDIR . "task_up.pl $tasPk", $out, $retv);
-    $message .= 'Task succesfully copied. \n';
-    $content .= "Information pulled from task ID $copytaskpk. \n";
+    # Update task Distances
+    $dist = update_task_distances($link,$tasPk);
+    if (substr_compare("Task", $dist, 0, 4) == 0)
+    {
+        $message .= "Task successfully copied. \n";
+    }
+    else {
+        $message .= "There was an error copying the task. \n";
+    }
+    $content .= $dist;
+
 }
 
 # Update the task itself
@@ -303,11 +331,11 @@ if (reqexists('updatetask'))
 
 }
 
-if (reqexists('fullrescore'))
-{
-    $command = BINDIR . "task_up.pl $tasPk" . ' > /dev/null 2>&1 & echo $!; ';
-    safe_process($link, $command, $tasPk, $comPk, 'score');
-}
+// if (reqexists('fullrescore'))
+// {
+//     $command = BINDIR . "task_up.pl $tasPk" . ' > /dev/null 2>&1 & echo $!; ';
+//     safe_process($link, $command, $tasPk, $comPk, 'score');
+// }
 
 if (reqexists('taskscore'))
 {
@@ -350,8 +378,8 @@ if (reqexists('add'))
     mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Add Task waypoint failed: ' . mysqli_connect_error());
     // update tasDistance ...
     $old = [];
-    $message .= update_task($link, $tasPk, $old);
-    $content .= "Waypoint added. \n";
+    $content .= update_task_distances($link, $tasPk);
+    $message .= "Waypoint added. \n";
 }
 
 if (reqexists('delete'))
@@ -359,14 +387,13 @@ if (reqexists('delete'))
     check_admin('admin',$usePk,$comPk);
 
     $tawPk = reqival('delete');
-    $query = "delete from tblTaskWaypoint where tawPk=$tawPk";
+    $query = "DELETE FROM `tblTaskWaypoint` WHERE `tawPk` = $tawPk";
     $out = '';
     $retv = 0;
-    exec(BINDIR . "task_up.pl $tasPk", $out, $retv);
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Delete Task waypoint failed: ' . mysqli_connect_error());
     $old = [];
-    $message .= update_task($link, $tasPk, $old);
-    $content .= "Waypoint deleted. \n";
+    $content .= update_task_distances($link, $tasPk);
+    $message .= "Waypoint deleted. \n";
 }
 
 if (reqexists('update'))
@@ -385,8 +412,8 @@ if (reqexists('update'))
     mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Update Task waypoint failed: ' . mysqli_connect_error());
 //  full_rescore($tasPk, $comPk, 'update');
     $old = [];
-    $message .= update_task($link, $tasPk, $old);
-    $content .= "Waypoint updated. \n";
+    $content .= update_task_distances($link, $tasPk);
+    $message .= "Waypoint updated. \n";
 }
 
 # Upload a task file generated from xc-track
@@ -815,25 +842,25 @@ if ( !$ext )
     echo "<br><br>";
     echo fis('airspace', 'Airspace Check', '');
 
-    if ($comEntryRestrict == 'registered')
-    {
-        $tasarr = [];
-        #$sql = "select C.comName, T.* from tblTask T, tblCompetition C where T.tasPk<>$tasPk and T.tasDate='$tasDate' and T.regPk=$regPk and C.comPk=T.comPk";
-        $sql = "select C.comName, T.* from tblTask T, tblCompetition C where T.tasPk<>$tasPk and T.tasDate='$tasDate' and C.comPk=T.comPk";
-        $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task copy selection failed: ' . mysqli_connect_error());
-        while ($row = mysqli_fetch_assoc($result))
-        {
-            $tasarr[$row['comName']] = $row['tasPk'];
-        }
-        if (sizeof($tasarr) > 0)
-        {
-            echo "<hr>";
-            echo "Copy registered tracks from: ";
-            $sel = fselect('copyfrom', '', $tasarr);
-            echo $sel;
-            echo fis('trackcopy', 'Copy', '');
-        }
-    }
+    // if ($comEntryRestrict == 'registered')
+    // {
+    //     $tasarr = [];
+    //     #$sql = "select C.comName, T.* from tblTask T, tblCompetition C where T.tasPk<>$tasPk and T.tasDate='$tasDate' and T.regPk=$regPk and C.comPk=T.comPk";
+    //     $sql = "select C.comName, T.* from tblTask T, tblCompetition C where T.tasPk<>$tasPk and T.tasDate='$tasDate' and C.comPk=T.comPk";
+    //     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task copy selection failed: ' . mysqli_connect_error());
+    //     while ($row = mysqli_fetch_assoc($result))
+    //     {
+    //         $tasarr[$row['comName']] = $row['tasPk'];
+    //     }
+    //     if (sizeof($tasarr) > 0)
+    //     {
+    //         echo "<hr>";
+    //         echo "Copy registered tracks from: ";
+    //         $sel = fselect('copyfrom', '', $tasarr);
+    //         echo $sel;
+    //         echo fis('trackcopy', 'Copy', '');
+    //     }
+    // }
     echo "</form>";
 }
 
