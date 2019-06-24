@@ -1,5 +1,5 @@
 from collections import namedtuple
-from formulas.gap import  task_totals, day_quality, points_weight, pilot_distance, pilot_speed, pilot_departure_leadout
+from formulas.gap import  task_totals, points_weight, pilot_distance, pilot_speed, pilot_departure_leadout
 from myconn import Database
 
 parameters = namedtuple('formula', 'allow_jump_the_gun, stopped_elapsed_calc, coeff_func, coeff_func_scaled, coef_landout')
@@ -60,13 +60,56 @@ def lc_calc(res, t):
         trailing            = parameters.coef_landout(task_time, best_dist_to_ess)
         trailing            = parameters.coef_func_scaled(trailing, SS_Distance)
 
-    LC = leading + res['fixed_LC'] + trailing
+    LC = leading + res['fixed_LC'] + trailing   #this is broken with manually put Min. Dist. pilots.
+                                                #need to put all 0 in those DB entries and like 100 in fixed_LC
 
     '''write final LC to tblTaskResult table in tarLeadingCoeff column'''
     # making a def because I suppose that in the future we could avoid storing total LC in DB
     store_LC(res['tarPk'], LC)
 
     return LC
+
+def launch_validity(taskt, formula):
+    '''
+    C.4.1 Launch Validity
+    ‘Pilots Present’ are pilots arriving on take-off, with their gear, with the intention of flying.
+    For scoring purposes, ‘Pilots Present’ are all pilots not in the ‘Absent’ status (ABS):
+    Pilots who took off, plus pilots present who did not fly (DNF). DNFs need to be attributed carefully.
+    A pilot who does not launch due to illness, for instance, is not a DNF, but an ABS.
+
+    LVR = min (1, (num pilots launched + nominal launch) / pilots present )
+    Launch Validity = 0.028*LRV + 2.917*LVR^2 - 1.944*LVR^3
+    '''
+
+    nomlau  = taskt['pilots'] * (1 - formula['forNomLaunch'])
+    LVR     = min(1, (taskt['launched'] + nomlau) / taskt['pilots'])
+    launch  = 0.028 * LVR + 2.917 * LVR**2 - 1.944 * LVR**3
+    launch  = min(launch, 1) if launch > 0 else 0           #sanity
+    print("PWC Launch validity: {}".format(launch))
+    return launch
+
+def day_quality(task, formula):
+    from formulas.gap import distance_validity, time_validity, stopped_validity
+
+    if not task.launchvalid:
+        print("Launch invalid - quality set to 0")
+        return (0, 0, 0, 0)
+
+    taskt = task.stats
+
+    if taskt['pilots'] == 0:
+        print("No pilots present - quality set to 0")
+        return (0, 0, 0, 0)
+
+    stopv = 1
+    if task.stopped_time:
+        stopv   = stopped_validity(task, formula)
+
+    launch      = launch_validity(taskt, formula)
+    distance    = distance_validity(taskt, formula)
+    time        = time_validity(taskt, formula)
+
+    return distance, time, launch, stopv
 
 def ordered_results(task, formula, results):
 
@@ -135,9 +178,9 @@ def ordered_results(task, formula, results):
         taskres['startSS']      = res['tarSS']
         taskres['start']        = res['tarStart']
         taskres['endSS']        = res['tarES']
-        taskres['timeafter']    = res['tarES'] - taskt['minarr']
+        taskres['timeafter']    = (res['tarES'] - taskt['minarr']) if res['tarES'] else None
         taskres['place']        = res['Place']
-        taskres['time']         = taskres['endSS'] - taskres['startSS']
+        taskres['time']         = (taskres['endSS'] - taskres['startSS']) if taskres['endSS'] else 0
         taskres['goal']         = res['tarGoal']
         taskres['last_time']    = res['tarLastTime']
         taskres['fixed_LC']   = res['tarLeadingCoeff2']

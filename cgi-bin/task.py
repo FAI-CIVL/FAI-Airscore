@@ -59,39 +59,39 @@ class Task:
 
     def __init__(self, turnpoints, start_time, end_time, task_type, stopped_time=None, last_start_time=None,
                  check_launch='off'):
-        self.tasPk = None
-        self.comPk = None
-        self.date = None    # in datetime.date format
-        self.turnpoints = turnpoints
-        self.task_name = None
-        self.task_start_time = None
-        self.start_time = start_time
-        self.start_close_time = None
-        self.end_time = end_time
-        self.task_type = task_type
-        self.ShortRouteDistance = 0
-        self.StartSSDistance = 0
-        self.SSInterval = 0
-        self.EndSSDistance = 0
-        self.SSDistance = 0
-        self.Distance = 0  # non optimised distance
-        self.optimised_turnpoints = []
-        self.optimised_legs = []  # opt distance between cylinders
-        self.partial_distance = []  # distance from launch to waypoint
-        self.legs = []  ##non optimised legs
-        self.stats = dict()  #scored task statistics
+        self.tasPk                      = None
+        self.comPk                      = None
+        self.date                       = None    # in datetime.date format
+        self.turnpoints                 = turnpoints
+        self.task_name                  = None
+        self.task_start_time            = None
+        self.start_time                 = start_time
+        self.start_close_time           = None
+        self.end_time                   = end_time
+        self.task_type                  = task_type
+        self.ShortRouteDistance         = 0
+        self.StartSSDistance            = 0
+        self.SSInterval                 = 0
+        self.EndSSDistance              = 0
+        self.SSDistance                 = 0
+        self.Distance                   = 0  # non optimised distance
+        self.optimised_turnpoints       = []
+        self.optimised_legs             = []  # opt distance between cylinders
+        self.partial_distance           = []  # distance from launch to waypoint
+        self.legs                       = []  ##non optimised legs
+        self.stats                      = dict()  #scored task statistics
         #self.results = []  #scored task results
-        self.stopped_time = stopped_time  # time task was stopped.
-        self.last_start_time = last_start_time  # last start gate when there are more than 1
-        self.check_launch = check_launch  # check launch flag. whether we check that pilots leave from launch.
-        self.arrival = None
-        self.departure = None
-        self.height_bonus = None
-        self.comment = None
-        self.goalalt = 0
-        self.time_offset = 0
-        self.tolerance = 0
-        self.launchvalid = None
+        self.stopped_time               = stopped_time  # time task was stopped.
+        self.last_start_time            = last_start_time  # last start gate when there are more than 1
+        self.check_launch               = check_launch  # check launch flag. whether we check that pilots leave from launch.
+        self.arrival                    = None
+        self.departure                  = None
+        self.height_bonus               = None
+        self.comment                    = None
+        self.goalalt                    = 0
+        self.time_offset                = 0
+        self.tolerance                  = 0
+        self.launchvalid                = None
 
     @staticmethod
     def read_task(task_id):
@@ -157,6 +157,7 @@ class Task:
         if t is None:
             print('Not a valid task')
             return
+        task_name           = t['tasName']
         time_offset         = t['comTimeOffset']
         task_date           = t['tasDate']
         start_time          = int(t['sstime'] - time_offset*60*60)
@@ -233,9 +234,10 @@ class Task:
                 partial_distance.append(tp['partial_distance'])
 
         task = Task(turnpoints, start_time, end_time, task_type, stopped_time, last_start_time, check_launch)
-        task.launchvalid = launchvalid
+        task.launchvalid            = launchvalid
         task.tasPk                  = task_id
         task.comPk                  = comPk
+        task.task_name              = task_name
         task.date                   = task_date
         task.distance               = distance
         task.EndSSDistance          = EndSSDistance

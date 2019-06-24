@@ -26,6 +26,7 @@ def main(args):
         exit()
 
     task = Task.read_task(task_id)
+    print('{} - ID {}'.format(task.task_name, task.tasPk))
     task.calculate_optimised_task_length()
     task.calculate_task_length()
     task.update_task_distance()

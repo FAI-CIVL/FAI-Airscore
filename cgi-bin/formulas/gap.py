@@ -39,6 +39,7 @@ def task_totals(task, formula):
                     `firstESS`,
                     `lastESS`,
                     `minTime`,
+                    `minTimeGoal`,
                     `LCmin`
                 FROM
                     `TaskTotalsView`
@@ -64,9 +65,10 @@ def task_totals(task, formula):
     task.stats['goal']          = int(t['TotalGoal'])
     task.stats['maxdist']       = t['maxDist']
     task.stats['fastest']       = t['minTime']
-    task.stats['minarr']        = t['firstESS'] if t['minTime'] > 0 else 0
+    task.stats['fastestingoal'] = t['minTimeGoal']
+    task.stats['minarr']        = t['firstESS']
     task.stats['maxarr']        = t['lastESS']
-    task.stats['tqtime']        = t['minTime'] # ???
+    #task.stats['tqtime']        = t['minTime'] # ???
     #task.stats['LCmin']         = t['LCmin']   # not already calculated
     task.stats['mindept']       = t['firstStart']
     task.stats['lastdept']      = t['lastStart']
@@ -74,134 +76,133 @@ def task_totals(task, formula):
     if task.stopped_time:     # Null is returned as None
         glidebonus = formula['glidebonus']
         print("F: glidebonus=", glidebonus)
-        task.stats['landed'] = t['Landed']
+        task.stats['landed'] = t['TotalLanded']
 
     return task.stats
 
-
-def day_quality(task, formula):
-    from math import sqrt
-
-    taskt = task.stats
-
-    tmin = None
-    if taskt['pilots'] == 0:
-        launch = 0
-        distance = 0
-        time = 0.1
-        return (distance, time, launch)
-
-
+def launch_validity(taskt, formula):
     '''
-    C.4.1 Launch Validity
-    LVR = min (1, (num pilots launched + nominal launch) / total pilots )
-    Launch Validity = 0.028*LRV + 2.917*LVR^2 - 1.944*LVR^3
+    9.1 Launch Validity
+    ‘Pilots Present’ are pilots arriving on take-off, with their gear, with the intention of flying.
+    For scoring purposes, ‘Pilots Present’ are all pilots not in the ‘Absent’ status (ABS):
+    Pilots who took off, plus pilots present who did not fly (DNF). DNFs need to be attributed carefully.
+    A pilot who does not launch due to illness, for instance, is not a DNF, but an ABS.
+
+    LVR = min (1, num_pilots_flying / (pilots_present * nom_launch) )
+    Launch Validity = 0.027*LRV + 2.917*LVR^2 - 1.944*LVR^3
     ?? Setting Nominal Launch = 10 (max number of DNF that still permit full validity) ??
     '''
 
-    if task.launchvalid == 0:
-        print("Launch invalid - dist quality set to 0")
-        launch = 0
-    else:
-        nomlau = taskt['pilots'] * (1 - formula['forNomLaunch'])
-        x = (taskt['launched'] + nomlau) / taskt['pilots']
-        x = min(1, x)
-        launch = 0.028 *x + 2.917 *x *x - 1.944 *x *x *x
-        launch = min(launch, 1) if launch > 0 else 0
-        print("Launch validity = launch")
+    LVR = min(1, (taskt['launched']) / (taskt['pilots'] * formula['forNomLaunch']))
+    launch = 0.028 * LVR + 2.917 * LVR**2 - 1.944 * LVR**3
+    launch = min(launch, 1) if launch > 0 else 0           #sanity
+    print("GAP Launch validity = launch")
 
+    return launch
+
+def distance_validity(taskt, formula):
     '''
-    C.4.2 Distance Validity
-    DVR = (Total flown Distance over MinDist) / [ (PilotsFlying / 2) * (NomGoal +1) * (NomDist - MinDist) * NomGoal * (BestDist - NomDist) ]
+    9.2 Distance Validity
+    NomDistArea = ( ((NomGoal + 1) * (NomDist − MinDist)) + max(0, (NomGoal * BestDistOverNom)) ) / 2
+    DVR = SumOfFlownDistancesOverMinDist / (NumPilotsFlying * NomDistArea)
     Dist. Validity = min (1, DVR)
     '''
 
-    nomgoal = formula['forNomGoal']   # nom goal percentage
-    nomdist = formula['forNomDistance']  # nom distance
-    mindist = formula['forMinDistance']  # min distance
-    maxdist = taskt['maxdist']  # max distance
-    totalflown = taskt['distovermin']  # total distance flown by pilots over min. distance
-    bestdistovernom = taskt['maxdist'] - nomdist  # best distance flown ove minimum dist.
+    nomgoal         = formula['forNomGoal']         # nom goal percentage
+    nomdist         = formula['forNomDistance']     # nom distance
+    mindist         = formula['forMinDistance']     # min distance
+    totalflown      = taskt['distovermin']          # total distance flown by pilots over min. distance
+    BestDistOverNom = taskt['maxdist'] - nomdist    # best distance flown ove minimum dist.
     # bestdistovermin = taskt['maxdist'] - mindist  # best distance flown ove minimum dist.
-    numlaunched = taskt['launched'] # Num Pilots flown
+    NumPilotsFlying = taskt['launched']             # Num Pilots flown
 
-    print("nom goal * best dist over nom : ", (nomgoal * bestdistovernom))
+    NomDistArea     = ( ((nomgoal + 1)*(nomdist - mindist)) + max(0, (nomgoal * BestDistOverNom)) ) / 2
+    DVR             = totalflown / (NumPilotsFlying * NomDistArea)
 
-    # distance = 2 * totalflown / ( taskt['launched'] * ( (1+nomgoal) * (int( formula['nomdist']-formula['mindist']) + .5 ) ) * (nomgoal * bestdist) )
-    if (nomgoal * bestdistovernom) > 0:
-        print("It is positive")
-        nomdistarea = ((nomgoal + 1) * (nomdist - mindist) + (nomgoal * bestdistovernom)) / 2
-        print("NomDistArea : ", nomdistarea)
+    print("Nom. Goal: {}% | Min. Distance: {} Km | Nom. Distance: {} Km".format(nomgoal*100, mindist/1000, nomdist/1000))
+    print("Total Flown Distance over min. dist.: {} Km".format(totalflown/1000))
+    print("Pilots launched: {} | Best Distance over Nom.: {} Km".format(NumPilotsFlying, BestDistOverNom/1000))
+    print("NomDistArea: {}".format(NomDistArea))
+    print('DVR = {}'.format(DVR))
 
-    else:
-        print("It is negative or null")
-        nomdistarea = (nomgoal + 1) * (nomdist - mindist) / 2
+    distance        = min(1, DVR)
 
+    print("Distance validity = {}".format(distance))
+    return distance
 
-    print("Nom. Goal parameter: ", nomgoal)
-    print("Min. Distance : ", mindist)
-    print("Nom. Distance: ", nomdist)
-    print("Total Flown Distance : ", taskt['distance'])
-    print("Total Flown Distance over min. dist. : " , totalflown)
-    print("Pilots launched : ", numlaunched)
-    print("Best Distance: ", maxdist)
-    print("NomDistArea : ", nomdistarea)
-
-    distance = totalflown / (numlaunched * nomdistarea)
-    distance = min(1, distance)
-
-    print("Total : ", (totalflown / (numlaunched * nomdistarea)))
-    print("PWC distance validity = ", distance)
-
+def time_validity(taskt, formula):
     '''
-    C.4.3 Time Validity
-    if no pilot @ ESS
-    TVR = min(1, BestDist/NomDist)
-    else
-    TVR = min(1, BestTime/NomTime)
+    9.3 Time Validity
+    Time validity depends on the fastest time to complete the speed section, in relation to nominal time.
+    If the fastest time to complete the speed section is longer than nominal time, then time validity is always equal to 1.
+    If no pilot finishes the speed section, then time validity is not based on time but on distance:
+
+    If one pilot reached ESS: TVR = min(1, BestTime / NominalTime)
+    If no pilot reached ESS: TVR = min(1, BestDistance / NominalDistance)
+
     TimeVal = max(0, min(1, -0.271 + 2.912*TVR - 2.098*TVR^2 + 0.457*TVR^3))
     '''
 
     if taskt['ess'] > 0:
-        tmin = taskt['tqtime']
-        x = tmin / formula['forNomTime']
-        print("ess > 0, x before min ", x)
-        x = min(1, x)
-        print("ess > 0, x = ", x)
+        TVR = min(1, (taskt['fastest'] / formula['forNomTime']))
+        print("ess > 0, TVR = {}".format(TVR))
     else:
-        x = taskt['maxdist'] / formula['forNomDistance']
-        print("none in goal, x before min ", x)
-        x = min(1, x)
-        print("none in goal, x = ", x)
+        TVR = min(1, (taskt['maxdist'] / formula['forNomDistance']))
+        print("none in goal, TVR = {}".format(TVR))
 
-    time = -0.271 + 2.912 *x - 2.098 *x *x + 0.457 *x *x *x
-    print("time quality before min time")
-    time = min(1, time)
-    print("time quality before max time")
-    time = max(0, time)
+    time = max(0, min(1, (-0.271 + 2.912 * TVR - 2.098 * TVR**2 + 0.457 * TVR**3)))
 
-    print("PWC time validity (tmin={} x={}) = {}".format(tmin, x, time))
+    print("Time validity = {}".format(time))
+    return time
 
+def stopped_validity(task, formula):
     '''
-    C.7.1 Stopped Task Validity
-    If ESS > 0 -> StopVal = 1
-    else StopVal = min (1, sqrt((bestDistFlown - avgDistFlown)/(TaskDistToESS-bestDistFlown+1)*sqrt(stDevDistFlown/5))+(pilotsLandedBeforeStop/pilotsLaunched)^3)
+    12.3.3 Stopped Task Validity
+    NumberOfPilotsReachedESS > 0 : StoppedTaskValidity = 1
+    NumberOfPilotsReachedESS = 0 :
+    StoppedTaskValidity = min(1, sqrt((bestDistFlown - avgDistFlown)/(TaskDistToESS-bestDistFlown+1)*sqrt(stDevDistFlown/5))+(pilotsLandedBeforeStop/pilotsLaunched)^3)
     '''
-    # Fix - need distlaunchtoess, landed
+    from math import sqrt
+
+    taskt = task.stats
+
+    if taskt['fastest'] and taskt['fastest'] > 0:
+        return 1
+
     avgdist = taskt['distance'] / taskt['launched']
     distlaunchtoess = task.EndSSDistance
-    # when calculating stopv, to avoid dividing by zero when max distance is greater than distlaunchtoess i.e. when someone reaches goal if statement added.
-    maxSSdist = 0
-    if taskt['fastest'] and taskt['fastest'] > 0:
-        stopv = 1
 
-    else:
-        x = (taskt['landed'] / taskt['launched'])
-        stopv = sqrt((taskt['maxdist'] - avgdist) / (maxSSdist+1) * sqrt(taskt['stddev'] / 5) ) + x ** 3
-        stopv = min(1, stopv)
+    stopv = min(1,
+                (sqrt((taskt['maxdist'] - avgdist) / (distlaunchtoess - taskt['maxdist'] + 1) * sqrt(taskt['stddev'] / 5) )
+                + (taskt['landed'] / taskt['launched'])**3))
+    return stopv
+
+def day_quality(task, formula):
+
+    if not task.launchvalid:
+        print("Launch invalid - dist quality set to 0")
+        launch      = 0
+        distance    = 0
+        time        = 0
+        return (distance, time, launch)
+
+    taskt = task.stats
+
+    if taskt['pilots'] == 0:
+        launch      = 0
+        distance    = 0
+        time        = 0.1
+        return (distance, time, launch)
+
+    stopv = 1
+    if task.stopped_time:
+        stopv   = stopped_validity(task, formula)
+
+    launch      = launch_validity(taskt, formula)
+    distance    = distance_validity(taskt, formula)
+    time        = time_validity(taskt, formula)
 
     return distance, time, launch, stopv
-
 
 def points_weight(task, formula):
     from math import sqrt
