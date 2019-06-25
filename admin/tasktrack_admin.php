@@ -125,17 +125,35 @@ elseif (array_key_exists('delete', $_REQUEST))
 elseif ( array_key_exists('setdnf', $_REQUEST) )
 {
     $pilPk = reqival('pilPk');
-    set_status($link, $pilPk, $comPk, $tasPk, 'dnf');
+    $tarPk = set_status($link, $pilPk, $comPk, $tasPk, 'dnf');
+    if ($tarPk > 0) {
+        $message .= "Pilot succesfully set to DNF. \n";
+    }
+    else {
+        $message .= "There was an error during the process. \n";
+    }
 }
 elseif ( array_key_exists('setabs', $_REQUEST) )
 {
     $pilPk = reqival('pilPk');
-    set_status($link, $pilPk, $comPk, $tasPk, 'abs');
+    $tarPk = set_status($link, $pilPk, $comPk, $tasPk, 'abs');
+    if ($tarPk > 0) {
+        $message .= "Pilot succesfully set to ABS. \n";
+    }
+    else {
+        $message .= "There was an error during the process. \n";
+    }
 }
 elseif ( array_key_exists('mindist', $_REQUEST) )
 {
     $pilPk = reqival('pilPk');
-    set_status($link, $pilPk, $comPk, $tasPk, 'mindist');
+    $tarPk = set_status($link, $pilPk, $comPk, $tasPk, 'mindist');
+    if ($tarPk > 0) {
+        $message .= "Pilot succesfully set to Minimum Distance. \n";
+    }
+    else {
+        $message .= "There was an error during the process. \n";
+    }
 }
 elseif (addslashes($_REQUEST['foo']) == 'Send Tracklog')
 {

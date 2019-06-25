@@ -92,6 +92,7 @@ class Task:
         self.time_offset                = 0
         self.tolerance                  = 0
         self.launchvalid                = None
+        self.event_class                = None
 
     @staticmethod
     def read_task(task_id):
@@ -183,6 +184,7 @@ class Task:
         departure           = t['tasDeparture']
         tolerance           = t['tasMargin'] * 0.01
         goalalt             = t['tasGoalAlt']
+        event_class         = t['comClass']
 
         if t['tasMaxDistance']:
             '''task has been already scored'''
@@ -254,7 +256,7 @@ class Task:
         task.tolerance              = tolerance
         task.goalalt                = goalalt
         task.stats                  = stats
-
+        task.event_class            = event_class
 
         return task
 

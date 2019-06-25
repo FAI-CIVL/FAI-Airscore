@@ -193,43 +193,60 @@ function task_score($traPk)
 
 function set_status($link, $pilPk, $comPk, $tasPk, $resulttype)
 {
-    #Get pilot details
-    $query = "  SELECT
-                    P.*,
-                    FC.forMinDistance * 1000 AS minDistance,
-                    T.tasStartTime,
-                    T.tasDate
-                FROM
-                    PilotView P,
-                    tblTask T
-                    JOIN tblForComp FC USING (comPk)
-                WHERE
-                    P.pilPk = $pilPk
-                    AND T.tasPk = $tasPk";
-    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot profile failed: ' . mysqli_connect_error());
-    $pilot = mysqli_fetch_object($result);
-    $glider = $pilot->pilGliderBrand . ' ' . $pilot->pilGlider;
-    $dhv = $pilot->gliGliderCert;
-    $tasDate = $pilot->tasDate;
-    $flown = 0.0;
-    if ( $resulttype == 'mindist' )
+    // #Get pilot details
+    // $query = "  SELECT
+    //                 P.*,
+    //                 FC.forMinDistance * 1000 AS minDistance,
+    //                 T.tasStartTime,
+    //                 T.tasDate
+    //             FROM
+    //                 PilotView P,
+    //                 tblTask T
+    //                 JOIN tblForComp FC USING (comPk)
+    //             WHERE
+    //                 P.pilPk = $pilPk
+    //                 AND T.tasPk = $tasPk";
+    // $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot profile failed: ' . mysqli_connect_error());
+    // $pilot = mysqli_fetch_object($result);
+    // $glider = $pilot->pilGliderBrand . ' ' . $pilot->pilGlider;
+    // $dhv = $pilot->gliGliderCert;
+    // $tasDate = $pilot->tasDate;
+    // $flown = 0.0;
+    // if ( $resulttype == 'mindist' )
+    // {
+    //     $flown = $pilot->minDistance;
+    // }
+    // $query = "insert into tblTrack (pilPk,traGlider,traDHV,traDate,traStart,traLength) values ($pilPk,'$glider','$dhv','$tasDate','$tasDate',$flown)";
+    // mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Track insert result failed: ' . mysqli_connect_error());
+    //
+    // $traPk = mysqli_insert_id($link);
+    //
+    // $query = "insert into tblTaskResult (tasPk,traPk,tarDistance,tarResultType) values ($tasPk,$traPk,$flown,'$resulttype')";
+    // mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Insert result failed: ' . mysqli_connect_error());
+    //
+    // $query = "INSERT INTO tblComTaskTrack (comPk, tasPk, traPk) VALUES ($comPk, $tasPk, $traPk)";
+    // mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Insert comtasktrack values failed: ' . mysqli_connect_error());
+    //
+    // $out = '';
+    // $retv = 0;
+    // exec(BINDIR . "task_score.pl $tasPk", $out, $retv);
+    $tarPk = 0;
+    $command = "python3 " . BINDIR . "set_pilot_status.py $tasPk $pilPk '$resulttype' ";
+    echo ($command);
+    $pid = exec($command, $out, $retv);
+
+    foreach ($out as $row)
     {
-        $flown = $pilot->minDistance;
+        // echo $row . PHP_EOL;
+        if (substr_compare("tarPk=6", $row, 0, 6) == 0)
+        {
+            $tarPk = 0 + substr($row, 6);
+            //echo $row . PHP_EOL;
+            break;
+        }
     }
-    $query = "insert into tblTrack (pilPk,traGlider,traDHV,traDate,traStart,traLength) values ($pilPk,'$glider','$dhv','$tasDate','$tasDate',$flown)";
-    mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Track insert result failed: ' . mysqli_connect_error());
 
-    $traPk = mysqli_insert_id($link);
-
-    $query = "insert into tblTaskResult (tasPk,traPk,tarDistance,tarResultType) values ($tasPk,$traPk,$flown,'$resulttype')";
-    mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Insert result failed: ' . mysqli_connect_error());
-
-    $query = "INSERT INTO tblComTaskTrack (comPk, tasPk, traPk) VALUES ($comPk, $tasPk, $traPk)";
-    mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Insert comtasktrack values failed: ' . mysqli_connect_error());
-
-    $out = '';
-    $retv = 0;
-    exec(BINDIR . "task_score.pl $tasPk", $out, $retv);
+    return $tarPk;
 }
 
 

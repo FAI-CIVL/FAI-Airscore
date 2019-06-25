@@ -183,7 +183,7 @@ def ordered_results(task, formula, results):
         taskres['time']         = (taskres['endSS'] - taskres['startSS']) if taskres['endSS'] else 0
         taskres['goal']         = res['tarGoal']
         taskres['last_time']    = res['tarLastTime']
-        taskres['fixed_LC']   = res['tarLeadingCoeff2']
+        taskres['fixed_LC']     = res['tarLeadingCoeff2']
 
         if taskres['time'] < 0:
             taskres['time'] = 0
@@ -192,7 +192,10 @@ def ordered_results(task, formula, results):
         Leadout Points Adjustment
         C.6.3.1
         '''
-        taskres['LC'] = lc_calc(taskres, task) # PWC LeadCoeff (with squared distances)
+        if taskres['result'] not in ('abs', 'dnf', 'mindist') and taskres['startSS']:
+            taskres['LC'] = lc_calc(taskres, task) # PWC LeadCoeff (with squared distances)
+        # else:
+        #     taskres['LC'] = 0
 
         pilots.append(taskres)
 
@@ -200,12 +203,12 @@ def ordered_results(task, formula, results):
 
 def points_allocation(task, formula, results = None):   # from PWC###
 
-    taskt = task.stats
-    tasPk = task.tasPk
+    taskt   = task.stats
+    tasPk   = task.tasPk
     quality = taskt['quality']
-    Ngoal = taskt['goal']
-    Tmin = taskt['fastest']
-    Tfarr = taskt['minarr']
+    Ngoal   = taskt['goal']
+    Tmin    = taskt['fastest']
+    Tfarr   = taskt['minarr']
 
     sorted_pilots = ordered_results(task, formula, results)
 
@@ -214,7 +217,7 @@ def points_allocation(task, formula, results = None):   # from PWC###
     in ordered_results we calculate final LC
     so we need to update LCmin for the task
     '''
-    task.stats['LCmin'] = min(res['LC'] for res in sorted_pilots)
+    task.stats['LCmin'] = min(res['LC'] for res in sorted_pilots if res['result'] not in ('dnf', 'abs', 'mindist'))
 
     # Get basic GAP allocation values
     Adistance, Aspeed, Astart, Aarrival = points_weight(task, formula)
@@ -238,21 +241,29 @@ def points_allocation(task, formula, results = None):   # from PWC###
     # Score each pilot now
     for pil in sorted_pilots:
         tarPk = pil['tarPk']
-        penalty = pil['penalty']
-        if not penalty:
-            penalty= 0
+        penalty = pil['penalty'] if pil['penalty'] else 0
+        # if not penalty:
+        #     penalty= 0
 
-        # Pilot distance score
-        # FIX: should round pil->distance properly?
-        # my pilrdist = round(pil->{'distance'}/100.0) * 100
 
-        Pdist = pilot_distance(task, pil, Adistance)
+        # Sanity
+        if pil['result'] in ('dnf', 'abs'):
+            Pdist       = 0
+            Pspeed      = 0
+            Parrival    = 0
+            Pdepart     = 0
 
-        # Pilot speed score
-        Pspeed = pilot_speed(task, pil, Aspeed)
+        else:
+            # Pilot distance score
+            # FIX: should round pil->distance properly?
+            # my pilrdist = round(pil->{'distance'}/100.0) * 100
+            Pdist = pilot_distance(task, pil, Adistance)
 
-        # Pilot departure/leading points
-        Pdepart = pilot_departure_leadout(task, pil, Astart)
+            # Pilot speed score
+            Pspeed = pilot_speed(task, pil, Aspeed)
+
+            # Pilot departure/leading points
+            Pdepart = pilot_departure_leadout(task, pil, Astart) if (pil['result'] != 'mindist' and pil['startSS']) else 0
 
         # Pilot arrival score    this is always off in pwc
         # Parrival = pilot_arrival(formula, task, pil, Aarrival)
@@ -262,17 +273,11 @@ def points_allocation(task, formula, results = None):   # from PWC###
             pil['goal'] = 0
 
         if pil['goal'] == 0:
-            Pspeed = Pspeed - Pspeed * formula['forGoalSSpenalty']
-            Parrival = Parrival - Parrival * formula['forGoalSSpenalty']
-
-        # Sanity
-        if pil['result'] == 'dnf' or pil['result'] == 'abs':
-            Pdist       = 0
-            Pspeed      = 0
-            Parrival    = 0
-            Pdepart     = 0
+            Pspeed = Pspeed * (1 - formula['forGoalSSpenalty'])
+            Parrival = Parrival * (1 - formula['forGoalSSpenalty'])
 
         # Total score
+        print('{} + {} + {} + {} + {}'.format(Pdist,Pspeed,Parrival,Pdepart,penalty))
         Pscore = Pdist + Pspeed + Parrival + Pdepart - penalty
 
         # Store back into tblTaskResult ...

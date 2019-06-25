@@ -13,14 +13,14 @@ def get_comp(tasPk, test = 0):
     """Get comPk from tasPk"""
     if str(tasPk).isdigit() and tasPk > 0:
         with Database() as db:
-            query = ("""    SELECT
-                                comPk
+            query = """    SELECT
+                                `comPk`
                             FROM
-                                tblTask
+                                `tblTask`
                             WHERE
-                                tasPk = {} """.format(tasPk))
-            if db.rows(query) > 0:
-                return db.fetchone(query)['comPk']
+                                `tasPk` = %s """
+            if db.rows(query, [tasPk]) > 0:
+                return db.fetchone(query, [tasPk])['comPk']
     else:
         print ("Error: {} is NOT a valid task ID".format(tasPk))
 
@@ -84,6 +84,17 @@ def get_registration(comPk, test=0):
         print (message)
 
     return (reg)
+
+def get_offset(task_id):
+    with Database() as db:
+        query = """    SELECT
+                            `comTimeOffset` AS offset
+                        FROM
+                            `TaskView`
+                        WHERE
+                            `tasPk` = %s
+                        LIMIT 1"""
+        return db.fetchone(query, [task_id])['offset']
 
 def get_registered_pilots(comPk, test=0):
     """Gets list of registered pilots for the comp"""
@@ -150,37 +161,30 @@ def is_registered(pilPk, comPk, test = 0):
 
     return (regPk)
 
-def get_glider(pilPk, test = 0):
+def get_glider(pilPk):
     """Get glider info for pilot, to be used in results"""
-    message = ''
-    info = dict()
-    info['glider'] = 'Unknown'
-    info['cert'] = None
+    glider = dict()
+    glider['name'] = 'Unknown'
+    glider['cert'] = None
 
     if (pilPk > 0):
         with Database() as db:
-            query = ("""    SELECT
+            query = """    SELECT
                                 pilGlider, pilGliderBrand, gliGliderCert
                             FROM
                                 PilotView
                             WHERE
-                                pilPk = {}
-                            LIMIT 1""".format(pilPk))
-            message += ("Query: {}  \n".format(query))
-            if db.rows(query) > 0:
-                row = 0 + db.fetchone(query)
-                info['glider'] = " ".join(row['pilGliderBrand'], row['pilGlider'])
-                info['cert'] = row['gliGliderCert']
+                                pilPk = %s
+                            LIMIT 1"""
+            if db.rows(query, [pilPk]) > 0:
+                row = db.fetchone(query, [pilPk])
+                glider['name'] = " ".join([row['pilGliderBrand'], row['pilGlider']])
+                glider['cert'] = row['gliGliderCert']
+
     else:
-        message += ("get_glider - Error: NOT a valid Pilot ID \n")
+        print ("get_glider - Error: NOT a valid Pilot ID \n")
 
-    if test == 1:
-        """TEST MODE"""
-        message += ("Glider Info: \n")
-        message += ("{}, cert. {} \n".format(info['glider'], info['cert']))
-        print (message)
-
-    return (info)
+    return (glider)
 
 def get_nat_code(iso):
     """Get Country Code from ISO2 or ISO3"""

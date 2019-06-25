@@ -13,10 +13,10 @@ def main():
     text  = dict()
     """check parameter is good."""
     if len(sys.argv) > 1:
-        """Get tasPk"""  
+        """Get tasPk"""
         track = sys.argv[1]
         if len(sys.argv) > 2:
-            """Test Mode""" 
+            """Test Mode"""
             print('Running in TEST MODE')
             test = 1
         """check if traPk or filename"""
@@ -27,7 +27,7 @@ def main():
         print ("track imported in object Track() \n")
         print('Fixes: \n')
         for fix in mytrack.flight.fixes:
-            print ('{} | {} {} | {}\n'.format(fix.rawtime, fix.lat, fix.lon, fix.gnss_alt))
+            print ('{} | {} {} | {}\n'.format(fix.lat, fix.lon, fix.gnss_alt, fix.rawtime))
         print ("file: {} \n".format(mytrack.filename))
         print ("pilot ID: {} \n".format(mytrack.pilPk))
         print ("Glider: {} | cert. {}\n".format(mytrack.glider, mytrack.cert))
@@ -44,10 +44,10 @@ def main():
 
 
         #j = json.dumps(result, cls=DateTimeEncoder)
-        
+
         #with open('json_kml.json', 'wb') as fp:
             #fp.write(j.encode("utf-8"))
-        
+
 
 if __name__ == "__main__":
     main()

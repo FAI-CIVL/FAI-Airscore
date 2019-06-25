@@ -105,14 +105,14 @@ class Track():
 
     def add(self, test = 0):
         import datetime
-        from compUtils import get_class
+        from compUtils import get_class, get_offset
         """Imports track to db"""
         result = ''
         message = ''
         message += ("track {} will be imported for pilot with ID {} and task with ID {} \n".format(self.filename, self.pilPk, self.tasPk))
 
         """get time of first fix of the track"""
-        stime = sec_to_time(self.flight.fixes[0].rawtime)
+        stime = sec_to_time(self.flight.fixes[0].rawtime + get_offset(self.tasPk)*3600)
         trastart = datetime.datetime.combine(self.date, stime)
 
         traclass = get_class(self.tasPk)
@@ -233,7 +233,7 @@ class Track():
 
         #assert self.flight.valid
 
-        #TODO write objects to the geojson form the flight object
+        #TODO write objects to the geojson from the flight object
 #         min_lat = self.flight.takeoff_fix.lat
 #         min_lon = self.flight.takeoff_fix.lon
 #         max_lat = self.flight.takeoff_fix.lat
@@ -259,7 +259,7 @@ class Track():
 
         route = []
         for fix in self.flight.fixes:
-            route.append((fix.lon, fix.lat))
+            route.append((fix.lon, fix.lat, fix.gnss_alt, fix.rawtime))
 
         route_multilinestring = MultiLineString([route])
         features.append(Feature(geometry=route_multilinestring, properties={"Track": "Track"}))

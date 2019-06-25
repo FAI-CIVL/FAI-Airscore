@@ -255,7 +255,6 @@ def pilot_departure_leadout(task, pil, Astart):
     if task.departure == 'leadout':  # In PWC is always the case, we can ignore else cases
         print("  - PWC  leadout: LC ", LCp, ", LCMin : ", LCmin)
         if LCp > 0:
-
             if LCp <= LCmin:
                 print("======= being LCp <= LCmin  =========")
                 Pdepart = Astart
@@ -263,7 +262,6 @@ def pilot_departure_leadout(task, pil, Astart):
                 # this shouldn't happen
                 print("=======  being LCmin <= 0   =========")
                 Pdepart = 0
-
             else: # We should have ONLY this case
                 # $Pdepart = $Astart * (1-(($LCp-$LCmin)*($LCp-$LCmin)/sqrt($LCmin))**(1/3))
                 # $Pdepart = $Alead * (1-(($LCp-$LCmin)*($LCp-$LCmin)/sqrt($LCmin))**(1/3)) # Why $Alead is not working?
