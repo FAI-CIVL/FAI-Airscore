@@ -41,9 +41,12 @@ IGC_LIB = 'igc_lib'
 
 ##############################################################################################################
 
-# function to style geojson geometries
+# functions to style geojson geometries
 def style_function(feature):
     return {'fillColor': 'white','weight': 2,'opacity': 1,'color': 'red','fillOpacity': 0.5,"stroke-width":3}
+
+def style_function_prestart(feature):
+    return {'fillColor': 'white','weight': 2,'opacity': 1, 'color': 'gray','fillOpacity': 0.5,"stroke-width":3}
 
 # function to return the bbox of geometries
 def checkbbox(lat,lon,bbox):
@@ -121,6 +124,10 @@ def make_map(layer_geojson=False,points=False,circles=False,polyline=False,margi
         folium.GeoJson(geojson,name='Flight',style_function=style_function).add_to(folium_map)
 #        folium.GeoJson(geojson,name='Flight',style_function=style_function,tooltip=folium.features.GeoJsonTooltip(labels=True,sticky=False)).add_to(folium_map)
 
+    if layer_geojson["prestart"]:
+        geojson = layer_geojson["prestart"]
+        folium.GeoJson(geojson,name='preFlight',style_function=style_function_prestart).add_to(folium_map)
+        
     """Design cylinders"""
     if circles:
         for c in circles:
@@ -214,11 +221,12 @@ def extract_flight_details(flight):
     return flight_html
 
 # dump flight object to geojson
-def dump_flight(track):
-    geojson_file = track.to_geojson()
+def dump_flight(track, task):
+    geojson_file_prestart = track.to_geojson(maxtime=task.start_time)
+    geojson_file_poststart = track.to_geojson(mintime=task.start_time)
     bbox = get_bbox(track.flight)
 
-    return geojson_file, bbox
+    return geojson_file_prestart, geojson_file_poststart, bbox
 
 # allowed uploads
 # def allowed_file(filename):
@@ -302,6 +310,7 @@ def main(mode, val, track_id):
         region_id = val
         region, wpt_coords, turnpoints = get_region(region_id)
         layer['geojson'] = None
+        layer['prestart'] = None
         layer['bbox'] = get_region_bbox(region)
     else:
         '''create the task map for route or tracklog maps'''
@@ -313,9 +322,10 @@ def main(mode, val, track_id):
         if mode == 'tracklog':
             """create task and track objects"""
             track = Track.read_db(track_id)
-            layer['geojson'], layer['bbox'] = dump_flight(track)
+            layer['prestart'], layer['geojson'], layer['bbox'] = dump_flight(track)
         elif mode == 'route':
             layer['geojson'] = None
+            layer['prestart'] = None
             layer['bbox'] = get_route_bbox(task)
 
     #flight_results = extract_flight_details(track.flight) #at the moment we have no takoff_fix, landing_fix or thermal in Flight Obj

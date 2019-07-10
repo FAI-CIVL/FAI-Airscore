@@ -225,7 +225,7 @@ class Track():
 
         return track
 
-    def to_geojson(self, filename = None, test = 0):
+    def to_geojson(self, filename = None, mintime=0, maxtime=86401, test = 0):
         """Dumps the flight to geojson format
             If a filename is given, it write the file, otherwise returns the string"""
 
@@ -259,7 +259,8 @@ class Track():
 
         route = []
         for fix in self.flight.fixes:
-            route.append((fix.lon, fix.lat, fix.gnss_alt, fix.rawtime))
+            if mintime <= fix.rawtime < maxtime:
+                route.append((fix.lon, fix.lat))
 
         route_multilinestring = MultiLineString([route])
         features.append(Feature(geometry=route_multilinestring, properties={"Track": "Track"}))
