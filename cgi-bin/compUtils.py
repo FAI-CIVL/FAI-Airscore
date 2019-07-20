@@ -230,10 +230,16 @@ def read_formula(comPk):
 
     return formula
 
-def get_task_file_path(tasPk, test = 0):
+def get_task_file_path(tasPk, JSON=False, test = 0):
     """gets path to task tracks folder"""
-    from Defines import FILEDIR
+    from Defines import FILEDIR, JSONDIR
     from os import path as p
+
+    if JSON:
+        dir = JSONDIR
+    else:
+        dir = FILEDIR
+
     path = None
     query = "  SELECT LOWER(T.`comCode`) AS comCode, " \
             "LOWER(T.`tasCode`) AS tasCode, " \
@@ -250,8 +256,8 @@ def get_task_file_path(tasPk, test = 0):
             tname = t['tasCode']
             year = str(t['comYear'])
             tdate = str(t['tasDate'])
-            print('filedir={}, year={}, cname={}, tname={}, tdate={}'.format(FILEDIR, year, cname, tname, tdate))
-            path = str(p.join(FILEDIR, year, cname, ('_'.join([tname, tdate]))))
+            print('filedir={}, year={}, cname={}, tname={}, tdate={}'.format(dir, year, cname, tname, tdate))
+            path = str(p.join(dir, year, cname, ('_'.join([tname, tdate]))))
     if test:
         print('Get Task tracks folder:')
         print(query)

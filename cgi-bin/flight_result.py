@@ -527,7 +527,7 @@ class Flight_result:
 
 
         if res_path is None:
-            res_path = get_task_file_path(task.tasPk, test)+'JSON/'
+            res_path = get_task_file_path(task.tasPk, JSON=True, test=test)
         if test:
             print('save result file')
             print('Task tracks path: {}'.format(res_path))
@@ -568,7 +568,6 @@ class Flight_result:
                 with open(fullname, 'w') as f:
                     json.dump(data, f)
 
-                # print(f'file succesfully copied to : {self.filename}')
                 print('file succesfully saved to :', fullname)
                 return fullname
             except:

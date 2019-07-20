@@ -19,6 +19,7 @@ from trackUtils import get_pil_track
 from pprint import pprint
 import flight_result
 import itertools
+import Defines
 
 #using aerofiles library to parse igc to geojson
 #from aerofiles.igc import Reader
@@ -137,7 +138,7 @@ def make_map(layer_geojson=False, points=False, circles=False, polyline=False, m
 
         for t in thermals:
             #             icon = Icon(color='blue', icon_color='black', icon='sync-alt', angle=0, prefix='fas')
-            icon = CustomIcon('thermal.png')
+            icon = CustomIcon(Defines.IMAGEDIR + 'thermal.png')
             thermal_group.add_child(Marker([t[1], t[0]], icon=icon, popup=Popup(t[2])))
 
         folium_map.add_child(thermal_group)
