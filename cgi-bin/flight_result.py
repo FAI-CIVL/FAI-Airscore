@@ -1,6 +1,7 @@
 from calcUtils import get_datetime
 from route import rawtime_float_to_hms, in_semicircle, distance_flown
 from myconn import Database
+import jsonpickle, json, geojson
 
 """
 contains Flight_result class.
@@ -342,6 +343,7 @@ class Flight_result:
             if Task.task_type == 'RACE':
                 if not Task.SSInterval:
                     result.SSS_time         = Task.start_time
+                    result.SSS_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(Task.start_time + time_offset))
                     result.Pilot_Start_time = min([e[1] for e in result.Waypoints_achieved if e[0]=='SSS'])
                 else:
                     start_num = int((Task.start_close_time - Task.start_time) / (Task.SSInterval*60))
@@ -349,6 +351,8 @@ class Flight_result:
                     while gate >= Task.start_time:
                         if any([e for e in result.Waypoints_achieved if e[0]=='SSS' and e[1] >= gate]):
                             result.SSS_time         = gate
+                            result.SSS_time_str = (
+                                        ("%02d:%02d:%02d") % rawtime_float_to_hms(gate + time_offset))
                             result.Pilot_Start_time = min([e[1] for e in result.Waypoints_achieved if e[0]=='SSS' and e[1] >= gate])
                             break
                         gate -= Task.SSInterval*60
@@ -356,6 +360,7 @@ class Flight_result:
             elif Task.task_type == 'ELAPSED TIME':
                 result.Pilot_Start_time = max([e[1] for e in result.Waypoints_achieved if e[0]=='SSS'])
                 result.SSS_time         = result.Pilot_Start_time
+                result.SSS_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(result.SSS_time + time_offset))
 
             result.Start_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(result.SSS_time+time_offset))
 
@@ -445,3 +450,128 @@ class Flight_result:
 
         with Database() as db:
            r = db.execute(query, params)
+
+
+    def store_result_json(self):
+        json.dump(self)
+
+    def to_geojson_result(self, track, Task, to_file=False):
+        """Dumps the flight to geojson format
+            If a filename is given, it write the file, otherwise returns the string"""
+
+        from geojson import Point, Feature, FeatureCollection, MultiPoint, MultiLineString, dump
+
+        # assert self.flight.valid
+
+        # TODO write objects to the geojson form the flight object
+        #         min_lat = self.flight.takeoff_fix.lat
+        #         min_lon = self.flight.takeoff_fix.lon
+        #         max_lat = self.flight.takeoff_fix.lat
+        #         max_lon = self.flight.takeoff_fix.lon
+
+        features = []
+        toff_land = []
+        # features.append(Feature(geometry=point, properties={"country": "Spain"}))
+
+        takeoff = Point((track.flight.takeoff_fix.lon, track.flight.takeoff_fix.lat))
+        toff_land.append(Feature(geometry=takeoff, properties={"TakeOff": "TakeOff"}))
+        landing = Point((track.flight.landing_fix.lon, track.flight.landing_fix.lat))
+        toff_land.append(Feature(geometry=landing, properties={"Landing": "Landing"}))
+
+        thermals = []
+        thermal_labels = []
+        all_thermals = []
+        for thermal in track.flight.thermals:
+            thermals.append((thermal.enter_fix.lon, thermal.enter_fix.lat,
+                             f'{thermal.vertical_velocity():.1f}m/s gain:{thermal.alt_change():.0f}m'))
+
+        pre_sss = []
+        pre_goal = []
+        post_goal = []
+
+        for fix in track.flight.fixes:
+            if fix.rawtime < self.SSS_time:
+                pre_sss.append((fix.lon, fix.lat))
+            elif fix.rawtime <= self.goal_time:
+                pre_goal.append((fix.lon, fix.lat))
+            else:
+                post_goal.append((fix.lon, fix.lat))
+
+        route_multilinestring = MultiLineString([pre_sss])
+        features.append(Feature(geometry=route_multilinestring, properties={"Track": "Pre_SSS"}))
+        route_multilinestring = MultiLineString([pre_goal])
+        features.append(Feature(geometry=route_multilinestring, properties={"Track": "Pre_Goal"}))
+        route_multilinestring = MultiLineString([post_goal])
+        features.append(Feature(geometry=route_multilinestring, properties={"Track": "Post_Goal"}))
+
+        feature_collection = FeatureCollection(features)
+
+        data = {'tracklog': feature_collection, 'thermals': thermals, 'takeoff_landing': toff_land,
+                'result': jsonpickle.dumps(self)}
+        if to_file:
+            self.save_result_file(data, Task)
+
+        else:
+            return data
+
+
+    def save_result_file(self, data, task, res_path=None, pname=None, test = 0):
+        """copy result file in the correct folder and with correct name
+           if path or pname is None will calculate. note that if bulk importing it is better to pass these values
+        rather than query DB for each track"""
+
+        from shutil import copyfile
+        import glob
+        from compUtils import get_task_file_path
+        from os import path, makedirs
+
+
+        if res_path is None:
+            res_path = get_task_file_path(task.tasPk, test)+'JSON/'
+        if test:
+            print('save result file')
+            print('Task tracks path: {}'.format(res_path))
+
+        if pname is None:
+            query = "SELECT " \
+                    "   CONCAT_WS('_', LOWER(P.`pilFirstName`), LOWER(P.`pilLastName`) ) AS pilName " \
+                    "   FROM `PilotView` P " \
+                    "   WHERE P.`pilPk` = %s" \
+                    "   LIMIT 1"
+            param = self.pilPk
+
+            if test:
+                print('pname query:')
+                print(query)
+
+            with Database() as db:
+                # get the task details.
+                t = db.fetchone(query, params=param)
+                if t:
+                    pname = t['pilName']
+
+        if res_path:
+            """check if directory already exists"""
+            if not path.isdir(res_path):
+                makedirs(res_path)
+            """creates a name for the track
+            name_surname_date_time_index.igc
+            if we use flight date then we need an index for multiple tracks"""
+
+            index = str(len(glob.glob(res_path+'/'+pname+'*.json')) + 1).zfill(2)
+            filename = '_'.join([pname, str(task.date), index]) + '.json'
+            fullname = path.join(res_path, filename)
+            # print(f'path to copy file: {fullname}')
+            print('path to save file:',fullname)
+            """copy file"""
+            try:
+                with open(fullname, 'w') as f:
+                    json.dump(data, f)
+
+                # print(f'file succesfully copied to : {self.filename}')
+                print('file succesfully saved to :', fullname)
+                return fullname
+            except:
+                print('Error saving file:', fullname)
+        else:
+            print('error, path not created')
