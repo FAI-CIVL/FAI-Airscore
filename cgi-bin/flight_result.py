@@ -511,8 +511,7 @@ class Flight_result:
         if to_file:
             self.save_result_file(data, Task)
 
-        else:
-            return data
+        return data
 
 
     def save_result_file(self, data, task, res_path=None, pname=None, test = 0):
@@ -520,7 +519,6 @@ class Flight_result:
            if path or pname is None will calculate. note that if bulk importing it is better to pass these values
         rather than query DB for each track"""
 
-        from shutil import copyfile
         import glob
         from compUtils import get_task_file_path
         from os import path, makedirs
@@ -561,7 +559,6 @@ class Flight_result:
             index = str(len(glob.glob(res_path+'/'+pname+'*.json')) + 1).zfill(2)
             filename = '_'.join([pname, str(task.date), index]) + '.json'
             fullname = path.join(res_path, filename)
-            # print(f'path to copy file: {fullname}')
             print('path to save file:',fullname)
             """copy file"""
             try:
