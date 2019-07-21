@@ -1,7 +1,6 @@
 <?php
-require 'authorisation.php';
-require 'hc.php';
-require 'format.php';
+require 'startup.php';
+require LIBDIR.'hc.php';
 
 $link = db_connect();
 
@@ -16,7 +15,7 @@ function  handicap_result($tasPk, $link)
         $maxscore = $row['maxScore'];
     }
 
-    $query = "select TM.teaPk,TM.teaName,P.pilLastName,P.pilFirstName,P.pilPk,TR.tarScore-H.hanHandicap*$maxscore as handiscore from tblTaskResult TR, tblTask TK, tblTrack K, tblPilot P, tblTeam TM, tblTeamPilot TP, tblHandicap H, tblCompetition C where TP.teaPk=TM.teaPk and P.pilPk=TP.pilPk and H.comPk=C.comPk and C.comPk=TK.comPk and K.traPk=TR.traPk and K.pilPk=P.pilPk and H.pilPk=P.pilPk and TK.tasPk=$tasPk and TR.tasPk=TK.tasPk and TM.comPk=C.comPk order by TM.teaPk";
+    $query = "select TM.teaPk,TM.teaName,P.pilLastName,P.pilFirstName,P.pilPk,TR.tarScore-H.hanHandicap*$maxscore as handiscore from tblTaskResult TR, tblTask TK, tblTrack K, PilotView P, tblTeam TM, tblTeamPilot TP, tblHandicap H, tblCompetition C where TP.teaPk=TM.teaPk and P.pilPk=TP.pilPk and H.comPk=C.comPk and C.comPk=TK.comPk and K.traPk=TR.traPk and K.pilPk=P.pilPk and H.pilPk=P.pilPk and TK.tasPk=$tasPk and TR.tasPk=TK.tasPk and TM.comPk=C.comPk order by TM.teaPk";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Team handicap query failed: ' . mysqli_connect_error());
     $row = mysqli_fetch_array($result, MYSQLI_BOTH);
     $htable = [];
@@ -82,7 +81,7 @@ function  handicap_result($tasPk, $link)
 
 function aggregate_result($tasPk, $teamsize, $link)
 {
-    $query = "select TM.teaPk,TM.teaName,P.pilLastName,P.pilFirstName,P.pilPk,TR.tarScore*TP.tepModifier as tepscore from tblTaskResult TR, tblTask TK, tblTrack K, tblPilot P, tblTeam TM, tblTeamPilot TP, tblCompetition C where TP.teaPk=TM.teaPk and P.pilPk=TP.pilPk and C.comPk=TK.comPk and K.traPk=TR.traPk and K.pilPk=P.pilPk and TK.tasPk=$tasPk and TR.tasPk=TK.tasPk and TM.comPk=C.comPk order by TM.teaPk,TR.tarScore*TP.tepModifier desc";
+    $query = "select TM.teaPk,TM.teaName,P.pilLastName,P.pilFirstName,P.pilPk,TR.tarScore*TP.tepModifier as tepscore from tblTaskResult TR, tblTask TK, tblTrack K, PilotView P, tblTeam TM, tblTeamPilot TP, tblCompetition C where TP.teaPk=TM.teaPk and P.pilPk=TP.pilPk and C.comPk=TK.comPk and K.traPk=TR.traPk and K.pilPk=P.pilPk and TK.tasPk=$tasPk and TR.tasPk=TK.tasPk and TM.comPk=C.comPk order by TM.teaPk,TR.tarScore*TP.tepModifier desc";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Team aggregate query failed: ' . mysqli_connect_error());
     $row = mysqli_fetch_array($result, MYSQLI_BOTH);
     $htable = [];
@@ -186,7 +185,7 @@ if (array_key_exists('tarup', $_REQUEST))
 if (array_key_exists('addflight', $_REQUEST))
 {
     $fai = addslashes($_REQUEST['fai']);
-    $query = "select pilPk from tblPilot where pilFAI='$fai'";
+    $query = "select pilPk from PilotView where pilFAI='$fai'";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query pilot failed: ' . mysqli_connect_error());
 
     if (mysqli_num_rows($result) > 0)
@@ -287,7 +286,7 @@ $htable = [];
 $htable[] = array( fb("Team"), fb("Pilot"), fb("Time"), fb("Dist"), fb("Total") );
 $count = 1;
 
-$sql = "select TR.*, P.*, L.*, TTR.* from tblTeamResult TR, tblTeam P, tblTeamPilot TP, tblPilot L, tblTaskResult TTR, tblTrack TK where TP.teaPk=P.teaPk and TP.pilPk=L.pilPk and TR.tasPk=$tasPk and TTR.traPk=TK.traPk and P.teaPk=TR.teaPk and TK.pilPk=TP.pilPk and TTR.tasPk=TR.tasPk and TK.traPk=TTR.traPk order by TR.terScore desc, P.teaName";
+$sql = "select TR.*, P.*, L.*, TTR.* from tblTeamResult TR, tblTeam P, tblTeamPilot TP, PilotView L, tblTaskResult TTR, tblTrack TK where TP.teaPk=P.teaPk and TP.pilPk=L.pilPk and TR.tasPk=$tasPk and TTR.traPk=TK.traPk and P.teaPk=TR.teaPk and TK.pilPk=TP.pilPk and TTR.tasPk=TR.tasPk and TK.traPk=TTR.traPk order by TR.terScore desc, P.teaName";
 
 $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Team Result Selection failed: ' . mysqli_connect_error());
 $lastscore = 0;

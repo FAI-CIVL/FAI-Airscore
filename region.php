@@ -1,7 +1,5 @@
 <?php
-require 'authorisation.php';
-require 'format.php';
-require 'template.php';
+require 'startup.php';
 
 $link = db_connect();
 $file = __FILE__;
@@ -11,7 +9,7 @@ if (reqexists('downloadwpt'))
 {
     // implement a nice 'confirm'
     $id=reqival('downloadwpt');
-    redirect("download_waypoints.php?download=$id");
+    redirect("/download_waypoints.php?download=$id");
 }
 
 if (reqexists('downloadopenair'))
@@ -41,7 +39,9 @@ while ( $row = mysqli_fetch_array($result, MYSQLI_BOTH) )
 }
 
 //initializing template header
-tpadmin($link,$file);
+//tpadmin($link,$file);
+tpinit($link,$file,$row);
+
 
 echo "<h3>Flying Areas</h3>\n";
 if ( $message !== '')
@@ -51,7 +51,7 @@ if ( $message !== '')
 echo "<hr />";
 echo "<i> We have " . $count . " defined flying areas</i>";
 echo "<hr />";
-echo "<form enctype=\"multipart/form-data\" action=\"area_admin.php\" name=\"area\" method=\"post\">";
+echo "<form enctype=\"multipart/form-data\" action=\"region.php\" name=\"area\" method=\"post\">";
 echo ftable($rtable,"class=format areatable", '', '');
 echo "</form>";
 

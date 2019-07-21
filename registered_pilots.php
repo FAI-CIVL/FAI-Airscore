@@ -1,9 +1,6 @@
 <?php
-
-require_once 'authorisation.php';
-require_once 'format.php';
-require_once 'dbextra.php';
-require 'template.php';
+require 'startup.php';
+require_once LIBDIR.'dbextra.php';
 
 // Main Code Begins HERE //
 
@@ -103,7 +100,7 @@ $query = "	SELECT
 				H.hanHandicap 
 			FROM 
 				tblRegistration R 
-				LEFT JOIN tblPilot P on P.pilPk = R.pilPk 
+				LEFT JOIN PilotView P on P.pilPk = R.pilPk 
 				LEFT OUTER JOIN tblHandicap H ON H.pilPk = P.pilPk 
 				AND H.comPk = $comPk 
 			WHERE 

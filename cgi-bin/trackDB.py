@@ -4,20 +4,20 @@ from myconn import Database
 
 def read_formula(comPk):
 
-    query = """	SELECT 
+    query = """	SELECT
                                     F.*,
-                                    FC.* 
-                                FROM 
-                                    tblCompetition C 
-                                    JOIN tblForComp FC USING (comPk) 
-                                    LEFT OUTER JOIN tblFormula F USING (forPk) 
-                                WHERE 
+                                    FC.*
+                                FROM
+                                    tblCompetition C
+                                    JOIN tblForComp FC USING (comPk)
+                                    LEFT OUTER JOIN tblFormula F USING (forPk)
+                                WHERE
                                     C.comPk = %s """
     with Database() as db:
         # get the formula details.
         formula = db.fetchone(query, [comPk])
     formula['forMinDistance'] *= 1000
-    formula['forNomDistance'] *=1000
+    formula['forNomDistance'] *= 1000
     formula['forNomTime'] *= 60
     formula['forDiffDist'] *= 1000
 #    formula['ScaleToValidity'] = formula['forScaleToValidity']

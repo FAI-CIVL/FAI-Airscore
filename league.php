@@ -1,8 +1,5 @@
 <?php
-
-require 'authorisation.php';
-require 'template.php';
-require 'format.php';
+require 'startup.php';
 
 function getseasoninfo($link, $season)
 {

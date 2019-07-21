@@ -1,7 +1,6 @@
 <?php
 ob_start(); 
-
-require 'template.php';
+require 'startup.php';
 
 /**
  * Constant that is checked in included files to prevent direct access.

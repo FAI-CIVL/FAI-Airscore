@@ -5,14 +5,16 @@ contains
 
 Use: import route
 
-Stuart Mackintosh - 2018
+Stuart Mackintosh - 2019
 """
 
 import math
 import numpy as np
 from geopy.distance import geodesic, ELLIPSOIDS, vincenty
 from collections import namedtuple
-from calcUtils import *
+from geographiclib.geodesic import Geodesic
+
+geod = Geodesic.WGS84
 
 a = 6378137  # WSG84 major meters
 b = 6356752.3142  # WGS84 minor meters
@@ -22,6 +24,54 @@ f = 0.0033528106647474805  # WGS84 flattening
 # a = ELLIPSOIDS['WGS-84'][0] * 1000  # WSG84 major meters: 6378137
 # b = ELLIPSOIDS['WGS-84'][1] * 1000  # WGS84 minor meters: 6356752.3142
 # f = ELLIPSOIDS['WGS-84'][2] #WGS84 flattening
+
+class Turnpoint:
+    """ single turnpoint in a task.
+    Attributes:
+        id: progressive number
+        lat: a float, latitude in degrees
+        lon: a float, longitude in degrees
+        dlat: a float, latitude (for optimised route)
+        dlon: a float, longitude (for optimised route)
+        altitude: altitude amsl
+        radius: radius of cylinder or line in km
+        type: type of turnpoint; "launch",
+                                 "speed",
+                                 "cylinder",
+                                 "endspeed",
+                                 "goal"
+        shape: "line" or "circle"
+        how: "entry" or "exit"
+    """
+
+    def __init__(self, lat, lon, radius, type, shape, how):
+        self.name       = None
+        self.id         = None                  # tawPk
+        self.rwpPk      = None
+        self.lat        = lat
+        self.lon        = lon
+        self.flat       = lat * math.pi / 180
+        self.flon       = lon * math.pi / 180
+        self.radius     = radius
+        self.type       = type
+        self.shape      = shape
+        self.how        = how
+        self.altitude   = None
+        self.description = None
+
+        assert type in ["launch", "speed", "waypoint", "endspeed", "goal", "optimised", "restricted"], \
+            "turnpoint type is not valid: %r" % type
+        assert shape in ["line", "circle", "optimised"], "turnpoint shape is not valid: %r" % shape
+        assert how in ["entry", "exit", "optimised"], "turnpoint how (direction) is not valid: %r" % how
+
+    def in_radius(self, fix, t, tm):
+        """Checks whether the provided GNSSFix is within the radius"""
+        if t < 0:
+            tol = min(tm, self.radius * t)
+        else:
+            tol = max(tm, self.radius * t)
+
+        return distance(self, fix) < self.radius + tol
 
 class polar(object):
     def __init__(self, lat=0, lon=0, flat=0, flon=0, shape=None, radius=0):
@@ -192,6 +242,115 @@ def find_closest(P1, P2, P3=None, method='fast_andoyer'):
     result = cartesian2polar(CL)
     return result
 
+def check_start (state, fix, tp, tolerance, min_tol_m):
+    '''check if pilot
+            is in correct position to take the start cylinder [state = 'ready'],
+            and if he takes the start [state = 'started']'''
+
+    if tp.how == "entry":
+        # pilot must have at least 1 fix outside the start after the start time then enter
+        condition = not(tp.in_radius(fix, -tolerance, -min_tol_m))
+        started = tp.in_radius(fix, tolerance, min_tol_m)
+    else:
+        # pilot must have at least 1 fix inside the start after the start time then exit
+        condition = tp.in_radius(fix, tolerance, min_tol_m)
+        started = not(tp.in_radius(fix, -tolerance, -min_tol_m))
+
+    if state == 'ready':
+        return condition
+    else:
+        return started
+
+def tp_made (fix, tp, tolerance, min_tol_m):
+    '''check if pilot is in correct position to take the cylinder'''
+
+    if tp.how == "entry":
+        # pilot must have at least 1 fix inside the cylinder
+        condition = tp.in_radius(fix, tolerance, min_tol_m)
+    else:
+        # pilot must have at least 1 fix outside the cylinder
+        condition = not(tp.in_radius(fix, -tolerance, -min_tol_m))
+
+    return condition
+
+def start_made_civl (fix, next, start, tolerance, min_tol_m):
+    '''check if pilot is in correct position to take the start cylinder
+    This version is following the FAI Rules / CIVL Gap Rules 2018 8.1.1
+
+    CIVL rules do not make distinction between start and turnpoints, but this creates
+    problems in case of a tesk with enter cylinder and first turnpoint that differs from start wpt.
+    FS considers that a exit start.
+    We prefer to use XCTrack approach.
+    This version DOES USE a Entry/Exit flag (start only)
+    '''
+
+    if start.how == "entry":
+        #entry start cylinder
+        condition = not(start.in_radius(fix, -tolerance, -min_tol_m)) and start.in_radius(next, tolerance, min_tol_m)
+    else:
+        #exit start cylinder
+        condition = start.in_radius(fix, tolerance, min_tol_m) and not(start.in_radius(next, -tolerance, -min_tol_m))
+
+    return condition
+
+def tp_made_civl (fix, next, tp, tolerance, min_tol_m):
+    '''check if pilot is in correct position to take the cylinder
+    This version is following the FAI Rules / CIVL Gap Rules 2018 8.1.1
+    crossingturnpoint[i]: ∃j:
+    (distance(center[i],trackpoint[j]) >= innerRadius[i] ∧ distance(center[i] , trackpoint[j+1] ) <= outerRadius[i] )
+    ∨
+    (distance(center[i] , trackpoint[j+1] ) >= innerRadius[i] ∧ distance(center[i] , trackpoint[j] ) <= outerRadius[i] )
+
+    This version DOES NOT USE a Entry/Exit flag
+    '''
+
+    condition = (   (not(tp.in_radius(fix, -tolerance, -min_tol_m)) and (tp.in_radius(next, tolerance, min_tol_m)))
+                or
+                    (not(tp.in_radius(next, -tolerance, -min_tol_m)) and (tp.in_radius(fix, tolerance, min_tol_m))) )
+
+    return condition
+
+def tp_time_civl (fix, next, tp):
+
+    '''return correct time based on CIVL rules'''
+
+    '''
+    The time of a crossing depends on whether it actually cuts across the actual cylinder,
+    or whether both points lie within the tolerance band, but on the same side of the actual cylinder.
+
+    (distance(center , trackpoint[j] ) < radius ∧ distance(center , trackpoint[j+1] ) < radius )
+    ∨
+    (distance(center , trackpoint[j] ) > radius ∧ distance(center , trackpoint[j+1] ) > radius )
+    ∧
+    turnpoint = ESS: crossing.time = trackpoint[j+1].time
+
+    (distance(center , trackpoint[j] ) < radius ∧ distance(center , trackpoint[j+1] ) < radius )
+    ∨
+    (distance(center , trackpoint[j] ) > radius ∧ distance(center , trackpoint[j+1] ) > radius )
+    ∧
+    turnpoint ≠ ESS: crossing.time = trackpoint[j].time
+
+    (distance(center , trackpoint[j] ) < radius ∧ distance(center , trackpoint[j+1] ) > radius )
+    ∨
+    (distance(center , trackpoint[j] ) > radius ∧ distance(center , trackpoint[j+1] ) < radius )
+    crossing.time = interpolateTime(trackpoint[j],trackpoint[j+1])
+    '''
+
+    from route import distance
+
+    if (    (tp.in_radius(fix, 0, 0) and tp.in_radius(next, 0, 0))
+            or
+            (not(tp.in_radius(fix, 0, 0)) and not(tp.in_radius(next, 0, 0)))):
+        return (fix.rawtime if tp.type != 'endspeed' else next.rawtime)
+    else:
+        '''interpolate time:
+        Will use distance from radius of the two points, and the proportion of times'''
+        d1      = abs(distance(tp, fix)  - tp.radius)
+        d2      = abs(distance(tp, next) - tp.radius)
+        speed   = (d1+d2)/(next.rawtime - fix.rawtime)
+        t       = round((fix.rawtime + d1/speed), 2)
+        return t
+
 def in_semicircle(self, wpts, wmade, coords):
     wpt = wpts[wmade]
     fcoords = namedtuple('fcoords', 'flat flon')  # wpts don't have flon/flat so make them for polar2cartesian
@@ -285,3 +444,109 @@ def fast_andoyer(p1, p2):
     return semi_major_axis * (d + dd)
 
 
+def calcBearing(lat1, lon1, lat2, lon2):
+    return Geodesic.WGS84.Inverse(lat1, lon1, lat2, lon2)['azi1']
+
+
+def opt_goal(p1, p2):
+    if p2.type == 'line':
+        #print('last tp is p2. lat{} lon{}'.format(p2.lat, p2.lon)
+        return Turnpoint(lat=p2.lat, lon=p2.lon, type='optimised', radius=0, shape='optimised', how='optimised')
+    else:
+        #print(f'radius:{p2.radius}')
+        p = geod.Direct(p2.lat, p2.lon, calcBearing(p2.lat, p2.lon, p1.lat, p1.lon), p2.radius)
+        return Turnpoint(lat=p['lat2'], lon=p['lon2'], type='optimised', radius=0, shape='optimised', how='optimised')
+
+
+def opt_wp(p1, p2, p3, r2):
+    if p3 is None:
+        return opt_goal(p1, p2)
+    p2_1 = calcBearing(p2.lat, p2.lon, p1.lat, p1.lon)
+
+    p2_3 = calcBearing(p2.lat, p2.lon, p3.lat, p3.lon)
+
+    if p2_1 < 0:
+        p2_1 += 360
+    if p2_3 < 0:
+        p2_3 += 360
+
+    #print('p2->p1', p2_1)
+    #print('p2->p3', p2_3)
+
+    angle = abs(p2_1 - p2_3)
+    #print('abs angle:', angle)
+    if angle > 180:
+        angle = 360 - angle
+
+    angle = angle / 2
+
+    #print('angle/2:', angle)
+    major = max(p2_1, p2_3)
+    minor = min(p2_1, p2_3)
+    if (360 - major + minor) < 180:
+        if (360 - major) > angle:
+            angle = major + angle
+        else:
+            angle = minor - angle
+    else:
+        angle = minor + angle
+
+    #print('final angle:', angle)
+    opt_point = geod.Direct(p2.lat, p2.lon, angle, r2)
+    return Turnpoint(lat=opt_point['lat2'], lon=opt_point['lon2'], type='optimised', radius=0, shape='optimised', how='optimised')
+
+
+def opt_wp_exit(opt, t1, exit):
+    # search for point that opt line crosses exit cylinder
+    bearing = calcBearing(opt.lat, opt.lon, t1.lat, t1.lon)
+    distance = geod.Inverse(opt.lat, opt.lon, t1.lat, t1.lon)['s12']
+    point = opt
+    found = False
+    d1 = distance / 2
+    direction = ''
+    while not found:
+
+        p = geod.Direct(opt.lat, opt.lon, bearing, distance)
+        point = Turnpoint(lat=p['lat2'], lon=p['lon2'], type='optimised', radius=0, shape='optimised', how='optimised')
+        dist_from_centre = int(round(geod.Inverse(point.lat, point.lon, exit.lat, exit.lon)['s12']))
+        if dist_from_centre > exit.radius:
+            if direction != 'plus':
+                d1 = d1 / 2  # if we change direction halve the increment
+            distance = distance + d1
+            direction = 'plus'
+        elif dist_from_centre < exit.radius:
+            if direction != 'minus':
+                d1 = d1 / 2  # if we change direction halve the increment
+            distance = distance - d1
+            direction = 'minus'
+        else:
+            found = True
+    return point
+
+
+def opt_wp_enter(opt, t1, enter):
+    # search for point that opt line crosses enter cylinder
+    bearing = calcBearing(opt.lat, opt.lon, t1.lat, t1.lon)
+    distance = geod.Inverse(opt.lat, opt.lon, t1.lat, t1.lon)['s12']
+    point = opt
+    found = False
+    d1 = distance / 2
+    direction = ''
+    while not found:
+
+        p = geod.Direct(opt.lat, opt.lon, bearing, distance)
+        point = Turnpoint(lat=p['lat2'], lon=p['lon2'], type='optimised', radius=0, shape='optimised', how='optimised')
+        dist_from_centre = int(round(geod.Inverse(point.lat, point.lon, enter.lat, enter.lon)['s12']))
+        if dist_from_centre > enter.radius:
+            if direction != 'plus':
+                d1 = d1 / 2  # if we change direction halve the increment
+            distance = distance + d1
+            direction = 'plus'
+        elif dist_from_centre < enter.radius:
+            if direction != 'minus':
+                d1 = d1 / 2  # if we change direction halve the increment
+            distance = distance - d1
+            direction = 'minus'
+        else:
+            found = True
+    return point

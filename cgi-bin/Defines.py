@@ -22,4 +22,8 @@ DATABASE = config['db']['Name'] # mysql db name
 BINDIR = config['dir']['bin']  # script directory
 FILEDIR = config['dir']['file']  # files directory
 LOGDIR = config['dir']['log']  # log files directory
+JSONDIR = config['dir']['json']  # log files directory
+
+XC_LOGIN = config['xcontest']['User']
+XC_password = config['xcontest']['Pass']  # mysql db password
 

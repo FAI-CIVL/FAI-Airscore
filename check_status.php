@@ -1,9 +1,6 @@
 <?php
-
-require_once 'authorisation.php';
-require_once 'format.php';
-require_once 'dbextra.php';
-require 'template.php';
+require 'startup.php';
+require_once LIBDIR.'dbextra.php';
 
 function find_track($link, $tasPk, $pilPk)
 {
@@ -37,14 +34,14 @@ function get_open_tasks($link, $comp, $pilPk)
 	if ($restrict == 'registered')
 	{
 		# Check if pilot is registered
-		$sql = "SELECT * FROM tblRegistration WHERE comPk=$compK and pilPk=$pilPk LIMIT 1";
+		$sql = "SELECT * FROM tblRegistration WHERE comPk=$comPk and pilPk=$pilPk LIMIT 1";
 		$result = mysqli_query($link, $sql);
 		if (mysqli_num_rows($result) == 0)
 		{
 			$permission = 0;
 		}
 	}
-	if ( $permission = 0 )
+	if ( !$permission )
 	{
 		$ftable[] = array("You are not registered in this Competition",'','','');
 	}

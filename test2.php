@@ -50,8 +50,8 @@ echo "cerco di eseguire il file: " . (BINDIR . "test.py") . "<br />";
 $message = shell_exec(BINDIR . "test.py");
 print_r($message);
 
-echo "<br />cerco di eseguire il comando: "."/home/untps52y/opt/python-3.6.2/bin/python3 " . BINDIR . "test.py"."<br />";
-$message = shell_exec("/home/untps52y/opt/python-3.6.2/bin/python3 " . BINDIR . "test.py");
+echo "<br />cerco di eseguire il comando: "."/home/ubuntu/opt/python-3.6.2/bin/python3 " . BINDIR . "test.py"."<br />";
+$message = shell_exec("/home/ubuntu/opt/python-3.6.2/bin/python3 " . BINDIR . "test.py");
 print_r($message);
 
 echo "<hr />";
@@ -63,7 +63,7 @@ $task = "3";
 
 $all="n";
 
-$command = "/home/untps52y/opt/python-3.6.2/bin/python3 " . BINDIR . "email_pilots.py $task $file $all";
+$command = "/home/ubuntu/opt/python-3.6.2/bin/python3 " . BINDIR . "email_pilots.py $task $file $all";
 $message = shell_exec($command);
 print_r($message);
 

@@ -45,8 +45,8 @@ echo "<hr />";
  echo "Userv Apache is using to run: " . exec('whoami')."<br />";
  
 echo "<hr />";
-echo "<br />cerco di eseguire il comando: "."/home/untps52y/opt/python-3.6.2/bin/python3 " . BINDIR . "test.py"."<br />";
-$message = shell_exec("/home/untps52y/opt/python-3.6.2/bin/python3 " . BINDIR . "test.py reminder");
+echo "<br />cerco di eseguire il comando: "."python3 " . BINDIR . "test2.py"."<br />";
+$message = shell_exec("python3 " . BINDIR . "test2.py reminder");
 print_r($message);
 
 $task =3;
@@ -57,8 +57,8 @@ echo "cerco di eseguire il comando: ".(BINDIR . "test_args.py $task $file $confi
 
 
 
-$command = "/home/untps52y/opt/python-3.6.2/bin/python3 " . BINDIR . "test_args.py $task $file $confirm";
-$message = exec("/home/untps52y/opt/python-3.6.2/bin/python3 " . BINDIR . "test_args.py '".$task."' '".$file."' '".$confirm."'");
+$command = "python3 " . BINDIR . "test_args.py $task $file $confirm";
+$message = exec("python3 " . BINDIR . "test_args.py '".$task."' '".$file."' '".$confirm."'");
 print_r($message);
 
 ?>

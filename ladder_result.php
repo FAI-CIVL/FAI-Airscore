@@ -1,17 +1,13 @@
 <?php
-require_once 'authorisation.php';
-require_once 'format.php';
-require_once 'dbextra.php';
-require_once 'template.php';
-
-
+require 'startup.php';
+require_once LIBDIR.'dbextra.php';
 
 // function taskcmp($a, $b)
 // {
 //     if (!is_array($a)) return 0;
 //     if (!is_array($b)) return 0;
-// 
-//     if ($a['tname'] == $b['tname']) 
+//
+//     if ($a['tname'] == $b['tname'])
 //     {
 //         return 0;
 //     }
@@ -39,7 +35,7 @@ function add_result(&$results, $row, $topnat, $how)
     }
     //echo "pilPk=$pilPk tasname=$tasName, result=$score<br>\n";
     $perf = 0;
-    if ($how == 'ftv') 
+    if ($how == 'ftv')
     {
         $perf = 0;
         if ($validity > 0)
@@ -70,8 +66,8 @@ function ladder_result($link, $ladPk, $ladder, $season, $restrict)
 
     # This query selects the Max score for a national pilot. I don't think we need this, FTV uses winner score anyway
 //     $topnat = [];
-//     $sql = "select T.tasPk, max(T.tarScore) as topNat 
-//             from tblTaskResult T, tblTrack TL, tblPilot P
+//     $sql = "select T.tasPk, max(T.tarScore) as topNat
+//             from tblTaskResult T, tblTrack TL, PilotView P
 //             where T.traPk=TL.traPk and TL.pilPk=P.pilPk and P.pilNationCode='$nat'
 //             group by tasPk";
 //     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Top National Query: ' . mysqli_connect_error());
@@ -83,52 +79,82 @@ function ladder_result($link, $ladPk, $ladder, $season, $restrict)
     # Select from the main database of results
 //     $sql = "select 0 as extPk, TR.tarScore,
 //         TP.pilPk, TP.pilLastName, TP.pilFirstName, TP.pilNationCode, TP.pilFAI, TP.pilSex,
-//         TK.tasPk, TK.tasName, TK.tasDate, TK.tasQuality, 
-//         C.comName, C.comDateTo, LC.lcValue, 
-//         case when date_sub('$end', INTERVAL 365 DAY) > C.comDateTo 
-//         then (TR.tarScore * LC.lcValue * 0.90 * TK.tasQuality) 
-//         else (TR.tarScore * LC.lcValue * TK.tasQuality) end as ladScore, 
-//         (TR.tarScore * LC.lcValue * (case when date_sub('$end', INTERVAL 365 DAY) > C.comDateTo 
+//         TK.tasPk, TK.tasName, TK.tasDate, TK.tasQuality,
+//         C.comName, C.comDateTo, LC.lcValue,
+//         case when date_sub('$end', INTERVAL 365 DAY) > C.comDateTo
+//         then (TR.tarScore * LC.lcValue * 0.90 * TK.tasQuality)
+//         else (TR.tarScore * LC.lcValue * TK.tasQuality) end as ladScore,
+//         (TR.tarScore * LC.lcValue * (case when date_sub('$end', INTERVAL 365 DAY) > C.comDateTo
 //             then 0.90 else 1.0 end) / (TK.tasQuality * LC.lcValue)) as validity
-// from    tblLadderComp LC 
+// from    tblLadderComp LC
 //         join tblLadder L on L.ladPk=LC.ladPk
 //         join tblCompetition C on LC.comPk=C.comPk
 //         join tblTask TK on C.comPk=TK.comPk
 //         join tblTaskResult TR on TR.tasPk=TK.tasPk
 //         join tblTrack TT on TT.traPk=TR.traPk
-//         join tblPilot TP on TP.pilPk=TT.pilPk
+//         join PilotView TP on TP.pilPk=TT.pilPk
 // WHERE LC.ladPk=$ladPk and TK.tasDate > '$start' and TK.tasDate < '$end'
 //     and TP.pilNationCode=L.ladNationCode $restrict
 //     order by TP.pilPk, C.comPk, (TR.tarScore * LC.lcValue * TK.tasQuality) desc";
 
-	$sql = "SELECT 
-				0 AS extPk, 
-				TR.tarScore, 
-				P.*, 
-				T.tasPk, T.tasName, T.tasQuality, 
+// 	$sql = "SELECT
+// 				0 AS extPk,
+// 				TR.tarScore,
+// 				P.*,
+// 				T.tasPk, T.tasName, T.tasQuality,
+// 				(
+// 					SELECT
+// 						MAX(tblTaskResult.tarScore)
+// 					FROM
+// 						tblTaskResult
+// 					WHERE
+// 						tblTaskResult.tasPk = T.tasPk
+// 				) AS maxScore,
+// 				C.comName, C.comDateTo, C.comCode
+// 			FROM
+// 				tblLadderComp LC
+// 				JOIN tblLadder L USING (ladPk)
+// 				JOIN tblCompetition C ON LC.comPk = C.comPk AND (C.comDateFrom BETWEEN '$start' AND '$end')
+// 				JOIN tblTask T ON T.comPk = LC.comPk
+// 				JOIN tblTaskResult TR USING (tasPk)
+// 				JOIN tblTrack TT USING (traPk)
+// 				JOIN PilotView P ON P.pilPk = TT.pilPk AND P.pilNat = L.ladNationCode
+// 			WHERE
+// 				LC.ladPk = $ladPk
+// 				$restrict
+// 			ORDER BY
+// 				P.pilPk,
+// 				C.comPk,
+// 				T.tasPk,
+// 				TR.tarScore DESC";
+
+    $sql = "SELECT
+				0 AS extPk,
+				TR.tarScore,
+				P.*,
+				T.tasPk, T.tasName, T.tasQuality,
 				(
-					SELECT 
-						MAX(tblTaskResult.tarScore) 
-					FROM 
-						tblTaskResult 
-					WHERE 
-						tblTaskResult.tasPk = T.tasPk 
+					SELECT
+						MAX(ResultView.tarScore)
+					FROM
+						ResultView
+					WHERE
+						ResultView.tasPk = T.tasPk
 				) AS maxScore,
-				C.comName, C.comDateTo, C.comCode  
-			FROM 
-				tblLadderComp LC 
-				JOIN tblLadder L USING (ladPk) 
-				JOIN tblCompetition C ON LC.comPk = C.comPk AND (C.comDateFrom BETWEEN '$start' AND '$end') 
-				JOIN tblTask T ON T.comPk = LC.comPk 
-				JOIN tblTaskResult TR USING (tasPk) 
-				JOIN tblTrack TT USING (traPk) 
-				JOIN tblPilot P ON P.pilPk = TT.pilPk AND P.pilNat = L.ladNationCode 
-			WHERE 
-				LC.ladPk = $ladPk 
-				$restrict 
-			ORDER BY 
-				P.pilPk, 
-				C.comPk, 
+				C.comName, C.comDateTo, C.comCode
+			FROM
+				tblLadderComp LC
+				JOIN tblLadder L USING (ladPk)
+				JOIN tblCompetition C ON LC.comPk = C.comPk AND (C.comDateFrom BETWEEN '$start' AND '$end')
+				JOIN tblTask T ON T.comPk = LC.comPk
+				JOIN ResultView TR USING (tasPk)
+				JOIN PilotView P ON P.pilPk = TR.pilPk AND P.pilNat = L.ladNationCode
+			WHERE
+				LC.ladPk = $ladPk
+                $restrict
+			ORDER BY
+				P.pilPk,
+				C.comPk,
 				T.tasPk,
 				TR.tarScore DESC";
     //echo "$sql \n";
@@ -140,34 +166,34 @@ function ladder_result($link, $ladPk, $ladder, $season, $restrict)
     }
 
     // Work out how much validity we want (not really generic)
-    $sql = "SELECT 
-				SUM(tasQuality)* 1000 AS totQuality, 
-				SUM(maxScore) AS totMaxScore 
-			FROM 
-				tblLadderComp LC 
-				JOIN tblLadder L USING (ladPk) 
-				JOIN tblCompetition C USING (comPk) 
-				JOIN tblTask T USING (comPk) 
+    $sql = "SELECT
+				SUM(tasQuality)* 1000 AS totQuality,
+				SUM(maxScore) AS totMaxScore
+			FROM
+				tblLadderComp LC
+				JOIN tblLadder L USING (ladPk)
+				JOIN tblCompetition C USING (comPk)
+				JOIN tblTask T USING (comPk)
 				JOIN (
-					SELECT 
-						tasPk, 
-						MAX(tarScore) AS maxScore 
-					FROM 
-						tblTaskResult 
-					GROUP BY 
+					SELECT
+						tasPk,
+						MAX(tarScore) AS maxScore
+					FROM
+						ResultView
+					GROUP BY
 						tasPk
-				) TR using (tasPk) 
-			WHERE 
-				LC.ladPk = $ladPk 
-				AND C.comDateFrom BETWEEN '$start' 
+				) TR using (tasPk)
+			WHERE
+				LC.ladPk = $ladPk
+				AND C.comDateFrom BETWEEN '$start'
 				AND '$end'";
 
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Total quality query failed: ' . mysqli_connect_error());
     //$param = mysqli_result($result,0,0) * $ladParam / 100 ;
-    
+
     # I will use Sum of Max Score as FTV param (PWC Style)
     $param = mysqli_result($result,0,1) * $ladParam;
-    
+
 
     # Add external task results (to 1/3 of validity)
     if ($ladder['ladIncExternal'] > 0)
@@ -175,14 +201,14 @@ function ladder_result($link, $ladPk, $ladder, $season, $restrict)
         $sql = "select TK.extPk, TK.extURL as tasPk,
         TP.pilPk, TP.pilLastName, TP.pilFirstName, TP.pilNationCode, TP.pilFAI, TP.pilSex,
         TK.tasName, TK.tasQuality, TK.comName, TK.comDateTo, TK.lcValue, TK.tasTopScore,
-        case when date_sub('$end', INTERVAL 365 DAY) > TK.comDateTo 
-        then (ER.etrScore * TK.lcValue * 0.90 * TK.tasQuality) 
-        else (ER.etrScore * TK.lcValue * TK.tasQuality) end as ladScore, 
-        (ER.etrScore * TK.lcValue * (case when date_sub('$end', INTERVAL 365 DAY) > TK.comDateTo 
+        case when date_sub('$end', INTERVAL 365 DAY) > TK.comDateTo
+        then (ER.etrScore * TK.lcValue * 0.90 * TK.tasQuality)
+        else (ER.etrScore * TK.lcValue * TK.tasQuality) end as ladScore,
+        (ER.etrScore * TK.lcValue * (case when date_sub('$end', INTERVAL 365 DAY) > TK.comDateTo
             then 0.90 else 1.0 end) / (TK.tasQuality * TK.lcValue)) as validity
         from tblExtTask TK
         join tblExtResult ER on ER.extPk=TK.extPk
-        join tblPilot TP on TP.pilPk=ER.pilPk
+        join PilotView TP on TP.pilPk=ER.pilPk
 WHERE TK.comDateTo > '$start' and TK.comDateTo < '$end'
         $restrict
         order by TP.pilPk, TK.extPk, (ER.etrScore * TK.lcValue * TK.tasQuality) desc";
@@ -214,7 +240,7 @@ function filter_results($ladPk, $how, $param, $extpar, $results)
             $count = 0;
             foreach ($arr as $perf => $taskresult)
             {
-                //if ($perf == 'name') 
+                //if ($perf == 'name')
                 if (ctype_alpha($perf))
                 {
                     continue;
@@ -229,7 +255,7 @@ function filter_results($ladPk, $how, $param, $extpar, $results)
                     $arr[$perf]['perc'] = 0;
                 }
                 $count++;
-                
+
             }
         }
         else
@@ -239,7 +265,7 @@ function filter_results($ladPk, $how, $param, $extpar, $results)
             $pilext = 0;
             foreach ($arr as $perf => $taskresult)
             {
-                //if ($perf == 'name') 
+                //if ($perf == 'name')
                 if (ctype_alpha($perf))
                 {
                     continue;
@@ -249,7 +275,7 @@ function filter_results($ladPk, $how, $param, $extpar, $results)
                 if ($pilvalid < $param)
                 {
                     // if external
-                    if (0+$taskresult['extpk'] > 0) 
+                    if (0+$taskresult['extpk'] > 0)
                     {
                         if ($pilext < $extpar)
                         {
@@ -294,7 +320,7 @@ function filter_results($ladPk, $how, $param, $extpar, $results)
                         $arr[$perf]['perc'] = $perc * 100;
                     }
                 }
-            }   
+            }
         }
 
         // resort arr by task?
@@ -324,18 +350,18 @@ function output_ladder($link, $ladPk, $ladder, $fdhv, $class, $season)
 {
     $today = getdate();
     $tdate = sprintf("%04d-%02d-%02d", $today['year'], $today['mon'], $today['mday']);
-	    
+
     $rtable = [];
     $rdec = [];
-    
+
     //if ($comClass == "HG")
     //{
-    //    $classopts = array ( 'open' => '', 'floater' => '&class=0', 'kingpost' => '&class=1', 
+    //    $classopts = array ( 'open' => '', 'floater' => '&class=0', 'kingpost' => '&class=1',
     //        'hg-open' => '&class=2', 'rigid' => '&class=3', 'women' => '&class=4' );
     //}
     //else
 //     {
-//         $classopts = array ( 'open' => '', 'fun' => '&class=0', 'sports' => '&class=1', 
+//         $classopts = array ( 'open' => '', 'fun' => '&class=0', 'sports' => '&class=1',
 //             'serial' => '&class=2', 'women' => '&class=4' );
 //     }
 //     $cind = '';
@@ -348,24 +374,24 @@ function output_ladder($link, $ladPk, $ladder, $fdhv, $class, $season)
 //     {
 //         $copts[$text] = "ladder.php?ladPk=$ladPk$url";
 //     }
-    
+
     $claPk = $ladder['claPk'];
     $rdec[] = 'class="h"';
     $rdec[] = 'class="h"';
     $hdr = array( fb('Class. '), classselector($link, $claPk, $class), '', '', '');
     $hdr2 = array( fb('Pos.'), fb('Name'), fb('Glider'), fb('Sponsor'), fb('Total') );
-    
+
     # find each task details
     $alltasks = [];
     $taskinfo = [];
     $sorted = [];
-    
+
     $sorted = ladder_result($link, $ladPk, $ladder, $season, $fdhv);
     $subtask = '';
-    
+
     $rtable[] = $hdr;
     $rtable[] = $hdr2;
-    
+
     $lasttot = 0;
     $count = 1;
     foreach ($sorted as $pil => $arr)
@@ -390,15 +416,15 @@ function output_ladder($link, $ladPk, $ladder, $fdhv, $class, $season)
             $nxt[] = '';
             $nxt[] = str_replace('\' ', '\'', ucwords(str_replace('\'', '\' ', strtolower($arr['name']))));
         }
-    
+
         $nxt[] = ( (stripos($arr['glider'], '') !== false) ? '' : str_replace('\' ', '\'', ucwords(str_replace('\'', '\' ', strtolower(substr($arr['glider'], 0, 32))))) );
         $nxt[] = substr($arr['sponsor'], 0, 48);
         $nxt[] = fb($tot);
         $lasttot = $tot;
-    
+
         //if (ctype_digit(substr($key,0,1)))
         foreach ($arr as $key => $sarr)
-        { 
+        {
             $score = 0;
             $perc = 0;
             if (is_array($sarr) && array_key_exists('score', $sarr))
@@ -413,7 +439,7 @@ function output_ladder($link, $ladPk, $ladder, $fdhv, $class, $season)
                 if (!$score)
                 {
                     $score = 0;
-                    
+
                 }
                 if ($perc == 100)
                 {
@@ -454,7 +480,7 @@ function output_ladder($link, $ladPk, $ladder, $fdhv, $class, $season)
         $count++;
     }
     echo ftable($rtable, "class='format format2 ladderresult'", $rdec, '');
-    
+
 	// FTV INFO
 	if ($comOverall == 'ftv')
 	{
@@ -468,12 +494,12 @@ function output_ladder($link, $ladPk, $ladder, $fdhv, $class, $season)
 // {
 //     $rtable = [];
 //     $rdec = [];
-// 
+//
 //     $hdr = array( fb('Name'),  fb('Nation'), fb('Start'), fb('End'), fb('Method') );
 //     $rtable[] = $hdr;
 //     $rdec[] = 'class="h"';
 //     $max = sizeof($ladder);
-// 
+//
 //     foreach ($ladder as $row)
 //     {
 //         $ladPk = $row['ladPk'];
@@ -488,7 +514,7 @@ function output_ladder($link, $ladPk, $ladder, $fdhv, $class, $season)
 //         }
 //         $count++;
 //     }
-// 
+//
 //     echo ftable($rtable, "border=\"0\" cellpadding=\"3\" alternate-colours=\"yes\" align=\"center\"", $rdec, '');
 // }
 
@@ -527,17 +553,17 @@ $season = isset($_REQUEST['season']) ? $_REQUEST['season'] : getseason();
 //     $end = reqsval('edate');
 //     $method = reqsval('method');
 //     $param = reqival('param');
-// 
+//
 //     $query = "insert into tblLadder (ladName, ladNationCode, ladStart, ladEnd, ladHow, ladParam) value ('$lname','$nation', '$start', '$end', '$method', $param)";
 //     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Ladder insert failed: ' . mysqli_connect_error());
 // }
-// 
+//
 // if (reqexists('addladcomp'))
 // {
 //     check_admin('admin',$usePk,-1);
 //     $sanction = reqival('sanction');
 //     $comPk = reqival('comp');
-// 
+//
 //     if ($comPk == 0 || $ladPk == 0)
 //     {
 //         echo "Failed: unknown comPk=$comPk ladPk=$ladPk<br>";
@@ -583,14 +609,14 @@ $fdhv = $sel['fdhv'];
 //echo "claPk: $cval, class: $class, restrict = $fdhv <br /> \n";
 $all_ladders = [];
 
-$query = "	SELECT 
-				L.*, 
-				LS.* 
-			FROM 
-				tblLadder L 
+$query = "	SELECT
+				L.*,
+				LS.*
+			FROM
+				tblLadder L
 				JOIN tblLadderSeason LS USING (ladPk)
-			WHERE 
-				ladPk = $ladPk 
+			WHERE
+				ladPk = $ladPk
 				AND LS.seasonYear = $season";
 $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Ladder info query failed: ' . mysqli_connect_error());
 $row = mysqli_fetch_assoc($result);
@@ -623,13 +649,13 @@ if ($ladPk > 0)
 //         {
 //             $comparr[$row['comName']] = $row['comPk'];
 //         }
-// 
+//
 //         $out = ftable(
 //             array(
 //                 array('Comp:', fselect('comp', '', $comparr), 'Value:', fin('sanction',0, 6), fis('addladcomp', 'Associate Comp', ''))
 //             ), '', '', ''
 //         );
-//     
+//
 //         echo $out;
 //         echo "</form>";
 //     }

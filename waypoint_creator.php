@@ -1,7 +1,6 @@
 <?php
-
-require 'authorisation.php';
-require 'hc2.php'
+require 'startup.php';
+require LIBDIR.'hc2.php'
 
 hchead();
 echo '<link HREF="xcstyle.css" REL="stylesheet" TYPE="text/css">';

@@ -556,7 +556,7 @@ sub get_all_tracks
     my $ref;
     my %ret;
 
-    my $sth = $dbh->prepare("select CTT.traPk, P.* from tblComTaskTrack CTT, tblTrack T, tblPilot P where CTT.traPk=T.traPk and P.pilPk=T.pilPk and CTT.tasPk=$tasPk order by P.pilLastName");
+    my $sth = $dbh->prepare("select CTT.traPk, P.* from tblComTaskTrack CTT, tblTrack T, PilotView P where CTT.traPk=T.traPk and P.pilPk=T.pilPk and CTT.tasPk=$tasPk order by P.pilLastName");
     $sth->execute();
     while ($ref = $sth->fetchrow_hashref())
     {
@@ -572,7 +572,7 @@ sub get_one_track
     my $ref;
     my %ret;
 
-    my $sth = $dbh->prepare("select CTT.traPk, P.* from tblComTaskTrack CTT, tblTrack T, tblPilot P where T.traPk=$traPk and CTT.traPk=T.traPk and P.pilPk=T.pilPk");
+    my $sth = $dbh->prepare("select CTT.traPk, P.* from tblComTaskTrack CTT, tblTrack T, PilotView P where T.traPk=$traPk and CTT.traPk=T.traPk and P.pilPk=T.pilPk");
     $sth->execute();
     while ($ref = $sth->fetchrow_hashref())
     {

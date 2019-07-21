@@ -21,7 +21,7 @@ menubar($comPk);
 $link = db_connect();
 echo "<ol>";
 $count = 1;
-$sql = "SELECT TR.*, T.*, P.*, C.* FROM tblComTaskTrack CTT, tblPilot P, tblCompetition C, tblTrack T left outer join tblTaskResult TR on TR.traPk=T.traPk where T.pilPk=P.pilPk and CTT.traPk=T.traPk and C.comPk=CTT.comPk $restrict order by T.traStart desc limit 40";
+$sql = "SELECT TR.*, T.*, P.*, C.* FROM tblComTaskTrack CTT, PilotView P, tblCompetition C, tblTrack T left outer join tblTaskResult TR on TR.traPk=T.traPk where T.pilPk=P.pilPk and CTT.traPk=T.traPk and C.comPk=CTT.comPk $restrict order by T.traStart desc limit 40";
 $result = mysqli_query($link, $sql,$link) or die('Error ' . mysqli_errno($link) . ' Recent query failed: ' . mysqli_connect_error());
 while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {

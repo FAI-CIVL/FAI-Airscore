@@ -1,50 +1,59 @@
 """
-Score a task. At the moment this is only set up for PWC formula tasks.
-python3 score_task.py <taskid>
+Script to score a task.
+usage: python3 score_task.py <taskid>
+
+Stuart Mackintosh Antonio Golfari - 2019
 """
 
-from task import Task
-from pwc import *
-from trackDB import read_formula
-from myconn import Database
+from task       import Task
+from formula    import get_formula_lib
+from trackDB    import read_formula
+from myconn     import Database
 import logging
-import sys
 import Defines as d
 
-def main():
+def main(args):
     print("starting..")
     """Main module. Takes tasPk as parameter"""
-    log_dir = d.LOGDIR
-    print("log setup")
-    logging.basicConfig(filename=log_dir + 'main.log',level=logging.INFO,format='%(asctime)s %(message)s')
-    task_id = 0
+    # log_dir = d.LOGDIR
+    # print("log setup")
+    # logging.basicConfig(filename=log_dir + 'main.log',level=logging.INFO,format='%(asctime)s %(message)s')
 
-    ##check parameter is good.
-    if len(sys.argv)==2 and sys.argv[1].isdigit():
-        task_id = int(sys.argv[1])
-
-    else:
-        logging.error("number of arguments != 1 and/or task_id not a number")
+    '''check parameter is good'''
+    if not (args[0].isdigit() and int(args[0]) > 0):
         print("number of arguments != 1 and/or task_id not a number")
         exit()
+    else:
+        task_id = int(args[0])
 
-    task = Task.read_task(task_id)
+    '''
+    new logic:
+    totals are already available in TaskTotalsView
+    create task.stats from taskTotalsView
+    create pilots array
+    we calculate total LC for each pilot
+    update LCmin in task.stats
+    calculate Validities and Points
+    Score
+    '''
+
+    print('task id: {}'.format(task_id))
+    task    = Task.read_task(task_id)
     formula = read_formula(task.comPk)
-    if formula['forClass'] == 'pwc':
-        totals = task_totals(task, formula)
-        query = "update tblTask set tasTotalDistanceFlown=%s, " \
-                "tasTotDistOverMin= %s, tasPilotsTotal=%s, " \
-                "tasPilotsLaunched=%s, tasPilotsGoal=%s, " \
-                "tasFastestTime=%s, tasMaxDistance=%s " \
-                "where tasPk=%s"
+    f       = get_formula_lib(formula)
 
-        params = [totals['distance'], totals['distovermin'], totals['pilots'], totals['launched'],
-                     totals['goal'], totals['fastest'], totals['maxdist'], task.tasPk]
 
-        with Database() as db:
-            comps = db.execute(query, params)
+    totals = f.task_totals(task, formula)
+    if totals:
+        task.stats.update(totals)   #have to check that all keys are the same
+        task.update_totals()        #with new logic (totals in a view calculated from mysql) this should no longer be needed
 
-        dist, time, launch, stop = day_quality(totals, formula)
+        dist, time, launch, stop = f.day_quality(task, formula)
+
+        task.stats['distval']   = dist
+        task.stats['timeval']   = time
+        task.stats['launchval'] = launch
+        task.stats['stopval']   = stop
 
         if task.stopped_time:
             quality = dist * time * launch * stop
@@ -56,23 +65,13 @@ def main():
         if quality > 1.0:
             quality = 1.0
 
-        query = "UPDATE tblTask " \
-                "SET tasQuality = %s, " \
-                "tasDistQuality = %s, " \
-                "tasTimeQuality = %s, " \
-                "tasLaunchQuality = %s, " \
-                "tasStopQuality = %s " \
-                "WHERE tasPk = %s"
-        params = [quality, dist, time, launch, stop, task.tasPk]
+        task.stats['quality']   = quality
 
-        with Database() as db:
-            comps = db.execute(query, params)
-
-        totals['quality'] = quality
+        task.update_quality()   #with new logic (multiple JSON result files for every task) this should no longer be needed
 
         if totals['pilots'] > 0:
-            points_allocation(task, totals, formula)
-
+            f.points_allocation(task, formula)    #with new logic (totals in task.stats) totals parameter should no longer be needed
 
 if __name__== "__main__":
-    main()
+    import sys
+    main(sys.argv[1:])

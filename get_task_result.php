@@ -100,7 +100,7 @@ $finfo = [];
 function task_result($link, $tasPk, $fdhv)
 {
     $count = 1;
-    $sql = "select TR.*, T.*, P.* from tblTaskResult TR, tblTrack T, tblPilot P where TR.tasPk=$tasPk $fdhv and T.traPk=TR.traPk and P.pilPk=T.pilPk order by TR.tarScore desc, P.pilFirstName";
+    $sql = "select TR.*, T.*, P.* from tblTaskResult TR, tblTrack T, PilotView P where TR.tasPk=$tasPk $fdhv and T.traPk=TR.traPk and P.pilPk=T.pilPk order by TR.tarScore desc, P.pilFirstName";
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task Result selection failed: ' . mysqli_connect_error());
     $lastscore = 0;
     $hh = 0;

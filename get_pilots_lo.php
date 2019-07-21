@@ -11,7 +11,7 @@ $link = db_connect();
 $tasPk = reqival('tasPk');
 $retarr = [];
 
-$sql = "select CT.traPk, P.pilLastName from tblComTaskTrack CT, tblTrack T, tblPilot P where CT.tasPk=$tasPk and T.traPk=CT.traPk and P.pilPk=T.pilPk";
+$sql = "select CT.traPk, P.pilLastName from tblComTaskTrack CT, tblTrack T, PilotView P where CT.tasPk=$tasPk and T.traPk=CT.traPk and P.pilPk=T.pilPk";
 $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Query failed: ' . mysqli_connect_error());
 $tracks = [];
 $pilots = [];

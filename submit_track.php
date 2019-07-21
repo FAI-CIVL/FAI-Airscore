@@ -1,10 +1,8 @@
 <?php
 
-require_once 'authorisation.php';
-require_once 'format.php';
-require_once 'dbextra.php';
-require 'template.php';
-require 'track_ops.php';
+require 'startup.php';
+require_once LIBDIR.'dbextra.php';
+require LIBDIR.'track_ops.php';
 
 
 

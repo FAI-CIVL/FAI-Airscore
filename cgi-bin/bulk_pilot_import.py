@@ -6,16 +6,12 @@ Antonio Golfari - 2018
 """
 
 # Use your utility module.
-from typing import Any, Tuple
-
-from myconn import Database
 from compUtils import *
-
-import sys, csv, os.path
+import sys, csv
 from pathlib import Path
-from pymysql import escape_string
 
-def read_membership(file,test):
+
+def read_membership(file, test):
 
     message = ''
     """Check if file exists"""
@@ -26,9 +22,8 @@ def read_membership(file,test):
         if test == 1:
             message += ("Reading: {} \n".format(file))
         """Read CSV File"""
-        with open(file) as csv_file:
+        with open(file, encoding='utf-8') as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
-            line_count = 0
             for row in csv_reader:
                 pilFAI = row[0]
                 pilFName = row[1]
@@ -36,7 +31,7 @@ def read_membership(file,test):
                 pilSex = row[4]
                 nat = row[3]
                 if test == 1:
-                    message += ('-- new line -- \n')
+                    message += '-- new line -- \n'
                     message += ("Pilot {} {}, from {}, sex {}, FAI n. {} \n".format(pilLName, pilFName, nat, pilSex, pilFAI))
 
                 """Get Nat code"""
@@ -50,7 +45,7 @@ def read_membership(file,test):
                     """Check if pilot exists in pilots main table"""
                     query = ("""SELECT 
                                     pilPK AS ID 
-                                FROM tblPilot 
+                                FROM PilotView 
                                 WHERE 
                                     (pilLastName LIKE '%%{0}%%' AND pilFirstName LIKE '%%{1}%%') 
                                 OR (pilLastName LIKE '%%{0}%%' AND pilFAI = {2}) 
@@ -58,14 +53,14 @@ def read_membership(file,test):
 
                     try:
                         """Pilot exists already"""
-                        #print ("Query: {} \n Rows: {} \n".format(query, db.rows(query)))
+                        # print ("Query: {} \n Rows: {} \n".format(query, db.rows(query)))
                         pil = 0 + db.fetchone(query)['ID']
                         message += ("pilot {} {} exists in pilots list: id {} \n".format(pilLName, pilFName, pil))
                     except:
                         """Check if FAI exists"""
                         query = ("""SELECT 
                                         pilPK AS ID, pilLastName AS Name 
-                                    FROM tblPilot 
+                                    FROM PilotView 
                                     WHERE pilFAI = '{}' LIMIT 1""".format(pilFAI))
                         try:
                             """Pilot exists already"""
@@ -85,7 +80,8 @@ def read_membership(file,test):
                                 message += ('Query: ' + query + ' \n')
 
         """Print messages"""
-        print (message)
+        print(message)
+
 
 def main():
     """Main module"""
@@ -102,6 +98,7 @@ def main():
 
     else:
         print('error: no filename found')
+
 
 if __name__ == "__main__":
     main()

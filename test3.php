@@ -45,15 +45,15 @@ echo "<hr />";
  echo "Userv Apache is using to run: " . exec('whoami')."<br />";
  
 echo "<hr />";
-echo "<br />cerco di eseguire il comando: "."/home/untps52y/opt/python-3.6.2/bin/python3 " . BINDIR . "test.py"."<br />";
-$message = shell_exec("/home/untps52y/opt/python-3.6.2/bin/python3 " . BINDIR . "test.py reminder");
+echo "<br />cerco di eseguire il comando: "."/home/ubuntu/opt/python-3.6.2/bin/python3 " . BINDIR . "test.py"."<br />";
+$message = shell_exec("/home/ubuntu/opt/python-3.6.2/bin/python3 " . BINDIR . "test.py reminder");
 print_r($message);
 
 echo "<hr />";
 echo "cerco di eseguire il comando: ".(BINDIR . "email_pilots.py 3 reminder -c")."<br />";
 echo mb_internal_encoding();
-$command = "/home/untps52y/opt/python-3.6.2/bin/python3 " . BINDIR . "email_pilots.py 3 reminder -c";
-$message = exec("/home/untps52y/opt/python-3.6.2/bin/python3 " . BINDIR . "email_pilots.py 3 reminder -c");
+$command = "/home/ubuntu/opt/python-3.6.2/bin/python3 " . BINDIR . "email_pilots.py 3 reminder -c";
+$message = exec("/home/ubuntu/opt/python-3.6.2/bin/python3 " . BINDIR . "email_pilots.py 3 reminder -c");
 print_r($message);
 
 ?>

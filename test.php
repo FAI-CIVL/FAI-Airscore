@@ -47,15 +47,15 @@ echo "<hr />";
 
 // Sezione TEST Python3 Mail
 // echo "<hr />";
-// echo "<br />cerco di eseguire il comando: "."/home/untps52y/opt/python-3.6.2/bin/python3 " . BINDIR . "test.py 3 reminder -c"."<br />";
-// $message = shell_exec("/home/untps52y/opt/python-3.6.2/bin/python3 " . BINDIR . "test_email.py 3 reminder -t antoniogolfari@gmail.com -c");
+// echo "<br />cerco di eseguire il comando: "."/home/ubuntu/opt/python-3.6.2/bin/python3 " . BINDIR . "test.py 3 reminder -c"."<br />";
+// $message = shell_exec("/home/ubuntu/opt/python-3.6.2/bin/python3 " . BINDIR . "test_email.py 3 reminder -t antoniogolfari@gmail.com -c");
 // print_r($message);
 
 // Sezione TEST Python3 IGC
 //echo "<hr />";
 // echo "cerco di eseguire il comando: ".(BINDIR . "email_pilots.py 3 reminder -c")."<br />";
 // 
-// $command = "/home/untps52y/opt/python-3.6.2/bin/python3 " . BINDIR . "test_igc.py";
+// $command = "/home/ubuntu/opt/python-3.6.2/bin/python3 " . BINDIR . "test_igc.py";
 // $message = shell_exec($command);
 // print_r($message);
 
