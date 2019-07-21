@@ -239,11 +239,18 @@ def extract_flight_details(flight):
 
 # dump flight object to geojson
 def dump_flight(track, task):
-    geojson_file_prestart = track.to_geojson(maxtime=task.start_time)
-    geojson_file_poststart = track.to_geojson(mintime=task.start_time)
+    # TODO check if file already exists otherwise create and save it
+    from flight_result import Flight_result
+    import formula as For
+    formula = read_formula(task.comPk)
+
+    f = For.get_formula_lib(formula)
+    task_result = Flight_result.check_flight(track.flight, task, f.parameters,
+                                             5)  # check flight against task with min tolerance of 5m
+    geojson_file = task_result.to_geojson_result(track, task)
     bbox = get_bbox(track.flight)
 
-    return geojson_file_prestart, geojson_file_poststart, bbox
+    return geojson_file, bbox
 
 # allowed uploads
 # def allowed_file(filename):
@@ -343,7 +350,6 @@ def main(mode, val, track_id):
             layer['geojson'] = json_result
         elif mode == 'route':
             layer['geojson'] = None
-            layer['prestart'] = None
             layer['bbox'] = get_route_bbox(task)
 
     #flight_results = extract_flight_details(track.flight) #at the moment we have no takoff_fix, landing_fix or thermal in Flight Obj
