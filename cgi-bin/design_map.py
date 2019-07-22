@@ -219,6 +219,7 @@ def make_map(layer_geojson=False, points=False, circles=False, polyline=False, m
     # path where to save the map
     # folium_map.save('templates/map.html')
     folium.LayerControl().add_to(folium_map)
+    folium.plugins.Fullscreen().add_to(folium_map)
     return folium_map
 
 
