@@ -12,6 +12,7 @@ import os,sys
 #from flask import Flask, flash, request, redirect, url_for, session, json
 #from flask import get_template_attribute,render_template
 import folium
+import folium.plugins
 from folium.map import FeatureGroup, Marker, Popup, Icon
 from folium.features import CustomIcon
 from compUtils import read_formula
@@ -20,7 +21,7 @@ from pprint import pprint
 import flight_result
 import itertools
 import Defines
-
+import formula as For  #to be removed once we use json files saved to disk
 #using aerofiles library to parse igc to geojson
 #from aerofiles.igc import Reader
 
@@ -348,7 +349,14 @@ def main(mode, val, track_id):
             track = Track.read_db(track_id)
             # json_result = flight_result.to_geojson_result(track)
             layer['bbox'] = get_bbox(track.flight)
-            layer['geojson'] = json_result
+
+            # this block to be removed once we use json files saved to disk
+            f = For.get_formula_lib(formula)
+            result=flight_result.Flight_result.check_flight(track.flight, task, f.parameters, 5)
+            layer['geojson'] = result.to_geojson_result(track, task)
+
+
+
         elif mode == 'route':
             layer['geojson'] = None
             layer['bbox'] = get_route_bbox(task)
@@ -383,7 +391,7 @@ if __name__== "__main__":
 
     else:
         #logging.error("number of arguments != 1 and/or task_id not a number")
-        print("Error, uncorrect arguments type or number.")
-        print("usage: design_map pilPk tasPk <test>")
+        print("Error, incorrect arguments type or number.")
+        print("usage: design_map mode (region tracklog, route), val(regionid taskid), track_id")
         exit()
     main(mode, val, track_id)
