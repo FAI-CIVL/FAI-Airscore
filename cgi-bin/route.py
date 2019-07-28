@@ -449,7 +449,7 @@ def calcBearing(lat1, lon1, lat2, lon2):
 
 
 def opt_goal(p1, p2):
-    if p2.type == 'line':
+    if p2.shape == 'line':
         #print('last tp is p2. lat{} lon{}'.format(p2.lat, p2.lon)
         return Turnpoint(lat=p2.lat, lon=p2.lon, type='optimised', radius=0, shape='optimised', how='optimised')
     else:
