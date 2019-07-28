@@ -21,6 +21,6 @@ _pycache_/*
 _pycache_
 *.pyc
 *.igc
-.idea/
+.idea/*
 map.html
 *.pyc
