@@ -22,11 +22,10 @@ import flight_result
 import itertools
 import Defines
 import formula as For  #to be removed once we use json files saved to disk
-#using aerofiles library to parse igc to geojson
-#from aerofiles.igc import Reader
+from geographiclib.geodesic import Geodesic
+from route import calcBearing
 
-#database connections
-from myconn import Database
+geod = Geodesic.WGS84
 
 #use Task to get task definition
 from task import Task
@@ -113,7 +112,7 @@ def get_region_bbox(region):
 
 
 # function to create the map template with optional geojson, circles and points objects
-def make_map(layer_geojson=False, points=False, circles=False, polyline=False, margin=0):
+def make_map(layer_geojson=False, points=False, circles=False, polyline=False, goal_line=False, margin=0):
     folium_map = folium.Map(location=[45.922207, 8.673952], zoom_start=13, tiles="Stamen Terrain", width='100%',
                             height='75%')
     #     folium.LayerControl().add_to(folium_map)
@@ -217,6 +216,14 @@ def make_map(layer_geojson=False, points=False, circles=False, polyline=False, m
             color='#2176bc'
         ).add_to(folium_map)
 
+    if goal_line:
+        folium.PolyLine(
+            locations   = goal_line,
+            weight      = 1.5,
+            opacity     = 0.75,
+            color       = '#800000'
+            ).add_to(folium_map)
+
     # path where to save the map
     # folium_map.save('templates/map.html')
     folium.LayerControl().add_to(folium_map)
@@ -286,7 +293,29 @@ def get_task(task):
         short_route.append(tuple([obj.lat,obj.lon]))
         #print ("short route fix: {}, {}".format(obj.lon,obj.lat))
 
-    return task_coords,turnpoints,short_route
+    #calculate 3 points for goal line (could use 2 but safer with 3?)
+    if task.turnpoints[-1].shape == 'line':
+        goal_line = []
+        bearing_to_last = calcBearing(task.turnpoints[-1].lat, task.turnpoints[-1].lon, task.turnpoints[-2].lat, task.turnpoints[-2].lon)
+        if bearing_to_last > 270:
+            bearing_to_line_end1 = 90 - (360 - bearing_to_last)
+        else:
+            bearing_to_line_end1 = bearing_to_last + 90
+
+        if bearing_to_last < 90:
+            bearing_to_line_end2 = 360 - (90 - bearing_to_last)
+        else:
+            bearing_to_line_end2 = bearing_to_last - 90
+
+        line_end1 = geod.Direct(task.turnpoints[-1].lat, task.turnpoints[-1].lon, bearing_to_line_end1, task.turnpoints[-1].radius)
+        line_end2 = geod.Direct(task.turnpoints[-1].lat, task.turnpoints[-1].lon, bearing_to_line_end2, task.turnpoints[-1].radius)
+
+        goal_line.append(tuple([line_end1['lat2'], line_end1['lon2']]))
+        goal_line.append(tuple([task.turnpoints[-1].lat, task.turnpoints[-1].lon]))
+        goal_line.append(tuple([line_end2['lat2'], line_end2['lon2']]))
+
+
+    return task_coords,turnpoints,short_route, goal_line
 
 def get_region(region_id):
     from region import Region as Reg
@@ -343,7 +372,7 @@ def main(mode, val, track_id):
         task = Task.read_task(task_id)
         formula = read_formula(task.comPk)
         tolerance = 0.000000 + formula['forMargin']/100
-        wpt_coords, turnpoints, short_route = get_task(task)
+        wpt_coords, turnpoints, short_route, goal_line = get_task(task)
         if mode == 'tracklog':
             """create task and track objects"""
             track = Track.read_db(track_id)
@@ -363,7 +392,7 @@ def main(mode, val, track_id):
 
     #flight_results = extract_flight_details(track.flight) #at the moment we have no takoff_fix, landing_fix or thermal in Flight Obj
 
-    map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route, margin=tolerance)
+    map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route, goal_line=goal_line, margin=tolerance)
     #map.save(map_file)
     #os.chown(map_file, 1000, 1000)
     html_string = map.get_root().render()
