@@ -296,7 +296,8 @@ def get_task(task):
     #calculate 3 points for goal line (could use 2 but safer with 3?)
     if task.turnpoints[-1].shape == 'line':
         goal_line = []
-        bearing_to_last = calcBearing(task.turnpoints[-1].lat, task.turnpoints[-1].lon, task.turnpoints[-2].lat, task.turnpoints[-2].lon)
+        bearing_to_last = calcBearing(task.turnpoints[-1].lat, task.turnpoints[-1].lon, task.optimised_turnpoints[-2].lat, task.optimised_turnpoints[-2].lon)
+        bearing_to_last += 360
         if bearing_to_last > 270:
             bearing_to_line_end1 = 90 - (360 - bearing_to_last)
         else:
