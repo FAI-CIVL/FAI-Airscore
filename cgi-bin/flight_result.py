@@ -490,12 +490,12 @@ class Flight_result:
         post_goal = []
 
         for fix in track.flight.fixes:
-            if fix.rawtime < self.SSS_time:
-                pre_sss.append((fix.lon, fix.lat))
-            elif fix.rawtime <= self.goal_time:
-                pre_goal.append((fix.lon, fix.lat))
-            else:
-                post_goal.append((fix.lon, fix.lat))
+            if fix.rawtime <= self.SSS_time:
+                pre_sss.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
+            if fix.rawtime >= self.SSS_time and fix.rawtime <= self.goal_time:
+                pre_goal.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
+            if fix.rawtime >= self.goal_time:
+                post_goal.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
 
         route_multilinestring = MultiLineString([pre_sss])
         features.append(Feature(geometry=route_multilinestring, properties={"Track": "Pre_SSS"}))
