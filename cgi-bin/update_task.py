@@ -8,7 +8,9 @@ Stuart Mackintosh - 2019
 from task import Task
 from logger import Logger
 import sys
-import Defines as d
+import design_map
+import Defines
+import os
 
 
 def main(args):
@@ -30,6 +32,12 @@ def main(args):
     task.calculate_optimised_task_length()
     task.calculate_task_length()
     task.update_task_distance()
+    # delete and recreate and task json file for maps
+    try:
+        os.remove(Defines.MAPOBJDIR+str(task.tasPk) + '.task')
+    except OSError:
+        pass
+    _, _, _, _ = design_map.get_task(task)
 
     opt_dist = task.ShortRouteDistance
     print('task distance:   {}'.format(task.Distance))
