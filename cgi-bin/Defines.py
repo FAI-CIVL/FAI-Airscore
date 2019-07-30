@@ -24,6 +24,7 @@ FILEDIR = config['dir']['file']  # files directory
 LOGDIR = config['dir']['log']  # log files directory
 JSONDIR = config['dir']['json']  # log files directory
 IMAGEDIR = config['dir']['image']  # image/icon files directory
+MAPOBJDIR = config['dir']['map']  # mapobj files directory
 
 XC_LOGIN = config['xcontest']['User']
 XC_password = config['xcontest']['Pass']  # mysql db password

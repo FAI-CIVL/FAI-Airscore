@@ -7,23 +7,26 @@ Martino Boni - 2019
 """
 
 
-import os,sys
-
-#from flask import Flask, flash, request, redirect, url_for, session, json
-#from flask import get_template_attribute,render_template
+import sys
 import folium
 import folium.plugins
 from folium.map import FeatureGroup, Marker, Popup, Icon
 from folium.features import CustomIcon
 from compUtils import read_formula
-from trackUtils import get_pil_track
-from pprint import pprint
 import flight_result
 import itertools
 import Defines
 import formula as For  #to be removed once we use json files saved to disk
 from geographiclib.geodesic import Geodesic
 from route import calcBearing
+from pathlib import Path
+import jsonpickle
+
+# import os
+# from trackUtils import get_pil_track
+# from pprint import pprint
+#from flask import Flask, flash, request, redirect, url_for, session, json
+#from flask import get_template_attribute,render_template
 
 geod = Geodesic.WGS84
 
@@ -268,55 +271,72 @@ def dump_flight(track, task):
 
 # function to parse task object to compilations
 def get_task(task):
-    task_coords = []
-    turnpoints = []
-    short_route = []
+    """gets task map json file if it exists, otherwise creates it. returns 4 separate objects for mapping"""
+    task_file = Path(Defines.MAPOBJDIR+str(task.tasPk) + '.task')
+    if task_file.is_file():
+        with open(task_file, 'r') as f:
+            data = jsonpickle.decode(f.read())
+            task_coords = data['task_coords']
+            turnpoints = data['turnpoints']
+            short_route = data['short_route']
+            goal_line = data['goal_line']
 
-    for obj in task.turnpoints:
-        task_coords.append({
-        'longitude' : obj.lon,
-        'latitude'  : obj.lat,
-        'name'      : obj.name
-        })
+    else:
+        task_coords = []
+        turnpoints = []
+        short_route = []
+        goal_line = None
 
-        turnpoints.append({
-        'radius'    : obj.radius,
-        'longitude' : obj.lon,
-        'latitude'  : obj.lat,
-#         'altitude': obj.altitude,
-        'name'      : obj.name,
-        'type'      : obj.type,
-        'shape'     : obj.shape
-        })
+        for obj in task.turnpoints:
+            task_coords.append({
+                'longitude': obj.lon,
+                'latitude': obj.lat,
+                'name': obj.name
+            })
 
-    for obj in task.optimised_turnpoints:
-        short_route.append(tuple([obj.lat,obj.lon]))
-        #print ("short route fix: {}, {}".format(obj.lon,obj.lat))
+            turnpoints.append({
+                'radius': obj.radius,
+                'longitude': obj.lon,
+                'latitude': obj.lat,
+                #         'altitude': obj.altitude,
+                'name': obj.name,
+                'type': obj.type,
+                'shape': obj.shape
+            })
 
-    #calculate 3 points for goal line (could use 2 but safer with 3?)
-    if task.turnpoints[-1].shape == 'line':
-        goal_line = []
-        bearing_to_last = calcBearing(task.turnpoints[-1].lat, task.turnpoints[-1].lon, task.optimised_turnpoints[-2].lat, task.optimised_turnpoints[-2].lon)
-        bearing_to_last += 360
-        if bearing_to_last > 270:
-            bearing_to_line_end1 = 90 - (360 - bearing_to_last)
-        else:
-            bearing_to_line_end1 = bearing_to_last + 90
+        for obj in task.optimised_turnpoints:
+            short_route.append(tuple([obj.lat, obj.lon]))
+            # print ("short route fix: {}, {}".format(obj.lon,obj.lat))
 
-        if bearing_to_last < 90:
-            bearing_to_line_end2 = 360 - (90 - bearing_to_last)
-        else:
-            bearing_to_line_end2 = bearing_to_last - 90
+        # calculate 3 points for goal line (could use 2 but safer with 3?)
+        if task.turnpoints[-1].shape == 'line':
+            goal_line = []
+            bearing_to_last = calcBearing(task.turnpoints[-1].lat, task.turnpoints[-1].lon,
+                                          task.optimised_turnpoints[-2].lat, task.optimised_turnpoints[-2].lon)
+            bearing_to_last += 360
+            if bearing_to_last > 270:
+                bearing_to_line_end1 = 90 - (360 - bearing_to_last)
+            else:
+                bearing_to_line_end1 = bearing_to_last + 90
 
-        line_end1 = geod.Direct(task.turnpoints[-1].lat, task.turnpoints[-1].lon, bearing_to_line_end1, task.turnpoints[-1].radius)
-        line_end2 = geod.Direct(task.turnpoints[-1].lat, task.turnpoints[-1].lon, bearing_to_line_end2, task.turnpoints[-1].radius)
+            if bearing_to_last < 90:
+                bearing_to_line_end2 = 360 - (90 - bearing_to_last)
+            else:
+                bearing_to_line_end2 = bearing_to_last - 90
 
-        goal_line.append(tuple([line_end1['lat2'], line_end1['lon2']]))
-        goal_line.append(tuple([task.turnpoints[-1].lat, task.turnpoints[-1].lon]))
-        goal_line.append(tuple([line_end2['lat2'], line_end2['lon2']]))
+            line_end1 = geod.Direct(task.turnpoints[-1].lat, task.turnpoints[-1].lon, bearing_to_line_end1,
+                                    task.turnpoints[-1].radius)
+            line_end2 = geod.Direct(task.turnpoints[-1].lat, task.turnpoints[-1].lon, bearing_to_line_end2,
+                                    task.turnpoints[-1].radius)
 
+            goal_line.append(tuple([line_end1['lat2'], line_end1['lon2']]))
+            goal_line.append(tuple([task.turnpoints[-1].lat, task.turnpoints[-1].lon]))
+            goal_line.append(tuple([line_end2['lat2'], line_end2['lon2']]))
+        with open(task_file, 'w') as f:
+            f.write(jsonpickle.dumps({'task_coords': task_coords, 'turnpoints': turnpoints, 'short_route': short_route,
+                                      'goal_line': goal_line}))
 
-    return task_coords,turnpoints,short_route, goal_line
+    return task_coords, turnpoints, short_route, goal_line
 
 def get_region(region_id):
     from region import Region as Reg
@@ -381,6 +401,7 @@ def main(mode, val, track_id):
             layer['bbox'] = get_bbox(track.flight)
 
             # this block to be removed once we use json files saved to disk
+
             f = For.get_formula_lib(formula)
             result=flight_result.Flight_result.check_flight(track.flight, task, f.parameters, 5)
             layer['geojson'] = result.to_geojson_result(track, task)
