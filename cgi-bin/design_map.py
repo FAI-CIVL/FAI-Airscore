@@ -3,7 +3,8 @@ Map definition
 Creates map from track GeoJSON and Task Definition JSON
 Use: design_map <traPk> <tasPk> <test>
 
-Martino Boni - 2019
+Martino Boni,
+Stuart Mackintosh - 2019
 """
 
 
@@ -21,6 +22,8 @@ from geographiclib.geodesic import Geodesic
 from route import calcBearing
 from pathlib import Path
 import jsonpickle
+from compUtils import get_task_file_path
+from os import path
 
 # import os
 # from trackUtils import get_pil_track
@@ -370,11 +373,7 @@ def main(mode, val, track_id):
 #     log_dir = d.LOGDIR
 #     print("log setup")
 #     logging.basicConfig(filename=log_dir + 'main.log',level=logging.INFO,format='%(asctime)s %(message)s')
-    #test = 0
-    #pilot_id = 0
-    #task_id = 0
-    wpt_coords = []
-    turnpoints = []
+
     short_route = []
     tolerance = 0
     map = None
@@ -396,35 +395,31 @@ def main(mode, val, track_id):
         wpt_coords, turnpoints, short_route, goal_line = get_task(task)
         if mode == 'tracklog':
             """create task and track objects"""
-            track = Track.read_db(track_id)
-            # json_result = flight_result.to_geojson_result(track)
-            layer['bbox'] = get_bbox(track.flight)
+            res_path = get_task_file_path(task.tasPk, JSON=True)
+            filename = '_'.join([str(track_id), str(task.date)]) + '.json'
+            fullname = path.join(res_path, filename)
+            #if the file exists
+            if Path(fullname).is_file():
+                with open(fullname, 'r') as f:
+                    layer['geojson'] = jsonpickle.decode(f.read())
 
-            # this block to be removed once we use json files saved to disk
+            else:
+                #make the file
+                track = Track.read_db(track_id)
+                f = For.get_formula_lib(formula)
+                result=flight_result.Flight_result.check_flight(track.flight, task, f.parameters, 5)
+                layer['geojson'] = result.to_geojson_result(track, task)
+                result.save_result_file( layer['geojson'], task, str(track_id), res_path=res_path, test = 0)
 
-            f = For.get_formula_lib(formula)
-            result=flight_result.Flight_result.check_flight(track.flight, task, f.parameters, 5)
-            layer['geojson'] = result.to_geojson_result(track, task)
-
-
-
+            layer['bbox'] = layer['geojson']['bounds']
         elif mode == 'route':
             layer['geojson'] = None
             layer['bbox'] = get_route_bbox(task)
-
-    #flight_results = extract_flight_details(track.flight) #at the moment we have no takoff_fix, landing_fix or thermal in Flight Obj
 
     map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route, goal_line=goal_line, margin=tolerance)
     #map.save(map_file)
     #os.chown(map_file, 1000, 1000)
     html_string = map.get_root().render()
-
-    # if test:
-    #     print("starting..")
-    #     print("TaskID: {} - CompID: {}".format(task.tasPk, task.comPk))
-    #     print("pil ID: {} - task ID: {} - track ID: {}".format(pilot_id, task_id, track_id))
-    #     print ("Tolerance: {} ".format(tolerance))
-    #     pprint(html_string)
 
     #test for srcdoc iframe source
     print(html_string)

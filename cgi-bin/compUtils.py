@@ -256,7 +256,7 @@ def get_task_file_path(tasPk, JSON=False, test = 0):
             tname = t['tasCode']
             year = str(t['comYear'])
             tdate = str(t['tasDate'])
-            print('filedir={}, year={}, cname={}, tname={}, tdate={}'.format(dir, year, cname, tname, tdate))
+            # print('filedir={}, year={}, cname={}, tname={}, tdate={}'.format(dir, year, cname, tname, tdate))
             path = str(p.join(dir, year, cname, ('_'.join([tname, tdate]))))
     if test:
         print('Get Task tracks folder:')
