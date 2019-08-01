@@ -24,6 +24,7 @@ from pathlib import Path
 import jsonpickle
 from compUtils import get_task_file_path
 from os import path
+from mapUtils import checkbbox
 
 # import os
 # from trackUtils import get_pil_track
@@ -55,18 +56,6 @@ def style_function(feature):
     return {'fillColor': 'white','weight': 2,'opacity': 1,'color': 'red','fillOpacity': 0.5,"stroke-width":3}
 
 track_style_function = lambda x: {'color':'red' if x['properties']['Track']=='Pre_Goal' else 'grey'}
-
-def checkbbox(lat,lon,bbox):
-    if lat < bbox[0][0]:
-        bbox[0][0] = lat
-    if lon < bbox[0][1]:
-        bbox[0][1] = lon
-    if lat > bbox[1][0]:
-        bbox[1][0] = lat
-    if lon > bbox[1][1]:
-        bbox[1][1] = lon
-
-    return bbox
 
 def get_bbox(flight):
     """Gets track boundaries """

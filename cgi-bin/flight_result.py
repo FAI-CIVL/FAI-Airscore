@@ -1,8 +1,8 @@
 from calcUtils import get_datetime
 from route import rawtime_float_to_hms, in_semicircle, distance_flown
 from myconn import Database
-from design_map import checkbbox
 import jsonpickle, json
+from mapUtils import checkbbox
 
 
 """
@@ -466,7 +466,7 @@ class Flight_result:
     def store_result_json(self):
         json.dump(self)
 
-    def to_geojson_result(self, track, Task, to_file=False):
+    def to_geojson_result(self, track, task, to_file=False):
         """Dumps the flight to geojson format
             If a filename is given, it write the file, otherwise returns the string"""
 
@@ -495,13 +495,23 @@ class Flight_result:
         pre_goal = []
         post_goal = []
 
+        #if the pilot did not make goal, goal time will be None. set to after end of track to avoid issues.
+        if not self.goal_time:
+            goal_time= track.flight.fixes[-1].rawtime + 1
+        else:
+            goal_time = self.goal_time
+
+        # if the pilot did not make SSS then it will be 0, set to task start time.
+        if self.SSS_time==0:
+            SSS_time = task.start_time
+
         for fix in track.flight.fixes:
             bbox = checkbbox(fix.lat, fix.lon, bbox)
-            if fix.rawtime <= self.SSS_time:
+            if fix.rawtime <= SSS_time:
                 pre_sss.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
-            if fix.rawtime >= self.SSS_time and fix.rawtime <= self.goal_time:
+            if fix.rawtime >= SSS_time and fix.rawtime <= goal_time:
                 pre_goal.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
-            if fix.rawtime >= self.goal_time:
+            if fix.rawtime >= goal_time:
                 post_goal.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
 
         route_multilinestring = MultiLineString([pre_sss])
@@ -516,7 +526,7 @@ class Flight_result:
         data = {'tracklog': feature_collection, 'thermals': thermals, 'takeoff_landing': toff_land,
                 'result': jsonpickle.dumps(self), 'bounds': bbox}
         if to_file:
-            self.save_result_file(data, Task)
+            self.save_result_file(data, task)
 
         return data
 
