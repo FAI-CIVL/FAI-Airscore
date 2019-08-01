@@ -504,6 +504,8 @@ class Flight_result:
         # if the pilot did not make SSS then it will be 0, set to task start time.
         if self.SSS_time==0:
             SSS_time = task.start_time
+        else:
+            SSS_time = self.SSS_time
 
         for fix in track.flight.fixes:
             bbox = checkbbox(fix.lat, fix.lon, bbox)
