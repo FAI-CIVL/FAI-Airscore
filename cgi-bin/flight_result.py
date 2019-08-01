@@ -533,7 +533,7 @@ class Flight_result:
         return data
 
 
-    def save_result_file(self, data, task, trackid, res_path=None,  test=0):
+    def save_result_file(self, data, task, trackid, res_path,  test=0):
         """copy result file in the correct folder and with correct name
            if path or pname is None will calculate. note that if bulk importing it is better to pass these values
         rather than query DB for each track"""
@@ -542,8 +542,6 @@ class Flight_result:
         from compUtils import get_task_file_path
         from os import path, makedirs
 
-        if res_path is None:
-            res_path = get_task_file_path(task.tasPk, JSON=True, test=test)
         if test:
             print('save result file')
             print('Task tracks path: {}'.format(res_path))
@@ -556,7 +554,7 @@ class Flight_result:
             name_surname_date_time_index.igc
             if we use flight date then we need an index for multiple tracks"""
 
-            filename = '_'.join([trackid, str(task.date)]) + '.json'
+            filename = 'result_'+str(trackid)+ '.json'
             fullname = path.join(res_path, filename)
             """copy file"""
             try:

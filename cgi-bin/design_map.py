@@ -262,9 +262,9 @@ def dump_flight(track, task):
 #            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # function to parse task object to compilations
-def get_task(task):
+def get_task(task_id):
     """gets task map json file if it exists, otherwise creates it. returns 4 separate objects for mapping"""
-    task_file = Path(Defines.MAPOBJDIR+str(task.tasPk) + '.task')
+    task_file = Path(Defines.MAPOBJDIR+str(task_id) + '.task')
     if task_file.is_file():
         with open(task_file, 'r') as f:
             data = jsonpickle.decode(f.read())
@@ -278,7 +278,7 @@ def get_task(task):
         turnpoints = []
         short_route = []
         goal_line = None
-
+        task = Task.read_task(task_id)
         for obj in task.turnpoints:
             task_coords.append({
                 'longitude': obj.lon,
@@ -378,14 +378,11 @@ def main(mode, val, track_id):
     else:
         '''create the task map for route or tracklog maps'''
         task_id = val
-        task = Task.read_task(task_id)
-        formula = read_formula(task.comPk)
-        tolerance = 0.000000 + formula['forMargin']/100
-        wpt_coords, turnpoints, short_route, goal_line = get_task(task)
+        wpt_coords, turnpoints, short_route, goal_line = get_task(task_id)
         if mode == 'tracklog':
             """create task and track objects"""
-            res_path = get_task_file_path(task.tasPk, JSON=True)
-            filename = '_'.join([str(track_id), str(task.date)]) + '.json'
+            res_path = Defines.JSONDIR
+            filename = 'result_'+ str(track_id)+ '.json'
             fullname = path.join(res_path, filename)
             #if the file exists
             if Path(fullname).is_file():
@@ -394,6 +391,9 @@ def main(mode, val, track_id):
 
             else:
                 #make the file
+                task = Task.read_task(task_id)
+                formula = read_formula(task.comPk)
+                tolerance = 0.000000 + formula['forMargin'] / 100
                 track = Track.read_db(track_id)
                 f = For.get_formula_lib(formula)
                 result=flight_result.Flight_result.check_flight(track.flight, task, f.parameters, 5)
@@ -402,6 +402,7 @@ def main(mode, val, track_id):
 
             layer['bbox'] = layer['geojson']['bounds']
         elif mode == 'route':
+            task = Task.read_task(task_id)
             layer['geojson'] = None
             layer['bbox'] = get_route_bbox(task)
 
