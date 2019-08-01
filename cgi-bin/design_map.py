@@ -223,6 +223,8 @@ def make_map(layer_geojson=False, points=False, circles=False, polyline=False, g
     # folium_map.save('templates/map.html')
     folium.LayerControl().add_to(folium_map)
     folium.plugins.Fullscreen().add_to(folium_map)
+    folium.plugins.MeasureControl().add_to(folium_map)
+
     return folium_map
 
 
