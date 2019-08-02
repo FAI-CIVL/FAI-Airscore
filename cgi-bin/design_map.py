@@ -119,15 +119,7 @@ def make_map(layer_geojson=False, points=False, circles=False, polyline=False, g
     """Design track"""
     if layer_geojson["geojson"]:
         track = layer_geojson['geojson']['tracklog']
-        thermals = layer_geojson['geojson']['thermals']
-        #         track = layer_geojson["geojson"]
         folium.GeoJson(track, name='Flight', style_function=track_style_function).add_to(folium_map)
-    #        folium.GeoJson(geojson,name='Flight',style_function=style_function,tooltip=folium.features.GeoJsonTooltip(labels=True,sticky=False)).add_to(folium_map)
-
-    """Design thermals"""
-    if layer_geojson["geojson"]:
-        #         <i class="fas fa-sync-alt"></i>
-
         thermals = layer_geojson['geojson']['thermals']
         thermal_group = FeatureGroup(name='Thermals', show=False)
 
@@ -137,6 +129,13 @@ def make_map(layer_geojson=False, points=False, circles=False, polyline=False, g
             thermal_group.add_child(Marker([t[1], t[0]], icon=icon, popup=Popup(t[2])))
 
         folium_map.add_child(thermal_group)
+
+        waypoints = layer_geojson['geojson']['waypoint_achieved']
+        waypoint_group = FeatureGroup(name='Waypoints Taken', show=False)
+        for w in waypoints:
+            waypoint_group.add_child(Marker([w[1], w[0]], popup=Popup(w[5])))
+
+        folium_map.add_child(waypoint_group)
 
     """Design cylinders"""
     if circles:
@@ -274,6 +273,7 @@ def get_task(task_id):
             turnpoints = data['turnpoints']
             short_route = data['short_route']
             goal_line = data['goal_line']
+            tolerance = data['tolerance']
 
     else:
         task_coords = []
@@ -281,6 +281,7 @@ def get_task(task_id):
         short_route = []
         goal_line = None
         task = Task.read_task(task_id)
+        tolerance = task.tolerance
         for obj in task.turnpoints:
             task_coords.append({
                 'longitude': obj.lon,
@@ -328,9 +329,9 @@ def get_task(task_id):
             goal_line.append(tuple([line_end2['lat2'], line_end2['lon2']]))
         with open(task_file, 'w') as f:
             f.write(jsonpickle.dumps({'task_coords': task_coords, 'turnpoints': turnpoints, 'short_route': short_route,
-                                      'goal_line': goal_line}))
+                                      'goal_line': goal_line, 'tolerance':tolerance}))
 
-    return task_coords, turnpoints, short_route, goal_line
+    return task_coords, turnpoints, short_route, goal_line, tolerance
 
 def get_region(region_id):
     from region import Region as Reg
@@ -366,7 +367,6 @@ def main(mode, val, track_id):
 #     logging.basicConfig(filename=log_dir + 'main.log',level=logging.INFO,format='%(asctime)s %(message)s')
 
     short_route = []
-    tolerance = 0
     map = None
     layer={}
     #map_file = '../map.html'
@@ -380,7 +380,7 @@ def main(mode, val, track_id):
     else:
         '''create the task map for route or tracklog maps'''
         task_id = val
-        wpt_coords, turnpoints, short_route, goal_line = get_task(task_id)
+        wpt_coords, turnpoints, short_route, goal_line, tolerance = get_task(task_id)
         if mode == 'tracklog':
             """create task and track objects"""
             res_path = Defines.JSONDIR

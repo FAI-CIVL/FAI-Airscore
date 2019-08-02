@@ -466,7 +466,7 @@ class Flight_result:
     def store_result_json(self):
         json.dump(self)
 
-    def to_geojson_result(self, track, task, to_file=False):
+    def to_geojson_result(self, track, task, second_interval=5, to_file=False):
         """Dumps the flight to geojson format
             If a filename is given, it write the file, otherwise returns the string"""
 
@@ -494,6 +494,7 @@ class Flight_result:
         pre_sss = []
         pre_goal = []
         post_goal = []
+        waypoint_achieved = []
 
         #if the pilot did not make goal, goal time will be None. set to after end of track to avoid issues.
         if not self.goal_time:
@@ -507,13 +508,31 @@ class Flight_result:
         else:
             SSS_time = self.SSS_time
 
+        waypoint = 0
+        lastfix = track.flight.fixes[0]
         for fix in track.flight.fixes:
             bbox = checkbbox(fix.lat, fix.lon, bbox)
-            if fix.rawtime <= SSS_time:
+            keep = False
+            if fix.rawtime >= lastfix.rawtime + second_interval:
+                keep = True
+                lastfix = fix
+
+            if fix.rawtime == self.Waypoints_achieved[waypoint][1]:
+                time = (("%02d:%02d:%02d") % rawtime_float_to_hms(fix.rawtime + task.time_offset * 3600))
+                waypoint_achieved.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt, self.Waypoints_achieved[waypoint][0],
+                                          f'{self.Waypoints_achieved[waypoint][0]} '
+                                          f'gps alt:{fix.gnss_alt:.0f}m '
+                                          f'baro alt{fix.press_alt:.0f}m '
+                                          f'time: {time}'))
+                keep = True
+                if waypoint < len(self.Waypoints_achieved)-1:
+                    waypoint += 1
+
+            if fix.rawtime <= SSS_time and keep:
                 pre_sss.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
-            if fix.rawtime >= SSS_time and fix.rawtime <= goal_time:
+            if fix.rawtime >= SSS_time and fix.rawtime <= goal_time and keep:
                 pre_goal.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
-            if fix.rawtime >= goal_time:
+            if fix.rawtime >= goal_time and keep:
                 post_goal.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
 
         route_multilinestring = MultiLineString([pre_sss])
@@ -526,7 +545,7 @@ class Flight_result:
         feature_collection = FeatureCollection(features)
 
         data = {'tracklog': feature_collection, 'thermals': thermals, 'takeoff_landing': toff_land,
-                'result': jsonpickle.dumps(self), 'bounds': bbox}
+                'result': jsonpickle.dumps(self), 'bounds': bbox, 'waypoint_achieved': waypoint_achieved}
         if to_file:
             self.save_result_file(data, task)
 
