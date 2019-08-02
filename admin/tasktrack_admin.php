@@ -107,15 +107,6 @@ elseif (array_key_exists('delete', $_REQUEST))
         $query = "delete from tblTrack where traPk=$traPk";
         mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Track delete failed: ' . mysqli_connect_error());
 
-        $query = "delete from tblTrackLog where traPk=$traPk";
-        mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Tracklog delete failed: ' . mysqli_connect_error());
-
-        $query = "delete from tblWaypoint where traPk=$traPk";
-        mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Waypoint delete failed: ' . mysqli_connect_error());
-
-        $query = "delete from tblBucket where traPk=$traPk";
-        mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Bucket delete failed: ' . mysqli_connect_error());
-
         $query = "delete from tblComTaskTrack where traPk=$traPk";
         mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' ComTaskTrack delete failed: ' . mysqli_connect_error());
 

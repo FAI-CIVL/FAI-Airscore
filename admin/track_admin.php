@@ -57,15 +57,6 @@ if (array_key_exists('delete', $_REQUEST))
     $query = "delete from tblTrack where traPk=$id";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Track delete failed: ' . mysqli_connect_error());
 
-    $query = "delete from tblTrackLog where traPk=$id";
-    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Tracklog delete failed: ' . mysqli_connect_error());
-
-    $query = "delete from tblWaypoint where traPk=$id";
-    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' aypoint delete failed: ' . mysqli_connect_error());
-
-    $query = "delete from tblBucket where traPk=$id";
-    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Bucket delete failed: ' . mysqli_connect_error());
-
     $query = "delete from tblComTaskTrack where traPk=$id$comcl";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' ComTaskTrack delete failed: ' . mysqli_connect_error());
 }
@@ -80,28 +71,28 @@ if ($comPk > 0)
     {
         #$sql = "SELECT T.*, P.* FROM tblTaskResult CTT left join tblTrack T on CTT.traPk=T.traPk left outer join PilotView P on T.pilPk=P.pilPk where CTT.tasPk in (select tasPk from tblTask TK where TK.comPk=$comPk) order by T.traStart desc";
         $sql = "(
-                SELECT T.*, P.* FROM tblTrack T 
-                    left outer join tblTaskResult CTT on CTT.traPk=T.traPk 
-                    left outer join PilotView P on T.pilPk=P.pilPk 
+                SELECT T.*, P.* FROM tblTrack T
+                    left outer join tblTaskResult CTT on CTT.traPk=T.traPk
+                    left outer join PilotView P on T.pilPk=P.pilPk
                 where CTT.tasPk in (select tasPk from tblTask TK where TK.comPk=$comPk)
             )
             union
             (
-                SELECT T.*, P.* FROM tblComTaskTrack CTT 
-                    join tblTrack T on CTT.traPk=T.traPk 
-                    left outer join PilotView P on T.pilPk=P.pilPk 
+                SELECT T.*, P.* FROM tblComTaskTrack CTT
+                    join tblTrack T on CTT.traPk=T.traPk
+                    left outer join PilotView P on T.pilPk=P.pilPk
                 where CTT.comPk=$comPk
-            ) 
+            )
             order by traStart desc";
     }
     else
     {
-        $sql = "SELECT T.*, P.* 
-            FROM tblComTaskTrack CTT 
-            join tblTrack T 
-                on CTT.traPk=T.traPk 
-            left outer join PilotView P 
-                on T.pilPk=P.pilPk 
+        $sql = "SELECT T.*, P.*
+            FROM tblComTaskTrack CTT
+            join tblTrack T
+                on CTT.traPk=T.traPk
+            left outer join PilotView P
+                on T.pilPk=P.pilPk
             where CTT.comPk=$comPk order by T.traStart desc";
     }
     echo "<form action=\"track_admin.php?comPk=$comPk\" name=\"trackadmin\" method=\"post\">";
@@ -127,11 +118,11 @@ else
         left outer join PilotView P on T.pilPk=P.pilPk
         left outer join tblComTaskTrack CTT on CTT.traPk=T.traPk
         order by T.traPk desc$limit";
-    
-#    $sql = "SELECT T.*, P.*, CTT.comPk 
-#            from tblComTaskTrack CTT 
-#            left join tblTrack T on CTT.traPk=T.traPk 
-#            left outer join PilotView P on T.pilPk=P.pilPk 
+
+#    $sql = "SELECT T.*, P.*, CTT.comPk
+#            from tblComTaskTrack CTT
+#            left join tblTrack T on CTT.traPk=T.traPk
+#            left outer join PilotView P on T.pilPk=P.pilPk
 #            order by T.traPk desc$limit";
 
     echo "<form action=\"track_admin.php\" name=\"trackadmin\" method=\"post\">";
@@ -168,5 +159,3 @@ echo "</form>";
 tpfooter($file);
 
 ?>
-
-

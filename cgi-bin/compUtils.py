@@ -44,15 +44,15 @@ def get_task_date(tasPk, test = 0):
     """Get date from tasPk in date format"""
     if str(tasPk).isdigit() and tasPk > 0:
         with Database() as db:
-            query = ("""    SELECT
-                                tasDate
+            query = """    SELECT
+                                `tasDate`
                             FROM
-                                TaskView
+                                `TaskView`
                             WHERE
-                                tasPk = {}
-                            LIMIT 1""".format(tasPk))
-            if db.rows(query) > 0:
-                date = db.fetchone(query)['tasDate']
+                                `tasPk` = %s
+                            LIMIT 1"""
+            if db.rows(query, [tasPk]) > 0:
+                date = db.fetchone(query, [tasPk])['tasDate']
                 if test:
                     print ('task date: {} \n'.format(date))
                 return date
@@ -230,11 +230,19 @@ def read_formula(comPk):
 
     return formula
 
-def get_task_file_path(tasPk, test = 0):
+def get_task_file_path(tasPk, comPk = None):
     """gets path to task tracks folder"""
     from Defines import FILEDIR
     from os import path as p
     path = None
+    if not comPk:
+        comPk   = get_comp(tasPk)
+    date        = get_task_date(tasPk)
+    query = """ SELECT
+                    COUNT(tasPk)
+                FROM `TaskView`
+                WHERE `comPk` = %s
+                AND DATE(`tasDate`) < DATE(%s)"""
     query = "  SELECT LOWER(T.`comCode`) AS comCode, " \
             "LOWER(T.`tasCode`) AS tasCode, " \
             "YEAR(C.`comDateFrom`) AS comYear, " \

@@ -13,14 +13,12 @@ def delete_track(traPk, test = 0):
 
     if not traPk < 1:
         message = ''
-        tables = ['tblTaskResult', 'tblTrack', 'tblTrackLog', 'tblWaypoint', 'tblBucket', 'tblTrackMarker', 'tblComTaskTrack']
+        tables = ['tblTaskResult', 'tblTrack', 'tblTrackMarker', 'tblComTaskTrack']
         with Database() as db:
             for table in tables:
-                query = ("DELETE FROM {} WHERE traPk = {}".format(table, traPk))
-                if test == 1:
-                    message += ("Query:  {} \n".format(query))
-                else:
-                    db.execute(query)
+                query = "DELETE FROM %s WHERE `traPk` = %s"
+                params = [table, traPk]
+                db.execute(query, params)
 
         message += ("track with ID: {} succesfully deleted \n".format(traPk))
         print(message)
@@ -32,10 +30,10 @@ def main():
     test = 0
     """check parameter is good."""
     if len(sys.argv) > 1:
-        """Get traPk"""  
+        """Get traPk"""
         traPk = 0 + int(sys.argv[1])
         if len(sys.argv) > 2:
-            """Test Mode""" 
+            """Test Mode"""
             print('Running in TEST MODE')
             test = 1
 
