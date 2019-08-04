@@ -137,26 +137,7 @@ function tpinit($link,$file,$row=0,$active=0)
 
     // displaying header
     htmlhead($file,$title);
-    // adds google maps scripts to map pages
-//  if ( strpos($file, 'map') )
-//  {
-//      hcmapjs();
-//      hcscripts([ '/js/rjson.js', '/js/json2.js', '/js/sprintf.js', '/js/plot_trackv4.js', '/js/microajax.minified.js', '/js/uair.js', '/js/plot_task.js' ]);
-//      if ( !strpos($file, 'waypoint') )
-//      {
-//          echo '<script>';
-//          sajax_show_javascript();
-//          echo "</script>\n";
-//      }
-//  }
 
-    // adds iframe refresh to map pages
-//  if ( strpos($file, 'map') )
-//  {
-//  echo "      <script type='text/javascript'>
-//          document.getElementById('map').contentDocument.location.reload(true);
-//      </script>";
-//  }
     echo "</head>";
     echo "<body id=\"page-top\">";
     // check if it's an admin side page
@@ -190,16 +171,11 @@ function tpadmin($link,$file,$row=0,$active=0)
     // adds google maps scripts to map pages
     if ( strpos($file, 'map') )
     {
-//      hcmapjs();
-//      hcscripts([ '/js/rjson.js', '/js/json2.js', '/js/sprintf.js', '/js/plot_trackv4.js', '/js/microajax.minified.js', '/js/uair.js', 'js/plot_task.js' ]);
-//      echo '<script>';
-//      sajax_show_javascript();
-//      echo "</script>\n";
     }
     elseif ( strpos($file, 'registration') )
     {
         echo "
-        <script src=\"/js/microajax.minified.js\" type=\"text/javascript\"></script>
+        <script src=\"/lib/js/microajax.minified.js\" type=\"text/javascript\"></script>
         <script type=\"text/javascript\">
         //<![CDATA[
         var map;
@@ -267,22 +243,17 @@ function htmlhead($file,$title)
     echo "
         <title>$title</title>
 
-        <!-- Bootstrap core CSS -->
-        <link href=\"/lib/vendor/bootstrap/css/bootstrap.min.css\" rel=\"stylesheet\">
+        <!-- Favicon -->
+        <link rel=\"icon\" href=\"/images/lpp-favicon.png\">
 
-        <!-- Custom fonts for this template -->
-        <link href=\"/lib/vendor/font-awesome/css/font-awesome.min.css\" rel=\"stylesheet\" type=\"text/css\">
+        <!-- Custom fonts for this theme -->
+        <link href=\"/lib/vendor/fontawesome-free/css/all.min.css\" rel=\"stylesheet\" type=\"text/css\">
+        <!-- <link href=\"/lib/vendor/font-awesome/css/font-awesome.min.css\" rel=\"stylesheet\" type=\"text/css\"> -->
         <link href=\"https://fonts.googleapis.com/css?family=Montserrat:400,700\" rel=\"stylesheet\" type=\"text/css\">
         <link href=\"https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic\" rel=\"stylesheet\" type=\"text/css\">
 
-        <!-- Plugin CSS -->
-        <link href=\"/lib/vendor/magnific-popup/magnific-popup.css\" rel=\"stylesheet\" type=\"text/css\">
-
-        <!-- Custom styles for this template -->
-        <!-- <link href=\"/lib/css/freelancer.min.css\" rel=\"stylesheet\"> -->
-
-        <!-- Favicon -->
-        <link rel=\"icon\" href=\"/images/lpp-favicon.png\">
+        <!-- Theme CSS -->
+        <link href=\"/lib/css/freelancer.min.css\" rel=\"stylesheet\">
 
         <!-- Styles added for AirScore -->
         ";
@@ -529,14 +500,6 @@ function tpheader($link,$file,$row,$page='')
             </div>
             <div class=\"column\">
         ";
-//          if ($param > 1)
-//          {
-//              hcclosedcomps($link, $page);
-//          }
-//          else
-//          {
-//              hcclosedcomps($link);
-//          }
        echo "
             </div>
         </div>
@@ -547,7 +510,7 @@ function tpheader($link,$file,$row,$page='')
         echo "  <div class=\"row\">
                     <div class=\"column\">
             ";
-        hccompinfo($row);
+        compinfo($row);
         if ( strpos($file, 'registered') )
         {
             $comPk = $row['comPk'];
@@ -623,7 +586,7 @@ function tpheader($link,$file,$row,$page='')
     ";
 }
 
-function hccompinfo($row)
+function compinfo($row)
 {
     $comDateFrom = substr(isset($row['comDateFrom']) ? $row['comDateFrom'] : '',0,10);
     $comDateTo = substr(isset($row['comDateTo']) ? $row['comDateTo'] : '',0,10);
@@ -1009,14 +972,9 @@ function tpfooter($file)
 
     <!-- Plugin JavaScript -->
     <script src=\"/lib/vendor/jquery-easing/jquery.easing.min.js\"></script>
-    <script src=\"/lib/vendor/magnific-popup/jquery.magnific-popup.min.js\"></script>
-
-    <!-- Contact Form JavaScript -->
-    <script src=\"/js/jqBootstrapValidation.js\"></script>
-    <script src=\"/js/contact_me.js\"></script>
 
     <!-- Custom scripts for this template -->
-    <script src=\"/js/freelancer.min.js\"></script>
+    <script src=\"/lib/js/freelancer.min.js\"></script>
 
     </body>
     </html>
@@ -1066,206 +1024,6 @@ function ladderincludedcomps($link, $ladPk, $season)
         $comps[] = "<a href=\"comp_result.php?comPk=$cpk\">" . $row['comName'] . "</a>";
     }
     echo fnl($comps);
-}
-
-function hcheadbar($title,$active,$titler)
-{
-    echo "
-      <div id=\"header\">
-        <div id=\"menu\">
-          <ul>\n
-    ";
-        $clarr = array
-        (
-            '', '', '', '', '', '', '', ''
-        );
-        $clarr[$active] = ' class="active"';
-        $comPk=reqival('comPk');
-        echo "<li><a href=\"index.php?comPk=$comPk\" title=\"About\"" . $clarr[0]. ">About</a></li>\n";
-        if (!$comPk)
-        {
-            echo "<li><a href=\"ladder.php\" title=\"Ladders\"" . $clarr[1] . ">Ladders</a></li>\n";
-            $comPk = 1;
-        }
-        echo "<li><a href=\"submit_track.php?comPk=$comPk\" title=\"Submit\"" . $clarr[1] . ">Submit</a></li>\n";
-        echo "<li><a href=\"comp_result.php?comPk=$comPk\" title=\"Results\"" . $clarr[2] . ">Results</a></li>\n";
-        $regPk=reqival('regPk');
-        if ($regPk > 0)
-        {
-        echo "<li><a href=\"http://highcloud.net/xc/waypoint_map.php?regPk=$regPk\" title=\"Waypoints\"" . $clarr[3] . ">Waypoints</a></li>\n";
-        }
-        //echo "<li><a href=\"comp_result.php?comPk=$comPk&tmsc=1\" title=\"Teams\"" . $clarr[4] . ">Teams</a></li>\n";
-        //echo "<li><a href=\"track.php\" title=\"submit tracks\"" . $clarr[4] . ">Tracks</a></li>";
-    echo "</ul>\n
-          <div id=\"title\">
-            <h1>$title</h1>
-          </div>
-          <div id=\"titler\">
-            <h1>$titler</h1>
-          </div>
-        </div>
-      </div>";
-}
-
-function hcimage($link,$comPk)
-{
-    $image = "images/pilots.jpg";
-    if (0+$comPk > 0)
-    {
-        $sql = "select comClass from tblCompetition where comPk=$comPk";
-        $result = mysqli_query($link, $sql);
-        if ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
-        {
-            $comClass = $row['comClass'];
-            if ($comClass != 'PG')
-            {
-                $image = "images/pilots_$comClass.jpg";
-            }
-        }
-    }
-    echo "<div id=\"image\"><img src=\"$image\" alt=\"Pilots Flying\"/></div>";
-}
-
-function hcsidebar($link)
-{
-    echo "
-        <div id=\"image\"><img src=\"images/pilots.jpg\" alt=\"Pilots Flying\"/></div>
-        <div id=\"sideBar\">
-        <h1><span>Longest 10</span></h1>
-        <div id=\"comments\"><ol>";
-    $count = 1;
-    $sql = "SELECT T.*, P.* FROM tblTrack T, PilotView P, tblComTaskTrack CTT where T.pilPk=P.pilPk and CTT.traPk=T.traPk order by T.traLength desc limit 10";
-    $result = mysqli_query($link, $sql);
-    while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
-    {
-        $id = $row['traPk'];
-        $dist = round($row['traLength']/1000,2);
-        $name = $row['pilFirstName'];
-        echo "<span class=\"author\"><a href=\"tracklog_map.php?trackid=$id&comPk=5\"><li> $dist kms ($name)</a></span>\n";
-
-        $count++;
-    }
-    echo "</ol>";
-    echo "
-        <img src=\"images/comment_bg.gif\" alt=\"comment bottom\"/>
-        </div>
-        <h1><span>Recent 10</span></h1><ol>";
-    $count = 1;
-    $sql = "SELECT T.*, P.* FROM tblTrack T, PilotView P, tblComTaskTrack CTT where T.pilPk=P.pilPk and CTT.traPk=T.traPk order by T.traDate desc limit 10";
-    $result = mysqli_query($link, $sql);
-    while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
-    {
-        $id = $row['traPk'];
-        $dist = round($row['traLength']/1000,2);
-        $date = $row['traDate'];
-        $name = $row['pilFirstName'];
-        echo "<a href=\"tracklog_map.php?trackid=$id&comPk=5\"><li> $dist kms ($name)</a><br>\n";
-
-        $count++;
-    }
-
-    echo "</ol>";
-    echo "<img src=\"images/comment_bg.gif\" alt=\"comment bottom\"/>
-        </div>\n";
-}
-
-function hcregion($link)
-{
-    echo "<h1><span>Tracks by Region</span></h1>\n";
-    $sql = "select R.*, RW.* from tblCompetition C, tblTask T, tblRegion R, tblRegionWaypoint RW where T.comPk=C.comPk and T.regPk=R.regPk and C.comDateTo > date_sub(now(), interval 1 year) and R.regCentre=RW.rwpPk and R.regDescription not like '%test%' and R.regDescription not like '' group by R.regPk order by R.regDescription";
-    $result = mysqli_query($link, $sql);
-    $regions = [];
-    while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
-    {
-        $regPk=$row['regPk'];
-        #$regions[] = "<a href=\"regional.php?${piln}regPk=$regPk\">" . $row['regDescription'] . "</a>";
-        $regions[] = "<a href=\"regional.php?regPk=$regPk\">" . $row['regDescription'] . "</a>";
-    }
-    echo fnl($regions);
-    //echo "<img src=\"images/comment_bg.gif\" alt=\"comment bottom\"/></div>\n";
-}
-
-function hcopencomps($link)
-{
-    echo "<h2 class=\"font-weight-light mb-0\">Open Competitions</span></h2>";
-    // This is the one to use in Production
-    // $sql = "select * from tblCompetition where comName not like '%test%' and comDateTo > date_sub(now(), interval 1 day) order by comDateTo";
-    // This is the one we use to simulate
-    $sql = "select * from tblCompetition where comDateTo > date_sub(now(), interval 1 day) order by comDateTo";
-    $result = mysqli_query($link, $sql);
-    $comps = [];
-    while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
-    {
-        // FIX: if not finished & no tracks then submit_track page ..
-        // FIX: if finished no tracks don't list!
-        $cpk = $row['comPk'];
-        $comps[] = "<span class=\"list\"><a href=\"comp_result.php?comPk=$cpk\">" . $row['comName'] . "</span></a>";
-    }
-    echo fnl($comps);
-}
-
-function hcclosedcomps($link, $like = '')
-{
-    echo "<h2 class=\"font-weight-light mb-0\">Closed Competitions</h2>";
-
-    if ($like != '')
-    {
-        $arr = explode (" ", $like);
-        $first = $arr[0];
-        // This is the one to use in Production
-        // $sql = "select * from tblCompetition where comName not like '%test%' and comName like '%$first%' and comDateTo < date_sub(now(), interval 1 day) order by comDateTo desc limit 15";
-        // This is the one we use to simulate
-        $sql = "select * from tblCompetition where comName like '%$first%' and comDateTo < date_sub(now(), interval 1 day) order by comDateTo desc limit 15";
-    }
-    else
-    {
-        // This is the one to use in Production
-        // $sql = "select * from tblCompetition where comName not like '%test%' and comDateTo < date_sub(now(), interval 1 day) order by comDateTo desc limit 15";
-        // This is the one we use to simulate
-        $sql = "select * from tblCompetition where comDateTo < date_sub(now(), interval 1 day) order by comDateTo desc limit 15";
-    }
-    $result = mysqli_query($link, $sql);
-    $comps = [];
-    while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
-    {
-        // FIX: if not finished & no tracks then submit_track page ..
-        // FIX: if finished no tracks don't list!
-        $cpk = $row['comPk'];
-        if ($row['comType'] == 'Route')
-        {
-            $comps[] = "<a href=\"compview.php?comPk=$cpk\">" . $row['comName'] . "</a>";
-        }
-        else
-        {
-            $comps[] = "<a href=\"comp_result.php?comPk=$cpk\">" . $row['comName'] . "</a>";
-        }
-    }
-    echo fnl($comps);
-}
-
-function hcfooter()
-{
-    echo "<div id=\"footer\">
-      <a href=\"http://openwebdesign.org\" title=\"designed by fullahead.org\">Open Web Design</a></div>
-  </div>\n";
-}
-
-function hcmapjs()
-{
-    echo '<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCsqRjSnEx9F_W9aIE-CZhge1THMQ6lkjI&callback=initMap"></script>';
-    echo "\n";
-    echo '<script src="/js/elabelv3.js"></script>';
-    echo "\n";
-    echo '<script src="/js/einsertv3.js"></script>';
-    echo "\n";
-}
-
-function hcscripts($arr)
-{
-    foreach ($arr as $ele)
-    {
-        echo "<script src=\"$ele\"></script>\n";
-    }
 }
 
 ?>

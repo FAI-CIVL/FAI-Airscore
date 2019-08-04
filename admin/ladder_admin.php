@@ -23,17 +23,6 @@ function hcincludedcomps($link,$ladPk)
     }
     echo fnl($comps);
 }
-// function taskcmp($a, $b)
-// {
-//     if (!is_array($a)) return 0;
-//     if (!is_array($b)) return 0;
-// 
-//     if ($a['tname'] == $b['tname']) 
-//     {
-//         return 0;
-//     }
-//     return ($a['tname'] < $b['tname']) ? -1 : 1;
-// }
 
 function add_result(&$results, $row, $topnat, $how)
 {
@@ -53,7 +42,7 @@ function add_result(&$results, $row, $topnat, $how)
     }
     //echo "pilPk=$pilPk tasname=$tasName, result=$score<br>\n";
     $perf = 0;
-    if ($how == 'ftv') 
+    if ($how == 'ftv')
     {
         $perf = 0;
         if ($validity > 0)
@@ -83,7 +72,7 @@ function ladder_result($ladPk, $ladder, $restrict)
     $ladParam = $ladder['ladParam'];
 
     $topnat = [];
-    $sql = "select T.tasPk, max(T.tarScore) as topNat 
+    $sql = "select T.tasPk, max(T.tarScore) as topNat
             from tblTaskResult T, tblTrack TL, PilotView P
             where T.traPk=TL.traPk and TL.pilPk=P.pilPk and P.pilNationCode='$nat'
             group by tasPk";
@@ -96,14 +85,14 @@ function ladder_result($ladPk, $ladder, $restrict)
     // Select from the main database of results
     $sql = "select 0 as extPk, TR.tarScore,
         TP.pilPk, TP.pilLastName, TP.pilFirstName, TP.pilNationCode, TP.pilFAI, TP.pilSex,
-        TK.tasPk, TK.tasName, TK.tasDate, TK.tasQuality, 
-        C.comName, C.comDateTo, LC.lcValue, 
-        case when date_sub('$end', INTERVAL 365 DAY) > C.comDateTo 
-        then (TR.tarScore * LC.lcValue * 0.90 * TK.tasQuality) 
-        else (TR.tarScore * LC.lcValue * TK.tasQuality) end as ladScore, 
-        (TR.tarScore * LC.lcValue * (case when date_sub('$end', INTERVAL 365 DAY) > C.comDateTo 
+        TK.tasPk, TK.tasName, TK.tasDate, TK.tasQuality,
+        C.comName, C.comDateTo, LC.lcValue,
+        case when date_sub('$end', INTERVAL 365 DAY) > C.comDateTo
+        then (TR.tarScore * LC.lcValue * 0.90 * TK.tasQuality)
+        else (TR.tarScore * LC.lcValue * TK.tasQuality) end as ladScore,
+        (TR.tarScore * LC.lcValue * (case when date_sub('$end', INTERVAL 365 DAY) > C.comDateTo
             then 0.90 else 1.0 end) / (TK.tasQuality * LC.lcValue)) as validity
-from    tblLadderComp LC 
+from    tblLadderComp LC
         join tblLadder L on L.ladPk=LC.ladPk
         join tblCompetition C on LC.comPk=C.comPk
         join tblTask TK on C.comPk=TK.comPk
@@ -122,7 +111,7 @@ WHERE LC.ladPk=$ladPk and TK.tasDate > '$start' and TK.tasDate < '$end'
     }
 
     // Work out how much validity we want (not really generic)
-    $sql = "select sum(tasQuality)*1000 from tblLadderComp LC 
+    $sql = "select sum(tasQuality)*1000 from tblLadderComp LC
         join tblLadder L on L.ladPk=LC.ladPk and LC.lcValue=450
         join tblCompetition C on LC.comPk=C.comPk
         join tblTask TK on C.comPk=TK.comPk
@@ -137,10 +126,10 @@ WHERE LC.ladPk=$ladPk and TK.tasDate > '$start' and TK.tasDate < '$end'
         $sql = "select TK.extPk, TK.extURL as tasPk,
         TP.pilPk, TP.pilLastName, TP.pilFirstName, TP.pilNationCode, TP.pilFAI, TP.pilSex,
         TK.tasName, TK.tasQuality, TK.comName, TK.comDateTo, TK.lcValue, TK.tasTopScore,
-        case when date_sub('$end', INTERVAL 365 DAY) > TK.comDateTo 
-        then (ER.etrScore * TK.lcValue * 0.90 * TK.tasQuality) 
-        else (ER.etrScore * TK.lcValue * TK.tasQuality) end as ladScore, 
-        (ER.etrScore * TK.lcValue * (case when date_sub('$end', INTERVAL 365 DAY) > TK.comDateTo 
+        case when date_sub('$end', INTERVAL 365 DAY) > TK.comDateTo
+        then (ER.etrScore * TK.lcValue * 0.90 * TK.tasQuality)
+        else (ER.etrScore * TK.lcValue * TK.tasQuality) end as ladScore,
+        (ER.etrScore * TK.lcValue * (case when date_sub('$end', INTERVAL 365 DAY) > TK.comDateTo
             then 0.90 else 1.0 end) / (TK.tasQuality * TK.lcValue)) as validity
         from tblExtTask TK
         join tblExtResult ER on ER.extPk=TK.extPk
@@ -175,7 +164,7 @@ function filter_results($ladPk, $how, $param, $extpar, $results)
             $count = 0;
             foreach ($arr as $perf => $taskresult)
             {
-                //if ($perf == 'name') 
+                //if ($perf == 'name')
                 if (ctype_alpha($perf))
                 {
                     continue;
@@ -190,7 +179,7 @@ function filter_results($ladPk, $how, $param, $extpar, $results)
                     $arr[$perf]['perc'] = 0;
                 }
                 $count++;
-                
+
             }
         }
         else
@@ -200,7 +189,7 @@ function filter_results($ladPk, $how, $param, $extpar, $results)
             $pilext = 0;
             foreach ($arr as $perf => $taskresult)
             {
-                //if ($perf == 'name') 
+                //if ($perf == 'name')
                 if (ctype_alpha($perf))
                 {
                     continue;
@@ -210,7 +199,7 @@ function filter_results($ladPk, $how, $param, $extpar, $results)
                 if ($pilvalid < $param)
                 {
                     // if external
-                    if (0+$taskresult['extpk'] > 0) 
+                    if (0+$taskresult['extpk'] > 0)
                     {
                         if ($pilext < $extpar)
                         {
@@ -255,7 +244,7 @@ function filter_results($ladPk, $how, $param, $extpar, $results)
                         $arr[$perf]['perc'] = $perc * 100;
                     }
                 }
-            }   
+            }
         }
 
         // resort arr by task?
@@ -285,18 +274,18 @@ function output_ladder($ladPk, $ladder, $fdhv, $class)
 {
     $today = getdate();
     $tdate = sprintf("%04d-%02d-%02d", $today['year'], $today['mon'], $today['mday']);
-    
+
     $rtable = [];
     $rdec = [];
-    
+
     //if ($comClass == "HG")
     //{
-    //    $classopts = array ( 'open' => '', 'floater' => '&class=0', 'kingpost' => '&class=1', 
+    //    $classopts = array ( 'open' => '', 'floater' => '&class=0', 'kingpost' => '&class=1',
     //        'hg-open' => '&class=2', 'rigid' => '&class=3', 'women' => '&class=4' );
     //}
     //else
     {
-        $classopts = array ( 'open' => '', 'fun' => '&class=0', 'sports' => '&class=1', 
+        $classopts = array ( 'open' => '', 'fun' => '&class=0', 'sports' => '&class=1',
             'serial' => '&class=2', 'women' => '&class=4' );
     }
     $cind = '';
@@ -309,23 +298,23 @@ function output_ladder($ladPk, $ladder, $fdhv, $class)
     {
         $copts[$text] = "ladder_admin.php?ladPk=$ladPk$url";
     }
-    
+
     $rdec[] = 'class="h"';
     $rdec[] = 'class="h"';
     $hdr = array( fb('Res'),  fselect('class', "ladder_admin.php?ladPk=$ladPk$cind", $copts, ' onchange="document.location.href=this.value"'), fb('HGFA'), fb('Total') );
     $hdr2 = array( '', '', '', '' );
-    
+
     # find each task details
     $alltasks = [];
     $taskinfo = [];
     $sorted = [];
-    
+
     $sorted = ladder_result($ladPk, $ladder, $fdhv);
     $subtask = '';
-    
+
     $rtable[] = $hdr;
     $rtable[] = $hdr2;
-    
+
     $lasttot = 0;
     $count = 1;
     foreach ($sorted as $pil => $arr)
@@ -350,14 +339,14 @@ function output_ladder($ladPk, $ladder, $fdhv, $class)
             $nxt[] = '';
             $nxt[] = $arr['name'];
         }
-    
+
         $nxt[] = $arr['hgfa'];
         $nxt[] = fb($tot);
         $lasttot = $tot;
-    
+
         //if (ctype_digit(substr($key,0,1)))
         foreach ($arr as $key => $sarr)
-        { 
+        {
             $score = 0;
             $perc = 0;
             if (is_array($sarr) && array_key_exists('score', $sarr))
@@ -405,7 +394,7 @@ function output_ladder($ladPk, $ladder, $fdhv, $class)
         $count++;
     }
     echo ftable($rtable, "border=\"0\" cellpadding=\"3\" alternate-colours=\"yes\" align=\"center\"", $rdec, '');
-    
+
     //echo "</table>";
     if ($ladder['ladHow'] == 'ftv')
     {
@@ -433,15 +422,15 @@ function output_ladder_list($link, $ladder, $season)
         $countrycode = get_countrycode($link, $row['ladNationCode']);
         if ( isset($row['seasonYear']) )
         {
-			$claname = $row['claName'];
-			$how = ($row['ladOverallScore'] == 'ftv') ? ( strtoupper($row['ladOverallScore']) . ' (' . (100 - $row['ladOverallParam'] * 100) . '%)' ) : $row['ladOverallScore'];
-		}
-		else
-		{
-			$claname = "<span style='color:red'>Not set for $season</span>";
-			$how = "<span style='color:red'>Not set for $season</span>";
-		}
-        $rtable[] = array( "<a href=\"ladder_admin.php?ladPk=$ladPk&season=$season\">" . $name . "</a>", $class, $countrycode, $active, $how, $claname, "<a href=\"ladder_admin.php?ladPk=$ladPk&season=$season\">edit</a>");
+            $claname = $row['claName'];
+            $how = ($row['ladOverallScore'] == 'ftv') ? ( strtoupper($row['ladOverallScore']) . ' (' . (100 - $row['ladOverallParam'] * 100) . '%)' ) : $row['ladOverallScore'];
+        }
+        else
+        {
+            $claname = "<span style='color:red'>Not set for $season</span>";
+            $how = "<span style='color:red'>Not set for $season</span>";
+        }
+            $rtable[] = array( "<a href=\"ladder_admin.php?ladPk=$ladPk&season=$season\">" . $name . "</a>", $class, $countrycode, $active, $how, $claname, "<a href=\"ladder_admin.php?ladPk=$ladPk&season=$season\">edit</a>");
     }
 
     return $rtable;
@@ -473,7 +462,7 @@ $sel_ladder = [];
 
 # deletion message
 if ( reqexists('del') )
-	$message .= "Ladder ($ladPk) succesfully deleted.\n";
+    $message .= "Ladder ($ladPk) succesfully deleted.\n";
 
 # Create new ladder
 if (reqexists('addladder'))
@@ -484,11 +473,11 @@ if (reqexists('addladder'))
     $comclass = reqsval('category');
     $method = reqsval('method');
     $param = 1 - reqival('param')/100;
-	$claPk = reqsval('classdef');
+    $claPk = reqsval('classdef');
     $query = "INSERT INTO tblLadder (ladName, ladComClass, ladNationCode) VALUE ('$lname', '$comclass', '$nation')";
     mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Ladder insert failed: ' . mysqli_connect_error() . ' - ' . $query);
     $ladPk = mysqli_insert_id($link);
-    
+
     $query = "INSERT INTO tblLadderSeason (ladPk, seasonYear, ladOverallScore, ladOverallParam, claPk) VALUE ('$ladPk', '$season', '$method', '$param', '$claPk')";
     mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' LadderSeason insert failed: ' . mysqli_connect_error() . ' - ' . $query);
 }
@@ -496,90 +485,62 @@ if (reqexists('addladder'))
 elseif (reqexists('delladder'))
 {
     check_admin('admin',$usePk,-1);
-    
+
     # Check ladder is not used before deleting
-	$ladPk = reqival('ladPk');
-	$query = "	SELECT 
-					* 
-				FROM 
-					tblLadderComp
-				WHERE 
-					ladPk = $ladPk 
-				LIMIT 1 ";
-	$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Ladder delete check failed: ' . mysqli_connect_error());
-	if (mysqli_num_rows($result) > 0)
+    $ladPk = reqival('ladPk');
+    $query = "	SELECT
+    *
+    FROM
+    tblLadderComp
+    WHERE
+    ladPk = $ladPk
+    LIMIT 1 ";
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Ladder delete check failed: ' . mysqli_connect_error());
+    if (mysqli_num_rows($result) > 0)
     {
         $message .= "Unable to delete ladder ($ladPk) as it is in use in a season.\n";
     }
-	else
-	{
-		$query = "DELETE FROM tblLadder WHERE ladPk=$ladPk";
-		mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Ladder delete failed: ' . mysqli_connect_error());
-		$query = "DELETE FROM tblLadderSeason WHERE ladPk=$ladPk";
-		mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' LadderSeason delete failed: ' . mysqli_connect_error());
-		
-		redirect("ladder_admin.php?ladPk=$ladPk&del=1");
-	} 
+    else
+    {
+        $query = "DELETE FROM tblLadder WHERE ladPk=$ladPk";
+        mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Ladder delete failed: ' . mysqli_connect_error());
+        $query = "DELETE FROM tblLadderSeason WHERE ladPk=$ladPk";
+        mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' LadderSeason delete failed: ' . mysqli_connect_error());
+
+        redirect("ladder_admin.php?ladPk=$ladPk&del=1");
+    }
 }
 # Update Ladder
 elseif (reqexists('upladder'))
-{    
+{
     check_admin('admin',$usePk,-1);
-    
-//     # Check ladder is not used before changing it
-//     $ladPk = reqival('ladPk');
-// 	$query = "	SELECT 
-// 					* 
-// 				FROM 
-// 					tblLadderComp  
-// 				WHERE 
-// 					ladPk = $ladPk 
-// 				LIMIT 1 ";
-// 	$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Ladder update check failed: ' . mysqli_connect_error());
-// 	if (mysqli_num_rows($result) > 0)
-//     {
-//         $message .= "Unable to change ladder ($ladPk) as it is in use in a competition.\n";
-//     }
-// 	else
-// 	{
-// 		$name = reqsval('lname');
-// 		$nation = reqsval('nation');
-// 		$comclass = reqsval('category');
-// 		$method = reqsval('method');
-// 		$param = 1 - reqival('param')/100;
-// 		$claPk = reqsval('classdef');
-// 		$query = "UPDATE tblLadder SET ladname='$name', ladComClass='$comclass', ladNationCode='$nation', ladHow='$method', ladOverallParam='$param', claPk='$claPk' WHERE ladPk=$ladPk";
-// 		mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Ladder update failed: ' . mysqli_connect_error());
-// 		
-// 		$message .= "Ladder ($ladPk) succesfully updated.\n";
-// 	}
 
-		$ladPk = reqival('ladPk');
-		$name = reqsval('lname');
-		$nation = reqsval('nation');
-		$comclass = reqsval('category');
-		$active = isset($_POST["active"]) ? 1 : 0;
-		$method = reqsval('method');
-		$param = 1 - reqival('param')/100;
-		$claPk = reqsval('classdef');
-		
-		$query = "UPDATE tblLadder SET ladname='$name', ladComClass='$comclass', ladNationCode='$nation' WHERE ladPk=$ladPk";
-		mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Ladder update failed: ' . mysqli_connect_error());
-		
-		$query = "SELECT ladPk FROM tblLadderSeason WHERE ladPk = $ladPk AND seasonYear = $season LIMIT 1";
-		$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' LadderSeason exists check failed: ' . mysqli_connect_error());
-		if (mysqli_num_rows($result) > 0)
-		{
-			$query = "UPDATE tblLadderSeason SET ladOverallScore='$method', ladActive=$active, ladOverallParam='$param', claPk='$claPk' WHERE ladPk=$ladPk AND seasonYear = $season";
-			echo $query;
-		}
-		else
-		{
-			$query = "INSERT INTO tblLadderSeason (ladPk, seasonYear, ladActive, ladOverallScore, ladOverallParam, claPk) VALUE ('$ladPk', '$season', '$active', '$method', '$param', '$claPk')";
-		}		
-		mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Ladder update failed: ' . mysqli_connect_error());
+    $ladPk = reqival('ladPk');
+    $name = reqsval('lname');
+    $nation = reqsval('nation');
+    $comclass = reqsval('category');
+    $active = isset($_POST["active"]) ? 1 : 0;
+    $method = reqsval('method');
+    $param = 1 - reqival('param')/100;
+    $claPk = reqsval('classdef');
 
-		$message .= "Ladder ($ladPk) succesfully updated.\n";
+    $query = "UPDATE tblLadder SET ladname='$name', ladComClass='$comclass', ladNationCode='$nation' WHERE ladPk=$ladPk";
+    mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Ladder update failed: ' . mysqli_connect_error());
+
+    $query = "SELECT ladPk FROM tblLadderSeason WHERE ladPk = $ladPk AND seasonYear = $season LIMIT 1";
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' LadderSeason exists check failed: ' . mysqli_connect_error());
+    if (mysqli_num_rows($result) > 0)
+    {
+        $query = "UPDATE tblLadderSeason SET ladOverallScore='$method', ladActive=$active, ladOverallParam='$param', claPk='$claPk' WHERE ladPk=$ladPk AND seasonYear = $season";
+        echo $query;
+    }
+    else
+    {
+        $query = "INSERT INTO tblLadderSeason (ladPk, seasonYear, ladActive, ladOverallScore, ladOverallParam, claPk) VALUE ('$ladPk', '$season', '$active', '$method', '$param', '$claPk')";
+    }
+    mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Ladder update failed: ' . mysqli_connect_error());
+
+    $message .= "Ladder ($ladPk) succesfully updated.\n";
 }
 
 if (reqexists('addladcomp'))
@@ -604,18 +565,18 @@ if ($ladPk < 1)
     # Display all available ladders
     $title = 'Ladders Administration';
     $all_ladders = [];
-    $query = "	SELECT 
-					L.ladPk AS id, 
-					L.*, 
-					LS.*, 
-					C.claName 
-				FROM 
-					tblLadder L 
-					LEFT OUTER JOIN tblLadderSeason LS ON L.ladPk = LS.ladPk AND LS.seasonYear = $season 
-					LEFT OUTER JOIN tblClassification C USING (claPk)  
-				ORDER BY 
-					ladComClass ASC, 
-					ladName ";
+    $query = "	SELECT
+    L.ladPk AS id,
+    L.*,
+    LS.*,
+    C.claName
+    FROM
+    tblLadder L
+    LEFT OUTER JOIN tblLadderSeason LS ON L.ladPk = LS.ladPk AND LS.seasonYear = $season
+    LEFT OUTER JOIN tblClassification C USING (claPk)
+    ORDER BY
+    ladComClass ASC,
+    ladName ";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Ladder query failed: ' . mysqli_connect_error());
     while ($row = mysqli_fetch_assoc($result))
     {
@@ -629,22 +590,22 @@ if ($ladPk < 1)
         $new_ladder[] = array('Category: ', fselect('category', $comclass, array('PG', 'HG', 'mixed'), " onchange=\"document.getElementById('ladadmin').submit();\""), 'Name: ', fin('lname','', 20), 'Nation: ', get_countrylist($link, 'nation', 380));
         $new_ladder[] = array('Scoring: ', fselect('method', '', array('all', 'ftv', 'round' )), 'Score param %: ', fin('param',0, 10), 'Classes Definition: ', get_classifications($link, 'classdef', $comclass));
         $new_ladder[] = array(fis('addladder', 'Add Ladder', ''), "<input type='hidden' name='season' value='$thisseason'>", '', '', '', '' );
-	}   
+    }
 
 }
 else
 {
     # Update / Delete Ladder Mode
-    $query = "	SELECT 
-					L.*,
-					LS.*, 
-					C.claName 
-				FROM 
-					tblLadder L 
-					LEFT OUTER JOIN tblLadderSeason LS ON L.ladPk = LS.ladPk AND LS.seasonYear = $season 
-					LEFT OUTER JOIN tblClassification C USING (claPk) 
-				WHERE 
-					L.ladPk = $ladPk";
+    $query = "	SELECT
+    L.*,
+    LS.*,
+    C.claName
+    FROM
+    tblLadder L
+    LEFT OUTER JOIN tblLadderSeason LS ON L.ladPk = LS.ladPk AND LS.seasonYear = $season
+    LEFT OUTER JOIN tblClassification C USING (claPk)
+    WHERE
+    L.ladPk = $ladPk";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Ladder query failed: ' . mysqli_connect_error());
     $row = mysqli_fetch_assoc($result);
     if ($row)
@@ -660,7 +621,7 @@ else
         $sel_ladder[] = array('Scoring: ', fselect('method', $method, array('all', 'ftv', 'round', 'round-perc' )), 'Score param %: ', fin('param',$param, 10), 'Classes Definition: ', get_classifications($link, 'classdef', $comclass, $claPk));
         $sel_ladder[] = array("Active in $season: ", fic("active", '', $active), fis('upladder', 'Update', ''), fis('delladder', 'DELETE', ''), "<a href=\"ladder_admin.php\">cancel</a>", "<input type='hidden' name='season' value='$season'>"."<input type='hidden' name='category' value='$comclass'>");
         $title = $name . " ($season)";
-	}
+    }
 }
 
 
@@ -671,8 +632,8 @@ echo "<h3>$title</h3>\n";
 echo "<br /><hr />\n";
 if ( $message !== '')
 {
-	echo "<h4> <span style='color:red'>$message</span> </h4>\n";
-	echo "<br /><hr />\n";
+    echo "<h4> <span style='color:red'>$message</span> </h4>\n";
+    echo "<br /><hr />\n";
 }
 
 echo "<form enctype='multipart/form-data' action=\"ladder_admin.php\" name='main' id='main' method='post'>\n";
@@ -682,30 +643,30 @@ echo "<hr />\n";
 
 if ( $content !== '')
 {
-	echo $content;
-	echo "<br /><hr />\n";
+    echo $content;
+    echo "<br /><hr />\n";
 }
 
 if ( !empty($sel_ladder) )
 {
     # Update / Delete ladder Mode
-	echo "<form  enctype='multipart/form-data' action=\"ladder_admin.php?ladPk=$ladPk\" name='ladadmin' id='ladadmin' method='post'>\n";
-	echo "<p class='explanation'>Method and Classes Definition for $season</p>\n";
-	echo ftable($sel_ladder, "class='format selladder'", '', '');
-	echo "</form>\n"; 
+    echo "<form  enctype='multipart/form-data' action=\"ladder_admin.php?ladPk=$ladPk\" name='ladadmin' id='ladadmin' method='post'>\n";
+    echo "<p class='explanation'>Method and Classes Definition for $season</p>\n";
+    echo ftable($sel_ladder, "class='format selladder'", '', '');
+    echo "</form>\n";
 }
 if ( !empty($ladder_list) || !empty($new_ladder) )
 {
     # Ladder List Mode
     echo "<p class='explanation'>Parameters for Season $season</p>\n";
     echo "<form enctype='multipart/form-data' action=\"ladder_admin.php\" name='ladadmin' id='ladadmin' method='post'>\n";
-	echo ftable($ladder_list, "class='format ladderlist'", '', '');
-	echo "<br /><hr />\n";
-	echo "<h4>Create new Ladder</h4>\n";
-	echo "<p class='explanation'>Method and Classes Definition for $thisseason</p>\n";
-	echo ftable($new_ladder, "class='format newladder'", '', '');
-	echo "</form>\n";
-    
+    echo ftable($ladder_list, "class='format ladderlist'", '', '');
+    echo "<br /><hr />\n";
+    echo "<h4>Create new Ladder</h4>\n";
+    echo "<p class='explanation'>Method and Classes Definition for $thisseason</p>\n";
+    echo ftable($new_ladder, "class='format newladder'", '', '');
+    echo "</form>\n";
+
 }
 
 tpfooter($file);
