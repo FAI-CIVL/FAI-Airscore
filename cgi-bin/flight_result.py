@@ -557,8 +557,6 @@ class Flight_result:
            if path or pname is None will calculate. note that if bulk importing it is better to pass these values
         rather than query DB for each track"""
 
-        import glob
-        from compUtils import get_task_file_path
         from os import path, makedirs
 
         if test:

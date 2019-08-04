@@ -13,32 +13,17 @@ import folium
 import folium.plugins
 from folium.map import FeatureGroup, Marker, Popup, Icon
 from folium.features import CustomIcon
+from geographiclib.geodesic import Geodesic
 from compUtils import read_formula
-import flight_result
 import itertools
 import Defines
-import formula as For  #to be removed once we use json files saved to disk
-from geographiclib.geodesic import Geodesic
-from route import calcBearing
-from pathlib import Path
-import jsonpickle
-from compUtils import get_task_file_path
-from os import path
 from mapUtils import checkbbox
+from task import Task
 
-# import os
-# from trackUtils import get_pil_track
-# from pprint import pprint
 #from flask import Flask, flash, request, redirect, url_for, session, json
 #from flask import get_template_attribute,render_template
 
 geod = Geodesic.WGS84
-
-#use Task to get task definition
-from task import Task
-
-#use Track to get track from DB
-from track import Track
 
 ### select the library to parse the igc to geojson
 global IGC_LIB
@@ -262,76 +247,6 @@ def dump_flight(track, task):
 #     return '.' in filename and \
 #            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# function to parse task object to compilations
-def get_task(task_id):
-    """gets task map json file if it exists, otherwise creates it. returns 4 separate objects for mapping"""
-    task_file = Path(Defines.MAPOBJDIR+str(task_id) + '.task')
-    if task_file.is_file():
-        with open(task_file, 'r') as f:
-            data = jsonpickle.decode(f.read())
-            task_coords = data['task_coords']
-            turnpoints = data['turnpoints']
-            short_route = data['short_route']
-            goal_line = data['goal_line']
-            tolerance = data['tolerance']
-
-    else:
-        task_coords = []
-        turnpoints = []
-        short_route = []
-        goal_line = None
-        task = Task.read_task(task_id)
-        tolerance = task.tolerance
-        for obj in task.turnpoints:
-            task_coords.append({
-                'longitude': obj.lon,
-                'latitude': obj.lat,
-                'name': obj.name
-            })
-
-            turnpoints.append({
-                'radius': obj.radius,
-                'longitude': obj.lon,
-                'latitude': obj.lat,
-                #         'altitude': obj.altitude,
-                'name': obj.name,
-                'type': obj.type,
-                'shape': obj.shape
-            })
-
-        for obj in task.optimised_turnpoints:
-            short_route.append(tuple([obj.lat, obj.lon]))
-            # print ("short route fix: {}, {}".format(obj.lon,obj.lat))
-
-        # calculate 3 points for goal line (could use 2 but safer with 3?)
-        if task.turnpoints[-1].shape == 'line':
-            goal_line = []
-            bearing_to_last = calcBearing(task.turnpoints[-1].lat, task.turnpoints[-1].lon,
-                                          task.optimised_turnpoints[-2].lat, task.optimised_turnpoints[-2].lon)
-            bearing_to_last += 360
-            if bearing_to_last > 270:
-                bearing_to_line_end1 = 90 - (360 - bearing_to_last)
-            else:
-                bearing_to_line_end1 = bearing_to_last + 90
-
-            if bearing_to_last < 90:
-                bearing_to_line_end2 = 360 - (90 - bearing_to_last)
-            else:
-                bearing_to_line_end2 = bearing_to_last - 90
-
-            line_end1 = geod.Direct(task.turnpoints[-1].lat, task.turnpoints[-1].lon, bearing_to_line_end1,
-                                    task.turnpoints[-1].radius)
-            line_end2 = geod.Direct(task.turnpoints[-1].lat, task.turnpoints[-1].lon, bearing_to_line_end2,
-                                    task.turnpoints[-1].radius)
-
-            goal_line.append(tuple([line_end1['lat2'], line_end1['lon2']]))
-            goal_line.append(tuple([task.turnpoints[-1].lat, task.turnpoints[-1].lon]))
-            goal_line.append(tuple([line_end2['lat2'], line_end2['lon2']]))
-        with open(task_file, 'w') as f:
-            f.write(jsonpickle.dumps({'task_coords': task_coords, 'turnpoints': turnpoints, 'short_route': short_route,
-                                      'goal_line': goal_line, 'tolerance':tolerance}))
-
-    return task_coords, turnpoints, short_route, goal_line, tolerance
 
 def get_region(region_id):
     from region import Region as Reg
@@ -362,14 +277,14 @@ def get_region(region_id):
 
 def main(mode, val, track_id):
     """Main module"""
+    from task import get_task_json
+    from trackUtils import read_result_file
 #     log_dir = d.LOGDIR
 #     print("log setup")
 #     logging.basicConfig(filename=log_dir + 'main.log',level=logging.INFO,format='%(asctime)s %(message)s')
 
     short_route = []
-    map = None
     layer={}
-    #map_file = '../map.html'
 
     if mode == 'region':
         '''waypoints map'''
@@ -380,27 +295,11 @@ def main(mode, val, track_id):
     else:
         '''create the task map for route or tracklog maps'''
         task_id = val
-        wpt_coords, turnpoints, short_route, goal_line, tolerance = get_task(task_id)
-        if mode == 'tracklog':
-            """create task and track objects"""
-            res_path = Defines.JSONDIR
-            filename = 'result_'+ str(track_id)+ '.json'
-            fullname = path.join(res_path, filename)
-            #if the file exists
-            if Path(fullname).is_file():
-                with open(fullname, 'r') as f:
-                    layer['geojson'] = jsonpickle.decode(f.read())
+        wpt_coords, turnpoints, short_route, goal_line, tolerance = get_task_json(task_id)
 
-            else:
-                #make the file
-                task = Task.read_task(task_id)
-                formula = read_formula(task.comPk)
-                tolerance = 0.000000 + formula['forMargin'] / 100
-                track = Track.read_db(track_id)
-                f = For.get_formula_lib(formula)
-                result=flight_result.Flight_result.check_flight(track.flight, task, f.parameters, 5)
-                layer['geojson'] = result.to_geojson_result(track, task)
-                result.save_result_file( layer['geojson'], task, str(track_id), res_path=res_path, test = 0)
+        if mode == 'tracklog':
+            """read task and track objects"""
+            layer['geojson'] = read_result_file(track_id, task_id)
 
             layer['bbox'] = layer['geojson']['bounds']
         elif mode == 'route':

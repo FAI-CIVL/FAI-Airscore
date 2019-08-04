@@ -11,6 +11,7 @@ from flight_result import Flight_result
 from track import Track
 from trackDB import read_formula
 import formula as For
+import Defines
 
 # Use your utility module.
 from myconn import Database
@@ -267,3 +268,33 @@ def get_pil_track(pilPk, tasPk, test=0):
         print (message)
 
     return traPk
+
+def read_result_file(track_id, task_id):
+    """create task and track objects"""
+    import jsonpickle
+    from pathlib import Path
+
+    res_path = Defines.MAPOBJDIR + 'tracks/'
+    filename = 'result_' + str(track_id) + '.json'
+    fullname = os.path.join(res_path, filename)
+    # if the file exists
+    if not Path(fullname).is_file():
+        create_result_file(track_id, task_id)
+
+    with open(fullname, 'r') as f:
+        return jsonpickle.decode(f.read())
+
+def create_result_file(track_id, task_id):
+    import flight_result
+    from task import Task
+
+    res_path = Defines.MAPOBJDIR + 'tracks/'
+    filename = 'result_' + str(track_id) + '.json'
+    if not os.path.isdir(res_path):
+        os.makedirs(res_path)
+    task = Task.read_task(task_id)
+    formula = read_formula(task.comPk)
+    track = Track.read_db(track_id)
+    f = For.get_formula_lib(formula)
+    result = flight_result.Flight_result.check_flight(track.flight, task, f.parameters, 5)
+    result.save_result_file(result.to_geojson_result(track, task), task, str(track_id), res_path=res_path, test=0)
