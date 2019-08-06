@@ -24,3 +24,4 @@ _pycache_
 .idea/*
 map.html
 *.pyc
+map-objects/*

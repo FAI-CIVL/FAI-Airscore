@@ -30,8 +30,10 @@ from route import distance, polar, find_closest, cartesian2polar, polar2cartesia
 from myconn import Database
 from calcUtils import json, get_datetime, decimal_to_seconds, time_difference
 from igc_lib import defaultdict
-import  math
 import xml.dom.minidom
+from pathlib import Path
+import jsonpickle
+import Defines
 
 class Task:
     """Stores a task definition and checks if a flight has achieved the turnpoints in the task.
@@ -1018,3 +1020,88 @@ class Task:
             distance_to_go.insert(0, d)
             t -= 1
         return distance_to_go
+
+
+
+# function to parse task object to compilations
+def get_task_json(task_id):
+    """gets task map json file if it exists, otherwise creates it. returns 5 separate objects for mapping"""
+
+    task_file = Path(Defines.MAPOBJDIR+'tasks/'+str(task_id) + '.task')
+    if not task_file.is_file():
+        write_task_json(task_id)
+    else:
+        with open(task_file, 'r') as f:
+            data = jsonpickle.decode(f.read())
+            task_coords = data['task_coords']
+            turnpoints = data['turnpoints']
+            short_route = data['short_route']
+            goal_line = data['goal_line']
+            tolerance = data['tolerance']
+
+    return task_coords, turnpoints, short_route, goal_line, tolerance
+
+def write_task_json(task_id):
+    import os
+    from geographiclib.geodesic import Geodesic
+    from route import calcBearing
+
+    geod = Geodesic.WGS84
+    task_file = Path(Defines.MAPOBJDIR+'tasks/'+str(task_id) + '.task')
+
+    if not os.path.isdir(Defines.MAPOBJDIR + 'tasks/'):
+        os.makedirs(Defines.MAPOBJDIR + 'tasks/')
+    task_coords = []
+    turnpoints = []
+    short_route = []
+    goal_line = None
+    task = Task.read_task(task_id)
+    tolerance = task.tolerance
+    for obj in task.turnpoints:
+        task_coords.append({
+            'longitude': obj.lon,
+            'latitude': obj.lat,
+            'name': obj.name
+        })
+
+        turnpoints.append({
+            'radius': obj.radius,
+            'longitude': obj.lon,
+            'latitude': obj.lat,
+            #         'altitude': obj.altitude,
+            'name': obj.name,
+            'type': obj.type,
+            'shape': obj.shape
+        })
+
+    for obj in task.optimised_turnpoints:
+        short_route.append(tuple([obj.lat, obj.lon]))
+        # print ("short route fix: {}, {}".format(obj.lon,obj.lat))
+
+    # calculate 3 points for goal line (could use 2 but safer with 3?)
+    if task.turnpoints[-1].shape == 'line':
+        goal_line = []
+        bearing_to_last = calcBearing(task.turnpoints[-1].lat, task.turnpoints[-1].lon,
+                                      task.optimised_turnpoints[-2].lat, task.optimised_turnpoints[-2].lon)
+        bearing_to_last += 360
+        if bearing_to_last > 270:
+            bearing_to_line_end1 = 90 - (360 - bearing_to_last)
+        else:
+            bearing_to_line_end1 = bearing_to_last + 90
+
+        if bearing_to_last < 90:
+            bearing_to_line_end2 = 360 - (90 - bearing_to_last)
+        else:
+            bearing_to_line_end2 = bearing_to_last - 90
+
+        line_end1 = geod.Direct(task.turnpoints[-1].lat, task.turnpoints[-1].lon, bearing_to_line_end1,
+                                task.turnpoints[-1].radius)
+        line_end2 = geod.Direct(task.turnpoints[-1].lat, task.turnpoints[-1].lon, bearing_to_line_end2,
+                                task.turnpoints[-1].radius)
+
+        goal_line.append(tuple([line_end1['lat2'], line_end1['lon2']]))
+        goal_line.append(tuple([task.turnpoints[-1].lat, task.turnpoints[-1].lon]))
+        goal_line.append(tuple([line_end2['lat2'], line_end2['lon2']]))
+    with open(task_file, 'w') as f:
+        f.write(jsonpickle.dumps({'task_coords': task_coords, 'turnpoints': turnpoints, 'short_route': short_route,
+                                  'goal_line': goal_line, 'tolerance': tolerance}))

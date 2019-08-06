@@ -28,7 +28,7 @@ if ($out)
 }
 
 // $iframe = "<iframe id='map' src='map.html' scrolling='no' style='width:100%;min-width:800px;height:100%;min-height:800px;overflow:hidden; margin-top:-4px; margin-left:-4px; border:none;'></iframe>";
-$iframe = "<iframe id='map' srcdoc=\"$source\" scrolling='no' style='width:100%;min-width:800px;height:100%;min-height:800px;overflow:hidden; margin-top:-4px; margin-left:-4px; border:none;'></iframe>";
+$iframe = "<iframe id='map' allowfullscreen srcdoc=\"$source\" scrolling='no' style='width:100%;min-width:800px;height:100%;min-height:800px;overflow:hidden; margin-top:-4px; margin-left:-4px; border:none;'></iframe>";
 
 //initializing template header
 tpinit($link,$file,$row);
