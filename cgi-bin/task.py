@@ -1,32 +1,18 @@
 """
-Route Library
 contains
     Task class
-    Turnpoint class
+    get_task_json and write_task_json - json files for task map
 
 Use: from task import Task
 
 Stuart Mackintosh - 2019
-"""
-
-'''used for finding shortest route and task validation.
-as we are using fast_andover we don't need the geopy lib. if we hard code the WSG84 parameters.
-Have also included: task object, turnpoint object, a task result object (results for an IGC processed with task.check_flight)
-Task object also includes the code to create from XCtrack file. There is old code for creating from LK8000, but we probably don't need this.
-
-will need to adapt to take IGC from aerofiles instead of igc_lib if we decide to use it.
 
 TO DO:
-
-add database write and update to task object,
-add database write for shortest route.
 Add support for FAI Sphere ???
+"""
 
-add support for elapsed time tasks and also jump the gun for HG.
-
-'''
-
-from route import distance, polar, find_closest, cartesian2polar, polar2cartesian, calcBearing, opt_goal, opt_wp, opt_wp_exit, opt_wp_enter, Turnpoint
+from route import distance, polar, find_closest, cartesian2polar, polar2cartesian, calcBearing, opt_goal, opt_wp, \
+    opt_wp_exit, opt_wp_enter, Turnpoint
 from myconn import Database
 from calcUtils import json, get_datetime, decimal_to_seconds, time_difference
 from igc_lib import defaultdict
@@ -36,8 +22,8 @@ import jsonpickle
 import Defines
 
 class Task:
-    """Stores a task definition and checks if a flight has achieved the turnpoints in the task.
-    Attributes:
+    """Task definition, DB operations and length calculations
+        Some Attributes:
         turnpoints: A list of Turnpoint objects.
         start_time: Raw time (seconds past midnight). The time the race starts.
                     The pilots must start at or after this time.
@@ -51,12 +37,28 @@ class Task:
         SSDistance: optimised distance from SSS to ESS, calculated with method calculate_optimised_task_length
 
     methods:
-        read_task(task_id): reads task from DB
-        create_from_xctrack_file: reads task from xctrack file.
-        create_from_lkt_file: reads task from LK8000 file, old code probably needs fixing, but unlikely to be used now we have xctrack
+        database
+        read_task(task_id): read task from DB
+        clear_waypoints: delete waypoints from tblTaskWaypoint
+        update_waypoints:  write waypoints to tblTaskWaypoint
+        update_task_distance: write distances to DB
+        update_task_info: write task timmings and type to DB
+
+        scoring/database
+        update_totals: update total statistics in DB (total distance flown, fastest time etc.)
+        update_quality: update quality values in DB
+        update_points_allocation: update available point values in DB
+
+        creation:
+        create_from_xctrack_file: read task from xctrack file.
+        create_from_lkt_file: read task from LK8000 file, old code probably needs fixing, but unlikely to be used now we have xctrack
+        create_from_fsdb: read fsdb xml file, create task object
+
+        task distance:
         calculate_task_length: calculate non optimised distances.
+        calculate_optimised_task_length_old: find optimised distances and waypoints. old perl method, no longer used
         calculate_optimised_task_length: find optimised distances and waypoints.
-        check_flight: checks a flight against the task
+        distances_to_go: calculates distance from each waypoint to goal
     """
 
     def __init__(self, turnpoints, start_time, end_time, task_type, stopped_time=None, last_start_time=None,
