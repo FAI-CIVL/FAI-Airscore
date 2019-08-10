@@ -288,13 +288,9 @@ def create_result_file(track_id, task_id):
     import flight_result
     from task import Task
 
-    res_path = Defines.MAPOBJDIR + 'tracks/'
-    filename = 'result_' + str(track_id) + '.json'
-    if not os.path.isdir(res_path):
-        os.makedirs(res_path)
     task = Task.read_task(task_id)
     formula = read_formula(task.comPk)
     track = Track.read_db(track_id)
     f = For.get_formula_lib(formula)
     result = flight_result.Flight_result.check_flight(track.flight, task, f.parameters, 5)
-    result.save_result_file(result.to_geojson_result(track, task), task, str(track_id), res_path=res_path, test=0)
+    result.save_result_file(result.to_geojson_result(track, task), str(track_id))

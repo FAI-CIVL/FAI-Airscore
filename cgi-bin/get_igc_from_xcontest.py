@@ -1,8 +1,4 @@
-'''Dependancies I had to install on AWS server:
-sudo apt install python-pip
-pip install mysqlclient
-sudo apt-get install python3-lxml
-
+'''
 needs to be run with python3.
 i.e.
 python3 get_igc_from_xcontest.py <tasPk>
@@ -16,6 +12,7 @@ import formula as For
 from trackDB import read_formula
 import time
 import requests
+
 
 def get_xc_parameters(task_id, test = 0):
     """Get site info and date from database """

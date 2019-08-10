@@ -435,26 +435,16 @@ class Flight_result:
         endss = 0 if not self.ESS_time else self.ESS_time
         num_wpts = len(Counter(el[0] for el in self.Waypoints_achieved))
 
-        # endss = self.ESS_time
-        # if not endss:
-        #     endss = 0
-        # print("turnponts", len(self.Waypoints_achieved))
         query = "DELETE FROM `tblTaskResult` WHERE `traPk`=%s and `tasPk`=%s"
         params = [traPk, tasPk]
         with Database() as db:
             db.execute(query, params)
 
-        # query = "INSERT INTO tblTaskResult (" \
-        #         "tasPk, traPk, tarDistance, tarSpeed, tarStart, tarGoal, tarSS, tarES, tarTurnpoints, " \
-        #         "tarLeadingCoeff2, tarPenalty, tarComment, tarLastAltitude, tarLastTime ) " \
-        #         "VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})".format(tasPk, traPk, self.Distance_flown, self.speed, self.Pilot_Start_time, self.goal_time, self.SSS_time, endss, len(self.Waypoints_achieved), self.Fixed_LC, self.Penalty, self.Comment, self.Stopped_altitude, self.Stopped_time)
-        # print(query)
-
         query = """INSERT INTO `tblTaskResult` (
                 `tasPk`, `traPk`, `tarDistance`, `tarSpeed`, `tarStart`, `tarGoal`, `tarSS`, `tarES`, `tarTurnpoints`,
                 `tarLeadingCoeff2`, `tarLeadingCoeff`, `tarPenalty`, `tarLastAltitude`, `tarLastTime` )
                 VALUES ( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s ) """
-        # , #%s, %s, %s)"
+
         params = [tasPk, traPk, self.Distance_flown, self.speed, self.Pilot_Start_time, self.goal_time, self.SSS_time,
                   endss, num_wpts,
                   self.Fixed_LC, self.Lead_coeff, self.Penalty, self.Stopped_altitude,
@@ -466,11 +456,16 @@ class Flight_result:
     def store_result_json(self):
         json.dump(self)
 
-    def to_geojson_result(self, track, task, second_interval=5, to_file=False):
-        """Dumps the flight to geojson format
-            If a filename is given, it write the file, otherwise returns the string"""
+    def to_geojson_result(self, track, task, second_interval=5):
+        """Dumps the flight to geojson format used for mapping.
+        Contains tracklog split into pre SSS, pre Goal and post goal parts, thermals, takeoff/landing,
+        result object, waypoints achieved, and bounds
 
-        from geojson import Point, Feature, FeatureCollection, MultiPoint, MultiLineString, dump
+        second_interval = resolution of tracklog. default one point every 5 seconds. regardless it will
+                            keep points where waypoints were achieved.
+        returns the Json string."""
+
+        from geojson import Point, Feature, FeatureCollection, MultiLineString
 
         features = []
         toff_land = []
@@ -546,39 +541,30 @@ class Flight_result:
 
         data = {'tracklog': feature_collection, 'thermals': thermals, 'takeoff_landing': toff_land,
                 'result': jsonpickle.dumps(self), 'bounds': bbox, 'waypoint_achieved': waypoint_achieved}
-        if to_file:
-            self.save_result_file(data, task)
 
         return data
 
 
-    def save_result_file(self, data, task, trackid, res_path,  test=0):
-        """copy result file in the correct folder and with correct name
-           if path or pname is None will calculate. note that if bulk importing it is better to pass these values
-        rather than query DB for each track"""
+    def save_result_file(self, data, trackid):
+        """save result file in the correct folder as defined by DEFINES"""
 
         from os import path, makedirs
+        import Defines
+        res_path = Defines.MAPOBJDIR + 'tracks/'
 
-        if test:
-            print('save result file')
-            print('Task tracks path: {}'.format(res_path))
+        """check if directory already exists"""
+        if not path.isdir(res_path):
+            makedirs(res_path)
+        """creates a name for the track
+        name_surname_date_time_index.igc
+        if we use flight date then we need an index for multiple tracks"""
 
-        if res_path:
-            """check if directory already exists"""
-            if not path.isdir(res_path):
-                makedirs(res_path)
-            """creates a name for the track
-            name_surname_date_time_index.igc
-            if we use flight date then we need an index for multiple tracks"""
-
-            filename = 'result_'+str(trackid)+ '.json'
-            fullname = path.join(res_path, filename)
-            """copy file"""
-            try:
-                with open(fullname, 'w') as f:
-                    json.dump(data, f)
-                return fullname
-            except:
-                print('Error saving file:', fullname)
-        else:
-            print('error, path not created')
+        filename = 'result_'+str(trackid)+ '.json'
+        fullname = path.join(res_path, filename)
+        """copy file"""
+        try:
+            with open(fullname, 'w') as f:
+                json.dump(data, f)
+            return fullname
+        except:
+            print('Error saving file:', fullname)
