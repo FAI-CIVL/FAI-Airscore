@@ -225,38 +225,13 @@ class Track():
 
         return track
 
-    def to_geojson(self, filename = None, mintime=0, maxtime=86401, test = 0):
+    def to_geojson(self, filename = None, mintime=0, maxtime=86401):
         """Dumps the flight to geojson format
             If a filename is given, it write the file, otherwise returns the string"""
 
-        from geojson import Point, Feature, FeatureCollection, MultiPoint, MultiLineString, dump
-
-        #assert self.flight.valid
-
-        #TODO write objects to the geojson from the flight object
-#         min_lat = self.flight.takeoff_fix.lat
-#         min_lon = self.flight.takeoff_fix.lon
-#         max_lat = self.flight.takeoff_fix.lat
-#         max_lon = self.flight.takeoff_fix.lon
+        from geojson import Feature, FeatureCollection, MultiLineString, dump
 
         features = []
-        #features.append(Feature(geometry=point, properties={"country": "Spain"}))
-
-#         takeoff = Point((self.flight.takeoff_fix.lon,self.flight.takeoff_fix.lat))
-#         features.append(Feature(geometry=takeoff, properties={"TakeOff": "TakeOff"}))
-#         landing = Point((self.flight.landing_fix.lon,self.flight.landing_fix.lat))
-#         features.append(Feature(geometry=landing, properties={"Landing": "Landing"}))
-
-#         thermals = []
-#         for i, thermal in enumerate(self.flight.thermals):
-#     #        add_point(name="thermal_%02d" % i, fix=thermal.enter_fix)
-#             thermals.append( (thermal.enter_fix.lon,thermal.enter_fix.lat) )
-#     #        add_point(name="thermal_%02d_END" % i, fix=thermal.exit_fix)
-#             thermals.append( (thermal.exit_fix.lon,thermal.exit_fix.lat) )
-#
-#         thermals_multipoint = MultiPoint(thermals)
-#         features.append(Feature(geometry=thermals_multipoint))
-
         route = []
         for fix in self.flight.fixes:
             if mintime <= fix.rawtime < maxtime:
