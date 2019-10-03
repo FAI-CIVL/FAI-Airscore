@@ -5,7 +5,7 @@ function taskcmp($a, $b)
     if (!is_array($a)) return 0;
     if (!is_array($b)) return 0;
 
-    if ($a['tname'] == $b['tname']) 
+    if ($a['tname'] == $b['tname'])
     {
         return 0;
     }
@@ -38,7 +38,7 @@ function fselect($name,$selected,$options,$extra='')
 function fwaypoint($link,$tasPk,$name,$selected)
 {
     $query="SELECT DISTINCT
-                RW.* 
+                RW.*
             FROM
                 tblRegionWaypoint RW
             JOIN tblRegion R ON R.regPk = RW.regPk
@@ -161,8 +161,8 @@ function fic($name,$value=null,$checked=0,$class=null)
 
 function fib($type,$name,$value=null,$class=null)
 {
-    $type = "type=\"$type\"";
-    $name = " name=\"$name\"";
+    $type = "type='$type'";
+    $name = " name='$name'";
     if ( isset($value) )
     {
         $value = "value=\"$value\"";
@@ -171,11 +171,11 @@ function fib($type,$name,$value=null,$class=null)
     {
         if ( is_numeric($class) )
         {
-        	$class = "class=\"width$class\"";
+        	$class = "class='width$class'";
         }
         else
         {
-        	$class = "class=\"$class\"";
+        	$class = "class='$class'";
         }
 
     }
@@ -254,11 +254,11 @@ function ftime($sec)
     $mm = floor(($sec % 3600) / 60);
     $ss = $sec % 60;
     if ($hh > 0)
-    {   
+    {
         $timeinair = "${hh}h${mm}m{$ss}s";
     }
     else
-    {   
+    {
         $timeinair = "${mm}m{$ss}s";
     }
     return $timeinair;

@@ -30,24 +30,19 @@ if ( reqexists('add') )
     $Interval = reqival('interval');
     $regPk = reqsval('region');
     $depart = 'leadout'; # Default departure points type to leadout points
-    
+
     # Check class to default arrival points
-    $query = "SELECT comClass FROM tblCompetition WHERE comPk = $comPk";
+    $query = "SELECT `comClass` FROM `tblCompetition` WHERE `comPk` = $comPk";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Comp Class check failed: ' . mysqli_connect_error());
     $arrival = ( mysqli_result($result, 0, 0) == 'HG' ? 'on' : 'off' );
-    
+
     # Defaults Height Bonus points to off
     // $heightbonus = 'off'; # Made in mysql default
 
     check_admin('admin',$usePk,$comPk);
 
-//     if ($TaskType == 'speedrun-interval' && $Interval == 0)
-//     {
-//         echo "Unable to add task a speedrun-interval task with no gate interval times<br>";
-//         exit(1);
-//     }
-
-    $query = "select * from tblTask where tasDate='$Date' and comPk=$comPk";
+    #check duplicate date
+    $query = "SELECT * FROM `tblTask` WHERE `tasDate` = '$Date' AND `comPk` = $comPk LIMIT 1";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task check failed: ' . mysqli_connect_error());
 
     if (mysqli_num_rows($result) > 0)
@@ -56,38 +51,15 @@ if ( reqexists('add') )
         exit(1);
     }
 
-    $query = "insert into tblTask (comPk, tasName, tasDate, tasTaskStart, tasFinishTime, tasStartTime, tasStartCloseTime, tasSSInterval, tasTaskType, regPk, tasDeparture, tasArrival) values ($comPk, '$Name', '$Date', '$Date $TaskStart', '$Date $TaskFinish', '$Date $StartOpen', '$Date $StartClose', $Interval, '$TaskType', $regPk, '$depart', '$arrival')";
+    $query = "  INSERT INTO `tblTask`
+                    (`comPk`, `tasName`, `tasDate`, `tasTaskStart`, `tasFinishTime`, `tasStartTime`, `tasStartCloseTime`, `tasSSInterval`, `tasTaskType`, `regPk`, `tasDeparture`, `tasArrival`)
+                VALUES
+                    ($comPk, '$Name', '$Date', '$Date $TaskStart', '$Date $TaskFinish', '$Date $StartOpen', '$Date $StartClose', $Interval, '$TaskType', $regPk, '$depart', '$arrival')";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task add failed: ' . mysqli_connect_error());
 
     # Get the task we just inserted
     $tasPk = mysqli_insert_id($link);
 
-    # Now check for pre-submitted tracks ..
-    // FIX: check for task / track date match!
-    // $query = "select traPk from tblComTaskTrack where comPk=$comPk and tasPk is null";
-    $query = "select CTT.traPk from tblComTaskTrack CTT, tblTask T, tblTrack TR, tblCompetition C where CTT.comPk=$comPk and C.comPk=CTT.comPk and T.tasPk=$tasPk and CTT.traPk=TR.traPk and CTT.tasPk is null and TR.traStart > date_sub(T.tasStartTime, interval C.comTimeOffset+1 hour) and TR.traStart < date_sub(T.tasFinishTime, interval C.comTimeOffset hour)";
-    $result = mysqli_query($link, $query);
-    $tracks = [];
-    while ($row = mysqli_fetch_assoc($result))
-    {
-        $tracks[] = $row['traPk'];
-    }
-
-    if (sizeof($tracks) > 0)
-    {
-        // Give them a task number 
-        $sql = "update tblComTaskTrack set tasPk=$tasPk where comPk=$comPk and traPk in (" . implode(",",$tracks) . ")";
-        $result = mysqli_query($link, $query);
-
-        // Now verify the pre-submitted tracks against the task
-        foreach ($tracks as $tpk)
-        {
-            echo "Verifying pre-submitted track: $tpk<br />";
-            $out = '';
-            $retv = 0;
-            exec(BINDIR . "track_verify.pl $tpk", $out, $retv);
-        }
-    }
 }
 
 # Delete a task
@@ -98,19 +70,19 @@ if ( reqexists('delete') )
 
     if ($id > 0)
     {
-        $query = "delete from tblTask where tasPk=$id";
+        $query = "DELETE FROM `tblTask` WHERE `tasPk` = $id";
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task delete failed: ' . mysqli_connect_error());
-    
-        $query = "delete from tblComTaskTrack where tasPk=$id";
+
+        $query = "DELETE FROM `tblComTaskTrack` WHERE `tasPk` = $id";
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task CTT deletefailed: ' . mysqli_connect_error());
-    
-        $query = "delete from tblTaskWaypoint where tasPk=$id";
+
+        $query = "DELETE FROM `tblTaskWaypoint` WHERE `tasPk` = $id";
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task TW delete failed: ' . mysqli_connect_error());
-    
-        $query = "delete from tblTaskResult where tasPk=$id";
+
+        $query = "DELETE FROM `tblTaskResult` WHERE `tasPk` = $id";
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task TR delete failed: ' . mysqli_connect_error());
 
-        $message .= "Task Removed\n";
+        $message .= "Task Removed <br />";
     }
     else
     {
@@ -122,7 +94,7 @@ if ( reqexists('delete') )
 if ( reqexists('update') )
 {
     check_admin('admin',$usePk,$comPk);
-    
+
     # Update tblCompetition
     $comarr = [];
     $comarr['comName'] = reqsval('comname');
@@ -137,16 +109,16 @@ if ( reqexists('update') )
     $comarr['claPk'] = reqival('classdef');
     $comarr['comEntryRestrict'] = reqsval('entry');
     $comarr['comSanction'] = reqsval('sanction');
-    
+
     $query = mysql_update_array('tblCompetition', $comarr, 'comPk', $comPk);
     //echo $query;
     mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Competition update failed: ' . mysqli_connect_error());
-    
+
     # Update tblForComp
     $comarr = [];
     $comarr['forPk'] = reqival('formula');
     $comarr['comOverallScore'] = reqsval('overallscore');
-    $comarr['comOverallParam'] = 1 - floatval($_REQUEST['overallparam']) / 100; 
+    $comarr['comOverallParam'] = 1 - floatval($_REQUEST['overallparam']) / 100;
     $comarr['forNomTime'] = reqfval('nomtime');
     $comarr['forNomGoal'] = reqfval('nomgoal') / 100;
     $comarr['forNomDistance'] = reqfval('nomdist');
@@ -155,13 +127,25 @@ if ( reqexists('update') )
     $comarr['comTeamSize'] = reqival('teamsize');
     $comarr['comTeamScoring'] = reqsval('teamscoring');
     $comarr['comTeamOver'] = reqsval('teamover');
-    
+
     $query = mysql_update_array('tblForComp', $comarr, 'comPk', $comPk);
     //echo $query;
     mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' tblForComp update failed: ' . mysqli_connect_error());
 
     $message .= "Competition details successfully updated. \n";
-    
+
+}
+
+# External Comp Switch
+if ( reqexists('extcomp') )
+{
+    check_admin('admin',$usePk,$comPk);
+
+    $query = "  UPDATE `tblCompetition` SET `comExt` = !(`comExt`) WHERE `comPk` = $comPk";
+    //echo $query;
+    mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Ext Comp Update failed: ' . mysqli_connect_error());
+
+    $message .= "External Comp status changed <br />";
 }
 
 # Manage Admin
@@ -172,13 +156,14 @@ if ( reqexists('updateadmin') )
     $adminPk = reqival('adminlogin');
     if ($adminPk > 0)
     {
-        $query = "  INSERT INTO tblCompAuth (usePk, comPk, useLevel) 
-                    VALUES 
+        $query = "  INSERT INTO `tblCompAuth`
+                        (`usePk`, `comPk`, `useLevel`)
+                    VALUES
                         ($adminPk, $comPk, 'admin')";
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Adinistrator addition failed: ' . mysqli_connect_error());
     }
-    
-    $message .= "Admin ID $adminPk succesfully added. \n\n";
+
+    $message .= "Admin ID $adminPk succesfully added. <br />";
 }
 
 # Change Ladders
@@ -188,18 +173,16 @@ if ( reqexists('ladPk') )
 
     $id = reqival('ladPk');
     $active = isset($_POST["active$id"]) ? 1 : 0;
-    
-    //echo "ladPk=$id, active=".$_POST["active$id"]."<br />\n";
 
     if ( $id > 0 )
     {
         if ( $active == 0 )
         {
-            $query = "DELETE FROM tblLadderComp WHERE ladPk=$id AND comPk=$comPk";
+            $query = "DELETE FROM `tblLadderComp` WHERE `ladPk` = $id AND `comPk` = $comPk";
         }
         else
         {
-            $query = "INSERT INTO tblLadderComp (ladPk, comPk) VALUES ($id, $comPk)";
+            $query = "INSERT INTO `tblLadderComp` (`ladPk`, `comPk`) VALUES ($id, $comPk)";
         }
         //echo $query;
         mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' League status update failed: ' . mysqli_connect_error());
@@ -215,18 +198,8 @@ if ( reqexists('ladPk') )
 # Get Competition Info
 $forPk = 0;
 $ctype = '';
-// $sql = "SELECT 
-//             C.*, 
-//             FC.*, 
-//             F.forName 
-//         FROM 
-//             tblCompetition C 
-//             JOIN tblForComp FC ON C.comPk = FC.comPk 
-//             LEFT OUTER JOIN tblFormula F ON FC.forPk = F.forPk 
-//         WHERE 
-//             C.comPk = $comPk";
 
-$sql = "SELECT * FROM CompetitionView WHERE comPk = $comPk";
+$sql = "SELECT * FROM `CompetitionView` WHERE `comPk` = $comPk LIMIT 1";
 $result = mysqli_query($link, $sql);
 if ( $row = mysqli_fetch_assoc($result) )
 {
@@ -253,17 +226,23 @@ if ( $row = mysqli_fetch_assoc($result) )
     $mindist = $row['forMinDistance'];
     $nomtime = $row['forNomTime'];
     $nomgoal = $row['forNomGoal'] * 100;
-    $nomlaunch = $row['forNomLaunch'] * 100;  
-    $sanction = $row['comSanction']; 
+    $nomlaunch = $row['forNomLaunch'] * 100;
+    $sanction = $row['comSanction'];
     $ext = $row['comExt'] <> 0 ? "<strong>EXTERNAL EVENT</strong>" : null;
-    $ext .= isset($row['comExtUrl']) ? ": <a href='".$row['comExtUrl']." target='_blank'>website</a>" : null;
+    $ext .= ($row['comExt'] <> 0 && isset($row['comExtUrl'])) ? ": <a href='".$row['comExtUrl']." target='_blank'>website</a>" : null;
 }
 
 if ( $ext )
 {
-    $message .= "* External Competition * \n";
+    $message .= "$ext <br />";
 }
 # Create the tables
+
+# External Competition Switch
+$exttable = [];
+$exttable[] = array("<form action=\"competition_admin.php?comPk=$comPk\" name=\"extcomp\" id=\"extcomp\" method=\"post\">" . "<span style='color:red;font-weight:700;'>EXTERNAL COMPETITION (No Scoring Permitted): </span>", "<input type='hidden' name='extcomp' value='switch'>" . fic("extcompbox", "", $row['comExt'], "onchange='this.form.submit()'") . "</form>");
+$extinfo = ftable($exttable, 'class=compinfotable', '', '');
+
 # Competition Details
 $ctable = [];
 
@@ -303,7 +282,7 @@ if ( $ext )
     $ftable[] = array('Nom Dist (km):', $nomdist, 'Min Dist (km):', $mindist,'Nom Time (min):', $nomtime, '','');
     $ftable[] = array('Nom Goal (%):', $nomgoal,'Nom Launch (%):', $nomlaunch, '', '');
     $ftable[] = array('<hr />','','','','','');
-    $ftable[] = array('<h6>Team Scoring:</h6>', fselect('teamscoring', $teamscoring, array('aggregate', 'team-gap', 'handicap')), 'Team Over:', fselect('teamover', $teamover, array('best', 'selected')), 'Team Size:', fin('teamsize', $teamsize, 4));
+    $ftable[] = array('<h6>Team Scoring:</h6>', fselect('teamscoring', $teamscoring, array('on', 'off')), 'Team starts from position:', fin('teamover', $teamover, 4), 'Team Size:', fin('teamsize', $teamsize, 4));
     $ftable[] = array('<hr />','','','','','');
 }
 else
@@ -314,22 +293,22 @@ else
     $ftable[] = array('Nom Dist (km):', fin('nomdist',$nomdist,4), 'Min Dist (km):', fin('mindist', $mindist, 4),'Nom Time (min):', fin('nomtime', $nomtime, 4), '','');
     $ftable[] = array('Nom Goal (%):', fin('nomgoal',$nomgoal,4),'Nom Launch (%):', fin('nomlaunch',$nomlaunch,4), '', '');
     $ftable[] = array('<hr />','','','','','');
-    $ftable[] = array('<h6>Team Scoring:</h6>', fselect('teamscoring', $teamscoring, array('aggregate', 'team-gap', 'handicap')), 'Team Over:', fselect('teamover', $teamover, array('best', 'selected')), 'Team Size:', fin('teamsize', $teamsize, 4));
+    $ftable[] = array('<h6>Team Scoring:</h6>', fselect('teamscoring', $teamscoring, array('on', 'off')), 'Team starts from position:', fin('teamover', $teamover, 4), 'Team Size:', fin('teamsize', $teamsize, 4));
     $ftable[] = array('<hr />','','','','','');
 }
 
 $formulainfo = ftable($ftable, 'class=compinfotable', '', '');
 
-# Get Administrators 
+# Get Administrators
 $atable = [];
 
-$sql = "SELECT 
-            U.useName AS name 
-        FROM 
-            tblCompAuth A 
-            JOIN UserView U ON U.usePk = A.usePk 
-        WHERE 
-            A.comPk = $comPk";
+$sql = "SELECT
+            `U`.`useName` AS `name`
+        FROM
+            `tblCompAuth` `A`
+            JOIN `UserView` `U` USING(`usePk`)
+        WHERE
+            `A`.`comPk` = $comPk";
 $result = mysqli_query($link, $sql);
 $admin = [];
 while ( $admins = mysqli_fetch_assoc($result) )
@@ -339,20 +318,20 @@ $atable[] = array('<h6>Administrators:</h6>', implode(", ", $admin),'');
 $atable[] = array('<hr />','','');
 
 # Populating a multiple choice with all admins not already active in the comp
-$sql = "SELECT 
-            U.usePk as user, 
-            U.* 
-        FROM 
-            UserView U 
-        WHERE 
+$sql = "SELECT
+            `U`.`usePk` as `user`,
+            `U`.*
+        FROM
+            `UserView` `U`
+        WHERE
             NOT EXISTS (
-                SELECT 
-                    A.* 
-                FROM 
-                    tblCompAuth A 
-                WHERE 
-                    A.usePk = U.usePk 
-                    AND A.comPk = $comPk
+                SELECT
+                    `A`.*
+                FROM
+                    `tblCompAuth` `A`
+                WHERE
+                    `A`.`usePk` = `U`.`usePk`
+                    AND `A`.`comPk` = $comPk
             )";
 $admin = [];
 $result = mysqli_query($link, $sql);
@@ -361,24 +340,24 @@ while ( $admins = mysqli_fetch_assoc($result) )
 
 $atable[] = array("<h6>Add Administrator: </h6>", fselect('adminlogin', '', $admin),fis('updateadmin', 'Add', '') );
 
-$admininfo = ftable($atable, 'class=compinfotable', '', ''); 
+$admininfo = ftable($atable, 'class=compinfotable', '', '');
 
 # Populating a checkbox list with all active ladders for the season
 $season = getseason($row['comDateFrom']);
 //echo $season . "\n";
 $ltable = [];
-$sql = "    SELECT 
-                DISTINCT LS.ladPk, 
-                L.ladName, 
-                LC.comPk AS active 
-            FROM 
-                tblLadderSeason LS 
-                JOIN tblLadder L USING (ladPk) 
-                LEFT OUTER JOIN tblLadderComp LC ON LS.ladPk = LC.ladPk 
-                AND LC.comPk = $comPk 
-            WHERE 
-                ladActive = TRUE 
-                AND seasonYear = $season";
+$sql = "    SELECT DISTINCT
+                `LS`.`ladPk`,
+                `L`.`ladName`,
+                `LC`.`comPk` AS `active`
+            FROM
+                `tblLadderSeason` `LS`
+                JOIN `tblLadder` `L` USING (`ladPk`)
+                LEFT OUTER JOIN `tblLadderComp` `LC` ON `LS`.`ladPk` = `LC`.`ladPk`
+                AND `LC`.`comPk` = $comPk
+            WHERE
+                `ladActive` = TRUE
+                AND `seasonYear` = $season";
 //echo $sql ."\n";
 $result = mysqli_query($link, $sql);
 while ( $ladder = mysqli_fetch_assoc($result) )
@@ -406,6 +385,8 @@ echo "<h4>Competition Info:</h4>\n";
 echo "<form action=\"competition_admin.php?comPk=$comPk\" name=\"comedit\" method=\"post\"> \n";
 echo $compinfo;
 echo "<hr /> \n";
+echo $extinfo;
+echo "<hr /> \n";
 echo "<h4>Scoring Formula Parameters:</h4>\n";
 echo $formulainfo;
 echo "<hr /> \n";
@@ -427,7 +408,11 @@ echo "<h3>Tasks</h3>\n";
 echo "<form action=\"competition_admin.php?comPk=$comPk\" name=\"taskadmin\" method=\"post\">\n";
 echo "<ol>\n";
 $count = 1;
-$sql = "SELECT T.*, traPk as Tadded FROM tblTask T left outer join tblComTaskTrack CTT on CTT.tasPk=T.tasPk where T.comPk=$comPk group by T.tasPk order by T.tasDate";
+$sql = "SELECT `T`.*, `CTT`.`traPk` AS `Tadded` FROM `tblTask` `T`
+        LEFT OUTER JOIN `tblComTaskTrack` `CTT` USING(`tasPk`)
+        WHERE `T`.`comPk` = $comPk
+        GROUP BY `T`.`tasPk`
+        ORDER BY `T`.`tasDate`";
 $result = mysqli_query($link, $sql);
 while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 {
@@ -459,7 +444,7 @@ while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
 }
 echo "</ol>\n";
 
-$sql = "SELECT * FROM tblRegion R";
+$sql = "SELECT * FROM `tblRegion`";
 $regions = [];
 $result = mysqli_query($link, $sql);
 while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
@@ -469,7 +454,10 @@ while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
     $regions[$regDesc] = $regPk;
 }
 
-$sql = "SELECT T.* FROM tblCompetition C, tblTask T where T.comPk=C.comPk and C.comPk=$comPk order by T.tasPk limit 1";
+$sql = "SELECT * FROM `TaskView`
+        WHERE `comPk` = $comPk
+        ORDER BY `tasPk`
+        LIMIT 1";
 $result = mysqli_query($link, $sql);
 $defregion = array();
 if (mysqli_num_rows($result) > 0)
@@ -483,14 +471,14 @@ echo "<hr />\n";
 
 if ( !$ext )
 {
-    $depdef = 'leadout'; 
+    $depdef = 'leadout';
     echo "<h4>Add new Task: </h4>\n";
     $out = ftable(
         array(
             array('Task Name:', fin('taskname', '', 10), 'Date:', fin('date', '', 10),'',''),
             array('Region:', fselect('region', $defregion, $regions), 'Task Type:', fselect('tasktype', 'race', array('race', 'elapsed time', 'free distance', 'distance with bearing')),'',''),
-            array('Task Start:', fin('taskstart', '', 10), 'Task Finish:', fin('taskfinish', '', 10),'',''), 
-            array('Start Open:', fin('starttime', '', 10), 'Start Close:', fin('startclose', '', 10), 'Gate Interval:', fin('interval', '', 4)) 
+            array('Task Start:', fin('taskstart', '', 10), 'Task Finish:', fin('taskfinish', '', 10),'',''),
+            array('Start Open:', fin('starttime', '', 10), 'Start Close:', fin('startclose', '', 10), 'Gate Interval:', fin('interval', '', 4))
             //array('Depart Bonus:', fselect('departure', $depdef, array('on', 'off', 'leadout', 'kmbonus')), 'Arrival Bonus:', fselect('arrival', 'on', array('on', 'off')),'','')
         ), '', '', '');
 
@@ -503,5 +491,3 @@ echo "</form>\n";
 tpfooter($file);
 
 ?>
-
-
