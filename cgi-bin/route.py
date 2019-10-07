@@ -388,18 +388,17 @@ def rawtime_float_to_hms(timef):
     return hms((time / 3600), (time % 3600) / 60, time % 60)
 
 
-def distance_flown(fix, next_waypoint, task, distances_to_go):
+def distance_flown(fix, i, short_route, wpt, distances_to_go):
     """Calculate distance flown
         For exit cilynders it uses """
 
-    if (task.turnpoints[next_waypoint].how == 'entry'
-            or task.turnpoints[next_waypoint].shape == 'line') :
-        short_route = task.optimised_turnpoints
-        dist_to_next = distance(fix, short_route[next_waypoint])
+    if (wpt.how == 'entry'
+            or wpt.shape == 'line') :
+        dist_to_next = distance(fix, short_route[i])
     else:
-        dist_to_center = distance(fix, task.turnpoints[next_waypoint])
-        dist_to_next = max(task.turnpoints[next_waypoint].radius - dist_to_center, 0)
-    dist_flown = distances_to_go[0] - (dist_to_next + distances_to_go[next_waypoint])
+        dist_to_center = distance(fix, wpt)
+        dist_to_next = max(wpt.radius - dist_to_center, 0)
+    dist_flown = distances_to_go[0] - (dist_to_next + distances_to_go[i])
 
     return dist_flown
 
