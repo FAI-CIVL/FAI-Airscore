@@ -89,7 +89,7 @@ def assign_and_import_tracks(files, task, xcontest=False, test = 0):
         message += "Comp with registration: files will be checked against registered pilots not yet scored \n"
         pilot_list = get_non_scored_pilots(task_id, xcontest, test)
 
-    track_path = get_task_file_path(task.tasPk)
+    track_path = get_task_file_path(task_id, comp_id)
 
     for file in files:
         mytrack = None

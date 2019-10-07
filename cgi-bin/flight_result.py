@@ -324,7 +324,7 @@ class Flight_result:
 
             '''update result data'''
             result.Distance_flown = max(result.Distance_flown,
-                                        distance_flown(next, t, Task.optimised_turnpoints, distances2go))
+                                        distance_flown(next, t, Task, distances2go))
             # print('fix {} | Dist. flown {} | tp {}'.format(i, round(result.Distance_flown, 2), t))
 
             '''Leading coefficient

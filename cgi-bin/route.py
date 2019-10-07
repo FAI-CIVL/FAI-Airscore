@@ -117,10 +117,10 @@ def distance(p1, p2, method='fast_andoyer'):
         #print ("fast andoyer")
         return fast_andoyer(p1, p2)
     elif method == "vincenty":
-    #print ("vincenty")
+        #print ("vincenty")
         return vincenty((p1.lat, p1.lon), (p2.lat, p2.lon)).meters
     elif method == "geodesic":
-    #print ("geodesic")
+        #print ("geodesic")
         return geodesic((p1.lat, p1.lon), (p2.lat, p2.lon)).meters
     else:
         #print ("other")
@@ -388,10 +388,17 @@ def rawtime_float_to_hms(timef):
     return hms((time / 3600), (time % 3600) / 60, time % 60)
 
 
-def distance_flown(fix, next_waypoint, short_route, distances_to_go):
-    """Calculate distance flown"""
+def distance_flown(fix, next_waypoint, task, distances_to_go):
+    """Calculate distance flown
+        For exit cilynders it uses """
 
-    dist_to_next = distance(fix, short_route[next_waypoint])
+    if (task.turnpoints[next_waypoint].how == 'entry'
+            or task.turnpoints[next_waypoint].shape == 'line') :
+        short_route = task.optimised_turnpoints
+        dist_to_next = distance(fix, short_route[next_waypoint])
+    else:
+        dist_to_center = distance(fix, task.turnpoints[next_waypoint])
+        dist_to_next = max(task.turnpoints[next_waypoint].radius - dist_to_center, 0)
     dist_flown = distances_to_go[0] - (dist_to_next + distances_to_go[next_waypoint])
 
     return dist_flown
