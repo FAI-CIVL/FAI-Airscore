@@ -78,11 +78,11 @@ class Task:
         self.SSInterval                 = 0
         self.EndSSDistance              = 0
         self.SSDistance                 = 0
-        self.Distance                   = 0  # non optimised distance
-        self.optimised_turnpoints       = []
-        self.optimised_legs             = []  # opt distance between cylinders
-        self.partial_distance           = []  # distance from launch to waypoint
-        self.legs                       = []  ##non optimised legs
+        self.Distance                   = 0     # non optimised distance
+        self.optimised_turnpoints       = []    # fixes on cilynders for opt route
+        self.optimised_legs             = []    # opt distance between cylinders
+        self.partial_distance           = []    # distance from launch to waypoint
+        self.legs                       = []    # non optimised legs
         self.stats                      = dict()  #scored task statistics
         #self.results = []  #scored task results
         self.stopped_time               = stopped_time  # time task was stopped.

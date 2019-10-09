@@ -582,20 +582,22 @@ function get_ladder_class_info($link, $ladPk, $cval, $season)
     else
     {
         $sql = "SELECT
-                    R.ranName,
-                    CCR.cerPk,
-                    MAX(CCR2.ranPk) AS maxcval
+                    `R`.`ranName`,
+                    `CCR`.`cerPk`,
+                    MAX(`CCR2`.`ranPk`) AS `maxcval`
                 FROM
-                    tblLadderSeason LS
-                    JOIN tblClasCertRank CCR USING (claPk)
-                    JOIN tblRanking R USING (ranPk),
-                    tblClasCertRank CCR2
+                    (
+                    `tblLadderSeason` `LS`
+                    JOIN `tblClasCertRank` `CCR` USING(`claPk`)
+                    JOIN `tblRanking` `R` USING(`ranPk`)
+                    ),
+                    `tblClasCertRank` `CCR2`
                 WHERE
-                    LS.ladPk = $ladPk
-                    AND LS.seasonYear = $season
-                    AND R.ranPk = $cval
-                    AND CCR2.claPk = LS.claPk
-                    AND CCR2.cerPk > 0";
+                    `LS`.`ladPk` = '$ladPk'
+                    AND `LS`.`seasonYear` = '$season'
+                    AND `R`.`ranPk` = '$cval'
+                    AND `CCR2`.`claPk` = `LS`.`claPk`
+                    AND `CCR2`.`cerPk` > 0";
         $result = mysqli_query($link, $sql);
         $row = mysqli_fetch_object($result);
         $rank = $row->ranName;

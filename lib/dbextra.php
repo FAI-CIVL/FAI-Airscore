@@ -114,14 +114,15 @@ function insertup($link,$table,$key,$clause,$map)
     else
     {
         // else insert
-        $fields = join(',', $keys);
+        $fields = join(', ', $keys);
         foreach ($map as $k => $val)
         {
             $map[$k] = quote($val);
         }
         $values = array_values($map);
-        $valstr = join(',', $values);
-        $sql = "INSERT INTO $table ($fields) VALUES ($valstr)";
+        $valstr = join(', ', $values);
+        $sql = "INSERT INTO `$table` ($fields) VALUES ($valstr)";
+        // echo $sql;
         # get last key insert for primary key value ..
         // echo $sql . "<br>";
         $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' insertup (select): $table ($clause) query failed: ' . mysqli_connect_error());

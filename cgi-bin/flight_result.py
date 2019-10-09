@@ -15,7 +15,7 @@ Methods:
     store_result - write result to DB (tblTaskResult)
     store_result_test - write result to DB in test mode(tblTaskResult_test)
 	store_result_json - not needed, think we can delete
-	to_geojson_result - create json file containing tracklog (split into preSSS, preGoal and postGoal), Thermals, bounds and result obj 
+	to_geojson_result - create json file containing tracklog (split into preSSS, preGoal and postGoal), Thermals, bounds and result obj
 	save_result_file - save the json file.
 """
 
@@ -324,7 +324,7 @@ class Flight_result:
 
             '''update result data'''
             result.Distance_flown = max(result.Distance_flown,
-                                        distance_flown(next, t, Task.optimised_turnpoints, distances2go))
+                                        distance_flown(next, t, Task.optimised_turnpoints, Task.turnpoints[t], distances2go))
             # print('fix {} | Dist. flown {} | tp {}'.format(i, round(result.Distance_flown, 2), t))
 
             '''Leading coefficient

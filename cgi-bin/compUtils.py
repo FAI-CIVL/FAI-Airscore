@@ -260,10 +260,10 @@ def get_task_file_path(tasPk, comPk = None):
             tdate = str(t['tasDate'])
             print('filedir={}, year={}, cname={}, tname={}, tdate={}'.format(FILEDIR, year, cname, tname, tdate))
             path = str(p.join(FILEDIR, year, cname, ('_'.join([tname, tdate]))))
-    if test:
-        print('Get Task tracks folder:')
-        print(query)
-        print('task folder: {}'.format(path))
+    # if test:
+    #     print('Get Task tracks folder:')
+    #     print(query)
+    #     print('task folder: {}'.format(path))
     return path
 
 def get_task_region(task_id):
