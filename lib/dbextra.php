@@ -82,8 +82,9 @@ function insertup($link,$table,$key,$clause,$map)
 
     if ($clause != '')
     {
-        $sql = "select * from $table where $clause";
-        $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' insertup (select): $table ($clause) query failed: ' . mysqli_connect_error());
+        $sql = "SELECT * FROM `$table` WHERE $clause";
+        //echo $sql;
+        $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . " insertup (select): $table ($clause) query failed: " . mysqli_connect_error());
 		$nrows = mysqli_num_rows($result);
 
     }
@@ -101,14 +102,14 @@ function insertup($link,$table,$key,$clause,$map)
                 $ref[$k] = $val;
             }
 
-            array_push($keystr, $k . "=" . quote($ref[$k]));
+            array_push($keystr, $k . "=" . quote(mysqli_real_escape_string($link, $ref[$k])));
         }
 
         # create nice string
         $fields = join(",", $keystr);
         $sql = "update $table set $fields where $clause";
         //echo $sql . "<br>";
-        $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' insertup (select): $table ($clause) query failed: ' . mysqli_connect_error());
+        $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . " insertup (update): $table ($clause) query failed: " . mysqli_connect_error());
         return $ref[$key];
     }
     else
@@ -117,15 +118,15 @@ function insertup($link,$table,$key,$clause,$map)
         $fields = join(', ', $keys);
         foreach ($map as $k => $val)
         {
-            $map[$k] = quote($val);
+            $map[$k] = quote(mysqli_real_escape_string($link, $val));
         }
         $values = array_values($map);
         $valstr = join(', ', $values);
         $sql = "INSERT INTO `$table` ($fields) VALUES ($valstr)";
-        // echo $sql;
+        //echo $sql;
         # get last key insert for primary key value ..
         // echo $sql . "<br>";
-        $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' insertup (select): $table ($clause) query failed: ' . mysqli_connect_error());
+        $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . " insertup (insert): $table ($clause) query failed: " . mysqli_connect_error());
 		return mysqli_insert_id($link);
     }
 }
