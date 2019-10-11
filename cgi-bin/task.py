@@ -514,6 +514,7 @@ class Task:
         turnpoints.append(turnpoint)
 
         task = Task(turnpoints, start_time, end_time, task_type)
+        task.calculate_optimised_task_length()
 
         return task
 

@@ -523,12 +523,13 @@ class Flight_result:
                 if waypoint < len(self.Waypoints_achieved)-1:
                     waypoint += 1
 
-            if fix.rawtime <= SSS_time and keep:
-                pre_sss.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
-            if fix.rawtime >= SSS_time and fix.rawtime <= goal_time and keep:
-                pre_goal.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
-            if fix.rawtime >= goal_time and keep:
-                post_goal.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
+            if keep:
+                if fix.rawtime <= SSS_time:
+                    pre_sss.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
+                if fix.rawtime >= SSS_time and fix.rawtime <= goal_time:
+                    pre_goal.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
+                if fix.rawtime >= goal_time:
+                    post_goal.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
 
         route_multilinestring = MultiLineString([pre_sss])
         features.append(Feature(geometry=route_multilinestring, properties={"Track": "Pre_SSS"}))
