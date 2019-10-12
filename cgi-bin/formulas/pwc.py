@@ -29,9 +29,9 @@ parameters.coef_landout = coef_landout
 
 def store_LC(res_id, lead_coeff):
     '''store LC to database'''
-    query = """ UPDATE tblTaskResult
-                SET tarLeadingCoeff = %s
-                WHERE tarPk = %s """
+    query = """ UPDATE `tblTaskResult`
+                SET `tarLeadingCoeff` = %s
+                WHERE `tarPk` = %s """
     params = [lead_coeff, res_id]
 
     with Database() as db:
@@ -41,28 +41,41 @@ def lc_calc(res, t):
     LC          = 0
     leading     = 0
     trailing    = 0
-    my_start    = res['start']
-    first_start = t.stats['mindept']
-    ss_start    = t.start_time
     SS_Distance = t.SSDistance
-    '''add the leading part, from start time of first pilot to start, to my start time'''
-    if not my_start:
-        my_start = 0  # this is to avoid my_start being none if pilot didn't make start and causing error below
-    if my_start > first_start:
-        leading = parameters.coef_landout((my_start - first_start), SS_Distance)
-        leading = parameters.coef_func_scaled(leading, SS_Distance)
-    if not res['endSS']:
-        '''pilot did not make ESS'''
-        best_dist_to_ess    = (t.EndSSDistance - res['distance'])
-        my_last_time        = res['last_time']          # should not need to check if < task deadline as we stop in Flight_result.check_flight()
-        last_ess            = t.stats['maxarr']
-        task_time           = (max(my_last_time,last_ess) - my_start)
+
+    '''Checking if we have a assigned status without a track, and if pilot actually did the start pilon'''
+    if res['result'] not in ('abs', 'dnf', 'mindist') and res['startSS']:
+        my_start    = res['start']
+        first_start = t.stats['mindept']
+        ss_start    = t.start_time
+
+        '''add the leading part, from start time of first pilot to start, to my start time'''
+        # if not my_start:
+        #     my_start = 0  # this is to avoid my_start being none if pilot didn't make start and causing error below
+        if my_start > first_start:
+            leading = parameters.coef_landout((my_start - first_start), SS_Distance)
+            leading = parameters.coef_func_scaled(leading, SS_Distance)
+        if not res['endSS']:
+            '''pilot did not make ESS'''
+            best_dist_to_ess    = (t.EndSSDistance - res['distance'])
+            my_last_time        = res['last_time']          # should not need to check if < task deadline as we stop in Flight_result.check_flight()
+            last_ess            = t.stats['maxarr'] if ( t.stats['maxarr'] - t.start_time > 0 ) else t.end_time
+            task_time           = (max(my_last_time,last_ess) - my_start)
+            trailing            = parameters.coef_landout(task_time, best_dist_to_ess)
+            trailing            = parameters.coef_func_scaled(trailing, SS_Distance)
+
+        LC = leading + res['fixed_LC'] + trailing
+
+    else:
+        '''pilot didn't make SS or has a assigned status without a track'''
+        best_dist_to_ess    = t.EndSSDistance
+        task_time           = t.stats['maxarr'] if ( t.stats['maxarr'] - t.start_time > 0 ) else t.end_time
         trailing            = parameters.coef_landout(task_time, best_dist_to_ess)
         trailing            = parameters.coef_func_scaled(trailing, SS_Distance)
 
-    LC = leading + res['fixed_LC'] + trailing   #this is broken with manually put Min. Dist. pilots.
-                                                #need to put all 0 in those DB entries and like 100 in fixed_LC
+        LC = trailing
 
+    print ("""Pilot: {} - Distance: {} - Time: {} - LC: {} \n""".format(res['tarPk'], res['distance'], res['time'], LC))
     '''write final LC to tblTaskResult table in tarLeadingCoeff column'''
     # making a def because I suppose that in the future we could avoid storing total LC in DB
     store_LC(res['tarPk'], LC)
@@ -192,8 +205,8 @@ def ordered_results(task, formula, results):
         Leadout Points Adjustment
         C.6.3.1
         '''
-        if taskres['result'] not in ('abs', 'dnf', 'mindist') and taskres['startSS']:
-            taskres['LC'] = lc_calc(taskres, task) # PWC LeadCoeff (with squared distances)
+        #if taskres['result'] not in ('abs', 'dnf', 'mindist') and taskres['startSS']:
+        taskres['LC'] = lc_calc(taskres, task) # PWC LeadCoeff (with squared distances)
         # else:
         #     taskres['LC'] = 0
 
