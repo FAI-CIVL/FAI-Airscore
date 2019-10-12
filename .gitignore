@@ -5,6 +5,7 @@ cgi-bin/defines.yaml*
 cgi-bin/Defines.pm
 cgi-bin/py*
 cgi-bin/.ht*
+cgi-bin/*.igc
 defines.php
 .ht*
 .travis*
@@ -15,6 +16,8 @@ cgi-bin/log/*.txt
 cgi-bin/log/*.log
 log/*.txt
 log/*.log
+cgi-bin/log/*.txt
+cgi-bin/log/*.log
 tracks/*
 json/*
 _pycache_/*
