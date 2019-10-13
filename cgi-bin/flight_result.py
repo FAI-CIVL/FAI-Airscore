@@ -322,8 +322,14 @@ class Flight_result:
                         result.Waypoints_achieved.append(['Goal', next.rawtime])  # pilot has achieved turnpoint
                         break
 
-            '''update result data'''
-            result.Distance_flown = max(result.Distance_flown,
+            '''update result data
+            Once launched, distance flown should be max result among:
+            - previous value;
+            - optimized dist. to last turnpoint made;
+            - total optimized distance minus opt. distance from next wpt to goal minus dist. to next wpt;
+            '''
+            if t > 0:
+                result.Distance_flown = max(result.Distance_flown, (distances2go[0] - distances2go[t-1]),
                                         distance_flown(next, t, Task.optimised_turnpoints, Task.turnpoints[t], distances2go))
             # print('fix {} | Dist. flown {} | tp {}'.format(i, round(result.Distance_flown, 2), t))
 

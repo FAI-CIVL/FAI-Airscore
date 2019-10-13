@@ -398,6 +398,7 @@ def distance_flown(fix, i, short_route, wpt, distances_to_go):
     else:
         dist_to_center = distance(fix, wpt)
         dist_to_next = max(wpt.radius - dist_to_center, 0)
+
     dist_flown = distances_to_go[0] - (dist_to_next + distances_to_go[i])
 
     return dist_flown
