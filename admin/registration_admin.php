@@ -71,7 +71,7 @@ if (array_key_exists('addpilot', $_REQUEST))
     $addarr['regNat'] = $row['nat'];
     $addarr['regGlider'] = $row['glider'];
     #class needs to be calculated from Cert and comp formula
-    $addarr['regClass'] = $row['cert'];
+    $addarr['regCert'] = $row['cert'];
     $addarr['regSponsor'] = $row['sponsor'];
     $addarr['regCIVL'] = $row['civl'];
     $addarr['regFAI'] = $row['fai'];

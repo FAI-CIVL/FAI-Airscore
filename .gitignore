@@ -20,9 +20,11 @@ admin/host.it*
 cgi-bin/*.yaml
 cgi-bin/defines.yaml*
 cgi-bin/Defines.pm
+cgi-bin/test*
 cgi-bin/py*
 cgi-bin/.ht*
 cgi-bin/*.igc
+cgi-bin/*.zip
 cgi-bin/*.xctsk
 cgi-bin/.DS*
 cgi-bin/log/*.txt

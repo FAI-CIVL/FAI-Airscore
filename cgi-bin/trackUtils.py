@@ -91,6 +91,7 @@ def assign_and_import_tracks(files, task, xcontest=False, test = 0):
 
     track_path = get_task_file_path(task_id, comp_id)
 
+    #print("found {} tracks \n".format(len(files)))
     for file in files:
         mytrack = None
         filename = os.path.basename(file)

@@ -85,12 +85,12 @@ def task_totals(task, formula):
                                 0
                                 )
                             ) AS
-                            Landed 
-                    FROM 
-                    tblTaskResult_test 
-                    WHERE 
-                    tasPk = %s 
-                    AND 
+                            Landed
+                    FROM
+                    tblTaskResult_test
+                    WHERE
+                    tasPk = %s
+                    AND
                     tarResultType <> 'abs'"""
     params = [mindist, mindist, mindist, mindist, mindist, mindist, tasPk]
     with Database() as db:
@@ -297,7 +297,7 @@ def task_totals(task, formula):
     # task quality
     taskt['pilots'] = pilots
     taskt['maxdist'] = maxdist
-    taskt['distance'] = totdist
+    taskt['totdistflown'] = totdist
     taskt['distovermin'] = totdistovermin
     taskt['median'] = median
     taskt['stddev'] = stddev
@@ -367,7 +367,7 @@ def day_quality(taskt, formula):
         print("It is positive")
         nomdistarea = ((nomgoal + 1) * (nomdist - mindist) + (nomgoal * bestdistovermin)) / 2
         print("NomDistArea : ", nomdistarea)
-    
+
     else:
         print("It is negative or null")
         nomdistarea = (nomgoal + 1) * (nomdist - mindist) / 2
@@ -439,7 +439,7 @@ def points_weight(task, taskt, formula):
 
     quality = taskt['quality']
     x = taskt['goal'] / taskt['launched']  # GoalRatio
-    
+
     # DistWeight = 0.9 - 1.665* goalRatio + 1.713*GolalRatio^2 - 0.587*goalRatio^3
     distweight = 0.9 - 1.665 * x + 1.713 * x * x - 0.587 * x *x *x
     print("PWC 2016 Points Allocatiom distWeight = ", distweight)
@@ -453,7 +453,7 @@ def points_weight(task, taskt, formula):
     print("Available Dist Points = ", Adistance)
     Astart = 1000 * quality * leadweight  # AvailLeadPoints
     print("Available Lead Points = ", Astart)
-    
+
     ## Old stuff - probably jettison
     # $Astart = 1000 * $quality * (1-$distweight) * formula['weightstart']
     # Aarrival = 1000 * quality * (1 -distweight) * formula['forWeightArrival']
@@ -481,7 +481,7 @@ def points_weight(task, taskt, formula):
     #     Astart =  1000 * quality * Astart / dem
 
     ## old stuff end
-    
+
     # resetting $speedweight and $Aspeed using PWC2016 formula
     speedweight = 1 - distweight - leadweight
     Aspeed = 1000 * quality * speedweight  # AvailSpeedPoints
@@ -495,7 +495,7 @@ def pilot_departure_leadout(task, taskt, pil, Astart):
     # C.6.3 Leading Points
 
     LCmin = taskt['mincoeff2']  # min(tarLeadingCoeff2) as MinCoeff2 : is PWC's LCmin?
-    LCp = pil['coeff']  # Leadout coefficient 
+    LCp = pil['coeff']  # Leadout coefficient
 
     # Pilot departure score
     Pdepart = 0
@@ -529,15 +529,15 @@ def pilot_departure_leadout(task, taskt, pil, Astart):
     if 0 + Pdepart != Pdepart:
         Pdepart = 0
 
-    
+
     if Pdepart < 0:
         Pdepart = 0
 
-    
+
     print("    Pdepart: ", Pdepart)
     return Pdepart
 
-    
+
 def pilot_speed(formula, task, taskt, pil, Aspeed):
     from math import sqrt
 
@@ -566,7 +566,7 @@ def ordered_results(task, taskt, formula):
     # Get all pilots and process each of them
     # pity it can't be done as a single update ...
 
-    query = """SELECT 
+    query = """SELECT
                                 @x := @x + 1 AS Place,
                                 tarPk,
                                 traPk,
@@ -592,7 +592,7 @@ def ordered_results(task, taskt, formula):
                                 ) THEN - 999999
                                 ELSE tarLastAltitude END,
                                 tarDistance DESC"""
-                         
+
     with Database() as db:
         db.execute('set @x=0')
         t = db.fetchall(query, [task.tasPk])
@@ -695,7 +695,7 @@ def points_allocation(task, taskt, formula):   # from PWC###
         penalty = pil['penalty']
         if not penalty:
             penalty= 0
-            
+
         # Pilot distance score
         # FIX: should round pil->distance properly?
         # my pilrdist = round(pil->{'distance'}/100.0) * 100

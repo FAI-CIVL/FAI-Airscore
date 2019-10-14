@@ -5,17 +5,16 @@ require 'startup.php';
 
 function overall_handicap($link, $comPk, $how, $param, $cls)
 {
-    $sql = "select
-                T.tasPk,
-                max(TR.tarScore) as maxScore
-            from
-                tblTask T,
-                tblTaskResult TR
-            where
-                T.tasPk = TR.tasPk
-                and T.comPk = $comPk
-            group by
-                T.tasPk";
+    $sql = "SELECT
+                `T`.`tasPk`,
+                MAX(`TR`.`tarScore`) AS `maxScore`
+            FROM
+                `tblTask` `T`,
+                `tblTaskResult` `TR`
+            WHERE
+                `T`.`tasPk` = `TR`.`tasPk` AND `T`.`comPk` = $comPk
+            GROUP BY
+                `T`.`tasPk`";
     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Handicap maxscore failed: ' . mysqli_connect_error());
     $maxarr = [];
     while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
@@ -127,42 +126,74 @@ function comp_result($link, $comPk, $how, $param, $cls, $tasktot, $ext)
                     TK.tasPk";
 
 
+    // $sql = "    SELECT
+    //                 TK.*,
+    //                 TR.*,
+    //                 (
+    //                     SELECT
+    //                         MAX(ResultView.tarScore)
+    //                     FROM
+    //                         ResultView
+    //                     WHERE
+    //                         ResultView.tasPk = TK.tasPk
+    //                 ) AS maxScore,
+    //                 F.forClass,
+    //                 F.forVersion,
+    //                 P.*,
+    //                 (
+    //                     SELECT
+    //                         C.natIso3
+    //                     FROM
+    //                         tblCountryCodes C
+    //                     WHERE
+    //                         C.natID = P.pilNat
+    //                 ) AS pilNationCode,
+    //                 TR.traGlider
+    //             FROM
+    //                 tblCompetition C
+    //                 JOIN tblTask TK ON TK.comPk = C.comPk
+    //                 JOIN ResultView TR ON TK.tasPk = TR.tasPk
+    //                 JOIN PilotView P ON P.pilPk = TR.pilPk
+    //                 JOIN tblForComp FC ON FC.comPk = C.comPk
+    //                 JOIN tblFormula F ON F.forPk = FC.forPk
+    //
+    //             WHERE
+    //                 C.comPk = $comPk $cls
+    //             ORDER BY
+    //                 P.pilPk,
+    //                 TK.tasPk";
     $sql = "    SELECT
-                    TK.*,
-                    TR.*,
+                    `TK`.`tasName`,
+                    `TK`.`tasQuality`,
                     (
                         SELECT
-                            MAX(ResultView.tarScore)
+                            MAX(`ResultView`.`tarScore`)
                         FROM
-                            ResultView
+                            `ResultView`
                         WHERE
-                            ResultView.tasPk = TK.tasPk
-                    ) AS maxScore,
-                    F.forClass,
-                    F.forVersion,
-                    P.*,
-                    (
-                        SELECT
-                            C.natIso3
-                        FROM
-                            tblCountryCodes C
-                        WHERE
-                            C.natID = P.pilNat
-                    ) AS pilNationCode,
-                    TR.traGlider
+                            `ResultView`.`tasPk` = `TK`.`tasPk`
+                    ) AS `maxScore`,
+                    `C`.`forClass`,
+                    `C`.`forVersion`,
+                    `TR`.`tarScore`,
+                    `TR`.`pilPk`,
+                    `TR`.`pilName`,
+                    `TR`.`pilNationCode`,
+                    `TR`.`pilSponsor`,
+                    `TR`.`traGlider`,
+                    `TR`.`traDHV`,
+                    `P`.`pilFAI`,
+                    `P`.`pilCIVL`
                 FROM
-                    tblCompetition C
-                    JOIN tblTask TK ON TK.comPk = C.comPk
-                    JOIN ResultView TR ON TK.tasPk = TR.tasPk
-                    JOIN PilotView P ON P.pilPk = TR.pilPk
-                    JOIN tblForComp FC ON FC.comPk = C.comPk
-                    JOIN tblFormula F ON F.forPk = FC.forPk
-
+                	`CompetitionView` `C`
+                    JOIN `TaskView` `TK` USING(`comPk`)
+                    JOIN `ResultView` `TR` USING(`tasPk`)
+                    JOIN `PilotView` `P` USING(`pilPk`)
                 WHERE
-                    C.comPk = $comPk $cls
+                    `C`.`comPk` = $comPk $cls
                 ORDER BY
-                    P.pilPk,
-                    TK.tasPk";
+                    `TR`.`pilPk`,
+                    `TK`.`tasPk`";
     if ( $ext )
     {
         $sql = $extsql;
@@ -195,7 +226,8 @@ function comp_result($link, $comPk, $how, $param, $cls, $tasktot, $ext)
         if (!array_key_exists($pilPk,$results) || !$results[$pilPk])
         {
             $results[$pilPk] = [];
-            $results[$pilPk]['name'] = $row['pilFirstName'] . ' ' . $row['pilLastName'];
+            //$results[$pilPk]['name'] = $row['pilFirstName'] . ' ' . $row['pilLastName'];
+            $results[$pilPk]['name'] = $row['pilName'];
             $results[$pilPk]['hgfa'] = $pilnum;
             $results[$pilPk]['civl'] = $civlnum;
             $results[$pilPk]['nation'] = $nation;

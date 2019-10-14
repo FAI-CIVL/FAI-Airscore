@@ -69,7 +69,7 @@ def main():
             result = ("error: task ID {} does NOT belong to any Competition \n".format(tasPk))
 
     else:
-        print('error: Use: python3 dbulk_igc_reader.py [taskPk] [zipfile] [opt. test]')
+        print('error: Use: python3 bulk_igc_reader.py [taskPk] [zipfile] [opt. test]')
 
     print(result)
 

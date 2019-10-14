@@ -549,7 +549,7 @@ function get_class_info($link, $comPk)
                 {
                     $cats[] = $row['cerName'];
                 }
-                $fdhv = "AND traDHV IN ('" . implode("','",$cats) . "') ";
+                $fdhv = "AND `traDHV` IN ('" . implode("','",$cats) . "') ";
                 //echo "cval < maxcval - fdhv = $fdhv \n";
                 $classstr = "<b>" . $rank . "</b> - ";
             }

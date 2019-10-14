@@ -38,7 +38,7 @@ def main():
         #         "tasFastestTime=%s, tasMaxDistance=%s " \
         #         "where tasPk=%s"
         #
-        # params = [totals['distance'], totals['distovermin'], totals['pilots'], totals['launched'],
+        # params = [totals['totdistflown'], totals['distovermin'], totals['pilots'], totals['launched'],
         #              totals['goal'], totals['fastest'], totals['maxdist'], task.tasPk]
         #
         # with Database() as db:
