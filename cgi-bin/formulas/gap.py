@@ -56,7 +56,7 @@ def task_totals(task, formula):
         print('No rows in TaskTotalsView for task ', tasPk)
         return
 
-    task.stats['distance']      = t['TotalDistance']
+    task.stats['totdistflown']      = t['TotalDistance']
     task.stats['launched']      = int(t['TotalLaunched'])
     task.stats['pilots']        = int(t['TotalPilots'])     # pilots present on take-off, ABS are not counted
     task.stats['stddev']        = t['Deviation']
@@ -169,7 +169,7 @@ def stopped_validity(task, formula):
     if taskt['fastest'] and taskt['fastest'] > 0:
         return 1
 
-    avgdist = taskt['distance'] / taskt['launched']
+    avgdist = taskt['totdistflown'] / taskt['launched']
     distlaunchtoess = task.EndSSDistance
 
     stopv = min(1,

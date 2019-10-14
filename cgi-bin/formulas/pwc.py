@@ -42,25 +42,31 @@ def lc_calc(res, t):
     leading     = 0
     trailing    = 0
     SS_Distance = t.SSDistance
+    first_start = t.stats['mindept']
+
+    '''find end_time to use for LC calculation'''
+    end_time = min((t.end_time if not t.stopped_time else t.stopped_time), t.stats['maxtime'])
+    if t.stats['maxarr']:
+        if (res['last_time'] < t.stats['maxarr']):
+            end_time = t.stats['maxarr']
+        else:
+            end_time = min(res['last_time'], end_time)
 
     '''Checking if we have a assigned status without a track, and if pilot actually did the start pilon'''
     if res['result'] not in ('abs', 'dnf', 'mindist') and res['startSS']:
         my_start    = res['start']
-        first_start = t.stats['mindept']
-        ss_start    = t.start_time
 
         '''add the leading part, from start time of first pilot to start, to my start time'''
-        # if not my_start:
-        #     my_start = 0  # this is to avoid my_start being none if pilot didn't make start and causing error below
         if my_start > first_start:
             leading = parameters.coef_landout((my_start - first_start), SS_Distance)
             leading = parameters.coef_func_scaled(leading, SS_Distance)
         if not res['endSS']:
             '''pilot did not make ESS'''
             best_dist_to_ess    = (t.EndSSDistance - res['distance'])
-            my_last_time        = res['last_time']          # should not need to check if < task deadline as we stop in Flight_result.check_flight()
-            last_ess            = t.stats['maxarr'] if ( t.stats['maxarr'] - t.start_time > 0 ) else t.end_time
-            task_time           = (max(my_last_time,last_ess) - my_start)
+            # my_last_time        = res['last_time']          # should not need to check if < task deadline as we stop in Flight_result.check_flight()
+            # last_ess            = t.stats['maxarr'] if t.stats['maxarr'] > 0 else min(t.end_time, t.stats['maxtime'])
+            # task_time           = (max(my_last_time,last_ess) - my_start)
+            task_time           = end_time - my_start
             trailing            = parameters.coef_landout(task_time, best_dist_to_ess)
             trailing            = parameters.coef_func_scaled(trailing, SS_Distance)
 
@@ -68,14 +74,14 @@ def lc_calc(res, t):
 
     else:
         '''pilot didn't make SS or has a assigned status without a track'''
-        best_dist_to_ess    = t.EndSSDistance
-        task_time           = t.stats['maxarr'] if ( t.stats['maxarr'] - t.start_time > 0 ) else t.end_time
-        trailing            = parameters.coef_landout(task_time, best_dist_to_ess)
+        task_time           = end_time - first_start
+        trailing            = parameters.coef_landout(task_time, SS_Distance)
         trailing            = parameters.coef_func_scaled(trailing, SS_Distance)
 
         LC = trailing
 
     print ("""Pilot: {} - Distance: {} - Time: {} - LC: {} \n""".format(res['tarPk'], res['distance'], res['time'], LC))
+    print(""" ** start_time: {} | end_time: {} | task_time: {} | leading p.: {} | trailing p.: {} \n""".format(res['start'], end_time, task_time, leading, trailing))
     '''write final LC to tblTaskResult table in tarLeadingCoeff column'''
     # making a def because I suppose that in the future we could avoid storing total LC in DB
     store_LC(res['tarPk'], LC)
@@ -143,6 +149,7 @@ def ordered_results(task, formula, results):
                                 tarES,
                                 tarPenalty,
                                 tarResultType,
+                                tarLeadingCoeff,
                                 tarLeadingCoeff2,
                                 tarGoal,
                                 tarLastAltitude,
@@ -197,6 +204,7 @@ def ordered_results(task, formula, results):
         taskres['goal']         = res['tarGoal']
         taskres['last_time']    = res['tarLastTime']
         taskres['fixed_LC']     = res['tarLeadingCoeff2']
+        #taskres['LC']           = res['tarLeadingCoeff']
 
         if taskres['time'] < 0:
             taskres['time'] = 0
@@ -209,6 +217,7 @@ def ordered_results(task, formula, results):
         taskres['LC'] = lc_calc(taskres, task) # PWC LeadCoeff (with squared distances)
         # else:
         #     taskres['LC'] = 0
+
 
         pilots.append(taskres)
 

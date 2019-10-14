@@ -65,17 +65,18 @@ class Task:
                  check_launch='off'):
         self.tasPk                      = None
         self.comPk                      = None
-        self.date                       = None    # in datetime.date format
+        self.date                       = None              # in datetime.date format
         self.turnpoints                 = turnpoints
         self.task_name                  = None
-        self.task_start_time            = None
+        self.task_start_time            = None              # takeoff window opening time (or any earlier pilots were permitted to take off)
         self.start_time                 = start_time
         self.start_close_time           = None
-        self.end_time                   = end_time
+        self.last_start_time            = last_start_time   # last start gate when there are more than 1
+        self.SSInterval                 = 0                 # Interval among start gates when more than one
+        self.end_time                   = end_time          # task deadline
         self.task_type                  = task_type
         self.ShortRouteDistance         = 0
         self.StartSSDistance            = 0
-        self.SSInterval                 = 0
         self.EndSSDistance              = 0
         self.SSDistance                 = 0
         self.Distance                   = 0     # non optimised distance
@@ -86,7 +87,6 @@ class Task:
         self.stats                      = dict()  #scored task statistics
         #self.results = []  #scored task results
         self.stopped_time               = stopped_time  # time task was stopped.
-        self.last_start_time            = last_start_time  # last start gate when there are more than 1
         self.check_launch               = check_launch  # check launch flag. whether we check that pilots leave from launch.
         self.arrival                    = None
         self.departure                  = None
@@ -111,48 +111,61 @@ class Task:
             print("task not present in database ", task_id)
 
         query = """ SELECT
-                        TIME_TO_SEC(`tasStartTime`) AS sstime,
-                        TIME_TO_SEC(`tasFinishTime`) AS endtime,
-                        TIME_TO_SEC(`tasLastStartTime`) AS LastStartTime,
-                        TIME_TO_SEC(`tasStartCloseTime`) AS StartCloseTime,
-                        TIME_TO_SEC(`tasTaskStart`) AS taskstart,
-                        `tasPk`,
-                        `comPk`,
-                        `tasDate`,
-                        `tasName`,
-                        `tasTaskStart`,
-                        `tasFinishTime`,
-                        `tasLaunchClose`,
-                        `tasCheckLaunch`,
-                        `tasStartTime`,
-                        `tasStartCloseTime`,
-                        `tasStoppedTime`,
-                        `tasLastStartTime`,
-                        `tasFastestTime`,
-                        `tasFirstDepTime`,
-                        `tasFirstArrTime`,
-                        `tasLastArrTime`,
-                        `tasMaxDistance`,
-                        'tasTotalDistanceFlown',
-                        `tasResultsType`,
-                        `tasTaskType`,
-                        `tasDistance`,
-                        `tasShortRouteDistance`,
-                        `tasStartSSDistance`,
-                        `tasEndSSDistance`,
-                        `tasSSDistance`,
-                        `tasSSInterval`,
-                        `tasDeparture`,
-                        `tasLaunchValid`,
-                        `tasArrival`,
-                        `tasHeightBonus`,
-                        `tasComment`,
-                        `tasGoalAlt`,
-                        `comTimeOffset`,
-                        `comClass`,
-                        `tasMargin`
+                        TIME_TO_SEC(`T`.`tasTaskStart`) AS `taskstart`,
+                        TIME_TO_SEC(`T`.`tasStartTime`) AS `sstime`,
+                        TIME_TO_SEC(`T`.`tasFinishTime`) AS `endtime`,
+                        TIME_TO_SEC(`T`.`tasLastStartTime`) AS `LastStartTime`,
+                        TIME_TO_SEC(`T`.`tasStartCloseTime`) AS `StartCloseTime`,
+                        TIME_TO_SEC(`T`.`tasStoppedTime`) AS `stoptime`,
+                        `T`.`tasPk`,
+                        `T`.`comPk`,
+                        `T`.`tasDate`,
+                        `T`.`tasName`,
+                        `T`.`tasTaskStart`,
+                        `T`.`tasFinishTime`,
+                        `T`.`tasLaunchClose`,
+                        `T`.`tasCheckLaunch`,
+                        `T`.`tasStartTime`,
+                        `T`.`tasStartCloseTime`,
+                        `T`.`tasStoppedTime`,
+                        `T`.`tasResultsType`,
+                        `T`.`tasTaskType`,
+                        `T`.`tasDistance`,
+                        `T`.`tasShortRouteDistance`,
+                        `T`.`tasStartSSDistance`,
+                        `T`.`tasEndSSDistance`,
+                        `T`.`tasSSDistance`,
+                        `T`.`tasSSInterval`,
+                        `T`.`tasDeparture`,
+                        `T`.`tasLaunchValid`,
+                        `T`.`tasArrival`,
+                        `T`.`tasHeightBonus`,
+                        `T`.`tasComment`,
+                        `T`.`tasGoalAlt`,
+                        `T`.`comTimeOffset`,
+                        `T`.`comClass`,
+                        `T`.`tasMargin`,
+                        `TT`.`TotalPilots`,
+                        `TT`.`TotalLaunched`,
+                        `TT`.`TotalLanded`,
+                        `TT`.`TotalESS`,
+                        `TT`.`TotalGoal`,
+                        `TT`.`firstStart`,
+                        `TT`.`lastStart`,
+                        `TT`.`firstSS`,
+                        `TT`.`lastSS`,
+                        `TT`.`firstESS`,
+                        `TT`.`lastESS`,
+                        `TT`.`minTime`,
+                        `TT`.`minTimeGoal`,
+                        `TT`.`lastTime`,
+                        `TT`.`maxDist`,
+                        `TT`.`TotalDistance`,
+                        `TT`.`TotDistOverMin`,
+                        `TT`.`Deviation`
                     FROM
-                        `TaskView`
+                        `TaskView` `T`
+                        LEFT OUTER JOIN `TaskTotalsView` `TT` USING(`tasPk`)
                     WHERE
                         `tasPk` = %s
                     LIMIT 1"""
@@ -168,10 +181,10 @@ class Task:
         start_time          = int(t['sstime'] - time_offset*60*60)
         end_time            = t['endtime'] - time_offset*60*60
         task_type           = t['tasTaskType'].upper()
-        if t['tasStoppedTime']:
-            t['tasStoppedTime'] -= time_offset * 60*60
+        if t['stoptime']:
+            t['stoptime'] -= time_offset * 60*60
 
-        stopped_time        = t['tasStoppedTime']
+        stopped_time        = t['stoptime']
         if t['LastStartTime']:
             t['LastStartTime'] -= time_offset * 60*60
         last_start_time     = t['LastStartTime']
@@ -190,14 +203,26 @@ class Task:
         goalalt             = t['tasGoalAlt']
         event_class         = t['comClass']
 
-        if t['tasMaxDistance']:
-            '''task has been already scored'''
+        if t['maxDist']:
+            '''task has already valid tracks'''
             stats = dict()
-            stats['firstdepart']    = t['tasFirstDepTime']
-            stats['maxarr']         = t['tasLastArrTime']
-            stats['maxdist']        = t['tasMaxDistance']
-            stats['fastest']        = t['tasFastestTime']
-            stats['distovermin']    = t['tasTotalDistanceFlown']
+            stats['pilots']             = int(t['TotalPilots'])
+            stats['launched']           = int(t['TotalLaunched'])
+            stats['ess']                = int(t['TotalESS'])
+            stats['goal']               = int(t['TotalGoal'])
+            stats['firstdepart']        = t['firstStart']
+            stats['lastdepart']         = t['lastStart']
+            stats['firststart']         = t['firstSS']
+            stats['laststart']          = t['lastSS']
+            stats['minarr']             = t['firstESS']
+            stats['maxarr']             = t['lastESS']
+            stats['maxdist']            = t['maxDist']
+            stats['fastest']            = t['minTime']
+            stats['fastestingoal']      = t['minTimeGoal']
+            stats['maxtime']            = t['lastTime']
+            stats['totdistflown']       = t['TotalDistance']
+            stats['distovermin']        = t['TotDistOverMin']
+            stats['stddev']             = t['Deviation']
 
         comPk = t['comPk']
 
@@ -337,7 +362,7 @@ class Task:
                     "tasFastestTime=%s, tasMaxDistance=%s " \
                     "where tasPk=%s"
 
-            params = [totals['distance'], totals['distovermin'], totals['pilots'], totals['launched'],
+            params = [totals['totdistflown'], totals['distovermin'], totals['pilots'], totals['launched'],
                          totals['goal'], totals['fastest'], totals['maxdist'], task_id]
             db.execute(query, params)
 
@@ -1036,6 +1061,7 @@ def get_task_json(task_id):
     else:
         with open(task_file, 'r') as f:
             data = jsonpickle.decode(f.read())
+            #print (data)
             task_coords = data['task_coords']
             turnpoints = data['turnpoints']
             short_route = data['short_route']
