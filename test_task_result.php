@@ -367,8 +367,10 @@ if ( isset($file) && !($file == NULL) ) {
     $sttbl .= "<tr><td class='result key'>Pilots Flying:</td><td class='result value'>".$stats['pilots_flying']."</td></tr>".PHP_EOL;
     $sttbl .= "<tr><td class='result key'>Pilots in Goal:</td><td class='result value'>".$stats['pilots_goal']."</td></tr>".PHP_EOL;
     $sttbl .= "<tr><td class='result key'>Best Distance:</td><td class='result value'>".round($stats['max_distance']/1000, 2)." Km </td></tr>".PHP_EOL;
-    $sttbl .= "<tr><td class='result key'>Total Distance:</td><td class='result value'>".round($stats['tot_dist_flown']/1000, 2)." Km </td></tr>".PHP_EOL;
-    $sttbl .= "<tr><td class='result key'>Best Time:</td><td class='result value'>".sec_to_time($stats['fastest_time'])."</td></tr>".PHP_EOL;
+    $sttbl .= "<tr><td class='result key'>Total Dist. Flown:</td><td class='result value'>".round($stats['tot_dist_flown']/1000, 2)." Km </td></tr>".PHP_EOL;
+    if ($stats['pilots_es'] > 0) {
+        $sttbl .= "<tr><td class='result key'>Best Time:</td><td class='result value'>".sec_to_time($stats['fastest_time'])."</td></tr>".PHP_EOL;
+    }
     $sttbl .= "</table>".PHP_EOL;
 
     #create task formula table
@@ -393,12 +395,12 @@ if ( isset($file) && !($file == NULL) ) {
     $valtbl .= "<table class='result_stats'>".PHP_EOL;
     $valtbl .= "<th><td colspan='2'><h3>Task Validity</h3></td></th>".PHP_EOL;
     $valtbl .= "<tr><td class='result key'>Launch Validity:</td><td class='result value'>".round($stats['launch_validity'],3)."</td></tr>".PHP_EOL;
-    $valtbl .= "<tr><td class='result key'>Distance Validity:</td><td class='result value'>".round($stats['launch_validity'],3)."</td></tr>".PHP_EOL;
-    $valtbl .= "<tr><td class='result key'>Time Validity:</td><td class='result value'>".round($stats['launch_validity'],3)."</td></tr>".PHP_EOL;
+    $valtbl .= "<tr><td class='result key'>Distance Validity:</td><td class='result value'>".round($stats['dist_validity'],3)."</td></tr>".PHP_EOL;
+    $valtbl .= "<tr><td class='result key'>Time Validity:</td><td class='result value'>".round($stats['time_validity'],3)."</td></tr>".PHP_EOL;
     if ($stopped_time != null) {
-        $valtbl .= "<tr><td class='result key'>Stop Validity:</td><td class='result value'>".round($stats['launch_validity'],3)."</td></tr>".PHP_EOL;
+        $valtbl .= "<tr><td class='result key'>Stop Validity:</td><td class='result value'>".round($stats['stop_validity'],3)."</td></tr>".PHP_EOL;
     }
-    $valtbl .= "<tr><td class='result key'>Task Quality:</td><td class='result value'>".round($stats['launch_validity'],3)."</td></tr>".PHP_EOL;
+    $valtbl .= "<tr><td class='result key'>Task Quality:</td><td class='result value'>".round($stats['day_quality'],3)."</td></tr>".PHP_EOL;
     $valtbl .= "</table>".PHP_EOL;
 
     #create avail. points table
