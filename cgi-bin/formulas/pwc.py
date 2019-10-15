@@ -81,7 +81,7 @@ def lc_calc(res, t):
         LC = trailing
 
     print ("""Pilot: {} - Distance: {} - Time: {} - LC: {} \n""".format(res['tarPk'], res['distance'], res['time'], LC))
-    print(""" ** start_time: {} | end_time: {} | task_time: {} | leading p.: {} | trailing p.: {} \n""".format(res['start'], end_time, task_time, leading, trailing))
+    #print(""" ** start_time: {} | end_time: {} | task_time: {} | leading p.: {} | trailing p.: {} \n""".format(res['start'], end_time, task_time, leading, trailing))
     '''write final LC to tblTaskResult table in tarLeadingCoeff column'''
     # making a def because I suppose that in the future we could avoid storing total LC in DB
     store_LC(res['tarPk'], LC)
