@@ -301,7 +301,8 @@ class Task:
                             `tasEndSSDistance` = %s,
                             `tasStartSSDistance` = %s
                         WHERE
-                            `tasPk` = %s"""
+                            `tasPk` = %s
+                        LIMIT 1"""
             params = [self.Distance, self.ShortRouteDistance,   self.SSDistance, self.EndSSDistance, self.StartSSDistance, self.tasPk]
             db.execute(query, params)
 
@@ -309,9 +310,18 @@ class Task:
             query = ''
             for idx, item in enumerate(self.turnpoints):
                 #print ("  {}  {}  {}  {}   {}".format(item.name, item.type, item.radius, self.optimised_legs[idx], self.partial_distance[idx]))
-                query = ("""UPDATE `tblTaskWaypoint` SET `ssrLatDecimal` = {}, `ssrLongDecimal` = {}, `ssrCumulativeDist` = {} WHERE `tawPk` = {} """.format(self.optimised_turnpoints[idx].lat, self.optimised_turnpoints[idx].lon, self.partial_distance[idx], item.id))
+                tp = self.optimised_turnpoints[idx]
+                query = """UPDATE `tblTaskWaypoint`
+                            SET
+                                `ssrLatDecimal` = %s,
+                                `ssrLongDecimal` = %s,
+                                `ssrCumulativeDist` = %s
+                            WHERE `tawPk` = %s
+                            LIMIT 1
+                        """
+                params = [tp.lat, tp.lon, self.partial_distance[idx], item.id]
                 #print (query)
-                db.execute(query)
+                db.execute(query, params)
                 #print (self.optimised_turnpoints[idx].lat, self.optimised_turnpoints[idx].lon)
 
     def update_task_info(self):
