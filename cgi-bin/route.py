@@ -469,8 +469,12 @@ def opt_wp(p1, p2, p3, r2):
     if p3 is None:
         return opt_goal(p1, p2)
     p2_1 = calcBearing(p2.lat, p2.lon, p1.lat, p1.lon)
-
-    p2_3 = calcBearing(p2.lat, p2.lon, p3.lat, p3.lon)
+    #if the next two points have the same center then the angle is given as 180, which is an error.
+    # Set to same as p2_1 to force the net angle to be same as first angle.
+    if p2.lat == p3.lat and p2.lon == p3.lon:
+        p2_3 = p2_1
+    else:
+        p2_3 = calcBearing(p2.lat, p2.lon, p3.lat, p3.lon)
 
     if p2_1 < 0:
         p2_1 += 360

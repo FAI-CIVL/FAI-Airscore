@@ -944,6 +944,9 @@ class Task:
             elif self.turnpoints[t + 1].in_radius(t1, 0, 0):
                 t += 1
                 exit_different = True
+                # case of having to exit and then next wpt also in the exit cylinder, reset t back 1
+                if self.turnpoints[t].in_radius(self.turnpoints[t + 1], 0, 0):
+                    t -= 1
             # or it is the same as the following one (i.e entry large radius followed by smaller like ess and goal often are)
             elif self.turnpoints[t + 2].lat == self.turnpoints[t + 1].lat and self.turnpoints[t + 2].lon == \
                     self.turnpoints[t + 1].lon:
