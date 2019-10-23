@@ -317,19 +317,14 @@ $count = 1;
 // 				P.pilFirstName";
 
 $sql = "SELECT
-            R.*,
-            P.`pilFirstName`,
-            P.`pilLastName`,
-            P.`pilSponsor`,
-            ( SELECT C.natIso3 FROM tblCountryCodes C WHERE C.natID = P.pilNat ) AS pilNationCode
+            *
         FROM
-            `ResultView` R
-            JOIN `PilotView` P USING (`pilPk`)
+            `ResultView`
         WHERE
-            R.tasPk = $tasPk $fdhv
+            `tasPk` = $tasPk $fdhv
         ORDER BY
-            R.tarScore DESC,
-            P.pilFirstName";
+            `tarScore` DESC,
+            `pilName`";
 
 $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task result selection failed: ' . mysqli_connect_error());
 $lastscore = 0;
@@ -566,7 +561,7 @@ if ($isadmin and $extComp != 1)
 
     $piladd = [];
     $piladd[] =  array(fb("FAI"), fin("fai",'',6), fb("Type"), fselect('resulttype', 'lo', array('abs', 'dnf', 'lo', 'goal' )),
-        fb("Dist"), fin("flown",'',4), fb("Glider"), fin("glider",'',6), fb("Class"), fselect('dhv', 'competition', array('1', '1/2', '2', '2/3', 'competition')), fb("Penalty"),fin("penalty",'',4), fbut("submit","addflight", "$tarPk", "Manual Addition"));
+        fb("Dist"), fin("flown",'',4), fb("Glider"), fin("glider",'',6), fb("Class"), fselect('dhv', 'competition', array('1', '1/2', '2', '2/3', 'competition')), fb("Penalty"), fin("penalty",'',4), fbut("submit","addflight", "$tarPk", "Manual Addition"));
     echo ftable($piladd, 'class=taskpiladd', '', '');
 
     echo "</form>";

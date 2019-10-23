@@ -67,7 +67,7 @@ class Flight_result:
         self.Penalty = 0
         self.Comment = None
         self.ext_id = None
-        self.pilPk = None
+        self.pil_id = None
         self.result_type = 'lo'
         self.goal_time = None
         self.SS_distance = None
@@ -154,7 +154,7 @@ class Flight_result:
             return
         else:
             result = cls()
-            result.pilPk = t['pilPk']
+            result.pil_id = t['pilPk']
             result.Pilot_Start_time = t['tarStart']
             result.SSS_time = t['tarSS']
             result.ESS_time = t['tarES']
@@ -219,8 +219,8 @@ class Flight_result:
             '''handle stopped task'''
             maxtime = None
             if Task.stopped_time is not None and result.ESS_time is None:
-                if formula_parameters.stopped_elapsed_calc == 'shortest_time':
-                    maxtime = Task.stopped_time - Task.last_start_time
+                if formula_parameters.stopped_elapsed_calc == 'shortest_time' and Task.last_start_time:
+                    maxtime = (Task.stopped_time - Task.last_start_time)
 
                 if (next.rawtime > Task.stopped_time
                         or
@@ -434,30 +434,80 @@ class Flight_result:
             r = db.execute(query, params)
         print(r)
 
-    def store_result(self, traPk, tasPk):
+    # def store_result(self, traPk, tasPk):
+    #     from collections import Counter
+    #
+    #     if not self.goal_time: self.goal_time = 0
+    #     endss = 0 if not self.ESS_time else self.ESS_time
+    #     num_wpts = len(Counter(el[0] for el in self.Waypoints_achieved))
+    #
+    #     query = "DELETE FROM `tblTaskResult` WHERE `traPk`=%s and `tasPk`=%s"
+    #     params = [traPk, tasPk]
+    #     with Database() as db:
+    #         db.execute(query, params)
+    #
+    #     query = """INSERT INTO `tblTaskResult` (
+    #             `tasPk`, `traPk`, `tarDistance`, `tarSpeed`, `tarStart`, `tarGoal`, `tarSS`, `tarES`, `tarTurnpoints`,
+    #             `tarLeadingCoeff2`, `tarLeadingCoeff`, `tarPenalty`, `tarLastAltitude`, `tarLastTime` )
+    #             VALUES ( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s ) """
+    #
+    #     params = [tasPk, traPk, self.distance_flown, self.speed, self.Pilot_Start_time, self.goal_time, self.SSS_time,
+    #               endss, num_wpts,
+    #               self.Fixed_LC, self.Lead_coeff, self.Penalty, self.Stopped_altitude,
+    #               self.Stopped_time]  # , self.Comment, self.Stopped_altitude, self.Stopped_time]
+
+    def store_result(self, task_id, track_id = None):
+        ''' stores new calculated results to db
+            if track_id is not given, it inserts a new result
+            else it updates existing one '''
         from collections import Counter
 
         if not self.goal_time: self.goal_time = 0
         endss = 0 if not self.ESS_time else self.ESS_time
         num_wpts = len(Counter(el[0] for el in self.Waypoints_achieved))
 
-        query = "DELETE FROM `tblTaskResult` WHERE `traPk`=%s and `tasPk`=%s"
-        params = [traPk, tasPk]
+        if track_id:
+            query = """ UPDATE
+                            `tblTaskResult`
+                        SET
+                            `tarDistance`       = %s,
+                            `tarSpeed`          = %s,
+                            `tarStart`          = %s,
+                            `tarGoal`           = %s,
+                            `tarSS`             = %s,
+                            `tarES`             = %s,
+                            `tarTurnpoints`     = %s,
+                            `tarLeadingCoeff2`  = %s,
+                            `tarLastAltitude`   = %s,
+                            `tarLastTime`       = %s
+                        WHERE
+                            `tarPk` = %s
+                    """
+            params = [self.distance_flown, self.speed, self.Pilot_Start_time, self.goal_time, self.SSS_time,
+                      endss, num_wpts, self.Fixed_LC, self.Stopped_altitude, self.Stopped_time, track_id]
+
+
+        else:       #should not be possible, as we wouldn't have track file stored
+            query = """ INSERT INTO `tblTaskResult`(
+                            `pilPk`,
+                            `tasPk`,
+                            `tarDistance`,
+                            `tarSpeed`,
+                            `tarStart`,
+                            `tarGoal`,
+                            `tarSS`,
+                            `tarES`,
+                            `tarTurnpoints`,
+                            `tarLeadingCoeff2`,
+                            `tarLastAltitude`,
+                            `tarLastTime`
+                        )
+                        VALUES( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s )"""
+            params = [self.pil_id, task_id, self.distance_flown, self.speed, self.Pilot_Start_time, self.goal_time, self.SSS_time,
+                      endss, num_wpts, self.Fixed_LC, self.Stopped_altitude, self.Stopped_time]
+
         with Database() as db:
             db.execute(query, params)
-
-        query = """INSERT INTO `tblTaskResult` (
-                `tasPk`, `traPk`, `tarDistance`, `tarSpeed`, `tarStart`, `tarGoal`, `tarSS`, `tarES`, `tarTurnpoints`,
-                `tarLeadingCoeff2`, `tarLeadingCoeff`, `tarPenalty`, `tarLastAltitude`, `tarLastTime` )
-                VALUES ( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s ) """
-
-        params = [tasPk, traPk, self.distance_flown, self.speed, self.Pilot_Start_time, self.goal_time, self.SSS_time,
-                  endss, num_wpts,
-                  self.Fixed_LC, self.Lead_coeff, self.Penalty, self.Stopped_altitude,
-                  self.Stopped_time]  # , self.Comment, self.Stopped_altitude, self.Stopped_time]
-
-        with Database() as db:
-            r = db.execute(query, params)
 
     def store_result_json(self):
         json.dump(self)

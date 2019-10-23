@@ -454,9 +454,13 @@ def points_allocation_new(task, formula):   # from PWC###
 
         # Total score
         print('{} + {} + {} + {} - {}'.format(pil['dist_points'],pil['time_points'],pil['arr_points'],pil['dep_points'],penalty))
-        pil['score'] = pil['dist_points'] + pil['time_points'] + pil['arr_points'] + pil['dep_points'] - penalty
+        pil['score'] = pil['dist_points'] + pil['time_points'] + pil['arr_points'] + pil['dep_points']
 
         #update task max score
         if pil['score'] > task.stats['max_score']: task.stats['max_score'] = pil['score']
+
+        #apply Penalty
+        if penalty:
+            pil['score'] = max(0, pil['score'] - penalty)
 
     return pilots

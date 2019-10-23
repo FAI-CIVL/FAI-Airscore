@@ -29,9 +29,9 @@ class Track():
 
     def __init__(self, filename = None, pilot = None, task = None, glider = None, cert = None, type = None, test = 0):
         self.filename = filename
-        self.traPk = None
+        self.track_id = None
         self.type = type
-        self.pilPk = pilot
+        self.pil_id = pilot
         self.task_id = task
         self.glider = glider
         self.cert = cert
@@ -43,7 +43,7 @@ class Track():
         should be named as such: FAI.igc or LASTNAME_FIRSTNAME.igc
         """
         message = ''
-        if self.pilPk is None:
+        if self.pil_id is None:
 
             """Get string"""
             fields = os.path.splitext(os.path.basename(self.filename))
@@ -51,7 +51,7 @@ class Track():
                 """Gets name from FAI n."""
                 fai = 0 + int(fields[0])
                 message += ("file {} contains FAI n. {} \n".format(fields[0], fai))
-                query = ("SELECT pilPk FROM PilotView WHERE pilFAI = {}".format(fai))
+                query = ("SELECT `pilPk` FROM `PilotView` WHERE `pilFAI` = {}".format(fai))
             else:
                 names = fields[0].replace('.', ' ').replace('_', ' ').replace('-', ' ').split()
                 """try to find xcontest user in filename
@@ -62,23 +62,23 @@ class Track():
                 t = []
                 u = []
                 for i in names:
-                    s.append(" pilLastName LIKE '%%{}%%' ".format(i))
-                    t.append(" pilFirstName LIKE '%%{}%%' ".format(i))
-                    u.append(" pilXContestUser LIKE '{}' ".format(i))
+                    s.append(" `pilLastName` LIKE '%%{}%%' ".format(i))
+                    t.append(" `pilFirstName` LIKE '%%{}%%' ".format(i))
+                    u.append(" `pilXContestUser` LIKE '{}' ".format(i))
                 cond = ' OR '.join(s)
                 cond2 = ' OR '.join(t)
                 cond3 = ' OR '.join(u)
                 query =(""" SELECT
-                                pilPk
+                                `pilPk`
                             FROM
-                                PilotView
+                                `PilotView`
                             WHERE
                                 ({})
                             UNION ALL
                             SELECT
-                                pilPk
+                                `pilPk`
                             FROM
-                                PilotView
+                                `PilotView`
                             WHERE
                                 ({})
                             AND
@@ -90,18 +90,65 @@ class Track():
             """Get pilot"""
             with Database() as db:
                 try:
-                    self.pilPk = db.fetchone(query)['pilPk']
+                    self.pil_id = db.fetchone(query)['pilPk']
                 except:
-                    self.pilPk = None
+                    self.pil_id = None
 
-            if self.pilPk is None:
+            if self.pil_id is None:
                 """No pilot infos in filename"""
                 message += ("{} does NOT contain any valid pilot info \n".format(fields[0]))
 
         if test == 1:
             """TEST MODE"""
-            message += ("pilPk: {}  \n".format(self.pilPk))
+            message += ("pil_id: {}  \n".format(self.pil_id))
             print (message)
+
+    # def add(self, test = 0):
+    #     import datetime
+    #     from compUtils import get_class, get_offset
+    #     """Imports track to db"""
+    #     result = ''
+    #     message = ''
+    #     message += ("track {} will be imported for pilot with ID {} and task with ID {} \n".format(self.filename, self.pil_id, self.task_id))
+    #
+    #     """get time of first fix of the track"""
+    #     stime = sec_to_time(self.flight.fixes[0].rawtime + get_offset(self.task_id)*3600)
+    #     trastart = datetime.datetime.combine(self.date, stime)
+    #
+    #     traclass = get_class(self.task_id)
+    #     traduration = self.flight.fixes[-1].rawtime - self.flight.fixes[0].rawtime
+    #
+    #     """add track entryassign_and_import_tracks(tracks, task, test) into tblTrack table"""
+    #     query = """INSERT INTO `tblTrack`(
+    #                     `pilPk`,
+    #                     `traClass`,
+    #                     `traGlider`,
+    #                     `traDHV`,
+    #                     `traDate`,
+    #                     `traStart`,
+    #                     `traDuration`,
+    #                     `traFile`
+    #                 )
+    #                 VALUES(
+    #                     %s, %s, %s, %s, %s, %s, %s, %s
+    #                 )
+    #                 """
+    #     params = [self.pil_id, traclass, self.glider, self.cert, self.date, trastart, traduration, self.filename]
+    #     message += query
+    #     if not test:
+    #         with Database() as db:
+    #             try:
+    #                 db.execute(query, params)
+    #                 self.track_id = db.lastrowid()
+    #                 result += ("track for pilot with id {} correctly stored in database".format(self.pil_id))
+    #             except:
+    #                 print('Error Inserting track into db:')
+    #                 print(query)
+    #                 result = ('Error inserting track for pilot with id {}'.format(self.pil_id))
+    #     else:
+    #         print(message)
+    #
+    #     return result
 
     def add(self, test = 0):
         import datetime
@@ -109,42 +156,32 @@ class Track():
         """Imports track to db"""
         result = ''
         message = ''
-        message += ("track {} will be imported for pilot with ID {} and task with ID {} \n".format(self.filename, self.pilPk, self.task_id))
+        message += ("track {} will be imported for pilot with ID {} and task with ID {} \n".format(self.filename, self.pil_id, self.task_id))
+        g_record = int(self.flight.valid)
 
-        """get time of first fix of the track"""
-        stime = sec_to_time(self.flight.fixes[0].rawtime + get_offset(self.task_id)*3600)
-        trastart = datetime.datetime.combine(self.date, stime)
-
-        traclass = get_class(self.task_id)
-        traduration = self.flight.fixes[-1].rawtime - self.flight.fixes[0].rawtime
-
-        """add track entryassign_and_import_tracks(tracks, task, test) into tblTrack table"""
-        query = """INSERT INTO `tblTrack`(
+        """add track as result in tblTaskResult table"""
+        query = """ INSERT INTO `tblTaskResult`(
                         `pilPk`,
-                        `traClass`,
-                        `traGlider`,
-                        `traDHV`,
-                        `traDate`,
-                        `traStart`,
-                        `traDuration`,
-                        `traFile`
+                        `tasPk`,
+                        `traFile`,
+                        `traGRecordOk`,
                     )
                     VALUES(
-                        %s, %s, %s, %s, %s, %s, %s, %s
+                        %s, %s, %s, %s
                     )
                     """
-        params = [self.pilPk, traclass, self.glider, self.cert, self.date, trastart, traduration, self.filename]
+        params = [self.pil_id, self.task_id, self.filename, g_record]
         message += query
         if not test:
             with Database() as db:
                 try:
                     db.execute(query, params)
-                    self.traPk = db.lastrowid()
-                    result += ("track for pilot with id {} correctly stored in database".format(self.pilPk))
+                    self.track_id = db.lastrowid()
+                    result += ("track for pilot with id {} correctly stored in database".format(self.pil_id))
                 except:
                     print('Error Inserting track into db:')
                     print(query)
-                    result = ('Error inserting track for pilot with id {}'.format(self.pilPk))
+                    result = ('Error inserting track for pilot with id {}'.format(self.pil_id))
         else:
             print(message)
 
@@ -180,7 +217,7 @@ class Track():
                 if not pilot_id:
                     track.get_pilot(test)
                 else:
-                    track.pilPk = 0 + pilot_id
+                    track.pil_id = 0 + pilot_id
                 track.get_glider(test)
                 track.flight = flight
                 track.date = epoch_to_date(track.flight.date_timestamp)
@@ -193,32 +230,32 @@ class Track():
             print("File {} (pilot ID {}) is NOT a valid track file. \n".format(track, pilot_id))
 
     @classmethod
-    def read_db(cls, traPk, test = 0):
+    def read_db(cls, track_id, test = 0):
         """Creates a Track Object from a DB Track entry"""
 
         track = cls()
 
         """Read general info about the track"""
-        query = "select unix_timestamp(T.traDate) as udate," \
-                "   T.*," \
-                "   CTT.* " \
-                "from tblTrack T " \
+        query = "select unix_timestamp(`T`.`traDate`) as `udate`," \
+                "   `T`.*," \
+                "   `CTT`.* " \
+                "from `tblTrack` `T` " \
                 "left outer join " \
-                "tblComTaskTrack CTT on T.traPk=CTT.traPk " \
-                "where T.traPk=%s"
+                "`tblComTaskTrack` `CTT` on `T`.`traPk`=`CTT`.`traPk` " \
+                "where `T`.`traPk`=%s"
 
         with Database() as db:
             # get the formula details.
-            t = db.fetchone(query, [traPk])
+            t = db.fetchone(query, [track_id])
 
         if t:
-            track.pilPk = t['pilPk']
+            track.pil_id = t['pilPk']
             track.filename = t['traFile'] if t['traFile'] is not None else None
             track.task_id = t['tasPk'] if t['tasPk'] is not None else None
             track.glider = t['traGlider'] if t['traGlider'] is not (None or 'Unknown') else None
             track.cert = t['traDHV'] if t['traGlider'] is not (None or 'Unknown') else None
         if test == 1:
-            print("read_db: pilPk: {} | filename: {}".format(track.pilPk, track.filename))
+            print("read_db: pilPk: {} | filename: {}".format(track.pil_id, track.filename))
 
         """Creates the flight obj with fixes info"""
         track.flight = Flight.create_from_file(track.filename)
@@ -271,7 +308,7 @@ class Track():
         """Get glider info for pilot, to be used in results"""
         message = ''
 
-        if self.pilPk is not None:
+        if self.pil_id is not None:
             query = """    SELECT
                                 CONCAT( IFNULL(`pilGlider`, ''),
                                         ' ',
@@ -288,7 +325,7 @@ class Track():
             if test:
                 print(query)
             with Database() as db:
-                row = db.fetchone(query, [self.pilPk])
+                row = db.fetchone(query, [self.pil_id])
             if row is not None:
                 self.__dict__.update(row)
                 # brand = '' if row['pilGliderBrand'] is None else row['pilGliderBrand']
@@ -330,7 +367,7 @@ class Track():
                     "   FROM `PilotView` P " \
                     "   WHERE P.`pilPk` = %s" \
                     "   LIMIT 1"
-            param = self.pilPk
+            param = self.pil_id
 
             if test:
                 print('pname query:')
