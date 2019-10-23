@@ -29,7 +29,7 @@ def main():
         exit()
 
     task = Task.read_task(task_id)
-    formula = read_formula(task.comPk)
+    formula = read_formula(task.comp_id)
     if formula['forClass'] == 'pwc':
         totals = task_totals(task, formula)
         # query = "update tblTask set tasTotalDistanceFlown=%s, " \
@@ -38,8 +38,8 @@ def main():
         #         "tasFastestTime=%s, tasMaxDistance=%s " \
         #         "where tasPk=%s"
         #
-        # params = [totals['totdistflown'], totals['distovermin'], totals['pilots'], totals['launched'],
-        #              totals['goal'], totals['fastest'], totals['maxdist'], task.tasPk]
+        # params = [totals['tot_dist_flown'], totals['tot_dist_over_min'], totals['pilots_present'], totals['pilots_launched'],
+        #              totals['pilots_goal'], totals['fastest'], totals['max_distance'], task.task_id]
         #
         # with Database() as db:
         #     db.execute(query, params)
@@ -63,14 +63,14 @@ def main():
         #         "tasLaunchQuality = %s, " \
         #         "tasStopQuality = %s " \
         #         "WHERE tasPk = %s"
-        # params = [quality, dist, time, launch, stop, task.tasPk]
+        # params = [quality, dist, time, launch, stop, task.task_id]
         #
         # with Database() as db:
         #     db.execute(query, params)
 
-        totals['quality'] = quality
+        totals['day_quality'] = quality
 
-        if totals['pilots'] > 0:
+        if totals['pilots_present'] > 0:
             points_allocation(task, totals, formula)
 
 

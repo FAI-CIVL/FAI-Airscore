@@ -134,32 +134,33 @@ def get_registered_pilots(comPk, test=0):
 
     return (list)
 
-def is_registered(pilPk, comPk, test = 0):
+def is_registered(pil_id, comp_id, test = 0):
     """Check if pilot is registered to the comp"""
     message = ''
-    regPk = 0
-    if (pilPk > 0 and comPk > 0):
+    reg_id = 0
+    if (pil_id > 0 and comp_id > 0):
         with Database() as db:
-            query = ("""    SELECT
-                                R.regPk
+            query = """    SELECT
+                                `R`.`regPk`
                             FROM
-                                tblRegistration R
+                                `tblRegistration` `R`
                             WHERE
-                                R.comPk = {}
-                                AND R.pilPk = {}
-                            LIMIT 1""".format(comPk, pilPk))
+                                `R`.`comPk` = %s
+                                AND `R`.`pilPk` = %s
+                            LIMIT 1"""
+            params = [pil_id, comp_id]
             message += ("Query: {}  \n".format(query))
-            if db.rows(query) > 0:
-                regPk = 0 + db.fetchone(query)['regPk']
+            if db.rows(query, params) > 0:
+                reg_id = 0 + db.fetchone(query, params)['regPk']
     else:
         message += ("is_registered - Error: NOT a valid ID \n")
 
     if test == 1:
         """TEST MODE"""
-        message += ("regPk: {} \n".format(regPk))
+        message += ("reg ID: {} \n".format(regPk))
         print (message)
 
-    return (regPk)
+    return reg_id
 
 def get_glider(pilPk):
     """Get glider info for pilot, to be used in results"""
@@ -203,21 +204,21 @@ def get_nat_code(iso):
             except:
                 return None
 
-def read_formula(comPk):
+def read_formula(comp_id):
 
     query = """ SELECT
-                    F.*,
-                    FC.*
+                    `F`.*,
+                    `FC`.*
                 FROM
-                    tblCompetition C
-                    JOIN tblForComp FC USING (comPk)
-                    LEFT OUTER JOIN tblFormula F USING (forPk)
+                    `tblCompetition` `C`
+                    JOIN `tblForComp` `FC` USING (`comPk`)
+                    LEFT OUTER JOIN `tblFormula` `F` USING (`forPk`)
                 WHERE
-                    C.comPk = %s
+                    `C`.`comPk` = %s
                 LIMIT 1"""
     with Database() as db:
         # get the formula details.
-        formula = db.fetchone(query, [comPk])
+        formula = db.fetchone(query, [comp_id])
     formula['forMinDistance'] *= 1000
     formula['forNomDistance'] *= 1000
     formula['forNomTime'] *= 60

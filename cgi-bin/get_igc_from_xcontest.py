@@ -22,15 +22,15 @@ def get_xc_parameters(task_id, test = 0):
     takeoff_id = 0
     datestr = None
     query = """  SELECT
-                    R.xccSiteID,
-                    R.XccToID,
-                    T.tasDate
+                    `R`.`xccSiteID`,
+                    `R`.`XccToID`,
+                    `T`.`tasDate`
                 FROM
-                    tblTaskWaypoint TW
-                JOIN tblTask T USING(tasPk)
-                JOIN tblRegionWaypoint R USING(rwpPk)
+                    `tblTaskWaypoint` `TW`
+                JOIN `tblTask` `T` USING(`tasPk`)
+                JOIN `tblRegionWaypoint` `R` USING(`rwpPk`)
                 WHERE
-                    T.tasPk = %s AND TW.tawType = 'launch'"""
+                    `T`.`tasPk` = %s AND `TW`.`tawType` = 'launch'"""
     params = [task_id]
     with Database() as db:
         q = db.fetchone(query, params)
@@ -135,19 +135,20 @@ def main():
 
         """Get Task object"""
         task = Task.read_task(task_id)
-        if task.ShortRouteDistance == 0:
+        if task.opt_dist == 0:
             print('task not optimised.. optimising')
             task.calculate_optimised_task_length()
 
-        if task.comPk > 0:
+        if task.comp_id > 0:
             """get zipfile from XContest server"""
             site_id, takeoff_id, date = get_xc_parameters(task_id, test)
             login_name = Defines.XC_LOGIN
             password = Defines.XC_password
             zip_name = 'igc_from_xc.zip'
 
-            formula =  read_formula(task.comPk)
-            f = For.get_formula_lib(formula)
+            #formula =  read_formula(task.comp_id)
+            # formula = For.Task_formula.read(task_id)
+            # lib = For.get_formula_lib(formula.type)
 
             """create a temp dire for zip file"""
             with TemporaryDirectory() as zip_destination:
@@ -167,7 +168,7 @@ def main():
                     else:
                         result = ("An error occured while dealing with file {} \n".format(zipfile))
         else:
-            result = ("error: task ID {} does NOT belong to any Competition \n".format(task.tasPk))
+            result = ("error: task ID {} does NOT belong to any Competition \n".format(task.task_id))
 
     else:
         print('error: Use: python3 get_igc_from_xcontest.py [taskPk] [opt. test]')

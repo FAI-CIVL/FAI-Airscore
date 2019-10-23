@@ -73,8 +73,8 @@ def main(args):
     print('Task read from DB:')
     print('start:       {} '.format(task.start_time))
     print('start close: {} '.format(task.start_close_time))
-    print('deadline:    {} '.format(task.end_time))
-    print('window open: {} '.format(task.task_start_time))
+    print('deadline:    {} '.format(task.task_deadline))
+    print('window open: {} '.format(task.window_open_time))
 
     '''delete old waypoints in database'''
     task.clear_waypoints()

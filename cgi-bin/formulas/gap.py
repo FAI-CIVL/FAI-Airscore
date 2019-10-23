@@ -6,81 +6,103 @@ standard gap formulas.
 
 from myconn import Database
 
-def task_totals(task, formula):
+def task_totals(task_id):
     '''
     This new version uses a view to collect task totals.
     It means we do not need to store totals in task table anylonger,
     as they are calculated on runtime from mySQL using all task results
     '''
 
-    tasPk = task.tasPk
-    launchvalid = task.launchvalid
-    mindist = formula['forMinDistance']
-    glidebonus = 0
-    landed = 0
-    tqtime = None
+    # tasPk = task.task_id
+    # launchvalid = task.launch_valid
+    # landed = 0
 
 
     #todo: 'Landed' misses people who made ESS but actually landed before goal
-    query ="""  SELECT
-                    `TotalPilots`,
-                    `TotalDistance`,
-                    `TotDistOverMin`,
-                    `TotalLaunched`,
-                    `Deviation`,
-                    `TotalLanded`,
-                    `TotalESS`,
-                    `TotalGoal`,
-                    `maxDist`,
-                    `firstStart`,
-                    `lastStart`,
-                    `firstSS`,
-                    `lastSS`,
-                    `firstESS`,
-                    `lastESS`,
-                    `minTime`,
-                    `minTimeGoal`,
-                    `LCmin`
+    # query ="""  SELECT
+    #                 (`TotalPilots` DIV 1) AS `pilots_present`,
+    #                 `TotalDistance` AS `tot_dist_flown`,
+    #                 `TotDistOverMin` AS 'tot_dist_over_min',
+    #                 (`TotalLaunched` DIV 1) AS `pilots_launched`,
+    #                 `Deviation` AS `std_dev`,
+    #                 (`TotalLanded` DIV 1) AS `pilots_landed`,
+    #                 (`TotalESS` DIV 1) AS `pilots_ess`,
+    #                 (`TotalGoal` DIV 1) AS `pilots_goal`,
+    #                 `maxDist` AS `max_distance`,
+    #                 `firstStart` AS `min_dept_time`,
+    #                 `lastStart` AS `max_dept_time`,
+    #                 `firstSS`  AS `first_SS`,
+    #                 `lastSS` AS `last_SS`,
+    #                 `firstESS` AS `min_ess_time`,
+    #                 `lastESS` AS `max_ess_time`,
+    #                 (`lastTime` DIV 1) AS `max_time`,
+    #                 `minTime` AS `fastest`,
+    #                 `minTimeGoal` AS `fastest_in_goal`
+    #             FROM
+    #                 `TaskTotalsView`
+    #             WHERE
+    #                 `tasPk` = %s
+    #             LIMIT 1"""
+
+    query = """SELECT
+                    `pilots_present`,
+                    `tot_dist_flown`,
+                    `tot_dist_over_min`,
+                    `pilots_launched`,
+                    `std_dev`,
+                    `pilots_landed`,
+                    `pilots_goal`,
+                    `pilots_ess`,
+                    `max_distance`,
+                    `min_dept_time`,
+                    `max_dept_time`,
+                    `first_SS`,
+                    `last_SS`,
+                    `min_ess_time`,
+                    `max_ess_time`,
+                    `fastest_in_goal`,
+                    `fastest`,
+                    `max_time`
                 FROM
-                    `TaskTotalsView`
+                    `TaskStatsView`
                 WHERE
-                    `tasPk` = %s
+                    `task_id` = %s
                 LIMIT 1"""
-    params = [tasPk]
+    params = [task_id]
     with Database() as db:
         # get the formula details.
-        t = db.fetchone(query, params)
+        stats = db.fetchone(query, params)
 
-    if not t:
+    if not stats:
         print(query)
-        print('No rows in TaskTotalsView for task ', tasPk)
+        print('No rows in TaskTotalsView for task ', task_id)
         return
 
-    task.stats['totdistflown']      = t['TotalDistance']
-    task.stats['launched']      = int(t['TotalLaunched'])
-    task.stats['pilots']        = int(t['TotalPilots'])     # pilots present on take-off, ABS are not counted
-    task.stats['stddev']        = t['Deviation']
-    task.stats['distovermin']   = t['TotDistOverMin']
-    task.stats['ess']           = int(t['TotalESS'])
-    task.stats['goal']          = int(t['TotalGoal'])
-    task.stats['maxdist']       = t['maxDist']
-    task.stats['fastest']       = t['minTime']
-    task.stats['fastestingoal'] = t['minTimeGoal']
-    task.stats['minarr']        = t['firstESS']
-    task.stats['maxarr']        = t['lastESS']
-    #task.stats['tqtime']        = t['minTime'] # ???
-    #task.stats['LCmin']         = t['LCmin']   # not already calculated
-    task.stats['mindept']       = t['firstStart']
-    task.stats['lastdept']      = t['lastStart']
+    # task.stats['tot_dist_flown']  = t['TotalDistance']
+    # task.stats['pilots_launched']      = int(t['TotalLaunched'])
+    # task.stats['pilots_present']        = int(t['TotalPilots'])     # pilots present on take-off, ABS are not counted
+    # task.stats['std_dev']        = t['Deviation']
+    # task.stats['tot_dist_over_min']   = t['TotDistOverMin']
+    # task.stats['pilots_ess']           = int(t['TotalESS'])
+    # task.stats['pilots_goal']          = int(t['TotalGoal'])
+    # task.stats['max_distance']       = t['maxDist']
+    # task.stats['fastest']       = t['minTime']
+    # task.stats['fastest_in_goal'] = t['minTimeGoal']
+    # task.stats['min_ess_time']        = t['firstESS']
+    # task.stats['max_ess_time']        = t['lastESS']
+    # task.stats['min_dept_time']       = t['firstStart']
+    # task.stats['max_dept_time']       = t['lastStart']
+    #
+    # if task.stopped_time:     # Null is returned as None
+    #     glidebonus = formula['glidebonus']
+    #     print("F: glidebonus=", glidebonus)
+    #     task.stats['pilots_landed'] = t['TotalLanded']
 
-    if task.stopped_time:     # Null is returned as None
-        glidebonus = formula['glidebonus']
-        print("F: glidebonus=", glidebonus)
-        task.stats['landed'] = t['TotalLanded']
+    #task.stats.update(t)
 
-    return task.stats
+    return stats
 
-def launch_validity(taskt, formula):
+def launch_validity(stats, formula):
     '''
     9.1 Launch Validity
     ‘Pilots Present’ are pilots arriving on take-off, with their gear, with the intention of flying.
@@ -93,14 +115,14 @@ def launch_validity(taskt, formula):
     ?? Setting Nominal Launch = 10 (max number of DNF that still permit full validity) ??
     '''
 
-    LVR = min(1, (taskt['launched']) / (taskt['pilots'] * formula['forNomLaunch']))
+    LVR = min(1, (stats['pilots_launched']) / (stats['pilots_present'] * formula.nominal_launch))
     launch = 0.028 * LVR + 2.917 * LVR**2 - 1.944 * LVR**3
     launch = min(launch, 1) if launch > 0 else 0           #sanity
     print("GAP Launch validity = launch")
 
     return launch
 
-def distance_validity(taskt, formula):
+def distance_validity(stats, formula):
     '''
     9.2 Distance Validity
     NomDistArea = ( ((NomGoal + 1) * (NomDist − MinDist)) + max(0, (NomGoal * BestDistOverNom)) ) / 2
@@ -108,13 +130,13 @@ def distance_validity(taskt, formula):
     Dist. Validity = min (1, DVR)
     '''
 
-    nomgoal         = formula['forNomGoal']         # nom goal percentage
-    nomdist         = formula['forNomDistance']     # nom distance
-    mindist         = formula['forMinDistance']     # min distance
-    totalflown      = taskt['distovermin']          # total distance flown by pilots over min. distance
-    BestDistOverNom = taskt['maxdist'] - nomdist    # best distance flown ove minimum dist.
-    # bestdistovermin = taskt['maxdist'] - mindist  # best distance flown ove minimum dist.
-    NumPilotsFlying = taskt['launched']             # Num Pilots flown
+    nomgoal         = formula.nominal_goal          # nom goal percentage
+    nomdist         = formula.nominal_dist          # nom distance
+    mindist         = formula.min_dist              # min distance
+    totalflown      = stats['tot_dist_over_min']          # total distance flown by pilots over min. distance
+    BestDistOverNom = stats['max_distance'] - nomdist    # best distance flown ove minimum dist.
+    # bestdistovermin = stats['max_distance'] - mindist  # best distance flown ove minimum dist.
+    NumPilotsFlying = stats['pilots_launched']             # Num Pilots flown
 
     NomDistArea     = ( ((nomgoal + 1)*(nomdist - mindist)) + max(0, (nomgoal * BestDistOverNom)) ) / 2
     DVR             = totalflown / (NumPilotsFlying * NomDistArea)
@@ -125,12 +147,12 @@ def distance_validity(taskt, formula):
     print("NomDistArea: {}".format(NomDistArea))
     print('DVR = {}'.format(DVR))
 
-    distance        = min(1, DVR)
+    distance        = min(1.000, DVR)
 
     print("Distance validity = {}".format(distance))
     return distance
 
-def time_validity(taskt, formula):
+def time_validity(stats, formula):
     '''
     9.3 Time Validity
     Time validity depends on the fastest time to complete the speed section, in relation to nominal time.
@@ -143,14 +165,14 @@ def time_validity(taskt, formula):
     TimeVal = max(0, min(1, -0.271 + 2.912*TVR - 2.098*TVR^2 + 0.457*TVR^3))
     '''
 
-    if taskt['ess'] > 0:
-        TVR = min(1, (taskt['fastest'] / formula['forNomTime']))
+    if stats['pilots_ess'] > 0:
+        TVR = min(1, (stats['fastest'] / formula.nominal_time))
         print("ess > 0, TVR = {}".format(TVR))
     else:
-        TVR = min(1, (taskt['maxdist'] / formula['forNomDistance']))
+        TVR = min(1, (stats['max_distance'] / formula.nominal_dist))
         print("none in goal, TVR = {}".format(TVR))
 
-    time = max(0, min(1, (-0.271 + 2.912 * TVR - 2.098 * TVR**2 + 0.457 * TVR**3)))
+    time = max(0, min(1.000, (-0.271 + 2.912 * TVR - 2.098 * TVR**2 + 0.457 * TVR**3)))
 
     print("Time validity = {}".format(time))
     return time
@@ -164,31 +186,31 @@ def stopped_validity(task, formula):
     '''
     from math import sqrt
 
-    taskt = task.stats
+    stats = task.stats
 
-    if taskt['fastest'] and taskt['fastest'] > 0:
-        return 1
+    if stats['fastest'] and stats['fastest'] > 0:
+        return 1.000
 
-    avgdist = taskt['totdistflown'] / taskt['launched']
-    distlaunchtoess = task.EndSSDistance
+    avgdist = stats['tot_dist_flown'] / stats['pilots_launched']
+    distlaunchtoess = task.opt_dist_to_ESS
 
-    stopv = min(1,
-                (sqrt((taskt['maxdist'] - avgdist) / (distlaunchtoess - taskt['maxdist'] + 1) * sqrt(taskt['stddev'] / 5) )
-                + (taskt['landed'] / taskt['launched'])**3))
+    stopv = min(1.000,
+                (sqrt((stats['max_distance'] - avgdist) / (distlaunchtoess - stats['max_distance'] + 1) * sqrt(stats['std_dev'] / 5) )
+                + (stats['pilots_landed'] / stats['pilots_launched'])**3))
     return stopv
 
 def day_quality(task, formula):
 
-    if not task.launchvalid:
+    if not task.launch_valid:
         print("Launch invalid - dist quality set to 0")
         launch      = 0
         distance    = 0
         time        = 0
         return (distance, time, launch)
 
-    taskt = task.stats
+    stats = task.stats
 
-    if taskt['pilots'] == 0:
+    if stats['pilots_present'] == 0:
         launch      = 0
         distance    = 0
         time        = 0.1
@@ -198,19 +220,19 @@ def day_quality(task, formula):
     if task.stopped_time:
         stopv   = stopped_validity(task, formula)
 
-    launch      = launch_validity(taskt, formula)
-    distance    = distance_validity(taskt, formula)
-    time        = time_validity(taskt, formula)
+    launch      = launch_validity(stats, formula)
+    distance    = distance_validity(stats, formula)
+    time        = time_validity(stats, formula)
 
     return distance, time, launch, stopv
 
 def points_weight(task, formula):
     from math import sqrt
 
-    taskt = task.stats
+    stats = task.stats
 
-    quality = taskt['quality']
-    x = taskt['goal'] / taskt['launched']  # GoalRatio
+    quality = stats['day_quality']
+    x = stats['pilots_goal'] / stats['pilots_launched']  # GoalRatio
 
     '''
     DistWeight = 0.9 - 1.665* goalRatio + 1.713*GolalRatio^2 - 0.587*goalRatio^3
@@ -236,18 +258,18 @@ def points_weight(task, formula):
     speedweight = 1 - distweight - leadweight
     Aspeed = 1000 * quality * speedweight  # AvailSpeedPoints
     print("Available Speed Points = ", Aspeed)
-    print("points_weight: (", formula['forVersion'], ") Adist=" , Adistance, ", Aspeed=", Aspeed, ", Astart=", Astart ,", Aarrival=", Aarrival)
+    print("points_weight: (", formula.version, ") Adist=" , Adistance, ", Aspeed=", Aspeed, ", Astart=", Astart ,", Aarrival=", Aarrival)
     return Adistance, Aspeed, Astart, Aarrival
 
 
 def pilot_departure_leadout(task, pil, Astart):
     from math import sqrt
 
-    taskt = task.stats
+    stats = task.stats
     # C.6.3 Leading Points
 
-    LCmin = taskt['LCmin']  # min(tarLeadingCoeff2) as LCmin : is PWC's LCmin?
-    LCp = pil['LC']  # Leadout coefficient
+    LCmin = stats['min_lead_coeff']  # min(tarLeadingCoeff2) as LCmin : is PWC's LCmin?
+    LCp = pil['lead_coeff']  # Leadout coefficient
 
     # Pilot departure score
     Pdepart = 0
@@ -292,16 +314,16 @@ def pilot_departure_leadout(task, pil, Astart):
 def pilot_speed(task, pil, Aspeed):
     from math import sqrt
 
-    taskt = task.stats
+    stats = task.stats
 
     # C.6.2 Time Points
-    Tmin = taskt['fastest']
+    Tmin = stats['fastest']
     Pspeed = 0
     Ptime = 0
 
-    if pil['goal'] and Tmin > 0:    # checking that task has pilots in ESS, and that pilot is in ESS
-                                    # we need to change this! It works correctly only if Time Pts is 0 when pil not in goal
-                                    # for HG we need a fastest and a fastest in goal in TaskTotalsView
+    if pil['ES_time'] and Tmin > 0:   # checking that task has pilots in ESS, and that pilot is in ESS
+                                        # we need to change this! It works correctly only if Time Pts is 0 when pil not in goal
+                                        # for HG we need a fastest and a fastest in goal in TaskTotalsView
         Ptime = pil['time']
         SF = 1 - ((Ptime-Tmin) / 3600 / sqrt(Tmin / 3600) ) ** (5 / 6)
 
@@ -309,7 +331,7 @@ def pilot_speed(task, pil, Aspeed):
             Pspeed = Aspeed * SF
 
 
-    print(pil['traPk'], " Ptime: {}, Tmin={}".format(Ptime, Tmin))
+    print(pil['track_id'], " Ptime: {}, Tmin={}".format(Ptime, Tmin))
 
     return Pspeed
 
@@ -320,7 +342,7 @@ def pilot_distance(task, pil, Adistance):
     :type pil: object
     """
 
-    maxdist = task.stats['maxdist']
+    maxdist = task.stats['max_distance']
     Pdist = Adistance * pil['distance']/maxdist
 
     return Pdist

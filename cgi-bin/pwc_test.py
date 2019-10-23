@@ -35,12 +35,12 @@ def task_totals(task, formula):
 
 
     distspread = []
-    tasPk = task.tasPk
-    launchvalid = task.launchvalid
+    tasPk = task.task_id
+    launchvalid = task.launch_valid
     mindist = formula['forMinDistance']
     glidebonus = 0
     landed = 0
-    taskt = {}
+    stats = {}
     median = 0
     tqtime = None
 
@@ -295,37 +295,37 @@ def task_totals(task, formula):
     #     kmmarker.append([row['tmDistance'], row['FirstArrival']])  #check
 
     # task quality
-    taskt['pilots'] = pilots
-    taskt['maxdist'] = maxdist
-    taskt['totdistflown'] = totdist
-    taskt['distovermin'] = totdistovermin
-    taskt['median'] = median
-    taskt['stddev'] = stddev
-    taskt['landed'] = landed
-    taskt['launched'] = launched
-    taskt['launchvalid'] = launchvalid
-    taskt['goal'] = goal
-    taskt['ess'] = ess
-    taskt['fastest'] = fastest
-    taskt['tqtime'] = tqtime
-    taskt['firstdepart'] = mindept
-    taskt['lastdepart'] = lastdept
-    taskt['firstarrival'] = minarr
-    taskt['lastarrival'] = maxarr
-    taskt['mincoeff'] = mincoeff
-    taskt['mincoeff2'] = mincoeff2
-    taskt['distspread'] = distspread
-    #taskt['kmmarker'] = kmmarker
-    taskt['endssdistance'] = task.EndSSDistance
-    taskt['quality'] = None
+    stats['pilots_present'] = pilots
+    stats['max_distance'] = maxdist
+    stats['tot_dist_flown'] = totdist
+    stats['tot_dist_over_min'] = totdistovermin
+    stats['median'] = median
+    stats['std_dev'] = stddev
+    stats['pilots_landed'] = landed
+    stats['pilots_launched'] = launched
+    stats['launch_validityid'] = launchvalid
+    stats['pilots_goal'] = goal
+    stats['ess'] = ess
+    stats['fastest'] = fastest
+    stats['tqtime'] = tqtime
+    stats['firstdepart'] = mindept
+    stats['lastdepart'] = lastdept
+    stats['firstarrival'] = minarr
+    stats['lastarrival'] = maxarr
+    stats['mincoeff'] = mincoeff
+    stats['mincoeff2'] = mincoeff2
+    stats['distspread'] = distspread
+    #stats['kmmarker'] = kmmarker
+    stats['endssdistance'] = task.opt_dist_to_ESS
+    stats['day_quality'] = None
 
-    return taskt
+    return stats
 
 
-def day_quality(taskt, formula):
+def day_quality(stats, formula):
     from math import sqrt
     tmin = None
-    if taskt['pilots'] == 0:
+    if stats['pilots_present'] == 0:
         launch = 0
         distance = 0
         time = 0.1
@@ -338,12 +338,12 @@ def day_quality(taskt, formula):
     # Setting Nominal Launch = 10 (max number of DNF that still permit full validity)
 
     nomlau = 10
-    x = (taskt['launched'] + nomlau) / taskt['pilots']
+    x = (stats['pilots_launched'] + nomlau) / stats['pilots_present']
     x = min(1, x)
     launch = 0.028 *x + 2.917 *x *x - 1.944 *x *x *x
     launch = min(launch, 1)
 
-    if taskt['launchvalid'] == 0 or launch < 0:
+    if stats['launch_validityid'] == 0 or launch < 0:
         print("Launch invalid - dist quality set to 0")
         launch = 0
 
@@ -356,13 +356,13 @@ def day_quality(taskt, formula):
     nomgoal = formula['forNomGoal'] / 100  # nom goal percentage
     nomdist = formula['forNomDistance']  # nom distance
     mindist = formula['forMinDistance']  # min distance
-    totalflown = taskt['distovermin']  # total distance flown by pilots over min. distance
-    bestdistovermin = taskt['maxdist'] - formula['forNomDistance']  # best distance flown ove minimum dist.
-    numlaunched = taskt['launched'] # Num Pilots flown
+    totalflown = stats['tot_dist_over_min']  # total distance flown by pilots over min. distance
+    bestdistovermin = stats['max_distance'] - formula['forNomDistance']  # best distance flown ove minimum dist.
+    numlaunched = stats['pilots_launched'] # Num Pilots flown
 
     print("nom goal * best dist over min : ",(nomgoal * bestdistovermin))
 
-    # distance = 2 * totalflown / ( taskt['launched'] * ( (1+nomgoal) * (int( formula['nomdist']-formula['mindist']) + .5 ) ) * (nomgoal * bestdist) )
+    # distance = 2 * totalflown / ( stats['pilots_launched'] * ( (1+nomgoal) * (int( formula['nomdist']-formula['mindist']) + .5 ) ) * (nomgoal * bestdist) )
     if (nomgoal * bestdistovermin) > 0:
         print("It is positive")
         nomdistarea = ((nomgoal + 1) * (nomdist - mindist) + (nomgoal * bestdistovermin)) / 2
@@ -376,7 +376,7 @@ def day_quality(taskt, formula):
     print("Nom. Goal parameter: ", nomgoal)
     print("Min. Distance : ", mindist)
     print("Nom. Distance: ", nomdist)
-    print("Total Flown Distance : ", taskt['distance'])
+    print("Total Flown Distance : ", stats['distance'])
     print("Total Flown Distance over min. dist. : " , totalflown)
     print("Pilots launched : ", numlaunched)
     print("Best Distance: ", bestdistovermin)
@@ -395,14 +395,14 @@ def day_quality(taskt, formula):
     # TVR = min(1, BestTime/NomTime)
     # TimeVal = max(0, min(1, -0.271 + 2.912*TVR - 2.098*TVR^2 + 0.457*TVR^3))
 
-    if taskt['ess'] > 0:
-        tmin = taskt['tqtime']
+    if stats['ess'] > 0:
+        tmin = stats['tqtime']
         x = tmin / formula['forNomTime']
         print("ess > 0, x before min ", x)
         x = min(1, x)
         print("ess > 0, x = ", x)
     else:
-        x = taskt['maxdist'] / formula['forNomDistance']
+        x = stats['max_distance'] / formula['forNomDistance']
         print("none in goal, x before min ", x)
         x = min(1, x)
         print("none in goal, x = ", x)
@@ -419,26 +419,26 @@ def day_quality(taskt, formula):
     # If ESS > 0 -> StopVal = 1
     # else StopVal = min (1, sqrt((bestDistFlown - avgDistFlown)/(TaskDistToESS-bestDistFlown+1)*sqrt(stDevDistFlown/5))+(pilotsLandedBeforeStop/pilotsLaunched)^3)
     # Fix - need distlaunchtoess, landed
-    avgdist = taskt['distance'] / taskt['launched']
-    distlaunchtoess = taskt['endssdistance']
+    avgdist = stats['distance'] / stats['pilots_launched']
+    distlaunchtoess = stats['endssdistance']
     # when calculating stopv, to avoid dividing by zero when max distance is greater than distlaunchtoess i.e. when someone reaches goal if statement added.
     maxSSdist = 0
-    if taskt['fastest'] and taskt['fastest'] > 0:
+    if stats['fastest'] and stats['fastest'] > 0:
         stopv = 1
 
     else:
-        x = (taskt['landed'] / taskt['launched'])
-        stopv = sqrt((taskt['maxdist'] - avgdist) / (maxSSdist+1) * sqrt(taskt['stddev'] / 5) ) + x ** 3
+        x = (stats['pilots_landed'] / stats['pilots_launched'])
+        stopv = sqrt((stats['max_distance'] - avgdist) / (maxSSdist+1) * sqrt(stats['std_dev'] / 5) ) + x ** 3
         stopv = min(1, stopv)
 
     return distance, time, launch, stopv
 
 
-def points_weight(task, taskt, formula):
+def points_weight(task, stats, formula):
     from math import sqrt
 
-    quality = taskt['quality']
-    x = taskt['goal'] / taskt['launched']  # GoalRatio
+    quality = stats['day_quality']
+    x = stats['pilots_goal'] / stats['pilots_launched']  # GoalRatio
 
     # DistWeight = 0.9 - 1.665* goalRatio + 1.713*GolalRatio^2 - 0.587*goalRatio^3
     distweight = 0.9 - 1.665 * x + 1.713 * x * x - 0.587 * x *x *x
@@ -490,11 +490,11 @@ def points_weight(task, taskt, formula):
     return Adistance, Aspeed, Astart, Aarrival
 
 
-def pilot_departure_leadout(task, taskt, pil, Astart):
+def pilot_departure_leadout(task, stats, pil, Astart):
     from math import sqrt
     # C.6.3 Leading Points
 
-    LCmin = taskt['mincoeff2']  # min(tarLeadingCoeff2) as MinCoeff2 : is PWC's LCmin?
+    LCmin = stats['mincoeff2']  # min(tarLeadingCoeff2) as MinCoeff2 : is PWC's LCmin?
     LCp = pil['coeff']  # Leadout coefficient
 
     # Pilot departure score
@@ -538,11 +538,11 @@ def pilot_departure_leadout(task, taskt, pil, Astart):
     return Pdepart
 
 
-def pilot_speed(formula, task, taskt, pil, Aspeed):
+def pilot_speed(formula, task, stats, pil, Aspeed):
     from math import sqrt
 
     # C.6.2 Time Points
-    Tmin = taskt['fastest']
+    Tmin = stats['fastest']
     Pspeed = 0
     Ptime = 0
 
@@ -559,7 +559,7 @@ def pilot_speed(formula, task, taskt, pil, Aspeed):
     return Pspeed
 
 
-def ordered_results(task, taskt, formula):
+def ordered_results(task, stats, formula):
 
     pilots=[]
 
@@ -595,7 +595,7 @@ def ordered_results(task, taskt, formula):
 
     with Database() as db:
         db.execute('set @x=0')
-        t = db.fetchall(query, [task.tasPk])
+        t = db.fetchall(query, [task.task_id])
 
     for res in t:
 
@@ -605,15 +605,15 @@ def ordered_results(task, taskt, formula):
         taskres['traPk'] = res['traPk']
         taskres['penalty'] = res['tarPenalty']
         taskres['distance'] = res['tarDistance']
-        taskres['stopalt'] = res['tarLastAltitude']
+        taskres['last_altitude'] = res['tarLastAltitude']
 
         # Handle Stopped Task
-        if task.stopped_time and taskres['stopalt'] > 0 and formula['glidebonus'] > 0:
-            if taskres['stopalt'] > task.goalalt:
-                print("Stopped height bonus: ", (formula['glidebonus'] * taskres['stopalt']))
-                taskres['distance'] = taskres['distance'] + formula['glidebonus'] * (taskres['stopalt'] - task.goalalt)
-                if taskres['distance'] > task.SSDistance:
-                    taskres['distance'] = task.SSDistance
+        if task.stopped_time and taskres['last_altitude'] > 0 and formula['glidebonus'] > 0:
+            if taskres['last_altitude'] > task.goal_altitude:
+                print("Stopped height bonus: ", (formula['glidebonus'] * taskres['last_altitude']))
+                taskres['distance'] = taskres['distance'] + formula['glidebonus'] * (taskres['last_altitude'] - task.goal_altitude)
+                if taskres['distance'] > task.SS_distance:
+                    taskres['distance'] = task.SS_distance
 
         # set pilot to min distance if they're below that ..
         if taskres['distance'] < formula['forMinDistance']:
@@ -622,7 +622,7 @@ def ordered_results(task, taskt, formula):
         taskres['result'] = res['tarResultType']
         taskres['startSS'] = res['tarSS']
         taskres['endSS'] = res['tarES']
-        taskres['timeafter'] = res['tarES'] - taskt['firstarrival']
+        taskres['timeafter'] = res['tarES'] - stats['firstarrival']
         taskres['place'] = res['Place']
         taskres['time'] = taskres['endSS'] - taskres['startSS']
         taskres['goal'] = res['tarGoal']
@@ -637,47 +637,47 @@ def ordered_results(task, taskt, formula):
         # FIX: adjust against fastest ..
         if ((res['tarES'] - res['tarSS']) < 1) and (res['tarSS'] > 0): # only pilots that started and didn't make ESS
             # Fix - busted if no one is in goal?
-            if taskt['goal'] > 0:
-                maxtime = taskt['lastarrival']  # Time of the last in ESS
-                if res['tarLastTime'] > task.end_time:
-                    maxtime = task.end_time  # If I was still flying after task deadline
+            if stats['pilots_goal'] > 0:
+                maxtime = stats['lastarrival']  # Time of the last in ESS
+                if res['tarLastTime'] > task.task_deadline:
+                    maxtime = task.task_deadline  # If I was still flying after task deadline
 
-                elif res['tarLastTime'] > taskt['lastarrival']:
+                elif res['tarLastTime'] > stats['lastarrival']:
                     maxtime = res['tarLastTime']  # If I was still flying after the last ESS time
 
                 # adjust for late starters
                 print("No goal, adjust pilot coeff from: ", res['tarLeadingCoeff2'])
-                BestDistToESS = task.EndSSDistance / 1000 - res['tarDistance'] / 1000  # PWC bestDistToESS in Km
-                taskres['coeff'] = res['tarLeadingCoeff2'] - (task.end_time - maxtime) * BestDistToESS ** 2 / ( 1800 * (task.SSDistance / 1000) ** 2 )
+                BestDistToESS = task.opt_dist_to_ESS / 1000 - res['tarDistance'] / 1000  # PWC bestDistToESS in Km
+                taskres['coeff'] = res['tarLeadingCoeff2'] - (task.task_deadline - maxtime) * BestDistToESS ** 2 / ( 1800 * (task.SS_distance / 1000) ** 2 )
 
                 print(" to: ", taskres['coeff'])
                 print("(maxtime - sstart)   =      ", (maxtime - task.start_time))
                 print("ref->{'tarLeadingCoeff2'] = ", res['tarLeadingCoeff2'])
                 print("Result taskres{coeff}  =    ", taskres['coeff'])
                 # adjust mincoeff?
-                if taskres['coeff'] < taskt['mincoeff2']:
-                    taskt['mincoeff2'] = taskres['coeff']
+                if taskres['coeff'] < stats['mincoeff2']:
+                    stats['mincoeff2'] = taskres['coeff']
 
         pilots.append(taskres)
 
     return pilots
 
 
-def points_allocation(task, taskt, formula):   # from PWC###
+def points_allocation(task, stats, formula):   # from PWC###
 
     # Find fastest pilot into goal and calculate leading coefficients
     # for each track .. (GAP2002 only?)
 
-    tasPk = task.tasPk
-    quality = taskt['quality']
-    Ngoal = taskt['goal']
-    Tmin = taskt['fastest']
-    Tfarr = taskt['firstarrival']
+    tasPk = task.task_id
+    quality = stats['day_quality']
+    Ngoal = stats['pilots_goal']
+    Tmin = stats['fastest']
+    Tfarr = stats['firstarrival']
 
-    sorted_pilots = ordered_results(task, taskt, formula)
+    sorted_pilots = ordered_results(task, stats, formula)
 
     # Get basic GAP allocation values
-    Adistance, Aspeed, Astart, Aarrival = points_weight(task, taskt, formula)
+    Adistance, Aspeed, Astart, Aarrival = points_weight(task, stats, formula)
 
     # Update point weights in tblTask_test
     query = "UPDATE tblTask_test SET tasAvailDistPoints=%s, " \
@@ -700,16 +700,16 @@ def points_allocation(task, taskt, formula):   # from PWC###
         # FIX: should round pil->distance properly?
         # my pilrdist = round(pil->{'distance'}/100.0) * 100
 
-        Pdist = pilot_distance(taskt, pil, Adistance)
+        Pdist = pilot_distance(stats, pil, Adistance)
 
         # Pilot speed score
-        Pspeed = pilot_speed(formula, task, taskt, pil, Aspeed)
+        Pspeed = pilot_speed(formula, task, stats, pil, Aspeed)
 
         # Pilot departure/leading points
-        Pdepart = pilot_departure_leadout(task, taskt, pil, Astart)
+        Pdepart = pilot_departure_leadout(task, stats, pil, Astart)
 
         # Pilot arrival score    this is always off in pwc
-        # Parrival = pilot_arrival(formula, task, taskt, pil, Aarrival)
+        # Parrival = pilot_arrival(formula, task, stats, pil, Aarrival)
         Parrival=0
         # Penalty for not making goal .
         if not pil['goal']:
@@ -727,7 +727,7 @@ def points_allocation(task, taskt, formula):   # from PWC###
             Pdepart = 0
 
         # Penalties
-        # penalty = self->pilot_penalty(formula, task, taskt, pil, Astart, Aspeed)
+        # penalty = self->pilot_penalty(formula, task, stats, pil, Astart, Aspeed)
 
         # Total score
         Pscore = Pdist + Pspeed + Parrival + Pdepart - penalty
@@ -748,11 +748,11 @@ def points_allocation(task, taskt, formula):   # from PWC###
                 db.execute(query, params)
 
 
-def pilot_distance(taskt, pil, Adistance):
+def pilot_distance(stats, pil, Adistance):
     """
 
     :type pil: object
     """
-    Pdist = Adistance * pil['distance']/taskt['maxdist']
+    Pdist = Adistance * pil['distance']/stats['max_distance']
 
     return Pdist

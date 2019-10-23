@@ -232,10 +232,11 @@ def dump_flight(track, task):
     # TODO check if file already exists otherwise create and save it
     from flight_result import Flight_result
     import formula as For
-    formula = read_formula(task.comPk)
+    #formula = read_formula(task.comp_id)
+    formula = Flight_result.read(task.task_id)
 
-    f = For.get_formula_lib(formula)
-    task_result = Flight_result.check_flight(track.flight, task, f.parameters,
+    lib = For.get_formula_lib(formula.type)
+    task_result = Flight_result.check_flight(track.flight, task, lib.parameters,
                                              5)  # check flight against task with min tolerance of 5m
     geojson_file = task_result.to_geojson_result(track, task)
     bbox = get_bbox(track.flight)

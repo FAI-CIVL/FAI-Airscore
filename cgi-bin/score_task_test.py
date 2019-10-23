@@ -42,9 +42,10 @@ def main(args):
 
     print('task id: {}'.format(task_id))
     task = Task.read_task(int(task_id))
-    formula =  read_formula(task.comPk)
+    #formula =  read_formula(task.comp_id)
+    formula = For.Task_formula.read(task_id)
 
-    f = For.get_formula_lib(formula)
+    lib = For.get_formula_lib(formula.type)
 
     # formula_file = 'formulas.' + formula['forClass']
     #
@@ -54,7 +55,7 @@ def main(args):
     #     print('formula file {} not found.'.format(formula))
 
 
-    totals = f.task_totals(task, formula)
+    totals = lib.task_totals(task, formula)
     task.stats.update(totals)   #have to check that all keys are the same
     task.update_totals()        #with new logic (totals in a view calculated from mysql) this should no longer be needed
     # query = "update tblTask_test set tasTotalDistanceFlown=%s, " \
@@ -63,19 +64,19 @@ def main(args):
     #         "tasFastestTime=%s, tasMaxDistance=%s " \
     #         "where tasPk=%s"
     #
-    # params = [totals['totdistflown'], totals['distovermin'], totals['pilots'], totals['launched'],
-    #              totals['goal'], totals['fastest'], totals['maxdist'], task.tasPk]
+    # params = [totals['tot_dist_flown'], totals['tot_dist_over_min'], totals['pilots_present'], totals['pilots_launched'],
+    #              totals['pilots_goal'], totals['fastest'], totals['max_distance'], task.task_id]
     #
     # with Database() as db:
     #     db.execute(query, params)
 
-    dist, time, launch, stop = f.day_quality(task, formula)
+    dist, time, launch, stop = lib.day_quality(task, formula)
 
 
-    task.stats['distval']   = dist
-    task.stats['timeval']   = time
-    task.stats['launchval'] = launch
-    task.stats['stopval']   = stop
+    task.stats['dist_validity']   = dist
+    task.stats['time_validity']   = time
+    task.stats['launch_validity'] = launch
+    task.stats['stop_validity']   = stop
 
     if task.stopped_time:
         quality = dist * time * launch * stop
@@ -87,7 +88,7 @@ def main(args):
     if quality > 1.0:
         quality = 1.0
 
-    task.stats['quality']   = quality
+    task.stats['day_quality']   = quality
 
     task.update_quality()   #with new logic (multiple JSON result files for every task) this should no longer be needed
 
@@ -98,15 +99,15 @@ def main(args):
     #         "tasLaunchQuality = %s, " \
     #         "tasStopQuality = %s " \
     #         "WHERE tasPk = %s"
-    # params = [quality, dist, time, launch, stop, task.tasPk]
+    # params = [quality, dist, time, launch, stop, task.task_id]
     #
     # with Database() as db:
     #     db.execute(query, params)
 
-    #totals['quality'] = quality
+    #totals['day_quality'] = quality
 
-    if totals['pilots'] > 0:
-        f.points_allocation(task, formula)    #with new logic (totals in task.stats) totals parameter should no longer be needed
+    if totals['pilots_present'] > 0:
+        lib.points_allocation(task, formula)    #with new logic (totals in task.stats) totals parameter should no longer be needed
 
 
 if __name__== "__main__":

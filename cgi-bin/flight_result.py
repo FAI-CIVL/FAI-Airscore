@@ -54,7 +54,7 @@ class Flight_result:
         self.total_time_str = total_time
         self.Fixed_LC = Fixed_LC
         self.Lead_coeff = Lead_coeff
-        self.Distance_flown = Distance_flown
+        self.distance_flown = Distance_flown
         self.Stopped_time = Stopped_time
         self.Stopped_altitude = Stopped_altitude
         self.Jumped_the_gun = Jumped_the_gun
@@ -62,7 +62,7 @@ class Flight_result:
         self.Total_distance = 0
         self.Departure_score = 0
         self.Arrival_score = 0
-        self.Distance_score = 0
+        self.distance_score = 0
         self.Time_score = 0
         self.Penalty = 0
         self.Comment = None
@@ -70,12 +70,12 @@ class Flight_result:
         self.pilPk = None
         self.result_type = 'lo'
         self.goal_time = None
-        self.SSDistance = None
+        self.SS_distance = None
 
     @property
     def speed(self):
-        if self.ESS_time and self.SSDistance:
-            return (self.SSDistance / 1000) / (self.total_time / 3600)
+        if self.ESS_time and self.SS_distance:
+            return (self.SS_distance / 1000) / (self.total_time / 3600)
         else:
             return 0
 
@@ -95,7 +95,7 @@ class Flight_result:
             # result['rank'] = int(r.get('rank'))
             result.Score = int(r.get('points'))
             result.Total_distance = float(r.get('distance')) * 1000  # in meters
-            result.Distance_flown = float(r.get('real_distance')) * 1000  # in meters
+            result.distance_flown = float(r.get('real_distance')) * 1000  # in meters
             # print ("start_ss: {}".format(r.get('started_ss')))
             result.Pilot_Start_time = get_datetime(r.get('started_ss')).time() if r.get(
                 'started_ss') is not None else None
@@ -113,7 +113,7 @@ class Flight_result:
             else:
                 result.ESS_time = None
             result.Stopped_altitude = int(r.get('last_altitude_above_goal'))
-            result.Distance_score = float(r.get('distance_points'))
+            result.distance_score = float(r.get('distance_points'))
             result.Time_score = float(r.get('time_points'))
             result.Penalty = int(r.get('penalty_points'))
             result.Comment = r.get('penalty_reason')
@@ -161,14 +161,14 @@ class Flight_result:
             result.goal_time = t['tarGoal']
             result.total_time = t['tarLastTime'] - t['tarStart']
             result.Fixed_LC = t['tarLeadingCoeff2']
-            result.Distance_flown = t['tarDistance']
+            result.distance_flown = t['tarDistance']
             result.Stopped_altitude = t['tarLastAltitude']
             result.Jumped_the_gun = None
             result.Score = t['tarScore']
             result.Total_distance = t['tarDistance']
             result.Departure_score = t['tarDepartureScore']
             result.Arrival_score = t['tarArrivalScore']
-            result.Distance_score = t['tarDistanceScore']
+            result.distance_score = t['tarDistanceScore']
             result.Time_score = t['tarSpeedScore']
             result.Penalty = t['tarPenalty']
             result.Comment = t['tarComment']
@@ -190,15 +190,15 @@ class Flight_result:
 
         result = cls()
         tolerance = Task.tolerance
-        time_offset = Task.time_offset * 3600  # local time offset for result times (SSS and ESS)
-        goal_alt = Task.goalalt  # Goal Altitude, will be used in Stooped_altitude above goal
+        time_offset = Task.time_offset  # local time offset for result times (SSS and ESS)
+        goal_alt = Task.goal_altitude   # Goal Altitude, will be used in Stooped_altitude above goal
 
         # result.SSS_time = Task.start_time
 
         if not Task.optimised_turnpoints:
             Task.calculate_optimised_task_length()
         distances2go = Task.distances_to_go  # Total task Opt. Distance, in legs list
-        best_dist_to_ess = [Task.SSDistance]  # Best distance to ESS, for LC calculation
+        best_dist_to_ess = [Task.SS_distance]  # Best distance to ESS, for LC calculation
         waypoint = 1  # for report purpouses
         # proceed_to_start    = False               # check position to start, probably not necessary in new logic
         t = 0  # turnpoint pointer
@@ -235,7 +235,7 @@ class Flight_result:
                 break
 
             '''check if task deadline has passed'''
-            if Task.end_time < next.rawtime:
+            if Task.task_deadline < next.rawtime:
                 # Task has ended
                 break
 
@@ -279,7 +279,7 @@ class Flight_result:
 
             if (((Task.turnpoints[t].type == "speed" and not started)
                  or
-                 (Task.turnpoints[t - 1].type == "speed" and (Task.SSInterval or Task.task_type == 'ELAPSED TIME')))
+                 (Task.turnpoints[t - 1].type == "speed" and (Task.SS_interval or Task.task_type == 'ELAPSED TIME')))
                     and
                     (fix.rawtime >= (Task.start_time - formula_parameters.max_jump_the_gun))
                     and
@@ -329,9 +329,9 @@ class Flight_result:
             - total optimized distance minus opt. distance from next wpt to goal minus dist. to next wpt;
             '''
             if t > 0:
-                result.Distance_flown = max(result.Distance_flown, (distances2go[0] - distances2go[t-1]),
+                result.distance_flown = max(result.distance_flown, (distances2go[0] - distances2go[t-1]),
                                         distance_flown(next, t, Task.optimised_turnpoints, Task.turnpoints[t], distances2go))
-            # print('fix {} | Dist. flown {} | tp {}'.format(i, round(result.Distance_flown, 2), t))
+            # print('fix {} | Dist. flown {} | tp {}'.format(i, round(result.distance_flown, 2), t))
 
             '''Leading coefficient
                 LC = taskTime(i)*(bestDistToESS(i-1)^2 - bestDistToESS(i)^2 )
@@ -339,12 +339,12 @@ class Flight_result:
             if started and not any(e[0] == 'ESS' for e in result.Waypoints_achieved):
                 pilot_start_time = max([e[1] for e in result.Waypoints_achieved if e[0] == 'SSS'])
                 taskTime = next.rawtime - pilot_start_time
-                best_dist_to_ess.append(Task.EndSSDistance - result.Distance_flown)
+                best_dist_to_ess.append(Task.opt_dist_to_ESS - result.distance_flown)
                 result.Fixed_LC += formula_parameters.coef_func(taskTime, best_dist_to_ess[0], best_dist_to_ess[1])
                 # print('    best dist. to ESS {} : {} | Time {} | LC: {}'.format(round(best_dist_to_ess[0],1),round(best_dist_to_ess[1],1),taskTime, result.Fixed_LC))
                 best_dist_to_ess.pop(0)
 
-        # result.last_time = min(Flight.fixes[-1].rawtime, result.goal_time, Task.end_time, Task.stopped_time)
+        # result.last_time = min(Flight.fixes[-1].rawtime, result.goal_time, Task.task_deadline, Task.stopped_time)
         # print('last_time: {} | last considered fix time: {}'.format(result.last_time, next.rawtime))
 
         '''final results'''
@@ -354,13 +354,13 @@ class Flight_result:
             if multistart, the time of the last gate
             il elapsed time, the time of last fix'''
             if Task.task_type == 'RACE':
-                if not Task.SSInterval:
+                if not Task.SS_interval:
                     result.SSS_time = Task.start_time
                     result.SSS_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(Task.start_time + time_offset))
                     result.Pilot_Start_time = min([e[1] for e in result.Waypoints_achieved if e[0] == 'SSS'])
                 else:
-                    start_num = int((Task.start_close_time - Task.start_time) / (Task.SSInterval * 60))
-                    gate = Task.start_time + ((Task.SSInterval * 60) * start_num)  # last gate
+                    start_num = int((Task.start_close_time - Task.start_time) / (Task.SS_interval * 60))
+                    gate = Task.start_time + ((Task.SS_interval * 60) * start_num)  # last gate
                     while gate >= Task.start_time:
                         if any([e for e in result.Waypoints_achieved if e[0] == 'SSS' and e[1] >= gate]):
                             result.SSS_time = gate
@@ -369,7 +369,7 @@ class Flight_result:
                             result.Pilot_Start_time = min(
                                 [e[1] for e in result.Waypoints_achieved if e[0] == 'SSS' and e[1] >= gate])
                             break
-                        gate -= Task.SSInterval * 60
+                        gate -= Task.SS_interval * 60
 
             elif Task.task_type == 'ELAPSED TIME':
                 result.Pilot_Start_time = max([e[1] for e in result.Waypoints_achieved if e[0] == 'SSS'])
@@ -390,16 +390,16 @@ class Flight_result:
                     ?p:p?PilotsReachingGoal:bestDistancep = taskDistance
                 '''
                 if any(e[0] == 'Goal' for e in result.Waypoints_achieved):
-                    result.Distance_flown = distances2go[0]
+                    result.distance_flown = distances2go[0]
                     result.goal_time = min([e[1] for e in result.Waypoints_achieved if e[0] == 'Goal'])
 
         result.Best_waypoint_achieved = str(result.Waypoints_achieved[-1][0]) if result.Waypoints_achieved else None
 
         # if result.ESS_time is None: # we need to do this after other operations
-        #     result.Fixed_LC += formula_parameters.coef_landout((Task.end_time - Task.start_time),((Task.EndSSDistance - result.Distance_flown) / 1000))
+        #     result.Fixed_LC += formula_parameters.coef_landout((Task.task_deadline - Task.start_time),((Task.opt_dist_to_ESS - result.distance_flown) / 1000))
         # print('    * Did not reach ESS LC: {}'.format(result.Fixed_LC))
 
-        result.Fixed_LC = formula_parameters.coef_func_scaled(result.Fixed_LC, Task.EndSSDistance)
+        result.Fixed_LC = formula_parameters.coef_func_scaled(result.Fixed_LC, Task.opt_dist_to_ESS)
         # print('    * Final LC: {} \n'.format(result.Fixed_LC))
         return result
 
@@ -417,7 +417,7 @@ class Flight_result:
         # query = "INSERT INTO tblTaskResult_test (" \
         #         "tasPk, traPk, tarDistance, tarSpeed, tarStart, tarGoal, tarSS, tarES, tarTurnpoints, " \
         #         "tarLeadingCoeff, tarPenalty, tarComment, tarLastAltitude, tarLastTime ) " \
-        #         "VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})".format(tasPk, traPk, self.Distance_flown, self.speed, self.Pilot_Start_time, self.goal_time, self.SSS_time, endss, len(self.Waypoints_achieved), self.Fixed_LC, self.Penalty, self.Comment, self.Stopped_altitude, self.Stopped_time)
+        #         "VALUES ({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})".format(tasPk, traPk, self.distance_flown, self.speed, self.Pilot_Start_time, self.goal_time, self.SSS_time, endss, len(self.Waypoints_achieved), self.Fixed_LC, self.Penalty, self.Comment, self.Stopped_altitude, self.Stopped_time)
         # print(query)
 
         query = "INSERT INTO tblTaskResult_test ( " \
@@ -426,7 +426,7 @@ class Flight_result:
                 "VALUES ( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s )"
         # , #%s, %s, %s)"
         num_wpts = len(self.Waypoints_achieved)
-        params = [tasPk, traPk, self.Distance_flown, self.speed, self.Pilot_Start_time, goal_time, self.SSS_time, endss,
+        params = [tasPk, traPk, self.distance_flown, self.speed, self.Pilot_Start_time, goal_time, self.SSS_time, endss,
                   num_wpts, self.Fixed_LC, self.Penalty,
                   self.Stopped_time]  # , self.Comment, self.Stopped_altitude, self.Stopped_time]
 
@@ -451,7 +451,7 @@ class Flight_result:
                 `tarLeadingCoeff2`, `tarLeadingCoeff`, `tarPenalty`, `tarLastAltitude`, `tarLastTime` )
                 VALUES ( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s ) """
 
-        params = [tasPk, traPk, self.Distance_flown, self.speed, self.Pilot_Start_time, self.goal_time, self.SSS_time,
+        params = [tasPk, traPk, self.distance_flown, self.speed, self.Pilot_Start_time, self.goal_time, self.SSS_time,
                   endss, num_wpts,
                   self.Fixed_LC, self.Lead_coeff, self.Penalty, self.Stopped_altitude,
                   self.Stopped_time]  # , self.Comment, self.Stopped_altitude, self.Stopped_time]
@@ -519,7 +519,7 @@ class Flight_result:
                 lastfix = fix
 
             if fix.rawtime == self.Waypoints_achieved[waypoint][1]:
-                time = (("%02d:%02d:%02d") % rawtime_float_to_hms(fix.rawtime + task.time_offset * 3600))
+                time = (("%02d:%02d:%02d") % rawtime_float_to_hms(fix.rawtime + task.time_offset))
                 waypoint_achieved.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt, self.Waypoints_achieved[waypoint][0],
                                           f'{self.Waypoints_achieved[waypoint][0]} '
                                           f'gps alt:{fix.gnss_alt:.0f}m '

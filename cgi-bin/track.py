@@ -32,7 +32,7 @@ class Track():
         self.traPk = None
         self.type = type
         self.pilPk = pilot
-        self.tasPk = task
+        self.task_id = task
         self.glider = glider
         self.cert = cert
         self.flight = None      # igc_lib.Flight object
@@ -109,13 +109,13 @@ class Track():
         """Imports track to db"""
         result = ''
         message = ''
-        message += ("track {} will be imported for pilot with ID {} and task with ID {} \n".format(self.filename, self.pilPk, self.tasPk))
+        message += ("track {} will be imported for pilot with ID {} and task with ID {} \n".format(self.filename, self.pilPk, self.task_id))
 
         """get time of first fix of the track"""
-        stime = sec_to_time(self.flight.fixes[0].rawtime + get_offset(self.tasPk)*3600)
+        stime = sec_to_time(self.flight.fixes[0].rawtime + get_offset(self.task_id)*3600)
         trastart = datetime.datetime.combine(self.date, stime)
 
-        traclass = get_class(self.tasPk)
+        traclass = get_class(self.task_id)
         traduration = self.flight.fixes[-1].rawtime - self.flight.fixes[0].rawtime
 
         """add track entryassign_and_import_tracks(tracks, task, test) into tblTrack table"""
@@ -214,7 +214,7 @@ class Track():
         if t:
             track.pilPk = t['pilPk']
             track.filename = t['traFile'] if t['traFile'] is not None else None
-            track.tasPk = t['tasPk'] if t['tasPk'] is not None else None
+            track.task_id = t['tasPk'] if t['tasPk'] is not None else None
             track.glider = t['traGlider'] if t['traGlider'] is not (None or 'Unknown') else None
             track.cert = t['traDHV'] if t['traGlider'] is not (None or 'Unknown') else None
         if test == 1:
@@ -272,23 +272,29 @@ class Track():
         message = ''
 
         if self.pilPk is not None:
-            query = ("""    SELECT
-                                pilGlider, pilGliderBrand, gliGliderCert
+            query = """    SELECT
+                                CONCAT( IFNULL(`pilGlider`, ''),
+                                        ' ',
+                                        IFNULL(`pilGliderBrand`, '')
+                                        ) AS `glider`,
+                                ,
+                                `gliGliderCert` AS `cert`
                             FROM
-                                PilotView
+                                `PilotView`
                             WHERE
-                                pilPk = {}
-                            LIMIT 1""".format(self.pilPk))
+                                `pilPk` = %s
+                            LIMIT 1"""
             #print ("get_glider Query: {}  \n".format(query))
             if test:
                 print(query)
             with Database() as db:
-                row = db.fetchone(query)
+                row = db.fetchone(query, [self.pilPk])
             if row is not None:
-                brand = '' if row['pilGliderBrand'] is None else row['pilGliderBrand']
-                glider = '' if row['pilGlider'] is None else ' ' + row['pilGlider']
-                self.glider = brand + glider
-                self.cert = row['gliGliderCert']
+                self.__dict__.update(row)
+                # brand = '' if row['pilGliderBrand'] is None else row['pilGliderBrand']
+                # glider = '' if row['pilGlider'] is None else ' ' + row['pilGlider']
+                # self.glider = brand + glider
+                # self.cert = row['gliGliderCert']
 
         else:
             message += ("get_glider - Error: NOT a valid Pilot ID \n")
@@ -312,7 +318,7 @@ class Track():
 
         src_file = self.filename
         if task_path is None:
-            task_path = get_task_file_path(self.tasPk, test)
+            task_path = get_task_file_path(self.task_id, test)
         if test:
             print('Copy track file')
             print('file name: {}'.format(src_file))

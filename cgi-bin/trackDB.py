@@ -5,14 +5,14 @@ from myconn import Database
 def read_formula(comPk):
 
     query = """	SELECT
-                                    F.*,
-                                    FC.*
+                                    `F`.*,
+                                    `FC`.*
                                 FROM
-                                    tblCompetition C
-                                    JOIN tblForComp FC USING (comPk)
-                                    LEFT OUTER JOIN tblFormula F USING (forPk)
+                                    `tblCompetition` `C`
+                                    JOIN `tblForComp` `FC` USING (`comPk`)
+                                    LEFT OUTER JOIN `tblFormula` `F` USING (`forPk`)
                                 WHERE
-                                    C.comPk = %s """
+                                    `C`.`comPk` = %s """
     with Database() as db:
         # get the formula details.
         formula = db.fetchone(query, [comPk])

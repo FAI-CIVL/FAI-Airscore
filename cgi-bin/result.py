@@ -141,7 +141,7 @@ class Task_result:
         """
 
         '''store timestamp in local time'''
-        timestamp = self.timestamp + self.info['time_offset']*3600
+        timestamp = self.timestamp + self.info['time_offset']
 
         query = """
                     INSERT INTO `tblResultFile`(
@@ -162,6 +162,182 @@ class Task_result:
                 self.ref_id = db.execute(query)
         return self.ref_id
 
+    @staticmethod
+    def create_result(task, formula, results, status=None):
+        '''create task results json file from task object and results list
+        '''
+        import time
+        from datetime import datetime
+        from pprint import pprint as pp
+        import Defines as d
+
+        ts = int(time.time())
+        dt = datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S')
+        filename = d.JSONDIR + '_'.join([task.task_code,dt]) + '.json'
+        comp_id = task.comp_id
+        task_id = task.task_id
+
+        result = Task_result(comp_id=comp_id, task_id=task_id, filename=filename, timestamp=dt)
+
+        '''create result object elements from task, formula and results objects'''
+
+        # task_code = t['tasCode']
+        result.get_task_info(task)
+        result.get_formula(formula)
+        result.get_task_stats(task.stats)
+        result.get_task_route(task)
+        result.get_task_pilots(results)
+        result.rankings = read_rankings(task_id)
+
+        print(f"task ID: {result.task_id}, timestamp: {result.timestamp}, file: {result.filename}")
+        pp(result.info)
+        pp(result.formula)
+        pp(result.stats)
+        pp(result.task)
+        pp(result.results)
+        pp(result.rankings)
+
+
+    def get_task_route(self, task):
+        '''gets route from task object and creates a list of dict'''
+
+        route = task.turnpoints
+        dist =  task.partial_distance
+        task_route = []
+        attr_list =[    'name',
+                        'description',
+                        'how',
+                        'radius',
+                        'shape',
+                        'type',
+                        'lat',
+                        'lon',
+                        'altitude'
+                        ]
+        for idx, tp in enumerate(route):
+            wpt = {x:getattr(tp, x) for x in attr_list}
+            wpt['cumulative_dist'] = dist[idx-1] if idx > 0 else 0
+            task_route.append(wpt)
+
+        self.task = task_route
+
+    def get_task_info(self, task):
+        '''gets info from task object and creates a dict'''
+
+        attr_list =[    'comp_name',
+                        'comp_site',
+                        'comp_class',
+                        'date',
+                        'task_name',
+                        'time_offset',
+                        'comment',
+                        'window_open_time',
+                        'task_deadline',
+                        'window_close_time',
+                        'check_launch',
+                        'start_time',
+                        'start_close_time',
+                        'SS_interval',
+                        'last_start_time',
+                        'task_type',
+                        'distance',
+                        'opt_dist',
+                        'SS_distance',
+                        'stopped_time',
+                        'goal_altitude']
+
+        self.info = {x:getattr(task, x) for x in attr_list}
+
+    def get_formula(self, formula):
+        '''gets info from task object and creates a dict'''
+
+        attr_list = [   'formula_name',
+                        'no_goal_penalty',
+                        'glide_bonus',
+                        'stopped_time_calc',
+                        'nominal_goal',
+                        'min_dist',
+                        'nominal_dist',
+                        'nominal_time',
+                        'nominal_launch',
+                        'score_back_time',
+                        'departure',
+                        'arrival',
+                        'arr_alt_bonus',
+                        'tolerance']
+
+        self.formula = {x:getattr(formula, x) for x in attr_list}
+
+    def get_task_stats(self, stats):
+        '''gets info from task object and creates a dict'''
+
+        attr_list = [   'fastest',
+                        'fastest_in_goal',
+                        'min_dept_time',
+                        'min_ess_time',
+                        'max_distance',
+                        'tot_dist_flown',
+                        'tot_dist_over_min',
+                        'day_quality',
+                        'dist_validity',
+                        'time_validity',
+                        'launch_validity',
+                        'stop_validity',
+                        'avail_dist_points',
+                        'avail_dep_points',
+                        'avail_time_points',
+                        'avail_arr_points',
+                        'pilots_launched',
+                        'pilots_present',
+                        'pilots_ess',
+                        'pilots_landed',
+                        'pilots_goal',
+                        'max_score',
+                        'min_lead_coeff']
+
+        self.stats = {x:stats[x] for x in attr_list}
+
+    def get_task_pilots(self, results):
+        '''gets pilots results from results list'''
+
+        list = []
+
+        attr_list = [   'track_id',
+                        'pil_id',
+                        'name',
+                        'sponsor',
+                        'nat',
+                        'sex',
+                        'glider',
+                        'class',
+                        'distance',
+                        'speed',
+                        'start_time',
+                        'goal_time',
+                        'result',
+                        'SS_time',
+                        'ES_time',
+                        'turnpoints_made',
+                        'dist_points',
+                        'time_points',
+                        'dep_points',
+                        'arr_points',
+                        'score',
+                        'penalty',
+                        'comment',
+                        'lead_coeff',
+                        'last_altitude',
+                        'last_time']
+
+        for pil in results:
+            res = {x:pil[x] for x in attr_list}
+            res['name'] = res['name'].title()
+            res['glider'] = res['glider'].title()
+            list.append(res)
+
+        self.results = list
+
+
 class Comp_result:
     """
         creates Task Result sheets
@@ -170,7 +346,7 @@ class Comp_result:
     """
 
     def __init__(self, comPk = None, date = None, test = 0):
-        self.comPk = None
+        self.comp_id = None
         self.date  = None
 
     @classmethod
@@ -235,193 +411,195 @@ def read_rankings(task_id, test = 0):
         pprint(rank)
     return rank
 
-def read_task(task_id, test = 0):
-    ''' read task from database, and returns:
-            comp_id
-            info        array of task info
-            formula
-            stats
-    '''
+# def read_task(task_id, test = 0):
+#     ''' read task from database, and returns:
+#             comp_id
+#             info        array of task info
+#             formula
+#             stats
+#     '''
+#
+#     query = """ SELECT
+#                     T.`comPk`                       AS comp_id,
+#                     T.`comName`                     AS comp_name,
+#                     T.`comLocation`                 AS comp_site,
+#                     T.`comClass`                    AS comp_class,
+#                     DATE_FORMAT(T.`tasDate`, '%%Y-%%m-%%d') AS date,
+#                     T.`tasName`                     AS task_name,
+#                     T.`comTimeOffset`               AS time_offset,
+#                     T.`tasComment`                  AS comment,
+#                     DATE_FORMAT(T.`tasTaskStart`, '%%T')   AS window_open_time,
+#                     DATE_FORMAT(T.`tasFinishTime`, '%%T')  AS task_deadline,
+#                     DATE_FORMAT(T.`tasLaunchClose`, '%%T') AS window_close_time,
+#                     T.`tasCheckLaunch`              AS check_launch,
+#                     DATE_FORMAT(T.`tasStartTime`, '%%T')   AS SS_time,
+#                     DATE_FORMAT(T.`tasStartCloseTime`, '%%T') AS SS_close_time,
+#                     T.`tasSSInterval`               AS SS_interval,
+#                     DATE_FORMAT(T.`tasLastStartTime`, '%%T') AS last_start_time,
+#                     T.`tasTaskType`                 AS task_type,
+#                     T.`tasDistance`                 AS distance,
+#                     T.`tasShortRouteDistance`       AS opt_dist,
+#                     T.`tasSSDistance`               AS SS_distance,
+#                     T.`forName`                     AS formula_name,
+#                     T.`forDiffDist`                 AS diff_distance,
+#                     T.`forGoalSSpenalty`            AS no_goal_penalty,
+#                     T.`forStoppedGlideBonus`        AS glide_bonus,
+#                     T.`forStoppedElapsedCalc`       AS stopped_time_calc,
+#                     T.`forNomGoal`                  AS nominal_goal,
+#                     T.`forMinDistance`              AS min_dist,
+#                     T.`forNomDistance`              AS nominal_dist,
+#                     T.`forNomTime`                  AS nominal_time,
+#                     T.`forNomLaunch`                AS nominal_launch,
+#                     T.`forScorebackTime`            AS score_back_time,
+#                     T.`tasDeparture`                AS departure,
+#                     T.`tasArrival`                  AS arrival,
+#                     T.`tasHeightBonus`              AS arr_alt_bonus,
+#                     T.`tasMargin`                   AS tolerance,
+#                     DATE_FORMAT(T.`tasStoppedTime`, '%%T') AS stopped_time,
+#                     TT.`minTime`                    AS fastest_time,
+#                     TT.`firstStart`                 AS first_dep_time,
+#                     TT.`firstESS`                   AS first_arr_time,
+#                     TT.`maxDist`                    AS max_distance,
+#                     T.`tasResultsType`              AS result_type,
+#                     TT.`TotalDistance`              AS tot_dist_flown,
+#                     TT.`TotDistOverMin`             AS tot_dist_over_min,
+#                     T.`tasQuality`                  AS day_quality,
+#                     T.`tasDistQuality`              AS dist_validity,
+#                     T.`tasTimeQuality`              AS time_validity,
+#                     T.`tasLaunchQuality`            AS launch_validity,
+#                     T.`tasStopQuality`              AS stop_validity,
+#                     T.`tasAvailDistPoints`          AS avail_dist_points,
+#                     T.`tasAvailLeadPoints`          AS avail_lead_points,
+#                     T.`tasAvailTimePoints`          AS avail_time_points,
+#                     T.`tasAvailArrPoints`           AS avail_arr_points,
+#                     T.`tasLaunchValid`,
+#                     T.`tasPilotsLaunched`           AS pilots_flying,
+#                     TT.`TotalPilots`                AS pilots_present,
+#                     TT.`TotalESS`                   AS pilots_es,
+#                     T.`tasPilotsLO`                 AS pilots_lo,
+#                     TT.`TotalGoal`                  AS pilots_goal,
+#                     T.`maxScore`                    AS max_score,
+#                     T.`tasGoalAlt`                  AS goal_altitude,
+#                     T.`tasCode`,
+#                     TT.`LCmin`                      AS min_lead_coeff
+#                 FROM
+#                     `TaskView` T
+#                     LEFT OUTER JOIN `TaskTotalsView` TT using(`tasPk`)
+#                 WHERE
+#                     T.`tasPk` = %s
+#                 LIMIT 1
+#             """
+#
+#     if test:
+#         print('read task:')
+#         print('Query:')
+#         print(query)
+#
+#     with Database() as db:
+#         t = db.fetchone(query, [task_id])
+#     if t is None:
+#         print('Task does not exist')
+#         return
+#
+#     '''create info, formula and stats dict from query result'''
+#     info_data = [       'comp_name',
+#                         'comp_site',
+#                         'comp_class',
+#                         'date',
+#                         'task_name',
+#                         'time_offset',
+#                         'comment',
+#                         'window_open_time',
+#                         'window_close_time',
+#                         'task_deadline',
+#                         'check_launch',
+#                         'start_time',
+#                         'start_close_time',
+#                         'SS_interval',
+#                         'last_start_time',
+#                         'task_type',
+#                         'distance',
+#                         'opt_dist',
+#                         'SS_distance',
+#                         'goal_altitude',
+#                         'stopped_time']
+#     formula_data = [    'formula_name',
+#                         'diff_distance',
+#                         'no_goal_penalty',
+#                         'glide_bonus',
+#                         'stopped_time_calc',
+#                         'nominal_goal',
+#                         'min_dist',
+#                         'nominal_dist',
+#                         'nominal_time',
+#                         'nominal_launch',
+#                         'score_back_time',
+#                         'departure',
+#                         'arrival',
+#                         'height_bonus',
+#                         'tolerance']
+#     stats_data = [      'fastest_time',
+#                         'first_dep_time',
+#                         'first_arr_time',
+#                         'max_distance',
+#                         'result_type',
+#                         'tot_dist_flown',
+#                         'tot_dist_over_min',
+#                         'day_quality',
+#                         'dist_validity',
+#                         'time_validity',
+#                         'launch_validity',
+#                         'stop_validity',
+#                         'avail_dist_points',
+#                         'avail_lead_points',
+#                         'avail_time_points',
+#                         'avail_arr_points',
+#                         'pilots_flying',
+#                         'pilots_present',
+#                         'pilots_es',
+#                         'pilots_lo',
+#                         'pilots_goal',
+#                         'max_score',
+#                         'min_lead_coeff']
+#     comp_id = t['comp_id']
+#     task_code = t['tasCode']
+#     info = {x:t[x] for x in info_data}
+#     formula = {x:t[x] for x in formula_data}
+#     stats = {x:t[x] for x in stats_data}
+#
+#     return comp_id, task_code, info, formula, stats
 
-    query = """ SELECT
-                    T.`comPk`                       AS comp_id,
-                    T.`comName`                     AS comp_name,
-                    T.`comClass`                    AS comp_class,
-                    DATE_FORMAT(T.`tasDate`, '%%Y-%%m-%%d') AS task_date,
-                    T.`tasName`                     AS task_name,
-                    T.`comTimeOffset`               AS time_offset,
-                    T.`tasComment`                  AS task_comment,
-                    DATE_FORMAT(T.`tasTaskStart`, '%%T')   AS window_open_time,
-                    DATE_FORMAT(T.`tasFinishTime`, '%%T')  AS task_deadline,
-                    DATE_FORMAT(T.`tasLaunchClose`, '%%T') AS window_close_time,
-                    T.`tasCheckLaunch`              AS check_launch,
-                    DATE_FORMAT(T.`tasStartTime`, '%%T')   AS SS_time,
-                    DATE_FORMAT(T.`tasStartCloseTime`, '%%T') AS SS_close_time,
-                    T.`tasSSInterval`               AS SS_interval,
-                    DATE_FORMAT(T.`tasLastStartTime`, '%%T') AS last_start_time,
-                    T.`tasTaskType`                 AS task_type,
-                    T.`tasDistance`                 AS task_distance,
-                    T.`tasShortRouteDistance`       AS task_opt_dist,
-                    T.`tasSSDistance`               AS SS_distance,
-                    T.`forName`                     AS formula_name,
-                    T.`forDiffDist`                 AS diff_distance,
-                    T.`forGoalSSpenalty`            AS no_goal_penalty,
-                    T.`forStoppedGlideBonus`        AS glide_bonus,
-                    T.`forStoppedElapsedCalc`       AS stopped_time_calc,
-                    T.`forNomGoal`                  AS nominal_goal,
-                    T.`forMinDistance`              AS min_dist,
-                    T.`forNomDistance`              AS nominal_dist,
-                    T.`forNomTime`                  AS nominal_time,
-                    T.`forNomLaunch`                AS nominal_launch,
-                    T.`forScorebackTime`            AS score_back_time,
-                    T.`tasDeparture`                AS departure,
-                    T.`tasArrival`                  AS arrival,
-                    T.`tasHeightBonus`              AS height_bonus,
-                    T.`tasMargin`                   AS tolerance,
-                    DATE_FORMAT(T.`tasStoppedTime`, '%%T') AS task_stopped_time,
-                    TT.`minTime`                    AS fastest_time,
-                    TT.`firstStart`                 AS first_dep_time,
-                    TT.`firstESS`                   AS first_arr_time,
-                    TT.`maxDist`                    AS max_distance,
-                    T.`tasResultsType`              AS result_type,
-                    TT.`TotalDistance`              AS tot_dist_flown,
-                    TT.`TotDistOverMin`             AS tot_dist_over_min,
-                    T.`tasQuality`                  AS day_quality,
-                    T.`tasDistQuality`              AS dist_validity,
-                    T.`tasTimeQuality`              AS time_validity,
-                    T.`tasLaunchQuality`            AS launch_validity,
-                    T.`tasStopQuality`              AS stop_validity,
-                    T.`tasAvailDistPoints`          AS avail_dist_points,
-                    T.`tasAvailLeadPoints`          AS avail_lead_points,
-                    T.`tasAvailTimePoints`          AS avail_time_points,
-                    T.`tasAvailArrPoints`           AS avail_arr_points,
-                    T.`tasLaunchValid`,
-                    T.`tasPilotsLaunched`           AS pilots_flying,
-                    TT.`TotalPilots`                AS pilots_present,
-                    TT.`TotalESS`                   AS pilots_es,
-                    T.`tasPilotsLO`                 AS pilots_lo,
-                    TT.`TotalGoal`                  AS pilots_goal,
-                    T.`maxScore`                    AS max_score,
-                    T.`tasGoalAlt`                  AS goal_altitude,
-                    T.`tasCode`,
-                    TT.`LCmin`                      AS min_lead_coeff
-                FROM
-                    `TaskView` T
-                    LEFT OUTER JOIN `TaskTotalsView` TT using(`tasPk`)
-                WHERE
-                    T.`tasPk` = %s
-                LIMIT 1
-            """
-
-    if test:
-        print('read task:')
-        print('Query:')
-        print(query)
-
-    with Database() as db:
-        t = db.fetchone(query, [task_id])
-    if t is None:
-        print('Task does not exist')
-        return
-
-    '''create info, formula and stats dict from query result'''
-    info_data = [       'comp_name',
-                        'comp_class',
-                        'task_date',
-                        'task_name',
-                        'time_offset',
-                        'task_comment',
-                        'window_open_time',
-                        'task_deadline',
-                        'window_close_time',
-                        'check_launch',
-                        'SS_time',
-                        'SS_close_time',
-                        'SS_interval',
-                        'last_start_time',
-                        'task_type',
-                        'task_distance',
-                        'task_opt_dist',
-                        'SS_distance']
-    formula_data = [    'formula_name',
-                        'diff_distance',
-                        'no_goal_penalty',
-                        'glide_bonus',
-                        'stopped_time_calc',
-                        'nominal_goal',
-                        'min_dist',
-                        'nominal_dist',
-                        'nominal_time',
-                        'nominal_launch',
-                        'score_back_time',
-                        'departure',
-                        'arrival',
-                        'height_bonus',
-                        'tolerance']
-    stats_data = [      'task_stopped_time',
-                        'fastest_time',
-                        'first_dep_time',
-                        'first_arr_time',
-                        'max_distance',
-                        'result_type',
-                        'tot_dist_flown',
-                        'tot_dist_over_min',
-                        'day_quality',
-                        'dist_validity',
-                        'time_validity',
-                        'launch_validity',
-                        'stop_validity',
-                        'avail_dist_points',
-                        'avail_lead_points',
-                        'avail_time_points',
-                        'avail_arr_points',
-                        'pilots_flying',
-                        'pilots_present',
-                        'pilots_es',
-                        'pilots_lo',
-                        'pilots_goal',
-                        'max_score',
-                        'goal_altitude',
-                        'min_lead_coeff']
-    comp_id = t['comp_id']
-    task_code = t['tasCode']
-    info = {x:t[x] for x in info_data}
-    formula = {x:t[x] for x in formula_data}
-    stats = {x:t[x] for x in stats_data}
-
-    return comp_id, task_code, info, formula, stats
-
-def read_task_route(task_id, test = 0):
-    '''gets task route from database and creates a dict'''
-
-    query = """
-            SELECT
-                `TW`.`tawNumber` 		AS `number`,
-                `W`.`rwpName`			AS `ID`,
-                `W`.`rwpDescription`	AS `description`,
-                `TW`.`tawTime`			AS `time`,
-                `TW`.`tawType`			AS `type`,
-                `TW`.`tawHow`			AS `how`,
-                `TW`.`tawShape`			AS `shape`,
-                `TW`.`tawAngle`			AS `angle`,
-                `TW`.`tawRadius`		AS `radius`,
-                `TW`.`ssrCumulativeDist` AS `cumulative_dist`
-            FROM
-                `tblTaskWaypoint` `TW`
-                JOIN `tblRegionWaypoint` `W` USING(`rwpPk`)
-            WHERE
-                `tasPk` = {}
-            """.format(task_id)
-    if test:
-        print('read task route:')
-        print('Query:')
-        print(query)
-
-    with Database() as db:
-        # get the task details.
-        task = db.fetchall(query)
-
-    return task
+# def read_task_route(task_id, test = 0):
+#     '''gets task route from database and creates a dict'''
+#
+#     query = """
+#             SELECT
+#                 `TW`.`tawNumber` 		AS `number`,
+#                 `W`.`rwpName`			AS `ID`,
+#                 `W`.`rwpDescription`	AS `description`,
+#                 `TW`.`tawTime`			AS `time`,
+#                 `TW`.`tawType`			AS `type`,
+#                 `TW`.`tawHow`			AS `how`,
+#                 `TW`.`tawShape`			AS `shape`,
+#                 `TW`.`tawAngle`			AS `angle`,
+#                 `TW`.`tawRadius`		AS `radius`,
+#                 `TW`.`ssrCumulativeDist` AS `partial_distance`
+#             FROM
+#                 `tblTaskWaypoint` `TW`
+#                 JOIN `tblRegionWaypoint` `W` USING(`rwpPk`)
+#             WHERE
+#                 `tasPk` = {}
+#             """.format(task_id)
+#     if test:
+#         print('read task route:')
+#         print('Query:')
+#         print(query)
+#
+#     with Database() as db:
+#         # get the task details.
+#         task = db.fetchall(query)
+#
+#     return task
 
 def read_task_result(task_id, test = 0):
     '''gets pilots result from database'''

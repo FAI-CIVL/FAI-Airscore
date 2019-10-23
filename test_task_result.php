@@ -55,7 +55,7 @@ if ( isset($file) && !($file == NULL) ) {
     $task       = $array['task'];
     $results    = $array['results'];
 
-    $date = date_format(date_create_from_format('Y-m-d', $info['task_date']), 'D d M Y');
+    $date = date_format(date_create_from_format('Y-m-d', $info['date']), 'D d M Y');
     $offset     = $info['time_offset'];
     $ssDist     = $info['SS_distance'];
     $start      = $info['SS_time'];
@@ -78,23 +78,34 @@ if ( isset($file) && !($file == NULL) ) {
     }
     array_multisort($order,SORT_NUMERIC,SORT_DESC,$results);
 
+    $html .= "<div class='result_header'>".PHP_EOL;
     ## Title Table ##
-    $html .= "<table class='result_header_table'>".PHP_EOL;
-    $html .= "<tr>".PHP_EOL;
-    $html .= "<td class='result_comp_name'>".$info['comp_name']."</td>".PHP_EOL;
-    $html .= "</tr><tr>".PHP_EOL;
-    $html .= "<td class='result_task_name'>".$info['task_name'].", ".$date."</td>".PHP_EOL;
-    $html .= "</tr><tr>".PHP_EOL;
-    $html .= "<td class='result_status'>".$jsondata['status']."</td>".PHP_EOL;
-    $html .= "</tr>".PHP_EOL;
-    $html .= "</table>".PHP_EOL;
+    $html .= "  <table class='result_header_table'>".PHP_EOL;
+    $html .= "    <tr>".PHP_EOL;
+    $html .= "    <td class='result_comp_name'>".$info['comp_name']."</td>".PHP_EOL;
+    $html .= "    </tr><tr>".PHP_EOL;
+    $html .= "    <td class='result_site_name'>".$info['comp_site']."</td>".PHP_EOL;
+    $html .= "    </tr>".PHP_EOL;
+    $html .= "  </table>".PHP_EOL;
+    $html .= "</div>".PHP_EOL;
 
-    $html .= "<hr>";
+    $html .= "<div class='task_header'>".PHP_EOL;
+    ## Task Name and date Table ##
+    $html .= "  <table class='task_header_table'>".PHP_EOL;
+    $html .= "    <td class='result_task_name'>".$info['task_name'].", ".$date."</td>".PHP_EOL;
+    $html .= "    </tr><tr>".PHP_EOL;
+    $html .= "    <td class='result_status'>".$jsondata['status']."</td>".PHP_EOL;
+    $html .= "    </tr>".PHP_EOL;
+    $html .= "  </table>".PHP_EOL;
+    $html .= "</div>".PHP_EOL;
 
-    ## Task Table ##
+
+    $html .= "<hr style ='float: none;'>";
+
+    ## Task Definition Table ##
     $html .= "<table class='result_task_table'>".PHP_EOL;
     $html .= "<tr>".PHP_EOL;
-    $html .= "<td>ID</td><td>Type</td><td>Radius</td><td>Distance</td><td>Description</td>".PHP_EOL;
+    $html .= "<th>ID</th><th>Type</th><th>Radius</th><th>Distance</th><th>Description</th>".PHP_EOL;
     $html .= "</tr><tr>".PHP_EOL;
     foreach ($task as $wpt) {
         $type = '';
@@ -362,7 +373,7 @@ if ( isset($file) && !($file == NULL) ) {
     #create task statistic table
     $sttbl = '';
     $sttbl .= "<table class='result_stats'>".PHP_EOL;
-    $sttbl .= "<th><td colspan='2'><h3>Task Statistics</h3></td></th>".PHP_EOL;
+    $sttbl .= "<th colspan='2'>Task Statistics</th>".PHP_EOL;
     $sttbl .= "<tr><td class='result key'>Partecipants:</td><td class='result value'>".$stats['pilots_present']."</td></tr>".PHP_EOL;
     $sttbl .= "<tr><td class='result key'>Pilots Flying:</td><td class='result value'>".$stats['pilots_flying']."</td></tr>".PHP_EOL;
     $sttbl .= "<tr><td class='result key'>Pilots in Goal:</td><td class='result value'>".$stats['pilots_goal']."</td></tr>".PHP_EOL;
@@ -376,7 +387,7 @@ if ( isset($file) && !($file == NULL) ) {
     #create task formula table
     $fortbl = '';
     $fortbl .= "<table class='result_stats'>".PHP_EOL;
-    $fortbl .= "<th><td colspan='2'><h3>Task Parameters</h3></td></th>".PHP_EOL;
+    $fortbl .= "<th colspan='2'>Task Parameters</th>".PHP_EOL;
     $fortbl .= "<tr><td class='result key'>Formula:</td><td class='result value'>".$formula['formula_name']."</td></tr>".PHP_EOL;
     $fortbl .= "<tr><td class='result key'>Nom. Distance:</td><td class='result value'>".$formula['nominal_dist']." Km</td></tr>".PHP_EOL;
     $fortbl .= "<tr><td class='result key'>Nom. Time:</td><td class='result value'>".sec_to_time($formula['nominal_time']*60)."</td></tr>".PHP_EOL;
@@ -393,20 +404,20 @@ if ( isset($file) && !($file == NULL) ) {
     #create task validity table
     $valtbl = '';
     $valtbl .= "<table class='result_stats'>".PHP_EOL;
-    $valtbl .= "<th><td colspan='2'><h3>Task Validity</h3></td></th>".PHP_EOL;
-    $valtbl .= "<tr><td class='result key'>Launch Validity:</td><td class='result value'>".round($stats['launch_validity'],3)."</td></tr>".PHP_EOL;
-    $valtbl .= "<tr><td class='result key'>Distance Validity:</td><td class='result value'>".round($stats['dist_validity'],3)."</td></tr>".PHP_EOL;
-    $valtbl .= "<tr><td class='result key'>Time Validity:</td><td class='result value'>".round($stats['time_validity'],3)."</td></tr>".PHP_EOL;
+    $valtbl .= "    <th colspan='2'>Task Validity</th>".PHP_EOL;
+    $valtbl .= "    <tr><td class='result key'>Launch Validity:</td><td class='result value'>".round($stats['launch_validity'],3)."</td></tr>".PHP_EOL;
+    $valtbl .= "    <tr><td class='result key'>Distance Validity:</td><td class='result value'>".round($stats['dist_validity'],3)."</td></tr>".PHP_EOL;
+    $valtbl .= "    <tr><td class='result key'>Time Validity:</td><td class='result value'>".round($stats['time_validity'],3)."</td></tr>".PHP_EOL;
     if ($stopped_time != null) {
-        $valtbl .= "<tr><td class='result key'>Stop Validity:</td><td class='result value'>".round($stats['stop_validity'],3)."</td></tr>".PHP_EOL;
+        $valtbl .= "    <tr><td class='result key'>Stop Validity:</td><td class='result value'>".round($stats['stop_validity'],3)."</td></tr>".PHP_EOL;
     }
-    $valtbl .= "<tr><td class='result key'>Task Quality:</td><td class='result value'>".round($stats['day_quality'],3)."</td></tr>".PHP_EOL;
+    $valtbl .= "    <tr><td class='result key'>Task Quality:</td><td class='result value'>".round($stats['day_quality'],3)."</td></tr>".PHP_EOL;
     $valtbl .= "</table>".PHP_EOL;
 
     #create avail. points table
     $pttbl = '';
     $pttbl .= "<table class='result_stats'>".PHP_EOL;
-    $pttbl .= "<th><td colspan='2'><h3>Available Points</h3></td></th>".PHP_EOL;
+    $pttbl .= "<th colspan='2'>Available Points</th>".PHP_EOL;
     $pttbl .= "<tr><td class='result key'>Distance Points:</td><td class='result value'>".round($stats['avail_dist_points'],1)."</td></tr>".PHP_EOL;
     $pttbl .= "<tr><td class='result key'>Time Point:</td><td class='result value'>".round($stats['avail_time_points'],1)."</td></tr>".PHP_EOL;
     $pttbl .= "<tr><td class='result key'>Leading Points:</td><td class='result value'>".round($stats['avail_lead_points'],1)."</td></tr>".PHP_EOL;
@@ -422,17 +433,20 @@ if ( isset($file) && !($file == NULL) ) {
     $pttbl .= "</table>".PHP_EOL;
 
     $html .= "<hr>".PHP_EOL;
-    $html .= "<table>".PHP_EOL;
-    $html .= "<tr><td>".PHP_EOL;
+    $html .= "<div class='stats_container'>".PHP_EOL;
+    $html .= "  <div class='column'>".PHP_EOL;
     $html .= $sttbl;
-    $html .= "</td><td>".PHP_EOL;
+    $html .= "  </div>".PHP_EOL;
+    $html .= "  <div class='column'>".PHP_EOL;
     $html .= $fortbl;
-    $html .= "</td><td>".PHP_EOL;
+    $html .= "  </div>".PHP_EOL;
+    $html .= "  <div class='column'>".PHP_EOL;
     $html .= $valtbl;
-    $html .= "</td><td>".PHP_EOL;
+    $html .= "  </div>".PHP_EOL;
+    $html .= "  <div class='column'>".PHP_EOL;
     $html .= $pttbl;
-    $html .= "</td></tr>".PHP_EOL;
-    $html .= "</table>".PHP_EOL;
+    $html .= "  </div>".PHP_EOL;
+    $html .= "</div>".PHP_EOL;
 
     $html .= "<hr>".PHP_EOL;
     $html .= "<p>created on ".$created."</p>";
@@ -440,8 +454,13 @@ if ( isset($file) && !($file == NULL) ) {
 else {
     $html .= "<p>Task has not been scored yet.<br /></p>";
 }
-echo $html;
 
+//initializing template header
+tpinit($link,$file,$info);
+
+echo $html;
 echo "<p><a href='comp_result.php?comPk=$comPk'>Back to competition Result</a></p>";
+
+tpfooter($file);
 
 ?>

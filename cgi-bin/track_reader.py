@@ -11,7 +11,7 @@ from trackUtils import *
 from track import Track
 from tempfile import TemporaryDirectory
 from shutil import copyfile
-from formula import get_formula_lib
+from formula import Tas_formula, get_formula_lib
 from trackDB import read_formula
 
 import io, os, sys, logger
@@ -78,11 +78,11 @@ def main(args):
         else:
             """Get Task object"""
             task = Task.read_task(task_id)
-            if task.ShortRouteDistance == 0:
+            if task.opt_dist == 0:
                 message += 'task not optimised.. optimising'
                 task.calculate_optimised_task_length()
 
-            if task.comPk > 0:
+            if task.comp_id > 0:
                 """import track"""
                 #filename = os.path.basename(file)
                 mytrack = Track.read_file(filename=file, pilot_id=pil_id, test=test)
@@ -96,17 +96,18 @@ def main(args):
                 else:
                     """pilot is registered and has no valid track yet
                     moving file to correct folder and adding to the list of valid tracks"""
-                    mytrack.tasPk = task.tasPk
+                    mytrack.task_id = task.task_id
                     mytrack.copy_track_file(test=test)
                     message += ("pilot {} associated with track {} \n".format(mytrack.pilPk, mytrack.filename))
                     """adding track to db"""
                     import_track(mytrack, test)
                     message += ("track imported to database with ID {}\n".format(mytrack.traPk))
                     """checking track against task"""
-                    formula =  read_formula(task.comPk)
-                    f = get_formula_lib(formula)
-                    verify_track(mytrack, task, f)
-                    message += ("track {} verified with task {}\n".format(mytrack.traPk, mytrack.tasPk))
+                    #formula =  read_formula(task.comp_id)
+                    formula = Task_formula.read(task_id)
+                    lib = get_formula_lib(formula.type)
+                    verify_track(mytrack, task, lib)
+                    message += ("track {} verified with task {}\n".format(mytrack.traPk, mytrack.task_id))
                     result += ("track correctly imported and results generated \n")
                     result += ("traPk={}".format(mytrack.traPk))
 

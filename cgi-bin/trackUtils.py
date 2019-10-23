@@ -77,8 +77,8 @@ def assign_and_import_tracks(files, task, xcontest=False, test = 0):
     message = ''
     pilot_list = []
     message += ("We have {} track to associate \n".format(len(files)))
-    task_id = task.tasPk
-    comp_id = task.comPk
+    task_id = task.task_id
+    comp_id = task.comp_id
     task_date = task.date
     """checking if comp requires a regisration.
     Then we create a list of registered pilots to check against tracks filename.
@@ -123,7 +123,7 @@ def assign_and_import_tracks(files, task, xcontest=False, test = 0):
         else:
             """pilot is registered and has no valid track yet
             moving file to correct folder and adding to the list of valid tracks"""
-            mytrack.tasPk = task_id
+            mytrack.task_id = task_id
             mytrack.copy_track_file(task_path=track_path, pname=full_name)
             message += ("pilot {} associated with track {} \n".format(mytrack.pilPk, mytrack.filename))
             import_track(mytrack)
@@ -136,17 +136,19 @@ def assign_and_import_tracks(files, task, xcontest=False, test = 0):
 def import_track(track, test = 0):
     result = ''
     result += track.add(test)
-    result += ("Track {} added for Pilot with ID {} for task with ID {} \n".format(track.filename, track.pilPk, track.tasPk))
+    result += ("Track {} added for Pilot with ID {} for task with ID {} \n".format(track.filename, track.pilPk, track.task_id))
 
     if test:
         print (result)
 
 def verify_track(track, task, test):
-    formula = read_formula(task.comPk)
 
-    f = For.get_formula_lib(formula)
-    task_result = Flight_result.check_flight(track.flight, task, f.parameters, 5) #check flight against task with min tolerance of 5m
-    task_result.store_result(track.traPk, task.tasPk)
+    #formula = read_formula(task.comp_id)
+    formula = For.Task_formula.read(task.task_id)
+
+    lib = For.get_formula_lib(formula.type)
+    task_result = Flight_result.check_flight(track.flight, task, lib.parameters, 5) #check flight against task with min tolerance of 5m
+    task_result.store_result(track.traPk, task.task_id)
     print(track.flight.notes)
 
 def get_non_scored_pilots(tasPk, xcontest=False, test=0):
@@ -290,8 +292,9 @@ def create_result_file(track_id, task_id):
     from task import Task
 
     task = Task.read_task(task_id)
-    formula = read_formula(task.comPk)
+    #formula = read_formula(task.comp_id)
+    formula = For.Task_formula.read(task_id)
     track = Track.read_db(track_id)
-    f = For.get_formula_lib(formula)
-    result = flight_result.Flight_result.check_flight(track.flight, task, f.parameters, 5)
+    lib = For.get_formula_lib(formula.type)
+    result = flight_result.Flight_result.check_flight(track.flight, task, lib.parameters, 5)
     result.save_result_file(result.to_geojson_result(track, task), str(track_id))

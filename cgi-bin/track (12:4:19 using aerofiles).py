@@ -2,7 +2,7 @@
 Module for operations on tracks
 Use:    import trackUtils
         pilPk = compUtils.get_track_pilot(filename)
-        
+
 Antonio Golfari - 2018
 """
 
@@ -19,14 +19,14 @@ class Track():
     """
     Create an object Track and
     a collection of functions to handle tracks.
-    
+
     var: filename, pilot
     """
     def __init__(self, filename = None, pilot = None, task = None, glider = None, cert = None, type = None, test = 0):
         self.filename = filename
         self.type = type
         self.pilPk = pilot
-        self.tasPk = task
+        self.task_id = task
         self.glider = glider
         self.cert = cert
         self.fixes = []
@@ -37,7 +37,7 @@ class Track():
         if self.pilPk is None:
             message = ''
             names = []
-    
+
             """Get string"""
             fields = os.path.splitext(os.path.basename(self.filename))
             if fields[0].isdigit():
@@ -56,13 +56,13 @@ class Track():
                     t.append(" pilFirstName LIKE '%%{}%%' ".format(i))
                 cond = ' OR '.join(s)
                 cond2 = ' OR '.join(t)
-                query = ("""    SELECT 
-                                    pilPk 
-                                FROM 
-                                    PilotView 
-                                WHERE 
-                                    ({}) 
-                                AND 
+                query = ("""    SELECT
+                                    pilPk
+                                FROM
+                                    PilotView
+                                WHERE
+                                    ({})
+                                AND
                                     ({})""".format(cond, cond2))
 
             print ("get_pilot Query: {}  \n".format(query))
@@ -70,7 +70,7 @@ class Track():
             """Get pilot"""
             with Database() as db:
                 self.pilPk = db.fetchone(query)['pilPk']
-                
+
 #               db = myconn.getConnection()
 #               query = ("SELECT pilPk FROM PilotView WHERE pilFAI = {}".format(fai))
 #               message += ("Query: {}  \n".format(query))
@@ -89,13 +89,13 @@ class Track():
 #               """Try to Get pilPk from name"""
 #               cond = "', '".join(names)
 #               db = myconn.getConnection()
-#               query = ("""    SELECT 
-#                                   pilPk 
-#                               FROM 
-#                                   PilotView 
-#                               WHERE 
-#                                   pilLastName IN ( '{0}' ) 
-#                               AND 
+#               query = ("""    SELECT
+#                                   pilPk
+#                               FROM
+#                                   PilotView
+#                               WHERE
+#                                   pilLastName IN ( '{0}' )
+#                               AND
 #                                   pilFirstName IN ( '{0}' )""".format(cond))
 #               message += ("Query: {}  \n".format(query))
 #               try:
@@ -124,7 +124,7 @@ class Track():
     def add(self, test = 0):
         """Imports track to db"""
         message = ''
-        message += ("track {} will be imported for pilot with ID {} and task with ID {} \n".format(self.filename, self.pilPk, self.tasPk))
+        message += ("track {} will be imported for pilot with ID {} and task with ID {} \n".format(self.filename, self.pilPk, self.task_id))
 
         print(self)
         """Get info on glider"""
@@ -225,12 +225,12 @@ class Track():
             if first_line[:1] == 'A':
                 """IGC: AXCT7cea4d3ae0df42a1"""
                 self.type = "igc"
-            elif first_line[:3] == '<?x': 
+            elif first_line[:3] == '<?x':
                 """KML: <?xml version="1.0" encoding="UTF-8"?>"""
                 self.type = "kml"
             elif first_line.contains("B  UTF"):
                 self.type = "ozi"
-            elif first_line[:3] == 'LIV': 
+            elif first_line[:3] == 'LIV':
                 self.type = "live"
             else:
                 self.type = None
@@ -244,12 +244,12 @@ class Track():
 #       info['cert'] = None
 
         if self.pilPk is not None:
-            query = ("""    SELECT 
-                                pilGlider, pilGliderBrand, gliGliderCert 
-                            FROM 
-                                PilotView 
-                            WHERE 
-                                pilPk = {}""".format(self.pilPk))   
+            query = ("""    SELECT
+                                pilGlider, pilGliderBrand, gliGliderCert
+                            FROM
+                                PilotView
+                            WHERE
+                                pilPk = {}""".format(self.pilPk))
             #print ("get_glider Query: {}  \n".format(query))
             with Database() as db:
                 row = db.fetchone(query)
@@ -258,11 +258,11 @@ class Track():
                 self.cert = row['gliGliderCert']
                 #print ("Glider: {} - Certification: {} \n".format(self.glider, self.cert))
 #           db = myconn.getConnection()
-#           query = ("""    SELECT 
-#                               pilGlider, pilGliderBrand, gliGliderCert 
-#                           FROM 
-#                               PilotView 
-#                           WHERE 
+#           query = ("""    SELECT
+#                               pilGlider, pilGliderBrand, gliGliderCert
+#                           FROM
+#                               PilotView
+#                           WHERE
 #                               pilPk = {}""".format(self.pilPk))
 #           message += ("Query: {}  \n".format(query))
 #           try:

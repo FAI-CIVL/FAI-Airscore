@@ -7,7 +7,7 @@ Stuart Mackintosh Antonio Golfari - 2019
 """
 
 from task       import Task
-from formula    import get_formula_lib
+from formula    import get_formula_lib, Task_formula
 from trackDB    import read_formula
 from myconn     import Database
 from logger     import Logger
@@ -52,16 +52,16 @@ def main(args):
     penalty     = 0
     lastalt     = 0
     duration    = 0
-    track_class = task.event_class
+    track_class = task.comp_class
     track_date  = task.date
     glider      = []
 
     '''check what we need to do'''
     if status == 'mindist':
-        formula     = read_formula(task.comPk)
-        distance    = formula['forMinDistance']
+        formula     = Task_formula.read(task_id)
+        distance    = formula.min_dist
         tp          = 1
-        launch      = task.task_start_time
+        launch      = task.window_open_time
         glider      = get_glider(pil_id)
         stime       = sec_to_time(launch + get_offset(task_id)*3600)
         trastart    = datetime.combine(track_date, stime)

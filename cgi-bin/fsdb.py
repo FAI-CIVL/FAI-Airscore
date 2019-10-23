@@ -199,13 +199,13 @@ class FSDB:
                                     ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}',
                                      '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}'
                                      '{}', '{}', '{}', '{}', '{}')
-                            """.format(comPk, task.task_start_time.date(), task.task_name, task.task_start_time, task.end_time, task.start_time,
-                                        task.start_close_time, task.stats['fastest'], task.stats['maxdist'],
-                                        task.task_type, task.Distance, task.ShortRouteDistance, task.SSDistance,
-                                        task.SSInterval, task.stats['totdistflown'], task.stats['quality'], task.stats['distval'], task.stats['timeval'],
-                                        task.stats['launchval'], task.stats['distp'], task.stats['depp'], task.stats['timep'], task.stats['arrp']
-                                        '1', task.stats['launched'], task.stats['pilots'], task.stats['goal'], task.departure,
-                                        task.arrival, task.height_bonus, task.comment, '1'))
+                            """.format(comPk, task.window_open_time.date(), task.task_name, task.window_open_time, task.task_deadline, task.start_time,
+                                        task.start_close_time, task.stats['fastest'], task.stats['max_distance'],
+                                        task.task_type, task.distance, task.opt_dist, task.SS_distance,
+                                        task.SS_interval, task.stats['tot_dist_flown'], task.stats['day_quality'], task.stats['dist_validity'], task.stats['time_validity'],
+                                        task.stats['launch_validity'], task.stats['avail_dist_points'], task.stats['avail_dep_points'], task.stats['avail_time_points'], task.stats['avail_arr_points']
+                                        '1', task.stats['pilots_launched'], task.stats['pilots_present'], task.stats['pilots_goal'], task.departure,
+                                        task.arrival, task., task.comment, '1'))
                 message += ("{} Query: \n {}".format(task.task_name, tasquery))
 
                 if test == 0:
@@ -263,7 +263,7 @@ class FSDB:
                         traGlider = pil['glider']
                         #print ("pilot id: {} - pilPk: {}".format(res.ext_id, pilPk))
                         '''get speed'''
-                        speed = (task.SSDistance / 1000) / res.SSS_time if (res.SSS_time is not None and res.SSS_time > 0) else 0
+                        speed = (task.SS_distance / 1000) / res.SSS_time if (res.SSS_time is not None and res.SSS_time > 0) else 0
                         '''transform time in seconds from midnight and adjust for timezone'''
                         tz = self.info['comTimeOffset'] * 3600
                         print ("Goal Time: {}".format(res.goal_time))
@@ -279,7 +279,7 @@ class FSDB:
                                             ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}',
                                              '{}', '{}', '{}', '{}', '{}')
                                     """.format(tasPk, pilPk, res.Total_distance, speed, tarSS, tarES,
-                                        tarGoal, res.Penalty, res.Comment, res.Time_score, res.Distance_score,
+                                        tarGoal, res.Penalty, res.Comment, res.Time_score, res.distance_score,
                                         res.Arrival_score, res.Departure_score, res.Score, res.Stopped_altitude, res.result_type, traGlider))
                         message += ("Result Query: \n {}".format(resquery))
                         if test == 0:

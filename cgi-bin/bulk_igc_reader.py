@@ -47,10 +47,10 @@ def main():
 
         """Get Task object"""
         task = Task.read_task(tasPk)
-        if task.ShortRouteDistance == 0:
+        if task.opt_dist == 0:
             print('task not optimised.. optimising')
             task.calculate_optimised_task_length()
-        if task.comPk > 0:
+        if task.comp_id > 0:
             """create a temporary directory"""
             with TemporaryDirectory() as tracksdir:
                 error = extract_tracks(zipfile, tracksdir, test)

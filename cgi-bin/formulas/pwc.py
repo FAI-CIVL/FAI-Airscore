@@ -41,32 +41,32 @@ def lc_calc(res, t):
     LC          = 0
     leading     = 0
     trailing    = 0
-    SS_Distance = t.SSDistance
-    first_start = t.stats['mindept']
+    SS_Distance = t.SS_distance
+    first_start = t.stats['min_dept_time']
 
-    '''find end_time to use for LC calculation'''
-    end_time = min((t.end_time if not t.stopped_time else t.stopped_time), t.stats['maxtime'])
-    if t.stats['maxarr']:
-        if (res['last_time'] < t.stats['maxarr']):
-            end_time = t.stats['maxarr']
+    '''find task_deadline to use for LC calculation'''
+    task_deadline = min((t.task_deadline if not t.stopped_time else t.stopped_time), t.stats['max_time'])
+    if t.stats['max_ess_time']:
+        if (res['last_time'] < t.stats['max_ess_time']):
+            task_deadline = t.stats['max_ess_time']
         else:
-            end_time = min(res['last_time'], end_time)
+            task_deadline = min(res['last_time'], task_deadline)
 
     '''Checking if we have a assigned status without a track, and if pilot actually did the start pilon'''
-    if res['result'] not in ('abs', 'dnf', 'mindist') and res['startSS']:
-        my_start    = res['start']
+    if res['result'] not in ('abs', 'dnf', 'mindist') and res['SS_time']:
+        my_start    = res['start_time']
 
         '''add the leading part, from start time of first pilot to start, to my start time'''
         if my_start > first_start:
             leading = parameters.coef_landout((my_start - first_start), SS_Distance)
             leading = parameters.coef_func_scaled(leading, SS_Distance)
-        if not res['endSS']:
+        if not res['ES_time']:
             '''pilot did not make ESS'''
-            best_dist_to_ess    = (t.EndSSDistance - res['distance'])
+            best_dist_to_ess    = (t.opt_dist_to_ESS - res['distance'])
             # my_last_time        = res['last_time']          # should not need to check if < task deadline as we stop in Flight_result.check_flight()
-            # last_ess            = t.stats['maxarr'] if t.stats['maxarr'] > 0 else min(t.end_time, t.stats['maxtime'])
+            # last_ess            = t.stats['maxarr'] if t.stats['maxarr'] > 0 else min(t.task_deadline, t.stats['max_time'])
             # task_time           = (max(my_last_time,last_ess) - my_start)
-            task_time           = end_time - my_start
+            task_time           = task_deadline - my_start
             trailing            = parameters.coef_landout(task_time, best_dist_to_ess)
             trailing            = parameters.coef_func_scaled(trailing, SS_Distance)
 
@@ -74,21 +74,21 @@ def lc_calc(res, t):
 
     else:
         '''pilot didn't make SS or has a assigned status without a track'''
-        task_time           = end_time - first_start
-        trailing            = parameters.coef_landout(task_time, SS_Distance)
-        trailing            = parameters.coef_func_scaled(trailing, SS_Distance)
+        task_time         = task_deadline - first_start
+        max_LC            = parameters.coef_landout(task_time, SS_Distance)
+        max_LC            = parameters.coef_func_scaled(max_LC, SS_Distance)
 
-        LC = trailing
+        LC = max_LC
 
-    print ("""Pilot: {} - Distance: {} - Time: {} - LC: {} \n""".format(res['tarPk'], res['distance'], res['time'], LC))
-    #print(""" ** start_time: {} | end_time: {} | task_time: {} | leading p.: {} | trailing p.: {} \n""".format(res['start'], end_time, task_time, leading, trailing))
+    print ("""Pilot: {} - Distance: {} - Time: {} - LC: {} \n""".format(res['track_id'], res['distance'], res['time'], LC))
+    #print(""" ** start_time: {} | task_deadline: {} | task_time: {} | leading p.: {} | trailing p.: {} \n""".format(res['start'], task_deadline, task_time, leading, trailing))
     '''write final LC to tblTaskResult table in tarLeadingCoeff column'''
     # making a def because I suppose that in the future we could avoid storing total LC in DB
-    store_LC(res['tarPk'], LC)
+    #store_LC(res['tarPk'], LC)
 
     return LC
 
-def launch_validity(taskt, formula):
+def launch_validity(stats, formula):
     '''
     C.4.1 Launch Validity
     ‘Pilots Present’ are pilots arriving on take-off, with their gear, with the intention of flying.
@@ -100,8 +100,8 @@ def launch_validity(taskt, formula):
     Launch Validity = 0.028*LRV + 2.917*LVR^2 - 1.944*LVR^3
     '''
 
-    nomlau  = taskt['pilots'] * (1 - formula['forNomLaunch'])
-    LVR     = min(1, (taskt['launched'] + nomlau) / taskt['pilots'])
+    nomlau  = stats['pilots_present'] * (1 - formula.nominal_launch)
+    LVR     = min(1, (stats['pilots_launched'] + nomlau) / stats['pilots_present'])
     launch  = 0.028 * LVR + 2.917 * LVR**2 - 1.944 * LVR**3
     launch  = min(launch, 1) if launch > 0 else 0           #sanity
     print("PWC Launch validity: {}".format(launch))
@@ -110,29 +110,36 @@ def launch_validity(taskt, formula):
 def day_quality(task, formula):
     from formulas.gap import distance_validity, time_validity, stopped_validity
 
-    if not task.launchvalid:
-        print("Launch invalid - quality set to 0")
-        return (0, 0, 0, 0)
+    val =   {
+            'dist_validity':    0.000,
+            'time_validity':    0.000,
+            'launch_validity':  0.000,
+            'stop_validity':    1.000,
+            'day_quality':      0.000
+            }
 
-    taskt = task.stats
+    if not task.launch_valid:
+        print("Launch invalid - dist quality set to 0")
+        return val
 
-    if taskt['pilots'] == 0:
-        print("No pilots present - quality set to 0")
-        return (0, 0, 0, 0)
+    if task.stats['pilots_present'] == 0:
+        print("No pilots results - quality set to 0")
+        return val
 
-    stopv = 1
-    if task.stopped_time:
-        stopv   = stopped_validity(task, formula)
+    if task.stopped_time: val['stop_validity'] = stopped_validity(task, formula)
 
-    launch      = launch_validity(taskt, formula)
-    distance    = distance_validity(taskt, formula)
-    time        = time_validity(taskt, formula)
+    val['launch_validity']  = launch_validity(task.stats, formula)
+    val['dist_validity']    = distance_validity(task.stats, formula)
+    val['time_validity']    = time_validity(task.stats, formula)
+    val['day_quality']      = min( (val['stop_validity']*val['launch_validity']*val['dist_validity']*val['time_validity']), 1.000)
+    #print("dict: {}".format(val['day_quality']))
+    # f"quality: {val['stop_validity']}*{val['launch_validity']}*{val['dist_validity']}*{val['time_validity']} = {val['day_quality']}"
 
-    return distance, time, launch, stopv
+    return val
 
 def ordered_results(task, formula, results):
 
-    taskt = task.stats
+    stats = task.stats
 
     pilots=[]
 
@@ -149,7 +156,6 @@ def ordered_results(task, formula, results):
                                 tarES,
                                 tarPenalty,
                                 tarResultType,
-                                tarLeadingCoeff,
                                 tarLeadingCoeff2,
                                 tarGoal,
                                 tarLastAltitude,
@@ -170,7 +176,7 @@ def ordered_results(task, formula, results):
 
     with Database() as db:
         db.execute('set @x=0')
-        t = db.fetchall(query, [task.tasPk])
+        t = db.fetchall(query, [task.task_id])
 
     for res in t:
 
@@ -183,28 +189,28 @@ def ordered_results(task, formula, results):
         taskres['stopalt'] = res['tarLastAltitude']
 
         # Handle Stopped Task
-        if task.stopped_time and taskres['stopalt'] > 0 and formula['glidebonus'] > 0:
-            if taskres['stopalt'] > task.goalalt:
-                print("Stopped height bonus: ", (formula['glidebonus'] * taskres['stopalt']))
-                taskres['distance'] = taskres['distance'] + formula['glidebonus'] * (taskres['stopalt'] - task.goalalt)
-                if taskres['distance'] > task.SSDistance:
-                    taskres['distance'] = task.SSDistance
+        if task.stopped_time and taskres['stopalt'] > 0 and formula.glide_bonus > 0:
+            if taskres['stopalt'] > task.goal_altitude:
+                print("Stopped height bonus: ", (formula.glide_bonus * taskres['stopalt']))
+                taskres['distance'] = taskres['distance'] + formula.glide_bonus * (taskres['stopalt'] - task.goal_altitude)
+                if taskres['distance'] > task.SS_distance:
+                    taskres['distance'] = task.SS_distance
 
         # set pilot to min distance if they're below that ..
-        if taskres['distance'] < formula['forMinDistance']:
-            taskres['distance'] = formula['forMinDistance']
+        if taskres['distance'] < formula.min_dist:
+            taskres['distance'] = formula.min_dist
 
         taskres['result']       = res['tarResultType']
         taskres['startSS']      = res['tarSS']
         taskres['start']        = res['tarStart']
         taskres['endSS']        = res['tarES']
-        taskres['timeafter']    = (res['tarES'] - taskt['minarr']) if res['tarES'] else None
+        taskres['timeafter']    = (res['tarES'] - stats['min_ess_time']) if res['tarES'] else None
         taskres['place']        = res['Place']
         taskres['time']         = (taskres['endSS'] - taskres['startSS']) if taskres['endSS'] else 0
         taskres['goal']         = res['tarGoal']
         taskres['last_time']    = res['tarLastTime']
         taskres['fixed_LC']     = res['tarLeadingCoeff2']
-        #taskres['LC']           = res['tarLeadingCoeff']
+        #taskres['lead_coeff']           = res['tarLeadingCoeff']
 
         if taskres['time'] < 0:
             taskres['time'] = 0
@@ -214,23 +220,90 @@ def ordered_results(task, formula, results):
         C.6.3.1
         '''
         #if taskres['result'] not in ('abs', 'dnf', 'mindist') and taskres['startSS']:
-        taskres['LC'] = lc_calc(taskres, task) # PWC LeadCoeff (with squared distances)
+        taskres['lead_coeff'] = lc_calc(taskres, task) # PWC LeadCoeff (with squared distances)
         # else:
-        #     taskres['LC'] = 0
+        #     taskres['lead_coeff'] = 0
 
 
         pilots.append(taskres)
 
     return pilots
 
+def get_results_new(task, formula):
+
+    stats = task.stats
+
+    # Get all pilots and process each of them
+    # pity it can't be done as a single update ...
+
+    query = """ SELECT
+                    `track_id`,
+                    `pil_id`,
+                    `name`,
+                    `sponsor`,
+                    `nat`,
+                    `sex`,
+                    `glider`,
+                    `class`,
+                    `distance`,
+                    `speed`,
+                    `start_time`,
+                    `goal_time`,
+                    `result`,
+                    `SS_time`,
+                    `ES_time`,
+                    `turnpoints_made`,
+                    `penalty`,
+                    `comment`,
+                    `fixed_LC`,
+                    `last_altitude`,
+                    `last_time`,
+                    `track_file`,
+                    `g_record`
+                FROM
+                    `TaskResultView`
+                WHERE
+                    `task_id` = %s
+                """
+
+    with Database() as db:
+        pilots = db.fetchall(query, [task.task_id])
+
+    for res in pilots:
+        '''manage ABS pilots'''
+        if res['result'] is not 'abs':
+            # Handle Stopped Task
+            if task.stopped_time and res['last_altitude'] > task.goal_altitude and formula.glide_bonus > 0:
+                print("Stopped height bonus: ", (formula.glide_bonus * (res['last_altitude'] - task.goal_altitude)))
+                res['distance'] = min( (res['distance'] + formula.glide_bonus * (res['last_altitude'] - task.goal_altitude)), task.SS_distance )
+            # set pilot to min distance if they're below that ..
+            res['distance'] = max(formula.min_dist, res['distance'])
+
+            res['timeafter']    = (res['ES_time'] - stats['min_ess_time']) if res['ES_time'] else None
+            res['time']         = (res['ES_time'] - res['SS_time']) if res['ES_time'] else 0
+
+            #sanity
+            res['time'] = max(res['time'], 0)
+
+            '''
+            Leadout Points Adjustment
+            C.6.3.1
+            '''
+            #if taskres['result'] not in ('abs', 'dnf', 'mindist') and taskres['startSS']:
+            res['lead_coeff'] = lc_calc(res, task) # PWC LeadCoeff (with squared distances)
+            # else:
+            #     taskres['lead_coeff'] = 0
+
+    return pilots
+
 def points_allocation(task, formula, results = None):   # from PWC###
 
-    taskt   = task.stats
-    tasPk   = task.tasPk
-    quality = taskt['quality']
-    Ngoal   = taskt['goal']
-    Tmin    = taskt['fastest']
-    Tfarr   = taskt['minarr']
+    stats   = task.stats
+    tasPk   = task.task_id
+    quality = stats['day_quality']
+    Ngoal   = stats['pilots_goal']
+    Tmin    = stats['fastest']
+    Tfarr   = stats['min_ess_time']
 
     sorted_pilots = ordered_results(task, formula, results)
 
@@ -239,7 +312,7 @@ def points_allocation(task, formula, results = None):   # from PWC###
     in ordered_results we calculate final LC
     so we need to update LCmin for the task
     '''
-    task.stats['LCmin'] = min(res['LC'] for res in sorted_pilots if res['result'] not in ('dnf', 'abs', 'mindist'))
+    task.stats['min_lead_coeff'] = min(res['lead_coeff'] for res in sorted_pilots if res['result'] not in ('dnf', 'abs', 'mindist'))
 
     # Get basic GAP allocation values
     Adistance, Aspeed, Astart, Aarrival = points_weight(task, formula)
@@ -254,10 +327,10 @@ def points_allocation(task, formula, results = None):   # from PWC###
     # with Database() as db:
     #     db.execute(query, params)
 
-    task.stats['distp']     = Adistance
-    task.stats['timep']     = Aspeed
-    task.stats['depp']      = Astart
-    task.stats['arrp']      = Aarrival
+    task.stats['avail_dist_points']     = Adistance
+    task.stats['avail_time_points']     = Aspeed
+    task.stats['avail_dep_points']      = Astart
+    task.stats['avail_arr_points']      = Aarrival
     task.update_points_allocation()
 
     # Score each pilot now
@@ -295,8 +368,8 @@ def points_allocation(task, formula, results = None):   # from PWC###
             pil['goal'] = 0
 
         if pil['goal'] == 0:
-            Pspeed = Pspeed * (1 - formula['forGoalSSpenalty'])
-            Parrival = Parrival * (1 - formula['forGoalSSpenalty'])
+            Pspeed = Pspeed * (1 - formula.no_goal_penalty)
+            Parrival = Parrival * (1 - formula.no_goal_penalty)
 
         # Total score
         print('{} + {} + {} + {} + {}'.format(Pdist,Pspeed,Parrival,Pdepart,penalty))
@@ -316,3 +389,74 @@ def points_allocation(task, formula, results = None):   # from PWC###
             params = [Pdist, Pspeed, Parrival, Pdepart, Pscore, tarPk]
             with Database() as db:
                 db.execute(query, params)
+
+def points_allocation_new(task, formula):   # from PWC###
+
+    stats   = task.stats
+    tasPk   = task.task_id
+    quality = stats['day_quality']
+    Ngoal   = stats['pilots_goal']
+    Tmin    = stats['fastest']
+    Tfarr   = stats['min_ess_time']
+
+    pilots = get_results_new(task, formula)
+
+    '''
+    Update Min LC
+    in ordered_results we calculate final LC
+    so we need to update LCmin for the task
+    '''
+    task.stats['min_lead_coeff'] = min(res['lead_coeff'] for res in pilots if res['result'] not in ('dnf', 'abs', 'mindist'))
+
+    # Get basic GAP allocation values
+    Adistance, Aspeed, Astart, Aarrival = points_weight(task, formula)
+
+    task.stats['avail_dist_points'] = Adistance
+    task.stats['avail_time_points'] = Aspeed
+    task.stats['avail_dep_points']  = Astart
+    task.stats['avail_arr_points']  = Aarrival
+    #task.update_points_allocation()
+
+    task.stats['max_score']         = 0
+
+    # Score each pilot now
+    for pil in pilots:
+        tarPk   = pil['track_id']
+        penalty = pil['penalty'] if pil['penalty'] else 0
+
+        # Sanity
+        if pil['result'] in ('dnf', 'abs'):
+            pil['Pdist']       = 0
+            pil['Pspeed']      = 0
+            pil['Parrival']    = 0
+            pil['Pdepart']     = 0
+
+        else:
+            # Pilot distance score
+            # FIX: should round pil->distance properly?
+            # my pilrdist = round(pil->{'distance'}/100.0) * 100
+            pil['dist_points'] = pilot_distance(task, pil, Adistance)
+
+            # Pilot speed score
+            pil['time_points'] = pilot_speed(task, pil, Aspeed)
+
+            # Pilot departure/leading points
+            pil['dep_points'] = pilot_departure_leadout(task, pil, Astart) if (pil['result'] != 'mindist' and pil['SS_time']) else 0
+
+        # Pilot arrival score    this is always off in pwc
+        # Parrival = pilot_arrival(formula, task, pil, Aarrival)
+        pil['arr_points']=0
+        # Penalty for not making goal .
+        if not pil['goal_time']:
+            pil['goal_time'] = 0
+            pil['time_points'] = pil['time_points'] * (1 - formula.no_goal_penalty)
+            #pil['Parrival'] = Parrival * (1 - formula['forGoalSSpenalty'])
+
+        # Total score
+        print('{} + {} + {} + {} - {}'.format(pil['dist_points'],pil['time_points'],pil['arr_points'],pil['dep_points'],penalty))
+        pil['score'] = pil['dist_points'] + pil['time_points'] + pil['arr_points'] + pil['dep_points'] - penalty
+
+        #update task max score
+        if pil['score'] > task.stats['max_score']: task.stats['max_score'] = pil['score']
+
+    return pilots

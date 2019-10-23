@@ -467,7 +467,7 @@ table.format {
 
 .format tr:first-child:hover,
 .format tr:first-child,
-.format tr:first-child td a, 
+.format tr:first-child td a,
 .format2 tr:nth-child(2):hover,
 .format2 tr:nth-child(2),
 .format2 tr:nth-child(2) td a {
@@ -563,7 +563,7 @@ table.ladderresult,
 table.taskresult,
 table.regpiltable {
 	font: 0.8em arial, sans-serif;
-/* 
+/*
 	border-collapse: separate;
     border-spacing: 5px;
  */
@@ -660,4 +660,128 @@ td .short {
 /* Comp Image */
 img.compclass {
 	width: 40px;
+}
+
+/* Task Results */
+/* div.result_header {
+    position: relative;
+    top: 0;
+    left: 250px;
+    width: 500px;
+} */
+
+div.task_header{
+    width:max-content;
+    min-height:50px;
+    margin-bottom:1px;
+    /* float:left; */
+    display: inline-block;
+}
+div.result_header {
+    width:max-content;
+    height:100px;
+    right: 5px;
+    float:right;
+    display:inline-block;
+    margin-bottom:5px;
+}
+
+@media screen and (max-width: 800px)   {
+    div.result_header, div.task_header{
+        width:100%;
+        float:none;
+    }
+
+}
+
+table.result_header_table {
+    width: 100%;
+}
+
+td.result_comp_name {
+    font-size: 2.5rem;
+    font-weight: 800;
+}
+
+td.result_task_name {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.result_task_table th {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.result_task_table th:nth-child(3),
+.result_task_table th:nth-child(4) {
+    min-width: 80px;
+    text-align: right;
+    padding-right: 10px;
+}
+
+.result_task_table td {
+    font-size: 0.8rem;
+    /* font-weight: 500; */
+}
+
+.result_task_table td:first-child {
+    min-width: 40px;
+}
+
+.result_task_table td:nth-child(2) {
+    min-width: 80px;
+}
+
+.result_task_table td:nth-child(3),
+.result_task_table td:nth-child(4) {
+    min-width: 80px;
+    text-align: right;
+    padding-right: 10px;
+}
+
+.result_task_table td:nth-child(5) {
+    min-width: 80px;
+}
+
+div.stats_container {
+    width: 100%;
+}
+
+div.stats_container div.column {
+    float: left;
+    width: 24.8%;
+}
+
+div.stats_container div.column table th {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+div.stats_container div.column table td {
+    font-size: 0.9rem;
+}
+
+div.stats_container div.column table td:first-child {
+    min-width: 130px;
+    margin-right: 15px;
+}
+
+div.stats_container div.column table td:nth-child(2) {
+    text-align: right;
+}
+
+/* Clear floats after the columns */
+div.stats_container:after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+@media screen and (max-width: 1000px)   {
+    div.stats_container div.column{
+        width:100%;
+        float:none;
+    }
+
 }
