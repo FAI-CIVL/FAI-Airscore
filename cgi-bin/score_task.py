@@ -1,3 +1,4 @@
+from logger     import Logger
 from task       import Task as T
 from formula    import get_formula_lib
 from trackDB    import read_formula
