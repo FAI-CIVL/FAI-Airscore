@@ -520,10 +520,10 @@ class Flight_result:
 
             if fix.rawtime == self.Waypoints_achieved[waypoint][1]:
                 time = (("%02d:%02d:%02d") % rawtime_float_to_hms(fix.rawtime + task.time_offset * 3600))
-                waypoint_achieved.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt, self.Waypoints_achieved[waypoint][0],
+                waypoint_achieved.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt, self.Waypoints_achieved[waypoint][0], time,
                                           f'{self.Waypoints_achieved[waypoint][0]} '
-                                          f'gps alt:{fix.gnss_alt:.0f}m '
-                                          f'baro alt{fix.press_alt:.0f}m '
+                                          f'gps alt: {fix.gnss_alt:.0f}m '
+                                          f'baro alt: {fix.press_alt:.0f}m '
                                           f'time: {time}'))
                 keep = True
                 if waypoint < len(self.Waypoints_achieved)-1:
