@@ -3,6 +3,8 @@ from route import rawtime_float_to_hms, in_semicircle, distance_flown
 from myconn import Database
 import jsonpickle, json
 from mapUtils import checkbbox
+from route import distance
+from collections import namedtuple
 
 
 """
@@ -476,6 +478,7 @@ class Flight_result:
         features = []
         toff_land = []
         thermals = []
+        point = namedtuple('fix', 'lat lon')
 
         min_lat = track.flight.fixes[0].lat
         min_lon = track.flight.fixes[0].lon
@@ -520,13 +523,15 @@ class Flight_result:
 
             if fix.rawtime == self.Waypoints_achieved[waypoint][1]:
                 time = (("%02d:%02d:%02d") % rawtime_float_to_hms(fix.rawtime + task.time_offset * 3600))
-                waypoint_achieved.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt, self.Waypoints_achieved[waypoint][0], time,
-                                          f'{self.Waypoints_achieved[waypoint][0]} '
-                                          f'gps alt: {fix.gnss_alt:.0f}m '
-                                          f'baro alt: {fix.press_alt:.0f}m '
-                                          f'time: {time}'))
+                waypoint_achieved.append(
+                    [fix.lon, fix.lat, fix.gnss_alt, fix.press_alt, self.Waypoints_achieved[waypoint][0], time,
+                     fix.rawtime,
+                     f'{self.Waypoints_achieved[waypoint][0]} '
+                     f'gps alt: {fix.gnss_alt:.0f}m '
+                     f'baro alt: {fix.press_alt:.0f}m '
+                     f'time: {time}'])
                 keep = True
-                if waypoint < len(self.Waypoints_achieved)-1:
+                if waypoint < len(self.Waypoints_achieved) - 1:
                     waypoint += 1
 
             if keep:
@@ -536,6 +541,21 @@ class Flight_result:
                     pre_goal.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
                 if fix.rawtime >= goal_time:
                     post_goal.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
+
+        for w in range(1, len(waypoint_achieved[1:]) + 1):
+            current = point(lon=waypoint_achieved[w][0], lat=waypoint_achieved[w][1])
+            previous = point(lon=waypoint_achieved[w - 1][0], lat=waypoint_achieved[w - 1][1])
+            straight_line_dist = distance(previous, current) / 1000
+            time_taken = (waypoint_achieved[w][6] - waypoint_achieved[w - 1][6]) / 3600
+            time_takenHMS = rawtime_float_to_hms(time_taken * 3600)
+            speed = straight_line_dist / time_taken
+            waypoint_achieved[w].append(round(straight_line_dist, 2))
+            waypoint_achieved[w].append(("%02d:%02d:%02d") % time_takenHMS)
+            waypoint_achieved[w].append(round(speed, 2))
+
+        waypoint_achieved[0].append(0)
+        waypoint_achieved[0].append(("0:00:00"))
+        waypoint_achieved[0].append('-')
 
         route_multilinestring = MultiLineString([pre_sss])
         features.append(Feature(geometry=route_multilinestring, properties={"Track": "Pre_SSS"}))
