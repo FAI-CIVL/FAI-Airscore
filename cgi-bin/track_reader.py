@@ -77,7 +77,7 @@ def main(args):
             result += "Pilot with ID {} has already a valid track for task with ID {} \n".format(pil_id, task_id)
         else:
             """Get Task object"""
-            task = Task.read_task(task_id)
+            task = Task.read(task_id)
             if task.opt_dist == 0:
                 message += 'task not optimised.. optimising'
                 task.calculate_optimised_task_length()
@@ -85,7 +85,7 @@ def main(args):
             if task.comp_id > 0:
                 """import track"""
                 #filename = os.path.basename(file)
-                mytrack = Track.read_file(filename=file, pilot_id=pil_id, test=test)
+                mytrack = Track.read_file(filename=file, pilot_id=pil_id)
 
                 """check result"""
                 if not mytrack:
@@ -96,7 +96,7 @@ def main(args):
                 else:
                     """pilot is registered and has no valid track yet
                     moving file to correct folder and adding to the list of valid tracks"""
-                    mytrack.task_id = task.task_id
+                    mytrack.task_id = task.id
                     mytrack.copy_track_file(test=test)
                     message += ("pilot {} associated with track {} \n".format(mytrack.pilPk, mytrack.filename))
                     """adding track to db"""

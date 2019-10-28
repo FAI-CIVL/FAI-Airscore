@@ -13,37 +13,6 @@ def task_totals(task_id):
     as they are calculated on runtime from mySQL using all task results
     '''
 
-    # tasPk = task.task_id
-    # launchvalid = task.launch_valid
-    # landed = 0
-
-
-    #todo: 'Landed' misses people who made ESS but actually landed before goal
-    # query ="""  SELECT
-    #                 (`TotalPilots` DIV 1) AS `pilots_present`,
-    #                 `TotalDistance` AS `tot_dist_flown`,
-    #                 `TotDistOverMin` AS 'tot_dist_over_min',
-    #                 (`TotalLaunched` DIV 1) AS `pilots_launched`,
-    #                 `Deviation` AS `std_dev`,
-    #                 (`TotalLanded` DIV 1) AS `pilots_landed`,
-    #                 (`TotalESS` DIV 1) AS `pilots_ess`,
-    #                 (`TotalGoal` DIV 1) AS `pilots_goal`,
-    #                 `maxDist` AS `max_distance`,
-    #                 `firstStart` AS `min_dept_time`,
-    #                 `lastStart` AS `max_dept_time`,
-    #                 `firstSS`  AS `first_SS`,
-    #                 `lastSS` AS `last_SS`,
-    #                 `firstESS` AS `min_ess_time`,
-    #                 `lastESS` AS `max_ess_time`,
-    #                 (`lastTime` DIV 1) AS `max_time`,
-    #                 `minTime` AS `fastest`,
-    #                 `minTimeGoal` AS `fastest_in_goal`
-    #             FROM
-    #                 `TaskTotalsView`
-    #             WHERE
-    #                 `tasPk` = %s
-    #             LIMIT 1"""
-
     query = """SELECT
                     `pilots_present`,
                     `tot_dist_flown`,
@@ -77,28 +46,6 @@ def task_totals(task_id):
         print(query)
         print('No rows in TaskTotalsView for task ', task_id)
         return
-
-    # task.stats['tot_dist_flown']  = t['TotalDistance']
-    # task.stats['pilots_launched']      = int(t['TotalLaunched'])
-    # task.stats['pilots_present']        = int(t['TotalPilots'])     # pilots present on take-off, ABS are not counted
-    # task.stats['std_dev']        = t['Deviation']
-    # task.stats['tot_dist_over_min']   = t['TotDistOverMin']
-    # task.stats['pilots_ess']           = int(t['TotalESS'])
-    # task.stats['pilots_goal']          = int(t['TotalGoal'])
-    # task.stats['max_distance']       = t['maxDist']
-    # task.stats['fastest']       = t['minTime']
-    # task.stats['fastest_in_goal'] = t['minTimeGoal']
-    # task.stats['min_ess_time']        = t['firstESS']
-    # task.stats['max_ess_time']        = t['lastESS']
-    # task.stats['min_dept_time']       = t['firstStart']
-    # task.stats['max_dept_time']       = t['lastStart']
-    #
-    # if task.stopped_time:     # Null is returned as None
-    #     glidebonus = formula['glidebonus']
-    #     print("F: glidebonus=", glidebonus)
-    #     task.stats['pilots_landed'] = t['TotalLanded']
-
-    #task.stats.update(t)
 
     return stats
 
@@ -177,7 +124,7 @@ def time_validity(stats, formula):
     print("Time validity = {}".format(time))
     return time
 
-def stopped_validity(task, formula):
+def stopped_validity(task):
     '''
     12.3.3 Stopped Task Validity
     NumberOfPilotsReachedESS > 0 : StoppedTaskValidity = 1
@@ -186,7 +133,8 @@ def stopped_validity(task, formula):
     '''
     from math import sqrt
 
-    stats = task.stats
+    stats   = task.stats
+    formula = task.formula
 
     if stats['fastest'] and stats['fastest'] > 0:
         return 1.000
@@ -226,10 +174,11 @@ def day_quality(task, formula):
 
     return distance, time, launch, stopv
 
-def points_weight(task, formula):
+def points_weight(task):
     from math import sqrt
 
-    stats = task.stats
+    stats   = task.stats
+    formula = task.formula
 
     quality = stats['day_quality']
     x = stats['pilots_goal'] / stats['pilots_launched']  # GoalRatio

@@ -307,11 +307,15 @@ if (reqexists('updatetask'))
         if (strlen($TaskStopped) < 10 && strlen($TaskStopped) > 2)
         {
             $TaskStopped = $Date . ' ' . $TaskStopped;
+            $query = "UPDATE `tblTask` SET `tasStoppedTime`='$TaskStopped' WHERE `tasPk`=$tasPk";
+        }
+        else {
+            $query = "UPDATE `tblTask` SET `tasStoppedTime`= NULL WHERE `tasPk`=$tasPk";
         }
 
         if (strlen($TaskStopped) > 2)
         {
-            $query = "update tblTask set tasStoppedTime='$TaskStopped' where tasPk=$tasPk";
+
             $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Stopped Task update query failed: ' . mysqli_connect_error());
         }
 
@@ -321,7 +325,7 @@ if (reqexists('updatetask'))
     else
     {
         $comment = reqsval('taskcomment');
-        $query = "UPDATE tblTask SET tasComment='$comment' WHERE tasPk=$tasPk";
+        $query = "UPDATE `tblTask` SET `tasComment`='$comment' WHERE `tasPk`=$tasPk";
 
         mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' External Task update failed: ' . mysqli_connect_error());
         $message .= "External Task successfully updated \n";

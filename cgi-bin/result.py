@@ -65,7 +65,7 @@ class Task_result:
         rank = read_rankings(task_id, test)
 
         '''read task info, formula and stats'''
-        comp_id, task_code, info, formula, stats = read_task(task_id, test)
+        comp_id, task_code, info, formula, stats = read(task_id, test)
         if comp_id is None:
             print('task is not in database or not in a valid competition')
             return
@@ -163,7 +163,7 @@ class Task_result:
         return self.ref_id
 
     @staticmethod
-    def create_result(task, formula, results, status=None):
+    def create_result(task, results, status=None):
         '''create task results json file from task object and results list
         '''
         import time
@@ -175,7 +175,7 @@ class Task_result:
         dt = datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S')
         filename = d.JSONDIR + '_'.join([task.task_code,dt]) + '.json'
         comp_id = task.comp_id
-        task_id = task.task_id
+        task_id = task.id
 
         result = Task_result(comp_id=comp_id, task_id=task_id, filename=filename, timestamp=dt)
 
@@ -183,7 +183,7 @@ class Task_result:
 
         # task_code = t['tasCode']
         result.get_task_info(task)
-        result.get_formula(formula)
+        result.get_formula(task.formula)
         result.get_task_stats(task.stats)
         result.get_task_route(task)
         result.get_task_pilots(results)
@@ -411,7 +411,7 @@ def read_rankings(task_id, test = 0):
         pprint(rank)
     return rank
 
-# def read_task(task_id, test = 0):
+# def read(task_id, test = 0):
 #     ''' read task from database, and returns:
 #             comp_id
 #             info        array of task info

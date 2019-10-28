@@ -35,7 +35,7 @@ def task_totals(task, formula):
 
 
     distspread = []
-    tasPk = task.task_id
+    tasPk = task.id
     launchvalid = task.launch_valid
     mindist = formula['forMinDistance']
     glidebonus = 0
@@ -595,7 +595,7 @@ def ordered_results(task, stats, formula):
 
     with Database() as db:
         db.execute('set @x=0')
-        t = db.fetchall(query, [task.task_id])
+        t = db.fetchall(query, [task.id])
 
     for res in t:
 
@@ -668,7 +668,7 @@ def points_allocation(task, stats, formula):   # from PWC###
     # Find fastest pilot into goal and calculate leading coefficients
     # for each track .. (GAP2002 only?)
 
-    tasPk = task.task_id
+    tasPk = task.id
     quality = stats['day_quality']
     Ngoal = stats['pilots_goal']
     Tmin = stats['fastest']

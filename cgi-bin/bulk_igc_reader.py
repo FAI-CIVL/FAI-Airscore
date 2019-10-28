@@ -46,7 +46,7 @@ def main():
             test = 1
 
         """Get Task object"""
-        task = Task.read_task(tasPk)
+        task = Task.read(tasPk)
         if task.opt_dist == 0:
             print('task not optimised.. optimising')
             task.calculate_optimised_task_length()

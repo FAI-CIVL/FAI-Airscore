@@ -69,7 +69,7 @@ def main(args):
     print("starting..")
 
     '''get task'''
-    task = Task.read_task(task_id)
+    task = Task.read(task_id)
     print('Task read from DB:')
     print('start:       {} '.format(task.start_time))
     print('start close: {} '.format(task.start_close_time))

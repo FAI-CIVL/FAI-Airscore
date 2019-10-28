@@ -26,14 +26,14 @@ def main(args):
         print("number of arguments != 1 and/or task_id not a number")
         exit()
 
-    task = Task.read_task(task_id)
-    print('{} - ID {}'.format(task.task_name, task.task_id))
+    task = Task.read(task_id)
+    print('{} - ID {}'.format(task.task_name, task.id))
     task.calculate_optimised_task_length()
     task.calculate_task_length()
     task.update_task_distance()
     # delete and recreate and task json file for maps
     try:
-        os.remove(Defines.MAPOBJDIR+str(task.task_id) + '.task')
+        os.remove(Defines.MAPOBJDIR+str(task.id) + '.task')
     except OSError:
         pass
     write_task_json(task_id)

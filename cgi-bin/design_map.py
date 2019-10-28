@@ -231,11 +231,9 @@ def extract_flight_details(flight):
 def dump_flight(track, task):
     # TODO check if file already exists otherwise create and save it
     from flight_result import Flight_result
-    import formula as For
-    #formula = read_formula(task.comp_id)
-    formula = Flight_result.read(task.task_id)
 
-    lib = For.get_formula_lib(formula.type)
+    lib = task.formula.get_lib()
+
     task_result = Flight_result.check_flight(track.flight, task, lib.parameters,
                                              5)  # check flight against task with min tolerance of 5m
     geojson_file = task_result.to_geojson_result(track, task)
@@ -304,7 +302,7 @@ def main(mode, val, track_id):
 
             layer['bbox'] = layer['geojson']['bounds']
         elif mode == 'route':
-            task = Task.read_task(task_id)
+            task = Task.read(task_id)
             layer['geojson'] = None
             layer['bbox'] = get_route_bbox(task)
 

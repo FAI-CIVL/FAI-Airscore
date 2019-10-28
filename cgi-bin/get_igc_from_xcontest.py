@@ -134,7 +134,7 @@ def main():
             test = 1
 
         """Get Task object"""
-        task = Task.read_task(task_id)
+        task = Task.read(task_id)
         if task.opt_dist == 0:
             print('task not optimised.. optimising')
             task.calculate_optimised_task_length()
@@ -145,10 +145,6 @@ def main():
             login_name = Defines.XC_LOGIN
             password = Defines.XC_password
             zip_name = 'igc_from_xc.zip'
-
-            #formula =  read_formula(task.comp_id)
-            # formula = For.Task_formula.read(task_id)
-            # lib = For.get_formula_lib(formula.type)
 
             """create a temp dire for zip file"""
             with TemporaryDirectory() as zip_destination:
@@ -168,7 +164,7 @@ def main():
                     else:
                         result = ("An error occured while dealing with file {} \n".format(zipfile))
         else:
-            result = ("error: task ID {} does NOT belong to any Competition \n".format(task.task_id))
+            result = ("error: task ID {} does NOT belong to any Competition \n".format(task.id))
 
     else:
         print('error: Use: python3 get_igc_from_xcontest.py [taskPk] [opt. test]')

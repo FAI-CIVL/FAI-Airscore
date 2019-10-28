@@ -27,12 +27,12 @@ class Track():
     def __str__(self):
         return "Track Object"
 
-    def __init__(self, filename = None, pilot = None, task = None, glider = None, cert = None, type = None, test = 0):
+    def __init__(self, filename = None, pilot = None, task_id = None, glider = None, cert = None, type = None, test = 0):
         self.filename = filename
         self.track_id = None
         self.type = type
         self.pil_id = pilot
-        self.task_id = task
+        self.task_id = task_id
         self.glider = glider
         self.cert = cert
         self.flight = None      # igc_lib.Flight object
@@ -103,53 +103,6 @@ class Track():
             message += ("pil_id: {}  \n".format(self.pil_id))
             print (message)
 
-    # def add(self, test = 0):
-    #     import datetime
-    #     from compUtils import get_class, get_offset
-    #     """Imports track to db"""
-    #     result = ''
-    #     message = ''
-    #     message += ("track {} will be imported for pilot with ID {} and task with ID {} \n".format(self.filename, self.pil_id, self.task_id))
-    #
-    #     """get time of first fix of the track"""
-    #     stime = sec_to_time(self.flight.fixes[0].rawtime + get_offset(self.task_id)*3600)
-    #     trastart = datetime.datetime.combine(self.date, stime)
-    #
-    #     traclass = get_class(self.task_id)
-    #     traduration = self.flight.fixes[-1].rawtime - self.flight.fixes[0].rawtime
-    #
-    #     """add track entryassign_and_import_tracks(tracks, task, test) into tblTrack table"""
-    #     query = """INSERT INTO `tblTrack`(
-    #                     `pilPk`,
-    #                     `traClass`,
-    #                     `traGlider`,
-    #                     `traDHV`,
-    #                     `traDate`,
-    #                     `traStart`,
-    #                     `traDuration`,
-    #                     `traFile`
-    #                 )
-    #                 VALUES(
-    #                     %s, %s, %s, %s, %s, %s, %s, %s
-    #                 )
-    #                 """
-    #     params = [self.pil_id, traclass, self.glider, self.cert, self.date, trastart, traduration, self.filename]
-    #     message += query
-    #     if not test:
-    #         with Database() as db:
-    #             try:
-    #                 db.execute(query, params)
-    #                 self.track_id = db.lastrowid()
-    #                 result += ("track for pilot with id {} correctly stored in database".format(self.pil_id))
-    #             except:
-    #                 print('Error Inserting track into db:')
-    #                 print(query)
-    #                 result = ('Error inserting track for pilot with id {}'.format(self.pil_id))
-    #     else:
-    #         print(message)
-    #
-    #     return result
-
     def add(self, test = 0):
         import datetime
         from compUtils import get_class, get_offset
@@ -188,7 +141,7 @@ class Track():
         return result
 
     @classmethod
-    def read_file(cls, filename, pilot_id = None, test = 0):
+    def read_file(cls, filename, pilot_id = None):
         """Reads track file and creates a track object"""
         if test:
             print('Track.read_file: filename: {} | pilot: {}'.format(filename, pilot_id))
@@ -221,9 +174,6 @@ class Track():
                 track.get_glider(test)
                 track.flight = flight
                 track.date = epoch_to_date(track.flight.date_timestamp)
-                if test == 1:
-                    """TEST MODE"""
-                    print(message)
                 return track
             else: print(flight.notes)
         else:

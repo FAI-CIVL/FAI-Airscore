@@ -51,7 +51,7 @@ class Formula:
         self.arrival_weight         = None
         self.speed_weight           = None
 
-class Task_formula:
+class Task_formula(object):
     """
     Creates an Object with all task parameters
     """
@@ -65,7 +65,6 @@ class Task_formula:
         creates an object with formula parameters
         that will be included in Task_result Object
         """
-        self.task_id                = task_id
         self.formula_name           = name
         self.type                   = None
         self.version                = None
@@ -74,14 +73,14 @@ class Task_formula:
         self.no_goal_penalty        = no_goal_penalty
         self.glide_bonus            = glide_bonus
         self.stopped_time_calc      = stopped_time_calc
-        self.tolerance              = tolerance
+        self.tolerance              = tolerance             # percentage / 100
         self.arr_alt_bonus          = arr_alt_bonus
-        self.nominal_goal           = nominal_goal
-        self.nominal_dist           = nominal_dist
-        self.nominal_time           = nominal_time
-        self.nominal_launch         = nominal_launch
-        self.min_dist               = min_dist
-        self.score_back_time        = score_back_time
+        self.nominal_goal           = nominal_goal          # percentage / 100
+        self.nominal_dist           = nominal_dist          # meters
+        self.nominal_time           = nominal_time          # seconds
+        self.nominal_launch         = nominal_launch        # percentage / 100
+        self.min_dist               = min_dist              # meters
+        self.score_back_time        = score_back_time       # seconds
 
     def __str__(self):
         out = ''
@@ -127,37 +126,9 @@ class Task_formula:
                     LIMIT 1
                 """
 
-        # if test:
-        #     print('task formula:')
-        #     print('Query:')
-        #     print(query)
-
-        # with Database() as db:
-        #     # get the task details.
-        #     t = db.fetchone(query)
-        # if t is None:
-        #     print('Task formula error')
-        #     return
-        # else:
-        #     formula = cls(  task_id             = t['tasPk'],
-        #                     name                = t['forName'],
-        #                     arrival             = t['tasArrival'],
-        #                     departure           = t['tasDeparture'],
-        #                     no_goal_penalty     = t['forGoalSSpenalty'],
-        #                     glide_bonus         = t['forStoppedGlideBonus'],
-        #                     tolerance           = t['tasMargin'],
-        #                     stopped_time_calc   = t['forStoppedElapsedCalc'],
-        #                     arr_alt_bonus       = t['tasHeightBonus'],
-        #                     nominal_goal        = t['forNomGoal'],
-        #                     nominal_dist        = t['forNomDistance'],
-        #                     nominal_time        = t['forNomTime'],
-        #                     nominal_launch      = t['forNomLaunch'],
-        #                     min_dist            = t['forMinDistance'],
-        #                     score_back_time     = t['forScorebackTime'])
-
         with Database() as db:
             # get the task details.
-            t = db.fetchone(query, task_id)
+            t = db.fetchone(query, [task_id])
         if t is None:
             print('Task formula error')
             return
@@ -166,3 +137,18 @@ class Task_formula:
             formula.__dict__.update(t)
 
             return formula
+
+    def get_lib(self):
+        import importlib
+
+        lib     = None
+        type    = self.type
+
+        '''get formula library to use in scoring'''
+        formula_file = 'formulas.' + type
+        try:
+            lib = importlib.import_module(formula_file, package=None)
+            return lib
+        except:
+            print('formula file {} not found.'.format(formula_file))
+            exit()

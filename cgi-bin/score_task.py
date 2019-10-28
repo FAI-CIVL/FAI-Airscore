@@ -1,7 +1,5 @@
 from logger     import Logger
 from task       import Task as T
-from formula    import get_formula_lib
-from trackDB    import read_formula
 from pprint     import pprint
 
 def main(args):
@@ -19,7 +17,7 @@ def main(args):
 
     task_id = int(args[0])
     print(f"Task ID: {task_id}")
-    task = T.read_task(task_id)
+    task = T.read(task_id)
     print(task)
     task.create_scoring()
 

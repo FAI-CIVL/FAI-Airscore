@@ -77,7 +77,7 @@ def assign_and_import_tracks(files, task, xcontest=False, test = 0):
     message = ''
     pilot_list = []
     message += ("We have {} track to associate \n".format(len(files)))
-    task_id = task.task_id
+    task_id = task.id
     comp_id = task.comp_id
     task_date = task.date
     """checking if comp requires a regisration.
@@ -105,11 +105,11 @@ def assign_and_import_tracks(files, task, xcontest=False, test = 0):
                     dropping pilot from list and creating track obj"""
                     message += ("Found a pilot to associate with file. dropping {} from non scored list \n".format(pilot_id))
                     pilot_list[:] = [d for d in pilot_list if d.get('pilPk') != pilot_id]
-                    mytrack = Track.read_file(filename=file, pilot_id=pilot_id, test=test)
+                    mytrack = Track.read_file(filename=file, pilot_id=pilot_id)
         else:
             """We add track if we find a pilot in database
             that has not yet been scored"""
-            mytrack = Track.read_file(filename=file, test=test)
+            mytrack = Track.read_file(filename=file)
             if get_pil_track(mytrack.pilPk, task_id, test):
                 """pilot has already been scored"""
                 message += ("Pilot with ID {} has already a valid track for task with ID {} \n".format(mytrack.pilPk, task_id))
@@ -144,11 +144,11 @@ def import_track(track, test = 0):
 def verify_track(track, task, test):
 
     #formula = read_formula(task.comp_id)
-    formula = For.Task_formula.read(task.task_id)
+    formula = For.Task_formula.read(task.id)
 
     lib = For.get_formula_lib(formula.type)
     task_result = Flight_result.check_flight(track.flight, task, lib.parameters, 5) #check flight against task with min tolerance of 5m
-    task_result.store_result(track.traPk, task.task_id)
+    task_result.store_result(track.traPk, task.id)
     print(track.flight.notes)
 
 def get_non_scored_pilots(tasPk, xcontest=False, test=0):
@@ -291,7 +291,7 @@ def create_result_file(track_id, task_id):
     import flight_result
     from task import Task
 
-    task = Task.read_task(task_id)
+    task = Task.read(task_id)
     #formula = read_formula(task.comp_id)
     formula = For.Task_formula.read(task_id)
     track = Track.read_db(track_id)
