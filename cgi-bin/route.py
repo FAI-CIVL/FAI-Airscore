@@ -566,3 +566,32 @@ def opt_wp_enter(opt, t1, enter):
         else:
             found = True
     return point
+
+def get_proj_center(turnpoints):
+    '''finds the fix(lat, lon) rapresenting the center of
+        cartesian projection for the waypoint file'''
+    from statistics import mean
+
+    lat = mean(t.lat for t in turnpoints)
+    lon = mean(t.lon for t in turnpoints)
+    return lat, lon
+
+def wgs84_to_merc(turnpoints):
+    ''' transform ellipsoid coordinates to trasverse mercatore planar projection,
+        centered on the mean point of the turnpoints list
+
+        input:
+        turnpoints      - Turnpoint obj list'''
+
+    from pyproj import Proj, transformer, transform
+
+    clat, clon = get_proj_center(turnpoints)
+    wgs84 = Proj("+init=EPSG:4326") # LatLon with WGS84 datum used by GPS units and Google Earth
+    # local = Proj(f"+proj=tmerc +lat_0={clat} +lon_0={clon} +x_0=0 +y_0=0 +towgs84=0,0,0,0,0,0,0 +units=m +vunits=m +no_defs")
+    local = Proj(f"+ellps=WGS84 +proj=tmerc +lat_0={clat} +lon_0={clon} +k=1 +x_0=0 +y_0=0 +units=m +vunits=m +no_defs")
+    merc = Transformer.from_proj(wgs84, local)
+    planar_tp = []
+    for tp in turnpoints:
+        p_lat, p_lon = merc.transform(tp.lat, tp.lon)
+        planar_tp.append(cPoint(x=p_lat, y=p_lon, radius=tp.radius, shape=tp.shape, type=tp.type))
+    return planar_tp
