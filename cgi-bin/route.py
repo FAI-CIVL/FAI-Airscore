@@ -395,7 +395,7 @@ def rawtime_float_to_hms(timef):
 
 def distance_flown(fix, i, short_route, wpt, distances_to_go):
     """Calculate distance flown
-        For exit wpts it uses distance from cilynders"""
+        For exit wpts it uses distance from cylinders"""
 
     if (wpt.how == 'entry'
             or wpt.shape == 'line') :

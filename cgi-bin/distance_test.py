@@ -31,15 +31,15 @@ class cPoint(object):
 
     @staticmethod
     def create_from_center(point):
-        return cPoint.create(point.x, point.y, point.radius)
+        return cPoint(point.x, point.y, point.radius, point.shape, point.type)
 
     @staticmethod
     def create_from_fix(point):
-        return cPoint.create(point.fx, point.fy, point.radius)
+        return cPoint(point.fx, point.fy, point.radius, point.shape, point.type)
 
     @staticmethod
     def create_from_Turnpoint(tp):
-        return cPoint.create(tp.lat, tp.lon, tp.radius, tp.shape, tp.type)
+        return cPoint(tp.lat, tp.lon, tp.radius, tp.shape, tp.type)
 
 def get_proj_center(turnpoints):
     '''finds the fix(lat, lon) rapresenting the center of
@@ -50,7 +50,7 @@ def get_proj_center(turnpoints):
     lon = mean(t.lon for t in turnpoints)
     return lat, lon
 
-def wgs84_to_merc(turnpoints, local):
+def wgs84_to_tmerc(turnpoints, local):
     ''' transform ellipsoid coordinates to trasverse mercatore planar projection,
         centered on the mean point of the turnpoints list
 
@@ -108,19 +108,28 @@ def get_shortest_path(task):
     clat, clon = get_proj_center(task.turnpoints)
 
     '''calculate planar projection'''
-    '''method 1: calculate UTM zone from center coordinates and use EPSG Projection'''
+    '''method 1: calculate UTM zone from center coordinates and use corresponding EPSG Projection'''
     # EPSG  = 32700-round((45+clat)/90)*100+round((183+clon)/6)
     # print(f"EPSG: {EPSG}")
     # local = Proj(f"+init=EPSG:{EPSG}")
-    '''method 2: create a custom projection upon center coordinates'''
+    '''method 2: create a custom trasverse mercatore projection upon center coordinates'''
     local = Proj(f"+proj=tmerc +lat_0={clat} +lon_0={clon} +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
 
     '''create a list of cPoint obj from turnpoint list'''
-    points          = wgs84_to_merc(task.turnpoints, local)
+    points          = wgs84_to_tmerc(task.turnpoints, local)
 
     count           = len(points)   # numer of waypoints
     ESS_index       = [i for i, e in enumerate(points) if e.type == 'endspeed'][0]
     line = []
+
+    print('***')
+    print(f'center {clat} , {clon}')
+    print(f'ESS Index {ESS_index} ')
+    for idx, tp in enumerate(task.turnpoints):
+        print(f'n. {idx}')
+        pt = points[idx]
+        print(f'tp:   lat {tp.lat} |  lon {tp.lon} |  radius {tp.radius} |  shape {tp.shape} |  type {tp.type}')
+        print(f'tp:   x {pt.x} |  y {pt.y} |  radius {pt.radius} |  shape {pt.shape} |  type {pt.type}')
 
     ''' Settings'''
     opsCount        = count * 10    # number of operations allowed
@@ -132,8 +141,8 @@ def get_shortest_path(task):
             smaller than the tolerance'''
         finished        = (lastDistance - distance < tolerance)
         lastDistance    = distance
-        print(f'iterations made: {count * 10 - opsCount} | distance: {distance}')
         opsCount        -= 1
+        print(f'iterations made: {count * 10 - opsCount} | distance: {distance}')
 
     optimised = get_opt_turnpoints(points, local)
 
@@ -173,39 +182,26 @@ def optimize_path(points, count, ESS_index, line):
     from math import hypot
 
     distance    = 0
-    hasLine     = len(line)
-    for idx, point in enumerate(points):
+    hasLine     = (len(line) == 2)
+    for idx in range(1, len(points)-1):
         '''Get the target cylinder c and its preceding and succeeding points'''
+        print(f'optimize_path:')
+        print(f'index {idx}')
         c, a, b = get_target_points(points, count, idx, ESS_index)
         if (idx == count - 1 and hasLine):
+            print(f'processing line')
             process_line(line, c, a)
         else:
+            print(f'processing cylinder')
             process_cylinder(c, a, b)
 
         '''Calculate the distance from A to the C fix point'''
         legDistance = hypot(a.x - c.fx, a.y - c.fy)
         distance    += legDistance
 
-    return distance
+        print(f'index {idx} | a: {a.x} {a.y} | c: {c.fx} {c.fy}')
 
-# def get_target_points(points, count, index, esIndex):
-#     '''Inputs:
-#         points  - array of point objects
-#         count   - number of points
-#         index   - index of the target cylinder (from 1 upwards)
-#         esIndex - index of the ESS point, or -1 '''
-#
-#     '''Set point C to the target cylinder'''
-#     c = points[index]
-#     '''Create point A using the fix from the previous point'''
-#     a = createPointFromFix(points[index - 1])
-#     '''Create point B using the fix from the next point
-#     use point C center for the lastPoint and esIndex).'''
-#     if (index == count - 1 or index == esIndex):
-#         b = createPointFromCenter(c)
-#     else:
-#         b = createPointFromFix(points[index + 1])
-#     return [c, a, b]
+    return distance
 
 def get_target_points(points, count, index, ESS_index):
     '''Inputs:
@@ -214,44 +210,57 @@ def get_target_points(points, count, index, ESS_index):
         index   - index of the target cylinder (from 1 upwards)
         ESS_index - index of the ESS point, or -1 '''
 
+    print(f'get_target_points:')
     '''Set point C to the target cylinder'''
     c = points[index]
+    print(f'index {index} ')
+    print(f'c: {c.type} {c.x} {c.y} {c.fx} {c.fy}')
     '''Create point A using the fix from the previous point'''
     a = cPoint.create_from_fix(points[index - 1])
+    print(f'a: {points[index-1].type}: {a.x} {a.y} {a.fx} {a.fy}')
     '''Create point B using the fix from the next point
     use point C center for the lastPoint and ESS_index).'''
-    if (index == count - 1 or index == ESS_index):
+    if ((index == count - 1) or (index == ESS_index)):
         b = cPoint.create_from_center(c)
     else:
         b = cPoint.create_from_fix(points[index + 1])
+    print(f'b: {b.type}: {b.x} {b.y} {b.fx} {b.fy}')
+
     return [c, a, b]
 
 def process_cylinder(c, a, b):
     '''Inputs:
         c, a, b - target cylinder, previous point, next point'''
 
+    print(f'process_cylinder:')
     distAC, distBC, distAB, distCtoAB = get_relative_distances(c, a, b)
     if (distAB == 0.0):
+        print(f'A and B are the same point: project the point on the circle')
         '''A and B are the same point: project the point on the circle'''
         project_on_circle(c, a.x, a.y, distAC)
     elif (point_on_circle(c, a, b, distAC, distBC, distAB, distCtoAB)):
         '''A or B are on the circle: the fix has been calculated'''
+        print(f'A or B are on the circle: the fix has been calculated')
         return
     elif (distCtoAB < c.radius):
         '''AB segment intersects the circle, but is not tangent to it'''
         if (distAC < c.radius and distBC < c.radius):
             '''A and B are inside the circle'''
+            print(f'A and B are inside the circle')
             set_reflection(c, a, b)
         elif (distAC < c.radius and distBC > c.radius or
              (distAC > c.radius and distBC < c.radius)):
             '''One point inside, one point outside the circle'''
+            print(f'One point inside, one point outside the circle')
             set_intersection_1(c, a, b, distAB)
         elif (distAC > c.radius and distBC > c.radius):
             '''A and B are outside the circle'''
+            print(f'A and B are outside the circle')
             set_intersection_2(c, a, b, distAB)
     else:
         '''A and B are outside the circle and the AB segment is
         either tangent to it or or does not intersect it'''
+        print(f'A and B are outside the circle and the AB segment is either tangent to it or or does not intersect it')
         set_reflection(c, a, b)
 
 def get_relative_distances(c, a, b):

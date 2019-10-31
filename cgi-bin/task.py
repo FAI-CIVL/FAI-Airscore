@@ -85,7 +85,7 @@ class Task(object):
         self.opt_dist_to_ESS            = 0
         self.SS_distance                = 0
         self.distance                   = 0                 # non optimised distance
-        self.optimised_turnpoints       = []                # fixes on cilynders for opt route
+        self.optimised_turnpoints       = []                # fixes on cylinders for opt route
         self.optimised_legs             = []                # opt distance between cylinders
         self.partial_distance           = []                # distance from launch to waypoint
         self.legs                       = []                # non optimised legs
