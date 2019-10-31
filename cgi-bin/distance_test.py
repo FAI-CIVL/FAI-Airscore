@@ -124,12 +124,12 @@ def get_shortest_path(task):
 
     print('***')
     print(f'center {clat} , {clon}')
-    print(f'ESS Index {ESS_index} ')
+    print(f'WPT Count: {count}  |  ESS Index: {ESS_index}')
     for idx, tp in enumerate(task.turnpoints):
         print(f'n. {idx}')
         pt = points[idx]
         print(f'tp:   lat {tp.lat} |  lon {tp.lon} |  radius {tp.radius} |  shape {tp.shape} |  type {tp.type}')
-        print(f'tp:   x {pt.x} |  y {pt.y} |  radius {pt.radius} |  shape {pt.shape} |  type {pt.type}')
+        print(f'pt:   x {pt.x} |  y {pt.y} |  radius {pt.radius} |  shape {pt.shape} |  type {pt.type}')
 
     ''' Settings'''
     opsCount        = count * 10    # number of operations allowed
@@ -183,7 +183,7 @@ def optimize_path(points, count, ESS_index, line):
 
     distance    = 0
     hasLine     = (len(line) == 2)
-    for idx in range(1, len(points)-1):
+    for idx in range(1, len(points)):
         '''Get the target cylinder c and its preceding and succeeding points'''
         print(f'optimize_path:')
         print(f'index {idx}')
@@ -214,19 +214,21 @@ def get_target_points(points, count, index, ESS_index):
     '''Set point C to the target cylinder'''
     c = points[index]
     print(f'index {index} ')
-    print(f'c: {c.type} {c.x} {c.y} {c.fx} {c.fy}')
+    print(f'c: {c.type} - {c.x} {c.y} {c.fx} {c.fy}')
     '''Create point A using the fix from the previous point'''
     a = cPoint.create_from_fix(points[index - 1])
-    print(f'a: {points[index-1].type}: {a.x} {a.y} {a.fx} {a.fy}')
+    print(f'a: {points[index-1].type} - {a.x} {a.y} {a.fx} {a.fy}')
     '''Create point B using the fix from the next point
     use point C center for the lastPoint and ESS_index).'''
     if ((index == count - 1) or (index == ESS_index)):
+        print(f'get point from center')
         b = cPoint.create_from_center(c)
     else:
+        print(f'get point from fix')
         b = cPoint.create_from_fix(points[index + 1])
-    print(f'b: {b.type}: {b.x} {b.y} {b.fx} {b.fy}')
+    print(f'b: {b.type} - {b.x} {b.y} {b.fx} {b.fy}')
 
-    return [c, a, b]
+    return c, a, b
 
 def process_cylinder(c, a, b):
     '''Inputs:
@@ -279,7 +281,7 @@ def get_relative_distances(c, a, b):
         '''A and B are the same point'''
         distCtoAB = distAC
     else:
-        t = ((c.x - a.x) * (b.x - a.x) + (c.y - a.y) * (b.y - a.y)) / len2
+        t   = ((c.x - a.x) * (b.x - a.x) + (c.y - a.y) * (b.y - a.y)) / len2
         if (t < 0.0):
             '''Beyond the A end of the AB segment'''
             distCtoAB = distAC
@@ -292,7 +294,7 @@ def get_relative_distances(c, a, b):
             cpy = t * (b.y - a.y) + a.y
             distCtoAB = hypot(cpx - c.x, cpy - c.y)
 
-    return [distAC, distBC, distAB, distCtoAB]
+    return distAC, distBC, distAB, distCtoAB
 
 def get_intersection_points(c, a, b, distAB):
     '''Inputs:
@@ -315,7 +317,7 @@ def get_intersection_points(c, a, b, distAB):
     s2x = (t2 + dt) * dx + a.x
     s2y = (t2 + dt) * dy + a.y
 
-    return [cPoint.create(s1x, s1y), cPoint.create(s2x, s2y), cPoint.create(ex, ey)]
+    return cPoint.create(s1x, s1y), cPoint.create(s2x, s2y), cPoint.create(ex, ey)
 
 def point_on_circle(c, a, b, distAC, distBC, distAB, distCtoAB):
     '''Inputs:
