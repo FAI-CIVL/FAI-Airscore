@@ -1,4 +1,3 @@
-from pyproj import Proj, Transformer, transform
 from task import Task as T
 from route import distance as calc_dist
 
@@ -58,20 +57,17 @@ def wgs84_to_tmerc(turnpoints, local):
         turnpoints      - Turnpoint obj list
         local           - projection calculated on mean turnpoint position'''
 
-    from pyproj import Proj, Transformer, transform
+    from pyproj import Proj, Transformer
 
-    # clat, clon = get_proj_center(turnpoints)
     wgs84 = Proj("+init=EPSG:4326") # LatLon with WGS84 datum used by GPS units and Google Earth
-    # local = Proj(f"+proj=tmerc +lat_0={clat} +lon_0={clon} +x_0=0 +y_0=0 +towgs84=0,0,0,0,0,0,0 +units=m +vunits=m +no_defs")
-    # local = Proj(f"+ellps=WGS84 +proj=tmerc +lat_0={clat} +lon_0={clon} +k=1 +x_0=0 +y_0=0 +units=m +vunits=m +no_defs")
     tmerc = Transformer.from_proj(wgs84, local)
     planar_tp = []
     for tp in turnpoints:
-        x, y = tmerc.transform(tp.lat, tp.lon)
+        x, y = tmerc.transform(tp.lon, tp.lat)
         planar_tp.append(cPoint(x=x, y=y, radius=tp.radius, shape=tp.shape, type=tp.type))
     return planar_tp
 
-def get_opt_turnpoints(points, local):
+def get_opt_turnpoints(wpt, points, local):
     ''' transform trasverse mercatore planar projection to ellipsoid coordinates,
 
         input:
@@ -79,18 +75,23 @@ def get_opt_turnpoints(points, local):
         local       - projection calculated on mean turnpoint position'''
 
     from route import Turnpoint
+    from pyproj import Proj, Transformer, Geod
 
     wgs84   = Proj("+init=EPSG:4326") # LatLon with WGS84 datum used by GPS units and Google Earth
     ellips  = Transformer.from_proj(local, wgs84)
 
     opt_turnpoints = []
 
-    for tp in points:
-        lat, lon = ellips.transform(tp.fx, tp.fy)
+    for idx, tp in enumerate(points):
+        lon, lat = ellips.transform(tp.fx, tp.fy)
+        # '''puts the opt. point exactly on the cylinder'''
+        # az12, az21, dist = Geod(ellps="WGS84").inv(wpt[idx].lon,wpt[idx].lat,lon,lat)
+        # print(f'wpt {idx}: dis {dist}')
+        # lon, lat, az = Geod(ellps="WGS84").fwd(wpt[idx].lon,wpt[idx].lat,az12,wpt[idx].radius)
         opt_turnpoints.append(Turnpoint(lat=lat, lon=lon, type='optimised', radius=0, shape='optimised', how='optimised'))
 
-    for t in opt_turnpoints:
-        print(f'{t.lat}, {t.lon}')
+    # for t in opt_turnpoints:
+    #     print(f'{t.lat}, {t.lon}')
 
     return opt_turnpoints
 
@@ -100,6 +101,7 @@ def get_shortest_path(task):
     '''
     import sys
     from myconn import Database
+    from pyproj import Proj
 
     lastDistance    = sys.maxsize   # inizialise to max integer
     finished        = False
@@ -113,7 +115,7 @@ def get_shortest_path(task):
     # print(f"EPSG: {EPSG}")
     # local = Proj(f"+init=EPSG:{EPSG}")
     '''method 2: create a custom trasverse mercatore projection upon center coordinates'''
-    local = Proj(f"+proj=tmerc +lat_0={clat} +lon_0={clon} +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
+    local = Proj(f"+proj=tmerc +lat_0={clat} +lon_0={clon} +k_0=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
 
     '''create a list of cPoint obj from turnpoint list'''
     points          = wgs84_to_tmerc(task.turnpoints, local)
@@ -144,7 +146,7 @@ def get_shortest_path(task):
         opsCount        -= 1
         print(f'iterations made: {count * 10 - opsCount} | distance: {distance}')
 
-    optimised = get_opt_turnpoints(points, local)
+    optimised = get_opt_turnpoints(task.turnpoints, points, local)
 
     opt_dist = 0.0
     method = "fast_andoyer"
@@ -158,15 +160,14 @@ def get_shortest_path(task):
     with Database() as db:
         query = ''
         for idx, item in enumerate(task.turnpoints):
-            #print ("  {}  {}  {}  {}   {}".format(item.name, item.type, item.radius, self.optimised_legs[idx], self.partial_distance[idx]))
             tp = task.optimised_turnpoints[idx]
-            query = """UPDATE `tblTaskWaypoint`
+            query = """ UPDATE `tblTaskWaypoint`
                         SET
                             `ssrLatDecimal` = %s,
                             `ssrLongDecimal` = %s
                         WHERE `tawPk` = %s
-                        LIMIT 1
-                    """
+                        LIMIT 1"""
+
             params = [tp.lat, tp.lon, item.id]
             db.execute(query, params)
 
@@ -183,23 +184,17 @@ def optimize_path(points, count, ESS_index, line):
 
     distance    = 0
     hasLine     = (len(line) == 2)
-    for idx in range(1, len(points)):
+    for idx in range(1, count):
         '''Get the target cylinder c and its preceding and succeeding points'''
-        print(f'optimize_path:')
-        print(f'index {idx}')
         c, a, b = get_target_points(points, count, idx, ESS_index)
         if (idx == count - 1 and hasLine):
-            print(f'processing line')
             process_line(line, c, a)
         else:
-            print(f'processing cylinder')
             process_cylinder(c, a, b)
 
         '''Calculate the distance from A to the C fix point'''
         legDistance = hypot(a.x - c.fx, a.y - c.fy)
         distance    += legDistance
-
-        print(f'index {idx} | a: {a.x} {a.y} | c: {c.fx} {c.fy}')
 
     return distance
 
@@ -210,23 +205,16 @@ def get_target_points(points, count, index, ESS_index):
         index   - index of the target cylinder (from 1 upwards)
         ESS_index - index of the ESS point, or -1 '''
 
-    print(f'get_target_points:')
     '''Set point C to the target cylinder'''
     c = points[index]
-    print(f'index {index} ')
-    print(f'c: {c.type} - {c.x} {c.y} {c.fx} {c.fy}')
     '''Create point A using the fix from the previous point'''
     a = cPoint.create_from_fix(points[index - 1])
-    print(f'a: {points[index-1].type} - {a.x} {a.y} {a.fx} {a.fy}')
     '''Create point B using the fix from the next point
     use point C center for the lastPoint and ESS_index).'''
     if ((index == count - 1) or (index == ESS_index)):
-        print(f'get point from center')
         b = cPoint.create_from_center(c)
     else:
-        print(f'get point from fix')
         b = cPoint.create_from_fix(points[index + 1])
-    print(f'b: {b.type} - {b.x} {b.y} {b.fx} {b.fy}')
 
     return c, a, b
 
@@ -234,35 +222,28 @@ def process_cylinder(c, a, b):
     '''Inputs:
         c, a, b - target cylinder, previous point, next point'''
 
-    print(f'process_cylinder:')
     distAC, distBC, distAB, distCtoAB = get_relative_distances(c, a, b)
     if (distAB == 0.0):
-        print(f'A and B are the same point: project the point on the circle')
         '''A and B are the same point: project the point on the circle'''
         project_on_circle(c, a.x, a.y, distAC)
     elif (point_on_circle(c, a, b, distAC, distBC, distAB, distCtoAB)):
         '''A or B are on the circle: the fix has been calculated'''
-        print(f'A or B are on the circle: the fix has been calculated')
         return
     elif (distCtoAB < c.radius):
         '''AB segment intersects the circle, but is not tangent to it'''
         if (distAC < c.radius and distBC < c.radius):
             '''A and B are inside the circle'''
-            print(f'A and B are inside the circle')
             set_reflection(c, a, b)
         elif (distAC < c.radius and distBC > c.radius or
              (distAC > c.radius and distBC < c.radius)):
             '''One point inside, one point outside the circle'''
-            print(f'One point inside, one point outside the circle')
             set_intersection_1(c, a, b, distAB)
         elif (distAC > c.radius and distBC > c.radius):
             '''A and B are outside the circle'''
-            print(f'A and B are outside the circle')
             set_intersection_2(c, a, b, distAB)
     else:
         '''A and B are outside the circle and the AB segment is
         either tangent to it or or does not intersect it'''
-        print(f'A and B are outside the circle and the AB segment is either tangent to it or or does not intersect it')
         set_reflection(c, a, b)
 
 def get_relative_distances(c, a, b):
@@ -449,34 +430,3 @@ print(f'org. opt. distance: {task.opt_dist}')
 distance, opt_dist = get_shortest_path(task)
 print(f'opt. distance on planar projection: {distance}')
 print(f'opt. distance on ellipsoid: {opt_dist}')
-
-
-# wpts = []
-# wpts.append(tp(44,13,1,'optimised', 'optimised', 'optimised'))
-# wpts.append(tp(45,13,1,'optimised', 'optimised', 'optimised'))
-#
-# clat, clon = get_proj_center(wpts)
-#
-# wgs84   = Proj("+init=EPSG:4326") # LatLon with WGS84 datum used by GPS units and Google Earth
-# local   = Proj(f"+ellps=WGS84 +proj=tmerc +lat_0={clat} +lon_0={clon} +k=1 +x_0=0 +y_0=0 +units=m +vunits=m +no_defs")
-# merc    = Transformer.from_proj(wgs84, local)
-#
-# planar_tp = []
-# for t in wpts:
-#     p_lat, p_lon = merc.transform(t.lat, t.lon)
-#     planar_tp.append({'lat': p_lat, 'lon': p_lon, 'radius': t.radius, 'shape': t.shape})
-#
-# ell_dist = fast_andoyer(wpts[0], wpts[1])
-# print(f'fast_andoyer dist: {ell_dist}')
-#
-# dist = sqrt((planar_tp[1]['lat'] - planar_tp[0]['lat'])**2 + (planar_tp[1]['lon'] - planar_tp[0]['lon'])**2)
-# print(f'planar dist: {dist}')
-#
-# coords = Transformer.from_proj(local, wgs84)
-# new = []
-# for t in planar_tp:
-#     p_lat, p_lon = coords.transform(t['lat'], t['lon'])
-#     new.append(tp(p_lat, p_lon, 1, 'optimised', 'optimised', 'optimised'))
-#
-# ell_dist = fast_andoyer(new[0], new[1])
-# print(f'new fast_andoyer dist: {ell_dist}')
