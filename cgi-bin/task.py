@@ -1069,7 +1069,6 @@ def get_task_json(task_id):
 def write_task_json(task_id):
     import os
     from geographiclib.geodesic import Geodesic
-    from route import calcBearing
 
     geod = Geodesic.WGS84
     task_file = Path(Defines.MAPOBJDIR+'tasks/'+str(task_id) + '.task')
@@ -1082,6 +1081,24 @@ def write_task_json(task_id):
     goal_line = None
     task = Task.read(task_id)
     tolerance = task.tolerance
+
+def write_task_json(task_id):
+    import os
+    from geographiclib.geodesic import Geodesic
+    from route import get_line
+
+    geod = Geodesic.WGS84
+    task_file = Path(Defines.MAPOBJDIR+'tasks/'+str(task_id) + '.task')
+
+    if not os.path.isdir(Defines.MAPOBJDIR + 'tasks/'):
+        os.makedirs(Defines.MAPOBJDIR + 'tasks/')
+    task_coords = []
+    turnpoints = []
+    short_route = []
+    goal_line = None
+    task = Task.read(task_id)
+    tolerance = task.tolerance
+
     for obj in task.turnpoints:
         task_coords.append({
             'longitude': obj.lon,
@@ -1089,44 +1106,54 @@ def write_task_json(task_id):
             'name': obj.name
         })
 
-        turnpoints.append({
-            'radius': obj.radius,
-            'longitude': obj.lon,
-            'latitude': obj.lat,
-            #         'altitude': obj.altitude,
-            'name': obj.name,
-            'type': obj.type,
-            'shape': obj.shape
-        })
+        if obj.shape == 'line':
+            '''manage goal line'''
+            goal_line = []
+            ends = get_line(task.turnpoints)
+            goal_line.append(tuple([ends[0].lat, ends[0].lon]))
+            goal_line.append(tuple([ends[1].lat, ends[1].lon]))
+
+        else:
+            '''create tp cylinder'''
+            turnpoints.append({
+                'radius': obj.radius,
+                'longitude': obj.lon,
+                'latitude': obj.lat,
+                #         'altitude': obj.altitude,
+                'name': obj.name,
+                'type': obj.type,
+                'shape': obj.shape
+            })
 
     for obj in task.optimised_turnpoints:
         short_route.append(tuple([obj.lat, obj.lon]))
         # print ("short route fix: {}, {}".format(obj.lon,obj.lat))
 
     # calculate 3 points for goal line (could use 2 but safer with 3?)
-    if task.turnpoints[-1].shape == 'line':
-        goal_line = []
-        bearing_to_last = calcBearing(task.turnpoints[-1].lat, task.turnpoints[-1].lon,
-                                      task.optimised_turnpoints[-2].lat, task.optimised_turnpoints[-2].lon)
-        bearing_to_last += 360
-        if bearing_to_last > 270:
-            bearing_to_line_end1 = 90 - (360 - bearing_to_last)
-        else:
-            bearing_to_line_end1 = bearing_to_last + 90
+    # if task.turnpoints[-1].shape == 'line':
+    #     goal_line = []
+    #     bearing_to_last = calcBearing(task.turnpoints[-1].lat, task.turnpoints[-1].lon,
+    #                                   task.optimised_turnpoints[-2].lat, task.optimised_turnpoints[-2].lon)
+    #     bearing_to_last += 360
+    #     if bearing_to_last > 270:
+    #         bearing_to_line_end1 = 90 - (360 - bearing_to_last)
+    #     else:
+    #         bearing_to_line_end1 = bearing_to_last + 90
+    #
+    #     if bearing_to_last < 90:
+    #         bearing_to_line_end2 = 360 - (90 - bearing_to_last)
+    #     else:
+    #         bearing_to_line_end2 = bearing_to_last - 90
+    #
+    #     line_end1 = geod.Direct(task.turnpoints[-1].lat, task.turnpoints[-1].lon, bearing_to_line_end1,
+    #                             task.turnpoints[-1].radius)
+    #     line_end2 = geod.Direct(task.turnpoints[-1].lat, task.turnpoints[-1].lon, bearing_to_line_end2,
+    #                             task.turnpoints[-1].radius)
+    #
+    #     goal_line.append(tuple([line_end1['lat2'], line_end1['lon2']]))
+    #     goal_line.append(tuple([task.turnpoints[-1].lat, task.turnpoints[-1].lon]))
+    #     goal_line.append(tuple([line_end2['lat2'], line_end2['lon2']]))
 
-        if bearing_to_last < 90:
-            bearing_to_line_end2 = 360 - (90 - bearing_to_last)
-        else:
-            bearing_to_line_end2 = bearing_to_last - 90
-
-        line_end1 = geod.Direct(task.turnpoints[-1].lat, task.turnpoints[-1].lon, bearing_to_line_end1,
-                                task.turnpoints[-1].radius)
-        line_end2 = geod.Direct(task.turnpoints[-1].lat, task.turnpoints[-1].lon, bearing_to_line_end2,
-                                task.turnpoints[-1].radius)
-
-        goal_line.append(tuple([line_end1['lat2'], line_end1['lon2']]))
-        goal_line.append(tuple([task.turnpoints[-1].lat, task.turnpoints[-1].lon]))
-        goal_line.append(tuple([line_end2['lat2'], line_end2['lon2']]))
     with open(task_file, 'w') as f:
         f.write(jsonpickle.dumps({'task_coords': task_coords, 'turnpoints': turnpoints, 'short_route': short_route,
                                   'goal_line': goal_line, 'tolerance': tolerance}))

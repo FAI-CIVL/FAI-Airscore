@@ -91,22 +91,3 @@ def sec_to_time(sec):
     m, s = divmod(seconds, 60)
     h, m = divmod(m, 60)
     return time(hour=h, minute=m, second=s)
-
-# def sec_to_str(sec, offset = 0, test = 0): #no longer used probably can remove
-#     """
-#         Transform string in datetime.datetime
-#     """
-#     try:
-#         return str(timedelta(seconds=sec+offset*3600))
-#     except TypeError:
-#         print ("an error occurred")
-#     else:
-#         return sec
-
-# class time_diff(timedelta):
-#   """Transfrom DateTme to string for JSON encoding"""
-#   def default(self, t1, t2):
-#       if isinstance(t1, time) and isinstance(t2, time):
-#           return o.isoformat()
-#
-#       return json.JSONEncoder.default(self, o)
