@@ -1,10 +1,3 @@
-from calcUtils import get_datetime
-from route import rawtime_float_to_hms, in_semicircle, distance_flown
-from myconn import Database
-import jsonpickle, json
-from mapUtils import checkbbox
-
-
 """
 contains Flight_result class.
 contains statistics about a flight with regards to a task.
@@ -17,8 +10,18 @@ Methods:
 	store_result_json - not needed, think we can delete
 	to_geojson_result - create json file containing tracklog (split into preSSS, preGoal and postGoal), Thermals, bounds and result obj
 	save_result_file - save the json file.
+
+- AirScore -
+Stuart Mackintosh - Antonio Golfari
+2019
+
 """
 
+from calcUtils import get_datetime
+from route import rawtime_float_to_hms, in_semicircle, distance_flown
+from myconn import Database
+import jsonpickle, json
+from mapUtils import checkbbox
 
 class Flight_result:
     """Set of statistics about a flight with respect a task.

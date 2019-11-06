@@ -1,572 +1,475 @@
 <?php
 require 'startup.php';
-require LIBDIR.'xcdb.php';
 
-function get_goal_altitude($link, $taskPk)
-{
-	$query = "  SELECT
-                    rwpAltitude
-                FROM
-                    tblRegionWaypoint
-                WHERE
-                    rwpPk = (
-                    SELECT
-                        TW.rwpPk
-                    FROM
-                        tblTaskWaypoint TW
-                    WHERE
-                        TW.tasPk = $taskPk AND TW.tawType = 'goal'
-                    )";
-    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Cannot get Goal Altitude: ' . mysqli_connect_error());
-    $alt = mysqli_result($result,0,0);
-    return $alt;
+function sec_to_time($s, $off = 0) {
+  $t = round($s) + $off;
+  return sprintf('%02d:%02d:%02d', (($t)/3600),(($t)/60%60), ($t)%60);
 }
+
+function get_json($link, $tasPk, $refPk=NULL) {
+    #check if we request a specific json, or the visible one
+    if ($refPk != NULL) {
+        $query = "  SELECT `refJSON`
+                    FROM `tblResultFile`
+                    WHERE `refPk` = $refPk
+                    LIMIT 1";
+    }
+    else {
+        $query = "  SELECT `refJSON`
+                    FROM `tblResultFile`
+                    WHERE `tasPk` = $tasPk
+                    AND `refVisible` = 1
+                    LIMIT 1";
+    }
+    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Cannot get JSON file: ' . mysqli_connect_error());
+    $file = mysqli_result($result,0,0);
+    return $file;
+}
+
+// Main Code Begins HERE //
 
 $comPk = intval($_REQUEST['comPk']);
 $tasPk = intval($_REQUEST['tasPk']);
-
-$usePk = check_auth('system');
+$refPk = intval($_REQUEST['refPk']);
 $link = db_connect();
-$isadmin = 0;
-$cval = null;
-$tarPk = null;
-
 $file = __FILE__;
 
-$message = '';
+$cval = (reqexists('class') ? reqsval('class') : '');
 
-if (!array_key_exists('pr', $_REQUEST))
-{
-    $isadmin = is_admin('admin',$usePk,$comPk);
-}
+$html = '';
 
-$rnd = 1;
-if (array_key_exists('rnd', $_REQUEST))
-{
-    $rnd = intval($_REQUEST['rnd']);
-}
-//echo "usePk=$usePk isadmin=$isadmin<br>";
+$file = get_json($link, $tasPk, $refPk);
+//print "file: ".$file;
 
-# Check if we have a classification request
-$sel = get_class_info($link, $comPk);
-$classstr = $sel['name'];
-$fdhv = $sel['fdhv'];
+if ( isset($file) && !($file == NULL) ) {
+    $json = file_get_contents($file);
+    $array = json_decode($json, true);
+    $rnd = 1;
 
-if (array_key_exists('tardel', $_REQUEST))
-{
-    $traPk = intval($_REQUEST['tardel']);
-    # Using new python script
-	$command = "python3 " . BINDIR . "del_track.py $traPk";
-	$message .= nl2br(shell_exec($command));
+    // print_r($array);
+    $info       = $array['info'];
+    $jsondata   = $array['data'];
+    $formula    = $array['formula'];
+    $rankings   = $array['rankings'];
+    $stats      = $array['stats'];
+    $task       = $array['task'];
+    $results    = $array['results'];
 
-//     $out = '';
-//     $retv = 0;
-//     exec(BINDIR . "del_track.pl $traPk", $out, $retv);
-//     if ($retv == 0)
-//     {
-//         echo "Deleted: $traPk<br>";
-//     }
-//     else
-//     {
-//         echo "$out<br>";
-//     }
-}
+    $date = date_format(date_create_from_format('Y-m-d', $info['date']), 'D d M Y');
+    $offset     = $info['time_offset'];
+    $ssDist     = $info['SS_distance'];
+    $start      = sec_to_time($info['start_time'], $offset);
+    $deadline   = sec_to_time($info['task_deadline'], $offset);
+    $stopped_time = (isset($stats['task_stopped_time']) ? sec_to_time($stats['task_stopped_time'], $offset) : NULL);
+    $altitude_bonus = $formula['height_bonus'];
+    $created = gmdate('D d M Y H:i:s', ($jsondata['timestamp'] + $offset));
 
-if (array_key_exists('tarup', $_REQUEST))
-{
-    $tarPk = reqival('tarup');
-    $glider = reqsval("glider$tarPk");
-    $dhv = reqsval("dhv$tarPk");
-    $flown = reqsval("flown$tarPk");
-    $penalty = reqival("penalty$tarPk");
-    $traPk = reqival("track$tarPk");
-    $resulttype = 'lo';
-    if ($flown == 'abs' || $flown == 'dnf' || $flown == 'lo')
-    {
-        $resulttype = $flown;
-        $flown = 0;
+    #order wpt array
+    $order = [];
+    foreach ($task as $key => $wpt) {
+        $order[$key] = $wpt['cumulative_dist'];
     }
-    else
-    {
-        $flown = $flown * 1000;
-        if (0 + $flown == 0)
-        {
-            $resulttype = 'dnf';
+    array_multisort($order,SORT_NUMERIC,$task);
+
+    #order results array
+    $order = [];
+    foreach ($results as $key => $row) {
+        $order[$key] = $row['score'];
+    }
+    array_multisort($order,SORT_NUMERIC,SORT_DESC,$results);
+
+    $html .= "<div class='result_header'>".PHP_EOL;
+    ## Title Table ##
+    $html .= "  <table class='result_header_table'>".PHP_EOL;
+    $html .= "    <tr>".PHP_EOL;
+    $html .= "    <td class='result_comp_name'>".$info['comp_name']."</td>".PHP_EOL;
+    $html .= "    </tr><tr>".PHP_EOL;
+    $html .= "    <td class='result_site_name'>".$info['comp_site']."</td>".PHP_EOL;
+    $html .= "    </tr>".PHP_EOL;
+    $html .= "  </table>".PHP_EOL;
+    $html .= "</div>".PHP_EOL;
+
+    $html .= "<div class='task_header'>".PHP_EOL;
+    ## Task Name and date Table ##
+    $html .= "  <table class='task_header_table'>".PHP_EOL;
+    $html .= "    <td class='result_task_name'>".$info['task_name'].", ".$date."</td>".PHP_EOL;
+    $html .= "    </tr><tr>".PHP_EOL;
+    if ( (stripos($jsondata['status'], 'provisional') !== false) || (stripos($jsondata['status'], 'test') !== false) ) {
+        $html .= "    <td class='result_status' style='color:red; font-weight:600;'>".$jsondata['status']."</td>".PHP_EOL;
+    }
+    else {
+        $html .= "    <td class='result_status'>".$jsondata['status']."</td>".PHP_EOL;
+    }
+    $html .= "    </tr>".PHP_EOL;
+    $html .= "  </table>".PHP_EOL;
+    $html .= "</div>".PHP_EOL;
+
+
+    $html .= "<hr style ='float: none;'>";
+
+    ## Task Definition Table ##
+    $html .= "<table class='result_task_table'>".PHP_EOL;
+    $html .= "<tr>".PHP_EOL;
+    $html .= "<th>ID</th><th>Type</th><th>Radius</th><th>Distance</th><th>Description</th>".PHP_EOL;
+    $html .= "</tr><tr>".PHP_EOL;
+    foreach ($task as $wpt) {
+        $type = '';
+        $description = $wpt['description'];
+        #check if wpt description has XContest ID and removes it
+        if ( is_numeric(substr($description, -4)) ){
+            $description = substr($description, 0, -5);
         }
-    }
-
-    $query = "update tblTaskResult set tarDistance=$flown, tarPenalty=$penalty, tarResultType='$resulttype' where tarPk=$tarPk";
-    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task Result update failed: ' . mysqli_connect_error());
-    $query = "update tblTrack set traGlider='$glider', traDHV='$dhv' where traPk=$traPk";
-    $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Glider update failed: ' . mysqli_connect_error());
-    # recompute every time?
-    $out = '';
-    $retv = 0;
-    exec(BINDIR . "task_score.pl $tasPk", $out, $retv);
-}
-
-if (array_key_exists('addflight', $_REQUEST))
-{
-    $fai = intval($_REQUEST['fai']);
-    if ($fai > 0)
-    {
-        $query = "select pilPk from PilotView where pilFAI=$fai";
-        $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query pilot (fai) failed: ' . mysqli_connect_error());
-    }
-
-    if (mysqli_num_rows($result) == 0)
-    {
-        $fai = addslashes($_REQUEST['fai']);
-        $query = "select P.pilPk from tblComTaskTrack T, tblTrack TR, PilotView P
-                    where T.comPk=$comPk
-                        and T.traPk=TR.traPk
-                        and TR.pilPk=P.pilPk
-                        and P.pilLastName='$fai'";
-        $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Query pilot (name) failed: ' . mysqli_connect_error());
-    }
-
-    if (mysqli_num_rows($result) > 0)
-    {
-        $pilPk = mysqli_result($result,0,0);
-        $flown = floatval($_REQUEST["flown"]) * 1000;
-        $penalty = intval($_REQUEST["penalty"]);
-        $glider = addslashes($_REQUEST["glider"]);
-        $dhv = addslashes($_REQUEST["dhv"]);
-        $resulttype = addslashes($_REQUEST["resulttype"]);
-        $tasPk = intval($_REQUEST["tasPk"]);
-        if ($resulttype == 'dnf' || $resulttype == 'abs')
-        {
-            $flown = 0.0;
+        switch($wpt['type']) {
+            case 'launch':
+                $type = 'TakeOff';
+                break;
+            case 'speed':
+                $type = ($wpt['how']=='entry' ? 'SS' : 'SS (exit)');
+                break;
+            case 'endspeed':
+                $type = ($wpt['how']=='entry' ? 'ESS' : 'ESS (exit)');
+                break;
+            case 'goal':
+                $type = ($wpt['shape']=='circle' ? 'Goal' : 'Goal Line');
+                break;
+            default:
+                ($wpt['how']=='entry' ? '' : '(exit)');
         }
-
-        $query = "select tasDate from tblTask where tasPk=$tasPk";
-        $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task date failed: ' . mysqli_connect_error());
-        $tasDate=mysqli_result($result,0);
-
-        $query = "insert into tblTrack (pilPk,traGlider,traDHV,traDate,traStart,traLength) values ($pilPk,'$glider','$dhv','$tasDate','$tasDate',$flown)";
-        $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task insert result failed: ' . mysqli_connect_error());
-
-        $maxPk = mysqli_insert_id($link);
-
-        $query = "insert into tblTaskResult (tasPk,traPk,tarDistance,tarPenalty,tarResultType) values ($tasPk,$maxPk,$flown,$penalty,'$resulttype')";
-        $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Insert result failed: ' . mysqli_connect_error());
-
-        $out = '';
-        $retv = 0;
-        exec(BINDIR . "task_score.pl $tasPk", $out, $retv);
+        $html .= "      <td>".$wpt['name']."</td>".PHP_EOL;
+        $html .= "      <td>".$type."</td>".PHP_EOL;
+        $html .= "      <td>".($type=='TakeOff' ? '' : ($wpt['radius'].' m.'))."</td>".PHP_EOL;
+        $html .= "      <td>".($type=='TakeOff' ? '' : round($wpt['cumulative_dist']/1000, 2).' Km'). "</td>".PHP_EOL;
+        $html .= "      <td>".$description. "</td>".PHP_EOL;
+        $html .= "</tr><tr>".PHP_EOL;
     }
-    else
-    {
-        echo "Unknown pilot: $fai<br>";
+
+    $html .= "<td colspan='2'>Start Gate Time: </td>".PHP_EOL;
+    $html .= "<td colspan='3'>".$start;
+    $html .= ($info['SS_close_time']>0 ? (" to ".$info['SS_close_time']) : '')."</td>".PHP_EOL;
+
+    if ( $info['SS_interval'] > 0 ) {
+        $html .= "</tr><tr>".PHP_EOL;
+        $html .= "<td colspan='2'>Interval: </td>".PHP_EOL;
+        $html .= "<td colspan='1'>".($info['SS_interval']/60)." min.</td>".PHP_EOL;
+        $html .= "<td colspan='2'></td>".PHP_EOL;
     }
-}
+    if ( isset($stopped_time) ) {
+        $html .= "</tr><tr>".PHP_EOL;
+        $html .= "<td colspan='2' style='color:red; font-weight:600;'>Task Stopped at: </td>".PHP_EOL;
+        $html .= "<td colspan='3' style='color:red; font-weight:600;'>".$stopped_time." </td>".PHP_EOL;
+    }
+    elseif ( $deadline > 0 ) {
+        $html .= "</tr><tr>".PHP_EOL;
+        $html .= "<td colspan='2'>Task Deadline: </td>".PHP_EOL;
+        $html .= "<td colspan='3'>".$deadline." </td>".PHP_EOL;
+    }
 
-$depcol = 'Dpt';
-$row = get_comtask($link,$tasPk);
-if ($row)
-{
-    $comName = $row['comName'];
-    $comClass = $row['comClass'];
-    $comPk = $row['comPk'];
-    $_REQUEST['comPk'] = $comPk;
-    $comTOffset = $row['comTimeOffset'] * 3600;
-    $tasName = $row['tasName'];
-    $tasDate = $row['tasDate'];
-    $tasTaskType = $row['tasTaskType'];
-    $tasStartTime = substr($row['tasStartTime'],11);
-    $tasFinishTime = substr($row['tasFinishTime'],11);
-    $tasDistance = round($row['tasDistance']/1000,2);
-    $tasShortest = round($row['tasShortRouteDistance']/1000,2);
-    $tasQuality = round($row['tasQuality'],3);
-    $tasComment = $row['tasComment'];
-    $tasDistQuality = round($row['tasDistQuality'],2);
-    $tasTimeQuality = round($row['tasTimeQuality'],2);
-    $tasLaunchQuality = round($row['tasLaunchQuality'],2);
-    $tasArrival = $row['tasArrival'];
-    $tasHeightBonus = $row['tasHeightBonus'];
-    $tasStoppedTime = substr($row['tasStoppedTime'],11);
-    $ssDist = $row['tasSSDistance'];
-    $extComp = $row['comExt'];
+    $html .= "</tr>".PHP_EOL;
+    $html .= "</table>".PHP_EOL;
 
-    if ($row['tasDeparture'] == 'leadout')
+    $html .= "<hr>";
+
+    ## Rankings switch ##
+    $html .= class_selector($link, $rankings, $cval);
+
+    ## Results Table ##
+
+    # create dep. points header
+    if ($formula['departure'] == 'leadout')
     {
         $depcol = 'LO P';
     }
-    elseif ($row['tasDeparture'] == 'kmbonus')
+    elseif ($formula['departure'] == 'kmbonus')
     {
         $depcol = 'Lkm';
     }
-    elseif ($row['tasDeparture'] == 'on')
+    elseif ($formula['departure'] == 'on')
     {
-        $depcol = 'Dpt';
+        $depcol = 'Dep P';
     }
     else
     {
         $depcol = 'off';
     }
-}
-//$waypoints = get_taskwaypoints($link,$tasPk);
 
-// incorporate $tasTaskType / $tasDate in heading?
-if ($isadmin > 0)
-{
-    $hdname = "<a href=\"task_admin.php?comPk=$comPk&tasPk=$tasPk\">$tasName</a> - <a href=\"competition_admin.php?comPk=$comPk\">$comName</a>";
+    $trtab = [];
+
+    $header = array("Rank", "Name", "Nat", "Glider");
+    $header[] = "Sponsor";
+    $header[] = "Start";
+    $header[] = "Finish";
+    $header[] = "Time";
+    $header[] = "Speed";
+    if (isset($stopped_time))
+    {
+        $goalalt = $stats['goal_altitude'];
+        $header[] = "Height";
+    }
+    if ($tasHeightBonus == 'on')
+    {
+        $header[] = "HBs";
+    }
+    $header[] = "Distance";
+
+    $header[] = "Spd P";
+    if ($depcol != 'off')
+    {
+        $header[] = $depcol;
+    }
+    if ($formula['arrival'] == 'on')
+    {
+        $header[] = "Arr P";
+    }
+    // $header[] = fb("Spd");
+    $header[] = "Dst P";
+    $header[] = "Score";
+    $trtab[] = $header;
+    $count = 1;
+
+    foreach ($results as $row)
+    {
+        #check if we have filtered ranking
+        #team ranking to be implemented
+        if ( ($cval == '') || ($cval=='Female' && $row['sex']=='F') || ($cval != null && is_array($rankings[$cval]) && array_search($row['class'],$rankings[$cval]) != NULL) ) {
+            $track_id = $row['track_id'];
+            $name = str_replace('\' ', '\'', ucwords(str_replace('\'', '\' ', strtolower($row['name']))));
+            $nation = $row['nat'];
+            $glider = ( (stripos($row['glider'], 'Unknown') !== false) ? '' : htmlspecialchars(str_replace('\' ', '\'', ucwords(str_replace('\'', '\' ', strtolower(substr($row['glider'], 0, 25)))))) );
+            $sponsor = isset($row['sponsor']) ? htmlspecialchars(str_replace('\' ', '\'', ucwords(str_replace('\'', '\' ', strtolower(substr($row['sponsor'], 0, 40)))))) : '';
+            $class = $row['class'];
+            $resulttype = strtoupper($row['result']);
+
+            # Check if pilot did fly
+            if ( $resulttype == 'ABS' || $resulttype == 'DNF' )
+            {
+            	$trrow = array('', $name, $nation);
+        		$trrow[] = $glider;
+        		$trrow[] = $sponsor;
+        		array_push($trrow, '', '', '', '');
+        		$trrow[] = '';
+        		array_push($trrow, '', '', '', $resulttype);
+            }
+            else
+            {
+        		$dist = round($row['dist_points'], $rnd);
+        		$dep = round($row['dep_points'], $rnd);
+        		$arr = round($row['arr_points'], $rnd);
+        		$spd = round($row['speed_points'], $rnd);
+        		$score = round($row['score'], $rnd);
+        		$lastalt = round($row['altitude']);
+        		$resulttype = $row['type'];
+        		$comment = $row['comment'];
+        		$start = $row['SS_time'];
+        		$end = $row['ES_time'];
+        		$goal = $row['goal_time'];
+        		$endf = "";
+        		$startf = "";
+        		$timeinair = "";
+                $startf = sec_to_time($start, $offset);
+        		if ($end)
+        		{
+                    $timeinair = sec_to_time($end - $start);
+                    $endf = sec_to_time($end, $offset);
+        			$speed = round($ssDist * 3.6 / ($end - $start), 2);
+        		}
+        		else
+        		{
+        			$timeinair = "";
+        			$speed = "";
+        		}
+        		$time = ($end - $start) / 60;
+        		$tardist = round($row['distance']/1000,2);
+        		$penalty = round($row['penalty']);
+        		if (0 + $tardist == 0)
+        		{
+        			$tardist = $resulttype;
+        		}
+
+        		if ($lastscore != $score)
+        		{
+        			$place = "$count";
+        		}
+        		else
+        		{
+        			$place = '';
+        		}
+        		$lastscore = $score;
+
+        		if ($count % 2 == 0)
+        		{
+        			$class = "d";
+        		}
+        		else
+        		{
+        			$class = "l";
+        		}
+
+        		if ( $extComp != 1 )
+        		{
+        		    $trrow = array(fb($place), "<a href=\"tracklog_map.php?trackid=$track_id&tasPk=$tasPk&comPk=$comPk\">$name</a>", $nation );
+        		}
+        		else
+        		{
+        		    $trrow = array(fb($place), $name, $nation );
+        		}
+
+        		$trrow[] = $glider;
+        		$trrow[] = $sponsor;
+
+        		$trrow[] = $startf;
+                #strikesout if pilot did not make goal
+        		$trrow[] = ( $goal != 0 ? $endf : "<del>".$endf."</del>" );
+        		$trrow[] = ( $goal != 0 ? $timeinair : "<del>".$timeinair."</del>" );
+        		$trrow[] = ( $speed != 0 ? number_format((float)$speed,2) : "" );
+        		if ( isset($stopped_time) )
+        		{
+        			$alt = ( $lastalt - $goalalt >= 0 ? "+".($lastalt - $goalalt) : "");
+        			#strikesout if pilot made ESS
+        			$trrow[] = ( !$end ? $alt : "<del>".$alt."</del>" );
+        		}
+        		if ($altitude_bonus == 'on')
+        		{
+        			if ($lastalt > 0)
+        			{
+        				$habove = $lastalt - $goalalt;
+        				if ($habove > 400)
+        				{
+        					$habove = 400;
+        				}
+        				if ($habove > 50)
+        				{
+        					$trrow[] = round(20.0*pow(($habove-50.0),0.40));
+        				}
+        				else
+        				{
+        					$trrow[] = 0;
+        				}
+        			}
+        			else
+        			{
+        				$trrow[] = '';
+        			}
+        		}
+        		$trrow[] = number_format((float)$tardist,2);
+        		if ( $totalPenalty != 0 )
+        		{
+        			$trrow[] = $penalty;
+        		}
+
+        		$trrow[] = number_format($spd,1);
+        		if ($depcol != 'off')
+        		{
+        			$trrow[] = number_format($dep,1);
+        		}
+        		if ($formula['arrival'] == 'on')
+        		{
+        			$trrow[] = $arr;
+        		}
+        	//     $trrow[] = number_format($spd,1);
+        		$trrow[] = number_format($dist,1);
+        		$trrow[] = round($score);
+            }
+
+            $trtab[] = $trrow;
+
+            $count++;
+        }
+    }
+
+    $html .= ftable($trtab, "class='format taskresult'", '' , '');
+
+    ## STATS TABLE ##
+
+    #create task statistic table
+    $sttbl = '';
+    $sttbl .= "<table class='result_stats'>".PHP_EOL;
+    $sttbl .= "<th colspan='2'>Task Statistics</th>".PHP_EOL;
+    $sttbl .= "<tr><td class='result key'>Partecipants:</td><td class='result value'>".$stats['pilots_present']."</td></tr>".PHP_EOL;
+    $sttbl .= "<tr><td class='result key'>Pilots Flying:</td><td class='result value'>".$stats['pilots_launched']."</td></tr>".PHP_EOL;
+    $sttbl .= "<tr><td class='result key'>Pilots in Goal:</td><td class='result value'>".$stats['pilots_goal']."</td></tr>".PHP_EOL;
+    $sttbl .= "<tr><td class='result key'>Best Distance:</td><td class='result value'>".round($stats['max_distance']/1000, 2)." Km </td></tr>".PHP_EOL;
+    $sttbl .= "<tr><td class='result key'>Total Dist. Flown:</td><td class='result value'>".round($stats['tot_dist_flown']/1000, 2)." Km </td></tr>".PHP_EOL;
+    if ($stats['pilots_es'] > 0) {
+        $sttbl .= "<tr><td class='result key'>Best Time:</td><td class='result value'>".sec_to_time($stats['fastest_time'])."</td></tr>".PHP_EOL;
+    }
+    $sttbl .= "</table>".PHP_EOL;
+
+    #create task formula table
+    $fortbl = '';
+    $fortbl .= "<table class='result_stats'>".PHP_EOL;
+    $fortbl .= "<th colspan='2'>Task Parameters</th>".PHP_EOL;
+    $fortbl .= "<tr><td class='result key'>Formula:</td><td class='result value'>".$formula['formula_name']."</td></tr>".PHP_EOL;
+    $fortbl .= "<tr><td class='result key'>Nom. Distance:</td><td class='result value'>".round($formula['nominal_dist']/1000, 1)." Km</td></tr>".PHP_EOL;
+    $fortbl .= "<tr><td class='result key'>Nom. Time:</td><td class='result value'>".sec_to_time($formula['nominal_time'])."</td></tr>".PHP_EOL;
+    $fortbl .= "<tr><td class='result key'>Nom. Launch:</td><td class='result value'>".($formula['nominal_launch']*100)."%</td></tr>".PHP_EOL;
+    $fortbl .= "<tr><td class='result key'>Nom. Goal:</td><td class='result value'>".($formula['nominal_goal']*100)."%</td></tr>".PHP_EOL;
+    $fortbl .= "<tr><td class='result key'>Min. Distance:</td><td class='result value'>".round($formula['min_dist']/1000, 1)." Km</td></tr>".PHP_EOL;
+    $fortbl .= "<tr><td class='result key'>Tolerance:</td><td class='result value'>".($formula['tolerance']*100)."%</td></tr>".PHP_EOL;
+    if ($stopped_time != null) {
+        $fortbl .= "<tr><td class='result key'>Score back Time:</td><td class='result value'>".($formula['score_back_time']/60)." min.</td></tr>".PHP_EOL;
+        $fortbl .= "<tr><td class='result key'>Glide Bonus:</td><td class='result value'>1:".round($formula['glide_bonus'],1)."</td></tr>".PHP_EOL;
+    }
+    $fortbl .= "</table>".PHP_EOL;
+
+    #create task validity table
+    $valtbl = '';
+    $valtbl .= "<table class='result_stats'>".PHP_EOL;
+    $valtbl .= "    <th colspan='2'>Task Validity</th>".PHP_EOL;
+    $valtbl .= "    <tr><td class='result key'>Launch Validity:</td><td class='result value'>".round($stats['launch_validity'],3)."</td></tr>".PHP_EOL;
+    $valtbl .= "    <tr><td class='result key'>Distance Validity:</td><td class='result value'>".round($stats['dist_validity'],3)."</td></tr>".PHP_EOL;
+    $valtbl .= "    <tr><td class='result key'>Time Validity:</td><td class='result value'>".round($stats['time_validity'],3)."</td></tr>".PHP_EOL;
+    if ($stopped_time != null) {
+        $valtbl .= "    <tr><td class='result key'>Stop Validity:</td><td class='result value'>".round($stats['stop_validity'],3)."</td></tr>".PHP_EOL;
+    }
+    $valtbl .= "    <tr><td class='result key'>Task Quality:</td><td class='result value'>".round($stats['day_quality'],3)."</td></tr>".PHP_EOL;
+    $valtbl .= "</table>".PHP_EOL;
+
+    #create avail. points table
+    $pttbl = '';
+    $pttbl .= "<table class='result_stats'>".PHP_EOL;
+    $pttbl .= "<th colspan='2'>Available Points</th>".PHP_EOL;
+    $pttbl .= "<tr><td class='result key'>Distance Points:</td><td class='result value'>".round($stats['avail_dist_points'],1)."</td></tr>".PHP_EOL;
+    $pttbl .= "<tr><td class='result key'>Time Point:</td><td class='result value'>".round($stats['avail_time_points'],1)."</td></tr>".PHP_EOL;
+    $pttbl .= "<tr><td class='result key'>Leading Points:</td><td class='result value'>".round($stats['avail_dep_points'],1)."</td></tr>".PHP_EOL;
+    if ($formula['arrival'] != 'off') {
+        $pttbl .= "<tr><td class='result key'>Arrival Points:</td><td class='result value'>".round($stats['avail_arr_points'],1)."</td></tr>".PHP_EOL;
+        $arr_points = $stats['avail_arr_points'];
+    }
+    else {
+        $arr_points = 0;
+    }
+    $pttbl .= "<tr><td class='result key'>Max. Task points:</td><td class='result value'>".round($stats['avail_dist_points']+$stats['avail_time_points']+$stats['avail_dep_points']+$arr_points,3)."</td></tr>".PHP_EOL;
+    $pttbl .= "<tr><td class='result key'>Best Score:</td><td class='result value'>".round($stats['max_score'],3)."</td></tr>".PHP_EOL;
+    $pttbl .= "</table>".PHP_EOL;
+
+    $html .= "<hr>".PHP_EOL;
+    $html .= "<div class='task_results stats_container'>".PHP_EOL;
+    $html .= "  <div class='column'>".PHP_EOL;
+    $html .= $sttbl;
+    $html .= "  </div>".PHP_EOL;
+    $html .= "  <div class='column'>".PHP_EOL;
+    $html .= $fortbl;
+    $html .= "  </div>".PHP_EOL;
+    $html .= "  <div class='column'>".PHP_EOL;
+    $html .= $valtbl;
+    $html .= "  </div>".PHP_EOL;
+    $html .= "  <div class='column'>".PHP_EOL;
+    $html .= $pttbl;
+    $html .= "  </div>".PHP_EOL;
+    $html .= "</div>".PHP_EOL;
+
+    $html .= "<hr>".PHP_EOL;
+    $html .= "<p>created on ".$created."</p>";
 }
-else
-{
-    $hdname =  "$comName - $tasName";
+else {
+    $html .= "<p>Task has not been scored yet.<br /></p>";
 }
 
 //initializing template header
-tpinit($link,$file,$row);
+tpinit($link,$file,$info);
 
-if ($tasComment != '')
-{
-    echo "<div id=\"comment\" width=\"50%\" align=\"right\">";
-    echo $tasComment;
-    echo "</div>";
-}
-
-# Classification - State (provisional / final YET TO IMPLEMENT)
-echo "<h5 class='classdef'> $classstr $state </h5> \n";
-
-# Pilot Info
-$pinfo = [];
-# total, launched, absent, goal, es?
-
-# Formula / Quality Info
-$finfo = [];
-# gap, min dist, nom dist, nom time, nom goal ?
-
-// FIX: Print out task quality information.
-
-// $sql = "select SUM(ABS(TR.tarPenalty)) AS totalPenalty from tblTaskResult TR where TR.tasPk=$tasPk";
-$sql = "select SUM(ABS(TR.tarPenalty)) AS totalPenalty from ResultView TR where TR.tasPk=$tasPk";
-$result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Penalty Sum failed: ' . mysqli_connect_error());
-$row = mysqli_fetch_assoc($result);
-$totalPenalty = $row['totalPenalty'];
-//echo "TotalPenalty: $totalPenalty";
-
-if ($isadmin)
-{
-	# Messages field
-	if ( $message !== '')
-	{
-		echo "<h4> <span style='color:red'>$message</span> </h4>" . PHP_EOL;
-		echo "<hr />" . PHP_EOL;
-	}
-    echo "<form action=\"task_result.php?comPk=$comPk&tasPk=$tasPk\" name=\"resultupdate\" method=\"post\"><p>";
-}
-// add in country from tblCompPilot if we have entries ...
-$trtab = [];
-
-$header = array(fb("Place"), fb("Pilot"), fb("Nat"), fb("Glider"));
-if ($isadmin and $extComp != 1)
-{
-    $header[] = fb("DHV");
-}
-$header[] = fb("Sponsor");
-$header[] = fb("SS");
-$header[] = fb("ES");
-$header[] = fb("Time");
-$header[] = fb("Speed");
-if ($tasStoppedTime != '')
-{
-    $goalalt = get_goal_altitude($link, $tasPk);
-    $header[] = fb("Altitude");
-}
-if ($tasHeightBonus == 'on')
-{
-    $header[] = fb("HBs");
-}
-$header[] = fb("Distance");
-if ( ($isadmin and $extComp != 1) or ($totalPenalty != 0) )
-{
-	$header[] = fb("Pen");
-}
-$header[] = fb("Spd P");
-if ($depcol != 'off')
-{
-    $header[] = fb($depcol);
-}
-if ($tasArrival == 'on')
-{
-    $header[] = fb("Arv");
-}
-// $header[] = fb("Spd");
-$header[] = fb("Dst P");
-$header[] = fb("Score");
-$trtab[] = $header;
-$count = 1;
-
-// $sql = "	SELECT
-// 				TR.*,
-// 				T.*,
-// 				P.*,
-// 				( SELECT C.natIso3 FROM tblCountryCodes C WHERE C.natID = P.pilNat ) AS pilNationCode
-// 			FROM
-// 				tblTaskResult TR,
-// 				tblTrack T,
-// 				PilotView P
-// 			WHERE
-// 				TR.tasPk = $tasPk $fdhv
-// 				AND T.traPk = TR.traPk
-// 				AND P.pilPk = T.pilPk
-// 			ORDER BY
-// 				TR.tarScore DESC,
-// 				P.pilFirstName";
-
-$sql = "SELECT
-            *
-        FROM
-            `ResultView`
-        WHERE
-            `tasPk` = $tasPk $fdhv
-        ORDER BY
-            `tarScore` DESC,
-            `pilName`";
-
-$result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task result selection failed: ' . mysqli_connect_error());
-$lastscore = 0;
-$hh = 0;
-$mm = 0;
-$ss = 0;
-
-while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))
-{
-    $name = str_replace('\' ', '\'', ucwords(str_replace('\'', '\' ', strtolower($row['pilFirstName'] . ' ' . $row['pilLastName']))));
-    $nation = $row['pilNationCode'];
-    $tarPk = $row['tarPk'];
-    $traPk = $row['traPk'];
-    $glider = ( (stripos($row['traGlider'], 'Unknown') !== false) ? '' : htmlspecialchars(str_replace('\' ', '\'', ucwords(str_replace('\'', '\' ', strtolower(substr($row['traGlider'], 0, 25)))))) );
-    $sponsor = isset($row['pilSponsor']) ? htmlspecialchars(str_replace('\' ', '\'', ucwords(str_replace('\'', '\' ', strtolower(substr($row['pilSponsor'], 0, 40)))))) : '';
-    $dhv = $row['traDHV'];
-    $resulttype = strtoupper($row['tarResultType']);
-
-    # Check if pilot did fly
-    if ( $resulttype == 'ABS' || $resulttype == 'DNF' )
-    {
-    	$trrow = array(fb($place), $name, $nation);
-    	if ($isadmin and $extComp != 1)
-		{
-			$trrow[] = fih("track$tarPk", $traPk) . fin("glider$tarPk", $glider, "wide");
-			$trrow[] = fin("dhv$tarPk", $dhv, "medium");
-			$trrow[] = $sponsor;
-		}
-		else
-		{
-			$trrow[] = $glider;
-			$trrow[] = $sponsor;
-		}
-		array_push($trrow, '', '', '', '');
-		if ($isadmin)
-		{
-			$trrow[] = fin("flown$tarPk", '', "short");
-			$trrow[] = fin("penalty$tarPk", '', "short");
-		}
-		else
-		{
-			$trrow[] = '';
-			if ( $totalPenalty != 0 )
-			{
-				$trrow[] = '';
-			}
-		}
-		array_push($trrow, '', '', '', $resulttype);
-    }
-    else
-    {
-		$dist = round($row['tarDistanceScore'], $rnd);
-		$dep = round($row['tarDepartureScore'], $rnd);
-		$arr = round($row['tarArrivalScore'], $rnd);
-		$spd = round($row['tarSpeedScore'], $rnd);
-		$score = round($row['tarScore'], $rnd);
-		$lastalt = round($row['tarLastAltitude']);
-		$resulttype = $row['tarResultType'];
-		$comment = $row['tarComment'];
-		$start = $row['tarSS'];
-		$end = $row['tarES'];
-		$goal = $row['tarGoal'];
-		$endf = "";
-		$startf = "";
-		$timeinair = "";
-		$hh = floor(($comTOffset + $start) / 3600) % 24;
-		$mm = floor((($comTOffset + $start) % 3600) / 60);
-		$ss = ($comTOffset + $start) % 60;
-		$startf = sprintf("%02d:%02d:%02d", $hh,$mm,$ss);
-		# echo $startf." ".$tasStartTime;
-		if ( $startf < $tasStartTime ) # If pilot did not make the start, do not print start time
-		{
-			$startf = "";
-		}
-		if ($end)
-		{
-			$hh = floor(($end - $start) / 3600);
-			$mm = floor((($end - $start) % 3600) / 60);
-			$ss = ($end - $start) % 60;
-			$timeinair = sprintf("%01d:%02d:%02d", $hh,$mm,$ss);
-			$hh = floor(($comTOffset + $start) / 3600) % 24;
-			$mm = floor((($comTOffset + $start) % 3600) / 60);
-			$ss = ($comTOffset + $start) % 60;
-			$startf = sprintf("%02d:%02d:%02d", $hh,$mm,$ss);
-			$hh = floor(($comTOffset + $end) / 3600) % 24;
-			$mm = floor((($comTOffset + $end) % 3600) / 60);
-			$ss = ($comTOffset + $end) % 60;
-			$endf = sprintf("%02d:%02d:%02d", $hh,$mm,$ss);
-			$speed = round($ssDist * 3.6 / ($end - $start), 2);
-		}
-		else
-		{
-			$timeinair = "";
-			$speed = "";
-// 			if ($tasTaskType == 'speedrun-interval')
-// 			{
-// 				$hh = floor(($comTOffset + $start) / 3600) % 24;
-// 				$mm = floor((($comTOffset + $start) % 3600) / 60);
-// 				$ss = ($comTOffset + $start) % 60;
-// 				if ($hh >= 0 && $mm >= 0 && $ss >= 0)
-// 				{
-// 					$startf = sprintf("%02d:%02d:%02d", $hh,$mm,$ss);
-// 				}
-// 				else
-// 				{
-// 					$startf = "";
-// 				}
-// 			}
-		}
-		$time = ($end - $start) / 60;
-		$tardist = round($row['tarDistance']/1000,2);
-		$penalty = round($row['tarPenalty']);
-		#$glider = ( (stripos($row['pilGlider'], 'Unknown') !== false) ? '' : htmlspecialchars(str_replace('\' ', '\'', ucwords(str_replace('\'', '\' ', strtolower($row['pilGliderBrand'] . ' ' . $row['pilGlider']))))) );
-		if (0 + $tardist == 0)
-		{
-			$tardist = $resulttype;
-		}
-
-		if ($lastscore != $score)
-		{
-			$place = "$count";
-		}
-		else
-		{
-			$place = '';
-		}
-		$lastscore = $score;
-
-		if ($count % 2 == 0)
-		{
-			$class = "d";
-		}
-		else
-		{
-			$class = "l";
-		}
-
-		if ( $extComp != 1 )
-		{
-		    $trrow = array(fb($place), "<a href=\"tracklog_map.php?trackid=$traPk&tasPk=$tasPk&comPk=$comPk\">$name</a>", $nation );
-		}
-		else
-		{
-		    $trrow = array(fb($place), $name, $nation );
-		}
-		//$trrow = array(fb($place), "<a href=\"tracklog_map.php?trackid=$traPk&tasPk=$tasPk&comPk=$comPk\">$name</a>", $nation );
-		if ($isadmin and $extComp != 1)
-		{
-			$trrow[] = fih("track$tarPk", $traPk) . fin("glider$tarPk", $glider, "wide");
-			$trrow[] = fin("dhv$tarPk", $dhv, "medium");
-			$trrow[] = $sponsor;
-		}
-		else
-		{
-			$trrow[] = $glider;
-			$trrow[] = $sponsor;
-		}
-		$trrow[] = $startf;
-		$trrow[] = ( $goal != 0 ? $endf : "<del>".$endf."</del>" );
-		$trrow[] = ( $goal != 0 ? $timeinair : "<del>".$timeinair."</del>" );
-		$trrow[] = ( $speed != 0 ? number_format((float)$speed,2) : "" );
-		if ($tasStoppedTime != '')
-		{
-			$alt = ( $lastalt - $goalalt >= 0 ? "+".($lastalt - $goalalt) : "");
-			#strikesout if pilot made ESS
-			$trrow[] = ( !$end ? $alt : "<del>".$alt."</del>" );
-		}
-		if ($tasHeightBonus == 'on')
-		{
-			if ($lastalt > 0)
-			{
-				$habove = $lastalt - $goalalt;
-				if ($habove > 400)
-				{
-					$habove = 400;
-				}
-				if ($habove > 50)
-				{
-					$trrow[] = round(20.0*pow(($habove-50.0),0.40));
-				}
-				else
-				{
-					$trrow[] = 0;
-				}
-			}
-			else
-			{
-				$trrow[] = '';
-			}
-		}
-		if ($isadmin and $extComp != 1)
-		{
-			$trrow[] = fin("flown$tarPk", $tardist, "short");
-			$trrow[] = fin("penalty$tarPk", $penalty, "short");
-		}
-		else
-		{
-			$trrow[] = number_format((float)$tardist,2);
-			if ( $totalPenalty != 0 )
-			{
-				$trrow[] = $penalty;
-			}
-		}
-		$trrow[] = number_format($spd,1);
-		if ($depcol != 'off')
-		{
-			$trrow[] = number_format($dep,1);
-		}
-		if ($tasArrival == 'on')
-		{
-			$trrow[] = $arr;
-		}
-	//     $trrow[] = number_format($spd,1);
-		$trrow[] = number_format($dist,1);
-		$trrow[] = round($score);
-    }
-
-    if ($isadmin and $extComp != 1)
-    {
-        $trrow[] = fbut("submit", "tardel",  $traPk, "del");
-        $trrow[] = fbut("submit", "tarup",  $tarPk, "up");
-        $trrow[] = $comment;
-    }
-
-    $trtab[] = $trrow;
-
-    $count++;
-}
-echo ftable($trtab, "class='format taskresult'", '' , '');
-
-if ($isadmin and $extComp != 1)
-{
-    // FIX: enable 'manual' pilot flight addition
-
-    $piladd = [];
-    $piladd[] =  array(fb("FAI"), fin("fai",'',6), fb("Type"), fselect('resulttype', 'lo', array('abs', 'dnf', 'lo', 'goal' )),
-        fb("Dist"), fin("flown",'',4), fb("Glider"), fin("glider",'',6), fb("Class"), fselect('dhv', 'competition', array('1', '1/2', '2', '2/3', 'competition')), fb("Penalty"), fin("penalty",'',4), fbut("submit","addflight", "$tarPk", "Manual Addition"));
-    echo ftable($piladd, 'class=taskpiladd', '', '');
-
-    echo "</form>";
-    echo "</p>";
-}
+echo $html;
+echo "<p><a href='comp_result.php?comPk=$comPk'>Back to competition Result</a></p>";
 
 tpfooter($file);
 

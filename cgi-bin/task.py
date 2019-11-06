@@ -238,7 +238,7 @@ class Task(object):
 
         return task
 
-    def create_scoring(self):
+    def create_scoring(self, status):
         '''gets info about formula, pilots results,
             calculate scores, and create a json file
         '''
@@ -254,7 +254,8 @@ class Task(object):
 
         self.stats.update(lib.day_quality(self))
         results = lib.points_allocation_new(self)
-        R.create_result(self, results)
+        ref     = R.create_result(self, results, status)
+        return ref
 
     def is_valid(self):
         '''In stopped task, check if duration is enough to be valid'''

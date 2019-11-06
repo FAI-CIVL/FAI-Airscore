@@ -46,14 +46,14 @@ def lc_calc(res, t):
 
     '''find task_deadline to use for LC calculation'''
     task_deadline = min((t.task_deadline if not t.stopped_time else t.stopped_time), t.stats['max_time'])
-    if t.stats['max_ess_time']:
+    if t.stats['max_ess_time'] and res['last_time']:
         if (res['last_time'] < t.stats['max_ess_time']):
             task_deadline = t.stats['max_ess_time']
         else:
             task_deadline = min(res['last_time'], task_deadline)
 
     '''Checking if we have a assigned status without a track, and if pilot actually did the start pilon'''
-    if res['result'] not in ('abs', 'dnf', 'mindist') and res['SS_time']:
+    if (res['result'] not in ('abs', 'dnf', 'mindist')) and res['SS_time']:
         my_start    = res['start_time']
 
         '''add the leading part, from start time of first pilot to start, to my start time'''
@@ -177,7 +177,7 @@ def get_results_new(task):
 
     for res in pilots:
         '''manage ABS pilots'''
-        if res['result'] is not 'abs':
+        if not (res['result'] == 'abs'):
             # Handle Stopped Task
             if task.stopped_time and res['last_altitude'] > task.goal_altitude and formula.glide_bonus > 0:
                 print("Stopped height bonus: ", (formula.glide_bonus * (res['last_altitude'] - task.goal_altitude)))
@@ -190,12 +190,15 @@ def get_results_new(task):
 
             #sanity
             res['time'] = max(res['time'], 0)
+        else:
+            res['time']         = None
+            res['timeafter']    = None
 
-            '''
-            Leadout Points Adjustment
-            C.6.3.1
-            '''
-            res['lead_coeff'] = lc_calc(res, task) # PWC LeadCoeff (with squared distances)
+        '''
+        Leadout Points Adjustment
+        C.6.3.1
+        '''
+        res['lead_coeff'] = lc_calc(res, task) # PWC LeadCoeff (with squared distances)
 
     return pilots
 
@@ -236,10 +239,10 @@ def points_allocation_new(task):   # from PWC###
 
         # Sanity
         if pil['result'] in ('dnf', 'abs'):
-            pil['Pdist']       = 0
-            pil['Pspeed']      = 0
-            pil['Parrival']    = 0
-            pil['Pdepart']     = 0
+            pil['dist_points']  = 0
+            pil['time_points']  = 0
+            pil['arr_points']   = 0
+            pil['dep_points']   = 0
 
         else:
             # Pilot distance score
