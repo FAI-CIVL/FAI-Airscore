@@ -130,6 +130,8 @@ def stopped_validity(task):
     NumberOfPilotsReachedESS > 0 : StoppedTaskValidity = 1
     NumberOfPilotsReachedESS = 0 :
     StoppedTaskValidity = min(1, sqrt((bestDistFlown - avgDistFlown)/(TaskDistToESS-bestDistFlown+1)*sqrt(stDevDistFlown/5))+(pilotsLandedBeforeStop/pilotsLaunched)^3)
+
+    For this formula we need to use Km as there are numeric constants
     '''
     from math import sqrt
 
@@ -139,11 +141,13 @@ def stopped_validity(task):
     if stats['fastest'] and stats['fastest'] > 0:
         return 1.000
 
-    avgdist = stats['tot_dist_flown'] / stats['pilots_launched']
-    distlaunchtoess = task.opt_dist_to_ESS
+    avgdist         = stats['tot_dist_flown'] / stats['pilots_launched'] / 1000     # avg distance in Km
+    distlaunchtoess = task.opt_dist_to_ESS / 1000                                   # TaskDistToESS in Km
+    max_distance    = stats['max_distance'] / 1000                                  # bestDistFlown in Km
+    std_dev         = stats['std_dev'] / 1000                                       # stDevDistFlown in Km
 
     stopv = min(1.000,
-                (sqrt((stats['max_distance'] - avgdist) / (distlaunchtoess - stats['max_distance'] + 1) * sqrt(stats['std_dev'] / 5) )
+                (sqrt((max_distance - avgdist) / (distlaunchtoess - max_distance + 1) * sqrt(std_dev / 5) )
                 + (stats['pilots_landed'] / stats['pilots_launched'])**3))
     return stopv
 
