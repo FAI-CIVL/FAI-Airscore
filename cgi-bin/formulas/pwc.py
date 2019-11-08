@@ -96,6 +96,10 @@ def launch_validity(stats, formula):
     Launch Validity = 0.028*LRV + 2.917*LVR^2 - 1.944*LVR^3
     '''
 
+    if stats['pilots_present'] == 0 or formula.nominal_launch == 0:
+        '''avoid div by zero'''
+        return 0
+
     nomlau  = stats['pilots_present'] * (1 - formula.nominal_launch)
     LVR     = min(1, (stats['pilots_launched'] + nomlau) / stats['pilots_present'])
     launch  = 0.028 * LVR + 2.917 * LVR**2 - 1.944 * LVR**3
@@ -133,6 +137,42 @@ def day_quality(task):
     val['day_quality']      = min( (val['stop_validity']*val['launch_validity']*val['dist_validity']*val['time_validity']), 1.000)
 
     return val
+
+def points_weight(task):
+    from math import sqrt
+
+    comp_class  = task.comp_class               # HG / PG
+    stats       = task.stats
+    formula     = task.formula
+    quality     = stats['day_quality']
+
+    if not(stats['pilots_launched'] > 0):       # sanity
+        return 0, 0, 0, 0
+
+    '''Goal Ratio'''
+    goal_ratio = stats['pilots_goal'] / stats['pilots_launched']
+
+    '''
+    DistWeight:         0.9 - 1.665* goalRatio + 1.713*GolalRatio^2 - 0.587*goalRatio^3
+
+    LeadWeight:         (1 - DistWeight)/8 * 1.4
+
+    ArrWeight:          0
+
+    TimeWeight:         1 − DistWeight − LeadWeight
+    '''
+
+    dist_weight = 0.9 - 1.665 * goal_ratio + 1.713 * goal_ratio**2 - 0.587 * goal_ratio**3
+    lead_weight = (1 - dist_weight) / 8 * 1.4
+    time_weight = 1 - dist_weight - lead_weight
+
+    Adistance   = 1000 * quality * dist_weight            # AvailDistPoints
+    Astart      = 1000 * quality * lead_weight            # AvailLeadPoints
+    if formula.version == '2017':  Astart  += 50          # PWC2017 Augmented LeadPoints
+    Aarrival    = 0                                       # AvailArrPoints
+    Aspeed      = 1000 * quality * time_weight            # AvailSpeedPoints
+
+    return Adistance, Aspeed, Astart, Aarrival
 
 def get_results_new(task):
 
@@ -216,10 +256,6 @@ def points_allocation_new(task):   # from PWC###
     stats   = task.stats
     task_id = task.id
     formula = task.formula
-    quality = stats['day_quality']
-    Ngoal   = stats['pilots_goal']
-    Tmin    = stats['fastest']
-    Tfarr   = stats['min_ess_time']
 
     # Get basic GAP allocation values
     Adistance, Aspeed, Astart, Aarrival = points_weight(task)
@@ -248,26 +284,28 @@ def points_allocation_new(task):   # from PWC###
             # Pilot distance score
             # FIX: should round pil->distance properly?
             # my pilrdist = round(pil->{'distance'}/100.0) * 100
-            pil['dist_points'] = pilot_distance(task, pil, Adistance)
+            pil['dist_points']  = pilot_distance(task, pil)
 
             # Pilot speed score
-            pil['time_points'] = pilot_speed(task, pil, Aspeed)
+            pil['time_points']  = pilot_speed(task, pil)
 
             # Pilot departure/leading points
-            pil['dep_points'] = pilot_departure_leadout(task, pil, Astart) if (pil['result'] != 'mindist' and pil['SS_time']) else 0
+            pil['dep_points']   = pilot_departure_leadout(task, pil) if (pil['result'] != 'mindist' and pil['SS_time']) else 0
 
-        # Pilot arrival score    this is always off in pwc
-        # Parrival = pilot_arrival(formula, task, pil, Aarrival)
-        pil['arr_points']=0
-        # Penalty for not making goal .
-        if not pil['goal_time']:
-            pil['goal_time'] = 0
-            pil['time_points'] = pil['time_points'] * (1 - formula.no_goal_penalty)
-            #pil['Parrival'] = Parrival * (1 - formula['forGoalSSpenalty'])
+            # Pilot arrival score    this is always off in pwc
+            # Parrival = pilot_arrival(formula, task, pil)
+            pil['arr_points']   = 0
+
+            # Penalty for not making goal .
+            if not pil['goal_time']:
+                pil['goal_time']    = 0
+                pil['time_points']  = pil['time_points'] * (1 - formula.no_goal_penalty)
+                #pil['Parrival'] = Parrival * (1 - formula['forGoalSSpenalty'])
 
         # Total score
-        print('{} + {} + {} + {} - {}'.format(pil['dist_points'],pil['time_points'],pil['arr_points'],pil['dep_points'],penalty))
         pil['score'] = pil['dist_points'] + pil['time_points'] + pil['arr_points'] + pil['dep_points']
+
+        print('{} + {} + {} + {} - {}'.format(pil['dist_points'],pil['time_points'],pil['arr_points'],pil['dep_points'],penalty))
 
         #update task max score
         if pil['score'] > task.stats['max_score']: task.stats['max_score'] = pil['score']
@@ -277,3 +315,70 @@ def points_allocation_new(task):   # from PWC###
             pil['score'] = max(0, pil['score'] - penalty)
 
     return pilots
+
+def pilot_speed(task, pil):
+    from math import sqrt
+
+    stats   = task.stats
+    Aspeed  = stats['avail_time_points']
+
+    # C.6.2 Time Points
+    Tmin    = stats['fastest']
+    Pspeed  = 0
+    Ptime   = 0
+
+    if pil['ES_time'] and Tmin > 0:   # checking that task has pilots in ESS, and that pilot is in ESS
+                                        # we need to change this! It works correctly only if Time Pts is 0 when pil not in goal
+                                        # for HG we need a fastest and a fastest in goal in TaskTotalsView
+        Ptime = pil['time']
+        SF = 1 - ((Ptime-Tmin) / 3600 / sqrt(Tmin / 3600) )**(5/6)
+
+        if SF > 0:
+            Pspeed = Aspeed * SF
+
+
+    print(pil['track_id'], " Ptime: {}, Tmin={}".format(Ptime, Tmin))
+
+    return Pspeed
+
+def pilot_departure_leadout(task, pil):
+    from math import sqrt
+
+    stats   = task.stats
+    Astart  = task['avail_dep_points']
+
+    # C.6.3 Leading Points
+
+    LCmin   = stats['min_lead_coeff']   # min(tarLeadingCoeff2) as LCmin : is PWC's LCmin?
+    LCp     = pil['lead_coeff']         # Leadout coefficient
+
+    # Pilot departure score
+    Pdepart = 0
+    '''Departure Points type = Leading Points'''
+    if task.departure == 'leadout':     # In PWC is always the case, we can ignore else cases
+        print("  - PWC  leadout: LC ", LCp, ", LCMin : ", LCmin)
+        if LCp > 0:
+            if LCp <= LCmin:
+                Pdepart = Astart
+            elif LCmin <= 0:            # this shouldn't happen
+                print("=======  being LCmin <= 0   =========")
+                Pdepart = 0
+            else:                       # We should have ONLY this case
+                # LeadingFactor = max (0, 1 - ( (LCp -LCmin) / sqrt(LCmin) )^(2/3))
+                # LeadingPoints = LeadingFactor * AvailLeadPoints
+                LF = 1 - ( (LCp - LCmin) / sqrt(LCmin) )**(2/3)
+
+                if LF > 0:
+                    Pdepart = Astart * LF
+
+    # Sanity
+    if 0 + Pdepart != Pdepart:
+        Pdepart = 0
+
+
+    if Pdepart < 0:
+        Pdepart = 0
+
+
+    print("    Pdepart: ", Pdepart)
+    return Pdepart

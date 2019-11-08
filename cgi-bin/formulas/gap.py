@@ -62,8 +62,12 @@ def launch_validity(stats, formula):
     ?? Setting Nominal Launch = 10 (max number of DNF that still permit full validity) ??
     '''
 
+    if stats['pilots_present'] == 0 or formula.nominal_launch == 0:
+        '''avoid div by zero'''
+        return 0
+
     LVR = min(1, (stats['pilots_launched']) / (stats['pilots_present'] * formula.nominal_launch))
-    launch = 0.028 * LVR + 2.917 * LVR**2 - 1.944 * LVR**3
+    launch = 0.027 * LVR + 2.917 * LVR**2 - 1.944 * LVR**3
     launch = min(launch, 1) if launch > 0 else 0           #sanity
     print("GAP Launch validity = launch")
 
@@ -77,13 +81,16 @@ def distance_validity(stats, formula):
     Dist. Validity = min (1, DVR)
     '''
 
-    nomgoal         = formula.nominal_goal          # nom goal percentage
-    nomdist         = formula.nominal_dist          # nom distance
-    mindist         = formula.min_dist              # min distance
-    totalflown      = stats['tot_dist_over_min']          # total distance flown by pilots over min. distance
-    BestDistOverNom = stats['max_distance'] - nomdist    # best distance flown ove minimum dist.
-    # bestdistovermin = stats['max_distance'] - mindist  # best distance flown ove minimum dist.
-    NumPilotsFlying = stats['pilots_launched']             # Num Pilots flown
+    nomgoal         = formula.nominal_goal                  # nom goal percentage
+    nomdist         = formula.nominal_dist                  # nom distance
+    mindist         = formula.min_dist                      # min distance
+    totalflown      = stats['tot_dist_over_min']            # total distance flown by pilots over min. distance
+    BestDistOverNom = stats['max_distance'] - nomdist       # best distance flown ove minimum dist.
+    # bestdistovermin = stats['max_distance'] - mindist     # best distance flown ove minimum dist.
+    NumPilotsFlying = stats['pilots_launched']              # Num Pilots flown
+
+    if not(NumPilotsFlying > 0):                            # sanity
+        return 0
 
     NomDistArea     = ( ((nomgoal + 1)*(nomdist - mindist)) + max(0, (nomgoal * BestDistOverNom)) ) / 2
     DVR             = totalflown / (NumPilotsFlying * NomDistArea)
@@ -146,6 +153,10 @@ def stopped_validity(task):
     max_distance    = stats['max_distance'] / 1000                                  # bestDistFlown in Km
     std_dev         = stats['std_dev'] / 1000                                       # stDevDistFlown in Km
 
+    if stats['pilots_launched'] == 0:
+        '''avoid div by zero'''
+        return 0
+
     stopv = min(1.000,
                 (sqrt((max_distance - avgdist) / (distlaunchtoess - max_distance + 1) * sqrt(std_dev / 5) )
                 + (stats['pilots_landed'] / stats['pilots_launched'])**3))
@@ -181,69 +192,83 @@ def day_quality(task, formula):
 def points_weight(task):
     from math import sqrt
 
-    stats   = task.stats
-    formula = task.formula
+    comp_class  = task.comp_class               # HG / PG
+    stats       = task.stats
+    formula     = task.formula
+    quality     = stats['day_quality']
 
-    quality = stats['day_quality']
-    x = stats['pilots_goal'] / stats['pilots_launched']  # GoalRatio
+    if not(stats['pilots_launched'] > 0):       # sanity
+        return 0, 0, 0, 0
 
-    '''
-    DistWeight = 0.9 - 1.665* goalRatio + 1.713*GolalRatio^2 - 0.587*goalRatio^3
-    '''
-    distweight = 0.9 - 1.665 * x + 1.713 * x * x - 0.587 * x *x *x
-    print("PWC 2016 Points Allocatiom distWeight = ", distweight)
-    # distweight = 1 - 0.8 * sqrt(x)
-    # print("NOT Using 2016 Points Allocatiom distWeight = ", distweight)
+    '''Goal Ratio'''
+    goal_ratio = stats['pilots_goal'] / stats['pilots_launched']
 
     '''
-    LeadingWeight = (1 - DistWeight)/8 * 1.4
-    '''
-    leadweight = (1 - distweight) / 8 * 1.4
-    print("LeadingWeight = ", leadweight)
-    Adistance = 1000 * quality * distweight  # AvailDistPoints
-    print("Available Dist Points = ", Adistance)
-    Astart = 1000 * quality * leadweight  # AvailLeadPoints
-    print("Available Lead Points = ", Astart)
+    DistWeight:         0.9 - 1.665* goalRatio + 1.713*GolalRatio^2 - 0.587*goalRatio^3
 
-    '''calculating speedweight and Aspeed using PWC2016 formula, without arrivalweight'''
-    # we could safely delete everything concerning Arrival Points in PWC GAP.
-    Aarrival = 0
-    speedweight = 1 - distweight - leadweight
-    Aspeed = 1000 * quality * speedweight  # AvailSpeedPoints
-    print("Available Speed Points = ", Aspeed)
-    print("points_weight: (", formula.version, ") Adist=" , Adistance, ", Aspeed=", Aspeed, ", Astart=", Astart ,", Aarrival=", Aarrival)
+    LeadWeight:
+            HG:         (1 - DistWeight)/8 * 1.4
+            PG:
+                GoalRatio > 0:
+                        (1 - DistWeight)/8 * 1.4 * 2
+                GoalRatio = 0:
+                        (BestDist / TaskDist) * 0.1
+
+    ArrWeight:
+            HG:         (1 - DistWeight)/8
+            PG:         0
+
+    TimeWeight:         1 − DistWeight − LeadWeight − ArrWeight
+    '''
+
+    dist_weight = 0.9 - 1.665 * goal_ratio + 1.713 * goal_ratio**2 - 0.587 * goal_ratio**3
+
+    if comp_class == 'HG':
+        lead_weight      = (1 - dist_weight) / 8 * 1.4
+        arr_weight   = (1 - dist_weight) / 8
+    else:
+        arr_weight   = 0
+        if goal_ratio > 0:
+            lead_weight = (1 - dist_weight) / 8 * 1.4 * 2
+        else:
+            lead_weight = stats['max_distance'] / task.opt_dist * 0.1
+
+    time_weight = 1 - dist_weight - lead_weight - arr_weight
+
+    Adistance   = 1000 * quality * dist_weight            # AvailDistPoints
+    Astart      = 1000 * quality * lead_weight            # AvailLeadPoints
+    Aarrival    = 1000 * quality * arrival_weight         # AvailArrPoints
+    Aspeed      = 1000 * quality * time_weight            # AvailSpeedPoints
+
     return Adistance, Aspeed, Astart, Aarrival
 
 
-def pilot_departure_leadout(task, pil, Astart):
+def pilot_departure_leadout(task, pil):
     from math import sqrt
 
-    stats = task.stats
+    stats   = task.stats
+    Astart  = task['avail_dep_points']
+
     # C.6.3 Leading Points
 
-    LCmin = stats['min_lead_coeff']  # min(tarLeadingCoeff2) as LCmin : is PWC's LCmin?
-    LCp = pil['lead_coeff']  # Leadout coefficient
+    LCmin   = stats['min_lead_coeff']   # min(tarLeadingCoeff2) as LCmin : is PWC's LCmin?
+    LCp     = pil['lead_coeff']         # Leadout coefficient
 
     # Pilot departure score
     Pdepart = 0
     '''Departure Points type = Leading Points'''
-    if task.departure == 'leadout':  # In PWC is always the case, we can ignore else cases
+    if task.departure == 'leadout':     # In PWC is always the case, we can ignore else cases
         print("  - PWC  leadout: LC ", LCp, ", LCMin : ", LCmin)
         if LCp > 0:
             if LCp <= LCmin:
-                print("======= being LCp <= LCmin  =========")
                 Pdepart = Astart
-            elif LCmin <= 0:
-                # this shouldn't happen
+            elif LCmin <= 0:            # this shouldn't happen
                 print("=======  being LCmin <= 0   =========")
                 Pdepart = 0
-            else: # We should have ONLY this case
-                # $Pdepart = $Astart * (1-(($LCp-$LCmin)*($LCp-$LCmin)/sqrt($LCmin))**(1/3))
-                # $Pdepart = $Alead * (1-(($LCp-$LCmin)*($LCp-$LCmin)/sqrt($LCmin))**(1/3)) # Why $Alead is not working?
-
+            else:                       # We should have ONLY this case
                 # LeadingFactor = max (0, 1 - ( (LCp -LCmin) / sqrt(LCmin) )^(2/3))
                 # LeadingPoints = LeadingFactor * AvailLeadPoints
-                LF = 1 - ( (LCp - LCmin) ** 2 / sqrt(LCmin) ) ** (1 / 3)
+                LF = 1 - ( (LCp - LCmin) / sqrt(LCmin) )**(2/3)
                 print("LeadFactor = ", LF)
                 if LF > 0:
                     Pdepart = Astart * LF
@@ -263,22 +288,22 @@ def pilot_departure_leadout(task, pil, Astart):
     print("    Pdepart: ", Pdepart)
     return Pdepart
 
-
-def pilot_speed(task, pil, Aspeed):
+def pilot_speed(task, pil):
     from math import sqrt
 
-    stats = task.stats
+    stats   = task.stats
+    Aspeed  = stats['avail_time_points']
 
     # C.6.2 Time Points
-    Tmin = stats['fastest']
-    Pspeed = 0
-    Ptime = 0
+    Tmin    = stats['fastest']
+    Pspeed  = 0
+    Ptime   = 0
 
     if pil['ES_time'] and Tmin > 0:   # checking that task has pilots in ESS, and that pilot is in ESS
                                         # we need to change this! It works correctly only if Time Pts is 0 when pil not in goal
                                         # for HG we need a fastest and a fastest in goal in TaskTotalsView
         Ptime = pil['time']
-        SF = 1 - ((Ptime-Tmin) / 3600 / sqrt(Tmin / 3600) ) ** (5 / 6)
+        SF = 1 - ((Ptime-Tmin) / 3600 / sqrt(Tmin / 3600) )**(2/3)
 
         if SF > 0:
             Pspeed = Aspeed * SF
@@ -289,13 +314,14 @@ def pilot_speed(task, pil, Aspeed):
     return Pspeed
 
 
-def pilot_distance(task, pil, Adistance):
+def pilot_distance(task, pil):
     """
 
     :type pil: object
     """
 
-    maxdist = task.stats['max_distance']
-    Pdist = Adistance * pil['distance']/maxdist
+    maxdist     = task.stats['max_distance']
+    Adistance   = task.stats['avail_dist_points']
+    Pdist       = Adistance * pil['distance'] / maxdist
 
     return Pdist
