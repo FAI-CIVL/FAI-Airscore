@@ -1,4 +1,6 @@
 """
+Task Library
+
 contains
     Task class
     get_task_json and write_task_json - json files for task map
@@ -238,14 +240,36 @@ class Task(object):
 
         return task
 
-    def create_scoring(self, status):
-        '''gets info about formula, pilots results,
-            calculate scores, and create a json file
+    def create_scoring(self, status=None, mode='default'):
+        '''
+            Create Scoring
+            - if necessary,recalcutales all tracks (stopped task, changed task settings)
+            - gets info about formula, pilots results
+            - calculates scores
+            - creates a json file
+            - adds json file to database
+
+            Inputs:
+            - status:   str - 'provisional', 'final', 'official' ...
+            - mode:     str - 'default'
+                              'full'    recalculates all tracks
         '''
         from result     import Task_result as R
         from pprint     import pprint as pp
 
+        '''retrieve scoring formula library'''
         lib = self.formula.get_lib()
+
+        if ( mode == 'full' or self.stopped ):
+            # TODO: check if we changed task, or we had new tracks, after last results generation
+            #       If this is the case we should not need to rescore unless especially requested
+            '''Task Full Rescore
+                - recalculate Opt. route
+                - check all tracks'''
+            self.calculate_task_length()
+            self.calculate_optimised_task_length()
+            self.check_all_tracks(lib)
+
         self.stats.update(lib.task_totals(self.id))
 
         if self.stats['pilots_present'] == 0:
@@ -253,7 +277,7 @@ class Task(object):
             return 0
 
         self.stats.update(lib.day_quality(self))
-        results = lib.points_allocation_new(self)
+        results = lib.points_allocation(self)
         ref     = R.create_result(self, results, status)
         return ref
 
@@ -320,6 +344,83 @@ class Task(object):
             self.duration   = duration
             self.stop_time  = last_time
             return True
+
+    def check_all_tracks(self, lib = None):
+        ''' checks all igc files against Task and creates results '''
+
+        from Flight_result import verify_all_tracks, adjust_flight_result
+
+        if not lib:
+            '''retrieve scoring formula library'''
+            lib = self.formula.get_lib()
+
+        ''' manage Stopped Task    '''
+        if self.stopped_time:
+            if self.comp_class == 'PG' :
+                '''
+                If (class == 'PG' and (SS_Interval or type == 'ELAPSED TIME')
+                    We cannot check tracks just once.
+                    We need to find last_SS_time and then check again tracks until duration == stopTime - last_SS_time
+
+                We need to calculate stopTime from announcingTime'''
+                '''     In paragliding the score-back time is set as part of the competition parameters
+                        (see section 5.7).
+                        taskStopTime = taskStopAnnouncementTime − competitionScoreBackTime
+                        In paragliding, a stopped task will be scored if the flying time was one hour or more.
+                        For Race to Goal tasks, this means that the Task Stop Time must be one hour or more
+                        after the race start time. For all other tasks, in order for them to be scored,
+                        the task stop time must be one hour or more after the last pilot started.
+                        minimumTime = 60 min .
+                        typeOfTask = RaceToGoal ∧ numberOfStartGates = 1:
+                            taskStopTime − startTime < minimumTime : taskValidity = 0
+                        TypeOfTask ≠ RaceToGoal ∨ numberOfStartGates > 1:
+                            taskStopTime − max(∀p :p ∈ StartedPilots :startTime p ) < minimumTime : taskValidity = 0
+                '''
+                if not self.is_valid():
+                    return f'task duration is not enough, task with id {self.id} is not valid, scoring is not needed'
+
+                # min_task_duration = 3600
+                # last_time = self.stopped_time - self.formula.score_back_time
+                results = verify_all_tracks(self, lib)
+
+                if self.task_type == 'elapsed time' or self.SS_interval:
+                    '''need to check track and get last_start_time'''
+                    self.stats.update(lib.task_totals(self.id))
+                    # duration = last_time - self.last_start_time
+                    if not self.is_valid():
+                        return f'duration is not enough for all pilots, task with id {self.id} is not valid, scoring is not needed.'
+                    results = adjust_flight_result(self, results, lib)
+
+            elif self.comp_class == 'HG':
+            '''     In hang-gliding, stopped tasks are “scored back” by a time that is determined
+                    by the number of start gates and the start gate interval:
+                    The task stop time is one start gate interval, or 15 minutes in case of a
+                    single start gate, before the task stop announcement time.
+                    numberOfStartGates = 1 : taskStopTime = taskStopAnnouncementTime − 15min.
+                    numberOfStartGates > 1 : taskStopTime = taskStopAnnouncementTime − startGateInterval.
+                    In hang gliding, a stopped task can only be scored if either a pilot reached goal
+                    or the race had been going on for a certain minimum time.
+                    The minimum time depends on whether the competition is the Women’s World Championship or not.
+                    The race start time is defined as the time when the first valid start was taken by a competition pilot.
+                    typeOfCompetition = Women's : minimumTime = 60min.
+                    typeOfCompetition ≠ Women's : minimumTime = 90min.
+                    taskStopTime − timeOfFirstStart < minimumTime ∧ numberOfPilotsInGoal(taskStopTime) = 0 : taskValidity = 0
+            '''
+
+                if not self.is_valid():
+                    return f'task duration is not enough, task with id {self.id} is not valid, scoring is not needed'
+
+                # min_task_duration = 3600 * 1.5 # 90 min
+                # last_time   = ( (self.stopped_time - self.formula.score_back_time)
+                #                 if not self.SS_interval
+                #                 else (self.stopped_time - self.SS_interval))
+                # duration    = last_time - self.start_time
+
+                verify_all_tracks(self, lib)
+
+        else:
+            '''get all results for the task'''
+            verify_all_tracks(self, lib)
 
     def update_task_distance(self):
 

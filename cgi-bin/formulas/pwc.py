@@ -1,3 +1,18 @@
+"""
+PWC Formula Library
+
+contains
+    - All procedures to calculate and allocate points according to PWC GAP Formula
+
+Use:    lib = Task.formula.get_lib()
+        lib = Formula.get_lib()
+
+Stuart Mackintosh - 2019
+
+TO DO:
+Add support for FAI Sphere ???
+"""
+
 from collections import namedtuple
 from formulas.gap import  task_totals, points_weight, pilot_distance, pilot_speed, pilot_departure_leadout
 from myconn import Database
@@ -174,7 +189,7 @@ def points_weight(task):
 
     return Adistance, Aspeed, Astart, Aarrival
 
-def get_results_new(task):
+def get_results(task):
 
     stats   = task.stats
     formula = task.formula
@@ -242,9 +257,9 @@ def get_results_new(task):
 
     return pilots
 
-def points_allocation_new(task):   # from PWC###
+def points_allocation(task):   # from PWC###
 
-    pilots = get_results_new(task)
+    pilots = get_results(task)
 
     '''
     Update Min LC
@@ -345,7 +360,7 @@ def pilot_departure_leadout(task, pil):
     from math import sqrt
 
     stats   = task.stats
-    Astart  = task['avail_dep_points']
+    Astart  = stats['avail_dep_points']
 
     # C.6.3 Leading Points
 

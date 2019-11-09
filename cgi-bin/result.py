@@ -165,7 +165,11 @@ class Task_result:
 
     @staticmethod
     def create_result(task, results, status=None):
-        '''create task results json file from task object and results list
+        ''' create task results json file from task object and results list
+            inputs:
+                - task:         OBJ     - Task Object
+                - results:      LIST    - Flight_result Objects
+                - status:       STR     - 'provisional', 'official' ...
         '''
         from    datetime import datetime
         from    pprint   import pprint as pp
@@ -416,6 +420,9 @@ class Comp_result(object):
     def create_from_json(cls, comp_id, status=None):
         """
             reads task result json files and create comp result object
+            inputs:
+                - comp_id:      INT - comPk comp database ID
+                - status        STR - 'provisional', 'official' ...
         """
         from pprint import pprint as pp
         import json

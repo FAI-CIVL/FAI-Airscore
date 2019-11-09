@@ -1,4 +1,6 @@
 """
+Flight Result Library
+
 contains Flight_result class.
 contains statistics about a flight with regards to a task.
 
@@ -553,3 +555,46 @@ class Flight_result:
             return fullname
         except:
             print('Error saving file:', fullname)
+
+def adjust_flight_result(task, results, lib):
+
+    maxtime = task.duration
+    for pilot in results:
+        if pilot['result'].last_fix_time - pilot['result'].SSS_time > maxtime:
+            flight = pilot['track'].flight
+            last_time = pilot['result'].SSS_time + maxtime
+            pilot['result'] = Flight_result.check_flight(flight, task, lib.parameters, 5, deadline=last_time)
+    return results
+
+def verify_all_tracks(task, lib):
+    from igc_lib import Flight
+    from track import Track
+
+    query = """ SELECT
+                    `track_id` AS `id`,
+                    `name`,
+                    `track_file` AS `file`
+                FROM
+                    `TaskResultView`
+                WHERE
+                    `task_id` = %s"""
+    params = [task.id]
+
+    with Database() as db:
+        tracks = db.fetchall(query, params)
+
+    if tracks:
+        print('getting tracks...')
+        # with Database() as db:
+        results = []
+        for t in tracks:
+            print('{} ({}) Result:'.format(t['name'], t['id']))
+            igc_file    = t['file']
+            # flight      = Flight.create_from_file(igc_file)
+            track       = Track.read_file(igc_file)
+            if track.flight:
+                result  = check_flight(track.flight, task, lib.parameters, 5)
+                print('   Goal: {} | part. LC: {}'.format(bool(result.goal_time),result.Fixed_LC))
+                result.store_result(task.id, t['id'])
+                results.append({'track': track, 'result': result})
+        return results

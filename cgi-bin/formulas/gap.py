@@ -1,8 +1,17 @@
-'''
-standard gap formulas.
- TODO will need it's own version of formulas in pwc in order to be used for gap scoring
+"""
+FAI GAP Formula Library
 
-'''
+contains
+    - All procedures to calculate and allocate points according to FAI GAP Formula
+
+Use:    lib = Task.formula.get_lib()
+        lib = Formula.get_lib()
+
+Stuart Mackintosh - 2019
+
+TO DO:
+Add support for FAI Sphere ???
+"""
 
 from myconn import Database
 

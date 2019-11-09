@@ -7,10 +7,10 @@ To be used on frontend.
 - outputs result ID (refPk)
 
 Usage:
-    python3 score_task.py [tasPk] (opt.)['status']
+    python3 score_task.py <tasPk> (opt.)<'status'>
 
     tasPk   - INT: task ID in tblTask
-    status  - STR: provisional, official, test...
+    status  - STR: 'provisional', 'official', 'test', ...
 
 - AirScore -
 Stuart Mackintosh - Antonio Golfari
