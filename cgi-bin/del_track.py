@@ -1,47 +1,54 @@
 """
 Delete track and all references in other tables
-Use: python3 del_track.py [traPk] [opt. test]
+Use: python3 del_track.py [traPk]
 
-Antonio Golfari - 2018
+Antonio Golfari - 2019
 """
 # Use your utility module.
 from myconn import Database
 
-import sys
+def delete_track(traPk):
 
-def delete_track(traPk, test = 0):
-
-    if not traPk < 1:
-        message = ''
-        tables = ['tblTaskResult', 'tblTrack', 'tblTrackMarker', 'tblComTaskTrack']
-        with Database() as db:
-            for table in tables:
-                query = "DELETE FROM %s WHERE `traPk` = %s"
-                params = [table, traPk]
+    # pretty sure we are not using all those tables anylonger
+    tables = ['tblTaskResult', 'tblTrack', 'tblTrackMarker', 'tblComTaskTrack']
+    with Database() as db:
+        for table in tables:
+            query = "DELETE FROM %s WHERE `traPk` = %s"
+            params = [table, traPk]
+            try:
                 db.execute(query, params)
+                print(f"track with ID: {traPk} succesfully deleted from {table}\n")
+            except:
+                print(f"Error with track with ID: {traPk} and table {table} \n")
+                error = True
 
-        message += ("track with ID: {} succesfully deleted \n".format(traPk))
-        print(message)
-    else:
-        print("Error: Parameter is not a valid Track ID \n")
+    return 0 if error else 1
 
-def main():
-    """Main module"""
-    test = 0
-    """check parameter is good."""
-    if len(sys.argv) > 1:
-        """Get traPk"""
-        traPk = 0 + int(sys.argv[1])
-        if len(sys.argv) > 2:
-            """Test Mode"""
-            print('Running in TEST MODE')
-            test = 1
+def main(args):
+    from logger import Logger
+    '''create logging and disable output'''
+    Logger('ON', 'task_full_rescore.txt')
 
-        """Delete track"""
-        delete_track(traPk, test)
+    print("starting..")
+    '''Main module. Takes traPk as parameter'''
+    track_id = 0 + int(args[0])
 
-    else:
-        print('error: Use: python3 del_track.py [traPk] [opt. test]')
+    """Delete track"""
+    out = delete_track(track_id)
+
+    ''' now restore stdout function '''
+    Logger('OFF')
+
+    ''' output ref_id to use in frontend:
+        task_result.php?refPk=ref_id&tasPk=task_id&comPk=comp_id'''
+    print(f'{out}')
 
 if __name__ == "__main__":
-    main()
+    import sys
+    '''check parameter is good'''
+    if not (sys.argv[1] and sys.argv[1].isdigit() and int(sys.argv[1]) > 0):
+        print("number of arguments != 1 and/or track_id not a number")
+        print("usage: python3 del_track.py <traPk>")
+        exit()
+
+    main(sys.argv[1:])

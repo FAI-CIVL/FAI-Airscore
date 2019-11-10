@@ -135,23 +135,20 @@ class Flight_result:
         return result
 
     @classmethod
-    def read_from_db(cls, res_id, test=0):
+    def read_from_db(cls, res_id):
         """reads result from database"""
-        query = (""" SELECT
+        query = """ SELECT
                         *
                     FROM
-                        ResultView
+                        `ResultView`
                     WHERE
-                        tarPk = {}
+                        `tarPk` = %s
                     LIMIT 1
-                """.format(res_id))
-        if test:
-            print('Result query:')
-            print(query)
+                """
 
         with Database() as db:
             # get the task details.
-            t = db.fetchone(query)
+            t = db.fetchone(query, [res_id])
         if t is None:
             print('Not a valid flight')
             return

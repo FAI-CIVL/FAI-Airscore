@@ -27,7 +27,7 @@ class Track():
     def __str__(self):
         return "Track Object"
 
-    def __init__(self, filename = None, pilot = None, task_id = None, glider = None, cert = None, type = None, test = 0):
+    def __init__(self, filename = None, pilot = None, task_id = None, glider = None, cert = None, type = None):
         self.filename = filename
         self.track_id = None
         self.type = type
@@ -38,11 +38,10 @@ class Track():
         self.flight = None      # igc_lib.Flight object
         self.date = None        # in datetime.date format
 
-    def get_pilot(self, test = 0):
+    def get_pilot(self):
         """Get pilot associated to a track from its filename
         should be named as such: FAI.igc or LASTNAME_FIRSTNAME.igc
         """
-        message = ''
         if self.pil_id is None:
 
             """Get string"""
@@ -50,13 +49,11 @@ class Track():
             if fields[0].isdigit():
                 """Gets name from FAI n."""
                 fai = 0 + int(fields[0])
-                message += ("file {} contains FAI n. {} \n".format(fields[0], fai))
                 query = ("SELECT `pilPk` FROM `PilotView` WHERE `pilFAI` = {}".format(fai))
             else:
                 names = fields[0].replace('.', ' ').replace('_', ' ').replace('-', ' ').split()
                 """try to find xcontest user in filename
                 otherwise try to find pilot name from filename"""
-                message += ("file {} contains pilot name \n".format(fields[0]))
 
                 s = []
                 t = []
@@ -96,20 +93,12 @@ class Track():
 
             if self.pil_id is None:
                 """No pilot infos in filename"""
-                message += ("{} does NOT contain any valid pilot info \n".format(fields[0]))
 
-        if test == 1:
-            """TEST MODE"""
-            message += ("pil_id: {}  \n".format(self.pil_id))
-            print (message)
-
-    def add(self, test = 0):
+    def add(self):
         import datetime
         from compUtils import get_class, get_offset
         """Imports track to db"""
         result = ''
-        message = ''
-        message += ("track {} will be imported for pilot with ID {} and task with ID {} \n".format(self.filename, self.pil_id, self.task_id))
         g_record = int(self.flight.valid)
 
         """add track as result in tblTaskResult table"""
@@ -124,34 +113,25 @@ class Track():
                     )
                     """
         params = [self.pil_id, self.task_id, self.filename, g_record]
-        message += query
-        if not test:
-            with Database() as db:
-                try:
-                    db.execute(query, params)
-                    self.track_id = db.lastrowid()
-                    result += ("track for pilot with id {} correctly stored in database".format(self.pil_id))
-                except:
-                    print('Error Inserting track into db:')
-                    print(query)
-                    result = ('Error inserting track for pilot with id {}'.format(self.pil_id))
-        else:
-            print(message)
+        with Database() as db:
+            try:
+                self.track_id = db.execute(query, params)
+                result += ("track for pilot with id {} correctly stored in database".format(self.pil_id))
+            except:
+                print('Error Inserting track into db:')
+                print(query)
+                result = ('Error inserting track for pilot with id {}'.format(self.pil_id))
 
         return result
 
     @classmethod
     def read_file(cls, filename, pilot_id = None):
         """Reads track file and creates a track object"""
-        if test:
-            print('Track.read_file: filename: {} | pilot: {}'.format(filename, pilot_id))
-        message = ''
         track = cls(filename)
-        track.get_type(test)
+        track.get_type()
         print('type', track.type)
         if track.type is not None:
             """file is a valid track format"""
-            message += ("File Type: {} \n".format(track.type))
             if track.type == "igc":
                 """using IGC reader from aerofile library"""
                 print('reading flight')
@@ -168,10 +148,10 @@ class Track():
             if flight.valid:
                 print('flight valid')
                 if not pilot_id:
-                    track.get_pilot(test)
+                    track.get_pilot()
                 else:
                     track.pil_id = 0 + pilot_id
-                track.get_glider(test)
+                track.get_glider()
                 track.flight = flight
                 track.date = epoch_to_date(track.flight.date_timestamp)
                 return track
@@ -180,7 +160,7 @@ class Track():
             print("File {} (pilot ID {}) is NOT a valid track file. \n".format(track, pilot_id))
 
     @classmethod
-    def read_db(cls, track_id, test = 0):
+    def read_db(cls, track_id):
         """Creates a Track Object from a DB Track entry"""
 
         track = cls()
@@ -204,8 +184,6 @@ class Track():
             track.task_id = t['tasPk'] if t['tasPk'] is not None else None
             track.glider = t['traGlider'] if t['traGlider'] is not (None or 'Unknown') else None
             track.cert = t['traDHV'] if t['traGlider'] is not (None or 'Unknown') else None
-        if test == 1:
-            print("read_db: pilPk: {} | filename: {}".format(track.pil_id, track.filename))
 
         """Creates the flight obj with fixes info"""
         track.flight = Flight.create_from_file(track.filename)
@@ -234,7 +212,7 @@ class Track():
             with open(filename, 'w') as f:
                 dump(feature_collection, f)
 
-    def get_type(self, test = 0):
+    def get_type(self):
         """determine if igc / kml / live / ozi"""
         if self.filename is not None:
             """read first line of file"""
@@ -254,9 +232,8 @@ class Track():
                 self.type = None
             print ("  ** FILENAME: {} TYPE: {} \n".format(self.filename, self.type))
 
-    def get_glider(self, test = 0):
+    def get_glider(self):
         """Get glider info for pilot, to be used in results"""
-        message = ''
 
         if self.pil_id is not None:
             query = """    SELECT
@@ -272,8 +249,6 @@ class Track():
                                 `pilPk` = %s
                             LIMIT 1"""
             #print ("get_glider Query: {}  \n".format(query))
-            if test:
-                print(query)
             with Database() as db:
                 row = db.fetchone(query, [self.pil_id])
             if row is not None:
@@ -283,16 +258,7 @@ class Track():
                 # self.glider = brand + glider
                 # self.cert = row['gliGliderCert']
 
-        else:
-            message += ("get_glider - Error: NOT a valid Pilot ID \n")
-
-        if test == 1:
-            """TEST MODE"""
-            message += ("Glider Info: \n")
-            message += ("{}, cert. {} \n".format(self.glider, self.cert))
-            print (message)
-
-    def copy_track_file(self, task_path=None, pname=None, test = 0):
+    def copy_track_file(self, task_path=None, pname=None):
         """copy track file in the correct folder and with correct name
         name could be changed as the one XContest is sending, or rename that one, as we wish
         if path or pname is None will calculate. note that if bulk importing it is better to pass these values
@@ -305,11 +271,7 @@ class Track():
 
         src_file = self.filename
         if task_path is None:
-            task_path = get_task_file_path(self.task_id, test)
-        if test:
-            print('Copy track file')
-            print('file name: {}'.format(src_file))
-            print('Task tracks path: {}'.format(task_path))
+            task_path = get_task_file_path(self.task_id)
 
         if pname is None:
             query = "SELECT " \
@@ -318,10 +280,6 @@ class Track():
                     "   WHERE P.`pilPk` = %s" \
                     "   LIMIT 1"
             param = self.pil_id
-
-            if test:
-                print('pname query:')
-                print(query)
 
             with Database() as db:
                 # get the task details.
@@ -354,9 +312,8 @@ class Track():
             print('error, path not created')
 
     @staticmethod
-    def is_flying(p1, p2, test = 0):
+    def is_flying(p1, p2):
         """check if pilot is flying between 2 gps points"""
-        message = ''
-        dist = quick_distance(p2, p1, test)
+        dist = quick_distance(p2, p1)
         altdif = abs(p2['gps_alt'] - p1['gps_alt'])
-        timedif = time_diff(p2['time'], p1['time'], test)
+        timedif = time_diff(p2['time'], p1['time'])

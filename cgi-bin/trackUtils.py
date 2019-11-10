@@ -16,78 +16,66 @@ import Defines
 # Use your utility module.
 from myconn import Database
 
-def extract_tracks(file, dir, test = 0):
+def extract_tracks(file, dir):
     """gets tracks from a zipfile"""
     from os.path import isfile
     from zipfile import ZipFile
 
-    message = ''
     error = 0
     """Check if file exists"""
     if isfile(file):
-        message += ('extracting: ' + file + ' in temp dir: ' + dir + ' \n')
+        print('extracting: ' + file + ' in temp dir: ' + dir + ' \n')
         """Create a ZipFile Object and load file in it"""
         with ZipFile(file, 'r') as zipObj:
             """Extract all the contents of zip file in temporary directory"""
             zipObj.extractall(dir)
     else:
-        message += ("reading error: {} does not exist or is not a zip file \n".format(file))
+        print(f"reading error: {file} does not exist or is not a zip file \n")
         error = 1
-
-    if test == 1:
-        """TEST MODE"""
-        print (message)
 
     return error
 
-def get_tracks(dir, test = 0):
+def get_tracks(dir):
     """Checks files and imports what appear to be tracks"""
-    message = ''
     files = []
 
-    message += ("Directory: {} \n".format(dir))
-    message += ("Looking for files \n")
+    print(f"Directory: {dir} \n")
+    print(f"Looking for files \n")
 
     """check files in temporary directory, and get only tracks"""
     for file in os.listdir(dir):
-        message += ("checking: {} \n".format(file))
+        print(f"checking: {file} \n")
         if ( (not (file.startswith(".") or file.startswith("_"))) and file.lower().endswith(".igc")):
             """file is a valid track"""
-            message += ("valid filename: {} \n".format(file))
+            print(f"valid filename: {file} \n")
             """add file to tracks list"""
             files.append(os.path.join(dir, file))
         else:
-            message +=  ("NOT valid filename: {} \n".format(file))
+            print(f"NOT valid filename: {file} \n")
 
-    message += ("files in directory: {} \n".format(len(os.listdir(dir))))
-    message += ("files in list: {} \n".format(len(files)))
+    print(f"files in list: {len(files)} \n")
     for f in files:
-        message += ("  {} \n".format(f))
-
-    if test == 1:
-        """TEST MODE"""
-        print (message)
+        print(f"  {f} \n")
 
     return files
 
-def assign_and_import_tracks(files, task, xcontest=False, test = 0):
+def assign_and_import_tracks(files, task, xcontest=False):
     """Find pilots to associate with tracks"""
     from compUtils import get_registration, get_task_file_path
 
-    message = ''
     pilot_list = []
-    message += ("We have {} track to associate \n".format(len(files)))
+    print(f"We have {len(files)} track to associate \n")
     task_id = task.id
     comp_id = task.comp_id
     task_date = task.date
     """checking if comp requires a regisration.
     Then we create a list of registered pilots to check against tracks filename.
     This should be much faster than checking against all pilots in database through a query"""
-    registration = get_registration(comp_id, test)
+    registration = get_registration(comp_id)
     if registration:
         """We add tracks for the registered pilots not yet scored"""
-        message += "Comp with registration: files will be checked against registered pilots not yet scored \n"
-        pilot_list = get_non_scored_pilots(task_id, xcontest, test)
+        print("Comp with registration: files will be checked against registered pilots not yet scored \n")
+        pilot_list = get_non_scored_pilots(task_id, xcontest)
 
     track_path = get_task_file_path(task_id, comp_id)
 
@@ -97,82 +85,69 @@ def assign_and_import_tracks(files, task, xcontest=False, test = 0):
         filename = os.path.basename(file)
         if registration:
             if len(pilot_list) > 0:
-                message += ("checking {} against {} pilots... \n".format(filename, len(pilot_list)))
+                print(f"checking {filename} against {len(pilot_list)} pilots... \n")
                 """check filenames to find pilots"""
-                pilot_id, full_name = get_pilot_from_list(filename, pilot_list, test)
+                pilot_id, full_name = get_pilot_from_list(filename, pilot_list)
                 if pilot_id:
                     """found a pilot for the track file.
                     dropping pilot from list and creating track obj"""
-                    message += ("Found a pilot to associate with file. dropping {} from non scored list \n".format(pilot_id))
+                    print(f"Found a pilot to associate with file. dropping {pilot_id} from non scored list \n")
                     pilot_list[:] = [d for d in pilot_list if d.get('pilPk') != pilot_id]
                     mytrack = Track.read_file(filename=file, pilot_id=pilot_id)
         else:
             """We add track if we find a pilot in database
             that has not yet been scored"""
             mytrack = Track.read_file(filename=file)
-            if get_pil_track(mytrack.pilPk, task_id, test):
+            if get_pil_track(mytrack.pilPk, task_id):
                 """pilot has already been scored"""
-                message += ("Pilot with ID {} has already a valid track for task with ID {} \n".format(mytrack.pilPk, task_id))
+                print(f"Pilot with ID {mytrack.pilPk} has already a valid track for task with ID {task_id} \n")
                 mytrack = None
         """check result"""
         if not mytrack:
-            message += ("Track {} is not a valid track file \n".format(filename))
+            print(f"Track {filename} is not a valid track file \n")
         elif not mytrack.date == task_date:
-            message += ("dates: {}  |  {}  \n".format(task_date, mytrack.date))
-            message += ("track {} has a different date from task \n".format(filename))
+            print(f"track {filename} has a different date from task \n")
         else:
             """pilot is registered and has no valid track yet
             moving file to correct folder and adding to the list of valid tracks"""
             mytrack.task_id = task_id
             mytrack.copy_track_file(task_path=track_path, pname=full_name)
-            message += ("pilot {} associated with track {} \n".format(mytrack.pilPk, mytrack.filename))
+            print(f"pilot {mytrack.pilPk} associated with track {mytrack.filename} \n")
             import_track(mytrack)
-            verify_track(mytrack, task, test)
+            verify_track(mytrack, task)
 
-    if test == 1:
-        """TEST MODE"""
-        print (message)
+def import_track(track):
+    track.add()
 
-def import_track(track, test = 0):
-    result = ''
-    result += track.add(test)
-    result += ("Track {} added for Pilot with ID {} for task with ID {} \n".format(track.filename, track.pilPk, track.task_id))
+def verify_track(track, task):
 
-    if test:
-        print (result)
-
-def verify_track(track, task, test):
-
-    #formula = read_formula(task.comp_id)
     formula = For.Task_formula.read(task.id)
-
-    lib = For.get_formula_lib(formula.type)
+    lib = formula.get_lib()
     task_result = Flight_result.check_flight(track.flight, task, lib.parameters, 5) #check flight against task with min tolerance of 5m
     task_result.store_result(track.traPk, task.id)
     print(track.flight.notes)
 
-def get_non_scored_pilots(tasPk, xcontest=False, test=0):
+def get_non_scored_pilots(tasPk, xcontest=False):
     """Gets list of registered pilots that still do not have a result"""
-    message = ''
     where = ""
     pilot_list = []
     if xcontest:
-        where = " AND pilXContestUser is not null AND pilXContestUser <> ''"
+        where = " AND `pilXContestUser` IS NOT NULL AND `pilXContestUser` <> ''"
     if tasPk:
         with Database() as db:
             query = """    SELECT
-                                R.`pilPk`,
-                                P.`pilFirstName`,
-                                P.`pilLastName`,
-                                P.`pilFAI`,
-                                P.`pilXContestUser`
+                                `R`.`pilPk`,
+                                `P`.`pilFirstName`,
+                                `P`.`pilLastName`,
+                                `P`.`pilFAI`,
+                                `P`.`pilXContestUser`
                             FROM
-                                `tblRegistration` R
-                            JOIN `PilotView` P USING(`pilPk`)
-                            LEFT OUTER JOIN `ResultView` S ON
-                                S.`pilPk` = P.`pilPk` AND S.`tasPk` = %s
+                                `tblRegistration` `R`
+                            JOIN `PilotView` `P` USING(`pilPk`)
+                            LEFT OUTER JOIN `ResultView` `S` ON
+                                `S`.`pilPk` = `P`.`pilPk` AND `S`.`tasPk` = %s
                             WHERE
-                                R.`comPk` =(
+                                `R`.`comPk` =(
                                 SELECT
                                     `comPk`
                                 FROM
@@ -180,22 +155,17 @@ def get_non_scored_pilots(tasPk, xcontest=False, test=0):
                                 WHERE
                                     `tasPk` = %s
                                 LIMIT 1
-                            ) AND S.`traPk` IS NULL""" + where
+                            ) AND `S`.`traPk` IS NULL""" + where
             params = [tasPk, tasPk]
-            message += ("Query: {}  \n".format(query))
             pilot_list = db.fetchall(query, params)
 
-            if pilot_list is None: message += ("No pilots without tracks found registered to the comp...")
+            if pilot_list is None: print(f"No pilots without tracks found registered to the comp...")
     else:
-        message += ("Registered List - Error: NOT a valid Comp ID \n")
-
-    if test:
-        """TEST MODE"""
-        print(message)
+        print(f"Registered List - Error: NOT a valid Comp ID \n")
 
     return pilot_list
 
-def get_pilot_from_list(filename, list, test=0):
+def get_pilot_from_list(filename, list):
     """check filename against a list of pilots"""
     pilot_id = 0
     fullname = None
@@ -204,19 +174,16 @@ def get_pilot_from_list(filename, list, test=0):
     if fields[0].isdigit():
         """Gets pilot ID from FAI n."""
         fai = fields[0]
-        print("file {} contains FAI n. {} \n".format(filename, fai))
+        print(f"file {filename} contains FAI n. {fai} \n")
         for row in list:
             if fai == row['pilFAI']:
-                print ("found a FAI number")
+                print("found a FAI number")
                 pilot_id = row['pilPk']
                 fullname = row['pilFirstName'].lower() + '_' + row['pilLastName'].lower()
                 break
     else:
         """Gets pilot ID from XContest User or name."""
         names = fields[0].replace('.', ' ').replace('_', ' ').replace('-', ' ').split()
-        if test:
-            print("filename: {} - parts: \n".format(filename))
-            print(', '.join(names))
         """try to find xcontest user in filename
         otherwise try to find pilot name from filename"""
         print ("file {} contains pilot name \n".format(fields[0]))
@@ -235,40 +202,30 @@ def get_pilot_from_list(filename, list, test=0):
                 fullname = row['pilFirstName'].lower() + '_' + row['pilLastName'].lower()
                 break
 
-    if test:
-        print('pilot ID: {}'.format(pilot_id))
-
     return pilot_id, fullname
 
 
-def get_pil_track(pilPk, tasPk, test=0):
+def get_pil_track(pilPk, tasPk):
     """Get pilot result in a given task"""
-    message = ''
     traPk = 0
 
-    query = ("""    SELECT
-                        traPk
+    query = """     SELECT
+                        `traPk`
                     FROM
-                        ResultView
+                        `ResultView`
                     WHERE
-                        pilPk = {}
-                        AND tasPk = {}
-                    LIMIT
-                        1""".format(pilPk, tasPk))
+                        `pilPk` = %s
+                        AND `tasPk` = %s
+                    LIMIT 1"""
+    params = [pilPk, tasPk]
 
-    message += ("Query: {}  \n".format(query))
     with Database() as db:
-        if db.rows(query) > 0:
-            traPk = db.fetchone(query)['traPk']
+        if db.rows(query, params) > 0:
+            traPk = db.fetchone(query, params)['traPk']
 
     if traPk == 0:
         """No result found"""
-        message += ("Pilot with ID {} has not been scored yet on task ID {} \n".format(pilPk, tasPk))
-
-    if test == 1:
-        """TEST MODE"""
-        message += ("traPk: {}  \n".format(traPk))
-        print (message)
+        print(f"Pilot with ID {pilPk} has not been scored yet on task ID {tasPk} \n")
 
     return traPk
 

@@ -9,7 +9,7 @@ To be used on frontend.
 - outputs result ID (refPk)
 
 Usage:
-    python3 task_full_rescore_test.py <tasPk>
+    python3 task_full_rescore.py <tasPk>
 
     tasPk   - INT: task ID in tblTask
 
@@ -30,19 +30,13 @@ def main(args):
     Logger('ON', 'task_full_rescore.txt')
 
     print("starting..")
-    """Main module. Takes tasPk as parameter"""
-    task_id = 0
+    '''Main module. Takes tasPk and status as parameters'''
 
-    #check parameter is good.
-    if len(sys.argv)==2 and sys.argv[1].isdigit():
-        task_id = int(sys.argv[1])
+    task_id = int(args[0])
+    status  = None if len(args) == 1 else str(args[1])
+    print(f"Task ID: {task_id} | Status: {status}")
 
-    else:
-        print("number of arguments != 1 and/or task_id not a number")
-        exit()
-
-    print(f"Task ID: {task_id}")
-
+    '''create task obj'''
     task = T.read(task_id)
 
     '''create task scores obj, json file, and tblResultFile entry'''
@@ -58,4 +52,11 @@ def main(args):
 
 if __name__== "__main__":
     import sys
+
+    '''check parameter is good'''
+    if not (sys.argv[1] and sys.argv[1].isdigit() and int(sys.argv[1]) > 0):
+        print("number of arguments != 1 and/or task_id not a number")
+        print("usage: python3 task_full_rescore.py <tasPk> (opt.)<'status'>")
+        exit()
+
     main(sys.argv[1:])

@@ -32,7 +32,7 @@ def main(args):
 
     task_id = int(args[0])
     status  = None if len(args) == 1 else str(args[1])
-    print(f"Task ID: {task_id}")
+    print(f"Task ID: {task_id} | Status: {status}")
 
     '''create task obj'''
     task = T.read(task_id)
@@ -54,7 +54,7 @@ if __name__== "__main__":
     '''check parameter is good'''
     if not (sys.argv[1] and sys.argv[1].isdigit() and int(sys.argv[1]) > 0):
         print("number of arguments != 1 and/or task_id not a number")
-        print("usage: python3 score_task.py [tasPk] (opt.)['status']")
+        print("usage: python3 score_task.py <tasPk> (opt.)<'status'>")
         exit()
 
     main(sys.argv[1:])

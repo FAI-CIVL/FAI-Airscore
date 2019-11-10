@@ -57,7 +57,7 @@ def time_difference(t1, t2):
 
     return diff
 
-def get_datetime(str, test = 0):
+def get_datetime(str):
     """
         Transform string in datetime.datetime
     """
@@ -66,7 +66,7 @@ def get_datetime(str, test = 0):
     else:
         return str
 
-def epoch_to_date(sec, offset = 0, test = 0):
+def epoch_to_date(sec, offset = 0):
     """
         Transform string in datetime.datetime
     """
@@ -76,7 +76,7 @@ def epoch_to_date(sec, offset = 0, test = 0):
         print("an error occurred")
         return sec
 
-def epoch_to_datetime(sec, rawtime = 0, offset = 0, test = 0):
+def epoch_to_datetime(sec, rawtime = 0, offset = 0):
     """
         Transform string in datetime.datetime
     """

@@ -1,7 +1,7 @@
 """
 Module for operations on formula
 Use:    import formula
-        parameters = Formula.read(comPk, <test>)
+        parameters = Formula.read(tasPk)
 
 Antonio Golfari - 2019
 """
@@ -29,7 +29,7 @@ class Formula:
     """
     Create an object Formula
     """
-    def __init__(self, id = None, name = None, comp_class = None, test = 0):
+    def __init__(self, id = None, name = None, comp_class = None):
         self.forPk                  = id
         self.name                   = name
         self.comp_class             = comp_class

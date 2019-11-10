@@ -1,76 +1,77 @@
 """
 Update Task / Comp Result status in JSON file and in database
-Use: python3 update_result_status.py [refPk] [status] [opt. test]
+Use: python3 update_result_status.py [refPk] [status]
 
 Antonio Golfari - 2019
 """
 # Use your utility module.
 from myconn import Database
 
-import sys
-
-def update_result(refPk, status, test = 0):
+def update_result(refPk, status):
     import os
     from os import path as p
     import json
 
-    if not refPk < 1:
-        message = ''
-        with Database() as db:
-            '''check if json file exists, and updates it'''
-            query = ("SELECT `refJSON` FROM `tblResultFile` WHERE `refPk` = {} LIMIT 1".format(refPk))
-            file = db.fetchone(query)['refJSON']
-            if test:
-                print('json file query: ')
-                print(query)
-                print('result: {}'.format(file))
+    with Database() as db:
+        '''check if json file exists, and updates it'''
+        query = """ SELECT `refJSON`
+                    FROM `tblResultFile`
+                    WHERE `refPk` = %s
+                    LIMIT 1"""
+        file = db.fetchone(query, [refPk])['refJSON']
 
-            if p.isfile(file):
-                '''update status in json file'''
-                with open(file, 'r+') as f:
-                    d = json.load(f)
-                    if test:
-                        print('old status: {}'.format(d['data']['status']))
-                        print('will be updated to {}'.format(status))
-                    else:
-                        d['data']['status'] = status
-                        f.seek(0)
-                        f.write(json.dumps(d))
-                        f.truncate()
-                        message += 'JSON file has been updated \n'
-            else:
-                message += "Couldn't find a JSON file for this result \n"
+        if p.isfile(file):
+            '''update status in json file'''
+            with open(file, 'r+') as f:
+                d = json.load(f)
+                d['data']['status'] = status
+                f.seek(0)
+                f.write(json.dumps(d))
+                f.truncate()
+                print(f'JSON file has been updated \n')
+        else:
+            print(f"Couldn't find a JSON file for this result \n")
 
-            '''update status in database'''
-            query = ("UPDATE `tblResultFile` SET `refStatus` = '{}' WHERE refPk = {}".format(status, refPk))
-            if test == 1:
-                print("Query:  {} \n".format(query))
-            else:
-                db.execute(query)
-                message += ("Result with ID: {} succesfully updated \n".format(refPk))
-        return message
-    else:
-        print("Error: Parameter is not a valid Result ID \n")
+        '''update status in database'''
+        query = """ UPDATE `tblResultFile`
+                    SET `refStatus` = %s
+                    WHERE `refPk` = %s"""
+        params = [status, refPk]
+        try:
+            db.execute(query, params)
+            print(f"Result with ID: {refPk} succesfully updated \n")
+            return 1
+        except:
+            print(f"Error updating Result with ID: {refPk} \n")
+            return 0
 
-def main():
+def main(args):
+    from logger import Logger
     """Main module"""
-    test = 0
-    """check parameter is good."""
-    if len(sys.argv) >= 3:
-        """Get refPk"""
-        ref_id = 0 + int(sys.argv[1])
-        status = str(sys.argv[2])
-        if len(sys.argv) > 3:
-            """Test Mode"""
-            print('Running in TEST MODE')
-            test = 1
+    '''create logging and disable output'''
+    Logger('ON', 'update_result.txt')
 
-        """Delete result"""
-        message = update_result(ref_id, status, test)
-        print(message)
+    print("starting..")
+    '''Main module. Takes refPk and status as parameters'''
+    ref_id = 0 + int(args[0])
+    status = str(args[1])
 
-    else:
-        print('error: Use: python3 update_result.py [refPk] [status]')
+    """Update result"""
+    out = update_result(ref_id, status)
+    print(f"out = {out}")
+
+    ''' now restore stdout function '''
+    Logger('OFF')
+
+    print(f"{out}")
 
 if __name__ == "__main__":
-    main()
+    import sys
+
+    '''check parameter is good'''
+    if not (sys.argv[1] and sys.argv[1].isdigit() and int(sys.argv[1]) > 0):
+        print("number of arguments != 1 and/or task_id not a number")
+        print("usage: python3 update_result.py [refPk] [status]'")
+        exit()
+
+    main(sys.argv[1:])

@@ -260,7 +260,7 @@ class Task(object):
         '''retrieve scoring formula library'''
         lib = self.formula.get_lib()
 
-        if ( mode == 'full' or self.stopped ):
+        if ( mode == 'full' or self.stopped_time ):
             # TODO: check if we changed task, or we had new tracks, after last results generation
             #       If this is the case we should not need to rescore unless especially requested
             '''Task Full Rescore
@@ -348,7 +348,7 @@ class Task(object):
     def check_all_tracks(self, lib = None):
         ''' checks all igc files against Task and creates results '''
 
-        from Flight_result import verify_all_tracks, adjust_flight_result
+        from flight_result import verify_all_tracks, adjust_flight_result
 
         if not lib:
             '''retrieve scoring formula library'''
@@ -392,7 +392,7 @@ class Task(object):
                     results = adjust_flight_result(self, results, lib)
 
             elif self.comp_class == 'HG':
-            '''     In hang-gliding, stopped tasks are “scored back” by a time that is determined
+                ''' In hang-gliding, stopped tasks are “scored back” by a time that is determined
                     by the number of start gates and the start gate interval:
                     The task stop time is one start gate interval, or 15 minutes in case of a
                     single start gate, before the task stop announcement time.
@@ -405,7 +405,7 @@ class Task(object):
                     typeOfCompetition = Women's : minimumTime = 60min.
                     typeOfCompetition ≠ Women's : minimumTime = 90min.
                     taskStopTime − timeOfFirstStart < minimumTime ∧ numberOfPilotsInGoal(taskStopTime) = 0 : taskValidity = 0
-            '''
+                '''
 
                 if not self.is_valid():
                     return f'task duration is not enough, task with id {self.id} is not valid, scoring is not needed'

@@ -1,7 +1,7 @@
 """
 Map definition
 Creates map from track GeoJSON and Task Definition JSON
-Use: design_map <traPk> <tasPk> <test>
+Use: design_map <traPk> <tasPk>
 
 Martino Boni,
 Stuart Mackintosh - 2019
@@ -311,7 +311,6 @@ def main(mode, val, track_id):
     #os.chown(map_file, 1000, 1000)
     html_string = map.get_root().render()
 
-    #test for srcdoc iframe source
     print(html_string)
 
 

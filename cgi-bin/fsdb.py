@@ -31,7 +31,6 @@ class FSDB:
         """
         import lxml.etree as ET
 
-        message = ''
         """read the fsdb file"""
         try:
             tree = ET.parse(fp)
@@ -106,13 +105,12 @@ class FSDB:
 
         return cls(info, formula, pilots, tasks, fp)
 
-    def add(self, test = 0):
+    def add(self):
         """
             Add comp to Airscore database
         """
         from myconn import Database
 
-        message = ''
         comPk = None
         tasPk = None
         #forPk = None
@@ -120,62 +118,58 @@ class FSDB:
 
         with Database() as db:
             """insert comp"""
-            message += ("*** Inserting Comp: ***\n ")
-            compquery = ("""INSERT INTO
+            compquery = """INSERT INTO
                                 `tblCompetition`
                                 (`comName`, `comLocation`, `comDateFrom`, `comDateTo`,
                                 `comEntryRestrict`, `comTimeOffset`, `comClass`, `comLocked`, `comExt`)
                             VALUES
-                                ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')
-                                """.format(self.info['comName'], self.info['comLocation'], self.info['comDateFrom'].isoformat(),
-                                self.info['comDateTo'].isoformat(), 'registered', self.info['comTimeOffset'], self.info['comClass'], '1', '1'))
+                                (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                                """
+            params = [self.info['comName'], self.info['comLocation'], self.info['comDateFrom'].isoformat(),
+                                self.info['comDateTo'].isoformat(), 'registered', self.info['comTimeOffset'], self.info['comClass'], 1, 1]
 
-            message += ("Comp Query: \n {}".format(compquery))
+            try:
+                comPk = db.execute(compquery, params)
 
-            if test == 0:
-                try:
-                    comPk = db.execute(compquery)
+                '''insert formula'''
+                formulaquery = """INSERT INTO
+                                    `tblForComp`
+                                    (`extForName`, `comPk`, `comOverallScore`, `comOverallParam`,
+                                    `forNomGoal`, `forMinDistance`, `forNomDistance`, `forNomTime`, `forNomLaunch`)
+                                VALUES
+                                    (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                                    """
+                params = [self.formula['forName'], comPk, self.formula['comOverallScore'], self.formula['comOverallParam'],
+                                    self.formula['forNomGoal'], self.formula['forMinDistance'], self.formula['forNomDistance'],
+                                    self.formula['forNomTime'], self.formula['forNomLaunch']]
 
-                    formulaquery = ("""INSERT INTO
-                                        `tblForComp`
-                                        (`extForName`, `comPk`, `comOverallScore`, `comOverallParam`,
-                                        `forNomGoal`, `forMinDistance`, `forNomDistance`, `forNomTime`, `forNomLaunch`)
-                                    VALUES
-                                        ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')
-                                        """.format(self.formula['forName'], comPk, self.formula['comOverallScore'], self.formula['comOverallParam'],
-                                        self.formula['forNomGoal'], self.formula['forMinDistance'], self.formula['forNomDistance'],
-                                        self.formula['forNomTime'], self.formula['forNomLaunch']))
-                    message += ("Formula Query: \n {}".format(formulaquery))
-
-                    db.execute(formulaquery)
-                except:
-                    print ("DB Error inserting comp.")
-                    sys.exit()
-                finally:
-                    print("{} inserted with id {}".format(self.info['comName'], comPk))
+                db.execute(formulaquery, params)
+            except:
+                print ("DB Error inserting comp.")
+                sys.exit()
+            finally:
+                print("{} inserted with id {}".format(self.info['comName'], comPk))
 
             """pilots info"""
-            message += ("*** Pilots Info: ***\n ")
             for pil in self.pilots:
                 """check if pilot exists"""
                 if pil['pilPk'] is None:
                     """create new pilot"""
                     names = []
                     names = pil['name'].replace("'", "''").replace('.', ' ').replace('_', ' ').replace('-', ' ').split(maxsplit=1)
-                    createpilquery = ("""   INSERT INTO
+                    createpilquery = """   INSERT INTO
                                                 `tblExtPilot`(`pilFirstName`, `pilLastName`,
                                                 `pilNat`, `pilSex`, `pilGlider`, `pilFAI`)
                                             VALUES
-                                                ('{}', '{}', '{}', '{}', '{}', '{}')
-                                    """.format(names[0], names[1], pil['pilNat'], pil['pilSex'], pil['glider'], pil['pilFAI']))
-                    message += ("Pilot Creation Query: \n {}".format(createpilquery))
+                                                (%s,%s,%s,%s,%s,%s)
+                                    """
+                    params = [names[0], names[1], pil['pilNat'], pil['pilSex'], pil['glider'], pil['pilFAI']]
 
-                    if test == 0:
-                        pil['pilPk'] = db.execute(createpilquery)
-                        if pil['pilPk'] is None:
-                            print ("DB Error inserting ext. pilot.")
-                            sys.exit()
-                        print("Pilot {} inserted with id {}".format(names[0], pil['pilPk']))
+                    pil['pilPk'] = db.execute(createpilquery, params)
+                    if pil['pilPk'] is None:
+                        print ("DB Error inserting ext. pilot.")
+                        sys.exit()
+                    print(f"Pilot {names[0]} inserted with id {pil['pilPk']}")
 
             """DO WE NEED TO REGISTER PILOTS TO COMP??"""
 #             regpilquery = ("""  INSERT INTO
@@ -185,9 +179,8 @@ class FSDB:
 #                                 """.format(comPk, 0, pil['glider'], pil['pilPk']))
 
             """task info"""
-            message += ("*** Task Info: ***\n ")
             for task in self.tasks:
-                tasquery = (""" INSERT INTO
+                tasquery = """ INSERT INTO
                                     `tblTask`(`comPk`, `tasDate`, `tasName`, `tasTaskStart`, `tasFinishTime`, `tasStartTime`,
                                     `tasStartCloseTime`, `tasFastestTime`, `tasMaxDistance`,
                                     `tasTaskType`, `tasDistance`, `tasShortRouteDistance`, `tasSSDistance`,
@@ -196,57 +189,55 @@ class FSDB:
                                     `tasLaunchValid`, `tasPilotsLaunched`, `tasPilotsTotal`, `tasPilotsGoal`, `tasDeparture`,
                                     `tasArrival`, `tasHeightBonus`, `tasComment`, `tasLocked`)
                                 VALUES
-                                    ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}',
-                                     '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}'
-                                     '{}', '{}', '{}', '{}', '{}')
-                            """.format(comPk, task.window_open_time.date(), task.task_name, task.window_open_time, task.task_deadline, task.start_time,
-                                        task.start_close_time, task.stats['fastest'], task.stats['max_distance'],
-                                        task.task_type, task.distance, task.opt_dist, task.SS_distance,
-                                        task.SS_interval, task.stats['tot_dist_flown'], task.stats['day_quality'], task.stats['dist_validity'], task.stats['time_validity'],
-                                        task.stats['launch_validity'], task.stats['avail_dist_points'], task.stats['avail_dep_points'], task.stats['avail_time_points'], task.stats['avail_arr_points']
-                                        '1', task.stats['pilots_launched'], task.stats['pilots_present'], task.stats['pilots_goal'], task.departure,
-                                        task.arrival, task., task.comment, '1'))
-                message += ("{} Query: \n {}".format(task.task_name, tasquery))
+                                    (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+                                     %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+                                     %s,%s,%s,%s,%s,%s)
+                            """
+                params = [comPk, task.window_open_time.date(), task.task_name, task.window_open_time, task.task_deadline, task.start_time,
+                            task.start_close_time, task.stats['fastest'], task.stats['max_distance'],
+                            task.task_type, task.distance, task.opt_dist, task.SS_distance,
+                            task.SS_interval, task.stats['tot_dist_flown'], task.stats['day_quality'], task.stats['dist_validity'], task.stats['time_validity'],
+                            task.stats['launch_validity'], task.stats['avail_dist_points'], task.stats['avail_dep_points'], task.stats['avail_time_points'], task.stats['avail_arr_points'],
+                            '1', task.stats['pilots_launched'], task.stats['pilots_present'], task.stats['pilots_goal'], task.departure,
+                            task.arrival, task., task.comment, '1']
 
-                if test == 0:
-                    try:
-                        tasPk = db.execute(tasquery)
-                        if task.stopped_time is not None:
-                            stopquery = ("""UPDATE
-                                                `tblTask`
-                                            SET
-                                                `tasStoppedTime` = '{}'
-                                            WHERE
-                                                `tasPk` = {}""".format(task.stopped_time, tasPk))
-                            db.execute(stopquery)
-                    except:
-                        print ("DB Error inserting Task.")
-                        sys.exit()
-                    finally:
-                        print("{} inserted with id {}".format(task.task_name, tasPk))
+                try:
+                    tasPk = db.execute(tasquery)
+                    if task.stopped_time is not None:
+                        stopquery = """UPDATE
+                                            `tblTask`
+                                        SET
+                                            `tasStoppedTime` = %s
+                                        WHERE
+                                            `tasPk` = %s"""
+                        params = [task.stopped_time, tasPk]
+                        db.execute(stopquery, params)
+                except:
+                    print ("DB Error inserting Task.")
+                    sys.exit()
+                finally:
+                    print(f"{task.task_name} inserted with id {tasPk}")
 
                 """task waypoints"""
                 legs = task.optimised_legs
                 for wpt in task.turnpoints:
                     try:
                         rwpPk = None
-                        wptquery = (""" INSERT INTO
+                        wptquery = """ INSERT INTO
                                             `tblRegionWaypoint`(`rwpName`, `rwpLatDecimal`, `rwpLongDecimal`, `rwpAltitude`)
-                                        VALUES ('{}', '{}', '{}', '{}')""".format(wpt.name, wpt.lat, wpt.lon, wpt.altitude))
-                        message += ("WPT Query: \n {}".format(wptquery))
-                        if test == 0:
-                            rwpPk = db.execute(wptquery)
+                                        VALUES (%s,%s,%s,%s)"""
+                        params = [wpt.name, wpt.lat, wpt.lon, wpt.altitude]
+                        rwpPk = db.execute(wptquery, params)
                         '''get optimised distance for leg'''
                         dist = legs.pop(0)
-                        routequery = ("""   INSERT INTO
+                        routequery = """   INSERT INTO
                                                 `tblTaskWaypoint`(`tasPk`, `rwpPk`, `tawNumber`, `tawType`,
                                                 `tawHow`, `tawShape`, `tawRadius`, `ssrCumulativeDist`)
-                                            VALUES ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')
-                                            """.format(tasPk, rwpPk, wpt.id, wpt.type,
-                                                wpt.how, wpt.shape, wpt.radius, dist))
-                        message += ("Route Query: \n {}".format(routequery))
-                        if test == 0:
-                            db.execute(routequery)
+                                            VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+                                            """
+                        params = [tasPk, rwpPk, wpt.id, wpt.type,
+                                    wpt.how, wpt.shape, wpt.radius, dist]
+                        db.execute(routequery, params)
                     except:
                         print ("DB Error inserting Turnpoints.")
                         sys.exit()
@@ -271,41 +262,34 @@ class FSDB:
                         tarES = time_to_seconds(res.ESS_time) - tz if res.ESS_time is not None else 0
                         tarGoal = time_to_seconds(res.goal_time) - tz if res.goal_time is not None else 0
 
-                        resquery = (""" INSERT INTO
+                        resquery = """ INSERT INTO
                                             `tblExtResult`(`tasPk`, `pilPk`, `tarDistance`, `tarSpeed`, `tarSS`, `tarES`,
                                             `tarGoal`, `tarPenalty`, `tarComment`, `tarSpeedScore`, `tarDistanceScore`,
                                             `tarArrivalScore`, `tarDepartureScore`, `tarScore`, `tarLastAltitude`, `tarResultType`, `traGlider`)
                                         VALUES
-                                            ('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}',
-                                             '{}', '{}', '{}', '{}', '{}')
-                                    """.format(tasPk, pilPk, res.Total_distance, speed, tarSS, tarES,
+                                            (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                                    """
+                        params = [tasPk, pilPk, res.Total_distance, speed, tarSS, tarES,
                                         tarGoal, res.Penalty, res.Comment, res.Time_score, res.distance_score,
-                                        res.Arrival_score, res.Departure_score, res.Score, res.Stopped_altitude, res.result_type, traGlider))
-                        message += ("Result Query: \n {}".format(resquery))
-                        if test == 0:
-                            db.execute(resquery)
+                                        res.Arrival_score, res.Departure_score, res.Score, res.Stopped_altitude, res.result_type, traGlider]
+                        db.execute(resquery, params)
                     except:
                         print ("DB Error inserting Result.")
                         sys.exit()
-                print("   Results inserted for {}".format(task.task_name))
-
-        if test == 1:
-            print (message)
-
+                print(f"   Results inserted for {task.task_name}")
 
     @staticmethod
-    def get_pilot(name, fai = None, test = 0):
+    def get_pilot(name, fai = None):
         """Get pilot from name or fai
         info comes from FSDB file, as FsParticipant attributes
         Not sure about best strategy to retrieve pilots ID from name and FAI n.
         """
 
-        message = ''
         names = []
         names = name.replace("'", "''").replace('.', ' ').replace('_', ' ').replace('-', ' ').split()
 
         """Gets name from string"""
-        message += ("Trying with name... \n")
+        print("Trying with name... \n")
         s = []
         t = []
         for i in names:
@@ -351,7 +335,7 @@ class FSDB:
                     return None
 
     @staticmethod
-    def get_time(str, test = 0):
+    def get_time(str):
         """
             Transform string in datetime.time
         """
@@ -361,7 +345,7 @@ class FSDB:
             return str
 
     @staticmethod
-    def get_day(str, test = 0):
+    def get_day(str):
         """
             Transform string in datetime.day
         """
