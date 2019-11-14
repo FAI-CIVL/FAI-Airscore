@@ -263,12 +263,14 @@ class Task_result:
                         'comment',
                         'lead_coeff',
                         'last_altitude',
-                        'last_time']
+                        'last_time',
+                        'track_file']
 
         for pil in results:
             res = {x:pil[x] for x in attr_list}
             res['name'] = res['name'].title()
             res['glider'] = res['glider'].title()
+            res['track_file'] = None if not res['track_file'] else res['track_file'].split('/')[-1]
             list.append(res)
 
         self.results = list
@@ -302,6 +304,7 @@ class Comp_result(object):
         '''gets comp info from database'''
         with Database() as db:
             query = """ SELECT
+                            `comp_id`,
                             `comp_name`,
                             `comp_site`,
                             `date_from`,
@@ -317,7 +320,7 @@ class Comp_result(object):
                             `website`,
                             `formula`,
                             `formula_class`,
-                            `task_validity`,
+                            `overall_validity`,
                             `validity_param`,
                             `team_size`,
                             `team_scoring`,
@@ -329,7 +332,8 @@ class Comp_result(object):
                         LIMIT 1
                     """
             list = db.fetchone(query, [self.comp_id])
-            info = {x:list[x] for x in ['comp_name',
+            info = {x:list[x] for x in ['comp_id',
+                                        'comp_name',
                                         'comp_site',
                                         'date_from',
                                         'date_to',
@@ -345,7 +349,7 @@ class Comp_result(object):
 
             formula = {x:list[x] for x in [ 'formula',
                                             'formula_class',
-                                            'task_validity',
+                                            'overall_validity',
                                             'validity_param',
                                             'team_size',
                                             'team_scoring',
@@ -388,7 +392,7 @@ class Comp_result(object):
         '''create result object'''
         comp_result = cls(comp_id=comp_id, status=status)
 
-        val     = comp_result.formula['task_validity']              # ftv, round, all
+        val     = comp_result.formula['overall_validity']           # ftv, round, all
         param   = comp_result.formula['validity_param']             # ftv param, dropped task param
         if val == 'ftv':
             ftv_type        = comp_result.formula['formula_class']  # pwc, fai
@@ -597,7 +601,7 @@ def get_final_scores(results, tasks, formula, d = 0):
     '''
     from operator import itemgetter
 
-    val     = formula['task_validity']
+    val     = formula['overall_validity']
     param   = formula['validity_param']
 
     if      val == 'ftv':   avail_validity  = sum(t['ftv_validity'] for t in tasks) * param
@@ -687,3 +691,16 @@ def read_task_result(task_id):
         results = db.fetchall(query, [task_id])
 
     return results
+
+def get_task_json(task_id):
+    '''returns active json result file'''
+    query = """    SELECT
+                        `refJSON` AS `file`
+                    FROM
+                        `tblResultFile`
+                    WHERE
+                        `tasPk` = %s
+                    AND `refVisible` = 1
+                    LIMIT 1"""
+    with Database() as db:
+        return db.fetchone(query, [task_id])['file']

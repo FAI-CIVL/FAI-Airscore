@@ -98,6 +98,9 @@ class Task_formula(object):
         out += 'Score back time:{} \n'.     format(self.score_back_time)
         return out
 
+    def to_dict(self):
+        return self.__dict__
+
     @classmethod
     def read(cls, task_id):
         """reads task formula from DB"""

@@ -276,7 +276,7 @@ def get_region(region_id):
 
 def main(mode, val, track_id):
     """Main module"""
-    from task import get_task_json
+    from task import get_map_json
     from trackUtils import read_result_file
 #     log_dir = d.LOGDIR
 #     print("log setup")
@@ -294,7 +294,7 @@ def main(mode, val, track_id):
     else:
         '''create the task map for route or tracklog maps'''
         task_id = val
-        wpt_coords, turnpoints, short_route, goal_line, tolerance = get_task_json(task_id)
+        wpt_coords, turnpoints, short_route, goal_line, tolerance = get_map_json(task_id)
 
         if mode == 'tracklog':
             """read task and track objects"""

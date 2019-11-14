@@ -141,6 +141,32 @@ def is_registered(pil_id, comp_id):
 
     return reg_id
 
+def is_ext(comp_id):
+    '''True if competition is external'''
+    query = """    SELECT
+                        `comExt`
+                    FROM
+                        `tblCompetition`
+                    WHERE
+                        `comPk` = %s
+                    LIMIT 1"""
+    with Database() as db:
+        return True if db.fetchone(query, [comp_id])['comExt'] else False
+
+def get_comp_json(comp_id):
+    '''returns active json results file'''
+    query = """    SELECT
+                        `refJSON` AS `file`
+                    FROM
+                        `tblResultFile`
+                    WHERE
+                        `comPk` = %s
+                    AND `tasPk` IS NULL
+                    AND `refVisible` = 1
+                    LIMIT 1"""
+    with Database() as db:
+        return db.fetchone(query, [comp_id])['file']
+
 def get_glider(pilPk):
     """Get glider info for pilot, to be used in results"""
     glider = dict()

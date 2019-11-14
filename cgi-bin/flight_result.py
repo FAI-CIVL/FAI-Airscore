@@ -25,7 +25,7 @@ from myconn import Database
 import jsonpickle, json
 from mapUtils import checkbbox
 
-class Flight_result:
+class Flight_result(object):
     """Set of statistics about a flight with respect a task.
     Attributes:
         Start_time:     time the task was started . i.e relevant start gate. (local time)
@@ -37,24 +37,18 @@ class Flight_result:
         Lead_coeff:     lead points coeff (for GAP based systems), sum of Fixed_LC and variable part calcullated during scoring
         """
 
-    def __init__(self, Pilot_Start_time=None, SSS_time=0, Start_time_str='', SSS_time_str='',
-                 Best_waypoint_achieved='No waypoints achieved', ESS_time_str='', total_time_str=None, ESS_time=None,
-                 total_time=None, Fixed_LC=0, Lead_coeff=0, Distance_flown=0, last_time=None, Stopped_altitude=0,
-                 Jumped_the_gun=None):
+    def __init__(self, pil_id=None, Pilot_Start_time=None, SSS_time=0, Best_waypoint_achieved='No waypoints achieved',
+                 ESS_time=None, Fixed_LC=0, Lead_coeff=0, Distance_flown=0, last_time=None, Stopped_altitude=0,
+                 Jumped_the_gun=None, track_file=None):
         """
 
         :type Lead_coeff: int
         """
-        self.Start_time_str             = Start_time_str
-        self.SSS_time_str               = SSS_time_str
         self.Pilot_Start_time           = Pilot_Start_time
         self.SSS_time                   = SSS_time
         self.Best_waypoint_achieved     = Best_waypoint_achieved
         self.Waypoints_achieved         = []
         self.ESS_time                   = ESS_time
-        self.total_time                 = total_time
-        self.ESS_time_str               = ESS_time_str
-        self.total_time_str             = total_time
         self.Fixed_LC                   = Fixed_LC
         self.Lead_coeff                 = Lead_coeff
         self.distance_flown             = Distance_flown
@@ -70,15 +64,22 @@ class Flight_result:
         self.Penalty                    = 0
         self.Comment                    = None
         self.ext_id                     = None
-        self.pil_id                     = None
+        self.pil_id                     = pil_id
         self.result_type                = 'lo'
         self.goal_time                  = None
         self.SS_distance                = None
+        self.track_file                 = track_file
 
     @property
     def speed(self):
         if self.ESS_time and self.SS_distance:
             return (self.SS_distance / 1000) / (self.total_time / 3600)
+        else:
+            return 0
+    @property
+    def total_time(self):
+        if self.ESS_time:
+            return self.ESS_time - self.SSS_time
         else:
             return 0
 
@@ -356,14 +357,14 @@ class Flight_result:
                 result.Pilot_Start_time = max([e[1] for e in result.Waypoints_achieved if e[0] == 'SSS'])
                 result.SSS_time = result.Pilot_Start_time
 
-            result.Start_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(result.SSS_time + time_offset))
+            # result.Start_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(result.SSS_time + time_offset))
 
             '''ESS Time'''
             if any(e[0] == 'ESS' for e in result.Waypoints_achieved):
                 result.ESS_time = min([e[1] for e in result.Waypoints_achieved if e[0] == 'ESS'])
-                result.ESS_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(result.ESS_time + time_offset))
-                result.total_time = result.ESS_time - result.SSS_time
-                result.total_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(result.ESS_time - result.SSS_time))
+                # result.ESS_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(result.ESS_time + time_offset))
+                # result.total_time = result.ESS_time - result.SSS_time
+                # result.total_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(result.ESS_time - result.SSS_time))
 
                 '''Distance flown'''
                 ''' ?p:p?PilotsLandingBeforeGoal:bestDistancep = max(minimumDistance, taskDistance-min(?trackp.pointi shortestDistanceToGoal(trackp.pointi)))

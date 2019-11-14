@@ -3,7 +3,7 @@ Task Library
 
 contains
     Task class
-    get_task_json and write_task_json - json files for task map
+    get_map_json and write_map_json - json files for task map
 
 Use: from task import Task
 
@@ -20,7 +20,6 @@ from formula    import Task_formula
 from calcUtils  import json, get_datetime, decimal_to_seconds, time_difference
 from igc_lib    import defaultdict
 from pathlib    import Path
-import xml.dom.minidom
 import jsonpickle
 import Defines
 
@@ -192,7 +191,7 @@ class Task(object):
             print('Not a valid task')
             return
 
-        query = ("""SELECT
+        query = """SELECT
                         `id`,
                         `how`,
                         `radius`,
@@ -212,7 +211,7 @@ class Task(object):
                     WHERE
                         `task_id` = %s
                     ORDER BY
-                        `partial_distance`""")
+                        `partial_distance`"""
 
         with Database() as db:
             # get the task details.
@@ -230,7 +229,7 @@ class Task(object):
             s_point = polar(lat=tp['ssr_lat'],lon=tp['ssr_lon'])
             #print ("short route fix: {}, {}".format(s_point.lon,s_point.lat))
             short_route.append(s_point)
-            if tp['partial_distance']: #this will be None in DB before we optimise route, but we append to this list so we should not fill it with Nones
+            if tp['partial_distance'] is not None: #this will be None in DB before we optimise route, but we append to this list so we should not fill it with Nones
                 partial_distance.append(tp['partial_distance'])
 
         task = Task(task_id, turnpoints)
@@ -278,8 +277,8 @@ class Task(object):
 
         self.stats.update(lib.day_quality(self))
         results = lib.points_allocation(self)
-        ref     = R.create_result(self, results, status)
-        return ref
+        ref_id  = R.create_result(self, results, status)
+        return ref_id
 
     def is_valid(self):
         '''In stopped task, check if duration is enough to be valid'''
@@ -639,15 +638,99 @@ class Task(object):
         return task
 
     @staticmethod
+    def create_from_json(task_id, filename = None):
+        """ Creates Task from JSON task file.
+            If filename is empty, it gets the active one
+            Inputs:
+                task_id     int: task ID
+                filename    str: (opt.) json filename
+
+        """
+        from os             import path as p
+        from result         import get_task_json
+        from flight_result  import Flight_result
+
+        if not filename or not p.isfile(filename):
+            '''we get the active json file'''
+            filename = get_task_json(task_id)
+
+        if not filename:
+            print(f"There's no active json file for task {task_id}, or given filename does not exists")
+            return None
+
+        print(f"task {task_id} json file: {filename}")
+
+
+        # info        = {}
+        # turnpoints  = []
+
+        with open(filename, encoding='utf-8') as json_data:
+            # a bit more checking..
+            try:
+                t = json.load(json_data)
+            except:
+                print("file is not a valid JSON object")
+                return None
+
+        # info = dict(t['info'])
+
+        task = Task(task_id)
+        task.__dict__.update(dict(t['info']))
+        task.stats.update(dict(t['stats']))
+        task.turnpoints = []
+
+        for id, tp in enumerate(t['task']):
+            '''creating waypoints'''
+            # I could take them from database, but this is the only way to be sure it is the correct one
+            turnpoint = Turnpoint(tp['lat'], tp['lon'], tp['radius'], tp['type'],
+                                  tp['shape'], tp['how'])
+
+            turnpoint.name          = tp['name']
+            turnpoint.id            = id+1
+            turnpoint.description   = tp['description']
+            turnpoint.altitude      = tp['altitude']
+            task.turnpoints.append(turnpoint)
+            task.partial_distance.append(tp['cumulative_dist'])
+
+        task.results = []
+
+        for pil in t['results']:
+            ''' create Flight_result objects from json list'''
+            # should unify property names
+            result = Flight_result(pil_id=pil['pil_id'], track_file = pil['track_file'])
+            result.distance_flown           = pil['distance']
+            result.SSS_time                 = pil['SS_time']
+            result.Pilot_Start_time         = pil['start_time']
+            result.ESS_time                 = pil['ES_time']
+            result.goal_time                = pil['goal_time']
+            result.Best_waypoint_achieved   = pil['turnpoints_made']
+            result.last_time                = pil['last_time']
+            result.Lead_coeff               = pil['lead_coeff']
+            result.Stopped_altitude         = pil['last_altitude']
+            result.distance_score           = pil['dist_points']
+            result.Departure_score          = pil['dep_points']
+            result.Arrival_score            = pil['arr_points']
+            result.Time_score               = pil['time_points']
+            result.Penalty                  = pil['penalty']
+            result.Comment                  = pil['comment']
+            result.Score                    = pil['score']
+            result.result_type              = pil['result']
+
+            task.results.append(result)
+
+        return task
+
+    @staticmethod
     def create_from_lkt_file(filename):
         """ Creates Task from LK8000 task file, which is in xml format.
             LK8000 does not have End of Speed Section or task finish time.
             For the goal, at the moment, Turnpoints can't handle goal cones or lines,
             for this reason we default to goal_cylinder.
         """
+        import xml.dom.minidom as D
 
         # Open XML document using minidom parser
-        DOMTree = xml.dom.minidom.parse(filename)
+        DOMTree = D.parse(filename)
         task = DOMTree.documentElement
 
         # Get the taskpoints, waypoints and time gate
@@ -707,27 +790,27 @@ class Task(object):
             Unfortunately the fsdb format isn't published so much of this is simply an
             exercise in reverse engineering.
         """
-        tas = dict()
-        stats = dict()
-        turnpoints = []
-        optimised_legs = []
+        tas             = dict()
+        stats           = dict()
+        turnpoints      = []
+        optimised_legs  = []
         #results = []
 
         #t = tree.getroot()
-        tas['tasCheckLaunch'] = 0
-        tas['tasName'] = t.get('name')
-        tas['id'] = 0 + int(t.get('id'))
+        tas['tasCheckLaunch']   = 0
+        tas['tasName']          = t.get('name')
+        tas['id']               = 0 + int(t.get('id'))
         #print ("task id: {} - name: {}".format(tas['id'], tas['tasName']))
 
         """formula info"""
         f = t.find('FsScoreFormula')
-        tas['tasHeightBonus'] = 'off'
+        tas['tasHeightBonus']   = 'off'
         if ((f.get('use_arrival_altitude_points') is not None and float(f.get('use_arrival_altitude_points')) > 0)
             or f.get('use_arrival_altitude_points') is 'aatb'):
             tas['tasHeightBonus'] = 'on'
         """Departure and Arrival from formula"""
-        tas['tasArrival'] = 'on' if float(f.get('use_arrival_position_points') + f.get('use_arrival_position_points')) > 0 else 'off'
-        #not sure if and which type Airscore is supporting at the moment
+        tas['tasArrival']       = 'on' if float(f.get('use_arrival_position_points') + f.get('use_arrival_position_points')) > 0 else 'off' #not sure if and which type Airscore is supporting at the moment
+        tas['tolerance']        = 0 + float(f.get('turnpoint_radius_tolerance')) * 100  # tolerance
 
         if float(f.get('use_departure_points')) > 0:
             tas['tasDeparture'] = 'on'
@@ -1150,12 +1233,12 @@ class Task(object):
 
 
 # function to parse task object to compilations
-def get_task_json(task_id):
+def get_map_json(task_id):
     """gets task map json file if it exists, otherwise creates it. returns 5 separate objects for mapping"""
 
     task_file = Path(Defines.MAPOBJDIR+'tasks/'+str(task_id) + '.task')
     if not task_file.is_file():
-        write_task_json(task_id)
+        write_map_json(task_id)
     else:
         with open(task_file, 'r') as f:
             data = jsonpickle.decode(f.read())
@@ -1168,23 +1251,7 @@ def get_task_json(task_id):
 
     return task_coords, turnpoints, short_route, goal_line, tolerance
 
-def write_task_json(task_id):
-    import os
-    from geographiclib.geodesic import Geodesic
-
-    geod = Geodesic.WGS84
-    task_file = Path(Defines.MAPOBJDIR+'tasks/'+str(task_id) + '.task')
-
-    if not os.path.isdir(Defines.MAPOBJDIR + 'tasks/'):
-        os.makedirs(Defines.MAPOBJDIR + 'tasks/')
-    task_coords = []
-    turnpoints = []
-    short_route = []
-    goal_line = None
-    task = Task.read(task_id)
-    tolerance = task.tolerance
-
-def write_task_json(task_id):
+def write_map_json(task_id):
     import os
     from geographiclib.geodesic import Geodesic
     from route import get_line
@@ -1229,32 +1296,6 @@ def write_task_json(task_id):
 
     for obj in task.optimised_turnpoints:
         short_route.append(tuple([obj.lat, obj.lon]))
-        # print ("short route fix: {}, {}".format(obj.lon,obj.lat))
-
-    # calculate 3 points for goal line (could use 2 but safer with 3?)
-    # if task.turnpoints[-1].shape == 'line':
-    #     goal_line = []
-    #     bearing_to_last = calcBearing(task.turnpoints[-1].lat, task.turnpoints[-1].lon,
-    #                                   task.optimised_turnpoints[-2].lat, task.optimised_turnpoints[-2].lon)
-    #     bearing_to_last += 360
-    #     if bearing_to_last > 270:
-    #         bearing_to_line_end1 = 90 - (360 - bearing_to_last)
-    #     else:
-    #         bearing_to_line_end1 = bearing_to_last + 90
-    #
-    #     if bearing_to_last < 90:
-    #         bearing_to_line_end2 = 360 - (90 - bearing_to_last)
-    #     else:
-    #         bearing_to_line_end2 = bearing_to_last - 90
-    #
-    #     line_end1 = geod.Direct(task.turnpoints[-1].lat, task.turnpoints[-1].lon, bearing_to_line_end1,
-    #                             task.turnpoints[-1].radius)
-    #     line_end2 = geod.Direct(task.turnpoints[-1].lat, task.turnpoints[-1].lon, bearing_to_line_end2,
-    #                             task.turnpoints[-1].radius)
-    #
-    #     goal_line.append(tuple([line_end1['lat2'], line_end1['lon2']]))
-    #     goal_line.append(tuple([task.turnpoints[-1].lat, task.turnpoints[-1].lon]))
-    #     goal_line.append(tuple([line_end2['lat2'], line_end2['lon2']]))
 
     with open(task_file, 'w') as f:
         f.write(jsonpickle.dumps({'task_coords': task_coords, 'turnpoints': turnpoints, 'short_route': short_route,

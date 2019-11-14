@@ -5,7 +5,7 @@ this is to used in current front end. eventually will be deprecated when we go t
 Stuart Mackintosh - 2019
 """
 
-from task import Task, write_task_json
+from task import Task, write_map_json
 from logger import Logger
 import sys
 import Defines
@@ -36,7 +36,7 @@ def main(args):
         os.remove(Defines.MAPOBJDIR+str(task.id) + '.task')
     except OSError:
         pass
-    write_task_json(task_id)
+    write_map_json(task_id)
 
     opt_dist = task.opt_dist
     print('task distance:   {}'.format(task.distance))

@@ -66,6 +66,26 @@ def get_datetime(str):
     else:
         return str
 
+def get_date(str):
+    """
+        Transform string in datetime.date
+        Gets first 10 positions in string ('YYYY-mm-dd')
+    """
+    if str is not None:
+        return datetime.strptime((str)[:10], '%Y-%m-%d').date()
+    else:
+        return str
+
+def get_time(str):
+    """
+        Transform string in datetime.time
+        Gets first 19 positions in string ('YYYY-MM-DD hh:mm:ss')
+    """
+    if str is not None:
+        return datetime.strptime((str)[:19], '%Y-%m-%dT%H:%M:%S').time()
+    else:
+        return str
+
 def epoch_to_date(sec, offset = 0):
     """
         Transform string in datetime.datetime
@@ -91,3 +111,9 @@ def sec_to_time(sec):
     m, s = divmod(seconds, 60)
     h, m = divmod(m, 60)
     return time(hour=h, minute=m, second=s)
+
+def get_isotime(date, time, offset=None):
+    import datetime as dt
+    from datetime import datetime as dd
+    tz = dt.timedelta(seconds=offset)
+    return dd.combine(get_date(date), sec_to_time(time), tzinfo=dt.timezone(offset=tz)).isoformat()
