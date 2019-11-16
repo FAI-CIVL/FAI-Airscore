@@ -10,17 +10,17 @@ from myconn import Database
 def delete_track(traPk):
 
     # pretty sure we are not using all those tables anylonger
-    tables = ['tblTaskResult', 'tblTrack', 'tblTrackMarker', 'tblComTaskTrack']
+    # tables = ['tblTaskResult', 'tblTrack', 'tblTrackMarker', 'tblComTaskTrack']
     with Database() as db:
-        for table in tables:
-            query = "DELETE FROM %s WHERE `traPk` = %s"
-            params = [table, traPk]
-            try:
-                db.execute(query, params)
-                print(f"track with ID: {traPk} succesfully deleted from {table}\n")
-            except:
-                print(f"Error with track with ID: {traPk} and table {table} \n")
-                error = True
+        # for table in tables:
+        query = "DELETE FROM `tblTaskResult` WHERE `traPk` = %s"
+        params = [traPk]
+        try:
+            db.execute(query, params)
+            print(f"track with ID: {traPk} succesfully deleted from {table}\n")
+        except:
+            print(f"Error with track with ID: {traPk} and table {table} \n")
+            error = True
 
     return 0 if error else 1
 

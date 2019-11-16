@@ -56,7 +56,7 @@ def lc_calc(res, t):
     LC          = 0
     leading     = 0
     trailing    = 0
-    SS_Distance = t.SS_distance
+    SS_distance = t.SS_distance
     first_start = t.stats['min_dept_time']
 
     '''find task_deadline to use for LC calculation'''
@@ -73,8 +73,8 @@ def lc_calc(res, t):
 
         '''add the leading part, from start time of first pilot to start, to my start time'''
         if my_start > first_start:
-            leading = parameters.coef_landout((my_start - first_start), SS_Distance)
-            leading = parameters.coef_func_scaled(leading, SS_Distance)
+            leading = parameters.coef_landout((my_start - first_start), SS_distance)
+            leading = parameters.coef_func_scaled(leading, SS_distance)
         if not res['ES_time']:
             '''pilot did not make ESS'''
             best_dist_to_ess    = (t.opt_dist_to_ESS - res['distance'])
@@ -83,15 +83,15 @@ def lc_calc(res, t):
             # task_time           = (max(my_last_time,last_ess) - my_start)
             task_time           = task_deadline - my_start
             trailing            = parameters.coef_landout(task_time, best_dist_to_ess)
-            trailing            = parameters.coef_func_scaled(trailing, SS_Distance)
+            trailing            = parameters.coef_func_scaled(trailing, SS_distance)
 
         LC = leading + res['fixed_LC'] + trailing
 
     else:
         '''pilot didn't make SS or has a assigned status without a track'''
         task_time         = task_deadline - first_start
-        max_LC            = parameters.coef_landout(task_time, SS_Distance)
-        max_LC            = parameters.coef_func_scaled(max_LC, SS_Distance)
+        max_LC            = parameters.coef_landout(task_time, SS_distance)
+        max_LC            = parameters.coef_func_scaled(max_LC, SS_distance)
 
         LC = max_LC
 
@@ -217,8 +217,14 @@ def get_results(task):
                     `penalty`,
                     `comment`,
                     `fixed_LC`,
+                    `ESS_altitude`,
+                    `goal_altitude`,
                     `last_altitude`,
+                    `landing_altitude`,
+                    `max_altitude`,
+                    `first_time`,
                     `last_time`,
+                    `landing_time`,
                     `track_file`,
                     `g_record`
                 FROM

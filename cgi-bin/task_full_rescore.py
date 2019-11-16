@@ -24,10 +24,12 @@ from    logger      import Logger
 import  importlib
 import  sys
 import  Defines as d
+import  time
 
 def main(args):
     '''create logging and disable output'''
     Logger('ON', 'task_full_rescore.txt')
+    start = time.time()
 
     print("starting..")
     '''Main module. Takes tasPk and status as parameters'''
@@ -42,6 +44,9 @@ def main(args):
     '''create task scores obj, json file, and tblResultFile entry'''
     ref_id = task.create_scoring(status=status, mode='full')
     print(f'result ID: {ref_id}')
+
+    end = time.time()
+    print(f'Process Time (mins): {(end - start)/60}')
 
     ''' now restore stdout function '''
     Logger('OFF')

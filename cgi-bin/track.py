@@ -27,16 +27,19 @@ class Track():
     def __str__(self):
         return "Track Object"
 
-    def __init__(self, filename = None, pilot = None, task_id = None, glider = None, cert = None, type = None):
+    def __init__(self, filename = None, track_id = None, pil_id = None, task_id = None, glider = None, cert = None, type = None):
         self.filename = filename
-        self.track_id = None
+        self.track_id = track_id
         self.type = type
-        self.pil_id = pilot
+        self.pil_id = pil_id
         self.task_id = task_id
         self.glider = glider
         self.cert = cert
         self.flight = None      # igc_lib.Flight object
         self.date = None        # in datetime.date format
+
+    def to_dict(self):
+        return self.__dict__
 
     def get_pilot(self):
         """Get pilot associated to a track from its filename
@@ -125,11 +128,11 @@ class Track():
         return result
 
     @classmethod
-    def read_file(cls, filename, pilot_id = None):
+    def read_file(cls, filename, track_id = None, pil_id = None):
         """Reads track file and creates a track object"""
-        track = cls(filename)
+        track = cls(filename=filename, track_id=track_id, pil_id=pil_id)
         track.get_type()
-        print('type', track.type)
+        print('type ', track.type)
         if track.type is not None:
             """file is a valid track format"""
             if track.type == "igc":
@@ -147,46 +150,43 @@ class Track():
             '"""
             if flight.valid:
                 print('flight valid')
-                if not pilot_id:
+                if not pil_id:
                     track.get_pilot()
-                else:
-                    track.pil_id = 0 + pilot_id
-                track.get_glider()
-                track.flight = flight
-                track.date = epoch_to_date(track.flight.date_timestamp)
+                # track.get_glider()
+                track.flight    = flight
+                track.date      = epoch_to_date(track.flight.date_timestamp)
                 return track
-            else: print(flight.notes)
+            else: print(f'** ERROR: {flight.notes}')
         else:
-            print("File {} (pilot ID {}) is NOT a valid track file. \n".format(track, pilot_id))
+            print(f"File {filename} (pilot ID {pil_id}) is NOT a valid track file.")
 
     @classmethod
     def read_db(cls, track_id):
         """Creates a Track Object from a DB Track entry"""
 
-        track = cls()
+        track = cls(track_id=track_id)
 
         """Read general info about the track"""
-        query = "select unix_timestamp(`T`.`traDate`) as `udate`," \
-                "   `T`.*," \
-                "   `CTT`.* " \
-                "from `tblTrack` `T` " \
-                "left outer join " \
-                "`tblComTaskTrack` `CTT` on `T`.`traPk`=`CTT`.`traPk` " \
-                "where `T`.`traPk`=%s"
+
+        query = """ SELECT
+                        `pil_id`,
+                        `task_id`,
+                        `track_file` AS `filename`
+                    FROM
+                        `TaskResultView`
+                    WHERE
+                        `track_id` = %s
+                    LIMIT 1 """
 
         with Database() as db:
             # get the formula details.
             t = db.fetchone(query, [track_id])
 
         if t:
-            track.pil_id = t['pilPk']
-            track.filename = t['traFile'] if t['traFile'] is not None else None
-            track.task_id = t['tasPk'] if t['tasPk'] is not None else None
-            track.glider = t['traGlider'] if t['traGlider'] is not (None or 'Unknown') else None
-            track.cert = t['traDHV'] if t['traGlider'] is not (None or 'Unknown') else None
+            track.to_dict().update(t)
 
-        """Creates the flight obj with fixes info"""
-        track.flight = Flight.create_from_file(track.filename)
+            """Creates the flight obj with fixes info"""
+            track.flight = Flight.create_from_file(track.filename)
 
         return track
 

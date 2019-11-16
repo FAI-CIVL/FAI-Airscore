@@ -267,6 +267,7 @@ class Task(object):
                 - check all tracks'''
             self.calculate_task_length()
             self.calculate_optimised_task_length()
+            self.update_task_distance()
             self.check_all_tracks(lib)
 
         self.stats.update(lib.task_totals(self.id))
@@ -347,14 +348,16 @@ class Task(object):
     def check_all_tracks(self, lib = None):
         ''' checks all igc files against Task and creates results '''
 
-        from flight_result import verify_all_tracks, adjust_flight_result
+        from flight_result import verify_all_tracks, adjust_flight_results, update_all_results
 
         if not lib:
             '''retrieve scoring formula library'''
             lib = self.formula.get_lib()
 
         ''' manage Stopped Task    '''
+        print(f'stopped time: {self.stopped_time}')
         if self.stopped_time:
+            print(f'We are executing Stopped Task Routine')
             if self.comp_class == 'PG' :
                 '''
                 If (class == 'PG' and (SS_Interval or type == 'ELAPSED TIME')
@@ -381,6 +384,7 @@ class Task(object):
                 # min_task_duration = 3600
                 # last_time = self.stopped_time - self.formula.score_back_time
                 results = verify_all_tracks(self, lib)
+                update_all_results(results)     #avoidable if we use results to update stats instead of db
 
                 if self.task_type == 'elapsed time' or self.SS_interval:
                     '''need to check track and get last_start_time'''
@@ -388,7 +392,7 @@ class Task(object):
                     # duration = last_time - self.last_start_time
                     if not self.is_valid():
                         return f'duration is not enough for all pilots, task with id {self.id} is not valid, scoring is not needed.'
-                    results = adjust_flight_result(self, results, lib)
+                    results = adjust_flight_results(self, results, lib)
 
             elif self.comp_class == 'HG':
                 ''' In hang-gliding, stopped tasks are “scored back” by a time that is determined
@@ -415,11 +419,14 @@ class Task(object):
                 #                 else (self.stopped_time - self.SS_interval))
                 # duration    = last_time - self.start_time
 
-                verify_all_tracks(self, lib)
+                results = verify_all_tracks(self, lib)
 
         else:
             '''get all results for the task'''
-            verify_all_tracks(self, lib)
+            results = verify_all_tracks(self, lib)
+
+        '''store results to database'''
+        update_all_results(results)
 
     def update_task_distance(self):
 
@@ -699,21 +706,25 @@ class Task(object):
             # should unify property names
             result = Flight_result(pil_id=pil['pil_id'], track_file = pil['track_file'])
             result.distance_flown           = pil['distance']
+            result.first_time               = pil['first_time']
             result.SSS_time                 = pil['SS_time']
-            result.Pilot_Start_time         = pil['start_time']
+            result.pilot_start_time         = pil['start_time']
             result.ESS_time                 = pil['ES_time']
             result.goal_time                = pil['goal_time']
-            result.Best_waypoint_achieved   = pil['turnpoints_made']
+            result.best_waypoint_achieved   = pil['turnpoints_made']
             result.last_time                = pil['last_time']
-            result.Lead_coeff               = pil['lead_coeff']
-            result.Stopped_altitude         = pil['last_altitude']
+            result.lead_coeff               = pil['lead_coeff']
+            result.ESS_altitude             = pil['ESS_altitude']
+            result.goal_altitude            = pil['goal_altitude']
+            result.max_altitude             = pil['max_altitude']
+            result.last_altitude            = pil['last_altitude']
             result.distance_score           = pil['dist_points']
-            result.Departure_score          = pil['dep_points']
-            result.Arrival_score            = pil['arr_points']
-            result.Time_score               = pil['time_points']
-            result.Penalty                  = pil['penalty']
-            result.Comment                  = pil['comment']
-            result.Score                    = pil['score']
+            result.departure_score          = pil['dep_points']
+            result.arrival_score            = pil['arr_points']
+            result.time_score               = pil['time_points']
+            result.penalty                  = pil['penalty']
+            result.comment                  = pil['comment']
+            result.score                    = pil['score']
             result.result_type              = pil['result']
 
             task.results.append(result)
@@ -980,6 +991,7 @@ class Task(object):
 
     def calculate_task_length(self, method="fast_andoyer"):
         # calculate non optimised route distance.
+        self.distance = 0
         for wpt in range(1, len(self.turnpoints)):
             leg_dist = distance(self.turnpoints[wpt - 1], self.turnpoints[wpt], method)
             self.legs.append(leg_dist)
@@ -1066,7 +1078,7 @@ class Task(object):
         self.SS_distance = sum(self.optimised_legs[sss_wpt:ess_wpt])
         self.optimised_turnpoints = closearr
 
-    def calculate_optimised_task_length(self, method="fast_andoyer"):
+    def calculate_optimised_task_length_fast_andoyer(self, method="fast_andoyer"):
         from geographiclib.geodesic import Geodesic
         geod = Geodesic.WGS84
         wpts = self.turnpoints
@@ -1186,6 +1198,58 @@ class Task(object):
         self.SS_distance = sum(self.optimised_legs[sss_wpt:ess_wpt])
         self.optimised_turnpoints = optimised
 
+    def calculate_optimised_task_length(self, method="fast_andoyer"):
+        ''' new optimized route procedure that uses John Stevenson on FAI Basecamp.
+            trasforms wgs84 to plan trasverse cartesian projection, calculates
+            optimised fix on cilynders, and goes back to wgs84 for distance calculations.
+        '''
+        from route import get_shortest_path
+
+        '''calculate optimised distance fixes on cilynders'''
+        optimised = get_shortest_path(self)
+
+        '''updates all task attributes'''
+        self.optimised_legs = []
+        self.optimised_legs.append(0)
+        self.partial_distance = []
+        self.partial_distance.append(0)
+        self.opt_dist = 0
+        for i in range(1, len(optimised)):
+            leg_dist = distance(optimised[i-1], optimised[i], method)
+            self.optimised_legs.append(leg_dist)
+            self.opt_dist += leg_dist
+            self.partial_distance.append(self.opt_dist)
+
+        # work out which turnpoints are SSS and ESS
+        sss_wpt = 0
+        ess_wpt = 0
+        for wpt in range(len(self.turnpoints)):
+            if self.turnpoints[wpt].type == 'speed':
+                sss_wpt = wpt+1
+            if self.turnpoints[wpt].type == 'endspeed':
+                ess_wpt = wpt+1
+
+        # work out self.opt_dist_to_SS, self.opt_dist_to_ESS, self.SS_distance
+        self.opt_dist_to_SS = sum(self.optimised_legs[0:sss_wpt])
+        self.opt_dist_to_ESS = sum(self.optimised_legs[0:ess_wpt])
+        self.SS_distance = sum(self.optimised_legs[sss_wpt:ess_wpt])
+        self.optimised_turnpoints = optimised
+
+        # ''' update task short route'''
+        # with Database() as db:
+        #     query = ''
+        #     for idx, item in enumerate(task.turnpoints):
+        #         tp = task.optimised_turnpoints[idx]
+        #         query = """ UPDATE `tblTaskWaypoint`
+        #                     SET
+        #                         `ssrLatDecimal` = %s,
+        #                         `ssrLongDecimal` = %s
+        #                     WHERE `tawPk` = %s
+        #                     LIMIT 1"""
+        #
+        #         params = [tp.lat, tp.lon, item.id]
+        #         db.execute(query, params)
+
     def clear_waypoints(self):
         self.turnpoints.clear()
         self.optimised_turnpoints.clear()
@@ -1229,8 +1293,6 @@ class Task(object):
             distance_to_go.insert(0, d)
             t -= 1
         return distance_to_go
-
-
 
 # function to parse task object to compilations
 def get_map_json(task_id):

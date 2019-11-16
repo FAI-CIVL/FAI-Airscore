@@ -152,7 +152,7 @@ class Task_result:
                         ]
         for idx, tp in enumerate(route):
             wpt = {x:getattr(tp, x) for x in attr_list}
-            wpt['cumulative_dist'] = dist[idx-1] if idx > 0 else 0
+            wpt['cumulative_dist'] = dist[idx]
             task_route.append(wpt)
 
         self.task = task_route
@@ -262,8 +262,14 @@ class Task_result:
                         'penalty',
                         'comment',
                         'lead_coeff',
+                        'ESS_altitude',
+                        'goal_altitude',
                         'last_altitude',
+                        'max_altitude',
+                        'first_time',
                         'last_time',
+                        'landing_altitude',
+                        'landing_time',
                         'track_file']
 
         for pil in results:
@@ -379,8 +385,7 @@ class Comp_result(object):
                         FROM
                             `tblResultFile`
                         WHERE
-                            `comPk` = %s
-                        AND `refVisible` = 1
+                            `comPk` = %s AND NOT(`tasPk` IS NULL) AND `refVisible` = 1
                         ORDER BY
                             `tasPk`
                         """

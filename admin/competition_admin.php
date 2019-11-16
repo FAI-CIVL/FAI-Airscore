@@ -73,8 +73,8 @@ if ( reqexists('delete') )
         $query = "DELETE FROM `tblTask` WHERE `tasPk` = $id";
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task delete failed: ' . mysqli_connect_error());
 
-        $query = "DELETE FROM `tblComTaskTrack` WHERE `tasPk` = $id";
-        $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task CTT deletefailed: ' . mysqli_connect_error());
+        // $query = "DELETE FROM `tblComTaskTrack` WHERE `tasPk` = $id";
+        // $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task CTT deletefailed: ' . mysqli_connect_error());
 
         $query = "DELETE FROM `tblTaskWaypoint` WHERE `tasPk` = $id";
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Task TW delete failed: ' . mysqli_connect_error());
@@ -408,8 +408,8 @@ echo "<h3>Tasks</h3>\n";
 echo "<form action=\"competition_admin.php?comPk=$comPk\" name=\"taskadmin\" method=\"post\">\n";
 echo "<ol>\n";
 $count = 1;
-$sql = "SELECT `T`.*, `CTT`.`traPk` AS `Tadded` FROM `tblTask` `T`
-        LEFT OUTER JOIN `tblComTaskTrack` `CTT` USING(`tasPk`)
+$sql = "SELECT `T`.*, `TR`.`tarPk` AS `Tadded` FROM `tblTask` `T`
+        LEFT OUTER JOIN `tblTaskResult` `TR` USING(`tasPk`)
         WHERE `T`.`comPk` = $comPk
         GROUP BY `T`.`tasPk`
         ORDER BY `T`.`tasDate`";

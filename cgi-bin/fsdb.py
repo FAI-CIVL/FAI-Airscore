@@ -26,6 +26,12 @@ class FSDB(object):
         self.pilots     = pilots        # list: pilots list
         self.tasks      = tasks         # list: task info and results
 
+    @property
+    def comp_class(self):
+        if self.tasks:
+            return self.tasks[0].comp_class
+        return None
+
     @classmethod
     def read(cls, fp):
         """ A XML reader to read FSDB files
@@ -211,31 +217,31 @@ class FSDB(object):
                         'nom_time':             self.formula['nominal_time']/3600,
                         'nom_launch':           self.formula['nominal_launch'],
                         'nom_goal':             self.formula['nominal_goal'],
-                        'day_quality_override': '',
+                        'day_quality_override': 0,      #still to implement
                         'bonus_gr':             self.formula['glide_bonus'],
-                        'jump_the_gun_factor':  '',      #still to implement
-                        'jump_the_gun_max':     '',     #still to implement
-                        'normalize_1000_before_day_quality': '',        #still to implement
+                        'jump_the_gun_factor':  2 if self.comp_class == 'HG' else 0,       #still to implement
+                        'jump_the_gun_max':     300,    #still to implement
+                        'normalize_1000_before_day_quality':    0,      #still to implement
                         'time_points_if_not_in_goal':   1 - self.formula['no_goal_penalty'],
-                        'use_1000_points_for_max_day_quality': '',
+                        'use_1000_points_for_max_day_quality':  0,      #still to implement
                         'use_arrival_position_points':  1 if self.formula['arrival'] == 'position' else 0,
                         'use_arrival_time_points':      1 if self.formula['arrival'] == 'time' else 0,
                         'use_departure_points':         1 if self.formula['departure'] == 'departure' else 0,
-                        'use_difficulty_for_distance_points': '',       #still to implement
-                        'use_distance_points':  '',                     #still to implement
-                        'use_distance_squared_for_LC': '',              #still to implement
-                        'use_leading_points':           0 if self.formula['departure'] == 'off' else 1,
-                        'use_semi_circle_control_zone_for_goal_line': '',       #still to implement
-                        'use_time_points':      '',                     #still to implement
-                        'scoring_altitude':     '',                     #still to implement
-                        'final_glide_decelerator': 'GPS',               #still to implement
+                        'use_difficulty_for_distance_points': 1 if self.comp_class == 'HG' else 0,       #still to implement
+                        'use_distance_points':          1,              #still to implement
+                        'use_distance_squared_for_LC':  1 if self.comp_class == 'PG' else 0,       #still to implement
+                        'use_leading_points':           1 if self.formula['departure'] == 'leadout' else 0,
+                        'use_semi_circle_control_zone_for_goal_line': 1,       #still to implement
+                        'use_time_points':              1,                     #still to implement
+                        'scoring_altitude':             'GPS',                 #still to implement
+                        'final_glide_decelerator':      0,                     #still to implement
                         'no_final_glide_decelerator_reason': '',
-                        'min_time_span_for_valid_task': '',             #still to implement
+                        'min_time_span_for_valid_task': 60 if self.comp_class == 'PG' else 0,       #still to implement
                         'score_back_time':              self.formula['score_back_time']/60,
                         'use_proportional_leading_weight_if_nobody_in_goal': '',        #still to implement
-                        'leading_weight_factor': '',                    #still to implement
+                        'leading_weight_factor':        '',                    #still to implement
                         'turnpoint_radius_tolerance':   self.formula['tolerance'],
-                        'use_arrival_altitude_points':  0 if self.formula['tolerance'] == 'off' else '' #still to implement
+                        'use_arrival_altitude_points':  0 if self.formula['arr_alt_bonus'] == 'off' else '' #still to implement
                         }
 
         '''create the file structure'''
@@ -311,11 +317,11 @@ class FSDB(object):
                         'nom_launch':           tf['nominal_launch'],
                         'nom_goal':             tf['nominal_goal'],
                         'day_quality':          tf['day_quality'],
-                        'day_quality_override': '',         #still to implement
+                        'day_quality_override': 0,         #still to implement
                         'bonus_gr':             tf['glide_bonus'],
-                        'jump_the_gun_factor':  '',         #still to implement
-                        'jump_the_gun_max':     '',         #still to implement
-                        'normalize_1000_before_day_quality': '',                #still to implement
+                        'jump_the_gun_factor':  2 if self.comp_class == 'HG' else 0,       #still to implement
+                        'jump_the_gun_max':     300,                            #still to implement
+                        'normalize_1000_before_day_quality': 0,                 #still to implement
                         'time_validity_based_on_pilot_with_speed_rank': '',     #still to implement
                         'time_points_if_not_in_goal':   1 - tf['no_goal_penalty'],
                         'use_1000_points_for_max_day_quality': '',
@@ -327,11 +333,11 @@ class FSDB(object):
                         'use_distance_squared_for_LC': '',              #still to implement
                         'use_leading_points':           0 if tf['departure'] == 'off' else 1,
                         'use_semi_circle_control_zone_for_goal_line': '',       #still to implement
-                        'use_time_points':      '',                     #still to implement
-                        'scoring_altitude':     '',                     #still to implement
+                        'use_time_points':      1,                      #still to implement
+                        'scoring_altitude':     'GPS',                  #still to implement
                         'final_glide_decelerator': 'GPS',               #still to implement
                         'no_final_glide_decelerator_reason': '',
-                        'min_time_span_for_valid_task': '',             #still to implement
+                        'min_time_span_for_valid_task': 60 if self.comp_class == 'PG' else 0,             #still to implement
                         'score_back_time':              tf['score_back_time']/60,
                         'use_proportional_leading_weight_if_nobody_in_goal': '',        #still to implement
                         'leading_weight_factor': '',                    #still to implement
@@ -420,7 +426,7 @@ class FSDB(object):
                             'first_start_time':                 get_isotime(t.date, tf['min_dept_time'], t.time_offset),
                             'first_finish_time':                get_isotime(t.date, tf['min_ess_time'], t.time_offset),
                             'max_time_to_get_time_points':      round(0/3600, 14),                  # not yet implemented
-                            'no_of_pilots_with_time_points':    len([x for x in t.results if x.Time_score > 0]),
+                            'no_of_pilots_with_time_points':    len([x for x in t.results if x.time_score > 0]),
                             'goal_ratio':                       0 if tf['pilots_launched'] == 0 else round(tf['pilots_goal']/tf['pilots_launched'], 15),
                             'arrival_weight':                   round(0, 3),                        # not yet implemented
                             'departure_weight':                 round(0, 3),                        # not yet implemented
@@ -455,56 +461,56 @@ class FSDB(object):
                     pil_r   = T.SubElement(pil_p, 'FsResult')
                     if not (pil.result_type == 'min_dist'):
                         fd_attr =  {'distance':             round(pil.distance_flown, 3),
-                                    'bonus_distance':       round(pil.Total_distance, 3),  #?? seems 0 for PG and more than dist for HG
-                                    'started_ss':           '' if not pil.Pilot_Start_time else get_isotime(t.date, pil.Pilot_Start_time, t.time_offset),
+                                    'bonus_distance':       round(pil.total_distance, 3),  #?? seems 0 for PG and more than dist for HG
+                                    'started_ss':           '' if not pil.pilot_start_time else get_isotime(t.date, pil.pilot_start_time, t.time_offset),
                                     'finished_ss':          '' if not pil.ESS_time else get_isotime(t.date, pil.ESS_time, t.time_offset),
-                                    'altitude_at_ess':      0,  # not implemented
+                                    'altitude_at_ess':      pil.ESS_altitude,
                                     'finished_task':        '' if not pil.goal_time else get_isotime(t.date, pil.goal_time, t.time_offset),
                                     'tracklog_filename':    pil.track_file,
-                                    'lc':                   pil.Lead_coeff,
+                                    'lc':                   pil.lead_coeff,
                                     'iv':                   '', # ?? not implemented
-                                    'ts':                   '', # track min time, not implemented
-                                    'alt':                  pil.Stopped_altitude,   # ??
+                                    'ts':                   get_isotime(t.date, pil.first_time, t.time_offset),
+                                    'alt':                  pil.last_altitude,   # ??
                                     'bonus_alt':            '',  # ?? not implemented
-                                    'max_alt':              '',  # not implemented yet
+                                    'max_alt':              pil.max_altitude,
                                     'last_tracklog_point_distance': '',     # not implemented yet
                                     'bonus_last_tracklog_point_distance': '', # ?? not implemented
-                                    'last_tracklog_point_time': get_isotime(t.date, pil.last_time, t.time_offset),
-                                    'last_tracklog_point_alt':  pil.Stopped_altitude,
-                                    'landed_before_deadline':   '1' if pil.last_time < (t.task_deadline if not t.stopped_time else t.stopped_time) else '0'     # only deadline?
+                                    'last_tracklog_point_time': get_isotime(t.date, pil.landing_time, t.time_offset),
+                                    'last_tracklog_point_alt':  pil.landing_altitude,
+                                    'landed_before_deadline':   '1' if pil.landing_time < (t.task_deadline if not t.stopped_time else t.stopped_time) else '0'     # only deadline?
                                     }
                         for k,v in fd_attr.items():
                             pil_fd.set(k, str(v))
 
                     r_attr =   {'rank':             idx+1,  # not implemented, tey should be ordered tho
                                                             # Rank IS NOT SAFE (I guess)
-                                'points':           round(pil.Score),
-                                'distance':         round(pil.Total_distance if pil.Total_distance else pil.distance_flown, 3),
+                                'points':           round(pil.score),
+                                'distance':         round(pil.total_distance if pil.total_distance else pil.distance_flown, 3),
                                 'ss_time':          sec_to_time(pil.total_time).strftime('%H:%M:%S'),
                                 'finished_ss_rank': '',     # not implemented
                                 'distance_points':  round(pil.distance_score,1),
-                                'time_points':      round(pil.Time_score,1),
-                                'arrival_points':   round(pil.Arrival_score,1),
-                                'departure_points': 0 if not t.formula.departure == 'departure' else round(pil.Departure_score, 1),
-                                'leading_points':   0 if not t.formula.departure == 'leadout' else round(pil.Departure_score, 1),
-                                'penalty':          0 if not pil.Penalty else pil.Penalty,  # ??
-                                'penalty_points':   0 if not pil.Penalty else pil.Penalty,  # ??
-                                'penalty_reason':   '' if not pil.Comment else pil.Comment,
+                                'time_points':      round(pil.time_score,1),
+                                'arrival_points':   round(pil.arrival_score,1),
+                                'departure_points': 0 if not t.formula.departure == 'departure' else round(pil.departure_score, 1),
+                                'leading_points':   0 if not t.formula.departure == 'leadout' else round(pil.departure_score, 1),
+                                'penalty':          0 if not pil.penalty else pil.penalty,  # ??
+                                'penalty_points':   0 if not pil.penalty else pil.penalty,  # ??
+                                'penalty_reason':   '' if not pil.comment else pil.comment,
                                 'penalty_points_auto':      0,      # ??
                                 'penalty_reason_auto':      0,      # ??
                                 'penalty_min_dist_points':  0,      # ??
                                 'got_time_but_not_goal_penalty':    pil.ESS_time > 0 and not pil.goal_time,
-                                'started_ss':       '' if not pil.Pilot_Start_time else get_isotime(t.date, pil.SSS_time, t.time_offset),
+                                'started_ss':       '' if not pil.pilot_start_time else get_isotime(t.date, pil.SSS_time, t.time_offset),
                                 'ss_time_dec_hours':        0,      # ??
-                                'ts':               '',             # flight origin time, not implemented
+                                'ts':               get_isotime(t.date, pil.first_time, t.time_offset),             # flight origin time
                                 'real_distance':    round(pil.distance_flown, 3),
                                 'last_distance':    '',             # ?? last fix distance?
-                                'last_altitude_above_goal': pil.Stopped_altitude,
+                                'last_altitude_above_goal': pil.last_altitude,
                                 'altitude_bonus_seconds':   0,      # not implemented
                                 'altitude_bonus_time':      sec_to_time(0).strftime('%H:%M:%S'),    # not implemented
-                                'altitude_at_ess':          0,  # not implemented
+                                'altitude_at_ess':          pil.ESS_altitude,
                                 'scored_ss_time':           sec_to_time(pil.total_time).strftime('%H:%M:%S'),   # ??
-                                'landed_before_stop':       pil.last_time < (t.task_deadline if not t.stopped_time else t.stopped_time)
+                                'landed_before_stop':       pil.landing_time < (t.task_deadline if not t.stopped_time else t.stopped_time)
                                 }
 
                     for k,v in r_attr.items():
@@ -521,6 +527,8 @@ class FSDB(object):
 
         with open(filename, "wb") as file:
             file.write(fsdb)
+
+        return filename
 
     def add(self):
         """
@@ -686,9 +694,9 @@ class FSDB(object):
                                         VALUES
                                             (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
                                     """
-                        params = [tasPk, pilPk, res.Total_distance, speed, tarSS, tarES,
-                                        tarGoal, res.Penalty, res.Comment, res.Time_score, res.distance_score,
-                                        res.Arrival_score, res.Departure_score, res.Score, res.Stopped_altitude, res.result_type, traGlider]
+                        params = [tasPk, pilPk, res.total_distance, speed, tarSS, tarES,
+                                        tarGoal, res.penalty, res.comment, res.time_score, res.distance_score,
+                                        res.arrival_score, res.departure_score, res.score, res.last_altitude, res.result_type, traGlider]
                         db.execute(resquery, params)
                     except:
                         print ("DB Error inserting Result.")
