@@ -424,7 +424,7 @@ def rawtime_float_to_hms(timef):
     time = int(round(timef))
     hms = namedtuple('hms', ['hours', 'minutes', 'seconds'])
 
-    return hms((time / 3600), (time % 3600) / 60, time % 60)
+     return hms(math.floor(time / 3600), math.floor((time % 3600) / 60), math.floor(time % 60))
 
 
 def distance_flown(fix, i, short_route, wpt, distances_to_go):
