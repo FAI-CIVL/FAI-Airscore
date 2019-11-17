@@ -17,6 +17,15 @@ class DateTimeEncoder(json.JSONEncoder):
 
         return json.JSONEncoder.default(self, o)
 
+def km(dist, n=3):
+    '''meters to km, with n as number of decimals'''
+    try:
+        return round(dist/1000, int(n))
+    except ValueError:
+        return None
+    else:
+        return None
+
 def get_int(str):
     try:
         return int(str)

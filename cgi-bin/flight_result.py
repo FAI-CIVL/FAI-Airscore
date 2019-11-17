@@ -104,8 +104,6 @@ class Flight_result(object):
         else:
             return 0
 
-
-
     @classmethod
     def from_fsdb(cls, res, dep=None, arr=None):
         """ Creates Results from FSDB FsPartecipant element, which is in xml format.

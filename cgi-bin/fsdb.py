@@ -212,8 +212,8 @@ class FSDB(object):
                         }
 
         formula_attr = {'id':                   self.formula['type'].upper()+self.formula['version'],
-                        'min_dist':             self.formula['min_dist']/1000,
-                        'nom_dist':             self.formula['nominal_dist']/1000,
+                        'min_dist':             km(self.formula['min_dist'], 1),
+                        'nom_dist':             km(self.formula['nominal_dist'], 1),
                         'nom_time':             self.formula['nominal_time']/3600,
                         'nom_launch':           self.formula['nominal_launch'],
                         'nom_goal':             self.formula['nominal_goal'],
@@ -311,8 +311,8 @@ class FSDB(object):
 
             '''FsScoreFormula'''
             tf_attr =  {'id':                   tf['type'].upper()+tf['version'],
-                        'min_dist':             tf['min_dist']/1000,
-                        'nom_dist':             tf['nominal_dist']/1000,
+                        'min_dist':             km(tf['min_dist'], 1),
+                        'nom_dist':             km(tf['nominal_dist'], 1),
                         'nom_time':             tf['nominal_time']/3600,
                         'nom_launch':           tf['nominal_launch'],
                         'nom_goal':             tf['nominal_goal'],
@@ -404,24 +404,24 @@ class FSDB(object):
 
             '''FsTaskScoreParams'''
             launch_ess  = [t.partial_distance[id] for id, tp in enumerate(t.turnpoints) if tp.type == 'endspeed'].pop()
-            sp_attr     =  {'ss_distance':                      round(t.SS_distance, 3),
-                            'task_distance':                    round(t.opt_dist, 3),
-                            'launch_to_ess_distance':           round(launch_ess, 3),
+            sp_attr     =  {'ss_distance':                      km(t.SS_distance),
+                            'task_distance':                    km(t.opt_dist),
+                            'launch_to_ess_distance':           km(launch_ess),
                             'no_of_pilots_present':             tf['pilots_present'],
                             'no_of_pilots_flying':              tf['pilots_launched'],
                             'no_of_pilots_lo':                  tf['pilots_launched'] - tf['pilots_goal'],
                             'no_of_pilots_reaching_nom_dist':   len([x for x in t.results if x.distance_flown > t.formula.nominal_dist]),
                             'no_of_pilots_reaching_es':         tf['pilots_ess'],
                             'no_of_pilots_reaching_goal':       tf['pilots_goal'],
-                            'sum_flown_distance':               round(tf['tot_dist_flown'], 11),
-                            'best_dist':                        round(tf['max_distance'], 3),
+                            'sum_flown_distance':               km(tf['tot_dist_flown']),
+                            'best_dist':                        km(tf['max_distance']),
                             'best_time':                        round(tf['fastest']/3600, 14),
                             'worst_time':                       round(max([0 if (x.ESS_time is None or x.SSS_time is None or (x.ESS_time - x.SSS_time < 0)) else (x.ESS_time - x.SSS_time) for x in t.results])/3600, 14),
                             'no_of_pilots_in_competition':      len(self.pilots),
                             'no_of_pilots_landed_before_stop':  tf['pilots_landed'],
-                            'sum_dist_over_min':                round(tf['tot_dist_over_min'], 11),
-                            'sum_real_dist_over_min':           round(tf['tot_dist_over_min'], 11), # not yet implemented
-                            'best_real_dist':                   round(tf['max_distance'], 3),       # not yet implemented
+                            'sum_dist_over_min':                km(tf['tot_dist_over_min']),
+                            'sum_real_dist_over_min':           km(tf['tot_dist_over_min']),        # not yet implemented
+                            'best_real_dist':                   km(tf['max_distance']),             # not yet implemented
                             'last_start_time':                  get_isotime(t.date, max([x.SSS_time for x in t.results if x.SSS_time is not None]), t.time_offset),
                             'first_start_time':                 get_isotime(t.date, tf['min_dept_time'], t.time_offset),
                             'first_finish_time':                get_isotime(t.date, tf['min_ess_time'], t.time_offset),
@@ -460,8 +460,8 @@ class FSDB(object):
                     pil_fd  = T.SubElement(pil_p, 'FsFlightData')
                     pil_r   = T.SubElement(pil_p, 'FsResult')
                     if not (pil.result_type == 'min_dist'):
-                        fd_attr =  {'distance':             round(pil.distance_flown, 3),
-                                    'bonus_distance':       round(pil.total_distance, 3),  #?? seems 0 for PG and more than dist for HG
+                        fd_attr =  {'distance':             km(pil.distance_flown),
+                                    'bonus_distance':       km(pil.total_distance),  #?? seems 0 for PG and more than dist for HG
                                     'started_ss':           '' if not pil.pilot_start_time else get_isotime(t.date, pil.pilot_start_time, t.time_offset),
                                     'finished_ss':          '' if not pil.ESS_time else get_isotime(t.date, pil.ESS_time, t.time_offset),
                                     'altitude_at_ess':      pil.ESS_altitude,
@@ -485,7 +485,7 @@ class FSDB(object):
                     r_attr =   {'rank':             idx+1,  # not implemented, tey should be ordered tho
                                                             # Rank IS NOT SAFE (I guess)
                                 'points':           round(pil.score),
-                                'distance':         round(pil.total_distance if pil.total_distance else pil.distance_flown, 3),
+                                'distance':         km(pil.total_distance if pil.total_distance else pil.distance_flown),
                                 'ss_time':          sec_to_time(pil.total_time).strftime('%H:%M:%S'),
                                 'finished_ss_rank': '',     # not implemented
                                 'distance_points':  round(pil.distance_score,1),
@@ -503,7 +503,7 @@ class FSDB(object):
                                 'started_ss':       '' if not pil.pilot_start_time else get_isotime(t.date, pil.SSS_time, t.time_offset),
                                 'ss_time_dec_hours':        0,      # ??
                                 'ts':               get_isotime(t.date, pil.first_time, t.time_offset),             # flight origin time
-                                'real_distance':    round(pil.distance_flown, 3),
+                                'real_distance':    km(pil.distance_flown),
                                 'last_distance':    '',             # ?? last fix distance?
                                 'last_altitude_above_goal': pil.last_altitude,
                                 'altitude_bonus_seconds':   0,      # not implemented
