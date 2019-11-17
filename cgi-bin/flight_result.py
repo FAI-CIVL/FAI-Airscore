@@ -568,17 +568,17 @@ class Flight_result(object):
                 keep = True
                 lastfix = fix
 
-            if fix.rawtime == self.Waypoints_achieved[waypoint][1]:
+            if fix.rawtime == self.waypoints_achieved[waypoint][1]:
                 time = (("%02d:%02d:%02d") % rawtime_float_to_hms(fix.rawtime + task.time_offset * 3600))
                 waypoint_achieved.append(
-                    [fix.lon, fix.lat, fix.gnss_alt, fix.press_alt, self.Waypoints_achieved[waypoint][0], time,
+                    [fix.lon, fix.lat, fix.gnss_alt, fix.press_alt, self.waypoints_achieved[waypoint][0], time,
                      fix.rawtime,
-                     f'{self.Waypoints_achieved[waypoint][0]} '
+                     f'{self.waypoints_achieved[waypoint][0]} '
                      f'gps alt: {fix.gnss_alt:.0f}m '
                      f'baro alt: {fix.press_alt:.0f}m '
                      f'time: {time}'])
                 keep = True
-                if waypoint < len(self.Waypoints_achieved) - 1:
+                if waypoint < len(self.waypoints_achieved) - 1:
                     waypoint += 1
 
             if keep:
