@@ -37,23 +37,24 @@ class Flight_result(object):
         lead_coeff:     lead points coeff (for GAP based systems), sum of fixed_LC and variable part calcullated during scoring
         """
 
-    def __init__(self, pil_id=None, pilot_start_time=None, SSS_time=0, best_waypoint_achieved='No waypoints achieved',
-                 ESS_time=None, fixed_LC=0, lead_coeff=0, distance_flown=0, first_time=None, last_time=None, last_altitude=0,
+    def __init__(self, pil_id=None, first_time=None, real_start_time=None, SSS_time=0, ESS_time=None, goal_time=None, last_time=None,
+                 best_waypoint_achieved='No waypoints achieved', fixed_LC=0, lead_coeff=0, distance_flown=0, last_altitude=0,
                  jump_the_gun=None, track_file=None):
         """
 
         :type lead_coeff: int
         """
-        self.pilot_start_time           = pilot_start_time
+        self.first_time                 = first_time
+        self.real_start_time            = real_start_time
         self.SSS_time                   = SSS_time
+        self.ESS_time                   = ESS_time
+        self.goal_time                  = goal_time
+        self.last_time                  = last_time
         self.best_waypoint_achieved     = best_waypoint_achieved
         self.waypoints_achieved         = []
-        self.ESS_time                   = ESS_time
         self.fixed_LC                   = fixed_LC
         self.lead_coeff                 = lead_coeff
         self.distance_flown             = distance_flown
-        self.first_time                 = first_time
-        self.last_time                  = last_time
         self.max_altitude               = 0
         self.ESS_altitude               = 0
         self.goal_altitude              = 0
@@ -72,7 +73,6 @@ class Flight_result(object):
         self.ext_id                     = None
         self.pil_id                     = pil_id
         self.result_type                = 'lo'
-        self.goal_time                  = None
         self.SS_distance                = None
         self.track_file                 = track_file
 
@@ -122,7 +122,7 @@ class Flight_result(object):
             result.total_distance = float(r.get('distance')) * 1000  # in meters
             result.distance_flown = float(r.get('real_distance')) * 1000  # in meters
             # print ("start_ss: {}".format(r.get('started_ss')))
-            result.pilot_start_time = get_datetime(r.get('started_ss')).time() if r.get(
+            result.real_start_time = get_datetime(r.get('started_ss')).time() if r.get(
                 'started_ss') is not None else None
             result.SSS_time = float(r.get('ss_time_dec_hours'))
             if result.SSS_time > 0:
@@ -159,50 +159,13 @@ class Flight_result(object):
     @classmethod
     def read_from_db(cls, res_id):
         """reads result from database"""
-        query = """ SELECT
-                        `pil_id`,
-                        `distance` AS `distance_flown`,
-                        `first_time`,
-                        `start_time`,
-                        `goal_time`,
-                        `last_time`,
-                        `result` AS `result_type`,
-                        `SS_time` AS `SSS_time`,
-                        `ES_time` AS `ESS_time`,
-                        `turnpoints_made` AS `best_waypoint_achieved`,
-                        `penalty`,
-                        `comment`,
-                        `speed_points` AS `time_score`,
-                        `dist_points` AS `distance_score`,
-                        `arr_points` AS `arrival_score`,
-                        `dep_points` AS `departure_score`,
-                        `score`,
-                        `lead_coeff`,
-                        `fixed_LC`,
-                        `ESS_altitude`,
-                        `goal_altitude`,
-                        `max_altitude`,
-                        `last_altitude`,
-                        `landing_time`,
-                        `landing_altitude`,
-                        `track_file`
-                    FROM
-                        `TaskResultView`
-                    WHERE
-                        `track_id` = %s
-                    LIMIT 1
-                """
-
-        with Database() as db:
-            # get the task details.
-            t = db.fetchone(query, [res_id])
-
-        if t is None:
-            print('Not a valid flight')
-            return
+        from db_tables import FlightResultView as R
 
         result = cls()
-        result.__dict__.update(t)
+        with Database() as db:
+            # get result details.
+            q = db.session.query(R)
+            db.populate_obj(result, q.get(res_id))
         return result
 
     @classmethod
@@ -365,8 +328,8 @@ class Flight_result(object):
                 LC = taskTime(i)*(bestDistToESS(i-1)^2 - bestDistToESS(i)^2 )
                 i : i ? TrackPoints In SS'''
             if started and not any(e[0] == 'ESS' for e in result.waypoints_achieved):
-                pilot_start_time = max([e[1] for e in result.waypoints_achieved if e[0] == 'SSS'])
-                taskTime = next.rawtime - pilot_start_time
+                real_start_time = max([e[1] for e in result.waypoints_achieved if e[0] == 'SSS'])
+                taskTime = next.rawtime - real_start_time
                 best_dist_to_ess.append(task.opt_dist_to_ESS - result.distance_flown)
                 result.fixed_LC += formula_parameters.coef_func(taskTime, best_dist_to_ess[0], best_dist_to_ess[1])
                 best_dist_to_ess.pop(0)
@@ -386,7 +349,7 @@ class Flight_result(object):
             il elapsed time, the time of last fix on start
             SS Time: the gate time'''
             result.SSS_time = task.start_time
-            result.pilot_start_time = min([e[1] for e in result.waypoints_achieved if e[0] == 'SSS'])
+            result.real_start_time = min([e[1] for e in result.waypoints_achieved if e[0] == 'SSS'])
 
             if task.task_type == 'RACE' and task.SS_interval:
                 start_num = int((task.start_close_time - task.start_time) / (task.SS_interval * 60))
@@ -394,14 +357,14 @@ class Flight_result(object):
                 while gate > task.start_time:
                     if any([e for e in result.waypoints_achieved if e[0] == 'SSS' and e[1] >= gate]):
                         result.SSS_time = gate
-                        result.pilot_start_time = min(
+                        result.real_start_time = min(
                             [e[1] for e in result.waypoints_achieved if e[0] == 'SSS' and e[1] >= gate])
                         break
                     gate -= task.SS_interval * 60
 
             elif task.task_type == 'ELAPSED TIME':
-                result.pilot_start_time = max([e[1] for e in result.waypoints_achieved if e[0] == 'SSS'])
-                result.SSS_time = result.pilot_start_time
+                result.real_start_time = max([e[1] for e in result.waypoints_achieved if e[0] == 'SSS'])
+                result.SSS_time = result.real_start_time
 
             # result.Start_time_str = (("%02d:%02d:%02d") % rawtime_float_to_hms(result.SSS_time + time_offset))
 
@@ -439,70 +402,43 @@ class Flight_result(object):
             if track_id is not given, it inserts a new result
             else it updates existing one '''
         from collections import Counter
+        from db_tables import tblTaskResult as R
 
         '''checks conformity'''
         if not self.goal_time: self.goal_time = 0
         endss = 0 if not self.ESS_time else self.ESS_time
         num_wpts = len(Counter(el[0] for el in self.waypoints_achieved))
 
-        if track_id:
-            query = """ UPDATE
-                            `tblTaskResult`
-                        SET
-                            `tarDistance`       = %s,
-                            `tarSpeed`          = %s,
-                            `tarLaunch`         = %s,
-                            `tarStart`          = %s,
-                            `tarGoal`           = %s,
-                            `tarSS`             = %s,
-                            `tarES`             = %s,
-                            `tarTurnpoints`     = %s,
-                            `tarLeadingCoeff2`  = %s,
-                            `tarESAltitude`     = %s,
-                            `tarGoalAltitude`   = %s,
-                            `tarMaxAltitude`    = %s,
-                            `tarLastAltitude`   = %s,
-                            `tarLastTime`       = %s,
-                            `tarLandingAltitude`= %s,
-                            `tarLandingTime`    = %s,
-                            `tarResultType`     = %s
-                        WHERE
-                            `tarPk` = %s
-                    """
-            params = [self.distance_flown, self.speed, self.first_time, self.pilot_start_time, self.goal_time, self.SSS_time,
-                      endss, num_wpts, self.fixed_LC, self.ESS_altitude, self.goal_altitude, self.max_altitude, self.last_altitude, self.last_time,
-                      self.landing_altitude, self.landing_time, self.result_type, track_id]
-
-
-        else:       #should not be possible, as we wouldn't have track file stored
-            query = """ INSERT INTO `tblTaskResult`(
-                            `pilPk`,
-                            `tasPk`,
-                            `tarDistance`,
-                            `tarSpeed`,
-                            `tarLaunch`,
-                            `tarStart`,
-                            `tarGoal`,
-                            `tarSS`,
-                            `tarES`,
-                            `tarTurnpoints`,
-                            `tarLeadingCoeff2`,
-                            `tarESAltitude`,
-                            `tarGoalAltitude`,
-                            `tarMaxAltitude`,
-                            `tarLastAltitude`,
-                            `tarLastTime`,
-                            `tarLandingAltitude`,
-                            `tarLandingTime`,
-                            `tarResultType`
-                        )
-                        VALUES( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s )"""
-            params = [self.pil_id, task_id, self.distance_flown, self.speed, self.first_time, self.pilot_start_time, self.goal_time, self.SSS_time,
-                      endss, num_wpts, self.fixed_LC, self.ESS_altitude, self.goal_altitude, self.max_altitude, self.last_altitude, self.last_time,
-                      self.landing_altitude, self.landing_time, self.result_type]
-
+        '''database connection'''
         with Database() as db:
-            db.execute(query, params)
+            if track_id:
+                results = db.session.query(R)
+                r = results.get(track_id)
+            else:
+                '''create a new result'''
+                r = R(pilPk=self.pil_id, tasPk=task_id)
+
+            r.tarDistance   = self.distance_flown
+            r.tarSpeed      = self.speed
+            r.tarLaunch     = self.first_time
+            r.tarStart      = self.real_start_time
+            r.tarGoal       = self.goal_time
+            r.tarSS         = self.SSS_time
+            r.tarES         = endss
+            r.tarTurnpoints = num_wpts
+            r.tarFixedLC    = self.fixed_LC
+            r.tarESAltitude = self.ESS_altitude
+            r.tarGoalAltitude   = self.goal_altitude
+            r.tarMaxAltitude    = self.max_altitude
+            r.tarLastAltitude   = self.last_altitude
+            r.tarLastTime       = self.last_time
+            r.tarLandingAltitude    = self.landing_altitude
+            r.tarLandingTime        = self.landing_time
+            r.tarResultType         = self.result_type
+
+            if not track_id: db.session.add(r)
+
+            db.session.commit()
 
     def store_result_json(self):
         json.dump(self)
@@ -654,43 +590,30 @@ def adjust_flight_results(task, results, lib):
 def verify_all_tracks(task, lib):
     from igc_lib import Flight
     from track import Track
-
-    query = """ SELECT
-                    `track_id`,
-                    `pil_id`,
-                    `track_file` AS `filename`
-                FROM
-                    `TaskResultView`
-                WHERE
-                    `task_id` = %s
-                    AND `result` NOT IN ('abs', 'dnf', 'mindist')"""
-    params = [task.id]
+    from db_tables import TrackFileView as T
 
     with Database() as db:
-        tracks = db.fetchall(query, params)
+        tracks = db.session.query(T).filter(T.task_id == task.id).all()
 
+    results = []
     if tracks:
         print('getting tracks...')
-        # with Database() as db:
-        results = []
         for t in tracks:
-            print(f"{t['track_id']} {t['pil_id']} ({t['filename']}) Result:")
-            # filename    = t['filename']
-            # flight      = Flight.create_from_file(igc_file)
-            track       = Track.read_file(filename=t['filename'], track_id=t['track_id'], pil_id=t['pil_id'])
+            print(f"{t.track_id} {t.pil_id} ({t.filename}) Result:")
+            track       = Track.read_file(filename=t.filename, track_id=t.track_id, pil_id=t.pil_id)
             if track and track.flight:
                 result  = Flight_result.check_flight(track.flight, task, lib.parameters, 5)
-                result.pil_id = t['pil_id']
+                result.pil_id = t.pil_id
                 print(f'   Goal: {bool(result.goal_time)} | part. LC: {result.fixed_LC}')
-                # result.store_result(task.id, t['track_id'])
                 results.append({'track': track, 'result': result})
-        return results
+    return results
 
 def update_all_results(results):
     from collections import Counter
+    from db_tables import tblTaskResult as R
 
     '''get results to update from the list'''
-    input = []
+    mappings = []
     for line in results:
         res = line['result']
         track_id = line['track'].track_id
@@ -698,44 +621,32 @@ def update_all_results(results):
         '''checks conformity'''
         if not res.goal_time: res.goal_time = 0
         if not res.ESS_time: res.ESS_time = 0
-        # endss = 0 if not res.ESS_time else res.ESS_time
-        # num_wpts = len(Counter(el[0] for el in res.waypoints_achieved))
 
-        input.append([  res.distance_flown, res.speed, res.first_time, res.pilot_start_time, res.goal_time, res.SSS_time,
-                        res.ESS_time, res.waypoints_made, res.fixed_LC, res.ESS_altitude, res.goal_altitude, res.max_altitude, res.last_altitude, res.last_time,
-                        res.landing_altitude, res.landing_time, res.result_type, track_id])
+        mapping = { 'tarPk':                track_id,
+                    'tarDistance':          res.distance_flown,
+                    'tarSpeed':             res.speed,
+                    'tarLaunch':            res.first_time,
+                    'tarStart':             res.real_start_time,
+                    'tarGoal':              res.goal_time,
+                    'tarSS':                res.SSS_time,
+                    'tarES':                res.ESS_time,
+                    'tarTurnpoints':        res.waypoints_made,
+                    'tarFixedLC':           res.fixed_LC,
+                    'tarESAltitude':        res.ESS_altitude,
+                    'tarGoalAltitude':      res.goal_altitude,
+                    'tarMaxAltitude':       res.max_altitude,
+                    'tarLastAltitude':      res.last_altitude,
+                    'tarLastTime':          res.last_time,
+                    'tarLandingAltitude':   res.landing_altitude,
+                    'tarLandingTime':       res.landing_time,
+                    'tarResultType':        res.result_type }
+        mappings.append(mapping)
 
     '''update database'''
     try:
         with Database() as db:
-            for q in input:
-                print(f'INPUT: {q}')
-                query = """ UPDATE
-                                `tblTaskResult`
-                            SET
-                                `tarDistance`       = %s,
-                                `tarSpeed`          = %s,
-                                `tarLaunch`         = %s,
-                                `tarStart`          = %s,
-                                `tarGoal`           = %s,
-                                `tarSS`             = %s,
-                                `tarES`             = %s,
-                                `tarTurnpoints`     = %s,
-                                `tarLeadingCoeff2`  = %s,
-                                `tarESAltitude`     = %s,
-                                `tarGoalAltitude`   = %s,
-                                `tarMaxAltitude`    = %s,
-                                `tarLastAltitude`   = %s,
-                                `tarLastTime`       = %s,
-                                `tarLandingAltitude`= %s,
-                                `tarLandingTime`    = %s,
-                                `tarResultType`     = %s
-                            WHERE
-                                `tarPk` = %s
-                        """
-                out = db.execute(query, tuple(q))
-                db.commit()
-                print(f'query out: {out}')
+                db.session.bulk_update_mappings(T, mappings)
+                db.session.commit()
     except:
         print(f'update all results on database gave an error')
         return False

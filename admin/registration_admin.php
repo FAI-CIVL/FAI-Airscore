@@ -49,7 +49,7 @@ if (array_key_exists('addpilot', $_REQUEST))
     $query = "  SELECT
                     CONCAT(`P`.`pilFirstName`, ' ', `P`.`pilLastName`) AS `name`,
                     `P`.`pilSex` AS `sex`,
-                    ( SELECT `C`.`natIso3` FROM `tblCountryCodes` `C` WHERE `C`.`natID` = `P`.`pilNat` ) AS `nat`,
+                    ( SELECT `C`.`natIso3` FROM `tblCountryCode` `C` WHERE `C`.`natID` = `P`.`pilNat` ) AS `nat`,
                     `P`.`pilCIVL` AS `civl`,
                     `P`.`pilFAI` AS `fai`,
                     CONCAT(`P`.`pilGliderBrand`, ' ', `P`.`pilGlider`) AS `glider`,

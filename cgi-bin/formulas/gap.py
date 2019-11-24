@@ -21,35 +21,12 @@ def task_totals(task_id):
     It means we do not need to store totals in task table anylonger,
     as they are calculated on runtime from mySQL using all task results
     '''
+    from db_tables import TaskStatsView as T
 
-    query = """SELECT
-                    `pilots_present`,
-                    `tot_dist_flown`,
-                    `tot_dist_over_min`,
-                    `pilots_launched`,
-                    `std_dev`,
-                    `pilots_landed`,
-                    `pilots_goal`,
-                    `pilots_ess`,
-                    `max_distance`,
-                    `min_dept_time`,
-                    `max_dept_time`,
-                    `first_SS`,
-                    `last_SS`,
-                    `min_ess_time`,
-                    `max_ess_time`,
-                    `fastest_in_goal`,
-                    `fastest`,
-                    `max_time`
-                FROM
-                    `TaskStatsView`
-                WHERE
-                    `task_id` = %s
-                LIMIT 1"""
-    params = [task_id]
     with Database() as db:
-        # get the formula details.
-        stats = db.fetchone(query, params)
+        # get the task stats details.
+        q = db.session.query(T)
+        stats = db.as_dict(q.get(task_id))
 
     if not stats:
         print(query)
@@ -260,7 +237,7 @@ def pilot_departure_leadout(task, pil):
 
     # C.6.3 Leading Points
 
-    LCmin   = stats['min_lead_coeff']   # min(tarLeadingCoeff2) as LCmin : is PWC's LCmin?
+    LCmin   = stats['min_lead_coeff']   # min(tarFixedLC) as LCmin : is PWC's LCmin?
     LCp     = pil['lead_coeff']         # Leadout coefficient
 
     # Pilot departure score

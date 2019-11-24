@@ -248,7 +248,7 @@ class Task_result:
                         'class',
                         'distance',
                         'speed',
-                        'start_time',
+                        'real_start_time',
                         'goal_time',
                         'result',
                         'SS_time',
@@ -308,37 +308,11 @@ class Comp_result(object):
 
     def get_info(self):
         '''gets comp info from database'''
+        from db_tables import CompResultView as C
         with Database() as db:
-            query = """ SELECT
-                            `comp_id`,
-                            `comp_name`,
-                            `comp_site`,
-                            `date_from`,
-                            `date_to`,
-                            `MD_name`,
-                            `contact`,
-                            `sanction`,
-                            `type`,
-                            `comp_code`,
-                            `restricted`,
-                            `time_offset`,
-                            `comp_class`,
-                            `website`,
-                            `formula`,
-                            `formula_class`,
-                            `overall_validity`,
-                            `validity_param`,
-                            `team_size`,
-                            `team_scoring`,
-                            `team_over`
-                        FROM
-                            `CompResultView`
-                        WHERE
-                            `comp_id` = %s
-                        LIMIT 1
-                    """
-            list = db.fetchone(query, [self.comp_id])
-            info = {x:list[x] for x in ['comp_id',
+            res = db.as_dict(db.session.query(C).get(self.comp_id))
+
+        info =      {x:res[x] for x in ['comp_id',
                                         'comp_name',
                                         'comp_site',
                                         'date_from',
@@ -353,13 +327,13 @@ class Comp_result(object):
                                         'comp_class',
                                         'website']}
 
-            formula = {x:list[x] for x in [ 'formula',
-                                            'formula_class',
-                                            'overall_validity',
-                                            'validity_param',
-                                            'team_size',
-                                            'team_scoring',
-                                            'team_over']}
+        formula =   {x:res[x] for x in ['formula',
+                                        'formula_class',
+                                        'overall_validity',
+                                        'validity_param',
+                                        'team_size',
+                                        'team_scoring',
+                                        'team_over']}
 
         return info, formula
 
@@ -371,6 +345,8 @@ class Comp_result(object):
                 - comp_id:      INT - comPk comp database ID
                 - status        STR - 'provisional', 'official' ...
         """
+        from db_tables import tblResultFile as R
+        from sqlalchemy import and_, or_
         from pprint import pprint as pp
         import json
 
@@ -379,18 +355,10 @@ class Comp_result(object):
 
         with Database() as db:
             '''getting active json files list'''
-            query = """ SELECT
-                            `tasPk` AS `task_id`,
-                            `refJSON` AS `file`
-                        FROM
-                            `tblResultFile`
-                        WHERE
-                            `comPk` = %s AND NOT(`tasPk` IS NULL) AND `refVisible` = 1
-                        ORDER BY
-                            `tasPk`
-                        """
-            files = db.fetchall(query, [comp_id])
-
+            files = db.session.query(R.tasPk.laber('task_id'),
+                                    R.refJSON.label('file')).filter(and_(
+                                    R.comPk==comp_id, R.tasPk.isnot(None), R.refVisible==1
+                                    )).all()
         if not files:
             return None
 
@@ -414,7 +382,7 @@ class Comp_result(object):
                         'opt_dist', 'day_quality', 'max_score', 'pilots_goal']
 
         for idx, t in enumerate(files):
-            with open(t['file'], 'r') as f:
+            with open(t.file, 'r') as f:
                 '''read task json file'''
                 data = json.load(f)
 
@@ -422,7 +390,7 @@ class Comp_result(object):
                 code = ('T'+str(idx+1))
 
                 '''get task info'''
-                task = {'code':code, 'id':t['task_id']}
+                task = {'code':code, 'id':t.task_id}
                 i = dict(data['info'], **data['stats'])
                 task.update({x:i[x] for x in tasks_list})
                 if val == 'ftv':
@@ -497,98 +465,57 @@ class Comp_result(object):
         """
 
         '''store timestamp in local time'''
+        from db_tables import tblResultFile as R
         timestamp = int(self.timestamp + self.info['time_offset'])
 
-        query = """
-                    INSERT INTO `tblResultFile`(
-                        `comPk`,
-                        `refTimestamp`,
-                        `refJSON`,
-                        `refStatus`
-                    )
-                    VALUES(%s, %s, %s, %s)
-                """
-        params = [self.comp_id, timestamp, self.filename, self.status]
-
         with Database() as db:
-            self.ref_id = db.execute(query, params)
+            result = R(comPk=self.comp_id, refTimestamp=timestamp, refJSON=self.filename, refStatus=self.status)
+            ref_id = db.session.add(result)
+            db.session.commit()
         return self.ref_id
 
 def get_pilots(comp_id):
     '''gets registered pilots list from database'''
-    query = """ SELECT
-                    `regPk` AS `reg_id`,
-                    `pilPk` AS `pil_id`,
-                    `regName` AS `name`,
-                    `regSex` AS `sex`,
-                    `regNat` AS `nat`,
-                    `regGlider` AS `glider`,
-                    `regCert` AS `class`,
-                    `regSponsor` AS `sponsor`,
-                    `regCIVL` AS `civl`,
-                    `regFAI` AS `fai`,
-                    `regTeam` AS `team`
-                FROM
-                    `tblRegistration`
-                WHERE
-                    `comPk` = %s
-            """
+    from db_tables import RegisteredPilotView as R
 
     with Database() as db:
-        list = db.fetchall(query, [comp_id])
-    for pil in list:
-        pil['name']     = pil['name'].title()
-        pil['glider']   = pil['glider'].title()
-        pil['results']  = {}    # empty dict for scores
+        q       = db.session.query(R).filter(R.comp_id==comp_id)
+        pilots  = db.as_dict(q.all())
 
-    return list
+    for p in pilots:
+        p['name']     = p['name'].title()
+        p['glider']   = p['glider'].title()
+        p['results']  = {}    # empty dict for scores
+
+    return pilots
 
 
 def read_rankings(task_id):
     '''reads sub rankings list for the task and creates a dictionary'''
+    from db_tables import tblClasCertRank as CC, tblCompetition as C, tblTask as T, tblRanking as R, tblCertification as CCT, tblClassification as CT
+    from sqlalchemy.orm import joinedload
+    from sqlalchemy import and_, or_
 
     rank = dict()
-    query = """ SELECT
-                    R.`ranName` AS rank,
-                    CCT.`cerName` AS cert
-                FROM
-                    `tblClasCertRank` CC
-                JOIN `TaskView` T USING(`claPk`)
-                JOIN `tblRanking` R USING(`ranPk`)
-                JOIN `tblCertification` CCT ON CCT.`cerPk` <= CC.`cerPk` AND CCT.`comClass` = R.`comClass`
-                WHERE
-                    T.`tasPk` = %s AND CC.`cerPk` > 0
-            """
 
     with Database() as db:
-        t = db.fetchall(query, [task_id])
-    if not t:
-        print('Task does not have rankings')
-        #rank = {'Open Class':[]}
-    else:
-        for l in t:
-            if l['rank'] in rank:
-                rank[l['rank']].append(l['cert'])
+        '''get rankings definitions'''
+        class_id    = db.session.query(C.claPk
+                                    ).join(T, T.comPk==C.comPk).filter(T.tasPk==task_id).scalar()
+        q           = db.session.query(R.ranName.label('rank'), CCT.cerName.label('cert'), CT.claFem.label('female'), CT.claTeam.label('team')
+                                    ).select_from(R).join(CC, R.ranPk==CC.ranPk).join(CCT, and_(CCT.cerPk <= CC.cerPk, CCT.comClass == R.comClass)
+                                    ).join(CT, CT.claPk==CC.claPk).filter(and_(CC.cerPk>0, CC.claPk==class_id))
+        result      = q.all()
+    try:
+        for l in result:
+            if l.rank in rank:
+                rank[l.rank].append(l.cert)
             else:
-                rank[l['rank']] = [l['cert']]
-
-        '''add female and team choices'''
-        query = """ SELECT
-                        claFem      AS female,
-                        claTeam     AS team
-                    FROM
-                        tblClassification
-                        JOIN TaskView USING (claPk)
-                    WHERE
-                        tasPk = %s
-                    LIMIT 1
-                """
-
-        with Database() as db:
-            t = db.fetchone(query, [task_id])
-        if t:
-            rank['Female'] = t['female']
-            rank['Team'] = t['team']
+                rank[l.rank] = [l.cert]
+        rank['female']  = result.pop().female
+        rank['team']    = result.pop().team
+    except:
+        print(f'Ranking Query Error: list is empty')
 
     return rank
 
@@ -655,57 +582,22 @@ def get_final_scores(results, tasks, formula, d = 0):
 
 def read_task_result(task_id):
     '''gets pilots result from database'''
-    query = """ SELECT
-                    `traPk`             AS `track_id`,
-                    `pilName`			AS `name`,
-                    `pilSex`            AS `sex`,
-                    `pilNationCode`		AS `nat`,
-                    `traGlider`			AS `glider`,
-                    `traDHV`            AS `class`,
-                    `pilSponsor`		AS `sponsor`,
-                    `tarDistance`		AS `distance`,
-                    `tarSpeed`			AS `speed`,
-                    `tarStart`			AS `real_SS_time`,
-                    `tarSS`				AS `SS_time`,
-                    `tarES`				AS `ES_time`,
-                    `tarGoal`			AS `goal_time`,
-                    `tarResultType`		AS `type`,
-                    `tarTurnpoints`		AS `n_turnpoints`,
-                    `tarPenalty`		AS `penalty`,
-                    `tarComment`		AS `comment`,
-                    `tarPlace`			AS `rank`,
-                    `tarSpeedScore`		AS `speed_points`,
-                    `tarDistanceScore`	AS `dist_points`,
-                    `tarArrivalScore`	AS `arr_points`,
-                    `tarDepartureScore`	AS `dep_points`,
-                    `tarScore`			AS `score`,
-                    `tarLastAltitude`	AS `altitude`,
-                    `tarLastTime`		AS `last_time`,
-                    `tarLeadingCoeff`   AS `lead_coeff`
-                FROM
-                    `ResultView`
-                WHERE
-                    `tasPk` = %s
-                ORDER BY
-                    `tarScore` DESC,
-                    `pilName`
-            """
+    from db_tables import TaskResultView as R
 
     with Database() as db:
-        # get the task details.
-        results = db.fetchall(query, [task_id])
+        # get results list.
+        q = db.session.query(R).filter(R.task_id==task_id).order_by(R.score.desc(), R.name)
+        results = db.as_dict(q.all())       #we should change code to acceps sqlalchemy results
 
     return results
 
 def get_task_json(task_id):
     '''returns active json result file'''
-    query = """    SELECT
-                        `refJSON` AS `file`
-                    FROM
-                        `tblResultFile`
-                    WHERE
-                        `tasPk` = %s
-                    AND `refVisible` = 1
-                    LIMIT 1"""
+    from db_tables import tblResultFile as R
+    from sqlalchemy import and_, or_
+
     with Database() as db:
-        return db.fetchone(query, [task_id])['file']
+        file = db.session.query(R.refJSON.label('file')).filter(and_(
+                                R.tasPk==task_id, R.refVisible==1
+                                )).scalar()
+    return file

@@ -9,7 +9,6 @@ Antonio Golfari - 2018
 import os
 from flight_result import Flight_result
 from track import Track
-from trackDB import read_formula
 import formula as For
 import Defines
 
@@ -127,45 +126,26 @@ def verify_track(track, task):
     task_result.store_result(track.traPk, task.id)
     print(track.flight.notes)
 
-def get_non_scored_pilots(tasPk, xcontest=False):
+def get_non_scored_pilots(task_id, xcontest=False):
     """Gets list of registered pilots that still do not have a result"""
-    where = ""
-    pilot_list = []
-    if xcontest:
-        where = " AND `pilXContestUser` IS NOT NULL AND `pilXContestUser` <> ''"
-    if tasPk:
-        with Database() as db:
-            query = """    SELECT
-                                `R`.`pilPk`,
-                                `P`.`pilFirstName`,
-                                `P`.`pilLastName`,
-                                `P`.`pilFAI`,
-                                `P`.`pilXContestUser`
-                            FROM
-                                `tblRegistration` `R`
-                            JOIN `PilotView` `P` USING(`pilPk`)
-                            LEFT OUTER JOIN `ResultView` `S` ON
-                                `S`.`pilPk` = `P`.`pilPk` AND `S`.`tasPk` = %s
-                            WHERE
-                                `R`.`comPk` =(
-                                SELECT
-                                    `comPk`
-                                FROM
-                                    `TaskView`
-                                WHERE
-                                    `tasPk` = %s
-                                LIMIT 1
-                            ) AND `S`.`traPk` IS NULL""" + where
-            params = [tasPk, tasPk]
-            pilot_list = db.fetchall(query, params)
+    from db_tables import tblRegistration as R, tblTaskResult as S, tblTask as T
+    from sqlalchemy import func, and_, or_
 
-            if pilot_list is None: print(f"No pilots without tracks found registered to the comp...")
-    else:
-        print(f"Registered List - Error: NOT a valid Comp ID \n")
+    with Database() as db:
+
+        comp_id = db.session.query(T).get(task_id).comPk
+        q       = (db.session.query(R.pilPk.label('pil_id'),
+                                    func.lower(R.regName).label('name'), R.regFAI.label('fai'),
+                                    R.regXC.label('xcontest')).outerjoin(
+                                    S, and_(R.pilPk==S.pilPk, S.tasPk==task_id))).filter(and_(R.comPk==comp_id, S.tarPk==None))
+        if xcontest:
+            q = q.filter(R.regXC!=None)
+        pilot_list = q.all()
+    if pilot_list is None: print(f"No pilots without tracks found registered to the comp...")
 
     return pilot_list
 
-def get_pilot_from_list(filename, list):
+def get_pilot_from_list(filename, pilots):
     """check filename against a list of pilots"""
     pilot_id = 0
     fullname = None
@@ -175,59 +155,87 @@ def get_pilot_from_list(filename, list):
         """Gets pilot ID from FAI n."""
         fai = fields[0]
         print(f"file {filename} contains FAI n. {fai} \n")
-        for row in list:
-            if fai == row['pilFAI']:
+        for p in pilots:
+            if fai == p.fai:
                 print("found a FAI number")
-                pilot_id = row['pilPk']
-                fullname = row['pilFirstName'].lower() + '_' + row['pilLastName'].lower()
+                pilot_id = p.pil_id
+                fullname = p.name.replace(' ', '_')
                 break
     else:
         """Gets pilot ID from XContest User or name."""
-        names = fields[0].replace('.', ' ').replace('_', ' ').replace('-', ' ').split()
+        names = fields[0].replace('.', ' ').replace('_', ' ').replace('-', ' ').lower().split()
         """try to find xcontest user in filename
         otherwise try to find pilot name from filename"""
         print ("file {} contains pilot name \n".format(fields[0]))
-        for row in list:
-            print("XC User: {} | Name: {} {} ".format(row['pilXContestUser'], row['pilFirstName'], row['pilLastName']))
-            if (row['pilXContestUser']is not None
-                    and any(row['pilXContestUser'].lower() in str(name).lower() for name in names)):
+        for p in pilots:
+            print(f"XC User: {p.xcontest} | Name: {p.name}")
+            if (p.xcontest is not None
+                    and any(p.xcontest.lower() in str(name).lower() for name in names)):
                 print ("found a xcontest user")
-                pilot_id = row['pilPk']
-                fullname = row['pilFirstName'].lower() + '_' + row['pilLastName'].lower()
+                pilot_id = p.pil_id
+                fullname = p.name.replace(' ', '_')
                 break
-            elif (any(row['pilFirstName'].lower() in str(name).lower() for name in names)
-                    and any(row['pilLastName'].lower() in str(name).lower() for name in names)):
+            elif all(n in names for n in p.name.split()):
                 print ("found a pilot name")
-                pilot_id = row['pilPk']
-                fullname = row['pilFirstName'].lower() + '_' + row['pilLastName'].lower()
+                pilot_id = p.pil_id
+                fullname = p.name.replace(' ', '_')
                 break
 
     return pilot_id, fullname
 
+def find_pilot(name):
+    """Get pilot from name or fai
+    info comes from FSDB file, as FsParticipant attributes, or from igc filename
+    Not sure about best strategy to retrieve pilots ID from name and FAI n.
+    """
+    from db_tables import PilotView as P
+    from sqlalchemy import and_, or_
 
-def get_pil_track(pilPk, tasPk):
+    '''Gets name from string. check it is not integer'''
+    if type(name) is int:
+        '''name is a id number'''
+        fai = name
+        names = None
+    else:
+        fai = None
+        names = name.replace("'", "''").replace('.', ' ').replace('_', ' ').replace('-', ' ').split()
+        '''check if we have fai n. in names'''
+        if names[0].isdigit():
+            fai = names.pop(0)
+
+    print("Trying with name... \n")
+    with Database() as db:
+        # q   = db.session.query(P.pilPk).filter(and_(P.pilLastName==func.any(names), P.pilFirstName==func.any(names)))
+        t   = db.session.query(P.pilPk)
+        if names:
+            q = t.filter(P.pilLastName.in_(names))
+            p = q.filter(P.pilFirstName.in_(names))
+        else:
+            p = t.filter(P.pilFAI==fai)
+        pil = p.all()
+        if len(pil) == 1: return pil.pop().pilPk
+        '''try one more time if we have both names and fai'''
+        if fai and names:
+            if pil == []: p = q         # if we have zero results, try with only lastname and fai
+            pil = p.filter(P.pilFAI==fai).all()
+            if len(pil) == 1: return pil.pop().pilPk
+    return None
+
+def get_pil_track(pil_id, task_id):
     """Get pilot result in a given task"""
-    traPk = 0
-
-    query = """     SELECT
-                        `traPk`
-                    FROM
-                        `ResultView`
-                    WHERE
-                        `pilPk` = %s
-                        AND `tasPk` = %s
-                    LIMIT 1"""
-    params = [pilPk, tasPk]
+    from db_tables import tblTaskResult as R
+    from sqlalchemy import func, and_, or_
+    track_id = 0
 
     with Database() as db:
-        if db.rows(query, params) > 0:
-            traPk = db.fetchone(query, params)['traPk']
+        track_id = db.session.query(R.tarPk).filter(
+                                and_(R.pilPk==pil_id, R.tasPk==task_id)).scalar()
 
-    if traPk == 0:
+    if track_id == 0:
         """No result found"""
-        print(f"Pilot with ID {pilPk} has not been scored yet on task ID {tasPk} \n")
+        print(f"Pilot with ID {pil_id} has not been scored yet on task ID {task_id} \n")
 
-    return traPk
+    return track_id
 
 def read_result_file(track_id, task_id):
     """create task and track objects"""
@@ -249,7 +257,6 @@ def create_result_file(track_id, task_id):
     from task import Task
 
     task = Task.read(task_id)
-    #formula = read_formula(task.comp_id)
     formula = For.Task_formula.read(task_id)
     track = Track.read_db(track_id)
     lib = For.get_formula_lib(formula.type)

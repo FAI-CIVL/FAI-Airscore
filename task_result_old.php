@@ -303,7 +303,7 @@ $count = 1;
 // 				TR.*,
 // 				T.*,
 // 				P.*,
-// 				( SELECT C.natIso3 FROM tblCountryCodes C WHERE C.natID = P.pilNat ) AS pilNationCode
+// 				( SELECT C.natIso3 FROM tblCountryCode C WHERE C.natID = P.pilNat ) AS pilNationCode
 // 			FROM
 // 				tblTaskResult TR,
 // 				tblTrack T,

@@ -44,25 +44,31 @@ class Turnpoint:
         how: "entry" or "exit"
     """
 
-    def __init__(self, lat, lon, radius, type, shape, how):
-        self.name           = None
-        self.id             = None                  # tawPk
-        self.rwpPk          = None
+    def __init__(self, lat=None, lon=None, radius=None, type='waypoint', shape='circle', how='entry', altitude=None, name=None, description=None, id=None, rwpPk=None):
+        self.name           = name
+        self.id             = id                  # tawPk
+        self.rwpPk          = rwpPk
         self.lat            = lat
         self.lon            = lon
-        self.flat           = lat * math.pi / 180
-        self.flon           = lon * math.pi / 180
         self.radius         = radius
         self.type           = type
         self.shape          = shape
         self.how            = how
-        self.altitude       = None
-        self.description    = None
+        self.altitude       = altitude
+        self.description    = description
 
         assert type in ["launch", "speed", "waypoint", "endspeed", "goal", "optimised", "restricted"], \
             "turnpoint type is not valid: %r" % type
         assert shape in ["line", "circle", "optimised"], "turnpoint shape is not valid: %r" % shape
         assert how in ["entry", "exit", "optimised"], "turnpoint how (direction) is not valid: %r" % how
+
+    @property
+    def flat(self):
+        return self.lat * math.pi / 180
+
+    @property
+    def flon(self):
+        return self.lon * math.pi / 180
 
     def __str__(self):
         out = ''

@@ -184,9 +184,9 @@ def task_totals(task, formula):
         mincoeff = t['MinCoeff']
 
     # FIX: lead out coeff2 - first departure in goal and adjust min coeff
-    query="select min(tarLeadingCoeff2) as MinCoeff2 " \
+    query="select min(tarFixedLC) as MinCoeff2 " \
         "from tblTaskResult_test " \
-        "where tasPk=%s and tarLeadingCoeff2 is not NULL"
+        "where tasPk=%s and tarFixedLC is not NULL"
 
     with Database() as db:
         t = db.fetchone(query, [tasPk])
@@ -494,7 +494,7 @@ def pilot_departure_leadout(task, stats, pil, Astart):
     from math import sqrt
     # C.6.3 Leading Points
 
-    LCmin = stats['mincoeff2']  # min(tarLeadingCoeff2) as MinCoeff2 : is PWC's LCmin?
+    LCmin = stats['mincoeff2']  # min(tarFixedLC) as MinCoeff2 : is PWC's LCmin?
     LCp = pil['coeff']  # Leadout coefficient
 
     # Pilot departure score
@@ -575,7 +575,7 @@ def ordered_results(task, stats, formula):
                                 tarES,
                                 tarPenalty,
                                 tarResultType,
-                                tarLeadingCoeff2,
+                                tarFixedLC,
                                 tarGoal,
                                 tarLastAltitude,
                                 tarLastTime
@@ -633,7 +633,7 @@ def ordered_results(task, stats, formula):
         # Leadout Points Adjustment
         # C.6.3.1
         #
-        taskres['coeff'] = res['tarLeadingCoeff2']  # PWC LeadCoeff (with squared distances)
+        taskres['coeff'] = res['tarFixedLC']  # PWC LeadCoeff (with squared distances)
         # FIX: adjust against fastest ..
         if ((res['tarES'] - res['tarSS']) < 1) and (res['tarSS'] > 0): # only pilots that started and didn't make ESS
             # Fix - busted if no one is in goal?
@@ -646,13 +646,13 @@ def ordered_results(task, stats, formula):
                     maxtime = res['tarLastTime']  # If I was still flying after the last ESS time
 
                 # adjust for late starters
-                print("No goal, adjust pilot coeff from: ", res['tarLeadingCoeff2'])
+                print("No goal, adjust pilot coeff from: ", res['tarFixedLC'])
                 BestDistToESS = task.opt_dist_to_ESS / 1000 - res['tarDistance'] / 1000  # PWC bestDistToESS in Km
-                taskres['coeff'] = res['tarLeadingCoeff2'] - (task.task_deadline - maxtime) * BestDistToESS ** 2 / ( 1800 * (task.SS_distance / 1000) ** 2 )
+                taskres['coeff'] = res['tarFixedLC'] - (task.task_deadline - maxtime) * BestDistToESS ** 2 / ( 1800 * (task.SS_distance / 1000) ** 2 )
 
                 print(" to: ", taskres['coeff'])
                 print("(maxtime - sstart)   =      ", (maxtime - task.start_time))
-                print("ref->{'tarLeadingCoeff2'] = ", res['tarLeadingCoeff2'])
+                print("ref->{'tarFixedLC'] = ", res['tarFixedLC'])
                 print("Result taskres{coeff}  =    ", taskres['coeff'])
                 # adjust mincoeff?
                 if taskres['coeff'] < stats['mincoeff2']:

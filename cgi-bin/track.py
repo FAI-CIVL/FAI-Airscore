@@ -45,86 +45,31 @@ class Track():
         """Get pilot associated to a track from its filename
         should be named as such: FAI.igc or LASTNAME_FIRSTNAME.igc
         """
+        from trackUtils import find_pilot
         if self.pil_id is None:
 
             """Get string"""
             fields = os.path.splitext(os.path.basename(self.filename))
-            if fields[0].isdigit():
-                """Gets name from FAI n."""
-                fai = 0 + int(fields[0])
-                query = ("SELECT `pilPk` FROM `PilotView` WHERE `pilFAI` = {}".format(fai))
-            else:
-                names = fields[0].replace('.', ' ').replace('_', ' ').replace('-', ' ').split()
-                """try to find xcontest user in filename
-                otherwise try to find pilot name from filename"""
-
-                s = []
-                t = []
-                u = []
-                for i in names:
-                    s.append(" `pilLastName` LIKE '%%{}%%' ".format(i))
-                    t.append(" `pilFirstName` LIKE '%%{}%%' ".format(i))
-                    u.append(" `pilXContestUser` LIKE '{}' ".format(i))
-                cond = ' OR '.join(s)
-                cond2 = ' OR '.join(t)
-                cond3 = ' OR '.join(u)
-                query =(""" SELECT
-                                `pilPk`
-                            FROM
-                                `PilotView`
-                            WHERE
-                                ({})
-                            UNION ALL
-                            SELECT
-                                `pilPk`
-                            FROM
-                                `PilotView`
-                            WHERE
-                                ({})
-                            AND
-                                ({})
-                            LIMIT 1""".format(cond3, cond, cond2))
-
-            print ("get_pilot Query: {}  \n".format(query))
-
-            """Get pilot"""
-            with Database() as db:
-                try:
-                    self.pil_id = db.fetchone(query)['pilPk']
-                except:
-                    self.pil_id = None
-
-            if self.pil_id is None:
-                """No pilot infos in filename"""
+            pil_id = find_pilot(fields[0])
 
     def add(self):
         import datetime
         from compUtils import get_class, get_offset
         """Imports track to db"""
+        from db_tables import tblTaskResult as R
         result = ''
         g_record = int(self.flight.valid)
 
         """add track as result in tblTaskResult table"""
-        query = """ INSERT INTO `tblTaskResult`(
-                        `pilPk`,
-                        `tasPk`,
-                        `traFile`,
-                        `traGRecordOk`,
-                    )
-                    VALUES(
-                        %s, %s, %s, %s
-                    )
-                    """
-        params = [self.pil_id, self.task_id, self.filename, g_record]
         with Database() as db:
             try:
-                self.track_id = db.execute(query, params)
+                track = R(pilPk=self.pil_id, tasPk=self.task_id, traFile=self.filename, traGRecordOk=filename)
+                self.track_id = db.session.add(track)
+                db.session.commit()
                 result += ("track for pilot with id {} correctly stored in database".format(self.pil_id))
             except:
                 print('Error Inserting track into db:')
-                print(query)
                 result = ('Error inserting track for pilot with id {}'.format(self.pil_id))
-
         return result
 
     @classmethod
@@ -163,30 +108,20 @@ class Track():
     @classmethod
     def read_db(cls, track_id):
         """Creates a Track Object from a DB Track entry"""
+        from db_tables import TaskResultView as T
 
         track = cls(track_id=track_id)
 
         """Read general info about the track"""
-
-        query = """ SELECT
-                        `pil_id`,
-                        `task_id`,
-                        `track_file` AS `filename`
-                    FROM
-                        `TaskResultView`
-                    WHERE
-                        `track_id` = %s
-                    LIMIT 1 """
-
         with Database() as db:
-            # get the formula details.
-            t = db.fetchone(query, [track_id])
-
-        if t:
-            track.to_dict().update(t)
-
-            """Creates the flight obj with fixes info"""
-            track.flight = Flight.create_from_file(track.filename)
+            # get track details.
+            q = db.session.query(T.pil_id, T.task_id, T.track_file.label('filename')).filter(T.track_id==track_id)
+            try:
+                t = db.populate_obj(track, q.one())
+                """Creates the flight obj with fixes info"""
+                track.flight = Flight.create_from_file(track.filename)
+            except:
+                print(f'Track Query Error: no result found')
 
         return track
 
@@ -233,30 +168,20 @@ class Track():
             print ("  ** FILENAME: {} TYPE: {} \n".format(self.filename, self.type))
 
     def get_glider(self):
-        """Get glider info for pilot, to be used in results"""
+        """Get glider info for pilot, to be used in results
+            New version is getting from Registration"""
+        from db_tables import tblRegistration as R, tblTask as T
+        from sqlalchemy import and_, or_
 
-        if self.pil_id is not None:
-            query = """    SELECT
-                                CONCAT( IFNULL(`pilGlider`, ''),
-                                        ' ',
-                                        IFNULL(`pilGliderBrand`, '')
-                                        ) AS `glider`,
-                                ,
-                                `gliGliderCert` AS `cert`
-                            FROM
-                                `PilotView`
-                            WHERE
-                                `pilPk` = %s
-                            LIMIT 1"""
-            #print ("get_glider Query: {}  \n".format(query))
+        if self.pil_id and self.task_id:
+
             with Database() as db:
-                row = db.fetchone(query, [self.pil_id])
-            if row is not None:
-                self.__dict__.update(row)
-                # brand = '' if row['pilGliderBrand'] is None else row['pilGliderBrand']
-                # glider = '' if row['pilGlider'] is None else ' ' + row['pilGlider']
-                # self.glider = brand + glider
-                # self.cert = row['gliGliderCert']
+                comp_id = db.session.query(T).get(self.task_id).comPk
+                q       = db.session.query(R.regGlider.label('glider'), R.regCert.label('cert')).filter(and_(R.pilPk==self.pil_id, R.comPk==comp_id))
+                try:
+                    db.populate_obj(self, q.one())
+                except:
+                    print(f'Track Glider query Error')
 
     def copy_track_file(self, task_path=None, pname=None):
         """copy track file in the correct folder and with correct name
@@ -268,24 +193,18 @@ class Track():
         import glob
         from compUtils import get_task_file_path
         from os import path
+        from db_tables import PilotView as P
 
         src_file = self.filename
         if task_path is None:
             task_path = get_task_file_path(self.task_id)
 
         if pname is None:
-            query = "SELECT " \
-                    "   CONCAT_WS('_', LOWER(P.`pilFirstName`), LOWER(P.`pilLastName`) ) AS pilName " \
-                    "   FROM `PilotView` P " \
-                    "   WHERE P.`pilPk` = %s" \
-                    "   LIMIT 1"
-            param = self.pil_id
-
             with Database() as db:
-                # get the task details.
-                t = db.fetchone(query, params=param)
-                if t:
-                    pname = t['pilName']
+                # get pilot details.
+                q = db.session.query(P).get(self.pilPk)
+            if q:
+                pname = '_'.join([q.pilFirstName, q.pilLastName]).replace(' ','_').lower()
 
         if task_path:
             """check if directory already exists"""

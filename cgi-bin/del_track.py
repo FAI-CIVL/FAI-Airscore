@@ -6,23 +6,27 @@ Antonio Golfari - 2019
 """
 # Use your utility module.
 from myconn import Database
+from db_tables import tblTaskResult as R
 
-def delete_track(traPk):
+def delete_track(result_id):
 
-    # pretty sure we are not using all those tables anylonger
-    # tables = ['tblTaskResult', 'tblTrack', 'tblTrackMarker', 'tblComTaskTrack']
     with Database() as db:
-        # for table in tables:
-        query = "DELETE FROM `tblTaskResult` WHERE `traPk` = %s"
-        params = [traPk]
-        try:
-            db.execute(query, params)
-            print(f"track with ID: {traPk} succesfully deleted from {table}\n")
-        except:
-            print(f"Error with track with ID: {traPk} and table {table} \n")
-            error = True
+        q       = db.session.query(R)
+        result  = q.get(result_id)
+        file    = result.traFile
+        db.session.delete(result)
+        db.session.commit()
 
-    return 0 if error else 1
+    if p.isfile(file):
+        os.remove(file)
+        print(f'Track file has been deleted \n')
+    else:
+        print("Couldn't find a Track file for this result \n")
+
+    if result:
+        print(f"Result with ID: {result_id} succesfully deleted \n")
+        return 1
+    return 0
 
 def main(args):
     from logger import Logger

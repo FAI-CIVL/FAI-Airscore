@@ -44,13 +44,14 @@ parameters.coef_landout = coef_landout
 
 def store_LC(res_id, lead_coeff):
     '''store LC to database'''
-    query = """ UPDATE `tblTaskResult`
-                SET `tarLeadingCoeff` = %s
-                WHERE `tarPk` = %s """
-    params = [lead_coeff, res_id]
+    from db_tables import tblTaskResult as R
+    # It shouldn't be necessary any longer, as we should not store final LC
 
     with Database() as db:
-        db.execute(query, params)
+        q = db.session.query(R)
+        res = q.get(res_id)
+        res.tarLeadingCoeff = lead_coeff
+        db.session.commit()
 
 def lc_calc(res, t):
     LC          = 0
@@ -69,7 +70,7 @@ def lc_calc(res, t):
 
     '''Checking if we have a assigned status without a track, and if pilot actually did the start pilon'''
     if (res['result'] not in ('abs', 'dnf', 'mindist')) and res['SS_time']:
-        my_start    = res['start_time']
+        my_start    = res['real_start_time']
 
         '''add the leading part, from start time of first pilot to start, to my start time'''
         if my_start > first_start:
@@ -190,6 +191,7 @@ def points_weight(task):
     return Adistance, Aspeed, Astart, Aarrival
 
 def get_results(task):
+    from db_tables import TaskResultView as R
 
     stats   = task.stats
     formula = task.formula
@@ -197,44 +199,9 @@ def get_results(task):
     # Get all pilots and process each of them
     # pity it can't be done as a single update ...
 
-    query = """ SELECT
-                    `track_id`,
-                    `pil_id`,
-                    `name`,
-                    `sponsor`,
-                    `nat`,
-                    `sex`,
-                    `glider`,
-                    `class`,
-                    `distance`,
-                    `speed`,
-                    `start_time`,
-                    `goal_time`,
-                    `result`,
-                    `SS_time`,
-                    `ES_time`,
-                    `turnpoints_made`,
-                    `penalty`,
-                    `comment`,
-                    `fixed_LC`,
-                    `ESS_altitude`,
-                    `goal_altitude`,
-                    `last_altitude`,
-                    `landing_altitude`,
-                    `max_altitude`,
-                    `first_time`,
-                    `last_time`,
-                    `landing_time`,
-                    `track_file`,
-                    `g_record`
-                FROM
-                    `TaskResultView`
-                WHERE
-                    `task_id` = %s
-                """
-
     with Database() as db:
-        pilots = db.fetchall(query, [task.id])
+        q = db.session.query(R).filter(R.task_id==task.id).all()
+        pilots = db.as_dict(q)
 
     for res in pilots:
         '''manage ABS pilots'''
@@ -370,7 +337,7 @@ def pilot_departure_leadout(task, pil):
 
     # C.6.3 Leading Points
 
-    LCmin   = stats['min_lead_coeff']   # min(tarLeadingCoeff2) as LCmin : is PWC's LCmin?
+    LCmin   = stats['min_lead_coeff']   # min(tarFixedLC) as LCmin : is PWC's LCmin?
     LCp     = pil['lead_coeff']         # Leadout coefficient
 
     # Pilot departure score

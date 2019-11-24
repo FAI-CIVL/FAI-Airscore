@@ -43,6 +43,7 @@ class FSDB(object):
         """
         import lxml.etree as ET
         from calcUtils import get_date, get_time
+        from trackUtils import find_pilot
 
         """read the fsdb file"""
         try:
@@ -104,7 +105,7 @@ class FSDB(object):
             pilot['glider'] = pil.get('glider')
             """check fai is int"""
             pilot['pilFAI'] = get_int(pil.get('fai_licence'))
-            pilot['pilPk']  = get_pilot(pilot['name'], pilot['pilFAI'])
+            pilot['pilPk']  = find_pilot(pilot['name'])
             if pilot['pilPk'] is None:
                 '''need to insert new ext. pilot'''
                 print (f"   ** pilot {pilot['name']} is not in DB **")
@@ -349,9 +350,9 @@ class FSDB(object):
 
             '''FsTaskDefinition'''
             tps     = t.turnpoints
-            td_attr =  {'ss':             [idx+1 for idx,tp in enumerate(tps) if tp.type == 'speed'].pop(),
-                        'es':             [idx+1 for idx,tp in enumerate(tps) if tp.type == 'endspeed'].pop(),
-                        'goal':           ([tp.shape for tp in tps if tp.type == 'goal'].pop()).upper(),
+            td_attr =  {'ss':             [idx+1 for idx,tp in enumerate(tps) if tp.type == 'speed'].pop(0),
+                        'es':             [idx+1 for idx,tp in enumerate(tps) if tp.type == 'endspeed'].pop(0),
+                        'goal':           ([tp.shape for tp in tps if tp.type == 'goal'].pop(0)).upper(),
                         'groundstart':    0,        #still to implement
                         'qnh_setting':    1013.25   #still to implement
                         }
@@ -462,7 +463,7 @@ class FSDB(object):
                     if not (pil.result_type == 'min_dist'):
                         fd_attr =  {'distance':             km(pil.distance_flown),
                                     'bonus_distance':       km(pil.total_distance),  #?? seems 0 for PG and more than dist for HG
-                                    'started_ss':           '' if not pil.pilot_start_time else get_isotime(t.date, pil.pilot_start_time, t.time_offset),
+                                    'started_ss':           '' if not pil.real_start_time else get_isotime(t.date, pil.real_start_time, t.time_offset),
                                     'finished_ss':          '' if not pil.ESS_time else get_isotime(t.date, pil.ESS_time, t.time_offset),
                                     'altitude_at_ess':      pil.ESS_altitude,
                                     'finished_task':        '' if not pil.goal_time else get_isotime(t.date, pil.goal_time, t.time_offset),
@@ -500,7 +501,7 @@ class FSDB(object):
                                 'penalty_reason_auto':      0,      # ??
                                 'penalty_min_dist_points':  0,      # ??
                                 'got_time_but_not_goal_penalty':    pil.ESS_time > 0 and not pil.goal_time,
-                                'started_ss':       '' if not pil.pilot_start_time else get_isotime(t.date, pil.SSS_time, t.time_offset),
+                                'started_ss':       '' if not pil.real_start_time else get_isotime(t.date, pil.SSS_time, t.time_offset),
                                 'ss_time_dec_hours':        0,      # ??
                                 'ts':               get_isotime(t.date, pil.first_time, t.time_offset),             # flight origin time
                                 'real_distance':    km(pil.distance_flown),
@@ -702,56 +703,6 @@ class FSDB(object):
                         print ("DB Error inserting Result.")
                         sys.exit()
                 print(f"   Results inserted for {task.task_name}")
-
-def get_pilot(name, fai = None):
-    """Get pilot from name or fai
-    info comes from FSDB file, as FsParticipant attributes
-    Not sure about best strategy to retrieve pilots ID from name and FAI n.
-    """
-
-    names = []
-    names = name.replace("'", "''").replace('.', ' ').replace('_', ' ').replace('-', ' ').split()
-
-    """Gets name from string"""
-    print("Trying with name... \n")
-    s = []
-    t = []
-    for i in names:
-        s.append(" pilLastName LIKE '%%{}%%' ".format(i))
-        t.append(" pilFirstName LIKE '%%{}%%' ".format(i))
-    cond = ' OR '.join(s)
-    cond2 = ' OR '.join(t)
-    query = """ SELECT `pilPk`
-                FROM `PilotView`
-                WHERE
-                    (%s)
-                AND (%s)
-                LIMIT 1"""
-    params = [cond, cond2]
-
-    """Get pilot"""
-    with Database() as db:
-        try:
-            """using name"""
-            return db.fetchone(query, params)['pilPk']
-        except:
-            if fai is not None:
-                query = """    SELECT `pilPk`
-                                FROM `PilotView`
-                                WHERE
-                                    (%s)
-                                AND `pilFAI` = %s"""
-                params = [cond, fai]
-
-                #print ("get_pilot Query: {}  \n".format(query))
-
-                """Get pilot using fai n."""
-                try:
-                    return db.fetchone(query, params)['pilPk']
-                except:
-                    return None
-            else:
-                return None
 
 def translate(source, mode, type):
     ''' creates a dictionary with correct keys

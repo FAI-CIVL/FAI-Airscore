@@ -3,296 +3,171 @@ Module for operations on comp / task / formulas
 Use:    import compUtils
         comPk = compUtils.get_comp(tasPk)
 
-Antonio Golfari - 2018
+Antonio Golfari - 2019
 """
 
 # Use your utility module.
 from myconn import Database
+from sqlalchemy import and_, or_
 
-def get_comp(tasPk):
+def get_comp(task_id):
     """Get comPk from tasPk"""
-    if str(tasPk).isdigit() and tasPk > 0:
+    from db_tables import tblTask as T
+    if type(task_id) is int and task_id > 0:
         with Database() as db:
-            query = """    SELECT
-                                `comPk`
-                            FROM
-                                `tblTask`
-                            WHERE
-                                `tasPk` = %s """
-            if db.rows(query, [tasPk]) > 0:
-                return db.fetchone(query, [tasPk])['comPk']
-    else:
-        print(f"Error: {tasPk} is NOT a valid task ID")
-
+            tasks = db.session.query(T)
+        return tasks.get(task_id).comPk
 
 def get_class(tasPk):
     """Get comPk from tasPk"""
-    if str(tasPk).isdigit() and tasPk > 0:
+    from db_tables import TaskView as T
+    if type(tasPk) is int and tasPk > 0:
         with Database() as db:
-            query = """    SELECT
-                                comClass
-                            FROM
-                                TaskView
-                            WHERE
-                                tasPk = %s
-                            LIMIT 1"""
-            if db.rows(query, [tasPk]) > 0:
-                return db.fetchone(query, [tasPk])['comClass']
-    else:
-        print (f"Error: {tasPk} is NOT a valid task ID")
+            comp_class = db.session.query(T.c.comClass).filter(T.c.tasPk==tasPk).limit(1).scalar()
+        return comp_class
 
-def get_task_date(tasPk):
+def get_task_date(task_id):
     """Get date from tasPk in date format"""
-    if str(tasPk).isdigit() and tasPk > 0:
+    from db_tables import tblTask as T
+    if type(task_id) is int and task_id > 0:
         with Database() as db:
-            query = """    SELECT
-                                `tasDate`
-                            FROM
-                                `TaskView`
-                            WHERE
-                                `tasPk` = %s
-                            LIMIT 1"""
-            if db.rows(query, [tasPk]) > 0:
-                date = db.fetchone(query, [tasPk])['tasDate']
-                return date
-    else:
-        print (f"Error: {tasPk} is NOT a valid task ID")
+            tasks = db.session.query(T)
+            # date = db.session.query(T.tasDate).filter(T.tasPk==tasPk).limit(1).scalar()
+        return tasks.get(task_id).tasDate
 
-def get_registration(comPk):
+def get_registration(comp_id):
     """Check if comp has a registration"""
-    reg = 0
-    if comPk > 0:
+    from db_tables import tblCompetition as C
+    if comp_id > 0:
         with Database() as db:
-            query = """    SELECT (CASE WHEN
-                                `comEntryRestrict` LIKE '%%registered%%' THEN 1 ELSE 0
-                            END) AS `Reg`
-                            FROM
-                                `tblCompetition`
-                            WHERE
-                                `comPk` = %s
-                            LIMIT 1"""
-            if db.rows(query, [comPk]) > 0:
-                reg = db.fetchone(query, [comPk])['Reg']
-    else:
-        print("comp registration - Error: NOT a valid ID \n")
-
-    return reg
+            comps = db.session.query(C)
+        return comps.get(comp_id).comEntryRestrict == 'registered'
 
 def get_offset(task_id):
+    from db_tables import TaskView as T
     with Database() as db:
-        query = """    SELECT
-                            `comTimeOffset` AS offset
-                        FROM
-                            `TaskView`
-                        WHERE
-                            `tasPk` = %s
-                        LIMIT 1"""
-        return db.fetchone(query, [task_id])['offset']
-
-def get_registered_pilots(comPk):
-    """Gets list of registered pilots for the comp"""
-    list = []
-    if comPk:
-        with Database() as db:
-            query = """    SELECT
-                                R.`pilPk`,
-                                P.`pilFirstName`,
-                                P.`pilLastName`,
-                                P.`pilFAI`,
-                                P.`pilXContestUser`
-                            FROM
-                                `tblRegistration` R
-                            JOIN `PilotView` P USING(`pilPk`)
-                            WHERE
-                                R.`comPk` = %s"""
-            if db.rows(query, [comPk]) > 0:
-                """create a list from results"""
-                list = [{   'pilPk': row['pilPk'],
-                            'pilFirstName': row['pilFirstName'],
-                            'pilLastName': row['pilLastName'],
-                            'pilFAI': row['pilFAI'],
-                            'pilXContestUser': row['pilXContestUser']}
-                        for row in db.fetchall(query, [comPk])]
-            else:
-                print("No pilot found registered to the comp...")
-    else:
-        print(f"Registered List - Error: NOT a valid Comp ID \n")
-
-    return (list)
+        off = db.session.query(T.c.comTimeOffset).filter(T.c.tasPk==task_id).limit(1).scalar()
+    return off
 
 def is_registered(pil_id, comp_id):
     """Check if pilot is registered to the comp"""
+    from db_tables import tblRegistration
     reg_id = 0
     if (pil_id > 0 and comp_id > 0):
         with Database() as db:
-            query = """    SELECT
-                                `R`.`regPk`
-                            FROM
-                                `tblRegistration` `R`
-                            WHERE
-                                `R`.`comPk` = %s
-                                AND `R`.`pilPk` = %s
-                            LIMIT 1"""
-            params = [pil_id, comp_id]
-            if db.rows(query, params) > 0:
-                reg_id = 0 + db.fetchone(query, params)['regPk']
-    else:
-        print("is_registered - Error: NOT a valid ID \n")
-
+            reg_id = db.session.query(tblRegistration.regPk).filter(tblRegistration.comPk==comp_id, tblRegistration.pilPk==pil_id).limit(1).scalar()
     return reg_id
 
 def is_ext(comp_id):
     '''True if competition is external'''
-    query = """    SELECT
-                        `comExt`
-                    FROM
-                        `tblCompetition`
-                    WHERE
-                        `comPk` = %s
-                    LIMIT 1"""
-    with Database() as db:
-        return True if db.fetchone(query, [comp_id])['comExt'] else False
+    from db_tables import tblCompetition as C
+    if comp_id > 0:
+        with Database() as db:
+            comps = db.session.query(C)
+            # ext = db.session.query(C.comExt).filter(C.comPk==comp_id).limit(1).scalar()
+        return bool(comps.get(comp_id).comExt)
 
 def get_comp_json(comp_id):
     '''returns active json results file'''
-    query = """    SELECT
-                        `refJSON` AS `file`
-                    FROM
-                        `tblResultFile`
-                    WHERE
-                        `comPk` = %s
-                    AND `tasPk` IS NULL
-                    AND `refVisible` = 1
-                    LIMIT 1"""
-    with Database() as db:
-        return db.fetchone(query, [comp_id])['file']
+    from db_tables import tblResultFile as R
+    if comp_id > 0:
+        with Database() as db:
+            file = db.session.query(R.refJSON).filter(and_(R.comPk==comp_id, R.tasPk==None, R.refVisible==1)).limit(1).scalar()
+            return file
 
 def get_glider(pilPk):
     """Get glider info for pilot, to be used in results"""
-    glider = dict()
-    glider['name'] = 'Unknown'
-    glider['cert'] = None
+    from db_tables import PilotView as P
+    glider = {'name': 'Unknown', 'cert': None}
 
     if (pilPk > 0):
         with Database() as db:
-            query = """    SELECT
-                                `pilGlider`, `pilGliderBrand`, `gliGliderCert`
-                            FROM
-                                `PilotView`
-                            WHERE
-                                `pilPk` = %s
-                            LIMIT 1"""
-            if db.rows(query, [pilPk]) > 0:
-                row = db.fetchone(query, [pilPk])
-                glider['name'] = " ".join([row['pilGliderBrand'], row['pilGlider']])
-                glider['cert'] = row['gliGliderCert']
-
-    else:
-        print("get_glider - Error: NOT a valid Pilot ID \n")
-
-    return (glider)
+            result = db.session.query(P.c.pilGlider, P.c.pilGliderBrand, P.c.gliGliderCert).filter(P.c.pilPk==pilPk).limit(1).first()
+            if result:
+                glider['name'] = " ".join([result.pilGliderBrand, result.pilGlider])
+                glider['cert'] = result.gliGliderCert
+    return glider
 
 def get_nat_code(iso):
     """Get Country Code from ISO2 or ISO3"""
-    if not (2 <= len(iso) <= 3):
-        return None
-    else:
-        cond = 'C.natIso' + str(len(iso))
+    from db_tables import tblCountryCode as CC
+    if not (type(iso) is str and len(iso) in (2,3)): return None
+    column = getattr(CC,'natIso' + str(len(iso)))
+    with Database() as db:
+        return db.session.query(CC.natId).filter(column==iso).limit(1).scalar()
+
+def get_task_path(task_id):
+    ''''''
+    from db_tables import tblTask as T
+    if type(task_id) is int and task_id > 0:
         with Database() as db:
-            #print("* get country *")
-            query = """SELECT
-                            `C`.`natID` AS `Code`
-                        FROM `tblCountryCodes` `C`
-                        WHERE %s = %s
-                        LIMIT 1"""
-            params = [cond, iso]
-            try:
-                return 0 + db.fetchone(query, params)['Code']
-            except:
-                return None
+            return db.session.query(T.tasPath).filter(T.tasPk==task_id).limit(1).scalar()
 
-def read_formula(comp_id):
+def get_comp_path(comp_id):
+    ''''''
+    from db_tables import tblCompetition as C
+    if type(comp_id) is int and comp_id > 0:
+        with Database() as db:
+            return db.session.query(C.comPath).filter(C.comPk==comp_id).limit(1).scalar()
 
-    query = """ SELECT
-                    `F`.*,
-                    `FC`.*
-                FROM
-                    `tblCompetition` `C`
-                    JOIN `tblForComp` `FC` USING (`comPk`)
-                    LEFT OUTER JOIN `tblFormula` `F` USING (`forPk`)
-                WHERE
-                    `C`.`comPk` = %s
-                LIMIT 1"""
-    with Database() as db:
-        # get the formula details.
-        formula = db.fetchone(query, [comp_id])
-    formula['forMinDistance'] *= 1000
-    formula['forNomDistance'] *= 1000
-    formula['forNomTime'] *= 60
-    formula['forDiffDist'] *= 1000
-#    formula['ScaleToValidity'] = formula['forScaleToValidity']
-    # FIX: add failsafe checking?
-    if formula['forMinDistance'] <= 0:
-        print("WARNING: mindist <= 0, using 5000m instead")
-        formula['forMinDistance'] = 5000
-
-    return formula
-
-def get_task_file_path(tasPk, comPk = None):
-    """gets path to task tracks folder"""
-    from Defines import FILEDIR
+def create_comp_path(comp_id, short_name, date):
+    ''' upon competition creation, creates the path to store tracks.
+        It will not change if comp name will be updated'''
+    # maybe should be moved to correct year if comp date will change?
+    from db_tables import tblCompetition as C
+    import datetime
     from os import path as p
-    path = None
-    if not comPk:
-        comPk   = get_comp(tasPk)
-    date        = get_task_date(tasPk)
-    query = """ SELECT
-                    COUNT(`tasPk`)
-                FROM `TaskView`
-                WHERE `comPk` = %s
-                AND DATE(`tasDate`) < DATE(%s)"""
-    query = "  SELECT LOWER(T.`comCode`) AS comCode, " \
-            "LOWER(T.`tasCode`) AS tasCode, " \
-            "YEAR(C.`comDateFrom`) AS comYear, " \
-            "DATE_FORMAT(T.`tasdate`, '%%Y%%m%%d') AS tasDate " \
-            " FROM `TaskView` T JOIN `tblCompetition` C USING(`comPk`) " \
-            "WHERE T.`tasPk` = %s LIMIT 1 "
-
-    param = tasPk
+    if not(type(comp_id)is int and comp_id > 0 and isinstance(date, datetime.date)):
+        return
+    if not(type(short_name) is str and len(short_name) > 0):
+        '''create a short name'''
+        # we need the name, maybe better create a class?
+    year = str(date.year)
+    path = p.join(year, short_name)
     with Database() as db:
-        t = db.fetchone(query, params=param)
-        if t:
-            cname = t['comCode']
-            tname = t['tasCode']
-            year = str(t['comYear'])
-            tdate = str(t['tasDate'])
-            print('filedir={}, year={}, cname={}, tname={}, tdate={}'.format(FILEDIR, year, cname, tname, tdate))
-            path = str(p.join(FILEDIR, year, cname, ('_'.join([tname, tdate]))))
-    return path
+        q = db.session.query(C).get(comp_id)
+        if not q.comPath:
+            q.comPath = path
+            db.session.commit()
+        return q.comPath
+
+def create_task_path(task_id, tcode, date):
+    ''' upon competition creation, creates the path to store tracks.
+        It will not change if comp name will be updated'''
+    # maybe should be moved to correct year if comp date will change?
+    from db_tables import tblTask as T
+    import datetime
+    from os import path as p
+    if not(type(task_id)is int and task_id > 0 and isinstance(date, datetime.date)):
+        return
+    if not(type(short_name) is str and len(short_name) > 0):
+        '''create a short name'''
+        # we need the name
+    tdate = date.strftime('%Y-%m-%d')
+    path = '_'.join([tcode, tdate])
+    with Database() as db:
+        q = db.session.query(T).get(task_id)
+        if not q.tasPath:
+            q.tasPath = path
+            db.session.commit()
+        return q.tasPath
 
 def get_task_region(task_id):
-    with Database() as db:
-        query = """    SELECT `regPk` FROM `tblTask`
-                        WHERE `tasPk` = %s LIMIT 1"""
-        region_id = 0 + db.fetchone(query, [task_id])['regPk']
-    return region_id
+    from db_tables import tblTask as T
+    if type(task_id) is int and task_id > 0:
+        with Database() as db:
+            return db.session.query(T.regPk).filter(T.tasPk==task_id).limit(1).scalar()
 
 def get_area_wps(region_id):
     """query db get all wpts names and pks for region of task and put into dictionary"""
-    with Database() as db:
-        query = """ SELECT
-                        `rwpName`, `rwpPk`
-                    FROM `tblRegionWaypoint`
-                    WHERE
-                        `regPk` = %s
-                        AND `rwpOld` = 0
-                    ORDER BY `rwpName`"""
-        wps = dict()
-        for row in db.fetchall(query, [region_id]):
-            wps[row['rwpName']] = row['rwpPk']
-    return wps
+    from db_tables import tblRegionWaypoint as W
+    if type(region_id) is int and region_id > 0:
+        with Database() as db:
+            wps = db.session.query(W.rwpName,
+                                    W.rwpPk).filter(and_(W.regPk==region_id,
+                                                        W.rwpOld==0)).order_by(W.rwpName).all()
+        return dict(wps)
 
 def get_wpts(task_id):
-    region_id   = get_task_region(task_id)
-    wps         = get_area_wps(region_id)
-    return wps
+    region_id = get_task_region(task_id)
+    return get_area_wps(region_id)

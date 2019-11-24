@@ -6,20 +6,17 @@ Antonio Golfari - 2019
 """
 # Use your utility module.
 from myconn import Database
+from db_tables import tblResultFile as R
 
-def update_result(refPk, status):
+def update_result(ref_id, status):
     import os
     from os import path as p
     import json
 
     with Database() as db:
+        result  = db.session.query(R).get(ref_id)
+        file    = result.refJSON
         '''check if json file exists, and updates it'''
-        query = """ SELECT `refJSON`
-                    FROM `tblResultFile`
-                    WHERE `refPk` = %s
-                    LIMIT 1"""
-        file = db.fetchone(query, [refPk])['refJSON']
-
         if p.isfile(file):
             '''update status in json file'''
             with open(file, 'r+') as f:
@@ -29,20 +26,12 @@ def update_result(refPk, status):
                 f.write(json.dumps(d))
                 f.truncate()
                 print(f'JSON file has been updated \n')
+            '''update status in database'''
+            result.refStatus = status
+            db.session.commit()
+            return 1
         else:
             print(f"Couldn't find a JSON file for this result \n")
-
-        '''update status in database'''
-        query = """ UPDATE `tblResultFile`
-                    SET `refStatus` = %s
-                    WHERE `refPk` = %s"""
-        params = [status, refPk]
-        try:
-            db.execute(query, params)
-            print(f"Result with ID: {refPk} succesfully updated \n")
-            return 1
-        except:
-            print(f"Error updating Result with ID: {refPk} \n")
             return 0
 
 def main(args):

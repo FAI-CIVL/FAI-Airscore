@@ -7,18 +7,19 @@ Antonio Golfari - 2019
 # Use your utility module.
 from myconn import Database
 
-def delete_result(refPk):
+def delete_result(ref_id):
     import os
     from os import path as p
+    from db_tables import tblResultFile as R
 
-    with Database() as db:
-        '''check if json file exists, and deletes it'''
-        query = """SELECT
-                        `refJSON`
-                    FROM `tblResultFile`
-                    WHERE `refPk` = %s
-                    LIMIT 1"""
-        file = db.fetchone(query, [refPk])['refJSON']
+    if type(ref_id) is int and ref_id > 0:
+        with Database() as db:
+            '''check if json file exists, and deletes it'''
+            q       = db.session.query(R)
+            result  = q.get(ref_id)
+            file    = result.refJSON
+            db.session.delete(result)
+            db.session.commit()
 
         if p.isfile(file):
             os.remove(file)
@@ -26,15 +27,10 @@ def delete_result(refPk):
         else:
             print("Couldn't find a JSON file for this result \n")
 
-        query = """ DELETE FROM
-                        `tblResultFile`
-                    WHERE refPk = %s"""
-        try:
-            db.execute(query, [refPk])
-            print(f"Result with ID: {refPk} succesfully deleted \n")
+        if result > 1:
+            print(f"Result with ID: {ref_id} succesfully deleted \n")
             return 1
-        except:
-            return 0
+    return 0
 
 def main(args):
     from logger import Logger

@@ -104,42 +104,15 @@ class Task_formula(object):
     @classmethod
     def read(cls, task_id):
         """reads task formula from DB"""
+        from db_tables import TaskFormulaView as F
 
-        query = """ SELECT
-                        `type`,
-                        `version`,
-                        `formula_name`,
-                        `arrival`,
-                        `departure`,
-                        `no_goal_penalty`,
-                        `glide_bonus`,
-                        `stopped_time_calc`,
-                        `arr_alt_bonus`,
-                        `nominal_goal`,
-                        `nominal_dist`,
-                        `min_dist`,
-                        `nominal_time`,
-                        `nominal_launch`,
-                        `score_back_time`,
-                        `tolerance`
-                    FROM
-                        `TaskFormulaView`
-                    WHERE
-                        `task_id` = %s
-                    LIMIT 1
-                """
-
+        formula = cls()
         with Database() as db:
             # get the task details.
-            t = db.fetchone(query, [task_id])
-        if t is None:
-            print('Task formula error')
-            return
-        else:
-            formula = cls(task_id)
-            formula.__dict__.update(t)
-
-            return formula
+            f = db.session.query(F)
+            t = f.get(task_id)
+            db.populate_obj(formula, t)
+        return formula
 
     def get_lib(self):
         import importlib

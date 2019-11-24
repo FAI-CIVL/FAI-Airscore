@@ -16,32 +16,24 @@ import requests
 
 def get_xc_parameters(task_id):
     """Get site info and date from database """
+    from db_tables import TaskXContestWptView as XC
     from datetime import datetime
 
     site_id = 0
     takeoff_id = 0
     datestr = None
-    query = """  SELECT
-                    `R`.`xccSiteID`,
-                    `R`.`XccToID`,
-                    `T`.`tasDate`
-                FROM
-                    `tblTaskWaypoint` `TW`
-                JOIN `tblTask` `T` USING(`tasPk`)
-                JOIN `tblRegionWaypoint` `R` USING(`rwpPk`)
-                WHERE
-                    `T`.`tasPk` = %s AND `TW`.`tawType` = 'launch'"""
-    params = [task_id]
+
     with Database() as db:
-        q = db.fetchone(query, params)
-        if q is not None:
-            site_id = q['xccSiteID']
-            takeoff_id = q['XccToID']
-            date = q['tasDate']
-            logging.info("site_id:%s takeoff_id:%s date:%s", site_id, takeoff_id, date)
-            datestr = date.strftime('%Y-%m-%d') #convert from datetime to string
-        else:
-            print('Error: no site found for the task')
+        q = db.session.query(XC).get(task_id)
+    if q is not None:
+        site_id = q.xccSiteID
+        takeoff_id = q.xccToID
+        date = q.tasDate
+
+        logging.info("site_id:%s takeoff_id:%s date:%s", site_id, takeoff_id, date)
+        datestr = date.strftime('%Y-%m-%d') #convert from datetime to string
+    else:
+        print('Error: no site found for the task')
     return(site_id, takeoff_id, datestr)
 
 def get_zip(site_id, takeoff_id, date, login_name, password, zip_destination, zip_name):

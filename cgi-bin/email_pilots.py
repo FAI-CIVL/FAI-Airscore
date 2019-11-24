@@ -35,68 +35,47 @@ class send_mail():
         '''closeconnection'''
         self.smtpserver.close()
 
-def get_email_list(task_id, DB_User, DB_Password, DB, to_all):
+def get_email_list(task_id, to_all=None):
     """Get pilot emails (pilots in task without tracks)
     returns a dictionary of pilFirstName pilLastname:pilEmail."""
-
-    where = '' if to_all else "WHERE `A`.`traPk` IS NULL"
-
-    query = """ SELECT
-                    `P`.`pilFirstName`,
-                    `P`.`pilLastName`,
-                    `P`.`pilEmail`
-                FROM
-                    `PilotView` `P`
-                    JOIN `tblRegistration` `R` ON `P`.`pilPk` = `R`.`pilPk`
-                    LEFT OUTER JOIN (
-                        SELECT
-                            `comPk`,
-                            `tasPk`,
-                            `TR`.`traPk`,
-                            `pilPk`
-                        FROM
-                            `tblComTaskTrack` `TR`
-                            JOIN `tblTrack` `T` ON `TR`.`traPk` = `T`.`traPk`
-                        WHERE
-                            `tasPk` = %s
-                    ) AS A ON `R`.`pilPk` = `A`.`pilPK`
-                    AND `R`.`comPk` = `A`.`comPk` %s"""
-    params = [task_id, where]
+    from db_tables import tblRegistration as R, PilotView as P, tblTaskResult as S, tblTask as T
+    from sqlalchemy import func, and_, or_
 
     with Database() as db:
-        pilot_list = dict((FirstName + ' ' + LastName, pilEmail)
-                      for FirstName, LastName, pilEmail in db.fetchall(query, params))
+        comp_id = db.session.query(T).get(task_id).comPk
+        q       = (db.session.query(R.regName.label('name'), P.pilEmail.label('email')
+                                    ).join(P, P.pilPk==R.pilPk).outerjoin(
+                                    S, and_(R.pilPk==S.pilPk, S.tasPk==task_id))).filter(R.comPk==comp_id)
+        if not to_all:
+            q   = q.filter(S.tarPk==None)
+        result  = q.all()
+
+        pilot_list = dict((x.name, x.email) for x in result)
     return pilot_list
 
-def get_task_details(task_id, DB_User, DB_Password, DB):
+def get_task_details(task_id):
     """Get task date and location for email subject line."""
-    query = """ SELECT
-                    `T`.`tasDate`,
-                    `C`.`comLocation`
-                FROM
-                    `tblTask` `T` JOIN
-                    `tblCompetition` `C` USING(`comPk`)
-                WHERE
-                    `tasPk` = %s
-                LIMIT 1"""
+    from db_tables import tblCompetition as C, tblTask as T
+
     with Database() as db:
-        date, location = db.fetchone(query, [task_id])
+        q = db.session.query(T.tasDate, C.comLocation).join(C, C.comPk==T.comPk).filter(T.tasPk==task_id)
+        try:
+            date, location = q.one()
+        except:
+            print(f'Date, Location Query Error')
+
     datestr = date.strftime('%m-%d')  # convert from datetime to string
     subject = datestr + ' ' + location
     return subject
 
 def get_admin_email(task_id, DB_User, DB_Password, DB):
     """Get admin email addresses"""
-    query = """ SELECT
-                    `useEmail`
-                FROM
-                    `UserView` `U`
-                    JOIN `tblCompAuth` `A` USING(`usePk`)
-                    JOIN `tblTask` `T` USING(`comPk`)
-                WHERE
-                    `T`.`tasPk` = %s"""
+    from db_tables import UserView as U, tblCompAuth as C, tblTask as T
+
     with Database() as db:
-        return [item[0] for item in db.fetchall(query, [task_id])]
+        q       = db.session.query(U.useEmail).join(C, C.usePk==U.usePk).join(T, T.comPk==C.comPk).filter(T.tasPk==task_id)
+        users   = q.all()
+        return [u[0] for u in users]
 
 def get_args(args=None):
     print('Number of arguments:', len(args), 'arguments.<br />')
@@ -155,7 +134,7 @@ def main():
     if len(pilot_list) > 0:
 #       print('We have pilots in list <br />')
         for name in pilot_list:
-            if pilot_list[name] == None:
+            if not pilot_list[name]:
                 no_email.append(' ' + name)
             else:
                 email_to.append(pilot_list[name])

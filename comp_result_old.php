@@ -108,7 +108,7 @@ function comp_result($link, $comPk, $how, $param, $cls, $tasktot, $ext)
                         SELECT
                             C.natIso3
                         FROM
-                            tblCountryCodes C
+                            tblCountryCode C
                         WHERE
                             C.natID = P.pilNat
                     ) AS pilNationCode,
@@ -144,7 +144,7 @@ function comp_result($link, $comPk, $how, $param, $cls, $tasktot, $ext)
     //                     SELECT
     //                         C.natIso3
     //                     FROM
-    //                         tblCountryCodes C
+    //                         tblCountryCode C
     //                     WHERE
     //                         C.natID = P.pilNat
     //                 ) AS pilNationCode,

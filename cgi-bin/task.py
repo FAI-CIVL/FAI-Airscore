@@ -63,9 +63,14 @@ class Task(object):
         distances_to_go: calculates distance from each waypoint to goal
     """
 
-    def __init__(self, task_id=None, turnpoints=None, start_time=None, task_deadline=None, task_type=None, stopped_time=None, last_start_time=None,
-                 check_launch='off'):
+    def __init__(self, task_id=None, task_type=None, start_time=None, task_deadline=None,
+                    stopped_time=None, check_launch='off'):
         self.id                         = task_id
+        self.task_type                  = task_type
+        self.start_time                 = start_time
+        self.task_deadline              = task_deadline     # seconds from midnight: task deadline
+        self.stopped_time               = stopped_time      # seconds from midnight: time task was stopped (TaskStopAnnouncementTime).
+        self.check_launch               = check_launch      # check launch flag. whether we check that pilots leave from launch.
         self.comp_id                    = None
         self.comp_name                  = None
         self.comp_site                  = None
@@ -73,12 +78,8 @@ class Task(object):
         self.date                       = None              # in Y-m-d format
         self.task_name                  = None
         self.task_code                  = None
-        self.task_type                  = task_type
-        self.turnpoints                 = turnpoints        # list of Turnpoint objects
         self.window_open_time           = None              # seconds from midnight: takeoff window opening time (or any earlier pilots were permitted to take off)
         self.window_close_time          = None              # seconds from midnight: not managed yet
-        self.task_deadline              = task_deadline     # seconds from midnight: task deadline
-        self.start_time                 = start_time
         self.start_close_time           = None
         self.SS_interval                = 0                 # seconds: Interval among start gates when more than one
         self.opt_dist                   = 0
@@ -86,14 +87,13 @@ class Task(object):
         self.opt_dist_to_ESS            = 0
         self.SS_distance                = 0
         self.distance                   = 0                 # non optimised distance
+        self.turnpoints                 = []                # list of Turnpoint objects
         self.optimised_turnpoints       = []                # fixes on cylinders for opt route
         self.optimised_legs             = []                # opt distance between cylinders
         self.partial_distance           = []                # distance from launch to waypoint
         self.legs                       = []                # non optimised legs
         self.stats                      = dict()            # scored task statistics
         # self.results = []  #scored task results
-        self.stopped_time               = stopped_time      # seconds from midnight: time task was stopped (TaskStopAnnouncementTime).
-        self.check_launch               = check_launch      # check launch flag. whether we check that pilots leave from launch.
         self.comment                    = None
         self.time_offset                = 0                 # seconds
         self.launch_valid               = None
@@ -143,99 +143,29 @@ class Task(object):
     def read(task_id):
         """Reads Task from database
         takes tasPk as argument"""
-        turnpoints = []
-        short_route = []
-        partial_distance = []
-        stats = dict()
+        from db_tables import TaskObjectView as T, TaskWaypointView as W
 
-        if task_id < 1:
+        if not (type(task_id) is int and task_id > 0):
             print("task not present in database ", task_id)
-            return
+            return None
 
-        query = """ SELECT
-                        `comp_code`,
-                        `comp_name`,
-                        `comp_site`,
-                        `time_offset`,
-                        `comp_class`,
-                        `comp_id`,
-                        `date`,
-                        `task_name`,
-                        `window_open_time`,
-                        `task_deadline`,
-                        `window_close_time`,
-                        `check_launch`,
-                        `start_time`,
-                        `start_close_time`,
-                        `stopped_time`,
-                        `SS_interval`,
-                        `task_type`,
-                        `distance`,
-                        `opt_dist`,
-                        `opt_dist_to_SS`,
-                        `opt_dist_to_ESS`,
-                        `SS_distance`,
-                        `comment`,
-                        `tasLocked`,
-                        `task_code`,
-                        `launch_valid`
-                    FROM
-                        `TaskObjectView`
-                    WHERE
-                        `task_id` = %s
-                    LIMIT 1"""
-        with Database() as db:
-            # get the task details.
-            info = db.fetchone(query, [task_id])
-        if info is None:
-            print('Not a valid task')
-            return
-
-        query = """SELECT
-                        `id`,
-                        `how`,
-                        `radius`,
-                        `shape`,
-                        `type`,
-                        `ssr_lat`,
-                        `ssr_lon`,
-                        `partial_distance`,
-                        `lat`,
-                        `lon`,
-                        `rwpPk`,
-                        `name`,
-                        `description`,
-                        `altitude`
-                    FROM
-                        `TaskWaypointView`
-                    WHERE
-                        `task_id` = %s
-                    ORDER BY
-                        `partial_distance`"""
+        task = Task(task_id)
 
         with Database() as db:
             # get the task details.
-            tps = db.fetchall(query, [task_id])
-
+            t   = db.session.query(T)
+            w   = db.session.query(W)
+            db.populate_obj(task, t.get(task_id))
+            tps = w.filter(W.task_id==task_id).order_by(W.partial_distance)
         for tp in tps:
-            turnpoint = Turnpoint(tp['lat'], tp['lon'], tp['radius'], tp['type'].strip(),
-                                  tp['shape'], tp['how'])
-            turnpoint.name          = tp['name']
-            turnpoint.id            = tp['id']
-            turnpoint.rwpPk         = tp['rwpPk']
-            turnpoint.description   = tp['description']
-            turnpoint.altitude      = tp['altitude']
-            turnpoints.append(turnpoint)
-            s_point = polar(lat=tp['ssr_lat'],lon=tp['ssr_lon'])
-            #print ("short route fix: {}, {}".format(s_point.lon,s_point.lat))
-            short_route.append(s_point)
-            if tp['partial_distance'] is not None: #this will be None in DB before we optimise route, but we append to this list so we should not fill it with Nones
-                partial_distance.append(tp['partial_distance'])
-
-        task = Task(task_id, turnpoints)
-        task.__dict__.update(info)
-        task.partial_distance       = partial_distance
-        task.optimised_turnpoints   = short_route
+            turnpoint = Turnpoint(tp.lat, tp.lon, tp.radius, tp.type.strip(),
+                                  tp.shape, tp.how, tp.altitude, tp.name,
+                                  tp.description, tp.id, tp.rwpPk)
+            task.turnpoints.append(turnpoint)
+            s_point = polar(lat=tp.ssr_lat,lon=tp.ssr_lon)
+            task.optimised_turnpoints.append(s_point)
+            if tp.partial_distance is not None: #this will be None in DB before we optimise route, but we append to this list so we should not fill it with Nones
+                task.partial_distance.append(tp.partial_distance)
 
         return task
 
@@ -413,12 +343,6 @@ class Task(object):
                 if not self.is_valid():
                     return f'task duration is not enough, task with id {self.id} is not valid, scoring is not needed'
 
-                # min_task_duration = 3600 * 1.5 # 90 min
-                # last_time   = ( (self.stopped_time - self.formula.score_back_time)
-                #                 if not self.SS_interval
-                #                 else (self.stopped_time - self.SS_interval))
-                # duration    = last_time - self.start_time
-
                 results = verify_all_tracks(self, lib)
 
         else:
@@ -429,39 +353,27 @@ class Task(object):
         update_all_results(results)
 
     def update_task_distance(self):
-
+        from db_tables import tblTask as T, tblTaskWaypoint as W
         with Database() as db:
             '''add optimised and total distance to task'''
-            query = """ UPDATE `tblTask`
-                        SET
-                            `tasDistance` = %s,
-                            `tasShortRouteDistance` = %s,
-                            `tasSSDistance` = %s,
-                            `tasEndSSDistance` = %s,
-                            `tasStartSSDistance` = %s
-                        WHERE
-                            `tasPk` = %s
-                        LIMIT 1"""
-            params = [self.distance, self.opt_dist, self.SS_distance, self.opt_dist_to_ESS, self.opt_dist_to_SS, self.id]
-            db.execute(query, params)
+            q = db.session.query(T)
+            t = q.get(self.id)
+            t.tasDistance           = self.distance
+            t.tasShortRouteDistance = self.opt_dist
+            t.tasSSDistance         = self.SS_distance
+            t.tasEndSSDistance      = self.opt_dist_to_ESS
+            t.tasStartSSDistance    = self.opt_dist_to_SS
+            db.session.commit()
 
             '''add opt legs to task wpt'''
-            query = ''
-            for idx, item in enumerate(self.turnpoints):
-                #print ("  {}  {}  {}  {}   {}".format(item.name, item.type, item.radius, self.optimised_legs[idx], self.partial_distance[idx]))
-                tp = self.optimised_turnpoints[idx]
-                query = """UPDATE `tblTaskWaypoint`
-                            SET
-                                `ssrLatDecimal` = %s,
-                                `ssrLongDecimal` = %s,
-                                `ssrCumulativeDist` = %s
-                            WHERE `tawPk` = %s
-                            LIMIT 1
-                        """
-                params = [tp.lat, tp.lon, self.partial_distance[idx], item.id]
-                #print (query)
-                db.execute(query, params)
-                #print (self.optimised_turnpoints[idx].lat, self.optimised_turnpoints[idx].lon)
+            w = db.session.query(W)
+            for idx, tp in enumerate(self.turnpoints):
+                sr  = self.optimised_turnpoints[idx]
+                wpt = w.get(tp.id)
+                wpt.ssrLatDecimal       = sr.lat
+                wpt.ssrLongDecimal      = sr.lon
+                wpt.ssrCumulativeDist   = self.partial_distance[idx]
+                db.session.commit()
 
     def update_task_info(self):
         with Database() as db:
@@ -575,12 +487,6 @@ class Task(object):
             turnpoint.name  = tp["waypoint"]["name"]
             turnpoint.rwpPk = wpID
             self.turnpoints.append(turnpoint)
-
-        # print('obj start:       {} '.format(self.start_time))
-        # print('obj deadline:    {} '.format(self.task_deadline))
-        # print('obj. turnpoints:')
-        # for obj in self.turnpoints:
-        #     print(' {} | {}'.format(obj.name, obj.rwpPk))
 
     @staticmethod
     def create_from_xctrack_file(filename):
@@ -708,7 +614,7 @@ class Task(object):
             result.distance_flown           = pil['distance']
             result.first_time               = pil['first_time']
             result.SSS_time                 = pil['SS_time']
-            result.pilot_start_time         = pil['start_time']
+            result.real_start_time         = pil['start_time']
             result.ESS_time                 = pil['ES_time']
             result.goal_time                = pil['goal_time']
             result.best_waypoint_achieved   = pil['turnpoints_made']
