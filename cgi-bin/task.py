@@ -1071,22 +1071,24 @@ def get_task_json(task_id):
     task_file = Path(Defines.MAPOBJDIR+'tasks/'+str(task_id) + '.task')
     if not task_file.is_file():
         write_task_json(task_id)
-    else:
-        with open(task_file, 'r') as f:
-            data = jsonpickle.decode(f.read())
-            #print (data)
-            task_coords = data['task_coords']
-            turnpoints = data['turnpoints']
-            short_route = data['short_route']
-            goal_line = data['goal_line']
-            tolerance = data['tolerance']
 
-    return task_coords, turnpoints, short_route, goal_line, tolerance
+    with open(task_file, 'r') as f:
+        data = jsonpickle.decode(f.read())
+        #print (data)
+        task_coords = data['task_coords']
+        turnpoints = data['turnpoints']
+        short_route = data['short_route']
+        goal_line = data['goal_line']
+        tolerance = data['tolerance']
+        bbox = data['bbox']
+
+    return task_coords, turnpoints, short_route, goal_line, tolerance, bbox
 
 def write_task_json(task_id):
     import os
     from geographiclib.geodesic import Geodesic
     from route import calcBearing
+    from mapUtils import get_route_bbox
 
     geod = Geodesic.WGS84
     task_file = Path(Defines.MAPOBJDIR+'tasks/'+str(task_id) + '.task')
@@ -1146,4 +1148,4 @@ def write_task_json(task_id):
         goal_line.append(tuple([line_end2['lat2'], line_end2['lon2']]))
     with open(task_file, 'w') as f:
         f.write(jsonpickle.dumps({'task_coords': task_coords, 'turnpoints': turnpoints, 'short_route': short_route,
-                                  'goal_line': goal_line, 'tolerance': tolerance}))
+                                  'goal_line': goal_line, 'tolerance': tolerance, 'bbox': get_route_bbox(task)}))

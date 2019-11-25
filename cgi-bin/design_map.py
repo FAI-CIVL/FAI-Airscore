@@ -8,16 +8,18 @@ Stuart Mackintosh - 2019
 """
 
 
+import itertools
 import sys
+
 import folium
 import folium.plugins
-from folium.map import FeatureGroup, Marker, Popup, Icon
 from folium.features import CustomIcon
+from folium.map import FeatureGroup, Marker, Popup
 from geographiclib.geodesic import Geodesic
-from compUtils import read_formula
-import itertools
+
 import Defines as d
-from mapUtils import checkbbox
+from compUtils import read_formula
+from mapUtils import get_region_bbox
 from task import Task
 
 #from flask import Flask, flash, request, redirect, url_for, session, json
@@ -41,54 +43,6 @@ def style_function(feature):
     return {'fillColor': 'white','weight': 2,'opacity': 1,'color': 'red','fillOpacity': 0.5,"stroke-width":3}
 
 track_style_function = lambda x: {'color':'red' if x['properties']['Track']=='Pre_Goal' else 'grey'}
-
-def get_bbox(flight):
-    """Gets track boundaries """
-
-    assert flight.valid
-
-    #TODO write objects to the geojson form the flight object
-    min_lat = flight.fixes[0].lat
-    min_lon = flight.fixes[0].lon
-    max_lat = flight.fixes[0].lat
-    max_lon = flight.fixes[0].lon
-
-    bbox = [[min_lat,min_lon],[max_lat,max_lon]]
-
-    for fix in flight.fixes:
-        bbox = checkbbox(fix.lat,fix.lon,bbox)
-    return bbox
-
-def get_route_bbox(task):
-    """Gets task boundaries """
-
-    #TODO write objects to the geojson form the flight object
-    min_lat = task.optimised_turnpoints[0].lat
-    min_lon = task.optimised_turnpoints[0].lon
-    max_lat = task.optimised_turnpoints[0].lat
-    max_lon = task.optimised_turnpoints[0].lon
-
-    bbox = [[min_lat,min_lon],[max_lat,max_lon]]
-
-    for fix in task.optimised_turnpoints:
-        bbox = checkbbox(fix.lat,fix.lon,bbox)
-    return bbox
-
-def get_region_bbox(region):
-    """Gets region map boundaries """
-
-    wpts = region.turnpoints
-    #TODO write objects to the geojson form the flight object
-    min_lat = wpts[0].lat
-    min_lon = wpts[0].lon
-    max_lat = wpts[0].lat
-    max_lon = wpts[0].lon
-
-    bbox = [[min_lat,min_lon],[max_lat,max_lon]]
-
-    for wpt in wpts:
-        bbox = checkbbox(wpt.lat,wpt.lon,bbox)
-    return bbox
 
 
 # function to create the map template with optional geojson, circles and points objects
