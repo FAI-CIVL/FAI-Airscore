@@ -24,6 +24,8 @@ from route import rawtime_float_to_hms, in_semicircle, distance_flown
 from myconn import Database
 import jsonpickle, json
 from mapUtils import checkbbox
+from route import distance
+from collections import namedtuple
 
 class Flight_result(object):
     """Set of statistics about a flight with respect a task.

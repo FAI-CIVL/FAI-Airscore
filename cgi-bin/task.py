@@ -1223,6 +1223,7 @@ def write_map_json(task_id):
     import os
     from geographiclib.geodesic import Geodesic
     from route import get_line
+    from mapUtils import get_route_bbox
 
     geod = Geodesic.WGS84
     task_file = Path(Defines.MAPOBJDIR+'tasks/'+str(task_id) + '.task')
