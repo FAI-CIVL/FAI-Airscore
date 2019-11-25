@@ -709,30 +709,6 @@ def get_shortest_path(task):
     '''create optimised points positions on earth model (lat, lon)'''
     optimised = convert(points, wgs84, tmerc, 'from')
 
-    # opt_dist = 0.0
-    # for i in range(1, len(optimised)):
-    #     leg_dist = distance(optimised[i-1], optimised[i], method)
-    #     opt_dist += leg_dist
-    #
-    # task.optimised_turnpoints = optimised
-    #
-    # ''' update task short route'''
-    # with Database() as db:
-    #     query = ''
-    #     for idx, item in enumerate(task.turnpoints):
-    #         tp = task.optimised_turnpoints[idx]
-    #         query = """ UPDATE `tblTaskWaypoint`
-    #                     SET
-    #                         `ssrLatDecimal` = %s,
-    #                         `ssrLongDecimal` = %s
-    #                     WHERE `tawPk` = %s
-    #                     LIMIT 1"""
-    #
-    #         params = [tp.lat, tp.lon, item.id]
-    #         db.execute(query, params)
-    #
-    # return opt_dist
-
     return optimised
 
 def get_proj_center(turnpoints):

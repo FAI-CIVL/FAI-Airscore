@@ -1141,22 +1141,9 @@ class Task(object):
         self.SS_distance = sum(self.optimised_legs[sss_wpt:ess_wpt])
         self.optimised_turnpoints = optimised
 
-        # ''' update task short route'''
-        # with Database() as db:
-        #     query = ''
-        #     for idx, item in enumerate(task.turnpoints):
-        #         tp = task.optimised_turnpoints[idx]
-        #         query = """ UPDATE `tblTaskWaypoint`
-        #                     SET
-        #                         `ssrLatDecimal` = %s,
-        #                         `ssrLongDecimal` = %s
-        #                     WHERE `tawPk` = %s
-        #                     LIMIT 1"""
-        #
-        #         params = [tp.lat, tp.lon, item.id]
-        #         db.execute(query, params)
-
     def clear_waypoints(self):
+        from db_tables import tblTaskWaypoint as W
+
         self.turnpoints.clear()
         self.optimised_turnpoints.clear()
         self.optimised_legs.clear()
@@ -1165,28 +1152,19 @@ class Task(object):
 
         '''delete waypoints from database'''
         with Database() as db:
-            query = """DELETE FROM `tblTaskWaypoint`
-                        WHERE `tasPk` = %s"""
-            db.execute(query, [self.id])
+            db.session.question.query(W).filter(W.tasPk==self.id).delete()
+            db.session.commit()
 
     def update_waypoints(self):
-        for idx, wp in enumerate(self.turnpoints):
-            wpNum = idx + 1
-            with Database() as db:
-                sql = """  INSERT INTO `tblTaskWaypoint`(
-                                `tasPk`,
-                                `rwpPk`,
-                                `tawNumber`,
-                                `tawType`,
-                                `tawHow`,
-                                `tawShape`,
-                                `tawTime`,
-                                `tawRadius`
-                                )
-                            VALUES(%s,%s,%s,%s,%s,%s,'0',%s)"""
-                params = [self.id, wp.rwpPk, wpNum, wp.type, wp.how, wp.shape, wp.radius]
-                id = db.execute(sql, params)
-            self.turnpoints[idx].id = id
+        from db_tables import tblTaskWaypoint as W
+        with Database() as db:
+            for idx, wp in enumerate(self.turnpoints):
+                wpNum = idx + 1
+                wpt = W(tasPk=self.id, rwpPk=wp.rwpPk, tawNumber=wpNum, tawType=wp.type,
+                        tawHow=wp.how, tawShape=wp.shape,tawTime=0, tawRadius=wp.radius)
+                db.session.add(wpt)
+                id = db.session.commit()
+                self.turnpoints[idx].id = id
 
     @property
     def distances_to_go(self):

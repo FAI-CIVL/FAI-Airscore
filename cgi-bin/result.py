@@ -80,24 +80,15 @@ class Task_result:
         """
         insert the result into database
         """
+        from db_tables import tblResultFile as R
 
         '''store timestamp in local time'''
         timestamp = int(self.timestamp + self.info['time_offset'])
 
-        query = """
-                    INSERT INTO `tblResultFile`(
-                        `comPk`,
-                        `tasPk`,
-                        `refTimestamp`,
-                        `refJSON`,
-                        `refStatus`
-                    )
-                    VALUES(%s, %s, %s, %s, %s)
-                """
-        params = [self.comp_id, self.task_id, timestamp, self.filename, self.status]
-
         with Database() as db:
-            self.ref_id = db.execute(query, params)
+            result = R(comPk=self.comp_id, tasPk=self.task_id, refTimestamp=timestamp, refJSON=self.filename, refStatus=self.status)
+            self.ref_id = db.session.add(result)
+            db.session.commit()
         return self.ref_id
 
     @staticmethod
@@ -236,9 +227,8 @@ class Task_result:
     def get_task_pilots(self, results):
         '''gets pilots results from results list'''
 
-        list = []
-
-        attr_list = [   'track_id',
+        pil_list    = []
+        attr_list   = [ 'track_id',
                         'pil_id',
                         'name',
                         'sponsor',
@@ -272,15 +262,14 @@ class Task_result:
                         'landing_time',
                         'track_file']
 
-        for pil in results:
+        for pil in pil_list:
             res = {x:pil[x] for x in attr_list}
             res['name'] = res['name'].title()
             res['glider'] = res['glider'].title()
             res['track_file'] = None if not res['track_file'] else res['track_file'].split('/')[-1]
-            list.append(res)
+            pil_list.append(res)
 
-        self.results = list
-
+        self.results = sorted(pil_list, key=lambda k: k['score'], reverse=True)
 
 class Comp_result(object):
     """
@@ -355,7 +344,7 @@ class Comp_result(object):
 
         with Database() as db:
             '''getting active json files list'''
-            files = db.session.query(R.tasPk.laber('task_id'),
+            files = db.session.query(R.tasPk.label('task_id'),
                                     R.refJSON.label('file')).filter(and_(
                                     R.comPk==comp_id, R.tasPk.isnot(None), R.refVisible==1
                                     )).all()
@@ -426,7 +415,7 @@ class Comp_result(object):
         comp_result.tasks       = tasks
         comp_result.stats       = stats
         comp_result.rankings    = rankings
-        comp_result.results     = results
+        comp_result.results     = sorted(results, key=lambda k: k['score'], reverse=True)
 
         '''create json file'''
         comp_result.to_json()
@@ -470,8 +459,9 @@ class Comp_result(object):
 
         with Database() as db:
             result = R(comPk=self.comp_id, refTimestamp=timestamp, refJSON=self.filename, refStatus=self.status)
-            ref_id = db.session.add(result)
+            db.session.add(result)
             db.session.commit()
+            self.ref_id = result.refPk
         return self.ref_id
 
 def get_pilots(comp_id):

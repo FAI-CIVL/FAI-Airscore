@@ -6,12 +6,13 @@ usage: python3 set_pilot_status.py <task_id> <pil_id> <status>
 Stuart Mackintosh Antonio Golfari - 2019
 """
 
-from task       import Task
+from task       import Task as T
 from myconn     import Database
 from logger     import Logger
-from compUtils  import get_glider, get_offset
+from compUtils  import get_offset
 from datetime   import datetime
 from calcUtils  import sec_to_time
+from db_tables  import tblTaskResult as R
 import Defines as d
 
 def main(args):
@@ -20,72 +21,23 @@ def main(args):
     print("starting..")
     """Main module. Takes tasPk pilPk Status as parameters"""
 
-    '''check parameter is good'''
-    if not ((args[0].isdigit() and int(args[0]) > 0) and
-            (args[1].isdigit() and int(args[1]) > 0) and
-            (args[2] in ('abs', 'dnf', 'mindist'))):
-        print("number of arguments != 3 and/or task_id or pil_id not a number")
-        exit()
-    else:
-        task_id = int(args[0])
-        pil_id  = int(args[1])
-        status  = args[2]
+    task_id = int(args[0])
+    pil_id  = int(args[1])
+    status  = args[2]
 
-    print('task id: {}'.format(task_id))
-    print('pil id:  {}'.format(pil_id))
-    print('status:  {}'.format(status))
-
-    task        = Task.read(task_id)
-
-    '''standard values'''
-    distance    = 0
-    speed       = 0
-    launch      = 0
-    start       = 0
-    trastart    = None
-    ess         = 0
-    goal        = 0
-    lasttime    = 0
-    tp          = 0
-    penalty     = 0
-    lastalt     = 0
-    duration    = 0
-    track_class = task.comp_class
-    track_date  = task.date
-    glider      = []
-
-    '''check what we need to do'''
-    if status == 'mindist':
-        distance    = task.formula.min_dist
-        tp          = 1
-        launch      = task.window_open_time
-        glider      = get_glider(pil_id)
-        stime       = sec_to_time(launch + get_offset(task_id)*3600)
-
-    '''create result entry'''
-    query = """ INSERT INTO `tblTaskResult`(
-                    `tasPk`,
-                    `pilPk`,
-                    `traGlider`,
-                    `traDHV`,
-                    `tarDistance`,
-                    `tarResultType`,
-                    `tarTurnpoints`
-                )
-                VALUES
-                (%s, %s, %s, %s, %s, %s, %s)"""
-
-    params = [  task_id,
-                pil_id,
-                glider['name'] if glider else None,
-                glider['cert'] if glider else None,
-                distance,
-                status,
-                tp
-            ]
+    print(f'task id: {task_id} pil id: {pil_id} status:  {status}')
 
     with Database() as db:
-        result_id = db.execute(query, params)
+        result = R(tasPk=task_id, pilPk=pil_id, tarResultType=status)
+        if status == 'mindist':
+            '''we need some more info'''
+            task            = T.read(task_id)
+            result.tarDistance      = task.formula.min_dist
+            result.tarTurnpoints    = 1
+            result.tarLaunch        = task.window_open_time
+        db.session.add(result)
+        db.session.commit()
+        result_id = result.tarPk
 
     ''' now restore stdout function '''
     Logger('OFF')
@@ -94,4 +46,9 @@ def main(args):
 
 if __name__== "__main__":
     import sys
+    if not ((sys.argv[1].isdigit() and int(sys.argv[1]) > 0) and
+            (sys.argv[2].isdigit() and int(sys.argv[2]) > 0) and
+            (sys.argv[3] in ('abs', 'dnf', 'mindist'))):
+        print("number of arguments != 3 and/or task_id or pil_id not a number")
+        exit()
     main(sys.argv[1:])
