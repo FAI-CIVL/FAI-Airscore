@@ -1,34 +1,38 @@
 """
-Score Task:
+Task Full rescore:
 To be used on frontend.
+- Calculates task Opt. Route
+- checks all tracks
 - calculates task scoring
 - creates JSON file
 - creates DB entry (tblResultFile)
 - outputs result ID (refPk)
 
 Usage:
-    python3 score_task.py <tasPk> (opt.)<'status'>
+    python3 task_full_rescore.py <tasPk>
 
     tasPk   - INT: task ID in tblTask
-    status  - STR: 'provisional', 'official', 'test', ...
 
 - AirScore -
 Stuart Mackintosh - Antonio Golfari
 2019
-
 """
 
-from logger     import Logger
-from task       import Task as T
-from pprint     import pprint
+from    task        import Task as T
+from    result      import Task_result as R
+from    logger      import Logger
+import  importlib
+import  sys
+import  Defines as d
+import  time
 
 def main(args):
-
     '''create logging and disable output'''
-    Logger('ON', 'score_task.txt')
+    Logger('ON', 'task_full_rescore.txt')
+    start = time.time()
 
     print("starting..")
-    '''Main module. Takes tasPk as parameter'''
+    '''Main module. Takes tasPk and status as parameters'''
 
     task_id = int(args[0])
     status  = None if len(args) == 1 else str(args[1])
@@ -38,8 +42,11 @@ def main(args):
     task = T.read(task_id)
 
     '''create task scores obj, json file, and tblResultFile entry'''
-    ref_id = task.create_scoring(status)
+    ref_id = task.create_scoring(status=status, mode='full')
     print(f'result ID: {ref_id}')
+
+    end = time.time()
+    print(f'Process Time (mins): {(end - start)/60}')
 
     ''' now restore stdout function '''
     Logger('OFF')
@@ -54,7 +61,7 @@ if __name__== "__main__":
     '''check parameter is good'''
     if not (sys.argv[1] and sys.argv[1].isdigit() and int(sys.argv[1]) > 0):
         print("number of arguments != 1 and/or task_id not a number")
-        print("usage: python3 score_task.py <tasPk> (opt.)<'status'>")
+        print("usage: python3 task_full_rescore.py <tasPk> (opt.)<'status'>")
         exit()
 
     main(sys.argv[1:])

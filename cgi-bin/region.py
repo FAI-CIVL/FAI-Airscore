@@ -10,10 +10,9 @@ Antonio Golfari - 2019
 
 import numpy as np
 from route import Turnpoint
-from collections import namedtuple
 
 class Region:
-    def __init__(self, regPk=None, name=None, filename=None, openair=None, turnpoints=None):
+    def __init__(self, regPk=None, name=None, filename=None, openair=None, turnpoints=[]):
         self.name       = name
         self.regPk      = regPk
         self.filename   = filename
@@ -26,52 +25,22 @@ class Region:
             reads region waypoints
         """
         from myconn import Database
+        from db_tables import tblRegion as R, RegionWaypointView as RW
 
         turnpoints = []
 
-        query = """ SELECT
-                        `regDescription` AS `name`,
-                        `regWptFileName` AS `filename`,
-                        `regOpenAirFile` AS `openair`
-                    FROM
-                        `tblRegion`
-                    WHERE
-                        `regPk` = %s
-                    LIMIT 1"""
-
         with Database() as db:
-            t = db.fetchone(query, [region_id])
-        if not t:
-            print('We could not find the region')
-            return None
-        name        = t['name']
-        filename    = t['filename']
-        openair     = t['openair']
-
-        query = """ SELECT
-                        `rwpName`           AS `name`,
-                        `rwpLatDecimal`     AS `lat`,
-                        `rwpLongDecimal`    AS `lon`,
-                        `rwpAltitude`       AS `alt`,
-                        `rwpDescription`    AS `desc`
-                    FROM
-                        `tblRegionWaypoint`
-                    WHERE
-                        `regPk` = %s AND `rwpOld` = 0 """
-
-        with Database() as db:
-            t = db.fetchall(query, [region_id])
-        if not t:
-            print('Region has no Waypoints')
-        else:
-            for tp in t:
-                if      tp['name'][0] == 'D':   type = 'launch'         #brown
-                elif    tp['name'][0] == 'A':   type = 'speed'          #green
-                elif    tp['name'][0] == 'X':   type = 'restricted'     #red
-                else:                           type = 'waypoint'       #blue
-                turnpoint = Turnpoint(tp['lat'], tp['lon'], 400, type, 'circle', 'entry')
-                turnpoint.name        = tp['name']
-                turnpoint.altitude    = tp['alt']
-                turnpoint.description = tp['desc']
+            q = db.session.query(R.regDescription.label('name'),
+                                R.regWptFileName.label('filename'),
+                                R.regOpenAirFile.label('openair')).filter(R.regPk==region_id).first()
+            name, filename, openair = q.name, q.filename, q.openair
+            w = db.session.query(RW).filter(RW.region_id==region_id).all()
+            for tp in w:
+                if      tp.name[0] == 'D':   type = 'launch'         #brown
+                elif    tp.name[0] == 'A':   type = 'speed'          #green
+                elif    tp.name[0] == 'X':   type = 'restricted'     #red
+                else:                        type = 'waypoint'       #blue
+                turnpoint = Turnpoint(radius=400, type=type, shape='circle', how='entry')
+                db.populate_obj(turnpoint, tp)
                 turnpoints.append(turnpoint)
         return cls(region_id, name, filename, openair, turnpoints)

@@ -5,7 +5,7 @@ this is to used in current front end. eventually will be deprecated when we go t
 Stuart Mackintosh - 2019
 """
 
-from task import Task, write_task_json
+from task import Task, write_map_json
 from logger import Logger
 import sys
 import Defines
@@ -26,20 +26,20 @@ def main(args):
         print("number of arguments != 1 and/or task_id not a number")
         exit()
 
-    task = Task.read_task(task_id)
-    print('{} - ID {}'.format(task.task_name, task.tasPk))
+    task = Task.read(task_id)
+    print('{} - ID {}'.format(task.task_name, task.id))
     task.calculate_optimised_task_length()
     task.calculate_task_length()
     task.update_task_distance()
     # delete and recreate and task json file for maps
     try:
-        os.remove(Defines.MAPOBJDIR+str(task.tasPk) + '.task')
+        os.remove(Defines.MAPOBJDIR+str(task.id) + '.task')
     except OSError:
         pass
-    write_task_json(task_id)
+    write_map_json(task_id)
 
-    opt_dist = task.ShortRouteDistance
-    print('task distance:   {}'.format(task.Distance))
+    opt_dist = task.opt_dist
+    print('task distance:   {}'.format(task.distance))
     print('task Opt. dist.: {}'.format(opt_dist))
 
     ''' now restore stdout function '''

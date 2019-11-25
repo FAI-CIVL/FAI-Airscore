@@ -17,6 +17,15 @@ class DateTimeEncoder(json.JSONEncoder):
 
         return json.JSONEncoder.default(self, o)
 
+def km(dist, n=3):
+    '''meters to km, with n as number of decimals'''
+    try:
+        return round(dist/1000, int(n))
+    except ValueError:
+        return None
+    else:
+        return None
+
 def get_int(str):
     try:
         return int(str)
@@ -57,7 +66,7 @@ def time_difference(t1, t2):
 
     return diff
 
-def get_datetime(str, test = 0):
+def get_datetime(str):
     """
         Transform string in datetime.datetime
     """
@@ -66,7 +75,27 @@ def get_datetime(str, test = 0):
     else:
         return str
 
-def epoch_to_date(sec, offset = 0, test = 0):
+def get_date(str):
+    """
+        Transform string in datetime.date
+        Gets first 10 positions in string ('YYYY-mm-dd')
+    """
+    if str is not None:
+        return datetime.strptime((str)[:10], '%Y-%m-%d').date()
+    else:
+        return str
+
+def get_time(str):
+    """
+        Transform string in datetime.time
+        Gets first 19 positions in string ('YYYY-MM-DD hh:mm:ss')
+    """
+    if str is not None:
+        return datetime.strptime((str)[:19], '%Y-%m-%dT%H:%M:%S').time()
+    else:
+        return str
+
+def epoch_to_date(sec, offset = 0):
     """
         Transform string in datetime.datetime
     """
@@ -76,7 +105,7 @@ def epoch_to_date(sec, offset = 0, test = 0):
         print("an error occurred")
         return sec
 
-def epoch_to_datetime(sec, rawtime = 0, offset = 0, test = 0):
+def epoch_to_datetime(sec, rawtime = 0, offset = 0):
     """
         Transform string in datetime.datetime
     """
@@ -92,21 +121,8 @@ def sec_to_time(sec):
     h, m = divmod(m, 60)
     return time(hour=h, minute=m, second=s)
 
-# def sec_to_str(sec, offset = 0, test = 0): #no longer used probably can remove
-#     """
-#         Transform string in datetime.datetime
-#     """
-#     try:
-#         return str(timedelta(seconds=sec+offset*3600))
-#     except TypeError:
-#         print ("an error occurred")
-#     else:
-#         return sec
-
-# class time_diff(timedelta):
-#   """Transfrom DateTme to string for JSON encoding"""
-#   def default(self, t1, t2):
-#       if isinstance(t1, time) and isinstance(t2, time):
-#           return o.isoformat()
-#
-#       return json.JSONEncoder.default(self, o)
+def get_isotime(date, time, offset=None):
+    import datetime as dt
+    from datetime import datetime as dd
+    tz = dt.timedelta(seconds=offset)
+    return dd.combine(get_date(date), sec_to_time(time), tzinfo=dt.timezone(offset=tz)).isoformat()

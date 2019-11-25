@@ -673,7 +673,7 @@ function get_countrycode($link, $id)
     $sql = "SELECT
                 C.natIso3 AS Code
             FROM
-                tblCountryCodes C
+                tblCountryCode C
             WHERE
                 C.natID = $id";
     $result = mysqli_query($link, $sql);
@@ -699,7 +699,7 @@ function get_countrylist($link, $selectname, $selected='')
                     DISTINCT C.natID AS id,
                     C.natIso3 AS name
                 FROM
-                    tblCountryCodes C
+                    tblCountryCode C
                 ORDER BY
                     C.natIso3 ASC";
     $result = mysqli_query($link, $sql);

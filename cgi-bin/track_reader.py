@@ -1,7 +1,7 @@
 """
 Reads a track file
 should be named as such: FAI.igc or LASTNAME_FIRSTNAME.igc
-Use: python3 track_reader.py [tasPk] [file] [pilPk] [opt. test]
+Use: python3 track_reader.py [tasPk] [file] [pilPk]
 
 Antonio Golfari - 2018
 """
@@ -11,10 +11,10 @@ from trackUtils import *
 from track import Track
 from tempfile import TemporaryDirectory
 from shutil import copyfile
-from formula import get_formula_lib
+from formula import Tas_formula, get_formula_lib
 from trackDB import read_formula
 
-import io, os, sys, logger
+import io, os, sys
 from os import path
 from os.path import isfile
 from task import Task
@@ -24,101 +24,89 @@ from logger import Logger
 
 def main(args):
     """Main module"""
-    test = 0
-    result = ''
-    message = ''
-    logfile = 'track_reader.txt'
-
-    """check parameter is good."""
-    if len(args) < 4 or not args[0].isdigit() or not args[3].isdigit():
-        print('error: Use: python3 track_reader.py [tasPk] [tempfile] [filename] [pilPk] [opt. test]')
-        exit()
-
-    """Get tasPk"""
-    task_id = 0 + int(args[0])
-    """Get file"""
-    tempfile = args[1]
-    """Get filename"""
-    filename = args[2]
-    """get pilot"""
-    pil_id = 0 + int(args[3])
-
-    # if len(args) > 4:
-    #     """Test Mode"""
-    #     test = 1
-    #     print('Running in TEST MODE')
-    #     print('track_reader:')
-    #     print('     file: {}'.format(tempfile))
-    #     print('     filename: {}'.format(filename))
-    #     print('     pilot: {}'.format(pil_id))
-    #     print('     task: {}'.format(task_id))
-    # else:
-    #     '''disable output'''
-    #     text_trap = io.StringIO()
-    #     sys.stdout = text_trap
-    #
     '''create logging and disable output'''
     Logger('ON', 'track_reader.txt')
 
-    # with myLogger('log', logfile) as redirector:
-    print('track_reader:')
-    print('     file: {}'.format(tempfile))
-    print('     filename: {}'.format(filename))
-    print('     pilot: {}'.format(pil_id))
-    print('     task: {}'.format(task_id))
+    print("starting..")
+    '''Main module. Takes tasPk, tempfile, filename and pil_id as parameters'''
+
+    out = 0
+    """Get tasPk"""
+    task_id = 0 + int(args[0])
+    """Get file"""
+    tempfile = str(args[1])
+    """Get filename"""
+    filename = str(args[2])
+    """get pilot"""
+    pil_id = 0 + int(args[3])
+
+    '''create logging and disable output'''
+    Logger('ON', 'track_reader.txt')
+
+    print(f'track_reader:')
+    print(f'     file: {tempfile}')
+    print(f'     filename: {filename}')
+    print(f'     pilot: {pil_id}')
+    print(f'     task: {task_id}')
 
     """create a temporary directory"""
     with TemporaryDirectory() as trackdir:
         file = path.join(trackdir, filename)
         copyfile(tempfile, file)
 
-        if get_pil_track(pil_id, task_id, test):
+        if get_pil_track(pil_id, task_id):
             """pilot has already been scored"""
-            result += "Pilot with ID {} has already a valid track for task with ID {} \n".format(pil_id, task_id)
+            print(f"Pilot with ID {pil_id} has already a valid track for task with ID {task_id} \n")
         else:
             """Get Task object"""
-            task = Task.read_task(task_id)
-            if task.ShortRouteDistance == 0:
-                message += 'task not optimised.. optimising'
+            task = Task.read(task_id)
+            if task.opt_dist == 0:
+                print('task not optimised.. optimising')
                 task.calculate_optimised_task_length()
 
-            if task.comPk > 0:
+            if task.comp_id > 0:
                 """import track"""
-                #filename = os.path.basename(file)
-                mytrack = Track.read_file(filename=file, pilot_id=pil_id, test=test)
-
+                mytrack = Track.read_file(filename=file, pilot_id=pil_id)
                 """check result"""
                 if not mytrack:
-                    result += ("Track {} is not a valid track file \n".format(filename))
+                    print(f"Track {filename} is not a valid track file \n")
                 elif not mytrack.date == task.date:
-                    message += ("dates: {}  |  {}  \n".format(task.date, mytrack.date))
-                    result += ("track {} has a different date from task day \n".format(filename))
+                    print(f"track {filename} has a different date from task day \n")
                 else:
                     """pilot is registered and has no valid track yet
                     moving file to correct folder and adding to the list of valid tracks"""
-                    mytrack.tasPk = task.tasPk
-                    mytrack.copy_track_file(test=test)
-                    message += ("pilot {} associated with track {} \n".format(mytrack.pilPk, mytrack.filename))
+                    mytrack.task_id = task.id
+                    mytrack.copy_track_file()
+                    print(f"pilot {mytrack.pilPk} associated with track {mytrack.filename} \n")
                     """adding track to db"""
-                    import_track(mytrack, test)
-                    message += ("track imported to database with ID {}\n".format(mytrack.traPk))
+                    import_track(mytrack)
+                    print(f"track imported to database with ID {mytrack.traPk}\n")
                     """checking track against task"""
-                    formula =  read_formula(task.comPk)
-                    f = get_formula_lib(formula)
-                    verify_track(mytrack, task, f)
-                    message += ("track {} verified with task {}\n".format(mytrack.traPk, mytrack.tasPk))
-                    result += ("track correctly imported and results generated \n")
-                    result += ("traPk={}".format(mytrack.traPk))
+                    formula = Task_formula.read(task_id)
+                    lib = get_formula_lib(formula.type)
+                    verify_track(mytrack, task, lib)
+                    print(f"track {mytrack.traPk} verified with task {mytrack.task_id}\n")
+                    print("track correctly imported and results generated \n")
+                    out = (f"traPk={mytrack.traPk}")
 
             else:
-                result = ("error: task ID {} does NOT belong to any Competition \n".format(tasPk))
-
-    print (message)
+                print(f"error: task ID {tasPk} does NOT belong to any Competition \n")
 
     ''' now restore stdout function '''
-    # sys.stdout = sys.__stdout__
     Logger('OFF')
-    print (result)
+
+    print (f"{out})
 
 if __name__ == "__main__":
+    import sys
+
+    '''check parameter is good'''
+    if not (sys.argv[1]
+            and sys.argv[1].isdigit()
+            and int(sys.argv[1]) > 0
+            and len(sys.argv) > 4):
+        print("number of arguments != 1 and/or task_id not a number")
+        print("usage: track_reader.py [tasPk] [tempfile] [filename] [pilPk]")
+        exit()
+
     main(sys.argv[1:])

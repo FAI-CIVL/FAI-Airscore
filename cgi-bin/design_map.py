@@ -1,7 +1,7 @@
 """
 Map definition
 Creates map from track GeoJSON and Task Definition JSON
-Use: design_map <traPk> <tasPk> <test>
+Use: design_map <traPk> <tasPk>
 
 Martino Boni,
 Stuart Mackintosh - 2019
@@ -185,11 +185,10 @@ def extract_flight_details(flight):
 def dump_flight(track, task):
     # TODO check if file already exists otherwise create and save it
     from flight_result import Flight_result
-    import formula as For
-    formula = read_formula(task.comPk)
 
-    f = For.get_formula_lib(formula)
-    task_result = Flight_result.check_flight(track.flight, task, f.parameters,
+    lib = task.formula.get_lib()
+
+    task_result = Flight_result.check_flight(track.flight, task, lib.parameters,
                                              5)  # check flight against task with min tolerance of 5m
     geojson_file = task_result.to_geojson_result(track, task)
     bbox = get_bbox(track.flight)
@@ -231,7 +230,7 @@ def get_region(region_id):
 
 def main(mode, val, track_id):
     """Main module"""
-    from task import get_task_json
+    from task import get_map_json
     from trackUtils import read_result_file
 #     log_dir = d.LOGDIR
 #     print("log setup")
@@ -249,7 +248,7 @@ def main(mode, val, track_id):
     else:
         '''create the task map for route or tracklog maps'''
         task_id = val
-        wpt_coords, turnpoints, short_route, goal_line, tolerance = get_task_json(task_id)
+        wpt_coords, turnpoints, short_route, goal_line, tolerance = get_map_json(task_id)
 
         if mode == 'tracklog':
             """read task and track objects"""
@@ -257,7 +256,7 @@ def main(mode, val, track_id):
 
             layer['bbox'] = layer['geojson']['bounds']
         elif mode == 'route':
-            task = Task.read_task(task_id)
+            task = Task.read(task_id)
             layer['geojson'] = None
             layer['bbox'] = get_route_bbox(task)
 
@@ -266,7 +265,6 @@ def main(mode, val, track_id):
     #os.chown(map_file, 1000, 1000)
     html_string = map.get_root().render()
 
-    #test for srcdoc iframe source
     print(html_string)
 
 

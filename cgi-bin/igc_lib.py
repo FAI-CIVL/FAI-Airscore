@@ -93,7 +93,7 @@ class Task:
         turnpoints: A list of Turnpoint objects.
         start_time: Raw time (seconds past midnight). The time the race starts.
                     The pilots must start at or after this time.
-        end_time: Raw time (seconds past midnight). The time the race ends.
+        task_deadline: Raw time (seconds past midnight). The time the race ends.
                   The pilots must finish the race at or before this time.
                   No credit is given for distance covered after this time.
     """
@@ -121,7 +121,7 @@ class Task:
 
         start_hours, start_minutes = start_time.split(':')
         start_time = int(start_hours) * 3600 + int(start_minutes) * 60
-        end_time = 23*3600 + 59*60 + 59  # default end_time of 23:59:59
+        task_deadline = 23*3600 + 59*60 + 59  # default task_deadline of 23:59:59
 
         # Create a dictionary of names and a list of longitudes and latitudes
         # as the waypoints co-ordinates are stored separate to turnpoint
@@ -166,13 +166,13 @@ class Task:
 
             turnpoint = Turnpoint(lat, lon, radius, kind)
             turnpoints.append(turnpoint)
-        task = Task(turnpoints, start_time, end_time)
+        task = Task(turnpoints, start_time, task_deadline)
         return task
 
-    def __init__(self, turnpoints, start_time, end_time):
+    def __init__(self, turnpoints, start_time, task_deadline):
         self.turnpoints = turnpoints
         self.start_time = start_time
-        self.end_time = end_time
+        self.task_deadline = task_deadline
 
     def check_flight(self, flight):
         """ Checks a Flight object against the task.
@@ -191,7 +191,7 @@ class Task:
                 # Pilot has arrived in goal (last turnpoint) so we can stop.
                 break
 
-            if self.end_time < fix.rawtime:
+            if self.task_deadline < fix.rawtime:
                 # Task has ended
                 break
 

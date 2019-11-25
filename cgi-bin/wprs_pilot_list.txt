@@ -1,0 +1,80 @@
+﻿Name	NAT	Score	Female	Birthday	Valid FAI licence	Glider	Sponsor	CIVL ID
+Bernardo Medina Sastre	COL	2347	0		1	FLOW PARAGLIDERS Spectra 	 FLYMASTER	2915
+Edinson Alvarez Suarez	COL	2255	0	1984-07-02	1	Ozone Enzo 3		1873
+Adrian Acosta	ARG	2240	0		1	Ozone  ENZO 3	Shauin 	5394
+Henry Alexander Alcazar Rincon	COL	2099	0		1	Enzo 3	Quindio Aventurero	10393
+Juan Andrade	TRI	2021	0	1973-06-08	1	Flow Spectra	Jesus Love You	27561
+Mauricio Orozco	COL	1972	0	1980-02-01	1	Ozone E3	Agua de Mayo	23307
+Andres Escobar	COL	1966	0		1	Ozone Enzo 2	Club Deportivo Base Nube	53339
+Juan Sebastian Carrera Palacios	ECU	1960	0		1	Flow Paragliders XCRacer	C3 Arquitectos, KortelDesignECU	11961
+Oscar Yesid Alvarez Caceres	COL	1959	0		1	Niviuk Evox	Cirrus	33977
+Carlos Andres Hernandez Castañeda	COL	1928	0	1989-08-11	1	Gin Boomerang 11	Camila	30107
+Yemerson Agudelo Peñaranda	COL	1884	0		1	Ozone Z-Alps	YERAP-Quiron IPS	3876
+Cristian Andres Agudelo Escobar	COL	1856	0	1989-08-01	1	Ozone OZONE Enzo3	YERAP-Quiron IPS-Gane Red COLSA-Supergiros-Soy Jumper- imderpradera	21189
+Carlos Fernando Bedoya Sanchez	COL	1715	0		1	Boomerang 11	My Selft	18353
+Pablo Zeballos	ARG	1631	0		1	NIVIUK ARTIK 5	pablo zeballos motos	23617
+Guillermo Velazquez Sierra	COL	1610	0		1	Ozone Enzo 3		2911
+Ricardo Navarro Marquez	VEN	1608	0	1966-12-12	1	Ozone Enzo 3	Mi trabajo	18357
+Shauin Kao	ARG	1467	1	1979-02-10	1	Ozone  Zeno	TerraNova - Husband 	9011
+Nestor Giovanny Valencia Gamboa	COL	1334	0	1990-11-03	1	Gin Gin carrera	IMDER Palmira	46299
+Paolo Bellezze	ARG	1298	0	1980-11-12	1	Niviuk Peak 4	SkyCamp - Flett	3816
+ANDRES SANTIAGO AGUIRRE MERINO	ECU	1295	0	1981-10-08	1	NIVIUK ARTICK 5	INCAÑAN	31652
+Oscar Pacheco	VEN	1257	0		1	ADVANCE IOTA2 size 29	Hermanas Pacheco	23252
+Juan Sebastian Mejia	COL	1229	0	1989-03-04	1	Ozone Enzo 2	Sebaristi1@hotmail.com	64206
+jorge andres contreras andrade	ECU	1229	0		1	Ozone ZENO 	Parapente AZUAIR 	34790
+Juan Sebastian Castro Perez	COL	1215	0		1	GIN Bonanza 2	motonautas	18376
+Julian Andres Bolivar Torres	COL	1198	0	1984-04-05	1	Gin Explorer	Buzzard XC Team	46986
+Lukas De Sanctis Gil	COL	1188	0	1981-12-03	1	Ozone Rush 4	Ninguno	52664
+Miguel Zarate	VEN	1181	0		1	Ozone Delta 2	ZaratParagliders	36576
+Kurt Meyer	GUA	1172	0	1966-11-02	1	Ozone MANTRA 6	ADVLS y La Loren	22902
+Nikolaus Tang-lee	TRI	1078	0		1	Gin Bonanza	my self	47908
+Ariel Augusto Dellafiore	ARG	1075	0		1	BGD Cure	BGD -AspNet- Esc Alas	43439
+Karla Gamba	GUA	1072	1		1	ozone rush 4	ADVLS io	24437
+Yury Felipe Gonzalez Peña	COL	1055	0	1984-03-09	1	niviuk Peek 3	Falco Escuela de Parapente Las Aguila Voladero	33972
+Franklin Ernesto Carrera Chavez	ECU	1054	0	1964-04-08	1	niviuk artik 5	Paravolar	18366
+Bruno Esteban Ullauri Paredes	ECU	1054	0	1975-04-05	1	Zeno 	Viennatone	42922
+Blanca Ester Perdomo Bravo	COL	1038	1		1	Gin Carrera	Club Halcones	13778
+Jonh Fredy Noreña Agudelo	COL	992	0		1	cure		36114
+Elvis Palta	VEN	969	0		1	BGD Cure	Mi Papa - Parapente Popayan	31352
+Antonio L. Mourao	USA	944	0		1	Iota 2	My Self	62683
+Freddy Andres Urrego Hoyos	COL	930	0		1	Gin Boomerang 11	PARAISO DEL VUELO	25901
+Jose Fernando Corrales	COL	899	0		1	Sky-Country Scorpion 4	Alas Colombia 	53446
+Sebastian Guefia Salazar	COL	848	0		1	sigma 8	Buitrera Parapente	46525
+Wilington Arboleda Avila	COL	828	0		1	SUPAIR TASKA	WORLD INSANE ADVENTURES	51767
+Diego Esteban Lopez Rojas	COL	781	0		1	niviuk icepeak	ParapenteMedina	41770
+Cristian Alfonso Chaparro Gil	COL	760	0		1	Gin  Carrera+	Aero club chicamocha , Alcaldia Paramo	10403
+Fernando Soler	VEN	748	0	1990-08-07	1	Bdg Cure	ferchofly90	62674
+Juan Francisco Montañez Sanchez	COL	740	0		1	Gin Bonanza	Galapago Restaurant	31634
+Jaisber Vasco Hincapie	COL	714	0	1985-06-05	1	BGD CURE	Dios  alcaldía santa rosa de osos 	37124
+Daniel Alberto Calle Rivera	COL	706	0		1	Mystic 4		46289
+Mauricio Escobar Perez	COL	697	0	1971-09-04	1	BGD PUNK	FLYTEAM	45783
+Sebastian Pardo Alvarez	COL	692	0		1	Gin Bonanaza2	Diosmeayude,enlaproximalosalcanzo,quedea300delgol	13766
+Juan Sebastian Salinas Flores	ECU	664	0	1986-11-12	1	BGD CURE	Servicios Legales - CVL	50929
+Miguel Andrades	CHI	622	0		1	Bgd Cure	Aventuras del Sarapiqui	11980
+Julio Cesar Benitez Arbelaez	COL	615	0	1979-04-11	1	BGD base	Vane	68934
+MARIANO PADILLA BONILLA	CRI	592	0	1987-10-02	1	Bgd Cure	Molinos de Guadalupe 	99999
+Carlos J. Zarate Agudelo	VEN	551	0	1967-02-12	1	Ozone Delta 3	ZaratParagliders	36577
+Hernan Felipe Uribe Cordoba	COL	537	0		1	Up Meru	Myself	1894
+Juan Carlos Escobar Quiroz	COL	536	0		1	Sky country  Scorpion 4	Alas Colombia - Base nube	51990
+Dasaev Villalobos Montaño	COL	533	0		1	rush 4		50859
+Ricardo Tello Carrión	ECU	531	0		1	UP Traigo XC Race	Maru's Car	50870
+EMMANUEL BECERRA ARAQUE	COL	529	0		1	3seven q	Lina	58871
+Nestor osorio sossa	COL	473	0	1989-06-07	1	gin carrera  size m	EASY PARAPENTE @easyparapente10.   Club Parapente aburra 	38958
+Jose Migliozzi	ARG	456	0		1	up  trango xc3	san andres	23626
+Juan Manuel Zapata	COL	402	0		1	Peek 4	Base Nube	58568
+Isabel Bernal Villa	COL	393	1		1	Ozone Zeno	Parapente Cali	39958
+Diana Zambrano	ECU	391	1	1974-06-04	1	Ozone Ruzz5	CVL	58492
+Patricio Estrella	ECU	388	0		1	UP Trango	SIT.com	12647
+Daniel Castro	COL	357	0		1	UP Summit XC4	GRUENN S.A.S.	46970
+Jorge Luis Alvarez Mancilla	COL	350	0		1	Epsilon 8	FALCO	65100
+Ronald CARRILLO CASTRO	CRI	337	0	1967-05-07	1	Sol Sycross one		99999
+Carlos Alberto Melendres Medina	ECU	326	0		1	UP Trango 	GRUPO VIENNATONE 	42921
+Alberto Rojas Naranjo	CRI	287	0	1977-10-03	1	SKYWALK CAYENNE 5	YO	99999
+Steven Griffith	TRI	281	0		1	Gin Explorer	WASA	58993
+Alejandro Mancheno	ECU	221	0	1978-11-06	1	Niviuk Artik 4	AMV	67936
+Pooran Narine	TRI	191	0		1	Apco vista 2		36569
+Alexander Villa Zapata	COL	87	0		1	waild supeir xalps	Efectuar fx - Oakley - Garmin	14734
+Pablo Herrera Masis	CRI	87	0		1	RUSH 4 OZONE	MY SELF	68812
+Gabriel Eugenio Duran Sierra	COL	72	0		1	Utrurm bl	My Selft	46292
+Garzon Vallejos Mauro Ivan	ECU	0	0		1	BGD Cure	41671.0	33426
+Jeisson Andres Quiroz Mejia	COL	0	0		1	Sky Country Discovery 5	Kaiser	65047

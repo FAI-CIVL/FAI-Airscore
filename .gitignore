@@ -24,6 +24,7 @@ cgi-bin/test*
 cgi-bin/py*
 cgi-bin/.ht*
 cgi-bin/*.igc
+cgi-bin/*.kml
 cgi-bin/*.zip
 cgi-bin/*.xctsk
 cgi-bin/.DS*

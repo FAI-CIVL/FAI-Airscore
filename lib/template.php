@@ -321,7 +321,11 @@ function tpnavigator($link,$file,$row,$title,$active=0)
     {
         $comPk = $row['comPk'];
         # Look for waypoints
-        $query = "SELECT DISTINCT T.regPk FROM tblTask T WHERE T.comPk=$comPk LIMIT 1";
+        $query = "  SELECT DISTINCT
+                        `T`.`regPk`
+                    FROM `tblTask` `T`
+                    WHERE `T`.`comPk` = $comPk
+                    LIMIT 1";
         #echo $query;
         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Comp query failed: ' . mysqli_connect_error());
         if ( mysqli_num_rows($result) > 0 )
@@ -883,16 +887,16 @@ function tpcontent($title='AirScore - Online Scoring Tool', $page='')
             <hr class=\"star-dark mb-5\">
 
     ";
-    if ( get_user()->id !== 0 )
+    if ( isset(get_user()->id) and (get_user()->id !== 0) )
     {
         $user = "Pilot: " . str_replace('\' ', '\'', ucwords(str_replace('\'', '\' ', strtolower(get_user()->name))));
-        $user .= " - id: ".get_user()->id;
+        //$user .= " - id: ".get_user()->id;
     }
     else
     {
         $user = "You are in Guest Mode. Login if you need pilot's tools.";
     }
-    echo "<p class='user'>$user</p>" . PHP_EOL;
+    echo "<p class='user' style='text-align: right'>$user</p>" . PHP_EOL;
     //print_r(get_user());
 
 //  echo 'Logged in as "' . JFactory::getUser()->username . '"<br />';

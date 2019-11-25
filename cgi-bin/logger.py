@@ -33,33 +33,3 @@ def Logger(mode='ON', name='log.txt'):
         sys.stderr.close()
         sys.stdout = sys.__stdout__
         sys.stderr = sys.__stderr__
-
-
-# class myLogger:
-#     def __init__(self, name='root', file='log.txt', level='INFO'):
-#         self.logger     = logging.getLogger(name)
-#         self.logfile    = file
-#         self.name       = self.logger.name
-#         self.level      = getattr(logging, level)
-#         self.path       = d.LOGDIR
-#         self._redirector = contextlib.redirect_stdout(self)
-#
-#
-#     def write(self, msg):
-#         if msg and not msg.isspace():
-#             self.logger.log(self.level, msg)
-#
-#     def flush(self): pass
-#
-#     def __enter__(self):
-#         fh = logging.FileHandler(p.join(self.path, self.logfile), mode='w')
-#         fh.setLevel(logging.INFO)
-#         formatter = logging.Formatter('%(asctime)s  %(levelname)s: %(message)s')
-#         fh.setFormatter(formatter)
-#         self.logger.addHandler(fh)
-#         self._redirector.__enter__()
-#         return self
-#
-#     def __exit__(self, exc_type, exc_value, traceback):
-#         # let contextlib do any exception handling here
-#         self._redirector.__exit__(exc_type, exc_value, traceback)

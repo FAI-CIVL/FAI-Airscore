@@ -61,6 +61,30 @@ if (reqexists('add'))
     }
 }
 
+if (reqexists('compscore'))
+{
+    $out = '';
+    $retv = 0;
+    $command = "python3 " . BINDIR . "create_comp_results.py $comPk";
+    $pid = exec($command, $out, $retv);
+    $ptime = microtime(true);
+    # redirect to avoid Timeout if script takes too long
+    sleep(35);
+    // if ( script_isRunning($pid) )
+    // {
+    //     redirect("safe_process_admin.php?tasPk=$tasPk&comPk=$comPk&pid=$pid&time=$ptime&task=1");
+    // }
+    if (isset($out) and $out > 0) {
+        $refPk = $out;
+        $content .= "Event has been scored. <br /> \n
+                        <a href='/comp_result.php?refPk=$refPk' target='_blank'>Check Generated Results</a> <br>\n
+                        <a href='comp_result_admin.php?comPk=$comPk'>Comp Results Admin</a> <br>\n";
+    }
+    else {
+        $content .= "There was an error scoring Event. <br /> \n";
+    }
+}
+
 $comparr = [];
 $comparr[] = array ('', fb('Date Range'), fb('Name'), fb('Class'), fb('Location'), fb('Director'), fb('External') );
 $count = 1;
@@ -109,14 +133,16 @@ $compadd[] = array(fis('add', 'Create Competition', '', '', '', '', '', ''));
 tpadmin($link,$file,$row);
 
 echo "<form action=\"comp_admin.php\" name=\"compadmin\" method=\"post\">";
-
 echo ftable($comparr, "", array('class="d"', 'class="l"'), '');
-
+echo "<br><hr>";
+echo "<h2>Scoring:</h2>";
+echo "<form action=\"comp_admin.php?comPk=$comPk&tasPk=$tasPk\" name=\"compscore\" method=\"post\"> \n";
+echo "<p class='explanation'>Score Comp will calculate from all tasks scored and published.<br>\n";
+echo fis('compscore', 'Score Event', '');
+echo "</form> \n";
 echo "<br><hr>";
 echo "<h2>Add Competition</h2>";
-
 echo ftable($compadd, "", array('class="d"', 'class="l"'), '');
-
 echo "</form>";
 
 tpfooter($file);

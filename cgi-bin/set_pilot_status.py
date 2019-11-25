@@ -7,8 +7,6 @@ Stuart Mackintosh Antonio Golfari - 2019
 """
 
 from task       import Task
-from formula    import get_formula_lib
-from trackDB    import read_formula
 from myconn     import Database
 from logger     import Logger
 from compUtils  import get_glider, get_offset
@@ -37,7 +35,7 @@ def main(args):
     print('pil id:  {}'.format(pil_id))
     print('status:  {}'.format(status))
 
-    task        = Task.read_task(task_id)
+    task        = Task.read(task_id)
 
     '''standard values'''
     distance    = 0
@@ -52,81 +50,46 @@ def main(args):
     penalty     = 0
     lastalt     = 0
     duration    = 0
-    track_class = task.event_class
+    track_class = task.comp_class
     track_date  = task.date
     glider      = []
 
     '''check what we need to do'''
     if status == 'mindist':
-        formula     = read_formula(task.comPk)
-        distance    = formula['forMinDistance']
+        distance    = task.formula.min_dist
         tp          = 1
-        launch      = task.task_start_time
+        launch      = task.window_open_time
         glider      = get_glider(pil_id)
         stime       = sec_to_time(launch + get_offset(task_id)*3600)
-        trastart    = datetime.combine(track_date, stime)
-        duration    = 1
 
-    '''create fake track entry'''
-    query = """ INSERT INTO `tblTrack`(
+    '''create result entry'''
+    query = """ INSERT INTO `tblTaskResult`(
+                    `tasPk`,
                     `pilPk`,
-                    `traClass`,
                     `traGlider`,
                     `traDHV`,
-                    `traDate`,
-                    `traStart`,
-                    `traDuration`
+                    `tarDistance`,
+                    `tarResultType`,
+                    `tarTurnpoints`
                 )
-                VALUES(%s, %s, %s, %s, %s, %s, %s)"""
-    params = [  pil_id,
-                track_class,
+                VALUES
+                (%s, %s, %s, %s, %s, %s, %s)"""
+
+    params = [  task_id,
+                pil_id,
                 glider['name'] if glider else None,
                 glider['cert'] if glider else None,
-                track_date,
-                trastart if trastart else None,
-                duration]
+                distance,
+                status,
+                tp
+            ]
 
     with Database() as db:
-        track_id = db.execute(query, params)
-
-    if track_id and track_id > 0:
-        '''create result entry'''
-        query = """ INSERT INTO `tblTaskResult`(
-                        `tasPk`,
-                        `traPk`,
-                        `tarDistance`,
-                        `tarSpeed`,
-                        `tarStart`,
-                        `tarGoal`,
-                        `tarResultType`,
-                        `tarSS`,
-                        `tarES`,
-                        `tarTurnpoints`,
-                        `tarLastAltitude`,
-                        `tarLastTime`
-                    )
-                    VALUES
-                    (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
-
-        params = [  task_id,
-                    track_id,
-                    distance,
-                    speed,
-                    start,
-                    goal,
-                    status,
-                    start,
-                    ess,
-                    tp,
-                    lastalt,
-                    lasttime]
-
-        with Database() as db:
-            result_id = db.execute(query, params)
+        result_id = db.execute(query, params)
 
     ''' now restore stdout function '''
     Logger('OFF')
-    if result_id:   print('tarPk={}'.format(result_id))
+    if result_id:   print(f'tarPk={result_id}')
     else:           print('We had an error creating result entry')
 
 if __name__== "__main__":

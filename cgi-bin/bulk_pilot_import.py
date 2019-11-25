@@ -1,104 +1,107 @@
 """
 Reads in a CSV membership list
-Use: python3 bulk_pilot_import.py [csv file name] [opt. test]
+Use: python3 bulk_pilot_import.py [csv file name]
 
 Antonio Golfari - 2018
 """
 
 # Use your utility module.
-from compUtils import *
-import sys, csv
-from pathlib import Path
+from compUtils  import *
+from logger     import Logger
+import csv
+from pathlib    import Path
 
 
-def read_membership(file, test):
+def read_membership(file):
+    """Read CSV File"""
+    from db_tables import PilotView as P
+    from db_tables import tblExtPilot as E
+    from myconn import Database
+    from sqlalchemy import and_, or_
 
-    message = ''
-    """Check if file exists"""
-    my_file = Path(file)
-    if not my_file.is_file():
-        print ("Reading error: {} does not exist".format(file))
-    else:
-        if test == 1:
-            message += ("Reading: {} \n".format(file))
-        """Read CSV File"""
-        with open(file, encoding='utf-8') as csv_file:
-            csv_reader = csv.reader(csv_file, delimiter=',')
+    with open(file, encoding='utf-8') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+
+        with Database() as db:
             for row in csv_reader:
                 pilFAI = row[0]
                 pilFName = row[1]
                 pilLName = row[2]
                 pilSex = row[4]
                 nat = row[3]
-                if test == 1:
-                    message += '-- new line -- \n'
-                    message += ("Pilot {} {}, from {}, sex {}, FAI n. {} \n".format(pilLName, pilFName, nat, pilSex, pilFAI))
 
                 """Get Nat code"""
                 pilNat = get_nat_code(nat)
                 if pilNat is None:
                     """defaults to Italy"""
                     pilNat = 380
-                    message += ("Pilot {} {} has a unrecognized country code, defaulting to ITA \n".format(pilFName, pilLName))                 
+                    print(f"Pilot {pilFName} {pilLName} has a unrecognized country code, defaulting to ITA \n")
 
-                with Database() as db:
-                    """Check if pilot exists in pilots main table"""
-                    query = ("""SELECT 
-                                    pilPK AS ID 
-                                FROM PilotView 
-                                WHERE 
-                                    (pilLastName LIKE '%%{0}%%' AND pilFirstName LIKE '%%{1}%%') 
-                                OR (pilLastName LIKE '%%{0}%%' AND pilFAI = {2}) 
-                                LIMIT 1""".format(pilLName, pilFName, pilFAI))
+                cond1 = f'%{pilLName}%'
+                cond2 = f'%{pilFName}%'
 
-                    try:
-                        """Pilot exists already"""
-                        # print ("Query: {} \n Rows: {} \n".format(query, db.rows(query)))
-                        pil = 0 + db.fetchone(query)['ID']
-                        message += ("pilot {} {} exists in pilots list: id {} \n".format(pilLName, pilFName, pil))
-                    except:
-                        """Check if FAI exists"""
-                        query = ("""SELECT 
-                                        pilPK AS ID, pilLastName AS Name 
-                                    FROM PilotView 
-                                    WHERE pilFAI = '{}' LIMIT 1""".format(pilFAI))
-                        try:
-                            """Pilot exists already"""
-                            row = db.fetchone(query)
-                            message += ("FAI n. {} already associated to pilot {}: id {} \n".format(pilFAI, row['Name'], row['ID']))
-                        except:
-                            """Insert new pilot"""
-                            query = ("""INSERT INTO 
-                                            `tblExtPilot`(`pilFirstName`, `pilLastName`, `pilNat`, `pilSex`, `pilFAI`) 
-                                        VALUES ('{}','{}',{},'{}',{})""".format(pilFName, pilLName, pilNat, pilSex, pilFAI))
-                            if not test == 1:
-                                """Normal Mode"""
-                                db.execute(query)
-                                message += ("PILOT {} {} ADDED \n".format(pilLName, pilFName))
-                            else:
-                                message += ("pilot {} {} doesn't exist so we need to add \n".format(pilLName, pilFName))
-                                message += ('Query: ' + query + ' \n')
-
-        """Print messages"""
-        print(message)
+                """Check if pilot exists in pilots main table"""
+                pil_id  = 0
+                result  = db.session.query(P.pilPk).filter(or_(
+                    and_(P.pilLastName.like(cond1), P.pilFirstName.like(cond2)),
+                    and_(P.pilLastName.like(cond2), P.pilFirstName.like(cond1)),
+                    and_(P.pilLastName.like(cond1), P.pilFAI==pilFAI))).all()
+                if (len(result) == 1):
+                    '''we found the pilot'''
+                    pil_id = result.pop().pilPk
+                elif (len(result) > 1):
+                    '''try to see if we have just one pilot among the fixed database'''
+                    candidate = [x.pilPk for x in result if x.pilPk < 10000]
+                    if len(candidate) == 1: pil_id = candidate.pop().pilPk
+                if not pil_id:
+                    """Check if FAI exists"""
+                    result  = db.session.query(P.pilPk).filter(P.pilFAI==pilFAI).all()
+                    if len(result) == 1: pil_id = result.pop().pilPk
+                if not pil_id:
+                    """Insert new pilot"""
+                    print(f'Pilot does not seem to be in database, adding to external table')
+                    pilot   = E(pilFirstName=pilFName, pilLastName=pilLName, pilNat=pilNat, pilSex=pilSex, pilFAI=pilFAI)
+                    pil_id  = db.session.add(pilot)
+                    db.session.commit()
+                    row.append(0)
+                else:
+                    print(f'Found Pilot {pilFName} {pilLName} with ID {pil_id}')
+                    row.append(pil_id)
 
 
-def main():
+def main(args):
     """Main module"""
-    test = 0
-    """check parameter is good."""
-    if len(sys.argv) > 1:
-        file = sys.argv[1]
-        if len(sys.argv) > 2:
-            print('Running in TEST MODE')
-            test = 1
+    comp_id = int(args[0])
+    my_file = Path(str(args[1]))
 
-        """Read CSV File"""
-        read_membership(file, test)
+    '''create logging and disable output'''
+    Logger('ON', 'bulk_pilots_import.txt')
 
-    else:
-        print('error: no filename found')
+    """Check if file exists"""
+    if not my_file.is_file():
+        print (f"Reading error: {str(args[0])} does not exist")
+        ''' restore stdout function '''
+        Logger('OFF')
+        print(0)
+        exit()
 
+    """Read CSV File"""
+    reader = read_membership(my_file)
+
+    ''' restore stdout function '''
+    Logger('OFF')
+    for p in reader:
+        print(f'{p[1]} - {p[-1]}')
 
 if __name__ == "__main__":
-    main()
+    import sys
+
+    '''check parameter is good'''
+    if not (sys.argv[1]
+
+            and len(sys.argv) == 3):
+        print("number of arguments != 2 and/or task_id not a number")
+        print("Use: python3 bulk_igc_reader.py <taskPk> <csv file>")
+        exit()
+
+    main(sys.argv[1:])

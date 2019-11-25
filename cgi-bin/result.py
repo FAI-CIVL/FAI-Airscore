@@ -5,9 +5,13 @@ contains
     Task_result class
     Comp_result class
 
-Use: from result import Task_result
+Methods:
+    create_result - write result to JSON file and creates DB entry (tblResultFile)
 
-Antonio Golfari & Stuart Mackintosh - 2019
+- AirScore -
+Stuart Mackintosh - Antonio Golfari
+2019
+
 """
 
 from myconn import Database
@@ -19,19 +23,21 @@ class Task_result:
         - in HTML format for AirTribune
     """
 
-    def __init__(self, ref_id = None, comp_id = None, task_id = None, status = None, task = None, rankings = None, info = None, formula = None, stats = None, timestamp = None, results = None, filename = None, test = 0):
-        self.ref_id     = ref_id        #refPk row in database
-        self.status     = status        #status of the result ('provisional', 'final', )
-        self.comp_id    = comp_id       #comPk
-        self.task_id    = task_id       #tasPk
-        self.task       = task          #task route info
-        self.rankings   = rankings      #list of sub rankings
-        self.info       = info          #list of info about the task
-        self.formula    = formula       #task formula parameters
-        self.stats      = stats         #statistics
-        self.timestamp  = timestamp     #creation timestamp
-        self.results    = results       #list of pilots result
-        self.filename   = filename      #json filename
+    def __init__(self, ref_id = None, comp_id = None, task_id = None, status = None, task = None, rankings = None, info = None, formula = None, stats = None, results = None, filename = None):
+        self.ref_id     = ref_id        # refPk row in database
+        self.status     = status        # status of the result ('provisional', 'final', )
+        self.comp_id    = comp_id       # comPk
+        self.task_id    = task_id       # tasPk
+        self.task       = task          # task route info
+        self.rankings   = rankings      # list of sub rankings
+        self.info       = info          # list of info about the task
+        self.formula    = formula       # task formula parameters
+        self.stats      = stats         # statistics
+        self.results    = results       # list of pilots result
+        self.filename   = filename      # json filename
+
+        from time import time
+        self.timestamp  = int(time())   #timestamp of generation
 
     def __str__(self):
         out = ''
@@ -45,70 +51,7 @@ class Task_result:
             out += '{}  {} km  {}  {} \n'.format(line['name'], round(line['distance']/1000, 2), line['ES_time'], (round(line['score'], 0) if line['score'] else 0))
         return out
 
-    @classmethod
-    def read_db(cls, task_id, test = 0):
-        """
-            reads task result
-        """
-        import time
-        from datetime import datetime
-        from pprint import pprint
-        import Defines as d
-
-        info = dict()
-        task = dict()
-        stats = dict()
-        formula = dict()
-        rank = dict()
-
-        '''read class rankings'''
-        rank = read_rankings(task_id, test)
-
-        '''read task info, formula and stats'''
-        comp_id, task_code, info, formula, stats = read_task(task_id, test)
-        if comp_id is None:
-            print('task is not in database or not in a valid competition')
-            return
-
-        ts = int(time.time())
-        dt = datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S')
-        filename = d.JSONDIR + '_'.join([task_code,dt]) + '.json'
-
-        '''read task route'''
-        task = read_task_route(task_id, test)
-        if task is None:
-            print('Task route does not exist')
-            return
-
-        if test:
-            pprint(info)
-            pprint(task)
-            pprint(formula)
-            pprint(stats)
-            print (ts)
-            print(dt)
-            print(filename)
-
-        '''read pilots result'''
-        results = read_task_result(task_id, test = 0)
-        if results is None:
-            print('Task has no results yet')
-            return
-
-        result = cls(   comp_id     = comp_id,
-                        task_id     = task_id,
-                        task        = task,
-                        rankings    = rank,
-                        formula     = formula,
-                        stats       = stats,
-                        results     = results,
-                        info        = info,
-                        timestamp   = ts,
-                        filename    = filename
-                    )
-        return result
-
-    def to_json(self, filename = None, status = None, test = 0):
+    def to_json(self, filename = None, status = None):
         """
         creates the JSON file of the result
         """
@@ -116,10 +59,8 @@ class Task_result:
         import simplejson as json
         from calcUtils import DateTimeEncoder
 
-        if filename:
-            self.filename = filename
-
-        self.status = status
+        if filename:    self.filename = filename
+        if status:      self.status   = status
 
         result =    {   'data':     {'timestamp':self.timestamp, 'status':self.status},
                         'info':     self.info,
@@ -135,13 +76,13 @@ class Task_result:
         os.chown(self.filename, 1000, 1000)
         return self.filename
 
-    def to_db(self, test = 0):
+    def to_db(self):
         """
         insert the result into database
         """
 
         '''store timestamp in local time'''
-        timestamp = self.timestamp + self.info['time_offset']*3600
+        timestamp = int(self.timestamp + self.info['time_offset'])
 
         query = """
                     INSERT INTO `tblResultFile`(
@@ -151,200 +92,102 @@ class Task_result:
                         `refJSON`,
                         `refStatus`
                     )
-                    VALUES('{}', '{}', '{}', '{}', '{}')
-                """.format(self.comp_id, self.task_id, timestamp, self.filename, self.status)
-
-        if test:
-            print ('Insert query:')
-            print(query)
-        else:
-            with Database() as db:
-                self.ref_id = db.execute(query)
-        return self.ref_id
-
-class Comp_result:
-    """
-        creates Task Result sheets
-        - in JSON format
-        - in HTML format for AirTribune
-    """
-
-    def __init__(self, comPk = None, date = None, test = 0):
-        self.comPk = None
-        self.date  = None
-
-    @classmethod
-    def read_db(cls, comPk, date = None, test = 0):
-        """
-            reads comp results
-        """
-
-
-def read_rankings(task_id, test = 0):
-    '''reads sub rankings list for the task and creates a dictionary'''
-
-    rank = dict()
-    query = """ SELECT
-                    R.`ranName` AS rank,
-                    CCT.`cerName` AS cert
-                FROM
-                    `tblClasCertRank` CC
-                JOIN `TaskView` T USING(`claPk`)
-                JOIN `tblRanking` R USING(`ranPk`)
-                JOIN `tblCertification` CCT ON CCT.`cerPk` <= CC.`cerPk` AND CCT.`comClass` = R.`comClass`
-                WHERE
-                    T.`tasPk` = %s AND CC.`cerPk` > 0
-            """
-    if test:
-        print('Rankings:')
-        print('Query:')
-        print(query)
-
-    with Database() as db:
-        t = db.fetchall(query, [task_id])
-    if not t:
-        print('Task does not have rankings')
-        #rank = {'Open Class':[]}
-    else:
-        for l in t:
-            if l['rank'] in rank:
-                rank[l['rank']].append(l['cert'])
-            else:
-                rank[l['rank']] = [l['cert']]
-
-        '''add female and team choices'''
-        query = """ SELECT
-                        claFem      AS female,
-                        claTeam     AS team
-                    FROM
-                        tblClassification
-                        JOIN TaskView USING (claPk)
-                    WHERE
-                        tasPk = %s
-                    LIMIT 1
+                    VALUES(%s, %s, %s, %s, %s)
                 """
+        params = [self.comp_id, self.task_id, timestamp, self.filename, self.status]
 
         with Database() as db:
-            t = db.fetchone(query, [task_id])
-        if t:
-            rank['Female'] = t['female']
-            rank['Team'] = t['team']
+            self.ref_id = db.execute(query, params)
+        return self.ref_id
 
-    if test:
-        print('rankings list:')
-        pprint(rank)
-    return rank
+    @staticmethod
+    def create_result(task, results, status=None):
+        ''' create task results json file from task object and results list
+            inputs:
+                - task:         OBJ     - Task Object
+                - results:      LIST    - Flight_result Objects
+                - status:       STR     - 'provisional', 'official' ...
+        '''
+        from    datetime import datetime
+        from    pprint   import pprint as pp
+        import  Defines  as d
 
-def read_task(task_id, test = 0):
-    ''' read task from database, and returns:
-            comp_id
-            info        array of task info
-            formula
-            stats
-    '''
+        comp_id         = task.comp_id
+        task_id         = task.id
 
-    query = """ SELECT
-                    T.`comPk`                       AS comp_id,
-                    T.`comName`                     AS comp_name,
-                    T.`comClass`                    AS comp_class,
-                    DATE_FORMAT(T.`tasDate`, '%%Y-%%m-%%d') AS task_date,
-                    T.`tasName`                     AS task_name,
-                    T.`comTimeOffset`               AS time_offset,
-                    T.`tasComment`                  AS task_comment,
-                    DATE_FORMAT(T.`tasTaskStart`, '%%T')   AS window_open_time,
-                    DATE_FORMAT(T.`tasFinishTime`, '%%T')  AS task_deadline,
-                    DATE_FORMAT(T.`tasLaunchClose`, '%%T') AS window_close_time,
-                    T.`tasCheckLaunch`              AS check_launch,
-                    DATE_FORMAT(T.`tasStartTime`, '%%T')   AS SS_time,
-                    DATE_FORMAT(T.`tasStartCloseTime`, '%%T') AS SS_close_time,
-                    T.`tasSSInterval`               AS SS_interval,
-                    DATE_FORMAT(T.`tasLastStartTime`, '%%T') AS last_start_time,
-                    T.`tasTaskType`                 AS task_type,
-                    T.`tasDistance`                 AS task_distance,
-                    T.`tasShortRouteDistance`       AS task_opt_dist,
-                    T.`tasSSDistance`               AS SS_distance,
-                    T.`forName`                     AS formula_name,
-                    T.`forDiffDist`                 AS diff_distance,
-                    T.`forGoalSSpenalty`            AS no_goal_penalty,
-                    T.`forStoppedGlideBonus`        AS glide_bonus,
-                    T.`forStoppedElapsedCalc`       AS stopped_time_calc,
-                    T.`forNomGoal`                  AS nominal_goal,
-                    T.`forMinDistance`              AS min_dist,
-                    T.`forNomDistance`              AS nominal_dist,
-                    T.`forNomTime`                  AS nominal_time,
-                    T.`forNomLaunch`                AS nominal_launch,
-                    T.`forScorebackTime`            AS score_back_time,
-                    T.`tasDeparture`                AS departure,
-                    T.`tasArrival`                  AS arrival,
-                    T.`tasHeightBonus`              AS height_bonus,
-                    T.`tasMargin`                   AS tolerance,
-                    DATE_FORMAT(T.`tasStoppedTime`, '%%T') AS task_stopped_time,
-                    TT.`minTime`                    AS fastest_time,
-                    TT.`firstStart`                 AS first_dep_time,
-                    TT.`firstESS`                   AS first_arr_time,
-                    TT.`maxDist`                    AS max_distance,
-                    T.`tasResultsType`              AS result_type,
-                    TT.`TotalDistance`              AS tot_dist_flown,
-                    TT.`TotDistOverMin`             AS tot_dist_over_min,
-                    T.`tasQuality`                  AS day_quality,
-                    T.`tasDistQuality`              AS dist_validity,
-                    T.`tasTimeQuality`              AS time_validity,
-                    T.`tasLaunchQuality`            AS launch_validity,
-                    T.`tasStopQuality`              AS stop_validity,
-                    T.`tasAvailDistPoints`          AS avail_dist_points,
-                    T.`tasAvailLeadPoints`          AS avail_lead_points,
-                    T.`tasAvailTimePoints`          AS avail_time_points,
-                    T.`tasAvailArrPoints`           AS avail_arr_points,
-                    T.`tasLaunchValid`,
-                    T.`tasPilotsLaunched`           AS pilots_flying,
-                    TT.`TotalPilots`                AS pilots_present,
-                    TT.`TotalESS`                   AS pilots_es,
-                    T.`tasPilotsLO`                 AS pilots_lo,
-                    TT.`TotalGoal`                  AS pilots_goal,
-                    T.`maxScore`                    AS max_score,
-                    T.`tasGoalAlt`                  AS goal_altitude,
-                    T.`tasCode`,
-                    TT.`LCmin`                      AS min_lead_coeff
-                FROM
-                    `TaskView` T
-                    LEFT OUTER JOIN `TaskTotalsView` TT using(`tasPk`)
-                WHERE
-                    T.`tasPk` = %s
-                LIMIT 1
-            """
+        result          = Task_result(comp_id=comp_id, task_id=task_id, status=status)
 
-    if test:
-        print('read task:')
-        print('Query:')
-        print(query)
+        dt              = datetime.fromtimestamp(result.timestamp).strftime('%Y%m%d_%H%M%S')
+        result.filename = d.JSONDIR + '_'.join([task.task_code,dt]) + '.json'
 
-    with Database() as db:
-        t = db.fetchone(query, [task_id])
-    if t is None:
-        print('Task does not exist')
-        return
+        '''create result object elements from task, formula and results objects'''
+        result.get_task_info(task)
+        result.get_formula(task.formula)
+        result.get_task_stats(task.stats)
+        result.get_task_route(task)
+        result.get_task_pilots(results)
+        result.rankings = read_rankings(task_id)
 
-    '''create info, formula and stats dict from query result'''
-    info_data = [       'comp_name',
+        '''create json file'''
+        result.to_json()
+
+        ref_id = result.to_db() if not None else 0
+        return ref_id
+
+    def get_task_route(self, task):
+        '''gets route from task object and creates a list of dict'''
+
+        route = task.turnpoints
+        dist =  task.partial_distance
+        task_route = []
+        attr_list =[    'name',
+                        'description',
+                        'how',
+                        'radius',
+                        'shape',
+                        'type',
+                        'lat',
+                        'lon',
+                        'altitude'
+                        ]
+        for idx, tp in enumerate(route):
+            wpt = {x:getattr(tp, x) for x in attr_list}
+            wpt['cumulative_dist'] = dist[idx]
+            task_route.append(wpt)
+
+        self.task = task_route
+
+    def get_task_info(self, task):
+        '''gets info from task object and creates a dict'''
+
+        attr_list =[    'comp_name',
+                        'comp_site',
                         'comp_class',
-                        'task_date',
+                        'date',
                         'task_name',
                         'time_offset',
-                        'task_comment',
+                        'comment',
                         'window_open_time',
                         'task_deadline',
                         'window_close_time',
                         'check_launch',
-                        'SS_time',
-                        'SS_close_time',
+                        'start_time',
+                        'start_close_time',
                         'SS_interval',
                         'last_start_time',
                         'task_type',
-                        'task_distance',
-                        'task_opt_dist',
-                        'SS_distance']
-    formula_data = [    'formula_name',
-                        'diff_distance',
+                        'distance',
+                        'opt_dist',
+                        'SS_distance',
+                        'stopped_time',
+                        'goal_altitude']
+
+        self.info = {x:getattr(task, x) for x in attr_list}
+
+    def get_formula(self, formula):
+        '''gets info from task object and creates a dict'''
+
+        attr_list = [   'formula_name',
                         'no_goal_penalty',
                         'glide_bonus',
                         'stopped_time_calc',
@@ -356,14 +199,19 @@ def read_task(task_id, test = 0):
                         'score_back_time',
                         'departure',
                         'arrival',
-                        'height_bonus',
+                        'arr_alt_bonus',
                         'tolerance']
-    stats_data = [      'task_stopped_time',
-                        'fastest_time',
-                        'first_dep_time',
-                        'first_arr_time',
+
+        self.formula = {x:getattr(formula, x) for x in attr_list}
+
+    def get_task_stats(self, stats):
+        '''gets info from task object and creates a dict'''
+
+        attr_list = [   'fastest',
+                        'fastest_in_goal',
+                        'min_dept_time',
+                        'min_ess_time',
                         'max_distance',
-                        'result_type',
                         'tot_dist_flown',
                         'tot_dist_over_min',
                         'day_quality',
@@ -372,102 +220,384 @@ def read_task(task_id, test = 0):
                         'launch_validity',
                         'stop_validity',
                         'avail_dist_points',
-                        'avail_lead_points',
+                        'avail_dep_points',
                         'avail_time_points',
                         'avail_arr_points',
-                        'pilots_flying',
+                        'pilots_launched',
                         'pilots_present',
-                        'pilots_es',
-                        'pilots_lo',
+                        'pilots_ess',
+                        'pilots_landed',
                         'pilots_goal',
                         'max_score',
-                        'goal_altitude',
                         'min_lead_coeff']
-    comp_id = t['comp_id']
-    task_code = t['tasCode']
-    info = {x:t[x] for x in info_data}
-    formula = {x:t[x] for x in formula_data}
-    stats = {x:t[x] for x in stats_data}
 
-    return comp_id, task_code, info, formula, stats
+        self.stats = {x:stats[x] for x in attr_list}
 
-def read_task_route(task_id, test = 0):
-    '''gets task route from database and creates a dict'''
+    def get_task_pilots(self, results):
+        '''gets pilots results from results list'''
 
-    query = """
-            SELECT
-                `TW`.`tawNumber` 		AS `number`,
-                `W`.`rwpName`			AS `ID`,
-                `W`.`rwpDescription`	AS `description`,
-                `TW`.`tawTime`			AS `time`,
-                `TW`.`tawType`			AS `type`,
-                `TW`.`tawHow`			AS `how`,
-                `TW`.`tawShape`			AS `shape`,
-                `TW`.`tawAngle`			AS `angle`,
-                `TW`.`tawRadius`		AS `radius`,
-                `TW`.`ssrCumulativeDist` AS `cumulative_dist`
-            FROM
-                `tblTaskWaypoint` `TW`
-                JOIN `tblRegionWaypoint` `W` USING(`rwpPk`)
-            WHERE
-                `tasPk` = {}
-            """.format(task_id)
-    if test:
-        print('read task route:')
-        print('Query:')
-        print(query)
+        list = []
+
+        attr_list = [   'track_id',
+                        'pil_id',
+                        'name',
+                        'sponsor',
+                        'nat',
+                        'sex',
+                        'glider',
+                        'class',
+                        'distance',
+                        'speed',
+                        'real_start_time',
+                        'goal_time',
+                        'result',
+                        'SS_time',
+                        'ES_time',
+                        'turnpoints_made',
+                        'dist_points',
+                        'time_points',
+                        'dep_points',
+                        'arr_points',
+                        'score',
+                        'penalty',
+                        'comment',
+                        'lead_coeff',
+                        'ESS_altitude',
+                        'goal_altitude',
+                        'last_altitude',
+                        'max_altitude',
+                        'first_time',
+                        'last_time',
+                        'landing_altitude',
+                        'landing_time',
+                        'track_file']
+
+        for pil in results:
+            res = {x:pil[x] for x in attr_list}
+            res['name'] = res['name'].title()
+            res['glider'] = res['glider'].title()
+            res['track_file'] = None if not res['track_file'] else res['track_file'].split('/')[-1]
+            list.append(res)
+
+        self.results = list
+
+
+class Comp_result(object):
+    """
+        creates Task Result sheets
+        - in JSON format
+        - in HTML format for AirTribune
+    """
+
+    def __init__(self, comp_id, status = None, tasks = None, stats = None, results = None, rankings = None):
+        self.comp_id    = comp_id
+        self.status     = status            # str:  status of the result ('provisional', 'final', )
+        self.tasks      = tasks             # list: comp tasks info
+        self.rankings   = rankings          # dict: sub rankings
+        self.stats      = stats             # dict: comp statistics
+        self.results    = results           # list: pilots results
+
+        from    time     import time
+        from    datetime import datetime
+        import  Defines  as d
+
+        self.info, self.formula = self.get_info()   # dict: info about the comp
+        self.timestamp          = int(time())       # timestamp of generation
+        dt                      = datetime.fromtimestamp(self.timestamp).strftime('%Y%m%d_%H%M%S')
+        self.filename           = d.JSONDIR + '_'.join([self.info['comp_code'],dt]) + '.json'
+
+    def get_info(self):
+        '''gets comp info from database'''
+        from db_tables import CompResultView as C
+        with Database() as db:
+            res = db.as_dict(db.session.query(C).get(self.comp_id))
+
+        info =      {x:res[x] for x in ['comp_id',
+                                        'comp_name',
+                                        'comp_site',
+                                        'date_from',
+                                        'date_to',
+                                        'MD_name',
+                                        'contact',
+                                        'sanction',
+                                        'type',
+                                        'comp_code',
+                                        'restricted',
+                                        'time_offset',
+                                        'comp_class',
+                                        'website']}
+
+        formula =   {x:res[x] for x in ['formula',
+                                        'formula_class',
+                                        'overall_validity',
+                                        'validity_param',
+                                        'team_size',
+                                        'team_scoring',
+                                        'team_over']}
+
+        return info, formula
+
+    @classmethod
+    def create_from_json(cls, comp_id, status=None):
+        """
+            reads task result json files and create comp result object
+            inputs:
+                - comp_id:      INT - comPk comp database ID
+                - status        STR - 'provisional', 'official' ...
+        """
+        from db_tables import tblResultFile as R
+        from sqlalchemy import and_, or_
+        from pprint import pprint as pp
+        import json
+
+        '''PARAMETER: decimal positions'''
+        d = 0       # should be a formula parameter, or a ForComp parameter?
+
+        with Database() as db:
+            '''getting active json files list'''
+            files = db.session.query(R.tasPk.laber('task_id'),
+                                    R.refJSON.label('file')).filter(and_(
+                                    R.comPk==comp_id, R.tasPk.isnot(None), R.refVisible==1
+                                    )).all()
+        if not files:
+            return None
+
+        '''create result object'''
+        comp_result = cls(comp_id=comp_id, status=status)
+
+        val     = comp_result.formula['overall_validity']           # ftv, round, all
+        param   = comp_result.formula['validity_param']             # ftv param, dropped task param
+        if val == 'ftv':
+            ftv_type        = comp_result.formula['formula_class']  # pwc, fai
+            # avail_validity  = 0                                     # total ftv validity
+
+        '''inzialize obj attributes'''
+        tasks       = []
+        results     = get_pilots(comp_id)
+        stats       = {'tot_dist_flown':0.0, 'tot_flights':0, 'valid_tasks':len(files),
+                            'tot_pilots':len(results)}
+        rankings    = {}
+
+        tasks_list  = ['task_name', 'date',
+                        'opt_dist', 'day_quality', 'max_score', 'pilots_goal']
+
+        for idx, t in enumerate(files):
+            with open(t.file, 'r') as f:
+                '''read task json file'''
+                data = json.load(f)
+
+                '''create task code'''
+                code = ('T'+str(idx+1))
+
+                '''get task info'''
+                task = {'code':code, 'id':t.task_id}
+                i = dict(data['info'], **data['stats'])
+                task.update({x:i[x] for x in tasks_list})
+                if val == 'ftv':
+                    task['ftv_validity'] = (  round(task['max_score'], d) if ftv_type == 'pwc'
+                                         else round(task['day_quality']*1000, d) )
+                    # avail_validity       += task['ftv_validity']
+                tasks.append(task)
+
+                '''add task stats to overall'''
+                stats['tot_dist_flown'] += float(i['tot_dist_flown'])
+                stats['tot_flights']    += int(i['pilots_launched'])
+
+                ''' get rankings (just once)'''
+                if not rankings: rankings.update(data['rankings'])
+
+                '''get pilots result'''
+                task_results = {}
+                for t in data['results']:
+                    task_results.setdefault(t['pil_id'], {}).update({code:t['score']})
+                for p in results:
+                    s = round(task_results.get(p['pil_id'], {})[code], d)
+                    r = task['ftv_validity'] if val == 'ftv' else 1000
+                    if r > 0:   #sanity
+                        perf = round(s / r, d+3)
+                        p['results'].update({code:{'pre':s, 'perf':perf, 'score':s}})
+                    else:
+                        p['results'].update({code:{'pre':s, 'perf':0, 'score':0}})
+
+        '''calculate final score'''
+        results = get_final_scores(results, tasks, comp_result.formula, d)
+        stats['winner_score'] = max([t['score'] for t in results])
+
+        comp_result.tasks       = tasks
+        comp_result.stats       = stats
+        comp_result.rankings    = rankings
+        comp_result.results     = results
+
+        '''create json file'''
+        comp_result.to_json()
+
+        ref_id = comp_result.to_db() if not None else 0
+        return ref_id
+
+    def to_json(self, filename = None, status = None):
+        """
+        creates the JSON file of comp result
+        """
+        import os
+        import simplejson as json
+        from calcUtils import DateTimeEncoder
+
+        if filename:    self.filename = filename
+        if status:      self.status   = status
+
+        result =    {   'data':     {'timestamp':self.timestamp, 'status':self.status},
+                        'info':     self.info,
+                        'rankings': self.rankings,
+                        'tasks':    [t for t in self.tasks],
+                        'results':  [res for res in self.results],
+                        'formula':  self.formula,
+                        'stats':    self.stats
+                    }
+
+        with open(self.filename, 'w') as f:
+            json.dump(result, f)
+        os.chown(self.filename, 1000, 1000)
+        return self.filename
+
+    def to_db(self):
+        """
+        insert the result into database
+        """
+
+        '''store timestamp in local time'''
+        from db_tables import tblResultFile as R
+        timestamp = int(self.timestamp + self.info['time_offset'])
+
+        with Database() as db:
+            result = R(comPk=self.comp_id, refTimestamp=timestamp, refJSON=self.filename, refStatus=self.status)
+            ref_id = db.session.add(result)
+            db.session.commit()
+        return self.ref_id
+
+def get_pilots(comp_id):
+    '''gets registered pilots list from database'''
+    from db_tables import RegisteredPilotView as R
 
     with Database() as db:
-        # get the task details.
-        task = db.fetchall(query)
+        q       = db.session.query(R).filter(R.comp_id==comp_id)
+        pilots  = db.as_dict(q.all())
 
-    return task
+    for p in pilots:
+        p['name']     = p['name'].title()
+        p['glider']   = p['glider'].title()
+        p['results']  = {}    # empty dict for scores
 
-def read_task_result(task_id, test = 0):
-    '''gets pilots result from database'''
-    query = """ SELECT
-                    `traPk`             AS `track_id`,
-                    `pilName`			AS `name`,
-                    `pilSex`            AS `sex`,
-                    `pilNationCode`		AS `nat`,
-                    `traGlider`			AS `glider`,
-                    `traDHV`            AS `class`,
-                    `pilSponsor`		AS `sponsor`,
-                    `tarDistance`		AS `distance`,
-                    `tarSpeed`			AS `speed`,
-                    `tarStart`			AS `real_SS_time`,
-                    `tarSS`				AS `SS_time`,
-                    `tarES`				AS `ES_time`,
-                    `tarGoal`			AS `goal_time`,
-                    `tarResultType`		AS `type`,
-                    `tarTurnpoints`		AS `n_turnpoints`,
-                    `tarPenalty`		AS `penalty`,
-                    `tarComment`		AS `comment`,
-                    `tarPlace`			AS `rank`,
-                    `tarSpeedScore`		AS `speed_points`,
-                    `tarDistanceScore`	AS `dist_points`,
-                    `tarArrivalScore`	AS `arr_points`,
-                    `tarDepartureScore`	AS `dep_points`,
-                    `tarScore`			AS `score`,
-                    `tarLastAltitude`	AS `altitude`,
-                    `tarLastTime`		AS `last_time`,
-                    `tarLeadingCoeff`   AS `lead_coeff`
-                FROM
-                    `ResultView`
-                WHERE
-                    `tasPk` = %s
-                ORDER BY
-                    `tarScore` DESC,
-                    `pilName`
-            """
+    return pilots
 
-    if test:
-        print('read results:')
-        print('Query:')
-        print(query)
+
+def read_rankings(task_id):
+    '''reads sub rankings list for the task and creates a dictionary'''
+    from db_tables import tblClasCertRank as CC, tblCompetition as C, tblTask as T, tblRanking as R, tblCertification as CCT, tblClassification as CT
+    from sqlalchemy.orm import joinedload
+    from sqlalchemy import and_, or_
+
+    rank = dict()
 
     with Database() as db:
-        # get the task details.
-        results = db.fetchall(query, [task_id])
+        '''get rankings definitions'''
+        class_id    = db.session.query(C.claPk
+                                    ).join(T, T.comPk==C.comPk).filter(T.tasPk==task_id).scalar()
+        q           = db.session.query(R.ranName.label('rank'), CCT.cerName.label('cert'), CT.claFem.label('female'), CT.claTeam.label('team')
+                                    ).select_from(R).join(CC, R.ranPk==CC.ranPk).join(CCT, and_(CCT.cerPk <= CC.cerPk, CCT.comClass == R.comClass)
+                                    ).join(CT, CT.claPk==CC.claPk).filter(and_(CC.cerPk>0, CC.claPk==class_id))
+        result      = q.all()
+    try:
+        for l in result:
+            if l.rank in rank:
+                rank[l.rank].append(l.cert)
+            else:
+                rank[l.rank] = [l.cert]
+        rank['female']  = result.pop().female
+        rank['team']    = result.pop().team
+    except:
+        print(f'Ranking Query Error: list is empty')
+
+    return rank
+
+def get_final_scores(results, tasks, formula, d = 0):
+    '''calculate final scores depending on overall validity:
+        - all:      sum of all tasks results
+        - round:    task discard every [param] tasks
+        - ftv:      calculate task scores and total score based on FTV [param]
+
+        input:
+            results:    pilots list
+            tasks:      tasks list
+            formula:    comp formula dict
+            d:          decimals on single tasks score, default 0
+    '''
+    from operator import itemgetter
+
+    val     = formula['overall_validity']
+    param   = formula['validity_param']
+
+    if      val == 'ftv':   avail_validity  = sum(t['ftv_validity'] for t in tasks) * param
+    elif    val == 'round': dropped         = int(len(tasks) / param)
+
+    for pil in results:
+        pil['score'] = 0
+
+        ''' if we score all tasks, or tasks are not enough to ha discards,
+            or event has just one valid task regardless method,
+            we can simply sum all score values
+        '''
+        if not( (val == 'all')
+                or (val == 'round' and dropped == 0)
+                or (len(tasks) < 2) ):
+            '''create a ordered list of results, perf desc'''
+            sorted_results = sorted(pil['results'].items(), key=lambda x: (x[1]['perf'], x[1]['pre']), reverse=True)
+
+            if (val == 'round' and len(tasks) >= param):
+                '''we need to order by score desc and sum only the ones we need'''
+                for i in range(dropped):
+                    id = sorted_results.pop()[0]                # getting id of worst result task
+                    pil['results'][id]['score'] = 0
+
+            elif val == 'ftv' and len(tasks) > 1:
+                '''ftv calculation'''
+                pval = avail_validity
+                for id, s in sorted_results:
+                    if not(pval > 0):
+                        pil['results'][id]['score'] = 0
+                    else:
+                        '''get ftv_validity of corresponding task'''
+                        tval = [t['ftv_validity'] for t in tasks if t['code'] == id].pop()
+                        if pval > tval:
+                            '''we can use the whole score'''
+                            pval -= tval
+                        else:
+                            '''we need to calculate proportion'''
+                            pil['results'][id]['score'] = round(pil['results'][id]['score']*(pval/tval), d)
+                            pval = 0
+
+        '''calculates final pilot score'''
+        pil['score'] = sum(pil['results'][x]['score'] for x in pil['results'])
 
     return results
+
+def read_task_result(task_id):
+    '''gets pilots result from database'''
+    from db_tables import TaskResultView as R
+
+    with Database() as db:
+        # get results list.
+        q = db.session.query(R).filter(R.task_id==task_id).order_by(R.score.desc(), R.name)
+        results = db.as_dict(q.all())       #we should change code to acceps sqlalchemy results
+
+    return results
+
+def get_task_json(task_id):
+    '''returns active json result file'''
+    from db_tables import tblResultFile as R
+    from sqlalchemy import and_, or_
+
+    with Database() as db:
+        file = db.session.query(R.refJSON.label('file')).filter(and_(
+                                R.tasPk==task_id, R.refVisible==1
+                                )).scalar()
+    return file

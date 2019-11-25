@@ -144,29 +144,6 @@ if (reqexists('airdel'))
     }
 }
 
-// if (reqexists('trackcopy'))
-// {
-//     $copyfrom = reqival('copyfrom');
-//     if ($copyfrom > 0)
-//     {
-//         $query = "select comEntryRestrict from tblCompetition where comPk=$comPk";
-//         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Failed to query tbl registration: ' . mysqli_connect_error());
-//         $reged = mysqli_result($result,0,0);
-//         echo "Copying from: $copyfrom<br>";
-//         if ($reged == "registered")
-//         {
-//             $query = "insert into tblComTaskTrack (comPk, tasPk, traPk) select $comPk, $tasPk, CT.traPk from tblComTaskTrack CT, tblTrack T, tblRegistration R where CT.tasPk=$copyfrom and T.traPk=CT.traPk and T.pilPk=R.pilPk and R.comPk=$comPk";
-//         }
-//         else
-//         {
-//             $query = "insert into tblComTaskTrack (comPk, tasPk, traPk) select $comPk, $tasPk, CT.traPk from tblComTaskTrack CT where CT.tasPk=$copyfrom";
-//         }
-//         $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Failed to copy task tracks: ' . mysqli_connect_error());
-//         # task_up
-//         exec(BINDIR . "task_up.pl $tasPk", $out, $retv);
-//     }
-// }
-
 if (reqexists('copytask'))
 {
     check_admin('admin',$usePk,$comPk);
@@ -307,11 +284,15 @@ if (reqexists('updatetask'))
         if (strlen($TaskStopped) < 10 && strlen($TaskStopped) > 2)
         {
             $TaskStopped = $Date . ' ' . $TaskStopped;
+            $query = "UPDATE `tblTask` SET `tasStoppedTime`='$TaskStopped' WHERE `tasPk`=$tasPk";
+        }
+        else {
+            $query = "UPDATE `tblTask` SET `tasStoppedTime`= NULL WHERE `tasPk`=$tasPk";
         }
 
         if (strlen($TaskStopped) > 2)
         {
-            $query = "update tblTask set tasStoppedTime='$TaskStopped' where tasPk=$tasPk";
+
             $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Stopped Task update query failed: ' . mysqli_connect_error());
         }
 
@@ -321,7 +302,7 @@ if (reqexists('updatetask'))
     else
     {
         $comment = reqsval('taskcomment');
-        $query = "UPDATE tblTask SET tasComment='$comment' WHERE tasPk=$tasPk";
+        $query = "UPDATE `tblTask` SET `tasComment`='$comment' WHERE `tasPk`=$tasPk";
 
         mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' External Task update failed: ' . mysqli_connect_error());
         $message .= "External Task successfully updated \n";
@@ -331,17 +312,32 @@ if (reqexists('updatetask'))
 
 }
 
-// if (reqexists('fullrescore'))
-// {
-//     $command = BINDIR . "task_up.pl $tasPk" . ' > /dev/null 2>&1 & echo $!; ';
-//     safe_process($link, $command, $tasPk, $comPk, 'score');
-// }
+if (reqexists('fullrescore'))
+{
+    $out = '';
+    $retv = 0;
+    $command = "python3 " . BINDIR . "task_full_rescore.py $tasPk";
+    # redirect to avoid Timeout if script takes too long
+    //safe_process($link, $command, $tasPk, $comPk, 'score');
+    $pid = exec($command, $out, $retv);
+    $ptime = microtime(true);
+    sleep(25);
+    if (isset($out) and $out > 0) {
+        $refPk = $out;
+        $content .= "Task has been fully re-scored. <br /> \n
+                        <a href='/task_result.php?refPk=$refPk' target='_blank'>Check Generated Results</a> <br>\n
+                        <a href='task_result_admin.php?tasPk=$tasPk&comPk=$comPk'>Task Results Admin</a> <br>\n";
+    }
+    else {
+        $content .= "There was an error scoring Task. <br /> \n";
+    }
+}
 
 if (reqexists('taskscore'))
 {
     $out = '';
     $retv = 0;
-    $command = "python3 " . BINDIR . "score_task.py $tasPk > " . BINDIR . 'log/scoretask.txt 2>&1 & echo $!; ';
+    $command = "python3 " . BINDIR . "score_task.py $tasPk";
     $pid = exec($command, $out, $retv);
     $ptime = microtime(true);
     # redirect to avoid Timeout if script takes too long
@@ -350,7 +346,15 @@ if (reqexists('taskscore'))
     // {
     //     redirect("safe_process_admin.php?tasPk=$tasPk&comPk=$comPk&pid=$pid&time=$ptime&task=1");
     // }
-    $content .= "Task has been scored. <br />\n";
+    if (isset($out) and $out > 0) {
+        $refPk = $out;
+        $content .= "Task has been scored. <br /> \n
+                        <a href='/task_result.php?refPk=$refPk' target='_blank'>Check Generated Results</a> <br>\n
+                        <a href='task_result_admin.php?tasPk=$tasPk&comPk=$comPk'>Task Results Admin</a> <br>\n";
+    }
+    else {
+        $content .= "There was an error scoring Task. <br /> \n";
+    }
 }
 
 # Manage waypoints for task ..
@@ -669,7 +673,7 @@ $shortdist = round(floatval(mysqli_result($result, 0, 1))/1000,2);
 tpadmin($link,$file,$row);
 
 echo "<h3>$tasName ($tasDate)</h3>\n";
-echo "<h4><a href=\"/task_result.php?comPk=$comPk&tasPk=$tasPk\">Results</a></h4>\n";
+echo "<h4><a href=\"/task_result.php?comPk=$comPk&tasPk=$tasPk\"> Visible Results</a></h4>\n";
 echo "<hr />\n";
 
 # Messages field
@@ -842,25 +846,6 @@ if ( !$ext )
     echo "<br><br>";
     echo fis('airspace', 'Airspace Check', '');
 
-    // if ($comEntryRestrict == 'registered')
-    // {
-    //     $tasarr = [];
-    //     #$sql = "select C.comName, T.* from tblTask T, tblCompetition C where T.tasPk<>$tasPk and T.tasDate='$tasDate' and T.regPk=$regPk and C.comPk=T.comPk";
-    //     $sql = "select C.comName, T.* from tblTask T, tblCompetition C where T.tasPk<>$tasPk and T.tasDate='$tasDate' and C.comPk=T.comPk";
-    //     $result = mysqli_query($link, $sql) or die('Error ' . mysqli_errno($link) . ' Task copy selection failed: ' . mysqli_connect_error());
-    //     while ($row = mysqli_fetch_assoc($result))
-    //     {
-    //         $tasarr[$row['comName']] = $row['tasPk'];
-    //     }
-    //     if (sizeof($tasarr) > 0)
-    //     {
-    //         echo "<hr>";
-    //         echo "Copy registered tracks from: ";
-    //         $sel = fselect('copyfrom', '', $tasarr);
-    //         echo $sel;
-    //         echo fis('trackcopy', 'Copy', '');
-    //     }
-    // }
     echo "</form>";
 }
 

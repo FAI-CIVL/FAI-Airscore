@@ -1,7 +1,7 @@
 """
 Module for operations on formula
 Use:    import formula
-        parameters = Formula.read(comPk, <test>)
+        parameters = Formula.read(tasPk)
 
 Antonio Golfari - 2019
 """
@@ -9,18 +9,18 @@ Antonio Golfari - 2019
 # Use your utility module.
 from myconn import Database
 
-def get_formula_lib(formula):
+def get_formula_lib(type):
     import importlib
     #from trackDB import read_formula
 
-    f = None
+    lib = None
 
     '''get formula library to use in scoring'''
     #formula = read_formula(comp_id)
-    formula_file = 'formulas.' + formula['forClass']
+    formula_file = 'formulas.' + type
     try:
-        f = importlib.import_module(formula_file, package=None)
-        return f
+        lib = importlib.import_module(formula_file, package=None)
+        return lib
     except:
         print('formula file {} not found.'.format(formula_file))
         exit()
@@ -29,7 +29,7 @@ class Formula:
     """
     Create an object Formula
     """
-    def __init__(self, id = None, name = None, comp_class = None, test = 0):
+    def __init__(self, id = None, name = None, comp_class = None):
         self.forPk                  = id
         self.name                   = name
         self.comp_class             = comp_class
@@ -51,7 +51,7 @@ class Formula:
         self.arrival_weight         = None
         self.speed_weight           = None
 
-class Task_formula:
+class Task_formula(object):
     """
     Creates an Object with all task parameters
     """
@@ -65,25 +65,26 @@ class Task_formula:
         creates an object with formula parameters
         that will be included in Task_result Object
         """
-        self.task_id                = task_id
-        self.name                   = name
+        self.formula_name           = name
+        self.type                   = None
+        self.version                = None
         self.arrival                = arrival
         self.departure              = departure
         self.no_goal_penalty        = no_goal_penalty
         self.glide_bonus            = glide_bonus
-        self.tolerance              = tolerance
         self.stopped_time_calc      = stopped_time_calc
+        self.tolerance              = tolerance             # percentage / 100
         self.arr_alt_bonus          = arr_alt_bonus
-        self.nominal_goal           = nominal_goal
-        self.nominal_dist           = nominal_dist
-        self.nominal_time           = nominal_time
-        self.nominal_launch         = nominal_launch
-        self.min_dist               = min_dist
-        self.score_back_time        = score_back_time
+        self.nominal_goal           = nominal_goal          # percentage / 100
+        self.nominal_dist           = nominal_dist          # meters
+        self.nominal_time           = nominal_time          # seconds
+        self.nominal_launch         = nominal_launch        # percentage / 100
+        self.min_dist               = min_dist              # meters
+        self.score_back_time        = score_back_time       # seconds
 
     def __str__(self):
         out = ''
-        out += 'Formula name:   {} \n'.     format(self.name)
+        out += 'Formula name:   {} \n'.     format(self.formula_name)
         out += 'Arrival:        {}  |  '.   format(self.arrival)
         out += 'Departure:      {} \n'.     format(self.departure)
         out += 'No goal Penalty:{}% \n'.     format(self.no_goal_penalty*100)
@@ -97,63 +98,33 @@ class Task_formula:
         out += 'Score back time:{} \n'.     format(self.score_back_time)
         return out
 
+    def to_dict(self):
+        return self.__dict__
+
     @classmethod
-    def read(cls, task_id, test = 0):
+    def read(cls, task_id):
         """reads task formula from DB"""
+        from db_tables import TaskFormulaView as F
 
-        query = (""" SELECT
-                        `tasPk`,
-                        `forName`,
-                        `tasArrival`,
-                        `tasDeparture`,
-                        `forLinearDist`,
-                        `forDiffDist`,
-                        `forGoalSSpenalty`,
-                        `forStoppedGlideBonus`,
-                        `forStoppedElapsedCalc`,
-                        `tasHeightBonus`,
-                        `comOverallScore`,
-                        `comOverallParam`,
-                        `forNomGoal`,
-                        `forMinDistance`,
-                        `forNomDistance`,
-                        `forNomTime`,
-                        `forNomLaunch`,
-                        `forScorebackTime`,
-                        `tasMargin`
-                    FROM
-                        `TaskView`
-                    WHERE
-                        `tasPk` = {}
-                    LIMIT 1
-                """.format(task_id))
-
-        if test:
-            print('task formula:')
-            print('Query:')
-            print(query)
-
+        formula = cls()
         with Database() as db:
             # get the task details.
-            t = db.fetchone(query)
-        if t is None:
-            print('Task formula error')
-            return
-        else:
-            formula = cls(  task_id             = t['tasPk'],
-                            name                = t['forName'],
-                            arrival             = t['tasArrival'],
-                            departure           = t['tasDeparture'],
-                            no_goal_penalty     = t['forGoalSSpenalty'],
-                            glide_bonus         = t['forStoppedGlideBonus'],
-                            tolerance           = t['tasMargin'],
-                            stopped_time_calc   = t['forStoppedElapsedCalc'],
-                            arr_alt_bonus       = t['tasHeightBonus'],
-                            nominal_goal        = t['forNomGoal'],
-                            nominal_dist        = t['forNomDistance'],
-                            nominal_time        = t['forNomTime'],
-                            nominal_launch      = t['forNomLaunch'],
-                            min_dist            = t['forMinDistance'],
-                            score_back_time     = t['forScorebackTime'])
+            f = db.session.query(F)
+            t = f.get(task_id)
+            db.populate_obj(formula, t)
+        return formula
 
-            return formula
+    def get_lib(self):
+        import importlib
+
+        lib     = None
+        type    = self.type
+
+        '''get formula library to use in scoring'''
+        formula_file = 'formulas.' + type
+        try:
+            lib = importlib.import_module(formula_file, package=None)
+            return lib
+        except:
+            print('formula file {} not found.'.format(formula_file))
+            exit()

@@ -27,141 +27,59 @@ class Track():
     def __str__(self):
         return "Track Object"
 
-    def __init__(self, filename = None, pilot = None, task = None, glider = None, cert = None, type = None, test = 0):
+    def __init__(self, filename = None, track_id = None, pil_id = None, task_id = None, glider = None, cert = None, type = None):
         self.filename = filename
-        self.traPk = None
+        self.track_id = track_id
         self.type = type
-        self.pilPk = pilot
-        self.tasPk = task
+        self.pil_id = pil_id
+        self.task_id = task_id
         self.glider = glider
         self.cert = cert
         self.flight = None      # igc_lib.Flight object
         self.date = None        # in datetime.date format
 
-    def get_pilot(self, test = 0):
+    def to_dict(self):
+        return self.__dict__
+
+    def get_pilot(self):
         """Get pilot associated to a track from its filename
         should be named as such: FAI.igc or LASTNAME_FIRSTNAME.igc
         """
-        message = ''
-        if self.pilPk is None:
+        from trackUtils import find_pilot
+        if self.pil_id is None:
 
             """Get string"""
             fields = os.path.splitext(os.path.basename(self.filename))
-            if fields[0].isdigit():
-                """Gets name from FAI n."""
-                fai = 0 + int(fields[0])
-                message += ("file {} contains FAI n. {} \n".format(fields[0], fai))
-                query = ("SELECT pilPk FROM PilotView WHERE pilFAI = {}".format(fai))
-            else:
-                names = fields[0].replace('.', ' ').replace('_', ' ').replace('-', ' ').split()
-                """try to find xcontest user in filename
-                otherwise try to find pilot name from filename"""
-                message += ("file {} contains pilot name \n".format(fields[0]))
+            pil_id = find_pilot(fields[0])
 
-                s = []
-                t = []
-                u = []
-                for i in names:
-                    s.append(" pilLastName LIKE '%%{}%%' ".format(i))
-                    t.append(" pilFirstName LIKE '%%{}%%' ".format(i))
-                    u.append(" pilXContestUser LIKE '{}' ".format(i))
-                cond = ' OR '.join(s)
-                cond2 = ' OR '.join(t)
-                cond3 = ' OR '.join(u)
-                query =(""" SELECT
-                                pilPk
-                            FROM
-                                PilotView
-                            WHERE
-                                ({})
-                            UNION ALL
-                            SELECT
-                                pilPk
-                            FROM
-                                PilotView
-                            WHERE
-                                ({})
-                            AND
-                                ({})
-                            LIMIT 1""".format(cond3, cond, cond2))
-
-            print ("get_pilot Query: {}  \n".format(query))
-
-            """Get pilot"""
-            with Database() as db:
-                try:
-                    self.pilPk = db.fetchone(query)['pilPk']
-                except:
-                    self.pilPk = None
-
-            if self.pilPk is None:
-                """No pilot infos in filename"""
-                message += ("{} does NOT contain any valid pilot info \n".format(fields[0]))
-
-        if test == 1:
-            """TEST MODE"""
-            message += ("pilPk: {}  \n".format(self.pilPk))
-            print (message)
-
-    def add(self, test = 0):
+    def add(self):
         import datetime
         from compUtils import get_class, get_offset
         """Imports track to db"""
+        from db_tables import tblTaskResult as R
         result = ''
-        message = ''
-        message += ("track {} will be imported for pilot with ID {} and task with ID {} \n".format(self.filename, self.pilPk, self.tasPk))
+        g_record = int(self.flight.valid)
 
-        """get time of first fix of the track"""
-        stime = sec_to_time(self.flight.fixes[0].rawtime + get_offset(self.tasPk)*3600)
-        trastart = datetime.datetime.combine(self.date, stime)
-
-        traclass = get_class(self.tasPk)
-        traduration = self.flight.fixes[-1].rawtime - self.flight.fixes[0].rawtime
-
-        """add track entryassign_and_import_tracks(tracks, task, test) into tblTrack table"""
-        query = """INSERT INTO `tblTrack`(
-                        `pilPk`,
-                        `traClass`,
-                        `traGlider`,
-                        `traDHV`,
-                        `traDate`,
-                        `traStart`,
-                        `traDuration`,
-                        `traFile`
-                    )
-                    VALUES(
-                        %s, %s, %s, %s, %s, %s, %s, %s
-                    )
-                    """
-        params = [self.pilPk, traclass, self.glider, self.cert, self.date, trastart, traduration, self.filename]
-        message += query
-        if not test:
-            with Database() as db:
-                try:
-                    db.execute(query, params)
-                    self.traPk = db.lastrowid()
-                    result += ("track for pilot with id {} correctly stored in database".format(self.pilPk))
-                except:
-                    print('Error Inserting track into db:')
-                    print(query)
-                    result = ('Error inserting track for pilot with id {}'.format(self.pilPk))
-        else:
-            print(message)
-
+        """add track as result in tblTaskResult table"""
+        with Database() as db:
+            try:
+                track = R(pilPk=self.pil_id, tasPk=self.task_id, traFile=self.filename, traGRecordOk=filename)
+                self.track_id = db.session.add(track)
+                db.session.commit()
+                result += ("track for pilot with id {} correctly stored in database".format(self.pil_id))
+            except:
+                print('Error Inserting track into db:')
+                result = ('Error inserting track for pilot with id {}'.format(self.pil_id))
         return result
 
     @classmethod
-    def read_file(cls, filename, pilot_id = None, test = 0):
+    def read_file(cls, filename, track_id = None, pil_id = None):
         """Reads track file and creates a track object"""
-        if test:
-            print('Track.read_file: filename: {} | pilot: {}'.format(filename, pilot_id))
-        message = ''
-        track = cls(filename)
-        track.get_type(test)
-        print('type', track.type)
+        track = cls(filename=filename, track_id=track_id, pil_id=pil_id)
+        track.get_type()
+        print('type ', track.type)
         if track.type is not None:
             """file is a valid track format"""
-            message += ("File Type: {} \n".format(track.type))
             if track.type == "igc":
                 """using IGC reader from aerofile library"""
                 print('reading flight')
@@ -177,51 +95,33 @@ class Track():
             '"""
             if flight.valid:
                 print('flight valid')
-                if not pilot_id:
-                    track.get_pilot(test)
-                else:
-                    track.pilPk = 0 + pilot_id
-                track.get_glider(test)
-                track.flight = flight
-                track.date = epoch_to_date(track.flight.date_timestamp)
-                if test == 1:
-                    """TEST MODE"""
-                    print(message)
+                if not pil_id:
+                    track.get_pilot()
+                # track.get_glider()
+                track.flight    = flight
+                track.date      = epoch_to_date(track.flight.date_timestamp)
                 return track
-            else: print(flight.notes)
+            else: print(f'** ERROR: {flight.notes}')
         else:
-            print("File {} (pilot ID {}) is NOT a valid track file. \n".format(track, pilot_id))
+            print(f"File {filename} (pilot ID {pil_id}) is NOT a valid track file.")
 
     @classmethod
-    def read_db(cls, traPk, test = 0):
+    def read_db(cls, track_id):
         """Creates a Track Object from a DB Track entry"""
+        from db_tables import TaskResultView as T
 
-        track = cls()
+        track = cls(track_id=track_id)
 
         """Read general info about the track"""
-        query = "select unix_timestamp(T.traDate) as udate," \
-                "   T.*," \
-                "   CTT.* " \
-                "from tblTrack T " \
-                "left outer join " \
-                "tblComTaskTrack CTT on T.traPk=CTT.traPk " \
-                "where T.traPk=%s"
-
         with Database() as db:
-            # get the formula details.
-            t = db.fetchone(query, [traPk])
-
-        if t:
-            track.pilPk = t['pilPk']
-            track.filename = t['traFile'] if t['traFile'] is not None else None
-            track.tasPk = t['tasPk'] if t['tasPk'] is not None else None
-            track.glider = t['traGlider'] if t['traGlider'] is not (None or 'Unknown') else None
-            track.cert = t['traDHV'] if t['traGlider'] is not (None or 'Unknown') else None
-        if test == 1:
-            print("read_db: pilPk: {} | filename: {}".format(track.pilPk, track.filename))
-
-        """Creates the flight obj with fixes info"""
-        track.flight = Flight.create_from_file(track.filename)
+            # get track details.
+            q = db.session.query(T.pil_id, T.task_id, T.track_file.label('filename')).filter(T.track_id==track_id)
+            try:
+                t = db.populate_obj(track, q.one())
+                """Creates the flight obj with fixes info"""
+                track.flight = Flight.create_from_file(track.filename)
+            except:
+                print(f'Track Query Error: no result found')
 
         return track
 
@@ -247,7 +147,7 @@ class Track():
             with open(filename, 'w') as f:
                 dump(feature_collection, f)
 
-    def get_type(self, test = 0):
+    def get_type(self):
         """determine if igc / kml / live / ozi"""
         if self.filename is not None:
             """read first line of file"""
@@ -267,39 +167,23 @@ class Track():
                 self.type = None
             print ("  ** FILENAME: {} TYPE: {} \n".format(self.filename, self.type))
 
-    def get_glider(self, test = 0):
-        """Get glider info for pilot, to be used in results"""
-        message = ''
+    def get_glider(self):
+        """Get glider info for pilot, to be used in results
+            New version is getting from Registration"""
+        from db_tables import tblRegistration as R, tblTask as T
+        from sqlalchemy import and_, or_
 
-        if self.pilPk is not None:
-            query = ("""    SELECT
-                                pilGlider, pilGliderBrand, gliGliderCert
-                            FROM
-                                PilotView
-                            WHERE
-                                pilPk = {}
-                            LIMIT 1""".format(self.pilPk))
-            #print ("get_glider Query: {}  \n".format(query))
-            if test:
-                print(query)
+        if self.pil_id and self.task_id:
+
             with Database() as db:
-                row = db.fetchone(query)
-            if row is not None:
-                brand = '' if row['pilGliderBrand'] is None else row['pilGliderBrand']
-                glider = '' if row['pilGlider'] is None else ' ' + row['pilGlider']
-                self.glider = brand + glider
-                self.cert = row['gliGliderCert']
+                comp_id = db.session.query(T).get(self.task_id).comPk
+                q       = db.session.query(R.regGlider.label('glider'), R.regCert.label('cert')).filter(and_(R.pilPk==self.pil_id, R.comPk==comp_id))
+                try:
+                    db.populate_obj(self, q.one())
+                except:
+                    print(f'Track Glider query Error')
 
-        else:
-            message += ("get_glider - Error: NOT a valid Pilot ID \n")
-
-        if test == 1:
-            """TEST MODE"""
-            message += ("Glider Info: \n")
-            message += ("{}, cert. {} \n".format(self.glider, self.cert))
-            print (message)
-
-    def copy_track_file(self, task_path=None, pname=None, test = 0):
+    def copy_track_file(self, task_path=None, pname=None):
         """copy track file in the correct folder and with correct name
         name could be changed as the one XContest is sending, or rename that one, as we wish
         if path or pname is None will calculate. note that if bulk importing it is better to pass these values
@@ -309,32 +193,18 @@ class Track():
         import glob
         from compUtils import get_task_file_path
         from os import path
+        from db_tables import PilotView as P
 
         src_file = self.filename
         if task_path is None:
-            task_path = get_task_file_path(self.tasPk, test)
-        if test:
-            print('Copy track file')
-            print('file name: {}'.format(src_file))
-            print('Task tracks path: {}'.format(task_path))
+            task_path = get_task_file_path(self.task_id)
 
         if pname is None:
-            query = "SELECT " \
-                    "   CONCAT_WS('_', LOWER(P.`pilFirstName`), LOWER(P.`pilLastName`) ) AS pilName " \
-                    "   FROM `PilotView` P " \
-                    "   WHERE P.`pilPk` = %s" \
-                    "   LIMIT 1"
-            param = self.pilPk
-
-            if test:
-                print('pname query:')
-                print(query)
-
             with Database() as db:
-                # get the task details.
-                t = db.fetchone(query, params=param)
-                if t:
-                    pname = t['pilName']
+                # get pilot details.
+                q = db.session.query(P).get(self.pilPk)
+            if q:
+                pname = '_'.join([q.pilFirstName, q.pilLastName]).replace(' ','_').lower()
 
         if task_path:
             """check if directory already exists"""
@@ -361,9 +231,8 @@ class Track():
             print('error, path not created')
 
     @staticmethod
-    def is_flying(p1, p2, test = 0):
+    def is_flying(p1, p2):
         """check if pilot is flying between 2 gps points"""
-        message = ''
-        dist = quick_distance(p2, p1, test)
+        dist = quick_distance(p2, p1)
         altdif = abs(p2['gps_alt'] - p1['gps_alt'])
-        timedif = time_diff(p2['time'], p1['time'], test)
+        timedif = time_diff(p2['time'], p1['time'])

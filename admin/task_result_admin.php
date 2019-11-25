@@ -77,7 +77,7 @@ else
 
         #check if JSON file exists
         if (file_exists($json)) {
-            $path = "<a href='../test_task_result.php?refPk=$refPk&tasPk=$tasPk&comPk=$comPk' target='_blank'>".basename($json)."</a>";
+            $path = "<a href='../task_result.php?refPk=$refPk&tasPk=$tasPk&comPk=$comPk' target='_blank'>".basename($json)."</a>";
         }
         else {
             $path = "<strong style='color:red'>".basename($json)."</strong>";
@@ -87,16 +87,6 @@ else
         $count++;
 
     }
-
-    // # Create Bulk IGC ZIP Submit
-    // $btable[] = array(" <form enctype=\"multipart/form-data\" action=\"tasktrack_admin.php?tasPk=$tasPk&comPk=$comPk\" method=\"post\">
-    //                         <input type=\"hidden\" name=\"MAX_FILE_SIZE\" value=\"1000000000\">",
-    //                         "<input name=\"userfile\" type=\"file\">",  "<input type=\"submit\" name=\"foo\" value=\"Send Tracklog\"></form>");
-    //
-    // # Create XContest Tracks Submit
-    // $xtable[] = array(" <form action=\"tasktrack_admin.php?tasPk=$tasPk&comPk=$comPk\" name=\"xcontest\" method=\"post\"> \n".
-    //                         fbut('submit', 'getxcontest', $tasPk, 'Get Tracks fron XContest').
-    //                         "\n</form>\n");
 }
 
 

@@ -107,8 +107,8 @@ elseif (array_key_exists('delete', $_REQUEST))
         $query = "delete from tblTrack where traPk=$traPk";
         mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Track delete failed: ' . mysqli_connect_error());
 
-        $query = "delete from tblComTaskTrack where traPk=$traPk";
-        mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' ComTaskTrack delete failed: ' . mysqli_connect_error());
+        // $query = "delete from tblComTaskTrack where traPk=$traPk";
+        // mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' ComTaskTrack delete failed: ' . mysqli_connect_error());
 
         $message .= "Track succesfully deleted (ID = $traPk) <br /> \n";
     }
