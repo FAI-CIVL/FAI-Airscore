@@ -376,40 +376,27 @@ class Task(object):
                 db.session.commit()
 
     def update_task_info(self):
-        with Database() as db:
-            start_time          = self.start_time + self.time_offset
-            task_deadline       = self.task_deadline + self.time_offset
-            task_start          = self.window_open_time + self.time_offset
-            start_close_time    = self.start_close_time + self.time_offset
-            start_interval      = int(self.SS_interval / 60)
-            task_type           = self.task_type.lower()
+        from datetime import datetime as dt
+        from db_tables import tblTask as T
+        from calcUtils import sec_to_time
 
-            sql = """  UPDATE
-                            `tblTask`
-                        SET
-                            `tasStartTime` = DATE_ADD(
-                                `tasDate`,
-                                INTERVAL %s SECOND
-                            ),
-                            `tasFinishTime` = DATE_ADD(
-                                `tasDate`,
-                                INTERVAL %s SECOND
-                            ),
-                            `tasTaskStart` = DATE_ADD(
-                                `tasDate`,
-                                INTERVAL %s SECOND
-                            ),
-                            `tasStartCloseTime` = DATE_ADD(
-                                `tasDate`,
-                                INTERVAL %s SECOND
-                            ),
-                            `tasSSInterval` = %s,
-                            `tasTaskType` = %s
-                        WHERE
-                            `tasPk` = %s """
-            params = [start_time, task_deadline, task_start, start_close_time, start_interval, task_type, self.id]
-            #update start and deadline
-            db.execute(sql, params)
+        start_time          = sec_to_time(self.start_time + self.time_offset)
+        task_deadline       = sec_to_time(self.task_deadline + self.time_offset)
+        task_start          = sec_to_time(self.window_open_time + self.time_offset)
+        start_close_time    = sec_to_time(self.start_close_time + self.time_offset)
+        start_interval      = int(self.SS_interval / 60)
+        task_type           = self.task_type.lower()
+
+        with Database() as db:
+            q = db.session.query(T).get(self.id)
+            date = q.date
+            q.tasStartTime      = dt.combine(date, start_time)
+            q.tasFinishTime     = dt.combine(date, task_deadline)
+            q.tasTaskStart      = dt.combine(date, task_start)
+            q.tasStartCloseTime = dt.combine(date, start_close_time)
+            q.tasSSInterval     = start_interval
+            q.tasTaskType       = task_type
+            db.session.commit()
 
     def update_from_xctrack_file(self, filename):
         """ Updates Task from xctrack file, which is in json format.
