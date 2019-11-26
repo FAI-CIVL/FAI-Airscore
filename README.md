@@ -19,7 +19,7 @@ TODO: provide latest DB build script
 
 #### Library files
 - track.py - Contains Track class definition. Reads IGC files using igc_lib library and creates a Track object.
-- flight_result.py - Contains Flight_result class definition. This evaluates a Track against a Task. Calculates start time, distance flown, lead co-efficient, goal time etc.
+- flight_result.py - Contains Flight_result class definition. This evaluates a Track against a Task. Calculates start time, distance flown, lead co-efficient, goal time etc. 
 - route.py - contains low level functions for distance calculations
 - result.py - contains Task_result class and Comp_result class
 - trackUtils.py - Module for operations on tracks. importing, assigning to pilots etc
@@ -39,7 +39,7 @@ TODO: provide latest DB build script
 ------------------------
 #### environment variables
 - Defines.py - Reads defines.yaml file
-- defines.yaml - environment variables, DB connection info, folder structure, logins etc
+- defines.yaml - environment variables, DB connection info, folder structure, logins etc 
 - logger.py - log file setup
 
 #### executable scripts
@@ -54,7 +54,7 @@ TODO: provide latest DB build script
 - update_task.py - Script to calculate task distances, optimised and non optimised and write to the DB
 - create_task_result.py - Script to create a task result JSON file, and create the row in database
 - import_xctrack_task.py - Scrpit to import task def from xctrack file
-- task_full_rescore_test.py - Reprocess all igc files and rescore a task. unfinished WIP
+- task_full_rescore_test.py - Reprocess all igc files and rescore a task. unfinished WIP	
 - del_result.py - Delete Task / Comp Result JSON file and all references in result tables
 - del_track.py - Delete track and all references in other tables
 - update_result_status.py - Update Task / Comp Result status in JSON file and in database

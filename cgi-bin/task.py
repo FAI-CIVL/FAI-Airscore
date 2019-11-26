@@ -1181,13 +1181,15 @@ def get_map_json(task_id):
             short_route = data['short_route']
             goal_line = data['goal_line']
             tolerance = data['tolerance']
+            bbox = data['bbox']
 
-    return task_coords, turnpoints, short_route, goal_line, tolerance
+    return task_coords, turnpoints, short_route, goal_line, tolerance, bbox
 
 def write_map_json(task_id):
     import os
     from geographiclib.geodesic import Geodesic
     from route import get_line
+    from mapUtils import get_route_bbox
 
     geod = Geodesic.WGS84
     task_file = Path(Defines.MAPOBJDIR+'tasks/'+str(task_id) + '.task')
@@ -1232,4 +1234,4 @@ def write_map_json(task_id):
 
     with open(task_file, 'w') as f:
         f.write(jsonpickle.dumps({'task_coords': task_coords, 'turnpoints': turnpoints, 'short_route': short_route,
-                                  'goal_line': goal_line, 'tolerance': tolerance}))
+                                  'goal_line': goal_line, 'tolerance': tolerance, 'bbox': get_route_bbox(task)}))

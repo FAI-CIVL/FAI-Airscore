@@ -1,4 +1,4 @@
-"""script to calculate tassk distances, optimised and non optimised and write to the DB
+"""script to calculate task distances, optimised and non optimised and write to the DB
 python3 update_task.py <taskid>
 this is to used in current front end. eventually will be deprecated when we go to flask app
 

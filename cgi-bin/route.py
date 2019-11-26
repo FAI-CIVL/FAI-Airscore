@@ -1,7 +1,6 @@
 """
 Route Library
-contains
-    low level functions for distance calculations
+contains low level functions for distance calculations
 
 Use: import route
 
