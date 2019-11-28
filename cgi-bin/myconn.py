@@ -5,9 +5,10 @@ Use:    from myconn import Database
 Antonio Golfari - 2019
 """
 
-from sqlalchemy import Column, Integer, String, create_engine
+from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, mapper, class_mapper, relationship
+from sqlalchemy.orm import sessionmaker
 import Defines as d
 
 '''basic connection'''
@@ -17,21 +18,33 @@ host    = d.MYSQLHOST
 dbase   = d.DATABASE
 
 connectionString    = f'mysql+pymysql://{user}:{passwd}@{host}/{dbase}?charset=utf8mb4'
+engine              = create_engine(connectionString)
+Session             = sessionmaker(bind=engine)
 Base                = declarative_base()
 metadata            = Base.metadata
 
 class Database(object):
-    """SQLAlchemy database connection"""
-    def __init__(self, connection_string=connectionString):
-        self.connection_string  = connection_string
-        self.session            = None
+    def __str__(self):
+        return "SQLAlchemy DB Connection Object"
+
+    def __init__(self, Session=Session):
+        self.Base       = Base
+        self._session   = Session()
+
     def __enter__(self):
-        engine  = create_engine(self.connection_string)
-        Session = sessionmaker()
-        self.session = Session(bind=engine)
         return self
+
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.session.close()
+        self._session.commit()
+        self._session.close()
+
+    @property
+    def session(self):
+        return self._session
+
+    @property
+    def commit(self):
+        return self._session.commit()
 
     def populate_obj(self, obj, result):
         ''' Associate query result with class object attributes, using same name
@@ -43,20 +56,6 @@ class Database(object):
         if type(result) == list: result = result[0]
         for x in obj.__dict__.keys():
             if hasattr(result,x): setattr(obj, x, getattr(result,x))
-
-    # def as_dict(self, obj):
-    #     ''' as we have still a lot of procedures written for dicts created from
-    #         old MySQL queries
-    #         Returns a dict if obj is a single row, or a list of dicts if obj is a list
-    #     '''
-    #     from sqlalchemy import inspect
-    #     if type(obj) is list:
-    #         return [    {c.key: getattr(el, c.key)
-    #                     for c in inspect(el).mapper.column_attrs}
-    #                 for el in obj]
-    #     else:
-    #         return {c.key: getattr(obj, c.key)
-    #             for c in inspect(obj).mapper.column_attrs}
 
     def as_dict(self, obj):
         ''' as we have still a lot of procedures written for dicts created from

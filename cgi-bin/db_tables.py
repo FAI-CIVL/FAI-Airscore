@@ -1,8 +1,7 @@
 # coding: utf-8
-from sqlalchemy import CHAR, Column, DECIMAL, Date, DateTime, Enum, Float, Index, String, TIMESTAMP, Table, Text, text, create_engine
+from sqlalchemy import CHAR, Column, DECIMAL, Date, DateTime, Enum, Float, Index, String, TIMESTAMP, Table, Text, text
 from sqlalchemy.dialects.mysql import BIGINT, INTEGER, LONGTEXT, MEDIUMTEXT, TINYINT, VARCHAR
-from sqlalchemy.ext.declarative import declarative_base
-from myconn import Base, metadata
+from myconn_new import Base, metadata
 
 class CompResultView(Base):
     __table__ = Table( 'CompResultView', metadata,
@@ -72,16 +71,16 @@ class CompetitionView(Base):
 class CompObjectView(Base):
     __table__ = Table( 'CompObjectView', metadata,
 
-    Column('comp_id', INTEGER(11), primary_key=True),
+    Column('id', INTEGER(11), primary_key=True),
     Column('comp_name', String(100)),
     Column('comp_site', String(100)),
-    Column('start_date', DateTime),
-    Column('end_date', DateTime),
+    Column('date_from', Date),
+    Column('date_to', Date),
     Column('MD_name', String(100)),
     Column('contact', String(100)),
     Column('cat_id', INTEGER(11), server_default=text("'0'")),
     Column('sanction', Enum('FAI 1', 'League', 'PWC', 'FAI 2', 'none'), server_default=text("'none'")),
-    Column('comp_type', Enum('RACE', 'Route', 'Team-RACE'), server_default=text("'RACE'")),
+    Column('type', Enum('RACE', 'Route', 'Team-RACE'), server_default=text("'RACE'")),
     Column('comp_code', String(8)),
     Column('restricted', Enum('open', 'registered'), server_default=text("'registered'")),
     Column('time_offset', Float(asdecimal=False), server_default=text("'11'")),
@@ -89,7 +88,15 @@ class CompObjectView(Base):
     Column('stylesheet', String(128)),
     Column('locked', INTEGER(11), server_default=text("'0'")),
     Column('external', INTEGER(2), server_default=text("'0'")),
-    Column('comp_url', String(100))
+    Column('website', String(100)),
+    Column('formula_name', String(88)),
+    Column('formula_class', Enum('gap', 'pwc', 'RTG'), server_default=text("'pwc'")),
+    Column('team_size', INTEGER(11)),
+    Column('overall_validity', Enum('ftv', 'all', 'round'), server_default=text("'ftv'")),
+    Column('validity_param', Float(asdecimal=False), server_default=text("'0.75'")),
+    Column('team_scoring', Enum('off', 'on'), server_default=text("'off'")),
+    Column('team_over', INTEGER(2))
+
 )
 
 class PilotView(Base):
@@ -229,14 +236,14 @@ class TaskFormulaView(Base):
 class TaskObjectView(Base):
     __table__ = Table( 'TaskObjectView', metadata,
 
-    Column('task_id', INTEGER(11), primary_key=True),
+    Column('id', INTEGER(11), primary_key=True),
     Column('comp_id', INTEGER(11)),
     Column('comp_code', String(8)),
     Column('comp_name', String(100)),
     Column('comp_site', String(100)),
     Column('time_offset', BIGINT(21)),
     Column('comp_class', Enum('PG', 'HG', 'mixed'), server_default=text("'PG'")),
-    Column('date', String(10)),
+    Column('date', Date, nullable=False),
     Column('task_name', String(100)),
     Column('reg_id', INTEGER(11)),
     Column('window_open_time', BIGINT(21)),
@@ -309,6 +316,7 @@ class TaskResultView(Base):
     Column('par_id', INTEGER(11)),
     Column('task_id', INTEGER(11)),
     Column('pil_id', INTEGER(11)),
+    Column('ID', INTEGER(11)),
     Column('name', LONGTEXT),
     Column('sponsor', LONGTEXT),
     Column('nat', String(10)),
@@ -832,7 +840,7 @@ tblRegionXCSites = Table(
 class tblRegistration(Base):
     __tablename__ = 'tblRegistration'
     __table_args__ = (
-        Index('pilPk', 'pilPk', 'comPk'),
+        Index('parPk', 'pilPk', 'comPk'),
     )
 
     parPk = Column(INTEGER(11), primary_key=True)
@@ -930,7 +938,7 @@ class tblTaskAirspace(Base):
 class tblTaskResult(Base):
     __tablename__ = 'tblTaskResult'
     __table_args__ = (
-        Index('tarPk', 'tarPk', 'tasPk', 'traPk', unique=True),
+        Index('tarPk', 'parPk', 'tasPk', unique=True),
     )
 
     tarPk = Column(INTEGER(11), primary_key=True)
