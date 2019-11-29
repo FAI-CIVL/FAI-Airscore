@@ -1,2 +1,0 @@
-starting..
-file:  /web/dev/airscore/tracks/saved_task_2019-03-09.xctsk

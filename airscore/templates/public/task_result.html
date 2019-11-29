@@ -1,0 +1,111 @@
+{% extends "base.html"%}
+{% block content %}
+
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- <title>AirScore Competitions</title> -->
+
+    <!-- CSS -->
+    <link href="/static/build/css/task.css" rel="stylesheet">
+    <!-- <link href="navbar.css" rel="stylesheet"> -->
+    <link href="/static/build/css/spacelab_bootstrap.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet">
+
+    <!-- JS -->
+    <script type="text/javascript" src="/static/build/js/utils.js"></script>
+    <script type="text/javascript" src="/static/build/js/microajax.minified.js"></script>
+  </head>
+
+<body>
+
+  <div class="container-fluid">
+      <div class="row mt-1 mb-2">
+          <div class="col comp_header" id="comp_header">
+          <h2 id="comp_name"></h2>
+          <h3 id="task_date"></h3>
+          <select name="dhv" id="dhv" class="form-control" placeholder="Class">
+              <option value="" selected>Open</option>
+              <option value="A">Novice</option>
+              <option value="B">Fun</option>
+              <option value="C">Sports</option>
+              <option value="D">Serial</option>
+              <option value="CCC">Competition</option>
+          </select>
+          </div>
+          <div class="col" class="task_waypoints">
+          <table class="table table-sm" id="waypoints">
+          <thead class="thead-light" id="wpts_hd">
+              <tr><th>Point</th><th>Type</th><th>Size</th><th>Dist</th><th>Description</th></tr>
+          </thead>
+          <tbody class="small" id="wpts_bd"></tbody>
+          </table>
+          </div>
+      </div>
+      <div class="row mb-3">
+      <div class="col w-100">
+      <table id="task_result" class="row-border compact" cellspacing="0" width="100%">
+      <thead>
+          <tr>
+              <th>#</th>
+              <th>Pilot</th>
+              <th>Nat</th>
+              <th>Glider</th>
+              <th>EN</th>
+              <th>Sponsor</th>
+              <th>SS</th>
+              <th>ES</th>
+              <th>Time</th>
+              <th>km/h</th>
+              <th id="altbonus">alt bonus</th>
+              <th>Kms</th>
+              <th>Spd p</th>
+              <th id="leading">LO p</th>
+              <th>Arv</th>
+              <th>Dst p</th>
+              <th>Pen</th>
+              <th>Tot</th>
+          </tr>
+      </thead>
+      </table>
+      </div>
+      </div>
+      <div class="row">
+          <div class="col-sm">
+          <table class="table table-sm form_param" id="formula1">
+          <thead class="thead-light small" id="formula_hd">
+              <tr><th>GAP Parameter</th><th>Setting</th></tr>
+          </thead>
+          <tbody class="small" id="formula_bd"></tbody>
+          </table>
+          </div>
+          <div class="col-sm">
+          <table class="table table-sm form_param" id="formula2">
+          <thead class="thead-light small" id="formula_hd">
+              <tr><th>GAP Parameter</th><th>Setting</th></tr>
+          </thead>
+          <tbody class="small" id="formula_bd"></tbody>
+          </table>
+          </div>
+          <div class="col-sm" class="form_param">
+          <table class="table table-sm form_param" id="taskinfo">
+          <thead class="thead-light small" id="taskinfo_hd">
+              <tr><th>Task Metric</th><th>Value</th></tr>
+          </thead>
+          <tbody class="small" id="taskinfo_bd"></tbody>
+          </table>
+          </div>
+      </div>
+      </div>
+
+      <!-- Bootstrap core JavaScript -->
+
+      <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+      <script type="text/javascript" src="/static/build/js/pop_task.js"></script>
+      <script type="text/javascript" src="/static/build/js/class_filter.js"></script>
+</body>
+
+{% endblock %}

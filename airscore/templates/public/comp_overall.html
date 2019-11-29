@@ -1,0 +1,91 @@
+{% extends "base.html"%}
+{% block content %}
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Competition Result</title>
+
+    <!-- CSS -->
+    <link href="/static/build/css/spacelab_bootstrap.css" rel="stylesheet">
+    <link href="/static/build/css/task.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet">
+
+    <!-- JS -->
+    <script type="text/javascript" src="/static/build/js/microajax.minified.js"></script>
+    <!-- <script src="/static/js/url.js"></script> -->
+  </head>
+
+  <body>
+
+
+    <div class="container-fluid">
+    <div class="row">
+        <div class="col col-md-7 comp_header mt-1">
+        <h2 id="comp_name"></h2>
+        <h4 id="comp_date"></h4>
+        <h4 id="comp_director"></h4>
+        <select name="dhv" id="dhv" class="form-control" placeholder="Class">
+            <option value="" selected>Open</option>
+            <option value="A">Novice</option>
+            <option value="B">Fun</option>
+            <option value="C">Sports</option>
+            <option value="D">Serial</option>
+            <option value="CCC">Competition</option>
+        </select>
+        </div>
+        <div class="col col-md-5" class="parameters">
+        <table class="table table-sm" id="formula">
+        <thead class="thead-light" id="formula_hd">
+            <tr><th>Information</th><th></th></tr>
+        </thead>
+        <tbody class="small" id="formula_bd"></tbody>
+        </table>
+        </div>
+    </div>
+    <table id="task_result" class="row-border compact" cellspacing="0" width="100%">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>FAI</th>
+            <th>CIVL</th>
+            <th>Name</th>
+            <th>NAT</th>
+            <th>Sex</th>
+            <th>Sponsor</th>
+            <th>Glider</th>
+            <th>EN</th>
+            <th>Total</th>
+            <th>T1</th>
+            <th>T2</th>
+            <th>T3</th>
+            <th>T4</th>
+            <th>T5</th>
+            <th>T6</th>
+            <th>T7</th>
+            <th>T8</th>
+            <th>T9</th>
+            <th>T10</th>
+            <th>T11</th>
+            <th>T12</th>
+            <th>T13</th>
+            <th>T14</th>
+            <th>T15</th>
+            <th>T16</th>
+        </tr>
+    </thead>
+    </table>
+    </div>
+
+    <!-- Bootstrap core JavaScript -->
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script> -->
+    <!-- <script src="/static/js/bootstrap.bundle.min.js"></script> -->
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="/static/build/js/enums.js"></script>
+    <script type="text/javascript" src="/static/build/js/pop_comp_overall.js"></script>
+    <script type="text/javascript" src="/static/build/js/overall_class_filter.js"></script>
+</body>
+
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html"%}
+{% block content %}
+
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>AirScore Competitions</title>
+
+    <!-- CSS -->
+    <link href="/static/build/css/task.css" rel="stylesheet">
+    <!-- <link href="navbar.css" rel="stylesheet"> -->
+    <link href="/static/build/css/spacelab_bootstrap.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet">
+
+    <!-- JS -->
+    <!-- <script src="/static/js/microajax.minified.js"></script> -->
+    <script src="{{ static_url_for('static', filename='build/utils.js') }}"></script>
+    <!-- <script src="/static/js/utils.js"></script> -->
+  </head>
+
+  <body>
+
+    <div class="container" id="main">
+    <br>
+    <table id="competitions" class="row-border stripe compact mb-1" cellspacing="0" width="100%">
+    <thead>
+        <tr>
+            <th>Competition</th>
+            <th>Location</th>
+            <th></th>
+            <th>Type</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Tasks</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    </table>
+    </div>
+
+    <!-- Bootstrap core JavaScript -->
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <!-- <script type="text/javascript" src="/static/js/pop_comps.js"></script> -->
+    <script src="{{ static_url_for('static', filename='build/js/pop_comps.js') }}"></script>
+</body>
+
+{% endblock %}

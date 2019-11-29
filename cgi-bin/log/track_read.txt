@@ -1,8 +1,0 @@
-  ** FILENAME: /tmp/tmpjfrzc15e/2019-04-01-XCT-PPA-01.igc TYPE: igc 
-
-filedir=/web/dev/airscore/tracks/, year=2019, cname=test, tname=test_t2, tdate=20190401
-path to copy file: /web/dev/airscore/tracks/2019/test/test_t2_20190401/giorgio_darra_2019-04-01_02.igc
-file succesfully copied to : /web/dev/airscore/tracks/2019/test/test_t2_20190401/giorgio_darra_2019-04-01_02.igc
-['Warning: average pressure altitude change between fixes is: 0.000000. It is lower than the minimum: 0.010000.']
-track correctly imported and results generated 
-traPk=1919
