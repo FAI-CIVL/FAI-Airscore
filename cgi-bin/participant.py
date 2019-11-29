@@ -6,7 +6,7 @@ contains
     function to write comp result json file
     function to write comp result fsdb file
 
-Use: from partecipant import Partecipant
+Use: from participant import Partecipant
 
 Stuart Mackintosh Antonio Golfari - 2019
 """
@@ -24,7 +24,7 @@ class Partecipant(object):
                 nat=None, glider=None, glider_cert=None, sponsor=None, fai_id=None, fai_valid=1, xcontest_id=None,
                 team=None, paid=None, status=None):
 
-        self.par_id                     = par_id            # regPk
+        self.par_id                     = par_id            # parPk
         self.comp_id                    = comp_id           # comPk
         self.ID                         = pilot_ID          # int
         self.civl_id                    = civl_id           # int
@@ -41,8 +41,8 @@ class Partecipant(object):
         self.team                       = team              # ?
         self.paid                       = paid              # bool
         self.status                     = status            # 'confirmed', 'waiting list', 'wild card', ?
-
-        # self.formula                    = Task_formula.read(self.id) if self.id else None
+        self.pil_id                     = None              # PilotView id
+        self.results                    = dict()
 
     def __setattr__(self, attr, value):
         if attr in ('name', 'glider') and type(value) is str:
@@ -67,19 +67,19 @@ class Partecipant(object):
         return out
 
     @staticmethod
-    def read(reg_id):
+    def read(par_id):
         """Reads pilot registration from database
-        takes regPk as argument"""
+        takes parPk as argument"""
         from db_tables import RegistrationView as R
 
-        if not (type(reg_id) is int and reg_id > 0):
-            print(f"reg_id needs to be int > 0, {reg_id} was given")
+        if not (type(par_id) is int and par_id > 0):
+            print(f"par_id needs to be int > 0, {par_id} was given")
             return None
 
-        pilot = Partecipant(reg_id=reg_id)
+        pilot = Partecipant(par_id=par_id)
 
         with Database() as db:
             # get pilot details.
-            q   = db.session.query(R).get(reg_id)
+            q   = db.session.query(R).get(par_id)
             db.populate_obj(pilot, q)
         return pilot

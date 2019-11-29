@@ -646,7 +646,7 @@ function check_registration($link, $comPk)
         $sql = "SELECT
                     R.regPk
                 FROM
-                    tblRegistration R
+                    tblParticipant R
                 WHERE
                     R.pilPk = $pilPk
                     AND R.comPk = $comPk";

@@ -1,7 +1,7 @@
 """
-Module for operations on tracks
+Track Library
 Use:    import track
-        pilPk = compUtils.get_track_pilot(filename)
+        par_id = compUtils.get_track_pilot(filename)
 
 This module reads IGC files using igc_lib library
 and creates an object containing all info about the flight
@@ -27,18 +27,19 @@ class Track():
     def __str__(self):
         return "Track Object"
 
-    def __init__(self, filename = None, track_id = None, pil_id = None, task_id = None, glider = None, cert = None, type = None):
-        self.filename = filename
-        self.track_id = track_id
-        self.type = type
-        self.pil_id = pil_id
-        self.task_id = task_id
-        self.glider = glider
-        self.cert = cert
-        self.flight = None      # igc_lib.Flight object
-        self.date = None        # in datetime.date format
+    def __init__(self, filename=None, track_id=None, par_id=None, task_id=None, glider=None, cert=None, type=None):
+        self.filename   = filename
+        self.track_id   = track_id
+        self.type       = type
+        self.par_id     = par_id        # tblParticipant ID
+        self.task_id    = task_id       # tblTask ID
+        self.glider     = glider
+        self.cert       = cert
+        self.flight     = None          # igc_lib.Flight object
+        self.date       = None          # in datetime.date format
+        self.pil_id     = None          # should be deleted
 
-    def to_dict(self):
+    def as_dict(self):
         return self.__dict__
 
     def get_pilot(self):
@@ -63,7 +64,7 @@ class Track():
         """add track as result in tblTaskResult table"""
         with Database() as db:
             try:
-                track = R(pilPk=self.pil_id, tasPk=self.task_id, traFile=self.filename, traGRecordOk=filename)
+                track = R(parPk=self.par_id, tasPk=self.task_id, traFile=self.filename, traGRecordOk=filename)
                 self.track_id = db.session.add(track)
                 db.session.commit()
                 result += ("track for pilot with id {} correctly stored in database".format(self.pil_id))
@@ -167,22 +168,6 @@ class Track():
                 self.type = None
             print ("  ** FILENAME: {} TYPE: {} \n".format(self.filename, self.type))
 
-    def get_glider(self):
-        """Get glider info for pilot, to be used in results
-            New version is getting from Registration"""
-        from db_tables import tblRegistration as R, tblTask as T
-        from sqlalchemy import and_, or_
-
-        if self.pil_id and self.task_id:
-
-            with Database() as db:
-                comp_id = db.session.query(T).get(self.task_id).comPk
-                q       = db.session.query(R.regGlider.label('glider'), R.regCert.label('cert')).filter(and_(R.pilPk==self.pil_id, R.comPk==comp_id))
-                try:
-                    db.populate_obj(self, q.one())
-                except:
-                    print(f'Track Glider query Error')
-
     def copy_track_file(self, task_path=None, pname=None):
         """copy track file in the correct folder and with correct name
         name could be changed as the one XContest is sending, or rename that one, as we wish
@@ -193,7 +178,7 @@ class Track():
         import glob
         from compUtils import get_task_file_path
         from os import path
-        from db_tables import PilotView as P
+        from db_tables import RegistrationView as P
 
         src_file = self.filename
         if task_path is None:
@@ -202,9 +187,9 @@ class Track():
         if pname is None:
             with Database() as db:
                 # get pilot details.
-                q = db.session.query(P).get(self.pilPk)
+                name = db.session.query(P).get(self.par_id).name
             if q:
-                pname = '_'.join([q.pilFirstName, q.pilLastName]).replace(' ','_').lower()
+                pname = name.replace(' ','_').lower()
 
         if task_path:
             """check if directory already exists"""

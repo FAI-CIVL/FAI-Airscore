@@ -1,7 +1,7 @@
 """
 Module for operations on tracks
 Use:    import trackUtils
-        pilPk = compUtils.get_track_pilot(filename)
+        parPk = compUtils.get_track_pilot(filename)
 
 Antonio Golfari - 2018
 """
@@ -91,15 +91,15 @@ def assign_and_import_tracks(files, task, xcontest=False):
                     """found a pilot for the track file.
                     dropping pilot from list and creating track obj"""
                     print(f"Found a pilot to associate with file. dropping {pilot_id} from non scored list \n")
-                    pilot_list[:] = [d for d in pilot_list if d.get('pilPk') != pilot_id]
+                    pilot_list[:] = [d for d in pilot_list if d.get('parPk') != pilot_id]
                     mytrack = Track.read_file(filename=file, pilot_id=pilot_id)
         else:
             """We add track if we find a pilot in database
             that has not yet been scored"""
             mytrack = Track.read_file(filename=file)
-            if get_pil_track(mytrack.pilPk, task_id):
+            if get_pil_track(mytrack.par_id, task_id):
                 """pilot has already been scored"""
-                print(f"Pilot with ID {mytrack.pilPk} has already a valid track for task with ID {task_id} \n")
+                print(f"Pilot with ID {mytrack.par_id} has already a valid track for task with ID {task_id} \n")
                 mytrack = None
         """check result"""
         if not mytrack:
@@ -111,7 +111,7 @@ def assign_and_import_tracks(files, task, xcontest=False):
             moving file to correct folder and adding to the list of valid tracks"""
             mytrack.task_id = task_id
             mytrack.copy_track_file(task_path=track_path, pname=full_name)
-            print(f"pilot {mytrack.pilPk} associated with track {mytrack.filename} \n")
+            print(f"pilot {mytrack.par_id} associated with track {mytrack.filename} \n")
             import_track(mytrack)
             verify_track(mytrack, task)
 
@@ -128,18 +128,18 @@ def verify_track(track, task):
 
 def get_non_scored_pilots(task_id, xcontest=False):
     """Gets list of registered pilots that still do not have a result"""
-    from db_tables import tblRegistration as R, tblTaskResult as S, tblTask as T
+    from db_tables import tblParticipant as R, tblTaskResult as S, tblTask as T
     from sqlalchemy import func, and_, or_
 
     with Database() as db:
 
         comp_id = db.session.query(T).get(task_id).comPk
-        q       = (db.session.query(R.pilPk.label('pil_id'),
-                                    func.lower(R.regName).label('name'), R.regFAI.label('fai'),
-                                    R.regXC.label('xcontest')).outerjoin(
-                                    S, and_(R.pilPk==S.pilPk, S.tasPk==task_id))).filter(and_(R.comPk==comp_id, S.tarPk==None))
+        q       = (db.session.query(R.parPk.label('par_id'),
+                                    func.lower(R.parName).label('name'), R.parFAI.label('fai'),
+                                    R.parXC.label('xcontest')).outerjoin(
+                                    S, and_(R.parPk==S.parPk, S.tasPk==task_id))).filter(and_(R.comPk==comp_id, S.tarPk==None))
         if xcontest:
-            q = q.filter(R.regXC!=None)
+            q = q.filter(R.parXC!=None)
         pilot_list = q.all()
     if pilot_list is None: print(f"No pilots without tracks found registered to the comp...")
 
@@ -205,7 +205,6 @@ def find_pilot(name):
 
     print("Trying with name... \n")
     with Database() as db:
-        # q   = db.session.query(P.pilPk).filter(and_(P.pilLastName==func.any(names), P.pilFirstName==func.any(names)))
         t   = db.session.query(P.pilPk)
         if names:
             q = t.filter(P.pilLastName.in_(names))
@@ -221,7 +220,7 @@ def find_pilot(name):
             if len(pil) == 1: return pil.pop().pilPk
     return None
 
-def get_pil_track(pil_id, task_id):
+def get_pil_track(par_id, task_id):
     """Get pilot result in a given task"""
     from db_tables import tblTaskResult as R
     from sqlalchemy import func, and_, or_
@@ -229,12 +228,10 @@ def get_pil_track(pil_id, task_id):
 
     with Database() as db:
         track_id = db.session.query(R.tarPk).filter(
-                                and_(R.pilPk==pil_id, R.tasPk==task_id)).scalar()
-
+                                and_(R.parPk==par_id, R.tasPk==task_id)).scalar()
     if track_id == 0:
         """No result found"""
         print(f"Pilot with ID {pil_id} has not been scored yet on task ID {task_id} \n")
-
     return track_id
 
 def read_result_file(track_id, task_id):

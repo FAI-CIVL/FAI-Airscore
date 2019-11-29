@@ -19,16 +19,16 @@ def main(args):
     '''create logging and disable output'''
     Logger('ON', 'pilot_status.txt')
     print("starting..")
-    """Main module. Takes tasPk pilPk Status as parameters"""
+    """Main module. Takes tasPk parPk Status as parameters"""
 
     task_id = int(args[0])
-    pil_id  = int(args[1])
+    par_id  = int(args[1])
     status  = args[2]
 
-    print(f'task id: {task_id} pil id: {pil_id} status:  {status}')
+    print(f'task id: {task_id} par id: {par_id} status:  {status}')
 
     with Database() as db:
-        result = R(tasPk=task_id, pilPk=pil_id, tarResultType=status)
+        result = R(tasPk=task_id, parPk=par_id, tarResultType=status)
         if status == 'mindist':
             '''we need some more info'''
             task            = T.read(task_id)

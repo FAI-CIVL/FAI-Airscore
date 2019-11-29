@@ -1,7 +1,7 @@
 """
 Reads a track file
 should be named as such: FAI.igc or LASTNAME_FIRSTNAME.igc
-Use: python3 track_reader.py [tasPk] [file] [pilPk]
+Use: python3 track_reader.py [tasPk] [file] [parPk]
 
 Antonio Golfari - 2018
 """
@@ -38,7 +38,7 @@ def main(args):
     """Get filename"""
     filename = str(args[2])
     """get pilot"""
-    pil_id = 0 + int(args[3])
+    par_id = 0 + int(args[3])
 
     '''create logging and disable output'''
     Logger('ON', 'track_reader.txt')
@@ -46,7 +46,7 @@ def main(args):
     print(f'track_reader:')
     print(f'     file: {tempfile}')
     print(f'     filename: {filename}')
-    print(f'     pilot: {pil_id}')
+    print(f'     pilot: {par_id}')
     print(f'     task: {task_id}')
 
     """create a temporary directory"""
@@ -54,7 +54,7 @@ def main(args):
         file = path.join(trackdir, filename)
         copyfile(tempfile, file)
 
-        if get_pil_track(pil_id, task_id):
+        if get_pil_track(par_id, task_id):
             """pilot has already been scored"""
             print(f"Pilot with ID {pil_id} has already a valid track for task with ID {task_id} \n")
         else:
@@ -77,7 +77,7 @@ def main(args):
                     moving file to correct folder and adding to the list of valid tracks"""
                     mytrack.task_id = task.id
                     mytrack.copy_track_file()
-                    print(f"pilot {mytrack.pilPk} associated with track {mytrack.filename} \n")
+                    print(f"pilot {mytrack.par_id} associated with track {mytrack.filename} \n")
                     """adding track to db"""
                     import_track(mytrack)
                     print(f"track imported to database with ID {mytrack.traPk}\n")
@@ -106,7 +106,7 @@ if __name__ == "__main__":
             and int(sys.argv[1]) > 0
             and len(sys.argv) > 4):
         print("number of arguments != 1 and/or task_id not a number")
-        print("usage: track_reader.py [tasPk] [tempfile] [filename] [pilPk]")
+        print("usage: track_reader.py [tasPk] [tempfile] [filename] [parPk]")
         exit()
 
     main(sys.argv[1:])

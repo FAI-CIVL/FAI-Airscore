@@ -16,7 +16,7 @@ function get_registered_pilots($link, $comPk, $tasPk)
                     TT.`TimeSS`,
                     TT.`TimeES`
                 FROM
-                    `tblRegistration` R
+                    `tblParticipant` R
                 JOIN PilotView P USING(`pilPk`)
                 LEFT OUTER JOIN(
                     SELECT `pilPk`,

@@ -1,7 +1,7 @@
 # coding: utf-8
 from sqlalchemy import CHAR, Column, DECIMAL, Date, DateTime, Enum, Float, Index, String, TIMESTAMP, Table, Text, text
 from sqlalchemy.dialects.mysql import BIGINT, INTEGER, LONGTEXT, MEDIUMTEXT, TINYINT, VARCHAR
-from myconn_new import Base, metadata
+from myconn import Base, metadata
 
 class CompResultView(Base):
     __table__ = Table( 'CompResultView', metadata,
@@ -182,7 +182,6 @@ class ResultView(Base):
     Column('tarPk', INTEGER(11), primary_key=True),
     Column('parPk', INTEGER(11)),
     Column('tasPk', INTEGER(11)),
-    Column('pilPk', INTEGER(11)),
     Column('pilName', LONGTEXT),
     Column('pilSponsor', LONGTEXT),
     Column('pilNationCode', String(10)),
@@ -837,8 +836,8 @@ tblRegionXCSites = Table(
     Column('xccSiteID', INTEGER(11), nullable=False)
 )
 
-class tblRegistration(Base):
-    __tablename__ = 'tblRegistration'
+class tblParticipant(Base):
+    __tablename__ = 'tblParticipant'
     __table_args__ = (
         Index('parPk', 'pilPk', 'comPk'),
     )
@@ -846,22 +845,23 @@ class tblRegistration(Base):
     parPk = Column(INTEGER(11), primary_key=True)
     comPk = Column(INTEGER(11))
     pilPk = Column(INTEGER(11))
-    regID = Column(INTEGER(5))
-    regName = Column(String(50))
-    regBirthdate = Column(CHAR(10))
-    regSex = Column(Enum('M', 'F'), nullable=False, server_default=text("'M'"))
-    regNat = Column(CHAR(10))
-    regGlider = Column(String(100))
-    regCert = Column(String(20))
-    regClass = Column(String(50))
-    regSponsor = Column(String(100))
-    regCIVL = Column(INTEGER(10))
-    regValidFAI = Column(TINYINT(1), nullable=False, server_default=text("'1'"))
-    regFAI = Column(String(20))
-    regXC = Column(String(20))
-    regTeam = Column(String(100))
-    regPaid = Column(INTEGER(11), server_default=text("'0'"))
-    regHours = Column(INTEGER(11), server_default=text("'200'"))
+    parID = Column(INTEGER(4))
+    parName = Column(String(50))
+    parBirthdate = Column(CHAR(10))
+    parSex = Column(Enum('M', 'F'), nullable=False, server_default=text("'M'"))
+    parNat = Column(CHAR(10))
+    parGlider = Column(String(100))
+    parCert = Column(String(20))
+    parClass = Column(String(50))
+    parSponsor = Column(String(100))
+    CIVLID = Column(INTEGER(10))
+    parValidFAI = Column(TINYINT(1), nullable=False, server_default=text("'1'"))
+    parFAI = Column(String(20))
+    parXC = Column(String(20))
+    parTeam = Column(String(100))
+    parNatTeam = Column(TINYINT(1), nullable=False, server_default=text("'1'"))
+    parPaid = Column(INTEGER(11), server_default=text("'0'"))
+    parHours = Column(INTEGER(11), server_default=text("'200'"))
 
 class tblResultFile(Base):
     __tablename__ = 'tblResultFile'
@@ -942,7 +942,6 @@ class tblTaskResult(Base):
     )
 
     tarPk = Column(INTEGER(11), primary_key=True)
-    pilPk = Column(INTEGER(11), nullable=False)
     tasPk = Column(INTEGER(11), index=True)
     parPk = Column(INTEGER(11), index=True)
     tarLastUpdate = Column(TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
@@ -1003,68 +1002,13 @@ class tblTeam(Base):
 class tblTeamPilot(Base):
     __tablename__ = 'tblTeamPilot'
     __table_args__ = (
-        Index('indTeamPilot', 'teaPk', 'pilPk'),
+        Index('indTeamPilot', 'teaPk', 'parPk'),
     )
 
     tepPk = Column(INTEGER(11), primary_key=True)
     teaPk = Column(INTEGER(11))
-    pilPk = Column(INTEGER(11))
-    tepPreference = Column(INTEGER(11), nullable=False, server_default=text("'1'"))
+    parPk = Column(INTEGER(11))
     tepModifier = Column(Float)
-
-class tblTeamResult(Base):
-    __tablename__ = 'tblTeamResult'
-
-    terPk = Column(INTEGER(11), primary_key=True)
-    tasPk = Column(INTEGER(11))
-    traPk = Column(INTEGER(11))
-    terDistance = Column(Float(asdecimal=False))
-    terSpeed = Column(Float(asdecimal=False))
-    terStart = Column(INTEGER(11))
-    terGoal = Column(INTEGER(11))
-    terResultType = Column(Enum('abs', 'dnf', 'lo', 'goal'), server_default=text("'lo'"))
-    terSS = Column(INTEGER(11))
-    terES = Column(INTEGER(11))
-    terTurnpoints = Column(INTEGER(11))
-    terPenalty = Column(Float(asdecimal=False))
-    terComment = Column(Text)
-    terPlace = Column(INTEGER(11))
-    terSpeedScore = Column(Float(asdecimal=False))
-    terDistanceScore = Column(Float(asdecimal=False))
-    terArrival = Column(Float(asdecimal=False))
-    terDeparture = Column(Float(asdecimal=False))
-    terScore = Column(Float(asdecimal=False))
-    terLeadingCoeff = Column(Float(asdecimal=False))
-
-class tblTeamTask(Base):
-    __tablename__ = 'tblTeamTask'
-
-    tetPk = Column(INTEGER(11), primary_key=True)
-    tasPk = Column(INTEGER(11))
-    teaPk = Column(INTEGER(11))
-    tetStartGate = Column(DateTime)
-
-class tblTrack(Base):
-    __tablename__ = 'tblTrack'
-
-    traPk = Column(INTEGER(11), primary_key=True)
-    pilPk = Column(INTEGER(11), nullable=False, index=True)
-    witnessPk = Column(INTEGER(11))
-    traClass = Column(Enum('PG', 'HG'), server_default=text("'PG'"))
-    traGlider = Column(String(32))
-    traDHV = Column(Enum('A', 'B', 'C', 'D', 'CCC', 'floater', 'kingpost', 'open', 'rigid'), server_default=text("'CCC'"))
-    traDate = Column(Date, nullable=False)
-    traStart = Column(DateTime)
-    traArea = Column(Float(asdecimal=False))
-    traLength = Column(Float(asdecimal=False))
-    traScore = Column(Float(asdecimal=False))
-    traSafety = Column(Enum('safe', 'maybe', 'unsafe'), server_default=text("'safe'"))
-    traConditions = Column(INTEGER(11), server_default=text("'5'"))
-    traOriginal = Column(String(128))
-    traDuration = Column(INTEGER(11), server_default=text("'0'"))
-    traGRecordOk = Column(INTEGER(11), server_default=text("'0'"))
-    traInAir = Column(INTEGER(11), server_default=text("'0'"))
-    traFile = Column(String(255))
 
 tblUserSession = Table(
     'tblUserSession', metadata,

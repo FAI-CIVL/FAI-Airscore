@@ -31,7 +31,7 @@ $altarr[0] = [
     "alter table tblAirspaceWaypoint add column     awpAngleStart   float",
     "alter table tblAirspaceWaypoint add column      awpAngleEnd     float",
     "alter table tblAirspaceWaypoint add column      awpRadius       float",
-    "alter table tblRegistration add column gliPk           integer",
+    "alter table tblParticipant add column gliPk           integer",
     ];
 
 $altarr[1] = [
@@ -39,7 +39,7 @@ $altarr[1] = [
     'alter table tblFormula_org add column forHeightArrBonus double default 0.0',
     'alter table tblFormula_org add column forHeightArrLower integer default 200',
     'alter table tblFormula_org add column forHeightArrUpper integer default 3000',
-    'alter table tblRegistration add column regHours integer default 200',
+    'alter table tblParticipant add column regHours integer default 200',
 
 ];
 

@@ -34,7 +34,7 @@ function get_open_tasks($link, $comp, $pilPk)
 	if ($restrict == 'registered')
 	{
 		# Check if pilot is registered
-		$sql = "SELECT * FROM tblRegistration WHERE comPk=$comPk and pilPk=$pilPk LIMIT 1";
+		$sql = "SELECT * FROM tblParticipant WHERE comPk=$comPk and pilPk=$pilPk LIMIT 1";
 		$result = mysqli_query($link, $sql);
 		if (mysqli_num_rows($result) == 0)
 		{
@@ -97,7 +97,7 @@ function get_comp_details($link, $comPk, $pilPk)
 				R.regPk 
 			FROM 
 				tblCompetition C 
-				LEFT OUTER JOIN tblRegistration R on R.comPk = C.comPk 
+				LEFT OUTER JOIN tblParticipant R on R.comPk = C.comPk 
 				AND R.pilPk = $pilPk 
 			WHERE 
 				C.comPk = $comPk 

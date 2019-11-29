@@ -75,7 +75,7 @@ class Task(object):
         self.comp_name                  = None
         self.comp_site                  = None
         self.comp_class                 = None
-        self.date                       = None              # in Y-m-d format
+        self.date                       = None              # in datetime.date (Y-m-d) format
         self.task_name                  = None
         self.task_code                  = None
         self.window_open_time           = None              # seconds from midnight: takeoff window opening time (or any earlier pilots were permitted to take off)
@@ -102,15 +102,32 @@ class Task(object):
 
         self.formula                    = Task_formula.read(self.id) if self.id else None
 
+    def __setattr__(self, attr, value):
+        from calcUtils import get_date
+        import datetime
+        if attr == 'date':
+            if type(value) is str:
+                value = get_date(value)
+            elif isinstance(value, datetime.datetime):
+                value = value.date()
+        elif attr == 'task_id':
+            attr = 'id'
+        self.__dict__[attr] = value
+
     def __str__(self):
         out = ''
         out += 'Task:'
-        out += '{} - {} | Date: {} \n'.format(self.comp_name, self.task_name, self.date)
-        out += '{} \n'.format(self.comment)
+        out += f'{self.comp_name} - {self.task_name} | Date: {self.date_str} \n'
+        out += f'{self.comment} \n'
         for wpt in self.turnpoints:
-            out += '  {}  {}  {} km \n'.format(wpt.name, wpt.type, round(wpt.radius/1000, 2))
-        out += 'Task Opt. Distance: {} Km \n'.format(round(self.opt_dist/1000,2))
+            out += f'  {wpt.name}  {wpt.type}  {round(wpt.radius/1000, 2)} km \n'
+        out += f'Task Opt. Distance: {round(self.opt_dist/1000,2)} Km \n'
         return out
+
+    @property
+    def date_str(self):
+        from datetime import datetime
+        return self.date.strftime("%Y-%m-%d")
 
     @property
     def last_start_time(self):
@@ -169,7 +186,7 @@ class Task(object):
 
         return task
 
-    def create_scoring(self, status=None, mode='default'):
+    def create_results(self, status=None, mode='default'):
         '''
             Create Scoring
             - if necessary,recalcutales all tracks (stopped task, changed task settings)
@@ -183,8 +200,13 @@ class Task(object):
             - mode:     str - 'default'
                               'full'    recalculates all tracks
         '''
-        from result     import Task_result as R
+        from result     import Task_result as R, create_json_file
+        from compUtils  import read_rankings
         from pprint     import pprint as pp
+        from    datetime import datetime
+        from    pprint   import pprint as pp
+        import  Defines  as d
+        from time import time
 
         '''retrieve scoring formula library'''
         lib = self.formula.get_lib()
@@ -207,8 +229,35 @@ class Task(object):
             return 0
 
         self.stats.update(lib.day_quality(self))
-        results = lib.points_allocation(self)
-        ref_id  = R.create_result(self, results, status)
+        pil_list = sorted(lib.points_allocation(self), key=lambda k: k['score'], reverse=True)
+
+        '''create result elements from task, formula and results objects'''
+        info    = {x:getattr(self, x) for x in R.info_list}
+        formula = {x:getattr(self.formula, x) for x in R.formula_list}
+        stats   = {x:self.stats[x] for x in R.stats_list}
+        route   = []
+        for idx, tp in enumerate(self.turnpoints):
+            wpt = {x:getattr(tp, x) for x in R.route_list}
+            wpt['cumulative_dist'] = self.partial_distance[idx]
+            route.append(wpt)
+        results = []
+        for pil in pil_list:
+            res = {x:pil[x] for x in R.results_list}
+            res['name'] = res['name'].title()
+            res['glider'] = res['glider'].title()
+            res['track_file'] = None if not res['track_file'] else res['track_file'].split('/')[-1]
+            results.append(res)
+        rankings = read_rankings(self.comp_id)
+
+        '''create json file'''
+        result =    {   'info':     info,
+                        'route':    route,
+                        'results':  results,
+                        'formula':  formula,
+                        'stats':    stats,
+                        'rankings': rankings
+                    }
+        ref_id = create_json_file(comp_id=self.comp_id, task_id=self.id, code=self.task_code, elements=result)
         return ref_id
 
     def is_valid(self):
@@ -560,10 +609,6 @@ class Task(object):
 
         print(f"task {task_id} json file: {filename}")
 
-
-        # info        = {}
-        # turnpoints  = []
-
         with open(filename, encoding='utf-8') as json_data:
             # a bit more checking..
             try:
@@ -571,8 +616,6 @@ class Task(object):
             except:
                 print("file is not a valid JSON object")
                 return None
-
-        # info = dict(t['info'])
 
         task = Task(task_id)
         task.__dict__.update(dict(t['info']))
@@ -601,7 +644,7 @@ class Task(object):
             result.distance_flown           = pil['distance']
             result.first_time               = pil['first_time']
             result.SSS_time                 = pil['SS_time']
-            result.real_start_time         = pil['start_time']
+            result.real_start_time          = pil['start_time']
             result.ESS_time                 = pil['ES_time']
             result.goal_time                = pil['goal_time']
             result.best_waypoint_achieved   = pil['turnpoints_made']
@@ -1235,3 +1278,14 @@ def write_map_json(task_id):
     with open(task_file, 'w') as f:
         f.write(jsonpickle.dumps({'task_coords': task_coords, 'turnpoints': turnpoints, 'short_route': short_route,
                                   'goal_line': goal_line, 'tolerance': tolerance, 'bbox': get_route_bbox(task)}))
+
+def get_task_json(task_id):
+  '''returns active json result file'''
+  from db_tables import tblResultFile as R
+  from sqlalchemy import and_, or_
+
+  with Database() as db:
+      file = db.session.query(R.refJSON.label('file')).filter(and_(
+                              R.tasPk==task_id, R.refVisible==1
+                              )).scalar()
+  return file

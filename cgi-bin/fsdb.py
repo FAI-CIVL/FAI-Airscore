@@ -166,7 +166,7 @@ class FSDB(object):
         dt              = datetime.fromtimestamp(timestamp).strftime('%Y%m%d_%H%M%S')
         filename        = d.JSONDIR + '_'.join([info['comp_code'],dt]) + '.fsdb'
 
-        '''get partecipants list'''
+        '''get participants list'''
         for pil in data['results']:
             p = {x:pil[x] for x in ['pil_id', 'name', 'fai', 'civl', 'nat', 'glider', 'sponsor', 'team']}
             p['female'] = 0 if pil['sex'] == 'M' else 1
@@ -599,7 +599,7 @@ class FSDB(object):
 
             """DO WE NEED TO REGISTER PILOTS TO COMP??"""
 #             regpilquery = ("""  INSERT INTO
-#                                     `tblRegistration`(`comPk`, `regPaid`, `gliPk`, `pilPk`)
+#                                     `tblParticipant`(`comPk`, `parPaid`, `gliPk`, `pilPk`)
 #                                 VALUES
 #                                     ('{}', '{}', '{}', '{}')
 #                                 """.format(comPk, 0, pil['glider'], pil['pilPk']))

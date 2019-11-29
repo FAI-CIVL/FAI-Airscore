@@ -49,14 +49,14 @@ def get_offset(task_id):
         off = db.session.query(T.c.comTimeOffset).filter(T.c.tasPk==task_id).limit(1).scalar()
     return off
 
-def is_registered(pil_id, comp_id):
+def is_registered(civl_id, comp_id):
     """Check if pilot is registered to the comp"""
-    from db_tables import tblRegistration
-    reg_id = 0
-    if (pil_id > 0 and comp_id > 0):
+    from db_tables import RegistrationView as R
+    par_id = 0
+    if (civl_id > 0 and comp_id > 0):
         with Database() as db:
-            reg_id = db.session.query(tblRegistration.regPk).filter(tblRegistration.comPk==comp_id, tblRegistration.pilPk==pil_id).limit(1).scalar()
-    return reg_id
+            par_id = db.session.query(R.parPk).filter(R.comp_id==comp_id, R.civl_id==civl_id).limit(1).scalar()
+    return par_id
 
 def is_ext(comp_id):
     '''True if competition is external'''
@@ -74,19 +74,6 @@ def get_comp_json(comp_id):
         with Database() as db:
             file = db.session.query(R.refJSON).filter(and_(R.comPk==comp_id, R.tasPk==None, R.refVisible==1)).limit(1).scalar()
             return file
-
-def get_glider(pilPk):
-    """Get glider info for pilot, to be used in results"""
-    from db_tables import PilotView as P
-    glider = {'name': 'Unknown', 'cert': None}
-
-    if (pilPk > 0):
-        with Database() as db:
-            result = db.session.query(P.c.pilGlider, P.c.pilGliderBrand, P.c.gliGliderCert).filter(P.c.pilPk==pilPk).limit(1).first()
-            if result:
-                glider['name'] = " ".join([result.pilGliderBrand, result.pilGlider])
-                glider['cert'] = result.gliGliderCert
-    return glider
 
 def get_nat_code(iso):
     """Get Country Code from ISO2 or ISO3"""
@@ -171,3 +158,59 @@ def get_area_wps(region_id):
 def get_wpts(task_id):
     region_id = get_task_region(task_id)
     return get_area_wps(region_id)
+
+def get_participants(comp_id):
+    '''gets registered pilots list from database'''
+    from db_tables import RegisteredPilotView as R
+    from participant import Partecipant
+
+    with Database() as db:
+        q       = db.session.query(R).filter(R.comp_id==comp_id)
+        result  = q.all()
+        pilots = []
+        for p in result:
+            pil = Partecipant(comp_id=comp_id)
+            db.populate_obj(pil, p)
+            # for x in pil.__dict__.keys():
+            #     if hasattr(result,x): setattr(pil, x, getattr(result,x))
+            pilots.append(pil)
+    return pilots
+
+def get_tasks_result_files(comp_id):
+    from db_tables import tblResultFile as R
+    files = []
+    with Database() as db:
+        '''getting active json files list'''
+        files = db.session.query(R.tasPk.label('task_id'),
+                                R.refJSON.label('file')).filter(and_(
+                                R.comPk==comp_id, R.tasPk.isnot(None), R.refVisible==1
+                                )).all()
+    return files
+
+def read_rankings(comp_id):
+    '''reads sub rankings list for the task and creates a dictionary'''
+    from db_tables import tblClasCertRank as CC, tblCompetition as C, tblRanking as R, tblCertification as CCT, tblClassification as CT
+    from sqlalchemy.orm import joinedload
+    from sqlalchemy import and_, or_
+
+    rank = dict()
+
+    with Database() as db:
+        '''get rankings definitions'''
+        class_id    = db.session.query(C).get(comp_id).claPk
+        q           = db.session.query(R.ranName.label('rank'), CCT.cerName.label('cert'), CT.claFem.label('female'), CT.claTeam.label('team')
+                                    ).select_from(R).join(CC, R.ranPk==CC.ranPk).join(CCT, and_(CCT.cerPk <= CC.cerPk, CCT.comClass == R.comClass)
+                                    ).join(CT, CT.claPk==CC.claPk).filter(and_(CC.cerPk>0, CC.claPk==class_id))
+        result      = q.all()
+    try:
+        for l in result:
+            if l.rank in rank:
+                rank[l.rank].append(l.cert)
+            else:
+                rank[l.rank] = [l.cert]
+        rank['female']  = result.pop().female
+        rank['team']    = result.pop().team
+    except:
+        print(f'Ranking Query Error: list is empty')
+
+    return rank

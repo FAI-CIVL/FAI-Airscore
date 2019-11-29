@@ -80,9 +80,9 @@ if (reqexists('addcomp'))
                 $regarr = [];
                 $regarr['pilPk'] = $pilPk;
                 $regarr['comPk'] = $comPk;
-                $regarr['regHours'] = $pilot->xc_hours;
+                $regarr['parHours'] = $pilot->xc_hours;
                 $clause = "comPk=$comPk and pilPk=$pilPk";
-                insertup($link, 'tblRegistration', 'regPk', $clause, $regarr);
+                insertup($link, 'tblParticipant', 'parPk', $clause, $regarr);
                 if ($handicap == "on")
                 {
                     $handarr = [];
@@ -111,7 +111,7 @@ if (reqexists('addcomp'))
                 $regarr['comPk'] = $comPk;
                 $regarr['regHours'] = $pilot->xc_hours;
                 $clause = "comPk=$comPk and pilPk=$pilPk";
-                insertup($link, 'tblRegistration', 'regPk', $clause, $regarr);
+                insertup($link, 'tblParticipant', 'regPk', $clause, $regarr);
                 if ($handicap == "on")
                 {
                     $handarr = [];

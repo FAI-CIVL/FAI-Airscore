@@ -42,7 +42,7 @@ def main(args):
     task = T.read(task_id)
 
     '''create task scores obj, json file, and tblResultFile entry'''
-    ref_id = task.create_scoring(status=status, mode='full')
+    ref_id = task.create_results(status=status, mode='full')
     print(f'result ID: {ref_id}')
 
     end = time.time()

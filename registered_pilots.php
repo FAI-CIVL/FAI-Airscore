@@ -19,11 +19,11 @@ if (array_key_exists('addpilot', $_REQUEST))
 	$addarr['pilPk'] = $pilPk;
 	$addarr['comPk'] = $comPk;
 	$clause = "comPk=$comPk and pilPk=$pilPk";
-	insertup($link, 'tblRegistration', 'regPk', $clause, $addarr);
+	insertup($link, 'tblParticipant', 'parPk', $clause, $addarr);
 
 // 	$query = "select H.* from tblHandicap H where H.comPk=$comPk and H.pilPk=$pilPk";
 // 	$result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Handicap query failed: ' . mysqli_connect_error());
-// 
+//
 // 	if (mysqli_num_rows($result) == 0)
 // 	{
 // 		$query = "insert into tblHandicap (comPk, pilPk, hanHandicap) value ($comPk,$pilPk,1)";
@@ -39,21 +39,21 @@ if (array_key_exists('delpilot', $_REQUEST))
 	$addarr['pilPk'] = $pilPk;
 	$addarr['comPk'] = $comPk;
 	$clause = "comPk=$comPk AND pilPk=$pilPk";
-	
-	$query = "DELETE FROM tblRegistration WHERE $clause";
+
+	$query = "DELETE FROM tblParticipant WHERE $clause";
 	mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot cancelation from event failed: ' . mysqli_connect_error());
 	$message .= "You canceled from this competition.";
 }
 
-$query = "	SELECT 
-				T.*, 
-				F.*, 
-				FC.* 
-			FROM 
-				tblCompetition T 
-				JOIN tblForComp FC ON T.comPk = FC.comPk 
-				LEFT OUTER JOIN tblFormula F ON FC.forPk = F.forPk 
-			WHERE 
+$query = "	SELECT
+				T.*,
+				F.*,
+				FC.*
+			FROM
+				tblCompetition T
+				JOIN tblForComp FC ON T.comPk = FC.comPk
+				LEFT OUTER JOIN tblFormula F ON FC.forPk = F.forPk
+			WHERE
 				T.comPk = $comPk";
 $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Comp query failed: ' . mysqli_connect_error());
 $row = mysqli_fetch_assoc($result);
@@ -81,7 +81,7 @@ if ($row)
     $forNomDistance = isset($row['forNomDistance']) ? $row['forNomDistance'] : '';
     $forNomTime = isset($row['forNomTime']) ? $row['forNomTime'] : '';
     //$forDiscreteClasses = isset($row['forDiscreteClasses']) ? $row['forDiscreteClasses'] : '';
-    
+
 }
 
 #initializing template header
@@ -95,19 +95,19 @@ if ( isset($message) and $message !== '' )
 $embed = reqsval('embed');
 
 $regpilots = [];
-$query = "	SELECT 
-				P.*, 
-				H.hanHandicap 
-			FROM 
-				tblRegistration R 
-				LEFT JOIN PilotView P on P.pilPk = R.pilPk 
-				LEFT OUTER JOIN tblHandicap H ON H.pilPk = P.pilPk 
-				AND H.comPk = $comPk 
-			WHERE 
-				R.comPk = $comPk 
-				AND P.pilPk > 0 
-			ORDER BY 
-				P.pilSex DESC, 
+$query = "	SELECT
+				P.*,
+				H.hanHandicap
+			FROM
+				tblParticipant R
+				LEFT JOIN PilotView P on P.pilPk = R.pilPk
+				LEFT OUTER JOIN tblHandicap H ON H.pilPk = P.pilPk
+				AND H.comPk = $comPk
+			WHERE
+				R.comPk = $comPk
+				AND P.pilPk > 0
+			ORDER BY
+				P.pilSex DESC,
 				P.pilLastName DESC";
 $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Team pilots query failed: ' . mysqli_connect_error());
 while ($row = mysqli_fetch_array($result, MYSQLI_BOTH))

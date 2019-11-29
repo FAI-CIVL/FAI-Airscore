@@ -66,22 +66,22 @@ if (array_key_exists('addpilot', $_REQUEST))
     $addarr = [];
     $addarr['pilPk'] = $pilPk;
     $addarr['comPk'] = $comPk;
-    $addarr['regName'] = $row['name'];
-    $addarr['regSex'] = $row['sex'];
-    $addarr['regNat'] = $row['nat'];
-    $addarr['regGlider'] = $row['glider'];
+    $addarr['parName'] = $row['name'];
+    $addarr['parSex'] = $row['sex'];
+    $addarr['parNat'] = $row['nat'];
+    $addarr['parGlider'] = $row['glider'];
     #class needs to be calculated from Cert and comp formula
-    $addarr['regCert'] = $row['cert'];
-    $addarr['regSponsor'] = $row['sponsor'];
-    $addarr['regCIVL'] = $row['civl'];
-    $addarr['regFAI'] = $row['fai'];
-    $addarr['regXC'] = $row['xc'];
+    $addarr['parCert'] = $row['cert'];
+    $addarr['parSponsor'] = $row['sponsor'];
+    $addarr['CIVLID'] = $row['civl'];
+    $addarr['parFAI'] = $row['fai'];
+    $addarr['parXC'] = $row['xc'];
     # create insert command
     $clause = "`comPk` = $comPk AND `pilPk` = $pilPk";
-    $regPk = insertup($link, 'tblRegistration', 'regPk', $clause, $addarr);
+    $parPk = insertup($link, 'tblParticipant', 'parPk', $clause, $addarr);
 
-    if ($regPk > 0) {
-        $message .= "Pilot succesfully registered with reg. id $regPk. <br />";
+    if ($parPk > 0) {
+        $message .= "Pilot succesfully registered with reg. id $parPk. <br />";
     }
 }
 
@@ -92,13 +92,13 @@ if (array_key_exists('addpilot', $_REQUEST))
 //     $addarr['pilPk'] = $pilPk;
 //     $addarr['comPk'] = $comPk;
 //     $clause = "comPk=$comPk and pilPk=$pilPk";
-//     insertup($link, 'tblRegistration', 'regPk', $clause, $addarr);
+//     insertup($link, 'tblParticipant', 'parPk', $clause, $addarr);
 // }
 
 if (array_key_exists('delpilot', $_REQUEST))
 {
     $pilPk = intval($_REQUEST['delpilot']);
-    $query = "DELETE FROM `tblRegistration` WHERE `comPk` = $comPk AND `pilPk` = $pilPk";
+    $query = "DELETE FROM `tblParticipant` WHERE `comPk` = $comPk AND `pilPk` = $pilPk";
     $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Pilot delete failed: ' . mysqli_connect_error());
     // $query = "delete from tblHandicap where comPk=$comPk and pilPk=$pilPk";
     // $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Delete handicap failed: ' . mysqli_connect_error());
@@ -134,11 +134,11 @@ $team = mysqli_result($result, 0, 0);
 
 $query = "  SELECT
                 *
-            FROM `tblRegistration`
+            FROM `tblParticipant`
             WHERE
                 `comPk` = $comPk
             ORDER BY
-                `regName`";
+                `parName`";
 
 $regpilots = [];
 $result = mysqli_query($link, $query) or die('Error ' . mysqli_errno($link) . ' Registered pilots query failed: ' . mysqli_connect_error());
@@ -167,16 +167,16 @@ if (sizeof($regpilots) > 0)
         #}
         $pilot = [];
         $pilot[] = fin("ID$pilPk", "", 4);
-        $pilot[] = fin("surname$pilPk", $row['regName'], 24);
-        $pilot[] = fin("nat$pilPk", $row['regNat'], 4);
-        $pilot[] = fin("civl$pilPk", $row['regCIVL'], 6);
-        $pilot[] = fin("fai$pilPk", $row['regFAI'], 8);
-        $pilot[] = fin("glider$pilPk", $row['regGlider'], 14);
-        $pilot[] = fin("class$pilPk", $row['regClass'], 6);
-        $pilot[] = fin("sponsor$pilPk", $row['regSponsor'], 16);
-        $pilot[] = fin("XC$pilPk", $row['regXC'], 14);
+        $pilot[] = fin("surname$pilPk", $row['parName'], 24);
+        $pilot[] = fin("nat$pilPk", $row['parNat'], 4);
+        $pilot[] = fin("civl$pilPk", $row['CIVLID'], 6);
+        $pilot[] = fin("fai$pilPk", $row['parFAI'], 8);
+        $pilot[] = fin("glider$pilPk", $row['parGlider'], 14);
+        $pilot[] = fin("class$pilPk", $row['parClass'], 6);
+        $pilot[] = fin("sponsor$pilPk", $row['parSponsor'], 16);
+        $pilot[] = fin("XC$pilPk", $row['parXC'], 14);
         if ($team == 1) {
-            $pilot[] = fin("team$pilPk", $row['regTeam'], 8);
+            $pilot[] = fin("team$pilPk", $row['parTeam'], 8);
         }
         $pilot[] = "<button type=\"submit\" name=\"uppilot\" value=\"$pilPk\">up</button>";
         $pilot[] = fbut('submit', 'delpilot', $pilPk, 'del');
@@ -224,9 +224,9 @@ if ($cat != '')
                 `P`.`pilLastName` LIKE '$cat%'
             AND NOT EXISTS (
                 SELECT
-                    `R`.`regPk`
+                    `R`.`parPk`
                 FROM
-                    `tblRegistration` `R`
+                    `tblParticipant` `R`
                 WHERE
                     `R`.`comPk` = $comPk
                 AND `R`.`pilPk` = `P`.`pilPk`

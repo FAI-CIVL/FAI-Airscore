@@ -1,7 +1,6 @@
 """
-Module for operations on tracks
+Library that contains calculation methods
 Use:    import trackUtils
-        pilPk = compUtils.get_track_pilot(filename)
 
 Antonio Golfari - 2018
 """
@@ -16,6 +15,17 @@ class DateTimeEncoder(json.JSONEncoder):
             return o.isoformat()
 
         return json.JSONEncoder.default(self, o)
+
+class CJsonEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.strftime('%Y-%m-%d %H:%M:%S')
+        elif isinstance(obj, date):
+            return obj.strftime('%Y-%m-%d')
+        elif isinstance(obj, time):
+            return obj.strftime('%H:%M:%S')
+        else:
+            return json.JSONEncoder.default(self, obj)
 
 def km(dist, n=3):
     '''meters to km, with n as number of decimals'''
@@ -100,7 +110,7 @@ def epoch_to_date(sec, offset = 0):
         Transform string in datetime.datetime
     """
     try:
-        return datetime.fromtimestamp(sec).date()
+        return datetime.fromtimestamp(sec+offset).date()
     except TypeError:
         print("an error occurred")
         return sec

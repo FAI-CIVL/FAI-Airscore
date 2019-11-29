@@ -38,12 +38,12 @@ class send_mail():
 def get_email_list(task_id, to_all=None):
     """Get pilot emails (pilots in task without tracks)
     returns a dictionary of pilFirstName pilLastname:pilEmail."""
-    from db_tables import tblRegistration as R, PilotView as P, tblTaskResult as S, tblTask as T
+    from db_tables import tblParticipant as R, PilotView as P, tblTaskResult as S, tblTask as T
     from sqlalchemy import func, and_, or_
 
     with Database() as db:
         comp_id = db.session.query(T).get(task_id).comPk
-        q       = (db.session.query(R.regName.label('name'), P.pilEmail.label('email')
+        q       = (db.session.query(R.parName.label('name'), P.pilEmail.label('email')
                                     ).join(P, P.pilPk==R.pilPk).outerjoin(
                                     S, and_(R.pilPk==S.pilPk, S.tasPk==task_id))).filter(R.comPk==comp_id)
         if not to_all:

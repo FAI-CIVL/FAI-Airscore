@@ -39,7 +39,7 @@ class Flight_result(object):
         lead_coeff:     lead points coeff (for GAP based systems), sum of fixed_LC and variable part calcullated during scoring
         """
 
-    def __init__(self, pil_id=None, first_time=None, real_start_time=None, SSS_time=0, ESS_time=None, goal_time=None, last_time=None,
+    def __init__(self, par_id=None, first_time=None, real_start_time=None, SSS_time=0, ESS_time=None, goal_time=None, last_time=None,
                  best_waypoint_achieved='No waypoints achieved', fixed_LC=0, lead_coeff=0, distance_flown=0, last_altitude=0,
                  jump_the_gun=None, track_file=None):
         """
@@ -73,7 +73,7 @@ class Flight_result(object):
         self.penalty                    = 0
         self.comment                    = None
         self.ext_id                     = None
-        self.pil_id                     = pil_id
+        self.par_id                     = par_id
         self.result_type                = 'lo'
         self.SS_distance                = None
         self.track_file                 = track_file
@@ -418,7 +418,7 @@ class Flight_result(object):
                 r = results.get(track_id)
             else:
                 '''create a new result'''
-                r = R(pilPk=self.pil_id, tasPk=task_id)
+                r = R(parPk=self.par_id, tasPk=task_id)
 
             r.tarDistance   = self.distance_flown
             r.tarSpeed      = self.speed
