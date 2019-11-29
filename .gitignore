@@ -1,3 +1,63 @@
+*.py[cod]
+
+# C extensions
+*.so
+
+# Packages
+*.egg
+*.egg-info
+build
+eggs
+parts
+bin
+var
+sdist
+develop-eggs
+.installed.cfg
+lib
+lib64
+
+# Installer logs
+pip-log.txt
+
+# Unit test / coverage reports
+.coverage
+.tox
+nosetests.xml
+
+# Translations
+*.mo
+
+# Mr Developer
+.mr.developer.cfg
+.project
+.pydevproject
+
+# Complexity
+output/*.html
+output/*/index.html
+
+# Sphinx
+docs/_build
+
+.webassets-cache
+
+# Virtualenvs
+env/
+
+# npm
+/node_modules/
+
+# webpack-built files
+/airscore/static/build/
+
+# Configuration
+.env
+
+# Development database
+*.db
+
+
 defines.php
 .ht*
 .travis*
@@ -9,26 +69,24 @@ _pycache_
 map.html
 *.pyc
 .idea/*
-tracks/*
-json/*
-log/*.txt
-log/*.log
-map-objects/*
-admin/.DS*
-admin/dreamhost*.*
-admin/host.it*
-cgi-bin/*.yaml
-cgi-bin/defines.yaml*
-cgi-bin/Defines.pm
-cgi-bin/test*
-cgi-bin/py*
-cgi-bin/.ht*
-cgi-bin/*.igc
-cgi-bin/*.kml
-cgi-bin/*.zip
-cgi-bin/*.xctsk
-cgi-bin/.DS*
-cgi-bin/log/*.txt
-cgi-bin/log/*.log
-cgi-bin/log/*.txt
-cgi-bin/log/*.log
+airscore/data/tracks/*
+airscore/data/results/*
+airscore/log/*.txt
+airscore/log/*.log
+airscore/data/map-objects/*
+airscore/admin/.DS*
+airscore/admin/dreamhost*.*
+airscore/admin/host.it*
+airscore/core/*.yaml
+airscore/core/defines.yaml*
+airscore/core/Defines.pm
+airscore/core/test*
+airscore/core/py*
+airscore/.ht*
+airscore/core/*.igc
+airscore/core/*.kml
+airscore/core/*.zip
+airscore/core/*.xctsk
+airscore/core/.DS*
+airscore/core/log/*.txt
+airscore/core/log/*.log
