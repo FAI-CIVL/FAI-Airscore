@@ -1137,7 +1137,7 @@ class Task(object):
     def calculate_optimised_task_length(self, method="fast_andoyer"):
         ''' new optimized route procedure that uses John Stevenson on FAI Basecamp.
             trasforms wgs84 to plan trasverse cartesian projection, calculates
-            optimised fix on cilynders, and goes back to wgs84 for distance calculations.
+            optimised fix on cylinders, and goes back to wgs84 for distance calculations.
         '''
         from route import get_shortest_path
 
@@ -1215,16 +1215,15 @@ def get_map_json(task_id):
     task_file = Path(Defines.MAPOBJDIR+'tasks/'+str(task_id) + '.task')
     if not task_file.is_file():
         write_map_json(task_id)
-    else:
-        with open(task_file, 'r') as f:
-            data = jsonpickle.decode(f.read())
-            #print (data)
-            task_coords = data['task_coords']
-            turnpoints = data['turnpoints']
-            short_route = data['short_route']
-            goal_line = data['goal_line']
-            tolerance = data['tolerance']
-            bbox = data['bbox']
+
+    with open(task_file, 'r') as f:
+        data = jsonpickle.decode(f.read())
+        task_coords = data['task_coords']
+        turnpoints = data['turnpoints']
+        short_route = data['short_route']
+        goal_line = data['goal_line']
+        tolerance = data['tolerance']
+        bbox = data['bbox']
     return task_coords, turnpoints, short_route, goal_line, tolerance, bbox
 
 def write_map_json(task_id):
