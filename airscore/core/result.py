@@ -21,7 +21,6 @@ Stuart Mackintosh - Antonio Golfari
 from myconn import Database
 
 
-
 class Task_result:
     """
         Task result fields lists
@@ -134,6 +133,7 @@ class Task_result:
                     'track_file',
                     'pil_id']
 
+
 class Comp_result(object):
     """
         Comp result fields lists
@@ -176,8 +176,7 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None):
 
     timestamp   = int(time())       # timestamp of generation
     dt          = datetime.fromtimestamp(timestamp).strftime('%Y%m%d_%H%M%S')
-    filename    = d.JSONDIR + '_'.join([code,dt]) + '.json'
-
+    filename    = d.RESULTDIR
     '''adding data section to the elements, with:
         timestamp, status'''
     result = {'data':{'timestamp':timestamp, 'status':status}}

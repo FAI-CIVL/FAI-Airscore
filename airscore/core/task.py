@@ -23,6 +23,7 @@ from pathlib    import Path
 import jsonpickle
 import Defines
 
+
 class Task(object):
     """Task definition, DB operations and length calculations
         Some Attributes:
@@ -261,7 +262,7 @@ class Task(object):
         return ref_id
 
     def is_valid(self):
-        '''In stopped task, check if duration is enough to be valid'''
+        """In stopped task, check if duration is enough to be valid"""
         if not self.stopped_time:
             print(f'Task (ID {self.id}) has not been stopped.')
             return True
@@ -289,7 +290,7 @@ class Task(object):
             else:
                 duration        = last_time - self.start_time
 
-        elif task.comp_class == 'HG':
+        elif self.comp_class == 'HG':
             '''
             In hang-gliding, stopped tasks are “scored back” by a time that is determined
             by the number of start gates and the start gate interval:
@@ -363,14 +364,15 @@ class Task(object):
                 # min_task_duration = 3600
                 # last_time = self.stopped_time - self.formula.score_back_time
                 results = verify_all_tracks(self, lib)
-                update_all_results(results)     #avoidable if we use results to update stats instead of db
+                update_all_results(results)     # avoidable if we use results to update stats instead of db
 
                 if self.task_type == 'elapsed time' or self.SS_interval:
                     '''need to check track and get last_start_time'''
                     self.stats.update(lib.task_totals(self.id))
                     # duration = last_time - self.last_start_time
                     if not self.is_valid():
-                        return f'duration is not enough for all pilots, task with id {self.id} is not valid, scoring is not needed.'
+                        return f'duration is not enough for all pilots, task with id {self.id} is not valid, ' \
+                            f'scoring is not needed.'
                     results = adjust_flight_results(self, results, lib)
 
             elif self.comp_class == 'HG':
@@ -498,19 +500,19 @@ class Task(object):
         for i, tp in enumerate(t['turnpoints']):
             waytype = "waypoint"
             shape = "circle"
-            how = "entry"  #default entry .. looks like xctrack doesn't support exit cylinders apart from SSS
+            how = "entry"  # default entry .. looks like xctrack doesn't support exit cylinders apart from SSS
             wpID = waypoint_list[tp["waypoint"]["name"]]
-            #wpNum = i+1
+            # wpNum = i+1
 
             if i < len(t['turnpoints']) -1:
                 if 'type' in tp :
                     if tp['type'] == 'TAKEOFF':
-                        waytype = "launch"  #live
-                        #waytype = "start"  #aws
+                        waytype = "launch"  # live
+                        # waytype = "start"  # aws
                         how = "exit"
                     elif tp['type'] == 'SSS':
                         waytype = "speed"
-                        if t['sss']['direction'] == "EXIT":  #get the direction form the SSS section
+                        if t['sss']['direction'] == "EXIT":  # get the direction form the SSS section
                             how = "exit"
                     elif tp['type'] == 'ESS':
                         waytype = "endspeed"
@@ -596,7 +598,7 @@ class Task(object):
 
         """
         from os             import path as p
-        from result         import get_task_json
+        from result         import get_task_json  # !!! this function does not exist in result.py
         from flight_result  import Flight_result
 
         if not filename or not p.isfile(filename):
@@ -890,7 +892,7 @@ class Task(object):
                 #print('Sono in es')
                 wpt['tawType'] = 'endspeed'
                 tas['tasFinishTime'] = get_datetime(w.get('close'))
-            elif wpt['tawNumber'] == len(node) - startgates - headingpoint: #need to remove FsStartGate and FsHeadingpoint nodes from count
+            elif wpt['tawNumber'] == len(node) - startgates - headingpoint: # need to remove FsStartGate and FsHeadingpoint nodes from count
                 #print('Sono in goal')
                 wpt['tawType'] = 'goal'
                 if gtype == 'LINE':
@@ -1209,6 +1211,8 @@ class Task(object):
         return distance_to_go
 
 # function to parse task object to compilations
+
+
 def get_map_json(task_id):
     """gets task map json file if it exists, otherwise creates it. returns 5 separate objects for mapping"""
 
@@ -1225,6 +1229,7 @@ def get_map_json(task_id):
         tolerance = data['tolerance']
         bbox = data['bbox']
     return task_coords, turnpoints, short_route, goal_line, tolerance, bbox
+
 
 def write_map_json(task_id):
     import os
@@ -1278,12 +1283,12 @@ def write_map_json(task_id):
                                   'goal_line': goal_line, 'tolerance': tolerance, 'bbox': get_route_bbox(task)}))
 
 def get_task_json(task_id):
-  '''returns active json result file'''
-  from db_tables import tblResultFile as R
-  from sqlalchemy import and_, or_
+   """returns active json result file"""
+   from db_tables import tblResultFile as R
+   from sqlalchemy import and_, or_
 
-  with Database() as db:
-      file = db.session.query(R.refJSON.label('file')).filter(and_(
+   with Database() as db:
+       file = db.session.query(R.refJSON.label('file')).filter(and_(
                               R.tasPk==task_id, R.refVisible==1
                               )).scalar()
-  return file
+   return file

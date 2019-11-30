@@ -10,6 +10,7 @@ Antonio Golfari - 2019
 from myconn import Database
 from sqlalchemy import and_, or_
 
+
 def get_comp(task_id):
     """Get comPk from tasPk"""
     from db_tables import tblTask as T
@@ -18,6 +19,7 @@ def get_comp(task_id):
             tasks = db.session.query(T)
         return tasks.get(task_id).comPk
 
+
 def get_class(tasPk):
     """Get comPk from tasPk"""
     from db_tables import TaskView as T
@@ -25,6 +27,7 @@ def get_class(tasPk):
         with Database() as db:
             comp_class = db.session.query(T.c.comClass).filter(T.c.tasPk==tasPk).limit(1).scalar()
         return comp_class
+
 
 def get_task_date(task_id):
     """Get date from tasPk in date format"""
@@ -35,6 +38,7 @@ def get_task_date(task_id):
             # date = db.session.query(T.tasDate).filter(T.tasPk==tasPk).limit(1).scalar()
         return tasks.get(task_id).tasDate
 
+
 def get_registration(comp_id):
     """Check if comp has a registration"""
     from db_tables import tblCompetition as C
@@ -43,11 +47,13 @@ def get_registration(comp_id):
             comps = db.session.query(C)
         return comps.get(comp_id).comEntryRestrict == 'registered'
 
+
 def get_offset(task_id):
     from db_tables import TaskView as T
     with Database() as db:
         off = db.session.query(T.c.comTimeOffset).filter(T.c.tasPk==task_id).limit(1).scalar()
     return off
+
 
 def is_registered(civl_id, comp_id):
     """Check if pilot is registered to the comp"""
@@ -58,8 +64,9 @@ def is_registered(civl_id, comp_id):
             par_id = db.session.query(R.parPk).filter(R.comp_id==comp_id, R.civl_id==civl_id).limit(1).scalar()
     return par_id
 
+
 def is_ext(comp_id):
-    '''True if competition is external'''
+    """True if competition is external"""
     from db_tables import tblCompetition as C
     if comp_id > 0:
         with Database() as db:
@@ -67,13 +74,15 @@ def is_ext(comp_id):
             # ext = db.session.query(C.comExt).filter(C.comPk==comp_id).limit(1).scalar()
         return bool(comps.get(comp_id).comExt)
 
+
 def get_comp_json(comp_id):
-    '''returns active json results file'''
+    """returns active json results file"""
     from db_tables import tblResultFile as R
     if comp_id > 0:
         with Database() as db:
             file = db.session.query(R.refJSON).filter(and_(R.comPk==comp_id, R.tasPk==None, R.refVisible==1)).limit(1).scalar()
             return file
+
 
 def get_nat_code(iso):
     """Get Country Code from ISO2 or ISO3"""
@@ -83,23 +92,26 @@ def get_nat_code(iso):
     with Database() as db:
         return db.session.query(CC.natId).filter(column==iso).limit(1).scalar()
 
+
 def get_task_path(task_id):
-    ''''''
+    """ """
     from db_tables import tblTask as T
     if type(task_id) is int and task_id > 0:
         with Database() as db:
             return db.session.query(T.tasPath).filter(T.tasPk==task_id).limit(1).scalar()
 
+
 def get_comp_path(comp_id):
-    ''''''
+    """ """
     from db_tables import tblCompetition as C
     if type(comp_id) is int and comp_id > 0:
         with Database() as db:
             return db.session.query(C.comPath).filter(C.comPk==comp_id).limit(1).scalar()
 
+
 def create_comp_path(comp_id, short_name, date):
-    ''' upon competition creation, creates the path to store tracks.
-        It will not change if comp name will be updated'''
+    """ upon competition creation, creates the path to store tracks.
+        It will not change if comp name is updated"""
     # maybe should be moved to correct year if comp date will change?
     from db_tables import tblCompetition as C
     import datetime
@@ -118,16 +130,17 @@ def create_comp_path(comp_id, short_name, date):
             db.session.commit()
         return q.comPath
 
+
 def create_task_path(task_id, tcode, date):
-    ''' upon competition creation, creates the path to store tracks.
-        It will not change if comp name will be updated'''
-    # maybe should be moved to correct year if comp date will change?
+    """ upon competition creation, creates the path to store tracks.
+        It will not change if comp name is updated"""
+    # maybe should be moved to correct year if comp date changes?
     from db_tables import tblTask as T
     import datetime
-    from os import path as p
+
     if not(type(task_id)is int and task_id > 0 and isinstance(date, datetime.date)):
         return
-    if not(type(short_name) is str and len(short_name) > 0):
+    if not(type(tcode) is str and len(tcode) > 0):
         '''create a short name'''
         # we need the name
     tdate = date.strftime('%Y-%m-%d')
@@ -139,11 +152,13 @@ def create_task_path(task_id, tcode, date):
             db.session.commit()
         return q.tasPath
 
+
 def get_task_region(task_id):
     from db_tables import tblTask as T
     if type(task_id) is int and task_id > 0:
         with Database() as db:
             return db.session.query(T.regPk).filter(T.tasPk==task_id).limit(1).scalar()
+
 
 def get_area_wps(region_id):
     """query db get all wpts names and pks for region of task and put into dictionary"""
@@ -155,12 +170,14 @@ def get_area_wps(region_id):
                                                         W.rwpOld==0)).order_by(W.rwpName).all()
         return dict(wps)
 
+
 def get_wpts(task_id):
     region_id = get_task_region(task_id)
     return get_area_wps(region_id)
 
+
 def get_participants(comp_id):
-    '''gets registered pilots list from database'''
+    """gets registered pilots list from database"""
     from db_tables import RegisteredPilotView as R
     from participant import Partecipant
 
@@ -176,6 +193,7 @@ def get_participants(comp_id):
             pilots.append(pil)
     return pilots
 
+
 def get_tasks_result_files(comp_id):
     from db_tables import tblResultFile as R
     files = []
@@ -187,8 +205,9 @@ def get_tasks_result_files(comp_id):
                                 )).all()
     return files
 
+
 def read_rankings(comp_id):
-    '''reads sub rankings list for the task and creates a dictionary'''
+    """reads sub rankings list for the task and creates a dictionary"""
     from db_tables import tblClasCertRank as CC, tblCompetition as C, tblRanking as R, tblCertification as CCT, tblClassification as CT
     from sqlalchemy.orm import joinedload
     from sqlalchemy import and_, or_

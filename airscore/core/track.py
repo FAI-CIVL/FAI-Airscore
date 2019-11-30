@@ -18,7 +18,7 @@ import os
 
 class Track():
     """
-    Create an object Track and
+    Create a Track object and
     a collection of functions to handle tracks.
 
     var: filename, pilot
@@ -54,17 +54,14 @@ class Track():
             pil_id = find_pilot(fields[0])
 
     def add(self):
-        import datetime
-        from compUtils import get_class, get_offset
         """Imports track to db"""
         from db_tables import tblTaskResult as R
         result = ''
-        g_record = int(self.flight.valid)
 
-        """add track as result in tblTaskResult table"""
+        # add track as result in tblTaskResult table
         with Database() as db:
             try:
-                track = R(parPk=self.par_id, tasPk=self.task_id, traFile=self.filename, traGRecordOk=filename)
+                track = R(parPk=self.par_id, tasPk=self.task_id, traFile=self.filename, traGRecordOk=self.filename) # not sure what g-record has to do with filename??
                 self.track_id = db.session.add(track)
                 db.session.commit()
                 result += ("track for pilot with id {} correctly stored in database".format(self.pil_id))
@@ -76,7 +73,7 @@ class Track():
     @classmethod
     def read_file(cls, filename, track_id = None, pil_id = None):
         """Reads track file and creates a track object"""
-        track = cls(filename=filename, track_id=track_id, pil_id=pil_id)
+        track = cls(filename=filename, track_id=track_id, par_id=pil_id)
         track.get_type()
         print('type ', track.type)
         if track.type is not None:

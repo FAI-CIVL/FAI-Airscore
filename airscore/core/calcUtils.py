@@ -6,7 +6,8 @@ Antonio Golfari - 2018
 """
 
 import json
-from datetime import date, time, datetime, timedelta
+from datetime import date, time, datetime
+
 
 class DateTimeEncoder(json.JSONEncoder):
     """Transfrom DateTme to string for JSON encoding"""
@@ -15,6 +16,7 @@ class DateTimeEncoder(json.JSONEncoder):
             return o.isoformat()
 
         return json.JSONEncoder.default(self, o)
+
 
 class CJsonEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -27,45 +29,51 @@ class CJsonEncoder(json.JSONEncoder):
         else:
             return json.JSONEncoder.default(self, obj)
 
+
 def km(dist, n=3):
-    '''meters to km, with n as number of decimals'''
+    """meters to km, with n as number of decimals"""
     try:
         return round(dist/1000, int(n))
     except ValueError:
         return None
-    else:
-        return None
 
-def get_int(str):
+
+def get_int(string):
     try:
-        return int(str)
+        return int(string)
     except:
-        lstr = str.replace('.', ' ').replace('_', ' ').replace('-', ' ').split()
+        lstr = string.replace('.', ' ').replace('_', ' ').replace('-', ' ').split()
         for i in lstr:
             if i.isdigit():
                 return int(i)
         return None
 
-def decimal_to_seconds(time):
-    return int(time * 3600)
+
+def decimal_to_seconds(d_time):
+    return int(d_time * 3600)
+
 
 def time_to_seconds(t):
     h, m, s = [int(i) for i in t.strftime("%H:%M:%S").split(':')]
     return 3600*int(h) + 60*int(m) + int(s)
 
+
 def datetime_to_seconds(t):
     return (t - t.replace(hour=0, minute=0, second=0, microsecond=0)).total_seconds()
 
+
 def string_to_seconds(time_str):
-    time_str = time_str[0:8] #strip Z or Zulu or anything after seconds
+    time_str = time_str[0:8] # strip Z or Zulu or anything after seconds
     h, m, s = time_str.split(':')
     return int(h) * 3600 + int(m) * 60 + int(s)
+
 
 def decimal_to_time(time):
     hours = int(time)
     minutes = (time*60) % 60
     seconds = (time*3600) % 60
-    return ("{:02d}:{02d}:{02d}".format(hours, minutes, seconds))
+    return "{:02d}:{02d}:{02d}".format(hours, minutes, seconds)
+
 
 def time_difference(t1, t2):
     # Create datetime objects for each time (a and b)
@@ -76,6 +84,7 @@ def time_difference(t1, t2):
 
     return diff
 
+
 def get_datetime(str):
     """
         Transform string in datetime.datetime
@@ -84,6 +93,7 @@ def get_datetime(str):
         return datetime.strptime((str)[:19], '%Y-%m-%dT%H:%M:%S')
     else:
         return str
+
 
 def get_date(str):
     """
@@ -95,6 +105,7 @@ def get_date(str):
     else:
         return str
 
+
 def get_time(str):
     """
         Transform string in datetime.time
@@ -104,6 +115,7 @@ def get_time(str):
         return datetime.strptime((str)[:19], '%Y-%m-%dT%H:%M:%S').time()
     else:
         return str
+
 
 def epoch_to_date(sec, offset = 0):
     """
@@ -115,7 +127,8 @@ def epoch_to_date(sec, offset = 0):
         print("an error occurred")
         return sec
 
-def epoch_to_datetime(sec, rawtime = 0, offset = 0):
+
+def epoch_to_datetime(sec, rawtime = 0, offset = 0): # offset is not used??
     """
         Transform string in datetime.datetime
     """
@@ -125,11 +138,13 @@ def epoch_to_datetime(sec, rawtime = 0, offset = 0):
         print("an error occurred")
         return sec
 
+
 def sec_to_time(sec):
     seconds = int(sec)
     m, s = divmod(seconds, 60)
     h, m = divmod(m, 60)
     return time(hour=h, minute=m, second=s)
+
 
 def get_isotime(date, time, offset=None):
     import datetime as dt
