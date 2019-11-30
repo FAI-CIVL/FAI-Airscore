@@ -30,5 +30,4 @@ core/*.xctsk
 core/.DS*
 core/log/*.txt
 core/log/*.log
-core/log/*.txt
-core/log/*.log
+
