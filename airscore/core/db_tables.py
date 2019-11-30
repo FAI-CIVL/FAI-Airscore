@@ -244,6 +244,7 @@ class TaskObjectView(Base):
     Column('comp_class', Enum('PG', 'HG', 'mixed'), server_default=text("'PG'")),
     Column('date', Date, nullable=False),
     Column('task_name', String(100)),
+    Column('task_num', TINYINT(3)),
     Column('reg_id', INTEGER(11)),
     Column('window_open_time', BIGINT(21)),
     Column('task_deadline', BIGINT(21)),
@@ -261,9 +262,9 @@ class TaskObjectView(Base):
     Column('opt_dist_to_ESS', Float(asdecimal=False)),
     Column('SS_distance', Float(asdecimal=False)),
     Column('comment', Text),
-    Column('tasLocked', TINYINT(3), server_default=text("'0'")),
-    Column('task_code', String(11)),
-    Column('launch_valid', BIGINT(11))
+    Column('locked', TINYINT(3), server_default=text("'0'")),
+    Column('launch_valid', BIGINT(11)),
+    Column('task_path', String(40))
 )
 
 class FlightResultView(Base):
@@ -408,6 +409,7 @@ class TaskView(Base):
     Column('tasLastUpdate', TIMESTAMP, nullable=False,),
     Column('tasDate', Date),
     Column('tasName', String(100)),
+    Column('tasNum', TINYINT(3), server_default=text("'0'")),
     Column('regPk', INTEGER(11)),
     Column('tasTaskStart', DateTime),
     Column('tasFinishTime', DateTime),
@@ -455,7 +457,6 @@ class TaskView(Base):
     Column('tasHeightBonus', Enum('off', 'on'), server_default=text("'off'")),
     Column('tasComment', Text),
     Column('tasLocked', TINYINT(3), server_default=text("'0'")),
-    Column('tasCode', String(11)),
     Column('tasGoalAlt', Float(asdecimal=False)),
     Column('comCode', String(8)),
     Column('comName', String(100)),
@@ -880,6 +881,7 @@ class tblTask(Base):
     tasPk = Column(INTEGER(11), primary_key=True)
     comPk = Column(INTEGER(11), index=True)
     tasLastUpdate = Column(TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
+    tasNum = Column(INTEGER(2), nullable=False, server_default=text("'0'"))
     tasName = Column(String(100))
     tasDate = Column(Date, nullable=False)
     regPk = Column(INTEGER(11))
@@ -891,10 +893,6 @@ class tblTask(Base):
     tasStartCloseTime = Column(DateTime)
     tasStoppedTime = Column(DateTime)
     tasLastStartTime = Column(DateTime)
-    tasFastestTime = Column(INTEGER(11))
-    tasFirstDepTime = Column(INTEGER(11))
-    tasFirstArrTime = Column(INTEGER(11))
-    tasMaxDistance = Column(Float(asdecimal=False))
     tasResultsType = Column(String(20))
     tasTaskType = Column(Enum('race', 'elapsed time', 'free distance', 'distance with bearing'), server_default=text("'race'"))
     tasDistance = Column(Float(asdecimal=False))
@@ -903,23 +901,6 @@ class tblTask(Base):
     tasEndSSDistance = Column(Float(asdecimal=False))
     tasSSDistance = Column(Float(asdecimal=False))
     tasSSInterval = Column(INTEGER(11), server_default=text("'0'"))
-    tasTotalDistanceFlown = Column(Float(asdecimal=False))
-    tasTotDistOverMin = Column(Float(asdecimal=False))
-    tasQuality = Column(Float(asdecimal=False))
-    tasDistQuality = Column(Float(asdecimal=False))
-    tasTimeQuality = Column(Float(asdecimal=False))
-    tasLaunchQuality = Column(Float(asdecimal=False))
-    tasStopQuality = Column(Float(asdecimal=False), server_default=text("'1'"))
-    tasAvailDistPoints = Column(Float(asdecimal=False))
-    tasAvailLeadPoints = Column(Float(asdecimal=False))
-    tasAvailTimePoints = Column(Float(asdecimal=False))
-    tasAvailArrPoints = Column(Float(asdecimal=False))
-    tasLaunchValid = Column(INTEGER(11), server_default=text("'1'"))
-    tasPilotsLaunched = Column(INTEGER(11))
-    tasPilotsTotal = Column(INTEGER(11))
-    tasPilotsES = Column(INTEGER(11))
-    tasPilotsLO = Column(INTEGER(11))
-    tasPilotsGoal = Column(INTEGER(11))
     tasDeparture = Column(Enum('off', 'on', 'leadout', 'kmbonus'), server_default=text("'on'"))
     tasArrival = Column(Enum('off', 'on'), server_default=text("'on'"))
     tasHeightBonus = Column(Enum('off', 'on'), server_default=text("'off'"))
