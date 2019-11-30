@@ -18,8 +18,6 @@ from airscore.user.forms import RegisterForm
 from airscore.user.models import User
 from airscore.utils import flash_errors
 
-
-
 import datetime
 from task import get_map_json
 from trackUtils import read_result_file
@@ -37,8 +35,6 @@ from sqlalchemy.orm import aliased
 # from branca.element import Element, MacroElement
 # from jinja2 import Template
 
-
-
 blueprint = Blueprint("public", __name__, static_folder="../static")
 
 
@@ -47,26 +43,28 @@ def load_user(user_id):
     """Load user by ID."""
     return User.get_by_id(int(user_id))
 
+#
+# @blueprint.route("/", methods=["GET", "POST"])
+# def home():
+#     """Home page."""
+#     form = LoginForm(request.form)
+#     current_app.logger.info("Hello from the home page!")
+#     Handle logging in
+#     if request.method == "POST":
+#         if form.validate_on_submit():
+#             login_user(form.user)
+#             flash("You are logged in.", "success")
+#             redirect_url = request.args.get("next") or url_for("user.members")
+#             return redirect(redirect_url)
+#         else:
+#             flash_errors(form)
+#     return render_template("public/home.html", form=form)
 
-#@blueprint.route("/", methods=["GET", "POST"])
-#def home():
-    #"""Home page."""
-    #form = LoginForm(request.form)
-    #current_app.logger.info("Hello from the home page!")
-    #Handle logging in
-    #if request.method == "POST":
-        #if form.validate_on_submit():
-            #login_user(form.user)
-            #flash("You are logged in.", "success")
-            #redirect_url = request.args.get("next") or url_for("user.members")
-            #return redirect(redirect_url)
-        #else:
-            #flash_errors(form)
-    #return render_template("public/home.html", form=form)
 
 @blueprint.route("/", methods=["GET", "POST"])
 def home():
     return render_template('public/index.html')
+
 
 @blueprint.route("/logout/")
 @login_required
@@ -101,28 +99,28 @@ def about():
     form = LoginForm(request.form)
     return render_template("public/about.html", form=form)
 
-@blueprint.route('/get_all_comps' , methods=['GET', 'POST'])
+
+@blueprint.route('/get_all_comps', methods=['GET', 'POST'])
 def get_all_comps():
     from db_tables import tblCompetition, tblTask
 
-
-    c=aliased(tblCompetition)
+    c = aliased(tblCompetition)
 
     with Database() as db:
         comps = (db.session.query(c.comPk, c.comName, c.comLocation,
-            c.comClass, c.comSanction, c.comType, c.comDateFrom,
-            c.comDateTo, func.count(tblTask.tasPk))
-            .outerjoin(tblTask, c.comPk == tblTask.comPk)
-            .group_by(c.comPk))
+                 c.comClass, c.comSanction, c.comType, c.comDateFrom,
+                 c.comDateTo, func.count(tblTask.tasPk))
+                 .outerjoin(tblTask, c.comPk == tblTask.comPk)
+                 .group_by(c.comPk))
 
-    all_comps=[]
+    all_comps = []
     now = datetime.datetime.now()
     for c in comps:
         comp = list(c)
         if comp[5] == 'RACE' or comp[5] == 'Route':
-            id = comp[0]
+            compid = comp[0]
             name = comp[1]
-            comp[1] = f'<a href="/competition/{id}">{name}</a>'
+            comp[1] = f'<a href="/competition/{compid}">{name}</a>'
         # else:
             # comp['comName'] = "<a href=\"comp_overall.html?comPk=$id\">" . $row['comName'] . '</a>';
         if comp[3] == "PG" or "HG":
@@ -134,7 +132,7 @@ def get_all_comps():
             comp[5] = comp[5] + ' - ' + comp[4]
         starts = comp[6]
         ends = comp[7]
-        if  starts > now:
+        if starts > now:
             comp.append(f"Starts in {(starts-now).days} day(s)")
         elif ends < now:
             comp.append('Finished')
@@ -146,33 +144,34 @@ def get_all_comps():
         del comp[4]
         del comp[0]
         all_comps.append(comp)
-    return jsonify({'data':all_comps})
+    return jsonify({'data': all_comps})
+
 
 @blueprint.route('/competition/<comp>')
 def competition(comp):
     from db_tables import tblTask, tblCompetition
-    layer={}
-    all_tasks=[]
-    c=aliased(tblCompetition)
-    t=aliased(tblTask)
+    layer = {}
+    all_tasks = []
+    c = aliased(tblCompetition)
+    t = aliased(tblTask)
 
     with Database() as db:
         tasks = (db.session.query(t.tasPk,
-                          t.tasName,
-                          t.tasDate,
-                          t.tasTaskType,
-                          t.tasDistance,
-                          t.tasComment,
-                          t.tasQuality)
-                        .filter(t.comPk == comp)
-                        .order_by(t.tasDate.desc()).all())
+                 t.tasName,
+                 t.tasDate,
+                 t.tasTaskType,
+                 t.tasDistance,
+                 t.tasComment,
+                 t.tasQuality)
+                 .filter(t.comPk == comp)
+                 .order_by(t.tasDate.desc()).all())
 
-        competition = (db.session.query(
+        competition_info = (db.session.query(
                 c.comName,
                 c.comLocation,
                 c.comDateFrom,
                 c.comDateTo).filter(c.comPk == comp).one())
-    comp = competition._asdict()
+    comp = competition_info._asdict()
     if comp['comDateFrom']:
         comp['comDateFrom'] = comp['comDateFrom'].strftime("%Y-%m-%d")
     if comp['comDateTo']:
@@ -185,8 +184,8 @@ def competition(comp):
             layer['geojson'] = None
             layer['bbox'] = bbox
             map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route, goal_line=goal_line, margin=tolerance)
-            task['tasDistance'] = '{:0.2f}'.format(task['tasDistance']/1000) +' km'
-            if(task['tasQuality']):
+            task['tasDistance'] = '{:0.2f}'.format(task['tasDistance']/1000) + ' km'
+            if task['tasQuality']:
                 task['tasQuality'] = '{:0.2f}'.format(task['tasQuality'])
             task.update({'map':map._repr_html_()})
             all_tasks.append(task)
@@ -196,6 +195,7 @@ def competition(comp):
 @blueprint.route('/task_result/<taskid>')
 def task_result(taskid):
     return render_template('public/task_result.html')
+
 
 @blueprint.route('/get_task_result/<taskid>', methods=['GET', 'POST'])
 def get_task_result(taskid):
@@ -230,11 +230,11 @@ def get_task_result(taskid):
             pilot.append(sec_to_time(r['ES_time']+result_file['info']['time_offset']).strftime("%H:%M:%S"))
             pilot.append(sec_to_time(r['ES_time']-r['SS_time']).strftime("%H:%M:%S"))
         pilot.append(round(r['speed'],2) if r['speed'] else "")
-        pilot.append("") #altitude bonus
+        pilot.append("")  # altitude bonus
         pilot.append(round(r['distance']/1000,2))
         pilot.append(round(r['time_points'],2))
         pilot.append(round(r['dep_points'],2))
-        pilot.append("") #arrival points
+        pilot.append("")  # arrival points
         pilot.append(round(r['dist_points'],2))
         pilot.append(round(r['penalty'],2) if r['penalty'] else "")
         pilot.append(round(r['score'], 2))
@@ -257,16 +257,18 @@ def get_task_result(taskid):
 def comp_result(compid):
     return render_template('public/comp_overall.html')
 
+
 @blueprint.route('/get_comp_result/<compid>', methods=['GET', 'POST'])
 def get_comp_result(compid):
-    filename = 'LEGA19_2_20191125_002016.json'
+    from compUtils import get_comp_json
+    filename = get_comp_json(compid)
+    filename = 'LEGA19_2_20191125_002016.json'  # for testing
     with open(d.RESULTDIR+filename, 'r') as myfile:
         data=myfile.read()
     if not data:
         return "error"
     result_file = json.loads(data)
     del result_file['data']
-    row=0
     all_pilots = []
     rank = 1
     for r in result_file['results']:
@@ -286,7 +288,7 @@ def get_comp_result(compid):
                 pilot.append(r['results'][task]['score'])
             else:
                 pilot.append(f"{int(r['results'][task]['score'])} <del>{int(r['results'][task]['pre'])}</del>")
-        #ad blanks to get to a total of 16 tasks
+        # add blanks to get to a total of 16 tasks
         for t in range(len(r['results']), 16):
             pilot.append("")
 

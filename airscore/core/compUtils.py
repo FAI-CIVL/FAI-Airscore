@@ -106,7 +106,7 @@ def get_comp_path(comp_id):
     from db_tables import tblCompetition as C
     if type(comp_id) is int and comp_id > 0:
         with Database() as db:
-            return db.session.query(C.comPath).filter(C.comPk==comp_id).limit(1).scalar()
+            return db.session.query(C.comPath).filter(C.comPk == comp_id).limit(1).scalar()
 
 
 def create_comp_path(comp_id, short_name, date):
