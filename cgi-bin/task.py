@@ -72,12 +72,13 @@ class Task(object):
         self.stopped_time               = stopped_time      # seconds from midnight: time task was stopped (TaskStopAnnouncementTime).
         self.check_launch               = check_launch      # check launch flag. whether we check that pilots leave from launch.
         self.comp_id                    = None
+        self.comp_code                  = None
         self.comp_name                  = None
         self.comp_site                  = None
         self.comp_class                 = None
         self.date                       = None              # in datetime.date (Y-m-d) format
         self.task_name                  = None
-        self.task_code                  = None
+        self.task_num                   = None              # task n#
         self.window_open_time           = None              # seconds from midnight: takeoff window opening time (or any earlier pilots were permitted to take off)
         self.window_close_time          = None              # seconds from midnight: not managed yet
         self.start_close_time           = None
@@ -97,9 +98,8 @@ class Task(object):
         self.comment                    = None
         self.time_offset                = 0                 # seconds
         self.launch_valid               = None
-        self.stop_time                  = None              # seconds from midnight, task stopTime
-        self.duration                   = None              # seconds, duration of track time in stopped task (PG, some cases)
-
+        self.locked                     = False
+        self.task_path                  = None
         self.formula                    = Task_formula.read(self.id) if self.id else None
 
     def __setattr__(self, attr, value):
@@ -130,6 +130,18 @@ class Task(object):
         return self.date.strftime("%Y-%m-%d")
 
     @property
+    def task_code(self):
+        return 'T'+str(self.task_num)
+
+    @property
+    def file_path(self):
+        if not self.task_path:
+            self.create_path()
+        from os import path as p
+        from Defines import FILEDIR
+        return p.join(FILEDIR, self.comp_code.lower(), self.task_path.lower())
+
+    @property
     def last_start_time(self):
         return self.stats['last_SS'] if self.stats else 0
 
@@ -155,6 +167,47 @@ class Task(object):
     @property
     def arr_alt_bonus(self):
         return self.formula.arr_alt_bonus if self.formula else None
+
+    @property
+    def stop_time(self):
+        # seconds from midnight, task stopTime
+        if not (self.stopped_time and self.formula.score_back_time):
+            return 0
+        if self.comp_class == 'PG' :
+            '''
+            We need to calculate stopTime from announcingTime
+            In paragliding the score-back time is set as part of the competition parameters
+            (see section 5.7).
+            taskStopTime = taskStopAnnouncementTime − competitionScoreBackTime
+            '''
+            return max(0, self.stopped_time - self.formula.score_back_time)
+        elif task.comp_class == 'HG':
+            '''
+            In hang-gliding, stopped tasks are “scored back” by a time that is determined
+            by the number of start gates and the start gate interval:
+            The task stop time is one start gate interval, or 15 minutes in case of a
+            single start gate, before the task stop announcement time.
+            numberOfStartGates = 1 : taskStopTime = taskStopAnnouncementTime − 15min.
+            numberOfStartGates > 1 : taskStopTime = taskStopAnnouncementTime − startGateInterval.
+            '''
+            return ((self.stopped_time - self.formula.score_back_time)
+                            if not self.SS_interval
+                            else (self.stopped_time - self.SS_interval))
+
+    @property
+    def duration(self):
+        # seconds from midnight, elapsed time from stop_time to last_SS_time
+        if not self.stopped_time:
+            return 0
+        if self.comp_class == 'PG':
+            '''Need to distinguish wether we have multiple start or elapsed time'''
+            if (self.task_type == 'elapsed time' or self.SS_interval) and self.last_start_time:
+                return self.stop_time - self.last_start_time
+            else:
+                return self.stop_time - self.start_time
+        elif self.comp_class == 'PG':
+            # is it so simple in HG? Need to check
+            return self.stop_time - self.start_time
 
     @staticmethod
     def read(task_id):
@@ -183,8 +236,17 @@ class Task(object):
             task.optimised_turnpoints.append(s_point)
             if tp.partial_distance is not None: #this will be None in DB before we optimise route, but we append to this list so we should not fill it with Nones
                 task.partial_distance.append(tp.partial_distance)
+            '''check if we already have a filepath for task'''
+            if not task.task_path:
+                task.create_path()
 
         return task
+
+    def create_path(self, path=None):
+        '''create filepath from # and date if not given
+            and store it in database'''
+        if not path:
+            self.task_path = '_'.join([('t'+str(self.task_num)), self.date.strftime('%Y%m%d')])
 
     def create_results(self, status=None, mode='default'):
         '''
@@ -268,10 +330,6 @@ class Task(object):
 
         if self.comp_class == 'PG' :
             '''
-            We need to calculate stopTime from announcingTime
-            In paragliding the score-back time is set as part of the competition parameters
-            (see section 5.7).
-            taskStopTime = taskStopAnnouncementTime − competitionScoreBackTime
             In paragliding, a stopped task will be scored if the flying time was one hour or more.
             For Race to Goal tasks, this means that the Task Stop Time must be one hour or more
             after the race start time.
@@ -281,22 +339,10 @@ class Task(object):
             TypeOfTask ≠ RaceToGoal ∨ numberOfStartGates > 1:
                 taskStopTime − max(∀p :p ∈ StartedPilots :startTime p ) < minimumTime : taskValidity = 0
             '''
-
             min_task_duration   = 3600
-            last_time           = self.stopped_time - self.formula.score_back_time
-            if (self.task_type == 'elapsed time' or self.SS_interval) and self.last_start_time:
-                duration        = last_time - self.last_start_time
-            else:
-                duration        = last_time - self.start_time
 
         elif task.comp_class == 'HG':
             '''
-            In hang-gliding, stopped tasks are “scored back” by a time that is determined
-            by the number of start gates and the start gate interval:
-            The task stop time is one start gate interval, or 15 minutes in case of a
-            single start gate, before the task stop announcement time.
-            numberOfStartGates = 1 : taskStopTime = taskStopAnnouncementTime − 15min.
-            numberOfStartGates > 1 : taskStopTime = taskStopAnnouncementTime − startGateInterval.
             In hang gliding, a stopped task can only be scored if either a pilot reached goal
             or the race had been going on for a certain minimum time.
             The minimum time depends on whether the competition is the Women’s World Championship or not.
@@ -305,24 +351,17 @@ class Task(object):
             typeOfCompetition ≠ Women's : minimumTime = 90min.
             taskStopTime − timeOfFirstStart < minimumTime ∧ numberOfPilotsInGoal(taskStopTime) = 0 : taskValidity = 0
             '''
-
             if self.stats['pilots_goal']:
                 return True
             elif self.stats['pilots_goal'] is None:
                 print(f'Tracks (Task ID {self.id}) have not been checked yet or stats have not been updated.')
                 return False
             min_task_duration = 3600 * 1.5 # 90 min
-            last_time   = ( (self.stopped_time - self.formula.score_back_time)
-                            if not self.SS_interval
-                            else (self.stopped_time - self.SS_interval))
-            duration    = last_time - self.start_time
 
-        if duration < min_task_duration:
+        '''is task valid?'''
+        if self.duration < min_task_duration:
             return False
-        else:
-            self.duration   = duration
-            self.stop_time  = last_time
-            return True
+        return True
 
     def check_all_tracks(self, lib = None):
         ''' checks all igc files against Task and creates results '''
