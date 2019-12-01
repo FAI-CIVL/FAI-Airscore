@@ -191,6 +191,7 @@ def get_participants(comp_id):
             # for x in pil.__dict__.keys():
             #     if hasattr(result,x): setattr(pil, x, getattr(result,x))
             pilots.append(pil)
+            print(pil)
     return pilots
 
 
@@ -202,7 +203,7 @@ def get_tasks_result_files(comp_id):
         files = db.session.query(R.tasPk.label('task_id'),
                                 R.refJSON.label('file')).filter(and_(
                                 R.comPk==comp_id, R.tasPk.isnot(None), R.refVisible==1
-                                )).all()
+                                )).order_by(R.tasPk).all()
     return files
 
 
@@ -216,17 +217,18 @@ def read_rankings(comp_id):
 
     with Database() as db:
         '''get rankings definitions'''
-        class_id    = db.session.query(C).get(comp_id).claPk
-        q           = db.session.query(R.ranName.label('rank'), CCT.cerName.label('cert'), CT.claFem.label('female'), CT.claTeam.label('team')
-                                    ).select_from(R).join(CC, R.ranPk==CC.ranPk).join(CCT, and_(CCT.cerPk <= CC.cerPk, CCT.comClass == R.comClass)
-                                    ).join(CT, CT.claPk==CC.claPk).filter(and_(CC.cerPk>0, CC.claPk==class_id))
-        result      = q.all()
+        class_id = db.session.query(C).get(comp_id).claPk
+        query = db.session.query(R.ranName.label('rank'), CCT.cerName.label('cert'), CT.claFem.label('female'),
+                                 CT.claTeam.label('team')).select_from(R).join(CC, R.ranPk == CC.ranPk)\
+                                 .join(CCT,and_(CCT.cerPk <= CC.cerPk, CCT.comClass == R.comClass)
+                                 ).join(CT, CT.claPk == CC.claPk).filter(and_(CC.cerPk>0, CC.claPk == class_id))
+        result = query.all()
     try:
-        for l in result:
-            if l.rank in rank:
-                rank[l.rank].append(l.cert)
+        for res in result:
+            if res.rank in rank:
+                rank[res.rank].append(res.cert)
             else:
-                rank[l.rank] = [l.cert]
+                rank[res.rank] = [res.cert]
         rank['female']  = result.pop().female
         rank['team']    = result.pop().team
     except:

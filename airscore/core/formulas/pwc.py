@@ -200,7 +200,7 @@ def get_results(task):
     # pity it can't be done as a single update ...
 
     with Database() as db:
-        q = db.session.query(R).filter(R.task_id==task.id).all()
+        q = db.session.query(R).filter(R.task_id == task.id).all()
         pilots = db.as_dict(q)
 
     for res in pilots:

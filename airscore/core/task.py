@@ -287,19 +287,19 @@ class Task(object):
 
         self.stats.update(lib.day_quality(self))
         pil_list = sorted(lib.points_allocation(self), key=lambda k: k['score'], reverse=True)
-
         '''create result elements from task, formula and results objects'''
-        info    = {x:getattr(self, x) for x in R.info_list}
-        formula = {x:getattr(self.formula, x) for x in R.formula_list}
-        stats   = {x:self.stats[x] for x in R.stats_list}
+        info    = {x: getattr(self, x) for x in R.info_list}
+        formula = {x: getattr(self.formula, x) for x in R.formula_list}
+        stats   = {x: self.stats[x] for x in R.stats_list}
         route   = []
         for idx, tp in enumerate(self.turnpoints):
-            wpt = {x:getattr(tp, x) for x in R.route_list}
+            wpt = {x: getattr(tp, x) for x in R.route_list}
             wpt['cumulative_dist'] = self.partial_distance[idx]
             route.append(wpt)
         results = []
         for pil in pil_list:
-            res = {x:pil[x] for x in R.results_list}
+            print(f"pil:{pil}")
+            res = {x: pil[x] for x in R.results_list}
             res['name'] = res['name'].title()
             res['glider'] = res['glider'].title()
             res['track_file'] = None if not res['track_file'] else res['track_file'].split('/')[-1]
@@ -307,13 +307,13 @@ class Task(object):
         rankings = read_rankings(self.comp_id)
 
         '''create json file'''
-        result =    {   'info':     info,
-                        'route':    route,
-                        'results':  results,
-                        'formula':  formula,
-                        'stats':    stats,
-                        'rankings': rankings
-                    }
+        result = {'info':     info,
+                  'route':    route,
+                  'results':  results,
+                  'formula':  formula,
+                  'stats':    stats,
+                  'rankings': rankings
+                  }
         ref_id = create_json_file(self.comp_id, self.comp_code + '_' + self.task_code, result, task_id=self.id, status=status)
         return ref_id
 
@@ -675,7 +675,7 @@ class Task(object):
         for pil in t['results']:
             ''' create Flight_result objects from json list'''
             # should unify property names
-            result = Flight_result(pil_id=pil['pil_id'], track_file = pil['track_file'])
+            result = Flight_result(par_id=pil['par_id'], track_file = pil['track_file'])
             result.distance_flown           = pil['distance']
             result.first_time               = pil['first_time']
             result.SSS_time                 = pil['SS_time']
@@ -788,7 +788,7 @@ class Task(object):
         f = t.find('FsScoreFormula')
         tas['tasHeightBonus']   = 'off'
         if ((f.get('use_arrival_altitude_points') is not None and float(f.get('use_arrival_altitude_points')) > 0)
-            or f.get('use_arrival_altitude_points') is 'aatb'):
+            or f.get('use_arrival_altitude_points') == 'aatb'):
             tas['tasHeightBonus'] = 'on'
         """Departure and Arrival from formula"""
         tas['tasArrival']       = 'on' if float(f.get('use_arrival_position_points') + f.get('use_arrival_position_points')) > 0 else 'off' #not sure if and which type Airscore is supporting at the moment
@@ -807,7 +807,7 @@ class Task(object):
         tas['forScorebackTime'] = int(node.get('score_back_time'))
         tas['state'] = node.get('task_state')
         tas['tasComment'] = node.get('cancel_reason')
-        if tas['state'] is not 'CANCELLED':
+        if tas['state'] != 'CANCELLED':
             """I don't need if cancelled"""
             tas['tasStoppedTime'] = get_datetime(node.get('stop_time')) if not (tas['state'] == 'REGULAR') else None
             """Task Stats"""
@@ -1217,7 +1217,7 @@ class Task(object):
 
         '''delete waypoints from database'''
         with Database() as db:
-            db.session.question.query(W).filter(W.tasPk==self.id).delete()
+            db.session.question.query(W).filter(W.tasPk == self.id).delete()
             db.session.commit()
 
     def update_waypoints(self):

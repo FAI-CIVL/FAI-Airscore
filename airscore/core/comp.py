@@ -22,36 +22,15 @@ import Defines
 class Comp(object):
     """Comp definition, DB operations
         Some Attributes:
-        turnpoints: list - A list of Turnpoint objects.
-        start_date: datetime.date
-        end_date:   datetime.date
+        date_from: datetime.date
+        date_to:   datetime.date
         comp_class: str - PG, HG etc.
-        location:   str
-        opt_dist_to_SS: optimised distance to SSS, calculated with method calculate_optimised_task_length
-        opt_dist_to_ESS: optimised distance to ESS from takeoff, calculated with method calculate_optimised_task_length
-        SS_distance: optimised distance from SSS to ESS, calculated with method calculate_optimised_task_length
+        comp_site:   str
 
     methods:
         database
         read(comp_id): read comp info from DB
-        clear_waypoints: delete waypoints from tblTaskWaypoint
-        update_waypoints:  write waypoints to tblTaskWaypoint
 
-        scoring/database
-        update_totals: update total statistics in DB (total distance flown, fastest time etc.)
-        update_quality: update quality values in DB
-        update_points_allocation: update available point values in DB
-
-        creation:
-        create_from_xctrack_file: read task from xctrack file.
-        create_from_lkt_file: read task from LK8000 file, old code probably needs fixing, but unlikely to be used now we have xctrack
-        create_from_fsdb: read fsdb xml file, create task object
-
-        task distance:
-        calculate_task_length: calculate non optimised distances.
-        calculate_optimised_task_length_old: find optimised distances and waypoints. old perl method, no longer used
-        calculate_optimised_task_length: find optimised distances and waypoints.
-        distances_to_go: calculates distance from each waypoint to goal
     """
 
     def __init__(self, comp_id=None, comp_name=None, comp_site=None, date_from=None, date_to=None,
@@ -215,7 +194,7 @@ class Comp(object):
         import Defines
 
         '''PARAMETER: decimal positions'''
-        d = 0       # should be a formula parameter, or a ForComp parameter?
+        decimals = 0       # should be a formula parameter, or a ForComp parameter?
 
         comp = Comp.read(comp_id)
 
@@ -226,13 +205,13 @@ class Comp(object):
             val     = comp.formula['overall_validity']           # ftv, round, all
             param   = comp.formula['validity_param']             # ftv param, dropped task param
             if val == 'ftv':
-                ftv_type        = comp.formula['formula_class']  # pwc, fai
+                ftv_type = comp.formula['formula_class']  # pwc, fai
                 # avail_validity  = 0                                     # total ftv validity
 
         '''inzialize obj attributes'''
         tasks           = []
         participants    = get_participants(comp_id)
-        stats           = {'tot_dist_flown':0.0, 'tot_flights':0, 'valid_tasks':len(files),
+        stats           = {'tot_dist_flown': 0.0, 'tot_flights': 0, 'valid_tasks': len(files),
                             'tot_pilots':len(participants)}
         rankings        = {}
 
@@ -249,8 +228,8 @@ class Comp(object):
                 i = dict(data['info'], **data['stats'])
                 task.update({x:i[x] for x in C.tasks_list})
                 if val == 'ftv':
-                    task['ftv_validity'] = (  round(task['max_score'], d) if ftv_type == 'pwc'
-                                         else round(task['day_quality']*1000, d) )
+                    task['ftv_validity'] = (round(task['max_score'], decimals) if ftv_type == 'pwc'
+                                            else round(task['day_quality']*1000, decimals))
                     # avail_validity       += task['ftv_validity']
                 tasks.append(task)
 
@@ -264,18 +243,19 @@ class Comp(object):
                 '''get pilots result'''
                 task_results = {}
                 for t in data['results']:
-                    task_results.setdefault(t['pil_id'], {}).update({code:t['score']})
+                    task_results.setdefault(t['par_id'], {}).update({code: t['score']})
                 for p in participants:
-                    s = round(task_results.get(p.pil_id, {})[code], d)
+                    print(f"parid {p.parid} code: {code} p:{p}")
+                    s = round(task_results.get(p.parid, {})[code], decimals)
                     r = task['ftv_validity'] if val == 'ftv' else 1000
                     if r > 0:   # sanity
-                        perf = round(s / r, d+3)
-                        p.results.update({code:{'pre':s, 'perf':perf, 'score':s}})
+                        perf = round(s / r, decimals+3)
+                        p.results.update({code: {'pre': s, 'perf': perf, 'score': s}})
                     else:
-                        p.results.update({code:{'pre':s, 'perf':0, 'score':0}})
+                        p.results.update({code: {'pre': s, 'perf': 0, 'score': 0}})
 
         '''calculate final score'''
-        results = get_final_scores(participants, tasks, comp.formula, d)
+        results = get_final_scores(participants, tasks, comp.formula, decimals)
         stats['winner_score'] = max([t.score for t in results])
 
         comp.tasks          = tasks

@@ -177,7 +177,7 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None):
 
     timestamp   = int(time())       # timestamp of generation
     dt          = datetime.fromtimestamp(timestamp).strftime('%Y%m%d_%H%M%S')
-    filename    = '_'.join([code,dt]) + '.json'
+    filename    = '_'.join([code, dt]) + '.json'
 
     '''adding data section to the elements, with:
         timestamp, status'''
