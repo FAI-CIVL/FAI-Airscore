@@ -84,6 +84,7 @@ def get_row_2(row):
              for c in inspect(row).mapper.column_attrs}
 
 def model_to_dict(obj, visited_children=None, back_relationships=None):
+    from sqlalchemy.orm import class_mapper
     if visited_children is None:
         visited_children = set()
     if back_relationships is None:
@@ -108,6 +109,7 @@ def model_to_dict(obj, visited_children=None, back_relationships=None):
 
 def object_to_dict(obj, found=None):
     from datetime import datetime
+    from sqlalchemy.orm import class_mapper
     if found is None:
         found = set()
     mapper = class_mapper(obj.__class__)

@@ -113,6 +113,13 @@ class Comp(object):
         from datetime import datetime
         return self.date_to.strftime("%Y-%m-%d")
 
+    @property
+    def file_path(self):
+        from datetime import datetime
+        from os import path as p
+        from Defines import FILEDIR
+        return p.join(FILEDIR, self.comp_code)
+
     def as_dict(self):
         return self.__dict__
 
@@ -212,6 +219,8 @@ class Comp(object):
         from    compUtils  import get_tasks_result_files, get_participants
         from    result     import Comp_result as C, create_json_file
         from    pprint     import pprint as pp
+        from    os         import path
+        from Defines       import JSONDIR
         import  json
 
         '''PARAMETER: decimal positions'''
@@ -236,8 +245,10 @@ class Comp(object):
                             'tot_pilots':len(participants)}
         rankings        = {}
 
+
         for idx, t in enumerate(files):
-            with open(t.file, 'r') as f:
+            file = path.join(JSONDIR, t.file)
+            with open(file, 'r') as f:
                 '''read task json file'''
                 data = json.load(f)
 
@@ -284,14 +295,14 @@ class Comp(object):
         comp.participants   = sorted(results, key=lambda k: k.score, reverse=True)
 
         '''create json file'''
-        result =    {   'info':     {x:getattr(self, x) for x in C.info_list},
-                        'rankings': self.rankings,
-                        'tasks':    [t for t in self.tasks],
-                        'results':  [res.as_dict() for res in self.results],
-                        'formula':  self.formula,
-                        'stats':    self.stats
+        result =    {   'info':     {x:getattr(comp, x) for x in C.info_list},
+                        'rankings': comp.rankings,
+                        'tasks':    [t for t in comp.tasks],
+                        'results':  [res.as_dict() for res in results],
+                        'formula':  comp.formula,
+                        'stats':    comp.stats
                     }
-        ref_id = create_json_file(comp_id=self.id, task_id=None, code=self.comp_code, elements=result)
+        ref_id = create_json_file(comp_id=comp.id, task_id=None, code=comp.comp_code, elements=result)
         return ref_id
 
 def get_final_scores(results, tasks, formula, d = 0):
