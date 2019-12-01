@@ -118,7 +118,7 @@ class Comp(object):
         from datetime import datetime
         from os import path as p
         from Defines import FILEDIR
-        return p.join(FILEDIR, self.comp_code)
+        return p.join(FILEDIR, self.date_to.strftime("%Y"), self.comp_code)
 
     def as_dict(self):
         return self.__dict__
