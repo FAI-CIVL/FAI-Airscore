@@ -34,11 +34,11 @@ def main(args):
     status  = None if len(args) == 1 else str(args[1])
     print(f"Comp ID: {comp_id} | Status: {status}")
 
-    '''create task obj'''
-    comp = C.read(comp_id)
-
-    '''create task scores obj, json file, and tblResultFile entry'''
-    ref_id = comp.create_results(comp_id, status=status)
+    # '''create task obj'''
+    # comp = C.read(comp_id)
+    #
+    '''create comp obj, scores, json file, and tblResultFile entry'''
+    ref_id = C.create_results(comp_id, status)
     print(f'result ID: {ref_id}')
 
     ''' now restore stdout function '''

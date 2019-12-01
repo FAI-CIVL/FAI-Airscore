@@ -92,6 +92,13 @@ class Comp(object):
         from datetime import datetime
         return self.date_to.strftime("%Y-%m-%d")
 
+    @property
+    def file_path(self):
+        from datetime import datetime
+        from os import path as p
+        from Defines import FILEDIR
+        return p.join(FILEDIR, self.date_to.strftime("%Y"), self.comp_code.lower())
+
     def as_dict(self):
         return self.__dict__
 
@@ -187,10 +194,11 @@ class Comp(object):
 
     @staticmethod
     def create_results(comp_id, status=None):
-        """creates the json result file and the database entry"""
-        from compUtils import get_tasks_result_files, get_participants
-        from result import Comp_result as C, create_json_file
-        import json
+        '''creates the json result file and the database entry'''
+        from    compUtils  import get_tasks_result_files, get_participants
+        from    result     import Comp_result as C, create_json_file
+        from    os         import path
+        import  json
         import Defines
 
         '''PARAMETER: decimal positions'''
@@ -222,7 +230,7 @@ class Comp(object):
 
                 '''create task code'''
                 code = ('T'+str(idx+1))
-                print(t.file)
+
                 '''get task info'''
                 task = {'code':code, 'id':t.task_id, 'status': data['file_stats']['status']}
                 i = dict(data['info'], **data['stats'])
@@ -242,11 +250,10 @@ class Comp(object):
 
                 '''get pilots result'''
                 task_results = {}
-                for t in data['results']:
-                    task_results.setdefault(t['par_id'], {}).update({code: t['score']})
+                for res in data['results']:
+                    task_results.setdefault(res['par_id'], {}).update({code:res['score']})
                 for p in participants:
-                    print(f"parid {p.parid} code: {code} p:{p}")
-                    s = round(task_results.get(p.parid, {})[code], decimals)
+                    s = round(task_results.get(p.par_id, {})[code], decimals)
                     r = task['ftv_validity'] if val == 'ftv' else 1000
                     if r > 0:   # sanity
                         perf = round(s / r, decimals+3)
@@ -265,13 +272,13 @@ class Comp(object):
 
         '''create json file'''
         result =    {   'info':     {x:getattr(comp, x) for x in C.info_list},
-                        'rankings': rankings,
+                        'rankings': comp.rankings,
                         'tasks':    [t for t in comp.tasks],
-                        'results':  [res.as_dict() for res in comp.results],
+                        'results':  [res.as_dict() for res in results],
                         'formula':  comp.formula,
                         'stats':    comp.stats
                     }
-        ref_id = create_json_file(comp_id=comp.id, task_id=None, code=comp.comp_code, elements=result)
+        ref_id = create_json_file(comp_id=comp.id, task_id=None, code=comp.comp_code, elements=result, status=status)
         return ref_id
 
 

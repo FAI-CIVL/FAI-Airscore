@@ -307,14 +307,14 @@ class Task(object):
         rankings = read_rankings(self.comp_id)
 
         '''create json file'''
-        result = {'info':     info,
-                  'route':    route,
-                  'results':  results,
-                  'formula':  formula,
-                  'stats':    stats,
-                  'rankings': rankings
-                  }
-        ref_id = create_json_file(self.comp_id, self.comp_code + '_' + self.task_code, result, task_id=self.id, status=status)
+        result =    {   'info':     info,
+                        'route':    route,
+                        'results':  results,
+                        'formula':  formula,
+                        'stats':    stats,
+                        'rankings': rankings
+                    }
+        ref_id = create_json_file(comp_id=self.comp_id, task_id=self.id, code='_'.join([self.comp_code, self.task_code]), elements=result, status=status)
         return ref_id
 
     def is_valid(self):
@@ -675,7 +675,7 @@ class Task(object):
         for pil in t['results']:
             ''' create Flight_result objects from json list'''
             # should unify property names
-            result = Flight_result(par_id=pil['par_id'], track_file = pil['track_file'])
+            result = Flight_result(pil_id=pil['pil_id'], track_file = pil['track_file'])
             result.distance_flown           = pil['distance']
             result.first_time               = pil['first_time']
             result.SSS_time                 = pil['SS_time']
@@ -1316,12 +1316,12 @@ def write_map_json(task_id):
                                   'goal_line': goal_line, 'tolerance': tolerance, 'bbox': get_route_bbox(task)}))
 
 def get_task_json(task_id):
-   """returns active json result file"""
-   from db_tables import tblResultFile as R
-   from sqlalchemy import and_, or_
+    """returns active json result file"""
+    from db_tables import tblResultFile as R
+    from sqlalchemy import and_, or_
 
-   with Database() as db:
-       file = db.session.query(R.refJSON.label('file')).filter(and_(
+    with Database() as db:
+        file = db.session.query(R.refJSON.label('file')).filter(and_(
                               R.tasPk==task_id, R.refVisible==1
                               )).scalar()
-   return file
+    return file
