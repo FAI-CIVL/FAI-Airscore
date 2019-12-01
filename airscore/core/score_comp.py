@@ -25,7 +25,7 @@ from pprint     import pprint
 def main(args):
 
     '''create logging and disable output'''
-    Logger('ON', 'score_comp.txt')
+    # Logger('ON', 'score_comp.txt')
 
     print("starting..")
     '''Main module. Takes comPk and status as parameters'''
@@ -38,11 +38,11 @@ def main(args):
     comp = C.read(comp_id)
 
     '''create task scores obj, json file, and tblResultFile entry'''
-    ref_id = comp.create_results(status)
+    ref_id = comp.create_results(comp_id, status=status)
     print(f'result ID: {ref_id}')
 
     ''' now restore stdout function '''
-    Logger('OFF')
+    # Logger('OFF')
 
     ''' output ref_id to use in frontend:
         comp_result.php?refPk=ref_id&comPk=comp_id'''

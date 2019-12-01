@@ -10,15 +10,16 @@ from logger import Logger
 from result import Task_result
 from pprint import pprint
 
+
 def main(args):
 
     """Main module. prints result from a task"""
 
     '''create logging and disable output'''
-    Logger('ON', 'create_task_result.txt')
+    # Logger('ON', 'create_task_result.txt')
 
-    task_id = int(sys.args[0])
-    status  = str(sys.args[1])
+    task_id = int(args[0])
+    status  = str(args[1])
 
     '''create result object using method 1'''
     start = time.time()
@@ -28,7 +29,7 @@ def main(args):
     end = time.time()
 
     ''' now restore stdout function '''
-    Logger('OFF')
+    # Logger('OFF')
 
     print(ref_id)
 

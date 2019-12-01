@@ -80,8 +80,8 @@ def get_comp_json(comp_id):
     from db_tables import tblResultFile as R
     if comp_id > 0:
         with Database() as db:
-            file = db.session.query(R.refJSON).filter(and_(R.comPk==comp_id, R.tasPk==None, R.refVisible==1)).limit(1).scalar()
-            return file
+            filename = db.session.query(R.refJSON).filter(and_(R.comPk==comp_id, R.tasPk==None, R.refVisible==1)).limit(1).scalar()
+            return filename
 
 
 def get_nat_code(iso):

@@ -18,7 +18,6 @@ from folium.map import FeatureGroup, Marker, Popup
 from geographiclib.geodesic import Geodesic
 
 import Defines as d
-from compUtils import read_formula
 from mapUtils import get_region_bbox
 from task import Task
 

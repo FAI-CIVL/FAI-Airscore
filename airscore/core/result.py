@@ -156,6 +156,7 @@ class Comp_result(object):
 
     tasks_list =   ['task_name',
                     'date',
+                    'comment',
                     'opt_dist',
                     'pilots_goal',
                     'day_quality',
@@ -176,19 +177,20 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None):
 
     timestamp   = int(time())       # timestamp of generation
     dt          = datetime.fromtimestamp(timestamp).strftime('%Y%m%d_%H%M%S')
-    filename    = d.RESULTDIR
+    filename    = '_'.join([code,dt]) + '.json'
+
     '''adding data section to the elements, with:
         timestamp, status'''
-    result = {'data':{'timestamp':timestamp, 'status':status}}
+    result = {'file_stats': {'timestamp': timestamp, 'status': status}}
     result.update(elements)
 
     '''creating json formatting'''
     content = json.dumps(result, cls=CJsonEncoder)
 
     '''creating file'''
-    with open(filename, 'w') as f:
+    with open(d.RESULTDIR + filename, 'w') as f:
         f.write(content)
-    os.chown(filename, 1000, 1000)
+    os.chown(d.RESULTDIR + filename, 1000, 1000)
 
     # with open(filename, 'w') as f:
     #     json.dump(value, f)

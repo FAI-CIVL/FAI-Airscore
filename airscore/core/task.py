@@ -127,7 +127,6 @@ class Task(object):
 
     @property
     def date_str(self):
-        from datetime import datetime
         return self.date.strftime("%Y-%m-%d")
 
     @property
@@ -250,9 +249,9 @@ class Task(object):
             self.task_path = '_'.join([('t'+str(self.task_num)), self.date.strftime('%Y%m%d')])
 
     def create_results(self, status=None, mode='default'):
-        '''
+        """
             Create Scoring
-            - if necessary,recalcutales all tracks (stopped task, changed task settings)
+            - if necessary, recalcutales all tracks (stopped task, changed task settings)
             - gets info about formula, pilots results
             - calculates scores
             - creates a json file
@@ -262,14 +261,9 @@ class Task(object):
             - status:   str - 'provisional', 'final', 'official' ...
             - mode:     str - 'default'
                               'full'    recalculates all tracks
-        '''
+        """
         from result     import Task_result as R, create_json_file
         from compUtils  import read_rankings
-        from pprint     import pprint as pp
-        from    datetime import datetime
-        from    pprint   import pprint as pp
-        import  Defines  as d
-        from time import time
 
         '''retrieve scoring formula library'''
         lib = self.formula.get_lib()
@@ -320,7 +314,7 @@ class Task(object):
                         'stats':    stats,
                         'rankings': rankings
                     }
-        ref_id = create_json_file(comp_id=self.comp_id, task_id=self.id, code=self.task_code, elements=result)
+        ref_id = create_json_file(self.comp_id, self.comp_code + '_' + self.task_code, result, task_id=self.id, status=status)
         return ref_id
 
     def is_valid(self):

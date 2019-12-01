@@ -8,7 +8,7 @@ Antonio Golfari - 2019
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, class_mapper
 import Defines as d
 
 '''basic connection'''

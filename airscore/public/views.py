@@ -161,8 +161,7 @@ def competition(comp):
                  t.tasDate,
                  t.tasTaskType,
                  t.tasDistance,
-                 t.tasComment,
-                 t.tasQuality)
+                 t.tasComment)
                  .filter(t.comPk == comp)
                  .order_by(t.tasDate.desc()).all())
 
@@ -262,7 +261,8 @@ def comp_result(compid):
 def get_comp_result(compid):
     from compUtils import get_comp_json
     filename = get_comp_json(compid)
-    filename = 'LEGA19_2_20191125_002016.json'  # for testing
+    print(filename)
+    # filename = 'LEGA19_2_20191125_002016.json'  # for testing
     with open(d.RESULTDIR+filename, 'r') as myfile:
         data=myfile.read()
     if not data:

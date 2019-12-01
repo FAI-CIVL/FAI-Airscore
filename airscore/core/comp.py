@@ -208,11 +208,11 @@ class Comp(object):
 
     @staticmethod
     def create_results(comp_id, status=None):
-        '''creates the json result file and the database entry'''
-        from    compUtils  import get_tasks_result_files, get_participants
-        from    result     import Comp_result as C, create_json_file
-        from    pprint     import pprint as pp
-        import  json
+        """creates the json result file and the database entry"""
+        from compUtils import get_tasks_result_files, get_participants
+        from result import Comp_result as C, create_json_file
+        import json
+        import Defines
 
         '''PARAMETER: decimal positions'''
         d = 0       # should be a formula parameter, or a ForComp parameter?
@@ -237,15 +237,15 @@ class Comp(object):
         rankings        = {}
 
         for idx, t in enumerate(files):
-            with open(t.file, 'r') as f:
+            with open(Defines.RESULTDIR + t.file, 'r') as f:
                 '''read task json file'''
                 data = json.load(f)
 
                 '''create task code'''
                 code = ('T'+str(idx+1))
-
+                print(t.file)
                 '''get task info'''
-                task = {'code':code, 'id':t.task_id}
+                task = {'code':code, 'id':t.task_id, 'status': data['file_stats']['status']}
                 i = dict(data['info'], **data['stats'])
                 task.update({x:i[x] for x in C.tasks_list})
                 if val == 'ftv':
@@ -268,7 +268,7 @@ class Comp(object):
                 for p in participants:
                     s = round(task_results.get(p.pil_id, {})[code], d)
                     r = task['ftv_validity'] if val == 'ftv' else 1000
-                    if r > 0:   #sanity
+                    if r > 0:   # sanity
                         perf = round(s / r, d+3)
                         p.results.update({code:{'pre':s, 'perf':perf, 'score':s}})
                     else:
@@ -284,15 +284,16 @@ class Comp(object):
         comp.participants   = sorted(results, key=lambda k: k.score, reverse=True)
 
         '''create json file'''
-        result =    {   'info':     {x:getattr(self, x) for x in C.info_list},
-                        'rankings': self.rankings,
-                        'tasks':    [t for t in self.tasks],
-                        'results':  [res.as_dict() for res in self.results],
-                        'formula':  self.formula,
-                        'stats':    self.stats
+        result =    {   'info':     {x:getattr(comp, x) for x in C.info_list},
+                        'rankings': rankings,
+                        'tasks':    [t for t in comp.tasks],
+                        'results':  [res.as_dict() for res in comp.results],
+                        'formula':  comp.formula,
+                        'stats':    comp.stats
                     }
-        ref_id = create_json_file(comp_id=self.id, task_id=None, code=self.comp_code, elements=result)
+        ref_id = create_json_file(comp_id=comp.id, task_id=None, code=comp.comp_code, elements=result)
         return ref_id
+
 
 def get_final_scores(results, tasks, formula, d = 0):
     '''calculate final scores depending on overall validity:

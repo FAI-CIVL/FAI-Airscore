@@ -3,6 +3,7 @@ from sqlalchemy import CHAR, Column, DECIMAL, Date, DateTime, Enum, Float, Index
 from sqlalchemy.dialects.mysql import BIGINT, INTEGER, LONGTEXT, MEDIUMTEXT, TINYINT, VARCHAR
 from myconn import Base, metadata
 
+
 class CompResultView(Base):
     __table__ = Table( 'CompResultView', metadata,
 
@@ -28,6 +29,7 @@ class CompResultView(Base):
     Column('team_scoring', Enum('off', 'on'), server_default=text("'off'")),
     Column('team_over', INTEGER(2))
 )
+
 
 class CompetitionView(Base):
     __table__ = Table( 'CompetitionView', metadata,
@@ -68,6 +70,7 @@ class CompetitionView(Base):
     Column('forComClass', String(5))
 )
 
+
 class CompObjectView(Base):
     __table__ = Table( 'CompObjectView', metadata,
 
@@ -96,8 +99,8 @@ class CompObjectView(Base):
     Column('validity_param', Float(asdecimal=False), server_default=text("'0.75'")),
     Column('team_scoring', Enum('off', 'on'), server_default=text("'off'")),
     Column('team_over', INTEGER(2))
-
 )
+
 
 class PilotView(Base):
     __table__ = Table( 'PilotView', metadata,
@@ -123,6 +126,7 @@ class PilotView(Base):
     Column('pilXContestUser', LONGTEXT)
 )
 
+
 class RegionWaypointView(Base):
     __table__ = Table( 'RegionWaypointView', metadata,
 
@@ -134,6 +138,7 @@ class RegionWaypointView(Base):
     Column('altitude', INTEGER(11)),
     Column('description', String(64))
 )
+
 
 class RegistrationView(Base):
     __table__ = Table( 'RegistrationView', metadata,
@@ -158,6 +163,7 @@ class RegistrationView(Base):
     Column('paid', INTEGER(11), server_default=text("'0'"))
 )
 
+
 class RegisteredPilotView(Base):
     __table__ = Table( 'RegisteredPilotView', metadata,
 
@@ -175,6 +181,7 @@ class RegisteredPilotView(Base):
     Column('fai', String(20)),
     Column('team', String(100)),
 )
+
 
 class ResultView(Base):
     __table__ = Table( 'ResultView', metadata,
@@ -210,6 +217,7 @@ class ResultView(Base):
     Column('tarLastTime', INTEGER(11))
 )
 
+
 class TaskFormulaView(Base):
     __table__ = Table( 'TaskFormulaView', metadata,
 
@@ -231,6 +239,7 @@ class TaskFormulaView(Base):
     Column('score_back_time', BIGINT(13), server_default=text("'0'")),
     Column('tolerance', Float(asdecimal=False))
 )
+
 
 class TaskObjectView(Base):
     __table__ = Table( 'TaskObjectView', metadata,
@@ -266,6 +275,7 @@ class TaskObjectView(Base):
     Column('launch_valid', BIGINT(11)),
     Column('task_path', String(40))
 )
+
 
 class FlightResultView(Base):
     __table__ = Table( 'FlightResultView', metadata,
@@ -308,6 +318,7 @@ class FlightResultView(Base):
     Column('track_file', String(255)),
     Column('g_record', TINYINT(4))
 )
+
 
 class TaskResultView(Base):
     __table__ = Table( 'TaskResultView', metadata,
@@ -352,6 +363,7 @@ class TaskResultView(Base):
     Column('g_record', TINYINT(4))
 )
 
+
 class TaskStatsView(Base):
     __table__ = Table( 'TaskStatsView', metadata,
 
@@ -375,6 +387,7 @@ class TaskStatsView(Base):
     Column('fastest', BIGINT(12), server_default=text("'0'")),
     Column('max_time', BIGINT(11), server_default=text("'0'"))
 )
+
 
 class TaskTotalsView(Base):
     __table__ = Table( 'TaskTotalsView', metadata,
@@ -400,6 +413,7 @@ class TaskTotalsView(Base):
     Column('lastTime', BIGINT(11), server_default=text("'0'")),
     Column('LCmin', Float(asdecimal=False), server_default=text("'0'"))
 )
+
 
 class TaskView(Base):
     __table__ = Table( 'TaskView', metadata,
@@ -495,6 +509,7 @@ class TaskWaypointView(Base):
     Column('altitude', BIGINT(21))
 )
 
+
 class TaskXContestWptView(Base):
     __table__ = Table( 'TaskXContestWptView', metadata,
 
@@ -505,6 +520,7 @@ class TaskXContestWptView(Base):
     Column('xccToID', BIGINT(11))
 )
 
+
 class UserView(Base):
     __table__ = Table( 'UserView', metadata,
 
@@ -513,6 +529,7 @@ class UserView(Base):
     Column('useLogin', String(60)),
     Column('useEmail', String(100))
 )
+
 
 class TrackFileView(Base):
     __table__ = Table( 'TrackFileView', metadata,
@@ -531,6 +548,7 @@ schema_version = Table(
     Column('svExtra', String(256))
 )
 
+
 class tblAirspace(Base):
     __tablename__ = 'tblAirspace'
 
@@ -543,6 +561,7 @@ class tblAirspace(Base):
     airCentreWP = Column(INTEGER(11))
     airRadius = Column(Float)
 
+
 class tblAirspaceRegion(Base):
     __tablename__ = 'tblAirspaceRegion'
 
@@ -551,6 +570,7 @@ class tblAirspaceRegion(Base):
     argLatDecimal = Column(Float(asdecimal=False), nullable=False)
     argLongDecimal = Column(Float(asdecimal=False), nullable=False)
     argSize = Column(Float, nullable=False)
+
 
 class tblAirspaceWaypoint(Base):
     __tablename__ = 'tblAirspaceWaypoint'
@@ -565,6 +585,7 @@ class tblAirspaceWaypoint(Base):
     awpAngleEnd = Column(Float)
     awpRadius = Column(Float)
 
+
 class tblCertification(Base):
     __tablename__ = 'tblCertification'
 
@@ -572,12 +593,14 @@ class tblCertification(Base):
     cerName = Column(String(15), nullable=False)
     comClass = Column(Enum('PG', 'HG', 'mixed'), nullable=False, server_default=text("'PG'"))
 
+
 class tblClasCertRank(Base):
     __tablename__ = 'tblClasCertRank'
 
     claPk = Column(INTEGER(11), primary_key=True)
     cerPk = Column(INTEGER(11), nullable=False)
     ranPk = Column(INTEGER(11), nullable=False)
+
 
 class tblClassification(Base):
     __tablename__ = 'tblClassification'
@@ -588,6 +611,7 @@ class tblClassification(Base):
     claFem = Column(TINYINT(1), nullable=False, server_default=text("'1'"))
     claTeam = Column(TINYINT(1), nullable=False, server_default=text("'0'"))
 
+
 class tblCompAuth(Base):
     __table__ = Table('tblCompAuth', metadata,
 
@@ -595,6 +619,7 @@ class tblCompAuth(Base):
     Column('comPk', INTEGER(11)),
     Column('useLevel', Enum('read', 'write', 'admin'), server_default=text("'read'"))
 )
+
 
 class tblCompetition(Base):
     __tablename__ = 'tblCompetition'
@@ -623,6 +648,7 @@ class tblCompetition(Base):
     comExtUrl = Column(String(100))
     comPath  = Column(String(40))
 
+
 class tblCountryCode(Base):
     __tablename__ = 'tblCountryCode'
 
@@ -635,6 +661,7 @@ class tblCountryCode(Base):
     natSubRegion = Column(String(25))
     natRegionId = Column(INTEGER(11))
     natSubRegionId = Column(INTEGER(11))
+
 
 class tblExtPilot(Base):
     __tablename__ = 'tblExtPilot'
@@ -656,6 +683,7 @@ class tblExtPilot(Base):
     pilLT24User = Column(String(255))
     pilATUser = Column(String(255))
     pilXcontestUser = Column(String(255))
+
 
 class tblExtResult(Base):
     __tablename__ = 'tblExtResult'
@@ -687,6 +715,7 @@ class tblExtResult(Base):
     tarLastTime = Column(INTEGER(11))
     traGlider = Column(String(50))
 
+
 class tblExtTask(Base):
     __tablename__ = 'tblExtTask'
 
@@ -698,6 +727,7 @@ class tblExtTask(Base):
     tasQuality = Column(Float(asdecimal=False))
     tasTopScore = Column(INTEGER(11))
     extURL = Column(String(128))
+
 
 class tblForComp(Base):
     __tablename__ = 'tblForComp'
@@ -718,6 +748,7 @@ class tblForComp(Base):
     comTeamSize = Column(INTEGER(11))
     comTeamScoring = Column(Enum('off', 'on'), nullable=False, server_default=text("'off'"))
     comTeamOver = Column(INTEGER(2))
+
 
 class tblFormula(Base):
     __tablename__ = 'tblFormula'
@@ -753,6 +784,7 @@ class tblGlider(Base):
     gliManufacturer = Column(String(32))
     gliClass = Column(Enum('PG', 'HG'), server_default=text("'PG'"))
     gliDHV = Column(Enum('1', '1/2', '2', '2/3', 'competition', 'floater', 'kingpost', 'open', 'rigid'), server_default=text("'competition'"))
+
 
 class tblLadder(Base):
     __tablename__ = 'tblLadder'
@@ -793,12 +825,14 @@ class tblLaunchSite(Base):
     lauLongDecimal = Column(Float(asdecimal=False), nullable=False)
     lauAltitude = Column(Float(asdecimal=False), nullable=False)
 
+
 class tblRanking(Base):
     __tablename__ = 'tblRanking'
 
     ranPk = Column(INTEGER(11), primary_key=True)
     ranName = Column(String(40), nullable=False)
     comClass = Column(Enum('PG', 'HG', 'mixed'), nullable=False, server_default=text("'PG'"))
+
 
 class tblRegion(Base):
     __tablename__ = 'tblRegion'
@@ -816,6 +850,7 @@ tblRegionAuth = Table(
     Column('comPk', INTEGER(11)),
     Column('useLevel', Enum('read', 'write', 'admin'), server_default=text("'read'"))
 )
+
 
 class tblRegionWaypoint(Base):
     __tablename__ = 'tblRegionWaypoint'
@@ -836,6 +871,7 @@ tblRegionXCSites = Table(
     Column('regPk', INTEGER(11), nullable=False),
     Column('xccSiteID', INTEGER(11), nullable=False)
 )
+
 
 class tblParticipant(Base):
     __tablename__ = 'tblParticipant'
