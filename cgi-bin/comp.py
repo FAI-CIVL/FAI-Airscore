@@ -274,10 +274,10 @@ class Comp(object):
 
                 '''get pilots result'''
                 task_results = {}
-                for t in data['results']:
-                    task_results.setdefault(t['pil_id'], {}).update({code:t['score']})
+                for res in data['results']:
+                    task_results.setdefault(res['par_id'], {}).update({code:res['score']})
                 for p in participants:
-                    s = round(task_results.get(p.pil_id, {})[code], d)
+                    s = round(task_results.get(p.par_id, {})[code], d)
                     r = task['ftv_validity'] if val == 'ftv' else 1000
                     if r > 0:   #sanity
                         perf = round(s / r, d+3)
@@ -302,7 +302,7 @@ class Comp(object):
                         'formula':  comp.formula,
                         'stats':    comp.stats
                     }
-        ref_id = create_json_file(comp_id=comp.id, task_id=None, code=comp.comp_code, elements=result)
+        ref_id = create_json_file(comp_id=comp.id, task_id=None, code=comp.comp_code, elements=result, status=status)
         return ref_id
 
 def get_final_scores(results, tasks, formula, d = 0):

@@ -319,7 +319,7 @@ class Task(object):
                         'stats':    stats,
                         'rankings': rankings
                     }
-        ref_id = create_json_file(comp_id=self.comp_id, task_id=self.id, code=self.task_code, elements=result)
+        ref_id = create_json_file(comp_id=self.comp_id, task_id=self.id, code='_'.join([self.comp_code, self.task_code]), elements=result, status=status)
         return ref_id
 
     def is_valid(self):

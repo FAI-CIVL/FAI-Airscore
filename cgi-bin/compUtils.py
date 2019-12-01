@@ -2,12 +2,11 @@
 Module for operations on comp / task / formulas
 Use:    import compUtils
         comPk = compUtils.get_comp(tasPk)
-
 Antonio Golfari - 2019
 """
 
 # Use your utility module.
-from myconn import Database
+from myconn     import Database
 from sqlalchemy import and_, or_
 
 def get_comp(task_id):
