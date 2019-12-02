@@ -6,9 +6,10 @@ Antonio Golfari - 2019
 """
 
 # Use your utility module.
-from myconn     import Database
+from myconn import Database
 from sqlalchemy import and_, or_
-
+import Defines
+import json
 
 def get_comp(task_id):
     """Get comPk from tasPk"""
@@ -74,13 +75,24 @@ def is_ext(comp_id):
         return bool(comps.get(comp_id).comExt)
 
 
-def get_comp_json(comp_id):
+def get_comp_json_filename(comp_id):
     """returns active json results file"""
     from db_tables import tblResultFile as R
-    if comp_id > 0:
-        with Database() as db:
-            filename = db.session.query(R.refJSON).filter(and_(R.comPk==comp_id, R.tasPk==None, R.refVisible==1)).limit(1).scalar()
-            return filename
+    filename = "NONE"
+    with Database() as db:
+        filename = db.session.query(R.refJSON).filter(and_(R.comPk == comp_id, R.tasPk == None, R.refVisible == 1))\
+            .limit(1).scalar()
+    print(f"filename: {filename}")
+    return filename
+
+
+def get_comp_json(comp_id):
+    filename = get_comp_json_filename(comp_id)
+    with open(Defines.RESULTDIR+filename, 'r') as myfile:
+        data = myfile.read()
+    if not data:
+        return "error"
+    return json.loads(data)
 
 
 def get_nat_code(iso):

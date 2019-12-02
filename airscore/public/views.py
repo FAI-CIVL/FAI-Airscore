@@ -147,46 +147,60 @@ def get_all_comps():
     return jsonify({'data': all_comps})
 
 
-@blueprint.route('/competition/<comp>')
-def competition(comp):
-    from db_tables import tblTask, tblCompetition
-    layer = {}
+@blueprint.route('/competition/<compid>')
+def competition(compid):
+    from db_tables import tblTask, tblCompetition, tblResultFile
+    from compUtils import get_comp_json
+    result_file = get_comp_json(int(compid))
     all_tasks = []
+    layer = {}
+    task_ids = []
+    if result_file != 'error':
+        for task in result_file['tasks']:
+            task_ids.append(task['id'])
+            wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox= get_map_json(task['id'])
+            layer['geojson'] = None
+            layer['bbox'] = bbox
+            map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route, goal_line=goal_line, margin=tolerance)
+            task['tasDistance'] = '{:0.2f}'.format(task['opt_distance']/1000) + ' km'
+            task['tasQuality'] = '{:0.2f}'.format(task['day_quality'])
+            task.update({'map':map._repr_html_()})
+            all_tasks.append(task)
+
     c = aliased(tblCompetition)
     t = aliased(tblTask)
 
     with Database() as db:
-        tasks = (db.session.query(t.tasPk,
+        non_scored_tasks = (db.session.query(t.tasPk,
                  t.tasName,
                  t.tasDate,
                  t.tasTaskType,
                  t.tasDistance,
-                 t.tasComment)
-                 .filter(t.comPk == comp)
+                 t.tasComment).filter(t.comPk == compid, t.comPk.notin_(task_ids))
                  .order_by(t.tasDate.desc()).all())
 
         competition_info = (db.session.query(
                 c.comName,
                 c.comLocation,
                 c.comDateFrom,
-                c.comDateTo).filter(c.comPk == comp).one())
+                c.comDateTo).filter(c.comPk == compid).one())
     comp = competition_info._asdict()
     if comp['comDateFrom']:
         comp['comDateFrom'] = comp['comDateFrom'].strftime("%Y-%m-%d")
     if comp['comDateTo']:
         comp['comDateTo'] = comp['comDateTo'].strftime("%Y-%m-%d")
 
-    if tasks:
-        for t in tasks:
+    if non_scored_tasks:
+        for t in non_scored_tasks:
             task = t._asdict()
             wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox= get_map_json(task['tasPk'])
             layer['geojson'] = None
             layer['bbox'] = bbox
             map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route, goal_line=goal_line, margin=tolerance)
             task['tasDistance'] = '{:0.2f}'.format(task['tasDistance']/1000) + ' km'
-            if task['tasQuality']:
-                task['tasQuality'] = '{:0.2f}'.format(task['tasQuality'])
             task.update({'map':map._repr_html_()})
+            task['tasQuality'] = "-"
+            task['status'] = "Not yet scored"
             all_tasks.append(task)
     return render_template('public/comp.html', tasks=all_tasks, comp=comp)
 
@@ -260,15 +274,9 @@ def comp_result(compid):
 @blueprint.route('/get_comp_result/<compid>', methods=['GET', 'POST'])
 def get_comp_result(compid):
     from compUtils import get_comp_json
-    filename = get_comp_json(compid)
-    print(filename)
-    # filename = 'LEGA19_2_20191125_002016.json'  # for testing
-    with open(d.RESULTDIR+filename, 'r') as myfile:
-        data=myfile.read()
-    if not data:
-        return "error"
-    result_file = json.loads(data)
-    del result_file['data']
+    result_file = get_comp_json(compid)
+    if result_file == 'error':
+        return render_template('404.html')
     all_pilots = []
     rank = 1
     for r in result_file['results']:
