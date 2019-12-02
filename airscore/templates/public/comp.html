@@ -12,17 +12,17 @@
        {{task['map']|safe}}
     </div>
     <div class="col">
-      <h3 id="task_hd">{{task['tasName']}}</h3>
-      <h4>{{task['tasDate']}}</h4>
-      {{task['tasComment']}}<br>
+      <h3 id="task_hd">{{task['task_name']}}</h3>
+      <h4>{{task['date']}}</h4>
+      {{task['comment']}}<br>
       <table class="taskinfo"><tbody><tr><td>Task Type:</td>
-        <td>{{task['tasType']}}</td></tr><tr>
+        <td>{{task['task_type']}}</td></tr><tr>
         <td>Task Distance:</td>
-        <td>{{task['tasDistance']}}</td>
+        <td>{{task['opt_dist']}}</td>
       </tr><tr><td>Day Quality:</td>
         <td>{{task['tasQuality']}}</td>
       </tr></tbody></table><br><a href={{ url_for('public.task_result', taskid=task['tasPk']) }} class="btn btn-primary">Task Scores</a>
-        <td>Placeholder for scoring:not scored/in progress/provisional/final</td>
+        <td><strong>{{task['status']}}</strong></td>
     </div>
  </div>
  <br>

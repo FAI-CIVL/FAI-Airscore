@@ -157,14 +157,14 @@ def competition(compid):
     task_ids = []
     if result_file != 'error':
         for task in result_file['tasks']:
-            task_ids.append(task['id'])
-            wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox= get_map_json(task['id'])
+            task_ids.append(int(task['id']))
+            wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox = get_map_json(task['id'])
             layer['geojson'] = None
             layer['bbox'] = bbox
-            map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route, goal_line=goal_line, margin=tolerance)
-            task['tasDistance'] = '{:0.2f}'.format(task['opt_distance']/1000) + ' km'
+            task_map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route, goal_line=goal_line, margin=tolerance)
+            task['opt_dist'] = '{:0.2f}'.format(task['opt_dist']/1000) + ' km'
             task['tasQuality'] = '{:0.2f}'.format(task['day_quality'])
-            task.update({'map':map._repr_html_()})
+            task.update({'map': task_map._repr_html_()})
             all_tasks.append(task)
 
     c = aliased(tblCompetition)
@@ -172,11 +172,11 @@ def competition(compid):
 
     with Database() as db:
         non_scored_tasks = (db.session.query(t.tasPk,
-                 t.tasName,
-                 t.tasDate,
-                 t.tasTaskType,
-                 t.tasDistance,
-                 t.tasComment).filter(t.comPk == compid, t.comPk.notin_(task_ids))
+                 t.tasName.label('task_name'),
+                 t.tasDate.label('date'),
+                 t.tasTaskType.label('task_type'),
+                 t.tasShortRouteDistance,
+                 t.tasComment.label('comment')).filter(t.comPk == compid, t.tasPk.notin_(task_ids))
                  .order_by(t.tasDate.desc()).all())
 
         competition_info = (db.session.query(
@@ -197,11 +197,13 @@ def competition(compid):
             layer['geojson'] = None
             layer['bbox'] = bbox
             map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route, goal_line=goal_line, margin=tolerance)
-            task['tasDistance'] = '{:0.2f}'.format(task['tasDistance']/1000) + ' km'
+            task['opt_dist'] = '{:0.2f}'.format(task['tasShortRouteDistance']/1000) + ' km'
             task.update({'map':map._repr_html_()})
             task['tasQuality'] = "-"
             task['status'] = "Not yet scored"
+            task['date'] = task['date'].strftime("%Y-%m-%d")
             all_tasks.append(task)
+    all_tasks.sort(key=lambda k: k['date'], reverse=True)
     return render_template('public/comp.html', tasks=all_tasks, comp=comp)
 
 

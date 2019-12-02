@@ -164,7 +164,8 @@ class Comp_result(object):
                     'opt_dist',
                     'pilots_goal',
                     'day_quality',
-                    'max_score']
+                    'max_score',
+                    'task_type']
 
     result_list =  ['ID',
                     'par_id',

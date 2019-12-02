@@ -197,7 +197,6 @@ class Comp(object):
         '''creates the json result file and the database entry'''
         from    compUtils  import get_tasks_result_files, get_participants
         from    result     import Comp_result as C, create_json_file
-        from    os         import path
         import  json
         import Defines
 
@@ -271,10 +270,10 @@ class Comp(object):
         comp.participants   = sorted(results, key=lambda k: k.score, reverse=True)
 
         '''create json file'''
-        result =    {   'info':     {x:getattr(comp, x) for x in C.info_list},
+        result =    {   'info':     {x: getattr(comp, x) for x in C.info_list},
                         'rankings': comp.rankings,
                         'tasks':    [t for t in comp.tasks],
-                        'results':  [{x:getattr(res, x) for x in C.result_list} for res in results],
+                        'results':  [{x: getattr(res, x) for x in C.result_list} for res in results],
                         'formula':  comp.formula,
                         'stats':    comp.stats
                     }
