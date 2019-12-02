@@ -19,7 +19,7 @@ from airscore.user.models import User
 from airscore.utils import flash_errors
 
 import datetime
-from task import get_map_json
+from task import get_map_json, get_task_json
 from trackUtils import read_result_file
 from design_map import *
 # from wtforms.widgets import ListWidget, CheckboxInput
@@ -171,7 +171,7 @@ def competition(compid):
     t = aliased(tblTask)
 
     with Database() as db:
-        non_scored_tasks = (db.session.query(t.tasPk,
+        non_scored_tasks = (db.session.query(t.tasPk.label('id'),
                  t.tasName.label('task_name'),
                  t.tasDate.label('date'),
                  t.tasTaskType.label('task_type'),
@@ -193,7 +193,7 @@ def competition(compid):
     if non_scored_tasks:
         for t in non_scored_tasks:
             task = t._asdict()
-            wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox= get_map_json(task['tasPk'])
+            wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox= get_map_json(task['id'])
             layer['geojson'] = None
             layer['bbox'] = bbox
             map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route, goal_line=goal_line, margin=tolerance)
@@ -209,22 +209,19 @@ def competition(compid):
 
 @blueprint.route('/task_result/<taskid>')
 def task_result(taskid):
-    return render_template('public/task_result.html')
+    return render_template('public/task_result.html', taskid=taskid)
 
 
 @blueprint.route('/get_task_result/<taskid>', methods=['GET', 'POST'])
 def get_task_result(taskid):
-    filename = 'LEGA19_2_T1_20191116_154121.json'
-    with open(d.RESULTDIR+filename, 'r') as myfile:
-        data=myfile.read()
-    if not data:
-        return "error"
 
-    result_file = json.loads(data)
-    del result_file['data']
+    result_file = get_task_json(taskid)
+    if result_file == 'error':
+        return render_template('404.html')
+
     rank=1
     all_pilots = []
-    for r in result_file['results']:  #need sex??
+    for r in result_file['results']:  # need sex??
         pilot = []
         track_id = r['track_id']
         name = r['name']

@@ -10,14 +10,14 @@
     <!-- <title>AirScore Competitions</title> -->
 
     <!-- CSS -->
-    <link href="/static/build/css/task.css" rel="stylesheet">
+    <link href="/static/css/task.css" rel="stylesheet">
     <!-- <link href="navbar.css" rel="stylesheet"> -->
-    <link href="/static/build/css/spacelab_bootstrap.css" rel="stylesheet">
+    <link href="/static/css/spacelab_bootstrap.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet">
 
     <!-- JS -->
-    <script type="text/javascript" src="/static/build/js/utils.js"></script>
-    <script type="text/javascript" src="/static/build/js/microajax.minified.js"></script>
+    <script type="text/javascript" src="/static/js/utils.js"></script>
+    <script type="text/javascript" src="/static/js/microajax.minified.js"></script>
   </head>
 
 <body>
@@ -104,8 +104,9 @@
       <!-- Bootstrap core JavaScript -->
 
       <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
-      <script type="text/javascript" src="/static/build/js/pop_task.js"></script>
-      <script type="text/javascript" src="/static/build/js/class_filter.js"></script>
+      <script type="text/javascript" src="/static/js/pop_task.js"></script>
+      <script type="text/javascript">populate_task({{taskid|tojson}})</script>
+      <script type="text/javascript" src="/static/js/class_filter.js"></script>
 </body>
 
 {% endblock %}

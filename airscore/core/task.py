@@ -1315,13 +1315,21 @@ def write_map_json(task_id):
         f.write(jsonpickle.dumps({'task_coords': task_coords, 'turnpoints': turnpoints, 'short_route': short_route,
                                   'goal_line': goal_line, 'tolerance': tolerance, 'bbox': get_route_bbox(task)}))
 
-def get_task_json(task_id):
+def get_task_json_filename(task_id):
     """returns active json result file"""
     from db_tables import tblResultFile as R
     from sqlalchemy import and_, or_
 
     with Database() as db:
-        file = db.session.query(R.refJSON.label('file')).filter(and_(
+        filename = db.session.query(R.refJSON.label('file')).filter(and_(
                               R.tasPk==task_id, R.refVisible==1
                               )).scalar()
-    return file
+    return filename
+
+def get_task_json(task_id):
+    filename = get_task_json_filename(task_id)
+    with open(Defines.RESULTDIR+filename, 'r') as myfile:
+        data = myfile.read()
+    if not data:
+        return "error"
+    return json.loads(data)
