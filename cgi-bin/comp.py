@@ -277,7 +277,8 @@ class Comp(object):
                 for res in data['results']:
                     task_results.setdefault(res['par_id'], {}).update({code:res['score']})
                 for p in participants:
-                    s = round(task_results.get(p.par_id, {})[code], d)
+                    s = 0 if not task_results.get(p.par_id, {}) else round(task_results.get(p.par_id, {})[code], d)
+                    # s = round(task_results.get(p.par_id, {})[code], d)
                     r = task['ftv_validity'] if val == 'ftv' else 1000
                     if r > 0:   #sanity
                         perf = round(s / r, d+3)

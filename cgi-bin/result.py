@@ -175,6 +175,7 @@ class Comp_result(object):
                     'glider',
                     'glider_cert',
                     'sponsor',
+                    'results',
                     'team',
                     'nat_team',
                     'status',
