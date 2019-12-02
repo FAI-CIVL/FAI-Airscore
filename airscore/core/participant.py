@@ -22,7 +22,7 @@ class Partecipant(object):
 
     def __init__(self, par_id=None, comp_id=None, pilot_ID=None, civl_id=None, name=None, sex=None, birthdate=None,
                 nat=None, glider=None, glider_cert=None, sponsor=None, fai_id=None, fai_valid=1, xcontest_id=None,
-                team=None, paid=None, status=None):
+                team=None, nat_team=1, paid=None, status=None):
 
         self.par_id                     = par_id            # parPk
         self.comp_id                    = comp_id           # comPk
@@ -39,6 +39,7 @@ class Partecipant(object):
         self.fai_valid                  = fai_valid         # bool
         self.xcontest_id                = xcontest_id       # str
         self.team                       = team              # ?
+        self.nat_team                   = nat_team          # default 1
         self.paid                       = paid              # bool
         self.status                     = status            # 'confirmed', 'waiting list', 'wild card', ?
         self.pil_id                     = None              # PilotView id

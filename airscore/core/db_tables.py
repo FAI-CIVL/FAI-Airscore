@@ -177,9 +177,10 @@ class RegisteredPilotView(Base):
     Column('glider', String(100)),
     Column('class', String(20)),
     Column('sponsor', String(100)),
-    Column('civl', INTEGER(10)),
-    Column('fai', String(20)),
+    Column('civl_id', INTEGER(10)),
+    Column('fai_id', String(20)),
     Column('team', String(100)),
+    Column('nat_team', TINYINT(4))
 )
 
 
@@ -328,12 +329,16 @@ class TaskResultView(Base):
     Column('task_id', INTEGER(11)),
     Column('pil_id', INTEGER(11)),
     Column('ID', INTEGER(11)),
+    Column('civl_id', INTEGER(11)),
+    Column('fai_id', INTEGER(11)),
     Column('name', LONGTEXT),
     Column('sponsor', LONGTEXT),
     Column('nat', String(10)),
     Column('sex', String(1)),
     Column('glider', String(100)),
     Column('class', String(20)),
+    Column('team', String(20)),
+    Column('nat_team', TINYINT(4)),
     Column('distance', Float(asdecimal=False)),
     Column('speed', Float(asdecimal=False)),
     Column('first_time', INTEGER(11)),

@@ -274,7 +274,7 @@ class Comp(object):
         result =    {   'info':     {x:getattr(comp, x) for x in C.info_list},
                         'rankings': comp.rankings,
                         'tasks':    [t for t in comp.tasks],
-                        'results':  [res.as_dict() for res in results],
+                        'results':  [{x:getattr(res, x) for x in C.result_list} for res in results],
                         'formula':  comp.formula,
                         'stats':    comp.stats
                     }

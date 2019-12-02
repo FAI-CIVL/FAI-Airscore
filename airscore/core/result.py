@@ -100,12 +100,16 @@ class Task_result:
     results_list = ['track_id',
                     'par_id',
                     'ID',
+                    'civl_id',
+                    'fai_id',
                     'name',
                     'sponsor',
                     'nat',
                     'sex',
                     'glider',
                     'class',
+                    'team',
+                    'nat_team',
                     'distance',
                     'speed',
                     'real_start_time',
@@ -161,6 +165,21 @@ class Comp_result(object):
                     'pilots_goal',
                     'day_quality',
                     'max_score']
+
+    result_list =  ['ID',
+                    'par_id',
+                    'civl_id',
+                    'fai_id',
+                    'name',
+                    'sex',
+                    'nat',
+                    'glider',
+                    'glider_cert',
+                    'sponsor',
+                    'team',
+                    'nat_team',
+                    'status',
+                    'pil_id']
 
 
 def create_json_file(comp_id, code, elements, task_id=None, status=None):
