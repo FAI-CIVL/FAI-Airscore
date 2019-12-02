@@ -137,9 +137,9 @@ class Comp(object):
 
         with Database() as db:
             # get comp details.
-            q   = db.session.query(C).get(comp_id)
+            q = db.session.query(C).get(comp_id)
             db.populate_obj(comp, q)
-            comp.formula =   {x:getattr(q, x) for x in ['formula_name',
+            comp.formula = {x:getattr(q, x) for x in ['formula_name',
                                                     'formula_class',
                                                     'overall_validity',
                                                     'validity_param',
