@@ -163,7 +163,8 @@ def competition(compid):
             wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox = get_map_json(task['id'])
             layer['geojson'] = None
             layer['bbox'] = bbox
-            task_map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route, goal_line=goal_line, margin=tolerance)
+            task_map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
+                                goal_line=goal_line, margin=tolerance)
             task['opt_dist'] = '{:0.2f}'.format(task['opt_dist']/1000) + ' km'
             task['tasQuality'] = '{:0.2f}'.format(task['day_quality'])
             task.update({'map': task_map._repr_html_()})
@@ -202,12 +203,13 @@ def competition(compid):
     if non_scored_tasks:
         for t in non_scored_tasks:
             task = t._asdict()
-            wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox= get_map_json(task['id'])
+            wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox = get_map_json(task['id'])
             layer['geojson'] = None
             layer['bbox'] = bbox
-            map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route, goal_line=goal_line, margin=tolerance)
+            map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
+                           goal_line=goal_line, margin=tolerance)
             task['opt_dist'] = '{:0.2f}'.format(task['tasShortRouteDistance']/1000) + ' km'
-            task.update({'map':map._repr_html_()})
+            task.update({'map': map._repr_html_()})
             task['tasQuality'] = "-"
             task['status'] = "Not yet scored"
             task['date'] = task['date'].strftime("%Y-%m-%d")
@@ -229,7 +231,7 @@ def get_task_result(taskid):
     if result_file == 'error':
         return render_template('404.html')
 
-    rank=1
+    rank = 1
     all_pilots = []
     for r in result_file['results']:  # need sex??
         pilot = []
@@ -253,16 +255,16 @@ def get_task_result(taskid):
             pilot.append(sec_to_time(r['ES_time']-r['SS_time']).strftime("%H:%M:%S"))
         pilot.append(round(r['speed'],2) if r['speed'] else "")
         pilot.append("")  # altitude bonus
-        pilot.append(round(r['distance']/1000,2))
-        pilot.append(round(r['time_points'],2))
-        pilot.append(round(r['dep_points'],2))
+        pilot.append(round(r['distance']/1000, 2))
+        pilot.append(round(r['time_points'], 2))
+        pilot.append(round(r['dep_points'], 2))
         pilot.append("")  # arrival points
-        pilot.append(round(r['dist_points'],2))
-        pilot.append(round(r['penalty'],2) if r['penalty'] else "")
+        pilot.append(round(r['dist_points'], 2))
+        pilot.append(round(r['penalty'], 2) if r['penalty'] else "")
         pilot.append(round(r['score'], 2))
         all_pilots.append(pilot)
         rank += 1
-    result_file['data']= all_pilots
+    result_file['data'] = all_pilots
     all_classes = []
     for glider_class in result_file['rankings']:
         if glider_class[-5:].lower() == 'class':
@@ -311,7 +313,7 @@ def get_comp_result(compid):
 
         rank += 1
         all_pilots.append(pilot)
-    result_file['data']= all_pilots
+    result_file['data'] = all_pilots
 
     total_validity = 0
     for task in result_file['tasks']:

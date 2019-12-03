@@ -9,6 +9,11 @@
         <a href={{ url_for('public.comp_result', compid=comp['comPk']) }} class="btn btn-primary" >Overall Scores</a>
     {% endif %}
   </div>
+  <div>
+    {%if not tasks%}
+      <h1> No task has been set yet</h1>
+    {% endif %}
+  </div>
 </h1>
 <br><br>
 
