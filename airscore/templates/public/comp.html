@@ -21,7 +21,10 @@
         <td>{{task['opt_dist']}}</td>
       </tr><tr><td>Day Quality:</td>
         <td>{{task['tasQuality']}}</td>
-      </tr></tbody></table><br><a href={{ url_for('public.task_result', taskid=task['id']) }} class="btn btn-primary">Task Scores</a>
+      </tr></tbody></table><br>
+        {% if task['status'] != "Not yet scored"%}
+        <a href={{ url_for('public.task_result', taskid=task['id']) }} class="btn btn-primary" >Task Scores</a>
+        {% endif %}
         <td><strong>{{task['status']}}</strong></td>
     </div>
  </div>
