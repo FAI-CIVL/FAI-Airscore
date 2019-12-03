@@ -125,7 +125,7 @@ def get_all_comps():
             # comp['comName'] = "<a href=\"comp_overall.html?comPk=$id\">" . $row['comName'] . '</a>';
         if comp[3] == "PG" or "HG":
             hgpg = comp[3]
-            comp[3] = f'<img src="/static/build/img/{hgpg}.png" width="100%" height="100%"</img>'
+            comp[3] = f'<img src="/static/img/{hgpg}.png" width="100%" height="100%"</img>'
         else:
             comp[3] = ''
         if comp[4] != 'none' and comp[4] != '':
@@ -155,7 +155,9 @@ def competition(compid):
     all_tasks = []
     layer = {}
     task_ids = []
+    overall_available = False
     if result_file != 'error':
+        overall_available = True
         for task in result_file['tasks']:
             task_ids.append(int(task['id']))
             wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox = get_map_json(task['id'])
@@ -180,15 +182,22 @@ def competition(compid):
                  .order_by(t.tasDate.desc()).all())
 
         competition_info = (db.session.query(
+                c.comPk,
                 c.comName,
                 c.comLocation,
                 c.comDateFrom,
                 c.comDateTo).filter(c.comPk == compid).one())
     comp = competition_info._asdict()
+
+    comp_start = comp['comDateFrom']
+
     if comp['comDateFrom']:
         comp['comDateFrom'] = comp['comDateFrom'].strftime("%Y-%m-%d")
     if comp['comDateTo']:
         comp['comDateTo'] = comp['comDateTo'].strftime("%Y-%m-%d")
+
+    if comp_start > datetime.datetime.now():
+        return render_template('public/future_competition.html', comp=comp)
 
     if non_scored_tasks:
         for t in non_scored_tasks:
@@ -204,7 +213,8 @@ def competition(compid):
             task['date'] = task['date'].strftime("%Y-%m-%d")
             all_tasks.append(task)
     all_tasks.sort(key=lambda k: k['date'], reverse=True)
-    return render_template('public/comp.html', tasks=all_tasks, comp=comp)
+
+    return render_template('public/comp.html', tasks=all_tasks, comp=comp, overall_available=overall_available)
 
 
 @blueprint.route('/task_result/<taskid>')

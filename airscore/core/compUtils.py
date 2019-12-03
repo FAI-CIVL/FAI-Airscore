@@ -88,6 +88,8 @@ def get_comp_json_filename(comp_id):
 
 def get_comp_json(comp_id):
     filename = get_comp_json_filename(comp_id)
+    if not filename:
+        return "error"
     with open(Defines.RESULTDIR+filename, 'r') as myfile:
         data = myfile.read()
     if not data:
