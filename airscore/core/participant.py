@@ -16,7 +16,7 @@ from calcUtils  import json, get_datetime, decimal_to_seconds, time_difference
 import jsonpickle
 import Defines
 
-class Partecipant(object):
+class Participant(object):
     """Partecipant definition, DB operations
     """
 
@@ -77,7 +77,7 @@ class Partecipant(object):
             print(f"par_id needs to be int > 0, {par_id} was given")
             return None
 
-        pilot = Partecipant(par_id=par_id)
+        pilot = Participant(par_id=par_id)
 
         with Database() as db:
             # get pilot details.

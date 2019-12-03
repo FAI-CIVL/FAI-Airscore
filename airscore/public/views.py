@@ -267,7 +267,7 @@ def get_task_result(taskid):
 
 @blueprint.route('/comp_result/<compid>')
 def comp_result(compid):
-    return render_template('public/comp_overall.html')
+    return render_template('public/comp_overall.html', compid=compid)
 
 
 @blueprint.route('/get_comp_result/<compid>', methods=['GET', 'POST'])
@@ -281,14 +281,14 @@ def get_comp_result(compid):
     for r in result_file['results']:
         pilot = []
         pilot.append(rank)
-        pilot.append(r['fai'])
-        pilot.append(r['civl'])
+        pilot.append(r['fai_id'])
+        pilot.append(r['civl_id'])
         pilot.append(r['name'])
         pilot.append(r['nat'])
         pilot.append(r['sex'])
         pilot.append(r['sponsor'])
         pilot.append(r['glider'])
-        pilot.append(r['class'])
+        pilot.append(r['glider_cert'])
         pilot.append(f"<b>{int(r['score'])}</b>")
         for task in r['results']:
             if r['results'][task]['pre'] == r['results'][task]['score']:

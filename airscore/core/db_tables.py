@@ -175,7 +175,7 @@ class RegisteredPilotView(Base):
     Column('sex', String(1)),
     Column('nat', CHAR(10)),
     Column('glider', String(100)),
-    Column('class', String(20)),
+    Column('glider_cert', String(20)),
     Column('sponsor', String(100)),
     Column('civl_id', INTEGER(10)),
     Column('fai_id', String(20)),

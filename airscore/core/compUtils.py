@@ -190,19 +190,18 @@ def get_wpts(task_id):
 def get_participants(comp_id):
     """gets registered pilots list from database"""
     from db_tables import RegisteredPilotView as R
-    from participant import Partecipant
+    from participant import Participant
 
     with Database() as db:
         q       = db.session.query(R).filter(R.comp_id==comp_id)
         result  = q.all()
         pilots = []
         for p in result:
-            pil = Partecipant(comp_id=comp_id)
+            pil = Participant(comp_id=comp_id)
             db.populate_obj(pil, p)
             # for x in pil.__dict__.keys():
             #     if hasattr(result,x): setattr(pil, x, getattr(result,x))
             pilots.append(pil)
-            print(pil)
     return pilots
 
 

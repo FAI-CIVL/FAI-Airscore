@@ -180,11 +180,12 @@ class Comp_result(object):
                     'glider',
                     'glider_cert',
                     'sponsor',
-                    'results',
                     'team',
                     'nat_team',
                     'status',
-                    'pil_id']
+                    'pil_id',
+                    'score',
+                    'results']
 
 
 def create_json_file(comp_id, code, elements, task_id=None, status=None):

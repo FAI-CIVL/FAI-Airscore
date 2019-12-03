@@ -298,7 +298,6 @@ class Task(object):
             route.append(wpt)
         results = []
         for pil in pil_list:
-            print(f"pil:{pil}")
             res = {x: pil[x] for x in R.results_list}
             res['name'] = res['name'].title()
             res['glider'] = res['glider'].title()

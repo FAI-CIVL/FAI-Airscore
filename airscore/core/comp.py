@@ -158,7 +158,7 @@ class Comp(object):
         """Reads competition from json result file
         takes comPk as argument"""
         from    db_tables      import tblResultFile as R
-        from    participant    import Partecipant
+        from    participant    import Participant
         from    sqlalchemy     import and_, or_
         import  json
 
@@ -185,7 +185,7 @@ class Comp(object):
                     results = []
                     for p in data['results']:
                         '''get participants'''
-                        participant = Partecipant(comp_id=comp_id)
+                        participant = Participant(comp_id=comp_id)
                         participant.as_dict().update(p)
                         results.append(participant)
                     # should already be ordered, so probably not necessary
@@ -199,6 +199,7 @@ class Comp(object):
         from    result     import Comp_result as C, create_json_file
         import  json
         import Defines
+        from operator import itemgetter
 
         '''PARAMETER: decimal positions'''
         decimals = 0       # should be a formula parameter, or a ForComp parameter?
@@ -231,9 +232,9 @@ class Comp(object):
                 code = ('T'+str(idx+1))
 
                 '''get task info'''
-                task = {'code':code, 'id':t.task_id, 'status': data['file_stats']['status']}
+                task = {'code': code, 'id': t.task_id, 'status': data['file_stats']['status']}
                 i = dict(data['info'], **data['stats'])
-                task.update({x:i[x] for x in C.tasks_list})
+                task.update({x: i[x] for x in C.tasks_list})
                 if val == 'ftv':
                     task['ftv_validity'] = (round(task['max_score'], decimals) if ftv_type == 'pwc'
                                             else round(task['day_quality']*1000, decimals))
@@ -250,7 +251,7 @@ class Comp(object):
                 '''get pilots result'''
                 task_results = {}
                 for res in data['results']:
-                    task_results.setdefault(res['par_id'], {}).update({code:res['score']})
+                    task_results.setdefault(res['par_id'], {}).update({code: res['score']})
                 for p in participants:
                     s = 0 if not task_results.get(p.par_id, {}) else round(task_results.get(p.par_id, {})[code], decimals)
                     # s = round(task_results.get(p.par_id, {})[code], d)
@@ -274,7 +275,7 @@ class Comp(object):
         result =    {   'info':     {x: getattr(comp, x) for x in C.info_list},
                         'rankings': comp.rankings,
                         'tasks':    [t for t in comp.tasks],
-                        'results':  [{x: getattr(res, x) for x in C.result_list} for res in results],
+                        'results':  [{x: getattr(res, x) for x in C.result_list} for res in comp.participants],
                         'formula':  comp.formula,
                         'stats':    comp.stats
                     }
