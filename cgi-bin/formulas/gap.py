@@ -466,14 +466,14 @@ def points_allocation(task):   # from PWC###
         tarPk   = pil['track_id']
         penalty = pil['penalty'] if pil['penalty'] else 0
 
-        # Sanity
-        if pil['result'] in ('dnf', 'abs'):
-            pil['dist_points']  = 0
-            pil['time_points']  = 0
-            pil['arr_points']   = 0
-            pil['dep_points']   = 0
+        '''inizialise'''
+        # if pil['result'] in ('dnf', 'abs'):
+        pil['dist_points']  = 0
+        pil['time_points']  = 0
+        pil['arr_points']   = 0
+        pil['dep_points']   = 0
 
-        else:
+        if not (pil['result'] in ('dnf', 'abs')):
             # Pilot distance score
             # FIX: should round pil->distance properly?
             # my pilrdist = round(pil->{'distance'}/100.0) * 100
@@ -483,11 +483,14 @@ def points_allocation(task):   # from PWC###
             pil['time_points']  = pilot_speed(task, pil)
 
             # Pilot departure/leading points
-            pil['dep_points']   = pilot_departure_leadout(task, pil) if (pil['result'] != 'mindist' and pil['SS_time']) else 0
+            if task.departure and pil['result'] != 'mindist' and pil['SS_time']:
+                if task.departure = 'leadout':
+                    pil['dep_points'] = pilot_departure_leadout(task, pil) if (pil['result'] != 'mindist' and pil['SS_time']) else 0
 
-            # Pilot arrival score    this is always off in pwc
-            # Parrival = pilot_arrival(formula, task, pil)
-            pil['arr_points']   = 0
+
+            # Pilot arrival score
+            if task.arrival:
+                Parrival = pilot_arrival(task, pil)
 
             # Penalty for not making goal .
             if not pil['goal_time']:
