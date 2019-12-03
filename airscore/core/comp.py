@@ -116,9 +116,9 @@ class Comp(object):
 
         with Database() as db:
             # get comp details.
-            q   = db.session.query(C).get(comp_id)
+            q = db.session.query(C).get(comp_id)
             db.populate_obj(comp, q)
-            comp.formula =   {x:getattr(q, x) for x in ['formula_name',
+            comp.formula = {x:getattr(q, x) for x in ['formula_name',
                                                     'formula_class',
                                                     'overall_validity',
                                                     'validity_param',
@@ -252,7 +252,8 @@ class Comp(object):
                 for res in data['results']:
                     task_results.setdefault(res['par_id'], {}).update({code:res['score']})
                 for p in participants:
-                    s = round(task_results.get(p.par_id, {})[code], decimals)
+                    s = 0 if not task_results.get(p.par_id, {}) else round(task_results.get(p.par_id, {})[code], decimals)
+                    # s = round(task_results.get(p.par_id, {})[code], d)
                     r = task['ftv_validity'] if val == 'ftv' else 1000
                     if r > 0:   # sanity
                         perf = round(s / r, decimals+3)

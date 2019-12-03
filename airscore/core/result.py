@@ -167,6 +167,9 @@ class Comp_result(object):
                     'max_score',
                     'task_type']
 
+    ''' result_list comes from Participant obj, and RegisteredPilotView
+        available fields are: (`par_id`, `comp_id`, `civl_id`, `fai_id`, `pil_id`, `ID`, `name`, `sex`, `nat`,
+                            `glider`, `class`, `sponsor`, `team`, `nat_team`, 'results')'''
     result_list =  ['ID',
                     'par_id',
                     'civl_id',
@@ -177,6 +180,7 @@ class Comp_result(object):
                     'glider',
                     'glider_cert',
                     'sponsor',
+                    'results',
                     'team',
                     'nat_team',
                     'status',
@@ -212,10 +216,6 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None):
         f.write(content)
     os.chown(d.RESULTDIR + filename, 1000, 1000)
 
-    # with open(filename, 'w') as f:
-    #     json.dump(value, f)
-    # os.chown(filename, 1000, 1000)
-    #
     '''create database entry'''
     with Database() as db:
         result = R(comPk=comp_id, tasPk=task_id, refTimestamp=timestamp, refJSON=filename, refStatus=status)
@@ -223,4 +223,3 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None):
         db.session.commit()
         ref_id = result.refPk
     return ref_id
-    # return value
