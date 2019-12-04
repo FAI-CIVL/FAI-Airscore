@@ -60,7 +60,7 @@ def get_tracks(dir):
 
 def assign_and_import_tracks(files, task, xcontest=False):
     """Find pilots to associate with tracks"""
-    from compUtils import get_registration, get_task_file_path
+    from compUtils import get_registration, get_task_path
 
     pilot_list = []
     print(f"We have {len(files)} track to associate \n")
@@ -76,7 +76,7 @@ def assign_and_import_tracks(files, task, xcontest=False):
         print("Comp with registration: files will be checked against registered pilots not yet scored \n")
         pilot_list = get_non_scored_pilots(task_id, xcontest)
 
-    track_path = get_task_file_path(task_id, comp_id)
+    track_path = get_task_path(task_id)
 
     #print("found {} tracks \n".format(len(files)))
     for file in files:
@@ -234,7 +234,7 @@ def get_pil_track(par_id, task_id):
         print(f"Pilot with ID {pil_id} has not been scored yet on task ID {task_id} \n")
     return track_id
 
-def read_result_file(track_id, task_id):
+def read_track_result_file(track_id, task_id):
     """create task and track objects"""
     import jsonpickle
     from pathlib import Path
@@ -244,12 +244,12 @@ def read_result_file(track_id, task_id):
     fullname = os.path.join(res_path, filename)
     # if the file exists
     if not Path(fullname).is_file():
-        create_result_file(track_id, task_id)
+        create_track_result_file(track_id, task_id)
 
     with open(fullname, 'r') as f:
         return jsonpickle.decode(f.read())
 
-def create_result_file(track_id, task_id):
+def create_track_result_file(track_id, task_id):
     import flight_result
     from task import Task
 

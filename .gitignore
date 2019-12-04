@@ -66,8 +66,8 @@ _pycache_/*
 _pycache_
 *.pyc
 *.igc
-map.html
 *.pyc
 .idea/*
 
 
+!/airscore/templates/

@@ -20,14 +20,17 @@ from airscore.utils import flash_errors
 
 import datetime
 from task import get_map_json, get_task_json
-from trackUtils import read_result_file
+from trackUtils import read_track_result_file
 from design_map import *
 # from wtforms.widgets import ListWidget, CheckboxInput
 # from wtforms.validators import Required
+from flask_wtf import FlaskForm
+from wtforms import StringField,SubmitField, SelectField, SelectMultipleField
 from calcUtils import sec_to_time
 import os
 import json
 import Defines as d
+import mapUtils
 from myconn import Database
 from sqlalchemy import func, not_
 from sqlalchemy.orm import aliased
@@ -330,3 +333,63 @@ def get_comp_result(compid):
     all_classes.reverse()
     result_file['classes'] = all_classes
     return jsonify(result_file)
+
+
+class SelectAdditionalTracks(FlaskForm):
+    track_pilot_list =[]
+    tracks = SelectField('Add Tracks:', choices=track_pilot_list)
+
+
+@blueprint.route('/map/<trackid>')
+def map(trackid):
+    short_route = []
+    layer={}
+    other_tracks = mapUtils.get_other_tracks()
+    wpt_coords, turnpoints, short_route, goal_line, tolerance, _ = get_map_json(66)
+    layer['geojson'] = read_track_result_file(trackid, 66)
+    layer['bbox'] = layer['geojson']['bounds']
+    map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route, goal_line=goal_line, margin=tolerance)
+    waypoint_achieved_list = list(w for w in layer['geojson']['waypoint_achieved'])
+    add_tracks = SelectAdditionalTracks()
+    add_tracks.track_pilot_list = other_tracks
+    return render_template('map.html', other_tracks =other_tracks , add_tracks=add_tracks, map=map._repr_html_(), wpt_achieved = waypoint_achieved_list, task='task 1', pilot='Joachim Oberhouser')
+
+@blueprint.route('/_map/<trackid>/<extra_trackids>')
+def multimap(trackid, extra_trackids):
+    trackids=[]
+    for t in extra_trackids.split(','):
+        trackids.append(t)
+    # if trackids is None:
+    #     map(trackid)
+    layer={}
+    extra_layer={}
+    print(f"trackid={trackid} trackids={trackids}")
+    wpt_coords, turnpoints, short_route, goal_line, tolerance = get_task_json(66)
+    colours = ['#0000ff','#33cc33','#ffff00','#9900cc','#006600','#3399ff','#ff99cc','#663300','#99ffcc']
+    #blue, green, yellow, purple, dark green,light blue, pink, brown, turquoise
+    c = 0
+    legend = {}
+    extra_tracks = []
+    for t in trackids:
+        layer['geojson'] = read_track_result_file(t, 66)
+        track = {}
+        track['name'] = t
+        track['track'] = layer['geojson']['tracklog']
+        track['colour'] = colours[c]
+        extra_tracks.append(track)
+        legend[t] = colours[c]
+        c += 1
+
+    layer['geojson'] = read_track_result_file(trackid, 66)
+    layer['bbox'] = layer['geojson']['bounds']
+    map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route, goal_line=goal_line, margin=tolerance, thermal_layer=False, waypoint_layer=False, extra_tracks = extra_tracks)
+    waypoint_achieved_list = list(list(w for w in layer['geojson']['waypoint_achieved']))
+    pilot_name = trackids
+    c = 0
+
+    map_id = map.get_name()
+
+    macro = mapUtils.map_legend(legend)
+    map.get_root().add_child(macro)
+    map=map._repr_html_()
+    return map

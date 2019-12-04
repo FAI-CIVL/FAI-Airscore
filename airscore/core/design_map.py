@@ -230,7 +230,7 @@ def get_region(region_id):
 def main(mode, val, track_id):
     """Main module"""
     from task import get_map_json
-    from trackUtils import read_result_file
+    from trackUtils import read_track_result_file
 #     log_dir = d.LOGDIR
 #     print("log setup")
 #     logging.basicConfig(filename=log_dir + 'main.log',level=logging.INFO,format='%(asctime)s %(message)s')
@@ -251,7 +251,7 @@ def main(mode, val, track_id):
 
         if mode == 'tracklog':
             """read task and track objects"""
-            layer['geojson'] = read_result_file(track_id, task_id)
+            layer['geojson'] = read_track_result_file(track_id, task_id)
 
             layer['bbox'] = layer['geojson']['bounds']
         elif mode == 'route':

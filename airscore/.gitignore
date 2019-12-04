@@ -6,7 +6,6 @@ _pycache_/*
 _pycache_
 *.pyc
 *.igc
-map.html
 *.pyc
 .idea/*
 tracks/*
@@ -30,5 +29,4 @@ core/*.xctsk
 core/.DS*
 core/log/*.txt
 core/log/*.log
-
 
