@@ -325,7 +325,7 @@ class TaskResultView(Base):
     Column('nat', String(10)),
     Column('sex', String(1)),
     Column('glider', String(100)),
-    Column('class', String(20)),
+    Column('glider_cert', String(20)),
     Column('team', String(20)),
     Column('nat_team', TINYINT(4)),
     Column('distance', Float(asdecimal=False)),
@@ -337,15 +337,10 @@ class TaskResultView(Base):
     Column('result', String(7)),
     Column('SS_time', INTEGER(11)),
     Column('ES_time', INTEGER(11)),
+    Column('ES_rank', INTEGER(11)),
     Column('turnpoints_made', INTEGER(11)),
     Column('penalty', Float(asdecimal=False)),
     Column('comment', Text),
-    Column('speed_points', Float(asdecimal=False)),
-    Column('dist_points', Float(asdecimal=False)),
-    Column('arr_points', Float(asdecimal=False)),
-    Column('dep_points', Float(asdecimal=False)),
-    Column('score', Float(asdecimal=False)),
-    Column('lead_coeff', Float(asdecimal=False)),
     Column('fixed_LC', Float(asdecimal=False)),
     Column('ESS_altitude', INTEGER(11), server_default=text("'0'")),
     Column('goal_altitude', INTEGER(11)),
@@ -732,8 +727,8 @@ class tblFormula(Base):
     forVersion = Column(String(32))
     forComClass = Column(Enum('PG', 'HG', 'mixed'), nullable=False, server_default=text("'PG'"))
     forName = Column(String(32), nullable=False)
-    forArrival = Column(Enum('none', 'place', 'timed'), server_default=text("'none'"))
-    forDeparture = Column(Enum('none', 'departure', 'leadout'), server_default=text("'leadout'"))
+    forArrival = Column(Enum('off', 'position', 'time'), server_default=text("'none'"))
+    forDeparture = Column(Enum('off', 'departure', 'leadout'), server_default=text("'leadout'"))
     forLinearDist = Column(Float(asdecimal=False), server_default=text("'1'"))
     forDiffDist = Column(Float(asdecimal=False), server_default=text("'3'"))
     forDistMeasure = Column(Enum('average', 'median'), server_default=text("'average'"))
@@ -906,9 +901,9 @@ class tblTask(Base):
     tasEndSSDistance = Column(Float(asdecimal=False))
     tasSSDistance = Column(Float(asdecimal=False))
     tasSSInterval = Column(INTEGER(11), server_default=text("'0'"))
-    tasDeparture = Column(Enum('off', 'on', 'leadout', 'kmbonus'), server_default=text("'on'"))
-    tasArrival = Column(Enum('off', 'on'), server_default=text("'on'"))
     tasHeightBonus = Column(Enum('off', 'on'), server_default=text("'off'"))
+    tasDepOverride = Column(TINYINT(2), nullable=False, server_default=text("'1'"))
+    tasArrOverride = Column(TINYINT(2), nullable=False, server_default=text("'1'"))
     tasComment = Column(Text)
     tasLocked = Column(TINYINT(3), nullable=False, server_default=text("'0'"))
     tasMarginOverride = Column(Float(asdecimal=False))

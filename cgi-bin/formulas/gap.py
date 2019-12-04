@@ -294,7 +294,7 @@ def points_weight(task):
     dist_weight = 0.9 - 1.665 * goal_ratio + 1.713 * goal_ratio**2 - 0.587 * goal_ratio**3
 
     if comp_class == 'HG':
-        lead_weight      = (1 - dist_weight) / 8 * 1.4
+        lead_weight  = (1 - dist_weight) / 8 * 1.4
         arr_weight   = (1 - dist_weight) / 8
     else:
         arr_weight   = 0
@@ -307,7 +307,7 @@ def points_weight(task):
 
     Adistance   = 1000 * quality * dist_weight            # AvailDistPoints
     Astart      = 1000 * quality * lead_weight            # AvailLeadPoints
-    Aarrival    = 1000 * quality * arr_weight         # AvailArrPoints
+    Aarrival    = 1000 * quality * arr_weight             # AvailArrPoints
     Aspeed      = 1000 * quality * time_weight            # AvailSpeedPoints
 
     return Adistance, Aspeed, Astart, Aarrival
@@ -348,11 +348,8 @@ def pilot_departure_leadout(task, pil):
     # Sanity
     if 0 + Pdepart != Pdepart:
         Pdepart = 0
-
-
     if Pdepart < 0:
         Pdepart = 0
-
 
     print("    Pdepart: ", Pdepart)
     return Pdepart
@@ -382,10 +379,39 @@ def pilot_speed(task, pil):
 
     return Pspeed
 
+def pilot_arrival(task, pil):
+    ''' 11.4 Arrival points
+        Arrival points depend on the position at which a pilot crosses ESS:
+        The first pilot completing the speed section receives the maximum
+        available arrival points, while the others are awarded arrival points
+        according to the number of pilots who reached ESS before them.
+        The last pilot to reach ESS will always receive at least 20%
+        of the available arrival points.
+        ACp = 1 − (PositionAtESSp − 1) / NumberOfPilotsReachingESS
+        AFp = 0.2 + 0.037*ACp + 0.13*ACp**2 + 0.633*ACp**3
+    '''
+    from math import sqrt
+
+    stats       = task.stats
+    Aarrival    = stats['avail_arr_points']
+
+    if task.arrival == 'position':
+        '''FAI position arrival points'''
+        AC = 1 - (pil['ES_rank'] - 1) / stats['pilots_ess']
+    elif task.arrival == 'time':
+        '''OZGAP time arrival points'''
+        time_after = pil['time_after']/3600     # hours decimals
+        AC = 1 - 0.667*time_after
+
+    AF = 0.2 + 0.037*AC + 0.13*AC**2 + 0.633*AC**3
+    Parrival = AF * Aarrival
+
+    print(pil['track_id'], f" Parrival: {Parrival}")
+
+    return Parrival
 
 def pilot_distance(task, pil):
     """
-
     :type pil: object
     """
 
@@ -401,9 +427,6 @@ def get_results(task):
     stats   = task.stats
     formula = task.formula
 
-    # Get all pilots and process each of them
-    # pity it can't be done as a single update ...
-
     with Database() as db:
         q = db.session.query(R).filter(R.task_id==task.id).all()
         pilots = db.as_dict(q)
@@ -418,14 +441,14 @@ def get_results(task):
             # set pilot to min distance if they're below that ..
             res['distance'] = max(formula.min_dist, res['distance'])
 
-            res['timeafter']    = (res['ES_time'] - stats['min_ess_time']) if res['ES_time'] else None
+            res['time_after']   = (res['ES_time'] - stats['min_ess_time']) if res['ES_time'] else None
             res['time']         = (res['ES_time'] - res['SS_time']) if res['ES_time'] else 0
 
             #sanity
             res['time'] = max(res['time'], 0)
         else:
             res['time']         = None
-            res['timeafter']    = None
+            res['time_after']   = None
 
         '''
         Leadout Points Adjustment
@@ -466,8 +489,7 @@ def points_allocation(task):   # from PWC###
         tarPk   = pil['track_id']
         penalty = pil['penalty'] if pil['penalty'] else 0
 
-        '''inizialise'''
-        # if pil['result'] in ('dnf', 'abs'):
+        '''initialize'''
         pil['dist_points']  = 0
         pil['time_points']  = 0
         pil['arr_points']   = 0
@@ -479,24 +501,26 @@ def points_allocation(task):   # from PWC###
             # my pilrdist = round(pil->{'distance'}/100.0) * 100
             pil['dist_points']  = pilot_distance(task, pil)
 
-            # Pilot speed score
-            pil['time_points']  = pilot_speed(task, pil)
-
             # Pilot departure/leading points
-            if task.departure and pil['result'] != 'mindist' and pil['SS_time']:
-                if task.departure = 'leadout':
+            if task.departure != 'off' and pil['result'] != 'mindist' and pil['SS_time']:
+                if task.departure == 'leadout':
                     pil['dep_points'] = pilot_departure_leadout(task, pil) if (pil['result'] != 'mindist' and pil['SS_time']) else 0
+                elif task.departure == 'departure':
+                    '''does it even still exist dep. points?'''
 
+            if pil['ES_time'] > 0:
+                # Pilot speed score
+                pil['time_points']  = pilot_speed(task, pil)
 
-            # Pilot arrival score
-            if task.arrival:
-                Parrival = pilot_arrival(task, pil)
+                # Pilot arrival score
+                if not (task.arrival == 'off'):
+                    pil['arr_points'] = pilot_arrival(task, pil)
 
-            # Penalty for not making goal .
-            if not pil['goal_time']:
-                pil['goal_time']    = 0
-                pil['time_points']  = pil['time_points'] * (1 - formula.no_goal_penalty)
-                #pil['Parrival'] = Parrival * (1 - formula['forGoalSSpenalty'])
+                # Penalty for not making goal .
+                if not pil['goal_time']:
+                    pil['goal_time']    = 0
+                    pil['time_points']  = pil['time_points'] * (1 - formula.no_goal_penalty)
+                    pil['arr_points']   = pil['arr_points'] * (1 - formula.no_goal_penalty)
 
         # Total score
         pil['score'] = pil['dist_points'] + pil['time_points'] + pil['arr_points'] + pil['dep_points']

@@ -259,38 +259,38 @@ def day_quality(task):
 
     return val
 
-def pilot_distance(task, pil):
-    """
-
-    :type pil: object
-    """
-
-    maxdist     = task.stats['max_distance']
-    Adistance   = task.stats['avail_dist_points']
-    Pdist       = Adistance * pil['distance'] / maxdist
-
-    return Pdist
-
-def pilot_speed(task, pil):
+def points_weight(task):
     from math import sqrt
 
-    stats   = task.stats
-    Aspeed  = stats['avail_time_points']
+    comp_class  = task.comp_class               # HG / PG
+    stats       = task.stats
+    formula     = task.formula
+    quality     = stats['day_quality']
 
-    # C.6.2 Time Points
-    Tmin    = stats['fastest']
-    Pspeed  = 0
-    Ptime   = 0
+    if not(stats['pilots_launched'] > 0):       # sanity
+        return 0, 0, 0, 0
 
-    if pil['ES_time'] and Tmin > 0:   # checking that task has pilots in ESS, and that pilot is in ESS
-                                        # we need to change this! It works correctly only if Time Pts is 0 when pil not in goal                                        # for HG we need a fastest and a fastest in goal in TaskTotalsView
-        Ptime = pil['time']
-        SF = 1 - ((Ptime-Tmin) / 3600 / sqrt(Tmin / 3600) )**(5/6)
-        if SF > 0:
-            Pspeed = Aspeed * SF
+    '''Goal Ratio'''
+    goal_ratio = stats['pilots_goal'] / stats['pilots_launched']
 
-    print(pil['track_id'], " Ptime: {}, Tmin={}".format(Ptime, Tmin))
-    return Pspeed
+    '''
+    DistWeight:         0.9 - 1.665* goalRatio + 1.713*GolalRatio^2 - 0.587*goalRatio^3
+    LeadWeight:         (1 - DistWeight)/8 * 1.4
+    ArrWeight:          0
+    TimeWeight:         1 − DistWeight − LeadWeight
+    '''
+
+    dist_weight = 0.9 - 1.665 * goal_ratio + 1.713 * goal_ratio**2 - 0.587 * goal_ratio**3
+    lead_weight = (1 - dist_weight) / 8 * 1.4
+    # time_weight = 1 - dist_weight - lead_weight
+
+    Adistance   = 1000 * quality * dist_weight            # AvailDistPoints
+    Astart      = 1000 * quality * lead_weight            # AvailLeadPoints
+    if formula.version == '2017':  Astart  += 50          # PWC2017 Augmented LeadPoints
+    Aarrival    = 0                                       # AvailArrPoints
+    Aspeed      = 1000 * quality - Astart - Adistance     # AvailSpeedPoints
+
+    return Adistance, Aspeed, Astart, Aarrival
 
 def pilot_departure_leadout(task, pil):
     from math import sqrt
@@ -329,47 +329,43 @@ def pilot_departure_leadout(task, pil):
     print("    Pdepart: ", Pdepart)
     return Pdepart
 
-def points_weight(task):
+def pilot_speed(task, pil):
     from math import sqrt
 
-    comp_class  = task.comp_class               # HG / PG
-    stats       = task.stats
-    formula     = task.formula
-    quality     = stats['day_quality']
+    stats   = task.stats
+    Aspeed  = stats['avail_time_points']
 
-    if not(stats['pilots_launched'] > 0):       # sanity
-        return 0, 0, 0, 0
+    # C.6.2 Time Points
+    Tmin    = stats['fastest']
+    Pspeed  = 0
+    Ptime   = 0
 
-    '''Goal Ratio'''
-    goal_ratio = stats['pilots_goal'] / stats['pilots_launched']
+    if pil['ES_time'] and Tmin > 0:   # checking that task has pilots in ESS, and that pilot is in ESS
+                                        # we need to change this! It works correctly only if Time Pts is 0 when pil not in goal                                        # for HG we need a fastest and a fastest in goal in TaskTotalsView
+        Ptime = pil['time']
+        SF = 1 - ((Ptime-Tmin) / 3600 / sqrt(Tmin / 3600) )**(5/6)
+        if SF > 0:
+            Pspeed = Aspeed * SF
 
-    '''
-    DistWeight:         0.9 - 1.665* goalRatio + 1.713*GolalRatio^2 - 0.587*goalRatio^3
-    LeadWeight:         (1 - DistWeight)/8 * 1.4
-    ArrWeight:          0
-    TimeWeight:         1 − DistWeight − LeadWeight
-    '''
+    print(pil['track_id'], " Ptime: {}, Tmin={}".format(Ptime, Tmin))
+    return Pspeed
 
-    dist_weight = 0.9 - 1.665 * goal_ratio + 1.713 * goal_ratio**2 - 0.587 * goal_ratio**3
-    lead_weight = (1 - dist_weight) / 8 * 1.4
-    time_weight = 1 - dist_weight - lead_weight
+def pilot_distance(task, pil):
+    """
+    :type pil: object
+    """
 
-    Adistance   = 1000 * quality * dist_weight            # AvailDistPoints
-    Astart      = 1000 * quality * lead_weight            # AvailLeadPoints
-    if formula.version == '2017':  Astart  += 50          # PWC2017 Augmented LeadPoints
-    Aarrival    = 0                                       # AvailArrPoints
-    Aspeed      = 1000 * quality * time_weight            # AvailSpeedPoints
+    maxdist     = task.stats['max_distance']
+    Adistance   = task.stats['avail_dist_points']
+    Pdist       = Adistance * pil['distance'] / maxdist
 
-    return Adistance, Aspeed, Astart, Aarrival
+    return Pdist
 
 def get_results(task):
     from db_tables import TaskResultView as R
 
     stats   = task.stats
     formula = task.formula
-
-    # Get all pilots and process each of them
-    # pity it can't be done as a single update ...
 
     with Database() as db:
         q = db.session.query(R).filter(R.task_id==task.id).all()
@@ -385,14 +381,14 @@ def get_results(task):
             # set pilot to min distance if they're below that ..
             res['distance'] = max(formula.min_dist, res['distance'])
 
-            res['timeafter']    = (res['ES_time'] - stats['min_ess_time']) if res['ES_time'] else None
+            res['time_after']   = (res['ES_time'] - stats['min_ess_time']) if res['ES_time'] else None
             res['time']         = (res['ES_time'] - res['SS_time']) if res['ES_time'] else 0
 
             #sanity
             res['time'] = max(res['time'], 0)
         else:
             res['time']         = None
-            res['timeafter']    = None
+            res['time_after']   = None
 
         '''
         Leadout Points Adjustment
@@ -402,10 +398,9 @@ def get_results(task):
 
     return pilots
 
-def points_allocation(task):   # from PWC###
+def points_allocation(task):
 
     pilots = get_results(task)
-
     '''
     Update Min LC
     in ordered_results we calculate final LC
@@ -433,34 +428,33 @@ def points_allocation(task):   # from PWC###
         tarPk   = pil['track_id']
         penalty = pil['penalty'] if pil['penalty'] else 0
 
-        # Sanity
-        if pil['result'] in ('dnf', 'abs'):
-            pil['dist_points']  = 0
-            pil['time_points']  = 0
-            pil['arr_points']   = 0
-            pil['dep_points']   = 0
+        '''initialize'''
+        pil['dist_points']  = 0
+        pil['time_points']  = 0
+        pil['arr_points']   = 0
+        pil['dep_points']   = 0
 
-        else:
+        if not (pil['result'] in ('dnf', 'abs')):
             # Pilot distance score
             # FIX: should round pil->distance properly?
             # my pilrdist = round(pil->{'distance'}/100.0) * 100
             pil['dist_points']  = pilot_distance(task, pil)
 
-            # Pilot speed score
-            pil['time_points']  = pilot_speed(task, pil)
-
             # Pilot departure/leading points
-            pil['dep_points']   = pilot_departure_leadout(task, pil) if (pil['result'] != 'mindist' and pil['SS_time']) else 0
+            if task.departure != 'off' and pil['result'] != 'mindist' and pil['SS_time']:
+                if task.departure == 'leadout':
+                    pil['dep_points'] = pilot_departure_leadout(task, pil) if (pil['result'] != 'mindist' and pil['SS_time']) else 0
+                elif task.departure == 'departure':
+                    '''does it even still exist dep. points?'''
 
-            # Pilot arrival score    this is always off in pwc
-            # Parrival = pilot_arrival(formula, task, pil)
-            pil['arr_points']   = 0
+            if pil['ES_time'] > 0:
+                # Pilot speed score
+                pil['time_points']  = pilot_speed(task, pil)
 
-            # Penalty for not making goal .
-            if not pil['goal_time']:
-                pil['goal_time']    = 0
-                pil['time_points']  = pil['time_points'] * (1 - formula.no_goal_penalty)
-                #pil['Parrival'] = Parrival * (1 - formula['forGoalSSpenalty'])
+                # Penalty for not making goal .
+                if not pil['goal_time']:
+                    pil['goal_time']    = 0
+                    pil['time_points']  = pil['time_points'] * (1 - formula.no_goal_penalty)
 
         # Total score
         pil['score'] = pil['dist_points'] + pil['time_points'] + pil['arr_points'] + pil['dep_points']
