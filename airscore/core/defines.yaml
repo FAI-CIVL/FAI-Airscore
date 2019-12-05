@@ -7,10 +7,10 @@
 ##################
 
 db:
-  Server: XXXXXXXXXXX
-  Name: XXXXXXXXXXX
-  User: XXXXXXXXXX
-  Pass: XXXXXXXXX
+  Server: 66.33.203.51
+  Name: airscore_fai
+  User: airscore_db
+  Pass: Tantobuchi01
 
 xcontest:
   User: XXXXXXXXX
@@ -20,10 +20,10 @@ dir:
   bin: /app/airscore/core/
   file: /app/airscore/data/tracks/
   json: /app/airscore/data/json/
-  log: /app/airscore/data/log
+  log: /app/airscore/data/log/
   image: /app/airscore/data/images/
   map: /app/airscore/data/map-objects/
-  results: /app/airscore/data/results/
+  result: /app/airscore/data/results/
 
 competition_season:
 #start_year: previous or current offset -1 or 0
