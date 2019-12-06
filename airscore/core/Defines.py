@@ -13,11 +13,15 @@ with open('defines.yaml', 'rb') as f:
         """use safe_load instead load"""
         config = yaml.safe_load(f)
 
+with open('secret.yaml', 'rb') as f:
+        """use safe_load instead load"""
+        secret = yaml.safe_load(f)
 
-MYSQLUSER = config['db']['User']  # mysql db user
-MYSQLPASSWORD = config['db']['Pass']  # mysql db password
-MYSQLHOST = config['db']['Server'] # mysql host name
-DATABASE = config['db']['Name'] # mysql db name
+
+MYSQLUSER = secret['db']['User']  # mysql db user
+MYSQLPASSWORD = secret['db']['Pass']  # mysql db password
+MYSQLHOST = secret['db']['Server'] # mysql host name
+DATABASE = secret['db']['Name'] # mysql db name
 
 BINDIR = config['dir']['bin']  # script directory
 FILEDIR = config['dir']['file']  # files directory
@@ -26,6 +30,5 @@ RESULTDIR = config['dir']['result']  # log files directory
 IMAGEDIR = config['dir']['image']  # image/icon files directory
 MAPOBJDIR = config['dir']['map']  # mapobj files directory
 
-XC_LOGIN = config['xcontest']['User']
-XC_password = config['xcontest']['Pass']
-
+XC_LOGIN = secret['xcontest']['User']
+XC_password = secret['xcontest']['Pass']

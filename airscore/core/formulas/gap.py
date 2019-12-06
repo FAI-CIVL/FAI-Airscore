@@ -130,7 +130,7 @@ def difficulty_calculation(task, pilots):
         diff_score: float = 0.0
 
     '''distance spread'''
-    min_dist_kmx10  = int(formula.min_dist)/100)     # min_dist (Km) * 10
+    min_dist_kmx10  = int(formula.min_dist/100)     # min_dist (Km) * 10
     distspread      = dict()
     best_dist       = 0
     best_dist_kmx10 = 0

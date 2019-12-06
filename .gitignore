@@ -1,8 +1,48 @@
-*.py[cod]
+## GitIgnore ##
+
+# Index files
+.DS*
+.ht*
+.travis*
+
+# Configuration files
+.env
 airscore/core/defines.yaml
+airscore/core/secret.yaml
+airscore/core/dreamhost*.*
+
+# Cache files
+_pycache_/*
+_pycache_
+*.pyc
+
+# data
+airscore/data/map_objects/tasks/*
+airscore/data/results/*
+airscore/data/log/*
+airscore/data/tracks/*
+airscore/data/json/*
+
+# Test files
+airscore/core/*.igc
+airscore/core/*.fsdb
+airscore/core/*.kml
+airscore/core/*.csv
+airscore/core/*.xml
+airscore/core/*.xsl
+airscore/core/*.xctsk
+airscore/core/*.zip
+airscore/core/test*
+airscore/core/*.json
+
+# Development database
+*.db
 
 # C extensions
 *.so
+
+# webpack-built files
+/airscore/static/build/
 
 # Packages
 *.egg
@@ -49,29 +89,6 @@ env/
 # npm
 /node_modules/
 
-# webpack-built files
-/airscore/static/build/
-
-# Configuration
-.env
-
-# Development database
-*.db
-
-# data
-airscore/data/map_objects/tasks/*
-airscore/data/results/*
-
-defines.php
-.ht*
-.travis*
-.DS*
-_pycache_/*
-_pycache_
-*.pyc
-*.igc
-*.pyc
 .idea/*
-
 
 !/airscore/templates/
