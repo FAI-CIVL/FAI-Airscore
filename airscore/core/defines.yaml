@@ -7,10 +7,10 @@
 ##################
 
 db:
-  Server: 66.33.203.51
-  Name: airscore_fai
-  User: airscore_db
-  Pass: Tantobuchi01
+  Server: 
+  Name: 
+  User: 
+  Pass: 
 
 xcontest:
   User: XXXXXXXXX
