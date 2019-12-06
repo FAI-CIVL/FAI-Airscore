@@ -19,6 +19,7 @@ _pycache_
 # data
 airscore/data/map_objects/*
 airscore/data/map_objects/tasks/*
+airscore/data/map_objects/tracks/*
 airscore/data/results/*
 airscore/data/log/*
 airscore/data/tracks/*
