@@ -1,6 +1,9 @@
 # Everything the developer needs in addition to the production requirements
 -r prod.txt
 
+# Model Mapping Generator
+sqlacodegen
+
 # Testing
 pytest==5.3.0
 WebTest==2.0.33

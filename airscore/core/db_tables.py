@@ -1,6 +1,7 @@
 # coding: utf-8
-from sqlalchemy import CHAR, Column, DECIMAL, Date, DateTime, Enum, Float, Index, String, TIMESTAMP, Table, Text, text
+from sqlalchemy import BINARY, CHAR, Column, DECIMAL, Date, DateTime, Enum, Float, ForeignKey, PrimaryKeyConstraint, Index, String, TIMESTAMP, Table, Text, text
 from sqlalchemy.dialects.mysql import BIGINT, INTEGER, LONGTEXT, MEDIUMTEXT, TINYINT, VARCHAR
+from sqlalchemy.orm import relationship
 from myconn import Base, metadata
 
 
@@ -145,21 +146,22 @@ class RegistrationView(Base):
 
     Column('par_id', INTEGER(11), primary_key=True),
     Column('comp_id', INTEGER(11)),
+    Column('civl_id', INTEGER(10)),
     Column('pil_id', INTEGER(11)),
-    Column('ID', INTEGER(5)),
+    Column('ID', INTEGER(4)),
     Column('name', String(50)),
     Column('birthdate', CHAR(10)),
-    Column('sex', Enum('M', 'F')),
+    Column('sex', Enum('M', 'F'), server_default=text("'M'")),
     Column('female', INTEGER(1), server_default=text("'0'")),
     Column('nat', CHAR(10)),
     Column('glider', String(100)),
     Column('glider_cert', String(20)),
     Column('sponsor', String(100)),
-    Column('civl_id', INTEGER(10)),
     Column('fai_valid', TINYINT(1), server_default=text("'1'")),
     Column('fai_id', String(20)),
     Column('xcontest_id', String(20)),
     Column('team', String(100)),
+    Column('nat_team', TINYINT(4), server_default=text("'1'")),
     Column('paid', INTEGER(11), server_default=text("'0'"))
 )
 
@@ -168,19 +170,20 @@ class RegisteredPilotView(Base):
     __table__ = Table( 'RegisteredPilotView', metadata,
 
     Column('par_id', INTEGER(11), primary_key=True),
+
     Column('comp_id', INTEGER(11)),
+    Column('civl_id', INTEGER(10)),
+    Column('fai_id', String(20)),
     Column('pil_id', INTEGER(11)),
-    Column('ID', INTEGER(5)),
+    Column('ID', INTEGER(4)),
     Column('name', String(50)),
-    Column('sex', String(1)),
+    Column('sex', Enum('M', 'F'), server_default=text("'M'")),
     Column('nat', CHAR(10)),
     Column('glider', String(100)),
     Column('glider_cert', String(20)),
     Column('sponsor', String(100)),
-    Column('civl_id', INTEGER(10)),
-    Column('fai_id', String(20)),
     Column('team', String(100)),
-    Column('nat_team', TINYINT(4))
+    Column('nat_team', TINYINT(4), server_default=text("'1'"))
 )
 
 
@@ -190,6 +193,7 @@ class ResultView(Base):
     Column('tarPk', INTEGER(11), primary_key=True),
     Column('parPk', INTEGER(11)),
     Column('tasPk', INTEGER(11)),
+    Column('pilPk', INTEGER(11)),
     Column('pilName', LONGTEXT),
     Column('pilSponsor', LONGTEXT),
     Column('pilNationCode', String(10)),
@@ -226,7 +230,7 @@ class TaskFormulaView(Base):
     Column('type', Enum('gap', 'pwc', 'RTG'), server_default=text("'pwc'")),
     Column('version', String(32)),
     Column('formula_name', String(50)),
-    Column('arrival', Enum('off', 'on'), server_default=text("'on'")),
+    Column('arrival', Enum('off', 'position', 'time'), server_default=text("'on'")),
     Column('departure', Enum('off', 'on', 'leadout', 'kmbonus'), server_default=text("'on'")),
     Column('no_goal_penalty', Float(asdecimal=False), server_default=text("'1'")),
     Column('glide_bonus', Float(asdecimal=False), server_default=text("'4'")),
@@ -246,12 +250,12 @@ class TaskObjectView(Base):
     __table__ = Table( 'TaskObjectView', metadata,
 
     Column('id', INTEGER(11), primary_key=True),
-    Column('comp_id', INTEGER(11)),
     Column('comp_code', String(8)),
     Column('comp_name', String(100)),
     Column('comp_site', String(100)),
     Column('time_offset', BIGINT(21)),
     Column('comp_class', Enum('PG', 'HG', 'mixed'), server_default=text("'PG'")),
+    Column('comp_id', INTEGER(11)),
     Column('date', Date, nullable=False),
     Column('task_name', String(100)),
     Column('task_num', TINYINT(3)),
@@ -328,24 +332,24 @@ class TaskResultView(Base):
     Column('par_id', INTEGER(11)),
     Column('task_id', INTEGER(11)),
     Column('pil_id', INTEGER(11)),
-    Column('ID', INTEGER(11)),
-    Column('civl_id', INTEGER(11)),
-    Column('fai_id', INTEGER(11)),
-    Column('name', LONGTEXT),
-    Column('sponsor', LONGTEXT),
-    Column('nat', String(10)),
-    Column('sex', String(1)),
+    Column('civl_id', INTEGER(10)),
+    Column('fai_id', String(20)),
+    Column('ID', INTEGER(4)),
+    Column('name', String(50)),
+    Column('sponsor', String(100)),
+    Column('nat', CHAR(10)),
+    Column('sex', Enum('M', 'F'), server_default=text("'M'")),
     Column('glider', String(100)),
     Column('glider_cert', String(20)),
-    Column('team', String(20)),
-    Column('nat_team', TINYINT(4)),
+    Column('team', String(80)),
+    Column('nat_team', TINYINT(4), server_default=text("'1'")),
     Column('distance', Float(asdecimal=False)),
     Column('speed', Float(asdecimal=False)),
     Column('first_time', INTEGER(11)),
     Column('real_start_time', INTEGER(11)),
     Column('goal_time', INTEGER(11)),
     Column('last_time', INTEGER(11)),
-    Column('result', String(7)),
+    Column('result', Enum('abs', 'dnf', 'lo', 'goal', 'mindist'), server_default=text("'lo'")),
     Column('SS_time', INTEGER(11)),
     Column('ES_time', INTEGER(11)),
     Column('ES_rank', INTEGER(11)),
@@ -354,13 +358,13 @@ class TaskResultView(Base):
     Column('comment', Text),
     Column('fixed_LC', Float(asdecimal=False)),
     Column('ESS_altitude', INTEGER(11), server_default=text("'0'")),
-    Column('goal_altitude', INTEGER(11)),
+    Column('goal_altitude', INTEGER(11), server_default=text("'0'")),
     Column('max_altitude', INTEGER(11), server_default=text("'0'")),
-    Column('last_altitude', INTEGER(11)),
-    Column('landing_altitude', INTEGER(11)),
-    Column('landing_time', INTEGER(11)),
+    Column('last_altitude', INTEGER(11), server_default=text("'0'")),
+    Column('landing_altitude', INTEGER(11), server_default=text("'0'")),
+    Column('landing_time', INTEGER(11), server_default=text("'0'")),
     Column('track_file', String(255)),
-    Column('g_record', TINYINT(4))
+    Column('g_record', TINYINT(4), server_default=text("'1'"))
 )
 
 
@@ -440,15 +444,6 @@ class TaskView(Base):
     Column('tasEndSSDistance', Float(asdecimal=False)),
     Column('tasSSDistance', Float(asdecimal=False)),
     Column('tasSSInterval', INTEGER(11), server_default=text("'0'")),
-    Column('tasQuality', Float(asdecimal=False)),
-    Column('tasDistQuality', Float(asdecimal=False)),
-    Column('tasTimeQuality', Float(asdecimal=False)),
-    Column('tasLaunchQuality', Float(asdecimal=False)),
-    Column('tasStopQuality', Float(asdecimal=False), server_default=text("'1'")),
-    Column('tasAvailDistPoints', Float(asdecimal=False)),
-    Column('tasAvailLeadPoints', Float(asdecimal=False)),
-    Column('tasAvailTimePoints', Float(asdecimal=False)),
-    Column('tasAvailArrPoints', Float(asdecimal=False)),
     Column('tasLaunchValid', INTEGER(11), server_default=text("'1'")),
     Column('forName', String(50)),
     Column('forClass', Enum('gap', 'pwc', 'RTG'), server_default=text("'pwc'")),
@@ -466,8 +461,8 @@ class TaskView(Base):
     Column('forNomTime', Float(asdecimal=False), server_default=text("'90'")),
     Column('forNomLaunch', Float(asdecimal=False), server_default=text("'0.96'")),
     Column('forScorebackTime', INTEGER(11), server_default=text("'5'")),
-    Column('tasDeparture', Enum('off', 'on', 'leadout', 'kmbonus'), server_default=text("'on'")),
-    Column('tasArrival', Enum('off', 'on'), server_default=text("'on'")),
+    Column('arrival', String(8)),
+    Column('departure', String(9)),
     Column('tasHeightBonus', Enum('off', 'on'), server_default=text("'off'")),
     Column('tasComment', Text),
     Column('tasLocked', TINYINT(3), server_default=text("'0'")),
@@ -513,7 +508,7 @@ class TaskWaypointView(Base):
 class TaskXContestWptView(Base):
     __table__ = Table( 'TaskXContestWptView', metadata,
 
-    Column('tasPk',INTEGER(11), primary_key=True),
+    Column('tasPk', INTEGER(11), primary_key=True),
     Column('tasDate', Date),
     Column('tasGoalAlt', Float(asdecimal=False)),
     Column('xccSiteID', BIGINT(11)),
@@ -536,7 +531,7 @@ class TrackFileView(Base):
 
     Column('track_id', INTEGER(11), primary_key=True),
     Column('task_id', INTEGER(11)),
-    Column('pil_id', INTEGER(11)),
+    Column('par_id', INTEGER(11)),
     Column('filename', String(255)),
     Column('g_record', TINYINT(4))
 )
@@ -576,7 +571,7 @@ class tblAirspaceWaypoint(Base):
     __tablename__ = 'tblAirspaceWaypoint'
 
     awpPk = Column(INTEGER(11), primary_key=True)
-    airPk = Column(INTEGER(11), nullable=False)
+    airPk = Column(ForeignKey('tblAirspace.airPk', ondelete='CASCADE'), nullable=False, index=True)
     airOrder = Column(INTEGER(11), nullable=False)
     awpConnect = Column(Enum('line', 'arc+', 'arc-'), server_default=text("'line'"))
     awpLatDecimal = Column(Float(asdecimal=False), nullable=False)
@@ -584,6 +579,8 @@ class tblAirspaceWaypoint(Base):
     awpAngleStart = Column(Float)
     awpAngleEnd = Column(Float)
     awpRadius = Column(Float)
+
+    tblAirspace = relationship('tblAirspace')
 
 
 class tblCertification(Base):
@@ -596,11 +593,31 @@ class tblCertification(Base):
 
 class tblClasCertRank(Base):
     __tablename__ = 'tblClasCertRank'
+    __table_args__ = (
+    PrimaryKeyConstraint('claPk'),
+ )
 
-    claPk = Column(INTEGER(11), primary_key=True)
-    cerPk = Column(INTEGER(11), nullable=False)
-    ranPk = Column(INTEGER(11), nullable=False)
+    claPk = Column(ForeignKey('tblClassification.claPk', ondelete='CASCADE'), index=True)
+    cerPk = Column(ForeignKey('tblCertification.cerPk'), index=True)
+    ranPk = Column(ForeignKey('tblRanking.ranPk'), nullable=False, index=True)
 
+    tblClassification = relationship('tblClassification')
+    tblCertification = relationship('tblCertification')
+    tblRanking = relationship('tblRanking')
+
+# tblClasCertRank = Table(
+#     'tblClasCertRank', metadata,
+#     Column('claPk', ForeignKey('tblClassification.claPk', ondelete='CASCADE'), nullable=False, index=True),
+#     Column('cerPk', ForeignKey('tblCertification.cerPk'), index=True),
+#     Column('ranPk', ForeignKey('tblRanking.ranPk'), nullable=False, index=True)
+# )
+
+# class tblClasCertRank(Base):
+#     __tablename__ = 'tblClasCertRank'
+#
+#     claPk = Column(INTEGER(11), primary_key=True)
+#     cerPk = Column(INTEGER(11), nullable=False)
+#     ranPk = Column(INTEGER(11), nullable=False)
 
 class tblClassification(Base):
     __tablename__ = 'tblClassification'
@@ -629,16 +646,16 @@ class tblCompetition(Base):
 
     comPk = Column(INTEGER(11), primary_key=True)
     comName = Column(String(100), nullable=False)
+    comCode = Column(String(8))
     comLastUpdate = Column(TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
     comLocation = Column(String(100), nullable=False)
     comDateFrom = Column(DateTime, nullable=False)
     comDateTo = Column(DateTime, nullable=False)
     comMeetDirName = Column(String(100))
     comContact = Column(String(100))
-    claPk = Column(INTEGER(11), nullable=False, server_default=text("'0'"))
-    comSanction = Column(Enum('FAI 1', 'League', 'PWC', 'FAI 2', 'none'), nullable=False, server_default=text("'none'"))
+    claPk = Column(ForeignKey('tblClassification.claPk', ondelete='SET NULL'), index=True)
+    comSanction = Column(Enum('League', 'PWC', 'FAI 2', 'none', 'FAI 1'), nullable=False, server_default=text("'none'"))
     comType = Column(Enum('RACE', 'Route', 'Team-RACE'), server_default=text("'RACE'"))
-    comCode = Column(String(8))
     comEntryRestrict = Column(Enum('open', 'registered'), server_default=text("'registered'"))
     comTimeOffset = Column(Float(asdecimal=False), server_default=text("'11'"))
     comClass = Column(Enum('PG', 'HG', 'mixed'), server_default=text("'PG'"))
@@ -646,7 +663,10 @@ class tblCompetition(Base):
     comLocked = Column(INTEGER(11), server_default=text("'0'"))
     comExt = Column(INTEGER(2), nullable=False, server_default=text("'0'"))
     comExtUrl = Column(String(100))
-    comPath  = Column(String(40))
+    comPath = Column(String(40))
+
+    tblClassification = relationship('tblClassification')
+    tblLadder = relationship('tblLadder', secondary='tblLadderComp')
 
 
 class tblCountryCode(Base):
@@ -690,6 +710,7 @@ class tblExtResult(Base):
 
     etrPk = Column(INTEGER(11), primary_key=True)
     tasPk = Column(INTEGER(11), index=True)
+    parPk = Column(INTEGER(11), nullable=False)
     pilPk = Column(INTEGER(11))
     tarDistance = Column(Float(asdecimal=False))
     tarSpeed = Column(Float(asdecimal=False))
@@ -732,7 +753,7 @@ class tblExtTask(Base):
 class tblForComp(Base):
     __tablename__ = 'tblForComp'
 
-    forPk = Column(INTEGER(11), index=True)
+    forPk = Column(ForeignKey('tblFormula.forPk', ondelete='SET NULL'), index=True)
     comPk = Column(INTEGER(11), primary_key=True)
     forLastUpdate = Column(TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
     extForName = Column(String(50))
@@ -748,6 +769,8 @@ class tblForComp(Base):
     comTeamSize = Column(INTEGER(11))
     comTeamScoring = Column(Enum('off', 'on'), nullable=False, server_default=text("'off'"))
     comTeamOver = Column(INTEGER(2))
+
+    tblFormula = relationship('tblFormula')
 
 
 class tblFormula(Base):
@@ -801,16 +824,16 @@ class tblLadder(Base):
 
 tblLadderComp = Table(
     'tblLadderComp', metadata,
-    Column('ladPk', INTEGER(11)),
-    Column('comPk', INTEGER(11))
+    Column('ladPk', ForeignKey('tblLadder.ladPk', ondelete='CASCADE'), index=True),
+    Column('comPk', ForeignKey('tblCompetition.comPk', ondelete='CASCADE'), index=True)
 )
 
 tblLadderSeason = Table(
     'tblLadderSeason', metadata,
-    Column('ladPk', INTEGER(11), nullable=False),
-    Column('seasonYear', INTEGER(11), nullable=False),
+    Column('ladPk', ForeignKey('tblLadder.ladPk'), nullable=False, index=True),
+    Column('seasonYear', INTEGER(11), nullable=False, index=True),
     Column('ladActive', TINYINT(1), server_default=text("'1'")),
-    Column('claPk', INTEGER(11), nullable=False),
+    Column('claPk', ForeignKey('tblClassification.claPk'), nullable=False, index=True),
     Column('ladOverallScore', Enum('all', 'ftv', 'round'), nullable=False, server_default=text("'ftv'")),
     Column('ladOverallParam', Float(asdecimal=False), nullable=False)
 )
@@ -856,7 +879,7 @@ class tblRegionWaypoint(Base):
     __tablename__ = 'tblRegionWaypoint'
 
     rwpPk = Column(INTEGER(11), primary_key=True)
-    regPk = Column(INTEGER(11))
+    regPk = Column(ForeignKey('tblRegion.regPk'), index=True)
     rwpName = Column(String(12), nullable=False)
     rwpLatDecimal = Column(Float(asdecimal=False), nullable=False)
     rwpLongDecimal = Column(Float(asdecimal=False), nullable=False)
@@ -866,10 +889,12 @@ class tblRegionWaypoint(Base):
     xccSiteID = Column(INTEGER(11))
     xccToID = Column(INTEGER(11))
 
+    tblRegion = relationship('tblRegion')
+
 tblRegionXCSites = Table(
     'tblRegionXCSites', metadata,
-    Column('regPk', INTEGER(11), nullable=False),
-    Column('xccSiteID', INTEGER(11), nullable=False)
+    Column('regPk', ForeignKey('tblRegion.regPk', ondelete='CASCADE'), nullable=False, index=True),
+    Column('xccSiteID', INTEGER(11), nullable=False, index=True)
 )
 
 
@@ -881,6 +906,7 @@ class tblParticipant(Base):
 
     parPk = Column(INTEGER(11), primary_key=True)
     comPk = Column(INTEGER(11))
+    CIVLID = Column(INTEGER(10))
     pilPk = Column(INTEGER(11))
     parID = Column(INTEGER(4))
     parName = Column(String(50))
@@ -891,12 +917,11 @@ class tblParticipant(Base):
     parCert = Column(String(20))
     parClass = Column(String(50))
     parSponsor = Column(String(100))
-    CIVLID = Column(INTEGER(10))
     parValidFAI = Column(TINYINT(1), nullable=False, server_default=text("'1'"))
     parFAI = Column(String(20))
     parXC = Column(String(20))
     parTeam = Column(String(100))
-    parNatTeam = Column(TINYINT(1), nullable=False, server_default=text("'1'"))
+    parNatTeam = Column(TINYINT(4), nullable=False, server_default=text("'1'"))
     parPaid = Column(INTEGER(11), server_default=text("'0'"))
     parHours = Column(INTEGER(11), server_default=text("'200'"))
 
@@ -915,12 +940,12 @@ class tblTask(Base):
     __tablename__ = 'tblTask'
 
     tasPk = Column(INTEGER(11), primary_key=True)
-    comPk = Column(INTEGER(11), index=True)
+    comPk = Column(ForeignKey('tblCompetition.comPk'), index=True)
     tasLastUpdate = Column(TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
-    tasNum = Column(INTEGER(2), nullable=False, server_default=text("'0'"))
+    tasNum = Column(TINYINT(4), nullable=False)
     tasName = Column(String(100))
     tasDate = Column(Date, nullable=False)
-    regPk = Column(INTEGER(11))
+    regPk = Column(ForeignKey('tblRegion.regPk'), index=True)
     tasTaskStart = Column(DateTime)
     tasFinishTime = Column(DateTime)
     tasLaunchClose = Column(DateTime)
@@ -936,30 +961,36 @@ class tblTask(Base):
     tasStartSSDistance = Column(Float(asdecimal=False))
     tasEndSSDistance = Column(Float(asdecimal=False))
     tasSSDistance = Column(Float(asdecimal=False))
-    tasSSInterval = Column(INTEGER(11), server_default=text("'0'"))
+    tasLaunchValid = Column(INTEGER(11), server_default=text("'1'"))
     tasHeightBonus = Column(Enum('off', 'on'), server_default=text("'off'"))
-    tasDepOverride = Column(TINYINT(2), nullable=False, server_default=text("'1'"))
     tasArrOverride = Column(TINYINT(2), nullable=False, server_default=text("'1'"))
+    tasDepOverride = Column(TINYINT(2), nullable=False, server_default=text("'1'"))
+    tasMarginOverride = Column(Float(asdecimal=False))
     tasComment = Column(Text)
     tasLocked = Column(TINYINT(3), nullable=False, server_default=text("'0'"))
-    tasMarginOverride = Column(Float(asdecimal=False))
-    tasPath  = Column(String(40))
+    tasPath = Column(String(40))
+
+    tblCompetition = relationship('tblCompetition')
+    tblRegion = relationship('tblRegion')
 
 class tblTaskAirspace(Base):
     __tablename__ = 'tblTaskAirspace'
 
     taPk = Column(INTEGER(11), primary_key=True)
-    tasPk = Column(INTEGER(11), nullable=False)
-    airPk = Column(INTEGER(11), nullable=False)
+    tasPk = Column(ForeignKey('tblTask.tasPk', ondelete='CASCADE'), nullable=False, index=True)
+    airPk = Column(ForeignKey('tblAirspace.airPk', ondelete='CASCADE'), nullable=False, index=True)
+
+    tblAirspace = relationship('tblAirspace')
+    tblTask = relationship('tblTask')
 
 class tblTaskResult(Base):
     __tablename__ = 'tblTaskResult'
     __table_args__ = (
-        Index('tarPk', 'parPk', 'tasPk', unique=True),
+        Index('tarPk', 'tarPk', 'tasPk', 'parPk', unique=True),
     )
 
     tarPk = Column(INTEGER(11), primary_key=True)
-    tasPk = Column(INTEGER(11), index=True)
+    tasPk = Column(ForeignKey('tblTask.tasPk'), index=True)
     parPk = Column(INTEGER(11), index=True)
     tarLastUpdate = Column(TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
     traFile = Column(String(255))
@@ -991,12 +1022,14 @@ class tblTaskResult(Base):
     tarLeadingCoeff = Column(Float(asdecimal=False))
     tarFixedLC = Column(Float(asdecimal=False))
 
+    tblTask = relationship('tblTask')
+
 class tblTaskWaypoint(Base):
     __tablename__ = 'tblTaskWaypoint'
 
     tawPk = Column(INTEGER(11), primary_key=True)
-    tasPk = Column(INTEGER(11), index=True)
-    rwpPk = Column(INTEGER(11), index=True)
+    tasPk = Column(ForeignKey('tblTask.tasPk', ondelete='SET NULL'), index=True)
+    rwpPk = Column(ForeignKey('tblRegionWaypoint.rwpPk', ondelete='SET NULL'), index=True)
     tawNumber = Column(INTEGER(11), nullable=False)
     tawTime = Column(INTEGER(11))
     tawType = Column(Enum('waypoint', 'launch', 'speed', 'endspeed', 'goal'), index=True, server_default=text("'waypoint'"))
@@ -1007,6 +1040,10 @@ class tblTaskWaypoint(Base):
     ssrLatDecimal = Column(Float(asdecimal=False))
     ssrLongDecimal = Column(Float(asdecimal=False))
     ssrCumulativeDist = Column(Float(asdecimal=False))
+
+    tblRegionWaypoint = relationship('tblRegionWaypoint')
+    tblTask = relationship('tblTask')
+
 
 class tblTeam(Base):
     __tablename__ = 'tblTeam'
@@ -1024,8 +1061,10 @@ class tblTeamPilot(Base):
 
     tepPk = Column(INTEGER(11), primary_key=True)
     teaPk = Column(INTEGER(11))
-    parPk = Column(INTEGER(11))
+    parPk = Column(ForeignKey('tblParticipant.parPk'), nullable=False, index=True)
     tepModifier = Column(Float)
+
+    tblParticipant = relationship('tblParticipant')
 
 tblUserSession = Table(
     'tblUserSession', metadata,
