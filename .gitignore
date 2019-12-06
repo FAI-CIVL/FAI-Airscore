@@ -1,4 +1,5 @@
 *.py[cod]
+airscore/core/defines.yaml
 
 # C extensions
 *.so
@@ -74,4 +75,3 @@ _pycache_
 
 
 !/airscore/templates/
-airscore/core/defines.yaml
