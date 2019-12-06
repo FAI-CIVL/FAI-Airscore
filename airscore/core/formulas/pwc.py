@@ -292,7 +292,7 @@ def points_weight(task):
 
     return Adistance, Aspeed, Astart, Aarrival
 
-def pilot_departure_leadout(task, pil):
+def pilot_leadout(task, pil):
     from math import sqrt
 
     stats   = task.stats
@@ -436,16 +436,11 @@ def points_allocation(task):
 
         if not (pil['result'] in ('dnf', 'abs')):
             # Pilot distance score
-            # FIX: should round pil->distance properly?
-            # my pilrdist = round(pil->{'distance'}/100.0) * 100
             pil['dist_points']  = pilot_distance(task, pil)
 
             # Pilot departure/leading points
-            if task.departure != 'off' and pil['result'] != 'mindist' and pil['SS_time']:
-                if task.departure == 'leadout':
-                    pil['dep_points'] = pilot_departure_leadout(task, pil) if (pil['result'] != 'mindist' and pil['SS_time']) else 0
-                elif task.departure == 'departure':
-                    '''does it even still exist dep. points?'''
+            if task.departure == 'leadout' and pil['result'] != 'mindist' and pil['SS_time']:
+                pil['dep_points'] = pilot_leadout(task, pil) if (pil['result'] != 'mindist' and pil['SS_time']) else 0
 
             if pil['ES_time'] > 0:
                 # Pilot speed score

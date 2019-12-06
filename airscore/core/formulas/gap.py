@@ -116,6 +116,63 @@ def task_totals(task_id):
 
     return stats
 
+def difficulty_calculation(task, pilots):
+    from dataclasses import dataclass
+
+    formula = task.formula
+    stats   = task.stats
+
+    @dataclass
+    class Diffslot:
+        dist:       int
+        diff:       int   = 0
+        rel_diff:   float = 0.0
+        diff_score: float = 0.0
+
+    '''distance spread'''
+    min_dist_kmx10  = int(formula.min_dist)/100)     # min_dist (Km) * 10
+    distspread      = dict()
+    best_dist       = 0
+    best_dist_kmx10 = 0
+    for p in pilots:
+        if not p['goal_time'] and not p['result'] in ('abs', 'dnf'):
+            dist = int(max(p['distance']/100, min_dist_kmx10))
+            if dist in distspread.keys():
+                distspread[dist] += 1
+            else:
+                distspread[dist] = 1
+            if dist > best_dist_kmx10: best_dist_kmx10 = dist
+            if p['distance']/1000 > best_dist: best_dist = p['distance']/1000
+
+    # Sanity
+    if best_dist == 0: return []
+
+    pilot_lo    = stats['pilots_launched'] - stats['pilots_goal']
+
+    ''' the difficulty for each 100-meter section of the task is calculated
+        by counting the number of pilots who landed further along the task'''
+    look_ahead  = max(30, round(30*best_dist/pilot_lo))
+    kmdiff      = []
+
+    for i in range(best_dist_kmx10+10):
+        diff = sum([0 if x not in distspread.keys() else distspread[x]
+                        for x in range(i, min(i+look_ahead, best_dist_kmx10))])
+        kmdiff.append(Diffslot(i,diff))
+
+    sum_diff = sum([x.diff for x in kmdiff])
+
+    ''' Relative difficulty is then calculated by dividing each 100-meter slot’s
+        difficulty by twice the sum of all difficulty values.'''
+    # sum_rel_diff = 0
+    sum_rel_diff = sum([(0.5 * x.diff / sum_diff) for x in kmdiff if x.dist <= min_dist_kmx10])
+    for i, el in enumerate(kmdiff):
+        el.rel_diff = 0.5 * el.diff / sum_diff
+        if el.dist > min_dist_kmx10:
+            sum_rel_diff += el.rel_diff
+        el.diff_score = sum_rel_diff if el.dist < best_dist_kmx10 else 0.5
+
+    return kmdiff
+
 def launch_validity(stats, formula):
     '''
     9.1 Launch Validity
@@ -296,6 +353,9 @@ def points_weight(task):
     if comp_class == 'HG':
         lead_weight  = (1 - dist_weight) / 8 * 1.4
         arr_weight   = (1 - dist_weight) / 8
+        if task.arrival=='time':
+            arr_weight *= 2         # (1 - dist_weight) / 4
+
     else:
         arr_weight   = 0
         if goal_ratio > 0:
@@ -312,7 +372,7 @@ def points_weight(task):
 
     return Adistance, Aspeed, Astart, Aarrival
 
-def pilot_departure_leadout(task, pil):
+def pilot_leadout(task, pil):
     from math import sqrt
 
     stats   = task.stats
@@ -344,6 +404,30 @@ def pilot_departure_leadout(task, pil):
                     print("=======  Normal Pdepart   =========")
 
         print("======= PDepart = {}  =========".format(Pdepart))
+
+    # Sanity
+    if 0 + Pdepart != Pdepart:
+        Pdepart = 0
+    if Pdepart < 0:
+        Pdepart = 0
+
+    print("    Pdepart: ", Pdepart)
+    return Pdepart
+
+def pilot_departure(task, pil):
+    ''' I don't think this part is still in use '''
+
+    stats   = task.stats
+    Astart  = stats['avail_dep_points']
+    Aspeed  = stats['avail_time_points']
+
+    # Pilot departure score
+    Pdepart = 0
+    '''Departure Points type = Departure'''
+    if task.departure == 'departure':
+        DF = (pil['real_start_time'] - stats['min_dept_time']) / task.formula.nominal_time
+        if DF < 1/2:
+            Pdepart = pil['time_points']*Astart/Aspeed* (1 - 6.312*DF + 10.932*DF**2 - 2.99*DF**3)
 
     # Sanity
     if 0 + Pdepart != Pdepart:
@@ -417,7 +501,24 @@ def pilot_distance(task, pil):
 
     maxdist     = task.stats['max_distance']
     Adistance   = task.stats['avail_dist_points']
-    Pdist       = Adistance * pil['distance'] / maxdist
+
+    if pil['goal_time']:
+        return Adistance
+
+    if task.comp_class == 'PG':
+        Pdist   = Adistance * pil['distance'] / maxdist
+    elif task.comp_class == 'HG':
+        ''' One half of the available distance points are assigned to each pilot
+            linearly, based on the pilot’s distance flown in relation to the best
+            distance flown in the task.
+            The other half is assigned taking into consideration the difficulty
+            of the kilometers flown.'''
+        diff    = task.stats['difficulty']
+        LF      = 0.5 * pil['distance'] / maxdist
+        dist10  = int(pil['distance']/100)          # int(dist in Km * 10)
+        DF      = diff[dist10].diff_score + ((diff[dist10+1].diff_score - diff[dist10].diff_score)
+                                                * (pil['distance']/100 - dist10))
+        Pdist   = Adistance * (LF + DF)
 
     return Pdist
 
@@ -462,16 +563,17 @@ def points_allocation(task):   # from PWC###
 
     pilots = get_results(task)
 
-    '''
-    Update Min LC
-    in ordered_results we calculate final LC
-    so we need to update LCmin for the task
-    '''
-    task.stats['min_lead_coeff'] = min(res['lead_coeff'] for res in pilots if res['result'] not in ('dnf', 'abs', 'mindist'))
+    if task.departure == 'leadout':
+        '''
+        Update Min LC
+        in ordered_results we calculate final LC
+        so we need to update LCmin for the task
+        '''
+        task.stats['min_lead_coeff'] = min(res['lead_coeff'] for res in pilots if res['result'] not in ('dnf', 'abs', 'mindist'))
 
-    stats   = task.stats
-    task_id = task.id
-    formula = task.formula
+    if task.comp_class == 'HG':
+        '''Difficulty Calculation'''
+        task.stats['difficulty'] = difficulty_calculation(task, pilots)
 
     # Get basic GAP allocation values
     Adistance, Aspeed, Astart, Aarrival = points_weight(task)
@@ -480,8 +582,6 @@ def points_allocation(task):   # from PWC###
     task.stats['avail_time_points'] = Aspeed
     task.stats['avail_dep_points']  = Astart
     task.stats['avail_arr_points']  = Aarrival
-    #task.update_points_allocation()
-
     task.stats['max_score']         = 0
 
     # Score each pilot now
@@ -502,25 +602,26 @@ def points_allocation(task):   # from PWC###
             pil['dist_points']  = pilot_distance(task, pil)
 
             # Pilot departure/leading points
-            if task.departure != 'off' and pil['result'] != 'mindist' and pil['SS_time']:
-                if task.departure == 'leadout':
-                    pil['dep_points'] = pilot_departure_leadout(task, pil) if (pil['result'] != 'mindist' and pil['SS_time']) else 0
-                elif task.departure == 'departure':
-                    '''does it even still exist dep. points?'''
+            if task.departure == 'leadout' and pil['result'] != 'mindist' and pil['SS_time']:
+                pil['dep_points'] = pilot_leadout(task, pil)
 
             if pil['ES_time'] > 0:
                 # Pilot speed score
-                pil['time_points']  = pilot_speed(task, pil)
+                pil['time_points'] = pilot_speed(task, pil)
+
+                if task.departure == 'departure':
+                    '''does it even still exist dep. points?'''
+                    pil['dep_points'] = pilot_departure(task, pil) if (pil['result'] != 'mindist' and pil['SS_time']) else 0
 
                 # Pilot arrival score
                 if not (task.arrival == 'off'):
                     pil['arr_points'] = pilot_arrival(task, pil)
 
-                # Penalty for not making goal .
+                # Penalty for not making goal
                 if not pil['goal_time']:
                     pil['goal_time']    = 0
-                    pil['time_points']  = pil['time_points'] * (1 - formula.no_goal_penalty)
-                    pil['arr_points']   = pil['arr_points'] * (1 - formula.no_goal_penalty)
+                    pil['time_points']  = pil['time_points'] * (1 - task.formula.no_goal_penalty)
+                    pil['arr_points']   = pil['arr_points'] * (1 - task.formula.no_goal_penalty)
 
         # Total score
         pil['score'] = pil['dist_points'] + pil['time_points'] + pil['arr_points'] + pil['dep_points']
