@@ -220,13 +220,14 @@ class Task(object):
             return None
 
         task = Task(task_id)
-
+        '''get task from db'''
         with Database() as db:
             # get the task details.
             t   = db.session.query(T)
             w   = db.session.query(W)
             db.populate_obj(task, t.get(task_id))
             tps = w.filter(W.task_id==task_id).order_by(W.partial_distance)
+        '''populate turnpoints'''
         for tp in tps:
             turnpoint = Turnpoint(tp.lat, tp.lon, tp.radius, tp.type.strip(),
                                   tp.shape, tp.how, tp.altitude, tp.name,
@@ -236,17 +237,27 @@ class Task(object):
             task.optimised_turnpoints.append(s_point)
             if tp.partial_distance is not None: #this will be None in DB before we optimise route, but we append to this list so we should not fill it with Nones
                 task.partial_distance.append(tp.partial_distance)
-            '''check if we already have a filepath for task'''
-            if not task.task_path:
-                task.create_path()
+
+        '''check if we already have a filepath for task'''
+        if task.task_path is None or '':
+            task.create_path()
 
         return task
 
     def create_path(self, path=None):
         '''create filepath from # and date if not given
             and store it in database'''
-        if not path:
+        from db_tables import tblTask as T
+
+        if path: self.task_path = path
+        elif self.task_num and self.date:
             self.task_path = '_'.join([('t'+str(self.task_num)), self.date.strftime('%Y%m%d')])
+        else: return
+
+        with Database() as db:
+            q = db.session.query(T).get(self.id)
+            q.tasPath = self.task_path
+            db.session.commit()
 
     def create_results(self, status=None, mode='default'):
         """
@@ -1174,6 +1185,9 @@ class Task(object):
             optimised fix on cylinders, and goes back to wgs84 for distance calculations.
         '''
         from route import get_shortest_path
+
+        '''check we have at least 3 points'''
+        if len(self.turnpoints) < 3: return
 
         '''calculate optimised distance fixes on cilynders'''
         optimised = get_shortest_path(self)
