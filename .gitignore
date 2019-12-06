@@ -74,3 +74,4 @@ _pycache_
 
 
 !/airscore/templates/
+airscore/core/defines.yaml
