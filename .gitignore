@@ -57,6 +57,9 @@ env/
 # Development database
 *.db
 
+# data
+airscore/data/map_objects/tasks/*
+airscore/data/results/*
 
 defines.php
 .ht*
