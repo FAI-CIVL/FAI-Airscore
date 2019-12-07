@@ -122,48 +122,48 @@ def get_comp_path(comp_id):
             return db.session.query(C.comPath).filter(C.comPk == comp_id).limit(1).scalar()
 
 
-def create_comp_path(comp_id, short_name, date):
-    """ upon competition creation, creates the path to store tracks.
-        It will not change if comp name is updated"""
-    # maybe should be moved to correct year if comp date will change?
-    from db_tables import tblCompetition as C
-    import datetime
-    from os import path as p
-    if not(type(comp_id)is int and comp_id > 0 and isinstance(date, datetime.date)):
-        return
-    if not(type(short_name) is str and len(short_name) > 0):
-        '''create a short name'''
-        # we need the name, maybe better create a class?
-    year = str(date.year)
-    path = p.join(year, short_name)
-    with Database() as db:
-        q = db.session.query(C).get(comp_id)
-        if not q.comPath:
-            q.comPath = path
-            db.session.commit()
-        return q.comPath
-
-
-def create_task_path(task_id, tcode, date):
-    """ upon competition creation, creates the path to store tracks.
-        It will not change if comp name is updated"""
-    # maybe should be moved to correct year if comp date changes?
-    from db_tables import tblTask as T
-    import datetime
-
-    if not(type(task_id)is int and task_id > 0 and isinstance(date, datetime.date)):
-        return
-    if not(type(tcode) is str and len(tcode) > 0):
-        '''create a short name'''
-        # we need the name
-    tdate = date.strftime('%Y-%m-%d')
-    path = '_'.join([tcode, tdate])
-    with Database() as db:
-        q = db.session.query(T).get(task_id)
-        if not q.tasPath:
-            q.tasPath = path
-            db.session.commit()
-        return q.tasPath
+# def create_comp_path(comp_id, short_name, date):
+#     """ upon competition creation, creates the path to store tracks.
+#         It will not change if comp name is updated"""
+#     # maybe should be moved to correct year if comp date will change?
+#     from db_tables import tblCompetition as C
+#     import datetime
+#     from os import path as p
+#     if not(type(comp_id)is int and comp_id > 0 and isinstance(date, datetime.date)):
+#         return
+#     if not(type(short_name) is str and len(short_name) > 0):
+#         '''create a short name'''
+#         # we need the name, maybe better create a class?
+#     year = str(date.year)
+#     path = p.join(year, short_name.lower())
+#     with Database() as db:
+#         q = db.session.query(C).get(comp_id)
+#         if not q.comPath:
+#             q.comPath = path
+#             db.session.commit()
+#         return q.comPath
+#
+#
+# def create_task_path(task_id, tcode, date):
+#     """ upon competition creation, creates the path to store tracks.
+#         It will not change if comp name is updated"""
+#     # maybe should be moved to correct year if comp date changes?
+#     from db_tables import tblTask as T
+#     import datetime
+#
+#     if not(type(task_id)is int and task_id > 0 and isinstance(date, datetime.date)):
+#         return
+#     if not(type(tcode) is str and len(tcode) > 0):
+#         '''create a short name'''
+#         # we need the name
+#     tdate = date.strftime('%Y%m%d')
+#     path = '_'.join([tcode, tdate])
+#     with Database() as db:
+#         q = db.session.query(T).get(task_id)
+#         if not q.tasPath:
+#             q.tasPath = path
+#             db.session.commit()
+#         return q.tasPath
 
 
 def get_task_region(task_id):

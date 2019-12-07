@@ -60,6 +60,7 @@ class Comp(object):
         self.locked                     = None              # bool
         self.external                   = None              # bool
         self.website                    = None              # str
+        self.comp_path                  = None              # str
 
         # self.formula                    = Task_formula.read(self.id) if self.id else None
 
@@ -94,10 +95,11 @@ class Comp(object):
 
     @property
     def file_path(self):
-        from datetime import datetime
+        if not self.comp_path:
+            self.create_path()
         from os import path as p
         from Defines import FILEDIR
-        return p.join(FILEDIR, self.date_to.strftime("%Y"), self.comp_code.lower())
+        return p.join(FILEDIR, str(self.date_from.year), self.comp_code.lower())
 
     def as_dict(self):
         return self.__dict__
@@ -126,6 +128,22 @@ class Comp(object):
                                                     'team_scoring',
                                                     'team_over']}
         return comp
+
+    def create_path(self, path=None):
+        '''create filepath from # and date if not given
+            and store it in database'''
+        from db_tables import tblCompetition as C
+        from os import path as p
+
+        if path: self.comp_path = path
+        elif self.comp_code and self.date_from:
+            self.comp_path = p.join(str(self.date_from.year), str(self.comp_code).lower())
+        else: return
+
+        with Database() as db:
+            q = db.session.query(C).get(self.id)
+            q.comPath = self.comp_path
+            db.session.commit()
 
     def update_comp_info(self):
         from datetime import datetime as dt

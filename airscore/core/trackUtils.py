@@ -259,3 +259,15 @@ def create_track_result_file(track_id, task_id):
     lib = For.get_formula_lib(formula.type)
     result = flight_result.Flight_result.check_flight(track.flight, task, lib.parameters, 5)
     result.save_result_file(result.to_geojson_result(track, task), str(track_id))
+
+def get_task_fullpath(task_id):
+    from db_tables import tblTask as T, tblCompetition as C
+    from os import path as p
+    from Defines import FILEDIR
+    with Database() as db:
+        try:
+            q = db.session.query(T.tasPath, C.comPath).join(C, C.comPk==T.comPk).filter(T.tasPk==task_id).one()
+        except:
+            print(f'Get Task Path Query Error')
+            return None
+    return p.join(FILEDIR,q.comPath,q.tasPath)
