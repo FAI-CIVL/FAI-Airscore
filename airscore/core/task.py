@@ -101,6 +101,7 @@ class Task(object):
         self.launch_valid               = None
         self.locked                     = False
         self.task_path                  = None
+        self.comp_path                  = None
         self.formula                    = Task_formula.read(self.id) if self.id else None
 
     def __setattr__(self, attr, value):
@@ -135,11 +136,13 @@ class Task(object):
 
     @property
     def file_path(self):
+        if not self.comp_path:
+            return
         if not self.task_path:
             self.create_path()
         from os import path as p
         from Defines import FILEDIR
-        return p.join(FILEDIR, self.comp_code.lower(), self.task_path.lower())
+        return p.join(FILEDIR, self.comp_path, self.task_path.lower())
 
     @property
     def last_start_time(self):

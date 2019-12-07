@@ -51,6 +51,7 @@ class CompetitionView(Base):
     Column('comClass', Enum('PG', 'HG', 'mixed'), server_default=text("'PG'")),
     Column('comStyleSheet', String(128)),
     Column('comLocked', INTEGER(11), server_default=text("'0'")),
+    Column('comPath', String(80)),
     Column('comExt', INTEGER(2), server_default=text("'0'")),
     Column('comExtUrl', String(100)),
     Column('forName', String(50)),
@@ -91,6 +92,7 @@ class CompObjectView(Base):
     Column('comp_class', Enum('PG', 'HG', 'mixed'), server_default=text("'PG'")),
     Column('stylesheet', String(128)),
     Column('locked', INTEGER(11), server_default=text("'0'")),
+    Column('comp_path', String(80)),
     Column('external', INTEGER(2), server_default=text("'0'")),
     Column('website', String(100)),
     Column('formula_name', String(88)),
@@ -278,7 +280,8 @@ class TaskObjectView(Base):
     Column('comment', Text),
     Column('locked', TINYINT(3), server_default=text("'0'")),
     Column('launch_valid', BIGINT(11)),
-    Column('task_path', String(40))
+    Column('task_path', String(40)),
+    Column('comp_path', String(40))
 )
 
 
@@ -477,6 +480,7 @@ class TaskView(Base):
     Column('claPk', INTEGER(11), server_default=text("'0'")),
     Column('comEntryRestrict', Enum('open', 'registered'), server_default=text("'registered'")),
     Column('comExt', INTEGER(2), server_default=text("'0'")),
+    Column('comPath', String(40)),
     Column('xccSiteID', INTEGER(11)),
     Column('xccToID', INTEGER(11)),
     Column('tasMargin', Float(asdecimal=False))
@@ -534,6 +538,18 @@ class TrackFileView(Base):
     Column('par_id', INTEGER(11)),
     Column('filename', String(255)),
     Column('g_record', TINYINT(4))
+)
+
+class TrackObjectView(Base):
+    __table__ = Table( 'TrackObjectView', metadata,
+
+    Column('track_id', INTEGER(11), primary_key=True),
+    Column('par_id', INTEGER(11)),
+    Column('task_id', INTEGER(11)),
+    Column('civl_id', INTEGER(10)),
+    Column('glider', String(100)),
+    Column('glider_cert', String(20)),
+    Column('track_file', String(255)),
 )
 
 schema_version = Table(

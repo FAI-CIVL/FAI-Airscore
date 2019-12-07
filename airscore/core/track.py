@@ -27,17 +27,33 @@ class Track():
     def __str__(self):
         return "Track Object"
 
-    def __init__(self, filename=None, track_id=None, par_id=None, task_id=None, glider=None, cert=None, type=None):
-        self.filename   = filename
-        self.track_id   = track_id
-        self.type       = type
-        self.par_id     = par_id        # tblParticipant ID
-        self.task_id    = task_id       # tblTask ID
-        self.glider     = glider
-        self.cert       = cert
-        self.flight     = None          # igc_lib.Flight object
-        self.date       = None          # in datetime.date format
-        self.pil_id     = None          # should be deleted
+    def __init__(self, track_file=None, track_id=None, par_id=None, civl_id=None, task_id=None, glider=None, glider_cert=None, type=None, comment=None):
+        self.track_file     = track_file
+        self.track_id       = track_id
+        self.type           = type
+        self.par_id         = par_id        # tblParticipant ID
+        self.civl_id        = civl_id       # CIVLID
+        self.task_id        = task_id       # tblTask ID
+        self.glider         = glider
+        self.glider_cert    = glider_cert
+        self.comment        = comment
+        self.flight         = None          # igc_lib.Flight object
+        self.date           = None          # in datetime.date format
+        self.pil_id         = None          # should be deleted
+
+    @property
+    def filename(self):
+        # compatibility
+        return self.fullpath
+
+    @property
+    def fullpath(self):
+        if not self.track_file:
+            return
+        from trackUtils import get_task_fullpath
+        from os import path as p
+        file_path = get_task_fullpath(self.task_id)
+        return p.join(file_path, self.track_file)
 
     def as_dict(self):
         return self.__dict__
@@ -106,18 +122,18 @@ class Track():
     @classmethod
     def read_db(cls, track_id):
         """Creates a Track Object from a DB Track entry"""
-        from db_tables import TaskResultView as T
+        from db_tables import TrackObjectView as T
 
         track = cls(track_id=track_id)
 
         """Read general info about the track"""
         with Database() as db:
             # get track details.
-            q = db.session.query(T.pil_id, T.task_id, T.track_file.label('filename')).filter(T.track_id==track_id)
+            q = db.session.query(T).get(track_id)
             try:
-                t = db.populate_obj(track, q.one())
+                db.populate_obj(track, q)
                 """Creates the flight obj with fixes info"""
-                track.flight = Flight.create_from_file(track.filename)
+                track.flight = Flight.create_from_file(track.fullpath)
             except:
                 print(f'Track Query Error: no result found')
 
