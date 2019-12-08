@@ -46,7 +46,7 @@ track_style_function = lambda x: {'color':'red' if x['properties']['Track']=='Pr
 
 # function to create the map template with optional geojson, circles and points objects
 def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_line=None, margin=0,
-             thermal_layer=None, waypoint_layer=None, extra_tracks=None):
+             thermal_layer=False, waypoint_layer=False, extra_tracks=None):
     if points is None:
         points = []
     folium_map = folium.Map(location=[45.922207, 8.673952], zoom_start=13, tiles="Stamen Terrain", width='100%',
@@ -76,7 +76,7 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
 
             for t in thermals:
                 #             icon = Icon(color='blue', icon_color='black', icon='sync-alt', angle=0, prefix='fas')
-                icon = CustomIcon('images/thermal.png')
+                icon = CustomIcon('/app/airscore/static/img/thermal.png')
                 thermal_group.add_child(Marker([t[1], t[0]], icon=icon, popup=Popup(t[2])))
 
             folium_map.add_child(thermal_group)

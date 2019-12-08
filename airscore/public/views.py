@@ -355,11 +355,11 @@ def map(trackidtaskid):
     other_tracks = mapUtils.get_other_tracks(taskid, parid)
 
     map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
-                   goal_line=goal_line, margin=tolerance)
+                   goal_line=goal_line, margin=tolerance, thermal_layer=True, waypoint_layer=True)
     waypoint_achieved_list = list(w for w in layer['geojson']['waypoint_achieved'])
     add_tracks = SelectAdditionalTracks()
     add_tracks.track_pilot_list = other_tracks
-    return render_template('map.html', other_tracks=other_tracks, add_tracks=add_tracks, map=map._repr_html_(),
+    return render_template('public/map.html', other_tracks=other_tracks, add_tracks=add_tracks, map=map._repr_html_(),
                            wpt_achieved=waypoint_achieved_list, task=task_name, pilot=pilot)
 
 @blueprint.route('/_map/<trackid>/<extra_trackids>')

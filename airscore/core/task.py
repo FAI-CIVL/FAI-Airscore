@@ -184,7 +184,7 @@ class Task(object):
             taskStopTime = taskStopAnnouncementTime − competitionScoreBackTime
             '''
             return max(0, self.stopped_time - self.formula.score_back_time)
-        elif task.comp_class == 'HG':
+        elif self.comp_class == 'HG':
             '''
             In hang-gliding, stopped tasks are “scored back” by a time that is determined
             by the number of start gates and the start gate interval:
@@ -226,10 +226,10 @@ class Task(object):
         '''get task from db'''
         with Database() as db:
             # get the task details.
-            t   = db.session.query(T)
-            w   = db.session.query(W)
+            t = db.session.query(T)
+            w = db.session.query(W)
             db.populate_obj(task, t.get(task_id))
-            tps = w.filter(W.task_id==task_id).order_by(W.partial_distance)
+            tps = w.filter(W.task_id == task_id).order_by(W.partial_distance)
         '''populate turnpoints'''
         for tp in tps:
             turnpoint = Turnpoint(tp.lat, tp.lon, tp.radius, tp.type.strip(),
