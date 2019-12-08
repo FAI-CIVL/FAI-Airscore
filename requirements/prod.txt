@@ -46,7 +46,6 @@ geographiclib==1.50
 geojson==2.5.0
 geopy==1.20.0
 jsonpickle==1.2
-
 numpy==1.17.2
 openpyxl==3.0.0
 pathlib2==2.3.4
@@ -55,4 +54,4 @@ pyproj
 PyYAML==5.1.1
 requests==2.22.0
 simplejson==3.16.0
-
+lxml==4.4.2

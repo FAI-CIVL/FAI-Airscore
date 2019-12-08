@@ -644,12 +644,14 @@ class Task(object):
 
         """
         from os             import path as p
-        from result         import get_task_json  # !!! this function does not exist in result.py
+        # from result         import get_task_json  # !!! this function does not exist in result.py
         from flight_result  import Flight_result
+        from Defines import RESULTDIR
+        from pprint import pprint as pp
 
         if not filename or not p.isfile(filename):
             '''we get the active json file'''
-            filename = get_task_json(task_id)
+            filename = get_task_json_filename(task_id)
 
         if not filename:
             print(f"There's no active json file for task {task_id}, or given filename does not exists")
@@ -657,7 +659,7 @@ class Task(object):
 
         print(f"task {task_id} json file: {filename}")
 
-        with open(filename, encoding='utf-8') as json_data:
+        with open(p.join(RESULTDIR,filename), encoding='utf-8') as json_data:
             # a bit more checking..
             try:
                 t = json.load(json_data)
@@ -665,12 +667,14 @@ class Task(object):
                 print("file is not a valid JSON object")
                 return None
 
+        # pp(t)
+
         task = Task(task_id)
         task.__dict__.update(dict(t['info']))
         task.stats.update(dict(t['stats']))
         task.turnpoints = []
 
-        for id, tp in enumerate(t['task']):
+        for id, tp in enumerate(t['route']):
             '''creating waypoints'''
             # I could take them from database, but this is the only way to be sure it is the correct one
             turnpoint = Turnpoint(tp['lat'], tp['lon'], tp['radius'], tp['type'],
@@ -688,11 +692,11 @@ class Task(object):
         for pil in t['results']:
             ''' create Flight_result objects from json list'''
             # should unify property names
-            result = Flight_result(pil_id=pil['pil_id'], track_file = pil['track_file'])
+            result = Flight_result(par_id=pil['par_id'], track_file = pil['track_file'])
             result.distance_flown           = pil['distance']
             result.first_time               = pil['first_time']
             result.SSS_time                 = pil['SS_time']
-            result.real_start_time          = pil['start_time']
+            result.real_start_time          = pil['real_start_time']
             result.ESS_time                 = pil['ES_time']
             result.goal_time                = pil['goal_time']
             result.best_waypoint_achieved   = pil['turnpoints_made']

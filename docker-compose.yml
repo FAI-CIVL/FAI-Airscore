@@ -18,7 +18,7 @@ services:
       args:
         <<: *build_args
     image: "airscore-development"
-    container_name: flask-dev
+    container_name: flask_dev
     ports:
       - "5000:5000"
       - "2992:2992"
@@ -31,7 +31,7 @@ services:
       args:
         <<: *build_args
     image: "airscore-production"
-    container_name: flask-prod
+    container_name: flask_prod
     ports:
       - "5000:5000"
     environment:
