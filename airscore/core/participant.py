@@ -1,20 +1,18 @@
 """
-Competition Library
+Participant Library
 
 contains
     Partecipant class
-    function to write comp result json file
-    function to write comp result fsdb file
+    function to import participants from excel file
 
-Use: from participant import Partecipant
+Use: from participant import Participant
 
 Stuart Mackintosh Antonio Golfari - 2019
 """
 
 from myconn     import Database
-from calcUtils  import json, get_datetime, decimal_to_seconds, time_difference
-import jsonpickle
 import Defines
+
 
 class Participant(object):
     """Partecipant definition, DB operations
@@ -45,6 +43,7 @@ class Participant(object):
         self.pil_id                     = None              # PilotView id
         self.results                    = dict()
 
+
     def __setattr__(self, attr, value):
         if attr in ('name', 'glider') and type(value) is str:
             value = value.title()
@@ -52,13 +51,16 @@ class Participant(object):
             value = value.upper()
         self.__dict__[attr] = value
 
+
     @property
     def pilot_birthdate_str(self):
         from datetime import datetime
         return self.birthdate.strftime("%Y-%m-%d")
 
+
     def as_dict(self):
         return self.__dict__
+
 
     def __str__(self):
         out = ''
@@ -66,6 +68,7 @@ class Participant(object):
         out += f'{self.name} - CIVL_ID {self.civl_id} \n'
         out += f'{self.glider}  | {self.sponsor}\n'
         return out
+
 
     @staticmethod
     def read(par_id):
@@ -84,6 +87,7 @@ class Participant(object):
             q   = db.session.query(R).get(par_id)
             db.populate_obj(pilot, q)
         return pilot
+
 
 def import_participants_from_excel(comp_id, filename):
     '''Gets participants from external file;
@@ -123,7 +127,9 @@ def import_participants_from_excel(comp_id, filename):
                                max_col=13,
                                values_only=True):
         if not row[0]:
+            'EOF'
             break
+
         pil = Participant(ID=row[0], comp_id=comp_id, civl_id=row[9], name=row[1], nat=row[2],
                 sex='F' if row[3]==1 else 'M', glider=row[5], sponsor=row[7],
                 team=row[11], fai_id=row[8], fai_valid=0 if row[8] is None else 1)
