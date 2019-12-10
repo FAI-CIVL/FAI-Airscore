@@ -6,9 +6,9 @@ Stuart Mackintosh - Antonio Golfari
 2019
 
 """
-
-from aerofiles      import openair
-from pprint         import pprint as pp
+from logger     import Logger
+from aerofiles  import openair
+from pprint     import pprint as pp
 
 def dms_to_dec(C, d, m, s=0):
     return (float(d) + float(m)/60 + float(s)/(60*60)) * (-1 if C in ['W', 'S'] else 1)
@@ -162,13 +162,14 @@ def get_waypoints_from_file(filename):
         [code lat lon alt desc]'''
     import Defines
 
+    '''create logging and disable output'''
+    Logger('ON', 'waypoint_reader.txt')
+
     '''try to open file in different encodings'''
     try:
         with open(filename, 'r', encoding='utf-8') as file:
             dump  = file.read()
-            # pp(dump)
             lines = dump.splitlines()
-            # pp(lines)
     except:
         with open(filename, 'r', encoding='latin') as file:
             dump  = file.read()
@@ -189,5 +190,8 @@ def get_waypoints_from_file(filename):
     elif str(lines[0]).startswith('G  WGS 84'):
         pp('CompeGPS')
         wpts = get_CompeGPS(lines[2:])
+
+    ''' now restore stdout function '''
+    Logger('OFF')
 
     return wpts
