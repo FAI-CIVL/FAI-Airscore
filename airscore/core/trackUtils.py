@@ -15,6 +15,7 @@ import Defines
 # Use your utility module.
 from myconn import Database
 
+
 def extract_tracks(file, dir):
     """gets tracks from a zipfile"""
     from os.path import isfile
@@ -34,6 +35,7 @@ def extract_tracks(file, dir):
 
     return error
 
+
 def get_tracks(dir):
     """Checks files and imports what appear to be tracks"""
     files = []
@@ -44,7 +46,7 @@ def get_tracks(dir):
     """check files in temporary directory, and get only tracks"""
     for file in os.listdir(dir):
         print(f"checking: {file} \n")
-        if ( (not (file.startswith(".") or file.startswith("_"))) and file.lower().endswith(".igc")):
+        if (not (file.startswith(".") or file.startswith("_"))) and file.lower().endswith(".igc"):
             """file is a valid track"""
             print(f"valid filename: {file} \n")
             """add file to tracks list"""
@@ -57,6 +59,7 @@ def get_tracks(dir):
         print(f"  {f} \n")
 
     return files
+
 
 def assign_and_import_tracks(files, task, xcontest=False):
     """Find pilots to associate with tracks"""
@@ -78,7 +81,7 @@ def assign_and_import_tracks(files, task, xcontest=False):
 
     track_path = get_task_path(task_id)
 
-    #print("found {} tracks \n".format(len(files)))
+    # print("found {} tracks \n".format(len(files)))
     for file in files:
         mytrack = None
         filename = os.path.basename(file)
@@ -115,16 +118,19 @@ def assign_and_import_tracks(files, task, xcontest=False):
             import_track(mytrack)
             verify_track(mytrack, task)
 
+
 def import_track(track):
     track.add()
 
-def verify_track(track, task):
 
+def verify_track(track, task):
     formula = For.Task_formula.read(task.id)
     lib = formula.get_lib()
-    task_result = Flight_result.check_flight(track.flight, task, lib.parameters, 5) #check flight against task with min tolerance of 5m
+    task_result = Flight_result.check_flight(track.flight, task, lib.parameters,
+                                             5)  # check flight against task with min tolerance of 5m
     task_result.store_result(track.traPk, task.id)
     print(track.flight.notes)
+
 
 def get_non_scored_pilots(task_id, xcontest=False):
     """Gets list of registered pilots that still do not have a result"""
@@ -134,16 +140,17 @@ def get_non_scored_pilots(task_id, xcontest=False):
     with Database() as db:
 
         comp_id = db.session.query(T).get(task_id).comPk
-        q       = (db.session.query(R.parPk.label('par_id'),
-                                    func.lower(R.parName).label('name'), R.parFAI.label('fai'),
-                                    R.parXC.label('xcontest')).outerjoin(
-                                    S, and_(R.parPk==S.parPk, S.tasPk==task_id))).filter(and_(R.comPk==comp_id, S.tarPk==None))
+        q = (db.session.query(R.parPk.label('par_id'),
+                              func.lower(R.parName).label('name'), R.parFAI.label('fai'),
+                              R.parXC.label('xcontest')).outerjoin(
+            S, and_(R.parPk == S.parPk, S.tasPk == task_id))).filter(and_(R.comPk == comp_id, S.tarPk == None))
         if xcontest:
-            q = q.filter(R.parXC!=None)
+            q = q.filter(R.parXC != None)
         pilot_list = q.all()
     if pilot_list is None: print(f"No pilots without tracks found registered to the comp...")
 
     return pilot_list
+
 
 def get_pilot_from_list(filename, pilots):
     """check filename against a list of pilots"""
@@ -166,22 +173,23 @@ def get_pilot_from_list(filename, pilots):
         names = fields[0].replace('.', ' ').replace('_', ' ').replace('-', ' ').lower().split()
         """try to find xcontest user in filename
         otherwise try to find pilot name from filename"""
-        print ("file {} contains pilot name \n".format(fields[0]))
+        print("file {} contains pilot name \n".format(fields[0]))
         for p in pilots:
             print(f"XC User: {p.xcontest} | Name: {p.name}")
             if (p.xcontest is not None
                     and any(p.xcontest.lower() in str(name).lower() for name in names)):
-                print ("found a xcontest user")
+                print("found a xcontest user")
                 pilot_id = p.pil_id
                 fullname = p.name.replace(' ', '_')
                 break
             elif all(n in names for n in p.name.split()):
-                print ("found a pilot name")
+                print("found a pilot name")
                 pilot_id = p.pil_id
                 fullname = p.name.replace(' ', '_')
                 break
 
     return pilot_id, fullname
+
 
 def find_pilot(name):
     """Get pilot from name or fai
@@ -205,20 +213,21 @@ def find_pilot(name):
 
     print("Trying with name... \n")
     with Database() as db:
-        t   = db.session.query(P.pilPk)
+        t = db.session.query(P.pilPk)
         if names:
             q = t.filter(P.pilLastName.in_(names))
             p = q.filter(P.pilFirstName.in_(names))
         else:
-            p = t.filter(P.pilFAI==fai)
+            p = t.filter(P.pilFAI == fai)
         pil = p.all()
         if len(pil) == 1: return pil.pop().pilPk
         '''try one more time if we have both names and fai'''
         if fai and names:
-            if pil == []: p = q         # if we have zero results, try with only lastname and fai
-            pil = p.filter(P.pilFAI==fai).all()
+            if pil == []: p = q  # if we have zero results, try with only lastname and fai
+            pil = p.filter(P.pilFAI == fai).all()
             if len(pil) == 1: return pil.pop().pilPk
     return None
+
 
 def get_pil_track(par_id, task_id):
     """Get pilot result in a given task"""
@@ -228,11 +237,12 @@ def get_pil_track(par_id, task_id):
 
     with Database() as db:
         track_id = db.session.query(R.tarPk).filter(
-                                and_(R.parPk==par_id, R.tasPk==task_id)).scalar()
+            and_(R.parPk == par_id, R.tasPk == task_id)).scalar()
     if track_id == 0:
         """No result found"""
         print(f"Pilot with ID {pil_id} has not been scored yet on task ID {task_id} \n")
     return track_id
+
 
 def read_track_result_file(track_id, task_id):
     """create task and track objects"""
@@ -249,6 +259,7 @@ def read_track_result_file(track_id, task_id):
     with open(fullname, 'r') as f:
         return jsonpickle.decode(f.read())
 
+
 def create_track_result_file(track_id, task_id):
     import flight_result
     from task import Task
@@ -260,14 +271,15 @@ def create_track_result_file(track_id, task_id):
     result = flight_result.Flight_result.check_flight(track.flight, task, lib.parameters, 5)
     result.save_result_file(result.to_geojson_result(track, task), str(track_id))
 
+
 def get_task_fullpath(task_id):
     from db_tables import tblTask as T, tblCompetition as C
     from os import path as p
     from Defines import FILEDIR
     with Database() as db:
         try:
-            q = db.session.query(T.tasPath, C.comPath).join(C, C.comPk==T.comPk).filter(T.tasPk==task_id).one()
+            q = db.session.query(T.tasPath, C.comPath).join(C, C.comPk == T.comPk).filter(T.tasPk == task_id).one()
         except:
             print(f'Get Task Path Query Error')
             return None
-    return p.join(FILEDIR,q.comPath,q.tasPath)
+    return p.join(FILEDIR, q.comPath, q.tasPath)

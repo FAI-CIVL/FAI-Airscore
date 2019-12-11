@@ -655,7 +655,7 @@ def update_all_results(results):
     '''update database'''
     try:
         with Database() as db:
-            db.session.bulk_update_mappings(T, mappings) # !!! not sure what T refers to
+            db.session.bulk_update_mappings(T, mappings)  # !!! not sure what T refers to
             db.session.commit()
     except:
         print(f'update all results on database gave an error')

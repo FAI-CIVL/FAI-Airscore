@@ -26,37 +26,37 @@ class Task_result:
         Task result fields lists
     """
 
-    info_list =[    'comp_name',
-                    'comp_site',
-                    'comp_class',
-                    'date',
-                    'task_name',
-                    'time_offset',
-                    'comment',
-                    'window_open_time',
-                    'task_deadline',
-                    'window_close_time',
-                    'check_launch',
-                    'start_time',
-                    'start_close_time',
-                    'SS_interval',
-                    'last_start_time',
-                    'task_type',
-                    'distance',
-                    'opt_dist',
-                    'SS_distance',
-                    'stopped_time',
-                    'goal_altitude']
+    info_list = ['comp_name',
+                 'comp_site',
+                 'comp_class',
+                 'date',
+                 'task_name',
+                 'time_offset',
+                 'comment',
+                 'window_open_time',
+                 'task_deadline',
+                 'window_close_time',
+                 'check_launch',
+                 'start_time',
+                 'start_close_time',
+                 'SS_interval',
+                 'last_start_time',
+                 'task_type',
+                 'distance',
+                 'opt_dist',
+                 'SS_distance',
+                 'stopped_time',
+                 'goal_altitude']
 
-    route_list   = ['name',
-                    'description',
-                    'how',
-                    'radius',
-                    'shape',
-                    'type',
-                    'lat',
-                    'lon',
-                    'altitude']
+    route_list = ['name',
+                  'description',
+                  'how',
+                  'radius',
+                  'shape',
+                  'type',
+                  'lat',
+                  'lon',
+                  'altitude']
 
     formula_list = ['formula_name',
                     'nominal_dist',
@@ -73,29 +73,29 @@ class Task_result:
                     'arr_alt_bonus',
                     'tolerance']
 
-    stats_list = [  'pilots_launched',
-                    'pilots_present',
-                    'pilots_ess',
-                    'pilots_landed',
-                    'pilots_goal',
-                    'fastest',
-                    'fastest_in_goal',
-                    'min_dept_time',
-                    'min_ess_time',
-                    'max_distance',
-                    'tot_dist_flown',
-                    'tot_dist_over_min',
-                    'day_quality',
-                    'dist_validity',
-                    'time_validity',
-                    'launch_validity',
-                    'stop_validity',
-                    'avail_dist_points',
-                    'avail_dep_points',
-                    'avail_time_points',
-                    'avail_arr_points',
-                    'max_score',
-                    'min_lead_coeff']
+    stats_list = ['pilots_launched',
+                  'pilots_present',
+                  'pilots_ess',
+                  'pilots_landed',
+                  'pilots_goal',
+                  'fastest',
+                  'fastest_in_goal',
+                  'min_dept_time',
+                  'min_ess_time',
+                  'max_distance',
+                  'tot_dist_flown',
+                  'tot_dist_over_min',
+                  'day_quality',
+                  'dist_validity',
+                  'time_validity',
+                  'launch_validity',
+                  'stop_validity',
+                  'avail_dist_points',
+                  'avail_dep_points',
+                  'avail_time_points',
+                  'avail_arr_points',
+                  'max_score',
+                  'min_lead_coeff']
 
     results_list = ['track_id',
                     'par_id',
@@ -144,66 +144,66 @@ class Comp_result(object):
         Comp result fields lists
     """
 
-    info_list =    ['id',
-                    'comp_name',
-                    'comp_class',
-                    'type',
-                    'comp_site',
-                    'date_from',
-                    'date_to',
-                    'sanction',
-                    'MD_name',
-                    'contact',
-                    'comp_code',
-                    'restricted',
-                    'time_offset',
-                    'website']
+    info_list = ['id',
+                 'comp_name',
+                 'comp_class',
+                 'type',
+                 'comp_site',
+                 'date_from',
+                 'date_to',
+                 'sanction',
+                 'MD_name',
+                 'contact',
+                 'comp_code',
+                 'restricted',
+                 'time_offset',
+                 'website']
 
-    tasks_list =   ['task_name',
-                    'date',
-                    'comment',
-                    'opt_dist',
-                    'pilots_goal',
-                    'day_quality',
-                    'max_score',
-                    'task_type']
+    tasks_list = ['task_name',
+                  'date',
+                  'comment',
+                  'opt_dist',
+                  'pilots_goal',
+                  'day_quality',
+                  'max_score',
+                  'task_type']
 
     ''' result_list comes from Participant obj, and RegisteredPilotView
         available fields are: (`par_id`, `comp_id`, `civl_id`, `fai_id`, `pil_id`, `ID`, `name`, `sex`, `nat`,
                             `glider`, `class`, `sponsor`, `team`, `nat_team`, 'results')'''
-    result_list =  ['ID',
-                    'par_id',
-                    'civl_id',
-                    'fai_id',
-                    'name',
-                    'sex',
-                    'nat',
-                    'glider',
-                    'glider_cert',
-                    'sponsor',
-                    'team',
-                    'nat_team',
-                    'status',
-                    'pil_id',
-                    'score',
-                    'results']
+    result_list = ['ID',
+                   'par_id',
+                   'civl_id',
+                   'fai_id',
+                   'name',
+                   'sex',
+                   'nat',
+                   'glider',
+                   'glider_cert',
+                   'sponsor',
+                   'team',
+                   'nat_team',
+                   'status',
+                   'pil_id',
+                   'score',
+                   'results']
 
 
 def create_json_file(comp_id, code, elements, task_id=None, status=None):
     """
     creates the JSON file of results
     """
-    import  os
-    import  json
-    from    time        import time
-    from    datetime    import datetime
-    import  Defines  as d
-    from    db_tables   import tblResultFile as R
-    from    calcUtils   import CJsonEncoder
+    import os
+    import json
+    from time import time
+    from datetime import datetime
+    import Defines  as d
+    from db_tables import tblResultFile as R
+    from calcUtils import CJsonEncoder
 
-    timestamp   = int(time())       # timestamp of generation
-    dt          = datetime.fromtimestamp(timestamp).strftime('%Y%m%d_%H%M%S')
-    filename    = '_'.join([code, dt]) + '.json'
+    timestamp = int(time())  # timestamp of generation
+    dt = datetime.fromtimestamp(timestamp).strftime('%Y%m%d_%H%M%S')
+    filename = '_'.join([code, dt]) + '.json'
 
     '''adding data section to the elements, with:
         timestamp, status'''

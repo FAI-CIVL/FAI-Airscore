@@ -18,20 +18,20 @@ Stuart Mackintosh - Antonio Golfari
 
 """
 
-from logger     import Logger
-from result     import Comp_result as C
-from pprint     import pprint
+from logger import Logger
+from result import Comp_result as C
+from pprint import pprint
+
 
 def main(args):
-
-    '''create logging and disable output'''
+    """create logging and disable output"""
     Logger('ON', 'comp_results.txt')
 
     print("starting..")
     '''Main module. Takes tasPk as parameter'''
 
     comp_id = int(args[0])
-    status  = None if len(args) == 1 else str(args[1])
+    status = None if len(args) == 1 else str(args[1])
     print(f"Task ID: {comp_id}")
 
     '''create comp result obj, json file, db entry'''
@@ -46,7 +46,8 @@ def main(args):
         comp_result.php?refPk=ref_id&comPk=comp_id'''
     print(f'{ref_id}')
 
-if __name__== "__main__":
+
+if __name__ == "__main__":
     import sys
 
     '''check parameter is good'''

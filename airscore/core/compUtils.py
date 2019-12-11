@@ -11,6 +11,7 @@ from sqlalchemy import and_, or_
 import Defines
 import json
 
+
 def get_comp(task_id):
     """Get comPk from tasPk"""
     from db_tables import tblTask as T
@@ -25,7 +26,7 @@ def get_class(tasPk):
     from db_tables import TaskView as T
     if type(tasPk) is int and tasPk > 0:
         with Database() as db:
-            comp_class = db.session.query(T.c.comClass).filter(T.c.tasPk==tasPk).limit(1).scalar()
+            comp_class = db.session.query(T.c.comClass).filter(T.c.tasPk == tasPk).limit(1).scalar()
         return comp_class
 
 
@@ -51,7 +52,7 @@ def get_registration(comp_id):
 def get_offset(task_id):
     from db_tables import TaskView as T
     with Database() as db:
-        off = db.session.query(T.c.comTimeOffset).filter(T.c.tasPk==task_id).limit(1).scalar()
+        off = db.session.query(T.c.comTimeOffset).filter(T.c.tasPk == task_id).limit(1).scalar()
     return off
 
 
@@ -61,7 +62,7 @@ def is_registered(civl_id, comp_id):
     par_id = 0
     if (civl_id > 0 and comp_id > 0):
         with Database() as db:
-            par_id = db.session.query(R.parPk).filter(R.comp_id==comp_id, R.civl_id==civl_id).limit(1).scalar()
+            par_id = db.session.query(R.parPk).filter(R.comp_id == comp_id, R.civl_id == civl_id).limit(1).scalar()
     return par_id
 
 
@@ -80,7 +81,7 @@ def get_comp_json_filename(comp_id):
     from db_tables import tblResultFile as R
     filename = "NONE"
     with Database() as db:
-        filename = db.session.query(R.refJSON).filter(and_(R.comPk == comp_id, R.tasPk == None, R.refVisible == 1))\
+        filename = db.session.query(R.refJSON).filter(and_(R.comPk == comp_id, R.tasPk == None, R.refVisible == 1)) \
             .limit(1).scalar()
     print(f"filename: {filename}")
     return filename
@@ -90,7 +91,7 @@ def get_comp_json(comp_id):
     filename = get_comp_json_filename(comp_id)
     if not filename:
         return "error"
-    with open(Defines.RESULTDIR+filename, 'r') as myfile:
+    with open(Defines.RESULTDIR + filename, 'r') as myfile:
         data = myfile.read()
     if not data:
         return "error"
@@ -100,10 +101,10 @@ def get_comp_json(comp_id):
 def get_nat_code(iso):
     """Get Country Code from ISO2 or ISO3"""
     from db_tables import tblCountryCode as CC
-    if not (type(iso) is str and len(iso) in (2,3)): return None
-    column = getattr(CC,'natIso' + str(len(iso)))
+    if not (type(iso) is str and len(iso) in (2, 3)): return None
+    column = getattr(CC, 'natIso' + str(len(iso)))
     with Database() as db:
-        return db.session.query(CC.natId).filter(column==iso).limit(1).scalar()
+        return db.session.query(CC.natId).filter(column == iso).limit(1).scalar()
 
 
 def get_task_path(task_id):
@@ -111,7 +112,7 @@ def get_task_path(task_id):
     from db_tables import tblTask as T
     if type(task_id) is int and task_id > 0:
         with Database() as db:
-            return db.session.query(T.tasPath).filter(T.tasPk==task_id).limit(1).scalar()
+            return db.session.query(T.tasPath).filter(T.tasPk == task_id).limit(1).scalar()
 
 
 def get_comp_path(comp_id):
@@ -170,7 +171,7 @@ def get_task_region(task_id):
     from db_tables import tblTask as T
     if type(task_id) is int and task_id > 0:
         with Database() as db:
-            return db.session.query(T.regPk).filter(T.tasPk==task_id).limit(1).scalar()
+            return db.session.query(T.regPk).filter(T.tasPk == task_id).limit(1).scalar()
 
 
 def get_area_wps(region_id):
@@ -179,8 +180,8 @@ def get_area_wps(region_id):
     if type(region_id) is int and region_id > 0:
         with Database() as db:
             wps = db.session.query(W.rwpName,
-                                    W.rwpPk).filter(and_(W.regPk==region_id,
-                                                        W.rwpOld==0)).order_by(W.rwpName).all()
+                                   W.rwpPk).filter(and_(W.regPk == region_id,
+                                                        W.rwpOld == 0)).order_by(W.rwpName).all()
         return dict(wps)
 
 
@@ -195,8 +196,8 @@ def get_participants(comp_id):
     from participant import Participant
 
     with Database() as db:
-        q       = db.session.query(R).filter(R.comp_id==comp_id)
-        result  = q.all()
+        q = db.session.query(R).filter(R.comp_id == comp_id)
+        result = q.all()
         pilots = []
         for p in result:
             pil = Participant(comp_id=comp_id)
@@ -213,15 +214,16 @@ def get_tasks_result_files(comp_id):
     with Database() as db:
         '''getting active json files list'''
         files = db.session.query(R.tasPk.label('task_id'),
-                                R.refJSON.label('file')).filter(and_(
-                                R.comPk==comp_id, R.tasPk.isnot(None), R.refVisible==1
-                                )).order_by(R.tasPk).all()
+                                 R.refJSON.label('file')).filter(and_(
+            R.comPk == comp_id, R.tasPk.isnot(None), R.refVisible == 1
+        )).order_by(R.tasPk).all()
     return files
 
 
 def read_rankings(comp_id):
     """reads sub rankings list for the task and creates a dictionary"""
-    from db_tables import tblClasCertRank as CC, tblCompetition as C, tblRanking as R, tblCertification as CCT, tblClassification as CT
+    from db_tables import tblClasCertRank as CC, tblCompetition as C, tblRanking as R, tblCertification as CCT, \
+        tblClassification as CT
     from sqlalchemy.orm import joinedload
     from sqlalchemy import and_, or_
 
@@ -231,9 +233,9 @@ def read_rankings(comp_id):
         '''get rankings definitions'''
         class_id = db.session.query(C).get(comp_id).claPk
         query = db.session.query(R.ranName.label('rank'), CCT.cerName.label('cert'), CT.claFem.label('female'),
-                                 CT.claTeam.label('team')).select_from(R).join(CC, R.ranPk == CC.ranPk)\
-                                 .join(CCT,and_(CCT.cerPk <= CC.cerPk, CCT.comClass == R.comClass)
-                                 ).join(CT, CT.claPk == CC.claPk).filter(and_(CC.cerPk>0, CC.claPk == class_id))
+                                 CT.claTeam.label('team')).select_from(R).join(CC, R.ranPk == CC.ranPk) \
+            .join(CCT, and_(CCT.cerPk <= CC.cerPk, CCT.comClass == R.comClass)
+                  ).join(CT, CT.claPk == CC.claPk).filter(and_(CC.cerPk > 0, CC.claPk == class_id))
         result = query.all()
     try:
         for res in result:
@@ -241,8 +243,8 @@ def read_rankings(comp_id):
                 rank[res.rank].append(res.cert)
             else:
                 rank[res.rank] = [res.cert]
-        rank['female']  = result.pop().female
-        rank['team']    = result.pop().team
+        rank['female'] = result.pop().female
+        rank['team'] = result.pop().team
     except:
         print(f'Ranking Query Error: list is empty')
 

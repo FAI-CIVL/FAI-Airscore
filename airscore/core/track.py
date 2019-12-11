@@ -9,14 +9,14 @@ and creates an object containing all info about the flight
 Antonio Golfari, Stuart Mackintosh - 2019
 """
 
-from calcUtils import epoch_to_date, sec_to_time
+from calcUtils import epoch_to_date, time_difference
 from igc_lib import Flight
 # Use your utility module.
 from myconn import Database
 import os
 
 
-class Track():
+class Track(object):
     """
     Create a Track object and
     a collection of functions to handle tracks.
@@ -27,19 +27,20 @@ class Track():
     def __str__(self):
         return "Track Object"
 
-    def __init__(self, track_file=None, track_id=None, par_id=None, civl_id=None, task_id=None, glider=None, glider_cert=None, type=None, comment=None):
-        self.track_file     = track_file
-        self.track_id       = track_id
-        self.type           = type
-        self.par_id         = par_id        # tblParticipant ID
-        self.civl_id        = civl_id       # CIVLID
-        self.task_id        = task_id       # tblTask ID
-        self.glider         = glider
-        self.glider_cert    = glider_cert
-        self.comment        = comment
-        self.flight         = None          # igc_lib.Flight object
-        self.date           = None          # in datetime.date format
-        self.pil_id         = None          # should be deleted
+    def __init__(self, track_file=None, track_id=None, par_id=None, civl_id=None, task_id=None, glider=None,
+                 glider_cert=None, type=None, comment=None):
+        self.track_file = track_file
+        self.track_id = track_id
+        self.type = type
+        self.par_id = par_id  # tblParticipant ID
+        self.civl_id = civl_id  # CIVLID
+        self.task_id = task_id  # tblTask ID
+        self.glider = glider
+        self.glider_cert = glider_cert
+        self.comment = comment
+        self.flight = None  # igc_lib.Flight object
+        self.date = None  # in datetime.date format
+        self.pil_id = None  # should be deleted
 
     @property
     def filename(self):
@@ -64,7 +65,6 @@ class Track():
         """
         from trackUtils import find_pilot
         if self.pil_id is None:
-
             """Get string"""
             fields = os.path.splitext(os.path.basename(self.filename))
             pil_id = find_pilot(fields[0])
@@ -77,7 +77,8 @@ class Track():
         # add track as result in tblTaskResult table
         with Database() as db:
             try:
-                track = R(parPk=self.par_id, tasPk=self.task_id, traFile=self.filename, traGRecordOk=self.filename) # not sure what g-record has to do with filename??
+                track = R(parPk=self.par_id, tasPk=self.task_id, traFile=self.filename,
+                          traGRecordOk=self.filename)  # not sure what g-record has to do with filename??
                 self.track_id = db.session.add(track)
                 db.session.commit()
                 result += ("track for pilot with id {} correctly stored in database".format(self.pil_id))
@@ -87,9 +88,9 @@ class Track():
         return result
 
     @classmethod
-    def read_file(cls, filename, track_id = None, pil_id = None):
+    def read_file(cls, filename, track_id=None, pil_id=None):
         """Reads track file and creates a track object"""
-        track = cls(filename=filename, track_id=track_id, par_id=pil_id)
+        track = cls(track_file=filename, track_id=track_id, par_id=pil_id)
         track.get_type()
         print('type ', track.type)
         if track.type is not None:
@@ -98,11 +99,11 @@ class Track():
                 """using IGC reader from aerofile library"""
                 print('reading flight')
                 flight = Flight.create_from_file(filename)
-            #if track.type == "kml":
-                """using KML reader created by Antonio Golfari
-                To be rewritten for igc_lib"""
-                #with open(track.filename, 'r', encoding='utf-8') as f:
-                    #flight = kml.Reader().read(f)
+            # if track.type == "kml":
+            """using KML reader created by Antonio Golfari
+            To be rewritten for igc_lib"""
+            # with open(track.filename, 'r', encoding='utf-8') as f:
+                # flight = kml.Reader().read(f)
             """Check flight is valid
             I'm not creating a track without a valid flight because it would miss date property.
             We could change this part if we find a way to gen non-valid flight with timestamp property
@@ -112,10 +113,11 @@ class Track():
                 if not pil_id:
                     track.get_pilot()
                 # track.get_glider()
-                track.flight    = flight
-                track.date      = epoch_to_date(track.flight.date_timestamp)
+                track.flight = flight
+                track.date = epoch_to_date(track.flight.date_timestamp)
                 return track
-            else: print(f'** ERROR: {flight.notes}')
+            else:
+                print(f'** ERROR: {flight.notes}')
         else:
             print(f"File {filename} (pilot ID {pil_id}) is NOT a valid track file.")
 
@@ -139,7 +141,7 @@ class Track():
 
         return track
 
-    def to_geojson(self, filename = None, mintime=0, maxtime=86401):
+    def to_geojson(self, filename=None, mintime=0, maxtime=86401):
         """Dumps the flight to geojson format
             If a filename is given, it write the file, otherwise returns the string"""
 
@@ -179,7 +181,7 @@ class Track():
                 self.type = "live"
             else:
                 self.type = None
-            print ("  ** FILENAME: {} TYPE: {} \n".format(self.filename, self.type))
+            print("  ** FILENAME: {} TYPE: {} \n".format(self.filename, self.type))
 
     def copy_track_file(self, task_path=None, pname=None):
         """copy track file in the correct folder and with correct name
@@ -202,7 +204,7 @@ class Track():
                 # get pilot details.
                 name = db.session.query(P).get(self.par_id).name
             if q:
-                pname = name.replace(' ','_').lower()
+                pname = name.replace(' ', '_').lower()
 
         if task_path:
             """check if directory already exists"""
@@ -212,15 +214,15 @@ class Track():
             name_surname_date_time_index.igc
             if we use flight date then we need an index for multiple tracks"""
 
-            index = str(len(glob.glob(task_path+'/'+pname+'*.igc')) + 1).zfill(2)
+            index = str(len(glob.glob(task_path + '/' + pname + '*.igc')) + 1).zfill(2)
             filename = '_'.join([pname, str(self.date), index]) + '.igc'
             fullname = path.join(task_path, filename)
             # print(f'path to copy file: {fullname}')
-            print('path to copy file:',fullname)
+            print('path to copy file:', fullname)
             """copy file"""
             try:
                 copyfile(src_file, fullname)
-                self.filename = fullname
+                self.track_file = fullname
                 # print(f'file succesfully copied to : {self.filename}')
                 print('file succesfully copied to :', self.filename)
             except:
@@ -231,6 +233,7 @@ class Track():
     @staticmethod
     def is_flying(p1, p2):
         """check if pilot is flying between 2 gps points"""
+
         dist = quick_distance(p2, p1)
         altdif = abs(p2['gps_alt'] - p1['gps_alt'])
-        timedif = time_diff(p2['time'], p1['time'])
+        timedif = time_difference(p2['time'], p1['time'])

@@ -10,7 +10,7 @@ from datetime import date, time, datetime
 
 
 class DateTimeEncoder(json.JSONEncoder):
-    """Transfrom DateTme to string for JSON encoding"""
+    """Transform DateTme to string for JSON encoding"""
     def default(self, o):
         if isinstance(o, datetime) or isinstance(o, date) or isinstance(o, time):
             return o.isoformat()

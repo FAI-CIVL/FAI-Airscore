@@ -15,7 +15,7 @@ import Defines
 
 
 class Participant(object):
-    """Partecipant definition, DB operations
+    """Participant definition, DB operations
     """
 
     def __init__(self, par_id=None, comp_id=None, ID=None, civl_id=None, name=None, sex=None, birthdate=None,

@@ -6,16 +6,18 @@ Use: python3 bulk_igc_reader.py <taskPk> <zipfile>
 Antonio Golfari - 2018
 """
 # Use your utility module.
-from logger     import Logger
+from logger import Logger
 from trackUtils import *
-from tempfile   import TemporaryDirectory
-from task       import Task
+from tempfile import TemporaryDirectory
+from task import Task
+
 
 def printf(format, *args):
     sys.stdout.write(format % args)
 
+
 def main(args):
-    '''create logging and disable output'''
+    """create logging and disable output"""
     Logger('ON', 'bulk_igc_reader.txt')
 
     print("starting..")
@@ -32,7 +34,7 @@ def main(args):
         print('task not optimised.. optimising')
         task.calculate_optimised_task_length()
 
-    if not(task.comp_id > 0):
+    if not (task.comp_id > 0):
         print(f"error: task with ID {task_id} does NOT belong to any Competition")
         ''' restore stdout function '''
         Logger('OFF')
@@ -62,6 +64,7 @@ def main(args):
     ''' now restore stdout function '''
     Logger('OFF')
     print(1)
+
 
 if __name__ == "__main__":
     import sys

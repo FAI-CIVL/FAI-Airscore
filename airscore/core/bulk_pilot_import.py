@@ -6,10 +6,10 @@ Antonio Golfari - 2018
 """
 
 # Use your utility module.
-from compUtils  import *
-from logger     import Logger
+from compUtils import *
+from logger import Logger
 import csv
-from pathlib    import Path
+from pathlib import Path
 
 
 def read_membership(file):
@@ -41,27 +41,28 @@ def read_membership(file):
                 cond2 = f'%{pilFName}%'
 
                 """Check if pilot exists in pilots main table"""
-                pil_id  = 0
-                result  = db.session.query(P.pilPk).filter(or_(
+                pil_id = 0
+                result = db.session.query(P.pilPk).filter(or_(
                     and_(P.pilLastName.like(cond1), P.pilFirstName.like(cond2)),
                     and_(P.pilLastName.like(cond2), P.pilFirstName.like(cond1)),
-                    and_(P.pilLastName.like(cond1), P.pilFAI==pilFAI))).all()
-                if (len(result) == 1):
+                    and_(P.pilLastName.like(cond1), P.pilFAI == pilFAI))).all()
+                if len(result) == 1:
                     '''we found the pilot'''
                     pil_id = result.pop().pilPk
-                elif (len(result) > 1):
+                elif len(result) > 1:
                     '''try to see if we have just one pilot among the fixed database'''
                     candidate = [x.pilPk for x in result if x.pilPk < 10000]
                     if len(candidate) == 1: pil_id = candidate.pop().pilPk
                 if not pil_id:
                     """Check if FAI exists"""
-                    result  = db.session.query(P.pilPk).filter(P.pilFAI==pilFAI).all()
-                    if len(result) == 1: pil_id = result.pop().pilPk
+                    result = db.session.query(P.pilPk).filter(P.pilFAI == pilFAI).all()
+                    if len(result) == 1:
+                        pil_id = result.pop().pilPk
                 if not pil_id:
                     """Insert new pilot"""
                     print(f'Pilot does not seem to be in database, adding to external table')
-                    pilot   = E(pilFirstName=pilFName, pilLastName=pilLName, pilNat=pilNat, pilSex=pilSex, pilFAI=pilFAI)
-                    pil_id  = db.session.add(pilot)
+                    pilot = E(pilFirstName=pilFName, pilLastName=pilLName, pilNat=pilNat, pilSex=pilSex, pilFAI=pilFAI)
+                    pil_id = db.session.add(pilot)
                     db.session.commit()
                     row.append(0)
                 else:
@@ -79,7 +80,7 @@ def main(args):
 
     """Check if file exists"""
     if not my_file.is_file():
-        print (f"Reading error: {str(args[0])} does not exist")
+        print(f"Reading error: {str(args[0])} does not exist")
         ''' restore stdout function '''
         Logger('OFF')
         print(0)
@@ -92,6 +93,7 @@ def main(args):
     Logger('OFF')
     for p in reader:
         print(f'{p[1]} - {p[-1]}')
+
 
 if __name__ == "__main__":
     import sys
