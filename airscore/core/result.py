@@ -59,19 +59,33 @@ class Task_result:
                   'altitude']
 
     formula_list = ['formula_name',
-                    'nominal_dist',
-                    'nominal_time',
-                    'nominal_goal',
-                    'nominal_launch',
-                    'min_dist',
-                    'departure',
-                    'arrival',
+                    'formula_type',
+                    'formula_version',
+                    'comp_class',  # 'HG', 'PG'
+                    'formula_distance',  # 'on', 'difficulty', 'off'
+                    'formula_arrival',  # 'position', 'time', 'off'
+                    'formula_departure',  # 'on', 'leadout', 'off'
+                    'lead_factor',  # float
+                    'formula_time',  # 'on', 'off'
+                    'arr_alt_bonus',  # float
+                    'arr_min_height',  # int
+                    'arr_max_height',  # int
+                    'validity_min_time',  # seconds
+                    'score_back_time',  # seconds
+                    'jump_the_gun',
+                    'max_JTG',
+                    'JTG_penalty_per_sec',
+                    'nominal_goal',  # percentage / 100
+                    'nominal_dist',  # meters
+                    'nominal_time',  # seconds
+                    'nominal_launch',  # percentage / 100
+                    'min_dist',  # meters
+                    'score_back_time',  # seconds
                     'no_goal_penalty',
-                    'score_back_time',
-                    'stopped_time_calc',
                     'glide_bonus',
-                    'arr_alt_bonus',
-                    'tolerance']
+                    'tolerance',  # percentage / 100
+                    'scoring_altitude',  # 'GPS', 'QNH'
+                    ]
 
     stats_list = ['pilots_launched',
                   'pilots_present',
@@ -90,12 +104,17 @@ class Task_result:
                   'time_validity',
                   'launch_validity',
                   'stop_validity',
+                  'arr_weight',
+                  'dep_weight',
+                  'time_weight',
+                  'dist_weight',
                   'avail_dist_points',
                   'avail_dep_points',
                   'avail_time_points',
                   'avail_arr_points',
                   'max_score',
-                  'min_lead_coeff']
+                  'min_lead_coeff',
+                  'tot_flight_time']
 
     results_list = ['track_id',
                     'par_id',
@@ -110,14 +129,15 @@ class Task_result:
                     'glider_cert',
                     'team',
                     'nat_team',
+                    'distance_flown',
                     'distance',
-                    'speed',
+                    'ss_speed',
                     'real_start_time',
                     'goal_time',
-                    'result',
-                    'SS_time',
-                    'ES_time',
-                    'ES_rank',
+                    'result_type',
+                    'SSS_time',
+                    'ESS_time',
+                    'ESS_rank',
                     'turnpoints_made',
                     'dist_points',
                     'time_points',
@@ -135,6 +155,7 @@ class Task_result:
                     'last_time',
                     'landing_altitude',
                     'landing_time',
+                    'flight_time',
                     'track_file',
                     'pil_id']
 
@@ -158,6 +179,37 @@ class Comp_result(object):
                  'restricted',
                  'time_offset',
                  'website']
+
+    formula_list = ['formula_name',
+                    'formula_type',
+                    'formula_version',
+                    'comp_class',  # 'HG', 'PG'
+                    'overall_validity',  # 'ftv', 'all',
+                    'validity_param',
+                    'formula_distance',  # 'on', 'difficulty', 'off'
+                    'formula_arrival',  # 'position', 'time', 'off'
+                    'formula_departure',  # 'on', 'leadout', 'off'
+                    'lead_factor',  # float
+                    'formula_time',  # 'on', 'off'
+                    'arr_alt_bonus',  # float
+                    'arr_min_height',  # int
+                    'arr_max_height',  # int
+                    'validity_min_time',  # seconds
+                    'score_back_time',  # seconds
+                    'jump_the_gun',
+                    'max_JTG',
+                    'JTG_penalty_per_sec',
+                    'nominal_goal',  # percentage / 100
+                    'nominal_dist',  # meters
+                    'nominal_time',  # seconds
+                    'nominal_launch',  # percentage / 100
+                    'min_dist',  # meters
+                    'score_back_time',  # seconds
+                    'no_goal_penalty',
+                    'glide_bonus',
+                    'tolerance',  # percentage / 100
+                    'scoring_altitude',  # 'GPS', 'QNH'
+                    ]
 
     tasks_list = ['task_name',
                   'date',
@@ -197,9 +249,10 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None):
     import json
     from time import time
     from datetime import datetime
-    import Defines  as d
+    import Defines as d
     from db_tables import tblResultFile as R
     from calcUtils import CJsonEncoder
+    import jsonpickle
 
     timestamp = int(time())  # timestamp of generation
     dt = datetime.fromtimestamp(timestamp).strftime('%Y%m%d_%H%M%S')
@@ -212,6 +265,7 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None):
 
     '''creating json formatting'''
     content = json.dumps(result, cls=CJsonEncoder)
+    # content = jsonpickle.encode(result)
 
     '''creating file'''
     with open(d.RESULTDIR + filename, 'w') as f:

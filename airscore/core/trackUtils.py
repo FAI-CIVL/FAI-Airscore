@@ -18,17 +18,19 @@ from myconn import Database
 
 def extract_tracks(file, dir):
     """gets tracks from a zipfile"""
-    from os.path import isfile
-    from zipfile import ZipFile
+    from zipfile import ZipFile, is_zipfile
 
     error = 0
     """Check if file exists"""
-    if isfile(file):
-        print('extracting: ' + file + ' in temp dir: ' + dir + ' \n')
+    if is_zipfile(file):
+        print(f'extracting {file} in dir: {dir}')
         """Create a ZipFile Object and load file in it"""
-        with ZipFile(file, 'r') as zipObj:
-            """Extract all the contents of zip file in temporary directory"""
-            zipObj.extractall(dir)
+        try:
+            with ZipFile(file, 'r') as zipObj:
+                """Extract all the contents of zip file in temporary directory"""
+                zipObj.extractall(dir)
+        except IOError:
+            print(f"Error: extracting {file} to {dir} \n")
     else:
         print(f"reading error: {file} does not exist or is not a zip file \n")
         error = 1
@@ -124,71 +126,14 @@ def import_track(track):
 
 
 def verify_track(track, task):
-    formula = For.Task_formula.read(task.id)
-    lib = formula.get_lib()
+    # formula = For.Task_formula.read(task.id)
+    lib = task.formula.get_lib()
     task_result = Flight_result.check_flight(track.flight, task, lib.parameters,
                                              5)  # check flight against task with min tolerance of 5m
-    task_result.store_result(track.traPk, task.id)
+    task_result.to_db(task.id, track.track_id)
     print(track.flight.notes)
 
-
-def get_non_scored_pilots(task_id, xcontest=False):
-    """Gets list of registered pilots that still do not have a result"""
-    from db_tables import tblParticipant as R, tblTaskResult as S, tblTask as T
-    from sqlalchemy import func, and_, or_
-
-    with Database() as db:
-
-        comp_id = db.session.query(T).get(task_id).comPk
-        q = (db.session.query(R.parPk.label('par_id'),
-                              func.lower(R.parName).label('name'), R.parFAI.label('fai'),
-                              R.parXC.label('xcontest')).outerjoin(
-            S, and_(R.parPk == S.parPk, S.tasPk == task_id))).filter(and_(R.comPk == comp_id, S.tarPk == None))
-        if xcontest:
-            q = q.filter(R.parXC != None)
-        pilot_list = q.all()
-    if pilot_list is None: print(f"No pilots without tracks found registered to the comp...")
-
-    return pilot_list
-
-
-def get_pilot_from_list(filename, pilots):
-    """check filename against a list of pilots"""
-    pilot_id = 0
-    fullname = None
-    """Get string"""
-    fields = os.path.splitext(filename)
-    if fields[0].isdigit():
-        """Gets pilot ID from FAI n."""
-        fai = fields[0]
-        print(f"file {filename} contains FAI n. {fai} \n")
-        for p in pilots:
-            if fai == p.fai:
-                print("found a FAI number")
-                pilot_id = p.pil_id
-                fullname = p.name.replace(' ', '_')
-                break
-    else:
-        """Gets pilot ID from XContest User or name."""
-        names = fields[0].replace('.', ' ').replace('_', ' ').replace('-', ' ').lower().split()
-        """try to find xcontest user in filename
-        otherwise try to find pilot name from filename"""
-        print("file {} contains pilot name \n".format(fields[0]))
-        for p in pilots:
-            print(f"XC User: {p.xcontest} | Name: {p.name}")
-            if (p.xcontest is not None
-                    and any(p.xcontest.lower() in str(name).lower() for name in names)):
-                print("found a xcontest user")
-                pilot_id = p.pil_id
-                fullname = p.name.replace(' ', '_')
-                break
-            elif all(n in names for n in p.name.split()):
-                print("found a pilot name")
-                pilot_id = p.pil_id
-                fullname = p.name.replace(' ', '_')
-                break
-
-    return pilot_id, fullname
+    return task_result
 
 
 def find_pilot(name):
@@ -283,3 +228,176 @@ def get_task_fullpath(task_id):
             print(f'Get Task Path Query Error')
             return None
     return p.join(FILEDIR, q.comPath, q.tasPath)
+
+
+def get_unscored_pilots(task_id, xcontest=False):
+    """ Gets list of registered pilots that still do not have a result
+        Input:  task_id INT task database ID
+        Output: list of Pilot obj."""
+    from pilot import Pilot
+    from participant import Participant
+    from db_tables import UnscoredPilotView as U
+    from sqlalchemy.exc import SQLAlchemyError
+    from sqlalchemy import func, and_, or_
+
+    pilot_list = []
+    with Database() as db:
+        try:
+            results = db.session.query(U.par_id, U.comp_id, U.ID, U.name, U.nat, U.sex, U.civl_id, U.glider,
+                                       U.glider_cert, U.sponsor, U.xcontest_id, U.team, U.nat_team).filter(
+                U.task_id == task_id).all()
+            # if xcontest:
+            #     q = q.filter(U.xcontest_id != None)
+            # results = q.all()
+            for p in results:
+                participant = Participant()
+                db.populate_obj(participant, p)
+                pilot = Pilot.create(task_id=task_id, info=participant)
+                pilot_list.append(pilot)
+        except SQLAlchemyError:
+            print(f"Error trying to retrieve unscored pilots from database")
+            db.session.rollback()
+
+    return pilot_list
+
+
+def get_pilot_from_list(filename, pilots):
+    """ check filename against a list of Pilot Obj.
+        Looks for different information in filename
+
+        filename:   STR file name
+        pilots:     LIST Participants Obj.
+    """
+    # TODO define different acceptable filename formats
+    from track import Track
+
+    '''Get string'''
+    string = os.path.splitext(filename)[0]
+
+    """Try to get pilot from filename, using ID, CIVLID or name."""
+    fields = string.replace('.', ' ').replace('_', ' ').replace('-', ' ').lower().split()
+    for idx, pilot in enumerate(pilots):
+        civl_id = pilot.info.civl_id
+        fullname = pilot.info.name.replace(' ', '_').lower()
+        ID = pilot.info.ID
+        if all(n in fields for n in fullname):
+            '''found a pilot'''
+            pilot.track.track_file = filename
+            return pilot, idx
+
+        elif any(int(f) == ID for f in fields) and any(n in fields for n in fullname):
+            '''found a pilot'''
+            pilot.track.track_file = filename
+            pilot.track.comment = f'Pilot found using name {pilot.name.lower()} and ID {ID}'
+            return pilot, idx
+
+        elif any(int(f) == civl_id for f in fields) and any(n in fields for n in fullname):
+            '''found a pilot'''
+            pilot.track.track_file = filename
+            pilot.track.comment = f'Pilot found using name {pilot.name.lower()} and CIVLID {civl_id}'
+            return pilot, idx
+
+
+def assign_tracks(task, file_dir, pilots_list, source):
+    """ This function will look for tracks in giver dir or in task_path, and tries to associate tracks to participants.
+        For the moment we give for granted pilots need to register, as for this stage only event with registration
+        are possible.
+
+        AirScore will permit to retrieve tracks from different sources and repositories. We need to be able
+        to recognise pilot from filename.
+    """
+    from os import path, listdir, fsdecode
+    from pathlib import Path
+    from igc_lib import Flight
+    import shutil
+
+    # if not file_dir:
+    #     file_dir = task.file_path
+    if len(listdir(file_dir)) == 0:
+        ''' directory is empty'''
+        print(f'directory {file_dir} is empty')
+        return None
+
+    for file in listdir(file_dir):
+        filename = fsdecode(file)  # filename is without path
+        file_ext = Path(filename).suffix[1:].lower()
+        if filename.startswith((".", "_")) or file_ext not in Defines.track_formats:
+            """file is not a valid track"""
+            print(f"Not a valid filename: {filename}")
+            pass
+
+        # TODO manage track file source (comp attr?)
+        if source:
+            pilot, idx = source.get_pilot_from_list(filename, pilots_list)
+        else:
+            pilot, idx = get_pilot_from_list(filename, pilots_list)
+
+        if pilot:
+            try:
+                '''move track to task folder'''
+                file_path = task.file_path
+                full_path = path.join(file_path, filename)
+                shutil.move(filename, full_path)
+                '''add flight'''
+                pilot.track.flight = Flight.create_from_file(full_path)
+                '''check flight'''
+                pilot.result = verify_track(pilot.track, task)
+                '''remove pilot from list'''
+                pilots_list.pop(idx)
+            except IOError:
+                print(f"Error assigning track {filename} to pilot \n")
+
+
+def get_tracks_from_source(task, source=None):
+    """ Accept tracks for unscored pilots of the task
+        - Gets unscored pilots list and, if is not null:
+        - Gets tracks from server source to a temporary folder
+        - assigns tracks to pilots
+        - imports assigned track to correct task folder and, if needed, changes filename"""
+    # TODO function that loads existing results before, so we can score directly after?
+    from tempfile import TemporaryDirectory
+    import importlib
+
+    ''' Get unscored pilots list'''
+    pilots_list = get_unscored_pilots(task.task_id)
+    if len(pilots_list) == 0:
+        print(f"No pilots without tracks found registered to the comp...")
+        return
+
+    ''' load source lib'''
+    if source is None:
+        if task.track_source not in Defines.track_sources:
+            print(f"We do not have any zipfile source.")
+            return
+        else:
+            source = importlib.import_module('tracksources.'+task.track_source)
+
+    '''get zipfile'''
+    with TemporaryDirectory() as archive_dir:
+        zipfile = source.get_zipfile(task, archive_dir)
+
+        ''' Get tracks from zipfile to a temporary folder'''
+        with TemporaryDirectory() as temp_dir:
+            extract_tracks(zipfile, temp_dir)
+            assign_tracks(task, temp_dir, pilots_list, source)
+
+
+def get_tracks_from_zipfile(task, zipfile):
+    """ Accept tracks for unscored pilots of the task
+        - Gets unscored pilots list and, if is not null:
+        - Gets tracks from zipfile to a temporary folder
+        - assigns tracks to pilots
+        - imports assigned track to correct task folder and, if needed, changes filename"""
+    # TODO function that loads existing results before, so we can score directly after?
+    from tempfile import TemporaryDirectory
+
+    ''' Get unscored pilots list'''
+    pilots_list = get_unscored_pilots(task.task_id)
+    if len(pilots_list) == 0:
+        print(f"No pilots without tracks found registered to the comp...")
+        return
+
+    ''' Get tracks from zipfile to a temporary folder'''
+    with TemporaryDirectory() as temp_dir:
+        extract_tracks(zipfile, temp_dir)
+        assign_tracks(task, temp_dir, pilots_list, source)

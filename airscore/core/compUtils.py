@@ -249,3 +249,33 @@ def read_rankings(comp_id):
         print(f'Ranking Query Error: list is empty')
 
     return rank
+
+
+def create_comp_code(name, date):
+    """creates comp_code from name and date if nothing was given
+        standard code is 6 chars + 2 numbers"""
+    names = [n for n in name.split() if not any(char.isdigit() for char in str(n))]
+    if len(names) >= 2:
+        string = str(names[0])[0:2] + str(names[1])[0:2]
+    else:
+        string = str(names[0])[0:5]
+    number = date.strftime('%y')
+    return string + number
+
+
+def get_task_filepath(task_id, session=None):
+    """ returns complete trackfile path"""
+    from myconn import Database
+    from db_tables import TaskObjectView as T
+    from sqlalchemy.exc import SQLAlchemyError
+    from Defines import FILEDIR
+    from os import path as p
+
+    with Database(session) as db:
+        try:
+            task = db.session.query(T).get(task_id)
+            comp_path, task_path = task.comp_path, task.task_path
+            return p.join(FILEDIR, comp_path, task_path)
+        except SQLAlchemyError:
+            print('Error trying to retrieve flie path from database')
+            return None

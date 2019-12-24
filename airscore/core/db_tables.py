@@ -25,12 +25,49 @@ class CompResultView(Base):
                       Column('comp_class', Enum('PG', 'HG', 'mixed'), server_default=text("'PG'")),
                       Column('website', String(100)),
                       Column('formula', String(88)),
-                      Column('formula_class', Enum('gap', 'pwc', 'RTG'), server_default=text("'pwc'")),
-                      Column('team_size', INTEGER(11)),
+                      Column('formula_type', Enum('gap', 'pwc', 'RTG'), server_default=text("'pwc'")),
+                      Column('team_size', INTEGER(4), server_default=text("'0'")),
                       Column('overall_validity', Enum('ftv', 'all', 'round'), server_default=text("'ftv'")),
-                      Column('validity_param', Float(asdecimal=False), server_default=text("'0.75'")),
-                      Column('team_scoring', Enum('off', 'on'), server_default=text("'off'")),
+                      Column('validity_param', Float, server_default=text("'0.75'")),
+                      Column('team_scoring', TINYINT(1), server_default=text("'0'")),
+                      Column('country_scoring', TINYINT(1), server_default=text("'0'")),
                       Column('team_over', INTEGER(2))
+                      )
+
+
+class CompFormulaView(Base):
+    __table__ = Table('CompFormulaView', metadata,
+                      Column('forPk', INTEGER(11)),
+                      Column('comp_id', INTEGER(11), primary_key=True),
+                      Column('comp_class', Enum('PG', 'HG', 'mixed'), server_default=text("'PG'")),
+                      Column('formula_type', String(10)),
+                      Column('formula_version', INTEGER(8)),
+                      Column('formula_name', String(50)),
+                      Column('overall_validity', Enum('ftv', 'all', 'round'), server_default=text("'ftv'")),
+                      Column('validity_param', Float, server_default=text("'0.75'")),
+                      Column('nominal_goal', Float, server_default=text("'0.3'")),
+                      Column('min_dist', Float(asdecimal=False), server_default=text("'0'")),
+                      Column('nominal_dist', Float(asdecimal=False), server_default=text("'0'")),
+                      Column('nominal_time', Float(asdecimal=False), server_default=text("'0'")),
+                      Column('nominal_launch', Float, server_default=text("'0.96'")),
+                      Column('formula_distance', Enum('on', 'difficulty', 'off'), server_default=text("'on'")),
+                      Column('formula_arrival', Enum('position', 'time', 'off'), server_default=text("'off'")),
+                      Column('formula_departure', Enum('leadout', 'departure', 'off'),
+                             server_default=text("'leadout'")),
+                      Column('lead_factor', Float),
+                      Column('formula_time', Enum('on', 'off'), server_default=text("'on'")),
+                      Column('no_goal_penalty', Float, server_default=text("'1'")),
+                      Column('glide_bonus', Float, server_default=text("'4'")),
+                      Column('tolerance', Float),
+                      Column('arr_alt_bonus', Float, server_default=text("'0'")),
+                      Column('arr_min_height', INTEGER(11)),
+                      Column('arr_max_height', INTEGER(11)),
+                      Column('validity_min_time', BIGINT(13)),
+                      Column('score_back_time', BIGINT(13), server_default=text("'0'")),
+                      Column('jump_the_gun', TINYINT(1), server_default=text("'0'")),
+                      Column('max_JTG', BIGINT(13)),
+                      Column('JTG_penalty_per_sec', Float),
+                      Column('scoring_altitude', Enum('GPS', 'QNH'), nullable=False, server_default=text("'GPS'"))
                       )
 
 
@@ -79,7 +116,7 @@ class CompetitionView(Base):
 class CompObjectView(Base):
     __table__ = Table('CompObjectView', metadata,
 
-                      Column('id', INTEGER(11), primary_key=True),
+                      Column('comp_id', INTEGER(11), primary_key=True),
                       Column('comp_name', String(100)),
                       Column('comp_site', String(100)),
                       Column('date_from', Date),
@@ -99,13 +136,38 @@ class CompObjectView(Base):
                       Column('comp_path', String(80)),
                       Column('external', INTEGER(2), server_default=text("'0'")),
                       Column('website', String(100)),
-                      Column('formula_name', String(88)),
-                      Column('formula_class', Enum('gap', 'pwc', 'RTG'), server_default=text("'pwc'")),
-                      Column('team_size', INTEGER(11)),
+                      Column('formula_type', String(10)),
+                      Column('formula_version', INTEGER(8)),
+                      Column('formula_name', String(50)),
                       Column('overall_validity', Enum('ftv', 'all', 'round'), server_default=text("'ftv'")),
-                      Column('validity_param', Float(asdecimal=False), server_default=text("'0.75'")),
-                      Column('team_scoring', Enum('off', 'on'), server_default=text("'off'")),
-                      Column('team_over', INTEGER(2))
+                      Column('validity_param', Float, server_default=text("'0.75'")),
+                      Column('nominal_goal', Float, server_default=text("'0.3'")),
+                      Column('min_dist', Float(asdecimal=False), server_default=text("'0'")),
+                      Column('nominal_dist', Float(asdecimal=False), server_default=text("'0'")),
+                      Column('nominal_time', Float(asdecimal=False), server_default=text("'0'")),
+                      Column('nominal_launch', Float, server_default=text("'0.96'")),
+                      Column('formula_distance', Enum('on', 'difficulty', 'off'), server_default=text("'on'")),
+                      Column('formula_arrival', Enum('position', 'time', 'off'), server_default=text("'off'")),
+                      Column('formula_departure', Enum('leadout', 'departure', 'off'),
+                             server_default=text("'leadout'")),
+                      Column('lead_factor', Float),
+                      Column('formula_time', Enum('on', 'off'), server_default=text("'on'")),
+                      Column('no_goal_penalty', Float, server_default=text("'1'")),
+                      Column('glide_bonus', Float, server_default=text("'4'")),
+                      Column('tolerance', Float),
+                      Column('arr_alt_bonus', Float, server_default=text("'0'")),
+                      Column('arr_min_height', INTEGER(11)),
+                      Column('arr_max_height', INTEGER(11)),
+                      Column('validity_min_time', BIGINT(13)),
+                      Column('score_back_time', BIGINT(13), server_default=text("'0'")),
+                      Column('jump_the_gun', TINYINT(1), server_default=text("'0'")),
+                      Column('max_JTG', BIGINT(13)),
+                      Column('JTG_penalty_per_sec', Float),
+                      Column('scoring_altitude', Enum('GPS', 'QNH'), nullable=False, server_default=text("'GPS'")),
+                      Column('team_size', INTEGER(11)),
+                      Column('team_scoring', TINYINT(1), server_default=text("'0'")),
+                      Column('team_over', INTEGER(2)),
+                      Column('country_scoring', TINYINT(1), server_default=text("'0'"))
                       )
 
 
@@ -166,8 +228,12 @@ class RegistrationView(Base):
                       Column('fai_valid', TINYINT(1), server_default=text("'1'")),
                       Column('fai_id', String(20)),
                       Column('xcontest_id', String(20)),
+                      Column('live_id', String(10)),
                       Column('team', String(100)),
                       Column('nat_team', TINYINT(4), server_default=text("'1'")),
+                      Column('status',
+                             Enum('confirmed', 'wild card', 'waiting list', 'cancelled', 'waiting for payment')),
+                      Column('ranking', INTEGER(11)),
                       Column('paid', INTEGER(11), server_default=text("'0'"))
                       )
 
@@ -176,7 +242,33 @@ class RegisteredPilotView(Base):
     __table__ = Table('RegisteredPilotView', metadata,
 
                       Column('par_id', INTEGER(11), primary_key=True),
+                      Column('comp_id', INTEGER(11)),
+                      Column('civl_id', INTEGER(10)),
+                      Column('fai_id', String(20)),
+                      Column('pil_id', INTEGER(11)),
+                      Column('ID', INTEGER(4)),
+                      Column('name', String(50)),
+                      Column('sex', Enum('M', 'F'), server_default=text("'M'")),
+                      Column('birthdate', CHAR(10)),
+                      Column('nat', CHAR(10)),
+                      Column('glider', String(100)),
+                      Column('glider_cert', String(20)),
+                      Column('sponsor', String(100)),
+                      Column('xcontest_id', CHAR(20)),
+                      Column('live_id', CHAR(10)),
+                      Column('team', String(100)),
+                      Column('nat_team', TINYINT(4), server_default=text("'1'")),
+                      Column('status',
+                             Enum('confirmed', 'wild card', 'waiting list', 'cancelled', 'waiting for payment')),
+                      Column('ranking', INTEGER(11)),
 
+                      )
+
+class UnscoredPilotView(Base):
+    __table__ = Table('UnscoredPilotView', metadata,
+
+                      Column('task_id', INTEGER(11), primary_key=True),
+                      Column('par_id', INTEGER(11)),
                       Column('comp_id', INTEGER(11)),
                       Column('civl_id', INTEGER(10)),
                       Column('fai_id', String(20)),
@@ -187,6 +279,8 @@ class RegisteredPilotView(Base):
                       Column('nat', CHAR(10)),
                       Column('glider', String(100)),
                       Column('glider_cert', String(20)),
+                      Column('xcontest_id', String(20)),
+                      Column('live_id', String(10)),
                       Column('sponsor', String(100)),
                       Column('team', String(100)),
                       Column('nat_team', TINYINT(4), server_default=text("'1'"))
@@ -233,30 +327,38 @@ class TaskFormulaView(Base):
     __table__ = Table('TaskFormulaView', metadata,
 
                       Column('task_id', INTEGER(11), primary_key=True),
-                      Column('type', Enum('gap', 'pwc', 'RTG'), server_default=text("'pwc'")),
-                      Column('version', String(32)),
+                      Column('formula_type', String(10)),
+                      Column('formula_version', INTEGER(8)),
                       Column('formula_name', String(50)),
-                      Column('arrival', Enum('off', 'position', 'time'), server_default=text("'on'")),
-                      Column('departure', Enum('off', 'on', 'leadout', 'kmbonus'), server_default=text("'on'")),
-                      Column('no_goal_penalty', Float(asdecimal=False), server_default=text("'1'")),
-                      Column('glide_bonus', Float(asdecimal=False), server_default=text("'4'")),
-                      Column('stopped_time_calc', Enum('atstopped', 'shortesttime'),
-                             server_default=text("'shortesttime'")),
-                      Column('arr_alt_bonus', Enum('off', 'on'), server_default=text("'off'")),
-                      Column('nominal_goal', Float(asdecimal=False), server_default=text("'0.3'")),
-                      Column('nominal_dist', Float(asdecimal=False), server_default=text("'0'")),
+                      Column('nominal_goal', Float, server_default=text("'0.3'")),
                       Column('min_dist', Float(asdecimal=False), server_default=text("'0'")),
+                      Column('nominal_dist', Float(asdecimal=False), server_default=text("'0'")),
                       Column('nominal_time', Float(asdecimal=False), server_default=text("'0'")),
-                      Column('nominal_launch', Float(asdecimal=False), server_default=text("'0.96'")),
+                      Column('nominal_launch', Float, server_default=text("'0.96'")),
+                      Column('formula_distance', String(10)),
+                      Column('formula_departure', String(9)),
+                      Column('formula_arrival', String(8)),
+                      Column('formula_time', String(3)),
+                      Column('lead_factor', Float),
+                      Column('no_goal_penalty', Float(20, False), server_default=text("'0.000'")),
+                      Column('glide_bonus', Float, server_default=text("'4'")),
+                      Column('tolerance', Float(21, False)),
+                      Column('arr_alt_bonus', Float(asdecimal=False), server_default=text("'0'")),
+                      Column('arr_min_height', INTEGER(11)),
+                      Column('arr_max_height', INTEGER(11)),
+                      Column('validity_min_time', BIGINT(13)),
                       Column('score_back_time', BIGINT(13), server_default=text("'0'")),
-                      Column('tolerance', Float(asdecimal=False))
+                      Column('jump_the_gun', INTEGER(4), server_default=text("'0'")),
+                      Column('max_JTG', BIGINT(13)),
+                      Column('JTG_penalty_per_sec', Float),
+                      Column('scoring_altitude', Enum('GPS', 'QNH'), server_default=text("'GPS'"))
                       )
 
 
 class TaskObjectView(Base):
     __table__ = Table('TaskObjectView', metadata,
 
-                      Column('id', INTEGER(11), primary_key=True),
+                      Column('task_id', INTEGER(11), primary_key=True),
                       Column('comp_code', String(8)),
                       Column('comp_name', String(100)),
                       Column('comp_site', String(100)),
@@ -285,6 +387,7 @@ class TaskObjectView(Base):
                       Column('comment', Text),
                       Column('locked', TINYINT(3), server_default=text("'0'")),
                       Column('launch_valid', BIGINT(11)),
+                      Column('track_source', String(40)),
                       Column('task_path', String(40)),
                       Column('comp_path', String(40))
                       )
@@ -296,13 +399,19 @@ class FlightResultView(Base):
                       Column('track_id', INTEGER(11), primary_key=True),
                       Column('par_id', INTEGER(11)),
                       Column('task_id', INTEGER(11)),
+                      Column('comp_id', INTEGER(11)),
+                      Column('civl_id', INTEGER(10)),
+                      Column('fai_id', String(20)),
                       Column('pil_id', INTEGER(11)),
-                      Column('name', LONGTEXT),
-                      Column('sponsor', LONGTEXT),
-                      Column('nat', String(10)),
-                      Column('sex', String(1)),
+                      Column('ID', INTEGER(4)),
+                      Column('name', String(50)),
+                      Column('sex', Enum('M', 'F'), server_default=text("'M'")),
+                      Column('nat', CHAR(10)),
                       Column('glider', String(100)),
-                      Column('class', String(20)),
+                      Column('glider_cert', String(20)),
+                      Column('sponsor', String(100)),
+                      Column('team', String(100)),
+                      Column('nat_team', TINYINT(4), server_default=text("'1'")),
                       Column('distance_flown', Float(asdecimal=False)),
                       Column('speed', Float(asdecimal=False)),
                       Column('first_time', INTEGER(11)),
@@ -401,96 +510,73 @@ class TaskStatsView(Base):
                       )
 
 
-class TaskTotalsView(Base):
-    __table__ = Table('TaskTotalsView', metadata,
-
-                      Column('tasPk', INTEGER(11), primary_key=True),
-                      Column('TotalPilots', BIGINT(21), server_default=text("'0'")),
-                      Column('TotalDistance', Float(asdecimal=False)),
-                      Column('TotDistOverMin', Float(asdecimal=False)),
-                      Column('TotalLaunched', DECIMAL(23, 0)),
-                      Column('Deviation', Float(asdecimal=False)),
-                      Column('TotalLanded', DECIMAL(23, 0)),
-                      Column('TotalGoal', DECIMAL(23, 0)),
-                      Column('TotalESS', DECIMAL(23, 0)),
-                      Column('maxDist', Float(asdecimal=False)),
-                      Column('firstStart', BIGINT(11), server_default=text("'0'")),
-                      Column('lastStart', BIGINT(11), server_default=text("'0'")),
-                      Column('firstSS', BIGINT(11), server_default=text("'0'")),
-                      Column('lastSS', BIGINT(11), server_default=text("'0'")),
-                      Column('firstESS', BIGINT(11), server_default=text("'0'")),
-                      Column('lastESS', BIGINT(11), server_default=text("'0'")),
-                      Column('minTimeGoal', BIGINT(12), server_default=text("'0'")),
-                      Column('minTime', BIGINT(12), server_default=text("'0'")),
-                      Column('lastTime', BIGINT(11), server_default=text("'0'")),
-                      Column('LCmin', Float(asdecimal=False), server_default=text("'0'"))
-                      )
-
-
 class TaskView(Base):
     __table__ = Table('TaskView', metadata,
 
-                      Column('tasPk', INTEGER(11), primary_key=True),
-                      Column('comPk', INTEGER(11)),
-                      Column('tasLastUpdate', TIMESTAMP, nullable=False, ),
-                      Column('tasDate', Date),
-                      Column('tasName', String(100)),
-                      Column('tasNum', TINYINT(3), server_default=text("'0'")),
-                      Column('regPk', INTEGER(11)),
-                      Column('tasTaskStart', DateTime),
-                      Column('tasFinishTime', DateTime),
-                      Column('tasLaunchClose', DateTime),
-                      Column('tasCheckLaunch', Enum('on', 'off'), server_default=text("'off'")),
-                      Column('tasStartTime', DateTime),
-                      Column('tasStartCloseTime', DateTime),
-                      Column('tasStoppedTime', DateTime),
-                      Column('tasLastStartTime', DateTime),
-                      Column('tasTaskType', Enum('race', 'elapsed time', 'free distance', 'distance with bearing'),
-                             server_default=text("'race'")),
-                      Column('tasDistance', Float(asdecimal=False)),
-                      Column('tasShortRouteDistance', Float(asdecimal=False)),
-                      Column('tasStartSSDistance', Float(asdecimal=False)),
-                      Column('tasEndSSDistance', Float(asdecimal=False)),
-                      Column('tasSSDistance', Float(asdecimal=False)),
-                      Column('tasSSInterval', INTEGER(11), server_default=text("'0'")),
-                      Column('tasLaunchValid', INTEGER(11), server_default=text("'1'")),
-                      Column('forName', String(50)),
-                      Column('forClass', Enum('gap', 'pwc', 'RTG'), server_default=text("'pwc'")),
-                      Column('forVersion', String(32)),
-                      Column('forLinearDist', Float(asdecimal=False), server_default=text("'1'")),
-                      Column('forDiffDist', Float(asdecimal=False), server_default=text("'3'")),
-                      Column('forGoalSSpenalty', Float(asdecimal=False), server_default=text("'1'")),
-                      Column('forStoppedGlideBonus', Float(asdecimal=False), server_default=text("'4'")),
-                      Column('forStoppedElapsedCalc', Enum('atstopped', 'shortesttime'),
-                             server_default=text("'shortesttime'")),
-                      Column('comOverallScore', Enum('ftv', 'all', 'round'), server_default=text("'ftv'")),
-                      Column('comOverallParam', Float(asdecimal=False), server_default=text("'0.75'")),
-                      Column('forNomGoal', Float(asdecimal=False), server_default=text("'0.3'")),
-                      Column('forMinDistance', Float(asdecimal=False), server_default=text("'5'")),
-                      Column('forNomDistance', Float(asdecimal=False), server_default=text("'45'")),
-                      Column('forNomTime', Float(asdecimal=False), server_default=text("'90'")),
-                      Column('forNomLaunch', Float(asdecimal=False), server_default=text("'0.96'")),
-                      Column('forScorebackTime', INTEGER(11), server_default=text("'5'")),
-                      Column('arrival', String(8)),
-                      Column('departure', String(9)),
-                      Column('tasHeightBonus', Enum('off', 'on'), server_default=text("'off'")),
-                      Column('tasComment', Text),
-                      Column('tasLocked', TINYINT(3), server_default=text("'0'")),
-                      Column('tasGoalAlt', Float(asdecimal=False)),
-                      Column('comCode', String(8)),
-                      Column('comName', String(100)),
-                      Column('comLocation', String(100)),
-                      Column('comDateFrom', DateTime),
-                      Column('comDateTo', DateTime),
-                      Column('comTimeOffset', Float(asdecimal=False), server_default=text("'11'")),
-                      Column('comClass', Enum('PG', 'HG', 'mixed'), server_default=text("'PG'")),
-                      Column('claPk', INTEGER(11), server_default=text("'0'")),
-                      Column('comEntryRestrict', Enum('open', 'registered'), server_default=text("'registered'")),
-                      Column('comExt', INTEGER(2), server_default=text("'0'")),
-                      Column('comPath', String(40)),
-                      Column('xccSiteID', INTEGER(11)),
-                      Column('xccToID', INTEGER(11)),
-                      Column('tasMargin', Float(asdecimal=False))
+                      Column('task_id', INTEGER(11), primary_key=True),
+                      Column('last_update', TIMESTAMP, nullable=False),
+                      Column('comp_code', String(8)),
+                      Column('comp_name', String(100)),
+                      Column('comp_site', String(100)),
+                      Column('time_offset', BIGINT(21)),
+                      Column('comp_class', Enum('PG', 'HG', 'mixed'), server_default=text("'PG'")),
+                      Column('comp_id', INTEGER(11)),
+                      Column('date_from', Date),
+                      Column('date_to', Date),
+                      Column('cat_id', INTEGER(11)),
+                      Column('sanction', Enum('League', 'PWC', 'FAI 2', 'none', 'FAI 1'),
+                             server_default=text("'none'")),
+                      Column('comp_type', Enum('RACE', 'Route', 'Team-RACE'), server_default=text("'RACE'")),
+                      Column('restricted', Enum('open', 'registered'), server_default=text("'registered'")),
+                      Column('date', Date),
+                      Column('task_name', String(100)),
+                      Column('task_num', TINYINT(4)),
+                      Column('reg_id', INTEGER(11)),
+                      Column('window_open_time', BIGINT(21)),
+                      Column('task_deadline', BIGINT(21)),
+                      Column('window_close_time', BIGINT(21)),
+                      Column('check_launch', Enum('on', 'off'), server_default=text("'off'")),
+                      Column('start_time', BIGINT(21)),
+                      Column('start_close_time', BIGINT(21)),
+                      Column('stopped_time', BIGINT(21)),
+                      Column('last_start_time', BIGINT(21)),
+                      Column('SS_interval', BIGINT(13)),
+                      Column('task_type', String(21)),
+                      Column('distance', Float(asdecimal=False)),
+                      Column('opt_dist', Float(asdecimal=False)),
+                      Column('opt_dist_to_SS', Float(asdecimal=False)),
+                      Column('opt_dist_to_ESS', Float(asdecimal=False)),
+                      Column('SS_distance', Float(asdecimal=False)),
+                      Column('formula_type', String(10)),
+                      Column('formula_version', INTEGER(8)),
+                      Column('formula_name', String(50)),
+                      Column('nominal_goal', Float, server_default=text("'0.3'")),
+                      Column('min_dist', Float(asdecimal=False), server_default=text("'0'")),
+                      Column('nominal_dist', Float(asdecimal=False), server_default=text("'0'")),
+                      Column('nominal_time', Float(asdecimal=False), server_default=text("'0'")),
+                      Column('nominal_launch', Float, server_default=text("'0.96'")),
+                      Column('formula_distance', String(10)),
+                      Column('formula_departure', String(9)),
+                      Column('formula_arrival', String(8)),
+                      Column('formula_time', String(3)),
+                      Column('lead_factor', Float),
+                      Column('no_goal_penalty', Float(20, False), server_default=text("'0.000'")),
+                      Column('glide_bonus', Float, server_default=text("'4'")),
+                      Column('tolerance', Float(21, False)),
+                      Column('arr_alt_bonus', Float(asdecimal=False), server_default=text("'0'")),
+                      Column('arr_min_height', INTEGER(11)),
+                      Column('arr_max_height', INTEGER(11)),
+                      Column('validity_min_time', BIGINT(13)),
+                      Column('score_back_time', BIGINT(13), server_default=text("'0'")),
+                      Column('jump_the_gun', INTEGER(4), server_default=text("'0'")),
+                      Column('max_JTG', BIGINT(13)),
+                      Column('JTG_penalty_per_sec', Float),
+                      Column('scoring_altitude', Enum('GPS', 'QNH'), server_default=text("'GPS'")),
+                      Column('comment', Text),
+                      Column('locked', TINYINT(3), server_default=text("'0'")),
+                      Column('launch_valid', BIGINT(11)),
+                      Column('comp_path', String(40)),
+                      Column('task_path', String(40))
                       )
 
 
@@ -498,9 +584,13 @@ class TaskWaypointView(Base):
     __table__ = Table('TaskWaypointView', metadata,
 
                       Column('id', INTEGER(11), primary_key=True),
-                      Column('rwpPk', INTEGER(11)),
                       Column('task_id', INTEGER(11)),
                       Column('n', INTEGER(11)),
+                      Column('name', CHAR(6)),
+                      Column('lat', Float),
+                      Column('lon', Float),
+                      Column('altitude', BIGINT(11)),
+                      Column('description', String(80)),
                       Column('how', Enum('entry', 'exit'), server_default=text("'entry'")),
                       Column('radius', BIGINT(11)),
                       Column('shape', Enum('circle', 'semicircle', 'line'), server_default=text("'circle'")),
@@ -509,11 +599,6 @@ class TaskWaypointView(Base):
                       Column('ssr_lat', Float(asdecimal=False)),
                       Column('ssr_lon', Float(asdecimal=False)),
                       Column('partial_distance', Float(asdecimal=False)),
-                      Column('lat', Float(asdecimal=False)),
-                      Column('lon', Float(asdecimal=False)),
-                      Column('name', String(12)),
-                      Column('description', String(64)),
-                      Column('altitude', BIGINT(21))
                       )
 
 
@@ -686,6 +771,7 @@ class tblCompetition(Base):
     comType = Column(Enum('RACE', 'Route', 'Team-RACE'), server_default=text("'RACE'"))
     comEntryRestrict = Column(Enum('open', 'registered'), server_default=text("'registered'"))
     comTimeOffset = Column(Float(asdecimal=False), server_default=text("'11'"))
+    comTrackSource = Column(String(40))
     comClass = Column(Enum('PG', 'HG', 'mixed'), server_default=text("'PG'"))
     comStyleSheet = Column(String(128))
     comLocked = Column(INTEGER(11), server_default=text("'0'"))
@@ -785,18 +871,37 @@ class tblForComp(Base):
     comPk = Column(INTEGER(11), primary_key=True)
     forLastUpdate = Column(TIMESTAMP, nullable=False,
                            server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
+    forClass = Column(String(10))
+    forVersion = Column(INTEGER(8))
+    forName = Column(String(20))
     extForName = Column(String(50))
     comOverallScore = Column(Enum('ftv', 'all', 'round'), nullable=False, server_default=text("'ftv'"))
-    comOverallParam = Column(Float(asdecimal=False), nullable=False, server_default=text("'0.75'"))
-    forNomGoal = Column(Float(asdecimal=False), nullable=False, server_default=text("'0.3'"))
-    forMinDistance = Column(Float(asdecimal=False), nullable=False, server_default=text("'5'"))
-    forNomDistance = Column(Float(asdecimal=False), nullable=False, server_default=text("'45'"))
-    forNomTime = Column(Float(asdecimal=False), nullable=False, server_default=text("'90'"))
-    forNomLaunch = Column(Float(asdecimal=False), nullable=False, server_default=text("'0.96'"))
+    comOverallParam = Column(Float, nullable=False, server_default=text("'0.75'"))
+    forNomGoal = Column(Float, nullable=False, server_default=text("'0.3'"))
+    forMinDistance = Column(Float, nullable=False, server_default=text("'5'"))
+    forNomDistance = Column(Float, nullable=False, server_default=text("'45'"))
+    forNomTime = Column(Float, nullable=False, server_default=text("'90'"))
+    forNomLaunch = Column(Float, nullable=False, server_default=text("'0.96'"))
+    forDistance = Column(Enum('on', 'difficulty', 'off'), nullable=False, server_default=text("'on'"))
+    forArrival = Column(Enum('position', 'time', 'off'), nullable=False, server_default=text("'off'"))
+    forDeparture = Column(Enum('leadout', 'departure', 'off'), nullable=False, server_default=text("'leadout'"))
+    forLeadFactor = Column(Float)
+    forTime = Column(Enum('on', 'off'), nullable=False, server_default=text("'on'"))
+    forNoGoalPenalty = Column(Float, nullable=False, server_default=text("'1'"))
+    forGlideBonus = Column(Float, nullable=False, server_default=text("'4'"))
+    forTolerance = Column(Float, nullable=False, server_default=text("'0.1'"))
+    forHeightBonus = Column(Float, nullable=False, server_default=text("'0'"))
+    forESSHeightLo = Column(INTEGER(11))
+    forESSHeightUp = Column(INTEGER(11))
     forMinTime = Column(INTEGER(11))
     forScorebackTime = Column(INTEGER(11), nullable=False, server_default=text("'5'"))
-    comTeamSize = Column(INTEGER(11))
-    comTeamScoring = Column(Enum('off', 'on'), nullable=False, server_default=text("'off'"))
+    forJumpTheGun = Column(TINYINT(1), nullable=False, server_default=text("'0'"))
+    forMaxJTG = Column(INTEGER(11))
+    forJTGPenPerSec = Column(Float)
+    forAltitudeMode = Column(Enum('GPS', 'QNH'), nullable=False, server_default=text("'GPS'"))
+    comTeamSize = Column(INTEGER(4), nullable=False, server_default=text("'0'"))
+    comTeamScoring = Column(TINYINT(1), nullable=False, server_default=text("'0'"))
+    comCountryScoring = Column(TINYINT(1), nullable=False, server_default=text("'0'"))
     comTeamOver = Column(INTEGER(2))
 
     tblFormula = relationship('tblFormula')
@@ -955,8 +1060,11 @@ class tblParticipant(Base):
     parValidFAI = Column(TINYINT(1), nullable=False, server_default=text("'1'"))
     parFAI = Column(String(20))
     parXC = Column(String(20))
+    parLiveID = Column(String(10))
     parTeam = Column(String(100))
     parNatTeam = Column(TINYINT(4), nullable=False, server_default=text("'1'"))
+    parStatus = Column(Enum('confirmed', 'wild card', 'waiting list', 'cancelled', 'waiting for payment'))
+    parRanking = Column(INTEGER(11))
     parPaid = Column(INTEGER(11), server_default=text("'0'"))
     parHours = Column(INTEGER(11), server_default=text("'200'"))
 
@@ -978,8 +1086,7 @@ class tblTask(Base):
 
     tasPk = Column(INTEGER(11), primary_key=True)
     comPk = Column(ForeignKey('tblCompetition.comPk'), index=True)
-    tasLastUpdate = Column(TIMESTAMP, nullable=False,
-                           server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
+    tasLastUpdate = Column(TIMESTAMP, nullable=False)
     tasNum = Column(TINYINT(4), nullable=False)
     tasName = Column(String(100))
     tasDate = Column(Date, nullable=False)
@@ -995,16 +1102,21 @@ class tblTask(Base):
     tasResultsType = Column(String(20))
     tasTaskType = Column(Enum('race', 'elapsed time', 'free distance', 'distance with bearing'),
                          server_default=text("'race'"))
-    tasDistance = Column(Float(asdecimal=False))
-    tasShortRouteDistance = Column(Float(asdecimal=False))
-    tasStartSSDistance = Column(Float(asdecimal=False))
-    tasEndSSDistance = Column(Float(asdecimal=False))
-    tasSSDistance = Column(Float(asdecimal=False))
+    tasDistance = Column(Float)
+    tasShortRouteDistance = Column(Float)
+    tasStartSSDistance = Column(Float)
+    tasEndSSDistance = Column(Float)
+    tasSSDistance = Column(Float)
+    tasSSInterval = Column(INTEGER(11), server_default=text("'0'"))
     tasLaunchValid = Column(INTEGER(11), server_default=text("'1'"))
-    tasHeightBonus = Column(Enum('off', 'on'), server_default=text("'off'"))
-    tasArrOverride = Column(TINYINT(2), nullable=False, server_default=text("'1'"))
-    tasDepOverride = Column(TINYINT(2), nullable=False, server_default=text("'1'"))
-    tasMarginOverride = Column(Float(asdecimal=False))
+    tasDistOverride = Column(Enum('on', 'difficulty', 'off'))
+    tasDepOverride = Column(Enum('leadout', 'departure', 'off'))
+    tasArrOverride = Column(Enum('position', 'time', 'off'))
+    tasTimeOverride = Column(Enum('on', 'off'))
+    tasHeightBonusOverride = Column(Float)
+    tasJTGOverride = Column(TINYINT(1))
+    tasNoGoalOverride = Column(TINYINT(1))
+    tasMarginOverride = Column(Float)
     tasComment = Column(Text)
     tasLocked = Column(TINYINT(3), nullable=False, server_default=text("'0'"))
     tasPath = Column(String(40))
@@ -1074,6 +1186,11 @@ class tblTaskWaypoint(Base):
     tasPk = Column(ForeignKey('tblTask.tasPk', ondelete='SET NULL'), index=True)
     rwpPk = Column(ForeignKey('tblRegionWaypoint.rwpPk', ondelete='SET NULL'), index=True)
     tawNumber = Column(INTEGER(11), nullable=False)
+    tawName = Column(CHAR(6), nullable=False)
+    tawLat = Column(Float, nullable=False)
+    tawLon = Column(Float, nullable=False)
+    tawAlt = Column(INTEGER(11), nullable=False, server_default=text("'0'"))
+    tawDesc = Column(String(80))
     tawTime = Column(INTEGER(11))
     tawType = Column(Enum('waypoint', 'launch', 'speed', 'endspeed', 'goal'), index=True,
                      server_default=text("'waypoint'"))
