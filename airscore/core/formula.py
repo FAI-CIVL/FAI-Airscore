@@ -8,6 +8,7 @@ Antonio Golfari - 2019
 
 # Use your utility module.
 from myconn import Database
+from collections import namedtuple
 
 
 def get_formula_lib(type):
@@ -25,6 +26,13 @@ def get_formula_lib(type):
     except:
         print('formula file {} not found.'.format(formula_file))
         exit()
+
+
+Preset = namedtuple('preset', 'formula_name, formula_type, formula_version, comp_class, formula_distance, '
+                              'formula_arrival, formula_departure, lead_factor, formula_time, arr_alt_bonus, '
+                              'arr_min_height, arr_max_height, validity_min_time, jump_the_gun, '
+                              'max_JTG, JTG_penalty_per_sec, overall_validity, validity_param, score_back_time '
+                              'no_goal_penalty, glide_bonus, tolerance, scoring_altitude')
 
 
 class Formula(object):
@@ -65,7 +73,6 @@ class Formula(object):
         self.nominal_time = nominal_time  # seconds
         self.nominal_launch = nominal_launch  # percentage / 100
         self.min_dist = min_dist  # meters
-        self.score_back_time = score_back_time  # seconds
         self.no_goal_penalty = no_goal_penalty
         self.glide_bonus = glide_bonus
         self.tolerance = tolerance  # percentage / 100
