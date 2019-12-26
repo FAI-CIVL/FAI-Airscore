@@ -13,6 +13,7 @@ import io, sys, logging, contextlib
 from os import path as p
 import Defines as d
 
+
 def Logger(mode='ON', name='log.txt'):
     """Main module"""
     if mode == 'ON':
@@ -20,8 +21,8 @@ def Logger(mode='ON', name='log.txt'):
         sys.stdout = f
         sys.stderr = f
         log_dir = d.LOGDIR
-        file    = p.join(log_dir, name)
-        logging.basicConfig(filename=file,level=logging.INFO,format='%(asctime)s %(message)s')
+        file = p.join(log_dir, name)
+        logging.basicConfig(filename=file, level=logging.INFO, format='%(asctime)s %(message)s')
         mylogger = logging.getLogger()
         sys.stderr.write = mylogger.error
         sys.stdout.write = mylogger.info

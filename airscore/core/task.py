@@ -3,7 +3,14 @@ Task Library
 
 contains
     Task class
-    get_map_json and write_map_json - json files for task map
+        Class to represent Comp Task
+    Task Methods:
+        read:       reads task information from database and creates Task Obj
+        to_db:      stores task info to database
+        create results:     scores task and writes json results file
+                            (mode='full' scores after task opt. route recalculation and checking of all tracks)
+        from_fsdb:  reads task from FSDB file
+        get_map_json and write_map_json - json files for task map
 
 Use: from task import Task
 
@@ -13,13 +20,13 @@ TO DO:
 Add support for FAI Sphere ???
 """
 
-from route      import distance, polar, find_closest, cartesian2polar, polar2cartesian, calcBearing, opt_goal, opt_wp, \
-                        opt_wp_exit, opt_wp_enter, Turnpoint
-from myconn     import Database
-from formula    import Task_formula
-from calcUtils  import json, get_datetime, decimal_to_seconds, time_difference
-from igc_lib    import defaultdict
-from pathlib    import Path
+from route import distance, polar, find_closest, cartesian2polar, polar2cartesian, calcBearing, opt_goal, opt_wp, \
+    opt_wp_exit, opt_wp_enter, Turnpoint
+from myconn import Database
+from formula import Task_formula
+from calcUtils import json, get_datetime, decimal_to_seconds, time_difference
+from igc_lib import defaultdict
+from pathlib import Path
 import jsonpickle
 import Defines
 
@@ -55,7 +62,7 @@ class Task(object):
         creation:
         create_from_xctrack_file: read task from xctrack file.
         create_from_lkt_file: read task from LK8000 file, old code probably needs fixing, but unlikely to be used now we have xctrack
-        create_from_fsdb: read fsdb xml file, create task object
+        from_fsdb: read fsdb xml file, create task object
 
         task distance:
         calculate_task_length: calculate non optimised distances.
@@ -65,56 +72,57 @@ class Task(object):
     """
 
     def __init__(self, task_id=None, task_type=None, start_time=None, task_deadline=None,
-                    stopped_time=None, check_launch='off'):
-        self.id                         = task_id
-        self.task_type                  = task_type
-        self.start_time                 = start_time
-        self.task_deadline              = task_deadline     # seconds from midnight: task deadline
-        self.stopped_time               = stopped_time      # seconds from midnight: time task was stopped (TaskStopAnnouncementTime).
-        self.check_launch               = check_launch      # check launch flag. whether we check that pilots leave from launch.
-        self.comp_id                    = None
-        self.comp_code                  = None
-        self.comp_name                  = None
-        self.comp_site                  = None
-        self.comp_class                 = None
-        self.date                       = None              # in datetime.date (Y-m-d) format
-        self.task_name                  = None
-        self.task_num                   = None              # task n#
-        self.window_open_time           = None              # seconds from midnight: takeoff window opening time (or any earlier pilots were permitted to take off)
-        self.window_close_time          = None              # seconds from midnight: not managed yet
-        self.start_close_time           = None
-        self.SS_interval                = 0                 # seconds: Interval among start gates when more than one
-        self.opt_dist                   = 0
-        self.opt_dist_to_SS             = 0
-        self.opt_dist_to_ESS            = 0
-        self.SS_distance                = 0
-        self.distance                   = 0                 # non optimised distance
-        self.turnpoints                 = []                # list of Turnpoint objects
-        self.optimised_turnpoints       = []                # fixes on cylinders for opt route
-        self.optimised_legs             = []                # opt distance between cylinders
-        self.partial_distance           = []                # distance from launch to waypoint
-        self.legs                       = []                # non optimised legs
-        self.stats                      = dict()            # scored task statistics
-        # self.results = []  #scored task results
-        self.comment                    = None
-        self.time_offset                = 0                 # seconds
-        self.launch_valid               = None
-        self.locked                     = False
-        self.task_path                  = None
-        self.comp_path                  = None
-        self.formula                    = Task_formula.read(self.id) if self.id else None
+                 stopped_time=None, check_launch='off'):
+        self.task_id = task_id
+        self.task_type = task_type  # 'race', 'elapsed_time'
+        self.start_time = start_time
+        self.task_deadline = task_deadline  # seconds from midnight: task deadline
+        self.stopped_time = stopped_time  # seconds from midnight: time task was stopped (TaskStopAnnouncementTime).
+        self.check_launch = check_launch  # check launch flag. whether we check that pilots leave from launch.
+        self.comp_id = None
+        self.comp_code = None
+        self.comp_name = None
+        self.comp_site = None
+        self.comp_class = None
+        self.date = None  # in datetime.date (Y-m-d) format
+        self.task_name = None
+        self.task_num = None  # task n#
+        self.window_open_time = None  # seconds from midnight: takeoff window opening time
+        self.window_close_time = None  # seconds from midnight: not managed yet
+        self.start_close_time = None
+        self.SS_interval = 0  # seconds: Interval among start gates when more than one
+        self.opt_dist = 0
+        self.opt_dist_to_SS = 0
+        self.opt_dist_to_ESS = 0
+        self.SS_distance = 0
+        self.distance = 0  # non optimised distance
+        self.turnpoints = []  # list of Turnpoint objects
+        self.optimised_turnpoints = []  # fixes on cylinders for opt route
+        self.optimised_legs = []  # opt distance between cylinders
+        self.partial_distance = []  # distance from launch to waypoint
+        self.legs = []  # non optimised legs
+        self.stats = dict()  # STATIC scored task statistics, used when importing results from JSON / FSDB files
+        self.pilots = []  # scored task results
+        self.comment = None
+        self.time_offset = 0  # seconds
+        self.launch_valid = None
+        self.locked = False
+        self.task_path = None
+        self.comp_path = None
+        self.track_source = None
+        self.formula = Task_formula.read(self.id) if self.id else None
 
     def __setattr__(self, attr, value):
         from calcUtils import get_date
         import datetime
+        property_names = [p for p in dir(Task) if isinstance(getattr(Task, p), property)]
         if attr == 'date':
             if type(value) is str:
                 value = get_date(value)
             elif isinstance(value, datetime.datetime):
                 value = value.date()
-        elif attr == 'task_id':
-            attr = 'id'
-        self.__dict__[attr] = value
+        if attr not in property_names:
+            self.__dict__[attr] = value
 
     def __str__(self):
         out = ''
@@ -122,9 +130,20 @@ class Task(object):
         out += f'{self.comp_name} - {self.task_name} | Date: {self.date_str} \n'
         out += f'{self.comment} \n'
         for wpt in self.turnpoints:
-            out += f'  {wpt.name}  {wpt.type}  {round(wpt.radius/1000, 2)} km \n'
-        out += f'Task Opt. Distance: {round(self.opt_dist/1000,2)} Km \n'
+            out += f'  {wpt.name}  {wpt.type}  {round(wpt.radius / 1000, 2)} km \n'
+        out += f'Task Opt. Distance: {round(self.opt_dist / 1000, 2)} Km \n'
         return out
+
+    def as_dict(self):
+        return self.__dict__
+
+    @property
+    def results(self):
+        return [pilot.result for pilot in self.pilots]
+
+    @property
+    def id(self):
+        return self.task_id
 
     @property
     def date_str(self):
@@ -132,7 +151,7 @@ class Task(object):
 
     @property
     def task_code(self):
-        return 'T'+str(self.task_num)
+        return 'T' + str(self.task_num)
 
     @property
     def file_path(self):
@@ -176,7 +195,7 @@ class Task(object):
         # seconds from midnight, task stopTime
         if not (self.stopped_time and self.formula.score_back_time):
             return 0
-        if self.comp_class == 'PG' :
+        if self.comp_class == 'PG':
             '''
             We need to calculate stopTime from announcingTime
             In paragliding the score-back time is set as part of the competition parameters
@@ -194,8 +213,8 @@ class Task(object):
             numberOfStartGates > 1 : taskStopTime = taskStopAnnouncementTime − startGateInterval.
             '''
             return ((self.stopped_time - self.formula.score_back_time)
-                            if not self.SS_interval
-                            else (self.stopped_time - self.SS_interval))
+                    if not self.SS_interval
+                    else (self.stopped_time - self.SS_interval))
 
     @property
     def duration(self):
@@ -211,6 +230,167 @@ class Task(object):
         elif self.comp_class == 'PG':
             # is it so simple in HG? Need to check
             return self.stop_time - self.start_time
+
+    ''' * Statistic Properties *'''
+    ''' list of present pilots' results'''
+
+    @property
+    def valid_results(self):
+        return [pilot.result for pilot in self.pilots if pilot.result_type not in ('abs', 'dnf')]
+
+    ''' pilots stats'''
+
+    @property
+    def pilots_present(self):
+        return len([p for p in self.pilots if p.result_type != 'abs'])
+
+    @property
+    def pilots_launched(self):
+        return len(self.valid_results)
+
+    @property
+    def pilots_ss(self):
+        return len([p for p in self.valid_results if p.SSS_time])
+
+    @property
+    def pilots_ess(self):
+        return len([p for p in self.valid_results if p.ESS_time])
+
+    @property
+    def pilots_goal(self):
+        return len([p for p in self.valid_results if p.goal_time])
+
+    # pilots already landed at task deadline / stop time
+    @property
+    def pilots_landed(self):
+        return len([p for p in self.valid_results if p.last_altitude == 0 or p.result_type == 'goal'])
+
+    ''' distance stats'''
+
+    @property
+    def tot_distance_flown(self):
+        if self.formula.min_dist and self.pilots_launched:
+            return sum([p.distance_flown for p in self.valid_results if p.distance_flown])
+        else:
+            return 0
+
+    @property
+    def tot_dist_over_min(self):
+        if self.formula.min_dist and self.pilots_launched:
+            return sum([max(p.distance_flown - self.formula.min_dist, 0) for p in self.valid_results])
+        else:
+            return 0
+
+    @property
+    def std_dev_dist(self):
+        from statistics import stdev
+        if self.formula.min_dist and self.pilots_launched:
+            return stdev([max(p.distance_flown, self.formula.min_dist) for p in self.valid_results])
+        else:
+            return 0
+
+    @property
+    def max_distance_flown(self):
+        if self.formula.min_dist and self.pilots_launched:
+            return max(max(p.distance_flown for p in self.valid_results), self.formula.min_dist)
+        else:
+            return 0
+
+    @property
+    def max_distance(self):
+        if self.formula.min_dist and self.pilots_launched:
+            # Flight_result.distance = max(distance_flown, total_distance)
+            return max(max(p.distance for p in self.valid_results), self.formula.min_dist)
+        else:
+            return 0
+
+    '''time stats'''
+
+    @property
+    def min_dept_time(self):
+        if self.pilots_ss:
+            return min(p.real_start_time for p in self.valid_results if p.real_start_time and p.real_start_time > 0)
+        else:
+            return None
+
+    @property
+    def max_dept_time(self):
+        if self.pilots_ss:
+            return max(p.real_start_time for p in self.valid_results if p.real_start_time and p.real_start_time > 0)
+        else:
+            return None
+
+    @property
+    def min_ss_time(self):
+        if self.pilots_ss:
+            return min(p.SSS_time for p in self.valid_results if p.SSS_time and p.SSS_time > 0)
+        else:
+            return None
+
+    @property
+    def max_ss_time(self):
+        if self.pilots_ss:
+            return max(p.SSS_time for p in self.valid_results if p.SSS_time and p.SSS_time > 0)
+        else:
+            return None
+
+    @property
+    def min_ess_time(self):
+        if self.pilots_ess:
+            return min(p.ESS_time for p in self.valid_results if p.ESS_time and p.ESS_time > 0)
+        else:
+            return None
+
+    @property
+    def max_ess_time(self):
+        if self.pilots_ess:
+            return max(p.ESS_time for p in self.valid_results if p.ESS_time and p.ESS_time > 0)
+        else:
+            return None
+
+    @property
+    def fastest(self):
+        if self.pilots_ess:
+            return min(p.ss_time for p in self.valid_results if p.ESS_time and p.ESS_time > 0)
+        else:
+            return None
+
+    @property
+    def fastest_in_goal(self):
+        if self.pilots_goal:
+            return min(p.ss_time for p in self.valid_results if p.goal_time and p.goal_time > 0)
+        else:
+            return None
+
+    @property
+    def max_time(self):
+        if self.pilots_launched:
+            return max(p.last_time for p in self.valid_results if p.last_time)
+        else:
+            return None
+
+    @property
+    def tot_flight_time(self):
+        if self.pilots_launched:
+            return sum([p.flight_time for p in self.valid_results if p.flight_time])
+        else:
+            return None
+
+    ''' scoring stats'''
+
+    @property
+    def min_lead_coeff(self):
+        if len([p for p in self.valid_results if p.lead_coeff]) > 0:
+            return min(p.lead_coeff for p in self.valid_results if p.lead_coeff is not None and p.lead_coeff > 0)
+        else:
+            return None
+
+    @property
+    def max_score(self):
+        if len([p for p in self.valid_results if p.score]) > 0:
+            return max(p.score for p in self.valid_results if p.score)
+        else:
+            return None
 
     @staticmethod
     def read(task_id):
@@ -234,11 +414,11 @@ class Task(object):
         for tp in tps:
             turnpoint = Turnpoint(tp.lat, tp.lon, tp.radius, tp.type.strip(),
                                   tp.shape, tp.how, tp.altitude, tp.name,
-                                  tp.description, tp.id, tp.rwpPk)
+                                  tp.description, tp.id)
             task.turnpoints.append(turnpoint)
-            s_point = polar(lat=tp.ssr_lat,lon=tp.ssr_lon)
+            s_point = polar(lat=tp.ssr_lat, lon=tp.ssr_lon)
             task.optimised_turnpoints.append(s_point)
-            if tp.partial_distance is not None: #this will be None in DB before we optimise route, but we append to this list so we should not fill it with Nones
+            if tp.partial_distance is not None:  # this will be None in DB before we optimise route, but we append to this list so we should not fill it with Nones
                 task.partial_distance.append(tp.partial_distance)
 
         '''check if we already have a filepath for task'''
@@ -248,14 +428,16 @@ class Task(object):
         return task
 
     def create_path(self, path=None):
-        '''create filepath from # and date if not given
-            and store it in database'''
+        """create filepath from # and date if not given
+            and store it in database"""
         from db_tables import tblTask as T
 
-        if path: self.task_path = path
+        if path:
+            self.task_path = path
         elif self.task_num and self.date:
-            self.task_path = '_'.join([('t'+str(self.task_num)), self.date.strftime('%Y%m%d')])
-        else: return
+            self.task_path = '_'.join([('t' + str(self.task_num)), self.date.strftime('%Y%m%d')])
+        else:
+            return
 
         with Database() as db:
             q = db.session.query(T).get(self.id)
@@ -265,7 +447,7 @@ class Task(object):
     def create_results(self, status=None, mode='default'):
         """
             Create Scoring
-            - if necessary, recalcutales all tracks (stopped task, changed task settings)
+            - if necessary, recalculates all tracks (stopped task, changed task settings)
             - gets info about formula, pilots results
             - calculates scores
             - creates a json file
@@ -276,67 +458,88 @@ class Task(object):
             - mode:     str - 'default'
                               'full'    recalculates all tracks
         """
-        from result     import Task_result as R, create_json_file
-        from compUtils  import read_rankings
+        from result import Task_result as R, create_json_file
+        from compUtils import read_rankings
 
-        '''retrieve scoring formula library'''
+        ''' retrieve scoring formula library'''
         lib = self.formula.get_lib()
 
-        if ( mode == 'full' or self.stopped_time ):
+        ''' get pilot list and results'''
+        self.get_results(lib)
+
+        if mode == 'full' or self.stopped_time:
             # TODO: check if we changed task, or we had new tracks, after last results generation
-            #       If this is the case we should not need to rescore unless especially requested
+            #       If this is the case we should not need to re-score unless especially requested
             '''Task Full Rescore
                 - recalculate Opt. route
                 - check all tracks'''
+            print(f" - FULL Mode -")
+            print(f"Calculating task optimised distance...")
             self.calculate_task_length()
             self.calculate_optimised_task_length()
             self.update_task_distance()
+            print(f"Task Opt. Route: {round(self.opt_dist / 1000, 4)} Km")
+            print(f"Processing pilots tracks...")
             self.check_all_tracks(lib)
 
-        self.stats.update(lib.task_totals(self.id))
+        # self.stats.update(lib.task_totals(self))
 
-        if self.stats['pilots_present'] == 0:
-            print(f'''Task (ID {self.id}) has no results yet''')
+        if self.pilots_launched == 0:
+            print(f"Task (ID {self.id}) has no results yet")
             return 0
 
-        self.stats.update(lib.day_quality(self))
-        pil_list = sorted(lib.points_allocation(self), key=lambda k: k['score'], reverse=True)
+        ''' Calculates task result'''
+        print(f"Calculating point allocation...")
+        lib.points_allocation(self)
+
         '''create result elements from task, formula and results objects'''
-        info    = {x: getattr(self, x) for x in R.info_list}
-        formula = {x: getattr(self.formula, x) for x in R.formula_list}
-        stats   = {x: self.stats[x] for x in R.stats_list}
-        route   = []
+        # sorting list by score, dnf, abs
+        pil_list = sorted([p for p in self.pilots if p.result_type not in ['dnf', 'abs']],
+                          key=lambda k: k.score, reverse=True)
+        pil_list += [p for p in self.pilots if p.result_type == 'dnf']
+        pil_list += [p for p in self.pilots if p.result_type == 'abs']
+
+        info = {x: getattr(self, x) for x in R.info_list if x in dir(self)}
+        formula = {x: getattr(self.formula, x) for x in R.formula_list if x in dir(self.formula)}
+        stats = {x: getattr(self, x) for x in R.stats_list if x in dir(self)}
+        route = []
         for idx, tp in enumerate(self.turnpoints):
-            wpt = {x: getattr(tp, x) for x in R.route_list}
+            wpt = {x: getattr(tp, x) for x in R.route_list if x in dir(tp)}
             wpt['cumulative_dist'] = self.partial_distance[idx]
             route.append(wpt)
         results = []
         for pil in pil_list:
-            res = {x: pil[x] for x in R.results_list}
-            res['name'] = res['name'].title()
-            res['glider'] = res['glider'].title()
-            res['track_file'] = None if not res['track_file'] else res['track_file'].split('/')[-1]
+            res = pil.create_result_dict()
+            # res = {x: getattr(pil, x) for x in R.results_list if x in dir(pil)}
+            # res.name = res.name.title()
+            # res.glider = res.glider.title()
+            # res['track_file'] = None if not res['track_file'] else res['track_file'].split('/')[-1]
             results.append(res)
         rankings = read_rankings(self.comp_id)
 
         '''create json file'''
-        result =    {   'info':     info,
-                        'route':    route,
-                        'results':  results,
-                        'formula':  formula,
-                        'stats':    stats,
-                        'rankings': rankings
-                    }
-        ref_id = create_json_file(comp_id=self.comp_id, task_id=self.id, code='_'.join([self.comp_code, self.task_code]), elements=result, status=status)
+        result = {'info': info,
+                  'route': route,
+                  'results': results,
+                  'formula': formula,
+                  'stats': stats,
+                  'rankings': rankings
+                  }
+        ref_id = create_json_file(comp_id=self.comp_id, task_id=self.id,
+                                  code='_'.join([self.comp_code, self.task_code]), elements=result, status=status)
         return ref_id
 
     def is_valid(self):
         """In stopped task, check if duration is enough to be valid"""
+        if self.pilots_launched == 0:
+            print(f'Tracks (Task ID {self.id}) have not been checked yet or stats have not been updated.')
+            return False
         if not self.stopped_time:
             print(f'Task (ID {self.id}) has not been stopped.')
             return True
 
-        if self.comp_class == 'PG' :
+        min_task_duration = self.formula.validity_min_time
+        if self.comp_class == 'PG':
             '''
             In paragliding, a stopped task will be scored if the flying time was one hour or more.
             For Race to Goal tasks, this means that the Task Stop Time must be one hour or more
@@ -347,7 +550,8 @@ class Task(object):
             TypeOfTask ≠ RaceToGoal ∨ numberOfStartGates > 1:
                 taskStopTime − max(∀p :p ∈ StartedPilots :startTime p ) < minimumTime : taskValidity = 0
             '''
-            min_task_duration   = 3600
+            if min_task_duration is None:
+                min_task_duration = 3600  # 60 min default for paragliding
 
         elif self.comp_class == 'HG':
             '''
@@ -359,21 +563,18 @@ class Task(object):
             typeOfCompetition ≠ Women's : minimumTime = 90min.
             taskStopTime − timeOfFirstStart < minimumTime ∧ numberOfPilotsInGoal(taskStopTime) = 0 : taskValidity = 0
             '''
-            if self.stats['pilots_goal']:
+            if self.pilots_goal:
                 return True
-            elif self.stats['pilots_goal'] is None:
-                print(f'Tracks (Task ID {self.id}) have not been checked yet or stats have not been updated.')
-                return False
-            min_task_duration = 3600 * 1.5 # 90 min
+            if min_task_duration is None:
+                min_task_duration = 3600 * 1.5  # 90 min default for hg
 
         '''is task valid?'''
         if self.duration < min_task_duration:
             return False
         return True
 
-    def check_all_tracks(self, lib = None):
-        ''' checks all igc files against Task and creates results '''
-
+    def check_all_tracks(self, lib=None):
+        """ checks all igc files against Task and creates results """
         from flight_result import verify_all_tracks, adjust_flight_results, update_all_results
 
         if not lib:
@@ -384,7 +585,7 @@ class Task(object):
         print(f'stopped time: {self.stopped_time}')
         if self.stopped_time:
             print(f'We are executing Stopped Task Routine')
-            if self.comp_class == 'PG' :
+            if self.comp_class == 'PG':
                 '''
                 If (class == 'PG' and (SS_Interval or type == 'ELAPSED TIME')
                     We cannot check tracks just once.
@@ -409,17 +610,16 @@ class Task(object):
 
                 # min_task_duration = 3600
                 # last_time = self.stopped_time - self.formula.score_back_time
-                results = verify_all_tracks(self, lib)
-                update_all_results(results)     # avoidable if we use results to update stats instead of db
+                verify_all_tracks(self, lib)
 
                 if self.task_type == 'elapsed time' or self.SS_interval:
                     '''need to check track and get last_start_time'''
-                    self.stats.update(lib.task_totals(self.id))
+                    # self.stats.update(lib.task_totals(self.id))
                     # duration = last_time - self.last_start_time
                     if not self.is_valid():
                         return f'duration is not enough for all pilots, task with id {self.id} is not valid, ' \
-                            f'scoring is not needed.'
-                    results = adjust_flight_results(self, results, lib)
+                               f'scoring is not needed.'
+                    adjust_flight_results(self, lib)
 
             elif self.comp_class == 'HG':
                 ''' In hang-gliding, stopped tasks are “scored back” by a time that is determined
@@ -436,18 +636,48 @@ class Task(object):
                     typeOfCompetition ≠ Women's : minimumTime = 90min.
                     taskStopTime − timeOfFirstStart < minimumTime ∧ numberOfPilotsInGoal(taskStopTime) = 0 : taskValidity = 0
                 '''
+                # TODO It's not really clear if in elapsed time or multiple start, minimum duration like PG is applied
 
                 if not self.is_valid():
                     return f'task duration is not enough, task with id {self.id} is not valid, scoring is not needed'
 
-                results = verify_all_tracks(self, lib)
+                verify_all_tracks(self, lib)
 
         else:
             '''get all results for the task'''
-            results = verify_all_tracks(self, lib)
+            verify_all_tracks(self, lib)
 
         '''store results to database'''
-        update_all_results(results)
+        update_all_results(self)
+
+        lib.process_results(self)
+
+    def get_results(self, lib=None):
+        """ Loads all Pilot obj. into Task obj."""
+        from db_tables import FlightResultView as F
+        from sqlalchemy.exc import SQLAlchemyError
+        from pilot import Pilot
+
+        pilots = []
+
+        with Database() as db:
+            try:
+                results = db.session.query(F).filter(F.task_id == self.task_id).all()
+                for row in results:
+                    pilot = Pilot.create(task_id=self.task_id)
+                    db.populate_obj(pilot.result, row)
+                    db.populate_obj(pilot.info, row)
+                    db.populate_obj(pilot.track, row)
+                    pilots.append(pilot)
+            except SQLAlchemyError:
+                print('DB Error retrieving task results')
+                db.session.rollback()
+                return
+        self.pilots = pilots
+        if lib:
+            '''prepare results for scoring'''
+            lib.process_results(self)
+        return pilots
 
     def update_task_distance(self):
         from db_tables import tblTask as T, tblTaskWaypoint as W
@@ -455,45 +685,96 @@ class Task(object):
             '''add optimised and total distance to task'''
             q = db.session.query(T)
             t = q.get(self.id)
-            t.tasDistance           = self.distance
+            t.tasDistance = self.distance
             t.tasShortRouteDistance = self.opt_dist
-            t.tasSSDistance         = self.SS_distance
-            t.tasEndSSDistance      = self.opt_dist_to_ESS
-            t.tasStartSSDistance    = self.opt_dist_to_SS
+            t.tasSSDistance = self.SS_distance
+            t.tasEndSSDistance = self.opt_dist_to_ESS
+            t.tasStartSSDistance = self.opt_dist_to_SS
             db.session.commit()
 
             '''add opt legs to task wpt'''
             w = db.session.query(W)
             for idx, tp in enumerate(self.turnpoints):
-                sr  = self.optimised_turnpoints[idx]
+                sr = self.optimised_turnpoints[idx]
                 wpt = w.get(tp.id)
-                wpt.ssrLatDecimal       = sr.lat
-                wpt.ssrLongDecimal      = sr.lon
-                wpt.ssrCumulativeDist   = self.partial_distance[idx]
-                db.session.commit()
+                wpt.ssrLatDecimal = sr.lat
+                wpt.ssrLongDecimal = sr.lon
+                wpt.ssrCumulativeDist = self.partial_distance[idx]
+            db.session.commit()
 
     def update_task_info(self):
         from datetime import datetime as dt
         from db_tables import tblTask as T
         from calcUtils import sec_to_time
 
-        start_time          = sec_to_time(self.start_time + self.time_offset)
-        task_deadline       = sec_to_time(self.task_deadline + self.time_offset)
-        task_start          = sec_to_time(self.window_open_time + self.time_offset)
-        start_close_time    = sec_to_time(self.start_close_time + self.time_offset)
-        start_interval      = int(self.SS_interval / 60)
-        task_type           = self.task_type.lower()
+        start_time = sec_to_time(self.start_time + self.time_offset)
+        task_deadline = sec_to_time(self.task_deadline + self.time_offset)
+        task_start = sec_to_time(self.window_open_time + self.time_offset)
+        start_close_time = sec_to_time(self.start_close_time + self.time_offset)
+        start_interval = int(self.SS_interval / 60)
+        task_type = self.task_type.lower()
 
         with Database() as db:
             q = db.session.query(T).get(self.id)
             date = q.date
-            q.tasStartTime      = dt.combine(date, start_time)
-            q.tasFinishTime     = dt.combine(date, task_deadline)
-            q.tasTaskStart      = dt.combine(date, task_start)
+            q.tasStartTime = dt.combine(date, start_time)
+            q.tasFinishTime = dt.combine(date, task_deadline)
+            q.tasTaskStart = dt.combine(date, task_start)
             q.tasStartCloseTime = dt.combine(date, start_close_time)
-            q.tasSSInterval     = start_interval
-            q.tasTaskType       = task_type
+            q.tasSSInterval = start_interval
+            q.tasTaskType = task_type
             db.session.commit()
+
+    def to_db(self, session=None):
+        """Inserts new task or updates existent one"""
+        # TODO update part, now it just inserts new Task and new Waypoints
+        from db_tables import tblTask as T, tblTaskWaypoint as W
+        from sqlalchemy.exc import SQLAlchemyError
+        from datetime import datetime
+        from calcUtils import sec_to_time
+
+        task_start = datetime.combine(self.date, sec_to_time(self.window_open_time))
+        launch_close = None if self.window_close_time is None else datetime.combine(self.date,
+                                                                                    sec_to_time(self.window_close_time))
+        deadline = datetime.combine(self.date, sec_to_time(self.task_deadline))
+        start_time = None if self.start_time is None else datetime.combine(self.date, sec_to_time(self.start_time))
+        start_close = None if self.start_close_time is None else datetime.combine(self.date,
+                                                                                  sec_to_time(self.start_close_time))
+        stopped_time = None if self.stopped_time is None else datetime.combine(self.date,
+                                                                               sec_to_time(self.stopped_time))
+
+        with Database(session) as db:
+            try:
+                task = T(tasName=self.task_name, comPk=self.comp_id, tasDate=self.date, tasNum=self.task_num,
+                         tasTaskStart=task_start, tasFinishTime=deadline, tasLaunchClose=launch_close,
+                         tasStartTime=start_time,
+                         tasStartCloseTime=start_close, tasStoppedTime=stopped_time, tasDistance=self.distance,
+                         tasShortRouteDistance=self.opt_dist, tasStartSSDistance=self.opt_dist_to_SS,
+                         tasEndSSDistance=self.opt_dist_to_ESS, tasSSDistance=self.SS_distance,
+                         tasSSInterval=self.SS_interval,
+                         tasLaunchValid=self.launch_valid, tasComment=self.comment)
+                db.session.add(task)
+                db.session.flush()
+                self.task_id = task.tasPk
+                wpts = []
+                for idx, tp in enumerate(self.turnpoints):
+                    opt_lat, opt_lon, cumulative_dist = None, None, None
+                    if len(self.optimised_turnpoints) > 0:
+                        opt_lat, opt_lon = self.optimised_turnpoints[idx].lat, self.optimised_turnpoints[idx].lon
+                    if len(self.partial_distance) > 0:
+                        cumulative_dist = self.partial_distance[idx]
+                    wpt = W(tasPk=self.id, tawNumber=tp.id, tawName=tp.name, tawLat=tp.lat, tawLon=tp.lon,
+                            tawAlt=tp.altitude,
+                            tawDesc=tp.description, tawType=tp.type, tawHow=tp.how, tawShape=tp.shape,
+                            tawRadius=tp.radius,
+                            ssrLatDecimal=opt_lat, ssrLongDecimal=opt_lon, ssrCumulativeDist=cumulative_dist)
+                    wpts.append(wpt)
+                db.session.bulk_save_objects(wpts)
+
+            except SQLAlchemyError:
+                print('Task storing error')
+                db.session.rollback()
+                return None
 
     def update_from_xctrack_file(self, filename):
         """ Updates Task from xctrack file, which is in json format.
@@ -504,7 +785,7 @@ class Task(object):
         offset = 0
         task_file = filename
 
-        #turnpoints = []
+        # turnpoints = []
         with open(task_file, encoding='utf-8') as json_data:
             # a bit more checking..
             print("file: ", task_file)
@@ -517,8 +798,8 @@ class Task(object):
         startopenzulu = t['sss']['timeGates'][0]
         deadlinezulu = t['goal']['deadline']
 
-        self.start_time     = string_to_seconds(startopenzulu)
-        self.task_deadline  = string_to_seconds(deadlinezulu)
+        self.start_time = string_to_seconds(startopenzulu)
+        self.task_deadline = string_to_seconds(deadlinezulu)
 
         '''check task start and start close times are ok for new start time
         we will check to be at least 1 hour before and after'''
@@ -527,15 +808,17 @@ class Task(object):
         if not self.start_close_time or self.start_close_time - self.start_time < 3600:
             self.start_close_time = self.start_time + 3600
 
-        if t['sss']['type'] == 'ELAPSED-TIME': self.task_type = 'ELAPSED TIME'
+        if t['sss']['type'] == 'ELAPSED-TIME':
+            self.task_type = 'ELAPSED TIME'
         else:
             self.task_type = 'RACE'
             '''manage multi start'''
             self.SS_interval = 0
             if len(t['sss']['timeGates']) > 1:
-                second_start            = string_to_seconds(t['sss']['timeGates'][1])
-                self.SS_interval         = int((second_start - self.start_time) / 60)    # interval in minutes
-                self.start_close_time   = int(self.start_time + len(t['sss']['timeGates']) * (second_start - self.start_time)) - 1
+                second_start = string_to_seconds(t['sss']['timeGates'][1])
+                self.SS_interval = int((second_start - self.start_time) / 60)  # interval in minutes
+                self.start_close_time = int(
+                    self.start_time + len(t['sss']['timeGates']) * (second_start - self.start_time)) - 1
 
         print('xct start:       {} '.format(self.start_time))
         print('xct deadline:    {} '.format(self.task_deadline))
@@ -550,8 +833,8 @@ class Task(object):
             wpID = waypoint_list[tp["waypoint"]["name"]]
             # wpNum = i+1
 
-            if i < len(t['turnpoints']) -1:
-                if 'type' in tp :
+            if i < len(t['turnpoints']) - 1:
+                if 'type' in tp:
                     if tp['type'] == 'TAKEOFF':
                         waytype = "launch"  # live
                         # waytype = "start"  # aws
@@ -568,7 +851,7 @@ class Task(object):
                     shape = "line"
 
             turnpoint = Turnpoint(tp['waypoint']['lat'], tp['waypoint']['lon'], tp['radius'], waytype, shape, how)
-            turnpoint.name  = tp["waypoint"]["name"]
+            turnpoint.name = tp["waypoint"]["name"]
             turnpoint.rwpPk = wpID
             self.turnpoints.append(turnpoint)
 
@@ -635,7 +918,7 @@ class Task(object):
         return task
 
     @staticmethod
-    def create_from_json(task_id, filename = None):
+    def create_from_json(task_id, filename=None):
         """ Creates Task from JSON task file.
             If filename is empty, it gets the active one
             Inputs:
@@ -643,13 +926,16 @@ class Task(object):
                 filename    str: (opt.) json filename
 
         """
-        from os             import path as p
-        from result         import get_task_json  # !!! this function does not exist in result.py
-        from flight_result  import Flight_result
+        from os import path as p
+        # from result         import get_task_json  # !!! this function does not exist in result.py
+        from flight_result import Flight_result
+        from pilot import Pilot
+        from Defines import RESULTDIR
+        from pprint import pprint as pp
 
         if not filename or not p.isfile(filename):
             '''we get the active json file'''
-            filename = get_task_json(task_id)
+            filename = get_task_json_filename(task_id)
 
         if not filename:
             print(f"There's no active json file for task {task_id}, or given filename does not exists")
@@ -657,61 +943,89 @@ class Task(object):
 
         print(f"task {task_id} json file: {filename}")
 
-        with open(filename, encoding='utf-8') as json_data:
+        with open(p.join(RESULTDIR, filename), encoding='utf-8') as json_data:
             # a bit more checking..
             try:
-                t = json.load(json_data)
+                t = jsonpickle.decode(json_data.read())
             except:
                 print("file is not a valid JSON object")
                 return None
 
-        task = Task(task_id)
-        task.__dict__.update(dict(t['info']))
-        task.stats.update(dict(t['stats']))
-        task.turnpoints = []
+        # pp(t)
 
-        for id, tp in enumerate(t['task']):
+        task = Task(task_id)
+        # task.__dict__.update(t['info'])
+        ''' get task info'''
+        for key, value in t['info'].items():
+            if hasattr(task, key):
+                setattr(task, key, value)
+        ''' get task stats'''
+        # I need to get only the ones we do not calculate from results
+        for key, value in t['stats'].items():
+            if not hasattr(task, key):
+                setattr(task, key, value)
+        # task.stats.update(t['stats'])
+        ''' get task formula'''
+        task.formula = Task_formula.from_dict(t['formula'])
+        ''' get route'''
+        task.turnpoints = []
+        task.partial_distance = []
+
+        for idx, tp in enumerate(t['route'], 1):
             '''creating waypoints'''
             # I could take them from database, but this is the only way to be sure it is the correct one
             turnpoint = Turnpoint(tp['lat'], tp['lon'], tp['radius'], tp['type'],
                                   tp['shape'], tp['how'])
 
-            turnpoint.name          = tp['name']
-            turnpoint.id            = id+1
-            turnpoint.description   = tp['description']
-            turnpoint.altitude      = tp['altitude']
+            turnpoint.name = tp['name']
+            turnpoint.id = idx
+            turnpoint.description = tp['description']
+            turnpoint.altitude = tp['altitude']
             task.turnpoints.append(turnpoint)
             task.partial_distance.append(tp['cumulative_dist'])
 
-        task.results = []
-
+        ''' get results'''
+        task.pilots = []
         for pil in t['results']:
-            ''' create Flight_result objects from json list'''
-            # should unify property names
-            result = Flight_result(pil_id=pil['pil_id'], track_file = pil['track_file'])
-            result.distance_flown           = pil['distance']
-            result.first_time               = pil['first_time']
-            result.SSS_time                 = pil['SS_time']
-            result.real_start_time          = pil['start_time']
-            result.ESS_time                 = pil['ES_time']
-            result.goal_time                = pil['goal_time']
-            result.best_waypoint_achieved   = pil['turnpoints_made']
-            result.last_time                = pil['last_time']
-            result.lead_coeff               = pil['lead_coeff']
-            result.ESS_altitude             = pil['ESS_altitude']
-            result.goal_altitude            = pil['goal_altitude']
-            result.max_altitude             = pil['max_altitude']
-            result.last_altitude            = pil['last_altitude']
-            result.distance_score           = pil['dist_points']
-            result.departure_score          = pil['dep_points']
-            result.arrival_score            = pil['arr_points']
-            result.time_score               = pil['time_points']
-            result.penalty                  = pil['penalty']
-            result.comment                  = pil['comment']
-            result.score                    = pil['score']
-            result.result_type              = pil['result']
-
-            task.results.append(result)
+            ''' create Pilot objects from json list'''
+            task.pilots.append(Pilot.from_result(task_id, pil))
+            # pilot = Pilot.create(task_id=task_id)
+            # pilot.track.track_file = pil['track_file']
+            # pilot.info.par_id = pil['par_id']
+            # pilot.info.ID = pil['ID']
+            # pilot.info.name = pil['name']
+            # pilot.info.glider = pil['glider']
+            # pilot.info.sponsor = pil['sponsor']
+            # pilot.info.glider_cert = pil['class']
+            # pilot.info.civl_id = pil['civl_id']
+            # pilot.info.fai_id = pil['fai_id']
+            # pilot.info.sex = pil['sex']
+            # pilot.info.nat = pil['nat']
+            # result = pilot.result
+            # # TODO should unify property names
+            # result.distance_flown = pil['distance']
+            # result.first_time = pil['first_time']
+            # result.SSS_time = pil['SS_time']
+            # result.real_start_time = pil['real_start_time']
+            # result.ESS_time = pil['ES_time']
+            # result.goal_time = pil['goal_time']
+            # result.best_waypoint_achieved = pil['turnpoints_made']
+            # result.last_time = pil['last_time']
+            # result.lead_coeff = pil['lead_coeff']
+            # result.ESS_altitude = pil['ESS_altitude']
+            # result.goal_altitude = pil['goal_altitude']
+            # result.max_altitude = pil['max_altitude']
+            # result.last_altitude = pil['last_altitude']
+            # result.distance_score = pil['dist_points']
+            # result.departure_score = pil['dep_points']
+            # result.arrival_score = pil['arr_points']
+            # result.time_score = pil['time_points']
+            # result.penalty = pil['penalty']
+            # result.comment = pil['comment']
+            # result.score = pil['score']
+            # result.result_type = pil['result']
+            #
+            # task.results.append(pilot)
 
         return task
 
@@ -780,196 +1094,191 @@ class Task(object):
         return task
 
     @classmethod
-    def create_from_fsdb(cls, t):
+    def from_fsdb(cls, t):
         """ Creates Task from FSDB FsTask element, which is in xml format.
             Unfortunately the fsdb format isn't published so much of this is simply an
             exercise in reverse engineering.
         """
-        tas             = dict()
-        stats           = dict()
-        turnpoints      = []
-        optimised_legs  = []
-        #results = []
+        from formula import Task_formula
+        from calcUtils import get_date, get_time, time_to_seconds
 
-        #t = tree.getroot()
-        tas['tasCheckLaunch']   = 0
-        tas['tasName']          = t.get('name')
-        tas['id']               = 0 + int(t.get('id'))
-        #print ("task id: {} - name: {}".format(tas['id'], tas['tasName']))
+        tas = dict()
+        stats = dict()
+        turnpoints = []
+        optimised_legs = []
+        # results = []
+
+        task = cls()
+
+        task.check_launch = 0
+        task.task_name = t.get('name')
+        task.task_num = 0 + int(t.get('id'))
+        print(f"task {task.task_num} - name: {task.task_name}")
 
         """formula info"""
         f = t.find('FsScoreFormula')
-        tas['tasHeightBonus']   = 'off'
+        formula = Task_formula()
+        formula.formula_name = f.get('id')
+        formula.arr_alt_bonus = 'off'
         if ((f.get('use_arrival_altitude_points') is not None and float(f.get('use_arrival_altitude_points')) > 0)
-            or f.get('use_arrival_altitude_points') == 'aatb'):
-            tas['tasHeightBonus'] = 'on'
+                or f.get('use_arrival_altitude_points') == 'aatb'):
+            formula.arr_alt_bonus = 'on'
         """Departure and Arrival from formula"""
-        tas['tasArrival']       = 'on' if float(f.get('use_arrival_position_points') + f.get('use_arrival_position_points')) > 0 else 'off' #not sure if and which type Airscore is supporting at the moment
-        tas['tolerance']        = 0 + float(f.get('turnpoint_radius_tolerance')) * 100  # tolerance
+        formula.formula_arrival = 'position' if float(f.get('use_arrival_position_points')) == 1 else 'time' if float(
+            f.get(
+                'use_arrival_position_points')) == 1 else 'off'  # not sure if and which type Airscore is supporting at the moment
+        formula.tolerance = 0 + float(f.get('turnpoint_radius_tolerance'))  # tolerance perc /100
 
         if float(f.get('use_departure_points')) > 0:
-            tas['tasDeparture'] = 'on'
+            formula.formula_departure = 'on'
         elif float(f.get('use_leading_points')) > 0:
-            tas['tasDeparture'] = 'leadout'
+            formula.formula_departure = 'leadout'
         else:
-            tas['tasDeparture'] = 'off'
+            formula.formula_departure = 'off'
 
         """Task Status"""
         node = t.find('FsTaskState')
-        tas['tasComment'] = None
-        tas['forScorebackTime'] = int(node.get('score_back_time'))
-        tas['state'] = node.get('task_state')
-        tas['tasComment'] = node.get('cancel_reason')
-        if tas['state'] != 'CANCELLED':
+        formula.score_back_time = int(node.get('score_back_time'))
+        state = node.get('task_state')
+        task.comment = ': '.join([state, node.get('cancel_reason')])
+        if state == 'CANCELLED':
             """I don't need if cancelled"""
-            tas['tasStoppedTime'] = get_datetime(node.get('stop_time')) if not (tas['state'] == 'REGULAR') else None
-            """Task Stats"""
-            p = t.find('FsTaskScoreParams')
-            if p is not None:
-                '''a non scored task could miss this element'''
-                tas['tasShortRouteDistance'] = float(p.get('task_distance'))
-                tas['tasDistance'] = float(p.get('task_distance')) #need to calculate distance through centers
-                tas['tasSSDistance'] = float(p.get('ss_distance'))
-                stats['pilots_present'] = int(p.get('no_of_pilots_present'))
-                stats['pilots_launched'] = int(p.get('no_of_pilots_flying'))
-                stats['pilots_goal'] = int(p.get('no_of_pilots_reaching_goal'))
-                stats['max_distance'] = float(p.get('best_dist')) * 1000 # in meters
-                stats['totdistovermin'] = float(p.get('sum_flown_distance')) * 1000 # in meters
-                try:
-                    '''happens this values are error strings'''
-                    stats['day_quality'] = float(p.get('day_quality'))
-                    stats['dist_validity'] = float(p.get('distance_validity'))
-                    stats['time_validity'] = float(p.get('time_validity'))
-                    stats['launch_validity'] = float(p.get('launch_validity'))
-                    stats['stop_validity'] = float(p.get('stop_validity'))
-                    stats['avail_dist_points'] = float(p.get('available_points_distance'))
-                    stats['avail_dep_points'] = float(p.get('available_points_leading'))
-                    stats['avail_time_points'] = float(p.get('available_points_time'))
-                    stats['avail_arr_points'] = float(p.get('available_points_arrival'))
-                except:
-                    stats['day_quality'] = 0
-                    stats['dist_validity'] = 0
-                    stats['time_validity'] = 0
-                    stats['launch_validity'] = 0
-                    stats['stop_validity'] = 0
-                    stats['avail_dist_points'] = 0
-                    stats['avail_dep_points'] = 0
-                    stats['avail_time_points'] = 0
-                    stats['avail_arr_points'] = 0
-                stats['fastest'] = decimal_to_seconds(float(p.get('best_time'))) if float(p.get('best_time')) > 0 else 0
+            return None
+
+        task.stopped_time = get_datetime(node.get('stop_time')) if not (state == 'REGULAR') else None
+        """Task Stats"""
+        p = t.find('FsTaskScoreParams')
+        '''a non scored task could miss this element'''
+        task.opt_dist = None if p is None else float(p.get('task_distance')) * 1000
+        task.distance = None  # need to calculate distance through centers
+        task.opt_dist_to_ESS = None if p is None else float(p.get('launch_to_ess_distance')) * 1000
+        task.SS_distance = None if p is None else float(p.get('ss_distance')) * 1000
+        stats['pilots_present'] = None if p is None else int(p.get('no_of_pilots_present'))
+        stats['pilots_launched'] = None if p is None else int(p.get('no_of_pilots_flying'))
+        stats['pilots_goal'] = None if p is None else int(p.get('no_of_pilots_reaching_goal'))
+        stats['max_distance'] = None if p is None else float(p.get('best_dist')) * 1000  # in meters
+        stats['totdistovermin'] = None if p is None else float(p.get('sum_flown_distance')) * 1000  # in meters
+        try:
+            '''happens this values are error strings'''
+            stats['day_quality'] = 0 if p is None else float(p.get('day_quality'))
+            stats['dist_validity'] = 0 if p is None else float(p.get('distance_validity'))
+            stats['time_validity'] = 0 if p is None else float(p.get('time_validity'))
+            stats['launch_validity'] = 0 if p is None else float(p.get('launch_validity'))
+            stats['stop_validity'] = 0 if p is None else float(p.get('stop_validity'))
+            stats['avail_dist_points'] = 0 if p is None else float(p.get('available_points_distance'))
+            stats['avail_dep_points'] = 0 if p is None else float(p.get('available_points_leading'))
+            stats['avail_time_points'] = 0 if p is None else float(p.get('available_points_time'))
+            stats['avail_arr_points'] = 0 if p is None else float(p.get('available_points_arrival'))
+        except:
+            stats['day_quality'] = 0
+            stats['dist_validity'] = 0
+            stats['time_validity'] = 0
+            stats['launch_validity'] = 0
+            stats['stop_validity'] = 0
+            stats['avail_dist_points'] = 0
+            stats['avail_dep_points'] = 0
+            stats['avail_time_points'] = 0
+            stats['avail_arr_points'] = 0
+        stats['fastest'] = 0 if p is None else decimal_to_seconds(float(p.get('best_time'))) if float(
+            p.get('best_time')) > 0 else 0
+        if p is not None:
             for l in p.iter('FsTaskDistToTp'):
-                optimised_legs.append(float(l.get('distance'))*1000)
+                optimised_legs.append(float(l.get('distance')) * 1000)
 
         node = t.find('FsTaskDefinition')
-        tas['qnh'] = float(node.get('qnh_setting').replace(',', '.'))
-        #tas['tasDate'] = get_datetime(node.find('FsStartGate').get('open'))
+        qnh = None if node is None else float(node.get('qnh_setting').replace(',', '.'))
+        # task.date = None if not node else get_date(node.find('FsStartGate').get('open'))
         """guessing type from startgates"""
-        tas['tasSSInterval'] = 0
+        task.SS_interval = 0
         startgates = 0
         headingpoint = 0
         if node.get('ss') is None:
             '''open distance
                 not yet implemented in Airscore'''
-            tas['tasTaskType'] = 'free distance'
+            # TODO: free distance and free distance with bearing
+            task.task_type = 'free distance'
             if node.find('FsHeadingpoint') is not None:
                 '''open distance with bearing'''
                 headingpoint = 1
-                tas['tasTaskType'] = 'distance with bearing'
-                tas['tasBearingLat'] = float(node.find('FsHeadingpoint').get('lat'))
-                tas['tasBearingLon'] = float(node.find('FsHeadingpoint').get('lon'))
+                task.task_type = 'distance with bearing'
+                task.bearing_lat = float(node.find('FsHeadingpoint').get('lat'))
+                task_bearing_lon = float(node.find('FsHeadingpoint').get('lon'))
         else:
             sswpt = int(node.get('ss'))
             eswpt = int(node.get('es'))
             gtype = node.get('goal')
-            tas['gstart'] = int(node.get('groundstart'))
+            gstart = int(node.get('groundstart'))
             if node.find('FsStartGate') is None:
                 '''elapsed time
                     on start gate, have to get start opening time from ss wpt'''
-                tas['tasTaskType'] = 'elapsed time'
+                task.task_type = 'elapsed time'
             else:
                 '''race'''
                 startgates = len(node.findall('FsStartGate'))
-                tas['tasTaskType'] = 'race'
-                tas['tasStartTime'] = get_datetime(node.find('FsStartGate').get('open'))
-                #print ("gates: {}".format(startgates))
+                task.task_type = 'race'
+                task.start_time = time_to_seconds(get_time(node.find('FsStartGate').get('open')))
+                # print ("gates: {}".format(startgates))
                 if startgates > 1:
                     '''race with multiple start gates'''
-                    #print ("MULTIPLE STARTS")
-                    time = get_datetime(node.findall('FsStartGate')[1].get('open')).time()
-                    interval = time_difference(tas['tasStartTime'].time(), time)
+                    # print ("MULTIPLE STARTS")
+                    time = time_to_seconds(get_time(node.findall('FsStartGate')[1].get('open')))
+                    task.SS_interval = time - task.start_time
                     '''if prefer minutes: time_difference(tas['tasStartTime'], time).total_seconds()/60'''
-                    print ("    **** interval: {}".format(interval))
-                    tas['tasSSInterval'] = interval
-        #print ("task type: {} - Interval: {}".format(tas['tasTaskType'], tas['tasSSInterval']))
+                    print(f"    **** interval: {task.SS_interval}")
 
         """Task Route"""
         for w in node.iter('FsTurnpoint'):
-            wpt = dict()
-            wpt['tawNumber'] = len(turnpoints) + 1
-            #wpt['ssrCumulativeDist'] = c_dist.pop(0)
-            wpt['rwpName'] = w.get('id')
-            #print ("wpt id: {} ".format(wpt['id']))
-            wpt['rwpLatDecimal'] = float(w.get('lat'))
-            wpt['rwpLonDecimal'] = float(w.get('lon'))
-            wpt['rwpAltitude'] = int(w.get('altitude'))
-            wpt['tawRadius'] = int(w.get('radius'))
-            #print ("radius: {} \n".format(wpt['radius']))
-            wpt['tawShape'] = 'circle'
-            #print ("   len(node) = {} - wpt['tawNumber'] = {} \n".format(len(node), wpt['tawNumber']))
-            if wpt['tawNumber'] == 1:
-                #print('Sono in launch')
-                wpt['tawType'] = 'launch'
-                tas['tasDate'] = get_datetime(w.get('open')).date()
-                tas['tasTaskStart'] = get_datetime(w.get('open'))
-                if 'free distance' in tas['tasTaskType']:
-                    #print('Sono in launch - free')
+            turnpoint = Turnpoint(float(w.get('lat')), float(w.get('lon')), int(w.get('radius')))
+            turnpoint.id = len(turnpoints) + 1
+            turnpoint.name = w.get('id')
+            turnpoint.altitude = int(w.get('altitude'))
+            print(f"    {turnpoint.id}  {turnpoint.name}  {turnpoint.radius}")
+            if turnpoint.id == 1:
+                turnpoint.type = 'launch'
+                task.date = get_date(w.get('open'))
+                task.window_open_time = time_to_seconds(get_time(w.get('open')))
+                task.window_close_time = time_to_seconds(get_time(w.get('close')))
+                # sanity
+                if task.window_close_time <= task.window_open_time:
+                    task.window_close_time = None
+                if 'free distance' in task.task_type:
+                    # print('Sono in launch - free')
                     '''get start and close time for free distance task types'''
-                    tas['tasStartTime'] = get_datetime(w.get('open'))
-                    tas['tasStartCloseTime'] = get_datetime(w.get('close'))
-                    tas['tasFinishTime'] = get_datetime(w.get('close'))
-            elif wpt['tawNumber'] == sswpt:
-                #print('Sono in ss')
-                wpt['tawType'] = 'speed'
-                tas['tasStartCloseTime'] = get_datetime(w.get('close'))
-                if 'elapsed time' in tas['tasTaskType']:
+                    task.start_time = time_to_seconds(get_time(w.get('open')))
+                    task.start_close_time = time_to_seconds(get_time(w.get('close')))
+                    # task.task_deadline = get_datetime(w.get('close'))
+            elif turnpoint.id == sswpt:
+                # print('Sono in ss')
+                turnpoint.type = 'speed'
+                task.start_close_time = time_to_seconds(get_time(w.get('close')))
+                if 'elapsed time' in task.task_type:
                     '''get start for elapsed time task types'''
-                    tas['tasStartTime'] = get_datetime(w.get('open'))
-            elif wpt['tawNumber'] == eswpt:
-                #print('Sono in es')
-                wpt['tawType'] = 'endspeed'
-                tas['tasFinishTime'] = get_datetime(w.get('close'))
-            elif wpt['tawNumber'] == len(node) - startgates - headingpoint: # need to remove FsStartGate and FsHeadingpoint nodes from count
-                #print('Sono in goal')
-                wpt['tawType'] = 'goal'
+                    task.start_time = time_to_seconds(get_time(w.get('open')))
+            elif turnpoint.id == eswpt:
+                # print('Sono in es')
+                turnpoint.type = 'endspeed'
+                task.task_deadline = time_to_seconds(get_time(w.get('close')))
+            elif turnpoint.id == len(
+                    node) - startgates - headingpoint:  # need to remove FsStartGate and FsHeadingpoint nodes from count
+                # print('Sono in goal')
+                turnpoint.type = 'goal'
                 if gtype == 'LINE':
-                    wpt['tawShape'] = 'line'
-            else:
-                wpt['tawType'] = 'waypoint'
+                    turnpoint.shape = 'line'
+            # else:
+            #     wpt['tawType'] = 'waypoint'
 
-            turnpoint = Turnpoint(wpt['rwpLatDecimal'], wpt['rwpLonDecimal'], wpt['tawRadius'], wpt['tawType'], wpt['tawShape'], 'entry')
-            turnpoint.name = wpt['rwpName']
-            turnpoint.id = wpt['tawNumber']
-            turnpoint.altitude = wpt['rwpAltitude']
             turnpoints.append(turnpoint)
 
-        #tas['route'] = route
-        task = cls(turnpoints, tas['tasStartTime'], tas['tasFinishTime'], tas['tasTaskType'], tas['tasStoppedTime'])
-        task.task_name = tas['tasName']
-        task.window_open_time = tas['tasTaskStart']
-        task.start_close_time = tas['tasStartCloseTime']
-        task.opt_dist = tas['tasShortRouteDistance'] * 1000 # in meters
-        task.SS_distance = tas['tasSSDistance'] * 1000 # in meters
-        task.arrival = tas['tasArrival']
-        task.departure = tas['tasDeparture']
-        task.arr_alt_bonus = tas['tasHeightBonus']
-        task.comment = tas['tasComment']
+        # tas['route'] = route
+        task.formula = formula
+        task.turnpoints = turnpoints
         task.calculate_task_length()
-        #print ("Tot. Dist.: {}".format(task.distance))
+        # print ("Tot. Dist.: {}".format(task.distance))
         task.stats = stats
-        task.optimised_legs = optimised_legs
-        #task.results = results
-        #print ("{} - date: {} - type: {} - dist.: {} - opt. dist.: {}".format(task.task_name, task.window_open_time.date(), task.task_type, task.distance, task.opt_dist))
-        #print ("open: {} - start: {} - close: {} - end: {} \n".format(task.window_open_time, task.start_time, task.start_close_time, task.task_deadline))
+        task.partial_distance = optimised_legs
+        # task.results = results
+        # print ("{} - date: {} - type: {} - dist.: {} - opt. dist.: {}".format(task.task_name, task.window_open_time.date(), task.task_type, task.distance, task.opt_dist))
+        # print ("open: {} - start: {} - close: {} - end: {} \n".format(task.window_open_time, task.start_time, task.start_close_time, task.task_deadline))
 
         return task
 
@@ -980,14 +1289,14 @@ class Task(object):
             leg_dist = distance(self.turnpoints[wpt - 1], self.turnpoints[wpt], method)
             self.legs.append(leg_dist)
             self.distance += leg_dist
-            #print ("leg dist.: {} - Dist.: {}".format(leg_dist, self.distance))
+            # print ("leg dist.: {} - Dist.: {}".format(leg_dist, self.distance))
 
     def calculate_optimised_task_length_old(self, method="fast_andoyer"):
 
         it1 = []
         it2 = []
         wpts = self.turnpoints
-        self.opt_dist = 0  #reset in case of recalc.
+        self.opt_dist = 0  # reset in case of recalc.
 
         closearr = []
         num = len(wpts)
@@ -1052,9 +1361,9 @@ class Task(object):
         ess_wpt = 0
         for wpt in range(len(self.turnpoints)):
             if self.turnpoints[wpt].type == 'speed':
-                sss_wpt = wpt+1
+                sss_wpt = wpt + 1
             if self.turnpoints[wpt].type == 'endspeed':
-                ess_wpt = wpt+1
+                ess_wpt = wpt + 1
 
         # work out self.opt_dist_to_SS, self.opt_dist_to_ESS, self.SS_distance
         self.opt_dist_to_SS = sum(self.optimised_legs[0:sss_wpt])
@@ -1066,7 +1375,7 @@ class Task(object):
         from geographiclib.geodesic import Geodesic
         geod = Geodesic.WGS84
         wpts = self.turnpoints
-        self.opt_dist = 0  #reset in case of recalc.
+        self.opt_dist = 0  # reset in case of recalc.
 
         closearr = []
         num = len(wpts)
@@ -1121,10 +1430,10 @@ class Task(object):
                 t += 1
                 enter_different = True
 
-            #print(f'{t} of{len(self.turnpoints)}')
+            # print(f'{t} of{len(self.turnpoints)}')
             t2 = self.turnpoints[t + 1]
 
-            if t + 2 > len(self.turnpoints)-1:
+            if t + 2 > len(self.turnpoints) - 1:
                 t3 = None
             else:
                 t3 = self.turnpoints[t + 2]
@@ -1134,14 +1443,16 @@ class Task(object):
             if exit_same:
                 p = geod.Direct(t1.lat, t1.lon, calcBearing(t1.lat, t1.lon, opt.lat, opt.lon),
                                 self.turnpoints[t].radius)
-                opt_exit = Turnpoint(lat=p['lat2'], lon=p['lon2'], type='optimised', radius=0, shape='optimised', how='optimised')
+                opt_exit = Turnpoint(lat=p['lat2'], lon=p['lon2'], type='optimised', radius=0, shape='optimised',
+                                     how='optimised')
                 optimised.append(opt_exit)
             if exit_different:
                 opt_exit = opt_wp_exit(opt, t1, self.turnpoints[t])
                 optimised.append(opt_exit)
             if enter_same:
                 p = geod.Direct(t2.lat, t2.lon, calcBearing(t2.lat, t2.lon, t1.lat, t1.lon), self.turnpoints[t].radius)
-                opt_enter = Turnpoint(lat=p['lat2'], lon=p['lon2'], type='optimised', radius=0, shape='optimised', how='optimised')
+                opt_enter = Turnpoint(lat=p['lat2'], lon=p['lon2'], type='optimised', radius=0, shape='optimised',
+                                      how='optimised')
                 optimised.append(opt_enter)
             if enter_different:
                 opt_enter = opt_wp_enter(opt, t2, self.turnpoints[t + 1])
@@ -1172,9 +1483,9 @@ class Task(object):
         ess_wpt = 0
         for wpt in range(len(self.turnpoints)):
             if self.turnpoints[wpt].type == 'speed':
-                sss_wpt = wpt+1
+                sss_wpt = wpt + 1
             if self.turnpoints[wpt].type == 'endspeed':
-                ess_wpt = wpt+1
+                ess_wpt = wpt + 1
 
         # work out self.opt_dist_to_SS, self.opt_dist_to_ESS, self.SS_distance
         self.opt_dist_to_SS = sum(self.optimised_legs[0:sss_wpt])
@@ -1183,10 +1494,10 @@ class Task(object):
         self.optimised_turnpoints = optimised
 
     def calculate_optimised_task_length(self, method="fast_andoyer"):
-        ''' new optimized route procedure that uses John Stevenson on FAI Basecamp.
+        """ new optimized route procedure that uses John Stevenson on FAI Basecamp.
             trasforms wgs84 to plan trasverse cartesian projection, calculates
             optimised fix on cylinders, and goes back to wgs84 for distance calculations.
-        '''
+        """
         from route import get_shortest_path
 
         '''check we have at least 3 points'''
@@ -1202,7 +1513,7 @@ class Task(object):
         self.partial_distance.append(0)
         self.opt_dist = 0
         for i in range(1, len(optimised)):
-            leg_dist = distance(optimised[i-1], optimised[i], method)
+            leg_dist = distance(optimised[i - 1], optimised[i], method)
             self.optimised_legs.append(leg_dist)
             self.opt_dist += leg_dist
             self.partial_distance.append(self.opt_dist)
@@ -1212,9 +1523,9 @@ class Task(object):
         ess_wpt = 0
         for wpt in range(len(self.turnpoints)):
             if self.turnpoints[wpt].type == 'speed':
-                sss_wpt = wpt+1
+                sss_wpt = wpt + 1
             if self.turnpoints[wpt].type == 'endspeed':
-                ess_wpt = wpt+1
+                ess_wpt = wpt + 1
 
         # work out self.opt_dist_to_SS, self.opt_dist_to_ESS, self.SS_distance
         self.opt_dist_to_SS = sum(self.optimised_legs[0:sss_wpt])
@@ -1242,7 +1553,7 @@ class Task(object):
             for idx, wp in enumerate(self.turnpoints):
                 wpNum = idx + 1
                 wpt = W(tasPk=self.id, rwpPk=wp.rwpPk, tawNumber=wpNum, tawType=wp.type,
-                        tawHow=wp.how, tawShape=wp.shape,tawTime=0, tawRadius=wp.radius)
+                        tawHow=wp.how, tawShape=wp.shape, tawTime=0, tawRadius=wp.radius)
                 db.session.add(wpt)
                 id = db.session.commit()
                 self.turnpoints[idx].id = id
@@ -1259,13 +1570,14 @@ class Task(object):
             t -= 1
         return distance_to_go
 
+
 # function to parse task object to compilations
 
 
 def get_map_json(task_id):
     """gets task map json file if it exists, otherwise creates it. returns 5 separate objects for mapping"""
 
-    task_file = Path(Defines.MAPOBJDIR+'tasks/'+str(task_id) + '.task')
+    task_file = Path(Defines.MAPOBJDIR + 'tasks/' + str(task_id) + '.task')
     if not task_file.is_file():
         write_map_json(task_id)
 
@@ -1287,7 +1599,7 @@ def write_map_json(task_id):
     from mapUtils import get_route_bbox
 
     geod = Geodesic.WGS84
-    task_file = Path(Defines.MAPOBJDIR+'tasks/'+str(task_id) + '.task')
+    task_file = Path(Defines.MAPOBJDIR + 'tasks/' + str(task_id) + '.task')
 
     if not os.path.isdir(Defines.MAPOBJDIR + 'tasks/'):
         os.makedirs(Defines.MAPOBJDIR + 'tasks/')
@@ -1331,6 +1643,7 @@ def write_map_json(task_id):
         f.write(jsonpickle.dumps({'task_coords': task_coords, 'turnpoints': turnpoints, 'short_route': short_route,
                                   'goal_line': goal_line, 'tolerance': tolerance, 'bbox': get_route_bbox(task)}))
 
+
 def get_task_json_filename(task_id):
     """returns active json result file"""
     from db_tables import tblResultFile as R
@@ -1338,13 +1651,14 @@ def get_task_json_filename(task_id):
 
     with Database() as db:
         filename = db.session.query(R.refJSON.label('file')).filter(and_(
-                              R.tasPk==task_id, R.refVisible==1
-                              )).scalar()
+            R.tasPk == task_id, R.refVisible == 1
+        )).scalar()
     return filename
+
 
 def get_task_json(task_id):
     filename = get_task_json_filename(task_id)
-    with open(Defines.RESULTDIR+filename, 'r') as myfile:
+    with open(Defines.RESULTDIR + filename, 'r') as myfile:
         data = myfile.read()
     if not data:
         return "error"

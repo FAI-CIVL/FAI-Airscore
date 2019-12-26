@@ -12,11 +12,12 @@ import requests
 import xml.etree.ElementTree as ET
 from participant import Participant
 
-url="http://civlrankings.fai.org/FL.asmx"
+url = "http://civlrankings.fai.org/FL.asmx"
 headers = {'content-type': 'text/xml'}
 
-def create_partecipant_from_CIVLID(civl_id):
-    '''get pilot info from CIVL database and create Participant obj'''
+
+def create_participant_from_CIVLID(civl_id):
+    """get pilot info from CIVL database and create Participant obj"""
 
     body = f"""<?xml version='1.0' encoding='utf-8'?>
                 <soap12:Envelope xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:soap12='http://www.w3.org/2003/05/soap-envelope'>
@@ -26,7 +27,7 @@ def create_partecipant_from_CIVLID(civl_id):
                         </GetPilot>
                     </soap12:Body>
                 </soap12:Envelope>"""
-    response = requests.post(url,data=body,headers=headers)
+    response = requests.post(url, data=body, headers=headers)
     # print(response.content)
     root = ET.fromstring(response.content)
     data = root.find('.//{http://civlrankings.fai.org/}GetPilotResponse')
@@ -35,18 +36,19 @@ def create_partecipant_from_CIVLID(civl_id):
         return None
     result = data.findall('{http://civlrankings.fai.org/}GetPilotResult//')
     pilot = Participant(civl_id=civl_id)
-    pilot.name  = result[0].text
-    pilot.nat   = result[1].text
-    pilot.sex   = 'F' if result[6].text == 'true' else 'M'
-    pilot.team  = result[7].text
-    pilot.glider  = result[8].text
+    pilot.name = result[0].text
+    pilot.nat = result[1].text
+    pilot.sex = 'F' if result[6].text == 'true' else 'M'
+    pilot.team = result[7].text
+    pilot.glider = result[8].text
     return pilot
 
-def create_partecipant_from_name(name):
-    '''get pilot info from pilot name database and create Participant obj
+
+def create_participant_from_name(name):
+    """get pilot info from pilot name database and create Participant obj
         It's almost sure that we get more than one result.
         This function gives back a Participant ONLY if we get a single result.
-        get_pilots_from_name gives a list of Dict'''
+        get_pilots_from_name gives a list of Dict"""
 
     body = f"""<?xml version="1.0" encoding="utf-8"?>
                 <soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
@@ -56,7 +58,7 @@ def create_partecipant_from_name(name):
                     </FindPilot>
                   </soap12:Body>
                 </soap12:Envelope>"""
-    response = requests.post(url,data=body,headers=headers)
+    response = requests.post(url, data=body, headers=headers)
     # print(response.content)
     root = ET.fromstring(response.content)
     data = root.find('.//{http://civlrankings.fai.org/}FindPilotResponse')
@@ -66,16 +68,17 @@ def create_partecipant_from_name(name):
 
     result = data.findall('{http://civlrankings.fai.org/}FindPilotResult//')
     pilot = Participant()
-    pilot.name  = result[1].text
-    pilot.nat   = result[2].text
+    pilot.name = result[1].text
+    pilot.nat = result[2].text
     pilot.civl_id = int(result[6].text)
-    pilot.sex   = 'F' if result[7].text == 'true' else 'M'
-    pilot.team  = result[8].text
-    pilot.glider  = result[9].text
+    pilot.sex = 'F' if result[7].text == 'true' else 'M'
+    pilot.team = result[8].text
+    pilot.glider = result[9].text
     return pilot
 
+
 def get_pilots_from_name(name):
-    '''get a list of Dict, for pilots in CIVL database with similar name'''
+    """get a list of Dict, for pilots in CIVL database with similar name"""
 
     body = f"""<?xml version="1.0" encoding="utf-8"?>
                 <soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">
@@ -85,7 +88,7 @@ def get_pilots_from_name(name):
                     </FindPilot>
                   </soap12:Body>
                 </soap12:Envelope>"""
-    response = requests.post(url,data=body,headers=headers)
+    response = requests.post(url, data=body, headers=headers)
     # print(response.content)
     root = ET.fromstring(response.content)
     data = root.find('.//{http://civlrankings.fai.org/}FindPilotResponse')
@@ -96,6 +99,7 @@ def get_pilots_from_name(name):
     results = data.findall('.//{http://civlrankings.fai.org/}Person')
     pilots = []
     for p in results:
-        pil = {'name': p[0].text, 'civl_id': int(p[5].text), 'nat': p[1].text, 'sex': 'F' if p[6].text=='true' else 'M'}
+        pil = {'name': p[0].text, 'civl_id': int(p[5].text), 'nat': p[1].text,
+               'sex': 'F' if p[6].text == 'true' else 'M'}
         pilots.append(pil)
     return pilots

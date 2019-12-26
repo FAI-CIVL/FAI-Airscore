@@ -11,8 +11,7 @@ from trackUtils import *
 from track import Track
 from tempfile import TemporaryDirectory
 from shutil import copyfile
-from formula import Tas_formula, get_formula_lib
-from trackDB import read_formula
+from formula import Task_formula, get_formula_lib
 
 import io, os, sys
 from os import path
@@ -56,7 +55,7 @@ def main(args):
 
         if get_pil_track(par_id, task_id):
             """pilot has already been scored"""
-            print(f"Pilot with ID {pil_id} has already a valid track for task with ID {task_id} \n")
+            print(f"Pilot with ID {par_id} has already a valid track for task with ID {task_id} \n")
         else:
             """Get Task object"""
             task = Task.read(task_id)
@@ -66,7 +65,7 @@ def main(args):
 
             if task.comp_id > 0:
                 """import track"""
-                mytrack = Track.read_file(filename=file, pilot_id=pil_id)
+                mytrack = Track.read_file(filename=file, pilot_id=par_id)
                 """check result"""
                 if not mytrack:
                     print(f"Track {filename} is not a valid track file \n")
@@ -90,12 +89,13 @@ def main(args):
                     out = (f"traPk={mytrack.traPk}")
 
             else:
-                print(f"error: task ID {tasPk} does NOT belong to any Competition \n")
+                print(f"error: task ID {task_id} does NOT belong to any Competition \n")
 
     ''' now restore stdout function '''
     Logger('OFF')
 
-    print (f"{out})
+    print(f"{out}")
+
 
 if __name__ == "__main__":
     import sys

@@ -12,31 +12,40 @@ from sqlalchemy.orm import sessionmaker, class_mapper
 import Defines as d
 
 '''basic connection'''
-user    = d.MYSQLUSER
-passwd  = d.MYSQLPASSWORD
-host    = d.MYSQLHOST
-dbase   = d.DATABASE
+user = d.MYSQLUSER
+passwd = d.MYSQLPASSWORD
+host = d.MYSQLHOST
+dbase = d.DATABASE
 
-connectionString    = f'mysql+pymysql://{user}:{passwd}@{host}/{dbase}?charset=utf8mb4'
-engine              = create_engine(connectionString)
-Session             = sessionmaker(bind=engine)
-Base                = declarative_base()
-metadata            = Base.metadata
+connectionString = f'mysql+pymysql://{user}:{passwd}@{host}/{dbase}?charset=utf8mb4'
+engine = create_engine(connectionString)
+Session = sessionmaker(bind=engine)
+Base = declarative_base()
+metadata = Base.metadata
+
 
 class Database(object):
     def __str__(self):
         return "SQLAlchemy DB Connection Object"
 
-    def __init__(self, Session=Session):
-        self.Base       = Base
-        self._session   = Session()
+    def __init__(self, session=None):
+        self.Base = Base
+        if session is None:
+            self._session = Session()
+            self._ext = False
+        else:
+            self._ext = True
+            self._session = session
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self._session.commit()
-        self._session.close()
+        if self._ext:
+            self._session.flush()
+        else:
+            self._session.commit()
+            self._session.close()
 
     @property
     def session(self):
@@ -47,26 +56,29 @@ class Database(object):
         return self._session.commit()
 
     def populate_obj(self, obj, result):
-        ''' Associate query result with class object attributes, using same name
+        """ Associate query result with class object attributes, using same name
             Input:
                 obj     - OBJ: object with attributes to populate with query result
-                result  - OBJ: query result (should be one row)'''
+                result  - OBJ: query result (should be one row)"""
 
         '''check if result has one row'''
-        if type(result) == list: result = result[0]
+        if type(result) == list:
+            result = result[0]
         for x in obj.__dict__.keys():
-            if hasattr(result,x): setattr(obj, x, getattr(result,x))
+            if hasattr(result, x):
+                setattr(obj, x, getattr(result, x))
 
     def as_dict(self, obj):
-        ''' as we have still a lot of procedures written for dicts created from
+        """ as we have still a lot of procedures written for dicts created from
             old MySQL queries
             Returns a dict if obj is a single row, or a list of dicts if obj is a list
-        '''
+        """
         from sqlalchemy import inspect
         if type(obj) is list:
             return [object_to_dict(el) for el in obj]
         else:
             return object_to_dict(obj)
+
 
 def get_row(row):
     from collections import OrderedDict
@@ -78,10 +90,12 @@ def get_row(row):
             result[key] = getattr(row, key)
     return result
 
+
 def get_row_2(row):
     from sqlalchemy import inspect
     return {c.key: getattr(row, c.key)
-             for c in inspect(row).mapper.column_attrs}
+            for c in inspect(row).mapper.column_attrs}
+
 
 def model_to_dict(obj, visited_children=None, back_relationships=None):
     from sqlalchemy.orm import class_mapper
@@ -107,6 +121,7 @@ def model_to_dict(obj, visited_children=None, back_relationships=None):
                 serialized_data[name] = model_to_dict(relationship_children, visited_children, back_relationships)
     return serialized_data
 
+
 def object_to_dict(obj, found=None):
     from datetime import datetime
     from sqlalchemy.orm import class_mapper
@@ -114,7 +129,8 @@ def object_to_dict(obj, found=None):
         found = set()
     mapper = class_mapper(obj.__class__)
     columns = [column.key for column in mapper.columns]
-    get_key_value = lambda c: (c, getattr(obj, c).isoformat()) if isinstance(getattr(obj, c), datetime) else (c, getattr(obj, c))
+    get_key_value = lambda c: (c, getattr(obj, c).isoformat()) if isinstance(getattr(obj, c), datetime) else (
+        c, getattr(obj, c))
     out = dict(map(get_key_value, columns))
     for name, relation in mapper.relationships.items():
         if relation not in found:
