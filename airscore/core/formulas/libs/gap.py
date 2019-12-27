@@ -12,12 +12,7 @@ Stuart Mackintosh - 2019
 TO DO:
 Add support for FAI Sphere ???
 """
-
-from collections import namedtuple
 from myconn import Database
-
-parameters = namedtuple('formula',
-                        'allow_jump_the_gun, stopped_elapsed_calc, coeff_func, coeff_func_scaled, coef_landout')
 
 
 def coef2(task_time, best_dist_to_ess, new_dist_to_ess):
@@ -48,14 +43,6 @@ def store_LC(res_id, lead_coeff):
         db.session.commit()
 
 
-parameters.allow_jump_the_gun = False
-parameters.max_jump_the_gun = 0  # seconds
-parameters.stopped_elapsed_calc = 'shortest_time'
-parameters.coef_func = coef2
-parameters.coef_func_scaled = coef_scaled
-parameters.coef_landout = coef_landout
-
-
 def lc_calc(res, t):
     LC = 0
     leading = 0
@@ -77,22 +64,22 @@ def lc_calc(res, t):
 
         '''add the leading part, from start time of first pilot to start, to my start time'''
         if my_start > first_start:
-            leading = parameters.coef_landout((my_start - first_start), SS_distance)
-            leading = parameters.coef_func_scaled(leading, SS_distance)
+            leading = coef_landout((my_start - first_start), SS_distance)
+            leading = coef_scaled(leading, SS_distance)
         if not res.ESS_time:
             '''pilot did not make ESS'''
             best_dist_to_ess = (t.opt_dist_to_ESS - res.distance)
             task_time = task_deadline - my_start
-            trailing = parameters.coef_landout(task_time, best_dist_to_ess)
-            trailing = parameters.coef_func_scaled(trailing, SS_distance)
+            trailing = coef_landout(task_time, best_dist_to_ess)
+            trailing = coef_scaled(trailing, SS_distance)
 
         LC = leading + res.fixed_LC + trailing
 
     else:
         '''pilot didn't make SS or has an assigned status without a track'''
         task_time = task_deadline - first_start
-        LC = parameters.coef_landout(task_time, SS_distance)
-        LC = parameters.coef_func_scaled(LC, SS_distance)
+        LC = coef_landout(task_time, SS_distance)
+        LC = coef_scaled(LC, SS_distance)
 
     return LC
 
@@ -311,13 +298,13 @@ def points_weight(task):
     '''
 
     ''' Distance Weight'''
-    if task.formula.formula_distance is not 'off':
+    if task.formula.formula_distance != 'off':
         task.dist_weight = 0.9 - 1.665 * goal_ratio + 1.713 * goal_ratio ** 2 - 0.587 * goal_ratio ** 3
     else:
         task.dist_weight = 0
 
     ''' Arrival Weight'''
-    if task.formula.formula_arrival is not 'off':
+    if task.formula.formula_arrival != 'off':
         task.arr_weight = (1 - task.dist_weight) / 8
         if task.formula.formula_arrival == 'time':
             task.arr_weight *= 2    # (1 - dist_weight) / 4
@@ -325,7 +312,7 @@ def points_weight(task):
         task.arr_weight = 0
 
     ''' Departure Weight'''
-    if task.formula.formula_departure is not 'off':
+    if task.formula.formula_departure != 'off':
         task.dep_weight = (1 - task.dist_weight) / 8 * 1.4 * formula.lead_factor
         if comp_class == 'PG' and goal_ratio == 0:
             task.dep_weight = task.max_distance / task.opt_dist * 0.1
@@ -416,8 +403,7 @@ def pilot_speed(task, res):
     """
     from math import sqrt
 
-    stats = task.stats
-    Aspeed = stats['avail_time_points']
+    Aspeed = task.avail_time_points
 
     # C.6.2 Time Points
     Tmin = task.fastest
@@ -478,10 +464,12 @@ def pilot_distance(task, pil):
     if pil.goal_time:
         return Adistance
 
-    if task.comp_class == 'PG':
+    if task.formula.formula_distance == 'on':
+        # PG Default
         Pdist = Adistance * pil.distance / maxdist
 
-    elif task.comp_class == 'HG':
+    elif task.formula.formula_distance == 'difficulty':
+        # HG Default
         ''' One half of the available distance points are assigned to each pilot
             linearly, based on the pilot’s distance flown in relation to the best
             distance flown in the task.
@@ -541,7 +529,7 @@ def points_allocation(task):
     points_weight(task)
     # task.max_score = 0      # max_score is evaluated without penalties. Is it correct?
 
-    if task.comp_class == 'HG':
+    if task.formula.formula_distance == 'difficulty':
         '''Difficulty Calculation'''
         task.difficulty = difficulty_calculation(task, results)
 

@@ -9,30 +9,57 @@ Antonio Golfari - 2019
 # Use your utility module.
 from myconn import Database
 from collections import namedtuple
+from dataclasses import dataclass, asdict, fields
 
 
-def get_formula_lib(type):
+def get_formula_lib(formula_type, formula_version):
     import importlib
-    # from trackDB import read_formula
-
-    lib = None
-
     '''get formula library to use in scoring'''
     # formula = read_formula(comp_id)
-    formula_file = 'formulas.' + type
+    formula_file = 'formulas.' + formula_type + str(formula_version)
     try:
         lib = importlib.import_module(formula_file, package=None)
         return lib
     except:
-        print('formula file {} not found.'.format(formula_file))
+        print(f'formula file {formula_file} not found.')
         exit()
 
 
-Preset = namedtuple('preset', 'formula_name, formula_type, formula_version, comp_class, formula_distance, '
-                              'formula_arrival, formula_departure, lead_factor, formula_time, arr_alt_bonus, '
-                              'arr_min_height, arr_max_height, validity_min_time, jump_the_gun, '
-                              'max_JTG, JTG_penalty_per_sec, overall_validity, validity_param, score_back_time '
-                              'no_goal_penalty, glide_bonus, tolerance, scoring_altitude')
+@dataclass(frozen=True)
+class Preset:
+    value: any
+    visible: bool = True
+    editable: bool = False
+
+
+@dataclass(frozen=True)
+class FormulaPreset:
+    formula_name: Preset
+    formula_type: Preset
+    formula_version: Preset
+    formula_distance: Preset
+    formula_arrival: Preset
+    formula_departure: Preset
+    lead_factor: Preset
+    formula_time: Preset
+    arr_alt_bonus: Preset
+    arr_min_height: Preset
+    arr_max_height: Preset
+    validity_min_time: Preset
+    jump_the_gun: Preset
+    max_JTG: Preset
+    JTG_penalty_per_sec: Preset
+    overall_validity: Preset
+    validity_param: Preset
+    score_back_time: Preset
+    no_goal_penalty: Preset
+    glide_bonus: Preset
+    tolerance: Preset
+    scoring_altitude: Preset
+
+    def as_formula(self):
+        """ gets presets' value"""
+        return {x.name: getattr(self, x.name).value for x in fields(self)}
 
 
 class Formula(object):
@@ -131,6 +158,19 @@ class Formula(object):
             except SQLAlchemyError:
                 print(f'Read formula from db Error: {SQLAlchemyError.code}')
         return formula
+
+    @staticmethod
+    def from_preset(comp_class, formula_name):
+        """ Create Formula obj. from preset values in formula script"""
+        import importlib
+        preset = None
+        lib_name = 'formulas.' + formula_name.lower()
+        lib = importlib.import_module(lib_name)
+        if comp_class in ('PG', 'mixed'):
+            preset = lib.pg_preset
+        elif comp_class == 'HG':
+            preset = lib.hg_preset
+        return Formula(**preset.as_formula())
 
     @staticmethod
     def from_fsdb(fs_info, type='comp'):
@@ -377,9 +417,10 @@ class Task_formula(object):
 
         lib = None
         type = self.formula_type
+        version = str(self.formula_version)
 
         '''get formula library to use in scoring'''
-        formula_file = 'formulas.' + type
+        formula_file = 'formulas.' + type + version
         try:
             lib = importlib.import_module(formula_file, package=None)
             return lib

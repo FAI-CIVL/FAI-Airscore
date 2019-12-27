@@ -12,11 +12,11 @@ from formula import FormulaPreset, Preset
 
 ''' Formula Info'''
 # Formula Name: usually the filename in capital letters
-formula_name = 'PWC2016'
+formula_name = 'PWC2017'
 # Formula Type: pwc, gap, aat, any formula in libs folder
 formula_type = 'pwc'
 # Formula Version: INT, usually identified with year
-formula_version = '2016'
+formula_version = '2017'
 # Comp Class: PG, HG, BOTH
 formula_class = 'PG'
 
@@ -71,3 +71,83 @@ pg_preset = FormulaPreset(
     # Scoring Altitude Type: default is GPS for PG and QNH for HG
     scoring_altitude=Preset(value='GPS', visible=True, editable=True)
 )
+
+
+def points_weight(task):
+
+    comp_class = task.comp_class  # HG / PG
+    formula = task.formula
+    quality = task.day_quality
+
+    if not task.pilots_launched:  # sanity
+        return 0, 0, 0, 0
+
+    '''Goal Ratio'''
+    goal_ratio = task.pilots_goal / task.pilots_launched
+
+    '''
+    DistWeight:         0.9 - 1.665* goalRatio + 1.713*GolalRatio^2 - 0.587*goalRatio^3
+    LeadWeight:         (1 - DistWeight)/8 * 1.4
+    ArrWeight:          0
+    TimeWeight:         1 − DistWeight − LeadWeight
+    '''
+    task.dist_weight = 0.9 - 1.665 * goal_ratio + 1.713 * goal_ratio ** 2 - 0.587 * goal_ratio ** 3
+    task.dep_weight = (1 - task.dist_weight) / 8 * 1.4
+    task.time_weight = 1 - task.dist_weight - task.dep_weight
+    task.arr_weight = 0
+
+    task.avail_dist_points = 1000 * quality * task.dist_weight  # AvailDistPoints
+    ''' PWC 2017: LeadPoints augmented by 50'''
+    task.avail_dep_points = 1000 * quality * task.dep_weight  # AvailLeadPoints
+    task.avail_dep_points += 50  # PWC2017 Augmented LeadPoints
+
+    task.avail_arr_points = 0  # AvailArrPoints
+    task.avail_time_points = 1000 * quality - task.avail_dep_points - task.avail_dist_points  # AvailSpeedPoints
+
+
+def points_allocation(task):
+    """ Get task with pilots Flight_result obj. and calculates results"""
+
+    ''' Get pilots not ABS or DNF '''
+    results = task.valid_results
+    formula = task.formula
+
+    ''' Get basic GAP allocation values'''
+    # dist_validity, time_validity, launch_validity, stop_validity, day_quality
+    day_quality(task)
+    # avail_dist_points, avail_time_points, avail_dep_points, avail_arr_points
+    points_weight(task)
+    # task.max_score = 0      # max_score is evaluated without penalties. Is it correct?
+
+    ''' Score each pilot now'''
+    for res in results:
+        penalty = res.penalty if res.penalty else 0
+
+        '''initialize'''
+        res.distance_score = 0
+        res.time_score = 0
+        res.arrival_score = 0
+        res.departure_score = 0
+
+        '''Pilot distance score'''
+        res.distance_score = pilot_distance(task, res)
+
+        ''' Pilot leading points'''
+        if task.departure == 'leadout' and res.result_type != 'mindist' and res.SSS_time:
+            res.departure_score = pilot_leadout(task, res)
+
+        if res.ESS_time > 0:
+            ''' Pilot speed points'''
+            res.time_score = pilot_speed(task, res)
+
+            ''' Penalty for not making goal'''
+            if not res.goal_time:
+                res.goal_time = 0
+                res.time_score *= (1 - formula.no_goal_penalty)
+
+        ''' Total score'''
+        res.score = res.distance_score + res.time_score + res.arrival_score + res.departure_score
+
+        ''' Apply Penalty'''
+        if penalty:
+            res.score = max(0, res.score - penalty)
