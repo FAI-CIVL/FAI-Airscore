@@ -97,7 +97,7 @@ class Task_result:
                   'min_dept_time',
                   'min_ess_time',
                   'max_distance',
-                  'tot_dist_flown',
+                  'tot_distance_flown',
                   'tot_dist_over_min',
                   'day_quality',
                   'dist_validity',
@@ -139,10 +139,10 @@ class Task_result:
                     'ESS_time',
                     'ESS_rank',
                     'turnpoints_made',
-                    'dist_points',
-                    'time_points',
-                    'dep_points',
-                    'arr_points',
+                    'distance_score',
+                    'time_score',
+                    'departure_score',
+                    'arrival_score',
                     'score',
                     'penalty',
                     'comment',
@@ -196,8 +196,8 @@ class Comp_result(object):
                     'arr_max_height',  # int
                     'validity_min_time',  # seconds
                     'score_back_time',  # seconds
-                    'jump_the_gun',
-                    'max_JTG',
+                    'jump_the_gun',     # True or False
+                    'max_JTG',      # seconds
                     'JTG_penalty_per_sec',
                     'nominal_goal',  # percentage / 100
                     'nominal_dist',  # meters
@@ -205,7 +205,7 @@ class Comp_result(object):
                     'nominal_launch',  # percentage / 100
                     'min_dist',  # meters
                     'score_back_time',  # seconds
-                    'no_goal_penalty',
+                    'no_goal_penalty',  # percentage / 100
                     'glide_bonus',
                     'tolerance',  # percentage / 100
                     'scoring_altitude',  # 'GPS', 'QNH'

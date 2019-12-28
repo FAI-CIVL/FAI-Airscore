@@ -18,7 +18,7 @@ host = d.MYSQLHOST
 dbase = d.DATABASE
 
 connectionString = f'mysql+pymysql://{user}:{passwd}@{host}/{dbase}?charset=utf8mb4'
-engine = create_engine(connectionString)
+engine = create_engine(connectionString, pool_pre_ping=True)       # pool_pre_ping could be deleted if MySQL is stable
 Session = sessionmaker(bind=engine)
 Base = declarative_base()
 metadata = Base.metadata

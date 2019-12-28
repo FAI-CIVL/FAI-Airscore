@@ -15,7 +15,7 @@ Add support for FAI Sphere ???
 from myconn import Database
 
 
-def coef2(task_time, best_dist_to_ess, new_dist_to_ess):
+def coef_func(task_time, best_dist_to_ess, new_dist_to_ess):
     best_dist_to_ess = best_dist_to_ess / 1000  # we use Km
     new_dist_to_ess = new_dist_to_ess / 1000  # we use Km
     return task_time * (best_dist_to_ess ** 2 - new_dist_to_ess ** 2)
@@ -330,12 +330,12 @@ def pilot_distance(task, pil):
 def process_results(task):
     formula = task.formula
 
-    ''' get pilots non ABS or DNF'''
-    results = task.valid_results
+    ''' get pilot.result non ABS or DNF, ordered by ESS time'''
+    results = sorted(task.valid_results, key=lambda i: (float('inf') if not i.ESS_time else i.ESS_time))
     if len(results) == 0:
         return None
 
-    for res in results:
+    for idx, res in enumerate(results, 1):
         '''Handle Stopped Task'''
         if task.stopped_time and res.last_altitude > task.goal_altitude and formula.glide_bonus > 0:
             print("Stopped height bonus: ", (formula.glide_bonus * (res.last_altitude - task.goal_altitude)))
@@ -348,7 +348,10 @@ def process_results(task):
         res.total_distance = max(formula.min_dist, res.total_distance)
 
         if res.ESS_time:
+            ''' Time after first on ESS'''
             res.time_after = res.ESS_time - task.min_ess_time
+            ''' ESS arrival order'''
+            res.ESS_rank = idx
 
         '''
         Leadout Points Adjustment
@@ -388,7 +391,7 @@ def points_allocation(task):
         if task.departure == 'leadout' and res.result_type != 'mindist' and res.SSS_time:
             res.departure_score = pilot_leadout(task, res)
 
-        if res.ESS_time > 0:
+        if res.ESS_time:
             ''' Pilot speed points'''
             res.time_score = pilot_speed(task, res)
 

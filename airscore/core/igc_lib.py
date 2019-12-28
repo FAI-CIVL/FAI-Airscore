@@ -54,7 +54,7 @@ def _rawtime_float_to_hms(timef):
     time = int(round(timef))
     hms = collections.namedtuple('hms', ['hours', 'minutes', 'seconds'])
 
-    return hms((time/3600), (time % 3600)/60, time % 60)
+    return hms((time / 3600), (time % 3600) / 60, time % 60)
 
 
 class Turnpoint:
@@ -121,7 +121,7 @@ class Task:
 
         start_hours, start_minutes = start_time.split(':')
         start_time = int(start_hours) * 3600 + int(start_minutes) * 60
-        task_deadline = 23*3600 + 59*60 + 59  # default task_deadline of 23:59:59
+        task_deadline = 23 * 3600 + 59 * 60 + 59  # default task_deadline of 23:59:59
 
         # Create a dictionary of names and a list of longitudes and latitudes
         # as the waypoints co-ordinates are stored separate to turnpoint
@@ -140,7 +140,7 @@ class Task:
         for point in tpoints:
             lat = coords[point.getAttribute("name")][1]
             lon = coords[point.getAttribute("name")][0]
-            radius = float(point.getAttribute("radius"))/1000
+            radius = float(point.getAttribute("radius")) / 1000
 
             if point == tpoints[0]:
                 # It is the first turnpoint, the start
@@ -229,7 +229,7 @@ class Task:
                     t += 1
             else:
                 assert False, (
-                    "Unknown turnpoint kind: %s" % self.turnpoints[t].kind)
+                        "Unknown turnpoint kind: %s" % self.turnpoints[t].kind)
 
         return reached_turnpoints
 
@@ -282,7 +282,7 @@ class GNSSFix:
          validity, press_alt, gnss_alt,
          extras) = match.groups()
 
-        rawtime = (float(hours)*60.0 + float(minutes))*60.0 + float(seconds)
+        rawtime = (float(hours) * 60.0 + float(minutes)) * 60.0 + float(seconds)
 
         lat = float(lat_deg)
         lat += float(lat_min) / 60.0
@@ -323,7 +323,7 @@ class GNSSFix:
         elif self.flight.alt_source == "GNSS":
             self.alt = self.gnss_alt
         else:
-            assert(False)
+            assert False
         self.timestamp = self.rawtime + flight.date_timestamp
 
     def __repr__(self):
@@ -331,9 +331,9 @@ class GNSSFix:
 
     def __str__(self):
         return (
-            "GNSSFix(rawtime=%02d:%02d:%02d, lat=%f, lon=%f, altitide=%.1f)" %
-            (_rawtime_float_to_hms(self.rawtime) +
-             (self.lat, self.lon, self.alt)))
+                "GNSSFix(rawtime=%02d:%02d:%02d, lat=%f, lon=%f, altitude=%.1f)" %
+                (_rawtime_float_to_hms(self.rawtime) +
+                 (self.lat, self.lon, self.alt)))
 
     def bearing_to(self, other):
         """Computes bearing in degrees to another GNSSFix."""
@@ -356,7 +356,7 @@ class GNSSFix:
         else:
             lat = self.lat
             lat_sign = 'N'
-        lat = int(round(lat*60000.0))
+        lat = int(round(lat * 60000.0))
         lat_deg = lat / 60000
         lat_min = (lat % 60000) / 1000
         lat_min_dec = lat % 1000
@@ -367,7 +367,7 @@ class GNSSFix:
         else:
             lon = self.lon
             lon_sign = 'E'
-        lon = int(round(lon*60000.0))
+        lon = int(round(lon * 60000.0))
         lon_deg = lon / 60000
         lon_min = (lon % 60000) / 1000
         lon_min_dec = lon % 1000
@@ -378,13 +378,13 @@ class GNSSFix:
         extras = self.extras
 
         return (
-            "B" +
-            "%02d%02d%02d" % (hours, minutes, seconds) +
-            "%02d%02d%03d%s" % (lat_deg, lat_min, lat_min_dec, lat_sign) +
-            "%03d%02d%03d%s" % (lon_deg, lon_min, lon_min_dec, lon_sign) +
-            validity +
-            "%05d%05d" % (press_alt, gnss_alt) +
-            extras)
+                "B" +
+                "%02d%02d%02d" % (hours, minutes, seconds) +
+                "%02d%02d%03d%s" % (lat_deg, lat_min, lat_min_dec, lat_sign) +
+                "%03d%02d%03d%s" % (lon_deg, lon_min, lon_min_dec, lon_sign) +
+                validity +
+                "%05d%05d" % (press_alt, gnss_alt) +
+                extras)
 
 
 class Thermal:
@@ -394,6 +394,7 @@ class Thermal:
         enter_fix: a GNSSFix, entry point of the thermal
         exit_fix: a GNSSFix, exit point of the thermal
     """
+
     def __init__(self, enter_fix, exit_fix):
         self.enter_fix = enter_fix
         self.exit_fix = exit_fix
@@ -463,10 +464,10 @@ class Glide:
     def __str__(self):
         hms = _rawtime_float_to_hms(self.time_change())
         return (
-            ("Glide(dist=%.2f km, avg_speed=%.2f kph, "
-             "avg L/D=%.2f duration=%dm %ds)") % (
-                self.track_length, self.speed(), self.glide_ratio(),
-                hms.minutes, hms.seconds))
+                ("Glide(dist=%.2f km, avg_speed=%.2f kph, "
+                 "avg L/D=%.2f duration=%dm %ds)") % (
+                    self.track_length, self.speed(), self.glide_ratio(),
+                    hms.minutes, hms.seconds))
 
 
 class FlightParsingConfig(object):
@@ -502,14 +503,14 @@ class FlightParsingConfig(object):
     # gps) that report either always constant altitude, or almost
     # always constant altitude, and therefore are invalid. The unit
     # is meters/fix.
-    min_avg_abs_alt_change = 0.01
+    min_avg_abs_alt_change = 0.00   # standard 0.01
 
     # Maximum altitude change per second between fixes, meters per second.
     # Soft limit, some fixes are allowed to exceed."""
     max_alt_change_rate = 50.0
 
     # Maximum number of fixes that exceed the altitude change limit.
-    max_alt_change_violations = 10
+    max_alt_change_violations = 250     # standard 10
 
     # Absolute maximum altitude, meters.
     max_alt = 10000.0
@@ -588,7 +589,7 @@ class Flight:
         a_records = []
         i_records = []
         h_records = []
-        #abs_filename = Path(filename).expanduser().absolute()
+        # abs_filename = Path(filename).expanduser().absolute()
         with open(filename, 'r', encoding='ISO-8859-1') as flight_file:
             for line in flight_file:
                 line = line.replace('\n', '').replace('\r', '')
@@ -636,6 +637,7 @@ class Flight:
         if not self.valid:
             return
 
+        # TODO check altitude source with task formula, and check it is valid
         if self.press_alt_valid:
             self.alt_source = "PRESS"
         elif self.gnss_alt_valid:
@@ -781,11 +783,11 @@ class Flight:
         gnss_chgs_sum = 0.0
         for i in range(len(self.fixes) - 1):
             press_alt_delta = math.fabs(
-                self.fixes[i+1].press_alt - self.fixes[i].press_alt)
+                self.fixes[i + 1].press_alt - self.fixes[i].press_alt)
             gnss_alt_delta = math.fabs(
-                self.fixes[i+1].gnss_alt - self.fixes[i].gnss_alt)
+                self.fixes[i + 1].gnss_alt - self.fixes[i].gnss_alt)
             rawtime_delta = math.fabs(
-                self.fixes[i+1].rawtime - self.fixes[i].rawtime)
+                self.fixes[i + 1].rawtime - self.fixes[i].rawtime)
             if rawtime_delta > 0.5:
                 if (press_alt_delta / rawtime_delta >
                         self._config.max_alt_change_rate):
@@ -865,7 +867,7 @@ class Flight:
         rawtime_to_add = 0.0
         rawtime_between_fix_exceeded = 0
         for i in range(1, len(self.fixes)):
-            f0 = self.fixes[i-1]
+            f0 = self.fixes[i - 1]
             f1 = self.fixes[i]
             f1.rawtime += rawtime_to_add
 
@@ -900,12 +902,12 @@ class Flight:
         """Adds ground speed info (km/h) to self.fixes."""
         self.fixes[0].gsp = 0.0
         for i in range(1, len(self.fixes)):
-            dist = self.fixes[i].distance_to(self.fixes[i-1])
-            rawtime = self.fixes[i].rawtime - self.fixes[i-1].rawtime
+            dist = self.fixes[i].distance_to(self.fixes[i - 1])
+            rawtime = self.fixes[i].rawtime - self.fixes[i - 1].rawtime
             if math.fabs(rawtime) < 1e-5:
                 self.fixes[i].gsp = 0.0
             else:
-                self.fixes[i].gsp = dist/rawtime*3600.0
+                self.fixes[i].gsp = dist / rawtime * 3600.0
 
     def _flying_emissions(self):
         """Generates raw flying/not flying emissions from ground speed.
@@ -974,7 +976,7 @@ class Flight:
     def _compute_bearings(self):
         """Adds bearing info to self.fixes."""
         for i in range(len(self.fixes) - 1):
-            self.fixes[i].bearing = self.fixes[i].bearing_to(self.fixes[i+1])
+            self.fixes[i].bearing = self.fixes[i].bearing_to(self.fixes[i + 1])
         self.fixes[-1].bearing = self.fixes[-2].bearing
 
     def _compute_bearing_change_rates(self):
@@ -985,6 +987,7 @@ class Flight:
         Therefore we compute rates between points that are at least
         min_time_for_bearing_change seconds apart.
         """
+
         def find_prev_fix(curr_fix):
             """Computes the previous fix to be used in bearing rate change."""
             prev_fix = None
@@ -1012,7 +1015,7 @@ class Flight:
                         bearing_change -= 360.0
                 time_change = (self.fixes[prev_fix].timestamp -
                                self.fixes[curr_fix].timestamp)
-                change_rate = bearing_change/time_change
+                change_rate = bearing_change / time_change
                 self.fixes[curr_fix].bearing_change_rate = change_rate
 
     def _circling_emissions(self):
@@ -1025,7 +1028,7 @@ class Flight:
         for fix in self.fixes:
             bearing_change = math.fabs(fix.bearing_change_rate)
             bearing_change_enough = (
-                bearing_change > self._config.min_bearing_change_circling)
+                    bearing_change > self._config.min_bearing_change_circling)
             if fix.flying and bearing_change_enough:
                 emissions.append(1)
             else:

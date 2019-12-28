@@ -15,7 +15,7 @@ Add support for FAI Sphere ???
 from myconn import Database
 
 
-def coef2(task_time, best_dist_to_ess, new_dist_to_ess):
+def coef_func(task_time, best_dist_to_ess, new_dist_to_ess):
     best_dist_to_ess = best_dist_to_ess / 1000  # we use Km
     new_dist_to_ess = new_dist_to_ess / 1000  # we use Km
     return task_time * (best_dist_to_ess ** 2 - new_dist_to_ess ** 2)
@@ -268,7 +268,6 @@ def day_quality(task):
 
 
 def points_weight(task):
-
     comp_class = task.comp_class  # HG / PG
     formula = task.formula
     quality = task.day_quality
@@ -307,7 +306,7 @@ def points_weight(task):
     if task.formula.formula_arrival != 'off':
         task.arr_weight = (1 - task.dist_weight) / 8
         if task.formula.formula_arrival == 'time':
-            task.arr_weight *= 2    # (1 - dist_weight) / 4
+            task.arr_weight *= 2  # (1 - dist_weight) / 4
     else:
         task.arr_weight = 0
 
@@ -422,7 +421,7 @@ def pilot_speed(task, res):
     return Pspeed
 
 
-def pilot_arrival(task, pil):
+def pilot_arrival(task, res):
     """ 11.4 Arrival points
         Arrival points depend on the position at which a pilot crosses ESS:
         The first pilot completing the speed section receives the maximum
@@ -436,13 +435,16 @@ def pilot_arrival(task, pil):
 
     Aarrival = task.avail_arr_points
 
+    if not res.ESS_time:
+        return 0
+
     if task.arrival == 'position':
         '''FAI position arrival points'''
         # TODO ESS_rank
-        AC = 1 - (pil.ESS_rank - 1) / task.pilots_ess
+        AC = 1 - (res.ESS_rank - 1) / task.pilots_ess
     elif task.arrival == 'time':
         '''OZGAP time arrival points'''
-        time_after = pil.time_after / 3600  # hours decimals
+        time_after = res.time_after / 3600  # hours decimals
         AC = 1 - 0.667 * time_after
 
     AF = 0.2 + 0.037 * AC + 0.13 * AC ** 2 + 0.633 * AC ** 3
@@ -487,12 +489,12 @@ def pilot_distance(task, pil):
 
 def process_results(task):
     formula = task.formula
-    ''' get pilot.result non ABS or DNF'''
-    pilots = task.valid_results
-    if len(pilots) == 0:
+    ''' get pilot.result non ABS or DNF, ordered by ESS time'''
+    results = sorted(task.valid_results, key=lambda i: (float('inf') if not i.ESS_time else i.ESS_time))
+    if len(results) == 0:
         return None
 
-    for res in pilots:
+    for idx, res in enumerate(results, 1):
         '''Handle Stopped Task'''
         if task.stopped_time and res.last_altitude > task.goal_altitude and formula.glide_bonus > 0:
             print("Stopped height bonus: ", (formula.glide_bonus * (res.last_altitude - task.goal_altitude)))
@@ -505,7 +507,11 @@ def process_results(task):
         res.total_distance = max(formula.min_dist, res.total_distance)
 
         if res.ESS_time:
+            ''' Time after first on ESS'''
             res.time_after = res.ESS_time - task.min_ess_time
+            ''' ESS arrival order'''
+            res.ESS_rank = idx
+        # print(f'ESS: {res.ESS_time} | rank: {res.ESS_rank}')
 
         '''
         Leadout Points Adjustment
@@ -550,7 +556,7 @@ def points_allocation(task):
         if task.departure == 'leadout' and res.result_type != 'mindist' and res.SSS_time:
             res.departure_score = pilot_leadout(task, res)
 
-        if res.ESS_time > 0:
+        if res.ESS_time:
             ''' Pilot speed points'''
             res.time_score = pilot_speed(task, res)
 

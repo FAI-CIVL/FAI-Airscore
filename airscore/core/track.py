@@ -77,7 +77,7 @@ class Track(object):
     @property
     def filename(self):
         # compatibility
-        return self.fullpath
+        return self.track_file
 
     @property
     def valid(self):
@@ -100,14 +100,14 @@ class Track(object):
         else:
             return False
 
-    @property
-    def fullpath(self):
-        if not self.track_file:
-            return
-        from trackUtils import get_task_fullpath
-        from os import path as p
-        file_path = get_task_fullpath(self.task_id)
-        return p.join(file_path, self.track_file)
+    # @property
+    # def fullpath(self):
+    #     if not self.track_file:
+    #         return
+    #     from trackUtils import get_task_fullpath
+    #     from os import path as p
+    #     file_path = get_task_fullpath(self.task_id)
+    #     return p.join(file_path, self.track_file)
 
     def as_dict(self):
         return self.__dict__
