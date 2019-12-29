@@ -123,50 +123,6 @@ def get_comp_path(comp_id):
             return db.session.query(C.comPath).filter(C.comPk == comp_id).limit(1).scalar()
 
 
-# def create_comp_path(comp_id, short_name, date):
-#     """ upon competition creation, creates the path to store tracks.
-#         It will not change if comp name is updated"""
-#     # maybe should be moved to correct year if comp date will change?
-#     from db_tables import tblCompetition as C
-#     import datetime
-#     from os import path as p
-#     if not(type(comp_id)is int and comp_id > 0 and isinstance(date, datetime.date)):
-#         return
-#     if not(type(short_name) is str and len(short_name) > 0):
-#         '''create a short name'''
-#         # we need the name, maybe better create a class?
-#     year = str(date.year)
-#     path = p.join(year, short_name.lower())
-#     with Database() as db:
-#         q = db.session.query(C).get(comp_id)
-#         if not q.comPath:
-#             q.comPath = path
-#             db.session.commit()
-#         return q.comPath
-#
-#
-# def create_task_path(task_id, tcode, date):
-#     """ upon competition creation, creates the path to store tracks.
-#         It will not change if comp name is updated"""
-#     # maybe should be moved to correct year if comp date changes?
-#     from db_tables import tblTask as T
-#     import datetime
-#
-#     if not(type(task_id)is int and task_id > 0 and isinstance(date, datetime.date)):
-#         return
-#     if not(type(tcode) is str and len(tcode) > 0):
-#         '''create a short name'''
-#         # we need the name
-#     tdate = date.strftime('%Y%m%d')
-#     path = '_'.join([tcode, tdate])
-#     with Database() as db:
-#         q = db.session.query(T).get(task_id)
-#         if not q.tasPath:
-#             q.tasPath = path
-#             db.session.commit()
-#         return q.tasPath
-
-
 def get_task_region(task_id):
     from db_tables import tblTask as T
     if type(task_id) is int and task_id > 0:
@@ -279,3 +235,31 @@ def get_task_filepath(task_id, session=None):
         except SQLAlchemyError:
             print('Error trying to retrieve flie path from database')
             return None
+
+
+def get_formulas(comp_class):
+    """ Gets available formula names for comp class from formula scripts in formulas folder.
+        To be used if frontend to get formula multiplechoice populated
+        output:
+            List of formula name"""
+    import os
+    import importlib
+    from dataclasses import dataclass
+
+    @dataclass
+    class FormulaList:
+        name: str
+        lib: str
+
+    all_files = os.listdir("formulas")
+    formulas = []
+
+    for formula in all_files:
+        fields = formula.split('.')
+        if len(fields) > 1 and fields[1] == 'py' and not any(x in fields[0] for x in ('test', 'old')):
+            ''' read formula types'''
+            lib = 'formulas.' + fields[0]
+            flib = importlib.import_module(lib, package=None)
+            if flib.formula_class in (comp_class, 'BOTH'):
+                formulas.append(FormulaList(name=flib.formula_name, lib=fields[0]))
+    return formulas

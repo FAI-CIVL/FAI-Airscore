@@ -482,6 +482,7 @@ class Task(object):
             print(f"Processing pilots tracks...")
             self.check_all_tracks(lib)
 
+
         # self.stats.update(lib.task_totals(self))
 
         if self.pilots_launched == 0:
@@ -648,7 +649,7 @@ class Task(object):
             verify_all_tracks(self, lib)
 
         '''store results to database'''
-        update_all_results(self)
+        # update_all_results(self.pilots)       # deactivated for tests TO BE activated
 
         lib.process_results(self)
 
