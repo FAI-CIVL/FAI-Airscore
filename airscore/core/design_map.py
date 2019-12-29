@@ -17,77 +17,76 @@ from folium.features import CustomIcon
 from folium.map import FeatureGroup, Marker, Popup
 from geographiclib.geodesic import Geodesic
 
-import Defines as d
-from mapUtils import get_region_bbox
+from mapUtils import get_region_bbox, get_route_bbox
 from task import Task
-
-#from flask import Flask, flash, request, redirect, url_for, session, json
-#from flask import get_template_attribute,render_template
 
 geod = Geodesic.WGS84
 
-### select the library to parse the igc to geojson
+# select the library to parse the igc to geojson
 global IGC_LIB
 IGC_LIB = 'igc_lib'
 
-# app = Flask(__name__)
-# app.secret_key = "A Super super uper secret key"
-# app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-
-##############################################################################################################
 
 # functions to style geojson geometries
 def style_function(feature):
-    return {'fillColor': 'white','weight': 2,'opacity': 1,'color': 'red','fillOpacity': 0.5,"stroke-width":3}
+    return {'fillColor': 'white', 'weight': 2, 'opacity': 1, 'color': 'red', 'fillOpacity': 0.5, "stroke-width": 3}
 
-track_style_function = lambda x: {'color':'red' if x['properties']['Track']=='Pre_Goal' else 'grey'}
+
+track_style_function = lambda x: {'color':'red' if x['properties']['Track'] == 'Pre_Goal' else 'grey'}
 
 
 # function to create the map template with optional geojson, circles and points objects
 def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_line=None, margin=0,
-             thermal_layer=False, waypoint_layer=False, extra_tracks=None):
+             thermal_layer=False, waypoint_layer=False, extra_tracks=None, airspace_layer=None, bbox=None):
     if points is None:
         points = []
     folium_map = folium.Map(location=[45.922207, 8.673952], zoom_start=13, tiles="Stamen Terrain", width='100%',
                             height='75%')
     #     folium.LayerControl().add_to(folium_map)
     '''Define map borders'''
-    if layer_geojson["bbox"]:
-        bbox = layer_geojson["bbox"]
+    # at this stage a track (layer_geojason has bbox inside,
+    # otherwise (plotting wpts, airspace, task) we can use the bbox variable
+    if bbox:
         folium_map.fit_bounds(bounds=bbox, max_zoom=13)
 
-    """Design track"""
-    if layer_geojson["geojson"]:
-        track = layer_geojson['geojson']['tracklog']
-        folium.GeoJson(track, name='Flight', style_function=track_style_function).add_to(folium_map)
-        if extra_tracks:
-            extra_track_style_function = lambda colour: (
-                lambda x: {'color': colour if x['properties']['Track'] == 'Pre_Goal' else 'grey'})
+    if layer_geojson:
 
-            for extra_track in extra_tracks:
-                colour = extra_track['colour']
-                folium.GeoJson(extra_track['track'], name=extra_track['name'],
-                               style_function=extra_track_style_function(colour)).add_to(folium_map)
+        '''Define map borders'''
+        if layer_geojson["bbox"]:
+            bbox = layer_geojson["bbox"]
+            folium_map.fit_bounds(bounds=bbox, max_zoom=13)
 
-        if thermal_layer:
-            thermals = layer_geojson['geojson']['thermals']
-            thermal_group = FeatureGroup(name='Thermals', show=False)
+        """Design track"""
+        if layer_geojson["geojson"]:
+            track = layer_geojson['geojson']['tracklog']
+            folium.GeoJson(track, name='Flight', style_function=track_style_function).add_to(folium_map)
+            if extra_tracks:
+                extra_track_style_function = lambda colour: (
+                    lambda x: {'color': colour if x['properties']['Track'] == 'Pre_Goal' else 'grey'})
 
-            for t in thermals:
-                #             icon = Icon(color='blue', icon_color='black', icon='sync-alt', angle=0, prefix='fas')
-                icon = CustomIcon('/app/airscore/static/img/thermal.png')
-                thermal_group.add_child(Marker([t[1], t[0]], icon=icon, popup=Popup(t[2])))
+                for extra_track in extra_tracks:
+                    colour = extra_track['colour']
+                    folium.GeoJson(extra_track['track'], name=extra_track['name'],
+                                   style_function=extra_track_style_function(colour)).add_to(folium_map)
 
-            folium_map.add_child(thermal_group)
+            if thermal_layer:
+                thermals = layer_geojson['geojson']['thermals']
+                thermal_group = FeatureGroup(name='Thermals', show=False)
 
-        if waypoint_layer:
-            waypoints = layer_geojson['geojson']['waypoint_achieved']
-            waypoint_group = FeatureGroup(name='Waypoints Taken', show=False)
-            for w in waypoints:
-                waypoint_group.add_child(Marker([w[1], w[0]], popup=Popup(w[5])))
+                for t in thermals:
+                    # icon = Icon(color='blue', icon_color='black', icon='sync-alt', angle=0, prefix='fas')
+                    icon = CustomIcon('/app/airscore/static/img/thermal.png')
+                    thermal_group.add_child(Marker([t[1], t[0]], icon=icon, popup=Popup(t[2])))
 
-            folium_map.add_child(waypoint_group)
+                folium_map.add_child(thermal_group)
+
+            if waypoint_layer:
+                waypoints = layer_geojson['geojson']['waypoint_achieved']
+                waypoint_group = FeatureGroup(name='Waypoints Taken', show=False)
+                for w in waypoints:
+                    waypoint_group.add_child(Marker([w[1], w[0]], popup=Popup(w[5])))
+
+                folium_map.add_child(waypoint_group)
     """Design cylinders"""
     if circles:
         for c in circles:
@@ -168,6 +167,10 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
             opacity=0.75,
             color='#800000'
         ).add_to(folium_map)
+
+    if airspace_layer:
+        for space in airspace_layer:
+            space.add_to(folium_map)
 
     # path where to save the map
     # folium_map.save('templates/map.html')
@@ -285,14 +288,14 @@ if __name__== "__main__":
     track_id    = None
     val         = None
     mode        = None
-    ##check parameter is good.
+    # check parameter is good.
     if len(sys.argv) >= 3 and sys.argv[2].isdigit():
         mode    = str(sys.argv[1])
         val     = int(sys.argv[2])
         if mode == 'tracklog': track_id = int(sys.argv[3])
 
     else:
-        #logging.error("number of arguments != 1 and/or task_id not a number")
+        # logging.error("number of arguments != 1 and/or task_id not a number")
         print("Error, incorrect arguments type or number.")
         print("usage: design_map mode (region tracklog, route), val(regionid taskid), track_id")
         exit()
