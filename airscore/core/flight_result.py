@@ -350,9 +350,9 @@ class Flight_result(object):
 
             if (((task.turnpoints[t].type == "speed" and not started)
                  or
-                 (task.turnpoints[t-1].type == "speed" and (task.SS_interval or task.task_type == 'ELAPSED TIME'))
+                 (task.turnpoints[t - 1].type == "speed" and (task.SS_interval or task.task_type == 'ELAPSED TIME'))
                  or
-                 (task.turnpoints[t-1].type == "speed" and started
+                 (task.turnpoints[t - 1].type == "speed" and started
                   and max_jump_the_gun > 0 and result.waypoints_achieved[-1][1] < task.start_time))
                     and
                     (my_fix.rawtime >= (task.start_time - max_jump_the_gun))
@@ -766,13 +766,64 @@ def update_all_results(results):
                    'tarLastTime': res.last_time,
                    'tarLandingAltitude': res.landing_altitude,
                    'tarLandingTime': res.landing_time,
-                   'tarResultType': res.result_type}
+                   'tarResultType': res.result_type,
+                   'tarPenalty': res.penalty,
+                   'tarComment': '; '.join(res.comment) if res.comment is not None and len(res.comment) > 0 else None}
         mappings.append(mapping)
 
     '''update database'''
     with Database() as db:
         try:
             db.session.bulk_update_mappings(R, mappings)
+            db.session.commit()
+        except SQLAlchemyError:
+            print(f'update all results on database gave an error')
+            db.session.rollback()
+            return False
+
+    return True
+
+
+def mass_add_results(task_id, results):
+    """adds results to database"""
+    from db_tables import tblTaskResult as R
+    from sqlalchemy.exc import SQLAlchemyError
+
+    mappings = []
+    for pilot in results:
+        res = pilot.result
+
+        '''checks conformity'''
+        if not res.goal_time:
+            res.goal_time = 0
+        if not res.ESS_time:
+            res.ESS_time = 0
+
+        mapping = {'parPk': pilot.par_id,
+                   'tasPk': task_id,
+                   'tarDistance': res.distance_flown,
+                   'tarSpeed': res.speed,
+                   'tarLaunch': res.first_time,
+                   'tarStart': res.real_start_time,
+                   'tarGoal': res.goal_time,
+                   'tarSS': res.SSS_time,
+                   'tarES': res.ESS_time,
+                   'tarTurnpoints': res.waypoints_made,
+                   'tarFixedLC': res.fixed_LC,
+                   'tarESAltitude': res.ESS_altitude,
+                   'tarGoalAltitude': res.goal_altitude,
+                   'tarMaxAltitude': res.max_altitude,
+                   'tarLastAltitude': res.last_altitude,
+                   'tarLastTime': res.last_time,
+                   'tarLandingAltitude': res.landing_altitude,
+                   'tarLandingTime': res.landing_time,
+                   'tarResultType': res.result_type}
+        mappings.append(mapping)
+
+    '''update database'''
+    with Database() as db:
+        try:
+            db.session.bulk_insert_mappings(R, mappings)
             db.session.commit()
         except SQLAlchemyError:
             print(f'update all results on database gave an error')

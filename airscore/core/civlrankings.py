@@ -31,7 +31,7 @@ def create_participant_from_CIVLID(civl_id):
     # print(response.content)
     root = ET.fromstring(response.content)
     data = root.find('.//{http://civlrankings.fai.org/}GetPilotResponse')
-    if not data.find('{http://civlrankings.fai.org/}GetPilotResult'):
+    if not data or not data.find('{http://civlrankings.fai.org/}GetPilotResult'):
         '''we don't have a result'''
         return None
     result = data.findall('{http://civlrankings.fai.org/}GetPilotResult//')

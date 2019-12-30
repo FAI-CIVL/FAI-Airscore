@@ -26,17 +26,27 @@ $(document).ready(function() {
             // comp info
             $('#comp_name').text(json.info.comp_name + " - " + json.info.task_name);
             $('#task_date').text(json.info.date + ' ' + json.info.task_type);
-            $('#comp_header').append('<b>Start: ' + format_seconds(json.info.start_time + json.info.time_offset) + ' End: ' + format_seconds(json.info.task_deadline + json.info.time_offset) + '</b><br>');
+
+            if (json.info.SS_interval)
+            {
+                $('#comp_header').append('<b>Start (2): 1. ' + format_seconds(json.info.start_time + json.info.time_offset) + ', 2. ' + format_seconds(json.info.start_time + json.info.SS_interval + json.info.time_offset) + '  |  End: ' + format_seconds(json.info.task_deadline + json.info.time_offset) + '</b><br>');
+
+            }
+            else
+            {
+                $('#comp_header').append('<b>Start: ' + format_seconds(json.info.start_time + json.info.time_offset) + '  |  End: ' + format_seconds(json.info.task_deadline + json.info.time_offset) + '</b><br>');
+
+            }
             if (json.info.stopped_time)
             {
                 $('#comp_header').append('<b>Stopped: ' + json.info.stopped_time + '</b><br>');
                 $('#altbonus').text("S.Alt");
 
             }
-            if (json.info.comp_class != "PG")
-            {
-                update_classes(json.info.comp_class);
-            }
+//            if (json.info.comp_class != "PG")
+//            {
+//                update_classes(json.info.comp_class);
+//            }
 
             // waypoints
             for (var c=0; c < json.route.length; c++)

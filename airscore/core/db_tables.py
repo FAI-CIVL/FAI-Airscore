@@ -1080,7 +1080,8 @@ class tblTask(Base):
 
     tasPk = Column(INTEGER(11), primary_key=True)
     comPk = Column(ForeignKey('tblCompetition.comPk'), index=True)
-    tasLastUpdate = Column(TIMESTAMP, nullable=False)
+    tasLastUpdate = Column(TIMESTAMP, nullable=False,
+                           server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
     tasNum = Column(TINYINT(4), nullable=False)
     tasName = Column(String(100))
     tasDate = Column(Date, nullable=False)

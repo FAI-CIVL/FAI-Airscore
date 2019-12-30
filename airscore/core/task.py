@@ -464,9 +464,6 @@ class Task(object):
         ''' retrieve scoring formula library'''
         lib = self.formula.get_lib()
 
-        ''' get pilot list and results'''
-        self.get_results(lib)
-
         if mode == 'full' or self.stopped_time:
             # TODO: check if we changed task, or we had new tracks, after last results generation
             #       If this is the case we should not need to re-score unless especially requested
@@ -482,6 +479,9 @@ class Task(object):
             print(f"Processing pilots tracks...")
             self.check_all_tracks(lib)
 
+        else:
+            ''' get pilot list and results'''
+            self.get_results(lib)
 
         # self.stats.update(lib.task_totals(self))
 
@@ -581,6 +581,9 @@ class Task(object):
         if not lib:
             '''retrieve scoring formula library'''
             lib = self.formula.get_lib()
+
+        ''' get pilot and tracks list'''
+        self.get_results()
 
         ''' manage Stopped Task    '''
         print(f'stopped time: {self.stopped_time}')
@@ -773,7 +776,7 @@ class Task(object):
                 db.session.bulk_save_objects(wpts)
 
             except SQLAlchemyError:
-                print('Task storing error')
+                print(f'Task storing error')
                 db.session.rollback()
                 return None
 

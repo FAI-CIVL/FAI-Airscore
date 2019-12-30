@@ -61,7 +61,6 @@ class Task_result:
     formula_list = ['formula_name',
                     'formula_type',
                     'formula_version',
-                    'comp_class',  # 'HG', 'PG'
                     'formula_distance',  # 'on', 'difficulty', 'off'
                     'formula_arrival',  # 'position', 'time', 'off'
                     'formula_departure',  # 'on', 'leadout', 'off'
@@ -131,7 +130,7 @@ class Task_result:
                     'nat_team',
                     'distance_flown',
                     'distance',
-                    'ss_speed',
+                    'speed',
                     'real_start_time',
                     'goal_time',
                     'result_type',

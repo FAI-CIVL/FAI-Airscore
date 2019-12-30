@@ -100,7 +100,8 @@ class FSDB(object):
                         result = Flight_result.from_fsdb(res, task.SS_distance, task.departure, task.arrival)
                         pilot = Pilot.create(result=result)
                         pilot.info.ID = int(res.get('id'))
-                        pilot.track.track_file = res.find('FsFlightData').get('tracklog_filename')
+                        if res.find('FsFlightData') is not None:
+                            pilot.track.track_file = res.find('FsFlightData').get('tracklog_filename')
                         task.pilots.append(pilot)
                 tasks.append(task)
 

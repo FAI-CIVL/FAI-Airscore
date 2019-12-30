@@ -244,25 +244,25 @@ def get_task_result(taskid):
         pilot.append(f'<a href="/map/{track_id}">{name}</a>')
         pilot.append(r['nat'])
         pilot.append(r['glider'])
-        pilot.append(r['class'])
+        pilot.append(r['glider_cert'])
         pilot.append(r['sponsor'])
-        if r['SS_time']:
-            pilot.append(sec_to_time(r['SS_time']+result_file['info']['time_offset']).strftime("%H:%M:%S"))
+        if r['SSS_time']:
+            pilot.append(sec_to_time(r['SSS_time']+result_file['info']['time_offset']).strftime("%H:%M:%S"))
         else:
             pilot.append("")
-        if r['ES_time'] == 0 or r['ES_time'] is None :
+        if r['ESS_time'] == 0 or r['ESS_time'] is None :
             pilot.append("")
             pilot.append("")
         else:
-            pilot.append(sec_to_time(r['ES_time']+result_file['info']['time_offset']).strftime("%H:%M:%S"))
-            pilot.append(sec_to_time(r['ES_time']-r['SS_time']).strftime("%H:%M:%S"))
+            pilot.append(sec_to_time(r['ESS_time']+result_file['info']['time_offset']).strftime("%H:%M:%S"))
+            pilot.append(sec_to_time(r['ESS_time']-r['SSS_time']).strftime("%H:%M:%S"))
         pilot.append(round(r['speed'],2) if r['speed'] else "")
         pilot.append("")  # altitude bonus
         pilot.append(round(r['distance']/1000, 2))
-        pilot.append(round(r['time_points'], 2))
-        pilot.append(round(r['dep_points'], 2))
-        pilot.append("")  # arrival points
-        pilot.append(round(r['dist_points'], 2))
+        pilot.append(round(r['time_score'], 2))
+        pilot.append(round(r['departure_score'], 2))
+        pilot.append(round(r['arrival_score'], 2))  # arrival points
+        pilot.append(round(r['distance_score'], 2))
         pilot.append(round(r['penalty'], 2) if r['penalty'] else "")
         pilot.append(round(r['score'], 2))
         all_pilots.append(pilot)

@@ -41,6 +41,7 @@ class Participant(object):
         self.paid = paid  # bool
         self.status = status  # 'confirmed', 'waiting list', 'wild card', 'cancelled', ?
         self.ranking = ranking  # WPRS Ranking?
+        self.live_id = None     # int
         self.pil_id = None  # PilotView id
 
     def __setattr__(self, attr, value):
@@ -119,6 +120,7 @@ class Participant(object):
                 pil.parValidFAI = self.fai_valid
                 pil.parFAI = self.fai_id,
                 pil.parXC = self.xcontest_id
+                pil.LiveID = self.live_id
                 pil.parTeam = self.team
                 pil.parNatTeam = self.nat_team
                 pil.parStatus = self.status
@@ -178,18 +180,24 @@ class Participant(object):
         return pilot
 
 
-def import_participants_from_excel(comp_id, filename):
-    """Gets participants from external file;
+def import_participants_from_excel(comp_id, filename, from_CIVL=False):
+    """Gets participants from external file (Airtribune Participants list in Excel format;
     Returns a list of Participant objects
+    Input:
+        comp_id:    INT comPk
+        filename:   STR filename
+        from_CIVL:  BOOL retrieve data from CIVL database using CIVLID
     - read Airtribune XSLX file
 
     excel file format:
     column name on row 1
     columns:
-    id,	name,	nat,	female,	birthday,	glider,	color,	sponsor,	fai_licence,	CIVILID,	club,	team,	class
+    id,name,nat,female,birthday,glider,color,sponsor,fai_licence,CIVILID,club,team,class,Live(optional)
     """
     from logger import Logger
+    from civlrankings import create_participant_from_CIVLID
     from openpyxl import load_workbook
+    from datetime import datetime
 
     '''create logging and disable output'''
     Logger('ON', 'import_participants.txt')
@@ -213,15 +221,27 @@ def import_participants_from_excel(comp_id, filename):
     pilots = []
     for row in sheet.iter_rows(min_row=2,
                                min_col=1,
-                               max_col=13,
+                               max_col=14,
                                values_only=True):
         if not row[0]:
             'EOF'
             break
 
-        pil = Participant(ID=row[0], comp_id=comp_id, civl_id=row[9], name=row[1], nat=row[2],
-                          sex='F' if row[3] == 1 else 'M', glider=row[5], sponsor=row[7],
-                          team=row[11], fai_id=row[8], fai_valid=0 if row[8] is None else 1)
+        ''' Check CIVL database if active'''
+        pil = None
+        if from_CIVL and row[9]:
+            pil = create_participant_from_CIVLID(row[9])
+        if pil is None:
+            pil = Participant(civl_id=row[9], name=row[1], nat=row[2], sex='F' if row[3] == 1 else 'M')
+        pil.ID = row[0]
+        pil.comp_id = comp_id
+        pil.birthdate = None if row[4] is None else row[4].date()   # row[4] should be datetime
+        pil.glider = row[5]
+        pil.sponsor = row[7]
+        pil.team = row[11]
+        pil.fai_id = row[8]
+        pil.fai_valid = 0 if row[8] is None else 1
+        pil.Live = row[13]
         pilots.append(pil)
 
     ''' now restore stdout function '''
@@ -253,6 +273,7 @@ def mass_import_participants(comp_id, pilots):
                    'parValidFAI': pil.fai_valid,
                    'parFAI': pil.fai_id,
                    'parXC': pil.xcontest_id,
+                   'parLive': pil.live_id,
                    'parTeam': pil.team,
                    'parNatTeam': pil.nat_team,
                    'parStatus': pil.status,
