@@ -401,5 +401,46 @@ def multimap(trackid, extra_trackids):
 
     macro = mapUtils.map_legend(legend)
     map.get_root().add_child(macro)
-    map=map._repr_html_()
+    map = map._repr_html_()
     return map
+
+
+@blueprint.route('/airspace_map')
+def airspace_edit():
+    from aerofiles import openair
+    import jsonpickle
+    import airspace
+    import design_map
+    from itertools import tee
+    from mapUtils import get_airspace_bbox
+
+    filename = '/app/airscore/data/test/test_openair.txt'
+    message = ''
+    spaces = []
+    with open(filename) as fp:
+        reader = openair.Reader(fp)
+        reader, reader_2 = tee(reader)
+        bbox = get_airspace_bbox(reader_2)
+        airspace_list = []
+        for record, error in reader:
+            if error:
+                raise error  # or handle it otherwise
+            if record['type'] == 'airspace':
+                airspace_list.append(airspace.airspace_info(record))
+                polygon = airspace.polygon_map(record)
+                if polygon:
+                    spaces.append(polygon)
+                for element in record['elements']:
+                    if element['type'] == 'circle':
+                        spaces.append(airspace.circle_map(element, record))
+
+    for space in airspace_list:
+        if space["floor unit"] == "FL" or space["ceiling unit"] == "FL" or space["floor unit"] == "Unknown height unit" or space["ceiling unit"] == "Unknown height unit":
+            message = 'Attention: There is FL and/or unknown height units in the file. You should adjust to meters above sea level'
+
+    data = jsonpickle.encode(spaces)
+    fullname: str = 'test_airspace'
+
+    map = design_map.make_map(airspace_layer=spaces, bbox=bbox)
+    # map.save('map.html')
+    return render_template('users/airspace_admin_map.html', airspace_list=airspace_list, file=filename, map=map._repr_html_(), message = message)

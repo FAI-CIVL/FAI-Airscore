@@ -23,26 +23,47 @@ def read_openair(filename):
         space = openair.Reader(fp)
     return space
 
+
+def airspace_info(record):
+    return {'name': record['name'], 'class': record['class'], 'floor description': record['floor'],
+            'floor': convert_height(record['floor'])[1], 'floor unit': convert_height(record['floor'])[2],
+            'ceiling description': record['ceiling'],
+            'ceiling': convert_height(record['ceiling'])[1], 'ceiling unit': convert_height(record['ceiling'])[2]}
+
+
 # def map_airspace(openair):
 #     for space in openair:
+def convert_height(height_string):
+    if re.search("FL", height_string):
+        height = int(re.sub("[^0-9]", "", height_string))
+        return height_string, None, "FL"
+
+    elif re.search("ft", height_string):
+        if len(re.sub("[^0-9]", "", height_string)) > 0:
+            feet = int(re.sub("[^0-9]", "", height_string))
+            meters = round(feet * Ft_in_meters,1)
+            info = f"{height_string}/{meters} m"
+
+    elif re.search("m", height_string):
+        if len(re.sub("[^0-9]", "", height_string)) > 0:
+            meters = int(re.sub("[^0-9]", "", height_string))
+            info = f"{meters} m"
+
+    elif height_string == 'GND':
+            meters = 0 # this should probably be something like -500m to cope with dead sea etc (or less for GPS/Baro error?)
+            info = "GND / 0 m"
+    else:
+        return height_string, None, "Unknown height unit"
+
+    return info, meters, "m"
 
 
 def circle_map(element, info):
     if element['type'] == 'circle':
-        if len(re.sub("[^0-9]", "", info['floor'])) > 0:
-            floor_ft = int(re.sub("[^0-9]", "", info['floor']))
-            floor = f"{info['floor']}/{(floor_ft * Ft_in_meters)} m"
-        else:
-            floor = info['floor']
-
-        if len(re.sub("[^0-9]", "", info['ceiling'])) > 0:
-            ceiling_ft = int(re.sub("[^0-9]", "", info['ceiling']))
-            ceiling = f"{info['ceiling']}/{(ceiling_ft * Ft_in_meters)} m"
-        else:
-            ceiling = info['ceiling']
-
-        radius = f"{element['radius']} NM/{element['radius'] * NM_in_meters}m"
-        return folium.Circle(
+       floor, _, _ = convert_height(info['floor'])
+       ceiling, _, _ = convert_height(info['ceiling'])
+       radius = f"{element['radius']} NM/{element['radius'] * NM_in_meters}m"
+       return folium.Circle(
                 location=(element['center'][0], element['center'][1]),
                 popup=f"{info['name']} Class {info['class']} floor:{floor} ceiling:{ceiling} Radius:{radius}",
                 radius=element['radius'] * NM_in_meters,
@@ -66,17 +87,8 @@ def polygon_map(record):
     if locations == []:
         return None
 
-    if len(re.sub("[^0-9]", "", record['floor'])) > 0:
-        floor_ft = int(re.sub("[^0-9]", "", record['floor']))
-        floor = f"{record['floor']}/{(floor_ft * Ft_in_meters)} m"
-    else:
-        floor = record['floor']
-
-    if len(re.sub("[^0-9]", "", record['ceiling'])) > 0:
-        ceiling_ft = int(re.sub("[^0-9]", "", record['ceiling']))
-        ceiling = f"{record['ceiling']}/{(ceiling_ft * Ft_in_meters)} m"
-    else:
-        ceiling = record['ceiling']
+    floor, _, _ = convert_height(record['floor'])
+    ceiling, _, _ = convert_height(record['ceiling'])
 
     return folium.Polygon(
             locations=locations,
