@@ -417,6 +417,9 @@ def airspace_edit():
     filename = '/app/airscore/data/test/test_openair.txt'
     message = ''
     spaces = []
+    unknown_flag = False
+    FL_detail = None
+
     with open(filename) as fp:
         reader = openair.Reader(fp)
         reader, reader_2 = tee(reader)
@@ -435,12 +438,28 @@ def airspace_edit():
                         spaces.append(airspace.circle_map(element, record))
 
     for space in airspace_list:
-        if space["floor unit"] == "FL" or space["ceiling unit"] == "FL" or space["floor unit"] == "Unknown height unit" or space["ceiling unit"] == "Unknown height unit":
-            message = 'Attention: There is FL and/or unknown height units in the file. You should adjust to meters above sea level'
+        if space["floor unit"] == "FL":
+            FL_detail = f"{space['floor description']} is {int(space['floor'])*100} ft or {int(space['floor'])*100*0.3048} m"
+            space['floor'] = None
 
+        if space["ceiling unit"] == "FL":
+            FL_detail = f"{space['ceiling description']} is {int(space['ceiling']) * 100} ft or {int(space['ceiling']) * 100 * 0.3048} m"
+            space['ceiling'] = None
+            
+        if space["floor unit"] == "Unknown height unit" or space["ceiling unit"] == "Unknown height unit":
+            unknown_flag = True
+
+    if FL_detail:
+        message = 'Attention: There is FL units in the file. You should adjust to meters or feet above sea level'
+        FL_detail +=" assuming an International Standard Atmosphere pressure of 1013.25. " \
+                    "You should round down to be conservative"
+    if unknown_flag:
+        message += 'Attention: There is unknown height units in the file. You should adjust to meters or ' \
+                   'feet above sea level'
     data = jsonpickle.encode(spaces)
     fullname: str = 'test_airspace'
 
     map = design_map.make_map(airspace_layer=spaces, bbox=bbox)
     # map.save('map.html')
-    return render_template('users/airspace_admin_map.html', airspace_list=airspace_list, file=filename, map=map._repr_html_(), message = message)
+    return render_template('users/airspace_admin_map.html', airspace_list=airspace_list, file=filename,
+                           map=map._repr_html_(), message = message, FL_message = FL_detail)

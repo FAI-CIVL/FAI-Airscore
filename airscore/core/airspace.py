@@ -36,7 +36,7 @@ def airspace_info(record):
 def convert_height(height_string):
     if re.search("FL", height_string):
         height = int(re.sub("[^0-9]", "", height_string))
-        return height_string, None, "FL"
+        return height_string, height, "FL"
 
     elif re.search("ft", height_string):
         if len(re.sub("[^0-9]", "", height_string)) > 0:
