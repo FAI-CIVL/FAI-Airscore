@@ -22,15 +22,15 @@
 </div>
 
 <div  id ="message" class="jumbotron">
-    <h3>Note</h3>
+    <h3>Note:</h3>
     <p class="lead">Airscore uses meters above mean sea level in checking flights.
       All heights in feet will be converted automatically, however if the airspace contains AGL
       you may want to increase the altitude below. You can adjust the floor and ceiling columns
       you should use the format "XXXX ft" or "XXXX m" clicking save will modify the Openair file.
       You can also delete airspaces if not needed.
       the new file will be available to download here and for pilots from the competition page.</p>
-  <b/><h2><b>{{message}}</b></h2>
-    <h6>{{FL_message}}</h6>
+  <b/><h2 class = "text-danger"><b>{{message}}</b></h2>
+    <h6 class = "text-danger">{{FL_message}}</h6>
 </div>
 
 <div class="container">
@@ -58,13 +58,14 @@
           {% endif %}
 
           {% if a['ceiling unit'] == 'FL' or a['ceiling unit'] == "Unknown height unit"  %}
-            <td class="text-danger"> {{a['floor description']}}</td>
+            <td class="text-danger"> {{a['ceiling description']}}</td>
           {% else %}
             <td>{{a['ceiling description']}}</td>
            {% endif %}
 
           <td data-editable="false">{{a['floor']}}</td>
           <td data-editable="false">{{a['ceiling']}}</td>
+          <td><button type="button" class="btn btn-primary" id="delete_airspace_{{a['id']}}" onclick=" delete_space({{loop.index0}});">Delete</button></td>
         </tr>
       {% endfor %}
 
@@ -74,7 +75,7 @@
 
 <form action="/" method="post">
     <div class="container">
-        <button type="button" class="btn btn-primary" id="submit-tracks">redraw map</button>
+        <button type="button" class="btn btn-primary" id="submit-tracks">save file and redraw map</button>
     </div>
 </form>
 
@@ -83,13 +84,13 @@
 	$('#airspace_table').editableTableWidget();
 </script>
 
-<!--<script>var $multiSelects = $("select[multiple='multiple']");-->
-<!--function install(){-->
-<!--                $multiSelects.bsMultiSelect();-->
-<!--}-->
-<!--install();</script>-->
+<script>
 
-<!--<script>-->
+function delete_space(index){ var isGood=confirm('Are you sure you want to delete this item?');
+ if (isGood) {alert(index) } }
+
+
+
 <!--  tracks=[]-->
 <!--  $(document).ready(function() {-->
 <!--    $("#submit-tracks").click(function(){-->
@@ -109,7 +110,9 @@
 <!--        }-->
 <!--    });-->
 <!--});-->
-<!--</script>-->
+</script>
+
+
 
 
 {% endblock %}

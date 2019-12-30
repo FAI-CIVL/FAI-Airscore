@@ -16,7 +16,7 @@ import jsonpickle
 
 NM_in_meters = 1852.00
 Ft_in_meters = 0.3048000
-colours = {'P': '#d42c31', 'D': '#d42c31', 'R': '#d42c31'}
+colours = {'P': '#d42c31', 'D': '#d42c31', 'R': '#d42c31', 'GP': '#d42c31', 'C': '#d42c31', 'Z': '#d42c31', 'CTR': '#d42c31'}
 def read_openair(filename):
     space = None
     with open(filename) as fp:
@@ -62,7 +62,7 @@ def circle_map(element, info):
     if element['type'] == 'circle':
        floor, _, _ = convert_height(info['floor'])
        ceiling, _, _ = convert_height(info['ceiling'])
-       radius = f"{element['radius']} NM/{element['radius'] * NM_in_meters}m"
+       radius = f"{element['radius']} NM/{round(element['radius'] * NM_in_meters, 1)}m"
        return folium.Circle(
                 location=(element['center'][0], element['center'][1]),
                 popup=f"{info['name']} Class {info['class']} floor:{floor} ceiling:{ceiling} Radius:{radius}",

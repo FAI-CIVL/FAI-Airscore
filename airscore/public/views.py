@@ -11,32 +11,22 @@ from flask import (
     jsonify
 )
 from flask_login import login_required, login_user, logout_user
-
 from airscore.extensions import login_manager
 from airscore.public.forms import LoginForm
 from airscore.user.forms import RegisterForm
 from airscore.user.models import User
 from airscore.utils import flash_errors
-
 import datetime
 from task import get_map_json, get_task_json
 from trackUtils import read_track_result_file
 from design_map import *
-# from wtforms.widgets import ListWidget, CheckboxInput
-# from wtforms.validators import Required
 from flask_wtf import FlaskForm
 from wtforms import StringField,SubmitField, SelectField, SelectMultipleField
 from calcUtils import sec_to_time
-import os
-import json
-import Defines as d
 import mapUtils
 from myconn import Database
 from sqlalchemy import func, not_
 from sqlalchemy.orm import aliased
-
-# from branca.element import Element, MacroElement
-# from jinja2 import Template
 
 blueprint = Blueprint("public", __name__, static_folder="../static")
 
@@ -152,7 +142,7 @@ def get_all_comps():
 
 @blueprint.route('/competition/<compid>')
 def competition(compid):
-    from db_tables import tblTask, tblCompetition, tblResultFile
+    from db_tables import tblTask, tblCompetition
     from compUtils import get_comp_json
     result_file = get_comp_json(int(compid))
     all_tasks = []
@@ -178,12 +168,13 @@ def competition(compid):
 
     with Database() as db:
         non_scored_tasks = (db.session.query(t.tasPk.label('id'),
-                 t.tasName.label('task_name'),
-                 t.tasDate.label('date'),
-                 t.tasTaskType.label('task_type'),
-                 t.tasShortRouteDistance,
-                 t.tasComment.label('comment')).filter(t.comPk == compid, t.tasPk.notin_(task_ids))
-                 .order_by(t.tasDate.desc()).all())
+                                             t.tasName.label('task_name'),
+                                             t.tasDate.label('date'),
+                                             t.tasTaskType.label('task_type'),
+                                             t.tasShortRouteDistance,
+                                             t.tasComment.label('comment')).filter(t.comPk == compid,
+                                                                                   t.tasPk.notin_(task_ids))
+                            .order_by(t.tasDate.desc()).all())
 
         competition_info = (db.session.query(
                 c.comPk,
@@ -209,10 +200,10 @@ def competition(compid):
             wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox = get_map_json(task['id'])
             layer['geojson'] = None
             layer['bbox'] = bbox
-            map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
+            task_map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
                            goal_line=goal_line, margin=tolerance)
             task['opt_dist'] = '{:0.2f}'.format(task['tasShortRouteDistance']/1000) + ' km'
-            task.update({'map': map._repr_html_()})
+            task.update({'map': task_map._repr_html_()})
             task['tasQuality'] = "-"
             task['status'] = "Not yet scored"
             task['date'] = task['date'].strftime("%Y-%m-%d")
@@ -237,15 +228,10 @@ def get_task_result(taskid):
     rank = 1
     all_pilots = []
     for r in result_file['results']:  # need sex??
-        pilot = []
         track_id = r['track_id']
         name = r['name']
-        pilot.append(f'<b>{rank}</b>')
-        pilot.append(f'<a href="/map/{track_id}-{taskid}">{name}</a>')
-        pilot.append(r['nat'])
-        pilot.append(r['glider'])
-        pilot.append(r['class'])
-        pilot.append(r['sponsor'])
+        pilot = [f'<b>{rank}</b>', f'<a href="/map/{track_id}-{taskid}">{name}</a>', r['nat'], r['glider'], r['class'],
+                 r['sponsor']]
         if r['SS_time']:
             pilot.append(sec_to_time(r['SS_time']+result_file['info']['time_offset']).strftime("%H:%M:%S"))
         else:
@@ -271,9 +257,7 @@ def get_task_result(taskid):
     all_classes = []
     for glider_class in result_file['rankings']:
         if glider_class[-5:].lower() == 'class':
-            comp_class = {}
-            comp_class['name'] = glider_class
-            comp_class['limit'] = result_file['rankings'][glider_class][-1]
+            comp_class = {'name': glider_class, 'limit': result_file['rankings'][glider_class][-1]}
             all_classes.append(comp_class)
     all_classes.reverse()
     result_file['classes'] = all_classes
@@ -294,17 +278,8 @@ def get_comp_result(compid):
     all_pilots = []
     rank = 1
     for r in result_file['results']:
-        pilot = []
-        pilot.append(rank)
-        pilot.append(r['fai_id'])
-        pilot.append(r['civl_id'])
-        pilot.append(r['name'])
-        pilot.append(r['nat'])
-        pilot.append(r['sex'])
-        pilot.append(r['sponsor'])
-        pilot.append(r['glider'])
-        pilot.append(r['glider_cert'])
-        pilot.append(f"<b>{int(r['score'])}</b>")
+        pilot = [rank, r['fai_id'], r['civl_id'], r['name'], r['nat'], r['sex'], r['sponsor'], r['glider'],
+                 r['glider_cert'], f"<b>{int(r['score'])}</b>"]
         for task in r['results']:
             if r['results'][task]['pre'] == r['results'][task]['score']:
                 pilot.append(r['results'][task]['score'])
@@ -326,9 +301,7 @@ def get_comp_result(compid):
     all_classes = []
     for glider_class in result_file['rankings']:
         if glider_class[-5:].lower() == 'class':
-            comp_class = {}
-            comp_class['name'] = glider_class
-            comp_class['limit'] = result_file['rankings'][glider_class][-1]
+            comp_class = {'name': glider_class, 'limit': result_file['rankings'][glider_class][-1]}
             all_classes.append(comp_class)
     all_classes.reverse()
     result_file['classes'] = all_classes
@@ -364,7 +337,7 @@ def map(trackidtaskid):
 
 @blueprint.route('/_map/<trackid>/<extra_trackids>')
 def multimap(trackid, extra_trackids):
-    trackids=[]
+    trackids = []
     for t in extra_trackids.split(','):
         trackids.append(t)
     # if trackids is None:
@@ -374,16 +347,13 @@ def multimap(trackid, extra_trackids):
     print(f"trackid={trackid} trackids={trackids}")
     wpt_coords, turnpoints, short_route, goal_line, tolerance = get_task_json(66)
     colours = ['#0000ff', '#33cc33', '#ffff00', '#9900cc', '#006600', '#3399ff', '#ff99cc', '#663300', '#99ffcc']
-    #blue, green, yellow, purple, dark green,light blue, pink, brown, turquoise
+    # blue, green, yellow, purple, dark green,light blue, pink, brown, turquoise
     c = 0
     legend = {}
     extra_tracks = []
     for t in trackids:
         layer['geojson'] = read_track_result_file(t, 66)
-        track = {}
-        track['name'] = t
-        track['track'] = layer['geojson']['tracklog']
-        track['colour'] = colours[c]
+        track = {'name': t, 'track': layer['geojson']['tracklog'], 'colour': colours[c]}
         extra_tracks.append(track)
         legend[t] = colours[c]
         c += 1
@@ -414,22 +384,34 @@ def airspace_edit():
     from itertools import tee
     from mapUtils import get_airspace_bbox
 
-    filename = '/app/airscore/data/test/test_openair.txt'
+    # filename = '/app/airscore/data/test/test_openair.txt'
+    # filename =  '/app/airscore/data/test/Montegrappa 2019 OpenAir.txt'
+    # filename = '/app/airscore/data/test/gemona openair - 20062020.txt'
+    # filename = '/app/airscore/data/test/valcomino2018 OpenAir.txt' # MSL
+    # filename = '/app/airscore/data/test/cavallaria airspaces openair.txt' # AGL
+    filename = '/app/airscore/data/test/Alpen Cup 2019 Openair.txt'
+
     message = ''
     spaces = []
     unknown_flag = False
-    FL_detail = None
+    fl_detail = ''
+    fl_messages = []
 
     with open(filename) as fp:
         reader = openair.Reader(fp)
         reader, reader_2 = tee(reader)
         bbox = get_airspace_bbox(reader_2)
         airspace_list = []
+        record_number = 0
         for record, error in reader:
+            record_number += 1
             if error:
                 raise error  # or handle it otherwise
             if record['type'] == 'airspace':
-                airspace_list.append(airspace.airspace_info(record))
+                info = airspace.airspace_info(record)
+                info['Delete'] = False
+                info['id'] = record_number
+                airspace_list.append(info)
                 polygon = airspace.polygon_map(record)
                 if polygon:
                     spaces.append(polygon)
@@ -439,20 +421,24 @@ def airspace_edit():
 
     for space in airspace_list:
         if space["floor unit"] == "FL":
-            FL_detail = f"{space['floor description']} is {int(space['floor'])*100} ft or {int(space['floor'])*100*0.3048} m"
+            fl_messages.append(f"{space['floor description']} is {int(space['floor']) * 100} ft or {int(space['floor']) * 100 * 0.3048} m ")
             space['floor'] = None
 
         if space["ceiling unit"] == "FL":
-            FL_detail = f"{space['ceiling description']} is {int(space['ceiling']) * 100} ft or {int(space['ceiling']) * 100 * 0.3048} m"
+            fl_messages.append(f"{space['ceiling description']} is {int(space['ceiling']) * 100} ft or {int(space['ceiling']) * 100 * 0.3048} m ")
             space['ceiling'] = None
-            
+
         if space["floor unit"] == "Unknown height unit" or space["ceiling unit"] == "Unknown height unit":
             unknown_flag = True
 
-    if FL_detail:
-        message = 'Attention: There is FL units in the file. You should adjust to meters or feet above sea level'
-        FL_detail +=" assuming an International Standard Atmosphere pressure of 1013.25. " \
-                    "You should round down to be conservative"
+    if fl_messages:
+        message = 'Attention: There is FL (flight level) units in the file. You should adjust to meters or ' \
+                  'feet above sea level'
+        fl_detail = ", ".join(set(fl_messages))
+        fl_detail += " - Assuming an International Standard Atmosphere pressure of 1013.25 hPa (29.92 inHg) " \
+                     "at sea level, and therefore is not necessarily the same as the aircraft's actual altitude, " \
+                     "either above sea level or above ground level. " \
+                     "You should round down to be conservative and allow for days with lower atmospheric pressure."
     if unknown_flag:
         message += 'Attention: There is unknown height units in the file. You should adjust to meters or ' \
                    'feet above sea level'
@@ -462,4 +448,4 @@ def airspace_edit():
     map = design_map.make_map(airspace_layer=spaces, bbox=bbox)
     # map.save('map.html')
     return render_template('users/airspace_admin_map.html', airspace_list=airspace_list, file=filename,
-                           map=map._repr_html_(), message = message, FL_message = FL_detail)
+                           map=map._repr_html_(), message=message, FL_message=fl_detail)
