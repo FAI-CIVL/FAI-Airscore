@@ -271,6 +271,7 @@ def get_task_result(taskid):
     all_classes = []
     for glider_class in result_file['rankings']:
         if glider_class[-5:].lower() == 'class':
+        # if glider_class[-5:].lower() == 'class' or glider_class.lower() == 'overall':
             comp_class = {'name': glider_class, 'limit': result_file['rankings'][glider_class][-1]}
             all_classes.append(comp_class)
     all_classes.reverse()

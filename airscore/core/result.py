@@ -94,6 +94,7 @@ class Task_result:
                   'fastest',
                   'fastest_in_goal',
                   'min_dept_time',
+                  'max_ss_time'
                   'min_ess_time',
                   'max_distance',
                   'tot_distance_flown',
