@@ -27,7 +27,7 @@ import mapUtils
 from myconn import Database
 from sqlalchemy import func, not_
 from sqlalchemy.orm import aliased
-
+import json
 blueprint = Blueprint("public", __name__, static_folder="../static")
 
 
@@ -388,8 +388,8 @@ def airspace_edit():
     # filename =  '/app/airscore/data/test/Montegrappa 2019 OpenAir.txt'
     # filename = '/app/airscore/data/test/gemona openair - 20062020.txt'
     # filename = '/app/airscore/data/test/valcomino2018 OpenAir.txt' # MSL
-    # filename = '/app/airscore/data/test/cavallaria airspaces openair.txt' # AGL
-    filename = '/app/airscore/data/test/Alpen Cup 2019 Openair.txt'
+    filename = '/app/airscore/data/test/cavallaria airspaces openair.txt' # AGL
+    # filename = '/app/airscore/data/test/Alpen Cup 2019 Openair.txt'
 
     message = ''
     spaces = []
@@ -402,22 +402,26 @@ def airspace_edit():
         reader, reader_2 = tee(reader)
         bbox = get_airspace_bbox(reader_2)
         airspace_list = []
+        delete_airspace_list= []
         record_number = 0
         for record, error in reader:
-            record_number += 1
+
             if error:
                 raise error  # or handle it otherwise
             if record['type'] == 'airspace':
-                info = airspace.airspace_info(record)
-                info['Delete'] = False
-                info['id'] = record_number
-                airspace_list.append(info)
+                details = airspace.airspace_info(record)
+                details['id'] = record_number
+                airspace_list.append(details)
+                delete_info = {'delete': False, 'id': record_number, 'floor': details['floor description'],
+                               'ceiling': details['ceiling description']}
+                delete_airspace_list.append(delete_info)
                 polygon = airspace.polygon_map(record)
                 if polygon:
                     spaces.append(polygon)
                 for element in record['elements']:
                     if element['type'] == 'circle':
                         spaces.append(airspace.circle_map(element, record))
+            record_number += 1
 
     for space in airspace_list:
         if space["floor unit"] == "FL":
@@ -448,4 +452,5 @@ def airspace_edit():
     map = design_map.make_map(airspace_layer=spaces, bbox=bbox)
     # map.save('map.html')
     return render_template('users/airspace_admin_map.html', airspace_list=airspace_list, file=filename,
-                           map=map._repr_html_(), message=message, FL_message=fl_detail)
+                           map=map._repr_html_(), message=message, FL_message=fl_detail,
+                           delete_list=json.dumps(delete_airspace_list))

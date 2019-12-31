@@ -25,10 +25,10 @@
     <h3>Note:</h3>
     <p class="lead">Airscore uses meters above mean sea level in checking flights.
       All heights in feet will be converted automatically, however if the airspace contains AGL
-      you may want to increase the altitude below. You can adjust the floor and ceiling columns
-      you should use the format "XXXX ft" or "XXXX m" clicking save will modify the Openair file.
-      You can also delete airspaces if not needed.
-      the new file will be available to download here and for pilots from the competition page.</p>
+      you may want to increase the altitude in the table below. You can adjust the floor and ceiling columns.
+      Use the format "XXXX ft" or "XXXX m". You can also delete airspaces if not needed.
+      Clicking save will create a new Openair file.
+      The new file will be available to immediately download here and for pilots, from the competition page.</p>
   <b/><h2 class = "text-danger"><b>{{message}}</b></h2>
     <h6 class = "text-danger">{{FL_message}}</h6>
 </div>
@@ -65,7 +65,7 @@
 
           <td data-editable="false">{{a['floor']}}</td>
           <td data-editable="false">{{a['ceiling']}}</td>
-          <td><button type="button" class="btn btn-primary" id="delete_airspace_{{a['id']}}" onclick=" delete_space({{loop.index0}});">Delete</button></td>
+          <td data-editable="false"><button type="button" class="btn btn-primary" id="delete_airspace_{{a['id']}}" onclick=" delete_space({{loop.index0}});">Delete</button></td>
         </tr>
       {% endfor %}
 
@@ -75,7 +75,7 @@
 
 <form action="/" method="post">
     <div class="container">
-        <button type="button" class="btn btn-primary" id="submit-tracks">save file and redraw map</button>
+        <button type="button" class="btn btn-primary" id="submit-tracks">Save new file</button>
     </div>
 </form>
 
@@ -83,11 +83,22 @@
 <script>
 	$('#airspace_table').editableTableWidget();
 </script>
+<script>delete_airspace_list = {{delete_list|safe}};</script>
 
 <script>
 
-function delete_space(index){ var isGood=confirm('Are you sure you want to delete this item?');
- if (isGood) {alert(index) } }
+function delete_space(index){
+  $('#delete_airspace_' + index).closest('tr').toggleClass("text-muted bg-dark ");
+  if (delete_airspace_list[index].delete == false) {
+    $('#delete_airspace_' + index).text("Reinstate");
+    delete_airspace_list[index].delete = true;
+      }
+    else {
+        $('#delete_airspace_' + index).text("Delete");
+    delete_airspace_list[index].delete = false;
+    }
+
+  };
 
 
 
