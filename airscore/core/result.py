@@ -40,6 +40,7 @@ class Task_result:
                  'start_time',
                  'start_close_time',
                  'SS_interval',
+                 'start_iteration',
                  'last_start_time',
                  'task_type',
                  'distance',
@@ -71,7 +72,6 @@ class Task_result:
                     'arr_max_height',  # int
                     'validity_min_time',  # seconds
                     'score_back_time',  # seconds
-                    'jump_the_gun',
                     'max_JTG',
                     'JTG_penalty_per_sec',
                     'nominal_goal',  # percentage / 100
@@ -195,7 +195,6 @@ class Comp_result(object):
                     'arr_max_height',  # int
                     'validity_min_time',  # seconds
                     'score_back_time',  # seconds
-                    'jump_the_gun',     # True or False
                     'max_JTG',      # seconds
                     'JTG_penalty_per_sec',
                     'nominal_goal',  # percentage / 100

@@ -46,7 +46,6 @@ class FormulaPreset:
     arr_min_height: Preset
     arr_max_height: Preset
     validity_min_time: Preset
-    jump_the_gun: Preset
     max_JTG: Preset
     JTG_penalty_per_sec: Preset
     overall_validity: Preset
@@ -70,7 +69,7 @@ class Formula(object):
     def __init__(self, comp_id=None, formula_name=None, formula_type=None, formula_version=None, comp_class=None,
                  formula_distance=None, formula_arrival=None, formula_departure=None, lead_factor=None,
                  formula_time=None, no_goal_penalty=None, glide_bonus=None, tolerance=0.001, arr_alt_bonus=None,
-                 arr_min_height=None, arr_max_height=None, validity_min_time=None, jump_the_gun=None, max_JTG=None,
+                 arr_min_height=None, arr_max_height=None, validity_min_time=None, max_JTG=0,
                  JTG_penalty_per_sec=None, nominal_goal=None, nominal_dist=None, nominal_time=None, nominal_launch=None,
                  scoring_altitude=None, min_dist=None, score_back_time=None, overall_validity='all', validity_param=1):
 
@@ -90,7 +89,6 @@ class Formula(object):
         self.arr_max_height = arr_max_height  # int
         self.validity_min_time = validity_min_time  # seconds
         self.score_back_time = score_back_time  # seconds
-        self.jump_the_gun = jump_the_gun
         self.max_JTG = max_JTG
         self.JTG_penalty_per_sec = JTG_penalty_per_sec
         self.overall_validity = overall_validity
@@ -231,9 +229,7 @@ class Formula(object):
         formula.arr_alt_bonus = float(form.get('aatb_factor') if form.get('final_glide_decelerator') == 'aatb' else 0)
 
         '''jump the gun'''
-        formula.jump_the_gun = 0 if form.get('jump_the_gun_factor') == '0' else 1
-        formula.max_JTG = (None if form.get('jump_the_gun_factor') == '0'
-                           else int(form.get('jump_the_gun_max')))  # seconds
+        formula.max_JTG = int(form.get('jump_the_gun_max'))  # seconds
         formula.JTG_penalty_per_sec = (None if form.get('jump_the_gun_factor') == '0'
                                        else round(1 / float(form.get('jump_the_gun_factor')), 4))
 
@@ -284,7 +280,6 @@ class Formula(object):
                 row.forESSHeightUp = self.arr_max_height
                 row.forMinTime = int(self.validity_min_time / 60)
                 row.forScorebackTime = int(self.score_back_time / 60)
-                row.forJumpTheGun = self.jump_the_gun
                 row.forMaxJTG = int(self.max_JTG / 60)
                 row.forJTGPenPerSec = self.JTG_penalty_per_sec
                 row.forAltitudeMode = self.scoring_altitude
@@ -307,7 +302,7 @@ class Task_formula(object):
     def __init__(self, task_id=None, formula_name=None, formula_type=None, formula_version=None, comp_class=None,
                  formula_distance=None, formula_arrival=None, formula_departure=None, lead_factor=None,
                  formula_time=None, no_goal_penalty=None, glide_bonus=None, tolerance=None, arr_alt_bonus=None,
-                 arr_min_height=None, arr_max_height=None, validity_min_time=None, jump_the_gun=None, max_JTG=None,
+                 arr_min_height=None, arr_max_height=None, validity_min_time=None, max_JTG=None,
                  JTG_penalty_per_sec=None, nominal_goal=None, nominal_dist=None, nominal_time=None, nominal_launch=None,
                  scoring_altitude=None, min_dist=None, score_back_time=None):
         """
@@ -328,7 +323,6 @@ class Task_formula(object):
         self.arr_max_height = arr_max_height  # int
         self.validity_min_time = validity_min_time  # seconds
         self.score_back_time = score_back_time  # seconds
-        self.jump_the_gun = jump_the_gun
         self.max_JTG = max_JTG
         self.JTG_penalty_per_sec = JTG_penalty_per_sec
         self.nominal_goal = nominal_goal  # percentage / 100
