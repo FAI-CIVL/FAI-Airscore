@@ -658,6 +658,7 @@ class Task(object):
             verify_all_tracks(self, lib)
 
         '''store results to database'''
+        print(f"updating database with new results...")
         update_all_results(self.task_id, self.pilots)
 
         lib.process_results(self)
