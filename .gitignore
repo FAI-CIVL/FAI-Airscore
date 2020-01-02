@@ -32,6 +32,8 @@ airscore/core/*.kml
 airscore/core/*.csv
 airscore/core/*.xml
 airscore/core/*.xsl
+airscore/core/*.xls
+airscore/core/*.xlsx
 airscore/core/*.xctsk
 airscore/core/*.zip
 airscore/core/test*

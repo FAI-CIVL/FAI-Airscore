@@ -71,7 +71,7 @@ class Flight_result(object):
         self.last_altitude = last_altitude
         self.landing_time = 0
         self.landing_altitude = 0
-        self.jump_the_gun = jump_the_gun
+        self.jump_the_gun = jump_the_gun        # not used at the moment
         self.result_type = 'lo'
         self.score = 0
         self.departure_score = 0
@@ -262,8 +262,8 @@ class Flight_result(object):
         result = cls()
         tolerance = task.formula.tolerance
         time_offset = task.time_offset  # local time offset for result times (SSS and ESS)
-        max_jump_the_gun = 0 if not task.formula.jump_the_gun else task.formula.max_JTG  # seconds
-        jtg_penalty_per_sec = 0 if not task.formula.jump_the_gun else task.formula.JTG_penalty_per_sec
+        max_jump_the_gun = task.formula.max_JTG  # seconds
+        jtg_penalty_per_sec = 0 if max_jump_the_gun == 0 else task.formula.JTG_penalty_per_sec
 
         if not task.optimised_turnpoints:
             task.calculate_optimised_task_length()
@@ -349,14 +349,14 @@ class Flight_result(object):
             '''
 
             if (((task.turnpoints[t].type == "speed" and not started)
-                 or
-                 (task.turnpoints[t-1].type == "speed" and (task.SS_interval or task.task_type == 'ELAPSED TIME'))
-                 or
-                 (task.turnpoints[t-1].type == "speed" and started
-                  and max_jump_the_gun > 0 and result.waypoints_achieved[-1][1] < task.start_time))
-                    and
+                    or
+                    (task.turnpoints[t - 1].type == "speed" and (task.SS_interval or task.task_type == 'ELAPSED TIME'))
+                    or
+                    (task.turnpoints[t - 1].type == "speed" and started
+                        and max_jump_the_gun > 0 and result.waypoints_achieved[-1][1] < task.start_time))
+                and
                     (my_fix.rawtime >= (task.start_time - max_jump_the_gun))
-                    and
+                and
                     (not task.start_close_time or my_fix.rawtime <= task.start_close_time)):
 
                 # we need to check if it is a restart, so to use correct tp
@@ -442,7 +442,11 @@ class Flight_result(object):
             result.real_start_time = min([e[1] for e in result.waypoints_achieved if e[0] == 'SSS'])
 
             if task.task_type == 'RACE' and task.SS_interval:
-                start_num = int((task.start_close_time - task.start_time) / task.SS_interval)
+                if task.start_iteration:
+                    start_num = task.start_iteration
+                else:
+                    # indefinite start number
+                    start_num = int((task.start_close_time - task.start_time) / task.SS_interval)
                 gate = task.start_time + (task.SS_interval * start_num)  # last gate
                 while gate > task.start_time:
                     valid_starts = [e for e in result.waypoints_achieved
@@ -751,15 +755,65 @@ def verify_all_tracks(task, lib):
     lib.process_results(task)
 
 
-def update_all_results(results):
-    """get results to update from the list"""
+# def update_all_results(results):
+#     """get results to update from the list"""
+#     from db_tables import tblTaskResult as R
+#     from sqlalchemy.exc import SQLAlchemyError
+#
+#     mappings = []
+#     for pilot in results:
+#         res = pilot.result
+#         track_id = pilot.track_id
+#
+#         '''checks conformity'''
+#         if not res.goal_time:
+#             res.goal_time = 0
+#         if not res.ESS_time:
+#             res.ESS_time = 0
+#
+#         mapping = {'tarPk': track_id,
+#                    'tarDistance': res.distance_flown,
+#                    'tarSpeed': res.speed,
+#                    'tarLaunch': res.first_time,
+#                    'tarStart': res.real_start_time,
+#                    'tarGoal': res.goal_time,
+#                    'tarSS': res.SSS_time,
+#                    'tarES': res.ESS_time,
+#                    'tarTurnpoints': res.waypoints_made,
+#                    'tarFixedLC': res.fixed_LC,
+#                    'tarESAltitude': res.ESS_altitude,
+#                    'tarGoalAltitude': res.goal_altitude,
+#                    'tarMaxAltitude': res.max_altitude,
+#                    'tarLastAltitude': res.last_altitude,
+#                    'tarLastTime': res.last_time,
+#                    'tarLandingAltitude': res.landing_altitude,
+#                    'tarLandingTime': res.landing_time,
+#                    'tarResultType': res.result_type,
+#                    'tarPenalty': res.penalty,
+#                    'tarComment': '; '.join(res.comment) if res.comment is not None and len(res.comment) > 0 else None}
+#         mappings.append(mapping)
+#
+#     '''update database'''
+#     with Database() as db:
+#         try:
+#             db.session.bulk_update_mappings(R, mappings)
+#             db.session.commit()
+#         except SQLAlchemyError:
+#             print(f'update all results on database gave an error')
+#             db.session.rollback()
+#             return False
+#
+#     return True
+
+
+def mass_add_results(task_id, results):
+    """adds results to database"""
     from db_tables import tblTaskResult as R
     from sqlalchemy.exc import SQLAlchemyError
 
     mappings = []
     for pilot in results:
         res = pilot.result
-        track_id = pilot.track_id
 
         '''checks conformity'''
         if not res.goal_time:
@@ -767,7 +821,8 @@ def update_all_results(results):
         if not res.ESS_time:
             res.ESS_time = 0
 
-        mapping = {'tarPk': track_id,
+        mapping = {'parPk': pilot.par_id,
+                   'tasPk': task_id,
                    'tarDistance': res.distance_flown,
                    'tarSpeed': res.speed,
                    'tarLaunch': res.first_time,
@@ -790,7 +845,7 @@ def update_all_results(results):
     '''update database'''
     with Database() as db:
         try:
-            db.session.bulk_update_mappings(R, mappings)
+            db.session.bulk_insert_mappings(R, mappings)
             db.session.commit()
         except SQLAlchemyError:
             print(f'update all results on database gave an error')

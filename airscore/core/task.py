@@ -91,6 +91,7 @@ class Task(object):
         self.window_close_time = None  # seconds from midnight: not managed yet
         self.start_close_time = None
         self.SS_interval = 0  # seconds: Interval among start gates when more than one
+        self.start_iteration = None     # number of start iterations: 0 is indefinite up to start close time
         self.opt_dist = 0
         self.opt_dist_to_SS = 0
         self.opt_dist_to_ESS = 0
@@ -163,9 +164,9 @@ class Task(object):
         from Defines import FILEDIR
         return p.join(FILEDIR, self.comp_path, self.task_path.lower())
 
-    @property
-    def last_start_time(self):
-        return self.stats['last_SS'] if self.stats else 0
+    # @property
+    # def last_start_time(self):
+    #     return self.stats['last_SS'] if self.stats else 0
 
     @property
     def tolerance(self):
@@ -223,12 +224,12 @@ class Task(object):
             return 0
         if self.comp_class == 'PG':
             '''Need to distinguish wether we have multiple start or elapsed time'''
-            if (self.task_type == 'elapsed time' or self.SS_interval) and self.last_start_time:
-                return self.stop_time - self.last_start_time
+            if (self.task_type == 'elapsed time' or self.SS_interval) and self.max_ss_time:
+                return self.stop_time - self.max_ss_time
             else:
                 return self.stop_time - self.start_time
-        elif self.comp_class == 'PG':
-            # is it so simple in HG? Need to check
+        elif self.comp_class == 'HG':
+            # TODO is it so simple in HG? Need to check
             return self.stop_time - self.start_time
 
     ''' * Statistic Properties *'''
@@ -464,9 +465,6 @@ class Task(object):
         ''' retrieve scoring formula library'''
         lib = self.formula.get_lib()
 
-        ''' get pilot list and results'''
-        self.get_results(lib)
-
         if mode == 'full' or self.stopped_time:
             # TODO: check if we changed task, or we had new tracks, after last results generation
             #       If this is the case we should not need to re-score unless especially requested
@@ -477,11 +475,15 @@ class Task(object):
             print(f"Calculating task optimised distance...")
             self.calculate_task_length()
             self.calculate_optimised_task_length()
+            print(f"Storing calculated values to database...")
             self.update_task_distance()
             print(f"Task Opt. Route: {round(self.opt_dist / 1000, 4)} Km")
             print(f"Processing pilots tracks...")
             self.check_all_tracks(lib)
 
+        else:
+            ''' get pilot list and results'''
+            self.get_results(lib)
 
         # self.stats.update(lib.task_totals(self))
 
@@ -517,6 +519,9 @@ class Task(object):
             # res['track_file'] = None if not res['track_file'] else res['track_file'].split('/')[-1]
             results.append(res)
         rankings = read_rankings(self.comp_id)
+        if len(rankings) == 0:
+            ''' create an overall ranking'''
+            rankings.update({'overall': [cert for cert in set([p.info.glider_cert for p in self.pilots])]})
 
         '''create json file'''
         result = {'info': info,
@@ -576,11 +581,15 @@ class Task(object):
 
     def check_all_tracks(self, lib=None):
         """ checks all igc files against Task and creates results """
-        from flight_result import verify_all_tracks, adjust_flight_results, update_all_results
+        from flight_result import verify_all_tracks, adjust_flight_results
+        from pilot import update_all_results
 
         if not lib:
             '''retrieve scoring formula library'''
             lib = self.formula.get_lib()
+
+        ''' get pilot and tracks list'''
+        self.get_results()
 
         ''' manage Stopped Task    '''
         print(f'stopped time: {self.stopped_time}')
@@ -649,7 +658,7 @@ class Task(object):
             verify_all_tracks(self, lib)
 
         '''store results to database'''
-        # update_all_results(self.pilots)       # deactivated for tests TO BE activated
+        update_all_results(self.task_id, self.pilots)
 
         lib.process_results(self)
 
@@ -773,7 +782,7 @@ class Task(object):
                 db.session.bulk_save_objects(wpts)
 
             except SQLAlchemyError:
-                print('Task storing error')
+                print(f'Task storing error')
                 db.session.rollback()
                 return None
 

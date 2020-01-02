@@ -26,17 +26,50 @@ $(document).ready(function() {
             // comp info
             $('#comp_name').text(json.info.comp_name + " - " + json.info.task_name);
             $('#task_date').text(json.info.date + ' ' + json.info.task_type);
-            $('#comp_header').append('<b>Start: ' + format_seconds(json.info.start_time + json.info.time_offset) + ' End: ' + format_seconds(json.info.task_deadline + json.info.time_offset) + '</b><br>');
+
+            var offset = json.info.time_offset;
+            if (json.info.SS_interval)
+            {
+                var int = json.info.SS_interval;
+                var rep = 1;
+
+                if (json.info.start_iteration)
+                {
+                    rep = json.info.start_iteration;
+                }
+
+                if (rep == 0)
+                {
+                    rep = parseInt((json.info.start_close_time - json.info.start_time) / int) - 1;
+                }
+
+                var t = json.info.start_time;
+                $('#comp_header').append('<b>Start gates (' + (rep+1) + '):</b><br />');
+                for (var i=0; i <= rep; i++)
+                {
+                    $('#comp_header').append((i+1) + '. <b>' + format_seconds(t + int * i + offset) + '</b><br />');
+                }
+
+            }
+            else
+            {
+                $('#comp_header').append('<b>Start: ' + format_seconds(json.info.start_time + offset) + '</b><br />');
+            }
+
             if (json.info.stopped_time)
             {
-                $('#comp_header').append('<b>Stopped: ' + json.info.stopped_time + '</b><br>');
+                $('#comp_header').append('<b>Stopped: ' + format_seconds(json.info.stopped_time + offset) + '</b><br />');
                 $('#altbonus').text("S.Alt");
 
             }
-            if (json.info.comp_class != "PG")
+            else
             {
-                update_classes(json.info.comp_class);
+                 $('#comp_header').append('<b>Task Deadline: ' + format_seconds(json.info.task_deadline + offset) + '</b><br />');
             }
+//            if (json.info.comp_class != "PG")
+//            {
+//                update_classes(json.info.comp_class);
+//            }
 
             // waypoints
             for (var c=0; c < json.route.length; c++)

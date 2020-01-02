@@ -53,9 +53,7 @@ pg_preset = FormulaPreset(
     # Score back time for Stopped Tasks (minutes)
     score_back_time=Preset(value=5, visible=True, editable=True),
     # Jump the Gun: 1 or 0
-    jump_the_gun=Preset(value=False, visible=True, editable=True),
-    # Max allowed Jump the Gun (seconds)
-    max_JTG=Preset(value=None, visible=True, editable=True),
+    max_JTG=Preset(value=0, visible=True, editable=True),
     # Penalty per Jump the Gun second
     JTG_penalty_per_sec=Preset(value=None, visible=True, editable=True),
     # Type of Total Validity: ftv, all
@@ -99,8 +97,6 @@ hg_preset = FormulaPreset(
     validity_min_time=Preset(value=90, visible=True, editable=True),
     # Score back time for Stopped Tasks (minutes)
     score_back_time=Preset(value=15, visible=True, editable=True),
-    # Jump the Gun: 1 or 0
-    jump_the_gun=Preset(value=1, visible=True, editable=True),
     # Max allowed Jump the Gun (seconds)
     max_JTG=Preset(value=300, visible=True, editable=True),
     # Penalty per Jump the Gun second

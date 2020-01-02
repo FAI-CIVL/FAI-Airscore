@@ -537,7 +537,7 @@ def points_allocation(task):
 
     if task.formula.formula_distance == 'difficulty':
         '''Difficulty Calculation'''
-        task.difficulty = difficulty_calculation(task, results)
+        task.difficulty = difficulty_calculation(task)
 
     ''' Score each pilot now'''
     for res in results:

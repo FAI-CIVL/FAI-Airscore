@@ -242,6 +242,7 @@ def update_all_results(task_id, pilots, session=None):
 
     for pilot in pilots:
         res = pilot.result
+        par_id = pilot.par_id
         track_file = pilot.track_file
         track_id = pilot.track_id
 
@@ -273,7 +274,7 @@ def update_all_results(task_id, pilots, session=None):
 
         if track_id is None:
             ''' insert new result'''
-            mapping.update({'tasPk': task_id})
+            mapping.update({'tasPk': task_id, 'parPk': par_id})
             insert_mappings.append(mapping)
         else:
             ''' update result'''

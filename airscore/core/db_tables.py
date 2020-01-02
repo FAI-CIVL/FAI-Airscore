@@ -1,7 +1,7 @@
 # coding: utf-8
 from sqlalchemy import BINARY, CHAR, Column, DECIMAL, Date, DateTime, Enum, Float, ForeignKey, PrimaryKeyConstraint, \
     Index, String, TIMESTAMP, Table, Text, text
-from sqlalchemy.dialects.mysql import BIGINT, INTEGER, LONGTEXT, MEDIUMTEXT, TINYINT, VARCHAR
+from sqlalchemy.dialects.mysql import BIGINT, INTEGER, LONGTEXT, MEDIUMTEXT, SMALLINT, TINYINT, VARCHAR
 from sqlalchemy.orm import relationship
 from myconn import Base, metadata
 
@@ -64,8 +64,7 @@ class CompFormulaView(Base):
                       Column('arr_max_height', INTEGER(11)),
                       Column('validity_min_time', BIGINT(13)),
                       Column('score_back_time', BIGINT(13), server_default=text("'0'")),
-                      Column('jump_the_gun', TINYINT(1), server_default=text("'0'")),
-                      Column('max_JTG', BIGINT(13)),
+                      Column('max_JTG', SMALLINT(6)),
                       Column('JTG_penalty_per_sec', Float),
                       Column('scoring_altitude', Enum('GPS', 'QNH'), nullable=False, server_default=text("'GPS'"))
                       )
@@ -160,8 +159,7 @@ class CompObjectView(Base):
                       Column('arr_max_height', INTEGER(11)),
                       Column('validity_min_time', BIGINT(13)),
                       Column('score_back_time', BIGINT(13), server_default=text("'0'")),
-                      Column('jump_the_gun', TINYINT(1), server_default=text("'0'")),
-                      Column('max_JTG', BIGINT(13)),
+                      Column('max_JTG', SMALLINT(6)),
                       Column('JTG_penalty_per_sec', Float),
                       Column('scoring_altitude', Enum('GPS', 'QNH'), nullable=False, server_default=text("'GPS'")),
                       Column('team_size', INTEGER(11)),
@@ -348,8 +346,7 @@ class TaskFormulaView(Base):
                       Column('arr_max_height', INTEGER(11)),
                       Column('validity_min_time', BIGINT(13)),
                       Column('score_back_time', BIGINT(13), server_default=text("'0'")),
-                      Column('jump_the_gun', INTEGER(4), server_default=text("'0'")),
-                      Column('max_JTG', BIGINT(13)),
+                      Column('max_JTG', SMALLINT(6)),
                       Column('JTG_penalty_per_sec', Float),
                       Column('scoring_altitude', Enum('GPS', 'QNH'), server_default=text("'GPS'"))
                       )
@@ -374,10 +371,10 @@ class TaskObjectView(Base):
                       Column('window_close_time', BIGINT(21)),
                       Column('check_launch', Enum('on', 'off'), server_default=text("'off'")),
                       Column('start_time', BIGINT(21)),
+                      Column('start_iteration', SMALLINT(6)),
+                      Column('SS_interval', BIGINT(13)),
                       Column('start_close_time', BIGINT(21)),
                       Column('stopped_time', BIGINT(21)),
-                      Column('last_start_time', BIGINT(21)),
-                      Column('SS_interval', BIGINT(13)),
                       Column('task_type', String(21)),
                       Column('distance', Float(asdecimal=False)),
                       Column('opt_dist', Float(asdecimal=False)),
@@ -531,10 +528,10 @@ class TaskView(Base):
                       Column('window_close_time', BIGINT(21)),
                       Column('check_launch', Enum('on', 'off'), server_default=text("'off'")),
                       Column('start_time', BIGINT(21)),
+                      Column('SS_interval', BIGINT(13)),
+                      Column('start_iteration', SMALLINT(6)),
                       Column('start_close_time', BIGINT(21)),
                       Column('stopped_time', BIGINT(21)),
-                      Column('last_start_time', BIGINT(21)),
-                      Column('SS_interval', BIGINT(13)),
                       Column('task_type', String(21)),
                       Column('distance', Float(asdecimal=False)),
                       Column('opt_dist', Float(asdecimal=False)),
@@ -562,8 +559,7 @@ class TaskView(Base):
                       Column('arr_max_height', INTEGER(11)),
                       Column('validity_min_time', BIGINT(13)),
                       Column('score_back_time', BIGINT(13), server_default=text("'0'")),
-                      Column('jump_the_gun', INTEGER(4), server_default=text("'0'")),
-                      Column('max_JTG', BIGINT(13)),
+                      Column('max_JTG', SMALLINT(6)),
                       Column('JTG_penalty_per_sec', Float),
                       Column('scoring_altitude', Enum('GPS', 'QNH'), server_default=text("'GPS'")),
                       Column('comment', Text),
@@ -889,8 +885,7 @@ class tblForComp(Base):
     forESSHeightUp = Column(INTEGER(11))
     forMinTime = Column(INTEGER(11))
     forScorebackTime = Column(INTEGER(11), nullable=False, server_default=text("'5'"))
-    forJumpTheGun = Column(TINYINT(1), nullable=False, server_default=text("'0'"))
-    forMaxJTG = Column(INTEGER(11))
+    forMaxJTG = Column(SMALLINT, nullable=False, server_default=text("'0'"))
     forJTGPenPerSec = Column(Float)
     forAltitudeMode = Column(Enum('GPS', 'QNH'), nullable=False, server_default=text("'GPS'"))
     comTeamSize = Column(INTEGER(4), nullable=False, server_default=text("'0'"))
@@ -1080,7 +1075,8 @@ class tblTask(Base):
 
     tasPk = Column(INTEGER(11), primary_key=True)
     comPk = Column(ForeignKey('tblCompetition.comPk'), index=True)
-    tasLastUpdate = Column(TIMESTAMP, nullable=False)
+    tasLastUpdate = Column(TIMESTAMP, nullable=False,
+                           server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
     tasNum = Column(TINYINT(4), nullable=False)
     tasName = Column(String(100))
     tasDate = Column(Date, nullable=False)
@@ -1090,9 +1086,10 @@ class tblTask(Base):
     tasLaunchClose = Column(DateTime)
     tasCheckLaunch = Column(Enum('on', 'off'), server_default=text("'off'"))
     tasStartTime = Column(DateTime)
+    tasSSInterval = Column(INTEGER(11), server_default=text("'0'"))
+    tasStartIteration = Column(TINYINT)
     tasStartCloseTime = Column(DateTime)
     tasStoppedTime = Column(DateTime)
-    tasLastStartTime = Column(DateTime)
     tasResultsType = Column(String(20))
     tasTaskType = Column(Enum('race', 'elapsed time', 'free distance', 'distance with bearing'),
                          server_default=text("'race'"))
@@ -1101,7 +1098,6 @@ class tblTask(Base):
     tasStartSSDistance = Column(Float)
     tasEndSSDistance = Column(Float)
     tasSSDistance = Column(Float)
-    tasSSInterval = Column(INTEGER(11), server_default=text("'0'"))
     tasLaunchValid = Column(INTEGER(11), server_default=text("'1'"))
     tasDistOverride = Column(Enum('on', 'difficulty', 'off'))
     tasDepOverride = Column(Enum('leadout', 'departure', 'off'))

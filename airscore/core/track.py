@@ -20,7 +20,6 @@ import os
 '''
 
 
-
 class Track(object):
     """
     Create a Track object and
@@ -36,10 +35,9 @@ class Track(object):
         self.track_file = track_file
         self.track_id = track_id
         self.track_type = track_type
-        self.comment = comment      #should be a list?
+        self.comment = comment  # should be a list?
         self.flight = flight  # igc_lib.Flight object
         self.par_id = par_id  # tblParticipant ID # could delete?
-
 
     @property
     def date(self):
@@ -146,10 +144,11 @@ class Track(object):
     @classmethod
     def read_file(cls, filename, track_id=None, par_id=None):
         """Reads track file and creates a track object"""
+        from Defines import track_formats
         track = cls(track_file=filename, track_id=track_id, par_id=par_id)
         track.get_type()
         print('type ', track.type)
-        if track.type in accepted_formats:
+        if track.type in track_formats:
             """file is a valid track format"""
             if track.type == "igc":
                 """using IGC reader from aerofile library"""
@@ -160,7 +159,7 @@ class Track(object):
             To be rewritten for igc_lib"""
             # TODO update kml reader if we are interested in reading kml track format
             # with open(track.filename, 'r', encoding='utf-8') as f:
-                # flight = kml.Reader().read(f)
+            # flight = kml.Reader().read(f)
             '''Check flight is valid
             I'm not creating a track without a valid flight because it would miss date property.'''
             # TODO We could change this part if we find a way to gen non-valid flight with timestamp property

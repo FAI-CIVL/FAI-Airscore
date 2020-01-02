@@ -40,6 +40,7 @@ class Task_result:
                  'start_time',
                  'start_close_time',
                  'SS_interval',
+                 'start_iteration',
                  'last_start_time',
                  'task_type',
                  'distance',
@@ -61,7 +62,6 @@ class Task_result:
     formula_list = ['formula_name',
                     'formula_type',
                     'formula_version',
-                    'comp_class',  # 'HG', 'PG'
                     'formula_distance',  # 'on', 'difficulty', 'off'
                     'formula_arrival',  # 'position', 'time', 'off'
                     'formula_departure',  # 'on', 'leadout', 'off'
@@ -72,7 +72,6 @@ class Task_result:
                     'arr_max_height',  # int
                     'validity_min_time',  # seconds
                     'score_back_time',  # seconds
-                    'jump_the_gun',
                     'max_JTG',
                     'JTG_penalty_per_sec',
                     'nominal_goal',  # percentage / 100
@@ -95,6 +94,7 @@ class Task_result:
                   'fastest',
                   'fastest_in_goal',
                   'min_dept_time',
+                  'max_ss_time'
                   'min_ess_time',
                   'max_distance',
                   'tot_distance_flown',
@@ -131,7 +131,7 @@ class Task_result:
                     'nat_team',
                     'distance_flown',
                     'distance',
-                    'ss_speed',
+                    'speed',
                     'real_start_time',
                     'goal_time',
                     'result_type',
@@ -196,7 +196,6 @@ class Comp_result(object):
                     'arr_max_height',  # int
                     'validity_min_time',  # seconds
                     'score_back_time',  # seconds
-                    'jump_the_gun',     # True or False
                     'max_JTG',      # seconds
                     'JTG_penalty_per_sec',
                     'nominal_goal',  # percentage / 100

@@ -100,7 +100,8 @@ class FSDB(object):
                         result = Flight_result.from_fsdb(res, task.SS_distance, task.departure, task.arrival)
                         pilot = Pilot.create(result=result)
                         pilot.info.ID = int(res.get('id'))
-                        pilot.track.track_file = res.find('FsFlightData').get('tracklog_filename')
+                        if res.find('FsFlightData') is not None:
+                            pilot.track.track_file = res.find('FsFlightData').get('tracklog_filename')
                         task.pilots.append(pilot)
                 tasks.append(task)
 
@@ -178,7 +179,7 @@ class FSDB(object):
                         'nom_goal': formula.nominal_goal,
                         'day_quality_override': 0,  # still to implement
                         'bonus_gr': formula.glide_bonus,
-                        'jump_the_gun_factor': (0 if formula.jump_the_gun == 0
+                        'jump_the_gun_factor': (0 if formula.max_JTG == 0
                                                 else round(1 / formula.JTG_penalty_per_sec, 1)),
                         'jump_the_gun_max': formula.max_JTG,
                         'normalize_1000_before_day_quality': 0,  # still to implement
@@ -277,8 +278,8 @@ class FSDB(object):
             '''FsScoreFormula'''
             # we permit just few changes in single tasks from comp formula, so we just update those
             tf_attr = formula_attr
-            tf_attr.update({'jump_the_gun_factor': (0 if not t.jump_the_gun or not t.formula.JTG_penalty
-                                                    else round(1 / t.formula.JTG_penalty)),
+            tf_attr.update({'jump_the_gun_factor': (0 if not not t.formula.JTG_penalty
+                                                    else round(1 / t.formula.JTG_penalty, 1)),
                             'time_points_if_not_in_goal': 1 - t.formula.no_goal_penalty,
                             'use_arrival_position_points': 1 if t.formula.arrival == 'position' else 0,
                             'use_arrival_time_points': 1 if t.formula.arrival == 'time' else 0,
