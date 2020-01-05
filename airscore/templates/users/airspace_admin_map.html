@@ -1,8 +1,6 @@
 {% extends "base.html"%}
 
 {% block content %}
-<!-- <script src="https://rawgit.com/DashboardCode/BsMultiSelect/master/dist/js/BsMultiSelect.min.js"></script> -->
-<script src="/static/js/BsMultiSelect.min.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.1.0/dist/leaflet.css"
    integrity="sha512-wcw6ts8Anuw10Mzh9Ytw4pylW8+NAD4ch3lqm9lzAsTxg0GFeJgoAtxuCLREZSC5lUXdVyo/7yfsqFjQ4S+aKw=="
    crossorigin=""/>
@@ -15,6 +13,7 @@
 <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 <!--<script src="/static/leaflet.elevation-0.0.4.js" crossorigin="anonymous"></script>-->
 <link rel="stylesheet" href="/static/css/BsMultiSelect.css" crossorigin="anonymous">
+<meta name="csrf-token" content="{{ csrf_token() }}">
 
 <h1>Airspace: {{file}}</h1>
 <div id="map">
@@ -49,23 +48,23 @@
 
       {%for a in airspace_list %}
         <tr>
-          <td data-editable="false">{{a['name']}}</td>
-          <td data-editable="false">{{a['class']}}</td>
+          <td data-editable="false" class ="value">{{a['name']}}</td>
+          <td data-editable="false" class ="value">{{a['class']}}</td>
           {% if a['floor unit'] == 'FL' or a['floor unit'] == "Unknown height unit"  %}
-            <td class="text-danger"> {{a['floor description']}}</td>
+            <td class="text-danger" class ="value"> {{a['floor_description']}}</td>
           {% else %}
-            <td>{{a['floor description']}}</td>
+            <td>{{a['floor_description']}}</td>
           {% endif %}
 
           {% if a['ceiling unit'] == 'FL' or a['ceiling unit'] == "Unknown height unit"  %}
-            <td class="text-danger"> {{a['ceiling description']}}</td>
+            <td class="text-danger" class ="value"> {{a['ceiling_description']}}</td>
           {% else %}
-            <td>{{a['ceiling description']}}</td>
+            <td>{{a['ceiling_description']}}</td>
            {% endif %}
 
-          <td data-editable="false">{{a['floor']}}</td>
-          <td data-editable="false">{{a['ceiling']}}</td>
-          <td data-editable="false"><button type="button" class="btn btn-primary" id="delete_airspace_{{a['id']}}" onclick=" delete_space({{loop.index0}});">Delete</button></td>
+          <td data-editable="false" class ="value">{{a['floor']}}</td>
+          <td data-editable="false" class ="value">{{a['ceiling']}}</td>
+          <td data-editable="false" class ="value"><button type="button" class="btn btn-primary" id="delete_airspace_{{a['id']}}" onclick=" delete_space({{loop.index0}}, '{{a['name']}}');">Delete</button></td>
         </tr>
       {% endfor %}
 
@@ -73,57 +72,163 @@
   </table>
 </div>
 
-<form action="/" method="post">
     <div class="container">
-        <button type="button" class="btn btn-primary" id="submit-tracks">Save new file</button>
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#file_save_Modal">Save new file</button>
     </div>
-</form>
+
+
+<!-- Modal -->
+<div class="modal fade" id="file_save_Modal" tabindex="-1" role="dialog" aria-labelledby="ModalCenterTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="ModalLongTitle">Save a new Openair file</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form>
+          <div class="form-group">
+          <label for="filename">New File Name</label>
+          <input type="text" class="form-control" id="filename" required>
+          <small id="fileHelp" class="form-text text-muted">We'll add the .txt extension</small>
+  </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="submit-tracks" onclick=save_new()>Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script src="/static/js/mindmup-editabletable.js"></script>
 <script>
 	$('#airspace_table').editableTableWidget();
 </script>
-<script>delete_airspace_list = {{delete_list|safe}};</script>
+<script>
+delete_airspace_list = [];
+table_data=[];
+original_file = "{{file}}";
+var airspace_detail = JSON.parse('{{airspace_list|tojson}}');
+changes = [];
+</script>
 
 <script>
-
-function delete_space(index){
-  $('#delete_airspace_' + index).closest('tr').toggleClass("text-muted bg-dark ");
-  if (delete_airspace_list[index].delete == false) {
-    $('#delete_airspace_' + index).text("Reinstate");
-    delete_airspace_list[index].delete = true;
+function delete_space(index, name){
+  $("#delete_airspace_" + index).closest("tr")
+.toggleClass("text-muted bg-dark");
+  if (delete_airspace_list.includes(name)===false){
+    $("#delete_airspace_" + index).text("Reinstate");
+    delete_airspace_list.push(name);
       }
     else {
-        $('#delete_airspace_' + index).text("Delete");
-    delete_airspace_list[index].delete = false;
+        $("#delete_airspace_" + index).text("Delete");
+        const nameindex = delete_airspace_list.indexOf(name);
+        if (nameindex > -1) {
+          delete_airspace_list.splice(nameindex, 1);
+        }
+
     }
 
   };
-
-
-
-<!--  tracks=[]-->
-<!--  $(document).ready(function() {-->
-<!--    $("#submit-tracks").click(function(){-->
-<!--        tracks = $('#select-tracks-id').val();-->
-<!--        if(tracks.length > 0){-->
-<!--          fetch('/_map/9999/' + tracks).then(function(response) {-->
-<!--                          response.text().then(function(data) {-->
-
-<!--                         map.innerHTML = data;-->
-<!--                       })-->
-
-<!--                   });-->
-<!--        }-->
-<!--        else {-->
-<!--    $(location).attr('href','/map/9999');-->
-
-<!--        }-->
-<!--    });-->
-<!--});-->
 </script>
 
+<script>
+var csrftoken = $('meta[name=csrf-token]').attr('content');
+
+$.ajaxSetup({
+    beforeSend: function(xhr, settings) {
+        if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type)) {
+            xhr.setRequestHeader("X-CSRFToken", csrftoken)
+        }
+    }
+})
+</script>
+<script>
 
 
+function get_table_data(){
+   // loop over each table row (tr)
+   $("#airspace_table tr").each(function(){
+        var currentRow=$(this);
+
+        var name_value=currentRow.find("td:eq(0)").text();
+        var floor_value=currentRow.find("td:eq(2)").text();
+        var ceiling_value=currentRow.find("td:eq(3)").text();
+
+        var obj={};
+        obj.name=name_value;
+        obj.floor=floor_value;
+        obj.ceiling=ceiling_value;
+        if(name_value !== ""){
+        table_data.push(obj);
+        }
+   });
+
+
+}
+
+    </script>
+
+<script>
+
+function save_new(){
+  get_changes()
+  if($("#filename").val()){
+      $('#file_save_Modal').modal('hide');
+          var inputs = document.getElementById('airspace_table_body').getElementsByTagName('td');
+
+        $.ajax({
+            url: '/save_airspace',
+            contentType:"application/json",
+            dataType:"json",
+            data: JSON.stringify({ "delete": delete_airspace_list, "changes": changes,  "old_filename": original_file, "new_filename": $("#filename").val()}),
+            type: 'PUT',
+            success: function(response) {
+                console.log(response);
+            },
+            error: function(error) {
+                console.log(error);
+            }
+        });
+    }
+
+}
+
+
+
+</script>
+
+<script>
+function get_changes(){
+get_table_data()
+let counter = 0;
+table_data.forEach(function(element) {
+
+if(typeof airspace_detail[counter] !== 'undefined'){
+  if( element.name==airspace_detail[counter].name) //should always be equal
+  {
+
+      if(element.floor!==airspace_detail[counter].floor_description)
+       {
+       changes.push({'name': element.name, 'old': airspace_detail[counter].floor_description, 'new': element.floor})
+       }
+       if(element.ceiling !==airspace_detail[counter].ceiling_description)
+       {
+       changes.push({'name': element.name, 'old': airspace_detail[counter].ceiling_description, 'new': element.ceiling})
+       }
+
+  }
+ }
+
+ counter++;
+ })
+console.log(changes)
+}
+
+</script>
 
 {% endblock %}

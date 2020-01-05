@@ -28,6 +28,8 @@ from myconn import Database
 from sqlalchemy import func, not_
 from sqlalchemy.orm import aliased
 import json
+
+
 blueprint = Blueprint("public", __name__, static_folder="../static")
 
 
@@ -228,15 +230,10 @@ def get_task_result(taskid):
     rank = 1
     all_pilots = []
     for r in result_file['results']:  # need sex??
-        pilot = []
         track_id = r['track_id']
         name = r['name']
-        pilot.append(f'<b>{rank}</b>')
-        pilot.append(f'<a href="/map/{track_id}">{name}</a>')
-        pilot.append(r['nat'])
-        pilot.append(r['glider'])
-        pilot.append(r['glider_cert'])
-        pilot.append(r['sponsor'])
+        pilot = [f'<b>{rank}</b>', f'<a href="/map/{track_id}">{name}</a>', r['nat'], r['glider'], r['glider_cert'],
+                 r['sponsor']]
         if r['SSS_time']:
             pilot.append(sec_to_time(r['SSS_time']+result_file['info']['time_offset']).strftime("%H:%M:%S"))
         else:
@@ -408,7 +405,6 @@ def airspace_edit():
         reader, reader_2 = tee(reader)
         bbox = get_airspace_bbox(reader_2)
         airspace_list = []
-        delete_airspace_list= []
         record_number = 0
         for record, error in reader:
 
@@ -418,9 +414,6 @@ def airspace_edit():
                 details = airspace.airspace_info(record)
                 details['id'] = record_number
                 airspace_list.append(details)
-                delete_info = {'delete': False, 'id': record_number, 'floor': details['floor description'],
-                               'ceiling': details['ceiling description']}
-                delete_airspace_list.append(delete_info)
                 polygon = airspace.polygon_map(record)
                 if polygon:
                     spaces.append(polygon)
@@ -430,15 +423,15 @@ def airspace_edit():
             record_number += 1
 
     for space in airspace_list:
-        if space["floor unit"] == "FL":
-            fl_messages.append(f"{space['floor description']} is {int(space['floor']) * 100} ft or {int(space['floor']) * 100 * 0.3048} m ")
+        if space["floor_unit"] == "FL":
+            fl_messages.append(f"{space['floor_description']} is {int(space['floor']) * 100} ft or {int(space['floor']) * 100 * 0.3048} m ")
             space['floor'] = None
 
-        if space["ceiling unit"] == "FL":
-            fl_messages.append(f"{space['ceiling description']} is {int(space['ceiling']) * 100} ft or {int(space['ceiling']) * 100 * 0.3048} m ")
+        if space["ceiling_unit"] == "FL":
+            fl_messages.append(f"{space['ceiling_description']} is {int(space['ceiling']) * 100} ft or {int(space['ceiling']) * 100 * 0.3048} m ")
             space['ceiling'] = None
 
-        if space["floor unit"] == "Unknown height unit" or space["ceiling unit"] == "Unknown height unit":
+        if space["floor_unit"] == "Unknown height unit" or space["ceiling_unit"] == "Unknown height unit":
             unknown_flag = True
 
     if fl_messages:
@@ -458,5 +451,15 @@ def airspace_edit():
     map = design_map.make_map(airspace_layer=spaces, bbox=bbox)
     # map.save('map.html')
     return render_template('users/airspace_admin_map.html', airspace_list=airspace_list, file=filename,
-                           map=map._repr_html_(), message=message, FL_message=fl_detail,
-                           delete_list=json.dumps(delete_airspace_list))
+                           map=map._repr_html_(), message=message, FL_message=fl_detail)
+
+
+
+@blueprint.route('/save_airspace', methods=['PUT'])
+def save_airspace():
+    import sys
+    data = request.json
+    print(data)
+    sys.stdout.flush()
+    # return json.loads(data)[0]
+    return render_template('public/index.html')

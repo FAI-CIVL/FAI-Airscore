@@ -1,5 +1,5 @@
 """
-OpenAir file reader:
+OpenAir file operations
 
 - AirScore -
 Stuart Mackintosh - Antonio Golfari
@@ -17,7 +17,11 @@ import jsonpickle
 NM_in_meters = 1852.00
 Ft_in_meters = 0.3048000
 colours = {'P': '#d42c31', 'D': '#d42c31', 'R': '#d42c31', 'GP': '#d42c31', 'C': '#d42c31', 'Z': '#d42c31', 'CTR': '#d42c31'}
+
+
 def read_openair(filename):
+    """reads openair file using the aerofiles library.
+    returns airspaces object (openair.reader)"""
     space = None
     with open(filename) as fp:
         space = openair.Reader(fp)
@@ -25,15 +29,19 @@ def read_openair(filename):
 
 
 def airspace_info(record):
-    return {'name': record['name'], 'class': record['class'], 'floor description': record['floor'],
-            'floor': convert_height(record['floor'])[1], 'floor unit': convert_height(record['floor'])[2],
-            'ceiling description': record['ceiling'],
-            'ceiling': convert_height(record['ceiling'])[1], 'ceiling unit': convert_height(record['ceiling'])[2]}
+    """Creates a dictionary containing details on an airspace for use in front end"""
+    return {'name': record['name'], 'class': record['class'], 'floor_description': record['floor'],
+            'floor': convert_height(record['floor'])[1], 'floor_unit': convert_height(record['floor'])[2],
+            'ceiling_description': record['ceiling'],
+            'ceiling': convert_height(record['ceiling'])[1], 'ceiling_unit': convert_height(record['ceiling'])[2]}
 
 
 # def map_airspace(openair):
 #     for space in openair:
 def convert_height(height_string):
+    """Converts feet in metres, GND into 0. leaves FL essentialy untouched. returns a string that can be used in
+    labels etc such as "123 m", a int of height such as 123 and a unit such as "m" """
+
     if re.search("FL", height_string):
         height = int(re.sub("[^0-9]", "", height_string))
         return height_string, height, "FL"
@@ -59,6 +67,8 @@ def convert_height(height_string):
 
 
 def circle_map(element, info):
+    """Returns folium circle mapping object from circular airspace.
+    takes circular airspace as input, which may only be part of an airspace"""
     if element['type'] == 'circle':
        floor, _, _ = convert_height(info['floor'])
        ceiling, _, _ = convert_height(info['ceiling'])
@@ -79,6 +89,8 @@ def circle_map(element, info):
 
 
 def polygon_map(record):
+    """Returns folium polygon mapping object from multipoint airspace
+    takes entire airspace as input"""
     locations = []
     for element in record['elements']:
         if element['type'] == 'point':
@@ -100,8 +112,52 @@ def polygon_map(record):
             fill_opacity=0.2,
             fill_color=colours[record['class']]
             )
-
 #
+# def modify_openair_file(oldfilename, newfilename, mod_data):
+#     with open(oldfilename) as file:
+#         for space in mod_data['data']:
+#             spacename = space['name']
+#             if space['delete'] == True:
+#                 delete_airspace(file, spacename)
+#         all_lines = file.readlines()
+#         for line_number, line in enumerate(all_lines):
+#             # if line == 'AN ' + mod_data['data']:
+
+
+
+def delete_airspace(file, spacename):
+    """Deletes an airspace from file data. Does not write file to disk
+    arguments:
+    file - file data
+    spacename - name of the airspace"""
+
+    all_spaces = file.split("\n\n")
+    # print(f'spacename:{spacename}')
+    for space in all_spaces:
+        # print(space)
+        if space.find(spacename) > 0:
+            all_spaces.remove(space)
+            # print(f'removing {spacename}')
+    return "\n\n".join(all_spaces)
+
+
+def modify_airspace(file, spacename, old, new):
+    """modifies airspace. for changing height data.
+    arguments:
+    file - file data
+    spacename - airspace name
+    old - string to be relpaced
+    new - string to be inserted"""
+
+    all_spaces = file.split("\n\n")
+    # print(f'spacename:{spacename}')
+    for i, space in enumerate(all_spaces):
+        # print(space)
+        if space.find(spacename) > 0:
+            all_spaces[i] = space.replace(old, new)
+
+    return "\n\n".join(all_spaces)
+
 # def arc_map(element, info):
 #     if element['type'] == 'arc':
 #         if len(re.sub("[^0-9]", "", info['floor'])) > 0:
