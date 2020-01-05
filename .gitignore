@@ -7,7 +7,6 @@
 
 # Configuration files
 .env
-airscore/core/defines.yaml
 airscore/core/secret.yaml
 airscore/core/dreamhost*.*
 
