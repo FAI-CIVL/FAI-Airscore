@@ -8,7 +8,8 @@ from flask import (
     render_template,
     request,
     url_for,
-    jsonify
+    jsonify,
+    send_file
 )
 from flask_login import login_required, login_user, logout_user
 from airscore.extensions import login_manager
@@ -27,6 +28,8 @@ import mapUtils
 from myconn import Database
 from sqlalchemy import func, not_
 from sqlalchemy.orm import aliased
+import Defines
+from os import path
 import json
 
 
@@ -378,21 +381,15 @@ def multimap(trackid, extra_trackids):
     return map
 
 
-@blueprint.route('/airspace_map')
-def airspace_edit():
+@blueprint.route('/airspace_map/<filename>')
+def airspace_edit(filename):
     from aerofiles import openair
     import jsonpickle
     import airspace
     import design_map
     from itertools import tee
     from mapUtils import get_airspace_bbox
-
-    # filename = '/app/airscore/data/test/test_openair.txt'
-    # filename =  '/app/airscore/data/test/Montegrappa 2019 OpenAir.txt'
-    # filename = '/app/airscore/data/test/gemona openair - 20062020.txt'
-    # filename = '/app/airscore/data/test/valcomino2018 OpenAir.txt' # MSL
-    filename = '/app/airscore/data/test/cavallaria airspaces openair.txt' # AGL
-    # filename = '/app/airscore/data/test/Alpen Cup 2019 Openair.txt'
+    from os import path
 
     message = ''
     spaces = []
@@ -400,8 +397,12 @@ def airspace_edit():
     fl_detail = ''
     fl_messages = []
 
-    with open(filename) as fp:
+    airspace_path = Defines.AIRSPACEDIR
+    fullname = path.join(airspace_path, filename)
+
+    with open(fullname) as fp:
         reader = openair.Reader(fp)
+
         reader, reader_2 = tee(reader)
         bbox = get_airspace_bbox(reader_2)
         airspace_list = []
@@ -424,11 +425,13 @@ def airspace_edit():
 
     for space in airspace_list:
         if space["floor_unit"] == "FL":
-            fl_messages.append(f"{space['floor_description']} is {int(space['floor']) * 100} ft or {int(space['floor']) * 100 * 0.3048} m ")
+            fl_messages.append(
+                f"{space['floor_description']} is {int(space['floor']) * 100} ft or {int(space['floor']) * 100 * 0.3048} m ")
             space['floor'] = None
 
         if space["ceiling_unit"] == "FL":
-            fl_messages.append(f"{space['ceiling_description']} is {int(space['ceiling']) * 100} ft or {int(space['ceiling']) * 100 * 0.3048} m ")
+            fl_messages.append(
+                f"{space['ceiling_description']} is {int(space['ceiling']) * 100} ft or {int(space['ceiling']) * 100 * 0.3048} m ")
             space['ceiling'] = None
 
         if space["floor_unit"] == "Unknown height unit" or space["ceiling_unit"] == "Unknown height unit":
@@ -454,12 +457,16 @@ def airspace_edit():
                            map=map._repr_html_(), message=message, FL_message=fl_detail)
 
 
-
 @blueprint.route('/save_airspace', methods=['PUT'])
 def save_airspace():
-    import sys
+    import airspace
     data = request.json
-    print(data)
-    sys.stdout.flush()
-    # return json.loads(data)[0]
-    return render_template('public/index.html')
+    newfile = airspace.create_new_airspace(data)
+    return jsonify(dict(redirect=newfile))
+
+@blueprint.route('/download/<filetype>/<filename>', methods=['GET'])
+def download_file(filetype, filename):
+    if filetype == 'airspace':
+        airspace_path = Defines.AIRSPACEDIR
+        fullname = path.join(airspace_path, filename)
+    return send_file(fullname, as_attachment=True)

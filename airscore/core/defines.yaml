@@ -14,7 +14,9 @@ dir:
   image: /app/airscore/data/images/
   map: /app/airscore/data/map-objects/
   result: /app/airscore/data/results/
-  airspace: /app/airscore/data/airspace/
+  airspace: /app/airscore/data/airspace/openair/
+  airspace_map: /app/airscore/data/map-objects/airspace/
+  airspace_check: /app/airscore/data/airspace/check_file/
 
 competition_season:
 #start_year: previous or current offset -1 or 0

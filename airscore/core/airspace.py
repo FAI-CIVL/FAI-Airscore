@@ -12,7 +12,9 @@ from aerofiles import openair
 from pprint import pprint as pp
 import folium
 import re
+from os import path
 import jsonpickle
+import Defines
 
 NM_in_meters = 1852.00
 Ft_in_meters = 0.3048000
@@ -23,9 +25,22 @@ def read_openair(filename):
     """reads openair file using the aerofiles library.
     returns airspaces object (openair.reader)"""
     space = None
-    with open(filename) as fp:
+    airspace_path = Defines.AIRSPACEDIR
+    fullname = path.join(airspace_path, filename)
+    with open(fullname, 'r') as fp:
         space = openair.Reader(fp)
     return space
+
+
+def write_openair(data, filename):
+    """writes file into airspace folder. No checking if file data is valid openair format.
+    returns airspaces object (openair.reader)"""
+    space = None
+    airspace_path = Defines.AIRSPACEDIR
+    # airspace_path = '/home/stuart/Documents/projects/Airscore_git/airscore/airscore/data/airspace/openair/'
+    fullname = path.join(airspace_path, filename)
+    with open(fullname, 'w') as fp:
+        fp.write(data)
 
 
 def airspace_info(record):
@@ -52,7 +67,7 @@ def convert_height(height_string):
             meters = round(feet * Ft_in_meters,1)
             info = f"{height_string}/{meters} m"
 
-    elif re.search("m", height_string):
+    elif re.search("m", height_string) or re.search("MSL", height_string):
         if len(re.sub("[^0-9]", "", height_string)) > 0:
             meters = int(re.sub("[^0-9]", "", height_string))
             info = f"{meters} m"
@@ -123,7 +138,23 @@ def polygon_map(record):
 #         for line_number, line in enumerate(all_lines):
 #             # if line == 'AN ' + mod_data['data']:
 
+def create_new_airspace(mod_data):
+    airspace_path = Defines.AIRSPACEDIR
+    # airspace_path = '/home/stuart/Documents/projects/Airscore_git/airscore/airscore/data/airspace/openair/'
+    fullname = path.join(airspace_path, mod_data['old_filename'])
+    new_file = mod_data['new_filename']
 
+    if new_file[-4:] != '.txt':
+        new_file += '.txt'
+
+    with open(fullname, 'r') as file:
+        data = file.read()
+        for change in mod_data['changes']:
+            data = modify_airspace(data, change['name'], change['old'], change['new'])
+        for space in mod_data['delete']:
+            data = delete_airspace(data, space)
+        write_openair(data, new_file)
+    return new_file
 
 def delete_airspace(file, spacename):
     """Deletes an airspace from file data. Does not write file to disk

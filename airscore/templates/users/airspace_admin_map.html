@@ -15,7 +15,14 @@
 <link rel="stylesheet" href="/static/css/BsMultiSelect.css" crossorigin="anonymous">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
+<div class="container">
 <h1>Airspace: {{file}}</h1>
+
+        <h3>
+          <a href="{{ url_for('.download_file', filetype='airspace', filename=file)}}"> <button type="button" class="btn btn-primary" >Download</button></a>
+        </h3>
+</div>
+
 <div id="map">
 {{map|safe}}
 </div>
@@ -73,7 +80,7 @@
 </div>
 
     <div class="container">
-        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#file_save_Modal">Save new file</button>
+        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#file_save_Modal">Save</button>
     </div>
 
 
@@ -90,9 +97,9 @@
       <div class="modal-body">
         <form>
           <div class="form-group">
-          <label for="filename">New File Name</label>
+          <label for="filename">File Name</label>
           <input type="text" class="form-control" id="filename" required>
-          <small id="fileHelp" class="form-text text-muted">We'll add the .txt extension</small>
+          <small id="fileHelp" class="form-text text-muted">Use the same name to overwrite or a new name for a new file. We'll add the .txt extension</small>
   </div>
         </form>
       </div>
@@ -188,7 +195,9 @@ function save_new(){
             data: JSON.stringify({ "delete": delete_airspace_list, "changes": changes,  "old_filename": original_file, "new_filename": $("#filename").val()}),
             type: 'PUT',
             success: function(response) {
-                console.log(response);
+            if (response.redirect){
+                window.location.href = response.redirect;
+                }
             },
             error: function(error) {
                 console.log(error);
