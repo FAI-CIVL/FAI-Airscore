@@ -383,13 +383,8 @@ def multimap(trackid, extra_trackids):
 
 @blueprint.route('/airspace_map/<filename>')
 def airspace_edit(filename):
-    from aerofiles import openair
-    import jsonpickle
-    import airspace
     import design_map
-    from itertools import tee
-    from mapUtils import get_airspace_bbox
-    from os import path
+    import airspaceUtils
 
     message = ''
     spaces = []
@@ -397,31 +392,10 @@ def airspace_edit(filename):
     fl_detail = ''
     fl_messages = []
 
-    airspace_path = Defines.AIRSPACEDIR
-    fullname = path.join(airspace_path, filename)
-
-    with open(fullname) as fp:
-        reader = openair.Reader(fp)
-
-        reader, reader_2 = tee(reader)
-        bbox = get_airspace_bbox(reader_2)
-        airspace_list = []
-        record_number = 0
-        for record, error in reader:
-
-            if error:
-                raise error  # or handle it otherwise
-            if record['type'] == 'airspace':
-                details = airspace.airspace_info(record)
-                details['id'] = record_number
-                airspace_list.append(details)
-                polygon = airspace.polygon_map(record)
-                if polygon:
-                    spaces.append(polygon)
-                for element in record['elements']:
-                    if element['type'] == 'circle':
-                        spaces.append(airspace.circle_map(element, record))
-            record_number += 1
+    data = airspaceUtils.read_airspace_map_file(filename)
+    airspace_list = data['airspace_list']
+    spaces = data['spaces']
+    bbox = data['bbox']
 
     for space in airspace_list:
         if space["floor_unit"] == "FL":
@@ -448,20 +422,18 @@ def airspace_edit(filename):
     if unknown_flag:
         message += 'Attention: There is unknown height units in the file. You should adjust to meters or ' \
                    'feet above sea level'
-    data = jsonpickle.encode(spaces)
-    fullname: str = 'test_airspace'
 
-    map = design_map.make_map(airspace_layer=spaces, bbox=bbox)
-    # map.save('map.html')
+    airspace_map = design_map.make_map(airspace_layer=spaces, bbox=bbox)
+
     return render_template('users/airspace_admin_map.html', airspace_list=airspace_list, file=filename,
-                           map=map._repr_html_(), message=message, FL_message=fl_detail)
+                           map=airspace_map._repr_html_(), message=message, FL_message=fl_detail)
 
 
 @blueprint.route('/save_airspace', methods=['PUT'])
 def save_airspace():
-    import airspace
+    import airspaceUtils
     data = request.json
-    newfile = airspace.create_new_airspace(data)
+    newfile = airspaceUtils.create_new_airspace(data)
     return jsonify(dict(redirect=newfile))
 
 @blueprint.route('/download/<filetype>/<filename>', methods=['GET'])

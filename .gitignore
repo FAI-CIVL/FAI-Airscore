@@ -24,6 +24,7 @@ airscore/data/log/*
 airscore/data/tracks/*
 airscore/data/json/*
 
+
 # Test files
 airscore/core/*.igc
 airscore/core/*.fsdb

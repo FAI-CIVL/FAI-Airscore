@@ -197,7 +197,7 @@ def read_track_result_file(track_id, task_id):
     res_path = Defines.MAPOBJDIR + 'tracks/'
     filename = 'result_' + str(track_id) + '.track'
     fullname = os.path.join(res_path, filename)
-    # if the file exists
+    # if the file does not exist
     if not Path(fullname).is_file():
         create_track_result_file(track_id, task_id)
 

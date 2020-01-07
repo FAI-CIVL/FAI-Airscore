@@ -15,6 +15,8 @@ import re
 from os import path
 import jsonpickle
 import Defines
+from mapUtils import get_airspace_bbox
+import json
 
 NM_in_meters = 1852.00
 Ft_in_meters = 0.3048000
@@ -51,11 +53,11 @@ def airspace_info(record):
             'ceiling': convert_height(record['ceiling'])[1], 'ceiling_unit': convert_height(record['ceiling'])[2]}
 
 
-# def map_airspace(openair):
-#     for space in openair:
 def convert_height(height_string):
     """Converts feet in metres, GND into 0. leaves FL essentialy untouched. returns a string that can be used in
     labels etc such as "123 m", a int of height such as 123 and a unit such as "m" """
+    if height_string == '0':
+        return '0', 0, "m"
 
     if re.search("FL", height_string):
         height = int(re.sub("[^0-9]", "", height_string))
@@ -103,6 +105,22 @@ def circle_map(element, info):
         return None
 
 
+def circle_check(element, info):
+    """Returns circle object for checking igc files from circular airspace.
+    takes circular airspace as input, which may only be part of an airspace"""
+    if element['type'] == 'circle':
+       floor, _, _ = convert_height(info['floor'])
+       ceiling, _, _ = convert_height(info['ceiling'])
+
+       return {'location': (element['center'][0], element['center'][1]),
+                'radius': element['radius'] * NM_in_meters,
+                'floor': floor,
+                'ceiling': ceiling,
+               'name': info['name']}
+    else:
+        return None
+
+
 def polygon_map(record):
     """Returns folium polygon mapping object from multipoint airspace
     takes entire airspace as input"""
@@ -127,16 +145,27 @@ def polygon_map(record):
             fill_opacity=0.2,
             fill_color=colours[record['class']]
             )
-#
-# def modify_openair_file(oldfilename, newfilename, mod_data):
-#     with open(oldfilename) as file:
-#         for space in mod_data['data']:
-#             spacename = space['name']
-#             if space['delete'] == True:
-#                 delete_airspace(file, spacename)
-#         all_lines = file.readlines()
-#         for line_number, line in enumerate(all_lines):
-#             # if line == 'AN ' + mod_data['data']:
+
+
+def polygon_check(record):
+    """Returns polygon object for checking igc files from multipoint airspace
+    takes entire airspace as input"""
+    locations = []
+    for element in record['elements']:
+        if element['type'] == 'point':
+            locations.append(element['location'])
+
+    if locations == []:
+        return None
+
+    floor, _, _ = convert_height(record['floor'])
+    ceiling, _, _ = convert_height(record['ceiling'])
+
+    return {'locations': locations,
+            'floor': floor,
+            'ceiling': ceiling,
+            'name': record['name']}
+
 
 def create_new_airspace(mod_data):
     airspace_path = Defines.AIRSPACEDIR
@@ -163,12 +192,10 @@ def delete_airspace(file, spacename):
     spacename - name of the airspace"""
 
     all_spaces = file.split("\n\n")
-    # print(f'spacename:{spacename}')
+
     for space in all_spaces:
-        # print(space)
         if space.find(spacename) > 0:
             all_spaces.remove(space)
-            # print(f'removing {spacename}')
     return "\n\n".join(all_spaces)
 
 
@@ -188,6 +215,109 @@ def modify_airspace(file, spacename, old, new):
             all_spaces[i] = space.replace(old, new)
 
     return "\n\n".join(all_spaces)
+
+
+def create_airspace_map_check_files(openair_filename):
+    """Creates file with folium objects for mapping.
+    :argument: openair_filename located in AIRSPACEDIR"""
+    from itertools import tee
+
+    mapspaces = []
+    checkspaces = []
+
+    airspace_path = Defines.AIRSPACEDIR
+    mapfile_path = Defines.AIRSPACEMAPDIR
+    checkfile_path = Defines.AIRSPACECHECKDIR
+
+    if openair_filename[-4:] != '.txt':
+        mapfile_name = openair_filename + '.map'
+        checkfile_name = openair_filename + '.check'
+    else:
+        mapfile_name = openair_filename[:-4] + '.map'
+        checkfile_name = openair_filename[:-4] + '.check'
+
+    openair_fullname = path.join(airspace_path, openair_filename)
+    mapfile_fullname = path.join(mapfile_path, mapfile_name)
+    checkfile_fullname = path.join(checkfile_path, checkfile_name)
+
+    with open(openair_fullname) as fp:
+        reader = openair.Reader(fp)
+
+        reader, reader_2 = tee(reader)
+        bbox = get_airspace_bbox(reader_2)
+        airspace_list = []
+        record_number = 0
+        for record, error in reader:
+
+            if error:
+                raise error  # or handle it otherwise
+            if record['type'] == 'airspace':
+                details = airspace_info(record)
+                details['id'] = record_number
+                airspace_list.append(details)
+                polygon = polygon_map(record)
+                if polygon:
+                    mapspaces.append(polygon)
+                    checkspaces.append(polygon_check(record))
+                for element in record['elements']:
+                    if element['type'] == 'circle':
+                        mapspaces.append(circle_map(element, record))
+                        checkspaces.append(circle_check(element, record))
+            record_number += 1
+
+        map_data = {'spaces': mapspaces, 'airspace_list': airspace_list, 'bbox': bbox}
+        check_data = {'spaces': checkspaces, 'airspace_list': airspace_list, 'bbox': bbox}
+        with open(mapfile_fullname, 'w') as fp:
+            fp.write(jsonpickle.encode(map_data))
+        with open(checkfile_fullname, 'w') as fp:
+            fp.write(json.dumps(check_data))
+
+
+def read_airspace_map_file(openair_filename):
+    """Read airspace map file if it exists. Create if not.
+        arguent: openair file name
+        returns: dictionary containing spaces object and bbox """
+    from pathlib import Path
+
+    mapfile_path = Defines.AIRSPACEMAPDIR
+
+    if openair_filename[-4:] != '.txt':
+        mapfile_name = openair_filename + '.map'
+    else:
+        mapfile_name = openair_filename[:-4] + '.map'
+
+    mapfile_fullname = path.join(mapfile_path, mapfile_name)
+
+    # if the file does not exist
+    if not Path(mapfile_fullname).is_file():
+        create_airspace_map_check_files(openair_filename)
+
+    with open(mapfile_fullname, 'r') as f:
+        return jsonpickle.decode(f.read())
+
+
+def read_airspace_check_file(openair_filename):
+    """Read airspace check file if it exists. Create if not.
+        arguent: openair file name
+        returns: dictionary containing spaces object and bbox """
+    from pathlib import Path
+
+    checkfile_path = Defines.AIRSPACECHECKDIR
+
+    if openair_filename[-4:] != '.txt':
+        checkfile_name = openair_filename + '.check'
+    else:
+        checkfile_name = openair_filename[:-4] + '.check'
+
+    checkfile_fullname = path.join(checkfile_path, checkfile_name)
+
+    # if the file does not exist
+    if not Path(checkfile_fullname).is_file():
+        create_airspace_map_check_files(openair_filename)
+
+    with open(checkfile_fullname, 'r') as f:
+        return json.loads(f.read())
+
 
 # def arc_map(element, info):
 #     if element['type'] == 'arc':
