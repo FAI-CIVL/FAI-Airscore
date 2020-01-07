@@ -76,7 +76,11 @@ class Turnpoint:
         return out
 
     def in_radius(self, fix, t, tm):
-        """Checks whether the provided GNSSFix is within the radius"""
+        """Checks whether the provided GNSSFix is within the radius
+        arguments:
+        fix - gnns fix object from flight
+        t - tolerance as a percentage
+        tm- minimum tolerance in meters"""
         if t < 0:
             tol = min(tm, self.radius * t)
         else:

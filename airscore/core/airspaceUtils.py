@@ -109,13 +109,12 @@ def circle_check(element, info):
     """Returns circle object for checking igc files from circular airspace.
     takes circular airspace as input, which may only be part of an airspace"""
     if element['type'] == 'circle':
-       floor, _, _ = convert_height(info['floor'])
-       ceiling, _, _ = convert_height(info['ceiling'])
 
-       return {'location': (element['center'][0], element['center'][1]),
-                'radius': element['radius'] * NM_in_meters,
-                'floor': floor,
-                'ceiling': ceiling,
+       return {'shape': 'circle',
+               'location': (element['center'][0], element['center'][1]),
+               'radius': element['radius'] * NM_in_meters,
+               'floor': info['floor'],
+               'ceiling': info['ceiling'],
                'name': info['name']}
     else:
         return None
@@ -147,7 +146,7 @@ def polygon_map(record):
             )
 
 
-def polygon_check(record):
+def polygon_check(record, info):
     """Returns polygon object for checking igc files from multipoint airspace
     takes entire airspace as input"""
     locations = []
@@ -161,10 +160,11 @@ def polygon_check(record):
     floor, _, _ = convert_height(record['floor'])
     ceiling, _, _ = convert_height(record['ceiling'])
 
-    return {'locations': locations,
-            'floor': floor,
-            'ceiling': ceiling,
-            'name': record['name']}
+    return {'shape': 'polygon',
+            'locations': locations,
+            'floor': info['floor'],
+            'ceiling': info['ceiling'],
+            'name': info['name']}
 
 
 def create_new_airspace(mod_data):
@@ -218,7 +218,7 @@ def modify_airspace(file, spacename, old, new):
 
 
 def create_airspace_map_check_files(openair_filename):
-    """Creates file with folium objects for mapping.
+    """Creates file with folium objects for mapping and file used for checking flights.
     :argument: openair_filename located in AIRSPACEDIR"""
     from itertools import tee
 
@@ -258,15 +258,15 @@ def create_airspace_map_check_files(openair_filename):
                 polygon = polygon_map(record)
                 if polygon:
                     mapspaces.append(polygon)
-                    checkspaces.append(polygon_check(record))
+                    checkspaces.append(polygon_check(record, details))
                 for element in record['elements']:
                     if element['type'] == 'circle':
                         mapspaces.append(circle_map(element, record))
-                        checkspaces.append(circle_check(element, record))
+                        checkspaces.append(circle_check(element, details))
             record_number += 1
 
         map_data = {'spaces': mapspaces, 'airspace_list': airspace_list, 'bbox': bbox}
-        check_data = {'spaces': checkspaces, 'airspace_list': airspace_list, 'bbox': bbox}
+        check_data = {'spaces': checkspaces, 'bbox': bbox}
         with open(mapfile_fullname, 'w') as fp:
             fp.write(jsonpickle.encode(map_data))
         with open(checkfile_fullname, 'w') as fp:
@@ -317,6 +317,108 @@ def read_airspace_check_file(openair_filename):
 
     with open(checkfile_fullname, 'r') as f:
         return json.loads(f.read())
+
+
+def check_flight_airspace(flight, openair_filename, altimeter='baro/gps', vertical_tolerance=0, horizontal_tolerance=0):
+    """check a flight object for airspace violations
+    arguments:
+    flight - flight object
+    openair_filename - filename of openair file.
+    altimeter - flight altitude to use in checking 'barometric' - barometric altitude,
+                                                  'gps' - GPS altitude
+                                                  'baro/gps' - barometric if present otherwise gps  (default)
+    vertical_tolerance: vertical distance in meters that a pilot can be inside airspace without penalty (default 0)
+    horizontal_tolerance: horizontal distance in meters that a pilot can be inside airspace without penalty (default 0)
+    """
+    from route import Turnpoint
+    from shapely.geometry import Point
+    from shapely.geometry.polygon import Polygon
+    from pyproj import Proj, Transformer
+    import numpy as np
+
+    airspace = read_airspace_check_file(openair_filename)
+    bounding_box = airspace['bbox']
+    airspace_details = airspace['spaces']
+    airspace_plot = []
+
+    '''get projection center'''
+    clat = bounding_box[0][0] + (bounding_box[1][0] - bounding_box[0][0])
+    clon = bounding_box[0][1] + (bounding_box[1][1] - bounding_box[0][1])
+
+    '''define earth model'''
+    wgs84 = Proj("+init=EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth
+    tmerc = Proj(
+        f"+proj=tmerc +lat_0={clat} +lon_0={clon} +k_0=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
+    trans = Transformer.from_proj(wgs84, tmerc)
+
+
+    for space in airspace_details:
+        if space['shape'] == 'circle':
+            space['object'] = Turnpoint(lat=space['location'][0], lon=space['location'][1], radius=space['radius'])
+        elif space['shape'] == 'polygon':
+            space['object'] = []
+            lats = []
+            lons = []
+            for p in space['locations']:
+                x, y = trans.transform(p[1], p[0])
+                lats.append(y)
+                lons.append(x)
+            lats_vect = np.array(lats)
+            lons_vect = np.array(lons)
+            lons_lats_vect = np.column_stack((lons_vect, lats_vect))
+            polygon = Polygon(lons_lats_vect)
+            space['object'] = polygon
+
+    violation = False
+    for fix in flight.fixes:
+        alt = altitude(fix, altimeter)
+        fix_violation = False
+        if in_bbox(bounding_box, fix): # check if we are in the bounding box of all airspaces
+            for space in airspace_details:
+                # we are at same alt as an airspace
+                if space['floor'] + vertical_tolerance < alt < space['ceiling'] - vertical_tolerance:
+                    if space['shape'] == 'circle':
+                        if space['object'].in_radius(fix, 0, horizontal_tolerance):
+                            airspace_plot.append([fix.rawtime, fix.lat, fix.lon, alt, space['floor'],
+                                                 space['ceiling'], space['name']])
+                            violation = True
+                            fix_violation = True
+                    elif space['shape'] == 'polygon':
+                        x, y = trans.transform(fix.lon, fix.lat)
+                        point = Point(y, x)
+                        if point.within(space['object']):
+                            airspace_plot.append([fix.rawtime, fix.lat, fix.lon, alt, space['floor'],
+                                                 space['ceiling'], space['name']])
+                            violation = True
+                            fix_violation = True
+                    # TODO insert arc check here. we can use in radius and bearing to
+
+        if not fix_violation:
+            airspace_plot.append([fix.rawtime, fix.lat, fix.lon, alt, None, None])
+    return airspace_plot, violation
+
+
+def in_bbox(bbox, fix):
+    if bbox[0][0] < fix.lat < bbox[1][0] and bbox[0][1] < fix.lon < bbox[1][1]:
+        return True
+    else:
+        return False
+
+
+def altitude(fix, altimeter):
+    """returns altitude of specified altimeter from fix"""
+    if altimeter == 'barometric' or altimeter == 'baro/gps':
+        if fix.press_alt:
+            return fix.press_alt
+        elif altimeter == 'baro/gps':
+            return fix.gnss_alt
+        else:
+            return 'error - no barometric altitude available'
+    else:
+        return fix.gnss_alt
+
+
+
 
 
 # def arc_map(element, info):

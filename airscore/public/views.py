@@ -434,6 +434,7 @@ def save_airspace():
     import airspaceUtils
     data = request.json
     newfile = airspaceUtils.create_new_airspace(data)
+    airspaceUtils.create_airspace_map_check_files(newfile)
     return jsonify(dict(redirect=newfile))
 
 @blueprint.route('/download/<filetype>/<filename>', methods=['GET'])
