@@ -17,64 +17,76 @@ from folium.features import CustomIcon
 from folium.map import FeatureGroup, Marker, Popup
 from geographiclib.geodesic import Geodesic
 
-import Defines as d
-from mapUtils import get_region_bbox
+from mapUtils import get_region_bbox, get_route_bbox
 from task import Task
-
-#from flask import Flask, flash, request, redirect, url_for, session, json
-#from flask import get_template_attribute,render_template
 
 geod = Geodesic.WGS84
 
-### select the library to parse the igc to geojson
+# select the library to parse the igc to geojson
 global IGC_LIB
 IGC_LIB = 'igc_lib'
 
-# app = Flask(__name__)
-# app.secret_key = "A Super super uper secret key"
-# app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-
-##############################################################################################################
 
 # functions to style geojson geometries
 def style_function(feature):
-    return {'fillColor': 'white','weight': 2,'opacity': 1,'color': 'red','fillOpacity': 0.5,"stroke-width":3}
+    return {'fillColor': 'white', 'weight': 2, 'opacity': 1, 'color': 'red', 'fillOpacity': 0.5, "stroke-width": 3}
 
-track_style_function = lambda x: {'color':'red' if x['properties']['Track']=='Pre_Goal' else 'grey'}
+
+track_style_function = lambda x: {'color':'red' if x['properties']['Track'] == 'Pre_Goal' else 'grey'}
 
 
 # function to create the map template with optional geojson, circles and points objects
-def make_map(layer_geojson=False, points=False, circles=False, polyline=False, goal_line=False, margin=0):
+def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_line=None, margin=0,
+             thermal_layer=False, waypoint_layer=False, extra_tracks=None, airspace_layer=None, bbox=None):
+    if points is None:
+        points = []
     folium_map = folium.Map(location=[45.922207, 8.673952], zoom_start=13, tiles="Stamen Terrain", width='100%',
                             height='75%')
     #     folium.LayerControl().add_to(folium_map)
     '''Define map borders'''
-    if layer_geojson["bbox"]:
-        bbox = layer_geojson["bbox"]
+    # at this stage a track (layer_geojason has bbox inside,
+    # otherwise (plotting wpts, airspace, task) we can use the bbox variable
+    if bbox:
         folium_map.fit_bounds(bounds=bbox, max_zoom=13)
 
-    """Design track"""
-    if layer_geojson["geojson"]:
-        track = layer_geojson['geojson']['tracklog']
-        folium.GeoJson(track, name='Flight', style_function=track_style_function).add_to(folium_map)
-        thermals = layer_geojson['geojson']['thermals']
-        thermal_group = FeatureGroup(name='Thermals', show=False)
+    if layer_geojson:
 
-        for t in thermals:
-            #             icon = Icon(color='blue', icon_color='black', icon='sync-alt', angle=0, prefix='fas')
-            icon = CustomIcon(d.IMAGEDIR + 'thermal.png')
-            thermal_group.add_child(Marker([t[1], t[0]], icon=icon, popup=Popup(t[2])))
+        '''Define map borders'''
+        if layer_geojson["bbox"]:
+            bbox = layer_geojson["bbox"]
+            folium_map.fit_bounds(bounds=bbox, max_zoom=13)
 
-        folium_map.add_child(thermal_group)
+        """Design track"""
+        if layer_geojson["geojson"]:
+            track = layer_geojson['geojson']['tracklog']
+            folium.GeoJson(track, name='Flight', style_function=track_style_function).add_to(folium_map)
+            if extra_tracks:
+                extra_track_style_function = lambda colour: (
+                    lambda x: {'color': colour if x['properties']['Track'] == 'Pre_Goal' else 'grey'})
 
-        waypoints = layer_geojson['geojson']['waypoint_achieved']
-        waypoint_group = FeatureGroup(name='Waypoints Taken', show=False)
-        for w in waypoints:
-            waypoint_group.add_child(Marker([w[1], w[0]], popup=Popup(w[5])))
+                for extra_track in extra_tracks:
+                    colour = extra_track['colour']
+                    folium.GeoJson(extra_track['track'], name=extra_track['name'],
+                                   style_function=extra_track_style_function(colour)).add_to(folium_map)
 
-        folium_map.add_child(waypoint_group)
+            if thermal_layer:
+                thermals = layer_geojson['geojson']['thermals']
+                thermal_group = FeatureGroup(name='Thermals', show=False)
 
+                for t in thermals:
+                    # icon = Icon(color='blue', icon_color='black', icon='sync-alt', angle=0, prefix='fas')
+                    icon = CustomIcon('/app/airscore/static/img/thermal.png')
+                    thermal_group.add_child(Marker([t[1], t[0]], icon=icon, popup=Popup(t[2])))
+
+                folium_map.add_child(thermal_group)
+
+            if waypoint_layer:
+                waypoints = layer_geojson['geojson']['waypoint_achieved']
+                waypoint_group = FeatureGroup(name='Waypoints Taken', show=False)
+                for w in waypoints:
+                    waypoint_group.add_child(Marker([w[1], w[0]], popup=Popup(w[5])))
+
+                folium_map.add_child(waypoint_group)
     """Design cylinders"""
     if circles:
         for c in circles:
@@ -91,7 +103,7 @@ def make_map(layer_geojson=False, points=False, circles=False, polyline=False, g
                 col = '#3186cc'
 
             folium.Circle(
-                location=[c['latitude'], c['longitude']],
+                location=(c['latitude'], c['longitude']),
                 radius=0.0 + c['radius'],
                 popup='Wpt: ' + c['name'] + '<br>Radius: ' + str(c['radius']) + 'm.',
                 color=col,
@@ -107,7 +119,7 @@ def make_map(layer_geojson=False, points=False, circles=False, polyline=False, g
         for c in circles:
             """create two circles based on tolerance value"""
             folium.Circle(
-                location=[c['latitude'], c['longitude']],
+                location=(c['latitude'], c['longitude']),
                 radius=0.0 + c['radius'] * (1 + margin),
                 popup='Wpt: ' + c['name'] + '<br>Radius: ' + str(c['radius']) + 'm.',
                 color="#44cc44",
@@ -117,7 +129,7 @@ def make_map(layer_geojson=False, points=False, circles=False, polyline=False, g
             ).add_to(folium_map)
 
             folium.Circle(
-                location=[c['latitude'], c['longitude']],
+                location=(c['latitude'], c['longitude']),
                 radius=0.0 + c['radius'] * (1 - margin),
                 popup='Wpt: ' + c['name'] + '<br>Radius: ' + str(c['radius']) + 'm.',
                 color="#44cc44",
@@ -150,11 +162,15 @@ def make_map(layer_geojson=False, points=False, circles=False, polyline=False, g
 
     if goal_line:
         folium.PolyLine(
-            locations   = goal_line,
-            weight      = 1.5,
-            opacity     = 0.75,
-            color       = '#800000'
-            ).add_to(folium_map)
+            locations=goal_line,
+            weight=1.5,
+            opacity=0.75,
+            color='#800000'
+        ).add_to(folium_map)
+
+    if airspace_layer:
+        for space in airspace_layer:
+            space.add_to(folium_map)
 
     # path where to save the map
     # folium_map.save('templates/map.html')
@@ -168,23 +184,24 @@ def make_map(layer_geojson=False, points=False, circles=False, polyline=False, g
 # function to extract flight details from flight object and return formatted html
 def extract_flight_details(flight):
     flight_html = ""
-    flight_html+= "Flight:" + str(flight) +'\n'
-    flight_html+= "Takeoff:" + str(flight.takeoff_fix) +'\n'
+    flight_html += "Flight:" + str(flight) + '\n'
+    flight_html += "Takeoff:" + str(flight.takeoff_fix) + '\n'
     zipped = itertools.izip_longest(flight.thermals, flight.glides)
     for x, (thermal, glide) in enumerate(zipped):
         if glide:
             flight_html+= "  glide[" + str(x) + "]:" + str(glide) + '\n'
         if thermal:
             flight_html+= "  thermal[" + str(x) + "]:" + str(thermal) + '\n'
-    flight_html+= "Landing:" + str(flight.landing_fix)
+    flight_html += "Landing:" + str(flight.landing_fix)
 
     return flight_html
+
 
 # dump flight object to geojson
 def dump_flight(track, task):
     # TODO check if file already exists otherwise create and save it
     from flight_result import Flight_result
-
+    from mapUtils import get_bbox
     lib = task.formula.get_lib()
 
     task_result = Flight_result.check_flight(track.flight, task, lib.parameters,
@@ -271,14 +288,14 @@ if __name__== "__main__":
     track_id    = None
     val         = None
     mode        = None
-    ##check parameter is good.
+    # check parameter is good.
     if len(sys.argv) >= 3 and sys.argv[2].isdigit():
         mode    = str(sys.argv[1])
         val     = int(sys.argv[2])
         if mode == 'tracklog': track_id = int(sys.argv[3])
 
     else:
-        #logging.error("number of arguments != 1 and/or task_id not a number")
+        # logging.error("number of arguments != 1 and/or task_id not a number")
         print("Error, incorrect arguments type or number.")
         print("usage: design_map mode (region tracklog, route), val(regionid taskid), track_id")
         exit()

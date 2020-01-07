@@ -32,7 +32,7 @@ def get_bbox(flight):
 def get_route_bbox(task):
     """Gets task boundaries """
 
-    # TODO write objects to the geojson form the flight object
+    # TODO write objects to the geojson from the flight object
     min_lat = task.optimised_turnpoints[0].lat
     min_lon = task.optimised_turnpoints[0].lon
     max_lat = task.optimised_turnpoints[0].lat
@@ -49,7 +49,7 @@ def get_region_bbox(region):
     """Gets region map boundaries """
 
     wpts = region.turnpoints
-    # TODO write objects to the geojson form the flight object
+    # TODO write objects to the geojson from the flight object
     min_lat = wpts[0].lat
     min_lon = wpts[0].lon
     max_lat = wpts[0].lat
@@ -61,6 +61,38 @@ def get_region_bbox(region):
         bbox = checkbbox(wpt.lat, wpt.lon, bbox)
     return bbox
 
+
+def get_airspace_bbox(reader):
+    from geographiclib.geodesic import Geodesic
+
+    geod = Geodesic.WGS84
+    NM_in_meters = 1852.00
+    latitudes = []
+    longitudes = []
+
+    for record, _ in reader:
+        for element in record['elements']:
+            if element['type'] == 'point':
+               latitudes.append(element['location'][0])
+               longitudes.append(element['location'][1])
+            elif element['type'] == 'arc' and element['start']:
+                latitudes.append(element['start'][0])
+                longitudes.append(element['start'][1])
+                latitudes.append(element['end'][0])
+                longitudes.append(element['end'][1])
+                latitudes.append(element['center'][0])
+                longitudes.append(element['center'][1])
+            elif element['type'] == 'circle' or element['type'] == 'arc': # hopefully capture case of arc defined by radius and angles - treat as circle
+                # Get N,E,S & W most points of circle
+                cardinals = [0, 90, 180, 270]
+                for c in cardinals:
+                    p = geod.Direct(element['center'][0], element['center'][1], c, element['radius'] * NM_in_meters)
+                    latitudes.append(p['lat2'])
+                    longitudes.append(p['lon2'])
+
+    bbox = [[min(latitudes), min(longitudes)], [max(latitudes), max(longitudes)]]
+
+    return bbox
 
 def map_legend(col_pilot_dict):
     from branca.element import Template, MacroElement

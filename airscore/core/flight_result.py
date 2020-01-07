@@ -24,7 +24,7 @@ Stuart Mackintosh - Antonio Golfari
 """
 
 from calcUtils import get_datetime
-from route import rawtime_float_to_hms, in_semicircle, distance_flown
+from route import rawtime_float_to_hms, in_semicircle, distance_flown, distance
 from myconn import Database
 import jsonpickle, json
 from mapUtils import checkbbox
@@ -260,7 +260,7 @@ class Flight_result(object):
 
         '''initialize'''
         result = cls()
-        tolerance = task.tolerance
+        tolerance = task.formula.tolerance
         time_offset = task.time_offset  # local time offset for result times (SSS and ESS)
         max_jump_the_gun = task.formula.max_JTG  # seconds
         jtg_penalty_per_sec = 0 if max_jump_the_gun == 0 else task.formula.JTG_penalty_per_sec
@@ -579,13 +579,31 @@ class Flight_result(object):
         returns the Json string."""
 
         from geojson import Point, Feature, FeatureCollection, MultiLineString
-        from route import distance
         from collections import namedtuple
+        from myconn import Database
+        from db_tables import tblParticipant as p
 
+        import sys
+
+        info = {}
         features = []
         toff_land = []
         thermals = []
         point = namedtuple('fix', 'lat lon')
+
+        info['taskid'] = task.id
+        info['task_name'] = task.task_name
+        info['comp_name'] = task.comp_name
+
+        with Database() as db:
+            pilot_details = (db.session.query(p.parName, p.parNat, p.parSex, p.parGlider)
+                             .filter(p.parPk == track.par_id, p.comPk == task.comp_id).one())
+        pilot_details = pilot_details._asdict()
+        info['pilot_name'] = pilot_details['parName']
+        info['pilot_nat'] = pilot_details['parNat']
+        info['pilot_sex'] = pilot_details['parSex']
+        info['pilot_parid'] = self.par_id
+        info['Glider'] = pilot_details['parGlider']
 
         min_lat = track.flight.fixes[0].lat
         min_lon = track.flight.fixes[0].lon
@@ -629,7 +647,7 @@ class Flight_result(object):
                 lastfix = fix
 
             if fix.rawtime == self.waypoints_achieved[waypoint][1]:
-                time = ("%02d:%02d:%02d" % rawtime_float_to_hms(fix.rawtime + task.time_offset * 3600))
+                time = ("%02d:%02d:%02d" % rawtime_float_to_hms(fix.rawtime + task.time_offset))
                 waypoint_achieved.append(
                     [fix.lon, fix.lat, fix.gnss_alt, fix.press_alt, self.waypoints_achieved[waypoint][0], time,
                      fix.rawtime,
@@ -673,7 +691,7 @@ class Flight_result(object):
 
         feature_collection = FeatureCollection(features)
 
-        data = {'tracklog': feature_collection, 'thermals': thermals, 'takeoff_landing': toff_land,
+        data = {'info': info, 'tracklog': feature_collection, 'thermals': thermals, 'takeoff_landing': toff_land,
                 'result': jsonpickle.dumps(self), 'bounds': bbox, 'waypoint_achieved': waypoint_achieved}
 
         return data
@@ -692,7 +710,7 @@ class Flight_result(object):
         name_surname_date_time_index.igc
         if we use flight date then we need an index for multiple tracks"""
 
-        filename = 'result_' + str(trackid) + '.json'
+        filename = 'result_' + str(trackid) + '.track'
         fullname = path.join(res_path, filename)
         """copy file"""
         try:

@@ -25,6 +25,9 @@ LOGDIR = config['dir']['log']  # log files directory
 RESULTDIR = config['dir']['result']  # log files directory
 IMAGEDIR = config['dir']['image']  # image/icon files directory
 MAPOBJDIR = config['dir']['map']  # mapobj files directory
+AIRSPACEDIR = config['dir']['airspace'] #openair files directory
+AIRSPACEMAPDIR = config['dir']['airspace_map'] #openair files directory
+AIRSPACECHECKDIR = config['dir']['airspace_check'] #openair files directory
 
 track_sources = ['xcontest', 'flymaster']     # external available sources for tracks
 track_formats = ['igc']   # track accepted formats

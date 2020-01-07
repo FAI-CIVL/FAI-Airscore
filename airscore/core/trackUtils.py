@@ -185,7 +185,7 @@ def get_pil_track(par_id, task_id):
             and_(R.parPk == par_id, R.tasPk == task_id)).scalar()
     if track_id == 0:
         """No result found"""
-        print(f"Pilot with ID {pil_id} has not been scored yet on task ID {task_id} \n")
+        print(f"Pilot with ID {par_id} has not been scored yet on task ID {task_id} \n")
     return track_id
 
 
@@ -195,9 +195,9 @@ def read_track_result_file(track_id, task_id):
     from pathlib import Path
 
     res_path = Defines.MAPOBJDIR + 'tracks/'
-    filename = 'result_' + str(track_id) + '.json'
+    filename = 'result_' + str(track_id) + '.track'
     fullname = os.path.join(res_path, filename)
-    # if the file exists
+    # if the file does not exist
     if not Path(fullname).is_file():
         create_track_result_file(track_id, task_id)
 
