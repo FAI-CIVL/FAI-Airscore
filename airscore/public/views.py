@@ -235,7 +235,7 @@ def get_task_result(taskid):
     for r in result_file['results']:  # need sex??
         track_id = r['track_id']
         name = r['name']
-        pilot = [f'<b>{rank}</b>', f'<a href="/map/{track_id}">{name}</a>', r['nat'], r['glider'], r['glider_cert'],
+        pilot = [f'<b>{rank}</b>', f'<a href="/map/{track_id}-{taskid}">{name}</a>', r['nat'], r['glider'], r['glider_cert'],
                  r['sponsor']]
         if r['SSS_time']:
             pilot.append(sec_to_time(r['SSS_time']+result_file['info']['time_offset']).strftime("%H:%M:%S"))
