@@ -138,7 +138,7 @@ class Flight_result(object):
         return self.__dict__
 
     @classmethod
-    def from_fsdb(cls, res, SS_distance=None, dep=None, arr=None):
+    def from_fsdb(cls, res, SS_distance=None, dep=None, arr=None, offset=0):
         """ Creates Results from FSDB FsPartecipant element, which is in xml format.
             Unfortunately the fsdb format isn't published so much of this is simply an
             exercise in reverse engineering.
@@ -147,25 +147,25 @@ class Flight_result(object):
         from calcUtils import string_to_seconds
 
         result = cls()
-        result.ID = int(res.get('id'))
+        ID = int(res.get('id'))
         if res.find('FsFlightData') is None and res.find('FsResult') is None:
             '''pilot is abs'''
-            print(f"ID {result.ID}: ABS")
+            # print(f"ID {ID}: ABS")
             result.result_type = 'abs'
             return result
         elif res.find('FsFlightData').get('distance') is None:
             if float(res.find('FsResult').get('distance')) > 0:
                 '''pilot is min dist'''
-                print(f"ID {result.ID}: Min Dist")
+                # print(f"ID {ID}: Min Dist")
                 result.result_type = 'mindist'
             else:
                 '''pilot is dnf'''
-                print(f"ID {result.ID}: DNF")
+                # print(f"ID {ID}: DNF")
                 result.result_type = 'dnf'
             return result
 
         d = res.find('FsFlightData')
-        result.real_start_time = string_to_seconds(d.get('started_ss'))
+        result.real_start_time = None if not d.get('started_ss') else string_to_seconds(d.get('started_ss')) - offset
         result.last_altitude = int(d.get('last_tracklog_point_alt')
                                    if d.get('last_tracklog_point_alt') is not None else 0)
         result.max_altitude = int(d.get('max_alt')
@@ -176,7 +176,8 @@ class Flight_result(object):
             result.ESS_altitude = int(d.get('altitude_at_ess')
                                       if d.get('altitude_at_ess') is not None else 0)
         if d.get('reachedGoal') == "1":
-            result.goal_time = string_to_seconds(d.get('finished_task'))
+            result.goal_time = (None if not d.get('finished_task')
+                                else string_to_seconds(d.get('finished_task')) - offset)
             result.result_type = 'goal'
         if res.find('FsResult') is not None:
             '''reading flight data'''
@@ -186,9 +187,10 @@ class Flight_result(object):
             result.total_distance = float(r.get('distance')) * 1000  # in meters
             result.distance_flown = float(r.get('real_distance')) * 1000  # in meters
             # print ("start_ss: {}".format(r.get('started_ss')))
-            result.SSS_time = string_to_seconds(r.get('started_ss'))
+            result.SSS_time = None if not r.get('started_ss') else string_to_seconds(r.get('started_ss')) - offset
             if result.SSS_time is not None:
-                result.ESS_time = string_to_seconds(r.get('finished_ss'))
+                result.ESS_time = (None if not r.get('finished_ss')
+                                   else string_to_seconds(r.get('finished_ss')) - offset)
                 if SS_distance is not None and result.ESS_time is not None and result.ESS_time > 0:
                     result.speed = (SS_distance / 1000) / ((result.ESS_time - result.SSS_time) / 3600)
             else:
@@ -199,17 +201,15 @@ class Flight_result(object):
             result.penalty = 0  # fsdb score is already decreased by penalties
             if not r.get('penalty_reason') == "":
                 if r.get('penalty') != "0":
-                    result.comment = f"{float(r.get('penalty')) * 100}%: "
+                    comment = f"{float(r.get('penalty')) * 100}%: "
                 else:
-                    result.comment = f"{float(r.get('penalty_points'))} points: "
-                result.comment += r.get('penalty_reason')
+                    comment = f"{float(r.get('penalty_points'))} points: "
+                comment += r.get('penalty_reason')
+                result.comment.append(comment)
             if not r.get('penalty_reason_auto') == "":
                 comment = f"{float(r.get('penalty_points_auto'))} points: "
                 comment += r.get('penalty_reason_auto')
-                if result.comment is None:
-                    result.comment = comment
-                else:
-                    result.comment += ' - ' + comment
+                result.comment.append(comment)
             if dep == 'on':
                 result.departure_score = float(r.get('departure_points'))
             elif dep == 'leadout':

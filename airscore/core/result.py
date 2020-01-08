@@ -131,6 +131,7 @@ class Task_result:
                     'nat_team',
                     'distance_flown',
                     'distance',
+                    'ss_time',
                     'speed',
                     'real_start_time',
                     'goal_time',

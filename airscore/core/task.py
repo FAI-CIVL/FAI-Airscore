@@ -459,8 +459,7 @@ class Task(object):
             - mode:     str - 'default'
                               'full'    recalculates all tracks
         """
-        from result import Task_result as R, create_json_file
-        from compUtils import read_rankings
+        from result import create_json_file
 
         ''' retrieve scoring formula library'''
         lib = self.formula.get_lib()
@@ -497,6 +496,46 @@ class Task(object):
 
         '''create result elements from task, formula and results objects'''
         # sorting list by score, dnf, abs
+        # pil_list = sorted([p for p in self.pilots if p.result_type not in ['dnf', 'abs']],
+        #                   key=lambda k: k.score, reverse=True)
+        # pil_list += [p for p in self.pilots if p.result_type == 'dnf']
+        # pil_list += [p for p in self.pilots if p.result_type == 'abs']
+        #
+        # info = {x: getattr(self, x) for x in R.info_list if x in dir(self)}
+        # formula = {x: getattr(self.formula, x) for x in R.formula_list if x in dir(self.formula)}
+        # stats = {x: getattr(self, x) for x in R.stats_list if x in dir(self)}
+        # route = []
+        # for idx, tp in enumerate(self.turnpoints):
+        #     wpt = {x: getattr(tp, x) for x in R.route_list if x in dir(tp)}
+        #     wpt['cumulative_dist'] = self.partial_distance[idx]
+        #     route.append(wpt)
+        # results = []
+        # for pil in pil_list:
+        #     res = pil.create_result_dict()
+        #     results.append(res)
+        # rankings = read_rankings(self.comp_id)
+        # if len(rankings) == 0:
+        #     ''' create an overall ranking'''
+        #     rankings.update({'overall': [cert for cert in set([p.info.glider_cert for p in self.pilots])]})
+        #
+        # '''create json file'''
+        # result = {'info': info,
+        #           'route': route,
+        #           'results': results,
+        #           'formula': formula,
+        #           'stats': stats,
+        #           'rankings': rankings
+        #           }
+        elements = self.create_json_elements()
+        ref_id = create_json_file(comp_id=self.comp_id, task_id=self.id,
+                                  code='_'.join([self.comp_code, self.task_code]), elements=elements, status=status)
+        return ref_id
+
+    def create_json_elements(self):
+        """ returns Dict with elements to generate json file"""
+        from result import Task_result as R
+        from compUtils import read_rankings
+
         pil_list = sorted([p for p in self.pilots if p.result_type not in ['dnf', 'abs']],
                           key=lambda k: k.score, reverse=True)
         pil_list += [p for p in self.pilots if p.result_type == 'dnf']
@@ -513,12 +552,9 @@ class Task(object):
         results = []
         for pil in pil_list:
             res = pil.create_result_dict()
-            # res = {x: getattr(pil, x) for x in R.results_list if x in dir(pil)}
-            # res.name = res.name.title()
-            # res.glider = res.glider.title()
-            # res['track_file'] = None if not res['track_file'] else res['track_file'].split('/')[-1]
             results.append(res)
-        rankings = read_rankings(self.comp_id)
+        # rankings = read_rankings(self.comp_id)
+        rankings = {}
         if len(rankings) == 0:
             ''' create an overall ranking'''
             rankings.update({'overall': [cert for cert in set([p.info.glider_cert for p in self.pilots])]})
@@ -531,9 +567,7 @@ class Task(object):
                   'stats': stats,
                   'rankings': rankings
                   }
-        ref_id = create_json_file(comp_id=self.comp_id, task_id=self.id,
-                                  code='_'.join([self.comp_code, self.task_code]), elements=result, status=status)
-        return ref_id
+        return result
 
     def is_valid(self):
         """In stopped task, check if duration is enough to be valid"""
@@ -658,6 +692,7 @@ class Task(object):
             verify_all_tracks(self, lib)
 
         '''store results to database'''
+        print(f"updating database with new results...")
         update_all_results(self.task_id, self.pilots)
 
         lib.process_results(self)

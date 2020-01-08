@@ -75,6 +75,8 @@ class FSDB(object):
 
         """Pilots"""
         print("Getting Pilots Info...")
+        if from_CIVL:
+            print('*** get from CIVL database')
         p = root.find('FsCompetition').find('FsParticipants')
         for pil in p.iter('FsParticipant'):
             pilot = Participant.from_fsdb(pil, from_CIVL=from_CIVL)
@@ -90,18 +92,16 @@ class FSDB(object):
             '''create task obj'''
             task = Task.from_fsdb(tas)
             '''check if task was valid'''
-            if task:
+            if task is not None:
                 """Task Results"""
+                task.time_offset = int(comp.time_offset * 3600)
                 node = tas.find('FsParticipants')
                 if node is not None:
                     task.pilots = []
+                    print("Getting Results Info...")
                     for res in node.iter('FsParticipant'):
                         '''pilots results'''
-                        result = Flight_result.from_fsdb(res, task.SS_distance, task.departure, task.arrival)
-                        pilot = Pilot.create(result=result)
-                        pilot.info.ID = int(res.get('id'))
-                        if res.find('FsFlightData') is not None:
-                            pilot.track.track_file = res.find('FsFlightData').get('tracklog_filename')
+                        pilot = Pilot.from_fsdb(task, res)
                         task.pilots.append(pilot)
                 tasks.append(task)
 
