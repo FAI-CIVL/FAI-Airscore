@@ -146,8 +146,8 @@ class Pilot(object):
         pilot = Pilot()
         pilot.task_id = task_id
         pilot.info = info if info and isinstance(info, Participant) else Participant()
-        pilot.track = track if info and isinstance(track, Track) else Track()
-        pilot.result = result if info and isinstance(info, Flight_result) else Flight_result()
+        pilot.track = track if track and isinstance(track, Track) else Track()
+        pilot.result = result if result and isinstance(result, Flight_result) else Flight_result()
         return pilot
 
     @staticmethod
@@ -167,6 +167,18 @@ class Pilot(object):
         result.update({x: getattr(self.track, x) for x in R.results_list if x in dir(self.track)})
         result.update({x: getattr(self.result, x) for x in R.results_list if x in dir(self.result)})
         return result
+
+    @staticmethod
+    def from_fsdb(task, data):
+        """ Creates Pilot from FSDB task result"""
+
+        info = Participant(ID=int(data.get('id')))
+        result = Flight_result.from_fsdb(data, task.SS_distance, task.departure, task.arrival, task.time_offset)
+        track = Track()
+        if data.find('FsFlightData') is not None:
+            track.track_file = data.find('FsFlightData').get('tracklog_filename')
+        pilot = Pilot.create(task_id=task.id, info=info, track=track, result=result)
+        return pilot
 
     def to_db(self, session=None):
         """ stores pilot result to database.

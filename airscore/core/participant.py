@@ -152,20 +152,19 @@ class Participant(object):
 
         CIVLID = None if not pil.get('CIVLID') else int(pil.get('CIVLID'))
         name = pil.get('name')
-        print(CIVLID, name)
+        # print(CIVLID, name)
         pilot = None
         if from_CIVL:
             '''check CIVL database'''
             if CIVLID:
-                print('*** get from civl')
                 pilot = create_participant_from_CIVLID(CIVLID)
             else:
-                print('*** get from name')
                 pilot = create_participant_from_name(name)
         '''check if we have a result and name is similar'''
         if not (pilot and any(n in pilot.name for n in name)):
             '''get all pilot info from fsdb file'''
-            print('*** no result')
+            if from_CIVL:
+                print('*** no result in CIVL database, getting data from FSDB file')
             pilot = Participant(name=name, civl_id=CIVLID)
             pilot.sex = 'F' if int(pil.get('female')) > 0 else 'M'
             pilot.nat = pil.get('nat_code_3166_a3')
