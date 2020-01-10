@@ -125,7 +125,7 @@ class CompObjectView(Base):
                       Column('cat_id', INTEGER(11), server_default=text("'0'")),
                       Column('sanction', Enum('FAI 1', 'League', 'PWC', 'FAI 2', 'none'),
                              server_default=text("'none'")),
-                      Column('type', Enum('RACE', 'Route', 'Team-RACE'), server_default=text("'RACE'")),
+                      Column('comp_type', Enum('RACE', 'Route', 'Team-RACE'), server_default=text("'RACE'")),
                       Column('comp_code', String(8)),
                       Column('restricted', Enum('open', 'registered'), server_default=text("'registered'")),
                       Column('time_offset', Float(asdecimal=False), server_default=text("'11'")),

@@ -142,7 +142,7 @@ class FSDB(object):
         tasks = []
         for tas in comp.tasks:
             task_id = tas['id']
-            task = T.create_from_json(task_id)
+            task = T.create_from_json(task_id=task_id)
             tasks.append(task)
 
         fsdb = FSDB(comp=comp, filename=filename, tasks=tasks)

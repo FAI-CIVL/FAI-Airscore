@@ -10,7 +10,6 @@ Use: from comp import Comp
 
 Stuart Mackintosh Antonio Golfari - 2019
 """
-
 from myconn import Database
 from formula import Task_formula
 from calcUtils import json, get_datetime, decimal_to_seconds, time_difference
@@ -46,9 +45,9 @@ class Comp(object):
         self.region = region  # Region object
         self.participants = []  # list of Partecipant obj
         self.tasks = []  # list of Task obj.
-        self.stats = dict()  # event statistics
+        # self.stats = dict()  # event statistics
         self.rankings = dict()  # rankings
-        self.data = dict()
+        # self.data = dict()
         self.formula = None  # Formula obj.
         self.MD_name = None  # str
         self.contact = None  # str
@@ -63,6 +62,7 @@ class Comp(object):
         self.external = external  # bool
         self.website = None  # str
         self.comp_path = None  # str
+        self.results = []
 
         # self.formula                    = Formula.read(self.comp_id) if self.comp_id else None
 
@@ -105,8 +105,75 @@ class Comp(object):
         from Defines import FILEDIR
         return p.join(FILEDIR, str(self.date_from.year), self.comp_code.lower())
 
+    @property
+    def tot_validity(self):
+        if len(self.tasks) > 0:
+            return round(sum([t.ftv_validity for t in self.tasks]), 4)
+        else:
+            return 0
+
+    @property
+    def avail_validity(self):
+        if len(self.tasks) > 0:
+            if self.formula.overall_validity == 'ftv':
+                return round(self.tot_validity * self.formula.validity_param, 4)
+            else:
+                return self.tot_validity
+        return 0
+
+    @property
+    def dropped_tasks(self):
+        if len(self.tasks) > 0:
+            if self.formula.overall_validity == 'round':
+                return int(len(self.tasks) / self.formula.validity_param)
+        return 0
+
     def as_dict(self):
         return self.__dict__
+
+    ''' * Statistic Properties *'''
+
+    @property
+    def tot_pilots(self):
+        if len(self.tasks) > 0:
+            return len(self.participants)
+        else:
+            return 0
+
+    @property
+    def valid_tasks(self):
+        if len(self.tasks) > 0:
+            return len([t for t in self.tasks if t.is_valid()])
+        else:
+            return 0
+
+    @property
+    def tot_flights(self):
+        if len(self.tasks) > 0:
+            return sum([t.pilots_launched for t in self.tasks])
+        else:
+            return 0
+
+    @property
+    def tot_distance_flown(self):
+        if len(self.tasks) > 0:
+            return sum([t.tot_distance_flown for t in self.tasks])
+        else:
+            return 0
+
+    @property
+    def winner_score(self):
+        if len([x for x in self.results if 'score' in x.keys()]) > 0:
+            return max(r['score'] for r in self.results)
+        else:
+            return 0
+
+    @property
+    def tot_flight_time(self):
+        if len(self.tasks) > 0:
+            return sum([t.tot_flight_time for t in self.tasks])
+        else:
+            return 0
 
     @staticmethod
     def read(comp_id):
@@ -120,11 +187,12 @@ class Comp(object):
             print(f"comp_id needs to be int > 0, {comp_id} was given")
             return None
 
+        comp = Comp(comp_id=comp_id)
         with Database() as db:
             # get comp details.
             try:
                 q = db.session.query(C).get(comp_id)
-                comp = Comp(comp_id=comp_id)
+                # comp = Comp(comp_id=comp_id)
                 db.populate_obj(comp, q)
                 comp.formula = Formula(comp_id=comp_id)
                 db.populate_obj(comp.formula, q)
@@ -198,6 +266,10 @@ class Comp(object):
                 return None
 
         return self.comp_id
+
+    def get_rankings(self):
+        from compUtils import read_rankings
+        self.rankings = read_rankings(self.comp_id)
 
     @staticmethod
     def from_fsdb(fs_comp):
@@ -290,7 +362,7 @@ class Comp(object):
                 return comp
 
     @staticmethod
-    def create_results(comp_id, status=None):
+    def create_results_old(comp_id, status=None):
         """creates the json result file and the database entry"""
         from compUtils import get_tasks_result_files, get_participants
         from result import Comp_result as C, create_json_file
@@ -313,7 +385,7 @@ class Comp(object):
         '''initialize obj attributes'''
         tasks = []
         participants = get_participants(comp_id)
-        stats = {'tot_dist_flown': 0.0, 'tot_flights': 0, 'valid_tasks': len(files),
+        stats = {'tot_distance_flown': 0.0, 'tot_flights': 0, 'valid_tasks': len(files),
                  'tot_pilots': len(participants)}
         rankings = {}
 
@@ -336,11 +408,12 @@ class Comp(object):
                 tasks.append(task)
 
                 '''add task stats to overall'''
-                stats['tot_dist_flown'] += float(i['tot_dist_flown'])
+                stats['tot_distance_flown'] += float(i['tot_distance_flown'])
                 stats['tot_flights'] += int(i['pilots_launched'])
 
                 ''' get rankings (just once)'''
-                if not rankings: rankings.update(data['rankings'])
+                if not rankings:
+                    rankings.update(data['rankings'])
 
                 '''get pilots result'''
                 task_results = {}
@@ -377,67 +450,151 @@ class Comp(object):
         ref_id = create_json_file(comp_id=comp.id, task_id=None, code=comp.comp_code, elements=result, status=status)
         return ref_id
 
+    @staticmethod
+    def create_results(comp_id, status=None, decimals=None):
+        """creates the json result file and the database entry"""
+        from compUtils import get_tasks_result_files, get_participants, read_rankings
+        from result import Comp_result as C, create_json_file
+        from task import Task
 
-def get_final_scores(results, tasks, formula, d=0):
-    """calculate final scores depending on overall validity:
-        - all:      sum of all tasks results
-        - round:    task discard every [param] tasks
-        - ftv:      calculate task scores and total score based on FTV [param]
+        import json
+        import Defines
+        from operator import itemgetter
 
-        input:
-            results:    participant list
-            tasks:      tasks list
-            formula:    comp formula dict
-            d:          decimals on single tasks score, default 0
-    """
-    from operator import itemgetter
+        '''PARAMETER: decimal positions'''
+        # TODO implement result decimal positions parameter
+        if decimals is None or not isinstance(decimals, int):
+            decimals = 0  # should be a formula parameter, or a ForComp parameter?
 
-    val = formula.overall_validity
-    param = formula.validity_param
-    avail_validity = 0
+        comp = Comp.read(comp_id)
+        # val = comp.formula.overall_validity  # ftv, round, all
+        # ftv_type = comp.formula.formula_type  # pwc, fai
+        # param = comp.formula.validity_param  # ftv param, dropped task param
 
-    if val == 'ftv':
-        avail_validity = sum(t['ftv_validity'] for t in tasks) * param
-    elif val == 'round':
-        dropped = int(len(tasks) / param)
+        '''retrieve active task result files and reads info'''
+        files = get_tasks_result_files(comp_id)
 
-    for pil in results:
-        pil.score = 0
+        '''initialize obj attributes'''
+        comp.participants = get_participants(comp_id)
+        ''' get rankings '''
+        comp.get_rankings()
 
-        ''' if we score all tasks, or tasks are not enough to ha discards,
-            or event has just one valid task regardless method,
-            we can simply sum all score values
-        '''
-        if not ((val == 'all')
-                or (val == 'round' and dropped == 0)
-                or (len(tasks) < 2)):
-            '''create a ordered list of results, perf desc'''
-            sorted_results = sorted(pil.results.items(), key=lambda x: (x[1]['perf'], x[1]['pre']), reverse=True)
+        for idx, t in enumerate(files):
+            task = Task.create_from_json(task_id=t.task_id, filename=t.file)
+            comp.tasks.append(task)
 
-            if val == 'round' and len(tasks) >= param:
-                '''we need to order by score desc and sum only the ones we need'''
-                for i in range(dropped):
-                    id = sorted_results.pop()[0]  # getting id of worst result task
-                    pil.results[id]['score'] = 0
+            ''' task validity (if not using ftv, ftv_validity = day_quality)'''
+            r = task.ftv_validity * 1000
 
-            elif val == 'ftv' and len(tasks) > 1:
-                '''ftv calculation'''
-                pval = avail_validity
-                for id, s in sorted_results:
-                    if not (pval > 0):
-                        pil.results[id]['score'] = 0
-                    else:
-                        '''get ftv_validity of corresponding task'''
-                        tval = [t['ftv_validity'] for t in tasks if t['code'] == id].pop()
-                        if pval > tval:
-                            '''we can use the whole score'''
-                            pval -= tval
+            '''get pilots result'''
+            for p in comp.participants:
+                res = next((d for d in comp.results if d.get('par_id', None) == p.par_id), False)
+                if res is False:
+                    ''' create pilot result Dict (once)'''
+                    # comp.results.append({'par_id': p.par_id, 'results': []})
+                    comp.results.append({'par_id': p.par_id})
+                    res = comp.results[-1]
+
+                s = next((round(pil.score, decimals) for pil in task.pilots if pil.par_id == p.par_id), 0)
+
+                if r > 0:  # sanity
+                    perf = round(s / r, decimals + 3)
+                    # res['results'].append({task.task_code: {'pre': s, 'perf': perf, 'score': s}})
+                    res.update({task.task_code: {'pre': s, 'perf': perf, 'score': s}})
+                else:
+                    # res['results'].append({task.task_code: {'pre': s, 'perf': 0, 'score': 0}})
+                    res.update({task.task_code: {'pre': s, 'perf': 0, 'score': 0}})
+
+        '''calculate final score'''
+        comp.get_final_scores(decimals)
+
+        ''' create result elements'''
+        results = []
+        for res in comp.results:
+            '''create results dict'''
+            p = next(x for x in comp.participants if x.par_id == res['par_id'])
+            r = {x: getattr(p, x) for x in C.result_list if x in dir(p)}
+            r['score'] = res['score']
+            r['results'] = {x: res[x] for x in res.keys() if isinstance(res[x], dict)}
+            results.append(r)
+
+        # comp.participants = sorted(results, key=lambda k: k.score, reverse=True)
+        #
+        '''create json file'''
+        result = {'info': {x: getattr(comp, x) for x in C.info_list},
+                  'rankings': comp.rankings,
+                  'tasks': [{x: getattr(t, x) for x in C.task_list} for t in comp.tasks],
+                  'results': results,
+                  'formula': {x: getattr(comp.formula, x) for x in C.formula_list},
+                  'stats': {x: getattr(comp, x) for x in C.stats_list}
+                  }
+        ref_id = create_json_file(comp_id=comp.id, task_id=None, code=comp.comp_code, elements=result, status=status)
+        return comp, ref_id
+        # return result
+
+    def get_final_scores(self, d=0):
+        """calculate final scores depending on overall validity:
+            - all:      sum of all tasks results
+            - round:    task discard every [param] tasks
+            - ftv:      calculate task scores and total score based on FTV [param]
+
+            input:
+                results:    participant list
+                tasks:      tasks list
+                formula:    comp formula dict
+                d:          decimals on single tasks score, default 0
+        """
+        from operator import itemgetter
+
+        val = self.formula.overall_validity
+        param = self.formula.validity_param
+        avail_validity = self.avail_validity
+
+        # if val == 'ftv':
+        #     avail_validity = sum(t['ftv_validity'] for t in tasks) * param
+        # elif val == 'round':
+        #     dropped = int(len(tasks) / param)
+
+        for pil in self.results:
+            pil['score'] = 0
+
+            ''' if we score all tasks, or tasks are not enough to ha discards,
+                or event has just one valid task regardless method,
+                we can simply sum all score values
+            '''
+            if not ((val == 'all')
+                    or (val == 'round' and self.dropped_tasks == 0)
+                    or (len(self.tasks) < 2)):
+                '''create a ordered list of results, perf desc'''
+                # sorted_results = sorted(pil['results'], key=lambda x: (x[1]['perf'], x[1]['pre']), reverse=True)
+                sorted_results = sorted([x for x in pil.items() if isinstance(x[1], dict)],
+                                        key=lambda x: (x[1]['perf'], x[1]['pre']), reverse=True)
+
+                if val == 'round' and len(self.tasks) >= param:
+                    '''we need to order by score desc and sum only the ones we need'''
+                    for i in range(self.dropped_tasks):
+                        idx = sorted_results.pop()[0]  # getting id of worst result task
+                        pil[idx]['score'] = 0
+
+                elif val == 'ftv' and len(self.tasks) > 1:
+                    '''ftv calculation'''
+                    pval = avail_validity
+                    for idx, s in sorted_results:
+                        if not (pval > 0):
+                            pil[idx]['score'] = 0
                         else:
-                            '''we need to calculate proportion'''
-                            pil.results[id]['score'] = round(pil.results[id]['score'] * (pval / tval), d)
-                            pval = 0
+                            '''get ftv_validity of corresponding task'''
+                            tval = next(t.ftv_validity for t in self.tasks if t.task_code == idx)
+                            if pval > tval:
+                                '''we can use the whole score'''
+                                pval -= tval
+                            else:
+                                '''we need to calculate proportion'''
+                                pil[idx]['score'] = round(pil[idx]['score'] * (pval / tval), d)
+                                pval = 0
 
-        '''calculates final pilot score'''
-        pil.score = sum(pil.results[x]['score'] for x in pil.results)
+            '''calculates final pilot score'''
+            pil['score'] = sum(pil[x]['score'] for x in pil.keys() if isinstance(pil[x], dict))
 
-    return results
+        ''' order list'''
+        self.results = sorted(self.results, key=lambda x: x['score'], reverse=True)
