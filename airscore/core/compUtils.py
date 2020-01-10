@@ -182,18 +182,23 @@ def read_rankings(comp_id):
         tblClassification as CT
     from sqlalchemy.orm import joinedload
     from sqlalchemy import and_, or_
+    from sqlalchemy.exc import SQLAlchemyError
 
     rank = dict()
 
     with Database() as db:
         '''get rankings definitions'''
-        class_id = db.session.query(C).get(comp_id).claPk
-        query = db.session.query(R.ranName.label('rank'), CCT.cerName.label('cert'), CT.claFem.label('female'),
-                                 CT.claTeam.label('team')).select_from(R).join(CC, R.ranPk == CC.ranPk) \
-            .join(CCT, and_(CCT.cerPk <= CC.cerPk, CCT.comClass == R.comClass)
-                  ).join(CT, CT.claPk == CC.claPk).filter(and_(CC.cerPk > 0, CC.claPk == class_id))
-        result = query.all()
-    try:
+        try:
+            class_id = db.session.query(C).get(comp_id).claPk
+            query = db.session.query(R.ranName.label('rank'), CCT.cerName.label('cert'), CT.claFem.label('female'),
+                                     CT.claTeam.label('team')).select_from(R).join(CC, R.ranPk == CC.ranPk) \
+                .join(CCT, and_(CCT.cerPk <= CC.cerPk, CCT.comClass == R.comClass)
+                      ).join(CT, CT.claPk == CC.claPk).filter(and_(CC.cerPk > 0, CC.claPk == class_id))
+            result = query.all()
+        except SQLAlchemyError:
+            print(f'Ranking Query Error')
+
+    if len(result) > 0:
         for res in result:
             if res.rank in rank:
                 rank[res.rank].append(res.cert)
@@ -201,8 +206,8 @@ def read_rankings(comp_id):
                 rank[res.rank] = [res.cert]
         rank['female'] = result.pop().female
         rank['team'] = result.pop().team
-    except:
-        print(f'Ranking Query Error: list is empty')
+    else:
+        print(f'Ranking list is empty')
 
     return rank
 

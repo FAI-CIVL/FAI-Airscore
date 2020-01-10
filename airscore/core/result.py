@@ -31,6 +31,7 @@ class Task_result:
                  'comp_class',
                  'date',
                  'task_name',
+                 'task_num',
                  'time_offset',
                  'comment',
                  'window_open_time',
@@ -62,6 +63,8 @@ class Task_result:
     formula_list = ['formula_name',
                     'formula_type',
                     'formula_version',
+                    'overall_validity',  # 'ftv', 'all',
+                    'validity_param',
                     'formula_distance',  # 'on', 'difficulty', 'off'
                     'formula_arrival',  # 'position', 'time', 'off'
                     'formula_departure',  # 'on', 'leadout', 'off'
@@ -100,6 +103,7 @@ class Task_result:
                   'tot_distance_flown',
                   'tot_dist_over_min',
                   'day_quality',
+                  'ftv_validity',
                   'dist_validity',
                   'time_validity',
                   'launch_validity',
@@ -169,7 +173,7 @@ class Comp_result(object):
     info_list = ['id',
                  'comp_name',
                  'comp_class',
-                 'type',
+                 'comp_type',
                  'comp_site',
                  'date_from',
                  'date_to',
@@ -180,6 +184,15 @@ class Comp_result(object):
                  'restricted',
                  'time_offset',
                  'website']
+
+    stats_list = ['winner_score',
+                  'valid_tasks',
+                  'tot_validity',
+                  'avail_validity',
+                  'tot_flights',
+                  'tot_distance_flown',
+                  'tot_flight_time',
+                  'tot_pilots']
 
     formula_list = ['formula_name',
                     'formula_type',
@@ -197,7 +210,7 @@ class Comp_result(object):
                     'arr_max_height',  # int
                     'validity_min_time',  # seconds
                     'score_back_time',  # seconds
-                    'max_JTG',      # seconds
+                    'max_JTG',  # seconds
                     'JTG_penalty_per_sec',
                     'nominal_goal',  # percentage / 100
                     'nominal_dist',  # meters
@@ -211,14 +224,16 @@ class Comp_result(object):
                     'scoring_altitude',  # 'GPS', 'QNH'
                     ]
 
-    tasks_list = ['task_name',
-                  'date',
-                  'comment',
-                  'opt_dist',
-                  'pilots_goal',
-                  'day_quality',
-                  'max_score',
-                  'task_type']
+    task_list = ['task_name',
+                 'task_code',
+                 'date',
+                 'comment',
+                 'opt_dist',
+                 'pilots_goal',
+                 'day_quality',
+                 'ftv_validity',
+                 'max_score',
+                 'task_type']
 
     ''' result_list comes from Participant obj, and RegisteredPilotView
         available fields are: (`par_id`, `comp_id`, `civl_id`, `fai_id`, `pil_id`, `ID`, `name`, `sex`, `nat`,

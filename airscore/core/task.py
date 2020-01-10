@@ -91,11 +91,16 @@ class Task(object):
         self.window_close_time = None  # seconds from midnight: not managed yet
         self.start_close_time = None
         self.SS_interval = 0  # seconds: Interval among start gates when more than one
-        self.start_iteration = None     # number of start iterations: 0 is indefinite up to start close time
+        self.start_iteration = None  # number of start iterations: 0 is indefinite up to start close time
         self.opt_dist = 0
         self.opt_dist_to_SS = 0
         self.opt_dist_to_ESS = 0
         self.SS_distance = 0
+        self.dist_validity = 0.000
+        self.time_validity = 0.000
+        self.launch_validity = 0.000
+        self.stop_validity = 1.000
+        self.day_quality = 0.000
         self.distance = 0  # non optimised distance
         self.turnpoints = []  # list of Turnpoint objects
         self.optimised_turnpoints = []  # fixes on cylinders for opt route
@@ -232,7 +237,18 @@ class Task(object):
             # TODO is it so simple in HG? Need to check
             return self.stop_time - self.start_time
 
+    @property
+    def ftv_validity(self):
+        if not self.formula or not self.day_quality or not self.max_score:
+            return 0
+        if self.formula.overall_validity == 'ftv':
+            return (round(self.max_score / 1000, 4) if self.formula.formula_type == 'pwc'
+                    else round(self.day_quality, 4))
+        else:
+            return self.day_quality
+
     ''' * Statistic Properties *'''
+
     ''' list of present pilots' results'''
 
     @property
@@ -484,8 +500,6 @@ class Task(object):
             ''' get pilot list and results'''
             self.get_results(lib)
 
-        # self.stats.update(lib.task_totals(self))
-
         if self.pilots_launched == 0:
             print(f"Task (ID {self.id}) has no results yet")
             return 0
@@ -495,37 +509,6 @@ class Task(object):
         lib.points_allocation(self)
 
         '''create result elements from task, formula and results objects'''
-        # sorting list by score, dnf, abs
-        # pil_list = sorted([p for p in self.pilots if p.result_type not in ['dnf', 'abs']],
-        #                   key=lambda k: k.score, reverse=True)
-        # pil_list += [p for p in self.pilots if p.result_type == 'dnf']
-        # pil_list += [p for p in self.pilots if p.result_type == 'abs']
-        #
-        # info = {x: getattr(self, x) for x in R.info_list if x in dir(self)}
-        # formula = {x: getattr(self.formula, x) for x in R.formula_list if x in dir(self.formula)}
-        # stats = {x: getattr(self, x) for x in R.stats_list if x in dir(self)}
-        # route = []
-        # for idx, tp in enumerate(self.turnpoints):
-        #     wpt = {x: getattr(tp, x) for x in R.route_list if x in dir(tp)}
-        #     wpt['cumulative_dist'] = self.partial_distance[idx]
-        #     route.append(wpt)
-        # results = []
-        # for pil in pil_list:
-        #     res = pil.create_result_dict()
-        #     results.append(res)
-        # rankings = read_rankings(self.comp_id)
-        # if len(rankings) == 0:
-        #     ''' create an overall ranking'''
-        #     rankings.update({'overall': [cert for cert in set([p.info.glider_cert for p in self.pilots])]})
-        #
-        # '''create json file'''
-        # result = {'info': info,
-        #           'route': route,
-        #           'results': results,
-        #           'formula': formula,
-        #           'stats': stats,
-        #           'rankings': rankings
-        #           }
         elements = self.create_json_elements()
         ref_id = create_json_file(comp_id=self.comp_id, task_id=self.id,
                                   code='_'.join([self.comp_code, self.task_code]), elements=elements, status=status)
@@ -553,9 +536,9 @@ class Task(object):
         for pil in pil_list:
             res = pil.create_result_dict()
             results.append(res)
-        # rankings = read_rankings(self.comp_id)
-        rankings = {}
-        if len(rankings) == 0:
+        rankings = read_rankings(self.comp_id)
+        # rankings = {}
+        if not rankings or len(rankings) == 0:
             ''' create an overall ranking'''
             rankings.update({'overall': [cert for cert in set([p.info.glider_cert for p in self.pilots])]})
 
@@ -1007,7 +990,7 @@ class Task(object):
         ''' get task stats'''
         # I need to get only the ones we do not calculate from results
         for key, value in t['stats'].items():
-            if not hasattr(task, key):
+            if hasattr(task, key):
                 setattr(task, key, value)
         # task.stats.update(t['stats'])
         ''' get task formula'''
@@ -1034,43 +1017,6 @@ class Task(object):
         for pil in t['results']:
             ''' create Pilot objects from json list'''
             task.pilots.append(Pilot.from_result(task_id, pil))
-            # pilot = Pilot.create(task_id=task_id)
-            # pilot.track.track_file = pil['track_file']
-            # pilot.info.par_id = pil['par_id']
-            # pilot.info.ID = pil['ID']
-            # pilot.info.name = pil['name']
-            # pilot.info.glider = pil['glider']
-            # pilot.info.sponsor = pil['sponsor']
-            # pilot.info.glider_cert = pil['class']
-            # pilot.info.civl_id = pil['civl_id']
-            # pilot.info.fai_id = pil['fai_id']
-            # pilot.info.sex = pil['sex']
-            # pilot.info.nat = pil['nat']
-            # result = pilot.result
-            # # TODO should unify property names
-            # result.distance_flown = pil['distance']
-            # result.first_time = pil['first_time']
-            # result.SSS_time = pil['SS_time']
-            # result.real_start_time = pil['real_start_time']
-            # result.ESS_time = pil['ES_time']
-            # result.goal_time = pil['goal_time']
-            # result.best_waypoint_achieved = pil['turnpoints_made']
-            # result.last_time = pil['last_time']
-            # result.lead_coeff = pil['lead_coeff']
-            # result.ESS_altitude = pil['ESS_altitude']
-            # result.goal_altitude = pil['goal_altitude']
-            # result.max_altitude = pil['max_altitude']
-            # result.last_altitude = pil['last_altitude']
-            # result.distance_score = pil['dist_points']
-            # result.departure_score = pil['dep_points']
-            # result.arrival_score = pil['arr_points']
-            # result.time_score = pil['time_points']
-            # result.penalty = pil['penalty']
-            # result.comment = pil['comment']
-            # result.score = pil['score']
-            # result.result_type = pil['result']
-            #
-            # task.results.append(pilot)
 
         return task
 

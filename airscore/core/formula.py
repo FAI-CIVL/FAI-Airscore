@@ -98,6 +98,7 @@ class Formula(object):
         self.nominal_time = nominal_time  # seconds
         self.nominal_launch = nominal_launch  # percentage / 100
         self.min_dist = min_dist  # meters
+        self.score_back_time = score_back_time  # seconds
         self.no_goal_penalty = no_goal_penalty
         self.glide_bonus = glide_bonus
         self.tolerance = tolerance  # percentage / 100
@@ -299,7 +300,7 @@ class Task_formula(object):
     Creates an Object with all task parameters
     """
 
-    def __init__(self, task_id=None, formula_name=None, formula_type=None, formula_version=None, comp_class=None,
+    def __init__(self, formula_name=None, formula_type=None, formula_version=None,
                  formula_distance=None, formula_arrival=None, formula_departure=None, lead_factor=None,
                  formula_time=None, no_goal_penalty=None, glide_bonus=None, tolerance=None, arr_alt_bonus=None,
                  arr_min_height=None, arr_max_height=None, validity_min_time=None, max_JTG=None,
@@ -312,7 +313,6 @@ class Task_formula(object):
         self.formula_name = formula_name
         self.formula_type = formula_type
         self.formula_version = formula_version
-        self.comp_class = comp_class  # 'HG', 'PG'
         self.formula_distance = formula_distance  # 'on', 'difficulty', 'off'
         self.formula_arrival = formula_arrival  # 'position', 'time', 'off'
         self.formula_departure = formula_departure  # 'on', 'leadout', 'off'
@@ -325,12 +325,13 @@ class Task_formula(object):
         self.score_back_time = score_back_time  # seconds
         self.max_JTG = max_JTG
         self.JTG_penalty_per_sec = JTG_penalty_per_sec
+        self.overall_validity = None
+        self.validity_param = None
         self.nominal_goal = nominal_goal  # percentage / 100
         self.nominal_dist = nominal_dist  # meters
         self.nominal_time = nominal_time  # seconds
         self.nominal_launch = nominal_launch  # percentage / 100
         self.min_dist = min_dist  # meters
-        self.score_back_time = score_back_time  # seconds
         self.no_goal_penalty = no_goal_penalty
         self.glide_bonus = glide_bonus
         self.tolerance = tolerance  # percentage / 100
