@@ -22,7 +22,7 @@ from task import get_map_json, get_task_json
 from trackUtils import read_track_result_file
 from design_map import *
 from flask_wtf import FlaskForm
-from wtforms import StringField,SubmitField, SelectField, SelectMultipleField
+from wtforms import StringField, SubmitField, SelectField, SelectMultipleField
 from calcUtils import sec_to_time
 import mapUtils
 from myconn import Database
@@ -31,7 +31,6 @@ from sqlalchemy.orm import aliased
 import Defines
 from os import path
 import json
-
 
 blueprint = Blueprint("public", __name__, static_folder="../static")
 
@@ -106,8 +105,8 @@ def get_all_comps():
 
     with Database() as db:
         comps = (db.session.query(c.comPk, c.comName, c.comLocation,
-                 c.comClass, c.comSanction, c.comType, c.comDateFrom,
-                 c.comDateTo, func.count(tblTask.tasPk))
+                                  c.comClass, c.comSanction, c.comType, c.comDateFrom,
+                                  c.comDateTo, func.count(tblTask.tasPk))
                  .outerjoin(tblTask, c.comPk == tblTask.comPk)
                  .group_by(c.comPk))
 
@@ -120,7 +119,7 @@ def get_all_comps():
             name = comp[1]
             comp[1] = f'<a href="/competition/{compid}">{name}</a>'
         # else:
-            # comp['comName'] = "<a href=\"comp_overall.html?comPk=$id\">" . $row['comName'] . '</a>';
+        # comp['comName'] = "<a href=\"comp_overall.html?comPk=$id\">" . $row['comName'] . '</a>';
         if comp[3] == "PG" or "HG":
             hgpg = comp[3]
             comp[3] = f'<img src="/static/img/{hgpg}.png" width="100%" height="100%"</img>'
@@ -131,7 +130,7 @@ def get_all_comps():
         starts = comp[6]
         ends = comp[7]
         if starts > now:
-            comp.append(f"Starts in {(starts-now).days} day(s)")
+            comp.append(f"Starts in {(starts - now).days} day(s)")
         elif ends < now:
             comp.append('Finished')
         else:
@@ -163,7 +162,7 @@ def competition(compid):
             layer['bbox'] = bbox
             task_map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
                                 goal_line=goal_line, margin=tolerance)
-            task['opt_dist'] = '{:0.2f}'.format(task['opt_dist']/1000) + ' km'
+            task['opt_dist'] = '{:0.2f}'.format(task['opt_dist'] / 1000) + ' km'
             task['tasQuality'] = '{:0.2f}'.format(task['day_quality'])
             task.update({'map': task_map._repr_html_()})
             all_tasks.append(task)
@@ -182,11 +181,11 @@ def competition(compid):
                             .order_by(t.tasDate.desc()).all())
 
         competition_info = (db.session.query(
-                c.comPk,
-                c.comName,
-                c.comLocation,
-                c.comDateFrom,
-                c.comDateTo).filter(c.comPk == compid).one())
+            c.comPk,
+            c.comName,
+            c.comLocation,
+            c.comDateFrom,
+            c.comDateTo).filter(c.comPk == compid).one())
     comp = competition_info._asdict()
 
     comp_start = comp['comDateFrom']
@@ -206,8 +205,8 @@ def competition(compid):
             layer['geojson'] = None
             layer['bbox'] = bbox
             task_map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
-                           goal_line=goal_line, margin=tolerance)
-            task['opt_dist'] = '{:0.2f}'.format(task['tasShortRouteDistance']/1000) + ' km'
+                                goal_line=goal_line, margin=tolerance)
+            task['opt_dist'] = '{:0.2f}'.format(task['tasShortRouteDistance'] / 1000) + ' km'
             task.update({'map': task_map._repr_html_()})
             task['tasQuality'] = "-"
             task['status'] = "Not yet scored"
@@ -225,7 +224,6 @@ def task_result(taskid):
 
 @blueprint.route('/get_task_result/<taskid>', methods=['GET', 'POST'])
 def get_task_result(taskid):
-
     result_file = get_task_json(taskid)
     if result_file == 'error':
         return render_template('404.html')
@@ -235,21 +233,21 @@ def get_task_result(taskid):
     for r in result_file['results']:  # need sex??
         track_id = r['track_id']
         name = r['name']
-        pilot = [f'<b>{rank}</b>', f'<a href="/map/{track_id}">{name}</a>', r['nat'], r['glider'], r['glider_cert'],
-                 r['sponsor']]
+        pilot = [f'<b>{rank}</b>', f'<a href="/map/{track_id}-{taskid}">{name}</a>', r['nat'], r['glider'],
+                 r['glider_cert'], r['sponsor']]
         if r['SSS_time']:
-            pilot.append(sec_to_time(r['SSS_time']+result_file['info']['time_offset']).strftime("%H:%M:%S"))
+            pilot.append(sec_to_time(r['SSS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S"))
         else:
             pilot.append("")
-        if r['ESS_time'] == 0 or r['ESS_time'] is None :
+        if r['ESS_time'] == 0 or r['ESS_time'] is None:
             pilot.append("")
             pilot.append("")
         else:
-            pilot.append(sec_to_time(r['ESS_time']+result_file['info']['time_offset']).strftime("%H:%M:%S"))
-            pilot.append(sec_to_time(r['ESS_time']-r['SSS_time']).strftime("%H:%M:%S"))
-        pilot.append(round(r['speed'],2) if r['speed'] else "")
+            pilot.append(sec_to_time(r['ESS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S"))
+            pilot.append(sec_to_time(r['ESS_time'] - r['SSS_time']).strftime("%H:%M:%S"))
+        pilot.append(round(r['speed'], 2) if r['speed'] else "")
         pilot.append("")  # altitude bonus
-        pilot.append(round(r['distance']/1000, 2))
+        pilot.append(round(r['distance'] / 1000, 2))
         pilot.append(round(r['time_score'], 2))
         pilot.append(round(r['departure_score'], 2))
         pilot.append(round(r['arrival_score'], 2))  # arrival points
@@ -262,7 +260,7 @@ def get_task_result(taskid):
     all_classes = []
     for glider_class in result_file['rankings']:
         if glider_class[-5:].lower() == 'class':
-        # if glider_class[-5:].lower() == 'class' or glider_class.lower() == 'overall':
+            # if glider_class[-5:].lower() == 'class' or glider_class.lower() == 'overall':
             comp_class = {'name': glider_class, 'limit': result_file['rankings'][glider_class][-1]}
             all_classes.append(comp_class)
     all_classes.reverse()
@@ -315,7 +313,7 @@ def get_comp_result(compid):
 
 
 class SelectAdditionalTracks(FlaskForm):
-    track_pilot_list =[]
+    track_pilot_list = []
     tracks = SelectField('Add Tracks:', choices=track_pilot_list)
 
 
@@ -341,6 +339,7 @@ def map(trackidtaskid):
     return render_template('public/map.html', other_tracks=other_tracks, add_tracks=add_tracks, map=map._repr_html_(),
                            wpt_achieved=waypoint_achieved_list, task=task_name, pilot=pilot)
 
+
 @blueprint.route('/_map/<trackid>/<extra_trackids>')
 def multimap(trackid, extra_trackids):
     trackids = []
@@ -348,8 +347,8 @@ def multimap(trackid, extra_trackids):
         trackids.append(t)
     # if trackids is None:
     #     map(trackid)
-    layer={}
-    extra_layer={}
+    layer = {}
+    extra_layer = {}
     print(f"trackid={trackid} trackids={trackids}")
     wpt_coords, turnpoints, short_route, goal_line, tolerance = get_task_json(66)
     colours = ['#0000ff', '#33cc33', '#ffff00', '#9900cc', '#006600', '#3399ff', '#ff99cc', '#663300', '#99ffcc']
@@ -436,6 +435,7 @@ def save_airspace():
     newfile = airspaceUtils.create_new_airspace(data)
     airspaceUtils.create_airspace_map_check_files(newfile)
     return jsonify(dict(redirect=newfile))
+
 
 @blueprint.route('/download/<filetype>/<filename>', methods=['GET'])
 def download_file(filetype, filename):

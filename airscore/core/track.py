@@ -147,10 +147,10 @@ class Track(object):
         from Defines import track_formats
         track = cls(track_file=filename, track_id=track_id, par_id=par_id)
         track.get_type()
-        print('type ', track.type)
-        if track.type in track_formats:
+        print('type ', track.track_type)
+        if track.track_type in track_formats:
             """file is a valid track format"""
-            if track.type == "igc":
+            if track.track_type == "igc":
                 """using IGC reader from aerofile library"""
                 print('reading flight')
                 track.flight = Flight.create_from_file(filename)
@@ -180,6 +180,8 @@ class Track(object):
     def read_db(cls, track_id):
         """Creates a Track Object from a DB Track entry"""
         from db_tables import TrackObjectView as T
+        from trackUtils import get_task_fullpath
+        from os import path
 
         track = cls(track_id=track_id)
 
@@ -190,7 +192,9 @@ class Track(object):
             try:
                 db.populate_obj(track, q)
                 """Creates the flight obj with fixes info"""
-                track.flight = Flight.create_from_file(track.fullpath)
+                # task_id = q.task_id
+                full_path = get_task_fullpath(q.task_id)
+                track.flight = Flight.create_from_file(path.join(full_path, track.track_file))
             except:
                 print(f'Track Query Error: no result found')
 
@@ -234,16 +238,16 @@ class Track(object):
                 first_line = f.readline()
             if first_line[:1] == 'A':
                 """IGC: AXCT7cea4d3ae0df42a1"""
-                self.type = "igc"
+                self.track_type = "igc"
             elif first_line[:3] == '<?x':
                 """KML: <?xml version="1.0" encoding="UTF-8"?>"""
-                self.type = "kml"
-            elif first_line.contains("B  UTF"):
-                self.type = "ozi"
+                self.track_type = "kml"
+            elif "B  UTF" in first_line:
+                self.track_type = "ozi"
             elif first_line[:3] == 'LIV':
-                self.type = "live"
+                self.track_type = "live"
             else:
-                self.type = None
+                self.track_type = None
             print("  ** FILENAME: {} TYPE: {} \n".format(self.filename, self.type))
 
     def copy_track_file(self, task_path=None, pname=None):
@@ -292,11 +296,3 @@ class Track(object):
                 print('Error copying file:', fullname)
         else:
             print('error, path not created')
-
-    @staticmethod
-    def is_flying(p1, p2):
-        """check if pilot is flying between 2 gps points"""
-
-        dist = quick_distance(p2, p1)
-        altdif = abs(p2['gps_alt'] - p1['gps_alt'])
-        timedif = time_difference(p2['time'], p1['time'])

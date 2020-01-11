@@ -563,7 +563,7 @@ class Flight_result(object):
             r.tarLandingTime = self.landing_time
             r.tarResultType = self.result_type
             r.tarComment = self.comment
-            r.traFile = self.track_file
+            # r.traFile = self.track_file
 
             if not track_id:
                 db.session.add(r)
@@ -602,7 +602,7 @@ class Flight_result(object):
         info['pilot_name'] = pilot_details['parName']
         info['pilot_nat'] = pilot_details['parNat']
         info['pilot_sex'] = pilot_details['parSex']
-        info['pilot_parid'] = self.par_id
+        info['pilot_parid'] = track.par_id
         info['Glider'] = pilot_details['parGlider']
 
         min_lat = track.flight.fixes[0].lat
