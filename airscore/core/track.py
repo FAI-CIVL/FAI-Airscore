@@ -210,27 +210,27 @@ class Track(object):
                 setattr(track, key, value)
         return track
 
-    def to_geojson(self, filename=None, mintime=0, maxtime=86401):
-        """Dumps the flight to geojson format
-            If a filename is given, it write the file, otherwise returns the string"""
-
-        from geojson import Feature, FeatureCollection, MultiLineString, dump
-
-        features = []
-        route = []
-        for fix in self.flight.fixes:
-            if mintime <= fix.rawtime < maxtime:
-                route.append((fix.lon, fix.lat))
-
-        route_multilinestring = MultiLineString([route])
-        features.append(Feature(geometry=route_multilinestring, properties={"Track": "Track"}))
-        feature_collection = FeatureCollection(features)
-
-        if filename is None:
-            return feature_collection
-        else:
-            with open(filename, 'w') as f:
-                dump(feature_collection, f)
+    # def to_geojson(self, filename=None, mintime=0, maxtime=86401):
+    #     """Dumps the flight to geojson format
+    #         If a filename is given, it write the file, otherwise returns the string"""
+    #
+    #     from geojson import Feature, FeatureCollection, MultiLineString, dump
+    #
+    #     features = []
+    #     route = []
+    #     for fix in self.flight.fixes:
+    #         if mintime <= fix.rawtime < maxtime:
+    #             route.append((fix.lon, fix.lat))
+    #
+    #     route_multilinestring = MultiLineString([route])
+    #     features.append(Feature(geometry=route_multilinestring, properties={"Track": "Track"}))
+    #     feature_collection = FeatureCollection(features)
+    #
+    #     if filename is None:
+    #         return feature_collection
+    #     else:
+    #         with open(filename, 'w') as f:
+    #             dump(feature_collection, f)
 
     def get_type(self):
         """determine if igc / kml / live / ozi"""
@@ -250,7 +250,7 @@ class Track(object):
                 self.track_type = "live"
             else:
                 self.track_type = None
-            print("  ** FILENAME: {} TYPE: {} \n".format(self.filename, self.type))
+            print(f"  ** FILENAME: {self.filename} TYPE: {self.track_type} \n")
 
     def copy_track_file(self, task_path, pname=None):
         """copy track file in the correct folder and with correct name
