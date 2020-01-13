@@ -250,7 +250,7 @@ class Track(object):
                 self.track_type = "live"
             else:
                 self.track_type = None
-            print("  ** FILENAME: {} TYPE: {} \n".format(self.filename, self.type))
+            print(f"  ** FILENAME: {self.filename} TYPE: {self.track_type} \n")
 
     def copy_track_file(self, task_path, pname=None):
         """copy track file in the correct folder and with correct name
