@@ -122,23 +122,25 @@ class Track(object):
             fields = os.path.splitext(os.path.basename(self.filename))
             self.par_id = find_pilot(fields[0])
 
-    def add(self):
+    def to_db(self, task_id):
         """Imports track to db"""
         # TODO in the new workflow we should have a Pilot obj, with Track as attr. so we should add() in Pilot
+        # TODO G record check
         from db_tables import tblTaskResult as R
+        from sqlalchemy.exc import SQLAlchemyError
         result = ''
 
         # add track as result in tblTaskResult table
         with Database() as db:
             try:
-                track = R(parPk=self.par_id, tasPk=self.task_id, traFile=self.filename,
-                          traGRecordOk=self.filename)  # not sure what g-record has to do with filename??
+                track = R(parPk=self.par_id, tasPk=task_id, traFile=self.filename,
+                          traGRecordOk=1)  # still to implement
                 self.track_id = db.session.add(track)
                 db.session.commit()
-                result += ("track for pilot with id {} correctly stored in database".format(self.pil_id))
-            except:
+                result += f"track for pilot with id {self.par_id} correctly stored in database"
+            except SQLAlchemyError:
                 print('Error Inserting track into db:')
-                result = ('Error inserting track for pilot with id {}'.format(self.pil_id))
+                result += f'Error inserting track for pilot with id {self.par_id}'
         return result
 
     @classmethod
@@ -250,7 +252,7 @@ class Track(object):
                 self.track_type = None
             print("  ** FILENAME: {} TYPE: {} \n".format(self.filename, self.type))
 
-    def copy_track_file(self, task_path=None, pname=None):
+    def copy_track_file(self, task_path, pname=None):
         """copy track file in the correct folder and with correct name
         name could be changed as the one XContest is sending, or rename that one, as we wish
         if path or pname is None will calculate. note that if bulk importing it is better to pass these values
@@ -261,17 +263,18 @@ class Track(object):
         from compUtils import get_task_filepath
         from os import path
         from db_tables import RegistrationView as P
+        from sqlalchemy.exc import SQLAlchemyError
 
         src_file = self.filename
-        if task_path is None:
-            task_path = get_task_filepath(self.task_id)
+        # if task_path is None:
+        #     task_path = get_task_filepath(self.task_id)
 
         if pname is None:
             with Database() as db:
                 # get pilot details.
                 name = db.session.query(P).get(self.par_id).name
-            if q:
-                pname = name.replace(' ', '_').lower()
+                if name:
+                    pname = name.replace(' ', '_').lower()
 
         if task_path:
             """check if directory already exists"""
@@ -292,7 +295,7 @@ class Track(object):
                 self.track_file = fullname
                 # print(f'file succesfully copied to : {self.filename}')
                 print('file succesfully copied to :', self.filename)
-            except:
+            except SQLAlchemyError:
                 print('Error copying file:', fullname)
         else:
             print('error, path not created')
