@@ -56,6 +56,7 @@ PyYAML>=5.1.1
 requests>=2.22.0
 simplejson>=3.16.0
 lxml>=4.4.2
+shapely>=1.6.4
 
 # Model Mapping Generator
 sqlacodegen
