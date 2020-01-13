@@ -20,7 +20,8 @@ import json
 
 NM_in_meters = 1852.00
 Ft_in_meters = 0.3048000
-colours = {'P': '#d42c31', 'D': '#d42c31', 'R': '#d42c31', 'GP': '#d42c31', 'C': '#d42c31', 'Z': '#d42c31', 'CTR': '#d42c31'}
+colours = {'P': '#d42c31', 'D': '#d42c31', 'R': '#d42c31', 'GP': '#d42c31', 'C': '#d42c31', 'Z': '#d42c31',
+           'CTR': '#d42c31'}
 
 
 def read_openair(filename):
@@ -56,6 +57,9 @@ def airspace_info(record):
 def convert_height(height_string):
     """Converts feet in metres, GND into 0. leaves FL essentialy untouched. returns a string that can be used in
     labels etc such as "123 m", a int of height such as 123 and a unit such as "m" """
+    info = ''
+    meters = None
+
     if height_string == '0':
         return '0', 0, "m"
 
@@ -66,7 +70,7 @@ def convert_height(height_string):
     elif re.search("ft", height_string):
         if len(re.sub("[^0-9]", "", height_string)) > 0:
             feet = int(re.sub("[^0-9]", "", height_string))
-            meters = round(feet * Ft_in_meters,1)
+            meters = round(feet * Ft_in_meters, 1)
             info = f"{height_string}/{meters} m"
 
     elif re.search("m", height_string) or re.search("MSL", height_string):
@@ -75,8 +79,8 @@ def convert_height(height_string):
             info = f"{meters} m"
 
     elif height_string == 'GND':
-            meters = 0 # this should probably be something like -500m to cope with dead sea etc (or less for GPS/Baro error?)
-            info = "GND / 0 m"
+        meters = 0  # this should probably be something like -500m to cope with dead sea etc (or less for GPS/Baro error?)
+        info = "GND / 0 m"
     else:
         return height_string, None, "Unknown height unit"
 
@@ -87,20 +91,20 @@ def circle_map(element, info):
     """Returns folium circle mapping object from circular airspace.
     takes circular airspace as input, which may only be part of an airspace"""
     if element['type'] == 'circle':
-       floor, _, _ = convert_height(info['floor'])
-       ceiling, _, _ = convert_height(info['ceiling'])
-       radius = f"{element['radius']} NM/{round(element['radius'] * NM_in_meters, 1)}m"
-       return folium.Circle(
-                location=(element['center'][0], element['center'][1]),
-                popup=f"{info['name']} Class {info['class']} floor:{floor} ceiling:{ceiling} Radius:{radius}",
-                radius=element['radius'] * NM_in_meters,
-                color=colours[info['class']],
-                weight=2,
-                opacity=0.8,
-                fill=True,
-                fill_opacity=0.2,
-                fill_color=colours[info['class']]
-                )
+        floor, _, _ = convert_height(info['floor'])
+        ceiling, _, _ = convert_height(info['ceiling'])
+        radius = f"{element['radius']} NM/{round(element['radius'] * NM_in_meters, 1)}m"
+        return folium.Circle(
+            location=(element['center'][0], element['center'][1]),
+            popup=f"{info['name']} Class {info['class']} floor:{floor} ceiling:{ceiling} Radius:{radius}",
+            radius=element['radius'] * NM_in_meters,
+            color=colours[info['class']],
+            weight=2,
+            opacity=0.8,
+            fill=True,
+            fill_opacity=0.2,
+            fill_color=colours[info['class']]
+        )
     else:
         return None
 
@@ -110,12 +114,12 @@ def circle_check(element, info):
     takes circular airspace as input, which may only be part of an airspace"""
     if element['type'] == 'circle':
 
-       return {'shape': 'circle',
-               'location': (element['center'][0], element['center'][1]),
-               'radius': element['radius'] * NM_in_meters,
-               'floor': info['floor'],
-               'ceiling': info['ceiling'],
-               'name': info['name']}
+        return {'shape': 'circle',
+                'location': (element['center'][0], element['center'][1]),
+                'radius': element['radius'] * NM_in_meters,
+                'floor': info['floor'],
+                'ceiling': info['ceiling'],
+                'name': info['name']}
     else:
         return None
 
@@ -128,22 +132,22 @@ def polygon_map(record):
         if element['type'] == 'point':
             locations.append(element['location'])
 
-    if locations == []:
+    if not locations:
         return None
 
     floor, _, _ = convert_height(record['floor'])
     ceiling, _, _ = convert_height(record['ceiling'])
 
     return folium.Polygon(
-            locations=locations,
-            popup=f"{record['name']} Class {record['class']} floor:{floor} ceiling:{ceiling}",
-            color=colours[record['class']],
-            weight=2,
-            opacity=0.8,
-            fill=True,
-            fill_opacity=0.2,
-            fill_color=colours[record['class']]
-            )
+        locations=locations,
+        popup=f"{record['name']} Class {record['class']} floor:{floor} ceiling:{ceiling}",
+        color=colours[record['class']],
+        weight=2,
+        opacity=0.8,
+        fill=True,
+        fill_opacity=0.2,
+        fill_color=colours[record['class']]
+    )
 
 
 def polygon_check(record, info):
@@ -154,7 +158,7 @@ def polygon_check(record, info):
         if element['type'] == 'point':
             locations.append(element['location'])
 
-    if locations == []:
+    if not locations:
         return None
 
     floor, _, _ = convert_height(record['floor'])
@@ -185,6 +189,7 @@ def create_new_airspace(mod_data):
         write_openair(data, new_file)
     return new_file
 
+
 def delete_airspace(file, spacename):
     """Deletes an airspace from file data. Does not write file to disk
     arguments:
@@ -194,7 +199,7 @@ def delete_airspace(file, spacename):
     all_spaces = file.split("\n\n")
 
     for space in all_spaces:
-        if space.find(spacename) > 0:
+        if space.find(spacename) > -1:
             all_spaces.remove(space)
     return "\n\n".join(all_spaces)
 
@@ -208,9 +213,7 @@ def modify_airspace(file, spacename, old, new):
     new - string to be inserted"""
 
     all_spaces = file.split("\n\n")
-    # print(f'spacename:{spacename}')
     for i, space in enumerate(all_spaces):
-        # print(space)
         if space.find(spacename) > 0:
             all_spaces[i] = space.replace(old, new)
 
@@ -267,15 +270,15 @@ def create_airspace_map_check_files(openair_filename):
 
         map_data = {'spaces': mapspaces, 'airspace_list': airspace_list, 'bbox': bbox}
         check_data = {'spaces': checkspaces, 'bbox': bbox}
-        with open(mapfile_fullname, 'w') as fp:
-            fp.write(jsonpickle.encode(map_data))
-        with open(checkfile_fullname, 'w') as fp:
-            fp.write(json.dumps(check_data))
+        with open(mapfile_fullname, 'w') as mapfile:
+            mapfile.write(jsonpickle.encode(map_data))
+        with open(checkfile_fullname, 'w') as checkfile:
+            checkfile.write(json.dumps(check_data))
 
 
 def read_airspace_map_file(openair_filename):
     """Read airspace map file if it exists. Create if not.
-        arguent: openair file name
+        argument: openair file name
         returns: dictionary containing spaces object and bbox """
     from pathlib import Path
 
@@ -348,9 +351,9 @@ def check_flight_airspace(flight, openair_filename, altimeter='baro/gps', vertic
     '''define earth model'''
     wgs84 = Proj("+init=EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth
     tmerc = Proj(
-        f"+proj=tmerc +lat_0={clat} +lon_0={clon} +k_0=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
+        f"+proj=tmerc +lat_0={clat} +lon_0={clon} "
+        f"+k_0=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
     trans = Transformer.from_proj(wgs84, tmerc)
-
 
     for space in airspace_details:
         if space['shape'] == 'circle':
@@ -373,14 +376,14 @@ def check_flight_airspace(flight, openair_filename, altimeter='baro/gps', vertic
     for fix in flight.fixes:
         alt = altitude(fix, altimeter)
         fix_violation = False
-        if in_bbox(bounding_box, fix): # check if we are in the bounding box of all airspaces
+        if in_bbox(bounding_box, fix):  # check if we are in the bounding box of all airspaces
             for space in airspace_details:
                 # we are at same alt as an airspace
                 if space['floor'] + vertical_tolerance < alt < space['ceiling'] - vertical_tolerance:
                     if space['shape'] == 'circle':
                         if space['object'].in_radius(fix, 0, horizontal_tolerance):
                             airspace_plot.append([fix.rawtime, fix.lat, fix.lon, alt, space['floor'],
-                                                 space['ceiling'], space['name']])
+                                                  space['ceiling'], space['name']])
                             violation = True
                             fix_violation = True
                     elif space['shape'] == 'polygon':
@@ -388,7 +391,7 @@ def check_flight_airspace(flight, openair_filename, altimeter='baro/gps', vertic
                         point = Point(y, x)
                         if point.within(space['object']):
                             airspace_plot.append([fix.rawtime, fix.lat, fix.lon, alt, space['floor'],
-                                                 space['ceiling'], space['name']])
+                                                  space['ceiling'], space['name']])
                             violation = True
                             fix_violation = True
                     # TODO insert arc check here. we can use in radius and bearing to
@@ -399,7 +402,7 @@ def check_flight_airspace(flight, openair_filename, altimeter='baro/gps', vertic
 
 
 def in_bbox(bbox, fix):
-    if bbox[0][0] < fix.lat < bbox[1][0] and bbox[0][1] < fix.lon < bbox[1][1]:
+    if bbox[0][0] <= fix.lat <= bbox[1][0] and bbox[0][1] <= fix.lon <= bbox[1][1]:
         return True
     else:
         return False
@@ -408,18 +411,16 @@ def in_bbox(bbox, fix):
 def altitude(fix, altimeter):
     """returns altitude of specified altimeter from fix"""
     if altimeter == 'barometric' or altimeter == 'baro/gps':
-        if fix.press_alt:
+        if fix.press_alt != 0.0:
             return fix.press_alt
         elif altimeter == 'baro/gps':
             return fix.gnss_alt
         else:
             return 'error - no barometric altitude available'
-    else:
+    elif altimeter == 'gps':
         return fix.gnss_alt
-
-
-
-
+    else:
+        raise ValueError(f"altimeter choice({altimeter}) not one of barometric, baro/gps or gps")
 
 # def arc_map(element, info):
 #     if element['type'] == 'arc':
