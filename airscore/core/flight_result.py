@@ -415,7 +415,7 @@ class Flight_result(object):
             - race has multiple starts
             - task is elapsed time
             '''
-
+            # print(f'time: {my_fix.rawtime}, start: {task.start_time} | can start: {pilot_can_start(task, tp, my_fix)} can restart: {pilot_can_restart(task, tp, my_fix, result)} | tp: {tp.name}')
             if pilot_can_start(task, tp, my_fix):
                 if start_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m):
                     time = round(tp_time_civl(my_fix, next_fix, tp.next), 0)
@@ -432,7 +432,7 @@ class Flight_result(object):
                     if lead_coeff:
                         lead_coeff.reset()
 
-            if tp.next.type in ['waypoint', 'endspeed', 'goal']:
+            if tp.start_done:
                 '''Turnpoint managing'''
                 if (tp.next.shape == 'circle'
                         and tp.next.type in ('endspeed', 'waypoint')):
@@ -481,7 +481,7 @@ class Flight_result(object):
             result.SSS_time = task.start_time
 
             if task.task_type == 'RACE' and task.SS_interval:
-                result.SSS_time += (start_number_at_time(task, result.real_start_time) - 1) * task.SS_interval
+                result.SSS_time += max(0, (start_number_at_time(task, result.real_start_time) - 1) * task.SS_interval)
 
             elif task.task_type == 'ELAPSED TIME':
                 result.SSS_time = result.real_start_time
@@ -661,7 +661,7 @@ class Flight_result(object):
                 keep = True
                 lastfix = fix
 
-            if fix.rawtime == self.waypoints_achieved[waypoint][1]:
+            if len(self.waypoints_achieved) > waypoint and fix.rawtime == self.waypoints_achieved[waypoint][1]:
                 time = ("%02d:%02d:%02d" % rawtime_float_to_hms(fix.rawtime + task.time_offset))
                 waypoint_achieved.append(
                     [fix.lon, fix.lat, fix.gnss_alt, fix.press_alt, self.waypoints_achieved[waypoint][0], time,
@@ -682,20 +682,21 @@ class Flight_result(object):
                 if fix.rawtime >= goal_time:
                     post_goal.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
 
-        for w in range(1, len(waypoint_achieved[1:]) + 1):
-            current = point(lon=waypoint_achieved[w][0], lat=waypoint_achieved[w][1])
-            previous = point(lon=waypoint_achieved[w - 1][0], lat=waypoint_achieved[w - 1][1])
-            straight_line_dist = distance(previous, current) / 1000
-            time_taken = (waypoint_achieved[w][6] - waypoint_achieved[w - 1][6]) / 3600
-            time_takenHMS = rawtime_float_to_hms(time_taken * 3600)
-            speed = straight_line_dist / time_taken
-            waypoint_achieved[w].append(round(straight_line_dist, 2))
-            waypoint_achieved[w].append("%02d:%02d:%02d" % time_takenHMS)
-            waypoint_achieved[w].append(round(speed, 2))
+        if len(waypoint_achieved) > 0:
+            for w in range(1, len(waypoint_achieved[1:]) + 1):  # this could be expressed as for idx, wp in enumerate(waypoint_achieved[1:], 1)_
+                current = point(lon=waypoint_achieved[w][0], lat=waypoint_achieved[w][1])
+                previous = point(lon=waypoint_achieved[w - 1][0], lat=waypoint_achieved[w - 1][1])
+                straight_line_dist = distance(previous, current) / 1000
+                time_taken = (waypoint_achieved[w][6] - waypoint_achieved[w - 1][6]) / 3600
+                time_takenHMS = rawtime_float_to_hms(time_taken * 3600)
+                speed = straight_line_dist / time_taken
+                waypoint_achieved[w].append(round(straight_line_dist, 2))
+                waypoint_achieved[w].append("%02d:%02d:%02d" % time_takenHMS)
+                waypoint_achieved[w].append(round(speed, 2))
 
-        waypoint_achieved[0].append(0)
-        waypoint_achieved[0].append("0:00:00")
-        waypoint_achieved[0].append('-')
+            waypoint_achieved[0].append(0)
+            waypoint_achieved[0].append("0:00:00")
+            waypoint_achieved[0].append('-')
 
         route_multilinestring = MultiLineString([pre_sss])
         features.append(Feature(geometry=route_multilinestring, properties={"Track": "Pre_SSS"}))
@@ -780,15 +781,15 @@ def pilot_can_restart(task, tp, fix, result):
 
     max_jump_the_gun = task.formula.max_JTG
 
-    if tp.last_made.type == "speed" and not (task.start_close_time or fix.rawtime >= task.start_close_time):
+    if tp.last_made.type == "speed" and (not task.start_close_time or fix.rawtime < task.start_close_time):
         if task.task_type == 'ELAPSED TIME':
             return True
         elif max_jump_the_gun > 0 and result.real_start_time < task.start_time:
             return True
         elif task.SS_interval and pilot_get_better_start(task, fix.rawtime, result.real_start_time):
             return True
-        else:
-            return False
+    else:
+        return False
 
 
 def adjust_flight_results(task, lib):
@@ -808,7 +809,7 @@ def start_number_at_time(task, time):
         return 0
     elif task.total_start_number <= 1:
         return task.total_start_number
-    elif task.SS_inteval > 0:
+    elif task.SS_interval > 0:
         return 1 + int((time - task.start_time) / task.SS_interval)
 
 
