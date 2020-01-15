@@ -204,8 +204,7 @@ def dump_flight(track, task):
     from mapUtils import get_bbox
     lib = task.formula.get_lib()
 
-    task_result = Flight_result.check_flight(track.flight, task, lib.parameters,
-                                             5)  # check flight against task with min tolerance of 5m
+    task_result = Flight_result.check_flight(track.flight, task)  # check flight against task
     geojson_file = task_result.to_geojson_result(track, task)
     bbox = get_bbox(track.flight)
 

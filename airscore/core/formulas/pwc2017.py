@@ -9,6 +9,8 @@ Scoring Formula Script
 """
 from formulas.libs.pwc import *
 from formula import FormulaPreset, Preset
+from formulas.libs.leadcoeff import lead_coeff_function, tot_lc_calc
+
 
 ''' Formula Info'''
 # Formula Name: usually the filename in capital letters
@@ -40,6 +42,8 @@ pg_preset = FormulaPreset(
     formula_departure=Preset(value='leadout', visible=False),
     # Lead Factor: factor for Leadou Points calculation formula
     lead_factor=Preset(value=1.0, visible=False),
+    # Squared Distances used for LeadCoeff: factor for Leadou Points calculation formula
+    lead_squared_distance=Preset(value=True, visible=False),
     # Time Points: on, off
     formula_time=Preset(value='on', visible=False),
     # Arrival Altitude Bonus: Bonus points factor on ESS altitude
@@ -66,13 +70,14 @@ pg_preset = FormulaPreset(
     glide_bonus=Preset(value=4.0, visible=False),
     # Waypoint radius tolerance for validation: FLOAT default is 0.1%
     tolerance=Preset(value=0.005, visible=True, editable=True),
+    # Waypoint radius minimum tolerance (meters): INT default = 5
+    min_tol=Preset(value=5, visible=True, editable=True),
     # Scoring Altitude Type: default is GPS for PG and QNH for HG
     scoring_altitude=Preset(value='GPS', visible=True, editable=True)
 )
 
 
 def points_weight(task):
-
     comp_class = task.comp_class  # HG / PG
     formula = task.formula
     quality = task.day_quality
@@ -103,49 +108,66 @@ def points_weight(task):
     task.avail_time_points = 1000 * quality - task.avail_dep_points - task.avail_dist_points  # AvailSpeedPoints
 
 
-def points_allocation(task):
-    """ Get task with pilots Flight_result obj. and calculates results"""
+def calculate_results(task):
+    """ Method to get to final results:
+            Task validity calculation: day_quality(task);
+            Points Weights calculation: points_weight(task);
+            Points Allocation: points_allocation(task);
+        Methods that are not on the script, are recalled from main library (pwc or gap) """
 
-    ''' Get pilots not ABS or DNF '''
-    results = task.valid_results
-    formula = task.formula
-
-    ''' Get basic GAP allocation values'''
     # dist_validity, time_validity, launch_validity, stop_validity, day_quality
     day_quality(task)
+
     # avail_dist_points, avail_time_points, avail_dep_points, avail_arr_points
     points_weight(task)
-    # task.max_score = 0      # max_score is evaluated without penalties. Is it correct?
 
-    ''' Score each pilot now'''
-    for res in results:
-        penalty = res.penalty if res.penalty else 0
+    # points allocation to pilots
+    points_allocation(task)
 
-        '''initialize'''
-        res.distance_score = 0
-        res.time_score = 0
-        res.arrival_score = 0
-        res.departure_score = 0
 
-        '''Pilot distance score'''
-        res.distance_score = pilot_distance(task, res)
-
-        ''' Pilot leading points'''
-        if task.departure == 'leadout' and res.result_type != 'mindist' and res.SSS_time:
-            res.departure_score = pilot_leadout(task, res)
-
-        if res.ESS_time > 0:
-            ''' Pilot speed points'''
-            res.time_score = pilot_speed(task, res)
-
-            ''' Penalty for not making goal'''
-            if not res.goal_time:
-                res.goal_time = 0
-                res.time_score *= (1 - formula.no_goal_penalty)
-
-        ''' Total score'''
-        res.score = res.distance_score + res.time_score + res.arrival_score + res.departure_score
-
-        ''' Apply Penalty'''
-        if penalty:
-            res.score = max(0, res.score - penalty)
+# def points_allocation(task):
+#     """ Get task with pilots Flight_result obj. and calculates results"""
+#
+#     ''' Get pilots not ABS or DNF '''
+#     results = task.valid_results
+#     formula = task.formula
+#
+#     ''' Get basic GAP allocation values'''
+#     # dist_validity, time_validity, launch_validity, stop_validity, day_quality
+#     day_quality(task)
+#     # avail_dist_points, avail_time_points, avail_dep_points, avail_arr_points
+#     points_weight(task)
+#     # task.max_score = 0      # max_score is evaluated without penalties. Is it correct?
+#
+#     ''' Score each pilot now'''
+#     for res in results:
+#         penalty = res.penalty if res.penalty else 0
+#
+#         '''initialize'''
+#         res.distance_score = 0
+#         res.time_score = 0
+#         res.arrival_score = 0
+#         res.departure_score = 0
+#
+#         '''Pilot distance score'''
+#         res.distance_score = pilot_distance(task, res)
+#
+#         ''' Pilot leading points'''
+#         if task.departure == 'leadout' and res.result_type != 'mindist' and res.SSS_time:
+#             res.departure_score = pilot_leadout(task, res)
+#
+#         if res.ESS_time > 0:
+#             ''' Pilot speed points'''
+#             res.time_score = pilot_speed(task, res)
+#
+#             ''' Penalty for not making goal'''
+#             if not res.goal_time:
+#                 res.goal_time = 0
+#                 res.time_score *= (1 - formula.no_goal_penalty)
+#
+#         ''' Total score'''
+#         res.score = res.distance_score + res.time_score + res.arrival_score + res.departure_score
+#
+#         ''' Apply Penalty'''
+#         if penalty:
+#             res.score = max(0, res.score - penalty)

@@ -128,8 +128,7 @@ def import_track(track, task_id):
 def verify_track(track, task):
     # formula = For.Task_formula.read(task.id)
     lib = task.formula.get_lib()
-    task_result = Flight_result.check_flight(track.flight, task, lib.parameters,
-                                             5)  # check flight against task with min tolerance of 5m
+    task_result = Flight_result.check_flight(track.flight, task)  # check flight against task
     task_result.to_db(task.id, track.track_id)
     print(track.flight.notes)
 
@@ -213,7 +212,7 @@ def create_track_result_file(track_id, task_id):
     # formula = For.Task_formula.read(task_id)
     track = Track.read_db(track_id)
     lib = task.formula.get_lib()
-    result = flight_result.Flight_result.check_flight(track.flight, task, lib, 5)
+    result = flight_result.Flight_result.check_flight(track.flight, task)
     result.save_result_file(result.to_geojson_result(track, task), str(track_id))
 
 

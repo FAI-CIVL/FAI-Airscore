@@ -13,7 +13,7 @@ RUN apt-get install -y \
     nodejs \
     && apt-get -y autoclean
 
-# Library needed for libgeos-dev
+# Library needed for shapely python library
 RUN apt-get install -y libgeos-dev
 
 WORKDIR /app

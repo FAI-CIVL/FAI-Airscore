@@ -247,6 +247,20 @@ class Task(object):
         else:
             return self.day_quality
 
+    @property
+    def total_start_number(self):
+        if self.task_type == 'RACE' and self.SS_interval:
+            if self.start_iteration:
+                return self.start_iteration + 1
+            else:
+                # indefinite start number
+                if self.start_close_time:
+                    return int((self.start_close_time - self.start_time) / self.SS_interval)
+        elif self.start_time:
+            return 1
+        else:
+            return 0
+
     ''' * Statistic Properties *'''
 
     ''' list of present pilots' results'''
@@ -505,8 +519,8 @@ class Task(object):
             return 0
 
         ''' Calculates task result'''
-        print(f"Calculating point allocation...")
-        lib.points_allocation(self)
+        print(f"Calculating task results...")
+        lib.calculate_results(self)
 
         '''create result elements from task, formula and results objects'''
         elements = self.create_json_elements()

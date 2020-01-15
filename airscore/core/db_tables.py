@@ -59,6 +59,7 @@ class CompFormulaView(Base):
                       Column('no_goal_penalty', Float, server_default=text("'1'")),
                       Column('glide_bonus', Float, server_default=text("'4'")),
                       Column('tolerance', Float),
+                      Column('min_tolerance', INTEGER(4)),
                       Column('arr_alt_bonus', Float, server_default=text("'0'")),
                       Column('arr_min_height', INTEGER(11)),
                       Column('arr_max_height', INTEGER(11)),
@@ -154,6 +155,7 @@ class CompObjectView(Base):
                       Column('no_goal_penalty', Float, server_default=text("'1'")),
                       Column('glide_bonus', Float, server_default=text("'4'")),
                       Column('tolerance', Float),
+                      Column('min_tolerance', INTEGER(4)),
                       Column('arr_alt_bonus', Float, server_default=text("'0'")),
                       Column('arr_min_height', INTEGER(11)),
                       Column('arr_max_height', INTEGER(11)),
@@ -341,6 +343,7 @@ class TaskFormulaView(Base):
                       Column('no_goal_penalty', Float(20, False), server_default=text("'0.000'")),
                       Column('glide_bonus', Float, server_default=text("'4'")),
                       Column('tolerance', Float(21, False)),
+                      Column('min_tolerance', INTEGER(4)),
                       Column('arr_alt_bonus', Float(asdecimal=False), server_default=text("'0'")),
                       Column('arr_min_height', INTEGER(11)),
                       Column('arr_max_height', INTEGER(11)),
@@ -554,6 +557,7 @@ class TaskView(Base):
                       Column('no_goal_penalty', Float(20, False), server_default=text("'0.000'")),
                       Column('glide_bonus', Float, server_default=text("'4'")),
                       Column('tolerance', Float(21, False)),
+                      Column('min_tolerance', INTEGER(4)),
                       Column('arr_alt_bonus', Float(asdecimal=False), server_default=text("'0'")),
                       Column('arr_min_height', INTEGER(11)),
                       Column('arr_max_height', INTEGER(11)),
@@ -880,6 +884,7 @@ class tblForComp(Base):
     forNoGoalPenalty = Column(Float, nullable=False, server_default=text("'1'"))
     forGlideBonus = Column(Float, nullable=False, server_default=text("'4'"))
     forTolerance = Column(Float, nullable=False, server_default=text("'0.1'"))
+    forMinTolerance = Column(INTEGER(4), nullable=False, server_default=text("'5'"))
     forHeightBonus = Column(Float, nullable=False, server_default=text("'0'"))
     forESSHeightLo = Column(INTEGER(11))
     forESSHeightUp = Column(INTEGER(11))

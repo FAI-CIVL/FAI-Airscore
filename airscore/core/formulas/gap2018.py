@@ -9,6 +9,7 @@ Scoring Formula Script
 """
 from formulas.libs.gap import *
 from formula import FormulaPreset, Preset
+from formulas.libs.leadcoeff import lead_coeff_function, tot_lc_calc
 
 ''' Formula Info'''
 # Formula Name: usually the filename in capital letters
@@ -40,6 +41,8 @@ pg_preset = FormulaPreset(
     formula_departure=Preset(value='leadout', visible=True, editable=True),
     # Lead Factor: factor for Leadou Points calculation formula
     lead_factor=Preset(value=2.0, visible=True, editable=True),
+    # Squared Distances used for LeadCoeff: factor for Leadou Points calculation formula
+    lead_squared_distance=Preset(value=True, visible=True, editable=True),
     # Time Points: on, off
     formula_time=Preset(value='on', visible=True, editable=True),
     # Arrival Altitude Bonus: Bonus points factor on ESS altitude
@@ -66,6 +69,8 @@ pg_preset = FormulaPreset(
     glide_bonus=Preset(value=4.0, visible=True, editable=True),
     # Waypoint radius tolerance for validation: FLOAT default is 0.1%
     tolerance=Preset(value=0.001, visible=True, editable=True),
+    # Waypoint radius minimum tolerance (meters): INT default = 5
+    min_tol=Preset(value=5, visible=True, editable=True),
     # Scoring Altitude Type: default is GPS for PG and QNH for HG
     scoring_altitude=Preset(value='GPS', visible=True, editable=True)
 )
@@ -85,6 +90,8 @@ hg_preset = FormulaPreset(
     formula_departure=Preset(value='leadout', visible=True, editable=True),
     # Lead Factor: factor for Leadou Points calculation formula
     lead_factor=Preset(value=1.0, visible=True, editable=True),
+    # Squared Distances used for LeadCoeff: factor for Leadou Points calculation formula
+    lead_squared_distance=Preset(value=True, visible=True, editable=True),
     # Time Points: on, off
     formula_time=Preset(value='on', visible=True, editable=True),
     # Arrival Altitude Bonus: Bonus points factor on ESS altitude
@@ -111,6 +118,25 @@ hg_preset = FormulaPreset(
     glide_bonus=Preset(value=5.0, visible=True, editable=True),
     # Waypoint radius tolerance for validation: FLOAT default is 0.1%
     tolerance=Preset(value=0.001, visible=True, editable=True),
+    # Waypoint radius minimum tolerance (meters): INT default = 5
+    min_tol=Preset(value=5, visible=True, editable=True),
     # Scoring Altitude Type: default is GPS for PG and QNH for HG
     scoring_altitude=Preset(value='QNH', visible=True, editable=True)
 )
+
+
+def calculate_results(task):
+    """ Method to get to final results:
+            Task validity calculation: day_quality(task);
+            Points Weights calculation: points_weight(task);
+            Points Allocation: points_allocation(task);
+        Methods that are not on the script, are recalled from main library (pwc or gap) """
+
+    # dist_validity, time_validity, launch_validity, stop_validity, day_quality
+    day_quality(task)
+
+    # avail_dist_points, avail_time_points, avail_dep_points, avail_arr_points
+    points_weight(task)
+
+    # points allocation to pilots
+    points_allocation(task)
