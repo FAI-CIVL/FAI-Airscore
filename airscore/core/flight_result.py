@@ -356,7 +356,7 @@ class Flight_result(object):
             '''Get two consecutive trackpoints as needed to use FAI / CIVL rules logic
             '''
             my_fix = flight.fixes[i]
-            next_fix = flight.fixes[i + 1]
+            next_fix = flight.fixes[i+1]
             result.last_time = my_fix.rawtime
             alt = next_fix.gnss_alt if alt_source == 'GPS' else next_fix.press_alt
 
@@ -464,7 +464,7 @@ class Flight_result(object):
                 LC = taskTime(i)*(bestDistToESS(i-1)^2 - bestDistToESS(i)^2 )
                 i : i ? TrackPoints In SS'''
             if lead_coeff and tp.start_done and not tp.ess_done:
-                lead_coeff.update(result, next_fix)
+                lead_coeff.update(result, my_fix, next_fix)
 
         '''final results'''
         result.max_altitude = max_altitude

@@ -9,16 +9,14 @@ Scoring Formula Script
 """
 from formulas.libs.pwc import *
 from formula import FormulaPreset, Preset
-from formulas.libs.leadcoeff import lead_coeff_function, tot_lc_calc
-
 
 ''' Formula Info'''
 # Formula Name: usually the filename in capital letters
-formula_name = 'PWC2017'
+formula_name = 'PWC2019'
 # Formula Type: pwc, gap, aat, any formula in libs folder
 formula_type = 'pwc'
 # Formula Version: INT, usually identified with year
-formula_version = '2017'
+formula_version = '2019'
 # Comp Class: PG, HG, BOTH
 formula_class = 'PG'
 
@@ -77,9 +75,24 @@ pg_preset = FormulaPreset(
 )
 
 
+def calculate_results(task):
+    """ Method to get to final results:
+            Task validity calculation: day_quality(task);
+            Points Weights calculation: points_weight(task);
+            Points Allocation: points_allocation(task);
+        Methods that are not on the script, are recalled from main library (pwc or gap) """
+
+    # dist_validity, time_validity, launch_validity, stop_validity, day_quality
+    day_quality(task)
+
+    # avail_dist_points, avail_time_points, avail_dep_points, avail_arr_points
+    points_weight(task)
+
+    # points allocation to pilots
+    points_allocation(task)
+
+
 def points_weight(task):
-    comp_class = task.comp_class  # HG / PG
-    formula = task.formula
     quality = task.day_quality
 
     if not task.pilots_launched:  # sanity
@@ -100,7 +113,7 @@ def points_weight(task):
     task.arr_weight = 0
 
     task.avail_dist_points = 1000 * quality * task.dist_weight  # AvailDistPoints
-    ''' PWC 2017: LeadPoints augmented by 50'''
+    ''' PWC 2019: LeadPoints augmented by 50'''
     task.avail_dep_points = 1000 * quality * task.dep_weight  # AvailLeadPoints
     task.avail_dep_points += 50  # PWC2017 Augmented LeadPoints
 
@@ -108,18 +121,65 @@ def points_weight(task):
     task.avail_time_points = 1000 * quality - task.avail_dep_points - task.avail_dist_points  # AvailSpeedPoints
 
 
-def calculate_results(task):
-    """ Method to get to final results:
-            Task validity calculation: day_quality(task);
-            Points Weights calculation: points_weight(task);
-            Points Allocation: points_allocation(task);
-        Methods that are not on the script, are recalled from main library (pwc or gap) """
+def weight_calc(dist_to_ess, ss_distance):
+    todo = dist_to_ess / ss_distance
+    return (1 - 10 ** (9 * todo - 9)) ** 5 * (1 - 10 ** (-3 * todo)) ** 2
 
-    # dist_validity, time_validity, launch_validity, stop_validity, day_quality
-    day_quality(task)
 
-    # avail_dist_points, avail_time_points, avail_dep_points, avail_arr_points
-    points_weight(task)
+def lead_coeff_function(lc, result, fix, next_fix):
+    """ Lead Coefficient formula from PWC2019"""
+    ''' C.6.3.1 Leading Coefficient (LC)
+        Each started pilot’s track log is used to calculate the Leading Coefficient (LC), by calculating the area 
+        underneath a graph defined by each track point’s time, and the distance to ESS at that time. 
+        The times used for this calculation are given in seconds from the moment when the first pilot crossed SSS, 
+        to the time when the last pilot reached ESS. For pilots who land out after the last pilot reached ESS, 
+        the calculation keeps going until they land. The distances used for the LC calculation are given in Kilometers 
+        and are the distance from each point’s position to ESS, starting from SSS, but never more than any previously 
+        reached distance. This means that the graph never “goes back”: even if the pilot flies away from goal 
+        for a while, the corresponding points in the graph will use the previously reached best distance towards ESS. 
+        Important: Previous versions of the formula used distances to ESS squared to increase the number of 
+        Leading Points awarded for leading out early in the task. 
+        This version uses a more complex weighting according to distance from ESS to give no leading points 
+        at the start, rising rapidly afterwards to give a similar linear function of distance from ESS after 
+        about 20% of the speed section.
+    '''
+    weight = weight_calc(lc.best_dist_to_ess[1], lc.ss_distance)
+    time_interval = next_fix.rawtime - fix.rawtime
 
-    # points allocation to pilots
-    points_allocation(task)
+    if time_interval == 0 or weight == 0:
+        return 0
+    else:
+        return (weight * time_interval * lc.best_dist_to_ess[1]) / (1800 * lc.ss_distance)
+
+
+def missing_area(time_interval, distance, ss_distance):
+    weight = weight_calc(distance, ss_distance)
+    return (weight * time_interval * distance) / (1800 * ss_distance)
+
+
+def tot_lc_calc(res, t):
+    """ Function to calculate final Leading Coefficient for pilots,
+        that needs to be done when all tracks have been scored"""
+    if res.ESS_time:
+        '''nothing to do'''
+        return res.fixed_LC
+    elif res.result_type in ('abs', 'dnf', 'mindist') or not res.SSS_time:
+        '''pilot did't make Start or has no track'''
+        return 0
+
+    '''pilot did not make ESS'''
+    ss_distance = t.SS_distance / 1000
+
+    '''find task_deadline to use for LC calculation'''
+    task_deadline = min((t.task_deadline if not t.stopped_time else t.stopped_time), t.max_time)
+    if t.max_ess_time and res.last_time:
+        if res.last_time < t.max_ess_time:
+            task_deadline = t.max_ess_time
+        else:
+            task_deadline = min(res.last_time, task_deadline)
+
+    best_dist_to_ess = (t.opt_dist_to_ESS - res.distance) / 1000  # in Km
+    missing_time = task_deadline - res.last_time
+    landed_out = missing_area(missing_time, best_dist_to_ess, ss_distance)
+
+    return res.fixed_LC + landed_out

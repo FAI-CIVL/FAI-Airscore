@@ -110,7 +110,7 @@ def launch_validity(task):
 
 def distance_validity(task):
     """
-    9.2 Distance Validity
+    C.4.2 Distance Validity
     NomDistArea = ( ((NomGoal + 1) * (NomDist − MinDist)) + max(0, (NomGoal * BestDistOverNom)) ) / 2
     DVR = SumOfFlownDistancesOverMinDist / (NumPilotsFlying * NomDistArea)
     Dist. Validity = min (1, DVR)
@@ -271,15 +271,10 @@ def pilot_leadout(task, res):
             else:  # We should have ONLY this case
                 # LeadingFactor = max (0, 1 - ( (LCp -LCmin) / sqrt(LCmin) )^(2/3))
                 # LeadingPoints = LeadingFactor * AvailLeadPoints
-                LF = 1 - ((LCp - LCmin) / sqrt(LCmin)) ** (2 / 3)
+                LF = max(0, 1 - ((LCp - LCmin) / sqrt(LCmin)) ** (2 / 3))
 
-                if LF > 0:
-                    Pdepart = Astart * LF
-    # Sanity
-    if 0 + Pdepart != Pdepart:
-        Pdepart = 0
-    if Pdepart < 0:
-        Pdepart = 0
+                Pdepart = Astart * LF
+
     return Pdepart
 
 
