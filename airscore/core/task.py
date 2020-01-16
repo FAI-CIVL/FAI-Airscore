@@ -394,19 +394,32 @@ class Task(object):
             return None
 
     @property
-    def last_time(self):
+    def last_landing_time(self):
+        """ Landing time of last pilot in flight"""
         if self.pilots_launched:
-            return max(p.last_time for p in self.valid_results if p.last_time)
+            return max((p.last_time if not p.landing_time else p.landing_time)
+                       for p in self.valid_results if p.last_time)
+        else:
+            return None
+
+    @property
+    def last_landout_time(self):
+        """ Landing time of last pilot landed out"""
+        if self.pilots_launched:
+            return max((p.last_time if not p.landing_time else p.landing_time)
+                       for p in self.valid_results if p.last_time and not p.ESS_time)
         else:
             return None
 
     @property
     def max_time(self):
         if self.pilots_launched:
+            last_pilot_time = (self.last_landout_time if not self.max_ess_time
+                               else max(self.last_landout_time, self.max_ess_time))
             if self.stopped_time:
-                return min(self.last_time, self.stop_time)
+                return min(last_pilot_time, self.stop_time)
             else:
-                return min(self.last_time, self.task_deadline)
+                return min(last_pilot_time, self.task_deadline)
         else:
             return None
 

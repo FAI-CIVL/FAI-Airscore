@@ -170,16 +170,8 @@ def tot_lc_calc(res, t):
     '''pilot did not make ESS'''
     ss_distance = t.SS_distance / 1000
 
-    '''find task_deadline to use for LC calculation'''
-    task_deadline = min((t.task_deadline if not t.stopped_time else t.stopped_time), t.max_time)
-    if t.max_ess_time and res.last_time:
-        if res.last_time < t.max_ess_time:
-            task_deadline = t.max_ess_time
-        else:
-            task_deadline = min(res.last_time, task_deadline)
-
     best_dist_to_ess = (t.opt_dist_to_ESS - res.distance) / 1000  # in Km
-    missing_time = task_deadline - res.last_time
+    missing_time = t.max_time - res.last_time
     landed_out = missing_area(missing_time, best_dist_to_ess, ss_distance)
 
     return res.fixed_LC + landed_out

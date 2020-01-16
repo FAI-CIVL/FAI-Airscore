@@ -12,76 +12,6 @@ Stuart Mackintosh - 2019
 TO DO:
 Add support for FAI Sphere ???
 """
-from myconn import Database
-
-
-# def coef_func(task_time, best_dist_to_ess, new_dist_to_ess):
-#     best_dist_to_ess = best_dist_to_ess / 1000  # we use Km
-#     new_dist_to_ess = new_dist_to_ess / 1000  # we use Km
-#     return task_time * (best_dist_to_ess ** 2 - new_dist_to_ess ** 2)
-#
-#
-# def coef_scaled(coeff, essdist):
-#     essdist = essdist / 1000  # we use Km
-#     return coeff / (1800 * (essdist ** 2))
-#
-#
-# def coef_landout(total_time_to_end, new_dist_to_ess):
-#     new_dist_to_ess = new_dist_to_ess / 1000  # we use Km
-#     return new_dist_to_ess ** 2 * total_time_to_end
-#
-#
-# def store_LC(res_id, lead_coeff):
-#     """store LC to database"""
-#     from db_tables import tblTaskResult as R
-#     # It shouldn't be necessary any longer, as we should not store final LC
-#
-#     with Database() as db:
-#         q = db.session.query(R)
-#         res = q.get(res_id)
-#         res.tarLeadingCoeff = lead_coeff
-#         db.session.commit()
-#
-#
-# def lc_calc(res, t):
-#     LC = 0
-#     leading = 0
-#     trailing = 0
-#     SS_distance = t.SS_distance
-#     first_start = t.min_dept_time
-#
-#     '''find task_deadline to use for LC calculation'''
-#     task_deadline = min((t.task_deadline if not t.stopped_time else t.stopped_time), t.max_time)
-#     if t.max_ess_time and res.last_time:
-#         if res.last_time < t.max_ess_time:
-#             task_deadline = t.max_ess_time
-#         else:
-#             task_deadline = min(res.last_time, task_deadline)
-#
-#     '''Checking if we have a assigned status without a track, and if pilot actually did the start pilon'''
-#     if (res.result_type not in ('abs', 'dnf', 'mindist')) and res.SSS_time:
-#         my_start = res.real_start_time
-#
-#         '''add the leading part, from start time of first pilot to start, to my start time'''
-#         if my_start > first_start:
-#             leading = coef_landout((my_start - first_start), SS_distance)
-#             leading = coef_scaled(leading, SS_distance)
-#         if not res.ESS_time:
-#             '''pilot did not make ESS'''
-#             best_dist_to_ess = (t.opt_dist_to_ESS - res.distance)
-#             task_time = task_deadline - my_start
-#             trailing = coef_landout(task_time, best_dist_to_ess)
-#             trailing = coef_scaled(trailing, SS_distance)
-#
-#         LC = leading + res.fixed_LC + trailing
-#
-#     else:
-#         '''pilot didn't make SS or has an assigned status without a track'''
-#         task_time = task_deadline - first_start
-#         LC = coef_landout(task_time, SS_distance)
-#         LC = coef_scaled(LC, SS_distance)
-#
-#     return LC
 
 
 def difficulty_calculation(task):
@@ -529,13 +459,6 @@ def points_allocation(task):
     ''' Get pilot.result not ABS or DNF '''
     results = task.valid_results
     formula = task.formula
-
-    # ''' Get basic GAP allocation values'''
-    # # dist_validity, time_validity, launch_validity, stop_validity, day_quality
-    # day_quality(task)
-    # # avail_dist_points, avail_time_points, avail_dep_points, avail_arr_points
-    # points_weight(task)
-    # # task.max_score = 0      # max_score is evaluated without penalties. Is it correct?
 
     if task.formula.formula_distance == 'difficulty':
         '''Difficulty Calculation'''

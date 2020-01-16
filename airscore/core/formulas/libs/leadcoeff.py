@@ -64,7 +64,7 @@ def tot_lc_calc(res, t):
 
     ss_distance = t.SS_distance / 1000
     late_start_area = 0
-    missing_area = 0
+    landed_out = 0
 
     '''add the leading part, from start time of first pilot to start, to my start time'''
     if res.real_start_time > t.min_dept_time:
@@ -80,9 +80,9 @@ def tot_lc_calc(res, t):
 
         best_dist_to_ess = (t.opt_dist_to_ESS - res.distance) / 1000  # in Km
         task_time = max_time - res.real_start_time
-        missing_area = lead_coeff_area(task_time, best_dist_to_ess, ss_distance)
+        landed_out = lead_coeff_area(task_time, best_dist_to_ess, ss_distance)
 
-    return late_start_area + res.fixed_LC + missing_area
+    return late_start_area + res.fixed_LC + landed_out
 
 
 def store_lc(res_id, lead_coeff):
