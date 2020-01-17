@@ -13,6 +13,9 @@ RUN apt-get install -y \
     nodejs \
     && apt-get -y autoclean
 
+# Library needed for shapely python library
+RUN apt-get install -y libgeos-dev
+
 WORKDIR /app
 COPY requirements requirements
 
@@ -22,6 +25,7 @@ RUN useradd -m sid
 RUN chown -R sid:sid /app
 USER sid
 ENV PATH="/home/sid/.local/bin:${PATH}"
+
 ENV PYTHONPATH "${PYTHONPATH}:/app/airscore/core"
 RUN npm install
 

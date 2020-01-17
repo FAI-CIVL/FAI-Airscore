@@ -99,6 +99,8 @@ class Task_result:
                   'min_dept_time',
                   'max_ss_time'
                   'min_ess_time',
+                  'max_ess_time',
+                  'last_landing_time'
                   'max_distance',
                   'tot_distance_flown',
                   'tot_dist_over_min',

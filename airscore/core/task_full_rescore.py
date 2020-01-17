@@ -18,16 +18,17 @@ Stuart Mackintosh - Antonio Golfari
 2019
 """
 
-from    task        import Task as T
-from    result      import Task_result as R
-from    logger      import Logger
-import  importlib
-import  sys
-import  Defines as d
-import  time
+from task import Task as T
+from result import Task_result as R
+from logger import Logger
+import importlib
+import sys
+import Defines as d
+import time
+
 
 def main(args):
-    '''create logging and disable output'''
+    """create logging and disable output"""
     Logger('ON', 'task_full_rescore.txt')
     start = time.time()
 
@@ -35,7 +36,7 @@ def main(args):
     '''Main module. Takes tasPk and status as parameters'''
 
     task_id = int(args[0])
-    status  = None if len(args) == 1 else str(args[1])
+    status = None if len(args) == 1 else str(args[1])
     print(f"Task ID: {task_id} | Status: {status}")
 
     '''create task obj'''
@@ -46,7 +47,7 @@ def main(args):
     print(f'result ID: {ref_id}')
 
     end = time.time()
-    print(f'Process Time (mins): {(end - start)/60}')
+    print(f'Process Time (mins): {(end - start) / 60}')
 
     ''' now restore stdout function '''
     Logger('OFF')
@@ -55,7 +56,8 @@ def main(args):
         task_result.php?refPk=ref_id&tasPk=task_id&comPk=comp_id'''
     print(f'{ref_id}')
 
-if __name__== "__main__":
+
+if __name__ == "__main__":
     import sys
 
     '''check parameter is good'''

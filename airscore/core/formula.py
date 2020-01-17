@@ -41,6 +41,7 @@ class FormulaPreset:
     formula_arrival: Preset
     formula_departure: Preset
     lead_factor: Preset
+    lead_squared_distance: Preset
     formula_time: Preset
     arr_alt_bonus: Preset
     arr_min_height: Preset
@@ -54,6 +55,7 @@ class FormulaPreset:
     no_goal_penalty: Preset
     glide_bonus: Preset
     tolerance: Preset
+    min_tol: Preset
     scoring_altitude: Preset
 
     def as_formula(self):
@@ -68,8 +70,8 @@ class Formula(object):
 
     def __init__(self, comp_id=None, formula_name=None, formula_type=None, formula_version=None, comp_class=None,
                  formula_distance=None, formula_arrival=None, formula_departure=None, lead_factor=None,
-                 formula_time=None, no_goal_penalty=None, glide_bonus=None, tolerance=0.001, arr_alt_bonus=None,
-                 arr_min_height=None, arr_max_height=None, validity_min_time=None, max_JTG=0,
+                 formula_time=None, no_goal_penalty=None, glide_bonus=None, tolerance=0.001, min_tolerance=5,
+                 arr_alt_bonus=None, arr_min_height=None, arr_max_height=None, validity_min_time=None, max_JTG=0,
                  JTG_penalty_per_sec=None, nominal_goal=None, nominal_dist=None, nominal_time=None, nominal_launch=None,
                  scoring_altitude=None, min_dist=None, score_back_time=None, overall_validity='all', validity_param=1):
 
@@ -102,6 +104,7 @@ class Formula(object):
         self.no_goal_penalty = no_goal_penalty
         self.glide_bonus = glide_bonus
         self.tolerance = tolerance  # percentage / 100
+        self.min_tolerance = min_tolerance  # meters
         self.scoring_altitude = scoring_altitude  # 'GPS', 'QNH'
         self.start_weight = None
         self.arrival_weight = None
@@ -302,8 +305,8 @@ class Task_formula(object):
 
     def __init__(self, formula_name=None, formula_type=None, formula_version=None,
                  formula_distance=None, formula_arrival=None, formula_departure=None, lead_factor=None,
-                 formula_time=None, no_goal_penalty=None, glide_bonus=None, tolerance=None, arr_alt_bonus=None,
-                 arr_min_height=None, arr_max_height=None, validity_min_time=None, max_JTG=None,
+                 formula_time=None, no_goal_penalty=None, glide_bonus=None, tolerance=None, min_tolerance=None,
+                 arr_alt_bonus=None, arr_min_height=None, arr_max_height=None, validity_min_time=None, max_JTG=None,
                  JTG_penalty_per_sec=None, nominal_goal=None, nominal_dist=None, nominal_time=None, nominal_launch=None,
                  scoring_altitude=None, min_dist=None, score_back_time=None):
         """
@@ -335,6 +338,7 @@ class Task_formula(object):
         self.no_goal_penalty = no_goal_penalty
         self.glide_bonus = glide_bonus
         self.tolerance = tolerance  # percentage / 100
+        self.min_tolerance = min_tolerance  # meters
         self.scoring_altitude = scoring_altitude  # 'GPS', 'QNH'
 
     @property

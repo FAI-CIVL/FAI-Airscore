@@ -59,6 +59,7 @@ class CompFormulaView(Base):
                       Column('no_goal_penalty', Float, server_default=text("'1'")),
                       Column('glide_bonus', Float, server_default=text("'4'")),
                       Column('tolerance', Float),
+                      Column('min_tolerance', INTEGER(4)),
                       Column('arr_alt_bonus', Float, server_default=text("'0'")),
                       Column('arr_min_height', INTEGER(11)),
                       Column('arr_max_height', INTEGER(11)),
@@ -88,6 +89,7 @@ class CompetitionView(Base):
                       Column('comEntryRestrict', Enum('open', 'registered'), server_default=text("'registered'")),
                       Column('comTimeOffset', Float(asdecimal=False), server_default=text("'11'")),
                       Column('comClass', Enum('PG', 'HG', 'mixed'), server_default=text("'PG'")),
+                      Column('comOpenAirFile', String(40)),
                       Column('comStyleSheet', String(128)),
                       Column('comLocked', INTEGER(11), server_default=text("'0'")),
                       Column('comPath', String(80)),
@@ -130,6 +132,7 @@ class CompObjectView(Base):
                       Column('restricted', Enum('open', 'registered'), server_default=text("'registered'")),
                       Column('time_offset', Float(asdecimal=False), server_default=text("'11'")),
                       Column('comp_class', Enum('PG', 'HG', 'mixed'), server_default=text("'PG'")),
+                      Column('openair_file', String(40)),
                       Column('stylesheet', String(128)),
                       Column('locked', INTEGER(11), server_default=text("'0'")),
                       Column('comp_path', String(80)),
@@ -154,6 +157,7 @@ class CompObjectView(Base):
                       Column('no_goal_penalty', Float, server_default=text("'1'")),
                       Column('glide_bonus', Float, server_default=text("'4'")),
                       Column('tolerance', Float),
+                      Column('min_tolerance', INTEGER(4)),
                       Column('arr_alt_bonus', Float, server_default=text("'0'")),
                       Column('arr_min_height', INTEGER(11)),
                       Column('arr_max_height', INTEGER(11)),
@@ -262,6 +266,7 @@ class RegisteredPilotView(Base):
 
                       )
 
+
 class UnscoredPilotView(Base):
     __table__ = Table('UnscoredPilotView', metadata,
 
@@ -341,6 +346,7 @@ class TaskFormulaView(Base):
                       Column('no_goal_penalty', Float(20, False), server_default=text("'0.000'")),
                       Column('glide_bonus', Float, server_default=text("'4'")),
                       Column('tolerance', Float(21, False)),
+                      Column('min_tolerance', INTEGER(4)),
                       Column('arr_alt_bonus', Float(asdecimal=False), server_default=text("'0'")),
                       Column('arr_min_height', INTEGER(11)),
                       Column('arr_max_height', INTEGER(11)),
@@ -384,6 +390,8 @@ class TaskObjectView(Base):
                       Column('comment', Text),
                       Column('locked', TINYINT(3), server_default=text("'0'")),
                       Column('launch_valid', BIGINT(11)),
+                      Column('airspace_check', TINYINT(1)),
+                      Column('openair_file', String(40)),
                       Column('track_source', String(40)),
                       Column('task_path', String(40)),
                       Column('comp_path', String(40))
@@ -554,6 +562,9 @@ class TaskView(Base):
                       Column('no_goal_penalty', Float(20, False), server_default=text("'0.000'")),
                       Column('glide_bonus', Float, server_default=text("'4'")),
                       Column('tolerance', Float(21, False)),
+                      Column('min_tolerance', INTEGER(4)),
+                      Column('airspace_check', TINYINT(1)),
+                      Column('openair_file', String(40)),
                       Column('arr_alt_bonus', Float(asdecimal=False), server_default=text("'0'")),
                       Column('arr_min_height', INTEGER(11)),
                       Column('arr_max_height', INTEGER(11)),
@@ -579,16 +590,29 @@ class TaskWaypointView(Base):
                       Column('name', CHAR(6)),
                       Column('lat', Float),
                       Column('lon', Float),
-                      Column('altitude', BIGINT(11)),
+                      Column('altitude', INTEGER(11)),
                       Column('description', String(80)),
                       Column('how', Enum('entry', 'exit'), server_default=text("'entry'")),
-                      Column('radius', BIGINT(11)),
+                      Column('radius', INTEGER(11)),
                       Column('shape', Enum('circle', 'semicircle', 'line'), server_default=text("'circle'")),
                       Column('type', Enum('waypoint', 'launch', 'speed', 'endspeed', 'goal'),
                              server_default=text("'waypoint'")),
                       Column('ssr_lat', Float(asdecimal=False)),
                       Column('ssr_lon', Float(asdecimal=False)),
-                      Column('partial_distance', Float(asdecimal=False)),
+                      Column('partial_distance', Float(asdecimal=False))
+                      )
+
+
+class TaskAirspaceCheckView(Base):
+    __table__ = Table('TaskAirspaceCheckView', metadata,
+
+                      Column('task_id', INTEGER(11), primary_key=True),
+                      Column('airspace_check', TINYINT(1)),
+                      Column('notification_distance', SMALLINT(4)),
+                      Column('outer_limit', SMALLINT(4)),
+                      Column('inner_limit', SMALLINT(4)),
+                      Column('border_penalty', Float(asdecimal=False)),
+                      Column('max_penalty', Float(asdecimal=False))
                       )
 
 
@@ -758,6 +782,7 @@ class tblCompetition(Base):
     comContact = Column(String(100))
     claPk = Column(ForeignKey('tblClassification.claPk', ondelete='SET NULL'), index=True)
     comSanction = Column(Enum('League', 'PWC', 'FAI 2', 'none', 'FAI 1'), nullable=False, server_default=text("'none'"))
+    comOpenAirFile = Column(String(40))
     comType = Column(Enum('RACE', 'Route', 'Team-RACE'), server_default=text("'RACE'"))
     comEntryRestrict = Column(Enum('open', 'registered'), server_default=text("'registered'"))
     comTimeOffset = Column(Float(asdecimal=False), server_default=text("'11'"))
@@ -880,6 +905,7 @@ class tblForComp(Base):
     forNoGoalPenalty = Column(Float, nullable=False, server_default=text("'1'"))
     forGlideBonus = Column(Float, nullable=False, server_default=text("'4'"))
     forTolerance = Column(Float, nullable=False, server_default=text("'0.1'"))
+    forMinTolerance = Column(INTEGER(4), nullable=False, server_default=text("'5'"))
     forHeightBonus = Column(Float, nullable=False, server_default=text("'0'"))
     forESSHeightLo = Column(INTEGER(11))
     forESSHeightUp = Column(INTEGER(11))
@@ -1107,6 +1133,8 @@ class tblTask(Base):
     tasJTGOverride = Column(TINYINT(1))
     tasNoGoalOverride = Column(TINYINT(1))
     tasMarginOverride = Column(Float)
+    tasAirspaceCheckOverride = Column(TINYINT(1))
+    tasOpenAirOverride = Column(String(40))
     tasComment = Column(Text)
     tasLocked = Column(TINYINT(3), nullable=False, server_default=text("'0'"))
     tasPath = Column(String(40))

@@ -109,6 +109,8 @@ class Task(object):
         self.legs = []  # non optimised legs
         self.stats = dict()  # STATIC scored task statistics, used when importing results from JSON / FSDB files
         self.pilots = []  # scored task results
+        self.airspace_check = False     # BOOL airspace check
+        self.openair_file = None  # STR
         self.comment = None
         self.time_offset = 0  # seconds
         self.launch_valid = None
@@ -224,7 +226,7 @@ class Task(object):
 
     @property
     def duration(self):
-        # seconds from midnight, elapsed time from stop_time to last_SS_time
+        # seconds, elapsed time from stop_time to last_SS_time
         if not self.stopped_time:
             return 0
         if self.comp_class == 'PG':
@@ -246,6 +248,20 @@ class Task(object):
                     else round(self.day_quality, 4))
         else:
             return self.day_quality
+
+    @property
+    def total_start_number(self):
+        if self.task_type == 'RACE' and self.SS_interval:
+            if self.start_iteration:
+                return self.start_iteration + 1
+            else:
+                # indefinite start number
+                if self.start_close_time:
+                    return int((self.start_close_time - self.start_time) / self.SS_interval)
+        elif self.start_time:
+            return 1
+        else:
+            return 0
 
     ''' * Statistic Properties *'''
 
@@ -380,9 +396,32 @@ class Task(object):
             return None
 
     @property
+    def last_landing_time(self):
+        """ Landing time of last pilot in flight"""
+        if self.pilots_launched:
+            return max((p.last_time if not p.landing_time else p.landing_time)
+                       for p in self.valid_results if p.last_time)
+        else:
+            return None
+
+    @property
+    def last_landout_time(self):
+        """ Landing time of last pilot landed out"""
+        if self.pilots_launched:
+            return max((p.last_time if not p.landing_time else p.landing_time)
+                       for p in self.valid_results if p.last_time and not p.ESS_time)
+        else:
+            return None
+
+    @property
     def max_time(self):
         if self.pilots_launched:
-            return max(p.last_time for p in self.valid_results if p.last_time)
+            last_pilot_time = (self.last_landout_time if not self.max_ess_time
+                               else max(self.last_landout_time, self.max_ess_time))
+            if self.stopped_time:
+                return min(last_pilot_time, self.stop_time)
+            else:
+                return min(last_pilot_time, self.task_deadline)
         else:
             return None
 
@@ -505,8 +544,8 @@ class Task(object):
             return 0
 
         ''' Calculates task result'''
-        print(f"Calculating point allocation...")
-        lib.points_allocation(self)
+        print(f"Calculating task results...")
+        lib.calculate_results(self)
 
         '''create result elements from task, formula and results objects'''
         elements = self.create_json_elements()

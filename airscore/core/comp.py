@@ -56,6 +56,7 @@ class Comp(object):
         self.comp_type = comp_type  # 'RACE', 'Route', 'Team-RACE'
         self.comp_code = None  # str 8 chars codename
         self.restricted = restricted  # bool
+        self.openair_file = None  # STR
         self.time_offset = None  # int
         self.stylesheet = None  # str
         self.locked = locked  # bool
@@ -127,6 +128,12 @@ class Comp(object):
             if self.formula.overall_validity == 'round':
                 return int(len(self.tasks) / self.formula.validity_param)
         return 0
+
+    @property
+    def airspace_check(self):
+        if self.openair_file:
+            return True
+        return False
 
     def as_dict(self):
         return self.__dict__
