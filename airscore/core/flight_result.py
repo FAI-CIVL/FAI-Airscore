@@ -307,7 +307,7 @@ class Flight_result(object):
         return result
 
     @classmethod
-    def check_flight(cls, flight, task, deadline=None):
+    def check_flight(cls, flight, task, airspace, deadline=None):
         """ Checks a Flight object against the task.
             Args:
                    flight:  a Flight object
@@ -319,6 +319,7 @@ class Flight_result(object):
         """
         from route import start_made_civl, tp_made_civl, tp_time_civl
         from formulas.libs.leadcoeff import LeadCoeff
+        from airspace import get_airspace_check_parameters, AirspaceCheck
 
         ''' Altitude Source: '''
         alt_source = 'GPS' if task.formula.scoring_altitude is None else task.formula.scoring_altitude
@@ -345,12 +346,19 @@ class Flight_result(object):
         max_altitude = 0  # max altitude
         result.last_altitude = 0
 
+        '''Stopped task managing'''
         if task.stopped_time:
             if not deadline:
                 '''Using stop_time (stopped_time - score_back_time)'''
                 deadline = task.stop_time
 
+        '''Turnpoint managing'''
         tp = Tp(task)
+
+        '''Airspace check managing'''
+        airspace_penalty = 0
+        if task.airspace_check and not airspace:
+            airspace = AirspaceCheck.from_task(task)
 
         for i in range(len(flight.fixes) - 1):
             '''Get two consecutive trackpoints as needed to use FAI / CIVL rules logic
@@ -465,6 +473,16 @@ class Flight_result(object):
                 i : i ? TrackPoints In SS'''
             if lead_coeff and tp.start_done and not tp.ess_done:
                 lead_coeff.update(result, my_fix, next_fix)
+
+            '''Airspace Check'''
+            if task.airspace_check and airspace:
+                # infringement: [name, 'vert'/'horiz', distance]
+                infringement, penalty = airspace.check_fix(my_fix)
+                if penalty > airspace_penalty:
+                    '''Airspace Infringement: check if we already have a worse one'''
+                    airspace_penalty = penalty
+                    '''Remove any previous comment about airspace'''
+                    airspace_comment = comment
 
         '''final results'''
         result.max_altitude = max_altitude

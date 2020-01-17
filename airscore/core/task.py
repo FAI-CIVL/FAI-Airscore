@@ -109,6 +109,8 @@ class Task(object):
         self.legs = []  # non optimised legs
         self.stats = dict()  # STATIC scored task statistics, used when importing results from JSON / FSDB files
         self.pilots = []  # scored task results
+        self.airspace_check = False     # BOOL airspace check
+        self.openair_file = None  # STR
         self.comment = None
         self.time_offset = 0  # seconds
         self.launch_valid = None
