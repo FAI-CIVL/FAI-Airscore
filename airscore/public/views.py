@@ -432,7 +432,7 @@ def airspace_edit(filename):
 def save_airspace():
     import airspaceUtils
     data = request.json
-    newfile = airspaceUtils.create_new_airspace(data)
+    newfile = airspaceUtils.create_new_airspace_file(data)
     airspaceUtils.create_airspace_map_check_files(newfile)
     return jsonify(dict(redirect=newfile))
 

@@ -44,7 +44,7 @@ def test_convert_height(string, result):
 #     assert False
 #
 #
-# def test_create_new_airspace():
+# def test_create_new_airspace_file():
 #     assert False
 
 

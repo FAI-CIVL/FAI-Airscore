@@ -171,7 +171,7 @@ def polygon_check(record, info):
             'name': info['name']}
 
 
-def create_new_airspace(mod_data):
+def create_new_airspace_file(mod_data):
     airspace_path = Defines.AIRSPACEDIR
     # airspace_path = '/home/stuart/Documents/projects/Airscore_git/airscore/airscore/data/airspace/openair/'
     fullname = path.join(airspace_path, mod_data['old_filename'])
@@ -322,7 +322,10 @@ def read_airspace_check_file(openair_filename):
         return json.loads(f.read())
 
 
-def check_flight_airspace(flight, openair_filename, altimeter='baro/gps', vertical_tolerance=0, horizontal_tolerance=0):
+def check_flight_airspace(flight, openair_filename, altimeter='baro/gps', vertical_tolerance_warning=0,
+                          vertical_tolerance_no_penalty=0, vertical_tolerance_full_penalty=0,
+                          horizontal_tolerance_warning=0, horizontal_tolerance_no_penalty=0,
+                          horizontal_tolerance_full_penalty=0):
     """check a flight object for airspace violations
     arguments:
     flight - flight object
@@ -330,10 +333,32 @@ def check_flight_airspace(flight, openair_filename, altimeter='baro/gps', vertic
     altimeter - flight altitude to use in checking 'barometric' - barometric altitude,
                                                   'gps' - GPS altitude
                                                   'baro/gps' - barometric if present otherwise gps  (default)
-    vertical_tolerance: vertical distance in meters that a pilot can be inside airspace without penalty (default 0)
-    horizontal_tolerance: horizontal distance in meters that a pilot can be inside airspace without penalty (default 0)
+    vertical_tolerance_warning: vertical distance in meters over which a pilot can be inside airspace without penalty
+                                    but will be signalled. This can be used for warnings.
+                                    If this is negative it will be distance away from airspace.
+                                     (default 0)
+    vertical_tolerance_no_penalty: vertical distance in meters that a pilot can be inside airspace without penalty,
+                                    if this is negative it will be distance away from airspace where penalties start.
+                                     (default 0)
+    vertical_tolerance_full_penalty: vertical distance in meters over which a pilot will incur a 100% penalty.
+    horizontal_tolerance_warning: horizontal distance in meters over which a pilot can be inside airspace without penalty
+                                    but will be signalled. This can be used for warnings.
+                                    If this is negative it will be distance away from airspace.
+                                     (default 0)
+    horizontal_tolerance_no_penalty: vertical distance in meters that a pilot can be inside airspace without penalty,
+                                    if this is negative it will be distance away from airspace where penalties start.
+                                     (default 0)
+    horizontal_tolerance_full_penalty: vertical distance in meters over which a pilot will incur a 100% penalty.
+
+    :returns
+    airspace_plot: a list of lists of all the fixes, the limit at that point and if there was a violation
+    [fix.rawtime, fix.lat, fix.lon, alt, airspace lower limit, airspace upper limit, airspace name,
+    type of infringement, infringement distance]
+    warning: True if there have been warnings
+    violations: True if there have been violations
+    full_violation: True if there have been full violations
     """
-    from route import Turnpoint
+    from route import Turnpoint, distance
     from shapely.geometry import Point
     from shapely.geometry.polygon import Polygon
     from pyproj import Proj, Transformer
@@ -373,32 +398,50 @@ def check_flight_airspace(flight, openair_filename, altimeter='baro/gps', vertic
             space['object'] = polygon
 
     violation = False
+    full_violation = False
+    warning = False
     for fix in flight.fixes:
         alt = altitude(fix, altimeter)
         fix_violation = False
         if in_bbox(bounding_box, fix):  # check if we are in the bounding box of all airspaces
             for space in airspace_details:
                 # we are at same alt as an airspace
-                if space['floor'] + vertical_tolerance < alt < space['ceiling'] - vertical_tolerance:
+                if space['floor'] + vertical_tolerance_warning < alt < space['ceiling'] - vertical_tolerance_warning:
                     if space['shape'] == 'circle':
-                        if space['object'].in_radius(fix, 0, horizontal_tolerance):
-                            airspace_plot.append([fix.rawtime, fix.lat, fix.lon, alt, space['floor'],
-                                                  space['ceiling'], space['name']])
-                            violation = True
-                            fix_violation = True
-                    elif space['shape'] == 'polygon':
+                        infringement_distance = space['object'].radius - distance(space['object'], fix)
+                    if space['shape'] == 'polygon':
                         x, y = trans.transform(fix.lon, fix.lat)
                         point = Point(y, x)
-                        if point.within(space['object']):
-                            airspace_plot.append([fix.rawtime, fix.lat, fix.lon, alt, space['floor'],
-                                                  space['ceiling'], space['name']])
+                        infringement_distance = 1 - space['object'].distance(point)
+                        # TODO need to get this back into actual geographic distance
+                    else:
+                        infringement_distance = - 1000
+                        # TODO insert arc check here. we can use in radius and bearing to
+                    if infringement_distance > horizontal_tolerance_warning:
+                        warning = True
+                        fix_violation = True
+                        infringement = 'warning'
+                        if infringement_distance > horizontal_tolerance_no_penalty:
                             violation = True
-                            fix_violation = True
+                            infringement = 'penalty'
+                            if infringement_distance > horizontal_tolerance_full_penalty:
+                                full_violation = True
+                                infringement = 'full penalty'
+                        airspace_plot.append([fix.rawtime, fix.lat, fix.lon, alt, space['floor'],
+                                              space['ceiling'], space['name'], infringement, infringement_distance])
+                    # elif space['shape'] == 'polygon':
+                    #     x, y = trans.transform(fix.lon, fix.lat)
+                    #     point = Point(y, x)
+                    #     if point.within(space['object']):
+                    #         airspace_plot.append([fix.rawtime, fix.lat, fix.lon, alt, space['floor'],
+                    #                               space['ceiling'], space['name'], infringement, infringement_distance])
+                    #         violation = True
+                    #         fix_violation = True
                     # TODO insert arc check here. we can use in radius and bearing to
 
         if not fix_violation:
-            airspace_plot.append([fix.rawtime, fix.lat, fix.lon, alt, None, None])
-    return airspace_plot, violation
+            airspace_plot.append([fix.rawtime, fix.lat, fix.lon, alt, None, None, None, None])
+    return airspace_plot, warning, violation, full_violation
 
 
 def in_bbox(bbox, fix):
