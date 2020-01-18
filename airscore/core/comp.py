@@ -206,6 +206,7 @@ class Comp(object):
             except SQLAlchemyError:
                 print("Comp Read Error")
                 db.session.rollback()
+                return None
         return comp
 
     def create_path(self, filepath=None):
