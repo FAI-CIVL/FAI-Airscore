@@ -37,6 +37,7 @@ class CompResultView(Base):
 
 class CompFormulaView(Base):
     __table__ = Table('CompFormulaView', metadata,
+
                       Column('forPk', INTEGER(11)),
                       Column('comp_id', INTEGER(11), primary_key=True),
                       Column('comp_class', Enum('PG', 'HG', 'mixed'), server_default=text("'PG'")),
@@ -52,20 +53,19 @@ class CompFormulaView(Base):
                       Column('nominal_launch', Float, server_default=text("'0.96'")),
                       Column('formula_distance', Enum('on', 'difficulty', 'off'), server_default=text("'on'")),
                       Column('formula_arrival', Enum('position', 'time', 'off'), server_default=text("'off'")),
-                      Column('formula_departure', Enum('leadout', 'departure', 'off'),
-                             server_default=text("'leadout'")),
+                      Column('formula_departure', Enum('leadout', 'departure', 'off'), server_default=text("'leadout'")),
                       Column('lead_factor', Float),
                       Column('formula_time', Enum('on', 'off'), server_default=text("'on'")),
                       Column('no_goal_penalty', Float, server_default=text("'1'")),
                       Column('glide_bonus', Float, server_default=text("'4'")),
                       Column('tolerance', Float),
-                      Column('min_tolerance', INTEGER(4)),
+                      Column('min_tolerance', INTEGER(4), server_default=text("'5'")),
                       Column('arr_alt_bonus', Float, server_default=text("'0'")),
                       Column('arr_min_height', INTEGER(11)),
                       Column('arr_max_height', INTEGER(11)),
                       Column('validity_min_time', BIGINT(13)),
                       Column('score_back_time', BIGINT(13), server_default=text("'0'")),
-                      Column('max_JTG', SMALLINT(6)),
+                      Column('max_JTG', SMALLINT(6), server_default=text("'0'")),
                       Column('JTG_penalty_per_sec', Float),
                       Column('scoring_altitude', Enum('GPS', 'QNH'), nullable=False, server_default=text("'GPS'"))
                       )
@@ -609,10 +609,14 @@ class TaskAirspaceCheckView(Base):
                       Column('task_id', INTEGER(11), primary_key=True),
                       Column('airspace_check', TINYINT(1)),
                       Column('notification_distance', SMALLINT(4)),
-                      Column('outer_limit', SMALLINT(4)),
-                      Column('inner_limit', SMALLINT(4)),
-                      Column('border_penalty', Float(asdecimal=False)),
-                      Column('max_penalty', Float(asdecimal=False))
+                      Column('h_outer_limit', SMALLINT(4)),
+                      Column('h_inner_limit', SMALLINT(4)),
+                      Column('h_border_penalty', Float(asdecimal=False)),
+                      Column('h_max_penalty', Float(asdecimal=False)),
+                      Column('v_outer_limit', SMALLINT(4)),
+                      Column('v_inner_limit', SMALLINT(4)),
+                      Column('v_border_penalty', Float(asdecimal=False)),
+                      Column('v_max_penalty', Float(asdecimal=False))
                       )
 
 
@@ -753,6 +757,27 @@ class tblClassification(Base):
     comClass = Column(Enum('PG', 'HG', 'mixed'), nullable=False, server_default=text("'PG'"))
     claFem = Column(TINYINT(1), nullable=False, server_default=text("'1'"))
     claTeam = Column(TINYINT(1), nullable=False, server_default=text("'0'"))
+
+
+class tblCompAirspaceCheck(Base):
+    __tablename__ = 'tblCompAirspaceCheck'
+    __table_args__ = (
+        PrimaryKeyConstraint('comPk'),
+    )
+
+    comPk = Column(ForeignKey('tblCompetition.comPk', ondelete='CASCADE'), index=True)
+    ctaNotificationDistance = Column(SMALLINT(4), nullable=False, server_default=text("'100'"))
+    ctaHOuterLimit = Column(SMALLINT(4), nullable=False, server_default=text("'70'"))
+    ctaHBoundaryPenalty = Column(Float(asdecimal=False), nullable=False)
+    ctaHInnerLimit = Column(SMALLINT(4), nullable=False, server_default=text("'30'"))
+    ctaHMaxPenalty = Column(Float(asdecimal=False), nullable=False)
+    ctaVOuterLimit = Column(SMALLINT(4), nullable=False, server_default=text("'70'"))
+    ctaVBoundaryPenalty = Column(Float(asdecimal=False), nullable=False)
+    ctaVInnerLimit = Column(SMALLINT(4), nullable=False, server_default=text("'30'"))
+    ctaVMaxPenalty = Column(Float(asdecimal=False), nullable=False)
+
+    tblCompetition = relationship('tblCompetition')
+
 
 
 class tblCompAuth(Base):

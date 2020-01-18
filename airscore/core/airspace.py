@@ -8,22 +8,49 @@ from os import path as p
 @dataclass(frozen=True)
 class CheckParams:
     notification_distance: int = 100
-    outer_limit: int = 70
-    border_penalty: float = 0.1
-    inner_limit: int = -30
-    max_penalty: float = 1.0
-    outer_penalty_per_m = border_penalty / outer_limit
-    inner_penalty_per_m = max_penalty if inner_limit == 0 else (max_penalty - border_penalty) / abs(inner_limit)
+    h_outer_limit: int = 70
+    h_border_penalty: float = 0.1
+    h_inner_limit: int = -30
+    h_max_penalty: float = 1.0
+    v_outer_limit: int = 70
+    v_border_penalty: float = 0.1
+    v_inner_limit: int = -30
+    v_max_penalty: float = 1.0
+    h_outer_penalty_per_m = 0 if not h_outer_limit else h_border_penalty / h_outer_limit
+    h_inner_penalty_per_m = (h_max_penalty if not h_inner_limit
+                             else (h_max_penalty - h_border_penalty) / abs(h_inner_limit))
+    v_outer_penalty_per_m = 0 if not v_outer_limit else v_border_penalty / v_outer_limit
+    v_inner_penalty_per_m = (v_max_penalty if not v_inner_limit
+                             else (v_max_penalty - v_border_penalty) / abs(v_inner_limit))
 
-    def penalty(self, distance) -> float:
-        if distance >= self.inner_limit:
+    def penalty(self, distance, direction) -> float:
+        """ calculate penalty based on params
+            distance: FLOAT distance in meters
+            direction: 'h' or 'v'"""
+        if direction == 'h':
+            outer_limit = self.h_outer_limit
+            border_penalty = self.h_border_penalty
+            inner_limit = self.h_inner_limit
+            max_penalty = self.h_max_penalty
+            outer_penalty_per_m = self.h_outer_penalty_per_m
+            inner_penalty_per_m = self.h_inner_penalty_per_m
+        else:
+            outer_limit = self.v_outer_limit
+            border_penalty = self.v_border_penalty
+            inner_limit = self.v_inner_limit
+            max_penalty = self.v_max_penalty
+            outer_penalty_per_m = self.v_outer_penalty_per_m
+            inner_penalty_per_m = self.v_inner_penalty_per_m
+        if distance >= outer_limit:
             return 0
-        elif distance <= self.inner_limit:
-            return 1.0
-        elif distance >= 0:
-            return (self.outer_limit - distance) * self.outer_penalty_per_m
+        elif distance <= inner_limit:
+            return max_penalty
+        elif distance > 0:
+            return (outer_limit - distance) * outer_penalty_per_m
+        elif distance == 0:
+            return border_penalty
         elif distance < 0:
-            return self.border_penalty + abs(distance * self.inner_penalty_per_m)
+            return border_penalty + abs(distance * inner_penalty_per_m)
 
 
 class AirspaceCheck(object):
@@ -161,8 +188,9 @@ def get_airspace_check_parameters(task_id):
         try:
             q = db.session.query(A).get(task_id)
             if q.airspace_check:
-                return CheckParams(q.notification_distance, q.outer_limit,
-                                   q.border_penalty, q.inner_limit, q.max_penalty)
+                return CheckParams(q.notification_distance, q.h_outer_limit, q.h_border_penalty,
+                                   q.h_inner_limit, q.h_max_penalty, q.v_outer_limit, q.v_border_penalty,
+                                   q.v_inner_limit, q.v_max_penalty)
             else:
                 return None
         except SQLAlchemyError:
