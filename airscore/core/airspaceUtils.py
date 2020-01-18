@@ -411,7 +411,7 @@ def check_flight_airspace(flight, openair_filename, altimeter='baro/gps', vertic
                         infringement_distance = space['object'].radius - distance(space['object'], fix)
                     if space['shape'] == 'polygon':
                         x, y = trans.transform(fix.lon, fix.lat)
-                        point = Point(y, x)
+                        point = Point(x, y)
                         infringement_distance = 1 - space['object'].distance(point)
                         # TODO need to get this back into actual geographic distance
                     else:
