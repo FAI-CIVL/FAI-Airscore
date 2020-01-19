@@ -307,7 +307,7 @@ class Flight_result(object):
         return result
 
     @classmethod
-    def check_flight(cls, flight, task, airspace, deadline=None):
+    def check_flight(cls, flight, task, airspace_obj=None, deadline=None):
         """ Checks a Flight object against the task.
             Args:
                    flight:  a Flight object
@@ -319,7 +319,8 @@ class Flight_result(object):
         """
         from route import start_made_civl, tp_made_civl, tp_time_civl
         from formulas.libs.leadcoeff import LeadCoeff
-        from airspace import get_airspace_check_parameters, AirspaceCheck
+        from airspace import AirspaceCheck
+        import time as tt
 
         ''' Altitude Source: '''
         alt_source = 'GPS' if task.formula.scoring_altitude is None else task.formula.scoring_altitude
@@ -356,13 +357,17 @@ class Flight_result(object):
         tp = Tp(task)
 
         '''Airspace check managing'''
-        airspace_penalty = 0
-        if task.airspace_check and not airspace:
-            airspace = AirspaceCheck.from_task(task)
+        if task.airspace_check:
+            airspace_penalty = 0
+            infringements_list = []
+            if task.airspace_check and not airspace_obj:
+                print(f'We should not create airspace here')
+                airspace_obj = AirspaceCheck.from_task(task)
 
         for i in range(len(flight.fixes) - 1):
             '''Get two consecutive trackpoints as needed to use FAI / CIVL rules logic
             '''
+            # start_time = tt.time()
             my_fix = flight.fixes[i]
             next_fix = flight.fixes[i+1]
             result.last_time = my_fix.rawtime
@@ -475,14 +480,11 @@ class Flight_result(object):
                 lead_coeff.update(result, my_fix, next_fix)
 
             '''Airspace Check'''
-            if task.airspace_check and airspace:
-                # infringement: [name, 'vert'/'horiz', distance]
-                infringement, penalty = airspace.check_fix(my_fix)
-                if penalty > airspace_penalty:
+            if task.airspace_check and airspace_obj:
+                infringement = airspace_obj.check_fix(next_fix, alt_source)
+                if infringement:
                     '''Airspace Infringement: check if we already have a worse one'''
-                    airspace_penalty = penalty
-                    '''Remove any previous comment about airspace'''
-                    airspace_comment = comment
+                    infringements_list.append([next_fix, infringement])
 
         '''final results'''
         result.max_altitude = max_altitude
@@ -534,6 +536,21 @@ class Flight_result(object):
 
         if lead_coeff:
             result.fixed_LC = lead_coeff.summing
+
+        if task.airspace_check:
+            result.infringements_list = infringements_list
+            '''penalty calculation'''
+            spaces = list(set([x[1][0] for x in infringements_list]))
+            new_list = []
+            for space in spaces:
+                d = min([max(p[1][1], p[1][2]) for p in infringements_list if p[1][0] == space])
+                idx = infringements_list.index([p for p in infringements_list if p[1][1] == d or p[1][2] == d][0])
+                time = infringements_list[idx][0].rawtime
+                new_list.append([time, space, d])
+                # TODO change di get if infringement if Vert or Horiz
+                penalty = airspace_obj.param.penalty(d, 'h')
+                result.comment.append(f"{'Warning' if penalty == 0 else 'Infringement'}: {space}, {round(d)}")
+            print(f'{new_list}')
 
         return result
 

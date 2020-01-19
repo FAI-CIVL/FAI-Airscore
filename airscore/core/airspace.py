@@ -1,6 +1,10 @@
 from dataclasses import dataclass
-
 from airspaceUtils import read_airspace_check_file
+import pyproj
+from pyproj import Proj, Transformer
+from shapely.geometry.polygon import Polygon
+from shapely.geometry import Point
+from route import distance, Turnpoint
 
 
 @dataclass(frozen=True)
@@ -55,6 +59,8 @@ class AirspaceCheck(object):
     def __init__(self, control_area=None, params=None):
         self.control_area = control_area  # igc_lib openair reader control zones
         self.params = params  # AirspaceCheck object
+        self.projection = self.get_projection()
+        self.transformer = get_cartesian_transformer(self.projection)
         self.get_airspace_details()
 
     @property
@@ -78,20 +84,9 @@ class AirspaceCheck(object):
     def airspace_details(self):
         if self.control_area:
             if not any(space['object'] for space in self.spaces):
+                print('I should never be here')
                 self.get_airspace_details()
             return self.control_area['spaces']
-
-    @property
-    def projection(self):
-        """WGS84 to Mercatore Plan Projection"""
-        from route import get_utm_proj
-        '''get projection center'''
-        clat, clon = self.bbox_center
-        # '''define projection'''
-        # tmerc = Proj(f"+proj=tmerc +lat_0={clat} +lon_0={clon} +k_0=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
-        # return tmerc
-        '''Get UTM proj'''
-        return get_utm_proj(clat, clon)
 
     @staticmethod
     def from_task(task):
@@ -110,50 +105,59 @@ class AirspaceCheck(object):
         except:
             print(f'Error trying to get task control zones')
 
+    def get_projection(self):
+        """WGS84 to Mercatore Plan Projection"""
+        from route import get_utm_proj
+        '''get projection center'''
+        clat, clon = self.bbox_center
+        # '''define projection'''
+        # tmerc = Proj(f"+proj=tmerc +lat_0={clat} +lon_0={clon} +k_0=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
+        # return tmerc
+        '''Get UTM proj'''
+        return get_utm_proj(clat, clon)
+
     def get_airspace_details(self):
         from route import Turnpoint
-        from shapely.geometry.polygon import Polygon
-        import numpy as np
+        from geopy import Point
+        from geopy.distance import distance
+        from math import sqrt
 
         if self.control_area:
             for space in self.control_area['spaces']:
-                if space['shape'] == 'circle':
-                    space['object'] = Turnpoint(lat=space['location'][0], lon=space['location'][1],
-                                                radius=space['radius'])
-                elif space['shape'] == 'polygon':
+                ''' create object and bbox'''
+                if space['shape'] == 'circle' or (space['shape'] == 'polygon' and len(space['locations']) == 1):
                     # TODO we get an error if airspace is an Arc. Transforming to circle with radius 1000m
-                    if len(space['locations']) == 1:
-                        # Arc
-                        space['object'] = Turnpoint(lat=space['locations'][0][0], lon=space['locations'][0][1],
-                                                    radius=1000)
+                    if space['shape'] == 'polygon':
+                        clat = space['locations'][0][0]
+                        clon = space['locations'][0][1]
+                        radius = 1000
                     else:
-                        space['object'] = []
-                        space['object'] = self.reproject(space)
+                        clat = space['location'][0]
+                        clon = space['location'][1]
+                        radius = space['radius']
+                    dist = radius + self.params.notification_distance * sqrt(2)
+                    pmin = pmax = Point(clat, clon)
+                    space['object'] = Turnpoint(lat=clat, lon=clon, radius=radius)
+                else:
+                    pmin = Point(min(pt[0] for pt in space['locations']), min(pt[1] for pt in space['locations']))
+                    pmax = Point(max(pt[0] for pt in space['locations']), max(pt[1] for pt in space['locations']))
+                    dist = self.params.notification_distance * sqrt(2)
+                    space['object'] = self.reproject(space)
+                pt1 = distance(meters=dist).destination(pmin, 225)
+                pt2 = distance(meters=dist).destination(pmax, 45)
+                space['bbox'] = [[pt1[0], pt1[1]], [pt2[0], pt2[1]]]
 
-    def to_mercatore(self):
-        """WGS84 to Mercatore Plan Projection"""
-        from pyproj import Proj, Transformer
-        '''define earth model'''
-        # wgs84 = Proj("EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth
-        wgs84 = Proj(proj='latlong', datum='WGS84')
-        my_proj = self.projection
-        return Transformer.from_proj(wgs84, my_proj)
-
-    def to_geo(self):
-        """WGS84 to Mercatore Plan Projection"""
-        from pyproj import Proj, Transformer
-        '''define earth model'''
-        # wgs84 = Proj("EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth
-        wgs84 = Proj(proj='latlong', datum='WGS84')
-        my_proj = self.projection
-        return Transformer.from_proj(my_proj, wgs84)
+    # def geo(self):
+    #     """WGS84 to Mercatore Plan Projection"""
+    #     '''define earth model'''
+    #     # wgs84 = Proj("EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth
+    #     wgs84 = Proj(proj='latlong', datum='WGS84')
+    #     my_proj = self.projection
+    #     return Transformer.from_proj(my_proj, wgs84)
 
     def reproject(self, space):
         from functools import partial
-        import pyproj
-        from pyproj import Proj
         from shapely import ops
-        from shapely.geometry.polygon import Polygon
         '''get polygon from space'''
         polygon = Polygon([(pt[1], pt[0]) for pt in space['locations']])
         # from_proj = Proj("EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth
@@ -162,7 +166,7 @@ class AirspaceCheck(object):
         tfm = partial(pyproj.transform, from_proj, to_proj)
         return ops.transform(tfm, polygon)
 
-    def check_fix(self, fix, altitude_mode='gps'):
+    def check_fix(self, fix, altitude_mode='GPS'):
         """check a flight object for airspace violations
         arguments:
         fix - Flight fix object
@@ -172,38 +176,43 @@ class AirspaceCheck(object):
         vertical_tolerance: vertical distance in meters that a pilot can be inside airspace without penalty (default 0)
         horizontal_tolerance: horizontal distance in meters that a pilot can be inside airspace without penalty (default 0)
         """
-        from airspaceUtils import altitude, in_bbox
-        from shapely.geometry import Point
-        from route import distance, Turnpoint
+        from airspaceUtils import in_bbox
+        import time as tt
 
         # airspace_plot = []
         notification_band = self.params.notification_distance
         # h_penalty_band = self.params.h_outer_limit
-
-        alt = altitude(fix, altitude_mode)
+        alt = fix.gnss_alt if altitude_mode == 'GPS' else fix.press_alt
         fix_violation = False
         infringement = 0
 
         '''Check if fix is actually in Airspace bounding box'''
-        if in_bbox(self.bounding_box, fix):
-            for space in self.airspace_details:
-                '''Check if fix is inside proximity warning area'''
-                if space['floor'] - notification_band < alt < space['ceiling'] + notification_band:
-                    # we are at same alt as an airspace
+        for space in self.airspace_details:
+            '''check if in altitude range'''
+            if space['floor'] - notification_band < alt < space['ceiling'] + notification_band:
+                # we are at same alt as the airspace
+                '''check if fix is inside bbox'''
+                if in_bbox(space['bbox'], fix):
+                    '''Check if fix is inside proximity warning area'''
                     # TODO this type check is needed due to Arcs not recognised
                     if space['shape'] == 'circle' or isinstance(space['object'], Turnpoint):
                         if space['object'].in_radius(fix, 0, notification_band):
                             # fix is inside proximity band (at least)
+                            print(f" in circle --- ")
+                            # start_time = tt.time()
                             dist_floor = space['floor'] - alt
                             dist_ceiling = alt - space['ceiling']
                             vert_distance = max(dist_floor, dist_ceiling)
                             horiz_distance = distance(fix, space['object']) - space['object'].radius
                             infringement = [space['name'], vert_distance, horiz_distance, 'circle']
+                            # print(f" airspace circle --- {tt.time() - start_time} seconds ---")
                     elif space['shape'] == 'polygon':
-                        x, y = self.to_mercatore().transform(fix.lon, fix.lat)
+                        # start_time = tt.time()
+                        x, y = self.transformer.transform(fix.lon, fix.lat)
                         point = Point(x, y)
-                        horiz_distance = point.distance(space['object'])
+                        horiz_distance = space['object'].exterior.distance(point)
                         if horiz_distance <= notification_band:
+                            print(f" in polygon --- ")
                             dist_floor = space['floor'] - alt
                             dist_ceiling = alt - space['ceiling']
                             vert_distance = max(dist_floor, dist_ceiling)
@@ -211,19 +220,10 @@ class AirspaceCheck(object):
                                 '''fix is inside the area'''
                                 horiz_distance *= -1
 
-                            '''test: get distance in ellypsoid reference '''
-                            dp = Point(point.x+horiz_distance, point.y)
-                            dlon, dlat = self.to_geo().transform(dp.x, dp.y)
-                            dwp = Turnpoint(lat=dlat, lon=dlon)
-                            geo_dist = distance(fix, dwp)
-                            '''test going back'''
-                            x, y = self.to_mercatore().transform(dwp.lon, dwp.lat)
-                            p2 = Point(x, y)
-                            d2 = p2.distance(point)
-
-                            infringement = [space['name'], vert_distance, horiz_distance, geo_dist, d2]
+                            infringement = [space['name'], vert_distance, horiz_distance]
                             violation = True
                             fix_violation = True
+                        # print(f" polygon airspace check --- {tt.time() - start_time} seconds ---")
                     # TODO insert arc check here. we can use in radius and bearing to
 
         return infringement
@@ -246,3 +246,12 @@ def get_airspace_check_parameters(task_id):
         except SQLAlchemyError:
             print(f'SQL Error trying to get Airspace Params from database')
             return None
+
+
+def get_cartesian_transformer(projection):
+    """WGS84 to Mercatore Plan Projection"""
+    '''define earth model'''
+    # wgs84 = Proj("EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth
+    wgs84 = Proj(proj='latlong', datum='WGS84')
+    my_proj = projection
+    return Transformer.from_proj(wgs84, my_proj)
