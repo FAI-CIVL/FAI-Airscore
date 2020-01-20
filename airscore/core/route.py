@@ -89,6 +89,18 @@ class Turnpoint:
         return distance(self, fix) < self.radius + tol
 
 
+def get_utm_proj(lat, lon):
+    from pyproj import Proj
+    utm_band = str((math.floor((lon + 180) / 6 ) % 60) + 1)
+    if len(utm_band) == 1:
+        utm_band = '0'+utm_band
+    if lat >= 0:
+        epsg_code = '326' + utm_band
+    else:
+        epsg_code = '327' + utm_band
+    return Proj(f"EPSG:{epsg_code}")
+
+
 class polar(object):
     def __init__(self, lat=0, lon=0, flat=0, flon=0, shape=None, radius=0):
         self.lat = lat
@@ -673,19 +685,18 @@ def get_shortest_path(task):
     clat, clon = get_proj_center(task.turnpoints)
 
     '''define earth model'''
-    wgs84 = Proj("+init=EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth
+    # wgs84 = Proj("+init=EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth
+    wgs84 = Proj(proj='latlong', datum='WGS84')
 
     '''calculate planar projection'''
     '''method 1: calculate UTM zone from center coordinates and use corresponding EPSG Projection'''
-    # EPSG  = 32700-round((45+clat)/90)*100+round((183+clon)/6)
-    # print(f"EPSG: {EPSG}")
-    # local = Proj(f"+init=EPSG:{EPSG}")
+    my_proj = get_utm_proj(clat, clon)
     '''method 2: create a custom trasverse mercatore projection upon center coordinates'''
-    tmerc = Proj(
-        f"+proj=tmerc +lat_0={clat} +lon_0={clon} +k_0=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
+    # tmerc = Proj(
+    #     f"+proj=tmerc +lat_0={clat} +lon_0={clon} +k_0=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
 
     '''create a list of cPoint obj from turnpoint list'''
-    points = convert(task.turnpoints, wgs84, tmerc)
+    points = convert(task.turnpoints, wgs84, my_proj)
 
     count = len(points)  # numer of waypoints
     ESS_index = [i for i, e in enumerate(task.turnpoints) if e.type == 'endspeed'][0]
@@ -694,7 +705,7 @@ def get_shortest_path(task):
         print(f'is line: {task.turnpoints[-1].shape}')
     else:
         ends = get_line(task.turnpoints)
-        line = convert(ends, wgs84, tmerc)
+        line = convert(ends, wgs84, my_proj)
         print(f'line: {line[0].x}, {line[0].y} - {line[1].x}, {line[1].y}')
 
     print('***')
@@ -720,7 +731,7 @@ def get_shortest_path(task):
         print(f'iterations made: {count * 10 - opsCount} | distance: {planar_dist}')
 
     '''create optimised points positions on earth model (lat, lon)'''
-    optimised = convert(points, wgs84, tmerc, 'from')
+    optimised = convert(points, wgs84, my_proj, 'from')
 
     return optimised
 
