@@ -23,11 +23,22 @@ Stuart Mackintosh - Antonio Golfari
 
 """
 
-from calcUtils import get_datetime
-from route import rawtime_float_to_hms, in_semicircle, distance_flown, distance
-from myconn import Database
-import jsonpickle, json
+import json
+import jsonpickle
+
+from airspace import AirspaceCheck
+from calcUtils import string_to_seconds
+from formulas.libs.leadcoeff import LeadCoeff
 from mapUtils import checkbbox
+from collections import Counter, namedtuple
+from route import rawtime_float_to_hms, in_semicircle, distance_flown, distance, start_made_civl, tp_made_civl, \
+    tp_time_civl
+from os import path, makedirs
+from Defines import MAPOBJDIR
+from myconn import Database
+from db_tables import tblTaskResult
+from sqlalchemy import and_
+from sqlalchemy.exc import SQLAlchemyError
 
 
 class Tp(object):
@@ -52,7 +63,7 @@ class Tp(object):
             return 'Goal'
         elif self.type == 'waypoint':
             wp = [tp for tp in self.turnpoints if tp.type == 'waypoint']
-            return 'TP{:02}'.format(wp.index(self.next)+1)
+            return 'TP{:02}'.format(wp.index(self.next) + 1)
 
     @property
     def total_number(self):
@@ -194,7 +205,6 @@ class Flight_result(object):
 
     @property
     def waypoints_made(self):
-        from collections import Counter
         if self.waypoints_achieved:
             return len(Counter(el[0] for el in self.waypoints_achieved))
         else:
@@ -209,8 +219,6 @@ class Flight_result(object):
             Unfortunately the fsdb format isn't published so much of this is simply an
             exercise in reverse engineering.
         """
-        from datetime import timedelta
-        from calcUtils import string_to_seconds
 
         result = cls()
         ID = int(res.get('id'))
@@ -317,10 +325,6 @@ class Flight_result(object):
             Returns:
                     a list of GNSSFixes of when turnpoints were achieved.
         """
-        from route import start_made_civl, tp_made_civl, tp_time_civl
-        from formulas.libs.leadcoeff import LeadCoeff
-        from airspace import AirspaceCheck
-        import time as tt
 
         ''' Altitude Source: '''
         alt_source = 'GPS' if task.formula.scoring_altitude is None else task.formula.scoring_altitude
@@ -369,7 +373,7 @@ class Flight_result(object):
             '''
             # start_time = tt.time()
             my_fix = flight.fixes[i]
-            next_fix = flight.fixes[i+1]
+            next_fix = flight.fixes[i + 1]
             result.last_time = my_fix.rawtime
             alt = next_fix.gnss_alt if alt_source == 'GPS' else next_fix.press_alt
 
@@ -457,7 +461,8 @@ class Flight_result(object):
                 if tp.next.type == 'goal':
                     if ((tp.next.shape == 'circle' and tp_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m))
                             or (tp.next.shape == 'line' and (in_semicircle(task, task.turnpoints, tp.pointer, my_fix)
-                                                             or in_semicircle(task, task.turnpoints, tp.pointer, next_fix)))):
+                                                             or in_semicircle(task, task.turnpoints, tp.pointer,
+                                                                              next_fix)))):
                         result.waypoints_achieved.append(
                             [tp.name, next_fix.rawtime, alt])  # pilot has achieved turnpoint
                         break
@@ -484,7 +489,7 @@ class Flight_result(object):
                 infringement = airspace_obj.check_fix(next_fix, alt_source)
                 if infringement:
                     '''Airspace Infringement: check if we already have a worse one'''
-                    infringements_list.append([next_fix, infringement])
+                    infringements_list.append([i, infringement])
 
         '''final results'''
         result.max_altitude = max_altitude
@@ -538,19 +543,54 @@ class Flight_result(object):
             result.fixed_LC = lead_coeff.summing
 
         if task.airspace_check:
-            result.infringements_list = infringements_list
+            # result.infringements_list = infringements_list
             '''penalty calculation'''
             spaces = list(set([x[1][0] for x in infringements_list]))
-            new_list = []
+            infringements_per_space = []
+            comments = []
+            '''check distance and penalty for each space in which we recorded a fix'''
             for space in spaces:
-                d = min([max(p[1][1], p[1][2]) for p in infringements_list if p[1][0] == space])
-                idx = infringements_list.index([p for p in infringements_list if p[1][1] == d or p[1][2] == d][0])
-                time = infringements_list[idx][0].rawtime
-                new_list.append([time, space, d])
-                # TODO change di get if infringement if Vert or Horiz
-                penalty = airspace_obj.param.penalty(d, 'h')
-                result.comment.append(f"{'Warning' if penalty == 0 else 'Infringement'}: {space}, {round(d)}")
-            print(f'{new_list}')
+                fixes = [p for p in infringements_list if p[1][0] == space]
+                dist_h = min(p[1][2] for p in fixes if p[1][1] <= 0)
+                dist_v = min(p[1][1] for p in fixes if p[1][2] <= 0)
+                pen_h = airspace_obj.params.penalty(dist_h, 'h')
+                pen_v = airspace_obj.params.penalty(dist_v, 'v')
+                print(f"{dist_h}, {dist_v} | {pen_h}, {pen_v}")
+                if dist_h > dist_v:
+                    '''horizontal infringement'''
+                    dist = dist_h
+                    penalty = pen_h
+                    p = next(x for x in fixes if x[1][2] == dist_h)
+                    fix = flight.fixes[p[0]]
+                    direction = 'horizontal'
+                # if (pen_v > pen_h) or (max(pen_v, pen_h) == 0 and dist_v < dist_h):
+                else:
+                    dist = dist_v
+                    penalty = pen_v
+                    p = next(x for x in fixes if x[1][1] == dist_v)
+                    fix = flight.fixes[p[0]]
+                    direction = 'vertical'
+                print(f"{direction}, {penalty}")
+                if penalty > 0:
+                    '''add fix to infringements'''
+                    infringements_per_space.append({'rawtime': fix.rawtime, 'space': p[1][0], 'distance': dist,
+                                                    'type': direction, 'penalty': penalty})
+                else:
+                    ''' create warning comment'''
+                    comments.append(f"Warning: {p[1][0]} {direction} separation less than {dist} meters")
+                if penalty > airspace_penalty:
+                    airspace_penalty = penalty
+
+            '''final calculation'''
+            result.infringements = infringements_per_space
+            if airspace_penalty > 0:
+                '''we have a penalty'''
+                el = next(p for p in infringements_per_space if p['penalty'] == airspace_penalty)
+                result.percentage_penalty = airspace_penalty
+                result.comment.append(f"{''.join([str(round(el['distance'])), 'm from']) if el['distance'] > 0 else ''.join([str(abs(round(el['distance']))), 'm inside'])} {el['space']}: penalty {round(el['penalty']*100)}%")
+            else:
+                '''we have warnings'''
+                result.comment.extend(comments)
 
         return result
 
@@ -558,10 +598,7 @@ class Flight_result(object):
         """ stores new calculated results to db
             if track_id is not given, it inserts a new result
             else it updates existing one """
-        from collections import Counter
         from db_tables import tblTaskResult as R, tblParticipant as P, tblTask as T
-        from sqlalchemy import and_, or_
-        from sqlalchemy.exc import SQLAlchemyError
 
         '''checks conformity'''
         if not self.goal_time:
@@ -629,11 +666,7 @@ class Flight_result(object):
         returns the Json string."""
 
         from geojson import Point, Feature, FeatureCollection, MultiLineString
-        from collections import namedtuple
-        from myconn import Database
         from db_tables import tblParticipant as p
-
-        import sys
 
         info = {}
         features = []
@@ -718,7 +751,8 @@ class Flight_result(object):
                     post_goal.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
 
         if len(waypoint_achieved) > 0:
-            for w in range(1, len(waypoint_achieved[1:]) + 1):  # this could be expressed as for idx, wp in enumerate(waypoint_achieved[1:], 1)_
+            for w in range(1, len(waypoint_achieved[
+                                  1:]) + 1):  # this could be expressed as for idx, wp in enumerate(waypoint_achieved[1:], 1)_
                 current = point(lon=waypoint_achieved[w][0], lat=waypoint_achieved[w][1])
                 previous = point(lon=waypoint_achieved[w - 1][0], lat=waypoint_achieved[w - 1][1])
                 straight_line_dist = distance(previous, current) / 1000
@@ -750,9 +784,7 @@ class Flight_result(object):
     def save_result_file(self, data, trackid):
         """save result file in the correct folder as defined by DEFINES"""
 
-        from os import path, makedirs
-        import Defines
-        res_path = Defines.MAPOBJDIR + 'tracks/'
+        res_path = MAPOBJDIR + 'tracks/'
 
         """check if directory already exists"""
         if not path.isdir(res_path):
@@ -856,7 +888,6 @@ def verify_all_tracks(task, lib):
     """ Gets in input:
             task:       Task object
             lib:        Formula library module"""
-    from os import path
     from igc_lib import Flight
 
     print('getting tracks...')
@@ -874,61 +905,8 @@ def verify_all_tracks(task, lib):
     lib.process_results(task)
 
 
-# def update_all_results(results):
-#     """get results to update from the list"""
-#     from db_tables import tblTaskResult as R
-#     from sqlalchemy.exc import SQLAlchemyError
-#
-#     mappings = []
-#     for pilot in results:
-#         res = pilot.result
-#         track_id = pilot.track_id
-#
-#         '''checks conformity'''
-#         if not res.goal_time:
-#             res.goal_time = 0
-#         if not res.ESS_time:
-#             res.ESS_time = 0
-#
-#         mapping = {'tarPk': track_id,
-#                    'tarDistance': res.distance_flown,
-#                    'tarSpeed': res.speed,
-#                    'tarLaunch': res.first_time,
-#                    'tarStart': res.real_start_time,
-#                    'tarGoal': res.goal_time,
-#                    'tarSS': res.SSS_time,
-#                    'tarES': res.ESS_time,
-#                    'tarTurnpoints': res.waypoints_made,
-#                    'tarFixedLC': res.fixed_LC,
-#                    'tarESAltitude': res.ESS_altitude,
-#                    'tarGoalAltitude': res.goal_altitude,
-#                    'tarMaxAltitude': res.max_altitude,
-#                    'tarLastAltitude': res.last_altitude,
-#                    'tarLastTime': res.last_time,
-#                    'tarLandingAltitude': res.landing_altitude,
-#                    'tarLandingTime': res.landing_time,
-#                    'tarResultType': res.result_type,
-#                    'tarPenalty': res.penalty,
-#                    'tarComment': '; '.join(res.comment) if res.comment is not None and len(res.comment) > 0 else None}
-#         mappings.append(mapping)
-#
-#     '''update database'''
-#     with Database() as db:
-#         try:
-#             db.session.bulk_update_mappings(R, mappings)
-#             db.session.commit()
-#         except SQLAlchemyError:
-#             print(f'update all results on database gave an error')
-#             db.session.rollback()
-#             return False
-#
-#     return True
-
-
 def mass_add_results(task_id, results):
     """adds results to database"""
-    from db_tables import tblTaskResult as R
-    from sqlalchemy.exc import SQLAlchemyError
 
     mappings = []
     for pilot in results:
@@ -964,7 +942,7 @@ def mass_add_results(task_id, results):
     '''update database'''
     with Database() as db:
         try:
-            db.session.bulk_insert_mappings(R, mappings)
+            db.session.bulk_insert_mappings(tblTaskResult, mappings)
             db.session.commit()
         except SQLAlchemyError:
             print(f'update all results on database gave an error')

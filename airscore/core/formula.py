@@ -7,14 +7,15 @@ Antonio Golfari - 2019
 """
 
 # Use your utility module.
+import importlib
+
 from myconn import Database
-from collections import namedtuple
+from sqlalchemy.exc import SQLAlchemyError
 from dataclasses import dataclass, asdict, fields
 
 
 def get_formula_lib(formula_type, formula_version):
-    import importlib
-    '''get formula library to use in scoring'''
+    """get formula library to use in scoring"""
     # formula = read_formula(comp_id)
     formula_file = 'formulas.' + formula_type + str(formula_version)
     try:
@@ -149,7 +150,6 @@ class Formula(object):
     def read(comp_id, session=None):
         """reads comp formula from database"""
         from db_tables import CompFormulaView as F
-        from sqlalchemy.exc import SQLAlchemyError
 
         formula = Formula(comp_id)
         with Database(session) as db:
@@ -164,7 +164,6 @@ class Formula(object):
     @staticmethod
     def from_preset(comp_class, formula_name):
         """ Create Formula obj. from preset values in formula script"""
-        import importlib
         preset = None
         lib_name = 'formulas.' + formula_name.lower()
         lib = importlib.import_module(lib_name)
@@ -250,7 +249,6 @@ class Formula(object):
     def to_db(self):
         """stores formula to tblForComp table in AirScore database"""
         from db_tables import tblForComp as FC
-        from sqlalchemy.exc import SQLAlchemyError
 
         with Database() as db:
             try:
@@ -412,14 +410,12 @@ class Task_formula(object):
         return formula
 
     def get_lib(self):
-        import importlib
 
-        lib = None
-        type = self.formula_type
+        formula_type = self.formula_type
         version = str(self.formula_version)
 
         '''get formula library to use in scoring'''
-        formula_file = 'formulas.' + type + version
+        formula_file = 'formulas.' + formula_type + version
         try:
             lib = importlib.import_module(formula_file, package=None)
             return lib

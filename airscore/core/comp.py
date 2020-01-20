@@ -10,13 +10,21 @@ Use: from comp import Comp
 
 Stuart Mackintosh Antonio Golfari - 2019
 """
+
+import json
+
+from compUtils import get_tasks_result_files, get_participants, read_rankings
+from calcUtils import get_date
+from Defines import FILEDIR, RESULTDIR
+from participant import Participant
+from formula import Formula
+from os import path
+from result import Comp_result, create_json_file
+from task import Task
 from myconn import Database
-from formula import Task_formula
-from calcUtils import json, get_datetime, decimal_to_seconds, time_difference
-from igc_lib import defaultdict
-from pathlib import Path
-import jsonpickle
-import Defines
+from db_tables import tblCompetition
+from sqlalchemy import and_, or_
+from sqlalchemy.exc import SQLAlchemyError
 
 
 class Comp(object):
@@ -68,7 +76,6 @@ class Comp(object):
         # self.formula                    = Formula.read(self.comp_id) if self.comp_id else None
 
     def __setattr__(self, attr, value):
-        from calcUtils import get_date
         import datetime
         if attr in ('date_from', 'date_to'):
             if type(value) is str:
@@ -90,21 +97,17 @@ class Comp(object):
 
     @property
     def start_date_str(self):
-        from datetime import datetime
         return self.date_from.strftime("%Y-%m-%d")
 
     @property
     def end_date_str(self):
-        from datetime import datetime
         return self.date_to.strftime("%Y-%m-%d")
 
     @property
     def file_path(self):
         if not self.comp_path:
             self.create_path()
-        from os import path as p
-        from Defines import FILEDIR
-        return p.join(FILEDIR, str(self.date_from.year), self.comp_code.lower())
+        return path.join(FILEDIR, str(self.date_from.year), self.comp_code.lower())
 
     @property
     def tot_validity(self):
@@ -187,8 +190,6 @@ class Comp(object):
         """Reads competition from database
         takes comPk as argument"""
         from db_tables import CompObjectView as C
-        from formula import Formula
-        from sqlalchemy.exc import SQLAlchemyError
 
         if not (type(comp_id) is int and comp_id > 0):
             print(f"comp_id needs to be int > 0, {comp_id} was given")
@@ -212,18 +213,16 @@ class Comp(object):
     def create_path(self, filepath=None):
         """create filepath from # and date if not given
             and store it in database"""
-        from db_tables import tblCompetition as C
-        from os import path as p
 
         if filepath:
             self.comp_path = filepath
         elif self.comp_code and self.date_from:
-            self.comp_path = p.join(str(self.date_from.year), str(self.comp_code).lower())
+            self.comp_path = path.join(str(self.date_from.year), str(self.comp_code).lower())
         else:
             return
 
         with Database() as db:
-            q = db.session.query(C).get(self.id)
+            q = db.session.query(tblCompetition).get(self.id)
             q.comPath = self.comp_path
             db.session.commit()
 
@@ -236,15 +235,12 @@ class Comp(object):
             print('cannot insert an invalid competition. Need more info.')
             return None
 
-        from db_tables import tblCompetition as C, tblForComp as FC
-        from sqlalchemy.exc import SQLAlchemyError
-
         with Database() as db:
             try:
                 if self.comp_id is not None:
-                    row = db.session.query(C).get(self.comp_id)
+                    row = db.session.query(tblCompetition).get(self.comp_id)
                 else:
-                    row = C()
+                    row = tblCompetition()
 
                 row.comName = self.comp_name
                 row.comCode = self.comp_code
@@ -276,7 +272,6 @@ class Comp(object):
         return self.comp_id
 
     def get_rankings(self):
-        from compUtils import read_rankings
         self.rankings = read_rankings(self.comp_id)
 
     @staticmethod
@@ -300,11 +295,9 @@ class Comp(object):
         return comp
 
     def update_comp_info(self):
-        from datetime import datetime as dt
-        from db_tables import tblCompetition as C
 
         with Database() as db:
-            q = db.session.query(C).get(self.id)
+            q = db.session.query(tblCompetition).get(self.id)
             q.comDateFrom = self.date_from
             q.comDateTo = self.date_to
             q.comName = self.comp_name
@@ -330,12 +323,6 @@ class Comp(object):
         """Reads competition from json result file
         takes comPk as argument"""
         from db_tables import tblResultFile as R
-        from participant import Participant
-        from formula import Formula
-        from sqlalchemy import and_, or_
-        from os import path
-        import json
-        import Defines
 
         if type(comp_id) is int and comp_id > 0:
             with Database() as db:
@@ -346,7 +333,7 @@ class Comp(object):
                         and_(R.comPk == comp_id, R.tasPk == None, R.refVisible == 1)).scalar()
             if file:
                 comp = Comp(comp_id=comp_id)
-                with open(path.join(Defines.RESULTDIR, file), 'r') as f:
+                with open(path.join(RESULTDIR, file), 'r') as f:
                     '''read task json file'''
                     data = json.load(f)
                     for k in comp.__dict__.keys():
@@ -370,104 +357,8 @@ class Comp(object):
                 return comp
 
     @staticmethod
-    def create_results_old(comp_id, status=None):
-        """creates the json result file and the database entry"""
-        from compUtils import get_tasks_result_files, get_participants
-        from result import Comp_result as C, create_json_file
-        import json
-        import Defines
-        from operator import itemgetter
-
-        '''PARAMETER: decimal positions'''
-        # TODO implement result decimal positions parameter
-        decimals = 0  # should be a formula parameter, or a ForComp parameter?
-
-        comp = Comp.read(comp_id)
-        val = comp.formula.overall_validity  # ftv, round, all
-        ftv_type = comp.formula.formula_type  # pwc, fai
-        param = comp.formula.validity_param  # ftv param, dropped task param
-
-        '''retrieve active task result files and reads info'''
-        files = get_tasks_result_files(comp_id)
-
-        '''initialize obj attributes'''
-        tasks = []
-        participants = get_participants(comp_id)
-        stats = {'tot_distance_flown': 0.0, 'tot_flights': 0, 'valid_tasks': len(files),
-                 'tot_pilots': len(participants)}
-        rankings = {}
-
-        for idx, t in enumerate(files):
-            with open(Defines.RESULTDIR + t.file, 'r') as f:
-                '''read task json file'''
-                data = json.load(f)
-
-                '''create task code'''
-                code = ('T' + str(idx + 1))
-
-                '''get task info'''
-                task = {'code': code, 'id': t.task_id, 'status': data['file_stats']['status']}
-                i = dict(data['info'], **data['stats'])
-                task.update({x: i[x] for x in C.tasks_list})
-                if val == 'ftv':
-                    task['ftv_validity'] = (round(task['max_score'], decimals) if ftv_type == 'pwc'
-                                            else round(task['day_quality'] * 1000, decimals))
-                    # avail_validity       += task['ftv_validity']
-                tasks.append(task)
-
-                '''add task stats to overall'''
-                stats['tot_distance_flown'] += float(i['tot_distance_flown'])
-                stats['tot_flights'] += int(i['pilots_launched'])
-
-                ''' get rankings (just once)'''
-                if not rankings:
-                    rankings.update(data['rankings'])
-
-                '''get pilots result'''
-                task_results = {}
-                for res in data['results']:
-                    task_results.setdefault(res['par_id'], {}).update({code: res['score']})
-                for p in participants:
-                    s = 0 if not task_results.get(p.par_id, {}) else round(task_results.get(p.par_id, {})[code],
-                                                                           decimals)
-                    # s = round(task_results.get(p.par_id, {})[code], d)
-                    r = task['ftv_validity'] if val == 'ftv' else 1000
-                    if r > 0:  # sanity
-                        perf = round(s / r, decimals + 3)
-                        p.results.update({code: {'pre': s, 'perf': perf, 'score': s}})
-                    else:
-                        p.results.update({code: {'pre': s, 'perf': 0, 'score': 0}})
-
-        '''calculate final score'''
-        results = get_final_scores(participants, tasks, comp.formula, decimals)
-        stats['winner_score'] = max([t.score for t in results])
-
-        comp.tasks = tasks
-        comp.stats = stats
-        comp.rankings = rankings
-        comp.participants = sorted(results, key=lambda k: k.score, reverse=True)
-
-        '''create json file'''
-        result = {'info': {x: getattr(comp, x) for x in C.info_list},
-                  'rankings': comp.rankings,
-                  'tasks': [t for t in comp.tasks],
-                  'results': [{x: getattr(res, x) for x in C.result_list} for res in comp.participants],
-                  'formula': {x: getattr(comp.formula, x) for x in C.formula_list},
-                  'stats': comp.stats
-                  }
-        ref_id = create_json_file(comp_id=comp.id, task_id=None, code=comp.comp_code, elements=result, status=status)
-        return ref_id
-
-    @staticmethod
     def create_results(comp_id, status=None, decimals=None):
         """creates the json result file and the database entry"""
-        from compUtils import get_tasks_result_files, get_participants, read_rankings
-        from result import Comp_result as C, create_json_file
-        from task import Task
-
-        import json
-        import Defines
-        from operator import itemgetter
 
         '''PARAMETER: decimal positions'''
         # TODO implement result decimal positions parameter
@@ -475,9 +366,6 @@ class Comp(object):
             decimals = 0  # should be a formula parameter, or a ForComp parameter?
 
         comp = Comp.read(comp_id)
-        # val = comp.formula.overall_validity  # ftv, round, all
-        # ftv_type = comp.formula.formula_type  # pwc, fai
-        # param = comp.formula.validity_param  # ftv param, dropped task param
 
         '''retrieve active task result files and reads info'''
         files = get_tasks_result_files(comp_id)
@@ -521,7 +409,7 @@ class Comp(object):
         for res in comp.results:
             '''create results dict'''
             p = next(x for x in comp.participants if x.par_id == res['par_id'])
-            r = {x: getattr(p, x) for x in C.result_list if x in dir(p)}
+            r = {x: getattr(p, x) for x in Comp_result.result_list if x in dir(p)}
             r['score'] = res['score']
             r['results'] = {x: res[x] for x in res.keys() if isinstance(res[x], dict)}
             results.append(r)
@@ -529,12 +417,12 @@ class Comp(object):
         # comp.participants = sorted(results, key=lambda k: k.score, reverse=True)
         #
         '''create json file'''
-        result = {'info': {x: getattr(comp, x) for x in C.info_list},
+        result = {'info': {x: getattr(comp, x) for x in Comp_result.info_list},
                   'rankings': comp.rankings,
-                  'tasks': [{x: getattr(t, x) for x in C.task_list} for t in comp.tasks],
+                  'tasks': [{x: getattr(t, x) for x in Comp_result.task_list} for t in comp.tasks],
                   'results': results,
-                  'formula': {x: getattr(comp.formula, x) for x in C.formula_list},
-                  'stats': {x: getattr(comp, x) for x in C.stats_list}
+                  'formula': {x: getattr(comp.formula, x) for x in Comp_result.formula_list},
+                  'stats': {x: getattr(comp, x) for x in Comp_result.stats_list}
                   }
         ref_id = create_json_file(comp_id=comp.id, task_id=None, code=comp.comp_code, elements=result, status=status)
         return comp, ref_id
@@ -552,7 +440,6 @@ class Comp(object):
                 formula:    comp formula dict
                 d:          decimals on single tasks score, default 0
         """
-        from operator import itemgetter
 
         val = self.formula.overall_validity
         param = self.formula.validity_param
@@ -606,3 +493,4 @@ class Comp(object):
 
         ''' order list'''
         self.results = sorted(self.results, key=lambda x: x['score'], reverse=True)
+

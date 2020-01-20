@@ -9,13 +9,14 @@ from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, class_mapper
-import Defines as d
+from datetime import datetime
+from Defines import MYSQLHOST, DATABASE, MYSQLUSER, MYSQLPASSWORD
 
 '''basic connection'''
-user = d.MYSQLUSER
-passwd = d.MYSQLPASSWORD
-host = d.MYSQLHOST
-dbase = d.DATABASE
+host = MYSQLHOST
+dbase = DATABASE
+user = MYSQLUSER
+passwd = MYSQLPASSWORD
 
 connectionString = f'mysql+pymysql://{user}:{passwd}@{host}/{dbase}?charset=utf8mb4'
 engine = create_engine(connectionString, pool_pre_ping=True)       # pool_pre_ping could be deleted if MySQL is stable
@@ -73,7 +74,6 @@ class Database(object):
             old MySQL queries
             Returns a dict if obj is a single row, or a list of dicts if obj is a list
         """
-        from sqlalchemy import inspect
         if type(obj) is list:
             return [object_to_dict(el) for el in obj]
         else:
@@ -123,8 +123,6 @@ def model_to_dict(obj, visited_children=None, back_relationships=None):
 
 
 def object_to_dict(obj, found=None):
-    from datetime import datetime
-    from sqlalchemy.orm import class_mapper
     if found is None:
         found = set()
     mapper = class_mapper(obj.__class__)

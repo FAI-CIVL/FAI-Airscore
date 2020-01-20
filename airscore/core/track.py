@@ -9,11 +9,19 @@ and creates an object containing all info about the flight
 Antonio Golfari, Stuart Mackintosh - 2019
 """
 
-from calcUtils import epoch_to_date, time_difference
-from igc_lib import Flight
-# Use your utility module.
-from myconn import Database
+import glob
 import os
+
+from os import path
+from calcUtils import epoch_to_date, time_difference
+from trackUtils import find_pilot, get_task_fullpath
+from igc_lib import Flight
+from shutil import copyfile
+from Defines import track_formats
+from myconn import Database
+from db_tables import tblTaskResult
+from sqlalchemy.exc import SQLAlchemyError
+
 
 ''' Accepted formats list
     When checking tracks, this are formats that will be accepted and processed
@@ -42,7 +50,6 @@ class Track(object):
     @property
     def date(self):
         """datetime.date format"""
-        from calcUtils import epoch_to_date
         if self.flight:
             return epoch_to_date(self.flight.date_timestamp)
         else:
@@ -98,15 +105,6 @@ class Track(object):
         else:
             return False
 
-    # @property
-    # def fullpath(self):
-    #     if not self.track_file:
-    #         return
-    #     from trackUtils import get_task_fullpath
-    #     from os import path as p
-    #     file_path = get_task_fullpath(self.task_id)
-    #     return p.join(file_path, self.track_file)
-
     def as_dict(self):
         return self.__dict__
 
@@ -116,7 +114,6 @@ class Track(object):
         """
         # TODO Update workflow using CIVL database / new Participant obj.
         # TODO in the new workflow we should have a Pilot obj, with Track as attr. so get_pilot should be in Pilot
-        from trackUtils import find_pilot
         if self.par_id is None:
             """Get string"""
             fields = os.path.splitext(os.path.basename(self.filename))
@@ -126,15 +123,13 @@ class Track(object):
         """Imports track to db"""
         # TODO in the new workflow we should have a Pilot obj, with Track as attr. so we should add() in Pilot
         # TODO G record check
-        from db_tables import tblTaskResult as R
-        from sqlalchemy.exc import SQLAlchemyError
         result = ''
 
         # add track as result in tblTaskResult table
         with Database() as db:
             try:
-                track = R(parPk=self.par_id, tasPk=task_id, traFile=self.filename,
-                          traGRecordOk=1)  # still to implement
+                track = tblTaskResult(parPk=self.par_id, tasPk=task_id, traFile=self.filename,
+                                      traGRecordOk=1)  # still to implement
                 self.track_id = db.session.add(track)
                 db.session.commit()
                 result += f"track for pilot with id {self.par_id} correctly stored in database"
@@ -146,7 +141,6 @@ class Track(object):
     @classmethod
     def read_file(cls, filename, track_id=None, par_id=None):
         """Reads track file and creates a track object"""
-        from Defines import track_formats
         track = cls(track_file=filename, track_id=track_id, par_id=par_id)
         track.get_type()
         print('type ', track.track_type)
@@ -182,8 +176,6 @@ class Track(object):
     def read_db(cls, track_id):
         """Creates a Track Object from a DB Track entry"""
         from db_tables import TrackObjectView as T
-        from trackUtils import get_task_fullpath
-        from os import path
 
         track = cls(track_id=track_id)
 
@@ -197,7 +189,7 @@ class Track(object):
                 # task_id = q.task_id
                 full_path = get_task_fullpath(q.task_id)
                 track.flight = Flight.create_from_file(path.join(full_path, track.track_file))
-            except:
+            except SQLAlchemyError:
                 print(f'Track Query Error: no result found')
 
         return track
@@ -209,28 +201,6 @@ class Track(object):
             if hasattr(track, key):
                 setattr(track, key, value)
         return track
-
-    # def to_geojson(self, filename=None, mintime=0, maxtime=86401):
-    #     """Dumps the flight to geojson format
-    #         If a filename is given, it write the file, otherwise returns the string"""
-    #
-    #     from geojson import Feature, FeatureCollection, MultiLineString, dump
-    #
-    #     features = []
-    #     route = []
-    #     for fix in self.flight.fixes:
-    #         if mintime <= fix.rawtime < maxtime:
-    #             route.append((fix.lon, fix.lat))
-    #
-    #     route_multilinestring = MultiLineString([route])
-    #     features.append(Feature(geometry=route_multilinestring, properties={"Track": "Track"}))
-    #     feature_collection = FeatureCollection(features)
-    #
-    #     if filename is None:
-    #         return feature_collection
-    #     else:
-    #         with open(filename, 'w') as f:
-    #             dump(feature_collection, f)
 
     def get_type(self):
         """determine if igc / kml / live / ozi"""
@@ -257,13 +227,7 @@ class Track(object):
         name could be changed as the one XContest is sending, or rename that one, as we wish
         if path or pname is None will calculate. note that if bulk importing it is better to pass these values
         rather than query DB for each track"""
-
-        from shutil import copyfile
-        import glob
-        from compUtils import get_task_filepath
-        from os import path
         from db_tables import RegistrationView as P
-        from sqlalchemy.exc import SQLAlchemyError
 
         src_file = self.filename
         # if task_path is None:

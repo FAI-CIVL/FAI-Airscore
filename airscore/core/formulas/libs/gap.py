@@ -13,9 +13,11 @@ TO DO:
 Add support for FAI Sphere ???
 """
 
+from math import sqrt
+from dataclasses import dataclass
+
 
 def difficulty_calculation(task):
-    from dataclasses import dataclass
 
     formula = task.formula
     results = task.valid_results
@@ -152,7 +154,6 @@ def stopped_validity(task):
 
     For this formula we need to use Km as there are numeric constants
     """
-    from math import sqrt
 
     if task.fastest and task.fastest > 0:
         return 1.000
@@ -264,7 +265,6 @@ def pilot_leadout(task, res):
         task: Task obj.
         res: Flight_result object
     """
-    from math import sqrt
 
     Astart = task.avail_dep_points
 
@@ -330,7 +330,6 @@ def pilot_speed(task, res):
         task: Task obj.
         res: Flight_result object
     """
-    from math import sqrt
 
     Aspeed = task.avail_time_points
 

@@ -1,10 +1,15 @@
+import pyproj
+import geopy
+
 from dataclasses import dataclass
 from airspaceUtils import read_airspace_check_file
-import pyproj
 from pyproj import Proj, Transformer
+from shapely import ops
 from shapely.geometry.polygon import Polygon
 from shapely.geometry import Point
+from functools import partial
 from route import distance, Turnpoint
+from math import sqrt
 
 
 @dataclass(frozen=True)
@@ -117,11 +122,7 @@ class AirspaceCheck(object):
         return get_utm_proj(clat, clon)
 
     def get_airspace_details(self):
-        from route import Turnpoint
-        from geopy import Point
-        from geopy.distance import distance
-        from math import sqrt
-
+        """Writes bbox and Polygon obj for each space"""
         if self.control_area:
             for space in self.control_area['spaces']:
                 ''' create object and bbox'''
@@ -136,29 +137,19 @@ class AirspaceCheck(object):
                         clon = space['location'][1]
                         radius = space['radius']
                     dist = radius + self.params.notification_distance * sqrt(2)
-                    pmin = pmax = Point(clat, clon)
+                    pmin = pmax = geopy.Point(clat, clon)
                     space['object'] = Turnpoint(lat=clat, lon=clon, radius=radius)
                 else:
-                    pmin = Point(min(pt[0] for pt in space['locations']), min(pt[1] for pt in space['locations']))
-                    pmax = Point(max(pt[0] for pt in space['locations']), max(pt[1] for pt in space['locations']))
+                    pmin = geopy.Point(min(pt[0] for pt in space['locations']), min(pt[1] for pt in space['locations']))
+                    pmax = geopy.Point(max(pt[0] for pt in space['locations']), max(pt[1] for pt in space['locations']))
                     dist = self.params.notification_distance * sqrt(2)
                     space['object'] = self.reproject(space)
-                pt1 = distance(meters=dist).destination(pmin, 225)
-                pt2 = distance(meters=dist).destination(pmax, 45)
+                pt1 = geopy.distance.distance(meters=dist).destination(pmin, 225)
+                pt2 = geopy.distance.distance(meters=dist).destination(pmax, 45)
                 space['bbox'] = [[pt1[0], pt1[1]], [pt2[0], pt2[1]]]
 
-    # def geo(self):
-    #     """WGS84 to Mercatore Plan Projection"""
-    #     '''define earth model'''
-    #     # wgs84 = Proj("EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth
-    #     wgs84 = Proj(proj='latlong', datum='WGS84')
-    #     my_proj = self.projection
-    #     return Transformer.from_proj(my_proj, wgs84)
-
     def reproject(self, space):
-        from functools import partial
-        from shapely import ops
-        '''get polygon from space'''
+        """get polygon from space"""
         polygon = Polygon([(pt[1], pt[0]) for pt in space['locations']])
         # from_proj = Proj("EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth
         from_proj = Proj(proj='latlong', datum='WGS84')
@@ -198,7 +189,7 @@ class AirspaceCheck(object):
                     if space['shape'] == 'circle' or isinstance(space['object'], Turnpoint):
                         if space['object'].in_radius(fix, 0, notification_band):
                             # fix is inside proximity band (at least)
-                            print(f" in circle --- ")
+                            # print(f" in circle --- ")
                             # start_time = tt.time()
                             dist_floor = space['floor'] - alt
                             dist_ceiling = alt - space['ceiling']
@@ -212,7 +203,7 @@ class AirspaceCheck(object):
                         point = Point(x, y)
                         horiz_distance = space['object'].exterior.distance(point)
                         if horiz_distance <= notification_band:
-                            print(f" in polygon --- ")
+                            # print(f" in polygon --- ")
                             dist_floor = space['floor'] - alt
                             dist_ceiling = alt - space['ceiling']
                             vert_distance = max(dist_floor, dist_ceiling)

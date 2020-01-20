@@ -6,14 +6,13 @@ Use:    import trackUtils
 Antonio Golfari - 2018
 """
 
-import os
 from flight_result import Flight_result
 from track import Track
-import formula as For
-import Defines
-
-# Use your utility module.
+from os import path, listdir, fsdecode
+from Defines import FILEDIR, MAPOBJDIR, track_sources
 from myconn import Database
+from sqlalchemy import func, and_, or_
+from sqlalchemy.exc import SQLAlchemyError
 
 
 def extract_tracks(file, dir):
@@ -46,13 +45,13 @@ def get_tracks(dir):
     print(f"Looking for files \n")
 
     """check files in temporary directory, and get only tracks"""
-    for file in os.listdir(dir):
+    for file in listdir(dir):
         print(f"checking: {file} \n")
         if (not (file.startswith(".") or file.startswith("_"))) and file.lower().endswith(".igc"):
             """file is a valid track"""
             print(f"valid filename: {file} \n")
             """add file to tracks list"""
-            files.append(os.path.join(dir, file))
+            files.append(path.join(dir, file))
         else:
             print(f"NOT valid filename: {file} \n")
 
@@ -86,7 +85,7 @@ def assign_and_import_tracks(files, task, xcontest=False):
     # print("found {} tracks \n".format(len(files)))
     for file in files:
         mytrack = None
-        filename = os.path.basename(file)
+        filename = path.basename(file)
         if registration:
             if len(pilot_list) > 0:
                 print(f"checking {filename} against {len(pilot_list)} pilots... \n")
@@ -126,7 +125,6 @@ def import_track(track, task_id):
 
 
 def verify_track(track, task):
-    # formula = For.Task_formula.read(task.id)
     lib = task.formula.get_lib()
     task_result = Flight_result.check_flight(track.flight, task)  # check flight against task
     task_result.to_db(task.id, track.track_id)
@@ -141,7 +139,6 @@ def find_pilot(name):
     Not sure about best strategy to retrieve pilots ID from name and FAI n.
     """
     from db_tables import PilotView as P
-    from sqlalchemy import and_, or_
 
     '''Gets name from string. check it is not integer'''
     if type(name) is int:
@@ -167,7 +164,8 @@ def find_pilot(name):
         if len(pil) == 1: return pil.pop().pilPk
         '''try one more time if we have both names and fai'''
         if fai and names:
-            if pil == []: p = q  # if we have zero results, try with only lastname and fai
+            if not pil:
+                p = q  # if we have zero results, try with only lastname and fai
             pil = p.filter(P.pilFAI == fai).all()
             if len(pil) == 1: return pil.pop().pilPk
     return None
@@ -176,8 +174,6 @@ def find_pilot(name):
 def get_pil_track(par_id, task_id):
     """Get pilot result in a given task"""
     from db_tables import tblTaskResult as R
-    from sqlalchemy import func, and_, or_
-    track_id = 0
 
     with Database() as db:
         track_id = db.session.query(R.tarPk).filter(
@@ -193,9 +189,9 @@ def read_track_result_file(track_id, task_id):
     import jsonpickle
     from pathlib import Path
 
-    res_path = Defines.MAPOBJDIR + 'tracks/'
+    res_path = MAPOBJDIR + 'tracks/'
     filename = 'result_' + str(track_id) + '.track'
-    fullname = os.path.join(res_path, filename)
+    fullname = path.join(res_path, filename)
     # if the file does not exist
     if not Path(fullname).is_file():
         create_track_result_file(track_id, task_id)
@@ -218,15 +214,14 @@ def create_track_result_file(track_id, task_id):
 
 def get_task_fullpath(task_id):
     from db_tables import tblTask as T, tblCompetition as C
-    from os import path as p
-    from Defines import FILEDIR
+
     with Database() as db:
         try:
             q = db.session.query(T.tasPath, C.comPath).join(C, C.comPk == T.comPk).filter(T.tasPk == task_id).one()
-        except:
+        except SQLAlchemyError:
             print(f'Get Task Path Query Error')
             return None
-    return p.join(FILEDIR, q.comPath, q.tasPath)
+    return path.join(FILEDIR, q.comPath, q.tasPath)
 
 
 def get_unscored_pilots(task_id, xcontest=False):
@@ -236,8 +231,6 @@ def get_unscored_pilots(task_id, xcontest=False):
     from pilot import Pilot
     from participant import Participant
     from db_tables import UnscoredPilotView as U
-    from sqlalchemy.exc import SQLAlchemyError
-    from sqlalchemy import func, and_, or_
 
     pilot_list = []
     with Database() as db:
@@ -268,10 +261,9 @@ def get_pilot_from_list(filename, pilots):
         pilots:     LIST Participants Obj.
     """
     # TODO define different acceptable filename formats
-    from track import Track
 
     '''Get string'''
-    string = os.path.splitext(filename)[0]
+    string = path.splitext(filename)[0]
 
     """Try to get pilot from filename, using ID, CIVLID or name."""
     fields = string.replace('.', ' ').replace('_', ' ').replace('-', ' ').lower().split()
@@ -305,7 +297,6 @@ def assign_tracks(task, file_dir, pilots_list, source):
         AirScore will permit to retrieve tracks from different sources and repositories. We need to be able
         to recognise pilot from filename.
     """
-    from os import path, listdir, fsdecode
     from pathlib import Path
     from igc_lib import Flight
     import shutil
@@ -365,11 +356,11 @@ def get_tracks_from_source(task, source=None):
 
     ''' load source lib'''
     if source is None:
-        if task.track_source not in Defines.track_sources:
+        if task.track_source not in track_sources:
             print(f"We do not have any zipfile source.")
             return
         else:
-            source = importlib.import_module('tracksources.'+task.track_source)
+            source = importlib.import_module('tracksources.' + task.track_source)
 
     '''get zipfile'''
     with TemporaryDirectory() as archive_dir:

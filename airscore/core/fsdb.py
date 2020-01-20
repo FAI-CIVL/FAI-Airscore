@@ -11,11 +11,22 @@ Use: from fsdb import read, write
 Stuart Mackintosh, Antonio Golfari - 2019
 """
 
-from calcUtils import *
-from compUtils import *
-from datetime import date, time, datetime
+import time
+import lxml.etree as ET
+
+from lxml.etree import CDATA
+from comp import Comp
 from task import Task
-from pprint import pprint as pp
+from formula import Formula
+from pilot import Pilot, update_all_results
+from participant import Participant, mass_import_participants
+from calcUtils import get_isotime, km, sec_to_time
+from compUtils import create_comp_code, is_ext
+from Defines import RESULTDIR
+from math import trunc
+from datetime import time, datetime
+from myconn import Database
+from sqlalchemy.exc import SQLAlchemyError
 
 
 class FSDB(object):
@@ -46,12 +57,6 @@ class FSDB(object):
                 - fp:           STR: filepath
                 - from_CIVL:    BOOL: look for pilot on CIVL database
         """
-        import lxml.etree as ET
-        from comp import Comp
-        from formula import Formula
-        from pilot import Pilot
-        from participant import Participant
-        from flight_result import Flight_result
 
         """read the fsdb file"""
         try:
@@ -114,15 +119,6 @@ class FSDB(object):
                 - comp_id       int: comPk event ID"""
 
         '''check comp is not an external event'''
-        from compUtils import is_ext, get_comp_json
-        from comp import Comp
-        import time
-        from task import get_task_json
-        from task import Task as T
-        from os import path as p
-        import Defines as d
-        import json
-        from pprint import pprint as pp
 
         if is_ext(comp_id):
             # TODO probably with new logic we are able to create FSDB from ext comps?
@@ -136,13 +132,13 @@ class FSDB(object):
 
         timestamp = int(time.time() + comp.time_offset * 3600)
         dt = datetime.fromtimestamp(timestamp).strftime('%Y%m%d_%H%M%S')
-        filename = d.RESULTDIR + '_'.join([comp.comp_code, dt]) + '.fsdb'
+        filename = RESULTDIR + '_'.join([comp.comp_code, dt]) + '.fsdb'
 
         '''get tasks and results'''
         tasks = []
         for tas in comp.tasks:
             task_id = tas['id']
-            task = T.create_from_json(task_id=task_id)
+            task = Task.create_from_json(task_id=task_id)
             tasks.append(task)
 
         fsdb = FSDB(comp=comp, filename=filename, tasks=tasks)
@@ -150,10 +146,6 @@ class FSDB(object):
 
     def to_file(self, filename=None):
         """ """
-        from lxml import etree as ET
-        from lxml.etree import CDATA
-        from calcUtils import get_isotime
-        from math import trunc
 
         formula = self.comp.formula
         pilots = self.comp.participants
@@ -301,7 +293,7 @@ class FSDB(object):
             tps = t.turnpoints
             td_attr = {'ss': [i + 1 for i, tp in enumerate(tps) if tp.type == 'speed'].pop(0),
                        'es': [i + 1 for i, tp in enumerate(tps) if tp.type == 'endspeed'].pop(0),
-                       'goal': ([tp.shape for tp in tps if tp.type == 'goal'].pop(0)).upper(),
+                       'goal': next(tp.shape for tp in tps if tp.type == 'goal').upper(),
                        'groundstart': 0,  # still to implement
                        'qnh_setting': 1013.25  # still to implement
                        }
@@ -504,7 +496,6 @@ class FSDB(object):
         """
             Add comp to AirScore database
         """
-        from compUtils import create_comp_code
         '''check if we have comp_code'''
         if self.comp.comp_code is None:
             self.comp.comp_code = create_comp_code(self.comp.comp_name, self.comp.date_from)
@@ -517,8 +508,6 @@ class FSDB(object):
         """
             Add comp tasks to AirScore database
         """
-        from myconn import Database
-        from sqlalchemy.exc import SQLAlchemyError
 
         if self.comp.comp_id is None:
             return
@@ -538,8 +527,6 @@ class FSDB(object):
         """
             Add results for each comp task to AirScore database
         """
-        from pilot import update_all_results
-
         if self.comp.comp_id is None:
             return
 
@@ -553,8 +540,6 @@ class FSDB(object):
         """
             Add participants to AirScore database
         """
-        from participant import mass_import_participants
-
         if self.comp.comp_id is None or len(self.comp.participants) == 0:
             print(f"Comp does not have a db ID or has not participants.")
             return
