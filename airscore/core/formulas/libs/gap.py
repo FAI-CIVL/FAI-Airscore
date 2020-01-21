@@ -504,5 +504,7 @@ def points_allocation(task):
         res.score = res.distance_score + res.time_score + res.arrival_score + res.departure_score
 
         ''' Apply Penalty'''
-        if penalty:
-            res.score = max(0, res.score*(1-percentage_penalty) - penalty)
+        if penalty or percentage_penalty:
+            res.penalty += res.score * percentage_penalty
+            res.score = max(0, res.score - res.penalty)
+

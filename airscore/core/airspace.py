@@ -14,38 +14,38 @@ from math import sqrt, pow, log
 
 @dataclass(frozen=True)
 class CheckParams:
-    notification_distance: int = 100
-    function: str = 'linear'  # linear / non-linear
-    h_outer_limit: int = 70
-    h_boundary: int = 0
-    h_boundary_penalty: float = 0.1
-    h_inner_limit: int = -30
-    h_max_penalty: float = 1.0
-    v_outer_limit: int = 70
-    v_boundary: int = 0
-    v_boundary_penalty: float = 0.1
-    v_inner_limit: int = -30
-    v_max_penalty: float = 1.0
-    h_outer_band = h_outer_limit - h_boundary
-    h_inner_band = h_boundary - h_inner_limit
-    h_total_band = h_outer_limit - h_inner_limit
-    v_outer_band = v_outer_limit - v_boundary
-    v_inner_band = v_boundary - v_inner_limit
-    v_total_band = v_outer_limit - v_inner_limit
-    h_outer_penalty_per_m = 0 if not h_outer_band else h_boundary_penalty / h_outer_band
-    h_inner_penalty_per_m = h_max_penalty if not h_inner_band else (h_max_penalty - h_boundary_penalty) / h_inner_band
-    v_outer_penalty_per_m = 0 if not v_outer_band else v_boundary_penalty / v_outer_band
-    v_inner_penalty_per_m = v_max_penalty if not v_inner_band else (v_max_penalty - v_boundary_penalty) / v_inner_band
+    notification_distance: int  # meters, default 100
+    function: str  # linear, non-linear
+    h_outer_limit: int  # meters, default 70
+    h_boundary: int  # meters, default 0
+    h_boundary_penalty: float  # default 0.1
+    h_inner_limit: int  # meters, default -30
+    h_max_penalty: float  # default 1.0
+    v_outer_limit: int  # meters, default 70
+    v_boundary: int  # meters, default 0
+    v_boundary_penalty: float  # default 0.1
+    v_inner_limit: int  # meters, default -30
+    v_max_penalty: float  # default 1.0
+    h_outer_band: int
+    h_inner_band: int
+    h_total_band: int
+    v_outer_band: int
+    v_inner_band: int
+    v_total_band: int
+    h_outer_penalty_per_m: float
+    h_inner_penalty_per_m: float
+    v_outer_penalty_per_m: float
+    v_inner_penalty_per_m: float
 
     def penalty(self, distance, direction) -> float:
         """ calculate penalty based on params
             distance: FLOAT distance in meters
             direction: 'h' or 'v'"""
-        if ((direction == 'h' and distance >= self.h_outer_limit)
-                or (direction == 'v' and distance >= self.v_outer_limit)):
+        if not distance or ((direction == 'h' and distance >= self.h_outer_limit)
+                            or (direction == 'v' and distance >= self.v_outer_limit)):
             return 0
         elif ((direction == 'h' and distance <= self.h_inner_limit)
-                or (direction == 'v' and distance <= self.v_inner_limit)):
+              or (direction == 'v' and distance <= self.v_inner_limit)):
             return self.h_max_penalty if direction == 'h' else self.v_max_penalty
 
         if self.function == 'linear':
@@ -63,11 +63,11 @@ class CheckParams:
                 outer_penalty_per_m = self.v_outer_penalty_per_m
                 inner_penalty_per_m = self.v_inner_penalty_per_m
             if distance > boundary:
-                return (outer_limit - distance) * outer_penalty_per_m
+                return round((outer_limit - distance) * outer_penalty_per_m, 5)
             elif distance == boundary:
                 return border_penalty
             elif distance < boundary:
-                return border_penalty + abs(boundary - distance) * inner_penalty_per_m
+                return round(border_penalty + abs(boundary - distance) * inner_penalty_per_m, 5)
         else:
             ''' case non-linear penalty
                 needs just outer limit, inner limit and max penalty (default 1.0)
@@ -83,7 +83,7 @@ class CheckParams:
                 outer_limit = self.v_outer_limit
                 max_penalty = self.v_max_penalty
                 total_band = self.v_total_band
-            return round(pow(((outer_limit - distance) / total_band), log(10, 2)), 4) * max_penalty
+            return round(pow(((outer_limit - distance) / total_band), log(10, 2)), 5) * max_penalty
 
 
 class AirspaceCheck(object):
@@ -109,14 +109,6 @@ class AirspaceCheck(object):
     def spaces(self):
         if self.control_area:
             return self.control_area['spaces']
-
-    # @property
-    # def airspace_details(self):
-    #     if self.control_area:
-    #         if not any(space['object'] for space in self.spaces):
-    #             print('I should never be here')
-    #             self.get_airspace_details()
-    #         return self.control_area['spaces']
 
     @staticmethod
     def from_task(task):
@@ -204,14 +196,9 @@ class AirspaceCheck(object):
         from airspaceUtils import in_bbox
         import time as tt
 
-        # airspace_plot = []
         notification_band = self.params.notification_distance
-        # h_penalty_band = self.params.h_outer_limit
         alt = fix.gnss_alt if altitude_mode == 'GPS' else fix.press_alt
-        fix_violation = False
         infringement = 0
-        horiz_distance = 0
-        vert_distance = 0
 
         '''Check if fix is actually in Airspace bounding box'''
         for space in self.spaces:
@@ -246,11 +233,7 @@ class AirspaceCheck(object):
                             dist_floor = space['floor'] - alt
                             dist_ceiling = alt - space['ceiling']
                             vert_distance = max(dist_floor, dist_ceiling)
-                            # print(
-                            #     f"alt {alt} floor {dist_floor} ceiling {dist_ceiling} vert {vert_distance} hor {horiz_distance}")
                             infringement = [space['name'], vert_distance, horiz_distance]
-                            violation = True
-                            fix_violation = True
                         # print(f" polygon airspace check --- {tt.time() - start_time} seconds ---")
                     # TODO insert arc check here. we can use in radius and bearing to
                     # '''check if we are in infringement zone
@@ -265,34 +248,39 @@ class AirspaceCheck(object):
         Airspace Warnings and Penalties Managing
         Creates a list of worst infringement for each airspace in infringements_list
         Calculates penalty
-        Claculates final penalty and comments
+        Calculates final penalty and comments
         """
         spaces = list(set([x[1][0] for x in infringements_list]))
         penalty = 0
         infringements_per_space = []
         comments = []
-        '''check distance and penalty for each space in which we recorded a fix'''
+        '''check distance and penalty for each space in which we recorded an infringement'''
         for space in spaces:
             fixes = [p for p in infringements_list if p[1][0] == space and (p[1][1] < 0 or p[1][2] < 0)]
             if fixes:
-                dist_h = min(p[1][2] for p in fixes)
-                pen_h = self.params.penalty(dist_h, 'h')
-                dist_v = min(p[1][1] for p in fixes)
-                pen_v = self.params.penalty(dist_v, 'v')
-                print(f"{dist_h}, {dist_v} | {pen_h}, {pen_v}")
-                if dist_h > dist_v:
+                '''look for fixes inside airspace'''
+                fix_min_h = min([p for p in fixes if p[1][1] <= p[1][2]], key=lambda x: x[1][2], default=None)
+                fix_min_v = min([p for p in fixes if p[1][2] <= p[1][1]], key=lambda x: x[1][1], default=None)
+                pen_h = 0 if not fix_min_h else self.params.penalty(fix_min_h[1][2], 'h')
+                pen_v = 0 if not fix_min_v else self.params.penalty(fix_min_v[1][1], 'v')
+                print(f"Horiz: {fix_min_h} | {pen_h}")
+                print(f"Vert: {fix_min_v} | {pen_v}")
+                if fix_min_h and (pen_h > pen_v or not fix_min_v
+                                  or (pen_h == pen_v and fix_min_h[1][2] > fix_min_v[1][1])):
                     '''horizontal infringement'''
-                    dist = dist_h
-                    pen = pen_h
-                    p = next(x for x in fixes if x[1][2] == dist_h)
                     direction = 'horizontal'
-                else:
-                    dist = dist_v
-                    pen = pen_v
-                    p = next(x for x in fixes if x[1][1] == dist_v)
+                    pen = pen_h
+                    fix = fix_min_h[0]
+                    dist = fix_min_h[1][2]
+                elif fix_min_v:
+                    '''horizontal infringement'''
                     direction = 'vertical'
-                print(f"{direction}, {pen}")
-                fix = p[0]
+                    pen = pen_v
+                    fix = fix_min_v[0]
+                    dist = fix_min_v[1][1]
+                else:
+                    '''false positive'''
+                    continue
                 if pen > 0:
                     '''add fix to infringements'''
                     infringements_per_space.append({'rawtime': fix.rawtime, 'space': space, 'distance': dist,
@@ -307,8 +295,13 @@ class AirspaceCheck(object):
         '''final calculation'''
         if penalty > 0:
             '''we have a penalty'''
-            comments = [
-                f"{''.join([str(round(el['distance'])), 'm from']) if el['distance'] > 0 else ''.join([str(abs(round(el['distance']))), 'm inside'])} {el['space']}: penalty {round(el['penalty'] * 100)}%"]
+            max_pen = self.params.h_max_penalty if el['type'] == 'horizontal' else self.params.v_max_penalty
+            if penalty == max_pen:
+                comments = [f"{el['space']}: airspace infringement. penalty {round(max_pen * 100)}%"]
+            else:
+                dist = round(el['distance'] - (self.params.h_inner_limit if el['type'] == 'horizontal'
+                                               else self.params.v_inner_limit))
+                comments = [f"{el['space']}: {dist}m from limit. penalty {round(el['penalty'] * 100)}%"]
 
         return infringements_per_space, comments, penalty
 
@@ -322,9 +315,26 @@ def get_airspace_check_parameters(task_id):
         try:
             q = db.session.query(A).get(task_id)
             if q.airspace_check:
+                '''calculate parameters'''
+                h_outer_band = q.h_outer_limit - q.h_boundary
+                h_inner_band = q.h_boundary - q.h_inner_limit
+                h_total_band = q.h_outer_limit - q.h_inner_limit
+                v_outer_band = q.v_outer_limit - q.v_boundary
+                v_inner_band = q.v_boundary - q.v_inner_limit
+                v_total_band = q.v_outer_limit - q.v_inner_limit
+                h_outer_penalty_per_m = 0 if not h_outer_band else q.h_boundary_penalty / h_outer_band
+                h_inner_penalty_per_m = (q.h_max_penalty if not h_inner_band
+                                         else (q.h_max_penalty - q.h_boundary_penalty) / h_inner_band)
+                v_outer_penalty_per_m = 0 if not v_outer_band else q.v_boundary_penalty / v_outer_band
+                v_inner_penalty_per_m = (q.v_max_penalty if not v_inner_band
+                                         else (q.v_max_penalty - q.v_boundary_penalty) / v_inner_band)
+
                 return CheckParams(q.notification_distance, q.function, q.h_outer_limit, q.h_boundary,
                                    q.h_boundary_penalty, q.h_inner_limit, q.h_max_penalty, q.v_outer_limit,
-                                   q.v_boundary, q.v_boundary_penalty, q.v_inner_limit, q.v_max_penalty)
+                                   q.v_boundary, q.v_boundary_penalty, q.v_inner_limit, q.v_max_penalty,
+                                   h_outer_band, h_inner_band, h_total_band, v_outer_band, v_inner_band, v_total_band,
+                                   h_outer_penalty_per_m, h_inner_penalty_per_m, v_outer_penalty_per_m,
+                                   v_inner_penalty_per_m)
             else:
                 return None
         except SQLAlchemyError:

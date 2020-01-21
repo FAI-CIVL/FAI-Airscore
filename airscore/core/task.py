@@ -23,6 +23,7 @@ Add support for FAI Sphere ???
 from route import distance, polar, find_closest, cartesian2polar, polar2cartesian, calcBearing, opt_goal, opt_wp, \
     opt_wp_exit, opt_wp_enter, Turnpoint, get_shortest_path
 from result import Task_result, create_json_file
+from airspace import AirspaceCheck
 from compUtils import read_rankings
 from calcUtils import json, get_date, get_datetime, decimal_to_seconds, time_difference
 from flight_result import verify_all_tracks, adjust_flight_results
@@ -537,8 +538,11 @@ class Task(object):
             print(f"Storing calculated values to database...")
             self.update_task_distance()
             print(f"Task Opt. Route: {round(self.opt_dist / 1000, 4)} Km")
+
+            '''get airspace info if needed'''
+            airspace = None if not self.airspace_check else AirspaceCheck.from_task(self)
             print(f"Processing pilots tracks...")
-            self.check_all_tracks(lib)
+            self.check_all_tracks(lib, airspace)
 
         else:
             ''' get pilot list and results'''
@@ -638,7 +642,7 @@ class Task(object):
             return False
         return True
 
-    def check_all_tracks(self, lib=None):
+    def check_all_tracks(self, lib=None, airspace=None):
         """ checks all igc files against Task and creates results """
 
         if not lib:
@@ -677,7 +681,7 @@ class Task(object):
 
                 # min_task_duration = 3600
                 # last_time = self.stopped_time - self.formula.score_back_time
-                verify_all_tracks(self, lib)
+                verify_all_tracks(self, lib, airspace)
 
                 if self.task_type == 'elapsed time' or self.SS_interval:
                     '''need to check track and get last_start_time'''
@@ -708,11 +712,11 @@ class Task(object):
                 if not self.is_valid():
                     return f'task duration is not enough, task with id {self.id} is not valid, scoring is not needed'
 
-                verify_all_tracks(self, lib)
+                verify_all_tracks(self, lib, airspace)
 
         else:
             '''get all results for the task'''
-            verify_all_tracks(self, lib)
+            verify_all_tracks(self, lib, airspace)
 
         '''store results to database'''
         print(f"updating database with new results...")

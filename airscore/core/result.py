@@ -153,6 +153,7 @@ class Task_result:
                     'arrival_score',
                     'score',
                     'penalty',
+                    'infringements',
                     'comment',
                     'lead_coeff',
                     'ESS_altitude',

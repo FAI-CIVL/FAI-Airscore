@@ -817,18 +817,6 @@ def pilot_can_restart(task, tp, fix, result):
         return False
 
 
-def adjust_flight_results(task, lib):
-    """ Called when multi-start or elapsed time task was stopped.
-        We need to check again and adjust results of pilots that flew more than task duration"""
-    maxtime = task.duration
-    for pilot in task.pilots:
-        if pilot.last_fix_time - pilot.SSS_time > maxtime:
-            flight = pilot.track.flight
-            last_time = pilot.result.SSS_time + maxtime
-            pilot.result = Flight_result.check_flight(flight, task, deadline=last_time)
-    lib.process_results(task)
-
-
 def start_number_at_time(task, time):
     if time < task.start_time or (task.start_close_time and time > task.start_close_time):
         return 0
@@ -842,7 +830,7 @@ def pilot_get_better_start(task, time, prev_time):
     return start_number_at_time(task, time) > start_number_at_time(task, prev_time)
 
 
-def verify_all_tracks(task, lib):
+def verify_all_tracks(task, lib, airspace=None):
     """ Gets in input:
             task:       Task object
             lib:        Formula library module"""
@@ -856,10 +844,31 @@ def verify_all_tracks(task, lib):
             filename = path.join(task.file_path, pilot.track.track_file)
             pilot.track.flight = Flight.create_from_file(filename)
             if pilot.track.flight and pilot.track.flight.valid:
-                pilot.result = Flight_result.check_flight(pilot.track.flight, task)
+                pilot.result = Flight_result.check_flight(pilot.track.flight, task, airspace_obj=airspace)
                 print(f'   Goal: {bool(pilot.result.goal_time)} | part. LC: {pilot.result.fixed_LC}')
             elif pilot.track.flight:
                 print(f'Error in parsing track: {[x for x in pilot.track.flight.notes]}')
+    lib.process_results(task)
+
+
+def adjust_flight_results(task, lib, airspace):
+    """ Called when multi-start or elapsed time task was stopped.
+        We need to check again and adjust results of pilots that flew more than task duration"""
+    maxtime = task.duration
+    for pilot in task.pilots:
+        if pilot.result.SSS_time:
+            last_time = pilot.result.SSS_time + maxtime
+            if ((not pilot.ESS_time and pilot.last_fix_time > last_time)
+                    or (pilot.ESS_time and pilot.ss_time > maxtime)):
+                '''need to adjust pilot result'''
+                # keep airspace infringements info
+                # if task.airspace_check:
+                #     infringements = pilot.result.infringements
+                #     percentace_penalty = pilot.result.percentage_penalty
+                #     comments = pilot.result.comments
+                flight = pilot.track.flight
+                adjusted = Flight_result.check_flight(flight, task, airspace_obj=airspace, deadline=last_time)
+                pilot.result.result_type = adjusted.result_type
     lib.process_results(task)
 
 
