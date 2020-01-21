@@ -156,6 +156,8 @@ class Flight_result(object):
         self.distance_score = 0
         self.time_score = 0
         self.penalty = 0
+        self.percentage_penalty = 0
+        self.infringements = []  # Infringement for each space
         self.comment = []  # should this be a list?
         # self.ID = None  # Could delete?
         # self.par_id = par_id  # Could delete?
@@ -489,7 +491,7 @@ class Flight_result(object):
                 infringement = airspace_obj.check_fix(next_fix, alt_source)
                 if infringement:
                     '''Airspace Infringement: check if we already have a worse one'''
-                    infringements_list.append([i, infringement])
+                    infringements_list.append([next_fix, infringement])
 
         '''final results'''
         result.max_altitude = max_altitude
@@ -543,54 +545,10 @@ class Flight_result(object):
             result.fixed_LC = lead_coeff.summing
 
         if task.airspace_check:
-            # result.infringements_list = infringements_list
-            '''penalty calculation'''
-            spaces = list(set([x[1][0] for x in infringements_list]))
-            infringements_per_space = []
-            comments = []
-            '''check distance and penalty for each space in which we recorded a fix'''
-            for space in spaces:
-                fixes = [p for p in infringements_list if p[1][0] == space]
-                dist_h = min(p[1][2] for p in fixes if p[1][1] <= 0)
-                dist_v = min(p[1][1] for p in fixes if p[1][2] <= 0)
-                pen_h = airspace_obj.params.penalty(dist_h, 'h')
-                pen_v = airspace_obj.params.penalty(dist_v, 'v')
-                print(f"{dist_h}, {dist_v} | {pen_h}, {pen_v}")
-                if dist_h > dist_v:
-                    '''horizontal infringement'''
-                    dist = dist_h
-                    penalty = pen_h
-                    p = next(x for x in fixes if x[1][2] == dist_h)
-                    fix = flight.fixes[p[0]]
-                    direction = 'horizontal'
-                # if (pen_v > pen_h) or (max(pen_v, pen_h) == 0 and dist_v < dist_h):
-                else:
-                    dist = dist_v
-                    penalty = pen_v
-                    p = next(x for x in fixes if x[1][1] == dist_v)
-                    fix = flight.fixes[p[0]]
-                    direction = 'vertical'
-                print(f"{direction}, {penalty}")
-                if penalty > 0:
-                    '''add fix to infringements'''
-                    infringements_per_space.append({'rawtime': fix.rawtime, 'space': p[1][0], 'distance': dist,
-                                                    'type': direction, 'penalty': penalty})
-                else:
-                    ''' create warning comment'''
-                    comments.append(f"Warning: {p[1][0]} {direction} separation less than {dist} meters")
-                if penalty > airspace_penalty:
-                    airspace_penalty = penalty
-
-            '''final calculation'''
-            result.infringements = infringements_per_space
-            if airspace_penalty > 0:
-                '''we have a penalty'''
-                el = next(p for p in infringements_per_space if p['penalty'] == airspace_penalty)
-                result.percentage_penalty = airspace_penalty
-                result.comment.append(f"{''.join([str(round(el['distance'])), 'm from']) if el['distance'] > 0 else ''.join([str(abs(round(el['distance']))), 'm inside'])} {el['space']}: penalty {round(el['penalty']*100)}%")
-            else:
-                '''we have warnings'''
-                result.comment.extend(comments)
+            infringements, comments, penalty = airspace_obj.get_infringements_result(infringements_list)
+            result.infringements = infringements
+            result.comment.extend(comments)
+            result.percentage_penalty = penalty
 
         return result
 

@@ -118,6 +118,7 @@ class Task(object):
         self.pilots = []  # scored task results
         self.airspace_check = False  # BOOL airspace check
         self.openair_file = None  # STR
+        self.QNH = 1013.25  # Pressure Reference for altitude if altitude_mode = QNH
         self.comment = None
         self.time_offset = 0  # seconds
         self.launch_valid = None

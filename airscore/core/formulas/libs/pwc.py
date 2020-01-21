@@ -294,6 +294,7 @@ def points_allocation(task):
     ''' Score each pilot now'''
     for res in results:
         penalty = res.penalty if res.penalty else 0
+        percentage_penalty = res.percentage_penalty if res.percentage_penalty else 0
 
         '''initialize'''
         res.distance_score = 0
@@ -322,4 +323,4 @@ def points_allocation(task):
 
         ''' Apply Penalty'''
         if penalty:
-            res.score = max(0, res.score - penalty)
+            res.score = max(0, res.score * (1 - percentage_penalty) - penalty)

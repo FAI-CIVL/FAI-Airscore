@@ -7,7 +7,6 @@ Antonio Golfari - 2018
 """
 
 from flight_result import Flight_result
-from track import Track
 from os import path, listdir, fsdecode
 from Defines import FILEDIR, MAPOBJDIR, track_sources
 from myconn import Database
@@ -65,6 +64,7 @@ def get_tracks(dir):
 def assign_and_import_tracks(files, task, xcontest=False):
     """Find pilots to associate with tracks"""
     from compUtils import get_registration, get_task_path
+    from track import Track
 
     pilot_list = []
     print(f"We have {len(files)} track to associate \n")
@@ -203,6 +203,7 @@ def read_track_result_file(track_id, task_id):
 def create_track_result_file(track_id, task_id):
     import flight_result
     from task import Task
+    from track import Track
 
     task = Task.read(task_id)
     # formula = For.Task_formula.read(task_id)
