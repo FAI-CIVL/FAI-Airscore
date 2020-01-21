@@ -9,7 +9,7 @@ from shapely.geometry.polygon import Polygon
 from shapely.geometry import Point
 from functools import partial
 from route import distance, Turnpoint
-from math import sqrt
+from math import sqrt, pow, log
 
 
 @dataclass(frozen=True)
@@ -28,8 +28,10 @@ class CheckParams:
     v_max_penalty: float = 1.0
     h_outer_band = h_outer_limit - h_boundary
     h_inner_band = h_boundary - h_inner_limit
+    h_total_band = h_outer_limit - h_inner_limit
     v_outer_band = v_outer_limit - v_boundary
     v_inner_band = v_boundary - v_inner_limit
+    v_total_band = v_outer_limit - v_inner_limit
     h_outer_penalty_per_m = 0 if not h_outer_band else h_boundary_penalty / h_outer_band
     h_inner_penalty_per_m = h_max_penalty if not h_inner_band else (h_max_penalty - h_boundary_penalty) / h_inner_band
     v_outer_penalty_per_m = 0 if not v_outer_band else v_boundary_penalty / v_outer_band
@@ -39,32 +41,49 @@ class CheckParams:
         """ calculate penalty based on params
             distance: FLOAT distance in meters
             direction: 'h' or 'v'"""
-        if direction == 'h':
-            outer_limit = self.h_outer_limit
-            boundary = self.h_boundary
-            border_penalty = self.h_boundary_penalty
-            inner_limit = self.h_inner_limit
-            max_penalty = self.h_max_penalty
-            outer_penalty_per_m = self.h_outer_penalty_per_m
-            inner_penalty_per_m = self.h_inner_penalty_per_m
-        else:
-            outer_limit = self.v_outer_limit
-            boundary = self.v_boundary
-            border_penalty = self.v_boundary_penalty
-            inner_limit = self.v_inner_limit
-            max_penalty = self.v_max_penalty
-            outer_penalty_per_m = self.v_outer_penalty_per_m
-            inner_penalty_per_m = self.v_inner_penalty_per_m
-        if distance >= outer_limit:
+        if ((direction == 'h' and distance >= self.h_outer_limit)
+                or (direction == 'v' and distance >= self.v_outer_limit)):
             return 0
-        elif distance <= inner_limit:
-            return max_penalty
-        elif distance > boundary:
-            return (outer_limit - distance) * outer_penalty_per_m
-        elif distance == boundary:
-            return border_penalty
-        elif distance < boundary:
-            return border_penalty + abs(boundary - distance) * inner_penalty_per_m
+        elif ((direction == 'h' and distance <= self.h_inner_limit)
+                or (direction == 'v' and distance <= self.v_inner_limit)):
+            return self.h_max_penalty if direction == 'h' else self.v_max_penalty
+
+        if self.function == 'linear':
+            '''case linear penalty'''
+            if direction == 'h':
+                outer_limit = self.h_outer_limit
+                boundary = self.h_boundary
+                border_penalty = self.h_boundary_penalty
+                outer_penalty_per_m = self.h_outer_penalty_per_m
+                inner_penalty_per_m = self.h_inner_penalty_per_m
+            else:
+                outer_limit = self.v_outer_limit
+                boundary = self.v_boundary
+                border_penalty = self.v_boundary_penalty
+                outer_penalty_per_m = self.v_outer_penalty_per_m
+                inner_penalty_per_m = self.v_inner_penalty_per_m
+            if distance > boundary:
+                return (outer_limit - distance) * outer_penalty_per_m
+            elif distance == boundary:
+                return border_penalty
+            elif distance < boundary:
+                return border_penalty + abs(boundary - distance) * inner_penalty_per_m
+        else:
+            ''' case non-linear penalty
+                needs just outer limit, inner limit and max penalty (default 1.0)
+                uses (distance/band)**(ln10/ln2)
+                Function gives 0 at outer limit, 1 at inner limit, and 0.1 at half way
+                with increasing penalty per meter moving toward inner limit'''
+
+            if direction == 'h':
+                outer_limit = self.h_outer_limit
+                max_penalty = self.h_max_penalty
+                total_band = self.h_total_band
+            else:
+                outer_limit = self.v_outer_limit
+                max_penalty = self.v_max_penalty
+                total_band = self.v_total_band
+            return round(pow(((outer_limit - distance) / total_band), log(10, 2)), 4) * max_penalty
 
 
 class AirspaceCheck(object):
