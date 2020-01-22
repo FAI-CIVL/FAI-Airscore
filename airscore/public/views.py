@@ -31,6 +31,7 @@ from sqlalchemy.orm import aliased
 import Defines
 from os import path
 import json
+import frontendUtils
 
 blueprint = Blueprint("public", __name__, static_folder="../static")
 
@@ -60,8 +61,24 @@ def home_old():
 
 @blueprint.route("/", methods=["GET", "POST"])
 def home():
-    return render_template('public/index.html')
+    form = LoginForm(request.form)
+    if request.method == "POST":
+        if form.validate_on_submit():
+            login_user(form.user)
+            flash("You are logged in.", "success")
+            redirect_url = request.args.get("next") or url_for("user.members")
+            return redirect(redirect_url)
+        else:
+            flash_errors(form)
+    return render_template('public/index.html',  form=form)
 
+@blueprint.route("/ladders/", methods=["GET", "POST"])
+def ladders():
+    return render_template('public/ladders.html')
+
+@blueprint.route("/pilots/", methods=["GET", "POST"])
+def pilots():
+    return render_template('public/pilots.html')
 
 @blueprint.route("/logout/")
 @login_required
@@ -99,49 +116,7 @@ def about():
 
 @blueprint.route('/get_all_comps', methods=['GET', 'POST'])
 def get_all_comps():
-    from db_tables import tblCompetition, tblTask
-
-    c = aliased(tblCompetition)
-
-    with Database() as db:
-        comps = (db.session.query(c.comPk, c.comName, c.comLocation,
-                                  c.comClass, c.comSanction, c.comType, c.comDateFrom,
-                                  c.comDateTo, func.count(tblTask.tasPk))
-                 .outerjoin(tblTask, c.comPk == tblTask.comPk)
-                 .group_by(c.comPk))
-
-    all_comps = []
-    now = datetime.datetime.now()
-    for c in comps:
-        comp = list(c)
-        if comp[5] == 'RACE' or comp[5] == 'Route':
-            compid = comp[0]
-            name = comp[1]
-            comp[1] = f'<a href="/competition/{compid}">{name}</a>'
-        # else:
-        # comp['comName'] = "<a href=\"comp_overall.html?comPk=$id\">" . $row['comName'] . '</a>';
-        if comp[3] == "PG" or "HG":
-            hgpg = comp[3]
-            comp[3] = f'<img src="/static/img/{hgpg}.png" width="100%" height="100%"</img>'
-        else:
-            comp[3] = ''
-        if comp[4] != 'none' and comp[4] != '':
-            comp[5] = comp[5] + ' - ' + comp[4]
-        starts = comp[6]
-        ends = comp[7]
-        if starts > now:
-            comp.append(f"Starts in {(starts - now).days} day(s)")
-        elif ends < now:
-            comp.append('Finished')
-        else:
-            comp.append('Running')
-
-        comp[6] = comp[6].strftime("%Y-%m-%d")
-        comp[7] = comp[7].strftime("%Y-%m-%d")
-        del comp[4]
-        del comp[0]
-        all_comps.append(comp)
-    return jsonify({'data': all_comps})
+    return frontendUtils.get_comps()
 
 
 @blueprint.route('/competition/<compid>')
@@ -443,3 +418,13 @@ def download_file(filetype, filename):
         airspace_path = Defines.AIRSPACEDIR
         fullname = path.join(airspace_path, filename)
     return send_file(fullname, as_attachment=True)
+
+
+@blueprint.route('/get_admin_comps', methods=['GET', 'POST'])
+def get_admin_comps():
+    return frontendUtils.get_admin_comps()
+
+
+@blueprint.route('/comp_admin', methods=['GET', 'POST'])
+def comp_admin():
+    return render_template('users/comp_admin.html')
