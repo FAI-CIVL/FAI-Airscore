@@ -20,6 +20,7 @@ import json
 
 NM_in_meters = 1852.00
 Ft_in_meters = 0.3048000
+hPa_in_feet = 27.3053
 colours = {'P': '#d42c31', 'D': '#d42c31', 'R': '#d42c31', 'GP': '#d42c31', 'C': '#d42c31', 'Z': '#d42c31',
            'CTR': '#d42c31', 'Q': '#d42c31', }
 
@@ -118,7 +119,9 @@ def circle_check(element, info):
                 'location': (element['center'][0], element['center'][1]),
                 'radius': element['radius'] * NM_in_meters,
                 'floor': info['floor'],
+                'floor_unit': info['floor_unit'],
                 'ceiling': info['ceiling'],
+                'ceiling_unit': info['ceiling_unit'],
                 'name': info['name']}
     else:
         return None
@@ -167,7 +170,9 @@ def polygon_check(record, info):
     return {'shape': 'polygon',
             'locations': locations,
             'floor': info['floor'],
+            'floor_unit': info['floor_unit'],
             'ceiling': info['ceiling'],
+            'ceiling_unit': info['ceiling_unit'],
             'name': info['name']}
 
 

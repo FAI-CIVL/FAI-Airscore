@@ -1,58 +1,89 @@
+import pyproj
+import geopy
+
 from dataclasses import dataclass
 from airspaceUtils import read_airspace_check_file
-import pyproj
 from pyproj import Proj, Transformer
+from shapely import ops
 from shapely.geometry.polygon import Polygon
 from shapely.geometry import Point
+from functools import partial
 from route import distance, Turnpoint
+from math import sqrt, pow, log
 
 
 @dataclass(frozen=True)
 class CheckParams:
-    notification_distance: int = 100
-    h_outer_limit: int = 70
-    h_border_penalty: float = 0.1
-    h_inner_limit: int = -30
-    h_max_penalty: float = 1.0
-    v_outer_limit: int = 70
-    v_border_penalty: float = 0.1
-    v_inner_limit: int = -30
-    v_max_penalty: float = 1.0
-    h_outer_penalty_per_m = 0 if not h_outer_limit else h_border_penalty / h_outer_limit
-    h_inner_penalty_per_m = (h_max_penalty if not h_inner_limit
-                             else (h_max_penalty - h_border_penalty) / abs(h_inner_limit))
-    v_outer_penalty_per_m = 0 if not v_outer_limit else v_border_penalty / v_outer_limit
-    v_inner_penalty_per_m = (v_max_penalty if not v_inner_limit
-                             else (v_max_penalty - v_border_penalty) / abs(v_inner_limit))
+    notification_distance: int  # meters, default 100
+    function: str  # linear, non-linear
+    h_outer_limit: int  # meters, default 70
+    h_boundary: int  # meters, default 0
+    h_boundary_penalty: float  # default 0.1
+    h_inner_limit: int  # meters, default -30
+    h_max_penalty: float  # default 1.0
+    v_outer_limit: int  # meters, default 70
+    v_boundary: int  # meters, default 0
+    v_boundary_penalty: float  # default 0.1
+    v_inner_limit: int  # meters, default -30
+    v_max_penalty: float  # default 1.0
+    h_outer_band: int
+    h_inner_band: int
+    h_total_band: int
+    v_outer_band: int
+    v_inner_band: int
+    v_total_band: int
+    h_outer_penalty_per_m: float
+    h_inner_penalty_per_m: float
+    v_outer_penalty_per_m: float
+    v_inner_penalty_per_m: float
 
     def penalty(self, distance, direction) -> float:
         """ calculate penalty based on params
             distance: FLOAT distance in meters
             direction: 'h' or 'v'"""
-        if direction == 'h':
-            outer_limit = self.h_outer_limit
-            border_penalty = self.h_border_penalty
-            inner_limit = self.h_inner_limit
-            max_penalty = self.h_max_penalty
-            outer_penalty_per_m = self.h_outer_penalty_per_m
-            inner_penalty_per_m = self.h_inner_penalty_per_m
-        else:
-            outer_limit = self.v_outer_limit
-            border_penalty = self.v_border_penalty
-            inner_limit = self.v_inner_limit
-            max_penalty = self.v_max_penalty
-            outer_penalty_per_m = self.v_outer_penalty_per_m
-            inner_penalty_per_m = self.v_inner_penalty_per_m
-        if distance >= outer_limit:
+        if not distance or ((direction == 'h' and distance >= self.h_outer_limit)
+                            or (direction == 'v' and distance >= self.v_outer_limit)):
             return 0
-        elif distance <= inner_limit:
-            return max_penalty
-        elif distance > 0:
-            return (outer_limit - distance) * outer_penalty_per_m
-        elif distance == 0:
-            return border_penalty
-        elif distance < 0:
-            return border_penalty + abs(distance * inner_penalty_per_m)
+        elif ((direction == 'h' and distance <= self.h_inner_limit)
+              or (direction == 'v' and distance <= self.v_inner_limit)):
+            return self.h_max_penalty if direction == 'h' else self.v_max_penalty
+
+        if self.function == 'linear':
+            '''case linear penalty'''
+            if direction == 'h':
+                outer_limit = self.h_outer_limit
+                boundary = self.h_boundary
+                border_penalty = self.h_boundary_penalty
+                outer_penalty_per_m = self.h_outer_penalty_per_m
+                inner_penalty_per_m = self.h_inner_penalty_per_m
+            else:
+                outer_limit = self.v_outer_limit
+                boundary = self.v_boundary
+                border_penalty = self.v_boundary_penalty
+                outer_penalty_per_m = self.v_outer_penalty_per_m
+                inner_penalty_per_m = self.v_inner_penalty_per_m
+            if distance > boundary:
+                return round((outer_limit - distance) * outer_penalty_per_m, 5)
+            elif distance == boundary:
+                return border_penalty
+            elif distance < boundary:
+                return round(border_penalty + abs(boundary - distance) * inner_penalty_per_m, 5)
+        else:
+            ''' case non-linear penalty
+                needs just outer limit, inner limit and max penalty (default 1.0)
+                uses (distance/band)**(ln10/ln2)
+                Function gives 0 at outer limit, 1 at inner limit, and 0.1 at half way
+                with increasing penalty per meter moving toward inner limit'''
+
+            if direction == 'h':
+                outer_limit = self.h_outer_limit
+                max_penalty = self.h_max_penalty
+                total_band = self.h_total_band
+            else:
+                outer_limit = self.v_outer_limit
+                max_penalty = self.v_max_penalty
+                total_band = self.v_total_band
+            return round(pow(((outer_limit - distance) / total_band), log(10, 2)), 5) * max_penalty
 
 
 class AirspaceCheck(object):
@@ -61,7 +92,6 @@ class AirspaceCheck(object):
         self.params = params  # AirspaceCheck object
         self.projection = self.get_projection()
         self.transformer = get_cartesian_transformer(self.projection)
-        self.get_airspace_details()
 
     @property
     def bounding_box(self):
@@ -80,21 +110,15 @@ class AirspaceCheck(object):
         if self.control_area:
             return self.control_area['spaces']
 
-    @property
-    def airspace_details(self):
-        if self.control_area:
-            if not any(space['object'] for space in self.spaces):
-                print('I should never be here')
-                self.get_airspace_details()
-            return self.control_area['spaces']
-
     @staticmethod
     def from_task(task):
         if task.airspace_check and task.openair_file:
             task_id = task.task_id
             control_area = read_airspace_check_file(task.openair_file)
             params = get_airspace_check_parameters(task_id)
-            return AirspaceCheck(control_area, params)
+            airspace = AirspaceCheck(control_area, params)
+            airspace.get_airspace_details(qnh=task.QNH)
+            return airspace
 
     @staticmethod
     def read(task_id):
@@ -116,14 +140,17 @@ class AirspaceCheck(object):
         '''Get UTM proj'''
         return get_utm_proj(clat, clon)
 
-    def get_airspace_details(self):
-        from route import Turnpoint
-        from geopy import Point
-        from geopy.distance import distance
-        from math import sqrt
-
+    def get_airspace_details(self, qnh=1013.25):
+        """Writes bbox and Polygon obj for each space"""
         if self.control_area:
-            for space in self.control_area['spaces']:
+            for space in self.spaces:
+                ''' check if we have Flight Levels to convert using task QNH'''
+                if space['floor_unit'] == 'FL':
+                    space['floor'] = fl_to_meters(space['floor'], qnh)
+                    space['floor_unit'] = 'm'
+                if space['ceiling_unit'] == 'FL':
+                    space['ceiling'] = fl_to_meters(space['floor'], qnh)
+                    space['ceiling_unit'] = 'm'
                 ''' create object and bbox'''
                 if space['shape'] == 'circle' or (space['shape'] == 'polygon' and len(space['locations']) == 1):
                     # TODO we get an error if airspace is an Arc. Transforming to circle with radius 1000m
@@ -136,29 +163,19 @@ class AirspaceCheck(object):
                         clon = space['location'][1]
                         radius = space['radius']
                     dist = radius + self.params.notification_distance * sqrt(2)
-                    pmin = pmax = Point(clat, clon)
+                    pmin = pmax = geopy.Point(clat, clon)
                     space['object'] = Turnpoint(lat=clat, lon=clon, radius=radius)
                 else:
-                    pmin = Point(min(pt[0] for pt in space['locations']), min(pt[1] for pt in space['locations']))
-                    pmax = Point(max(pt[0] for pt in space['locations']), max(pt[1] for pt in space['locations']))
+                    pmin = geopy.Point(min(pt[0] for pt in space['locations']), min(pt[1] for pt in space['locations']))
+                    pmax = geopy.Point(max(pt[0] for pt in space['locations']), max(pt[1] for pt in space['locations']))
                     dist = self.params.notification_distance * sqrt(2)
                     space['object'] = self.reproject(space)
-                pt1 = distance(meters=dist).destination(pmin, 225)
-                pt2 = distance(meters=dist).destination(pmax, 45)
+                pt1 = geopy.distance.distance(meters=dist).destination(pmin, 225)
+                pt2 = geopy.distance.distance(meters=dist).destination(pmax, 45)
                 space['bbox'] = [[pt1[0], pt1[1]], [pt2[0], pt2[1]]]
 
-    # def geo(self):
-    #     """WGS84 to Mercatore Plan Projection"""
-    #     '''define earth model'''
-    #     # wgs84 = Proj("EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth
-    #     wgs84 = Proj(proj='latlong', datum='WGS84')
-    #     my_proj = self.projection
-    #     return Transformer.from_proj(my_proj, wgs84)
-
     def reproject(self, space):
-        from functools import partial
-        from shapely import ops
-        '''get polygon from space'''
+        """get polygon from space"""
         polygon = Polygon([(pt[1], pt[0]) for pt in space['locations']])
         # from_proj = Proj("EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth
         from_proj = Proj(proj='latlong', datum='WGS84')
@@ -179,15 +196,12 @@ class AirspaceCheck(object):
         from airspaceUtils import in_bbox
         import time as tt
 
-        # airspace_plot = []
         notification_band = self.params.notification_distance
-        # h_penalty_band = self.params.h_outer_limit
         alt = fix.gnss_alt if altitude_mode == 'GPS' else fix.press_alt
-        fix_violation = False
         infringement = 0
 
         '''Check if fix is actually in Airspace bounding box'''
-        for space in self.airspace_details:
+        for space in self.spaces:
             '''check if in altitude range'''
             if space['floor'] - notification_band < alt < space['ceiling'] + notification_band:
                 # we are at same alt as the airspace
@@ -198,35 +212,98 @@ class AirspaceCheck(object):
                     if space['shape'] == 'circle' or isinstance(space['object'], Turnpoint):
                         if space['object'].in_radius(fix, 0, notification_band):
                             # fix is inside proximity band (at least)
-                            print(f" in circle --- ")
+                            # print(f" in circle --- ")
                             # start_time = tt.time()
                             dist_floor = space['floor'] - alt
                             dist_ceiling = alt - space['ceiling']
                             vert_distance = max(dist_floor, dist_ceiling)
                             horiz_distance = distance(fix, space['object']) - space['object'].radius
-                            infringement = [space['name'], vert_distance, horiz_distance, 'circle']
+                            infringement = [space['name'], vert_distance, horiz_distance]
                             # print(f" airspace circle --- {tt.time() - start_time} seconds ---")
                     elif space['shape'] == 'polygon':
                         # start_time = tt.time()
                         x, y = self.transformer.transform(fix.lon, fix.lat)
                         point = Point(x, y)
                         horiz_distance = space['object'].exterior.distance(point)
+                        if point.within(space['object']):
+                            '''fix is inside the area'''
+                            horiz_distance *= -1
                         if horiz_distance <= notification_band:
-                            print(f" in polygon --- ")
+                            # print(f" {space['name']}: in polygon --- ")
                             dist_floor = space['floor'] - alt
                             dist_ceiling = alt - space['ceiling']
                             vert_distance = max(dist_floor, dist_ceiling)
-                            if point.within(space['object']):
-                                '''fix is inside the area'''
-                                horiz_distance *= -1
-
                             infringement = [space['name'], vert_distance, horiz_distance]
-                            violation = True
-                            fix_violation = True
                         # print(f" polygon airspace check --- {tt.time() - start_time} seconds ---")
                     # TODO insert arc check here. we can use in radius and bearing to
+                    # '''check if we are in infringement zone
+                    #     we should have at least one negative measure between horiz and vert distance'''
+                    # # if min(vert_distance, horiz_distance) < 0:
+                    #     infringement = [space['name'], vert_distance, horiz_distance]
 
         return infringement
+
+    def get_infringements_result(self, infringements_list):
+        """
+        Airspace Warnings and Penalties Managing
+        Creates a list of worst infringement for each airspace in infringements_list
+        Calculates penalty
+        Calculates final penalty and comments
+        """
+        spaces = list(set([x[1][0] for x in infringements_list]))
+        penalty = 0
+        infringements_per_space = []
+        comments = []
+        '''check distance and penalty for each space in which we recorded an infringement'''
+        for space in spaces:
+            fixes = [p for p in infringements_list if p[1][0] == space and (p[1][1] < 0 or p[1][2] < 0)]
+            if fixes:
+                '''look for fixes inside airspace'''
+                fix_min_h = min([p for p in fixes if p[1][1] <= p[1][2]], key=lambda x: x[1][2], default=None)
+                fix_min_v = min([p for p in fixes if p[1][2] <= p[1][1]], key=lambda x: x[1][1], default=None)
+                pen_h = 0 if not fix_min_h else self.params.penalty(fix_min_h[1][2], 'h')
+                pen_v = 0 if not fix_min_v else self.params.penalty(fix_min_v[1][1], 'v')
+                print(f"Horiz: {fix_min_h} | {pen_h}")
+                print(f"Vert: {fix_min_v} | {pen_v}")
+                if fix_min_h and (pen_h > pen_v or not fix_min_v
+                                  or (pen_h == pen_v and fix_min_h[1][2] > fix_min_v[1][1])):
+                    '''horizontal infringement'''
+                    direction = 'horizontal'
+                    pen = pen_h
+                    fix = fix_min_h[0]
+                    dist = fix_min_h[1][2]
+                elif fix_min_v:
+                    '''horizontal infringement'''
+                    direction = 'vertical'
+                    pen = pen_v
+                    fix = fix_min_v[0]
+                    dist = fix_min_v[1][1]
+                else:
+                    '''false positive'''
+                    continue
+                if pen > 0:
+                    '''add fix to infringements'''
+                    infringements_per_space.append({'rawtime': fix.rawtime, 'space': space, 'distance': dist,
+                                                    'type': direction, 'penalty': pen})
+                else:
+                    ''' create warning comment'''
+                    comments.append(f"{space} Warning: {direction} separation less than {dist} meters")
+                if pen > penalty:
+                    penalty = pen
+                    el = infringements_per_space[-1]
+
+        '''final calculation'''
+        if penalty > 0:
+            '''we have a penalty'''
+            max_pen = self.params.h_max_penalty if el['type'] == 'horizontal' else self.params.v_max_penalty
+            if penalty == max_pen:
+                comments = [f"{el['space']}: airspace infringement. penalty {round(max_pen * 100)}%"]
+            else:
+                dist = round(el['distance'] - (self.params.h_inner_limit if el['type'] == 'horizontal'
+                                               else self.params.v_inner_limit))
+                comments = [f"{el['space']}: {dist}m from limit. penalty {round(el['penalty'] * 100)}%"]
+
+        return infringements_per_space, comments, penalty
 
 
 def get_airspace_check_parameters(task_id):
@@ -238,9 +315,26 @@ def get_airspace_check_parameters(task_id):
         try:
             q = db.session.query(A).get(task_id)
             if q.airspace_check:
-                return CheckParams(q.notification_distance, q.h_outer_limit, q.h_border_penalty,
-                                   q.h_inner_limit, q.h_max_penalty, q.v_outer_limit, q.v_border_penalty,
-                                   q.v_inner_limit, q.v_max_penalty)
+                '''calculate parameters'''
+                h_outer_band = q.h_outer_limit - q.h_boundary
+                h_inner_band = q.h_boundary - q.h_inner_limit
+                h_total_band = q.h_outer_limit - q.h_inner_limit
+                v_outer_band = q.v_outer_limit - q.v_boundary
+                v_inner_band = q.v_boundary - q.v_inner_limit
+                v_total_band = q.v_outer_limit - q.v_inner_limit
+                h_outer_penalty_per_m = 0 if not h_outer_band else q.h_boundary_penalty / h_outer_band
+                h_inner_penalty_per_m = (q.h_max_penalty if not h_inner_band
+                                         else (q.h_max_penalty - q.h_boundary_penalty) / h_inner_band)
+                v_outer_penalty_per_m = 0 if not v_outer_band else q.v_boundary_penalty / v_outer_band
+                v_inner_penalty_per_m = (q.v_max_penalty if not v_inner_band
+                                         else (q.v_max_penalty - q.v_boundary_penalty) / v_inner_band)
+
+                return CheckParams(q.notification_distance, q.function, q.h_outer_limit, q.h_boundary,
+                                   q.h_boundary_penalty, q.h_inner_limit, q.h_max_penalty, q.v_outer_limit,
+                                   q.v_boundary, q.v_boundary_penalty, q.v_inner_limit, q.v_max_penalty,
+                                   h_outer_band, h_inner_band, h_total_band, v_outer_band, v_inner_band, v_total_band,
+                                   h_outer_penalty_per_m, h_inner_penalty_per_m, v_outer_penalty_per_m,
+                                   v_inner_penalty_per_m)
             else:
                 return None
         except SQLAlchemyError:
@@ -255,3 +349,11 @@ def get_cartesian_transformer(projection):
     wgs84 = Proj(proj='latlong', datum='WGS84')
     my_proj = projection
     return Transformer.from_proj(wgs84, my_proj)
+
+
+def fl_to_meters(flight_level, qnh=1013.25):
+    from airspaceUtils import hPa_in_feet, Ft_in_meters
+    d = 1013.25 - qnh
+    feet = flight_level * 100 - hPa_in_feet * d
+    meters = feet * Ft_in_meters
+    return meters

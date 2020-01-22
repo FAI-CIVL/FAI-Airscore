@@ -21,14 +21,22 @@ Add support for FAI Sphere ???
 """
 
 from route import distance, polar, find_closest, cartesian2polar, polar2cartesian, calcBearing, opt_goal, opt_wp, \
-    opt_wp_exit, opt_wp_enter, Turnpoint
+    opt_wp_exit, opt_wp_enter, Turnpoint, get_shortest_path
+from result import Task_result, create_json_file
+from airspace import AirspaceCheck
+from compUtils import read_rankings
+from calcUtils import json, get_date, get_datetime, decimal_to_seconds, time_difference
+from flight_result import verify_all_tracks, adjust_flight_results
+from pilot import Pilot, update_all_results
+from os import path
+from Defines import RESULTDIR, MAPOBJDIR
 from myconn import Database
+from db_tables import tblTask
+from sqlalchemy import and_, or_
 from formula import Task_formula
-from calcUtils import json, get_datetime, decimal_to_seconds, time_difference
 from igc_lib import defaultdict
 from pathlib import Path
 import jsonpickle
-import Defines
 
 
 class Task(object):
@@ -109,8 +117,9 @@ class Task(object):
         self.legs = []  # non optimised legs
         self.stats = dict()  # STATIC scored task statistics, used when importing results from JSON / FSDB files
         self.pilots = []  # scored task results
-        self.airspace_check = False     # BOOL airspace check
+        self.airspace_check = False  # BOOL airspace check
         self.openair_file = None  # STR
+        self.QNH = 1013.25  # Pressure Reference for altitude if altitude_mode = QNH
         self.comment = None
         self.time_offset = 0  # seconds
         self.launch_valid = None
@@ -121,7 +130,6 @@ class Task(object):
         self.formula = Task_formula.read(self.id) if self.id else None
 
     def __setattr__(self, attr, value):
-        from calcUtils import get_date
         import datetime
         property_names = [p for p in dir(Task) if isinstance(getattr(Task, p), property)]
         if attr == 'date':
@@ -486,7 +494,6 @@ class Task(object):
     def create_path(self, path=None):
         """create filepath from # and date if not given
             and store it in database"""
-        from db_tables import tblTask as T
 
         if path:
             self.task_path = path
@@ -496,7 +503,7 @@ class Task(object):
             return
 
         with Database() as db:
-            q = db.session.query(T).get(self.id)
+            q = db.session.query(tblTask).get(self.id)
             q.tasPath = self.task_path
             db.session.commit()
 
@@ -514,7 +521,6 @@ class Task(object):
             - mode:     str - 'default'
                               'full'    recalculates all tracks
         """
-        from result import create_json_file
 
         ''' retrieve scoring formula library'''
         lib = self.formula.get_lib()
@@ -532,8 +538,11 @@ class Task(object):
             print(f"Storing calculated values to database...")
             self.update_task_distance()
             print(f"Task Opt. Route: {round(self.opt_dist / 1000, 4)} Km")
+
+            '''get airspace info if needed'''
+            airspace = None if not self.airspace_check else AirspaceCheck.from_task(self)
             print(f"Processing pilots tracks...")
-            self.check_all_tracks(lib)
+            self.check_all_tracks(lib, airspace)
 
         else:
             ''' get pilot list and results'''
@@ -555,20 +564,18 @@ class Task(object):
 
     def create_json_elements(self):
         """ returns Dict with elements to generate json file"""
-        from result import Task_result as R
-        from compUtils import read_rankings
 
         pil_list = sorted([p for p in self.pilots if p.result_type not in ['dnf', 'abs']],
                           key=lambda k: k.score, reverse=True)
         pil_list += [p for p in self.pilots if p.result_type == 'dnf']
         pil_list += [p for p in self.pilots if p.result_type == 'abs']
 
-        info = {x: getattr(self, x) for x in R.info_list if x in dir(self)}
-        formula = {x: getattr(self.formula, x) for x in R.formula_list if x in dir(self.formula)}
-        stats = {x: getattr(self, x) for x in R.stats_list if x in dir(self)}
+        info = {x: getattr(self, x) for x in Task_result.info_list if x in dir(self)}
+        formula = {x: getattr(self.formula, x) for x in Task_result.formula_list if x in dir(self.formula)}
+        stats = {x: getattr(self, x) for x in Task_result.stats_list if x in dir(self)}
         route = []
         for idx, tp in enumerate(self.turnpoints):
-            wpt = {x: getattr(tp, x) for x in R.route_list if x in dir(tp)}
+            wpt = {x: getattr(tp, x) for x in Task_result.route_list if x in dir(tp)}
             wpt['cumulative_dist'] = self.partial_distance[idx]
             route.append(wpt)
         results = []
@@ -635,10 +642,8 @@ class Task(object):
             return False
         return True
 
-    def check_all_tracks(self, lib=None):
+    def check_all_tracks(self, lib=None, airspace=None):
         """ checks all igc files against Task and creates results """
-        from flight_result import verify_all_tracks, adjust_flight_results
-        from pilot import update_all_results
 
         if not lib:
             '''retrieve scoring formula library'''
@@ -676,7 +681,7 @@ class Task(object):
 
                 # min_task_duration = 3600
                 # last_time = self.stopped_time - self.formula.score_back_time
-                verify_all_tracks(self, lib)
+                verify_all_tracks(self, lib, airspace)
 
                 if self.task_type == 'elapsed time' or self.SS_interval:
                     '''need to check track and get last_start_time'''
@@ -707,11 +712,11 @@ class Task(object):
                 if not self.is_valid():
                     return f'task duration is not enough, task with id {self.id} is not valid, scoring is not needed'
 
-                verify_all_tracks(self, lib)
+                verify_all_tracks(self, lib, airspace)
 
         else:
             '''get all results for the task'''
-            verify_all_tracks(self, lib)
+            verify_all_tracks(self, lib, airspace)
 
         '''store results to database'''
         print(f"updating database with new results...")
@@ -744,7 +749,7 @@ class Task(object):
         if lib:
             '''prepare results for scoring'''
             lib.process_results(self)
-        return pilots
+        # return pilots
 
     def update_task_distance(self):
         from db_tables import tblTask as T, tblTaskWaypoint as W
@@ -812,14 +817,14 @@ class Task(object):
 
         with Database(session) as db:
             try:
-                task = T(tasName=self.task_name, comPk=self.comp_id, tasDate=self.date, tasNum=self.task_num,
-                         tasTaskStart=task_start, tasFinishTime=deadline, tasLaunchClose=launch_close,
-                         tasStartTime=start_time,
-                         tasStartCloseTime=start_close, tasStoppedTime=stopped_time, tasDistance=self.distance,
-                         tasShortRouteDistance=self.opt_dist, tasStartSSDistance=self.opt_dist_to_SS,
-                         tasEndSSDistance=self.opt_dist_to_ESS, tasSSDistance=self.SS_distance,
-                         tasSSInterval=self.SS_interval,
-                         tasLaunchValid=self.launch_valid, tasComment=self.comment)
+                task = tblTask(tasName=self.task_name, comPk=self.comp_id, tasDate=self.date, tasNum=self.task_num,
+                               tasTaskStart=task_start, tasFinishTime=deadline, tasLaunchClose=launch_close,
+                               tasStartTime=start_time,
+                               tasStartCloseTime=start_close, tasStoppedTime=stopped_time, tasDistance=self.distance,
+                               tasShortRouteDistance=self.opt_dist, tasStartSSDistance=self.opt_dist_to_SS,
+                               tasEndSSDistance=self.opt_dist_to_ESS, tasSSDistance=self.SS_distance,
+                               tasSSInterval=self.SS_interval,
+                               tasLaunchValid=self.launch_valid, tasComment=self.comment)
                 db.session.add(task)
                 db.session.flush()
                 self.task_id = task.tasPk
@@ -993,14 +998,8 @@ class Task(object):
                 filename    str: (opt.) json filename
 
         """
-        from os import path as p
-        # from result         import get_task_json  # !!! this function does not exist in result.py
-        from flight_result import Flight_result
-        from pilot import Pilot
-        from Defines import RESULTDIR
-        from pprint import pprint as pp
 
-        if not filename or not p.isfile(filename):
+        if not filename or not path.isfile(filename):
             '''we get the active json file'''
             filename = get_task_json_filename(task_id)
 
@@ -1010,7 +1009,7 @@ class Task(object):
 
         print(f"task {task_id} json file: {filename}")
 
-        with open(p.join(RESULTDIR, filename), encoding='utf-8') as json_data:
+        with open(path.join(RESULTDIR, filename), encoding='utf-8') as json_data:
             # a bit more checking..
             try:
                 t = jsonpickle.decode(json_data.read())
@@ -1321,214 +1320,11 @@ class Task(object):
             self.distance += leg_dist
             # print ("leg dist.: {} - Dist.: {}".format(leg_dist, self.distance))
 
-    def calculate_optimised_task_length_old(self, method="fast_andoyer"):
-
-        it1 = []
-        it2 = []
-        wpts = self.turnpoints
-        self.opt_dist = 0  # reset in case of recalc.
-
-        closearr = []
-        num = len(wpts)
-
-        if num < 1:
-            self.partial_distance.append(self.opt_dist)
-            return 0
-
-        if num == 1:
-            first = cartesian2polar(polar2cartesian(wpts[0]))
-            closearr.append(first)
-            return closearr
-
-        # Work out shortest route!
-        # End points don't vary?
-        it1.append(wpts[0])
-        newcl = wpts[0]
-        for i in range(num - 2):
-            # print "From it1: $i: ", $wpts->[$i]->{'name'}, "\n";
-            if wpts[i + 1].lat == wpts[i + 2].lat and wpts[i + 1].lon == wpts[i + 2].lon:
-                newcl = find_closest(newcl, wpts[i + 1], None, method)
-            else:
-                newcl = find_closest(newcl, wpts[i + 1], wpts[i + 2], method)
-            it1.append(newcl)
-        # FIX: special case for end point ..
-        newcl = find_closest(newcl, wpts[num - 1], None, method)
-        it1.append(newcl)
-
-        num = len(it1)
-        it2.append(it1[0])
-        newcl = it1[0]
-        for i in range(num - 2):
-            # print "From it2: $i: ", $wpts->[$i]->{'name'}, "\n";
-            newcl = find_closest(newcl, it1[i + 1], it1[i + 2], method)
-            it2.append(newcl)
-
-        it2.append(it1[num - 1])
-
-        num = len(it2)
-        closearr.append(it2[0])
-        newcl = it2[0]
-        for i in range(num - 2):
-            # print "From it3: $i: ", $wpts->[$i]->{'name'}, "\n";
-            newcl = find_closest(newcl, it2[i + 1], it2[i + 2], method)
-            closearr.append(newcl)
-        closearr.append(it2[num - 1])
-
-        # calculate optimised route distance
-        self.optimised_legs = []
-        self.optimised_legs.append(0)
-        self.partial_distance = []
-        self.partial_distance.append(0)
-        self.opt_dist = 0
-        for opt_wpt in range(1, len(closearr)):
-            leg_dist = distance(closearr[opt_wpt - 1], closearr[opt_wpt], method)
-            self.optimised_legs.append(leg_dist)
-            self.opt_dist += leg_dist
-            self.partial_distance.append(self.opt_dist)
-
-        # work out which turnpoints are SSS and ESS
-        sss_wpt = 0
-        ess_wpt = 0
-        for wpt in range(len(self.turnpoints)):
-            if self.turnpoints[wpt].type == 'speed':
-                sss_wpt = wpt + 1
-            if self.turnpoints[wpt].type == 'endspeed':
-                ess_wpt = wpt + 1
-
-        # work out self.opt_dist_to_SS, self.opt_dist_to_ESS, self.SS_distance
-        self.opt_dist_to_SS = sum(self.optimised_legs[0:sss_wpt])
-        self.opt_dist_to_ESS = sum(self.optimised_legs[0:ess_wpt])
-        self.SS_distance = sum(self.optimised_legs[sss_wpt:ess_wpt])
-        self.optimised_turnpoints = closearr
-
-    def calculate_optimised_task_length_fast_andoyer(self, method="fast_andoyer"):
-        from geographiclib.geodesic import Geodesic
-        geod = Geodesic.WGS84
-        wpts = self.turnpoints
-        self.opt_dist = 0  # reset in case of recalc.
-
-        closearr = []
-        num = len(wpts)
-
-        if num < 1:
-            return 0
-
-        if num == 1:
-            first = cartesian2polar(polar2cartesian(wpts[0]))
-            closearr.append(first)
-            return closearr
-
-        # Work out shortest route!
-        # End points don't vary?
-        optimised = []
-        t = 0
-
-        while t < len(self.turnpoints) - 1:
-
-            exit_same = False
-            exit_different = False
-            enter_same = False
-            enter_different = False
-
-            if t == 0:
-                t1 = self.turnpoints[t]
-                optimised.append(t1)
-            else:
-                t1 = opt
-
-            if t + 2 > len(self.turnpoints) - 1:
-                optimised.append(opt_goal(t1, self.turnpoints[-1]))
-                break
-            # next wpt has the same centre but a bigger exit radius  (and therefore we are in it)
-            if t1.lat == self.turnpoints[t + 1].lat and t1.lon == self.turnpoints[t + 1].lon:
-                t += 1
-                exit_same = True
-            #  we are in the next one but it does not have the same centre
-            elif self.turnpoints[t + 1].in_radius(t1, 0, 0):
-                t += 1
-                exit_different = True
-                # case of having to exit and then next wpt also in the exit cylinder, reset t back 1
-                if self.turnpoints[t].in_radius(self.turnpoints[t + 1], 0, 0):
-                    t -= 1
-            # or it is the same as the following one (i.e entry large radius followed by smaller like ess and goal often are)
-            elif self.turnpoints[t + 2].lat == self.turnpoints[t + 1].lat and self.turnpoints[t + 2].lon == \
-                    self.turnpoints[t + 1].lon:
-                t += 1
-                enter_same = True
-            #  we are in the next one but it does not have the same centre
-            elif self.turnpoints[t + 2].in_radius(self.turnpoints[t + 1], 0, 0):
-                t += 1
-                enter_different = True
-
-            # print(f'{t} of{len(self.turnpoints)}')
-            t2 = self.turnpoints[t + 1]
-
-            if t + 2 > len(self.turnpoints) - 1:
-                t3 = None
-            else:
-                t3 = self.turnpoints[t + 2]
-
-            opt = opt_wp(t1, t2, t3, t2.radius)
-
-            if exit_same:
-                p = geod.Direct(t1.lat, t1.lon, calcBearing(t1.lat, t1.lon, opt.lat, opt.lon),
-                                self.turnpoints[t].radius)
-                opt_exit = Turnpoint(lat=p['lat2'], lon=p['lon2'], type='optimised', radius=0, shape='optimised',
-                                     how='optimised')
-                optimised.append(opt_exit)
-            if exit_different:
-                opt_exit = opt_wp_exit(opt, t1, self.turnpoints[t])
-                optimised.append(opt_exit)
-            if enter_same:
-                p = geod.Direct(t2.lat, t2.lon, calcBearing(t2.lat, t2.lon, t1.lat, t1.lon), self.turnpoints[t].radius)
-                opt_enter = Turnpoint(lat=p['lat2'], lon=p['lon2'], type='optimised', radius=0, shape='optimised',
-                                      how='optimised')
-                optimised.append(opt_enter)
-            if enter_different:
-                opt_enter = opt_wp_enter(opt, t2, self.turnpoints[t + 1])
-                optimised.append(opt_enter)
-
-            optimised.append(opt)
-
-            t += 1
-        total = 0
-        for o in range(len(optimised) - 1):
-            d = geod.Inverse(optimised[o].lat, optimised[o].lon, optimised[o + 1].lat, optimised[o + 1].lon)['s12']
-            total += d
-
-        # calculate optimised route distance
-        self.optimised_legs = []
-        self.optimised_legs.append(0)
-        self.partial_distance = []
-        self.partial_distance.append(0)
-        self.opt_dist = 0
-        for opt_wpt in range(1, len(optimised)):
-            leg_dist = distance(optimised[opt_wpt - 1], optimised[opt_wpt], method)
-            self.optimised_legs.append(leg_dist)
-            self.opt_dist += leg_dist
-            self.partial_distance.append(self.opt_dist)
-
-        # work out which turnpoints are SSS and ESS
-        sss_wpt = 0
-        ess_wpt = 0
-        for wpt in range(len(self.turnpoints)):
-            if self.turnpoints[wpt].type == 'speed':
-                sss_wpt = wpt + 1
-            if self.turnpoints[wpt].type == 'endspeed':
-                ess_wpt = wpt + 1
-
-        # work out self.opt_dist_to_SS, self.opt_dist_to_ESS, self.SS_distance
-        self.opt_dist_to_SS = sum(self.optimised_legs[0:sss_wpt])
-        self.opt_dist_to_ESS = sum(self.optimised_legs[0:ess_wpt])
-        self.SS_distance = sum(self.optimised_legs[sss_wpt:ess_wpt])
-        self.optimised_turnpoints = optimised
-
     def calculate_optimised_task_length(self, method="fast_andoyer"):
         """ new optimized route procedure that uses John Stevenson on FAI Basecamp.
             trasforms wgs84 to plan trasverse cartesian projection, calculates
             optimised fix on cylinders, and goes back to wgs84 for distance calculations.
         """
-        from route import get_shortest_path
 
         '''check we have at least 3 points'''
         if len(self.turnpoints) < 3: return
@@ -1602,12 +1398,10 @@ class Task(object):
 
 
 # function to parse task object to compilations
-
-
 def get_map_json(task_id):
     """gets task map json file if it exists, otherwise creates it. returns 5 separate objects for mapping"""
 
-    task_file = Path(Defines.MAPOBJDIR + 'tasks/' + str(task_id) + '.task')
+    task_file = Path(MAPOBJDIR + 'tasks/' + str(task_id) + '.task')
     if not task_file.is_file():
         write_map_json(task_id)
 
@@ -1629,10 +1423,10 @@ def write_map_json(task_id):
     from mapUtils import get_route_bbox
 
     geod = Geodesic.WGS84
-    task_file = Path(Defines.MAPOBJDIR + 'tasks/' + str(task_id) + '.task')
+    task_file = Path(MAPOBJDIR + 'tasks/' + str(task_id) + '.task')
 
-    if not os.path.isdir(Defines.MAPOBJDIR + 'tasks/'):
-        os.makedirs(Defines.MAPOBJDIR + 'tasks/')
+    if not os.path.isdir(MAPOBJDIR + 'tasks/'):
+        os.makedirs(MAPOBJDIR + 'tasks/')
     task_coords = []
     turnpoints = []
     short_route = []
@@ -1677,7 +1471,6 @@ def write_map_json(task_id):
 def get_task_json_filename(task_id):
     """returns active json result file"""
     from db_tables import tblResultFile as R
-    from sqlalchemy import and_, or_
 
     with Database() as db:
         filename = db.session.query(R.refJSON.label('file')).filter(and_(
@@ -1688,7 +1481,7 @@ def get_task_json_filename(task_id):
 
 def get_task_json(task_id):
     filename = get_task_json_filename(task_id)
-    with open(Defines.RESULTDIR + filename, 'r') as myfile:
+    with open(RESULTDIR + filename, 'r') as myfile:
         data = myfile.read()
     if not data:
         return "error"

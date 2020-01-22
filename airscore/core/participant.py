@@ -10,8 +10,13 @@ Use: from participant import Participant
 Stuart Mackintosh Antonio Golfari - 2019
 """
 
+from logger import Logger
+from openpyxl import load_workbook
+from civlrankings import create_participant_from_CIVLID, create_participant_from_name
+from calcUtils import get_date
 from myconn import Database
-import Defines
+from db_tables import tblParticipant
+from sqlalchemy.exc import SQLAlchemyError
 
 
 class Participant(object):
@@ -97,16 +102,13 @@ class Participant(object):
 
     def to_db(self, session=None):
         """stores Participant to AirScore database"""
-        from db_tables import tblParticipant as P
-        from sqlalchemy.exc import SQLAlchemyError
-        from myconn import Database
 
         with Database(session) as db:
             try:
                 if not self.par_id:
-                    pil = P()
+                    pil = tblParticipant()
                 else:
-                    pil = db.session.query(P).get(self.par_id)
+                    pil = db.session.query(tblParticipant).get(self.par_id)
                 pil.comPk = self.comp_id
                 pil.CIVLID = self.civl_id
                 pil.parID = self.ID
@@ -147,8 +149,6 @@ class Participant(object):
             Input:
                 - pil:          lxml.etree: FsParticipant section
                 - from_CIVL:    BOOL: look for pilot on CIVL database"""
-        from civlrankings import create_participant_from_CIVLID, create_participant_from_name
-        from calcUtils import get_date
 
         CIVLID = None if not pil.get('CIVLID') else int(pil.get('CIVLID'))
         name = pil.get('name')
@@ -193,10 +193,6 @@ def import_participants_from_excel(comp_id, filename, from_CIVL=False):
     columns:
     id,name,nat,female,birthday,glider,color,sponsor,fai_licence,CIVILID,club,team,class,Live(optional)
     """
-    from logger import Logger
-    from civlrankings import create_participant_from_CIVLID
-    from openpyxl import load_workbook
-    from datetime import datetime
 
     '''create logging and disable output'''
     Logger('ON', 'import_participants.txt')
@@ -252,8 +248,6 @@ def import_participants_from_excel(comp_id, filename, from_CIVL=False):
 def mass_import_participants(comp_id, pilots):
     """get participants to update from the list"""
     # TODO check if we already have participants for the comp before inserting, and manage update instead
-    from db_tables import tblParticipant as R
-    from sqlalchemy.exc import SQLAlchemyError
 
     insert_mappings = []
     update_mappings = []
@@ -289,9 +283,9 @@ def mass_import_participants(comp_id, pilots):
     with Database() as db:
         try:
             if len(insert_mappings) > 0:
-                db.session.bulk_insert_mappings(R, insert_mappings)
+                db.session.bulk_insert_mappings(tblParticipant, insert_mappings)
             if len(update_mappings) > 0:
-                db.session.bulk_update_mappings(R, update_mappings)
+                db.session.bulk_update_mappings(tblParticipant, update_mappings)
             db.session.commit()
         except SQLAlchemyError:
             print(f'update all participants on database gave an error')

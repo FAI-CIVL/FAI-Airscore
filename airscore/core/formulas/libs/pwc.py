@@ -13,6 +13,8 @@ TO DO:
 Add support for FAI Sphere ???
 """
 
+from math import sqrt
+
 
 def launch_validity(task):
     """
@@ -97,7 +99,6 @@ def stopped_validity(task):
 
     For this formula we need to use Km as there are numeric constants
     """
-    from math import sqrt
 
     if task.fastest and task.fastest > 0:
         return 1.000
@@ -180,7 +181,6 @@ def pilot_leadout(task, res):
         task: Task obj.
         res: Flight_result object
     """
-    from math import sqrt
 
     Astart = task.avail_dep_points
 
@@ -214,7 +214,6 @@ def pilot_speed(task, res):
         task: Task obj.
         res: Flight_result object
     """
-    from math import sqrt
 
     Aspeed = task.avail_time_points
 
@@ -295,6 +294,7 @@ def points_allocation(task):
     ''' Score each pilot now'''
     for res in results:
         penalty = res.penalty if res.penalty else 0
+        percentage_penalty = res.percentage_penalty if res.percentage_penalty else 0
 
         '''initialize'''
         res.distance_score = 0
@@ -322,5 +322,6 @@ def points_allocation(task):
         res.score = res.distance_score + res.time_score + res.arrival_score + res.departure_score
 
         ''' Apply Penalty'''
-        if penalty:
-            res.score = max(0, res.score - penalty)
+        if penalty or percentage_penalty:
+            res.penalty += res.score * percentage_penalty
+            res.score = max(0, res.score - res.penalty)

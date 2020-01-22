@@ -10,7 +10,6 @@ Antonio Golfari - 2019
 
 import requests
 import xml.etree.ElementTree as ET
-from participant import Participant
 
 url = "http://civlrankings.fai.org/FL.asmx"
 headers = {'content-type': 'text/xml'}
@@ -18,6 +17,7 @@ headers = {'content-type': 'text/xml'}
 
 def create_participant_from_CIVLID(civl_id):
     """get pilot info from CIVL database and create Participant obj"""
+    from participant import Participant
 
     body = f"""<?xml version='1.0' encoding='utf-8'?>
                 <soap12:Envelope xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xmlns:xsd='http://www.w3.org/2001/XMLSchema' xmlns:soap12='http://www.w3.org/2003/05/soap-envelope'>
@@ -49,6 +49,7 @@ def create_participant_from_name(name):
         It's almost sure that we get more than one result.
         This function gives back a Participant ONLY if we get a single result.
         get_pilots_from_name gives a list of Dict"""
+    from participant import Participant
 
     body = f"""<?xml version="1.0" encoding="utf-8"?>
                 <soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">

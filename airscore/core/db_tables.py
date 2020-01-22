@@ -387,6 +387,7 @@ class TaskObjectView(Base):
                       Column('opt_dist_to_SS', Float(asdecimal=False)),
                       Column('opt_dist_to_ESS', Float(asdecimal=False)),
                       Column('SS_distance', Float(asdecimal=False)),
+                      Column('QNH', Float(asdecimal=False)),
                       Column('comment', Text),
                       Column('locked', TINYINT(3), server_default=text("'0'")),
                       Column('launch_valid', BIGINT(11)),
@@ -573,6 +574,7 @@ class TaskView(Base):
                       Column('max_JTG', SMALLINT(6)),
                       Column('JTG_penalty_per_sec', Float),
                       Column('scoring_altitude', Enum('GPS', 'QNH'), server_default=text("'GPS'")),
+                      Column('QNH', Float(asdecimal=False)),
                       Column('comment', Text),
                       Column('locked', TINYINT(3), server_default=text("'0'")),
                       Column('launch_valid', BIGINT(11)),
@@ -609,13 +611,16 @@ class TaskAirspaceCheckView(Base):
                       Column('task_id', INTEGER(11), primary_key=True),
                       Column('airspace_check', TINYINT(1)),
                       Column('notification_distance', SMALLINT(4)),
+                      Column('function', Enum('linear', 'non-linear'), server_default=text("'linear'")),
                       Column('h_outer_limit', SMALLINT(4)),
                       Column('h_inner_limit', SMALLINT(4)),
-                      Column('h_border_penalty', Float(asdecimal=False)),
+                      Column('h_boundary', SMALLINT(4)),
+                      Column('h_boundary_penalty', Float(asdecimal=False)),
                       Column('h_max_penalty', Float(asdecimal=False)),
                       Column('v_outer_limit', SMALLINT(4)),
                       Column('v_inner_limit', SMALLINT(4)),
-                      Column('v_border_penalty', Float(asdecimal=False)),
+                      Column('v_boundary', SMALLINT(4)),
+                      Column('v_boundary_penalty', Float(asdecimal=False)),
                       Column('v_max_penalty', Float(asdecimal=False))
                       )
 
@@ -767,11 +772,14 @@ class tblCompAirspaceCheck(Base):
 
     comPk = Column(ForeignKey('tblCompetition.comPk', ondelete='CASCADE'), index=True)
     ctaNotificationDistance = Column(SMALLINT(4), nullable=False, server_default=text("'100'"))
+    ctaFunction = Column(Enum('linear', 'non-linear'), nullable=False, server_default=text("'linear'"))
     ctaHOuterLimit = Column(SMALLINT(4), nullable=False, server_default=text("'70'"))
+    ctaHBoundary = Column(SMALLINT(4), nullable=False, server_default=text("'0'"))
     ctaHBoundaryPenalty = Column(Float(asdecimal=False), nullable=False)
     ctaHInnerLimit = Column(SMALLINT(4), nullable=False, server_default=text("'30'"))
     ctaHMaxPenalty = Column(Float(asdecimal=False), nullable=False)
     ctaVOuterLimit = Column(SMALLINT(4), nullable=False, server_default=text("'70'"))
+    ctaVBoundary = Column(SMALLINT(4), nullable=False, server_default=text("'0'"))
     ctaVBoundaryPenalty = Column(Float(asdecimal=False), nullable=False)
     ctaVInnerLimit = Column(SMALLINT(4), nullable=False, server_default=text("'30'"))
     ctaVMaxPenalty = Column(Float(asdecimal=False), nullable=False)
@@ -1160,6 +1168,7 @@ class tblTask(Base):
     tasMarginOverride = Column(Float)
     tasAirspaceCheckOverride = Column(TINYINT(1))
     tasOpenAirOverride = Column(String(40))
+    tasQNH = Column(Float)
     tasComment = Column(Text)
     tasLocked = Column(TINYINT(3), nullable=False, server_default=text("'0'"))
     tasPath = Column(String(40))

@@ -9,9 +9,11 @@ Stuart Mackintosh - 2019
 
 import math
 import numpy as np
+
 from geopy.distance import geodesic, ELLIPSOIDS, vincenty
 from collections import namedtuple
 from geographiclib.geodesic import Geodesic
+from math import sqrt, hypot, fabs
 
 geod = Geodesic.WGS84
 
@@ -674,7 +676,6 @@ def get_shortest_path(task):
             task  - Obj: task object
     """
     import sys
-    from myconn import Database
     from pyproj import Proj
 
     last_dist = sys.maxsize  # inizialise to max integer
@@ -780,9 +781,7 @@ def optimize_path(points, count, ESS_index, line):
             ESS_index   - index of the ESS point, or -1 (not needed, we have type)
             line        - goal line endpoints, or empty array"""
 
-    from math import hypot
-
-    distance = 0
+    dist = 0
     hasLine = (len(line) == 2)
     for idx in range(1, count):
         '''Get the target cylinder c and its preceding and succeeding points'''
@@ -794,9 +793,9 @@ def optimize_path(points, count, ESS_index, line):
 
         '''Calculate the distance from A to the C fix point'''
         legDistance = hypot(a.x - c.fx, a.y - c.fy)
-        distance += legDistance
+        dist += legDistance
 
-    return distance
+    return dist
 
 
 def get_target_points(points, count, index, ESS_index):
@@ -853,8 +852,6 @@ def get_relative_distances(c, a, b):
     """Inputs:
         c, a, b - target cylinder, previous point, next point"""
 
-    from math import sqrt, hypot
-
     '''Calculate distances AC, BC and AB'''
     distAC = hypot(a.x - c.x, a.y - c.y)
     distBC = hypot(b.x - c.x, b.y - c.y)
@@ -886,8 +883,6 @@ def get_intersection_points(c, a, b, distAB):
             c, a, b - target cylinder, previous point, next point
             distAB  - AB line segment length"""
 
-    from math import sqrt
-
     '''Find e, which is on the AB line perpendicular to c center'''
     dx = (b.x - a.x) / distAB
     dy = (b.y - a.y) / distAB
@@ -909,8 +904,6 @@ def point_on_circle(c, a, b, distAC, distBC, distAB, distCtoAB):
     """Inputs:
         c, a, b - target cylinder, previous point, next point
         Distances between the points"""
-
-    from math import fabs
 
     if fabs(distAC - c.radius) < 0.0001:
         '''A on the circle (perhaps B as well): use A position'''
@@ -952,8 +945,6 @@ def set_intersection_1(c, a, b, distAB):
         c, a, b     - target cylinder, previous point, next point
         distAB      - AB line segment length"""
 
-    from math import fabs, hypot
-
     '''Get the intersection points (s1, s2)'''
     s1, s2, e = get_intersection_points(c, a, b, distAB)
     as1 = hypot(a.x - s1.x, a.y - s1.y)
@@ -972,8 +963,6 @@ def set_intersection_2(c, a, b, distAB):
          c, a, b    - target cylinder, previous point, next point
          distAB     - AB line segment length"""
 
-    from math import fabs, hypot
-
     '''Get the intersection points (s1, s2) and midpoint (e)'''
     s1, s2, e = get_intersection_points(c, a, b, distAB)
     as1 = hypot(a.x - s1.x, a.y - s1.y)
@@ -991,8 +980,6 @@ def set_intersection_2(c, a, b, distAB):
 def set_reflection(c, a, b):
     """Inputs:
         c, a, b - target circle, previous point, next point"""
-
-    from math import hypot
 
     ''' The lengths of the adjacent triangle sides (af, bf) are
         proportional to the lengths of the cut AB segments (ak, bk)'''

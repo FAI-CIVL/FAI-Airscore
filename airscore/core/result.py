@@ -19,6 +19,7 @@ Stuart Mackintosh - Antonio Golfari
 """
 
 from myconn import Database
+from db_tables import tblResultFile
 
 
 class Task_result:
@@ -152,6 +153,7 @@ class Task_result:
                     'arrival_score',
                     'score',
                     'penalty',
+                    'infringements',
                     'comment',
                     'lead_coeff',
                     'ESS_altitude',
@@ -266,10 +268,8 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None):
     import json
     from time import time
     from datetime import datetime
-    import Defines as d
-    from db_tables import tblResultFile as R
+    from Defines import RESULTDIR
     from calcUtils import CJsonEncoder
-    import jsonpickle
 
     timestamp = int(time())  # timestamp of generation
     dt = datetime.fromtimestamp(timestamp).strftime('%Y%m%d_%H%M%S')
@@ -282,16 +282,15 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None):
 
     '''creating json formatting'''
     content = json.dumps(result, cls=CJsonEncoder)
-    # content = jsonpickle.encode(result)
 
     '''creating file'''
-    with open(d.RESULTDIR + filename, 'w') as f:
+    with open(RESULTDIR + filename, 'w') as f:
         f.write(content)
-    os.chown(d.RESULTDIR + filename, 1000, 1000)
+    os.chown(RESULTDIR + filename, 1000, 1000)
 
     '''create database entry'''
     with Database() as db:
-        result = R(comPk=comp_id, tasPk=task_id, refTimestamp=timestamp, refJSON=filename, refStatus=status)
+        result = tblResultFile(comPk=comp_id, tasPk=task_id, refTimestamp=timestamp, refJSON=filename, refStatus=status)
         db.session.add(result)
         db.session.commit()
         ref_id = result.refPk
