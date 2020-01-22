@@ -1144,6 +1144,21 @@ def save_all_geojson_files(task, interval=5):
         data = create_geojson(pilot, task, interval)
         pilot.result.save_result_file(data, track_id)
 
+        # """check if directory already exists"""
+        # if not path.isdir(res_path):
+        #     makedirs(res_path)
+        # """creates a name for the track
+        # name_surname_date_time_index.igc
+        # if we use flight date then we need an index for multiple tracks"""
+        #
+        # filename = 'result_' + str(track_id) + '.track'
+        # fullname = path.join(res_path, filename)
+        # """copy file"""
+        # try:
+        #     with open(fullname, 'w') as f:
+        #         json.dump(data, f)
+        # except:
+        #     print('Error saving file:', fullname)
 
 def pilot_can_start(task, tp, fix):
     """ returns True if pilot, in the track fix, is in the condition to take the start gate"""

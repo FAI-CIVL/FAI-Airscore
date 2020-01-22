@@ -183,6 +183,66 @@ class AirspaceCheck(object):
         tfm = partial(pyproj.transform, from_proj, to_proj)
         return ops.transform(tfm, polygon)
 
+    def check_fix_old(self, fix, altitude_mode='GPS'):
+        """check a flight object for airspace violations
+        arguments:
+        fix - Flight fix object
+        altimeter - flight altitude to use in checking 'barometric' - barometric altitude,
+                                                      'gps' - GPS altitude
+                                                      'baro/gps' - barometric if present otherwise gps  (default)
+        vertical_tolerance: vertical distance in meters that a pilot can be inside airspace without penalty (default 0)
+        horizontal_tolerance: horizontal distance in meters that a pilot can be inside airspace without penalty (default 0)
+        """
+        from airspaceUtils import in_bbox
+        import time as tt
+
+        notification_band = self.params.notification_distance
+        alt = fix.gnss_alt if altitude_mode == 'GPS' else fix.press_alt
+        infringement = 0
+
+        '''Check if fix is actually in Airspace bounding box'''
+        for space in self.spaces:
+            '''check if in altitude range'''
+            if space['floor'] - notification_band < alt < space['ceiling'] + notification_band:
+                # we are at same alt as the airspace
+                '''check if fix is inside bbox'''
+                if in_bbox(space['bbox'], fix):
+                    '''Check if fix is inside proximity warning area'''
+                    # TODO this type check is needed due to Arcs not recognised
+                    if space['shape'] == 'circle' or isinstance(space['object'], Turnpoint):
+                        if space['object'].in_radius(fix, 0, notification_band):
+                            # fix is inside proximity band (at least)
+                            # print(f" in circle --- ")
+                            # start_time = tt.time()
+                            dist_floor = space['floor'] - alt
+                            dist_ceiling = alt - space['ceiling']
+                            vert_distance = max(dist_floor, dist_ceiling)
+                            horiz_distance = distance(fix, space['object']) - space['object'].radius
+                            infringement = [space['name'], vert_distance, horiz_distance]
+                            # print(f" airspace circle --- {tt.time() - start_time} seconds ---")
+                    elif space['shape'] == 'polygon':
+                        # start_time = tt.time()
+                        x, y = self.transformer.transform(fix.lon, fix.lat)
+                        point = Point(x, y)
+                        horiz_distance = space['object'].exterior.distance(point)
+                        if point.within(space['object']):
+                            '''fix is inside the area'''
+                            horiz_distance *= -1
+                        if horiz_distance <= notification_band:
+                            # print(f" {space['name']}: in polygon --- ")
+                            dist_floor = space['floor'] - alt
+                            dist_ceiling = alt - space['ceiling']
+                            vert_distance = max(dist_floor, dist_ceiling)
+                            infringement = [space['name'], vert_distance, horiz_distance]
+                        # print(f" polygon airspace check --- {tt.time() - start_time} seconds ---")
+                    # TODO insert arc check here. we can use in radius and bearing to
+                    # '''check if we are in infringement zone
+                    #     we should have at least one negative measure between horiz and vert distance'''
+                    # # if min(vert_distance, horiz_distance) < 0:
+                    #     infringement = [space['name'], vert_distance, horiz_distance]
+
+        return infringement
+
     def check_fix(self, fix, altitude_mode='GPS'):
         """check a flight object for airspace violations
         arguments:
@@ -268,6 +328,68 @@ class AirspaceCheck(object):
                     infringement, dist]
 
         return plot, penalty
+
+    def get_infringements_result_old(self, infringements_list):
+        """
+        Airspace Warnings and Penalties Managing
+        Creates a list of worst infringement for each airspace in infringements_list
+        Calculates penalty
+        Calculates final penalty and comments
+        """
+        spaces = list(set([x[1][0] for x in infringements_list]))
+        penalty = 0
+        infringements_per_space = []
+        comments = []
+        '''check distance and penalty for each space in which we recorded an infringement'''
+        for space in spaces:
+            fixes = [p for p in infringements_list if p[1][0] == space and (p[1][1] < 0 or p[1][2] < 0)]
+            if fixes:
+                '''look for fixes inside airspace'''
+                fix_min_h = min([p for p in fixes if p[1][1] <= p[1][2]], key=lambda x: x[1][2], default=None)
+                fix_min_v = min([p for p in fixes if p[1][2] <= p[1][1]], key=lambda x: x[1][1], default=None)
+                pen_h = 0 if not fix_min_h else self.params.penalty(fix_min_h[1][2], 'h')
+                pen_v = 0 if not fix_min_v else self.params.penalty(fix_min_v[1][1], 'v')
+                print(f"Horiz: {fix_min_h} | {pen_h}")
+                print(f"Vert: {fix_min_v} | {pen_v}")
+                if fix_min_h and (pen_h > pen_v or not fix_min_v
+                                  or (pen_h == pen_v and fix_min_h[1][2] > fix_min_v[1][1])):
+                    '''horizontal infringement'''
+                    direction = 'horizontal'
+                    pen = pen_h
+                    fix = fix_min_h[0]
+                    dist = fix_min_h[1][2]
+                elif fix_min_v:
+                    '''horizontal infringement'''
+                    direction = 'vertical'
+                    pen = pen_v
+                    fix = fix_min_v[0]
+                    dist = fix_min_v[1][1]
+                else:
+                    '''false positive'''
+                    continue
+                if pen > 0:
+                    '''add fix to infringements'''
+                    infringements_per_space.append({'rawtime': fix.rawtime, 'space': space, 'distance': dist,
+                                                    'type': direction, 'penalty': pen})
+                else:
+                    ''' create warning comment'''
+                    comments.append(f"{space} Warning: {direction} separation less than {dist} meters")
+                if pen > penalty:
+                    penalty = pen
+                    el = infringements_per_space[-1]
+
+        '''final calculation'''
+        if penalty > 0:
+            '''we have a penalty'''
+            max_pen = self.params.h_max_penalty if el['type'] == 'horizontal' else self.params.v_max_penalty
+            if penalty == max_pen:
+                comments = [f"{el['space']}: airspace infringement. penalty {round(max_pen * 100)}%"]
+            else:
+                dist = round(el['distance'] - (self.params.h_inner_limit if el['type'] == 'horizontal'
+                                               else self.params.v_inner_limit))
+                comments = [f"{el['space']}: {dist}m from limit. penalty {round(el['penalty'] * 100)}%"]
+
+        return infringements_per_space, comments, penalty
 
     def get_infringements_result(self, infringements_list):
         """
