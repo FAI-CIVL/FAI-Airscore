@@ -320,19 +320,13 @@ def save_all_geojson_files(task, interval=5):
 
     pilots = [pilot for pilot in task.pilots if pilot.track.flight and pilot.track.flight.valid]
     for pilot in pilots:
-        info = {}
         track = pilot.track
         result = pilot.result
         track_id = pilot.track.track_id
-        info['taskid'] = task.id
-        info['task_name'] = task.task_name
-        info['comp_name'] = task.comp_name
 
-        info['pilot_name'] = pilot.info.name
-        info['pilot_nat'] = pilot.info.nat
-        info['pilot_sex'] = pilot.info.sex
-        info['pilot_parid'] = pilot.par_id
-        info['Glider'] = pilot.info.glider
+        info = {'taskid': task.id, 'task_name': task.task_name, 'comp_name': task.comp_name,
+                'pilot_name': pilot.info.name, 'pilot_nat': pilot.info.nat, 'pilot_sex': pilot.info.sex,
+                'pilot_parid': pilot.par_id, 'Glider': pilot.info.glider}
 
         tracklog, thermals, takeoff_landing, bbox, waypoint_achieved = result_to_geojson(result, track, task)
         airspace_plot = result.airspace_plot

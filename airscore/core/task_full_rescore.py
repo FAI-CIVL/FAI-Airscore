@@ -29,7 +29,7 @@ import time
 
 def main(args):
     """create logging and disable output"""
-    # Logger('ON', 'task_full_rescore.txt')
+    Logger('ON', 'task_full_rescore.txt')
     start = time.time()
 
     print("starting..")
@@ -50,7 +50,7 @@ def main(args):
     print(f'Process Time (mins): {(end - start) / 60}')
 
     ''' now restore stdout function '''
-    # Logger('OFF')
+    Logger('OFF')
 
     ''' output ref_id to use in frontend:
         task_result.php?refPk=ref_id&tasPk=task_id&comPk=comp_id'''
