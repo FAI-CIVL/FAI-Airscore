@@ -26,7 +26,8 @@ from result import Task_result, create_json_file
 from airspace import AirspaceCheck
 from compUtils import read_rankings
 from calcUtils import json, get_date, get_datetime, decimal_to_seconds, time_difference
-from flight_result import verify_all_tracks, adjust_flight_results, save_all_geojson_files
+from mapUtils import save_all_geojson_files
+from flight_result import verify_all_tracks, adjust_flight_results
 from pilot import Pilot, update_all_results
 from os import path
 from Defines import RESULTDIR, MAPOBJDIR

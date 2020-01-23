@@ -634,18 +634,10 @@ class Flight_result(object):
                             keep points where waypoints were achieved.
         returns the Json string."""
 
-        from geojson import Point, Feature, FeatureCollection, MultiLineString
+        from mapUtils import result_to_geojson
         from db_tables import tblParticipant as p
 
-        info = {}
-        features = []
-        toff_land = []
-        thermals = []
-        point = namedtuple('fix', 'lat lon')
-
-        info['taskid'] = task.id
-        info['task_name'] = task.task_name
-        info['comp_name'] = task.comp_name
+        info = {'taskid': task.id, 'task_name': task.task_name, 'comp_name': task.comp_name}
 
         with Database() as db:
             pilot_details = (db.session.query(p.parName, p.parNat, p.parSex, p.parGlider)
@@ -657,96 +649,12 @@ class Flight_result(object):
         info['pilot_parid'] = track.par_id
         info['Glider'] = pilot_details['parGlider']
 
-        min_lat = track.flight.fixes[0].lat
-        min_lon = track.flight.fixes[0].lon
-        max_lat = track.flight.fixes[0].lat
-        max_lon = track.flight.fixes[0].lon
-        bbox = [[min_lat, min_lon], [max_lat, max_lon]]
+        tracklog, thermals, takeoff_landing, bbox, waypoint_achieved = result_to_geojson(self, track, task)
+        airspace_plot = self.airspace_plot
 
-        takeoff = Point((track.flight.takeoff_fix.lon, track.flight.takeoff_fix.lat))
-        toff_land.append(Feature(geometry=takeoff, properties={"TakeOff": "TakeOff"}))
-        landing = Point((track.flight.landing_fix.lon, track.flight.landing_fix.lat))
-        toff_land.append(Feature(geometry=landing, properties={"Landing": "Landing"}))
-
-        for thermal in track.flight.thermals:
-            thermals.append((thermal.enter_fix.lon, thermal.enter_fix.lat,
-                             f'{thermal.vertical_velocity():.1f}m/s gain:{thermal.alt_change():.0f}m'))
-
-        pre_sss = []
-        pre_goal = []
-        post_goal = []
-        waypoint_achieved = []
-
-        # if the pilot did not make goal, goal time will be None. set to after end of track to avoid issues.
-        if not self.goal_time:
-            goal_time = track.flight.fixes[-1].rawtime + 1
-        else:
-            goal_time = self.goal_time
-
-        # if the pilot did not make SSS then it will be 0, set to task start time.
-        if self.SSS_time == 0:
-            SSS_time = task.start_time
-        else:
-            SSS_time = self.SSS_time
-
-        waypoint = 0
-        lastfix = track.flight.fixes[0]
-        for fix in track.flight.fixes:
-            bbox = checkbbox(fix.lat, fix.lon, bbox)
-            keep = False
-            if fix.rawtime >= lastfix.rawtime + second_interval:
-                keep = True
-                lastfix = fix
-
-            if len(self.waypoints_achieved) > waypoint and fix.rawtime == self.waypoints_achieved[waypoint][1]:
-                time = ("%02d:%02d:%02d" % rawtime_float_to_hms(fix.rawtime + task.time_offset))
-                waypoint_achieved.append(
-                    [fix.lon, fix.lat, fix.gnss_alt, fix.press_alt, self.waypoints_achieved[waypoint][0], time,
-                     fix.rawtime,
-                     f'{self.waypoints_achieved[waypoint][0]} '
-                     f'gps alt: {fix.gnss_alt:.0f}m '
-                     f'baro alt: {fix.press_alt:.0f}m '
-                     f'time: {time}'])
-                keep = True
-                if waypoint < len(self.waypoints_achieved) - 1:
-                    waypoint += 1
-
-            if keep:
-                if fix.rawtime <= SSS_time:
-                    pre_sss.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
-                if SSS_time <= fix.rawtime <= goal_time:
-                    pre_goal.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
-                if fix.rawtime >= goal_time:
-                    post_goal.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
-
-        if len(waypoint_achieved) > 0:
-            for w in range(1, len(waypoint_achieved[
-                                  1:]) + 1):  # this could be expressed as for idx, wp in enumerate(waypoint_achieved[1:], 1)_
-                current = point(lon=waypoint_achieved[w][0], lat=waypoint_achieved[w][1])
-                previous = point(lon=waypoint_achieved[w - 1][0], lat=waypoint_achieved[w - 1][1])
-                straight_line_dist = distance(previous, current) / 1000
-                time_taken = (waypoint_achieved[w][6] - waypoint_achieved[w - 1][6]) / 3600
-                time_takenHMS = rawtime_float_to_hms(time_taken * 3600)
-                speed = straight_line_dist / time_taken
-                waypoint_achieved[w].append(round(straight_line_dist, 2))
-                waypoint_achieved[w].append("%02d:%02d:%02d" % time_takenHMS)
-                waypoint_achieved[w].append(round(speed, 2))
-
-            waypoint_achieved[0].append(0)
-            waypoint_achieved[0].append("0:00:00")
-            waypoint_achieved[0].append('-')
-
-        route_multilinestring = MultiLineString([pre_sss])
-        features.append(Feature(geometry=route_multilinestring, properties={"Track": "Pre_SSS"}))
-        route_multilinestring = MultiLineString([pre_goal])
-        features.append(Feature(geometry=route_multilinestring, properties={"Track": "Pre_Goal"}))
-        route_multilinestring = MultiLineString([post_goal])
-        features.append(Feature(geometry=route_multilinestring, properties={"Track": "Post_Goal"}))
-
-        feature_collection = FeatureCollection(features)
-
-        data = {'info': info, 'tracklog': feature_collection, 'thermals': thermals, 'takeoff_landing': toff_land,
-                'result': jsonpickle.dumps(self), 'bounds': bbox, 'waypoint_achieved': waypoint_achieved}
+        data = {'info': info, 'tracklog': tracklog, 'thermals': thermals, 'takeoff_landing': takeoff_landing,
+                'result': jsonpickle.dumps(self), 'bounds': bbox, 'waypoint_achieved': waypoint_achieved,
+                'airspace': airspace_plot}
 
         return data
 
@@ -771,142 +679,6 @@ class Flight_result(object):
             return fullname
         except:
             print('Error saving file:', fullname)
-
-
-def create_geojson(pilot, task, second_interval=5):
-    """Dumps the flight to geojson format used for mapping.
-    Contains tracklog split into pre SSS, pre Goal and post goal parts, thermals, takeoff/landing,
-    result object, waypoints achieved, and bounds
-
-    second_interval = resolution of tracklog. default one point every 5 seconds. regardless it will
-                        keep points where waypoints were achieved.
-    returns the Json string."""
-
-    from geojson import Point, Feature, FeatureCollection, MultiLineString
-
-    info = {}
-    features = []
-    toff_land = []
-    thermals = []
-    point = namedtuple('fix', 'lat lon')
-    track = pilot.track
-    result = pilot.result
-
-    info['taskid'] = task.id
-    info['task_name'] = task.task_name
-    info['comp_name'] = task.comp_name
-
-    info['pilot_name'] = pilot.info.name
-    info['pilot_nat'] = pilot.info.nat
-    info['pilot_sex'] = pilot.info.sex
-    info['pilot_parid'] = pilot.par_id
-    info['Glider'] = pilot.info.glider
-
-    min_lat = track.flight.fixes[0].lat
-    min_lon = track.flight.fixes[0].lon
-    max_lat = track.flight.fixes[0].lat
-    max_lon = track.flight.fixes[0].lon
-    bbox = [[min_lat, min_lon], [max_lat, max_lon]]
-
-    takeoff = Point((track.flight.takeoff_fix.lon, track.flight.takeoff_fix.lat))
-    toff_land.append(Feature(geometry=takeoff, properties={"TakeOff": "TakeOff"}))
-    landing = Point((track.flight.landing_fix.lon, track.flight.landing_fix.lat))
-    toff_land.append(Feature(geometry=landing, properties={"Landing": "Landing"}))
-
-    for thermal in track.flight.thermals:
-        thermals.append((thermal.enter_fix.lon, thermal.enter_fix.lat,
-                         f'{thermal.vertical_velocity():.1f}m/s gain:{thermal.alt_change():.0f}m'))
-
-    pre_sss = []
-    pre_goal = []
-    post_goal = []
-    waypoint_achieved = []
-
-    # if the pilot did not make goal, goal time will be None. set to after end of track to avoid issues.
-    if not result.goal_time:
-        goal_time = track.flight.fixes[-1].rawtime + 1
-    else:
-        goal_time = result.goal_time
-
-    # if the pilot did not make SSS then it will be 0, set to task start time.
-    if result.SSS_time == 0:
-        SSS_time = task.start_time
-    else:
-        SSS_time = result.SSS_time
-
-    waypoint = 0
-    lastfix = track.flight.fixes[0]
-    for fix in track.flight.fixes:
-        bbox = checkbbox(fix.lat, fix.lon, bbox)
-        keep = False
-        if fix.rawtime >= lastfix.rawtime + second_interval:
-            keep = True
-            lastfix = fix
-
-        if len(result.waypoints_achieved) > waypoint and fix.rawtime == result.waypoints_achieved[waypoint][1]:
-            time = ("%02d:%02d:%02d" % rawtime_float_to_hms(fix.rawtime + task.time_offset))
-            waypoint_achieved.append(
-                [fix.lon, fix.lat, fix.gnss_alt, fix.press_alt, result.waypoints_achieved[waypoint][0], time,
-                 fix.rawtime,
-                 f'{result.waypoints_achieved[waypoint][0]} '
-                 f'gps alt: {fix.gnss_alt:.0f}m '
-                 f'baro alt: {fix.press_alt:.0f}m '
-                 f'time: {time}'])
-            keep = True
-            if waypoint < len(result.waypoints_achieved) - 1:
-                waypoint += 1
-
-        if keep:
-            if fix.rawtime <= SSS_time:
-                pre_sss.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
-            if SSS_time <= fix.rawtime <= goal_time:
-                pre_goal.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
-            if fix.rawtime >= goal_time:
-                post_goal.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
-
-    if len(waypoint_achieved) > 0:
-        for w in range(1, len(waypoint_achieved[
-                              1:]) + 1):  # this could be expressed as for idx, wp in enumerate(waypoint_achieved[1:], 1)_
-            current = point(lon=waypoint_achieved[w][0], lat=waypoint_achieved[w][1])
-            previous = point(lon=waypoint_achieved[w - 1][0], lat=waypoint_achieved[w - 1][1])
-            straight_line_dist = distance(previous, current) / 1000
-            time_taken = (waypoint_achieved[w][6] - waypoint_achieved[w - 1][6]) / 3600
-            time_takenHMS = rawtime_float_to_hms(time_taken * 3600)
-            speed = straight_line_dist / time_taken
-            waypoint_achieved[w].append(round(straight_line_dist, 2))
-            waypoint_achieved[w].append("%02d:%02d:%02d" % time_takenHMS)
-            waypoint_achieved[w].append(round(speed, 2))
-
-        waypoint_achieved[0].append(0)
-        waypoint_achieved[0].append("0:00:00")
-        waypoint_achieved[0].append('-')
-
-    route_multilinestring = MultiLineString([pre_sss])
-    features.append(Feature(geometry=route_multilinestring, properties={"Track": "Pre_SSS"}))
-    route_multilinestring = MultiLineString([pre_goal])
-    features.append(Feature(geometry=route_multilinestring, properties={"Track": "Pre_Goal"}))
-    route_multilinestring = MultiLineString([post_goal])
-    features.append(Feature(geometry=route_multilinestring, properties={"Track": "Post_Goal"}))
-
-    feature_collection = FeatureCollection(features)
-
-    airspace_plot = result.airspace_plot
-
-    data = {'info': info, 'tracklog': feature_collection, 'thermals': thermals, 'takeoff_landing': toff_land,
-            'result': jsonpickle.dumps(result), 'bounds': bbox, 'waypoint_achieved': waypoint_achieved,
-            'airspace': airspace_plot}
-
-    return data
-
-
-def save_all_geojson_files(task, interval=5):
-    """saves geojson map files for all pilots with valid result in task"""
-
-    pilots = [pilot for pilot in task.pilots if pilot.track.flight and pilot.track.flight.valid]
-    for pilot in pilots:
-        track_id = pilot.track.track_id
-        data = create_geojson(pilot, task, interval)
-        pilot.result.save_result_file(data, track_id)
 
 
 def pilot_can_start(task, tp, fix):
