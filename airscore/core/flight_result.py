@@ -559,7 +559,7 @@ class Flight_result(object):
             result.infringements = infringements
             result.comment.extend(comments)
             result.percentage_penalty = penalty
-            # result.airspace_plot = airspace_plot
+            result.airspace_plot = airspace_plot
 
         return result
 
