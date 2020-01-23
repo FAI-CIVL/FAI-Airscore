@@ -649,7 +649,7 @@ class Flight_result(object):
         info['pilot_parid'] = track.par_id
         info['Glider'] = pilot_details['parGlider']
 
-        tracklog, thermals, takeoff_landing, bbox, waypoint_achieved = result_to_geojson(result, track, task)
+        tracklog, thermals, takeoff_landing, bbox, waypoint_achieved = result_to_geojson(self, track, task)
         airspace_plot = self.airspace_plot
 
         data = {'info': info, 'tracklog': tracklog, 'thermals': thermals, 'takeoff_landing': takeoff_landing,
