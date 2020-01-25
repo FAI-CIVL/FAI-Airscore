@@ -13,7 +13,7 @@ Stuart Mackintosh Antonio Golfari - 2019
 
 import json
 
-from compUtils import get_tasks_result_files, get_participants, read_rankings
+from compUtils import get_tasks_result_files, get_participants, read_rankings, calculate_comp_path
 from calcUtils import get_date
 from Defines import FILEDIR, RESULTDIR
 from participant import Participant
@@ -217,7 +217,7 @@ class Comp(object):
         if filepath:
             self.comp_path = filepath
         elif self.comp_code and self.date_from:
-            self.comp_path = path.join(str(self.date_from.year), str(self.comp_code).lower())
+            self.comp_path = calculate_comp_path(self.date_from, self.comp_code)
         else:
             return
 
@@ -253,17 +253,19 @@ class Comp(object):
                 row.comContact = self.contact
                 row.comTimeOffset = self.time_offset
                 row.comSanction = self.sanction
+                row.comOpenAirFile = self.openair_file
                 row.comType = self.comp_type
                 row.comEntryRestrict = 'registered' if self.restricted else 'open'
                 row.comLocked = self.locked
                 row.comStyleSheet = self.stylesheet
                 row.comExt = self.external
                 row.comExtUrl = self.website
-                row.comPath = self.comp_path
+                row.comPath = self.comp_path if not None else calculate_comp_path(self.date_from, self.comp_code)
                 if self.comp_id is None:
                     db.session.add(row)
                 db.session.flush()
                 self.comp_id = row.comPk
+                db.session.commit()
             except SQLAlchemyError:
                 print('cannot insert competition. DB insert error.')
                 db.session.rollback()
