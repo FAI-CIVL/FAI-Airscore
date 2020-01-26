@@ -17,7 +17,7 @@ from airscore.public.forms import LoginForm
 from airscore.user.forms import RegisterForm
 from airscore.user.models import User
 from airscore.utils import flash_errors
-import datetime
+from datetime import datetime
 from task import get_map_json, get_task_json
 from trackUtils import read_track_result_file
 from design_map import *
@@ -170,7 +170,7 @@ def competition(compid):
     if comp['comDateTo']:
         comp['comDateTo'] = comp['comDateTo'].strftime("%Y-%m-%d")
 
-    if comp_start > datetime.datetime.now():
+    if comp_start > datetime.now():
         return render_template('public/future_competition.html', comp=comp)
 
     if non_scored_tasks:
@@ -427,4 +427,23 @@ def get_admin_comps():
 
 @blueprint.route('/comp_admin', methods=['GET', 'POST'])
 def comp_admin():
-    return render_template('users/comp_admin.html')
+    return render_template('users/comp_admin.html', today=datetime.today().strftime('%d-%m-%Y'))
+
+
+@blueprint.route('/create_comp', methods=['PUT'])
+def create_comp():
+    from comp import Comp
+    data = request.json
+    date_from = datetime.strptime(data['datefrom'], '%Y-%m-%d')
+    date_to = datetime.strptime(data['dateto'], '%Y-%m-%d')
+    new_comp = Comp(comp_name=data['name'],
+                    comp_class=data['class'],
+                    comp_site=data['location'],
+                    comp_code=data['code'],
+                    date_from=date_to,
+                    date_to=date_from)
+    output = new_comp.to_db()
+    if type(output) == int:
+        return jsonify(dict(redirect='/comp_admin'))
+    else:
+        return render_template('500.html')

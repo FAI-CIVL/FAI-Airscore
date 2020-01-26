@@ -5,6 +5,7 @@
     <title>Competition Admin</title>
 
     <link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- JS -->
 <!--    <script src="microajax.minified.js"></script>-->
@@ -25,19 +26,41 @@
 		    <form id="createcomp" action="javascript:void(0);" method="post">
 		    <div class="form-group">
 		    <div class="form-row" id="route">
-			  	<label for="date-from" class="col-2 col-form-label">Name</label>
+			  	<label for="Name" class="col-2 col-form-label">Name</label>
 			    <div class="col-10">
-			 		<input class="form-control" type="text" value="" id="compname">
+			 		<input class="form-control required" type="text" value="" id="compname">
 			    </div>
 		    </div>
+            <div class="form-row" id="route">
+            <label for="code" class="col-2 col-form-label">Short name</label>
+            <div class="col-10">
+                <input class="form-control required" type="text" value="" id="compcode">
+            </div>
+            </div>
+                <div class="form-row" id="route">
+            <label for="class" class="col-2 col-form-label">Class</label>
+            <div class="col-10">
+                 <select class="form-control required" type="select" value="" id="compclass">
+                    <option value="HG">HG</option>
+                    <option value="PG">PG</option>
+                </select>
+            </div>
+            </div>
+            		    <div class="form-row" id="route">
+			  	<label for="location" class="col-2 col-form-label">Location</label>
+			    <div class="col-10">
+			 		<input class="form-control required" type="text" value="" id="compsite">
+			    </div>
+		    </div>
+
 			<div class="form-group row">
 			  <label for="date-from" class="col-2 1ol-form-label">From</label>
 			  <div class="col-10">
-			    <input class="form-control" type="date" value="2018-08-19" id="datefrom">
+			    <input class="form-control required" type="date" value= {{today}} id="datefrom">
 			  </div>
 			  <label for="date-to" class="col-2 col-form-label">To</label>
 			  <div class="col-10">
-			    <input class="form-control" type="date" value="2018-08-20" id="dateto">
+			    <input class="form-control required" type="date" value= {{today}} id="dateto">
 			  </div>
 			</div>
 			</div>

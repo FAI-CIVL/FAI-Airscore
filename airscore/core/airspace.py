@@ -190,8 +190,9 @@ class AirspaceCheck(object):
         altimeter - flight altitude to use in checking 'barometric' - barometric altitude,
                                                       'gps' - GPS altitude
                                                       'baro/gps' - barometric if present otherwise gps  (default)
-        vertical_tolerance: vertical distance in meters that a pilot can be inside airspace without penalty (default 0)
-        horizontal_tolerance: horizontal distance in meters that a pilot can be inside airspace without penalty (default 0)
+        :returns
+            plot - list, details of airspace infringed
+            penalty - the penalty for this infringement
         """
         from airspaceUtils import in_bbox
         import time as tt

@@ -41,7 +41,7 @@ class Comp(object):
 
     """
 
-    def __init__(self, comp_id=None, comp_name=None, comp_site=None, date_from=None, date_to=None,
+    def __init__(self, comp_id=None, comp_name=None, comp_site=None, date_from=None, comp_code=None, date_to=None,
                  comp_class=None, region=None, comp_type='RACE', restricted=True, locked=False, external=False):
 
         self.comp_id = comp_id  # comPk
@@ -62,7 +62,7 @@ class Comp(object):
         self.cat_id = None  # claPk
         self.sanction = None  # 'League', 'PWC', 'FAI 1', 'FAI 2', 'none'
         self.comp_type = comp_type  # 'RACE', 'Route', 'Team-RACE'
-        self.comp_code = None  # str 8 chars codename
+        self.comp_code = comp_code  # str 8 chars codename
         self.restricted = restricted  # bool
         self.openair_file = None  # STR
         self.time_offset = None  # int
@@ -227,11 +227,18 @@ class Comp(object):
             db.session.commit()
 
     def to_db(self):
-        """create a DB entry from Comp object
+        """create or update a DB entry from Comp object. If comp_id is provided it will update otherwise add a new row
+            mandatory info for a comp:
+                comp_name
+                comp_code (short name)
+                date_from
+                date_to
+                comp_class (PG or HG)
+                comp_site - location of the comp. String can be site name or general description
         """
 
-        '''check we have the minimum required infos'''
-        if not (self.comp_name and self.comp_code and self.date_from and self.comp_class):
+        '''check we have the minimum required info'''
+        if not (self.comp_name and self.comp_code and self.date_from and self.comp_class and self.comp_site):
             print('cannot insert an invalid competition. Need more info.')
             return None
 

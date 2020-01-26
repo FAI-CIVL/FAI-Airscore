@@ -1,9 +1,38 @@
+var csrftoken = $('meta[name=csrf-token]').attr('content');
+
+$.ajaxSetup({
+    beforeSend: function(xhr, settings) {
+        if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type)) {
+            xhr.setRequestHeader("X-CSRFToken", csrftoken)
+        }
+    }
+})
+
 function create_comp()
 {
     var options = { };
     options.name = $('#compname').val();
+    options.code = $('#compcode').val();
+    options.location = $('#compsite').val();
+    options.class =$('#compclass').val();
     options.dateto = $('#dateto').val();
     options.datefrom = $('#datefrom').val();
+    $.ajax({
+            url: '/create_comp',
+            contentType:"application/json",
+            dataType:"json",
+            data: JSON.stringify(options),
+            type: 'PUT',
+            success:  function(response) {
+            if (response.redirect){
+                window.location.href = response.redirect;
+                }
+            },
+
+            error: function(error) {
+                console.log(error);
+            }
+        });
     console.log(options);
 }
 $(document).ready(function() {
