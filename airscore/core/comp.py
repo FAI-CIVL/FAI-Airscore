@@ -51,7 +51,7 @@ class Comp(object):
         self.date_to = date_to  # in datetime.date (Y-m-d) format
         self.comp_class = comp_class  # 'PG', 'HG', 'mixed'
         self.region = region  # Region object
-        self.participants = []  # list of Partecipant obj
+        self.participants = []  # list of Participant obj
         self.tasks = []  # list of Task obj.
         # self.stats = dict()  # event statistics
         self.rankings = dict()  # rankings

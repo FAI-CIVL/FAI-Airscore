@@ -26,3 +26,10 @@ competition_season:
     start_day: 1
     end_month: 10
     end_day: 31
+
+sanctions:
+  -
+  - league
+  - PWC
+  - FAI 2
+  - FAI 1

@@ -1,0 +1,65 @@
+
+{% extends "base.html"%}
+{% block content %}
+<br>
+<br>
+<br>
+<form method="post">
+    {{compform.hidden_tag()}}
+    {{compform.category.label}} {{compform.category()}}
+    {{compform.formula.label}} {{compform.formula()}}
+
+
+</form>
+    <!-- Bootstrap core JavaScript -->
+<!--    <script type="text/javascript" src="js/enums.js"></script>-->
+<!--    <script src="{{ static_url_for('static', filename='js/pop_comp_details.js') }}"></script>-->
+
+
+<script charset="utf-8" type="text/javascript">
+
+$(function() {
+
+    // jQuery selection for the 2 select boxes
+    var dropdown = {
+        category: $('#select_category'),
+        formula: $('#select_formula')
+    };
+
+    // call to update on load
+    updateFormulas();
+
+    // function to call XHR and update formula dropdown
+    function updateFormulas() {
+        var send = {
+            category: dropdown.category.val()
+        };
+        dropdown.formula.attr('disabled', 'disabled');
+        dropdown.formula.empty();
+        $.getJSON("{{ url_for('public._get_formulas') }}", send, function(data) {
+            data.forEach(function(item) {
+                dropdown.formula.append(
+                    $('<option>', {
+                        value: item[0],
+                        text: item[1]
+                    })
+                );
+            });
+            dropdown.formula.removeAttr('disabled');
+        });
+    }
+
+    // event listener to state dropdown change
+    dropdown.category.on('change', function() {
+        updateFormulas();
+    });
+
+});
+
+</script>
+
+{% endblock %}
+
+
+
+

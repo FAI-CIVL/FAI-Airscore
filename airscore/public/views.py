@@ -13,7 +13,7 @@ from flask import (
 )
 from flask_login import login_required, login_user, logout_user
 from airscore.extensions import login_manager
-from airscore.public.forms import LoginForm
+from airscore.public.forms import LoginForm, CompForm
 from airscore.user.forms import RegisterForm
 from airscore.user.models import User
 from airscore.utils import flash_errors
@@ -22,7 +22,8 @@ from task import get_map_json, get_task_json
 from trackUtils import read_track_result_file
 from design_map import *
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, SelectField, SelectMultipleField
+from wtforms import StringField, SubmitField, SelectField, SelectMultipleField, DateField, IntegerField
+from wtforms.validators import DataRequired
 from calcUtils import sec_to_time
 import mapUtils
 from myconn import Database
@@ -32,7 +33,7 @@ import Defines
 from os import path
 import json
 import frontendUtils
-
+from formula import list_formulas
 blueprint = Blueprint("public", __name__, static_folder="../static")
 
 
@@ -447,3 +448,19 @@ def create_comp():
         return jsonify(dict(redirect='/comp_admin'))
     else:
         return render_template('500.html')
+
+
+@blueprint.route('/_get_formulas/')
+def _get_formulas():
+    category = request.args.get('category', '01', type=str)
+    formulas = list_formulas()
+    formula_choices = [(x,x.upper()) for x in formulas[category]]
+    return jsonify(formula_choices)
+
+
+@blueprint.route('/competition', methods=['GET', 'POST'])
+def comp_settings_admin():
+    compform = CompForm()
+    compform.formula.choices=[(1,'1') ,(2,'2')]
+    if request.method == 'GET':
+        return render_template('public/competition.html', compform=compform)
