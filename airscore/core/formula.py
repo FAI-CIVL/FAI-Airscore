@@ -25,11 +25,11 @@ def list_formulas():
     for file in listdir('formulas'):
         if file[-3:] == '.py':
             formula_lib = get_formula_lib_by_name(file[:-3])
-            all_formulas.append(file[:-3])
+            all_formulas.append(formula_lib.formula_name)
             if formula_lib.formula_class == 'PG' or formula_lib.formula_class == 'BOTH':
-                pg_formulas.append(file[:-3])
+                pg_formulas.append(formula_lib.formula_name)
             if formula_lib.formula_class == 'HG' or formula_lib.formula_class == 'BOTH':
-                hg_formulas.append(file[:-3])
+                hg_formulas.append(formula_lib.formula_name)
     all_formulas = sorted(all_formulas)
     hg_formulas = sorted(hg_formulas)
     pg_formulas = sorted(pg_formulas)
