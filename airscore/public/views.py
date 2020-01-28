@@ -36,6 +36,9 @@ import frontendUtils
 from formula import list_formulas
 blueprint = Blueprint("public", __name__, static_folder="../static")
 
+from comp import Comp
+from formula import Formula
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -433,7 +436,7 @@ def comp_admin():
 
 @blueprint.route('/create_comp', methods=['PUT'])
 def create_comp():
-    from comp import Comp
+
     data = request.json
     date_from = datetime.strptime(data['datefrom'], '%Y-%m-%d')
     date_to = datetime.strptime(data['dateto'], '%Y-%m-%d')
@@ -454,13 +457,44 @@ def create_comp():
 def _get_formulas():
     category = request.args.get('category', '01', type=str)
     formulas = list_formulas()
-    formula_choices = [(x,x.upper()) for x in formulas[category]]
+    formula_choices = [(x, x.upper()) for x in formulas[category]]
     return jsonify(formula_choices)
 
 
-@blueprint.route('/competition', methods=['GET', 'POST'])
-def comp_settings_admin():
+@blueprint.route('/comp_settings_admin/<compid>', methods=['GET', 'POST'])
+def comp_settings_admin(compid):
+    error = None
+    compid = int(compid)
+    comp = Comp.read(compid)
+    formula = Formula.read(compid)
     compform = CompForm()
-    compform.formula.choices=[(1,'1') ,(2,'2')]
-    if request.method == 'GET':
-        return render_template('public/competition.html', compform=compform)
+
+    compform.comp_name.data = comp.comp_name
+    compform.comp_code.data = comp.comp_code
+    compform.sanction.data = comp.sanction
+    compform.comp_type.data = comp.comp_type
+    compform.comp_class.data = comp.comp_class
+    compform.comp_site.data = comp.comp_site
+    compform.date_from.data = comp.date_from
+    compform.date_to.data = comp.date_to
+    compform.MD_name.data = comp.MD_name
+    compform.time_offset.data = comp.time_offset
+    compform.pilot_registration.data = comp.restricted
+    compform.formula.data = formula.formula_name
+    compform.overall_validity.data = formula.overall_validity
+    compform.validity_param.data = formula.validity_param*100
+    compform.nom_dist.data = formula.nominal_dist/1000
+    compform.nom_goal.data = formula.nominal_goal*100
+    compform.min_dist.data = formula.min_dist/1000
+    compform.nom_launch.data = formula.nominal_launch*100
+    compform.nom_time.data = formula.nominal_time/60
+    # compform.team_scoring = formula. TODO
+    compform.formula.choices = [(1, '1'), (2, '2')]
+    if compform.validate_on_submit():
+        return f'Start Date is : {compform.date_from} End Date is : {compform.date_to}'
+    else:
+        error = flash("Start date is greater than End date")
+
+    admins = ['joe smith', 'john wayne']  # TODO
+    # if request.method == 'GET':
+    return render_template('public/competition.html', compid=compid , compform=compform, admins=admins, error=error)
