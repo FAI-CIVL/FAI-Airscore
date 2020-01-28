@@ -41,6 +41,12 @@ class LoginForm(FlaskForm):
         return True
 
 
+class NewTaskForm(FlaskForm):
+    task_name = StringField("Task Name")
+    task_date = DateField('Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
+    task_region = SelectField('Region')
+
+
 class CompForm(FlaskForm):
     comp_name = StringField('Competition Name')
     comp_code = StringField('Short name', render_kw=dict(maxlength=8), description='An abbreviated name (max 8 chars) e.g. PGEuro20')

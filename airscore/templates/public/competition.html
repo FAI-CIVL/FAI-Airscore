@@ -152,9 +152,42 @@
           <h3 class="font-weight-bold">Tasks</h3>
   <div class="form-row">
     <div class="form-group col-md-6">
-        {{compform.formula.label}} {{compform.formula(**{'data-toggle': 'tooltip', 'title': compform.formula.description})}}
-        {{compform.overall_validity.label}} {{compform.overall_validity(**{'data-toggle': 'tooltip', 'title': compform.overall_validity.description})}}
-        {{compform.validity_param.label}} {{compform.validity_param(**{'data-toggle': 'tooltip', 'title': compform.validity_param.description})}}
+    <h6>Placeholder for list of Tasks</h6>
+                <table>
+        {% for task in compform.tasks %}
+            <TR>
+            <TD class="c3">{{task}}</TD>
+            </TR>
+        {% endfor %}
+            </table>
+        <p>
+            <button id="add_task" class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#collapse5" aria-expanded="false" aria-controls="collapseExample">
+                Add task
+            </button>
+        </p>
+<div class="collapse" id="collapse5">
+  <div class="card card-body">
+      <div class="container">
+
+  <div class="form-row">
+    <div class="form-group col-md-6">
+          {{taskform.task_name.label}} {{taskform.task_name()}}
+          {{taskform.task_date.label}} {{taskform.task_date()}}
+
+            <button id="add_task" class="btn btn-success" type="button" >
+                Add
+            </button>
+    </div>
+    </div>
+    </div>
+    </div>
+
+        </div>
+
+
+
+
+
     </div>
     </div>
         </div>

@@ -13,7 +13,7 @@ from flask import (
 )
 from flask_login import login_required, login_user, logout_user
 from airscore.extensions import login_manager
-from airscore.public.forms import LoginForm, CompForm
+from airscore.public.forms import LoginForm, CompForm, NewTaskForm
 from airscore.user.forms import RegisterForm
 from airscore.user.models import User
 from airscore.utils import flash_errors
@@ -468,6 +468,7 @@ def comp_settings_admin(compid):
     comp = Comp.read(compid)
     formula = Formula.read(compid)
     compform = CompForm()
+    newtaskform = NewTaskForm()
 
     compform.comp_name.data = comp.comp_name
     compform.comp_code.data = comp.comp_code
@@ -496,5 +497,9 @@ def comp_settings_admin(compid):
         error = flash("Start date is greater than End date")
 
     admins = ['joe smith', 'john wayne']  # TODO
+    tasks = comp.tasks
+
+
+
     # if request.method == 'GET':
-    return render_template('public/competition.html', compid=compid , compform=compform, admins=admins, error=error)
+    return render_template('public/competition.html', compid=compid , compform=compform, taskform=newtaskform, admins=admins, tasks=tasks, error=error)
