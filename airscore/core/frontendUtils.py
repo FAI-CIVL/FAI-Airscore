@@ -67,3 +67,17 @@ def get_admin_comps():
         comp[4] = comp[4].strftime("%Y-%m-%d")
         all_comps.append(comp)
     return jsonify({'data': all_comps})
+
+def get_task_list(comp):
+    from sys import stdout
+    tasks = comp.get_tasks_details()
+    print(tasks)
+    stdout.flush()
+    for task in tasks:
+        taskid = task['task_id']
+        if task['task_name'] is None:
+            task['task_name'] = f'Task {taskid}'
+        taskname = task['task_name']
+        task['link'] = f'<a href="/task_admin/{taskid}">{taskname}</a>'
+        task['opt_dist'] = f"{round(task['opt_dist']/1000,2)} km"
+    return tasks
