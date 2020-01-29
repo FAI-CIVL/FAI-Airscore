@@ -311,6 +311,8 @@ class Comp(object):
             try:
                 results = db.session.query(T.task_id, T.task_num, T.task_name, T.date, T.opt_dist,
                                            T.comment).filter(T.comp_id == self.comp_id).all()
+                if results:
+                    results = [row._asdict() for row in results]
                 return results
             except SQLAlchemyError:
                 print(f"Error trying to retrieve Tasks details for Comp ID {self.comp_id}")
