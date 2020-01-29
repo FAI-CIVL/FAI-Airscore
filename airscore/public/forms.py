@@ -44,7 +44,8 @@ class LoginForm(FlaskForm):
 class NewTaskForm(FlaskForm):
     task_name = StringField("Task Name", description='optional. If you want to give the task a name. '
                                                      'If left blank it will default to "Task #"')
-    task_number = IntegerField("Task Number", description='task number, by default one more than the last task')
+    task_number = IntegerField("Task Number", validators=[NumberRange(min=0, max=50)],
+                               description='task number, by default one more than the last task')
     task_comment = StringField('Comment', description='Sometimes you may wish to make a comment that will show up'
                                                       ' in the competition overview page. e.g. "task stopped at 14:34"')
     task_date = DateField('Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)

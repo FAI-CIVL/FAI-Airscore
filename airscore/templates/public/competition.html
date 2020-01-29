@@ -152,11 +152,13 @@
           <h3 class="font-weight-bold">Tasks</h3>
   <div class="form-row">
     <div class="form-group col-md-6">
-    <h6>Placeholder for list of Tasks</h6>
                 <table>
-        {% for task in compform.tasks %}
+        {% for task in tasks %}
             <TR>
-            <TD class="c3">{{task}}</TD>
+            <TD class="c3">{{task['link']|safe}}</TD>
+                <td>{{task['date']}}</td>
+                <td>{{task['opt_dist']}}</td>
+                <td>{{task['comment']}}</td>
             </TR>
         {% endfor %}
             </table>
@@ -203,8 +205,6 @@
 
 
 
-
-
     </div>
     </div>
         </div>
@@ -218,15 +218,6 @@
             {{compform.submit(class="btn-success")}}
       </center>
     </div>
-
-
-
-
-
-
-
-
-
 
 
 </form>

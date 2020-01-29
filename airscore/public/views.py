@@ -497,9 +497,13 @@ def comp_settings_admin(compid):
         error = flash("Start date is greater than End date")
 
     admins = ['joe smith', 'john wayne']  # TODO
-    tasks = comp.tasks
+    tasks = frontendUtils.get_task_list(comp)
 
 
 
     # if request.method == 'GET':
-    return render_template('public/competition.html', compid=compid , compform=compform, taskform=newtaskform, admins=admins, tasks=tasks, error=error)
+    return render_template('public/competition.html', compid=compid , compform=compform, tasks=tasks, taskform=newtaskform, admins=admins, error=error)
+
+@blueprint.route('/task_admin/<taskid>', methods=['GET', 'POST'])
+def task_admin(taskid):
+    return render_template('public/task_admin.html', taskid=taskid)
