@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Public forms."""
 from flask_wtf import FlaskForm
-from wtforms import PasswordField, StringField, SelectField, IntegerField, SubmitField, FloatField, RadioField, BooleanField
+from wtforms import PasswordField, StringField, SelectField, IntegerField, SubmitField, DecimalField, RadioField, BooleanField
 from wtforms.fields.html5 import DateField
 from wtforms.validators import DataRequired, NumberRange, Length
 import Defines
@@ -42,9 +42,13 @@ class LoginForm(FlaskForm):
 
 
 class NewTaskForm(FlaskForm):
-    task_name = StringField("Task Name")
+    task_name = StringField("Task Name", description='optional. If you want to give the task a name. '
+                                                     'If left blank it will default to "Task #"')
+    task_number = IntegerField("Task Number", description='task number, by default one more than the last task')
+    task_comment = StringField('Comment', description='Sometimes you may wish to make a comment that will show up'
+                                                      ' in the competition overview page. e.g. "task stopped at 14:34"')
     task_date = DateField('Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
-    task_region = SelectField('Region')
+    # task_region = SelectField('Region')
 
 
 class CompForm(FlaskForm):
@@ -58,7 +62,7 @@ class CompForm(FlaskForm):
     date_from = DateField('Start Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
     date_to = DateField('End Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
     MD_name = StringField('Race Director')
-    time_offset = FloatField('GMT offset', validators=[DataRequired()], render_kw=dict(maxlength=5),
+    time_offset = DecimalField('GMT offset', validators=[DataRequired()], places=2, render_kw=dict(maxlength=5),
                              description='The default time offset for the comp. Individual tasks will have this '
                                          'as a default but can be overridden if your comp spans multiple time zones'
                                          ' or over change in daylight savings')
@@ -74,7 +78,7 @@ class CompForm(FlaskForm):
     nom_launch = IntegerField('Nominal Launch (%):', validators=[NumberRange(min=0, max=100)])
     nom_time = IntegerField('Nominal Time (min):')
     team_scoring = SelectField('Team Scoring:', choices=[('aggregate', 'aggregate'), ()])
-    locked = BooleanField('Competition Locked', description="i'm not 100 percnet what this does") #TODO
+    locked = BooleanField('Scoring Locked', description="If locked, a rescore will not change displayed results") #TODO
     submit = SubmitField('Save')
 
     def validate_on_submit(self):

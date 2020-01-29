@@ -44,7 +44,7 @@
     <div class="form-group" col-md-3">
       {{compform.comp_type.label}} {{compform.comp_type()}}
       {{compform.comp_class.label}} {{compform.comp_class()}}
-    {{compform.time_offset.label}} {{compform.time_offset(**{'data-toggle': 'tooltip', 'title': compform.time_offset.description})}}
+    {{compform.time_offset.label}} {{compform.time_offset(size=3,**{'data-toggle': 'tooltip', 'title': compform.time_offset.description})}}
     {{compform.pilot_registration.label}} {{compform.pilot_registration(**{'data-toggle': 'tooltip', 'title': compform.pilot_registration.description})}}
     </div>
   </div>
@@ -75,26 +75,26 @@
     <div class="form-group col-md-6">
         {{compform.formula.label}} {{compform.formula(**{'data-toggle': 'tooltip', 'title': compform.formula.description})}}
         {{compform.overall_validity.label}} {{compform.overall_validity(**{'data-toggle': 'tooltip', 'title': compform.overall_validity.description})}}
-        {{compform.validity_param.label}} {{compform.validity_param(**{'data-toggle': 'tooltip', 'title': compform.validity_param.description})}}
+        {{compform.validity_param.label}} {{compform.validity_param(size=3,**{'data-toggle': 'tooltip', 'title': compform.validity_param.description})}}
     </div>
     </div>
 
     <div  class="form-row">
        <div class="form-group col-md-2">
-       {{compform.nom_dist.label}} {{compform.nom_dist(**{'data-toggle': 'tooltip', 'title': compform.nom_dist.description})}}
+       {{compform.nom_dist.label}} {{compform.nom_dist(size=3, **{'data-toggle': 'tooltip', 'title': compform.nom_dist.description})}}
     </div>
         <div class="form-group col-md-2">
-       {{compform.min_dist.label}} {{compform.min_dist(**{'data-toggle': 'tooltip', 'title': compform.min_dist.description})}}
+       {{compform.min_dist.label}} {{compform.min_dist(size=3,**{'data-toggle': 'tooltip', 'title': compform.min_dist.description})}}
     </div>
 
     <div  class="form-group col-md-2">
-      {{compform.nom_goal.label}} {{compform.nom_goal(**{'data-toggle': 'tooltip', 'title': compform.nom_goal.description})}}
+      {{compform.nom_goal.label}} {{compform.nom_goal(size=3,**{'data-toggle': 'tooltip', 'title': compform.nom_goal.description})}}
            </div>
          <div  class="form-group col-md-2">
-         {{compform.nom_launch.label}} {{compform.nom_launch(**{'data-toggle': 'tooltip', 'title': compform.nom_launch.description})}}
+         {{compform.nom_launch.label}} {{compform.nom_launch(size=3,**{'data-toggle': 'tooltip', 'title': compform.nom_launch.description})}}
     </div>
                  <div  class="form-group col-md-2">
-         {{compform.nom_time.label}} {{compform.nom_time(**{'data-toggle': 'tooltip', 'title': compform.nom_time.description})}}
+         {{compform.nom_time.label}} {{compform.nom_time(size=3,**{'data-toggle': 'tooltip', 'title': compform.nom_time.description})}}
     </div>
 
 
@@ -170,15 +170,32 @@
       <div class="container">
 
   <div class="form-row">
-    <div class="form-group col-md-6">
-          {{taskform.task_name.label}} {{taskform.task_name()}}
-          {{taskform.task_date.label}} {{taskform.task_date()}}
+    <div class="form-group width4">
+        {{taskform.task_number.label}}{{taskform.task_number(size=2, **{'data-toggle': 'tooltip', 'title': taskform.task_number.description})}}
+        {{taskform.task_date.label}} {{taskform.task_date()}}
+    </div>
 
-            <button id="add_task" class="btn btn-success" type="button" >
+    </div>
+          <div class="form-row">
+                 <div class="form-group col-md-6">
+              {{taskform.task_name.label}} {{taskform.task_name(**{'data-toggle': 'tooltip', 'title': taskform.task_name.description})}}
+                 </div>
+              <div class="form-group col-md-6">
+        {{taskform.task_comment.label}} {{taskform.task_comment(**{'data-toggle': 'tooltip', 'title': taskform.task_comment.description})}}
+
+                 </div>
+
+
+          </div>
+
+                    <div class="form-row">
+
+            <button id="save_task" class="btn btn-success" type="button" >
                 Add
             </button>
-    </div>
-    </div>
+
+
+          </div>
     </div>
     </div>
 
