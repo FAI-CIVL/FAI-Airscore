@@ -13,16 +13,17 @@ from flask import (
 )
 from flask_login import login_required, login_user, logout_user
 from airscore.extensions import login_manager
-from airscore.public.forms import LoginForm
+from airscore.public.forms import LoginForm, CompForm, NewTaskForm
 from airscore.user.forms import RegisterForm
 from airscore.user.models import User
 from airscore.utils import flash_errors
-import datetime
+from datetime import datetime
 from task import get_map_json, get_task_json
 from trackUtils import read_track_result_file
 from design_map import *
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, SelectField, SelectMultipleField
+from wtforms import StringField, SubmitField, SelectField, SelectMultipleField, DateField, IntegerField
+from wtforms.validators import DataRequired
 from calcUtils import sec_to_time
 import mapUtils
 from myconn import Database
@@ -31,8 +32,12 @@ from sqlalchemy.orm import aliased
 import Defines
 from os import path
 import json
-
+import frontendUtils
+from formula import list_formulas
 blueprint = Blueprint("public", __name__, static_folder="../static")
+
+from comp import Comp
+from formula import Formula
 
 
 @login_manager.user_loader
@@ -60,8 +65,24 @@ def home_old():
 
 @blueprint.route("/", methods=["GET", "POST"])
 def home():
-    return render_template('public/index.html')
+    form = LoginForm(request.form)
+    if request.method == "POST":
+        if form.validate_on_submit():
+            login_user(form.user)
+            flash("You are logged in.", "success")
+            redirect_url = request.args.get("next") or url_for("user.members")
+            return redirect(redirect_url)
+        else:
+            flash_errors(form)
+    return render_template('public/index.html',  form=form)
 
+@blueprint.route("/ladders/", methods=["GET", "POST"])
+def ladders():
+    return render_template('public/ladders.html')
+
+@blueprint.route("/pilots/", methods=["GET", "POST"])
+def pilots():
+    return render_template('public/pilots.html')
 
 @blueprint.route("/logout/")
 @login_required
@@ -99,49 +120,7 @@ def about():
 
 @blueprint.route('/get_all_comps', methods=['GET', 'POST'])
 def get_all_comps():
-    from db_tables import tblCompetition, tblTask
-
-    c = aliased(tblCompetition)
-
-    with Database() as db:
-        comps = (db.session.query(c.comPk, c.comName, c.comLocation,
-                                  c.comClass, c.comSanction, c.comType, c.comDateFrom,
-                                  c.comDateTo, func.count(tblTask.tasPk))
-                 .outerjoin(tblTask, c.comPk == tblTask.comPk)
-                 .group_by(c.comPk))
-
-    all_comps = []
-    now = datetime.datetime.now()
-    for c in comps:
-        comp = list(c)
-        if comp[5] == 'RACE' or comp[5] == 'Route':
-            compid = comp[0]
-            name = comp[1]
-            comp[1] = f'<a href="/competition/{compid}">{name}</a>'
-        # else:
-        # comp['comName'] = "<a href=\"comp_overall.html?comPk=$id\">" . $row['comName'] . '</a>';
-        if comp[3] == "PG" or "HG":
-            hgpg = comp[3]
-            comp[3] = f'<img src="/static/img/{hgpg}.png" width="100%" height="100%"</img>'
-        else:
-            comp[3] = ''
-        if comp[4] != 'none' and comp[4] != '':
-            comp[5] = comp[5] + ' - ' + comp[4]
-        starts = comp[6]
-        ends = comp[7]
-        if starts > now:
-            comp.append(f"Starts in {(starts - now).days} day(s)")
-        elif ends < now:
-            comp.append('Finished')
-        else:
-            comp.append('Running')
-
-        comp[6] = comp[6].strftime("%Y-%m-%d")
-        comp[7] = comp[7].strftime("%Y-%m-%d")
-        del comp[4]
-        del comp[0]
-        all_comps.append(comp)
-    return jsonify({'data': all_comps})
+    return frontendUtils.get_comps()
 
 
 @blueprint.route('/competition/<compid>')
@@ -195,7 +174,7 @@ def competition(compid):
     if comp['comDateTo']:
         comp['comDateTo'] = comp['comDateTo'].strftime("%Y-%m-%d")
 
-    if comp_start > datetime.datetime.now():
+    if comp_start > datetime.now():
         return render_template('public/future_competition.html', comp=comp)
 
     if non_scored_tasks:
@@ -443,3 +422,84 @@ def download_file(filetype, filename):
         airspace_path = Defines.AIRSPACEDIR
         fullname = path.join(airspace_path, filename)
     return send_file(fullname, as_attachment=True)
+
+
+@blueprint.route('/get_admin_comps', methods=['GET', 'POST'])
+def get_admin_comps():
+    return frontendUtils.get_admin_comps()
+
+
+@blueprint.route('/comp_admin', methods=['GET', 'POST'])
+def comp_admin():
+    return render_template('users/comp_admin.html', today=datetime.today().strftime('%d-%m-%Y'))
+
+
+@blueprint.route('/create_comp', methods=['PUT'])
+def create_comp():
+
+    data = request.json
+    date_from = datetime.strptime(data['datefrom'], '%Y-%m-%d')
+    date_to = datetime.strptime(data['dateto'], '%Y-%m-%d')
+    new_comp = Comp(comp_name=data['name'],
+                    comp_class=data['class'],
+                    comp_site=data['location'],
+                    comp_code=data['code'],
+                    date_from=date_to,
+                    date_to=date_from)
+    output = new_comp.to_db()
+    if type(output) == int:
+        return jsonify(dict(redirect='/comp_admin'))
+    else:
+        return render_template('500.html')
+
+
+@blueprint.route('/_get_formulas/')
+def _get_formulas():
+    category = request.args.get('category', '01', type=str)
+    formulas = list_formulas()
+    formula_choices = [(x, x.upper()) for x in formulas[category]]
+    return jsonify(formula_choices)
+
+
+@blueprint.route('/comp_settings_admin/<compid>', methods=['GET', 'POST'])
+def comp_settings_admin(compid):
+    error = None
+    compid = int(compid)
+    comp = Comp.read(compid)
+    formula = Formula.read(compid)
+    compform = CompForm()
+    newtaskform = NewTaskForm()
+
+    compform.comp_name.data = comp.comp_name
+    compform.comp_code.data = comp.comp_code
+    compform.sanction.data = comp.sanction
+    compform.comp_type.data = comp.comp_type
+    compform.comp_class.data = comp.comp_class
+    compform.comp_site.data = comp.comp_site
+    compform.date_from.data = comp.date_from
+    compform.date_to.data = comp.date_to
+    compform.MD_name.data = comp.MD_name
+    compform.time_offset.data = comp.time_offset
+    compform.pilot_registration.data = comp.restricted
+    compform.formula.data = formula.formula_name
+    compform.overall_validity.data = formula.overall_validity
+    compform.validity_param.data = formula.validity_param*100
+    compform.nom_dist.data = formula.nominal_dist/1000
+    compform.nom_goal.data = formula.nominal_goal*100
+    compform.min_dist.data = formula.min_dist/1000
+    compform.nom_launch.data = formula.nominal_launch*100
+    compform.nom_time.data = formula.nominal_time/60
+    # compform.team_scoring = formula. TODO
+    compform.formula.choices = [(1, '1'), (2, '2')]
+    if compform.validate_on_submit():
+        return f'Start Date is : {compform.date_from} End Date is : {compform.date_to}'
+    else:
+        error = flash("Start date is greater than End date")
+
+    admins = ['joe smith', 'john wayne']  # TODO
+    tasks = comp.tasks
+
+
+
+    # if request.method == 'GET':
+    return render_template('public/competition.html', compid=compid , compform=compform, taskform=newtaskform, admins=admins, tasks=tasks, error=error)

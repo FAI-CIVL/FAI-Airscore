@@ -1,0 +1,104 @@
+
+{% extends "base.html"%}
+
+{% block content %}
+    <title>Competition Admin</title>
+
+    <link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <!-- JS -->
+<!--    <script src="microajax.minified.js"></script>-->
+    <script src="{{ static_url_for('static', filename='js/utils.js') }}"></script>
+
+
+ <!-- The Modal -->
+	<div class="modal fade" id="compmodal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered" role="document">
+
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title">Create Competition</h4>
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+        </div>
+
+        <div class="modal-body">
+		    <form id="createcomp" action="javascript:void(0);" method="post">
+		    <div class="form-group">
+		    <div class="form-row" id="route">
+			  	<label for="Name" class="col-2 col-form-label">Name</label>
+			    <div class="col-10">
+			 		<input class="form-control required" type="text" value="" id="compname">
+			    </div>
+		    </div>
+            <div class="form-row" id="route">
+            <label for="code" class="col-2 col-form-label">Short name</label>
+            <div class="col-10">
+                <input class="form-control required" type="text" value="" id="compcode">
+            </div>
+            </div>
+                <div class="form-row" id="route">
+            <label for="class" class="col-2 col-form-label">Class</label>
+            <div class="col-10">
+                 <select class="form-control required" type="select" value="" id="compclass">
+                    <option value="HG">HG</option>
+                    <option value="PG">PG</option>
+                </select>
+            </div>
+            </div>
+            		    <div class="form-row" id="route">
+			  	<label for="location" class="col-2 col-form-label">Location</label>
+			    <div class="col-10">
+			 		<input class="form-control required" type="text" value="" id="compsite">
+			    </div>
+		    </div>
+
+			<div class="form-group row">
+			  <label for="date-from" class="col-2 1ol-form-label">From</label>
+			  <div class="col-10">
+			    <input class="form-control required" type="date" value= {{today}} id="datefrom">
+			  </div>
+			  <label for="date-to" class="col-2 col-form-label">To</label>
+			  <div class="col-10">
+			    <input class="form-control required" type="date" value= {{today}} id="dateto">
+			  </div>
+			</div>
+			</div>
+			</form>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="create_comp();">Create</button>
+          <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+        </div>
+
+      </div>
+
+    </div>
+	</div>
+
+    <div class="container" id="main">
+	<div class="row">
+	<button type="button" class="btn btn-primary mt-3" data-toggle="modal" data-target="#compmodal">Create</button>
+	</div>
+	<div class="row">
+    <table id="competitions" class="row-border stripe compact mb-1 mt-2" cellspacing="0" width="100%">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Competition</th>
+            <th>Location</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Tasks</th>
+        </tr>
+    </thead>
+    </table>
+    </div>
+    </div>
+
+    <!-- Bootstrap core JavaScript -->
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <script src="{{ static_url_for('static', filename='js/pop_admin_comps.js') }}"></script>
+
+{% endblock %}

@@ -6,12 +6,46 @@ Use:    import formula
 Antonio Golfari - 2019
 """
 
-# Use your utility module.
 import importlib
-
 from myconn import Database
 from sqlalchemy.exc import SQLAlchemyError
 from dataclasses import dataclass, asdict, fields
+from os import listdir
+
+
+def list_formulas():
+    '''Lists all formulas present in the formulas folder.
+    :returns a dictinary with 3 lists.
+        all: a list of all formulas
+        pg: a list of all formulas that are of class pg or both
+        hg: a list of all formulas that are of class hg or both'''
+    all_formulas = []
+    hg_formulas = []
+    pg_formulas = []
+    for file in listdir('formulas'):
+        if file[-3:] == '.py':
+            formula_lib = get_formula_lib_by_name(file[:-3])
+            all_formulas.append(formula_lib.formula_name)
+            if formula_lib.formula_class == 'PG' or formula_lib.formula_class == 'BOTH':
+                pg_formulas.append(formula_lib.formula_name)
+            if formula_lib.formula_class == 'HG' or formula_lib.formula_class == 'BOTH':
+                hg_formulas.append(formula_lib.formula_name)
+    all_formulas = sorted(all_formulas)
+    hg_formulas = sorted(hg_formulas)
+    pg_formulas = sorted(pg_formulas)
+    return {'ALL': all_formulas, 'PG': pg_formulas, 'HG': hg_formulas}
+
+
+def get_formula_lib_by_name(formula_name):
+    """get formula library to use in scoring"""
+    # formula = read_formula(comp_id)
+    formula_file = 'formulas.' + formula_name
+    try:
+        lib = importlib.import_module(formula_file, package=None)
+        return lib
+    except:
+        print(f'formula file {formula_file} not found.')
+        exit()
 
 
 def get_formula_lib(formula_type, formula_version):
