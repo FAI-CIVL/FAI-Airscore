@@ -303,6 +303,19 @@ class Comp(object):
 
         return comp
 
+    def get_tasks_details(self):
+        """gets tasks details from database. They could be different from JSON data for scored tasks"""
+        from db_tables import TaskObjectView as T
+
+        with Database() as db:
+            try:
+                results = db.session.query(T.task_id, T.task_num, T.task_name, T.date, T.opt_dist,
+                                           T.comment).filter(T.comp_id == self.comp_id).all()
+                return results
+            except SQLAlchemyError:
+                print(f"Error trying to retrieve Tasks details for Comp ID {self.comp_id}")
+                return None
+
     def update_comp_info(self):
 
         with Database() as db:
