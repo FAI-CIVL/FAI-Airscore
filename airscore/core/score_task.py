@@ -18,12 +18,12 @@ Stuart Mackintosh - Antonio Golfari
 
 """
 
-from logger     import Logger
-from task       import Task as T
-from pprint     import pprint
+from logger import Logger
+from task import Task as T
+from pprint import pprint
+
 
 def main(args):
-
     '''create logging and disable output'''
     Logger('ON', 'score_task.txt')
 
@@ -31,7 +31,7 @@ def main(args):
     '''Main module. Takes tasPk as parameter'''
 
     task_id = int(args[0])
-    status  = None if len(args) == 1 else str(args[1])
+    status = None if len(args) == 1 else str(args[1])
     print(f"Task ID: {task_id} | Status: {status}")
 
     '''create task obj'''
@@ -48,7 +48,8 @@ def main(args):
         task_result.php?refPk=ref_id&tasPk=task_id&comPk=comp_id'''
     print(f'{ref_id}')
 
-if __name__== "__main__":
+
+if __name__ == "__main__":
     import sys
 
     '''check parameter is good'''

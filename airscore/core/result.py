@@ -27,7 +27,8 @@ class Task_result:
         Task result fields lists
     """
 
-    info_list = ['comp_name',
+    info_list = ['id',
+                 'comp_name',
                  'comp_site',
                  'comp_class',
                  'date',
@@ -228,7 +229,8 @@ class Comp_result(object):
                     'scoring_altitude',  # 'GPS', 'QNH'
                     ]
 
-    task_list = ['task_name',
+    task_list = ['id',
+                 'task_name',
                  'task_code',
                  'date',
                  'comment',
