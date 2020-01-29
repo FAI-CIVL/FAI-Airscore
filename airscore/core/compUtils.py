@@ -123,6 +123,11 @@ def get_comp_path(comp_id):
             return db.session.query(C.comPath).filter(C.comPk == comp_id).limit(1).scalar()
 
 
+def calculate_comp_path(date, code):
+    from os import path
+    return path.join(str(date.year), str(code).lower())
+
+
 def get_task_region(task_id):
     from db_tables import tblTask as T
     if type(task_id) is int and task_id > 0:
