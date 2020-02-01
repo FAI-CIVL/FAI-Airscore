@@ -93,8 +93,10 @@ def launch_validity(task):
         '''avoid div by zero'''
         return 0
 
-    LVR = min(1, (task.pilots_launched) / (task.pilots_present * task.formula.nominal_launch))
-    launch = 0.027 * LVR + 2.917 * LVR ** 2 - 1.944 * LVR ** 3
+    # LVR = min(1, (task.pilots_launched) / (task.pilots_present *
+    threshold = round(task.pilots_present * task.formula.nominal_launch)
+    LVR = min(1, (task.pilots_launched + threshold) / task.pilots_present)
+    launch = 0.028 * LVR + 2.917 * LVR ** 2 - 1.944 * LVR ** 3
     launch = min(launch, 1) if launch > 0 else 0  # sanity
     return launch
 
