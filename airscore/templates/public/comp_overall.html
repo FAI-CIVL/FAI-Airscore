@@ -1,4 +1,4 @@
-{% extends "base.html"%}
+{% extends "layout.html"%}
 {% block content %}
   <head>
     <meta charset="utf-8">
@@ -79,14 +79,14 @@
     </table>
     </div>
 
-    <!-- Bootstrap core JavaScript -->
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script> -->
-    <!-- <script src="/static/js/bootstrap.bundle.min.js"></script> -->
+</body>
+
+{% endblock %}
+{% block js %}
+{% include "js.html" %}
     <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
     <script type="text/javascript" src="/static/js/enums.js"></script>
     <script type="text/javascript" src="/static/js/pop_comp_overall.js"></script>
     <script type="text/javascript">populate_comp_overall({{compid|tojson}})</script>
     <script type="text/javascript" src="/static/js/overall_class_filter.js"></script>
-</body>
-
 {% endblock %}

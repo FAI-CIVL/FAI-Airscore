@@ -1,10 +1,10 @@
 
-{% extends "base.html"%}
+{% extends "layout.html"%}
 {% block content %}
 {% if error %}
 <p><strong> Error: </strong></p> {{error}}
 {% endif %}
-<form method="post" action="{{url_for('public.comp_settings_admin', compid=compid)}}">
+<form method="post" action="{{url_for('user.comp_settings_admin', compid=compid)}}">
     {{compform.hidden_tag()}}
 
     <div class="container"><br>
@@ -14,7 +14,7 @@
     </div>
 
     <p>
-  <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse1" aria-expanded="false" aria-controls="collapseExample">
+  <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse1" aria-expanded="false" aria-controls="collapse1">
     Competition Details
   </button>
 </p>
@@ -23,11 +23,11 @@
       <div class="container">
           <h3 class="font-weight-bold">Competition Details</h3>
   <div class="form-row">
-    <div class="form-group col-md-6">
-      {{compform.comp_name.label}} {{compform.comp_name()}}
+    <div class="form-group col-md-7">
+      {{compform.comp_name.label}} {{compform.comp_name(size=40)}}
     </div>
-    <div  class="form-group col-md-6">
-      {{compform.comp_code.label}} {{compform.comp_code(**{'data-toggle': 'tooltip', 'title': compform.comp_code.description})}}
+    <div  class="form-group col-md-5">
+      {{compform.comp_code.label}} {{compform.comp_code(size=10, **{'data-toggle': 'tooltip', 'title': compform.comp_code.description})}}
     </div>
     </div>
 
@@ -57,13 +57,13 @@
 
     </div>
 
-</div>
+ </div>
 </div>
 
 
 
         <p>
-  <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse2" aria-expanded="false" aria-controls="collapseExample">
+  <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse2" aria-expanded="false" aria-controls="collapse2">
     Scoring Parameters
   </button>
 </p>
@@ -108,7 +108,7 @@
 </div>
 
     <p>
-  <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse3" aria-expanded="false" aria-controls="collapseExample">
+  <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse3" aria-expanded="false" aria-controls="collapse3">
     Management
   </button>
 </p>
@@ -126,7 +126,9 @@
             </TR>
         {% endfor %}
             </table>
-        <button id="add_admin" class="btn btn-secondary" type="button">Add admin</button>
+                        {% if compform.submit %}
+                            <button id="add_admin" class="btn btn-secondary" type="button">Add admin</button>
+                        {% endif %}
 
     </div>
     </div>
@@ -142,7 +144,7 @@
 
 
       <p>
-  <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse4" aria-expanded="false" aria-controls="collapseExample">
+  <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse4" aria-expanded="false" aria-controls="collapse4">
     Tasks
   </button>
 </p>
@@ -155,17 +157,19 @@
                 <table>
         {% for task in tasks %}
             <TR>
-            <TD class="c3">{{task['link']|safe}}</TD>
-                <td>{{task['date']}}</td>
-                <td>{{task['opt_dist']}}</td>
-                <td>{{task['comment']}}</td>
+            <TD class="c3">{{task['link']|safe}}&nbsp;&nbsp;</TD>
+                <td>{{task['date']}}&nbsp;&nbsp;</td>
+                <td>{{task['opt_dist']}}&nbsp;&nbsp;</td>
+                <td> {% if task['comment']%} {{task['comment']}} {% endif %}</td>
             </TR>
         {% endfor %}
             </table>
         <p>
-            <button id="add_task" class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#collapse5" aria-expanded="false" aria-controls="collapseExample">
+            {% if compform.submit %}
+            <button id="add_task" class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#collapse5" aria-expanded="false" aria-controls="collapse5">
                 Add task
             </button>
+            {% endif%}
         </p>
 <div class="collapse" id="collapse5">
   <div class="card card-body">
@@ -173,7 +177,7 @@
 
   <div class="form-row">
     <div class="form-group width4">
-        {{taskform.task_number.label}}{{taskform.task_number(size=2, **{'data-toggle': 'tooltip', 'title': taskform.task_number.description})}}
+        {{taskform.task_number.label}} {{taskform.task_number(size=2, **{'data-toggle': 'tooltip', 'title': taskform.task_number.description})}}
         {{taskform.task_date.label}} {{taskform.task_date()}}
     </div>
 
@@ -192,9 +196,12 @@
 
                     <div class="form-row">
 
-            <button id="save_task" class="btn btn-success" type="button" >
-                Add
-            </button>
+                        <button id="save_task" class="btn btn-success" type="button" >
+                        Add
+                         </button>
+
+
+
 
 
           </div>
@@ -215,15 +222,17 @@
 
     <div class="container"><br>
       <center>
+          {% if compform.submit %}
             {{compform.submit(class="btn-success")}}
+          {% else %}
+          <b>You are not an admin of this comp</b>
+          {% endif%}
+
       </center>
     </div>
 
 
 </form>
-    <!-- Bootstrap core JavaScript -->
-<!--    <script type="text/javascript" src="js/enums.js"></script>-->
-<!--    <script src="{{ static_url_for('static', filename='js/pop_comp_details.js') }}"></script>-->
 
 
 <script charset="utf-8" type="text/javascript">
@@ -246,7 +255,7 @@ $(function() {
         };
         dropdown.formula.attr('disabled', 'disabled');
         dropdown.formula.empty();
-        $.getJSON("{{ url_for('public._get_formulas') }}", send, function(data) {
+        $.getJSON("{{ url_for('user._get_formulas') }}", send, function(data) {
             data.forEach(function(item) {
                 dropdown.formula.append(
                     $('<option>', {

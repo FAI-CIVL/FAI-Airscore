@@ -1,4 +1,4 @@
-{% extends "base.html"%}
+{% extends "layout.html"%}
 {% block content %}
 <br>
 <div class="container" id="main">
@@ -45,3 +45,8 @@
 {% endfor %}
 </div>
  {% endblock %}
+
+{% block js %}
+{% include "js.html" %}
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+{% endblock %}

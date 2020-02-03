@@ -62,7 +62,7 @@ def get_admin_comps():
     all_comps = []
     for c in comps:
         comp = list(c)
-        comp[1] = f'<a href="/comp_settings_admin/{comp[0]}">{comp[1]}</a>'
+        comp[1] = f'<a href="/users/comp_settings_admin/{comp[0]}">{comp[1]}</a>'
         comp[3] = comp[3].strftime("%Y-%m-%d")
         comp[4] = comp[4].strftime("%Y-%m-%d")
         all_comps.append(comp)

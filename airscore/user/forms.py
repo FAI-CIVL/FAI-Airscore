@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
 """User forms."""
-from flask_wtf import FlaskForm
-from wtforms import PasswordField, StringField
-from wtforms.validators import DataRequired, Email, EqualTo, Length
+from datetime import date
 
+from flask_wtf import FlaskForm
+from wtforms import PasswordField, StringField, IntegerField, SelectField, DecimalField, BooleanField, SubmitField
+from wtforms.fields.html5 import DateField
+from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange
+
+import Defines
 from .models import User
 
 
@@ -43,3 +47,52 @@ class RegisterForm(FlaskForm):
             self.email.errors.append("Email already registered")
             return False
         return True
+
+
+class NewTaskForm(FlaskForm):
+    task_name = StringField("Task Name", description='optional. If you want to give the task a name. '
+                                                     'If left blank it will default to "Task #"')
+    task_number = IntegerField("Task Number", validators=[NumberRange(min=0, max=50)],
+                               description='task number, by default one more than the last task')
+    task_comment = StringField('Comment', description='Sometimes you may wish to make a comment that will show up'
+                                                      ' in the competition overview page. e.g. "task stopped at 14:34"')
+    task_date = DateField('Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
+    # task_region = SelectField('Region')
+
+
+class CompForm(FlaskForm):
+    comp_name = StringField('Competition Name')
+    comp_code = StringField('Short name', render_kw=dict(maxlength=8), description='An abbreviated name (max 8 chars) e.g. PGEuro20')
+    sanction = SelectField('Sanction', choices=[(x, x) for x in Defines.SANCTIONS])
+    comp_type = SelectField('Type', choices=[('RACE', 'RACE'), ('ROUTE', 'ROUTE'), ('TEAM RACE', 'TEAM RACE')])
+    comp_class = SelectField('Category', choices=[('PG', 'PG'), ('HG', 'HG')],
+                           id='select_category')
+    comp_site = StringField('Location', validators=[DataRequired()], description='location of the competition')
+    date_from = DateField('Start Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
+    date_to = DateField('End Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
+    MD_name = StringField('Race Director')
+    time_offset = DecimalField('GMT offset', validators=[DataRequired()], places=2, render_kw=dict(maxlength=5),
+                             description='The default time offset for the comp. Individual tasks will have this '
+                                         'as a default but can be overridden if your comp spans multiple time zones'
+                                         ' or over change in daylight savings')
+    pilot_registration = SelectField('Pilot Entry', choices=[('registered', 'registered'), ('open', 'open')],
+                                     description='Registered - only pilots registered are flying, '
+                                                 'open - all tracklogs uploaded are considered as entires')
+    formula = SelectField('Formula', id='select_formula')
+    overall_validity = SelectField('Scoring', choices=[('all', 'ALL'), ('ftv', 'FTV'), ('round', 'ROUND')]) # tblForComp comOverallScore  ??what is round?? do we also need old drop tasks?
+    validity_param = IntegerField('FTV percentage', validators=[NumberRange(min=0, max=100)])
+    nom_dist = IntegerField('Nominal Distance (km):')
+    nom_goal = IntegerField('Nominal Goal (%):', validators=[NumberRange(min=0, max=100)])
+    min_dist = IntegerField('Minimum Distance (km):')
+    nom_launch = IntegerField('Nominal Launch (%):', validators=[NumberRange(min=0, max=100)])
+    nom_time = IntegerField('Nominal Time (min):')
+    team_scoring = SelectField('Team Scoring:', choices=[('aggregate', 'aggregate'), ()])
+    locked = BooleanField('Scoring Locked', description="If locked, a rescore will not change displayed results") #TODO
+    submit = SubmitField('Save')
+
+    def validate_on_submit(self):
+        result = super(CompForm, self).validate()
+        if self.date_from.data > self.date_to.data:
+            return False
+        else:
+            return result

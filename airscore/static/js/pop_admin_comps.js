@@ -38,7 +38,7 @@ function create_comp()
 $(document).ready(function() {
 //    var url = new URL('http://highcloud.net/xc/get_admin_comps.php');
     $('#competitions').dataTable({
-        ajax: '/get_admin_comps',
+        ajax: '/users/get_admin_comps',
         paging: true,
         order: [[ 4, 'desc' ]],
         lengthMenu: [ 15, 30, 60, 1000 ],
@@ -48,7 +48,7 @@ $(document).ready(function() {
         "dom": '<"#search"f>rt<"bottom"lip><"clear">',
         "createdRow": function( row, data, index, cells )
         {
-//            cells[1].innerHTML = '<a href=\"competition.html?comPk=' + data[0] + '\">' + data[1] + '</a>';
+//            cells[1].innerHTML = '<a href=\"users/comp_settings.html?comPk=' + data[0] + '\">' + data[1] + '</a>';
             if (today() < data[4])
             {       
                 $(row).addClass('text-warning');

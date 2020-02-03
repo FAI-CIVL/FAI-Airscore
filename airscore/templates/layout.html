@@ -34,7 +34,7 @@
     {% block css %}{% endblock %}
   </head>
   <body class="{% block body_class %}{% endblock %}">
-    {% block body %} {% with form=form %} {% include "nav.html" %} {% endwith %}
+    {% block body %} {% with form=form %} {% include "base.html" %} {% endwith %}
 
     <header>{% block header %}{% endblock %}</header>
 
@@ -62,8 +62,9 @@
     {% include "footer.html" %}
 
     <!-- JavaScript at the bottom for fast page loading -->
-    <script src="{{ static_url_for('static', filename='build/main_js.bundle.js') }}"></script>
-    {% block js %}{% endblock %}
+<!--    <script src="{{ static_url_for('static', filename='build/main_js.bundle.js') }}"></script>-->
+    {% block js %}
+    {% endblock %}
     <!-- end scripts -->
     {% endblock %}
   </body>
