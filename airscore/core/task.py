@@ -20,8 +20,8 @@ TO DO:
 Add support for FAI Sphere ???
 """
 
-from route import distance, polar, find_closest, cartesian2polar, polar2cartesian, calcBearing, opt_goal, opt_wp, \
-    opt_wp_exit, opt_wp_enter, Turnpoint, get_shortest_path
+from route import distance, polar, Turnpoint, get_shortest_path
+from geo import Geo, get_proj
 from result import Task_result, create_json_file
 from airspace import AirspaceCheck
 from compUtils import read_rankings
@@ -116,6 +116,7 @@ class Task(object):
         self.optimised_legs = []  # opt distance between cylinders
         self.partial_distance = []  # distance from launch to waypoint
         self.legs = []  # non optimised legs
+        self.geo = None   # Geo Object
         self.stats = dict()  # STATIC scored task statistics, used when importing results from JSON / FSDB files
         self.pilots = []  # scored task results
         self.airspace_check = False  # BOOL airspace check
@@ -272,16 +273,25 @@ class Task(object):
         else:
             return 0
 
+    ''' * Geographic Projection *'''
+
+    @property
+    def bbox_center(self):
+        from statistics import mean
+        if not self.turnpoints:
+            return 0.0, 0.0
+        lat = mean(t.lat for t in self.turnpoints)
+        lon = mean(t.lon for t in self.turnpoints)
+        return lat, lon
+
     ''' * Statistic Properties *'''
 
     ''' list of present pilots' results'''
-
     @property
     def valid_results(self):
         return [pilot.result for pilot in self.pilots if pilot.result_type not in ('abs', 'dnf')]
 
     ''' pilots stats'''
-
     @property
     def pilots_present(self):
         return len([p for p in self.pilots if p.result_type != 'abs'])
@@ -308,7 +318,6 @@ class Task(object):
         return len([p for p in self.valid_results if p.last_altitude == 0 or p.result_type == 'goal'])
 
     ''' distance stats'''
-
     @property
     def tot_distance_flown(self):
         if self.formula.min_dist and self.pilots_launched:
@@ -347,7 +356,6 @@ class Task(object):
             return 0
 
     '''time stats'''
-
     @property
     def min_dept_time(self):
         if self.pilots_ss:
@@ -442,7 +450,6 @@ class Task(object):
             return None
 
     ''' scoring stats'''
-
     @property
     def min_lead_coeff(self):
         if len([p for p in self.valid_results if p.lead_coeff]) > 0:
@@ -489,6 +496,10 @@ class Task(object):
         '''check if we already have a filepath for task'''
         if task.task_path is None or '':
             task.create_path()
+
+        '''add geo object if we have turnpoints'''
+        if task.turnpoints is not None and len(task.turnpoints) > 0:
+            task.get_geo()
 
         return task
 
@@ -754,6 +765,10 @@ class Task(object):
             '''prepare results for scoring'''
             lib.process_results(self)
         # return pilots
+
+    def get_geo(self):
+        clat, clon = self.bbox_center
+        self.geo = Geo.from_coords(clat, clon)
 
     def update_task_distance(self):
         from db_tables import tblTask as T, tblTaskWaypoint as W
@@ -1331,7 +1346,8 @@ class Task(object):
         """
 
         '''check we have at least 3 points'''
-        if len(self.turnpoints) < 3: return
+        if len(self.turnpoints) < 3:
+            return
 
         '''calculate optimised distance fixes on cilynders'''
         optimised = get_shortest_path(self)
