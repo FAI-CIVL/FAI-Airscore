@@ -10,11 +10,23 @@ Stuart Mackintosh - 2019
 import math
 import numpy as np
 
-from geopy.distance import geodesic, ELLIPSOIDS, vincenty
+from pyproj import Proj
+from geopy.distance import geodesic, vincenty
 from collections import namedtuple
 from geographiclib.geodesic import Geodesic
 from math import sqrt, hypot, fabs
 
+'''define earth model'''
+# EARTHMODEL = Proj("+init=EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth
+EARTHMODEL = Proj(proj='latlong', datum='WGS84')  # LatLon with WGS84 datum used by GPS units and Google Earth
+
+''' Standard plan projection: UTM or Mercatore.
+    If UTM is used, function will calculate the correct UTM projection for the area.
+    If Mercatore is used, function will create an 'ad hoc' Mercatore projection centered on the area. 
+'''
+PROJ = 'Mercatore'
+
+''' Geodesic ellipsoid'''
 geod = Geodesic.WGS84
 
 a = 6378137  # WSG84 major meters
@@ -91,16 +103,27 @@ class Turnpoint:
         return distance(self, fix) < self.radius + tol
 
 
-def get_utm_proj(lat, lon):
-    from pyproj import Proj
-    utm_band = str((math.floor((lon + 180) / 6 ) % 60) + 1)
-    if len(utm_band) == 1:
-        utm_band = '0'+utm_band
-    if lat >= 0:
-        epsg_code = '326' + utm_band
+def get_proj(clat, clon, proj=PROJ):
+    """
+    returns correct projection, UTM or custom Mercatore, using BBox center coordinates
+    method 1: calculate UTM zone from center coordinates and use corresponding EPSG Projection
+    method 2: create a custom trasverse mercatore projection upon center coordinates
+    """
+
+    if proj == 'UTM':
+        utm_band = str((math.floor((clon + 180) / 6) % 60) + 1)
+        if len(utm_band) == 1:
+            utm_band = '0' + utm_band
+        if clat >= 0:
+            epsg_code = '326' + utm_band
+        else:
+            epsg_code = '327' + utm_band
+        return Proj(f"EPSG:{epsg_code}")
     else:
-        epsg_code = '327' + utm_band
-    return Proj(f"EPSG:{epsg_code}")
+        '''custom Mercatore projection'''
+        tmerc = Proj(
+             f"+proj=tmerc +lat_0={clat} +lon_0={clon} +k_0=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
+        return tmerc
 
 
 class polar(object):
@@ -676,10 +699,8 @@ def get_shortest_path(task):
             task  - Obj: task object
     """
     import sys
-    from pyproj import Proj
 
     last_dist = sys.maxsize  # inizialise to max integer
-    method = "fast_andoyer"  # method to calculate distance on ellipsoid
     finished = False
 
     '''get projection center'''
@@ -687,19 +708,16 @@ def get_shortest_path(task):
 
     '''define earth model'''
     # wgs84 = Proj("+init=EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth
-    wgs84 = Proj(proj='latlong', datum='WGS84')
+    # wgs84 = Proj(proj='latlong', datum='WGS84')
+    wgs84 = EARTHMODEL
 
     '''calculate planar projection'''
-    '''method 1: calculate UTM zone from center coordinates and use corresponding EPSG Projection'''
-    my_proj = get_utm_proj(clat, clon)
-    '''method 2: create a custom trasverse mercatore projection upon center coordinates'''
-    # tmerc = Proj(
-    #     f"+proj=tmerc +lat_0={clat} +lon_0={clon} +k_0=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
+    my_proj = get_proj(clat, clon)
 
     '''create a list of cPoint obj from turnpoint list'''
     points = convert(task.turnpoints, wgs84, my_proj)
 
-    count = len(points)  # numer of waypoints
+    count = len(points)  # number of waypoints
     ESS_index = [i for i, e in enumerate(task.turnpoints) if e.type == 'endspeed'][0]
     if not (task.turnpoints[-1].shape == 'line'):
         line = []

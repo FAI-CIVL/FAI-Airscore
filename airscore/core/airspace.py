@@ -131,14 +131,14 @@ class AirspaceCheck(object):
 
     def get_projection(self):
         """WGS84 to Mercatore Plan Projection"""
-        from route import get_utm_proj
+        from route import get_proj
         '''get projection center'''
         clat, clon = self.bbox_center
         # '''define projection'''
         # tmerc = Proj(f"+proj=tmerc +lat_0={clat} +lon_0={clon} +k_0=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
         # return tmerc
         '''Get UTM proj'''
-        return get_utm_proj(clat, clon)
+        return get_proj(clat, clon)
 
     def get_airspace_details(self, qnh=1013.25):
         """Writes bbox and Polygon obj for each space"""
@@ -352,6 +352,7 @@ def get_airspace_check_parameters(task_id):
 
 def get_cartesian_transformer(projection):
     """WGS84 to Mercatore Plan Projection"""
+
     '''define earth model'''
     # wgs84 = Proj("EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth
     wgs84 = Proj(proj='latlong', datum='WGS84')
