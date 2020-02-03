@@ -11,6 +11,10 @@ def checkbbox(lat, lon, bbox):
     return bbox
 
 
+def bbox_centre(bbox):
+    return [(bbox[0][0] + bbox[1][0]) / 2, (bbox[0][1] + bbox[1][1]) / 2]
+
+
 def get_bbox(flight):
     """Gets track boundaries """
 

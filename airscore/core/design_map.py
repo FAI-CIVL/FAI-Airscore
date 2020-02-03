@@ -17,7 +17,7 @@ from folium.features import CustomIcon
 from folium.map import FeatureGroup, Marker, Popup
 from geographiclib.geodesic import Geodesic
 
-from mapUtils import get_region_bbox, get_route_bbox
+from mapUtils import get_region_bbox, get_route_bbox, bbox_centre
 from task import Task
 
 geod = Geodesic.WGS84
@@ -40,7 +40,12 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
              thermal_layer=False, waypoint_layer=False, extra_tracks=None, airspace_layer=None, bbox=None):
     if points is None:
         points = []
-    folium_map = folium.Map(location=[45.922207, 8.673952], zoom_start=13, tiles="Stamen Terrain", width='100%',
+
+    if bbox:
+        location = bbox_centre(bbox)
+    else:
+        location = [45, 10]
+    folium_map = folium.Map(location=location, zoom_start=13, tiles="Stamen Terrain", width='100%',
                             height='75%')
     #     folium.LayerControl().add_to(folium_map)
     '''Define map borders'''
