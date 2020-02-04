@@ -544,6 +544,11 @@ class Task(object):
                 - recalculate Opt. route
                 - check all tracks'''
             print(f" - FULL Mode -")
+
+            '''get projection if needed'''
+            if self.geo is None:
+                self.get_geo()
+
             print(f"Calculating task optimised distance...")
             self.calculate_task_length()
             self.calculate_optimised_task_length()
@@ -1409,12 +1414,12 @@ class Task(object):
         """calculates a list of distances from turnpoint to goal (assumes goal is the last turnpoint)"""
         t = len(self.optimised_turnpoints) - 1
         d = 0
-        distance_to_go = [0]
+        distances_to_go = [0]
         while t >= 1:
             d += distance(self.optimised_turnpoints[t], self.optimised_turnpoints[t - 1])
-            distance_to_go.insert(0, d)
+            distances_to_go.insert(0, d)
             t -= 1
-        return distance_to_go
+        return distances_to_go
 
 
 # function to parse task object to compilations

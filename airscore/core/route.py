@@ -122,7 +122,7 @@ def get_proj(clat, clon, proj=PROJ):
     else:
         '''custom Mercatore projection'''
         tmerc = Proj(
-             f"+proj=tmerc +lat_0={clat} +lon_0={clon} +k_0=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
+            f"+proj=tmerc +lat_0={clat} +lon_0={clon} +k_0=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
         return tmerc
 
 
@@ -694,7 +694,7 @@ BEGIN HERE
 """
 
 
-def get_shortest_path(task):
+def get_shortest_path(task, fix=None, pointer=None):
     """ Inputs:
             task  - Obj: task object
     """
@@ -703,22 +703,32 @@ def get_shortest_path(task):
     last_dist = sys.maxsize  # inizialise to max integer
     finished = False
 
+    if fix and pointer:
+        '''create list of turnpoints to optimize distance to goal '''
+        turnpoints = [Turnpoint(lat=fix.lat, lon=fix.lon, type='optimised', radius=0, shape='optimised', how='optimised')]
+        turnpoints.extend([tp for idx, tp in enumerate(task.turnpoints) if idx >= pointer])
+    else:
+        turnpoints = task.turnpoints
+
     '''create a list of cPoint obj from turnpoint list'''
-    points = convert_turnpoints(task.turnpoints, task.geo)
+    points = convert_turnpoints(turnpoints, task.geo)
 
     count = len(points)  # number of waypoints
-    ESS_index = [i for i, e in enumerate(task.turnpoints) if e.type == 'endspeed'][0]
-    if not (task.turnpoints[-1].shape == 'line'):
-        line = []
-        print(f'is line: {task.turnpoints[-1].shape}')
+    if any(tp for tp in turnpoints if tp.type == 'endspeed'):
+        ESS_index = turnpoints.index(next(tp for tp in turnpoints if tp.type == 'endspeed'))
     else:
-        ends = get_line(task.turnpoints)
+        ESS_index = None
+    if not (turnpoints[-1].shape == 'line'):
+        line = []
+        print(f'is line: {turnpoints[-1].shape}')
+    else:
+        ends = get_line(turnpoints)
         line = convert_turnpoints(ends, task.geo)
         print(f'line: {line[0].x}, {line[0].y} - {line[1].x}, {line[1].y}')
 
     print('***')
     print(f'WPT Count: {count}  |  ESS Index: {ESS_index}')
-    for idx, tp in enumerate(task.turnpoints):
+    for idx, tp in enumerate(turnpoints):
         print(f'n. {idx}')
         pt = points[idx]
         print(f'tp:   lat {tp.lat} |  lon {tp.lon} |  radius {tp.radius} |  shape {tp.shape} |  type {tp.type}')
@@ -736,6 +746,10 @@ def get_shortest_path(task):
         last_dist = planar_dist
         opsCount -= 1
         print(f'iterations made: {count * 10 - opsCount} | distance: {planar_dist}')
+
+    if fix:
+        '''return opt dist to goal'''
+        return planar_dist
 
     '''create optimised points positions on earth model (lat, lon)'''
     optimised = revert_opt_points(points, task.geo)

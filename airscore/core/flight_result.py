@@ -32,7 +32,7 @@ from formulas.libs.leadcoeff import LeadCoeff
 from mapUtils import checkbbox
 from collections import Counter, namedtuple
 from route import rawtime_float_to_hms, in_semicircle, distance_flown, distance, start_made_civl, tp_made_civl, \
-    tp_time_civl
+    tp_time_civl, get_shortest_path
 from os import path, makedirs
 from Defines import MAPOBJDIR
 from myconn import Database
@@ -341,7 +341,7 @@ class Flight_result(object):
 
         if not task.optimised_turnpoints:
             task.calculate_optimised_task_length()
-        distances2go = task.distances_to_go  # Total task Opt. Distance, in legs list
+        # distances2go = task.distances_to_go  # Total task Opt. Distance, in legs list
 
         '''leadout coefficient'''
         if task.formula.formula_departure == 'leadout':
@@ -478,13 +478,13 @@ class Flight_result(object):
             - total optimized distance minus opt. distance from next wpt to goal minus dist. to next wpt;
             '''
             if tp.pointer > 0:
-                result.distance_flown = max(result.distance_flown, (distances2go[0] - distances2go[tp.pointer - 1]),
-                                            distance_flown(next_fix, tp.pointer, task.optimised_turnpoints,
-                                                           task.turnpoints[tp.pointer], distances2go))
+                missing_distance = get_shortest_path(task, next_fix, tp.pointer)
+                fix_dist_flown = task.opt_dist - missing_distance
+                result.distance_flown = max(result.distance_flown, fix_dist_flown, task.partial_distance[tp.pointer - 1])
 
             '''Leading coefficient
-                LC = taskTime(i)*(bestDistToESS(i-1)^2 - bestDistToESS(i)^2 )
-                i : i ? TrackPoints In SS'''
+            LC = taskTime(i)*(bestDistToESS(i-1)^2 - bestDistToESS(i)^2 )
+            i : i ? TrackPoints In SS'''
             if lead_coeff and tp.start_done and not tp.ess_done:
                 lead_coeff.update(result, my_fix, next_fix)
 
@@ -544,7 +544,8 @@ class Flight_result(object):
                     ?p:p?PilotsReachingGoal:bestDistancep = taskDistance
                 '''
                 if any(e[0] == 'Goal' for e in result.waypoints_achieved):
-                    result.distance_flown = distances2go[0]
+                    # result.distance_flown = distances2go[0]
+                    result.distance_flown = task.opt_dist
                     result.goal_time, result.goal_altitude = min(
                         [(x[1], x[2]) for x in result.waypoints_achieved if x[0] == 'Goal'], key=lambda t: t[0])
                     result.result_type = 'goal'
