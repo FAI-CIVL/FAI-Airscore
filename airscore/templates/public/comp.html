@@ -26,7 +26,9 @@
     <div class="col">
       <h3 id="task_hd">{{task['task_name']}}</h3>
       <h4>{{task['date']}}</h4>
+      {% if task.comment %}
       {{task['comment']}}<br>
+      {% endif %}
       <table class="taskinfo"><tbody><tr><td>Task Type:</td>
         <td>{{task['task_type']}}</td></tr><tr>
         <td>Task Distance:</td>
