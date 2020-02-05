@@ -176,15 +176,20 @@ def competition(compid):
     if non_scored_tasks:
         for t in non_scored_tasks:
             task = t._asdict()
-            wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox = get_map_json(task['id'])
-            layer['geojson'] = None
-            layer['bbox'] = bbox
-            task_map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
-                                goal_line=goal_line, margin=tolerance)
-            task['opt_dist'] = '{:0.2f}'.format(task['tasShortRouteDistance'] / 1000) + ' km'
-            task.update({'map': task_map._repr_html_()})
-            task['tasQuality'] = "-"
             task['status'] = "Not yet scored"
+            if not t.tasShortRouteDistance or t.tasShortRouteDistance == 0:
+                task['status'] = "Task not set"
+                task['opt_dist'] = '0 km'
+            else:
+                wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox = get_map_json(task['id'])
+                layer['geojson'] = None
+                layer['bbox'] = bbox
+                task_map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
+                                    goal_line=goal_line, margin=tolerance)
+                task['opt_dist'] = '{:0.2f}'.format(task['tasShortRouteDistance'] / 1000) + ' km'
+                task.update({'map': task_map._repr_html_()})
+
+            task['tasQuality'] = "-"
             task['date'] = task['date'].strftime("%Y-%m-%d")
             all_tasks.append(task)
     all_tasks.sort(key=lambda k: k['date'], reverse=True)
