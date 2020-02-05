@@ -111,7 +111,13 @@
   </div>
 </div>
 
-<script src="/static/js/mindmup-editabletable.js"></script>
+{% endblock %}
+{% block js %}
+{% include "js.html" %}
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <script src="{{ static_url_for('static', filename='js/pop_admin_comps.js') }}"></script>
+    <script src="{{ static_url_for('static', filename='js/utils.js') }}"></script>
+    <script src="/static/js/mindmup-editabletable.js"></script>
 <script>
 	$('#airspace_table').editableTableWidget();
 </script>

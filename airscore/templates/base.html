@@ -5,7 +5,6 @@
     <title>Airscore</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <link rel="stylesheet" href="/static/css/nav_bar_custom.css"  crossorigin="anonymous">
-    <!-- <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script> -->
 
     <style media="screen">
             body {
@@ -50,6 +49,10 @@
                 <li class="nav-item">
         <a class="nav-link" href="{{ url_for('user.waypoint_admin') }}">Waypoints</a>
       </li>
+                    <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('user.pilot_admin') }}">Pilots</a>
+      </li>
+
 
 
     <ul class="navbar-nav my-auto">
@@ -80,17 +83,6 @@
   </div><!-- /.navbar-collapse -->
 </nav>
     </head>
-  <script>
-
-//control the resizing of menu and go down the content in the correct position
-
-    $("#navMenu").resize(function () {
-        $('#godown').height($("#navMenu").height() + 10);
-    });
-
-    if ($("#navMenu").height() > $('#godown').height()) $('#godown').height($("#navMenu").height() + 10);
-
-</script>
   <body>
   <div class="godown-60" id="godown"></div>
 {% block content %}
