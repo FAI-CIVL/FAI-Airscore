@@ -4,7 +4,7 @@
 {% if error %}
 <p><strong> Error: </strong></p> {{error}}
 {% endif %}
-<form method="post" action="{{url_for('user.comp_settings_admin', compid=compid)}}">
+<form method="post" action="">
     {{compform.hidden_tag()}}
 
     <div class="container"><br>
@@ -46,6 +46,7 @@
       {{compform.comp_class.label}} {{compform.comp_class()}}
     {{compform.time_offset.label}} {{compform.time_offset(size=3,**{'data-toggle': 'tooltip', 'title': compform.time_offset.description})}}
     {{compform.pilot_registration.label}} {{compform.pilot_registration(**{'data-toggle': 'tooltip', 'title': compform.pilot_registration.description})}}
+        {{compform.sanction.label}} {{compform.sanction(**{'data-toggle': 'tooltip', 'title': compform.sanction.description})}}
     </div>
   </div>
   <div class="form-row">
@@ -59,8 +60,6 @@
 
  </div>
 </div>
-
-
 
         <p>
   <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse2" aria-expanded="false" aria-controls="collapse2">
@@ -142,7 +141,6 @@
     </div>
 
 
-
       <p>
   <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse4" aria-expanded="false" aria-controls="collapse4">
     Tasks
@@ -200,10 +198,6 @@
                         Add
                          </button>
 
-
-
-
-
           </div>
     </div>
     </div>
@@ -234,10 +228,14 @@
 
 </form>
 
-
-<script charset="utf-8" type="text/javascript">
-
-$(function() {
+{% endblock %}
+{% block js %}
+{% include "js.html" %}
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <script src="{{ static_url_for('static', filename='js/pop_admin_comps.js') }}"></script>
+    <script src="{{ static_url_for('static', filename='js/utils.js') }}"></script>
+    <script>
+            $(function() {
 
     // jQuery selection for the 2 select boxes
     var dropdown = {
@@ -255,7 +253,7 @@ $(function() {
         };
         dropdown.formula.attr('disabled', 'disabled');
         dropdown.formula.empty();
-        $.getJSON("{{ url_for('user._get_formulas') }}", send, function(data) {
+        $.getJSON("{{ url_for('user._get_formulas')}}", send, function(data) {
             data.forEach(function(item) {
                 dropdown.formula.append(
                     $('<option>', {
@@ -275,10 +273,9 @@ $(function() {
 
 });
 
-</script>
 
+    </script>
 {% endblock %}
-
 
 
 

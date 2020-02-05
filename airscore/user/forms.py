@@ -61,24 +61,30 @@ class NewTaskForm(FlaskForm):
 
 
 class CompForm(FlaskForm):
+    from formula import list_formulas
     comp_name = StringField('Competition Name')
     comp_code = StringField('Short name', render_kw=dict(maxlength=8), description='An abbreviated name (max 8 chars) e.g. PGEuro20')
     sanction = SelectField('Sanction', choices=[(x, x) for x in Defines.SANCTIONS])
     comp_type = SelectField('Type', choices=[('RACE', 'RACE'), ('ROUTE', 'ROUTE'), ('TEAM RACE', 'TEAM RACE')])
     comp_class = SelectField('Category', choices=[('PG', 'PG'), ('HG', 'HG')],
-                           id='select_category')
+                             id='select_category')
     comp_site = StringField('Location', validators=[DataRequired()], description='location of the competition')
     date_from = DateField('Start Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
     date_to = DateField('End Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
     MD_name = StringField('Race Director')
     time_offset = DecimalField('GMT offset', validators=[DataRequired()], places=2, render_kw=dict(maxlength=5),
-                             description='The default time offset for the comp. Individual tasks will have this '
+                               description='The default time offset for the comp. Individual tasks will have this '
                                          'as a default but can be overridden if your comp spans multiple time zones'
                                          ' or over change in daylight savings')
     pilot_registration = SelectField('Pilot Entry', choices=[('registered', 'registered'), ('open', 'open')],
                                      description='Registered - only pilots registered are flying, '
                                                  'open - all tracklogs uploaded are considered as entires')
-    formula = SelectField('Formula', id='select_formula')
+    formulas = list_formulas()
+    formula = SelectField('Formula', choices= [(x, x.upper()) for x in formulas['ALL']], id='select_formula')
+    locked = BooleanField('Scoring Locked',
+                          description="If locked, a rescore will not change displayed results")
+
+    #formula object/table
     overall_validity = SelectField('Scoring', choices=[('all', 'ALL'), ('ftv', 'FTV'), ('round', 'ROUND')]) # tblForComp comOverallScore  ??what is round?? do we also need old drop tasks?
     validity_param = IntegerField('FTV percentage', validators=[NumberRange(min=0, max=100)])
     nom_dist = IntegerField('Nominal Distance (km):')
@@ -86,8 +92,8 @@ class CompForm(FlaskForm):
     min_dist = IntegerField('Minimum Distance (km):')
     nom_launch = IntegerField('Nominal Launch (%):', validators=[NumberRange(min=0, max=100)])
     nom_time = IntegerField('Nominal Time (min):')
-    team_scoring = SelectField('Team Scoring:', choices=[('aggregate', 'aggregate'), ()])
-    locked = BooleanField('Scoring Locked', description="If locked, a rescore will not change displayed results") #TODO
+    # team_scoring = SelectField('Team Scoring:', choices=[('aggregate', 'aggregate'), ()])
+
     submit = SubmitField('Save')
 
     def validate_on_submit(self):

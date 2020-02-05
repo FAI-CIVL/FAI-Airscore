@@ -2,7 +2,7 @@
 """User views."""
 from datetime import datetime
 
-from flask import Blueprint, render_template, request, jsonify, flash
+from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
 from flask_login import login_required, current_user
 import frontendUtils
 from airscore.user.forms import NewTaskForm, CompForm
@@ -118,50 +118,82 @@ def _get_formulas():
 def comp_settings_admin(compid):
     error = None
     compid = int(compid)
-    comp = Comp.read(compid)
-    formula = Formula.read(compid)
     compform = CompForm()
     newtaskform = NewTaskForm()
+    comp = Comp.read(compid)
+    admins = ['joe smith', 'john wayne', 'stuart']  # TODO
 
-    compform.comp_name.data = comp.comp_name
-    compform.comp_code.data = comp.comp_code
-    compform.sanction.data = comp.sanction
-    compform.comp_type.data = comp.comp_type
-    compform.comp_class.data = comp.comp_class
-    compform.comp_site.data = comp.comp_site
-    compform.date_from.data = comp.date_from
-    compform.date_to.data = comp.date_to
-    compform.MD_name.data = comp.MD_name
-    compform.time_offset.data = comp.time_offset
-    compform.pilot_registration.data = comp.restricted
-    compform.formula.data = formula.formula_name
-    compform.overall_validity.data = formula.overall_validity
-    compform.validity_param.data = formula.validity_param*100
-    compform.nom_dist.data = formula.nominal_dist/1000
-    compform.nom_goal.data = formula.nominal_goal*100
-    compform.min_dist.data = formula.min_dist/1000
-    compform.nom_launch.data = formula.nominal_launch*100
-    compform.nom_time.data = formula.nominal_time/60
-    # compform.team_scoring = formula. TODO
-    compform.formula.choices = [(1, '1'), (2, '2')]
+    if request.method == 'POST':
+        if compform.validate_on_submit():
+            comp.comp_name = compform.comp_name.data
+            comp.comp_code = compform.comp_code.data
+            comp.sanction = compform.sanction.data
+            comp.comp_type = compform.comp_type.data
+            comp.comp_class = compform.comp_class.data
+            comp.comp_site = compform.comp_site.data
+            comp.date_from = compform.date_from.data
+            comp.date_to = compform.date_to.data
+            comp.MD_name = compform.MD_name.data
+            comp.time_offset = compform.time_offset.data
+            comp.restricted = 1 if compform.pilot_registration.data == 'registered' else None
+            comp.formula = compform.formula.data
+            comp.locked = compform.locked.data
+            comp.update_comp_info()
 
-    admins = ['joe smith', 'john wayne', 'astuart']  # TODO
+            formula = Formula.read(compid)
+            formula.overall_validity = compform.overall_validity.data
+            formula.validity_param = compform.validity_param.data/100
+            formula.nominal_dist = compform.nom_dist.data*1000
+            formula.nominal_goal = compform.nom_goal.data/100
+            formula.min_dist = compform.min_dist.data*1000
+            formula.nominal_launch = compform.nom_launch.data/100
+            formula.nominal_time = compform.nom_time.data*60
+            formula.to_db()
 
-    if current_user.username not in admins:
-        compform.submit = None
+            flash(f"{compform.comp_name.data} saved", category='info')
+            return redirect(url_for('user.comp_settings_admin', compid=compid))
+        else:
+            flash("not valid")
+            for item in compform:
+                if item.errors:
+                    print(f"{item} value:{item.data} error:{item.errors}")
 
-    if compform.validate_on_submit():
-        return f'Start Date is : {compform.date_from} End Date is : {compform.date_to}'
-    else:
-        error = flash("Start date is greater than End date")
+    if request.method == 'GET':
+        formula = Formula.read(compid)
+        compform.comp_name.data = comp.comp_name
+        compform.comp_code.data = comp.comp_code
+        compform.sanction.data = comp.sanction
+        compform.comp_type.data = comp.comp_type
+        compform.comp_class.data = comp.comp_class
+        compform.comp_site.data = comp.comp_site
+        compform.date_from.data = comp.date_from
+        compform.date_to.data = comp.date_to
+        compform.MD_name.data = comp.MD_name
+        compform.time_offset.data = comp.time_offset
+        compform.pilot_registration.data = comp.restricted
+        compform.formula.data = formula.formula_name
+        compform.overall_validity.data = formula.overall_validity
+        formula.validity_param = 0 if not formula.validity_param else formula.validity_param
+        formula.nominal_dist = 0 if not formula.nominal_dist else formula.nominal_dist
+        formula.nominal_goal = 0 if not formula.nominal_goal else formula.nominal_goal
+        formula.min_dist = 0 if not formula.min_dist else formula.min_dist
+        formula.nominal_launch = 0 if not formula.nominal_launch else formula.nominal_launch
+        formula.nominal_time = 0 if not formula.nominal_time else formula.nominal_time
+        compform.validity_param.data = int(formula.validity_param*100)
+        compform.nom_dist.data = int(formula.nominal_dist/1000)
+        compform.nom_goal.data = int(formula.nominal_goal*100)
+        compform.min_dist.data = int(formula.min_dist/1000)
+        compform.nom_launch.data = int(formula.nominal_launch*100)
+        compform.nom_time.data = int(formula.nominal_time/60)
+        # compform.team_scoring = formula. TODO
 
+        if current_user.username not in admins:
+            compform.submit = None
 
     tasks = frontendUtils.get_task_list(comp)
 
-
-
-    # if request.method == 'GET':
-    return render_template('users/comp_settings.html', compid=compid , compform=compform, tasks=tasks, taskform=newtaskform, admins=admins, error=error)
+    return render_template('users/comp_settings.html', compid=compid, compform=compform, tasks=tasks,
+                           taskform=newtaskform, admins=admins, error=error)
 
 
 @blueprint.route('/task_admin/<taskid>', methods=['GET', 'POST'])
@@ -175,12 +207,20 @@ def task_admin(taskid):
 def get_admin_comps():
     return frontendUtils.get_admin_comps()
 
+
 @blueprint.route('/airspace_admin', methods=['GET', 'POST'])
 @login_required
 def airspace_admin():
     return render_template('users/airspace_admin.html')
 
+
 @blueprint.route('/waypoint_admin', methods=['GET', 'POST'])
 @login_required
 def waypoint_admin():
     return render_template('users/waypoint_admin.html')
+
+
+@blueprint.route('/pilot_admin', methods=['GET', 'POST'])
+@login_required
+def pilot_admin():
+    return render_template('users/pilot_admin.html')
