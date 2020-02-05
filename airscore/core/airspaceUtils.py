@@ -10,6 +10,7 @@ Stuart Mackintosh - Antonio Golfari
 from logger import Logger
 from aerofiles import openair
 from pprint import pprint as pp
+from geo import create_arc_polygon
 import folium
 import re
 from os import path
@@ -31,9 +32,15 @@ def read_openair(filename):
     space = None
     airspace_path = Defines.AIRSPACEDIR
     fullname = path.join(airspace_path, filename)
-    with open(fullname, 'r') as fp:
-        space = openair.Reader(fp)
-    return space
+    with open(fullname) as fp:
+        reader = openair.Reader(fp)
+
+        airspace_list = []
+        for record, error in reader:
+            if error:
+                raise error  # or handle it otherwise
+            airspace_list.append(record)
+    return airspace_list
 
 
 def write_openair(data, filename):
@@ -134,6 +141,10 @@ def polygon_map(record):
     for element in record['elements']:
         if element['type'] == 'point':
             locations.append(element['location'])
+        elif element['type'] == 'arc':
+            print(f"{record['name']}: * ARC DETECTED *")
+            locations.extend(create_arc_polygon(element['center'], element['start'],
+                                                element['end'], element['clockwise']))
 
     if not locations:
         return None
@@ -160,6 +171,9 @@ def polygon_check(record, info):
     for element in record['elements']:
         if element['type'] == 'point':
             locations.append(element['location'])
+        elif element['type'] == 'arc':
+            locations.extend(create_arc_polygon(element['center'], element['start'],
+                                                element['end'], element['clockwise']))
 
     if not locations:
         return None

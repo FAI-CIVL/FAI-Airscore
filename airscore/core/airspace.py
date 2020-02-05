@@ -140,8 +140,7 @@ class AirspaceCheck(object):
                     space['ceiling'] = fl_to_meters(space['floor'], qnh)
                     space['ceiling_unit'] = 'm'
                 ''' create object and bbox'''
-                if space['shape'] == 'circle' or (space['shape'] == 'polygon' and len(space['locations']) == 1):
-                    # TODO we get an error if airspace is an Arc. Transforming to circle with radius 1000m
+                if space['shape'] == 'circle':
                     if space['shape'] == 'polygon':
                         clat = space['locations'][0][0]
                         clon = space['locations'][0][1]
@@ -158,6 +157,7 @@ class AirspaceCheck(object):
                     pmax = geopy.Point(max(pt[0] for pt in space['locations']), max(pt[1] for pt in space['locations']))
                     dist = self.params.notification_distance * sqrt(2)
                     space['object'] = self.reproject(space)
+                '''enlarge bbox to contain notification band'''
                 pt1 = geopy.distance.distance(meters=dist).destination(pmin, 225)
                 pt2 = geopy.distance.distance(meters=dist).destination(pmax, 45)
                 space['bbox'] = [[pt1[0], pt1[1]], [pt2[0], pt2[1]]]
@@ -199,8 +199,7 @@ class AirspaceCheck(object):
                 '''check if fix is inside bbox'''
                 if in_bbox(space['bbox'], fix):
                     '''Check if fix is inside proximity warning area'''
-                    # TODO this type check is needed due to Arcs not recognised
-                    if space['shape'] == 'circle' or isinstance(space['object'], Turnpoint):
+                    if space['shape'] == 'circle':
                         if space['object'].in_radius(fix, 0, notification_band):
                             # fix is inside proximity band (at least)
                             # print(f" in circle --- ")
@@ -224,12 +223,6 @@ class AirspaceCheck(object):
                             dist_ceiling = alt - space['ceiling']
                             vert_distance = max(dist_floor, dist_ceiling)
                             violation = 1
-                        # print(f" polygon airspace check --- {tt.time() - start_time} seconds ---")
-                    # TODO insert arc check here. we can use in radius and bearing to
-                    # '''check if we are in infringement zone
-                    #     we should have at least one negative measure between horiz and vert distance'''
-                    # # if min(vert_distance, horiz_distance) < 0:
-                    #     infringement = [space['name'], vert_distance, horiz_distance]
                     if violation:
                         result = min([(vert_distance, self.params.penalty(vert_distance, 'v')),
                                       (horiz_distance, self.params.penalty(horiz_distance, 'h'))], key=lambda p: p[1])

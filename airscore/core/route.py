@@ -141,6 +141,7 @@ class cPoint(object):
         x       (float)     the x coordinate
         y       (float)     the y coordinate
         radius  (int)       the radius in metres
+        type    (str)       "fix", "launch", "speed", "cylinder", "endspeed", "goal"
         fx      (float)     the x coordinate of the fix
         fy      (float)     the y coordinate of the fix
     """
@@ -148,11 +149,12 @@ class cPoint(object):
     def __str__(self):
         print(f'x: {str(self.x)} | y: {str(self.y)} | radius: {str(self.radius)}')
 
-    def __init__(self, x, y, radius=0):
+    def __init__(self, x, y, radius=0, type='fix'):
         self.x = x
         self.y = y
         self.fx = x
         self.fy = y
+        self.type = type
         self.radius = radius
 
     @classmethod
@@ -169,7 +171,7 @@ class cPoint(object):
 
     @staticmethod
     def create_from_Turnpoint(tp):
-        return cPoint(tp.lon, tp.lat, tp.radius)
+        return cPoint(tp.lon, tp.lat, tp.radius, tp.type)
 
 
 def polar2cartesian(P):
@@ -703,36 +705,40 @@ def get_shortest_path(task, fix=None, pointer=None):
     last_dist = sys.maxsize  # inizialise to max integer
     finished = False
 
-    if fix and pointer:
-        '''create list of turnpoints to optimize distance to goal '''
-        turnpoints = [Turnpoint(lat=fix.lat, lon=fix.lon, type='optimised', radius=0, shape='optimised', how='optimised')]
-        turnpoints.extend([tp for idx, tp in enumerate(task.turnpoints) if idx >= pointer])
+    if not task.projected_turnpoints:
+        '''create a list of cPoint obj from turnpoint list'''
+        points = convert_turnpoints(task.turnpoints, task.geo)
+        line = convert_turnpoints(get_line(task.turnpoints), task.geo)
     else:
-        turnpoints = task.turnpoints
+        points = task.projected_turnpoints
+        line = task.projected_line
 
-    '''create a list of cPoint obj from turnpoint list'''
-    points = convert_turnpoints(turnpoints, task.geo)
+    if fix and pointer:
+        '''create list of points to optimize distance to goal '''
+        x, y = task.geo.convert(fix.lon, fix.lat)
+        points = points[pointer:]
+        points.insert(0, cPoint(x=x, y=y))
 
     count = len(points)  # number of waypoints
-    if any(tp for tp in turnpoints if tp.type == 'endspeed'):
-        ESS_index = turnpoints.index(next(tp for tp in turnpoints if tp.type == 'endspeed'))
+    if any(p for p in points if p.type == 'endspeed'):
+        ESS_index = points.index(next(p for p in points if p.type == 'endspeed'))
     else:
         ESS_index = None
-    if not (turnpoints[-1].shape == 'line'):
-        line = []
-        print(f'is line: {turnpoints[-1].shape}')
-    else:
-        ends = get_line(turnpoints)
-        line = convert_turnpoints(ends, task.geo)
-        print(f'line: {line[0].x}, {line[0].y} - {line[1].x}, {line[1].y}')
+    # if not (turnpoints[-1].shape == 'line'):
+    #     line = []
+    #     # print(f'is line: {turnpoints[-1].shape}')
+    # else:
+    #     ends = get_line(turnpoints)
+    #     line = convert_turnpoints(ends, task.geo)
+    #     # print(f'line: {line[0].x}, {line[0].y} - {line[1].x}, {line[1].y}')
 
-    print('***')
-    print(f'WPT Count: {count}  |  ESS Index: {ESS_index}')
-    for idx, tp in enumerate(turnpoints):
-        print(f'n. {idx}')
-        pt = points[idx]
-        print(f'tp:   lat {tp.lat} |  lon {tp.lon} |  radius {tp.radius} |  shape {tp.shape} |  type {tp.type}')
-        print(f'pt:   x {pt.x} |  y {pt.y} |  radius {pt.radius}')
+    # print('***')
+    # print(f'WPT Count: {count}  |  ESS Index: {ESS_index}')
+    # for idx, tp in enumerate(turnpoints):
+    #     print(f'n. {idx}')
+    #     pt = points[idx]
+    #     print(f'tp:   lat {tp.lat} |  lon {tp.lon} |  radius {tp.radius} |  shape {tp.shape} |  type {tp.type}')
+    #     print(f'pt:   x {pt.x} |  y {pt.y} |  radius {pt.radius}')
 
     ''' Settings'''
     opsCount = count * 10  # number of operations allowed
@@ -745,7 +751,7 @@ def get_shortest_path(task, fix=None, pointer=None):
         finished = (last_dist - planar_dist < tolerance)
         last_dist = planar_dist
         opsCount -= 1
-        print(f'iterations made: {count * 10 - opsCount} | distance: {planar_dist}')
+    # print(f'iterations made: {count * 10 - opsCount} | distance: {planar_dist}')
 
     if fix:
         '''return opt dist to goal'''
@@ -766,7 +772,7 @@ def convert_turnpoints(turnpoints, geo):
 
     for tp in turnpoints:
         x, y = geo.convert(tp.lon, tp.lat)
-        result.append(cPoint(x=x, y=y, radius=tp.radius))
+        result.append(cPoint(x=x, y=y, radius=tp.radius, type=tp.type))
 
     return result
 

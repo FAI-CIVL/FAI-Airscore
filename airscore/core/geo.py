@@ -2,11 +2,13 @@ import math
 import numpy as np
 
 from pyproj import Proj, Transformer
-from route import cPoint, Turnpoint
+from route import cPoint, Turnpoint, calcBearing
+from geopy import distance, Point
 from geopy.distance import geodesic, vincenty
 from collections import namedtuple
 from geographiclib.geodesic import Geodesic
 from math import sqrt, hypot, fabs
+from statistics import mean
 
 '''define earth model'''
 # EARTHMODEL = Proj("+init=EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth
@@ -73,4 +75,46 @@ def get_proj(clat, clon, proj=PROJ):
         tmerc = Proj(
             f"+proj=tmerc +lat_0={clat} +lon_0={clon} +k_0=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
         return tmerc
+
+
+def create_arc_polygon(center, start, end, clockwise=True):
+    """create an arc between two points, given a center"""
+    points = 50
+    center = Point(center[0], center[1])
+    start = Point(start[0], start[1])
+    end = Point(end[0], end[1])
+    bearing1 = calcBearing(center.latitude, center.longitude, start.latitude, start.longitude)
+    dist1 = geodesic(center, start).meters
+    bearing2 = calcBearing(center.latitude, center.longitude, end.latitude, end.longitude)
+    dist2 = geodesic(center, end).meters
+    # dist = mean(dist1, dist2)
+    angle = get_arc_angle(bearing1, bearing2)
+    '''angle is negative if it is smaller counterclockwise from start to end'''
+    if angle < 0 and clockwise:
+        angle += 360
+    elif angle > 0 and not clockwise:
+        angle -= 360
+    # da = angle/points if clockwise else angle/points * -1
+    da = angle / points
+    dr = (dist1 - dist2)/points
+    print(f"center: {center.latitude, center.longitude} | start: {start.latitude, start.longitude} | end: {end.latitude, end.longitude}")
+    print(f"radius: {dist1} | clockwise: {clockwise} | angle: {angle}")
+    print(f"points: {points} | dAngle: {da} | dRadius: {dr}")
+    interpolation_list = []
+    for i in range(1, points):
+        pt = distance.distance(meters=dist1 + dr*i).destination(center, bearing1 + da*i)
+        p = (pt.latitude, pt.longitude)
+        interpolation_list.append(p)
+    print(interpolation_list)
+
+    return interpolation_list
+
+
+def get_arc_angle(b1, b2):
+    r = (b2 - b1) % 360.0
+    # Python modulus has same sign as divisor, which is positive here,
+    # so no need to consider negative case
+    if r >= 180.0:
+        r -= 360.0
+    return r
 

@@ -20,8 +20,8 @@ TO DO:
 Add support for FAI Sphere ???
 """
 
-from route import distance, polar, Turnpoint, get_shortest_path
-from geo import Geo, get_proj
+from route import distance, polar, Turnpoint, get_shortest_path, convert_turnpoints, get_line
+from geo import Geo
 from result import Task_result, create_json_file
 from airspace import AirspaceCheck
 from compUtils import read_rankings
@@ -113,6 +113,8 @@ class Task(object):
         self.distance = 0  # non optimised distance
         self.turnpoints = []  # list of Turnpoint objects
         self.optimised_turnpoints = []  # fixes on cylinders for opt route
+        self.projected_turnpoints = []  # list of cPoint objects
+        self.projected_line = []  # list of cPoint objects
         self.optimised_legs = []  # opt distance between cylinders
         self.partial_distance = []  # distance from launch to waypoint
         self.legs = []  # non optimised legs
@@ -551,6 +553,8 @@ class Task(object):
 
             print(f"Calculating task optimised distance...")
             self.calculate_task_length()
+            self.projected_turnpoints = convert_turnpoints(self.turnpoints, self.geo)
+            self.projected_line = convert_turnpoints(get_line(self.turnpoints), self.geo)
             self.calculate_optimised_task_length()
             print(f"Storing calculated values to database...")
             self.update_task_distance()
@@ -668,6 +672,11 @@ class Task(object):
 
         ''' get pilot and tracks list'''
         self.get_results()
+
+        ''' calculate projected turnpoints'''
+        if not self.projected_turnpoints:
+            self.projected_turnpoints = convert_turnpoints(self.turnpoints, self.geo)
+            self.projected_line = convert_turnpoints(get_line(self.turnpoints), self.geo)
 
         ''' manage Stopped Task    '''
         print(f'stopped time: {self.stopped_time}')
@@ -1444,7 +1453,6 @@ def get_map_json(task_id):
 def write_map_json(task_id):
     import os
     from geographiclib.geodesic import Geodesic
-    from route import get_line
     from mapUtils import get_route_bbox
 
     geod = Geodesic.WGS84
