@@ -92,7 +92,33 @@ class CompForm(FlaskForm):
     min_dist = IntegerField('Minimum Distance (km):')
     nom_launch = IntegerField('Nominal Launch (%):', validators=[NumberRange(min=0, max=100)])
     nom_time = IntegerField('Nominal Time (min):')
-    # team_scoring = SelectField('Team Scoring:', choices=[('aggregate', 'aggregate'), ()])
+
+    team_scoring = BooleanField('Team Scoring:')
+    country_scoring = BooleanField('Country scoring:')
+    team_size = IntegerField('Team size:')
+    team_over = IntegerField('Team over: what is this??')
+
+    distance = SelectField('Distance points:', choices=[('on','On'), ('difficulty','Difficulty'), ('off','Off')])
+    arrival = SelectField('Arrival points:', choices=[('position','Position'), ('time','Time'), ('off','Off')])
+    departure = SelectField('Departure points:', choices=[('leadout','Leadout'), ('departure','Departure'), ('off','Off')])
+    time = SelectField('Time points:', choices=[('on','On'), ('off', 'Off')])
+
+    alt_mode = SelectField('Instrument Altitude:', choices=[('GPS', 'GPS'), ('QNH', 'QNH')])
+    lead_factor = DecimalField('Leadfactor:')
+    no_goal_pen = DecimalField('No goal penalty:')
+
+    tolerance = DecimalField('Turnpoint radius tolerance %:')
+    min_tolerance = IntegerField('Minimum turnpoint tolerance (m):')
+    glide_bonus = DecimalField('Glide bonus:')
+    height_bonus = DecimalField('Height bonus:')
+    ESS__height_upper = IntegerField('ESS height limit - upper:')
+    ESS_height_lower = IntegerField('ESS height limit - lower:')
+    min_time = IntegerField('Minimum time:')
+    scoreback_time = IntegerField('Scoreback time (sec):')
+    max_JTG = IntegerField("Max Jump the gun (sec):")
+    JTG_pen_sec = DecimalField('Jump the gun penalty per second:')
+
+
 
     submit = SubmitField('Save')
 

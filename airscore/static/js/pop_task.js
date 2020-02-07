@@ -1,6 +1,6 @@
 function populate_task(tasPk){
 $(document).ready(function() {
-//  var tasPk = '123' // url.pathname.trimleft("/");
+
     $('#task_result').dataTable({
         ajax: '/get_task_result/'+tasPk,
         paging: false,
@@ -66,10 +66,6 @@ $(document).ready(function() {
             {
                  $('#comp_header').append('<b>Task Deadline: ' + format_seconds(json.info.task_deadline + offset) + '</b><br />');
             }
-//            if (json.info.comp_class != "PG")
-//            {
-//                update_classes(json.info.comp_class);
-//            }
 
             // waypoints
             for (var c=0; c < json.route.length; c++)

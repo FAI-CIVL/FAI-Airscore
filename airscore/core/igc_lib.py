@@ -302,8 +302,8 @@ class GNSSFix:
         return GNSSFix(rawtime, lat, lon, validity, press_alt, gnss_alt,
                        index, extras)
 
-    def __init__(self, rawtime, lat, lon, validity, press_alt, gnss_alt,
-                 index, extras):
+    def __init__(self, rawtime: object, lat: object, lon: object, validity: object, press_alt: object, gnss_alt: object,
+                 index: object, extras: object) -> object:
         """Initializer of GNSSFix. Not meant to be used directly."""
         self.rawtime = rawtime
         self.lat = lat

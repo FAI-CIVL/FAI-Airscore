@@ -8,7 +8,8 @@ import frontendUtils
 from airscore.user.forms import NewTaskForm, CompForm
 from comp import Comp
 from formula import list_formulas, Formula
-
+from task import Task
+import json
 blueprint = Blueprint("user", __name__, url_prefix="/users", static_folder="../static")
 
 
@@ -185,12 +186,36 @@ def comp_settings_admin(compid):
         compform.min_dist.data = int(formula.min_dist/1000)
         compform.nom_launch.data = int(formula.nominal_launch*100)
         compform.nom_time.data = int(formula.nominal_time/60)
-        # compform.team_scoring = formula. TODO
+        # compform.team_scoring.data = formula.
+        # compform.country_scoring.data = formula.
+        # compform.team_size.data = formula.
+        # compform.team_over.data = formula.
+        compform.distance.data = formula.formula_distance
+        compform.arrival.data = formula.formula_arrival
+        compform.departure.data = formula.formula_departure
+        compform.lead_factor.data = formula.lead_factor
+        compform.time.data = formula.formula_time
+        compform.no_goal_pen.data = formula.no_goal_penalty
+        compform.glide_bonus.data = formula.glide_bonus
+        compform.tolerance.data = formula.tolerance
+        compform.min_tolerance.data = formula.min_tolerance
+        compform.height_bonus.data = formula.height_bonus
+        compform.ESS__height_upper.data = formula.arr_max_height
+        compform.ESS_height_lower.data = formula.arr_min_height
+        compform.min_time.data = formula.validity_min_time
+        compform.scoreback_time.data = formula.score_back_time
+        compform.max_JTG.data = formula.max_JTG
+        compform.JTG_pen_sec.data = formula.JTG_penalty_per_sec
+        compform.alt_mode.data = formula.scoring_altitude
+
+
+
+
 
         if current_user.username not in admins:
             compform.submit = None
 
-    tasks = frontendUtils.get_task_list(comp)
+    tasks = jsonify(frontendUtils.get_task_list(comp))
 
     return render_template('users/comp_settings.html', compid=compid, compform=compform, tasks=tasks,
                            taskform=newtaskform, admins=admins, error=error)
@@ -224,3 +249,29 @@ def waypoint_admin():
 @login_required
 def pilot_admin():
     return render_template('users/pilot_admin.html')
+
+
+@blueprint.route('/_add_task/<compid>', methods=['POST'])
+@login_required
+def _add_task(compid):
+    data = request.json
+    task = Task()
+    task.comp_id = compid
+    task.task_name = data['task_name']
+    task.task_num = int(data['task_num'])
+    task.date = datetime.strptime(data['task_date'], '%Y-%m-%d')
+    task.comment = data['task_comment']
+    task.to_db()
+    comp = Comp()
+    comp.comp_id = compid
+    tasks = frontendUtils.get_task_list(comp)
+    return jsonify(tasks)
+
+
+@blueprint.route('/_get_tasks/<compid>', methods=['GET'])
+@login_required
+def _get_tasks(compid):
+    comp = Comp()
+    comp.comp_id = compid
+    tasks = frontendUtils.get_task_list(comp)
+    return jsonify(tasks)
