@@ -76,7 +76,7 @@ class FormulaPreset:
     formula_arrival: Preset
     formula_departure: Preset
     lead_factor: Preset
-    lead_squared_distance: Preset
+    # lead_squared_distance: Preset
     formula_time: Preset
     arr_alt_bonus: Preset
     arr_min_height: Preset
@@ -90,7 +90,7 @@ class FormulaPreset:
     no_goal_penalty: Preset
     glide_bonus: Preset
     tolerance: Preset
-    min_tol: Preset
+    min_tolerance: Preset
     scoring_altitude: Preset
 
     def as_formula(self):
@@ -120,6 +120,7 @@ class Formula(object):
         self.formula_arrival = formula_arrival  # 'position', 'time', 'off'
         self.formula_departure = formula_departure  # 'on', 'leadout', 'off'
         self.lead_factor = lead_factor  # float
+        # self.lead_squared_distance
         self.formula_time = formula_time  # 'on', 'off'
         self.arr_alt_bonus = arr_alt_bonus  # float
         self.arr_min_height = arr_min_height  # int
