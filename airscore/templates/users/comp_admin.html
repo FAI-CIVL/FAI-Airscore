@@ -1,16 +1,11 @@
 
-{% extends "base.html"%}
+{% extends "layout.html"%}
 
 {% block content %}
     <title>Competition Admin</title>
 
     <link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-
-    <!-- JS -->
-<!--    <script src="microajax.minified.js"></script>-->
-    <script src="{{ static_url_for('static', filename='js/utils.js') }}"></script>
-
 
  <!-- The Modal -->
 	<div class="modal fade" id="compmodal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
@@ -97,8 +92,11 @@
     </div>
     </div>
 
-    <!-- Bootstrap core JavaScript -->
+{% endblock %}
+
+{% block js %}
+{% include "js.html" %}
     <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
     <script src="{{ static_url_for('static', filename='js/pop_admin_comps.js') }}"></script>
-
+    <script src="{{ static_url_for('static', filename='js/utils.js') }}"></script>
 {% endblock %}

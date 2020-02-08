@@ -321,26 +321,31 @@ class Comp(object):
     def update_comp_info(self):
 
         with Database() as db:
-            q = db.session.query(tblCompetition).get(self.id)
-            q.comDateFrom = self.date_from
-            q.comDateTo = self.date_to
-            q.comName = self.comp_name
-            q.comCode = self.comp_code
-            q.comSanction = self.sanction
-            q.comLocation = self.comp_site
-            q.regPk = self.region
-            q.comContact = self.contact
-            q.comMeetDirName = self.MD_name
-            q.comTimeOffset = self.time_offset
-            q.claPk = self.cat_id
-            q.comExtUrl = self.website
-            q.comExt = self.external
-            q.comEntryRestrict = self.restricted
-            q.comClass = self.comp_class
-            q.comType = self.comp_type
-            q.comLocked = self.locked
-            q.comStyleSheet = self.stylesheet
-            db.session.commit()
+            try:
+                q = db.session.query(tblCompetition).get(self.id)
+                q.comDateFrom = self.date_from
+                q.comDateTo = self.date_to
+                q.comName = self.comp_name
+                q.comCode = self.comp_code
+                q.comSanction = self.sanction
+                q.comLocation = self.comp_site
+                q.regPk = self.region
+                q.comContact = self.contact
+                q.comMeetDirName = self.MD_name
+                q.comTimeOffset = self.time_offset
+                q.claPk = self.cat_id
+                q.comExtUrl = self.website
+                q.comExt = self.external
+                q.comEntryRestrict = 'registered' if self.restricted else 'open'
+                q.comClass = self.comp_class
+                q.comType = self.comp_type
+                q.comLocked = self.locked
+                q.comStyleSheet = self.stylesheet
+                db.session.commit()
+            except SQLAlchemyError:
+                print('cannot update competition. DB error.')
+                db.session.rollback()
+                return None
 
     @staticmethod
     def from_json(comp_id, ref_id=None):

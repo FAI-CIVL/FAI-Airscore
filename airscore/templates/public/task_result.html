@@ -1,4 +1,4 @@
-{% extends "base.html"%}
+{% extends "layout.html"%}
 {% block content %}
 
   <head>
@@ -101,12 +101,13 @@
       </div>
       </div>
 
-      <!-- Bootstrap core JavaScript -->
-
-      <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
-      <script type="text/javascript" src="/static/js/pop_task.js"></script>
-      <script type="text/javascript">populate_task({{taskid|tojson}})</script>
-      <script type="text/javascript" src="/static/js/class_filter.js"></script>
 </body>
 
+{% endblock %}
+{% block js %}
+{% include "js.html" %}
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="/static/js/pop_task.js"></script>
+    <script type="text/javascript">populate_task({{taskid|tojson}})</script>
+    <script type="text/javascript" src="/static/js/class_filter.js"></script>
 {% endblock %}

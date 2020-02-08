@@ -322,40 +322,40 @@ class Task(object):
     ''' distance stats'''
     @property
     def tot_distance_flown(self):
-        if self.formula.min_dist and self.pilots_launched:
-            return sum([p.distance_flown for p in self.valid_results if p.distance_flown])
-        else:
-            return 0
+        if self.formula:
+            if self.formula.min_dist and self.pilots_launched > 0:
+                return sum([p.distance_flown for p in self.valid_results if p.distance_flown])
+        return 0
 
     @property
     def tot_dist_over_min(self):
-        if self.formula.min_dist and self.pilots_launched:
-            return sum([max(p.distance_flown - self.formula.min_dist, 0) for p in self.valid_results])
-        else:
-            return 0
+        if self.formula:
+            if self.formula.min_dist and self.pilots_launched > 0:
+                return sum([max(p.distance_flown - self.formula.min_dist, 0) for p in self.valid_results])
+        return 0
 
     @property
     def std_dev_dist(self):
-        from statistics import stdev
-        if self.formula.min_dist and self.pilots_launched:
-            return stdev([max(p.distance_flown, self.formula.min_dist) for p in self.valid_results])
-        else:
-            return 0
+        if self.formula:
+            from statistics import stdev
+            if self.formula.min_dist and self.pilots_launched > 0:
+                return stdev([max(p.distance_flown, self.formula.min_dist) for p in self.valid_results])
+        return 0
 
     @property
     def max_distance_flown(self):
-        if self.formula.min_dist and self.pilots_launched:
-            return max(max(p.distance_flown for p in self.valid_results), self.formula.min_dist)
-        else:
-            return 0
+        if self.formula:
+            if self.formula.min_dist and self.pilots_launched > 0:
+                return max(max(p.distance_flown for p in self.valid_results), self.formula.min_dist)
+        return 0
 
     @property
     def max_distance(self):
-        if self.formula.min_dist and self.pilots_launched:
-            # Flight_result.distance = max(distance_flown, total_distance)
-            return max(max(p.distance for p in self.valid_results), self.formula.min_dist)
-        else:
-            return 0
+        if self.formula:
+                if self.formula.min_dist and self.pilots_launched > 0:
+                    # Flight_result.distance = max(distance_flown, total_distance)
+                    return max(max(p.distance for p in self.valid_results), self.formula.min_dist)
+        return 0
 
     '''time stats'''
     @property
@@ -838,10 +838,10 @@ class Task(object):
         from datetime import datetime
         from calcUtils import sec_to_time
 
-        task_start = datetime.combine(self.date, sec_to_time(self.window_open_time))
+        task_start = None if self.window_open_time is None else datetime.combine(self.date, sec_to_time(self.window_open_time))
         launch_close = None if self.window_close_time is None else datetime.combine(self.date,
                                                                                     sec_to_time(self.window_close_time))
-        deadline = datetime.combine(self.date, sec_to_time(self.task_deadline))
+        deadline = None if self.task_deadline is None else datetime.combine(self.date, sec_to_time(self.task_deadline))
         start_time = None if self.start_time is None else datetime.combine(self.date, sec_to_time(self.start_time))
         start_close = None if self.start_close_time is None else datetime.combine(self.date,
                                                                                   sec_to_time(self.start_close_time))
@@ -857,24 +857,26 @@ class Task(object):
                                tasShortRouteDistance=self.opt_dist, tasStartSSDistance=self.opt_dist_to_SS,
                                tasEndSSDistance=self.opt_dist_to_ESS, tasSSDistance=self.SS_distance,
                                tasSSInterval=self.SS_interval,
-                               tasLaunchValid=self.launch_valid, tasComment=self.comment)
+                               tasLaunchValid=self.launch_valid, tasComment=self.comment,
+                               tasQNH=self.QNH)
                 db.session.add(task)
                 db.session.flush()
                 self.task_id = task.tasPk
-                wpts = []
-                for idx, tp in enumerate(self.turnpoints):
-                    opt_lat, opt_lon, cumulative_dist = None, None, None
-                    if len(self.optimised_turnpoints) > 0:
-                        opt_lat, opt_lon = self.optimised_turnpoints[idx].lat, self.optimised_turnpoints[idx].lon
-                    if len(self.partial_distance) > 0:
-                        cumulative_dist = self.partial_distance[idx]
-                    wpt = W(tasPk=self.id, tawNumber=tp.id, tawName=tp.name, tawLat=tp.lat, tawLon=tp.lon,
-                            tawAlt=tp.altitude,
-                            tawDesc=tp.description, tawType=tp.type, tawHow=tp.how, tawShape=tp.shape,
-                            tawRadius=tp.radius,
-                            ssrLatDecimal=opt_lat, ssrLongDecimal=opt_lon, ssrCumulativeDist=cumulative_dist)
-                    wpts.append(wpt)
-                db.session.bulk_save_objects(wpts)
+                if self.turnpoints:
+                    wpts = []
+                    for idx, tp in enumerate(self.turnpoints):
+                        opt_lat, opt_lon, cumulative_dist = None, None, None
+                        if len(self.optimised_turnpoints) > 0:
+                            opt_lat, opt_lon = self.optimised_turnpoints[idx].lat, self.optimised_turnpoints[idx].lon
+                        if len(self.partial_distance) > 0:
+                            cumulative_dist = self.partial_distance[idx]
+                        wpt = W(tasPk=self.id, tawNumber=tp.id, tawName=tp.name, tawLat=tp.lat, tawLon=tp.lon,
+                                tawAlt=tp.altitude,
+                                tawDesc=tp.description, tawType=tp.type, tawHow=tp.how, tawShape=tp.shape,
+                                tawRadius=tp.radius,
+                                ssrLatDecimal=opt_lat, ssrLongDecimal=opt_lon, ssrCumulativeDist=cumulative_dist)
+                        wpts.append(wpt)
+                    db.session.bulk_save_objects(wpts)
 
             except SQLAlchemyError:
                 print(f'Task storing error')

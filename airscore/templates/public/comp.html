@@ -1,4 +1,4 @@
-{% extends "base.html"%}
+{% extends "layout.html"%}
 {% block content %}
 <br>
 <div class="container" id="main">
@@ -26,7 +26,9 @@
     <div class="col">
       <h3 id="task_hd">{{task['task_name']}}</h3>
       <h4>{{task['date']}}</h4>
+      {% if task.comment %}
       {{task['comment']}}<br>
+      {% endif %}
       <table class="taskinfo"><tbody><tr><td>Task Type:</td>
         <td>{{task['task_type']}}</td></tr><tr>
         <td>Task Distance:</td>
@@ -34,7 +36,7 @@
       </tr><tr><td>Day Quality:</td>
         <td>{{task['tasQuality']}}</td>
       </tr></tbody></table><br>
-        {% if task['status'] != "Not yet scored"%}
+        {% if task['status'] != "Not yet scored" and task['status'] != "Task not set"%}
         <a href={{ url_for('public.task_result', taskid=task['id']) }} class="btn btn-primary" >Task Scores</a>
         {% endif %}
         <td><strong>{{task['status']}}</strong></td>
@@ -45,3 +47,9 @@
 {% endfor %}
 </div>
  {% endblock %}
+
+{% block js %}
+{% include "js.html" %}
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+
+{% endblock %}

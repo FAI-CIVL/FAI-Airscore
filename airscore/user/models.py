@@ -15,6 +15,7 @@ from airscore.database import (
 from airscore.extensions import bcrypt
 
 
+
 class Role(SurrogatePK, Model):
     """A role for a user."""
 
@@ -70,3 +71,5 @@ class User(UserMixin, SurrogatePK, Model):
     def __repr__(self):
         """Represent instance as a unique string."""
         return f"<User({self.username!r})>"
+
+

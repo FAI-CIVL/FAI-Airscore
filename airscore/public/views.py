@@ -11,9 +11,9 @@ from flask import (
     jsonify,
     send_file
 )
-from flask_login import login_required, login_user, logout_user
+from flask_login import login_required, login_user, logout_user, current_user
 from airscore.extensions import login_manager
-from airscore.public.forms import LoginForm, CompForm, NewTaskForm
+from airscore.public.forms import LoginForm
 from airscore.user.forms import RegisterForm
 from airscore.user.models import User
 from airscore.utils import flash_errors
@@ -22,22 +22,16 @@ from task import get_map_json, get_task_json
 from trackUtils import read_track_result_file
 from design_map import *
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, SelectField, SelectMultipleField, DateField, IntegerField
-from wtforms.validators import DataRequired
+from wtforms import SelectField
 from calcUtils import sec_to_time
 import mapUtils
 from myconn import Database
-from sqlalchemy import func, not_
 from sqlalchemy.orm import aliased
 import Defines
 from os import path
-import json
 import frontendUtils
-from formula import list_formulas
-blueprint = Blueprint("public", __name__, static_folder="../static")
 
-from comp import Comp
-from formula import Formula
+blueprint = Blueprint("public", __name__, static_folder="../static")
 
 
 @login_manager.user_loader
@@ -60,12 +54,14 @@ def home_old():
             return redirect(redirect_url)
         else:
             flash_errors(form)
+    flash("333")
     return render_template("public/home.html", form=form)
 
 
 @blueprint.route("/", methods=["GET", "POST"])
 def home():
     form = LoginForm(request.form)
+    # Handle logging in
     if request.method == "POST":
         if form.validate_on_submit():
             login_user(form.user)
@@ -180,15 +176,20 @@ def competition(compid):
     if non_scored_tasks:
         for t in non_scored_tasks:
             task = t._asdict()
-            wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox = get_map_json(task['id'])
-            layer['geojson'] = None
-            layer['bbox'] = bbox
-            task_map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
-                                goal_line=goal_line, margin=tolerance)
-            task['opt_dist'] = '{:0.2f}'.format(task['tasShortRouteDistance'] / 1000) + ' km'
-            task.update({'map': task_map._repr_html_()})
-            task['tasQuality'] = "-"
             task['status'] = "Not yet scored"
+            if not t.tasShortRouteDistance or t.tasShortRouteDistance == 0:
+                task['status'] = "Task not set"
+                task['opt_dist'] = '0 km'
+            else:
+                wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox = get_map_json(task['id'])
+                layer['geojson'] = None
+                layer['bbox'] = bbox
+                task_map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
+                                    goal_line=goal_line, margin=tolerance)
+                task['opt_dist'] = '{:0.2f}'.format(task['tasShortRouteDistance'] / 1000) + ' km'
+                task.update({'map': task_map._repr_html_()})
+
+            task['tasQuality'] = "-"
             task['date'] = task['date'].strftime("%Y-%m-%d")
             all_tasks.append(task)
     all_tasks.sort(key=lambda k: k['date'], reverse=True)
@@ -359,63 +360,6 @@ def multimap(trackid, extra_trackids):
     return map
 
 
-@blueprint.route('/airspace_map/<filename>')
-def airspace_edit(filename):
-    import design_map
-    import airspaceUtils
-
-    message = ''
-    spaces = []
-    unknown_flag = False
-    fl_detail = ''
-    fl_messages = []
-
-    data = airspaceUtils.read_airspace_map_file(filename)
-    airspace_list = data['airspace_list']
-    spaces = data['spaces']
-    bbox = data['bbox']
-
-    for space in airspace_list:
-        if space["floor_unit"] == "FL":
-            fl_messages.append(
-                f"{space['floor_description']} is {int(space['floor']) * 100} ft or {int(space['floor']) * 100 * 0.3048} m ")
-            space['floor'] = None
-
-        if space["ceiling_unit"] == "FL":
-            fl_messages.append(
-                f"{space['ceiling_description']} is {int(space['ceiling']) * 100} ft or {int(space['ceiling']) * 100 * 0.3048} m ")
-            space['ceiling'] = None
-
-        if space["floor_unit"] == "Unknown height unit" or space["ceiling_unit"] == "Unknown height unit":
-            unknown_flag = True
-
-    if fl_messages:
-        message = 'Attention: There is FL (flight level) units in the file. You should adjust to meters or ' \
-                  'feet above sea level'
-        fl_detail = ", ".join(set(fl_messages))
-        fl_detail += " - Assuming an International Standard Atmosphere pressure of 1013.25 hPa (29.92 inHg) " \
-                     "at sea level, and therefore is not necessarily the same as the aircraft's actual altitude, " \
-                     "either above sea level or above ground level. " \
-                     "You should round down to be conservative and allow for days with lower atmospheric pressure."
-    if unknown_flag:
-        message += 'Attention: There is unknown height units in the file. You should adjust to meters or ' \
-                   'feet above sea level'
-
-    airspace_map = design_map.make_map(airspace_layer=spaces, bbox=bbox)
-
-    return render_template('users/airspace_admin_map.html', airspace_list=airspace_list, file=filename,
-                           map=airspace_map._repr_html_(), message=message, FL_message=fl_detail)
-
-
-@blueprint.route('/save_airspace', methods=['PUT'])
-def save_airspace():
-    import airspaceUtils
-    data = request.json
-    newfile = airspaceUtils.create_new_airspace_file(data)
-    airspaceUtils.create_airspace_map_check_files(newfile)
-    return jsonify(dict(redirect=newfile))
-
-
 @blueprint.route('/download/<filetype>/<filename>', methods=['GET'])
 def download_file(filetype, filename):
     if filetype == 'airspace':
@@ -424,86 +368,3 @@ def download_file(filetype, filename):
     return send_file(fullname, as_attachment=True)
 
 
-@blueprint.route('/get_admin_comps', methods=['GET', 'POST'])
-def get_admin_comps():
-    return frontendUtils.get_admin_comps()
-
-
-@blueprint.route('/comp_admin', methods=['GET', 'POST'])
-def comp_admin():
-    return render_template('users/comp_admin.html', today=datetime.today().strftime('%d-%m-%Y'))
-
-
-@blueprint.route('/create_comp', methods=['PUT'])
-def create_comp():
-
-    data = request.json
-    date_from = datetime.strptime(data['datefrom'], '%Y-%m-%d')
-    date_to = datetime.strptime(data['dateto'], '%Y-%m-%d')
-    new_comp = Comp(comp_name=data['name'],
-                    comp_class=data['class'],
-                    comp_site=data['location'],
-                    comp_code=data['code'],
-                    date_from=date_to,
-                    date_to=date_from)
-    output = new_comp.to_db()
-    if type(output) == int:
-        return jsonify(dict(redirect='/comp_admin'))
-    else:
-        return render_template('500.html')
-
-
-@blueprint.route('/_get_formulas/')
-def _get_formulas():
-    category = request.args.get('category', '01', type=str)
-    formulas = list_formulas()
-    formula_choices = [(x, x.upper()) for x in formulas[category]]
-    return jsonify(formula_choices)
-
-
-@blueprint.route('/comp_settings_admin/<compid>', methods=['GET', 'POST'])
-def comp_settings_admin(compid):
-    error = None
-    compid = int(compid)
-    comp = Comp.read(compid)
-    formula = Formula.read(compid)
-    compform = CompForm()
-    newtaskform = NewTaskForm()
-
-    compform.comp_name.data = comp.comp_name
-    compform.comp_code.data = comp.comp_code
-    compform.sanction.data = comp.sanction
-    compform.comp_type.data = comp.comp_type
-    compform.comp_class.data = comp.comp_class
-    compform.comp_site.data = comp.comp_site
-    compform.date_from.data = comp.date_from
-    compform.date_to.data = comp.date_to
-    compform.MD_name.data = comp.MD_name
-    compform.time_offset.data = comp.time_offset
-    compform.pilot_registration.data = comp.restricted
-    compform.formula.data = formula.formula_name
-    compform.overall_validity.data = formula.overall_validity
-    compform.validity_param.data = formula.validity_param*100
-    compform.nom_dist.data = formula.nominal_dist/1000
-    compform.nom_goal.data = formula.nominal_goal*100
-    compform.min_dist.data = formula.min_dist/1000
-    compform.nom_launch.data = formula.nominal_launch*100
-    compform.nom_time.data = formula.nominal_time/60
-    # compform.team_scoring = formula. TODO
-    compform.formula.choices = [(1, '1'), (2, '2')]
-    if compform.validate_on_submit():
-        return f'Start Date is : {compform.date_from} End Date is : {compform.date_to}'
-    else:
-        error = flash("Start date is greater than End date")
-
-    admins = ['joe smith', 'john wayne']  # TODO
-    tasks = frontendUtils.get_task_list(comp)
-
-
-
-    # if request.method == 'GET':
-    return render_template('public/competition.html', compid=compid , compform=compform, tasks=tasks, taskform=newtaskform, admins=admins, error=error)
-
-@blueprint.route('/task_admin/<taskid>', methods=['GET', 'POST'])
-def task_admin(taskid):
-    return render_template('public/task_admin.html', taskid=taskid)

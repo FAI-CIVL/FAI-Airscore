@@ -76,7 +76,7 @@ class FormulaPreset:
     formula_arrival: Preset
     formula_departure: Preset
     lead_factor: Preset
-    lead_squared_distance: Preset
+    # lead_squared_distance: Preset
     formula_time: Preset
     arr_alt_bonus: Preset
     arr_min_height: Preset
@@ -90,7 +90,7 @@ class FormulaPreset:
     no_goal_penalty: Preset
     glide_bonus: Preset
     tolerance: Preset
-    min_tol: Preset
+    min_tolerance: Preset
     scoring_altitude: Preset
 
     def as_formula(self):
@@ -120,6 +120,7 @@ class Formula(object):
         self.formula_arrival = formula_arrival  # 'position', 'time', 'off'
         self.formula_departure = formula_departure  # 'on', 'leadout', 'off'
         self.lead_factor = lead_factor  # float
+        # self.lead_squared_distance
         self.formula_time = formula_time  # 'on', 'off'
         self.arr_alt_bonus = arr_alt_bonus  # float
         self.arr_min_height = arr_min_height  # int
@@ -299,9 +300,9 @@ class Formula(object):
                 row.comOverallScore = self.overall_validity
                 row.comOverallParam = self.validity_param
                 row.forNomGoal = self.nominal_goal
-                row.forMinDistance = int(self.min_dist / 1000)
-                row.forNomDistance = int(self.nominal_dist / 1000)
-                row.forNomTime = int(self.nominal_time / 60)
+                row.forMinDistance = int(self.min_dist / 1000) if self.min_dist else 0
+                row.forNomDistance = int(self.nominal_dist / 1000) if self.nominal_dist else 0
+                row.forNomTime = int(self.nominal_time / 60) if self.nominal_time else 0
                 row.forNomLaunch = self.nominal_launch
                 row.forDistance = self.formula_distance
                 row.forArrival = self.formula_arrival
@@ -310,13 +311,13 @@ class Formula(object):
                 row.forTime = self.formula_time
                 row.forNoGoalPenalty = self.no_goal_penalty
                 row.forGlideBonus = self.glide_bonus
-                row.forTolerance = self.tolerance * 100
+                row.forTolerance = self.tolerance * 100 if self.tolerance else 0
                 row.forHeightBonus = self.arr_alt_bonus
                 row.forESSHeightLo = self.arr_min_height
                 row.forESSHeightUp = self.arr_max_height
-                row.forMinTime = int(self.validity_min_time / 60)
-                row.forScorebackTime = int(self.score_back_time / 60)
-                row.forMaxJTG = int(self.max_JTG / 60)
+                row.forMinTime = int(self.validity_min_time / 60) if self.validity_min_time else 0
+                row.forScorebackTime = int(self.score_back_time / 60) if self.score_back_time else 0
+                row.forMaxJTG = int(self.max_JTG / 60) if self.max_JTG else 0
                 row.forJTGPenPerSec = self.JTG_penalty_per_sec
                 row.forAltitudeMode = self.scoring_altitude
 

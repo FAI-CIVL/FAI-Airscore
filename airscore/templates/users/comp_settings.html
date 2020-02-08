@@ -1,0 +1,375 @@
+{% extends "layout.html"%}
+{% block content %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+{% if error %}
+<p><strong> Error: </strong></p>
+{{error}}
+{% endif %}
+<form method="post" action="">
+   {{compform.hidden_tag()}}
+   <div class="container">
+      <br>
+      <center>
+         <h2 class="font-weight-bold">{{compform.comp_name.data}}</h2>
+      </center>
+   </div>
+   <p>
+      <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse1" aria-expanded="false" aria-controls="collapse1">
+      Competition Details
+      </button>
+   </p>
+   <div class="collapse show" id="collapse1">
+      <div class="card card-body">
+         <div class="container">
+            <h3 class="font-weight-bold">Competition Details</h3>
+            <div class="form-row">
+               <div class="form-group col-md-7">
+                  {{compform.comp_name.label}} {{compform.comp_name(size=40)}}
+               </div>
+               <div  class="form-group col-md-5">
+                  {{compform.comp_code.label}} {{compform.comp_code(size=10, **{'data-toggle': 'tooltip', 'title': compform.comp_code.description})}}
+               </div>
+            </div>
+            <div  class="form-row">
+               <div class="form-group col-md-6">
+                  {{compform.comp_site.label}} {{compform.comp_site(**{'data-toggle': 'tooltip', 'title': compform.comp_site.description})}}
+               </div>
+               <div  class="form-group col-md-6">
+                  {{compform.date_from.label}} {{compform.date_from()}}
+                  {{compform.date_to.label}} {{compform.date_to()}}
+               </div>
+            </div>
+            <div class="form-row">
+               <div class="form-group" col-md-3">
+                  {{compform.comp_type.label}} {{compform.comp_type()}}
+                  {{compform.comp_class.label}} {{compform.comp_class()}}
+                  {{compform.time_offset.label}} {{compform.time_offset(size=3,**{'data-toggle': 'tooltip', 'title': compform.time_offset.description})}}
+                  {{compform.pilot_registration.label}} {{compform.pilot_registration(**{'data-toggle': 'tooltip', 'title': compform.pilot_registration.description})}}
+                  {{compform.sanction.label}} {{compform.sanction(**{'data-toggle': 'tooltip', 'title': compform.sanction.description})}}
+               </div>
+            </div>
+            <div class="form-row">
+               <div class="form-group" col-md-3">
+                  {{compform.MD_name.label}} {{compform.MD_name()}}
+               </div>
+            </div>
+         </div>
+      </div>
+   </div>
+   <p>
+      <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse2" aria-expanded="false" aria-controls="collapse2">
+      Scoring Parameters
+      </button>
+   </p>
+   <div class="collapse" id="collapse2">
+   <div class="card card-body">
+      <div class="container">
+         <h3 class="font-weight-bold">Scoring Parameters</h3>
+         <div class="form-row">
+            <div class="form-group col-md-6">
+               {{compform.formula.label}} {{compform.formula(**{'data-toggle': 'tooltip', 'title': compform.formula.description})}}
+               {{compform.overall_validity.label}} {{compform.overall_validity(**{'data-toggle': 'tooltip', 'title': compform.overall_validity.description})}}
+               {{compform.validity_param.label}} {{compform.validity_param(size=3,**{'data-toggle': 'tooltip', 'title': compform.validity_param.description})}}
+            </div>
+         </div>
+         <div  class="form-row">
+            <div class="form-group col-md-2">
+               {{compform.nom_dist.label}} {{compform.nom_dist(size=3, **{'data-toggle': 'tooltip', 'title': compform.nom_dist.description})}}
+            </div>
+            <div class="form-group col-md-2">
+               {{compform.min_dist.label}} {{compform.min_dist(size=3,**{'data-toggle': 'tooltip', 'title': compform.min_dist.description})}}
+            </div>
+            <div  class="form-group col-md-2">
+               {{compform.nom_goal.label}} {{compform.nom_goal(size=3,**{'data-toggle': 'tooltip', 'title': compform.nom_goal.description})}}
+            </div>
+            <div  class="form-group col-md-2">
+               {{compform.nom_launch.label}} {{compform.nom_launch(size=3,**{'data-toggle': 'tooltip', 'title': compform.nom_launch.description})}}
+            </div>
+            <div  class="form-group col-md-2">
+               {{compform.nom_time.label}} {{compform.nom_time(size=3,**{'data-toggle': 'tooltip', 'title': compform.nom_time.description})}}
+            </div>
+         </div>
+         <p>
+            <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse25" aria-expanded="false" aria-controls="collapse25">
+            Advanced Parameters
+            </button>
+         </p>
+         <div class="collapse" id="collapse25">
+            <div class="card card-body">
+               <div class="container">
+                  <div class="form-row">
+                     <div class="form-group col-md-12">
+                        {{compform.distance.label}} {{compform.distance(**{'data-toggle': 'tooltip', 'title': compform.distance.description})}}
+                        {{compform.arrival.label}} {{compform.arrival(**{'data-toggle': 'tooltip', 'title': compform.arrival.description})}}
+                        {{compform.departure.label}} {{compform.departure(**{'data-toggle': 'tooltip', 'title': compform.departure.description})}}
+                        {{compform.time.label}} {{compform.time(**{'data-toggle': 'tooltip', 'title': compform.time.description})}}
+                     </div>
+                  </div>
+                  <div  class="form-row">
+                     <div class="form-group col-md-3">
+                        {{compform.alt_mode.label}} {{compform.alt_mode(**{'data-toggle': 'tooltip', 'title': compform.alt_mode.description})}}
+                     </div>
+                     <div class="form-group col-md-3">
+                        {{compform.lead_factor.label}} {{compform.lead_factor(size=3,**{'data-toggle': 'tooltip', 'title': compform.lead_factor.description})}}
+                     </div>
+                     <div  class="form-group col-md-3">
+                        {{compform.no_goal_pen.label}} {{compform.no_goal_pen(size=3,**{'data-toggle': 'tooltip', 'title': compform.no_goal_pen.description})}}
+                     </div>
+                  </div>
+                   <div  class="form-row">
+                      <div class="form-group col-md-4">
+                        {{compform.tolerance.label}} {{compform.tolerance(size=3,**{'data-toggle': 'tooltip', 'title': compform.tolerance.description})}}
+                        </div>
+                          <div  class="form-group col-md-4">
+                          {{compform.min_tolerance.label}} {{compform.min_tolerance(size=3,**{'data-toggle': 'tooltip', 'title': compform.min_tolerance.description})}}
+                       </div>
+                  </div>
+                  <div  class="form-row">
+                        <div class="form-group col-md-12">
+                          {{compform.glide_bonus.label}} {{compform.glide_bonus(size=3,**{'data-toggle': 'tooltip', 'title': compform.glide_bonus.description})}}
+                        {{compform.height_bonus.label}} {{compform.height_bonus(size=3,**{'data-toggle': 'tooltip', 'title': compform.height_bonus.description})}}
+                      {{compform.ESS__height_upper.label}} {{compform.ESS__height_upper(size=3,**{'data-toggle': 'tooltip', 'title': compform.ESS__height_upper.description})}}
+                        {{compform.ESS_height_lower.label}} {{compform.ESS_height_lower(size=3,**{'data-toggle': 'tooltip', 'title': compform.ESS_height_lower.description})}}
+
+                        </div>
+                  </div>
+                  <div  class="form-row">
+                        <div class="form-group col-md-12">
+                        {{compform.min_time.label}} {{compform.min_time(size=3,**{'data-toggle': 'tooltip', 'title': compform.min_time.description})}}
+                        {{compform.scoreback_time.label}} {{compform.scoreback_time(size=3,**{'data-toggle': 'tooltip', 'title': compform.scoreback_time.description})}}
+                     </div>
+                  </div>
+                    <div  class="form-row">
+                        <div class="form-group col-md-12">
+                        {{compform.max_JTG.label}} {{compform.max_JTG(size=3,**{'data-toggle': 'tooltip', 'title': compform.max_JTG.description})}}
+                        {{compform.JTG_pen_sec.label}} {{compform.JTG_pen_sec(size=3,**{'data-toggle': 'tooltip', 'title': compform.JTG_pen_sec.description})}}
+                     </div>
+                  </div>
+
+
+               </div>
+            </div>
+         </div>
+      </div>
+   </div>
+   </div>
+   <p>
+      <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse3" aria-expanded="false" aria-controls="collapse3">
+      Management
+      </button>
+   </p>
+   <div class="collapse" id="collapse3">
+      <div class="card card-body">
+         <div class="container">
+            <h3 class="font-weight-bold">Management</h3>
+            <div class="form-row">
+               <div class="form-group col-md-6">
+                  <h6 font-weight-bold>Admins:</h6>
+                  <table>
+                     {% for admin in admins %}
+                     <TR>
+                        <TD class="c3">{{admin}}</TD>
+                     </TR>
+                     {% endfor %}
+                  </table>
+                  {% if compform.submit %}
+                  <button id="add_admin" class="btn btn-secondary" type="button">Add admin</button>
+                  {% endif %}
+               </div>
+            </div>
+            <div class="form-row">
+               <div class="form-group col-md-6">
+                  {{compform.locked.label}} {{compform.locked(**{'data-toggle': 'tooltip', 'title': compform.locked.description})}}
+               </div>
+            </div>
+         </div>
+      </div>
+   </div>
+   <p>
+      <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse4" aria-expanded="false" aria-controls="collapse4">
+      Tasks
+      </button>
+   </p>
+   <div class="collapse" id="collapse4">
+      <div class="card card-body">
+         <div class="container">
+            <h3 class="font-weight-bold">Tasks</h3>
+            <div class="form-row">
+               <div class="form-group col-md-6">
+                  <table id="tasks">
+                     <tbody>
+                     </tbody>
+                  </table>
+                  <p>
+                     {% if compform.submit %}
+                     <button id="add_task" class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#collapse5" aria-expanded="false" aria-controls="collapse5">
+                     Add task
+                     </button>
+                     {% endif%}
+                  </p>
+                  <div class="collapse" id="collapse5">
+                     <div class="card card-body">
+                        <div class="container">
+<form id = "add_task_form" method="post" action="">
+<div class="form-row">
+<div class="form-group width4">
+{{taskform.task_number.label}} {{taskform.task_number(size=2, **{'id':"task_number", 'data-toggle': 'tooltip', 'title': taskform.task_number.description})}}
+{{taskform.task_date.label}} {{taskform.task_date(**{'id':"task_date",})}}
+</div>
+</div>
+<div class="form-row">
+<div class="form-group col-md-6">
+{{taskform.task_name.label}} {{taskform.task_name(**{'id':"task_name", 'data-toggle': 'tooltip', 'title': taskform.task_name.description})}}
+</div>
+<div class="form-group col-md-6">
+{{taskform.task_comment.label}} {{taskform.task_comment(**{'id':"task_comment",'data-toggle': 'tooltip', 'title': taskform.task_comment.description})}}
+</div>
+</div>
+<div class="form-row">
+<button id="save_task_button" class="btn btn-success" type="button" onclick="save_task()">
+Add
+</button>
+</div>
+</form>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="container">
+   <br>
+   <center>
+      {% if compform.submit %}
+      {{compform.submit(class="btn-success")}}
+      {% else %}
+      <b>You are not an admin of this comp</b>
+      {% endif%}
+   </center>
+</div>
+<button class="btn btn-success" data-toggle="confirmation" data-popout="true">Confirmation</button>
+</form>
+{% endblock %}
+{% block js %}
+{% include "js.html" %}
+<script src="{{ static_url_for('static', filename='js/bootstrap-confirmation.js') }}"></script>
+<script>
+   var csrftoken = $('meta[name=csrf-token]').attr('content');
+   
+   $('[data-toggle=confirmation]').confirmation({
+     rootSelector: '[data-toggle=confirmation]',
+     // other options
+   });
+   
+   
+   
+   $.ajaxSetup({
+       beforeSend: function(xhr, settings) {
+           if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type)) {
+               xhr.setRequestHeader("X-CSRFToken", csrftoken)
+           }
+       }
+   })
+   
+               $(function() {
+   
+       // jQuery selection for the 2 select boxes
+       var dropdown = {
+           category: $('#select_category'),
+           formula: $('#select_formula')
+       };
+   
+       // call to update on load
+       updateFormulas();
+   
+       // function to call XHR and update formula dropdown
+       function updateFormulas() {
+           var send = {
+               category: dropdown.category.val()
+           };
+           dropdown.formula.attr('disabled', 'disabled');
+           dropdown.formula.empty();
+           $.getJSON("{{ url_for('user._get_formulas')}}", send, function(data) {
+               data.forEach(function(item) {
+                   dropdown.formula.append(
+                       $('<option>', {
+                           value: item[0],
+                           text: item[1]
+                       })
+                   );
+               });
+               dropdown.formula.removeAttr('disabled');
+           });
+       }
+   
+       // event listener to state dropdown change
+       dropdown.category.on('change', function() {
+           updateFormulas();
+       });
+   
+   });
+   
+   function update_tasks(json) {
+               $("#tasks tbody").remove();
+               var content = '';
+               content += '<tbody>';
+               for (var i = 0; i < json.length; i++) {
+               content += '><tr id="'
+               + json[i].task_id + '">';
+               content += '<td class="col-3">' + json[i].link + '</td>';
+          //     content += '<td class="col-3">' + json[i].task_name + '</td>';
+               content += '<td class="col-3">' + json[i].date + '</td>';
+               content += '<td class="col-3">' + json[i].opt_dist + '</td>';
+               content += '<td class="col-3">' + json[i].comment+ '</td>';
+               content += '<td  class ="value" ><button type="button" class="btn btn-danger" data-toggle="confirmation" data-popout="true">Delete</button></td>'
+               content += '</tr>';
+   
+               }
+               content += '</tbody>';
+   
+               $('#tasks').append(content);
+   
+          };
+   
+   
+   function save_task(){
+           var mydata = new Object();
+               mydata.task_name = $('#task_name').val();
+               mydata.task_date = $('#task_date').val();
+               mydata.task_num = $('#task_number').val();
+               mydata.task_comment = $('#task_comment').val();
+   
+           $.ajax({
+               type: "POST",
+               url: "{{ url_for('user._add_task', compid=compid)}}",
+               contentType:"application/json",
+               data : JSON.stringify(mydata),
+               dataType: "json",
+               success: function () {
+                      get_tasks()
+               }
+               });
+   
+   };
+   
+   function get_tasks(){
+    $.ajax({
+               type: "GET",
+               url: "{{ url_for('user._get_tasks', compid=compid)}}",
+               contentType:"application/json",
+               dataType: "json",
+               success: function (response) {
+                       update_tasks(response)
+               }
+               });
+   }
+   
+   
+   $(document).ready(function() {
+   get_tasks()
+   });
+      
+</script>
+{% endblock %}

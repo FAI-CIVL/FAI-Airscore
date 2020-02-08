@@ -43,7 +43,7 @@ pg_preset = FormulaPreset(
     # Lead Factor: factor for Leadou Points calculation formula
     lead_factor=Preset(value=1.0, visible=False),
     # Squared Distances used for LeadCoeff: factor for Leadou Points calculation formula
-    lead_squared_distance=Preset(value=False, visible=False),
+    # lead_squared_distance=Preset(value=False, visible=False),
     # Time Points: on, off
     formula_time=Preset(value='on', visible=False),
     # Arrival Altitude Bonus: Bonus points factor on ESS altitude
@@ -71,7 +71,7 @@ pg_preset = FormulaPreset(
     # Waypoint radius tolerance for validation: FLOAT default is 0.1%
     tolerance=Preset(value=0.005, visible=True, editable=True),
     # Waypoint radius minimum tolerance (meters): INT default = 5
-    min_tol=Preset(value=5, visible=True, editable=True),
+    min_tolerance=Preset(value=5, visible=True, editable=True),
     # Scoring Altitude Type: default is GPS for PG and QNH for HG
     scoring_altitude=Preset(value='GPS', visible=True, editable=True)
 )
