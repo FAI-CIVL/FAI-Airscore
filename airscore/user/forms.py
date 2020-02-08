@@ -111,7 +111,7 @@ class CompForm(FlaskForm):
     min_tolerance = IntegerField('Minimum turnpoint tolerance (m):')
     glide_bonus = DecimalField('Glide bonus:')
     height_bonus = DecimalField('Height bonus:')
-    ESS__height_upper = IntegerField('ESS height limit - upper:')
+    ESS_height_upper = IntegerField('ESS height limit - upper:')
     ESS_height_lower = IntegerField('ESS height limit - lower:')
     min_time = IntegerField('Minimum time:')
     scoreback_time = IntegerField('Scoreback time (sec):')

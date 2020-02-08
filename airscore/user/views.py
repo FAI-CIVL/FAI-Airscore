@@ -200,7 +200,7 @@ def comp_settings_admin(compid):
         compform.tolerance.data = formula.tolerance
         compform.min_tolerance.data = formula.min_tolerance
         compform.height_bonus.data = formula.height_bonus
-        compform.ESS__height_upper.data = formula.arr_max_height
+        compform.ESS_height_upper.data = formula.arr_max_height
         compform.ESS_height_lower.data = formula.arr_min_height
         compform.min_time.data = formula.validity_min_time
         compform.scoreback_time.data = formula.score_back_time
@@ -275,3 +275,30 @@ def _get_tasks(compid):
     comp.comp_id = compid
     tasks = frontendUtils.get_task_list(comp)
     return jsonify(tasks)
+
+
+@blueprint.route('/_get_adv_settings', methods=['GET'])
+@login_required
+def _get_adv_settings():
+    data = request.json
+    formula = Formula.from_preset(data['category'], data['formula'])
+    settings= {}
+    settings['distance'] = formula.formula_distance
+    settings['arrival'] = formula.formula_arrival
+    settings['departure'] = formula.formula_departure
+    settings['lead_factor'] = formula.lead_factor
+    settings['time'] = formula.formula_time
+    settings['no_goal_pen'] = formula.no_goal_penalty
+    settings['glide_bonus'] = formula.glide_bonus
+    settings['tolerance'] = formula.tolerance
+    settings['min_tolerance'] = formula.min_tolerance
+    settings['height_bonus'] = formula.height_bonus
+    settings['ESS_height_upper'] = formula.arr_max_height
+    settings['ESS_height_lower'] = formula.arr_min_height
+    settings['min_time'] = formula.validity_min_time
+    settings['scoreback_time'] = formula.score_back_time
+    settings['max_JTG'] = formula.max_JTG
+    settings['JTG_pen_sec'] = formula.JTG_penalty_per_sec
+    settings['alt_mode'] = formula.scoring_altitude
+
+    return jsonify(settings)
