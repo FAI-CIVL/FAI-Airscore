@@ -146,6 +146,32 @@ class Formula(object):
         self.arrival_weight = None
         self.speed_weight = None
 
+    def __eq__(self, other):
+        if not isinstance(other, Formula):
+            # don't attempt to compare against unrelated types
+            return NotImplemented
+
+        return self.formula_name == other.formula_name \
+            and self.formula_distance == other.formula_distance \
+            and self.formula_arrival == other.formula_arrival \
+            and self.formula_departure == other.formula_departure \
+            and self.lead_factor == other.lead_factor \
+            and self.formula_time == other.formula_time \
+            and self.arr_alt_bonus == other.arr_alt_bonus \
+            and self.arr_min_height == other.arr_min_height \
+            and self.arr_max_height == other.arr_max_height \
+            and self.validity_min_time == other.validity_min_time \
+            and self.max_JTG == other.max_JTG \
+            and self.JTG_penalty_per_sec == other.JTG_penalty_per_sec \
+            and self.overall_validity == other.overall_validity \
+            and self.validity_param == other.validity_param \
+            and self.score_back_time == other.score_back_time \
+            and self.no_goal_penalty == other.no_goal_penalty \
+            and self.glide_bonus == other.glide_bonus \
+            and self.tolerance == other.tolerance \
+            and self.min_tolerance == other.min_tolerance \
+            and self.scoring_altitude == other.scoring_altitude
+
     @property
     def type(self):
         return self.formula_type
