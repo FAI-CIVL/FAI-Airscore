@@ -24,3 +24,17 @@ sanctions:
   - PWC
   - FAI 2
   - FAI 1
+
+dir:
+  bin: /app/airscore/core/
+  file: /app/airscore/data/tracks/
+  json: /app/airscore/data/json/
+  log: /app/airscore/data/log/
+  image: /app/airscore/data/images/
+  map: /app/airscore/data/map-objects/
+  result: /app/airscore/data/results/
+  airspace: /app/airscore/data/airspace/openair/
+  airspace_map: /app/airscore/data/map-objects/airspace/
+  airspace_check: /app/airscore/data/airspace/check_file/
+
+

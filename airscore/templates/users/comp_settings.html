@@ -99,50 +99,50 @@
                <div class="container">
                   <div class="form-row">
                      <div class="form-group col-md-12">
-                        {{compform.distance.label}} {{compform.distance(**{'data-toggle': 'tooltip', 'title': compform.distance.description})}}
-                        {{compform.arrival.label}} {{compform.arrival(**{'data-toggle': 'tooltip', 'title': compform.arrival.description})}}
-                        {{compform.departure.label}} {{compform.departure(**{'data-toggle': 'tooltip', 'title': compform.departure.description})}}
-                        {{compform.time.label}} {{compform.time(**{'data-toggle': 'tooltip', 'title': compform.time.description})}}
+                        {{compform.distance.label}} {{compform.distance(**{'id': "distance", 'data-toggle': 'tooltip', 'title': compform.distance.description})}}
+                        {{compform.arrival.label}} {{compform.arrival(**{'id': "arrival", 'data-toggle': 'tooltip', 'title': compform.arrival.description})}}
+                        {{compform.departure.label}} {{compform.departure(**{'id': "departure", 'data-toggle': 'tooltip', 'title': compform.departure.description})}}
+                        {{compform.time.label}} {{compform.time(**{'id': "time", 'data-toggle': 'tooltip', 'title': compform.time.description})}}
                      </div>
                   </div>
                   <div  class="form-row">
                      <div class="form-group col-md-3">
-                        {{compform.alt_mode.label}} {{compform.alt_mode(**{'data-toggle': 'tooltip', 'title': compform.alt_mode.description})}}
+                        {{compform.alt_mode.label}} {{compform.alt_mode(**{'id': "alt_mode", 'data-toggle': 'tooltip', 'title': compform.alt_mode.description})}}
                      </div>
                      <div class="form-group col-md-3">
-                        {{compform.lead_factor.label}} {{compform.lead_factor(size=3,**{'data-toggle': 'tooltip', 'title': compform.lead_factor.description})}}
+                        {{compform.lead_factor.label}} {{compform.lead_factor(size=3,**{'id': "lead_factor", 'data-toggle': 'tooltip', 'title': compform.lead_factor.description})}}
                      </div>
                      <div  class="form-group col-md-3">
-                        {{compform.no_goal_pen.label}} {{compform.no_goal_pen(size=3,**{'data-toggle': 'tooltip', 'title': compform.no_goal_pen.description})}}
+                        {{compform.no_goal_pen.label}} {{compform.no_goal_pen(size=3,**{'id': "no_goal_pen", 'data-toggle': 'tooltip', 'title': compform.no_goal_pen.description})}}
                      </div>
                   </div>
                    <div  class="form-row">
                       <div class="form-group col-md-4">
-                        {{compform.tolerance.label}} {{compform.tolerance(size=3,**{'data-toggle': 'tooltip', 'title': compform.tolerance.description})}}
+                        {{compform.tolerance.label}} {{compform.tolerance(size=3,**{'id': "tolerance", 'data-toggle': 'tooltip', 'title': compform.tolerance.description})}}
                         </div>
                           <div  class="form-group col-md-4">
-                          {{compform.min_tolerance.label}} {{compform.min_tolerance(size=3,**{'data-toggle': 'tooltip', 'title': compform.min_tolerance.description})}}
+                          {{compform.min_tolerance.label}} {{compform.min_tolerance(size=3,**{'id': "min_tolerance", 'data-toggle': 'tooltip', 'title': compform.min_tolerance.description})}}
                        </div>
                   </div>
                   <div  class="form-row">
                         <div class="form-group col-md-12">
-                          {{compform.glide_bonus.label}} {{compform.glide_bonus(size=3,**{'data-toggle': 'tooltip', 'title': compform.glide_bonus.description})}}
-                        {{compform.height_bonus.label}} {{compform.height_bonus(size=3,**{'data-toggle': 'tooltip', 'title': compform.height_bonus.description})}}
-                      {{compform.ESS__height_upper.label}} {{compform.ESS__height_upper(size=3,**{'data-toggle': 'tooltip', 'title': compform.ESS__height_upper.description})}}
-                        {{compform.ESS_height_lower.label}} {{compform.ESS_height_lower(size=3,**{'data-toggle': 'tooltip', 'title': compform.ESS_height_lower.description})}}
+                          {{compform.glide_bonus.label}} {{compform.glide_bonus(size=3,**{'id': "glide_bonus", 'data-toggle': 'tooltip', 'title': compform.glide_bonus.description})}}
+                        {{compform.height_bonus.label}} {{compform.height_bonus(size=3,**{'id': "height_bonus", 'data-toggle': 'tooltip', 'title': compform.height_bonus.description})}}
+                      {{compform.ESS_height_upper.label}} {{compform.ESS_height_upper(size=3,**{'id': "ESS_height_upper", 'data-toggle': 'tooltip', 'title': compform.ESS_height_upper.description})}}
+                        {{compform.ESS_height_lower.label}} {{compform.ESS_height_lower(size=3,**{'id': "ESS_height_lower", 'data-toggle': 'tooltip', 'title': compform.ESS_height_lower.description})}}
 
                         </div>
                   </div>
                   <div  class="form-row">
                         <div class="form-group col-md-12">
-                        {{compform.min_time.label}} {{compform.min_time(size=3,**{'data-toggle': 'tooltip', 'title': compform.min_time.description})}}
-                        {{compform.scoreback_time.label}} {{compform.scoreback_time(size=3,**{'data-toggle': 'tooltip', 'title': compform.scoreback_time.description})}}
+                        {{compform.min_time.label}} {{compform.min_time(size=3,**{'id': "min_time", 'data-toggle': 'tooltip', 'title': compform.min_time.description})}}
+                        {{compform.scoreback_time.label}} {{compform.scoreback_time(size=3,**{'id': "scoreback_time", 'data-toggle': 'tooltip', 'title': compform.scoreback_time.description})}}
                      </div>
                   </div>
                     <div  class="form-row">
                         <div class="form-group col-md-12">
-                        {{compform.max_JTG.label}} {{compform.max_JTG(size=3,**{'data-toggle': 'tooltip', 'title': compform.max_JTG.description})}}
-                        {{compform.JTG_pen_sec.label}} {{compform.JTG_pen_sec(size=3,**{'data-toggle': 'tooltip', 'title': compform.JTG_pen_sec.description})}}
+                        {{compform.max_JTG.label}} {{compform.max_JTG(size=3,**{'id': "max_JTG", 'data-toggle': 'tooltip', 'title': compform.max_JTG.description})}}
+                        {{compform.JTG_pen_sec.label}} {{compform.JTG_pen_sec(size=3,**{'id': "JTG_pen_sec", 'data-toggle': 'tooltip', 'title': compform.JTG_pen_sec.description})}}
                      </div>
                   </div>
 
@@ -249,19 +249,19 @@ Add
       {% endif%}
    </center>
 </div>
-<button class="btn btn-success" data-toggle="confirmation" data-popout="true">Confirmation</button>
+
 </form>
 {% endblock %}
 {% block js %}
 {% include "js.html" %}
-<script src="{{ static_url_for('static', filename='js/bootstrap-confirmation.js') }}"></script>
+<!--<script src="{{ static_url_for('static', filename='js/bootstrap-confirmation.js') }}"></script>-->
 <script>
    var csrftoken = $('meta[name=csrf-token]').attr('content');
    
-   $('[data-toggle=confirmation]').confirmation({
-     rootSelector: '[data-toggle=confirmation]',
+//   $('[data-toggle=confirmation]').confirmation({
+//     rootSelector: '[data-toggle=confirmation]',
      // other options
-   });
+//   });
    
    
    
@@ -283,6 +283,7 @@ Add
    
        // call to update on load
        updateFormulas();
+//<!--       get_adv_settings();-->
    
        // function to call XHR and update formula dropdown
        function updateFormulas() {
@@ -302,6 +303,7 @@ Add
                });
                dropdown.formula.removeAttr('disabled');
            });
+
        }
    
        // event listener to state dropdown change
@@ -370,6 +372,28 @@ Add
    $(document).ready(function() {
    get_tasks()
    });
+
+
+      function get_adv_settings(){
+            var formula = {formula: $('#select_formula').val(), category: $('#select_category').val()}
+           $.ajax({
+               type: "POST",
+               url: "{{ url_for('user._get_adv_settings')}}",
+               contentType:"application/json",
+               data : JSON.stringify(formula),
+               dataType: "json",
+               success: function (data) {
+                     $('#distance').val(data.distance);
+                     $('#time').val(data.distance);
+                     $('#arrival').val(data.distance);
+                     $('#departure').val(data.distance);
+
+               }
+               });
+
+   }
+
+
       
 </script>
 {% endblock %}
