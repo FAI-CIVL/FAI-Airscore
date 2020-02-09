@@ -245,7 +245,7 @@ def import_participants_from_excel(comp_id, filename, from_CIVL=False):
     return pilots
 
 
-def mass_import_participants(comp_id, pilots):
+def mass_import_participants(comp_id, pilots, session=None):
     """get participants to update from the list"""
     # TODO check if we already have participants for the comp before inserting, and manage update instead
 
@@ -280,7 +280,7 @@ def mass_import_participants(comp_id, pilots):
             insert_mappings.append(mapping)
 
     '''update database'''
-    with Database() as db:
+    with Database(session) as db:
         try:
             if len(insert_mappings) > 0:
                 db.session.bulk_insert_mappings(tblParticipant, insert_mappings)

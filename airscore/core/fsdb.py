@@ -368,7 +368,8 @@ class FSDB(object):
                        'sum_real_dist_over_min': km(t.tot_dist_over_min),  # not yet implemented
                        'best_real_dist': km(t.max_distance),  # not yet implemented
                        'last_start_time': get_isotime(t.date,
-                                                      max([x.SSS_time for x in t.valid_results if x.SSS_time is not None]),
+                                                      max([x.SSS_time for x in t.valid_results if
+                                                           x.SSS_time is not None]),
                                                       t.time_offset),
                        'first_start_time': get_isotime(t.date, t.min_dept_time, t.time_offset),
                        'first_finish_time': get_isotime(t.date, t.min_ess_time, t.time_offset),
@@ -496,10 +497,21 @@ class FSDB(object):
         """
             Add comp to AirScore database
         """
+        import re
         '''check if we have comp_code'''
         if self.comp.comp_code is None:
             self.comp.comp_code = create_comp_code(self.comp.comp_name, self.comp.date_from)
         self.comp.create_path()
+
+        if self.comp.formula.formula_name and not self.comp.formula.formula_type:
+            '''trying to guess formula from name'''
+            if 'pwc' in self.comp.formula.formula_name.lower():
+                self.comp.formula.formula_type = 'pwc'
+            elif 'gap' in self.comp.formula.formula_name.lower():
+                self.comp.formula.formula_type = 'gap'
+            if self.comp.formula.formula_type is not None:
+                self.comp.formula.formula_version = (int(re.search("(\d+)", self.comp.formula.formula_name).group())
+                                                     if re.search("(\d+)", self.comp.formula.formula_name) else None)
 
         self.comp.to_db()
         self.comp.formula.comp_id = self.comp.comp_id
@@ -509,40 +521,83 @@ class FSDB(object):
         """
             Add comp tasks to AirScore database
         """
-
         if self.comp.comp_id is None:
-            return
+            return False
 
         with Database(session) as db:
             try:
                 for t in self.tasks:
                     t.comp_id = self.comp.comp_id
+                    t.create_path()
                     t.to_db(db.session)
                 db.session.commit()
 
             except SQLAlchemyError:
                 print('Tasks storing error')
                 db.session.rollback()
+                return False
+        return True
 
     def add_results(self, session=None):
         """
             Add results for each comp task to AirScore database
         """
+        from db_tables import tblTaskResult as R
         if self.comp.comp_id is None:
-            return
+            return False
 
         for t in self.tasks:
             if len(t.results) == 0 or t.task_id is None:
                 print(f"task {t.task_code} does not have a db ID or has not been scored.")
-                pass
-            update_all_results(task_id=t.task_id, pilots=t.pilots, session=session)
+                return False
+            with Database(session) as db:
+                inserted = update_all_results(task_id=t.task_id, pilots=t.pilots, session=session)
+                if inserted:
+                    '''populate results track_id'''
+                    try:
+                        results = db.session.query(R.tarPk, R.parPk).filter(R.tasPk == t.task_id).all()
+                        for result in results:
+                            pilot = next(p for p in t.pilots if p.info.par_id == result.parPk)
+                            pilot.track.track_id = result.tarPk
+                    except SQLAlchemyError:
+                        print(f"Error trying to collect results tarPk")
+        return True
 
     def add_participants(self, session=None):
         """
             Add participants to AirScore database
         """
+        from db_tables import tblParticipant as P
+
         if self.comp.comp_id is None or len(self.comp.participants) == 0:
             print(f"Comp does not have a db ID or has not participants.")
-            return
+            return False
 
-        mass_import_participants(self.comp.comp_id, self.comp.participants)
+        with Database(session) as db:
+            inserted = mass_import_participants(self.comp.comp_id, self.comp.participants, db.session)
+            if inserted:
+                '''populate participants par_id'''
+                try:
+                    results = db.session.query(P.parPk, P.parID).filter(P.comPk == self.comp.comp_id).all()
+                    for result in results:
+                        pilot = next(p for p in self.comp.participants if p.ID == result.parID)
+                        pilot.par_id = result.parPk
+                except SQLAlchemyError:
+                    print(f"Error trying to collect participants parPk")
+                    return False
+        return True
+
+    def add_all(self):
+        print(f"add all FSDB info to database...")
+        print(f"adding comp...")
+        self.add_comp()
+        if self.comp.comp_id is not None:
+            print(f"comp ID: {self.comp.comp_id}")
+            with Database() as db:
+                print(f"adding participants...")
+                self.add_participants(db.session)
+                print(f"adding tasks...")
+                self.add_tasks(db.session)
+                print(f"adding results...")
+                self.add_results(db.session)
+            print(f"Done.")

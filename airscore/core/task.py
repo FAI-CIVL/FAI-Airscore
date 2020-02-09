@@ -864,9 +864,9 @@ class Task(object):
                                tasStartCloseTime=start_close, tasStoppedTime=stopped_time, tasDistance=self.distance,
                                tasShortRouteDistance=self.opt_dist, tasStartSSDistance=self.opt_dist_to_SS,
                                tasEndSSDistance=self.opt_dist_to_ESS, tasSSDistance=self.SS_distance,
-                               tasSSInterval=self.SS_interval,
+                               tasSSInterval=self.SS_interval, tasStartIteration=self.start_iteration,
                                tasLaunchValid=self.launch_valid, tasComment=self.comment,
-                               tasQNH=self.QNH)
+                               tasQNH=self.QNH, tasPath=self.task_path)
                 db.session.add(task)
                 db.session.flush()
                 self.task_id = task.tasPk
