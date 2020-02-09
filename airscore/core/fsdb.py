@@ -499,6 +499,7 @@ class FSDB(object):
         '''check if we have comp_code'''
         if self.comp.comp_code is None:
             self.comp.comp_code = create_comp_code(self.comp.comp_name, self.comp.date_from)
+        self.comp.create_path()
 
         self.comp.to_db()
         self.comp.formula.comp_id = self.comp.comp_id

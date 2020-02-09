@@ -477,6 +477,14 @@ class Flight_result(object):
             - optimized dist. to last turnpoint made;
             - total optimized distance minus opt. distance from next wpt to goal minus dist. to next wpt;
             '''
+            # TODO: To compensate for altitude differences at the time when a task is stopped, a bonus distance is
+            #  calculated for each point in the pilots’ track logs, based on that point’s altitude above goal. This
+            #  bonus distance is added to the distance achieved at that point. All altitude values used for this
+            #  calculation are GPS altitude values, as received from the pilots’ GPS devices (no compensation for
+            #  different earth models applied by those devices). For all distance point calculations, including the
+            #  difficulty calculations in hang-gliding (see 11.1.1), these new stopped distance values are being used
+            #  to determine the pilots’ best distance values. Time and leading point calculations remain the same:
+            #  they are not affected by the altitude bonus or stopped distance values.
             if tp.pointer > 0:
                 missing_distance = get_shortest_path(task, next_fix, tp.pointer)
                 fix_dist_flown = task.opt_dist - missing_distance
@@ -501,7 +509,7 @@ class Flight_result(object):
                     infringements_list.append([next_fix, airspace_name, infringement_type, dist, penalty])
                 else:
                     map_fix.extend([None, None, None, None, None])
-                airspace_plot.append(map_fix)
+                # airspace_plot.append(map_fix)
 
         '''final results'''
         result.max_altitude = max_altitude
@@ -560,7 +568,7 @@ class Flight_result(object):
             result.infringements = infringements
             result.comment.extend(comments)
             result.percentage_penalty = penalty
-            result.airspace_plot = airspace_plot
+            # result.airspace_plot = airspace_plot
 
         return result
 

@@ -277,10 +277,12 @@ class Formula(object):
         formula.formula_time = 'on' if form.get('use_time_points') == '1' else 'off'
         # leading points factor: probably needs to be linked to GAP version
         formula.lead_factor = (None if form.get('use_leading_points') == '0'
-                               else float(form.get('leading_weight_factor')))
+                               else float(form.get('leading_weight_factor')
+                                          if form.get('leading_weight_factor') else 1))
 
         '''tolerance'''
-        formula.tolerance = 0.0 + float(form.get('turnpoint_radius_tolerance'))  # tolerance, perc / 100
+        formula.tolerance = 0.0 + float(form.get('turnpoint_radius_tolerance')
+                                        if form.get('turnpoint_radius_tolerance') else 0.1)  # tolerance, perc / 100
 
         '''stopped task parameters'''
         formula.validity_min_time = 0 + int(

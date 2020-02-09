@@ -13,7 +13,7 @@ Stuart Mackintosh Antonio Golfari - 2019
 
 import json
 
-from compUtils import get_tasks_result_files, get_participants, read_rankings, calculate_comp_path
+from compUtils import get_tasks_result_files, get_participants, read_rankings, create_comp_path
 from calcUtils import get_date
 from Defines import FILEDIR, RESULTDIR
 from participant import Participant
@@ -217,14 +217,16 @@ class Comp(object):
         if filepath:
             self.comp_path = filepath
         elif self.comp_code and self.date_from:
-            self.comp_path = calculate_comp_path(self.date_from, self.comp_code)
+            self.comp_path = create_comp_path(self.date_from, self.comp_code)
         else:
             return
 
-        with Database() as db:
-            q = db.session.query(tblCompetition).get(self.id)
-            q.comPath = self.comp_path
-            db.session.commit()
+        if self.comp_id:
+            '''store to database'''
+            with Database() as db:
+                q = db.session.query(tblCompetition).get(self.id)
+                q.comPath = self.comp_path
+                db.session.commit()
 
     def to_db(self):
         """create or update a DB entry from Comp object. If comp_id is provided it will update otherwise add a new row
@@ -267,7 +269,7 @@ class Comp(object):
                 row.comStyleSheet = self.stylesheet
                 row.comExt = self.external
                 row.comExtUrl = self.website
-                row.comPath = self.comp_path if not None else calculate_comp_path(self.date_from, self.comp_code)
+                row.comPath = self.comp_path
                 if self.comp_id is None:
                     db.session.add(row)
                 db.session.flush()

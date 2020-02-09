@@ -123,7 +123,7 @@ def get_comp_path(comp_id):
             return db.session.query(C.comPath).filter(C.comPk == comp_id).limit(1).scalar()
 
 
-def calculate_comp_path(date, code):
+def create_comp_path(date, code):
     from os import path
     return path.join(str(date.year), str(code).lower())
 
@@ -222,11 +222,11 @@ def create_comp_code(name, date):
         standard code is 6 chars + 2 numbers"""
     names = [n for n in name.split() if not any(char.isdigit() for char in str(n))]
     if len(names) >= 2:
-        string = str(names[0])[0:2] + str(names[1])[0:2]
+        string = str(names[0])[0:3] + str(names[1])[0:3]
     else:
         string = str(names[0])[0:5]
     number = date.strftime('%y')
-    return string + number
+    return string.upper() + number
 
 
 def get_task_filepath(task_id, session=None):

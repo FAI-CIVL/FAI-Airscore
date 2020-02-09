@@ -118,7 +118,7 @@ class Task(object):
         self.optimised_legs = []  # opt distance between cylinders
         self.partial_distance = []  # distance from launch to waypoint
         self.legs = []  # non optimised legs
-        self.geo = None   # Geo Object
+        self.geo = None  # Geo Object
         self.stats = dict()  # STATIC scored task statistics, used when importing results from JSON / FSDB files
         self.pilots = []  # scored task results
         self.airspace_check = False  # BOOL airspace check
@@ -289,11 +289,13 @@ class Task(object):
     ''' * Statistic Properties *'''
 
     ''' list of present pilots' results'''
+
     @property
     def valid_results(self):
         return [pilot.result for pilot in self.pilots if pilot.result_type not in ('abs', 'dnf')]
 
     ''' pilots stats'''
+
     @property
     def pilots_present(self):
         return len([p for p in self.pilots if p.result_type != 'abs'])
@@ -320,6 +322,7 @@ class Task(object):
         return len([p for p in self.valid_results if p.last_altitude == 0 or p.result_type == 'goal'])
 
     ''' distance stats'''
+
     @property
     def tot_distance_flown(self):
         if self.formula:
@@ -352,12 +355,13 @@ class Task(object):
     @property
     def max_distance(self):
         if self.formula:
-                if self.formula.min_dist and self.pilots_launched > 0:
-                    # Flight_result.distance = max(distance_flown, total_distance)
-                    return max(max(p.distance for p in self.valid_results), self.formula.min_dist)
+            if self.formula.min_dist and self.pilots_launched > 0:
+                # Flight_result.distance = max(distance_flown, total_distance)
+                return max(max(p.distance for p in self.valid_results), self.formula.min_dist)
         return 0
 
     '''time stats'''
+
     @property
     def min_dept_time(self):
         if self.pilots_ss:
@@ -452,6 +456,7 @@ class Task(object):
             return None
 
     ''' scoring stats'''
+
     @property
     def min_lead_coeff(self):
         if len([p for p in self.valid_results if p.lead_coeff]) > 0:
@@ -516,10 +521,12 @@ class Task(object):
         else:
             return
 
-        with Database() as db:
-            q = db.session.query(tblTask).get(self.id)
-            q.tasPath = self.task_path
-            db.session.commit()
+        if self.id:
+            '''store to database'''
+            with Database() as db:
+                q = db.session.query(tblTask).get(self.id)
+                q.tasPath = self.task_path
+                db.session.commit()
 
     def create_results(self, status=None, mode='default'):
         """
@@ -838,7 +845,8 @@ class Task(object):
         from datetime import datetime
         from calcUtils import sec_to_time
 
-        task_start = None if self.window_open_time is None else datetime.combine(self.date, sec_to_time(self.window_open_time))
+        task_start = None if self.window_open_time is None else datetime.combine(self.date,
+                                                                                 sec_to_time(self.window_open_time))
         launch_close = None if self.window_close_time is None else datetime.combine(self.date,
                                                                                     sec_to_time(self.window_close_time))
         deadline = None if self.task_deadline is None else datetime.combine(self.date, sec_to_time(self.task_deadline))
@@ -1191,7 +1199,8 @@ class Task(object):
         formula.formula_arrival = 'position' if float(f.get('use_arrival_position_points')) == 1 else 'time' if float(
             f.get(
                 'use_arrival_position_points')) == 1 else 'off'  # not sure if and which type Airscore is supporting at the moment
-        formula.tolerance = 0 + float(f.get('turnpoint_radius_tolerance'))  # tolerance perc /100
+        formula.tolerance = 0.0 + float(f.get('turnpoint_radius_tolerance')
+                                        if f.get('turnpoint_radius_tolerance') else 0.1)  # tolerance, perc / 100
 
         if float(f.get('use_departure_points')) > 0:
             formula.formula_departure = 'on'
@@ -1250,7 +1259,8 @@ class Task(object):
                 optimised_legs.append(float(l.get('distance')) * 1000)
 
         node = t.find('FsTaskDefinition')
-        qnh = None if node is None else float(node.get('qnh_setting').replace(',', '.'))
+        qnh = None if node is None else float(node.get('qnh_setting').replace(',', '.')
+                                              if node.get('qnh_setting') else 1013.25)
         # task.date = None if not node else get_date(node.find('FsStartGate').get('open'))
         """guessing type from startgates"""
         task.SS_interval = 0
@@ -1285,6 +1295,7 @@ class Task(object):
                 if startgates > 1:
                     '''race with multiple start gates'''
                     # print ("MULTIPLE STARTS")
+                    task.start_iteration = startgates - 1
                     time = time_to_seconds(get_time(node.findall('FsStartGate')[1].get('open')))
                     task.SS_interval = time - task.start_time
                     '''if prefer minutes: time_difference(tas['tasStartTime'], time).total_seconds()/60'''
