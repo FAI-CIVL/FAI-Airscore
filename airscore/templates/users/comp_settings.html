@@ -89,6 +89,12 @@
                {{compform.nom_time.label}} {{compform.nom_time(size=3,**{'data-toggle': 'tooltip', 'title': compform.nom_time.description})}}
             </div>
          </div>
+         <div  class="form-row">
+            <div class="form-group col-md-6">
+               {{compform.alt_mode.label}} {{compform.alt_mode(**{'id': "alt_mode", 'data-toggle': 'tooltip', 'title': compform.alt_mode.description})}}
+               {{compform.team_scoring.label}} {{compform.team_scoring(**{ 'data-toggle': 'tooltip', 'title': compform.team_scoring.description})}}
+            </div>
+            </div>
          <p>
             <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse25" aria-expanded="false" aria-controls="collapse25">
             Advanced Parameters
@@ -106,9 +112,7 @@
                      </div>
                   </div>
                   <div  class="form-row">
-                     <div class="form-group col-md-3">
-                        {{compform.alt_mode.label}} {{compform.alt_mode(**{'id': "alt_mode", 'data-toggle': 'tooltip', 'title': compform.alt_mode.description})}}
-                     </div>
+
                      <div class="form-group col-md-3">
                         {{compform.lead_factor.label}} {{compform.lead_factor(size=3,**{'id': "lead_factor", 'data-toggle': 'tooltip', 'title': compform.lead_factor.description})}}
                      </div>
@@ -143,6 +147,13 @@
                         <div class="form-group col-md-12">
                         {{compform.max_JTG.label}} {{compform.max_JTG(size=3,**{'id': "max_JTG", 'data-toggle': 'tooltip', 'title': compform.max_JTG.description})}}
                         {{compform.JTG_pen_sec.label}} {{compform.JTG_pen_sec(size=3,**{'id': "JTG_pen_sec", 'data-toggle': 'tooltip', 'title': compform.JTG_pen_sec.description})}}
+                     </div>
+                  </div>
+                  <div  class="form-row">
+                        <div class="form-group col-md-12 display-if" data-target_name="team_scoring" data-target_type="checkbox" data-target_value=true>
+                        {{compform.country_scoring.label}} {{compform.country_scoring(size=3,**{'id': "cty_scoring", 'data-toggle': 'tooltip', 'title': compform.country_scoring.description})}}
+                        {{compform.team_size.label}} {{compform.team_size(size=3,**{'id': "team_size", 'data-toggle': 'tooltip', 'title': compform.team_size.description})}}
+                        {{compform.team_over.label}} {{compform.team_over(size=3,**{'id': "team_over", 'data-toggle': 'tooltip', 'title': compform.team_over.description})}}
                      </div>
                   </div>
 
@@ -254,7 +265,7 @@ Add
 {% endblock %}
 {% block js %}
 {% include "js.html" %}
-<!--<script src="{{ static_url_for('static', filename='js/bootstrap-confirmation.js') }}"></script>-->
+<script src="{{ static_url_for('static', filename='js/display-if.min.js') }}"></script>
 <script>
    var csrftoken = $('meta[name=csrf-token]').attr('content');
    

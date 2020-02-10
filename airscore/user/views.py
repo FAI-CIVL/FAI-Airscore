@@ -186,10 +186,10 @@ def comp_settings_admin(compid):
         compform.min_dist.data = int(formula.min_dist/1000)
         compform.nom_launch.data = int(formula.nominal_launch*100)
         compform.nom_time.data = int(formula.nominal_time/60)
-        # compform.team_scoring.data = formula.
-        # compform.country_scoring.data = formula.
-        # compform.team_size.data = formula.
-        # compform.team_over.data = formula.
+        compform.team_scoring.data = formula.TeamScoring
+        compform.country_scoring.data = formula.CountryScoring
+        compform.team_size.data = formula.TeamSize
+        compform.team_over.data = formula.TeamOver
         compform.distance.data = formula.formula_distance
         compform.arrival.data = formula.formula_arrival
         compform.departure.data = formula.formula_departure
