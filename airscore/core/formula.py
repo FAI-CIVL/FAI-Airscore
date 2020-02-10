@@ -14,11 +14,11 @@ from os import listdir
 
 
 def list_formulas():
-    '''Lists all formulas present in the formulas folder.
-    :returns a dictinary with 3 lists.
+    """Lists all formulas present in the formulas folder.
+    :returns a dictionary with 3 lists.
         all: a list of all formulas
         pg: a list of all formulas that are of class pg or both
-        hg: a list of all formulas that are of class hg or both'''
+        hg: a list of all formulas that are of class hg or both"""
     all_formulas = []
     hg_formulas = []
     pg_formulas = []
@@ -282,7 +282,7 @@ class Formula(object):
 
         '''tolerance'''
         formula.tolerance = 0.0 + float(form.get('turnpoint_radius_tolerance')
-                                        if form.get('turnpoint_radius_tolerance') else 0.1)  # tolerance, perc / 100
+                                        if form.get('turnpoint_radius_tolerance') else 0.001)  # tolerance, perc / 100
 
         '''stopped task parameters'''
         formula.validity_min_time = 0 + int(

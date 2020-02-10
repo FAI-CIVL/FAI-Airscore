@@ -38,7 +38,7 @@ f = 0.0033528106647474805  # WGS84 flattening
 # b = ELLIPSOIDS['WGS-84'][1] * 1000  # WGS84 minor meters: 6356752.3142
 # f = ELLIPSOIDS['WGS-84'][2] #WGS84 flattening
 
-class Turnpoint:
+class Turnpoint():
     """ single turnpoint in a task.
     Attributes:
         id: progressive number
@@ -121,8 +121,7 @@ def get_proj(clat, clon, proj=PROJ):
         return Proj(f"EPSG:{epsg_code}")
     else:
         '''custom Mercatore projection'''
-        tmerc = Proj(
-            f"+proj=tmerc +lat_0={clat} +lon_0={clon} +k_0=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
+        tmerc = Proj(f"+proj=tmerc +lat_0={clat} +lon_0={clon} +k_0=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
         return tmerc
 
 
@@ -378,11 +377,13 @@ def start_made_civl(fix, next, start, tolerance, min_tol_m):
     """
 
     if start.how == "entry":
-        # entry start cylinder
+        '''entry start cylinder'''
         condition = not (start.in_radius(fix, -tolerance, -min_tol_m)) and start.in_radius(next, tolerance, min_tol_m)
+        # print(f"how: {start.how} (entry) | dist: {distance(start, fix)} | made: {condition}")
     else:
-        # exit start cylinder
+        '''exit start cylinder'''
         condition = start.in_radius(fix, tolerance, min_tol_m) and not (start.in_radius(next, -tolerance, -min_tol_m))
+        # print(f"how: {start.how} (exit) | dist: {distance(start, fix)} | made: {condition}")
 
     return condition
 
@@ -751,7 +752,7 @@ def get_shortest_path(task, fix=None, pointer=None):
         finished = (last_dist - planar_dist < tolerance)
         last_dist = planar_dist
         opsCount -= 1
-    # print(f'iterations made: {count * 10 - opsCount} | distance: {planar_dist}')
+    print(f'iterations made: {count * 10 - opsCount} | distance: {planar_dist}')
 
     if fix:
         '''return opt dist to goal'''

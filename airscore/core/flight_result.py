@@ -225,19 +225,22 @@ class Flight_result(object):
 
         result = cls()
         ID = int(res.get('id'))
+
         if res.find('FsFlightData') is None and res.find('FsResult') is None:
             '''pilot is abs'''
-            # print(f"ID {ID}: ABS")
+            print(f"ID {ID}: ABS")
             result.result_type = 'abs'
             return result
-        elif res.find('FsFlightData').get('distance') is None:
+        elif res.find('FsFlightData') is None or res.find('FsFlightData').get('tracklog_filename') in [None, '']:
+            print(f"ID {ID}: No track")
+            print(f" - distance: {float(res.find('FsResult').get('distance'))}")
             if float(res.find('FsResult').get('distance')) > 0:
                 '''pilot is min dist'''
-                # print(f"ID {ID}: Min Dist")
+                print(f"ID {ID}: Min Dist")
                 result.result_type = 'mindist'
             else:
                 '''pilot is dnf'''
-                # print(f"ID {ID}: DNF")
+                print(f"ID {ID}: DNF")
                 result.result_type = 'dnf'
             return result
 
@@ -436,8 +439,8 @@ class Flight_result(object):
             - race has multiple starts
             - task is elapsed time
             '''
-            # print(f'time: {my_fix.rawtime}, start: {task.start_time} | can start: {pilot_can_start(task, tp, my_fix)} can restart: {pilot_can_restart(task, tp, my_fix, result)} | tp: {tp.name}')
             if pilot_can_start(task, tp, my_fix):
+                # print(f'time: {my_fix.rawtime}, start: {task.start_time} | Interval: {task.SS_interval} | my start: {result.real_start_time} | better_start: {pilot_get_better_start(task, my_fix.rawtime, result.SSS_time)} | can start: {pilot_can_start(task, tp, my_fix)} can restart: {pilot_can_restart(task, tp, my_fix, result)} | tp: {tp.name}')
                 if start_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m):
                     time = round(tp_time_civl(my_fix, next_fix, tp.next), 0)
                     result.waypoints_achieved.append([tp.name, time, alt])  # pilot has started
@@ -445,6 +448,7 @@ class Flight_result(object):
                     tp.move_to_next()
 
             elif pilot_can_restart(task, tp, my_fix, result):
+                # print(f'time: {my_fix.rawtime}, start: {task.start_time} | Interval: {task.SS_interval} | my start: {result.real_start_time} | better_start: {pilot_get_better_start(task, my_fix.rawtime, result.SSS_time)} | can start: {pilot_can_start(task, tp, my_fix)} can restart: {pilot_can_restart(task, tp, my_fix, result)} | tp: {tp.name}')
                 if start_made_civl(my_fix, next_fix, tp.last_made, tolerance, min_tol_m):
                     time = round(tp_time_civl(my_fix, next_fix, tp.next), 0)
                     result.waypoints_achieved.pop()
@@ -741,8 +745,7 @@ def pilot_can_restart(task, tp, fix, result):
             return True
         elif task.SS_interval and pilot_get_better_start(task, fix.rawtime, result.real_start_time):
             return True
-    else:
-        return False
+    return False
 
 
 def start_number_at_time(task, time):

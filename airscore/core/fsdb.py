@@ -529,6 +529,12 @@ class FSDB(object):
                 for t in self.tasks:
                     t.comp_id = self.comp.comp_id
                     t.create_path()
+                    '''recalculating legs to avoid errors when fsdb task misses launch and/or goal'''
+                    if t.geo is None:
+                        t.get_geo()
+                    t.calculate_task_length()
+                    t.calculate_optimised_task_length()
+                    '''storing'''
                     t.to_db(db.session)
                 db.session.commit()
 
@@ -549,8 +555,12 @@ class FSDB(object):
         for t in self.tasks:
             if len(t.results) == 0 or t.task_id is None:
                 print(f"task {t.task_code} does not have a db ID or has not been scored.")
-                return False
+                pass
             with Database(session) as db:
+                '''get results par_id from participants'''
+                for pilot in t.pilots:
+                    par = next(p for p in self.comp.participants if p.ID == pilot.info.ID)
+                    pilot.info.par_id = par.par_id
                 inserted = update_all_results(task_id=t.task_id, pilots=t.pilots, session=session)
                 if inserted:
                     '''populate results track_id'''

@@ -855,6 +855,7 @@ class Task(object):
                                                                                   sec_to_time(self.start_close_time))
         stopped_time = None if self.stopped_time is None else datetime.combine(self.date,
                                                                                sec_to_time(self.stopped_time))
+        SSInterval = self.SS_interval/60
 
         with Database(session) as db:
             try:
@@ -864,7 +865,7 @@ class Task(object):
                                tasStartCloseTime=start_close, tasStoppedTime=stopped_time, tasDistance=self.distance,
                                tasShortRouteDistance=self.opt_dist, tasStartSSDistance=self.opt_dist_to_SS,
                                tasEndSSDistance=self.opt_dist_to_ESS, tasSSDistance=self.SS_distance,
-                               tasSSInterval=self.SS_interval, tasStartIteration=self.start_iteration,
+                               tasSSInterval=SSInterval, tasStartIteration=self.start_iteration,
                                tasLaunchValid=self.launch_valid, tasComment=self.comment,
                                tasQNH=self.QNH, tasPath=self.task_path)
                 db.session.add(task)
@@ -1282,6 +1283,7 @@ class Task(object):
             eswpt = int(node.get('es'))
             gtype = node.get('goal')
             gstart = int(node.get('groundstart'))
+            last = len(node.findall('FsTurnpoint'))
             if node.find('FsStartGate') is None:
                 '''elapsed time
                     on start gate, have to get start opening time from ss wpt'''
@@ -1302,47 +1304,109 @@ class Task(object):
                     print(f"    **** interval: {task.SS_interval}")
 
         """Task Route"""
-        for w in node.iter('FsTurnpoint'):
-            turnpoint = Turnpoint(float(w.get('lat')), float(w.get('lon')), int(w.get('radius')))
-            turnpoint.id = len(turnpoints) + 1
-            turnpoint.name = w.get('id')
-            turnpoint.altitude = int(w.get('altitude'))
-            print(f"    {turnpoint.id}  {turnpoint.name}  {turnpoint.radius}")
-            if turnpoint.id == 1:
-                turnpoint.type = 'launch'
-                task.date = get_date(w.get('open'))
-                task.window_open_time = time_to_seconds(get_time(w.get('open')))
-                task.window_close_time = time_to_seconds(get_time(w.get('close')))
-                # sanity
-                if task.window_close_time <= task.window_open_time:
-                    task.window_close_time = None
-                if 'free distance' in task.task_type:
-                    # print('Sono in launch - free')
-                    '''get start and close time for free distance task types'''
-                    task.start_time = time_to_seconds(get_time(w.get('open')))
+        for idx, w in enumerate(node.iter('FsTurnpoint'), 1):
+            if idx in [1, sswpt, eswpt, last]:
+                if idx == 1:
+                    '''launch'''
+                    turnpoint = Turnpoint(float(w.get('lat')), float(w.get('lon')), int(w.get('radius')))
+                    turnpoint.name = w.get('id')
+                    turnpoint.id = len(turnpoints) + 1
+                    turnpoint.type = 'launch'
+                    task.date = get_date(w.get('open'))
+                    task.window_open_time = time_to_seconds(get_time(w.get('open')))
+                    task.window_close_time = time_to_seconds(get_time(w.get('close')))
+                    if task.window_close_time <= task.window_open_time:
+                        # sanity
+                        task.window_close_time = None
+                    if 'free distance' in task.task_type:
+                        '''get start and close time for free distance task types'''
+                        task.start_time = time_to_seconds(get_time(w.get('open')))
+                        task.start_close_time = time_to_seconds(get_time(w.get('close')))
+                    turnpoints.append(turnpoint)
+                if idx == sswpt:
+                    '''start'''
+                    turnpoint = Turnpoint(float(w.get('lat')), float(w.get('lon')), int(w.get('radius')))
+                    turnpoint.name = w.get('id')
+                    turnpoint.id = len(turnpoints) + 1
+                    turnpoint.type = 'speed'
                     task.start_close_time = time_to_seconds(get_time(w.get('close')))
-                    # task.task_deadline = get_datetime(w.get('close'))
-            elif turnpoint.id == sswpt:
-                # print('Sono in ss')
-                turnpoint.type = 'speed'
-                task.start_close_time = time_to_seconds(get_time(w.get('close')))
-                if 'elapsed time' in task.task_type:
-                    '''get start for elapsed time task types'''
-                    task.start_time = time_to_seconds(get_time(w.get('open')))
-            elif turnpoint.id == eswpt:
-                # print('Sono in es')
-                turnpoint.type = 'endspeed'
-                task.task_deadline = time_to_seconds(get_time(w.get('close')))
-            elif turnpoint.id == len(
-                    node) - startgates - headingpoint:  # need to remove FsStartGate and FsHeadingpoint nodes from count
-                # print('Sono in goal')
-                turnpoint.type = 'goal'
-                if gtype == 'LINE':
-                    turnpoint.shape = 'line'
-            # else:
-            #     wpt['tawType'] = 'waypoint'
+                    '''guess start direction: exit if launch is same wpt'''
+                    launch = next(p for p in turnpoints if p.type == 'launch')
+                    if launch.lat == turnpoint.lat and launch.lon == turnpoint.lon:
+                        turnpoint.how = 'exit'
+                    if 'elapsed time' in task.task_type:
+                        '''get start for elapsed time task types'''
+                        task.start_time = time_to_seconds(get_time(w.get('open')))
+                    turnpoints.append(turnpoint)
+                if idx == eswpt:
+                    '''ess'''
+                    turnpoint = Turnpoint(float(w.get('lat')), float(w.get('lon')), int(w.get('radius')))
+                    turnpoint.name = w.get('id')
+                    turnpoint.id = len(turnpoints) + 1
+                    turnpoint.type = 'endspeed'
+                    task.task_deadline = time_to_seconds(get_time(w.get('close')))
+                    turnpoints.append(turnpoint)
+                if idx == last:
+                    '''goal'''
+                    turnpoint = Turnpoint(float(w.get('lat')), float(w.get('lon')), int(w.get('radius')))
+                    turnpoint.name = w.get('id')
+                    turnpoint.id = len(turnpoints) + 1
+                    turnpoint.type = 'goal'
+                    if gtype == 'LINE':
+                        turnpoint.shape = 'line'
+                    turnpoints.append(turnpoint)
+            else:
+                '''waypoint'''
+                turnpoint = Turnpoint(float(w.get('lat')), float(w.get('lon')), int(w.get('radius')))
+                turnpoint.name = w.get('id')
+                turnpoint.id = len(turnpoints) + 1
+                turnpoints.append(turnpoint)
 
-            turnpoints.append(turnpoint)
+            # turnpoint = Turnpoint(float(w.get('lat')), float(w.get('lon')), int(w.get('radius')))
+            # turnpoint.id = len(turnpoints) + 1
+            # turnpoint.name = w.get('id')
+            # turnpoint.altitude = int(w.get('altitude'))
+            # print(f"    {turnpoint.id}  {turnpoint.name}  {turnpoint.radius}")
+            # if turnpoint.id == 1:
+            #     turnpoint.type = 'launch'
+            #     task.date = get_date(w.get('open'))
+            #     task.window_open_time = time_to_seconds(get_time(w.get('open')))
+            #     task.window_close_time = time_to_seconds(get_time(w.get('close')))
+            #     # sanity
+            #     if task.window_close_time <= task.window_open_time:
+            #         task.window_close_time = None
+            #     if 'free distance' in task.task_type:
+            #         # print('Sono in launch - free')
+            #         '''get start and close time for free distance task types'''
+            #         task.start_time = time_to_seconds(get_time(w.get('open')))
+            #         task.start_close_time = time_to_seconds(get_time(w.get('close')))
+            #         # task.task_deadline = get_datetime(w.get('close'))
+            #     if turnpoint.id == sswpt:
+            #         '''need to manage tasks where first wpt is ss. adding a point as launch'''
+            #         turnpoints.append(turnpoint)
+            # if turnpoint.id == sswpt:
+            #     # print('Sono in ss')
+            #     turnpoint.type = 'speed'
+            #     task.start_close_time = time_to_seconds(get_time(w.get('close')))
+            #     if 'elapsed time' in task.task_type:
+            #         '''get start for elapsed time task types'''
+            #         task.start_time = time_to_seconds(get_time(w.get('open')))
+            # elif turnpoint.id == eswpt:
+            #     # print('Sono in es')
+            #     turnpoint.type = 'endspeed'
+            #     task.task_deadline = time_to_seconds(get_time(w.get('close')))
+            #     if turnpoint.id == len(node.findall('FsTurnpoint')):
+            #         '''need to manage tasks where last wpt is es. adding a point as es'''
+            #         turnpoints.append(turnpoint)
+            # if turnpoint.id == len(node.findall('FsTurnpoint')):
+            #     # print('Sono in goal')
+            #     turnpoint.type = 'goal'
+            #     if gtype == 'LINE':
+            #         turnpoint.shape = 'line'
+            # # else:
+            # #     wpt['tawType'] = 'waypoint'
+            #
+            # turnpoints.append(turnpoint)
 
         # tas['route'] = route
         task.formula = formula
