@@ -70,9 +70,12 @@ def get_admin_comps():
 
 def get_task_list(comp):
     tasks = comp.get_tasks_details()
+    max_task_num = 0
     for task in tasks:
         taskid = task['task_id']
         tasknum = task['task_num']
+        if int(tasknum) > max_task_num:
+            max_task_num = int(tasknum)
         # if task['task_name'] is None or task['task_name'] == '':
         #     task['task_name'] = f'Task {tasknum}'
         task['link'] = f'<a href="/users/task_admin/{taskid}">Task {tasknum}</a>'
@@ -81,4 +84,4 @@ def get_task_list(comp):
         if task['comment'] is None:
             task['comment'] = ''
         task['date'] = task['date'].strftime('%d/%m/%y')
-    return tasks
+    return {'next_task': max_task_num + 1, 'tasks': tasks}

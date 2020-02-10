@@ -328,14 +328,14 @@ Add
                $("#tasks tbody").remove();
                var content = '';
                content += '<tbody>';
-               for (var i = 0; i < json.length; i++) {
+               for (var i = 0; i < json['tasks'].length; i++) {
                content += '><tr id="'
-               + json[i].task_id + '">';
-               content += '<td class="col-3">' + json[i].link + '</td>';
-          //     content += '<td class="col-3">' + json[i].task_name + '</td>';
-               content += '<td class="col-3">' + json[i].date + '</td>';
-               content += '<td class="col-3">' + json[i].opt_dist + '</td>';
-               content += '<td class="col-3">' + json[i].comment+ '</td>';
+               + json['tasks'][i].task_id + '">';
+               content += '<td class="col-3">' + json['tasks'][i].link + '</td>';
+          //     content += '<td class="col-3">' + json['tasks'][i].task_name + '</td>';
+               content += '<td class="col-3">' + json['tasks'][i].date + '</td>';
+               content += '<td class="col-3">' + json['tasks'][i].opt_dist + '</td>';
+               content += '<td class="col-3">' + json['tasks'][i].comment+ '</td>';
                content += '<td  class ="value" ><button type="button" class="btn btn-danger" data-toggle="confirmation" data-popout="true">Delete</button></td>'
                content += '</tr>';
    
@@ -343,6 +343,7 @@ Add
                content += '</tbody>';
    
                $('#tasks').append(content);
+               $('#task_number').val(json['next_task']);
    
           };
    
