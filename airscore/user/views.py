@@ -268,6 +268,15 @@ def _add_task(compid):
     return jsonify(tasks)
 
 
+@blueprint.route('/_del_task/<taskid>', methods=['POST'])
+@login_required
+def _del_task(taskid):
+    from task import delete_task
+    delete_task(taskid)
+    resp = jsonify(success=True)
+    return resp
+
+
 @blueprint.route('/_get_tasks/<compid>', methods=['GET'])
 @login_required
 def _get_tasks(compid):

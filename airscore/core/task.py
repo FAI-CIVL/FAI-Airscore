@@ -1403,6 +1403,17 @@ class Task(object):
         return distance_to_go
 
 
+
+def delete_task(task_id):
+    from db_tables import tblTaskWaypoint as W
+    from db_tables import tblTask as T
+
+    '''delete waypoints and task from database'''
+    with Database() as db:
+        db.session.query(W).filter(W.tasPk == task_id).delete()
+        db.session.query(T).filter(T.tasPk == task_id).delete()
+        db.session.commit()
+
 # function to parse task object to compilations
 def get_map_json(task_id):
     """gets task map json file if it exists, otherwise creates it. returns 5 separate objects for mapping"""
