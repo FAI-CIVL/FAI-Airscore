@@ -5,7 +5,7 @@ from datetime import date
 from flask_wtf import FlaskForm
 from wtforms import PasswordField, StringField, IntegerField, SelectField, DecimalField, BooleanField, SubmitField
 from wtforms.fields.html5 import DateField
-from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange
+from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange, Optional
 
 import Defines
 from .models import User
@@ -95,8 +95,8 @@ class CompForm(FlaskForm):
 
     team_scoring = BooleanField('Team Scoring:')
     country_scoring = BooleanField('Country scoring:')
-    team_size = IntegerField('Team size:')
-    team_over = IntegerField('Team over: what is this??')
+    team_size = IntegerField('Team size:',validators=[Optional(strip_whitespace=True)])
+    team_over = IntegerField('Team over: what is this??', validators=[Optional(strip_whitespace=True)])
 
     distance = SelectField('Distance points:', choices=[('on','On'), ('difficulty','Difficulty'), ('off','Off')])
     arrival = SelectField('Arrival points:', choices=[('position','Position'), ('time','Time'), ('off','Off')])
@@ -111,12 +111,12 @@ class CompForm(FlaskForm):
     min_tolerance = IntegerField('Minimum turnpoint tolerance (m):')
     glide_bonus = DecimalField('Glide bonus:')
     height_bonus = DecimalField('Height bonus:')
-    ESS_height_upper = IntegerField('ESS height limit - upper:')
-    ESS_height_lower = IntegerField('ESS height limit - lower:')
+    ESS_height_upper = IntegerField('ESS height limit - upper:', validators=[Optional(strip_whitespace=True)])
+    ESS_height_lower = IntegerField('ESS height limit - lower:', validators=[Optional(strip_whitespace=True)])
     min_time = IntegerField('Minimum time:')
     scoreback_time = IntegerField('Scoreback time (sec):')
-    max_JTG = IntegerField("Max Jump the gun (sec):")
-    JTG_pen_sec = DecimalField('Jump the gun penalty per second:')
+    max_JTG = IntegerField("Max Jump the gun (sec):", validators=[Optional(strip_whitespace=True)])
+    JTG_pen_sec = DecimalField('Jump the gun penalty per second:', validators=[Optional(strip_whitespace=True)])
 
 
 

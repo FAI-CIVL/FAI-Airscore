@@ -221,27 +221,27 @@
                   <div class="collapse" id="collapse5">
                      <div class="card card-body">
                         <div class="container">
-<form id = "add_task_form" method="post" action="">
-<div class="form-row">
-<div class="form-group width4">
-{{taskform.task_number.label}} {{taskform.task_number(size=2, **{'id':"task_number", 'data-toggle': 'tooltip', 'title': taskform.task_number.description})}}
-{{taskform.task_date.label}} {{taskform.task_date(**{'id':"task_date",})}}
+<div id = "add_task_form">
+      <div class="form-row">
+      <div class="form-group width4">
+      {{taskform.task_number.label}} {{taskform.task_number(size=2, **{'id':"task_number", 'data-toggle': 'tooltip', 'title': taskform.task_number.description})}}
+      {{taskform.task_date.label}} {{taskform.task_date(**{'id':"task_date",})}}
+      </div>
+      </div>
+      <div class="form-row">
+      <div class="form-group col-md-6">
+      {{taskform.task_name.label}} {{taskform.task_name(**{'id':"task_name", 'data-toggle': 'tooltip', 'title': taskform.task_name.description})}}
+      </div>
+      <div class="form-group col-md-6">
+      {{taskform.task_comment.label}} {{taskform.task_comment(**{'id':"task_comment",'data-toggle': 'tooltip', 'title': taskform.task_comment.description})}}
+      </div>
+      </div>
+      <div class="form-row">
+      <button id="save_task_button" class="btn btn-success" type="button" onclick="save_task()">
+      Add
+      </button>
+      </div>
 </div>
-</div>
-<div class="form-row">
-<div class="form-group col-md-6">
-{{taskform.task_name.label}} {{taskform.task_name(**{'id':"task_name", 'data-toggle': 'tooltip', 'title': taskform.task_name.description})}}
-</div>
-<div class="form-group col-md-6">
-{{taskform.task_comment.label}} {{taskform.task_comment(**{'id':"task_comment",'data-toggle': 'tooltip', 'title': taskform.task_comment.description})}}
-</div>
-</div>
-<div class="form-row">
-<button id="save_task_button" class="btn btn-success" type="button" onclick="save_task()">
-Add
-</button>
-</div>
-</form>
 </div>
 </div>
 </div>
@@ -301,13 +301,7 @@ Add
 
    var csrftoken = $('meta[name=csrf-token]').attr('content');
    
-//   $('[data-toggle=confirmation]').confirmation({
-//     rootSelector: '[data-toggle=confirmation]',
-     // other options
-//   });
-   
-   
-   
+
    $.ajaxSetup({
        beforeSend: function(xhr, settings) {
            if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type)) {
