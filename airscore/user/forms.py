@@ -62,6 +62,40 @@ class NewTaskForm(FlaskForm):
 
 class CompForm(FlaskForm):
     from formula import list_formulas
+
+    help_nom_launch = "When pilots do not take off for safety reasons, to avoid difficult launch conditions or bad " \
+                      "conditions in the air, Launch Validity is reduced.. Nominal Launch defines a threshold as a " \
+                      "percentage of the pilots in a competition. Launch Validity is only reduced if fewer pilots " \
+                      "than defined by that threshold decide to launch. The recommended default value for Nominal" \
+                      " Launch is 96%, which means that Launch Validity will only be reduced if fewer than 96% of" \
+                      " the pilots present at launch chose to launch."
+
+    help_nom_distance = "Nominal distance should be set to the expected average task distance for the competition." \
+                        " Depending on the other competition parameters and the distances actually flown by pilots, " \
+                        "tasks shorter than Nominal Distance will be devalued in most cases. Tasks longer than" \
+                        " nominal distance will usually not be devalued, as long as the pilots fly most of the " \
+                        "distance. In order for GAP to be able to distinguish between good and not-so-good tasks, " \
+                        "and devalue the latter, it is important to set nominal distance high enough"
+
+    help_min_distance = "The minimum distance awarded to every pilot who takes off. It is the distance below which " \
+                        "it is pointless to measure a pilot's performance. The minimum distance parameter is set so " \
+                        "that pilots who are about to 'bomb out' will not be tempted to fly into the next field to " \
+                        "get past a group of pilots – they all receive the same amount of points anyway."
+
+    help_nom_goal = "The percentage of pilots the meet director would wish to have in goal in a well-chosen task. " \
+                    "This is typically 20 to 40%. This parameter has a very marginal effect on distance validity."
+
+    help_nom_time = "Nominal time indicates the expected task duration, the amount of time required to fly the speed" \
+                    " section. If the fastest pilot’s time is below nominal time, the task will be devalued. There is" \
+                    " no devaluation if the fastest pilot’s time is above nominal time. Nominal time should be set to " \
+                    "the expected “normal” task duration for the competition site, and nominal distance / nominal time " \
+                    "should be a bit higher than typical average speeds for the area."
+
+    help_score_back = "In a stopped task, this value defines the amount of time before the task stop was announced" \
+                      " that will not be considered for scoring. The default is 5 minutes, but depending on local " \
+                      "meteorological circumstances, it may be set to a longer period for a whole competition."
+
+
     comp_name = StringField('Competition Name')
     comp_code = StringField('Short name', render_kw=dict(maxlength=8), description='An abbreviated name (max 8 chars) e.g. PGEuro20')
     sanction = SelectField('Sanction', choices=[(x, x) for x in Defines.SANCTIONS])
@@ -87,11 +121,11 @@ class CompForm(FlaskForm):
     #formula object/table
     overall_validity = SelectField('Scoring', choices=[('all', 'ALL'), ('ftv', 'FTV'), ('round', 'ROUND')]) # tblForComp comOverallScore  ??what is round?? do we also need old drop tasks?
     validity_param = IntegerField('FTV percentage', validators=[NumberRange(min=0, max=100)])
-    nom_dist = IntegerField('Nominal Distance (km):')
-    nom_goal = IntegerField('Nominal Goal (%):', validators=[NumberRange(min=0, max=100)])
-    min_dist = IntegerField('Minimum Distance (km):')
-    nom_launch = IntegerField('Nominal Launch (%):', validators=[NumberRange(min=0, max=100)])
-    nom_time = IntegerField('Nominal Time (min):')
+    nom_dist = IntegerField('Nominal Distance (km):', description=help_nom_distance)
+    nom_goal = IntegerField('Nominal Goal (%):', description=help_nom_goal, validators=[NumberRange(min=0, max=100)])
+    min_dist = IntegerField('Minimum Distance (km):', description=help_min_distance)
+    nom_launch = IntegerField('Nominal Launch (%):', description=help_nom_launch, validators=[NumberRange(min=0, max=100)])
+    nom_time = IntegerField('Nominal Time (min):', description=help_nom_time)
 
     team_scoring = BooleanField('Team Scoring:')
     country_scoring = BooleanField('Country scoring:')
@@ -114,7 +148,7 @@ class CompForm(FlaskForm):
     ESS_height_upper = IntegerField('ESS height limit - upper:', validators=[Optional(strip_whitespace=True)])
     ESS_height_lower = IntegerField('ESS height limit - lower:', validators=[Optional(strip_whitespace=True)])
     min_time = IntegerField('Minimum time:')
-    scoreback_time = IntegerField('Scoreback time (sec):')
+    scoreback_time = IntegerField('Scoreback time (sec):', description=help_score_back)
     max_JTG = IntegerField("Max Jump the gun (sec):", validators=[Optional(strip_whitespace=True)])
     JTG_pen_sec = DecimalField('Jump the gun penalty per second:', validators=[Optional(strip_whitespace=True)])
 
