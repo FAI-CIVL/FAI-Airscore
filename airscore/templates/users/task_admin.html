@@ -1,7 +1,313 @@
 {% extends "layout.html"%}
 
 {% block content %}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+{% if error %}
+<p><strong> Error: </strong></p>
+{{error}}
+{% endif %}
+<form method="post" action="">
+   {{taskform.hidden_tag()}}
+   <div class="container">
+      <br>
+      <center>
+         <h2 class="font-weight-bold">Task {{taskform.task_num.data}} {% if taskform.task_name.data %}
+         - {{taskform.task_name.data}} {% endif %}</h2>
+         <br>
+          <h4 class="font-weight-bold">{{taskform.comp_name}}</h4>
+      </center>
+   </div>
+   <p>
+      <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse1" aria-expanded="false" aria-controls="collapse1">
+      Task Details
+      </button>
+   </p>
+   <div class="collapse show" id="collapse1">
+      <div class="card card-body">
+         <div class="container">
+            <h3 class="font-weight-bold">Task Details</h3>
+            <div class="form-row">
+               <div class="form-group col-md-7">
+                  {{taskform.task_num.label}} {{taskform.task_num(size=2)}}
+                  {{taskform.task_name.label}} {{taskform.task_name(size=40)}}
+               </div>
+            </div>
+             <div class="form-row">
+               <div  class="form-group col-md-5">
+                  {{taskform.comment.label}} {{taskform.comment(size=80, **{'data-toggle': 'tooltip', 'title': taskform.comment.description})}}
+               </div>
+            </div>
+            <div  class="form-row">
+               <div class="form-group col-md-6">
+                  {{taskform.date.label}} {{taskform.date(**{'data-toggle': 'tooltip', 'title': taskform.date.description})}}
+                   {{taskform.time_offset.label}} {{taskform.time_offset(size=4, **{'data-toggle': 'tooltip', 'title': taskform.time_offset.description})}}
+               </div>
+               <div  class="form-group col-md-6">
+                  {{taskform.task_type.label}} {{taskform.task_type(**{'data-toggle': 'tooltip', 'title': taskform.task_type.description})}}
 
-<h1>place holder page for task {{taskid}} admin page </h1>
+               </div>
+            </div>
+
+
+         </div>
+      </div>
+   </div>
+   <p>
+      <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse2" aria-expanded="false" aria-controls="collapse2">
+      Timing
+      </button>
+   </p>
+   <div class="collapse" id="collapse2">
+   <div class="card card-body">
+      <div class="container">
+         <h3 class="font-weight-bold">Task timing</h3>
+         <div class="form-row">
+            <div class="form-group col-md-6">
+               {{taskform.window_open_time.label}} {{taskform.window_open_time(size=3, **{'data-toggle': 'tooltip', 'title': taskform.window_open_time.description})}}
+            </div>
+         </div>
+          <div class="form-row">
+             <div class="form-group col-md-12">
+               {{taskform.start_time.label}} {{taskform.start_time(size=6, **{'data-toggle': 'tooltip', 'title': taskform.start_time.description})}}
+                 {{taskform.SS_interval.label}} {{taskform.SS_interval(size=4, **{'data-toggle': 'tooltip', 'title': taskform.SS_interval.description})}}
+                 {{taskform.start_iteration.label}} {{taskform.start_iteration(size=3, **{'data-toggle': 'tooltip', 'title': taskform.start_iteration.description})}}
+             </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group col-md-6">
+               {{taskform.window_close_time.label}} {{taskform.window_close_time(size=3,**{'data-toggle': 'tooltip', 'title': taskform.window_close_time.description})}}
+            </div>
+         </div>
+           <div class="form-row">
+               <div class="form-group col-md-6">
+                {{taskform.start_close_time.label}} {{taskform.start_close_time(size=3, **{'data-toggle': 'tooltip', 'title': taskform.start_close_time.description})}}
+                 </div>
+           </div>
+             <div class="form-group col-md-6">
+                <div class="form-row">
+                {{taskform.task_deadline.label}} {{taskform.task_deadline(size=3,**{'data-toggle': 'tooltip', 'title': taskform.task_deadline.description})}}
+                </div>
+             </div>
+          <div class="form-row">
+                {{taskform.stopped_time.label}} {{taskform.stopped_time(size=3,**{'data-toggle': 'tooltip', 'title': taskform.stopped_time.description})}}
+           </div>
+
+      </div>
+   </div>
+   </div>
+             <p>
+            <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse25" aria-expanded="false" aria-controls="collapse25">
+            Checks and files
+            </button>
+         </p>
+         <div class="collapse" id="collapse25">
+            <div class="card card-body">
+               <div class="container">
+                  <div class="form-row">
+                     <div class="form-group col-md-12">
+                        {{taskform.region.label}} {{taskform.region(**{'id': "distance", 'data-toggle': 'tooltip', 'title': taskform.region.description})}}
+                     </div>
+                  </div>
+                  <div  class="form-row">
+
+                     <div class="form-group col-md-3">
+                        {{taskform.airspace_check.label}} {{taskform.airspace_check(size=3,**{'id': "lead_factor", 'data-toggle': 'tooltip', 'title': taskform.airspace_check.description})}}
+                     </div>
+                     <div  class="form-group col-md-3 display-if" data-target_name="airspace_check" data-target_type="checkbox" data-target_value=true>
+                        {{taskform.openair_file.label}} {{taskform.openair_file(size=15,**{'id': "no_goal_pen", 'data-toggle': 'tooltip', 'title': taskform.openair_file.description})}}
+                     </div>
+                  </div>
+                   <div  class="form-row">
+                      <div class="form-group col-md-4">
+                        {{taskform.QNH.label}} {{taskform.QNH(size=5,**{'id': "tolerance", 'data-toggle': 'tooltip', 'title': taskform.QNH.description})}}
+                        </div>
+                          <div  class="form-group col-md-4">
+                          {{taskform.check_launch.label}} {{taskform.check_launch(size=3,**{'id': "min_tolerance", 'data-toggle': 'tooltip', 'title': taskform.check_launch.description})}}
+                       </div>
+                  </div>
+
+               </div>
+            </div>
+         </div>
+
+   <p>
+      <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse4" aria-expanded="false" aria-controls="collapse4">
+      Turnpoints
+      </button>
+   </p>
+   <div class="collapse" id="collapse4">
+      <div class="card card-body">
+         <div class="container">
+            <h3 class="font-weight-bold">Task</h3>
+            <div class="form-row">
+               <div class="form-group col-md-6">
+                  <table class="table" id="turnpoints">
+                 <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Type</th>
+                        <th>Waypoint</th>
+                        <th>Direction</th>
+                        <th>Shape</th>
+                        <th>Radius (m)</th>
+                        <th>Distance (km)</th>
+                    </tr>
+                  </thead>
+                                     <tbody>
+                     </tbody>
+                  </table>
+                  <p>
+                     {% if taskform.submit %}
+                     <button id="add_task" class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#collapse5" aria-expanded="false" aria-controls="collapse5">
+                     Add turnpoint
+                     </button>
+                     {% endif%}
+                  </p>
+                  <div class="collapse" id="collapse5">
+                     <div class="card card-body">
+                        <div class="container">
+<div id = "add_turnpoint_form">
+      <div class="form-row">
+          <div class="form-group width6">
+          {{turnpointform.type.label}} {{turnpointform.type(**{'id':"tp_type",})}}
+          </div>
+      </div>
+             <div class="form-row">
+                  <div class="form-group width12">
+                      {{turnpointform.name.label}} {{turnpointform.name(size=4, **{'id':"tp_name", 'data-toggle': 'tooltip', 'title': turnpointform.name.description})}}
+                  </div>
+                 </div>
+          <div class="form-row">
+            <div class="form-group col-md-12 display-if" data-target_name="type" data-target_type="select" data-target_value='speed'>
+      {{turnpointform.how.label}} {{turnpointform.how(**{'id':"task_name", 'data-toggle': 'tooltip', 'title': turnpointform.how.description})}}
+      </div>
+          </div>
+
+      <div class="form-row">
+      <div class="form-group col-md-6 display-if" data-target_name="type" data-target_type="select" data-target_value='goal'>
+      {{turnpointform.shape.label}} {{turnpointform.shape(**{'id':"task_name", 'data-toggle': 'tooltip', 'title': turnpointform.shape.description})}}
+      </div>
+      <div class="form-group col-md-6">
+      {{turnpointform.radius.label}} {{turnpointform.radius(size=5 , **{'id':"task_comment",'data-toggle': 'tooltip', 'title': turnpointform.radius.description})}}
+      </div>
+      </div>
+
+
+      <div class="form-row">
+      <button id="save_task_button" class="btn btn-success" type="button" onclick="save_task()">
+      Add
+      </button>
+      </div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+<div class="container">
+   <br>
+   <center>
+      {% if taskform.submit %}
+      {{taskform.submit(class="btn-success")}}
+      {% else %}
+      <b>You are not an admin of this comp</b>
+      {% endif%}
+   </center>
+</div>
+
+</form>
+
+  <!----modal starts here--->
+<div id="modal" class="modal fade" role='dialog'>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                <h4 class="modal-title">Please confirm</h4>
+            </div>
+            <div class="modal-body" id= "modal-body">
+                <p>Here the description starts here........</p>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+               <button id = "delete_confirmed" type="button" class="btn btn-default" data-dismiss="modal">Delete</button>
+            </div>
+        </div>
+      </div>
+  </div>
+<!--Modal ends here--->
+
+{% endblock %}
+{% block js %}
+{% include "js.html" %}
+<script src="{{ static_url_for('static', filename='js/display-if.min.js') }}"></script>
+
+<script type="text/javascript">
+   function update_turnpoints(json) {
+               $("#turnpoints tbody").remove();
+               var content = '';
+               content += '<tbody>';
+               for (var i = 0; i < json['turnpoints'].length; i++) {
+               content += '><tr id="'
+               + json['turnpoints'][i].task_id + '">';
+               content += '<td class="col-3">' + json['turnpoints'][i].n + '</td>';
+               content += '<td class="col-3">' + json['turnpoints'][i].type + '</td>';
+               content += '<td class="col-3">' + json['turnpoints'][i].name + '</td>';
+               content += '<td class="col-3">' + json['turnpoints'][i].how + '</td>';
+               content += '<td class="col-3">' + json['turnpoints'][i].shape + '</td>';
+               content += '<td class="col-3">' + json['turnpoints'][i].radius+ '</td>';
+               content += '<td class="col-3">' + json['turnpoints'][i].partial_distance+ '</td>';
+               content += '<td  class ="value" ><button type="button" class="btn btn-warning" onclick="modify('
+               content +=  json['turnpoints'][i].n + ',' + json['turnpoints'][i].id
+               content += ')" data-toggle="confirmation" data-popout="true">Modify</button></td>'
+               content += '</tr>';
+               }
+               content += '</tbody>';
+               $('#turnpoints').append(content);
+          };
+
+
+   function save_turnpoints(){
+           var mydata = new Object();
+               mydata.task_name = $('#task_name').val();
+               mydata.task_date = $('#task_date').val();
+               mydata.task_num = $('#task_number').val();
+               mydata.task_comment = $('#task_comment').val();
+
+           $.ajax({
+               type: "POST",
+               url: "{{ url_for('user._add_task', compid=compid)}}",
+               contentType:"application/json",
+               data : JSON.stringify(mydata),
+               dataType: "json",
+               success: function () {
+                      get_turnpoints()
+               }
+               });
+
+   };
+
+   function get_turnpoints(){
+    $.ajax({
+               type: "GET",
+               url: "{{ url_for('user._get_task_turnpoints', taskid=taskid)}}",
+               contentType:"application/json",
+               dataType: "json",
+               success: function (response) {
+                       update_turnpoints(response)
+               }
+               });
+   }
+
+
+   $(document).ready(function() {
+   get_turnpoints()
+   });
+
+</script>
 
 {% endblock %}

@@ -47,7 +47,7 @@ class Turnpoint:
         dlat: a float, latitude (for optimised route)
         dlon: a float, longitude (for optimised route)
         altitude: altitude amsl
-        radius: radius of cylinder or line in km
+        radius: radius of cylinder or line in m
         type: type of turnpoint; "launch",
                                  "speed",
                                  "cylinder",

@@ -3,7 +3,8 @@
 from datetime import date
 
 from flask_wtf import FlaskForm
-from wtforms import PasswordField, StringField, IntegerField, SelectField, DecimalField, BooleanField, SubmitField
+from wtforms import PasswordField, StringField, IntegerField, SelectField, DecimalField, BooleanField, SubmitField, \
+    TimeField
 from wtforms.fields.html5 import DateField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange, Optional
 
@@ -57,7 +58,7 @@ class NewTaskForm(FlaskForm):
     task_comment = StringField('Comment', description='Sometimes you may wish to make a comment that will show up'
                                                       ' in the competition overview page. e.g. "task stopped at 14:34"')
     task_date = DateField('Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
-    # task_region = SelectField('Region')
+    task_region = SelectField('Region')
 
 
 class CompForm(FlaskForm):
@@ -121,36 +122,36 @@ class CompForm(FlaskForm):
     #formula object/table
     overall_validity = SelectField('Scoring', choices=[('all', 'ALL'), ('ftv', 'FTV'), ('round', 'ROUND')]) # tblForComp comOverallScore  ??what is round?? do we also need old drop tasks?
     validity_param = IntegerField('FTV percentage', validators=[NumberRange(min=0, max=100)])
-    nom_dist = IntegerField('Nominal Distance (km):', description=help_nom_distance)
-    nom_goal = IntegerField('Nominal Goal (%):', description=help_nom_goal, validators=[NumberRange(min=0, max=100)])
-    min_dist = IntegerField('Minimum Distance (km):', description=help_min_distance)
-    nom_launch = IntegerField('Nominal Launch (%):', description=help_nom_launch, validators=[NumberRange(min=0, max=100)])
-    nom_time = IntegerField('Nominal Time (min):', description=help_nom_time)
+    nom_dist = IntegerField('Nominal Distance (km)', description=help_nom_distance)
+    nom_goal = IntegerField('Nominal Goal (%)', description=help_nom_goal, validators=[NumberRange(min=0, max=100)])
+    min_dist = IntegerField('Minimum Distance (km)', description=help_min_distance)
+    nom_launch = IntegerField('Nominal Launch (%)', description=help_nom_launch, validators=[NumberRange(min=0, max=100)])
+    nom_time = IntegerField('Nominal Time (min)', description=help_nom_time)
 
-    team_scoring = BooleanField('Team Scoring:')
-    country_scoring = BooleanField('Country scoring:')
-    team_size = IntegerField('Team size:',validators=[Optional(strip_whitespace=True)])
-    team_over = IntegerField('Team over: what is this??', validators=[Optional(strip_whitespace=True)])
+    team_scoring = BooleanField('Team Scoring')
+    country_scoring = BooleanField('Country scoring')
+    team_size = IntegerField('Team size',validators=[Optional(strip_whitespace=True)])
+    team_over = IntegerField('Team over- what is this??', validators=[Optional(strip_whitespace=True)])
 
-    distance = SelectField('Distance points:', choices=[('on','On'), ('difficulty','Difficulty'), ('off','Off')])
-    arrival = SelectField('Arrival points:', choices=[('position','Position'), ('time','Time'), ('off','Off')])
-    departure = SelectField('Departure points:', choices=[('leadout','Leadout'), ('departure','Departure'), ('off','Off')])
-    time = SelectField('Time points:', choices=[('on','On'), ('off', 'Off')])
+    distance = SelectField('Distance points', choices=[('on','On'), ('difficulty','Difficulty'), ('off','Off')])
+    arrival = SelectField('Arrival points', choices=[('position','Position'), ('time','Time'), ('off','Off')])
+    departure = SelectField('Departure points', choices=[('leadout','Leadout'), ('departure','Departure'), ('off','Off')])
+    time = SelectField('Time points', choices=[('on','On'), ('off', 'Off')])
 
-    alt_mode = SelectField('Instrument Altitude:', choices=[('GPS', 'GPS'), ('QNH', 'QNH')])
-    lead_factor = DecimalField('Leadfactor:')
-    no_goal_pen = DecimalField('No goal penalty:')
+    alt_mode = SelectField('Instrument Altitude', choices=[('GPS', 'GPS'), ('QNH', 'QNH')])
+    lead_factor = DecimalField('Leadfactor')
+    no_goal_pen = DecimalField('No goal penalty')
 
-    tolerance = DecimalField('Turnpoint radius tolerance %:')
-    min_tolerance = IntegerField('Minimum turnpoint tolerance (m):')
-    glide_bonus = DecimalField('Glide bonus:')
-    height_bonus = DecimalField('Height bonus:')
-    ESS_height_upper = IntegerField('ESS height limit - upper:', validators=[Optional(strip_whitespace=True)])
-    ESS_height_lower = IntegerField('ESS height limit - lower:', validators=[Optional(strip_whitespace=True)])
-    min_time = IntegerField('Minimum time:')
-    scoreback_time = IntegerField('Scoreback time (sec):', description=help_score_back)
-    max_JTG = IntegerField("Max Jump the gun (sec):", validators=[Optional(strip_whitespace=True)])
-    JTG_pen_sec = DecimalField('Jump the gun penalty per second:', validators=[Optional(strip_whitespace=True)])
+    tolerance = DecimalField('Turnpoint radius tolerance %')
+    min_tolerance = IntegerField('Minimum turnpoint tolerance (m)')
+    glide_bonus = DecimalField('Glide bonus')
+    height_bonus = DecimalField('Height bonus')
+    ESS_height_upper = IntegerField('ESS height limit - upper', validators=[Optional(strip_whitespace=True)])
+    ESS_height_lower = IntegerField('ESS height limit - lower', validators=[Optional(strip_whitespace=True)])
+    min_time = IntegerField('Minimum time')
+    scoreback_time = IntegerField('Scoreback time (sec)', description=help_score_back)
+    max_JTG = IntegerField("Max Jump the gun (sec)", validators=[Optional(strip_whitespace=True)])
+    JTG_pen_sec = DecimalField('Jump the gun penalty per second', validators=[Optional(strip_whitespace=True)])
 
 
 
@@ -162,3 +163,62 @@ class CompForm(FlaskForm):
             return False
         else:
             return result
+
+class TaskForm(FlaskForm):
+    #general
+    comp_name = ""
+    task_name = StringField("Task Name", description='optional. If you want to give the task a name. '
+                                                     'If left blank it will default to "Task #"')
+    task_num = IntegerField("Task Number", validators=[NumberRange(min=0, max=50)],
+                               description='task number, by default one more than the last task')
+    comment = StringField('Comment', description='Sometimes you may wish to make a comment that will show up'
+                                                      ' in the competition overview page. e.g. "task stopped at 14:34"')
+    date = DateField('Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
+    task_type = SelectField('Type', choices=[('race', 'Race'), ('elapsed_time', 'Elapsed time')])
+    # times
+    window_open_time = TimeField('Window open')
+    start_time = TimeField('Start time')
+    window_close_time = TimeField('Window close')
+    start_close_time = TimeField('Start close')
+    stopped_time = TimeField('Stopped time')
+    task_deadline = TimeField('Deadline')
+
+    # other
+    SS_interval = IntegerField('Gate interval (mins)')
+    start_iteration = IntegerField('Number of gates', description='number of start iterations: 0 is indefinite up to '
+                                                                  'start close time')
+    time_offset = DecimalField('GMT offset', validators=[DataRequired()], places=2, render_kw=dict(maxlength=5),
+                               description='The time offset for the task. Default value taken from the competition '
+                                           'time offset')
+    check_launch = BooleanField('Check launch', description='If we check pilots leaving launch - i.e. launch is like '
+                                                            'an exit cylinder')
+    region = SelectField('Waypoint file', choices=[(1,'1'), (2,'2')])
+
+    # airspace
+    airspace_check = BooleanField('Airspace checking')
+    openair_file = SelectField('Openair file', choices=[(1,'1'), (2,'2')])
+    QNH = DecimalField('QNH', validators=[NumberRange(min=900, max=1100)])
+
+    submit = SubmitField('Save')
+    def validate_on_submit(self):
+        result = super(CompForm, self).validate()
+        if self.window_close_time.data > self.window_open_time.data:
+            return False
+        if self.start_close_time.data > self.start_time.data:
+            return False
+        if self.task_deadline.data > self.start_time.data:
+            return False
+        else:
+            return result
+
+
+class NewTurnpointForm(FlaskForm):
+
+    id = None
+    description = None
+    name = SelectField('Waypoint')
+    radius = IntegerField('Radius (m)')
+    type = SelectField('Type', choices=[('launch', 'Launch'), ('speed', 'SSS'), ('waypoint', 'Waypoint'),
+                                        ('endspeed', 'ESS'), ('goal', 'Goal')])
+    shape = SelectField('Shape', choices=[('circle', 'Circle'), ('line', 'Line')])
+    how = SelectField('SSS Direction', choices=[('entry', 'Out/Enter'), ('exit', 'In/Exit')])

@@ -38,6 +38,7 @@ from formula import Task_formula
 from igc_lib import defaultdict
 from pathlib import Path
 import jsonpickle
+from sqlalchemy.exc import SQLAlchemyError
 
 
 class Task(object):
@@ -93,6 +94,8 @@ class Task(object):
         self.comp_name = None
         self.comp_site = None
         self.comp_class = None
+        self.reg_id = None
+        self.region_name = None
         self.date = None  # in datetime.date (Y-m-d) format
         self.task_name = None
         self.task_num = None  # task n#
@@ -491,6 +494,24 @@ class Task(object):
             task.create_path()
 
         return task
+
+    def read_turnpoints(self):
+        """Reads Task turnpoints from database, for use in front end"""
+        from db_tables import TaskWaypointView as W
+
+        with Database() as db:
+            try:
+                # get the task turnpoint details.
+                results = db.session.query(W.id, W.name, W.n, W.description, W.how, W.radius, W.shape, W.type,
+                                           W.partial_distance).filter(W.task_id == self.task_id).order_by(
+                                           W.partial_distance).all()
+
+                if results:
+                    results = [row._asdict() for row in results]
+                return results
+            except SQLAlchemyError:
+                print(f"Error trying to retrieve Tasks details for Comp ID {self.comp_id}")
+                return None
 
     def create_path(self, path=None):
         """create filepath from # and date if not given

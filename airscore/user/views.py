@@ -5,7 +5,7 @@ from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
 from flask_login import login_required, current_user
 import frontendUtils
-from airscore.user.forms import NewTaskForm, CompForm
+from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm
 from comp import Comp
 from formula import list_formulas, Formula
 from task import Task
@@ -208,9 +208,7 @@ def comp_settings_admin(compid):
         compform.JTG_pen_sec.data = formula.JTG_penalty_per_sec
         compform.alt_mode.data = formula.scoring_altitude
 
-
-
-
+        newtaskform.task_region.choices = frontendUtils.get_region_choices(compid)
 
         if current_user.username not in admins:
             compform.submit = None
@@ -224,7 +222,42 @@ def comp_settings_admin(compid):
 @blueprint.route('/task_admin/<taskid>', methods=['GET', 'POST'])
 @login_required
 def task_admin(taskid):
-    return render_template('users/task_admin.html', taskid=taskid)
+    from calcUtils import sec_to_time
+    error = None
+    taskform = TaskForm()
+    turnpointform = NewTurnpointForm()
+    task = Task.read(int(taskid))
+    admins = ['joe smith', 'john wayne', 'stuart']  # TODO
+
+    if request.method == 'GET':
+        taskform.comp_name = task.comp_name
+        taskform.task_name.data = task.task_name
+        taskform.task_num.data = task.task_num
+        taskform.comment.data = task.comment
+        taskform.date.data = task.date
+        taskform.task_type.data = task.task_type
+        taskform.window_open_time.data = "" if not task.window_open_time else sec_to_time(task.window_open_time)
+        taskform.window_close_time.data = "" if not task.window_close_time else sec_to_time(task.window_close_time)
+        taskform.start_time.data = "" if not task.start_time else sec_to_time(task.start_time)
+        taskform.start_close_time.data = "" if not task.start_close_time else sec_to_time(task.start_close_time)
+        taskform.stopped_time.data = "" if not task.stopped_time else sec_to_time(task.stopped_time)
+        taskform.task_deadline.data = "" if not task.task_deadline else sec_to_time(task.task_deadline)
+        taskform.SS_interval.data = task.SS_interval/60 # (convert from sec to min)
+        taskform.start_iteration.data = task.start_iteration
+        taskform.time_offset.data = task.time_offset/3600 # (convert from seconds to hours)
+        taskform.check_launch.data = task.check_launch
+        taskform.airspace_check.data = task.airspace_check
+        taskform.openair_file.data = task.openair_file # TODO get a list of openair files for this comp (in the case of defines.yaml airspace_file_library: off otherwise all openair files available)
+        taskform.QNH.data = task.QNH
+        # taskform.region.data = task.reg_id # TODO get a list of waypoint files for this comp (in the case of defines.yaml waypoint_file_library: off otherwise all regions available)
+        # taskform.region.choices = frontendUtils.get_region_choices(compid)
+
+        turnpointform.name.choices = frontendUtils.get_waypoint_choices(task.reg_id)
+
+        if current_user.username not in admins:
+            taskform.submit = None
+
+    return render_template('users/task_admin.html', taskid=taskid, taskform=taskform, turnpointform=turnpointform, error=error)
 
 
 @blueprint.route('/get_admin_comps', methods=['GET', 'POST'])
@@ -261,6 +294,7 @@ def _add_task(compid):
     task.task_num = int(data['task_num'])
     task.date = datetime.strptime(data['task_date'], '%Y-%m-%d')
     task.comment = data['task_comment']
+    task.reg_id = data['region']
     task.to_db()
     comp = Comp()
     comp.comp_id = compid
@@ -311,3 +345,12 @@ def _get_adv_settings():
     settings['alt_mode'] = formula.scoring_altitude
 
     return jsonify(settings)
+
+
+@blueprint.route('/_get_task_turnpoints/<taskid>', methods=['GET'])
+@login_required
+def _get_task_turnpoints(taskid):
+    task = Task()
+    task.task_id = taskid
+    turnpoints = frontendUtils.get_task_turnpoints(task)
+    return jsonify(turnpoints)

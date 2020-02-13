@@ -206,8 +206,17 @@
          <div class="container">
             <h3 class="font-weight-bold">Tasks</h3>
             <div class="form-row">
-               <div class="form-group col-md-6">
-                  <table id="tasks">
+               <div class="form-group col-md-10">
+                  <table class="table" id="tasks">
+                                       <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Date</th>
+                        <th>Region</th>
+                        <th>Optimised Dist</th>
+                        <th>Comment</th>
+                    </tr>
+                  </thead>
                      <tbody>
                      </tbody>
                   </table>
@@ -226,6 +235,7 @@
       <div class="form-group width4">
       {{taskform.task_number.label}} {{taskform.task_number(size=2, **{'id':"task_number", 'data-toggle': 'tooltip', 'title': taskform.task_number.description})}}
       {{taskform.task_date.label}} {{taskform.task_date(**{'id':"task_date",})}}
+      {{taskform.task_region.label}} {{taskform.task_region(**{'id':"task_region",})}}
       </div>
       </div>
       <div class="form-row">
@@ -377,6 +387,7 @@
                content += '<td class="col-3">' + json['tasks'][i].link + '</td>';
           //     content += '<td class="col-3">' + json['tasks'][i].task_name + '</td>';
                content += '<td class="col-3">' + json['tasks'][i].date + '</td>';
+               content += '<td class="col-3">' + json['tasks'][i].region_name + '</td>';
                content += '<td class="col-3">' + json['tasks'][i].opt_dist + '</td>';
                content += '<td class="col-3">' + json['tasks'][i].comment+ '</td>';
                content += '<td  class ="value" ><button type="button" class="btn btn-danger" onclick="confirm_delete('
@@ -389,6 +400,7 @@
    
                $('#tasks').append(content);
                $('#task_number').val(json['next_task']);
+               $('#task_region').val(json['last_region']);
    
           };
    
@@ -399,6 +411,7 @@
                mydata.task_date = $('#task_date').val();
                mydata.task_num = $('#task_number').val();
                mydata.task_comment = $('#task_comment').val();
+               mydate.task_region = $('#task_region').val();
    
            $.ajax({
                type: "POST",

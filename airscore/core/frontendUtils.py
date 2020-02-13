@@ -71,11 +71,13 @@ def get_admin_comps():
 def get_task_list(comp):
     tasks = comp.get_tasks_details()
     max_task_num = 0
+    last_region = 0
     for task in tasks:
         taskid = task['task_id']
         tasknum = task['task_num']
         if int(tasknum) > max_task_num:
             max_task_num = int(tasknum)
+            last_region = task['reg_id']
         # if task['task_name'] is None or task['task_name'] == '':
         #     task['task_name'] = f'Task {tasknum}'
         task['link'] = f'<a href="/users/task_admin/{taskid}">Task {tasknum}</a>'
@@ -84,4 +86,44 @@ def get_task_list(comp):
         if task['comment'] is None:
             task['comment'] = ''
         task['date'] = task['date'].strftime('%d/%m/%y')
-    return {'next_task': max_task_num + 1, 'tasks': tasks}
+    return {'next_task': max_task_num + 1, 'last_region': last_region, 'tasks': tasks}
+
+
+def get_task_turnpoints(task):
+    turnpoints = task.read_turnpoints()
+    for tp in turnpoints:
+        tp['partial_distance'] = '' if not tp['partial_distance']  else round(tp['partial_distance'] /1000, 2)
+        if tp['type'] == 'speed':
+            tp['type'] = 'SSS'
+        elif tp['type'] == 'endspeed':
+            tp['type'] = 'ESS'
+        else:
+            tp['type'] = tp['type'].capitalize()
+
+    return {'turnpoints': turnpoints}
+
+
+def get_comp_regions(compid):
+    import Defines
+    import region
+    if Defines.WAYPOINT_FILE_LIBRARY:
+        return region.get_all_regions()
+    else:
+        return region.get_comp_regions_and_wpts(compid)
+
+
+def get_region_choices(compid):
+    regions = get_comp_regions(compid)
+    choices = []
+    for region in regions['regions']:
+        choices.append((region['regPk'], region['name']))
+    return choices
+
+def get_waypoint_choices(reg_id):
+    import region
+    wpts = region.get_region_wpts(reg_id)
+    choices = []
+
+    for wpt in wpts:
+        choices.append((wpt['regPk'], wpt['rwpName'] + ' - ' + wpt['rwpDescription']))
+    return choices

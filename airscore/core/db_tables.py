@@ -372,6 +372,7 @@ class TaskObjectView(Base):
                       Column('task_name', String(100)),
                       Column('task_num', TINYINT(3)),
                       Column('reg_id', INTEGER(11)),
+                      Column('region_name', String(64)),
                       Column('window_open_time', BIGINT(21)),
                       Column('task_deadline', BIGINT(21)),
                       Column('window_close_time', BIGINT(21)),
@@ -1047,6 +1048,7 @@ class tblRegion(Base):
     __tablename__ = 'tblRegion'
 
     regPk = Column(INTEGER(11), primary_key=True)
+    comPk = Column(INTEGER(11)) # for use when library feature turned off (see defines.yaml)
     regCentre = Column(INTEGER(11))
     regRadius = Column(Float(asdecimal=False))
     regDescription = Column(String(64), nullable=False)
