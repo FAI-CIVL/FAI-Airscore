@@ -5,6 +5,10 @@ from myconn import Database
 import datetime
 from sqlalchemy import func, not_
 import math
+from pathlib import Path
+import jsonpickle
+from Defines import MAPOBJDIR
+from design_map import make_map
 
 def get_comps():
     c = aliased(tblCompetition)
@@ -112,7 +116,26 @@ def get_task_turnpoints(task):
         total_dist = str(total_dist) + "km"
     # max_n = int(math.ceil(max_n / 10.0)) * 10
     max_n += 1
-    return {'turnpoints': turnpoints, 'next_number': max_n, 'distance': total_dist}
+
+    task_file = Path(MAPOBJDIR + 'tasks/' + str(task.task_id) + '.task')
+    if task_file.is_file():
+        with open(task_file, 'r') as f:
+            data = jsonpickle.decode(f.read())
+            task_coords = data['task_coords']
+            map_turnpoints = data['turnpoints']
+            short_route = data['short_route']
+            goal_line = data['goal_line']
+            tolerance = data['tolerance']
+            bbox = data['bbox']
+            layer = {'geojson': None, 'bbox': bbox}
+            task_map = make_map(layer_geojson=layer, points=task_coords, circles=map_turnpoints, polyline=short_route,
+                                goal_line=goal_line, margin=tolerance)
+            task_map = task_map._repr_html_()
+
+    else:
+        task_map = None
+
+    return {'turnpoints': turnpoints, 'next_number': max_n, 'distance': total_dist, 'map': task_map}
 
 
 def get_comp_regions(compid):

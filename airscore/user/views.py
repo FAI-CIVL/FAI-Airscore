@@ -8,7 +8,7 @@ import frontendUtils
 from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm
 from comp import Comp
 from formula import list_formulas, Formula
-from task import Task
+from task import Task, write_map_json
 import json
 from route import save_turnpoint, Turnpoint
 blueprint = Blueprint("user", __name__, url_prefix="/users", static_folder="../static")
@@ -416,6 +416,7 @@ def _add_turnpoint(taskid):
             task.calculate_optimised_task_length()
             task.calculate_task_length()
             task.update_task_distance()
+            write_map_json(taskid)
 
         turnpoints = frontendUtils.get_task_turnpoints(task)
         return jsonify(turnpoints)
@@ -437,6 +438,7 @@ def _del_turnpoint(tpid):
         task.calculate_optimised_task_length()
         task.calculate_task_length()
         task.update_task_distance()
+        write_map_json(taskid)
 
     resp = jsonify(success=True)
     return resp
