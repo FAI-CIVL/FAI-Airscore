@@ -93,21 +93,26 @@ def get_task_list(comp):
 def get_task_turnpoints(task):
     turnpoints = task.read_turnpoints()
     max_n = 0
+    total_dist = 0
     for tp in turnpoints:
         tp['original_type'] = tp['type']
+        tp['partial_distance'] = '' if not tp['partial_distance'] else round(tp['partial_distance'] / 1000, 2)
         if int(tp['n']) > max_n:
             max_n = int(tp['n'])
-        tp['partial_distance'] = '' if not tp['partial_distance']  else round(tp['partial_distance'] / 1000, 2)
+            total_dist = tp['partial_distance']
         if tp['type'] == 'speed':
             tp['type'] = 'SSS'
         elif tp['type'] == 'endspeed':
             tp['type'] = 'ESS'
         else:
             tp['type'] = tp['type'].capitalize()
-
+    if total_dist == '':
+        total_dist = 'Distance not yet calculated'
+    else:
+        total_dist = str(total_dist) + "km"
     # max_n = int(math.ceil(max_n / 10.0)) * 10
     max_n += 1
-    return {'turnpoints': turnpoints, 'next_number': max_n}
+    return {'turnpoints': turnpoints, 'next_number': max_n, 'distance': total_dist}
 
 
 def get_comp_regions(compid):

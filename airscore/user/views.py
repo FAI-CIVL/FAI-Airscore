@@ -392,9 +392,12 @@ def _get_task_turnpoints(taskid):
 @blueprint.route('/_add_turnpoint/<taskid>', methods=['POST'])
 @login_required
 def _add_turnpoint(taskid):
+    """add turnpoint to the task,if rwpPk is not null then update instead of insert (add)
+    if turnpoint is goal or we are updating and goal exists then calculate opt dist and dist."""
     data = request.json
-    from sys import stdout
-
+    taskid = int(taskid)
+    if data['id']:
+        data['id'] = int(data['id'])
     if data['type'] != 'goal':
         data['shape'] = 'circle'
     if data['type'] != 'speed':
@@ -403,13 +406,17 @@ def _add_turnpoint(taskid):
     data['number'] = int(data['number'])
     data['rwpPk'] = int(data['rwpPk'])
 
-    print(data)
-    stdout.flush()
     tp = Turnpoint(radius=data['radius'], how=data['direction'], shape=data['shape'], type=data['type'],
                    id=data['number'], rwpPk=data['rwpPk'])
     if save_turnpoint(int(taskid), tp, data['id']):
         task = Task()
         task.task_id = taskid
+        task = Task.read(taskid)
+        if task.opt_dist > 0 or data['type'] == 'goal':
+            task.calculate_optimised_task_length()
+            task.calculate_task_length()
+            task.update_task_distance()
+
         turnpoints = frontendUtils.get_task_turnpoints(task)
         return jsonify(turnpoints)
     else:
@@ -419,7 +426,17 @@ def _add_turnpoint(taskid):
 @blueprint.route('/_del_turnpoint/<tpid>', methods=['POST'])
 @login_required
 def _del_turnpoint(tpid):
+    """delete a turnpoint from the task"""
     from route import delete_turnpoint
+    data = request.json
+    print(data)
+    taskid = int(data['taskid'])
     delete_turnpoint(tpid)
+    if data['partial_distance'] != '':
+        task = Task.read(taskid)
+        task.calculate_optimised_task_length()
+        task.calculate_task_length()
+        task.update_task_distance()
+
     resp = jsonify(success=True)
     return resp

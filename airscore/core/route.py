@@ -145,7 +145,18 @@ def save_turnpoint(task_id, turnpoint: Turnpoint, pk=None):
     else:
         with Database() as db:
             try:
+                waypoint = db.session.query(RW.rwpName, RW.rwpLatDecimal, RW.rwpLongDecimal, RW.rwpAltitude,
+                                           RW.rwpDescription).filter(RW.rwpPk == turnpoint.rwpPk).one()
+                if waypoint:
+                    waypoint = [waypoint._asdict()]
+                    waypoint = waypoint[0]
+
                 q = db.session.query(tblTaskWaypoint).get(pk)
+                q.tawName = waypoint['rwpName']
+                q.tawLat = waypoint['rwpLatDecimal']
+                q.tawLon = waypoint['rwpLongDecimal']
+                q.tawAlt = waypoint['rwpAltitude']
+                q.tawDesc = waypoint['rwpDescription']
                 q.rwpPk = turnpoint.rwpPk
                 q.tawNumber = turnpoint.id
                 q.tawType = turnpoint.type

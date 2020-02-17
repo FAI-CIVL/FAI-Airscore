@@ -130,7 +130,7 @@
    <div class="collapse" id="collapse4">
       <div class="card card-body">
          <div class="container">
-            <h3 class="font-weight-bold">Task</h3>
+            <h3 id="task_table_heading" class="font-weight-bold">Task</h3>
             <div class="form-row">
                <div class="form-group col-md-6">
                   <table class="table" id="turnpoints">
@@ -295,13 +295,19 @@
    })
 
 var turnpoints;
+var taskid = {{taskid}};
 
    function update_turnpoints(json) {
                $("#turnpoints tbody").remove();
                var content = '';
+
                turnpoints = json;
+               task_table_heading.innerText = "Task - "+json['distance'];
                content += '<tbody>';
                for (var i = 0; i < json['turnpoints'].length; i++) {
+               var partial_dist = json['turnpoints'][i].partial_distance;
+               if (json['turnpoints'][i].partial_distance == ''){
+                    var partial_dist = 0; }
                content += '><tr id="'
                + json['turnpoints'][i].task_id + '">';
                content += '<td class="col-3">' + json['turnpoints'][i].n + '</td>';
@@ -310,14 +316,14 @@ var turnpoints;
                content += '<td class="col-3">' + json['turnpoints'][i].how + '</td>';
                content += '<td class="col-3">' + json['turnpoints'][i].shape + '</td>';
                content += '<td class="col-3">' + json['turnpoints'][i].radius+ '</td>';
-               content += '<td class="col-3">' + json['turnpoints'][i].partial_distance+ '</td>';
+               content += '<td class="col-3">' + json['turnpoints'][i].partial_distance + '</td>';
 
                content += '<td  class ="value" ><button type="button" class="btn btn-warning" onclick="modify_tp('
                content +=  json['turnpoints'][i].n + ',' + json['turnpoints'][i].id
                content += ')" data-toggle="confirmation" data-popout="true">Modify</button></td>'
 
                content += '<td  class ="value" ><button type="button" class="btn btn-danger" onclick="confirm_delete('
-               content +=  json['turnpoints'][i].n + ',' + json['turnpoints'][i].id
+               content +=  json['turnpoints'][i].n + ',' + json['turnpoints'][i].id + ',' + partial_dist
                content += ')" data-toggle="confirmation" data-popout="true">Delete</button></td>'
 
                content += '</tr>';
@@ -370,11 +376,17 @@ var turnpoints;
 
 
 
-   function delete_tp(tpid){
-
+   function delete_tp(tpid, partial_d){
+            var mydata = new Object();
+            mydata.partial_distance = partial_d;
+            mydata.taskid = taskid;
            $.ajax({
                type: "POST",
-               url: '/users/_del_turnpoint/'+tpid,
+               url: '/users/_del_turnpoint/'+ tpid,
+               contentType:"application/json",
+               data : JSON.stringify(mydata),
+               dataType: "json",
+
                success: function () {
                       get_turnpoints()
                }
@@ -383,11 +395,11 @@ var turnpoints;
    };
 
 
-   function confirm_delete(tp_num, tpid) {
+   function confirm_delete(tp_num, tpid, partial_distance) {
 	 var x = tp_num;
      var myHeading = "<p>Are you sure you want to delete Turnpoint ";
      $("#delmodal-body").html(myHeading + x + '?</p>');
-     $('#delete_confirmed').attr("onclick","delete_tp('"+tpid+"')");
+     $('#delete_confirmed').attr("onclick","delete_tp("+tpid+", "+ partial_distance+")");
      $('#delmodal').modal('show');
     }
 
