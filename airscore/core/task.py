@@ -477,7 +477,7 @@ class Task(object):
             t = db.session.query(T)
             w = db.session.query(W)
             db.populate_obj(task, t.get(task_id))
-            tps = w.filter(W.task_id == task_id).order_by(W.partial_distance)
+            tps = w.filter(W.task_id == task_id).order_by(W.n)
         '''populate turnpoints'''
         for tp in tps:
             turnpoint = Turnpoint(tp.lat, tp.lon, tp.radius, tp.type.strip(),
@@ -781,7 +781,7 @@ class Task(object):
         with Database() as db:
             '''add optimised and total distance to task'''
             q = db.session.query(T)
-            t = q.get(self.id)
+            t = q.get(self.task_id)
             t.tasDistance = self.distance
             t.tasShortRouteDistance = self.opt_dist
             t.tasSSDistance = self.SS_distance
@@ -812,7 +812,7 @@ class Task(object):
         task_type = self.task_type.lower()
 
         with Database() as db:
-            q = db.session.query(T).get(self.id)
+            q = db.session.query(T).get(self.task_id)
             date = q.date
             q.tasStartTime = dt.combine(date, start_time)
             q.tasFinishTime = dt.combine(date, task_deadline)
