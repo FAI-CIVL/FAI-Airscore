@@ -15,6 +15,7 @@ from geopy.distance import geodesic, vincenty
 from collections import namedtuple
 from geographiclib.geodesic import Geodesic
 from math import sqrt, hypot, fabs
+from myconn import Database
 
 '''define earth model'''
 # EARTHMODEL = Proj("+init=EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth
@@ -102,6 +103,43 @@ class Turnpoint:
 
         return distance(self, fix) < self.radius + tol
 
+
+def delete_turnpoint(tp_id):
+    from db_tables import tblTaskWaypoint as W
+
+    '''delete turnpoint from task in database'''
+    with Database() as db:
+        db.session.query(W).filter(W.tawPk == tp_id).delete()
+        db.session.commit()
+
+
+def save_turnpoint(task_id, turnpoint: Turnpoint):
+    '''save turnpoint in a task- for frontend'''
+    from db_tables import tblTaskWaypoint, tblRegionWaypoint as RW
+    if not (type(task_id) is int and task_id > 0):
+        print("task not present in database ", task_id)
+        return None
+
+    with Database() as db:
+        # get the turnpoint details.
+        try:
+            # get the task turnpoint details.
+            waypoint = db.session.query(RW.rwpName, RW.rwpLatDecimal, RW.rwpLongDecimal, RW.rwpAltitude,
+                                       RW.rwpDescription).filter(RW.rwpPk == turnpoint.rwpPk).one()
+            if waypoint:
+                waypoint = [waypoint._asdict()]
+                waypoint = waypoint[0]
+            tp = tblTaskWaypoint(tasPk=task_id, rwpPk=turnpoint.rwpPk, tawNumber=turnpoint.id,
+                                 tawName=waypoint['rwpName'], tawLat=waypoint['rwpLatDecimal'],
+                                 tawLon=waypoint['rwpLongDecimal'], tawAlt=waypoint['rwpAltitude'],
+                                 tawDesc=waypoint['rwpDescription'], tawType=turnpoint.type, tawHow=turnpoint.how,
+                                 tawShape=turnpoint.shape, tawRadius=turnpoint.radius)
+            db.session.add(tp)
+            db.session.flush()
+        except:
+            print('error saving turnpoint')
+            return 0
+        return 1
 
 def get_proj(clat, clon, proj=PROJ):
     """

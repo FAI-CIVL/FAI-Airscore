@@ -176,12 +176,12 @@ class TaskForm(FlaskForm):
     date = DateField('Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
     task_type = SelectField('Type', choices=[('race', 'Race'), ('elapsed_time', 'Elapsed time')])
     # times
-    window_open_time = TimeField('Window open')
-    start_time = TimeField('Start time')
-    window_close_time = TimeField('Window close')
-    start_close_time = TimeField('Start close')
+    window_open_time = TimeField('Window open', validators=[DataRequired()])
+    start_time = TimeField('Start time', validators=[DataRequired()])
+    window_close_time = TimeField('Window close', validators=[DataRequired()])
+    start_close_time = TimeField('Start close', validators=[DataRequired()])
     stopped_time = TimeField('Stopped time')
-    task_deadline = TimeField('Deadline')
+    task_deadline = TimeField('Deadline', validators=[DataRequired()])
 
     # other
     SS_interval = IntegerField('Gate interval (mins)')
@@ -216,8 +216,9 @@ class NewTurnpointForm(FlaskForm):
 
     id = None
     description = None
+    number = IntegerField('#')
     name = SelectField('Waypoint')
-    radius = IntegerField('Radius (m)')
+    radius = IntegerField('Radius (m)', default=400)
     type = SelectField('Type', choices=[('launch', 'Launch'), ('speed', 'SSS'), ('waypoint', 'Waypoint'),
                                         ('endspeed', 'ESS'), ('goal', 'Goal')])
     shape = SelectField('Shape', choices=[('circle', 'Circle'), ('line', 'Line')])

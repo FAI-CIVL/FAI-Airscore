@@ -588,6 +588,7 @@ class TaskWaypointView(Base):
     __table__ = Table('TaskWaypointView', metadata,
 
                       Column('id', INTEGER(11), primary_key=True),
+                      Column('rwpid', INTEGER(11)),
                       Column('task_id', INTEGER(11)),
                       Column('n', INTEGER(11)),
                       Column('name', CHAR(6)),

@@ -10,6 +10,7 @@ from comp import Comp
 from formula import list_formulas, Formula
 from task import Task
 import json
+from route import save_turnpoint, Turnpoint
 blueprint = Blueprint("user", __name__, url_prefix="/users", static_folder="../static")
 
 
@@ -222,12 +223,44 @@ def comp_settings_admin(compid):
 @blueprint.route('/task_admin/<taskid>', methods=['GET', 'POST'])
 @login_required
 def task_admin(taskid):
-    from calcUtils import sec_to_time
+    from calcUtils import sec_to_time, time_to_seconds
     error = None
     taskform = TaskForm()
     turnpointform = NewTurnpointForm()
     task = Task.read(int(taskid))
     admins = ['joe smith', 'john wayne', 'stuart']  # TODO
+
+    if request.method == 'POST':
+        if taskform.validate_on_submit():
+            task.comp_name = taskform.comp_name
+            task.task_name.data = taskform.task_name
+            task.task_num.data = taskform.task_num
+            task.comment.data = taskform.comment
+            task.date.data = taskform.date
+            task.task_type.data = taskform.task_type
+            task.window_open_time.data = time_to_seconds(taskform.window_open_time)
+            task.window_close_time.data = time_to_seconds(taskform.window_close_time)
+            task.start_time.data = time_to_seconds(taskform.start_time)
+            task.start_close_time.data = time_to_seconds(taskform.start_close_time)
+            task.stopped_time.data = None if taskform.stopped_time == "" else time_to_seconds(taskform.stopped_time)
+            task.task_deadline.data = time_to_seconds(taskform.task_deadline)
+            task.SS_interval.data = taskform.SS_interval * 60  # (convert from min to sec)
+            task.start_iteration.data = taskform.start_iteration
+            task.time_offset.data = taskform.time_offset * 3600  # (convert from hours to seconds)
+            task.check_launch.data = taskform.check_launch
+            task.airspace_check.data = taskform.airspace_check
+            task.openair_file.data = taskform.openair_file  # TODO get a list of openair files for this comp (in the case of defines.yaml airspace_file_library: off otherwise all openair files available)
+            task.QNH.data = taskform.QNH
+            task.to_db()
+
+            flash("Saved", category='info')
+            return redirect(url_for('user.task_admin', taskid=taskid, taskform=taskform, turnpointform=turnpointform,
+                                    error=error))
+        else:
+            flash("not valid")
+            for item in taskform:
+                if item.errors:
+                    print(f"{item} value:{item.data} error:{item.errors}")
 
     if request.method == 'GET':
         taskform.comp_name = task.comp_name
@@ -294,7 +327,7 @@ def _add_task(compid):
     task.task_num = int(data['task_num'])
     task.date = datetime.strptime(data['task_date'], '%Y-%m-%d')
     task.comment = data['task_comment']
-    task.reg_id = data['region']
+    task.reg_id = int(data['task_region'])
     task.to_db()
     comp = Comp()
     comp.comp_id = compid
@@ -354,3 +387,37 @@ def _get_task_turnpoints(taskid):
     task.task_id = taskid
     turnpoints = frontendUtils.get_task_turnpoints(task)
     return jsonify(turnpoints)
+
+
+@blueprint.route('/_add_turnpoint/<taskid>', methods=['POST'])
+@login_required
+def _add_turnpoint(taskid):
+    data = request.json
+    from sys import stdout
+
+    if data['type'] != 'goal':
+        data['shape'] = 'circle'
+    if data['type'] != 'speed':
+        data['direction'] = 'entry'
+    data['radius'] = int(data['radius'])
+    data['number'] = int(data['number'])
+    data['rwpPk'] = int(data['rwpPk'])
+
+    print(data)
+    stdout.flush()
+    tp = Turnpoint(radius=data['radius'], how=data['direction'], shape=data['shape'], type=data['type'],
+                   id=data['number'], rwpPk=data['rwpPk'])
+    save_turnpoint(int(taskid), tp)
+    task = Task()
+    task.task_id = taskid
+    turnpoints = frontendUtils.get_task_turnpoints(task)
+    return jsonify(turnpoints)
+
+
+@blueprint.route('/_del_turnpoint/<tpid>', methods=['POST'])
+@login_required
+def _del_turnpoint(tpid):
+    from route import delete_turnpoint
+    delete_turnpoint(tpid)
+    resp = jsonify(success=True)
+    return resp

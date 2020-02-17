@@ -97,27 +97,19 @@
    </div>
              <p>
             <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse25" aria-expanded="false" aria-controls="collapse25">
-            Checks and files
+            Checks
             </button>
          </p>
          <div class="collapse" id="collapse25">
             <div class="card card-body">
                <div class="container">
-                  <div class="form-row">
-                     <div class="form-group col-md-12">
-                        {{taskform.region.label}} {{taskform.region(**{'id': "distance", 'data-toggle': 'tooltip', 'title': taskform.region.description})}}
-                     </div>
-                  </div>
                   <div  class="form-row">
-
                      <div class="form-group col-md-3">
                         {{taskform.airspace_check.label}} {{taskform.airspace_check(size=3,**{'id': "lead_factor", 'data-toggle': 'tooltip', 'title': taskform.airspace_check.description})}}
                      </div>
                      <div  class="form-group col-md-3 display-if" data-target_name="airspace_check" data-target_type="checkbox" data-target_value=true>
                         {{taskform.openair_file.label}} {{taskform.openair_file(size=15,**{'id': "no_goal_pen", 'data-toggle': 'tooltip', 'title': taskform.openair_file.description})}}
                      </div>
-                  </div>
-                   <div  class="form-row">
                       <div class="form-group col-md-4">
                         {{taskform.QNH.label}} {{taskform.QNH(size=5,**{'id': "tolerance", 'data-toggle': 'tooltip', 'title': taskform.QNH.description})}}
                         </div>
@@ -169,6 +161,7 @@
 <div id = "add_turnpoint_form">
       <div class="form-row">
           <div class="form-group width6">
+              {{turnpointform.number.label}} {{turnpointform.number(size=2, **{'id':"tp_number",})}}
           {{turnpointform.type.label}} {{turnpointform.type(**{'id':"tp_type",})}}
           </div>
       </div>
@@ -178,23 +171,23 @@
                   </div>
                  </div>
           <div class="form-row">
-            <div class="form-group col-md-12 display-if" data-target_name="type" data-target_type="select" data-target_value='speed'>
-      {{turnpointform.how.label}} {{turnpointform.how(**{'id':"task_name", 'data-toggle': 'tooltip', 'title': turnpointform.how.description})}}
+            <div class="form-group col-md-12 display-if" data-target_name="tp_type" data-target_type="select" data-target_value='speed'>
+      {{turnpointform.how.label}} {{turnpointform.how(**{'id':"tp_how", 'data-toggle': 'tooltip', 'title': turnpointform.how.description})}}
       </div>
           </div>
 
       <div class="form-row">
       <div class="form-group col-md-6 display-if" data-target_name="type" data-target_type="select" data-target_value='goal'>
-      {{turnpointform.shape.label}} {{turnpointform.shape(**{'id':"task_name", 'data-toggle': 'tooltip', 'title': turnpointform.shape.description})}}
+      {{turnpointform.shape.label}} {{turnpointform.shape(**{'id':"tp_shape", 'data-toggle': 'tooltip', 'title': turnpointform.shape.description})}}
       </div>
       <div class="form-group col-md-6">
-      {{turnpointform.radius.label}} {{turnpointform.radius(size=5 , **{'id':"task_comment",'data-toggle': 'tooltip', 'title': turnpointform.radius.description})}}
+      {{turnpointform.radius.label}} {{turnpointform.radius(size=5 , **{'id':"tp_radius",'data-toggle': 'tooltip', 'title': turnpointform.radius.description})}}
       </div>
       </div>
 
 
       <div class="form-row">
-      <button id="save_task_button" class="btn btn-success" type="button" onclick="save_task()">
+      <button id="save_task_button" class="btn btn-success" type="button" onclick="save_turnpoint()">
       Add
       </button>
       </div>
@@ -220,15 +213,15 @@
 
 </form>
 
-  <!----modal starts here--->
-<div id="modal" class="modal fade" role='dialog'>
+  <!---delete-modal starts here--->
+<div id="delmodal" class="modal fade" role='dialog'>
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
                 <h4 class="modal-title">Please confirm</h4>
             </div>
-            <div class="modal-body" id= "modal-body">
+            <div class="modal-body" id= "delmodal-body">
                 <p>Here the description starts here........</p>
 
             </div>
@@ -239,7 +232,52 @@
         </div>
       </div>
   </div>
-<!--Modal ends here--->
+<!-delete-Modal ends here--->
+
+<!---modify-modal starts here--->
+<div id="modmodal" class="modal fade" role='dialog'>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                <h4 class="modal-title"></h4>
+            </div>
+            <div class="modal-body" id= "modmodal-body">
+                      <div class="form-row">
+          <div class="form-group width6">
+              {{turnpointform.number.label}} {{turnpointform.number(size=2, **{'id':"mod_tp_number",})}}
+          {{turnpointform.type.label}} {{turnpointform.type(**{'id':"mod_tp_type",})}}
+          </div>
+      </div>
+             <div class="form-row">
+                  <div class="form-group width12">
+                      {{turnpointform.name.label}} {{turnpointform.name(size=4, **{'id':"mod_tp_name", 'data-toggle': 'tooltip', 'title': turnpointform.name.description})}}
+                  </div>
+                 </div>
+          <div class="form-row">
+            <div class="form-group col-md-12 display-if" data-target_name="mod_tp_type" data-target_type="select" data-target_value='speed'>
+      {{turnpointform.how.label}} {{turnpointform.how(**{'id':"mod_tp_how", 'data-toggle': 'tooltip', 'title': turnpointform.how.description})}}
+      </div>
+          </div>
+
+      <div class="form-row">
+      <div class="form-group col-md-6 display-if" data-target_name="mod_tp_type" data-target_type="select" data-target_value='goal'>
+      {{turnpointform.shape.label}} {{turnpointform.shape(**{'id':"mod_tp_shape", 'data-toggle': 'tooltip', 'title': turnpointform.shape.description})}}
+      </div>
+      <div class="form-group col-md-6">
+      {{turnpointform.radius.label}} {{turnpointform.radius(size=5 , **{'id':"mod_tp_radius",'data-toggle': 'tooltip', 'title': turnpointform.radius.description})}}
+      </div>
+      </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+               <button id = "modify_confirmed" type="button" class="btn btn-default" data-dismiss="modal">Save</button>
+            </div>
+        </div>
+      </div>
+  </div>
+<!-modify-Modal ends here--->
 
 {% endblock %}
 {% block js %}
@@ -247,9 +285,21 @@
 <script src="{{ static_url_for('static', filename='js/display-if.min.js') }}"></script>
 
 <script type="text/javascript">
+   var csrftoken = $('meta[name=csrf-token]').attr('content');
+      $.ajaxSetup({
+       beforeSend: function(xhr, settings) {
+           if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type)) {
+               xhr.setRequestHeader("X-CSRFToken", csrftoken)
+           }
+       }
+   })
+
+var turnpoints;
+
    function update_turnpoints(json) {
                $("#turnpoints tbody").remove();
                var content = '';
+               turnpoints = json;
                content += '<tbody>';
                for (var i = 0; i < json['turnpoints'].length; i++) {
                content += '><tr id="'
@@ -261,26 +311,36 @@
                content += '<td class="col-3">' + json['turnpoints'][i].shape + '</td>';
                content += '<td class="col-3">' + json['turnpoints'][i].radius+ '</td>';
                content += '<td class="col-3">' + json['turnpoints'][i].partial_distance+ '</td>';
-               content += '<td  class ="value" ><button type="button" class="btn btn-warning" onclick="modify('
+
+               content += '<td  class ="value" ><button type="button" class="btn btn-warning" onclick="modify_tp('
                content +=  json['turnpoints'][i].n + ',' + json['turnpoints'][i].id
                content += ')" data-toggle="confirmation" data-popout="true">Modify</button></td>'
+
+               content += '<td  class ="value" ><button type="button" class="btn btn-danger" onclick="confirm_delete('
+               content +=  json['turnpoints'][i].n + ',' + json['turnpoints'][i].id
+               content += ')" data-toggle="confirmation" data-popout="true">Delete</button></td>'
+
                content += '</tr>';
                }
                content += '</tbody>';
                $('#turnpoints').append(content);
+               $('#tp_number').val(json['next_number']);
           };
 
 
-   function save_turnpoints(){
+   function save_turnpoint(){
            var mydata = new Object();
-               mydata.task_name = $('#task_name').val();
-               mydata.task_date = $('#task_date').val();
-               mydata.task_num = $('#task_number').val();
-               mydata.task_comment = $('#task_comment').val();
+               mydata.number = $('#tp_number').val();
+               mydata.type = $('#tp_type').val();
+               mydata.rwpPk = $('#tp_name').val();
+               mydata.direction = $('#tp_how').val();
+               mydata.shape = $('#tp_shape').val();
+               mydata.radius = $('#tp_radius').val();
+
 
            $.ajax({
                type: "POST",
-               url: "{{ url_for('user._add_task', compid=compid)}}",
+               url: "{{ url_for('user._add_turnpoint', taskid=taskid)}}",
                contentType:"application/json",
                data : JSON.stringify(mydata),
                dataType: "json",
@@ -307,6 +367,83 @@
    $(document).ready(function() {
    get_turnpoints()
    });
+
+
+
+   function delete_tp(tpid){
+
+           $.ajax({
+               type: "POST",
+               url: '/users/_del_turnpoint/'+tpid,
+               success: function () {
+                      get_turnpoints()
+               }
+               });
+
+   };
+
+
+   function confirm_delete(tp_num, tpid) {
+	 var x = tp_num;
+     var myHeading = "<p>Are you sure you want to delete Turnpoint ";
+     $("#delmodal-body").html(myHeading + x + '?</p>');
+     $('#delete_confirmed').attr("onclick","delete_tp('"+tpid+"')");
+     $('#delmodal').modal('show');
+    }
+
+
+   function modify_tp(tp_num, tpid) {
+     var found = null;
+    for (var i = 0; i < turnpoints['turnpoints'].length; i++) {
+        var element = turnpoints['turnpoints'][i];
+
+        if (element.id == tpid) {
+           found = element;
+
+       }
+    }
+
+
+
+	 var x = tp_num;
+     var myHeading = "<p>Modify turnpoint ";
+     $("#delmodal-body").html(myHeading + x);
+
+<!--     $('#modify_confirmed').attr("onclick","save_tp('"+tpid+"')");-->
+           console.log(found)
+    $('#mod_tp_number').val(found.n);
+    $('#mod_tp_type').val(found.original_type);
+    $('#mod_tp_name').val(found.rwpid).change();
+    $('#mod_tp_how').val(found.how).change();
+    $('#mod_tp_shape').val(found.shape).change();
+    $('#mod_tp_radius').val(found.radius);
+    $("#delmodal-body").html(myHeading + x + '?</p>');
+     $('#modmodal').modal('show');
+    }
+
+   function save_modified_turnpoint(){
+           var mydata = new Object();
+           maydata.number = $('#mod_tp_number').val
+               mydata.type = $('#mod_tp_type').val();
+               mydata.name = $('#mod_tp_name').val();
+               mydata.direction = $('#mod_tp_how').val();
+               mydata.shape = $('#mod_tp_shape').val();
+               mydata.radius = $('#mod_tp_radius').val();
+
+           $.ajax({
+               type: "POST",
+               url: "{{ url_for('user._add_turnpoint', taskid=taskid)}}",
+               contentType:"application/json",
+               data : JSON.stringify(mydata),
+               dataType: "json",
+               success: function () {
+                      get_turnpoints()
+               }
+               });
+
+   };
+
+
 
 </script>
 

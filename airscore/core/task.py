@@ -502,9 +502,9 @@ class Task(object):
         with Database() as db:
             try:
                 # get the task turnpoint details.
-                results = db.session.query(W.id, W.name, W.n, W.description, W.how, W.radius, W.shape, W.type,
+                results = db.session.query(W.id, W.rwpid, W.name, W.n, W.description, W.how, W.radius, W.shape, W.type,
                                            W.partial_distance).filter(W.task_id == self.task_id).order_by(
-                                           W.partial_distance).all()
+                                           W.n).all()
 
                 if results:
                     results = [row._asdict() for row in results]
@@ -825,7 +825,7 @@ class Task(object):
     def to_db(self, session=None):
         """Inserts new task or updates existent one"""
         # TODO update part, now it just inserts new Task and new Waypoints
-        from db_tables import tblTask as T, tblTaskWaypoint as W
+        from db_tables import tblTaskWaypoint as W
         from sqlalchemy.exc import SQLAlchemyError
         from datetime import datetime
         from calcUtils import sec_to_time
@@ -850,7 +850,7 @@ class Task(object):
                                tasEndSSDistance=self.opt_dist_to_ESS, tasSSDistance=self.SS_distance,
                                tasSSInterval=self.SS_interval,
                                tasLaunchValid=self.launch_valid, tasComment=self.comment,
-                               tasQNH=self.QNH)
+                               tasQNH=self.QNH, regPk=self.reg_id)
                 db.session.add(task)
                 db.session.flush()
                 self.task_id = task.tasPk

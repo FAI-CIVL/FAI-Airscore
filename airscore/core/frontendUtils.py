@@ -4,6 +4,7 @@ from flask import jsonify
 from myconn import Database
 import datetime
 from sqlalchemy import func, not_
+import math
 
 def get_comps():
     c = aliased(tblCompetition)
@@ -91,8 +92,12 @@ def get_task_list(comp):
 
 def get_task_turnpoints(task):
     turnpoints = task.read_turnpoints()
+    max_n = 0
     for tp in turnpoints:
-        tp['partial_distance'] = '' if not tp['partial_distance']  else round(tp['partial_distance'] /1000, 2)
+        tp['original_type'] = tp['type']
+        if int(tp['n']) > max_n:
+            max_n = int(tp['n'])
+        tp['partial_distance'] = '' if not tp['partial_distance']  else round(tp['partial_distance'] / 1000, 2)
         if tp['type'] == 'speed':
             tp['type'] = 'SSS'
         elif tp['type'] == 'endspeed':
@@ -100,7 +105,9 @@ def get_task_turnpoints(task):
         else:
             tp['type'] = tp['type'].capitalize()
 
-    return {'turnpoints': turnpoints}
+    # max_n = int(math.ceil(max_n / 10.0)) * 10
+    max_n += 1
+    return {'turnpoints': turnpoints, 'next_number': max_n}
 
 
 def get_comp_regions(compid):
@@ -125,5 +132,5 @@ def get_waypoint_choices(reg_id):
     choices = []
 
     for wpt in wpts:
-        choices.append((wpt['regPk'], wpt['rwpName'] + ' - ' + wpt['rwpDescription']))
+        choices.append((wpt['rwpPk'], wpt['rwpName'] + ' - ' + wpt['rwpDescription']))
     return choices
