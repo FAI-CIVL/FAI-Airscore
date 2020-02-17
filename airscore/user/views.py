@@ -407,11 +407,13 @@ def _add_turnpoint(taskid):
     stdout.flush()
     tp = Turnpoint(radius=data['radius'], how=data['direction'], shape=data['shape'], type=data['type'],
                    id=data['number'], rwpPk=data['rwpPk'])
-    save_turnpoint(int(taskid), tp)
-    task = Task()
-    task.task_id = taskid
-    turnpoints = frontendUtils.get_task_turnpoints(task)
-    return jsonify(turnpoints)
+    if save_turnpoint(int(taskid), tp, data['id']):
+        task = Task()
+        task.task_id = taskid
+        turnpoints = frontendUtils.get_task_turnpoints(task)
+        return jsonify(turnpoints)
+    else:
+        return render_template('500.html')
 
 
 @blueprint.route('/_del_turnpoint/<tpid>', methods=['POST'])

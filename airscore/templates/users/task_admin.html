@@ -336,7 +336,7 @@ var turnpoints;
                mydata.direction = $('#tp_how').val();
                mydata.shape = $('#tp_shape').val();
                mydata.radius = $('#tp_radius').val();
-
+               mydata.id = null
 
            $.ajax({
                type: "POST",
@@ -407,10 +407,8 @@ var turnpoints;
 
 	 var x = tp_num;
      var myHeading = "<p>Modify turnpoint ";
-     $("#delmodal-body").html(myHeading + x);
+<!--     $("#modmodal-body").html(myHeading + x);-->
 
-<!--     $('#modify_confirmed').attr("onclick","save_tp('"+tpid+"')");-->
-           console.log(found)
     $('#mod_tp_number').val(found.n);
     $('#mod_tp_type').val(found.original_type);
     $('#mod_tp_name').val(found.rwpid).change();
@@ -418,17 +416,19 @@ var turnpoints;
     $('#mod_tp_shape').val(found.shape).change();
     $('#mod_tp_radius').val(found.radius);
     $("#delmodal-body").html(myHeading + x + '?</p>');
+    $('#modify_confirmed').attr("onclick","save_modified_turnpoint('"+ tpid +"')");
      $('#modmodal').modal('show');
     }
 
-   function save_modified_turnpoint(){
+   function save_modified_turnpoint(id){
            var mydata = new Object();
-           maydata.number = $('#mod_tp_number').val
+               mydata.number = $('#mod_tp_number').val();
                mydata.type = $('#mod_tp_type').val();
-               mydata.name = $('#mod_tp_name').val();
+               mydata.rwpPk = $('#mod_tp_name').val();
                mydata.direction = $('#mod_tp_how').val();
                mydata.shape = $('#mod_tp_shape').val();
                mydata.radius = $('#mod_tp_radius').val();
+               mydata.id = id
 
            $.ajax({
                type: "POST",
