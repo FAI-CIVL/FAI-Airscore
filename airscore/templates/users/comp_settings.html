@@ -300,6 +300,16 @@
 <script src="{{ static_url_for('static', filename='js/display-if.min.js') }}"></script>
 
 <script type="text/javascript">
+
+   var csrftoken = $('meta[name=csrf-token]').attr('content');
+      $.ajaxSetup({
+       beforeSend: function(xhr, settings) {
+           if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type)) {
+               xhr.setRequestHeader("X-CSRFToken", csrftoken)
+           }
+       }
+   })
+
    function confirm_delete(task_num, taskid) {
 	 var x = task_num;
      var myHeading = "<p>Are you sure you want to delete Task ";
@@ -308,18 +318,6 @@
      $('#modal').modal('show');
     }
 
-
-   var csrftoken = $('meta[name=csrf-token]').attr('content');
-   
-
-   $.ajaxSetup({
-       beforeSend: function(xhr, settings) {
-           if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type)) {
-               xhr.setRequestHeader("X-CSRFToken", csrftoken)
-           }
-       }
-   })
-   
                $(function() {
    
        // jQuery selection for the 2 select boxes
@@ -411,7 +409,7 @@
                mydata.task_date = $('#task_date').val();
                mydata.task_num = $('#task_number').val();
                mydata.task_comment = $('#task_comment').val();
-               mydate.task_region = $('#task_region').val();
+               mydata.task_region = $('#task_region').val();
    
            $.ajax({
                type: "POST",
