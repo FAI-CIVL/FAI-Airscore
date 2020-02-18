@@ -64,11 +64,13 @@
                </div>
             </div>
             <div class="form-row">
-               <div class="form-group col-md-12">
+               <div class="form-group col-md-6">
                   {{taskform.start_time.label}} {{taskform.start_time(size=6, **{'data-toggle': 'tooltip', 'title': taskform.start_time.description})}}
-                  {{taskform.SS_interval.label}} {{taskform.SS_interval(size=4, **{'data-toggle': 'tooltip', 'title': taskform.SS_interval.description})}}
-                  {{taskform.start_iteration.label}} {{taskform.start_iteration(size=3, **{'data-toggle': 'tooltip', 'title': taskform.start_iteration.description})}}
-               </div>
+                  <div class="form-group col-md-6 display-if" data-target_name="task_type" data-target_type="select" data-target_value_not='race'>
+                     {{taskform.SS_interval.label}} {{taskform.SS_interval(size=4, **{'data-toggle': 'tooltip', 'title': taskform.SS_interval.description})}}
+                     {{taskform.start_iteration.label}} {{taskform.start_iteration(size=3, **{'data-toggle': 'tooltip', 'title': taskform.start_iteration.description})}}
+                  </div>
+                </div>
             </div>
             <div class="form-row">
                <div class="form-group col-md-6">
