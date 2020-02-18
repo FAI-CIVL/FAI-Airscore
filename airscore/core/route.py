@@ -40,7 +40,7 @@ f = 0.0033528106647474805  # WGS84 flattening
 # b = ELLIPSOIDS['WGS-84'][1] * 1000  # WGS84 minor meters: 6356752.3142
 # f = ELLIPSOIDS['WGS-84'][2] #WGS84 flattening
 
-class Turnpoint:
+class Turnpoint():
     """ single turnpoint in a task.
     Attributes:
         id: progressive number
@@ -189,8 +189,7 @@ def get_proj(clat, clon, proj=PROJ):
         return Proj(f"EPSG:{epsg_code}")
     else:
         '''custom Mercatore projection'''
-        tmerc = Proj(
-             f"+proj=tmerc +lat_0={clat} +lon_0={clon} +k_0=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
+        tmerc = Proj(f"+proj=tmerc +lat_0={clat} +lon_0={clon} +k_0=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
         return tmerc
 
 
@@ -209,6 +208,7 @@ class cPoint(object):
         x       (float)     the x coordinate
         y       (float)     the y coordinate
         radius  (int)       the radius in metres
+        type    (str)       "fix", "launch", "speed", "cylinder", "endspeed", "goal"
         fx      (float)     the x coordinate of the fix
         fy      (float)     the y coordinate of the fix
     """
@@ -216,11 +216,12 @@ class cPoint(object):
     def __str__(self):
         print(f'x: {str(self.x)} | y: {str(self.y)} | radius: {str(self.radius)}')
 
-    def __init__(self, x, y, radius=0):
+    def __init__(self, x, y, radius=0, type='fix'):
         self.x = x
         self.y = y
         self.fx = x
         self.fy = y
+        self.type = type
         self.radius = radius
 
     @classmethod
@@ -237,7 +238,7 @@ class cPoint(object):
 
     @staticmethod
     def create_from_Turnpoint(tp):
-        return cPoint(tp.lon, tp.lat, tp.radius)
+        return cPoint(tp.lon, tp.lat, tp.radius, tp.type)
 
 
 def polar2cartesian(P):
@@ -444,11 +445,13 @@ def start_made_civl(fix, next, start, tolerance, min_tol_m):
     """
 
     if start.how == "entry":
-        # entry start cylinder
+        '''entry start cylinder'''
         condition = not (start.in_radius(fix, -tolerance, -min_tol_m)) and start.in_radius(next, tolerance, min_tol_m)
+        # print(f"how: {start.how} (entry) | dist: {distance(start, fix)} | made: {condition}")
     else:
-        # exit start cylinder
+        '''exit start cylinder'''
         condition = start.in_radius(fix, tolerance, min_tol_m) and not (start.in_radius(next, -tolerance, -min_tol_m))
+        # print(f"how: {start.how} (exit) | dist: {distance(start, fix)} | made: {condition}")
 
     return condition
 
@@ -762,7 +765,7 @@ BEGIN HERE
 """
 
 
-def get_shortest_path(task):
+def get_shortest_path(task, fix=None, pointer=None):
     """ Inputs:
             task  - Obj: task object
     """
@@ -771,38 +774,40 @@ def get_shortest_path(task):
     last_dist = sys.maxsize  # inizialise to max integer
     finished = False
 
-    '''get projection center'''
-    clat, clon = get_proj_center(task.turnpoints)
+    if not task.projected_turnpoints:
+        '''create a list of cPoint obj from turnpoint list'''
+        points = convert_turnpoints(task.turnpoints, task.geo)
+        line = convert_turnpoints(get_line(task.turnpoints), task.geo)
+    else:
+        points = task.projected_turnpoints
+        line = task.projected_line
 
-    '''define earth model'''
-    # wgs84 = Proj("+init=EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth
-    # wgs84 = Proj(proj='latlong', datum='WGS84')
-    wgs84 = EARTHMODEL
-
-    '''calculate planar projection'''
-    my_proj = get_proj(clat, clon)
-
-    '''create a list of cPoint obj from turnpoint list'''
-    points = convert(task.turnpoints, wgs84, my_proj)
+    if fix and pointer:
+        '''create list of points to optimize distance to goal '''
+        x, y = task.geo.convert(fix.lon, fix.lat)
+        points = points[pointer:]
+        points.insert(0, cPoint(x=x, y=y))
 
     count = len(points)  # number of waypoints
-    ESS_index = [i for i, e in enumerate(task.turnpoints) if e.type == 'endspeed'][0]
-    if not (task.turnpoints[-1].shape == 'line'):
-        line = []
-        print(f'is line: {task.turnpoints[-1].shape}')
+    if any(p for p in points if p.type == 'endspeed'):
+        ESS_index = points.index(next(p for p in points if p.type == 'endspeed'))
     else:
-        ends = get_line(task.turnpoints)
-        line = convert(ends, wgs84, my_proj)
-        print(f'line: {line[0].x}, {line[0].y} - {line[1].x}, {line[1].y}')
+        ESS_index = None
+    # if not (turnpoints[-1].shape == 'line'):
+    #     line = []
+    #     # print(f'is line: {turnpoints[-1].shape}')
+    # else:
+    #     ends = get_line(turnpoints)
+    #     line = convert_turnpoints(ends, task.geo)
+    #     # print(f'line: {line[0].x}, {line[0].y} - {line[1].x}, {line[1].y}')
 
-    print('***')
-    print(f'center {clat} , {clon}')
-    print(f'WPT Count: {count}  |  ESS Index: {ESS_index}')
-    for idx, tp in enumerate(task.turnpoints):
-        print(f'n. {idx}')
-        pt = points[idx]
-        print(f'tp:   lat {tp.lat} |  lon {tp.lon} |  radius {tp.radius} |  shape {tp.shape} |  type {tp.type}')
-        print(f'pt:   x {pt.x} |  y {pt.y} |  radius {pt.radius}')
+    # print('***')
+    # print(f'WPT Count: {count}  |  ESS Index: {ESS_index}')
+    # for idx, tp in enumerate(turnpoints):
+    #     print(f'n. {idx}')
+    #     pt = points[idx]
+    #     print(f'tp:   lat {tp.lat} |  lon {tp.lon} |  radius {tp.radius} |  shape {tp.shape} |  type {tp.type}')
+    #     print(f'pt:   x {pt.x} |  y {pt.y} |  radius {pt.radius}')
 
     ''' Settings'''
     opsCount = count * 10  # number of operations allowed
@@ -815,47 +820,42 @@ def get_shortest_path(task):
         finished = (last_dist - planar_dist < tolerance)
         last_dist = planar_dist
         opsCount -= 1
-        print(f'iterations made: {count * 10 - opsCount} | distance: {planar_dist}')
+    print(f'iterations made: {count * 10 - opsCount} | distance: {planar_dist}')
+
+    if fix:
+        '''return opt dist to goal'''
+        return planar_dist
 
     '''create optimised points positions on earth model (lat, lon)'''
-    optimised = convert(points, wgs84, my_proj, 'from')
+    optimised = revert_opt_points(points, task.geo)
 
     return optimised
 
 
-def get_proj_center(turnpoints):
-    """finds the fix(lat, lon) rapresenting the center of
-        cartesian projection for the waypoint file"""
-    from statistics import mean
-
-    lat = mean(t.lat for t in turnpoints)
-    lon = mean(t.lon for t in turnpoints)
-    return lat, lon
-
-
-def convert(elements, earth_model, projection, direction='to'):
-    """ transform Turnpoints position (lon, lat) to projection coordinates (x, y), and back
-
+def convert_turnpoints(turnpoints, geo):
+    """ transform Turnpoints (lon, lat) to projected points (x, y)
         input:
-        elements    - obj list
-        earth model - default is wgs84
-        projection  - default is trasverse mercatore calculated on mean turnpoints position
-        direction   - 'to' or 'from' projection"""
-
-    from pyproj import Transformer
-
+        task  - Task obj
+    """
     result = []
 
-    if direction == 'to':
-        t = Transformer.from_proj(earth_model, projection)
-        for tp in elements:
-            x, y = t.transform(tp.lon, tp.lat)
-            result.append(cPoint(x=x, y=y, radius=tp.radius))
-    elif direction == 'from':
-        t = Transformer.from_proj(projection, earth_model)
-        for fix in elements:
-            lon, lat = t.transform(fix.fx, fix.fy)
-            result.append(Turnpoint(lat=lat, lon=lon, type='optimised', radius=0, shape='optimised', how='optimised'))
+    for tp in turnpoints:
+        x, y = geo.convert(tp.lon, tp.lat)
+        result.append(cPoint(x=x, y=y, radius=tp.radius, type=tp.type))
+
+    return result
+
+
+def revert_opt_points(points, geo):
+    """ transform projected points (x, y) to Turnpoints (lon, lat)
+        input:
+        points - List
+        geo - Geo obj
+    """
+    result = []
+    for p in points:
+        lon, lat = geo.revert(p.fx, p.fy)
+        result.append(Turnpoint(lat=lat, lon=lon, type='optimised', radius=0, shape='optimised', how='optimised'))
 
     return result
 

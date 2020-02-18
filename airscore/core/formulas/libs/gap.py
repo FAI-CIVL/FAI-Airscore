@@ -506,6 +506,7 @@ def points_allocation(task):
 
         ''' Apply Penalty'''
         if penalty or percentage_penalty:
+            # TODO: totalScore p = max(totalScore p − jumpTheGunPenalty p , scoreForMinDistance)
             res.penalty += res.score * percentage_penalty
             res.score = max(0, res.score - res.penalty)
 

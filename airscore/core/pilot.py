@@ -282,6 +282,7 @@ def update_all_results(task_id, pilots, session=None):
                    'tarLandingAltitude': res.landing_altitude,
                    'tarLandingTime': res.landing_time,
                    'tarResultType': res.result_type,
+                   'tarPenalty': res.penalty,
                    'traFile': track_file}
 
         if track_id is None:

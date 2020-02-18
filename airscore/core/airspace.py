@@ -87,11 +87,10 @@ class CheckParams:
 
 
 class AirspaceCheck(object):
-    def __init__(self, control_area=None, params=None):
+    def __init__(self, control_area=None, params=None, geo=None):
         self.control_area = control_area  # igc_lib openair reader control zones
         self.params = params  # AirspaceCheck object
-        self.projection = self.get_projection()
-        self.transformer = get_cartesian_transformer(self.projection)
+        self.geo = geo  # Geo object
 
     @property
     def bounding_box(self):
@@ -116,7 +115,7 @@ class AirspaceCheck(object):
             task_id = task.task_id
             control_area = read_airspace_check_file(task.openair_file)
             params = get_airspace_check_parameters(task_id)
-            airspace = AirspaceCheck(control_area, params)
+            airspace = AirspaceCheck(control_area, params, task.geo)
             airspace.get_airspace_details(qnh=task.QNH)
             return airspace
 
@@ -128,17 +127,6 @@ class AirspaceCheck(object):
             return AirspaceCheck.from_task(task)
         except:
             print(f'Error trying to get task control zones')
-
-    def get_projection(self):
-        """WGS84 to Mercatore Plan Projection"""
-        from route import get_proj
-        '''get projection center'''
-        clat, clon = self.bbox_center
-        # '''define projection'''
-        # tmerc = Proj(f"+proj=tmerc +lat_0={clat} +lon_0={clon} +k_0=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
-        # return tmerc
-        '''Get UTM proj'''
-        return get_proj(clat, clon)
 
     def get_airspace_details(self, qnh=1013.25):
         """Writes bbox and Polygon obj for each space"""
@@ -152,8 +140,7 @@ class AirspaceCheck(object):
                     space['ceiling'] = fl_to_meters(space['floor'], qnh)
                     space['ceiling_unit'] = 'm'
                 ''' create object and bbox'''
-                if space['shape'] == 'circle' or (space['shape'] == 'polygon' and len(space['locations']) == 1):
-                    # TODO we get an error if airspace is an Arc. Transforming to circle with radius 1000m
+                if space['shape'] == 'circle':
                     if space['shape'] == 'polygon':
                         clat = space['locations'][0][0]
                         clon = space['locations'][0][1]
@@ -170,6 +157,7 @@ class AirspaceCheck(object):
                     pmax = geopy.Point(max(pt[0] for pt in space['locations']), max(pt[1] for pt in space['locations']))
                     dist = self.params.notification_distance * sqrt(2)
                     space['object'] = self.reproject(space)
+                '''enlarge bbox to contain notification band'''
                 pt1 = geopy.distance.distance(meters=dist).destination(pmin, 225)
                 pt2 = geopy.distance.distance(meters=dist).destination(pmax, 45)
                 space['bbox'] = [[pt1[0], pt1[1]], [pt2[0], pt2[1]]]
@@ -177,9 +165,8 @@ class AirspaceCheck(object):
     def reproject(self, space):
         """get polygon from space"""
         polygon = Polygon([(pt[1], pt[0]) for pt in space['locations']])
-        # from_proj = Proj("EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth
-        from_proj = Proj(proj='latlong', datum='WGS84')
-        to_proj = self.projection
+        from_proj = self.geo.geod
+        to_proj = self.geo.proj
         tfm = partial(pyproj.transform, from_proj, to_proj)
         return ops.transform(tfm, polygon)
 
@@ -212,8 +199,7 @@ class AirspaceCheck(object):
                 '''check if fix is inside bbox'''
                 if in_bbox(space['bbox'], fix):
                     '''Check if fix is inside proximity warning area'''
-                    # TODO this type check is needed due to Arcs not recognised
-                    if space['shape'] == 'circle' or isinstance(space['object'], Turnpoint):
+                    if space['shape'] == 'circle':
                         if space['object'].in_radius(fix, 0, notification_band):
                             # fix is inside proximity band (at least)
                             # print(f" in circle --- ")
@@ -225,7 +211,7 @@ class AirspaceCheck(object):
                             violation = 1
                     elif space['shape'] == 'polygon':
                         # start_time = tt.time()
-                        x, y = self.transformer.transform(fix.lon, fix.lat)
+                        x, y = self.geo.convert(fix.lon, fix.lat)
                         point = Point(x, y)
                         horiz_distance = space['object'].exterior.distance(point)
                         if point.within(space['object']):
@@ -237,12 +223,6 @@ class AirspaceCheck(object):
                             dist_ceiling = alt - space['ceiling']
                             vert_distance = max(dist_floor, dist_ceiling)
                             violation = 1
-                        # print(f" polygon airspace check --- {tt.time() - start_time} seconds ---")
-                    # TODO insert arc check here. we can use in radius and bearing to
-                    # '''check if we are in infringement zone
-                    #     we should have at least one negative measure between horiz and vert distance'''
-                    # # if min(vert_distance, horiz_distance) < 0:
-                    #     infringement = [space['name'], vert_distance, horiz_distance]
                     if violation:
                         result = min([(vert_distance, self.params.penalty(vert_distance, 'v')),
                                       (horiz_distance, self.params.penalty(horiz_distance, 'h'))], key=lambda p: p[1])
@@ -348,16 +328,6 @@ def get_airspace_check_parameters(task_id):
         except SQLAlchemyError:
             print(f'SQL Error trying to get Airspace Params from database')
             return None
-
-
-def get_cartesian_transformer(projection):
-    """WGS84 to Mercatore Plan Projection"""
-
-    '''define earth model'''
-    # wgs84 = Proj("EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth
-    wgs84 = Proj(proj='latlong', datum='WGS84')
-    my_proj = projection
-    return Transformer.from_proj(wgs84, my_proj)
 
 
 def fl_to_meters(flight_level, qnh=1013.25):

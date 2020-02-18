@@ -14,11 +14,11 @@ from os import listdir
 
 
 def list_formulas():
-    '''Lists all formulas present in the formulas folder.
-    :returns a dictinary with 3 lists.
+    """Lists all formulas present in the formulas folder.
+    :returns a dictionary with 3 lists.
         all: a list of all formulas
         pg: a list of all formulas that are of class pg or both
-        hg: a list of all formulas that are of class hg or both'''
+        hg: a list of all formulas that are of class hg or both"""
     all_formulas = []
     hg_formulas = []
     pg_formulas = []
@@ -281,10 +281,12 @@ class Formula(object):
         formula.formula_time = 'on' if form.get('use_time_points') == '1' else 'off'
         # leading points factor: probably needs to be linked to GAP version
         formula.lead_factor = (None if form.get('use_leading_points') == '0'
-                               else float(form.get('leading_weight_factor')))
+                               else float(form.get('leading_weight_factor')
+                                          if form.get('leading_weight_factor') else 1))
 
         '''tolerance'''
-        formula.tolerance = 0.0 + float(form.get('turnpoint_radius_tolerance'))  # tolerance, perc / 100
+        formula.tolerance = 0.0 + float(form.get('turnpoint_radius_tolerance')
+                                        if form.get('turnpoint_radius_tolerance') else 0.001)  # tolerance, perc / 100
 
         '''stopped task parameters'''
         formula.validity_min_time = 0 + int(

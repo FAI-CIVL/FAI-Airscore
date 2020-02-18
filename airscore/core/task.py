@@ -20,8 +20,8 @@ TO DO:
 Add support for FAI Sphere ???
 """
 
-from route import distance, polar, find_closest, cartesian2polar, polar2cartesian, calcBearing, opt_goal, opt_wp, \
-    opt_wp_exit, opt_wp_enter, Turnpoint, get_shortest_path
+from route import distance, polar, Turnpoint, get_shortest_path, convert_turnpoints, get_line
+from geo import Geo
 from result import Task_result, create_json_file
 from airspace import AirspaceCheck
 from compUtils import read_rankings
@@ -116,9 +116,12 @@ class Task(object):
         self.distance = 0  # non optimised distance
         self.turnpoints = []  # list of Turnpoint objects
         self.optimised_turnpoints = []  # fixes on cylinders for opt route
+        self.projected_turnpoints = []  # list of cPoint objects
+        self.projected_line = []  # list of cPoint objects
         self.optimised_legs = []  # opt distance between cylinders
         self.partial_distance = []  # distance from launch to waypoint
         self.legs = []  # non optimised legs
+        self.geo = None  # Geo Object
         self.stats = dict()  # STATIC scored task statistics, used when importing results from JSON / FSDB files
         self.pilots = []  # scored task results
         self.airspace_check = False  # BOOL airspace check
@@ -275,6 +278,17 @@ class Task(object):
         else:
             return 0
 
+    ''' * Geographic Projection *'''
+
+    @property
+    def bbox_center(self):
+        from statistics import mean
+        if not self.turnpoints:
+            return 0.0, 0.0
+        lat = mean(t.lat for t in self.turnpoints)
+        lon = mean(t.lon for t in self.turnpoints)
+        return lat, lon
+
     ''' * Statistic Properties *'''
 
     ''' list of present pilots' results'''
@@ -344,9 +358,9 @@ class Task(object):
     @property
     def max_distance(self):
         if self.formula:
-                if self.formula.min_dist and self.pilots_launched > 0:
-                    # Flight_result.distance = max(distance_flown, total_distance)
-                    return max(max(p.distance for p in self.valid_results), self.formula.min_dist)
+            if self.formula.min_dist and self.pilots_launched > 0:
+                # Flight_result.distance = max(distance_flown, total_distance)
+                return max(max(p.distance for p in self.valid_results), self.formula.min_dist)
         return 0
 
     '''time stats'''
@@ -493,6 +507,10 @@ class Task(object):
         if task.task_path is None or '':
             task.create_path()
 
+        '''add geo object if we have turnpoints'''
+        if task.turnpoints is not None and len(task.turnpoints) > 0:
+            task.get_geo()
+
         return task
 
     def read_turnpoints(self):
@@ -524,10 +542,12 @@ class Task(object):
         else:
             return
 
-        with Database() as db:
-            q = db.session.query(tblTask).get(self.id)
-            q.tasPath = self.task_path
-            db.session.commit()
+        if self.id:
+            '''store to database'''
+            with Database() as db:
+                q = db.session.query(tblTask).get(self.id)
+                q.tasPath = self.task_path
+                db.session.commit()
 
     def create_results(self, status=None, mode='default'):
         """
@@ -554,8 +574,15 @@ class Task(object):
                 - recalculate Opt. route
                 - check all tracks'''
             print(f" - FULL Mode -")
+
+            '''get projection if needed'''
+            if self.geo is None:
+                self.get_geo()
+
             print(f"Calculating task optimised distance...")
             self.calculate_task_length()
+            self.projected_turnpoints = convert_turnpoints(self.turnpoints, self.geo)
+            self.projected_line = convert_turnpoints(get_line(self.turnpoints), self.geo)
             self.calculate_optimised_task_length()
             print(f"Storing calculated values to database...")
             self.update_task_distance()
@@ -674,6 +701,11 @@ class Task(object):
         ''' get pilot and tracks list'''
         self.get_results()
 
+        ''' calculate projected turnpoints'''
+        if not self.projected_turnpoints:
+            self.projected_turnpoints = convert_turnpoints(self.turnpoints, self.geo)
+            self.projected_line = convert_turnpoints(get_line(self.turnpoints), self.geo)
+
         ''' manage Stopped Task    '''
         print(f'stopped time: {self.stopped_time}')
         if self.stopped_time:
@@ -776,6 +808,10 @@ class Task(object):
             lib.process_results(self)
         # return pilots
 
+    def get_geo(self):
+        clat, clon = self.bbox_center
+        self.geo = Geo.from_coords(clat, clon)
+
     def update_task_distance(self):
         from db_tables import tblTask as T, tblTaskWaypoint as W
         with Database() as db:
@@ -846,7 +882,8 @@ class Task(object):
         from datetime import datetime
         from calcUtils import sec_to_time
 
-        task_start = None if self.window_open_time is None else datetime.combine(self.date, sec_to_time(self.window_open_time))
+        task_start = None if self.window_open_time is None else datetime.combine(self.date,
+                                                                                 sec_to_time(self.window_open_time))
         launch_close = None if self.window_close_time is None else datetime.combine(self.date,
                                                                                     sec_to_time(self.window_close_time))
         deadline = None if self.task_deadline is None else datetime.combine(self.date, sec_to_time(self.task_deadline))
@@ -855,6 +892,7 @@ class Task(object):
                                                                                   sec_to_time(self.start_close_time))
         stopped_time = None if self.stopped_time is None else datetime.combine(self.date,
                                                                                sec_to_time(self.stopped_time))
+        SSInterval = self.SS_interval/60
 
         with Database(session) as db:
             try:
@@ -864,9 +902,11 @@ class Task(object):
                                tasStartCloseTime=start_close, tasStoppedTime=stopped_time, tasDistance=self.distance,
                                tasShortRouteDistance=self.opt_dist, tasStartSSDistance=self.opt_dist_to_SS,
                                tasEndSSDistance=self.opt_dist_to_ESS, tasSSDistance=self.SS_distance,
-                               tasSSInterval=self.SS_interval, tasStartIteration=self.start_iteration,
+                               tasSSInterval=SSInterval, tasStartIteration=self.start_iteration,
                                tasLaunchValid=self.launch_valid, tasComment=self.comment,
-                               tasQNH=self.QNH, regPk=self.reg_id, tasTimeOffset=self.time_offset)
+                               tasQNH=self.QNH, regPk=self.reg_id, tasTimeOffset=self.time_offset,
+                               tasPath=self.task_path)
+
                 db.session.add(task)
                 db.session.flush()
                 self.task_id = task.tasPk
@@ -1199,7 +1239,8 @@ class Task(object):
         formula.formula_arrival = 'position' if float(f.get('use_arrival_position_points')) == 1 else 'time' if float(
             f.get(
                 'use_arrival_position_points')) == 1 else 'off'  # not sure if and which type Airscore is supporting at the moment
-        formula.tolerance = 0 + float(f.get('turnpoint_radius_tolerance'))  # tolerance perc /100
+        formula.tolerance = 0.0 + float(f.get('turnpoint_radius_tolerance')
+                                        if f.get('turnpoint_radius_tolerance') else 0.1)  # tolerance, perc / 100
 
         if float(f.get('use_departure_points')) > 0:
             formula.formula_departure = 'on'
@@ -1258,7 +1299,8 @@ class Task(object):
                 optimised_legs.append(float(l.get('distance')) * 1000)
 
         node = t.find('FsTaskDefinition')
-        qnh = None if node is None else float(node.get('qnh_setting').replace(',', '.'))
+        qnh = None if node is None else float(node.get('qnh_setting').replace(',', '.')
+                                              if node.get('qnh_setting') else 1013.25)
         # task.date = None if not node else get_date(node.find('FsStartGate').get('open'))
         """guessing type from startgates"""
         task.SS_interval = 0
@@ -1280,6 +1322,7 @@ class Task(object):
             eswpt = int(node.get('es'))
             gtype = node.get('goal')
             gstart = int(node.get('groundstart'))
+            last = len(node.findall('FsTurnpoint'))
             if node.find('FsStartGate') is None:
                 '''elapsed time
                     on start gate, have to get start opening time from ss wpt'''
@@ -1293,53 +1336,116 @@ class Task(object):
                 if startgates > 1:
                     '''race with multiple start gates'''
                     # print ("MULTIPLE STARTS")
+                    task.start_iteration = startgates - 1
                     time = time_to_seconds(get_time(node.findall('FsStartGate')[1].get('open')))
                     task.SS_interval = time - task.start_time
                     '''if prefer minutes: time_difference(tas['tasStartTime'], time).total_seconds()/60'''
                     print(f"    **** interval: {task.SS_interval}")
 
         """Task Route"""
-        for w in node.iter('FsTurnpoint'):
-            turnpoint = Turnpoint(float(w.get('lat')), float(w.get('lon')), int(w.get('radius')))
-            turnpoint.id = len(turnpoints) + 1
-            turnpoint.name = w.get('id')
-            turnpoint.altitude = int(w.get('altitude'))
-            print(f"    {turnpoint.id}  {turnpoint.name}  {turnpoint.radius}")
-            if turnpoint.id == 1:
-                turnpoint.type = 'launch'
-                task.date = get_date(w.get('open'))
-                task.window_open_time = time_to_seconds(get_time(w.get('open')))
-                task.window_close_time = time_to_seconds(get_time(w.get('close')))
-                # sanity
-                if task.window_close_time <= task.window_open_time:
-                    task.window_close_time = None
-                if 'free distance' in task.task_type:
-                    # print('Sono in launch - free')
-                    '''get start and close time for free distance task types'''
-                    task.start_time = time_to_seconds(get_time(w.get('open')))
+        for idx, w in enumerate(node.iter('FsTurnpoint'), 1):
+            if idx in [1, sswpt, eswpt, last]:
+                if idx == 1:
+                    '''launch'''
+                    turnpoint = Turnpoint(float(w.get('lat')), float(w.get('lon')), int(w.get('radius')))
+                    turnpoint.name = w.get('id')
+                    turnpoint.id = len(turnpoints) + 1
+                    turnpoint.type = 'launch'
+                    task.date = get_date(w.get('open'))
+                    task.window_open_time = time_to_seconds(get_time(w.get('open')))
+                    task.window_close_time = time_to_seconds(get_time(w.get('close')))
+                    if task.window_close_time <= task.window_open_time:
+                        # sanity
+                        task.window_close_time = None
+                    if 'free distance' in task.task_type:
+                        '''get start and close time for free distance task types'''
+                        task.start_time = time_to_seconds(get_time(w.get('open')))
+                        task.start_close_time = time_to_seconds(get_time(w.get('close')))
+                    turnpoints.append(turnpoint)
+                if idx == sswpt:
+                    '''start'''
+                    turnpoint = Turnpoint(float(w.get('lat')), float(w.get('lon')), int(w.get('radius')))
+                    turnpoint.name = w.get('id')
+                    turnpoint.id = len(turnpoints) + 1
+                    turnpoint.type = 'speed'
                     task.start_close_time = time_to_seconds(get_time(w.get('close')))
-                    # task.task_deadline = get_datetime(w.get('close'))
-            elif turnpoint.id == sswpt:
-                # print('Sono in ss')
-                turnpoint.type = 'speed'
-                task.start_close_time = time_to_seconds(get_time(w.get('close')))
-                if 'elapsed time' in task.task_type:
-                    '''get start for elapsed time task types'''
-                    task.start_time = time_to_seconds(get_time(w.get('open')))
-            elif turnpoint.id == eswpt:
-                # print('Sono in es')
-                turnpoint.type = 'endspeed'
-                task.task_deadline = time_to_seconds(get_time(w.get('close')))
-            elif turnpoint.id == len(
-                    node) - startgates - headingpoint:  # need to remove FsStartGate and FsHeadingpoint nodes from count
-                # print('Sono in goal')
-                turnpoint.type = 'goal'
-                if gtype == 'LINE':
-                    turnpoint.shape = 'line'
-            # else:
-            #     wpt['tawType'] = 'waypoint'
+                    '''guess start direction: exit if launch is same wpt'''
+                    launch = next(p for p in turnpoints if p.type == 'launch')
+                    if launch.lat == turnpoint.lat and launch.lon == turnpoint.lon:
+                        turnpoint.how = 'exit'
+                    if 'elapsed time' in task.task_type:
+                        '''get start for elapsed time task types'''
+                        task.start_time = time_to_seconds(get_time(w.get('open')))
+                    turnpoints.append(turnpoint)
+                if idx == eswpt:
+                    '''ess'''
+                    turnpoint = Turnpoint(float(w.get('lat')), float(w.get('lon')), int(w.get('radius')))
+                    turnpoint.name = w.get('id')
+                    turnpoint.id = len(turnpoints) + 1
+                    turnpoint.type = 'endspeed'
+                    task.task_deadline = time_to_seconds(get_time(w.get('close')))
+                    turnpoints.append(turnpoint)
+                if idx == last:
+                    '''goal'''
+                    turnpoint = Turnpoint(float(w.get('lat')), float(w.get('lon')), int(w.get('radius')))
+                    turnpoint.name = w.get('id')
+                    turnpoint.id = len(turnpoints) + 1
+                    turnpoint.type = 'goal'
+                    if gtype == 'LINE':
+                        turnpoint.shape = 'line'
+                    turnpoints.append(turnpoint)
+            else:
+                '''waypoint'''
+                turnpoint = Turnpoint(float(w.get('lat')), float(w.get('lon')), int(w.get('radius')))
+                turnpoint.name = w.get('id')
+                turnpoint.id = len(turnpoints) + 1
+                turnpoints.append(turnpoint)
 
-            turnpoints.append(turnpoint)
+            # turnpoint = Turnpoint(float(w.get('lat')), float(w.get('lon')), int(w.get('radius')))
+            # turnpoint.id = len(turnpoints) + 1
+            # turnpoint.name = w.get('id')
+            # turnpoint.altitude = int(w.get('altitude'))
+            # print(f"    {turnpoint.id}  {turnpoint.name}  {turnpoint.radius}")
+            # if turnpoint.id == 1:
+            #     turnpoint.type = 'launch'
+            #     task.date = get_date(w.get('open'))
+            #     task.window_open_time = time_to_seconds(get_time(w.get('open')))
+            #     task.window_close_time = time_to_seconds(get_time(w.get('close')))
+            #     # sanity
+            #     if task.window_close_time <= task.window_open_time:
+            #         task.window_close_time = None
+            #     if 'free distance' in task.task_type:
+            #         # print('Sono in launch - free')
+            #         '''get start and close time for free distance task types'''
+            #         task.start_time = time_to_seconds(get_time(w.get('open')))
+            #         task.start_close_time = time_to_seconds(get_time(w.get('close')))
+            #         # task.task_deadline = get_datetime(w.get('close'))
+            #     if turnpoint.id == sswpt:
+            #         '''need to manage tasks where first wpt is ss. adding a point as launch'''
+            #         turnpoints.append(turnpoint)
+            # if turnpoint.id == sswpt:
+            #     # print('Sono in ss')
+            #     turnpoint.type = 'speed'
+            #     task.start_close_time = time_to_seconds(get_time(w.get('close')))
+            #     if 'elapsed time' in task.task_type:
+            #         '''get start for elapsed time task types'''
+            #         task.start_time = time_to_seconds(get_time(w.get('open')))
+            # elif turnpoint.id == eswpt:
+            #     # print('Sono in es')
+            #     turnpoint.type = 'endspeed'
+            #     task.task_deadline = time_to_seconds(get_time(w.get('close')))
+            #     if turnpoint.id == len(node.findall('FsTurnpoint')):
+            #         '''need to manage tasks where last wpt is es. adding a point as es'''
+            #         turnpoints.append(turnpoint)
+            # if turnpoint.id == len(node.findall('FsTurnpoint')):
+            #     # print('Sono in goal')
+            #     turnpoint.type = 'goal'
+            #     if gtype == 'LINE':
+            #         turnpoint.shape = 'line'
+            # # else:
+            # #     wpt['tawType'] = 'waypoint'
+            #
+            # turnpoints.append(turnpoint)
 
         # tas['route'] = route
         task.formula = formula
@@ -1370,7 +1476,8 @@ class Task(object):
         """
 
         '''check we have at least 3 points'''
-        if len(self.turnpoints) < 3: return
+        if len(self.turnpoints) < 3:
+            return
 
         '''calculate optimised distance fixes on cilynders'''
         optimised = get_shortest_path(self)
@@ -1432,12 +1539,12 @@ class Task(object):
         """calculates a list of distances from turnpoint to goal (assumes goal is the last turnpoint)"""
         t = len(self.optimised_turnpoints) - 1
         d = 0
-        distance_to_go = [0]
+        distances_to_go = [0]
         while t >= 1:
             d += distance(self.optimised_turnpoints[t], self.optimised_turnpoints[t - 1])
-            distance_to_go.insert(0, d)
+            distances_to_go.insert(0, d)
             t -= 1
-        return distance_to_go
+        return distances_to_go
 
 
 
@@ -1473,7 +1580,6 @@ def get_map_json(task_id):
 def write_map_json(task_id):
     import os
     from geographiclib.geodesic import Geodesic
-    from route import get_line
     from mapUtils import get_route_bbox
 
     geod = Geodesic.WGS84

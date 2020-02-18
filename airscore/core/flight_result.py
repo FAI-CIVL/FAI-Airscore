@@ -32,7 +32,7 @@ from formulas.libs.leadcoeff import LeadCoeff
 from mapUtils import checkbbox
 from collections import Counter, namedtuple
 from route import rawtime_float_to_hms, in_semicircle, distance_flown, distance, start_made_civl, tp_made_civl, \
-    tp_time_civl
+    tp_time_civl, get_shortest_path
 from os import path, makedirs
 from Defines import MAPOBJDIR
 from myconn import Database
@@ -225,19 +225,22 @@ class Flight_result(object):
 
         result = cls()
         ID = int(res.get('id'))
+
         if res.find('FsFlightData') is None and res.find('FsResult') is None:
             '''pilot is abs'''
-            # print(f"ID {ID}: ABS")
+            print(f"ID {ID}: ABS")
             result.result_type = 'abs'
             return result
-        elif res.find('FsFlightData').get('distance') is None:
+        elif res.find('FsFlightData') is None or res.find('FsFlightData').get('tracklog_filename') in [None, '']:
+            print(f"ID {ID}: No track")
+            print(f" - distance: {float(res.find('FsResult').get('distance'))}")
             if float(res.find('FsResult').get('distance')) > 0:
                 '''pilot is min dist'''
-                # print(f"ID {ID}: Min Dist")
+                print(f"ID {ID}: Min Dist")
                 result.result_type = 'mindist'
             else:
                 '''pilot is dnf'''
-                # print(f"ID {ID}: DNF")
+                print(f"ID {ID}: DNF")
                 result.result_type = 'dnf'
             return result
 
@@ -341,7 +344,7 @@ class Flight_result(object):
 
         if not task.optimised_turnpoints:
             task.calculate_optimised_task_length()
-        distances2go = task.distances_to_go  # Total task Opt. Distance, in legs list
+        # distances2go = task.distances_to_go  # Total task Opt. Distance, in legs list
 
         '''leadout coefficient'''
         if task.formula.formula_departure == 'leadout':
@@ -436,8 +439,8 @@ class Flight_result(object):
             - race has multiple starts
             - task is elapsed time
             '''
-            # print(f'time: {my_fix.rawtime}, start: {task.start_time} | can start: {pilot_can_start(task, tp, my_fix)} can restart: {pilot_can_restart(task, tp, my_fix, result)} | tp: {tp.name}')
             if pilot_can_start(task, tp, my_fix):
+                # print(f'time: {my_fix.rawtime}, start: {task.start_time} | Interval: {task.SS_interval} | my start: {result.real_start_time} | better_start: {pilot_get_better_start(task, my_fix.rawtime, result.SSS_time)} | can start: {pilot_can_start(task, tp, my_fix)} can restart: {pilot_can_restart(task, tp, my_fix, result)} | tp: {tp.name}')
                 if start_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m):
                     time = round(tp_time_civl(my_fix, next_fix, tp.next), 0)
                     result.waypoints_achieved.append([tp.name, time, alt])  # pilot has started
@@ -445,6 +448,7 @@ class Flight_result(object):
                     tp.move_to_next()
 
             elif pilot_can_restart(task, tp, my_fix, result):
+                # print(f'time: {my_fix.rawtime}, start: {task.start_time} | Interval: {task.SS_interval} | my start: {result.real_start_time} | better_start: {pilot_get_better_start(task, my_fix.rawtime, result.SSS_time)} | can start: {pilot_can_start(task, tp, my_fix)} can restart: {pilot_can_restart(task, tp, my_fix, result)} | tp: {tp.name}')
                 if start_made_civl(my_fix, next_fix, tp.last_made, tolerance, min_tol_m):
                     time = round(tp_time_civl(my_fix, next_fix, tp.next), 0)
                     result.waypoints_achieved.pop()
@@ -477,14 +481,22 @@ class Flight_result(object):
             - optimized dist. to last turnpoint made;
             - total optimized distance minus opt. distance from next wpt to goal minus dist. to next wpt;
             '''
+            # TODO: To compensate for altitude differences at the time when a task is stopped, a bonus distance is
+            #  calculated for each point in the pilots’ track logs, based on that point’s altitude above goal. This
+            #  bonus distance is added to the distance achieved at that point. All altitude values used for this
+            #  calculation are GPS altitude values, as received from the pilots’ GPS devices (no compensation for
+            #  different earth models applied by those devices). For all distance point calculations, including the
+            #  difficulty calculations in hang-gliding (see 11.1.1), these new stopped distance values are being used
+            #  to determine the pilots’ best distance values. Time and leading point calculations remain the same:
+            #  they are not affected by the altitude bonus or stopped distance values.
             if tp.pointer > 0:
-                result.distance_flown = max(result.distance_flown, (distances2go[0] - distances2go[tp.pointer - 1]),
-                                            distance_flown(next_fix, tp.pointer, task.optimised_turnpoints,
-                                                           task.turnpoints[tp.pointer], distances2go))
+                missing_distance = get_shortest_path(task, next_fix, tp.pointer)
+                fix_dist_flown = task.opt_dist - missing_distance
+                result.distance_flown = max(result.distance_flown, fix_dist_flown, task.partial_distance[tp.pointer - 1])
 
             '''Leading coefficient
-                LC = taskTime(i)*(bestDistToESS(i-1)^2 - bestDistToESS(i)^2 )
-                i : i ? TrackPoints In SS'''
+            LC = taskTime(i)*(bestDistToESS(i-1)^2 - bestDistToESS(i)^2 )
+            i : i ? TrackPoints In SS'''
             if lead_coeff and tp.start_done and not tp.ess_done:
                 lead_coeff.update(result, my_fix, next_fix)
 
@@ -501,7 +513,7 @@ class Flight_result(object):
                     infringements_list.append([next_fix, airspace_name, infringement_type, dist, penalty])
                 else:
                     map_fix.extend([None, None, None, None, None])
-                airspace_plot.append(map_fix)
+                # airspace_plot.append(map_fix)
 
         '''final results'''
         result.max_altitude = max_altitude
@@ -544,7 +556,8 @@ class Flight_result(object):
                     ?p:p?PilotsReachingGoal:bestDistancep = taskDistance
                 '''
                 if any(e[0] == 'Goal' for e in result.waypoints_achieved):
-                    result.distance_flown = distances2go[0]
+                    # result.distance_flown = distances2go[0]
+                    result.distance_flown = task.opt_dist
                     result.goal_time, result.goal_altitude = min(
                         [(x[1], x[2]) for x in result.waypoints_achieved if x[0] == 'Goal'], key=lambda t: t[0])
                     result.result_type = 'goal'
@@ -559,7 +572,7 @@ class Flight_result(object):
             result.infringements = infringements
             result.comment.extend(comments)
             result.percentage_penalty = penalty
-            result.airspace_plot = airspace_plot
+            # result.airspace_plot = airspace_plot
 
         return result
 
@@ -732,8 +745,7 @@ def pilot_can_restart(task, tp, fix, result):
             return True
         elif task.SS_interval and pilot_get_better_start(task, fix.rawtime, result.real_start_time):
             return True
-    else:
-        return False
+    return False
 
 
 def start_number_at_time(task, time):

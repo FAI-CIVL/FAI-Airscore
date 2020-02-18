@@ -166,7 +166,7 @@ class Participant(object):
             if from_CIVL:
                 print('*** no result in CIVL database, getting data from FSDB file')
             pilot = Participant(name=name, civl_id=CIVLID)
-            pilot.sex = 'F' if int(pil.get('female')) > 0 else 'M'
+            pilot.sex = 'F' if int(pil.get('female') if pil.get('female') else 0) > 0 else 'M'
             pilot.nat = pil.get('nat_code_3166_a3')
 
         pilot.birthdate = get_date(pil.get('birthday'))
@@ -174,7 +174,7 @@ class Participant(object):
         pilot.glider = pil.get('glider')
         pilot.sponsor = pil.get('sponsor')
         """check fai is int"""
-        pilot.fai_valid = int(pil.get('fai_licence'))
+        pilot.fai_valid = int(pil.get('fai_licence') if pil.get('fai_licence') else 0)
 
         return pilot
 
@@ -245,7 +245,7 @@ def import_participants_from_excel(comp_id, filename, from_CIVL=False):
     return pilots
 
 
-def mass_import_participants(comp_id, pilots):
+def mass_import_participants(comp_id, pilots, session=None):
     """get participants to update from the list"""
     # TODO check if we already have participants for the comp before inserting, and manage update instead
 
@@ -280,7 +280,7 @@ def mass_import_participants(comp_id, pilots):
             insert_mappings.append(mapping)
 
     '''update database'''
-    with Database() as db:
+    with Database(session) as db:
         try:
             if len(insert_mappings) > 0:
                 db.session.bulk_insert_mappings(tblParticipant, insert_mappings)
