@@ -1175,6 +1175,7 @@ class tblTask(Base):
     tasComment = Column(Text)
     tasLocked = Column(TINYINT(3), nullable=False, server_default=text("'0'"))
     tasPath = Column(String(40))
+    tasTimeOffset = Column(Float(asdecimal=False), server_default=text("'11'"))
 
     tblCompetition = relationship('tblCompetition')
     tblRegion = relationship('tblRegion')

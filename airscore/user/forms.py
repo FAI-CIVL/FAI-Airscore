@@ -3,9 +3,9 @@
 from datetime import date
 
 from flask_wtf import FlaskForm
-from wtforms import PasswordField, StringField, IntegerField, SelectField, DecimalField, BooleanField, SubmitField, \
-    TimeField
-from wtforms.fields.html5 import DateField
+from wtforms import PasswordField, StringField, IntegerField, SelectField, DecimalField, BooleanField, SubmitField
+
+from wtforms.fields.html5 import DateField, TimeField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange, Optional
 
 import Defines
@@ -176,40 +176,43 @@ class TaskForm(FlaskForm):
     date = DateField('Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
     task_type = SelectField('Type', choices=[('race', 'Race'), ('elapsed_time', 'Elapsed time')])
     # times
-    window_open_time = TimeField('Window open', validators=[DataRequired()])
-    start_time = TimeField('Start time', validators=[DataRequired()])
-    window_close_time = TimeField('Window close', validators=[DataRequired()])
-    start_close_time = TimeField('Start close', validators=[DataRequired()])
-    stopped_time = TimeField('Stopped time')
-    task_deadline = TimeField('Deadline', validators=[DataRequired()])
+    window_open_time = TimeField('Window open', format='%H:%M', validators=[DataRequired()])
+    start_time = TimeField('Start time', format='%H:%M', validators=[DataRequired()])
+    window_close_time = TimeField('Window close', format='%H:%M', validators=[DataRequired()])
+    start_close_time = TimeField('Start close', format='%H:%M', validators=[DataRequired()])
+    stopped_time = TimeField('Stopped time', format='%H:%M', validators=[Optional(strip_whitespace=True)])
+    task_deadline = TimeField('Deadline', format='%H:%M', validators=[DataRequired()])
 
     # other
-    SS_interval = IntegerField('Gate interval (mins)')
+    SS_interval = DecimalField('Gate interval (mins)')
     start_iteration = IntegerField('Number of gates', description='number of start iterations: 0 is indefinite up to '
-                                                                  'start close time')
+                                                                  'start close time',
+                                   validators=[Optional(strip_whitespace=True)])
     time_offset = DecimalField('GMT offset', validators=[DataRequired()], places=2, render_kw=dict(maxlength=5),
                                description='The time offset for the task. Default value taken from the competition '
                                            'time offset')
     check_launch = BooleanField('Check launch', description='If we check pilots leaving launch - i.e. launch is like '
                                                             'an exit cylinder')
-    region = SelectField('Waypoint file', choices=[(1,'1'), (2,'2')])
+    # region = SelectField('Waypoint file', choices=[(1,'1'), (2,'2')])
 
     # airspace
     airspace_check = BooleanField('Airspace checking')
-    openair_file = SelectField('Openair file', choices=[(1,'1'), (2,'2')])
+    # openair_file = SelectField('Openair file', choices=[(1,'1'), (2,'2')])
     QNH = DecimalField('QNH', validators=[NumberRange(min=900, max=1100)])
 
     submit = SubmitField('Save')
+
     def validate_on_submit(self):
-        result = super(CompForm, self).validate()
-        if self.window_close_time.data > self.window_open_time.data:
-            return False
-        if self.start_close_time.data > self.start_time.data:
-            return False
-        if self.task_deadline.data > self.start_time.data:
-            return False
-        else:
-            return result
+        result = super(TaskForm, self).validate()
+        return result
+        # if self.window_close_time.data > self.window_open_time.data:
+        #     return False
+        # if self.start_close_time.data > self.start_time.data:
+        #     return False
+        # if self.task_deadline.data > self.start_time.data:
+        #     return False
+        # else:
+        #     return result
 
 
 class NewTurnpointForm(FlaskForm):

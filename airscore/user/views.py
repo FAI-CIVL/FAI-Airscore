@@ -224,43 +224,47 @@ def comp_settings_admin(compid):
 @login_required
 def task_admin(taskid):
     from calcUtils import sec_to_time, time_to_seconds
+    from sys import stdout
     error = None
     taskform = TaskForm()
     turnpointform = NewTurnpointForm()
     task = Task.read(int(taskid))
-    admins = ['joe smith', 'john wayne', 'stuart']  # TODO
+    turnpointform.name.choices = frontendUtils.get_waypoint_choices(task.reg_id)
+    admins = ['john wayne', 'stuart']  # TODO
 
     if request.method == 'POST':
         if taskform.validate_on_submit():
             task.comp_name = taskform.comp_name
-            task.task_name.data = taskform.task_name
-            task.task_num.data = taskform.task_num
-            task.comment.data = taskform.comment
-            task.date.data = taskform.date
-            task.task_type.data = taskform.task_type
-            task.window_open_time.data = time_to_seconds(taskform.window_open_time)
-            task.window_close_time.data = time_to_seconds(taskform.window_close_time)
-            task.start_time.data = time_to_seconds(taskform.start_time)
-            task.start_close_time.data = time_to_seconds(taskform.start_close_time)
-            task.stopped_time.data = None if taskform.stopped_time == "" else time_to_seconds(taskform.stopped_time)
-            task.task_deadline.data = time_to_seconds(taskform.task_deadline)
-            task.SS_interval.data = taskform.SS_interval * 60  # (convert from min to sec)
-            task.start_iteration.data = taskform.start_iteration
-            task.time_offset.data = taskform.time_offset * 3600  # (convert from hours to seconds)
-            task.check_launch.data = taskform.check_launch
-            task.airspace_check.data = taskform.airspace_check
-            task.openair_file.data = taskform.openair_file  # TODO get a list of openair files for this comp (in the case of defines.yaml airspace_file_library: off otherwise all openair files available)
-            task.QNH.data = taskform.QNH
-            task.to_db()
+            task.task_name = taskform.task_name.data
+            task.task_num = taskform.task_num.data
+            task.comment = taskform.comment.data
+            task.date = taskform.date.data
+            task.task_type = taskform.task_type.data
+            task.window_open_time = time_to_seconds(taskform.window_open_time.data)
+            task.window_close_time = time_to_seconds(taskform.window_close_time.data)
+            task.start_time = time_to_seconds(taskform.start_time.data)
+            task.start_close_time = time_to_seconds(taskform.start_close_time.data)
+            task.stopped_time = None if taskform.stopped_time.data is None else time_to_seconds(taskform.stopped_time.data)
+            task.task_deadline = time_to_seconds(taskform.task_deadline.data)
+            task.SS_interval = taskform.SS_interval.data * 60  # (convert from min to sec)
+            task.start_iteration = taskform.start_iteration.data
+            task.time_offset = int(taskform.time_offset.data * 3600)  # (convert from hours to seconds)
+            task.check_launch = 'on' if taskform.check_launch.data else 'off'
+            task.airspace_check = taskform.airspace_check.data
+            # task.openair_file = taskform.openair_file  # TODO get a list of openair files for this comp (in the case of defines.yaml airspace_file_library: off otherwise all openair files available)
+            task.QNH = taskform.QNH.data
+            task.update_task_info()
 
             flash("Saved", category='info')
-            return redirect(url_for('user.task_admin', taskid=taskid, taskform=taskform, turnpointform=turnpointform,
-                                    error=error))
+
+            return redirect(url_for('user.task_admin', taskid=taskid))
+
         else:
             flash("not valid")
             for item in taskform:
                 if item.errors:
                     print(f"{item} value:{item.data} error:{item.errors}")
+                    stdout.flush()
 
     if request.method == 'GET':
         taskform.comp_name = task.comp_name
@@ -280,12 +284,10 @@ def task_admin(taskid):
         taskform.time_offset.data = task.time_offset/3600 # (convert from seconds to hours)
         taskform.check_launch.data = task.check_launch
         taskform.airspace_check.data = task.airspace_check
-        taskform.openair_file.data = task.openair_file # TODO get a list of openair files for this comp (in the case of defines.yaml airspace_file_library: off otherwise all openair files available)
+        # taskform.openair_file.data = task.openair_file # TODO get a list of openair files for this comp (in the case of defines.yaml airspace_file_library: off otherwise all openair files available)
         taskform.QNH.data = task.QNH
         # taskform.region.data = task.reg_id # TODO get a list of waypoint files for this comp (in the case of defines.yaml waypoint_file_library: off otherwise all regions available)
         # taskform.region.choices = frontendUtils.get_region_choices(compid)
-
-        turnpointform.name.choices = frontendUtils.get_waypoint_choices(task.reg_id)
 
         if current_user.username not in admins:
             taskform.submit = None

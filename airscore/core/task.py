@@ -806,20 +806,36 @@ class Task(object):
 
         start_time = sec_to_time(self.start_time + self.time_offset)
         task_deadline = sec_to_time(self.task_deadline + self.time_offset)
-        task_start = sec_to_time(self.window_open_time + self.time_offset)
+        task_window_open = sec_to_time(self.window_open_time + self.time_offset)
+        task_window_close = sec_to_time(self.window_close_time + self.time_offset)
         start_close_time = sec_to_time(self.start_close_time + self.time_offset)
         start_interval = int(self.SS_interval / 60)
-        task_type = self.task_type.lower()
+        stopped_time = None if self.stopped_time is None else dt.combine(self.date, self.stopped_time + self.time_offset)
 
         with Database() as db:
+            print(f"taskid:{self.task_id}")
             q = db.session.query(T).get(self.task_id)
-            date = q.date
+            print(f"q{q}")
+            date = self.date
+            q.tasName = self.task_name
+            q.tasNum = self.task_num
+            q.tasDate = self.date
+            q.tasComment = self.comment
             q.tasStartTime = dt.combine(date, start_time)
             q.tasFinishTime = dt.combine(date, task_deadline)
-            q.tasTaskStart = dt.combine(date, task_start)
+            q.tasTaskStart = dt.combine(date, task_window_open)
+            q.tasLaunchClose = dt.combine(date, task_window_close)
+            q.tasStoppedTime = stopped_time
+            q.tasTaskType = self.task_type.lower()
+            q.tasTimeOffset = self.time_offset
+            q.tasStartIteration =self.start_iteration
+            q.tasQNH = self.QNH
             q.tasStartCloseTime = dt.combine(date, start_close_time)
             q.tasSSInterval = start_interval
-            q.tasTaskType = task_type
+            q.tasTaskType = self.task_type
+            q.tasLocked = self.locked
+            q.tasAirspaceCheckOverride = self.airspace_check
+            q.tasCheckLaunch = self.check_launch
             db.session.commit()
 
     def to_db(self, session=None):
@@ -848,9 +864,9 @@ class Task(object):
                                tasStartCloseTime=start_close, tasStoppedTime=stopped_time, tasDistance=self.distance,
                                tasShortRouteDistance=self.opt_dist, tasStartSSDistance=self.opt_dist_to_SS,
                                tasEndSSDistance=self.opt_dist_to_ESS, tasSSDistance=self.SS_distance,
-                               tasSSInterval=self.SS_interval,
+                               tasSSInterval=self.SS_interval, tasStartIteration=self.start_iteration,
                                tasLaunchValid=self.launch_valid, tasComment=self.comment,
-                               tasQNH=self.QNH, regPk=self.reg_id)
+                               tasQNH=self.QNH, regPk=self.reg_id, tasTimeOffset=self.time_offset)
                 db.session.add(task)
                 db.session.flush()
                 self.task_id = task.tasPk

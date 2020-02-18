@@ -121,7 +121,7 @@ def save_turnpoint(task_id, turnpoint: Turnpoint, pk=None):
         print("task not present in database ", task_id)
         return None
 
-    if not pk:
+    if not pk: # insert a new turnpoint
         with Database() as db:
             # get the turnpoint details.
             try:
@@ -142,7 +142,7 @@ def save_turnpoint(task_id, turnpoint: Turnpoint, pk=None):
                 print('error saving turnpoint')
                 return None
             return 1
-    else:
+    else: # update as opposed to insert
         with Database() as db:
             try:
                 waypoint = db.session.query(RW.rwpName, RW.rwpLatDecimal, RW.rwpLongDecimal, RW.rwpAltitude,

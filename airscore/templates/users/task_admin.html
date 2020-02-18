@@ -103,9 +103,9 @@
                <div class="form-group col-md-3">
                   {{taskform.airspace_check.label}} {{taskform.airspace_check(size=3,**{'id': "lead_factor", 'data-toggle': 'tooltip', 'title': taskform.airspace_check.description})}}
                </div>
-               <div  class="form-group col-md-3 display-if" data-target_name="airspace_check" data-target_type="checkbox" data-target_value=true>
-                  {{taskform.openair_file.label}} {{taskform.openair_file(size=15,**{'id': "no_goal_pen", 'data-toggle': 'tooltip', 'title': taskform.openair_file.description})}}
-               </div>
+<!--               <div  class="form-group col-md-3 display-if" data-target_name="airspace_check" data-target_type="checkbox" data-target_value=true>-->
+<!--                  taskform.openair_file.label}} taskform.openair_file(size=15,**{'id': "no_goal_pen", 'data-toggle': 'tooltip', 'title': taskform.openair_file.description})}}-->
+<!--               </div>-->
                <div class="form-group col-md-4">
                   {{taskform.QNH.label}} {{taskform.QNH(size=5,**{'id': "tolerance", 'data-toggle': 'tooltip', 'title': taskform.QNH.description})}}
                </div>
@@ -189,14 +189,9 @@
             </div>
          </div>
       </div>
-      <div class="card card-body">
->
-            <div class="embed-responsive embed-responsive-16by9">
-            <iframe id="map" class="embed-responsive-item" allowfullscreen></iframe>
-      </div>
 
-      </div>
    </div>
+      </div>
    <div class="container">
       <br>
       <center>
@@ -208,6 +203,13 @@
       </center>
    </div>
 </form>
+      <div class="card card-body">
+
+            <div class="embed-responsive embed-responsive-16by9">
+            <iframe id="map" class="embed-responsive-item" allowfullscreen></iframe>
+            </div>
+
+      </div>
 <!---delete-modal starts here--->
 <div id="delmodal" class="modal fade" role='dialog'>
    <div class="modal-dialog">
