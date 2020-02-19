@@ -15,6 +15,8 @@
          </h2>
          <br>
          <h4 class="font-weight-bold">{{taskform.comp_name}}</h4>
+         <br>
+         <h5 id="title_dist" ></h5>
       </center>
    </div>
    <p>
@@ -314,6 +316,7 @@
                if(json.map != null){
                   $('#map').contents().find('body').html(json.map);
                }
+               title_dist.innerHTML = json['distance'];
                task_table_heading.innerHTML = "Task - "+json['distance'];
                content += '<tbody>';
                for (var i = 0; i < json['turnpoints'].length; i++) {
