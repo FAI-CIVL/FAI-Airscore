@@ -134,15 +134,15 @@
       <div class="container">
          <h3 id="task_table_heading" class="font-weight-bold">Task</h3>
          <div class="form-row">
-            <div class="form-group col-md-6">
+            <div class="form-group col-md-9">
                <table class="table" id="turnpoints">
                   <thead>
                      <tr>
                         <th>#</th>
                         <th>Type</th>
                         <th>Waypoint</th>
-                        <th>Direction</th>
-                        <th>Shape</th>
+<!--                        <th>Direction</th>-->
+<!--                        <th>Shape</th>-->
                         <th>Radius (m)</th>
                         <th>Distance (km)</th>
                      </tr>
@@ -323,10 +323,10 @@
                content += '><tr id="'
                + json['turnpoints'][i].task_id + '">';
                content += '<td class="col-3">' + json['turnpoints'][i].n + '</td>';
-               content += '<td class="col-3">' + json['turnpoints'][i].type + '</td>';
+               content += '<td class="col-4">' + json['turnpoints'][i].type + '</td>';
                content += '<td class="col-3">' + json['turnpoints'][i].name + '</td>';
-               content += '<td class="col-3">' + json['turnpoints'][i].how + '</td>';
-               content += '<td class="col-3">' + json['turnpoints'][i].shape + '</td>';
+<!--               content += '<td class="col-3">' + json['turnpoints'][i].how + '</td>';-->
+<!--               content += '<td class="col-3">' + json['turnpoints'][i].shape + '</td>';-->
                content += '<td class="col-3">' + json['turnpoints'][i].radius+ '</td>';
                content += '<td class="col-3">' + json['turnpoints'][i].partial_distance + '</td>';
 

@@ -105,9 +105,18 @@ def get_task_turnpoints(task):
             max_n = int(tp['n'])
             total_dist = tp['partial_distance']
         if tp['type'] == 'speed':
-            tp['type'] = 'SSS'
+            if tp['how'] == 'entry':
+                tp['type'] = 'SSS - Out/Enter'
+            else:
+                tp['type'] = 'SSS - In/Exit'
         elif tp['type'] == 'endspeed':
             tp['type'] = 'ESS'
+        elif tp['type'] == 'goal':
+            if tp['shape'] == 'circle':
+                tp['type'] = 'Goal Cylinder'
+            else:
+                tp['type'] = 'Goal Line'
+
         else:
             tp['type'] = tp['type'].capitalize()
     if total_dist == '':
