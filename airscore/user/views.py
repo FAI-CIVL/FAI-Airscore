@@ -286,7 +286,7 @@ def task_admin(taskid):
         taskform.SS_interval.data = task.SS_interval/60 # (convert from sec to min)
         taskform.start_iteration.data = task.start_iteration
         taskform.time_offset.data = task.time_offset/3600 # (convert from seconds to hours)
-        taskform.check_launch.data = task.check_launch
+        taskform.check_launch.data = False if task.check_launch == 'off' else True
         taskform.airspace_check.data = task.airspace_check
         # taskform.openair_file.data = task.openair_file # TODO get a list of openair files for this comp (in the case of defines.yaml airspace_file_library: off otherwise all openair files available)
         taskform.QNH.data = task.QNH
