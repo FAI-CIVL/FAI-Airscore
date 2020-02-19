@@ -18,6 +18,12 @@
       </center>
    </div>
    <p>
+      <a href="{{ url_for('user.comp_settings_admin', compid=compid)}}" class="btn btn-info ml-4" type="button" >
+      Back to competition settings
+      </a>
+      <br>
+      </p>
+   <p>
       <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse1" aria-expanded="false" aria-controls="collapse1">
       Task Details
       </button>
@@ -112,7 +118,7 @@
                   {{taskform.QNH.label}} {{taskform.QNH(size=5,**{'id': "tolerance", 'data-toggle': 'tooltip', 'title': taskform.QNH.description})}}
                </div>
                <div  class="form-group col-md-4">
-                  {{taskform.check_launch.label}} {{taskform.check_launch(size=3,**{'id': "min_tolerance", 'data-toggle': 'tooltip', 'title': taskform.check_launch.description})}}
+                  {{taskform.check_launch.label}} {{taskform.check_launch(size=3,**{'id': "check_launch", 'data-toggle': 'tooltip', 'title': taskform.check_launch.description})}}
                </div>
             </div>
          </div>
@@ -167,7 +173,7 @@
                               </div>
                            </div>
                            <div class="form-row">
-                              <div class="form-group col-md-12 display-if" data-target_name="tp_type" data-target_type="select" data-target_value='speed'>
+                              <div class="form-group col-md-12 display-if" data-target_name="type" data-target_type="select" data-target_value='speed'>
                                  {{turnpointform.how.label}} {{turnpointform.how(**{'id':"tp_how", 'data-toggle': 'tooltip', 'title': turnpointform.how.description})}}
                               </div>
                            </div>
@@ -175,7 +181,12 @@
                               <div class="form-group col-md-6 display-if" data-target_name="type" data-target_type="select" data-target_value='goal'>
                                  {{turnpointform.shape.label}} {{turnpointform.shape(**{'id':"tp_shape", 'data-toggle': 'tooltip', 'title': turnpointform.shape.description})}}
                               </div>
-                              <div class="form-group col-md-6">
+                              <div class="form-group col-md-6 display-if" data-target_name="check_launch" data-target_type="checkbox" data-target_value=true>
+                                    <div class="form-group col-md-6 display-if" data-target_name="type" data-target_type="select" data-target_value='launch'>
+                                       {{turnpointform.radius.label}} {{turnpointform.radius(size=5 , **{'id':"tp_launch_radius",'data-toggle': 'tooltip', 'title': turnpointform.radius.description})}}
+                                    </div>
+                                 </div>
+                              <div class="form-group col-md-6 display-if" data-target_name="type" data-target_type="select" data-target_value_not='launch'>
                                  {{turnpointform.radius.label}} {{turnpointform.radius(size=5 , **{'id':"tp_radius",'data-toggle': 'tooltip', 'title': turnpointform.radius.description})}}
                               </div>
                            </div>
@@ -242,26 +253,31 @@
          <div class="modal-body" id= "modmodal-body">
             <div class="form-row">
                <div class="form-group width6">
-                  {{turnpointform.number.label}} {{turnpointform.number(size=2, **{'id':"mod_tp_number",})}}
-                  {{turnpointform.type.label}} {{turnpointform.type(**{'id':"mod_tp_type",})}}
+                  {{modifyturnpointform.mod_number.label}} {{modifyturnpointform.mod_number(size=2, **{'id':"mod_tp_number",})}}
+                  {{modifyturnpointform.mod_type.label}} {{modifyturnpointform.mod_type(**{'id':"mod_tp_type",})}}
                </div>
             </div>
             <div class="form-row">
                <div class="form-group width12">
-                  {{turnpointform.name.label}} {{turnpointform.name(size=4, **{'id':"mod_tp_name", 'data-toggle': 'tooltip', 'title': turnpointform.name.description})}}
+                  {{modifyturnpointform.mod_name.label}} {{modifyturnpointform.mod_name(size=4, **{'id':"mod_tp_name", 'data-toggle': 'tooltip', 'title': modifyturnpointform.mod_name.description})}}
                </div>
             </div>
             <div class="form-row">
-               <div class="form-group col-md-12 display-if" data-target_name="mod_tp_type" data-target_type="select" data-target_value='speed'>
-                  {{turnpointform.how.label}} {{turnpointform.how(**{'id':"mod_tp_how", 'data-toggle': 'tooltip', 'title': turnpointform.how.description})}}
+               <div class="form-group col-md-12 display-if" data-target_name="mod_type" data-target_type="select" data-target_value='speed'>
+                  {{modifyturnpointform.mod_how.label}} {{modifyturnpointform.mod_how(**{'id':"mod_tp_how", 'data-toggle': 'tooltip', 'title': modifyturnpointform.mod_how.description})}}
                </div>
             </div>
             <div class="form-row">
-               <div class="form-group col-md-6 display-if" data-target_name="mod_tp_type" data-target_type="select" data-target_value='goal'>
-                  {{turnpointform.shape.label}} {{turnpointform.shape(**{'id':"mod_tp_shape", 'data-toggle': 'tooltip', 'title': turnpointform.shape.description})}}
+               <div class="form-group col-md-6 display-if" data-target_name="mod_type" data-target_type="select" data-target_value='goal'>
+                  {{modifyturnpointform.mod_shape.label}} {{modifyturnpointform.mod_shape(**{'id':"mod_tp_shape", 'data-toggle': 'tooltip', 'title': modifyturnpointform.mod_shape.description})}}
                </div>
-               <div class="form-group col-md-6">
-                  {{turnpointform.radius.label}} {{turnpointform.radius(size=5 , **{'id':"mod_tp_radius",'data-toggle': 'tooltip', 'title': turnpointform.radius.description})}}
+               <div class="form-group col-md-6 display-if" data-target_name="check_launch" data-target_type="checkbox" data-target_value=true>
+                     <div class="form-group col-md-6 display-if" data-target_name="mod_type" data-target_type="select" data-target_value='launch'>
+                        {{modifyturnpointform.mod_radius.label}} {{modifyturnpointform.mod_radius(size=5 , **{'id':"mod_tp_launch_radius",'data-toggle': 'tooltip', 'title': modifyturnpointform.mod_radius.description})}}
+                     </div>
+                  </div>
+                <div class="form-group col-md-6 display-if" data-target_name="mod_type" data-target_type="select" data-target_value_not='launch'>
+                  {{modifyturnpointform.mod_radius.label}} {{modifyturnpointform.mod_radius(size=5 , **{'id':"mod_tp_radius",'data-toggle': 'tooltip', 'title': modifyturnpointform.mod_radius.description})}}
                </div>
             </div>
          </div>
@@ -331,13 +347,20 @@
 
 
    function save_turnpoint(){
+           var radius =$('#tp_radius').val();
+           if($('#tp_type').val() == 'launch' ){
+           radius = 400;
+               if($('#check_launch').val()=='y' ){
+               radius = $('#tp_launch_radius').val();
+               }
+           }
            var mydata = new Object();
                mydata.number = $('#tp_number').val();
                mydata.type = $('#tp_type').val();
                mydata.rwpPk = $('#tp_name').val();
                mydata.direction = $('#tp_how').val();
                mydata.shape = $('#tp_shape').val();
-               mydata.radius = $('#tp_radius').val();
+               mydata.radius = radius;
                mydata.id = null
 
            $.ajax({
@@ -417,25 +440,32 @@
      var myHeading = "<p>Modify turnpoint ";
    <!--     $("#modmodal-body").html(myHeading + x);-->
 
-    $('#mod_tp_number').val(found.n);
-    $('#mod_tp_type').val(found.original_type);
+    $('#mod_tp_number').val(found.n).change();
+    $('#mod_tp_type').val(found.original_type).change();
     $('#mod_tp_name').val(found.rwpid).change();
     $('#mod_tp_how').val(found.how).change();
     $('#mod_tp_shape').val(found.shape).change();
-    $('#mod_tp_radius').val(found.radius);
+    $('#mod_tp_radius').val(found.radius).change();
     $("#delmodal-body").html(myHeading + x + '?</p>');
     $('#modify_confirmed').attr("onclick","save_modified_turnpoint('"+ tpid +"')");
      $('#modmodal').modal('show');
     }
 
    function save_modified_turnpoint(id){
+              var radius =$('#mod_tp_radius').val();
+           if($('#mod_tp_type').val() == 'launch' ){
+           radius = 400;
+               if($('#check_launch').val()=='y' ){
+               radius = $('#mod_tp_launch_radius').val();
+               }
+           }
            var mydata = new Object();
                mydata.number = $('#mod_tp_number').val();
                mydata.type = $('#mod_tp_type').val();
                mydata.rwpPk = $('#mod_tp_name').val();
                mydata.direction = $('#mod_tp_how').val();
                mydata.shape = $('#mod_tp_shape').val();
-               mydata.radius = $('#mod_tp_radius').val();
+               mydata.radius = radius;
                mydata.id = id
 
            $.ajax({

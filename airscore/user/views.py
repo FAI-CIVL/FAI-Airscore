@@ -5,7 +5,7 @@ from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
 from flask_login import login_required, current_user
 import frontendUtils
-from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm
+from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm
 from comp import Comp
 from formula import list_formulas, Formula
 from task import Task, write_map_json
@@ -228,8 +228,12 @@ def task_admin(taskid):
     error = None
     taskform = TaskForm()
     turnpointform = NewTurnpointForm()
+    modifyturnpointform = ModifyTurnpointForm()
     task = Task.read(int(taskid))
-    turnpointform.name.choices = frontendUtils.get_waypoint_choices(task.reg_id)
+    waypoints = frontendUtils.get_waypoint_choices(task.reg_id)
+    turnpointform.name.choices = waypoints
+    modifyturnpointform.mod_name.choices = waypoints
+
     admins = ['john wayne', 'stuart']  # TODO
 
     if request.method == 'POST':
@@ -292,7 +296,8 @@ def task_admin(taskid):
         if current_user.username not in admins:
             taskform.submit = None
 
-    return render_template('users/task_admin.html', taskid=taskid, taskform=taskform, turnpointform=turnpointform, error=error)
+    return render_template('users/task_admin.html', taskid=taskid, taskform=taskform, turnpointform=turnpointform,
+                           modifyturnpointform=modifyturnpointform, compid=task.comp_id, error=error)
 
 
 @blueprint.route('/get_admin_comps', methods=['GET', 'POST'])
