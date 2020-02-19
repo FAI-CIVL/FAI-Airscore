@@ -224,7 +224,7 @@ class NewTurnpointForm(FlaskForm):
     radius = IntegerField('Radius (m)', default=400)
     type = SelectField('Type', choices=[('launch', 'Launch'), ('speed', 'SSS'), ('waypoint', 'Waypoint'),
                                         ('endspeed', 'ESS'), ('goal', 'Goal')])
-    shape = SelectField('Shape', choices=[('circle', 'Circle'), ('line', 'Line')])
+    shape = SelectField('Shape', choices=[('circle', 'Cylinder'), ('line', 'Line')])
     how = SelectField('SSS Direction', choices=[('entry', 'Out/Enter'), ('exit', 'In/Exit')])
 
 class ModifyTurnpointForm(FlaskForm):
@@ -236,5 +236,5 @@ class ModifyTurnpointForm(FlaskForm):
     mod_radius = IntegerField('Radius (m)', default=400)
     mod_type = SelectField('Type', choices=[('launch', 'Launch'), ('speed', 'SSS'), ('waypoint', 'Waypoint'),
                                         ('endspeed', 'ESS'), ('goal', 'Goal')])
-    mod_shape = SelectField('Shape', choices=[('circle', 'Circle'), ('line', 'Line')])
+    mod_shape = SelectField('Shape', choices=[('circle', 'Cylinder'), ('line', 'Line')])
     mod_how = SelectField('SSS Direction', choices=[('entry', 'Out/Enter'), ('exit', 'In/Exit')])
