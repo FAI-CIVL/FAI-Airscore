@@ -360,29 +360,19 @@ def _get_tasks(compid):
     return jsonify(tasks)
 
 
-@blueprint.route('/_get_adv_settings', methods=['GET'])
+@blueprint.route('/_get_adv_settings', methods=['GET','POST'])
 @login_required
 def _get_adv_settings():
     data = request.json
     formula = Formula.from_preset(data['category'], data['formula'])
-    settings= {}
-    settings['distance'] = formula.formula_distance
-    settings['arrival'] = formula.formula_arrival
-    settings['departure'] = formula.formula_departure
-    settings['lead_factor'] = formula.lead_factor
-    settings['time'] = formula.formula_time
-    settings['no_goal_pen'] = formula.no_goal_penalty
-    settings['glide_bonus'] = formula.glide_bonus
-    settings['tolerance'] = formula.tolerance
-    settings['min_tolerance'] = formula.min_tolerance
-    settings['height_bonus'] = formula.height_bonus
-    settings['ESS_height_upper'] = formula.arr_max_height
-    settings['ESS_height_lower'] = formula.arr_min_height
-    settings['min_time'] = formula.validity_min_time
-    settings['scoreback_time'] = formula.score_back_time
-    settings['max_JTG'] = formula.max_JTG
-    settings['JTG_pen_sec'] = formula.JTG_penalty_per_sec
-    settings['alt_mode'] = formula.scoring_altitude
+    settings = {'distance': formula.formula_distance, 'arrival': formula.formula_arrival,
+                'departure': formula.formula_departure, 'lead_factor': formula.lead_factor,
+                'time': formula.formula_time, 'no_goal_pen': formula.no_goal_penalty,
+                'glide_bonus': formula.glide_bonus, 'tolerance': formula.tolerance,
+                'min_tolerance': formula.min_tolerance, 'height_bonus': formula.height_bonus,
+                'ESS_height_upper': formula.arr_max_height, 'ESS_height_lower': formula.arr_min_height,
+                'min_time': formula.validity_min_time, 'scoreback_time': formula.score_back_time,
+                'max_JTG': formula.max_JTG, 'JTG_pen_sec': formula.JTG_penalty_per_sec}
 
     return jsonify(settings)
 
