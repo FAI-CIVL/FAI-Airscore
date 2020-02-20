@@ -22,7 +22,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from Defines import RESULTDIR
 from calcUtils import get_isotime, km, sec_to_time
 from comp import Comp
-from compUtils import create_comp_code, is_ext
+from compUtils import is_ext
 from formula import Formula
 from myconn import Database
 from participant import Participant, mass_import_participants
@@ -49,7 +49,7 @@ class FSDB(object):
         return self.comp.formula
 
     @classmethod
-    def read(cls, fp, from_CIVL=0):
+    def read(cls, fp, short_name=None, keep_task_path=False, from_CIVL=False):
         """ A XML reader to read FSDB files
             Unfortunately the fsdb format isn't published so much of this is simply an
             exercise in reverse engineering.
@@ -73,7 +73,7 @@ class FSDB(object):
         """Comp Info"""
         print("Getting Comp Info...")
         fs_comp = root.find('FsCompetition')
-        comp = Comp.from_fsdb(fs_comp)
+        comp = Comp.from_fsdb(fs_comp, short_name)
 
         """Formula"""
         comp.formula = Formula.from_fsdb(fs_comp)
@@ -96,11 +96,13 @@ class FSDB(object):
         t = root.find('FsCompetition').find('FsTasks')
         for tas in t.iter('FsTask'):
             '''create task obj'''
-            task = Task.from_fsdb(tas)
+            task = Task.from_fsdb(tas, keep_task_path)
             '''check if task was valid'''
             if task is not None:
-                """Task Results"""
+                if not task.task_path:
+                    task.create_path()
                 task.time_offset = int(comp.time_offset * 3600)
+                """Task Results"""
                 node = tas.find('FsParticipants')
                 if node is not None:
                     task.pilots = []
@@ -499,10 +501,6 @@ class FSDB(object):
             Add comp to AirScore database
         """
         import re
-        '''check if we have comp_code'''
-        if self.comp.comp_code is None:
-            self.comp.comp_code = create_comp_code(self.comp.comp_name, self.comp.date_from)
-        self.comp.create_path()
 
         if self.comp.formula.formula_name and not self.comp.formula.formula_type:
             '''trying to guess formula from name'''
@@ -529,7 +527,7 @@ class FSDB(object):
             try:
                 for t in self.tasks:
                     t.comp_id = self.comp.comp_id
-                    t.create_path()
+                    # t.create_path()
                     '''recalculating legs to avoid errors when fsdb task misses launch and/or goal'''
                     if t.geo is None:
                         t.get_geo()
@@ -537,6 +535,8 @@ class FSDB(object):
                     t.calculate_optimised_task_length()
                     '''storing'''
                     t.to_db(db.session)
+                    '''adding folders'''
+
                 db.session.commit()
 
             except SQLAlchemyError:

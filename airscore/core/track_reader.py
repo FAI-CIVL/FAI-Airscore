@@ -5,7 +5,6 @@ Use: python3 track_reader.py [tasPk] [file] [parPk]
 
 Antonio Golfari - 2018
 """
-from os import path
 from shutil import copyfile
 from tempfile import TemporaryDirectory
 

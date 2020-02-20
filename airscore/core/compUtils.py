@@ -274,3 +274,10 @@ def get_formulas(comp_class):
             if flib.formula_class in (comp_class, 'BOTH'):
                 formulas.append(FormulaList(name=flib.formula_name, lib=fields[0]))
     return formulas
+
+
+def get_fsdb_task_path(task_path):
+    """returns tracks folder from fsdb field tracklog_folder"""
+    from pathlib import PureWindowsPath
+    folder = PureWindowsPath(task_path)
+    return None if not folder.parts else folder.parts[-1]

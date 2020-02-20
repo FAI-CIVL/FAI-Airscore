@@ -108,7 +108,7 @@ class Comp(object):
     def file_path(self):
         if not self.comp_path:
             self.create_path()
-        return path.join(FILEDIR, str(self.date_from.year), self.comp_code.lower())
+        return path.join(FILEDIR, self.comp_path)
 
     @property
     def tot_validity(self):
@@ -211,16 +211,20 @@ class Comp(object):
                 return None
         return comp
 
-    def create_path(self, filepath=None):
+    def create_path(self):
         """create filepath from # and date if not given
             and store it in database"""
+        from compUtils import create_comp_code
 
-        if filepath:
-            self.comp_path = filepath
-        elif self.comp_code and self.date_from:
-            self.comp_path = create_comp_path(self.date_from, self.comp_code)
-        else:
-            return
+        if self.comp_path:
+            print(f"Error: Comp has already a valid path: {self.comp_path}")
+            return None
+        if not self.date_from:
+            print(f"Error: Comp has no Date")
+            return None
+        if not self.comp_code:
+            self.comp_code = create_comp_code(self.comp_name, self.date_from)
+        self.comp_path = create_comp_path(self.date_from, self.comp_code)
 
         if self.comp_id:
             '''store to database'''
@@ -287,9 +291,12 @@ class Comp(object):
         self.rankings = read_rankings(self.comp_id)
 
     @staticmethod
-    def from_fsdb(fs_comp):
+    def from_fsdb(fs_comp, short_name=None):
         """gets comp and formula info from FSDB file"""
         from calcUtils import get_date
+        from pathlib import Path
+        from glob import glob
+        from compUtils import create_comp_code
 
         comp = Comp()
 
@@ -303,6 +310,20 @@ class Comp(object):
                          else 'FAI 2' if fs_comp.get('fai_sanctioning') == '2' else 'none')
         comp.external = True
         comp.locked = True
+
+        '''check if we have comp_code'''
+        if short_name:
+            comp.comp_code = short_name
+        else:
+            comp.comp_code = create_comp_code(comp.comp_name, comp.date_from)
+        comp.create_path()
+        '''check path does not already exist'''
+        if Path(comp.file_path).exists():
+            '''create a new comp_code and comp_path'''
+            index = len(glob(comp.file_path + '*/')) + 1
+            comp.comp_code = '_'.join([comp.comp_code, str(index)])
+            print(f"Comp short name already exists: changing to {comp.comp_code}")
+            comp.comp_path = create_comp_path(comp.date_from, comp.comp_code)
 
         return comp
 
