@@ -25,7 +25,7 @@ from pprint import pprint
 
 def main(args):
     """create logging and disable output"""
-    Logger('ON', 'comp_results.txt')
+    # Logger('ON', 'comp_results.txt')
 
     print("starting..")
     '''Main module. Takes tasPk as parameter'''
@@ -40,7 +40,7 @@ def main(args):
     print(f'Comp result ID: {ref_id}')
 
     ''' now restore stdout function '''
-    Logger('OFF')
+    # Logger('OFF')
 
     ''' output ref_id to use in frontend:
         comp_result.php?refPk=ref_id&comPk=comp_id'''

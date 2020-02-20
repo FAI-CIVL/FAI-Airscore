@@ -18,7 +18,7 @@ def printf(format, *args):
 
 def main(args):
     """create logging and disable output"""
-    Logger('ON', 'bulk_igc_reader.txt')
+    # Logger('ON', 'bulk_igc_reader.txt')
 
     print("starting..")
     '''Main module. Takes tasPk as parameter'''
@@ -28,7 +28,7 @@ def main(args):
     zipfile = str(args[1])
 
     """Get Task object"""
-    task = Task.read(tasPk)
+    task = Task.read(task_id)
 
     if task.opt_dist == 0:
         print('task not optimised.. optimising')
@@ -47,7 +47,7 @@ def main(args):
         if error:
             print(f"An error occured while dealing with file {zipfile} \n")
             ''' restore stdout function '''
-            Logger('OFF')
+            # Logger('OFF')
             print(0)
             exit()
         """find valid tracks"""
@@ -55,14 +55,14 @@ def main(args):
         if tracks is None:
             print(f"There is no valid track in zipfile {zipfile} \n")
             ''' restore stdout function '''
-            Logger('OFF')
+            # Logger('OFF')
             print(0)
             exit()
         """associate tracks to pilots and import"""
         assign_and_import_tracks(tracks, task)
 
     ''' now restore stdout function '''
-    Logger('OFF')
+    # Logger('OFF')
     print(1)
 
 

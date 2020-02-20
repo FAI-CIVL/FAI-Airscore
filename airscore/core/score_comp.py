@@ -25,7 +25,7 @@ from pprint import pprint
 
 def main(args):
     """create logging and disable output"""
-    Logger('ON', 'score_comp.txt')
+    # Logger('ON', 'score_comp.txt')
 
     print("starting..")
     '''Main module. Takes comPk and status as parameters'''
@@ -39,7 +39,7 @@ def main(args):
     print(f'result ID: {ref_id}')
 
     ''' now restore stdout function '''
-    Logger('OFF')
+    # Logger('OFF')
 
 
 if __name__ == "__main__":
