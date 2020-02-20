@@ -5,11 +5,12 @@ Use:    from myconn import Database
 Antonio Golfari - 2019
 """
 
+from datetime import datetime
+
 from sqlalchemy import create_engine
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, class_mapper
-from datetime import datetime
+
 from Defines import MYSQLHOST, DATABASE, MYSQLUSER, MYSQLPASSWORD
 
 '''basic connection'''

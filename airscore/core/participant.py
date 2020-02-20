@@ -10,13 +10,14 @@ Use: from participant import Participant
 Stuart Mackintosh Antonio Golfari - 2019
 """
 
-from logger import Logger
 from openpyxl import load_workbook
-from civlrankings import create_participant_from_CIVLID, create_participant_from_name
-from calcUtils import get_date
-from myconn import Database
-from db_tables import tblParticipant
 from sqlalchemy.exc import SQLAlchemyError
+
+from calcUtils import get_date
+from civlrankings import create_participant_from_CIVLID, create_participant_from_name
+from db_tables import tblParticipant
+from logger import Logger
+from myconn import Database
 
 
 class Participant(object):

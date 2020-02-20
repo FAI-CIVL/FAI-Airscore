@@ -8,7 +8,9 @@ Antonio Golfari - 2018
 """
 
 import datetime
+
 import lxml.etree as ET
+
 
 class Reader:
     """

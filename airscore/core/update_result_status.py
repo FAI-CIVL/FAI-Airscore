@@ -4,12 +4,12 @@ Use: python3 update_result_status.py [refPk] [status]
 
 Antonio Golfari - 2019
 """
+from db_tables import tblResultFile as R
 # Use your utility module.
 from myconn import Database
-from db_tables import tblResultFile as R
+
 
 def update_result(ref_id, status):
-    import os
     from os import path as p
     import json
 

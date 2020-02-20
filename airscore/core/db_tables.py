@@ -1,8 +1,9 @@
 # coding: utf-8
-from sqlalchemy import BINARY, CHAR, Column, DECIMAL, Date, DateTime, Enum, Float, ForeignKey, PrimaryKeyConstraint, \
+from sqlalchemy import CHAR, Column, Date, DateTime, Enum, Float, ForeignKey, PrimaryKeyConstraint, \
     Index, String, TIMESTAMP, Table, Text, text
 from sqlalchemy.dialects.mysql import BIGINT, INTEGER, LONGTEXT, MEDIUMTEXT, SMALLINT, TINYINT, VARCHAR
 from sqlalchemy.orm import relationship
+
 from myconn import Base, metadata
 
 

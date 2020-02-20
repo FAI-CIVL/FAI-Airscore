@@ -5,9 +5,9 @@ Use:    import trackUtils
 Antonio Golfari - 2018
 """
 
+import decimal
 import json
 from datetime import date, time, datetime
-import decimal
 
 
 class DateTimeEncoder(json.JSONEncoder):

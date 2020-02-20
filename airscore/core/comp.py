@@ -12,19 +12,20 @@ Stuart Mackintosh Antonio Golfari - 2019
 """
 
 import json
-
-from compUtils import get_tasks_result_files, get_participants, read_rankings, create_comp_path
-from calcUtils import get_date
-from Defines import FILEDIR, RESULTDIR
-from participant import Participant
-from formula import Formula
 from os import path
+
+from sqlalchemy import and_
+from sqlalchemy.exc import SQLAlchemyError
+
+from Defines import FILEDIR, RESULTDIR
+from calcUtils import get_date
+from compUtils import get_tasks_result_files, get_participants, read_rankings, create_comp_path
+from db_tables import tblCompetition
+from formula import Formula
+from myconn import Database
+from participant import Participant
 from result import Comp_result, create_json_file
 from task import Task
-from myconn import Database
-from db_tables import tblCompetition
-from sqlalchemy import and_, or_
-from sqlalchemy.exc import SQLAlchemyError
 
 
 class Comp(object):

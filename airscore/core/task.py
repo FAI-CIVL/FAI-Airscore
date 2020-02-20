@@ -20,24 +20,26 @@ TO DO:
 Add support for FAI Sphere ???
 """
 
-from route import distance, polar, Turnpoint, get_shortest_path, convert_turnpoints, get_line
-from geo import Geo
-from result import Task_result, create_json_file
-from airspace import AirspaceCheck
-from compUtils import read_rankings
-from calcUtils import json, get_date, get_datetime, decimal_to_seconds, time_difference
-from mapUtils import save_all_geojson_files
-from flight_result import verify_all_tracks, adjust_flight_results
-from pilot import Pilot, update_all_results
 from os import path
-from Defines import RESULTDIR, MAPOBJDIR
-from myconn import Database
-from db_tables import tblTask
-from sqlalchemy import and_, or_
-from formula import Task_formula
-from igc_lib import defaultdict
 from pathlib import Path
+
 import jsonpickle
+from sqlalchemy import and_
+
+from Defines import RESULTDIR, MAPOBJDIR
+from airspace import AirspaceCheck
+from calcUtils import json, get_date, get_datetime, decimal_to_seconds
+from compUtils import read_rankings
+from db_tables import tblTask
+from flight_result import verify_all_tracks, adjust_flight_results
+from formula import Task_formula
+from geo import Geo
+from igc_lib import defaultdict
+from mapUtils import save_all_geojson_files
+from myconn import Database
+from pilot import Pilot, update_all_results
+from result import Task_result, create_json_file
+from route import distance, polar, Turnpoint, get_shortest_path, convert_turnpoints, get_line
 
 
 class Task(object):
@@ -840,7 +842,7 @@ class Task(object):
     def to_db(self, session=None):
         """Inserts new task or updates existent one"""
         # TODO update part, now it just inserts new Task and new Waypoints
-        from db_tables import tblTask as T, tblTaskWaypoint as W
+        from db_tables import tblTaskWaypoint as W
         from sqlalchemy.exc import SQLAlchemyError
         from datetime import datetime
         from calcUtils import sec_to_time

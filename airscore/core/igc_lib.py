@@ -18,12 +18,10 @@ import datetime
 import math
 import re
 import xml.dom.minidom
-from pathlib import Path
-
 from collections import defaultdict
 
-import lib.viterbi as viterbi
 import lib.geo as geo
+import lib.viterbi as viterbi
 
 
 def _strip_non_printable_chars(string: str):

@@ -1,7 +1,7 @@
 import os
 import shutil
-import unittest
 import tempfile
+import unittest
 
 import igc_lib
 import lib.dumpers as dumpers

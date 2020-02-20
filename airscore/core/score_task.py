@@ -20,7 +20,6 @@ Stuart Mackintosh - Antonio Golfari
 
 from logger import Logger
 from task import Task as T
-from pprint import pprint
 
 
 def main(args):

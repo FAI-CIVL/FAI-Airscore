@@ -8,8 +8,9 @@ Use: import civlrankings
 Antonio Golfari - 2019
 """
 
-import requests
 import xml.etree.ElementTree as ET
+
+import requests
 
 url = "http://civlrankings.fai.org/FL.asmx"
 headers = {'content-type': 'text/xml'}

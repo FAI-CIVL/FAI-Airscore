@@ -5,20 +5,16 @@ Use: python3 track_reader.py [tasPk] [file] [parPk]
 
 Antonio Golfari - 2018
 """
-# Use your utility module.
-from compUtils import *
-from trackUtils import *
-from track import Track
-from tempfile import TemporaryDirectory
-from shutil import copyfile
-from formula import Task_formula, get_formula_lib
-
-import io, os, sys
 from os import path
-from os.path import isfile
-from task import Task
-from flight_result import Flight_result
+from shutil import copyfile
+from tempfile import TemporaryDirectory
+
+from formula import Task_formula, get_formula_lib
 from logger import Logger
+from task import Task
+from track import Track
+# Use your utility module.
+from trackUtils import *
 
 
 def main(args):

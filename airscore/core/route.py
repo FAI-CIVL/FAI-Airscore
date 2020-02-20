@@ -8,13 +8,13 @@ Stuart Mackintosh - 2019
 """
 
 import math
-import numpy as np
-
-from pyproj import Proj
-from geopy.distance import geodesic, vincenty
 from collections import namedtuple
-from geographiclib.geodesic import Geodesic
 from math import sqrt, hypot, fabs
+
+import numpy as np
+from geographiclib.geodesic import Geodesic
+from geopy.distance import geodesic, vincenty
+from pyproj import Proj
 
 '''define earth model'''
 # EARTHMODEL = Proj("+init=EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth

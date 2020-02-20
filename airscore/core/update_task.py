@@ -5,11 +5,12 @@ this is to used in current front end. eventually will be deprecated when we go t
 Stuart Mackintosh - 2019
 """
 
-from task import Task, write_map_json
-from logger import Logger
-import sys
-import Defines
 import os
+import sys
+
+import Defines
+from logger import Logger
+from task import Task, write_map_json
 
 
 def main(args):

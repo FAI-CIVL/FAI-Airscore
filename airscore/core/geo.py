@@ -1,14 +1,10 @@
 import math
-import numpy as np
 
-from pyproj import Proj, Transformer
-from route import cPoint, Turnpoint, calcBearing
 from geopy import distance, Point
-from geopy.distance import geodesic, vincenty
-from collections import namedtuple
-from geographiclib.geodesic import Geodesic
-from math import sqrt, hypot, fabs
-from statistics import mean
+from geopy.distance import geodesic
+from pyproj import Proj, Transformer
+
+from route import calcBearing
 
 '''define earth model'''
 # EARTHMODEL = Proj("+init=EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth

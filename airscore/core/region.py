@@ -8,7 +8,6 @@ Use: import region
 Antonio Golfari - 2019
 """
 
-import numpy as np
 from route import Turnpoint
 
 

@@ -1,9 +1,12 @@
-from db_tables import tblCompetition, tblTask
-from sqlalchemy.orm import aliased
-from flask import jsonify
-from myconn import Database
 import datetime
-from sqlalchemy import func, not_
+
+from flask import jsonify
+from sqlalchemy import func
+from sqlalchemy.orm import aliased
+
+from db_tables import tblCompetition, tblTask
+from myconn import Database
+
 
 def get_comps():
     c = aliased(tblCompetition)

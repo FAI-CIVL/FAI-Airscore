@@ -7,9 +7,8 @@ Scoring Formula Script
     Defines which classes formula applies
     Defines standard parameters values for each class
 """
-from formulas.libs.gap import *
 from formula import FormulaPreset, Preset
-from formulas.libs.leadcoeff import lead_coeff_function, tot_lc_calc
+from formulas.libs.gap import *
 
 ''' Formula Info'''
 # Formula Name: usually the filename in capital letters

@@ -1,15 +1,15 @@
-import pyproj
-import geopy
-
 from dataclasses import dataclass
-from airspaceUtils import read_airspace_check_file
-from pyproj import Proj, Transformer
-from shapely import ops
-from shapely.geometry.polygon import Polygon
-from shapely.geometry import Point
 from functools import partial
-from route import distance, Turnpoint
 from math import sqrt, pow, log
+
+import geopy
+import pyproj
+from shapely import ops
+from shapely.geometry import Point
+from shapely.geometry.polygon import Polygon
+
+from airspaceUtils import read_airspace_check_file
+from route import distance, Turnpoint
 
 
 @dataclass(frozen=True)
@@ -182,7 +182,6 @@ class AirspaceCheck(object):
             penalty - the penalty for this infringement
         """
         from airspaceUtils import in_bbox
-        import time as tt
 
         notification_band = self.params.notification_distance
         alt = fix.gnss_alt if altitude_mode == 'GPS' else fix.press_alt

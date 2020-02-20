@@ -9,9 +9,10 @@ By Stuart Mackintosh, Antonio Golfari, 2019
 
 import logging
 import time
+
 import requests
+
 from myconn import Database
-from task import Task
 
 
 def get_pilot_from_list(filename, pilots):

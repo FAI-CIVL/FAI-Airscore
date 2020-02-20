@@ -13,10 +13,10 @@ Stuart Mackintosh - Antonio Golfari
 
 """
 
+from flight_result import Flight_result
 from myconn import Database
 from participant import Participant
 from track import Track
-from flight_result import Flight_result
 
 
 class Pilot(object):
@@ -125,7 +125,7 @@ class Pilot(object):
         from flight_result import Flight_result
         from db_tables import RegisteredPilotView as R
         from db_tables import FlightResultView as F
-        from sqlalchemy import and_, or_
+        from sqlalchemy import and_
 
         pilot = Pilot()
         pilot.info = Participant(par_id=par_id)
@@ -186,9 +186,7 @@ class Pilot(object):
             but if we organize track reading using Pilot obj. this should be useful.
             We will also be able to delete a lot of redundant info about track filename, pilot ID, task_id and so on"""
 
-        from collections import Counter
-        from db_tables import tblTaskResult as R, tblParticipant as P, tblTask as T
-        from sqlalchemy import and_, or_
+        from db_tables import tblTaskResult as R
         from sqlalchemy.exc import SQLAlchemyError
 
         '''checks conformity'''
@@ -247,7 +245,6 @@ def update_all_results(task_id, pilots, session=None):
     """get results to update from the list"""
     from db_tables import tblTaskResult as R
     from sqlalchemy.exc import SQLAlchemyError
-    from collections import Counter
 
     update_mappings = []
     insert_mappings = []

@@ -5,11 +5,12 @@ Use: python3 bulk_igc_reader.py <taskPk> <zipfile>
 
 Antonio Golfari - 2018
 """
+from tempfile import TemporaryDirectory
+
 # Use your utility module.
 from logger import Logger
-from trackUtils import *
-from tempfile import TemporaryDirectory
 from task import Task
+from trackUtils import *
 
 
 def printf(format, *args):

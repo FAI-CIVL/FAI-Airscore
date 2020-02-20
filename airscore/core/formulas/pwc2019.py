@@ -7,8 +7,8 @@ Scoring Formula Script
     Defines which classes formula applies
     Defines standard parameters values for each class
 """
-from formulas.libs.pwc import *
 from formula import FormulaPreset, Preset
+from formulas.libs.pwc import *
 
 ''' Formula Info'''
 # Formula Name: usually the filename in capital letters

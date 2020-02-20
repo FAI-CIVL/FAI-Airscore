@@ -24,21 +24,21 @@ Stuart Mackintosh - Antonio Golfari
 """
 
 import json
-import jsonpickle
-
-from airspace import AirspaceCheck
-from calcUtils import string_to_seconds
-from formulas.libs.leadcoeff import LeadCoeff
-from mapUtils import checkbbox
-from collections import Counter, namedtuple
-from route import rawtime_float_to_hms, in_semicircle, distance_flown, distance, start_made_civl, tp_made_civl, \
-    tp_time_civl, get_shortest_path
+from collections import Counter
 from os import path, makedirs
-from Defines import MAPOBJDIR
-from myconn import Database
-from db_tables import tblTaskResult
+
+import jsonpickle
 from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
+
+from Defines import MAPOBJDIR
+from airspace import AirspaceCheck
+from calcUtils import string_to_seconds
+from db_tables import tblTaskResult
+from formulas.libs.leadcoeff import LeadCoeff
+from myconn import Database
+from route import in_semicircle, start_made_civl, tp_made_civl, \
+    tp_time_civl, get_shortest_path
 
 
 class Tp(object):

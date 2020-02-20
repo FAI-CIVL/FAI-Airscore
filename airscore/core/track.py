@@ -11,17 +11,17 @@ Antonio Golfari, Stuart Mackintosh - 2019
 
 import glob
 import os
-
 from os import path
-from calcUtils import epoch_to_date, time_difference
-from trackUtils import find_pilot, get_task_fullpath
-from igc_lib import Flight
 from shutil import copyfile
-from Defines import track_formats
-from myconn import Database
-from db_tables import tblTaskResult
+
 from sqlalchemy.exc import SQLAlchemyError
 
+from Defines import track_formats
+from calcUtils import epoch_to_date
+from db_tables import tblTaskResult
+from igc_lib import Flight
+from myconn import Database
+from trackUtils import find_pilot, get_task_fullpath
 
 ''' Accepted formats list
     When checking tracks, this are formats that will be accepted and processed

@@ -12,13 +12,13 @@ Stuart Mackintosh - Antonio Golfari
 2019
 """
 
-from task import Task as T
-from result import Task_result as R
-from logger import Logger
 import time
-from myconn import Database
-from db_tables import tblResultFile as Results
+
 from sqlalchemy.exc import SQLAlchemyError
+
+from db_tables import tblResultFile as Results
+from logger import Logger
+from myconn import Database
 
 
 def main(args):

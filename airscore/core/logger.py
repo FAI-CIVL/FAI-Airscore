@@ -9,8 +9,11 @@ Use: logger [mode] [file]
 Antonio Golfari - 2019
 """
 
-import io, sys, logging, contextlib
+import io
+import logging
+import sys
 from os import path as p
+
 import Defines as d
 
 

@@ -8,9 +8,8 @@ By Stuart Mackintosh, Antonio Golfari, 2019
 # TODO probably better add all sources to a sources folder? Create a sources package?
 import logging
 import time
+
 import requests
-from myconn import Database
-from task import Task
 
 
 def get_pilot_from_list(filename, pilots):

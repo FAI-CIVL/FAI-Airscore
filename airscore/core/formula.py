@@ -7,10 +7,12 @@ Antonio Golfari - 2019
 """
 
 import importlib
-from myconn import Database
-from sqlalchemy.exc import SQLAlchemyError
-from dataclasses import dataclass, asdict, fields
+from dataclasses import dataclass, fields
 from os import listdir
+
+from sqlalchemy.exc import SQLAlchemyError
+
+from myconn import Database
 
 
 def list_formulas():

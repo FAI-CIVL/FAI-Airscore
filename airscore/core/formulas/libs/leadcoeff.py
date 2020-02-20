@@ -7,7 +7,6 @@ contains
 
 Stuart Mackintosh, Antonio Golfari - 2019
 """
-from dataclasses import dataclass, asdict, fields
 
 
 class LeadCoeff(object):

@@ -1,8 +1,8 @@
-import json, sys
+import sys
+
 from logger import Logger
-from myconn import Database
 from task import Task
-from compUtils import get_wpts
+
 
 def main(args):
 

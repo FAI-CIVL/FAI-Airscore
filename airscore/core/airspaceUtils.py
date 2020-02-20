@@ -7,17 +7,17 @@ Stuart Mackintosh - Antonio Golfari
 
 """
 
-from logger import Logger
-from aerofiles import openair
-from pprint import pprint as pp
-from geo import create_arc_polygon
-import folium
+import json
 import re
 from os import path
+
+import folium
 import jsonpickle
+from aerofiles import openair
+
 import Defines
+from geo import create_arc_polygon
 from mapUtils import get_airspace_bbox
-import json
 
 NM_in_meters = 1852.00
 Ft_in_meters = 0.3048000

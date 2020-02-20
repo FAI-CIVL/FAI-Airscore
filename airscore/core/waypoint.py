@@ -6,9 +6,9 @@ Stuart Mackintosh - Antonio Golfari
 2019
 
 """
-from logger import Logger
-from aerofiles import openair
 from pprint import pprint as pp
+
+from logger import Logger
 
 
 def dms_to_dec(C, d, m, s=0):
@@ -107,7 +107,6 @@ def get_GPX(dump):
     ['T OFF MEDUNO', 'D01', '', '4613.850N', '01248.417E', '980.0m', '1', '', '', '', '']
     """
     import lxml.etree as ET
-    from io import StringIO
     try:
         # pp(dump)
         tree = ET.XML(dump)
@@ -161,7 +160,6 @@ def get_waypoints_from_file(filename):
         - CompeGPS
         returns a list of list:
         [code lat lon alt desc]"""
-    import Defines
 
     '''create logging and disable output'''
     Logger('ON', 'waypoint_reader.txt')

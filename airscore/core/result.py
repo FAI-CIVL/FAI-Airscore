@@ -18,8 +18,8 @@ Stuart Mackintosh - Antonio Golfari
 2019
 """
 
-from myconn import Database
 from db_tables import tblResultFile
+from myconn import Database
 
 
 class Task_result:

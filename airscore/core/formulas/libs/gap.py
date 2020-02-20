@@ -13,8 +13,8 @@ TO DO:
 Add support for FAI Sphere ???
 """
 
-from math import sqrt
 from dataclasses import dataclass
+from math import sqrt
 
 
 def difficulty_calculation(task):

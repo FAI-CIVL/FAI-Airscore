@@ -18,13 +18,10 @@ Stuart Mackintosh - Antonio Golfari
 2019
 """
 
-from task import Task as T
-from result import Task_result as R
-from logger import Logger
-import importlib
-import sys
-import Defines as d
 import time
+
+from logger import Logger
+from task import Task as T
 
 
 def main(args):

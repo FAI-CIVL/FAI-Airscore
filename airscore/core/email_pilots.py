@@ -1,14 +1,25 @@
 #!/home/untps52y/opt/python-3.6.2/bin/python3
-'''email pilots script. Can send email to pilots with no tracksubmitted
-(default e.g. for sending a reminder to submit)or to all pilots in task
+'''email pilots script. Can send email to pilots with no track
+submitted
+(default e.g. for sending a reminder to submit)
+or to all pilots in task
 (e.g.for sending results available)
 arguments <tasPk>  <text file> optional(-a to all pilots, -t <TEST> send only to test email)
 email text file located in email_dir.
-task date and comp locationfollowed by first line of email text file is the subject.
+task date and comp location
+followed by first line of email text file is the subject.
 Rest of email text file is message body.
-Will send a confirmation to all comp admins unless in -t test mode.'''
-import sys, argparse, smtplib, logging
-from myconn import Database
+Will send a confirmation to all comp admins unless in -t test mode.
+'''
+
+
+import argparse
+import logging
+import smtplib
+import sys
+
+from myconn import Database
+
 
 class send_mail():
     def __init__(self, server, username, password):
@@ -39,7 +50,7 @@ def get_email_list(task_id, to_all=None):
     """Get pilot emails (pilots in task without tracks)
     returns a dictionary of pilFirstName pilLastname:pilEmail."""
     from db_tables import tblParticipant as R, PilotView as P, tblTaskResult as S, tblTask as T
-    from sqlalchemy import func, and_, or_
+    from sqlalchemy import and_
 
     with Database() as db:
         comp_id = db.session.query(T).get(task_id).comPk
@@ -178,4 +189,9 @@ def main():
         confirm_mess = '***TEST EMAIL***\n' + confirm_mess
         confirm_mess = confirm_mess.replace('were sent','would have been sent')
         #print(confirm_mess+' <br />')
-        mail.send(test_email, subject} + ' TEST EMAIL', confirm_mess)    mail.close()if __name__ == "__main__":    main()
+        mail.send(test_email, subject} + ' TEST EMAIL', confirm_mess)
+
+    mail.close()
+
+if __name__ == "__main__":
+    main()

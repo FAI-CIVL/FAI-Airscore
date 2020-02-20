@@ -18,9 +18,8 @@ Stuart Mackintosh - Antonio Golfari
 
 """
 
-from logger import Logger
 from comp import Comp as C
-from pprint import pprint
+from logger import Logger
 
 
 def main(args):

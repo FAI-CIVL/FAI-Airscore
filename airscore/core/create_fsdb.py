@@ -12,9 +12,11 @@ Stuart Mackintosh - Antonio Golfari
 2019
 """
 
+import time
+
 from fsdb import FSDB
-from    logger      import Logger
-import  time
+from logger import Logger
+
 
 def main(args):
 

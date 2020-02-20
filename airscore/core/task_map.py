@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
-import os,sys
+import os
+import sys
+
 sys.path.append('/home/ubuntu/workspace/igc_lib/')
 
-from flask import Flask, flash, request, redirect, url_for, session, json
-from flask import get_template_attribute,render_template
+from flask import Flask, flash, request, redirect, url_for, json
+from flask import render_template
 import folium
 from werkzeug.utils import secure_filename
 
 #using igc_lib library to parse igc to geojson
-import igc_lib
 from igc_lib.igc_lib import Flight
 #import igc_lib.lib.dumpers as dumpers
 import itertools

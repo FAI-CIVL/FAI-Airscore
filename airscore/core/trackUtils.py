@@ -6,12 +6,14 @@ Use:    import trackUtils
 Antonio Golfari - 2018
 """
 
-from flight_result import Flight_result
 from os import path, listdir, fsdecode
-from Defines import FILEDIR, MAPOBJDIR, track_sources
-from myconn import Database
-from sqlalchemy import func, and_, or_
+
+from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
+
+from Defines import FILEDIR, MAPOBJDIR, track_sources
+from flight_result import Flight_result
+from myconn import Database
 
 
 def extract_tracks(file, dir):

@@ -6,14 +6,11 @@ usage: python3 set_pilot_status.py <task_id> <pil_id> <status>
 Stuart Mackintosh Antonio Golfari - 2019
 """
 
-from task       import Task as T
-from myconn     import Database
-from logger     import Logger
-from compUtils  import get_offset
-from datetime   import datetime
-from calcUtils  import sec_to_time
-from db_tables  import tblTaskResult as R
-import Defines as d
+from db_tables import tblTaskResult as R
+from logger import Logger
+from myconn import Database
+from task import Task as T
+
 
 def main(args):
     '''create logging and disable output'''

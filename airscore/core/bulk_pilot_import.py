@@ -5,11 +5,12 @@ Use: python3 bulk_pilot_import.py [csv file name]
 Antonio Golfari - 2018
 """
 
+import csv
+from pathlib import Path
+
 # Use your utility module.
 from compUtils import *
 from logger import Logger
-import csv
-from pathlib import Path
 
 
 def read_membership(file):

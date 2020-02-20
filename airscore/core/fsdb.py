@@ -12,21 +12,22 @@ Stuart Mackintosh, Antonio Golfari - 2019
 """
 
 import time
-import lxml.etree as ET
-
-from lxml.etree import CDATA
-from comp import Comp
-from task import Task
-from formula import Formula
-from pilot import Pilot, update_all_results
-from participant import Participant, mass_import_participants
-from calcUtils import get_isotime, km, sec_to_time
-from compUtils import create_comp_code, is_ext
-from Defines import RESULTDIR
-from math import trunc
 from datetime import time, datetime
-from myconn import Database
+from math import trunc
+
+import lxml.etree as ET
+from lxml.etree import CDATA
 from sqlalchemy.exc import SQLAlchemyError
+
+from Defines import RESULTDIR
+from calcUtils import get_isotime, km, sec_to_time
+from comp import Comp
+from compUtils import create_comp_code, is_ext
+from formula import Formula
+from myconn import Database
+from participant import Participant, mass_import_participants
+from pilot import Pilot, update_all_results
+from task import Task
 
 
 class FSDB(object):

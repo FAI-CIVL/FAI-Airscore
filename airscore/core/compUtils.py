@@ -5,11 +5,13 @@ Use:    import compUtils
 Antonio Golfari - 2019
 """
 
+import json
+
+from sqlalchemy import and_
+
+import Defines
 # Use your utility module.
 from myconn import Database
-from sqlalchemy import and_, or_
-import Defines
-import json
 
 
 def get_comp(task_id):
@@ -185,8 +187,7 @@ def read_rankings(comp_id):
     """reads sub rankings list for the task and creates a dictionary"""
     from db_tables import tblClasCertRank as CC, tblCompetition as C, tblRanking as R, tblCertification as CCT, \
         tblClassification as CT
-    from sqlalchemy.orm import joinedload
-    from sqlalchemy import and_, or_
+    from sqlalchemy import and_
     from sqlalchemy.exc import SQLAlchemyError
 
     rank = dict()

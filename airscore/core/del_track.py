@@ -4,16 +4,16 @@ Use: python3 del_track.py [traPk]
 
 Antonio Golfari - 2019
 """
+from db_tables import tblTaskResult as R
 # Use your utility module.
 from myconn import Database
-from db_tables import tblTaskResult as R
+
 
 def delete_track(result_id):
-
     with Database() as db:
-        q       = db.session.query(R)
-        result  = q.get(result_id)
-        file    = result.traFile
+        q = db.session.query(R)
+        result = q.get(result_id)
+        file = result.traFile
         db.session.delete(result)
         db.session.commit()
 
@@ -27,6 +27,7 @@ def delete_track(result_id):
         print(f"Result with ID: {result_id} succesfully deleted \n")
         return 1
     return 0
+
 
 def main(args):
     from logger import Logger
@@ -47,8 +48,10 @@ def main(args):
         task_result.php?refPk=ref_id&tasPk=task_id&comPk=comp_id'''
     print(f'{out}')
 
+
 if __name__ == "__main__":
     import sys
+
     '''check parameter is good'''
     if not (sys.argv[1] and sys.argv[1].isdigit() and int(sys.argv[1]) > 0):
         print("number of arguments != 1 and/or track_id not a number")

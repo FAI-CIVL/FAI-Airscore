@@ -5,6 +5,7 @@ Use: from Defines import BINDIR, FILEDIR
 Antonio Golfari - 2018
 """
 import os
+
 import yaml
 
 abspath = os.path.abspath(__file__)
