@@ -1208,12 +1208,13 @@ class Task(object):
         return task
 
     @classmethod
-    def from_fsdb(cls, t):
+    def from_fsdb(cls, t, keep_task_path=False):
         """ Creates Task from FSDB FsTask element, which is in xml format.
             Unfortunately the fsdb format isn't published so much of this is simply an
             exercise in reverse engineering.
         """
         from formula import Task_formula
+        from compUtils import get_fsdb_task_path
         from calcUtils import get_date, get_time, time_to_seconds
 
         tas = dict()
@@ -1228,6 +1229,8 @@ class Task(object):
         task.task_name = t.get('name')
         task.task_num = 0 + int(t.get('id'))
         print(f"task {task.task_num} - name: {task.task_name}")
+        if keep_task_path:
+            task.task_path = get_fsdb_task_path(t.get('tracklog_folder'))
 
         """formula info"""
         f = t.find('FsScoreFormula')

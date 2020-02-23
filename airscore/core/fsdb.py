@@ -520,6 +520,7 @@ class FSDB(object):
         """
             Add comp tasks to AirScore database
         """
+        from pathlib import Path
         if self.comp.comp_id is None:
             return False
 
@@ -536,6 +537,8 @@ class FSDB(object):
                     '''storing'''
                     t.to_db(db.session)
                     '''adding folders'''
+                    t.comp_path = self.comp.comp_path
+                    Path(t.file_path).mkdir(parents=True, exist_ok=True)
 
                 db.session.commit()
 
