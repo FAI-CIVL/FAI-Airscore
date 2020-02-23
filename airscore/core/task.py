@@ -40,6 +40,7 @@ from myconn import Database
 from pilot import Pilot, update_all_results
 from result import Task_result, create_json_file
 from route import distance, polar, Turnpoint, get_shortest_path, convert_turnpoints, get_line
+from sqlalchemy.exc import SQLAlchemyError
 
 
 class Task(object):
@@ -95,6 +96,8 @@ class Task(object):
         self.comp_name = None
         self.comp_site = None
         self.comp_class = None
+        self.reg_id = None
+        self.region_name = None
         self.date = None  # in datetime.date (Y-m-d) format
         self.task_name = None
         self.task_num = None  # task n#
@@ -490,7 +493,7 @@ class Task(object):
             t = db.session.query(T)
             w = db.session.query(W)
             db.populate_obj(task, t.get(task_id))
-            tps = w.filter(W.task_id == task_id).order_by(W.partial_distance)
+            tps = w.filter(W.task_id == task_id).order_by(W.n)
         '''populate turnpoints'''
         for tp in tps:
             turnpoint = Turnpoint(tp.lat, tp.lon, tp.radius, tp.type.strip(),
@@ -511,6 +514,24 @@ class Task(object):
             task.get_geo()
 
         return task
+
+    def read_turnpoints(self):
+        """Reads Task turnpoints from database, for use in front end"""
+        from db_tables import TaskWaypointView as W
+
+        with Database() as db:
+            try:
+                # get the task turnpoint details.
+                results = db.session.query(W.id, W.rwpid, W.name, W.n, W.description, W.how, W.radius, W.shape, W.type,
+                                           W.partial_distance).filter(W.task_id == self.task_id).order_by(
+                                           W.n).all()
+
+                if results:
+                    results = [row._asdict() for row in results]
+                return results
+            except SQLAlchemyError:
+                print(f"Error trying to retrieve Tasks details for Comp ID {self.comp_id}")
+                return None
 
     def create_path(self, path=None):
         """create filepath from # and date if not given
@@ -798,7 +819,7 @@ class Task(object):
         with Database() as db:
             '''add optimised and total distance to task'''
             q = db.session.query(T)
-            t = q.get(self.id)
+            t = q.get(self.task_id)
             t.tasDistance = self.distance
             t.tasShortRouteDistance = self.opt_dist
             t.tasSSDistance = self.SS_distance
@@ -823,20 +844,36 @@ class Task(object):
 
         start_time = sec_to_time(self.start_time + self.time_offset)
         task_deadline = sec_to_time(self.task_deadline + self.time_offset)
-        task_start = sec_to_time(self.window_open_time + self.time_offset)
+        task_window_open = sec_to_time(self.window_open_time + self.time_offset)
+        task_window_close = sec_to_time(self.window_close_time + self.time_offset)
         start_close_time = sec_to_time(self.start_close_time + self.time_offset)
         start_interval = int(self.SS_interval / 60)
-        task_type = self.task_type.lower()
+        stopped_time = None if self.stopped_time is None else dt.combine(self.date, self.stopped_time + self.time_offset)
 
         with Database() as db:
-            q = db.session.query(T).get(self.id)
-            date = q.date
+            print(f"taskid:{self.task_id}")
+            q = db.session.query(T).get(self.task_id)
+            print(f"q{q}")
+            date = self.date
+            q.tasName = self.task_name
+            q.tasNum = self.task_num
+            q.tasDate = self.date
+            q.tasComment = self.comment
             q.tasStartTime = dt.combine(date, start_time)
             q.tasFinishTime = dt.combine(date, task_deadline)
-            q.tasTaskStart = dt.combine(date, task_start)
+            q.tasTaskStart = dt.combine(date, task_window_open)
+            q.tasLaunchClose = dt.combine(date, task_window_close)
+            q.tasStoppedTime = stopped_time
+            q.tasTaskType = self.task_type.lower()
+            q.tasTimeOffset = self.time_offset
+            q.tasStartIteration =self.start_iteration
+            q.tasQNH = self.QNH
             q.tasStartCloseTime = dt.combine(date, start_close_time)
             q.tasSSInterval = start_interval
-            q.tasTaskType = task_type
+            q.tasTaskType = self.task_type
+            q.tasLocked = self.locked
+            q.tasAirspaceCheckOverride = self.airspace_check
+            q.tasCheckLaunch = self.check_launch
             db.session.commit()
 
     def to_db(self, session=None):
@@ -869,7 +906,9 @@ class Task(object):
                                tasEndSSDistance=self.opt_dist_to_ESS, tasSSDistance=self.SS_distance,
                                tasSSInterval=SSInterval, tasStartIteration=self.start_iteration,
                                tasLaunchValid=self.launch_valid, tasComment=self.comment,
-                               tasQNH=self.QNH, tasPath=self.task_path)
+                               tasQNH=self.QNH, regPk=self.reg_id, tasTimeOffset=self.time_offset,
+                               tasPath=self.task_path)
+
                 db.session.add(task)
                 db.session.flush()
                 self.task_id = task.tasPk
@@ -1169,13 +1208,12 @@ class Task(object):
         return task
 
     @classmethod
-    def from_fsdb(cls, t, keep_task_path=False):
+    def from_fsdb(cls, t):
         """ Creates Task from FSDB FsTask element, which is in xml format.
             Unfortunately the fsdb format isn't published so much of this is simply an
             exercise in reverse engineering.
         """
         from formula import Task_formula
-        from compUtils import get_fsdb_task_path
         from calcUtils import get_date, get_time, time_to_seconds
 
         tas = dict()
@@ -1190,8 +1228,6 @@ class Task(object):
         task.task_name = t.get('name')
         task.task_num = 0 + int(t.get('id'))
         print(f"task {task.task_num} - name: {task.task_name}")
-        if keep_task_path:
-            task.task_path = get_fsdb_task_path(t.get('tracklog_folder'))
 
         """formula info"""
         f = t.find('FsScoreFormula')
@@ -1511,6 +1547,17 @@ class Task(object):
             distances_to_go.insert(0, d)
             t -= 1
         return distances_to_go
+
+
+def delete_task(task_id):
+    from db_tables import tblTaskWaypoint as W
+    from db_tables import tblTask as T
+
+    '''delete waypoints and task from database'''
+    with Database() as db:
+        db.session.query(W).filter(W.tasPk == task_id).delete()
+        db.session.query(T).filter(T.tasPk == task_id).delete()
+        db.session.commit()
 
 
 # function to parse task object to compilations

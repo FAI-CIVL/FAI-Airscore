@@ -18,7 +18,7 @@ def main(args):
         exit()
 
     '''create logging and disable output'''
-    Logger('ON', 'xct_task_import.txt')
+    # Logger('ON', 'xct_task_import.txt')
     print("starting..")
 
     '''get task'''
@@ -47,7 +47,7 @@ def main(args):
     task.update_task_distance()
 
     ''' now restore stdout function '''
-    Logger('OFF')
+    # Logger('OFF')
 
 if __name__== "__main__":
     main(sys.argv[1:])

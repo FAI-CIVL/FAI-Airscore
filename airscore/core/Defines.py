@@ -46,3 +46,7 @@ XC_password = secret['xcontest']['Pass']
 
 '''Competition options'''
 SANCTIONS = config['sanctions']
+
+'''file libraries'''
+AIRSPACE_FILE_LIBRARY = config['airspace_file_library']
+WAYPOINT_FILE_LIBRARY = config['waypoint_file_library']

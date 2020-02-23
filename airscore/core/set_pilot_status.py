@@ -14,7 +14,7 @@ from task import Task as T
 
 def main(args):
     '''create logging and disable output'''
-    Logger('ON', 'pilot_status.txt')
+    # Logger('ON', 'pilot_status.txt')
     print("starting..")
     """Main module. Takes tasPk parPk Status as parameters"""
 
@@ -37,7 +37,7 @@ def main(args):
         result_id = result.tarPk
 
     ''' now restore stdout function '''
-    Logger('OFF')
+    # Logger('OFF')
     if result_id:   print(f'tarPk={result_id}')
     else:           print('We had an error creating result entry')
 

@@ -77,13 +77,13 @@ def main(args):
     my_file = Path(str(args[1]))
 
     '''create logging and disable output'''
-    Logger('ON', 'bulk_pilots_import.txt')
+    # Logger('ON', 'bulk_pilots_import.txt')
 
     """Check if file exists"""
     if not my_file.is_file():
         print(f"Reading error: {str(args[0])} does not exist")
         ''' restore stdout function '''
-        Logger('OFF')
+        # Logger('OFF')
         print(0)
         exit()
 
@@ -91,7 +91,7 @@ def main(args):
     reader = read_membership(my_file)
 
     ''' restore stdout function '''
-    Logger('OFF')
+    # Logger('OFF')
     for p in reader:
         print(f'{p[1]} - {p[-1]}')
 

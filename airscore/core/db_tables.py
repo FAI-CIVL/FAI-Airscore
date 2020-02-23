@@ -373,6 +373,7 @@ class TaskObjectView(Base):
                       Column('task_name', String(100)),
                       Column('task_num', TINYINT(3)),
                       Column('reg_id', INTEGER(11)),
+                      Column('region_name', String(64)),
                       Column('window_open_time', BIGINT(21)),
                       Column('task_deadline', BIGINT(21)),
                       Column('window_close_time', BIGINT(21)),
@@ -588,6 +589,7 @@ class TaskWaypointView(Base):
     __table__ = Table('TaskWaypointView', metadata,
 
                       Column('id', INTEGER(11), primary_key=True),
+                      Column('rwpid', INTEGER(11)),
                       Column('task_id', INTEGER(11)),
                       Column('n', INTEGER(11)),
                       Column('name', CHAR(6)),
@@ -1048,6 +1050,7 @@ class tblRegion(Base):
     __tablename__ = 'tblRegion'
 
     regPk = Column(INTEGER(11), primary_key=True)
+    comPk = Column(INTEGER(11)) # for use when library feature turned off (see defines.yaml)
     regCentre = Column(INTEGER(11))
     regRadius = Column(Float(asdecimal=False))
     regDescription = Column(String(64), nullable=False)
@@ -1173,6 +1176,7 @@ class tblTask(Base):
     tasComment = Column(Text)
     tasLocked = Column(TINYINT(3), nullable=False, server_default=text("'0'"))
     tasPath = Column(String(40))
+    tasTimeOffset = Column(Float(asdecimal=False), server_default=text("'11'"))
 
     tblCompetition = relationship('tblCompetition')
     tblRegion = relationship('tblRegion')

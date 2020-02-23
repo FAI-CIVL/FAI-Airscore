@@ -23,7 +23,7 @@ from myconn import Database
 
 def main(args):
     """create logging and disable output"""
-    Logger('ON', 'activate_last_task_result.txt')
+    # Logger('ON', 'activate_last_task_result.txt')
     start = time.time()
 
     print("starting..")
@@ -49,7 +49,7 @@ def main(args):
     print(f'Process Time (mins): {(end - start) / 60}')
 
     ''' now restore stdout function '''
-    Logger('OFF')
+    # Logger('OFF')
 
 
 if __name__ == "__main__":

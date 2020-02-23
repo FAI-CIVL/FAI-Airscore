@@ -5,11 +5,12 @@ from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
 from flask_login import login_required, current_user
 import frontendUtils
-from airscore.user.forms import NewTaskForm, CompForm
+from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm
 from comp import Comp
 from formula import list_formulas, Formula
-from task import Task
+from task import Task, write_map_json
 import json
+from route import save_turnpoint, Turnpoint
 blueprint = Blueprint("user", __name__, url_prefix="/users", static_folder="../static")
 
 
@@ -186,10 +187,10 @@ def comp_settings_admin(compid):
         compform.min_dist.data = int(formula.min_dist/1000)
         compform.nom_launch.data = int(formula.nominal_launch*100)
         compform.nom_time.data = int(formula.nominal_time/60)
-        # compform.team_scoring.data = formula.
-        # compform.country_scoring.data = formula.
-        # compform.team_size.data = formula.
-        # compform.team_over.data = formula.
+        compform.team_scoring.data = formula.TeamScoring
+        compform.country_scoring.data = formula.CountryScoring
+        compform.team_size.data = formula.TeamSize
+        compform.team_over.data = formula.TeamOver
         compform.distance.data = formula.formula_distance
         compform.arrival.data = formula.formula_arrival
         compform.departure.data = formula.formula_departure
@@ -208,9 +209,7 @@ def comp_settings_admin(compid):
         compform.JTG_pen_sec.data = formula.JTG_penalty_per_sec
         compform.alt_mode.data = formula.scoring_altitude
 
-
-
-
+        newtaskform.task_region.choices = frontendUtils.get_region_choices(compid)
 
         if current_user.username not in admins:
             compform.submit = None
@@ -224,7 +223,81 @@ def comp_settings_admin(compid):
 @blueprint.route('/task_admin/<taskid>', methods=['GET', 'POST'])
 @login_required
 def task_admin(taskid):
-    return render_template('users/task_admin.html', taskid=taskid)
+    from calcUtils import sec_to_time, time_to_seconds
+    from sys import stdout
+    error = None
+    taskform = TaskForm()
+    turnpointform = NewTurnpointForm()
+    modifyturnpointform = ModifyTurnpointForm()
+    task = Task.read(int(taskid))
+    waypoints = frontendUtils.get_waypoint_choices(task.reg_id)
+    turnpointform.name.choices = waypoints
+    modifyturnpointform.mod_name.choices = waypoints
+
+    admins = ['john wayne', 'stuart']  # TODO
+
+    if request.method == 'POST':
+        if taskform.validate_on_submit():
+            task.comp_name = taskform.comp_name
+            task.task_name = taskform.task_name.data
+            task.task_num = taskform.task_num.data
+            task.comment = taskform.comment.data
+            task.date = taskform.date.data
+            task.task_type = taskform.task_type.data
+            task.window_open_time = time_to_seconds(taskform.window_open_time.data)
+            task.window_close_time = time_to_seconds(taskform.window_close_time.data)
+            task.start_time = time_to_seconds(taskform.start_time.data)
+            task.start_close_time = time_to_seconds(taskform.start_close_time.data)
+            task.stopped_time = None if taskform.stopped_time.data is None else time_to_seconds(taskform.stopped_time.data)
+            task.task_deadline = time_to_seconds(taskform.task_deadline.data)
+            task.SS_interval = taskform.SS_interval.data * 60  # (convert from min to sec)
+            task.start_iteration = taskform.start_iteration.data
+            task.time_offset = int(taskform.time_offset.data * 3600)  # (convert from hours to seconds)
+            task.check_launch = 'on' if taskform.check_launch.data else 'off'
+            task.airspace_check = taskform.airspace_check.data
+            # task.openair_file = taskform.openair_file  # TODO get a list of openair files for this comp (in the case of defines.yaml airspace_file_library: off otherwise all openair files available)
+            task.QNH = taskform.QNH.data
+            task.update_task_info()
+
+            flash("Saved", category='info')
+
+            return redirect(url_for('user.task_admin', taskid=taskid))
+
+        else:
+            flash("not valid")
+            for item in taskform:
+                if item.errors:
+                    print(f"{item} value:{item.data} error:{item.errors}")
+                    stdout.flush()
+
+    if request.method == 'GET':
+        taskform.comp_name = task.comp_name
+        taskform.task_name.data = task.task_name
+        taskform.task_num.data = task.task_num
+        taskform.comment.data = task.comment
+        taskform.date.data = task.date
+        taskform.task_type.data = task.task_type
+        taskform.window_open_time.data = "" if not task.window_open_time else sec_to_time(task.window_open_time)
+        taskform.window_close_time.data = "" if not task.window_close_time else sec_to_time(task.window_close_time)
+        taskform.start_time.data = "" if not task.start_time else sec_to_time(task.start_time)
+        taskform.start_close_time.data = "" if not task.start_close_time else sec_to_time(task.start_close_time)
+        taskform.stopped_time.data = "" if not task.stopped_time else sec_to_time(task.stopped_time)
+        taskform.task_deadline.data = "" if not task.task_deadline else sec_to_time(task.task_deadline)
+        taskform.SS_interval.data = task.SS_interval/60 # (convert from sec to min)
+        taskform.start_iteration.data = task.start_iteration
+        taskform.time_offset.data = task.time_offset/3600 # (convert from seconds to hours)
+        taskform.check_launch.data = False if task.check_launch == 'off' else True
+        taskform.airspace_check.data = task.airspace_check
+        # taskform.openair_file.data = task.openair_file # TODO get a list of openair files for this comp (in the case of defines.yaml airspace_file_library: off otherwise all openair files available)
+        taskform.QNH.data = task.QNH
+        # taskform.region.data = task.reg_id # TODO get a list of waypoint files for this comp (in the case of defines.yaml waypoint_file_library: off otherwise all regions available)
+        # taskform.region.choices = frontendUtils.get_region_choices(compid)
+
+        if current_user.username not in admins:
+            taskform.submit = None
+
+    return render_template('users/task_admin.html', taskid=taskid, taskform=taskform, turnpointform=turnpointform,
+                           modifyturnpointform=modifyturnpointform, compid=task.comp_id, error=error)
 
 
 @blueprint.route('/get_admin_comps', methods=['GET', 'POST'])
@@ -261,11 +334,21 @@ def _add_task(compid):
     task.task_num = int(data['task_num'])
     task.date = datetime.strptime(data['task_date'], '%Y-%m-%d')
     task.comment = data['task_comment']
+    task.reg_id = int(data['task_region'])
     task.to_db()
     comp = Comp()
     comp.comp_id = compid
     tasks = frontendUtils.get_task_list(comp)
     return jsonify(tasks)
+
+
+@blueprint.route('/_del_task/<taskid>', methods=['POST'])
+@login_required
+def _del_task(taskid):
+    from task import delete_task
+    delete_task(taskid)
+    resp = jsonify(success=True)
+    return resp
 
 
 @blueprint.route('/_get_tasks/<compid>', methods=['GET'])
@@ -277,28 +360,82 @@ def _get_tasks(compid):
     return jsonify(tasks)
 
 
-@blueprint.route('/_get_adv_settings', methods=['GET'])
+@blueprint.route('/_get_adv_settings', methods=['GET','POST'])
 @login_required
 def _get_adv_settings():
     data = request.json
     formula = Formula.from_preset(data['category'], data['formula'])
-    settings= {}
-    settings['distance'] = formula.formula_distance
-    settings['arrival'] = formula.formula_arrival
-    settings['departure'] = formula.formula_departure
-    settings['lead_factor'] = formula.lead_factor
-    settings['time'] = formula.formula_time
-    settings['no_goal_pen'] = formula.no_goal_penalty
-    settings['glide_bonus'] = formula.glide_bonus
-    settings['tolerance'] = formula.tolerance
-    settings['min_tolerance'] = formula.min_tolerance
-    settings['height_bonus'] = formula.height_bonus
-    settings['ESS_height_upper'] = formula.arr_max_height
-    settings['ESS_height_lower'] = formula.arr_min_height
-    settings['min_time'] = formula.validity_min_time
-    settings['scoreback_time'] = formula.score_back_time
-    settings['max_JTG'] = formula.max_JTG
-    settings['JTG_pen_sec'] = formula.JTG_penalty_per_sec
-    settings['alt_mode'] = formula.scoring_altitude
+    settings = {'distance': formula.formula_distance, 'arrival': formula.formula_arrival,
+                'departure': formula.formula_departure, 'lead_factor': formula.lead_factor,
+                'time': formula.formula_time, 'no_goal_pen': formula.no_goal_penalty,
+                'glide_bonus': formula.glide_bonus, 'tolerance': formula.tolerance,
+                'min_tolerance': formula.min_tolerance, 'height_bonus': formula.height_bonus,
+                'ESS_height_upper': formula.arr_max_height, 'ESS_height_lower': formula.arr_min_height,
+                'min_time': formula.validity_min_time, 'scoreback_time': formula.score_back_time,
+                'max_JTG': formula.max_JTG, 'JTG_pen_sec': formula.JTG_penalty_per_sec}
 
     return jsonify(settings)
+
+
+@blueprint.route('/_get_task_turnpoints/<taskid>', methods=['GET'])
+@login_required
+def _get_task_turnpoints(taskid):
+    task = Task()
+    task.task_id = taskid
+    turnpoints = frontendUtils.get_task_turnpoints(task)
+    return jsonify(turnpoints)
+
+
+@blueprint.route('/_add_turnpoint/<taskid>', methods=['POST'])
+@login_required
+def _add_turnpoint(taskid):
+    """add turnpoint to the task,if rwpPk is not null then update instead of insert (add)
+    if turnpoint is goal or we are updating and goal exists then calculate opt dist and dist."""
+    data = request.json
+    taskid = int(taskid)
+    if data['id']:
+        data['id'] = int(data['id'])
+    if data['type'] != 'goal':
+        data['shape'] = 'circle'
+    if data['type'] != 'speed':
+        data['direction'] = 'entry'
+    data['radius'] = int(data['radius'])
+    data['number'] = int(data['number'])
+    data['rwpPk'] = int(data['rwpPk'])
+
+    tp = Turnpoint(radius=data['radius'], how=data['direction'], shape=data['shape'], type=data['type'],
+                   id=data['number'], rwpPk=data['rwpPk'])
+    if save_turnpoint(int(taskid), tp, data['id']):
+        task = Task()
+        task.task_id = taskid
+        task = Task.read(taskid)
+        if task.opt_dist > 0 or data['type'] == 'goal':
+            task.calculate_optimised_task_length()
+            task.calculate_task_length()
+            task.update_task_distance()
+            write_map_json(taskid)
+
+        turnpoints = frontendUtils.get_task_turnpoints(task)
+        return jsonify(turnpoints)
+    else:
+        return render_template('500.html')
+
+
+@blueprint.route('/_del_turnpoint/<tpid>', methods=['POST'])
+@login_required
+def _del_turnpoint(tpid):
+    """delete a turnpoint from the task"""
+    from route import delete_turnpoint
+    data = request.json
+    print(data)
+    taskid = int(data['taskid'])
+    delete_turnpoint(tpid)
+    if data['partial_distance'] != '':
+        task = Task.read(taskid)
+        task.calculate_optimised_task_length()
+        task.calculate_task_length()
+        task.update_task_distance()
+        write_map_json(taskid)
+
+    resp = jsonify(success=True)
+    return resp

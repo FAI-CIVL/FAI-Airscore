@@ -89,11 +89,33 @@
                {{compform.nom_time.label}} {{compform.nom_time(size=3,**{'data-toggle': 'tooltip', 'title': compform.nom_time.description})}}
             </div>
          </div>
+         <div  class="form-row">
+            <div class="form-group col-md-6">
+               {{compform.alt_mode.label}} {{compform.alt_mode(**{'id': "alt_mode", 'data-toggle': 'tooltip', 'title': compform.alt_mode.description})}}
+               {{compform.team_scoring.label}} {{compform.team_scoring(**{ 'data-toggle': 'tooltip', 'title': compform.team_scoring.description})}}
+            </div>
+            </div>
          <p>
             <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse25" aria-expanded="false" aria-controls="collapse25">
             Advanced Parameters
             </button>
+             <button class="btn btn-primary ml-4 display-if" data-target_name="team_scoring" data-target_type="checkbox" data-target_value=true type="button" data-toggle="collapse" data-target="#collapse26" aria-expanded="false" aria-controls="collapse26">
+                Team Parameters
+            </button>
          </p>
+          <div class="collapse" id="collapse26">
+            <div class="card card-body">
+               <div class="container">
+                    <div  class="form-row">
+                        <div class="form-group col-md-12">
+                        {{compform.country_scoring.label}} {{compform.country_scoring(size=3,**{'id': "cty_scoring", 'data-toggle': 'tooltip', 'title': compform.country_scoring.description})}}
+                        {{compform.team_size.label}} {{compform.team_size(size=3,**{'id': "team_size", 'data-toggle': 'tooltip', 'title': compform.team_size.description})}}
+                        {{compform.team_over.label}} {{compform.team_over(size=3,**{'id': "team_over", 'data-toggle': 'tooltip', 'title': compform.team_over.description})}}
+                       </div>
+                  </div>
+               </div>
+            </div>
+          </div>
          <div class="collapse" id="collapse25">
             <div class="card card-body">
                <div class="container">
@@ -106,9 +128,7 @@
                      </div>
                   </div>
                   <div  class="form-row">
-                     <div class="form-group col-md-3">
-                        {{compform.alt_mode.label}} {{compform.alt_mode(**{'id': "alt_mode", 'data-toggle': 'tooltip', 'title': compform.alt_mode.description})}}
-                     </div>
+
                      <div class="form-group col-md-3">
                         {{compform.lead_factor.label}} {{compform.lead_factor(size=3,**{'id': "lead_factor", 'data-toggle': 'tooltip', 'title': compform.lead_factor.description})}}
                      </div>
@@ -145,7 +165,12 @@
                         {{compform.JTG_pen_sec.label}} {{compform.JTG_pen_sec(size=3,**{'id': "JTG_pen_sec", 'data-toggle': 'tooltip', 'title': compform.JTG_pen_sec.description})}}
                      </div>
                   </div>
+                   <div  class="form-row">
+                             <button class="btn btn-warning ml-4" type="button" onclick="get_adv_settings()">
+                            Reset Advanced Parameters
+                            </button>
 
+                   </div>
 
                </div>
             </div>
@@ -195,8 +220,17 @@
          <div class="container">
             <h3 class="font-weight-bold">Tasks</h3>
             <div class="form-row">
-               <div class="form-group col-md-6">
-                  <table id="tasks">
+               <div class="form-group col-md-10">
+                  <table class="table" id="tasks">
+                                       <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Date</th>
+                        <th>Region</th>
+                        <th>Optimised Dist</th>
+                        <th>Comment</th>
+                    </tr>
+                  </thead>
                      <tbody>
                      </tbody>
                   </table>
@@ -210,27 +244,28 @@
                   <div class="collapse" id="collapse5">
                      <div class="card card-body">
                         <div class="container">
-<form id = "add_task_form" method="post" action="">
-<div class="form-row">
-<div class="form-group width4">
-{{taskform.task_number.label}} {{taskform.task_number(size=2, **{'id':"task_number", 'data-toggle': 'tooltip', 'title': taskform.task_number.description})}}
-{{taskform.task_date.label}} {{taskform.task_date(**{'id':"task_date",})}}
+<div id = "add_task_form">
+      <div class="form-row">
+      <div class="form-group width4">
+      {{taskform.task_number.label}} {{taskform.task_number(size=2, **{'id':"task_number", 'data-toggle': 'tooltip', 'title': taskform.task_number.description})}}
+      {{taskform.task_date.label}} {{taskform.task_date(**{'id':"task_date",})}}
+      {{taskform.task_region.label}} {{taskform.task_region(**{'id':"task_region",})}}
+      </div>
+      </div>
+      <div class="form-row">
+      <div class="form-group col-md-6">
+      {{taskform.task_name.label}} {{taskform.task_name(**{'id':"task_name", 'data-toggle': 'tooltip', 'title': taskform.task_name.description})}}
+      </div>
+      <div class="form-group col-md-6">
+      {{taskform.task_comment.label}} {{taskform.task_comment(**{'id':"task_comment",'data-toggle': 'tooltip', 'title': taskform.task_comment.description})}}
+      </div>
+      </div>
+      <div class="form-row">
+      <button id="save_task_button" class="btn btn-success" type="button" onclick="save_task()">
+      Add
+      </button>
+      </div>
 </div>
-</div>
-<div class="form-row">
-<div class="form-group col-md-6">
-{{taskform.task_name.label}} {{taskform.task_name(**{'id':"task_name", 'data-toggle': 'tooltip', 'title': taskform.task_name.description})}}
-</div>
-<div class="form-group col-md-6">
-{{taskform.task_comment.label}} {{taskform.task_comment(**{'id':"task_comment",'data-toggle': 'tooltip', 'title': taskform.task_comment.description})}}
-</div>
-</div>
-<div class="form-row">
-<button id="save_task_button" class="btn btn-success" type="button" onclick="save_task()">
-Add
-</button>
-</div>
-</form>
 </div>
 </div>
 </div>
@@ -251,29 +286,74 @@ Add
 </div>
 
 </form>
+
+  <!----delete modal starts here--->
+<div id="modal" class="modal fade" role='dialog'>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                <h4 class="modal-title">Please confirm</h4>
+            </div>
+            <div class="modal-body" id= "modal-body">
+                <p>Here the description starts here........</p>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+               <button id = "delete_confirmed" type="button" class="btn btn-default" data-dismiss="modal">Delete</button>
+            </div>
+        </div>
+      </div>
+  </div>
+<!--Modal ends here--->
+
+  <!----formula update modal starts here--->
+<div id="formula_modal" class="modal fade" role='dialog'>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                <h4 class="modal-title">Please confirm</h4>
+            </div>
+            <div class="modal-body" id= "formula_modal-body">
+                <p>Here the description starts here........</p>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">No</button>
+               <button id = "formula_confirmed" type="button" class="btn btn-default" data-dismiss="modal">Yes update</button>
+            </div>
+        </div>
+      </div>
+  </div>
+<!--Modal ends here--->
+
 {% endblock %}
 {% block js %}
 {% include "js.html" %}
-<!--<script src="{{ static_url_for('static', filename='js/bootstrap-confirmation.js') }}"></script>-->
-<script>
+<script src="{{ static_url_for('static', filename='js/display-if.min.js') }}"></script>
+
+<script type="text/javascript">
+
    var csrftoken = $('meta[name=csrf-token]').attr('content');
-   
-//   $('[data-toggle=confirmation]').confirmation({
-//     rootSelector: '[data-toggle=confirmation]',
-     // other options
-//   });
-   
-   
-   
-   $.ajaxSetup({
+      $.ajaxSetup({
        beforeSend: function(xhr, settings) {
            if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type)) {
                xhr.setRequestHeader("X-CSRFToken", csrftoken)
            }
        }
    })
-   
-               $(function() {
+
+   function confirm_delete(task_num, taskid) {
+	 var x = task_num;
+     var myHeading = "<p>Are you sure you want to delete Task ";
+     $("#modal-body").html(myHeading + x + '?</p>');
+     $('#delete_confirmed').attr("onclick","delete_task('"+taskid+"')");
+     $('#modal').modal('show');
+    }
+
+    $(function() {
    
        // jQuery selection for the 2 select boxes
        var dropdown = {
@@ -302,36 +382,83 @@ Add
                    );
                });
                dropdown.formula.removeAttr('disabled');
+<!--               dropdown.formula.change();-->
            });
 
        }
    
-       // event listener to state dropdown change
+       // event listener to category dropdown change
        dropdown.category.on('change', function() {
            updateFormulas();
+            ask_update('category');
+
+
+       });
+
+       // event listener to formula dropdown change
+       dropdown.formula.on('change', function() {
+           ask_update('formula');
        });
    
    });
-   
+
+   function ask_update(change) {
+	 var formula = $('#select_formula').val();
+     var field = formula;
+
+	 if(change=='category'){
+	 field=$('#select_category').val();
+	 formula = field
+	 }
+
+     var heading1 = "<p>Changing to ";
+     var heading2 = ". Do you also want to update the advanced parameters to the standard for ";
+     $("#formula_modal-body").html(heading1 + field + heading2 + formula +'?</p>');
+     $('#formula_confirmed').attr("onclick","get_adv_settings()");
+     $('#formula_modal').modal('show');
+    };
+
+
+   function delete_task(taskid){
+
+           $.ajax({
+               type: "POST",
+               url: '/users/_del_task/'+taskid,
+               success: function () {
+                      get_tasks()
+               }
+               });
+
+   };
+
+
+
+
+
    function update_tasks(json) {
                $("#tasks tbody").remove();
                var content = '';
                content += '<tbody>';
-               for (var i = 0; i < json.length; i++) {
+               for (var i = 0; i < json['tasks'].length; i++) {
                content += '><tr id="'
-               + json[i].task_id + '">';
-               content += '<td class="col-3">' + json[i].link + '</td>';
-          //     content += '<td class="col-3">' + json[i].task_name + '</td>';
-               content += '<td class="col-3">' + json[i].date + '</td>';
-               content += '<td class="col-3">' + json[i].opt_dist + '</td>';
-               content += '<td class="col-3">' + json[i].comment+ '</td>';
-               content += '<td  class ="value" ><button type="button" class="btn btn-danger" data-toggle="confirmation" data-popout="true">Delete</button></td>'
+               + json['tasks'][i].task_id + '">';
+               content += '<td class="col-3">' + json['tasks'][i].link + '</td>';
+          //     content += '<td class="col-3">' + json['tasks'][i].task_name + '</td>';
+               content += '<td class="col-3">' + json['tasks'][i].date + '</td>';
+               content += '<td class="col-3">' + json['tasks'][i].region_name + '</td>';
+               content += '<td class="col-3">' + json['tasks'][i].opt_dist + '</td>';
+               content += '<td class="col-3">' + json['tasks'][i].comment+ '</td>';
+               content += '<td  class ="value" ><button type="button" class="btn btn-danger" onclick="confirm_delete('
+               content +=  json['tasks'][i].task_num + ',' + json['tasks'][i].task_id
+               content += ')" data-toggle="confirmation" data-popout="true">Delete</button></td>'
                content += '</tr>';
    
                }
                content += '</tbody>';
    
                $('#tasks').append(content);
+               $('#task_number').val(json['next_task']);
+               $('#task_region').val(json['last_region']);
    
           };
    
@@ -342,6 +469,7 @@ Add
                mydata.task_date = $('#task_date').val();
                mydata.task_num = $('#task_number').val();
                mydata.task_comment = $('#task_comment').val();
+               mydata.task_region = $('#task_region').val();
    
            $.ajax({
                type: "POST",
@@ -375,7 +503,9 @@ Add
 
 
       function get_adv_settings(){
-            var formula = {formula: $('#select_formula').val(), category: $('#select_category').val()}
+            var formula = new Object();
+            formula.formula = $('#select_formula').val();
+            formula.category = $('#select_category').val();
            $.ajax({
                type: "POST",
                url: "{{ url_for('user._get_adv_settings')}}",
@@ -384,9 +514,21 @@ Add
                dataType: "json",
                success: function (data) {
                      $('#distance').val(data.distance);
-                     $('#time').val(data.distance);
-                     $('#arrival').val(data.distance);
-                     $('#departure').val(data.distance);
+                     $('#time').val(data.time);
+                     $('#arrival').val(data.arrival);
+                     $('#departure').val(data.departure);
+                     $('#lead_factor').val(data.lead_factor);
+                     $('#no_goal_pen').val(data.no_goal_pen);
+                     $('#tolerance').val(data.tolerance);
+                     $('#min_tolerance').val(data.min_tolerance);
+                     $('#glide_bonus').val(data.glide_bonus);
+                     $('#height_bonus').val(data.height_bonus);
+                     $('#ESS_height_upper').val(data.ESS_height_upper);
+                     $('#ESS_height_lower').val(data.ESS_height_lower);
+                     $('#min_time').val(data.min_time);
+                     $('#scoreback_time').val(data.scoreback_time);
+                     $('#max_JTG').val(data.max_JTG);
+                     $('#JTG_pen_sec').val(data.JTG_pen_sec);
 
                }
                });

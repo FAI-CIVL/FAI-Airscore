@@ -147,6 +147,10 @@ class Formula(object):
         self.start_weight = None
         self.arrival_weight = None
         self.speed_weight = None
+        self.TeamScoring = False
+        self.TeamSize = None
+        self.TeamOver = None
+        self.CountryScoring = False
 
     def __eq__(self, other):
         if not isinstance(other, Formula):
@@ -350,6 +354,10 @@ class Formula(object):
                 row.forMaxJTG = int(self.max_JTG / 60) if self.max_JTG else 0
                 row.forJTGPenPerSec = self.JTG_penalty_per_sec
                 row.forAltitudeMode = self.scoring_altitude
+                row.comTeamScoring = self.TeamScoring
+                row.comTeamOver = self.TeamOver
+                row.comTeamSize = self.TeamSize
+                row.comCountryScoring = self.CountryScoring
 
                 db.session.flush()
 

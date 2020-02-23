@@ -24,7 +24,7 @@ from task import Task as T
 
 def main(args):
     '''create logging and disable output'''
-    Logger('ON', 'score_task.txt')
+    # Logger('ON', 'score_task.txt')
 
     print("starting..")
     '''Main module. Takes tasPk as parameter'''
@@ -41,7 +41,7 @@ def main(args):
     print(f'result ID: {ref_id}')
 
     ''' now restore stdout function '''
-    Logger('OFF')
+    # Logger('OFF')
 
     ''' output ref_id to use in frontend:
         task_result.php?refPk=ref_id&tasPk=task_id&comPk=comp_id'''
