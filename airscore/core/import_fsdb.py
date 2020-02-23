@@ -60,7 +60,7 @@ def main(args):
     Logger('OFF')
     print(f'FSDB Processed correctly: {fsdb is not None} | Imported to database: {fsdb.comp.comp_id is not None}')
     if fsdb:
-        print(f'path to comp folder: {fsdb.comp.file_path}')
+        print(f'comp database ID: {fsdb.comp.comp_id} | path to comp folder: {fsdb.comp.file_path}')
 
 
 if __name__ == "__main__":
@@ -71,6 +71,6 @@ if __name__ == "__main__":
         print("number of arguments less than minimum")
         print(
             "usage: python3 import_fsdb.py <filename> (opt.)<'short_name'> (opt. keep_task_path)<0/1> (opt. from_CIVL)<0/1>")
-        exit()
+        sys.exit()
 
     main(sys.argv[1:])
