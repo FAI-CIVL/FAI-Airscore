@@ -492,7 +492,8 @@ class Flight_result(object):
             if tp.pointer > 0:
                 missing_distance = get_shortest_path(task, next_fix, tp.pointer)
                 fix_dist_flown = task.opt_dist - missing_distance
-                result.distance_flown = max(result.distance_flown, fix_dist_flown, task.partial_distance[tp.pointer - 1])
+                result.distance_flown = max(result.distance_flown, fix_dist_flown,
+                                            task.partial_distance[tp.pointer - 1])
 
             '''Leading coefficient
             LC = taskTime(i)*(bestDistToESS(i-1)^2 - bestDistToESS(i)^2 )
@@ -848,3 +849,23 @@ def mass_add_results(task_id, results):
             return False
 
     return True
+
+
+def update_status(par_id, task_id, status):
+    """Create or update pilot status ('abs', 'dnf', 'mindist')"""
+    with Database() as db:
+        try:
+            result = db.session.query(tblTaskResult).filter(and_(tblTaskResult.parPk == par_id,
+                                                                 tblTaskResult.tasPk == task_id)).first()
+            if result:
+                result.tarResultType = status
+            else:
+                result = tblTaskResult(parPk=par_id, tasPk=task_id, tarResultType=status)
+                db.session.add(result)
+            db.session.flush()
+        except SQLAlchemyError:
+            print(f"Status update / Insert Error")
+            db.session.rollback()
+            return 0
+
+        return result.tarPk
