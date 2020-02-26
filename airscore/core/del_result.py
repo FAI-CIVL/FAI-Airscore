@@ -7,17 +7,18 @@ Antonio Golfari - 2019
 # Use your utility module.
 from myconn import Database
 
+
 def delete_result(ref_id):
     import os
     from os import path as p
-    from db_tables import tblResultFile as R
+    from db_tables import TblResultFile as R
 
     if type(ref_id) is int and ref_id > 0:
         with Database() as db:
             '''check if json file exists, and deletes it'''
-            q       = db.session.query(R)
-            result  = q.get(ref_id)
-            file    = result.refJSON
+            q = db.session.query(R)
+            result = q.get(ref_id).delete()
+            file = result.filename
             db.session.delete(result)
             db.session.commit()
 
@@ -31,6 +32,7 @@ def delete_result(ref_id):
             print(f"Result with ID: {ref_id} succesfully deleted \n")
             return 1
     return 0
+
 
 def main(args):
     from logger import Logger
@@ -50,6 +52,7 @@ def main(args):
 
     ''' output out to use in frontend'''
     print(f'{out}')
+
 
 if __name__ == "__main__":
     import sys

@@ -5,7 +5,7 @@ Output: FSDB filename
 Usage:
     python3 create_fsdb.py <comPk>
 
-    comPk   - INT: comp ID in tblCompetition
+    comPk   - INT: comp ID in TblCompetition
 
 - AirScore -
 Stuart Mackintosh - Antonio Golfari

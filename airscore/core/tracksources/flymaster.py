@@ -43,7 +43,7 @@ def get_pilot_from_list(filename, pilots):
 def get_xc_parameters(task_id):
     """Get site info and date from database """
     # TODO I suspect the logic on xc_site will be broken if we use waypoint file instead of table
-    # Should we use tblTaskWaypoint instead or manually or by adding xc_to id to launch name or description?
+    # Should we use TblTaskWaypoint instead or manually or by adding xc_to id to launch name or description?
 
 
 def get_zip(site_id, takeoff_id, date, login_name, password, zip_destination, zip_name):

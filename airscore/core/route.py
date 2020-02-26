@@ -60,9 +60,9 @@ class Turnpoint():
     """
 
     def __init__(self, lat=None, lon=None, radius=None, type='waypoint', shape='circle', how='entry', altitude=None,
-                 name=None, description=None, id=None, rwpPk=None):
+                 name=None, description=None, wpt_id=None, rwpPk=None):
         self.name = name
-        self.id = id  # tawPk
+        self.wpt_id = wpt_id  # tawPk
         self.rwpPk = rwpPk
         self.lat = lat
         self.lon = lon
@@ -79,12 +79,19 @@ class Turnpoint():
         assert how in ["entry", "exit", "optimised"], "turnpoint how (direction) is not valid: %r" % how
 
     @property
+    def id(self):
+        return self.wpt_id
+
+    @property
     def flat(self):
         return self.lat * math.pi / 180
 
     @property
     def flon(self):
         return self.lon * math.pi / 180
+
+    def as_dict(self):
+        return self.__dict__
 
     def __str__(self):
         out = ''
@@ -106,70 +113,41 @@ class Turnpoint():
 
 
 def delete_turnpoint(tp_id):
-    from db_tables import tblTaskWaypoint as W
+    from db_tables import TblTaskWaypoint as W
 
     '''delete turnpoint from task in database'''
     with Database() as db:
-        db.session.query(W).filter(W.tawPk == tp_id).delete()
+        db.session.query(W).filter(W.wpt_id == tp_id).delete()
         db.session.commit()
 
 
-def save_turnpoint(task_id, turnpoint: Turnpoint, pk=None):
-    '''save turnpoint in a task- for frontend'''
-    from db_tables import tblTaskWaypoint, tblRegionWaypoint as RW
+def save_turnpoint(task_id, turnpoint: Turnpoint):
+    """save turnpoint in a task- for frontend"""
+    from db_tables import TblTaskWaypoint as W
     if not (type(task_id) is int and task_id > 0):
         print("task not present in database ", task_id)
         return None
 
-    if not pk: # insert a new turnpoint
-        with Database() as db:
-            # get the turnpoint details.
-            try:
-                # get the task turnpoint details.
-                waypoint = db.session.query(RW.rwpName, RW.rwpLatDecimal, RW.rwpLongDecimal, RW.rwpAltitude,
-                                           RW.rwpDescription).filter(RW.rwpPk == turnpoint.rwpPk).one()
-                if waypoint:
-                    waypoint = [waypoint._asdict()]
-                    waypoint = waypoint[0]
-                tp = tblTaskWaypoint(tasPk=task_id, rwpPk=turnpoint.rwpPk, tawNumber=turnpoint.id,
-                                     tawName=waypoint['rwpName'], tawLat=waypoint['rwpLatDecimal'],
-                                     tawLon=waypoint['rwpLongDecimal'], tawAlt=waypoint['rwpAltitude'],
-                                     tawDesc=waypoint['rwpDescription'], tawType=turnpoint.type, tawHow=turnpoint.how,
-                                     tawShape=turnpoint.shape, tawRadius=turnpoint.radius)
+    with Database() as db:
+        # get the turnpoint details.
+        try:
+            if not turnpoint.wpt_id:
+                tp = W(**turnpoint.as_dict())
                 db.session.add(tp)
                 db.session.flush()
-            except:
-                print('error saving turnpoint')
-                return None
-            return 1
-    else: # update as opposed to insert
-        with Database() as db:
-            try:
-                waypoint = db.session.query(RW.rwpName, RW.rwpLatDecimal, RW.rwpLongDecimal, RW.rwpAltitude,
-                                           RW.rwpDescription).filter(RW.rwpPk == turnpoint.rwpPk).one()
-                if waypoint:
-                    waypoint = [waypoint._asdict()]
-                    waypoint = waypoint[0]
-
-                q = db.session.query(tblTaskWaypoint).get(pk)
-                q.tawName = waypoint['rwpName']
-                q.tawLat = waypoint['rwpLatDecimal']
-                q.tawLon = waypoint['rwpLongDecimal']
-                q.tawAlt = waypoint['rwpAltitude']
-                q.tawDesc = waypoint['rwpDescription']
-                q.rwpPk = turnpoint.rwpPk
-                q.tawNumber = turnpoint.id
-                q.tawType = turnpoint.type
-                q.tawHow = turnpoint.how
-                q.tawShape = turnpoint.shape
-                q.tawRadius = turnpoint.radius
-                db.session.commit()
-
-            except SQLAlchemyError:
-                print('cannot update competition. DB error.')
-                db.session.rollback()
-                return None
+            else:
+                tp = db.session.query(W).get(turnpoint.wpt_id)
+                if tp:
+                    for k, v in turnpoint.as_dict().items():
+                        if hasattr(tp, k):
+                            setattr(tp, k, v)
+                db.session.flush()
+        except SQLAlchemyError:
+            print('error saving turnpoint')
+            db.session.rollback()
+            return None
         return 1
+
 
 def get_proj(clat, clon, proj=PROJ):
     """
@@ -189,7 +167,8 @@ def get_proj(clat, clon, proj=PROJ):
         return Proj(f"EPSG:{epsg_code}")
     else:
         '''custom Mercatore projection'''
-        tmerc = Proj(f"+proj=tmerc +lat_0={clat} +lon_0={clon} +k_0=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
+        tmerc = Proj(
+            f"+proj=tmerc +lat_0={clat} +lon_0={clon} +k_0=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
         return tmerc
 
 

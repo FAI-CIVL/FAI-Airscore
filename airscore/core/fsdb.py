@@ -552,7 +552,7 @@ class FSDB(object):
         """
             Add results for each comp task to AirScore database
         """
-        from db_tables import tblTaskResult as R
+        from db_tables import TblTaskResult as R
         if self.comp.comp_id is None:
             return False
 
@@ -581,7 +581,7 @@ class FSDB(object):
         """
             Add participants to AirScore database
         """
-        from db_tables import tblParticipant as P
+        from db_tables import TblParticipant as P
 
         if self.comp.comp_id is None or len(self.comp.participants) == 0:
             print(f"Comp does not have a db ID or has not participants.")

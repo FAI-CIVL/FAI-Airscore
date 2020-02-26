@@ -18,7 +18,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from Defines import track_formats
 from calcUtils import epoch_to_date
-from db_tables import tblTaskResult
+from db_tables import TblTaskResult
 from igc_lib import Flight
 from myconn import Database
 from trackUtils import find_pilot, get_task_fullpath
@@ -45,7 +45,7 @@ class Track(object):
         self.track_type = track_type
         self.comment = comment  # should be a list?
         self.flight = flight  # igc_lib.Flight object
-        self.par_id = par_id  # tblParticipant ID # could delete?
+        self.par_id = par_id  # TblParticipant ID # could delete?
 
     @property
     def date(self):
@@ -125,11 +125,11 @@ class Track(object):
         # TODO G record check
         result = ''
 
-        # add track as result in tblTaskResult table
+        # add track as result in TblTaskResult table
         with Database() as db:
             try:
-                track = tblTaskResult(parPk=self.par_id, tasPk=task_id, traFile=self.filename,
-                                      traGRecordOk=1)  # still to implement
+                # TODO: g-record still to implement
+                track = TblTaskResult(par_id=self.par_id, task_id=task_id, filename=self.filename, g_record=1)
                 self.track_id = db.session.add(track)
                 db.session.commit()
                 result += f"track for pilot with id {self.par_id} correctly stored in database"
@@ -227,7 +227,7 @@ class Track(object):
         name could be changed as the one XContest is sending, or rename that one, as we wish
         if path or pname is None will calculate. note that if bulk importing it is better to pass these values
         rather than query DB for each track"""
-        from db_tables import RegistrationView as P
+        from db_tables import TblParticipant as P
 
         src_file = self.filename
         # if task_path is None:

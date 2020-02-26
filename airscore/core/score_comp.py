@@ -3,13 +3,13 @@ Score Task:
 To be used on frontend.
 - calculates task scoring
 - creates JSON file
-- creates DB entry (tblResultFile)
+- creates DB entry (TblResultFile)
 - outputs result ID (refPk)
 
 Usage:
     python3 score_comp.py <comPk> (opt.)<'status'>
 
-    comPk   - INT: comp ID in tblCompetition
+    comPk   - INT: comp ID in TblCompetition
     status  - STR: 'provisional', 'official', 'test', ...
 
 - AirScore -
@@ -33,7 +33,7 @@ def main(args):
     status = None if len(args) == 1 else str(args[1])
     print(f"Comp ID: {comp_id} | Status: {status}")
 
-    '''create comp obj, scores, json file, and tblResultFile entry'''
+    '''create comp obj, scores, json file, and TblResultFile entry'''
     ref_id = C.create_results(comp_id, status)
     print(f'result ID: {ref_id}')
 

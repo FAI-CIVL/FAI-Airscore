@@ -10,7 +10,7 @@ Antonio Golfari - 2019
 
 from route import Turnpoint
 from myconn import Database
-from db_tables import tblRegion as R, RegionWaypointView as RWV, tblRegionWaypoint as RW
+from db_tables import TblRegion as R, RegionWaypointView as RWV, TblRegionWaypoint as RW
 from sqlalchemy.exc import SQLAlchemyError
 
 class Region:

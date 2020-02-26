@@ -6,7 +6,7 @@ usage: python3 set_pilot_status.py <task_id> <pil_id> <status>
 Stuart Mackintosh Antonio Golfari - 2019
 """
 
-from db_tables import tblTaskResult as R
+from db_tables import TblTaskResult as R
 from logger import Logger
 from myconn import Database
 from task import Task as T

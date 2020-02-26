@@ -30,7 +30,7 @@ from Defines import RESULTDIR, MAPOBJDIR
 from airspace import AirspaceCheck
 from calcUtils import json, get_date, get_datetime, decimal_to_seconds
 from compUtils import read_rankings
-from db_tables import tblTask
+from db_tables import TblTask
 from flight_result import verify_all_tracks, adjust_flight_results
 from formula import Task_formula
 from geo import Geo
@@ -61,8 +61,8 @@ class Task(object):
     methods:
         database
         read(task_id): read task from DB
-        clear_waypoints: delete waypoints from tblTaskWaypoint
-        update_waypoints:  write waypoints to tblTaskWaypoint
+        clear_waypoints: delete waypoints from TblTaskWaypoint
+        update_waypoints:  write waypoints to TblTaskWaypoint
         update_task_distance: write distances to DB
         update_task_info: write task timmings and type to DB
 
@@ -480,7 +480,7 @@ class Task(object):
     def read(task_id):
         """Reads Task from database
         takes tasPk as argument"""
-        from db_tables import TaskObjectView as T, TaskWaypointView as W
+        from db_tables import TaskObjectView as T, TblTaskWaypoint as W
 
         if not (type(task_id) is int and task_id > 0):
             print("task not present in database ", task_id)
@@ -493,12 +493,11 @@ class Task(object):
             t = db.session.query(T)
             w = db.session.query(W)
             db.populate_obj(task, t.get(task_id))
-            tps = w.filter(W.task_id == task_id).order_by(W.n)
+            tps = w.filter(W.task_id == task_id).order_by(W.num)
         '''populate turnpoints'''
         for tp in tps:
-            turnpoint = Turnpoint(tp.lat, tp.lon, tp.radius, tp.type.strip(),
-                                  tp.shape, tp.how, tp.altitude, tp.name,
-                                  tp.description, tp.id)
+            turnpoint = Turnpoint(tp.lat, tp.lon, tp.radius, tp.type, tp.shape, tp.how, tp.altitude, tp.name,
+                                  tp.description, tp.wpt_id)
             task.turnpoints.append(turnpoint)
             s_point = polar(lat=tp.ssr_lat, lon=tp.ssr_lon)
             task.optimised_turnpoints.append(s_point)
@@ -517,14 +516,14 @@ class Task(object):
 
     def read_turnpoints(self):
         """Reads Task turnpoints from database, for use in front end"""
-        from db_tables import TaskWaypointView as W
+        from db_tables import TblTaskWaypoint as W
 
         with Database() as db:
             try:
                 # get the task turnpoint details.
-                results = db.session.query(W.id, W.rwpid, W.name, W.n, W.description, W.how, W.radius, W.shape, W.type,
+                results = db.session.query(W.wpt_id, W.rwpPk, W.name, W.num, W.description, W.how, W.radius, W.shape, W.type,
                                            W.partial_distance).filter(W.task_id == self.task_id).order_by(
-                                           W.n).all()
+                    W.num).all()
 
                 if results:
                     results = [row._asdict() for row in results]
@@ -547,8 +546,8 @@ class Task(object):
         if self.id:
             '''store to database'''
             with Database() as db:
-                q = db.session.query(tblTask).get(self.id)
-                q.tasPath = self.task_path
+                q = db.session.query(TblTask).get(self.id)
+                q.task_path = self.task_path
                 db.session.commit()
 
     def create_results(self, status=None, mode='default'):
@@ -815,16 +814,16 @@ class Task(object):
         self.geo = Geo.from_coords(clat, clon)
 
     def update_task_distance(self):
-        from db_tables import tblTask as T, tblTaskWaypoint as W
+        from db_tables import TblTask as T, TblTaskWaypoint as W
         with Database() as db:
             '''add optimised and total distance to task'''
             q = db.session.query(T)
             t = q.get(self.task_id)
-            t.tasDistance = self.distance
-            t.tasShortRouteDistance = self.opt_dist
-            t.tasSSDistance = self.SS_distance
-            t.tasEndSSDistance = self.opt_dist_to_ESS
-            t.tasStartSSDistance = self.opt_dist_to_SS
+            t.distance = self.distance
+            t.opt_dist = self.opt_dist
+            t.SS_distance = self.SS_distance
+            t.opt_dist_to_ESS = self.opt_dist_to_ESS
+            t.opt_dist_to_SS = self.opt_dist_to_SS
             db.session.commit()
 
             '''add opt legs to task wpt'''
@@ -832,86 +831,60 @@ class Task(object):
             for idx, tp in enumerate(self.turnpoints):
                 sr = self.optimised_turnpoints[idx]
                 wpt = w.get(tp.id)
-                wpt.ssrLatDecimal = sr.lat
-                wpt.ssrLongDecimal = sr.lon
-                wpt.ssrCumulativeDist = self.partial_distance[idx]
+                wpt.ssr_lat = sr.lat
+                wpt.ssr_lon = sr.lon
+                wpt.partial_distance = self.partial_distance[idx]
             db.session.commit()
 
     def update_task_info(self):
-        from datetime import datetime as dt
-        from db_tables import tblTask as T
-        from calcUtils import sec_to_time
-
-        start_time = sec_to_time(self.start_time + self.time_offset)
-        task_deadline = sec_to_time(self.task_deadline + self.time_offset)
-        task_window_open = sec_to_time(self.window_open_time + self.time_offset)
-        task_window_close = sec_to_time(self.window_close_time + self.time_offset)
-        start_close_time = sec_to_time(self.start_close_time + self.time_offset)
-        start_interval = int(self.SS_interval / 60)
-        stopped_time = None if self.stopped_time is None else dt.combine(self.date, self.stopped_time + self.time_offset)
+        from db_tables import TblTask as T
 
         with Database() as db:
             print(f"taskid:{self.task_id}")
             q = db.session.query(T).get(self.task_id)
-            print(f"q{q}")
-            date = self.date
-            q.tasName = self.task_name
-            q.tasNum = self.task_num
-            q.tasDate = self.date
-            q.tasComment = self.comment
-            q.tasStartTime = dt.combine(date, start_time)
-            q.tasFinishTime = dt.combine(date, task_deadline)
-            q.tasTaskStart = dt.combine(date, task_window_open)
-            q.tasLaunchClose = dt.combine(date, task_window_close)
-            q.tasStoppedTime = stopped_time
-            q.tasTaskType = self.task_type.lower()
-            q.tasTimeOffset = self.time_offset
-            q.tasStartIteration =self.start_iteration
-            q.tasQNH = self.QNH
-            q.tasStartCloseTime = dt.combine(date, start_close_time)
-            q.tasSSInterval = start_interval
-            q.tasTaskType = self.task_type
-            q.tasLocked = self.locked
-            q.tasAirspaceCheckOverride = self.airspace_check
-            q.tasCheckLaunch = self.check_launch
+            for k, v in self.as_dict().items():
+                if hasattr(q, k):
+                    setattr(q, k, v)
             db.session.commit()
+
+            # print(f"q{q}")
+            # date = self.date
+            # q.tasName = self.task_name
+            # q.tasNum = self.task_num
+            # q.tasDate = self.date
+            # q.tasComment = self.comment
+            # q.tasStartTime = dt.combine(date, start_time)
+            # q.tasFinishTime = dt.combine(date, task_deadline)
+            # q.tasTaskStart = dt.combine(date, task_window_open)
+            # q.tasLaunchClose = dt.combine(date, task_window_close)
+            # q.tasStoppedTime = stopped_time
+            # q.tasTaskType = self.task_type.lower()
+            # q.tasTimeOffset = self.time_offset
+            # q.tasStartIteration = self.start_iteration
+            # q.tasQNH = self.QNH
+            # q.tasStartCloseTime = dt.combine(date, start_close_time)
+            # q.tasSSInterval = start_interval
+            # q.tasTaskType = self.task_type
+            # q.tasLocked = self.locked
+            # q.tasAirspaceCheckOverride = self.airspace_check
+            # q.tasCheckLaunch = self.check_launch
+            # db.session.commit()
 
     def to_db(self, session=None):
         """Inserts new task or updates existent one"""
         # TODO update part, now it just inserts new Task and new Waypoints
-        from db_tables import tblTaskWaypoint as W
+        from db_tables import TblTaskWaypoint as W
         from sqlalchemy.exc import SQLAlchemyError
-        from datetime import datetime
-        from calcUtils import sec_to_time
-
-        task_start = None if self.window_open_time is None else datetime.combine(self.date,
-                                                                                 sec_to_time(self.window_open_time))
-        launch_close = None if self.window_close_time is None else datetime.combine(self.date,
-                                                                                    sec_to_time(self.window_close_time))
-        deadline = None if self.task_deadline is None else datetime.combine(self.date, sec_to_time(self.task_deadline))
-        start_time = None if self.start_time is None else datetime.combine(self.date, sec_to_time(self.start_time))
-        start_close = None if self.start_close_time is None else datetime.combine(self.date,
-                                                                                  sec_to_time(self.start_close_time))
-        stopped_time = None if self.stopped_time is None else datetime.combine(self.date,
-                                                                               sec_to_time(self.stopped_time))
-        SSInterval = self.SS_interval/60
 
         with Database(session) as db:
             try:
-                task = tblTask(tasName=self.task_name, comPk=self.comp_id, tasDate=self.date, tasNum=self.task_num,
-                               tasTaskStart=task_start, tasFinishTime=deadline, tasLaunchClose=launch_close,
-                               tasStartTime=start_time,
-                               tasStartCloseTime=start_close, tasStoppedTime=stopped_time, tasDistance=self.distance,
-                               tasShortRouteDistance=self.opt_dist, tasStartSSDistance=self.opt_dist_to_SS,
-                               tasEndSSDistance=self.opt_dist_to_ESS, tasSSDistance=self.SS_distance,
-                               tasSSInterval=SSInterval, tasStartIteration=self.start_iteration,
-                               tasLaunchValid=self.launch_valid, tasComment=self.comment,
-                               tasQNH=self.QNH, regPk=self.reg_id, tasTimeOffset=self.time_offset,
-                               tasPath=self.task_path)
-
+                task = TblTask()
+                for k, v in self.as_dict().items():
+                    if hasattr(task, k):
+                        setattr(task, k, v)
                 db.session.add(task)
                 db.session.flush()
-                self.task_id = task.tasPk
+                self.task_id = task.task_id
                 if self.turnpoints:
                     wpts = []
                     for idx, tp in enumerate(self.turnpoints):
@@ -920,11 +893,13 @@ class Task(object):
                             opt_lat, opt_lon = self.optimised_turnpoints[idx].lat, self.optimised_turnpoints[idx].lon
                         if len(self.partial_distance) > 0:
                             cumulative_dist = self.partial_distance[idx]
-                        wpt = W(tasPk=self.id, tawNumber=tp.id, tawName=tp.name, tawLat=tp.lat, tawLon=tp.lon,
-                                tawAlt=tp.altitude,
-                                tawDesc=tp.description, tawType=tp.type, tawHow=tp.how, tawShape=tp.shape,
-                                tawRadius=tp.radius,
-                                ssrLatDecimal=opt_lat, ssrLongDecimal=opt_lon, ssrCumulativeDist=cumulative_dist)
+                        wpt = W()
+                        for k, v in tp.__dict__.items():
+                            if hasattr(wpt, k):
+                                setattr(wpt, k, v)
+                        wpt.ssr_lat = opt_lat
+                        wpt.ssr_lon = opt_lon
+                        wpt.partial_distance = cumulative_dist
                         wpts.append(wpt)
                     db.session.bulk_save_objects(wpts)
 
@@ -1129,7 +1104,7 @@ class Task(object):
                                   tp['shape'], tp['how'])
 
             turnpoint.name = tp['name']
-            turnpoint.id = idx
+            turnpoint.num = idx
             turnpoint.description = tp['description']
             turnpoint.altitude = tp['altitude']
             task.turnpoints.append(turnpoint)
@@ -1354,7 +1329,7 @@ class Task(object):
                     '''launch'''
                     turnpoint = Turnpoint(float(w.get('lat')), float(w.get('lon')), int(w.get('radius')))
                     turnpoint.name = w.get('id')
-                    turnpoint.id = len(turnpoints) + 1
+                    turnpoint.num = len(turnpoints) + 1
                     turnpoint.type = 'launch'
                     task.date = get_date(w.get('open'))
                     task.window_open_time = time_to_seconds(get_time(w.get('open')))
@@ -1371,7 +1346,7 @@ class Task(object):
                     '''start'''
                     turnpoint = Turnpoint(float(w.get('lat')), float(w.get('lon')), int(w.get('radius')))
                     turnpoint.name = w.get('id')
-                    turnpoint.id = len(turnpoints) + 1
+                    turnpoint.num = len(turnpoints) + 1
                     turnpoint.type = 'speed'
                     task.start_close_time = time_to_seconds(get_time(w.get('close')))
                     '''guess start direction: exit if launch is same wpt'''
@@ -1386,7 +1361,7 @@ class Task(object):
                     '''ess'''
                     turnpoint = Turnpoint(float(w.get('lat')), float(w.get('lon')), int(w.get('radius')))
                     turnpoint.name = w.get('id')
-                    turnpoint.id = len(turnpoints) + 1
+                    turnpoint.num = len(turnpoints) + 1
                     turnpoint.type = 'endspeed'
                     task.task_deadline = time_to_seconds(get_time(w.get('close')))
                     turnpoints.append(turnpoint)
@@ -1394,7 +1369,7 @@ class Task(object):
                     '''goal'''
                     turnpoint = Turnpoint(float(w.get('lat')), float(w.get('lon')), int(w.get('radius')))
                     turnpoint.name = w.get('id')
-                    turnpoint.id = len(turnpoints) + 1
+                    turnpoint.num = len(turnpoints) + 1
                     turnpoint.type = 'goal'
                     if gtype == 'LINE':
                         turnpoint.shape = 'line'
@@ -1403,7 +1378,7 @@ class Task(object):
                 '''waypoint'''
                 turnpoint = Turnpoint(float(w.get('lat')), float(w.get('lon')), int(w.get('radius')))
                 turnpoint.name = w.get('id')
-                turnpoint.id = len(turnpoints) + 1
+                turnpoint.num = len(turnpoints) + 1
                 turnpoints.append(turnpoint)
 
             # turnpoint = Turnpoint(float(w.get('lat')), float(w.get('lon')), int(w.get('radius')))
@@ -1515,7 +1490,7 @@ class Task(object):
         self.optimised_turnpoints = optimised
 
     def clear_waypoints(self):
-        from db_tables import tblTaskWaypoint as W
+        from db_tables import TblTaskWaypoint as W
 
         self.turnpoints.clear()
         self.optimised_turnpoints.clear()
@@ -1525,19 +1500,18 @@ class Task(object):
 
         '''delete waypoints from database'''
         with Database() as db:
-            db.session.question.query(W).filter(W.tasPk == self.id).delete()
+            db.session.question.query(W).filter(W.task_id == self.id).delete()
             db.session.commit()
 
     def update_waypoints(self):
-        from db_tables import tblTaskWaypoint as W
+        from db_tables import TblTaskWaypoint as W
         with Database() as db:
-            for idx, wp in enumerate(self.turnpoints):
-                wpNum = idx + 1
-                wpt = W(tasPk=self.id, rwpPk=wp.rwpPk, tawNumber=wpNum, tawType=wp.type,
-                        tawHow=wp.how, tawShape=wp.shape, tawTime=0, tawRadius=wp.radius)
+            for idx, wp in enumerate(self.turnpoints, 1):
+                wpt = W(task_id=self.id, rwpPk=wp.rwpPk, num=idx, type=wp.type,
+                        how=wp.how, shape=wp.shape, radius=wp.radius)
                 db.session.add(wpt)
-                id = db.session.commit()
-                self.turnpoints[idx].id = id
+                wpt_id = db.session.commit()
+                self.turnpoints[idx].wpt_id = wpt_id
 
     @property
     def distances_to_go(self):
@@ -1553,13 +1527,13 @@ class Task(object):
 
 
 def delete_task(task_id):
-    from db_tables import tblTaskWaypoint as W
-    from db_tables import tblTask as T
+    from db_tables import TblTaskWaypoint as W
+    from db_tables import TblTask as T
 
     '''delete waypoints and task from database'''
     with Database() as db:
-        db.session.query(W).filter(W.tasPk == task_id).delete()
-        db.session.query(T).filter(T.tasPk == task_id).delete()
+        db.session.query(W).filter(W.task_id == task_id).delete()
+        db.session.query(T).filter(T.task_id == task_id).delete()
         db.session.commit()
 
 
@@ -1635,11 +1609,11 @@ def write_map_json(task_id):
 
 def get_task_json_filename(task_id):
     """returns active json result file"""
-    from db_tables import tblResultFile as R
+    from db_tables import TblResultFile as R
 
     with Database() as db:
-        filename = db.session.query(R.refJSON.label('file')).filter(and_(
-            R.tasPk == task_id, R.refVisible == 1
+        filename = db.session.query(R.filename).filter(and_(
+            R.task_id == task_id, R.active == 1
         )).scalar()
     return filename
 

@@ -18,7 +18,7 @@ Stuart Mackintosh - Antonio Golfari
 2019
 """
 
-from db_tables import tblResultFile
+from db_tables import TblResultFile
 from myconn import Database
 
 
@@ -292,7 +292,7 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None):
 
     '''create database entry'''
     with Database() as db:
-        result = tblResultFile(comPk=comp_id, tasPk=task_id, refTimestamp=timestamp, refJSON=filename, refStatus=status)
+        result = TblResultFile(comPk=comp_id, tasPk=task_id, refTimestamp=timestamp, refJSON=filename, refStatus=status)
         db.session.add(result)
         db.session.commit()
         ref_id = result.refPk

@@ -4,20 +4,22 @@ Use: python3 del_track.py [traPk]
 
 Antonio Golfari - 2019
 """
-from db_tables import tblTaskResult as R
+from db_tables import TblTaskResult as R
 # Use your utility module.
+import os
 from myconn import Database
+from os import path
 
 
 def delete_track(result_id):
     with Database() as db:
         q = db.session.query(R)
         result = q.get(result_id)
-        file = result.traFile
+        file = result.track_file
         db.session.delete(result)
         db.session.commit()
 
-    if p.isfile(file):
+    if path.isfile(file):
         os.remove(file)
         print(f'Track file has been deleted \n')
     else:

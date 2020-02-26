@@ -175,7 +175,7 @@ def find_pilot(name):
 
 def get_pil_track(par_id, task_id):
     """Get pilot result in a given task"""
-    from db_tables import tblTaskResult as R
+    from db_tables import TblTaskResult as R
 
     with Database() as db:
         track_id = db.session.query(R.tarPk).filter(
@@ -216,7 +216,7 @@ def create_track_result_file(track_id, task_id):
 
 
 def get_task_fullpath(task_id):
-    from db_tables import tblTask as T, tblCompetition as C
+    from db_tables import TblTask as T, TblCompetition as C
 
     with Database() as db:
         try:

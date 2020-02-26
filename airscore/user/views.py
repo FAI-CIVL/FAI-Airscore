@@ -140,7 +140,7 @@ def comp_settings_admin(compid):
             comp.restricted = 1 if compform.pilot_registration.data == 'registered' else None
             comp.formula = compform.formula.data
             comp.locked = compform.locked.data
-            comp.update_comp_info()
+            comp.to_db()
 
             formula = Formula.read(compid)
             formula.overall_validity = compform.overall_validity.data

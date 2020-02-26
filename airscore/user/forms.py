@@ -120,7 +120,7 @@ class CompForm(FlaskForm):
                           description="If locked, a rescore will not change displayed results")
 
     #formula object/table
-    overall_validity = SelectField('Scoring', choices=[('all', 'ALL'), ('ftv', 'FTV'), ('round', 'ROUND')]) # tblForComp comOverallScore  ??what is round?? do we also need old drop tasks?
+    overall_validity = SelectField('Scoring', choices=[('all', 'ALL'), ('ftv', 'FTV'), ('round', 'ROUND')]) # TblForComp comOverallScore  ??what is round?? do we also need old drop tasks?
     validity_param = IntegerField('FTV percentage', validators=[NumberRange(min=0, max=100)])
     nom_dist = IntegerField('Nominal Distance (km)', description=help_nom_distance)
     nom_goal = IntegerField('Nominal Goal (%)', description=help_nom_goal, validators=[NumberRange(min=0, max=100)])

@@ -15,7 +15,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from calcUtils import get_date
 from civlrankings import create_participant_from_CIVLID, create_participant_from_name
-from db_tables import tblParticipant
+from db_tables import TblParticipant
 from logger import Logger
 from myconn import Database
 
@@ -107,9 +107,9 @@ class Participant(object):
         with Database(session) as db:
             try:
                 if not self.par_id:
-                    pil = tblParticipant()
+                    pil = TblParticipant()
                 else:
-                    pil = db.session.query(tblParticipant).get(self.par_id)
+                    pil = db.session.query(TblParticipant).get(self.par_id)
                 pil.comPk = self.comp_id
                 pil.CIVLID = self.civl_id
                 pil.parID = self.ID
@@ -284,9 +284,9 @@ def mass_import_participants(comp_id, pilots, session=None):
     with Database(session) as db:
         try:
             if len(insert_mappings) > 0:
-                db.session.bulk_insert_mappings(tblParticipant, insert_mappings)
+                db.session.bulk_insert_mappings(TblParticipant, insert_mappings)
             if len(update_mappings) > 0:
-                db.session.bulk_update_mappings(tblParticipant, update_mappings)
+                db.session.bulk_update_mappings(TblParticipant, update_mappings)
             db.session.commit()
         except SQLAlchemyError:
             print(f'update all participants on database gave an error')

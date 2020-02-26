@@ -16,7 +16,7 @@ from myconn import Database
 
 def get_comp(task_id):
     """Get comPk from tasPk"""
-    from db_tables import tblTask as T
+    from db_tables import TblTask as T
     if type(task_id) is int and task_id > 0:
         with Database() as db:
             tasks = db.session.query(T)
@@ -34,7 +34,7 @@ def get_class(tasPk):
 
 def get_task_date(task_id):
     """Get date from tasPk in date format"""
-    from db_tables import tblTask as T
+    from db_tables import TblTask as T
     if type(task_id) is int and task_id > 0:
         with Database() as db:
             tasks = db.session.query(T)
@@ -44,7 +44,7 @@ def get_task_date(task_id):
 
 def get_registration(comp_id):
     """Check if comp has a registration"""
-    from db_tables import tblCompetition as C
+    from db_tables import TblCompetition as C
     if comp_id > 0:
         with Database() as db:
             comps = db.session.query(C)
@@ -70,7 +70,7 @@ def is_registered(civl_id, comp_id):
 
 def is_ext(comp_id):
     """True if competition is external"""
-    from db_tables import tblCompetition as C
+    from db_tables import TblCompetition as C
     if comp_id > 0:
         with Database() as db:
             comps = db.session.query(C)
@@ -80,7 +80,7 @@ def is_ext(comp_id):
 
 def get_comp_json_filename(comp_id):
     """returns active json results file"""
-    from db_tables import tblResultFile as R
+    from db_tables import TblResultFile as R
     filename = "NONE"
     with Database() as db:
         filename = db.session.query(R.refJSON).filter(and_(R.comPk == comp_id, R.tasPk == None, R.refVisible == 1)) \
@@ -102,7 +102,7 @@ def get_comp_json(comp_id):
 
 def get_nat_code(iso):
     """Get Country Code from ISO2 or ISO3"""
-    from db_tables import tblCountryCode as CC
+    from db_tables import TblCountryCode as CC
     if not (type(iso) is str and len(iso) in (2, 3)): return None
     column = getattr(CC, 'natIso' + str(len(iso)))
     with Database() as db:
@@ -111,7 +111,7 @@ def get_nat_code(iso):
 
 def get_task_path(task_id):
     """ """
-    from db_tables import tblTask as T
+    from db_tables import TblTask as T
     if type(task_id) is int and task_id > 0:
         with Database() as db:
             return db.session.query(T.tasPath).filter(T.tasPk == task_id).limit(1).scalar()
@@ -119,7 +119,7 @@ def get_task_path(task_id):
 
 def get_comp_path(comp_id):
     """ """
-    from db_tables import tblCompetition as C
+    from db_tables import TblCompetition as C
     if type(comp_id) is int and comp_id > 0:
         with Database() as db:
             return db.session.query(C.comPath).filter(C.comPk == comp_id).limit(1).scalar()
@@ -131,7 +131,7 @@ def create_comp_path(date, code):
 
 
 def get_task_region(task_id):
-    from db_tables import tblTask as T
+    from db_tables import TblTask as T
     if type(task_id) is int and task_id > 0:
         with Database() as db:
             return db.session.query(T.regPk).filter(T.tasPk == task_id).limit(1).scalar()
@@ -139,7 +139,7 @@ def get_task_region(task_id):
 
 def get_area_wps(region_id):
     """query db get all wpts names and pks for region of task and put into dictionary"""
-    from db_tables import tblRegionWaypoint as W
+    from db_tables import TblRegionWaypoint as W
     if type(region_id) is int and region_id > 0:
         with Database() as db:
             wps = db.session.query(W.rwpName,
@@ -172,7 +172,7 @@ def get_participants(comp_id):
 
 
 def get_tasks_result_files(comp_id):
-    from db_tables import tblResultFile as R
+    from db_tables import TblResultFile as R
     files = []
     with Database() as db:
         '''getting active json files list'''
@@ -185,8 +185,8 @@ def get_tasks_result_files(comp_id):
 
 def read_rankings(comp_id):
     """reads sub rankings list for the task and creates a dictionary"""
-    from db_tables import tblClasCertRank as CC, tblCompetition as C, tblRanking as R, tblCertification as CCT, \
-        tblClassification as CT
+    from db_tables import TblClasCertRank as CC, TblCompetition as C, TblRanking as R, TblCertification as CCT, \
+        TblClassification as CT
     from sqlalchemy import and_
     from sqlalchemy.exc import SQLAlchemyError
 

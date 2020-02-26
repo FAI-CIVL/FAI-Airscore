@@ -3,13 +3,13 @@ Score Competition:
 To be used on frontend.
 - calculates competition results from tasks active JSON files.
 - creates JSON file
-- creates DB entry (tblResultFile)
+- creates DB entry (TblResultFile)
 - outputs result ID (refPk)
 
 Usage:
     python3 create_comp_results.py [comPk] (opt.)['status']
 
-    comPk   - INT: comp ID in tblCompetition
+    comPk   - INT: comp ID in TblCompetition
     status  - STR: provisional, official, test...
 
 - AirScore -

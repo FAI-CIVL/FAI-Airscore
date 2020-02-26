@@ -20,7 +20,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from Defines import FILEDIR, RESULTDIR
 from calcUtils import get_date
 from compUtils import get_tasks_result_files, get_participants, read_rankings, create_comp_path
-from db_tables import tblCompetition
+from db_tables import TblCompetition
 from formula import Formula
 from myconn import Database
 from participant import Participant
@@ -229,8 +229,8 @@ class Comp(object):
         if self.comp_id:
             '''store to database'''
             with Database() as db:
-                q = db.session.query(tblCompetition).get(self.id)
-                q.comPath = self.comp_path
+                q = db.session.query(TblCompetition).get(self.id)
+                q.comp_path = self.comp_path
                 db.session.commit()
 
     def to_db(self):
@@ -252,33 +252,15 @@ class Comp(object):
         with Database() as db:
             try:
                 if self.comp_id is not None:
-                    row = db.session.query(tblCompetition).get(self.comp_id)
+                    row = db.session.query(TblCompetition).get(self.comp_id)
                 else:
-                    row = tblCompetition()
-
-                row.comName = self.comp_name
-                row.comCode = self.comp_code
-                row.comDateFrom = self.date_from
-                row.comDateTo = self.date_to
-                row.comLocation = self.comp_site
-                row.comClass = self.comp_class
-                row.claPk = self.cat_id
-                row.comMeetDirName = self.MD_name
-                row.comContact = self.contact
-                row.comTimeOffset = self.time_offset
-                row.comSanction = self.sanction
-                row.comOpenAirFile = self.openair_file
-                row.comType = self.comp_type
-                row.comEntryRestrict = 'registered' if self.restricted else 'open'
-                row.comLocked = self.locked
-                row.comStyleSheet = self.stylesheet
-                row.comExt = self.external
-                row.comExtUrl = self.website
-                row.comPath = self.comp_path
-                if self.comp_id is None:
+                    row = TblCompetition()
                     db.session.add(row)
-                db.session.flush()
-                self.comp_id = row.comPk
+                    db.session.flush()
+                    self.comp_id = row.comp_id
+                for k, v in self.as_dict().items():
+                    if hasattr(row, k):
+                        setattr(row, k, v)
                 db.session.commit()
             except SQLAlchemyError:
                 print('cannot insert competition. DB insert error.')
@@ -342,57 +324,57 @@ class Comp(object):
                 print(f"Error trying to retrieve Tasks details for Comp ID {self.comp_id}")
                 return None
 
-    def update_comp_info(self):
-
-        with Database() as db:
-            try:
-                q = db.session.query(tblCompetition).get(self.id)
-                q.comDateFrom = self.date_from
-                q.comDateTo = self.date_to
-                q.comName = self.comp_name
-                q.comCode = self.comp_code
-                q.comSanction = self.sanction
-                q.comLocation = self.comp_site
-                q.regPk = self.region
-                q.comContact = self.contact
-                q.comMeetDirName = self.MD_name
-                q.comTimeOffset = self.time_offset
-                q.claPk = self.cat_id
-                q.comExtUrl = self.website
-                q.comExt = self.external
-                q.comEntryRestrict = 'registered' if self.restricted else 'open'
-                q.comClass = self.comp_class
-                q.comType = self.comp_type
-                q.comLocked = self.locked
-                q.comStyleSheet = self.stylesheet
-                db.session.commit()
-            except SQLAlchemyError:
-                print('cannot update competition. DB error.')
-                db.session.rollback()
-                return None
+    # def update_comp_info(self):
+    #
+    #     with Database() as db:
+    #         try:
+    #             q = db.session.query(TblCompetition).get(self.id)
+    #             q.comDateFrom = self.date_from
+    #             q.comDateTo = self.date_to
+    #             q.comName = self.comp_name
+    #             q.comCode = self.comp_code
+    #             q.comSanction = self.sanction
+    #             q.comLocation = self.comp_site
+    #             q.regPk = self.region
+    #             q.comContact = self.contact
+    #             q.comMeetDirName = self.MD_name
+    #             q.comTimeOffset = self.time_offset
+    #             q.claPk = self.cat_id
+    #             q.comExtUrl = self.website
+    #             q.comExt = self.external
+    #             q.comEntryRestrict = 'registered' if self.restricted else 'open'
+    #             q.comClass = self.comp_class
+    #             q.comType = self.comp_type
+    #             q.comLocked = self.locked
+    #             q.comStyleSheet = self.stylesheet
+    #             db.session.commit()
+    #         except SQLAlchemyError:
+    #             print('cannot update competition. DB error.')
+    #             db.session.rollback()
+    #             return None
 
     @staticmethod
     def from_json(comp_id, ref_id=None):
         """Reads competition from json result file
         takes comPk as argument"""
-        from db_tables import tblResultFile as R
+        from db_tables import TblResultFile as R
 
         if type(comp_id) is int and comp_id > 0:
             with Database() as db:
                 if ref_id:
-                    file = db.session.query(R).get(ref_id).refJSON
+                    file = db.session.query(R).get(ref_id).filename
                 else:
-                    file = db.session.query(R.refJSON).filter(
-                        and_(R.comPk == comp_id, R.tasPk == None, R.refVisible == 1)).scalar()
+                    file = db.session.query(R.filename).filter(
+                        and_(R.comp_id == comp_id, R.task_id == None, R.active == 1)).scalar()
             if file:
                 comp = Comp(comp_id=comp_id)
                 with open(path.join(RESULTDIR, file), 'r') as f:
                     '''read task json file'''
                     data = json.load(f)
-                    for k in comp.__dict__.keys():
+                    for k, v in comp.__dict__.items():
                         # not using update to intercept changing in formats
-                        if k in data['info'].keys():
-                            setattr(comp, k, data['info'][k])
+                        if hasattr(comp, k):
+                            setattr(comp, k, v)
                     # comp.as_dict().update(data['info'])
                     comp.stats.update(data['stats'])
                     comp.rankings.update(data['rankings'])

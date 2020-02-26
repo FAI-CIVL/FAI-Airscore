@@ -4,7 +4,7 @@ Use: python3 update_result_status.py [refPk] [status]
 
 Antonio Golfari - 2019
 """
-from db_tables import tblResultFile as R
+from db_tables import TblResultFile as R
 # Use your utility module.
 from myconn import Database
 

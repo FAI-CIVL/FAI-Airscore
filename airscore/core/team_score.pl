@@ -42,10 +42,10 @@ sub day_quality
 								FC.*, 
 								F.* 
 							FROM 
-								tblTask TK 
-								JOIN tblCompetition C USING (comPk) 
-								JOIN tblForComp FC USING (comPk) 
-								LEFT OUTER JOIN tblFormula F USING (forPk)  
+								TblTask TK
+								JOIN TblCompetition C USING (comPk)
+								JOIN TblForComp FC USING (comPk)
+								LEFT OUTER JOIN TblFormula F USING (forPk)
 							WHERE 
 								TK.tasPk = $task");
 
@@ -117,7 +117,7 @@ sub day_quality
     }
 
     # FIX: TeamTask perhaps?
-    #$sth = $dbh->prepare("update tblTask set tasQuality=$quality, tasDistQuality=$distance, tasTimeQuality=$time, tasLaunchQuality=$launch where tasPk=$task");
+    #$sth = $dbh->prepare("update TblTask set tasQuality=$quality, tasDistQuality=$distance, tasTimeQuality=$time, tasLaunchQuality=$launch where tasPk=$task");
     #$sth->execute();
 
 
@@ -148,7 +148,7 @@ sub aggregate_team
     $goal = -1;
     $start = 99999999;
 
-    $sth = $dbh->prepare("select * from tblCompetition C, tblTask T where C.comPk=T.comPk and tasPk=$tasPk");
+    $sth = $dbh->prepare("select * from TblCompetition C, TblTask T where C.comPk=T.comPk and tasPk=$tasPk");
     $sth->execute();
     $ref = $sth->fetchrow_hashref();
     $comPk = $ref->{'comPk'};
@@ -156,7 +156,7 @@ sub aggregate_team
     $over = $ref->{'comTeamOver'};
     $how = $ref->{'comTeamScoring'};
 
-    #"select R.*,T.*,P.* FROM tblTaskResult R, tblTrack TR, tblTeam T, tblTeamPilot P where R.traPk=TR.traPk and R.tasPk=$tasPk and T.comPk=$comPk and T.teaPk=P.teaPk and TR.pilPk=P.pilPk order by T.teaPk,P.tepPreference");
+    #"select R.*,T.*,P.* FROM TblTaskResult R, TblTrack TR, tblTeam T, tblTeamPilot P where R.traPk=TR.traPk and R.tasPk=$tasPk and T.comPk=$comPk and T.teaPk=P.teaPk and TR.pilPk=P.pilPk order by T.teaPk,P.tepPreference");
     $sth = $dbh->prepare(
     "select * from tblTrack T join tblTaskResult TR on T.traPk=TR.traPk join tblTask TK on TK.tasPk=TR.tasPk join tblTeam M on M.comPk=TK.comPk join tblTeamPilot TP on TP.teaPk=M.teaPk where TR.tasPk=$tasPk and TP.pilPk=T.pilPk order by M.teaPk,TP.tepPreference");
     # Find aggregate for the N scoring pilots (based on pref / how about 'best?)

@@ -19,6 +19,7 @@ import smtplib
 import sys
 
 from myconn import Database
+from sqlalchemy.exc import SQLAlchemyError
 
 
 class send_mail():
@@ -43,22 +44,21 @@ class send_mail():
         self.smtpserver.sendmail(self.username, email_to, msg.encode("ascii", errors="replace"))
 
     def close(self):
-        '''closeconnection'''
+        """close connection"""
         self.smtpserver.close()
 
 def get_email_list(task_id, to_all=None):
     """Get pilot emails (pilots in task without tracks)
     returns a dictionary of pilFirstName pilLastname:pilEmail."""
-    from db_tables import tblParticipant as R, PilotView as P, tblTaskResult as S, tblTask as T
+    from db_tables import TblParticipant as R, PilotView as P, TblTaskResult as S, TblTask as T
     from sqlalchemy import and_
 
     with Database() as db:
         comp_id = db.session.query(T).get(task_id).comPk
-        q       = (db.session.query(R.parName.label('name'), P.pilEmail.label('email')
-                                    ).join(P, P.pilPk==R.pilPk).outerjoin(
-                                    S, and_(R.pilPk==S.pilPk, S.tasPk==task_id))).filter(R.comPk==comp_id)
+        q       = (db.session.query(R.name, P.email).join(P, P.pil_id==R.pil_id).outerjoin(
+                                    S, and_(R.pil_id==S.pil_id, S.task_id==task_id))).filter(R.comp_id==comp_id)
         if not to_all:
-            q   = q.filter(S.tarPk==None)
+            q   = q.filter(S.track_id==None)
         result  = q.all()
 
         pilot_list = dict((x.name, x.email) for x in result)
@@ -66,13 +66,13 @@ def get_email_list(task_id, to_all=None):
 
 def get_task_details(task_id):
     """Get task date and location for email subject line."""
-    from db_tables import tblCompetition as C, tblTask as T
+    from db_tables import TblCompetition as C, TblTask as T
 
     with Database() as db:
-        q = db.session.query(T.tasDate, C.comLocation).join(C, C.comPk==T.comPk).filter(T.tasPk==task_id)
+        q = db.session.query(T.date, C.comp_site).join(C, C.comp_id==T.comp_id).filter(T.task_id==task_id)
         try:
             date, location = q.one()
-        except:
+        except SQLAlchemyError:
             print(f'Date, Location Query Error')
 
     datestr = date.strftime('%m-%d')  # convert from datetime to string
@@ -81,10 +81,10 @@ def get_task_details(task_id):
 
 def get_admin_email(task_id, DB_User, DB_Password, DB):
     """Get admin email addresses"""
-    from db_tables import UserView as U, tblCompAuth as C, tblTask as T
+    from db_tables import UserView as U, TblCompAuth as C, TblTask as T
 
     with Database() as db:
-        q       = db.session.query(U.useEmail).join(C, C.usePk==U.usePk).join(T, T.comPk==C.comPk).filter(T.tasPk==task_id)
+        q       = db.session.query(U.user_email).join(C, C.user_id==U.user_id).join(T, T.comp_id==C.comp_id).filter(T.task_id==task_id)
         users   = q.all()
         return [u[0] for u in users]
 

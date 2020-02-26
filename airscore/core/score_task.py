@@ -3,13 +3,13 @@ Score Task:
 To be used on frontend.
 - calculates task scoring
 - creates JSON file
-- creates DB entry (tblResultFile)
+- creates DB entry (TblResultFile)
 - outputs result ID (refPk)
 
 Usage:
     python3 score_task.py <tasPk> (opt.)<'status'>
 
-    tasPk   - INT: task ID in tblTask
+    tasPk   - INT: task ID in TblTask
     status  - STR: 'provisional', 'official', 'test', ...
 
 - AirScore -
@@ -36,7 +36,7 @@ def main(args):
     '''create task obj'''
     task = T.read(task_id)
 
-    '''create task scores obj, json file, and tblResultFile entry'''
+    '''create task scores obj, json file, and TblResultFile entry'''
     ref_id = task.create_results(status)
     print(f'result ID: {ref_id}')
 

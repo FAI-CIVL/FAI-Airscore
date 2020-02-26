@@ -1,11 +1,11 @@
 """
 Activate last task result:
-- activates last created DB entry (tblResultFile)
+- activates last created DB entry (TblResultFile)
 
 Usage:
     python3 activate_last_task_result.py <tasPk>
 
-    tasPk   - INT: task ID in tblTask
+    tasPk   - INT: task ID in TblTask
 
 - AirScore -
 Stuart Mackintosh - Antonio Golfari
@@ -16,7 +16,7 @@ import time
 
 from sqlalchemy.exc import SQLAlchemyError
 
-from db_tables import tblResultFile as Results
+from db_tables import TblResultFile as Results
 from logger import Logger
 from myconn import Database
 
@@ -34,13 +34,13 @@ def main(args):
 
     with Database() as db:
         try:
-            results = db.session.query(Results).filter(Results.tasPk == task_id).all()
+            results = db.session.query(Results).filter(Results.task_id == task_id).all()
             if results:
-                selected = next(r for r in results if r.refVisible == 1)
-                selected.refVisible = 0
+                selected = next(r for r in results if r.active == 1)
+                selected.active = 0
                 db.session.flush()
-                new = max(results, key=lambda r: r.refTimestamp)
-                new.refVisible = 1
+                new = max(results, key=lambda r: r.created)
+                new.active = 1
                 db.session.commit()
         except SQLAlchemyError:
             print(f'Error changing active result for task ID {task_id}')

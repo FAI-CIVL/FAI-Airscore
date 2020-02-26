@@ -323,6 +323,7 @@ def get_airspace_check_parameters(task_id):
                                    h_outer_penalty_per_m, h_inner_penalty_per_m, v_outer_penalty_per_m,
                                    v_inner_penalty_per_m)
             else:
+                print(f"airspace_check disabled")
                 return None
         except SQLAlchemyError:
             print(f'SQL Error trying to get Airspace Params from database')

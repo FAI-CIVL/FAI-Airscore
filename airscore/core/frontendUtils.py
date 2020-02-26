@@ -1,4 +1,4 @@
-from db_tables import tblCompetition, tblTask
+from db_tables import TblCompetition, TblTask
 from sqlalchemy.orm import aliased
 from flask import jsonify
 from myconn import Database
@@ -12,13 +12,13 @@ from design_map import make_map
 
 
 def get_comps():
-    c = aliased(tblCompetition)
+    c = aliased(TblCompetition)
 
     with Database() as db:
         comps = (db.session.query(c.comPk, c.comName, c.comLocation,
                                   c.comClass, c.comSanction, c.comType, c.comDateFrom,
-                                  c.comDateTo, func.count(tblTask.tasPk))
-                 .outerjoin(tblTask, c.comPk == tblTask.comPk)
+                                  c.comDateTo, func.count(TblTask.tasPk))
+                 .outerjoin(TblTask, c.comPk == TblTask.comPk)
                  .group_by(c.comPk))
 
     all_comps = []
@@ -56,13 +56,13 @@ def get_comps():
 
 
 def get_admin_comps():
-    c = aliased(tblCompetition)
+    c = aliased(TblCompetition)
 
     with Database() as db:
         comps = (db.session.query(c.comPk, c.comName, c.comLocation,
                                   c.comDateFrom,
-                                  c.comDateTo, func.count(tblTask.tasPk))
-                 .outerjoin(tblTask, c.comPk == tblTask.comPk)
+                                  c.comDateTo, func.count(TblTask.tasPk))
+                 .outerjoin(TblTask, c.comPk == TblTask.comPk)
                  .group_by(c.comPk))
 
     all_comps = []

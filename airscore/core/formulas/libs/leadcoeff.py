@@ -86,7 +86,7 @@ def tot_lc_calc(res, t):
 
 def store_lc(res_id, lead_coeff):
     """store LC to database"""
-    from db_tables import tblTaskResult as R
+    from db_tables import TblTaskResult as R
     from myconn import Database
     # It shouldn't be necessary any longer, as we should not store final LC
 

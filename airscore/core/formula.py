@@ -147,10 +147,10 @@ class Formula(object):
         self.start_weight = None
         self.arrival_weight = None
         self.speed_weight = None
-        self.TeamScoring = False
-        self.TeamSize = None
-        self.TeamOver = None
-        self.CountryScoring = False
+        self.team_scoring = False
+        self.team_size = None
+        self.team_over = None
+        self.country_scoring = False
 
     def __eq__(self, other):
         if not isinstance(other, Formula):
@@ -216,7 +216,7 @@ class Formula(object):
     @staticmethod
     def read(comp_id, session=None):
         """reads comp formula from database"""
-        from db_tables import CompFormulaView as F
+        from db_tables import TblForComp as F
 
         formula = Formula(comp_id)
         with Database(session) as db:
@@ -316,8 +316,8 @@ class Formula(object):
         return formula
 
     def to_db(self):
-        """stores formula to tblForComp table in AirScore database"""
-        from db_tables import tblForComp as FC
+        """stores formula to TblForComp table in AirScore database"""
+        from db_tables import TblForComp as FC
 
         with Database() as db:
             try:
@@ -327,38 +327,9 @@ class Formula(object):
                     row = FC(comPk=self.comp_id)
                     db.session.add(row)
                     db.session.flush()
-
-                row.forClass = self.formula_type
-                row.forVersion = self.formula_version
-                row.forName = self.formula_name
-                row.comOverallScore = self.overall_validity
-                row.comOverallParam = self.validity_param
-                row.forNomGoal = self.nominal_goal
-                row.forMinDistance = int(self.min_dist / 1000) if self.min_dist else 0
-                row.forNomDistance = int(self.nominal_dist / 1000) if self.nominal_dist else 0
-                row.forNomTime = int(self.nominal_time / 60) if self.nominal_time else 0
-                row.forNomLaunch = self.nominal_launch
-                row.forDistance = self.formula_distance
-                row.forArrival = self.formula_arrival
-                row.forDeparture = self.formula_departure
-                row.forLeadFactor = self.lead_factor
-                row.forTime = self.formula_time
-                row.forNoGoalPenalty = self.no_goal_penalty
-                row.forGlideBonus = self.glide_bonus
-                row.forTolerance = self.tolerance * 100 if self.tolerance else 0
-                row.forHeightBonus = self.arr_alt_bonus
-                row.forESSHeightLo = self.arr_min_height
-                row.forESSHeightUp = self.arr_max_height
-                row.forMinTime = int(self.validity_min_time / 60) if self.validity_min_time else 0
-                row.forScorebackTime = int(self.score_back_time / 60) if self.score_back_time else 0
-                row.forMaxJTG = int(self.max_JTG / 60) if self.max_JTG else 0
-                row.forJTGPenPerSec = self.JTG_penalty_per_sec
-                row.forAltitudeMode = self.scoring_altitude
-                row.comTeamScoring = self.TeamScoring
-                row.comTeamOver = self.TeamOver
-                row.comTeamSize = self.TeamSize
-                row.comCountryScoring = self.CountryScoring
-
+                for k, v in self.as_dict().items():
+                    if hasattr(row, k):
+                        setattr(row, k, v)
                 db.session.flush()
 
             except SQLAlchemyError:

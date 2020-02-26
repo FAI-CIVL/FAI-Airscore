@@ -7,7 +7,7 @@ contains statistics about a flight with regards to a task.
 Methods:
     from_fsdb
     check_flight - check flight against task and record results (times, distances and leadout coeff)
-    to_db - write result to DB (tblTaskResult) store_result_test - write result to DB in test mode(tblTaskResult_test)
+    to_db - write result to DB (TblTaskResult) store_result_test - write result to DB in test mode(TblTaskResult_test)
     store_result_json - not needed, think we can delete
     to_geojson_result - create json file containing tracklog (split into preSSS, preGoal and postGoal), Thermals,
                         bounds and result obj
@@ -34,7 +34,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from Defines import MAPOBJDIR
 from airspace import AirspaceCheck
 from calcUtils import string_to_seconds
-from db_tables import tblTaskResult
+from db_tables import TblTaskResult
 from formulas.libs.leadcoeff import LeadCoeff
 from myconn import Database
 from route import in_semicircle, start_made_civl, tp_made_civl, \
@@ -581,7 +581,7 @@ class Flight_result(object):
         """ stores new calculated results to db
             if track_id is not given, it inserts a new result
             else it updates existing one """
-        from db_tables import tblTaskResult as R, tblParticipant as P, tblTask as T
+        from db_tables import TblTaskResult as R, TblParticipant as P, TblTask as T
 
         '''checks conformity'''
         if not self.goal_time:
@@ -649,7 +649,7 @@ class Flight_result(object):
         returns the Json string."""
 
         from mapUtils import result_to_geojson
-        from db_tables import tblParticipant as p
+        from db_tables import TblParticipant as p
 
         info = {'taskid': task.id, 'task_name': task.task_name, 'comp_name': task.comp_name}
 
@@ -841,7 +841,7 @@ def mass_add_results(task_id, results):
     '''update database'''
     with Database() as db:
         try:
-            db.session.bulk_insert_mappings(tblTaskResult, mappings)
+            db.session.bulk_insert_mappings(TblTaskResult, mappings)
             db.session.commit()
         except SQLAlchemyError:
             print(f'update all results on database gave an error')
@@ -855,12 +855,12 @@ def update_status(par_id, task_id, status):
     """Create or update pilot status ('abs', 'dnf', 'mindist')"""
     with Database() as db:
         try:
-            result = db.session.query(tblTaskResult).filter(and_(tblTaskResult.parPk == par_id,
-                                                                 tblTaskResult.tasPk == task_id)).first()
+            result = db.session.query(TblTaskResult).filter(and_(TblTaskResult.parPk == par_id,
+                                                                 TblTaskResult.tasPk == task_id)).first()
             if result:
                 result.tarResultType = status
             else:
-                result = tblTaskResult(parPk=par_id, tasPk=task_id, tarResultType=status)
+                result = TblTaskResult(parPk=par_id, tasPk=task_id, tarResultType=status)
                 db.session.add(result)
             db.session.flush()
         except SQLAlchemyError:

@@ -121,7 +121,7 @@ def get_all_comps():
 
 @blueprint.route('/competition/<compid>')
 def competition(compid):
-    from db_tables import tblTask, tblCompetition
+    from db_tables import TblTask, TblCompetition
     from compUtils import get_comp_json
     result_file = get_comp_json(int(compid))
     all_tasks = []
@@ -142,8 +142,8 @@ def competition(compid):
             task.update({'map': task_map._repr_html_()})
             all_tasks.append(task)
 
-    c = aliased(tblCompetition)
-    t = aliased(tblTask)
+    c = aliased(TblCompetition)
+    t = aliased(TblTask)
 
     with Database() as db:
         non_scored_tasks = (db.session.query(t.tasPk.label('id'),

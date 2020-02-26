@@ -5,7 +5,7 @@ contains Pilot class and methods
 
 Methods:
     read    - reads from database
-    to_db   - write result to DB (tblTaskResult) store_result_test - write result to DB in test mode(tblTaskResult_test)
+    to_db   - write result to DB (TblTaskResult) store_result_test - write result to DB in test mode(TblTaskResult_test)
 
 - AirScore -
 Stuart Mackintosh - Antonio Golfari
@@ -186,7 +186,7 @@ class Pilot(object):
             but if we organize track reading using Pilot obj. this should be useful.
             We will also be able to delete a lot of redundant info about track filename, pilot ID, task_id and so on"""
 
-        from db_tables import tblTaskResult as R
+        from db_tables import TblTaskResult as R
         from sqlalchemy.exc import SQLAlchemyError
 
         '''checks conformity'''
@@ -243,7 +243,7 @@ class Pilot(object):
 
 def update_all_results(task_id, pilots, session=None):
     """get results to update from the list"""
-    from db_tables import tblTaskResult as R
+    from db_tables import TblTaskResult as R
     from sqlalchemy.exc import SQLAlchemyError
 
     update_mappings = []

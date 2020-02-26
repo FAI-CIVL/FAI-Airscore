@@ -16,7 +16,6 @@ from logger import Logger
 def read_membership(file):
     """Read CSV File"""
     from db_tables import PilotView as P
-    from db_tables import tblExtPilot as E
     from myconn import Database
     from sqlalchemy import and_, or_
 
