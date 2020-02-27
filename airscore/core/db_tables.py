@@ -269,6 +269,7 @@ class TaskObjectView(Base):
                       Column('task_name', String(100)),
                       Column('task_num', TINYINT(4)),
                       Column('reg_id', INTEGER(11)),
+                      Column('region_name', String(40)),
                       Column('window_open_time', MEDIUMINT(9)),
                       Column('task_deadline', MEDIUMINT(9)),
                       Column('window_close_time', MEDIUMINT(9)),
@@ -760,7 +761,7 @@ class TblTaskWaypoint(Base):
 
     wpt_id = Column(INTEGER(11), primary_key=True)
     task_id = Column(ForeignKey('tblTask.task_id', ondelete='SET NULL'), index=True)
-    rwp_id = Column(INTEGER(11), index=True)
+    rwp_id = Column(ForeignKey('TblRegionWaypoint.rwp_id', ondelete='SET NULL'), index=True)
     num = Column(TINYINT(4), nullable=False)
     name = Column(CHAR(6), nullable=False)
     lat = Column(Float, nullable=False)
