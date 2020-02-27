@@ -51,9 +51,9 @@ pg_preset = FormulaPreset(
     # ESS Max Altitude
     arr_max_height=Preset(value=None, visible=True, editable=True),
     # Minimum flight time for task validation (minutes)
-    validity_min_time=Preset(value=60, visible=True, editable=True),
+    validity_min_time=Preset(value=3600, visible=True, editable=True),
     # Score back time for Stopped Tasks (minutes)
-    score_back_time=Preset(value=5, visible=True, editable=True),
+    score_back_time=Preset(value=300, visible=True, editable=True),
     # Max allowed Jump the Gun (seconds)
     max_JTG=Preset(value=0, visible=True, editable=True),
     # Penalty per Jump the Gun second
@@ -100,9 +100,9 @@ hg_preset = FormulaPreset(
     # ESS Max Altitude
     arr_max_height=Preset(value=None, visible=True, editable=True),
     # Minimum flight time for task validation (minutes)
-    validity_min_time=Preset(value=90, visible=True, editable=True),
+    validity_min_time=Preset(value=5400, visible=True, editable=True),
     # Score back time for Stopped Tasks (minutes)
-    score_back_time=Preset(value=15, visible=True, editable=True),
+    score_back_time=Preset(value=900, visible=True, editable=True),
     # Max allowed Jump the Gun (seconds)
     max_JTG=Preset(value=300, visible=True, editable=True),
     # Penalty per Jump the Gun second
