@@ -761,7 +761,7 @@ class TblTaskWaypoint(Base):
 
     wpt_id = Column(INTEGER(11), primary_key=True)
     task_id = Column(ForeignKey('tblTask.task_id', ondelete='SET NULL'), index=True)
-    rwp_id = Column(ForeignKey('TblRegionWaypoint.rwp_id', ondelete='SET NULL'), index=True)
+    rwp_id = Column(ForeignKey('tblRegionWaypoint.rwp_id', ondelete='SET NULL'), index=True)
     num = Column(TINYINT(4), nullable=False)
     name = Column(CHAR(6), nullable=False)
     lat = Column(Float, nullable=False)
