@@ -14,7 +14,7 @@
     "type": "git",
     "url": "git+https://github.com/kuaka/airscore.git"
   },
-  "author": "stuart mackintosh",
+  "author": "stuart mackintosh, antonio golfari",
   "license": "MIT",
   "engines": {
     "node": ">=12"
@@ -35,6 +35,7 @@
     "babel-eslint": "^10.0.1",
     "babel-loader": "^8.0.6",
     "babel-preset-env": "^1.7.0",
+    "blueimp-file-upload": "^10.8.0",
     "concurrently": "^5.0.0",
     "css-loader": "^3.0.0",
     "eslint": "^6.2.2",

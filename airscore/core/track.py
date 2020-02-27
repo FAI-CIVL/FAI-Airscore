@@ -129,7 +129,7 @@ class Track(object):
         with Database() as db:
             try:
                 # TODO: g-record still to implement
-                track = TblTaskResult(par_id=self.par_id, task_id=task_id, filename=self.filename, g_record=1)
+                track = TblTaskResult(par_id=self.par_id, task_id=task_id, track_file=self.filename, g_record=1)
                 self.track_id = db.session.add(track)
                 db.session.commit()
                 result += f"track for pilot with id {self.par_id} correctly stored in database"

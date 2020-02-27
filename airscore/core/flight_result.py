@@ -844,3 +844,23 @@ def update_status(par_id, task_id, status):
             return 0
 
         return result.track_id
+
+
+def delete_result(trackid):
+    from trackUtils import get_task_fullpath
+    from os import remove
+    from db_tables import tblTaskResult as R
+    row_deleted = None
+    with Database() as db:
+        try:
+            results = db.session.query(R.traFile, R.tasPk).filter(R.tarPk == trackid).one()
+            row_deleted = db.session.query(R.traFile, R.tasPk).filter(R.tarPk == trackid).delete(synchronize_session=False)
+        except SQLAlchemyError:
+            print("there was a problem deleting the track")
+            return None
+
+    if results.traFile is not None:
+        full_path = get_task_fullpath(results.tasPk)
+        remove(path.join(full_path, results.traFile))
+
+    return row_deleted
