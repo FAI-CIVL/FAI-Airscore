@@ -365,7 +365,7 @@ def index():
                         t = db.session.query(T).first()
                         # t = db.fetchall(q)
 #                    return render_template('home.html',flight_data=flight_results, igc_content=igc_object, mysql_query=t )
-                    return render_template('home.html',flight_data=flight_results, igc_content=igc_object )
+                    return render_template('home.html',flight_data=flight_results, igc_content=igc_object)
 
             else:
                 flash('Missing file, please upload it first.')

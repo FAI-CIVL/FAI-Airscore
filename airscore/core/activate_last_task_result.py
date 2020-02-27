@@ -3,9 +3,9 @@ Activate last task result:
 - activates last created DB entry (TblResultFile)
 
 Usage:
-    python3 activate_last_task_result.py <tasPk>
+    python3 activate_last_task_result.py <task_id>
 
-    tasPk   - INT: task ID in TblTask
+    task_id   - INT: task ID in TblTask
 
 - AirScore -
 Stuart Mackintosh - Antonio Golfari
@@ -27,7 +27,7 @@ def main(args):
     start = time.time()
 
     print("starting..")
-    '''Main module. Takes tasPk and status as parameters'''
+    '''Main module. Takes task_id and status as parameters'''
 
     task_id = int(args[0])
     print(f"Task ID: {task_id} ")
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     '''check parameter is good'''
     if not (sys.argv[1] and sys.argv[1].isdigit() and int(sys.argv[1]) > 0):
         print("number of arguments != 1 and/or task_id not a number")
-        print("usage: python3 activate_last_task_result.py <tasPk> ")
+        print("usage: python3 activate_last_task_result.py <task_id> ")
         exit()
 
     main(sys.argv[1:])

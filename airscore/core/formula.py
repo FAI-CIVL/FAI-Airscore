@@ -1,7 +1,7 @@
 """
 Module for operations on formula
 Use:    import formula
-        parameters = Formula.read(tasPk)
+        parameters = Formula.read(task_id)
 
 Antonio Golfari - 2019
 """
@@ -324,7 +324,7 @@ class Formula(object):
                 '''check if we have already a row for the comp'''
                 row = db.session.query(FC).get(self.comp_id)
                 if row is None:
-                    row = FC(comPk=self.comp_id)
+                    row = FC(comp_id=self.comp_id)
                     db.session.add(row)
                     db.session.flush()
                 for k, v in self.as_dict().items():

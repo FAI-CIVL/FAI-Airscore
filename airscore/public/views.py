@@ -70,15 +70,18 @@ def home():
             return redirect(redirect_url)
         else:
             flash_errors(form)
-    return render_template('public/index.html',  form=form)
+    return render_template('public/index.html', form=form)
+
 
 @blueprint.route("/ladders/", methods=["GET", "POST"])
 def ladders():
     return render_template('public/ladders.html')
 
+
 @blueprint.route("/pilots/", methods=["GET", "POST"])
 def pilots():
     return render_template('public/pilots.html')
+
 
 @blueprint.route("/logout/")
 @login_required
@@ -146,29 +149,28 @@ def competition(compid):
     t = aliased(TblTask)
 
     with Database() as db:
-        non_scored_tasks = (db.session.query(t.tasPk.label('id'),
-                                             t.tasName.label('task_name'),
-                                             t.tasDate.label('date'),
-                                             t.tasTaskType.label('task_type'),
-                                             t.tasShortRouteDistance,
-                                             t.tasComment.label('comment')).filter(t.comPk == compid,
-                                                                                   t.tasPk.notin_(task_ids))
-                            .order_by(t.tasDate.desc()).all())
+        non_scored_tasks = (db.session.query(t.task_id.label('id'),
+                                             t.task_name,
+                                             t.date,
+                                             t.task_type,
+                                             t.opt_dist,
+                                             t.comment).filter(t.comp_id == compid, t.task_id.notin_(task_ids))
+                            .order_by(t.date.desc()).all())
 
         competition_info = (db.session.query(
-            c.comPk,
-            c.comName,
-            c.comLocation,
-            c.comDateFrom,
-            c.comDateTo).filter(c.comPk == compid).one())
+            c.comp_id,
+            c.comp_name,
+            c.comp_site,
+            c.date_from,
+            c.date_to).filter(c.comp_id == compid).one())
     comp = competition_info._asdict()
 
-    comp_start = comp['comDateFrom']
+    comp_start = comp['date_from']
 
-    if comp['comDateFrom']:
-        comp['comDateFrom'] = comp['comDateFrom'].strftime("%Y-%m-%d")
-    if comp['comDateTo']:
-        comp['comDateTo'] = comp['comDateTo'].strftime("%Y-%m-%d")
+    if comp['date_from']:
+        comp['date_from'] = comp['date_from'].strftime("%Y-%m-%d")
+    if comp['date_to']:
+        comp['date_to'] = comp['date_to'].strftime("%Y-%m-%d")
 
     if comp_start > datetime.now():
         return render_template('public/future_competition.html', comp=comp)
@@ -177,7 +179,7 @@ def competition(compid):
         for t in non_scored_tasks:
             task = t._asdict()
             task['status'] = "Not yet scored"
-            if not t.tasShortRouteDistance or t.tasShortRouteDistance == 0:
+            if not t.opt_dist or t.opt_dist == 0:
                 task['status'] = "Task not set"
                 task['opt_dist'] = '0 km'
             else:
@@ -186,7 +188,7 @@ def competition(compid):
                 layer['bbox'] = bbox
                 task_map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
                                     goal_line=goal_line, margin=tolerance)
-                task['opt_dist'] = '{:0.2f}'.format(task['tasShortRouteDistance'] / 1000) + ' km'
+                task['opt_dist'] = '{:0.2f}'.format(task['opt_dist'] / 1000) + ' km'
                 task.update({'map': task_map._repr_html_()})
 
             task['tasQuality'] = "-"
@@ -366,5 +368,3 @@ def download_file(filetype, filename):
         airspace_path = Defines.AIRSPACEDIR
         fullname = path.join(airspace_path, filename)
     return send_file(fullname, as_attachment=True)
-
-

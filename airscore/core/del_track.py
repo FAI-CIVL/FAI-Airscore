@@ -1,6 +1,6 @@
 """
 Delete track and all references in other tables
-Use: python3 del_track.py [traPk]
+Use: python3 del_track.py [track_id]
 
 Antonio Golfari - 2019
 """
@@ -37,7 +37,7 @@ def main(args):
     Logger('ON', 'task_full_rescore.txt')
 
     print("starting..")
-    '''Main module. Takes traPk as parameter'''
+    '''Main module. Takes track_id as parameter'''
     track_id = 0 + int(args[0])
 
     """Delete track"""
@@ -46,8 +46,6 @@ def main(args):
     ''' now restore stdout function '''
     Logger('OFF')
 
-    ''' output ref_id to use in frontend:
-        task_result.php?refPk=ref_id&tasPk=task_id&comPk=comp_id'''
     print(f'{out}')
 
 
@@ -57,7 +55,7 @@ if __name__ == "__main__":
     '''check parameter is good'''
     if not (sys.argv[1] and sys.argv[1].isdigit() and int(sys.argv[1]) > 0):
         print("number of arguments != 1 and/or track_id not a number")
-        print("usage: python3 del_track.py <traPk>")
+        print("usage: python3 del_track.py <track_id>")
         exit()
 
     main(sys.argv[1:])

@@ -14,9 +14,9 @@ from db_tables import TblRegion as R, RegionWaypointView as RWV, TblRegionWaypoi
 from sqlalchemy.exc import SQLAlchemyError
 
 class Region:
-    def __init__(self, regPk=None, name=None, filename=None, openair=None, turnpoints=[]):
+    def __init__(self, reg_id=None, name=None, filename=None, openair=None, turnpoints=[]):
         self.name = name
-        self.regPk = regPk
+        self.reg_id = reg_id
         self.filename = filename
         self.openair = openair
         self.turnpoints = turnpoints
@@ -30,9 +30,9 @@ class Region:
         turnpoints = []
 
         with Database() as db:
-            q = db.session.query(R.regDescription.label('name'),
-                                 R.regWptFileName.label('filename'),
-                                 R.regOpenAirFile.label('openair')).filter(R.regPk == region_id).first()
+            q = db.session.query(R.description.label('name'),
+                                 R.waypoint_file.label('filename'),
+                                 R.openair_file.label('openair')).filter(R.reg_id == region_id).first()
             name, filename, openair = q.name, q.filename, q.openair
             w = db.session.query(RWV).filter(RWV.region_id == region_id).all()
             for tp in w:
@@ -53,10 +53,10 @@ class Region:
 def get_all_regions():
     with Database() as db:
         try:
-            results = db.session.query(R.regPk,
-                                     R.regDescription.label('name'),
-                                     R.regWptFileName.label('filename'),
-                                     R.regOpenAirFile.label('openair')).all()
+            results = db.session.query(R.reg_id,
+                                     R.description.label('name'),
+                                     R.waypoint_file.label('filename'),
+                                     R.openair_file.label('openair')).all()
             if results:
                 results = [row._asdict() for row in results]
             return {'regions': results}
@@ -69,16 +69,17 @@ def get_all_regions():
 def get_comp_regions_and_wpts(compid):
     with Database() as db:
         try:
-            region_results = db.session.query(R.regPk,
-                                       R.regDescription.label('name'),
-                                       R.regWptFileName.label('filename'),
-                                       R.regOpenAirFile.label('openair'))\
-                                       .filter(R.comPk == compid).all()
+            region_results = db.session.query(R.reg_id,
+                                       R.description.label('name'),
+                                       R.waypoint_file.label('filename'),
+                                       R.openair_file.label('openair'))\
+                                       .filter(R.comp_id == compid).all()
 
-            wpt_results = db.session.query(RW.regPk,
+            wpt_results = db.session.query(RW.reg_id,
                                            RW.rwpPk,
                                            RW.rwpName,
-                                           RW.rwpDescription).join(R).filter(R.regPk == RW.regPk, R.comPk == compid).all()
+                                           RW.rwpDescription).join(R).filter(R.reg_id == RW.reg_id,
+                                                                             R.comp_id == compid).all()
 
             if region_results:
                 region_results = [row._asdict() for row in region_results]
@@ -95,10 +96,11 @@ def get_comp_regions_and_wpts(compid):
 def get_region_wpts(reg_id):
     with Database() as db:
         try:
-            wpt_results = db.session.query(RW.regPk,
+            wpt_results = db.session.query(RW.reg_id,
                                            RW.rwpPk,
                                            RW.rwpName,
-                                           RW.rwpDescription).join(R).filter(RW.regPk == reg_id).order_by(RW.rwpName).all()
+                                           RW.rwpDescription).join(R).filter(
+                                           RW.reg_id == reg_id).order_by(RW.rwpName).all()
 
             if wpt_results:
                 wpt_results = [row._asdict() for row in wpt_results]

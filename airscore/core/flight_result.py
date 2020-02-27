@@ -583,11 +583,11 @@ class Flight_result(object):
             else it updates existing one """
         from db_tables import TblTaskResult as R, TblParticipant as P, TblTask as T
 
-        '''checks conformity'''
-        if not self.goal_time:
-            self.goal_time = 0
-        endss = 0 if self.ESS_time is None else self.ESS_time
-        num_wpts = len(Counter(el[0] for el in self.waypoints_achieved))
+        # '''checks conformity'''
+        # if not self.goal_time:
+        #     self.goal_time = 0
+        # endss = 0 if self.ESS_time is None else self.ESS_time
+        # num_wpts = len(Counter(el[0] for el in self.waypoints_achieved))
 
         '''database connection'''
         with Database(session) as db:
@@ -597,9 +597,9 @@ class Flight_result(object):
                     '''we don't have any info about pilot'''
                     return None
                 try:
-                    comp_id = db.session.query(T).get(task_id).comPk
-                    self.par_id = db.session.query(P.parPk).filter(
-                        and_(P.parID == self.ID, P.comPk == comp_id)).scalar()
+                    comp_id = db.session.query(T).get(task_id).comp_id
+                    self.par_id = db.session.query(P.par_id).filter(
+                        and_(P.ID == self.ID, P.comp_id == comp_id)).scalar()
                 except SQLAlchemyError:
                     print('Get registered pilot error')
                     db.session.rollback()
@@ -612,32 +612,18 @@ class Flight_result(object):
                 r = results.get(track_id)
             else:
                 '''create a new result'''
-                r = R(parPk=self.par_id, tasPk=task_id)
-
-            r.tarDistance = self.distance_flown
-            r.tarSpeed = self.speed
-            r.tarLaunch = self.first_time
-            r.tarStart = self.real_start_time
-            r.tarGoal = self.goal_time
-            r.tarSS = self.SSS_time
-            r.tarES = endss
-            r.tarSpeed = self.speed
-            r.tarTurnpoints = num_wpts
-            r.tarFixedLC = self.fixed_LC
-            r.tarESAltitude = self.ESS_altitude
-            r.tarGoalAltitude = self.goal_altitude
-            r.tarMaxAltitude = self.max_altitude
-            r.tarLastAltitude = self.last_altitude
-            r.tarLastTime = self.last_time
-            r.tarLandingAltitude = self.landing_altitude
-            r.tarLandingTime = self.landing_time
-            r.tarResultType = self.result_type
-            r.tarComment = self.comment
-            # r.traFile = self.track_file
-
-            if not track_id:
+                r = R(par_id=self.par_id, task_id=task_id)
                 db.session.add(r)
+                db.session.flush()
+            row_id = r.track_id
+            for a in dir(r):
+                if a == 'comment' and self.comment:
+                    r.comment = '; '.join(self.comment)
+                if not a[0] == '_' and hasattr(self, a):
+                    setattr(r, a, getattr(self, a))
             db.session.flush()
+
+        return row_id
 
     def to_geojson_result(self, track, task, second_interval=5):
         """Dumps the flight to geojson format used for mapping.
@@ -654,14 +640,14 @@ class Flight_result(object):
         info = {'taskid': task.id, 'task_name': task.task_name, 'comp_name': task.comp_name}
 
         with Database() as db:
-            pilot_details = (db.session.query(p.parName, p.parNat, p.parSex, p.parGlider)
-                             .filter(p.parPk == track.par_id, p.comPk == task.comp_id).one())
+            pilot_details = (db.session.query(p.name, p.nat, p.sex, p.glider)
+                             .filter(p.par_id == track.par_id, p.comp_id == task.comp_id).one())
         pilot_details = pilot_details._asdict()
-        info['pilot_name'] = pilot_details['parName']
-        info['pilot_nat'] = pilot_details['parNat']
-        info['pilot_sex'] = pilot_details['parSex']
+        info['pilot_name'] = pilot_details['name']
+        info['pilot_nat'] = pilot_details['nat']
+        info['pilot_sex'] = pilot_details['sex']
         info['pilot_parid'] = track.par_id
-        info['Glider'] = pilot_details['parGlider']
+        info['Glider'] = pilot_details['glider']
 
         tracklog, thermals, takeoff_landing, bbox, waypoint_achieved = result_to_geojson(self, track, task)
         airspace_plot = self.airspace_plot
@@ -807,41 +793,30 @@ def adjust_flight_results(task, lib, airspace):
 def mass_add_results(task_id, results):
     """adds results to database"""
 
-    mappings = []
+    objects = []
     for pilot in results:
         res = pilot.result
 
-        '''checks conformity'''
-        if not res.goal_time:
-            res.goal_time = 0
-        if not res.ESS_time:
-            res.ESS_time = 0
+        # '''checks conformity'''
+        # if not res.goal_time:
+        #     res.goal_time = 0
+        # if not res.ESS_time:
+        #     res.ESS_time = 0
 
-        mapping = {'parPk': pilot.par_id,
-                   'tasPk': task_id,
-                   'tarDistance': res.distance_flown,
-                   'tarSpeed': res.speed,
-                   'tarLaunch': res.first_time,
-                   'tarStart': res.real_start_time,
-                   'tarGoal': res.goal_time,
-                   'tarSS': res.SSS_time,
-                   'tarES': res.ESS_time,
-                   'tarTurnpoints': res.waypoints_made,
-                   'tarFixedLC': res.fixed_LC,
-                   'tarESAltitude': res.ESS_altitude,
-                   'tarGoalAltitude': res.goal_altitude,
-                   'tarMaxAltitude': res.max_altitude,
-                   'tarLastAltitude': res.last_altitude,
-                   'tarLastTime': res.last_time,
-                   'tarLandingAltitude': res.landing_altitude,
-                   'tarLandingTime': res.landing_time,
-                   'tarResultType': res.result_type}
-        mappings.append(mapping)
+        r = TblTaskResult(task_id=task_id, par_id=pilot.par_id)
+        for attr in dir(r):
+            if attr == 'track_id' and pilot.track.track_id:
+                r.track_id = pilot.track.track_id
+            elif attr == 'comment' and res.comment:
+                r.comment = '; '.join(res.comment)
+            elif not attr[0] == '_' and hasattr(res, attr):
+                setattr(r, attr, getattr(res, attr))
+        objects.append(r)
 
     '''update database'''
     with Database() as db:
         try:
-            db.session.bulk_insert_mappings(TblTaskResult, mappings)
+            db.session.bulk_save_objects(TblTaskResult, objects)
             db.session.commit()
         except SQLAlchemyError:
             print(f'update all results on database gave an error')
@@ -855,12 +830,12 @@ def update_status(par_id, task_id, status):
     """Create or update pilot status ('abs', 'dnf', 'mindist')"""
     with Database() as db:
         try:
-            result = db.session.query(TblTaskResult).filter(and_(TblTaskResult.parPk == par_id,
-                                                                 TblTaskResult.tasPk == task_id)).first()
+            result = db.session.query(TblTaskResult).filter(and_(TblTaskResult.par_id == par_id,
+                                                                 TblTaskResult.task_id == task_id)).first()
             if result:
                 result.tarResultType = status
             else:
-                result = TblTaskResult(parPk=par_id, tasPk=task_id, tarResultType=status)
+                result = TblTaskResult(par_id=par_id, task_id=task_id, result_type=status)
                 db.session.add(result)
             db.session.flush()
         except SQLAlchemyError:
@@ -868,4 +843,4 @@ def update_status(par_id, task_id, status):
             db.session.rollback()
             return 0
 
-        return result.tarPk
+        return result.track_id

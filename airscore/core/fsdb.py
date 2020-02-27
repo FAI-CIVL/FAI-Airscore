@@ -119,7 +119,7 @@ class FSDB(object):
     def create(cls, comp_id, ref_id=None):
         """ creates a FSDB Object from an AirScore competition
             input:
-                - comp_id       int: comPk event ID"""
+                - comp_id       int: comp_id event ID"""
 
         '''check comp is not an external event'''
 
@@ -569,12 +569,12 @@ class FSDB(object):
                 if inserted:
                     '''populate results track_id'''
                     try:
-                        results = db.session.query(R.tarPk, R.parPk).filter(R.tasPk == t.task_id).all()
+                        results = db.session.query(R.track_id, R.par_id).filter(R.task_id == t.task_id).all()
                         for result in results:
-                            pilot = next(p for p in t.pilots if p.info.par_id == result.parPk)
-                            pilot.track.track_id = result.tarPk
+                            pilot = next(p for p in t.pilots if p.info.par_id == result.par_id)
+                            pilot.track.track_id = result.track_id
                     except SQLAlchemyError:
-                        print(f"Error trying to collect results tarPk")
+                        print(f"Error trying to collect results track_id")
         return True
 
     def add_participants(self, session=None):
@@ -592,12 +592,12 @@ class FSDB(object):
             if inserted:
                 '''populate participants par_id'''
                 try:
-                    results = db.session.query(P.parPk, P.parID).filter(P.comPk == self.comp.comp_id).all()
+                    results = db.session.query(P.par_id, P.ID).filter(P.comp_id == self.comp.comp_id).all()
                     for result in results:
-                        pilot = next(p for p in self.comp.participants if p.ID == result.parID)
-                        pilot.par_id = result.parPk
+                        pilot = next(p for p in self.comp.participants if p.ID == result.ID)
+                        pilot.par_id = result.par_id
                 except SQLAlchemyError:
-                    print(f"Error trying to collect participants parPk")
+                    print(f"Error trying to collect participants par_id")
                     return False
         return True
 

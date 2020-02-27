@@ -24,49 +24,46 @@ def read_membership(file):
 
         with Database() as db:
             for row in csv_reader:
-                pilFAI = row[0]
-                pilFName = row[1]
-                pilLName = row[2]
-                pilSex = row[4]
+                fai_id = row[0]
+                first_name = row[1]
+                last_name = row[2]
+                sex = row[4]
                 nat = row[3]
 
                 """Get Nat code"""
-                pilNat = get_nat_code(nat)
-                if pilNat is None:
+                nat = get_nat_code(nat)
+                if nat is None:
                     """defaults to Italy"""
-                    pilNat = 380
-                    print(f"Pilot {pilFName} {pilLName} has a unrecognized country code, defaulting to ITA \n")
+                    nat = 380
+                    print(f"Pilot {first_name} {last_name} has a unrecognized country code, defaulting to ITA \n")
 
-                cond1 = f'%{pilLName}%'
-                cond2 = f'%{pilFName}%'
+                cond1 = f'%{last_name}%'
+                cond2 = f'%{first_name}%'
 
                 """Check if pilot exists in pilots main table"""
                 pil_id = 0
-                result = db.session.query(P.pilPk).filter(or_(
-                    and_(P.pilLastName.like(cond1), P.pilFirstName.like(cond2)),
-                    and_(P.pilLastName.like(cond2), P.pilFirstName.like(cond1)),
-                    and_(P.pilLastName.like(cond1), P.pilFAI == pilFAI))).all()
+                result = db.session.query(P.pil_id).filter(or_(
+                    and_(P.last_name.like(cond1), P.first_name.like(cond2)),
+                    and_(P.last_name.like(cond2), P.first_name.like(cond1)),
+                    and_(P.last_name.like(cond1), P.fai_id == fai_id))).all()
                 if len(result) == 1:
                     '''we found the pilot'''
-                    pil_id = result.pop().pilPk
+                    pil_id = result.pop().pil_id
                 elif len(result) > 1:
                     '''try to see if we have just one pilot among the fixed database'''
-                    candidate = [x.pilPk for x in result if x.pilPk < 10000]
-                    if len(candidate) == 1: pil_id = candidate.pop().pilPk
+                    candidate = [x.pil_id for x in result if x.pil_id < 10000]
+                    if len(candidate) == 1:
+                        pil_id = candidate.pop().pil_id
                 if not pil_id:
                     """Check if FAI exists"""
-                    result = db.session.query(P.pilPk).filter(P.pilFAI == pilFAI).all()
+                    result = db.session.query(P.pil_id).filter(P.fai_id == fai_id).all()
                     if len(result) == 1:
-                        pil_id = result.pop().pilPk
+                        pil_id = result.pop().pil_id
                 if not pil_id:
                     """Insert new pilot"""
-                    print(f'Pilot does not seem to be in database, adding to external table')
-                    pilot = E(pilFirstName=pilFName, pilLastName=pilLName, pilNat=pilNat, pilSex=pilSex, pilFAI=pilFAI)
-                    pil_id = db.session.add(pilot)
-                    db.session.commit()
-                    row.append(0)
+                    print(f'Pilot does not seem to be in database')
                 else:
-                    print(f'Found Pilot {pilFName} {pilLName} with ID {pil_id}')
+                    print(f'Found Pilot {first_name} {last_name} with ID {pil_id}')
                     row.append(pil_id)
 
 
@@ -103,7 +100,7 @@ if __name__ == "__main__":
 
             and len(sys.argv) == 3):
         print("number of arguments != 2 and/or task_id not a number")
-        print("Use: python3 bulk_igc_reader.py <taskPk> <csv file>")
+        print("Use: python3 bulk_igc_reader.py <task_id> <csv file>")
         exit()
 
     main(sys.argv[1:])

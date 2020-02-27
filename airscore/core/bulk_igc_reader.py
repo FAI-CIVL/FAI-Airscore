@@ -1,7 +1,7 @@
 """
 Reads in a zip file full of .igc files
 should be named as such: FAI.igc or LASTNAME_FIRSTNAME.igc
-Use: python3 bulk_igc_reader.py <taskPk> <zipfile>
+Use: python3 bulk_igc_reader.py <task_id> <zipfile>
 
 Antonio Golfari - 2018
 """
@@ -22,7 +22,7 @@ def main(args):
     # Logger('ON', 'bulk_igc_reader.txt')
 
     print("starting..")
-    '''Main module. Takes tasPk as parameter'''
+    '''Main module. Takes task_id as parameter'''
 
     task_id = 0 + int(args[0])
     """Get zip filename"""
@@ -76,7 +76,7 @@ if __name__ == "__main__":
             and int(sys.argv[1]) > 0
             and len(sys.argv) == 3):
         print("number of arguments != 2 and/or task_id not a number")
-        print("Use: python3 bulk_igc_reader.py <taskPk> <zipfile>")
+        print("Use: python3 bulk_igc_reader.py <task_id> <zipfile>")
         exit()
 
     main(sys.argv[1:])

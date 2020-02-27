@@ -4,12 +4,12 @@ To be used on frontend.
 - calculates task scoring
 - creates JSON file
 - creates DB entry (TblResultFile)
-- outputs result ID (refPk)
+- outputs result ID (ref_id)
 
 Usage:
-    python3 score_task.py <tasPk> (opt.)<'status'>
+    python3 score_task.py <task_id> (opt.)<'status'>
 
-    tasPk   - INT: task ID in TblTask
+    task_id   - INT: task ID in TblTask
     status  - STR: 'provisional', 'official', 'test', ...
 
 - AirScore -
@@ -23,11 +23,11 @@ from task import Task as T
 
 
 def main(args):
-    '''create logging and disable output'''
+    """create logging and disable output"""
     # Logger('ON', 'score_task.txt')
 
     print("starting..")
-    '''Main module. Takes tasPk as parameter'''
+    '''Main module. Takes task_id as parameter'''
 
     task_id = int(args[0])
     status = None if len(args) == 1 else str(args[1])
@@ -43,8 +43,6 @@ def main(args):
     ''' now restore stdout function '''
     # Logger('OFF')
 
-    ''' output ref_id to use in frontend:
-        task_result.php?refPk=ref_id&tasPk=task_id&comPk=comp_id'''
     print(f'{ref_id}')
 
 
@@ -54,7 +52,7 @@ if __name__ == "__main__":
     '''check parameter is good'''
     if not (sys.argv[1] and sys.argv[1].isdigit() and int(sys.argv[1]) > 0):
         print("number of arguments != 1 and/or task_id not a number")
-        print("usage: python3 score_task.py <tasPk> (opt.)<'status'>")
+        print("usage: python3 score_task.py <task_id> (opt.)<'status'>")
         exit()
 
     main(sys.argv[1:])

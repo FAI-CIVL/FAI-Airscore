@@ -292,8 +292,8 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None):
 
     '''create database entry'''
     with Database() as db:
-        result = TblResultFile(comPk=comp_id, tasPk=task_id, refTimestamp=timestamp, refJSON=filename, refStatus=status)
+        result = TblResultFile(comp_id=comp_id, task_id=task_id, created=timestamp, filename=filename, status=status)
         db.session.add(result)
         db.session.commit()
-        ref_id = result.refPk
+        ref_id = result.ref_id
     return ref_id

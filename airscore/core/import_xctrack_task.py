@@ -6,7 +6,7 @@ from task import Task
 
 def main(args):
 
-    """Main module. Takes tasPk and filename as parameters"""
+    """Main module. Takes task_id and filename as parameters"""
     #wpNum = 0 #one or zero start???
 
     ##check parameter is good.

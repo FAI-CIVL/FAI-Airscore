@@ -93,6 +93,6 @@ def store_lc(res_id, lead_coeff):
     with Database() as db:
         q = db.session.query(R)
         res = q.get(res_id)
-        res.tarLeadingCoeff = lead_coeff
+        res.lead_coeff = lead_coeff
         db.session.commit()
 

@@ -521,8 +521,8 @@ class Task(object):
         with Database() as db:
             try:
                 # get the task turnpoint details.
-                results = db.session.query(W.wpt_id, W.rwpPk, W.name, W.num, W.description, W.how, W.radius, W.shape, W.type,
-                                           W.partial_distance).filter(W.task_id == self.task_id).order_by(
+                results = db.session.query(W.wpt_id, W.rwpPk, W.name, W.num, W.description, W.how, W.radius, W.shape,
+                                           W.type, W.partial_distance).filter(W.task_id == self.task_id).order_by(
                     W.num).all()
 
                 if results:
@@ -1505,13 +1505,16 @@ class Task(object):
 
     def update_waypoints(self):
         from db_tables import TblTaskWaypoint as W
+        objects = []
+        for idx, wp in enumerate(self.turnpoints, 1):
+            wpt = W(task_id=self.id, num=idx, **wp.as_dict())
+            objects.append(wpt)
         with Database() as db:
-            for idx, wp in enumerate(self.turnpoints, 1):
-                wpt = W(task_id=self.id, rwpPk=wp.rwpPk, num=idx, type=wp.type,
-                        how=wp.how, shape=wp.shape, radius=wp.radius)
-                db.session.add(wpt)
-                wpt_id = db.session.commit()
-                self.turnpoints[idx].wpt_id = wpt_id
+            db.session.bulk_save_objects(objects, return_defaults=True)
+            db.session.commit()
+
+            for idx, elem in objects:
+                self.turnpoints[idx].wpt_id = elem.wpt_id
 
     @property
     def distances_to_go(self):

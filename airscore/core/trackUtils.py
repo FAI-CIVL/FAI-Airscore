@@ -1,7 +1,7 @@
 """
 Module for operations on tracks
 Use:    import trackUtils
-        parPk = compUtils.get_track_pilot(filename)
+        pil_id = compUtils.get_track_pilot(filename)
 
 Antonio Golfari - 2018
 """
@@ -11,7 +11,7 @@ from os import path, listdir, fsdecode
 from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
 
-from Defines import FILEDIR, MAPOBJDIR, track_sources
+from Defines import FILEDIR, MAPOBJDIR, track_sources, track_formats
 from flight_result import Flight_result
 from myconn import Database
 
@@ -97,8 +97,8 @@ def assign_and_import_tracks(files, task, xcontest=False):
                     """found a pilot for the track file.
                     dropping pilot from list and creating track obj"""
                     print(f"Found a pilot to associate with file. dropping {pilot_id} from non scored list \n")
-                    pilot_list[:] = [d for d in pilot_list if d.get('parPk') != pilot_id]
-                    mytrack = Track.read_file(filename=file, pilot_id=pilot_id)
+                    pilot_list[:] = [d for d in pilot_list if d.get('par_id') != pilot_id]
+                    mytrack = Track.read_file(filename=file)
         else:
             """We add track if we find a pilot in database
             that has not yet been scored"""
@@ -156,20 +156,21 @@ def find_pilot(name):
 
     print("Trying with name... \n")
     with Database() as db:
-        t = db.session.query(P.pilPk)
+        t = db.session.query(P.pil_id)
         if names:
-            q = t.filter(P.pilLastName.in_(names))
-            p = q.filter(P.pilFirstName.in_(names))
+            q = t.filter(P.last_name.in_(names))
+            p = q.filter(P.first_name.in_(names))
         else:
-            p = t.filter(P.pilFAI == fai)
+            p = t.filter(P.fai_id == fai)
         pil = p.all()
-        if len(pil) == 1: return pil.pop().pilPk
+        if len(pil) == 1: return pil.pop().pil_id
         '''try one more time if we have both names and fai'''
         if fai and names:
             if not pil:
                 p = q  # if we have zero results, try with only lastname and fai
-            pil = p.filter(P.pilFAI == fai).all()
-            if len(pil) == 1: return pil.pop().pilPk
+            pil = p.filter(P.fai_id == fai).all()
+            if len(pil) == 1:
+                return pil.pop().pil_id
     return None
 
 
@@ -178,8 +179,8 @@ def get_pil_track(par_id, task_id):
     from db_tables import TblTaskResult as R
 
     with Database() as db:
-        track_id = db.session.query(R.tarPk).filter(
-            and_(R.parPk == par_id, R.tasPk == task_id)).scalar()
+        track_id = db.session.query(R.track_id).filter(
+            and_(R.par_id == par_id, R.task_id == task_id)).scalar()
     if track_id == 0:
         """No result found"""
         print(f"Pilot with ID {par_id} has not been scored yet on task ID {task_id} \n")
@@ -220,11 +221,12 @@ def get_task_fullpath(task_id):
 
     with Database() as db:
         try:
-            q = db.session.query(T.tasPath, C.comPath).join(C, C.comPk == T.comPk).filter(T.tasPk == task_id).one()
+            q = db.session.query(T.task_path, 
+                                 C.comp_path).join(C, C.comp_id == T.comp_id).filter(T.task_id == task_id).one()
         except SQLAlchemyError:
             print(f'Get Task Path Query Error')
             return None
-    return path.join(FILEDIR, q.comPath, q.tasPath)
+    return path.join(FILEDIR, q.comp_path, q.task_path)
 
 
 def get_unscored_pilots(task_id, xcontest=False):
@@ -314,7 +316,7 @@ def assign_tracks(task, file_dir, pilots_list, source):
     for file in listdir(file_dir):
         filename = fsdecode(file)  # filename is without path
         file_ext = Path(filename).suffix[1:].lower()
-        if filename.startswith((".", "_")) or file_ext not in Defines.track_formats:
+        if filename.startswith((".", "_")) or file_ext not in track_formats:
             """file is not a valid track"""
             print(f"Not a valid filename: {filename}")
             pass
@@ -393,4 +395,4 @@ def get_tracks_from_zipfile(task, zipfile):
     ''' Get tracks from zipfile to a temporary folder'''
     with TemporaryDirectory() as temp_dir:
         extract_tracks(zipfile, temp_dir)
-        assign_tracks(task, temp_dir, pilots_list, source)
+        assign_tracks(task, temp_dir, pilots_list, task.track_source)

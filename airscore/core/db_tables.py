@@ -183,7 +183,7 @@ class FlightResultView(Base):
                       Column('result_type', String(7)),
                       Column('SSS_time', MEDIUMINT(9)),
                       Column('ESS_time', MEDIUMINT(9)),
-                      Column('best_waypoint_achieved', INTEGER(11)),
+                      Column('waypoints_made', INTEGER(11)),
                       Column('penalty', Float),
                       Column('comment', Text),
                       Column('fixed_LC', Float),
@@ -282,6 +282,30 @@ class TaskObjectView(Base):
                       Column('comp_path', String(40))
                       )
 
+
+class UnscoredPilotView(Base):
+    __table__ = Table('UnscoredPilotView', metadata,
+
+                      Column('task_id', INTEGER(11), primary_key=True),
+                      Column('par_id', INTEGER(11)),
+                      Column('comp_id', INTEGER(11)),
+                      Column('civl_id', INTEGER(10)),
+                      Column('fai_id', String(20)),
+                      Column('pil_id', INTEGER(11)),
+                      Column('ID', INTEGER(4)),
+                      Column('name', String(50)),
+                      Column('sex', Enum('M', 'F'), server_default=text("'M'")),
+                      Column('nat', CHAR(10)),
+                      Column('glider', String(100)),
+                      Column('glider_cert', String(20)),
+                      Column('xcontest_id', String(20)),
+                      Column('live_id', String(10)),
+                      Column('sponsor', String(100)),
+                      Column('team', String(100)),
+                      Column('nat_team', TINYINT(4), server_default=text("'1'"))
+                      )
+
+
 # TaskObjectView = Table(
 #     'TaskObjectView', metadata,
 #     Column('task_id', INTEGER(11), server_default=text("'0'")),
@@ -365,8 +389,8 @@ class TblClassification(Base):
     cat_id = Column(INTEGER(11), primary_key=True)
     cat_name = Column(String(60), nullable=False)
     comp_class = Column(Enum('PG', 'HG', 'mixed'), nullable=False, server_default=text("'PG'"))
-    cat_fem = Column(TINYINT(1), nullable=False, server_default=text("'1'"))
-    cat_team = Column(TINYINT(1), nullable=False, server_default=text("'0'"))
+    female = Column(TINYINT(1), nullable=False, server_default=text("'1'"))
+    team = Column(TINYINT(1), nullable=False, server_default=text("'0'"))
 
 
 TblCompAuth = Table(
@@ -679,7 +703,7 @@ class TblTaskResult(Base):
     goal_time = Column(MEDIUMINT(9))
     last_time = Column(MEDIUMINT(9))
     speed = Column(Float)
-    waypoints_achieved = Column(TINYINT(4))
+    waypoints_made = Column(TINYINT(4))
     ESS_altitude = Column(SMALLINT(6), nullable=False, server_default=text("'0'"))
     goal_altitude = Column(SMALLINT(6), nullable=False, server_default=text("'0'"))
     max_altitude = Column(SMALLINT(6), nullable=False, server_default=text("'0'"))

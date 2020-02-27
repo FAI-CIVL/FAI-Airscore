@@ -1,6 +1,6 @@
 """
 Delete Task / Comp Result JSON file and all references in result tables
-Use: python3 del_result.py [refPk]
+Use: python3 del_result.py [ref_id]
 
 Antonio Golfari - 2019
 """
@@ -40,8 +40,8 @@ def main(args):
     Logger('ON', 'del_result.txt')
 
     print("starting..")
-    '''Main module. Takes refPk as parameter'''
-    """Get refPk"""
+    '''Main module. Takes ref_id as parameter'''
+    """Get ref_id"""
     result = 0 + int(args[0])
 
     """Delete result"""
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     '''check parameter is good'''
     if not (sys.argv[1] and sys.argv[1].isdigit() and int(sys.argv[1]) > 0):
         print("number of arguments != 1 and/or task_id not a number")
-        print("Use: python3 del_result.py [refPk] ")
+        print("Use: python3 del_result.py [ref_id] ")
         exit()
 
     main(sys.argv[1:])

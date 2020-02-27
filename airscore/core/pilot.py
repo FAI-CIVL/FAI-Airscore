@@ -123,7 +123,7 @@ class Pilot(object):
         from participant import Participant
         from track import Track
         from flight_result import Flight_result
-        from db_tables import RegisteredPilotView as R
+        from db_tables import TblParticipant as R
         from db_tables import FlightResultView as F
         from sqlalchemy import and_
 
@@ -197,9 +197,10 @@ class Pilot(object):
 
         result = self.result
 
-        if not result.goal_time:
-            result.goal_time = 0
-        endss = 0 if result.ESS_time is None else result.ESS_time
+        # if not result.goal_time:
+        #     result.goal_time = 0
+        # endss = 0 if result.ESS_time is None else result.ESS_time
+        #
 
         '''database connection'''
         with Database(session) as db:
@@ -208,32 +209,44 @@ class Pilot(object):
                     r = db.session.query(R).get(self.track_id)
                 else:
                     '''create a new result'''
-                    r = R(parPk=self.par_id, tasPk=self.task_id)
-
-                r.tarDistance = result.distance_flown
-                r.tarSpeed = result.speed
-                r.tarLaunch = result.first_time
-                r.tarStart = result.real_start_time
-                r.tarGoal = result.goal_time
-                r.tarSS = result.SSS_time
-                r.tarES = endss
-                r.tarTurnpoints = result.waypoints_made
-                r.tarFixedLC = result.fixed_LC
-                r.tarESAltitude = result.ESS_altitude
-                r.tarGoalAltitude = result.goal_altitude
-                r.tarMaxAltitude = result.max_altitude
-                r.tarLastAltitude = result.last_altitude
-                r.tarLastTime = result.last_time
-                r.tarLandingAltitude = result.landing_altitude
-                r.tarLandingTime = result.landing_time
-                r.tarResultType = result.result_type
-                r.tarComment = result.comment
-                r.traFile = result.track_file
-
-                if not self.track_id:
+                    r = R(par_id=self.par_id, task_id=self.task_id)
                     db.session.add(r)
                     db.session.flush()
-                    self.track.track_id = r.tarPk
+                    self.track.track_id = r.track_id
+
+                for attr in dir(r):
+                    if attr == 'comment' and result.comment:
+                        r.comment = '; '.join(result.comment)
+                    if attr == 'track_file' and self.track.track_file:
+                        r.track_file = self.track.track_file
+                    elif not attr[0] == '_' and hasattr(result, attr):
+                        setattr(r, attr, getattr(result, attr))
+
+                # r.tarDistance = result.distance_flown
+                # r.tarSpeed = result.speed
+                # r.tarLaunch = result.first_time
+                # r.tarStart = result.real_start_time
+                # r.tarGoal = result.goal_time
+                # r.tarSS = result.SSS_time
+                # r.tarES = endss
+                # r.tarTurnpoints = result.waypoints_made
+                # r.tarFixedLC = result.fixed_LC
+                # r.tarESAltitude = result.ESS_altitude
+                # r.tarGoalAltitude = result.goal_altitude
+                # r.tarMaxAltitude = result.max_altitude
+                # r.tarLastAltitude = result.last_altitude
+                # r.tarLastTime = result.last_time
+                # r.tarLandingAltitude = result.landing_altitude
+                # r.tarLandingTime = result.landing_time
+                # r.tarResultType = result.result_type
+                # r.tarComment = result.comment
+                # r.traFile = result.track_file
+
+                # if not self.track_id:
+                #     db.session.add(r)
+                #     db.session.flush()
+                #     self.track.track_id = r.tarPk
+
                 db.session.commit()
 
             except SQLAlchemyError:
@@ -246,58 +259,34 @@ def update_all_results(task_id, pilots, session=None):
     from db_tables import TblTaskResult as R
     from sqlalchemy.exc import SQLAlchemyError
 
-    update_mappings = []
-    insert_mappings = []
+    # update_mappings = []
+    # insert_mappings = []
+    objects = []
 
     for pilot in pilots:
         res = pilot.result
-        par_id = pilot.par_id
-        track_file = pilot.track_file
-        track_id = pilot.track_id
 
-        '''checks conformity'''
-        # TODO need to check this values at the end of scoring process, or probably just put as default in database
-        if not res.goal_time:
-            res.goal_time = 0
-        if not res.ESS_time:
-            res.ESS_time = 0
+        # '''checks conformity'''
+        # # TODO need to check this values at the end of scoring process, or probably just put as default in database
+        # if not res.goal_time:
+        #     res.goal_time = 0
+        # if not res.ESS_time:
+        #     res.ESS_time = 0
 
-        mapping = {'tarDistance': res.distance_flown,
-                   'tarSpeed': res.speed,
-                   'tarLaunch': res.first_time,
-                   'tarStart': res.real_start_time,
-                   'tarGoal': res.goal_time,
-                   'tarSS': res.SSS_time,
-                   'tarES': res.ESS_time,
-                   'tarTurnpoints': res.waypoints_made,
-                   'tarFixedLC': res.fixed_LC,
-                   'tarESAltitude': res.ESS_altitude,
-                   'tarGoalAltitude': res.goal_altitude,
-                   'tarMaxAltitude': res.max_altitude,
-                   'tarLastAltitude': res.last_altitude,
-                   'tarLastTime': res.last_time,
-                   'tarLandingAltitude': res.landing_altitude,
-                   'tarLandingTime': res.landing_time,
-                   'tarResultType': res.result_type,
-                   'tarPenalty': res.penalty,
-                   'traFile': track_file}
-
-        if track_id is None:
-            ''' insert new result'''
-            mapping.update({'tasPk': task_id, 'parPk': par_id})
-            insert_mappings.append(mapping)
-        else:
-            ''' update result'''
-            mapping.update({'tarPk': track_id})
-            update_mappings.append(mapping)
+        r = R(track_id=pilot.track_id, task_id=task_id, par_id=pilot.par_id, track_file=pilot.track_file)
+        for attr in dir(r):
+            if attr == 'track_id' and pilot.track.track_id:
+                r.track_id = pilot.track.track_id
+            elif attr == 'comment' and res.comment:
+                r.comment = '; '.join(res.comment)
+            elif not attr[0] == '_' and hasattr(res, attr):
+                setattr(r, attr, getattr(res, attr))
+        objects.append(r)
 
     '''update database'''
-    with Database(session) as db:
+    with Database() as db:
         try:
-            if len(insert_mappings) > 0:
-                db.session.bulk_insert_mappings(R, insert_mappings)
-            if len(update_mappings) > 0:
-                db.session.bulk_update_mappings(R, update_mappings)
+            db.session.bulk_save_objects(R, objects)
             db.session.commit()
         except SQLAlchemyError:
             print(f'update all results on database gave an error')
@@ -305,3 +294,47 @@ def update_all_results(task_id, pilots, session=None):
             return False
 
     return True
+
+    #     mapping = {'tarDistance': res.distance_flown,
+    #                'tarSpeed': res.speed,
+    #                'tarLaunch': res.first_time,
+    #                'tarStart': res.real_start_time,
+    #                'tarGoal': res.goal_time,
+    #                'tarSS': res.SSS_time,
+    #                'tarES': res.ESS_time,
+    #                'tarTurnpoints': res.waypoints_made,
+    #                'tarFixedLC': res.fixed_LC,
+    #                'tarESAltitude': res.ESS_altitude,
+    #                'tarGoalAltitude': res.goal_altitude,
+    #                'tarMaxAltitude': res.max_altitude,
+    #                'tarLastAltitude': res.last_altitude,
+    #                'tarLastTime': res.last_time,
+    #                'tarLandingAltitude': res.landing_altitude,
+    #                'tarLandingTime': res.landing_time,
+    #                'tarResultType': res.result_type,
+    #                'tarPenalty': res.penalty,
+    #                'traFile': track_file}
+    #
+    #     if track_id is None:
+    #         ''' insert new result'''
+    #         mapping.update({'tasPk': task_id, 'parPk': par_id})
+    #         insert_mappings.append(mapping)
+    #     else:
+    #         ''' update result'''
+    #         mapping.update({'tarPk': track_id})
+    #         update_mappings.append(mapping)
+    #
+    # '''update database'''
+    # with Database(session) as db:
+    #     try:
+    #         if len(insert_mappings) > 0:
+    #             db.session.bulk_insert_mappings(R, insert_mappings)
+    #         if len(update_mappings) > 0:
+    #             db.session.bulk_update_mappings(R, update_mappings)
+    #         db.session.commit()
+    #     except SQLAlchemyError:
+    #         print(f'update all results on database gave an error')
+    #         db.session.rollback()
+    #         return False
+    #
+    # return True

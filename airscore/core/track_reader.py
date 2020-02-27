@@ -74,14 +74,14 @@ def main(args):
                     print(f"pilot {mytrack.par_id} associated with track {mytrack.filename} \n")
                     """adding track to db"""
                     import_track(mytrack)
-                    print(f"track imported to database with ID {mytrack.traPk}\n")
+                    print(f"track imported to database with ID {mytrack.track_id}\n")
                     """checking track against task"""
                     formula = Task_formula.read(task_id)
                     lib = get_formula_lib(formula.type)
                     verify_track(mytrack, task, lib)
-                    print(f"track {mytrack.traPk} verified with task {mytrack.task_id}\n")
+                    print(f"track {mytrack.track_id} verified with task {mytrack.task_id}\n")
                     print("track correctly imported and results generated \n")
-                    out = (f"traPk={mytrack.traPk}")
+                    out = (f"track_id={mytrack.track_id}")
 
             else:
                 print(f"error: task ID {task_id} does NOT belong to any Competition \n")

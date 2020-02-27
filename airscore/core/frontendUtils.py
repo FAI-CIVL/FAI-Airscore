@@ -15,11 +15,11 @@ def get_comps():
     c = aliased(TblCompetition)
 
     with Database() as db:
-        comps = (db.session.query(c.comPk, c.comName, c.comLocation,
-                                  c.comClass, c.comSanction, c.comType, c.comDateFrom,
-                                  c.comDateTo, func.count(TblTask.tasPk))
-                 .outerjoin(TblTask, c.comPk == TblTask.comPk)
-                 .group_by(c.comPk))
+        comps = (db.session.query(c.comp_id, c.comp_name, c.comp_site,
+                                  c.comp_class, c.sanction, c.comp_type, c.date_from,
+                                  c.date_to, func.count(TblTask.task_id))
+                 .outerjoin(TblTask, c.comp_id == TblTask.comp_id)
+                 .group_by(c.comp_id))
 
     all_comps = []
     now = datetime.datetime.now()
@@ -30,7 +30,7 @@ def get_comps():
             name = comp[1]
             comp[1] = f'<a href="/competition/{compid}">{name}</a>'
         # else:
-        # comp['comName'] = "<a href=\"comp_overall.html?comPk=$id\">" . $row['comName'] . '</a>';
+        # comp['comp_name'] = "<a href=\"comp_overall.html?comp_id=$id\">" . $row['comp_name'] . '</a>';
         if comp[3] == "PG" or "HG":
             hgpg = comp[3]
             comp[3] = f'<img src="/static/img/{hgpg}.png" width="100%" height="100%"</img>'
@@ -59,11 +59,11 @@ def get_admin_comps():
     c = aliased(TblCompetition)
 
     with Database() as db:
-        comps = (db.session.query(c.comPk, c.comName, c.comLocation,
-                                  c.comDateFrom,
-                                  c.comDateTo, func.count(TblTask.tasPk))
-                 .outerjoin(TblTask, c.comPk == TblTask.comPk)
-                 .group_by(c.comPk))
+        comps = (db.session.query(c.comp_id, c.comp_name, c.comp_site,
+                                  c.date_from,
+                                  c.date_to, func.count(TblTask.task_id))
+                 .outerjoin(TblTask, c.comp_id == TblTask.comp_id)
+                 .group_by(c.comp_id))
 
     all_comps = []
     for c in comps:
@@ -162,7 +162,7 @@ def get_region_choices(compid):
     regions = get_comp_regions(compid)
     choices = []
     for region in regions['regions']:
-        choices.append((region['regPk'], region['name']))
+        choices.append((region['reg_id'], region['name']))
     return choices
 
 
@@ -172,5 +172,5 @@ def get_waypoint_choices(reg_id):
     choices = []
 
     for wpt in wpts:
-        choices.append((wpt['rwpPk'], wpt['rwpName'] + ' - ' + wpt['rwpDescription']))
+        choices.append((wpt['rwp_id'], wpt['rwpName'] + ' - ' + wpt['rwpDescription']))
     return choices

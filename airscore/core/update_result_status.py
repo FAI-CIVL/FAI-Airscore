@@ -14,8 +14,8 @@ def update_result(ref_id, status):
     import json
 
     with Database() as db:
-        result  = db.session.query(R).get(ref_id)
-        file    = result.refJSON
+        result = db.session.query(R).get(ref_id)
+        file = result.filename
         '''check if json file exists, and updates it'''
         if p.isfile(file):
             '''update status in json file'''
@@ -27,12 +27,13 @@ def update_result(ref_id, status):
                 f.truncate()
                 print(f'JSON file has been updated \n')
             '''update status in database'''
-            result.refStatus = status
+            result.status = status
             db.session.commit()
             return 1
         else:
             print(f"Couldn't find a JSON file for this result \n")
             return 0
+
 
 def main(args):
     from logger import Logger
@@ -53,6 +54,7 @@ def main(args):
     Logger('OFF')
 
     print(f"{out}")
+
 
 if __name__ == "__main__":
     import sys

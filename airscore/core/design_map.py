@@ -1,7 +1,7 @@
 """
 Map definition
 Creates map from track GeoJSON and Task Definition JSON
-Use: design_map <traPk> <tasPk>
+Use: design_map <track_id> <task_id>
 
 Martino Boni,
 Stuart Mackintosh - 2019

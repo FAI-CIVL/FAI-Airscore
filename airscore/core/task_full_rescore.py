@@ -49,8 +49,6 @@ def main(args):
     ''' now restore stdout function '''
     # Logger('OFF')
 
-    ''' output ref_id to use in frontend:
-        task_result.php?refPk=ref_id&tasPk=task_id&comPk=comp_id'''
     print(f'{ref_id}')
 
 

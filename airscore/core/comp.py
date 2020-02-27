@@ -45,7 +45,7 @@ class Comp(object):
     def __init__(self, comp_id=None, comp_name=None, comp_site=None, date_from=None, comp_code=None, date_to=None,
                  comp_class=None, region=None, comp_type='RACE', restricted=True, locked=False, external=False):
 
-        self.comp_id = comp_id  # comPk
+        self.comp_id = comp_id  # com_id
         self.comp_name = comp_name  # str
         self.comp_site = comp_site  # str
         self.date_from = date_from  # in datetime.date (Y-m-d) format
@@ -60,7 +60,7 @@ class Comp(object):
         self.formula = None  # Formula obj.
         self.MD_name = None  # str
         self.contact = None  # str
-        self.cat_id = None  # claPk
+        self.cat_id = None  # cat_id
         self.sanction = None  # 'League', 'PWC', 'FAI 1', 'FAI 2', 'none'
         self.comp_type = comp_type  # 'RACE', 'Route', 'Team-RACE'
         self.comp_code = comp_code  # str 8 chars codename
@@ -189,7 +189,7 @@ class Comp(object):
     @staticmethod
     def read(comp_id):
         """Reads competition from database
-        takes comPk as argument"""
+        takes com_id as argument"""
         from db_tables import CompObjectView as C
 
         if not (type(comp_id) is int and comp_id > 0):
@@ -356,7 +356,7 @@ class Comp(object):
     @staticmethod
     def from_json(comp_id, ref_id=None):
         """Reads competition from json result file
-        takes comPk as argument"""
+        takes com_id as argument"""
         from db_tables import TblResultFile as R
 
         if type(comp_id) is int and comp_id > 0:
@@ -365,7 +365,7 @@ class Comp(object):
                     file = db.session.query(R).get(ref_id).filename
                 else:
                     file = db.session.query(R.filename).filter(
-                        and_(R.comp_id == comp_id, R.task_id == None, R.active == 1)).scalar()
+                        and_(R.comp_id == comp_id, R.task_id.is_(None), R.active == 1)).scalar()
             if file:
                 comp = Comp(comp_id=comp_id)
                 with open(path.join(RESULTDIR, file), 'r') as f:

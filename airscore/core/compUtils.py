@@ -1,7 +1,7 @@
 """
 Module for operations on comp / task / formulas
 Use:    import compUtils
-        comPk = compUtils.get_comp(tasPk)
+        com_id = compUtils.get_comp(tas_id)
 Antonio Golfari - 2019
 """
 
@@ -15,31 +15,30 @@ from myconn import Database
 
 
 def get_comp(task_id):
-    """Get comPk from tasPk"""
+    """Get com_id from tas_id"""
     from db_tables import TblTask as T
     if type(task_id) is int and task_id > 0:
         with Database() as db:
             tasks = db.session.query(T)
-        return tasks.get(task_id).comPk
+        return tasks.get(task_id).comp_id
 
 
-def get_class(tasPk):
-    """Get comPk from tasPk"""
-    from db_tables import TaskView as T
-    if type(tasPk) is int and tasPk > 0:
+def get_class(task_id):
+    """Get comp_id from task_id"""
+    from db_tables import TblTask as T, TblCompetition as C
+    if type(task_id) is int and task_id > 0:
         with Database() as db:
-            comp_class = db.session.query(T.c.comClass).filter(T.c.tasPk == tasPk).limit(1).scalar()
-        return comp_class
+            result = db.session.query(C).join(T, T.comp_id == C.comp_id).filter(T.task_id == task_id).one()
+        return result.comp_class
 
 
 def get_task_date(task_id):
-    """Get date from tasPk in date format"""
+    """Get date from task_id in date format"""
     from db_tables import TblTask as T
     if type(task_id) is int and task_id > 0:
         with Database() as db:
-            tasks = db.session.query(T)
-            # date = db.session.query(T.tasDate).filter(T.tasPk==tasPk).limit(1).scalar()
-        return tasks.get(task_id).tasDate
+            task = db.session.query(T).get(task_id)
+        return task.date
 
 
 def get_registration(comp_id):
@@ -48,24 +47,28 @@ def get_registration(comp_id):
     if comp_id > 0:
         with Database() as db:
             comps = db.session.query(C)
-        return comps.get(comp_id).comEntryRestrict == 'registered'
+        return comps.get(comp_id).restricted == 1
 
 
 def get_offset(task_id):
-    from db_tables import TaskView as T
+    from db_tables import TblTask as T
     with Database() as db:
-        off = db.session.query(T.c.comTimeOffset).filter(T.c.tasPk == task_id).limit(1).scalar()
+        off = db.session.query(T).get(task_id).time_offset
     return off
 
 
 def is_registered(civl_id, comp_id):
     """Check if pilot is registered to the comp"""
-    from db_tables import RegistrationView as R
-    par_id = 0
-    if (civl_id > 0 and comp_id > 0):
+    from db_tables import TblParticipant as R
+    from sqlalchemy.exc import SQLAlchemyError
+    if civl_id > 0 and comp_id > 0:
         with Database() as db:
-            par_id = db.session.query(R.parPk).filter(R.comp_id == comp_id, R.civl_id == civl_id).limit(1).scalar()
-    return par_id
+            try:
+                pilot = db.session.query(R).filter(R.comp_id == comp_id, R.civl_id == civl_id).one()
+                return pilot.par_id
+            except SQLAlchemyError:
+                print(f'No pilot with CIVLID {civl_id} is registered')
+    return False
 
 
 def is_ext(comp_id):
@@ -74,19 +77,21 @@ def is_ext(comp_id):
     if comp_id > 0:
         with Database() as db:
             comps = db.session.query(C)
-            # ext = db.session.query(C.comExt).filter(C.comPk==comp_id).limit(1).scalar()
-        return bool(comps.get(comp_id).comExt)
+            # ext = db.session.query(C.comExt).filter(C.comp_id==comp_id).limit(1).scalar()
+        return bool(comps.get(comp_id).external)
 
 
 def get_comp_json_filename(comp_id):
     """returns active json results file"""
     from db_tables import TblResultFile as R
-    filename = "NONE"
+    from sqlalchemy.exc import SQLAlchemyError
     with Database() as db:
-        filename = db.session.query(R.refJSON).filter(and_(R.comPk == comp_id, R.tasPk == None, R.refVisible == 1)) \
-            .limit(1).scalar()
-    print(f"filename: {filename}")
-    return filename
+        try:
+            result = db.session.query(R).filter(and_(R.comp_id == comp_id, R.task_id.is_(None), R.active == 1)).one()
+            return result.filename
+        except SQLAlchemyError:
+            print(f"No file found")
+    return None
 
 
 def get_comp_json(comp_id):
@@ -114,7 +119,7 @@ def get_task_path(task_id):
     from db_tables import TblTask as T
     if type(task_id) is int and task_id > 0:
         with Database() as db:
-            return db.session.query(T.tasPath).filter(T.tasPk == task_id).limit(1).scalar()
+            return db.session.query(T.task_path).filter(T.task_id == task_id).limit(1).scalar()
 
 
 def get_comp_path(comp_id):
@@ -122,7 +127,7 @@ def get_comp_path(comp_id):
     from db_tables import TblCompetition as C
     if type(comp_id) is int and comp_id > 0:
         with Database() as db:
-            return db.session.query(C.comPath).filter(C.comPk == comp_id).limit(1).scalar()
+            return db.session.query(C.comp_path).filter(C.comp_id == comp_id).limit(1).scalar()
 
 
 def create_comp_path(date, code):
@@ -134,28 +139,28 @@ def get_task_region(task_id):
     from db_tables import TblTask as T
     if type(task_id) is int and task_id > 0:
         with Database() as db:
-            return db.session.query(T.regPk).filter(T.tasPk == task_id).limit(1).scalar()
+            return db.session.query(T.reg_id).filter(T.task_id == task_id).limit(1).scalar()
 
 
-def get_area_wps(region_id):
-    """query db get all wpts names and pks for region of task and put into dictionary"""
-    from db_tables import TblRegionWaypoint as W
-    if type(region_id) is int and region_id > 0:
-        with Database() as db:
-            wps = db.session.query(W.rwpName,
-                                   W.rwpPk).filter(and_(W.regPk == region_id,
-                                                        W.rwpOld == 0)).order_by(W.rwpName).all()
-        return dict(wps)
+# def get_area_wps(region_id):
+#     """query db get all wpts names and pks for region of task and put into dictionary"""
+#     from db_tables import TblRegionWaypoint as W
+#     if type(region_id) is int and region_id > 0:
+#         with Database() as db:
+#             wps = db.session.query(W.rwpName,
+#                                    W.rwpPk).filter(and_(W.regPk == region_id,
+#                                                         W.rwpOld == 0)).order_by(W.rwpName).all()
+#         return dict(wps)
 
 
-def get_wpts(task_id):
-    region_id = get_task_region(task_id)
-    return get_area_wps(region_id)
+# def get_wpts(task_id):
+#     region_id = get_task_region(task_id)
+#     return get_area_wps(region_id)
 
 
 def get_participants(comp_id):
     """gets registered pilots list from database"""
-    from db_tables import RegisteredPilotView as R
+    from db_tables import TblParticipant as R
     from participant import Participant
 
     with Database() as db:
@@ -165,8 +170,6 @@ def get_participants(comp_id):
         for p in result:
             pil = Participant(comp_id=comp_id)
             db.populate_obj(pil, p)
-            # for x in pil.__dict__.keys():
-            #     if hasattr(result,x): setattr(pil, x, getattr(result,x))
             pilots.append(pil)
     return pilots
 
@@ -176,10 +179,10 @@ def get_tasks_result_files(comp_id):
     files = []
     with Database() as db:
         '''getting active json files list'''
-        files = db.session.query(R.tasPk.label('task_id'),
-                                 R.refJSON.label('file')).filter(and_(
-            R.comPk == comp_id, R.tasPk.isnot(None), R.refVisible == 1
-        )).order_by(R.tasPk).all()
+        files = db.session.query(R.task_id,
+                                 R.filename.label('file')).filter(and_(R.comp_id == comp_id,
+                                                                       R.task_id.isnot(None), R.active == 1)).order_by(
+                                                                       R.task_id).all()
     return files
 
 
@@ -195,11 +198,11 @@ def read_rankings(comp_id):
     with Database() as db:
         '''get rankings definitions'''
         try:
-            class_id = db.session.query(C).get(comp_id).claPk
-            query = db.session.query(R.ranName.label('rank'), CCT.cerName.label('cert'), CT.claFem.label('female'),
-                                     CT.claTeam.label('team')).select_from(R).join(CC, R.ranPk == CC.ranPk) \
-                .join(CCT, and_(CCT.cerPk <= CC.cerPk, CCT.comClass == R.comClass)
-                      ).join(CT, CT.claPk == CC.claPk).filter(and_(CC.cerPk > 0, CC.claPk == class_id))
+            class_id = db.session.query(C).get(comp_id).cat_id
+            query = db.session.query(R.rank_name.label('rank'), CCT.cert_name.label('cert'), CT.female,
+                                     CT.team).select_from(R).join(CC, R.rank_id == CC.rank_id) \
+                .join(CCT, and_(CCT.cert_id <= CC.cert_id, CCT.comp_class == R.comp_class)
+                      ).join(CT, CT.cat_id == CC.cat_id).filter(and_(CC.cert_id > 0, CC.cat_id == class_id))
             result = query.all()
         except SQLAlchemyError:
             print(f'Ranking Query Error')
@@ -241,8 +244,7 @@ def get_task_filepath(task_id, session=None):
     with Database(session) as db:
         try:
             task = db.session.query(T).get(task_id)
-            comp_path, task_path = task.comp_path, task.task_path
-            return p.join(FILEDIR, comp_path, task_path)
+            return p.join(FILEDIR, task.comp_path, task.task_path)
         except SQLAlchemyError:
             print('Error trying to retrieve flie path from database')
             return None

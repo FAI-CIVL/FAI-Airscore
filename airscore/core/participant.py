@@ -28,8 +28,8 @@ class Participant(object):
                  nat=None, glider=None, glider_cert=None, sponsor=None, fai_id=None, fai_valid=1, xcontest_id=None,
                  team=None, nat_team=1, status=None, ranking=None, paid=None):
 
-        self.par_id = par_id  # parPk
-        self.comp_id = comp_id  # comPk
+        self.par_id = par_id  # pil_id
+        self.comp_id = comp_id  # comp_id
         self.ID = ID  # int
         self.civl_id = civl_id  # int
         self.name = name  # str
@@ -78,8 +78,8 @@ class Participant(object):
     @staticmethod
     def read(par_id):
         """Reads pilot registration from database
-        takes parPk as argument"""
-        from db_tables import RegistrationView as R
+        takes pil_id as argument"""
+        from db_tables import TblParticipant as R
 
         if not (type(par_id) is int and par_id > 0):
             print(f"par_id needs to be int > 0, {par_id} was given")
@@ -108,32 +108,15 @@ class Participant(object):
             try:
                 if not self.par_id:
                     pil = TblParticipant()
+                    db.session.add(pil)
+                    db.session.flush()
+                    self.par_id = pil.par_id
                 else:
                     pil = db.session.query(TblParticipant).get(self.par_id)
-                pil.comPk = self.comp_id
-                pil.CIVLID = self.civl_id
-                pil.parID = self.ID
-                pil.parName = self.name
-                pil.parBirthdate = self.birthdate
-                pil.parSex = self.sex
-                pil.parNat = self.nat
-                pil.parGlider = self.glider
-                pil.parCert = self.glider_cert
-                pil.parSponsor = self.sponsor
-                pil.parValidFAI = self.fai_valid
-                pil.parFAI = self.fai_id,
-                pil.parXC = self.xcontest_id
-                pil.LiveID = self.live_id
-                pil.parTeam = self.team
-                pil.parNatTeam = self.nat_team
-                pil.parStatus = self.status
-                pil.parRanking = self.ranking
-                pil.parPaid = self.paid
-                pil.parHours = None
-                pil.pilPk = self.pil_id
 
-                if not self.par_id:
-                    db.session.add(pil)
+                for attr in dir(pil):
+                    if not attr[0] == '_' and hasattr(self, attr):
+                        setattr(pil, attr, getattr(self, attr))
                 db.session.flush()
 
             except SQLAlchemyError:
@@ -141,7 +124,6 @@ class Participant(object):
                 db.session.rollback()
                 return None
 
-            self.par_id = pil.parPk
         return self.par_id
 
     @staticmethod
@@ -184,7 +166,7 @@ def import_participants_from_excel(comp_id, filename, from_CIVL=False):
     """Gets participants from external file (Airtribune Participants list in Excel format;
     Returns a list of Participant objects
     Input:
-        comp_id:    INT comPk
+        comp_id:    INT comp_id
         filename:   STR filename
         from_CIVL:  BOOL retrieve data from CIVL database using CIVLID
     - read Airtribune XSLX file
@@ -250,43 +232,48 @@ def mass_import_participants(comp_id, pilots, session=None):
     """get participants to update from the list"""
     # TODO check if we already have participants for the comp before inserting, and manage update instead
 
-    insert_mappings = []
-    update_mappings = []
-    for pil in pilots:
-        mapping = {'parPk': pil.par_id,
-                   'comPk': comp_id,
-                   'CIVLID': pil.civl_id,
-                   'parID': pil.ID,
-                   'parName': pil.name,
-                   'parBirthdate': pil.birthdate,
-                   'parSex': pil.sex,
-                   'parNat': pil.nat,
-                   'parGlider': pil.glider,
-                   'parCert': pil.glider_cert,
-                   'parSponsor': pil.sponsor,
-                   'parValidFAI': pil.fai_valid,
-                   'parFAI': pil.fai_id,
-                   'parXC': pil.xcontest_id,
-                   'parLive': pil.live_id,
-                   'parTeam': pil.team,
-                   'parNatTeam': pil.nat_team,
-                   'parStatus': pil.status,
-                   'parRanking': pil.ranking,
-                   'parPaid': pil.paid,
-                   'parHours': None,
-                   'pilPk': pil.pil_id}
-        if mapping['parPk']:
-            update_mappings.append(mapping)
-        else:
-            insert_mappings.append(mapping)
+    objects = []
+    for par in pilots:
+        r = TblParticipant(comp_id=comp_id, par_id=par.par_id)
+        for attr in dir(r):
+            if not attr[0] == '_' and hasattr(par, attr):
+                setattr(r, attr, getattr(par, attr))
+        objects.append(r)
+        # mapping = {'parPk': pil.par_id,
+        #            'comPk': comp_id,
+        #            'CIVLID': pil.civl_id,
+        #            'parID': pil.ID,
+        #            'parName': pil.name,
+        #            'parBirthdate': pil.birthdate,
+        #            'parSex': pil.sex,
+        #            'parNat': pil.nat,
+        #            'parGlider': pil.glider,
+        #            'parCert': pil.glider_cert,
+        #            'parSponsor': pil.sponsor,
+        #            'parValidFAI': pil.fai_valid,
+        #            'parFAI': pil.fai_id,
+        #            'parXC': pil.xcontest_id,
+        #            'parLive': pil.live_id,
+        #            'parTeam': pil.team,
+        #            'parNatTeam': pil.nat_team,
+        #            'parStatus': pil.status,
+        #            'parRanking': pil.ranking,
+        #            'parPaid': pil.paid,
+        #            'parHours': None,
+        #            'pilPk': pil.pil_id}
+        # if mapping['parPk']:
+        #     update_mappings.append(mapping)
+        # else:
+        #     insert_mappings.append(mapping)
 
     '''update database'''
     with Database(session) as db:
         try:
-            if len(insert_mappings) > 0:
-                db.session.bulk_insert_mappings(TblParticipant, insert_mappings)
-            if len(update_mappings) > 0:
-                db.session.bulk_update_mappings(TblParticipant, update_mappings)
+            db.session.bulk_save_objects(TblParticipant, objects)
+            # if len(insert_mappings) > 0:
+            #     db.session.bulk_insert_mappings(TblParticipant, insert_mappings)
+            # if len(update_mappings) > 0:
+            #     db.session.bulk_update_mappings(TblParticipant, update_mappings)
             db.session.commit()
         except SQLAlchemyError:
             print(f'update all participants on database gave an error')
