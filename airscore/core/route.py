@@ -60,10 +60,10 @@ class Turnpoint():
     """
 
     def __init__(self, lat=None, lon=None, radius=None, type='waypoint', shape='circle', how='entry', altitude=None,
-                 name=None, description=None, wpt_id=None, rwpPk=None):
+                 name=None, description=None, wpt_id=None, rwp_id=None):
         self.name = name
         self.wpt_id = wpt_id  # tawPk
-        self.rwpPk = rwpPk
+        self.rwp_id = rwp_id
         self.lat = lat
         self.lon = lon
         self.radius = radius

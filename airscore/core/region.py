@@ -13,6 +13,7 @@ from myconn import Database
 from db_tables import TblRegion as R, RegionWaypointView as RWV, TblRegionWaypoint as RW
 from sqlalchemy.exc import SQLAlchemyError
 
+
 class Region:
     def __init__(self, reg_id=None, name=None, filename=None, openair=None, turnpoints=[]):
         self.name = name
@@ -54,9 +55,9 @@ def get_all_regions():
     with Database() as db:
         try:
             results = db.session.query(R.reg_id,
-                                     R.description.label('name'),
-                                     R.waypoint_file.label('filename'),
-                                     R.openair_file.label('openair')).all()
+                                       R.description.label('name'),
+                                       R.waypoint_file.label('filename'),
+                                       R.openair_file.label('openair')).all()
             if results:
                 results = [row._asdict() for row in results]
             return {'regions': results}
@@ -70,15 +71,15 @@ def get_comp_regions_and_wpts(compid):
     with Database() as db:
         try:
             region_results = db.session.query(R.reg_id,
-                                       R.description.label('name'),
-                                       R.waypoint_file.label('filename'),
-                                       R.openair_file.label('openair'))\
-                                       .filter(R.comp_id == compid).all()
+                                              R.description.label('name'),
+                                              R.waypoint_file.label('filename'),
+                                              R.openair_file.label('openair')) \
+                .filter(R.comp_id == compid).all()
 
             wpt_results = db.session.query(RW.reg_id,
-                                           RW.rwpPk,
-                                           RW.rwpName,
-                                           RW.rwpDescription).join(R).filter(R.reg_id == RW.reg_id,
+                                           RW.rwp_id,
+                                           RW.name,
+                                           RW.description).join(R).filter(R.reg_id == RW.reg_id,
                                                                              R.comp_id == compid).all()
 
             if region_results:
@@ -97,10 +98,9 @@ def get_region_wpts(reg_id):
     with Database() as db:
         try:
             wpt_results = db.session.query(RW.reg_id,
-                                           RW.rwpPk,
-                                           RW.rwpName,
-                                           RW.rwpDescription).join(R).filter(
-                                           RW.reg_id == reg_id).order_by(RW.rwpName).all()
+                                           RW.rwp_id,
+                                           RW.name,
+                                           RW.description).join(R).filter(RW.reg_id == reg_id).order_by(RW.name).all()
 
             if wpt_results:
                 wpt_results = [row._asdict() for row in wpt_results]
@@ -110,4 +110,3 @@ def get_region_wpts(reg_id):
         except SQLAlchemyError:
             print("Error trying to retrieve regions")
             return None
-

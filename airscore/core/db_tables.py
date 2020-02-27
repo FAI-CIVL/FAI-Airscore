@@ -222,6 +222,19 @@ PilotView = Table(
 )
 
 
+class RegionWaypointView(Base):
+    __table__ = Table('RegionWaypointView', metadata,
+
+                      Column('rwp_id', INTEGER(11), primary_key=True),
+                      Column('region_id', INTEGER(11)),
+                      Column('name', String(12)),
+                      Column('lat', Float),
+                      Column('lon', Float),
+                      Column('altitude', SMALLINT(6)),
+                      Column('description', String(64))
+                      )
+
+
 class TaskAirspaceCheckView(Base):
     __table__ = Table('TaskAirspaceCheckView', metadata,
 
@@ -636,6 +649,23 @@ TblLadderComp = Table(
 )
 
 
+class TblRegionWaypoint(Base):
+    __tablename__ = 'tblRegionWaypoint'
+
+    rwp_id = Column(INTEGER(11), primary_key=True)
+    reg_id = Column(ForeignKey('tblRegion.reg_id'), index=True)
+    name = Column(String(12), nullable=False)
+    lat = Column(Float, nullable=False)
+    lon = Column(Float, nullable=False)
+    altitude = Column(SMALLINT(6), nullable=False)
+    description = Column(String(64))
+    old = Column(TINYINT(1), nullable=False, server_default=text("'0'"))
+    xccSiteID = Column(INTEGER(11))
+    xccToID = Column(INTEGER(11))
+
+    reg = relationship('TblRegion')
+
+
 class TblTask(Base):
     __tablename__ = 'tblTask'
 
@@ -730,7 +760,7 @@ class TblTaskWaypoint(Base):
 
     wpt_id = Column(INTEGER(11), primary_key=True)
     task_id = Column(ForeignKey('tblTask.task_id', ondelete='SET NULL'), index=True)
-    rwpPk = Column(INTEGER(11), index=True)
+    rwp_id = Column(INTEGER(11), index=True)
     num = Column(TINYINT(4), nullable=False)
     name = Column(CHAR(6), nullable=False)
     lat = Column(Float, nullable=False)
@@ -747,4 +777,5 @@ class TblTaskWaypoint(Base):
     ssr_lon = Column(Float)
     partial_distance = Column(Float)
 
+    rwp = relationship('TblRegionWaypoint')
     task = relationship('TblTask')

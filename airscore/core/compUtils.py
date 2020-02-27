@@ -148,7 +148,7 @@ def get_task_region(task_id):
 #     if type(region_id) is int and region_id > 0:
 #         with Database() as db:
 #             wps = db.session.query(W.rwpName,
-#                                    W.rwpPk).filter(and_(W.regPk == region_id,
+#                                    W.rwp_id).filter(and_(W.regPk == region_id,
 #                                                         W.rwpOld == 0)).order_by(W.rwpName).all()
 #         return dict(wps)
 

@@ -389,7 +389,7 @@ def _get_task_turnpoints(taskid):
 @blueprint.route('/_add_turnpoint/<taskid>', methods=['POST'])
 @login_required
 def _add_turnpoint(taskid):
-    """add turnpoint to the task,if rwpPk is not null then update instead of insert (add)
+    """add turnpoint to the task,if rwp_id is not null then update instead of insert (add)
     if turnpoint is goal or we are updating and goal exists then calculate opt dist and dist."""
     data = request.json
     taskid = int(taskid)
@@ -401,10 +401,10 @@ def _add_turnpoint(taskid):
         data['direction'] = 'entry'
     data['radius'] = int(data['radius'])
     data['number'] = int(data['number'])
-    data['rwpPk'] = int(data['rwpPk'])
+    data['rwp_id'] = int(data['rwp_id'])
 
     tp = Turnpoint(radius=data['radius'], how=data['direction'], shape=data['shape'], type=data['type'],
-                   id=data['number'], rwpPk=data['rwpPk'])
+                   id=data['number'], rwp_id=data['rwp_id'])
     if save_turnpoint(int(taskid), tp, data['id']):
         task = Task()
         task.task_id = taskid

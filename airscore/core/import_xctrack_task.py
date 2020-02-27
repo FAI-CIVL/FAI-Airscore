@@ -39,7 +39,7 @@ def main(args):
     task.update_from_xctrack_file(task_file)
     # print('Waypoints after reading xct file:')
     # for wp in task.turnpoints:
-    #     print('{} - {}'.format(wp.rwpPk, wp.name))
+    #     print('{} - {}'.format(wp.rwp_id, wp.name))
     task.update_task_info()
     task.update_waypoints()
     task.calculate_task_length()

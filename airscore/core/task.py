@@ -521,7 +521,7 @@ class Task(object):
         with Database() as db:
             try:
                 # get the task turnpoint details.
-                results = db.session.query(W.wpt_id, W.rwpPk, W.name, W.num, W.description, W.how, W.radius, W.shape,
+                results = db.session.query(W.wpt_id, W.rwp_id, W.name, W.num, W.description, W.how, W.radius, W.shape,
                                            W.type, W.partial_distance).filter(W.task_id == self.task_id).order_by(
                     W.num).all()
 
@@ -984,7 +984,7 @@ class Task(object):
 
             turnpoint = Turnpoint(tp['waypoint']['lat'], tp['waypoint']['lon'], tp['radius'], waytype, shape, how)
             turnpoint.name = tp["waypoint"]["name"]
-            turnpoint.rwpPk = wpID
+            turnpoint.rwp_id = wpID
             self.turnpoints.append(turnpoint)
 
     @staticmethod
