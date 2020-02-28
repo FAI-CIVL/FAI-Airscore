@@ -5,8 +5,10 @@ from sqlalchemy.orm import relationship
 
 from myconn import Base, metadata
 
+
 # Created using sqlacodegen library
 # sqlacodegen mysql+pymysql://user:pwd@server/database --outfile db_tables_new.py
+
 
 class CompObjectView(Base):
     __table__ = Table('CompObjectView', metadata,
@@ -36,21 +38,21 @@ class CompObjectView(Base):
                       Column('formula_version', INTEGER(8)),
                       Column('formula_name', String(50)),
                       Column('overall_validity', Enum('ftv', 'all', 'round'), server_default=text("'ftv'")),
-                      Column('validity_param', Float, server_default=text("'0.75'")),
-                      Column('nominal_goal', Float, server_default=text("'0.3'")),
+                      Column('validity_param', Float(4), server_default=text("'0.750'")),
+                      Column('nominal_goal', Float(3), server_default=text("'0.30'")),
                       Column('min_dist', MEDIUMINT(9), server_default=text("'5000'")),
                       Column('nominal_dist', MEDIUMINT(9), server_default=text("'45000'")),
                       Column('nominal_time', SMALLINT(6), server_default=text("'5400'")),
-                      Column('nominal_launch', Float, server_default=text("'0.96'")),
+                      Column('nominal_launch', Float(3), server_default=text("'0.96'")),
                       Column('formula_distance', Enum('on', 'difficulty', 'off'), server_default=text("'on'")),
                       Column('formula_arrival', Enum('position', 'time', 'off'), server_default=text("'off'")),
                       Column('formula_departure', Enum('leadout', 'departure', 'off'),
                              server_default=text("'leadout'")),
-                      Column('lead_factor', Float),
+                      Column('lead_factor', Float(4)),
                       Column('formula_time', Enum('on', 'off'), server_default=text("'on'")),
-                      Column('no_goal_penalty', Float, server_default=text("'1'")),
-                      Column('glide_bonus', Float, server_default=text("'4'")),
-                      Column('tolerance', Float, server_default=text("'0.1'")),
+                      Column('no_goal_penalty', Float(4), server_default=text("'1.000'")),
+                      Column('glide_bonus', Float(4), server_default=text("'4.00'")),
+                      Column('tolerance', Float(6), server_default=text("'0.10000'")),
                       Column('min_tolerance', INTEGER(4), server_default=text("'5'")),
                       Column('arr_alt_bonus', Float, server_default=text("'0'")),
                       Column('arr_min_height', SMALLINT(6)),
@@ -58,7 +60,7 @@ class CompObjectView(Base):
                       Column('validity_min_time', SMALLINT(6)),
                       Column('score_back_time', SMALLINT(6), server_default=text("'300'")),
                       Column('max_JTG', SMALLINT(6), server_default=text("'0'")),
-                      Column('JTG_penalty_per_sec', Float),
+                      Column('JTG_penalty_per_sec', Float(4)),
                       Column('scoring_altitude', Enum('GPS', 'QNH'), server_default=text("'GPS'")),
                       Column('team_size', INTEGER(4), server_default=text("'0'")),
                       Column('team_scoring', TINYINT(1), server_default=text("'0'")),
@@ -130,27 +132,29 @@ class TaskFormulaView(Base):
                       Column('formula_type', String(10)),
                       Column('formula_version', INTEGER(8)),
                       Column('formula_name', String(50)),
-                      Column('nominal_goal', Float, server_default=text("'0.3'")),
-                      Column('min_dist', Float(asdecimal=False), server_default=text("'0'")),
-                      Column('nominal_dist', Float(asdecimal=False), server_default=text("'0'")),
-                      Column('nominal_time', Float(asdecimal=False), server_default=text("'0'")),
-                      Column('nominal_launch', Float, server_default=text("'0.96'")),
-                      Column('formula_distance', String(10)),
-                      Column('formula_departure', String(9)),
-                      Column('formula_arrival', String(8)),
-                      Column('formula_time', String(3)),
-                      Column('lead_factor', Float),
-                      Column('no_goal_penalty', Float(20, False), server_default=text("'0.000'")),
-                      Column('glide_bonus', Float, server_default=text("'4'")),
-                      Column('tolerance', Float(21, False)),
-                      Column('min_tolerance', INTEGER(4)),
-                      Column('arr_alt_bonus', Float(asdecimal=False), server_default=text("'0'")),
-                      Column('arr_min_height', INTEGER(11)),
-                      Column('arr_max_height', INTEGER(11)),
-                      Column('validity_min_time', BIGINT(13)),
-                      Column('score_back_time', BIGINT(13), server_default=text("'0'")),
+                      Column('overall_validity', Enum('ftv', 'all', 'round'), server_default=text("'ftv'")),
+                      Column('validity_param', Float(4), server_default=text("'0.750'")),
+                      Column('nominal_goal', Float(3), server_default=text("'0.30'")),
+                      Column('min_dist', MEDIUMINT(9), server_default=text("'5000'")),
+                      Column('nominal_dist', MEDIUMINT(9), server_default=text("'45000'")),
+                      Column('nominal_time', SMALLINT(6), server_default=text("'5400'")),
+                      Column('nominal_launch', Float(3), server_default=text("'0.96'")),
+                      Column('formula_distance', Enum('on', 'difficulty', 'off')),
+                      Column('formula_departure', Enum('leadout', 'departure', 'off')),
+                      Column('formula_arrival', Enum('position', 'time', 'off')),
+                      Column('formula_time', Enum('on', 'off')),
+                      Column('lead_factor', Float(4)),
+                      Column('no_goal_penalty', Float(4)),
+                      Column('glide_bonus', Float(4), server_default=text("'4.00'")),
+                      Column('tolerance', Float(6)),
+                      Column('min_tolerance', INTEGER(4), server_default=text("'5'")),
+                      Column('arr_alt_bonus', Float),
+                      Column('arr_min_height', SMALLINT(6)),
+                      Column('arr_max_height', SMALLINT(6)),
+                      Column('validity_min_time', SMALLINT(6)),
+                      Column('score_back_time', SMALLINT(6), server_default=text("'300'")),
                       Column('max_JTG', SMALLINT(6)),
-                      Column('JTG_penalty_per_sec', Float),
+                      Column('JTG_penalty_per_sec', Float(4)),
                       Column('scoring_altitude', Enum('GPS', 'QNH'), server_default=text("'GPS'"))
                       )
 
@@ -198,28 +202,29 @@ class FlightResultView(Base):
                       )
 
 
-PilotView = Table(
-    'PilotView', metadata,
-    Column('pil_id', BIGINT(20)),
-    Column('login', String(60)),
-    Column('pwd', String(255)),
-    Column('email', String(100)),
-    Column('first_name', LONGTEXT),
-    Column('last_name', LONGTEXT),
-    Column('nat', LONGTEXT),
-    Column('phone', LONGTEXT),
-    Column('sex', String(1)),
-    Column('glider_brand', LONGTEXT),
-    Column('glider', LONGTEXT),
-    Column('glider_cert', LONGTEXT),
-    Column('glider_class', String(12)),
-    Column('sponsor', LONGTEXT),
-    Column('fai_id', LONGTEXT),
-    Column('civl_id', LONGTEXT),
-    Column('livetrack24_id', LONGTEXT),
-    Column('airtribune_id', LONGTEXT),
-    Column('xcontest_id', LONGTEXT)
-)
+class PilotView(Base):
+    __table__ = Table('PilotView', metadata,
+
+                      Column('pilPk', BIGINT(20), primary_key=True),
+                      Column('pilLogin', String(60)),
+                      Column('pilpass', String(255)),
+                      Column('pilEmail', String(100)),
+                      Column('pilFirstName', LONGTEXT),
+                      Column('pilLastName', LONGTEXT),
+                      Column('pilNat', LONGTEXT),
+                      Column('pilPhoneMobile', LONGTEXT),
+                      Column('pilSex', String(1)),
+                      Column('pilGliderBrand', LONGTEXT),
+                      Column('pilGlider', LONGTEXT),
+                      Column('gliGliderCert', LONGTEXT),
+                      Column('gliGliderClass', String(12)),
+                      Column('pilSponsor', LONGTEXT),
+                      Column('pilFAI', LONGTEXT),
+                      Column('pilCIVL', LONGTEXT),
+                      Column('pilLT24User', LONGTEXT),
+                      Column('pilATUser', LONGTEXT),
+                      Column('pilXContestUser', LONGTEXT)
+                      )
 
 
 class RegionWaypointView(Base):
@@ -245,13 +250,13 @@ class TaskAirspaceCheckView(Base):
                       Column('h_outer_limit', SMALLINT(4)),
                       Column('h_inner_limit', SMALLINT(4)),
                       Column('h_boundary', SMALLINT(4)),
-                      Column('h_boundary_penalty', Float),
-                      Column('h_max_penalty', Float),
+                      Column('h_boundary_penalty', Float(3)),
+                      Column('h_max_penalty', Float(3)),
                       Column('v_outer_limit', SMALLINT(4)),
                       Column('v_inner_limit', SMALLINT(4)),
                       Column('v_boundary', SMALLINT(4)),
-                      Column('v_boundary_penalty', Float),
-                      Column('v_max_penalty', Float)
+                      Column('v_boundary_penalty', Float(3)),
+                      Column('v_max_penalty', Float(3))
                       )
 
 
@@ -285,7 +290,7 @@ class TaskObjectView(Base):
                       Column('opt_dist_to_SS', Float),
                       Column('opt_dist_to_ESS', Float),
                       Column('SS_distance', Float),
-                      Column('QNH', Float, server_default=text("'1013.25'")),
+                      Column('QNH', Float(7), server_default=text("'1013.250'")),
                       Column('comment', Text),
                       Column('locked', TINYINT(3), server_default=text("'0'")),
                       Column('airspace_check', TINYINT(1)),
@@ -360,25 +365,27 @@ class UnscoredPilotView(Base):
 # )
 
 
-TrackObjectView = Table(
-    'TrackObjectView', metadata,
-    Column('track_id', INTEGER(11), server_default=text("'0'")),
-    Column('par_id', INTEGER(11)),
-    Column('task_id', INTEGER(11)),
-    Column('civl_id', INTEGER(10)),
-    Column('glider', String(100)),
-    Column('glider_cert', String(20)),
-    Column('track_file', String(255))
-)
+class TrackObjectView(Base):
+    __table__ = Table('TrackObjectView', metadata,
+
+                      Column('track_id', INTEGER(11), primary_key=True),
+                      Column('par_id', INTEGER(11)),
+                      Column('task_id', INTEGER(11)),
+                      Column('civl_id', INTEGER(10)),
+                      Column('glider', String(100)),
+                      Column('glider_cert', String(20)),
+                      Column('track_file', String(255)),
+                      )
 
 
-UserView = Table(
-    'UserView', metadata,
-    Column('user_id', BIGINT(20)),
-    Column('user_name', String(250)),
-    Column('user_login', String(60)),
-    Column('user_email', String(100))
-)
+class UserView(Base):
+    __table__ = Table('UserView', metadata,
+
+                      Column('usePk', BIGINT(20), primary_key=True),
+                      Column('useName', String(250)),
+                      Column('useLogin', String(60)),
+                      Column('useEmail', String(100))
+                      )
 
 
 schema_version = Table(
@@ -434,7 +441,8 @@ class TblForComp(Base):
 
     forPk = Column(INTEGER(11))
     comp_id = Column(INTEGER(11), primary_key=True)
-    formula_last_update = Column(TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
+    formula_last_update = Column(TIMESTAMP, nullable=False,
+                                 server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
     formula_type = Column(String(10))
     formula_version = Column(INTEGER(8))
     formula_name = Column(String(20))
@@ -584,7 +592,8 @@ class TblCompetition(Base):
     comp_name = Column(String(100), nullable=False)
     comp_code = Column(String(8))
     comp_class = Column(Enum('PG', 'HG', 'mixed'), server_default=text("'PG'"))
-    comp_last_update = Column(TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
+    comp_last_update = Column(TIMESTAMP, nullable=False,
+                              server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
     comp_site = Column(String(100), nullable=False)
     date_from = Column(Date, nullable=False)
     date_to = Column(Date, nullable=False)
@@ -617,13 +626,11 @@ TblLadderSeason = Table(
     Column('validity_param', Float, nullable=False)
 )
 
-
 TblRegionXCSites = Table(
     'tblRegionXCSites', metadata,
     Column('reg_id', ForeignKey('tblRegion.reg_id', ondelete='CASCADE'), nullable=False, index=True),
     Column('xccSiteID', INTEGER(11), nullable=False, index=True)
 )
-
 
 TblCompAirspaceCheck = Table(
     'tblCompAirspaceCheck', metadata,
@@ -632,16 +639,15 @@ TblCompAirspaceCheck = Table(
     Column('function', Enum('linear', 'non-linear'), nullable=False, server_default=text("'linear'")),
     Column('h_outer_limit', SMALLINT(4), nullable=False, server_default=text("'70'")),
     Column('h_boundary', SMALLINT(4), nullable=False, server_default=text("'0'")),
-    Column('h_boundary_penalty', Float, nullable=False, server_default=text("'0.1'")),
+    Column('h_boundary_penalty', Float(3), nullable=False, server_default=text("'0.1'")),
     Column('h_inner_limit', SMALLINT(4), nullable=False, server_default=text("'-30'")),
-    Column('h_max_penalty', Float, nullable=False, server_default=text("'1'")),
+    Column('h_max_penalty', Float(3), nullable=False, server_default=text("'1'")),
     Column('v_outer_limit', SMALLINT(4), nullable=False, server_default=text("'70'")),
     Column('v_boundary', SMALLINT(4), nullable=False, server_default=text("'0'")),
-    Column('v_boundary_penalty', Float, nullable=False, server_default=text("'0.1'")),
+    Column('v_boundary_penalty', Float(3), nullable=False, server_default=text("'0.1'")),
     Column('v_inner_limit', SMALLINT(4), nullable=False, server_default=text("'30'")),
-    Column('v_max_penalty', Float, nullable=False, server_default=text("'1'"))
+    Column('v_max_penalty', Float(3), nullable=False, server_default=text("'1'"))
 )
-
 
 TblLadderComp = Table(
     'tblLadderComp', metadata,
@@ -672,7 +678,8 @@ class TblTask(Base):
 
     task_id = Column(INTEGER(11), primary_key=True)
     comp_id = Column(ForeignKey('tblCompetition.comp_id'), index=True)
-    task_last_update = Column(TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
+    task_last_update = Column(TIMESTAMP, nullable=False,
+                              server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
     task_num = Column(TINYINT(4), nullable=False)
     task_name = Column(String(100))
     date = Column(Date, nullable=False)
@@ -687,7 +694,8 @@ class TblTask(Base):
     task_deadline = Column(MEDIUMINT(9))
     stopped_time = Column(MEDIUMINT(9))
     tasResultsType = Column(String(20))
-    task_type = Column(Enum('race', 'elapsed time', 'free distance', 'distance with bearing'), server_default=text("'race'"))
+    task_type = Column(Enum('race', 'elapsed time', 'free distance', 'distance with bearing'),
+                       server_default=text("'race'"))
     distance = Column(Float)
     opt_dist = Column(Float)
     opt_dist_to_SS = Column(Float)
@@ -701,7 +709,7 @@ class TblTask(Base):
     formula_time = Column(Enum('on', 'off'))
     arr_alt_bonus = Column(Float)
     max_JTG = Column(SMALLINT(6))
-    no_goal_penalty = Column(TINYINT(1))
+    no_goal_penalty = Column(Float)
     tolerance = Column(Float)
     airspace_check = Column(TINYINT(1))
     openair_file = Column(String(40))
@@ -711,8 +719,9 @@ class TblTask(Base):
     task_path = Column(String(40))
 
     reg = relationship('TblRegion')
-    comp = relationship('TblCompetition',  backref="tasks", lazy='subquery')
+    comp = relationship('TblCompetition', backref="tasks", lazy='subquery')
     Results = relationship('TblTaskResult', backref="task")
+
 
 class TblTaskResult(Base):
     __tablename__ = 'tblTaskResult'
@@ -723,7 +732,8 @@ class TblTaskResult(Base):
     track_id = Column(INTEGER(11), primary_key=True)
     task_id = Column(ForeignKey('tblTask.task_id', ondelete='SET NULL'), index=True)
     par_id = Column(INTEGER(11), ForeignKey('tblParticipant.par_id'), index=True)
-    track_last_update = Column(TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
+    track_last_update = Column(TIMESTAMP, nullable=False,
+                               server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
     track_file = Column(String(255))
     g_record = Column(TINYINT(4), server_default=text("'1'"))
     distance_flown = Column(Float)
@@ -769,7 +779,8 @@ class TblTaskWaypoint(Base):
     altitude = Column(SMALLINT(6), nullable=False, server_default=text("'0'"))
     description = Column(String(80))
     time = Column(MEDIUMINT(9))
-    type = Column(Enum('waypoint', 'launch', 'speed', 'endspeed', 'goal'), index=True, server_default=text("'waypoint'"))
+    type = Column(Enum('waypoint', 'launch', 'speed', 'endspeed', 'goal'), index=True,
+                  server_default=text("'waypoint'"))
     how = Column(Enum('entry', 'exit'), server_default=text("'entry'"))
     shape = Column(Enum('circle', 'semicircle', 'line'), server_default=text("'circle'"))
     angle = Column(SMALLINT(6))
@@ -780,3 +791,4 @@ class TblTaskWaypoint(Base):
 
     rwp = relationship('TblRegionWaypoint')
     task = relationship('TblTask')
+

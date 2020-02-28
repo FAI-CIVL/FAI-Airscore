@@ -9,6 +9,7 @@ Scoring Formula Script
 """
 from formula import FormulaPreset, Preset
 from formulas.libs.pwc import *
+from formulas.libs.leadcoeff import *
 
 ''' Formula Info'''
 # Formula Name: usually the filename in capital letters
