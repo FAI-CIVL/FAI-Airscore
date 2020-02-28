@@ -114,6 +114,15 @@ class Pilot(object):
         else:
             return None
 
+    @property
+    def comment(self):
+        comment = []
+        if self.flight.notes:
+            comment.append('; '.join(['[track]: ' + i for i in self.flight.notes]))
+        if self.result.comment:
+            comment.append('; '.join(['[result]: ' + i for i in self.result.comment]))
+        return '; '.join(comment)
+
     def as_dict(self):
         return self.__dict__
 
@@ -215,12 +224,10 @@ class Pilot(object):
                     db.session.flush()
                     self.track.track_id = r.track_id
 
-                for attr in dir(r):
-                    if attr == 'comment' and result.comment:
-                        r.comment = '; '.join(result.comment)
-                    if attr == 'track_file' and self.track.track_file:
-                        r.track_file = self.track.track_file
-                    elif not attr[0] == '_' and hasattr(result, attr):
+                r.comment = self.comment
+                r.track_file = self.track_file
+                for attr in [a for a in dir(r) if not (a[0] == '_' or a in ['track_file', 'comment'])]:
+                    if hasattr(result, attr):
                         setattr(r, attr, getattr(result, attr))
 
                 # r.tarDistance = result.distance_flown
@@ -250,7 +257,7 @@ class Pilot(object):
 
                 db.session.commit()
             except SQLAlchemyError as e:
-                error = str(e.__dict__['orig'])
+                error = str(e.__dict__)
                 print(f"Error storing result to database")
                 db.session.rollback()
                 return error
