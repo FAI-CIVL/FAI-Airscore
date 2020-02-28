@@ -337,9 +337,9 @@ class Flight_result(object):
 
         '''initialize'''
         result = cls()
-        tolerance = task.formula.tolerance
-        min_tol_m = task.formula.min_tolerance
-        max_jump_the_gun = task.formula.max_JTG  # seconds
+        tolerance = task.formula.tolerance or 0
+        min_tol_m = task.formula.min_tolerance or 0
+        max_jump_the_gun = task.formula.max_JTG or 0 # seconds
         jtg_penalty_per_sec = 0 if max_jump_the_gun == 0 else task.formula.JTG_penalty_per_sec
 
         if not task.optimised_turnpoints:
@@ -442,7 +442,7 @@ class Flight_result(object):
             if pilot_can_start(task, tp, my_fix):
                 # print(f'time: {my_fix.rawtime}, start: {task.start_time} | Interval: {task.SS_interval} | my start: {result.real_start_time} | better_start: {pilot_get_better_start(task, my_fix.rawtime, result.SSS_time)} | can start: {pilot_can_start(task, tp, my_fix)} can restart: {pilot_can_restart(task, tp, my_fix, result)} | tp: {tp.name}')
                 if start_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m):
-                    time = round(tp_time_civl(my_fix, next_fix, tp.next), 0)
+                    time = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
                     result.waypoints_achieved.append([tp.name, time, alt])  # pilot has started
                     result.real_start_time = time
                     tp.move_to_next()
@@ -450,7 +450,7 @@ class Flight_result(object):
             elif pilot_can_restart(task, tp, my_fix, result):
                 # print(f'time: {my_fix.rawtime}, start: {task.start_time} | Interval: {task.SS_interval} | my start: {result.real_start_time} | better_start: {pilot_get_better_start(task, my_fix.rawtime, result.SSS_time)} | can start: {pilot_can_start(task, tp, my_fix)} can restart: {pilot_can_restart(task, tp, my_fix, result)} | tp: {tp.name}')
                 if start_made_civl(my_fix, next_fix, tp.last_made, tolerance, min_tol_m):
-                    time = round(tp_time_civl(my_fix, next_fix, tp.next), 0)
+                    time = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
                     result.waypoints_achieved.pop()
                     result.waypoints_achieved.append([tp.name, time, alt])  # pilot has started again
                     result.real_start_time = time
@@ -462,7 +462,7 @@ class Flight_result(object):
                 if (tp.next.shape == 'circle'
                         and tp.next.type in ('endspeed', 'waypoint')):
                     if tp_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m):
-                        time = round(tp_time_civl(my_fix, next_fix, tp.next), 0)
+                        time = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
                         result.waypoints_achieved.append([tp.name, time, alt])  # pilot has achieved turnpoint
                         tp.move_to_next()
 
@@ -696,7 +696,7 @@ def pilot_can_start(task, tp, fix):
     - task is elapsed time
     '''
 
-    max_jump_the_gun = task.formula.max_JTG
+    max_jump_the_gun = task.formula.max_JTG or 0
 
     if ((tp.type == "speed")
             and
@@ -723,7 +723,7 @@ def pilot_can_restart(task, tp, fix, result):
     - task is elapsed time
     '''
 
-    max_jump_the_gun = task.formula.max_JTG
+    max_jump_the_gun = task.formula.max_JTG or 0
 
     if tp.last_made.type == "speed" and (not task.start_close_time or fix.rawtime < task.start_close_time):
         if task.task_type == 'ELAPSED TIME':

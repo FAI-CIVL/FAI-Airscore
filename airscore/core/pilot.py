@@ -129,6 +129,7 @@ class Pilot(object):
 
         pilot = Pilot()
         pilot.info = Participant(par_id=par_id)
+        pilot.task_id = task_id
         with Database() as db:
             # get result details.
             q = db.session.query(R)
@@ -248,10 +249,11 @@ class Pilot(object):
                 #     self.track.track_id = r.tarPk
 
                 db.session.commit()
-
-            except SQLAlchemyError:
+            except SQLAlchemyError as e:
+                error = str(e.__dict__['orig'])
                 print(f"Error storing result to database")
                 db.session.rollback()
+                return error
 
 
 def update_all_results(task_id, pilots, session=None):
