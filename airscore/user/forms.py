@@ -150,7 +150,7 @@ class CompForm(FlaskForm):
     ESS_height_lower = IntegerField('ESS height limit - lower', validators=[Optional(strip_whitespace=True)])
     min_time = IntegerField('Minimum time (mins)')
     scoreback_time = IntegerField('Scoreback time (mins)', description=help_score_back)
-    max_JTG = IntegerField("Max Jump the gun (sec)", validators=[Optional(strip_whitespace=True)])
+    max_JTG = IntegerField("Max Jump the gun (sec)", default=0)
     JTG_pen_sec = DecimalField('Jump the gun penalty per second', validators=[Optional(strip_whitespace=True)])
 
     submit = SubmitField('Save')

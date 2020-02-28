@@ -172,7 +172,7 @@ def competition(compid):
     if comp['date_to']:
         comp['date_to'] = comp['date_to'].strftime("%Y-%m-%d")
 
-    if comp_start > datetime.now():
+    if comp_start > datetime.now().date():
         return render_template('public/future_competition.html', comp=comp)
 
     if non_scored_tasks:

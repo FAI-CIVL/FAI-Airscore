@@ -106,8 +106,8 @@ def get_task_turnpoints(task):
     for tp in turnpoints:
         tp['original_type'] = tp['type']
         tp['partial_distance'] = '' if not tp['partial_distance'] else round(tp['partial_distance'] / 1000, 2)
-        if int(tp['n']) > max_n:
-            max_n = int(tp['n'])
+        if int(tp['num']) > max_n:
+            max_n = int(tp['num'])
             total_dist = tp['partial_distance']
         if tp['type'] == 'speed':
             if tp['how'] == 'entry':
@@ -175,7 +175,7 @@ def get_waypoint_choices(reg_id):
     choices = []
 
     for wpt in wpts:
-        choices.append((wpt['rwp_id'], wpt['rwpName'] + ' - ' + wpt['rwpDescription']))
+        choices.append((wpt['rwp_id'], wpt['name'] + ' - ' + wpt['description']))
     return choices
 
 
@@ -249,53 +249,64 @@ def allowed_tracklog_filesize(filesize):
 def process_igc(task_id, par_id, tracklog):
     from task import Task
     from track import Track
-    from trackUtils import verify_track, import_track
-    from db_tables import TblParticipant as P
-    from formula import Task_formula, get_formula_lib
+    from pilot import Pilot
+    # from trackUtils import verify_track, import_track
+    # from db_tables import TblParticipant as P
+    # from formula import Task_formula, get_formula_lib
+    from flight_result import Flight_result
+    from airspace import AirspaceCheck
+    from igc_lib import Flight
 
-    with Database() as db:
-        # get pilot details.
-        name = db.session.query(P).get(par_id).name
-        if name:
-            filename = name.replace(' ', '_').lower() + '.IGC'
-            filename = secure_filename(filename)
-        else:
-            return None
+    pilot = Pilot.read(par_id, task_id)
+    if pilot.name:
+        filename = pilot.name.replace(' ', '_').lower() + '.IGC'
+        filename = secure_filename(filename)
+    else:
+        return None
+
     task = Task.read(task_id)
     track_path = task.file_path
+    print(task_id)
+    print(filename)
+
     full_file_name = path.join(track_path, filename)
     tracklog.save(full_file_name)
     print("Tracklog saved")
 
     """import track"""
-    mytrack = Track.read_file(filename=full_file_name, par_id=par_id)
+    pilot.track = Track(track_file=full_file_name, par_id=par_id)
+    pilot.track.flight = Flight.create_from_file(full_file_name)
     """check result"""
-    if not mytrack:
+    if not pilot.track:
         print(f"Track {filename} is not a valid track file \n")
-    elif not mytrack.date == task.date:
+    elif not pilot.track.date == task.date:
         print(f"track {filename} has a different date from task day \n")
     else:
-        mytrack.task_id = task.id
-        print(f"pilot {mytrack.par_id} associated with track {mytrack.filename} \n")
+#         mytrack.task_id = task.id
+        print(f"pilot {pilot.track.par_id} associated with track {pilot.track.filename} \n")
 
         """checking track against task"""
-        formula = Task_formula.read(task_id)
-        lib = get_formula_lib(formula.type, formula.version)
-        result = verify_track(mytrack, task)
-        print(f"track {mytrack.traPk} verified with task {mytrack.task_id}\n")
+#         formula = Task_formula.read(task_id)
+#         lib = get_formula_lib(formula.type, formula.version)
+#         result = verify_track(mytrack, task)
+        if task.airspace_check:
+            airspace = AirspaceCheck.from_task(task)
+        else:
+            airspace = None
+        pilot.result = Flight_result.check_flight(pilot.track.flight, task, airspace_obj=airspace)
+        print(f"track verified with task {task.task_id}\n")
         """adding track to db"""
-        track_id = import_track(mytrack, task_id)
-        print(f"track imported to database with ID {mytrack.traPk}\n")
-        print("track correctly imported and results generated \n")
+#         track_id = import_track(mytrack, task_id)
+#         print(f"track imported to database with ID {mytrack.traPk}\n")
+#         print("track correctly imported and results generated \n")
+        pilot.to_db()
 
         time = ''
-        data = {'par_id': par_id, 'track_id': track_id}
-        if result.goal_time:
-            time = sec_to_time(result.ESS_time - result.SSS_time)
-        if result.result_type == 'goal':
+        data = {'par_id': pilot.par_id, 'track_id': pilot.track.track_id}
+        if pilot.result.goal_time:
+            time = sec_to_time(pilot.result.ESS_time - pilot.result.SSS_time)
+        if pilot.result.result_type == 'goal':
             data['Result'] = f'Goal {time}'
-        elif result.result_type == 'lo':
-            data['Result'] = f"LO {round(result.distance/1000,2)}"
+        elif pilot.result.result_type == 'lo':
+            data['Result'] = f"LO {round(pilot.result.distance/1000,2)}"
         return data
-
-
