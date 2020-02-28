@@ -62,7 +62,7 @@
 
         function update_row(new_data){
         var table = $('#tracks').dataTable();
-        new_data.Name = $('#tracks').DataTable().row( $('tr#id_'+ new_data.par_id)).data()['Name'];
+        new_data.name = $('#tracks').DataTable().row( $('tr#id_'+ new_data.par_id)).data()['name'];
         table.fnUpdate(new_data, $('tr#id_'+ new_data.par_id), undefined, false);
         }
 

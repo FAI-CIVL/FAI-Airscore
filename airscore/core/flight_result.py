@@ -859,7 +859,7 @@ def delete_result(trackid):
             print("there was a problem deleting the track")
             return None
 
-    if results.traFile is not None:
+    if results.track_file is not None:
         full_path = get_task_fullpath(results.task_id)
         remove(path.join(full_path, results.track_file))
 
