@@ -40,7 +40,7 @@
                </div>
             </div>
             <div class="form-row">
-               <div class="form-group" col-md-3">
+               <div class="form-group col-md-3">
                   {{compform.comp_type.label}} {{compform.comp_type()}}
                   {{compform.comp_class.label}} {{compform.comp_class()}}
                   {{compform.time_offset.label}} {{compform.time_offset(size=3,**{'data-toggle': 'tooltip', 'title': compform.time_offset.description})}}
@@ -49,7 +49,7 @@
                </div>
             </div>
             <div class="form-row">
-               <div class="form-group" col-md-3">
+               <div class="form-group col-md-3">
                   {{compform.MD_name.label}} {{compform.MD_name()}}
                </div>
             </div>
@@ -451,6 +451,7 @@
                content += '<td  class ="value" ><button type="button" class="btn btn-danger" onclick="confirm_delete('
                content +=  json['tasks'][i].task_num + ',' + json['tasks'][i].task_id
                content += ')" data-toggle="confirmation" data-popout="true">Delete</button></td>'
+               content += '<td  class ="value" ><a href="/users/track_admin/' + json['tasks'][i].task_id + '" class="btn btn-info ml-4" type="button" >Manage Tracks</a></td>'
                content += '</tr>';
    
                }

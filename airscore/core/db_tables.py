@@ -390,7 +390,7 @@ schema_version = Table(
 
 
 class TblCertification(Base):
-    __tablename__ = 'TblCertification'
+    __tablename__ = 'tblCertification'
 
     cert_id = Column(INTEGER(11), primary_key=True)
     cert_name = Column(String(15), nullable=False)
@@ -488,7 +488,7 @@ class TblParticipant(Base):
     )
 
     par_id = Column(INTEGER(11), primary_key=True)
-    comp_id = Column(INTEGER(11))
+    comp_id = Column(INTEGER(11), ForeignKey('tblCompetition.comp_id'), index=True)
     civl_id = Column(INTEGER(10), index=True)
     pil_id = Column(INTEGER(11))
     ID = Column(INTEGER(4))
@@ -710,9 +710,9 @@ class TblTask(Base):
     locked = Column(TINYINT(3), nullable=False, server_default=text("'0'"))
     task_path = Column(String(40))
 
-    comp = relationship('TblCompetition')
     reg = relationship('TblRegion')
-
+    comp = relationship('TblCompetition',  backref="tasks", lazy='subquery')
+    Results = relationship('TblTaskResult', backref="task")
 
 class TblTaskResult(Base):
     __tablename__ = 'tblTaskResult'
@@ -722,7 +722,7 @@ class TblTaskResult(Base):
 
     track_id = Column(INTEGER(11), primary_key=True)
     task_id = Column(ForeignKey('tblTask.task_id', ondelete='SET NULL'), index=True)
-    par_id = Column(INTEGER(11), index=True)
+    par_id = Column(INTEGER(11), ForeignKey('tblParticipant.par_id'), index=True)
     track_last_update = Column(TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
     track_file = Column(String(255))
     g_record = Column(TINYINT(4), server_default=text("'1'"))
@@ -753,7 +753,7 @@ class TblTaskResult(Base):
     lead_coeff = Column(Float)
     fixed_LC = Column(Float)
 
-    task = relationship('TblTask')
+    Participants = relationship('TblParticipant', backref="taskresults", lazy="subquery")
 
 
 class TblTaskWaypoint(Base):

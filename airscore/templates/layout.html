@@ -31,7 +31,9 @@
       href="{{ static_url_for('static', filename='build/main_css.bundle.css') }}"
     />
 
-    {% block css %}{% endblock %}
+    {% block css %}
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+    {% endblock %}
   </head>
   <body class="{% block body_class %}{% endblock %}">
     {% block body %} {% with form=form %} {% include "base.html" %} {% endwith %}
@@ -56,7 +58,14 @@
         <!-- end col-md -->
       </div>
       <!-- end row -->
-      {% endif %} {% endwith %} {% block content %}{% endblock %}
+      {% endif %} {% endwith %}
+      <meta name="csrf-token" content="{{ csrf_token() }}">
+      {% if error %}
+      <p><strong> Error: </strong></p>
+      {{error}}
+      {% endif %}
+
+      {% block content %}{% endblock %}
     </main>
 
     {% include "footer.html" %}

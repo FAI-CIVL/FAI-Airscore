@@ -20,7 +20,7 @@ TO DO:
 Add support for FAI Sphere ???
 """
 
-from os import path
+from os import path, makedirs
 from pathlib import Path
 
 import jsonpickle
@@ -532,18 +532,20 @@ class Task(object):
                 print(f"Error trying to retrieve Tasks details for Comp ID {self.comp_id}")
                 return None
 
-    def create_path(self, path=None):
+    def create_path(self, track_path=None):
         """create filepath from # and date if not given
             and store it in database"""
 
-        if path:
-            self.task_path = path
+        if track_path:
+            self.task_path = track_path
         elif self.task_num and self.date:
             self.task_path = '_'.join([('t' + str(self.task_num)), self.date.strftime('%Y%m%d')])
         else:
             return
 
         if self.id:
+            if not path.exists(self.task_path):
+                makedirs(self.task_path)
             '''store to database'''
             with Database() as db:
                 q = db.session.query(TblTask).get(self.id)

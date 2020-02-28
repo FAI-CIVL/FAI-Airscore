@@ -9,7 +9,10 @@ from pathlib import Path
 import jsonpickle
 from Defines import MAPOBJDIR
 from design_map import make_map
-
+from sqlalchemy.exc import SQLAlchemyError
+from calcUtils import sec_to_time
+from os import path
+from werkzeug.utils import secure_filename
 
 def get_comps():
     c = aliased(TblCompetition)
@@ -22,7 +25,7 @@ def get_comps():
                  .group_by(c.comp_id))
 
     all_comps = []
-    now = datetime.datetime.now()
+    now = datetime.datetime.now().date()
     for c in comps:
         comp = list(c)
         if comp[5] == 'RACE' or comp[5] == 'Route':
@@ -174,3 +177,125 @@ def get_waypoint_choices(reg_id):
     for wpt in wpts:
         choices.append((wpt['rwp_id'], wpt['rwpName'] + ' - ' + wpt['rwpDescription']))
     return choices
+
+
+def get_pilot_list_for_track_management(taskid):
+    from db_tables import TblTaskResult as R, TblParticipant as P, TblTask as T
+    with Database() as db:
+        try:
+            results = db.session.query(R.goal_time, R.track_file, R.track_id, R.result_type, R.distance_flown, R.ESS_time, R.SSS_time, R.par_id).filter(
+                                               R.task_id == taskid).subquery()
+            pilots = db.session.query(T.task_id, P.name, P.par_id, results.c.track_id, results.c.SSS_time, results.c.ESS_time,
+                                      results.c.distance_flown, results.c.track_file, results.c.result_type)\
+                .outerjoin(P, T.comp_id == P.comp_id).filter(T.task_id == taskid)\
+                .outerjoin(results, results.c.par_id == P.par_id).all()
+
+            if pilots:
+                pilots = [row._asdict() for row in pilots]
+
+        except SQLAlchemyError:
+            print("there was a problem with getting the pilot list")
+            return None
+    all_data = []
+    for pilot in pilots:
+        time = ''
+        data = {}
+        data['name'] = pilot['name']
+        data['par_id'] = pilot['par_id']
+        data['track_id'] = pilot['track_id']
+        if pilot['ESS_time']:
+            time = sec_to_time(pilot['ESS_time'] - pilot['SSS_time'])
+        if pilot['result_type'] == 'goal':
+            data['Result'] = f'Goal {time}'
+        elif pilot['result_type'] == 'lo':
+            data['Result'] = f"LO {round(pilot['distance_flown']/1000,2)}"
+        elif pilot['result_type'] is None:
+            data['Result'] = "Not Yet Processed"
+        elif pilot['result_type'] == "mindist":
+            data['Result'] = "Min Dist"
+        else:
+            data['Result'] = pilot['result_type'].upper()
+        if pilot['track_file']:   # if there is a track, make the result a link to the map
+            trackid = data['track_id']
+            result = data['Result']
+            data['Result']  = f'<a href="/map/{trackid}-{taskid}">{result}</a>'
+        all_data.append(data)
+    return all_data
+
+
+def allowed_tracklog(filename):
+
+    if not "." in filename:
+        return False
+
+    # Split the extension from the filename
+    ext = filename.rsplit(".", 1)[1]
+
+    # Check if the extension is in ALLOWED_IMAGE_EXTENSIONS
+    if ext.upper() in ['IGC']:
+        return True
+    else:
+        return False
+
+
+def allowed_tracklog_filesize(filesize):
+
+    if int(filesize) <= 5*1024*1024:
+        return True
+    else:
+        return False
+
+
+def process_igc(task_id, par_id, tracklog):
+    from task import Task
+    from track import Track
+    from trackUtils import verify_track, import_track
+    from db_tables import TblParticipant as P
+    from formula import Task_formula, get_formula_lib
+
+    with Database() as db:
+        # get pilot details.
+        name = db.session.query(P).get(par_id).name
+        if name:
+            filename = name.replace(' ', '_').lower() + '.IGC'
+            filename = secure_filename(filename)
+        else:
+            return None
+    task = Task.read(task_id)
+    track_path = task.file_path
+    full_file_name = path.join(track_path, filename)
+    tracklog.save(full_file_name)
+    print("Tracklog saved")
+
+    """import track"""
+    mytrack = Track.read_file(filename=full_file_name, par_id=par_id)
+    """check result"""
+    if not mytrack:
+        print(f"Track {filename} is not a valid track file \n")
+    elif not mytrack.date == task.date:
+        print(f"track {filename} has a different date from task day \n")
+    else:
+        mytrack.task_id = task.id
+        print(f"pilot {mytrack.par_id} associated with track {mytrack.filename} \n")
+
+        """checking track against task"""
+        formula = Task_formula.read(task_id)
+        lib = get_formula_lib(formula.type, formula.version)
+        result = verify_track(mytrack, task)
+        print(f"track {mytrack.traPk} verified with task {mytrack.task_id}\n")
+        """adding track to db"""
+        track_id = import_track(mytrack, task_id)
+        print(f"track imported to database with ID {mytrack.traPk}\n")
+        print("track correctly imported and results generated \n")
+
+        time = ''
+        data = {'par_id': par_id, 'track_id': track_id}
+        if result.goal_time:
+            time = sec_to_time(result.ESS_time - result.SSS_time)
+        if result.result_type == 'goal':
+            data['Result'] = f'Goal {time}'
+        elif result.result_type == 'lo':
+            data['Result'] = f"LO {round(result.distance/1000,2)}"
+        return data
+
+

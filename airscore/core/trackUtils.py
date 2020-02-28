@@ -124,6 +124,7 @@ def assign_and_import_tracks(files, task, xcontest=False):
 
 def import_track(track, task_id):
     track.to_db(task_id)
+    return track.track_id
 
 
 def verify_track(track, task):

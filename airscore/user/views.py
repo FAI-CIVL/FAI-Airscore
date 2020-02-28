@@ -9,10 +9,12 @@ from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointFor
 from comp import Comp
 from formula import list_formulas, Formula
 from task import Task, write_map_json
-import json
 from route import save_turnpoint, Turnpoint
-blueprint = Blueprint("user", __name__, url_prefix="/users", static_folder="../static")
+from flight_result import update_status, delete_result
 
+from sys import stdout
+
+blueprint = Blueprint("user", __name__, url_prefix="/users", static_folder="../static")
 
 @blueprint.route("/")
 @login_required
@@ -187,10 +189,10 @@ def comp_settings_admin(compid):
         compform.min_dist.data = int(formula.min_dist/1000)
         compform.nom_launch.data = int(formula.nominal_launch*100)
         compform.nom_time.data = int(formula.nominal_time/60)
-        compform.team_scoring.data = formula.TeamScoring
-        compform.country_scoring.data = formula.CountryScoring
-        compform.team_size.data = formula.TeamSize
-        compform.team_over.data = formula.TeamOver
+        compform.team_scoring.data = formula.team_scoring
+        compform.country_scoring.data = formula.country_scoring
+        compform.team_size.data = formula.team_size
+        compform.team_over.data = formula.team_over
         compform.distance.data = formula.formula_distance
         compform.arrival.data = formula.formula_arrival
         compform.departure.data = formula.formula_departure
@@ -224,7 +226,6 @@ def comp_settings_admin(compid):
 @login_required
 def task_admin(taskid):
     from calcUtils import sec_to_time, time_to_seconds
-    from sys import stdout
     error = None
     taskform = TaskForm()
     turnpointform = NewTurnpointForm()
@@ -244,15 +245,16 @@ def task_admin(taskid):
             task.comment = taskform.comment.data
             task.date = taskform.date.data
             task.task_type = taskform.task_type.data
-            task.window_open_time = time_to_seconds(taskform.window_open_time.data)
-            task.window_close_time = time_to_seconds(taskform.window_close_time.data)
-            task.start_time = time_to_seconds(taskform.start_time.data)
-            task.start_close_time = time_to_seconds(taskform.start_close_time.data)
-            task.stopped_time = None if taskform.stopped_time.data is None else time_to_seconds(taskform.stopped_time.data)
-            task.task_deadline = time_to_seconds(taskform.task_deadline.data)
+            task.window_open_time = time_to_seconds(taskform.window_open_time.data) - taskform.time_offset.data * 3600
+            task.window_close_time = time_to_seconds(taskform.window_close_time.data) - taskform.time_offset.data * 3600
+            task.start_time = time_to_seconds(taskform.start_time.data) - taskform.time_offset.data * 3600
+            task.start_close_time = time_to_seconds(taskform.start_close_time.data) - taskform.time_offset.data * 3600
+            task.stopped_time = None if taskform.stopped_time.data is None else \
+                time_to_seconds(taskform.stopped_time.data) - taskform.time_offset.data * 3600
+            task.task_deadline = time_to_seconds(taskform.task_deadline.data) - taskform.time_offset.data * 3600
             task.SS_interval = taskform.SS_interval.data * 60  # (convert from min to sec)
             task.start_iteration = taskform.start_iteration.data
-            task.time_offset = int(taskform.time_offset.data * 3600)  # (convert from hours to seconds)
+            task.time_offset = taskform.time_offset.data*3600
             task.check_launch = 'on' if taskform.check_launch.data else 'off'
             task.airspace_check = taskform.airspace_check.data
             # task.openair_file = taskform.openair_file  # TODO get a list of openair files for this comp (in the case of defines.yaml airspace_file_library: off otherwise all openair files available)
@@ -277,15 +279,15 @@ def task_admin(taskid):
         taskform.comment.data = task.comment
         taskform.date.data = task.date
         taskform.task_type.data = task.task_type
-        taskform.window_open_time.data = "" if not task.window_open_time else sec_to_time(task.window_open_time)
-        taskform.window_close_time.data = "" if not task.window_close_time else sec_to_time(task.window_close_time)
-        taskform.start_time.data = "" if not task.start_time else sec_to_time(task.start_time)
-        taskform.start_close_time.data = "" if not task.start_close_time else sec_to_time(task.start_close_time)
-        taskform.stopped_time.data = "" if not task.stopped_time else sec_to_time(task.stopped_time)
-        taskform.task_deadline.data = "" if not task.task_deadline else sec_to_time(task.task_deadline)
+        taskform.window_open_time.data = "" if not task.window_open_time else sec_to_time(task.window_open_time + task.time_offset)
+        taskform.window_close_time.data = "" if not task.window_close_time else sec_to_time(task.window_close_time + task.time_offset)
+        taskform.start_time.data = "" if not task.start_time else sec_to_time(task.start_time + task.time_offset)
+        taskform.start_close_time.data = "" if not task.start_close_time else sec_to_time(task.start_close_time + task.time_offset)
+        taskform.stopped_time.data = "" if not task.stopped_time else sec_to_time(task.stopped_time + task.time_offset)
+        taskform.task_deadline.data = "" if not task.task_deadline else sec_to_time(task.task_deadline + task.time_offset)
         taskform.SS_interval.data = task.SS_interval/60 # (convert from sec to min)
         taskform.start_iteration.data = task.start_iteration
-        taskform.time_offset.data = task.time_offset/3600 # (convert from seconds to hours)
+        taskform.time_offset.data = task.time_offset/3600
         taskform.check_launch.data = False if task.check_launch == 'off' else True
         taskform.airspace_check.data = task.airspace_check
         # taskform.openair_file.data = task.openair_file # TODO get a list of openair files for this comp (in the case of defines.yaml airspace_file_library: off otherwise all openair files available)
@@ -439,3 +441,86 @@ def _del_turnpoint(tpid):
 
     resp = jsonify(success=True)
     return resp
+
+
+@blueprint.route('/_get_tracks_admin/<taskid>', methods=['GET'])
+@login_required
+def _get_tracks_admin(taskid):
+    return jsonify({'data':frontendUtils.get_pilot_list_for_track_management(taskid)})
+
+
+@blueprint.route('/track_admin/<taskid>', methods=['GET'])
+@login_required
+def track_admin(taskid):
+    return render_template('users/track_admin.html', taskid=taskid)
+
+
+@blueprint.route('/_set_result/<taskid>', methods=['POST'])
+@login_required
+def _set_result(taskid):
+    data = request.json
+    taskid = int(taskid)
+    trackid = update_status(data['par_id'], taskid, data['Result'])
+    print(trackid)
+
+    if trackid > 0:
+        data['track_id'] = trackid
+        if data['Result'] == "mindist":
+            data['Result'] = "Min Dist"
+        else:
+            data['Result'] = data['Result'].upper()
+        resp = jsonify(data)
+        return resp
+
+
+@blueprint.route('/_delete_track/<trackid>', methods=['POST'])
+@login_required
+def _delete_track(trackid):
+    data = request.json
+    if delete_result(trackid) == 1:
+        data['Result'] = "Not Yet Processed"
+        resp = jsonify(data)
+        return resp
+    else:
+        return render_template('500.html')
+
+
+@blueprint.route('/_upload_track/<taskid>/<parid>', methods=['GET', 'POST'])
+@login_required
+def _upload_track(taskid, parid):
+    taskid = int(taskid)
+    parid = int(parid)
+    if request.method == "POST":
+        if request.files:
+
+            if "filesize" in request.cookies:
+
+                if not frontendUtils.allowed_tracklog_filesize(request.cookies["filesize"]):
+                    print("Filesize exceeded maximum limit")
+                    return redirect(request.url)
+
+                tracklog = request.files["tracklog"]
+
+                if tracklog.filename == "":
+                    print("No filename")
+                    return redirect(request.url)
+
+                if frontendUtils.allowed_tracklog(tracklog.filename):
+                    data = frontendUtils.process_igc(taskid, parid, tracklog)
+                    resp = jsonify(data)
+                    # resp = jsonify({'file': 'accepted'})
+                    return resp
+
+                else:
+                    print("That file extension is not allowed")
+                    return redirect(request.url)
+            resp = jsonify({'error': 'filesize'})
+            return resp
+        resp = jsonify({'error': 'request.files'})
+        return resp
+
+
+@blueprint.route('/test_upload', methods=['GET'])
+@login_required
+def test_upload():
+    return render_template('users/testupload.html')

@@ -225,6 +225,7 @@ class NewTurnpointForm(FlaskForm):
     shape = SelectField('Shape', choices=[('circle', 'Cylinder'), ('line', 'Line')])
     how = SelectField('SSS Direction', choices=[('entry', 'Out/Enter'), ('exit', 'In/Exit')])
 
+
 class ModifyTurnpointForm(FlaskForm):
 
     id = None
