@@ -99,3 +99,4 @@ venv/
 !/airscore/templates/
 /airscore/data/airspace/openair/*
 /airscore/data/airspace/check_file/*
+/.env
