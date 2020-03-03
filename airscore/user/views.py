@@ -519,8 +519,3 @@ def _upload_track(taskid, parid):
         resp = jsonify({'error': 'request.files'})
         return resp
 
-
-@blueprint.route('/test_upload', methods=['GET'])
-@login_required
-def test_upload():
-    return render_template('users/testupload.html')
