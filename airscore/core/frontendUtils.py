@@ -305,4 +305,8 @@ def process_igc(task_id, par_id, tracklog):
             data['Result'] = f'Goal {time}'
         elif pilot.result.result_type == 'lo':
             data['Result'] = f"LO {round(pilot.result.distance / 1000, 2)}"
+        if pilot.track_id:   # if there is a track, make the result a link to the map
+            trackid = data['track_id']
+            result = data['Result']
+            data['Result']  = f'<a href="/map/{trackid}-{task_id}">{result}</a>'
     return data
