@@ -7,14 +7,14 @@
 }
 </style>
 
-<style>
-input {
-    display: block;
-    visibility: hidden;
-    width: 0;
-    height: 0;
-}
-</style>
+<!--<style>-->
+<!--input {-->
+<!--    display: block;-->
+<!--    visibility: hidden;-->
+<!--    width: 0;-->
+<!--    height: 0;-->
+<!--}-->
+<!--</style>-->
 
   <body>
 <!--  <head>-->
@@ -37,7 +37,7 @@ input {
     <thead>
         <tr>
             <th>Name</th>
-            <th>Status</th>
+<!--            <th>Status</th>-->
             <th>Result</th>
             <th></th>
         </tr>
@@ -86,18 +86,6 @@ input {
         table.fnUpdate(new_data, $('tr#id_'+ new_data.par_id), undefined, false);
         }
 
-        function set_processing(par_id, file){
-        var table = $('#tracks').dataTable();
-        var data= new Object();
-        data.name = $('#tracks').DataTable().row( $('tr#id_'+ par_id)).data()['name'];
-        data.par_id = $('#tracks').DataTable().row( $('tr#id_'+ par_id)).data()['par_id'];
-        data.Result = 'Processing..';
-        data.file = file;
-        table.fnUpdate(data, $('tr#id_'+ data.par_id), undefined, false);
-        }
-
-
-
    function delete_track(track_id, par_id){
                var mydata = new Object();
                mydata.track_id = track_id;
@@ -134,7 +122,7 @@ input {
         $('#DNF'+ par_id).hide();
         $('#TrackUp'+ par_id).hide();
         $('#upload_box'+ par_id).hide();
-<!--        set_processing(par_id, filename);-->
+        $('#filediv'+ par_id).show();
 
          $('#progress_text'+ par_id).text(data.files[0].name + ' - processing');
         },
