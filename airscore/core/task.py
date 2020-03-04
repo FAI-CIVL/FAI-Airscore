@@ -25,6 +25,7 @@ from pathlib import Path
 
 import jsonpickle
 from sqlalchemy import and_
+from sqlalchemy.orm import aliased
 
 from Defines import RESULTDIR, MAPOBJDIR
 from airspace import AirspaceCheck
@@ -32,7 +33,7 @@ from calcUtils import json, get_date, get_datetime, decimal_to_seconds
 from compUtils import read_rankings
 from db_tables import TblTask
 from flight_result import verify_all_tracks, adjust_flight_results
-from formula import Task_formula
+from formula import TaskFormula
 from geo import Geo
 from igc_lib import defaultdict
 from mapUtils import save_all_geojson_files
@@ -136,7 +137,7 @@ class Task(object):
         self.task_path = None
         self.comp_path = None
         self.track_source = None
-        self.formula = Task_formula.read(self.id) if self.id else None
+        self.formula = TaskFormula.read(self.id) if self.id else None
 
     def __setattr__(self, attr, value):
         import datetime
@@ -839,52 +840,41 @@ class Task(object):
             db.session.commit()
 
     def update_task_info(self):
-        from db_tables import TblTask as T
+        t = aliased(TblTask)
 
         with Database() as db:
             print(f"taskid:{self.task_id}")
-            q = db.session.query(T).get(self.task_id)
+            q = db.session.query(t).get(self.task_id)
             for k, v in self.as_dict().items():
                 if hasattr(q, k):
                     setattr(q, k, v)
             db.session.commit()
 
-            # print(f"q{q}")
-            # date = self.date
-            # q.tasName = self.task_name
-            # q.tasNum = self.task_num
-            # q.tasDate = self.date
-            # q.tasComment = self.comment
-            # q.tasStartTime = dt.combine(date, start_time)
-            # q.tasFinishTime = dt.combine(date, task_deadline)
-            # q.tasTaskStart = dt.combine(date, task_window_open)
-            # q.tasLaunchClose = dt.combine(date, task_window_close)
-            # q.tasStoppedTime = stopped_time
-            # q.tasTaskType = self.task_type.lower()
-            # q.tasTimeOffset = self.time_offset
-            # q.tasStartIteration = self.start_iteration
-            # q.tasQNH = self.QNH
-            # q.tasStartCloseTime = dt.combine(date, start_close_time)
-            # q.tasSSInterval = start_interval
-            # q.tasTaskType = self.task_type
-            # q.tasLocked = self.locked
-            # q.tasAirspaceCheckOverride = self.airspace_check
-            # q.tasCheckLaunch = self.check_launch
-            # db.session.commit()
+    def update_formula(self):
+        self.formula.to_db()
 
     def to_db(self, session=None):
         """Inserts new task or updates existent one"""
         # TODO update part, now it just inserts new Task and new Waypoints
-        from db_tables import TblTaskWaypoint as W
+        from db_tables import TblTaskWaypoint
         from sqlalchemy.exc import SQLAlchemyError
 
+        t = aliased(TblTask)
+        w = aliased(TblTaskWaypoint)
         with Database(session) as db:
             try:
-                task = TblTask()
+                if not self.id:
+                    task = t()
+                    db.session.add(task)
+                    db.session.flush()
+                else:
+                    task = db.session.query(t).get(self.id)
                 for k, v in self.as_dict().items():
                     if hasattr(task, k):
                         setattr(task, k, v)
-                db.session.add(task)
+                '''save formula parameters'''
+                for k in TaskFormula.task_overrides:
+                    setattr(task, k, getattr(task.formula, k))
                 db.session.flush()
                 self.task_id = task.task_id
                 if self.turnpoints:
@@ -895,7 +885,7 @@ class Task(object):
                             opt_lat, opt_lon = self.optimised_turnpoints[idx].lat, self.optimised_turnpoints[idx].lon
                         if len(self.partial_distance) > 0:
                             cumulative_dist = self.partial_distance[idx]
-                        wpt = W()
+                        wpt = w()
                         for k, v in tp.__dict__.items():
                             if hasattr(wpt, k):
                                 setattr(wpt, k, v)
@@ -1094,7 +1084,7 @@ class Task(object):
                 setattr(task, key, value)
         # task.stats.update(t['stats'])
         ''' get task formula'''
-        task.formula = Task_formula.from_dict(t['formula'])
+        task.formula = TaskFormula.from_dict(t['formula'])
         ''' get route'''
         task.turnpoints = []
         task.partial_distance = []
@@ -1190,7 +1180,7 @@ class Task(object):
             Unfortunately the fsdb format isn't published so much of this is simply an
             exercise in reverse engineering.
         """
-        from formula import Task_formula
+        from formula import TaskFormula
         from compUtils import get_fsdb_task_path
         from calcUtils import get_date, get_time, time_to_seconds
 
@@ -1211,7 +1201,7 @@ class Task(object):
 
         """formula info"""
         f = t.find('FsScoreFormula')
-        formula = Task_formula()
+        formula = TaskFormula()
         formula.formula_name = f.get('id')
         formula.arr_alt_bonus = 'off'
         if ((f.get('use_arrival_altitude_points') is not None and float(f.get('use_arrival_altitude_points')) > 0)

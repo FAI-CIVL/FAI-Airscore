@@ -129,6 +129,7 @@ class TaskFormulaView(Base):
     __table__ = Table('TaskFormulaView', metadata,
 
                       Column('task_id', INTEGER(11), primary_key=True),
+                      Column('comp_id', INTEGER(11), index=True),
                       Column('formula_type', String(10)),
                       Column('formula_version', INTEGER(8)),
                       Column('formula_name', String(50)),
@@ -737,8 +738,10 @@ class TblTask(Base):
     task_path = Column(String(40))
 
     reg = relationship('TblRegion')
-    comp = relationship('TblCompetition', backref="tasks", lazy='subquery')
-    Results = relationship('TblTaskResult', backref="task")
+    comp = relationship('TblCompetition')
+    Results = relationship('TblTaskResult')
+    # comp = relationship('TblCompetition', backref="tasks", lazy='subquery')
+    # Results = relationship('TblTaskResult', backref="task")
 
 
 class TblTaskResult(Base):
@@ -781,7 +784,8 @@ class TblTaskResult(Base):
     lead_coeff = Column(Float)
     fixed_LC = Column(Float)
 
-    Participants = relationship('TblParticipant', backref="taskresults", lazy="subquery")
+    # Participants = relationship('TblParticipant', backref="taskresults", lazy="subquery")
+    Participants = relationship('TblParticipant')
 
 
 class TblTaskWaypoint(Base):

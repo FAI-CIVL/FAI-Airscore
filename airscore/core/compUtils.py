@@ -142,20 +142,20 @@ def get_task_region(task_id):
             return db.session.query(T.reg_id).filter(T.task_id == task_id).limit(1).scalar()
 
 
-# def get_area_wps(region_id):
-#     """query db get all wpts names and pks for region of task and put into dictionary"""
-#     from db_tables import TblRegionWaypoint as W
-#     if type(region_id) is int and region_id > 0:
-#         with Database() as db:
-#             wps = db.session.query(W.rwpName,
-#                                    W.rwp_id).filter(and_(W.regPk == region_id,
-#                                                         W.rwpOld == 0)).order_by(W.rwpName).all()
-#         return dict(wps)
+def get_area_wps(region_id):
+    """query db get all wpts names and pks for region of task and put into dictionary"""
+    from db_tables import TblRegionWaypoint as W
+    if type(region_id) is int and region_id > 0:
+        with Database() as db:
+            wps = db.session.query(W.rwpName,
+                                   W.rwp_id).filter(and_(W.regPk == region_id,
+                                                        W.rwpOld == 0)).order_by(W.rwpName).all()
+        return dict(wps)
 
 
-# def get_wpts(task_id):
-#     region_id = get_task_region(task_id)
-#     return get_area_wps(region_id)
+def get_wpts(task_id):
+    region_id = get_task_region(task_id)
+    return get_area_wps(region_id)
 
 
 def get_participants(comp_id):

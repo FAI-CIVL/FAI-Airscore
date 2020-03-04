@@ -1,0 +1,60 @@
+{% extends "layout.html"%}
+{% block content %}
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- <title>AirScore Competitions</title> -->
+
+    <!-- CSS -->
+    <link href="/static/css/task.css" rel="stylesheet">
+    <!-- <link href="navbar.css" rel="stylesheet"> -->
+    <link href="/static/css/spacelab_bootstrap.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet">
+
+    <!-- JS -->
+    <script type="text/javascript" src="/static/js/utils.js"></script>
+    <script type="text/javascript" src="/static/js/microajax.minified.js"></script>
+  </head>
+
+<body>
+
+<div class="container-fluid">
+  <div class="row mt-1 mb-2">
+      <div class="col comp_header" id="comp_header">
+      <h2 id="comp_name"></h2>
+      <h3 id="comp_date"></h3>
+      <h4 id="register"></h4>
+      </div>
+  </div>
+   <div class="row mb-3">
+      <div class="col w-100">
+      <table id="pilots" class="row-border compact" cellspacing="0" width="100%">
+      <thead>
+          <tr>
+<!--              <th>par_id</th>-->
+<!--              <th>pil_id</th>-->
+              <th>#</th>
+              <th>Pilot</th>
+              <th>Nat</th>
+              <th>Glider</th>
+              <th>Sponsor</th>
+              <th>Status</th>
+          </tr>
+      </thead>
+      </table>
+      </div>
+  </div>
+</div>
+
+</body>
+{% endblock %}
+{% block js %}
+{% include "js.html" %}
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="/static/js/pop_registered_pilots.js"></script>
+    <script type="text/javascript">populate_pilots({{compid|tojson}})</script>
+    <script type="text/javascript" src="/static/js/class_filter.js"></script>
+{% endblock %}
