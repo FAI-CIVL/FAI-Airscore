@@ -9,7 +9,7 @@ Antonio Golfari - 2019
 import importlib
 from dataclasses import dataclass, fields
 from os import listdir
-
+from sqlalchemy.orm import aliased
 from sqlalchemy.exc import SQLAlchemyError
 
 from myconn import Database
@@ -112,7 +112,6 @@ class Formula(object):
                  JTG_penalty_per_sec=None, nominal_goal=None, nominal_dist=None, nominal_time=None, nominal_launch=None,
                  scoring_altitude=None, min_dist=None, score_back_time=None, overall_validity='all', validity_param=1):
 
-        self.forPk = None
         self.comp_id = comp_id
         self.formula_name = formula_name
         self.formula_type = formula_type
@@ -122,7 +121,6 @@ class Formula(object):
         self.formula_arrival = formula_arrival  # 'position', 'time', 'off'
         self.formula_departure = formula_departure  # 'on', 'leadout', 'off'
         self.lead_factor = lead_factor  # float
-        # self.lead_squared_distance
         self.formula_time = formula_time  # 'on', 'off'
         self.arr_alt_bonus = arr_alt_bonus  # float
         self.arr_min_height = arr_min_height  # int
@@ -144,9 +142,6 @@ class Formula(object):
         self.tolerance = tolerance  # percentage / 100
         self.min_tolerance = min_tolerance  # meters
         self.scoring_altitude = scoring_altitude  # 'GPS', 'QNH'
-        self.start_weight = None
-        self.arrival_weight = None
-        self.speed_weight = None
         self.team_scoring = False
         self.team_size = None
         self.team_over = None
@@ -158,25 +153,25 @@ class Formula(object):
             return NotImplemented
 
         return self.formula_name == other.formula_name \
-            and self.formula_distance == other.formula_distance \
-            and self.formula_arrival == other.formula_arrival \
-            and self.formula_departure == other.formula_departure \
-            and self.lead_factor == other.lead_factor \
-            and self.formula_time == other.formula_time \
-            and self.arr_alt_bonus == other.arr_alt_bonus \
-            and self.arr_min_height == other.arr_min_height \
-            and self.arr_max_height == other.arr_max_height \
-            and self.validity_min_time == other.validity_min_time \
-            and self.max_JTG == other.max_JTG \
-            and self.JTG_penalty_per_sec == other.JTG_penalty_per_sec \
-            and self.overall_validity == other.overall_validity \
-            and self.validity_param == other.validity_param \
-            and self.score_back_time == other.score_back_time \
-            and self.no_goal_penalty == other.no_goal_penalty \
-            and self.glide_bonus == other.glide_bonus \
-            and self.tolerance == other.tolerance \
-            and self.min_tolerance == other.min_tolerance \
-            and self.scoring_altitude == other.scoring_altitude
+               and self.formula_distance == other.formula_distance \
+               and self.formula_arrival == other.formula_arrival \
+               and self.formula_departure == other.formula_departure \
+               and self.lead_factor == other.lead_factor \
+               and self.formula_time == other.formula_time \
+               and self.arr_alt_bonus == other.arr_alt_bonus \
+               and self.arr_min_height == other.arr_min_height \
+               and self.arr_max_height == other.arr_max_height \
+               and self.validity_min_time == other.validity_min_time \
+               and self.max_JTG == other.max_JTG \
+               and self.JTG_penalty_per_sec == other.JTG_penalty_per_sec \
+               and self.overall_validity == other.overall_validity \
+               and self.validity_param == other.validity_param \
+               and self.score_back_time == other.score_back_time \
+               and self.no_goal_penalty == other.no_goal_penalty \
+               and self.glide_bonus == other.glide_bonus \
+               and self.tolerance == other.tolerance \
+               and self.min_tolerance == other.min_tolerance \
+               and self.scoring_altitude == other.scoring_altitude
 
     @property
     def type(self):
@@ -209,6 +204,22 @@ class Formula(object):
     @property
     def height_bonus(self):
         return self.arr_alt_bonus
+
+    def __str__(self):
+        out = ''
+        out += 'Formula name:   {} \n'.format(self.formula_name)
+        out += 'Arrival:        {}  |  '.format(self.arrival)
+        out += 'Departure:      {} \n'.format(self.departure)
+        out += 'No goal Penalty:{}% \n'.format(self.no_goal_penalty * 100)
+        out += 'Glide Bonus:    1:{} \n'.format(self.glide_bonus)
+        out += 'Tolerance:      {}% \n'.format(self.tolerance)
+        out += 'Nom. Goal:      {}  |  '.format(self.nominal_goal)
+        out += 'Nom. Distance:  {} \n'.format(self.nominal_dist)
+        out += 'Nom. Time:      {}  |  '.format(self.nominal_time)
+        out += 'Nom. Launch:    {} \n'.format(self.nominal_launch)
+        out += 'Min. Dist:      {} \n'.format(self.min_dist)
+        out += 'Score back time:{} \n'.format(self.score_back_time)
+        return out
 
     def as_dict(self):
         return self.__dict__
@@ -339,120 +350,6 @@ class Formula(object):
 
         return self.comp_id
 
-
-class Task_formula(object):
-    """
-    Creates an Object with all task parameters
-    """
-
-    def __init__(self, formula_name=None, formula_type=None, formula_version=None,
-                 formula_distance=None, formula_arrival=None, formula_departure=None, lead_factor=None,
-                 formula_time=None, no_goal_penalty=None, glide_bonus=None, tolerance=None, min_tolerance=None,
-                 arr_alt_bonus=None, arr_min_height=None, arr_max_height=None, validity_min_time=None, max_JTG=None,
-                 JTG_penalty_per_sec=None, nominal_goal=None, nominal_dist=None, nominal_time=None, nominal_launch=None,
-                 scoring_altitude=None, min_dist=None, score_back_time=None):
-        """
-        creates an object with formula parameters
-        that will be included in Task_result Object
-        """
-        self.formula_name = formula_name
-        self.formula_type = formula_type
-        self.formula_version = formula_version
-        self.formula_distance = formula_distance  # 'on', 'difficulty', 'off'
-        self.formula_arrival = formula_arrival  # 'position', 'time', 'off'
-        self.formula_departure = formula_departure  # 'on', 'leadout', 'off'
-        self.lead_factor = lead_factor  # float
-        self.formula_time = formula_time  # 'on', 'off'
-        self.arr_alt_bonus = arr_alt_bonus  # float
-        self.arr_min_height = arr_min_height  # int
-        self.arr_max_height = arr_max_height  # int
-        self.validity_min_time = validity_min_time  # seconds
-        self.score_back_time = score_back_time  # seconds
-        self.max_JTG = max_JTG
-        self.JTG_penalty_per_sec = JTG_penalty_per_sec
-        self.overall_validity = None
-        self.validity_param = None
-        self.nominal_goal = nominal_goal  # percentage / 100
-        self.nominal_dist = nominal_dist  # meters
-        self.nominal_time = nominal_time  # seconds
-        self.nominal_launch = nominal_launch  # percentage / 100
-        self.min_dist = min_dist  # meters
-        self.no_goal_penalty = no_goal_penalty
-        self.glide_bonus = glide_bonus
-        self.tolerance = tolerance  # percentage / 100
-        self.min_tolerance = min_tolerance  # meters
-        self.scoring_altitude = scoring_altitude  # 'GPS', 'QNH'
-
-    @property
-    def type(self):
-        return self.formula_type
-
-    @property
-    def version(self):
-        return self.formula_version
-
-    @property
-    def name(self):
-        return self.formula_name
-
-    @property
-    def distance(self):
-        return self.formula_distance
-
-    @property
-    def departure(self):
-        return self.formula_departure
-
-    @property
-    def arrival(self):
-        return self.formula_arrival
-
-    @property
-    def time(self):
-        return self.formula_time
-
-    @property
-    def height_bonus(self):
-        return self.arr_alt_bonus
-
-    def __str__(self):
-        out = ''
-        out += 'Formula name:   {} \n'.format(self.formula_name)
-        out += 'Arrival:        {}  |  '.format(self.arrival)
-        out += 'Departure:      {} \n'.format(self.departure)
-        out += 'No goal Penalty:{}% \n'.format(self.no_goal_penalty * 100)
-        out += 'Glide Bonus:    1:{} \n'.format(self.glide_bonus)
-        out += 'Tolerance:      {}% \n'.format(self.tolerance)
-        out += 'Nom. Goal:      {}  |  '.format(self.nominal_goal)
-        out += 'Nom. Distance:  {} \n'.format(self.nominal_dist)
-        out += 'Nom. Time:      {}  |  '.format(self.nominal_time)
-        out += 'Nom. Launch:    {} \n'.format(self.nominal_launch)
-        out += 'Min. Dist:      {} \n'.format(self.min_dist)
-        out += 'Score back time:{} \n'.format(self.score_back_time)
-        return out
-
-    def as_dict(self):
-        return self.__dict__
-
-    @staticmethod
-    def from_dict(d):
-        formula = Task_formula()
-        formula.as_dict().update({x: d[x] for x in d if hasattr(formula, x)})
-        return formula
-
-    @classmethod
-    def read(cls, task_id):
-        """reads task formula from DB"""
-        from db_tables import TaskFormulaView as F
-
-        formula = cls()
-        with Database() as db:
-            # get the task details.
-            f = db.session.query(F)
-            t = f.get(task_id)
-            db.populate_obj(formula, t)
-        return formula
-
     def get_lib(self):
 
         formula_type = self.formula_type
@@ -466,3 +363,86 @@ class Task_formula(object):
         except:
             print('formula file {} not found.'.format(formula_file))
             exit()
+
+
+class TaskFormula(Formula):
+    """
+    Creates an Object with all task parameters
+    """
+
+    task_overrides = ['formula_distance',
+                      'formula_arrival',
+                      'formula_departure',
+                      'formula_time',
+                      'arr_alt_bonus',
+                      'max_JTG',
+                      'no_goal_penalty',
+                      'tolerance']
+
+    def __init__(self, task_id=None):
+        self.task_id = task_id
+        super().__init__(self)
+
+    @staticmethod
+    def from_dict(d):
+        formula = TaskFormula()
+        formula.as_dict().update({x: d[x] for x in d if hasattr(formula, x)})
+        return formula
+
+    @staticmethod
+    def read(task_id, session=None):
+        """reads comp formula from database"""
+        from db_tables import TaskFormulaView as F
+
+        formula = TaskFormula()
+        with Database(session) as db:
+            try:
+                q = db.session.query(F).get(task_id)
+                if q is not None:
+                    db.populate_obj(formula, q)
+            except SQLAlchemyError:
+                print(f'Read TaskFormula from db Error: {SQLAlchemyError.code}')
+        return formula
+
+    def to_db(self):
+        """stores TaskFormula parameters to TblTask table in AirScore database"""
+        from db_tables import TblTask
+
+        t = aliased(TblTask)
+        with Database() as db:
+            try:
+                '''check if we have already a row for the task'''
+                row = db.session.query(t).get(self.task_id)
+                for k in TaskFormula.task_overrides:
+                    setattr(row, k, getattr(self, k))
+                db.session.flush()
+
+            except SQLAlchemyError:
+                print('cannot insert or update task formula. DB error.')
+                db.session.rollback()
+                return None
+
+        return True
+
+    def reset(self):
+        """brings back to comp formula"""
+        from db_tables import TblTask, TblForComp
+        t = aliased(TblTask)
+        f = aliased(TblForComp)
+
+        with Database() as db:
+            try:
+                '''check if we have already a row for the comp'''
+                comp_formula = db.session.query(f).get(self.comp_id)
+                task = db.session.query(t).get(self.task_id)
+                for k in TaskFormula.task_overrides:
+                    setattr(self, k, getattr(comp_formula, k))
+                    setattr(task, k, getattr(comp_formula, k))
+                db.session.flush()
+
+            except SQLAlchemyError:
+                print('cannot reset task formula. DB error.')
+                db.session.rollback()
+                return None
+
+        return True

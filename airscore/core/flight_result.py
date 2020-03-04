@@ -38,7 +38,7 @@ from db_tables import TblTaskResult
 from formulas.libs.leadcoeff import LeadCoeff
 from myconn import Database
 from route import in_semicircle, start_made_civl, tp_made_civl, \
-    tp_time_civl, get_shortest_path
+    tp_time_civl, get_shortest_path, distance_flown
 
 
 class Tp(object):
@@ -339,12 +339,12 @@ class Flight_result(object):
         result = cls()
         tolerance = task.formula.tolerance or 0
         min_tol_m = task.formula.min_tolerance or 0
-        max_jump_the_gun = task.formula.max_JTG or 0 # seconds
+        max_jump_the_gun = task.formula.max_JTG or 0  # seconds
         jtg_penalty_per_sec = 0 if max_jump_the_gun == 0 else task.formula.JTG_penalty_per_sec
 
         if not task.optimised_turnpoints:
             task.calculate_optimised_task_length()
-        # distances2go = task.distances_to_go  # Total task Opt. Distance, in legs list
+        distances2go = task.distances_to_go  # Total task Opt. Distance, in legs list
 
         '''leadout coefficient'''
         if task.formula.formula_departure == 'leadout':
@@ -490,10 +490,15 @@ class Flight_result(object):
             #  to determine the pilots’ best distance values. Time and leading point calculations remain the same:
             #  they are not affected by the altitude bonus or stopped distance values.
             if tp.pointer > 0:
-                missing_distance = get_shortest_path(task, next_fix, tp.pointer)
-                fix_dist_flown = task.opt_dist - missing_distance
-                result.distance_flown = max(result.distance_flown, fix_dist_flown,
-                                            task.partial_distance[tp.pointer - 1])
+                if tp.start_done and not tp.ess_done:
+                    '''optimized distance calculation each fix'''
+                    fix_dist_flown = task.opt_dist - get_shortest_path(task, next_fix, tp.pointer)
+                else:
+                    '''simplified and faster distance calculation'''
+                    fix_dist_flown = distance_flown(next_fix, tp.pointer, task.optimised_turnpoints,
+                                                    task.turnpoints[tp.pointer], distances2go)
+
+                result.distance_flown = max(result.distance_flown, fix_dist_flown, task.partial_distance[tp.last_made])
 
             '''Leading coefficient
             LC = taskTime(i)*(bestDistToESS(i-1)^2 - bestDistToESS(i)^2 )
@@ -854,7 +859,8 @@ def delete_result(trackid):
     with Database() as db:
         try:
             results = db.session.query(R.track_file, R.task_id).filter(R.track_id == trackid).one()
-            row_deleted = db.session.query(R.track_file, R.task_id).filter(R.track_id == trackid).delete(synchronize_session=False)
+            row_deleted = db.session.query(R.track_file, R.task_id).filter(R.track_id == trackid).delete(
+                synchronize_session=False)
         except SQLAlchemyError:
             print("there was a problem deleting the track")
             return None

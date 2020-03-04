@@ -125,7 +125,7 @@ def comp_settings_admin(compid):
     compform = CompForm()
     newtaskform = NewTaskForm()
     comp = Comp.read(compid)
-    admins = ['joe smith', 'john wayne', 'stuart']  # TODO
+    admins = ['joe smith', 'john wayne', 'stuart', 'pippo', 'biuti']  # TODO
 
     if request.method == 'POST':
         if compform.validate_on_submit():

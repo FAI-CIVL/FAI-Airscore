@@ -8,7 +8,7 @@ Antonio Golfari - 2018
 from shutil import copyfile
 from tempfile import TemporaryDirectory
 
-from formula import Task_formula, get_formula_lib
+from formula import TaskFormula, get_formula_lib
 from logger import Logger
 from task import Task
 from track import Track
@@ -76,7 +76,7 @@ def main(args):
                     import_track(mytrack)
                     print(f"track imported to database with ID {mytrack.track_id}\n")
                     """checking track against task"""
-                    formula = Task_formula.read(task_id)
+                    formula = TaskFormula.read(task_id)
                     lib = get_formula_lib(formula.type)
                     verify_track(mytrack, task, lib)
                     print(f"track {mytrack.track_id} verified with task {mytrack.task_id}\n")

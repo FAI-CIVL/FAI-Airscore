@@ -252,7 +252,7 @@ def process_igc(task_id, par_id, tracklog):
     from pilot import Pilot
     # from trackUtils import verify_track, import_track
     # from db_tables import TblParticipant as P
-    # from formula import Task_formula, get_formula_lib
+    # from formula import TaskFormula, get_formula_lib
     from flight_result import Flight_result
     from airspace import AirspaceCheck
     from igc_lib import Flight

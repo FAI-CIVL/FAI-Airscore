@@ -78,7 +78,7 @@ def ladders():
     return render_template('public/ladders.html')
 
 
-@blueprint.route("/pilots/", methods=["GET", "POST"])
+@blueprint.route('/pilots/')
 def pilots():
     return render_template('public/pilots.html')
 
@@ -122,7 +122,7 @@ def get_all_comps():
     return frontendUtils.get_comps()
 
 
-@blueprint.route('/competition/<compid>')
+@blueprint.route('/competition/<int:compid>')
 def competition(compid):
     from db_tables import TblTask, TblCompetition
     from compUtils import get_comp_json
@@ -199,12 +199,58 @@ def competition(compid):
     return render_template('public/comp.html', tasks=all_tasks, comp=comp, overall_available=overall_available)
 
 
-@blueprint.route('/task_result/<taskid>')
+@blueprint.route('/registered_pilots/<int:compid>')
+def registered_pilots(compid):
+    """ List of registered pilots for an event.
+        Creates a Register to the event button if pilot is not yet registered"""
+    return render_template('public/registered_pilots.html', compid=compid)
+
+
+@blueprint.route('/get_registered_pilots/<compid>', methods=['GET', 'POST'])
+def get_registered_pilots(compid):
+    from db_tables import TblParticipant, TblCompetition
+
+    p = aliased(TblParticipant)
+    c = aliased(TblCompetition)
+
+    with Database() as db:
+        '''get registered pilots'''
+        results = (db.session.query(p.par_id,
+                                    p.pil_id,
+                                    p.ID,
+                                    p.name,
+                                    p.nat,
+                                    p.glider,
+                                    p.sponsor,
+                                    p.status).filter(p.comp_id == compid)
+                   .order_by(p.name))
+        pilot_list = [u._asdict() for u in results.all()]
+        '''pilot registration status'''
+        if not current_user.is_authenticated:
+            pilot = None
+        elif any(p for p in results if p.pil_id == current_user.id):
+            p = next(p for p in results if p.pil_id == current_user.id)
+            pilot = dict(par_id=p.par_id, ID=p.ID)
+        else:
+            pilot = 0
+
+        competition_info = (db.session.query(
+            c.comp_id,
+            c.comp_name,
+            c.comp_site,
+            c.date_from,
+            c.date_to).filter(c.comp_id == compid).one())
+        comp = competition_info._asdict()
+
+    return jsonify(dict(info=comp, data=pilot_list, pilot=pilot))
+
+
+@blueprint.route('/task_result/<int:taskid>')
 def task_result(taskid):
     return render_template('public/task_result.html', taskid=taskid)
 
 
-@blueprint.route('/get_task_result/<taskid>', methods=['GET', 'POST'])
+@blueprint.route('/get_task_result/<int:taskid>', methods=['GET', 'POST'])
 def get_task_result(taskid):
     result_file = get_task_json(taskid)
     if result_file == 'error':
@@ -250,7 +296,7 @@ def get_task_result(taskid):
     return jsonify(result_file)
 
 
-@blueprint.route('/comp_result/<compid>')
+@blueprint.route('/comp_result/<int:compid>')
 def comp_result(compid):
     return render_template('public/comp_overall.html', compid=compid)
 

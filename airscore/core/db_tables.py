@@ -1,5 +1,5 @@
 # coding: utf-8
-from sqlalchemy import CHAR, Column, Date, Enum, Float, ForeignKey, Index, String, TIMESTAMP, Table, Text, text
+from sqlalchemy import CHAR, Column, Date, Enum, Float, ForeignKey, Index, String, TIMESTAMP, Table, Text, text, DateTime
 from sqlalchemy.dialects.mysql import BIGINT, INTEGER, LONGTEXT, MEDIUMINT, MEDIUMTEXT, SMALLINT, TINYINT, VARCHAR
 from sqlalchemy.orm import relationship
 
@@ -129,6 +129,7 @@ class TaskFormulaView(Base):
     __table__ = Table('TaskFormulaView', metadata,
 
                       Column('task_id', INTEGER(11), primary_key=True),
+                      Column('comp_id', INTEGER(11), index=True),
                       Column('formula_type', String(10)),
                       Column('formula_version', INTEGER(8)),
                       Column('formula_name', String(50)),
@@ -205,25 +206,43 @@ class FlightResultView(Base):
 class PilotView(Base):
     __table__ = Table('PilotView', metadata,
 
-                      Column('pilPk', BIGINT(20), primary_key=True),
-                      Column('pilLogin', String(60)),
-                      Column('pilpass', String(255)),
-                      Column('pilEmail', String(100)),
-                      Column('pilFirstName', LONGTEXT),
-                      Column('pilLastName', LONGTEXT),
-                      Column('pilNat', LONGTEXT),
-                      Column('pilPhoneMobile', LONGTEXT),
-                      Column('pilSex', String(1)),
-                      Column('pilGliderBrand', LONGTEXT),
-                      Column('pilGlider', LONGTEXT),
-                      Column('gliGliderCert', LONGTEXT),
-                      Column('gliGliderClass', String(12)),
-                      Column('pilSponsor', LONGTEXT),
-                      Column('pilFAI', LONGTEXT),
-                      Column('pilCIVL', LONGTEXT),
-                      Column('pilLT24User', LONGTEXT),
-                      Column('pilATUser', LONGTEXT),
-                      Column('pilXContestUser', LONGTEXT)
+                      Column('pil_id', INTEGER(11), primary_key=True),
+                      Column('login', String(60)),
+                      Column('pwd', String(255)),
+                      Column('email', String(100)),
+                      Column('first_name', LONGTEXT),
+                      Column('last_name', LONGTEXT),
+                      Column('nat', LONGTEXT),
+                      Column('phone', LONGTEXT),
+                      Column('sex', String(1)),
+                      Column('glider_brand', LONGTEXT),
+                      Column('glider', LONGTEXT),
+                      Column('glider_cert', LONGTEXT),
+                      Column('glider_class', String(12)),
+                      Column('sponsor', LONGTEXT),
+                      Column('fai_id', LONGTEXT),
+                      Column('civl_id', LONGTEXT),
+                      Column('livetrack24_id', LONGTEXT),
+                      Column('airtribune_id', LONGTEXT),
+                      Column('xcontest_id', LONGTEXT)
+                      )
+
+
+class User(Base):
+    __table__ = Table('users', metadata,
+
+                      Column('id', INTEGER(11), primary_key=True),
+                      Column('username', String(60)),
+                      Column('password', String(255)),
+                      Column('email', String(100)),
+                      Column('created_at', DateTime),
+                      Column('first_name', LONGTEXT),
+                      Column('last_name', LONGTEXT),
+                      Column('nat', LONGTEXT),
+                      Column('phone', LONGTEXT),
+                      Column('sex', String(1)),
+                      Column('active', TINYINT(1)),
+                      Column('is_admin', TINYINT(1)),
                       )
 
 
@@ -719,8 +738,10 @@ class TblTask(Base):
     task_path = Column(String(40))
 
     reg = relationship('TblRegion')
-    comp = relationship('TblCompetition', backref="tasks", lazy='subquery')
-    Results = relationship('TblTaskResult', backref="task")
+    comp = relationship('TblCompetition')
+    Results = relationship('TblTaskResult')
+    # comp = relationship('TblCompetition', backref="tasks", lazy='subquery')
+    # Results = relationship('TblTaskResult', backref="task")
 
 
 class TblTaskResult(Base):
@@ -763,7 +784,8 @@ class TblTaskResult(Base):
     lead_coeff = Column(Float)
     fixed_LC = Column(Float)
 
-    Participants = relationship('TblParticipant', backref="taskresults", lazy="subquery")
+    # Participants = relationship('TblParticipant', backref="taskresults", lazy="subquery")
+    Participants = relationship('TblParticipant')
 
 
 class TblTaskWaypoint(Base):

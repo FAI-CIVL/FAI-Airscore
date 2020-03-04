@@ -210,7 +210,7 @@ def create_track_result_file(track_id, task_id):
     from track import Track
 
     task = Task.read(task_id)
-    # formula = For.Task_formula.read(task_id)
+    # formula = For.TaskFormula.read(task_id)
     track = Track.read_db(track_id)
     lib = task.formula.get_lib()
     result = flight_result.Flight_result.check_flight(track.flight, task)

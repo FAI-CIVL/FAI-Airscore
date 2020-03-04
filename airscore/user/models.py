@@ -15,7 +15,6 @@ from airscore.database import (
 from airscore.extensions import bcrypt
 
 
-
 class Role(SurrogatePK, Model):
     """A role for a user."""
 
@@ -36,14 +35,29 @@ class Role(SurrogatePK, Model):
 class User(UserMixin, SurrogatePK, Model):
     """A user of the app."""
 
+    # __tablename__ = "users"
+    # username = Column(db.String(80), unique=True, nullable=False)
+    # email = Column(db.String(80), unique=True, nullable=False)
+    # #: The hashed password
+    # password = Column(db.LargeBinary(128), nullable=True)
+    # created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
+    # first_name = Column(db.String(30), nullable=True)
+    # last_name = Column(db.String(30), nullable=True)
+    # active = Column(db.Boolean(), default=False)
+    # is_admin = Column(db.Boolean(), default=False)
+
     __tablename__ = "users"
+    # pil_id = Column(db.INTEGER, unique=True, nullable=False),
+    id = Column(db.INTEGER, primary_key=True, nullable=False)
     username = Column(db.String(80), unique=True, nullable=False)
+    password = Column(db.String(128), nullable=True)
     email = Column(db.String(80), unique=True, nullable=False)
-    #: The hashed password
-    password = Column(db.LargeBinary(128), nullable=True)
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     first_name = Column(db.String(30), nullable=True)
     last_name = Column(db.String(30), nullable=True)
+    nat = Column(db.String(10)),
+    phone = Column(db.String(40)),
+    sex = Column(db.String(1)),
     active = Column(db.Boolean(), default=False)
     is_admin = Column(db.Boolean(), default=False)
 
@@ -71,5 +85,3 @@ class User(UserMixin, SurrogatePK, Model):
     def __repr__(self):
         """Represent instance as a unique string."""
         return f"<User({self.username!r})>"
-
-
