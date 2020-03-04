@@ -2,7 +2,7 @@
 """User views."""
 from datetime import datetime
 
-from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
+from flask import Blueprint, render_template, request, jsonify, json, flash, redirect, url_for
 from flask_login import login_required, current_user
 import frontendUtils
 from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm
@@ -11,7 +11,7 @@ from formula import list_formulas, Formula
 from task import Task, write_map_json
 from route import save_turnpoint, Turnpoint
 from flight_result import update_status, delete_result
-
+from os import path, remove
 from sys import stdout
 
 blueprint = Blueprint("user", __name__, url_prefix="/users", static_folder="../static")
@@ -279,12 +279,18 @@ def task_admin(taskid):
         taskform.comment.data = task.comment
         taskform.date.data = task.date
         taskform.task_type.data = task.task_type
-        taskform.window_open_time.data = "" if not task.window_open_time else sec_to_time(task.window_open_time + task.time_offset)
-        taskform.window_close_time.data = "" if not task.window_close_time else sec_to_time(task.window_close_time + task.time_offset)
-        taskform.start_time.data = "" if not task.start_time else sec_to_time(task.start_time + task.time_offset)
-        taskform.start_close_time.data = "" if not task.start_close_time else sec_to_time(task.start_close_time + task.time_offset)
-        taskform.stopped_time.data = "" if not task.stopped_time else sec_to_time(task.stopped_time + task.time_offset)
-        taskform.task_deadline.data = "" if not task.task_deadline else sec_to_time(task.task_deadline + task.time_offset)
+        taskform.window_open_time.data = "" if not task.window_open_time else sec_to_time((task.window_open_time
+                                                                                           + task.time_offset)%86400)
+        taskform.window_close_time.data = "" if not task.window_close_time else sec_to_time((task.window_close_time
+                                                                                             + task.time_offset)%86400)
+        taskform.start_time.data = "" if not task.start_time else sec_to_time((task.start_time
+                                                                               + task.time_offset)%86400)
+        taskform.start_close_time.data = "" if not task.start_close_time else sec_to_time((task.start_close_time
+                                                                                           + task.time_offset)%86400)
+        taskform.stopped_time.data = "" if not task.stopped_time else sec_to_time((task.stopped_time
+                                                                                   + task.time_offset)%86400)
+        taskform.task_deadline.data = "" if not task.task_deadline else sec_to_time((task.task_deadline
+                                                                                     + task.time_offset)%86400)
         taskform.SS_interval.data = task.SS_interval/60 # (convert from sec to min)
         taskform.start_iteration.data = task.start_iteration
         taskform.time_offset.data = task.time_offset/3600
@@ -429,7 +435,6 @@ def _del_turnpoint(tpid):
     """delete a turnpoint from the task"""
     from route import delete_turnpoint
     data = request.json
-    print(data)
     taskid = int(data['taskid'])
     delete_turnpoint(tpid)
     if data['partial_distance'] != '':
@@ -438,6 +443,27 @@ def _del_turnpoint(tpid):
         task.calculate_task_length()
         task.update_task_distance()
         write_map_json(taskid)
+
+    resp = jsonify(success=True)
+    return resp
+
+
+@blueprint.route('/_del_all_turnpoints/<taskid>', methods=['POST'])
+@login_required
+def _del_all_turnpoints(taskid):
+    """delete a turnpoint from the task"""
+    taskid = int(taskid)
+    from route import delete_all_turnpoints
+    from task import Task
+    from Defines import MAPOBJDIR
+    delete_all_turnpoints(taskid)
+    task = Task.read(taskid)
+    task.opt_dist = 0
+    task.distance = 0
+    task.update_task_info()
+    task_map = path.join(MAPOBJDIR, 'tasks/' + str(taskid) + '.task')
+    if path.isfile(task_map):
+        remove(task_map)
 
     resp = jsonify(success=True)
     return resp
@@ -485,7 +511,7 @@ def _delete_track(trackid):
         return render_template('500.html')
 
 
-@blueprint.route('/_upload_track/<taskid>/<parid>', methods=['GET', 'POST'])
+@blueprint.route('/_upload_track/<taskid>/<parid>', methods=['POST'])
 @login_required
 def _upload_track(taskid, parid):
     taskid = int(taskid)
@@ -519,3 +545,25 @@ def _upload_track(taskid, parid):
         resp = jsonify({'error': 'request.files'})
         return resp
 
+
+@blueprint.route('/_upload_XCTrack/<taskid>', methods=['GET', 'POST'])
+@login_required
+def _upload_XCTrack(taskid):
+    taskid = int(taskid)
+    if request.method == "POST":
+        if request.files:
+            task_file = json.load(request.files["track_file"])
+            print(task_file)
+            stdout.flush()
+            task = Task.read(taskid)
+            task.update_from_xctrack_data(task_file)
+            task.calculate_optimised_task_length()
+            task.calculate_task_length()
+            task.calculate_task_length()
+            task.update_task_info()
+            task.turnpoints_to_db()
+            task.to_db()
+            write_map_json(taskid)
+
+            resp = jsonify(success=True)
+            return resp

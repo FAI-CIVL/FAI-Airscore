@@ -132,6 +132,31 @@
       </button>
    </p>
    <div class="collapse" id="collapse4">
+      <div id="import">
+         <p>
+             <button class="btn btn-secondary ml-5 " type="button" data-toggle="collapse" data-target="#collapse26" aria-expanded="false" aria-controls="collapse26">
+                Import
+            </button>
+         </p>
+          <div class="collapse" id="collapse26">
+            <div class="card card-body">
+               <div class="container">
+                    <div  class="form-row">
+                        <div class="form-group col-md-12">
+                           <button id="XCTrack_button" class="btn btn-success ml-4 ">Import XCTrack task file</button>
+                           <input id="XCTrack_fileupload" type="file" size="chars" class="custom-file-input"  oninput="filesize(this);" data-url="/users/_upload_XCTrack/{{ taskid }}" name="track_file" >
+
+                       </div>
+                  </div>
+               </div>
+            </div>
+          </div>
+      </div>
+      <button id="deleteall_btn" class="btn btn-danger ml-5 " onclick="confirm_delete_all();" type="button" >
+         Clear Task
+      </button>
+
+
    <div class="card card-body">
       <div class="container">
          <h3 id="task_table_heading" class="font-weight-bold">Task</h3>
@@ -295,6 +320,9 @@
 {% block js %}
 {% include "js.html" %}
 <script src="{{ static_url_for('static', filename='js/display-if.min.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.ui.widget.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.iframe-transport.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.fileupload.js') }}"></script>
 <script type="text/javascript">
    var csrftoken = $('meta[name=csrf-token]').attr('content');
       $.ajaxSetup({
@@ -309,6 +337,10 @@
    var taskid = {{taskid}};
 
    function update_turnpoints(json) {
+               $('#deleteall_btn').hide();
+               if(json['turnpoints'].length > 0){
+                 $('#deleteall_btn').show();
+                 $('#import').hide() }
                $("#turnpoints tbody").remove();
                var content = '';
 
@@ -325,7 +357,7 @@
                     var partial_dist = 0; }
                content += '><tr id="'
                + json['turnpoints'][i].task_id + '">';
-               content += '<td class="col-3">' + json['turnpoints'][i].n + '</td>';
+               content += '<td class="col-3">' + json['turnpoints'][i].num + '</td>';
                content += '<td class="col-4">' + json['turnpoints'][i].type + '</td>';
                content += '<td class="col-3">' + json['turnpoints'][i].name + '</td>';
 <!--               content += '<td class="col-3">' + json['turnpoints'][i].how + '</td>';-->
@@ -416,12 +448,34 @@
 
    };
 
+      function delete_all_tp(){
+
+           $.ajax({
+               type: "POST",
+               url: '/users/_del_all_turnpoints/'+ taskid,
+               contentType:"application/json",
+               dataType: "json",
+               success: function () {
+                      get_turnpoints()
+                      $('#map').contents().find('body').html('');
+               }
+               });
+
+   };
+
 
    function confirm_delete(tp_num, tpid, partial_distance) {
    var x = tp_num;
      var myHeading = "<p>Are you sure you want to delete Turnpoint ";
      $("#delmodal-body").html(myHeading + x + '?</p>');
      $('#delete_confirmed').attr("onclick","delete_tp("+tpid+", "+ partial_distance+")");
+     $('#delmodal').modal('show');
+    }
+
+    function confirm_delete_all() {
+     var myHeading = "<p>Are you sure you want to delete ALL Turnpoints";
+     $("#delmodal-body").html(myHeading + '?</p>');
+     $('#delete_confirmed').attr("onclick","delete_all_tp()");
      $('#delmodal').modal('show');
     }
 
@@ -484,7 +538,42 @@
 
    };
 
+</script>
+<script type="text/javascript">
+
+$('#XCTrack_button').click(function(){
+    $('#XCTrack_fileupload').click();
+});
+
+$(function () {
+
+    $('#XCTrack_fileupload').fileupload({
+        dataType: 'json',
+        done: function (e, data) {
+            $.each(data.result.files, function (index, file) {
+                $('<p/>').text(file.name).appendTo(document.body);
+            });
+        },
+        submit: function (e, data){
+        $('#upload_box').hide();
+<!--         $('#progress_text').text(data.files[0].name);-->
+        },
+        success: function () {
+                      get_turnpoints()
+               }
+    });
+});
 
 
 </script>
+
+<script>
+
+  function filesize(elem){
+    document.cookie = `filesize=${elem.files[0].size}`
+  }
+
+</script>
+
+
 {% endblock %}
