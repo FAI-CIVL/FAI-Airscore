@@ -84,7 +84,7 @@ class Task(object):
         distances_to_go: calculates distance from each waypoint to goal
     """
 
-    def __init__(self, task_id=None, task_type=None, start_time=None, task_deadline=None,
+    def __init__(self, comp_id=None, task_id=None, task_type=None, start_time=None, task_deadline=None,
                  stopped_time=None, check_launch='off'):
         self.task_id = task_id
         self.task_type = task_type  # 'race', 'elapsed_time'
@@ -92,7 +92,7 @@ class Task(object):
         self.task_deadline = task_deadline  # seconds from midnight: task deadline
         self.stopped_time = stopped_time  # seconds from midnight: time task was stopped (TaskStopAnnouncementTime).
         self.check_launch = check_launch  # check launch flag. whether we check that pilots leave from launch.
-        self.comp_id = None
+        self.comp_id = comp_id
         self.comp_code = None
         self.comp_name = None
         self.comp_site = None
@@ -137,7 +137,14 @@ class Task(object):
         self.task_path = None
         self.comp_path = None
         self.track_source = None
-        self.formula = TaskFormula.read(self.id) if self.id else None
+
+        '''Formula'''
+        if self.id:
+            self.formula = TaskFormula.read(self.id)
+        elif self.comp_id:
+            self.formula = TaskFormula.from_comp(self.comp_id)
+        else:
+            self.formula = None
 
     def __setattr__(self, attr, value):
         import datetime
