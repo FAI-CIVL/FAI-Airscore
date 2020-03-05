@@ -152,6 +152,7 @@ def comp_settings_admin(compid):
             formula.min_dist = compform.min_dist.data*1000
             formula.nominal_launch = compform.nom_launch.data/100
             formula.nominal_time = compform.nom_time.data*60
+            formula.no_goal_penalty = compform.no_goal_penalty.data
             formula.to_db()
 
             flash(f"{compform.comp_name.data} saved", category='info')
@@ -193,18 +194,18 @@ def comp_settings_admin(compid):
         compform.country_scoring.data = formula.country_scoring
         compform.team_size.data = formula.team_size
         compform.team_over.data = formula.team_over
-        compform.distance.data = formula.formula_distance
-        compform.arrival.data = formula.formula_arrival
-        compform.departure.data = formula.formula_departure
+        compform.formula_distance.data = formula.formula_distance
+        compform.formula_arrival.data = formula.formula_arrival
+        compform.formula_departure.data = formula.formula_departure
         compform.lead_factor.data = formula.lead_factor
-        compform.time.data = formula.formula_time
-        compform.no_goal_pen.data = formula.no_goal_penalty
+        compform.formula_time.data = formula.formula_time
+        compform.no_goal_penalty.data = formula.no_goal_penalty
         compform.glide_bonus.data = formula.glide_bonus
         compform.tolerance.data = formula.tolerance
         compform.min_tolerance.data = formula.min_tolerance
-        compform.height_bonus.data = formula.height_bonus
-        compform.ESS_height_upper.data = formula.arr_max_height
-        compform.ESS_height_lower.data = formula.arr_min_height
+        compform.arr_alt_bonus.data = formula.arr_alt_bonus
+        compform.arr_max_height.data = formula.arr_max_height
+        compform.arr_min_height.data = formula.arr_min_height
         compform.min_time.data = formula.validity_min_time
         compform.scoreback_time.data = formula.score_back_time
         compform.max_JTG.data = formula.max_JTG
@@ -375,10 +376,10 @@ def _get_adv_settings():
     formula = Formula.from_preset(data['category'], data['formula'])
     settings = {'distance': formula.formula_distance, 'arrival': formula.formula_arrival,
                 'departure': formula.formula_departure, 'lead_factor': formula.lead_factor,
-                'time': formula.formula_time, 'no_goal_pen': formula.no_goal_penalty,
+                'time': formula.formula_time, 'no_goal_penalty': formula.no_goal_penalty,
                 'glide_bonus': formula.glide_bonus, 'tolerance': formula.tolerance,
-                'min_tolerance': formula.min_tolerance, 'height_bonus': formula.height_bonus,
-                'ESS_height_upper': formula.arr_max_height, 'ESS_height_lower': formula.arr_min_height,
+                'min_tolerance': formula.min_tolerance, 'arr_alt_bonus': formula.height_bonus,
+                'arr_max_height': formula.arr_max_height, 'arr_min_height': formula.arr_min_height,
                 'min_time': formula.validity_min_time, 'scoreback_time': formula.score_back_time,
                 'max_JTG': formula.max_JTG, 'JTG_pen_sec': formula.JTG_penalty_per_sec}
 
