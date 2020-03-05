@@ -858,22 +858,21 @@ class Task(object):
         # TODO update part, now it just inserts new Task and new Waypoints
         from sqlalchemy.exc import SQLAlchemyError
 
-        t = aliased(TblTask)
-
         with Database(session) as db:
             try:
                 if not self.id:
-                    task = t()
+                    task = TblTask(comp_id=self.comp_id, task_num=self.task_num, task_name=self.task_name,
+                                   date=self.date)
                     db.session.add(task)
                     db.session.flush()
                 else:
-                    task = db.session.query(t).get(self.id)
+                    task = db.session.query(TblTask).get(self.id)
                 for k, v in self.as_dict().items():
-                    if hasattr(task, k):
+                    if k not in ['task_id', 'comp_id'] and hasattr(task, k):
                         setattr(task, k, v)
                 '''save formula parameters'''
                 for k in TaskFormula.task_overrides:
-                    setattr(task, k, getattr(task.formula, k))
+                    setattr(task, k, getattr(self.formula, k))
                 db.session.flush()
                 self.task_id = task.task_id
                 if self.turnpoints:
@@ -896,23 +895,41 @@ class Task(object):
         with Database(session) as db:
             try:
                 if self.turnpoints:
-                    wpts = []
+                    insert_wpts = []
+                    update_wpts = []
                     for idx, tp in enumerate(self.turnpoints):
                         opt_lat, opt_lon, cumulative_dist = None, None, None
                         if len(self.optimised_turnpoints) > 0:
                             opt_lat, opt_lon = self.optimised_turnpoints[idx].lat, self.optimised_turnpoints[idx].lon
                         if len(self.partial_distance) > 0:
                             cumulative_dist = self.partial_distance[idx]
-                        wpt = w()
-                        for k, v in tp.__dict__.items():
-                            if hasattr(wpt, k):
-                                setattr(wpt, k, v)
-                        wpt.task_id = self.task_id
-                        wpt.ssr_lat = opt_lat
-                        wpt.ssr_lon = opt_lon
-                        wpt.partial_distance = cumulative_dist
-                        wpts.append(wpt)
-                    db.session.bulk_save_objects(wpts)
+                         wpt = dict(tp.as_dict(), task_id=self.id, num=idx + 1, ssr_lat=opt_lat, ssr_lon=opt_lon,
+                                   partial_distance=cumulative_dist)
+                        # wpt.update({'task_id': self.id, 'num': idx + 1, 'ssr_lat': opt_lat, 'ssr_lon': opt_lon,
+                        #             'partial_distance': cumulative_dist})
+                        # for k, v in tp.__dict__.items():
+                        #     if hasattr(wpt, k):
+                        #         setattr(wpt, k, v)
+                        # wpt.ssr_lat = opt_lat
+                        # wpt.ssr_lon = opt_lon
+                        # wpt.partial_distance = cumulative_dist
+                        if tp.wpt_id:
+                            update_wpts.append(wpt)
+                        else:
+                            insert_wpts.append(wpt)
+                    if insert_wpts:
+                        db.session.bulk_insert_mappings(TblTaskWaypoint, insert_wpts)
+                        db.session.flush()
+                    if update_wpts:
+                        db.session.bulk_update_mappings(TblTaskWaypoint, update_wpts)
+                        db.session.flush()
+                    db.session.commit()
+
+                    w = aliased(TblTaskWaypoint)
+                    res = db.session.query(w).filter(w.task_id == self.task_id).order_by(w.num).all()
+                    for idx, tp in enumerate(self.turnpoints):
+                        if not tp.wpt_id:
+                            tp.wpt_id = res[idx].wpt_id
 
             except SQLAlchemyError as e:
                 error = str(e.__dict__)
