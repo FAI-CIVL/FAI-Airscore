@@ -114,7 +114,7 @@
                   {{taskform.airspace_check.label}} {{taskform.airspace_check(size=3,**{'id': "lead_factor", 'data-toggle': 'tooltip', 'title': taskform.airspace_check.description})}}
                </div>
 <!--               <div  class="form-group col-md-3 display-if" data-target_name="airspace_check" data-target_type="checkbox" data-target_value=true>-->
-<!--                  taskform.openair_file.label}} taskform.openair_file(size=15,**{'id': "no_goal_pen", 'data-toggle': 'tooltip', 'title': taskform.openair_file.description})}}-->
+<!--                  taskform.openair_file.label}} taskform.openair_file(size=15,**{'id': "no_goal_penalty", 'data-toggle': 'tooltip', 'title': taskform.openair_file.description})}}-->
 <!--               </div>-->
                <div class="form-group col-md-4">
                   {{taskform.QNH.label}} {{taskform.QNH(size=5,**{'id': "tolerance", 'data-toggle': 'tooltip', 'title': taskform.QNH.description})}}
@@ -126,6 +126,38 @@
          </div>
       </div>
    </div>
+
+      <p>
+      <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse27" aria-expanded="false" aria-controls="collapse27">
+      Formula
+      </button>
+   </p>
+   <div class="collapse" id="collapse27">
+      <div class="card card-body">
+         <div class="container">
+            <div class="alert alert-warning" role="alert">
+            <h4>These settings are inherited from the settings for this competition.<br>Change them here if you want to overide for this task only.</h4>
+            </div>
+            <div  class="form-row">
+                     <div class="form-group col-md-12">
+                        {{taskform.formula_distance.label}} {{taskform.formula_distance(**{'id': "formula_distance", 'data-toggle': 'tooltip', 'title': taskform.formula_distance.description})}}
+                        {{taskform.formula_arrival.label}} {{taskform.formula_arrival(**{'id': "formula_arrival", 'data-toggle': 'tooltip', 'title': taskform.formula_arrival.description})}}
+                        {{taskform.formula_departure.label}} {{taskform.formula_departure(**{'id': "formula_departure", 'data-toggle': 'tooltip', 'title': taskform.formula_departure.description})}}
+                        {{taskform.formula_time.label}} {{taskform.formula_time(**{'id': "formula_time", 'data-toggle': 'tooltip', 'title': taskform.formula_time.description})}}
+                     </div>
+
+                      <div class="form-group col-md-12">
+                         {{taskform.tolerance.label}} {{taskform.tolerance(size=3,**{'id': "tolerance", 'data-toggle': 'tooltip', 'title': taskform.tolerance.description})}}
+                         {{taskform.arr_alt_bonus.label}} {{taskform.arr_alt_bonus(size=3,**{'id': "arr_alt_bonus", 'data-toggle': 'tooltip', 'title': taskform.arr_alt_bonus.description})}}
+                         {{taskform.max_JTG.label}} {{taskform.max_JTG(size=3,**{'id': "max_JTG", 'data-toggle': 'tooltip', 'title': taskform.max_JTG.description})}}
+                         {{taskform.no_goal_penalty.label}} {{taskform.no_goal_penalty(size=3,**{'id': "no_goal_penalty", 'data-toggle': 'tooltip', 'title': taskform.no_goal_penalty.description})}}
+                      </div>
+            </div>
+         </div>
+      </div>
+   </div>
+
+
    <p>
       <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse4" aria-expanded="false" aria-controls="collapse4">
       Turnpoints

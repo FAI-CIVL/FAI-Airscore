@@ -198,6 +198,16 @@ class TaskForm(FlaskForm):
     # openair_file = SelectField('Openair file', choices=[(1,'1'), (2,'2')])
     QNH = DecimalField('QNH', validators=[NumberRange(min=900, max=1100)])
 
+    #formula overides
+    formula_distance = SelectField('Distance points', choices=[('on','On'), ('difficulty','Difficulty'), ('off','Off')])
+    formula_arrival = SelectField('Arrival points', choices=[('position','Position'), ('time','Time'), ('off','Off')])
+    formula_departure = SelectField('Departure points', choices=[('leadout','Leadout'), ('departure','Departure'), ('off','Off')])
+    formula_time = SelectField('Time points', choices=[('on','On'), ('off', 'Off')])
+    arr_alt_bonus = DecimalField('Height bonus')
+    max_JTG = IntegerField("Max Jump the gun (sec)", default=0)
+    no_goal_penalty = DecimalField('No goal penalty')
+    tolerance = DecimalField('Turnpoint radius tolerance %')
+
     submit = SubmitField('Save')
 
     def validate_on_submit(self):
