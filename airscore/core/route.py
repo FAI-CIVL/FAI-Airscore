@@ -60,8 +60,9 @@ class Turnpoint():
     """
 
     def __init__(self, lat=None, lon=None, radius=None, type='waypoint', shape='circle', how='entry', altitude=None,
-                 name=None, description=None, wpt_id=None, rwp_id=None):
+                 name=None, num=None, description=None, wpt_id=None, rwp_id=None):
         self.name = name
+        self.num = num
         self.wpt_id = wpt_id  # tawPk
         self.rwp_id = rwp_id
         self.lat = lat
@@ -118,6 +119,15 @@ def delete_turnpoint(tp_id):
     '''delete turnpoint from task in database'''
     with Database() as db:
         db.session.query(W).filter(W.wpt_id == tp_id).delete()
+        db.session.commit()
+
+
+def delete_all_turnpoints(task_id):
+    from db_tables import TblTaskWaypoint as W
+
+    '''delete turnpoints from task in database'''
+    with Database() as db:
+        db.session.query(W).filter(W.task_id == task_id).delete()
         db.session.commit()
 
 

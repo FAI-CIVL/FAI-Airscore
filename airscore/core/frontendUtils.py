@@ -274,7 +274,7 @@ def process_igc(task_id, par_id, tracklog):
     print("Tracklog saved")
 
     """import track"""
-    pilot.track = Track(track_file=full_file_name, par_id=par_id)
+    pilot.track = Track(track_file=filename, par_id=par_id)
     pilot.track.flight = Flight.create_from_file(full_file_name)
     """check result"""
     if not pilot.track:
@@ -282,13 +282,11 @@ def process_igc(task_id, par_id, tracklog):
     elif not pilot.track.date == task.date:
         print(f"track {filename} has a different date from task day \n")
     else:
-#         mytrack.task_id = task.id
+
         print(f"pilot {pilot.track.par_id} associated with track {pilot.track.filename} \n")
 
         """checking track against task"""
-#         formula = TaskFormula.read(task_id)
-#         lib = get_formula_lib(formula.type, formula.version)
-#         result = verify_track(mytrack, task)
+
         if task.airspace_check:
             airspace = AirspaceCheck.from_task(task)
         else:
@@ -296,17 +294,19 @@ def process_igc(task_id, par_id, tracklog):
         pilot.result = Flight_result.check_flight(pilot.track.flight, task, airspace_obj=airspace)
         print(f"track verified with task {task.task_id}\n")
         """adding track to db"""
-#         track_id = import_track(mytrack, task_id)
-#         print(f"track imported to database with ID {mytrack.traPk}\n")
-#         print("track correctly imported and results generated \n")
+
         pilot.to_db()
 
         time = ''
-        data = {'par_id': pilot.par_id, 'track_id': pilot.track.track_id}
+        data = {'par_id': pilot.par_id, 'track_id': pilot.track_id}
         if pilot.result.goal_time:
             time = sec_to_time(pilot.result.ESS_time - pilot.result.SSS_time)
         if pilot.result.result_type == 'goal':
             data['Result'] = f'Goal {time}'
         elif pilot.result.result_type == 'lo':
-            data['Result'] = f"LO {round(pilot.result.distance/1000,2)}"
-        return data
+            data['Result'] = f"LO {round(pilot.result.distance / 1000, 2)}"
+        if pilot.track_id:   # if there is a track, make the result a link to the map
+            trackid = data['track_id']
+            result = data['Result']
+            data['Result']  = f'<a href="/map/{trackid}-{task_id}">{result}</a>'
+    return data

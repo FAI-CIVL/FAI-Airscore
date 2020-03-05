@@ -1,5 +1,20 @@
 {% extends "layout.html" %}
 {% block content %}
+<style>
+  .bar {
+    height: 20px;
+    background: green;
+}
+</style>
+
+<!--<style>-->
+<!--input {-->
+<!--    display: block;-->
+<!--    visibility: hidden;-->
+<!--    width: 0;-->
+<!--    height: 0;-->
+<!--}-->
+<!--</style>-->
 
   <body>
 <!--  <head>-->
@@ -22,7 +37,7 @@
     <thead>
         <tr>
             <th>Name</th>
-            <th>Status</th>
+<!--            <th>Status</th>-->
             <th>Result</th>
             <th></th>
         </tr>
@@ -37,10 +52,15 @@
 
 {% block js %}
 {% include "js.html" %}
+    <script src="{{ static_url_for('static', filename='js/jquery.initialize.js') }}"></script>
     <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
     <script src="{{ static_url_for('static', filename='js/pop_track_admin.js') }}"></script>
+    <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.ui.widget.js') }}"></script>
+    <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.iframe-transport.js') }}"></script>
+    <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.fileupload.js') }}"></script>
     <script type="text/javascript">populate_track_admin({{taskid|tojson}})</script>
     <script type="text/javascript">
+
 
 
         function set_result(par_id, status){
@@ -62,13 +82,13 @@
 
         function update_row(new_data){
         var table = $('#tracks').dataTable();
-        new_data.Name = $('#tracks').DataTable().row( $('tr#id_'+ new_data.par_id)).data()['Name'];
+        new_data.name = $('#tracks').DataTable().row( $('tr#id_'+ new_data.par_id)).data()['name'];
         table.fnUpdate(new_data, $('tr#id_'+ new_data.par_id), undefined, false);
         }
 
    function delete_track(track_id, par_id){
                var mydata = new Object();
-               mydata.track_id = track_id
+               mydata.track_id = track_id;
                mydata.par_id = par_id;
    $.ajax({
                type: "POST",
@@ -83,10 +103,51 @@
 }
 
 
-    </script>
+</script>
 
+<script type="text/javascript">
+   function choose_file(par_id){
+   var filename;
+   $('#fileupload' + par_id).fileupload({
+        dataType: 'json',
+        done: function (e, data) {
+            $.each(data.result.files, function (index, file) {
+                $('<p/>').text(file.name).appendTo(document.body);
+                filename = file.name;
+            });
+        },
+        submit: function (e, data){
+        $('#ABS'+ par_id).hide();
+        $('#MD'+ par_id).hide();
+        $('#DNF'+ par_id).hide();
+        $('#TrackUp'+ par_id).hide();
+        $('#upload_box'+ par_id).hide();
+        $('#filediv'+ par_id).show();
 
+         $('#progress_text'+ par_id).text(data.files[0].name + ' - processing');
+        },
+                      success: function (response, par_id) {
+                      update_row(response);
+                      },
 
+         progress: function (e, data) {
+        var progress = parseInt(data.loaded / data.total * 100, 10);
+        $('#progress'+ par_id+' .bar').css(
+            'width',
+            progress + '%'
+        );
+    }
+    });
+    $('#fileupload' + par_id).click();
+};
+</script>
 
+<script>
+
+  function filesize(elem){
+    document.cookie = `filesize=${elem.files[0].size}`
+  }
+
+</script>
 
 {% endblock %}

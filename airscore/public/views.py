@@ -414,3 +414,4 @@ def download_file(filetype, filename):
         airspace_path = Defines.AIRSPACEDIR
         fullname = path.join(airspace_path, filename)
     return send_file(fullname, as_attachment=True)
+

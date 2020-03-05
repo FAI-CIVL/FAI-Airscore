@@ -121,10 +121,10 @@
                <div class="container">
                   <div class="form-row">
                      <div class="form-group col-md-12">
-                        {{compform.distance.label}} {{compform.distance(**{'id': "distance", 'data-toggle': 'tooltip', 'title': compform.distance.description})}}
-                        {{compform.arrival.label}} {{compform.arrival(**{'id': "arrival", 'data-toggle': 'tooltip', 'title': compform.arrival.description})}}
-                        {{compform.departure.label}} {{compform.departure(**{'id': "departure", 'data-toggle': 'tooltip', 'title': compform.departure.description})}}
-                        {{compform.time.label}} {{compform.time(**{'id': "time", 'data-toggle': 'tooltip', 'title': compform.time.description})}}
+                        {{compform.formula_distance.label}} {{compform.formula_distance(**{'id': "formula_distance", 'data-toggle': 'tooltip', 'title': compform.formula_distance.description})}}
+                        {{compform.formula_arrival.label}} {{compform.formula_arrival(**{'id': "formula_arrival", 'data-toggle': 'tooltip', 'title': compform.formula_arrival.description})}}
+                        {{compform.formula_departure.label}} {{compform.formula_departure(**{'id': "formula_departure", 'data-toggle': 'tooltip', 'title': compform.formula_departure.description})}}
+                        {{compform.formula_time.label}} {{compform.formula_time(**{'id': "formula_time", 'data-toggle': 'tooltip', 'title': compform.formula_time.description})}}
                      </div>
                   </div>
                   <div  class="form-row">
@@ -133,7 +133,7 @@
                         {{compform.lead_factor.label}} {{compform.lead_factor(size=3,**{'id': "lead_factor", 'data-toggle': 'tooltip', 'title': compform.lead_factor.description})}}
                      </div>
                      <div  class="form-group col-md-3">
-                        {{compform.no_goal_pen.label}} {{compform.no_goal_pen(size=3,**{'id': "no_goal_pen", 'data-toggle': 'tooltip', 'title': compform.no_goal_pen.description})}}
+                        {{compform.no_goal_penalty.label}} {{compform.no_goal_penalty(size=3,**{'id': "no_goal_penalty", 'data-toggle': 'tooltip', 'title': compform.no_goal_penalty.description})}}
                      </div>
                   </div>
                    <div  class="form-row">
@@ -147,9 +147,9 @@
                   <div  class="form-row">
                         <div class="form-group col-md-12">
                           {{compform.glide_bonus.label}} {{compform.glide_bonus(size=3,**{'id': "glide_bonus", 'data-toggle': 'tooltip', 'title': compform.glide_bonus.description})}}
-                        {{compform.height_bonus.label}} {{compform.height_bonus(size=3,**{'id': "height_bonus", 'data-toggle': 'tooltip', 'title': compform.height_bonus.description})}}
-                      {{compform.ESS_height_upper.label}} {{compform.ESS_height_upper(size=3,**{'id': "ESS_height_upper", 'data-toggle': 'tooltip', 'title': compform.ESS_height_upper.description})}}
-                        {{compform.ESS_height_lower.label}} {{compform.ESS_height_lower(size=3,**{'id': "ESS_height_lower", 'data-toggle': 'tooltip', 'title': compform.ESS_height_lower.description})}}
+                        {{compform.arr_alt_bonus.label}} {{compform.arr_alt_bonus(size=3,**{'id': "arr_alt_bonus", 'data-toggle': 'tooltip', 'title': compform.arr_alt_bonus.description})}}
+                      {{compform.arr_max_height.label}} {{compform.arr_max_height(size=3,**{'id': "arr_max_height", 'data-toggle': 'tooltip', 'title': compform.arr_max_height.description})}}
+                        {{compform.arr_min_height.label}} {{compform.arr_min_height(size=3,**{'id': "arr_min_height", 'data-toggle': 'tooltip', 'title': compform.arr_min_height.description})}}
 
                         </div>
                   </div>
@@ -514,18 +514,18 @@
                data : JSON.stringify(formula),
                dataType: "json",
                success: function (data) {
-                     $('#distance').val(data.distance);
-                     $('#time').val(data.time);
-                     $('#arrival').val(data.arrival);
-                     $('#departure').val(data.departure);
+                     $('#formula_distance').val(data.formula_distance);
+                     $('#formula_time').val(data.formula_time);
+                     $('#formula_arrival').val(data.formula_arrival);
+                     $('#formula_departure').val(data.formula_departure);
                      $('#lead_factor').val(data.lead_factor);
-                     $('#no_goal_pen').val(data.no_goal_pen);
+                     $('#no_goal_penalty').val(data.no_goal_penalty);
                      $('#tolerance').val(data.tolerance);
                      $('#min_tolerance').val(data.min_tolerance);
                      $('#glide_bonus').val(data.glide_bonus);
-                     $('#height_bonus').val(data.height_bonus);
-                     $('#ESS_height_upper').val(data.ESS_height_upper);
-                     $('#ESS_height_lower').val(data.ESS_height_lower);
+                     $('#arr_alt_bonus').val(data.arr_alt_bonus);
+                     $('#arr_max_height').val(data.arr_max_height);
+                     $('#arr_min_height').val(data.arr_min_height);
                      $('#min_time').val(data.min_time);
                      $('#scoreback_time').val(data.scoreback_time);
                      $('#max_JTG').val(data.max_JTG);

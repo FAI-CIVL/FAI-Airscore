@@ -2,7 +2,7 @@
 """User views."""
 from datetime import datetime
 
-from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
+from flask import Blueprint, render_template, request, jsonify, json, flash, redirect, url_for
 from flask_login import login_required, current_user
 import frontendUtils
 from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm
@@ -11,7 +11,7 @@ from formula import list_formulas, Formula
 from task import Task, write_map_json
 from route import save_turnpoint, Turnpoint
 from flight_result import update_status, delete_result
-
+from os import path, remove
 from sys import stdout
 
 blueprint = Blueprint("user", __name__, url_prefix="/users", static_folder="../static")
@@ -152,6 +152,7 @@ def comp_settings_admin(compid):
             formula.min_dist = compform.min_dist.data*1000
             formula.nominal_launch = compform.nom_launch.data/100
             formula.nominal_time = compform.nom_time.data*60
+            formula.no_goal_penalty = compform.no_goal_penalty.data
             formula.to_db()
 
             flash(f"{compform.comp_name.data} saved", category='info')
@@ -193,18 +194,18 @@ def comp_settings_admin(compid):
         compform.country_scoring.data = formula.country_scoring
         compform.team_size.data = formula.team_size
         compform.team_over.data = formula.team_over
-        compform.distance.data = formula.formula_distance
-        compform.arrival.data = formula.formula_arrival
-        compform.departure.data = formula.formula_departure
+        compform.formula_distance.data = formula.formula_distance
+        compform.formula_arrival.data = formula.formula_arrival
+        compform.formula_departure.data = formula.formula_departure
         compform.lead_factor.data = formula.lead_factor
-        compform.time.data = formula.formula_time
-        compform.no_goal_pen.data = formula.no_goal_penalty
+        compform.formula_time.data = formula.formula_time
+        compform.no_goal_penalty.data = formula.no_goal_penalty
         compform.glide_bonus.data = formula.glide_bonus
         compform.tolerance.data = formula.tolerance
         compform.min_tolerance.data = formula.min_tolerance
-        compform.height_bonus.data = formula.height_bonus
-        compform.ESS_height_upper.data = formula.arr_max_height
-        compform.ESS_height_lower.data = formula.arr_min_height
+        compform.arr_alt_bonus.data = formula.arr_alt_bonus
+        compform.arr_max_height.data = formula.arr_max_height
+        compform.arr_min_height.data = formula.arr_min_height
         compform.min_time.data = formula.validity_min_time
         compform.scoreback_time.data = formula.score_back_time
         compform.max_JTG.data = formula.max_JTG
@@ -279,12 +280,18 @@ def task_admin(taskid):
         taskform.comment.data = task.comment
         taskform.date.data = task.date
         taskform.task_type.data = task.task_type
-        taskform.window_open_time.data = "" if not task.window_open_time else sec_to_time(task.window_open_time + task.time_offset)
-        taskform.window_close_time.data = "" if not task.window_close_time else sec_to_time(task.window_close_time + task.time_offset)
-        taskform.start_time.data = "" if not task.start_time else sec_to_time(task.start_time + task.time_offset)
-        taskform.start_close_time.data = "" if not task.start_close_time else sec_to_time(task.start_close_time + task.time_offset)
-        taskform.stopped_time.data = "" if not task.stopped_time else sec_to_time(task.stopped_time + task.time_offset)
-        taskform.task_deadline.data = "" if not task.task_deadline else sec_to_time(task.task_deadline + task.time_offset)
+        taskform.window_open_time.data = "" if not task.window_open_time else sec_to_time((task.window_open_time
+                                                                                           + task.time_offset)%86400)
+        taskform.window_close_time.data = "" if not task.window_close_time else sec_to_time((task.window_close_time
+                                                                                             + task.time_offset)%86400)
+        taskform.start_time.data = "" if not task.start_time else sec_to_time((task.start_time
+                                                                               + task.time_offset)%86400)
+        taskform.start_close_time.data = "" if not task.start_close_time else sec_to_time((task.start_close_time
+                                                                                           + task.time_offset)%86400)
+        taskform.stopped_time.data = "" if not task.stopped_time else sec_to_time((task.stopped_time
+                                                                                   + task.time_offset)%86400)
+        taskform.task_deadline.data = "" if not task.task_deadline else sec_to_time((task.task_deadline
+                                                                                     + task.time_offset)%86400)
         taskform.SS_interval.data = task.SS_interval/60 # (convert from sec to min)
         taskform.start_iteration.data = task.start_iteration
         taskform.time_offset.data = task.time_offset/3600
@@ -369,10 +376,10 @@ def _get_adv_settings():
     formula = Formula.from_preset(data['category'], data['formula'])
     settings = {'distance': formula.formula_distance, 'arrival': formula.formula_arrival,
                 'departure': formula.formula_departure, 'lead_factor': formula.lead_factor,
-                'time': formula.formula_time, 'no_goal_pen': formula.no_goal_penalty,
+                'time': formula.formula_time, 'no_goal_penalty': formula.no_goal_penalty,
                 'glide_bonus': formula.glide_bonus, 'tolerance': formula.tolerance,
-                'min_tolerance': formula.min_tolerance, 'height_bonus': formula.height_bonus,
-                'ESS_height_upper': formula.arr_max_height, 'ESS_height_lower': formula.arr_min_height,
+                'min_tolerance': formula.min_tolerance, 'arr_alt_bonus': formula.height_bonus,
+                'arr_max_height': formula.arr_max_height, 'arr_min_height': formula.arr_min_height,
                 'min_time': formula.validity_min_time, 'scoreback_time': formula.score_back_time,
                 'max_JTG': formula.max_JTG, 'JTG_pen_sec': formula.JTG_penalty_per_sec}
 
@@ -429,7 +436,6 @@ def _del_turnpoint(tpid):
     """delete a turnpoint from the task"""
     from route import delete_turnpoint
     data = request.json
-    print(data)
     taskid = int(data['taskid'])
     delete_turnpoint(tpid)
     if data['partial_distance'] != '':
@@ -438,6 +444,27 @@ def _del_turnpoint(tpid):
         task.calculate_task_length()
         task.update_task_distance()
         write_map_json(taskid)
+
+    resp = jsonify(success=True)
+    return resp
+
+
+@blueprint.route('/_del_all_turnpoints/<taskid>', methods=['POST'])
+@login_required
+def _del_all_turnpoints(taskid):
+    """delete a turnpoint from the task"""
+    taskid = int(taskid)
+    from route import delete_all_turnpoints
+    from task import Task
+    from Defines import MAPOBJDIR
+    delete_all_turnpoints(taskid)
+    task = Task.read(taskid)
+    task.opt_dist = 0
+    task.distance = 0
+    task.update_task_info()
+    task_map = path.join(MAPOBJDIR, 'tasks/' + str(taskid) + '.task')
+    if path.isfile(task_map):
+        remove(task_map)
 
     resp = jsonify(success=True)
     return resp
@@ -485,7 +512,7 @@ def _delete_track(trackid):
         return render_template('500.html')
 
 
-@blueprint.route('/_upload_track/<taskid>/<parid>', methods=['GET', 'POST'])
+@blueprint.route('/_upload_track/<taskid>/<parid>', methods=['POST'])
 @login_required
 def _upload_track(taskid, parid):
     taskid = int(taskid)
@@ -520,7 +547,24 @@ def _upload_track(taskid, parid):
         return resp
 
 
-@blueprint.route('/test_upload', methods=['GET'])
+@blueprint.route('/_upload_XCTrack/<taskid>', methods=['GET', 'POST'])
 @login_required
-def test_upload():
-    return render_template('users/testupload.html')
+def _upload_XCTrack(taskid):
+    taskid = int(taskid)
+    if request.method == "POST":
+        if request.files:
+            task_file = json.load(request.files["track_file"])
+            print(task_file)
+            stdout.flush()
+            task = Task.read(taskid)
+            task.update_from_xctrack_data(task_file)
+            task.calculate_optimised_task_length()
+            task.calculate_task_length()
+            task.calculate_task_length()
+            task.update_task_info()
+            task.turnpoints_to_db()
+            task.to_db()
+            write_map_json(taskid)
+
+            resp = jsonify(success=True)
+            return resp

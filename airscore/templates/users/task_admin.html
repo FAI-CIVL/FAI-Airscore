@@ -114,7 +114,7 @@
                   {{taskform.airspace_check.label}} {{taskform.airspace_check(size=3,**{'id': "lead_factor", 'data-toggle': 'tooltip', 'title': taskform.airspace_check.description})}}
                </div>
 <!--               <div  class="form-group col-md-3 display-if" data-target_name="airspace_check" data-target_type="checkbox" data-target_value=true>-->
-<!--                  taskform.openair_file.label}} taskform.openair_file(size=15,**{'id': "no_goal_pen", 'data-toggle': 'tooltip', 'title': taskform.openair_file.description})}}-->
+<!--                  taskform.openair_file.label}} taskform.openair_file(size=15,**{'id': "no_goal_penalty", 'data-toggle': 'tooltip', 'title': taskform.openair_file.description})}}-->
 <!--               </div>-->
                <div class="form-group col-md-4">
                   {{taskform.QNH.label}} {{taskform.QNH(size=5,**{'id': "tolerance", 'data-toggle': 'tooltip', 'title': taskform.QNH.description})}}
@@ -126,12 +126,69 @@
          </div>
       </div>
    </div>
+
+      <p>
+      <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse27" aria-expanded="false" aria-controls="collapse27">
+      Formula
+      </button>
+   </p>
+   <div class="collapse" id="collapse27">
+      <div class="card card-body">
+         <div class="container">
+            <div class="alert alert-warning" role="alert">
+            <h4>These settings are inherited from the settings for this competition.<br>Change them here if you want to overide for this task only.</h4>
+            </div>
+            <div  class="form-row">
+                     <div class="form-group col-md-12">
+                        {{taskform.formula_distance.label}} {{taskform.formula_distance(**{'id': "formula_distance", 'data-toggle': 'tooltip', 'title': taskform.formula_distance.description})}}
+                        {{taskform.formula_arrival.label}} {{taskform.formula_arrival(**{'id': "formula_arrival", 'data-toggle': 'tooltip', 'title': taskform.formula_arrival.description})}}
+                        {{taskform.formula_departure.label}} {{taskform.formula_departure(**{'id': "formula_departure", 'data-toggle': 'tooltip', 'title': taskform.formula_departure.description})}}
+                        {{taskform.formula_time.label}} {{taskform.formula_time(**{'id': "formula_time", 'data-toggle': 'tooltip', 'title': taskform.formula_time.description})}}
+                     </div>
+
+                      <div class="form-group col-md-12">
+                         {{taskform.tolerance.label}} {{taskform.tolerance(size=3,**{'id': "tolerance", 'data-toggle': 'tooltip', 'title': taskform.tolerance.description})}}
+                         {{taskform.arr_alt_bonus.label}} {{taskform.arr_alt_bonus(size=3,**{'id': "arr_alt_bonus", 'data-toggle': 'tooltip', 'title': taskform.arr_alt_bonus.description})}}
+                         {{taskform.max_JTG.label}} {{taskform.max_JTG(size=3,**{'id': "max_JTG", 'data-toggle': 'tooltip', 'title': taskform.max_JTG.description})}}
+                         {{taskform.no_goal_penalty.label}} {{taskform.no_goal_penalty(size=3,**{'id': "no_goal_penalty", 'data-toggle': 'tooltip', 'title': taskform.no_goal_penalty.description})}}
+                      </div>
+            </div>
+         </div>
+      </div>
+   </div>
+
+
    <p>
       <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse4" aria-expanded="false" aria-controls="collapse4">
       Turnpoints
       </button>
    </p>
    <div class="collapse" id="collapse4">
+      <div id="import">
+         <p>
+             <button class="btn btn-secondary ml-5 " type="button" data-toggle="collapse" data-target="#collapse26" aria-expanded="false" aria-controls="collapse26">
+                Import
+            </button>
+         </p>
+          <div class="collapse" id="collapse26">
+            <div class="card card-body">
+               <div class="container">
+                    <div  class="form-row">
+                        <div class="form-group col-md-12">
+                           <button id="XCTrack_button" class="btn btn-success ml-4 ">Import XCTrack task file</button>
+                           <input id="XCTrack_fileupload" type="file" size="chars" class="custom-file-input"  oninput="filesize(this);" data-url="/users/_upload_XCTrack/{{ taskid }}" name="track_file" >
+
+                       </div>
+                  </div>
+               </div>
+            </div>
+          </div>
+      </div>
+      <button id="deleteall_btn" class="btn btn-danger ml-5 " onclick="confirm_delete_all();" type="button" >
+         Clear Task
+      </button>
+
+
    <div class="card card-body">
       <div class="container">
          <h3 id="task_table_heading" class="font-weight-bold">Task</h3>
@@ -295,6 +352,9 @@
 {% block js %}
 {% include "js.html" %}
 <script src="{{ static_url_for('static', filename='js/display-if.min.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.ui.widget.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.iframe-transport.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.fileupload.js') }}"></script>
 <script type="text/javascript">
    var csrftoken = $('meta[name=csrf-token]').attr('content');
       $.ajaxSetup({
@@ -309,6 +369,10 @@
    var taskid = {{taskid}};
 
    function update_turnpoints(json) {
+               $('#deleteall_btn').hide();
+               if(json['turnpoints'].length > 0){
+                 $('#deleteall_btn').show();
+                 $('#import').hide() }
                $("#turnpoints tbody").remove();
                var content = '';
 
@@ -325,7 +389,7 @@
                     var partial_dist = 0; }
                content += '><tr id="'
                + json['turnpoints'][i].task_id + '">';
-               content += '<td class="col-3">' + json['turnpoints'][i].n + '</td>';
+               content += '<td class="col-3">' + json['turnpoints'][i].num + '</td>';
                content += '<td class="col-4">' + json['turnpoints'][i].type + '</td>';
                content += '<td class="col-3">' + json['turnpoints'][i].name + '</td>';
 <!--               content += '<td class="col-3">' + json['turnpoints'][i].how + '</td>';-->
@@ -416,12 +480,34 @@
 
    };
 
+      function delete_all_tp(){
+
+           $.ajax({
+               type: "POST",
+               url: '/users/_del_all_turnpoints/'+ taskid,
+               contentType:"application/json",
+               dataType: "json",
+               success: function () {
+                      get_turnpoints()
+                      $('#map').contents().find('body').html('');
+               }
+               });
+
+   };
+
 
    function confirm_delete(tp_num, tpid, partial_distance) {
    var x = tp_num;
      var myHeading = "<p>Are you sure you want to delete Turnpoint ";
      $("#delmodal-body").html(myHeading + x + '?</p>');
      $('#delete_confirmed').attr("onclick","delete_tp("+tpid+", "+ partial_distance+")");
+     $('#delmodal').modal('show');
+    }
+
+    function confirm_delete_all() {
+     var myHeading = "<p>Are you sure you want to delete ALL Turnpoints";
+     $("#delmodal-body").html(myHeading + '?</p>');
+     $('#delete_confirmed').attr("onclick","delete_all_tp()");
      $('#delmodal').modal('show');
     }
 
@@ -484,7 +570,42 @@
 
    };
 
+</script>
+<script type="text/javascript">
+
+$('#XCTrack_button').click(function(){
+    $('#XCTrack_fileupload').click();
+});
+
+$(function () {
+
+    $('#XCTrack_fileupload').fileupload({
+        dataType: 'json',
+        done: function (e, data) {
+            $.each(data.result.files, function (index, file) {
+                $('<p/>').text(file.name).appendTo(document.body);
+            });
+        },
+        submit: function (e, data){
+        $('#upload_box').hide();
+<!--         $('#progress_text').text(data.files[0].name);-->
+        },
+        success: function () {
+                      get_turnpoints()
+               }
+    });
+});
 
 
 </script>
+
+<script>
+
+  function filesize(elem){
+    document.cookie = `filesize=${elem.files[0].size}`
+  }
+
+</script>
+
+
 {% endblock %}

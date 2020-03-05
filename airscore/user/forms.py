@@ -133,21 +133,21 @@ class CompForm(FlaskForm):
     team_size = IntegerField('Team size',validators=[Optional(strip_whitespace=True)])
     team_over = IntegerField('Team over- what is this??', validators=[Optional(strip_whitespace=True)])
 
-    distance = SelectField('Distance points', choices=[('on','On'), ('difficulty','Difficulty'), ('off','Off')])
-    arrival = SelectField('Arrival points', choices=[('position','Position'), ('time','Time'), ('off','Off')])
-    departure = SelectField('Departure points', choices=[('leadout','Leadout'), ('departure','Departure'), ('off','Off')])
-    time = SelectField('Time points', choices=[('on','On'), ('off', 'Off')])
+    formula_distance = SelectField('Distance points', choices=[('on', 'On'), ('difficulty', 'Difficulty'), ('off', 'Off')])
+    formula_arrival = SelectField('Arrival points', choices=[('position', 'Position'), ('time', 'Time'), ('off', 'Off')])
+    formula_departure = SelectField('Departure points', choices=[('leadout', 'Leadout'), ('departure', 'Departure'), ('off', 'Off')])
+    formula_time = SelectField('Time points', choices=[('on', 'On'), ('off', 'Off')])
 
     alt_mode = SelectField('Instrument Altitude', choices=[('GPS', 'GPS'), ('QNH', 'QNH')])
     lead_factor = DecimalField('Leadfactor')
-    no_goal_pen = DecimalField('No goal penalty')
+    no_goal_penalty = DecimalField('No goal penalty')
 
     tolerance = DecimalField('Turnpoint radius tolerance %')
     min_tolerance = IntegerField('Minimum turnpoint tolerance (m)')
     glide_bonus = DecimalField('Glide bonus')
-    height_bonus = DecimalField('Height bonus')
-    ESS_height_upper = IntegerField('ESS height limit - upper', validators=[Optional(strip_whitespace=True)])
-    ESS_height_lower = IntegerField('ESS height limit - lower', validators=[Optional(strip_whitespace=True)])
+    arr_alt_bonus = DecimalField('Height bonus')
+    arr_max_height = IntegerField('ESS height limit - upper', validators=[Optional(strip_whitespace=True)])
+    arr_min_height = IntegerField('ESS height limit - lower', validators=[Optional(strip_whitespace=True)])
     min_time = IntegerField('Minimum time (mins)')
     scoreback_time = IntegerField('Scoreback time (mins)', description=help_score_back)
     max_JTG = IntegerField("Max Jump the gun (sec)", default=0)
@@ -197,6 +197,16 @@ class TaskForm(FlaskForm):
     airspace_check = BooleanField('Airspace checking')
     # openair_file = SelectField('Openair file', choices=[(1,'1'), (2,'2')])
     QNH = DecimalField('QNH', validators=[NumberRange(min=900, max=1100)])
+
+    #formula overides
+    formula_distance = SelectField('Distance points', choices=[('on','On'), ('difficulty','Difficulty'), ('off','Off')])
+    formula_arrival = SelectField('Arrival points', choices=[('position','Position'), ('time','Time'), ('off','Off')])
+    formula_departure = SelectField('Departure points', choices=[('leadout','Leadout'), ('departure','Departure'), ('off','Off')])
+    formula_time = SelectField('Time points', choices=[('on','On'), ('off', 'Off')])
+    arr_alt_bonus = DecimalField('Height bonus')
+    max_JTG = IntegerField("Max Jump the gun (sec)", default=0)
+    no_goal_penalty = DecimalField('No goal penalty')
+    tolerance = DecimalField('Turnpoint radius tolerance %')
 
     submit = SubmitField('Save')
 
