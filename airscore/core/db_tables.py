@@ -418,7 +418,7 @@ schema_version = Table(
 class TblCertification(Base):
     __tablename__ = 'tblCertification'
 
-    cert_id = Column(INTEGER(11), primary_key=True)
+    cert_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
     cert_name = Column(String(15), nullable=False)
     comp_class = Column(Enum('PG', 'HG', 'mixed'), nullable=False, server_default=text("'PG'"))
 
@@ -426,7 +426,7 @@ class TblCertification(Base):
 class TblClassification(Base):
     __tablename__ = 'tblClassification'
 
-    cat_id = Column(INTEGER(11), primary_key=True)
+    cat_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
     cat_name = Column(String(60), nullable=False)
     comp_class = Column(Enum('PG', 'HG', 'mixed'), nullable=False, server_default=text("'PG'"))
     female = Column(TINYINT(1), nullable=False, server_default=text("'1'"))
@@ -459,7 +459,7 @@ class TblForComp(Base):
     __tablename__ = 'tblForComp'
 
     forPk = Column(INTEGER(11))
-    comp_id = Column(INTEGER(11), primary_key=True)
+    comp_id = Column(INTEGER(11), ForeignKey('tblCompetition.comp_id'), primary_key=True)
     formula_last_update = Column(TIMESTAMP, nullable=False,
                                  server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
     formula_type = Column(String(10))
@@ -499,7 +499,7 @@ class TblForComp(Base):
 class TblLadder(Base):
     __tablename__ = 'tblLadder'
 
-    ladder_id = Column(INTEGER(11), primary_key=True)
+    ladder_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
     ladder_name = Column(String(100), nullable=False)
     ladder_class = Column(Enum('PG', 'HG'), nullable=False, server_default=text("'PG'"))
     nation_code = Column(INTEGER(11), server_default=text("'380'"))
@@ -514,7 +514,7 @@ class TblParticipant(Base):
         Index('par_pil_id', 'pil_id', 'comp_id'),
     )
 
-    par_id = Column(INTEGER(11), primary_key=True)
+    par_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
     comp_id = Column(INTEGER(11), ForeignKey('tblCompetition.comp_id'), index=True)
     civl_id = Column(INTEGER(10), index=True)
     pil_id = Column(INTEGER(11))
@@ -542,7 +542,7 @@ class TblParticipant(Base):
 class TblRanking(Base):
     __tablename__ = 'tblRanking'
 
-    rank_id = Column(INTEGER(11), primary_key=True)
+    rank_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
     rank_name = Column(String(40), nullable=False)
     comp_class = Column(Enum('PG', 'HG', 'mixed'), nullable=False, server_default=text("'PG'"))
 
@@ -550,7 +550,7 @@ class TblRanking(Base):
 class TblRegion(Base):
     __tablename__ = 'tblRegion'
 
-    reg_id = Column(INTEGER(11), primary_key=True)
+    reg_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
     comp_id = Column(INTEGER(11))
     centre = Column(INTEGER(11))
     radius = Column(Float)
@@ -562,7 +562,7 @@ class TblRegion(Base):
 class TblResultFile(Base):
     __tablename__ = 'tblResultFile'
 
-    ref_id = Column(INTEGER(11), primary_key=True)
+    ref_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
     comp_id = Column(INTEGER(11), nullable=False)
     task_id = Column(INTEGER(11))
     created = Column(INTEGER(11), nullable=False)
@@ -607,7 +607,7 @@ class TblCompetition(Base):
         Index('comp_id', 'comp_id', 'comp_name', unique=True),
     )
 
-    comp_id = Column(INTEGER(11), primary_key=True)
+    comp_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
     comp_name = Column(String(100), nullable=False)
     comp_code = Column(String(8))
     comp_class = Column(Enum('PG', 'HG', 'mixed'), server_default=text("'PG'"))
@@ -678,7 +678,7 @@ TblLadderComp = Table(
 class TblRegionWaypoint(Base):
     __tablename__ = 'tblRegionWaypoint'
 
-    rwp_id = Column(INTEGER(11), primary_key=True)
+    rwp_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
     reg_id = Column(ForeignKey('tblRegion.reg_id'), index=True)
     name = Column(String(12), nullable=False)
     lat = Column(Float, nullable=False)
@@ -695,7 +695,7 @@ class TblRegionWaypoint(Base):
 class TblTask(Base):
     __tablename__ = 'tblTask'
 
-    task_id = Column(INTEGER(11), primary_key=True)
+    task_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
     comp_id = Column(ForeignKey('tblCompetition.comp_id'), index=True)
     task_last_update = Column(TIMESTAMP, nullable=False,
                               server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
@@ -750,7 +750,7 @@ class TblTaskResult(Base):
         Index('track_id', 'task_id', 'par_id', unique=True),
     )
 
-    track_id = Column(INTEGER(11), primary_key=True)
+    track_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
     task_id = Column(ForeignKey('tblTask.task_id', ondelete='SET NULL'), index=True)
     par_id = Column(INTEGER(11), ForeignKey('tblParticipant.par_id'), index=True)
     track_last_update = Column(TIMESTAMP, nullable=False,
@@ -791,7 +791,7 @@ class TblTaskResult(Base):
 class TblTaskWaypoint(Base):
     __tablename__ = 'tblTaskWaypoint'
 
-    wpt_id = Column(INTEGER(11), primary_key=True)
+    wpt_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
     task_id = Column(ForeignKey('tblTask.task_id', ondelete='SET NULL'), index=True)
     rwp_id = Column(ForeignKey('tblRegionWaypoint.rwp_id', ondelete='SET NULL'), index=True)
     num = Column(TINYINT(4), nullable=False)
