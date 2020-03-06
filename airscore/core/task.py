@@ -489,28 +489,39 @@ class Task(object):
         """Reads Task from database
         takes tasPk as argument"""
         from db_tables import TaskObjectView as T, TblTaskWaypoint as W
-
         if not (type(task_id) is int and task_id > 0):
-            print("task not present in database ", task_id)
-            return None
-
-        task = Task(task_id)
+            print(f'Error: {task_id} is not a valid id')
+            return f'Error: {task_id} is not a valid id'
+        task = Task(task_id=task_id)
         '''get task from db'''
         with Database() as db:
             # get the task details.
-            t = db.session.query(T)
-            w = db.session.query(W)
-            db.populate_obj(task, t.get(task_id))
-            tps = w.filter(W.task_id == task_id).order_by(W.num)
-        '''populate turnpoints'''
-        for tp in tps:
-            turnpoint = Turnpoint(tp.lat, tp.lon, tp.radius, tp.type, tp.shape, tp.how, tp.altitude, tp.name,
-                                  tp.description, tp.wpt_id)
-            task.turnpoints.append(turnpoint)
-            s_point = polar(lat=tp.ssr_lat, lon=tp.ssr_lon)
-            task.optimised_turnpoints.append(s_point)
-            if tp.partial_distance is not None:  # this will be None in DB before we optimise route, but we append to this list so we should not fill it with Nones
-                task.partial_distance.append(tp.partial_distance)
+            try:
+                t = db.session.query(T).get(task_id)
+                if not t:
+                    db.session.close()
+                    error = f'Error: No task found with id {task_id}'
+                    print(error)
+                    return error
+                tps = db.session.query(W).filter(W.task_id == task_id).order_by(W.num)
+                db.populate_obj(task, t)
+
+                '''populate turnpoints'''
+                for tp in tps:
+                    turnpoint = Turnpoint(tp.lat, tp.lon, tp.radius, tp.type, tp.shape, tp.how, tp.altitude, tp.name,
+                                          tp.description, tp.wpt_id)
+                    task.turnpoints.append(turnpoint)
+                    s_point = polar(lat=tp.ssr_lat, lon=tp.ssr_lon)
+                    task.optimised_turnpoints.append(s_point)
+                    if tp.partial_distance is not None:  # this will be None in DB before we optimise route, but we append to this list so we should not fill it with Nones
+                        task.partial_distance.append(tp.partial_distance)
+
+            except SQLAlchemyError as e:
+                error = str(e)
+                print(f"Error retrieving task from database: {error}")
+                db.session.rollback()
+                db.session.close()
+                return error
 
         '''check if we already have a filepath for task'''
         if task.task_path is None or '':
