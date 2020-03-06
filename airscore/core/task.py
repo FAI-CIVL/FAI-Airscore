@@ -489,51 +489,55 @@ class Task(object):
         """Reads Task from database
         takes tasPk as argument"""
         from db_tables import TaskObjectView as T, TblTaskWaypoint as W
-
         if not (type(task_id) is int and task_id > 0):
-            print("task not present in database ", task_id)
-            return None
-
-        task = Task(task_id)
+            print(f'Error: {task_id} is not a valid id')
+            return f'Error: {task_id} is not a valid id'
+        task = Task(task_id=task_id)
         '''get task from db'''
         with Database() as db:
             # get the task details.
-            t = db.session.query(T)
-            w = db.session.query(W)
-            db.populate_obj(task, t.get(task_id))
-            tps = w.filter(W.task_id == task_id).order_by(W.num)
-        '''populate turnpoints'''
-        for tp in tps:
-            turnpoint = Turnpoint(tp.lat, tp.lon, tp.radius, tp.type, tp.shape, tp.how, tp.altitude, tp.name,
-                                  tp.description, tp.wpt_id)
-            task.turnpoints.append(turnpoint)
-            s_point = polar(lat=tp.ssr_lat, lon=tp.ssr_lon)
-            task.optimised_turnpoints.append(s_point)
-            if tp.partial_distance is not None:  # this will be None in DB before we optimise route, but we append to this list so we should not fill it with Nones
-                task.partial_distance.append(tp.partial_distance)
-
+            try:
+                t = db.session.query(T).get(task_id)
+                if not t:
+                    db.session.close()
+                    error = f'Error: No task found with id {task_id}'
+                    print(error)
+                    return error
+                tps = db.session.query(W).filter(W.task_id == task_id).order_by(W.num)
+                db.populate_obj(task, t)
+                '''populate turnpoints'''
+                for tp in tps:
+                    turnpoint = Turnpoint(tp.lat, tp.lon, tp.radius, tp.type, tp.shape, tp.how, tp.altitude, tp.name,
+                                          tp.num, tp.description, tp.wpt_id, tp.rwp_id)
+                    task.turnpoints.append(turnpoint)
+                    s_point = polar(lat=tp.ssr_lat, lon=tp.ssr_lon)
+                    task.optimised_turnpoints.append(s_point)
+                    if tp.partial_distance is not None:  # this will be None in DB before we optimise route, but we append to this list so we should not fill it with Nones
+                        task.partial_distance.append(tp.partial_distance)
+            except SQLAlchemyError as e:
+                error = str(e)
+                print(f"Error retrieving task from database: {error}")
+                db.session.rollback()
+                db.session.close()
+                return error
         '''check if we already have a filepath for task'''
         if task.task_path is None or '':
             task.create_path()
-
         '''add geo object if we have turnpoints'''
         if task.turnpoints is not None and len(task.turnpoints) > 0:
             task.get_geo()
-
         return task
 
 
     def read_turnpoints(self):
         """Reads Task turnpoints from database, for use in front end"""
         from db_tables import TblTaskWaypoint as W
-
         with Database() as db:
             try:
                 # get the task turnpoint details.
                 results = db.session.query(W.wpt_id, W.rwp_id, W.name, W.num, W.description, W.how, W.radius, W.shape,
                                            W.type, W.partial_distance).filter(W.task_id == self.task_id).order_by(
                     W.num).all()
-
                 if results:
                     results = [row._asdict() for row in results]
                 return results
@@ -544,14 +548,12 @@ class Task(object):
     def create_path(self, track_path=None):
         """create filepath from # and date if not given
             and store it in database"""
-
         if track_path:
             self.task_path = track_path
         elif self.task_num and self.date:
             self.task_path = '_'.join([('t' + str(self.task_num)), self.date.strftime('%Y%m%d')])
         else:
             return
-
         if self.id:
             if not path.exists(self.task_path):
                 makedirs(self.task_path)
@@ -575,10 +577,8 @@ class Task(object):
             - mode:     str - 'default'
                               'full'    recalculates all tracks
         """
-
         ''' retrieve scoring formula library'''
         lib = self.formula.get_lib()
-
         if mode == 'full' or self.stopped_time:
             # TODO: check if we changed task, or we had new tracks, after last results generation
             #       If this is the case we should not need to re-score unless especially requested
@@ -586,11 +586,9 @@ class Task(object):
                 - recalculate Opt. route
                 - check all tracks'''
             print(f" - FULL Mode -")
-
             '''get projection if needed'''
             if self.geo is None:
                 self.get_geo()
-
             print(f"Calculating task optimised distance...")
             self.calculate_task_length()
             self.projected_turnpoints = convert_turnpoints(self.turnpoints, self.geo)
@@ -599,24 +597,19 @@ class Task(object):
             print(f"Storing calculated values to database...")
             self.update_task_distance()
             print(f"Task Opt. Route: {round(self.opt_dist / 1000, 4)} Km")
-
             '''get airspace info if needed'''
             airspace = None if not self.airspace_check else AirspaceCheck.from_task(self)
             print(f"Processing pilots tracks...")
             self.check_all_tracks(lib, airspace)
-
         else:
             ''' get pilot list and results'''
             self.get_results(lib)
-
         if self.pilots_launched == 0:
             print(f"Task (ID {self.id}) has no results yet")
             return 0
-
         ''' Calculates task result'''
         print(f"Calculating task results...")
         lib.calculate_results(self)
-
         '''create result elements from task, formula and results objects'''
         elements = self.create_json_elements()
         ref_id = create_json_file(comp_id=self.comp_id, task_id=self.id,
@@ -667,7 +660,6 @@ class Task(object):
         if not self.stopped_time:
             print(f'Task (ID {self.id}) has not been stopped.')
             return True
-
         min_task_duration = self.formula.validity_min_time
         if self.comp_class == 'PG':
             '''
@@ -682,7 +674,6 @@ class Task(object):
             '''
             if min_task_duration is None:
                 min_task_duration = 3600  # 60 min default for paragliding
-
         elif self.comp_class == 'HG':
             '''
             In hang gliding, a stopped task can only be scored if either a pilot reached goal
@@ -697,7 +688,6 @@ class Task(object):
                 return True
             if min_task_duration is None:
                 min_task_duration = 3600 * 1.5  # 90 min default for hg
-
         '''is task valid?'''
         if self.duration < min_task_duration:
             return False
