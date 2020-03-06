@@ -138,7 +138,7 @@ class CompForm(FlaskForm):
     formula_departure = SelectField('Departure points', choices=[('leadout', 'Leadout'), ('departure', 'Departure'), ('off', 'Off')])
     formula_time = SelectField('Time points', choices=[('on', 'On'), ('off', 'Off')])
 
-    alt_mode = SelectField('Instrument Altitude', choices=[('GPS', 'GPS'), ('QNH', 'QNH')])
+    scoring_altitude = SelectField('Instrument Altitude', choices=[('GPS', 'GPS'), ('QNH', 'QNH')])
     lead_factor = DecimalField('Leadfactor')
     no_goal_penalty = DecimalField('No goal penalty')
 
