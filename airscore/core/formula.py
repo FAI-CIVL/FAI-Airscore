@@ -136,7 +136,6 @@ class Formula(object):
         self.nominal_time = nominal_time  # seconds
         self.nominal_launch = nominal_launch  # percentage / 100
         self.min_dist = min_dist  # meters
-        self.score_back_time = score_back_time  # seconds
         self.no_goal_penalty = no_goal_penalty
         self.glide_bonus = glide_bonus
         self.tolerance = tolerance  # percentage / 100
