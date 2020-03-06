@@ -155,14 +155,14 @@
                   </div>
                   <div  class="form-row">
                         <div class="form-group col-md-12">
-                        {{compform.min_time.label}} {{compform.min_time(size=3,**{'id': "min_time", 'data-toggle': 'tooltip', 'title': compform.min_time.description})}}
+                        {{compform.validity_min_time.label}} {{compform.validity_min_time(size=3,**{'id': "validity_min_time", 'data-toggle': 'tooltip', 'title': compform.validity_min_time.description})}}
                         {{compform.scoreback_time.label}} {{compform.scoreback_time(size=3,**{'id': "scoreback_time", 'data-toggle': 'tooltip', 'title': compform.scoreback_time.description})}}
                      </div>
                   </div>
                     <div  class="form-row">
                         <div class="form-group col-md-12">
                         {{compform.max_JTG.label}} {{compform.max_JTG(size=3,**{'id': "max_JTG", 'data-toggle': 'tooltip', 'title': compform.max_JTG.description})}}
-                        {{compform.JTG_pen_sec.label}} {{compform.JTG_pen_sec(size=3,**{'id': "JTG_pen_sec", 'data-toggle': 'tooltip', 'title': compform.JTG_pen_sec.description})}}
+                        {{compform.JTG_penalty_per_sec.label}} {{compform.JTG_penalty_per_sec(size=3,**{'id': "JTG_penalty_per_sec", 'data-toggle': 'tooltip', 'title': compform.JTG_penalty_per_sec.description})}}
                      </div>
                   </div>
                    <div  class="form-row">
@@ -526,10 +526,10 @@
                      $('#arr_alt_bonus').val(data.arr_alt_bonus);
                      $('#arr_max_height').val(data.arr_max_height);
                      $('#arr_min_height').val(data.arr_min_height);
-                     $('#min_time').val(data.min_time);
+                     $('#validity_min_time').val(data.validity_min_time);
                      $('#scoreback_time').val(data.scoreback_time);
                      $('#max_JTG').val(data.max_JTG);
-                     $('#JTG_pen_sec').val(data.JTG_pen_sec);
+                     $('#JTG_penalty_per_sec').val(data.JTG_penalty_per_sec);
 
                }
                });

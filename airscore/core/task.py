@@ -84,7 +84,7 @@ class Task(object):
         distances_to_go: calculates distance from each waypoint to goal
     """
 
-    def __init__(self, task_id=None, task_type=None, start_time=None, task_deadline=None,
+    def __init__(self, comp_id=None, task_id=None, task_type=None, start_time=None, task_deadline=None,
                  stopped_time=None, check_launch='off'):
         self.task_id = task_id
         self.task_type = task_type  # 'race', 'elapsed_time'
@@ -92,7 +92,7 @@ class Task(object):
         self.task_deadline = task_deadline  # seconds from midnight: task deadline
         self.stopped_time = stopped_time  # seconds from midnight: time task was stopped (TaskStopAnnouncementTime).
         self.check_launch = check_launch  # check launch flag. whether we check that pilots leave from launch.
-        self.comp_id = None
+        self.comp_id = comp_id
         self.comp_code = None
         self.comp_name = None
         self.comp_site = None
@@ -137,7 +137,14 @@ class Task(object):
         self.task_path = None
         self.comp_path = None
         self.track_source = None
-        self.formula = TaskFormula.read(self.id) if self.id else None
+
+        '''Formula'''
+        if self.id:
+            self.formula = TaskFormula.read(self.id)
+        elif self.comp_id:
+            self.formula = TaskFormula.from_comp(self.comp_id)
+        else:
+            self.formula = None
 
     def __setattr__(self, attr, value):
         import datetime
@@ -515,6 +522,7 @@ class Task(object):
 
         return task
 
+
     def read_turnpoints(self):
         """Reads Task turnpoints from database, for use in front end"""
         from db_tables import TblTaskWaypoint as W
@@ -856,6 +864,7 @@ class Task(object):
     def to_db(self, session=None):
         """Inserts new task or updates existent one"""
         # TODO update part, now it just inserts new Task and new Waypoints
+        from db_tables import TblTaskWaypoint
         from sqlalchemy.exc import SQLAlchemyError
 
         with Database(session) as db:
@@ -903,7 +912,7 @@ class Task(object):
                             opt_lat, opt_lon = self.optimised_turnpoints[idx].lat, self.optimised_turnpoints[idx].lon
                         if len(self.partial_distance) > 0:
                             cumulative_dist = self.partial_distance[idx]
-                         wpt = dict(tp.as_dict(), task_id=self.id, num=idx + 1, ssr_lat=opt_lat, ssr_lon=opt_lon,
+                        wpt = dict(tp.as_dict(), task_id=self.id, num=idx + 1, ssr_lat=opt_lat, ssr_lon=opt_lon,
                                    partial_distance=cumulative_dist)
                         # wpt.update({'task_id': self.id, 'num': idx + 1, 'ssr_lat': opt_lat, 'ssr_lon': opt_lon,
                         #             'partial_distance': cumulative_dist})
@@ -936,7 +945,6 @@ class Task(object):
                 print(f"Error storing task to database: {error}")
                 db.session.rollback()
                 return error
-
 
     def update_from_xctrack_data(self, taskfile_data):
         """processes XCTrack file that is already in memory as json data and updates the task defintion"""

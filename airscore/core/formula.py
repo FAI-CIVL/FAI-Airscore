@@ -390,6 +390,21 @@ class TaskFormula(Formula):
         return formula
 
     @staticmethod
+    def from_comp(comp_id, session=None):
+        """reads comp formula from database"""
+        from db_tables import TblForComp as F
+
+        formula = TaskFormula()
+        with Database(session) as db:
+            try:
+                q = db.session.query(F).get(comp_id)
+                if q is not None:
+                    db.populate_obj(formula, q)
+            except SQLAlchemyError:
+                print(f'Read TaskFormula from db Error: {SQLAlchemyError.code}')
+        return formula
+
+    @staticmethod
     def read(task_id, session=None):
         """reads comp formula from database"""
         from db_tables import TaskFormulaView as F

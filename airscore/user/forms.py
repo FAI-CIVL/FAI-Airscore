@@ -142,16 +142,16 @@ class CompForm(FlaskForm):
     lead_factor = DecimalField('Leadfactor')
     no_goal_penalty = DecimalField('No goal penalty')
 
-    tolerance = DecimalField('Turnpoint radius tolerance %')
+    tolerance = DecimalField('Turnpoint radius tolerance %', places=3)
     min_tolerance = IntegerField('Minimum turnpoint tolerance (m)')
     glide_bonus = DecimalField('Glide bonus')
     arr_alt_bonus = DecimalField('Height bonus')
     arr_max_height = IntegerField('ESS height limit - upper', validators=[Optional(strip_whitespace=True)])
     arr_min_height = IntegerField('ESS height limit - lower', validators=[Optional(strip_whitespace=True)])
-    min_time = IntegerField('Minimum time (mins)')
+    validity_min_time = IntegerField('Minimum time (mins)')
     scoreback_time = IntegerField('Scoreback time (mins)', description=help_score_back)
     max_JTG = IntegerField("Max Jump the gun (sec)", default=0)
-    JTG_pen_sec = DecimalField('Jump the gun penalty per second', validators=[Optional(strip_whitespace=True)])
+    JTG_penalty_per_sec = DecimalField('Jump the gun penalty per second', validators=[Optional(strip_whitespace=True)])
 
     submit = SubmitField('Save')
 
@@ -206,7 +206,7 @@ class TaskForm(FlaskForm):
     arr_alt_bonus = DecimalField('Height bonus')
     max_JTG = IntegerField("Max Jump the gun (sec)", default=0)
     no_goal_penalty = DecimalField('No goal penalty')
-    tolerance = DecimalField('Turnpoint radius tolerance %')
+    tolerance = DecimalField('Turnpoint radius tolerance %', places=3)
 
     submit = SubmitField('Save')
 

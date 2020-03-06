@@ -125,7 +125,7 @@ def comp_settings_admin(compid):
     compform = CompForm()
     newtaskform = NewTaskForm()
     comp = Comp.read(compid)
-    admins = ['joe smith', 'john wayne', 'stuart', 'pippo', 'biuti']  # TODO
+    admins = ['joe smith', 'john wayne', 'stuartm', 'pippo', 'biuti']  # TODO
 
     if request.method == 'POST':
         if compform.validate_on_submit():
@@ -153,6 +153,24 @@ def comp_settings_admin(compid):
             formula.nominal_launch = compform.nom_launch.data/100
             formula.nominal_time = compform.nom_time.data*60
             formula.no_goal_penalty = compform.no_goal_penalty.data
+            formula.tolerance = compform.tolerance
+            formula.max_JTG = compform.max_JTG
+            formula.formula_distance = compform.formula_distance
+            formula.formula_arrival = compform.formula_arrival
+            formula.formula_departure = compform.formula_departure
+            formula.lead_factor = compform.lead_factor
+            formula.formula_time = compform.formula_time
+            formula.glide_bonus = compform.glide_bonus
+            formula.min_tolerance = compform.min_tolerance
+            formula.arr_alt_bonus = compform.arr_alt_bonus
+            formula.arr_max_height = compform.arr_max_height
+            formula.arr_min_height = compform.arr_min_height
+            formula.validity_min_time = compform.validity_min_time
+            formula.score_back_time = compform.scoreback_time
+            formula.JTG_penalty_per_sec = compform.JTG_penalty_per_sec
+            
+            
+            
             formula.to_db()
 
             flash(f"{compform.comp_name.data} saved", category='info')
@@ -206,10 +224,10 @@ def comp_settings_admin(compid):
         compform.arr_alt_bonus.data = formula.arr_alt_bonus
         compform.arr_max_height.data = formula.arr_max_height
         compform.arr_min_height.data = formula.arr_min_height
-        compform.min_time.data = formula.validity_min_time
+        compform.validity_min_time.data = formula.validity_min_time
         compform.scoreback_time.data = formula.score_back_time
         compform.max_JTG.data = formula.max_JTG
-        compform.JTG_pen_sec.data = formula.JTG_penalty_per_sec
+        compform.JTG_penalty_per_sec.data = formula.JTG_penalty_per_sec
         compform.alt_mode.data = formula.scoring_altitude
 
         newtaskform.task_region.choices = frontendUtils.get_region_choices(compid)
@@ -236,7 +254,7 @@ def task_admin(taskid):
     turnpointform.name.choices = waypoints
     modifyturnpointform.mod_name.choices = waypoints
 
-    admins = ['john wayne', 'stuart']  # TODO
+    admins = ['john wayne', 'stuartm']  # TODO
 
     if request.method == 'POST':
         if taskform.validate_on_submit():
@@ -260,6 +278,14 @@ def task_admin(taskid):
             task.airspace_check = taskform.airspace_check.data
             # task.openair_file = taskform.openair_file  # TODO get a list of openair files for this comp (in the case of defines.yaml airspace_file_library: off otherwise all openair files available)
             task.QNH = taskform.QNH.data
+            task.formula.formula_distance = taskform.formula_distance.data
+            task.formula.formula_arrival = taskform.formula_arrival.data
+            task.formula.formula_departure = taskform.formula_departure.data
+            task.formula.formula_time = taskform.formula_time.data
+            task.formula.tolerance = taskform.tolerance.data
+            task.formula.max_JTG = taskform.max_JTG.data
+            task.formula.no_goal_penalty = taskform.no_goal_penalty.data
+            task.formula.arr_alt_bonus = taskform.arr_alt_bonus.data
             task.update_task_info()
 
             flash("Saved", category='info')
@@ -301,6 +327,14 @@ def task_admin(taskid):
         taskform.QNH.data = task.QNH
         # taskform.region.data = task.reg_id # TODO get a list of waypoint files for this comp (in the case of defines.yaml waypoint_file_library: off otherwise all regions available)
         # taskform.region.choices = frontendUtils.get_region_choices(compid)
+        taskform.formula_distance.data = task.formula.formula_distance
+        taskform.formula_arrival.data = task.formula.formula_arrival
+        taskform.formula_departure.data = task.formula.formula_departure
+        taskform.formula_time.data = task.formula.formula_time
+        taskform.tolerance.data = task.formula.tolerance
+        taskform.max_JTG.data = task.formula.max_JTG
+        taskform.no_goal_penalty.data = task.formula.no_goal_penalty
+        taskform.arr_alt_bonus.data = task.formula.arr_alt_bonus
 
         if current_user.username not in admins:
             taskform.submit = None
@@ -337,8 +371,7 @@ def pilot_admin():
 @login_required
 def _add_task(compid):
     data = request.json
-    task = Task()
-    task.comp_id = compid
+    task = Task(comp_id=compid)
     task.task_name = data['task_name']
     task.task_num = int(data['task_num'])
     task.date = datetime.strptime(data['task_date'], '%Y-%m-%d')
@@ -380,8 +413,8 @@ def _get_adv_settings():
                 'glide_bonus': formula.glide_bonus, 'tolerance': formula.tolerance,
                 'min_tolerance': formula.min_tolerance, 'arr_alt_bonus': formula.height_bonus,
                 'arr_max_height': formula.arr_max_height, 'arr_min_height': formula.arr_min_height,
-                'min_time': formula.validity_min_time, 'scoreback_time': formula.score_back_time,
-                'max_JTG': formula.max_JTG, 'JTG_pen_sec': formula.JTG_penalty_per_sec}
+                'validity_min_time': formula.validity_min_time, 'scoreback_time': formula.score_back_time,
+                'max_JTG': formula.max_JTG, 'JTG_penalty_per_sec': formula.JTG_penalty_per_sec}
 
     return jsonify(settings)
 
