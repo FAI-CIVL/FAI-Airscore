@@ -153,24 +153,27 @@ def comp_settings_admin(compid):
             formula.nominal_launch = compform.nom_launch.data/100
             formula.nominal_time = compform.nom_time.data*60
             formula.no_goal_penalty = compform.no_goal_penalty.data
-            formula.tolerance = compform.tolerance
-            formula.max_JTG = compform.max_JTG
-            formula.formula_distance = compform.formula_distance
-            formula.formula_arrival = compform.formula_arrival
-            formula.formula_departure = compform.formula_departure
-            formula.lead_factor = compform.lead_factor
-            formula.formula_time = compform.formula_time
-            formula.glide_bonus = compform.glide_bonus
-            formula.min_tolerance = compform.min_tolerance
-            formula.arr_alt_bonus = compform.arr_alt_bonus
-            formula.arr_max_height = compform.arr_max_height
-            formula.arr_min_height = compform.arr_min_height
-            formula.validity_min_time = compform.validity_min_time
-            formula.score_back_time = compform.scoreback_time
-            formula.JTG_penalty_per_sec = compform.JTG_penalty_per_sec
-            
-            
-            
+            formula.tolerance = compform.tolerance.data
+            formula.max_JTG = compform.max_JTG.data
+            formula.formula_distance = compform.formula_distance.data
+            formula.formula_arrival = compform.formula_arrival.data
+            formula.formula_departure = compform.formula_departure.data
+            formula.lead_factor = compform.lead_factor.data
+            formula.formula_time = compform.formula_time.data
+            formula.glide_bonus = compform.glide_bonus.data
+            formula.min_tolerance = compform.min_tolerance.data
+            formula.arr_alt_bonus = compform.arr_alt_bonus.data
+            formula.arr_max_height = compform.arr_max_height.data
+            formula.arr_min_height = compform.arr_min_height.data
+            formula.validity_min_time = compform.validity_min_time.data
+            formula.score_back_time = compform.scoreback_time.data
+            formula.JTG_penalty_per_sec = compform.JTG_penalty_per_sec.data
+            formula.scoring_altitude = compform.scoring_altitude.data
+            formula.team_scoring = compform.team_scoring.data
+            formula.country_scoring = compform.country_scoring.data
+            formula.team_size = compform.team_size.data
+            formula.team_over = compform.team_over.data
+
             formula.to_db()
 
             flash(f"{compform.comp_name.data} saved", category='info')
@@ -228,7 +231,7 @@ def comp_settings_admin(compid):
         compform.scoreback_time.data = formula.score_back_time
         compform.max_JTG.data = formula.max_JTG
         compform.JTG_penalty_per_sec.data = formula.JTG_penalty_per_sec
-        compform.alt_mode.data = formula.scoring_altitude
+        compform.scoring_altitude.data = formula.scoring_altitude
 
         newtaskform.task_region.choices = frontendUtils.get_region_choices(compid)
 
