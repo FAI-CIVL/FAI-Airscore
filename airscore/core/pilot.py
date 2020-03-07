@@ -135,7 +135,6 @@ class Pilot(object):
         from db_tables import TblParticipant as R
         from db_tables import FlightResultView as F
         from sqlalchemy import and_
-
         pilot = Pilot()
         pilot.info = Participant(par_id=par_id)
         pilot.task_id = task_id
@@ -181,7 +180,6 @@ class Pilot(object):
     @staticmethod
     def from_fsdb(task, data):
         """ Creates Pilot from FSDB task result"""
-
         info = Participant(ID=int(data.get('id')))
         result = Flight_result.from_fsdb(data, task.SS_distance, task.departure, task.arrival, task.time_offset)
         track = Track()
@@ -195,18 +193,14 @@ class Pilot(object):
             we already have Flight_result.to_db()
             but if we organize track reading using Pilot obj. this should be useful.
             We will also be able to delete a lot of redundant info about track filename, pilot ID, task_id and so on"""
-
         from db_tables import TblTaskResult as R
         from sqlalchemy.exc import SQLAlchemyError
-
         '''checks conformity'''
         if not (self.par_id and self.task_id):
             '''we miss info about pilot and task'''
             print(f"Error: missing info about participant ID and/or task ID")
             return None
-
         result = self.result
-
         '''database connection'''
         with Database(session) as db:
             try:
@@ -218,18 +212,17 @@ class Pilot(object):
                     db.session.add(r)
                     db.session.flush()
                     self.track.track_id = r.track_id
-
                 r.comment = self.comment
                 r.track_file = self.track_file
                 for attr in [a for a in dir(r) if not (a[0] == '_' or a in ['track_file', 'comment'])]:
                     if hasattr(result, attr):
                         setattr(r, attr, getattr(result, attr))
-
                 db.session.commit()
             except SQLAlchemyError as e:
                 error = str(e.__dict__)
                 print(f"Error storing result to database")
                 db.session.rollback()
+                db.session.close()
                 return error
 
 
@@ -237,37 +230,34 @@ def update_all_results(task_id, pilots, session=None):
     """get results to update from the list"""
     from db_tables import TblTaskResult as R
     from sqlalchemy.exc import SQLAlchemyError
-
-    objects = []
-
+    insert_mappings = []
+    update_mappings = []
     for pilot in pilots:
         res = pilot.result
-
-        # '''checks conformity'''
-        # # TODO need to check this values at the end of scoring process, or probably just put as default in database
-        # if not res.goal_time:
-        #     res.goal_time = 0
-        # if not res.ESS_time:
-        #     res.ESS_time = 0
-
-        r = R(track_id=pilot.track_id, task_id=task_id, par_id=pilot.par_id, track_file=pilot.track_file)
-        for attr in dir(r):
-            if attr == 'track_id' and pilot.track.track_id:
-                r.track_id = pilot.track.track_id
-            elif attr == 'comment' and res.comment:
-                r.comment = '; '.join(res.comment)
-            elif not attr[0] == '_' and hasattr(res, attr):
-                setattr(r, attr, getattr(res, attr))
-        objects.append(r)
-
+        r = dict(track_id=pilot.track_id, task_id=task_id, par_id=pilot.par_id,
+                 track_file=pilot.track_file, comment=pilot.comment)
+        for key in [col for col in R.__table__.columns.keys() if col not in r.keys()]:
+            if hasattr(res, key):
+                r[key] = getattr(res, key)
+        if r['track_id']:
+            update_mappings.append(r)
+        else:
+            insert_mappings.append(r)
     '''update database'''
-    with Database() as db:
+    with Database(session) as db:
         try:
-            db.session.bulk_save_objects(R, objects)
+            if insert_mappings:
+                db.session.bulk_insert_mappings(R, insert_mappings, return_defaults=True)
+                db.session.flush()
+                for elem in insert_mappings:
+                    next(pilot for pilot in pilots if pilot.par_id == elem['par_id']).track.track_id = elem['track_id']
+            if update_mappings:
+                db.session.bulk_update_mappings(R, update_mappings)
             db.session.commit()
-        except SQLAlchemyError:
-            print(f'update all results on database gave an error')
+        except SQLAlchemyError as e:
+            error = str(e.__dict__)
+            print(f"Error storing pilots results to database: {error}")
             db.session.rollback()
-            return False
-
+            db.session.close()
+            return error
     return True

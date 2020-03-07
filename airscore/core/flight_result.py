@@ -586,13 +586,8 @@ class Flight_result(object):
         """ stores new calculated results to db
             if track_id is not given, it inserts a new result
             else it updates existing one """
+        # we should use Pilot.to_db()
         from db_tables import TblTaskResult as R, TblParticipant as P, TblTask as T
-
-        # '''checks conformity'''
-        # if not self.goal_time:
-        #     self.goal_time = 0
-        # endss = 0 if self.ESS_time is None else self.ESS_time
-        # num_wpts = len(Counter(el[0] for el in self.waypoints_achieved))
 
         '''database connection'''
         with Database(session) as db:
@@ -795,42 +790,6 @@ def adjust_flight_results(task, lib, airspace):
     lib.process_results(task)
 
 
-def mass_add_results(task_id, results):
-    """adds results to database"""
-
-    objects = []
-    for pilot in results:
-        res = pilot.result
-
-        # '''checks conformity'''
-        # if not res.goal_time:
-        #     res.goal_time = 0
-        # if not res.ESS_time:
-        #     res.ESS_time = 0
-
-        r = TblTaskResult(task_id=task_id, par_id=pilot.par_id)
-        for attr in dir(r):
-            if attr == 'track_id' and pilot.track.track_id:
-                r.track_id = pilot.track.track_id
-            elif attr == 'comment' and res.comment:
-                r.comment = '; '.join(res.comment)
-            elif not attr[0] == '_' and hasattr(res, attr):
-                setattr(r, attr, getattr(res, attr))
-        objects.append(r)
-
-    '''update database'''
-    with Database() as db:
-        try:
-            db.session.bulk_save_objects(TblTaskResult, objects)
-            db.session.commit()
-        except SQLAlchemyError:
-            print(f'update all results on database gave an error')
-            db.session.rollback()
-            return False
-
-    return True
-
-
 def update_status(par_id, task_id, status):
     """Create or update pilot status ('abs', 'dnf', 'mindist')"""
     with Database() as db:
@@ -843,11 +802,12 @@ def update_status(par_id, task_id, status):
                 result = TblTaskResult(par_id=par_id, task_id=task_id, result_type=status)
                 db.session.add(result)
             db.session.flush()
-        except SQLAlchemyError:
+        except SQLAlchemyError as e:
+            error = str(e.__dict__)
             print(f"Status update / Insert Error")
             db.session.rollback()
-            return 0
-
+            db.session.close()
+            return error
         return result.track_id
 
 

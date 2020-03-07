@@ -262,11 +262,12 @@ class Comp(object):
                     if hasattr(row, k):
                         setattr(row, k, v)
                 db.session.commit()
-            except SQLAlchemyError:
+            except SQLAlchemyError as e:
+                error = str(e.__dict__)
                 print('cannot insert competition. DB insert error.')
                 db.session.rollback()
-                return None
-
+                db.session.close()
+                return error
         return self.comp_id
 
     def get_rankings(self):
@@ -323,35 +324,6 @@ class Comp(object):
             except SQLAlchemyError:
                 print(f"Error trying to retrieve Tasks details for Comp ID {self.comp_id}")
                 return None
-
-    # def update_comp_info(self):
-    #
-    #     with Database() as db:
-    #         try:
-    #             q = db.session.query(TblCompetition).get(self.id)
-    #             q.comDateFrom = self.date_from
-    #             q.comDateTo = self.date_to
-    #             q.comName = self.comp_name
-    #             q.comCode = self.comp_code
-    #             q.comSanction = self.sanction
-    #             q.comLocation = self.comp_site
-    #             q.regPk = self.region
-    #             q.comContact = self.contact
-    #             q.comMeetDirName = self.MD_name
-    #             q.comTimeOffset = self.time_offset
-    #             q.claPk = self.cat_id
-    #             q.comExtUrl = self.website
-    #             q.comExt = self.external
-    #             q.comEntryRestrict = 'registered' if self.restricted else 'open'
-    #             q.comClass = self.comp_class
-    #             q.comType = self.comp_type
-    #             q.comLocked = self.locked
-    #             q.comStyleSheet = self.stylesheet
-    #             db.session.commit()
-    #         except SQLAlchemyError:
-    #             print('cannot update competition. DB error.')
-    #             db.session.rollback()
-    #             return None
 
     @staticmethod
     def from_json(comp_id, ref_id=None):
