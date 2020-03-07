@@ -228,56 +228,36 @@ def import_participants_from_excel(comp_id, filename, from_CIVL=False):
     return pilots
 
 
-def mass_import_participants(comp_id, pilots, session=None):
+def mass_import_participants(comp_id, participants, session=None):
     """get participants to update from the list"""
     # TODO check if we already have participants for the comp before inserting, and manage update instead
 
-    objects = []
-    for par in pilots:
-        r = TblParticipant(comp_id=comp_id, par_id=par.par_id)
-        for attr in dir(r):
-            if not attr[0] == '_' and hasattr(par, attr):
-                setattr(r, attr, getattr(par, attr))
-        objects.append(r)
-        # mapping = {'parPk': pil.par_id,
-        #            'comPk': comp_id,
-        #            'CIVLID': pil.civl_id,
-        #            'parID': pil.ID,
-        #            'parName': pil.name,
-        #            'parBirthdate': pil.birthdate,
-        #            'parSex': pil.sex,
-        #            'parNat': pil.nat,
-        #            'parGlider': pil.glider,
-        #            'parCert': pil.glider_cert,
-        #            'parSponsor': pil.sponsor,
-        #            'parValidFAI': pil.fai_valid,
-        #            'parFAI': pil.fai_id,
-        #            'parXC': pil.xcontest_id,
-        #            'parLive': pil.live_id,
-        #            'parTeam': pil.team,
-        #            'parNatTeam': pil.nat_team,
-        #            'parStatus': pil.status,
-        #            'parRanking': pil.ranking,
-        #            'parPaid': pil.paid,
-        #            'parHours': None,
-        #            'pilPk': pil.pil_id}
-        # if mapping['parPk']:
-        #     update_mappings.append(mapping)
-        # else:
-        #     insert_mappings.append(mapping)
-
+    insert_mappings = []
+    update_mappings = []
+    for par in participants:
+        r = dict(comp_id=comp_id, par_id=par.par_id)
+        for key in [col for col in TblParticipant.__table__.columns.keys() if col not in r.keys()]:
+            if hasattr(par, key):
+                r[key] = getattr(par, key)
+        if r['par_id']:
+            update_mappings.append(r)
+        else:
+            insert_mappings.append(r)
     '''update database'''
     with Database(session) as db:
         try:
-            db.session.bulk_save_objects(TblParticipant, objects)
-            # if len(insert_mappings) > 0:
-            #     db.session.bulk_insert_mappings(TblParticipant, insert_mappings)
-            # if len(update_mappings) > 0:
-            #     db.session.bulk_update_mappings(TblParticipant, update_mappings)
+            if insert_mappings:
+                db.session.bulk_insert_mappings(TblParticipant, insert_mappings)
+                db.session.flush()
+                for elem in insert_mappings:
+                    next(par for par in participants if par.name == elem['name']).par_id = elem['par_id']
+            if update_mappings:
+                db.session.bulk_update_mappings(TblParticipant, update_mappings)
             db.session.commit()
-        except SQLAlchemyError:
-            print(f'update all participants on database gave an error')
+        except SQLAlchemyError as e:
+            error = str(e.__dict__)
+            print(f"Error storing participants to database: {error}")
             db.session.rollback()
-            return False
-
+            db.session.close()
+            return error
     return True

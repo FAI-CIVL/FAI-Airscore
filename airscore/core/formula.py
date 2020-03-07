@@ -419,24 +419,22 @@ class TaskFormula(Formula):
                 print(f'Read TaskFormula from db Error: {SQLAlchemyError.code}')
         return formula
 
-    def to_db(self):
+    def to_db(self, session=None):
         """stores TaskFormula parameters to TblTask table in AirScore database"""
         from db_tables import TblTask
-
-        t = aliased(TblTask)
-        with Database() as db:
+        with Database(session) as db:
             try:
                 '''check if we have already a row for the task'''
-                row = db.session.query(t).get(self.task_id)
+                row = db.session.query(TblTask).get(self.task_id)
                 for k in TaskFormula.task_overrides:
                     setattr(row, k, getattr(self, k))
                 db.session.flush()
-
-            except SQLAlchemyError:
-                print('cannot insert or update task formula. DB error.')
+            except SQLAlchemyError as e:
+                error = str(e.__dict__)
+                print(f"Error storing result to database")
                 db.session.rollback()
-                return None
-
+                db.session.close()
+                return error
         return True
 
     def reset(self):

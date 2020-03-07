@@ -156,6 +156,8 @@ class Task(object):
                 value = value.date()
         if attr not in property_names:
             self.__dict__[attr] = value
+            if attr == 'task_id' and hasattr(self, 'formula'):
+                self.formula.__dict__[attr] = value
 
     def __str__(self):
         out = ''
@@ -248,6 +250,18 @@ class Task(object):
             return ((self.stopped_time - self.formula.score_back_time)
                     if not self.SS_interval
                     else (self.stopped_time - self.SS_interval))
+
+    @property
+    def distances_to_go(self):
+        """calculates a list of distances from turnpoint to goal (assumes goal is the last turnpoint)"""
+        t = len(self.optimised_turnpoints) - 1
+        d = 0
+        distances_to_go = [0]
+        while t >= 1:
+            d += distance(self.optimised_turnpoints[t], self.optimised_turnpoints[t - 1])
+            distances_to_go.insert(0, d)
+            t -= 1
+        return distances_to_go
 
     @property
     def duration(self):
@@ -852,10 +866,6 @@ class Task(object):
 
     def to_db(self, session=None):
         """Inserts new task or updates existent one"""
-        # TODO update part, now it just inserts new Task and new Waypoints
-        from db_tables import TblTaskWaypoint
-        from sqlalchemy.exc import SQLAlchemyError
-
         with Database(session) as db:
             try:
                 if not self.id:
@@ -863,57 +873,25 @@ class Task(object):
                                    date=self.date)
                     db.session.add(task)
                     db.session.flush()
+                    self.task_id = task.task_id
                 else:
                     task = db.session.query(TblTask).get(self.id)
                 for k, v in self.as_dict().items():
                     if k not in ['task_id', 'comp_id'] and hasattr(task, k):
                         setattr(task, k, v)
                 '''save formula parameters'''
-                for k in TaskFormula.task_overrides:
-                    setattr(task, k, getattr(self.formula, k))
-                db.session.flush()
-                self.task_id = task.task_id
+                if self.formula:
+                    for key in TaskFormula.task_overrides:
+                        setattr(task, key, getattr(self.formula, key))
+                db.session.commit()
+                '''save waypoints'''
                 if self.turnpoints:
-                    insert_wpts = []
-                    update_wpts = []
-                    for idx, tp in enumerate(self.turnpoints):
-                        opt_lat, opt_lon, cumulative_dist = None, None, None
-                        if len(self.optimised_turnpoints) > 0:
-                            opt_lat, opt_lon = self.optimised_turnpoints[idx].lat, self.optimised_turnpoints[idx].lon
-                        if len(self.partial_distance) > 0:
-                            cumulative_dist = self.partial_distance[idx]
-                        wpt = dict(tp.as_dict(), task_id=self.id, num=idx + 1, ssr_lat=opt_lat, ssr_lon=opt_lon,
-                                   partial_distance=cumulative_dist)
-                        # wpt.update({'task_id': self.id, 'num': idx + 1, 'ssr_lat': opt_lat, 'ssr_lon': opt_lon,
-                        #             'partial_distance': cumulative_dist})
-                        # for k, v in tp.__dict__.items():
-                        #     if hasattr(wpt, k):
-                        #         setattr(wpt, k, v)
-                        # wpt.ssr_lat = opt_lat
-                        # wpt.ssr_lon = opt_lon
-                        # wpt.partial_distance = cumulative_dist
-                        if tp.wpt_id:
-                            update_wpts.append(wpt)
-                        else:
-                            insert_wpts.append(wpt)
-                    if insert_wpts:
-                        db.session.bulk_insert_mappings(TblTaskWaypoint, insert_wpts)
-                        db.session.flush()
-                    if update_wpts:
-                        db.session.bulk_update_mappings(TblTaskWaypoint, update_wpts)
-                        db.session.flush()
-                    db.session.commit()
-
-                    w = aliased(TblTaskWaypoint)
-                    res = db.session.query(w).filter(w.task_id == self.task_id).order_by(w.num).all()
-                    for idx, tp in enumerate(self.turnpoints):
-                        if not tp.wpt_id:
-                            tp.wpt_id = res[idx].wpt_id
-
+                    self.update_waypoints(session=session)
             except SQLAlchemyError as e:
                 error = str(e.__dict__)
                 print(f"Error storing task to database: {error}")
                 db.session.rollback()
+                db.session.close()
                 return error
 
     def update_from_xctrack_data(self, taskfile_data):
@@ -957,7 +935,7 @@ class Task(object):
             shape = "circle"
             how = "entry"  # default entry .. looks like xctrack doesn't support exit cylinders apart from SSS
             wpID = waypoint_list[tp["waypoint"]["name"]]
-            wpNum = i+1
+            wpNum = i + 1
 
             if i < len(taskfile_data['turnpoints']) - 1:
                 if 'type' in tp:
@@ -996,7 +974,6 @@ class Task(object):
                 exit()
 
         self.update_from_xctrack_data(task_data)
-
 
     @staticmethod
     def create_from_xctrack_file(filename):
@@ -1518,30 +1495,39 @@ class Task(object):
             db.session.question.query(W).filter(W.task_id == self.id).delete()
             db.session.commit()
 
-    def update_waypoints(self):
+    def update_waypoints(self, session=None):
         from db_tables import TblTaskWaypoint as W
-        objects = []
-        for idx, wp in enumerate(self.turnpoints, 1):
-            wpt = W(task_id=self.id, num=idx, **wp.as_dict())
-            objects.append(wpt)
-        with Database() as db:
-            db.session.bulk_save_objects(objects, return_defaults=True)
-            db.session.commit()
-
-            for idx, elem in objects:
-                self.turnpoints[idx].wpt_id = elem.wpt_id
-
-    @property
-    def distances_to_go(self):
-        """calculates a list of distances from turnpoint to goal (assumes goal is the last turnpoint)"""
-        t = len(self.optimised_turnpoints) - 1
-        d = 0
-        distances_to_go = [0]
-        while t >= 1:
-            d += distance(self.optimised_turnpoints[t], self.optimised_turnpoints[t - 1])
-            distances_to_go.insert(0, d)
-            t -= 1
-        return distances_to_go
+        insert_mappings = []
+        update_mappings = []
+        for idx, tp in enumerate(self.turnpoints):
+            opt_lat, opt_lon, cumulative_dist = None, None, None
+            if len(self.optimised_turnpoints) > 0:
+                opt_lat, opt_lon = self.optimised_turnpoints[idx].lat, self.optimised_turnpoints[idx].lon
+            if len(self.partial_distance) > 0:
+                cumulative_dist = self.partial_distance[idx]
+            tp.num = idx + 1
+            wpt = dict(tp.as_dict(), task_id=self.id, ssr_lat=opt_lat, ssr_lon=opt_lon,
+                       partial_distance=cumulative_dist)
+            if tp.wpt_id:
+                update_mappings.append(wpt)
+            else:
+                insert_mappings.append(wpt)
+        with Database(session) as db:
+            try:
+                if update_mappings:
+                    db.session.bulk_update_mappings(W, update_mappings)
+                    db.session.flush()
+                if insert_mappings:
+                    db.session.bulk_insert_mappings(W, insert_mappings, return_defaults=True)
+                    for elem in insert_mappings:
+                        next(tp for tp in self.turnpoints if tp.num == elem['num']).wpt_id = elem['wpt_id']
+                db.session.commit()
+            except SQLAlchemyError as e:
+                error = str(e.__dict__)
+                print(f"Error storing task to database: {error}")
+                db.session.rollback()
+                db.session.close()
+                return error
 
 
 def delete_task(task_id):
