@@ -78,6 +78,10 @@ class Tp(object):
         return self.turnpoints[self.pointer] if self.pointer == 0 else self.turnpoints[self.pointer - 1]
 
     @property
+    def last_made_index(self):
+        return 0 if self.pointer == 0 else self.pointer - 1
+
+    @property
     def start_index(self):
         if any(x for x in self.turnpoints if x.type == 'speed'):
             return self.turnpoints.index(next(x for x in self.turnpoints if x.type == 'speed'))
@@ -498,7 +502,8 @@ class Flight_result(object):
                     fix_dist_flown = distance_flown(next_fix, tp.pointer, task.optimised_turnpoints,
                                                     task.turnpoints[tp.pointer], distances2go)
 
-                result.distance_flown = max(result.distance_flown, fix_dist_flown, task.partial_distance[tp.last_made])
+                result.distance_flown = max(result.distance_flown, fix_dist_flown,
+                                            task.partial_distance[tp.last_made_index])
 
             '''Leading coefficient
             LC = taskTime(i)*(bestDistToESS(i-1)^2 - bestDistToESS(i)^2 )
