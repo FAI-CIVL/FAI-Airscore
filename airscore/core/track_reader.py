@@ -73,7 +73,7 @@ def main(args):
                     mytrack.copy_track_file()
                     print(f"pilot {mytrack.par_id} associated with track {mytrack.filename} \n")
                     """adding track to db"""
-                    import_track(mytrack)
+                    import_track(mytrack, task_id)
                     print(f"track imported to database with ID {mytrack.track_id}\n")
                     """checking track against task"""
                     formula = TaskFormula.read(task_id)
