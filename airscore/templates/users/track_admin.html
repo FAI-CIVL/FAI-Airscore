@@ -30,6 +30,13 @@
     <link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet">
     <script src="{{ static_url_for('static', filename='js/utils.js') }}"></script>
 
+    <div class="form-group col-md-12" id="bulk">
+        <button id="bulk_button" class="btn btn-primary ml-4" onclick="open_bulk_modal();">
+            Bulk Import Tracks
+        </button>
+    </div>
+
+
 
     <div class="container" id="main">
     <br>
@@ -48,6 +55,31 @@
 
 </body>
 
+<!---bulk-modal starts here--->
+<div id="bulkmodal" class="modal fade" role='dialog'>
+   <div class="modal-dialog">
+      <div class="modal-content">
+         <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+            <h4 class="modal-title"></h4>
+         </div>
+         <div class="modal-body" id= "bulkmodal-body">
+            <p id ="zip_modal_message">Please provide a ZIP file containing .igc files. The files should be named as such: FAI.igc or LASTNAME_FIRSTNAME.igc</p>
+             <div id="zip_progress" ><div class="bar" style="width: 0%;"><p id="zip_progress_text"></p></div></div>
+         </div>
+         <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                     <button id="get_bulk_file_button" class="btn btn-primary ml-4 " onclick="choose_zip_file()">
+            Browse
+        </button>
+        <input id="bulk_fileupload" type="file" size="chars" class="custom-file-input"  oninput="filesize(this);" data-url="/users/_upload_track_zip/{{ taskid }}" name="zip_file" >
+
+         </div>
+      </div>
+   </div>
+</div>
+<!-bulk-Modal ends here--->
+
 {% endblock %}
 
 {% block js %}
@@ -61,7 +93,9 @@
     <script type="text/javascript">populate_track_admin({{taskid|tojson}})</script>
     <script type="text/javascript">
 
-
+   function open_bulk_modal() {
+     $('#bulkmodal').modal('show');
+    }
 
         function set_result(par_id, status){
                var mydata = new Object();
@@ -106,6 +140,39 @@
 </script>
 
 <script type="text/javascript">
+
+   function choose_zip_file(){
+   var filename;
+   $('#bulk_fileupload').fileupload({
+        dataType: 'json',
+        done: function (e, data) {
+            $.each(data.result.files, function (index, file) {
+                $('<p/>').text(file.name).appendTo(document.body);
+                filename = file.name;
+            });
+        },
+        submit: function (e, data){
+        $('#zip_modal_message').hide();
+        $('#zip_progress').show();
+        $('#zip_progress_text').text(data.files[0].name + ' - processing');
+        },
+                      success: function (response, par_id) {
+                      update_row(response);
+                      },
+
+         progress: function (e, data) {
+        var progress = parseInt(data.loaded / data.total * 100, 10);
+        $('#pzip_rogress .bar').css(
+            'width',
+            progress + '%'
+        );
+    }
+    });
+    $('#bulk_fileupload').click();
+};
+
+
+
    function choose_file(par_id){
    var filename;
    $('#fileupload' + par_id).fileupload({

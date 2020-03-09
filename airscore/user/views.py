@@ -604,3 +604,38 @@ def _upload_XCTrack(taskid):
 
             resp = jsonify(success=True)
             return resp
+
+
+
+@blueprint.route('/_upload_track_zip/<taskid>', methods=['GET', 'POST'])
+@login_required
+def _upload_track_zip(taskid):
+    taskid = int(taskid)
+    if request.method == "POST":
+        if request.files:
+
+            if "filesize" in request.cookies:
+
+                if not frontendUtils.allowed_tracklog_filesize(request.cookies["filesize"]):
+                    print("Filesize exceeded maximum limit")
+                    return redirect(request.url)
+
+                zip_file = request.files["zip_file"]
+
+                if zip_file.filename == "":
+                    print("No filename")
+                    return redirect(request.url)
+
+                if frontendUtils.allowed_tracklog(zip_file.filename, extension=['zip']):
+                    task = Task.read(taskid)
+                    data = frontendUtils.process_igc_zip(task, zip_file)
+                    resp = jsonify(data)
+                    return resp
+
+                else:
+                    print("That file extension is not allowed")
+                    return redirect(request.url)
+            resp = jsonify({'error': 'filesize'})
+            return resp
+        resp = jsonify({'error': 'request.files'})
+        return resp

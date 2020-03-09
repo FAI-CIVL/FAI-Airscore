@@ -223,16 +223,16 @@ def get_pilot_list_for_track_management(taskid):
     return all_data
 
 
-def allowed_tracklog(filename):
+def allowed_tracklog(filename, extension=['IGC']):
 
-    if not "." in filename:
+    if "." not in filename:
         return False
 
     # Split the extension from the filename
     ext = filename.rsplit(".", 1)[1]
 
-    # Check if the extension is in ALLOWED_IMAGE_EXTENSIONS
-    if ext.upper() in ['IGC']:
+    # Check if the extension is allowed (make everything uppercase)
+    if ext.upper() in [e.upper() for e in extension]:
         return True
     else:
         return False
@@ -250,9 +250,6 @@ def process_igc(task_id, par_id, tracklog):
     from task import Task
     from track import Track
     from pilot import Pilot
-    # from trackUtils import verify_track, import_track
-    # from db_tables import TblParticipant as P
-    # from formula import TaskFormula, get_formula_lib
     from flight_result import Flight_result
     from airspace import AirspaceCheck
     from igc_lib import Flight
@@ -310,3 +307,28 @@ def process_igc(task_id, par_id, tracklog):
             result = data['Result']
             data['Result']  = f'<a href="/map/{trackid}-{task_id}">{result}</a>'
     return data
+
+
+def process_igc_zip(task, zipfile):
+    from trackUtils import extract_tracks, get_tracks, assign_and_import_tracks
+    from tempfile import TemporaryDirectory
+
+    if task.opt_dist == 0:
+        print('task not optimised.. optimising')
+        task.calculate_optimised_task_length()
+
+    """create a temporary directory"""
+    with TemporaryDirectory() as tracksdir:
+        error = extract_tracks(zipfile, tracksdir)
+        if error:
+            print(f"An error occurred while dealing with file {zipfile} \n")
+            return None
+        """find valid tracks"""
+        tracks = get_tracks(tracksdir)
+        if tracks is None:
+            print(f"There are no valid tracks in zipfile {zipfile} \n")
+            return None
+
+        """associate tracks to pilots and import"""
+        assign_and_import_tracks(tracks, task)
+        return 'Success'
