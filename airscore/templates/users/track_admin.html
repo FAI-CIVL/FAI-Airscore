@@ -156,8 +156,9 @@
         $('#zip_progress').show();
         $('#zip_progress_text').text(data.files[0].name + ' - processing');
         },
-                      success: function (response, par_id) {
-                      update_row(response);
+                      success: function () {
+                           $('#bulkmodal').modal('hide');
+                           populate_track_admin({{taskid|tojson}});
                       },
 
          progress: function (e, data) {

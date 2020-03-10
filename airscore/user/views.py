@@ -509,7 +509,7 @@ def _del_all_turnpoints(taskid):
 @blueprint.route('/_get_tracks_admin/<taskid>', methods=['GET'])
 @login_required
 def _get_tracks_admin(taskid):
-    return jsonify({'data':frontendUtils.get_pilot_list_for_track_management(taskid)})
+    return jsonify({'data': frontendUtils.get_pilot_list_for_track_management(taskid)})
 
 
 @blueprint.route('/track_admin/<taskid>', methods=['GET'])

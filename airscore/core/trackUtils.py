@@ -84,7 +84,7 @@ def assign_and_import_tracks(files, task, xcontest=False):
         print("Comp with registration: files will be checked against registered pilots not yet scored \n")
         pilot_list = get_unscored_pilots(task_id, xcontest)
 
-    track_path = get_task_path(task_id)
+    track_path = task.file_path
 
     # print("found {} tracks \n".format(len(files)))
     for file in files:
@@ -120,22 +120,27 @@ def assign_and_import_tracks(files, task, xcontest=False):
             mytrack.task_id = task_id
             mytrack.copy_track_file(task_path=track_path, pname=full_name)
             print(f"pilot {mytrack.par_id} associated with track {mytrack.filename} \n")
-            import_track(mytrack, task_id)
-            verify_track(mytrack, task)
+            pilot.track = mytrack
+            verify_and_import_track(pilot, task)
 
 
-def import_track(track, task_id):
-    track.to_db(task_id)
-    return track.track_id
+def import_track(pilot, task_id):
+    pilot.track.to_db(task_id)
+    return pilot.track.track_id
 
 
-def verify_track(track, task):
-    lib = task.formula.get_lib()
-    task_result = Flight_result.check_flight(track.flight, task)  # check flight against task
-    task_result.to_db(task.id, track.track_id)
-    print(track.flight.notes)
+def verify_and_import_track(pilot, task):
+    from airspace import AirspaceCheck
 
-    return task_result
+    if task.airspace_check:
+        airspace = AirspaceCheck.from_task(task)
+    else:
+        airspace = None
+    pilot.result = Flight_result.check_flight(pilot.track.flight, task, airspace_obj=airspace)  # check flight against task
+    pilot.to_db()
+    print(pilot.track.flight.notes)
+
+    return pilot.result
 
 
 def find_pilot(name):
@@ -254,9 +259,14 @@ def get_unscored_pilots(task_id, xcontest=False):
                 db.populate_obj(participant, p)
                 pilot = Pilot.create(task_id=task_id, info=participant)
                 pilot_list.append(pilot)
-        except SQLAlchemyError:
-            print(f"Error trying to retrieve unscored pilots from database")
+        except SQLAlchemyError as e:
+            error = str(e.__dict__)
+            print(f"Error trying to retrieve unscored pilots from database {error}")
             db.session.rollback()
+            db.session.close()
+            return error
+
+
 
     return pilot_list
 
