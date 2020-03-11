@@ -289,7 +289,7 @@ def task_admin(taskid):
             task.formula.max_JTG = taskform.max_JTG.data
             task.formula.no_goal_penalty = taskform.no_goal_penalty.data
             task.formula.arr_alt_bonus = taskform.arr_alt_bonus.data
-            task.update_task_info()
+            task.to_db()
 
             flash("Saved", category='info')
 
@@ -425,8 +425,7 @@ def _get_adv_settings():
 @blueprint.route('/_get_task_turnpoints/<taskid>', methods=['GET'])
 @login_required
 def _get_task_turnpoints(taskid):
-    task = Task()
-    task.task_id = taskid
+    task = Task(task_id=int(taskid))
     turnpoints = frontendUtils.get_task_turnpoints(task)
     return jsonify(turnpoints)
 
