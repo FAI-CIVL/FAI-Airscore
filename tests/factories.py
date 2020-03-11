@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """Factories to help in tests."""
-from factory import PostGenerationMethodCall, Sequence
+from factory import PostGenerationMethodCall, Sequence, Factory
+from factory.faker import faker
 from factory.alchemy import SQLAlchemyModelFactory
-
 from airscore.database import db
 from airscore.user.models import User
+
 
 
 class BaseFactory(SQLAlchemyModelFactory):
@@ -29,3 +30,4 @@ class UserFactory(BaseFactory):
         """Factory configuration."""
 
         model = User
+
