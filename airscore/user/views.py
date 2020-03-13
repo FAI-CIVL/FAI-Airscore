@@ -5,7 +5,8 @@ from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify, json, flash, redirect, url_for
 from flask_login import login_required, current_user
 import frontendUtils
-from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm
+from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm, \
+    TaskResultAdminForm
 from comp import Comp
 from formula import list_formulas, Formula
 from task import Task, write_map_json
@@ -13,6 +14,9 @@ from route import save_turnpoint, Turnpoint
 from flight_result import update_status, delete_result
 from os import path, remove
 from sys import stdout
+from task import get_task_json_by_filename
+from calcUtils import sec_to_time
+import time
 
 blueprint = Blueprint("user", __name__, url_prefix="/users", static_folder="../static")
 
@@ -638,3 +642,70 @@ def _upload_track_zip(taskid):
             return resp
         resp = jsonify({'error': 'request.files'})
         return resp
+
+
+@blueprint.route('/_get_task_result_files/<taskid>', methods=['GET', 'POST'])
+@login_required
+def _get_task_result_files(taskid):
+    file_list = frontendUtils.get_task_result_file_list(int(taskid))
+    return file_list
+
+
+@blueprint.route('/_get_task_score_from_file/<taskid>/<filename>', methods=['GET'])
+@login_required
+def _get_task_score_from_file(taskid, filename):
+    error = None
+    result_file = get_task_json_by_filename(filename)
+    if not result_file:
+        return jsonify({'data': ''})
+    taskid = int(taskid)
+    rank = 1
+    all_pilots = []
+    for r in result_file['results']:
+        track_id = r['track_id']
+        name = r['name']
+        pilot = {'rank': rank, 'name': f'<a href="/map/{track_id}-{taskid}">{name}</a>'}
+        if r['SSS_time']:
+            pilot['SSS'] = sec_to_time(r['SSS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S")
+        else:
+            pilot['SSS'] = ""
+        if r['ESS_time'] == 0 or r['ESS_time'] is None:
+            pilot['ESS'] = ""
+            pilot['time'] = ""
+        else:
+            pilot['ESS'] = sec_to_time(r['ESS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S")
+            pilot['time'] = sec_to_time(r['ESS_time'] - r['SSS_time']).strftime("%H:%M:%S")
+
+        pilot['altbonus'] = ""  # altitude bonus
+        pilot['distance'] = round(r['distance'] / 1000, 2)
+        pilot['speedP']  = round(r['time_score'], 2)
+        pilot['leadP'] = round(r['departure_score'], 2)
+        pilot['arrivalP'] = round(r['arrival_score'], 2) # arrival points
+        pilot['distanceP'] = round(r['distance_score'], 2)
+        pilot['penalty'] = round(r['penalty'], 2) if r['penalty'] else ""
+        pilot['score'] = round(r['score'], 2)
+
+        all_pilots.append(pilot)
+        rank += 1
+
+    return jsonify({'data': all_pilots})
+
+
+@blueprint.route('/task_score_admin/<taskid>', methods=['GET', 'POST'])
+@login_required
+def task_score_admin(taskid):
+    taskid = int(taskid)
+    fileform = TaskResultAdminForm()
+    active_file = None
+    files = frontendUtils.get_task_result_file_list(taskid)
+    choices = []
+    for file in files:
+        choices.append((file['filename'], f"{time.ctime(file['created'])} - {file['status']}"))
+        if file['active'] == 1:
+            active_file = file['filename']
+    fileform.result_file.choices = choices
+    if active_file:
+        fileform.result_file.data = active_file
+
+    return render_template('users/task_score_admin.html', fileform=fileform, taskid=taskid,
+                           active_file=active_file, result_files=files)

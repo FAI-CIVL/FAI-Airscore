@@ -332,3 +332,19 @@ def process_igc_zip(task, zipfile):
         """associate tracks to pilots and import"""
         assign_and_import_tracks(tracks, task)
         return 'Success'
+
+
+def get_task_result_file_list(taskid):
+    from db_tables import TblResultFile as R
+    with Database() as db:
+        try:
+            files = db.session.query(R.created, R.filename, R.status, R.active, R.ref_id).filter(
+                                               R.task_id == taskid).all()
+            if files:
+                files = [row._asdict() for row in files]
+
+        except SQLAlchemyError:
+            print("there was a problem with getting the result list")
+            return None
+
+        return files

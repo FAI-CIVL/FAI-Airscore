@@ -1625,8 +1625,13 @@ def get_task_json_filename(task_id):
 
 def get_task_json(task_id):
     filename = get_task_json_filename(task_id)
-    with open(RESULTDIR + filename, 'r') as myfile:
-        data = myfile.read()
-    if not data:
-        return "error"
+    return get_task_json_by_filename(filename)
+
+
+def get_task_json_by_filename(filename):
+    try:
+        with open(RESULTDIR + filename, 'r') as myfile:
+            data = myfile.read()
+    except:
+            return None
     return json.loads(data)
