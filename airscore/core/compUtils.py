@@ -198,14 +198,23 @@ def read_rankings(comp_id):
     with Database() as db:
         '''get rankings definitions'''
         try:
-            class_id = db.session.query(C).get(comp_id).cat_id
+            comp = db.session.query(C).get(comp_id)
+            if not comp:
+                print(f'Comp with ID {comp_id} does not exist')
+                db.session.close()
+                return None
+            class_id = comp.cat_id
             query = db.session.query(R.rank_name.label('rank'), CCT.cert_name.label('cert'), CT.female,
-                                     CT.team).select_from(R).join(CC, R.rank_id == CC.rank_id) \
-                .join(CCT, and_(CCT.cert_id <= CC.cert_id, CCT.comp_class == R.comp_class)
-                      ).join(CT, CT.cat_id == CC.cat_id).filter(and_(CC.cert_id > 0, CC.cat_id == class_id))
+                                     CT.team).select_from(R).join(CC, R.rank_id == CC.c.rank_id) \
+                .join(CCT, and_(CCT.cert_id <= CC.c.cert_id, CCT.comp_class == R.comp_class)
+                      ).join(CT, CT.cat_id == CC.c.cat_id).filter(and_(CC.c.cert_id > 0, CC.c.cat_id == class_id))
             result = query.all()
-        except SQLAlchemyError:
+        except SQLAlchemyError as e:
             print(f'Ranking Query Error')
+            error = str(e.__dict__)
+            db.session.rollback()
+            db.session.close()
+            return error
 
     if len(result) > 0:
         for res in result:
