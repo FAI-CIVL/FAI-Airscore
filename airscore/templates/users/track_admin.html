@@ -34,8 +34,11 @@
         <button id="bulk_button" class="btn btn-primary ml-4" onclick="open_bulk_modal();">
             Bulk Import Tracks
         </button>
-    </div>
 
+    </div>
+        <div class=" text-center " >
+            <h3 id="TracksProcessed"></h3>
+        </div>
 
 
     <div class="container" id="main">
@@ -110,11 +113,23 @@
                dataType: "json",
                success: function (response, par_id) {
                       update_row(response);
+                      update_track_pilot_stats();
                }
                });
 }
+ function update_track_pilot_stats(){
+       $.ajax({
+               type: "GET",
+               url: "{{ url_for('user._get_tracks_processed', taskid=taskid)}}",
+               contentType:"application/json",
+               dataType: "json",
+               success: function (response) {
+                      $('#TracksProcessed').text('Tracks collected: ' + response.tracks + '/' + response.pilots)
+                      }
+               });
+        }
 
-        function update_row(new_data){
+ function update_row(new_data){
         var table = $('#tracks').dataTable();
         new_data.name = $('#tracks').DataTable().row( $('tr#id_'+ new_data.par_id)).data()['name'];
         table.fnUpdate(new_data, $('tr#id_'+ new_data.par_id), undefined, false);
@@ -132,6 +147,7 @@
                dataType: "json",
                success: function (response, par_id) {
                       update_row(response);
+                      update_track_pilot_stats();
                }
                });
 }
@@ -215,6 +231,10 @@
   function filesize(elem){
     document.cookie = `filesize=${elem.files[0].size}`
   }
+
+    $(document).ready(function(){
+    update_track_pilot_stats();
+    });
 
 </script>
 

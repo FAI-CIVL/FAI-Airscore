@@ -348,3 +348,17 @@ def get_task_result_file_list(taskid):
             return None
 
         return files
+
+
+def number_of_tracks_processed(taskid):
+    from db_tables import TblTaskResult as R, TblParticipant as P, TblTask as T
+    from sqlalchemy import func
+    with Database() as db:
+        try:
+            results = db.session.query(func.count()).filter(R.task_id == taskid).scalar()
+            pilots = db.session.query(func.count(P.par_id)).outerjoin(T, P.comp_id == T.comp_id).filter(T.task_id == taskid).scalar()
+
+        except SQLAlchemyError:
+            print("there was a problem with getting the pilot/result list")
+            return None
+    return results, pilots

@@ -512,7 +512,15 @@ def _del_all_turnpoints(taskid):
 @blueprint.route('/_get_tracks_admin/<taskid>', methods=['GET'])
 @login_required
 def _get_tracks_admin(taskid):
+    tracks, pilots = frontendUtils.number_of_tracks_processed(taskid)
     return jsonify({'data': frontendUtils.get_pilot_list_for_track_management(taskid)})
+
+
+@blueprint.route('/_get_tracks_processed/<taskid>', methods=['GET'])
+@login_required
+def _get_tracks_processed(taskid):
+    tracks, pilots = frontendUtils.number_of_tracks_processed(taskid)
+    return jsonify({'tracks': tracks, 'pilots': pilots})
 
 
 @blueprint.route('/track_admin/<taskid>', methods=['GET'])
@@ -700,7 +708,11 @@ def task_score_admin(taskid):
     files = frontendUtils.get_task_result_file_list(taskid)
     choices = []
     for file in files:
-        choices.append((file['filename'], f"{time.ctime(file['created'])} - {file['status']}"))
+        published = ''
+        if file['active'] == 1:
+            active_file = file['filename']
+            published = " - published"
+        choices.append((file['filename'], f"{time.ctime(file['created'])} - {file['status']}{published}"))
         if file['active'] == 1:
             active_file = file['filename']
     fileform.result_file.choices = choices
