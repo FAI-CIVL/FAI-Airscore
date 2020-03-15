@@ -620,7 +620,7 @@ class Task(object):
             self.get_results(lib)
         if self.pilots_launched == 0:
             print(f"Task (ID {self.id}) has no results yet")
-            return 0
+            return None
         ''' Calculates task result'''
         print(f"Calculating task results...")
         lib.calculate_results(self)

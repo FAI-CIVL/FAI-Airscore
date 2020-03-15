@@ -20,7 +20,8 @@ Stuart Mackintosh - Antonio Golfari
 
 from db_tables import TblResultFile
 from myconn import Database
-
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import update
 
 class Task_result:
     """
@@ -297,3 +298,37 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None):
         db.session.commit()
         ref_id = result.ref_id
     return ref_id
+
+
+def unpublish_result(taskid, session=None):
+    """unpublish (set active to 0) all result files for a task"""
+    with Database(session) as db:
+        try:
+            db.session.query(TblResultFile).filter(TblResultFile.task_id == taskid).update({'active': 0})
+            db.session.commit()
+            if not session:
+                db.session.close()
+        except SQLAlchemyError as e:
+            error = str(e.__dict__)
+            print(f"Error unpublishing result in database: {error}")
+            db.session.rollback()
+            db.session.close()
+            return error
+        return 1
+
+
+def publish_result(filename, session=None):
+    """publish (set active to 1) a result files"""
+    with Database(session) as db:
+        try:
+            db.session.query(TblResultFile).filter(TblResultFile.filename == filename).update({'active': 1})
+            db.session.commit()
+            if not session:
+                db.session.close()
+        except SQLAlchemyError as e:
+            error = str(e.__dict__)
+            print(f"Error publishing result in database: {error}")
+            db.session.rollback()
+            db.session.close()
+            return error
+        return 1

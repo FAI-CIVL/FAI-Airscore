@@ -655,8 +655,11 @@ def _upload_track_zip(taskid):
 @blueprint.route('/_get_task_result_files/<taskid>', methods=['GET', 'POST'])
 @login_required
 def _get_task_result_files(taskid):
-    file_list = frontendUtils.get_task_result_file_list(int(taskid))
-    return file_list
+    files = frontendUtils.get_task_result_file_list(int(taskid))
+    choices = []
+    for file in files:
+        choices.append((file['filename'], f"{time.ctime(file['created'])} - {file['status']}"))
+    return jsonify(choices)
 
 
 @blueprint.route('/_get_task_score_from_file/<taskid>/<filename>', methods=['GET'])
@@ -692,6 +695,13 @@ def _get_task_score_from_file(taskid, filename):
         pilot['distanceP'] = round(r['distance_score'], 2)
         pilot['penalty'] = round(r['penalty'], 2) if r['penalty'] else ""
         pilot['score'] = round(r['score'], 2)
+        # TODO once result files have a list of comments we can activate these lines and remove the 3 dummy lines below
+        # pilot['Track Comment'] = r['comment'][0]
+        # pilot['Penalty Comment'] = r['comment'][1]
+        # pilot['Admin Comment'] = r['comment'][2]
+        pilot['Track Comment'] = 'test track comment'
+        pilot['Penalty Comment'] = 'test penalt comment'
+        pilot['Admin Comment'] = 'test admin comment'
 
         all_pilots.append(pilot)
         rank += 1
@@ -711,13 +721,50 @@ def task_score_admin(taskid):
         published = ''
         if file['active'] == 1:
             active_file = file['filename']
-            published = " - published"
-        choices.append((file['filename'], f"{time.ctime(file['created'])} - {file['status']}{published}"))
-        if file['active'] == 1:
-            active_file = file['filename']
+            # published = " - published"
+        choices.append((file['filename'], f"{time.ctime(file['created'])} - {file['status']}"))
     fileform.result_file.choices = choices
     if active_file:
         fileform.result_file.data = active_file
 
     return render_template('users/task_score_admin.html', fileform=fileform, taskid=taskid,
                            active_file=active_file, result_files=files)
+
+
+@blueprint.route('/_score_task/<taskid>', methods=['POST'])
+@login_required
+def _score_task(taskid):
+    from result import unpublish_result, publish_result
+    """score task, request data should contain status: the score status (provisional, official etc),
+    autopublish: True or False. indicates if to publish results automatically after scoring"""
+    data = request.json
+    taskid = int(taskid)
+    task = Task.read(taskid)
+    ref_id = task.create_results(data['status'])
+    if ref_id:
+        if data['autopublish']:
+            unpublish_result(taskid)
+            publish_result(ref_id)
+        return jsonify(dict(redirect='/task_score_admin/' + str(taskid)))
+    return render_template('500.html')
+
+
+@blueprint.route('/_unpublish_result/<taskid>', methods=['POST'])
+@login_required
+def _unpublish_result(taskid):
+    from result import unpublish_result
+    unpublish_result(taskid)
+    resp = jsonify(filename='')
+    return resp
+
+
+@blueprint.route('/_publish_result/<filename>/<taskid>', methods=['POST'])
+@login_required
+def _publish_result(filename, taskid):
+    from result import publish_result, unpublish_result
+    unpublish_result(taskid)
+    publish_result(filename)
+    resp = jsonify(filename=filename)
+    return resp
+
+

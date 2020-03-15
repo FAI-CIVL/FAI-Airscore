@@ -23,11 +23,11 @@
  <div class="container">
     <div id = "display_file">
        <div class="form-row form-group col-md-12">
-                 <button class="btn btn-primary ml-4" type="button">
+                 <button class="btn btn-primary ml-4" type="button" onclick="Score_modal();">
       Score Task
       </button>
 
-      <button class="btn btn-warning ml-4" type="button">
+      <button class="btn btn-warning ml-4" type="button" onclick="FullRescore();">
       Full Rescore
       </button>
            &nbsp;
@@ -69,6 +69,41 @@
 
 </body>
 
+<!---bulk-modal starts here--->
+<div id="scoremodal" class="modal fade" tabindex="-1" role='dialog'>
+   <div class="modal-dialog" role="document">
+      <div class="modal-content">
+         <div class="modal-header">
+            <h4 class="modal-title">Score Task</h4>
+             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+         </div>
+         <div class="modal-body" id= "bulkmodal-body">
+            <div class="container-fluid">
+             <div class="col-md-12">
+             <input type="checkbox" class="form-check-input" id="autopublish" name="autopublish" value="1">
+            <label class="form-check-label" for="autopublish">publish results after scoring</label>
+                 <br>
+                   <br>
+                 <label for="autopublish">Status:</label>
+             <input type="text" id="status_comment" class="form-control" placeholder="partial/provisional/official etc.">
+
+             <small id="emailHelp" class="form-text text-muted">This can be done later also.</small>
+            </div>
+            </div>
+               <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <button type="button"  onclick="Score()" class="btn btn-primary">Score</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-bulk-Modal ends here--->
+
+
+
 {% endblock %}
 {% block js %}
 {% include "js.html" %}
@@ -76,22 +111,110 @@
     <script type="text/javascript" src="/static/js/pop_task_score_admin.js"></script>
     <script type="text/javascript">populate_task_scores({{taskid}},{{active_file|tojson}})</script>
     <script type="text/javascript">
-        $(document).ready(function() {
-    // Event listener to the file picker to redraw on input
-    $('#file').change( function() {
-    var filename = $('#file option:selected').val();
-    if(filename=='{{active_file}}'){
-        $('#publish').text('Un-Publish results');
-          $('#publish').addClass('btn-danger').removeClass('btn-success');
-    }
-    else {  $('#publish').text('Publish results');
-             $('#publish').addClass('btn-success').removeClass('btn-danger');
-            }
-        populate_task_scores({{taskid}}, filename);
-    } );
-} );
+var active_file = '{{active_file}}';
 
-function toggle_publish(){
+// jQuery selection for the file select box
+var dropdown = {
+    file: $('#file')
+};
+
+$(document).ready(function() {
+    // Event listener to the file picker to redraw on input
+    $('#file').change(function() {
+
+        var filename = $('#file option:selected').val();
+        update_publish_button(filename);
+        populate_task_scores({{taskid}}, filename);
+    });
+});
+
+
+function update_publish_button(filename) {
+
+    if (filename == active_file) {
+        $('#publish').text('Un-Publish results');
+        $('#publish').addClass('btn-danger').removeClass('btn-success');
+
+    } else {
+        $('#publish').text('Publish results');
+        $('#publish').addClass('btn-success').removeClass('btn-danger');
+    }
+
+
+}
+
+
+function toggle_publish() {
+    var filename = $('#file option:selected').val();
+    var url = ''
+    if (filename == active_file) {
+        url = "{{ url_for('user._unpublish_result', taskid=taskid)}}"
+    } else {
+        url = '/users/_publish_result/' + filename + '/' + {{taskid}}
+    }
+
+    $.ajax({
+        type: "POST",
+        url: url,
+        contentType: "application/json",
+        dataType: "json",
+        success: function(response) {
+                active_file = response.filename
+                update_publish_button(filename);
+
+        }
+    });
+
+}
+
+
+function updateFiles() {
+
+    dropdown.file.attr('disabled', 'disabled');
+    dropdown.file.empty();
+    $.getJSON("{{ url_for('user._get_task_result_files', taskid=taskid)}}", send, function(data) {
+        data.forEach(function(item) {
+            dropdown.file.append(
+                $('<option>', {
+                    value: item[0],
+                    text: item[1]
+                })
+            );
+        });
+        dropdown.file.removeAttr('disabled');
+
+        var filename = $('#file option:selected').val();
+        update_publish_button(filename);
+    });
+
+}
+
+function Score_modal() {
+    $('#scoremodal').modal('show');
+}
+
+function Score() {
+    var mydata = new Object();
+    mydata.autopublish = $("#autopublish").is(':checked');
+    mydata.status = $('#status_comment').val();
+
+    $.ajax({
+        type: "POST",
+        url: "{{ url_for('user._score_task', taskid=taskid)}}",
+        contentType: "application/json",
+        data: JSON.stringify(mydata),
+        dataType: "json",
+        success: function(response) {
+            if (response.redirect) {
+                window.location.href = response.redirect;
+            }
+        }
+    });
+
+
+}
+
+function FullRescore() {
 
 
 
