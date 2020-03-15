@@ -512,7 +512,6 @@ def _del_all_turnpoints(taskid):
 @blueprint.route('/_get_tracks_admin/<taskid>', methods=['GET'])
 @login_required
 def _get_tracks_admin(taskid):
-    tracks, pilots = frontendUtils.number_of_tracks_processed(taskid)
     return jsonify({'data': frontendUtils.get_pilot_list_for_track_management(taskid)})
 
 
@@ -655,10 +654,13 @@ def _upload_track_zip(taskid):
 @blueprint.route('/_get_task_result_files/<taskid>', methods=['GET', 'POST'])
 @login_required
 def _get_task_result_files(taskid):
+    data = request.json
+
     files = frontendUtils.get_task_result_file_list(int(taskid))
     choices = []
+    offset = (int(data['offset'])/60*-1)*3600
     for file in files:
-        choices.append((file['filename'], f"{time.ctime(file['created'])} - {file['status']}"))
+        choices.append((file['filename'], f"{time.ctime(file['created'] + offset)} - {file['status']}"))
     return jsonify(choices)
 
 

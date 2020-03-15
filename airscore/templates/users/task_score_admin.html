@@ -118,15 +118,7 @@ var dropdown = {
     file: $('#file')
 };
 
-$(document).ready(function() {
-    // Event listener to the file picker to redraw on input
-    $('#file').change(function() {
 
-        var filename = $('#file option:selected').val();
-        update_publish_button(filename);
-        populate_task_scores({{taskid}}, filename);
-    });
-});
 
 
 function update_publish_button(filename) {
@@ -169,11 +161,18 @@ function toggle_publish() {
 
 
 function updateFiles() {
-
+    var mydata = new Object();
+    mydata.offset = new Date().getTimezoneOffset();
     dropdown.file.attr('disabled', 'disabled');
     dropdown.file.empty();
-    $.getJSON("{{ url_for('user._get_task_result_files', taskid=taskid)}}", send, function(data) {
-        data.forEach(function(item) {
+        $.ajax({
+        type: "POST",
+        url: "{{ url_for('user._get_task_result_files', taskid=taskid)}}",
+        contentType: "application/json",
+        data: JSON.stringify(mydata),
+        dataType: "json",
+        success: function(response) {
+        response.forEach(function(item) {
             dropdown.file.append(
                 $('<option>', {
                     value: item[0],
@@ -185,7 +184,25 @@ function updateFiles() {
 
         var filename = $('#file option:selected').val();
         update_publish_button(filename);
+        }
     });
+
+
+<!--    $.getJSON("{{ url_for('user._get_task_result_files', taskid=taskid)}}", send, -->
+<!--    function(data) {-->
+<!--        data.forEach(function(item) {-->
+<!--            dropdown.file.append(-->
+<!--                $('<option>', {-->
+<!--                    value: item[0],-->
+<!--                    text: item[1]-->
+<!--                })-->
+<!--            );-->
+<!--        });-->
+<!--        dropdown.file.removeAttr('disabled');-->
+
+<!--        var filename = $('#file option:selected').val();-->
+<!--        update_publish_button(filename);-->
+<!--    });-->
 
 }
 
@@ -219,6 +236,20 @@ function FullRescore() {
 
 
 }
+
+$(document).ready(function() {
+updateFiles();
+    // Event listener to the file picker to redraw on input
+    $('#file').change(function() {
+
+        var filename = $('#file option:selected').val();
+        update_publish_button(filename);
+        populate_task_scores({{taskid}}, filename);
+    });
+});
+
+
+
     </script>
 
 {% endblock %}
