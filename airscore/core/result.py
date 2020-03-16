@@ -317,11 +317,16 @@ def unpublish_result(taskid, session=None):
         return 1
 
 
-def publish_result(filename, session=None):
-    """publish (set active to 1) a result files"""
+def publish_result(filename_or_refid, ref_id=False, session=None):
+    """publish (set active to 1) a result files, by default takes filename of result to publish,
+    otherwise ref_id if ref_id flag True"""
+
     with Database(session) as db:
         try:
-            db.session.query(TblResultFile).filter(TblResultFile.filename == filename).update({'active': 1})
+            if ref_id:
+                db.session.query(TblResultFile).filter(TblResultFile.ref_id == filename_or_refid).update({'active': 1})
+            else:
+                db.session.query(TblResultFile).filter(TblResultFile.filename == filename_or_refid).update({'active': 1})
             db.session.commit()
             if not session:
                 db.session.close()

@@ -748,8 +748,8 @@ def _score_task(taskid):
     if ref_id:
         if data['autopublish']:
             unpublish_result(taskid)
-            publish_result(ref_id)
-        return jsonify(dict(redirect='/task_score_admin/' + str(taskid)))
+            publish_result(ref_id, ref_id=True)
+        return jsonify(dict(redirect='/users/task_score_admin/' + str(taskid)))
     return render_template('500.html')
 
 
