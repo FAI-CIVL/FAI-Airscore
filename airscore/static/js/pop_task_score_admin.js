@@ -1,5 +1,5 @@
 function populate_task_scores(taskid, filename){
-$(document).ready(function() {
+
 
     $('#task_result').dataTable({
         ajax: '/users/_get_task_score_from_file/' + taskid + '/' + filename,
@@ -26,6 +26,6 @@ $(document).ready(function() {
         "emptyTable":     "Error: result file not found"
     }
     });
-});
+
 }
 

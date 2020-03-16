@@ -90,7 +90,8 @@ def get_task_list(comp):
             last_region = task['reg_id']
         # if task['task_name'] is None or task['task_name'] == '':
         #     task['task_name'] = f'Task {tasknum}'
-        task['link'] = f'<a href="/users/task_admin/{taskid}">Task {tasknum}</a>'
+        task['num'] = f"Task {tasknum}"
+        # task['link'] = f'<a href="/users/task_admin/{taskid}">Task {tasknum}</a>'
         task['opt_dist'] = 0 if not task['opt_dist'] else round(task['opt_dist']/1000, 2)
         task['opt_dist'] = f"{task['opt_dist']} km"
         if task['comment'] is None:
@@ -362,3 +363,23 @@ def number_of_tracks_processed(taskid):
             print("there was a problem with getting the pilot/result list")
             return None
     return results, pilots
+
+
+def get_score_header(files, offset):
+    import time
+    active_published = None
+    active_status = None
+    active = None
+    header = "This task has not been scored"
+    offset = (int(offset)/60*-1)*3600
+    for file in files:
+        published = time.ctime(file['created'] + offset)
+        if int(file['active']) == 1:
+            active_published = published
+            active_status = file['status']
+            active = file['filename']
+    if active_published:
+        header = f"Published result ran at:{active_published} Status:{active_status}"
+    else:
+        header = "No published results"
+    return header, active

@@ -655,13 +655,15 @@ def _upload_track_zip(taskid):
 @login_required
 def _get_task_result_files(taskid):
     data = request.json
-
     files = frontendUtils.get_task_result_file_list(int(taskid))
+    header, active = frontendUtils.get_score_header(files, data['offset'])
     choices = []
     offset = (int(data['offset'])/60*-1)*3600
     for file in files:
-        choices.append((file['filename'], f"{time.ctime(file['created'] + offset)} - {file['status']}"))
-    return jsonify(choices)
+        published = time.ctime(file['created'] + offset)
+        choices.append((file['filename'], f"{published} - {file['status']}"))
+    choices.reverse()
+    return jsonify({'choices': choices, 'header': header, 'active': active})
 
 
 @blueprint.route('/_get_task_score_from_file/<taskid>/<filename>', methods=['GET'])
@@ -717,20 +719,20 @@ def task_score_admin(taskid):
     taskid = int(taskid)
     fileform = TaskResultAdminForm()
     active_file = None
-    files = frontendUtils.get_task_result_file_list(taskid)
-    choices = []
-    for file in files:
-        published = ''
-        if file['active'] == 1:
-            active_file = file['filename']
-            # published = " - published"
-        choices.append((file['filename'], f"{time.ctime(file['created'])} - {file['status']}"))
+    # files = frontendUtils.get_task_result_file_list(taskid)
+    choices = [(1,1),(2,2)]
+    # for file in files:
+    #     # published = ''
+    #     if file['active'] == 1:
+    #         active_file = file['filename']
+    #         # published = " - published"
+    #     choices.append((file['filename'], f"{time.ctime(file['created'])} - {file['status']}"))
     fileform.result_file.choices = choices
     if active_file:
         fileform.result_file.data = active_file
 
     return render_template('users/task_score_admin.html', fileform=fileform, taskid=taskid,
-                           active_file=active_file, result_files=files)
+                           active_file=active_file)
 
 
 @blueprint.route('/_score_task/<taskid>', methods=['POST'])
@@ -756,17 +758,21 @@ def _score_task(taskid):
 def _unpublish_result(taskid):
     from result import unpublish_result
     unpublish_result(taskid)
-    resp = jsonify(filename='')
+    header = "No published results"
+    resp = jsonify(filename='', header=header)
     return resp
 
 
-@blueprint.route('/_publish_result/<filename>/<taskid>', methods=['POST'])
+@blueprint.route('/_publish_result/<taskid>', methods=['POST'])
 @login_required
-def _publish_result(filename, taskid):
+def _publish_result(taskid):
     from result import publish_result, unpublish_result
+    data = request.json
     unpublish_result(taskid)
-    publish_result(filename)
-    resp = jsonify(filename=filename)
+    publish_result(data['filename'])
+    run_at, status = data['filetext'].split('-')
+    header = f"Published result ran at:{run_at} Status:{status}"
+    resp = jsonify(filename=data['filename'], header=header)
     return resp
 
 

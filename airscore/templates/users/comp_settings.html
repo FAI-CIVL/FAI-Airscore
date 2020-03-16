@@ -442,16 +442,19 @@
                for (var i = 0; i < json['tasks'].length; i++) {
                content += '><tr id="'
                + json['tasks'][i].task_id + '">';
-               content += '<td class="col-3">' + json['tasks'][i].link + '</td>';
-          //     content += '<td class="col-3">' + json['tasks'][i].task_name + '</td>';
+               // content += '<td class="col-3">' + json['tasks'][i].link + '</td>';
+               content += '<td class="col-3">' + json['tasks'][i].task_num + '</td>';
                content += '<td class="col-3">' + json['tasks'][i].date + '</td>';
-               content += '<td class="col-3">' + json['tasks'][i].region_name + '</td>';
+               content += '<td class="col-9">' + json['tasks'][i].region_name + '</td>';
                content += '<td class="col-3">' + json['tasks'][i].opt_dist + '</td>';
-               content += '<td class="col-3">' + json['tasks'][i].comment+ '</td>';
+               content += '<td class="col-6">' + json['tasks'][i].comment+ '</td>';
+               content += '<td  class ="value" ><a href="/users/task_admin/' + json['tasks'][i].task_id + '" class="btn btn-info ml-3" type="button" >Settings</a></td>'
+               content += '<td  class ="value" ><a href="/users/track_admin/' + json['tasks'][i].task_id + '" class="btn btn-info ml-3" type="button" >Tracks</a></td>'
+               content += '<td  class ="value" ><a href="/users/task_score_admin/' + json['tasks'][i].task_id + '" class="btn btn-info ml-3" type="button" >Scores</a></td>'
                content += '<td  class ="value" ><button type="button" class="btn btn-danger" onclick="confirm_delete('
                content +=  json['tasks'][i].task_num + ',' + json['tasks'][i].task_id
                content += ')" data-toggle="confirmation" data-popout="true">Delete</button></td>'
-               content += '<td  class ="value" ><a href="/users/track_admin/' + json['tasks'][i].task_id + '" class="btn btn-info ml-4" type="button" >Manage Tracks</a></td>'
+
                content += '</tr>';
    
                }

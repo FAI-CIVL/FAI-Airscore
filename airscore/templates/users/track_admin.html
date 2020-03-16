@@ -34,9 +34,11 @@
         <button id="bulk_button" class="btn btn-primary ml-4" onclick="open_bulk_modal();">
             Bulk Import Tracks
         </button>
-
+        <a href="{{ url_for('user.task_score_admin', taskid=taskid)}}" class="btn btn-info ml-4" type="button" >
+         Manage Scores
+      </a>
     </div>
-        <div class=" text-center " >
+        <div class="text-center" >
             <h3 id="TracksProcessed"></h3>
         </div>
 

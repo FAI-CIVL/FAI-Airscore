@@ -19,7 +19,9 @@
   </head>
 
 <body>
-
+        <div class=" text-center " >
+            <h3 id="header"></h3>
+        </div>
  <div class="container">
     <div id = "display_file">
        <div class="form-row form-group col-md-12">
@@ -111,7 +113,7 @@
     <script type="text/javascript" src="/static/js/pop_task_score_admin.js"></script>
     <script type="text/javascript">populate_task_scores({{taskid}},{{active_file|tojson}})</script>
     <script type="text/javascript">
-var active_file = '{{active_file}}';
+var active_file = '';
 
 // jQuery selection for the file select box
 var dropdown = {
@@ -137,23 +139,26 @@ function update_publish_button(filename) {
 
 
 function toggle_publish() {
-    var filename = $('#file option:selected').val();
+    var mydata = new Object();
+    mydata.filetext = $('#file option:selected').text();
+    mydata.filename = $('#file option:selected').val();
     var url = ''
-    if (filename == active_file) {
+    if (mydata.filename == active_file) {
         url = "{{ url_for('user._unpublish_result', taskid=taskid)}}"
     } else {
-        url = '/users/_publish_result/' + filename + '/' + {{taskid}}
+        url = '/users/_publish_result/' + {{taskid}}
     }
 
     $.ajax({
         type: "POST",
         url: url,
         contentType: "application/json",
+        data: JSON.stringify(mydata),
         dataType: "json",
         success: function(response) {
                 active_file = response.filename
-                update_publish_button(filename);
-
+                update_publish_button(mydata.filename);
+                $('#header').text(response.header)
         }
     });
 
@@ -172,7 +177,8 @@ function updateFiles() {
         data: JSON.stringify(mydata),
         dataType: "json",
         success: function(response) {
-        response.forEach(function(item) {
+        $('#header').text(response.header)
+        response.choices.forEach(function(item) {
             dropdown.file.append(
                 $('<option>', {
                     value: item[0],
@@ -181,28 +187,16 @@ function updateFiles() {
             );
         });
         dropdown.file.removeAttr('disabled');
+        if(response.active){
+        active_file = response.active;
+        $("#file").val(response.active);
+        }
 
         var filename = $('#file option:selected').val();
         update_publish_button(filename);
+        populate_task_scores({{taskid}}, filename);
         }
     });
-
-
-<!--    $.getJSON("{{ url_for('user._get_task_result_files', taskid=taskid)}}", send, -->
-<!--    function(data) {-->
-<!--        data.forEach(function(item) {-->
-<!--            dropdown.file.append(-->
-<!--                $('<option>', {-->
-<!--                    value: item[0],-->
-<!--                    text: item[1]-->
-<!--                })-->
-<!--            );-->
-<!--        });-->
-<!--        dropdown.file.removeAttr('disabled');-->
-
-<!--        var filename = $('#file option:selected').val();-->
-<!--        update_publish_button(filename);-->
-<!--    });-->
 
 }
 
@@ -239,6 +233,7 @@ function FullRescore() {
 
 $(document).ready(function() {
 updateFiles();
+
     // Event listener to the file picker to redraw on input
     $('#file').change(function() {
 
