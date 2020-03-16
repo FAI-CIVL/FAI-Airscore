@@ -365,7 +365,7 @@ def update_result_status(ref_id, status):
             return 0
 
 
-def update_result_file(ref_id, par_id, comment, penalty=None):
+def update_result_file(filename, par_id, comment=None, penalty=None):
     """gets result file id and info to update from frontend"""
     from db_tables import TblTaskResult
     from sqlalchemy import and_
@@ -373,36 +373,29 @@ def update_result_file(ref_id, par_id, comment, penalty=None):
     from os import path
     from pathlib import Path
     import json
-    with Database() as db:
-        try:
-            row = db.session.query(TblResultFile).get(ref_id)
-            if not row:
-                print(f'Result entry with ID {ref_id} does not exist')
-                db.session.close()
-                return None
-            task_id = row.task_id
-            file = path.join(RESULTDIR, row.filename)
-            if not Path(file).is_file():
-                print(f'Json file with ID {ref_id} does not exist')
-                db.session.close()
-                return None
-            with open(file, 'r+') as f:
-                data = json.load(f)
-                result = next(res for res in data['results'] if res['par_id'] == par_id)
-                if not result:
-                    print(f'Result file has no pilot with ID {par_id}')
-                    db.session.close()
-                    return None
+    file = path.join(RESULTDIR, filename)
+    if not Path(file).is_file():
+        print(f'Json file {filename} does not exist')
+        return None
+    with open(file, 'r+') as f:
+        data = json.load(f)
+        task_id = data['info']['id']
+        result = next(res for res in data['results'] if res['par_id'] == par_id)
+        if not result:
+            print(f'Result file has no pilot with ID {par_id}')
+            return None
+        with Database() as db:
+            try:
                 pilot = db.session.query(TblTaskResult).filter(and_(TblTaskResult.par_id == par_id,
                                                                     TblTaskResult.task_id == task_id)).one()
                 if comment:
                     comment = '[admin] ' + str(comment)
                     result['comment'].append(comment)
                     pilot.comment = comment if not pilot.comment else pilot.comment + '; ' + comment
-                if penalty:
-                    old_penalty = result['penalty']
-                    result['penalty'] += penalty
-                    result['score'] = max(0, result['score'] - penalty + old_penalty)
+                if penalty is not None:
+                    result['penalty'] = penalty
+                    result['score'] = max(0, sum([result['arrival_score'], result['departure_score'],
+                                                 result['time_score'], result['distance_score']]) - penalty)
                     pilot.penalty = result['penalty']
                     pil_list = sorted([p for p in data['results'] if p['result_type'] not in ['dnf', 'abs']],
                                       key=lambda k: k['score'], reverse=True)
@@ -410,13 +403,14 @@ def update_result_file(ref_id, par_id, comment, penalty=None):
                     pil_list += [p for p in data['results'] if p['result_type'] == 'abs']
                     data['results'] = pil_list
                 db.session.flush()
-                f.seek(0)
-                f.write(json.dumps(data))
-                f.truncate()
-        except SQLAlchemyError as e:
-            print(f'Result file Query Error')
-            error = str(e.__dict__)
-            db.session.rollback()
-            db.session.close()
-            return error
+            except SQLAlchemyError as e:
+                print(f'Error updating result entry for participant ID {par_id}')
+                error = str(e.__dict__)
+                db.session.rollback()
+                db.session.close()
+                return error
+        f.seek(0)
+        f.write(json.dumps(data))
+        f.truncate()
+
 
