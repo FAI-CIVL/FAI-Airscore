@@ -1,25 +1,25 @@
 {% extends "layout.html"%}
 {% block content %}
 
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="">
-    <meta name="author" content="">
+<!--  <head>-->
+<!--    <meta charset="utf-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">-->
+<!--    <meta name="description" content="">-->
+<!--    <meta name="author" content="">-->
 
-    <!-- CSS -->
-    <link href="/static/css/task.css" rel="stylesheet">
-    <!-- <link href="navbar.css" rel="stylesheet"> -->
-    <link href="/static/css/spacelab_bootstrap.css" rel="stylesheet">
+<!--    &lt;!&ndash; CSS &ndash;&gt;-->
+<!--    <link href="/static/css/task.css" rel="stylesheet">-->
+<!--    &lt;!&ndash; <link href="navbar.css" rel="stylesheet"> &ndash;&gt;-->
+<!--    <link href="/static/css/spacelab_bootstrap.css" rel="stylesheet">-->
     <link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet">
 
-    <!-- JS -->
-    <script type="text/javascript" src="/static/js/utils.js"></script>
-    <script type="text/javascript" src="/static/js/microajax.minified.js"></script>
-  </head>
+<!--    &lt;!&ndash; JS &ndash;&gt;-->
+<!--    <script type="text/javascript" src="/static/js/utils.js"></script>-->
+<!--    <script type="text/javascript" src="/static/js/microajax.minified.js"></script>-->
+<!--  </head>-->
 
 <body>
-        <div class=" text-center " >
+        <div class="text-center">
             <h3 id="header"></h3>
         </div>
  <div class="container">
@@ -46,7 +46,7 @@
   <div class="container-fluid">
       <div class="row mb-3">
           <div class="col w-100">
-          <table id="task_result" class="row-border compact" cellspacing="0" width="100%">
+          <table id="task_result" class="row-border stripe compact" cellspacing="0" width="100%">
           <thead>
               <tr>
                   <th>#</th>
@@ -132,7 +132,7 @@
     </div>
   </div>
 </div>
-
+</div>
 <!-score-Modal ends here--->
 
 
@@ -300,8 +300,9 @@ var mydata = new Object();
         data: JSON.stringify(mydata),
         dataType: "json",
         success: function(response) {
-            if (response.redirect) {
-                window.location.href = response.redirect;
+            if (response.success) {
+                updateFiles();
+                $('#statusmodal').modal('hide');
             }
         }
     });
