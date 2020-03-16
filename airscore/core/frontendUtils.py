@@ -379,7 +379,7 @@ def get_score_header(files, offset):
             active_status = file['status']
             active = file['filename']
     if active_published:
-        header = f"Published result ran at:{active_published} Status:{active_status}"
+        header = f"Published result ran: {active_published} Status: {active_status}"
     else:
         header = "No published results"
     return header, active
