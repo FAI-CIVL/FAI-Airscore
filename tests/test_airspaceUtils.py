@@ -1,6 +1,6 @@
 import airspaceUtils
 import pytest
-from mock import patch
+# from mock import patch
 from igc_lib import GNSSFix
 
 

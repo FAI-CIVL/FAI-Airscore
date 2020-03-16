@@ -247,3 +247,8 @@ class ModifyTurnpointForm(FlaskForm):
                                         ('endspeed', 'ESS'), ('goal', 'Goal')])
     mod_shape = SelectField('Shape', choices=[('circle', 'Cylinder'), ('line', 'Line')])
     mod_how = SelectField('SSS Direction', choices=[('entry', 'Out/Enter'), ('exit', 'In/Exit')])
+
+
+class TaskResultAdminForm(FlaskForm):
+
+    result_file = SelectField('Scoring run')

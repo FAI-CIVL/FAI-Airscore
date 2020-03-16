@@ -5,7 +5,8 @@ from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify, json, flash, redirect, url_for
 from flask_login import login_required, current_user
 import frontendUtils
-from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm
+from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm, \
+    TaskResultAdminForm
 from comp import Comp
 from formula import list_formulas, Formula
 from task import Task, write_map_json
@@ -13,6 +14,9 @@ from route import save_turnpoint, Turnpoint
 from flight_result import update_status, delete_result
 from os import path, remove
 from sys import stdout
+from task import get_task_json_by_filename
+from calcUtils import sec_to_time
+import time
 
 blueprint = Blueprint("user", __name__, url_prefix="/users", static_folder="../static")
 
@@ -289,7 +293,7 @@ def task_admin(taskid):
             task.formula.max_JTG = taskform.max_JTG.data
             task.formula.no_goal_penalty = taskform.no_goal_penalty.data
             task.formula.arr_alt_bonus = taskform.arr_alt_bonus.data
-            task.update_task_info()
+            task.to_db()
 
             flash("Saved", category='info')
 
@@ -425,8 +429,7 @@ def _get_adv_settings():
 @blueprint.route('/_get_task_turnpoints/<taskid>', methods=['GET'])
 @login_required
 def _get_task_turnpoints(taskid):
-    task = Task()
-    task.task_id = taskid
+    task = Task(task_id=int(taskid))
     turnpoints = frontendUtils.get_task_turnpoints(task)
     return jsonify(turnpoints)
 
@@ -509,7 +512,14 @@ def _del_all_turnpoints(taskid):
 @blueprint.route('/_get_tracks_admin/<taskid>', methods=['GET'])
 @login_required
 def _get_tracks_admin(taskid):
-    return jsonify({'data':frontendUtils.get_pilot_list_for_track_management(taskid)})
+    return jsonify({'data': frontendUtils.get_pilot_list_for_track_management(taskid)})
+
+
+@blueprint.route('/_get_tracks_processed/<taskid>', methods=['GET'])
+@login_required
+def _get_tracks_processed(taskid):
+    tracks, pilots = frontendUtils.number_of_tracks_processed(taskid)
+    return jsonify({'tracks': tracks, 'pilots': pilots})
 
 
 @blueprint.route('/track_admin/<taskid>', methods=['GET'])
@@ -604,3 +614,174 @@ def _upload_XCTrack(taskid):
 
             resp = jsonify(success=True)
             return resp
+
+
+
+@blueprint.route('/_upload_track_zip/<taskid>', methods=['GET', 'POST'])
+@login_required
+def _upload_track_zip(taskid):
+    taskid = int(taskid)
+    if request.method == "POST":
+        if request.files:
+
+            if "filesize" in request.cookies:
+
+                if not frontendUtils.allowed_tracklog_filesize(request.cookies["filesize"]):
+                    print("Filesize exceeded maximum limit")
+                    return redirect(request.url)
+
+                zip_file = request.files["zip_file"]
+
+                if zip_file.filename == "":
+                    print("No filename")
+                    return redirect(request.url)
+
+                if frontendUtils.allowed_tracklog(zip_file.filename, extension=['zip']):
+                    task = Task.read(taskid)
+                    data = frontendUtils.process_igc_zip(task, zip_file)
+                    resp = jsonify(data)
+                    return resp
+
+                else:
+                    print("That file extension is not allowed")
+                    return redirect(request.url)
+            resp = jsonify({'error': 'filesize'})
+            return resp
+        resp = jsonify({'error': 'request.files'})
+        return resp
+
+
+@blueprint.route('/_get_task_result_files/<taskid>', methods=['GET', 'POST'])
+@login_required
+def _get_task_result_files(taskid):
+    data = request.json
+    files = frontendUtils.get_task_result_file_list(int(taskid))
+    header, active = frontendUtils.get_score_header(files, data['offset'])
+    choices = []
+    offset = (int(data['offset'])/60*-1)*3600
+    for file in files:
+        published = time.ctime(file['created'] + offset)
+        choices.append((file['filename'], f"{published} - {file['status']}"))
+    choices.reverse()
+    return jsonify({'choices': choices, 'header': header, 'active': active})
+
+
+@blueprint.route('/_get_task_score_from_file/<taskid>/<filename>', methods=['GET'])
+@login_required
+def _get_task_score_from_file(taskid, filename):
+    error = None
+    result_file = get_task_json_by_filename(filename)
+    if not result_file:
+        return jsonify({'data': ''})
+    taskid = int(taskid)
+    rank = 1
+    all_pilots = []
+    for r in result_file['results']:
+        track_id = r['track_id']
+        name = r['name']
+        pilot = {'rank': rank, 'name': f'<a href="/map/{track_id}-{taskid}">{name}</a>'}
+        if r['SSS_time']:
+            pilot['SSS'] = sec_to_time(r['SSS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S")
+        else:
+            pilot['SSS'] = ""
+        if r['ESS_time'] == 0 or r['ESS_time'] is None:
+            pilot['ESS'] = ""
+            pilot['time'] = ""
+        else:
+            pilot['ESS'] = sec_to_time(r['ESS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S")
+            pilot['time'] = sec_to_time(r['ESS_time'] - r['SSS_time']).strftime("%H:%M:%S")
+
+        pilot['altbonus'] = ""  # altitude bonus
+        pilot['distance'] = round(r['distance'] / 1000, 2)
+        pilot['speedP']  = round(r['time_score'], 2)
+        pilot['leadP'] = round(r['departure_score'], 2)
+        pilot['arrivalP'] = round(r['arrival_score'], 2) # arrival points
+        pilot['distanceP'] = round(r['distance_score'], 2)
+        pilot['penalty'] = round(r['penalty'], 2) if r['penalty'] else ""
+        pilot['score'] = round(r['score'], 2)
+        # TODO once result files have a list of comments we can activate these lines and remove the 3 dummy lines below
+        # pilot['Track Comment'] = r['comment'][0]
+        # pilot['Penalty Comment'] = r['comment'][1]
+        # pilot['Admin Comment'] = r['comment'][2]
+        pilot['Track Comment'] = 'test track comment'
+        pilot['Penalty Comment'] = 'test penalt comment'
+        pilot['Admin Comment'] = 'test admin comment'
+
+        all_pilots.append(pilot)
+        rank += 1
+
+    return jsonify({'data': all_pilots})
+
+
+@blueprint.route('/task_score_admin/<taskid>', methods=['GET', 'POST'])
+@login_required
+def task_score_admin(taskid):
+    taskid = int(taskid)
+    fileform = TaskResultAdminForm()
+    active_file = None
+    # files = frontendUtils.get_task_result_file_list(taskid)
+    choices = [(1,1),(2,2)]
+    # for file in files:
+    #     # published = ''
+    #     if file['active'] == 1:
+    #         active_file = file['filename']
+    #         # published = " - published"
+    #     choices.append((file['filename'], f"{time.ctime(file['created'])} - {file['status']}"))
+    fileform.result_file.choices = choices
+    if active_file:
+        fileform.result_file.data = active_file
+
+    return render_template('users/task_score_admin.html', fileform=fileform, taskid=taskid,
+                           active_file=active_file)
+
+
+@blueprint.route('/_score_task/<taskid>', methods=['POST'])
+@login_required
+def _score_task(taskid):
+    from result import unpublish_result, publish_result
+    """score task, request data should contain status: the score status (provisional, official etc),
+    autopublish: True or False. indicates if to publish results automatically after scoring"""
+    data = request.json
+    taskid = int(taskid)
+    task = Task.read(taskid)
+    ref_id = task.create_results(data['status'])
+    if ref_id:
+        if data['autopublish']:
+            unpublish_result(taskid)
+            publish_result(ref_id, ref_id=True)
+        return jsonify(dict(redirect='/users/task_score_admin/' + str(taskid)))
+    return render_template('500.html')
+
+
+@blueprint.route('/_unpublish_result/<taskid>', methods=['POST'])
+@login_required
+def _unpublish_result(taskid):
+    from result import unpublish_result
+    unpublish_result(taskid)
+    header = "No published results"
+    resp = jsonify(filename='', header=header)
+    return resp
+
+
+@blueprint.route('/_publish_result/<taskid>', methods=['POST'])
+@login_required
+def _publish_result(taskid):
+    from result import publish_result, unpublish_result
+    data = request.json
+    unpublish_result(taskid)
+    publish_result(data['filename'])
+    run_at, status = data['filetext'].split('-')
+    header = f"Published result ran at:{run_at} Status:{status}"
+    resp = jsonify(filename=data['filename'], header=header)
+    return resp
+
+
+@blueprint.route('/_change_result_status/<taskid>', methods=['POST'])
+@login_required
+def _change_result_status(taskid):
+    # from result import update_result_status
+    data = request.json
+    # update_result_status(data['filename'], data['status'])
+    resp = jsonify(success=True)
+    return resp
+

@@ -809,7 +809,7 @@ def get_shortest_path(task, fix=None, pointer=None):
         finished = (last_dist - planar_dist < tolerance)
         last_dist = planar_dist
         opsCount -= 1
-    print(f'iterations made: {count * 10 - opsCount} | distance: {planar_dist}')
+    # print(f'iterations made: {count * 10 - opsCount} | distance: {planar_dist}')
 
     if fix:
         '''return opt dist to goal'''

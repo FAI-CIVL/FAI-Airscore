@@ -90,7 +90,8 @@ def get_task_list(comp):
             last_region = task['reg_id']
         # if task['task_name'] is None or task['task_name'] == '':
         #     task['task_name'] = f'Task {tasknum}'
-        task['link'] = f'<a href="/users/task_admin/{taskid}">Task {tasknum}</a>'
+        task['num'] = f"Task {tasknum}"
+        # task['link'] = f'<a href="/users/task_admin/{taskid}">Task {tasknum}</a>'
         task['opt_dist'] = 0 if not task['opt_dist'] else round(task['opt_dist']/1000, 2)
         task['opt_dist'] = f"{task['opt_dist']} km"
         if task['comment'] is None:
@@ -223,16 +224,16 @@ def get_pilot_list_for_track_management(taskid):
     return all_data
 
 
-def allowed_tracklog(filename):
+def allowed_tracklog(filename, extension=['IGC']):
 
-    if not "." in filename:
+    if "." not in filename:
         return False
 
     # Split the extension from the filename
     ext = filename.rsplit(".", 1)[1]
 
-    # Check if the extension is in ALLOWED_IMAGE_EXTENSIONS
-    if ext.upper() in ['IGC']:
+    # Check if the extension is allowed (make everything uppercase)
+    if ext.upper() in [e.upper() for e in extension]:
         return True
     else:
         return False
@@ -250,9 +251,6 @@ def process_igc(task_id, par_id, tracklog):
     from task import Task
     from track import Track
     from pilot import Pilot
-    # from trackUtils import verify_track, import_track
-    # from db_tables import TblParticipant as P
-    # from formula import TaskFormula, get_formula_lib
     from flight_result import Flight_result
     from airspace import AirspaceCheck
     from igc_lib import Flight
@@ -310,3 +308,78 @@ def process_igc(task_id, par_id, tracklog):
             result = data['Result']
             data['Result']  = f'<a href="/map/{trackid}-{task_id}">{result}</a>'
     return data
+
+
+def process_igc_zip(task, zipfile):
+    from trackUtils import extract_tracks, get_tracks, assign_and_import_tracks
+    from tempfile import TemporaryDirectory
+
+    if task.opt_dist == 0:
+        print('task not optimised.. optimising')
+        task.calculate_optimised_task_length()
+
+    """create a temporary directory"""
+    with TemporaryDirectory() as tracksdir:
+        error = extract_tracks(zipfile, tracksdir)
+        if error:
+            print(f"An error occurred while dealing with file {zipfile} \n")
+            return None
+        """find valid tracks"""
+        tracks = get_tracks(tracksdir)
+        if tracks is None:
+            print(f"There are no valid tracks in zipfile {zipfile} \n")
+            return None
+
+        """associate tracks to pilots and import"""
+        assign_and_import_tracks(tracks, task)
+        return 'Success'
+
+
+def get_task_result_file_list(taskid):
+    from db_tables import TblResultFile as R
+    with Database() as db:
+        try:
+            files = db.session.query(R.created, R.filename, R.status, R.active, R.ref_id).filter(
+                                               R.task_id == taskid).all()
+            if files:
+                files = [row._asdict() for row in files]
+
+        except SQLAlchemyError:
+            print("there was a problem with getting the result list")
+            return None
+
+        return files
+
+
+def number_of_tracks_processed(taskid):
+    from db_tables import TblTaskResult as R, TblParticipant as P, TblTask as T
+    from sqlalchemy import func
+    with Database() as db:
+        try:
+            results = db.session.query(func.count()).filter(R.task_id == taskid).scalar()
+            pilots = db.session.query(func.count(P.par_id)).outerjoin(T, P.comp_id == T.comp_id).filter(T.task_id == taskid).scalar()
+
+        except SQLAlchemyError:
+            print("there was a problem with getting the pilot/result list")
+            return None
+    return results, pilots
+
+
+def get_score_header(files, offset):
+    import time
+    active_published = None
+    active_status = None
+    active = None
+    header = "This task has not been scored"
+    offset = (int(offset)/60*-1)*3600
+    for file in files:
+        published = time.ctime(file['created'] + offset)
+        if int(file['active']) == 1:
+            active_published = published
+            active_status = file['status']
+            active = file['filename']
+    if active_published:
+        header = f"Published result ran: {active_published} Status: {active_status}"
+    else:
+        header = "No published results"
+    return header, active

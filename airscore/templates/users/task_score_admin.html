@@ -1,0 +1,316 @@
+{% extends "layout.html"%}
+{% block content %}
+
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- CSS -->
+    <link href="/static/css/task.css" rel="stylesheet">
+    <!-- <link href="navbar.css" rel="stylesheet"> -->
+    <link href="/static/css/spacelab_bootstrap.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet">
+
+    <!-- JS -->
+    <script type="text/javascript" src="/static/js/utils.js"></script>
+    <script type="text/javascript" src="/static/js/microajax.minified.js"></script>
+  </head>
+
+<body>
+        <div class=" text-center " >
+            <h3 id="header"></h3>
+        </div>
+ <div class="container">
+    <div id = "display_file">
+       <div class="form-row form-group col-md-12">
+                 <button class="btn btn-primary ml-4" type="button" onclick="Score_modal();">
+      Score Task
+      </button>
+
+      <button class="btn btn-warning ml-4" type="button" onclick="FullRescore();">
+      Full Rescore
+      </button>
+           &nbsp;
+            {{fileform.result_file.label}}&nbsp;{{fileform.result_file(**{'id':"file"})}}
+           <button id="publish" class="btn btn-danger ml-4" type="button" onclick="toggle_publish();">
+            Un-publish results
+            </button>
+            <button id="change_status" class="btn btn-primary ml-4" type="button" onclick="open_status_modal();">
+            Edit Status
+            </button>
+       </div>
+    </div>
+ </div>
+  <div class="container-fluid">
+      <div class="row mb-3">
+          <div class="col w-100">
+          <table id="task_result" class="row-border compact" cellspacing="0" width="100%">
+          <thead>
+              <tr>
+                  <th>#</th>
+                  <th>Pilot</th>
+                  <th>SS</th>
+                  <th>ES</th>
+                  <th>Time</th>
+                  <th id="altbonus">alt bonus</th>
+                  <th>Kms</th>
+                  <th>Spd p</th>
+                  <th id="leading">LO p</th>
+                  <th>Arv</th>
+                  <th>Dst p</th>
+                  <th>Pen</th>
+                  <th>Tot</th>
+<!--                  <th>Notes</th>-->
+<!--                  <th>Actions</th>-->
+              </tr>
+          </thead>
+          </table>
+          </div>
+      </div>
+
+  </div>
+
+</body>
+<!---status-modal starts here--->
+<div id="statusmodal" class="modal fade" tabindex="-1" role='dialog'>
+   <div class="modal-dialog" role="document">
+      <div class="modal-content">
+         <div class="modal-header">
+            <h4 class="modal-title">Edit Status</h4>
+             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+         </div>
+         <div class="modal-body" id= "statusmodal-body">
+            <div class="container-fluid">
+             <div class="col-md-12">
+
+                   <br>
+                 <label for="autopublish">Status:</label>
+             <input type="text" id="status_modal_comment" class="form-control" placeholder="partial/provisional/official etc.">
+            </div>
+            </div>
+               <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <button type="button"  onclick="change_status()" class="btn btn-primary">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<!-status-Modal ends here--->
+
+<!---score-modal starts here--->
+<div id="scoremodal" class="modal fade" tabindex="-1" role='dialog'>
+   <div class="modal-dialog" role="document">
+      <div class="modal-content">
+         <div class="modal-header">
+            <h4 class="modal-title">Score Task</h4>
+             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+         </div>
+         <div class="modal-body" id= "scoremodal-body">
+            <div class="container-fluid">
+             <div class="col-md-12">
+             <input type="checkbox" class="form-check-input" id="autopublish" name="autopublish" value="1">
+            <label class="form-check-label" for="autopublish">publish results after scoring</label>
+                 <br>
+                   <br>
+                 <label for="autopublish">Status:</label>
+             <input type="text" id="status_comment" class="form-control" placeholder="partial/provisional/official etc.">
+
+             <small id="helptxt" class="form-text text-muted">This can be done later also.</small>
+            </div>
+            </div>
+               <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <button type="button"  onclick="Score()" class="btn btn-primary">Score</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-score-Modal ends here--->
+
+
+
+{% endblock %}
+{% block js %}
+{% include "js.html" %}
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="/static/js/pop_task_score_admin.js"></script>
+    <script type="text/javascript">populate_task_scores({{taskid}},{{active_file|tojson}})</script>
+    <script type="text/javascript">
+var active_file = '';
+
+// jQuery selection for the file select box
+var dropdown = {
+    file: $('#file')
+};
+
+
+
+
+function update_publish_button(filename) {
+
+    if (filename == active_file) {
+        $('#publish').text('Un-Publish results');
+        $('#publish').addClass('btn-danger').removeClass('btn-success');
+
+    } else {
+        $('#publish').text('Publish results');
+        $('#publish').addClass('btn-success').removeClass('btn-danger');
+    }
+
+
+}
+
+
+function toggle_publish() {
+    var mydata = new Object();
+    mydata.filetext = $('#file option:selected').text();
+    mydata.filename = $('#file option:selected').val();
+    var url = ''
+    if (mydata.filename == active_file) {
+        url = "{{ url_for('user._unpublish_result', taskid=taskid)}}"
+    } else {
+        url = '/users/_publish_result/' + {{taskid}}
+    }
+
+    $.ajax({
+        type: "POST",
+        url: url,
+        contentType: "application/json",
+        data: JSON.stringify(mydata),
+        dataType: "json",
+        success: function(response) {
+                active_file = response.filename
+                update_publish_button(mydata.filename);
+                $('#header').text(response.header)
+        }
+    });
+
+}
+
+
+function updateFiles() {
+    var mydata = new Object();
+    mydata.offset = new Date().getTimezoneOffset();
+    dropdown.file.attr('disabled', 'disabled');
+    dropdown.file.empty();
+        $.ajax({
+        type: "POST",
+        url: "{{ url_for('user._get_task_result_files', taskid=taskid)}}",
+        contentType: "application/json",
+        data: JSON.stringify(mydata),
+        dataType: "json",
+        success: function(response) {
+        $('#header').text(response.header)
+        response.choices.forEach(function(item) {
+            dropdown.file.append(
+                $('<option>', {
+                    value: item[0],
+                    text: item[1]
+                })
+            );
+        });
+        dropdown.file.removeAttr('disabled');
+        if(response.active){
+        active_file = response.active;
+        $("#file").val(response.active);
+        }
+
+        var filename = $('#file option:selected').val();
+        update_publish_button(filename);
+        var status = $('#file option:selected').text().split(' - ')[1];
+        $('#status_modal_comment').val(status);
+        populate_task_scores({{taskid}}, filename);
+        }
+    });
+
+}
+
+function Score_modal() {
+    $('#scoremodal').modal('show');
+}
+
+function open_status_modal() {
+    $('#statusmodal').modal('show');
+}
+
+
+function Score() {
+    var mydata = new Object();
+    mydata.autopublish = $("#autopublish").is(':checked');
+    mydata.status = $('#status_comment').val();
+
+    $.ajax({
+        type: "POST",
+        url: "{{ url_for('user._score_task', taskid=taskid)}}",
+        contentType: "application/json",
+        data: JSON.stringify(mydata),
+        dataType: "json",
+        success: function(response) {
+            if (response.redirect) {
+                window.location.href = response.redirect;
+            }
+        }
+    });
+
+
+}
+
+function FullRescore() {
+
+
+
+}
+
+$(document).ready(function() {
+updateFiles();
+
+
+    // Event listener to the file picker to redraw on input
+    $('#file').change(function() {
+
+        var filename = $('#file option:selected').val();
+        var status = $('#file option:selected').text().split(' - ')[1];
+        update_publish_button(filename);
+        populate_task_scores({{taskid}}, filename);
+        $('#status_modal_comment').val(status);
+
+    });
+});
+
+
+
+function change_status() {
+var mydata = new Object();
+
+    mydata.status = $('#status_modal_comment').val();
+    mydata.filename = $('#file option:selected').val();
+
+    $.ajax({
+        type: "POST",
+        url: "{{ url_for('user._change_result_status', taskid=taskid)}}",
+        contentType: "application/json",
+        data: JSON.stringify(mydata),
+        dataType: "json",
+        success: function(response) {
+            if (response.redirect) {
+                window.location.href = response.redirect;
+            }
+        }
+    });
+
+
+
+}
+
+
+    </script>
+
+{% endblock %}

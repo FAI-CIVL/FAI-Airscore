@@ -14,6 +14,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from Defines import FILEDIR, MAPOBJDIR, track_sources, track_formats
 from flight_result import Flight_result
 from myconn import Database
+import re
 
 
 def extract_tracks(file, dir):
@@ -38,21 +39,21 @@ def extract_tracks(file, dir):
     return error
 
 
-def get_tracks(dir):
+def get_tracks(directory):
     """Checks files and imports what appear to be tracks"""
     files = []
 
-    print(f"Directory: {dir} \n")
+    print(f"Directory: {directory} \n")
     print(f"Looking for files \n")
 
     """check files in temporary directory, and get only tracks"""
-    for file in listdir(dir):
+    for file in listdir(directory):
         print(f"checking: {file} \n")
         if (not (file.startswith(".") or file.startswith("_"))) and file.lower().endswith(".igc"):
             """file is a valid track"""
             print(f"valid filename: {file} \n")
             """add file to tracks list"""
-            files.append(path.join(dir, file))
+            files.append(path.join(directory, file))
         else:
             print(f"NOT valid filename: {file} \n")
 
@@ -67,6 +68,7 @@ def assign_and_import_tracks(files, task, xcontest=False):
     """Find pilots to associate with tracks"""
     from compUtils import get_registration, get_task_path
     from track import Track
+    from trackUtils import get_unscored_pilots
 
     pilot_list = []
     print(f"We have {len(files)} track to associate \n")
@@ -80,9 +82,9 @@ def assign_and_import_tracks(files, task, xcontest=False):
     if registration:
         """We add tracks for the registered pilots not yet scored"""
         print("Comp with registration: files will be checked against registered pilots not yet scored \n")
-        pilot_list = get_non_scored_pilots(task_id, xcontest)
+        pilot_list = get_unscored_pilots(task_id, xcontest)
 
-    track_path = get_task_path(task_id)
+    track_path = task.file_path
 
     # print("found {} tracks \n".format(len(files)))
     for file in files:
@@ -92,12 +94,12 @@ def assign_and_import_tracks(files, task, xcontest=False):
             if len(pilot_list) > 0:
                 print(f"checking {filename} against {len(pilot_list)} pilots... \n")
                 """check filenames to find pilots"""
-                pilot_id, full_name = get_pilot_from_list(filename, pilot_list)
-                if pilot_id:
+                pilot, full_name = get_pilot_from_list(filename, pilot_list)
+                if pilot:
                     """found a pilot for the track file.
                     dropping pilot from list and creating track obj"""
-                    print(f"Found a pilot to associate with file. dropping {pilot_id} from non scored list \n")
-                    pilot_list[:] = [d for d in pilot_list if d.get('par_id') != pilot_id]
+                    print(f"Found a pilot to associate with file. dropping {pilot.name} from non scored list \n")
+                    pilot_list[:] = [d for d in pilot_list if d.par_id != pilot.par_id]
                     mytrack = Track.read_file(filename=file)
         else:
             """We add track if we find a pilot in database
@@ -109,7 +111,7 @@ def assign_and_import_tracks(files, task, xcontest=False):
                 mytrack = None
         """check result"""
         if not mytrack:
-            print(f"Track {filename} is not a valid track file \n")
+            print(f"Track {filename} is not a valid track file or pilot not found in competition\n")
         elif not mytrack.date == task_date:
             print(f"track {filename} has a different date from task \n")
         else:
@@ -118,22 +120,27 @@ def assign_and_import_tracks(files, task, xcontest=False):
             mytrack.task_id = task_id
             mytrack.copy_track_file(task_path=track_path, pname=full_name)
             print(f"pilot {mytrack.par_id} associated with track {mytrack.filename} \n")
-            import_track(mytrack)
-            verify_track(mytrack, task)
+            pilot.track = mytrack
+            verify_and_import_track(pilot, task)
 
 
-def import_track(track, task_id):
-    track.to_db(task_id)
-    return track.track_id
+def import_track(pilot, task_id):
+    pilot.track.to_db(task_id)
+    return pilot.track.track_id
 
 
-def verify_track(track, task):
-    lib = task.formula.get_lib()
-    task_result = Flight_result.check_flight(track.flight, task)  # check flight against task
-    task_result.to_db(task.id, track.track_id)
-    print(track.flight.notes)
+def verify_and_import_track(pilot, task):
+    from airspace import AirspaceCheck
 
-    return task_result
+    if task.airspace_check:
+        airspace = AirspaceCheck.from_task(task)
+    else:
+        airspace = None
+    pilot.result = Flight_result.check_flight(pilot.track.flight, task, airspace_obj=airspace)  # check flight against task
+    pilot.to_db()
+    print(pilot.track.flight.notes)
+
+    return pilot.result
 
 
 def find_pilot(name):
@@ -252,9 +259,14 @@ def get_unscored_pilots(task_id, xcontest=False):
                 db.populate_obj(participant, p)
                 pilot = Pilot.create(task_id=task_id, info=participant)
                 pilot_list.append(pilot)
-        except SQLAlchemyError:
-            print(f"Error trying to retrieve unscored pilots from database")
+        except SQLAlchemyError as e:
+            error = str(e.__dict__)
+            print(f"Error trying to retrieve unscored pilots from database {error}")
             db.session.rollback()
+            db.session.close()
+            return error
+
+
 
     return pilot_list
 
@@ -273,27 +285,30 @@ def get_pilot_from_list(filename, pilots):
 
     """Try to get pilot from filename, using ID, CIVLID or name."""
     fields = string.replace('.', ' ').replace('_', ' ').replace('-', ' ').lower().split()
+    # strip out all numbers and other non letters. So we can process igc files like the ones airscore saves.
+    string_alpha_only = re.sub('[^a-zA-Z]+', ' ', string)
+    fields_alpha_only = string_alpha_only.replace('.', ' ').replace('_', ' ').replace('-', ' ').lower().split()
     for idx, pilot in enumerate(pilots):
         civl_id = pilot.info.civl_id
-        fullname = pilot.info.name.replace(' ', '_').lower()
+        fullname = pilot.info.name.replace('_', ' ').lower().split()
         ID = pilot.info.ID
-        if all(n in fields for n in fullname):
+        if all(n in fields_alpha_only for n in fullname):
             '''found a pilot'''
             pilot.track.track_file = filename
-            return pilot, idx
+            return pilot, '_'.join(fullname)
 
-        elif any(int(f) == ID for f in fields) and any(n in fields for n in fullname):
+        elif any(f == str(ID) for f in fields) and any(n in fields for n in fullname):
             '''found a pilot'''
             pilot.track.track_file = filename
             pilot.track.comment = f'Pilot found using name {pilot.name.lower()} and ID {ID}'
-            return pilot, idx
+            return pilot, '_'.join(fullname)
 
-        elif any(int(f) == civl_id for f in fields) and any(n in fields for n in fullname):
+        elif any(f == str(civl_id) for f in fields) and any(n in fields for n in fullname):
             '''found a pilot'''
             pilot.track.track_file = filename
             pilot.track.comment = f'Pilot found using name {pilot.name.lower()} and CIVLID {civl_id}'
-            return pilot, idx
-
+            return pilot, '_'.join(fullname)
+    return None, None
 
 def assign_tracks(task, file_dir, pilots_list, source):
     """ This function will look for tracks in giver dir or in task_path, and tries to associate tracks to participants.

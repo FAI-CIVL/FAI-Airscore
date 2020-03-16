@@ -20,7 +20,8 @@ Stuart Mackintosh - Antonio Golfari
 
 from db_tables import TblResultFile
 from myconn import Database
-
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import update
 
 class Task_result:
     """
@@ -299,6 +300,45 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None):
     return ref_id
 
 
+def unpublish_result(taskid, session=None):
+    """unpublish (set active to 0) all result files for a task"""
+    with Database(session) as db:
+        try:
+            db.session.query(TblResultFile).filter(TblResultFile.task_id == taskid).update({'active': 0})
+            db.session.commit()
+            if not session:
+                db.session.close()
+        except SQLAlchemyError as e:
+            error = str(e.__dict__)
+            print(f"Error unpublishing result in database: {error}")
+            db.session.rollback()
+            db.session.close()
+            return error
+        return 1
+
+
+def publish_result(filename_or_refid, ref_id=False, session=None):
+    """publish (set active to 1) a result files, by default takes filename of result to publish,
+    otherwise ref_id if ref_id flag True"""
+
+    with Database(session) as db:
+        try:
+            if ref_id:
+                db.session.query(TblResultFile).filter(TblResultFile.ref_id == filename_or_refid).update({'active': 1})
+            else:
+                db.session.query(TblResultFile).filter(TblResultFile.filename == filename_or_refid).update({'active': 1})
+            db.session.commit()
+            if not session:
+                db.session.close()
+        except SQLAlchemyError as e:
+            error = str(e.__dict__)
+            print(f"Error publishing result in database: {error}")
+            db.session.rollback()
+            db.session.close()
+            return error
+        return 1
+
+
 def update_result_status(ref_id, status):
     from os import path as p
     import json
@@ -329,7 +369,6 @@ def update_result_file(ref_id, par_id, comment, penalty=None):
     """gets result file id and info to update from frontend"""
     from db_tables import TblTaskResult
     from sqlalchemy import and_
-    from sqlalchemy.exc import SQLAlchemyError
     from Defines import RESULTDIR
     from os import path
     from pathlib import Path

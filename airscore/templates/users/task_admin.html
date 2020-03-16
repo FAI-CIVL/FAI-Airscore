@@ -23,8 +23,14 @@
       <a href="{{ url_for('user.comp_settings_admin', compid=compid)}}" class="btn btn-info ml-4" type="button" >
       Back to competition settings
       </a>
-      <a href="{{ url_for('user.track_admin', taskid=taskid)}}" class="btn btn-info ml-4" type="button" >Manage Tracks</a>
+      <a href="{{ url_for('user.track_admin', taskid=taskid)}}" class="btn btn-info ml-4" type="button" >
+         Manage Tracks
+      </a>
+            <a href="{{ url_for('user.task_score_admin', taskid=taskid)}}" class="btn btn-info ml-4" type="button" >
+         Manage Scores
+      </a>
       <br>
+
       </p>
    <p>
       <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse1" aria-expanded="false" aria-controls="collapse1">
