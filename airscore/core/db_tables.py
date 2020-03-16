@@ -561,12 +561,15 @@ class TblRegion(Base):
 
 class TblResultFile(Base):
     __tablename__ = 'tblResultFile'
+    __table_args__ = (
+        Index('ref_id', 'filename'),
+    )
 
     ref_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
     comp_id = Column(INTEGER(11), nullable=False)
     task_id = Column(INTEGER(11))
     created = Column(INTEGER(11), nullable=False)
-    filename = Column(MEDIUMTEXT)
+    filename = Column(VARCHAR(80), index=True)
     status = Column(VARCHAR(255))
     active = Column(TINYINT(1), nullable=False, server_default=text("'0'"))
 
