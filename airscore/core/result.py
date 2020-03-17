@@ -339,30 +339,36 @@ def publish_result(filename_or_refid, ref_id=False, session=None):
         return 1
 
 
-def update_result_status(ref_id, status):
-    from os import path as p
+def update_result_status(filename, status):
+    from Defines import RESULTDIR
+    from os import path
+    from pathlib import Path
     import json
-
-    with Database() as db:
-        result = db.session.query(TblResultFile).get(ref_id)
-        file = result.filename
-        '''check if json file exists, and updates it'''
-        if p.isfile(file):
-            '''update status in json file'''
-            with open(file, 'r+') as f:
-                d = json.load(f)
-                d['data']['status'] = status
-                f.seek(0)
-                f.write(json.dumps(d))
-                f.truncate()
-                print(f'JSON file has been updated \n')
-            '''update status in database'''
-            result.status = status
-            db.session.commit()
-            return 1
-        else:
-            print(f"Couldn't find a JSON file for this result \n")
-            return 0
+    '''check if json file exists, and updates it'''
+    file = path.join(RESULTDIR, filename)
+    if not Path(file).is_file():
+        print(f'Json file {filename} does not exist')
+        return None
+    with open(file, 'r+') as f:
+        '''update status in json file'''
+        d = json.load(f)
+        d['file_stats']['status'] = status
+        f.seek(0)
+        f.write(json.dumps(d))
+        f.truncate()
+        print(f'JSON file has been updated \n')
+        '''update status in database'''
+        with Database() as db:
+            try:
+                result = db.session.query(TblResultFile).filter(TblResultFile.filename == filename).one()
+                result.status = status
+                db.session.flush()
+            except SQLAlchemyError as e:
+                print(f'Error updating result file {filename}')
+                error = str(e.__dict__)
+                db.session.rollback()
+                db.session.close()
+                return error
 
 
 def update_result_file(filename, par_id, comment=None, penalty=None):
