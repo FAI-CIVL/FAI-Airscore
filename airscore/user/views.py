@@ -414,9 +414,9 @@ def _get_tasks(compid):
 def _get_adv_settings():
     data = request.json
     formula = Formula.from_preset(data['category'], data['formula'])
-    settings = {'distance': formula.formula_distance, 'arrival': formula.formula_arrival,
-                'departure': formula.formula_departure, 'lead_factor': formula.lead_factor,
-                'time': formula.formula_time, 'no_goal_penalty': formula.no_goal_penalty,
+    settings = {'formula_distance': formula.formula_distance, 'formula_arrival': formula.formula_arrival,
+                'formula_departure': formula.formula_departure, 'lead_factor': formula.lead_factor,
+                'formula_time': formula.formula_time, 'no_goal_penalty': formula.no_goal_penalty,
                 'glide_bonus': formula.glide_bonus, 'tolerance': formula.tolerance,
                 'min_tolerance': formula.min_tolerance, 'arr_alt_bonus': formula.height_bonus,
                 'arr_max_height': formula.arr_max_height, 'arr_min_height': formula.arr_min_height,
