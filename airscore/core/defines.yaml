@@ -38,3 +38,6 @@ dir:
   airspace_check: /app/airscore/data/airspace/check_file/
 
 
+g_record_validation_server: http://vali.fai-civl.org/api/vali/json
+
+

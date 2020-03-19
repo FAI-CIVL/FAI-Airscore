@@ -263,3 +263,27 @@ class Track(object):
                 print('Error copying file:', fullname)
         else:
             print('error, path not created')
+
+
+def validate_G_record(igc_filename):
+    """validates g record by passing the file to a validation server.
+    Assumtion is that the protocol is the same as the FAI server (POST)
+    :argument igc_filename (full path and filename of igc_file)
+    :returns PASSED, FAILED or ERROR"""
+    from requests import post
+    from Defines import G_Record_validation_Server
+    try:
+        with open(igc_filename, 'rb') as igc:
+            file = {'igcfile': igc}
+            r = post(G_Record_validation_Server, files=file)
+            if r.json()['result'] in ('PASSED', 'FAILED'):
+                return r.json()['result']
+            else:
+                return 'ERROR'
+
+    except IOError:
+        print
+        "Could not read file:", igc_filename
+        return 'ERROR'
+
+

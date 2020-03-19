@@ -43,6 +43,7 @@ DATABASE = secret['db']['Name']  # mysql db name
 ''' Other Settings'''
 XC_LOGIN = secret['xcontest']['User']
 XC_password = secret['xcontest']['Pass']
+G_Record_validation_Server = config['g_record_validation_server']
 
 '''Competition options'''
 SANCTIONS = config['sanctions']
