@@ -12,6 +12,7 @@ Stuart Mackintosh Antonio Golfari - 2019
 
 from openpyxl import load_workbook
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import aliased
 
 from calcUtils import get_date
 from civlrankings import create_participant_from_CIVLID, create_participant_from_name
@@ -26,7 +27,7 @@ class Participant(object):
 
     def __init__(self, par_id=None, comp_id=None, ID=None, civl_id=None, name=None, sex=None, birthdate=None,
                  nat=None, glider=None, glider_cert=None, sponsor=None, fai_id=None, fai_valid=1, xcontest_id=None,
-                 team=None, nat_team=1, status=None, ranking=None, paid=None):
+                 team=None, nat_team=1, status=None, ranking=None, paid=None, pil_id=None):
 
         self.par_id = par_id  # pil_id
         self.comp_id = comp_id  # comp_id
@@ -48,7 +49,7 @@ class Participant(object):
         self.status = status  # 'confirmed', 'waiting list', 'wild card', 'cancelled', ?
         self.ranking = ranking  # WPRS Ranking?
         self.live_id = None     # int
-        self.pil_id = None  # PilotView id
+        self.pil_id = pil_id  # PilotView id
 
     def __setattr__(self, attr, value):
         if attr in ('name', 'glider') and type(value) is str:
@@ -157,9 +158,40 @@ class Participant(object):
         pilot.glider = pil.get('glider')
         pilot.sponsor = pil.get('sponsor')
         """check fai is int"""
-        pilot.fai_valid = int(pil.get('fai_licence') if pil.get('fai_licence') else 0)
+        if pil.get('fai_licence'):
+            pilot.fai_valid = True
+            pilot.fai_id = pil.get('fai_licence')
+        else:
+            pilot.fai_valid = False
+            pilot.fai_id = None
 
         return pilot
+
+    @staticmethod
+    def from_profile(pilot_id, comp_id=None):
+        from db_tables import PilotView, TblCountryCode
+        with Database() as db:
+            try:
+                result = db.session.query(PilotView).get(pilot_id)
+                if result:
+                    pilot = Participant(pil_id=pilot_id, comp_id=comp_id)
+                    pilot.name = ' '.join([result.first_name.title(), result.last_name.title()])
+                    pilot.glider = ' '.join([result.glider_brand.title(), result.glider])
+                    c = aliased(TblCountryCode)
+                    pilot.nat = db.session.query(c.natIso3).filter(c.natId == result.nat).scalar()
+                    for attr in ['sex', 'civl_id', 'fai_id', 'sponsor', 'xcontest_id', 'glider_cert']:
+                        if hasattr(result, attr):
+                            setattr(pilot, attr, getattr(result, attr))
+                    return pilot
+                else:
+                    print(f'Error: No result has been found for profile id {pilot_id}')
+                    return None
+            except SQLAlchemyError as e:
+                error = str(e.__dict__)
+                print(f"Error storing result to database")
+                db.session.rollback()
+                db.session.close()
+                return error
 
 
 def import_participants_from_excel(comp_id, filename, from_CIVL=False):
