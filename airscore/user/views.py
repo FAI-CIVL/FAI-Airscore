@@ -779,9 +779,9 @@ def _publish_result(taskid):
 @blueprint.route('/_change_result_status/<taskid>', methods=['POST'])
 @login_required
 def _change_result_status(taskid):
-    # from result import update_result_status
+    from result import update_result_status
     data = request.json
-    # update_result_status(data['filename'], data['status'])
+    update_result_status(data['filename'], data['status'])
     resp = jsonify(success=True)
     return resp
 
