@@ -5,9 +5,58 @@
     <title>Competition Admin</title>
 
     <link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
 
- <!-- The Modal -->
+    <div class="container" id="main">
+	<div class="row">
+	<button type="button" class="btn btn-primary mr-1" data-toggle="modal" data-target="#compmodal">Create</button>
+    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#importmodal">Import</button>
+	</div>
+	<div class="row">
+    <table id="competitions" class="row-border stripe compact mb-1 mt-2" cellspacing="0" width="100%">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Competition</th>
+            <th>Location</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Tasks</th>
+        </tr>
+    </thead>
+    </table>
+    </div>
+    </div>
+
+ <!-- import Modal -->
+	<div class="modal fade" id="importmodal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered" role="document">
+
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title">Import Competition</h4>
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+        </div>
+
+
+         <div class="modal-body" id= "importmodal-body">
+            <p id ="zip_modal_message">Please provide a FSDB file.</p>
+             <div id="zip_progress" ><div class="bar" style="width: 0%;"><p id="zip_progress_text"></p></div></div>
+         </div>
+         <div class="modal-footer">
+             <button id="get_fsdb_file_button" class="btn btn-primary ml-4 " onclick="choose_fsdb_file()">
+            Browse
+        </button>
+                       <button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
+        <input id="fsdb_fileupload" type="file" size="chars" class="custom-file-input"  oninput="filesize(this);" data-url="/users/import_comp_fsdb/" name="fsdb_file" >
+
+         </div>
+      </div>
+
+    </div>
+	</div>
+ <!-- end import Modal -->
+
+ <!-- create Modal -->
 	<div class="modal fade" id="compmodal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
 	<div class="modal-dialog modal-dialog-centered" role="document">
 
@@ -71,26 +120,7 @@
 
     </div>
 	</div>
-
-    <div class="container" id="main">
-	<div class="row">
-	<button type="button" class="btn btn-primary mt-3" data-toggle="modal" data-target="#compmodal">Create</button>
-	</div>
-	<div class="row">
-    <table id="competitions" class="row-border stripe compact mb-1 mt-2" cellspacing="0" width="100%">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Competition</th>
-            <th>Location</th>
-            <th>From</th>
-            <th>To</th>
-            <th>Tasks</th>
-        </tr>
-    </thead>
-    </table>
-    </div>
-    </div>
+ <!-- end create Modal -->
 
 {% endblock %}
 
@@ -98,15 +128,45 @@
 {% include "js.html" %}
     <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
     <script src="{{ static_url_for('static', filename='js/pop_admin_comps.js') }}"></script>
+    <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.ui.widget.js') }}"></script>
+    <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.iframe-transport.js') }}"></script>
+    <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.fileupload.js') }}"></script>
     <script>
-    var csrftoken = $('meta[name=csrf-token]').attr('content');
+  function filesize(elem){
+    document.cookie = `filesize=${elem.files[0].size}`
+  }
 
-    $.ajaxSetup({
-        beforeSend: function(xhr, settings) {
-            if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type)) {
-                xhr.setRequestHeader("X-CSRFToken", csrftoken)
-            }
-        }
-    })</script>
+   function choose_fsdb_file(){
+   var filename;
+   $('#fsdb_fileupload').fileupload({
+        dataType: 'json',
+        done: function (e, data) {
+            $.each(data.result.files, function (index, file) {
+                $('<p/>').text(file.name).appendTo(document.body);
+                filename = file.name;
+            });
+        },
+        submit: function (e, data){
+        $('#fsdb_modal_message').hide();
+        $('#fsdb_progress').show();
+        $('#fsdb_progress_text').text(data.files[0].name + ' - processing');
+        },
+                      success: function () {
+                           $('#fsdbmodal').modal('hide');
+
+                      },
+
+         progress: function (e, data) {
+        var progress = parseInt(data.loaded / data.total * 100, 10);
+        $('#fsdb_progress .bar').css(
+            'width',
+            progress + '%'
+        );
+    }
+    });
+    $('#fsdb_fileupload').click();
+};
+
+    </script>
     <script src="{{ static_url_for('static', filename='js/utils.js') }}"></script>
 {% endblock %}

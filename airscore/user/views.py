@@ -95,7 +95,6 @@ def comp_admin():
 @blueprint.route('/create_comp', methods=['PUT'])
 @login_required
 def create_comp():
-
     data = request.json
     date_from = datetime.strptime(data['datefrom'], '%Y-%m-%d')
     date_to = datetime.strptime(data['dateto'], '%Y-%m-%d')
@@ -110,6 +109,34 @@ def create_comp():
         return jsonify(dict(redirect='/comp_admin'))
     else:
         return render_template('500.html')
+
+
+@blueprint.route('/import_comp_fsdb/', methods=['POST'])
+@login_required
+def import_comp_fsdb():
+    from fsdb import FSDB
+    if request.method == "POST":
+        if request.files:
+
+            if "filesize" in request.cookies:
+
+                if not frontendUtils.allowed_tracklog_filesize(request.cookies["filesize"]):
+                    print("Filesize exceeded maximum limit")
+                    return redirect(request.url)
+
+            fsdb_file = request.files["fsdb_file"]
+
+            if fsdb_file.filename == "":
+                print("No filename")
+                return redirect(request.url)
+            if frontendUtils.allowed_tracklog(fsdb_file.filename, extension=['fsdb']):
+                f = FSDB.read(fsdb_file)
+                f.add_all()
+                return jsonify(dict(redirect='/comp_admin'))
+
+            else:
+                print("That file extension is not allowed")
+                return redirect(request.url)
 
 
 @blueprint.route('/_get_formulas/')
@@ -593,15 +620,13 @@ def _upload_track(taskid, parid):
         return resp
 
 
-@blueprint.route('/_upload_XCTrack/<taskid>', methods=['GET', 'POST'])
+@blueprint.route('/_upload_XCTrack/<taskid>', methods=['POST'])
 @login_required
 def _upload_XCTrack(taskid):
     taskid = int(taskid)
     if request.method == "POST":
         if request.files:
             task_file = json.load(request.files["track_file"])
-            print(task_file)
-            stdout.flush()
             task = Task.read(taskid)
             task.update_from_xctrack_data(task_file)
             task.calculate_optimised_task_length()
@@ -617,7 +642,7 @@ def _upload_XCTrack(taskid):
 
 
 
-@blueprint.route('/_upload_track_zip/<taskid>', methods=['GET', 'POST'])
+@blueprint.route('/_upload_track_zip/<taskid>', methods=['POST'])
 @login_required
 def _upload_track_zip(taskid):
     taskid = int(taskid)
