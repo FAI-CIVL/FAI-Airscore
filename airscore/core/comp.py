@@ -289,7 +289,7 @@ class Comp(object):
         comp.comp_site = fs_comp.get('location')
         comp.date_from = get_date(fs_comp.get('from'))
         comp.date_to = get_date(fs_comp.get('to'))
-        comp.time_offset = float(fs_comp.get('utc_offset'))
+        comp.time_offset = int(float(fs_comp.get('utc_offset')) * 3600)
         comp.sanction = ('FAI 1' if fs_comp.get('fai_sanctioning') == '1'
                          else 'FAI 2' if fs_comp.get('fai_sanctioning') == '2' else 'none')
         comp.external = True

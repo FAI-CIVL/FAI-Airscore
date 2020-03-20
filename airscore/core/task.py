@@ -1172,7 +1172,7 @@ class Task(object):
         return task
 
     @classmethod
-    def from_fsdb(cls, t, keep_task_path=False):
+    def from_fsdb(cls, t, offset=0, keep_task_path=False):
         """ Creates Task from FSDB FsTask element, which is in xml format.
             Unfortunately the fsdb format isn't published so much of this is simply an
             exercise in reverse engineering.
@@ -1189,45 +1189,47 @@ class Task(object):
 
         task = cls()
 
-        task.check_launch = 0
+        task.check_launch = 'off'
         task.task_name = t.get('name')
         task.task_num = 0 + int(t.get('id'))
         print(f"task {task.task_num} - name: {task.task_name}")
+        task.time_offset = offset
         if keep_task_path:
             task.task_path = get_fsdb_task_path(t.get('tracklog_folder'))
 
         """formula info"""
-        f = t.find('FsScoreFormula')
-        formula = TaskFormula()
-        formula.formula_name = f.get('id')
-        formula.arr_alt_bonus = 'off'
-        if ((f.get('use_arrival_altitude_points') is not None and float(f.get('use_arrival_altitude_points')) > 0)
-                or f.get('use_arrival_altitude_points') == 'aatb'):
-            formula.arr_alt_bonus = 'on'
-        """Departure and Arrival from formula"""
-        formula.formula_arrival = 'position' if float(f.get('use_arrival_position_points')) == 1 else 'time' if float(
-            f.get(
-                'use_arrival_position_points')) == 1 else 'off'  # not sure if and which type Airscore is supporting at the moment
-        formula.tolerance = 0.0 + float(f.get('turnpoint_radius_tolerance')
-                                        if f.get('turnpoint_radius_tolerance') else 0.1)  # tolerance, perc / 100
-
-        if float(f.get('use_departure_points')) > 0:
-            formula.formula_departure = 'on'
-        elif float(f.get('use_leading_points')) > 0:
-            formula.formula_departure = 'leadout'
-        else:
-            formula.formula_departure = 'off'
+        formula = TaskFormula.from_fsdb(t)
+        # f = t.find('FsScoreFormula')
+        # formula = TaskFormula()
+        # formula.formula_name = f.get('id')
+        # formula.arr_alt_bonus = 'off'
+        # if ((f.get('use_arrival_altitude_points') is not None and float(f.get('use_arrival_altitude_points')) > 0)
+        #         or f.get('use_arrival_altitude_points') == 'aatb'):
+        #     formula.arr_alt_bonus = 'on'
+        # """Departure and Arrival from formula"""
+        # formula.formula_arrival = 'position' if float(f.get('use_arrival_position_points')) == 1 else 'time' if float(
+        #     f.get(
+        #         'use_arrival_position_points')) == 1 else 'off'  # not sure if and which type Airscore is supporting at the moment
+        # formula.tolerance = 0.0 + float(f.get('turnpoint_radius_tolerance')
+        #                                 if f.get('turnpoint_radius_tolerance') else 0.1)  # tolerance, perc / 100
+        #
+        # if float(f.get('use_departure_points')) > 0:
+        #     formula.formula_departure = 'on'
+        # elif float(f.get('use_leading_points')) > 0:
+        #     formula.formula_departure = 'leadout'
+        # else:
+        #     formula.formula_departure = 'off'
 
         """Task Status"""
         node = t.find('FsTaskState')
-        formula.score_back_time = int(node.get('score_back_time'))
+        formula.score_back_time = int(node.get('score_back_time')) * 60
         state = node.get('task_state')
         task.comment = ': '.join([state, node.get('cancel_reason')])
         if state == 'CANCELLED':
             """I don't need if cancelled"""
             return None
-
-        task.stopped_time = get_datetime(node.get('stop_time')) if not (state == 'REGULAR') else None
+        task.stopped_time = time_to_seconds(get_time(node.get('stop_time'))) - offset
+        # task.stopped_time = get_datetime(node.get('stop_time')) if not (state == 'REGULAR') else None
         """Task Stats"""
         p = t.find('FsTaskScoreParams')
         '''a non scored task could miss this element'''
@@ -1300,13 +1302,13 @@ class Task(object):
                 '''race'''
                 startgates = len(node.findall('FsStartGate'))
                 task.task_type = 'race'
-                task.start_time = time_to_seconds(get_time(node.find('FsStartGate').get('open')))
+                task.start_time = time_to_seconds(get_time(node.find('FsStartGate').get('open'))) - offset
                 # print ("gates: {}".format(startgates))
                 if startgates > 1:
                     '''race with multiple start gates'''
                     # print ("MULTIPLE STARTS")
                     task.start_iteration = startgates - 1
-                    time = time_to_seconds(get_time(node.findall('FsStartGate')[1].get('open')))
+                    time = time_to_seconds(get_time(node.findall('FsStartGate')[1].get('open'))) - offset
                     task.SS_interval = time - task.start_time
                     '''if prefer minutes: time_difference(tas['tasStartTime'], time).total_seconds()/60'''
                     print(f"    **** interval: {task.SS_interval}")
@@ -1321,15 +1323,15 @@ class Task(object):
                     turnpoint.num = len(turnpoints) + 1
                     turnpoint.type = 'launch'
                     task.date = get_date(w.get('open'))
-                    task.window_open_time = time_to_seconds(get_time(w.get('open')))
-                    task.window_close_time = time_to_seconds(get_time(w.get('close')))
+                    task.window_open_time = time_to_seconds(get_time(w.get('open'))) - offset
+                    task.window_close_time = time_to_seconds(get_time(w.get('close'))) - offset
                     if task.window_close_time <= task.window_open_time:
                         # sanity
                         task.window_close_time = None
                     if 'free distance' in task.task_type:
                         '''get start and close time for free distance task types'''
-                        task.start_time = time_to_seconds(get_time(w.get('open')))
-                        task.start_close_time = time_to_seconds(get_time(w.get('close')))
+                        task.start_time = time_to_seconds(get_time(w.get('open'))) - offset
+                        task.start_close_time = time_to_seconds(get_time(w.get('close'))) - offset
                     turnpoints.append(turnpoint)
                 if idx == sswpt:
                     '''start'''
@@ -1337,14 +1339,14 @@ class Task(object):
                     turnpoint.name = w.get('id')
                     turnpoint.num = len(turnpoints) + 1
                     turnpoint.type = 'speed'
-                    task.start_close_time = time_to_seconds(get_time(w.get('close')))
+                    task.start_close_time = time_to_seconds(get_time(w.get('close'))) - offset
                     '''guess start direction: exit if launch is same wpt'''
                     launch = next(p for p in turnpoints if p.type == 'launch')
                     if launch.lat == turnpoint.lat and launch.lon == turnpoint.lon:
                         turnpoint.how = 'exit'
                     if 'elapsed time' in task.task_type:
                         '''get start for elapsed time task types'''
-                        task.start_time = time_to_seconds(get_time(w.get('open')))
+                        task.start_time = time_to_seconds(get_time(w.get('open'))) - offset
                     turnpoints.append(turnpoint)
                 if idx == eswpt:
                     '''ess'''
@@ -1352,7 +1354,7 @@ class Task(object):
                     turnpoint.name = w.get('id')
                     turnpoint.num = len(turnpoints) + 1
                     turnpoint.type = 'endspeed'
-                    task.task_deadline = time_to_seconds(get_time(w.get('close')))
+                    task.task_deadline = time_to_seconds(get_time(w.get('close'))) - offset
                     turnpoints.append(turnpoint)
                 if idx == last:
                     '''goal'''
@@ -1614,7 +1616,6 @@ def write_map_json(task_id):
 def get_task_json_filename(task_id):
     """returns active json result file"""
     from db_tables import TblResultFile as R
-
     with Database() as db:
         filename = db.session.query(R.filename).filter(and_(
             R.task_id == task_id, R.active == 1

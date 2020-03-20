@@ -96,12 +96,12 @@ class FSDB(object):
         t = root.find('FsCompetition').find('FsTasks')
         for tas in t.iter('FsTask'):
             '''create task obj'''
-            task = Task.from_fsdb(tas, keep_task_path)
+            task = Task.from_fsdb(tas, comp.time_offset, keep_task_path)
             '''check if task was valid'''
             if task is not None:
                 if not task.task_path:
                     task.create_path()
-                task.time_offset = int(comp.time_offset * 3600)
+                # task.time_offset = int(comp.time_offset)
                 """Task Results"""
                 node = tas.find('FsParticipants')
                 if node is not None:
