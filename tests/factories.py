@@ -5,6 +5,7 @@ from factory.faker import faker
 from factory.alchemy import SQLAlchemyModelFactory
 from airscore.database import db
 from airscore.user.models import User
+from db_tables import TblCompetition, TblTask
 
 
 
@@ -30,4 +31,14 @@ class UserFactory(BaseFactory):
         """Factory configuration."""
 
         model = User
+
+
+class CompetitionTableFactory(BaseFactory):
+    """ db competition factory"""
+
+    class Meta:
+        """Factory configuration."""
+
+        model = TblCompetition
+
 

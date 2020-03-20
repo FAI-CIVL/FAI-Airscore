@@ -3,10 +3,14 @@ import pytest
 from datetime import datetime
 import frontendUtils
 import region
-from myconn import Database
+# from myconn import Database
 from autoapp import create_app
-
-
+from unittest.mock import MagicMock
+from frontendUtils import Database
+from faker import Faker
+from random import random
+from json import loads
+fake = Faker()
 app = create_app()
 
 @pytest.fixture
@@ -67,14 +71,38 @@ def test_get_waypoint_choices(monkeypatch):
     assert len(result) == 2
 
 
-# def test_get_admin_comps(monkeypatch):
-#     def fake_query():
-#         d1 = datetime(1999,1,2)
-#         d2 = datetime(2000,4,5)
-#         return 'zero','one','timbuktu', d1, d2
-#     monkeypatch.setattr(Database().session, 'query', fake_query)
-#     result = frontendUtils.get_admin_comps()
-#     assert result['data'][0][1] == '<a href="/users/comp_settings_admin/zero">one</a>'
+def query(*args, **kwargs):
+    rows = []
+    for n in range(1, 10):
+        rows.append(row())
+    return rows
+
+def row():
+    id = int(random()*10)
+    name = fake.name()
+    place = fake.word()
+    d1 = fake.date_object()
+    d2 = fake.date_object()
+    return id, name, place, d1, d2
+
+
+
+def test_get_admin_comps(monkeypatch):
+    MockResponse = MagicMock(autospec=True)
+    myquery = query()
+    MockResponse.query.return_value.outerjoin.return_value.group_by.return_value = myquery
+    with app.app_context():
+        monkeypatch.setattr(Database, 'session', MockResponse)
+        result = frontendUtils.get_admin_comps()
+        print(result)
+        assert result.json['data'][0][1] == '<a href="/users/comp_settings_admin/'+ str(myquery[0][0])+'">'+myquery[0][1]+'</a>'
+        assert result.json['data'][0][3] == myquery[0][3].strftime("%Y-%m-%d")
+        assert result.json['data'][0][4] == myquery[0][4].strftime("%Y-%m-%d")
+        assert result.json['data'][0][0] == myquery[0][0]
+        assert result.json['data'][1][1] == '<a href="/users/comp_settings_admin/'+ str(myquery[1][0])+'">'+myquery[1][1]+'</a>'
+        assert result.json['data'][1][3] == myquery[1][3].strftime("%Y-%m-%d")
+        assert result.json['data'][1][4] == myquery[1][4].strftime("%Y-%m-%d")
+        assert result.json['data'][1][0] == myquery[1][0]
 
 # @patch.object()
 # def test_get_comp():
