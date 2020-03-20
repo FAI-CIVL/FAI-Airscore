@@ -142,7 +142,7 @@ class Formula(object):
         self.min_tolerance = min_tolerance  # meters
         self.scoring_altitude = scoring_altitude  # 'GPS', 'QNH'
         self.team_scoring = False
-        self.team_size = None
+        self.team_size = 0
         self.team_over = None
         self.country_scoring = False
 

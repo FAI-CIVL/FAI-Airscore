@@ -255,12 +255,13 @@ class Comp(object):
                     row = db.session.query(TblCompetition).get(self.comp_id)
                 else:
                     row = TblCompetition()
-                    db.session.add(row)
-                    db.session.flush()
-                    self.comp_id = row.comp_id
                 for k, v in self.as_dict().items():
                     if hasattr(row, k):
                         setattr(row, k, v)
+                if not self.comp_id:
+                    db.session.add(row)
+                    db.session.flush()
+                    self.comp_id = row.comp_id
                 db.session.commit()
             except SQLAlchemyError as e:
                 error = str(e.__dict__)
