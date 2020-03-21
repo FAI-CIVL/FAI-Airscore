@@ -502,3 +502,44 @@ class Comp(object):
         ''' order list'''
         self.results = sorted(self.results, key=lambda x: x['score'], reverse=True)
 
+
+def delete_comp(comp_id, files=True):
+    """delete all database entries and files on disk related to comp"""
+    from db_tables import TblTask as T
+    from db_tables import TblForComp as FC
+    from db_tables import TblResultFile as RF
+    from db_tables import TblParticipant as P
+    from task import delete_task
+    from result import delete_result
+    from Defines import FILEDIR
+    import shutil
+    from os import path
+    with Database() as db:
+        # if files:
+        #     '''delete tracks'''
+        #     folder = path.join(FILEDIR, db.session.query(TblCompetition).get(comp_id).comp_path)
+        #     if path.exists(folder):
+        #         shutil.rmtree(folder)
+        tasks = db.session.query(T.task_id).filter(T.comp_id == comp_id).all()
+        if tasks:
+            '''delete tasks'''
+            for task in tasks:
+                delete_task(task.task_id, files=files, session=db.session)
+        results = db.session.query(RF.ref_id).filter(RF.comp_id == comp_id).all()
+        if results:
+            '''delete result json files'''
+            for res in results:
+                delete_result(res.ref_id, files, db.session)
+        '''delete db entries: formula, participants, comp'''
+        try:
+            db.session.query(P).filter(P.comp_id == comp_id).delete(synchronize_session=False)
+            db.session.query(FC).filter(FC.comp_id == comp_id).delete(synchronize_session=False)
+            db.session.query(TblCompetition).filter(TblCompetition.comp_id == comp_id).delete(synchronize_session=False)
+            db.session.commit()
+        except SQLAlchemyError as e:
+            error = str(e)
+            print(f"Error deleting comp from database: {error}")
+            db.session.rollback()
+            db.session.close()
+            return error
+

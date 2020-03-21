@@ -1532,15 +1532,44 @@ class Task(object):
                 return error
 
 
-def delete_task(task_id):
+def delete_task(task_id, files=False, session=None):
     from db_tables import TblTaskWaypoint as W
     from db_tables import TblTask as T
-
+    from db_tables import TblTaskResult as R
+    from db_tables import TblResultFile as RF
+    from db_tables import TblCompetition as C
+    from result import delete_result
+    from Defines import FILEDIR
+    import shutil
+    from os import path
     '''delete waypoints and task from database'''
-    with Database() as db:
-        db.session.query(W).filter(W.task_id == task_id).delete()
-        db.session.query(T).filter(T.task_id == task_id).delete()
-        db.session.commit()
+    print(f"{task_id}")
+    with Database(session) as db:
+        try:
+            if files:
+                '''delete track files'''
+                info = db.session.query(T.task_path,
+                                        C.comp_path).select_from(T).join(C, C.comp_id ==
+                                                                         T.comp_id).filter(T.task_id == task_id).one()
+                folder = path.join(FILEDIR, info.comp_path, info.task_path)
+                if path.exists(folder):
+                    shutil.rmtree(folder)
+            results = db.session.query(RF.ref_id).filter(RF.task_id == task_id).all()
+            if results:
+                '''delete result json files'''
+                for res in results:
+                    delete_result(res.ref_id, files, db.session)
+            '''delete db entries: results, waypoints, task'''
+            db.session.query(R).filter(T.task_id == task_id).delete(synchronize_session=False)
+            db.session.query(W).filter(W.task_id == task_id).delete(synchronize_session=False)
+            db.session.query(T).filter(T.task_id == task_id).delete(synchronize_session=False)
+            db.session.commit()
+        except SQLAlchemyError as e:
+            error = str(e)
+            print(f"Error deleting task from database: {error}")
+            db.session.rollback()
+            db.session.close()
+            return error
 
 
 # function to parse task object to compilations

@@ -23,6 +23,7 @@ from myconn import Database
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import update
 
+
 class Task_result:
     """
         Task result fields lists
@@ -326,7 +327,8 @@ def publish_result(filename_or_refid, ref_id=False, session=None):
             if ref_id:
                 db.session.query(TblResultFile).filter(TblResultFile.ref_id == filename_or_refid).update({'active': 1})
             else:
-                db.session.query(TblResultFile).filter(TblResultFile.filename == filename_or_refid).update({'active': 1})
+                db.session.query(TblResultFile).filter(TblResultFile.filename == filename_or_refid).update(
+                    {'active': 1})
             db.session.commit()
             if not session:
                 db.session.close()
@@ -401,7 +403,7 @@ def update_result_file(filename, par_id, comment=None, penalty=None):
                 if penalty is not None:
                     result['penalty'] = penalty
                     result['score'] = max(0, sum([result['arrival_score'], result['departure_score'],
-                                                 result['time_score'], result['distance_score']]) - penalty)
+                                                  result['time_score'], result['distance_score']]) - penalty)
                     pilot.penalty = result['penalty']
                     pil_list = sorted([p for p in data['results'] if p['result_type'] not in ['dnf', 'abs']],
                                       key=lambda k: k['score'], reverse=True)
@@ -420,3 +422,21 @@ def update_result_file(filename, par_id, comment=None, penalty=None):
         f.truncate()
 
 
+def delete_result(ref_id, file=True, session=None):
+    from Defines import RESULTDIR
+    import os
+    with Database(session) as db:
+        try:
+            if file:
+                info = db.session.query(TblResultFile).get(ref_id)
+                filename = os.path.join(RESULTDIR, info.filename)
+                if os.path.exists(filename):
+                    os.remove(filename)
+            db.session.query(TblResultFile).filter(TblResultFile.ref_id == ref_id).delete(synchronize_session=False)
+            db.session.commit()
+        except SQLAlchemyError as e:
+            error = str(e)
+            print(f"Error deleting result from database: {error}")
+            db.session.rollback()
+            db.session.close()
+            return error
