@@ -20,7 +20,7 @@ TO DO:
 Add support for FAI Sphere ???
 """
 
-from os import path, makedirs
+from os import path, makedirs, remove
 from pathlib import Path
 
 import jsonpickle
@@ -1551,9 +1551,19 @@ def delete_task(task_id, files=False, session=None):
                 info = db.session.query(T.task_path,
                                         C.comp_path).select_from(T).join(C, C.comp_id ==
                                                                          T.comp_id).filter(T.task_id == task_id).one()
-                folder = path.join(FILEDIR, info.comp_path, info.task_path)
-                if path.exists(folder):
-                    shutil.rmtree(folder)
+                igc_folder = path.join(FILEDIR, info.comp_path, info.task_path)
+                tracklog_map_folder = path.join(MAPOBJDIR, 'tracks', str(task_id))
+                task_map = path.join(MAPOBJDIR, 'tasks', str(task_id) + '.task')
+
+                # remove igc files
+                if path.exists(igc_folder):
+                    shutil.rmtree(igc_folder)
+                # remove tracklog map files
+                if path.exists(tracklog_map_folder):
+                    shutil.rmtree(tracklog_map_folder)
+                # remove task map file
+                if path.exists(task_map):
+                    remove(task_map)
             results = db.session.query(RF.ref_id).filter(RF.task_id == task_id).all()
             if results:
                 '''delete result json files'''
