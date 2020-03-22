@@ -195,23 +195,23 @@ def get_pil_track(par_id, task_id):
     return track_id
 
 
-def read_track_result_file(track_id, task_id):
+def read_tracklog_map_result_file(track_id, task_id):
     """create task and track objects"""
     import jsonpickle
     from pathlib import Path
 
-    res_path = MAPOBJDIR + 'tracks/'
+    res_path = f"{MAPOBJDIR}tracks/{task_id}/"
     filename = 'result_' + str(track_id) + '.track'
     fullname = path.join(res_path, filename)
     # if the file does not exist
     if not Path(fullname).is_file():
-        create_track_result_file(track_id, task_id)
+        create_tracklog_map_result_file(track_id, task_id)
 
     with open(fullname, 'r') as f:
         return jsonpickle.decode(f.read())
 
 
-def create_track_result_file(track_id, task_id):
+def create_tracklog_map_result_file(track_id, task_id):
     import flight_result
     from task import Task
     from track import Track
@@ -221,7 +221,7 @@ def create_track_result_file(track_id, task_id):
     track = Track.read_db(track_id)
     lib = task.formula.get_lib()
     result = flight_result.Flight_result.check_flight(track.flight, task)
-    result.save_result_file(result.to_geojson_result(track, task), str(track_id))
+    result.save_tracklog_map_result_file(result.to_geojson_result(track, task), str(track_id), task_id)
 
 
 def get_task_fullpath(task_id):

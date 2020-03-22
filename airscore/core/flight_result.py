@@ -663,10 +663,10 @@ class Flight_result(object):
 
         return data
 
-    def save_result_file(self, data, trackid):
-        """save result file in the correct folder as defined by DEFINES"""
+    def save_tracklog_map_result_file(self, data, trackid, taskid):
+        """save tracklog map result file in the correct folder as defined by DEFINES"""
 
-        res_path = MAPOBJDIR + 'tracks/'
+        res_path = f"{MAPOBJDIR}tracks/{taskid}/"
 
         """check if directory already exists"""
         if not path.isdir(res_path):

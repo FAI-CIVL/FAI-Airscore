@@ -339,4 +339,4 @@ def save_all_geojson_files(task, interval=5):
                 'result': jsonpickle.dumps(result), 'bounds': bbox, 'waypoint_achieved': waypoint_achieved,
                 'airspace': airspace_plot}
 
-        pilot.result.save_result_file(data, track_id)
+        pilot.result.save_tracklog_map_result_file(data, track_id, task.id)

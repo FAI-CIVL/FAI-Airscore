@@ -19,7 +19,7 @@ from airscore.user.models import User
 from airscore.utils import flash_errors
 from datetime import datetime
 from task import get_map_json, get_task_json
-from trackUtils import read_track_result_file
+from trackUtils import read_tracklog_map_result_file
 from design_map import make_map
 from flask_wtf import FlaskForm
 from wtforms import SelectField
@@ -352,7 +352,7 @@ def map(trackidtaskid):
     taskid = int(taskid)
     layer = {}
     wpt_coords, turnpoints, short_route, goal_line, tolerance, _ = get_map_json(taskid)
-    layer['geojson'] = read_track_result_file(trackid, taskid)
+    layer['geojson'] = read_tracklog_map_result_file(trackid, taskid)
     layer['bbox'] = layer['geojson']['bounds']
     pilot = layer['geojson']['info']['pilot_name']
     task_name = layer['geojson']['info']['task_name']
@@ -385,13 +385,13 @@ def multimap(trackid, extra_trackids):
     legend = {}
     extra_tracks = []
     for t in trackids:
-        layer['geojson'] = read_track_result_file(t, 66)
+        layer['geojson'] = read_tracklog_map_result_file(t, 66)
         track = {'name': t, 'track': layer['geojson']['tracklog'], 'colour': colours[c]}
         extra_tracks.append(track)
         legend[t] = colours[c]
         c += 1
 
-    layer['geojson'] = read_track_result_file(trackid, 66)
+    layer['geojson'] = read_tracklog_map_result_file(trackid, 66)
     layer['bbox'] = layer['geojson']['bounds']
     map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
                    goal_line=goal_line, margin=tolerance, thermal_layer=False, waypoint_layer=False,
