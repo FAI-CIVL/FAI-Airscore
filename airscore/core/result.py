@@ -422,16 +422,16 @@ def update_result_file(filename, par_id, comment=None, penalty=None):
         f.truncate()
 
 
-def delete_result(ref_id, file=True, session=None):
+def delete_result(ref_id, filename=None, session=None):
     from Defines import RESULTDIR
     import os
     with Database(session) as db:
         try:
-            if file:
-                info = db.session.query(TblResultFile).get(ref_id)
-                filename = os.path.join(RESULTDIR, info.filename)
-                if os.path.exists(filename):
-                    os.remove(filename)
+            if not filename:
+                filename = db.session.query(TblResultFile).get(ref_id).filename
+            file = os.path.join(RESULTDIR, filename)
+            if os.path.exists(file):
+                os.remove(file)
             db.session.query(TblResultFile).filter(TblResultFile.ref_id == ref_id).delete(synchronize_session=False)
             db.session.commit()
         except SQLAlchemyError as e:

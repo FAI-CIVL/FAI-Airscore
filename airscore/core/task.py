@@ -1554,11 +1554,11 @@ def delete_task(task_id, files=False, session=None):
                 folder = path.join(FILEDIR, info.comp_path, info.task_path)
                 if path.exists(folder):
                     shutil.rmtree(folder)
-            results = db.session.query(RF.ref_id).filter(RF.task_id == task_id).all()
+            results = db.session.query(RF.ref_id, RF.filename).filter(RF.task_id == task_id).all()
             if results:
                 '''delete result json files'''
                 for res in results:
-                    delete_result(res.ref_id, files, db.session)
+                    delete_result(res.ref_id, res.filename, db.session)
             '''delete db entries: results, waypoints, task'''
             db.session.query(R).filter(T.task_id == task_id).delete(synchronize_session=False)
             db.session.query(W).filter(W.task_id == task_id).delete(synchronize_session=False)
