@@ -380,6 +380,52 @@ def get_score_header(files, offset):
             active = file['filename']
     if active_published:
         header = f"Published result ran: {active_published} Status: {active_status}"
-    else:
+    elif len(files) > 0:
         header = "No published results"
     return header, active
+
+
+def get_comp_admins(compid):
+    """returns owner and list of admins"""
+    from db_tables import TblCompAuth as CA
+    from airscore.user.models import User
+    with Database() as db:
+        try:
+            all_admins = db.session.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth)\
+                .join(CA, User.id == CA.user_id).filter(CA.comp_id == compid,
+                                                        CA.user_auth.in_(('owner', 'admin'))).all()
+            if all_admins:
+                all_admins = [row._asdict() for row in all_admins]
+        except SQLAlchemyError as e:
+            error = str(e)
+            print(f"there was a problem with getting the admin list for comp id{compid} error{error}")
+            db.session.rollback()
+            db.session.close()
+            return None, None
+        admins = []
+        owner = None
+        for admin in all_admins:
+            if admin['user_auth'] == 'owner':
+                owner = admin
+            else:
+                admins.append(admin)
+    return owner, admins
+
+
+def set_comp_admin(compid, userid, owner=False):
+    from db_tables import TblCompAuth as CA
+    auth = 'owner' if owner else 'admin'
+    with Database() as db:
+        try:
+            admin = CA(user_id=userid, comp_id=compid, user_auth=auth)
+            db.session.add(admin)
+            db.session.flush()
+        except SQLAlchemyError as e:
+            error = str(e)
+            print(f"there was a problem with setting the admin for comp id{compid} error{error}")
+            db.session.rollback()
+            db.session.close()
+            return None
+    return True
+
+

@@ -433,12 +433,12 @@ class TblClassification(Base):
     team = Column(TINYINT(1), nullable=False, server_default=text("'0'"))
 
 
-TblCompAuth = Table(
-    'tblCompAuth', metadata,
-    Column('user_id', INTEGER(11)),
-    Column('comp_id', INTEGER(11)),
-    Column('user_auth', Enum('read', 'write', 'admin'), server_default=text("'read'"))
-)
+class TblCompAuth(Base):
+    __tablename__ = 'tblCompAuth'
+
+    user_id = Column(INTEGER(11), primary_key=True)
+    comp_id = Column(INTEGER(11), primary_key=True)
+    user_auth = Column(Enum('read', 'write', 'admin', 'owner'), nullable=False, server_default=text("'read'"))
 
 
 class TblCountryCode(Base):
