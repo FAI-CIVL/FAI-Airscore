@@ -1,10 +1,10 @@
-from db_tables import TblCompetition, TblTask
+from db_tables import TblCompetition, TblTask, TblCompAuth
 from sqlalchemy.orm import aliased
 from flask import jsonify
 from myconn import Database
 import datetime
 from sqlalchemy import func, not_
-import math
+# import math
 from pathlib import Path
 import jsonpickle
 from Defines import MAPOBJDIR
@@ -60,12 +60,13 @@ def get_comps():
 
 def get_admin_comps():
     c = aliased(TblCompetition)
-
+    ca = aliased(TblCompAuth)
     with Database() as db:
         comps = (db.session.query(c.comp_id, c.comp_name, c.comp_site,
                                   c.date_from,
-                                  c.date_to, func.count(TblTask.task_id))
-                 .outerjoin(TblTask, c.comp_id == TblTask.comp_id)
+                                  c.date_to, func.count(TblTask.task_id), ca.user_id)
+                 .outerjoin(TblTask, c.comp_id == TblTask.comp_id).outerjoin(ca)
+                 .filter(ca.user_auth == 'owner')
                  .group_by(c.comp_id))
 
     all_comps = []
@@ -406,8 +407,10 @@ def get_comp_admins(compid):
         owner = None
         for admin in all_admins:
             if admin['user_auth'] == 'owner':
+                del admin['user_auth']
                 owner = admin
             else:
+                del admin['user_auth']
                 admins.append(admin)
     return owner, admins
 
@@ -429,3 +432,19 @@ def set_comp_admin(compid, userid, owner=False):
     return True
 
 
+def get_all_admins():
+    """returns a list of all admins in the system"""
+    from airscore.user.models import User
+    with Database() as db:
+        try:
+            all_admins = db.session.query(User.id, User.username, User.first_name, User.last_name) \
+                .filter(User.is_admin == 1).all()
+            if all_admins:
+                all_admins = [row._asdict() for row in all_admins]
+        except SQLAlchemyError as e:
+            error = str(e)
+            print(f"there was a problem with getting the admin list for comp id{compid} error{error}")
+            db.session.rollback()
+            db.session.close()
+            return None, None
+        return all_admins

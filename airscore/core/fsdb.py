@@ -615,3 +615,6 @@ class FSDB(object):
                 print(f"adding results...")
                 self.add_results(db.session)
             print(f"Done.")
+            return self.comp.comp_id
+        else:
+            return None

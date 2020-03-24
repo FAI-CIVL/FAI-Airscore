@@ -6,7 +6,7 @@ from flask import Blueprint, render_template, request, jsonify, json, flash, red
 from flask_login import login_required, current_user
 import frontendUtils
 from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm, \
-    TaskResultAdminForm
+    TaskResultAdminForm, NewAdminForm
 from comp import Comp
 from formula import list_formulas, Formula
 from task import Task, write_map_json
@@ -106,6 +106,7 @@ def create_comp():
                     date_to=date_from)
     output = new_comp.to_db()
     if type(output) == int:
+        frontendUtils.set_comp_admin(output, current_user.id, owner=True)
         return jsonify(dict(redirect='/comp_admin'))
     else:
         return render_template('500.html')
@@ -131,8 +132,12 @@ def import_comp_fsdb():
                 return redirect(request.url)
             if frontendUtils.allowed_tracklog(fsdb_file.filename, extension=['fsdb']):
                 f = FSDB.read(fsdb_file)
-                f.add_all()
-                return jsonify(dict(redirect='/comp_admin'))
+                compid = f.add_all()
+                if compid:
+                    frontendUtils.set_comp_admin(compid, current_user.id, owner=True)
+                    return jsonify(dict(redirect='/comp_admin'))
+                else:
+                    return render_template('500.html')
 
             else:
                 print("That file extension is not allowed")
@@ -155,9 +160,19 @@ def comp_settings_admin(compid):
     compid = int(compid)
     compform = CompForm()
     newtaskform = NewTaskForm()
+    newadminform = NewAdminForm()
     comp = Comp.read(compid)
-    admins = ['joe smith', 'john wayne', 'stuartm', 'pippo', 'biuti']  # TODO
-
+    owner, administrators = frontendUtils.get_comp_admins(compid)
+    all_admins = frontendUtils.get_all_admins()
+    all_admins.remove(owner)
+    admins = [owner['id']]
+    for admin in administrators:
+        admins.append(admin['id'])
+        all_admins.remove(admin)
+    admin_choices = []
+    if all_admins:
+        for admin in all_admins:
+            admin_choices.append((admin['id'], f"{admin['first_name']} {admin['last_name']} ({admin['username'] })"))
     if request.method == 'POST':
         if compform.validate_on_submit():
             comp.comp_name = compform.comp_name.data
@@ -265,14 +280,34 @@ def comp_settings_admin(compid):
         compform.scoring_altitude.data = formula.scoring_altitude
 
         newtaskform.task_region.choices = frontendUtils.get_region_choices(compid)
+        newadminform.admin.choices = admin_choices
 
-        if current_user.username not in admins:
+        if current_user.id not in admins:
             compform.submit = None
 
     tasks = jsonify(frontendUtils.get_task_list(comp))
 
     return render_template('users/comp_settings.html', compid=compid, compform=compform, tasks=tasks,
-                           taskform=newtaskform, admins=admins, error=error)
+                           taskform=newtaskform, adminform=newadminform, error=error)
+
+
+@blueprint.route('/_get_admins/<compid>', methods=['GET'])
+@login_required
+def _get_admins(compid):
+    owner, admins = frontendUtils.get_comp_admins(compid)
+    return jsonify({'owner': owner, 'admins': admins})
+
+
+@blueprint.route('/_add_admin/<compid>', methods=['POST'])
+@login_required
+def _add_admin(compid):
+    data = request.json
+    if frontendUtils.set_comp_admin(compid, data['id']):
+        resp = jsonify(success=True)
+        return resp
+    else:
+        return render_template('500.html')
+
 
 
 @blueprint.route('/task_admin/<taskid>', methods=['GET', 'POST'])

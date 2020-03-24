@@ -77,29 +77,34 @@ def query(*args, **kwargs):
         rows.append(row())
     return rows
 
+
 def row():
     id = int(random()*10)
     name = fake.name()
     place = fake.word()
     d1 = fake.date_object()
     d2 = fake.date_object()
-    return id, name, place, d1, d2
-
+    tasks = int(random()*10)
+    owner = int(random()*10)
+    return id, name, place, d1, d2, tasks, owner
 
 
 def test_get_admin_comps(monkeypatch):
     MockResponse = MagicMock(autospec=True)
     myquery = query()
-    MockResponse.query.return_value.outerjoin.return_value.group_by.return_value = myquery
+    MockResponse.query.return_value.outerjoin.return_value.outerjoin.return_value.filter.return_value\
+        .group_by.return_value = myquery
     with app.app_context():
         monkeypatch.setattr(Database, 'session', MockResponse)
         result = frontendUtils.get_admin_comps()
         print(result)
-        assert result.json['data'][0][1] == '<a href="/users/comp_settings_admin/'+ str(myquery[0][0])+'">'+myquery[0][1]+'</a>'
+        assert result.json['data'][0][1] == '<a href="/users/comp_settings_admin/' + str(myquery[0][0])+'">'\
+            + myquery[0][1] + '</a>'
         assert result.json['data'][0][3] == myquery[0][3].strftime("%Y-%m-%d")
         assert result.json['data'][0][4] == myquery[0][4].strftime("%Y-%m-%d")
         assert result.json['data'][0][0] == myquery[0][0]
-        assert result.json['data'][1][1] == '<a href="/users/comp_settings_admin/'+ str(myquery[1][0])+'">'+myquery[1][1]+'</a>'
+        assert result.json['data'][1][1] == '<a href="/users/comp_settings_admin/' + str(myquery[1][0])+'">' \
+            + myquery[1][1] + '</a>'
         assert result.json['data'][1][3] == myquery[1][3].strftime("%Y-%m-%d")
         assert result.json['data'][1][4] == myquery[1][4].strftime("%Y-%m-%d")
         assert result.json['data'][1][0] == myquery[1][0]

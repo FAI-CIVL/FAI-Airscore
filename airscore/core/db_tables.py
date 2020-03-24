@@ -433,14 +433,6 @@ class TblClassification(Base):
     team = Column(TINYINT(1), nullable=False, server_default=text("'0'"))
 
 
-class TblCompAuth(Base):
-    __tablename__ = 'tblCompAuth'
-
-    user_id = Column(INTEGER(11), primary_key=True)
-    comp_id = Column(INTEGER(11), primary_key=True)
-    user_auth = Column(Enum('read', 'write', 'admin', 'owner'), nullable=False, server_default=text("'read'"))
-
-
 class TblCountryCode(Base):
     __tablename__ = 'tblCountryCode'
 
@@ -636,6 +628,15 @@ class TblCompetition(Base):
 
     cat = relationship('TblClassification')
     ladders = relationship('TblLadder', secondary='tblLadderComp')
+
+
+class TblCompAuth(Base):
+    __tablename__ = 'tblCompAuth'
+
+    user_id = Column(INTEGER(11), primary_key=True)
+    comp_id = Column(INTEGER(11), ForeignKey("tblCompetition.comp_id"), primary_key=True,)
+    user_auth = Column(Enum('read', 'write', 'admin', 'owner'), nullable=False, server_default=text("'read'"))
+    comp = relationship(TblCompetition, backref='Auth')
 
 
 TblLadderSeason = Table(

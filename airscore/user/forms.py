@@ -61,6 +61,9 @@ class NewTaskForm(FlaskForm):
     task_region = SelectField('Region')
 
 
+class NewAdminForm(FlaskForm):
+    admin = SelectField("Admin")
+
 class CompForm(FlaskForm):
     from formula import list_formulas
 

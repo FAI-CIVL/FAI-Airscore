@@ -189,16 +189,20 @@
             <h3 class="font-weight-bold">Management</h3>
             <div class="form-row">
                <div class="form-group col-md-6">
-                  <h6 font-weight-bold>Admins:</h6>
-                  <table>
-                     {% for admin in admins %}
-                     <TR>
-                        <TD class="c3">{{admin}}</TD>
+                   <h6 class = "font-weight-bold">Owner:</h6>
+                  <h6 id="owner"> </h6>
+                  <h6 class="font-weight-bold">Admins:</h6>
+                  <table id="admin_table">
+
+                     <TR >
+
                      </TR>
-                     {% endfor %}
+
                   </table>
                   {% if compform.submit %}
-                  <button id="add_admin" class="btn btn-secondary" type="button">Add admin</button>
+                  <button id="add_admin" class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#collapse6" aria-expanded="false" aria-controls="collapse6">
+                      Add admin
+                  </button>
                   {% endif %}
                </div>
             </div>
@@ -210,6 +214,26 @@
          </div>
       </div>
    </div>
+  <div class="collapse" id="collapse6">
+ <div class="card card-body">
+    <div class="container">
+<div id = "add_admin_form">
+      <div class="form-row">
+      <div class="form-group width4">
+           {{adminform.admin.label}} {{adminform.admin(**{'id':'admin_to_add', 'data-toggle': 'tooltip', 'title': adminform.admin.description})}}
+      </div>
+      </div>
+
+      <div class="form-row">
+      <button id="save_admin_button" class="btn btn-success" type="button" onclick="add_administrator()">
+      Add
+      </button>
+      </div>
+</div>
+</div>
+</div>
+</div>
+
    <p>
       <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse4" aria-expanded="false" aria-controls="collapse4">
       Tasks
@@ -323,7 +347,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">No</button>
                <button id = "formula_confirmed" type="button" class="btn btn-default" data-dismiss="modal">Yes update</button>
-            </div>
+            </div>task_name
         </div>
       </div>
   </div>
@@ -433,8 +457,6 @@
 
 
 
-
-
    function update_tasks(json) {
                $("#tasks tbody").remove();
                var content = '';
@@ -465,7 +487,23 @@
                $('#task_region').val(json['last_region']);
    
           };
-   
+
+   function add_administrator(){
+     var mydata = new Object();
+     mydata.id = $('#admin_to_add').val();
+              $.ajax({
+               type: "POST",
+               url: "{{ url_for('user._add_admin', compid=compid)}}",
+               contentType:"application/json",
+               data : JSON.stringify(mydata),
+               dataType: "json",
+               success: function () {
+                      get_admins()
+               }
+               });
+
+   }
+
    
    function save_task(){
            var mydata = new Object();
@@ -500,9 +538,26 @@
                });
    }
    
-   
+      function get_admins(){
+    $.ajax({
+               type: "GET",
+               url: "{{ url_for('user._get_admins', compid=compid)}}",
+               contentType:"application/json",
+               dataType: "json",
+               success: function (response) {
+               var content = '';
+               for (var i = 0; i < response['admins'].length; i++) {
+               content += '<tr><TD class="c3">'+ response['admins'][i]['first_name'] + ' '+ response['admins'][i]['last_name'] +'</TD></tr>'
+               }
+               $('#admin_table').append(content);
+               $('#owner').html(response['owner']['first_name'] + ' ' + response['owner']['last_name'] )
+               }
+   });
+}
+
    $(document).ready(function() {
-   get_tasks()
+   get_tasks();
+   get_admins();
    });
 
 
