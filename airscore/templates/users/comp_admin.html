@@ -68,8 +68,8 @@
 
 
          <div class="modal-body" id= "importmodal-body">
-            <p id ="zip_modal_message">Please provide a FSDB file.</p>
-             <div id="zip_progress" ><div class="bar" style="width: 0%;"><p id="zip_progress_text"></p></div></div>
+            <p id ="fsdb_modal_message">Please provide a FSDB file.</p>
+             <div id="fsdb_progress" ><div class="bar" style="width: 0%;"><p id="fsdb_progress_text"></p></div></div>
          </div>
          <div class="modal-footer">
              <button id="get_fsdb_file_button" class="btn btn-primary ml-4 " onclick="choose_fsdb_file()">
@@ -182,12 +182,19 @@
         $('#fsdb_progress').show();
         $('#fsdb_progress_text').text(data.files[0].name + ' - processing');
         },
-                      success: function () {
-                           $('#fsdbmodal').modal('hide');
+                              success: function(response) {
+            if (response.redirect) {
+                window.location.href = response.redirect;
+            }
+            else{
 
-                      },
+            $('#importmodal').modal('hide');
+            get_comps();
+            }
+            },
 
-         progress: function (e, data) {
+
+                     progress: function (e, data) {
         var progress = parseInt(data.loaded / data.total * 100, 10);
         $('#fsdb_progress .bar').css(
             'width',
@@ -197,6 +204,11 @@
     });
     $('#fsdb_fileupload').click();
 };
+
+
+
+
+
 
 
 function confirm_delete_comp(compid)

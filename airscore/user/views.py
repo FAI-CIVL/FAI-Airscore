@@ -135,7 +135,8 @@ def import_comp_fsdb():
                 compid = f.add_all()
                 if compid:
                     frontendUtils.set_comp_admin(compid, current_user.id, owner=True)
-                    return jsonify(dict(redirect='/comp_admin'))
+                    resp = jsonify(success=True)
+                    return resp
                 else:
                     return render_template('500.html')
 
