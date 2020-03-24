@@ -6,14 +6,16 @@ class MockResponsePASS:
     # mock json() method always returns a specific testing dictionary
     @staticmethod
     def json():
-        return {"result":"PASSED","status":"IGC_PASSED","msg":"vali-xcs.exe","igc":"test_G_record_PASS.igc","ref":"","server":"Open Validation Server 3.03"}
+        return {"result": "PASSED", "status": "IGC_PASSED", "msg": "vali-xcs.exe", "igc":"test_G_record_PASS.igc",
+                "ref": "", "server": "Open Validation Server 3.03"}
 
 
 class MockResponseFAIL:
     # mock json() method always returns a specific testing dictionary
     @staticmethod
     def json():
-        return {"result":"FAILED","status":"IGC_FAILED_NC","msg":"vali-xcs.exe","igc":"test_G_record_FAIL.igc","ref":"","server":"Open Validation Server 3.03"}
+        return {"result": "FAILED", "status": "IGC_FAILED_NC", "msg": "vali-xcs.exe", "igc": "test_G_record_FAIL.igc",
+                "ref": "", "server": "Open Validation Server 3.03"}
 
 
 def test_validate_G_record_pass(monkeypatch):
