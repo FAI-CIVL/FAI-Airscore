@@ -443,7 +443,7 @@ def get_all_admins():
                 all_admins = [row._asdict() for row in all_admins]
         except SQLAlchemyError as e:
             error = str(e)
-            print(f"there was a problem with getting the admin list for comp id{compid} error{error}")
+            print(f"there was a problem with getting the admin list. error{error}")
             db.session.rollback()
             db.session.close()
             return None, None
