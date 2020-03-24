@@ -412,10 +412,24 @@ def task_admin(taskid):
                            modifyturnpointform=modifyturnpointform, compid=task.comp_id, error=error)
 
 
-@blueprint.route('/get_admin_comps', methods=['GET', 'POST'])
+@blueprint.route('/get_admin_comps', methods=['GET'])
 @login_required
 def get_admin_comps():
-    return frontendUtils.get_admin_comps()
+    return frontendUtils.get_admin_comps(current_user.id)
+
+
+@blueprint.route('/_delete_comp/<compid>', methods=['POST', 'GET'])
+@login_required
+def _delete_comp(compid):
+    from comp import delete_comp
+    owner, _ = frontendUtils.get_comp_admins(int(compid))
+    if current_user.id == owner['id']:
+        delete_comp(compid)
+    else:
+        flash(f"You are not the owner of this competition. You cannot delete it.", category='error')
+        return redirect(request.url)
+    resp = jsonify(success=True)
+    return resp
 
 
 @blueprint.route('/airspace_admin', methods=['GET', 'POST'])

@@ -1,4 +1,4 @@
-var csrftoken = $('meta[name=csrf-token]').attr('content');
+ var csrftoken = $('meta[name=csrf-token]').attr('content');
 
 $.ajaxSetup({
     beforeSend: function(xhr, settings) {
@@ -35,8 +35,12 @@ function create_comp()
         });
     console.log(options);
 }
-$(document).ready(function() {
+
+function get_comps()
+{
+
     $('#competitions').dataTable({
+        destroy: true,
         ajax: '/users/get_admin_comps',
         paging: true,
         order: [[ 4, 'desc' ]],
@@ -55,7 +59,21 @@ $(document).ready(function() {
             {
                 $(row).addClass('text-info');
             }
+
+            },
+          columnDefs:[{
+            targets: [-1],  render: function (a, b, data, d) {
+            if(data[6]=='delete'){
+            return ('<td  class ="value" ><button type="button" class="btn btn-danger" onclick="confirm_delete_comp('
+               +  data[0] + ')" data-toggle="confirmation" data-popout="true">Delete</button></td>');
+            }
+
+           else{ return '';}
+
+        }                 }]
+        });
+
         }
-    });
-});
+
+
 
