@@ -184,7 +184,7 @@ def comp_settings_admin(compid):
             comp.date_from = compform.date_from.data
             comp.date_to = compform.date_to.data
             comp.MD_name = compform.MD_name.data
-            comp.time_offset = compform.time_offset.data
+            comp.time_offset = compform.time_offset.data*3600
             comp.restricted = 1 if compform.pilot_registration.data == 'registered' else None
             comp.formula = compform.formula.data
             comp.locked = compform.locked.data
@@ -241,7 +241,7 @@ def comp_settings_admin(compid):
         compform.date_from.data = comp.date_from
         compform.date_to.data = comp.date_to
         compform.MD_name.data = comp.MD_name
-        compform.time_offset.data = comp.time_offset
+        compform.time_offset.data = comp.time_offset/3600
         compform.pilot_registration.data = comp.restricted
         compform.formula.data = formula.formula_name
         compform.overall_validity.data = formula.overall_validity
