@@ -27,7 +27,7 @@ import jsonpickle
 from sqlalchemy import and_
 from sqlalchemy.orm import aliased
 
-from Defines import RESULTDIR, MAPOBJDIR
+from Defines import RESULTDIR, MAPOBJDIR, FILEDIR
 from airspace import AirspaceCheck
 from calcUtils import json, get_date, get_datetime, decimal_to_seconds
 from compUtils import read_rankings
@@ -194,9 +194,7 @@ class Task(object):
             return
         if not self.task_path:
             self.create_path()
-        from os import path as p
-        from Defines import FILEDIR
-        return p.join(FILEDIR, self.comp_path, self.task_path.lower())
+        return path.join(FILEDIR, self.comp_path, self.task_path.lower())
 
     # @property
     # def last_start_time(self):
@@ -568,8 +566,9 @@ class Task(object):
         else:
             return
         if self.id:
-            if not path.exists(self.task_path):
-                makedirs(self.task_path)
+            full_path = path.join(FILEDIR, self.comp_path, self.task_path.lower())
+            if not path.exists(full_path):
+                makedirs(full_path)
             '''store to database'''
             with Database() as db:
                 q = db.session.query(TblTask).get(self.id)
