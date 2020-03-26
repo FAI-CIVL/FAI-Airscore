@@ -471,11 +471,14 @@
                content += '<td class="col-3">' + json['tasks'][i].opt_dist + '</td>';
                content += '<td class="col-6">' + json['tasks'][i].comment+ '</td>';
                content += '<td  class ="value" ><a href="/users/task_admin/' + json['tasks'][i].task_id + '" class="btn btn-info ml-3" type="button" >Settings</a></td>'
+               {% if compform.submit %}
+
                content += '<td  class ="value" ><a href="/users/track_admin/' + json['tasks'][i].task_id + '" class="btn btn-info ml-3" type="button" >Tracks</a></td>'
                content += '<td  class ="value" ><a href="/users/task_score_admin/' + json['tasks'][i].task_id + '" class="btn btn-info ml-3" type="button" >Scores</a></td>'
                content += '<td  class ="value" ><button type="button" class="btn btn-danger" onclick="confirm_delete('
                content +=  json['tasks'][i].task_num + ',' + json['tasks'][i].task_id
                content += ')" data-toggle="confirmation" data-popout="true">Delete</button></td>'
+               {% endif %}
 
                content += '</tr>';
    

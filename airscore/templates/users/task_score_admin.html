@@ -1,27 +1,18 @@
 {% extends "layout.html"%}
 {% block content %}
 
-<!--  <head>-->
-<!--    <meta charset="utf-8">-->
-<!--    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">-->
-<!--    <meta name="description" content="">-->
-<!--    <meta name="author" content="">-->
 
-<!--    &lt;!&ndash; CSS &ndash;&gt;-->
-<!--    <link href="/static/css/task.css" rel="stylesheet">-->
-<!--    &lt;!&ndash; <link href="navbar.css" rel="stylesheet"> &ndash;&gt;-->
-<!--    <link href="/static/css/spacelab_bootstrap.css" rel="stylesheet">-->
     <link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet">
-
-<!--    &lt;!&ndash; JS &ndash;&gt;-->
-<!--    <script type="text/javascript" src="/static/js/utils.js"></script>-->
-<!--    <script type="text/javascript" src="/static/js/microajax.minified.js"></script>-->
-<!--  </head>-->
 
 <body>
         <div class="text-center">
             <h3 id="header"></h3>
         </div>
+
+  {% if not user_is_admin %}
+
+<h2>You are not authorised to access this page as you are not an admin of this competition</h2>
+{% else %}
  <div class="container">
     <div id = "display_file">
        <div class="form-row form-group col-md-12">
@@ -135,15 +126,18 @@
 </div>
 <!-score-Modal ends here--->
 
-
+{% endif %}
 
 {% endblock %}
 {% block js %}
+{% if user_is_admin %}
 {% include "js.html" %}
     <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
     <script type="text/javascript" src="/static/js/pop_task_score_admin.js"></script>
     <script type="text/javascript">populate_task_scores({{taskid}},{{active_file|tojson}})</script>
     <script type="text/javascript">
+
+
 var active_file = '';
 
 // jQuery selection for the file select box
@@ -314,4 +308,6 @@ var mydata = new Object();
 
     </script>
 
+
+{% endif %}
 {% endblock %}

@@ -389,15 +389,24 @@ def get_score_header(files, offset):
     return header, active
 
 
-def get_comp_admins(compid):
-    """returns owner and list of admins"""
+def get_comp_admins(compid_or_taskid, task_id=False):
+    """returns owner and list of admins takes compid by default or taskid if taskid is True"""
     from db_tables import TblCompAuth as CA
     from airscore.user.models import User
+    if task_id:
+        taskid = compid_or_taskid
+    else:
+        compid = compid_or_taskid
     with Database() as db:
         try:
-            all_admins = db.session.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth)\
-                .join(CA, User.id == CA.user_id).filter(CA.comp_id == compid,
-                                                        CA.user_auth.in_(('owner', 'admin'))).all()
+            if task_id:
+                all_admins = db.session.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth)\
+                    .join(CA, User.id == CA.user_id).join(TblTask, CA.comp_id == TblTask.comp_id).filter(TblTask.task_id == taskid,
+                                                            CA.user_auth.in_(('owner', 'admin'))).all()
+            else:
+                all_admins = db.session.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth)\
+                    .join(CA, User.id == CA.user_id).filter(CA.comp_id == compid,
+                                                            CA.user_auth.in_(('owner', 'admin'))).all()
             if all_admins:
                 all_admins = [row._asdict() for row in all_admins]
         except SQLAlchemyError as e:

@@ -293,7 +293,7 @@ def comp_settings_admin(compid):
 @blueprint.route('/_get_admins/<compid>', methods=['GET'])
 @login_required
 def _get_admins(compid):
-    owner, admins = frontendUtils.get_comp_admins(compid)
+    owner, admins, _ = frontendUtils.get_comp_admins(compid)
     return jsonify({'owner': owner, 'admins': admins})
 
 
@@ -421,7 +421,7 @@ def get_admin_comps():
 @login_required
 def _delete_comp(compid):
     from comp import delete_comp
-    owner, _ = frontendUtils.get_comp_admins(int(compid))
+    owner, _, _ = frontendUtils.get_comp_admins(int(compid))
     if current_user.id == owner['id']:
         delete_comp(compid)
     else:
@@ -600,7 +600,12 @@ def _get_tracks_processed(taskid):
 @blueprint.route('/track_admin/<taskid>', methods=['GET'])
 @login_required
 def track_admin(taskid):
-    return render_template('users/track_admin.html', taskid=taskid)
+    _, _, all_admin_ids = frontendUtils.get_comp_admins(taskid, task_id=True)
+    if current_user.id in all_admin_ids:
+        user_is_admin = True
+    else:
+        user_is_admin = None
+    return render_template('users/track_admin.html', taskid=taskid, user_is_admin=user_is_admin)
 
 
 @blueprint.route('/_set_result/<taskid>', methods=['POST'])
@@ -806,9 +811,14 @@ def task_score_admin(taskid):
     fileform.result_file.choices = choices
     if active_file:
         fileform.result_file.data = active_file
+    _, _, all_admin_ids = frontendUtils.get_comp_admins(taskid, task_id=True)
+    if current_user.id in all_admin_ids:
+        user_is_admin = True
+    else:
+        user_is_admin = None
 
     return render_template('users/task_score_admin.html', fileform=fileform, taskid=taskid,
-                           active_file=active_file)
+                           active_file=active_file, user_is_admin=user_is_admin)
 
 
 @blueprint.route('/_score_task/<taskid>', methods=['POST'])

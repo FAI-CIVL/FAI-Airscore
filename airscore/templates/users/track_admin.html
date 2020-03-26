@@ -16,6 +16,10 @@
 
     <title>Track Management</title>
 
+ {% if not user_is_admin %}
+
+<h2>You are not authorised to access this page as you are not an admin of this competition</h2>
+{% else %}
     <!-- CSS -->
     <link href="/static/css/task.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet">
@@ -76,9 +80,9 @@
    </div>
 </div>
 <!-bulk-Modal ends here--->
-
+  {% endif%}
 {% endblock %}
-
+ {% if user_is_admin %}
 {% block js %}
 {% include "js.html" %}
     <script src="{{ static_url_for('static', filename='js/jquery.initialize.js') }}"></script>
@@ -247,5 +251,6 @@
     });
 
 </script>
-
 {% endblock %}
+  {% endif%}
+
