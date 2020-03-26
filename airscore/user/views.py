@@ -656,11 +656,14 @@ def _upload_track(taskid, parid):
                     return redirect(request.url)
 
                 if frontendUtils.allowed_tracklog(tracklog.filename):
-                    data = frontendUtils.process_igc(taskid, parid, tracklog)
-                    resp = jsonify(data)
-                    # resp = jsonify({'file': 'accepted'})
-                    return resp
-
+                    data, error = frontendUtils.process_igc(taskid, parid, tracklog)
+                    if data:
+                        resp = jsonify(data)
+                        return resp
+                    else:
+                        error = tracklog.filename + ' ' + error
+                        resp = jsonify({'error': error})
+                        return resp
                 else:
                     print("That file extension is not allowed")
                     return redirect(request.url)

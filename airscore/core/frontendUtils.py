@@ -270,21 +270,19 @@ def process_igc(task_id, par_id, tracklog):
 
     task = Task.read(task_id)
     track_path = task.file_path
-    print(task_id)
-    print(filename)
-
     full_file_name = path.join(track_path, filename)
     tracklog.save(full_file_name)
-    print("Tracklog saved")
 
     """import track"""
     pilot.track = Track(track_file=filename, par_id=par_id)
     pilot.track.flight = Flight.create_from_file(full_file_name)
     """check result"""
     if not pilot.track:
-        print(f"Track {filename} is not a valid track file \n")
+        error = f"for {pilot.name} - Track is not a valid track file"
+        return None, error
     elif not pilot.track.date == task.date:
-        print(f"track {filename} has a different date from task day \n")
+        error = f"for {pilot.name} - Track has a different date from task date"
+        return None, error
     else:
 
         print(f"pilot {pilot.track.par_id} associated with track {pilot.track.filename} \n")
@@ -313,7 +311,7 @@ def process_igc(task_id, par_id, tracklog):
             trackid = data['track_id']
             result = data['Result']
             data['Result']  = f'<a href="/map/{trackid}-{task_id}">{result}</a>'
-    return data
+    return data, None
 
 
 def process_igc_zip(task, zipfile):

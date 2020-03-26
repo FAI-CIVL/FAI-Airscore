@@ -7,15 +7,6 @@
 }
 </style>
 
-<!--<style>-->
-<!--input {-->
-<!--    display: block;-->
-<!--    visibility: hidden;-->
-<!--    width: 0;-->
-<!--    height: 0;-->
-<!--}-->
-<!--</style>-->
-
   <body>
 <!--  <head>-->
     <meta charset="utf-8">
@@ -71,6 +62,7 @@
          <div class="modal-body" id= "bulkmodal-body">
             <p id ="zip_modal_message">Please provide a ZIP file containing .igc files. The files should be named as such: FAI.igc or LASTNAME_FIRSTNAME.igc</p>
              <div id="zip_progress" ><div class="bar" style="width: 0%;"><p id="zip_progress_text"></p></div></div>
+             <p id="zip_spinner"></p>
          </div>
          <div class="modal-footer">
             <button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
@@ -95,6 +87,7 @@
     <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.ui.widget.js') }}"></script>
     <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.iframe-transport.js') }}"></script>
     <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.fileupload.js') }}"></script>
+    <script src="{{ static_url_for('static', filename='js/jquery-alert-master/jquery-alert.js') }}"></script>
     <script type="text/javascript">populate_track_admin({{taskid|tojson}})</script>
     <script type="text/javascript">
 
@@ -172,14 +165,16 @@
         submit: function (e, data){
         $('#zip_modal_message').hide();
         $('#zip_progress').show();
+        $('#zip_spinner').show()
         $('#zip_progress_text').text(data.files[0].name + ' - processing');
+        $('#zip_spinner').html('<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>');
         },
                       success: function () {
                            $('#bulkmodal').modal('hide');
                            populate_track_admin({{taskid|tojson}});
                       },
 
-         progress: function (e, data) {
+        progress: function (e, data) {
         var progress = parseInt(data.loaded / data.total * 100, 10);
         $('#zip_progress .bar').css(
             'width',
@@ -211,8 +206,20 @@
         $('#filediv'+ par_id).show();
 
          $('#progress_text'+ par_id).text(data.files[0].name + ' - processing');
+         $('#spinner' + par_id).html('<div class="spinner-border" role="status"><span class="sr-only"></span></div>');
         },
-                      success: function (response, par_id) {
+                      success: function (response) {
+                      if(response.error){
+                              $('#ABS'+ par_id).show();
+                                $('#MD'+ par_id).show();
+                                $('#DNF'+ par_id).show();
+                                $('#TrackUp'+ par_id).show();
+                                $('#upload_box'+ par_id).show();
+                                $('#filediv'+ par_id).hide();
+                        $.alert(response.error,{ type: 'danger', position: ['center', [-0.42, 0]],
+                        autoClose: false
+                        });
+                      }
                       update_row(response);
                       },
 
@@ -222,6 +229,7 @@
             'width',
             progress + '%'
         );
+
     }
     });
     $('#fileupload' + par_id).click();

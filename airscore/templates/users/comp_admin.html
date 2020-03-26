@@ -70,6 +70,7 @@
          <div class="modal-body" id= "importmodal-body">
             <p id ="fsdb_modal_message">Please provide a FSDB file.</p>
              <div id="fsdb_progress" ><div class="bar" style="width: 0%;"><p id="fsdb_progress_text"></p></div></div>
+             <p id="fsdb_spinner"></p>
          </div>
          <div class="modal-footer">
              <button id="get_fsdb_file_button" class="btn btn-primary ml-4 " onclick="choose_fsdb_file()">
@@ -181,6 +182,7 @@
         $('#fsdb_modal_message').hide();
         $('#fsdb_progress').show();
         $('#fsdb_progress_text').text(data.files[0].name + ' - processing');
+        $('#fsdb_spinner').html('<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>');
         },
                               success: function(response) {
             if (response.redirect) {
