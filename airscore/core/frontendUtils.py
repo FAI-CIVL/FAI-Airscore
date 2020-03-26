@@ -407,15 +407,17 @@ def get_comp_admins(compid):
             db.session.close()
             return None, None
         admins = []
+        all_ids = []
         owner = None
         for admin in all_admins:
+            all_ids.append(admin['id'])
             if admin['user_auth'] == 'owner':
                 del admin['user_auth']
                 owner = admin
             else:
                 del admin['user_auth']
                 admins.append(admin)
-    return owner, admins
+    return owner, admins, all_ids
 
 
 def set_comp_admin(compid, userid, owner=False):

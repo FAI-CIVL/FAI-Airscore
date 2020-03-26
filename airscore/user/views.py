@@ -163,12 +163,10 @@ def comp_settings_admin(compid):
     newtaskform = NewTaskForm()
     newadminform = NewAdminForm()
     comp = Comp.read(compid)
-    owner, administrators = frontendUtils.get_comp_admins(compid)
+    owner, administrators, admin_ids = frontendUtils.get_comp_admins(compid)
     all_admins = frontendUtils.get_all_admins()
     all_admins.remove(owner)
-    admins = [owner['id']]
     for admin in administrators:
-        admins.append(admin['id'])
         all_admins.remove(admin)
     admin_choices = []
     if all_admins:
@@ -283,7 +281,7 @@ def comp_settings_admin(compid):
         newtaskform.task_region.choices = frontendUtils.get_region_choices(compid)
         newadminform.admin.choices = admin_choices
 
-        if current_user.id not in admins:
+        if current_user.id not in admin_ids:
             compform.submit = None
 
     tasks = jsonify(frontendUtils.get_task_list(comp))
@@ -324,7 +322,7 @@ def task_admin(taskid):
     turnpointform.name.choices = waypoints
     modifyturnpointform.mod_name.choices = waypoints
 
-    admins = ['john wayne', 'stuartm']  # TODO
+    owner, administrators, all_admin_ids = frontendUtils.get_comp_admins(task.comp_id)
 
     if request.method == 'POST':
         if taskform.validate_on_submit():
@@ -406,7 +404,7 @@ def task_admin(taskid):
         taskform.no_goal_penalty.data = task.formula.no_goal_penalty
         taskform.arr_alt_bonus.data = task.formula.arr_alt_bonus
 
-        if current_user.username not in admins:
+        if current_user.id not in all_admin_ids:
             taskform.submit = None
 
     return render_template('users/task_admin.html', taskid=taskid, taskform=taskform, turnpointform=turnpointform,

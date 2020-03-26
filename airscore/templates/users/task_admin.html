@@ -23,12 +23,16 @@
       <a href="{{ url_for('user.comp_settings_admin', compid=compid)}}" class="btn btn-info ml-4" type="button" >
       Back to competition settings
       </a>
+               {% if taskform.submit %}
+
+
       <a href="{{ url_for('user.track_admin', taskid=taskid)}}" class="btn btn-info ml-4" type="button" >
          Manage Tracks
       </a>
             <a href="{{ url_for('user.task_score_admin', taskid=taskid)}}" class="btn btn-info ml-4" type="button" >
          Manage Scores
       </a>
+               {% endif%}
       <br>
 
       </p>
@@ -170,7 +174,9 @@
       Turnpoints
       </button>
    </p>
+
    <div class="collapse" id="collapse4">
+                 {% if taskform.submit %}
       <div id="import">
          <p>
              <button class="btn btn-secondary ml-5 " type="button" data-toggle="collapse" data-target="#collapse26" aria-expanded="false" aria-controls="collapse26">
@@ -194,7 +200,7 @@
       <button id="deleteall_btn" class="btn btn-danger ml-5 " onclick="confirm_delete_all();" type="button" >
          Clear Task
       </button>
-
+{% endif %}
 
    <div class="card card-body">
       <div class="container">
@@ -289,6 +295,8 @@
             </div>
 
       </div>
+
+     {% if taskform.submit %}
 <!---delete-modal starts here--->
 <div id="delmodal" class="modal fade" role='dialog'>
    <div class="modal-dialog">
@@ -355,6 +363,7 @@
    </div>
 </div>
 <!-modify-Modal ends here--->
+      {% endif%}
 {% endblock %}
 {% block js %}
 {% include "js.html" %}
@@ -371,6 +380,24 @@
            }
        }
    })
+
+   function get_turnpoints(){
+    $.ajax({
+               type: "GET",
+               url: "{{ url_for('user._get_task_turnpoints', taskid=taskid)}}",
+               contentType:"application/json",
+               dataType: "json",
+               success: function (response) {
+                       update_turnpoints(response)
+               }
+               });
+   }
+
+
+   $(document).ready(function() {
+   get_turnpoints()
+   });
+
 
    var turnpoints;
    var taskid = {{taskid}};
@@ -419,7 +446,7 @@
                $('#tp_number').val(json['next_number']);
           };
 
-
+ {% if taskform.submit %}
    function save_turnpoint(){
            var radius =$('#tp_radius').val();
            if($('#tp_type').val() == 'launch' ){
@@ -449,23 +476,6 @@
                });
 
    };
-
-   function get_turnpoints(){
-    $.ajax({
-               type: "GET",
-               url: "{{ url_for('user._get_task_turnpoints', taskid=taskid)}}",
-               contentType:"application/json",
-               dataType: "json",
-               success: function (response) {
-                       update_turnpoints(response)
-               }
-               });
-   }
-
-
-   $(document).ready(function() {
-   get_turnpoints()
-   });
 
 
 
@@ -611,6 +621,8 @@ $(function () {
   function filesize(elem){
     document.cookie = `filesize=${elem.files[0].size}`
   }
+
+    {% endif%}
 
 </script>
 
