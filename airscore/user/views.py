@@ -2,7 +2,7 @@
 """User views."""
 from datetime import datetime
 
-from flask import Blueprint, render_template, request, jsonify, json, flash, redirect, url_for
+from flask import Blueprint, render_template, request, jsonify, json, flash, redirect, url_for, session
 from flask_login import login_required, current_user
 import frontendUtils
 from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm, \
@@ -163,6 +163,10 @@ def comp_settings_admin(compid):
     newtaskform = NewTaskForm()
     newadminform = NewAdminForm()
     comp = Comp.read(compid)
+    # set session variables for navbar
+    session['compid'] = compid
+    session['comp_name'] = comp.comp_name
+
     owner, administrators, admin_ids = frontendUtils.get_comp_admins(compid)
     all_admins = frontendUtils.get_all_admins()
     all_admins.remove(owner)
@@ -284,9 +288,10 @@ def comp_settings_admin(compid):
         if current_user.id not in admin_ids:
             compform.submit = None
 
-    tasks = jsonify(frontendUtils.get_task_list(comp))
-
-    return render_template('users/comp_settings.html', compid=compid, compform=compform, tasks=tasks,
+    # tasks = jsonify(frontendUtils.get_task_list(comp))
+    tasks = frontendUtils.get_task_list(comp)
+    session['tasks'] = tasks['tasks']
+    return render_template('users/comp_settings.html', compid=compid, compform=compform, # tasks=tasks,
                            taskform=newtaskform, adminform=newadminform, error=error)
 
 
