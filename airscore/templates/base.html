@@ -56,7 +56,9 @@
                         aria-haspopup="true" aria-expanded="false">
                             {{session.comp_name }}
                     </a>
+
                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <li><a class="dropdown-item" href="{{ url_for('user.comp_settings_admin', compid=session.compid) }}">Competition Settings</a></li>
                     {% for task in session.tasks %}
                         <li class="nav-item dropdown">
                                 <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown{{task.task_num}}" role="button" data-toggle="dropdown"
