@@ -435,15 +435,11 @@
 
                content += '<td  class ="value" ><button type="button" class="btn btn-warning" onclick="modify_tp('
                content +=  json['turnpoints'][i].n + ',' + json['turnpoints'][i].id
-               content += ')" data-toggle="confirmation" data-popout="true">
-               Modify
-               </button></td>'
+               content += ')" data-toggle="confirmation" data-popout="true">Modify</button></td>'
 
                content += '<td  class ="value" ><button type="button" class="btn btn-danger" onclick="confirm_delete('
                content +=  json['turnpoints'][i].n + ',' + json['turnpoints'][i].id + ',' + partial_dist
-               content += ')" data-toggle="confirmation" data-popout="true">
-               Delete
-               </button></td>'
+               content += ')" data-toggle="confirmation" data-popout="true">Delete</button></td>'
   {% endif%}
 
                content += '</tr>';
