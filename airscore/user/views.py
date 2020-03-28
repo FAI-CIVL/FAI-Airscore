@@ -373,6 +373,7 @@ def task_admin(taskid):
                     stdout.flush()
 
     if request.method == 'GET':
+        offset = task.time_offset if task.time_offset else 0
         taskform.comp_name = task.comp_name
         taskform.task_name.data = task.task_name
         taskform.task_num.data = task.task_num
@@ -380,20 +381,20 @@ def task_admin(taskid):
         taskform.date.data = task.date
         taskform.task_type.data = task.task_type
         taskform.window_open_time.data = "" if not task.window_open_time else sec_to_time((task.window_open_time
-                                                                                           + task.time_offset)%86400)
+                                                                                           + offset)%86400)
         taskform.window_close_time.data = "" if not task.window_close_time else sec_to_time((task.window_close_time
-                                                                                             + task.time_offset)%86400)
+                                                                                             + offset)%86400)
         taskform.start_time.data = "" if not task.start_time else sec_to_time((task.start_time
-                                                                               + task.time_offset)%86400)
+                                                                               + offset)%86400)
         taskform.start_close_time.data = "" if not task.start_close_time else sec_to_time((task.start_close_time
-                                                                                           + task.time_offset)%86400)
+                                                                                           + offset)%86400)
         taskform.stopped_time.data = "" if not task.stopped_time else sec_to_time((task.stopped_time
-                                                                                   + task.time_offset)%86400)
+                                                                                   + offset)%86400)
         taskform.task_deadline.data = "" if not task.task_deadline else sec_to_time((task.task_deadline
-                                                                                     + task.time_offset)%86400)
+                                                                                     + offset)%86400)
         taskform.SS_interval.data = task.SS_interval/60 # (convert from sec to min)
         taskform.start_iteration.data = task.start_iteration
-        taskform.time_offset.data = task.time_offset/3600
+        taskform.time_offset.data = offset/3600
         taskform.check_launch.data = False if task.check_launch == 'off' else True
         taskform.airspace_check.data = task.airspace_check
         # taskform.openair_file.data = task.openair_file # TODO get a list of openair files for this comp (in the case of defines.yaml airspace_file_library: off otherwise all openair files available)
