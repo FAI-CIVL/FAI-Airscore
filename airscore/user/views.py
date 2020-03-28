@@ -286,12 +286,15 @@ def comp_settings_admin(compid):
         newadminform.admin.choices = admin_choices
 
         if current_user.id not in admin_ids:
+            session['is_admin'] = False
             compform.submit = None
+        else:
+            session['is_admin'] = True
 
-    # tasks = jsonify(frontendUtils.get_task_list(comp))
     tasks = frontendUtils.get_task_list(comp)
     session['tasks'] = tasks['tasks']
-    return render_template('users/comp_settings.html', compid=compid, compform=compform, # tasks=tasks,
+
+    return render_template('users/comp_settings.html', compid=compid, compform=compform,
                            taskform=newtaskform, adminform=newadminform, error=error)
 
 
