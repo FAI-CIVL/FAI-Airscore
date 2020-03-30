@@ -91,6 +91,10 @@ class Task_result:
                     'glide_bonus',
                     'tolerance',  # percentage / 100
                     'scoring_altitude',  # 'GPS', 'QNH'
+                    'team_scoring',
+                    'team_size',
+                    'team_over',
+                    'country_scoring'
                     ]
 
     stats_list = ['pilots_launched',
@@ -229,6 +233,10 @@ class Comp_result(object):
                     'glide_bonus',
                     'tolerance',  # percentage / 100
                     'scoring_altitude',  # 'GPS', 'QNH'
+                    'team_scoring',
+                    'team_size',
+                    'team_over',
+                    'country_scoring'
                     ]
 
     task_list = ['id',
@@ -440,3 +448,51 @@ def delete_result(ref_id, filename=None, session=None):
             db.session.rollback()
             db.session.close()
             return error
+
+
+def get_country_scoring(filename):
+    from os import path
+    import jsonpickle
+    from Defines import RESULTDIR
+    file = path.join(RESULTDIR, filename)
+    with open(file, 'r') as f:
+        data = jsonpickle.decode(f.read())
+        formula = data['formula']
+        if not formula['country_scoring']:
+            print(f'Team Scoring is not available')
+            return None
+        # results = data['results']
+        countries = get_country_list(countries=set(map(lambda x: x['nat'], data['results'])))
+        size = formula['team_size']
+        results = []
+        for nat in countries:
+            nation = dict(code=nat.code, name=nat.name)
+            nat_pilots = sorted([p for p in data['results'] if p['nat'] == nation['code']
+                                                    and p['nat_team']], key=lambda k: k['score'], reverse=True)
+            nation['pilots'] = nat_pilots
+            nation['score'] = sum([p['score'] for p in nat_pilots][:size])
+            results.append(nation)
+        results = sorted(results, key=lambda k: k['score'], reverse=True)
+        # for p in results:
+        #     print(f"{p['name']}: {p['score']}")
+        return jsonpickle.encode(results)
+
+
+def get_country_list(countries=None, iso=3):
+    from db_tables import TblCountryCode as CC
+    from myconn import Database
+    from sqlalchemy.exc import SQLAlchemyError
+    column = getattr(CC, 'natIso' + str(iso))
+    with Database() as db:
+        try:
+            query = db.session.query(CC.natName.label('name'), column.label('code'))
+            if countries:
+                return sorted(query.filter(column.in_(countries)).all(), key=lambda k: k.name)
+            return query.all()
+        except SQLAlchemyError as e:
+            error = str(e)
+            print(f"Error getting countries list from database: {error}")
+            db.session.rollback()
+            db.session.close()
+            return error
+
