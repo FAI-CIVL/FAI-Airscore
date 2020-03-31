@@ -450,34 +450,6 @@ def delete_result(ref_id, filename=None, session=None):
             return error
 
 
-def get_country_scoring(filename):
-    from os import path
-    import jsonpickle
-    from Defines import RESULTDIR
-    file = path.join(RESULTDIR, filename)
-    with open(file, 'r') as f:
-        data = jsonpickle.decode(f.read())
-        formula = data['formula']
-        if not formula['country_scoring']:
-            print(f'Team Scoring is not available')
-            return None
-        # results = data['results']
-        countries = get_country_list(countries=set(map(lambda x: x['nat'], data['results'])))
-        size = formula['team_size']
-        results = []
-        for nat in countries:
-            nation = dict(code=nat.code, name=nat.name)
-            nat_pilots = sorted([p for p in data['results'] if p['nat'] == nation['code']
-                                                    and p['nat_team']], key=lambda k: k['score'], reverse=True)
-            nation['pilots'] = nat_pilots
-            nation['score'] = sum([p['score'] for p in nat_pilots][:size])
-            results.append(nation)
-        results = sorted(results, key=lambda k: k['score'], reverse=True)
-        # for p in results:
-        #     print(f"{p['name']}: {p['score']}")
-        return jsonpickle.encode(results)
-
-
 def get_country_list(countries=None, iso=3):
     from db_tables import TblCountryCode as CC
     from myconn import Database
@@ -496,3 +468,79 @@ def get_country_list(countries=None, iso=3):
             db.session.close()
             return error
 
+
+def open_json_file(filename):
+    from pathlib import Path
+    from os import path
+    import jsonpickle
+    from Defines import RESULTDIR
+    file = path.join(RESULTDIR, filename)
+    if not Path(file).is_file():
+        print(f"error: file {filename} does not exist")
+        return None
+    with open(file, 'r') as f:
+        return jsonpickle.decode(f.read())
+
+
+def get_task_country_scoring(filename):
+    import jsonpickle
+    data = open_json_file(filename)
+    formula = data['formula']
+    if not formula['country_scoring']:
+        print(f'Team Scoring is not available')
+        return None
+    countries = get_country_list(countries=set(map(lambda x: x['nat'], data['results'])))
+    size = formula['team_size']
+    results = []
+    for nat in countries:
+        nation = dict(code=nat.code, name=nat.name)
+        nat_pilots = sorted([p for p in data['results'] if p['nat'] == nation['code']
+                                                and p['nat_team']], key=lambda k: k['score'], reverse=True)
+        nation['pilots'] = nat_pilots
+        nation['score'] = sum([p['score'] for p in nat_pilots][:size])
+        results.append(nation)
+    results = sorted(results, key=lambda k: k['score'], reverse=True)
+    return jsonpickle.encode(results)
+
+
+def get_comp_country_scoring(filename):
+    import jsonpickle
+    data = open_json_file(filename)
+    formula = data['formula']
+    if not formula['country_scoring']:
+        print(f'Team Scoring is not available')
+        return None
+    '''get info: countries list, team size, task codes'''
+    countries = get_country_list(countries=set(map(lambda x: x['nat'], data['results'])))
+    size = formula['team_size']
+    tasks = [t['task_code'] for t in data['tasks']]
+    results = []
+    for nat in countries:
+        nation = dict(code=nat.code, name=nat.name)
+        nat_pilots = [p for p in data['results'] if p['nat'] == nation['code'] and p['nat_team']]
+        score = 0
+        for t in tasks:
+            '''sort pilots by task result'''
+            nat_pilots = sorted(nat_pilots, key=lambda k: k['results'][t]['pre'], reverse=True)
+            '''adjust values'''
+            for idx, p in enumerate(nat_pilots):
+                if idx < size:
+                    score += p['results'][t]['pre']
+                    p['results'][t]['score'] = p['results'][t]['pre']
+                    p['results'][t]['perf'] = 1
+                else:
+                    p['results'][t]['score'] = 0
+                    p['results'][t]['perf'] = 0
+        '''final nation sorting'''
+        for p in nat_pilots:
+            p['score'] = sum(p['results'][t]['score'] for t in tasks)
+        nat_pilots = sorted(nat_pilots, key=lambda k: k['score'], reverse=True)
+        nation['pilots'] = nat_pilots
+        nation['score'] = score
+        results.append(nation)
+    results = sorted(results, key=lambda k: k['score'], reverse=True)
+    return jsonpickle.encode(results)
+    # for idx, nat in enumerate(results, 1):
+    #     print(f"{idx}. - {nat['name']}: {nat['score']}")
+    #     for p in nat['pilots']:
+    #         print(f" - {p['name']}: {[(t, p['results'][t]['score']) for t in tasks]} - {p['score']}")
