@@ -91,6 +91,10 @@ class Task_result:
                     'glide_bonus',
                     'tolerance',  # percentage / 100
                     'scoring_altitude',  # 'GPS', 'QNH'
+                    'team_scoring',
+                    'team_size',
+                    'team_over',
+                    'country_scoring'
                     ]
 
     stats_list = ['pilots_launched',
@@ -229,6 +233,10 @@ class Comp_result(object):
                     'glide_bonus',
                     'tolerance',  # percentage / 100
                     'scoring_altitude',  # 'GPS', 'QNH'
+                    'team_scoring',
+                    'team_size',
+                    'team_over',
+                    'country_scoring'
                     ]
 
     task_list = ['id',
@@ -422,16 +430,16 @@ def update_result_file(filename, par_id, comment=None, penalty=None):
         f.truncate()
 
 
-def delete_result(ref_id, file=True, session=None):
+def delete_result(ref_id, filename=None, session=None):
     from Defines import RESULTDIR
     import os
     with Database(session) as db:
         try:
-            if file:
-                info = db.session.query(TblResultFile).get(ref_id)
-                filename = os.path.join(RESULTDIR, info.filename)
-                if os.path.exists(filename):
-                    os.remove(filename)
+            if not filename:
+                filename = db.session.query(TblResultFile).get(ref_id).filename
+            file = os.path.join(RESULTDIR, filename)
+            if os.path.exists(file):
+                os.remove(file)
             db.session.query(TblResultFile).filter(TblResultFile.ref_id == ref_id).delete(synchronize_session=False)
             db.session.commit()
         except SQLAlchemyError as e:
@@ -440,3 +448,99 @@ def delete_result(ref_id, file=True, session=None):
             db.session.rollback()
             db.session.close()
             return error
+
+
+def get_country_list(countries=None, iso=3):
+    from db_tables import TblCountryCode as CC
+    from myconn import Database
+    from sqlalchemy.exc import SQLAlchemyError
+    column = getattr(CC, 'natIso' + str(iso))
+    with Database() as db:
+        try:
+            query = db.session.query(CC.natName.label('name'), column.label('code'))
+            if countries:
+                return sorted(query.filter(column.in_(countries)).all(), key=lambda k: k.name)
+            return query.all()
+        except SQLAlchemyError as e:
+            error = str(e)
+            print(f"Error getting countries list from database: {error}")
+            db.session.rollback()
+            db.session.close()
+            return error
+
+
+def open_json_file(filename):
+    from pathlib import Path
+    from os import path
+    import jsonpickle
+    from Defines import RESULTDIR
+    file = path.join(RESULTDIR, filename)
+    if not Path(file).is_file():
+        print(f"error: file {filename} does not exist")
+        return None
+    with open(file, 'r') as f:
+        return jsonpickle.decode(f.read())
+
+
+def get_task_country_scoring(filename):
+    import jsonpickle
+    data = open_json_file(filename)
+    formula = data['formula']
+    if not formula['country_scoring']:
+        print(f'Team Scoring is not available')
+        return None
+    countries = get_country_list(countries=set(map(lambda x: x['nat'], data['results'])))
+    size = formula['team_size']
+    results = []
+    for nat in countries:
+        nation = dict(code=nat.code, name=nat.name)
+        nat_pilots = sorted([p for p in data['results'] if p['nat'] == nation['code']
+                                                and p['nat_team']], key=lambda k: k['score'], reverse=True)
+        nation['pilots'] = nat_pilots
+        nation['score'] = sum([p['score'] for p in nat_pilots][:size])
+        results.append(nation)
+    results = sorted(results, key=lambda k: k['score'], reverse=True)
+    return jsonpickle.encode(results)
+
+
+def get_comp_country_scoring(filename):
+    import jsonpickle
+    data = open_json_file(filename)
+    formula = data['formula']
+    if not formula['country_scoring']:
+        print(f'Team Scoring is not available')
+        return None
+    '''get info: countries list, team size, task codes'''
+    countries = get_country_list(countries=set(map(lambda x: x['nat'], data['results'])))
+    size = formula['team_size']
+    tasks = [t['task_code'] for t in data['tasks']]
+    results = []
+    for nat in countries:
+        nation = dict(code=nat.code, name=nat.name)
+        nat_pilots = [p for p in data['results'] if p['nat'] == nation['code'] and p['nat_team']]
+        score = 0
+        for t in tasks:
+            '''sort pilots by task result'''
+            nat_pilots = sorted(nat_pilots, key=lambda k: k['results'][t]['pre'], reverse=True)
+            '''adjust values'''
+            for idx, p in enumerate(nat_pilots):
+                if idx < size:
+                    score += p['results'][t]['pre']
+                    p['results'][t]['score'] = p['results'][t]['pre']
+                    p['results'][t]['perf'] = 1
+                else:
+                    p['results'][t]['score'] = 0
+                    p['results'][t]['perf'] = 0
+        '''final nation sorting'''
+        for p in nat_pilots:
+            p['score'] = sum(p['results'][t]['score'] for t in tasks)
+        nat_pilots = sorted(nat_pilots, key=lambda k: k['score'], reverse=True)
+        nation['pilots'] = nat_pilots
+        nation['score'] = score
+        results.append(nation)
+    results = sorted(results, key=lambda k: k['score'], reverse=True)
+    return jsonpickle.encode(results)
+    # for idx, nat in enumerate(results, 1):
+    #     print(f"{idx}. - {nat['name']}: {nat['score']}")
+    #     for p in nat['pilots']:
+    #         print(f" - {p['name']}: {[(t, p['results'][t]['score']) for t in tasks]} - {p['score']}")
