@@ -160,7 +160,10 @@ def get_waypoints_from_file(filename):
         - CompeGPS
         returns a list of list:
         [code lat lon alt desc]"""
-
+    from pathlib import Path
+    if not Path(filename).is_file():
+        print(f"error: file {filename} does not exist")
+        return []
     '''create logging and disable output'''
     Logger('ON', 'waypoint_reader.txt')
 
