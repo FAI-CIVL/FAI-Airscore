@@ -196,3 +196,18 @@ def get_waypoints_from_file(filename):
     Logger('OFF')
 
     return wpts
+
+
+def get_turnpoints_from_file(filename):
+    """ Returns a list of Turnpoints objects from waypoint file
+    """
+    from route import Turnpoint
+    wpts = get_waypoints_from_file(filename)
+    if not wpts:
+        print(f"error: file {filename} does not contain any waypoint")
+        return []
+    turnpoints = []
+    for wpt in wpts:
+        tp = Turnpoint(name=wpt[0], lat=wpt[1], lon=wpt[2], altitude=wpt[3], description=wpt[4])
+        turnpoints.append(tp)
+    return turnpoints
