@@ -451,6 +451,15 @@ def delete_result(ref_id, filename=None, session=None):
 
 
 def get_country_list(countries=None, iso=3):
+    """
+    Returns a list of countries code and names.
+    If a list of codes is not given, returns the whole countries set.
+    Args:
+        countries: list of country codes
+        iso: 2 or 3
+    Returns:
+        a list of objects with attributes name and code
+    """
     from db_tables import TblCountryCode as CC
     from myconn import Database
     from sqlalchemy.exc import SQLAlchemyError
@@ -483,6 +492,15 @@ def open_json_file(filename):
 
 
 def get_task_country_scoring(filename):
+    """
+    Get task result json file as input
+    returns json formatted string
+    list of nations dict with attributes:
+        name: nation name
+        code: nation code
+        score: nation score
+        pilots: list of pilots dict, as in result json file. Only pilots in National team.
+    So in frontend every result after the max team size should be formatted as deleted"""
     import jsonpickle
     data = open_json_file(filename)
     formula = data['formula']
@@ -495,7 +513,7 @@ def get_task_country_scoring(filename):
     for nat in countries:
         nation = dict(code=nat.code, name=nat.name)
         nat_pilots = sorted([p for p in data['results'] if p['nat'] == nation['code']
-                                                and p['nat_team']], key=lambda k: k['score'], reverse=True)
+                             and p['nat_team']], key=lambda k: k['score'], reverse=True)
         nation['pilots'] = nat_pilots
         nation['score'] = sum([p['score'] for p in nat_pilots][:size])
         results.append(nation)
@@ -504,6 +522,18 @@ def get_task_country_scoring(filename):
 
 
 def get_comp_country_scoring(filename):
+    """
+    Get comp result json file as input
+    returns json formatted string
+    list of nations dict with attributes:
+        name: nation name
+        code: nation code
+        score: nation score
+        pilots: list of pilots dict, as in result json file, but in results attribute you have, for each task:
+            pre: actual pilot result
+            perf: 1 if result has been used by team, 0 otherwise
+            score: actual score if used, 0 otherwise
+    So in frontend every result is taken from pre, formatted as deleted if perf == 0"""
     import jsonpickle
     data = open_json_file(filename)
     formula = data['formula']
@@ -544,3 +574,94 @@ def get_comp_country_scoring(filename):
     #     print(f"{idx}. - {nat['name']}: {nat['score']}")
     #     for p in nat['pilots']:
     #         print(f" - {p['name']}: {[(t, p['results'][t]['score']) for t in tasks]} - {p['score']}")
+
+
+def get_comp_team_scoring(filename):
+    """
+    Get comp result json file as input
+    returns json formatted string
+    list of teams dict with attributes:
+        name: team name
+        score: team score
+        pilots: list of pilots dict, as in result json file, but in results attribute you have, for each task:
+            pre: actual pilot result
+            perf: 1 if result has been used by team, 0 otherwise
+            score: actual score if used, 0 otherwise
+    So in frontend every result is taken from pre, formatted as deleted if perf == 0"""
+    import jsonpickle
+    data = open_json_file(filename)
+    formula = data['formula']
+    if not formula['team_scoring']:
+        print(f'Team Scoring is not available')
+        return None
+    '''get info: teams list, team size, task codes'''
+    pilots = [p for p in data['results'] if not p['team'] in [None, '']]
+    teams = set(map(lambda x: x['team'].strip().title(), pilots))
+    size = formula['team_size']
+    tasks = [t['task_code'] for t in data['tasks']]
+    results = []
+    for el in teams:
+        team = dict(name=el)
+        team_pilots = [p for p in pilots if p['team'].strip().title() == team['name']]
+        score = 0
+        for t in tasks:
+            '''sort pilots by task result'''
+            team_pilots = sorted(team_pilots, key=lambda k: k['results'][t]['pre'], reverse=True)
+            '''adjust values'''
+            for idx, p in enumerate(team_pilots):
+                if idx < size:
+                    score += p['results'][t]['pre']
+                    p['results'][t]['score'] = p['results'][t]['pre']
+                    p['results'][t]['perf'] = 1
+                else:
+                    p['results'][t]['score'] = 0
+                    p['results'][t]['perf'] = 0
+        '''final nation sorting'''
+        for p in team_pilots:
+            p['score'] = sum(p['results'][t]['score'] for t in tasks)
+        nat_pilots = sorted(team_pilots, key=lambda k: k['score'], reverse=True)
+        team['pilots'] = nat_pilots
+        team['score'] = score
+        results.append(team)
+    results = sorted(results, key=lambda k: k['score'], reverse=True)
+    return jsonpickle.encode(results)
+    # for idx, team in enumerate(results, 1):
+    #     print(f"{idx}. - {team['name']}: {team['score']}")
+    #     for p in team['pilots']:
+    #         print(f" - {p['name']}: {[(t, p['results'][t]['score']) for t in tasks]} - {p['score']}")
+
+
+def get_task_team_scoring(filename):
+    """
+    Get task result json file as input
+    returns json formatted string
+    list of teams dict with attributes:
+        name: team name
+        score: team score
+        pilots: list of team pilots dict, as in result json file.
+    So in frontend every result after the max team size should be formatted as deleted.
+    Only pilots with team different from None or '' """
+    import jsonpickle
+    data = open_json_file(filename)
+    formula = data['formula']
+    if not formula['team_scoring']:
+        print(f'Team Scoring is not available')
+        return None
+    pilots = [p for p in data['results'] if not p['team'] in [None, '']]
+    teams = set(map(lambda x: x['team'].strip().title(), pilots))
+    size = formula['team_size']
+    results = []
+    for el in teams:
+        team = dict(name=el)
+        team_pilots = sorted([p for p in pilots if p['team'].strip().title() == team['name']],
+                             key=lambda k: k['score'], reverse=True)
+        team['pilots'] = team_pilots
+        team['score'] = sum([p['score'] for p in team_pilots][:size])
+        results.append(team)
+    results = sorted(results, key=lambda k: k['score'], reverse=True)
+    return jsonpickle.encode(results)
+    # for idx, team in enumerate(results, 1):
+    #     print(f"{idx}. - {team['name']}: {team['score']}")
+    #     for p in team['pilots']:
+    #         print(f" - {p['name']}: {p['score']}")
+
