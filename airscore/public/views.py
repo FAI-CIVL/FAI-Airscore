@@ -310,16 +310,18 @@ def get_comp_result(compid):
     all_pilots = []
     rank = 1
     for r in result_file['results']:
-        pilot = [rank, r['fai_id'], r['civl_id'], r['name'], r['nat'], r['sex'], r['sponsor'], r['glider'],
-                 r['glider_cert'], f"<b>{int(r['score'])}</b>"]
-        for task in r['results']:
+        pilot = {'fai_id': r['fai_id'], 'civl_id': r['civl_id'], 'name': r['name'], 'nat': r['nat'], 'sex': r['sex'],
+                 'sponsor': r['sponsor'], 'glider': r['glider'], 'glider_cert': r['glider_cert'], 'rank': rank,
+                 'score': f"<b>{int(r['score'])}</b>", 'results': {}}
+        # setup the 20 task placeholders
+        for t in range(1, 21):
+            task = 'T' + str(t)
+            pilot['results'][task] = {'score': ''}
+        for t, task in enumerate(r['results']):
             if r['results'][task]['pre'] == r['results'][task]['score']:
-                pilot.append(r['results'][task]['score'])
+                pilot['results'][task] = {'score': r['results'][task]['score']}
             else:
-                pilot.append(f"{int(r['results'][task]['score'])} <del>{int(r['results'][task]['pre'])}</del>")
-        # add blanks to get to a total of 16 tasks
-        for t in range(len(r['results']), 16):
-            pilot.append("")
+                pilot['results'][task] = {'score': f"{int(r['results'][task]['score'])} <del>{int(r['results'][task]['pre'])}</del>"}
 
         rank += 1
         all_pilots.append(pilot)
