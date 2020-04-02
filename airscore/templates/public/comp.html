@@ -6,7 +6,11 @@
   <div class="row">
     <div class="col-md-6"><h5>{{comp['date_from']}} - {{comp['date_to']}}</h5></div>
     {% if overall_available %}
-        <a href={{ url_for('public.comp_result', compid=comp['comp_id']) }} class="btn btn-primary" >Overall Scores</a>
+        <a href={{ url_for('public.comp_result', compid=comp['comp_id']) }} class="btn btn-primary" >Overall - Individual</a>
+        {% if country_scores %}
+    &nbsp;
+            <a href={{ url_for('public.country_overall', compid=comp['comp_id']) }} class="btn btn-primary" >Overall - Nations</a>
+        {% endif %}
     {% endif %}
   </div>
   <div>

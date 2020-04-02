@@ -504,7 +504,6 @@ def get_task_country_scoring(filename):
 
 
 def get_comp_country_scoring(filename):
-    import jsonpickle
     data = open_json_file(filename)
     formula = data['formula']
     if not formula['country_scoring']:
@@ -514,7 +513,15 @@ def get_comp_country_scoring(filename):
     countries = get_country_list(countries=set(map(lambda x: x['nat'], data['results'])))
     size = formula['team_size']
     tasks = [t['task_code'] for t in data['tasks']]
-    results = []
+    teams = []
+    pilots = []
+    all_scores = []
+    all_possible_tasks = []
+
+    # setup the 20 task placeholders
+    for t in range(1, 21):
+        all_possible_tasks.append('T' + str(t))
+
     for nat in countries:
         nation = dict(code=nat.code, name=nat.name)
         nat_pilots = [p for p in data['results'] if p['nat'] == nation['code'] and p['nat_team']]
@@ -529,18 +536,26 @@ def get_comp_country_scoring(filename):
                     p['results'][t]['score'] = p['results'][t]['pre']
                     p['results'][t]['perf'] = 1
                 else:
-                    p['results'][t]['score'] = 0
+                    p['results'][t]['score'] = f"<del>{int(p['results'][t]['pre'])}</del>"
                     p['results'][t]['perf'] = 0
+        for t in list(set(all_possible_tasks)-set(tasks)):
+            for idx, p in enumerate(nat_pilots):
+                p['results'][t] = {'score': ''}
         '''final nation sorting'''
         for p in nat_pilots:
-            p['score'] = sum(p['results'][t]['score'] for t in tasks)
+            p['score'] = sum(p['results'][t]['score'] for t in tasks if not isinstance(p['results'][t]['score'], str))
+            p['group'] = f". {nat.name} - {score:.0f} points"
+            p['nation_score'] = score
         nat_pilots = sorted(nat_pilots, key=lambda k: k['score'], reverse=True)
-        nation['pilots'] = nat_pilots
+
+        # nation['pilots'] = nat_pilots
+        pilots.extend(nat_pilots)
         nation['score'] = score
-        results.append(nation)
-    results = sorted(results, key=lambda k: k['score'], reverse=True)
-    return jsonpickle.encode(results)
-    # for idx, nat in enumerate(results, 1):
-    #     print(f"{idx}. - {nat['name']}: {nat['score']}")
-    #     for p in nat['pilots']:
-    #         print(f" - {p['name']}: {[(t, p['results'][t]['score']) for t in tasks]} - {p['score']}")
+        teams.append(nation)
+    # get rank after sort
+    for t in teams:
+        all_scores.append(t['score'])
+    for row in data['results']:
+        row['group'] = str(sum(map(lambda x: x > row['nation_score'], all_scores))+1) + row['group']
+
+    return {'teams': teams, 'data': pilots, 'info': data['info'], 'formula': data['formula']}

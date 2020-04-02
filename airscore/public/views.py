@@ -129,9 +129,12 @@ def competition(compid):
     result_file = get_comp_json(int(compid))
     all_tasks = []
     layer = {}
+    country_scores = False
     task_ids = []
     overall_available = False
     if result_file != 'error':
+        if result_file['formula']['country_scoring']  == 1:
+            country_scores = True
         overall_available = True
         for task in result_file['tasks']:
             task_ids.append(int(task['id']))
@@ -196,7 +199,8 @@ def competition(compid):
             all_tasks.append(task)
     all_tasks.sort(key=lambda k: k['date'], reverse=True)
 
-    return render_template('public/comp.html', tasks=all_tasks, comp=comp, overall_available=overall_available)
+    return render_template('public/comp.html', tasks=all_tasks, comp=comp, overall_available=overall_available,
+                           country_scores=country_scores)
 
 
 @blueprint.route('/registered_pilots/<int:compid>')
@@ -340,6 +344,21 @@ def get_comp_result(compid):
     all_classes.reverse()
     result_file['classes'] = all_classes
     return jsonify(result_file)
+
+
+@blueprint.route('/country_overall/<int:compid>')
+def country_overall(compid):
+    return render_template('public/country_overall.html', compid=compid)
+
+
+@blueprint.route('/_get_comp_country_result/<compid>', methods=['GET'])
+def _get_comp_country_result(compid):
+    from compUtils import get_comp_json_filename
+    from result import get_comp_country_scoring
+    filename = get_comp_json_filename(compid)
+    if not filename:
+        return render_template('404.html')
+    return jsonify(get_comp_country_scoring(filename))
 
 
 class SelectAdditionalTracks(FlaskForm):
