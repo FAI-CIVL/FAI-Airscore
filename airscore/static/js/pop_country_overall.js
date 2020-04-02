@@ -61,7 +61,7 @@ $(document).ready(function() {
             var numCols = $("th", table).length+6;
 
             // comp info
-            $('#comp_name').text(json.info.comp_name);
+            $('#comp_name').text(json.info.comp_name + "  - Nations");
             $('#comp_date').text(json.info.date_from + ' - ' + json.info.date_to);
 
             // some GAP parameters
