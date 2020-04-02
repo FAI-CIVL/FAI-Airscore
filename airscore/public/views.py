@@ -133,7 +133,7 @@ def competition(compid):
     task_ids = []
     overall_available = False
     if result_file != 'error':
-        if result_file['formula']['country_scoring']  == 1:
+        if result_file['formula'].get('country_scoring') == 1:
             country_scores = True
         overall_available = True
         for task in result_file['tasks']:
