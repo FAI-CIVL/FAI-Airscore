@@ -123,6 +123,15 @@ class Pilot(object):
             comment.append('; '.join(['[result]: ' + i for i in self.result.comment]))
         return '; '.join(comment)
 
+    @property
+    def notifications(self):
+        notifications = []
+        if self.track:
+            notifications.extend(self.track.notifications)
+        if self.result:
+            notifications.extend(self.result.notifications)
+        return notifications
+
     def as_dict(self):
         return self.__dict__
 
@@ -175,6 +184,7 @@ class Pilot(object):
         result.update({x: getattr(self.info, x) for x in R.results_list if x in dir(self.info)})
         result.update({x: getattr(self.track, x) for x in R.results_list if x in dir(self.track)})
         result.update({x: getattr(self.result, x) for x in R.results_list if x in dir(self.result)})
+        result['notifications'] = [n.__dict__ for n in self.notifications]
         return result
 
     @staticmethod
