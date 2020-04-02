@@ -361,6 +361,21 @@ def _get_comp_country_result(compid):
     return jsonify(get_comp_country_scoring(filename))
 
 
+@blueprint.route('/country_task/<int:taskid>')
+def country_task(taskid):
+    return render_template('public/country_task.html', taskid=taskid)
+
+
+@blueprint.route('/_get_task_country_result/<taskid>', methods=['GET'])
+def _get_task_country_result(taskid):
+    from task import get_task_json_filename
+    from result import get_task_country_scoring
+    filename = get_task_json_filename(taskid)
+    if not filename:
+        return render_template('404.html')
+    return jsonify(get_task_country_scoring(filename))
+
+
 class SelectAdditionalTracks(FlaskForm):
     track_pilot_list = []
     tracks = SelectField('Add Tracks:', choices=track_pilot_list)

@@ -42,6 +42,10 @@
       </tr></tbody></table><br>
         {% if task['status'] != "Not yet scored" and task['status'] != "Task not set"%}
         <a href={{ url_for('public.task_result', taskid=task['id']) }} class="btn btn-primary" >Task Scores</a>
+                {% if country_scores %}
+                &nbsp;
+            <a href={{ url_for('public.country_task', taskid=task['id']) }} class="btn btn-primary" >Nations</a>
+        {% endif %}
         {% endif %}
         <td><strong>{{task['status']}}</strong></td>
     </div>

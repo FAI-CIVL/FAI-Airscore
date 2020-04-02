@@ -483,9 +483,11 @@ def open_json_file(filename):
 
 
 def get_task_country_scoring(filename):
-    import jsonpickle
     data = open_json_file(filename)
     formula = data['formula']
+    pilots = []
+    teams = []
+    all_scores = []
     if not formula['country_scoring']:
         print(f'Team Scoring is not available')
         return None
@@ -496,11 +498,22 @@ def get_task_country_scoring(filename):
         nation = dict(code=nat.code, name=nat.name)
         nat_pilots = sorted([p for p in data['results'] if p['nat'] == nation['code']
                                                 and p['nat_team']], key=lambda k: k['score'], reverse=True)
-        nation['pilots'] = nat_pilots
         nation['score'] = sum([p['score'] for p in nat_pilots][:size])
-        results.append(nation)
-    results = sorted(results, key=lambda k: k['score'], reverse=True)
-    return jsonpickle.encode(results)
+        for rank, p in enumerate(nat_pilots):
+            p['group'] = f". {nat.name} - {nation['score']:.0f} points"
+            p['nation_score'] = nation['score']
+            if rank >= size:
+                p['score'] = f"<del>{p['score']:.2f}</del>"
+            else:
+                p['score'] = f"{p['score']:.2f}"
+        teams.append(nation)
+        pilots.extend(nat_pilots)
+    # get rank after sort
+    for t in teams:
+        all_scores.append(t['score'])
+    for row in pilots:
+        row['group'] = str(sum(map(lambda x: x > row['nation_score'], all_scores)) + 1) + row['group']
+    return {'teams': teams, 'data': pilots, 'info': data['info'], 'formula': data['formula']}
 
 
 def get_comp_country_scoring(filename):
