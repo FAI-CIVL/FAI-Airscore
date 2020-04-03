@@ -497,11 +497,10 @@ def get_task_country_scoring(filename):
         return None
     countries = get_country_list(countries=set(map(lambda x: x['nat'], data['results'])))
     size = formula['team_size']
-    results = []
     for nat in countries:
         nation = dict(code=nat.code, name=nat.name)
         nat_pilots = sorted([p for p in data['results'] if p['nat'] == nation['code']
-                                                and p['nat_team']], key=lambda k: k['score'], reverse=True)
+                            and p['nat_team']], key=lambda k: k['score'], reverse=True)
         nation['score'] = sum([p['score'] for p in nat_pilots][:size])
         for rank, p in enumerate(nat_pilots):
             p['group'] = f". {nat.name} - {nation['score']:.0f} points"
@@ -568,8 +567,6 @@ def get_comp_country_scoring(filename):
             p['group'] = f". {nat.name} - {score:.0f} points"
             p['nation_score'] = score
         nat_pilots = sorted(nat_pilots, key=lambda k: k['score'], reverse=True)
-
-        # nation['pilots'] = nat_pilots
         pilots.extend(nat_pilots)
         nation['score'] = score
         teams.append(nation)
