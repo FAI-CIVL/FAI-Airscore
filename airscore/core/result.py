@@ -483,6 +483,10 @@ def open_json_file(filename):
 
 
 def get_task_country_scoring(filename):
+    """takes a task result filename and outputs a nested dict ready to be jsonified for the front end
+        each pilot has attributes for their nation and nation score to allow grouping in datatables js.
+        Scores are given html strikethough <del> if they do not count towards nation total
+    """
     data = open_json_file(filename)
     formula = data['formula']
     pilots = []
@@ -517,6 +521,10 @@ def get_task_country_scoring(filename):
 
 
 def get_comp_country_scoring(filename):
+    """takes a competition result filename and outputs a nested dict ready to be jsonified for the front end
+        each pilot has attributes for their nation and nation score to allow grouping in datatables js.
+        Scores are given html strikethough <del> if they do not count towards nation total
+    """
     data = open_json_file(filename)
     formula = data['formula']
     if not formula['country_scoring']:
