@@ -160,6 +160,8 @@ def get_task_turnpoints(task):
 
 
 def get_comp_regions(compid):
+    """Gets a list of dicts of: if defines.yaml waypoint library function is on - all regions
+    otherwise only the regions with their comp_id field set the the compid parameter"""
     import Defines
     import region
     if Defines.WAYPOINT_FILE_LIBRARY:
@@ -169,21 +171,26 @@ def get_comp_regions(compid):
 
 
 def get_region_choices(compid):
+    """gets a list of regions to be used in frontend select field (choices) and details of each region (details)"""
     regions = get_comp_regions(compid)
     choices = []
+    details = {}
     for region in regions['regions']:
         choices.append((region['reg_id'], region['name']))
-    return choices
+        details[region['reg_id']] = region
+    return choices, details
 
 
 def get_waypoint_choices(reg_id):
     import region
     wpts = region.get_region_wpts(reg_id)
     choices = []
+    details = {}
 
     for wpt in wpts:
         choices.append((wpt['rwp_id'], wpt['name'] + ' - ' + wpt['description']))
-    return choices
+        details[wpt['rwp_id']] = wpt
+    return choices, details
 
 
 def get_pilot_list_for_track_management(taskid):

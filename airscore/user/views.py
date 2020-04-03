@@ -282,7 +282,7 @@ def comp_settings_admin(compid):
         compform.JTG_penalty_per_sec.data = formula.JTG_penalty_per_sec
         compform.scoring_altitude.data = formula.scoring_altitude
 
-        newtaskform.task_region.choices = frontendUtils.get_region_choices(compid)
+        newtaskform.task_region.choices, _ = frontendUtils.get_region_choices(compid)
         newadminform.admin.choices = admin_choices
 
         if current_user.id not in admin_ids:
@@ -326,7 +326,7 @@ def task_admin(taskid):
     turnpointform = NewTurnpointForm()
     modifyturnpointform = ModifyTurnpointForm()
     task = Task.read(int(taskid))
-    waypoints = frontendUtils.get_waypoint_choices(task.reg_id)
+    waypoints, _ = frontendUtils.get_waypoint_choices(task.reg_id)
     turnpointform.name.choices = waypoints
     modifyturnpointform.mod_name.choices = waypoints
 
@@ -880,3 +880,15 @@ def _change_result_status(taskid):
     resp = jsonify(success=True)
     return resp
 
+@blueprint.route('/_get_regions/<compid>', methods=['GET'])
+@login_required
+def _get_regions(compid):
+    choices, details = frontendUtils.get_region_choices(compid)
+    return jsonify({'choices': choices, 'details': details})
+
+
+@blueprint.route('/_get_wpts/<regid>', methods=['GET'])
+@login_required
+def _get_wpts(regid):
+    choices, details = frontendUtils.get_waypoint_choices(regid)
+    return jsonify({'choices': choices, 'details': details})

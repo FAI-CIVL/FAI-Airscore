@@ -100,6 +100,11 @@ def get_region_wpts(reg_id):
             wpt_results = db.session.query(RW.reg_id,
                                            RW.rwp_id,
                                            RW.name,
+                                           RW.lat,
+                                           RW.lon,
+                                           RW.altitude,
+                                           RW.xccSiteID,
+                                           RW.xccToID,
                                            RW.description).join(R).filter(RW.reg_id == reg_id).order_by(RW.name).all()
 
             if wpt_results:
