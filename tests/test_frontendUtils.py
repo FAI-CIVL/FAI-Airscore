@@ -64,11 +64,12 @@ def test_allowed_tracklog(string, result):
 
 def test_get_waypoint_choices(monkeypatch):
     def fake_get_waypoint_choices(reg_id):
-        return [{'rwp_id': 123, 'name': 'london', 'description': 'home of big ben'}, {'rwp_id': 456, 'name': 'paris', 'description': 'home of notre dame'}]
+        return [{'rwp_id': 123, 'name': 'london', 'description': 'home of big ben', 'altitude': 123, 'lat': 55.23, 'lon': 150.44, 'blahblah': 'abc'}, {'rwp_id': 456, 'name': 'paris', 'description': 'home of notre dame', 'altitude': 8848, 'lat': 5.23, 'lon': 15.44, 'blahblah': 'xyz'}]
     monkeypatch.setattr(region, 'get_region_wpts', fake_get_waypoint_choices)
-    result = frontendUtils.get_waypoint_choices(1)
+    result, wpts = frontendUtils.get_waypoint_choices(1)
     assert result[0] == (123, 'london - home of big ben')
     assert len(result) == 2
+    assert wpts[123] == fake_get_waypoint_choices(123)[0]
 
 
 def query(*args, **kwargs):
@@ -85,7 +86,7 @@ def row():
     d1 = fake.date_object()
     d2 = fake.date_object()
     tasks = int(random()*10)
-    owner = int(random()*10)
+    owner = 123
     return id, name, place, d1, d2, tasks, owner
 
 
@@ -96,19 +97,23 @@ def test_get_admin_comps(monkeypatch):
         .group_by.return_value = myquery
     with app.app_context():
         monkeypatch.setattr(Database, 'session', MockResponse)
-        result = frontendUtils.get_admin_comps()
+        result = frontendUtils.get_admin_comps(123)
         print(result)
         assert result.json['data'][0][1] == '<a href="/users/comp_settings_admin/' + str(myquery[0][0])+'">'\
             + myquery[0][1] + '</a>'
         assert result.json['data'][0][3] == myquery[0][3].strftime("%Y-%m-%d")
         assert result.json['data'][0][4] == myquery[0][4].strftime("%Y-%m-%d")
         assert result.json['data'][0][0] == myquery[0][0]
+        assert result.json['data'][0][6] == 'delete'
         assert result.json['data'][1][1] == '<a href="/users/comp_settings_admin/' + str(myquery[1][0])+'">' \
             + myquery[1][1] + '</a>'
         assert result.json['data'][1][3] == myquery[1][3].strftime("%Y-%m-%d")
         assert result.json['data'][1][4] == myquery[1][4].strftime("%Y-%m-%d")
         assert result.json['data'][1][0] == myquery[1][0]
+        assert result.json['data'][1][6] == 'delete'
 
+        result = frontendUtils.get_admin_comps(111)
+        assert result.json['data'][1][6] == ''
 # @patch.object()
 # def test_get_comp():
 #     comp = compUtils.get_comp(1)
