@@ -161,7 +161,7 @@ class Flight_result(object):
         self.distance_score = 0
         self.time_score = 0
         self.penalty = 0
-        self.percentage_penalty = 0
+        # self.percentage_penalty = 0
         self.airspace_plot = []
         self.infringements = []  # Infringement for each space
         self.comment = []  # should this be a list?
@@ -202,6 +202,27 @@ class Flight_result(object):
     def distance(self):
         if self.distance_flown:
             return max(self.distance_flown, self.total_distance)
+        else:
+            return 0
+
+    @property
+    def flat_penalty(self):
+        if self.notifications and sum(n.flat_penalty for n in self.notifications if not n.notification_type == 'jtg') > 0:
+            return max(n.flat_penalty for n in self.notifications if not n.notification_type == 'jtg')
+        else:
+            return 0
+
+    @property
+    def jtg_penalty(self):
+        if self.notifications and sum(n.flat_penalty for n in self.notifications if n.notification_type == 'jtg') > 0:
+            return next(n for n in self.notifications if n.notification_type == 'jtg').flat_penalty
+        else:
+            return 0
+
+    @property
+    def percentage_penalty(self):
+        if self.notifications and sum(n.percentage_penalty for n in self.notifications) > 0:
+            return max(n.percentage_penalty for n in self.notifications)
         else:
             return 0
 
@@ -286,16 +307,18 @@ class Flight_result(object):
             result.time_score = float(r.get('time_points'))
             result.penalty = 0  # fsdb score is already decreased by penalties
             if not r.get('penalty_reason') == "":
+                notification = Notification()
                 if r.get('penalty') != "0":
-                    comment = f"{float(r.get('penalty')) * 100}%: "
+                    notification.percentage_penalty = float(r.get('penalty'))
                 else:
-                    comment = f"{float(r.get('penalty_points'))} points: "
-                comment += r.get('penalty_reason')
-                result.comment.append(comment)
+                    notification.flat_penalty = float(r.get('penalty_points'))
+                notification.comment = r.get('penalty_reason')
+                result.notifications.append(notification)
             if not r.get('penalty_reason_auto') == "":
-                comment = f"{float(r.get('penalty_points_auto'))} points: "
-                comment += r.get('penalty_reason_auto')
-                result.comment.append(comment)
+                notification = Notification(notification_type='jtg',
+                                            flat_penalty=r.get('penalty_points_auto'),
+                                            comment=r.get('penalty_reason_auto'))
+                result.notifications.append(notification)
             if dep == 'on':
                 result.departure_score = float(r.get('departure_points'))
             elif dep == 'leadout':
@@ -556,12 +579,12 @@ class Flight_result(object):
                 diff = result.SSS_time - result.real_start_time
                 penalty = diff * jtg_penalty_per_sec
                 # check
-                print(f'jump the gun: {diff} - valid: {diff <= max_jump_the_gun} - penalty: {result.penalty}')
+                print(f'jump the gun: {diff} - valid: {diff <= max_jump_the_gun} - penalty: {penalty}')
                 comment = f"Jump the gun: {diff} seconds. Penalty: {penalty} points"
-                result.notifications.append(Notification(notification_type='result',
+                result.notifications.append(Notification(notification_type='jtg',
                                                          flat_penalty=penalty, comment=comment))
-                result.penalty += penalty
-                result.comment.append(comment)
+                # result.penalty += penalty
+                # result.comment.append(comment)
 
             '''ESS Time'''
             if any(e[0] == 'ESS' for e in result.waypoints_achieved):

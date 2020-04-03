@@ -457,11 +457,21 @@ class FSDB(object):
                                   res.departure_score, 1),
                               'leading_points': 0 if not t.formula.departure == 'leadout' else round(
                                   res.departure_score, 1),
-                              'penalty': 0 if not res.penalty else res.penalty,  # ??
-                              'penalty_points': 0 if not res.penalty else res.penalty,  # ??
-                              'penalty_reason': '' if not res.comment else res.comment,
-                              'penalty_points_auto': 0,  # ??
-                              'penalty_reason_auto': 0,  # ??
+                              'penalty': 0 if not [n for n in res.notifications
+                                                   if n.percentage_penalty > 0] else max(
+                                  n.percentage_penalty for n in res.notifications),
+                              'penalty_points': 0 if not [n for n in res.notifications
+                                                          if n.flat_penalty > 0] else max(
+                                  n.flat_penalty for n in res.notifications),
+                              'penalty_reason': '; '.join([n.comment for n in res.notifications
+                                                           if n.flat_penalty + n.percentage_penalty > 0
+                                                           and not n.notification_type == 'jtg']),
+                              'penalty_points_auto': sum(n.flat_penalty for n in res.notifications
+                                                         if n.notification_type == 'jtg'),
+                              'penalty_reason_auto': '' if not [n for n in res.notifications
+                                                                if n.notification_type == 'jtg'] else next(
+                                  n for n in res.notifications
+                                  if n.notification_type == 'jtg').flat_penalty,
                               'penalty_min_dist_points': 0,  # ??
                               'got_time_but_not_goal_penalty': res.ESS_time > 0 and not res.goal_time,
                               'started_ss': '' if not res.real_start_time else get_isotime(t.date, res.SSS_time,

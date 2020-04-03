@@ -328,7 +328,7 @@ class AirspaceCheck(object):
                 if pen > penalty:
                     penalty = pen
                     max_pen_fix = fix
-            notifications.append(Notification(notification_type='result', percentage_penalty=pen, comment=comment))
+            notifications.append(Notification(notification_type='airspace', percentage_penalty=pen, comment=comment))
 
         # '''final calculation'''
         # if penalty > 0:
