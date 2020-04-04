@@ -791,6 +791,19 @@ class TblTaskResult(Base):
     Participants = relationship('TblParticipant')
 
 
+class TblNotification(Base):
+    __tablename__ = 'tblNotification'
+
+    not_id = Column(INTEGER(11), primary_key=True)
+    track_id = Column(ForeignKey('tblTaskResult.track_id'), nullable=False, index=True)
+    notification_type = Column(Enum('admin', 'track', 'jtg', 'airspace'), nullable=False, server_default=text("'admin'"))
+    flat_penalty = Column(Float(8), nullable=False, server_default=text("'0.0000'"))
+    percentage_penalty = Column(Float(5), nullable=False, server_default=text("'0.0000'"))
+    comment = Column(String(80))
+
+    track = relationship('TblTaskResult')
+
+
 class TblTaskWaypoint(Base):
     __tablename__ = 'tblTaskWaypoint'
 

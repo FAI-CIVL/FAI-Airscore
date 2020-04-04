@@ -798,7 +798,8 @@ class Task(object):
 
     def get_results(self, lib=None):
         """ Loads all Pilot obj. into Task obj."""
-        from db_tables import FlightResultView as F
+        from db_tables import FlightResultView as F, TblNotification as N
+        from notification import Notification
         from sqlalchemy.exc import SQLAlchemyError
         from pilot import Pilot
 
@@ -812,6 +813,14 @@ class Task(object):
                     db.populate_obj(pilot.result, row)
                     db.populate_obj(pilot.info, row)
                     db.populate_obj(pilot.track, row)
+                    notifications = db.session.query(N).filter(N.track_id == pilot.track.track_id).all()
+                    for el in notifications:
+                        n = Notification()
+                        db.populate_obj(n, el)
+                        if n.notification_type == 'track':
+                            pilot.track.notifications.append(n)
+                        else:
+                            pilot.result.notifications.append(n)
                     pilots.append(pilot)
             except SQLAlchemyError:
                 print('DB Error retrieving task results')

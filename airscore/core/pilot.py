@@ -238,10 +238,12 @@ class Pilot(object):
 
 def update_all_results(task_id, pilots, session=None):
     """get results to update from the list"""
-    from db_tables import TblTaskResult as R
+    from db_tables import TblTaskResult as R, TblNotification as N
+    from sqlalchemy import and_
     from sqlalchemy.exc import SQLAlchemyError
     insert_mappings = []
     update_mappings = []
+    insert_notifications_mappings = []
     for pilot in pilots:
         res = pilot.result
         r = dict(track_id=pilot.track_id, task_id=task_id, par_id=pilot.par_id,
@@ -263,6 +265,23 @@ def update_all_results(task_id, pilots, session=None):
                     next(pilot for pilot in pilots if pilot.par_id == elem['par_id']).track.track_id = elem['track_id']
             if update_mappings:
                 db.session.bulk_update_mappings(R, update_mappings)
+                db.session.flush()
+            '''notifications'''
+            db.session.query(N).filter(and_(N.track_id.in_([r['track_id'] for r in update_mappings]),
+                                        N.notification_type.in_(['jtg', 'airspace']))).delete(synchronize_session=False)
+            for pilot in [p for p in pilots if p.notifications]:
+                for n in pilot.notifications:
+                    el = dict(track_id=pilot.track_id, notification_type=n.notification_type,
+                              flat_penalty=n.flat_penalty, percentage_penalty=n.percentage_penalty, comment=n.comment)
+                    insert_notifications_mappings.append(el)
+            if insert_notifications_mappings:
+                db.session.bulk_insert_mappings(N, insert_notifications_mappings, return_defaults=True)
+                db.session.flush()
+                for elem in insert_notifications_mappings:
+                    pilot = next(p for p in pilots if p.track.track_id == elem['track_id'])
+                    next(n for n in pilot.notifications if n.notification_type == elem['notification_type']
+                         and n.flat_penalty == elem['flat_penalty']
+                         and n.percentage_penalty == elem['percentage_penalty']).not_id = elem['not_id']
             db.session.commit()
         except SQLAlchemyError as e:
             error = str(e.__dict__)

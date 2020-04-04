@@ -335,8 +335,7 @@ def points_allocation(task):
 
         ''' Apply Penalty'''
         if res.flat_penalty or res.percentage_penalty:
-            res.penalty = res.score - ((res.score - res.flat_penalty) * (1 - res.percentage_penalty))
-            # variant applying flat penalty after percentage one
-            # res.penalty = min(res.score, res.score * res.percentage_penalty + res.flat_penalty)
-            res.score -= res.penalty
+            # applying flat penalty after percentage one
+            res.penalty = res.score * res.percentage_penalty + res.flat_penalty
+            res.score = max(0, res.score - res.penalty)
 

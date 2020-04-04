@@ -527,8 +527,7 @@ def points_allocation(task):
                 totalScore p = max(totalScore p − jumpTheGunPenalty p , scoreForMinDistance) '''
             res.score = max(min_dist_score, res.score - res.jtg_penalty)
             ''' Other penalties'''
-            res.penalty = res.score - ((res.score - res.flat_penalty) * (1 - res.percentage_penalty))
-            # variant applying flat penalty after percentage one
-            # res.penalty = min(res.score, res.score * res.percentage_penalty + res.flat_penalty)
-            res.score -= res.penalty
+            # applying flat penalty after percentage ones
+            res.penalty = res.score * res.percentage_penalty + res.flat_penalty
+            res.score = max(0, res.score - res.penalty)
 
