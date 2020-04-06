@@ -29,6 +29,7 @@ MAPOBJDIR = config['dir']['map']  # mapobj files directory
 AIRSPACEDIR = config['dir']['airspace']  # openair files directory
 AIRSPACEMAPDIR = config['dir']['airspace_map']  # openair files directory
 AIRSPACECHECKDIR = config['dir']['airspace_check']  # openair files directory
+WAYPOINTDIR = config['dir']['waypoint']  # waypoint files directory
 
 track_sources = ['xcontest', 'flymaster']     # external available sources for tracks
 track_formats = ['igc']   # track accepted formats

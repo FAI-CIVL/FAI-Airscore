@@ -1,5 +1,5 @@
 """
-OpenAir file reader:
+waypoint file reader:
 
 - AirScore -
 Stuart Mackintosh - Antonio Golfari
@@ -7,8 +7,6 @@ Stuart Mackintosh - Antonio Golfari
 
 """
 from pprint import pprint as pp
-
-from logger import Logger
 
 
 def dms_to_dec(C, d, m, s=0):
@@ -151,6 +149,25 @@ def get_CompeGPS(lines):
     return wpts
 
 
+def get_OziExplorer(lines):
+    """get wpts list from waypoints file
+    file format:
+    https://www.oziexplorer4.com/eng/help/fileformats.html
+    """
+
+    wpts = []
+    for line in lines:
+        wp = line.split(',')
+        code = str(wp[1])
+        lat = float(wp[2][0:-2])
+        lon = float(wp[3][0:-2])
+        alt = int(float(wp[14]))*0.3048
+        desc = wp[10]
+        wpts.append([code, lat, lon, alt, desc])
+
+    return wpts
+
+
 def get_waypoints_from_file(filename):
     """ Reads waypoint file, in different formats:
         - GEO
@@ -160,14 +177,11 @@ def get_waypoints_from_file(filename):
         - CompeGPS
         returns a list of list:
         [code lat lon alt desc]"""
+
     from pathlib import Path
     if not Path(filename).is_file():
         print(f"error: file {filename} does not exist")
         return []
-    '''create logging and disable output'''
-    Logger('ON', 'waypoint_reader.txt')
-
-    wpts = []
 
     '''try to open file in different encodings'''
     try:
@@ -178,7 +192,13 @@ def get_waypoints_from_file(filename):
         with open(filename, 'r', encoding='latin') as file:
             dump = file.read()
             lines = dump.splitlines()
+    return get_waypoints_from_filedata(dump)
 
+
+def get_waypoints_from_filedata(filedata):
+    """Reads wpts from filedata"""
+    wpts = []
+    lines = filedata.splitlines()
     if str(lines[0]).startswith('$FormatGEO'):
         pp('GEO')
         wpts = get_GEO(lines[1:])
@@ -190,22 +210,26 @@ def get_waypoints_from_file(filename):
         wpts = get_CUP(lines[1:])
     elif str(lines[0]).startswith('<?xml ver'):
         pp('GPX')
-        wpts = get_GPX(dump.encode())
+        wpts = get_GPX(filedata.encode())
     elif str(lines[0]).startswith('G  WGS 84'):
         pp('CompeGPS')
         wpts = get_CompeGPS(lines[2:])
-
-    ''' now restore stdout function '''
-    Logger('OFF')
+    elif str(lines[0]).startswith('OziExplorer Waypoint File'):
+        pp('OziExplorer')
+        wpts = get_OziExplorer(lines[4:])
 
     return wpts
 
 
-def get_turnpoints_from_file(filename):
-    """ Returns a list of Turnpoints objects from waypoint file
-    """
+def get_turnpoints_from_file(filename, data=False):
+    """ takes a filename or filedata (if data=True)
+    Returns a list of Turnpoints objects from waypoint file
+        """
     from route import Turnpoint
-    wpts = get_waypoints_from_file(filename)
+    if data:
+        wpts = get_waypoints_from_filedata(filename)
+    else:
+        wpts = get_waypoints_from_file(filename)
     if not wpts:
         print(f"error: file {filename} does not contain any waypoint")
         return []

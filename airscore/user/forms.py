@@ -3,7 +3,8 @@
 from datetime import date
 
 from flask_wtf import FlaskForm
-from wtforms import PasswordField, StringField, IntegerField, SelectField, DecimalField, BooleanField, SubmitField
+from wtforms import PasswordField, StringField, IntegerField, SelectField, DecimalField, BooleanField, SubmitField,\
+    FileField
 
 from wtforms.fields.html5 import DateField, TimeField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange, Optional
@@ -255,3 +256,15 @@ class ModifyTurnpointForm(FlaskForm):
 class TaskResultAdminForm(FlaskForm):
 
     result_file = SelectField('Scoring run')
+
+
+class NewRegionForm(FlaskForm):
+
+    name = StringField("Region name", validators=[DataRequired()],
+                       description='This is the name that will appear when choosing a region for a task')
+    waypoint_file = FileField("Waypoint file", validators=[DataRequired()])
+    openair_file = FileField("Open Air file", description='Open Air airspace file')
+    submit = SubmitField('Add')
+
+class RegionForm(FlaskForm):
+    region = SelectField('Region', id='select_region')

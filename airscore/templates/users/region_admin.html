@@ -1,0 +1,228 @@
+{% extends "layout.html"%}
+{% block content %}
+
+<!-- CSS -->
+<link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet">
+<link href="https://cdn.datatables.net/rowgroup/1.1.1/css/rowGroup.dataTables.min.css" rel="stylesheet">
+
+<meta name="csrf-token" content="{{ csrf_token() }}">
+{% if error %}
+<p><strong> Error: </strong></p>
+{{error}}
+{% endif %}
+
+   {{region_select.hidden_tag()}}
+
+      <div class="card card-body">
+         <div class="container">
+            <h3 class="font-weight-bold">Region Details</h3>
+            <div class="form-row">
+               <div class="form-group col-md-7">
+                  {{region_select.region.label}} {{region_select.region}}
+                   <h5 id="region_wpt_no"></h5>
+                   <h5 id="region_wpt_filename"></h5>
+                   <h5 id="region_oair_filename"></h5>
+                   <button type="button" class="btn btn-danger" onclick="confirm_delete()" data-toggle="confirmation" data-popout="true">Delete</button>
+               </div>
+            </div>
+
+
+         </div>
+      </div>
+                  <p>
+
+                     <button id="add_task" class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#collapse5" aria-expanded="false" aria-controls="collapse5">
+                     Add region
+                     </button>
+
+                  </p>
+                  <div class="collapse" id="collapse5">
+                     <div class="card card-body">
+                        <div class="container">
+
+<form id="upload-form" action="" method="POST" enctype="multipart/form-data">
+
+<div id = "add_task_form">
+       {{new_region_form.hidden_tag()}}
+      <div class="form-row">
+      <div class="form-group width4">
+      {{new_region_form.name.label}} {{new_region_form.name(size=16, **{'id':"new_region_name", 'data-toggle': 'tooltip', 'title': new_region_form.name.description})}}
+      </div>
+      </div>
+      <div class="form-row">
+      <div class="form-group width4">
+      {{new_region_form.waypoint_file.label}} {{new_region_form.waypoint_file(**{'id':"new_region_waypoint_file",})}}
+      </div>
+      </div>
+          <div class="form-row">
+      <div class="form-group width4">
+      {{new_region_form.openair_file.label}} {{new_region_form.openair_file(**{'id':"new_region_openair_file",})}}
+      </div>
+      </div>
+      <div class="form-row">
+        {{new_region_form.submit}}
+      </div>
+</div>
+</form>
+
+
+</div>
+</div>
+</div>
+
+   <p>
+      <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse4" aria-expanded="false" aria-controls="collapse4">
+      Waypoints
+      </button>
+   </p>
+
+   <div class="collapse" id="collapse4">
+
+    <table id="waypoints" class="row-border compact" cellspacing="0" width="100%">
+    <thead>
+        <tr>
+        </tr>
+    </thead>
+    </table>
+    </div>
+
+
+      <div class="card card-body">
+
+            <div class="embed-responsive embed-responsive-16by9">
+            <iframe id="map" class="embed-responsive-item" allowfullscreen></iframe>
+            </div>
+
+      </div>
+
+  <!----delete modal starts here--->
+<div id="modal" class="modal fade" role='dialog'>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                <h4 class="modal-title">Please confirm</h4>
+            </div>
+            <div class="modal-body" id= "modal-body">
+                <p>Here the description starts here........</p>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+               <button id = "delete_confirmed" type="button" class="btn btn-default" data-dismiss="modal">Delete</button>
+            </div>
+        </div>
+      </div>
+  </div>
+<!--Modal ends here--->
+{% endblock %}
+{% block js %}
+{% include "js.html" %}
+<script src="{{ static_url_for('static', filename='js/display-if.min.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.ui.widget.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.iframe-transport.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.fileupload.js') }}"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/rowgroup/1.1.1/js/dataTables.rowGroup.min.js"></script>
+
+<script type="text/javascript" src="/static/js/pop_waypoints.js"></script>
+<script type="text/javascript">
+   var csrftoken = $('meta[name=csrf-token]').attr('content');
+      $.ajaxSetup({
+       beforeSend: function(xhr, settings) {
+           if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type)) {
+               xhr.setRequestHeader("X-CSRFToken", csrftoken)
+           }
+       }
+   })
+    var region_details = '';
+           var dropdown = {
+           region: $('#select_region'),
+       };
+
+           // function to call XHR and update formula dropdown
+             function updateRegions() {
+           dropdown.region.attr('disabled', 'disabled');
+           dropdown.region.empty();
+           $.getJSON("{{ url_for('user._get_regions')}}",function(data) {
+           region_details = data.details
+               data.choices.forEach(function(item) {
+                   dropdown.region.append(
+                       $('<option>', {
+                           value: item[0],
+                           text: item[1]
+                       })
+                   );
+               });
+               dropdown.region.removeAttr('disabled');
+           });
+
+       }
+
+
+
+    $(function() {
+       // call to update on load
+       updateRegions();
+//<!--       get_adv_settings();-->
+
+              // event listener to region dropdown change
+       dropdown.region.on('change', function() {
+              if(region_details[dropdown.region.val()].filename){
+              $('#region_wpt_filename').text('Waypoint file: ' + region_details[dropdown.region.val()].filename )
+       }
+       else { $('#region_wpt_filename').text('Waypoint file: None') }
+       if(region_details[dropdown.region.val()].openair){
+       $('#region_oair_filename').text('Airspace file: ' + region_details[dropdown.region.val()].openair )
+       }
+       else { $('#region_oair_filename').text('Airspace file: None') }
+
+        $('#region_wpt_no').text('Waypoints : ');
+
+       populate_waypoints(dropdown.region.val());
+       });
+   });
+
+
+   function delete_region(regid){
+
+           $.ajax({
+               type: "POST",
+               url: '/users/_delete_region/'+regid,
+               success: function () {
+                      updateRegions();
+                      populate_waypoints($('#select_region').val());
+               }
+               });
+
+   };
+
+      function confirm_delete() {
+	 var x =  $('#select_region option:selected').text();
+     var myHeading = "<p>Are you sure you want to delete region ";
+     $("#modal-body").html(myHeading + x + '?</p>');
+     $('#delete_confirmed').attr("onclick","delete_region('"+ $('#select_region').val()+"')");
+     $('#modal').modal('show');
+    }
+
+
+
+</script>
+
+<script>
+
+  function filesize(elem){
+    document.cookie = `filesize=${elem.files[0].size}`
+  }
+
+
+   $(document).ready(function() {
+   populate_waypoints($('#select_region').val());
+
+   });
+
+
+</script>
+
+
+{% endblock %}

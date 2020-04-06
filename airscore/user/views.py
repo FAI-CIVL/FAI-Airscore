@@ -6,7 +6,7 @@ from flask import Blueprint, render_template, request, jsonify, json, flash, red
 from flask_login import login_required, current_user
 import frontendUtils
 from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm, \
-    TaskResultAdminForm, NewAdminForm
+    TaskResultAdminForm, NewAdminForm, RegionForm, NewRegionForm
 from comp import Comp
 from formula import list_formulas, Formula
 from task import Task, write_map_json
@@ -880,9 +880,10 @@ def _change_result_status(taskid):
     resp = jsonify(success=True)
     return resp
 
-@blueprint.route('/_get_regions/<compid>', methods=['GET'])
+@blueprint.route('/_get_regions', methods=['GET'])
 @login_required
-def _get_regions(compid):
+def _get_regions():
+    compid = session.get('compid')
     choices, details = frontendUtils.get_region_choices(compid)
     return jsonify({'choices': choices, 'details': details})
 
@@ -891,4 +892,47 @@ def _get_regions(compid):
 @login_required
 def _get_wpts(regid):
     choices, details = frontendUtils.get_waypoint_choices(regid)
-    return jsonify({'choices': choices, 'details': details})
+    return jsonify({'choices': choices, 'data': details})
+
+
+@blueprint.route('/region_admin', methods=['GET', 'POST'])
+@login_required
+def region_admin():
+    from frontendUtils import get_region_choices
+    from waypoint import get_turnpoints_from_file
+    from region import Region
+    region_select = RegionForm()
+    new_region = NewRegionForm()
+    compid = session.get('compid')
+    regions, _ = get_region_choices(compid)
+    region_select.region.choices = regions
+
+    if request.method == "POST":
+        if request.files:
+            waypoint_file = request.files["waypoint_file"]
+            airspace_file = request.files["openair_file"]
+            if airspace_file == '':
+                airspace_file = None
+            waypoint_file_data = waypoint_file.read().decode('UTF-8')
+            if waypoint_file:
+                wpts = get_turnpoints_from_file(waypoint_file_data, data=True)
+                if not wpts:
+                    flash("Waypoint file format not supported or file is not a waypoint file", category='error')
+                    return render_template('users/region_admin.html', region_select=region_select,
+                                           new_region_form=new_region)
+
+                region = Region(name=new_region.name.data, comp_id=compid, filename=waypoint_file.filename,
+                                openair=airspace_file.filename, turnpoints=wpts)
+                region.to_db()
+
+    return render_template('users/region_admin.html', region_select=region_select, new_region_form=new_region)
+
+
+@blueprint.route('/_delete_region/<regid>', methods=['POST'])
+@login_required
+def _delete_region(regid):
+    from region import delete_region
+    delete_region(regid)
+    resp = jsonify(success=True)
+    return resp
+
