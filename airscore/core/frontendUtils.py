@@ -14,6 +14,7 @@ from calcUtils import sec_to_time
 from os import path
 from werkzeug.utils import secure_filename
 
+
 def get_comps():
     c = aliased(TblCompetition)
 
@@ -185,11 +186,13 @@ def get_waypoint_choices(reg_id):
     import region
     wpts = region.get_region_wpts(reg_id)
     choices = []
-    details = {}
+    details = []
 
     for wpt in wpts:
         choices.append((wpt['rwp_id'], wpt['name'] + ' - ' + wpt['description']))
-        details[wpt['rwp_id']] = wpt
+        wpt['Class'] = wpt['name'][0]
+        details.append(wpt)
+
     return choices, details
 
 
@@ -469,3 +472,8 @@ def get_all_admins():
             db.session.close()
             return None, None
         return all_admins
+
+
+# def save_waypoint_file(file):
+#     from Defines import WAYPOINTDIR, AIRSPACEDIR
+#     full_file_name = path.join(WAYPOINTDIR, filename)

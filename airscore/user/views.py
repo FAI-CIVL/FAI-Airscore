@@ -12,8 +12,7 @@ from formula import list_formulas, Formula
 from task import Task, write_map_json
 from route import save_turnpoint, Turnpoint
 from flight_result import update_status, delete_result
-from os import path, remove
-from sys import stdout
+from os import path, remove, makedirs
 from task import get_task_json_by_filename
 from calcUtils import sec_to_time
 import time
@@ -901,6 +900,7 @@ def region_admin():
     from frontendUtils import get_region_choices
     from waypoint import get_turnpoints_from_file
     from region import Region
+    from Defines import WAYPOINTDIR
     region_select = RegionForm()
     new_region = NewRegionForm()
     compid = session.get('compid')
@@ -909,19 +909,32 @@ def region_admin():
 
     if request.method == "POST":
         if request.files:
+            if not path.isdir(WAYPOINTDIR):
+                makedirs(WAYPOINTDIR)
             waypoint_file = request.files["waypoint_file"]
             airspace_file = request.files["openair_file"]
             if airspace_file == '':
                 airspace_file = None
             waypoint_file_data = waypoint_file.read().decode('UTF-8')
-            if waypoint_file:
+            if waypoint_file: # there should always be a file as it is a required field
                 wpts = get_turnpoints_from_file(waypoint_file_data, data=True)
                 if not wpts:
                     flash("Waypoint file format not supported or file is not a waypoint file", category='error')
                     return render_template('users/region_admin.html', region_select=region_select,
                                            new_region_form=new_region)
+                # save waypoint file
+                fullpath = path.join(WAYPOINTDIR, waypoint_file.filename)
+                i = 1
+                wpt_new_filename = waypoint_file.filename
+                while path.exists(fullpath):
+                    wpt_new_filename = f"{i}_{waypoint_file.filename}"
+                    fullpath = path.join(WAYPOINTDIR, wpt_new_filename)
+                    i += 1
+                with open(fullpath, 'w') as f:
+                    f.write(waypoint_file_data)
 
-                region = Region(name=new_region.name.data, comp_id=compid, filename=waypoint_file.filename,
+                # write to DB
+                region = Region(name=new_region.name.data, comp_id=compid, filename=wpt_new_filename,
                                 openair=airspace_file.filename, turnpoints=wpts)
                 region.to_db()
 
