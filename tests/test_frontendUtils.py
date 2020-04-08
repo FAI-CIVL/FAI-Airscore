@@ -69,7 +69,6 @@ def test_get_waypoint_choices(monkeypatch):
     result, wpts = frontendUtils.get_waypoint_choices(1)
     assert result[0] == (123, 'london - home of big ben')
     assert len(result) == 2
-    assert wpts[123] == fake_get_waypoint_choices(123)[0]
 
 
 def query(*args, **kwargs):
