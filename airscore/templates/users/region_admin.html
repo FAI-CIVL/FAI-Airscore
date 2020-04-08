@@ -170,7 +170,7 @@ function update_details(){
        }
        else { $('#region_wpt_filename').text('Waypoint file: None') }
        if(region_details[dropdown.region.val()].openair){
-       $('#region_oair_filename').text('Airspace file: ' + region_details[dropdown.region.val()].openair )
+       $('#region_oair_filename').html('Airspace file: <a href="/users/airspace_map/' + region_details[dropdown.region.val()].openair + '">' + region_details[dropdown.region.val()].openair +'</a>')
        }
        else { $('#region_oair_filename').text('Airspace file: None') }
 
