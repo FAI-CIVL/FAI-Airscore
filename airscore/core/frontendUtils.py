@@ -165,7 +165,7 @@ def get_comp_regions(compid):
     otherwise only the regions with their comp_id field set the the compid parameter"""
     import Defines
     import region
-    if Defines.WAYPOINT_FILE_LIBRARY:
+    if Defines.WAYPOINT_AIRSPACE_FILE_LIBRARY:
         return region.get_all_regions()
     else:
         return region.get_comp_regions_and_wpts(compid)

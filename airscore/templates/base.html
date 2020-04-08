@@ -78,9 +78,11 @@
                 </li>
 
       {% endif %}
+       {% if session.library or session.comp_name%}
         <li class="nav-item">
         <a class="nav-link text-primary" href="{{ url_for('user.region_admin') }}">Flying Areas</a>
       </li>
+        {% endif %}
 
                     <li class="nav-item">
         <a class="nav-link text-primary" href="{{ url_for('user.pilot_admin') }}">Pilots</a>

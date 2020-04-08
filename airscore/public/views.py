@@ -9,7 +9,8 @@ from flask import (
     request,
     url_for,
     jsonify,
-    send_file
+    send_file,
+    session
 )
 from flask_login import login_required, login_user, logout_user, current_user
 from airscore.extensions import login_manager
@@ -50,6 +51,7 @@ def home_old():
         if form.validate_on_submit():
             login_user(form.user)
             flash("You are logged in.", "success")
+
             redirect_url = request.args.get("next") or url_for("user.members")
             return redirect(redirect_url)
         else:
@@ -67,6 +69,10 @@ def home():
             login_user(form.user)
             flash("You are logged in.", "success")
             redirect_url = request.args.get("next") or url_for("user.members")
+            if Defines.WAYPOINT_AIRSPACE_FILE_LIBRARY:
+                session['library'] = True
+            else:
+                session['library'] = False
             return redirect(redirect_url)
         else:
             flash_errors(form)
