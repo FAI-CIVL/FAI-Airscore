@@ -260,11 +260,11 @@ class TaskResultAdminForm(FlaskForm):
 
 class NewRegionForm(FlaskForm):
 
-    name = StringField("Region name", validators=[DataRequired()],
-                       description='This is the name that will appear when choosing a region for a task')
+    name = StringField("Area name", validators=[DataRequired()],
+                       description='This is the name that will appear when choosing an area for a task')
     waypoint_file = FileField("Waypoint file", validators=[DataRequired()])
     openair_file = FileField("Open Air file", description='Open Air airspace file')
     submit = SubmitField('Add')
 
 class RegionForm(FlaskForm):
-    region = SelectField('Region', id='select_region')
+    region = SelectField('Area', id='select_region')
