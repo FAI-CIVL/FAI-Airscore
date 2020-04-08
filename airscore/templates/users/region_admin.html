@@ -53,6 +53,7 @@
       <div class="form-group width4">
       {{new_region_form.waypoint_file.label}} {{new_region_form.waypoint_file(**{'id':"new_region_waypoint_file",})}}
       </div>
+          <p>Formats supported: GEO, UTM, CUP, GPX, CompeGPS and OziExplorer</p>
       </div>
           <div class="form-row">
       <div class="form-group width4">
@@ -152,23 +153,19 @@
                            value: item[0],
                            text: item[1]
                        })
+
                    );
                });
                dropdown.region.removeAttr('disabled');
-           });
+               $("#select_region").val(data.choices[0][0]);
+                update_details();
+          });
 
-       }
+           }
 
+function update_details(){
 
-
-    $(function() {
-       // call to update on load
-       updateRegions();
-//<!--       get_adv_settings();-->
-
-              // event listener to region dropdown change
-       dropdown.region.on('change', function() {
-              if(region_details[dropdown.region.val()].filename){
+                         if(region_details[dropdown.region.val()].filename){
               $('#region_wpt_filename').text('Waypoint file: ' + region_details[dropdown.region.val()].filename )
        }
        else { $('#region_wpt_filename').text('Waypoint file: None') }
@@ -180,6 +177,19 @@
         $('#region_wpt_no').text('Waypoints : ');
 
        populate_waypoints(dropdown.region.val());
+
+}
+
+
+
+
+    $(function() {
+       // call to update on load
+
+              // event listener to region dropdown change
+         dropdown.region.on('change', function() {
+        update_details();
+
        });
    });
 
@@ -205,8 +215,6 @@
      $('#modal').modal('show');
     }
 
-
-
 </script>
 
 <script>
@@ -217,9 +225,9 @@
 
 
    $(document).ready(function() {
-   populate_waypoints($('#select_region').val());
+      updateRegions();
 
-   });
+});
 
 
 </script>

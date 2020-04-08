@@ -2,7 +2,7 @@
 """User views."""
 from datetime import datetime
 
-from flask import Blueprint, render_template, request, jsonify, json, flash, redirect, url_for, session
+from flask import Blueprint, render_template, request, jsonify, json, flash, redirect, url_for, session, Markup
 from flask_login import login_required, current_user
 import frontendUtils
 from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm, \
@@ -900,7 +900,7 @@ def region_admin():
     from frontendUtils import get_region_choices
     from waypoint import get_turnpoints_from_file
     from region import Region
-    from Defines import WAYPOINTDIR
+    from Defines import WAYPOINTDIR, AIRSPACEDIR
     region_select = RegionForm()
     new_region = NewRegionForm()
     compid = session.get('compid')
@@ -916,6 +916,7 @@ def region_admin():
             if airspace_file == '':
                 airspace_file = None
             waypoint_file_data = waypoint_file.read().decode('UTF-8')
+            airspace_file_data = airspace_file.read().decode('UTF-8')
             if waypoint_file: # there should always be a file as it is a required field
                 wpts = get_turnpoints_from_file(waypoint_file_data, data=True)
                 if not wpts:
@@ -933,10 +934,27 @@ def region_admin():
                 with open(fullpath, 'w') as f:
                     f.write(waypoint_file_data)
 
+                if airspace_file:
+                    # save airspace file
+                    fullpath = path.join(AIRSPACEDIR, airspace_file.filename)
+                    i = 1
+                    air_new_filename = airspace_file.filename
+                    while path.exists(fullpath):
+                        air_new_filename = f"{i}_{airspace_file.filename}"
+                        fullpath = path.join(AIRSPACEDIR, air_new_filename)
+                        i += 1
+                    # airspace_file.save(fullpath)
+                    with open(fullpath, 'w') as f:
+                        f.write(airspace_file_data)
+                    flash(Markup(f'Open air file added, please check it <a href="'
+                                 f'{url_for("user.airspace_edit", filename=air_new_filename)}" '
+                                 f'class="alert-link">here</a>'), category='info')
+
                 # write to DB
                 region = Region(name=new_region.name.data, comp_id=compid, filename=wpt_new_filename,
-                                openair=airspace_file.filename, turnpoints=wpts)
+                                openair=air_new_filename, turnpoints=wpts)
                 region.to_db()
+                flash(f"Region {new_region.name.data} added", category='info')
 
     return render_template('users/region_admin.html', region_select=region_select, new_region_form=new_region)
 

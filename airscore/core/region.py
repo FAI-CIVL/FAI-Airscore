@@ -103,7 +103,7 @@ def get_all_regions():
             results = db.session.query(R.reg_id,
                                        R.description.label('name'),
                                        R.waypoint_file.label('filename'),
-                                       R.openair_file.label('openair')).all()
+                                       R.openair_file.label('openair')).order_by(R.description).all()
             if results:
                 results = [row._asdict() for row in results]
             return {'regions': results}
