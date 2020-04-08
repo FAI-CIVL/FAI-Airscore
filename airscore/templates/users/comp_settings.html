@@ -387,8 +387,7 @@
    
        // call to update on load
        updateFormulas();
-//<!--       get_adv_settings();-->
-   
+
        // function to call XHR and update formula dropdown
        function updateFormulas() {
            var send = {
@@ -406,7 +405,7 @@
                    );
                });
                dropdown.formula.removeAttr('disabled');
-<!--               dropdown.formula.change();-->
+
            });
 
        }
@@ -415,7 +414,6 @@
        dropdown.category.on('change', function() {
            updateFormulas();
             ask_update('category');
-
 
        });
 

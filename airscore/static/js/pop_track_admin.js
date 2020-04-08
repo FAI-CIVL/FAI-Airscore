@@ -12,7 +12,6 @@ function populate_track_admin(task_id){
         info: false,
         columns: [
             {data: 'name', name:'Name'},
-//            {data: 'par_id', name:'par_id'},
             {data: 'Result', name:'Result'},
             {data: null}],
               rowId: function(data) {

@@ -187,7 +187,7 @@ class Comp(object):
             return 0
 
     @staticmethod
-    def read(comp_id):
+    def read(comp_id, session=None):
         """Reads competition from database
         takes com_id as argument"""
         from db_tables import CompObjectView as C
