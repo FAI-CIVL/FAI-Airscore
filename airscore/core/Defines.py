@@ -50,5 +50,4 @@ G_Record_validation_Server = config['g_record_validation_server']
 SANCTIONS = config['sanctions']
 
 '''file libraries'''
-AIRSPACE_FILE_LIBRARY = config['airspace_file_library']
-WAYPOINT_FILE_LIBRARY = config['waypoint_file_library']
+WAYPOINT_AIRSPACE_FILE_LIBRARY = config['waypoint/airspace_file_library']

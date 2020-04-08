@@ -34,6 +34,7 @@
       you may want to increase the altitude in the table below. You can adjust the floor and ceiling columns.
       Use the format "XXXX ft" or "XXXX m". You can also delete airspaces if not needed.
       Clicking save will create a new Openair file.
+        THIS WILL REPLACE THE ORIGINAL FILE IN THE FLYING AREA AND COMPETITIONS THAT USE THE FLYING AREA.
       The new file will be available to immediately download here and for pilots, from the competition page.</p>
   <b/><h2 class = "text-danger"><b>{{message}}</b></h2>
     <h6 class = "text-danger">{{FL_message}}</h6>
@@ -195,7 +196,7 @@ function save_new(){
           var inputs = document.getElementById('airspace_table_body').getElementsByTagName('td');
 
         $.ajax({
-            url: '/save_airspace',
+            url: '/users/save_airspace',
             contentType:"application/json",
             dataType:"json",
             data: JSON.stringify({ "delete": delete_airspace_list, "changes": changes,  "old_filename": original_file, "new_filename": $("#filename").val()}),

@@ -1,4 +1,4 @@
-from db_tables import TblCompetition, TblTask, TblCompAuth
+from db_tables import TblCompetition, TblTask, TblCompAuth, TblRegion
 from sqlalchemy.orm import aliased
 from flask import jsonify
 from myconn import Database
@@ -473,6 +473,24 @@ def get_all_admins():
             return None, None
         return all_admins
 
+
+def update_airspace_file(old_filename, new_filename):
+    """change the name of the openair file in all regions it is used."""
+    R = aliased(TblRegion)
+    with Database() as db:
+        try:
+
+            db.session.query(R).filter(R.openair_file == old_filename).update({R.openair_file: new_filename},
+                                                                                synchronize_session=False)
+            db.session.commit()
+
+        except SQLAlchemyError as e:
+            error = str(e)
+            print(f"error trying to update openair_file file in DB. error{error}")
+            db.session.rollback()
+            db.session.close()
+            return None
+    return True
 
 # def save_waypoint_file(file):
 #     from Defines import WAYPOINTDIR, AIRSPACEDIR

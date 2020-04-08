@@ -82,6 +82,8 @@ def save_airspace():
     data = request.json
     newfile = airspaceUtils.create_new_airspace_file(data)
     airspaceUtils.create_airspace_map_check_files(newfile)
+    if data['old_filename'] != data['new_filename']:
+        frontendUtils.update_airspace_file(data['old_filename'], newfile)
     return jsonify(dict(redirect=newfile))
 
 
@@ -369,10 +371,10 @@ def task_admin(taskid):
 
         else:
             flash("not valid")
-            for item in taskform:
-                if item.errors:
-                    print(f"{item} value:{item.data} error:{item.errors}")
-                    stdout.flush()
+            # for item in taskform:
+            #     if item.errors:
+            #         print(f"{item} value:{item.data} error:{item.errors}")
+            #         stdout.flush()
 
     if request.method == 'GET':
         offset = task.time_offset if task.time_offset else 0
