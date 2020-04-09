@@ -218,40 +218,7 @@ def registered_pilots(compid):
 
 @blueprint.route('/_get_registered_pilots/<compid>', methods=['GET'])
 def _get_registered_pilots(compid):
-    from db_tables import TblParticipant, TblCompetition
-
-    p = aliased(TblParticipant)
-    c = aliased(TblCompetition)
-
-    with Database() as db:
-        '''get registered pilots'''
-        results = (db.session.query(p.par_id,
-                                    p.pil_id,
-                                    p.ID,
-                                    p.name,
-                                    p.nat,
-                                    p.glider,
-                                    p.sponsor,
-                                    p.status).filter(p.comp_id == compid)
-                   .order_by(p.name))
-        pilot_list = [u._asdict() for u in results.all()]
-        '''pilot registration status'''
-        if not current_user.is_authenticated:
-            pilot = None
-        elif any(p for p in results if p.pil_id == current_user.id):
-            p = next(p for p in results if p.pil_id == current_user.id)
-            pilot = dict(par_id=p.par_id, ID=p.ID)
-        else:
-            pilot = 0
-
-        competition_info = (db.session.query(
-            c.comp_id,
-            c.comp_name,
-            c.comp_site,
-            c.date_from,
-            c.date_to).filter(c.comp_id == compid).one())
-        comp = competition_info._asdict()
-
+    comp, pilot_list, pilot = frontendUtils.get_registered_pilots(compid, current_user)
     return jsonify(dict(info=comp, data=pilot_list, pilot=pilot))
 
 

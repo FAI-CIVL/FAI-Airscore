@@ -495,3 +495,54 @@ def update_airspace_file(old_filename, new_filename):
 # def save_waypoint_file(file):
 #     from Defines import WAYPOINTDIR, AIRSPACEDIR
 #     full_file_name = path.join(WAYPOINTDIR, filename)
+
+def get_non_registered_pilots(compid):
+    from db_tables import TblParticipant, PilotView
+
+    p = aliased(TblParticipant)
+    pv = aliased(PilotView)
+
+    with Database() as db:
+        '''get registered pilots'''
+        reg = db.session.query(p.pil_id).filter(p.comp_id == compid).order_by(p.name).subquery()
+        non_reg = db.session.query(pv.civl_id, pv.first_name, pv.last_name).filter(reg.c.pil_id == None).outerjoin(reg,
+                                                                                                                   reg.c.pil_id == pv.pil_id).all()
+        non_registered = [row._asdict() for row in non_reg]
+    return non_registered
+
+
+def get_registered_pilots(compid, current_user):
+    from db_tables import TblParticipant, TblCompetition
+
+    p = aliased(TblParticipant)
+    c = aliased(TblCompetition)
+
+    with Database() as db:
+        '''get registered pilots'''
+        results = db.session.query(p.par_id,
+                                    p.pil_id,
+                                    p.civl_id,
+                                    p.ID,
+                                    p.name,
+                                    p.nat,
+                                    p.glider,
+                                    p.sponsor,
+                                    p.status).filter(p.comp_id == compid).order_by(p.name)
+        pilot_list = [u._asdict() for u in results.all()]
+        '''pilot registration status'''
+        if not current_user.is_authenticated:
+            pilot = None
+        elif any(p for p in results if p.pil_id == current_user.id):
+            p = next(p for p in results if p.pil_id == current_user.id)
+            pilot = dict(par_id=p.par_id, ID=p.ID)
+        else:
+            pilot = 0
+
+        competition_info = db.session.query(
+            c.comp_id,
+            c.comp_name,
+            c.comp_site,
+            c.date_from,
+            c.date_to).filter(c.comp_id == compid).one()
+        comp = competition_info._asdict()
+    return comp, pilot_list, pilot
