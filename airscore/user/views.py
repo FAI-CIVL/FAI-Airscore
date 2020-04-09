@@ -969,3 +969,10 @@ def _delete_region(regid):
     resp = jsonify(success=True)
     return resp
 
+
+@blueprint.route('/_get_non_and_registered_pilots/<compid>', methods=['GET', 'POST'])
+@login_required
+def _get_non_and_registered_pilots(compid):
+    _, registered_pilots, _ = frontendUtils.get_registered_pilots(compid, current_user)
+    non_registered_pilots = frontendUtils.get_non_registered_pilots(compid)
+    return jsonify({'non_registered_pilots': non_registered_pilots, 'registered_pilots': registered_pilots})

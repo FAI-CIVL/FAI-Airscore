@@ -2,6 +2,90 @@
 
 {% block content %}
 
-<h1>place holder page for waypoint admin page </h1>
+<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+<body>
+<div class="container">
+<h1>Register Pilots</h1>
+<div class="row">
+				<div class="col-xs-5">
+					<h2>All pilots</h2>
+					<h4>Name - civl id</h4>
+                <select name="from[]" id="lstview" class="form-control" size="15" multiple="multiple">
+					</select>
+				</div>
+
+				<div class="col-xs-2">
+					<button type="button" id="lstview_undo" class="btn btn-danger btn-block">undo</button>
+					<button type="button" id="lstview_rightAll" class="btn btn-default btn-block"><i class="fa fa-forward"></i></button>
+					<button type="button" id="lstview_rightSelected" class="btn btn-default btn-block"><i class="fa fa-chevron-right"></i></button>
+					<button type="button" id="lstview_leftSelected" class="btn btn-default btn-block"><i class="fa fa-chevron-left"></i></button>
+					<button type="button" id="lstview_leftAll" class="btn btn-default btn-block"><i class="fa fa-backward"></i></button>
+					<button type="button" id="lstview_redo" class="btn btn-warning btn-block">redo</button>
+				</div>
+
+				<div class="col-xs-5">
+					<h2>Registered pilots</h2>
+					<h4>Name - civl id</h4>
+                    <select name="to[]" id="lstview_to" class="form-control" size="15" multiple="multiple">
+
+                    </select>
+
+				</div>
+			</div>
+</div>
+{% endblock %}
+
+{% block js %}
+{% include "js.html" %}
+
+<script src="{{ static_url_for('static', filename='js/multiselect.min.js') }}"></script>
+
+<script type="text/javascript">
+jQuery(document).ready(function($) {
+    $('#lstview').multiselect({
+        search: {
+            left: '<input type="text" name="q" class="form-control" placeholder="Search..." />',
+            right: '<input type="text" name="q" class="form-control" placeholder="Search..." />',
+        }
+    });
+    get_pilots();
+});
+
+function get_pilots() {
+           $('#lstview').empty();
+           $('#lstview_to').empty();
+           $.getJSON("{{ url_for('user._get_non_and_registered_pilots', compid=session.compid)}}",function(data) {
+           registered = data.registered_pilots
+           non_registered = data.non_registered_pilots
+               non_registered.forEach(function(item) {
+                   $('#lstview').append(
+                       $('<option>', {
+                           value: item.pil_id,
+                           text: item.first_name + ' ' + item.last_name + ' - ' + item.civl_id
+                       })
+
+                   );
+               });
+
+                registered.forEach(function(item) {
+                   $('#lstview_to').append(
+                       $('<option>', {
+                           value: item.civl_id,
+                           text: item.name + ' - ' + item.civl_id
+                       })
+
+                   );
+               });
+
+
+          });
+
+           }
+
+
+
+</script>
+
+</body>
 
 {% endblock %}

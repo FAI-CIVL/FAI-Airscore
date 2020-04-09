@@ -505,7 +505,7 @@ def get_non_registered_pilots(compid):
     with Database() as db:
         '''get registered pilots'''
         reg = db.session.query(p.pil_id).filter(p.comp_id == compid).order_by(p.name).subquery()
-        non_reg = db.session.query(pv.civl_id, pv.first_name, pv.last_name).filter(reg.c.pil_id == None).outerjoin(reg,
+        non_reg = db.session.query(pv.pil_id, pv.civl_id, pv.first_name, pv.last_name).filter(reg.c.pil_id == None).outerjoin(reg,
                                                                                                                    reg.c.pil_id == pv.pil_id).all()
         non_registered = [row._asdict() for row in non_reg]
     return non_registered
