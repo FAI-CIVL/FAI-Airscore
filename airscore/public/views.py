@@ -216,8 +216,8 @@ def registered_pilots(compid):
     return render_template('public/registered_pilots.html', compid=compid)
 
 
-@blueprint.route('/get_registered_pilots/<compid>', methods=['GET', 'POST'])
-def get_registered_pilots(compid):
+@blueprint.route('/_get_registered_pilots/<compid>', methods=['GET'])
+def _get_registered_pilots(compid):
     from db_tables import TblParticipant, TblCompetition
 
     p = aliased(TblParticipant)

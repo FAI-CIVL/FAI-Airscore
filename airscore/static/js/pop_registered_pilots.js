@@ -2,7 +2,7 @@ function populate_pilots(compid){
 $(document).ready(function() {
 
     $('#pilots').dataTable({
-        ajax: '/get_registered_pilots/'+compid,
+        ajax: '/_get_registered_pilots/'+compid,
         paging: false,
         searching: false,
         info: true,
