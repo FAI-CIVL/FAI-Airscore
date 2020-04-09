@@ -16,14 +16,15 @@ from airscore.extensions import (
     login_manager,
     migrate,
 )
-
+# from flask_socketio import SocketIO
+# socketio = SocketIO()
 
 def create_app(config_object="airscore.settings"):
     """Create application factory, as explained here: http://flask.pocoo.org/docs/patterns/appfactories/.
 
     :param config_object: The configuration object to use.
     """
-    app = Flask(__name__.split(".")[0])
+    app = Flask(__name__.split(".")[0]) # , debug=True)
     app.config.from_object(config_object)
     register_extensions(app)
     register_blueprints(app)
@@ -31,6 +32,7 @@ def create_app(config_object="airscore.settings"):
     register_shellcontext(app)
     register_commands(app)
     configure_logger(app)
+    # socketio.init_app(app)
     return app
 
 

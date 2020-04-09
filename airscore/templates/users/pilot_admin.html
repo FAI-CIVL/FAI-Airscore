@@ -9,12 +9,12 @@
 <div class="row">
 				<div class="col-xs-5">
 					<h2>All pilots</h2>
-					<h4>Name - civl id</h4>
+					<h5>(Name - civl id)</h5>
                 <select name="from[]" id="lstview" class="form-control" size="15" multiple="multiple">
 					</select>
 				</div>
 
-				<div class="col-xs-2">
+				<div id="buttons" class="col-xs-2">
 					<button type="button" id="lstview_undo" class="btn btn-danger btn-block">undo</button>
 					<button type="button" id="lstview_rightAll" class="btn btn-default btn-block"><i class="fa fa-forward"></i></button>
 					<button type="button" id="lstview_rightSelected" class="btn btn-default btn-block"><i class="fa fa-chevron-right"></i></button>
@@ -24,8 +24,8 @@
 				</div>
 
 				<div class="col-xs-5">
-					<h2>Registered pilots</h2>
-					<h4>Name - civl id</h4>
+					<h2 id="registered">Registered pilots</h2>
+					<h4>(Name - civl id)</h4>
                     <select name="to[]" id="lstview_to" class="form-control" size="15" multiple="multiple">
 
                     </select>
@@ -49,7 +49,13 @@ jQuery(document).ready(function($) {
         }
     });
     get_pilots();
+
 });
+
+function update_pilot_count(){
+        var num_pilots = $('#lstview_to option').length;
+		$('#registered').text('Registered pilots (' + num_pilots + ')' );
+}
 
 function get_pilots() {
            $('#lstview').empty();
@@ -75,6 +81,7 @@ function get_pilots() {
                        })
 
                    );
+                       update_pilot_count();
                });
 
 
@@ -82,6 +89,13 @@ function get_pilots() {
 
            }
 
+
+    $(function() {
+  // event listener to pilot list change
+         $('#lstview_to, #lstview_undo, #lstview_rightAll, #lstview_rightSelected, #lstview_leftSelected, #lstview_leftAll, #lstview_redo').on('click', function() {
+			update_pilot_count();
+       });
+   });
 
 
 </script>
