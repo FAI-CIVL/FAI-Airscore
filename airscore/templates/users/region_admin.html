@@ -138,7 +138,7 @@
        };
 
            // function to call XHR and update formula dropdown
-             function updateRegions() {
+           function updateRegions() {
            dropdown.region.attr('disabled', 'disabled');
            dropdown.region.empty();
            $.getJSON("{{ url_for('user._get_regions')}}",function(data) {
@@ -177,9 +177,7 @@ function update_details(){
 }
 
     $(function() {
-       // call to update on load
-
-              // event listener to region dropdown change
+  // event listener to region dropdown change
          dropdown.region.on('change', function() {
         update_details();
 
