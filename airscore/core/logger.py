@@ -29,7 +29,7 @@ def Logger(mode='ON', name='log.txt'):
         mylogger = logging.getLogger()
         sys.stderr.write = mylogger.error
         sys.stdout.write = mylogger.info
-        print('LOGGER ON | Filename = {}'.format(file))
+        print(f'LOGGER ON | Filename = {file}')
 
     elif mode == 'OFF':
         print('LOGGER OFF')

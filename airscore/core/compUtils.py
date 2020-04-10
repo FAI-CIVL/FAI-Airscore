@@ -108,10 +108,21 @@ def get_comp_json(comp_id):
 def get_nat_code(iso):
     """Get Country Code from ISO2 or ISO3"""
     from db_tables import TblCountryCode as CC
-    if not (type(iso) is str and len(iso) in (2, 3)): return None
+    if not (type(iso) is str and len(iso) in (2, 3)):
+        return None
     column = getattr(CC, 'natIso' + str(len(iso)))
     with Database() as db:
         return db.session.query(CC.natId).filter(column == iso).limit(1).scalar()
+
+
+def get_nat_name(iso):
+    """Get Country Code from ISO2 or ISO3"""
+    from db_tables import TblCountryCode as CC
+    if not (type(iso) is str and len(iso) in (2, 3)):
+        return None
+    column = getattr(CC, 'natIso' + str(len(iso)))
+    with Database() as db:
+        return db.session.query(CC.natName).filter(column == iso).limit(1).scalar()
 
 
 def get_task_path(task_id):
