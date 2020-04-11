@@ -491,7 +491,7 @@ def open_json_file(filename):
         return jsonpickle.decode(f.read())
 
 
-def get_task_country_scoring(filename):
+def get_task_country_json(filename):
     """
     Get task result json file as input
     returns json formatted string
@@ -521,7 +521,7 @@ def get_task_country_scoring(filename):
     return jsonpickle.encode(results)
 
 
-def get_comp_country_scoring(filename):
+def get_comp_country_json(filename):
     """
     Get comp result json file as input
     returns json formatted string
@@ -576,7 +576,7 @@ def get_comp_country_scoring(filename):
     #         print(f" - {p['name']}: {[(t, p['results'][t]['score']) for t in tasks]} - {p['score']}")
 
 
-def get_comp_team_scoring(filename):
+def get_comp_team_json(filename):
     """
     Get comp result json file as input
     returns json formatted string
@@ -631,7 +631,7 @@ def get_comp_team_scoring(filename):
     #         print(f" - {p['name']}: {[(t, p['results'][t]['score']) for t in tasks]} - {p['score']}")
 
 
-def get_task_team_scoring(filename):
+def get_task_team_json(filename):
     """
     Get task result json file as input
     returns json formatted string
@@ -665,3 +665,198 @@ def get_task_team_scoring(filename):
     #     for p in team['pilots']:
     #         print(f" - {p['name']}: {p['score']}")
 
+
+def get_task_country_scoring(filename):
+    """takes a task result filename and outputs a nested dict ready to be jsonified for the front end
+        each pilot has attributes for their nation and nation score to allow grouping in datatables js.
+        Scores are given html strikethough <del> if they do not count towards nation total
+    """
+    data = open_json_file(filename)
+    formula = data['formula']
+    pilots = []
+    teams = []
+    all_scores = []
+    if not formula['country_scoring']:
+        print(f'Team Scoring is not available')
+        return None
+    countries = get_country_list(countries=set(map(lambda x: x['nat'], data['results'])))
+    size = formula['team_size']
+    for nat in countries:
+        nation = dict(code=nat.code, name=nat.name)
+        nat_pilots = sorted([p for p in data['results'] if p['nat'] == nation['code']
+                            and p['nat_team']], key=lambda k: k['score'], reverse=True)
+        nation['score'] = sum([p['score'] for p in nat_pilots][:size])
+        for rank, p in enumerate(nat_pilots):
+            p['group'] = f". {nat.name} - {nation['score']:.0f} points"
+            p['nation_score'] = nation['score']
+            if rank >= size:
+                p['score'] = f"<del>{p['score']:.2f}</del>"
+            else:
+                p['score'] = f"{p['score']:.2f}"
+        teams.append(nation)
+        pilots.extend(nat_pilots)
+    # get rank after sort
+    for t in teams:
+        all_scores.append(t['score'])
+    for row in pilots:
+        row['group'] = str(sum(map(lambda x: x > row['nation_score'], all_scores)) + 1) + row['group']
+    return {'teams': teams, 'data': pilots, 'info': data['info'], 'formula': data['formula']}
+
+
+def get_comp_country_scoring(filename):
+    """takes a competition result filename and outputs a nested dict ready to be jsonified for the front end
+        each pilot has attributes for their nation and nation score to allow grouping in datatables js.
+        Scores are given html strikethough <del> if they do not count towards nation total
+    """
+    data = open_json_file(filename)
+    formula = data['formula']
+    if not formula['country_scoring']:
+        print(f'Team Scoring is not available')
+        return None
+    '''get info: countries list, team size, task codes'''
+    countries = get_country_list(countries=set(map(lambda x: x['nat'], data['results'])))
+    size = formula['team_size']
+    tasks = [t['task_code'] for t in data['tasks']]
+    teams = []
+    pilots = []
+    all_scores = []
+    all_possible_tasks = []
+
+    # setup the 20 task placeholders
+    for t in range(1, 21):
+        all_possible_tasks.append('T' + str(t))
+
+    for nat in countries:
+        nation = dict(code=nat.code, name=nat.name)
+        nat_pilots = [p for p in data['results'] if p['nat'] == nation['code'] and p['nat_team']]
+        score = 0
+        for t in tasks:
+            '''sort pilots by task result'''
+            nat_pilots = sorted(nat_pilots, key=lambda k: k['results'][t]['pre'], reverse=True)
+            '''adjust values'''
+            for idx, p in enumerate(nat_pilots):
+                if idx < size:
+                    score += p['results'][t]['pre']
+                    p['results'][t]['score'] = p['results'][t]['pre']
+                    p['results'][t]['perf'] = 1
+                else:
+                    p['results'][t]['score'] = f"<del>{int(p['results'][t]['pre'])}</del>"
+                    p['results'][t]['perf'] = 0
+        for t in list(set(all_possible_tasks)-set(tasks)):
+            for idx, p in enumerate(nat_pilots):
+                p['results'][t] = {'score': ''}
+        '''final nation sorting'''
+        for p in nat_pilots:
+            p['score'] = sum(p['results'][t]['score'] for t in tasks if not isinstance(p['results'][t]['score'], str))
+            p['group'] = f". {nat.name} - {score:.0f} points"
+            p['nation_score'] = score
+        nat_pilots = sorted(nat_pilots, key=lambda k: k['score'], reverse=True)
+        pilots.extend(nat_pilots)
+        nation['score'] = score
+        teams.append(nation)
+    # get rank after sort
+    for t in teams:
+        all_scores.append(t['score'])
+    for row in data['results']:
+        row['group'] = str(sum(map(lambda x: x > row['nation_score'], all_scores))+1) + row['group']
+
+    return {'teams': teams, 'data': pilots, 'info': data['info'], 'formula': data['formula']}
+
+
+def get_task_team_scoring(filename):
+    """takes a task result filename and outputs a nested dict ready to be jsonified for the front end
+        each pilot has attributes for their nation and nation score to allow grouping in datatables js.
+        Scores are given html strikethough <del> if they do not count towards nation total
+    """
+    data = open_json_file(filename)
+    formula = data['formula']
+    pilots = []
+    teams = []
+    all_scores = []
+    if not formula['country_scoring']:
+        print(f'Team Scoring is not available')
+        return None
+    teams_list = set(map(lambda x: x['team'].strip().title(), pilots))
+    size = formula['team_size']
+    for el in teams_list:
+        team = dict(name=el)
+        team_pilots = sorted([p for p in pilots if p['team'].strip().title() == team['name']],
+                             key=lambda k: k['score'], reverse=True)
+        team['pilots'] = team_pilots
+        team['score'] = sum([p['score'] for p in team_pilots][:size])
+        for rank, p in enumerate(team_pilots):
+            p['group'] = f". {team['name']} - {team['score']:.0f} points"
+            p['team_score'] = team['score']
+            if rank >= size:
+                p['score'] = f"<del>{p['score']:.2f}</del>"
+            else:
+                p['score'] = f"{p['score']:.2f}"
+        teams.append(team)
+        pilots.extend(team_pilots)
+    # get rank after sort
+    for t in teams:
+        all_scores.append(t['score'])
+    for row in pilots:
+        row['group'] = str(sum(map(lambda x: x > row['nation_score'], all_scores)) + 1) + row['group']
+    return {'teams': teams, 'data': pilots, 'info': data['info'], 'formula': data['formula']}
+
+
+def get_comp_team_scoring(filename):
+    """takes a competition result filename and outputs a nested dict ready to be jsonified for the front end
+        each pilot has attributes for their nation and nation score to allow grouping in datatables js.
+        Scores are given html strikethough <del> if they do not count towards nation total
+    """
+    data = open_json_file(filename)
+    formula = data['formula']
+    if not formula['country_scoring']:
+        print(f'Team Scoring is not available')
+        return None
+    '''get info: teams list, team size, task codes'''
+    pilots = [p for p in data['results'] if not p['team'] in [None, '']]
+    teams_list = set(map(lambda x: x['team'].strip().title(), pilots))
+    size = formula['team_size']
+    tasks = [t['task_code'] for t in data['tasks']]
+    teams = []
+    pilots = []
+    all_scores = []
+    all_possible_tasks = []
+
+    # setup the 20 task placeholders
+    for t in range(1, 21):
+        all_possible_tasks.append('T' + str(t))
+
+    for el in teams:
+        team = dict(name=el)
+        team_pilots = [p for p in pilots if p['team'].strip().title() == team['name']]
+        score = 0
+        for t in tasks:
+            '''sort pilots by task result'''
+            team_pilots = sorted(team_pilots, key=lambda k: k['results'][t]['pre'], reverse=True)
+            '''adjust values'''
+            for idx, p in enumerate(team_pilots):
+                if idx < size:
+                    score += p['results'][t]['pre']
+                    p['results'][t]['score'] = p['results'][t]['pre']
+                    p['results'][t]['perf'] = 1
+                else:
+                    p['results'][t]['score'] = f"<del>{int(p['results'][t]['pre'])}</del>"
+                    p['results'][t]['perf'] = 0
+        for t in list(set(all_possible_tasks)-set(tasks)):
+            for idx, p in enumerate(team_pilots):
+                p['results'][t] = {'score': ''}
+        '''final nation sorting'''
+        for p in team_pilots:
+            p['score'] = sum(p['results'][t]['score'] for t in tasks if not isinstance(p['results'][t]['score'], str))
+            p['group'] = f". {team['name']} - {score:.0f} points"
+            p['nation_score'] = score
+        team_pilots = sorted(team_pilots, key=lambda k: k['score'], reverse=True)
+        pilots.extend(team_pilots)
+        team['score'] = score
+        teams.append(team)
+    # get rank after sort
+    for t in teams:
+        all_scores.append(t['score'])
+    for row in data['results']:
+        row['group'] = str(sum(map(lambda x: x > row['nation_score'], all_scores))+1) + row['group']
+
+    return {'teams': teams, 'data': pilots, 'info': data['info'], 'formula': data['formula']}
