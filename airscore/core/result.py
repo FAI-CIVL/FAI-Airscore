@@ -776,11 +776,12 @@ def get_task_team_scoring(filename):
     if not formula['country_scoring']:
         print(f'Team Scoring is not available')
         return None
-    teams_list = set(map(lambda x: x['team'].strip().title(), pilots))
+    pilots_list = [p for p in data['results'] if not p['team'] in [None, '']]
+    teams_list = set(map(lambda x: x['team'].strip().title(), pilots_list))
     size = formula['team_size']
     for el in teams_list:
         team = dict(name=el)
-        team_pilots = sorted([p for p in pilots if p['team'].strip().title() == team['name']],
+        team_pilots = sorted([p for p in pilots_list if p['team'].strip().title() == team['name']],
                              key=lambda k: k['score'], reverse=True)
         team['pilots'] = team_pilots
         team['score'] = sum([p['score'] for p in team_pilots][:size])
@@ -797,7 +798,7 @@ def get_task_team_scoring(filename):
     for t in teams:
         all_scores.append(t['score'])
     for row in pilots:
-        row['group'] = str(sum(map(lambda x: x > row['nation_score'], all_scores)) + 1) + row['group']
+        row['group'] = str(sum(map(lambda x: x > row['team_score'], all_scores)) + 1) + row['group']
     return {'teams': teams, 'data': pilots, 'info': data['info'], 'formula': data['formula']}
 
 
@@ -812,8 +813,8 @@ def get_comp_team_scoring(filename):
         print(f'Team Scoring is not available')
         return None
     '''get info: teams list, team size, task codes'''
-    pilots = [p for p in data['results'] if not p['team'] in [None, '']]
-    teams_list = set(map(lambda x: x['team'].strip().title(), pilots))
+    pilots_list = [p for p in data['results'] if not p['team'] in [None, '']]
+    teams_list = set(map(lambda x: x['team'].strip().title(), pilots_list))
     size = formula['team_size']
     tasks = [t['task_code'] for t in data['tasks']]
     teams = []
@@ -825,9 +826,9 @@ def get_comp_team_scoring(filename):
     for t in range(1, 21):
         all_possible_tasks.append('T' + str(t))
 
-    for el in teams:
+    for el in teams_list:
         team = dict(name=el)
-        team_pilots = [p for p in pilots if p['team'].strip().title() == team['name']]
+        team_pilots = [p for p in pilots_list if p['team'].strip().title() == team['name']]
         score = 0
         for t in tasks:
             '''sort pilots by task result'''
@@ -844,11 +845,11 @@ def get_comp_team_scoring(filename):
         for t in list(set(all_possible_tasks)-set(tasks)):
             for idx, p in enumerate(team_pilots):
                 p['results'][t] = {'score': ''}
-        '''final nation sorting'''
+        '''final team sorting'''
         for p in team_pilots:
             p['score'] = sum(p['results'][t]['score'] for t in tasks if not isinstance(p['results'][t]['score'], str))
             p['group'] = f". {team['name']} - {score:.0f} points"
-            p['nation_score'] = score
+            p['team_score'] = score
         team_pilots = sorted(team_pilots, key=lambda k: k['score'], reverse=True)
         pilots.extend(team_pilots)
         team['score'] = score
@@ -856,7 +857,7 @@ def get_comp_team_scoring(filename):
     # get rank after sort
     for t in teams:
         all_scores.append(t['score'])
-    for row in data['results']:
-        row['group'] = str(sum(map(lambda x: x > row['nation_score'], all_scores))+1) + row['group']
+    for row in pilots:
+        row['group'] = str(sum(map(lambda x: x > row['team_score'], all_scores))+1) + row['group']
 
     return {'teams': teams, 'data': pilots, 'info': data['info'], 'formula': data['formula']}
