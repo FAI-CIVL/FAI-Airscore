@@ -466,6 +466,19 @@ def pilot_admin():
     return render_template('users/pilot_admin.html')
 
 
+@blueprint.route('/_register_pilots/<compid>', methods=['POST'])
+@login_required
+def _register_pilots(compid):
+    from participant import register_from_profiles_list, unregister_from_profiles_list
+    data = request.json
+    if data['register']:
+        register_from_profiles_list(compid, data['register'])
+    if data['unregister']:
+        unregister_from_profiles_list(compid, data['unregister'])
+    resp = jsonify(success=True)
+    return resp
+
+
 @blueprint.route('/_add_task/<compid>', methods=['POST'])
 @login_required
 def _add_task(compid):

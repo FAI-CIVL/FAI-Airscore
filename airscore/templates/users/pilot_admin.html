@@ -4,6 +4,7 @@
 
 <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
 <body>
+<center>
 <div class="container">
 <h1>Register Pilots</h1>
 <div class="row">
@@ -39,6 +40,9 @@
 				</div>
 			</div>
 </div>
+
+	<button type="button" onclick="register_pilots();" class="btn btn-success">Save</button>
+   </center>
 {% endblock %}
 
 {% block js %}
@@ -60,12 +64,26 @@ jQuery(document).ready(function($) {
 
 var registered;
 var non_registered;
+var registered_pil=[];
+var new_registered_pil = [];
+var un_registered_pil=[];
 
 function update_pilot_count(){
         var num_pilots = $('#lstview_to option').length;
 		$('#registered').text('Registered pilots (' + num_pilots + ')' );
-}
+			new_registered =[];
+        $("#lstview_to option").each(function()
+{
 
+	new_registered.push(parseInt($(this).val(),10));
+
+});
+	new_registered_pil = new_registered.filter( el => !registered_pil.includes( el ) );
+	un_registered_pil = registered_pil.filter( el => !new_registered.includes( el ) );
+	console.log(new_registered_pil);
+	console.log(un_registered_pil);
+	console.log(registered_pil);
+}
 function get_pilots() {
            $('#lstview').empty();
            $('#lstview_to').empty();
@@ -80,19 +98,21 @@ function get_pilots() {
                        })
 
                    );
+
                });
 
                 registered.forEach(function(item) {
                    $('#lstview_to').append(
                        $('<option>', {
-                           value: item.civl_id,
+                           value: item.pil_id,
                            text: item.name + ' - ' + item.civl_id
                        })
 
                    );
-                       update_pilot_count();
-               });
+                    registered_pil.push(item.pil_id);
 
+               });
+				update_pilot_count();
 
           });
 
@@ -105,6 +125,25 @@ function get_pilots() {
 			update_pilot_count();
        });
    });
+
+   function register_pilots(){
+           var mydata = new Object();
+               mydata.register = new_registered_pil;
+               mydata.unregister = un_registered_pil;
+
+
+           $.ajax({
+               type: "POST",
+               url: "{{ url_for('user._register_pilots', compid=session.compid)}}",
+               contentType:"application/json",
+               data : JSON.stringify(mydata),
+               dataType: "json",
+               success: function () {
+                      get_pilots()
+               }
+               });
+
+   };
 
 
 </script>
