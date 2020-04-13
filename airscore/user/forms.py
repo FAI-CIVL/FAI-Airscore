@@ -4,7 +4,7 @@ from datetime import date
 
 from flask_wtf import FlaskForm
 from wtforms import PasswordField, StringField, IntegerField, SelectField, DecimalField, BooleanField, SubmitField,\
-    FileField
+    FileField, TextAreaField
 
 from wtforms.fields.html5 import DateField, TimeField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange, Optional
@@ -100,9 +100,9 @@ class CompForm(FlaskForm):
                       " that will not be considered for scoring. The default is 5 minutes, but depending on local " \
                       "meteorological circumstances, it may be set to a longer period for a whole competition."
 
-
     comp_name = StringField('Competition Name')
-    comp_code = StringField('Short name', render_kw=dict(maxlength=8), description='An abbreviated name (max 8 chars) e.g. PGEuro20')
+    comp_code = StringField('Short name', render_kw=dict(maxlength=8), description='An abbreviated name (max 8 chars) '
+                                                                                   'e.g. PGEuro20')
     sanction = SelectField('Sanction', choices=[(x, x) for x in Defines.SANCTIONS])
     comp_type = SelectField('Type', choices=[('RACE', 'RACE'), ('ROUTE', 'ROUTE'), ('TEAM RACE', 'TEAM RACE')])
     comp_class = SelectField('Category', choices=[('PG', 'PG'), ('HG', 'HG')],
@@ -113,8 +113,8 @@ class CompForm(FlaskForm):
     MD_name = StringField('Race Director')
     time_offset = DecimalField('GMT offset', validators=[DataRequired()], places=2, render_kw=dict(maxlength=5),
                                description='The default time offset for the comp. Individual tasks will have this '
-                                         'as a default but can be overridden if your comp spans multiple time zones'
-                                         ' or over change in daylight savings')
+                               'as a default but can be overridden if your comp spans multiple time zones'
+                               ' or over change in daylight savings')
     pilot_registration = SelectField('Pilot Entry', choices=[('registered', 'registered'), ('open', 'open')],
                                      description='Registered - only pilots registered are flying, '
                                                  'open - all tracklogs uploaded are considered as entires')
@@ -123,7 +123,7 @@ class CompForm(FlaskForm):
     locked = BooleanField('Scoring Locked',
                           description="If locked, a rescore will not change displayed results")
 
-    #formula object/table
+    # formula object/table
     overall_validity = SelectField('Scoring', choices=[('all', 'ALL'), ('ftv', 'FTV'), ('round', 'ROUND')]) # TblForComp comOverallScore  ??what is round?? do we also need old drop tasks?
     validity_param = IntegerField('FTV percentage', validators=[NumberRange(min=0, max=100)])
     nom_dist = IntegerField('Nominal Distance (km)', description=help_nom_distance)
@@ -156,7 +156,14 @@ class CompForm(FlaskForm):
     scoreback_time = IntegerField('Scoreback time (mins)', description=help_score_back)
     max_JTG = IntegerField("Max Jump the gun (sec)", default=0)
     JTG_penalty_per_sec = DecimalField('Jump the gun penalty per second', validators=[Optional(strip_whitespace=True)])
-
+    check_launch = BooleanField('Check launch', description='If we check pilots leaving launch - i.e. launch is like '
+                                                            'an exit cylinder. Individual tasks will have this '
+                                                            'as a default but can be overridden.')
+    airspace_check = BooleanField('Airspace checking', description='if we check for airspace violations. Individual '
+                                                                   'tasks will have this as a default but can be '
+                                                                   'overridden. Note that this will only work if '
+                                                                   'the flying area includes an airspace file')
+    igc_parsing_file = SelectField("IGC parsing config file")
     submit = SubmitField('Save')
 
     def validate_on_submit(self):
@@ -174,7 +181,7 @@ class TaskForm(FlaskForm):
     task_num = IntegerField("Task Number", validators=[NumberRange(min=0, max=50)],
                                description='task number, by default one more than the last task')
     comment = StringField('Comment', description='Sometimes you may wish to make a comment that will show up'
-                                                      ' in the competition overview page. e.g. "task stopped at 14:34"')
+                                                ' in the competition overview page. e.g. "task stopped at 14:34"')
     date = DateField('Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
     task_type = SelectField('Type', choices=[('race', 'Race'), ('elapsed_time', 'Elapsed time')])
     # times
@@ -203,9 +210,12 @@ class TaskForm(FlaskForm):
     QNH = DecimalField('QNH', validators=[NumberRange(min=900, max=1100)])
 
     #formula overides
-    formula_distance = SelectField('Distance points', choices=[('on','On'), ('difficulty','Difficulty'), ('off','Off')])
-    formula_arrival = SelectField('Arrival points', choices=[('position','Position'), ('time','Time'), ('off','Off')])
-    formula_departure = SelectField('Departure points', choices=[('leadout','Leadout'), ('departure','Departure'), ('off','Off')])
+    formula_distance = SelectField('Distance points', choices=[('on', 'On'), ('difficulty', 'Difficulty'),
+                                                               ('off', 'Off')])
+    formula_arrival = SelectField('Arrival points', choices=[('position', 'Position'), ('time', 'Time'),
+                                                             ('off', 'Off')])
+    formula_departure = SelectField('Departure points', choices=[('leadout', 'Leadout'), ('departure', 'Departure'),
+                                                                 ('off', 'Off')])
     formula_time = SelectField('Time points', choices=[('on','On'), ('off', 'Off')])
     arr_alt_bonus = DecimalField('Height bonus')
     max_JTG = IntegerField("Max Jump the gun (sec)", default=0)
@@ -266,5 +276,74 @@ class NewRegionForm(FlaskForm):
     openair_file = FileField("Open Air file", description='Open Air airspace file')
     submit = SubmitField('Add')
 
+
 class RegionForm(FlaskForm):
     region = SelectField('Area', id='select_region')
+
+
+class IgcParsingConfigForm(FlaskForm):
+    help_min_fixes = 'Minimum number of fixes in a file.'
+    help_max_seconds_between_fixes = 'Maximum time between fixes, seconds. Soft limit, some fixes are allowed to' \
+                                     ' exceed'
+    help_min_seconds_between_fixes = 'Minimum time between fixes, seconds. Soft limit, some fixes are allowed to' \
+                                     ' exceed.'
+    help_max_time_violations = 'Maximum number of fixes exceeding time between fix constraints.'
+    help_max_new_days_in_flight = 'Maximum number of times a file can cross the 0:00 UTC time.'
+    help_min_avg_abs_alt_change = 'Minimum average of absolute values of altitude changes in a file. This is needed' \
+                                  ' to discover altitude sensors (either pressure or gps) that report either always ' \
+                                  'constant altitude, or almost always constant altitude, and therefore are invalid. ' \
+                                  'The unit is meters/fix.'
+    help_max_alt_change_rate = 'Maximum altitude change per second between fixes, meters per second. Soft limit, ' \
+                               'some fixes are allowed to exceed.'
+    help_max_alt_change_violations = 'Maximum number of fixes that exceed the altitude change limit.'
+    help_max_alt = 'Absolute maximum altitude, meters.'
+    help_min_alt = 'Absolute minimum altitude, meters.'
+    # Flight detection parameters.
+    help_min_gsp_flight = 'Minimum ground speed to switch to flight mode, km/h.'
+
+    help_min_landing_time = 'Minimum idle time (i.e. time with speed below minimum ground speed) to switch to landing,' \
+                            ' seconds. Exception: end of the file (tail fixes that do not trigger the above' \
+                            ' condition), no limit is applied there.'
+
+    help_which_flight_to_pick = '''In case there are multiple continuous segments with ground speed exceeding the 
+                                    limit, which one should be taken?
+                                    Available options:
+                                     - "first": take the first segment, ignore the part after
+                                        the first detected landing.
+                                     - "concat": concatenate all segments; will include the down
+                                        periods between segments (legacy behavior)'''
+    # Thermal detection parameters.
+    help_min_bearing_change_circling = 'Minimum bearing change to enter a thermal, deg/sec.'
+    help_min_time_for_bearing_change = 'Minimum time between fixes to calculate bearing change, seconds.'
+    help_min_time_for_thermal = 'Minimum time to consider circling a thermal, seconds.'
+
+    description = TextAreaField('Description', description='Free text describing the settings file')
+    new_name = StringField('New settings name')
+    min_fixes = IntegerField('Min number of fixes', description=help_min_fixes)
+    max_seconds_between_fixes = IntegerField('Max seconds between fixes', description=help_max_seconds_between_fixes)
+    min_seconds_between_fixes = IntegerField('Min seconds between fixes', description=help_min_seconds_between_fixes)
+    max_time_violations = IntegerField('Max time violations', description=help_max_time_violations)
+    max_new_days_in_flight = IntegerField('Max new days in flight', description=help_max_new_days_in_flight)
+    min_avg_abs_alt_change = DecimalField('Min average absolute altitude change',
+                                          description=help_min_avg_abs_alt_change)
+    max_alt_change_rate = IntegerField('Max alt change rate', description=help_max_alt_change_rate)
+    max_alt_change_violations = IntegerField('Max alt change violations', description=help_max_alt_change_violations)
+    max_alt = IntegerField('Max alt (m)', description=help_max_alt)
+    min_alt = IntegerField('Min alt', description=help_min_alt)
+    min_gsp_flight = IntegerField('Min groundspeed in flight (kph)', description=help_min_gsp_flight)
+    min_landing_time = IntegerField('Min landing time (sec)', description=help_min_landing_time)
+    which_flight_to_pick = SelectField('Which flight to pick', choices=[('concat', 'join flights together'),
+                                                                        ('first', 'take the first flight')]
+                                       , description=help_which_flight_to_pick)
+    min_bearing_change_circling = IntegerField('Min bearing change circling',
+                                               description=help_min_bearing_change_circling)
+    min_time_for_bearing_change = IntegerField('Min time for bearing change',
+                                               description=help_min_time_for_bearing_change)
+    min_time_for_thermal = IntegerField('Min time for thermal', description=help_min_time_for_thermal)
+
+    save = SubmitField('Save')
+    save_as = SubmitField('Save As')
+
+    def validate_on_submit(self):
+        result = super(IgcParsingConfigForm, self).validate()
+        return result

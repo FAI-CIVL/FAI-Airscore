@@ -3,15 +3,16 @@ from sqlalchemy.orm import aliased
 from flask import jsonify
 from myconn import Database
 import datetime
+import ruamel.yaml
 from sqlalchemy import func, not_
 # import math
 from pathlib import Path
 import jsonpickle
-from Defines import MAPOBJDIR
+from Defines import MAPOBJDIR, IGCPARSINGCONFIG
 from design_map import make_map
 from sqlalchemy.exc import SQLAlchemyError
 from calcUtils import sec_to_time
-from os import path
+from os import scandir, fsencode, path
 from werkzeug.utils import secure_filename
 
 
@@ -549,3 +550,35 @@ def get_registered_pilots(compid, current_user):
             c.date_to).filter(c.comp_id == compid).one()
         comp = competition_info._asdict()
     return comp, pilot_list, pilot
+
+
+def get_igc_parsing_config_file_list():
+    yaml = ruamel.yaml.YAML()
+    configs = []
+    choices = []
+    for file in scandir(IGCPARSINGCONFIG):
+        if file.name.endswith(".yaml"):
+            print(file.name)
+            with open(file.path) as fp:
+                config = yaml.load(fp)
+            print(config['description'])
+            configs.append({'file': file.name, 'name': file.name[:-5], 'description': config['description'],
+                            'editable': config['editable']})
+            choices.append((file.name[:-5], file.name[:-5]))
+    return choices, configs
+
+
+def get_comps_with_igc_parsing(igc_config):
+    from db_tables import TblCompetition
+
+    c = aliased(TblCompetition)
+    with Database() as db:
+        try:
+            comps = db.session.query(c.comp_id).filter(c.igc_config_file == igc_config).all()
+        except SQLAlchemyError as e:
+            error = str(e)
+            print(f"error trying to update openair_file file in DB. error{error}")
+            db.session.rollback()
+            db.session.close()
+            return None
+        return comps

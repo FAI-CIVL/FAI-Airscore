@@ -137,6 +137,7 @@ class Task(object):
         self.task_path = None
         self.comp_path = None
         self.track_source = None
+        self.igc_config_file = None # config yaml for igc_lib.
 
         '''Formula'''
         if self.id:

@@ -10,16 +10,15 @@ Antonio Golfari, Stuart Mackintosh - 2019
 """
 
 import glob
-import os
-from os import path
+from os import path, makedirs
 from shutil import copyfile
 
 from sqlalchemy.exc import SQLAlchemyError
 
-from Defines import track_formats
+from Defines import track_formats, IGCPARSINGCONFIG
 from calcUtils import epoch_to_date
 from db_tables import TblTaskResult
-from igc_lib import Flight
+from igc_lib import Flight, FlightParsingConfig
 from myconn import Database
 from trackUtils import find_pilot, get_task_fullpath
 from notification import Notification
@@ -126,7 +125,7 @@ class Track(object):
         # TODO in the new workflow we should have a Pilot obj, with Track as attr. so get_pilot should be in Pilot
         if self.par_id is None:
             """Get string"""
-            fields = os.path.splitext(os.path.basename(self.filename))
+            fields = path.splitext(path.basename(self.filename))
             self.par_id = find_pilot(fields[0])
 
     def to_db(self, task_id):
@@ -149,7 +148,7 @@ class Track(object):
         return result
 
     @classmethod
-    def read_file(cls, filename, track_id=None, par_id=None):
+    def read_file(cls, filename, track_id=None, par_id=None, config=None):
         """Reads track file and creates a track object"""
         track = cls(track_file=filename, track_id=track_id, par_id=par_id)
         track.get_type()
@@ -159,7 +158,10 @@ class Track(object):
             if track.track_type == "igc":
                 """using IGC reader from aerofile library"""
                 print('reading flight')
-                track.flight = Flight.create_from_file(filename)
+                if config:
+                    track.flight = Flight.create_from_file(filename, config_class=config)
+                else:
+                    track.flight = Flight.create_from_file(filename, )
             # elif track.type == "kml":
             """using KML reader created by Antonio Golfari
             To be rewritten for igc_lib"""
@@ -253,7 +255,7 @@ class Track(object):
         if task_path:
             """check if directory already exists"""
             if not path.isdir(task_path):
-                os.makedirs(task_path)
+                makedirs(task_path)
             """creates a name for the track
             name_surname_date_time_index.igc
             if we use flight date then we need an index for multiple tracks"""
@@ -297,3 +299,40 @@ def validate_G_record(igc_filename):
         return 'ERROR'
 
 
+def igc_parsing_config_from_yaml(yaml_filename):
+    """reads the settings from a YAML file and creates a
+    new FlightParsingConfig object for use when processing track files """
+
+    yaml_config = read_igc_config_yaml(yaml_filename)
+    if yaml_config is None:
+        return None
+
+    config = FlightParsingConfig()
+    yaml_config.pop('editable', None)
+    yaml_config.pop('description', None)
+    for setting in yaml_config:
+        config.yaml_config[setting] = yaml_config['min_fixes']
+    return config
+
+
+def read_igc_config_yaml(yaml_filename):
+    import ruamel.yaml
+    yaml = ruamel.yaml.YAML()
+    full_filename = path.join(IGCPARSINGCONFIG, yaml_filename)
+    try:
+        with open(full_filename) as fp:
+            return yaml.load(fp)
+    except IOError:
+        return None
+    
+
+def save_igc_config_yaml(yaml_filename, yaml_data):
+    import ruamel.yaml
+    yaml = ruamel.yaml.YAML()
+    full_filename = path.join(IGCPARSINGCONFIG, yaml_filename)
+    try:
+        with open(full_filename, 'w') as fp:
+            yaml.dump(yaml_data, fp)
+    except IOError:
+        return None
+    return True

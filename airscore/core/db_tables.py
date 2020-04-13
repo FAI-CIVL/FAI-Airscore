@@ -625,6 +625,9 @@ class TblCompetition(Base):
     external = Column(INTEGER(2), nullable=False, server_default=text("'0'"))
     website = Column(String(100))
     comp_path = Column(String(40))
+    airspace_check = Column(TINYINT(1))
+    check_launch = Column(Enum('on', 'off'), server_default=text("'off'"))
+    igc_config_file = Column(String(80))
 
     cat = relationship('TblClassification')
     ladders = relationship('TblLadder', secondary='tblLadderComp')
@@ -744,6 +747,7 @@ class TblTask(Base):
     reg = relationship('TblRegion')
     comp = relationship('TblCompetition')
     Results = relationship('TblTaskResult')
+    igc_config_file = Column(String(80))
     # comp = relationship('TblCompetition', backref="tasks", lazy='subquery')
     # Results = relationship('TblTaskResult', backref="task")
 

@@ -6,7 +6,7 @@ from flask import Blueprint, render_template, request, jsonify, json, flash, red
 from flask_login import login_required, current_user
 import frontendUtils
 from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm, \
-    TaskResultAdminForm, NewAdminForm, RegionForm, NewRegionForm
+    TaskResultAdminForm, NewAdminForm, RegionForm, NewRegionForm, IgcParsingConfigForm
 from comp import Comp
 from formula import list_formulas, Formula
 from task import Task, write_map_json
@@ -192,6 +192,9 @@ def comp_settings_admin(compid):
             comp.restricted = 1 if compform.pilot_registration.data == 'registered' else None
             comp.formula = compform.formula.data
             comp.locked = compform.locked.data
+            comp.igc_config_file = compform.igc_parsing_file.data
+            comp.airspace_check = compform.airspace_check.data
+            comp.check_launch = compform.check_launch.data
             comp.to_db()
 
             formula = Formula.read(compid)
@@ -282,7 +285,11 @@ def comp_settings_admin(compid):
         compform.max_JTG.data = formula.max_JTG
         compform.JTG_penalty_per_sec.data = formula.JTG_penalty_per_sec
         compform.scoring_altitude.data = formula.scoring_altitude
+        compform.igc_parsing_file.data = comp.igc_config_file
+        compform.airspace_check.data = comp.airspace_check
+        compform.check_launch.data = comp.check_launch
 
+        compform.igc_parsing_file.choices, _ = frontendUtils.get_igc_parsing_config_file_list()
         newtaskform.task_region.choices, _ = frontendUtils.get_region_choices(compid)
         newadminform.admin.choices = admin_choices
 
@@ -976,3 +983,80 @@ def _get_non_and_registered_pilots(compid):
     _, registered_pilots, _ = frontendUtils.get_registered_pilots(compid, current_user)
     non_registered_pilots = frontendUtils.get_non_registered_pilots(compid)
     return jsonify({'non_registered_pilots': non_registered_pilots, 'registered_pilots': registered_pilots})
+
+
+@blueprint.route('/igc_parsing_config/<filename>', methods=['GET', 'POST'])
+@login_required
+def igc_parsing_config(filename):
+    from track import read_igc_config_yaml, save_igc_config_yaml
+    igc_config_form = IgcParsingConfigForm()
+    filename += '.yaml'
+    save = True
+    config = read_igc_config_yaml(filename)
+    if request.method == 'GET':
+        if config is None:
+            return render_template('404.html')
+        igc_config_form.description.data = config['description']
+        igc_config_form.min_fixes.data = config['min_fixes']
+        igc_config_form.max_seconds_between_fixes.data = config['max_seconds_between_fixes']
+        igc_config_form.min_seconds_between_fixes.data = config['min_seconds_between_fixes']
+        igc_config_form.max_time_violations.data = config['max_time_violations']
+        igc_config_form.max_new_days_in_flight.data = config['max_new_days_in_flight']
+        igc_config_form.min_avg_abs_alt_change.data = config['min_avg_abs_alt_change']
+        igc_config_form.max_alt_change_rate.data = config['max_alt_change_rate']
+        igc_config_form.max_alt_change_violations.data = config['max_alt_change_violations']
+        igc_config_form.max_alt.data = config['max_alt']
+        igc_config_form.min_alt.data = config['min_alt']
+        igc_config_form.min_gsp_flight.data = config['min_gsp_flight']
+        igc_config_form.min_landing_time.data = config['min_landing_time']
+        igc_config_form.which_flight_to_pick.data = config['which_flight_to_pick']
+        igc_config_form.min_bearing_change_circling.data = config['min_bearing_change_circling']
+        igc_config_form.min_time_for_bearing_change.data = config['min_time_for_bearing_change']
+        igc_config_form.min_time_for_thermal.data = config['min_time_for_thermal']
+
+        if current_user.username == config['owner']:
+            save = True
+    if request.method == 'POST':
+        config['description'] = igc_config_form.description.data
+        config['min_fixes'] = igc_config_form.min_fixes.data
+        config['max_seconds_between_fixes'] = igc_config_form.max_seconds_between_fixes.data
+        config['min_seconds_between_fixes'] = igc_config_form.min_seconds_between_fixes.data
+        config['max_time_violations'] = igc_config_form.max_time_violations.data
+        config['max_new_days_in_flight'] = igc_config_form.max_new_days_in_flight.data
+        config['min_avg_abs_alt_change'] = float(igc_config_form.min_avg_abs_alt_change.data)
+        config['max_alt_change_rate'] = igc_config_form.max_alt_change_rate.data
+        config['max_alt_change_violations'] = igc_config_form.max_alt_change_violations.data
+        config['max_alt'] = igc_config_form.max_alt.data
+        config['min_alt'] = igc_config_form.min_alt.data
+        config['min_gsp_flight'] = igc_config_form.min_gsp_flight.data
+        config['min_landing_time'] = igc_config_form.min_landing_time.data
+        config['which_flight_to_pick'] = igc_config_form.which_flight_to_pick.data
+        config['min_bearing_change_circling'] = igc_config_form.min_bearing_change_circling.data
+        config['min_time_for_bearing_change'] = igc_config_form.min_time_for_bearing_change.data
+        config['min_time_for_thermal'] = igc_config_form.min_time_for_thermal.data
+        config['owner'] = current_user.username
+        if igc_config_form.save.data and current_user.username ==  config['owner']:
+            save_igc_config_yaml(filename, config)
+            flash("saved", category='info')
+        if igc_config_form.save_as.data and igc_config_form.new_name.data:
+            save_igc_config_yaml(igc_config_form.new_name.data+'.yaml', config)
+            flash("saved as " + igc_config_form.new_name.data, category='info')
+            return render_template('users/igc_parsing_settings.html', save=save, name=filename,
+                                   description=config['description'], configform=igc_config_form)
+    return render_template('users/igc_parsing_settings.html', save=save, name=filename[:-5],
+                           description=config['description'], configform=igc_config_form)
+
+
+@blueprint.route('/_del_igc_config/<filename>', methods=['POST'])
+@login_required
+def _del_igc_config(filename):
+    from Defines import IGCPARSINGCONFIG
+    filename += '.yaml'
+    comps = frontendUtils.get_comps_with_igc_parsing(filename)
+    if comps:
+        flash(f"Unable to delete settings file as it is in use in the following comps:{comps}", category='danger')
+    else:
+        file = path.join(IGCPARSINGCONFIG, filename)
+        if path.exists(file):
+            remove(file)
+    return "File Deleted"

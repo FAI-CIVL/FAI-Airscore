@@ -178,6 +178,31 @@
       </div>
    </div>
    </div>
+    <p>
+      <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse27" aria-expanded="false" aria-controls="collapse27">
+      Checks
+      </button>
+   </p>
+   <div class="collapse" id="collapse27">
+      <div class="card card-body">
+         <div class="container">
+            <div  class="form-row">
+               <div class="form-group col-md-3">
+                  {{compform.airspace_check.label}} {{compform.airspace_check(size=3,**{'id': "airspace_check", 'data-toggle': 'tooltip', 'title': compform.airspace_check.description})}}
+               </div>
+               <div class="form-group col-md-4">
+                  {{compform.igc_parsing_file.label}} {{compform.igc_parsing_file(**{'id': "igc_config", 'data-toggle': 'tooltip', 'title': compform.igc_parsing_file.description})}}
+               <a id="link_igc_config" >view/edit</a>
+               </div>
+               <div  class="form-group col-md-4">
+                  {{compform.check_launch.label}} {{compform.check_launch(size=3,**{'id': "check_launch", 'data-toggle': 'tooltip', 'title': compform.check_launch.description})}}
+               </div>
+            </div>
+         </div>
+      </div>
+   </div>
+
+
    <p>
       <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse3" aria-expanded="false" aria-controls="collapse3">
       Management
@@ -382,12 +407,13 @@
        // jQuery selection for the 2 select boxes
        var dropdown = {
            category: $('#select_category'),
-           formula: $('#select_formula')
+           formula: $('#select_formula'),
+           igc_config: $('#igc_config')
        };
    
        // call to update on load
        updateFormulas();
-
+       $('#link_igc_config').attr("href", "/users/igc_parsing_config/" + dropdown.igc_config.val());
        // function to call XHR and update formula dropdown
        function updateFormulas() {
            var send = {
@@ -421,7 +447,11 @@
        dropdown.formula.on('change', function() {
            ask_update('formula');
        });
-   
+       // event listener to igc config dropdown change
+       dropdown.igc_config.on('change', function() {
+           $('#link_igc_config').attr("href", "/users/igc_parsing_config/" + dropdown.igc_config.val());
+       });
+
    });
 
    function ask_update(change) {

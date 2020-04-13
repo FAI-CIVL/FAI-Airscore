@@ -30,10 +30,11 @@ AIRSPACEDIR = config['dir']['airspace']  # openair files directory
 AIRSPACEMAPDIR = config['dir']['airspace_map']  # openair files directory
 AIRSPACECHECKDIR = config['dir']['airspace_check']  # openair files directory
 WAYPOINTDIR = config['dir']['waypoint']  # waypoint files directory
+IGCPARSINGCONFIG = config['dir']['igc_parsing_config']  # igc parsing config files
 
 track_sources = ['xcontest', 'flymaster']     # external available sources for tracks
 track_formats = ['igc']   # track accepted formats
-wpt_formats = ['GEO', 'UTM', 'CUP', 'GPX', 'CompeGPS']
+wpt_formats = ['GEO', 'UTM', 'CUP', 'GPX', 'CompeGPS', 'OziExplorer']
 
 ''' Database Settings'''
 MYSQLUSER = secret['db']['User']  # mysql db user
