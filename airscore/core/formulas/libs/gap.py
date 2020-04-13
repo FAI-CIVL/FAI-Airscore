@@ -417,6 +417,13 @@ def pilot_distance(task, pil):
     return Pdist
 
 
+def calculate_min_dist_score(t):
+    from flight_result import Flight_result
+    p = Flight_result()
+    p.distance_flown = t.formula.min_dist
+    return pilot_distance(t, p)
+
+
 def process_results(task):
     formula = task.formula
     ''' get pilot.result non ABS or DNF, ordered by ESS time'''
@@ -464,49 +471,63 @@ def points_allocation(task):
         '''Difficulty Calculation'''
         task.difficulty = difficulty_calculation(task)
 
+    ''' Calculate Min Dist Score '''
+    min_dist_score = calculate_min_dist_score(task)
+
     ''' Score each pilot now'''
     for res in results:
-        penalty = res.penalty if res.penalty else 0
-        percentage_penalty = res.percentage_penalty if res.percentage_penalty else 0
 
         '''initialize'''
         res.distance_score = 0
         res.time_score = 0
         res.arrival_score = 0
         res.departure_score = 0
+        res.penalty = 0
 
-        '''Pilot distance score'''
-        res.distance_score = pilot_distance(task, res)
+        if res.result_type == 'mindist':
+            res.distance_score = min_dist_score
+        else:
+            '''Pilot distance score'''
+            res.distance_score = pilot_distance(task, res)
 
-        ''' Pilot leading points'''
-        if task.departure == 'leadout' and res.result_type != 'mindist' and res.SSS_time:
-            res.departure_score = pilot_leadout(task, res)
+            ''' Pilot leading points'''
+            if task.departure == 'leadout' and res.result_type != 'mindist' and res.SSS_time:
+                res.departure_score = pilot_leadout(task, res)
 
-        if res.ESS_time:
-            ''' Pilot speed points'''
-            res.time_score = pilot_speed(task, res)
+            if res.ESS_time:
+                ''' Pilot speed points'''
+                res.time_score = pilot_speed(task, res)
 
-            ''' Pilot departure points'''
-            if task.departure == 'departure' and res.result_type != 'mindist' and res.SSS_time:
-                # does it even still exist dep. points?
-                res.departure_score = pilot_departure(task, res)
+                ''' Pilot departure points'''
+                if task.departure == 'departure' and res.result_type != 'mindist' and res.SSS_time:
+                    # does it even still exist dep. points?
+                    res.departure_score = pilot_departure(task, res)
 
-            ''' Pilot arrival points'''
-            if not (task.arrival == 'off'):
-                res.arrival_score = pilot_arrival(task, res)
+                ''' Pilot arrival points'''
+                if not (task.arrival == 'off'):
+                    res.arrival_score = pilot_arrival(task, res)
 
-            ''' Penalty for not making goal'''
-            if not res.goal_time:
-                res.goal_time = 0
-                res.time_score *= (1 - formula.no_goal_penalty)
-                res.arrival_score *= (1 - formula.no_goal_penalty)
+                ''' Penalty for not making goal'''
+                if not res.goal_time:
+                    res.goal_time = 0
+                    res.time_score *= (1 - formula.no_goal_penalty)
+                    res.arrival_score *= (1 - formula.no_goal_penalty)
 
         ''' Total score'''
         res.score = res.distance_score + res.time_score + res.arrival_score + res.departure_score
 
         ''' Apply Penalty'''
-        if penalty or percentage_penalty:
+        # if penalty or percentage_penalty:
             # TODO: totalScore p = max(totalScore p − jumpTheGunPenalty p , scoreForMinDistance)
-            res.penalty += res.score * percentage_penalty
+            # res.penalty += res.score * percentage_penalty
+            # res.score = max(0, res.score - res.penalty)
+
+        if res.jtg_penalty or res.flat_penalty or res.percentage_penalty:
+            ''' Jump the Gun Penalty:
+                totalScore p = max(totalScore p − jumpTheGunPenalty p , scoreForMinDistance) '''
+            res.score = max(min_dist_score, res.score - res.jtg_penalty)
+            ''' Other penalties'''
+            # applying flat penalty after percentage ones
+            res.penalty = res.score * res.percentage_penalty + res.flat_penalty
             res.score = max(0, res.score - res.penalty)
 

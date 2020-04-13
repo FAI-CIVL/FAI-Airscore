@@ -48,7 +48,7 @@ class Participant(object):
         self.paid = paid  # bool
         self.status = status  # 'confirmed', 'waiting list', 'wild card', 'cancelled', ?
         self.ranking = ranking  # WPRS Ranking?
-        self.live_id = None     # int
+        self.live_id = None  # int
         self.pil_id = pil_id  # PilotView id
 
     def __setattr__(self, attr, value):
@@ -168,9 +168,9 @@ class Participant(object):
         return pilot
 
     @staticmethod
-    def from_profile(pilot_id, comp_id=None):
+    def from_profile(pilot_id, comp_id=None, session=None):
         from db_tables import PilotView, TblCountryCode
-        with Database() as db:
+        with Database(session) as db:
             try:
                 result = db.session.query(PilotView).get(pilot_id)
                 if result:
@@ -245,7 +245,7 @@ def import_participants_from_excel(comp_id, filename, from_CIVL=False):
             pil = Participant(civl_id=row[9], name=row[1], nat=row[2], sex='F' if row[3] == 1 else 'M')
         pil.ID = row[0]
         pil.comp_id = comp_id
-        pil.birthdate = None if row[4] is None else row[4].date()   # row[4] should be datetime
+        pil.birthdate = None if row[4] is None else row[4].date()  # row[4] should be datetime
         pil.glider = row[5]
         pil.sponsor = row[7]
         pil.team = row[11]
@@ -258,6 +258,60 @@ def import_participants_from_excel(comp_id, filename, from_CIVL=False):
     Logger('OFF')
 
     return pilots
+
+
+def register_from_profiles_list(comp_id, pilots):
+    """ gets comp_id and pil_id list
+        registers pilots to comp"""
+    if not (comp_id and pilots):
+        print(f"error: comp_id does not exist or pilots list is empty")
+        return None
+    participants = []
+    with Database() as db:
+        for pilot in pilots:
+            participants.append(Participant.from_profile(pilot, comp_id, db.session))
+        mass_import_participants(comp_id, participants, db.session)
+    return True
+
+
+def unregister_from_profiles_list(comp_id, pilots):
+    """ gets comp_id and pil_id list
+        unregisters pilots from comp"""
+    from sqlalchemy import and_
+    if not (comp_id and pilots):
+        print(f"error: comp_id does not exist or pilots list is empty")
+        return None
+    with Database() as db:
+        try:
+            results = db.session.query(TblParticipant).filter(and_(TblParticipant.comp_id == comp_id,
+                                                                   TblParticipant.pil_id.in_(pilots)))
+            results.delete(synchronize_session=False)
+        except SQLAlchemyError as e:
+            error = str(e.__dict__)
+            print(f"Error deleting participants to database: {error}")
+            db.session.rollback()
+            db.session.close()
+            return error
+    return True
+
+
+def mass_unregister(pilots):
+    """ gets par_id list
+        unregisters pilots from comp"""
+    if not pilots:
+        print(f"error: pilots list is empty")
+        return None
+    with Database() as db:
+        try:
+            results = db.session.query(TblParticipant).filter(TblParticipant.par_id.in_(pilots))
+            results.delete(synchronize_session=False)
+        except SQLAlchemyError as e:
+            error = str(e.__dict__)
+            print(f"Error deleting participants to database: {error}")
+            db.session.rollback()
+            db.session.close()
+            return error
+    return True
 
 
 def mass_import_participants(comp_id, participants, session=None):

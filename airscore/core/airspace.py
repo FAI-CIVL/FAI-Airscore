@@ -292,6 +292,56 @@ class AirspaceCheck(object):
 
         return infringements_per_space, comments, penalty
 
+    def get_infringements_result_new(self, infringements_list):
+        """
+        Airspace Warnings and Penalties Managing
+        Creates a list of worst infringement for each airspace in infringements_list
+        Calculates penalty
+        Calculates final penalty and comments
+        """
+        from notification import Notification
+        '''element: [next_fix, airspace_name, infringement_type, distance, penalty]'''
+        spaces = list(set([x[1] for x in infringements_list]))
+        penalty = 0
+        max_pen_fix = None
+        infringements_per_space = []
+        comments = []
+        notifications = []
+        '''check distance and penalty for each space in which we recorded an infringement'''
+        for space in spaces:
+            fixes = [fix for fix in infringements_list if fix[1] == space]
+            pen = max(x[4] for x in fixes)
+            fix = min([x for x in fixes if x[4] == pen], key=lambda x: x[3])
+            dist = fix[3]
+            rawtime = fix[0].rawtime
+            if pen == 0:
+                ''' create warning comment'''
+                comment = f"[{space}] Warning: separation less than {dist} meters"
+            else:
+                '''add fix to infringements'''
+                infringements_per_space.append({'rawtime': rawtime, 'space': space,
+                                                'distance': dist, 'penalty': pen})
+                if fix[2] == 'full penalty':
+                    comment = f"[{space}]: airspace infringement. penalty {round(pen * 100)}%"
+                else:
+                    comment = f"[{space}]: {round(dist)}m from limit. penalty {round(pen * 100)}%"
+                if pen > penalty:
+                    penalty = pen
+                    max_pen_fix = fix
+            notifications.append(Notification(notification_type='airspace', percentage_penalty=pen, comment=comment))
+
+        # '''final calculation'''
+        # if penalty > 0:
+        #     '''we have a penalty'''
+        #     space = max_pen_fix[1]
+        #     if max_pen_fix[2] == 'full penalty':
+        #         comments = [f"{space}: airspace infringement. penalty {round(penalty * 100)}%"]
+        #     else:
+        #         dist = max_pen_fix[3]
+        #         comments = [f"{space}: {round(dist)}m from limit. penalty {round(penalty * 100)}%"]
+
+        return infringements_per_space, notifications, penalty
+
 
 def get_airspace_check_parameters(task_id):
     from myconn import Database

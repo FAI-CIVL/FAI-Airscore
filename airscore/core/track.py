@@ -22,6 +22,7 @@ from db_tables import TblTaskResult
 from igc_lib import Flight
 from myconn import Database
 from trackUtils import find_pilot, get_task_fullpath
+from notification import Notification
 
 ''' Accepted formats list
     When checking tracks, this are formats that will be accepted and processed
@@ -78,6 +79,15 @@ class Track(object):
             return self.flight.notes
         else:
             return None
+
+    @property
+    def notifications(self):
+        """flight notifications list"""
+        if self.flight:
+            return [Notification(notification_type='track', comment=i) for i in self.flight.notes]
+        else:
+            return []
+
 
     @property
     def filename(self):

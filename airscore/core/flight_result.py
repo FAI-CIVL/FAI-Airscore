@@ -39,6 +39,7 @@ from formulas.libs.leadcoeff import LeadCoeff
 from myconn import Database
 from route import in_semicircle, start_made_civl, tp_made_civl, \
     tp_time_civl, get_shortest_path, distance_flown
+from notification import Notification
 
 
 class Tp(object):
@@ -160,10 +161,11 @@ class Flight_result(object):
         self.distance_score = 0
         self.time_score = 0
         self.penalty = 0
-        self.percentage_penalty = 0
+        # self.percentage_penalty = 0
         self.airspace_plot = []
         self.infringements = []  # Infringement for each space
         self.comment = []  # should this be a list?
+        self.notifications = []  # notification objects
         # self.ID = None  # Could delete?
         # self.par_id = par_id  # Could delete?
         # self.track_file = track_file  # Could delete?
@@ -200,6 +202,27 @@ class Flight_result(object):
     def distance(self):
         if self.distance_flown:
             return max(self.distance_flown, self.total_distance)
+        else:
+            return 0
+
+    @property
+    def flat_penalty(self):
+        if self.notifications and sum(n.flat_penalty for n in self.notifications if not n.notification_type == 'jtg') > 0:
+            return max(n.flat_penalty for n in self.notifications if not n.notification_type == 'jtg')
+        else:
+            return 0
+
+    @property
+    def jtg_penalty(self):
+        if self.notifications and sum(n.flat_penalty for n in self.notifications if n.notification_type == 'jtg') > 0:
+            return next(n for n in self.notifications if n.notification_type == 'jtg').flat_penalty
+        else:
+            return 0
+
+    @property
+    def percentage_penalty(self):
+        if self.notifications and sum(n.percentage_penalty for n in self.notifications) > 0:
+            return max(n.percentage_penalty for n in self.notifications)
         else:
             return 0
 
@@ -284,16 +307,18 @@ class Flight_result(object):
             result.time_score = float(r.get('time_points'))
             result.penalty = 0  # fsdb score is already decreased by penalties
             if not r.get('penalty_reason') == "":
+                notification = Notification()
                 if r.get('penalty') != "0":
-                    comment = f"{float(r.get('penalty')) * 100}%: "
+                    notification.percentage_penalty = float(r.get('penalty'))
                 else:
-                    comment = f"{float(r.get('penalty_points'))} points: "
-                comment += r.get('penalty_reason')
-                result.comment.append(comment)
+                    notification.flat_penalty = float(r.get('penalty_points'))
+                notification.comment = r.get('penalty_reason')
+                result.notifications.append(notification)
             if not r.get('penalty_reason_auto') == "":
-                comment = f"{float(r.get('penalty_points_auto'))} points: "
-                comment += r.get('penalty_reason_auto')
-                result.comment.append(comment)
+                notification = Notification(notification_type='jtg',
+                                            flat_penalty=r.get('penalty_points_auto'),
+                                            comment=r.get('penalty_reason_auto'))
+                result.notifications.append(notification)
             if dep == 'on':
                 result.departure_score = float(r.get('departure_points'))
             elif dep == 'leadout':
@@ -497,10 +522,12 @@ class Flight_result(object):
                 if tp.start_done and not tp.ess_done:
                     '''optimized distance calculation each fix'''
                     fix_dist_flown = task.opt_dist - get_shortest_path(task, next_fix, tp.pointer)
+                    # print(f'time: {next_fix.rawtime} | fix: {tp.name} | Optimized Distance used')
                 else:
                     '''simplified and faster distance calculation'''
                     fix_dist_flown = distance_flown(next_fix, tp.pointer, task.optimised_turnpoints,
                                                     task.turnpoints[tp.pointer], distances2go)
+                    # print(f'time: {next_fix.rawtime} | fix: {tp.name} | Simplified Distance used')
 
                 result.distance_flown = max(result.distance_flown, fix_dist_flown,
                                             task.partial_distance[tp.last_made_index])
@@ -550,10 +577,14 @@ class Flight_result(object):
             print(f'wayponts made: {result.waypoints_achieved}')
             if max_jump_the_gun > 0 and result.real_start_time < result.SSS_time:
                 diff = result.SSS_time - result.real_start_time
-                result.penalty += diff * jtg_penalty_per_sec
+                penalty = diff * jtg_penalty_per_sec
                 # check
-                print(f'jump the gun: {diff} - valid: {diff <= max_jump_the_gun} - penalty: {result.penalty}')
-                result.comment.append(f"Jump the gun: {diff} seconds. Penalty: {result.penalty} points")
+                print(f'jump the gun: {diff} - valid: {diff <= max_jump_the_gun} - penalty: {penalty}')
+                comment = f"Jump the gun: {diff} seconds. Penalty: {penalty} points"
+                result.notifications.append(Notification(notification_type='jtg',
+                                                         flat_penalty=penalty, comment=comment))
+                # result.penalty += penalty
+                # result.comment.append(comment)
 
             '''ESS Time'''
             if any(e[0] == 'ESS' for e in result.waypoints_achieved):
@@ -579,9 +610,9 @@ class Flight_result(object):
             result.fixed_LC = lead_coeff.summing
 
         if task.airspace_check:
-            infringements, comments, penalty = airspace_obj.get_infringements_result(infringements_list)
+            infringements, notifications, penalty = airspace_obj.get_infringements_result_new(infringements_list)
             result.infringements = infringements
-            result.comment.extend(comments)
+            result.notifications.extend(notifications)
             result.percentage_penalty = penalty
             # result.airspace_plot = airspace_plot
 
@@ -688,7 +719,6 @@ class Flight_result(object):
 
 def pilot_can_start(task, tp, fix):
     """ returns True if pilot, in the track fix, is in the condition to take the start gate"""
-
     '''start turnpoint managing'''
     '''given all n crossings for a turnpoint cylinder, sorted in ascending order by their crossing time,
     the time when the cylinder was reached is determined.
@@ -700,9 +730,7 @@ def pilot_can_start(task, tp, fix):
     - race has multiple starts
     - task is elapsed time
     '''
-
     max_jump_the_gun = task.formula.max_JTG or 0
-
     if ((tp.type == "speed")
             and
             (fix.rawtime >= (task.start_time - max_jump_the_gun))
@@ -715,7 +743,6 @@ def pilot_can_start(task, tp, fix):
 
 def pilot_can_restart(task, tp, fix, result):
     """ returns True if pilot, in the track fix, is in the condition to take the start gate"""
-
     '''start turnpoint managing'''
     '''given all n crossings for a turnpoint cylinder, sorted in ascending order by their crossing time,
     the time when the cylinder was reached is determined.
@@ -727,9 +754,7 @@ def pilot_can_restart(task, tp, fix, result):
     - race has multiple starts
     - task is elapsed time
     '''
-
     max_jump_the_gun = task.formula.max_JTG or 0
-
     if tp.last_made.type == "speed" and (not task.start_close_time or fix.rawtime < task.start_close_time):
         if task.task_type == 'ELAPSED TIME':
             return True
