@@ -471,7 +471,7 @@ def get_all_admins():
             print(f"there was a problem with getting the admin list. error{error}")
             db.session.rollback()
             db.session.close()
-            return None, None
+            return None
         return all_admins
 
 
@@ -558,10 +558,8 @@ def get_igc_parsing_config_file_list():
     choices = []
     for file in scandir(IGCPARSINGCONFIG):
         if file.name.endswith(".yaml"):
-            print(file.name)
             with open(file.path) as fp:
                 config = yaml.load(fp)
-            print(config['description'])
             configs.append({'file': file.name, 'name': file.name[:-5], 'description': config['description'],
                             'editable': config['editable']})
             choices.append((file.name[:-5], file.name[:-5]))

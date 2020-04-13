@@ -269,7 +269,7 @@ class Comp(object):
                 db.session.commit()
             except SQLAlchemyError as e:
                 error = str(e.__dict__)
-                print('cannot insert competition. DB insert error.')
+                print(f'cannot insert competition. DB insert error.{error}')
                 db.session.rollback()
                 db.session.close()
                 return error

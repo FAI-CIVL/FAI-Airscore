@@ -168,6 +168,7 @@ def comp_settings_admin(compid):
     session['compid'] = compid
     session['comp_name'] = comp.comp_name
 
+    compform.igc_parsing_file.choices, _ = frontendUtils.get_igc_parsing_config_file_list()
     owner, administrators, admin_ids = frontendUtils.get_comp_admins(compid)
     all_admins = frontendUtils.get_all_admins()
     all_admins.remove(owner)
@@ -193,8 +194,8 @@ def comp_settings_admin(compid):
             comp.formula = compform.formula.data
             comp.locked = compform.locked.data
             comp.igc_config_file = compform.igc_parsing_file.data
-            comp.airspace_check = compform.airspace_check.data
-            comp.check_launch = compform.check_launch.data
+            # comp.airspace_check = compform.airspace_check.data
+            comp.check_launch = 'on' if compform.check_launch.data else 'off'
             comp.to_db()
 
             formula = Formula.read(compid)
@@ -232,7 +233,7 @@ def comp_settings_admin(compid):
             flash(f"{compform.comp_name.data} saved", category='info')
             return redirect(url_for('user.comp_settings_admin', compid=compid))
         else:
-            flash("not valid")
+            flash("not saved as something on the form is not valid", category="warning")
             for item in compform:
                 if item.errors:
                     print(f"{item} value:{item.data} error:{item.errors}")
@@ -289,7 +290,6 @@ def comp_settings_admin(compid):
         compform.airspace_check.data = comp.airspace_check
         compform.check_launch.data = comp.check_launch
 
-        compform.igc_parsing_file.choices, _ = frontendUtils.get_igc_parsing_config_file_list()
         newtaskform.task_region.choices, _ = frontendUtils.get_region_choices(compid)
         newadminform.admin.choices = admin_choices
 
@@ -469,6 +469,8 @@ def pilot_admin():
 @blueprint.route('/_add_task/<compid>', methods=['POST'])
 @login_required
 def _add_task(compid):
+    comp = Comp()
+    comp.comp_id = compid
     data = request.json
     task = Task(comp_id=compid)
     task.task_name = data['task_name']
@@ -476,9 +478,10 @@ def _add_task(compid):
     task.date = datetime.strptime(data['task_date'], '%Y-%m-%d')
     task.comment = data['task_comment']
     task.reg_id = int(data['task_region'])
+    task.airspace_check = comp.airspace_check
+    task.check_launch = comp.check_launch
+    task.igc_config_file = comp.igc_config_file
     task.to_db()
-    comp = Comp()
-    comp.comp_id = compid
     tasks = frontendUtils.get_task_list(comp)
     return jsonify(tasks)
 

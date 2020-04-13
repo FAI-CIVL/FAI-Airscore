@@ -59,11 +59,11 @@ class NewTaskForm(FlaskForm):
     task_comment = StringField('Comment', description='Sometimes you may wish to make a comment that will show up'
                                                       ' in the competition overview page. e.g. "task stopped at 14:34"')
     task_date = DateField('Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
-    task_region = SelectField('Region')
+    task_region = SelectField('Region', choices=[('1', '1'), ('2', '2')])
 
 
 class NewAdminForm(FlaskForm):
-    admin = SelectField("Admin")
+    admin = SelectField("Admin", choices=[('1', '1'), ('2', '2')])
 
 class CompForm(FlaskForm):
     from formula import list_formulas
@@ -134,7 +134,7 @@ class CompForm(FlaskForm):
 
     team_scoring = BooleanField('Team Scoring')
     country_scoring = BooleanField('Country scoring')
-    team_size = IntegerField('Team size',validators=[Optional(strip_whitespace=True)])
+    team_size = IntegerField('Team size', validators=[Optional(strip_whitespace=True)])
     team_over = IntegerField('Team over- what is this??', validators=[Optional(strip_whitespace=True)])
 
     formula_distance = SelectField('Distance points', choices=[('on', 'On'), ('difficulty', 'Difficulty'), ('off', 'Off')])
@@ -163,7 +163,7 @@ class CompForm(FlaskForm):
                                                                    'tasks will have this as a default but can be '
                                                                    'overridden. Note that this will only work if '
                                                                    'the flying area includes an airspace file')
-    igc_parsing_file = SelectField("IGC parsing config file")
+    igc_parsing_file = SelectField("IGC parsing config file", choices=[('1', '1'), ('2', '2')])
     submit = SubmitField('Save')
 
     def validate_on_submit(self):
