@@ -15,6 +15,9 @@
    <div class="collapse" id="collapse1">
       <div class="card card-body">
          <div class="container">
+             <button id="Excel_button" class="btn btn-success ml-4 ">Upload Excel file</button>
+             <input id="Excel_fileupload" type="file" size="chars" class="custom-file-input"  data-url="/users/_upload_participants_excel/{{ session.compid }}" name="excel_file" >
+
 			 <center>
 			<h3 class="font-weight-bold">Register Pilots</h3>
 				<div class="row">
@@ -134,7 +137,9 @@
 <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
 <script src="{{ static_url_for('static', filename='js/multiselect.min.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/pop_registered_pilots_admin.js') }}"></script>
-
+<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.ui.widget.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.iframe-transport.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.fileupload.js') }}"></script>
 <script type="text/javascript">
 var registered;
 var non_registered;
@@ -268,6 +273,33 @@ function save_modified_participant(par_id){
                });
 
    };
+
+
+$('#Excel_button').click(function(){
+    $('#Excel_fileupload').click();
+});
+
+$(function () {
+
+    $('#Excel_fileupload').fileupload({
+        dataType: 'json',
+        done: function (e, data) {
+            $.each(data.result.files, function (index, file) {
+                $('<p/>').text(file.name).appendTo(document.body);
+            });
+        },
+        submit: function (e, data){
+<!--        $('#upload_box').hide();-->
+        },
+        success: function () {
+                      get_pilots();
+                      populate_registered_pilot_details({{session.compid}});
+               }
+    });
+});
+
+
+
 
 </script>
 

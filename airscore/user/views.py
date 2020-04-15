@@ -15,6 +15,7 @@ from flight_result import update_status, delete_result
 from os import path, remove, makedirs
 from task import get_task_json_by_filename
 from calcUtils import sec_to_time
+# from werkzeug import secure_filename
 import time
 
 blueprint = Blueprint("user", __name__, url_prefix="/users", static_folder="../static")
@@ -1112,3 +1113,23 @@ def _modify_participant_details(parid):
     participant.to_db()
     resp = jsonify(success=True)
     return resp
+
+
+@blueprint.route('/_upload_participants_excel/<compid>', methods=['POST'])
+@login_required
+def _upload_participants_excel(compid):
+    from participant import extract_participants_from_excel, mass_import_participants
+    import tempfile
+    compid = int(compid)
+    if request.method == "POST":
+        if request.files:
+            excel_file = request.files["excel_file"]
+            with tempfile.TemporaryDirectory() as tmpdirname:
+                # filename = secure_filename(excel_file.filename)
+                excel_file.save(path.join(tmpdirname, excel_file.filename))
+                pilots = extract_participants_from_excel(compid, path.join(tmpdirname, excel_file.filename))
+                mass_import_participants(41, pilots)
+            resp = jsonify(success=True)
+            return resp
+        resp = jsonify(success=False)
+        return resp
