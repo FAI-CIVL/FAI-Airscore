@@ -194,7 +194,7 @@ class Participant(object):
                 return error
 
 
-def import_participants_from_excel(comp_id, filename, from_CIVL=False):
+def extract_participants_from_excel(comp_id, filename, from_CIVL=False):
     """Gets participants from external file (Airtribune Participants list in Excel format;
     Returns a list of Participant objects
     Input:
@@ -210,7 +210,7 @@ def import_participants_from_excel(comp_id, filename, from_CIVL=False):
     """
 
     '''create logging and disable output'''
-    Logger('ON', 'import_participants.txt')
+    # Logger('ON', 'import_participants.txt')
 
     print(f"Comp ID: {comp_id} | filename: {filename}")
 
@@ -254,8 +254,8 @@ def import_participants_from_excel(comp_id, filename, from_CIVL=False):
         pil.Live = row[13]
         pilots.append(pil)
 
-    ''' now restore stdout function '''
-    Logger('OFF')
+    # ''' now restore stdout function '''
+    # Logger('OFF')
 
     return pilots
 
