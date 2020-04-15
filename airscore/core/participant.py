@@ -103,7 +103,7 @@ class Participant(object):
         return par
 
     def to_db(self, session=None):
-        """stores Participant to AirScore database"""
+        """stores or updates Participant to AirScore database"""
 
         with Database(session) as db:
             try:

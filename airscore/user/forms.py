@@ -173,6 +173,7 @@ class CompForm(FlaskForm):
         else:
             return result
 
+
 class TaskForm(FlaskForm):
     #general
     comp_name = ""
@@ -347,3 +348,17 @@ class IgcParsingConfigForm(FlaskForm):
     def validate_on_submit(self):
         result = super(IgcParsingConfigForm, self).validate()
         return result
+
+
+class ModifyParticipantForm(FlaskForm):
+    name = StringField('Name')
+    id_num = IntegerField('ID')
+    nat = StringField('Nat', validators=[Length(3)])
+    sex = SelectField('Sex', choices=[('M', 'M'), ('F', 'F')])
+    glider = StringField('Glider')
+    sponsor = StringField('Sponsor')
+    status = SelectField('Status', choices=[('waiting for payment', 'waiting for payment'), ('cancelled', 'cancelled'),
+                                             ('waiting list', 'waiting list'), ('wild card', 'wild card'),
+                                             ('confirmed', 'confirmed')])
+    certification = StringField('Certification')
+    paid = SelectField('Paid', choices=[(1, 'Yes'), (0, 'No')])

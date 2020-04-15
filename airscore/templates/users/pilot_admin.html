@@ -3,13 +3,23 @@
 {% block content %}
 
 <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+<link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet">
 <body>
-<center>
-<div class="container">
-<h1>Register Pilots</h1>
-<div class="row">
+
+
+  <p>
+      <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse1" aria-expanded="false" aria-controls="collapse1">
+      Register Pilots
+      </button>
+   </p>
+   <div class="collapse" id="collapse1">
+      <div class="card card-body">
+         <div class="container">
+			 <center>
+			<h3 class="font-weight-bold">Register Pilots</h3>
+				<div class="row">
 				<div class="col-xs-5">
-					<h2>All pilots</h2>
+					<h4>All pilots</h4>
 					<h6>(Name - civl id)</h6>
                 <select name="from[]" id="lstview" class="form-control" size="25" multiple="multiple">
 					</select>
@@ -31,7 +41,7 @@
 				</div>
 
 				<div class="col-xs-5">
-					<h2 id="registered">Registered pilots</h2>
+					<h4 id="registered">Registered pilots</h4>
 					<h6>(Name - civl id)</h6>
                     <select name="to[]" id="lstview_to" class="form-control" size="25" multiple="multiple">
 
@@ -39,18 +49,99 @@
 
 				</div>
 			</div>
-</div>
+				<button type="button" onclick="register_pilots();" class="btn btn-success">Save</button>
+   				</center>
 
-	<button type="button" onclick="register_pilots();" class="btn btn-success">Save</button>
-   </center>
+         </div>
+      </div>
+   </div>
+
+   <p>
+      <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse2" aria-expanded="false" aria-controls="collapse2">
+      Registered Pilot Details
+      </button>
+   </p>
+   <div class="collapse" id="collapse2">
+      <div class="card card-body">
+         <div class="container">
+            <h3 class="font-weight-bold">Registered Pilot Details</h3>
+			    <table id="pilots" class="row-border compact" cellspacing="0" width="100%">
+			<thead>
+				<tr>
+				</tr>
+			</thead>
+			</table>
+         </div>
+      </div>
+   </div>
+
+<!---edit-participant details modal starts here--->
+<div id="edit_par_modal" class="modal fade" role='dialog'>
+   <div class="modal-dialog">
+      <div class="modal-content">
+         <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+            <h4 class="modal-title">Update Participant Details</h4>
+         </div>
+         <div class="modal-body" id= "modmodal-body">
+            <div class="form-row">
+               <div class="form-group width6">
+                  {{modify_participant_form.id_num.label}} {{modify_participant_form.id_num(size=2, **{'id':"mod_id_number",})}}
+                  {{modify_participant_form.name.label}} {{modify_participant_form.name(**{'id':"mod_name",})}}
+               </div>
+            </div>
+            <div class="form-row">
+               <div class="form-group width12">
+                  {{modify_participant_form.nat.label}} {{modify_participant_form.nat(size=4, **{'id':"mod_nat"})}}
+               </div>
+            </div>
+            <div class="form-row">
+               <div class="form-group col-md-12 display-if" data-target_name="mod_type" data-target_type="select" data-target_value='speed'>
+                  {{modify_participant_form.sex.label}} {{modify_participant_form.sex(**{'id':"mod_sex"})}}
+               </div>
+            </div>
+            <div class="form-row">
+               <div class="form-group col-md-12 display-if" data-target_name="mod_type" data-target_type="select" data-target_value='goal'>
+                  {{modify_participant_form.glider.label}} {{modify_participant_form.glider(**{'id':"mod_glider"})}}
+                  {{modify_participant_form.certification.label}} {{modify_participant_form.certification(size=4, **{'id':"mod_certification"})}}
+               </div>
+               <div class="form-group col-md-12 display-if" data-target_name="check_launch" data-target_type="checkbox" data-target_value=true>
+                     <div class="form-group col-md-6 display-if" data-target_name="mod_type" data-target_type="select" data-target_value='launch'>
+                        {{modify_participant_form.sponsor.label}} {{modify_participant_form.sponsor(size=30, **{'id':"mod_sponsor"})}}
+                     </div>
+                  </div>
+                <div class="form-group col-md-12 display-if" data-target_name="mod_type" data-target_type="select" data-target_value_not='launch'>
+                  {{modify_participant_form.status.label}} {{modify_participant_form.status(**{'id':"mod_status"})}}
+                  {{modify_participant_form.paid.label}} {{modify_participant_form.paid( **{'id':"mod_paid"})}}
+                </div>
+            </div>
+         </div>
+         <div class="modal-footer">
+            <button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
+            <button id = "modify_confirmed" type="button" class="btn btn-success" data-dismiss="modal">Save</button>
+         </div>
+      </div>
+   </div>
+</div>
+<!-edit-participant details-Modal ends here--->
+
+
+
 {% endblock %}
 
 {% block js %}
 {% include "js.html" %}
-
+<script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
 <script src="{{ static_url_for('static', filename='js/multiselect.min.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/pop_registered_pilots_admin.js') }}"></script>
 
 <script type="text/javascript">
+var registered;
+var non_registered;
+var registered_pil=[];
+var new_registered_pil = [];
+var un_registered_pil=[];
+
 jQuery(document).ready(function($) {
     $('#lstview').multiselect({
         search: {
@@ -59,14 +150,9 @@ jQuery(document).ready(function($) {
         }
     });
     get_pilots();
-
+    populate_registered_pilot_details({{session.compid}});
 });
 
-var registered;
-var non_registered;
-var registered_pil=[];
-var new_registered_pil = [];
-var un_registered_pil=[];
 
 function update_pilot_count(){
         var num_pilots = $('#lstview_to option').length;
@@ -80,9 +166,7 @@ function update_pilot_count(){
 });
 	new_registered_pil = new_registered.filter( el => !registered_pil.includes( el ) );
 	un_registered_pil = registered_pil.filter( el => !new_registered.includes( el ) );
-	console.log(new_registered_pil);
-	console.log(un_registered_pil);
-	console.log(registered_pil);
+
 }
 function get_pilots() {
            $('#lstview').empty();
@@ -145,6 +229,45 @@ function get_pilots() {
 
    };
 
+function edit_participant(par_id){
+
+$('#mod_id_number').val($('#id_'+par_id).children('td:eq(0)').text()).change();
+$('#mod_name').val($('#id_'+par_id).children('td:eq(1)').text()).change();
+$('#mod_sex').val($('#id_'+par_id).children('td:eq(2)').text()).change();
+$('#mod_nat').val($('#id_'+par_id).children('td:eq(3)').text()).change();
+$('#mod_glider').val($('#id_'+par_id).children('td:eq(4)').text()).change();
+$('#mod_certification').val($('#id_'+par_id).children('td:eq(5)').text()).change();
+$('#mod_sponsor').val($('#id_'+par_id).children('td:eq(6)').text()).change();
+$('#mod_status').val($('#id_'+par_id).children('td:eq(7)').text()).change();
+$('#mod_paid').val($('#id_'+par_id).children('td:eq(8)').text()).change();
+$('#modify_confirmed').attr("onclick","save_modified_participant('"+ par_id +"')");
+$('#edit_par_modal').modal('show');
+}
+
+function save_modified_participant(par_id){
+           var mydata = new Object();
+               mydata.id_num = $('#mod_id_number').val();
+               mydata.name = $('#mod_name').val();
+               mydata.sex = $('#mod_sex').val();
+               mydata.nat = $('#mod_nat').val();
+               mydata.glider = $('#mod_glider').val();
+               mydata.certification = $('#mod_certification').val();
+               mydata.sponsor = $('#mod_sponsor').val();
+               mydata.status = $('#mod_status').val();
+               mydata.paid = $('#mod_paid').val();
+
+           $.ajax({
+               type: "POST",
+               url: "/users/_modify_participant_details/"+par_id,
+               contentType:"application/json",
+               data : JSON.stringify(mydata),
+               dataType: "json",
+               success: function () {
+                      populate_registered_pilot_details({{session.compid}})
+               }
+               });
+
+   };
 
 </script>
 

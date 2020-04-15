@@ -6,7 +6,7 @@ from flask import Blueprint, render_template, request, jsonify, json, flash, red
 from flask_login import login_required, current_user
 import frontendUtils
 from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm, \
-    TaskResultAdminForm, NewAdminForm, RegionForm, NewRegionForm, IgcParsingConfigForm
+    TaskResultAdminForm, NewAdminForm, RegionForm, NewRegionForm, IgcParsingConfigForm, ModifyParticipantForm
 from comp import Comp
 from formula import list_formulas, Formula
 from task import Task, write_map_json
@@ -458,12 +458,6 @@ def airspace_admin():
 @login_required
 def waypoint_admin():
     return render_template('users/waypoint_admin.html')
-
-
-@blueprint.route('/pilot_admin', methods=['GET', 'POST'])
-@login_required
-def pilot_admin():
-    return render_template('users/pilot_admin.html')
 
 
 @blueprint.route('/_register_pilots/<compid>', methods=['POST'])
@@ -1076,3 +1070,45 @@ def _del_igc_config(filename):
         if path.exists(file):
             remove(file)
     return "File Deleted"
+
+
+@blueprint.route('/_get_participants/<compid>', methods=['GET'])
+@login_required
+def _get_participants(compid):
+    from compUtils import get_participants
+    pilots = get_participants(compid)
+    pilot_list = []
+    for pilot in pilots:
+        if pilot.paid == 1:
+            pilot.paid = 'Y'
+        else:
+            pilot.paid = 'N'
+        pilot_list.append(pilot.as_dict())
+    return jsonify({'data': pilot_list})
+
+
+@blueprint.route('/pilot_admin', methods=['GET', 'POST'])
+@login_required
+def pilot_admin():
+    modify_participant_form = ModifyParticipantForm()
+    return render_template('users/pilot_admin.html', modify_participant_form=modify_participant_form)
+
+
+@blueprint.route('/_modify_participant_details/<parid>', methods=['POST'])
+@login_required
+def _modify_participant_details(parid):
+    from participant import Participant
+    data = request.json
+    participant = Participant.read(int(parid))
+    participant.ID = data.get('id_num')
+    participant.name = data.get('name')
+    participant.sex = data.get('sex')
+    participant.nat = data.get('nat')
+    participant.glider = data.get('glider')
+    participant.certification = data.get('certification')
+    participant.sponsor = data.get('sponsor')
+    participant.status = data.get('status')
+    participant.paid = data.get('paid')
+    participant.to_db()
+    resp = jsonify(success=True)
+    return resp
