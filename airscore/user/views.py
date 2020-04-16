@@ -234,10 +234,12 @@ def comp_settings_admin(compid):
             flash(f"{compform.comp_name.data} saved", category='info')
             return redirect(url_for('user.comp_settings_admin', compid=compid))
         else:
-            flash("not saved as something on the form is not valid", category="warning")
             for item in compform:
                 if item.errors:
                     print(f"{item} value:{item.data} error:{item.errors}")
+                    flash(
+                        f"not saved as something(s) on the form not valid: {item} value:{item.data} "
+                        f"error:{item.errors}", category="warning")
 
     if request.method == 'GET':
         formula = Formula.read(compid)
