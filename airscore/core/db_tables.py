@@ -179,6 +179,7 @@ class FlightResultView(Base):
                       Column('sponsor', String(100)),
                       Column('team', String(100)),
                       Column('nat_team', TINYINT(4), server_default=text("'1'")),
+                      Column('live_id', MEDIUMINT(9)),
                       Column('distance_flown', Float),
                       Column('speed', Float),
                       Column('first_time', MEDIUMINT(9)),

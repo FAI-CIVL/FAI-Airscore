@@ -808,13 +808,14 @@ class Task(object):
         with Database() as db:
             try:
                 results = db.session.query(F).filter(F.task_id == self.task_id).all()
+                notifications = db.session.query(N).filter(N.track_id.in_([p.track_id for p in results])).all()
                 for row in results:
                     pilot = Pilot.create(task_id=self.task_id)
                     db.populate_obj(pilot.result, row)
                     db.populate_obj(pilot.info, row)
                     db.populate_obj(pilot.track, row)
-                    notifications = db.session.query(N).filter(N.track_id == pilot.track.track_id).all()
-                    for el in notifications:
+                    # notifications = db.session.query(N).filter(N.track_id == pilot.track.track_id).all()
+                    for el in [n for n in notifications if n.track_id == pilot.track.track_id]:
                         n = Notification()
                         db.populate_obj(n, el)
                         if n.notification_type == 'track':
