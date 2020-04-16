@@ -175,7 +175,7 @@ class CompForm(FlaskForm):
 
 
 class TaskForm(FlaskForm):
-    #general
+    # general
     comp_name = ""
     task_name = StringField("Task Name", description='optional. If you want to give the task a name. '
                                                      'If left blank it will default to "Task #"')
@@ -239,7 +239,6 @@ class TaskForm(FlaskForm):
 
 
 class NewTurnpointForm(FlaskForm):
-
     id = None
     description = None
     number = IntegerField('#')
@@ -252,14 +251,13 @@ class NewTurnpointForm(FlaskForm):
 
 
 class ModifyTurnpointForm(FlaskForm):
-
     id = None
     description = None
     mod_number = IntegerField('#')
     mod_name = SelectField('Waypoint')
     mod_radius = IntegerField('Radius (m)', default=400)
     mod_type = SelectField('Type', choices=[('launch', 'Launch'), ('speed', 'SSS'), ('waypoint', 'Waypoint'),
-                                        ('endspeed', 'ESS'), ('goal', 'Goal')])
+                                            ('endspeed', 'ESS'), ('goal', 'Goal')])
     mod_shape = SelectField('Shape', choices=[('circle', 'Cylinder'), ('line', 'Line')])
     mod_how = SelectField('SSS Direction', choices=[('entry', 'Out/Enter'), ('exit', 'In/Exit')])
 

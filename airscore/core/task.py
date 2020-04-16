@@ -136,8 +136,8 @@ class Task(object):
         self.locked = False
         self.task_path = None
         self.comp_path = None
-        self.track_source = None
-        self.igc_config_file = None # config yaml for igc_lib.
+        self.track_source = None    # ['xcontest', 'flymaster'] external available sources for tracks in Defines.py
+        self.igc_config_file = None     # config yaml for igc_lib.
 
         '''Formula'''
         if self.id:

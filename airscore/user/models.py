@@ -55,9 +55,9 @@ class User(UserMixin, SurrogatePK, Model):
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     first_name = Column(db.String(30), nullable=True)
     last_name = Column(db.String(30), nullable=True)
-    nat = Column(db.String(10)),
-    phone = Column(db.String(40)),
-    sex = Column(db.String(1)),
+    nat = Column(db.String(10))
+    phone = Column(db.String(40))
+    sex = Column(db.String(1))
     active = Column(db.Boolean(), default=False)
     is_admin = Column(db.Boolean(), default=False)
 

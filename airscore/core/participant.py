@@ -2,7 +2,7 @@
 Participant Library
 
 contains
-    Partecipant class
+    Participant class
     function to import participants from excel file
 
 Use: from participant import Participant
