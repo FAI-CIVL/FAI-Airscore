@@ -993,7 +993,7 @@ def _delete_region(regid):
 @blueprint.route('/_get_non_and_registered_pilots/<compid>', methods=['GET', 'POST'])
 @login_required
 def _get_non_and_registered_pilots(compid):
-    _, registered_pilots, _ = frontendUtils.get_registered_pilots(compid, current_user)
+    registered_pilots = frontendUtils.get_participants(compid)
     non_registered_pilots = frontendUtils.get_non_registered_pilots(compid)
     return jsonify({'non_registered_pilots': non_registered_pilots, 'registered_pilots': registered_pilots})
 
@@ -1075,21 +1075,6 @@ def _del_igc_config(filename):
     return "File Deleted"
 
 
-@blueprint.route('/_get_participants/<compid>', methods=['GET'])
-@login_required
-def _get_participants(compid):
-    from compUtils import get_participants
-    pilots = get_participants(compid)
-    pilot_list = []
-    for pilot in pilots:
-        if pilot.paid == 1:
-            pilot.paid = 'Y'
-        else:
-            pilot.paid = 'N'
-        pilot_list.append(pilot.as_dict())
-    return jsonify({'data': pilot_list})
-
-
 @blueprint.route('/pilot_admin', methods=['GET', 'POST'])
 @login_required
 def pilot_admin():
@@ -1104,14 +1089,18 @@ def _modify_participant_details(parid):
     data = request.json
     participant = Participant.read(int(parid))
     participant.ID = data.get('id_num')
-    participant.name = data.get('name')
-    participant.sex = data.get('sex')
+    if data.get('name'):
+        participant.name = data.get('name')
+    if data.get('sex'):
+        participant.sex = data.get('sex')
     participant.nat = data.get('nat')
     participant.glider = data.get('glider')
     participant.certification = data.get('certification')
     participant.sponsor = data.get('sponsor')
-    participant.status = data.get('status')
-    participant.paid = data.get('paid')
+    if data.get('status'):
+        participant.status = data.get('status')
+    if data.get('paid'):
+        participant.paid = data.get('paid')
     participant.to_db()
     resp = jsonify(success=True)
     return resp
@@ -1135,3 +1124,19 @@ def _upload_participants_excel(compid):
             return resp
         resp = jsonify(success=False)
         return resp
+
+
+@blueprint.route('/_self_register/<compid>', methods=['POST'])
+@login_required
+def _self_register(compid):
+    from participant import Participant
+    data = request.json
+    participant = Participant.from_profile(data['pil_id'], comp_id=compid)
+    participant.ID = data.get('id_num')
+    participant.nat = data.get('nat')
+    participant.glider = data.get('glider')
+    participant.certification = data.get('certification')
+    participant.sponsor = data.get('sponsor')
+    participant.to_db()
+    resp = jsonify(success=True)
+    return resp

@@ -14,7 +14,7 @@ from flask import (
 )
 from flask_login import login_required, login_user, logout_user, current_user
 from airscore.extensions import login_manager
-from airscore.public.forms import LoginForm
+from airscore.public.forms import LoginForm, ModifyParticipantForm
 from airscore.user.forms import RegisterForm
 from airscore.user.models import User
 from airscore.utils import flash_errors
@@ -26,11 +26,10 @@ from flask_wtf import FlaskForm
 from wtforms import SelectField
 from calcUtils import sec_to_time
 import mapUtils
-from myconn import Database
-from sqlalchemy.orm import aliased
 import Defines
 from os import path
 import frontendUtils
+
 
 blueprint = Blueprint("public", __name__, static_folder="../static")
 
@@ -130,7 +129,7 @@ def get_all_comps():
 
 @blueprint.route('/competition/<int:compid>')
 def competition(compid):
-    from db_tables import TblTask, TblCompetition
+
     from compUtils import get_comp_json
     result_file = get_comp_json(int(compid))
     all_tasks = []
@@ -154,33 +153,12 @@ def competition(compid):
             task.update({'map': task_map._repr_html_()})
             all_tasks.append(task)
 
-    c = aliased(TblCompetition)
-    t = aliased(TblTask)
-
-    with Database() as db:
-        non_scored_tasks = (db.session.query(t.task_id.label('id'),
-                                             t.task_name,
-                                             t.date,
-                                             t.task_type,
-                                             t.opt_dist,
-                                             t.comment).filter(t.comp_id == compid, t.task_id.notin_(task_ids))
-                            .order_by(t.date.desc()).all())
-
-        competition_info = (db.session.query(
-            c.comp_id,
-            c.comp_name,
-            c.comp_site,
-            c.date_from,
-            c.date_to).filter(c.comp_id == compid).one())
-    comp = competition_info._asdict()
-
+    comp, non_scored_tasks = frontendUtils.get_comp_info(compid, task_ids)
     comp_start = comp['date_from']
-
     if comp['date_from']:
         comp['date_from'] = comp['date_from'].strftime("%Y-%m-%d")
     if comp['date_to']:
         comp['date_to'] = comp['date_to'].strftime("%Y-%m-%d")
-
     if comp_start > datetime.now().date():
         return render_template('public/future_competition.html', comp=comp)
 
@@ -207,19 +185,6 @@ def competition(compid):
 
     return render_template('public/comp.html', tasks=all_tasks, comp=comp, overall_available=overall_available,
                            country_scores=country_scores)
-
-
-@blueprint.route('/registered_pilots/<int:compid>')
-def registered_pilots(compid):
-    """ List of registered pilots for an event.
-        Creates a Register to the event button if pilot is not yet registered"""
-    return render_template('public/registered_pilots.html', compid=compid)
-
-
-@blueprint.route('/_get_registered_pilots/<compid>', methods=['GET'])
-def _get_registered_pilots(compid):
-    comp, pilot_list, pilot = frontendUtils.get_registered_pilots(compid, current_user)
-    return jsonify(dict(info=comp, data=pilot_list, pilot=pilot))
 
 
 @blueprint.route('/task_result/<int:taskid>')
@@ -424,3 +389,41 @@ def download_file(filetype, filename):
         fullname = path.join(airspace_path, filename)
     return send_file(fullname, as_attachment=True)
 
+
+@blueprint.route('/_get_participants/<compid>', methods=['GET'])
+def _get_participants(compid):
+    pilot_list = frontendUtils.get_participants(compid)
+    return jsonify({'data': pilot_list})
+
+
+@blueprint.route('/registered_pilots/<int:compid>')
+def registered_pilots(compid):
+    """ List of registered pilots for an event.
+        Creates a Register to the event button if pilot is not yet registered"""
+    modify_participant_form = ModifyParticipantForm()
+    comp, _ = frontendUtils.get_comp_info(compid)
+    if comp['date_from']:
+        comp['date_from'] = comp['date_from'].strftime("%Y-%m-%d")
+    if comp['date_to']:
+        comp['date_to'] = comp['date_to'].strftime("%Y-%m-%d")
+    return render_template('public/registered_pilots.html', modify_participant_form=modify_participant_form,
+                           compid=compid, comp=comp)
+
+
+@blueprint.route('/_get_participants_and_status/<compid>', methods=['GET'])
+def _get_participants_and_status(compid):
+    from participant import Participant
+    pilot_list = frontendUtils.get_participants(compid)
+    status = None
+    participant_info = None
+    if current_user:
+        if not current_user.is_authenticated:
+            status = None
+        elif any(p for p in pilot_list if p['pil_id'] == current_user.id):
+            participant_info = next(p for p in pilot_list if p['pil_id'] == current_user.id)
+            status = 'registered'
+        else:
+            participant = Participant.from_profile(current_user.id)
+            participant_info = participant.as_dict()
+            status = 'not_registered'
+    return jsonify({'data': pilot_list, 'status': status, 'pilot_details': participant_info})

@@ -1,59 +1,58 @@
 function populate_pilots(compid){
-$(document).ready(function() {
-
     $('#pilots').dataTable({
-        ajax: '/_get_registered_pilots/'+compid,
-        paging: false,
-        searching: false,
+        ajax: '/_get_participants_and_status/' + compid,
         info: true,
-//        columnDefs: [
-//            {
-//                targets: [ 0 ],
-//                render: function ( data, type, row ) {
-//                    return data;
-//            },
-//            {
-//                targets: [ 1 ],
-//                visible: false,
-//                searchable: false
-//            }
-//        ],
+        paging: false,
+        saveState: true,
+        searching: true,
+        filter: true,
+        info: false,
+        "dom": '<"#search"f>rt<"bottom"lip><"clear">',
+        destroy: true,
         columns: [
-//             { data: 'par_id', name: "par_id" },
-//             { data: 'pil_id', name: "pil_id" },
-             { data: 'ID', name: "#" },
-             { data: 'name', name: "Pilot" },
-             { data: 'nat', name: "Nat" },
-             { data: 'glider', name: "Glider" },
-             { data: 'sponsor', name: "Sponsor" },
-             { data: 'status', name: "Status" }
-       ],
-        "initComplete": function(settings, json)
-        {
-            var table = $('#pilots');
-            var rows = $("tr", table).length-1;
-            var numCols = $("th", table).length;
 
-            // comp info
-            $('#comp_name').text(json.info.comp_name);
-            $('#comp_site').text(json.info.comp_site);
-            $('#comp_date').text(json.info.date_from + ' - ' + json.info.date_to);
-            // user registration
-            if (json.pilot == null){
-                $('#register').text('You need to Login to register')
-            } else if (json.pilot == 0){
-                var button = document.createElement("button");
-                button.innerHTML = "Register";
-                document.getElementById("register").appendChild(button);
-                button.addEventListener ("click", function() {
-                        alert("So, you want to register");
-                    });
-            } else if (json.pilot.ID == null){
-                $('#register').text('You are already registered')
-            } else {
-                $('#register').text('You are already registered with ID ' + json.pilot.ID)
+             { data: 'ID', title: "#"},
+             { data: 'name', title: "Pilot"},
+             { data: 'sex', title: "Sex"},
+             { data: 'nat', title: "Nat"},
+             { data: 'glider', title: "Glider"},
+             { data: 'glider_cert', title: "Certification"},
+             { data: 'sponsor', title: "Sponsor"},
+             { data: 'status', title: "Status"}
+
+       ],
+       "initComplete":
+       function(settings, json){
+       if(json.status == null){
+               $("#reg_text").show();
+       }
+       else{
+        $('#mod_id_number').val(json.pilot_details.ID).change();
+        $('#mod_name').text(json.pilot_details.name);
+        $('#mod_nat').val(json.pilot_details.nat).change();
+        $('#mod_glider').val(json.pilot_details.glider).change();
+        $('#mod_certification').val(json.pilot_details.glider_cert).change();
+        $('#mod_sponsor').val(json.pilot_details.sponsor).change();
+
+
+         if(json.status=='not_registered'){
+            $("#reg_btn").show();
+            $('#modify_confirmed').attr("onclick","register ('"+ json.pilot_details.pil_id +"')");
+             }
+         else if (json.status=='registered'){
+            $("#unreg_btn").show();
+            $("#modify_btn").show();
+            $('#modify_confirmed').attr("onclick","save_modified_participant('"+ json.pilot_details.par_id +"')");
+            $('#unreg_btn').attr("onclick","unregister('"+ json.pilot_details.pil_id +"')");
             }
-        }
-    });
-});
+
+       }
+       }})
+
+       };
+
+
+function modify_participant(par_id){
+$('#edit_par_modal').modal('show');
 }
+

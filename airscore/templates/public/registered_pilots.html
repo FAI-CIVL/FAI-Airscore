@@ -6,54 +6,170 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <!-- <title>AirScore Competitions</title> -->
-
     <!-- CSS -->
     <link href="/static/css/task.css" rel="stylesheet">
-    <!-- <link href="navbar.css" rel="stylesheet"> -->
     <link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet">
 
-    <!-- JS -->
-    <script type="text/javascript" src="/static/js/utils.js"></script>
-    <script type="text/javascript" src="/static/js/microajax.minified.js"></script>
   </head>
 
 <body>
+<h1 >{{comp['comp_name']}} - <small>{{comp['comp_site']}}</small></h1>
+  <div class="row">
+    <div class="col-md-6"><h5>{{comp['date_from']}} - {{comp['date_to']}}</h5></div>
+  </div>
+<p id="reg_text">To register you need to login</p>
+<button id="reg_btn" type="button" data-toggle="modal" data-target="#edit_par_modal" class="btn btn-success">Register</button>
+<button id="unreg_btn" type="button" class="btn btn-danger">Unregister</button>
+<button id="modify_btn" type="button" data-toggle="modal" data-target="#edit_par_modal" class="btn btn-primary">Modify your details</button>
 
 <div class="container-fluid">
-  <div class="row mt-1 mb-2">
-      <div class="col comp_header" id="comp_header">
-      <h2 id="comp_name"></h2>
-      <h3 id="comp_date"></h3>
-      <h4 id="register"></h4>
-      </div>
-  </div>
+
    <div class="row mb-3">
       <div class="col w-100">
-      <table id="pilots" class="row-border compact" cellspacing="0" width="100%">
-      <thead>
-          <tr>
-<!--              <th>par_id</th>-->
-<!--              <th>pil_id</th>-->
-              <th>#</th>
-              <th>Pilot</th>
-              <th>Nat</th>
-              <th>Glider</th>
-              <th>Sponsor</th>
-              <th>Status</th>
-          </tr>
-      </thead>
-      </table>
+          <table id="pilots" class="row-border compact" cellspacing="0" width="100%">
+			<thead>
+				<tr>
+				</tr>
+			</thead>
+			</table>
+
       </div>
   </div>
 </div>
 
 </body>
+
+<!---edit-participant details modal starts here--->
+<div id="edit_par_modal" class="modal fade" role='dialog'>
+   <div class="modal-dialog">
+      <div class="modal-content">
+         <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+            <h4 class="modal-title">Update Your Details</h4>
+         </div>
+         <div class="modal-body" id= "modmodal-body">
+             <h5 id="mod_name"></h5>
+            <div class="form-row">
+               <div class="form-group width12">
+                  {{modify_participant_form.id_num.label}} {{modify_participant_form.id_num(size=2, **{'id':"mod_id_number",})}}
+                  {{modify_participant_form.nat.label}} {{modify_participant_form.nat(size=4, **{'id':"mod_nat"})}}
+               </div>
+            </div>
+            <div class="form-row">
+               <div class="form-group col-md-12 display-if" data-target_name="mod_type" data-target_type="select" data-target_value='goal'>
+                  {{modify_participant_form.glider.label}} {{modify_participant_form.glider(**{'id':"mod_glider"})}}
+                  {{modify_participant_form.certification.label}} {{modify_participant_form.certification(size=4, **{'id':"mod_certification"})}}
+               </div>
+               <div class="form-group col-md-12 display-if" data-target_name="check_launch" data-target_type="checkbox" data-target_value=true>
+                     <div class="form-group col-md-6 display-if" data-target_name="mod_type" data-target_type="select" data-target_value='launch'>
+                        {{modify_participant_form.sponsor.label}} {{modify_participant_form.sponsor(size=30, **{'id':"mod_sponsor"})}}
+                     </div>
+                  </div>
+            </div>
+         </div>
+         <div class="modal-footer">
+            <button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
+            <button id = "modify_confirmed" type="button" class="btn btn-success" data-dismiss="modal">Save</button>
+         </div>
+      </div>
+   </div>
+</div>
+<!-edit-participant details-Modal ends here--->
+
+
+
 {% endblock %}
 {% block js %}
 {% include "js.html" %}
     <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
     <script type="text/javascript" src="/static/js/pop_registered_pilots.js"></script>
-    <script type="text/javascript">populate_pilots({{compid|tojson}})</script>
-    <script type="text/javascript" src="/static/js/class_filter.js"></script>
+
+<script type="text/javascript">
+jQuery(document).ready(function($) {
+$("#reg_btn").hide();
+$("#unreg_btn").hide();
+$("#modify_btn").hide();
+$("#reg_text").hide();
+    populate_pilots({{compid}});
+});
+
+var un_registered_pil=[];
+
+function unregister(pil_id){
+          un_registered_pil.push(parseInt(pil_id,10));
+          send_unregister();
+          $("#unreg_btn").hide();
+          $("#modify_btn").hide();
+}
+
+
+function send_unregister(){
+           var mydata = new Object();
+               mydata.unregister = un_registered_pil;
+               mydata.register = [];
+
+           $.ajax({
+               type: "POST",
+               url: "{{ url_for('user._register_pilots', compid=compid)}}",
+               contentType:"application/json",
+               data : JSON.stringify(mydata),
+               dataType: "json",
+               success: function () {
+                    populate_pilots({{compid}});
+                    un_registered_pil.length = 0
+               }
+               });
+
+}
+
+function save_modified_participant(par_id){
+           var mydata = new Object();
+               mydata.id_num = $('#mod_id_number').val();
+               mydata.nat = $('#mod_nat').val();
+               mydata.glider = $('#mod_glider').val();
+               mydata.certification = $('#mod_certification').val();
+               mydata.sponsor = $('#mod_sponsor').val();
+
+           $.ajax({
+               type: "POST",
+               url: "/users/_modify_participant_details/"+par_id,
+               contentType:"application/json",
+               data : JSON.stringify(mydata),
+               dataType: "json",
+               success: function () {
+                          populate_pilots({{compid}});
+               }
+               });
+
+   };
+
+function register(pil_id){
+           var mydata = new Object();
+               mydata.id_num = $('#mod_id_number').val();
+               mydata.nat = $('#mod_nat').val();
+               mydata.glider = $('#mod_glider').val();
+               mydata.certification = $('#mod_certification').val();
+               mydata.sponsor = $('#mod_sponsor').val();
+               mydata.pil_id = pil_id;
+
+           $.ajax({
+               type: "POST",
+               url: "/users/_self_register/"+{{compid}},
+               contentType:"application/json",
+               data : JSON.stringify(mydata),
+               dataType: "json",
+               success: function () {
+                          $("#reg_btn").hide();
+                          populate_pilots({{compid}});
+               }
+               });
+
+   };
+
+
+
+
+</script>
 {% endblock %}
+
+

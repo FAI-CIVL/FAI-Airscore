@@ -1,7 +1,7 @@
-function populate_registered_pilot_details(compid, pilot_data){
+function populate_registered_pilot_details(compid){
 
     $('#pilots').dataTable({
-        ajax: '/users/_get_participants/' + compid,
+        ajax: '/_get_participants/' + compid,
         info: true,
         paging: false,
         saveState: true,
