@@ -11,7 +11,7 @@ waypoint/airspace_file_library: on # on/off ability to see and reuse waypoint an
 use_internal_pilot_DB: yes # store pilots in airscore for use in comps.
                            # The alternative is to import a list of competitors for each comp.
                            # Using a internal pilot DB is recommended for clubs and national organisations.
-                           # note that even if using an interanl pilot DB you can still import external pilots for a comp
+                           # note that even if using an internal pilot DB you can still import external pilots for a comp
                            # (guest pilots, particular events etc.)
 
 internal_pilot_DB: # if use_internal_pilot_DB is yes the below settings are relevant
