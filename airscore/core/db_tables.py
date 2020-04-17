@@ -34,6 +34,10 @@ class CompObjectView(Base):
                       Column('comp_path', String(40)),
                       Column('external', INTEGER(2), server_default=text("'0'")),
                       Column('website', String(100)),
+                      Column('airspace_check', TINYINT(1)),
+                      Column('check_launch', Enum('on', 'off'), server_default=text("'off'")),
+                      Column('igc_config_file', String(80)),
+                      Column('self_register', TINYINT(1), server_default=text("'0'")),
                       Column('formula_type', String(10)),
                       Column('formula_version', INTEGER(8)),
                       Column('formula_name', String(50)),
@@ -629,6 +633,7 @@ class TblCompetition(Base):
     airspace_check = Column(TINYINT(1))
     check_launch = Column(Enum('on', 'off'), server_default=text("'off'"))
     igc_config_file = Column(String(80))
+    self_register = Column(TINYINT(1))
 
     cat = relationship('TblClassification')
     ladders = relationship('TblLadder', secondary='tblLadderComp')
