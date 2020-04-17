@@ -17,6 +17,7 @@ from task import get_task_json_by_filename
 from calcUtils import sec_to_time
 # from werkzeug import secure_filename
 import time
+from Defines import SELF_REG_DEFAULT, PILOT_DB
 
 blueprint = Blueprint("user", __name__, url_prefix="/users", static_folder="../static")
 
@@ -197,6 +198,7 @@ def comp_settings_admin(compid):
             comp.igc_config_file = compform.igc_parsing_file.data
             # comp.airspace_check = compform.airspace_check.data
             comp.check_launch = 'on' if compform.check_launch.data else 'off'
+            comp.self_register = compform.self_register.data
             comp.to_db()
 
             formula = Formula.read(compid)
@@ -292,6 +294,7 @@ def comp_settings_admin(compid):
         compform.igc_parsing_file.data = comp.igc_config_file
         compform.airspace_check.data = comp.airspace_check
         compform.check_launch.data = comp.check_launch
+        compform.self_register.data = comp.self_register
 
         newtaskform.task_region.choices, _ = frontendUtils.get_region_choices(compid)
         newadminform.admin.choices = admin_choices
@@ -306,7 +309,8 @@ def comp_settings_admin(compid):
     session['tasks'] = tasks['tasks']
 
     return render_template('users/comp_settings.html', compid=compid, compform=compform,
-                           taskform=newtaskform, adminform=newadminform, error=error)
+                           taskform=newtaskform, adminform=newadminform, error=error,
+                           self_register=(SELF_REG_DEFAULT and PILOT_DB))
 
 
 @blueprint.route('/_get_admins/<compid>', methods=['GET'])

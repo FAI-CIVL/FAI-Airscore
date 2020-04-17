@@ -17,7 +17,7 @@ from os import path
 from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
 
-from Defines import FILEDIR, RESULTDIR
+from Defines import FILEDIR, RESULTDIR, SELF_REG_DEFAULT, PILOT_DB
 from calcUtils import get_date
 from compUtils import get_tasks_result_files, get_participants, read_rankings, create_comp_path
 from db_tables import TblCompetition
@@ -77,6 +77,7 @@ class Comp(object):
         self.igc_config_file = None # config yaml for igc_lib. This setting will be passed on to new tasks
         self.airspace_check = False  # BOOL airspace check. This setting will be passed on to new tasks
         self.check_launch = check_launch  # check launch flag. whether we check that pilots leave from launch. This setting will be passed on to new tasks
+        self.self_register = PILOT_DB and SELF_REG_DEFAULT # set to true if we have pilot DB on and self reg on by default
 
         # self.formula                    = Formula.read(self.comp_id) if self.comp_id else None
 

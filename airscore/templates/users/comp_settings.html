@@ -234,6 +234,12 @@
             <div class="form-row">
                <div class="form-group col-md-6">
                   {{compform.locked.label}} {{compform.locked(**{'data-toggle': 'tooltip', 'title': compform.locked.description})}}
+                   </div>
+                   {% if self_register %}
+                   <div class="form-group col-md-6">
+                     {{compform.self_register.label}} {{compform.self_register(**{'data-toggle': 'tooltip', 'title': compform.self_register.description})}}
+                   </div>
+                   {% endif %}
                </div>
             </div>
          </div>
