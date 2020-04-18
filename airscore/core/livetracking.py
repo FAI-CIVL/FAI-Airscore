@@ -18,6 +18,243 @@ s is the height of ground (SRTM)
 b bearing
 v velocity
 """
+from task import Task
+from airspace import AirspaceCheck
+
+
+class LiveTracking(object):
+    results_list = ['par_id',
+                    'ID',
+                    'civl_id',
+                    'name',
+                    'sponsor',
+                    'nat',
+                    'sex',
+                    'glider',
+                    'glider_cert',
+                    'team',
+                    'nat_team',
+                    'live_id',
+                    'distance',
+                    'ss_time',
+                    'real_start_time',
+                    'goal_time',
+                    'SSS_time',
+                    'ESS_time',
+                    'turnpoints_made',
+                    'ESS_altitude',
+                    'goal_altitude',
+                    'last_altitude',
+                    'max_altitude',
+                    'last_time',
+                    'landing_time',
+                    'pil_id']
+
+    def __init__(self, task=None, airspace=None):
+        self.task = task  # task object
+        self.airspace = airspace  # AirspaceCheck object
+        self.result = {}  # json result string
+
+    @property
+    def timestamp(self):
+        import time
+        return int(time.time())
+
+    @property
+    def json_result(self):
+        import jsonpickle
+        return jsonpickle.encode(self.result, unpicklable=False)
+
+    @property
+    def task_id(self):
+        return None if not self.task else self.task.task_id
+
+    @property
+    def track_source(self):
+        return None if not self.task else self.task.track_source
+
+    @property
+    def properly_set(self):
+        return ((self.task is not None) and self.pilots and self.track_source
+                and self.task.turnpoints and (self.task.start_time is not None))
+
+    @property
+    def unix_date(self):
+        import time
+        return 0 if not self.task else int(time.mktime(self.task.date.timetuple()))
+
+    @property
+    def starting_timestamp(self):
+        return 0 if not self.task else self.task.window_open_time + self.unix_date
+
+    @property
+    def ending_timestamp(self):
+        if not self.task:
+            return None
+        elif self.task.stopped_time:
+            return self.task.stopped_time + self.unix_date
+        elif self.task.task_deadline:
+            return self.task.task_deadline + self.unix_date
+        else:
+            '''end of day'''
+            return self.unix_date + 3600 * 23 + 3599
+
+    @property
+    def status(self):
+        if not (self.task and self.task.turnpoints):
+            return 'Task not defined'
+        elif not self.properly_set:
+            return 'Livetracking source is not set properly'
+        else:
+            if not self.task.start_time:
+                return 'Times are not set yet'
+            else:
+                return 'Task is set'
+
+    @property
+    def headers(self):
+        from calcUtils import sec_to_string
+        headers = []
+        if not (self.task and self.task.turnpoints):
+            headers.append("Today's Task is not yet defined. Try Later.")
+        elif not self.properly_set:
+            headers.append('Livetracking source is not set properly.')
+        else:
+            task_type = 'Race to Goal' if self.task.task_type.lower() == 'race' else self.task.task_type
+            headers.append(f"Task Set: {round(self.task.opt_dist/1000, 1)} Km {task_type}.")
+            if not self.task.start_time:
+                headers.append('Times are not set yet.')
+            else:
+                window = sec_to_string(self.task.window_open_time, self.task.time_offset, False)
+                start = sec_to_string(self.task.start_time, self.task.time_offset, False)
+                headers.append(f'Window opens at {window} and start is at {start} (Local Time).')
+        return headers
+
+    @property
+    def pilots(self):
+        return [] if not self.task.pilots else [p for p in self.task.pilots if p.info.live_id]
+
+    @property
+    def filename(self):
+        from Defines import LIVETRACKDIR
+        from os import path
+        return None if not self.task else path.join(LIVETRACKDIR, str(self.task_id))
+
+    @staticmethod
+    def read(task_id):
+        task = Task.read(task_id)
+        if task.turnpoints:
+            if not task.distance:
+                task.calculate_task_length()
+            if not task.optimised_turnpoints:
+                task.calculate_optimised_task_length()
+        task.get_pilots()
+        airspace = AirspaceCheck.from_task(task)
+        livetrack = LiveTracking(task, airspace)
+        livetrack.create_result()
+        return livetrack
+
+    def create_result(self):
+        from result import Task_result
+        import jsonpickle
+        file_stats = dict(timestamp=self.timestamp, status=self.status)
+        headers = dict(main=self.headers[0], details=self.headers[1] or '')
+        info = {}
+        data = []
+        if not self.task:
+            file_stats['status'] = 'Task is not set yet'
+        else:
+            info = {x: getattr(self.task, x) for x in Task_result.info_list if x in dir(self.task)}
+            if not self.task.turnpoints:
+                file_stats['status'] = 'Task is not set yet'
+            elif not (self.track_source and self.pilots):
+                file_stats['status'] = 'Livetracking source is not set properly.'
+            else:
+                if not self.task.start_time:
+                    file_stats['status'] = 'Task Start time is not set yet'
+                else:
+                    file_stats['status'] = 'Task Set'
+                for p in self.pilots:
+                    result = dict()
+                    result.update({x: getattr(p.info, x) for x in LiveTracking.results_list if x in dir(p.info)})
+                    result.update({x: getattr(p.result, x) for x in LiveTracking.results_list if x in dir(p.result)})
+                    result['notifications'] = [n.__dict__ for n in p.notifications]
+                    data.append(result)
+        self.result.update(dict(file_stats=file_stats, headers=headers, info=info, data=data))
+        self.create_json_file()
+        # return jsonpickle.encode(self.result)
+
+    def update_result(self, test_timestamp=None):
+        from result import Task_result
+        self.result['file_stats']['timestamp'] = test_timestamp or self.timestamp
+        '''check if status changed'''
+        status = self.result['file_stats']['status']
+        if not status == self.status:
+            self.result['file_stats']['status'] = self.status
+            self.result['headers'] = self.headers
+            self.result['info'] = {x: getattr(self.task, x) for x in Task_result.info_list if x in dir(self.task)}
+        else:
+            for p in self.pilots:
+                result = next(r for r in self.result['data'] if r['par_id'] == p.info.par_id)
+                result.update({x: getattr(p.result, x) for x in Task_result.results_list if x in dir(p.result)})
+                result['notifications'] = [n.__dict__ for n in p.notifications]
+        self.create_json_file()
+
+    def create_json_file(self):
+        # from Defines import LIVETRACKDIR
+        # from os import path
+        # fullname = path.join(LIVETRACKDIR, str(self.task_id))
+        try:
+            with open(self.filename, 'w') as f:
+                f.write(self.json_result)
+            return True
+        except:
+            print(f'Error saving file: {self.filename}')
+
+    def run(self, interval=99, test=False):
+        import time
+        from datetime import datetime
+        if not self.properly_set:
+            print(f'Livetracking source is not set properly.')
+            return
+        i = 0
+        offset = int(time.time()) - self.starting_timestamp if test else 0
+        t = self.timestamp
+        response = {}
+        print(f'Window open: {datetime.fromtimestamp(int(time.mktime(self.task.date.timetuple()) + self.task.window_open_time)).isoformat()}')
+        print(f'Deadline: {datetime.fromtimestamp(int(time.mktime(self.task.date.timetuple()) + self.task.task_deadline)).isoformat()}')
+        print(f'ora iniziale: {datetime.fromtimestamp(t - offset).isoformat()}')
+        while self.starting_timestamp - interval < t - offset < self.ending_timestamp + interval:
+            '''get livetracks from flymaster live server'''
+            print(f'*** Cicle {i} ({t}):')
+            # print(f' -- Getting livetracks ...')
+            previous = response
+            response = get_livetracks(self.task)
+            if not response or response == previous:
+                print(f' -- NO RESPONSE or NO NEW FIXES. Stopping ...')
+            else:
+                print(f' -- Associating livetracks ...')
+                associate_livetracks(self.task, response)
+                for p in self.pilots:
+                    if p.livetrack and p.livetrack[-2].rawtime > (p.result.last_time or 0) and not p.result.goal_time:
+                        check_livetrack(pilot=p, task=self.task, airspace_obj=self.airspace)
+                        # print(f' -- -- Pilot {p.info.name}:')
+                        # print(f' ..... -- last fix {p.livetrack[-2].rawtime}')
+                        # print(f' ..... -- rawtime: {p.result.last_time}')
+                        # print(f' ..... -- Distance: {p.result.distance_flown}')
+                        # print(f' ..... -- start: {p.result.real_start_time is not None}')
+                        # print(f' ..... -- wpt made: {p.result.waypoints_made}')
+                        # print(f' ..... -- Goal: {p.result.goal_time is not None}')
+                        if p.result.goal_time:
+                            print(f' ..... -- Time: {p.result.time}')
+                            print(f' ..... -- Waypoints:')
+                            print(f'{p.result.waypoints_achieved}')
+                            print(f' ..... -- Notifications:')
+                            print(f'{p.result.notifications}')
+                self.update_result(test_timestamp=(t - offset))
+            i += 1
+            time.sleep(max(interval - (self.timestamp - t), 0))
+            t = self.timestamp
 
 
 def get_livetracks(task):
@@ -25,16 +262,17 @@ def get_livetracks(task):
     import jsonpickle
     import time
     from requests.exceptions import HTTPError
+    from Defines import FM_LIVE
     request = {}
     if task.track_source.lower() == 'flymaster':
         pilots = [p for p in task.pilots if p.info.live_id]
-        url = 'https://lt.flymaster.net/wlb/getLiveData.php?trackers='
+        # url = 'https://lt.flymaster.net/wlb/getLiveData.php?trackers='
         for p in pilots:
             live = int(p.info.live_id)
             '''get epoch time'''
-            last_time = int(time.mktime(task.date.timetuple()) + (p.result.last_time or 0))
+            last_time = int(time.mktime(task.date.timetuple()) + (p.result.last_time or task.window_open_time))
             request[live] = last_time
-        url = url + str(jsonpickle.encode(request))
+        url = FM_LIVE + str(jsonpickle.encode(request))
         if request:
             try:
                 response = requests.get(url)
@@ -56,8 +294,8 @@ def associate_livetracks(task, response):
         flight = []
         for idx, el in enumerate(value):
             time = int(el['d']) - midnight
-            lat = int(el['ai'])/60000
-            lon = int(el['oi'])/60000
+            lat = int(el['ai']) / 60000
+            lon = int(el['oi']) / 60000
             baro_alt = int(el['c'])
             gnss_alt = int(el['h'])
             alt = gnss_alt if alt_source == 'GPS' else baro_alt
@@ -362,7 +600,7 @@ def check_livetrack(pilot, task, airspace_obj=None):
                     print(f'jump the gun: {diff} - valid: {diff <= max_jump_the_gun} - penalty: {penalty}')
                     comment = f"Jump the gun: {diff} seconds. Penalty: {penalty} points"
                     result.notifications.append(Notification(notification_type='jtg',
-                                                         flat_penalty=penalty, comment=comment))
+                                                             flat_penalty=penalty, comment=comment))
                 elif restarted and any(n for n in result.notifications if n.notification_type == 'jtg'):
                     '''delete jtg notification'''
                     result.notifications.remove(next(n for n in result.notifications if n.notification_type == 'jtg'))
@@ -399,3 +637,24 @@ def check_livetrack(pilot, task, airspace_obj=None):
         # result.percentage_penalty = penalty
         # result.airspace_plot = airspace_plot
     return result
+
+
+def get_live_json(task_id):
+    from Defines import LIVETRACKDIR
+    from os import path
+    import jsonpickle
+    import time
+    fullname = path.join(LIVETRACKDIR, str(task_id))
+    try:
+        with open(fullname, 'r') as f:
+            result = jsonpickle.decode(f.read())
+            # return jsonpickle.decode(result)
+    except:
+        print(f"Error reading file")
+        file_stats = dict(timestamp=int(time.time()), status='Live Not Set Yet')
+        headers = {}
+        data = []
+        info = {}
+        result = dict(file_stats=file_stats, headers=headers, data=data, info=info)
+    return result
+

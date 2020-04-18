@@ -424,3 +424,41 @@ def download_file(filetype, filename):
         fullname = path.join(airspace_path, filename)
     return send_file(fullname, as_attachment=True)
 
+
+@blueprint.route('/live/<int:taskid>')
+def livetracking(taskid):
+    from livetracking import get_live_json
+    from calcUtils import sec_to_string
+    result_file = get_live_json(int(taskid))
+    file_stats = result_file['file_stats']
+    headers = result_file['headers']
+    data = result_file['data']
+    info = result_file['info']
+    if result_file['data']:
+        task_distance = info['opt_dist']
+        results = []
+        goal = [p for p in result_file['data'] if p['ESS_time'] and (p['distance'] - task_distance) <= 5]
+        results.extend(sorted(goal, key=lambda k: k['ss_time']))
+        ess = [p for p in result_file['data'] if p['ESS_time'] and (p['distance'] - task_distance) > 5]
+        results.extend(sorted(ess, key=lambda k: k['ss_time']))
+        others = [p for p in result_file['data'] if p['ESS_time'] is None]
+        results.extend(sorted(others, key=lambda k: k['distance'], reverse=True))
+        data = []
+        for el in results:
+            if el['ESS_time'] and (el['distance'] - task_distance) <= 5:
+                res = sec_to_string(el['ss_time'])
+            elif el['ESS_time'] and (el['distance'] - task_distance) > 5:
+                res = f"[{sec_to_string(el['ss_time'])}]"
+            else:
+                res = str(round(el['distance']/1000, 2)) + ' Km'
+            '''notifications'''
+            if el['notifications']:
+                note = '; '.join([n['comment'] for n in el['notifications']])
+            else:
+                note = ''
+            p = dict(id=el['ID'], name=el['name'], fem=1 if el['sex'] == 'F' else 0, result=res, note=note)
+            data.append(p)
+
+    # print(info)
+    return render_template('public/live.html', file_stats=file_stats, headers=headers, data=data, info=info)
+

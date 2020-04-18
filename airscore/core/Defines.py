@@ -30,6 +30,7 @@ AIRSPACEDIR = config['dir']['airspace']  # openair files directory
 AIRSPACEMAPDIR = config['dir']['airspace_map']  # openair files directory
 AIRSPACECHECKDIR = config['dir']['airspace_check']  # openair files directory
 WAYPOINTDIR = config['dir']['waypoint']  # waypoint files directory
+LIVETRACKDIR = config['dir']['livetracking']  # waypoint files directory
 IGCPARSINGCONFIG = config['dir']['igc_parsing_config']  # igc parsing config files
 
 track_sources = ['xcontest', 'flymaster']     # external available sources for tracks
@@ -52,3 +53,6 @@ SANCTIONS = config['sanctions']
 
 '''file libraries'''
 WAYPOINT_AIRSPACE_FILE_LIBRARY = config['waypoint/airspace_file_library']
+
+'''Live Tracking servers'''
+FM_LIVE = config['flymaster_live_server']

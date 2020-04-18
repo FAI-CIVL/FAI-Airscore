@@ -36,8 +36,10 @@ dir:
   airspace: /app/airscore/data/airspace/openair/
   airspace_map: /app/airscore/data/map-objects/airspace/
   airspace_check: /app/airscore/data/airspace/check_file/
+  livetracking: /app/airscore/data/livetracking/
   igc_parsing_config: /app/airscore/igc_parsing_config/
 
 g_record_validation_server: http://vali.fai-civl.org/api/vali/json
+flymaster_live_server: https://lt.flymaster.net/wlb/getLiveData.php?trackers=
 
 

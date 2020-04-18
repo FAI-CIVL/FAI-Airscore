@@ -157,6 +157,14 @@ def sec_to_time(sec):
     return time(hour=h, minute=m, second=s)
 
 
+def sec_to_string(rawtime, offset=0, seconds=True):
+    sec = int(rawtime + offset)
+    m, s = divmod(sec, 60)
+    h, m = divmod(m, 60)
+    string = f"{h:02d}:{m:02d}:{s:02d}"
+    return string if seconds else string[:5]
+
+
 def get_isotime(d, t, offset=None):
     import datetime as dt
     from datetime import datetime as dd

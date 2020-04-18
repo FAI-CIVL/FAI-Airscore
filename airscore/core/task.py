@@ -1569,6 +1569,7 @@ class Task(object):
         i = 0
         response = []
         print(f'*** Task Deadline: {self.task_deadline}:')
+
         while max(p.result.last_time or 0 for p in pilots) < self.task_deadline:
             '''get livetracks from flymaster live server'''
             print(f'*** Cicle {i}:')
