@@ -28,8 +28,8 @@
         </div>
     </div>
     <div class="row">
-        <h3>{{headers['main']}} - {{headers['details']}}</h3>
-        <h5>Last Update: {{file_stats['timestamp']}}</h5>
+        <h4>{{headers['main']}} - {{headers['details']}}</h4>
+        <h5>Last Update: {{file_stats['last_update']}}</h5>
     </div>
     {% endif %}
     <div class="live_results">
@@ -43,7 +43,7 @@
             </tr>
             {% for pilot in data %}
                 <tr>
-                <td>{{ loop.index + 1 }}</td>
+                <td>{{ loop.index }}</td>
                 {% if pilot['fem'] %}
                     <td style="color: magenta">{{pilot['id']}}</td>
                     <td style="color: magenta">{{pilot['name']}}</td>

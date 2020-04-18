@@ -114,21 +114,22 @@ class LiveTracking(object):
     @property
     def headers(self):
         from calcUtils import sec_to_string
-        headers = []
+        main = ''
+        details = ''
         if not (self.task and self.task.turnpoints):
-            headers.append("Today's Task is not yet defined. Try Later.")
+            main = "Today's Task is not yet defined. Try Later."
         elif not self.properly_set:
-            headers.append('Livetracking source is not set properly.')
+            main = "Livetracking source is not set properly."
         else:
             task_type = 'Race to Goal' if self.task.task_type.lower() == 'race' else self.task.task_type
-            headers.append(f"Task Set: {round(self.task.opt_dist/1000, 1)} Km {task_type}.")
+            main = f"Task Set: {round(self.task.opt_dist/1000, 1)} Km {task_type}."
             if not self.task.start_time:
-                headers.append('Times are not set yet.')
+                details = 'Times are not set yet.'
             else:
                 window = sec_to_string(self.task.window_open_time, self.task.time_offset, False)
                 start = sec_to_string(self.task.start_time, self.task.time_offset, False)
-                headers.append(f'Window opens at {window} and start is at {start} (Local Time).')
-        return headers
+                details = f'Window opens at {window} and start is at {start} (Local Time).'
+        return dict(main=main, details=details)
 
     @property
     def pilots(self):
@@ -156,9 +157,8 @@ class LiveTracking(object):
 
     def create_result(self):
         from result import Task_result
-        import jsonpickle
         file_stats = dict(timestamp=self.timestamp, status=self.status)
-        headers = dict(main=self.headers[0], details=self.headers[1] or '')
+        headers = self.headers
         info = {}
         data = []
         if not self.task:
@@ -182,7 +182,6 @@ class LiveTracking(object):
                     data.append(result)
         self.result.update(dict(file_stats=file_stats, headers=headers, info=info, data=data))
         self.create_json_file()
-        # return jsonpickle.encode(self.result)
 
     def update_result(self, test_timestamp=None):
         from result import Task_result

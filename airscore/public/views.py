@@ -298,7 +298,8 @@ def get_comp_result(compid):
             if r['results'][task]['pre'] == r['results'][task]['score']:
                 pilot['results'][task] = {'score': r['results'][task]['score']}
             else:
-                pilot['results'][task] = {'score': f"{int(r['results'][task]['score'])} <del>{int(r['results'][task]['pre'])}</del>"}
+                pilot['results'][task] = {
+                    'score': f"{int(r['results'][task]['score'])} <del>{int(r['results'][task]['pre'])}</del>"}
 
         rank += 1
         all_pilots.append(pilot)
@@ -429,11 +430,14 @@ def download_file(filetype, filename):
 def livetracking(taskid):
     from livetracking import get_live_json
     from calcUtils import sec_to_string
+    from datetime import datetime
     result_file = get_live_json(int(taskid))
     file_stats = result_file['file_stats']
     headers = result_file['headers']
     data = result_file['data']
     info = result_file['info']
+    if info['time_offset']:
+        file_stats['last_update'] = datetime.fromtimestamp(file_stats['timestamp'] + info['time_offset']).isoformat()
     if result_file['data']:
         task_distance = info['opt_dist']
         results = []
@@ -450,15 +454,23 @@ def livetracking(taskid):
             elif el['ESS_time'] and (el['distance'] - task_distance) > 5:
                 res = f"[{sec_to_string(el['ss_time'])}]"
             else:
-                res = str(round(el['distance']/1000, 2)) + ' Km'
+                res = str(round(el['distance'] / 1000, 2)) + ' Km'
             '''notifications'''
+            note = ''
             if el['notifications']:
-                note = '; '.join([n['comment'] for n in el['notifications']])
-            else:
-                note = ''
+                note = []
+                if any(n for n in el['notifications'] if n['notification_type'] == 'jtg'):
+                    j = min([n for n in el['notifications'] if n['notification_type'] == 'jtg'],
+                            key=lambda x: x['flat_penalty'])
+                    note.append(j['comment'].split('.')[0])
+                if any(n for n in el['notifications'] if n['notification_type'] == 'airspace'
+                                                         and n['percentage_penalty'] > 0):
+                    a = max([n for n in el['notifications'] if n['notification_type'] == 'airspace'],
+                            key=lambda x: x['percentage_penalty'])
+                    note.append(a['comment'].split('.')[0])
+                note = '; '.join(note)
             p = dict(id=el['ID'], name=el['name'], fem=1 if el['sex'] == 'F' else 0, result=res, note=note)
             data.append(p)
 
     # print(info)
     return render_template('public/live.html', file_stats=file_stats, headers=headers, data=data, info=info)
-
