@@ -13,14 +13,29 @@
   </head>
 
 <body>
+<div class="container" >
+  <div class="row col-md-12">
 <h1 >{{comp['comp_name']}} - <small>{{comp['comp_site']}}</small></h1>
+
+  </div>
   <div class="row">
     <div class="col-md-6"><h5>{{comp['date_from']}} - {{comp['date_to']}}</h5></div>
   </div>
+</div>
+
+{% if comp.self_register %}
 <p id="reg_text">To register you need to login</p>
 <button id="reg_btn" type="button" data-toggle="modal" data-target="#edit_par_modal" class="btn btn-success">Register</button>
 <button id="unreg_btn" type="button" class="btn btn-danger">Unregister</button>
 <button id="modify_btn" type="button" data-toggle="modal" data-target="#edit_par_modal" class="btn btn-primary">Modify your details</button>
+
+{% endif %}
+
+{% if comp.website %}
+
+<a href='http://{{comp.website}}' class="btn btn-primary" >Go to official website</a>
+
+{% endif %}
 
 <div class="container-fluid">
 
@@ -86,13 +101,17 @@
 
 <script type="text/javascript">
 jQuery(document).ready(function($) {
+
+{% if comp.self_register %}
 $("#reg_btn").hide();
 $("#unreg_btn").hide();
 $("#modify_btn").hide();
 $("#reg_text").hide();
+{% endif %}
+
     populate_pilots({{compid}});
 });
-
+{% if comp.self_register %}
 var un_registered_pil=[];
 
 function unregister(pil_id){
@@ -166,7 +185,7 @@ function register(pil_id){
 
    };
 
-
+{% endif %}
 
 
 </script>

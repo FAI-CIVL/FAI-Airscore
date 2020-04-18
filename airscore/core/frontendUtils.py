@@ -566,7 +566,9 @@ def get_comp_info(compid, task_ids=None):
             c.comp_name,
             c.comp_site,
             c.date_from,
-            c.date_to).filter(c.comp_id == compid).one())
+            c.date_to,
+            c.self_register,
+            c.website).filter(c.comp_id == compid).one())
     comp = competition_info._asdict()
 
     return comp, non_scored_tasks

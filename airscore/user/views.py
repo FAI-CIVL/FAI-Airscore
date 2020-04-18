@@ -199,6 +199,7 @@ def comp_settings_admin(compid):
             # comp.airspace_check = compform.airspace_check.data
             comp.check_launch = 'on' if compform.check_launch.data else 'off'
             comp.self_register = compform.self_register.data
+            comp.website = compform.website.data.lower().lstrip('http://')
             comp.to_db()
 
             formula = Formula.read(compid)
@@ -295,6 +296,7 @@ def comp_settings_admin(compid):
         compform.airspace_check.data = comp.airspace_check
         compform.check_launch.data = comp.check_launch
         compform.self_register.data = comp.self_register
+        compform.website.data = comp.website
 
         newtaskform.task_region.choices, _ = frontendUtils.get_region_choices(compid)
         newadminform.admin.choices = admin_choices

@@ -11,5 +11,12 @@
 <br><br>
 <h1>This competition has not started yet</h1>
   <a href='/registered_pilots/{{comp['comp_id']}}' class="btn btn-primary" >Registered Pilots</a>
+{% if comp.website %}
+
+<a href='http://{{comp.website}}' class="btn btn-primary" >Go to official website</a>
+
+{% endif %}
+
 </div>
+
 {% endblock %}

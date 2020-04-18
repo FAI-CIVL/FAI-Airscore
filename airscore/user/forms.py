@@ -167,6 +167,8 @@ class CompForm(FlaskForm):
     igc_parsing_file = SelectField("IGC parsing config file", choices=[('1', '1'), ('2', '2')])
     self_register = BooleanField("Allow self registration", description='Allow users who are pilots to register '
                                                                         'to the competition')
+    website = StringField("Competition website", description='If you have an official website for the comp. e.g.'
+                                                             ' Airtribune or other')
     submit = SubmitField('Save')
 
     def validate_on_submit(self):
