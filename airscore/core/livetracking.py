@@ -20,6 +20,9 @@ v velocity
 """
 from task import Task
 from airspace import AirspaceCheck
+import time
+from datetime import datetime
+from logger import Logger
 
 
 class LiveTracking(object):
@@ -37,6 +40,7 @@ class LiveTracking(object):
                     'live_id',
                     'distance',
                     'ss_time',
+                    'first_time',
                     'real_start_time',
                     'goal_time',
                     'SSS_time',
@@ -46,18 +50,20 @@ class LiveTracking(object):
                     'goal_altitude',
                     'last_altitude',
                     'max_altitude',
+                    'height',
                     'last_time',
                     'landing_time',
                     'pil_id']
 
-    def __init__(self, task=None, airspace=None):
-        self.task = task  # task object
+    def __init__(self, task=None, airspace=None, test=False):
+        self.task = task  # Task object
         self.airspace = airspace  # AirspaceCheck object
-        self.result = {}  # json result string
+        self.test = test  # bool, test mode, using stored informations about events in the past
+        self.start_timestamp = int(time.time())
+        self.result = {}  # result string
 
     @property
     def timestamp(self):
-        import time
         return int(time.time())
 
     @property
@@ -80,11 +86,10 @@ class LiveTracking(object):
 
     @property
     def unix_date(self):
-        import time
         return 0 if not self.task else int(time.mktime(self.task.date.timetuple()))
 
     @property
-    def starting_timestamp(self):
+    def opening_timestamp(self):
         return 0 if not self.task else self.task.window_open_time + self.unix_date
 
     @property
@@ -98,6 +103,14 @@ class LiveTracking(object):
         else:
             '''end of day'''
             return self.unix_date + 3600 * 23 + 3599
+
+    @property
+    def test_offset(self):
+        return self.start_timestamp - self.opening_timestamp if self.test else 0
+
+    @property
+    def now(self):
+        return self.timestamp - self.test_offset
 
     @property
     def status(self):
@@ -122,7 +135,7 @@ class LiveTracking(object):
             main = "Livetracking source is not set properly."
         else:
             task_type = 'Race to Goal' if self.task.task_type.lower() == 'race' else self.task.task_type
-            main = f"Task Set: {round(self.task.opt_dist/1000, 1)} Km {task_type}."
+            main = f"Task Set: {round(self.task.opt_dist / 1000, 1)} Km {task_type}."
             if not self.task.start_time:
                 details = 'Times are not set yet.'
             else:
@@ -149,15 +162,16 @@ class LiveTracking(object):
                 task.calculate_task_length()
             if not task.optimised_turnpoints:
                 task.calculate_optimised_task_length()
+        test = task.date < datetime.today().date()
         task.get_pilots()
         airspace = AirspaceCheck.from_task(task)
-        livetrack = LiveTracking(task, airspace)
+        livetrack = LiveTracking(task, airspace, test)
         livetrack.create_result()
         return livetrack
 
     def create_result(self):
         from result import Task_result
-        file_stats = dict(timestamp=self.timestamp, status=self.status)
+        file_stats = dict(timestamp=self.now, status=self.status)
         headers = self.headers
         info = {}
         data = []
@@ -183,9 +197,9 @@ class LiveTracking(object):
         self.result.update(dict(file_stats=file_stats, headers=headers, info=info, data=data))
         self.create_json_file()
 
-    def update_result(self, test_timestamp=None):
+    def update_result(self):
         from result import Task_result
-        self.result['file_stats']['timestamp'] = test_timestamp or self.timestamp
+        self.result['file_stats']['timestamp'] = self.now
         '''check if status changed'''
         status = self.result['file_stats']['status']
         if not status == self.status:
@@ -195,7 +209,7 @@ class LiveTracking(object):
         else:
             for p in self.pilots:
                 result = next(r for r in self.result['data'] if r['par_id'] == p.info.par_id)
-                result.update({x: getattr(p.result, x) for x in Task_result.results_list if x in dir(p.result)})
+                result.update({x: getattr(p.result, x) for x in LiveTracking.results_list if x in dir(p.result)})
                 result['notifications'] = [n.__dict__ for n in p.notifications]
         self.create_json_file()
 
@@ -210,72 +224,87 @@ class LiveTracking(object):
         except:
             print(f'Error saving file: {self.filename}')
 
-    def run(self, interval=99, test=False):
-        import time
-        from datetime import datetime
+    def run(self, interval=99):
         if not self.properly_set:
             print(f'Livetracking source is not set properly.')
             return
+        Logger('ON', 'livetracking.txt')
         i = 0
-        offset = int(time.time()) - self.starting_timestamp if test else 0
-        t = self.timestamp
         response = {}
-        print(f'Window open: {datetime.fromtimestamp(int(time.mktime(self.task.date.timetuple()) + self.task.window_open_time)).isoformat()}')
-        print(f'Deadline: {datetime.fromtimestamp(int(time.mktime(self.task.date.timetuple()) + self.task.task_deadline)).isoformat()}')
-        print(f'ora iniziale: {datetime.fromtimestamp(t - offset).isoformat()}')
-        while self.starting_timestamp - interval < t - offset < self.ending_timestamp + interval:
+        print(f'Window open: {datetime.fromtimestamp(self.opening_timestamp).isoformat()}')
+        print(f'Deadline: {datetime.fromtimestamp(self.ending_timestamp).isoformat()}')
+        print(f'Livetrack Starting: {datetime.fromtimestamp(self.timestamp).isoformat()}')
+        if self.test:
+            print(f'Test Starting Timestamp: {datetime.fromtimestamp(self.now).isoformat()}')
+        if self.opening_timestamp - interval > self.now:
+            '''wait window opening'''
+            print(f'Waiting for window opening: {self.opening_timestamp - interval - self.now} seconds ...')
+            time.sleep(self.opening_timestamp - interval - self.now)
+        while self.opening_timestamp - interval <= self.now <= self.ending_timestamp + interval:
             '''get livetracks from flymaster live server'''
-            print(f'*** Cicle {i} ({t}):')
-            # print(f' -- Getting livetracks ...')
+            print(f'*** Cycle {i} ({self.timestamp}):')
+            print(f' -- Getting livetracks ...')
+            cycle_starting_time = self.now
             previous = response
-            response = get_livetracks(self.task)
+            response = get_livetracks(self.task, cycle_starting_time, interval)
             if not response or response == previous:
-                print(f' -- NO RESPONSE or NO NEW FIXES. Stopping ...')
+                print(f' -- NO RESPONSE or NO NEW FIXES ...')
             else:
                 print(f' -- Associating livetracks ...')
-                associate_livetracks(self.task, response)
-                for p in self.pilots:
-                    if p.livetrack and p.livetrack[-2].rawtime > (p.result.last_time or 0) and not p.result.goal_time:
-                        check_livetrack(pilot=p, task=self.task, airspace_obj=self.airspace)
-                        # print(f' -- -- Pilot {p.info.name}:')
-                        # print(f' ..... -- last fix {p.livetrack[-2].rawtime}')
-                        # print(f' ..... -- rawtime: {p.result.last_time}')
-                        # print(f' ..... -- Distance: {p.result.distance_flown}')
-                        # print(f' ..... -- start: {p.result.real_start_time is not None}')
-                        # print(f' ..... -- wpt made: {p.result.waypoints_made}')
-                        # print(f' ..... -- Goal: {p.result.goal_time is not None}')
-                        if p.result.goal_time:
-                            print(f' ..... -- Time: {p.result.time}')
-                            print(f' ..... -- Waypoints:')
-                            print(f'{p.result.waypoints_achieved}')
-                            print(f' ..... -- Notifications:')
-                            print(f'{p.result.notifications}')
-                self.update_result(test_timestamp=(t - offset))
+            associate_livetracks(self.task, response, cycle_starting_time)
+            for p in self.pilots:
+                if (p.livetrack and p.livetrack[-1].rawtime > (p.result.last_time or 0)
+                        and not p.result.goal_time and not p.result.landing_time):
+                    check_livetrack(pilot=p, task=self.task, airspace_obj=self.airspace)
+                    # print(f' -- -- Pilot {p.info.name}:')
+                    # print(f' ..... -- last fix {p.livetrack[-2].rawtime}')
+                    # print(f' ..... -- rawtime: {p.result.last_time}')
+                    # print(f' ..... -- Distance: {p.result.distance_flown}')
+                    # print(f' ..... -- start: {p.result.real_start_time is not None}')
+                    # print(f' ..... -- wpt made: {p.result.waypoints_made}')
+                    # print(f' ..... -- Goal: {p.result.goal_time is not None}')
+                    # if p.result.goal_time:
+                    #     print(f' ..... -- Time: {p.result.time}')
+                    #     print(f' ..... -- Waypoints:')
+                    #     print(f'{p.result.waypoints_achieved}')
+                    #     print(f' ..... -- Notifications:')
+                    #     print(f'{p.result.notifications}')
+            self.update_result()
             i += 1
-            time.sleep(max(interval - (self.timestamp - t), 0))
-            t = self.timestamp
+            time.sleep(max(interval / 2 - (self.now - cycle_starting_time), 0))
+            # t = self.timestamp
+        print(f'Livetrack Ending: {datetime.fromtimestamp(self.timestamp).isoformat()}')
+        Logger('OFF')
+        print(f'Livetrack Ending: {datetime.fromtimestamp(self.timestamp).isoformat()}')
 
 
-def get_livetracks(task):
+def get_livetracks(task, timestamp, interval):
+    """ Requests live tracks fixes to Livetracking Server
+        Flymaster gives back chunks of 100 fixes for each live_id """
     import requests
     import jsonpickle
-    import time
     from requests.exceptions import HTTPError
     from Defines import FM_LIVE
     request = {}
     if task.track_source.lower() == 'flymaster':
-        pilots = [p for p in task.pilots if p.info.live_id]
+        pilots = [p for p in task.pilots if p.info.live_id and not p.result.landing_time]
+        print(f'pilots to get: {len(pilots)}')
         # url = 'https://lt.flymaster.net/wlb/getLiveData.php?trackers='
         for p in pilots:
             live = int(p.info.live_id)
             '''get epoch time'''
-            last_time = int(time.mktime(task.date.timetuple()) + (p.result.last_time or task.window_open_time))
+            if not p.result.first_time:
+                '''pilot not launched yet'''
+                last_time = timestamp - interval
+            else:
+                last_time = int(time.mktime(task.date.timetuple()) + (p.result.last_time or task.window_open_time))
             request[live] = last_time
         url = FM_LIVE + str(jsonpickle.encode(request))
         if request:
             try:
                 response = requests.get(url)
                 response.raise_for_status()
+                print(response.json()['629878'][0])
                 return response.json()
             except HTTPError as http_err:
                 print(f'HTTP error trying to get tracks: {http_err}')
@@ -283,75 +312,85 @@ def get_livetracks(task):
                 print(f'Error trying to get tracks: {err}')
 
 
-def associate_livetracks(task, response):
-    import time
+def associate_livetracks(task, response, timestamp):
     from igc_lib import GNSSFix
+    import time
+    '''initialise'''
+    launch_speed = 20  # km/h
     midnight = int(time.mktime(task.date.timetuple()))
     alt_source = 'GPS' if task.formula.scoring_altitude is None else task.formula.scoring_altitude
     for key, value in response.items():
         pil = next(p for p in task.pilots if p.info.live_id == key)
+        if not pil:
+            continue
+        # res = pil.result
+        if str(key) == '629878':
+            print(f' - first time: {pil.result.first_time}')
+            print(f' - last time: {pil.result.last_time}')
+            print(f' - landing time: {pil.result.landing_time}')
+        if pil.result.landing_time:
+            '''already landed'''
+            # shouldn't happen as landed pilots are filtered in tracks request
+            continue
         flight = []
+        counter = 0
         for idx, el in enumerate(value):
-            time = int(el['d']) - midnight
+            t = int(el['d']) - midnight
+            s = int(el['v'])
+            if pil.result.last_time and t < pil.result.last_time:
+                '''fix behind last scored fix'''
+                if str(key) == '629878':
+                    print(f' - fix behind last scored fix')
+                continue
+            if t > timestamp - midnight:
+                '''fix ahead of cycle time'''
+                if str(key) == '629878':
+                    print(
+                        f' - fix ahead of cycle time | timestamp: {timestamp} / midnight {midnight} / fix time: {t} / difference {t - (timestamp - midnight + 100)}')
+                break
+            if not pil.result.first_time:
+                if s < launch_speed:
+                    ''' not launched yet'''
+                    pil.result.last_time = t
+                    if str(key) == '629878':
+                        print(f' - not launched yet | last time = {t}')
+                    continue
+                else:
+                    '''launched'''
+                    pil.result.first_time = t
+                    if str(key) == '629878':
+                        print(f' - launched | first time = {t}')
             lat = int(el['ai']) / 60000
             lon = int(el['oi']) / 60000
             baro_alt = int(el['c'])
             gnss_alt = int(el['h'])
             alt = gnss_alt if alt_source == 'GPS' else baro_alt
-            fix = GNSSFix(time, lat, lon, 'A', baro_alt, gnss_alt, idx, '')
+            fix = GNSSFix(t, lat, lon, 'A', baro_alt, gnss_alt, idx, '')
             fix.alt = alt
+            ground = int(el['s'])
+            if pil.result.first_time and s < 10 and abs(alt - ground) < 10:
+                '''pilot seems landed'''
+                counter += 1
+                if counter > 10:
+                    ''' we assume he is landed'''
+                    pil.result.landing_time = t - 1
+                    pil.result.height = 0
+                    break
+            elif counter > 0:
+                counter = 0
+            pil.result.height = abs(alt - ground)
+            if str(key) == '629878':
+                print(f' - height = {pil.result.height}')
+            if str(key) == '629878':
+                print(f' - fix added | time = {t}')
             flight.append(fix)
         pil.livetrack = flight
 
 
-def simulate_livetrack(task_id):
-    from flight_result import Flight_result
-    from task import Task
-    from airspace import AirspaceCheck
+def simulate_livetracking(task_id):
     print(f'*** Getting Task {task_id}:')
-    task = Task.read(task_id)
-    print(f'*** Getting Pilots:')
-    task.get_pilots()
-    task.livetracking()
-    # airspace = AirspaceCheck.from_task(task)
-    # pilots = [p for p in task.pilots if p.info.live_id]
-    # if not pilots:
-    #     print(f'*** NO PILOT with Live ID. Aborting ...')
-    #     return False
-    # ''' start with fresh Flight_result objects'''
-    # for p in pilots:
-    #     p.result = Flight_result()
-    # i = 0
-    # response = []
-    # print(f'*** Task Deadline: {task.task_deadline}:')
-    # while max(p.result.last_time or 0 for p in pilots) < task.task_deadline:
-    #     '''get livetracks from flymaster live server'''
-    #     print(f'*** Cicle {i}:')
-    #     print(f' -- Getting livetracks starting from time {max(p.result.last_time for p in pilots)} ...')
-    #     previous = response
-    #     response = get_livetracks(task)
-    #     if not response or response == previous:
-    #         print(f' -- NO RESPONSE. Stopping ...')
-    #         break
-    #     print(f' -- Associating livetracks ...')
-    #     associate_livetracks(task, response)
-    #     for p in pilots:
-    #         if p.livetrack and p.livetrack[-2].rawtime > (p.result.last_time or 0) and not p.result.goal_time:
-    #             check_livetrack(pilot=p, task=task, airspace_obj=airspace)
-    #             print(f' -- -- Pilot {p.info.name}:')
-    #             print(f' ..... -- last fix {p.livetrack[-2].rawtime}')
-    #             print(f' ..... -- rawtime: {p.result.last_time}')
-    #             print(f' ..... -- Distance: {p.result.distance_flown}')
-    #             print(f' ..... -- start: {p.result.real_start_time is not None}')
-    #             print(f' ..... -- wpt made: {p.result.waypoints_made}')
-    #             print(f' ..... -- Goal: {p.result.goal_time is not None}')
-    #             if p.result.goal_time:
-    #                 print(f' ..... -- Time: {p.result.time}')
-    #                 print(f' ..... -- Waypoints:')
-    #                 print(f'{p.result.waypoints_achieved}')
-    #                 print(f' ..... -- Notifications:')
-    #                 print(f'{p.result.notifications}')
-    #     i += 1
+    LT = LiveTracking.read(task_id)
+    LT.run()
 
 
 def check_livetrack(pilot, task, airspace_obj=None):
@@ -480,19 +519,19 @@ def check_livetrack(pilot, task, airspace_obj=None):
         if pilot_can_start(task, tp, my_fix):
             # print(f'time: {my_fix.rawtime}, start: {task.start_time} | Interval: {task.SS_interval} | my start: {result.real_start_time} | better_start: {pilot_get_better_start(task, my_fix.rawtime, result.SSS_time)} | can start: {pilot_can_start(task, tp, my_fix)} can restart: {pilot_can_restart(task, tp, my_fix, result)} | tp: {tp.name}')
             if start_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m):
-                time = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
-                result.waypoints_achieved.append([tp.name, time, alt])  # pilot has started
-                result.real_start_time = time
+                t = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
+                result.waypoints_achieved.append([tp.name, t, alt])  # pilot has started
+                result.real_start_time = t
                 tp.move_to_next()
 
         elif pilot_can_restart(task, tp, my_fix, result):
             # print(f'time: {my_fix.rawtime}, start: {task.start_time} | Interval: {task.SS_interval} | my start: {result.real_start_time} | better_start: {pilot_get_better_start(task, my_fix.rawtime, result.SSS_time)} | can start: {pilot_can_start(task, tp, my_fix)} can restart: {pilot_can_restart(task, tp, my_fix, result)} | tp: {tp.name}')
             if start_made_civl(my_fix, next_fix, tp.last_made, tolerance, min_tol_m):
                 tp.pointer -= 1
-                time = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
+                t = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
                 result.waypoints_achieved.pop()
-                result.waypoints_achieved.append([tp.name, time, alt])  # pilot has started again
-                result.real_start_time = time
+                result.waypoints_achieved.append([tp.name, t, alt])  # pilot has started again
+                result.real_start_time = t
                 if lead_coeff:
                     lead_coeff.reset()
                 tp.move_to_next()
@@ -503,8 +542,8 @@ def check_livetrack(pilot, task, airspace_obj=None):
             if (tp.next.shape == 'circle'
                     and tp.next.type in ('endspeed', 'waypoint')):
                 if tp_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m):
-                    time = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
-                    result.waypoints_achieved.append([tp.name, time, alt])  # pilot has achieved turnpoint
+                    t = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
+                    result.waypoints_achieved.append([tp.name, t, alt])  # pilot has achieved turnpoint
                     tp.move_to_next()
 
             if tp.next.type == 'goal':
@@ -570,9 +609,9 @@ def check_livetrack(pilot, task, airspace_obj=None):
     # result.landing_time = flight.landing_fix.rawtime
     # result.landing_altitude = flight.landing_fix.gnss_alt if alt_source == 'GPS' else flight.landing_fix.press_alt
 
-    print(f'start indev: {tp.start_index}')
-    print(f'start done: {tp.start_done}')
-    print(f'pointer: {tp.pointer}')
+    # print(f'start indev: {tp.start_index}')
+    # print(f'start done: {tp.start_done}')
+    # print(f'pointer: {tp.pointer}')
     if tp.start_done:
         if not already_started or restarted:
             '''
@@ -598,11 +637,13 @@ def check_livetrack(pilot, task, airspace_obj=None):
                     # check
                     print(f'jump the gun: {diff} - valid: {diff <= max_jump_the_gun} - penalty: {penalty}')
                     comment = f"Jump the gun: {diff} seconds. Penalty: {penalty} points"
+                    # '''delete previous jtg notification'''
+                    # result.notifications = [n for n in result.notifications if not n.notification_type == 'jtg']
                     result.notifications.append(Notification(notification_type='jtg',
                                                              flat_penalty=penalty, comment=comment))
-                elif restarted and any(n for n in result.notifications if n.notification_type == 'jtg'):
-                    '''delete jtg notification'''
-                    result.notifications.remove(next(n for n in result.notifications if n.notification_type == 'jtg'))
+                # elif restarted and any(n for n in result.notifications if n.notification_type == 'jtg'):
+                #     '''delete jtg notification'''
+                #     result.notifications = [n for n in result.notifications if not n.notification_type == 'jtg']
                 # result.penalty += penalty
                 # result.comment.append(comment)
 
@@ -631,8 +672,8 @@ def check_livetrack(pilot, task, airspace_obj=None):
 
     if task.airspace_check:
         infringements, notifications, penalty = airspace_obj.get_infringements_result_new(infringements_list)
-        result.infringements = infringements
         result.notifications.extend(notifications)
+        result.notifications = clear_notifications(task, result)
         # result.percentage_penalty = penalty
         # result.airspace_plot = airspace_plot
     return result
@@ -642,7 +683,6 @@ def get_live_json(task_id):
     from Defines import LIVETRACKDIR
     from os import path
     import jsonpickle
-    import time
     fullname = path.join(LIVETRACKDIR, str(task_id))
     try:
         with open(fullname, 'r') as f:
@@ -657,3 +697,16 @@ def get_live_json(task_id):
         result = dict(file_stats=file_stats, headers=headers, data=data, info=info)
     return result
 
+
+def clear_notifications(task, result):
+    """ check Notifications, and keeps only the relevant ones"""
+    jtg = not (task.formula.max_JTG in [None, 0])
+    notifications = []
+    if jtg and any(n for n in result.notifications if n.notification_type == 'jtg'):
+        if result.real_start_time < task.start_time:
+            notifications.append(min([n for n in result.notifications if n.notification_type == 'jtg'],
+                                     key=lambda x: x.flat_penalty))
+    if any(n for n in result.notifications if n.notification_type == 'airspace' and n.percentage_penalty > 0):
+        notifications.append(max([n for n in result.notifications if n.notification_type == 'airspace'
+                                  and n.percentage_penalty > 0], key=lambda x: x.percentage_penalty))
+    return notifications

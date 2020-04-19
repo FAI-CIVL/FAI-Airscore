@@ -36,28 +36,40 @@
         {% if data %}
         <table>
             <tr>
-                <th style="width:10%">#</th>
-                <th style="width:10%">ID</th>
-                <th style="width:50%">Name</th>
-                <th style="width:30%">Result</th>
+                <th style="width:3%">#</th>
+                <th style="width:4%">ID</th>
+                <th style="width:25%">Name</th>
+                <th style="width:15%">Result</th>
+                <th style="width:38%">Warnings</th>
+                <th style="width:10%">Delay</th>
             </tr>
             {% for pilot in data %}
                 <tr>
                 <td>{{ loop.index }}</td>
                 {% if pilot['fem'] %}
                     <td style="color: magenta">{{pilot['id']}}</td>
-                    <td style="color: magenta">{{pilot['name']}}</td>
+                    <td style="color: magenta">{{pilot['name']}} [{{pilot['time']}}]</td>
                 {% else %}
                     <td>{{pilot['id']}}</td>
-                    <td>{{pilot['name']}}</td>
+                    <td>{{pilot['name']}} [{{pilot['time']}}]</td>
                 {% endif %}
-                {% if pilot['note'] %}
+                {% if pilot['comment'] %}
                     <td class="noted" style="color: orange; text-decoration:underline;">
-                        {{pilot['result']}}
-                        <span class="tooltiptext">{{pilot['note']}}</span>
+                        {{pilot['result']}} <span style="font-size: 0.6em;">[{{pilot['height']}}]</span>
+                    </td>
+                    <td class="noted" style="color: orange; font-size: 0.6em;">
+                        <span class="tooltiptext">{{pilot['comment']}}</span>
                     </td>
                 {% else %}
-                    <td>{{pilot['result']}}</td>
+                    <td>{{pilot['result']}} <span style="font-size: 0.6em;">[{{pilot['height']}}]</span></td>
+                    <td></td>
+                {% endif %}
+                {% if pilot['delay'] %}
+                    <td class="delay" style="color: red;">
+                        {{pilot['delay']}}
+                    </td>
+                {% else %}
+                    <td></td>
                 {% endif %}
                 </tr>
             {% endfor %}
