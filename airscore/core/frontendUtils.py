@@ -4,8 +4,7 @@ from flask import jsonify
 from myconn import Database
 import datetime
 import ruamel.yaml
-from sqlalchemy import func, not_
-# import math
+from sqlalchemy import func
 from pathlib import Path
 import jsonpickle
 from Defines import MAPOBJDIR, IGCPARSINGCONFIG
@@ -412,7 +411,7 @@ def get_comp_admins(compid_or_taskid, task_id=False):
         try:
             if task_id:
                 all_admins = db.session.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth)\
-                    .join(CA, User.id == CA.user_id).join(TblTask, CA.comp_id == TblTask.comp_id).filter(TblTask.task_id == taskid,
+                    .join(CA, User.id == CA.user_id).join(TblTask, CA.comp_id == TblTask.comp_id).filter(TblTask.task_id ==  taskid,
                                                             CA.user_auth.in_(('owner', 'admin'))).all()
             else:
                 all_admins = db.session.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth)\
@@ -422,7 +421,7 @@ def get_comp_admins(compid_or_taskid, task_id=False):
                 all_admins = [row._asdict() for row in all_admins]
         except SQLAlchemyError as e:
             error = str(e)
-            print(f"there was a problem with getting the admin list for comp id{compid} error{error}")
+            print(f"there was a problem with getting the admin list for comp id{compid_or_taskid} error{error}")
             db.session.rollback()
             db.session.close()
             return None, None
@@ -574,14 +573,26 @@ def get_comp_info(compid, task_ids=None):
     return comp, non_scored_tasks
 
 
-def get_participants(compid):
+def get_participants(compid, source='all'):
+    """get all registered pilots for a comp.
+    Compid: comp_id
+    source: all: all participants
+            interanl: only participants from pilot table (with pil_id)
+            external: only participants not in pilot table (without pil_id)"""
     from compUtils import get_participants
     pilots = get_participants(compid)
     pilot_list = []
+    external = 0
     for pilot in pilots:
         if pilot.paid == 1:
             pilot.paid = 'Y'
         else:
             pilot.paid = 'N'
-        pilot_list.append(pilot.as_dict())
-    return pilot_list
+        if source == 'all' or source == 'internal':
+            if pilot.pil_id:
+                pilot_list.append(pilot.as_dict())
+        if source == 'all' or source == 'external':
+            if not pilot.pil_id:
+                external += 1
+                pilot_list.append(pilot.as_dict())
+    return pilot_list, external

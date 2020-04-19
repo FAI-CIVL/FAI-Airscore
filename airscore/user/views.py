@@ -18,8 +18,18 @@ from calcUtils import sec_to_time
 # from werkzeug import secure_filename
 import time
 from Defines import SELF_REG_DEFAULT, PILOT_DB
+from flask_socketio import send, emit, SocketIO
 
 blueprint = Blueprint("user", __name__, url_prefix="/users", static_folder="../static")
+
+
+
+
+
+@blueprint.route("/test")
+@login_required
+def test():
+    return render_template('users/socketio_demo.html')
 
 @blueprint.route("/")
 @login_required
@@ -998,10 +1008,17 @@ def _delete_region(regid):
 
 @blueprint.route('/_get_non_and_registered_pilots/<compid>', methods=['GET', 'POST'])
 @login_required
-def _get_non_and_registered_pilots(compid):
-    registered_pilots = frontendUtils.get_participants(compid)
+def _get_non_and_registered_pilots_internal(compid):
+    registered_pilots, _ = frontendUtils.get_participants(compid, source='internal')
     non_registered_pilots = frontendUtils.get_non_registered_pilots(compid)
     return jsonify({'non_registered_pilots': non_registered_pilots, 'registered_pilots': registered_pilots})
+
+
+@blueprint.route('/_get_non_and_registered_pilots/<compid>', methods=['GET', 'POST'])
+@login_required
+def _get_registered_pilots_external(compid):
+    registered_pilots, _ = frontendUtils.get_participants(compid, source='external')
+    return jsonify({'registered_pilots': registered_pilots})
 
 
 @blueprint.route('/igc_parsing_config/<filename>', methods=['GET', 'POST'])
@@ -1085,7 +1102,7 @@ def _del_igc_config(filename):
 @login_required
 def pilot_admin():
     modify_participant_form = ModifyParticipantForm()
-    return render_template('users/pilot_admin.html', modify_participant_form=modify_participant_form)
+    return render_template('users/pilot_admin.html', modify_participant_form=modify_participant_form, pilotdb=PILOT_DB)
 
 
 @blueprint.route('/_modify_participant_details/<parid>', methods=['POST'])
@@ -1146,3 +1163,25 @@ def _self_register(compid):
     participant.to_db()
     resp = jsonify(success=True)
     return resp
+
+
+@blueprint.route('/_unregister_participant/<compid>', methods=['POST'])
+@login_required
+def _unregister_participant(compid):
+    """unregister participant from a comp"""
+    from participant import unregister_participant
+    data = request.json
+    unregister_participant(compid, data['participant'])
+    resp = jsonify(success=True)
+    return resp
+
+
+@blueprint.route('/_unregister_all_external_participants/<compid>', methods=['POST'])
+@login_required
+def _unregister_all_external_participants(compid):
+    """unregister participant from a comp"""
+    from participant import unregister_all_exteranl_participants
+    unregister_all_exteranl_participants(compid)
+    resp = jsonify(success=True)
+    return resp
+
