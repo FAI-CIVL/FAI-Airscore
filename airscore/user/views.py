@@ -221,7 +221,7 @@ def comp_settings_admin(compid):
             formula.nominal_launch = compform.nom_launch.data/100
             formula.nominal_time = compform.nom_time.data*60
             formula.no_goal_penalty = compform.no_goal_penalty.data
-            formula.tolerance = compform.tolerance.data
+            formula.tolerance = compform.tolerance.data/100
             formula.max_JTG = compform.max_JTG.data
             formula.formula_distance = compform.formula_distance.data
             formula.formula_arrival = compform.formula_arrival.data
@@ -292,7 +292,7 @@ def comp_settings_admin(compid):
         compform.formula_time.data = formula.formula_time
         compform.no_goal_penalty.data = formula.no_goal_penalty
         compform.glide_bonus.data = formula.glide_bonus
-        compform.tolerance.data = formula.tolerance
+        compform.tolerance.data = formula.tolerance*100
         compform.min_tolerance.data = formula.min_tolerance
         compform.arr_alt_bonus.data = formula.arr_alt_bonus
         compform.arr_max_height.data = formula.arr_max_height
@@ -385,7 +385,7 @@ def task_admin(taskid):
             task.formula.formula_arrival = taskform.formula_arrival.data
             task.formula.formula_departure = taskform.formula_departure.data
             task.formula.formula_time = taskform.formula_time.data
-            task.formula.tolerance = taskform.tolerance.data
+            task.formula.tolerance = taskform.tolerance.data/100
             task.formula.max_JTG = taskform.max_JTG.data
             task.formula.no_goal_penalty = taskform.no_goal_penalty.data
             task.formula.arr_alt_bonus = taskform.arr_alt_bonus.data
@@ -435,7 +435,7 @@ def task_admin(taskid):
         taskform.formula_arrival.data = task.formula.formula_arrival
         taskform.formula_departure.data = task.formula.formula_departure
         taskform.formula_time.data = task.formula.formula_time
-        taskform.tolerance.data = task.formula.tolerance
+        taskform.tolerance.data = task.formula.tolerance*100
         taskform.max_JTG.data = task.formula.max_JTG
         taskform.no_goal_penalty.data = task.formula.no_goal_penalty
         taskform.arr_alt_bonus.data = task.formula.arr_alt_bonus
