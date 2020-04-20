@@ -2,7 +2,7 @@ function populate_task(tasPk){
 $(document).ready(function() {
 
     $('#task_result').dataTable({
-        ajax: '/get_task_result/'+tasPk,
+        ajax: '/_get_task_result/'+tasPk,
         paging: false,
         searching: true,
         info: false,

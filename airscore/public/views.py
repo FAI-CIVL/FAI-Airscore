@@ -192,8 +192,8 @@ def task_result(taskid):
     return render_template('public/task_result.html', taskid=taskid)
 
 
-@blueprint.route('/get_task_result/<int:taskid>', methods=['GET', 'POST'])
-def get_task_result(taskid):
+@blueprint.route('/_get_task_result/<int:taskid>', methods=['GET', 'POST'])
+def _get_task_result(taskid):
     result_file = get_task_json(taskid)
     if result_file == 'error':
         return render_template('404.html')
@@ -243,8 +243,8 @@ def comp_result(compid):
     return render_template('public/comp_overall.html', compid=compid)
 
 
-@blueprint.route('/get_comp_result/<compid>', methods=['GET', 'POST'])
-def get_comp_result(compid):
+@blueprint.route('/_get_comp_result/<compid>', methods=['GET', 'POST'])
+def _get_comp_result(compid):
     from compUtils import get_comp_json
     result_file = get_comp_json(compid)
     if result_file == 'error':

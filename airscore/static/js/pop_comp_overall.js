@@ -1,7 +1,7 @@
 function populate_comp_overall(comPk){
 $(document).ready(function() {
     $('#task_result').dataTable({
-        ajax: '/get_comp_result/'+comPk,
+        ajax: '/_get_comp_result/'+comPk,
         paging: false,
         searching: true,
         saveState: true,
