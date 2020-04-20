@@ -6,7 +6,7 @@ import pytest
 
 from airscore.user.models import Role, User
 
-from .factories import UserFactory
+from factories import UserFactory
 
 
 @pytest.mark.usefixtures("db")

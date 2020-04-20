@@ -275,7 +275,7 @@ def register_from_profiles_list(comp_id, pilots):
 
 
 def unregister_from_profiles_list(comp_id, pilots):
-    """ gets comp_id and pil_id list
+    """ takes comp_id and list of pil_id
         unregisters pilots from comp"""
     from sqlalchemy import and_
     if not (comp_id and pilots):
@@ -288,7 +288,45 @@ def unregister_from_profiles_list(comp_id, pilots):
             results.delete(synchronize_session=False)
         except SQLAlchemyError as e:
             error = str(e.__dict__)
-            print(f"Error deleting participants to database: {error}")
+            print(f"Error deleting participants from database: {error}")
+            db.session.rollback()
+            db.session.close()
+            return error
+    return True
+
+
+def unregister_participant(comp_id, par_id):
+    """ takes comp_id and a par_id
+        unregisters participant from comp.
+        in reality we don't need compid but it is a safeguard"""
+    from sqlalchemy import and_
+
+    with Database() as db:
+        try:
+            results = db.session.query(TblParticipant).filter(and_(TblParticipant.comp_id == comp_id,
+                                                                   TblParticipant.par_id == par_id))
+            results.delete(synchronize_session=False)
+        except SQLAlchemyError as e:
+            error = str(e.__dict__)
+            print(f"Error deleting participants from database: {error}")
+            db.session.rollback()
+            db.session.close()
+            return error
+    return True
+
+
+def unregister_all_exteranl_participants(comp_id):
+    """ takes comp_id and unregisters all participants from comp without a pil_id."""
+    from sqlalchemy import and_
+
+    with Database() as db:
+        try:
+            results = db.session.query(TblParticipant).filter(and_(TblParticipant.comp_id == comp_id,
+                                                                   TblParticipant.pil_id == None))
+            results.delete(synchronize_session=False)
+        except SQLAlchemyError as e:
+            error = str(e.__dict__)
+            print(f"Error deleting participants from database: {error}")
             db.session.rollback()
             db.session.close()
             return error

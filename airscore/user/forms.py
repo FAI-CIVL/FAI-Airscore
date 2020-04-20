@@ -65,6 +65,7 @@ class NewTaskForm(FlaskForm):
 class NewAdminForm(FlaskForm):
     admin = SelectField("Admin", choices=[('1', '1'), ('2', '2')])
 
+
 class CompForm(FlaskForm):
     from formula import list_formulas
 
@@ -164,6 +165,10 @@ class CompForm(FlaskForm):
                                                                    'overridden. Note that this will only work if '
                                                                    'the flying area includes an airspace file')
     igc_parsing_file = SelectField("IGC parsing config file", choices=[('1', '1'), ('2', '2')])
+    self_register = BooleanField("Allow self registration", description='Allow users who are pilots to register '
+                                                                        'to the competition')
+    website = StringField("Competition website", description='If you have an official website for the comp. e.g.'
+                                                             ' Airtribune or other')
     submit = SubmitField('Save')
 
     def validate_on_submit(self):

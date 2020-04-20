@@ -9,7 +9,7 @@ from webtest import TestApp
 from airscore.app import create_app
 from airscore.database import db as _db
 
-from .factories import UserFactory
+from factories import UserFactory
 
 
 @pytest.fixture

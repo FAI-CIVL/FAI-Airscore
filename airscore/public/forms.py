@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """Public forms."""
 from flask_wtf import FlaskForm
-from wtforms import PasswordField, StringField
-from wtforms.validators import DataRequired
+from wtforms import PasswordField, StringField, IntegerField, SelectField
 from airscore.user.models import User
+from wtforms.validators import DataRequired, Length
+
 
 
 class LoginForm(FlaskForm):
@@ -43,6 +44,13 @@ class LoginForm(FlaskForm):
             return False
         return True
 
+
+class ModifyParticipantForm(FlaskForm):
+    id_num = IntegerField('ID')
+    nat = StringField('Nat', validators=[Length(3)])
+    glider = StringField('Glider')
+    sponsor = StringField('Sponsor')
+    certification = StringField('Certification')
 
 # class LoginForm(FlaskForm):
 #     """Login form."""

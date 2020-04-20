@@ -17,8 +17,19 @@ from task import get_task_json_by_filename
 from calcUtils import sec_to_time
 # from werkzeug import secure_filename
 import time
+from Defines import SELF_REG_DEFAULT, PILOT_DB
+from flask_socketio import send, emit, SocketIO
 
 blueprint = Blueprint("user", __name__, url_prefix="/users", static_folder="../static")
+
+
+
+
+
+@blueprint.route("/test")
+@login_required
+def test():
+    return render_template('users/socketio_demo.html')
 
 @blueprint.route("/")
 @login_required
@@ -197,6 +208,8 @@ def comp_settings_admin(compid):
             comp.igc_config_file = compform.igc_parsing_file.data
             # comp.airspace_check = compform.airspace_check.data
             comp.check_launch = 'on' if compform.check_launch.data else 'off'
+            comp.self_register = compform.self_register.data
+            comp.website = compform.website.data.lower().lstrip('http://')
             comp.to_db()
 
             formula = Formula.read(compid)
@@ -208,7 +221,7 @@ def comp_settings_admin(compid):
             formula.nominal_launch = compform.nom_launch.data/100
             formula.nominal_time = compform.nom_time.data*60
             formula.no_goal_penalty = compform.no_goal_penalty.data
-            formula.tolerance = compform.tolerance.data
+            formula.tolerance = compform.tolerance.data/100
             formula.max_JTG = compform.max_JTG.data
             formula.formula_distance = compform.formula_distance.data
             formula.formula_arrival = compform.formula_arrival.data
@@ -234,10 +247,12 @@ def comp_settings_admin(compid):
             flash(f"{compform.comp_name.data} saved", category='info')
             return redirect(url_for('user.comp_settings_admin', compid=compid))
         else:
-            flash("not saved as something on the form is not valid", category="warning")
             for item in compform:
                 if item.errors:
                     print(f"{item} value:{item.data} error:{item.errors}")
+                    flash(
+                        f"not saved as something(s) on the form not valid: {item} value:{item.data} "
+                        f"error:{item.errors}", category="warning")
 
     if request.method == 'GET':
         formula = Formula.read(compid)
@@ -277,7 +292,7 @@ def comp_settings_admin(compid):
         compform.formula_time.data = formula.formula_time
         compform.no_goal_penalty.data = formula.no_goal_penalty
         compform.glide_bonus.data = formula.glide_bonus
-        compform.tolerance.data = formula.tolerance
+        compform.tolerance.data = formula.tolerance*100
         compform.min_tolerance.data = formula.min_tolerance
         compform.arr_alt_bonus.data = formula.arr_alt_bonus
         compform.arr_max_height.data = formula.arr_max_height
@@ -290,6 +305,8 @@ def comp_settings_admin(compid):
         compform.igc_parsing_file.data = comp.igc_config_file
         compform.airspace_check.data = comp.airspace_check
         compform.check_launch.data = comp.check_launch
+        compform.self_register.data = comp.self_register
+        compform.website.data = comp.website
 
         newtaskform.task_region.choices, _ = frontendUtils.get_region_choices(compid)
         newadminform.admin.choices = admin_choices
@@ -304,7 +321,8 @@ def comp_settings_admin(compid):
     session['tasks'] = tasks['tasks']
 
     return render_template('users/comp_settings.html', compid=compid, compform=compform,
-                           taskform=newtaskform, adminform=newadminform, error=error)
+                           taskform=newtaskform, adminform=newadminform, error=error,
+                           self_register=(SELF_REG_DEFAULT and PILOT_DB))
 
 
 @blueprint.route('/_get_admins/<compid>', methods=['GET'])
@@ -367,7 +385,7 @@ def task_admin(taskid):
             task.formula.formula_arrival = taskform.formula_arrival.data
             task.formula.formula_departure = taskform.formula_departure.data
             task.formula.formula_time = taskform.formula_time.data
-            task.formula.tolerance = taskform.tolerance.data
+            task.formula.tolerance = taskform.tolerance.data/100
             task.formula.max_JTG = taskform.max_JTG.data
             task.formula.no_goal_penalty = taskform.no_goal_penalty.data
             task.formula.arr_alt_bonus = taskform.arr_alt_bonus.data
@@ -417,7 +435,7 @@ def task_admin(taskid):
         taskform.formula_arrival.data = task.formula.formula_arrival
         taskform.formula_departure.data = task.formula.formula_departure
         taskform.formula_time.data = task.formula.formula_time
-        taskform.tolerance.data = task.formula.tolerance
+        taskform.tolerance.data = task.formula.tolerance*100
         taskform.max_JTG.data = task.formula.max_JTG
         taskform.no_goal_penalty.data = task.formula.no_goal_penalty
         taskform.arr_alt_bonus.data = task.formula.arr_alt_bonus
@@ -990,10 +1008,17 @@ def _delete_region(regid):
 
 @blueprint.route('/_get_non_and_registered_pilots/<compid>', methods=['GET', 'POST'])
 @login_required
-def _get_non_and_registered_pilots(compid):
-    _, registered_pilots, _ = frontendUtils.get_registered_pilots(compid, current_user)
+def _get_non_and_registered_pilots_internal(compid):
+    registered_pilots, _ = frontendUtils.get_participants(compid, source='internal')
     non_registered_pilots = frontendUtils.get_non_registered_pilots(compid)
     return jsonify({'non_registered_pilots': non_registered_pilots, 'registered_pilots': registered_pilots})
+
+
+@blueprint.route('/_get_non_and_registered_pilots/<compid>', methods=['GET', 'POST'])
+@login_required
+def _get_registered_pilots_external(compid):
+    registered_pilots, _ = frontendUtils.get_participants(compid, source='external')
+    return jsonify({'registered_pilots': registered_pilots})
 
 
 @blueprint.route('/igc_parsing_config/<filename>', methods=['GET', 'POST'])
@@ -1073,26 +1098,11 @@ def _del_igc_config(filename):
     return "File Deleted"
 
 
-@blueprint.route('/_get_participants/<compid>', methods=['GET'])
-@login_required
-def _get_participants(compid):
-    from compUtils import get_participants
-    pilots = get_participants(compid)
-    pilot_list = []
-    for pilot in pilots:
-        if pilot.paid == 1:
-            pilot.paid = 'Y'
-        else:
-            pilot.paid = 'N'
-        pilot_list.append(pilot.as_dict())
-    return jsonify({'data': pilot_list})
-
-
 @blueprint.route('/pilot_admin', methods=['GET', 'POST'])
 @login_required
 def pilot_admin():
     modify_participant_form = ModifyParticipantForm()
-    return render_template('users/pilot_admin.html', modify_participant_form=modify_participant_form)
+    return render_template('users/pilot_admin.html', modify_participant_form=modify_participant_form, pilotdb=PILOT_DB)
 
 
 @blueprint.route('/_modify_participant_details/<parid>', methods=['POST'])
@@ -1102,14 +1112,18 @@ def _modify_participant_details(parid):
     data = request.json
     participant = Participant.read(int(parid))
     participant.ID = data.get('id_num')
-    participant.name = data.get('name')
-    participant.sex = data.get('sex')
+    if data.get('name'):
+        participant.name = data.get('name')
+    if data.get('sex'):
+        participant.sex = data.get('sex')
     participant.nat = data.get('nat')
     participant.glider = data.get('glider')
     participant.certification = data.get('certification')
     participant.sponsor = data.get('sponsor')
-    participant.status = data.get('status')
-    participant.paid = data.get('paid')
+    if data.get('status'):
+        participant.status = data.get('status')
+    if data.get('paid'):
+        participant.paid = data.get('paid')
     participant.to_db()
     resp = jsonify(success=True)
     return resp
@@ -1133,3 +1147,41 @@ def _upload_participants_excel(compid):
             return resp
         resp = jsonify(success=False)
         return resp
+
+
+@blueprint.route('/_self_register/<compid>', methods=['POST'])
+@login_required
+def _self_register(compid):
+    from participant import Participant
+    data = request.json
+    participant = Participant.from_profile(data['pil_id'], comp_id=compid)
+    participant.ID = data.get('id_num')
+    participant.nat = data.get('nat')
+    participant.glider = data.get('glider')
+    participant.certification = data.get('certification')
+    participant.sponsor = data.get('sponsor')
+    participant.to_db()
+    resp = jsonify(success=True)
+    return resp
+
+
+@blueprint.route('/_unregister_participant/<compid>', methods=['POST'])
+@login_required
+def _unregister_participant(compid):
+    """unregister participant from a comp"""
+    from participant import unregister_participant
+    data = request.json
+    unregister_participant(compid, data['participant'])
+    resp = jsonify(success=True)
+    return resp
+
+
+@blueprint.route('/_unregister_all_external_participants/<compid>', methods=['POST'])
+@login_required
+def _unregister_all_external_participants(compid):
+    """unregister participant from a comp"""
+    from participant import unregister_all_exteranl_participants
+    unregister_all_exteranl_participants(compid)
+    resp = jsonify(success=True)
+    return resp
+

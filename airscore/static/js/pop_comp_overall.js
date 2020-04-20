@@ -1,9 +1,7 @@
 function populate_comp_overall(comPk){
 $(document).ready(function() {
-    // var url = new URL('http://highcloud.net/xc/get_result.php' + window.location.search);
-    // var comPk = url.searchParams.get("comPk");
     $('#task_result').dataTable({
-        ajax: '/get_comp_result/'+comPk,
+        ajax: '/_get_comp_result/'+comPk,
         paging: false,
         searching: true,
         saveState: true,

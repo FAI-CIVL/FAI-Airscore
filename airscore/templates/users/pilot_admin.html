@@ -13,10 +13,17 @@
       </button>
    </p>
    <div class="collapse" id="collapse1">
+       {% if pilotdb %}
+      <p>
+      <button class="btn btn-primary ml-5" type="button" data-toggle="collapse" data-target="#collapse3" aria-expanded="false" aria-controls="collapse3">
+      Internal Pilots
+      </button>
+   </p>
+   <div class="collapse" id="collapse3">
+
+
       <div class="card card-body">
          <div class="container">
-             <button id="Excel_button" class="btn btn-success ml-4 ">Upload Excel file</button>
-             <input id="Excel_fileupload" type="file" size="chars" class="custom-file-input"  data-url="/users/_upload_participants_excel/{{ session.compid }}" name="excel_file" >
 
 			 <center>
 			<h3 class="font-weight-bold">Register Pilots</h3>
@@ -57,8 +64,32 @@
 
          </div>
       </div>
+    </div>
+
+             <p>
+      <button class="btn btn-primary ml-5" type="button" data-toggle="collapse" data-target="#collapse4" aria-expanded="false" aria-controls="collapse4">
+      External Pilots
+      </button>
+   </p>
+   <div class="collapse" id="collapse4">
+    {% endif %}
+
+      <div class="card card-body">
+         <div class="container">
+             <h4 style="float:left">Registered {% if pilotdb %}External {% endif %}Pilots:</h4>
+             <h4 id="total_external_pilots"></h4>
+             <button id="Excel_button" class="btn btn-success ml-4 ">Upload Excel file</button>
+             <input id="Excel_fileupload" type="file" size="chars" class="custom-file-input"  data-url="/users/_upload_participants_excel/{{ session.compid }}" name="excel_file" >
+             <button id="delete_external" data-toggle="modal" data-target="#delete_modal" class="btn btn-danger ml-4 ">Remove All</button>
+         </div>
+      </div>
+
    </div>
 
+{% if pilotdb %}
+
+   </div>
+{% endif %}
    <p>
       <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse2" aria-expanded="false" aria-controls="collapse2">
       Registered Pilot Details
@@ -68,6 +99,7 @@
       <div class="card card-body">
          <div class="container">
             <h3 class="font-weight-bold">Registered Pilot Details</h3>
+             <h4 id="total_pilots"></h4>
 			    <table id="pilots" class="row-border compact" cellspacing="0" width="100%">
 			<thead>
 				<tr>
@@ -128,7 +160,26 @@
 </div>
 <!-edit-participant details-Modal ends here--->
 
+ <!-- delete Modal -->
+	<div id="delete_modal" class="modal fade" role='dialog'>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                <h4 class="modal-title">Please confirm</h4>
+            </div>
+            <div class="modal-body" id= "modal-body">
+                <p>This will remove all the{% if pilotdb %} external{% endif %} pilots from the competition</p>
 
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" data-dismiss="modal">Cancel</button>
+               <button id = "delete_confirmed" type="button" onclick="unregister_all_external();" class="btn btn-danger" data-dismiss="modal">Delete</button>
+            </div>
+        </div>
+      </div>
+  </div>
+ <!-- end delete Modal -->
 
 {% endblock %}
 
@@ -147,21 +198,26 @@ var registered_pil=[];
 var new_registered_pil = [];
 var un_registered_pil=[];
 
+var num_internal_pilots = 0;
+
+
 jQuery(document).ready(function($) {
+ $('#delete_external').hide();
     $('#lstview').multiselect({
         search: {
             left: '<input type="text" name="q" class="form-control" placeholder="Search..." />',
             right: '<input type="text" name="q" class="form-control" placeholder="Search..." />',
         }
     });
-    get_pilots();
+    {% if pilotdb %}
+    get_internal_pilots();
+    {% endif %}
     populate_registered_pilot_details({{session.compid}});
 });
 
-
 function update_pilot_count(){
-        var num_pilots = $('#lstview_to option').length;
-		$('#registered').text('Registered pilots (' + num_pilots + ')' );
+        num_internal_pilots = $('#lstview_to option').length;
+		$('#registered').text('Registered internal pilots: ' + num_internal_pilots);
 			new_registered =[];
         $("#lstview_to option").each(function()
 {
@@ -173,10 +229,10 @@ function update_pilot_count(){
 	un_registered_pil = registered_pil.filter( el => !new_registered.includes( el ) );
 
 }
-function get_pilots() {
+function get_internal_pilots() {
            $('#lstview').empty();
            $('#lstview_to').empty();
-           $.getJSON("{{ url_for('user._get_non_and_registered_pilots', compid=session.compid)}}",function(data) {
+           $.getJSON("{{ url_for('user._get_non_and_registered_pilots_internal', compid=session.compid)}}",function(data) {
            registered = data.registered_pilots
            non_registered = data.non_registered_pilots
                non_registered.forEach(function(item) {
@@ -228,11 +284,49 @@ function get_pilots() {
                data : JSON.stringify(mydata),
                dataType: "json",
                success: function () {
-                      get_pilots()
+                   {% if pilotdb %}
+                    get_internal_pilots();
+                    {% endif %}
+                      populate_registered_pilot_details({{session.compid}});
+
                }
                });
 
    };
+
+   function unregister_all_external(){
+    $.ajax({
+               type: "POST",
+               url: "{{ url_for('user._unregister_all_external_participants', compid=session.compid)}}",
+               dataType: "json",
+               success: function () {
+                      populate_registered_pilot_details({{session.compid}});
+
+               }
+               });
+   }
+
+      function remove_participant(par_id){
+           var mydata = new Object();
+               mydata.participant = par_id;
+
+           $.ajax({
+               type: "POST",
+               url: "{{ url_for('user._unregister_participant', compid=session.compid)}}",
+               contentType:"application/json",
+               data : JSON.stringify(mydata),
+               dataType: "json",
+               success: function () {
+                      populate_registered_pilot_details({{session.compid}});
+
+               }
+               });
+
+   };
+
+
+
+
 
 function edit_participant(par_id){
 
@@ -268,7 +362,8 @@ function save_modified_participant(par_id){
                data : JSON.stringify(mydata),
                dataType: "json",
                success: function () {
-                      populate_registered_pilot_details({{session.compid}})
+                      populate_registered_pilot_details({{session.compid}});
+
                }
                });
 
@@ -292,8 +387,11 @@ $(function () {
 <!--        $('#upload_box').hide();-->
         },
         success: function () {
-                      get_pilots();
+                    {% if pilotdb %}
+                    get_internal_pilots();
+                    {% endif %}
                       populate_registered_pilot_details({{session.compid}});
+
                }
     });
 });

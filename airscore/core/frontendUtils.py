@@ -4,8 +4,7 @@ from flask import jsonify
 from myconn import Database
 import datetime
 import ruamel.yaml
-from sqlalchemy import func, not_
-# import math
+from sqlalchemy import func
 from pathlib import Path
 import jsonpickle
 from Defines import MAPOBJDIR, IGCPARSINGCONFIG
@@ -412,7 +411,7 @@ def get_comp_admins(compid_or_taskid, task_id=False):
         try:
             if task_id:
                 all_admins = db.session.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth)\
-                    .join(CA, User.id == CA.user_id).join(TblTask, CA.comp_id == TblTask.comp_id).filter(TblTask.task_id == taskid,
+                    .join(CA, User.id == CA.user_id).join(TblTask, CA.comp_id == TblTask.comp_id).filter(TblTask.task_id ==  taskid,
                                                             CA.user_auth.in_(('owner', 'admin'))).all()
             else:
                 all_admins = db.session.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth)\
@@ -422,7 +421,7 @@ def get_comp_admins(compid_or_taskid, task_id=False):
                 all_admins = [row._asdict() for row in all_admins]
         except SQLAlchemyError as e:
             error = str(e)
-            print(f"there was a problem with getting the admin list for comp id{compid} error{error}")
+            print(f"there was a problem with getting the admin list for comp id{compid_or_taskid} error{error}")
             db.session.rollback()
             db.session.close()
             return None, None
@@ -497,6 +496,7 @@ def update_airspace_file(old_filename, new_filename):
 #     from Defines import WAYPOINTDIR, AIRSPACEDIR
 #     full_file_name = path.join(WAYPOINTDIR, filename)
 
+
 def get_non_registered_pilots(compid):
     from db_tables import TblParticipant, PilotView
 
@@ -513,43 +513,6 @@ def get_non_registered_pilots(compid):
 
         non_registered = [row._asdict() for row in non_reg]
     return non_registered
-
-
-def get_registered_pilots(compid, current_user):
-    from db_tables import TblParticipant, TblCompetition
-
-    p = aliased(TblParticipant)
-    c = aliased(TblCompetition)
-
-    with Database() as db:
-        '''get registered pilots'''
-        results = db.session.query(p.par_id,
-                                    p.pil_id,
-                                    p.civl_id,
-                                    p.ID,
-                                    p.name,
-                                    p.nat,
-                                    p.glider,
-                                    p.sponsor,
-                                    p.status).filter(p.comp_id == compid).order_by(p.name)
-        pilot_list = [u._asdict() for u in results.all()]
-        '''pilot registration status'''
-        if not current_user.is_authenticated:
-            pilot = None
-        elif any(p for p in results if p.pil_id == current_user.id):
-            p = next(p for p in results if p.pil_id == current_user.id)
-            pilot = dict(par_id=p.par_id, ID=p.ID)
-        else:
-            pilot = 0
-
-        competition_info = db.session.query(
-            c.comp_id,
-            c.comp_name,
-            c.comp_site,
-            c.date_from,
-            c.date_to).filter(c.comp_id == compid).one()
-        comp = competition_info._asdict()
-    return comp, pilot_list, pilot
 
 
 def get_igc_parsing_config_file_list():
@@ -580,3 +543,56 @@ def get_comps_with_igc_parsing(igc_config):
             db.session.close()
             return None
         return comps
+
+
+def get_comp_info(compid, task_ids=None):
+    if task_ids is None:
+        task_ids = []
+    c = aliased(TblCompetition)
+    t = aliased(TblTask)
+
+    with Database() as db:
+        non_scored_tasks = (db.session.query(t.task_id.label('id'),
+                                             t.task_name,
+                                             t.date,
+                                             t.task_type,
+                                             t.opt_dist,
+                                             t.comment).filter(t.comp_id == compid, t.task_id.notin_(task_ids))
+                            .order_by(t.date.desc()).all())
+
+        competition_info = (db.session.query(
+            c.comp_id,
+            c.comp_name,
+            c.comp_site,
+            c.date_from,
+            c.date_to,
+            c.self_register,
+            c.website).filter(c.comp_id == compid).one())
+    comp = competition_info._asdict()
+
+    return comp, non_scored_tasks
+
+
+def get_participants(compid, source='all'):
+    """get all registered pilots for a comp.
+    Compid: comp_id
+    source: all: all participants
+            interanl: only participants from pilot table (with pil_id)
+            external: only participants not in pilot table (without pil_id)"""
+    from compUtils import get_participants
+    pilots = get_participants(compid)
+    pilot_list = []
+    external = 0
+    for pilot in pilots:
+        if pilot.paid == 1:
+            pilot.paid = 'Y'
+        else:
+            pilot.paid = 'N'
+        if source == 'all' or source == 'internal':
+            if pilot.pil_id:
+                pilot_list.append(pilot.as_dict())
+        if source == 'all' or source == 'external':
+            if not pilot.pil_id:
+                external += 1
+                pilot_list.append(pilot.as_dict())
+    return pilot_list, external

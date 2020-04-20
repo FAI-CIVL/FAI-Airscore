@@ -6,7 +6,20 @@
 # ToDO: setup script to create this file"""
 ##################
 
-waypoint/airspace_file_library: on # on/off ability to see and reuse waypoint and airspace files between comps. recommended for small user base. i.e. national associations
+waypoint/airspace_file_library: on # on/off ability to see and reuse waypoint and airspace files between comps.
+                                   # recommended for small user base. i.e. national associations
+use_internal_pilot_DB: yes # store pilots in airscore for use in comps.
+                           # The alternative is to import a list of competitors for each comp.
+                           # Using a internal pilot DB is recommended for clubs and national organisations.
+                           # note that even if using an internal pilot DB you can still import external pilots for a comp
+                           # (guest pilots, particular events etc.)
+
+internal_pilot_DB: # if use_internal_pilot_DB is yes the below settings are relevant
+  write_to_internal_pilot_DB: no # if Airscore store and modify pilots.
+                                 # The reason you may not want to do this is if you connect the pilot DB to an external source.
+  self_registration_default: on # Each comp can be setup that a pilot (given a login) can self register for an event.
+                                # This is the default value on creating a new competition
+
 
 competition_season:
 #start_year: previous or current offset -1 or 0

@@ -52,6 +52,9 @@
                <div class="form-group col-md-3">
                   {{compform.MD_name.label}} {{compform.MD_name()}}
                </div>
+                <div class="form-group col-md-3">
+                  {{compform.website.label}} {{compform.website()}}
+               </div>
             </div>
          </div>
       </div>
@@ -234,6 +237,12 @@
             <div class="form-row">
                <div class="form-group col-md-6">
                   {{compform.locked.label}} {{compform.locked(**{'data-toggle': 'tooltip', 'title': compform.locked.description})}}
+                   </div>
+                   {% if self_register %}
+                   <div class="form-group col-md-6">
+                     {{compform.self_register.label}} {{compform.self_register(**{'data-toggle': 'tooltip', 'title': compform.self_register.description})}}
+                   </div>
+                   {% endif %}
                </div>
             </div>
          </div>
@@ -349,8 +358,8 @@
 
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-               <button id = "delete_confirmed" type="button" class="btn btn-default" data-dismiss="modal">Delete</button>
+                <button type="button" class="btn btn-success" data-dismiss="modal">Cancel</button>
+               <button id = "delete_confirmed" type="button" class="btn btn-danger" data-dismiss="modal">Delete</button>
             </div>
         </div>
       </div>
