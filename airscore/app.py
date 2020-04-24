@@ -16,8 +16,10 @@ from airscore.extensions import (
     login_manager,
     migrate,
 )
-# from flask_socketio import SocketIO
-# socketio = SocketIO()
+
+from redis import Redis
+import rq
+
 
 def create_app(config_object="airscore.settings"):
     """Create application factory, as explained here: http://flask.pocoo.org/docs/patterns/appfactories/.
@@ -26,13 +28,14 @@ def create_app(config_object="airscore.settings"):
     """
     app = Flask(__name__.split(".")[0]) # , debug=True)
     app.config.from_object(config_object)
+    app.redis = Redis(host='redis', port=6379)
+    app.task_queue = rq.Queue('airscore-jobs', connection=app.redis)
     register_extensions(app)
     register_blueprints(app)
     register_errorhandlers(app)
     register_shellcontext(app)
     register_commands(app)
     configure_logger(app)
-    # socketio.init_app(app)
     return app
 
 

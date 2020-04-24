@@ -22,6 +22,8 @@ services:
     ports:
       - "5000:5000"
       - "2992:2992"
+    environment:
+      REDIS_URL: ${REDIS_URL}
     <<: *default_volumes
 
   flask-prod:
@@ -35,6 +37,7 @@ services:
     ports:
       - "5000:5000"
     environment:
+      REDIS_URL: ${REDIS_URL}
       FLASK_ENV: production
       FLASK_DEBUG: 0
       LOG_LEVEL: info
@@ -53,6 +56,9 @@ services:
     stdin_open: true
     tty: true
     <<: *default_volumes
+
+  redis:
+    image: redis
 
 volumes:
   node-modules:

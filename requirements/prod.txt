@@ -61,3 +61,6 @@ lxml>=4.4.2
 shapely>=1.6.4
 ruamel.yaml>=0.16.10
 email_validator>=1.0.5
+redis>=3.4.1
+rq>=0.13
+flask-sse>=0.2.1
