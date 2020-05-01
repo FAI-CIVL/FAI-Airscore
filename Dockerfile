@@ -29,6 +29,8 @@ ENV PATH="/home/sid/.local/bin:${PATH}"
 ENV PYTHONPATH "${PYTHONPATH}:/app/airscore/core"
 RUN npm install
 
+RUN pip install --upgrade pip
+
 # ================================= DEVELOPMENT ================================
 FROM base AS development
 RUN pip install --user -r requirements/dev.txt
