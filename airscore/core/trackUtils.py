@@ -244,7 +244,6 @@ def get_unscored_pilots(task_id, xcontest=False):
     from pilot import Pilot
     from participant import Participant
     from db_tables import UnscoredPilotView as U
-
     pilot_list = []
     with Database() as db:
         try:
@@ -265,9 +264,6 @@ def get_unscored_pilots(task_id, xcontest=False):
             db.session.rollback()
             db.session.close()
             return error
-
-
-
     return pilot_list
 
 
@@ -309,6 +305,7 @@ def get_pilot_from_list(filename, pilots):
             pilot.track.comment = f'Pilot found using name {pilot.name.lower()} and CIVLID {civl_id}'
             return pilot, '_'.join(fullname)
     return None, None
+
 
 def assign_tracks(task, file_dir, pilots_list, source):
     """ This function will look for tracks in giver dir or in task_path, and tries to associate tracks to participants.

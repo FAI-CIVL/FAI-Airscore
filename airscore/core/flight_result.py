@@ -236,7 +236,7 @@ class Flight_result(object):
     @property
     def waypoints_made(self):
         if self.waypoints_achieved:
-            return len(Counter(el[0] for el in self.waypoints_achieved))
+            return len(Counter(el[0] for el in self.waypoints_achieved if not el[0] == 'Left Launch'))
         else:
             return 0
 
@@ -349,8 +349,8 @@ class Flight_result(object):
                 setattr(result, key, value)
         return result
 
-    @classmethod
-    def check_flight(cls, flight, task, airspace_obj=None, deadline=None):
+    @staticmethod
+    def check_flight(flight, task, airspace_obj=None, deadline=None):
         """ Checks a Flight object against the task.
             Args:
                    flight:  a Flight object
@@ -365,7 +365,7 @@ class Flight_result(object):
         alt_source = 'GPS' if task.formula.scoring_altitude is None else task.formula.scoring_altitude
 
         '''initialize'''
-        result = cls()
+        result = Flight_result()
         tolerance = task.formula.tolerance or 0
         min_tol_m = task.formula.min_tolerance or 0
         max_jump_the_gun = task.formula.max_JTG or 0  # seconds
@@ -440,6 +440,10 @@ class Flight_result(object):
             if tp.next.type not in ('launch', 'speed', 'waypoint', 'endspeed', 'goal'):
                 assert False, f"Unknown turnpoint type: {tp.type}"
 
+            '''check window is open'''
+            if task.window_open_time > next_fix.rawtime:
+                continue
+
             '''launch turnpoint managing'''
             if tp.type == "launch":
                 if task.check_launch == 'on':
@@ -479,12 +483,14 @@ class Flight_result(object):
             elif pilot_can_restart(task, tp, my_fix, result):
                 # print(f'time: {my_fix.rawtime}, start: {task.start_time} | Interval: {task.SS_interval} | my start: {result.real_start_time} | better_start: {pilot_get_better_start(task, my_fix.rawtime, result.SSS_time)} | can start: {pilot_can_start(task, tp, my_fix)} can restart: {pilot_can_restart(task, tp, my_fix, result)} | tp: {tp.name}')
                 if start_made_civl(my_fix, next_fix, tp.last_made, tolerance, min_tol_m):
+                    tp.pointer -= 1
                     time = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
                     result.waypoints_achieved.pop()
                     result.waypoints_achieved.append([tp.name, time, alt])  # pilot has started again
                     result.real_start_time = time
                     if lead_coeff:
                         lead_coeff.reset()
+                    tp.move_to_next()
 
             if tp.start_done:
                 '''Turnpoint managing'''
@@ -613,9 +619,8 @@ class Flight_result(object):
             infringements, notifications, penalty = airspace_obj.get_infringements_result_new(infringements_list)
             result.infringements = infringements
             result.notifications.extend(notifications)
-            result.percentage_penalty = penalty
+            # result.percentage_penalty = penalty
             # result.airspace_plot = airspace_plot
-
         return result
 
     def to_db(self, task_id, track_id=None, session=None):

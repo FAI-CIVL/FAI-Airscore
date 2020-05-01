@@ -136,8 +136,8 @@ class Task(object):
         self.locked = False
         self.task_path = None
         self.comp_path = None
-        self.track_source = None
-        self.igc_config_file = None # config yaml for igc_lib.
+        self.track_source = None    # ['xcontest', 'flymaster'] external available sources for tracks in Defines.py
+        self.igc_config_file = None     # config yaml for igc_lib.
 
         '''Formula'''
         if self.id:
@@ -796,6 +796,24 @@ class Task(object):
 
         lib.process_results(self)
 
+    def get_pilots(self):
+        from db_tables import TblParticipant as P
+        from sqlalchemy.exc import SQLAlchemyError
+        from pilot import Pilot
+        pilots = []
+        with Database() as db:
+            try:
+                results = db.session.query(P).filter(P.comp_id == self.comp_id).all()
+                for row in results:
+                    pilot = Pilot.create(task_id=self.task_id)
+                    db.populate_obj(pilot.info, row)
+                    pilots.append(pilot)
+            except SQLAlchemyError:
+                print('DB Error retrieving task results')
+                db.session.rollback()
+                return
+        self.pilots = pilots
+
     def get_results(self, lib=None):
         """ Loads all Pilot obj. into Task obj."""
         from db_tables import FlightResultView as F, TblNotification as N
@@ -808,13 +826,14 @@ class Task(object):
         with Database() as db:
             try:
                 results = db.session.query(F).filter(F.task_id == self.task_id).all()
+                notifications = db.session.query(N).filter(N.track_id.in_([p.track_id for p in results])).all()
                 for row in results:
                     pilot = Pilot.create(task_id=self.task_id)
                     db.populate_obj(pilot.result, row)
                     db.populate_obj(pilot.info, row)
                     db.populate_obj(pilot.track, row)
-                    notifications = db.session.query(N).filter(N.track_id == pilot.track.track_id).all()
-                    for el in notifications:
+                    # notifications = db.session.query(N).filter(N.track_id == pilot.track.track_id).all()
+                    for el in [n for n in notifications if n.track_id == pilot.track.track_id]:
                         n = Notification()
                         db.populate_obj(n, el)
                         if n.notification_type == 'track':
@@ -1539,6 +1558,54 @@ class Task(object):
                 db.session.rollback()
                 db.session.close()
                 return error
+
+    def livetracking(self):
+        from livetracking import get_livetracks, associate_livetracks, check_livetrack
+        pilots = [p for p in self.pilots if p.info.live_id]
+        if not pilots:
+            print(f'*** NO PILOT with Live ID. Aborting ...')
+            return False
+        airspace = AirspaceCheck.from_task(self)
+        i = 0
+        response = []
+        print(f'*** Task Deadline: {self.task_deadline}:')
+
+        while max(p.result.last_time or 0 for p in pilots) < self.task_deadline:
+            '''get livetracks from flymaster live server'''
+            print(f'*** Cicle {i}:')
+            print(f' -- Getting livetracks starting from time {max(p.result.last_time for p in pilots)} ...')
+            previous = response
+            response = get_livetracks(self)
+            if not response or response == previous:
+                print(f' -- NO RESPONSE. Stopping ...')
+                break
+            print(f' -- Associating livetracks ...')
+            associate_livetracks(self, response)
+            for p in pilots:
+                if p.livetrack and p.livetrack[-2].rawtime > (p.result.last_time or 0) and not p.result.goal_time:
+                    check_livetrack(pilot=p, task=self, airspace_obj=airspace)
+                    print(f' -- -- Pilot {p.info.name}:')
+                    # print(f' ..... -- last fix {p.livetrack[-2].rawtime}')
+                    print(f' ..... -- rawtime: {p.result.last_time}')
+                    # print(f' ..... -- Distance: {p.result.distance_flown}')
+                    # print(f' ..... -- start: {p.result.real_start_time is not None}')
+                    # print(f' ..... -- wpt made: {p.result.waypoints_made}')
+                    # print(f' ..... -- Goal: {p.result.goal_time is not None}')
+                    # if p.result.goal_time:
+                    #     print(f' ..... -- Time: {p.result.time}')
+                    #     print(f' ..... -- Waypoints:')
+                    #     print(f'{p.result.waypoints_achieved}')
+                    #     print(f' ..... -- Notifications:')
+                    #     print(f'{p.result.notifications}')
+            i += 1
+        for p in pilots:
+            print(f'Name: {p.name}')
+            print(f'Waypoints achieved:')
+            print(f'{p.result.waypoints_achieved}')
+            print(f'Distance: {p.result.distance_flown}')
+            print(f'Time: {p.result.time}')
+            print(f'Notifications:')
+            print(f'{p.result.notifications}')
 
 
 def delete_task(task_id, files=False, session=None):

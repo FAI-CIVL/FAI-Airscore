@@ -129,7 +129,6 @@ def get_all_comps():
 
 @blueprint.route('/competition/<int:compid>')
 def competition(compid):
-
     from compUtils import get_comp_json
     result_file = get_comp_json(int(compid))
     all_tasks = []
@@ -187,13 +186,26 @@ def competition(compid):
                            country_scores=country_scores)
 
 
+# @blueprint.route('/registered_pilots/<int:compid>')
+# def registered_pilots(compid):
+#     """ List of registered pilots for an event.
+#         Creates a Register to the event button if pilot is not yet registered"""
+#     return render_template('public/registered_pilots.html', compid=compid)
+#
+#
+# @blueprint.route('/_get_registered_pilots/<compid>', methods=['GET'])
+# def _get_registered_pilots(compid):
+#     comp, pilot_list, pilot = frontendUtils.get_registered_pilots(compid, current_user)
+#     return jsonify(dict(info=comp, data=pilot_list, pilot=pilot))
+
+
 @blueprint.route('/task_result/<int:taskid>')
 def task_result(taskid):
     return render_template('public/task_result.html', taskid=taskid)
 
 
-@blueprint.route('/_get_task_result/<int:taskid>', methods=['GET', 'POST'])
-def _get_task_result(taskid):
+@blueprint.route('/get_task_result/<int:taskid>', methods=['GET', 'POST'])
+def get_task_result(taskid):
     result_file = get_task_json(taskid)
     if result_file == 'error':
         return render_template('404.html')
@@ -427,3 +439,59 @@ def _get_participants_and_status(compid):
             participant_info = participant.as_dict()
             status = 'not_registered'
     return jsonify({'data': pilot_list, 'status': status, 'pilot_details': participant_info})
+
+@blueprint.route('/live/<int:taskid>')
+def livetracking(taskid):
+    from livetracking import get_live_json
+    from calcUtils import sec_to_string, time_to_seconds
+    from datetime import datetime
+    result_file = get_live_json(int(taskid))
+    file_stats = result_file['file_stats']
+    headers = result_file['headers']
+    data = result_file['data']
+    info = result_file['info']
+    if info['time_offset']:
+        file_stats['last_update'] = datetime.fromtimestamp(file_stats['timestamp'] + info['time_offset']).isoformat()
+    if result_file['data']:
+        rawtime = time_to_seconds(datetime.fromtimestamp(file_stats['timestamp']).time())
+        task_distance = info['opt_dist']
+        results = []
+        goal = [p for p in result_file['data'] if p['ESS_time'] and (p['distance'] - task_distance) <= 5]
+        results.extend(sorted(goal, key=lambda k: k['ss_time']))
+        ess = [p for p in result_file['data'] if p['ESS_time'] and (p['distance'] - task_distance) > 5]
+        results.extend(sorted(ess, key=lambda k: k['ss_time']))
+        others = [p for p in result_file['data'] if p['ESS_time'] is None]
+        results.extend(sorted(others, key=lambda k: k['distance'], reverse=True))
+        data = []
+        for el in results:
+            '''result, time or distance'''
+            if el['ESS_time'] and (el['distance'] - task_distance) <= 5:
+                res = sec_to_string(el['ss_time'])
+            elif el['ESS_time'] and (el['distance'] - task_distance) > 5:
+                res = f"[{sec_to_string(el['ss_time'])}]"
+            else:
+                res = str(round(el['distance'] / 1000, 2)) + ' Km' if el['distance'] > 500 else ''
+            '''height'''
+            if not ('height' in el) or not el['first_time']:
+                height = 'not launched yet'
+            elif el['landing_time']:
+                height = 'landed'
+            else:
+                height = f"{el['height']} agl"
+            '''notifications'''
+            if el['notifications']:
+                comment = '; '.join([n['comment'].split('.')[0] for n in el['notifications']])
+            else:
+                comment = ''
+            '''delay'''
+            if not el['landing_time'] and el['last_time'] and rawtime - el['last_time'] > 60:  # 1 minutes old
+                m, s = divmod(rawtime - el['last_time'], 60)
+                delay = f"{m:02d} min {s:02d} sec"
+            else:
+                delay = ''
+            time = sec_to_string(el['last_time'], info['time_offset']) if el['last_time'] else ''
+            p = dict(id=el['ID'], name=el['name'], fem=1 if el['sex'] == 'F' else 0, result=res,
+                     comment=comment, delay=delay, time=time, height=height)
+            data.append(p)
+
+    return render_template('public/live.html', file_stats=file_stats, headers=headers, data=data, info=info)
