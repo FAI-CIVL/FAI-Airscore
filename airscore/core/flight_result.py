@@ -153,6 +153,7 @@ class Flight_result(object):
         self.last_altitude = last_altitude
         self.landing_time = 0
         self.landing_altitude = 0
+        self.best_distance_time = 0
         self.jump_the_gun = jump_the_gun  # not used at the moment
         self.result_type = 'lo'
         self.score = 0
@@ -478,6 +479,7 @@ class Flight_result(object):
                     time = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
                     result.waypoints_achieved.append([tp.name, time, alt])  # pilot has started
                     result.real_start_time = time
+                    result.best_distance_time = time
                     tp.move_to_next()
 
             elif pilot_can_restart(task, tp, my_fix, result):
@@ -488,6 +490,7 @@ class Flight_result(object):
                     result.waypoints_achieved.pop()
                     result.waypoints_achieved.append([tp.name, time, alt])  # pilot has started again
                     result.real_start_time = time
+                    result.best_distance_time = time
                     if lead_coeff:
                         lead_coeff.reset()
                     tp.move_to_next()
@@ -508,6 +511,7 @@ class Flight_result(object):
                                                                               next_fix)))):
                         result.waypoints_achieved.append(
                             [tp.name, next_fix.rawtime, alt])  # pilot has achieved turnpoint
+                        result.best_distance_time = next_fix.rawtime
                         break
 
             '''update result data
@@ -535,6 +539,10 @@ class Flight_result(object):
                                                     task.turnpoints[tp.pointer], distances2go)
                     # print(f'time: {next_fix.rawtime} | fix: {tp.name} | Simplified Distance used')
 
+                '''time of trackpoint with shortest distance to ESS'''
+                if fix_dist_flown > result.distance_flown:
+                    result.best_distance_time = next_fix.rawtime
+                '''updating shortest distance to ESS'''
                 result.distance_flown = max(result.distance_flown, fix_dist_flown,
                                             task.partial_distance[tp.last_made_index])
 

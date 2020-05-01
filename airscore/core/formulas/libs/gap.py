@@ -334,7 +334,7 @@ def pilot_speed(task, res):
 
     Aspeed = task.avail_time_points
 
-    # C.6.2 Time Points
+    # C.11.2 Time points
     Tmin = task.fastest
     Pspeed = 0
     Ptime = 0
