@@ -749,11 +749,12 @@ class TblTask(Base):
     comment = Column(Text)
     locked = Column(TINYINT(3), nullable=False, server_default=text("'0'"))
     task_path = Column(String(40))
+    igc_config_file = Column(String(80))
 
     reg = relationship('TblRegion')
     comp = relationship('TblCompetition')
     Results = relationship('TblTaskResult')
-    igc_config_file = Column(String(80))
+
     # comp = relationship('TblCompetition', backref="tasks", lazy='subquery')
     # Results = relationship('TblTaskResult', backref="task")
 

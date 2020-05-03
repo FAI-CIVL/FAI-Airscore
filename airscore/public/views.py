@@ -204,8 +204,8 @@ def task_result(taskid):
     return render_template('public/task_result.html', taskid=taskid)
 
 
-@blueprint.route('/get_task_result/<int:taskid>', methods=['GET', 'POST'])
-def get_task_result(taskid):
+@blueprint.route('/_get_task_result/<int:taskid>', methods=['GET', 'POST'])
+def _get_task_result(taskid):
     result_file = get_task_json(taskid)
     if result_file == 'error':
         return render_template('404.html')
@@ -439,6 +439,7 @@ def _get_participants_and_status(compid):
             participant_info = participant.as_dict()
             status = 'not_registered'
     return jsonify({'data': pilot_list, 'status': status, 'pilot_details': participant_info})
+
 
 @blueprint.route('/live/<int:taskid>')
 def livetracking(taskid):
