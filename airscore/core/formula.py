@@ -67,6 +67,8 @@ class Preset:
     value: any
     visible: bool = True
     editable: bool = False
+    calculated: bool = False
+    comment: str = ''
 
 
 @dataclass(frozen=True)

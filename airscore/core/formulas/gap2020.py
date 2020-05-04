@@ -23,8 +23,12 @@ formula_class = 'BOTH'
 
 ''' Default Formula presets
     pg_preset: PG default values, if formula applies for PG or mixed
-    hg_preset: HG default values, if formula applies for HG or mixed'''
-# TODO should have switch for each parameter to be editable or not in frontend
+    hg_preset: HG default values, if formula applies for HG or mixed
+    
+    value:      default value of the parameter
+    visible:    whether parameter is visible or not in frontend
+    editable:   whether parameter is editable by user or not in frontend
+    comment:    comment to show in parameter label in frontend'''
 
 pg_preset = FormulaPreset(
     # This part should not be edited
@@ -34,31 +38,32 @@ pg_preset = FormulaPreset(
 
     # Editable part starts here
     # Distance Points: on, difficulty, off
-    formula_distance=Preset(value='on', visible=True, editable=True),
+    formula_distance=Preset(value='on', visible=True, editable=False),
     # Arrival Points: position, time, off
-    formula_arrival=Preset(value='off', visible=True, editable=True),
+    formula_arrival=Preset(value='off', visible=False, editable=False),
     # Departure Points: on, leadout, off
-    formula_departure=Preset(value='leadout', visible=True, editable=True),
+    formula_departure=Preset(value='leadout', visible=True, editable=False),
     # Lead Factor: factor for Leadou Points calculation formula
-    lead_factor=Preset(value=2.0, visible=True, editable=True),
+    lead_factor=Preset(value=None, visible=False, editable=False),
     # Squared Distances used for LeadCoeff: factor for Leadou Points calculation formula
     # lead_squared_distance=Preset(value=True, visible=True, editable=True),
     # Time Points: on, off
-    formula_time=Preset(value='on', visible=True, editable=True),
+    formula_time=Preset(value='on', visible=True, editable=False),
     # Arrival Altitude Bonus: Bonus points factor on ESS altitude
-    arr_alt_bonus=Preset(value=0, visible=True, editable=True),
+    arr_alt_bonus=Preset(value=0, visible=True, editable=True, comment='default: disabled'),
     # ESS Min Altitude
     arr_min_height=Preset(value=None, visible=True, editable=True),
     # ESS Max Altitude
     arr_max_height=Preset(value=None, visible=True, editable=True),
     # Minimum flight time for task validation (minutes)
-    validity_min_time=Preset(value=None, visible=True, editable=True),
+    validity_min_time=Preset(value=None, visible=True, editable=False,
+                             calculated=True, comment='calculated from nominal distance'),
     # Score back time for Stopped Tasks (minutes)
-    score_back_time=Preset(value=300, visible=True, editable=True),
+    score_back_time=Preset(value=300, visible=True, editable=True, comment='default: 5 mins'),
     # Jump the Gun: 1 or 0
-    max_JTG=Preset(value=0, visible=True, editable=True),
+    max_JTG=Preset(value=0, visible=False, editable=False),
     # Penalty per Jump the Gun second
-    JTG_penalty_per_sec=Preset(value=None, visible=True, editable=True),
+    JTG_penalty_per_sec=Preset(value=None, visible=False, editable=False),
     # Type of Total Validity: ftv, all
     overall_validity=Preset(value='ftv', visible=True, editable=True),
     # FTV Parameter
@@ -68,9 +73,9 @@ pg_preset = FormulaPreset(
     # Glide Bonus for Stopped Task: default is 4 for PG and 5 for HG
     glide_bonus=Preset(value=4.0, visible=True, editable=True),
     # Waypoint radius tolerance for validation: FLOAT default is 0.1%
-    tolerance=Preset(value=0.001, visible=True, editable=True),
+    tolerance=Preset(value=0.001, visible=True, editable=True, comment='0.1 ~ 0.5'),
     # Waypoint radius minimum tolerance (meters): INT default = 5
-    min_tolerance=Preset(value=5, visible=True, editable=True),
+    min_tolerance=Preset(value=5, visible=True, editable=True, comment='0 ~ 5 m.'),
     # Scoring Altitude Type: default is GPS for PG and QNH for HG
     scoring_altitude=Preset(value='GPS', visible=True, editable=True)
 )
@@ -123,6 +128,21 @@ hg_preset = FormulaPreset(
     # Scoring Altitude Type: default is GPS for PG and QNH for HG
     scoring_altitude=Preset(value='QNH', visible=True, editable=True)
 )
+
+''' Function to calculate parameters (if needed)'''
+def calculate_parameters(args):
+    """
+    Args:
+        args:   frontend parameters dict
+    Returns:    parameter values
+    """
+    '''validity_min_time = min(1h, nominal_time/2)'''
+    if args['nominal_time'] is not None:
+        try:
+            args['validity_min_time'] = min(3600, int(args['nominal_time'] / 2))
+        except BaseException as e:
+            print(f'Error trying to calculate parameters: {e}')
+    return args
 
 
 def launch_validity(task):
@@ -221,7 +241,7 @@ def points_weight(task):
             if goal_ratio == 0:
                 task.dist_weight = 0.838
             else:
-                task.dist_weight = 0.805 - 1.374 * goal_ratio + 1.413 * goal_ratio**2 - 0.484 * goal_ratio**3
+                task.dist_weight = 0.805 - 1.374 * goal_ratio + 1.413 * goal_ratio ** 2 - 0.484 * goal_ratio ** 3
         ''' Departure Weight'''
         if task.formula.formula_departure != 'off':
             task.dep_weight = 0.162
