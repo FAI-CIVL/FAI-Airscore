@@ -345,7 +345,7 @@ class Task(object):
     # pilots already landed at task deadline / stop time
     @property
     def pilots_landed(self):
-        return len([p for p in self.valid_results if p.last_altitude == 0 or p.result_type == 'goal'])
+        return len([p for p in self.valid_results if not p.still_flying_at_deadline])
 
     ''' distance stats'''
 
@@ -840,6 +840,8 @@ class Task(object):
                             pilot.track.notifications.append(n)
                         else:
                             pilot.result.notifications.append(n)
+                    if self.stopped_time and pilot.result.stopped_distance:
+                        pilot.result.still_flying_at_deadline = True
                     pilots.append(pilot)
             except SQLAlchemyError:
                 print('DB Error retrieving task results')

@@ -124,11 +124,9 @@ class Flight_result(object):
         lead_coeff:     lead points coeff (for GAP based systems), sum of fixed_LC and variable part calculated during scoring
         """
 
-    def __init__(self, par_id=None, first_time=None, real_start_time=None, SSS_time=0, ESS_time=None, goal_time=None,
-                 last_time=None,
-                 best_waypoint_achieved='No waypoints achieved', fixed_LC=0, lead_coeff=0, distance_flown=0,
-                 last_altitude=0,
-                 jump_the_gun=None, track_file=None):
+    def __init__(self, first_time=None, real_start_time=None, SSS_time=0, ESS_time=None, goal_time=None,
+                 last_time=None, best_waypoint_achieved='No waypoints achieved', fixed_LC=0, lead_coeff=0,
+                 distance_flown=0, last_altitude=0):
         """
 
         :type lead_coeff: int
@@ -145,16 +143,18 @@ class Flight_result(object):
         self.waypoints_achieved = []
         self.fixed_LC = fixed_LC
         self.lead_coeff = lead_coeff
-        self.distance_flown = distance_flown
-        self.total_distance = 0
+        self.distance_flown = distance_flown  # max distance flown calculated along task route
+        self.best_distance_time = 0  # rawtime of fix that gave max distance flown
+        self.stopped_distance = 0  # distance at fix that achieve best total distance in stopped tasks
+        self.stopped_altitude = 0  # altitude at fix that achieve best total distance in stopped tasks
+        self.total_distance = 0  # sum of distance and bonus distance with altitude in stopped tasks
         self.max_altitude = 0
         self.ESS_altitude = 0
         self.goal_altitude = 0
         self.last_altitude = last_altitude
         self.landing_time = 0
         self.landing_altitude = 0
-        self.best_distance_time = 0
-        self.jump_the_gun = jump_the_gun  # not used at the moment
+        # self.jump_the_gun = jump_the_gun  # not used at the moment
         self.result_type = 'lo'
         self.score = 0
         self.departure_score = 0
@@ -167,6 +167,7 @@ class Flight_result(object):
         self.infringements = []  # Infringement for each space
         self.comment = []  # should this be a list?
         self.notifications = []  # notification objects
+        self.still_flying_at_deadline = False
         # self.ID = None  # Could delete?
         # self.par_id = par_id  # Could delete?
         # self.track_file = track_file  # Could delete?
@@ -201,14 +202,12 @@ class Flight_result(object):
 
     @property
     def distance(self):
-        if self.distance_flown:
-            return max(self.distance_flown, self.total_distance)
-        else:
-            return 0
+        return max(self.distance_flown, self.total_distance)
 
     @property
     def flat_penalty(self):
-        if self.notifications and sum(n.flat_penalty for n in self.notifications if not n.notification_type == 'jtg') > 0:
+        if self.notifications and sum(
+                n.flat_penalty for n in self.notifications if not n.notification_type == 'jtg') > 0:
             return max(n.flat_penalty for n in self.notifications if not n.notification_type == 'jtg')
         else:
             return 0
@@ -371,6 +370,7 @@ class Flight_result(object):
         min_tol_m = task.formula.min_tolerance or 0
         max_jump_the_gun = task.formula.max_JTG or 0  # seconds
         jtg_penalty_per_sec = 0 if max_jump_the_gun == 0 else task.formula.JTG_penalty_per_sec
+        max_altitude = 0
 
         if not task.optimised_turnpoints:
             task.calculate_optimised_task_length()
@@ -384,14 +384,19 @@ class Flight_result(object):
 
         result.first_time = flight.fixes[
             0].rawtime if not hasattr(flight, 'takeoff_fix') else flight.takeoff_fix.rawtime  # time of flight origin
-        max_altitude = 0  # max altitude
-        result.last_altitude = 0
+        result.landing_time = flight.landing_fix.rawtime
+        result.landing_altitude = flight.landing_fix.gnss_alt if alt_source == 'GPS' else flight.landing_fix.press_alt
 
         '''Stopped task managing'''
         if task.stopped_time:
             if not deadline:
                 '''Using stop_time (stopped_time - score_back_time)'''
                 deadline = task.stop_time
+            goal_altitude = task.goal_altitude or 0
+            glide_ratio = task.formula.glide_bonus or 0
+            stopped_distance = 0
+            stopped_altitude = 0
+            total_distance = 0
 
         '''Turnpoint managing'''
         tp = Tp(task)
@@ -411,25 +416,37 @@ class Flight_result(object):
             # start_time = tt.time()
             my_fix = flight.fixes[i]
             next_fix = flight.fixes[i + 1]
-            result.last_time = my_fix.rawtime
             alt = next_fix.gnss_alt if alt_source == 'GPS' else next_fix.press_alt
 
             if alt > max_altitude:
                 max_altitude = alt
 
-            '''handle stopped task'''
-            if task.stopped_time and next_fix.rawtime > deadline:
-                result.last_altitude = alt  # check the rules on this point..which alt to
+            '''pilot flying'''
+            if next_fix.rawtime < result.first_time:
+                continue
+            if next_fix.rawtime > result.landing_time:
+                '''pilot landed out'''
+                print(f'fix {i}: landed out - {next_fix.rawtime} - {alt}')
                 break
 
-            '''check if pilot has arrived in goal (last turnpoint) so we can stop.'''
-            if tp.made_all:
+            '''handle stopped task
+            Pilots who were at a position between ESS and goal at the task stop time will be scored for their 
+            complete flight, including the portion flown after the task stop time. 
+            This is to remove any discontinuity between pilots just before goal and pilots who had just reached goal 
+            at task stop time.
+            '''
+            if task.stopped_time and next_fix.rawtime > deadline and not tp.ess_done:
+                result.still_flying_at_deadline = True
                 break
 
             '''check if task deadline has passed'''
             if task.task_deadline < next_fix.rawtime:
                 # Task has ended
-                result.last_altitude = alt
+                result.still_flying_at_deadline = True
+                break
+
+            '''check if pilot has arrived in goal (last turnpoint) so we can stop.'''
+            if tp.made_all:
                 break
 
             '''check if start closing time passed and pilot did not start'''
@@ -520,14 +537,6 @@ class Flight_result(object):
             - optimized dist. to last turnpoint made;
             - total optimized distance minus opt. distance from next wpt to goal minus dist. to next wpt;
             '''
-            # TODO: To compensate for altitude differences at the time when a task is stopped, a bonus distance is
-            #  calculated for each point in the pilots’ track logs, based on that point’s altitude above goal. This
-            #  bonus distance is added to the distance achieved at that point. All altitude values used for this
-            #  calculation are GPS altitude values, as received from the pilots’ GPS devices (no compensation for
-            #  different earth models applied by those devices). For all distance point calculations, including the
-            #  difficulty calculations in hang-gliding (see 11.1.1), these new stopped distance values are being used
-            #  to determine the pilots’ best distance values. Time and leading point calculations remain the same:
-            #  they are not affected by the altitude bonus or stopped distance values.
             if tp.pointer > 0:
                 if tp.start_done and not tp.ess_done:
                     '''optimized distance calculation each fix'''
@@ -539,12 +548,25 @@ class Flight_result(object):
                                                     task.turnpoints[tp.pointer], distances2go)
                     # print(f'time: {next_fix.rawtime} | fix: {tp.name} | Simplified Distance used')
 
-                '''time of trackpoint with shortest distance to ESS'''
                 if fix_dist_flown > result.distance_flown:
+                    '''time of trackpoint with shortest distance to ESS'''
                     result.best_distance_time = next_fix.rawtime
-                '''updating shortest distance to ESS'''
-                result.distance_flown = max(result.distance_flown, fix_dist_flown,
-                                            task.partial_distance[tp.last_made_index])
+                    '''updating shortest distance to ESS'''
+                    result.distance_flown = max(fix_dist_flown, task.partial_distance[tp.last_made_index])
+
+                '''stopped task
+                ∀p : p ∈ PilotsLandedBeforeGoal :
+                    bestDistance p = max(minimumDistance, 
+                                         taskDistance − min(∀trackp.pointi : shortestDistanceToGoal(trackp.pointi )−(trackp .pointi .altitude−GoalAltitude)*GlideRatio)) 
+                ∀p :p ∈ PilotsReachedGoal : bestDistance p = taskDistance
+                '''
+                if task.stopped_time and glide_ratio and total_distance < task.opt_dist:
+                    alt_over_goal = max(0, alt - goal_altitude)
+                    if fix_dist_flown + glide_ratio * alt_over_goal > total_distance:
+                        '''calculate total distance with glide bonus'''
+                        stopped_distance = fix_dist_flown
+                        stopped_altitude = alt
+                        total_distance = min(fix_dist_flown + glide_ratio * alt_over_goal, task.opt_dist)
 
             '''Leading coefficient
             LC = taskTime(i)*(bestDistToESS(i-1)^2 - bestDistToESS(i)^2 )
@@ -569,8 +591,14 @@ class Flight_result(object):
 
         '''final results'''
         result.max_altitude = max_altitude
-        result.landing_time = flight.landing_fix.rawtime
-        result.landing_altitude = flight.landing_fix.gnss_alt if alt_source == 'GPS' else flight.landing_fix.press_alt
+        result.last_altitude = 0 if 'alt' not in locals() else alt
+        result.last_time = 0 if 'next_fix' not in locals() else next_fix.rawtime
+
+        '''manage stopped tasks'''
+        if task.stopped_time and result.still_flying_at_deadline:
+            result.stopped_distance = stopped_distance
+            result.stopped_altitude = stopped_altitude
+            result.total_distance = total_distance
 
         if tp.start_done:
             '''
@@ -806,13 +834,13 @@ def verify_all_tracks(task, lib, airspace=None):
             pilot.track.flight = Flight.create_from_file(filename)
             if pilot.track.flight and pilot.track.flight.valid:
                 pilot.result = Flight_result.check_flight(pilot.track.flight, task, airspace_obj=airspace)
-                print(f'   Goal: {bool(pilot.result.goal_time)} | part. LC: {pilot.result.fixed_LC}')
+                print(f'   Goal: {bool(pilot.result.goal_time)} | dist: {pilot.result.distance} part. LC: {pilot.result.fixed_LC}')
             elif pilot.track.flight:
                 print(f'Error in parsing track: {[x for x in pilot.track.flight.notes]}')
     lib.process_results(task)
 
 
-def adjust_flight_results(task, lib, airspace):
+def adjust_flight_results(task, lib, airspace=None):
     """ Called when multi-start or elapsed time task was stopped.
         We need to check again and adjust results of pilots that flew more than task duration"""
     maxtime = task.duration

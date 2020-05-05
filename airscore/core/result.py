@@ -144,6 +144,8 @@ class Task_result:
                     'team',
                     'nat_team',
                     'distance_flown',
+                    'stopped_distance',
+                    'stopped_altitude',
                     'distance',
                     'ss_time',
                     'speed',

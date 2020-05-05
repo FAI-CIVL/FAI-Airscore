@@ -145,6 +145,7 @@ def calculate_parameters(args):
     return args
 
 
+''' Scoring Functions'''
 def launch_validity(task):
     """
     9.1 Launch Validity
