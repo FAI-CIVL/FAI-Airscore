@@ -165,7 +165,7 @@ class Flight_result(object):
         # self.percentage_penalty = 0
         self.airspace_plot = []
         self.infringements = []  # Infringement for each space
-        self.comment = []  # should this be a list?
+        self.comment = ''  # should this be a list?
         self.notifications = []  # notification objects
         self.still_flying_at_deadline = False
         # self.ID = None  # Could delete?
@@ -184,12 +184,12 @@ class Flight_result(object):
         else:
             return None
 
-    @property
-    def time(self):
-        if self.ESS_time:
-            return self.ESS_time - self.SSS_time
-        else:
-            return None
+    # @property
+    # def time(self):
+    #     if self.ESS_time:
+    #         return self.ESS_time - self.SSS_time
+    #     else:
+    #         return None
 
     @property
     def flight_time(self):
@@ -424,7 +424,7 @@ class Flight_result(object):
             '''pilot flying'''
             if next_fix.rawtime < result.first_time:
                 continue
-            if next_fix.rawtime > result.landing_time:
+            if result.landing_time and next_fix.rawtime > result.landing_time:
                 '''pilot landed out'''
                 print(f'fix {i}: landed out - {next_fix.rawtime} - {alt}')
                 break
@@ -664,6 +664,7 @@ class Flight_result(object):
             if track_id is not given, it inserts a new result
             else it updates existing one """
         # we should use Pilot.to_db()
+        #TODO not used anylonger, should be deleted ( Pilot.to_db() is the one in use )
         from db_tables import TblTaskResult as R, TblParticipant as P, TblTask as T
 
         '''database connection'''
@@ -694,8 +695,6 @@ class Flight_result(object):
                 db.session.flush()
             row_id = r.track_id
             for a in dir(r):
-                if a == 'comment' and self.comment:
-                    r.comment = '; '.join(self.comment)
                 if not a[0] == '_' and hasattr(self, a):
                     setattr(r, a, getattr(self, a))
             db.session.flush()
