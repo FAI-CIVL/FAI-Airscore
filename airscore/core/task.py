@@ -170,6 +170,21 @@ class Task(object):
         out += f'Task Opt. Distance: {round(self.opt_dist / 1000, 2)} Km \n'
         return out
 
+    def __eq__(self, other=None):
+        if not other or not isinstance(other, Task):
+            return NotImplemented
+        keys = ['task_type', 'start_time', 'task_deadline', 'stopped_time', 'window_open_time', 'window_close_time',
+                'start_close_time', 'SS_interval', 'start_iteration', 'distance', 'opt_dist', 'launch_valid']
+        for k in keys:
+            if not getattr(self, k) == getattr(other, k):
+                return False
+        return True
+
+    def __ne__(self, other=None):
+        if not other or not isinstance(other, Turnpoint):
+            return NotImplemented
+        return not self.__eq__(other)
+
     def as_dict(self):
         return self.__dict__
 
