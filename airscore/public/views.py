@@ -451,6 +451,7 @@ def livetracking(taskid):
     headers = result_file['headers']
     data = result_file['data']
     info = result_file['info']
+    # if file_stats['timestamp'] == 'Cancelled':
     if info['time_offset']:
         file_stats['last_update'] = datetime.fromtimestamp(file_stats['timestamp'] + info['time_offset']).isoformat()
     if result_file['data']:
@@ -474,25 +475,28 @@ def livetracking(taskid):
                 res = str(round(el['distance'] / 1000, 2)) + ' Km' if el['distance'] > 500 else ''
             '''height'''
             if not ('height' in el) or not el['first_time']:
-                height = 'not launched yet'
+                height = '[not launched yet]'
+            elif el['goal_time']:
+                height = ''
             elif el['landing_time']:
-                height = 'landed'
+                height = '[landed]'
             else:
-                height = f"{el['height']} agl"
+                height = f"[{el['height']} agl]"
             '''notifications'''
             if el['notifications']:
                 comment = '; '.join([n['comment'].split('.')[0] for n in el['notifications']])
             else:
                 comment = ''
             '''delay'''
-            if not el['landing_time'] and el['last_time'] and rawtime - el['last_time'] > 60:  # 1 minutes old
-                m, s = divmod(rawtime - el['last_time'], 60)
-                delay = f"{m:02d} min {s:02d} sec"
-            else:
-                delay = ''
+            if not (el['landing_time'] or el['goal_time']) and el['last_time'] and rawtime - el['last_time'] > 120:  # 2 mins old
+                if rawtime - el['last_time'] > 600:  # 10 minutes old
+                    height = f"disconnected"
+                else:
+                    m, s = divmod(rawtime - el['last_time'], 60)
+                    height = f"[{m:02d}:{s:02d} old]"
             time = sec_to_string(el['last_time'], info['time_offset']) if el['last_time'] else ''
             p = dict(id=el['ID'], name=el['name'], fem=1 if el['sex'] == 'F' else 0, result=res,
-                     comment=comment, delay=delay, time=time, height=height)
+                     comment=comment, time=time, height=height)
             data.append(p)
 
     return render_template('public/live.html', file_stats=file_stats, headers=headers, data=data, info=info)

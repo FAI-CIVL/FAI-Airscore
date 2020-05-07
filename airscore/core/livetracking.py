@@ -23,6 +23,18 @@ from airspace import AirspaceCheck
 import time
 from datetime import datetime
 from logger import Logger
+from igc_lib import FlightParsingConfig
+
+
+'''parameters for livetracking'''
+min_flight_speed = FlightParsingConfig.min_gsp_flight   # km/h
+max_flight_speed = 250  # Km/k
+max_still_seconds = 30  # max consecutive seconds under min speed not to be considered landed
+min_alt_difference = 15   # meters min altitude difference not to be considered landed
+min_fixes = 5  # min number of fixes to be considered a valid livetrack chunk
+max_alt_rate = FlightParsingConfig.max_alt_change_rate  # max altitude change rate not to be considered wrong fix
+max_alt = FlightParsingConfig.max_alt
+min_alt = FlightParsingConfig.min_alt
 
 
 class LiveTracking(object):
@@ -39,20 +51,18 @@ class LiveTracking(object):
                     'nat_team',
                     'live_id',
                     'distance',
-                    'ss_time',
                     'first_time',
-                    'real_start_time',
-                    'goal_time',
                     'SSS_time',
+                    'real_start_time',
                     'ESS_time',
-                    'turnpoints_made',
-                    'ESS_altitude',
-                    'goal_altitude',
-                    'last_altitude',
-                    'max_altitude',
-                    'height',
+                    'goal_time',
+                    'ss_time',
                     'last_time',
                     'landing_time',
+                    'last_altitude',
+                    'turnpoints_made',
+                    'height',
+                    'comment',
                     'pil_id']
 
     def __init__(self, task=None, airspace=None, test=False):
@@ -81,8 +91,8 @@ class LiveTracking(object):
 
     @property
     def properly_set(self):
-        return ((self.task is not None) and self.pilots and self.track_source
-                and self.task.turnpoints and (self.task.start_time is not None))
+        return ((self.task is not None) and self.pilots and self.track_source and self.task.turnpoints
+                and (self.task.start_time is not None) and not (self.task.stopped_time or not self.task.launch_valid))
 
     @property
     def unix_date(self):
@@ -129,7 +139,11 @@ class LiveTracking(object):
         from calcUtils import sec_to_string
         main = ''
         details = ''
-        if not (self.task and self.task.turnpoints):
+        warning = ''
+        if not self.task.launch_valid:
+            '''task has been cancelled'''
+            main = f"Task has been cancelled."
+        elif not (self.task and self.task.turnpoints):
             main = "Today's Task is not yet defined. Try Later."
         elif not self.properly_set:
             main = "Livetracking source is not set properly."
@@ -142,7 +156,10 @@ class LiveTracking(object):
                 window = sec_to_string(self.task.window_open_time, self.task.time_offset, False)
                 start = sec_to_string(self.task.start_time, self.task.time_offset, False)
                 details = f'Window opens at {window} and start is at {start} (Local Time).'
-        return dict(main=main, details=details)
+            if self.task.stopped_time:
+                stopped = sec_to_string(self.task.stopped_time, self.task.time_offset, False)
+                warning = f'Task has been stopped at {stopped} (Local Time).'
+        return dict(main=main, warning=warning, details=details)
 
     @property
     def pilots(self):
@@ -173,12 +190,14 @@ class LiveTracking(object):
         from result import Task_result
         file_stats = dict(timestamp=self.now, status=self.status)
         headers = self.headers
-        info = {}
+        info = {x: getattr(self.task, x) for x in Task_result.info_list if x in dir(self.task)}
         data = []
         if not self.task:
             file_stats['status'] = 'Task is not set yet'
+        elif not self.task.launch_valid:
+            file_stats['status'] = 'Cancelled'
         else:
-            info = {x: getattr(self.task, x) for x in Task_result.info_list if x in dir(self.task)}
+            # info = {x: getattr(self.task, x) for x in Task_result.info_list if x in dir(self.task)}
             if not self.task.turnpoints:
                 file_stats['status'] = 'Task is not set yet'
             elif not (self.track_source and self.pilots):
@@ -186,6 +205,8 @@ class LiveTracking(object):
             else:
                 if not self.task.start_time:
                     file_stats['status'] = 'Task Start time is not set yet'
+                elif self.task.stopped_time:
+                    file_stats['status'] = 'Stopped'
                 else:
                     file_stats['status'] = 'Task Set'
                 for p in self.pilots:
@@ -224,6 +245,15 @@ class LiveTracking(object):
         except:
             print(f'Error saving file: {self.filename}')
 
+    def task_has_changed(self):
+        db_task = Task.read(self.task_id)
+        if not self.task.__eq__(db_task):
+            '''changed'''
+            db_task.pilots = self.task.pilots
+            self.task = db_task
+            return True
+        return False
+
     def run(self, interval=99):
         if not self.properly_set:
             print(f'Livetracking source is not set properly.')
@@ -241,6 +271,16 @@ class LiveTracking(object):
             print(f'Waiting for window opening: {self.opening_timestamp - interval - self.now} seconds ...')
             time.sleep(self.opening_timestamp - interval - self.now)
         while self.opening_timestamp - interval <= self.now <= self.ending_timestamp + interval:
+            '''check task did not change'''
+            if self.task_has_changed():
+                print(f'*** *** Cycle {i} ({self.timestamp}): TASK HAS CHANGED ***')
+                self.update_result()
+                if not self.properly_set:
+                    print(f'* Task not properly set, Stopped or Cancelled.')
+                    print(f'* Livetrack Stopping: {datetime.fromtimestamp(self.timestamp).isoformat()}')
+                    break
+                if self.opening_timestamp > self.now - interval:
+                    time.sleep(self.opening_timestamp - (self.now - interval))
             '''get livetracks from flymaster live server'''
             print(f'*** Cycle {i} ({self.timestamp}):')
             print(f' -- Getting livetracks ...')
@@ -253,22 +293,9 @@ class LiveTracking(object):
                 print(f' -- Associating livetracks ...')
             associate_livetracks(self.task, response, cycle_starting_time)
             for p in self.pilots:
-                if (p.livetrack and p.livetrack[-1].rawtime > (p.result.last_time or 0)
+                if (p.livetrack and len(p.livetrack) > min_fixes and p.livetrack[-1].rawtime > (p.result.last_time or 0)
                         and not p.result.goal_time and not p.result.landing_time):
                     check_livetrack(pilot=p, task=self.task, airspace_obj=self.airspace)
-                    # print(f' -- -- Pilot {p.info.name}:')
-                    # print(f' ..... -- last fix {p.livetrack[-2].rawtime}')
-                    # print(f' ..... -- rawtime: {p.result.last_time}')
-                    # print(f' ..... -- Distance: {p.result.distance_flown}')
-                    # print(f' ..... -- start: {p.result.real_start_time is not None}')
-                    # print(f' ..... -- wpt made: {p.result.waypoints_made}')
-                    # print(f' ..... -- Goal: {p.result.goal_time is not None}')
-                    # if p.result.goal_time:
-                    #     print(f' ..... -- Time: {p.result.time}')
-                    #     print(f' ..... -- Waypoints:')
-                    #     print(f'{p.result.waypoints_achieved}')
-                    #     print(f' ..... -- Notifications:')
-                    #     print(f'{p.result.notifications}')
             self.update_result()
             i += 1
             time.sleep(max(interval / 2 - (self.now - cycle_starting_time), 0))
@@ -287,7 +314,7 @@ def get_livetracks(task, timestamp, interval):
     from Defines import FM_LIVE
     request = {}
     if task.track_source.lower() == 'flymaster':
-        pilots = [p for p in task.pilots if p.info.live_id and not p.result.landing_time]
+        pilots = [p for p in task.pilots if p.info.live_id and not (p.result.landing_time or p.result.goal_time)]
         print(f'pilots to get: {len(pilots)}')
         # url = 'https://lt.flymaster.net/wlb/getLiveData.php?trackers='
         for p in pilots:
@@ -304,7 +331,7 @@ def get_livetracks(task, timestamp, interval):
             try:
                 response = requests.get(url)
                 response.raise_for_status()
-                print(response.json()['629878'][0])
+                # print(response.json()['629878'][0])
                 return response.json()
             except HTTPError as http_err:
                 print(f'HTTP error trying to get tracks: {http_err}')
@@ -316,73 +343,93 @@ def associate_livetracks(task, response, timestamp):
     from igc_lib import GNSSFix
     import time
     '''initialise'''
-    launch_speed = 20  # km/h
     midnight = int(time.mktime(task.date.timetuple()))
     alt_source = 'GPS' if task.formula.scoring_altitude is None else task.formula.scoring_altitude
-    for key, value in response.items():
-        pil = next(p for p in task.pilots if p.info.live_id == key)
+    for live_id, fixes in response.items():
+        pil = next(p for p in task.pilots if p.info.live_id == live_id)
         if not pil:
             continue
         # res = pil.result
-        if str(key) == '629878':
-            print(f' - first time: {pil.result.first_time}')
-            print(f' - last time: {pil.result.last_time}')
-            print(f' - landing time: {pil.result.landing_time}')
+        if len(fixes) < min_fixes:
+            '''livetrack segment too short'''
+            pil.livetrack = []
+            continue
+        # if str(live_id) == '629878':
+        #     print(f' - first time: {pil.result.first_time}')
+        #     print(f' - last time: {pil.result.last_time}')
+        #     print(f' - landing time: {pil.result.landing_time}')
+        #     print(f' - fixes: {len(fixes)}')
         if pil.result.landing_time:
             '''already landed'''
             # shouldn't happen as landed pilots are filtered in tracks request
             continue
+        if not any(el for el in fixes if int(el['v']) > min_flight_speed):
+            '''not flying'''
+            pil.result.last_time = int(fixes[-1]['d']) - midnight
+            pil.result.comment = 'not flying'
+            pil.livetrack = []
+            continue
         flight = []
-        counter = 0
-        for idx, el in enumerate(value):
+        # slow = 0
+        # slow_alt = 0
+        # slow_rawtime = 0
+        for idx, el in enumerate(fixes):
             t = int(el['d']) - midnight
             s = int(el['v'])
-            if pil.result.last_time and t < pil.result.last_time:
-                '''fix behind last scored fix'''
-                if str(key) == '629878':
-                    print(f' - fix behind last scored fix')
-                continue
-            if t > timestamp - midnight:
-                '''fix ahead of cycle time'''
-                if str(key) == '629878':
-                    print(
-                        f' - fix ahead of cycle time | timestamp: {timestamp} / midnight {midnight} / fix time: {t} / difference {t - (timestamp - midnight + 100)}')
-                break
-            if not pil.result.first_time:
-                if s < launch_speed:
-                    ''' not launched yet'''
-                    pil.result.last_time = t
-                    if str(key) == '629878':
-                        print(f' - not launched yet | last time = {t}')
-                    continue
-                else:
-                    '''launched'''
-                    pil.result.first_time = t
-                    if str(key) == '629878':
-                        print(f' - launched | first time = {t}')
-            lat = int(el['ai']) / 60000
-            lon = int(el['oi']) / 60000
             baro_alt = int(el['c'])
             gnss_alt = int(el['h'])
             alt = gnss_alt if alt_source == 'GPS' else baro_alt
+            ground = int(el['s'])
+            height = abs(alt - ground)
+            if pil.result.last_time and t < pil.result.last_time:
+                '''fix behind last scored fix'''
+                # if str(live_id) == '629878':
+                #     print(f' - fix behind last scored fix')
+                continue
+            if t > timestamp - midnight:
+                '''fix ahead of cycle time'''
+                # if str(live_id) == '629878':
+                #     print(
+                #         f' - fix ahead of cycle time | timestamp: {timestamp} / midnight {midnight} / fix time: {t} / difference {t - (timestamp - midnight + 100)}')
+                break
+            # if not pil.result.first_time:
+            #     if s > min_flight_speed and height > min_alt_difference:
+            #         '''launched'''
+            #         pil.result.first_time = t
+            #         pil.result.comment = 'flying'
+            #         if str(live_id) == '629878':
+            #             print(f' - launched | first time = {t}')
+            #     else:
+            #         ''' not launched yet'''
+            #         pil.result.last_time = t
+            #         if str(live_id) == '629878':
+            #             print(f' - not launched yet | last time = {t}')
+            #         continue
+            lat = int(el['ai']) / 60000
+            lon = int(el['oi']) / 60000
             fix = GNSSFix(t, lat, lon, 'A', baro_alt, gnss_alt, idx, '')
             fix.alt = alt
-            ground = int(el['s'])
-            if pil.result.first_time and s < 10 and abs(alt - ground) < 10:
-                '''pilot seems landed'''
-                counter += 1
-                if counter > 10:
-                    ''' we assume he is landed'''
-                    pil.result.landing_time = t - 1
-                    pil.result.height = 0
-                    break
-            elif counter > 0:
-                counter = 0
-            pil.result.height = abs(alt - ground)
-            if str(key) == '629878':
-                print(f' - height = {pil.result.height}')
-            if str(key) == '629878':
-                print(f' - fix added | time = {t}')
+            fix.height = height
+            fix.speed = s
+            # if pil.result.first_time and s < min_flight_speed:
+            #     '''pilot seems landed'''
+            #     if not slow:
+            #         slow = True
+            #         slow_rawtime = t
+            #         slow_alt = alt
+            #     elif t - slow_rawtime > max_still_seconds and abs(alt - slow_alt) <= min_alt_difference:
+            #         ''' we assume he is landed'''
+            #         pil.result.landing_time = t - 1
+            #         pil.result.height = 0
+            #         pil.result.comment = 'landed'
+            #         break
+            # elif slow > 0:
+            #     slow = 0
+            # pil.result.height = height
+            # if str(live_id) == '629878':
+            #     print(f' - height = {pil.result.height}')
+            # if str(live_id) == '629878':
+            #     print(f' - fix added | time = {t}')
             flight.append(fix)
         pil.livetrack = flight
 
@@ -403,7 +450,7 @@ def check_livetrack(pilot, task, airspace_obj=None):
                 a list of GNSSFixes of when turnpoints were achieved.
     """
     from flight_result import Tp, pilot_can_start, pilot_can_restart, start_number_at_time
-    from route import in_semicircle, start_made_civl, tp_made_civl, \
+    from route import in_semicircle, start_made_civl, tp_made_civl, distance, \
         tp_time_civl, get_shortest_path, distance_flown
     from airspace import AirspaceCheck
     from formulas.libs.leadcoeff import LeadCoeff
@@ -418,8 +465,8 @@ def check_livetrack(pilot, task, airspace_obj=None):
     max_jump_the_gun = task.formula.max_JTG or 0  # seconds
     jtg_penalty_per_sec = 0 if max_jump_the_gun == 0 else task.formula.JTG_penalty_per_sec
 
-    if not task.optimised_turnpoints:
-        task.calculate_optimised_task_length()
+    # if not task.optimised_turnpoints:
+    #     task.calculate_optimised_task_length()
     distances2go = task.distances_to_go  # Total task Opt. Distance, in legs list
 
     result = pilot.result
@@ -435,18 +482,22 @@ def check_livetrack(pilot, task, airspace_obj=None):
     '''Turnpoint managing'''
     tp = Tp(task)
     tp.pointer = result.waypoints_made + 1
+    '''get if pilot already started in previous track slices'''
     already_started = tp.start_done
     restarted = False
+    '''get if pilot already made ESS in previous track slices'''
     already_ESS = any(e[0] == 'ESS' for e in result.waypoints_achieved)
 
     '''Airspace check managing'''
-    airspace_plot = []
     infringements_list = []
-    airspace_penalty = 0
     if task.airspace_check:
         if task.airspace_check and not airspace_obj:
             print(f'We should not create airspace here')
             airspace_obj = AirspaceCheck.from_task(task)
+
+    alt = 0
+    suspect_landing_fix = None
+    next_fix = None
 
     for i in range(len(fixes) - 1):
         '''Get two consecutive trackpoints as needed to use FAI / CIVL rules logic
@@ -454,11 +505,48 @@ def check_livetrack(pilot, task, airspace_obj=None):
         # start_time = tt.time()
         my_fix = fixes[i]
         next_fix = fixes[i + 1]
-        result.last_time = my_fix.rawtime
+        result.last_time = next_fix.rawtime
         alt = next_fix.alt
 
-        if alt > result.max_altitude:
-            result.max_altitude = alt
+        '''check coherence'''
+        if next_fix.rawtime - my_fix.rawtime < 1:
+            continue
+        alt_rate = abs(next_fix.alt - my_fix.alt)/(next_fix.rawtime - my_fix.rawtime)
+        if alt_rate > max_alt_rate or not (min_alt < alt < max_alt):
+            continue
+
+        '''check flying'''
+        speed = next_fix.speed  # km/h
+        if not result.first_time:
+            '''not launched yet'''
+            launch = next(x for x in tp.turnpoints if x.type == 'launch')
+            if distance(next_fix, launch) < 400:
+                '''still on launch'''
+                continue
+            if abs(launch.altitude - alt) > min_alt_difference and speed > min_flight_speed:
+                '''pilot launched'''
+                result.first_time = next_fix.rawtime
+                result.comment = 'flying'
+        else:
+            '''check if pilot landed'''
+            if speed < min_flight_speed:
+                if not suspect_landing_fix:
+                    suspect_landing_fix = next_fix
+                    # suspect_landing_alt = alt
+                else:
+                    time_diff = next_fix.rawtime - suspect_landing_fix.rawtime
+                    alt_diff = abs(alt - suspect_landing_fix.alt)
+                    if time_diff > max_still_seconds and alt_diff < min_alt_difference:
+                        '''assuming pilot landed'''
+                        result.landing_time = next_fix.rawtime
+                        result.landing_altitude = alt
+                        result.comment = 'landed'
+                        break
+            elif suspect_landing_fix is not None:
+                suspect_landing_fix = None
+
+        # if alt > result.max_altitude:
+        #     result.max_altitude = alt
 
         # '''handle stopped task'''
         # if task.stopped_time and next_fix.rawtime > deadline:
@@ -472,12 +560,18 @@ def check_livetrack(pilot, task, airspace_obj=None):
         '''check if task deadline has passed'''
         if task.task_deadline < next_fix.rawtime:
             # Task has ended
-            result.last_altitude = alt
+            result.comment = 'flying past deadline'
             break
 
         '''check if start closing time passed and pilot did not start'''
         if task.start_close_time and task.start_close_time < my_fix.rawtime and not tp.start_done:
             # start closed
+            result.comment = 'did not start before start closing time'
+            break
+
+        if result.landing_time and next_fix.rawtime > result.landing_time:
+            '''pilot already landed'''
+            # this should not happen as landed pilot are filtered
             break
 
         '''check tp type is known'''
@@ -487,23 +581,6 @@ def check_livetrack(pilot, task, airspace_obj=None):
         '''check window is open'''
         if task.window_open_time > next_fix.rawtime:
             continue
-
-        # '''launch turnpoint managing'''
-        # if tp.type == "launch":
-        #     if task.check_launch == 'on':
-        #         # Set radius to check to 200m (in the task def it will be 0)
-        #         # could set this in the DB or even formula if needed..???
-        #         tp.next.radius = 200  # meters
-        #         if tp.next.in_radius(my_fix, tolerance, min_tol_m):
-        #             result.waypoints_achieved.append(
-        #                 [tp.name, my_fix.rawtime, alt])  # pilot has achieved turnpoint
-        #             tp.move_to_next()
-        #
-        #     else:
-        #         tp.move_to_next()
-
-        # to do check for restarts for elapsed time tasks and those that allow jump the gun
-        # if started and task.task_type != 'race' or result.jump_the_gun is not None:
 
         '''start turnpoint managing'''
         '''given all n crossings for a turnpoint cylinder, sorted in ascending order by their crossing time,
@@ -561,14 +638,6 @@ def check_livetrack(pilot, task, airspace_obj=None):
         - optimized dist. to last turnpoint made;
         - total optimized distance minus opt. distance from next wpt to goal minus dist. to next wpt;
         '''
-        # TODO: To compensate for altitude differences at the time when a task is stopped, a bonus distance is
-        #  calculated for each point in the pilots’ track logs, based on that point’s altitude above goal. This
-        #  bonus distance is added to the distance achieved at that point. All altitude values used for this
-        #  calculation are GPS altitude values, as received from the pilots’ GPS devices (no compensation for
-        #  different earth models applied by those devices). For all distance point calculations, including the
-        #  difficulty calculations in hang-gliding (see 11.1.1), these new stopped distance values are being used
-        #  to determine the pilots’ best distance values. Time and leading point calculations remain the same:
-        #  they are not affected by the altitude bonus or stopped distance values.
         if tp.pointer > 0:
             if tp.start_done and not tp.ess_done:
                 '''optimized distance calculation each fix'''
@@ -605,9 +674,8 @@ def check_livetrack(pilot, task, airspace_obj=None):
             # airspace_plot.append(map_fix)
 
     '''final results'''
-    # result.max_altitude = max(max_altitude, result.max_altitude)
-    # result.landing_time = flight.landing_fix.rawtime
-    # result.landing_altitude = flight.landing_fix.gnss_alt if alt_source == 'GPS' else flight.landing_fix.press_alt
+    result.last_altitude = alt
+    result.height = 0 if not result.first_time or result.landing_time or not next_fix else next_fix.height
 
     # print(f'start indev: {tp.start_index}')
     # print(f'start done: {tp.start_done}')
@@ -664,6 +732,7 @@ def check_livetrack(pilot, task, airspace_obj=None):
             result.goal_time, result.goal_altitude = min(
                 [(x[1], x[2]) for x in result.waypoints_achieved if x[0] == 'Goal'], key=lambda t: t[0])
             result.result_type = 'goal'
+            result.comment = 'Goal!'
 
     result.best_waypoint_achieved = str(result.waypoints_achieved[-1][0]) if result.waypoints_achieved else None
 
