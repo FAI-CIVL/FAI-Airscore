@@ -251,6 +251,8 @@ class LiveTracking(object):
             '''changed'''
             db_task.pilots = self.task.pilots
             self.task = db_task
+            self.task.calculate_task_length()
+            self.task.calculate_optimised_task_length()
             return True
         return False
 
