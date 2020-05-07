@@ -92,7 +92,7 @@ class LiveTracking(object):
     @property
     def properly_set(self):
         return ((self.task is not None) and self.pilots and self.track_source and self.task.turnpoints
-                and (self.task.start_time is not None) and not (self.task.stopped_time or not self.task.launch_valid))
+                and (self.task.start_time is not None))
 
     @property
     def unix_date(self):
@@ -124,15 +124,18 @@ class LiveTracking(object):
 
     @property
     def status(self):
-        if not (self.task and self.task.turnpoints):
-            return 'Task not defined'
+        if not self.task.launch_valid:
+            return 'Task is Cancelled'
+        elif not (self.task and self.task.turnpoints):
+            return 'Task not defined yet'
         elif not self.properly_set:
             return 'Livetracking source is not set properly'
+        elif not self.task.start_time:
+            return 'Times are not set yet'
+        elif self.task.stopped_time:
+            return 'Task is Stopped'
         else:
-            if not self.task.start_time:
-                return 'Times are not set yet'
-            else:
-                return 'Task is set'
+            return 'Task is set'
 
     @property
     def headers(self):
@@ -281,7 +284,11 @@ class LiveTracking(object):
                     print(f'* Task not properly set, Stopped or Cancelled.')
                     print(f'* Livetrack Stopping: {datetime.fromtimestamp(self.timestamp).isoformat()}')
                     break
-                if self.opening_timestamp > self.now - interval:
+                elif self.task.stopped_time or self.task.launch_valid:
+                    print(f'* Task Stopped or Cancelled.')
+                    print(f'* Livetrack Stopping: {datetime.fromtimestamp(self.timestamp).isoformat()}')
+                    break
+                elif self.opening_timestamp > self.now - interval:
                     time.sleep(self.opening_timestamp - (self.now - interval))
             '''get livetracks from flymaster live server'''
             print(f'*** Cycle {i} ({self.timestamp}):')
