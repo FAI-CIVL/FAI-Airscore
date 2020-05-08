@@ -1,0 +1,87 @@
+version: '3.6'
+
+x-build-args: &build_args
+  INSTALL_PYTHON_VERSION: 3.8.2
+  INSTALL_NODE_VERSION: 12
+
+x-default-volumes: &default_volumes
+  volumes:
+    - ./:/app
+    - node-modules:/app/node_modules
+    - ./dev.db:/tmp/dev.db
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile_production
+      target: production
+      args:
+        <<: *build_args
+    command: gunicorn airscore.app:create_app() -b :5000 -w ${GUNICORN_WORKERS} -k gevent
+    image: master-image
+    container_name: airscore_prod
+    ports:
+      - "5000:5000"
+    environment:
+      REDIS_URL: ${REDIS_URL}
+      FLASK_ENV: production
+      FLASK_DEBUG: 0
+      LOG_LEVEL: info
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS}
+    networks:
+      - net
+    restart: always
+    <<: *default_volumes
+
+  worker:
+    image: master-image
+    depends_on:
+      - redis
+    command: rqworker --name worker --url redis://redis:6379/0 airscore-jobs
+    networks:
+      - net
+    <<: *default_volumes
+  # uncomment to have a another worker
+  #  worker2:
+  #    image: master-image
+  #    depends_on:
+  #      - redis
+  #    command: rqworker --name worker2 --url redis://redis:6379/0
+
+  redis:
+    image: redis
+    networks:
+      - net
+
+  nginx:
+    container_name: nginx
+    restart: always
+    build: ./nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - web
+    networks:
+      - net
+    volumes:
+      - type: bind
+        source: ./airscore/static
+        target: /static
+volumes:
+  node-modules:
+  static-build:
+
+networks:
+  net:
+
+
+#
+#  dashboard:
+#    image: master-image
+#    ports:
+#      - 5555:5555
+#    depends_on:
+#      - redis
+#    command: rq-dashboard --port 5555 --redis-url redis://redis:6379/0
+

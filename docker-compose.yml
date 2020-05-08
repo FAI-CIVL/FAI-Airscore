@@ -24,6 +24,7 @@ services:
       - "2992:2992"
     environment:
       REDIS_URL: ${REDIS_URL}
+      FLASK_DEBUG: 1
     <<: *default_volumes
 
   flask-prod:
