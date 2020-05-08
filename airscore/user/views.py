@@ -2,7 +2,8 @@
 """User views."""
 from datetime import datetime
 
-from flask import Blueprint, render_template, request, jsonify, json, flash, redirect, url_for, session, Markup
+from flask import Blueprint, render_template, request, jsonify, json, flash, redirect, url_for, session, Markup,\
+    current_app
 from flask_login import login_required, current_user
 import frontendUtils
 from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm, \
@@ -15,21 +16,17 @@ from flight_result import update_status, delete_result
 from os import path, remove, makedirs
 from task import get_task_json_by_filename
 from calcUtils import sec_to_time
-# from werkzeug import secure_filename
 import time
 from Defines import SELF_REG_DEFAULT, PILOT_DB
-from flask_socketio import send, emit, SocketIO
 
 blueprint = Blueprint("user", __name__, url_prefix="/users", static_folder="../static")
-
-
-
 
 
 @blueprint.route("/test")
 @login_required
 def test():
     return render_template('users/socketio_demo.html')
+
 
 @blueprint.route("/")
 @login_required
@@ -651,7 +648,8 @@ def track_admin(taskid):
         user_is_admin = True
     else:
         user_is_admin = None
-    return render_template('users/track_admin.html', taskid=taskid, user_is_admin=user_is_admin)
+    return render_template('users/track_admin.html', taskid=taskid, user_is_admin=user_is_admin,
+                           production=frontendUtils.production())
 
 
 @blueprint.route('/_set_result/<taskid>', methods=['POST'])
@@ -691,7 +689,6 @@ def _upload_track(taskid, parid):
     parid = int(parid)
     if request.method == "POST":
         if request.files:
-
             if "filesize" in request.cookies:
 
                 if not frontendUtils.allowed_tracklog_filesize(request.cookies["filesize"]):
@@ -705,18 +702,26 @@ def _upload_track(taskid, parid):
                     return redirect(request.url)
 
                 if frontendUtils.allowed_tracklog(tracklog.filename):
-                    data, error = frontendUtils.process_igc(taskid, parid, tracklog)
-                    if data:
-                        resp = jsonify(data)
-                        return resp
+                    if frontendUtils.production():
+                        filename, full_file_name = frontendUtils.save_igc_background(taskid, parid, tracklog,
+                                                                                     current_user.username)
+                        job = current_app.task_queue.enqueue(frontendUtils.process_igc_background, taskid, parid,
+                                                             filename, full_file_name, current_user.username)
+                        return "message sent"
+
                     else:
-                        error = tracklog.filename + ' ' + error
-                        resp = jsonify({'error': error})
-                        return resp
+                        data, error = frontendUtils.process_igc(taskid, parid, tracklog)
+                        if data:
+                            resp = jsonify(data)
+                            return resp
+                        else:
+                            error = tracklog.filename + ' ' + error
+                            resp = jsonify({'error': error})
+                            return resp
                 else:
                     print("That file extension is not allowed")
                     return redirect(request.url)
-            resp = jsonify({'error': 'filesize'})
+            resp = jsonify({'error': 'filesize not sent'})
             return resp
         resp = jsonify({'error': 'request.files'})
         return resp
@@ -725,6 +730,7 @@ def _upload_track(taskid, parid):
 @blueprint.route('/_upload_XCTrack/<taskid>', methods=['POST'])
 @login_required
 def _upload_XCTrack(taskid):
+    """takes an upload of an xctrack task file and processes it and saves the task to the DB"""
     taskid = int(taskid)
     if request.method == "POST":
         if request.files:
@@ -741,7 +747,6 @@ def _upload_XCTrack(taskid):
 
             resp = jsonify(success=True)
             return resp
-
 
 
 @blueprint.route('/_upload_track_zip/<taskid>', methods=['POST'])
@@ -847,7 +852,7 @@ def task_score_admin(taskid):
     fileform = TaskResultAdminForm()
     active_file = None
     # files = frontendUtils.get_task_result_file_list(taskid)
-    choices = [(1,1),(2,2)]
+    choices = [(1, 1), (2, 2)]
     # for file in files:
     #     # published = ''
     #     if file['active'] == 1:
@@ -916,6 +921,7 @@ def _change_result_status(taskid):
     update_result_status(data['filename'], data['status'])
     resp = jsonify(success=True)
     return resp
+
 
 @blueprint.route('/_get_regions', methods=['GET'])
 @login_required
