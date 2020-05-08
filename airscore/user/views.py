@@ -102,9 +102,9 @@ def comp_admin():
     return render_template('users/comp_admin.html', today=datetime.today().strftime('%d-%m-%Y'))
 
 
-@blueprint.route('/create_comp', methods=['PUT'])
+@blueprint.route('/_create_comp', methods=['PUT'])
 @login_required
-def create_comp():
+def _create_comp():
     data = request.json
     date_from = datetime.strptime(data['datefrom'], '%Y-%m-%d')
     date_to = datetime.strptime(data['dateto'], '%Y-%m-%d')
@@ -117,7 +117,7 @@ def create_comp():
     output = new_comp.to_db()
     if type(output) == int:
         frontendUtils.set_comp_admin(output, current_user.id, owner=True)
-        return jsonify(dict(redirect='/comp_admin'))
+        return jsonify(dict(redirect='/users/comp_admin'))
     else:
         return render_template('500.html')
 
