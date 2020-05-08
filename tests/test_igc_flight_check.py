@@ -1,18 +1,17 @@
-import pytest
 from track import Track
 from datetime import datetime, date
 from flight_result import Flight_result
 from obj_factories import TurnpointFactory, TaskFactory
 
 
-test_task_turnpoints = [TurnpointFactory(lat = 45.7129, lon = 9.93693, radius = 400, how = 'exit', shape = 'circle', type = 'launch'),
-                        TurnpointFactory(lat = 45.7581, lon = 9.96171, radius = 2000, how = 'exit', type = 'speed'),
-                        TurnpointFactory(lat = 45.8325, lon = 9.7675, radius = 2000),
-                        TurnpointFactory(lat = 45.7129, lon = 9.93693, radius = 2500),
-                        TurnpointFactory(lat = 45.8296, lon = 9.89672, radius = 400),
-                        TurnpointFactory(lat = 45.8569, lon = 10.1591, radius = 15000),
-                        TurnpointFactory(lat = 45.698, lon = 9.97001, radius = 400, type = 'endspeed'),
-                        TurnpointFactory(lat = 45.6777, lon = 9.94366, radius = 400, type = 'goal')
+test_task_turnpoints = [TurnpointFactory(lat=45.7129, lon=9.93693, radius=400, how='exit', shape='circle', type='launch'),
+                        TurnpointFactory(lat=45.7581, lon=9.96171, radius=2000, how='exit', type='speed'),
+                        TurnpointFactory(lat=45.8325, lon=9.7675, radius=2000),
+                        TurnpointFactory(lat=45.7129, lon=9.93693, radius=2500),
+                        TurnpointFactory(lat=45.8296, lon=9.89672, radius=400),
+                        TurnpointFactory(lat=45.8569, lon=10.1591, radius=15000),
+                        TurnpointFactory(lat=45.698, lon=9.97001, radius=400, type='endspeed'),
+                        TurnpointFactory(lat=45.6777, lon=9.94366, radius=400, type='goal')
                         ]
 
 test_task = TaskFactory()
@@ -35,6 +34,7 @@ test_task.SS_distance = 57252.6
 test_task.time_offset = 7200
 test_task.tolerance = 0.001
 test_task.QNH = 1013.25
+
 
 def test_track_read():
     test_track = Track.read_file('/app/tests/data/test_igc_1.igc', par_id=1)
