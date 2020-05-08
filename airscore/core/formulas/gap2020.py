@@ -175,8 +175,8 @@ def day_quality(task):
     task.stop_validity = 1.000
     task.day_quality = 0.000
 
-    if not task.launch_valid:
-        print("Launch invalid - dist quality set to 0")
+    if task.cancelled:
+        print("Task Cancelled - dist quality set to 0")
         return None
 
     if task.pilots_present == 0:

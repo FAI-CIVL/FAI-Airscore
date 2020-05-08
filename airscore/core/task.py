@@ -132,7 +132,7 @@ class Task(object):
         self.QNH = 1013.25  # Pressure Reference for altitude if altitude_mode = QNH
         self.comment = None
         self.time_offset = 0  # seconds
-        self.launch_valid = None
+        self.cancelled = False
         self.locked = False
         self.task_path = None
         self.comp_path = None
@@ -174,7 +174,7 @@ class Task(object):
         if not other or not isinstance(other, Task):
             return NotImplemented
         keys = ['task_type', 'start_time', 'task_deadline', 'stopped_time', 'window_open_time', 'window_close_time',
-                'start_close_time', 'SS_interval', 'start_iteration', 'distance', 'opt_dist', 'launch_valid']
+                'start_close_time', 'SS_interval', 'start_iteration', 'distance', 'opt_dist', 'cancelled']
         for k in keys:
             if not getattr(self, k) == getattr(other, k):
                 return False

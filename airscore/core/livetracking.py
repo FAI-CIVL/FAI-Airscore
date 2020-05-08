@@ -124,7 +124,7 @@ class LiveTracking(object):
 
     @property
     def status(self):
-        if not self.task.launch_valid:
+        if self.task.cancelled:
             return 'Task is Cancelled'
         elif not (self.task and self.task.turnpoints):
             return 'Task not defined yet'
@@ -143,7 +143,7 @@ class LiveTracking(object):
         main = ''
         details = ''
         warning = ''
-        if not self.task.launch_valid:
+        if self.task.cancelled:
             '''task has been cancelled'''
             main = f"Task has been cancelled."
         elif not (self.task and self.task.turnpoints):
@@ -197,7 +197,7 @@ class LiveTracking(object):
         data = []
         if not self.task:
             file_stats['status'] = 'Task is not set yet'
-        elif not self.task.launch_valid:
+        elif self.task.cancelled:
             file_stats['status'] = 'Cancelled'
         else:
             # info = {x: getattr(self.task, x) for x in Task_result.info_list if x in dir(self.task)}
@@ -284,7 +284,7 @@ class LiveTracking(object):
                     print(f'* Task not properly set, Stopped or Cancelled.')
                     print(f'* Livetrack Stopping: {datetime.fromtimestamp(self.timestamp).isoformat()}')
                     break
-                elif self.task.stopped_time or self.task.launch_valid:
+                elif self.task.stopped_time or self.task.cancelled:
                     print(f'* Task Stopped or Cancelled.')
                     print(f'* Livetrack Stopping: {datetime.fromtimestamp(self.timestamp).isoformat()}')
                     break

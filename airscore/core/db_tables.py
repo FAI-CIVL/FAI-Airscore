@@ -323,10 +323,12 @@ class TaskObjectView(Base):
                       Column('locked', TINYINT(3), server_default=text("'0'")),
                       Column('airspace_check', TINYINT(1)),
                       Column('openair_file', String(40)),
-                      Column('launch_valid', TINYINT(1), server_default=text("'1'")),
+                      Column('cancelled', TINYINT(1), server_default=text("'1'")),
                       Column('track_source', String(40)),
                       Column('task_path', String(40)),
-                      Column('comp_path', String(40))
+                      Column('comp_path', String(40)),
+                      Column('igc_config_file', String(80))
+
                       )
 
 
@@ -386,7 +388,7 @@ class UnscoredPilotView(Base):
 #     Column('locked', TINYINT(3), server_default=text("'0'")),
 #     Column('airspace_check', TINYINT(1)),
 #     Column('openair_file', String(40)),
-#     Column('launch_valid', TINYINT(1), server_default=text("'1'")),
+#     Column('cancelled', TINYINT(1), server_default=text("'1'")),
 #     Column('track_source', String(40)),
 #     Column('task_path', String(40)),
 #     Column('comp_path', String(40))
@@ -753,7 +755,6 @@ class TblTask(Base):
     comment = Column(Text)
     locked = Column(TINYINT(3), nullable=False, server_default=text("'0'"))
     task_path = Column(String(40))
-    igc_config_file = Column(String(80))
 
     reg = relationship('TblRegion')
     comp = relationship('TblCompetition')
