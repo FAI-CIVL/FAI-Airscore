@@ -32,7 +32,12 @@
         <a href="{{ url_for('user.task_score_admin', taskid=taskid)}}" class="btn btn-info ml-4" type="button" >
          Manage Scores
       </a>
+        <button type="button" id="log_button" class="hideatstart btn btn-success ml-4" data-toggle="modal" data-target="#ProcessModal">
+            Processing log
+        </button>
     </div>
+
+
         <div class="text-center" >
             <h3 id="TracksProcessed"></h3>
         </div>
@@ -80,6 +85,27 @@
    </div>
 </div>
 <!-bulk-Modal ends here--->
+
+<!-- process log Modal starts here -->
+<div class="modal fade" id="ProcessModal" tabindex="-1" role="dialog" aria-labelledby="ProcessModalTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="ProcessModalTitle">Tracklog Processing</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" id="process_text">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Hide</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- process log Modal ends here -->
+
   {% endif%}
 {% endblock %}
  {% if user_is_admin %}
@@ -93,7 +119,7 @@
     <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.fileupload.js') }}"></script>
     <script src="{{ static_url_for('static', filename='js/jquery-alert.js') }}"></script>
     <script type="text/javascript">populate_track_admin({{taskid|tojson}})</script>
-    <script type="text/javascript">
+    <script>
 
    function open_bulk_modal() {
      $('#bulkmodal').modal('show');
@@ -154,7 +180,7 @@
 
 </script>
 
-<script type="text/javascript">
+<script>
 
    function choose_zip_file(){
    var filename;
@@ -169,7 +195,7 @@
         submit: function (e, data){
         $('#zip_modal_message').hide();
         $('#zip_progress').show();
-        $('#zip_spinner').show()
+        $('#zip_spinner').show();
         $('#zip_progress_text').text(data.files[0].name + ' - processing');
         $('#zip_spinner').html('<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>');
         },
@@ -189,7 +215,49 @@
     $('#bulk_fileupload').click();
 };
 
+{% if production %}
 
+   function choose_file(par_id){
+   var filename;
+   $('#fileupload' + par_id).fileupload({
+        dataType: 'json',
+        done: function (e, data) {
+            $.each(data.result.files, function (index, file) {
+                $('<p/>').text(file.name).appendTo(document.body);
+                filename = file.name;
+            });
+        },
+        submit: function (e, data){
+        $('#ABS'+ par_id).hide();
+        $('#MD'+ par_id).hide();
+        $('#DNF'+ par_id).hide();
+        $('#TrackUp'+ par_id).hide();
+        $('#upload_box'+ par_id).hide();
+        $('#progress_percentage'+ par_id).show();
+        $('#progress_percentage'+ par_id).text('uploading..')
+        $('#filediv'+ par_id).show();
+
+        },
+                      success: function (response) {
+                      if(response.error){
+                              $('#ABS'+ par_id).show();
+                                $('#MD'+ par_id).show();
+                                $('#DNF'+ par_id).show();
+                                $('#TrackUp'+ par_id).show();
+                                $('#upload_box'+ par_id).show();
+                                $('#filediv'+ par_id).hide();
+                        $.alert(response.error,{ type: 'danger', position: ['center', [-0.42, 0]],
+                        autoClose: false
+                        });
+                      }
+                      update_row(response);
+                      },
+
+    });
+    $('#fileupload' + par_id).click();
+};
+
+{% else %}
 
    function choose_file(par_id){
    var filename;
@@ -208,9 +276,8 @@
         $('#TrackUp'+ par_id).hide();
         $('#upload_box'+ par_id).hide();
         $('#filediv'+ par_id).show();
-
-         $('#progress_text'+ par_id).text(data.files[0].name + ' - processing');
-         $('#spinner' + par_id).html('<div class="spinner-border" role="status"><span class="sr-only"></span></div>');
+        $('#progress_text'+ par_id).text(data.files[0].name + ' - processing');
+        $('#spinner' + par_id).html('<div class="spinner-border" role="status"><span class="sr-only"></span></div>');
         },
                       success: function (response) {
                       if(response.error){
@@ -238,9 +305,12 @@
     });
     $('#fileupload' + par_id).click();
 };
-</script>
 
-<script>
+
+
+
+{% endif %}
+
 
   function filesize(elem){
     document.cookie = `filesize=${elem.files[0].size}`
@@ -249,6 +319,66 @@
     $(document).ready(function(){
     update_track_pilot_stats();
     });
+
+
+{% if production %}
+
+  var es = null;
+function initES() {
+    if (es == null || es.readyState == 2) { // this is probably not necessary.
+        es = new EventSource('{{ url_for('sse.stream', channel=current_user.username)}}');
+        es.onerror = function(e) {
+            if (es.readyState == 2) {
+                setTimeout(initES, 5000);
+            }
+        };
+            es.addEventListener('% complete', function(event) {
+        var data = JSON.parse(event.data);
+        $('#progress_percentage'+ data.id).text(data.message + ' % complete');
+
+    }, false);
+
+                es.addEventListener('info', function(event) {
+        var data = JSON.parse(event.data);
+        $('#process_text').append(data.message + "<br/>");
+
+    }, false);
+
+            es.addEventListener('open_modal', function(event) {
+            $('#log_button').show();
+            $('#ProcessModal').modal('show');
+
+    }, false);
+
+                es.addEventListener('result', function(event) {
+                        var data = JSON.parse(event.data);
+                if(data.message == 'error'){
+                $('#ABS'+ par_id).show();
+                                $('#MD'+ par_id).show();
+                                $('#DNF'+ par_id).show();
+                                $('#TrackUp'+ par_id).show();
+                                $('#upload_box'+ par_id).show();
+                                $('#filediv'+ par_id).hide();
+                        $.alert(response.error,{ type: 'danger', position: ['center', [-0.42, 0]],
+                        autoClose: false
+                                                });
+                }
+                else {
+                update_row($.parseJSON(data.message));
+                }
+
+
+    }, false);
+
+<!--    es.addEventListener('error', function(event) {-->
+<!--        alert("Failed to connect to event stream. Is Redis running?");-->
+<!--    }, false);-->
+    }
+}
+initES();
+
+
+{% endif %}
 
 </script>
 {% endblock %}

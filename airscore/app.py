@@ -5,7 +5,7 @@ import sys
 
 from flask import Flask, render_template
 
-from airscore import commands, public, user
+from airscore import commands, public, user, internal
 from airscore.extensions import (
     bcrypt,
     cache,
@@ -16,8 +16,11 @@ from airscore.extensions import (
     login_manager,
     migrate,
 )
-# from flask_socketio import SocketIO
-# socketio = SocketIO()
+
+from redis import Redis
+import rq
+from flask_sse import sse
+
 
 def create_app(config_object="airscore.settings"):
     """Create application factory, as explained here: http://flask.pocoo.org/docs/patterns/appfactories/.
@@ -26,13 +29,15 @@ def create_app(config_object="airscore.settings"):
     """
     app = Flask(__name__.split(".")[0]) # , debug=True)
     app.config.from_object(config_object)
+    app.config["REDIS_URL"] = "redis://redis:6379"
+    app.redis = Redis(host='redis', port=6379)
+    app.task_queue = rq.Queue('airscore-jobs', connection=app.redis)
     register_extensions(app)
     register_blueprints(app)
     register_errorhandlers(app)
     register_shellcontext(app)
     register_commands(app)
     configure_logger(app)
-    # socketio.init_app(app)
     return app
 
 
@@ -53,6 +58,8 @@ def register_blueprints(app):
     """Register Flask blueprints."""
     app.register_blueprint(public.views.blueprint)
     app.register_blueprint(user.views.blueprint)
+    app.register_blueprint(internal.views.blueprint)
+    app.register_blueprint(sse, url_prefix='/stream')
     return None
 
 

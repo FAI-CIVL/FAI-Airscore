@@ -83,7 +83,7 @@ def decimal_to_time(time):
     hours = int(time)
     minutes = (time * 60) % 60
     seconds = (time * 3600) % 60
-    return "{:02d}:{02d}:{02d}".format(hours, minutes, seconds)
+    return f'{hours:d}:{minutes:02d}:{seconds:02d}'
 
 
 def time_difference(t1, t2):

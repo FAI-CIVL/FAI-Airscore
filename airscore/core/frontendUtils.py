@@ -11,8 +11,11 @@ from Defines import MAPOBJDIR, IGCPARSINGCONFIG
 from design_map import make_map
 from sqlalchemy.exc import SQLAlchemyError
 from calcUtils import sec_to_time
-from os import scandir, fsencode, path
+from os import scandir, path, environ
 from werkzeug.utils import secure_filename
+import requests
+from flask_sse import sse
+from functools import partial
 
 
 def get_comps():
@@ -256,7 +259,7 @@ def allowed_tracklog(filename, extension=['IGC']):
 
 
 def allowed_tracklog_filesize(filesize):
-
+    """check if tracklog exceeds maximum file size for tracklog (5mb)"""
     if int(filesize) <= 5*1024*1024:
         return True
     else:
@@ -264,27 +267,26 @@ def allowed_tracklog_filesize(filesize):
 
 
 def process_igc(task_id, par_id, tracklog):
-    from task import Task
     from track import Track
-    from pilot import Pilot
     from flight_result import Flight_result
     from airspace import AirspaceCheck
     from igc_lib import Flight
+    from task import Task
+    from pilot import Pilot
 
     pilot = Pilot.read(par_id, task_id)
     if pilot.name:
         filename = pilot.name.replace(' ', '_').lower() + '.IGC'
         filename = secure_filename(filename)
     else:
-        return None
+        return None, None
 
     task = Task.read(task_id)
     track_path = task.file_path
     full_file_name = path.join(track_path, filename)
     tracklog.save(full_file_name)
-
     """import track"""
-    pilot.track = Track(track_file=filename, par_id=par_id)
+    pilot.track = Track(track_file=filename, par_id=pilot.par_id)
     pilot.track.flight = Flight.create_from_file(full_file_name)
     """check result"""
     if not pilot.track:
@@ -294,11 +296,9 @@ def process_igc(task_id, par_id, tracklog):
         error = f"for {pilot.name} - Track has a different date from task date"
         return None, error
     else:
-
         print(f"pilot {pilot.track.par_id} associated with track {pilot.track.filename} \n")
 
         """checking track against task"""
-
         if task.airspace_check:
             airspace = AirspaceCheck.from_task(task)
         else:
@@ -308,7 +308,6 @@ def process_igc(task_id, par_id, tracklog):
         """adding track to db"""
 
         pilot.to_db()
-
         time = ''
         data = {'par_id': pilot.par_id, 'track_id': pilot.track_id}
         if pilot.result.goal_time:
@@ -320,8 +319,80 @@ def process_igc(task_id, par_id, tracklog):
         if pilot.track_id:   # if there is a track, make the result a link to the map
             trackid = data['track_id']
             result = data['Result']
-            data['Result']  = f'<a href="/map/{trackid}-{task_id}">{result}</a>'
+            data['Result'] = f'<a href="/map/{trackid}-{task.task_id}">{result}</a>'
     return data, None
+
+
+def save_igc_background(task_id, par_id, tracklog, user):
+    from task import Task
+    from pilot import Pilot
+
+    pilot = Pilot.read(par_id, task_id)
+    if pilot.name:
+        filename = pilot.name.replace(' ', '_').lower() + '.IGC'
+        filename = secure_filename(filename)
+        sse.publish({'message': f'IGC file saved: {filename}', 'id': par_id}, channel=user, type='info', retry=30)
+    else:
+        return None, None
+
+    task = Task.read(task_id)
+    track_path = task.file_path
+    full_file_name = path.join(track_path, filename)
+    tracklog.save(full_file_name)
+    return filename, full_file_name
+
+
+def process_igc_background(task_id, par_id, filename, full_file_name, user):
+    from track import Track
+    from flight_result import Flight_result
+    from airspace import AirspaceCheck
+    from igc_lib import Flight
+    from task import Task
+    from pilot import Pilot
+    import json
+    pilot = Pilot.read(par_id, task_id)
+    task = Task.read(task_id)
+    print = partial(print_to_sse, id=par_id, channel=user)
+    print('|open_modal')
+    print('***************START*******************')
+    """import track"""
+    pilot.track = Track(track_file=filename, par_id=pilot.par_id)
+    pilot.track.flight = Flight.create_from_file(full_file_name)
+    """check result"""
+    if not pilot.track:
+        print(f"for {pilot.name} - Track is not a valid track file")
+        return None
+    elif not pilot.track.date == task.date:
+        print(f"for {pilot.name} - Track has a different date from task date")
+        return None
+    else:
+        print(f"pilot {pilot.track.par_id} associated with track {pilot.track.filename} \n")
+
+        """checking track against task"""
+        if task.airspace_check:
+            airspace = AirspaceCheck.from_task(task)
+        else:
+            airspace = None
+        pilot.result = Flight_result.check_flight(pilot.track.flight, task, airspace_obj=airspace, print=print)
+        print(f"track verified with task {task.task_id}\n")
+        """adding track to db"""
+        pilot.to_db()
+        time = ''
+        data = {'par_id': pilot.par_id, 'track_id': pilot.track_id}
+        if pilot.result.goal_time:
+            time = sec_to_time(pilot.result.ESS_time - pilot.result.SSS_time)
+        if pilot.result.result_type == 'goal':
+            data['Result'] = f'Goal {time}'
+        elif pilot.result.result_type == 'lo':
+            data['Result'] = f"LO {round(pilot.result.distance / 1000, 2)}"
+        if pilot.track_id:  # if there is a track, make the result a link to the map
+            trackid = data['track_id']
+            result = data['Result']
+            data['Result'] = f'<a href="/map/{trackid}-{task.task_id}">{result}</a>'
+        print(data['Result'])
+        print(json.dumps(data) + '|result')
+        print('***************END****************')
+    return None
 
 
 def process_igc_zip(task, zipfile):
@@ -411,7 +482,7 @@ def get_comp_admins(compid_or_taskid, task_id=False):
         try:
             if task_id:
                 all_admins = db.session.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth)\
-                    .join(CA, User.id == CA.user_id).join(TblTask, CA.comp_id == TblTask.comp_id).filter(TblTask.task_id ==  taskid,
+                    .join(CA, User.id == CA.user_id).join(TblTask, CA.comp_id == TblTask.comp_id).filter(TblTask.task_id==taskid,
                                                             CA.user_auth.in_(('owner', 'admin'))).all()
             else:
                 all_admins = db.session.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth)\
@@ -596,3 +667,39 @@ def get_participants(compid, source='all'):
                 external += 1
                 pilot_list.append(pilot.as_dict())
     return pilot_list, external
+
+
+def print_to_sse(text, id, channel):
+    """Background jobs can send SSE by using this function which takes a string and sends to webserver
+    as an HTML post request (via push_sse).
+    A message type can be specified by including it in the string after a pipe "|" otherwise the default message
+    type is 'info'
+    Args:
+        :param text: a string
+        :id int/string to identify what the message relates to (par_id etc.)
+        :channel string to identify destination of message (not access control) such as username etc
+    """
+    from sys import stdout
+    message = text.split('|')[0]
+    if len(text.split('|')) > 1:
+        message_type = text.split('|')[1]
+    else:
+        message_type = 'info'
+    body = {'message': message, 'id': id}
+    push_sse(body, message_type, channel=channel)
+    # print(f"pushed {body=} {message_type=} {channel=}")
+    # stdout.flush()
+
+
+def push_sse(body, message_type, channel):
+    """send a post request to webserver with contents of SSE to be sent"""
+    data = {'body': body, 'type': message_type, 'channel': channel}
+    requests.post('http://web:5000/internal/see_message', json=data)
+
+
+def production():
+    """Checks if we are running production or dev via environment variable."""
+    if environ['FLASK_DEBUG'] == '1':
+        return False
+    else:
+        return True

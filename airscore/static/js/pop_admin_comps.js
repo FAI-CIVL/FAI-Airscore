@@ -18,7 +18,7 @@ function create_comp()
     options.dateto = $('#dateto').val();
     options.datefrom = $('#datefrom').val();
     $.ajax({
-            url: '/create_comp',
+            url: '/users/_create_comp',
             contentType:"application/json",
             dataType:"json",
             data: JSON.stringify(options),

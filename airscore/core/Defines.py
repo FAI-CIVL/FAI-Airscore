@@ -21,14 +21,14 @@ with open('secret.yaml', 'rb') as f:
 
 ''' Application Settings'''
 BINDIR = config['dir']['bin']  # script directory
-FILEDIR = config['dir']['file']  # files directory
+FILEDIR = config['dir']['tracks']  # track file directory
 LOGDIR = config['dir']['log']  # log files directory
 RESULTDIR = config['dir']['result']  # log files directory
 IMAGEDIR = config['dir']['image']  # image/icon files directory
 MAPOBJDIR = config['dir']['map']  # mapobj files directory
 AIRSPACEDIR = config['dir']['airspace']  # openair files directory
-AIRSPACEMAPDIR = config['dir']['airspace_map']  # openair files directory
-AIRSPACECHECKDIR = config['dir']['airspace_check']  # openair files directory
+AIRSPACEMAPDIR = config['dir']['airspace_map']  # airspace map files directory
+AIRSPACECHECKDIR = config['dir']['airspace_check']  # airspace check files directory
 WAYPOINTDIR = config['dir']['waypoint']  # waypoint files directory
 IGCPARSINGCONFIG = config['dir']['igc_parsing_config']  # igc parsing config files
 

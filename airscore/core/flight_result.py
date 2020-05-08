@@ -33,7 +33,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from Defines import MAPOBJDIR
 from airspace import AirspaceCheck
-from calcUtils import string_to_seconds
+from calcUtils import string_to_seconds, sec_to_time
 from db_tables import TblTaskResult
 from formulas.libs.leadcoeff import LeadCoeff
 from myconn import Database
@@ -350,13 +350,16 @@ class Flight_result(object):
         return result
 
     @classmethod
-    def check_flight(cls, flight, task, airspace_obj=None, deadline=None):
+    def check_flight(cls, flight, task, airspace_obj=None, deadline=None, print=print):
         """ Checks a Flight object against the task.
             Args:
-                   flight:  a Flight object
-                   task:    a Task
-                   deadline: in multiple start or elapsed time, I need to check again track using Min_flight_time
+                   :param flight: a Flight object
+                   :param task: a Task
+                   :param airspace_obj: airspace object to check flight against
+                   :param deadline: in multiple start or elapsed time, I need to check again track using Min_flight_time
                                 as deadline
+                   :param print: function to overide print() function. defaults to print() i.e. no override. Intended for
+                                 sending progress to front end
             Returns:
                     a list of GNSSFixes of when turnpoints were achieved.
         """
@@ -370,6 +373,7 @@ class Flight_result(object):
         min_tol_m = task.formula.min_tolerance or 0
         max_jump_the_gun = task.formula.max_JTG or 0  # seconds
         jtg_penalty_per_sec = 0 if max_jump_the_gun == 0 else task.formula.JTG_penalty_per_sec
+        percentage_complete = 0
 
         if not task.optimised_turnpoints:
             task.calculate_optimised_task_length()
@@ -403,8 +407,13 @@ class Flight_result(object):
             if task.airspace_check and not airspace_obj:
                 print(f'We should not create airspace here')
                 airspace_obj = AirspaceCheck.from_task(task)
-
+        total_fixes = len(flight.fixes)
         for i in range(len(flight.fixes) - 1):
+            # report percentage progress
+            if int(i / len(flight.fixes) * 100) > percentage_complete:
+                percentage_complete = int(i / len(flight.fixes) * 100)
+                print(f"{percentage_complete}|% complete")
+
             '''Get two consecutive trackpoints as needed to use FAI / CIVL rules logic
             '''
             # start_time = tt.time()
@@ -474,6 +483,7 @@ class Flight_result(object):
                     time = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
                     result.waypoints_achieved.append([tp.name, time, alt])  # pilot has started
                     result.real_start_time = time
+                    print(f"Pilot started SS at {sec_to_time(result.real_start_time)}")
                     tp.move_to_next()
 
             elif pilot_can_restart(task, tp, my_fix, result):
@@ -483,6 +493,7 @@ class Flight_result(object):
                     result.waypoints_achieved.pop()
                     result.waypoints_achieved.append([tp.name, time, alt])  # pilot has started again
                     result.real_start_time = time
+                    print(f"Pilot restarted SS at {sec_to_time(result.real_start_time)}")
                     if lead_coeff:
                         lead_coeff.reset()
 
@@ -493,6 +504,7 @@ class Flight_result(object):
                     if tp_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m):
                         time = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
                         result.waypoints_achieved.append([tp.name, time, alt])  # pilot has achieved turnpoint
+                        print(f"Pilot took {tp.name} at {sec_to_time(time)} at {alt}m")
                         tp.move_to_next()
 
                 if tp.next.type == 'goal':
@@ -502,6 +514,7 @@ class Flight_result(object):
                                                                               next_fix)))):
                         result.waypoints_achieved.append(
                             [tp.name, next_fix.rawtime, alt])  # pilot has achieved turnpoint
+                        print(f"Pilot in goal at {sec_to_time(next_fix.rawtime)} at {alt}m")
                         break
 
             '''update result data
@@ -554,6 +567,7 @@ class Flight_result(object):
                 # airspace_plot.append(map_fix)
 
         '''final results'''
+        print("100|% complete")
         result.max_altitude = max_altitude
         result.landing_time = flight.landing_fix.rawtime
         result.landing_altitude = flight.landing_fix.gnss_alt if alt_source == 'GPS' else flight.landing_fix.press_alt
@@ -574,7 +588,7 @@ class Flight_result(object):
                 result.SSS_time = result.real_start_time
 
             '''manage jump the gun'''
-            print(f'wayponts made: {result.waypoints_achieved}')
+            # print(f'wayponts made: {result.waypoints_achieved}')
             if max_jump_the_gun > 0 and result.real_start_time < result.SSS_time:
                 diff = result.SSS_time - result.real_start_time
                 penalty = diff * jtg_penalty_per_sec
@@ -603,6 +617,8 @@ class Flight_result(object):
                     result.goal_time, result.goal_altitude = min(
                         [(x[1], x[2]) for x in result.waypoints_achieved if x[0] == 'Goal'], key=lambda t: t[0])
                     result.result_type = 'goal'
+        if result.result_type != 'goal':
+            print(f"Pilot landed after {result.distance_flown/1000:.2f}km")
 
         result.best_waypoint_achieved = str(result.waypoints_achieved[-1][0]) if result.waypoints_achieved else None
 
