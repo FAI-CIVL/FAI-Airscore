@@ -281,11 +281,11 @@ class LiveTracking(object):
                 print(f'*** *** Cycle {i} ({self.timestamp}): TASK HAS CHANGED ***')
                 self.update_result()
                 if not self.properly_set:
-                    print(f'* Task not properly set, Stopped or Cancelled.')
+                    print(f'* Task not properly set.')
                     print(f'* Livetrack Stopping: {datetime.fromtimestamp(self.timestamp).isoformat()}')
                     break
-                elif self.task.stopped_time or self.task.cancelled:
-                    print(f'* Task Stopped or Cancelled.')
+                elif self.task.cancelled:
+                    print(f'* Task Cancelled.')
                     print(f'* Livetrack Stopping: {datetime.fromtimestamp(self.timestamp).isoformat()}')
                     break
                 elif self.opening_timestamp > self.now - interval:
