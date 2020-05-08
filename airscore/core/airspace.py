@@ -111,13 +111,15 @@ class AirspaceCheck(object):
 
     @staticmethod
     def from_task(task):
-        if task.airspace_check and task.openair_file:
-            task_id = task.task_id
-            control_area = read_airspace_check_file(task.openair_file)
-            params = get_airspace_check_parameters(task_id)
-            airspace = AirspaceCheck(control_area, params, task.geo)
-            airspace.get_airspace_details(qnh=task.QNH)
-            return airspace
+        if not (task.airspace_check and task.openair_file):
+            print(f'Airspace check disabled or no Openair file set')
+            return None
+        task_id = task.task_id
+        control_area = read_airspace_check_file(task.openair_file)
+        params = get_airspace_check_parameters(task_id)
+        airspace = AirspaceCheck(control_area, params, task.geo)
+        airspace.get_airspace_details(qnh=task.QNH)
+        return airspace
 
     @staticmethod
     def read(task_id):

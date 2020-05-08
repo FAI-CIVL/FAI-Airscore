@@ -125,8 +125,8 @@ def day_quality(task):
     task.stop_validity = 1.000
     task.day_quality = 0.000
 
-    if not task.launch_valid:
-        print("Launch invalid - dist quality set to 0")
+    if task.cancelled:
+        print("Task Cancelled - dist quality set to 0")
         return None
 
     if task.pilots_present == 0:
@@ -265,16 +265,16 @@ def process_results(task):
         return None
 
     for idx, res in enumerate(results, 1):
-        '''Handle Stopped Task'''
-        if task.stopped_time and res.last_altitude > task.goal_altitude and formula.glide_bonus > 0:
-            print("Stopped height bonus: ", (formula.glide_bonus * (res.last_altitude - task.goal_altitude)))
-            res.total_distance = min((res.distance_flown +
-                                      formula.glide_bonus * (res.last_altitude - task.goal_altitude)),
-                                     task.SS_distance)
-        else:
-            res.total_distance = res.distance_flown
-        # set pilot to min distance if they're below that ..
-        res.total_distance = max(formula.min_dist, res.total_distance)
+        # '''Handle Stopped Task'''
+        # if task.stopped_time and res.stopped_distance:
+        #     print("Stopped height bonus: ", (formula.glide_bonus * (res.last_altitude - task.goal_altitude)))
+        #     res.total_distance = min((res.distance_flown +
+        #                               formula.glide_bonus * (res.last_altitude - task.goal_altitude)),
+        #                              task.SS_distance)
+        # else:
+        #     res.total_distance = res.distance_flown
+        '''set pilot to min distance if they're below that ..'''
+        res.total_distance = max(formula.min_dist, res.distance)
 
         if res.ESS_time:
             ''' Time after first on ESS'''

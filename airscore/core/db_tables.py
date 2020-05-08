@@ -37,7 +37,7 @@ class CompObjectView(Base):
                       Column('airspace_check', TINYINT(1)),
                       Column('check_launch', Enum('on', 'off'), server_default=text("'off'")),
                       Column('igc_config_file', String(80)),
-                      Column('self_register', TINYINT(1)),
+                      Column('self_register', TINYINT(1), server_default=text("'0'")),
                       Column('formula_type', String(10)),
                       Column('formula_version', INTEGER(8)),
                       Column('formula_name', String(50)),
@@ -185,6 +185,10 @@ class FlightResultView(Base):
                       Column('nat_team', TINYINT(4), server_default=text("'1'")),
                       Column('live_id', MEDIUMINT(9)),
                       Column('distance_flown', Float),
+                      Column('best_distance_time', MEDIUMINT(9), nullable=False, server_default=text("'0'")),
+                      Column('stopped_distance', Float),
+                      Column('stopped_altitude', SMALLINT(6), server_default=text("'0'")),
+                      Column('total_distance', Float),
                       Column('speed', Float),
                       Column('first_time', MEDIUMINT(9)),
                       Column('real_start_time', MEDIUMINT(9)),
@@ -319,10 +323,12 @@ class TaskObjectView(Base):
                       Column('locked', TINYINT(3), server_default=text("'0'")),
                       Column('airspace_check', TINYINT(1)),
                       Column('openair_file', String(40)),
-                      Column('launch_valid', TINYINT(1), server_default=text("'1'")),
+                      Column('cancelled', TINYINT(1), server_default=text("'1'")),
                       Column('track_source', String(40)),
                       Column('task_path', String(40)),
-                      Column('comp_path', String(40))
+                      Column('comp_path', String(40)),
+                      Column('igc_config_file', String(80))
+
                       )
 
 
@@ -382,7 +388,7 @@ class UnscoredPilotView(Base):
 #     Column('locked', TINYINT(3), server_default=text("'0'")),
 #     Column('airspace_check', TINYINT(1)),
 #     Column('openair_file', String(40)),
-#     Column('launch_valid', TINYINT(1), server_default=text("'1'")),
+#     Column('cancelled', TINYINT(1), server_default=text("'1'")),
 #     Column('track_source', String(40)),
 #     Column('task_path', String(40)),
 #     Column('comp_path', String(40))
@@ -753,7 +759,7 @@ class TblTask(Base):
     reg = relationship('TblRegion')
     comp = relationship('TblCompetition')
     Results = relationship('TblTaskResult')
-    igc_config_file = Column(String(80))
+
     # comp = relationship('TblCompetition', backref="tasks", lazy='subquery')
     # Results = relationship('TblTaskResult', backref="task")
 
@@ -772,6 +778,10 @@ class TblTaskResult(Base):
     track_file = Column(String(255))
     g_record = Column(TINYINT(4), server_default=text("'1'"))
     distance_flown = Column(Float)
+    best_distance_time = Column(MEDIUMINT(9), nullable=False, server_default=text("'0'"))
+    stopped_distance = Column(Float)
+    stopped_altitude = Column(SMALLINT(6), nullable=False, server_default=text("'0'"))
+    total_distance = Column(Float)
     first_time = Column(MEDIUMINT(9), nullable=False, server_default=text("'0'"))
     real_start_time = Column(MEDIUMINT(9), nullable=False, server_default=text("'0'"))
     SSS_time = Column(MEDIUMINT(9), nullable=False, server_default=text("'0'"))

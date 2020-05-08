@@ -12,19 +12,18 @@ Stuart Mackintosh, Antonio Golfari - 2019
 class LeadCoeff(object):
     def __init__(self, task):
         self.ss_distance = task.SS_distance / 1000
-        self.best_dist_to_ess = task.SS_distance / 1000
         self.opt_dist_to_ess = task.opt_dist_to_ESS / 1000
         self.best_dist_to_ess = [task.SS_distance / 1000]
         self.lib = task.formula.get_lib()
         self.summing = 0.0
 
-    @property
-    def squared_distance(self):
-        """ defaulting to True if not specified (should always be)"""
-        if self.lib and self.lib.lead_coeff_parameters:
-            return self.lib.lead_coeff_parameters.squared_distance
-        else:
-            return True
+    # @property
+    # def squared_distance(self):
+    #     """ defaulting to True if not specified (should always be)"""
+    #     if self.lib and self.lib.lead_coeff_parameters:
+    #         return self.lib.lead_coeff_parameters.squared_distance
+    #     else:
+    #         return True
 
     def reset(self):
         self.summing = 0.0
@@ -42,10 +41,10 @@ def lead_coeff_function(lc, result, fix, next_fix):
     '''Leading coefficient
         LC = taskTime(i)*(bestDistToESS(i-1)^2 - bestDistToESS(i)^2 )
         i : i ? TrackPoints In SS'''
-    task_time = next_fix.rawtime - result.real_start_time
     if lc.best_dist_to_ess[0] == lc.best_dist_to_ess[1]:
         return 0
     else:
+        task_time = next_fix.rawtime - result.real_start_time
         return task_time * (lc.best_dist_to_ess[0] ** 2 - lc.best_dist_to_ess[1] ** 2) / (1800 * (lc.ss_distance ** 2))
 
 

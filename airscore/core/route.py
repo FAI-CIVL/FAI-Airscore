@@ -99,6 +99,20 @@ class Turnpoint():
         out += f"name: {self.name}, lat: {self.lat}, lon: {self.lon}, radius: {self.radius}"
         return out
 
+    def __eq__(self, other=None):
+        if not other or not isinstance(other, Turnpoint):
+            return NotImplemented
+        keys = ['lat', 'lon', 'radius', 'type', 'shape', 'how', 'altitude', 'name']
+        for k in keys:
+            if not getattr(self, k) == getattr(other, k):
+                return False
+        return True
+
+    def __ne__(self, other=None):
+        if not other or not isinstance(other, Turnpoint):
+            return NotImplemented
+        return not self.__eq__(other)
+
     def in_radius(self, fix, t, tm):
         """Checks whether the provided GNSSFix is within the radius
         arguments:

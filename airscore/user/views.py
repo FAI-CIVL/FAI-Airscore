@@ -10,7 +10,7 @@ from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointFor
     TaskResultAdminForm, NewAdminForm, RegionForm, NewRegionForm, IgcParsingConfigForm, ModifyParticipantForm
 from comp import Comp
 from formula import list_formulas, Formula
-from task import Task, write_map_json
+from task import Task, write_map_json, get_task_json_by_filename
 from route import save_turnpoint, Turnpoint
 from flight_result import update_status, delete_result
 from os import path, remove, makedirs

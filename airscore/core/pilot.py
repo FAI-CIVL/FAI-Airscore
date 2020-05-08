@@ -120,7 +120,7 @@ class Pilot(object):
         if self.flight and self.flight.notes:
             comment.append('; '.join(['[track]: ' + i for i in self.flight.notes]))
         if self.result and self.result.comment:
-            comment.append('; '.join(['[result]: ' + i for i in self.result.comment]))
+            comment.append('[result]: ' + str(self.result.comment))
         return '; '.join(comment)
 
     @property

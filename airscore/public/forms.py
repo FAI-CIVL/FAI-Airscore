@@ -6,7 +6,6 @@ from airscore.user.models import User
 from wtforms.validators import DataRequired, Length
 
 
-
 class LoginForm(FlaskForm):
     """Login form."""
 
@@ -82,5 +81,3 @@ class ModifyParticipantForm(FlaskForm):
 #             self.username.errors.append("User not activated")
 #             return False
 #         return True
-
-

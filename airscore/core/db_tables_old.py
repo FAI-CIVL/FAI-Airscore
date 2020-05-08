@@ -392,7 +392,7 @@ class TaskObjectView(Base):
                       Column('QNH', Float(asdecimal=False)),
                       Column('comment', Text),
                       Column('locked', TINYINT(3), server_default=text("'0'")),
-                      Column('launch_valid', BIGINT(11)),
+                      Column('cancelled', BIGINT(11)),
                       Column('airspace_check', TINYINT(1)),
                       Column('openair_file', String(40)),
                       Column('track_source', String(40)),
@@ -579,7 +579,7 @@ class TaskView(Base):
                       Column('QNH', Float(asdecimal=False)),
                       Column('comment', Text),
                       Column('locked', TINYINT(3), server_default=text("'0'")),
-                      Column('launch_valid', BIGINT(11)),
+                      Column('cancelled', BIGINT(11)),
                       Column('comp_path', String(40)),
                       Column('task_path', String(40))
                       )

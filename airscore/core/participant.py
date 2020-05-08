@@ -164,6 +164,14 @@ class Participant(object):
         else:
             pilot.fai_valid = False
             pilot.fai_id = None
+        """check Live ID"""
+        node = pil.find('FsCustomAttributes')
+        if node is not None:
+            childs = node.findall('FsCustomAttribute')
+            live = next(el for el in childs if el.get('name') == 'Live')
+            if live is not None:
+                pilot.live_id = int(live.get('value'))
+                print(pilot.live_id)
 
         return pilot
 

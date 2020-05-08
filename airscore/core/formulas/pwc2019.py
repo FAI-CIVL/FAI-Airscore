@@ -121,9 +121,17 @@ def points_weight(task):
     task.avail_time_points = 1000 * quality - task.avail_dep_points - task.avail_dist_points  # AvailSpeedPoints
 
 
+def weightRising(p):
+    return (1 - 10 ** (9 * p - 9)) ** 5
+
+
+def weightFalling(p):
+    return (1 - 10 ** (-3 * p)) ** 2
+
+
 def weight_calc(dist_to_ess, ss_distance):
-    todo = dist_to_ess / ss_distance
-    return (1 - 10 ** (9 * todo - 9)) ** 5 * (1 - 10 ** (-3 * todo)) ** 2
+    p = dist_to_ess / ss_distance
+    return weightRising(p) * weightFalling(p)
 
 
 def lead_coeff_function(lc, result, fix, next_fix):
@@ -145,16 +153,15 @@ def lead_coeff_function(lc, result, fix, next_fix):
     '''
     weight = weight_calc(lc.best_dist_to_ess[1], lc.ss_distance)
     time_interval = next_fix.rawtime - fix.rawtime
-
     if time_interval == 0 or weight == 0:
         return 0
     else:
         return (weight * time_interval * lc.best_dist_to_ess[1]) / (1800 * lc.ss_distance)
 
 
-def missing_area(time_interval, distance, ss_distance):
-    weight = weight_calc(distance, ss_distance)
-    return (weight * time_interval * distance) / (1800 * ss_distance)
+def missing_area(time_interval, best_distance_to_ESS, ss_distance):
+    p = best_distance_to_ESS / ss_distance
+    return (weightFalling(p) * time_interval * best_distance_to_ESS) / (1800 * ss_distance)
 
 
 def tot_lc_calc(res, t):
@@ -171,7 +178,7 @@ def tot_lc_calc(res, t):
     ss_distance = t.SS_distance / 1000
 
     best_dist_to_ess = (t.opt_dist_to_ESS - res.distance) / 1000  # in Km
-    missing_time = t.max_time - res.last_time
+    missing_time = t.max_time - res.best_distance_time
     landed_out = missing_area(missing_time, best_dist_to_ess, ss_distance)
 
     return res.fixed_LC + landed_out
