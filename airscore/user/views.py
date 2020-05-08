@@ -125,9 +125,9 @@ def create_comp():
         return render_template('500.html')
 
 
-@blueprint.route('/import_comp_fsdb/', methods=['POST'])
+@blueprint.route('/_import_comp_fsdb/', methods=['POST'])
 @login_required
-def import_comp_fsdb():
+def _import_comp_fsdb():
     from fsdb import FSDB
     if request.method == "POST":
         if request.files:
