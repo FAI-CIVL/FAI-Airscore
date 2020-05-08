@@ -256,7 +256,7 @@ def allowed_tracklog(filename, extension=['IGC']):
 
 
 def allowed_tracklog_filesize(filesize):
-
+    """check if tracklog exceeds maximum file size for tracklog (5mb)"""
     if int(filesize) <= 5*1024*1024:
         return True
     else:
