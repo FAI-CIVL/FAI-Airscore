@@ -286,7 +286,7 @@ def get_pilot_from_list(filename, pilots):
     """Try to get pilot from filename, using ID, CIVLID or name."""
     fields = string.replace('.', ' ').replace('_', ' ').replace('-', ' ').lower().split()
     # strip out all numbers and other non letters. So we can process igc files like the ones airscore saves.
-    string_alpha_only = re.sub('[^a-zA-Z]+', ' ', string)
+    string_alpha_only = re.sub("[^a-zA-Z']+", ' ', string)
     fields_alpha_only = string_alpha_only.replace('.', ' ').replace('_', ' ').replace('-', ' ').lower().split()
     for idx, pilot in enumerate(pilots):
         civl_id = pilot.info.civl_id
