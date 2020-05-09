@@ -108,12 +108,15 @@ def _create_comp():
     data = request.json
     date_from = datetime.strptime(data['datefrom'], '%Y-%m-%d')
     date_to = datetime.strptime(data['dateto'], '%Y-%m-%d')
+    if date_to < date_from:
+        flash("Start date cannot be after end date. Competition not saved", category='danger')
+        return jsonify(dict(redirect='/users/comp_admin'))
     new_comp = Comp(comp_name=data['name'],
                     comp_class=data['class'],
                     comp_site=data['location'],
                     comp_code=data['code'],
-                    date_from=date_to,
-                    date_to=date_from)
+                    date_from=date_from,
+                    date_to=date_to)
     output = new_comp.to_db()
     if type(output) == int:
         frontendUtils.set_comp_admin(output, current_user.id, owner=True)
@@ -535,7 +538,7 @@ def _get_adv_settings():
     settings = {'formula_distance': formula.formula_distance, 'formula_arrival': formula.formula_arrival,
                 'formula_departure': formula.formula_departure, 'lead_factor': formula.lead_factor,
                 'formula_time': formula.formula_time, 'no_goal_penalty': formula.no_goal_penalty,
-                'glide_bonus': formula.glide_bonus, 'tolerance': formula.tolerance,
+                'glide_bonus': formula.glide_bonus, 'tolerance': formula.tolerance*100,
                 'min_tolerance': formula.min_tolerance, 'arr_alt_bonus': formula.height_bonus,
                 'arr_max_height': formula.arr_max_height, 'arr_min_height': formula.arr_min_height,
                 'validity_min_time': formula.validity_min_time, 'scoreback_time': formula.score_back_time,
