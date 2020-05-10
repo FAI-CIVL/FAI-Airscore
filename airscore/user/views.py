@@ -1162,7 +1162,7 @@ def _upload_participants_excel(compid):
                 # filename = secure_filename(excel_file.filename)
                 excel_file.save(path.join(tmpdirname, excel_file.filename))
                 pilots = extract_participants_from_excel(compid, path.join(tmpdirname, excel_file.filename))
-                mass_import_participants(41, pilots)
+                mass_import_participants(compid, pilots)
             resp = jsonify(success=True)
             return resp
         resp = jsonify(success=False)
