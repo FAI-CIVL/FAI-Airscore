@@ -495,13 +495,13 @@ def _register_pilots(compid):
 @blueprint.route('/_add_task/<compid>', methods=['POST'])
 @login_required
 def _add_task(compid):
+    compid = int(compid)
     comp = Comp.read(compid)
-    # comp.comp_id = compid
     data = request.json
     task = Task(comp_id=compid)
     task.task_name = data['task_name']
     task.task_num = int(data['task_num'])
-    task.date = datetime.strptime(data['task_date'], '%m-%d-%Y')
+    task.date = datetime.strptime(data['task_date'], '%Y-%m-%d')
     task.comment = data['task_comment']
     task.reg_id = int(data['task_region'])
     task.time_offset = comp.time_offset
