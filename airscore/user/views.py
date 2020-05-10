@@ -967,7 +967,7 @@ def region_admin():
             if waypoint_file: # there should always be a file as it is a required field
                 wpts = get_turnpoints_from_file(waypoint_file_data, data=True)
                 if not wpts:
-                    flash("Waypoint file format not supported or file is not a waypoint file", category='error')
+                    flash("Waypoint file format not supported or file is not a waypoint file", category='danger')
                     return render_template('users/region_admin.html', region_select=region_select,
                                            new_region_form=new_region)
                 # save waypoint file
@@ -996,7 +996,8 @@ def region_admin():
                     flash(Markup(f'Open air file added, please check it <a href="'
                                  f'{url_for("user.airspace_edit", filename=air_new_filename)}" '
                                  f'class="alert-link">here</a>'), category='info')
-
+                else:
+                    air_new_filename = None
                 # write to DB
                 region = Region(name=new_region.name.data, comp_id=compid, filename=wpt_new_filename,
                                 openair=air_new_filename, turnpoints=wpts)
