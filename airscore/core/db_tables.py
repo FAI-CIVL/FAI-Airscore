@@ -739,7 +739,7 @@ class TblTask(Base):
     opt_dist_to_SS = Column(Float)
     opt_dist_to_ESS = Column(Float)
     SS_distance = Column(Float)
-    launch_valid = Column(TINYINT(1), server_default=text("'1'"))
+    cancelled = Column(TINYINT(1), server_default=text("'0'"))
     time_offset = Column(MEDIUMINT(9))
     formula_distance = Column(Enum('on', 'difficulty', 'off'))
     formula_departure = Column(Enum('leadout', 'departure', 'off'))
