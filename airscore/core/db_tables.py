@@ -559,7 +559,7 @@ class TblRegion(Base):
     radius = Column(Float)
     description = Column(String(64), nullable=False)
     waypoint_file = Column(String(50), nullable=False)
-    openair_file = Column(String(50), nullable=False)
+    openair_file = Column(String(50))
 
 
 class TblResultFile(Base):

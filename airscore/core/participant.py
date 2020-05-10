@@ -259,7 +259,7 @@ def extract_participants_from_excel(comp_id, filename, from_CIVL=False):
         pil.team = row[11]
         pil.fai_id = row[8]
         pil.fai_valid = 0 if row[8] is None else 1
-        pil.Live = row[13]
+        pil.live_id = row[13]
         pilots.append(pil)
 
     # ''' now restore stdout function '''

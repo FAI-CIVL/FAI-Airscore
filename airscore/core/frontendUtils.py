@@ -703,3 +703,18 @@ def production():
         return False
     else:
         return True
+
+
+def unique_filename(filename, filepath):
+    """checks file does not already exist and creates a unique and secure filename"""
+    from pathlib import Path
+    from os.path import join
+    import glob
+    from werkzeug.utils import secure_filename
+    fullpath = join(filepath, filename)
+    if Path(fullpath).is_file():
+        index = str(len(glob.glob(fullpath)) + 1).zfill(2)
+        name, suffix = filename.rsplit(".", 1)
+        filename = '_'.join([name, index]) + '.' + suffix
+    return secure_filename(filename)
+
