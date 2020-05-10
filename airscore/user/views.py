@@ -944,10 +944,11 @@ def _get_wpts(regid):
 @blueprint.route('/region_admin', methods=['GET', 'POST'])
 @login_required
 def region_admin():
-    from frontendUtils import get_region_choices
-    from waypoint import get_turnpoints_from_file
+    from frontendUtils import get_region_choices, unique_filename
+    from waypoint import get_turnpoints_from_file_storage, allowed_wpt_extensions
     from region import Region
-    from Defines import WAYPOINTDIR, AIRSPACEDIR
+    from Defines import WAYPOINTDIR, AIRSPACEDIR, ALLOWED_WPT_EXTENSIONS
+
     region_select = RegionForm()
     new_region = NewRegionForm()
     compid = session.get('compid')
@@ -960,26 +961,31 @@ def region_admin():
                 makedirs(WAYPOINTDIR)
             waypoint_file = request.files["waypoint_file"]
             airspace_file = request.files["openair_file"]
-            if airspace_file == '':
+            '''airspace file'''
+            if airspace_file in ['', None]:
                 airspace_file = None
-            waypoint_file_data = waypoint_file.read().decode('UTF-8')
-            airspace_file_data = airspace_file.read().decode('UTF-8')
-            if waypoint_file: # there should always be a file as it is a required field
-                wpts = get_turnpoints_from_file(waypoint_file_data, data=True)
-                if not wpts:
-                    flash("Waypoint file format not supported or file is not a waypoint file", category='error')
+            else:
+                airspace_file_data = airspace_file.read().decode('UTF-8')
+
+            '''waypoint file'''
+            if waypoint_file:  # there should always be a file as it is a required field
+                if not allowed_wpt_extensions(waypoint_file.filename):
+                    '''file has not a valid extension'''
+                    flash(f"Waypoint file extension not supported ({', '.join(ALLOWED_WPT_EXTENSIONS)} ",
+                          category='danger')
                     return render_template('users/region_admin.html', region_select=region_select,
                                            new_region_form=new_region)
-                # save waypoint file
-                fullpath = path.join(WAYPOINTDIR, waypoint_file.filename)
-                i = 1
-                wpt_new_filename = waypoint_file.filename
-                while path.exists(fullpath):
-                    wpt_new_filename = f"{i}_{waypoint_file.filename}"
-                    fullpath = path.join(WAYPOINTDIR, wpt_new_filename)
-                    i += 1
-                with open(fullpath, 'w') as f:
-                    f.write(waypoint_file_data)
+
+                wpt_format, wpts = get_turnpoints_from_file_storage(waypoint_file)
+
+                if not wpts:
+                    flash("Waypoint file format not supported or file is not a waypoint file", category='danger')
+                    return render_template('users/region_admin.html', region_select=region_select,
+                                           new_region_form=new_region)
+                '''save file'''
+                wpt_filename = unique_filename(waypoint_file.filename, WAYPOINTDIR)
+                fullpath = path.join(WAYPOINTDIR, wpt_filename)
+                waypoint_file.save(fullpath)
 
                 if airspace_file:
                     # save airspace file
@@ -996,11 +1002,14 @@ def region_admin():
                     flash(Markup(f'Open air file added, please check it <a href="'
                                  f'{url_for("user.airspace_edit", filename=air_new_filename)}" '
                                  f'class="alert-link">here</a>'), category='info')
+                else:
+                    air_new_filename = None
 
                 # write to DB
-                region = Region(name=new_region.name.data, comp_id=compid, filename=wpt_new_filename,
+                region = Region(name=new_region.name.data, comp_id=compid, filename=wpt_filename,
                                 openair=air_new_filename, turnpoints=wpts)
                 region.to_db()
+                flash(f"Waypoint file format: {wpt_format}, {len(wpts)} waypoints. ", category='info')
                 flash(f"Region {new_region.name.data} added", category='info')
 
     return render_template('users/region_admin.html', region_select=region_select, new_region_form=new_region)
@@ -1011,6 +1020,8 @@ def region_admin():
 def _delete_region(regid):
     from region import delete_region
     delete_region(regid)
+    # flash text goes on the second next page refresh, instead of after deleting.
+    flash(f"Region deleted", category='info')
     resp = jsonify(success=True)
     return resp
 

@@ -171,7 +171,8 @@ def find_pilot(name):
         else:
             p = t.filter(P.fai_id == fai)
         pil = p.all()
-        if len(pil) == 1: return pil.pop().pil_id
+        if len(pil) == 1:
+            return pil.pop().pil_id
         '''try one more time if we have both names and fai'''
         if fai and names:
             if not pil:

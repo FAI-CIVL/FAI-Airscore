@@ -36,6 +36,7 @@ IGCPARSINGCONFIG = config['dir']['igc_parsing_config']  # igc parsing config fil
 track_sources = ['xcontest', 'flymaster']     # external available sources for tracks
 track_formats = ['igc']   # track accepted formats
 wpt_formats = ['GEO', 'UTM', 'CUP', 'GPX', 'CompeGPS', 'OziExplorer']
+ALLOWED_WPT_EXTENSIONS = ['wpt', 'cup', 'gpx', 'ozi']
 
 ''' Database Settings'''
 MYSQLUSER = secret['db']['User']  # mysql db user
