@@ -447,9 +447,9 @@ def task_admin(taskid):
                            modifyturnpointform=modifyturnpointform, compid=task.comp_id, error=error)
 
 
-@blueprint.route('/get_admin_comps', methods=['GET'])
+@blueprint.route('/_get_admin_comps', methods=['GET'])
 @login_required
-def get_admin_comps():
+def _get_admin_comps():
     return frontendUtils.get_admin_comps(current_user.id)
 
 

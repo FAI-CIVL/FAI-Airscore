@@ -41,7 +41,7 @@ function get_comps()
 
     $('#competitions').dataTable({
         destroy: true,
-        ajax: '/users/get_admin_comps',
+        ajax: '/users/_get_admin_comps',
         paging: true,
         order: [[ 4, 'desc' ]],
         lengthMenu: [ 15, 30, 60, 1000 ],
