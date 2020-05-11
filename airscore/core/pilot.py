@@ -216,17 +216,20 @@ class Pilot(object):
             try:
                 if self.track_id:
                     r = db.session.query(R).get(self.track_id)
+                    r.comment = self.comment
+                    r.track_file = self.track_file
+                    for attr in [a for a in dir(r) if not (a[0] == '_' or a in ['track_file', 'comment'])]:
+                        if hasattr(result, attr):
+                            setattr(r, attr, getattr(result, attr))
                 else:
                     '''create a new result'''
                     r = R(par_id=self.par_id, task_id=self.task_id)
+                    db.populate_row(r, result)
+                    r.comment = self.comment
+                    r.track_file = self.track_file
                     db.session.add(r)
                     db.session.flush()
                     self.track.track_id = r.track_id
-                r.comment = self.comment
-                r.track_file = self.track_file
-                for attr in [a for a in dir(r) if not (a[0] == '_' or a in ['track_file', 'comment'])]:
-                    if hasattr(result, attr):
-                        setattr(r, attr, getattr(result, attr))
                 db.session.commit()
             except SQLAlchemyError as e:
                 error = str(e.__dict__)

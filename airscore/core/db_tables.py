@@ -832,6 +832,7 @@ class TblTaskWaypoint(Base):
     task_id = Column(ForeignKey('tblTask.task_id', ondelete='SET NULL'), index=True)
     num = Column(TINYINT(4), nullable=False)
     name = Column(CHAR(6), nullable=False)
+    rwp_id = Column(INTEGER(11))
     lat = Column(Float, nullable=False)
     lon = Column(Float, nullable=False)
     altitude = Column(SMALLINT(6), nullable=False, server_default=text("'0'"))
