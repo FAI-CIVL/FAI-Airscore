@@ -70,6 +70,18 @@ class Database(object):
             if hasattr(result, x):
                 setattr(obj, x, getattr(result, x))
 
+    def populate_row(self, row, obj):
+        """ populate a Table row object from an object
+            Input:
+                row     - OBJ: Table obj
+                result  - OBJ: object"""
+        try:
+            for x in row.__table__.columns.keys():
+                if hasattr(obj, x):
+                    setattr(row, x, getattr(obj, x))
+        except TypeError as e:
+            print(f'Error populating table row: obj is not iterable')
+
     def as_dict(self, obj):
         """ as we have still a lot of procedures written for dicts created from
             old MySQL queries
