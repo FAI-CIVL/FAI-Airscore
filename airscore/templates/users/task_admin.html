@@ -433,11 +433,11 @@
  {% if taskform.submit %}
 
                content += '<td  class ="value" ><button type="button" class="btn btn-warning" onclick="modify_tp('
-               content +=  json['turnpoints'][i].n + ',' + json['turnpoints'][i].id
+               content +=  json['turnpoints'][i].num + ',' + json['turnpoints'][i].wpt_id
                content += ')" data-toggle="confirmation" data-popout="true">Modify</button></td>'
 
                content += '<td  class ="value" ><button type="button" class="btn btn-danger" onclick="confirm_delete('
-               content +=  json['turnpoints'][i].n + ',' + json['turnpoints'][i].id + ',' + partial_dist
+               content +=  json['turnpoints'][i].num + ',' + json['turnpoints'][i].id + ',' + partial_dist
                content += ')" data-toggle="confirmation" data-popout="true">Delete</button></td>'
   {% endif%}
 
@@ -536,7 +536,7 @@
     for (var i = 0; i < turnpoints['turnpoints'].length; i++) {
         var element = turnpoints['turnpoints'][i];
 
-        if (element.id == tpid) {
+        if (element.wpt_id == tpid) {
            found = element;
 
        }
@@ -548,7 +548,7 @@
      var myHeading = "<p>Modify turnpoint ";
    <!--     $("#modmodal-body").html(myHeading + x);-->
 
-    $('#mod_tp_number').val(found.n).change();
+    $('#mod_tp_number').val(found.num).change();
     $('#mod_tp_type').val(found.original_type).change();
     $('#mod_tp_name').val(found.rwpid).change();
     $('#mod_tp_how').val(found.how).change();
