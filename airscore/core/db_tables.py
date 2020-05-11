@@ -830,7 +830,6 @@ class TblTaskWaypoint(Base):
 
     wpt_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
     task_id = Column(ForeignKey('tblTask.task_id', ondelete='SET NULL'), index=True)
-    rwp_id = Column(ForeignKey('tblRegionWaypoint.rwp_id', ondelete='SET NULL'), index=True)
     num = Column(TINYINT(4), nullable=False)
     name = Column(CHAR(6), nullable=False)
     lat = Column(Float, nullable=False)
@@ -848,6 +847,5 @@ class TblTaskWaypoint(Base):
     ssr_lon = Column(Float)
     partial_distance = Column(Float)
 
-    rwp = relationship('TblRegionWaypoint')
     task = relationship('TblTask')
 

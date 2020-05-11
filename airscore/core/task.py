@@ -536,7 +536,7 @@ class Task(object):
                 '''populate turnpoints'''
                 for tp in tps:
                     turnpoint = Turnpoint(tp.lat, tp.lon, tp.radius, tp.type, tp.shape, tp.how, tp.altitude, tp.name,
-                                          tp.num, tp.description, tp.wpt_id, tp.rwp_id)
+                                          tp.num, tp.description, tp.wpt_id)
                     task.turnpoints.append(turnpoint)
                     s_point = polar(lat=tp.ssr_lat, lon=tp.ssr_lon)
                     task.optimised_turnpoints.append(s_point)
@@ -562,7 +562,7 @@ class Task(object):
         with Database() as db:
             try:
                 # get the task turnpoint details.
-                results = db.session.query(W.wpt_id, W.rwp_id, W.name, W.num, W.description, W.how, W.radius, W.shape,
+                results = db.session.query(W.wpt_id, W.name, W.num, W.description, W.how, W.radius, W.shape,
                                            W.type, W.partial_distance).filter(W.task_id == self.task_id).order_by(
                     W.num).all()
                 if results:
@@ -1001,7 +1001,7 @@ class Task(object):
 
             turnpoint = Turnpoint(tp['waypoint']['lat'], tp['waypoint']['lon'], tp['radius'], waytype, shape, how)
             turnpoint.name = tp["waypoint"]["name"]
-            turnpoint.rwp_id = wpID
+            # turnpoint.rwp_id = wpID
             turnpoint.num = wpNum
             self.turnpoints.append(turnpoint)
 
