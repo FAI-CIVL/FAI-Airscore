@@ -564,6 +564,8 @@ def _add_turnpoint(taskid):
     from frontendUtils import get_region_waypoint
     data = request.json
     taskid = int(taskid)
+    if data['wpt_id']:
+        data['wpt_id'] = int(data['wpt_id'])
     rwp_id = int(data['rwp_id'])
     tp = get_region_waypoint(rwp_id)
     tp.task_id = taskid

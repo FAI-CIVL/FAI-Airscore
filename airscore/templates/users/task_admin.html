@@ -308,8 +308,8 @@
             <p>Here the description starts here........</p>
          </div>
          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-            <button id = "delete_confirmed" type="button" class="btn btn-default" data-dismiss="modal">Delete</button>
+            <button type="button" class="btn btn-success" data-dismiss="modal">Cancel</button>
+            <button id = "delete_confirmed" type="button" class="btn btn-danger" data-dismiss="modal">Delete</button>
          </div>
       </div>
    </div>
@@ -437,7 +437,7 @@
                content += ')" data-toggle="confirmation" data-popout="true">Modify</button></td>'
 
                content += '<td  class ="value" ><button type="button" class="btn btn-danger" onclick="confirm_delete('
-               content +=  json['turnpoints'][i].num + ',' + json['turnpoints'][i].id + ',' + partial_dist
+               content +=  json['turnpoints'][i].num + ',' + json['turnpoints'][i].wpt_id + ',' + partial_dist
                content += ')" data-toggle="confirmation" data-popout="true">Delete</button></td>'
   {% endif%}
 
@@ -464,7 +464,7 @@
                mydata.direction = $('#tp_how').val();
                mydata.shape = $('#tp_shape').val();
                mydata.radius = radius;
-               mydata.id = null
+               mydata.wpt_id = null
 
            $.ajax({
                type: "POST",
@@ -550,7 +550,7 @@
 
     $('#mod_tp_number').val(found.num).change();
     $('#mod_tp_type').val(found.original_type).change();
-    $('#mod_tp_name').val(found.rwpid).change();
+    $('#mod_tp_name').val(found.rwp_id).change();
     $('#mod_tp_how').val(found.how).change();
     $('#mod_tp_shape').val(found.shape).change();
     $('#mod_tp_radius').val(found.radius).change();
@@ -574,7 +574,7 @@
                mydata.direction = $('#mod_tp_how').val();
                mydata.shape = $('#mod_tp_shape').val();
                mydata.radius = radius;
-               mydata.id = id
+               mydata.wpt_id = id
 
            $.ajax({
                type: "POST",
