@@ -105,6 +105,7 @@ def comp_admin():
 @blueprint.route('/_create_comp', methods=['PUT'])
 @login_required
 def _create_comp():
+    import compUtils
     data = request.json
     date_from = datetime.strptime(data['datefrom'], '%Y-%m-%d')
     date_to = datetime.strptime(data['dateto'], '%Y-%m-%d')
@@ -117,6 +118,7 @@ def _create_comp():
                     comp_code=data['code'],
                     date_from=date_from,
                     date_to=date_to)
+    new_comp.comp_path = compUtils.create_comp_path(date_from, data['code'])
     output = new_comp.to_db()
     if type(output) == int:
         frontendUtils.set_comp_admin(output, current_user.id, owner=True)
