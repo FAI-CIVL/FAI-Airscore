@@ -1,4 +1,5 @@
-from db_tables import TblCompetition, TblTask, TblCompAuth, TblRegion
+from db_tables import TblCompetition, TblTask, TblCompAuth, TblRegion, TblRegionWaypoint, TblTaskWaypoint
+from route import Turnpoint
 from sqlalchemy.orm import aliased
 from flask import jsonify
 from myconn import Database
@@ -7,7 +8,7 @@ import ruamel.yaml
 from sqlalchemy import func
 from pathlib import Path
 import jsonpickle
-from Defines import MAPOBJDIR, IGCPARSINGCONFIG
+from Defines import MAPOBJDIR, IGCPARSINGCONFIG, track_formats
 from design_map import make_map
 from sqlalchemy.exc import SQLAlchemyError
 from calcUtils import sec_to_time
@@ -243,13 +244,16 @@ def get_pilot_list_for_track_management(taskid):
     return all_data
 
 
-def get_region_waypoint(rwp_id):
-    """reads waypoint from tblRegionWaypoint and returns Turnpoint object"""
-    from db_tables import TblRegionWaypoint as RW
-    from route import Turnpoint
+def get_waypoint(wpt_id=None, rwp_id=None):
+    """reads waypoint from tblTaskWaypoint or tblRegionWaypoint depending on input and returns Turnpoint object"""
+    if not (wpt_id or rwp_id):
+        return None
     with Database() as db:
         try:
-            result = db.session.query(RW).get(rwp_id)
+            if wpt_id:
+                result = db.session.query(TblTaskWaypoint).get(wpt_id)
+            else:
+                result = db.session.query(TblRegionWaypoint).get(rwp_id)
             tp = Turnpoint()
             db.populate_obj(tp, result)
         except SQLAlchemyError as e:
@@ -261,7 +265,36 @@ def get_region_waypoint(rwp_id):
         return tp
 
 
-def allowed_tracklog(filename, extension=['IGC']):
+def save_turnpoint(task_id, turnpoint: Turnpoint):
+    """save turnpoint in a task- for frontend"""
+    if not (type(task_id) is int and task_id > 0):
+        print("task not present in database ", task_id)
+        return None
+    with Database() as db:
+        try:
+            if not turnpoint.wpt_id:
+                '''add new taskWaypoint'''
+                # tp = TblTaskWaypoint(**turnpoint.as_dict())
+                tp = TblTaskWaypoint()
+                db.populate_row(tp, turnpoint)
+                db.session.add(tp)
+                db.session.flush()
+            else:
+                '''update taskWaypoint'''
+                tp = db.session.query(TblTaskWaypoint).get(turnpoint.wpt_id)
+                if tp:
+                    for k, v in turnpoint.as_dict().items():
+                        if hasattr(tp, k):
+                            setattr(tp, k, v)
+                db.session.flush()
+        except SQLAlchemyError:
+            print('error saving turnpoint')
+            db.session.rollback()
+            return None
+        return 1
+
+
+def allowed_tracklog(filename, extension=track_formats):
 
     if "." not in filename:
         return False

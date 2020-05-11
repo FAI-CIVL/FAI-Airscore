@@ -11,7 +11,7 @@ from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointFor
 from comp import Comp
 from formula import list_formulas, Formula
 from task import Task, write_map_json, get_task_json_by_filename
-from route import save_turnpoint, Turnpoint
+from frontendUtils import save_turnpoint
 from flight_result import update_status, delete_result
 from os import path, remove, makedirs
 from task import get_task_json_by_filename
@@ -561,14 +561,24 @@ def _get_task_turnpoints(taskid):
 def _add_turnpoint(taskid):
     """add turnpoint to the task,if rwp_id is not null then update instead of insert (add)
     if turnpoint is goal or we are updating and goal exists then calculate opt dist and dist."""
-    from frontendUtils import get_region_waypoint
+    from frontendUtils import get_waypoint
     data = request.json
     taskid = int(taskid)
+    rwp_id = None if not data['rwp_id'] else int(data['rwp_id'])
     if data['wpt_id']:
-        data['wpt_id'] = int(data['wpt_id'])
-    rwp_id = int(data['rwp_id'])
-    tp = get_region_waypoint(rwp_id)
-    tp.task_id = taskid
+        '''modify waypoint'''
+        wpt_id = int(data['wpt_id'])
+        if rwp_id:
+            '''changing wpt'''
+            tp = get_waypoint(rwp_id=rwp_id)
+            tp.wpt_id = wpt_id
+            tp.task_id = taskid
+        else:
+            tp = get_waypoint(wpt_id=wpt_id)
+    else:
+        '''add waypoint'''
+        tp = get_waypoint(rwp_id=rwp_id)
+        tp.task_id = taskid
     tp.num = int(data['number'])
     tp.radius = int(data['radius'])
     tp.type = data['type']
@@ -576,28 +586,13 @@ def _add_turnpoint(taskid):
         tp.how = data['direction']
     if data['shape'] is not None:
         tp.shape = data['shape']
-    # if data['id']:
-    #     data['id'] = int(data['id'])
-    # if data['type'] != 'goal':
-    #     data['shape'] = 'circle'
-    # if data['type'] != 'speed':
-    #     data['direction'] = 'entry'
-    # data['radius'] = int(data['radius'])
-    # data['number'] = int(data['number'])
-    # data['rwp_id'] = int(data['rwp_id'])
-    #
-    # tp = Turnpoint(radius=data['radius'], how=data['direction'], shape=data['shape'], type=data['type'],
-    #                id=data['number'], rwp_id=data['rwp_id'])
-    if save_turnpoint(int(taskid), tp):
-        # task = Task()
-        # task.task_id = taskid
+    if save_turnpoint(taskid, tp):
         task = Task.read(taskid)
         if task.opt_dist > 0 or data['type'] == 'goal':
             task.calculate_optimised_task_length()
             task.calculate_task_length()
             task.update_task_distance()
             write_map_json(taskid)
-
         turnpoints = frontendUtils.get_task_turnpoints(task)
         return jsonify(turnpoints)
     else:

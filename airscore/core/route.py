@@ -145,34 +145,6 @@ def delete_all_turnpoints(task_id):
         db.session.commit()
 
 
-def save_turnpoint(task_id, turnpoint: Turnpoint):
-    """save turnpoint in a task- for frontend"""
-    from db_tables import TblTaskWaypoint as W
-    if not (type(task_id) is int and task_id > 0):
-        print("task not present in database ", task_id)
-        return None
-
-    with Database() as db:
-        # get the turnpoint details.
-        try:
-            if not turnpoint.wpt_id:
-                tp = W(**turnpoint.as_dict())
-                db.session.add(tp)
-                db.session.flush()
-            else:
-                tp = db.session.query(W).get(turnpoint.wpt_id)
-                if tp:
-                    for k, v in turnpoint.as_dict().items():
-                        if hasattr(tp, k):
-                            setattr(tp, k, v)
-                db.session.flush()
-        except SQLAlchemyError:
-            print('error saving turnpoint')
-            db.session.rollback()
-            return None
-        return 1
-
-
 def get_proj(clat, clon, proj=PROJ):
     """
     returns correct projection, UTM or custom Mercatore, using BBox center coordinates
