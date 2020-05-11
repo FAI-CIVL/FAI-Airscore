@@ -255,6 +255,7 @@ def comp_settings_admin(compid):
                     flash(
                         f"not saved as something(s) on the form not valid: {item} value:{item.data} "
                         f"error:{item.errors}", category="warning")
+                    return redirect(url_for('user.comp_settings_admin', compid=compid))
 
     if request.method == 'GET':
         formula = Formula.read(compid)
@@ -343,7 +344,6 @@ def _add_admin(compid):
         return resp
     else:
         return render_template('500.html')
-
 
 
 @blueprint.route('/task_admin/<taskid>', methods=['GET', 'POST'])
@@ -463,7 +463,7 @@ def _delete_comp(compid):
     if current_user.id == owner['id']:
         delete_comp(compid)
     else:
-        flash(f"You are not the owner of this competition. You cannot delete it.", category='error')
+        flash(f"You are not the owner of this competition. You cannot delete it.", category='danger')
         return redirect(request.url)
     resp = jsonify(success=True)
     return resp
@@ -721,7 +721,8 @@ def _upload_track(taskid, parid):
                                                                                      current_user.username)
                         job = current_app.task_queue.enqueue(frontendUtils.process_igc_background, taskid, parid,
                                                              filename, full_file_name, current_user.username)
-                        return "message sent"
+                        resp = jsonify(success=True)
+                        return resp
 
                     else:
                         data, error = frontendUtils.process_igc(taskid, parid, tracklog)
