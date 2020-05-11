@@ -495,8 +495,8 @@ def _register_pilots(compid):
 @blueprint.route('/_add_task/<compid>', methods=['POST'])
 @login_required
 def _add_task(compid):
-    compid = int(compid)
-    comp = Comp.read(compid)
+    comp = Comp.read(int(compid))
+    # comp.comp_id = compid
     data = request.json
     task = Task(comp_id=compid)
     task.task_name = data['task_name']
@@ -561,23 +561,34 @@ def _get_task_turnpoints(taskid):
 def _add_turnpoint(taskid):
     """add turnpoint to the task,if rwp_id is not null then update instead of insert (add)
     if turnpoint is goal or we are updating and goal exists then calculate opt dist and dist."""
+    from frontendUtils import get_region_waypoint
     data = request.json
     taskid = int(taskid)
-    if data['id']:
-        data['id'] = int(data['id'])
-    if data['type'] != 'goal':
-        data['shape'] = 'circle'
-    if data['type'] != 'speed':
-        data['direction'] = 'entry'
-    data['radius'] = int(data['radius'])
-    data['number'] = int(data['number'])
-    data['rwp_id'] = int(data['rwp_id'])
-
-    tp = Turnpoint(radius=data['radius'], how=data['direction'], shape=data['shape'], type=data['type'],
-                   id=data['number'], rwp_id=data['rwp_id'])
-    if save_turnpoint(int(taskid), tp, data['id']):
-        task = Task()
-        task.task_id = taskid
+    rwp_id = int(data['rwp_id'])
+    tp = get_region_waypoint(rwp_id)
+    tp.task_id = taskid
+    tp.num = int(data['number'])
+    tp.radius = int(data['radius'])
+    tp.type = data['type']
+    if data['direction'] is not None:
+        tp.how = data['direction']
+    if data['shape'] is not None:
+        tp.shape = data['shape']
+    # if data['id']:
+    #     data['id'] = int(data['id'])
+    # if data['type'] != 'goal':
+    #     data['shape'] = 'circle'
+    # if data['type'] != 'speed':
+    #     data['direction'] = 'entry'
+    # data['radius'] = int(data['radius'])
+    # data['number'] = int(data['number'])
+    # data['rwp_id'] = int(data['rwp_id'])
+    #
+    # tp = Turnpoint(radius=data['radius'], how=data['direction'], shape=data['shape'], type=data['type'],
+    #                id=data['number'], rwp_id=data['rwp_id'])
+    if save_turnpoint(int(taskid), tp):
+        # task = Task()
+        # task.task_id = taskid
         task = Task.read(taskid)
         if task.opt_dist > 0 or data['type'] == 'goal':
             task.calculate_optimised_task_length()

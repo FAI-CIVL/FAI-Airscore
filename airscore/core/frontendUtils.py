@@ -243,6 +243,24 @@ def get_pilot_list_for_track_management(taskid):
     return all_data
 
 
+def get_region_waypoint(rwp_id):
+    """reads waypoint from tblRegionWaypoint and returns Turnpoint object"""
+    from db_tables import TblRegionWaypoint as RW
+    from route import Turnpoint
+    with Database() as db:
+        try:
+            result = db.session.query(RW).get(rwp_id)
+            tp = Turnpoint()
+            db.populate_obj(tp, result)
+        except SQLAlchemyError as e:
+            error = str(e)
+            print(f"error creating Turnpoint obj. error{error}")
+            db.session.rollback()
+            db.session.close()
+            return None
+        return tp
+
+
 def allowed_tracklog(filename, extension=['IGC']):
 
     if "." not in filename:
