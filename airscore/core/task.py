@@ -562,7 +562,7 @@ class Task(object):
         with Database() as db:
             try:
                 # get the task turnpoint details.
-                results = db.session.query(W.wpt_id, W.name, W.num, W.description, W.how, W.radius, W.shape,
+                results = db.session.query(W.wpt_id, W.rwp_id, W.name, W.num, W.description, W.how, W.radius, W.shape,
                                            W.type, W.partial_distance).filter(W.task_id == self.task_id).order_by(
                     W.num).all()
                 if results:
