@@ -332,7 +332,7 @@
             </div>
             <div class="form-row">
                <div class="form-group width12">
-                  {{modifyturnpointform.mod_name.label}} {{modifyturnpointform.mod_name(size=4, **{'id':"mod_tp_name", 'data-toggle': 'tooltip', 'title': modifyturnpointform.mod_name.description})}}
+                  {{modifyturnpointform.mod_name.label}} {{modifyturnpointform.mod_name(**{'id':"mod_tp_name", 'data-toggle': 'tooltip', 'title': modifyturnpointform.mod_name.description})}}
                </div>
             </div>
             <div class="form-row">
@@ -355,8 +355,8 @@
             </div>
          </div>
          <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-            <button id = "modify_confirmed" type="button" class="btn btn-default" data-dismiss="modal">Save</button>
+            <button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
+            <button id = "modify_confirmed" type="button" class="btn btn-success" data-dismiss="modal">Save</button>
          </div>
       </div>
    </div>
