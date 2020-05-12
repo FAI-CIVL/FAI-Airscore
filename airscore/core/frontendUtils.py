@@ -205,7 +205,7 @@ def get_pilot_list_for_track_management(taskid):
         try:
             results = db.session.query(R.goal_time, R.track_file, R.track_id, R.result_type, R.distance_flown, R.ESS_time, R.SSS_time, R.par_id).filter(
                                                R.task_id == taskid).subquery()
-            pilots = db.session.query(T.task_id, P.name, P.par_id, results.c.track_id, results.c.SSS_time, results.c.ESS_time,
+            pilots = db.session.query(T.task_id, P.name, P.ID, P.par_id, results.c.track_id, results.c.SSS_time, results.c.ESS_time,
                                       results.c.distance_flown, results.c.track_file, results.c.result_type)\
                 .outerjoin(P, T.comp_id == P.comp_id).filter(T.task_id == taskid)\
                 .outerjoin(results, results.c.par_id == P.par_id).all()
@@ -220,6 +220,7 @@ def get_pilot_list_for_track_management(taskid):
     for pilot in pilots:
         time = ''
         data = {}
+        data['ID']  = pilot['ID']
         data['name'] = pilot['name']
         data['par_id'] = pilot['par_id']
         data['track_id'] = pilot['track_id']

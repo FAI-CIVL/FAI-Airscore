@@ -48,6 +48,7 @@
     <table id="tracks" class="row-border stripe compact mb-1" cellspacing="0" width="100%">
     <thead>
         <tr>
+            <th>ID</th>
             <th>Name</th>
 <!--            <th>Status</th>-->
             <th>Result</th>
@@ -156,6 +157,7 @@
 
  function update_row(new_data){
         var table = $('#tracks').dataTable();
+        new_data.ID = $('#tracks').DataTable().row( $('tr#id_'+ new_data.par_id)).data()['ID'];
         new_data.name = $('#tracks').DataTable().row( $('tr#id_'+ new_data.par_id)).data()['name'];
         table.fnUpdate(new_data, $('tr#id_'+ new_data.par_id), undefined, false);
         }
