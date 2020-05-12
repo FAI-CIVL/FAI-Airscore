@@ -508,7 +508,7 @@ def process_igc_zip(task, zipfile):
         """find valid tracks"""
         tracks = get_tracks(tracksdir)
         if tracks is None:
-            print(f"There are no valid tracks in zipfile {zipfile} \n")
+            print(f"There are no valid tracks in zipfile {zipfile}, or all pilots are already been scored \n")
             return None
 
         """associate tracks to pilots and import"""

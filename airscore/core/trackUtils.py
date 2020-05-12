@@ -15,6 +15,7 @@ from Defines import FILEDIR, MAPOBJDIR, track_sources, track_formats
 from flight_result import Flight_result
 from myconn import Database
 import re
+from pathlib import Path
 
 
 def extract_tracks(file, dir):
@@ -41,6 +42,7 @@ def extract_tracks(file, dir):
 
 def get_tracks(directory):
     """Checks files and imports what appear to be tracks"""
+    from Defines import track_formats
     files = []
 
     print(f"Directory: {directory} \n")
@@ -49,18 +51,9 @@ def get_tracks(directory):
     """check files in temporary directory, and get only tracks"""
     for file in listdir(directory):
         print(f"checking: {file} \n")
-        if (not (file.startswith(".") or file.startswith("_"))) and file.lower().endswith(".igc"):
+        if not Path(file).name.startswith(tuple(['_', '.'])) and Path(file).suffix.strip('.') in track_formats:
             """file is a valid track"""
-            print(f"valid filename: {file} \n")
-            """add file to tracks list"""
             files.append(path.join(directory, file))
-        else:
-            print(f"NOT valid filename: {file} \n")
-
-    print(f"files in list: {len(files)} \n")
-    for f in files:
-        print(f"  {f} \n")
-
     return files
 
 
@@ -68,7 +61,6 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None):
     """Find pilots to associate with tracks"""
     from compUtils import get_registration
     from track import Track
-    from trackUtils import get_unscored_pilots
     from functools import partial
     from frontendUtils import print_to_sse
 
@@ -139,6 +131,7 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None):
             verify_and_import_track(pilot, task, print=new_print)
     print("*******************processed all tracks**********************")
 
+
 def import_track(pilot, task_id):
     pilot.track.to_db(task_id)
     return pilot.track.track_id
@@ -151,7 +144,8 @@ def verify_and_import_track(pilot, task, print=print):
         airspace = AirspaceCheck.from_task(task)
     else:
         airspace = None
-    pilot.result = Flight_result.check_flight(pilot.track.flight, task, airspace_obj=airspace, print=print)  # check flight against task
+    pilot.result = Flight_result.check_flight(pilot.track.flight, task, airspace_obj=airspace,
+                                              print=print)  # check flight against task
     pilot.to_db()
     print(str(pilot.track.flight.notes))
     print('***************END****************')
@@ -246,7 +240,7 @@ def get_task_fullpath(task_id):
 
     with Database() as db:
         try:
-            q = db.session.query(T.task_path, 
+            q = db.session.query(T.task_path,
                                  C.comp_path).join(C, C.comp_id == T.comp_id).filter(T.task_id == task_id).one()
         except SQLAlchemyError:
             print(f'Get Task Path Query Error')
@@ -264,9 +258,9 @@ def get_unscored_pilots(task_id, xcontest=False):
     pilot_list = []
     with Database() as db:
         try:
-            results = db.session.query(U.par_id, U.comp_id, U.ID, U.name, U.nat, U.sex, U.civl_id, U.glider,
-                                       U.glider_cert, U.sponsor, U.xcontest_id, U.team, U.nat_team).filter(
-                U.task_id == task_id).all()
+            results = db.session.query(U.par_id, U.comp_id, U.ID, U.name, U.nat, U.sex, U.civl_id,
+                                       U.live_id, U.glider, U.glider_cert, U.sponsor, U.xcontest_id,
+                                       U.team, U.nat_team).filter(U.task_id == task_id).all()
             # if xcontest:
             #     q = q.filter(U.xcontest_id != None)
             # results = q.all()
@@ -291,36 +285,62 @@ def get_pilot_from_list(filename, pilots):
         filename:   STR file name
         pilots:     LIST Participants Obj.
     """
-    # TODO define different acceptable filename formats
+    from Defines import filename_formats
+    '''prepare filename formats'''
+    # name = r'[a-zA-Z]+'
+    # id = r'[\d]+'
+    # fai = r'[\da-zA-Z]+'
+    # civl = r'[0-9]+'
+    # live = r'[\d]+'
+    # other = r'[\da-zA-Z]+'
+    filename_check = dict(name=r'[a-zA-Z]+', id=r'[\d]+', fai=r'[\da-zA-Z]+', civl=r'[0-9]+', live=r'[\da-zA-Z]+',
+                          other=r'[\da-zA-Z]+')
+    format_list = [re.findall(r'[\da-zA-Z]+', el) for el in filename_formats]
 
     '''Get string'''
-    string = path.splitext(filename)[0]
-
-    """Try to get pilot from filename, using ID, CIVLID or name."""
-    fields = string.replace('.', ' ').replace('_', ' ').replace('-', ' ').lower().split()
-    # strip out all numbers and other non letters. So we can process igc files like the ones airscore saves.
-    string_alpha_only = re.sub("[^a-zA-Z']+", ' ', string)
-    fields_alpha_only = string_alpha_only.replace('.', ' ').replace('_', ' ').replace('-', ' ').lower().split()
-    for idx, pilot in enumerate(pilots):
-        civl_id = pilot.info.civl_id
-        fullname = pilot.info.name.replace('_', ' ').lower().split()
-        ID = pilot.info.ID
-        if all(n in fields_alpha_only for n in fullname):
-            '''found a pilot'''
-            pilot.track.track_file = filename
-            return pilot, '_'.join(fullname)
-
-        elif any(f == str(ID) for f in fields) and any(n in fields for n in fullname):
-            '''found a pilot'''
-            pilot.track.track_file = filename
-            pilot.track.comment = f'Pilot found using name {pilot.name.lower()} and ID {ID}'
-            return pilot, '_'.join(fullname)
-
-        elif any(f == str(civl_id) for f in fields) and any(n in fields for n in fullname):
-            '''found a pilot'''
-            pilot.track.track_file = filename
-            pilot.track.comment = f'Pilot found using name {pilot.name.lower()} and CIVLID {civl_id}'
-            return pilot, '_'.join(fullname)
+    string = Path(filename).stem
+    elements = re.findall(r'[\d]+|[a-zA-Z]+', string)
+    num_of_el = len(elements)
+    pilot = None
+    if any(el for el in format_list if len(el) == num_of_el):
+        '''we have a match in number of elements between filename and accepted formats'''
+        for f in [el for el in format_list if len(el) == num_of_el]:
+            if all(re.match(filename_check[val], elements[idx]) for idx, val in enumerate(f)):
+                '''we have a match between filename and accepted formats'''
+                print(f'{f}')
+                print(f'{elements}')
+                if any(k for k in f if k in ['id', 'live', 'civl', 'fai']):
+                    '''unique id, each should find the exact pilot'''
+                    for idx, val in enumerate(f):
+                        print(f'{val}, {elements[idx]}')
+                        if val in ['other', 'name']:
+                            continue
+                        elif val == 'id':
+                            v = int(elements[idx])
+                            a = 'ID'
+                        elif val == 'civl':
+                            v = int(elements[idx])
+                            a = 'civl_id'
+                        elif val == 'live':
+                            v = elements[idx]
+                            a = 'live_id'
+                        elif val == 'fai':
+                            v = elements[idx]
+                            a = 'fai_id'
+                        pilot = next((p for p in pilots if getattr(p.info, a) == v), None)
+                        if pilot:
+                            print(f'{a}, found {pilot.info.name}')
+                            break
+                else:
+                    '''no unique id in filename, using name'''
+                    names = [str(elements[idx]).lower() for idx, val in enumerate(f) if val == 'name']
+                    pilot = next((p for p in pilots if all(n in p.info.name.lower().split() for n in names)), None)
+                    if pilot:
+                        print(f'using name, found {pilot.info.name}')
+                        break
+                if pilot:
+                    '''we found a pilot'''
+                    return pilot, '_'.join(pilot.info.name.replace('_', ' ').lower().split())
     return None, None
 
 
