@@ -896,14 +896,15 @@ class Task(object):
             db.session.commit()
 
     def update_task_info(self):
-        t = aliased(TblTask)
+        # t = aliased(TblTask)
 
         with Database() as db:
             print(f"taskid:{self.task_id}")
-            q = db.session.query(t).get(self.task_id)
-            for k, v in self.as_dict().items():
-                if hasattr(q, k):
-                    setattr(q, k, v)
+            q = db.session.query(TblTask).get(self.task_id)
+            db.populate_row(q, self)
+            # for k, v in self.as_dict().items():
+            #     if hasattr(q, k):
+            #         setattr(q, k, v)
             db.session.commit()
 
     def update_formula(self):
