@@ -784,10 +784,17 @@ def _upload_track_zip(taskid):
                     return redirect(request.url)
 
                 if frontendUtils.allowed_tracklog(zip_file.filename, extension=['zip']):
-                    task = Task.read(taskid)
-                    data = frontendUtils.process_igc_zip(task, zip_file)
-                    resp = jsonify(data)
-                    return resp
+                    tracksdir = frontendUtils.unzip_igc(zip_file)
+                    if frontendUtils.production():
+                        job = current_app.task_queue.enqueue(frontendUtils.process_igc_from_zip, taskid, tracksdir,
+                                                             current_user.username)
+                        resp = jsonify(success=True)
+                        return resp
+                    else:
+                        task = Task.read(taskid)
+                        data = frontendUtils.process_igc_zip(task, zip_file)
+                        resp = jsonify(data)
+                        return resp
 
                 else:
                     print("That file extension is not allowed")

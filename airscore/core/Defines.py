@@ -32,6 +32,7 @@ AIRSPACECHECKDIR = config['dir']['airspace_check']  # airspace check files direc
 WAYPOINTDIR = config['dir']['waypoint']  # waypoint files directory
 LIVETRACKDIR = config['dir']['livetracking']  # waypoint files directory
 IGCPARSINGCONFIG = config['dir']['igc_parsing_config']  # igc parsing config files
+TEMPFILES = config['dir']['temp_files']  # tempfile folder when we need one that can be seen by other containers. e.g. workers
 
 track_sources = ['xcontest', 'flymaster']     # external available sources for tracks
 track_formats = ['igc']   # track accepted formats

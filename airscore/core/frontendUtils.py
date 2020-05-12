@@ -446,6 +446,51 @@ def process_igc_background(task_id, par_id, filename, full_file_name, user):
     return None
 
 
+def unzip_igc(zipfile):
+    """split function for background in production"""
+    from trackUtils import extract_tracks
+    from tempfile import mkdtemp
+    from os import chmod
+    from Defines import TEMPFILES
+
+    """create a temporary directory"""
+    # with TemporaryDirectory() as tracksdir:
+    tracksdir = mkdtemp(dir=TEMPFILES)
+    # make readable and writable by other users as background runs in another container
+    chmod(tracksdir, 0o775)
+
+    error = extract_tracks(zipfile, tracksdir)
+    if error:
+        print(f"An error occurred while dealing with file {zipfile}")
+        return None
+    return tracksdir
+
+
+def process_igc_from_zip(taskid, tracksdir, user):
+    """function split for background use.
+    tracksdir is a temp dir that will be deleted at the end of the function"""
+    from task import Task
+    from trackUtils import get_tracks, assign_and_import_tracks
+    from shutil import rmtree
+    print = partial(print_to_sse, id=None, channel=user)
+    print('|open_modal')
+    task = Task.read(taskid)
+    if task.opt_dist == 0:
+        print('task not optimised.. optimising')
+        task.calculate_optimised_task_length()
+    tracks = get_tracks(tracksdir)
+    """find valid tracks"""
+    if tracks is None:
+        print(f"There are no valid tracks in zipfile")
+        return None
+
+    """associate tracks to pilots and import"""
+    assign_and_import_tracks(tracks, task, user=user)
+    rmtree(tracksdir)
+    print('|reload')
+    return 'Success'
+
+
 def process_igc_zip(task, zipfile):
     from trackUtils import extract_tracks, get_tracks, assign_and_import_tracks
     from tempfile import TemporaryDirectory

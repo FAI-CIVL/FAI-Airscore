@@ -201,7 +201,9 @@
         },
                       success: function () {
                            $('#bulkmodal').modal('hide');
+                           {% if not production %}
                            populate_track_admin({{taskid|tojson}});
+                           {% endif %}
                       },
 
         progress: function (e, data) {
@@ -369,6 +371,13 @@ function initES() {
 
 
     }, false);
+
+    es.addEventListener('reload', function(event) {
+        populate_track_admin({{taskid|tojson}});
+
+    }, false);
+
+
 
 <!--    es.addEventListener('error', function(event) {-->
 <!--        alert("Failed to connect to event stream. Is Redis running?");-->

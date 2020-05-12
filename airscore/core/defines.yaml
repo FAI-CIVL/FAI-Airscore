@@ -51,6 +51,7 @@ dir:
   airspace_check: /app/airscore/data/airspace/check_file/
   livetracking: /app/airscore/data/livetracking/
   igc_parsing_config: /app/airscore/igc_parsing_config/
+  temp_files: /app/airscore/data/temp/
 
 g_record_validation_server: http://vali.fai-civl.org/api/vali/json
 flymaster_live_server: https://lt.flymaster.net/wlb/getLiveData.php?trackers=

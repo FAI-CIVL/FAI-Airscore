@@ -64,14 +64,19 @@ def get_tracks(directory):
     return files
 
 
-def assign_and_import_tracks(files, task, xcontest=False):
+def assign_and_import_tracks(files, task, xcontest=False, user=None):
     """Find pilots to associate with tracks"""
-    from compUtils import get_registration, get_task_path
+    from compUtils import get_registration
     from track import Track
     from trackUtils import get_unscored_pilots
+    from functools import partial
+    from frontendUtils import print_to_sse
 
+    # if user is supplied we want to change the print func to use SSE (we are probably running in background)
+    if user:
+        print = partial(print_to_sse, id=None, channel=user)
     pilot_list = []
-    print(f"We have {len(files)} track to associate \n")
+
     task_id = task.id
     comp_id = task.comp_id
     task_date = task.date
@@ -81,9 +86,11 @@ def assign_and_import_tracks(files, task, xcontest=False):
     registration = get_registration(comp_id)
     if registration:
         """We add tracks for the registered pilots not yet scored"""
-        print("Comp with registration: files will be checked against registered pilots not yet scored \n")
+        print("Comp with registration: files will be checked against registered pilots not yet scored")
         pilot_list = get_unscored_pilots(task_id, xcontest)
-
+        print(f"We have {len(pilot_list)} pilots to find tracks for")
+    else:
+        print(f"We have {len(files)} tracks to associate")
     track_path = task.file_path
 
     # print("found {} tracks \n".format(len(files)))
@@ -91,14 +98,16 @@ def assign_and_import_tracks(files, task, xcontest=False):
         mytrack = None
         filename = path.basename(file)
         if registration:
+            if len(pilot_list) == 0:
+                break
             if len(pilot_list) > 0:
-                print(f"checking {filename} against {len(pilot_list)} pilots... \n")
+                print(f"checking {filename} against {len(pilot_list)} pilots...")
                 """check filenames to find pilots"""
                 pilot, full_name = get_pilot_from_list(filename, pilot_list)
                 if pilot:
                     """found a pilot for the track file.
                     dropping pilot from list and creating track obj"""
-                    print(f"Found a pilot to associate with file. dropping {pilot.name} from non scored list \n")
+                    print(f"Found a pilot to associate with file. dropping {pilot.name} from non scored list")
                     pilot_list[:] = [d for d in pilot_list if d.par_id != pilot.par_id]
                     mytrack = Track.read_file(filename=file)
         else:
@@ -107,38 +116,45 @@ def assign_and_import_tracks(files, task, xcontest=False):
             mytrack = Track.read_file(filename=file)
             if get_pil_track(mytrack.par_id, task_id):
                 """pilot has already been scored"""
-                print(f"Pilot with ID {mytrack.par_id} has already a valid track for task with ID {task_id} \n")
+                print(f"Pilot with ID {mytrack.par_id} has already a valid track for task with ID {task_id}")
                 mytrack = None
         """check result"""
         if not mytrack:
-            print(f"Track {filename} is not a valid track file or pilot not found in competition\n")
+            print(f"Track {filename} is not a valid track file, pilot not found in competition or pilot already has "
+                  f"a track")
         elif not mytrack.date == task_date:
-            print(f"track {filename} has a different date from task \n")
+            print(f"track {filename} has a different date from task")
         else:
             """pilot is registered and has no valid track yet
             moving file to correct folder and adding to the list of valid tracks"""
             mytrack.task_id = task_id
             mytrack.copy_track_file(task_path=track_path, pname=full_name)
-            print(f"pilot {mytrack.par_id} associated with track {mytrack.filename} \n")
+            print(f"pilot {mytrack.par_id} associated with track {mytrack.filename}")
             pilot.track = mytrack
-            verify_and_import_track(pilot, task)
-
+            if user:
+                new_print = partial(print_to_sse, id=mytrack.par_id, channel=user)
+                print('***************START*******************')
+            else:
+                print = print
+            verify_and_import_track(pilot, task, print=new_print)
+    print("*******************processed all tracks**********************")
 
 def import_track(pilot, task_id):
     pilot.track.to_db(task_id)
     return pilot.track.track_id
 
 
-def verify_and_import_track(pilot, task):
+def verify_and_import_track(pilot, task, print=print):
     from airspace import AirspaceCheck
 
     if task.airspace_check:
         airspace = AirspaceCheck.from_task(task)
     else:
         airspace = None
-    pilot.result = Flight_result.check_flight(pilot.track.flight, task, airspace_obj=airspace)  # check flight against task
+    pilot.result = Flight_result.check_flight(pilot.track.flight, task, airspace_obj=airspace, print=print)  # check flight against task
     pilot.to_db()
-    print(pilot.track.flight.notes)
+    print(str(pilot.track.flight.notes))
+    print('***************END****************')
 
     return pilot.result
 
