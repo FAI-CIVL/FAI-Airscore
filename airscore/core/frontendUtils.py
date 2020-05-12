@@ -133,7 +133,6 @@ def get_task_turnpoints(task):
                 tp['type'] = 'Goal Cylinder'
             else:
                 tp['type'] = 'Goal Line'
-
         else:
             tp['type'] = tp['type'].capitalize()
     if total_dist == '':
