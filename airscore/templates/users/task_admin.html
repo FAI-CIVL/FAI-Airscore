@@ -621,7 +621,7 @@ $(function () {
 <script>
 
   function filesize(elem){
-    document.cookie = `filesize=${elem.files[0].size}`
+    document.cookie = `filesize=${elem.files[0].size}; SameSite=Strict; path=/`
   }
 
     {% endif%}
