@@ -268,7 +268,7 @@ class Track(object):
             """copy file"""
             try:
                 copyfile(src_file, fullname)
-                self.track_file = fullname
+                self.track_file = filename
                 # print(f'file succesfully copied to : {self.filename}')
                 print('file succesfully copied to :', self.filename)
             except SQLAlchemyError:
