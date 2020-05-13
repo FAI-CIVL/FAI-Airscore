@@ -509,7 +509,7 @@ def in_semicircle(wpts, idx, coords):
         pvec = polar2cartesian(f) - c
         # dot product
         dot = vecdot(bvec, pvec)
-        if dot > 0:
+        if dot <= 0:
             return 1
     return 0
 
