@@ -773,7 +773,7 @@ def _upload_track_zip(taskid):
 
             if "filesize" in request.cookies:
 
-                if not frontendUtils.allowed_tracklog_filesize(request.cookies["filesize"]):
+                if not frontendUtils.allowed_tracklog_filesize(request.cookies["filesize"], size=50):
                     print("Filesize exceeded maximum limit")
                     return redirect(request.url)
 
