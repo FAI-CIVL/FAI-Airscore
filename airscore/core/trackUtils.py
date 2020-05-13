@@ -64,9 +64,6 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None, print=print
     from functools import partial
     from frontendUtils import print_to_sse
 
-    # if user is supplied we want to change the print func to use SSE (we are probably running in background)
-    # if user:
-    #     print = partial(print_to_sse, id=None, channel=user)
     pilot_list = []
 
     task_id = task.id

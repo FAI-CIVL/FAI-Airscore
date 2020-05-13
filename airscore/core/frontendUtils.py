@@ -309,9 +309,9 @@ def allowed_tracklog(filename, extension=track_formats):
         return False
 
 
-def allowed_tracklog_filesize(filesize):
+def allowed_tracklog_filesize(filesize, size=5):
     """check if tracklog exceeds maximum file size for tracklog (5mb)"""
-    if int(filesize) <= 5*1024*1024:
+    if int(filesize) <= size*1024*1024:
         return True
     else:
         return False
