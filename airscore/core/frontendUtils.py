@@ -485,7 +485,7 @@ def process_igc_from_zip(taskid, tracksdir, user):
         return None
 
     """associate tracks to pilots and import"""
-    assign_and_import_tracks(tracks, task, user=user)
+    assign_and_import_tracks(tracks, task, user=user, print=print)
     rmtree(tracksdir)
     print('|reload')
     return 'Success'

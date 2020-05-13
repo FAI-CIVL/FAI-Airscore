@@ -57,7 +57,7 @@ def get_tracks(directory):
     return files
 
 
-def assign_and_import_tracks(files, task, xcontest=False, user=None):
+def assign_and_import_tracks(files, task, xcontest=False, user=None, print=print):
     """Find pilots to associate with tracks"""
     from compUtils import get_registration
     from track import Track
@@ -65,8 +65,8 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None):
     from frontendUtils import print_to_sse
 
     # if user is supplied we want to change the print func to use SSE (we are probably running in background)
-    if user:
-        print = partial(print_to_sse, id=None, channel=user)
+    # if user:
+    #     print = partial(print_to_sse, id=None, channel=user)
     pilot_list = []
 
     task_id = task.id
@@ -127,7 +127,7 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None):
                 new_print = partial(print_to_sse, id=mytrack.par_id, channel=user)
                 print('***************START*******************')
             else:
-                print = print
+                new_print = print
             verify_and_import_track(pilot, task, print=new_print)
     print("*******************processed all tracks**********************")
 
