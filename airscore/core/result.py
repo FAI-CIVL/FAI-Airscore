@@ -156,6 +156,7 @@ class Task_result:
                     'ESS_time',
                     'ESS_rank',
                     'turnpoints_made',
+                    'waypoints_achieved',
                     'distance_score',
                     'time_score',
                     'departure_score',
