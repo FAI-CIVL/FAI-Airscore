@@ -216,7 +216,7 @@ def competition(compid):
 # @blueprint.route('/_get_registered_pilots/<compid>', methods=['GET'])
 # def _get_registered_pilots(compid):
 #     comp, pilot_list, pilot = frontendUtils.get_registered_pilots(compid, current_user)
-#     return jsonify(dict(info=comp, data=pilot_list, pilot=pilot))
+#     return dict(info=comp, data=pilot_list, pilot=pilot)
 
 
 @blueprint.route('/task_result/<int:taskid>')
@@ -267,7 +267,7 @@ def _get_task_result(taskid):
             all_classes.append(comp_class)
     all_classes.reverse()
     result_file['classes'] = all_classes
-    return jsonify(result_file)
+    return result_file
 
 
 @blueprint.route('/comp_result/<int:compid>')
@@ -313,7 +313,7 @@ def _get_comp_result(compid):
             all_classes.append(comp_class)
     all_classes.reverse()
     result_file['classes'] = all_classes
-    return jsonify(result_file)
+    return result_file
 
 
 @blueprint.route('/country_overall/<int:compid>')
@@ -328,7 +328,7 @@ def _get_comp_country_result(compid):
     filename = get_comp_json_filename(compid)
     if not filename:
         return render_template('404.html')
-    return jsonify(get_comp_country_scoring(filename))
+    return get_comp_country_scoring(filename)
 
 
 @blueprint.route('/country_task/<int:taskid>')
@@ -343,7 +343,7 @@ def _get_task_country_result(taskid):
     filename = get_task_json_filename(taskid)
     if not filename:
         return render_template('404.html')
-    return jsonify(get_task_country_scoring(filename))
+    return get_task_country_scoring(filename)
 
 
 class SelectAdditionalTracks(FlaskForm):
@@ -425,7 +425,7 @@ def download_file(filetype, filename):
 @blueprint.route('/_get_participants/<compid>', methods=['GET'])
 def _get_participants(compid):
     pilot_list, external, teams = frontendUtils.get_participants(compid)
-    return jsonify({'data': pilot_list, 'external': external, 'teams': teams})
+    return {'data': pilot_list, 'external': external, 'teams': teams}
 
 
 @blueprint.route('/registered_pilots/<int:compid>')
@@ -458,7 +458,7 @@ def _get_participants_and_status(compid):
             participant = Participant.from_profile(current_user.id)
             participant_info = participant.as_dict()
             status = 'not_registered'
-    return jsonify({'data': pilot_list, 'status': status, 'pilot_details': participant_info})
+    return {'data': pilot_list, 'status': status, 'pilot_details': participant_info}
 
 
 @blueprint.route('/live/<int:taskid>')

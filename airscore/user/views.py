@@ -93,7 +93,7 @@ def save_airspace():
     airspaceUtils.create_airspace_map_check_files(newfile)
     if data['old_filename'] != data['new_filename']:
         frontendUtils.update_airspace_file(data['old_filename'], newfile)
-    return jsonify(dict(redirect=newfile))
+    return dict(redirect=newfile)
 
 
 @blueprint.route('/comp_admin', methods=['GET', 'POST'])
@@ -111,7 +111,7 @@ def _create_comp():
     date_to = datetime.strptime(data['dateto'], '%Y-%m-%d')
     if date_to < date_from:
         flash("Start date cannot be after end date. Competition not saved", category='danger')
-        return jsonify(dict(redirect='/users/comp_admin'))
+        return dict(redirect='/users/comp_admin')
     new_comp = Comp(comp_name=data['name'],
                     comp_class=data['class'],
                     comp_site=data['location'],
@@ -122,7 +122,7 @@ def _create_comp():
     output = new_comp.to_db()
     if type(output) == int:
         frontendUtils.set_comp_admin(output, current_user.id, owner=True)
-        return jsonify(dict(redirect='/users/comp_admin'))
+        return dict(redirect='/users/comp_admin')
     else:
         return render_template('500.html')
 
@@ -166,7 +166,7 @@ def _get_formulas():
     category = request.args.get('category', '01', type=str)
     formulas = list_formulas()
     formula_choices = [(x, x.upper()) for x in formulas[category]]
-    return jsonify(formula_choices)
+    return formula_choices
 
 
 @blueprint.route('/comp_settings_admin/<compid>', methods=['GET', 'POST'])
@@ -332,7 +332,7 @@ def comp_settings_admin(compid):
 @login_required
 def _get_admins(compid):
     owner, admins, _ = frontendUtils.get_comp_admins(compid)
-    return jsonify({'owner': owner, 'admins': admins})
+    return {'owner': owner, 'admins': admins}
 
 
 @blueprint.route('/_add_admin/<compid>', methods=['POST'])
@@ -512,7 +512,7 @@ def _add_task(compid):
     task.igc_config_file = comp.igc_config_file
     task.to_db()
     tasks = frontendUtils.get_task_list(comp)
-    return jsonify(tasks)
+    return tasks
 
 
 @blueprint.route('/_del_task/<taskid>', methods=['POST'])
@@ -530,7 +530,7 @@ def _get_tasks(compid):
     comp = Comp()
     comp.comp_id = compid
     tasks = frontendUtils.get_task_list(comp)
-    return jsonify(tasks)
+    return tasks
 
 
 @blueprint.route('/_get_adv_settings', methods=['GET','POST'])
@@ -547,7 +547,7 @@ def _get_adv_settings():
                 'validity_min_time': formula.validity_min_time, 'scoreback_time': formula.score_back_time,
                 'max_JTG': formula.max_JTG, 'JTG_penalty_per_sec': formula.JTG_penalty_per_sec}
 
-    return jsonify(settings)
+    return settings
 
 
 @blueprint.route('/_get_task_turnpoints/<taskid>', methods=['GET'])
@@ -555,7 +555,7 @@ def _get_adv_settings():
 def _get_task_turnpoints(taskid):
     task = Task(task_id=int(taskid))
     turnpoints = frontendUtils.get_task_turnpoints(task)
-    return jsonify(turnpoints)
+    return turnpoints
 
 
 @blueprint.route('/_add_turnpoint/<taskid>', methods=['POST'])
@@ -596,7 +596,7 @@ def _add_turnpoint(taskid):
             task.update_task_distance()
             write_map_json(taskid)
         turnpoints = frontendUtils.get_task_turnpoints(task)
-        return jsonify(turnpoints)
+        return turnpoints
     else:
         return render_template('500.html')
 
@@ -644,14 +644,14 @@ def _del_all_turnpoints(taskid):
 @blueprint.route('/_get_tracks_admin/<taskid>', methods=['GET'])
 @login_required
 def _get_tracks_admin(taskid):
-    return jsonify({'data': frontendUtils.get_pilot_list_for_track_management(taskid)})
+    return {'data': frontendUtils.get_pilot_list_for_track_management(taskid)}
 
 
 @blueprint.route('/_get_tracks_processed/<taskid>', methods=['GET'])
 @login_required
 def _get_tracks_processed(taskid):
     tracks, pilots = frontendUtils.number_of_tracks_processed(taskid)
-    return jsonify({'tracks': tracks, 'pilots': pilots})
+    return {'tracks': tracks, 'pilots': pilots}
 
 
 @blueprint.route('/track_admin/<taskid>', methods=['GET'])
@@ -736,9 +736,9 @@ def _upload_track(taskid, parid):
                 else:
                     print("That file extension is not allowed")
                     return redirect(request.url)
-            resp = jsonify({'error': 'filesize not sent'})
+            resp = {'error': 'filesize not sent'}
             return resp
-        resp = jsonify({'error': 'request.files'})
+        resp = {'error': 'request.files'}
         return resp
 
 
@@ -793,15 +793,15 @@ def _upload_track_zip(taskid):
                     else:
                         task = Task.read(taskid)
                         data = frontendUtils.process_igc_zip(task, zip_file)
-                        resp = jsonify(data)
+                        resp = data
                         return resp
 
                 else:
                     print("That file extension is not allowed")
                     return redirect(request.url)
-            resp = jsonify({'error': 'filesize'})
+            resp = {'error': 'filesize'}
             return resp
-        resp = jsonify({'error': 'request.files'})
+        resp = {'error': 'request.files'}
         return resp
 
 
@@ -817,7 +817,8 @@ def _get_task_result_files(taskid):
         published = time.ctime(file['created'] + offset)
         choices.append((file['filename'], f"{published} - {file['status']}"))
     choices.reverse()
-    return jsonify({'choices': choices, 'header': header, 'active': active})
+    return {'choices': choices, 'header': header, 'active': active, 'comp_header': comp_header,
+                    'display_comp_unpublish': display_comp_unpublish}
 
 
 @blueprint.route('/_get_task_score_from_file/<taskid>/<filename>', methods=['GET'])
@@ -826,7 +827,7 @@ def _get_task_score_from_file(taskid, filename):
     error = None
     result_file = get_task_json_by_filename(filename)
     if not result_file:
-        return jsonify({'data': ''})
+        return {'data': ''}
     taskid = int(taskid)
     rank = 1
     all_pilots = []
@@ -864,7 +865,7 @@ def _get_task_score_from_file(taskid, filename):
         all_pilots.append(pilot)
         rank += 1
 
-    return jsonify({'data': all_pilots})
+    return {'data': all_pilots}
 
 
 @blueprint.route('/task_score_admin/<taskid>', methods=['GET', 'POST'])
@@ -950,14 +951,14 @@ def _change_result_status(taskid):
 def _get_regions():
     compid = session.get('compid')
     choices, details = frontendUtils.get_region_choices(compid)
-    return jsonify({'choices': choices, 'details': details})
+    return {'choices': choices, 'details': details}
 
 
 @blueprint.route('/_get_wpts/<regid>', methods=['GET'])
 @login_required
 def _get_wpts(regid):
     choices, details = frontendUtils.get_waypoint_choices(regid)
-    return jsonify({'choices': choices, 'data': details})
+    return {'choices': choices, 'data': details}
 
 
 @blueprint.route('/region_admin', methods=['GET', 'POST'])
@@ -1057,7 +1058,7 @@ def _get_non_and_registered_pilots_internal(compid):
 @login_required
 def _get_registered_pilots_external(compid):
     registered_pilots, _ = frontendUtils.get_participants(compid, source='external')
-    return jsonify({'registered_pilots': registered_pilots})
+    return {'registered_pilots': registered_pilots}
 
 
 @blueprint.route('/igc_parsing_config/<filename>', methods=['GET', 'POST'])
