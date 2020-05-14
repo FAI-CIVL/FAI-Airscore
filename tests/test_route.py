@@ -21,12 +21,21 @@ out_radius = GNSSFix(rawtime=1, lat=41.34809381046268, lon=21.303493968601263, v
 goal_tp = TurnpointFactory(lat=41.348, lon=21.3042, radius=50)
 previous_tp = TurnpointFactory(lat=41.2448, lon=21.5773)
 
-waypoint_list = [previous_tp, goal_tp]
-assert in_semicircle(waypoint_list, 1, in_radius_in_semi) is True
-assert in_semicircle(waypoint_list, 1, in_radius_out_semi) is False
-assert in_semicircle(waypoint_list, 1, goal_tp) is True
 
-# using task wpt list
-assert in_semicircle(turnpoints, 5, in_radius_out_semi) is False
-assert in_semicircle(turnpoints, 5, in_radius_in_semi) is True
-assert in_semicircle(turnpoints, 5, out_radius) is False
+def check_in_radius():
+    # check in radius
+    assert goal_tp.in_radius(in_radius_in_semi, 0, 0) is True
+    assert goal_tp.in_radius(in_radius_out_semi, 0, 0) is True
+    assert goal_tp.in_radius(out_radius, 0, 0) is False
+
+
+def check_in_semicircle():
+    waypoint_list = [previous_tp, goal_tp]
+    assert in_semicircle(waypoint_list, 1, in_radius_in_semi) is True
+    assert in_semicircle(waypoint_list, 1, in_radius_out_semi) is False
+    assert in_semicircle(waypoint_list, 1, goal_tp) is True
+
+    # using task wpt list
+    assert in_semicircle(turnpoints, 5, in_radius_out_semi) is False
+    assert in_semicircle(turnpoints, 5, in_radius_in_semi) is True
+    assert in_semicircle(turnpoints, 5, out_radius) is False
