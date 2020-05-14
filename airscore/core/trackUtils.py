@@ -16,6 +16,12 @@ from flight_result import Flight_result
 from myconn import Database
 import re
 from pathlib import Path
+import unicodedata
+
+
+def remove_accents(input_str):
+    nfkd_form = unicodedata.normalize('NFKD', input_str)
+    return u"".join([c for c in nfkd_form if not unicodedata.combining(c)])
 
 
 def extract_tracks(file, dir):
@@ -290,13 +296,13 @@ def get_pilot_from_list(filename, pilots):
     # civl = r'[0-9]+'
     # live = r'[\d]+'
     # other = r'[\da-zA-Z]+'
-    filename_check = dict(name=r'[a-zA-Z]+', id=r'[\d]+', fai=r'[\da-zA-Z]+', civl=r'[0-9]+', live=r'[\da-zA-Z]+',
-                          other=r'[\da-zA-Z]+')
+    filename_check = dict(name=r"[a-zA-Z']+", id=r'[\d]+', fai=r'[\da-zA-Z]+', civl=r'[\d]+', live=r'[\da-zA-Z]+',
+                          other=r"[a-zA-Z']+")
     format_list = [re.findall(r'[\da-zA-Z]+', el) for el in filename_formats]
 
     '''Get string'''
     string = Path(filename).stem
-    elements = re.findall(r'[\d]+|[a-zA-Z]+', string)
+    elements = re.findall(r"[\d]+|[a-zA-Z']+", string)
     num_of_el = len(elements)
     pilot = None
     if any(el for el in format_list if len(el) == num_of_el):
@@ -327,17 +333,19 @@ def get_pilot_from_list(filename, pilots):
                         pilot = next((p for p in pilots if getattr(p.info, a) == v), None)
                         if pilot:
                             print(f'{a}, found {pilot.info.name}')
-                            break
+                            filename = remove_accents('_'.join(pilot.info.name.replace('_', ' ')
+                                                               .replace("'", ' ').lower().split()))
+                            return pilot, filename
                 else:
                     '''no unique id in filename, using name'''
                     names = [str(elements[idx]).lower() for idx, val in enumerate(f) if val == 'name']
                     pilot = next((p for p in pilots if all(n in p.info.name.lower().split() for n in names)), None)
                     if pilot:
                         print(f'using name, found {pilot.info.name}')
-                        break
-                if pilot:
-                    '''we found a pilot'''
-                    return pilot, '_'.join(pilot.info.name.replace('_', ' ').lower().split())
+                        '''we found a pilot'''
+                        filename = remove_accents('_'.join(pilot.info.name.replace('_', ' ')
+                                                           .replace("'", ' ').lower().split()))
+                        return pilot, filename
     return None, None
 
 
