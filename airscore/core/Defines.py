@@ -34,8 +34,22 @@ LIVETRACKDIR = config['dir']['livetracking']  # waypoint files directory
 IGCPARSINGCONFIG = config['dir']['igc_parsing_config']  # igc parsing config files
 TEMPFILES = config['dir']['temp_files']  # tempfile folder when we need one that can be seen by other containers. e.g. workers
 
+''' Track file Settings'''
 track_sources = ['xcontest', 'flymaster']     # external available sources for tracks
 track_formats = ['igc']   # track accepted formats
+'''accepted filename formats
+id
+name
+civl
+live
+fai
+other: other not used
+examples: 
+    '0068.igc' = 'id' 
+    'LiveTrack Antoine Saraf.361951.20190717-113625.5836.47.igc' = 'other name name.live.other-other.other.id' '''
+filename_formats = ['id', 'other name name.live.other-other.other.id', 'fai_name', 'name_name']
+
+''' Waypoint file Settings'''
 wpt_formats = ['GEO', 'UTM', 'CUP', 'GPX', 'CompeGPS', 'OziExplorer']
 ALLOWED_WPT_EXTENSIONS = ['wpt', 'cup', 'gpx', 'ozi']
 

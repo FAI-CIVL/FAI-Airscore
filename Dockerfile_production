@@ -26,8 +26,10 @@ RUN chown -R sid:sid /app
 USER sid
 ENV PATH="/home/sid/.local/bin:${PATH}"
 ENV PYTHONPATH="${PYTHONPATH}:/app/airscore/core:/app"
+
 RUN npm install
 
+RUN pip install --upgrade pip
 
 # ================================= PRODUCTION =================================
 FROM base AS production

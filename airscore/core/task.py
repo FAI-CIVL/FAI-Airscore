@@ -553,7 +553,7 @@ class Task(object):
             task.create_path()
         '''add geo object if we have turnpoints'''
         if task.turnpoints is not None and len(task.turnpoints) > 0:
-            task.get_geo()
+            task.create_projection()
         return task
 
     def read_turnpoints(self):
@@ -614,13 +614,10 @@ class Task(object):
                 - recalculate Opt. route
                 - check all tracks'''
             print(f" - FULL Mode -")
-            '''get projection if needed'''
-            if self.geo is None:
-                self.get_geo()
+            '''get projection'''
+            self.create_projection()
             print(f"Calculating task optimised distance...")
             self.calculate_task_length()
-            self.projected_turnpoints = convert_turnpoints(self.turnpoints, self.geo)
-            self.projected_line = convert_turnpoints(get_line(self.turnpoints), self.geo)
             self.calculate_optimised_task_length()
             print(f"Storing calculated values to database...")
             self.update_task_distance()
@@ -732,9 +729,8 @@ class Task(object):
         self.get_results()
 
         ''' calculate projected turnpoints'''
-        if not self.projected_turnpoints:
-            self.projected_turnpoints = convert_turnpoints(self.turnpoints, self.geo)
-            self.projected_line = convert_turnpoints(get_line(self.turnpoints), self.geo)
+        if not self.geo:
+            self.create_projection()
 
         ''' manage Stopped Task    '''
         print(f'stopped time: {self.stopped_time}')
@@ -909,6 +905,14 @@ class Task(object):
 
     def update_formula(self):
         self.formula.to_db()
+
+    def create_projection(self):
+        """creates geo.Geo flat projection, projected turnpoints and line/semicircle bisecting segment extremes"""
+        from route import get_line, convert_turnpoints
+        self.get_geo()
+        tol, min_tol = self.formula.tolerance, self.formula.min_tolerance
+        self.projected_turnpoints = convert_turnpoints(self.turnpoints, self.geo)
+        self.projected_line = convert_turnpoints(get_line(self.turnpoints, tol, min_tol), self.geo)
 
     def to_db(self, session=None):
         """Inserts new task or updates existent one"""
@@ -1496,9 +1500,9 @@ class Task(object):
         if len(self.turnpoints) < 3:
             return
 
-        '''calculate optimised distance fixes on cilynders'''
+        '''calculate optimised distance fixes on cylinders'''
         if self.geo is None:
-            self.get_geo()
+            self.create_projection()
 
         optimised = get_shortest_path(self)
 
@@ -1537,6 +1541,8 @@ class Task(object):
         self.optimised_legs.clear()
         self.partial_distance.clear()
         self.legs.clear()
+        self.projected_turnpoints.clear()
+        self.projected_line.clear()
 
         '''delete waypoints from database'''
         with Database() as db:

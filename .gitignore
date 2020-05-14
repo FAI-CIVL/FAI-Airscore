@@ -101,3 +101,7 @@ venv/
 /airscore/data/airspace/check_file/*
 /.env
 /airscore/data/livetracking/
+/temp_tracks/
+/temp_tracks/*
+/airscore/data/temp/
+/airscore/data/temp/*

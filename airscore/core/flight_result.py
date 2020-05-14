@@ -37,8 +37,7 @@ from calcUtils import string_to_seconds, sec_to_time
 from db_tables import TblTaskResult
 from formulas.libs.leadcoeff import LeadCoeff
 from myconn import Database
-from route import in_semicircle, start_made_civl, tp_made_civl, \
-    tp_time_civl, get_shortest_path, distance_flown
+from route import in_goal_sector, start_made_civl, tp_made_civl, tp_time_civl, get_shortest_path, distance_flown
 from notification import Notification
 
 
@@ -530,18 +529,16 @@ class Flight_result(object):
                     if tp_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m):
                         time = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
                         result.waypoints_achieved.append([tp.name, time, alt])  # pilot has achieved turnpoint
-                        print(f"Pilot took {tp.name} at {sec_to_time(time)} at {alt}m")
+                        print(f"Pilot took {tp.name} at {sec_to_time(time)} at {alt}m | tp.next is {tp.name}")
                         tp.move_to_next()
 
-                if tp.next.type == 'goal':
+                if tp.ess_done and tp.type == 'goal':
                     if ((tp.next.shape == 'circle' and tp_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m))
-                            or (tp.next.shape == 'line' and (in_semicircle(task, task.turnpoints, tp.pointer, my_fix)
-                                                             or in_semicircle(task, task.turnpoints, tp.pointer,
-                                                                              next_fix)))):
-                        result.waypoints_achieved.append(
-                            [tp.name, next_fix.rawtime, alt])  # pilot has achieved turnpoint
+                            or
+                            (tp.next.shape == 'line' and (in_goal_sector(task, next_fix)))):
+                        result.waypoints_achieved.append([tp.name, next_fix.rawtime, alt])  # pilot has achieved goal
                         result.best_distance_time = next_fix.rawtime
-                        print(f"Pilot in goal at {sec_to_time(next_fix.rawtime)} at {alt}m")
+                        print(f"Goal at {sec_to_time(next_fix.rawtime)} at {alt}m, {next_fix.lat}, {next_fix.lon}")
                         break
 
             '''update result data
@@ -660,7 +657,7 @@ class Flight_result(object):
                         [(x[1], x[2]) for x in result.waypoints_achieved if x[0] == 'Goal'], key=lambda t: t[0])
                     result.result_type = 'goal'
         if result.result_type != 'goal':
-            print(f"Pilot landed after {result.distance_flown/1000:.2f}km")
+            print(f"Pilot landed after {result.distance_flown / 1000:.2f}km")
 
         result.best_waypoint_achieved = str(result.waypoints_achieved[-1][0]) if result.waypoints_achieved else None
 
@@ -680,7 +677,7 @@ class Flight_result(object):
             if track_id is not given, it inserts a new result
             else it updates existing one """
         # we should use Pilot.to_db()
-        #TODO not used anylonger, should be deleted ( Pilot.to_db() is the one in use )
+        # TODO not used anylonger, should be deleted ( Pilot.to_db() is the one in use )
         from db_tables import TblTaskResult as R, TblParticipant as P, TblTask as T
 
         '''database connection'''
@@ -849,7 +846,8 @@ def verify_all_tracks(task, lib, airspace=None):
             pilot.track.flight = Flight.create_from_file(filename)
             if pilot.track.flight and pilot.track.flight.valid:
                 pilot.result = Flight_result.check_flight(pilot.track.flight, task, airspace_obj=airspace)
-                print(f'   Goal: {bool(pilot.result.goal_time)} | dist: {pilot.result.distance} part. LC: {pilot.result.fixed_LC}')
+                print(
+                    f'   Goal: {bool(pilot.result.goal_time)} | dist: {pilot.result.distance} part. LC: {pilot.result.fixed_LC}')
             elif pilot.track.flight:
                 print(f'Error in parsing track: {[x for x in pilot.track.flight.notes]}')
     lib.process_results(task)
