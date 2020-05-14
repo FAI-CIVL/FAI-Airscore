@@ -145,8 +145,11 @@ class Formula(object):
         self.scoring_altitude = scoring_altitude  # 'GPS', 'QNH'
         self.team_scoring = False
         self.team_size = 0
-        self.team_over = None
+        self.max_team_size = 0
         self.country_scoring = False
+        self.country_size = 0
+        self.max_country_size = 0
+        self.team_over = None
 
     def __eq__(self, other):
         if not isinstance(other, Formula):
