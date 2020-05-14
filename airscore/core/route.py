@@ -488,12 +488,11 @@ def tp_time_civl(fix, next, tp):
         return t
 
 
-def in_semicircle(wpts, idx, fix):
+def in_semicircle(wpts, idx, fix, t=0.001, min_t=5):
     from geopy import Point
     wpt = wpts[idx]
-    ln = wpt.radius
     print(f'distance from center: {distance(wpt, fix)} m')
-    if distance(wpt, fix) <= ln:
+    if wpt.in_radius(fix, t, min_t):
         fcoords = namedtuple('fcoords', 'flat flon')  # wpts don't have flon/flat so make them for polar2cartesian
         P = polar2cartesian(fcoords(fix.lat * math.pi / 180, fix.lon * math.pi / 180))
         '''initialised as south origin, case all task wpts have same coordinates'''
@@ -511,9 +510,26 @@ def in_semicircle(wpts, idx, fix):
         pvec = P - C
         # dot product
         dot = vecdot(bvec, pvec)
-        if dot <= 0:
-            return 1
-    return 0
+        if dot > 0:
+            return True
+    return False
+
+
+def in_goal_sector(task, fix):
+    wpts = task.turnpoints
+    t, min_t = task.formula.tolerance, task.formula.min_tolerance
+    goal = next((tp for tp in wpts if tp.type == 'goal' and tp.shape == 'line'), None)
+    if not goal:
+        return
+    # print(f'distance from center: {distance(goal, fix)} m')
+    if goal.in_radius(fix, t, min_t):
+        x, y = task.geo.convert(fix.lon, fix.lat)
+        B1, B2 = task.projected_line[2], task.projected_line[3]
+        dx = B2.x - B1.x
+        dy = B2.y - B1.y
+        innerProduct = (x - B1.x) * dx + (y - B1.y) * dy
+        return 0 <= innerProduct <= dx * dx + dy * dy
+    return False
 
 
 def rawtime_float_to_hms(timef):
@@ -707,34 +723,42 @@ def opt_wp_enter(opt, t1, enter):
     return point
 
 
-def get_line(turnpoints):
-    """returns line segment extremes"""
+def get_line(turnpoints, tol=0.001, min_t=5):
+    """returns line segment extremes and bisecting segment extremes """
     if not (turnpoints[-1].shape == 'line'):
         return []
-
     from pyproj import Geod
 
     clon, clat = turnpoints[-1].lon, turnpoints[-1].lat  # center point of the line
     ln = turnpoints[-1].radius
+    t = max(ln * tol, min_t)
     g = Geod(ellps="WGS84")
 
-    for t in reversed(list(turnpoints)):
-        if not (t.lat == clat and t.lon == clon):
-            flon, flat = t.lon, t.lat
+    for tp in reversed(list(turnpoints)):
+        if not (tp.lat == clat and tp.lon == clon):
+            flon, flat = tp.lon, tp.lat
             az1, az2, d = g.inv(clon, clat, flon, flat)
             lon1, lat1, az = g.fwd(clon, clat, az1 - 90, ln)
             lon2, lat2, az = g.fwd(clon, clat, az1 + 90, ln)
+            lon3, lat3, az = g.fwd(clon, clat, az1, t)
+            lon4, lat4, az = g.fwd(clon, clat, az2, ln + t)
             # print(f'Line: {lat1}, {lon1} - {lat2}, {lon2}')
 
             return [Turnpoint(lat1, lon1, 0, 'optimised', 'optimised', 'optimised'),
-                    Turnpoint(lat2, lon2, 0, 'optimised', 'optimised', 'optimised')]
+                    Turnpoint(lat2, lon2, 0, 'optimised', 'optimised', 'optimised'),
+                    Turnpoint(lat3, lon3, 0, 'optimised', 'optimised', 'optimised'),
+                    Turnpoint(lat4, lon4, 0, 'optimised', 'optimised', 'optimised')]
 
     ''' if all waypoints have same coordinates, returns a north-south line'''
     lon1, lat1, az = g.fwd(clon, clat, 0, ln)
     lon2, lat2, az = g.fwd(clon, clat, 180, ln)
+    lon3, lat3, az = g.fwd(clon, clat, 90, t)
+    lon4, lat4, az = g.fwd(clon, clat, 270, ln + t)
 
     return [Turnpoint(lat1, lon1, 0, 'optimised', 'optimised', 'optimised'),
-            Turnpoint(lat2, lon2, 0, 'optimised', 'optimised', 'optimised')]
+            Turnpoint(lat2, lon2, 0, 'optimised', 'optimised', 'optimised'),
+            Turnpoint(lat3, lon3, 0, 'optimised', 'optimised', 'optimised'),
+            Turnpoint(lat4, lon4, 0, 'optimised', 'optimised', 'optimised')]
 
 
 """
@@ -756,11 +780,12 @@ def get_shortest_path(task, fix=None, pointer=None):
 
     if not task.projected_turnpoints:
         '''create a list of cPoint obj from turnpoint list'''
-        points = convert_turnpoints(task.turnpoints, task.geo)
-        line = convert_turnpoints(get_line(task.turnpoints), task.geo)
-    else:
-        points = task.projected_turnpoints
-        line = task.projected_line
+        tol, min_tol = task.formula.tolerance, task.formula.min_tolerance
+        task.projected_turnpoints = convert_turnpoints(task.turnpoints, task.geo)
+        task.projected_line = convert_turnpoints(get_line(task.turnpoints, tol, min_tol), task.geo)
+
+    points = task.projected_turnpoints
+    line = task.projected_line
 
     if fix and pointer:
         '''create list of points to optimize distance to goal '''
@@ -848,7 +873,7 @@ def optimize_path(points, count, ESS_index, line):
             line        - goal line endpoints, or empty array"""
 
     dist = 0
-    hasLine = (len(line) == 2)
+    hasLine = (len(line) >= 2)
     for idx in range(1, count):
         '''Get the target cylinder c and its preceding and succeeding points'''
         c, a, b = get_target_points(points, count, idx, ESS_index)
