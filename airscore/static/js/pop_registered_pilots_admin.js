@@ -13,12 +13,15 @@ function populate_registered_pilot_details(compid){
         columns: [
 
              { data: 'ID', title: "#"},
+             { data: 'civl_id', title: "CIVL"},
              { data: 'name', title: "Pilot"},
              { data: 'sex', title: "Sex"},
              { data: 'nat', title: "Nat"},
+             { data: 'nat_team', title: "Nat team", "visible": false, "searchable": false},
              { data: 'glider', title: "Glider"},
              { data: 'glider_cert', title: "Certification"},
              { data: 'sponsor', title: "Sponsor"},
+             { data: 'team', title: "Team", "visible": false, "searchable": false},
              { data: 'status', title: "Status"},
              { data: 'paid', title: "Paid"},
              { data: null, title: "Source"},
@@ -55,6 +58,8 @@ function populate_registered_pilot_details(compid){
                    $('#total_external_pilots').text(json.external);
                    $('#delete_external').hide();
                    if(json.external > 0){ $('#delete_external').show();}
+                   if(json.teams.nat_teams){$('#pilots').DataTable().column(5).visible( true );}
+                   if(json.teams.teams){$('#pilots').DataTable().column(9).visible( true );}
   }
        })
 

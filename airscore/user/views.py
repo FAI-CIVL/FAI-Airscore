@@ -1048,7 +1048,7 @@ def _delete_region(regid):
 @blueprint.route('/_get_non_and_registered_pilots/<compid>', methods=['GET', 'POST'])
 @login_required
 def _get_non_and_registered_pilots_internal(compid):
-    registered_pilots, _ = frontendUtils.get_participants(compid, source='internal')
+    registered_pilots, _, _ = frontendUtils.get_participants(compid, source='internal')
     non_registered_pilots = frontendUtils.get_non_registered_pilots(compid)
     return jsonify({'non_registered_pilots': non_registered_pilots, 'registered_pilots': registered_pilots})
 
@@ -1159,6 +1159,9 @@ def _modify_participant_details(parid):
     participant.glider = data.get('glider')
     participant.certification = data.get('certification')
     participant.sponsor = data.get('sponsor')
+    participant.nat_team = data.get('nat_team')
+    participant.team = data.get('team')
+    participant.civl_id = data.get('CIVL')
     if data.get('status'):
         participant.status = data.get('status')
     if data.get('paid'):

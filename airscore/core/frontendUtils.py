@@ -744,13 +744,16 @@ def get_participants(compid, source='all'):
     """get all registered pilots for a comp.
     Compid: comp_id
     source: all: all participants
-            interanl: only participants from pilot table (with pil_id)
+            internal: only participants from pilot table (with pil_id)
             external: only participants not in pilot table (without pil_id)"""
     from compUtils import get_participants
+    from formula import Formula
     pilots = get_participants(compid)
     pilot_list = []
     external = 0
     for pilot in pilots:
+        if pilot.nat_team == 1:
+            pilot.nat_team = '✓'
         if pilot.paid == 1:
             pilot.paid = 'Y'
         else:
@@ -762,7 +765,9 @@ def get_participants(compid, source='all'):
             if not pilot.pil_id:
                 external += 1
                 pilot_list.append(pilot.as_dict())
-    return pilot_list, external
+    formula = Formula.read(compid)
+    teams = {'nat_teams': formula.country_scoring, 'teams': formula.team_scoring, 'team_size': formula.team_size}
+    return pilot_list, external, teams
 
 
 def print_to_sse(text, id, channel):

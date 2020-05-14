@@ -365,3 +365,6 @@ class ModifyParticipantForm(FlaskForm):
                                              ('confirmed', 'confirmed')])
     certification = StringField('Certification')
     paid = SelectField('Paid', choices=[(1, 'Yes'), (0, 'No')])
+    nat_team = BooleanField('In National Team')
+    team = StringField('Team')
+    CIVL = IntegerField('CIVL')

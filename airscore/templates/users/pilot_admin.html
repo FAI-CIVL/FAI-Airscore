@@ -122,12 +122,16 @@
             <div class="form-row">
                <div class="form-group width6">
                   {{modify_participant_form.id_num.label}} {{modify_participant_form.id_num(size=2, **{'id':"mod_id_number",})}}
+                   {{modify_participant_form.CIVL.label}} {{modify_participant_form.CIVL(size=2, **{'id':"mod_civl",})}}
                   {{modify_participant_form.name.label}} {{modify_participant_form.name(**{'id':"mod_name",})}}
                </div>
             </div>
             <div class="form-row">
                <div class="form-group width12">
                   {{modify_participant_form.nat.label}} {{modify_participant_form.nat(size=4, **{'id':"mod_nat"})}}
+                   <div id = "mod_nat_team_section">
+                  {{modify_participant_form.nat_team.label}} {{modify_participant_form.nat_team(size=4, **{'id':"mod_nat_team"})}}
+                       </div>
                </div>
             </div>
             <div class="form-row">
@@ -144,7 +148,12 @@
                      <div class="form-group col-md-6 display-if" data-target_name="mod_type" data-target_type="select" data-target_value='launch'>
                         {{modify_participant_form.sponsor.label}} {{modify_participant_form.sponsor(size=30, **{'id':"mod_sponsor"})}}
                      </div>
-                  </div>
+               </div>
+               <div class="form-group col-md-12 display-if" data-target_name="check_launch" data-target_type="checkbox" data-target_value=true>
+                     <div id="mod_team_section" class="form-group col-md-6 display-if" data-target_name="mod_type" data-target_type="select" data-target_value='launch'>
+                        {{modify_participant_form.team.label}} {{modify_participant_form.team(size=30, **{'id':"mod_team"})}}
+                     </div>
+               </div>
                 <div class="form-group col-md-12 display-if" data-target_name="mod_type" data-target_type="select" data-target_value_not='launch'>
                   {{modify_participant_form.status.label}} {{modify_participant_form.status(**{'id':"mod_status"})}}
                   {{modify_participant_form.paid.label}} {{modify_participant_form.paid( **{'id':"mod_paid"})}}
@@ -325,21 +334,36 @@ function get_internal_pilots() {
    };
 
 
-
+ function isNotEmpty( el ){
+      return !!$.trim(el.html())
+  }
 
 
 function edit_participant(par_id){
 
+
 $('#mod_id_number').val($('#id_'+par_id).children('td:eq(0)').text()).change();
-$('#mod_name').val($('#id_'+par_id).children('td:eq(1)').text()).change();
-$('#mod_sex').val($('#id_'+par_id).children('td:eq(2)').text()).change();
-$('#mod_nat').val($('#id_'+par_id).children('td:eq(3)').text()).change();
-$('#mod_glider').val($('#id_'+par_id).children('td:eq(4)').text()).change();
-$('#mod_certification').val($('#id_'+par_id).children('td:eq(5)').text()).change();
-$('#mod_sponsor').val($('#id_'+par_id).children('td:eq(6)').text()).change();
-$('#mod_status').val($('#id_'+par_id).children('td:eq(7)').text()).change();
-$('#mod_paid').val($('#id_'+par_id).children('td:eq(8)').text()).change();
+$('#mod_civl').val($('#id_'+par_id).children('td:eq(1)').text()).change();
+$('#mod_name').val($('#id_'+par_id).children('td:eq(2)').text()).change();
+$('#mod_sex').val($('#id_'+par_id).children('td:eq(3)').text()).change();
+$('#mod_nat').val($('#id_'+par_id).children('td:eq(4)').text()).change();
+$('#mod_nat_team').prop('checked', isNotEmpty($('#id_'+par_id).children('td:eq(5)')));
+$('#mod_glider').val($('#id_'+par_id).children('td:eq(6)').text()).change();
+$('#mod_certification').val($('#id_'+par_id).children('td:eq(7)').text()).change();
+$('#mod_sponsor').val($('#id_'+par_id).children('td:eq(8)').text()).change();
+$('#mod_team').val($('#id_'+par_id).children('td:eq(9)').text()).change();
+$('#mod_status').val($('#id_'+par_id).children('td:eq(10)').text()).change();
+$('#mod_paid').val($('#id_'+par_id).children('td:eq(11)').text()).change();
 $('#modify_confirmed').attr("onclick","save_modified_participant('"+ par_id +"')");
+if ($('#pilots').DataTable().column(9).visible()){
+        $('#mod_team_section').show();
+    }
+ else {$('#mod_team_section').hide();}
+if ($('#pilots').DataTable().column(5).visible()){
+        $('#mod_nat_team_section').show();
+    }
+ else {$('#mod_nat_team_section').hide();}
+
 $('#edit_par_modal').modal('show');
 }
 
@@ -354,6 +378,9 @@ function save_modified_participant(par_id){
                mydata.sponsor = $('#mod_sponsor').val();
                mydata.status = $('#mod_status').val();
                mydata.paid = $('#mod_paid').val();
+               mydata.CIVL = $('#mod_civl').val();
+               mydata.team = $('#mod_team').val();
+               mydata.nat_team = $('#mod_nat_team').val();
 
            $.ajax({
                type: "POST",

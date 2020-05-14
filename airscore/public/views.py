@@ -424,8 +424,8 @@ def download_file(filetype, filename):
 
 @blueprint.route('/_get_participants/<compid>', methods=['GET'])
 def _get_participants(compid):
-    pilot_list, external = frontendUtils.get_participants(compid)
-    return jsonify({'data': pilot_list, 'external': external})
+    pilot_list, external, teams = frontendUtils.get_participants(compid)
+    return jsonify({'data': pilot_list, 'external': external, 'teams': teams})
 
 
 @blueprint.route('/registered_pilots/<int:compid>')
