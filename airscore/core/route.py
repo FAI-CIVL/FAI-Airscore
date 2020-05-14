@@ -491,13 +491,13 @@ def tp_time_civl(fix, next, tp):
 def in_semicircle(wpts, idx, fix):
     from geopy import Point
     wpt = wpts[idx]
-    ln = wpt.radius / 2
+    ln = wpt.radius
     print(f'distance from center: {distance(wpt, fix)} m')
     if distance(wpt, fix) <= ln:
         fcoords = namedtuple('fcoords', 'flat flon')  # wpts don't have flon/flat so make them for polar2cartesian
         P = polar2cartesian(fcoords(fix.lat * math.pi / 180, fix.lon * math.pi / 180))
         '''initialised as south origin, case all task wpts have same coordinates'''
-        geo_b = geodesic(meters=wpt.radius/2).destination(Point(wpt.lat, wpt.lon), 180)
+        geo_b = geodesic(meters=wpt.radius).destination(Point(wpt.lat, wpt.lon), 180)
         B = polar2cartesian(Turnpoint(lat=geo_b.latitude, lon=geo_b.longitude))  # initialized
         '''get first different turnpoint before goal'''
         for t in reversed(list(wpts)):
