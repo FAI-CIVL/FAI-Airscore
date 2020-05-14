@@ -488,25 +488,27 @@ def tp_time_civl(fix, next, tp):
         return t
 
 
-def in_semicircle(wpts, idx, coords):
+def in_semicircle(wpts, idx, fix):
     from geopy import Point
     wpt = wpts[idx]
     ln = wpt.radius / 2
-    print(f'distance from center: {distance(wpt, coords)} m')
-    if distance(wpt, coords) <= ln:
+    print(f'distance from center: {distance(wpt, fix)} m')
+    if distance(wpt, fix) <= ln:
         fcoords = namedtuple('fcoords', 'flat flon')  # wpts don't have flon/flat so make them for polar2cartesian
-        f = fcoords(coords.lat * math.pi / 180, coords.lon * math.pi / 180)
+        P = polar2cartesian(fcoords(fix.lat * math.pi / 180, fix.lon * math.pi / 180))
         '''initialised as south origin, case all task wpts have same coordinates'''
-        geo_p = geodesic(meters=wpt.radius/2).destination(Point(wpt.lat, wpt.lon), 180)
-        p = polar2cartesian(Turnpoint(lat=geo_p.latitude, lon=geo_p.longitude))  # initialized
+        geo_b = geodesic(meters=wpt.radius/2).destination(Point(wpt.lat, wpt.lon), 180)
+        B = polar2cartesian(Turnpoint(lat=geo_b.latitude, lon=geo_b.longitude))  # initialized
         '''get first different turnpoint before goal'''
         for t in reversed(list(wpts)):
             if not (t.lat == wpt.lat and t.lon == wpt.lon):
-                p = polar2cartesian(t)
-        c = polar2cartesian(wpt)
+                print(f'using wpt {t.name} {t.lat}, {t.lon}')
+                B = polar2cartesian(t)
+                break
+        C = polar2cartesian(wpt)
         # vector that bisects the semi-circle pointing into occupied half plane
-        bvec = c - p
-        pvec = polar2cartesian(f) - c
+        bvec = B - C
+        pvec = P - C
         # dot product
         dot = vecdot(bvec, pvec)
         if dot <= 0:
