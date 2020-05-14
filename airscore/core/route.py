@@ -715,7 +715,7 @@ def get_line(turnpoints):
     from pyproj import Geod
 
     clon, clat = turnpoints[-1].lon, turnpoints[-1].lat  # center point of the line
-    ln = turnpoints[-1].radius / 2
+    ln = turnpoints[-1].radius
     g = Geod(ellps="WGS84")
 
     for t in reversed(list(turnpoints)):
