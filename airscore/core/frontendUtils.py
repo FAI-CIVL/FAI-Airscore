@@ -777,10 +777,10 @@ def print_to_sse(text, id, channel):
     type is 'info'
     Args:
         :param text: a string
-        :id int/string to identify what the message relates to (par_id etc.)
-        :channel string to identify destination of message (not access control) such as username etc
+        :param id: int/string to identify what the message relates to (par_id etc.)
+        :param channel: string to identify destination of message (not access control) such as username etc
     """
-    from sys import stdout
+    # from sys import stdout
     message = text.split('|')[0]
     if len(text.split('|')) > 1:
         message_type = text.split('|')[1]
