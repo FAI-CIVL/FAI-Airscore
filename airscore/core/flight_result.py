@@ -201,7 +201,10 @@ class Flight_result(object):
 
     @property
     def distance(self):
-        return max(self.distance_flown, self.total_distance)
+        try:
+            return max(self.distance_flown, self.total_distance)
+        except TypeError:
+            return None
 
     @property
     def flat_penalty(self):

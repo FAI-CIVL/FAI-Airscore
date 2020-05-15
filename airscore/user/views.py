@@ -2,7 +2,7 @@
 """User views."""
 from datetime import datetime
 
-from flask import Blueprint, render_template, request, jsonify, json, flash, redirect, url_for, session, Markup,\
+from flask import Blueprint, render_template, request, jsonify, json, flash, redirect, url_for, session, Markup, \
     current_app
 from flask_login import login_required, current_user
 import frontendUtils
@@ -191,7 +191,7 @@ def comp_settings_admin(compid):
     admin_choices = []
     if all_admins:
         for admin in all_admins:
-            admin_choices.append((admin['id'], f"{admin['first_name']} {admin['last_name']} ({admin['username'] })"))
+            admin_choices.append((admin['id'], f"{admin['first_name']} {admin['last_name']} ({admin['username']})"))
     if request.method == 'POST':
         if compform.validate_on_submit():
             comp.comp_name = compform.comp_name.data
@@ -203,7 +203,7 @@ def comp_settings_admin(compid):
             comp.date_from = compform.date_from.data
             comp.date_to = compform.date_to.data
             comp.MD_name = compform.MD_name.data
-            comp.time_offset = compform.time_offset.data*3600
+            comp.time_offset = compform.time_offset.data * 3600
             comp.restricted = 1 if compform.pilot_registration.data == 'registered' else None
             comp.formula = compform.formula.data
             comp.locked = compform.locked.data
@@ -216,14 +216,14 @@ def comp_settings_admin(compid):
 
             formula = Formula.read(compid)
             formula.overall_validity = compform.overall_validity.data
-            formula.validity_param = compform.validity_param.data/100
-            formula.nominal_dist = compform.nom_dist.data*1000
-            formula.nominal_goal = compform.nom_goal.data/100
-            formula.min_dist = compform.min_dist.data*1000
-            formula.nominal_launch = compform.nom_launch.data/100
-            formula.nominal_time = compform.nom_time.data*60
+            formula.validity_param = compform.validity_param.data / 100
+            formula.nominal_dist = compform.nom_dist.data * 1000
+            formula.nominal_goal = compform.nom_goal.data / 100
+            formula.min_dist = compform.min_dist.data * 1000
+            formula.nominal_launch = compform.nom_launch.data / 100
+            formula.nominal_time = compform.nom_time.data * 60
             formula.no_goal_penalty = compform.no_goal_penalty.data
-            formula.tolerance = compform.tolerance.data/100
+            formula.tolerance = compform.tolerance.data / 100
             formula.max_JTG = compform.max_JTG.data
             formula.formula_distance = compform.formula_distance.data
             formula.formula_arrival = compform.formula_arrival.data
@@ -271,7 +271,7 @@ def comp_settings_admin(compid):
         compform.date_from.data = comp.date_from
         compform.date_to.data = comp.date_to
         compform.MD_name.data = comp.MD_name
-        compform.time_offset.data = comp.time_offset/3600
+        compform.time_offset.data = comp.time_offset / 3600
         compform.pilot_registration.data = comp.restricted
         compform.formula.data = formula.formula_name
         compform.overall_validity.data = formula.overall_validity
@@ -281,12 +281,12 @@ def comp_settings_admin(compid):
         formula.min_dist = 0 if not formula.min_dist else formula.min_dist
         formula.nominal_launch = 0 if not formula.nominal_launch else formula.nominal_launch
         formula.nominal_time = 0 if not formula.nominal_time else formula.nominal_time
-        compform.validity_param.data = int(formula.validity_param*100)
-        compform.nom_dist.data = int(formula.nominal_dist/1000)
-        compform.nom_goal.data = int(formula.nominal_goal*100)
-        compform.min_dist.data = int(formula.min_dist/1000)
-        compform.nom_launch.data = int(formula.nominal_launch*100)
-        compform.nom_time.data = int(formula.nominal_time/60)
+        compform.validity_param.data = int(formula.validity_param * 100)
+        compform.nom_dist.data = int(formula.nominal_dist / 1000)
+        compform.nom_goal.data = int(formula.nominal_goal * 100)
+        compform.min_dist.data = int(formula.min_dist / 1000)
+        compform.nom_launch.data = int(formula.nominal_launch * 100)
+        compform.nom_time.data = int(formula.nominal_time / 60)
         compform.team_scoring.data = formula.team_scoring
         compform.team_size.data = formula.team_size
         compform.max_team_size.data = formula.max_team_size
@@ -301,7 +301,7 @@ def comp_settings_admin(compid):
         compform.formula_time.data = formula.formula_time
         compform.no_goal_penalty.data = formula.no_goal_penalty
         compform.glide_bonus.data = formula.glide_bonus
-        compform.tolerance.data = formula.tolerance*100
+        compform.tolerance.data = formula.tolerance * 100
         compform.min_tolerance.data = formula.min_tolerance
         compform.arr_alt_bonus.data = formula.arr_alt_bonus
         compform.arr_max_height.data = formula.arr_max_height
@@ -385,7 +385,7 @@ def task_admin(taskid):
             task.task_deadline = time_to_seconds(taskform.task_deadline.data) - taskform.time_offset.data * 3600
             task.SS_interval = taskform.SS_interval.data * 60  # (convert from min to sec)
             task.start_iteration = taskform.start_iteration.data
-            task.time_offset = taskform.time_offset.data*3600
+            task.time_offset = taskform.time_offset.data * 3600
             task.check_launch = 'on' if taskform.check_launch.data else 'off'
             task.airspace_check = taskform.airspace_check.data
             # task.openair_file = taskform.openair_file  # TODO get a list of openair files for this comp (in the case of defines.yaml airspace_file_library: off otherwise all openair files available)
@@ -394,7 +394,7 @@ def task_admin(taskid):
             task.formula.formula_arrival = taskform.formula_arrival.data
             task.formula.formula_departure = taskform.formula_departure.data
             task.formula.formula_time = taskform.formula_time.data
-            task.formula.tolerance = taskform.tolerance.data/100
+            task.formula.tolerance = taskform.tolerance.data / 100
             task.formula.max_JTG = taskform.max_JTG.data
             task.formula.no_goal_penalty = taskform.no_goal_penalty.data
             task.formula.arr_alt_bonus = taskform.arr_alt_bonus.data
@@ -420,20 +420,20 @@ def task_admin(taskid):
         taskform.date.data = task.date
         taskform.task_type.data = task.task_type
         taskform.window_open_time.data = "" if not task.window_open_time else sec_to_time((task.window_open_time
-                                                                                           + offset)%86400)
+                                                                                           + offset) % 86400)
         taskform.window_close_time.data = "" if not task.window_close_time else sec_to_time((task.window_close_time
-                                                                                             + offset)%86400)
+                                                                                             + offset) % 86400)
         taskform.start_time.data = "" if not task.start_time else sec_to_time((task.start_time
-                                                                               + offset)%86400)
+                                                                               + offset) % 86400)
         taskform.start_close_time.data = "" if not task.start_close_time else sec_to_time((task.start_close_time
-                                                                                           + offset)%86400)
+                                                                                           + offset) % 86400)
         taskform.stopped_time.data = "" if not task.stopped_time else sec_to_time((task.stopped_time
-                                                                                   + offset)%86400)
+                                                                                   + offset) % 86400)
         taskform.task_deadline.data = "" if not task.task_deadline else sec_to_time((task.task_deadline
-                                                                                     + offset)%86400)
-        taskform.SS_interval.data = task.SS_interval/60 # (convert from sec to min)
+                                                                                     + offset) % 86400)
+        taskform.SS_interval.data = task.SS_interval / 60  # (convert from sec to min)
         taskform.start_iteration.data = task.start_iteration
-        taskform.time_offset.data = offset/3600
+        taskform.time_offset.data = offset / 3600
         taskform.check_launch.data = False if task.check_launch == 'off' else True
         taskform.airspace_check.data = task.airspace_check
         # taskform.openair_file.data = task.openair_file # TODO get a list of openair files for this comp (in the case of defines.yaml airspace_file_library: off otherwise all openair files available)
@@ -444,7 +444,7 @@ def task_admin(taskid):
         taskform.formula_arrival.data = task.formula.formula_arrival
         taskform.formula_departure.data = task.formula.formula_departure
         taskform.formula_time.data = task.formula.formula_time
-        taskform.tolerance.data = task.formula.tolerance*100
+        taskform.tolerance.data = task.formula.tolerance * 100
         taskform.max_JTG.data = task.formula.max_JTG
         taskform.no_goal_penalty.data = task.formula.no_goal_penalty
         taskform.arr_alt_bonus.data = task.formula.arr_alt_bonus
@@ -540,7 +540,7 @@ def _get_tasks(compid):
     return tasks
 
 
-@blueprint.route('/_get_adv_settings', methods=['GET','POST'])
+@blueprint.route('/_get_adv_settings', methods=['GET', 'POST'])
 @login_required
 def _get_adv_settings():
     data = request.json
@@ -548,7 +548,7 @@ def _get_adv_settings():
     settings = {'formula_distance': formula.formula_distance, 'formula_arrival': formula.formula_arrival,
                 'formula_departure': formula.formula_departure, 'lead_factor': formula.lead_factor,
                 'formula_time': formula.formula_time, 'no_goal_penalty': formula.no_goal_penalty,
-                'glide_bonus': formula.glide_bonus, 'tolerance': formula.tolerance*100,
+                'glide_bonus': formula.glide_bonus, 'tolerance': formula.tolerance * 100,
                 'min_tolerance': formula.min_tolerance, 'arr_alt_bonus': formula.height_bonus,
                 'arr_max_height': formula.arr_max_height, 'arr_min_height': formula.arr_min_height,
                 'validity_min_time': formula.validity_min_time, 'scoreback_time': formula.score_back_time,
@@ -855,26 +855,31 @@ def _get_task_score_from_file(taskid, filename):
     for r in result_file['results']:
         track_id = r['track_id']
         name = r['name']
-        pilot = {'rank': rank, 'name': f'<a href="/map/{track_id}-{taskid}">{name}</a>'}
-        if r['SSS_time']:
-            pilot['SSS'] = sec_to_time(r['SSS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S")
-        else:
-            pilot['SSS'] = ""
-        if r['ESS_time'] == 0 or r['ESS_time'] is None:
-            pilot['ESS'] = ""
-            pilot['time'] = ""
-        else:
-            pilot['ESS'] = sec_to_time(r['ESS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S")
-            pilot['time'] = sec_to_time(r['ESS_time'] - r['SSS_time']).strftime("%H:%M:%S")
+        status = r['result_type']
+        if status not in ['dnf', 'abs']:
+            pilot = {'rank': rank, 'name': f'<a href="/map/{track_id}-{taskid}">{name}</a>'}
+            if r['SSS_time']:
+                pilot['SSS'] = sec_to_time(r['SSS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S")
+            else:
+                pilot['SSS'] = ""
+            if r['ESS_time'] == 0 or r['ESS_time'] is None:
+                pilot['ESS'] = ""
+                pilot['time'] = ""
+            else:
+                pilot['ESS'] = sec_to_time(r['ESS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S")
+                pilot['time'] = sec_to_time(r['ESS_time'] - r['SSS_time']).strftime("%H:%M:%S")
 
-        pilot['altbonus'] = ""  # altitude bonus
-        pilot['distance'] = round(r['distance'] / 1000, 2)
-        pilot['speedP'] = c_round(r['time_score'], 2)
-        pilot['leadP'] = c_round(r['departure_score'], 2)
-        pilot['arrivalP'] = c_round(r['arrival_score'], 2) # arrival points
-        pilot['distanceP'] = c_round(r['distance_score'], 2)
-        pilot['penalty'] = c_round(r['penalty'], 2) if r['penalty'] else ""
-        pilot['score'] = c_round(r['score'], 2)
+            pilot['altbonus'] = ""  # altitude bonus
+            pilot['distance'] = round(r['distance'] / 1000, 2)
+            pilot['speedP'] = c_round(r['time_score'], 2)
+            pilot['leadP'] = c_round(r['departure_score'], 2)
+            pilot['arrivalP'] = c_round(r['arrival_score'], 2)  # arrival points
+            pilot['distanceP'] = c_round(r['distance_score'], 2)
+            pilot['penalty'] = c_round(r['penalty'], 2) if r['penalty'] else ""
+            pilot['score'] = c_round(r['score'], 2)
+        else:
+            pilot = dict(rank=rank, name=name, SSS='', ESS='', time='', altbonus='', distance='',
+                         speedP='', leadP='', arrivalP='', distanceP='', penalty='', score=status)
         # TODO once result files have a list of comments we can activate these lines and remove the 3 dummy lines below
         # pilot['Track Comment'] = r['comment'][0]
         # pilot['Penalty Comment'] = r['comment'][1]
@@ -1002,6 +1007,7 @@ def _change_result_status(taskid):
         resp = jsonify(success=True)
         return resp
     return render_template('500.html')
+
 
 @blueprint.route('/_get_regions', methods=['GET'])
 @login_required
@@ -1168,11 +1174,11 @@ def igc_parsing_config(filename):
         config['min_time_for_bearing_change'] = igc_config_form.min_time_for_bearing_change.data
         config['min_time_for_thermal'] = igc_config_form.min_time_for_thermal.data
         config['owner'] = current_user.username
-        if igc_config_form.save.data and current_user.username ==  config['owner']:
+        if igc_config_form.save.data and current_user.username == config['owner']:
             save_igc_config_yaml(filename, config)
             flash("saved", category='info')
         if igc_config_form.save_as.data and igc_config_form.new_name.data:
-            save_igc_config_yaml(igc_config_form.new_name.data+'.yaml', config)
+            save_igc_config_yaml(igc_config_form.new_name.data + '.yaml', config)
             flash("saved as " + igc_config_form.new_name.data, category='info')
             return render_template('users/igc_parsing_settings.html', save=save, name=filename,
                                    description=config['description'], configform=igc_config_form)

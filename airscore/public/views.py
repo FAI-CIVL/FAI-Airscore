@@ -242,29 +242,42 @@ def _get_task_result(taskid):
     for r in result_file['results']:  # need sex??
         track_id = r['track_id']
         name = r['name']
-        pilot = [f'<b>{rank}</b>', f'<a href="/map/{track_id}-{taskid}">{name}</a>', r['nat'], r['glider'],
-                 r['glider_cert'], r['sponsor']]
-        if r['SSS_time']:
-            pilot.append(sec_to_time(r['SSS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S"))
-        else:
-            pilot.append("")
-        if r['ESS_time'] == 0 or r['ESS_time'] is None:
-            pilot.append("")
-            pilot.append("")
-        else:
-            pilot.append(sec_to_time(r['ESS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S"))
-            pilot.append(sec_to_time(r['ESS_time'] - r['SSS_time']).strftime("%H:%M:%S"))
-        pilot.append(f"{round(r['speed'], 2):.2f}" if r['speed'] else "")
-        pilot.append("")  # altitude bonus
-        pilot.append(f"{round(r['distance'] / 1000, 2):.2f}")
-        pilot.append(f"{c_round(r['time_score'], 1):.1f}")
-        pilot.append(f"{c_round(r['departure_score'], 1):.1f}")
-        pilot.append(f"{c_round(r['arrival_score'], 1):.1f}")  # arrival points
-        pilot.append(f"{c_round(r['distance_score'], 1):.1f}")
-        pilot.append(f"{c_round(r['penalty'], 1):.1f}" if r['penalty'] else "")
-        pilot.append(f"{c_round(r['score'], d):.{d}f}")
-        all_pilots.append(pilot)
-        rank += 1
+        status = r['result_type']
+        if status not in ['dnf', 'abs']:
+            pilot = [f'<b>{rank}</b>', f'<a href="/map/{track_id}-{taskid}">{name}</a>', r['nat'], r['glider'],
+                     r['glider_cert'], r['sponsor']]
+            if r['SSS_time']:
+                pilot.append(sec_to_time(r['SSS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S"))
+            else:
+                pilot.append("")
+            if r['ESS_time'] == 0 or r['ESS_time'] is None:
+                pilot.append("")
+                pilot.append("")
+                pilot.append("")
+            elif r['goal_time'] in [None, 0]:
+                pilot.append(f"<del>{sec_to_time(r['ESS_time'] + result_file['info']['time_offset']).strftime('%H:%M:%S')}</del>")
+                pilot.append(f"<del>{sec_to_time(r['ss_time']).strftime('%H:%M:%S')}</del>")
+                pilot.append(f"<del>{round(r['speed'], 2):.2f}</del>" if r['speed'] else "")
+            else:
+                pilot.append(sec_to_time(r['ESS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S"))
+                pilot.append(sec_to_time(r['ss_time']).strftime("%H:%M:%S"))
+                pilot.append(f"{round(r['speed'], 2):.2f}" if r['speed'] else "")
+            pilot.append("")  # altitude bonus
+            pilot.append(f"{round(r['distance'] / 1000, 2):.2f}")
+            pilot.append(f"{c_round(r['time_score'], 1):.1f}")
+            pilot.append(f"{c_round(r['departure_score'], 1):.1f}")
+            pilot.append(f"{c_round(r['arrival_score'], 1):.1f}")  # arrival points
+            pilot.append(f"{c_round(r['distance_score'], 1):.1f}")
+            pilot.append(f"{c_round(r['penalty'], 1):.1f}" if r['penalty'] else "")
+            pilot.append(f"{c_round(r['score'], d):.{d}f}")
+            all_pilots.append(pilot)
+            rank += 1
+        # else:
+        #     '''pilot do not have result data'''
+            # TODO at the moment js raises error trying to order scores, leaving non flying pilots out of datatable
+            # pilot = [f'<b>{rank}</b>', f'{name}', r['nat'], r['glider'], r['glider_cert'], r['sponsor'], "", "", "", "",
+            #          "", "", "", "", "", "", "", f"{r['result_type'].upper()}"]
+
     result_file['data'] = all_pilots
     all_classes = []
     for glider_class in result_file['rankings']:
