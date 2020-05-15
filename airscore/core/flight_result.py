@@ -437,7 +437,7 @@ class Flight_result(object):
                 continue
             if result.landing_time and next_fix.rawtime > result.landing_time:
                 '''pilot landed out'''
-                print(f'fix {i}: landed out - {next_fix.rawtime} - {alt}')
+                # print(f'fix {i}: landed out - {next_fix.rawtime} - {alt}')
                 break
 
             '''handle stopped task
@@ -541,7 +541,7 @@ class Flight_result(object):
                             (tp.next.shape == 'line' and (in_goal_sector(task, next_fix)))):
                         result.waypoints_achieved.append([tp.name, next_fix.rawtime, alt])  # pilot has achieved goal
                         result.best_distance_time = next_fix.rawtime
-                        print(f"Goal at {sec_to_time(next_fix.rawtime)} at {alt}m, {next_fix.lat}, {next_fix.lon}")
+                        print(f"Goal at {sec_to_time(next_fix.rawtime)}")
                         break
 
             '''update result data

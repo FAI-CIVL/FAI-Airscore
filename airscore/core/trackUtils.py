@@ -96,13 +96,13 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None, print=print
             if len(pilot_list) == 0:
                 break
             if len(pilot_list) > 0:
-                print(f"checking {filename} against {len(pilot_list)} pilots...")
+                # print(f"checking {filename} against {len(pilot_list)} pilots...")
                 """check filenames to find pilots"""
                 pilot, full_name = get_pilot_from_list(filename, pilot_list)
                 if pilot:
                     """found a pilot for the track file.
                     dropping pilot from list and creating track obj"""
-                    print(f"Found a pilot to associate with file. dropping {pilot.name} from non scored list")
+                    # print(f"Found a pilot to associate with file. dropping {pilot.name} from non scored list")
                     pilot_list[:] = [d for d in pilot_list if d.par_id != pilot.par_id]
                     mytrack = Track.read_file(filename=file)
         else:
@@ -124,8 +124,9 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None, print=print
             moving file to correct folder and adding to the list of valid tracks"""
             mytrack.task_id = task_id
             mytrack.copy_track_file(task_path=track_path, pname=full_name)
-            print(f"pilot {mytrack.par_id} associated with track {mytrack.filename}")
+            # print(f"pilot {mytrack.par_id} associated with track {mytrack.filename}")
             pilot.track = mytrack
+            print(f"processing {pilot.info.ID} {pilot.info.name}:")
             if user:
                 new_print = partial(print_to_sse, id=mytrack.par_id, channel=user)
                 print('***************START*******************')
@@ -150,7 +151,8 @@ def verify_and_import_track(pilot, task, print=print):
     pilot.result = Flight_result.check_flight(pilot.track.flight, task, airspace_obj=airspace,
                                               print=print)  # check flight against task
     pilot.to_db()
-    print(str(pilot.track.flight.notes))
+    if pilot.notifications:
+        print(str(pilot.notifications))
     print('***************END****************')
 
     return pilot.result
