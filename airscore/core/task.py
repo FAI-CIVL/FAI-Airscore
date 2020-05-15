@@ -1196,27 +1196,25 @@ class Task(object):
         # create list of turnpoints
         turnpoints = []
         for point in tpoints:
+            type = 'waypoint'
+            shape = 'circle'
+            how = 'entry'
             lat = coords[point.getAttribute("name")][1]
             lon = coords[point.getAttribute("name")][0]
-            radius = float(point.getAttribute("radius")) / 1000
+            radius = float(point.getAttribute("radius"))
 
             if point == tpoints[0]:  # if it is the 1st turnpoint then it is a start
+                type = 'speed'
                 if point.getAttribute("Exit") == "true":
-                    kind = "start_exit"
-                else:
-                    kind = "start_enter"
-            else:
-                if point == tpoints[-1]:  # if it is the last turnpoint i.e. the goal
-                    if point.getAttribute("type") == "line":
-                        kind = "goal_cylinder"  # TODO(kuaka): change to 'line' once we can process it
-                    else:
-                        kind = "goal_cylinder"
-                else:
-                    kind = "cylinder"  # All turnpoints other than the 1st and the last are "cylinders".
-                    # In theory they could be "End_of_speed_section" but this is not supported by LK8000.
-                    # For paragliders it would be safe to assume that the 2nd to last is always "End_of_speed_section"
+                    how = "exit"
+            elif point == tpoints[-1]:  # if it is the last turnpoint i.e. the goal
+                type = 'goal'
+                if point.getAttribute("type") == "line":
+                    shape = 'line'
+            # In theory they could be "End_of_speed_section" but this is not supported by LK8000.
+            # For paragliders it would be safe to assume that the 2nd to last is always "End_of_speed_section"
 
-            turnpoint = Turnpoint(lat, lon, radius, kind)
+            turnpoint = Turnpoint(lat=lat, lon=lon, radius=radius, type=type, shape=shape, how=how)
             turnpoints.append(turnpoint)
         task = Task(turnpoints, start_time, task_deadline)
         return task
