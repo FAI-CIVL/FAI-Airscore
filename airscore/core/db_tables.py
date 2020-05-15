@@ -66,6 +66,8 @@ class CompObjectView(Base):
                       Column('max_JTG', SMALLINT(6), server_default=text("'0'")),
                       Column('JTG_penalty_per_sec', Float(4)),
                       Column('scoring_altitude', Enum('GPS', 'QNH'), server_default=text("'GPS'")),
+                      Column('task_result_decimal', INTEGER(2), server_default=text("'0'")),
+                      Column('comp_result_decimal', INTEGER(2), server_default=text("'0'")),
                       Column('team_scoring', TINYINT(1), server_default=text("'0'")),
                       Column('team_size', INTEGER(4)),
                       Column('max_team_size', INTEGER(4)),
@@ -496,6 +498,8 @@ class TblForComp(Base):
     max_JTG = Column(SMALLINT(6), nullable=False, server_default=text("'0'"))
     JTG_penalty_per_sec = Column(Float)
     scoring_altitude = Column(Enum('GPS', 'QNH'), nullable=False, server_default=text("'GPS'"))
+    task_result_decimal = Column(INTEGER(2), nullable=False, server_default=text("'0'"))
+    comp_result_decimal = Column(INTEGER(2), nullable=False, server_default=text("'0'"))
     team_scoring = Column(TINYINT(1), nullable=False, server_default=text("'0'"))
     team_size = Column(INTEGER(4))
     max_team_size = Column(INTEGER(4))

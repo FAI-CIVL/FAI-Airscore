@@ -227,12 +227,18 @@ def task_result(taskid):
 
 @blueprint.route('/_get_task_result/<int:taskid>', methods=['GET', 'POST'])
 def _get_task_result(taskid):
+    from calcUtils import c_round
     result_file = get_task_json(taskid)
     if result_file == 'error':
         return render_template('404.html')
 
     rank = 1
     all_pilots = []
+    '''score decimals'''
+    if 'task_result_decimal' in result_file['formula'].keys():
+        d = result_file['formula']['task_result_decimal']
+    else:
+        d = 0
     for r in result_file['results']:  # need sex??
         track_id = r['track_id']
         name = r['name']
@@ -248,15 +254,15 @@ def _get_task_result(taskid):
         else:
             pilot.append(sec_to_time(r['ESS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S"))
             pilot.append(sec_to_time(r['ESS_time'] - r['SSS_time']).strftime("%H:%M:%S"))
-        pilot.append(round(r['speed'], 2) if r['speed'] else "")
+        pilot.append(f"{round(r['speed'], 2):.2f}" if r['speed'] else "")
         pilot.append("")  # altitude bonus
-        pilot.append(round(r['distance'] / 1000, 2))
-        pilot.append(round(r['time_score'], 2))
-        pilot.append(round(r['departure_score'], 2))
-        pilot.append(round(r['arrival_score'], 2))  # arrival points
-        pilot.append(round(r['distance_score'], 2))
-        pilot.append(round(r['penalty'], 2) if r['penalty'] else "")
-        pilot.append(round(r['score'], 2))
+        pilot.append(f"{round(r['distance'] / 1000, 2):.2f}")
+        pilot.append(f"{c_round(r['time_score'], 1):.1f}")
+        pilot.append(f"{c_round(r['departure_score'], 1):.1f}")
+        pilot.append(f"{c_round(r['arrival_score'], 1):.1f}")  # arrival points
+        pilot.append(f"{c_round(r['distance_score'], 1):.1f}")
+        pilot.append(f"{c_round(r['penalty'], 1):.1f}" if r['penalty'] else "")
+        pilot.append(f"{c_round(r['score'], d):.{d}f}")
         all_pilots.append(pilot)
         rank += 1
     result_file['data'] = all_pilots

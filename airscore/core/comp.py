@@ -372,29 +372,22 @@ class Comp(object):
     @staticmethod
     def create_results(comp_id, status=None, decimals=None):
         """creates the json result file and the database entry"""
-
-        '''PARAMETER: decimal positions'''
-        # TODO implement result decimal positions parameter
-        if decimals is None or not isinstance(decimals, int):
-            decimals = 0  # should be a formula parameter, or a ForComp parameter?
-
+        from calcUtils import c_round
         comp = Comp.read(comp_id)
-
+        '''PARAMETER: decimal positions'''
+        if decimals is None or not isinstance(decimals, int):
+            decimals = comp.formula.comp_result_decimal
         '''retrieve active task result files and reads info'''
         files = get_tasks_result_files(comp_id)
-
         '''initialize obj attributes'''
         comp.participants = get_participants(comp_id)
         ''' get rankings '''
         comp.get_rankings()
-
         for idx, t in enumerate(files):
             task = Task.create_from_json(task_id=t.task_id, filename=t.file)
             comp.tasks.append(task)
-
             ''' task validity (if not using ftv, ftv_validity = day_quality)'''
             r = task.ftv_validity * 1000
-
             '''get pilots result'''
             for p in comp.participants:
                 res = next((d for d in comp.results if d.get('par_id', None) == p.par_id), False)
@@ -403,11 +396,9 @@ class Comp(object):
                     # comp.results.append({'par_id': p.par_id, 'results': []})
                     comp.results.append({'par_id': p.par_id})
                     res = comp.results[-1]
-
-                s = next((round(pil.score, decimals) for pil in task.pilots if pil.par_id == p.par_id), 0)
-
+                s = next((c_round(pil.score, decimals) for pil in task.pilots if pil.par_id == p.par_id), 0)
                 if r > 0:  # sanity
-                    perf = round(s / r, decimals + 3)
+                    perf = c_round(s / r, decimals + 3)
                     # res['results'].append({task.task_code: {'pre': s, 'perf': perf, 'score': s}})
                     res.update({task.task_code: {'pre': s, 'perf': perf, 'score': s}})
                 else:
@@ -416,7 +407,6 @@ class Comp(object):
 
         '''calculate final score'''
         comp.get_final_scores(decimals)
-
         ''' create result elements'''
         results = []
         for res in comp.results:
@@ -426,9 +416,6 @@ class Comp(object):
             r['score'] = res['score']
             r['results'] = {x: res[x] for x in res.keys() if isinstance(res[x], dict)}
             results.append(r)
-
-        # comp.participants = sorted(results, key=lambda k: k.score, reverse=True)
-        #
         '''create json file'''
         result = {'info': {x: getattr(comp, x) for x in Comp_result.info_list},
                   'rankings': comp.rankings,
@@ -440,7 +427,6 @@ class Comp(object):
         ref_id, filename, timestamp = create_json_file(comp_id=comp.id, task_id=None, code=comp.comp_code,
                                                        elements=result, status=status)
         return comp, ref_id, filename, timestamp
-        # return result
 
     def get_final_scores(self, d=0):
         """calculate final scores depending on overall validity:
@@ -454,15 +440,11 @@ class Comp(object):
                 formula:    comp formula dict
                 d:          decimals on single tasks score, default 0
         """
+        from calcUtils import c_round
 
         val = self.formula.overall_validity
         param = self.formula.validity_param
         avail_validity = self.avail_validity
-
-        # if val == 'ftv':
-        #     avail_validity = sum(t['ftv_validity'] for t in tasks) * param
-        # elif val == 'round':
-        #     dropped = int(len(tasks) / param)
 
         for pil in self.results:
             pil['score'] = 0
@@ -499,7 +481,7 @@ class Comp(object):
                                 pval -= tval
                             else:
                                 '''we need to calculate proportion'''
-                                pil[idx]['score'] = round(pil[idx]['score'] * (pval / tval), d)
+                                pil[idx]['score'] = c_round(pil[idx]['score'] * (pval / tval), d)
                                 pval = 0
 
             '''calculates final pilot score'''

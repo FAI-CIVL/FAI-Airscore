@@ -34,6 +34,14 @@ class CJsonEncoder(json.JSONEncoder):
             return json.JSONEncoder.default(self, obj)
 
 
+def c_round(x, digits=0, precision=15):
+    from decimal import Decimal, getcontext, ROUND_HALF_UP
+    round_context = getcontext()
+    round_context.rounding = ROUND_HALF_UP
+    tmp = round(Decimal(x), precision)
+    return float(tmp.__round__(digits)) if digits > 0 else int(tmp.__round__(digits))
+
+
 def km(dist, n=3):
     """meters to km, with n as number of decimals"""
     try:

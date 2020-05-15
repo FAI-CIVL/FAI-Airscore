@@ -844,6 +844,7 @@ def _get_task_result_files(taskid):
 @blueprint.route('/_get_task_score_from_file/<taskid>/<filename>', methods=['GET'])
 @login_required
 def _get_task_score_from_file(taskid, filename):
+    from calcUtils import c_round
     error = None
     result_file = get_task_json_by_filename(filename)
     if not result_file:
@@ -868,12 +869,12 @@ def _get_task_score_from_file(taskid, filename):
 
         pilot['altbonus'] = ""  # altitude bonus
         pilot['distance'] = round(r['distance'] / 1000, 2)
-        pilot['speedP']  = round(r['time_score'], 2)
-        pilot['leadP'] = round(r['departure_score'], 2)
-        pilot['arrivalP'] = round(r['arrival_score'], 2) # arrival points
-        pilot['distanceP'] = round(r['distance_score'], 2)
-        pilot['penalty'] = round(r['penalty'], 2) if r['penalty'] else ""
-        pilot['score'] = round(r['score'], 2)
+        pilot['speedP'] = c_round(r['time_score'], 2)
+        pilot['leadP'] = c_round(r['departure_score'], 2)
+        pilot['arrivalP'] = c_round(r['arrival_score'], 2) # arrival points
+        pilot['distanceP'] = c_round(r['distance_score'], 2)
+        pilot['penalty'] = c_round(r['penalty'], 2) if r['penalty'] else ""
+        pilot['score'] = c_round(r['score'], 2)
         # TODO once result files have a list of comments we can activate these lines and remove the 3 dummy lines below
         # pilot['Track Comment'] = r['comment'][0]
         # pilot['Penalty Comment'] = r['comment'][1]
