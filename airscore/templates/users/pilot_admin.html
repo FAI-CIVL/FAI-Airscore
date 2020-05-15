@@ -100,6 +100,7 @@
          <div class="container">
             <h3 class="font-weight-bold">Registered Pilot Details</h3>
              <h4 id="total_pilots"></h4>
+             <h6 class="text-danger" id="team_messages"></h6>
 			    <table id="pilots" class="row-border compact" cellspacing="0" width="100%">
 			<thead>
 				<tr>
@@ -206,7 +207,6 @@ var non_registered;
 var registered_pil=[];
 var new_registered_pil = [];
 var un_registered_pil=[];
-
 var num_internal_pilots = 0;
 
 
@@ -223,6 +223,26 @@ jQuery(document).ready(function($) {
     {% endif %}
     populate_registered_pilot_details({{session.compid}});
 });
+
+function get_team_size_messages(){
+
+
+if ($('#pilots').DataTable().column(9).visible()){
+       $.get( "{{ url_for('user._check_team_size', compid=session.compid)}}", function( data ) {
+  $( "#team_messages" )
+    .html( data.message )
+
+}, "json" );
+    }
+
+if ($('#pilots').DataTable().column(5).visible()){
+        $.get( "{{ url_for('user._check_nat_team_size', compid=session.compid)}}", function( data ) {
+  $( "#team_messages" )
+    .html( data.message )
+
+}, "json" );
+    }
+};
 
 function update_pilot_count(){
         num_internal_pilots = $('#lstview_to option').length;
@@ -380,7 +400,7 @@ function save_modified_participant(par_id){
                mydata.paid = $('#mod_paid').val();
                mydata.CIVL = $('#mod_civl').val();
                mydata.team = $('#mod_team').val();
-               mydata.nat_team = $('#mod_nat_team').val();
+               mydata.nat_team = $('#mod_nat_team').is(':checked');
 
            $.ajax({
                type: "POST",
@@ -422,8 +442,6 @@ $(function () {
                }
     });
 });
-
-
 
 
 </script>

@@ -240,8 +240,11 @@ def comp_settings_admin(compid):
             formula.JTG_penalty_per_sec = compform.JTG_penalty_per_sec.data
             formula.scoring_altitude = compform.scoring_altitude.data
             formula.team_scoring = compform.team_scoring.data
-            formula.country_scoring = compform.country_scoring.data
             formula.team_size = compform.team_size.data
+            formula.max_team_size = compform.max_team_size.data
+            formula.country_scoring = compform.country_scoring.data
+            formula.country_size = compform.country_size.data
+            formula.max_country_size = compform.max_country_size.data
             formula.team_over = compform.team_over.data
 
             formula.to_db()
@@ -287,6 +290,10 @@ def comp_settings_admin(compid):
         compform.team_scoring.data = formula.team_scoring
         compform.country_scoring.data = formula.country_scoring
         compform.team_size.data = formula.team_size
+        compform.max_team_size.data = formula.max_team_size
+        compform.country_scoring.data = formula.country_scoring
+        compform.country_size.data = formula.country_size
+        compform.max_country_size.data = formula.max_country_size
         compform.team_over.data = formula.team_over
         compform.formula_distance.data = formula.formula_distance
         compform.formula_arrival.data = formula.formula_arrival
@@ -1228,3 +1235,14 @@ def _unregister_all_external_participants(compid):
     resp = jsonify(success=True)
     return resp
 
+
+@blueprint.route('/_check_nat_team_size/<compid>', methods=['GET'])
+@login_required
+def _check_nat_team_size(compid):
+    return {'message': frontendUtils.check_team_size(int(compid), nat=True)}
+
+
+@blueprint.route('/_check_team_size/<compid>', methods=['GET'])
+@login_required
+def _check_team_size(compid):
+    return {'message': frontendUtils.check_team_size(int(compid))}

@@ -134,8 +134,17 @@ class CompForm(FlaskForm):
     nom_time = IntegerField('Nominal Time (min)', description=help_nom_time)
 
     team_scoring = BooleanField('Team Scoring')
-    country_scoring = BooleanField('Country scoring')
-    team_size = IntegerField('Team size', validators=[Optional(strip_whitespace=True)])
+    team_size = IntegerField('Pilots Scoring', validators=[Optional(strip_whitespace=True)],
+                             description="The number of scores from a task counting towards team score")
+    max_team_size = IntegerField('Team size', validators=[Optional(strip_whitespace=True)],
+                                 description="Number of pilots in team")
+
+    country_scoring = BooleanField('Nations scoring')
+    country_size = IntegerField('Pilots Scoring in Nat Team', validators=[Optional(strip_whitespace=True)],
+                                description="The number of scores from a task counting towards nations team score")
+    max_country_size = IntegerField('Nat. Team size', validators=[Optional(strip_whitespace=True)],
+                                    description="Number of pilots in Nat. team")
+
     team_over = IntegerField('Team over- what is this??', validators=[Optional(strip_whitespace=True)])
 
     formula_distance = SelectField('Distance points', choices=[('on', 'On'), ('difficulty', 'Difficulty'), ('off', 'Off')])

@@ -754,6 +754,8 @@ def get_participants(compid, source='all'):
     for pilot in pilots:
         if pilot.nat_team == 1:
             pilot.nat_team = '✓'
+        else:
+            pilot.nat_team = None
         if pilot.paid == 1:
             pilot.paid = 'Y'
         else:
@@ -766,8 +768,33 @@ def get_participants(compid, source='all'):
                 external += 1
                 pilot_list.append(pilot.as_dict())
     formula = Formula.read(compid)
-    teams = {'nat_teams': formula.country_scoring, 'teams': formula.team_scoring, 'team_size': formula.team_size}
+    teams = {'country_scoring': formula.country_scoring, 'max_country_size': formula.max_country_size,
+             'country_size': formula.country_size, 'team_scoring': formula.team_scoring, 'team_size': formula.team_size,
+             'max_team_size': formula.max_team_size}
     return pilot_list, external, teams
+
+
+def check_team_size(compid, nat=False):
+    """Checks that the number of pilots in a team don't exceed the allowed number"""
+    from formula import Formula
+    from db_tables import TblParticipant as P
+    formula = Formula.read(compid)
+    message = ''
+    if nat:
+        max_team_size = formula.max_country_size or 0
+    else:
+        max_team_size = formula.max_team_size or 0
+
+    with Database() as db:
+        if nat:
+            q = db.session.query(P.nat, func.sum(P.nat_team)).filter(P.comp_id == compid).group_by(P.nat)
+        else:
+            q = db.session.query(P.team, func.count(P.team)).filter(P.comp_id == compid).group_by(P.team)
+        result = q.all()
+        for team in result:
+            if team[1] > max_team_size:
+                message += f"<p>Team {team[0]} has {team[1]} members - only {max_team_size} allowed.</p>"
+    return message
 
 
 def print_to_sse(text, id, channel):
