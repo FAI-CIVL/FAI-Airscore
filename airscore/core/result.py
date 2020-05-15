@@ -693,7 +693,7 @@ def get_task_country_scoring(filename):
         print(f'Team Scoring is not available')
         return None
     countries = get_country_list(countries=set(map(lambda x: x['nat'], data['results'])))
-    size = formula['team_size']
+    size = formula['country_size']
     for nat in countries:
         nation = dict(code=nat.code, name=nat.name)
         nat_pilots = sorted([p for p in data['results'] if p['nat'] == nation['code']
@@ -728,7 +728,7 @@ def get_comp_country_scoring(filename):
         return None
     '''get info: countries list, team size, task codes'''
     countries = get_country_list(countries=set(map(lambda x: x['nat'], data['results'])))
-    size = formula['team_size']
+    size = formula['country_size']
     tasks = [t['task_code'] for t in data['tasks']]
     teams = []
     pilots = []
@@ -770,7 +770,7 @@ def get_comp_country_scoring(filename):
     # get rank after sort
     for t in teams:
         all_scores.append(t['score'])
-    for row in data['results']:
+    for row in pilots:
         row['group'] = str(sum(map(lambda x: x > row['nation_score'], all_scores))+1) + row['group']
 
     return {'teams': teams, 'data': pilots, 'info': data['info'], 'formula': data['formula']}
