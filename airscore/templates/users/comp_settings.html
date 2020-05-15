@@ -95,14 +95,13 @@
          <div  class="form-row">
             <div class="form-group col-md-6">
                {{compform.scoring_altitude.label}} {{compform.scoring_altitude(**{'id': "scoring_altitude", 'data-toggle': 'tooltip', 'title': compform.scoring_altitude.description})}}
-               {{compform.team_scoring.label}} {{compform.team_scoring(**{ 'data-toggle': 'tooltip', 'title': compform.team_scoring.description})}}
             </div>
-            </div>
+         </div>
          <p>
             <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse25" aria-expanded="false" aria-controls="collapse25">
             Advanced Parameters
             </button>
-             <button class="btn btn-primary ml-4 display-if" data-target_name="team_scoring" data-target_type="checkbox" data-target_value=true type="button" data-toggle="collapse" data-target="#collapse26" aria-expanded="false" aria-controls="collapse26">
+             <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse26" aria-expanded="false" aria-controls="collapse26">
                 Team Parameters
             </button>
          </p>
@@ -112,8 +111,17 @@
                     <div  class="form-row">
                         <div class="form-group col-md-12">
                         {{compform.country_scoring.label}} {{compform.country_scoring(size=3,**{'id': "cty_scoring", 'data-toggle': 'tooltip', 'title': compform.country_scoring.description})}}
+                            <div class="display-if" id="collapse26a" data-target_name="country_scoring" data-target_type="checkbox" data-target_value=true>
+                                {{compform.max_country_size.label}} {{compform.max_country_size(size=3,**{'id': "max_country_size", 'data-toggle': 'tooltip', 'title': compform.max_country_size.description})}}
+                                {{compform.country_size.label}} {{compform.country_size(size=3,**{'id': "country_size", 'data-toggle': 'tooltip', 'title': compform.country_size.description})}}
+                            </div>
+                        </div>
+                        <div class="form-group col-md-12">
+                        {{compform.team_scoring.label}} {{compform.team_scoring(size=3,**{'id': "team_scoring", 'data-toggle': 'tooltip', 'title': compform.team_scoring.description})}}
+                            <div class="display-if" id="collapse26b" data-target_name="team_scoring" data-target_type="checkbox" data-target_value=true>
+                        {{compform.max_team_size.label}} {{compform.max_team_size(size=3,**{'id': "max_team_size", 'data-toggle': 'tooltip', 'title': compform.max_team_size.description})}}
                         {{compform.team_size.label}} {{compform.team_size(size=3,**{'id': "team_size", 'data-toggle': 'tooltip', 'title': compform.team_size.description})}}
-                        {{compform.team_over.label}} {{compform.team_over(size=3,**{'id': "team_over", 'data-toggle': 'tooltip', 'title': compform.team_over.description})}}
+                            </div>
                        </div>
                   </div>
                </div>
