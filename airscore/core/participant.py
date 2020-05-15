@@ -360,12 +360,16 @@ def mass_unregister(pilots):
     return True
 
 
-def mass_import_participants(comp_id, participants, session=None):
-    """get participants to update from the list"""
-    # TODO check if we already have participants for the comp before inserting, and manage update instead
+def mass_import_participants(comp_id, participants, existing_list=None, session=None):
+    """get participants to update from the list
+        Before inserting rows without par_id, we need to check if pilot is already in participants
+        Will create a list of dicts from database, if not given as parameter"""
+    from compUtils import get_participants
 
     insert_mappings = []
     update_mappings = []
+    if not existing_list:
+        existing_list = [p.as_dict() for p in get_participants(comp_id)]
     for par in participants:
         r = dict(comp_id=comp_id, par_id=par.par_id)
         for key in [col for col in TblParticipant.__table__.columns.keys() if col not in r.keys()]:
@@ -374,7 +378,9 @@ def mass_import_participants(comp_id, participants, session=None):
         if r['par_id']:
             update_mappings.append(r)
         else:
-            insert_mappings.append(r)
+            if not any(p for p in existing_list if p['name'] == r['name']):
+                '''pilots seems not to be in database yet'''
+                insert_mappings.append(r)
     '''update database'''
     with Database(session) as db:
         try:
