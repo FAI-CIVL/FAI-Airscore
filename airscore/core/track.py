@@ -12,9 +12,7 @@ Antonio Golfari, Stuart Mackintosh - 2019
 import glob
 from os import path, makedirs
 from shutil import copyfile
-
 from sqlalchemy.exc import SQLAlchemyError
-
 from Defines import track_formats, IGCPARSINGCONFIG
 from calcUtils import epoch_to_date
 from db_tables import TblTaskResult
@@ -211,7 +209,10 @@ class Track(object):
         track = Track()
         for key, value in d.items():
             if hasattr(track, key):
-                setattr(track, key, value)
+                try:
+                    setattr(track, key, value)
+                except AttributeError as e:
+                    continue
         return track
 
     def get_type(self):

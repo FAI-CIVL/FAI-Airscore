@@ -172,7 +172,7 @@ class Pilot(object):
     def from_result(task_id, result):
         """ creates a Pilot obj. from result dict in Task Result json file"""
         pilot = Pilot.create(task_id=task_id)
-        pilot.track.track_file = Track.from_dict(result)
+        pilot.track = Track.from_dict(result)
         pilot.info = Participant.from_dict(result)
         pilot.result = Flight_result.from_dict(result)
         return pilot
