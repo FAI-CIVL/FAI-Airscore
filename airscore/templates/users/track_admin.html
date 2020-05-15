@@ -15,6 +15,16 @@
     <meta name="author" content="">
 
     <title>Track Management</title>
+        <div class="container">
+             <h2>Task {{task_number}} {% if task_name %}
+                - {{task_name}} {% endif %}
+             </h2>
+             <br>
+             <h4 >{{session.comp_name}}</h4>
+             <br>
+             <h5 id="title_dist" ></h5>
+        </div>
+
 
  {% if not user_is_admin %}
 
@@ -205,7 +215,9 @@
                            $('#bulkmodal').modal('hide');
                            {% if not production %}
                            populate_track_admin({{taskid|tojson}});
+                           update_track_pilot_stats();
                            {% endif %}
+
                       },
 
         progress: function (e, data) {
@@ -367,6 +379,7 @@ function initES() {
                         $.alert(response.error,{ type: 'danger', position: ['center', [-0.42, 0]],
                         autoClose: false
                                                 });
+                        update_track_pilot_stats();
                 }
                 else {
                 update_row($.parseJSON(data.message));
@@ -377,6 +390,7 @@ function initES() {
 
     es.addEventListener('reload', function(event) {
         populate_track_admin({{taskid|tojson}});
+        update_track_pilot_stats();
 
     }, false);
 
