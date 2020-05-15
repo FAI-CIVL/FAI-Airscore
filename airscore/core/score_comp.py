@@ -34,7 +34,7 @@ def main(args):
     print(f"Comp ID: {comp_id} | Status: {status}")
 
     '''create comp obj, scores, json file, and TblResultFile entry'''
-    ref_id = C.create_results(comp_id, status)
+    ref_id, _ = C.create_results(comp_id, status)
     print(f'result ID: {ref_id}')
 
     ''' now restore stdout function '''

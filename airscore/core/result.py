@@ -21,7 +21,7 @@ Stuart Mackintosh - Antonio Golfari
 from db_tables import TblResultFile
 from myconn import Database
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy import update
+from sqlalchemy import update, and_
 
 
 class Task_result:
@@ -309,14 +309,18 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None):
         db.session.add(result)
         db.session.commit()
         ref_id = result.ref_id
-    return ref_id
+    return ref_id, filename, timestamp
 
 
-def unpublish_result(taskid, session=None):
-    """unpublish (set active to 0) all result files for a task"""
+def unpublish_result(taskid_or_compid, comp=False, session=None):
+    """unpublish (set active to 0) all result files for a task or a comp"""
     with Database(session) as db:
         try:
-            db.session.query(TblResultFile).filter(TblResultFile.task_id == taskid).update({'active': 0})
+            if comp:
+                db.session.query(TblResultFile).filter(and_(TblResultFile.comp_id == taskid_or_compid,
+                                                            TblResultFile.task_id.is_(None))).update({'active': 0})
+            else:
+                db.session.query(TblResultFile).filter(TblResultFile.task_id == taskid_or_compid).update({'active': 0})
             db.session.commit()
             if not session:
                 db.session.close()

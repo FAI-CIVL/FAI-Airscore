@@ -7,7 +7,7 @@ Antonio Golfari - 2019
 
 import json
 
-from sqlalchemy import and_
+from sqlalchemy import and_, desc
 
 import Defines
 # Use your utility module.
@@ -81,21 +81,26 @@ def is_ext(comp_id):
         return bool(comps.get(comp_id).external)
 
 
-def get_comp_json_filename(comp_id):
+def get_comp_json_filename(comp_id, latest=False):
     """returns active json results file"""
     from db_tables import TblResultFile as R
     from sqlalchemy.exc import SQLAlchemyError
     with Database() as db:
         try:
-            result = db.session.query(R).filter(and_(R.comp_id == comp_id, R.task_id.is_(None), R.active == 1)).one()
+            if latest:
+                result = db.session.query(R).filter(and_(R.comp_id == comp_id, R.task_id.is_(None)))\
+                    .order_by(desc(R.ref_id)).limit(1).one()
+            else:
+                result = db.session.query(R).filter(and_(R.comp_id == comp_id, R.task_id.is_(None), R.active == 1))\
+                    .one()
             return result.filename
         except SQLAlchemyError:
             print(f"No file found")
     return None
 
 
-def get_comp_json(comp_id):
-    filename = get_comp_json_filename(comp_id)
+def get_comp_json(comp_id, latest=False):
+    filename = get_comp_json_filename(comp_id, latest)
     if not filename:
         return "error"
     with open(Defines.RESULTDIR + filename, 'r') as myfile:

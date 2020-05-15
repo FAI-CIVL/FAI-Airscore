@@ -637,8 +637,9 @@ class Task(object):
         lib.calculate_results(self)
         '''create result elements from task, formula and results objects'''
         elements = self.create_json_elements()
-        ref_id = create_json_file(comp_id=self.comp_id, task_id=self.id,
-                                  code='_'.join([self.comp_code, self.task_code]), elements=elements, status=status)
+        ref_id, _, _ = create_json_file(comp_id=self.comp_id, task_id=self.id,
+                                        code='_'.join([self.comp_code, self.task_code]), elements=elements,
+                                        status=status)
         return ref_id
 
     def create_json_elements(self):
@@ -1095,7 +1096,6 @@ class Task(object):
             Inputs:
                 task_id     int: task ID
                 filename    str: (opt.) json filename
-
         """
 
         if not filename or not path.isfile(filename):
@@ -1118,7 +1118,7 @@ class Task(object):
 
         # pp(t)
 
-        task = Task(task_id)
+        task = Task(task_id=task_id)
         # task.__dict__.update(t['info'])
         ''' get task info'''
         for key, value in t['info'].items():

@@ -8,7 +8,6 @@ from flask import (
     render_template,
     request,
     url_for,
-    jsonify,
     send_file,
     session
 )
@@ -150,7 +149,9 @@ def get_all_comps():
 @blueprint.route('/competition/<int:compid>')
 def competition(compid):
     from compUtils import get_comp_json
-    result_file = get_comp_json(int(compid))
+    # get the latest comp result file, not the active one. This is so we can display tasks that have published
+    # results that are not yet official and therefore in the comp overall results
+    result_file = get_comp_json(int(compid), latest=True)
     all_tasks = []
     layer = {}
     country_scores = False
@@ -159,7 +160,7 @@ def competition(compid):
     if result_file != 'error':
         if result_file['formula'].get('country_scoring') == 1:
             country_scores = True
-        overall_available = True
+        overall_available = True if get_comp_json(int(compid)) != 'error' else False
         for task in result_file['tasks']:
             task_ids.append(int(task['id']))
             wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox = get_map_json(task['id'])

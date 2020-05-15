@@ -5,6 +5,16 @@
     <link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet">
 
 <body>
+        <div class="container">
+             <h2>Task {{task_number}} {% if task_name %}
+                - {{task_name}} {% endif %}
+             </h2>
+             <br>
+             <h4 >{{session.comp_name}}</h4>
+             <br>
+             <h5 id="title_dist" ></h5>
+        </div>
+
         <div class="text-center">
             <h3 id="header"></h3>
         </div>
@@ -32,6 +42,16 @@
             Edit Status
             </button>
        </div>
+         <div class="form-row form-group col-md-12">
+            <h5 id="comp_header"></h5>
+              <button id="comp_unpublish" class="btn btn-danger ml-4" type="button" onclick="comp_unpublish();">
+                Remove
+            </button>
+             <button id="comp_publish" class="btn btn-danger ml-4" type="button" onclick="comp_publish();">
+                Update
+            </button>
+         </div>
+
     </div>
  </div>
   <div class="container-fluid">
@@ -203,6 +223,13 @@ function updateFiles() {
         dataType: "json",
         success: function(response) {
         $('#header').text(response.header)
+        $('#comp_header').text(response.comp_header)
+        if (response.display_comp_unpublish) {
+            $('#comp_unpublish').show();
+            }
+         else {
+            $('#comp_unpublish').hide();
+            }
         response.choices.forEach(function(item) {
             dropdown.file.append(
                 $('<option>', {
@@ -304,6 +331,25 @@ var mydata = new Object();
 
 
 }
+
+
+function comp_publish() {
+    var mydata = new Object();
+    mydata.offset = new Date().getTimezoneOffset();
+    $.ajax({
+        type: "POST",
+        url:  "{{ url_for('user._publish_comp_result', compid=session.compid)}}",
+        contentType: "application/json",
+        data: JSON.stringify(mydata),
+        dataType: "json",
+        success: function(response) {
+                $('#comp_header').text(response.comp_header)
+                $('#comp_unpublish').show();
+        }
+    });
+
+}
+
 
 
     </script>

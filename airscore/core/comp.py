@@ -437,8 +437,9 @@ class Comp(object):
                   'formula': {x: getattr(comp.formula, x) for x in Comp_result.formula_list},
                   'stats': {x: getattr(comp, x) for x in Comp_result.stats_list}
                   }
-        ref_id = create_json_file(comp_id=comp.id, task_id=None, code=comp.comp_code, elements=result, status=status)
-        return comp, ref_id
+        ref_id, filename, timestamp = create_json_file(comp_id=comp.id, task_id=None, code=comp.comp_code,
+                                                       elements=result, status=status)
+        return comp, ref_id, filename, timestamp
         # return result
 
     def get_final_scores(self, d=0):

@@ -166,7 +166,7 @@ def _get_formulas():
     category = request.args.get('category', '01', type=str)
     formulas = list_formulas()
     formula_choices = [(x, x.upper()) for x in formulas[category]]
-    return formula_choices
+    return jsonify(formula_choices)
 
 
 @blueprint.route('/comp_settings_admin/<compid>', methods=['GET', 'POST'])
@@ -288,7 +288,6 @@ def comp_settings_admin(compid):
         compform.nom_launch.data = int(formula.nominal_launch*100)
         compform.nom_time.data = int(formula.nominal_time/60)
         compform.team_scoring.data = formula.team_scoring
-        compform.country_scoring.data = formula.country_scoring
         compform.team_size.data = formula.team_size
         compform.max_team_size.data = formula.max_team_size
         compform.country_scoring.data = formula.country_scoring
@@ -317,9 +316,10 @@ def comp_settings_admin(compid):
         compform.check_launch.data = comp.check_launch
         compform.self_register.data = comp.self_register
         compform.website.data = comp.website
-
         newtaskform.task_region.choices, _ = frontendUtils.get_region_choices(compid)
         newadminform.admin.choices = admin_choices
+        formulas = list_formulas()
+        compform.formula.choices = [(x, x.upper()) for x in formulas[comp.comp_class]]
 
         if current_user.id not in admin_ids:
             session['is_admin'] = False
@@ -664,13 +664,15 @@ def _get_tracks_processed(taskid):
 @blueprint.route('/track_admin/<taskid>', methods=['GET'])
 @login_required
 def track_admin(taskid):
+    taskid = int(taskid)
+    task = Task.read(taskid)
     _, _, all_admin_ids = frontendUtils.get_comp_admins(taskid, task_id=True)
     if current_user.id in all_admin_ids:
         user_is_admin = True
     else:
         user_is_admin = None
     return render_template('users/track_admin.html', taskid=taskid, user_is_admin=user_is_admin,
-                           production=frontendUtils.production())
+                           production=frontendUtils.production(), task_name=task.task_name, task_num=task.task_num)
 
 
 @blueprint.route('/_set_result/<taskid>', methods=['POST'])
@@ -812,20 +814,31 @@ def _upload_track_zip(taskid):
         return resp
 
 
-@blueprint.route('/_get_task_result_files/<taskid>', methods=['GET', 'POST'])
+@blueprint.route('/_get_task_result_files/<taskid>', methods=['POST'])
 @login_required
 def _get_task_result_files(taskid):
+    from compUtils import get_comp_json
     data = request.json
+    offset = (int(data['offset']) / 60 * -1) * 3600
     files = frontendUtils.get_task_result_file_list(int(taskid))
+    comp_file = get_comp_json(int(session['compid']))
+
+    if comp_file == 'error':
+        comp_header = "No overall competition results published"
+        display_comp_unpublish = False
+    else:
+        comp_published = time.ctime(comp_file['file_stats']['timestamp'] + offset)
+        comp_header = f"Overall competition results published: {comp_published}"
+        display_comp_unpublish = True
     header, active = frontendUtils.get_score_header(files, data['offset'])
     choices = []
-    offset = (int(data['offset'])/60*-1)*3600
+
     for file in files:
         published = time.ctime(file['created'] + offset)
         choices.append((file['filename'], f"{published} - {file['status']}"))
     choices.reverse()
     return {'choices': choices, 'header': header, 'active': active, 'comp_header': comp_header,
-                    'display_comp_unpublish': display_comp_unpublish}
+            'display_comp_unpublish': display_comp_unpublish}
 
 
 @blueprint.route('/_get_task_score_from_file/<taskid>/<filename>', methods=['GET'])
@@ -875,20 +888,14 @@ def _get_task_score_from_file(taskid, filename):
     return {'data': all_pilots}
 
 
-@blueprint.route('/task_score_admin/<taskid>', methods=['GET', 'POST'])
+@blueprint.route('/task_score_admin/<taskid>', methods=['GET'])
 @login_required
 def task_score_admin(taskid):
     taskid = int(taskid)
+    task = Task.read(taskid)
     fileform = TaskResultAdminForm()
     active_file = None
-    # files = frontendUtils.get_task_result_file_list(taskid)
     choices = [(1, 1), (2, 2)]
-    # for file in files:
-    #     # published = ''
-    #     if file['active'] == 1:
-    #         active_file = file['filename']
-    #         # published = " - published"
-    #     choices.append((file['filename'], f"{time.ctime(file['created'])} - {file['status']}"))
     fileform.result_file.choices = choices
     if active_file:
         fileform.result_file.data = active_file
@@ -899,59 +906,101 @@ def task_score_admin(taskid):
         user_is_admin = None
 
     return render_template('users/task_score_admin.html', fileform=fileform, taskid=taskid,
-                           active_file=active_file, user_is_admin=user_is_admin)
+                           active_file=active_file, user_is_admin=user_is_admin, task_name=task.task_name,
+                           task_num=task.task_num)
 
 
 @blueprint.route('/_score_task/<taskid>', methods=['POST'])
 @login_required
 def _score_task(taskid):
-    from result import unpublish_result, publish_result
-    """score task, request data should contain status: the score status (provisional, official etc),
-    autopublish: True or False. indicates if to publish results automatically after scoring"""
-    data = request.json
-    taskid = int(taskid)
-    task = Task.read(taskid)
-    ref_id = task.create_results(data['status'])
-    if ref_id:
-        if data['autopublish']:
-            unpublish_result(taskid)
-            publish_result(ref_id, ref_id=True)
-        return jsonify(dict(redirect='/users/task_score_admin/' + str(taskid)))
+    if request.method == "POST":
+        from result import unpublish_result, publish_result
+        """score task, request data should contain status: the score status (provisional, official etc),
+        autopublish: True or False. indicates if to publish results automatically after scoring"""
+        data = request.json
+        taskid = int(taskid)
+        task = Task.read(taskid)
+        ref_id = task.create_results(data['status'])
+        if ref_id:
+            if data['autopublish']:
+                unpublish_result(taskid)
+                publish_result(ref_id, ref_id=True)
+                comp = Comp()
+                comp.create_results(session['compid'], data['status'])
+            return dict(redirect='/users/task_score_admin/' + str(taskid))
     return render_template('500.html')
 
 
 @blueprint.route('/_unpublish_result/<taskid>', methods=['POST'])
 @login_required
 def _unpublish_result(taskid):
-    from result import unpublish_result
-    unpublish_result(taskid)
-    header = "No published results"
-    resp = jsonify(filename='', header=header)
-    return resp
+    if request.method == "POST":
+        from result import unpublish_result
+        unpublish_result(taskid)
+        header = "No published results"
+        resp = jsonify(filename='', header=header)
+        return resp
+    return render_template('500.html')
+
+
+@blueprint.route('/_unpublish_comp_result/<compid>', methods=['POST'])
+@login_required
+def _unpublish_comp_result(compid):
+    if request.method == "POST":
+        from result import unpublish_result
+        unpublish_result(compid, comp=True)
+        comp_header = "No overall competition results published"
+        resp = jsonify(filename='', comp_header=comp_header)
+        return resp
+    return render_template('500.html')
 
 
 @blueprint.route('/_publish_result/<taskid>', methods=['POST'])
 @login_required
 def _publish_result(taskid):
-    from result import publish_result, unpublish_result
-    data = request.json
-    unpublish_result(taskid)
-    publish_result(data['filename'])
-    run_at, status = data['filetext'].split('-')
-    header = f"Published result ran at:{run_at} Status:{status}"
-    resp = jsonify(filename=data['filename'], header=header)
-    return resp
+    if request.method == "POST":
+        from result import publish_result, unpublish_result
+        data = request.json
+        unpublish_result(taskid)
+        publish_result(data['filename'])
+        comp = Comp()
+        comp.create_results(session['compid'])
+        run_at, status = data['filetext'].split('-')
+        header = f"Published result ran at:{run_at} Status:{status}"
+        resp = jsonify(filename=data['filename'], header=header)
+        return resp
+    return render_template('500.html')
+
+
+@blueprint.route('/_publish_comp_result/<compid>', methods=['POST'])
+@login_required
+def _publish_comp_result(compid):
+    if request.method == "POST":
+        from result import publish_result, unpublish_result
+        data = request.json
+        offset = (int(data['offset']) / 60 * -1) * 3600
+
+        unpublish_result(compid, comp=True)
+        comp = Comp()
+        _, ref_id, filename, timestamp = comp.create_results(session['compid'])
+        publish_result(ref_id, ref_id=True)
+        comp_published = time.ctime(timestamp + offset)
+        comp_header = f"Overall competition results published: {comp_published}"
+        resp = jsonify(comp_header=comp_header)
+        return resp
+    return render_template('500.html')
 
 
 @blueprint.route('/_change_result_status/<taskid>', methods=['POST'])
 @login_required
 def _change_result_status(taskid):
-    from result import update_result_status
-    data = request.json
-    update_result_status(data['filename'], data['status'])
-    resp = jsonify(success=True)
-    return resp
-
+    if request.method == "POST":
+        from result import update_result_status
+        data = request.json
+        update_result_status(data['filename'], data['status'])
+        resp = jsonify(success=True)
+        return resp
+    return render_template('500.html')
 
 @blueprint.route('/_get_regions', methods=['GET'])
 @login_required
