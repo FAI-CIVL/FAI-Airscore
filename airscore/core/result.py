@@ -521,7 +521,7 @@ def get_task_country_json(filename):
         print(f'Team Scoring is not available')
         return None
     countries = get_country_list(countries=set(map(lambda x: x['nat'], data['results'])))
-    size = formula['team_size']
+    size = formula['team_size'] if 'country_size' not in formula.keys() else formula['country_size']
     results = []
     for nat in countries:
         nation = dict(code=nat.code, name=nat.name)
@@ -555,7 +555,7 @@ def get_comp_country_json(filename):
         return None
     '''get info: countries list, team size, task codes'''
     countries = get_country_list(countries=set(map(lambda x: x['nat'], data['results'])))
-    size = formula['team_size']
+    size = formula['team_size'] if 'country_size' not in formula.keys() else formula['country_size']
     tasks = [t['task_code'] for t in data['tasks']]
     results = []
     for nat in countries:
@@ -693,7 +693,7 @@ def get_task_country_scoring(filename):
         print(f'Team Scoring is not available')
         return None
     countries = get_country_list(countries=set(map(lambda x: x['nat'], data['results'])))
-    size = formula['country_size']
+    size = formula['team_size'] if 'country_size' not in formula.keys() else formula['country_size']
     for nat in countries:
         nation = dict(code=nat.code, name=nat.name)
         nat_pilots = sorted([p for p in data['results'] if p['nat'] == nation['code']
@@ -728,7 +728,7 @@ def get_comp_country_scoring(filename):
         return None
     '''get info: countries list, team size, task codes'''
     countries = get_country_list(countries=set(map(lambda x: x['nat'], data['results'])))
-    size = formula['country_size']
+    size = formula['team_size'] if 'country_size' not in formula.keys() else formula['country_size']
     tasks = [t['task_code'] for t in data['tasks']]
     teams = []
     pilots = []
