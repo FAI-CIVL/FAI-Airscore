@@ -387,8 +387,8 @@
 
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">No</button>
-               <button id = "formula_confirmed" type="button" class="btn btn-default" data-dismiss="modal">Yes update</button>
+                <button type="button" class="btn btn-success" data-dismiss="modal">No</button>
+               <button id = "formula_confirmed" type="button" class="btn btn-danger" data-dismiss="modal">Yes update</button>
             </div>task_name
         </div>
       </div>
@@ -428,8 +428,6 @@
            igc_config: $('#igc_config')
        };
    
-       // call to update on load
-       updateFormulas();
        $('#link_igc_config').attr("href", "/users/igc_parsing_config/" + dropdown.igc_config.val());
        // function to call XHR and update formula dropdown
        function updateFormulas() {
