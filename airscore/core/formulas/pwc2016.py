@@ -23,8 +23,12 @@ formula_class = 'PG'
 
 ''' Default Formula presets
     pg_preset: PG default values, if formula applies for PG or mixed
-    hg_preset: HG default values, if formula applies for HG or mixed'''
-# TODO should have switch for each parameter to be editable or not in frontend
+    hg_preset: HG default values, if formula applies for HG or mixed  
+  
+    value:      default value of the parameter
+    visible:    whether parameter is visible or not in frontend
+    editable:   whether parameter is editable by user or not in frontend
+    comment:    comment to show in parameter label in frontend'''
 
 pg_preset = FormulaPreset(
     # This part should not be edited
@@ -72,7 +76,11 @@ pg_preset = FormulaPreset(
     # Waypoint radius minimum tolerance (meters): INT default = 5
     min_tolerance=Preset(value=5, visible=True, editable=True),
     # Scoring Altitude Type: default is GPS for PG and QNH for HG
-    scoring_altitude=Preset(value='GPS', visible=True, editable=True)
+    scoring_altitude=Preset(value='GPS', visible=True, editable=True),
+    # Decimals to be displayed in Task results: default is 0
+    task_result_decimal=Preset(value=0, visible=False, editable=False),
+    # Decimals to be displayed in Comp results: default is 0
+    comp_result_decimal=Preset(value=0, visible=False, editable=False)
 )
 
 

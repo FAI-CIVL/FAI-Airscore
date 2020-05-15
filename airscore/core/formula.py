@@ -96,6 +96,8 @@ class FormulaPreset:
     tolerance: Preset
     min_tolerance: Preset
     scoring_altitude: Preset
+    task_result_decimal: Preset
+    comp_result_decimal: Preset
 
     def as_formula(self):
         """ gets presets' value"""
@@ -112,7 +114,8 @@ class Formula(object):
                  formula_time=None, no_goal_penalty=None, glide_bonus=None, tolerance=0.001, min_tolerance=5,
                  arr_alt_bonus=None, arr_min_height=None, arr_max_height=None, validity_min_time=None, max_JTG=0,
                  JTG_penalty_per_sec=None, nominal_goal=None, nominal_dist=None, nominal_time=None, nominal_launch=None,
-                 scoring_altitude=None, min_dist=None, score_back_time=None, overall_validity='all', validity_param=1):
+                 scoring_altitude=None, min_dist=None, score_back_time=None, overall_validity='all', validity_param=1,
+                 task_result_decimal=0, comp_result_decimal=0):
 
         self.comp_id = comp_id
         self.formula_name = formula_name
@@ -143,6 +146,8 @@ class Formula(object):
         self.tolerance = tolerance  # percentage / 100
         self.min_tolerance = min_tolerance  # meters
         self.scoring_altitude = scoring_altitude  # 'GPS', 'QNH'
+        self.task_result_decimal = task_result_decimal  # score decimals displayed in task result
+        self.comp_result_decimal = comp_result_decimal  # score decimals displayed in comp result
         self.team_scoring = False
         self.team_size = 0
         self.max_team_size = 0

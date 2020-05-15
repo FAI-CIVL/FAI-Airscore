@@ -77,7 +77,11 @@ pg_preset = FormulaPreset(
     # Waypoint radius minimum tolerance (meters): INT default = 5
     min_tolerance=Preset(value=5, visible=True, editable=True, comment='0 ~ 5 m.'),
     # Scoring Altitude Type: default is GPS for PG and QNH for HG
-    scoring_altitude=Preset(value='GPS', visible=True, editable=True)
+    scoring_altitude=Preset(value='GPS', visible=True, editable=True),
+    # Decimals to be displayed in Task results: default is 0
+    task_result_decimal=Preset(value=1, visible=False, editable=False),
+    # Decimals to be displayed in Comp results: default is 0
+    comp_result_decimal=Preset(value=0, visible=False, editable=False)
 )
 
 hg_preset = FormulaPreset(
@@ -126,8 +130,13 @@ hg_preset = FormulaPreset(
     # Waypoint radius minimum tolerance (meters): INT default = 5
     min_tolerance=Preset(value=5, visible=True, editable=True),
     # Scoring Altitude Type: default is GPS for PG and QNH for HG
-    scoring_altitude=Preset(value='QNH', visible=True, editable=True)
+    scoring_altitude=Preset(value='QNH', visible=True, editable=True),
+    # Decimals to be displayed in Task results: default is 0
+    task_result_decimal=Preset(value=0, visible=False, editable=False),
+    # Decimals to be displayed in Comp results: default is 0
+    comp_result_decimal=Preset(value=0, visible=False, editable=False)
 )
+
 
 ''' Function to calculate parameters (if needed)'''
 def calculate_parameters(args):

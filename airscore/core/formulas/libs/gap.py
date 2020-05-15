@@ -370,7 +370,6 @@ def pilot_arrival(task, res):
 
     if task.arrival == 'position':
         '''FAI position arrival points'''
-        # TODO ESS_rank
         AC = 1 - (res.ESS_rank - 1) / task.pilots_ess
     elif task.arrival == 'time':
         '''OZGAP time arrival points'''
@@ -518,11 +517,6 @@ def points_allocation(task):
         res.score = res.distance_score + res.time_score + res.arrival_score + res.departure_score
 
         ''' Apply Penalty'''
-        # if penalty or percentage_penalty:
-            # TODO: totalScore p = max(totalScore p − jumpTheGunPenalty p , scoreForMinDistance)
-            # res.penalty += res.score * percentage_penalty
-            # res.score = max(0, res.score - res.penalty)
-
         if res.jtg_penalty or res.flat_penalty or res.percentage_penalty:
             ''' Jump the Gun Penalty:
                 totalScore p = max(totalScore p − jumpTheGunPenalty p , scoreForMinDistance) '''

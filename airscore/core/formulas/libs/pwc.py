@@ -167,10 +167,6 @@ def points_weight(task):
 
     task.avail_dist_points = 1000 * quality * task.dist_weight  # AvailDistPoints
     task.avail_dep_points = 1000 * quality * task.dep_weight  # AvailLeadPoints
-
-    # TODO this version variation should be moved to version scripts when logic will be updated
-    if formula.version == '2017':
-        task.avail_dep_points += 50  # PWC2017 Augmented LeadPoints
     task.avail_arr_points = 0  # AvailArrPoints
     task.avail_time_points = 1000 * quality - task.avail_dep_points - task.avail_dist_points  # AvailSpeedPoints
 
