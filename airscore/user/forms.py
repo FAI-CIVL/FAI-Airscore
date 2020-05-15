@@ -7,7 +7,7 @@ from wtforms import PasswordField, StringField, IntegerField, SelectField, Decim
     FileField, TextAreaField
 
 from wtforms.fields.html5 import DateField, TimeField
-from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange, Optional
+from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange, Optional, InputRequired
 
 import Defines
 from .models import User
@@ -112,7 +112,7 @@ class CompForm(FlaskForm):
     date_from = DateField('Start Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
     date_to = DateField('End Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
     MD_name = StringField('Race Director')
-    time_offset = DecimalField('GMT offset', validators=[DataRequired()], places=2, render_kw=dict(maxlength=5),
+    time_offset = DecimalField('GMT offset', validators=[InputRequired()], places=2, render_kw=dict(maxlength=5),
                                description='The default time offset for the comp. Individual tasks will have this '
                                'as a default but can be overridden if your comp spans multiple time zones'
                                ' or over change in daylight savings')
@@ -120,7 +120,7 @@ class CompForm(FlaskForm):
                                      description='Registered - only pilots registered are flying, '
                                                  'open - all tracklogs uploaded are considered as entires')
     formulas = list_formulas()
-    formula = SelectField('Formula', choices= [(x, x.upper()) for x in formulas['ALL']], id='select_formula')
+    formula = SelectField('Formula', choices=[(x, x.upper()) for x in formulas['ALL']], id='select_formula')
     locked = BooleanField('Scoring Locked',
                           description="If locked, a rescore will not change displayed results")
 
@@ -153,13 +153,13 @@ class CompForm(FlaskForm):
     formula_time = SelectField('Time points', choices=[('on', 'On'), ('off', 'Off')])
 
     scoring_altitude = SelectField('Instrument Altitude', choices=[('GPS', 'GPS'), ('QNH', 'QNH')])
-    lead_factor = DecimalField('Leadfactor')
-    no_goal_penalty = DecimalField('No goal penalty')
+    lead_factor = DecimalField('Leadfactor', default=1)
+    no_goal_penalty = DecimalField('No goal penalty', validators=[InputRequired()], default=0)
 
-    tolerance = DecimalField('Turnpoint radius tolerance %', places=3)
+    tolerance = DecimalField('Turnpoint radius tolerance %', places=3, default=0)
     min_tolerance = IntegerField('Minimum turnpoint tolerance (m)')
-    glide_bonus = DecimalField('Glide bonus')
-    arr_alt_bonus = DecimalField('Height bonus')
+    glide_bonus = DecimalField('Glide bonus', validators=[InputRequired()], default=0)
+    arr_alt_bonus = DecimalField('Height bonus', validators=[InputRequired()], default=0)
     arr_max_height = IntegerField('ESS height limit - upper', validators=[Optional(strip_whitespace=True)])
     arr_min_height = IntegerField('ESS height limit - lower', validators=[Optional(strip_whitespace=True)])
     validity_min_time = IntegerField('Minimum time (mins)')
@@ -183,6 +183,7 @@ class CompForm(FlaskForm):
     def validate_on_submit(self):
         result = super(CompForm, self).validate()
         if self.date_from.data > self.date_to.data:
+            self.date_from.errors.append('Competition end date is before start date')
             return False
         else:
             return result
@@ -212,7 +213,7 @@ class TaskForm(FlaskForm):
     start_iteration = IntegerField('Number of gates', description='number of start iterations: 0 is indefinite up to '
                                                                   'start close time',
                                    validators=[Optional(strip_whitespace=True)])
-    time_offset = DecimalField('GMT offset', validators=[DataRequired()], places=2, render_kw=dict(maxlength=5),
+    time_offset = DecimalField('GMT offset', validators=[InputRequired()], places=2, render_kw=dict(maxlength=5),
                                description='The time offset for the task. Default value taken from the competition '
                                            'time offset')
     check_launch = BooleanField('Check launch', description='If we check pilots leaving launch - i.e. launch is like '
@@ -232,24 +233,32 @@ class TaskForm(FlaskForm):
     formula_departure = SelectField('Departure points', choices=[('leadout', 'Leadout'), ('departure', 'Departure'),
                                                                  ('off', 'Off')])
     formula_time = SelectField('Time points', choices=[('on','On'), ('off', 'Off')])
-    arr_alt_bonus = DecimalField('Height bonus')
+    arr_alt_bonus = DecimalField('Height bonus', validators=[InputRequired()], default=0)
     max_JTG = IntegerField("Max Jump the gun (sec)", default=0)
-    no_goal_penalty = DecimalField('No goal penalty')
+    no_goal_penalty = DecimalField('No goal penalty', validators=[InputRequired()], default=0)
     tolerance = DecimalField('Turnpoint radius tolerance %', places=3)
 
     submit = SubmitField('Save')
 
     def validate_on_submit(self):
         result = super(TaskForm, self).validate()
-        return result
-        # if self.window_close_time.data > self.window_open_time.data:
-        #     return False
-        # if self.start_close_time.data > self.start_time.data:
-        #     return False
-        # if self.task_deadline.data > self.start_time.data:
-        #     return False
-        # else:
-        #     return result
+        if self.window_close_time.data < self.window_open_time.data:
+            self.window_open_time.errors.append('window open time is after window close time')
+            return False
+        if self.start_time.data < self.window_open_time.data:
+            self.start_time.errors.append('start time is before window open')
+            return False
+        if self.start_close_time.data < self.start_time.data:
+            self.start_close_time.errors.append('start time is after start close time')
+            return False
+        if self.window_close_time.data > self.start_close_time.data:
+            self.window_close_time.errors.append('window close time is after start close time')
+            return False
+        if self.task_deadline.data < self.start_close_time.data:
+            self.task_deadline.errors.append('task deadline is before start close time')
+            return False
+        else:
+            return result
 
 
 class NewTurnpointForm(FlaskForm):

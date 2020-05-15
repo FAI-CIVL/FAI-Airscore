@@ -254,10 +254,7 @@ def comp_settings_admin(compid):
         else:
             for item in compform:
                 if item.errors:
-                    print(f"{item} value:{item.data} error:{item.errors}")
-                    flash(
-                        f"not saved as something(s) on the form not valid: {item} value:{item.data} "
-                        f"error:{item.errors}", category="warning")
+                    flash(f"{item.label.text}: {', '.join(x for x in item.errors)}", category='danger')
                     return redirect(url_for('user.comp_settings_admin', compid=compid))
 
     if request.method == 'GET':
@@ -405,11 +402,9 @@ def task_admin(taskid):
             return redirect(url_for('user.task_admin', taskid=taskid))
 
         else:
-            flash("not valid")
-            # for item in taskform:
-            #     if item.errors:
-            #         print(f"{item} value:{item.data} error:{item.errors}")
-            #         stdout.flush()
+            for item in taskform:
+                if item.errors:
+                    flash(f"{item.label.text}: {', '.join(x for x in item.errors)}", category='danger')
 
     if request.method == 'GET':
         offset = task.time_offset if task.time_offset else 0
