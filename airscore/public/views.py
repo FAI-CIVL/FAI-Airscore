@@ -225,53 +225,109 @@ def task_result(taskid):
     return render_template('public/task_result.html', taskid=taskid)
 
 
+# @blueprint.route('/_get_task_result/<int:taskid>', methods=['GET', 'POST'])
+# def _get_task_result(taskid):
+#     from calcUtils import c_round
+#     result_file = get_task_json(taskid)
+#     if result_file == 'error':
+#         return render_template('404.html')
+#
+#     rank = 1
+#     all_pilots = []
+#     '''score decimals'''
+#     if 'task_result_decimal' in result_file['formula'].keys():
+#         d = result_file['formula']['task_result_decimal']
+#     else:
+#         d = 0
+#     for r in result_file['results']:  # need sex??
+#         track_id = r['track_id']
+#         name = r['name']
+#         status = r['result_type']
+#         if status not in ['dnf', 'abs']:
+#             pilot = [f'<b>{rank}</b>', f'<a href="/map/{track_id}-{taskid}">{name}</a>', r['nat'], r['glider'],
+#                      r['glider_cert'], r['sponsor']]
+#             if r['SSS_time']:
+#                 pilot.append(sec_to_time(r['SSS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S"))
+#             else:
+#                 pilot.append("")
+#             if r['ESS_time'] == 0 or r['ESS_time'] is None:
+#                 pilot.append("")
+#                 pilot.append("")
+#                 pilot.append("")
+#             elif r['goal_time'] in [None, 0]:
+#                 pilot.append(f"<del>{sec_to_time(r['ESS_time'] + result_file['info']['time_offset']).strftime('%H:%M:%S')}</del>")
+#                 pilot.append(f"<del>{sec_to_time(r['ss_time']).strftime('%H:%M:%S')}</del>")
+#                 pilot.append(f"<del>{round(r['speed'], 2):.2f}</del>" if r['speed'] else "")
+#             else:
+#                 pilot.append(sec_to_time(r['ESS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S"))
+#                 pilot.append(sec_to_time(r['ss_time']).strftime("%H:%M:%S"))
+#                 pilot.append(f"{round(r['speed'], 2):.2f}" if r['speed'] else "")
+#             pilot.append("")  # altitude bonus
+#             pilot.append(f"{round(r['distance'] / 1000, 2):.2f}")
+#             pilot.append(f"{c_round(r['time_score'], 1):.1f}")
+#             pilot.append(f"{c_round(r['departure_score'], 1):.1f}")
+#             pilot.append(f"{c_round(r['arrival_score'], 1):.1f}")  # arrival points
+#             pilot.append(f"{c_round(r['distance_score'], 1):.1f}")
+#             pilot.append(f"{c_round(r['penalty'], 1):.1f}" if r['penalty'] else "")
+#             pilot.append(f"{c_round(r['score'], d):.{d}f}")
+#             all_pilots.append(pilot)
+#             rank += 1
+#         # else:
+#         #     '''pilot do not have result data'''
+#             # TODO at the moment js raises error trying to order scores, leaving non flying pilots out of datatable
+#             # pilot = [f'<b>{rank}</b>', f'{name}', r['nat'], r['glider'], r['glider_cert'], r['sponsor'], "", "", "", "",
+#             #          "", "", "", "", "", "", "", f"{r['result_type'].upper()}"]
+#
+#     result_file['data'] = all_pilots
+#     all_classes = []
+#     for glider_class in result_file['rankings']:
+#         if glider_class[-5:].lower() == 'class':
+#             # if glider_class[-5:].lower() == 'class' or glider_class.lower() == 'overall':
+#             comp_class = {'name': glider_class, 'limit': result_file['rankings'][glider_class][-1]}
+#             all_classes.append(comp_class)
+#     all_classes.reverse()
+#     result_file['classes'] = all_classes
+#     return result_file
+
+
 @blueprint.route('/_get_task_result/<int:taskid>', methods=['GET', 'POST'])
 def _get_task_result(taskid):
-    from calcUtils import c_round
-    result_file = get_task_json(taskid)
+    from task import get_task_json_filename
+    result_file = frontendUtils.get_pretty_data(get_task_json_filename(taskid))
     if result_file == 'error':
         return render_template('404.html')
 
-    rank = 1
     all_pilots = []
-    '''score decimals'''
-    if 'task_result_decimal' in result_file['formula'].keys():
-        d = result_file['formula']['task_result_decimal']
-    else:
-        d = 0
-    for r in result_file['results']:  # need sex??
-        track_id = r['track_id']
-        name = r['name']
-        status = r['result_type']
-        if status not in ['dnf', 'abs']:
-            pilot = [f'<b>{rank}</b>', f'<a href="/map/{track_id}-{taskid}">{name}</a>', r['nat'], r['glider'],
-                     r['glider_cert'], r['sponsor']]
-            if r['SSS_time']:
-                pilot.append(sec_to_time(r['SSS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S"))
-            else:
-                pilot.append("")
-            if r['ESS_time'] == 0 or r['ESS_time'] is None:
-                pilot.append("")
-                pilot.append("")
-                pilot.append("")
-            elif r['goal_time'] in [None, 0]:
-                pilot.append(f"<del>{sec_to_time(r['ESS_time'] + result_file['info']['time_offset']).strftime('%H:%M:%S')}</del>")
-                pilot.append(f"<del>{sec_to_time(r['ss_time']).strftime('%H:%M:%S')}</del>")
-                pilot.append(f"<del>{round(r['speed'], 2):.2f}</del>" if r['speed'] else "")
-            else:
-                pilot.append(sec_to_time(r['ESS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S"))
-                pilot.append(sec_to_time(r['ss_time']).strftime("%H:%M:%S"))
-                pilot.append(f"{round(r['speed'], 2):.2f}" if r['speed'] else "")
-            pilot.append("")  # altitude bonus
-            pilot.append(f"{round(r['distance'] / 1000, 2):.2f}")
-            pilot.append(f"{c_round(r['time_score'], 1):.1f}")
-            pilot.append(f"{c_round(r['departure_score'], 1):.1f}")
-            pilot.append(f"{c_round(r['arrival_score'], 1):.1f}")  # arrival points
-            pilot.append(f"{c_round(r['distance_score'], 1):.1f}")
-            pilot.append(f"{c_round(r['penalty'], 1):.1f}" if r['penalty'] else "")
-            pilot.append(f"{c_round(r['score'], d):.{d}f}")
-            all_pilots.append(pilot)
-            rank += 1
+    results = [p for p in result_file['results'] if p['result_type'] not in ['dnf', 'abs']]
+    for r in results:
+        rt = r['result_type']
+        rank = f"<b>{r['rank']}</b>"
+        trackid = r['track_id']
+        ID = r['ID']
+        n = r['name']
+        name = n if rt in ['mindist', 'nyp'] else f'<a href="/map/{trackid}-{taskid}">{n}</a>'
+        sex = r['sex']
+        nat = r['nat']
+        sp = r['sponsor']
+        gl = r['glider']
+        gc = r['glider_cert']
+        ss = r['SSS_time']
+        es = r['ESS_time']
+        goal = r['goal_time']
+        t = r['ss_time']
+        s = r['speed']
+        if es and not goal:
+            es, t, s = f'<del>{es}</del>', f'<del>{t}</del>', f'<del>{s}</del>'
+        ab = ''  # alt bonus
+        d = r['distance']
+        ts = r['time_score']
+        dep = r['departure_score']
+        arr = r['arrival_score']
+        dis = r['distance_score']
+        pen = r['penalty']
+        score = r['score']
+        pilot = [rank, name, nat, gl, gc, sp, ss, es, t, s, ab, d, ts, dep, arr, dis, pen, score]
+        all_pilots.append(pilot)
         # else:
         #     '''pilot do not have result data'''
             # TODO at the moment js raises error trying to order scores, leaving non flying pilots out of datatable
@@ -279,14 +335,6 @@ def _get_task_result(taskid):
             #          "", "", "", "", "", "", "", f"{r['result_type'].upper()}"]
 
     result_file['data'] = all_pilots
-    all_classes = []
-    for glider_class in result_file['rankings']:
-        if glider_class[-5:].lower() == 'class':
-            # if glider_class[-5:].lower() == 'class' or glider_class.lower() == 'overall':
-            comp_class = {'name': glider_class, 'limit': result_file['rankings'][glider_class][-1]}
-            all_classes.append(comp_class)
-    all_classes.reverse()
-    result_file['classes'] = all_classes
     return result_file
 
 

@@ -103,7 +103,7 @@ def get_task_list(comp):
         #     task['task_name'] = f'Task {tasknum}'
         task['num'] = f"Task {tasknum}"
         # task['link'] = f'<a href="/users/task_admin/{taskid}">Task {tasknum}</a>'
-        task['opt_dist'] = 0 if not task['opt_dist'] else round(task['opt_dist']/1000, 2)
+        task['opt_dist'] = 0 if not task['opt_dist'] else round(task['opt_dist'] / 1000, 2)
         task['opt_dist'] = f"{task['opt_dist']} km"
         if task['comment'] is None:
             task['comment'] = ''
@@ -203,11 +203,13 @@ def get_pilot_list_for_track_management(taskid):
     from db_tables import TblTaskResult as R, TblParticipant as P, TblTask as T
     with Database() as db:
         try:
-            results = db.session.query(R.goal_time, R.track_file, R.track_id, R.result_type, R.distance_flown, R.ESS_time, R.SSS_time, R.par_id).filter(
-                                               R.task_id == taskid).subquery()
-            pilots = db.session.query(T.task_id, P.name, P.ID, P.par_id, results.c.track_id, results.c.SSS_time, results.c.ESS_time,
-                                      results.c.distance_flown, results.c.track_file, results.c.result_type)\
-                .outerjoin(P, T.comp_id == P.comp_id).filter(T.task_id == taskid)\
+            results = db.session.query(R.goal_time, R.track_file, R.track_id, R.result_type, R.distance_flown,
+                                       R.ESS_time, R.SSS_time, R.par_id).filter(
+                R.task_id == taskid).subquery()
+            pilots = db.session.query(T.task_id, P.name, P.ID, P.par_id, results.c.track_id, results.c.SSS_time,
+                                      results.c.ESS_time,
+                                      results.c.distance_flown, results.c.track_file, results.c.result_type) \
+                .outerjoin(P, T.comp_id == P.comp_id).filter(T.task_id == taskid) \
                 .outerjoin(results, results.c.par_id == P.par_id).all()
 
             if pilots:
@@ -220,7 +222,7 @@ def get_pilot_list_for_track_management(taskid):
     for pilot in pilots:
         time = ''
         data = {}
-        data['ID']  = pilot['ID']
+        data['ID'] = pilot['ID']
         data['name'] = pilot['name']
         data['par_id'] = pilot['par_id']
         data['track_id'] = pilot['track_id']
@@ -229,17 +231,17 @@ def get_pilot_list_for_track_management(taskid):
         if pilot['result_type'] == 'goal':
             data['Result'] = f'Goal {time}'
         elif pilot['result_type'] == 'lo':
-            data['Result'] = f"LO {round(pilot['distance_flown']/1000,2)}"
+            data['Result'] = f"LO {round(pilot['distance_flown'] / 1000, 2)}"
         elif pilot['result_type'] is None:
             data['Result'] = "Not Yet Processed"
         elif pilot['result_type'] == "mindist":
             data['Result'] = "Min Dist"
         else:
             data['Result'] = pilot['result_type'].upper()
-        if pilot['track_file']:   # if there is a track, make the result a link to the map
+        if pilot['track_file']:  # if there is a track, make the result a link to the map
             trackid = data['track_id']
             result = data['Result']
-            data['Result']  = f'<a href="/map/{trackid}-{taskid}">{result}</a>'
+            data['Result'] = f'<a href="/map/{trackid}-{taskid}">{result}</a>'
         all_data.append(data)
     return all_data
 
@@ -295,7 +297,6 @@ def save_turnpoint(task_id, turnpoint: Turnpoint):
 
 
 def allowed_tracklog(filename, extension=track_formats):
-
     if "." not in filename:
         return False
 
@@ -311,7 +312,7 @@ def allowed_tracklog(filename, extension=track_formats):
 
 def allowed_tracklog_filesize(filesize, size=5):
     """check if tracklog exceeds maximum file size for tracklog (5mb)"""
-    if int(filesize) <= size*1024*1024:
+    if int(filesize) <= size * 1024 * 1024:
         return True
     else:
         return False
@@ -367,7 +368,7 @@ def process_igc(task_id, par_id, tracklog):
             data['Result'] = f'Goal {time}'
         elif pilot.result.result_type == 'lo':
             data['Result'] = f"LO {round(pilot.result.distance / 1000, 2)}"
-        if pilot.track_id:   # if there is a track, make the result a link to the map
+        if pilot.track_id:  # if there is a track, make the result a link to the map
             trackid = data['track_id']
             result = data['Result']
             data['Result'] = f'<a href="/map/{trackid}-{task.task_id}">{result}</a>'
@@ -521,7 +522,7 @@ def get_task_result_file_list(taskid):
     with Database() as db:
         try:
             files = db.session.query(R.created, R.filename, R.status, R.active, R.ref_id).filter(
-                                               R.task_id == taskid).all()
+                R.task_id == taskid).all()
             if files:
                 files = [row._asdict() for row in files]
 
@@ -538,7 +539,8 @@ def number_of_tracks_processed(taskid):
     with Database() as db:
         try:
             results = db.session.query(func.count()).filter(R.task_id == taskid).scalar()
-            pilots = db.session.query(func.count(P.par_id)).outerjoin(T, P.comp_id == T.comp_id).filter(T.task_id == taskid).scalar()
+            pilots = db.session.query(func.count(P.par_id)).outerjoin(T, P.comp_id == T.comp_id).filter(
+                T.task_id == taskid).scalar()
 
         except SQLAlchemyError:
             print("there was a problem with getting the pilot/result list")
@@ -552,7 +554,7 @@ def get_score_header(files, offset):
     active_status = None
     active = None
     header = "This task has not been scored"
-    offset = (int(offset)/60*-1)*3600
+    offset = (int(offset) / 60 * -1) * 3600
     for file in files:
         published = time.ctime(file['created'] + offset)
         if int(file['active']) == 1:
@@ -577,11 +579,12 @@ def get_comp_admins(compid_or_taskid, task_id=False):
     with Database() as db:
         try:
             if task_id:
-                all_admins = db.session.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth)\
-                    .join(CA, User.id == CA.user_id).join(TblTask, CA.comp_id == TblTask.comp_id).filter(TblTask.task_id==taskid,
-                                                            CA.user_auth.in_(('owner', 'admin'))).all()
+                all_admins = db.session.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth) \
+                    .join(CA, User.id == CA.user_id).join(TblTask, CA.comp_id == TblTask.comp_id).filter(
+                    TblTask.task_id == taskid,
+                    CA.user_auth.in_(('owner', 'admin'))).all()
             else:
-                all_admins = db.session.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth)\
+                all_admins = db.session.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth) \
                     .join(CA, User.id == CA.user_id).filter(CA.comp_id == compid,
                                                             CA.user_auth.in_(('owner', 'admin'))).all()
             if all_admins:
@@ -648,7 +651,7 @@ def update_airspace_file(old_filename, new_filename):
         try:
 
             db.session.query(R).filter(R.openair_file == old_filename).update({R.openair_file: new_filename},
-                                                                                synchronize_session=False)
+                                                                              synchronize_session=False)
             db.session.commit()
 
         except SQLAlchemyError as e:
@@ -658,6 +661,7 @@ def update_airspace_file(old_filename, new_filename):
             db.session.close()
             return None
     return True
+
 
 # def save_waypoint_file(file):
 #     from Defines import WAYPOINTDIR, AIRSPACEDIR
@@ -673,9 +677,9 @@ def get_non_registered_pilots(compid):
     with Database() as db:
         '''get registered pilots'''
         reg = db.session.query(p.pil_id).filter(p.comp_id == compid).subquery()
-        non_reg = db.session.query(pv.pil_id, pv.civl_id, pv.first_name, pv.last_name).\
-            filter(reg.c.pil_id == None).\
-            outerjoin(reg, reg.c.pil_id == pv.pil_id).\
+        non_reg = db.session.query(pv.pil_id, pv.civl_id, pv.first_name, pv.last_name). \
+            filter(reg.c.pil_id == None). \
+            outerjoin(reg, reg.c.pil_id == pv.pil_id). \
             order_by(pv.first_name, pv.last_name).all()
 
         non_registered = [row._asdict() for row in non_reg]
@@ -846,3 +850,42 @@ def unique_filename(filename, filepath):
         filename = '_'.join([name, index]) + '.' + suffix
     return secure_filename(filename)
 
+
+def get_pretty_data(filename):
+    """transforms result json file in human readable data"""
+    from result import open_json_file, pretty_format_results, get_startgates
+    try:
+        content = open_json_file(filename)
+        '''time offset'''
+        timeoffset = int(content['info']['time_offset'])
+        '''score decimals'''
+        td = 0 if 'task_result_decimal' not in content['formula'].keys() else int(content['formula']['task_result_decimal'])
+        cd = 0 if 'task_result_decimal' not in content['formula'].keys() else int(content['formula']['task_result_decimal'])
+        pretty_content = dict()
+        pretty_content['file_stats'] = pretty_format_results(content['file_stats'], timeoffset)
+        pretty_content['info'] = pretty_format_results(content['info'], timeoffset)
+        pretty_content['info'].update(startgates=get_startgates(content['info']))
+        if 'tasks' in content.keys():
+            pretty_content['tasks'] = pretty_format_results(content['tasks'], timeoffset, td)
+        elif 'route' in content.keys():
+            pretty_content['route'] = pretty_format_results(content['route'], timeoffset)
+        pretty_content['stats'] = pretty_format_results(content['stats'], timeoffset)
+        pretty_content['formula'] = pretty_format_results(content['formula'])
+        results = []
+        rank = 1
+        for r in content['results']:
+            p = pretty_format_results(r, timeoffset, td, cd)
+            p['rank'] = str(rank)
+            results.append(p)
+            rank += 1
+        pretty_content['results'] = results
+        all_classes = []
+        for glider_class in content['rankings']:
+            if glider_class[-5:].lower() == 'class':
+                comp_class = {'name': glider_class, 'limit': content['rankings'][glider_class][-1]}
+                all_classes.append(comp_class)
+        all_classes.reverse()
+        pretty_content['classes'] = all_classes
+        return pretty_content
+    except:
+        return 'error'

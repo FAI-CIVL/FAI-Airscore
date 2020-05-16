@@ -504,6 +504,87 @@ def open_json_file(filename):
         return jsonpickle.decode(f.read())
 
 
+def pretty_format_results(content, timeoffset=0, td=0, cd=0):
+    import jsonpickle
+    from calcUtils import sec_to_string, sec_to_duration, epoch_to_datetime, c_round
+    pure_time = ['ss_time', 'time_offset', 'fastest', 'fastest_in_goal']
+    duration = ['tot_flight_time', 'SS_interval', 'max_JTG', 'validity_min_time', 'score_back_time']
+    day_time = ('_time', '_deadline')
+    validity = ('_validity', '_quality')
+    weight = '_weight'
+    scores = ('_score', 'penalty', '_arr_points', '_dep_points', '_dist_points', '_time_points', )
+    booleans = ['team_scoring', 'country_scoring', 'nat_team']
+    percentage = ['no_goal_penalty', 'nominal_goal', 'nominal_launch', 'tolerance', 'validity_param']
+    formatted = dict()
+    # content = jsonpickle.decode(content)
+    # print(f'{type(content)}')
+    if isinstance(content, list):
+        formatted = []
+        for value in content:
+            formatted.append(pretty_format_results(value))
+    else:
+        for key, value in content.items():
+            if isinstance(value, (dict, list)):
+                formatted[key] = pretty_format_results(value)
+            else:
+                # print(f'{key}, {type(key)}, {value}')
+                try:
+                    if value is None:
+                        '''formatting None to empty'''
+                        formatted[key] = ''
+                    elif key in pure_time:
+                        '''formatting time'''
+                        formatted[key] = sec_to_string(int(value))
+                    elif key in percentage:
+                        '''formatting percentage'''
+                        formatted[key] = f"{c_round(float(value)*100, 2):.2f}%"
+                    elif str(key).endswith(day_time):
+                        '''formatting time with offset'''
+                        formatted[key] = '' if int(value) == 0 else sec_to_string(int(value), timeoffset)
+                    elif str(key) in duration:
+                        '''formatting duration'''
+                        formatted[key] = sec_to_duration(int(value))
+                    elif str(key).endswith(validity):
+                        '''formatting formula validity'''
+                        formatted[key] = f"{c_round(float(value), 3):.3f}"
+                    elif str(key).endswith(weight):
+                        '''formatting formula weight'''
+                        formatted[key] = f"{c_round(float(value), 3):.3f}"
+                    elif str(key).endswith(scores):
+                        '''formatting scores'''
+                        formatted[key] = f"{c_round(float(value), 1):.1f}"
+                    elif key == 'score':
+                        formatted[key] = f"{c_round(float(value), 1):.{td}f}"
+                    elif key == 'speed':
+                        formatted[key] = f"{c_round(float(value), 1):.2f}"
+                    elif 'dist' in key:
+                        '''formatting distances'''
+                        formatted[key] = f"{round(float(value) / 1000, 2):.2f}"
+                    elif 'timestamp' in key:
+                        '''formatting timestamp'''
+                        formatted[key] = epoch_to_datetime(int(value), timeoffset)
+                    elif key in booleans:
+                        '''formatting booleans'''
+                        formatted[key] = value is True
+                    else:
+                        formatted[key] = str(value)
+                except ValueError:
+                    formatted[key] = str(value)
+    return formatted
+
+
+def get_startgates(task_info):
+    """creates a list of startgates time from start_time, SS_interval, start_iteration"""
+    from calcUtils import sec_to_string
+    start_time = task_info['start_time'] or 0
+    if start_time:
+        interval = task_info['SS_interval'] or 0
+        iteration = task_info['start_iteration'] or 0
+        offset = task_info['time_offset'] or 0
+        return [sec_to_string(start_time + i * interval, offset) for i in range(iteration + 1)]
+
+
+
 def get_task_country_json(filename):
     """
     Get task result json file as input

@@ -27,45 +27,68 @@ $(document).ready(function() {
             $('#comp_name').text(json.info.comp_name + " - " + json.info.task_name);
             $('#task_date').text(json.info.date + ' ' + json.info.task_type);
 
-            var offset = json.info.time_offset;
-            if (json.info.SS_interval)
+            // times
+            var tbl = document.createElement('table');
+            var tbdy = document.createElement('tbody');
+            if (json.info.startgates.length > 1)
             {
-                var int = json.info.SS_interval;
-                var rep = 1;
-
-                if (json.info.start_iteration)
+                for (var i=0; i < json.info.startgates.length; i++)
                 {
-                    rep = json.info.start_iteration;
+                    var tr = document.createElement('tr');
+                    var td = document.createElement('td');
+                    if (i==0)
+                    {
+                        td.innerHTML = '<b>Startgates:</b>'
+                    }
+                    else
+                    {
+                        td.appendChild(document.createTextNode('\u0020'))
+                    }
+                    tr.appendChild(td)
+                    var td = document.createElement('td');
+                    td.style.textAlign = "right";
+                    td.innerHTML = (i+1) + '. <b>' + json.info.startgates[i] + '</b>'
+                    tr.appendChild(td)
+                    tbdy.appendChild(tr);
                 }
-
-                if (rep == 0)
-                {
-                    rep = parseInt((json.info.start_close_time - json.info.start_time) / int) - 1;
-                }
-
-                var t = json.info.start_time;
-                $('#comp_header').append('<b>Start gates (' + (rep+1) + '):</b><br />');
-                for (var i=0; i <= rep; i++)
-                {
-                    $('#comp_header').append((i+1) + '. <b>' + format_seconds(t + int * i + offset) + '</b><br />');
-                }
-
             }
             else
             {
-                $('#comp_header').append('<b>Start: ' + format_seconds(json.info.start_time + offset) + '</b><br />');
+                var tr = document.createElement('tr');
+                var td = document.createElement('td');
+                td.innerHTML = '<b>Startgate:</b>'
+                tr.appendChild(td)
+                var td = document.createElement('td');
+                td.style.textAlign = "right";
+                td.innerHTML = '<b>' + json.info.start_time + '</b>'
+                tr.appendChild(td)
+                tbdy.appendChild(tr);
             }
-
             if (json.info.stopped_time)
             {
-                $('#comp_header').append('<b>Stopped: ' + format_seconds(json.info.stopped_time + offset) + '</b><br />');
-                $('#altbonus').text("S.Alt");
-
+                var tr = document.createElement('tr');
+                var td = document.createElement('td');
+                td.innerHTML = '<b>Stopped: </b>'
+                tr.appendChild(td)
+                var td = document.createElement('td');
+                td.style.textAlign = "right";
+                td.innerHTML = '<b>' + json.info.stopped_time + '</b>'
+                tr.appendChild(td)
             }
             else
             {
-                 $('#comp_header').append('<b>Task Deadline: ' + format_seconds(json.info.task_deadline + offset) + '</b><br />');
+                var tr = document.createElement('tr');
+                var td = document.createElement('td');
+                td.innerHTML = '<b>Task Deadline: </b>'
+                tr.appendChild(td)
+                var td = document.createElement('td');
+                td.style.textAlign = "right";
+                td.innerHTML = '<b>' + json.info.task_deadline + '</b>'
+                tr.appendChild(td)
             }
+            tbdy.appendChild(tr);
+            tbl.appendChild(tbdy);
+            $('#comp_header').append(tbl)
 
             // waypoints
             for (var c=0; c < json.route.length; c++)
@@ -73,7 +96,7 @@ $(document).ready(function() {
                 $('#waypoints tbody').append("<tr><td>" + json.route[c].name +
                         "</td><td>" + json.route[c].type +
                         "</td><td>" + json.route[c].radius +
-                        "</td><td>" + Number((json.route[c].cumulative_dist/1000).toFixed(1)) +
+                        "</td><td>" + json.route[c].cumulative_dist +
                         "</td><td>" + json.route[c].description +
                         "</td></tr>");
             }
