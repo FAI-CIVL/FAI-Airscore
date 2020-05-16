@@ -242,20 +242,23 @@ class TaskForm(FlaskForm):
 
     def validate_on_submit(self):
         result = super(TaskForm, self).validate()
+        error = None
         if self.window_close_time.data < self.window_open_time.data:
             self.window_open_time.errors.append('window open time is after window close time')
-            return False
+            error = True
         if self.start_time.data < self.window_open_time.data:
             self.start_time.errors.append('start time is before window open')
-            return False
+            error = True
         if self.start_close_time.data < self.start_time.data:
             self.start_close_time.errors.append('start time is after start close time')
-            return False
+            error = True
         if self.window_close_time.data > self.start_close_time.data:
             self.window_close_time.errors.append('window close time is after start close time')
-            return False
+            error = True
         if self.task_deadline.data < self.start_close_time.data:
             self.task_deadline.errors.append('task deadline is before start close time')
+            error = True
+        if error:
             return False
         else:
             return result
