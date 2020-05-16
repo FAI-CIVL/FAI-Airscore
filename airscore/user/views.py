@@ -791,7 +791,7 @@ def _upload_track_zip(taskid):
                     if frontendUtils.production():
                         tracksdir = frontendUtils.unzip_igc(zip_file)
                         job = current_app.task_queue.enqueue(frontendUtils.process_igc_from_zip, taskid, tracksdir,
-                                                             current_user.username)
+                                                             current_user.username, job_timeout=2000)
                         resp = jsonify(success=True)
                         return resp
                     else:
