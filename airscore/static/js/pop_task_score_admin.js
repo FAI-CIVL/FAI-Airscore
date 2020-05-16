@@ -24,7 +24,15 @@ function populate_task_scores(taskid, filename){
            ],
         "language": {
         "emptyTable":     "Error: result file not found"
-    }
+        },
+       "initComplete": function(settings, json)
+        {
+                    $.each( json.stats, function( key, value ) {
+                $('#taskinfo tbody').append('<tr><td>' + key + '</td><td>' + value + '</td></tr>');
+            });
+        }
+
+
     });
 
 }
