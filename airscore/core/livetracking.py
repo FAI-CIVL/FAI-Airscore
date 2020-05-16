@@ -156,11 +156,11 @@ class LiveTracking(object):
             if not self.task.start_time:
                 details = 'Times are not set yet.'
             else:
-                window = sec_to_string(self.task.window_open_time, self.task.time_offset, False)
-                start = sec_to_string(self.task.start_time, self.task.time_offset, False)
+                window = sec_to_string(self.task.window_open_time, self.task.time_offset, seconds=False)
+                start = sec_to_string(self.task.start_time, self.task.time_offset, seconds=False)
                 details = f'Window opens at {window} and start is at {start} (Local Time).'
             if self.task.stopped_time:
-                stopped = sec_to_string(self.task.stopped_time, self.task.time_offset, False)
+                stopped = sec_to_string(self.task.stopped_time, self.task.time_offset, seconds=False)
                 warning = f'Task has been stopped at {stopped} (Local Time).'
         return dict(main=main, warning=warning, details=details)
 

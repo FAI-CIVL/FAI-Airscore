@@ -152,7 +152,7 @@ def epoch_to_datetime(sec, rawtime=0, offset=0):  # offset is not used??
         Transform epoch in datetime.datetime
     """
     try:
-        return datetime.fromtimestamp(sec + rawtime).strftime('%Y-%m-%d %H:%M:%S')
+        return datetime.fromtimestamp(sec + rawtime + offset).strftime('%Y-%m-%d %H:%M:%S')
     except TypeError:
         print("an error occurred")
         return sec
@@ -165,12 +165,29 @@ def sec_to_time(sec):
     return time(hour=h, minute=m, second=s)
 
 
-def sec_to_string(rawtime, offset=0, seconds=True):
+def sec_to_string(rawtime, offset=0, hours=True, seconds=True):
     sec = int(rawtime + offset)
     m, s = divmod(sec, 60)
+    if hours:
+        h, m = divmod(m, 60)
+        string = f"{h:02d}:{m:02d}:{s:02d}"
+    else:
+        string = f"{m:02d}:{s:02d}"
+    return string if seconds else string[:-3]
+
+
+def sec_to_duration(rawtime):
+    sec = int(rawtime)
+    m, s = divmod(sec, 60)
     h, m = divmod(m, 60)
-    string = f"{h:02d}:{m:02d}:{s:02d}"
-    return string if seconds else string[:5]
+    string = ''
+    if h > 0:
+        string += f"{h:02d}h "
+    if m > 0:
+        string += f"{m:02d}m "
+    if s > 0:
+        string += f"{s:02d}s"
+    return string
 
 
 def get_isotime(d, t, offset=None):
