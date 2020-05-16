@@ -532,7 +532,7 @@ class Flight_result(object):
                     if tp_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m):
                         time = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
                         result.waypoints_achieved.append([tp.name, time, alt])  # pilot has achieved turnpoint
-                        print(f"Pilot took {tp.name} at {sec_to_time(time)} at {alt}m | tp.next is {tp.name}")
+                        print(f"Pilot took {tp.name} at {sec_to_time(time)} at {alt}m")
                         tp.move_to_next()
 
                 if tp.ess_done and tp.type == 'goal':
