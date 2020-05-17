@@ -211,9 +211,11 @@ def comp_settings_admin(compid):
             # comp.airspace_check = compform.airspace_check.data
             comp.check_launch = 'on' if compform.check_launch.data else 'off'
             comp.self_register = compform.self_register.data
-            comp.website = compform.website.data.lower().lstrip('http://')
+            if compform.website.data.lower()[:7] == 'http://':
+                comp.website = compform.website.data.lower()[7:]
+            else:
+                comp.website = compform.website.data.lower()
             comp.to_db()
-
             formula = Formula.read(compid)
             formula.overall_validity = compform.overall_validity.data
             formula.validity_param = compform.validity_param.data / 100
