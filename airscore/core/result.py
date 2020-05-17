@@ -521,7 +521,10 @@ def pretty_format_results(content, timeoffset=0, td=0, cd=0):
     if isinstance(content, list):
         formatted = []
         for value in content:
-            formatted.append(pretty_format_results(value))
+            if isinstance(value, (dict, list)):
+                formatted.append(pretty_format_results(value))
+            else:
+                formatted.append(str(value))
     else:
         for key, value in content.items():
             if isinstance(value, (dict, list)):
