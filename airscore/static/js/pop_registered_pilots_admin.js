@@ -58,13 +58,17 @@ function populate_registered_pilot_details(compid){
                    $('#total_external_pilots').text(json.external);
                    $('#delete_external').hide();
                    if(json.external > 0){ $('#delete_external').show();}
-                   if(json.teams.country_scoring){$('#pilots').DataTable().column(5).visible( true );
-                           $.get( '/users/_check_nat_team_size/' + compid, function( data ) {
-                          $( "#team_messages" ).html( data.message )}, "json" );
+                   if(json.teams.country_scoring){
+                        $('#pilots').DataTable().column(5).visible( true );
+                        $.get( '/users/_check_nat_team_size/' + compid, function( data ) {
+                        $( "#team_messages" ).html( data.message )}, "json" );
+                        $('#add_nat_team_section').show();
                    }
-                   if(json.teams.team_scoring){$('#pilots').DataTable().column(9).visible( true );
-                                $.get( '/users/_check_team_size/' + compid, function( data ) {
+                   if(json.teams.team_scoring){
+                              $('#pilots').DataTable().column(9).visible( true );
+                              $.get( '/users/_check_team_size/' + compid, function( data ) {
                               $( "#team_messages" ).html( data.message )}, "json" );
+                              $('#add_team_section').show();
                    }
 
   }

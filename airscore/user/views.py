@@ -1231,6 +1231,34 @@ def _modify_participant_details(parid):
     return resp
 
 
+@blueprint.route('/_add_participant/<compid>', methods=['POST'])
+@login_required
+def _add_participant(compid):
+    from participant import Participant
+    data = request.json
+    participant = Participant()
+    participant.comp_id = int(compid)
+    participant.ID = data.get('id_num')
+    if data.get('name'):
+        participant.name = data.get('name')
+    if data.get('sex'):
+        participant.sex = data.get('sex')
+    participant.nat = data.get('nat')
+    participant.glider = data.get('glider')
+    participant.certification = data.get('certification')
+    participant.sponsor = data.get('sponsor')
+    participant.nat_team = data.get('nat_team')
+    participant.team = data.get('team')
+    participant.civl_id = data.get('CIVL')
+    if data.get('status'):
+        participant.status = data.get('status')
+    if data.get('paid'):
+        participant.paid = data.get('paid')
+    participant.to_db()
+    resp = jsonify(success=True)
+    return resp
+
+
 @blueprint.route('/_upload_participants_excel/<compid>', methods=['POST'])
 @login_required
 def _upload_participants_excel(compid):

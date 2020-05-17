@@ -78,12 +78,12 @@
          <div class="container">
              <h4 style="float:left">Registered {% if pilotdb %}External {% endif %}Pilots:</h4>
              <h4 id="total_external_pilots"></h4>
-             <button id="Excel_button" class="btn btn-success ml-4 ">Upload Excel file</button>
-             <input id="Excel_fileupload" type="file" size="chars" class="custom-file-input"  data-url="/users/_upload_participants_excel/{{ session.compid }}" name="excel_file" >
-             <button id="delete_external" data-toggle="modal" data-target="#delete_modal" class="btn btn-danger ml-4 ">Remove All</button>
+             <button id="manual_add_pilot_button" class="btn btn-success ml-4" data-toggle="modal" data-target="#add_modal">Add a pilot</button>
+             <button id="Excel_button" class="btn btn-success ml-4">Upload Excel file</button>
+             <input id="Excel_fileupload" style="width: 0%;" type="file" size="chars" class="custom-file-input"  data-url="/users/_upload_participants_excel/{{ session.compid }}" name="excel_file" >
+             <button id="delete_external" data-toggle="modal" data-target="#delete_modal" class="btn btn-danger ml-4">Remove All</button>
          </div>
       </div>
-
    </div>
 
 {% if pilotdb %}
@@ -136,26 +136,26 @@
                </div>
             </div>
             <div class="form-row">
-               <div class="form-group col-md-12 display-if" data-target_name="mod_type" data-target_type="select" data-target_value='speed'>
+               <div class="form-group col-md-12">
                   {{modify_participant_form.sex.label}} {{modify_participant_form.sex(**{'id':"mod_sex"})}}
                </div>
             </div>
             <div class="form-row">
-               <div class="form-group col-md-12 display-if" data-target_name="mod_type" data-target_type="select" data-target_value='goal'>
+               <div class="form-group col-md-12">
                   {{modify_participant_form.glider.label}} {{modify_participant_form.glider(**{'id':"mod_glider"})}}
                   {{modify_participant_form.certification.label}} {{modify_participant_form.certification(size=4, **{'id':"mod_certification"})}}
                </div>
-               <div class="form-group col-md-12 display-if" data-target_name="check_launch" data-target_type="checkbox" data-target_value=true>
-                     <div class="form-group col-md-6 display-if" data-target_name="mod_type" data-target_type="select" data-target_value='launch'>
+               <div class="form-group col-md-12">
+                     <div class="form-group col-md-6">
                         {{modify_participant_form.sponsor.label}} {{modify_participant_form.sponsor(size=30, **{'id':"mod_sponsor"})}}
                      </div>
                </div>
-               <div class="form-group col-md-12 display-if" data-target_name="check_launch" data-target_type="checkbox" data-target_value=true>
-                     <div id="mod_team_section" class="form-group col-md-6 display-if" data-target_name="mod_type" data-target_type="select" data-target_value='launch'>
+               <div class="form-group col-md-12">
+                     <div id="mod_team_section" class="form-group col-md-6">
                         {{modify_participant_form.team.label}} {{modify_participant_form.team(size=30, **{'id':"mod_team"})}}
                      </div>
                </div>
-                <div class="form-group col-md-12 display-if" data-target_name="mod_type" data-target_type="select" data-target_value_not='launch'>
+                <div class="form-group col-md-12">
                   {{modify_participant_form.status.label}} {{modify_participant_form.status(**{'id':"mod_status"})}}
                   {{modify_participant_form.paid.label}} {{modify_participant_form.paid( **{'id':"mod_paid"})}}
                 </div>
@@ -169,6 +169,65 @@
    </div>
 </div>
 <!-edit-participant details-Modal ends here--->
+
+ <!---add-participant details modal starts here--->
+<div id="add_modal" class="modal fade" role='dialog'>
+   <div class="modal-dialog">
+      <div class="modal-content">
+         <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+            <h4 class="modal-title">Add a pilot</h4>
+         </div>
+         <div class="modal-body" id= "addmodal-body">
+            <div class="form-row">
+               <div class="form-group width6">
+                  {{modify_participant_form.id_num.label}} {{modify_participant_form.id_num(size=2, **{'id':"add_id_number",})}}
+                   {{modify_participant_form.CIVL.label}} {{modify_participant_form.CIVL(size=2, **{'id':"add_civl",})}}
+                  {{modify_participant_form.name.label}} {{modify_participant_form.name(**{'id':"add_name",})}}
+               </div>
+            </div>
+            <div class="form-row">
+               <div class="form-group width12">
+                  {{modify_participant_form.nat.label}} {{modify_participant_form.nat(size=4, **{'id':"add_nat"})}}
+                   <div id = "add_nat_team_section">
+                  {{modify_participant_form.nat_team.label}} {{modify_participant_form.nat_team(size=4, **{'id':"add_nat_team"})}}
+                       </div>
+               </div>
+            </div>
+            <div class="form-row">
+               <div class="form-group col-md-12">
+                  {{modify_participant_form.sex.label}} {{modify_participant_form.sex(**{'id':"add_sex"})}}
+               </div>
+            </div>
+            <div class="form-row">
+               <div class="form-group col-md-12 ">
+                  {{modify_participant_form.glider.label}} {{modify_participant_form.glider(**{'id':"add_glider"})}}
+                  {{modify_participant_form.certification.label}} {{modify_participant_form.certification(size=4, **{'id':"add_certification"})}}
+               </div>
+               <div class="form-group col-md-12">
+                     <div class="form-group col-md-6">
+                        {{modify_participant_form.sponsor.label}} {{modify_participant_form.sponsor(size=30, **{'id':"add_sponsor"})}}
+                     </div>
+               </div>
+               <div class="form-group col-md-12">
+                     <div id="add_team_section" class="form-group col-md-6">
+                        {{modify_participant_form.team.label}} {{modify_participant_form.team(size=30, **{'id':"add_team"})}}
+                     </div>
+               </div>
+                <div class="form-group col-md-12">
+                  {{modify_participant_form.status.label}} {{modify_participant_form.status(**{'id':"add_status"})}}
+                  {{modify_participant_form.paid.label}} {{modify_participant_form.paid( **{'id':"add_paid"})}}
+                </div>
+            </div>
+         </div>
+         <div class="modal-footer">
+            <button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
+            <button id = "add_confirmed" type="button" class="btn btn-success" onclick="save_new_participant();" data-dismiss="modal">Save</button>
+         </div>
+      </div>
+   </div>
+</div>
+<!-add-participant details-Modal ends here--->
 
  <!-- delete Modal -->
 	<div id="delete_modal" class="modal fade" role='dialog'>
@@ -211,7 +270,9 @@ var num_internal_pilots = 0;
 
 
 jQuery(document).ready(function($) {
- $('#delete_external').hide();
+  $('#delete_external').hide();
+  $('#add_nat_team_section').hide();
+  $('#add_team_section').hide();
     $('#lstview').multiselect({
         search: {
             left: '<input type="text" name="q" class="form-control" placeholder="Search..." />',
@@ -347,10 +408,8 @@ function get_internal_pilots() {
                dataType: "json",
                success: function () {
                       populate_registered_pilot_details({{session.compid}});
-
                }
                });
-
    };
 
 
@@ -360,8 +419,6 @@ function get_internal_pilots() {
 
 
 function edit_participant(par_id){
-
-
 $('#mod_id_number').val($('#id_'+par_id).children('td:eq(0)').text()).change();
 $('#mod_civl').val($('#id_'+par_id).children('td:eq(1)').text()).change();
 $('#mod_name').val($('#id_'+par_id).children('td:eq(2)').text()).change();
@@ -376,13 +433,12 @@ $('#mod_status').val($('#id_'+par_id).children('td:eq(10)').text()).change();
 $('#mod_paid').val($('#id_'+par_id).children('td:eq(11)').text()).change();
 $('#modify_confirmed').attr("onclick","save_modified_participant('"+ par_id +"')");
 if ($('#pilots').DataTable().column(9).visible()){
-        $('#mod_team_section').show();
-    }
- else {$('#mod_team_section').hide();}
+        $('#mod_team_section').show();}
+ else {$('#mod_team_section').hide(); }
+
 if ($('#pilots').DataTable().column(5).visible()){
-        $('#mod_nat_team_section').show();
-    }
- else {$('#mod_nat_team_section').hide();}
+        $('#mod_nat_team_section').show();    }
+ else {$('#mod_nat_team_section').hide(); }
 
 $('#edit_par_modal').modal('show');
 }
@@ -413,16 +469,13 @@ function save_modified_participant(par_id){
 
                }
                });
-
-   };
-
+};
 
 $('#Excel_button').click(function(){
     $('#Excel_fileupload').click();
 });
 
 $(function () {
-
     $('#Excel_fileupload').fileupload({
         dataType: 'json',
         done: function (e, data) {
@@ -442,6 +495,37 @@ $(function () {
                }
     });
 });
+
+function save_new_participant(){
+           var mydata = new Object();
+               mydata.id_num = $('#add_id_number').val();
+               mydata.name = $('#add_name').val();
+               mydata.sex = $('#add_sex').val();
+               mydata.nat = $('#add_nat').val();
+               mydata.glider = $('#add_glider').val();
+               mydata.certification = $('#add_certification').val();
+               mydata.sponsor = $('#add_sponsor').val();
+               mydata.status = $('#add_status').val();
+               mydata.paid = $('#add_paid').val();
+               mydata.CIVL = $('#add_civl').val();
+               mydata.team = $('#add_team').val();
+               mydata.nat_team = $('#add_nat_team').is(':checked');
+
+           $.ajax({
+               type: "POST",
+               url: "/users/_add_participant/"+ {{session.compid}},
+               contentType:"application/json",
+               data : JSON.stringify(mydata),
+               dataType: "json",
+               success: function () {
+                      $('#add_modal').hide();
+                      populate_registered_pilot_details({{session.compid}});
+
+               }
+               });
+};
+
+
 
 
 </script>
