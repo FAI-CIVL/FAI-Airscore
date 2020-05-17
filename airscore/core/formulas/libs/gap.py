@@ -448,7 +448,7 @@ def process_results(task):
             ''' ESS arrival order'''
             res.ESS_rank = idx
 
-        print(f'Dist: {res.distance} | ESS: {res.ESS_time} | rank: {res.ESS_rank}')
+        # print(f'Dist: {res.distance} | ESS: {res.ESS_time} | rank: {res.ESS_rank}')
 
         '''
         Leadout Points Adjustment

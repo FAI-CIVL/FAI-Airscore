@@ -160,33 +160,34 @@ def lead_coeff_function(lc, result, fix, next_fix):
         about 20% of the speed section.
     '''
     weight = weight_calc(lc.best_dist_to_ess[1], lc.ss_distance)
-    time_interval = next_fix.rawtime - fix.rawtime
-    if time_interval == 0 or weight == 0:
+    # time_interval = next_fix.rawtime - fix.rawtime
+    time = next_fix.rawtime - lc.best_start_time
+    progress = lc.best_dist_to_ess[0] - lc.best_dist_to_ess[1]
+    # print(f'weight: {weight}, progress: {progress}, time: {time}')
+    if progress <= 0 or weight == 0:
         return 0
     else:
-        return (weight * time_interval * lc.best_dist_to_ess[1]) / (1800 * lc.ss_distance)
+        return weight * progress * time
 
 
 def missing_area(time_interval, best_distance_to_ESS, ss_distance):
     p = best_distance_to_ESS / ss_distance
-    return (weightFalling(p) * time_interval * best_distance_to_ESS) / (1800 * ss_distance)
+    return weightFalling(p) * time_interval * best_distance_to_ESS
 
 
 def tot_lc_calc(res, t):
     """ Function to calculate final Leading Coefficient for pilots,
         that needs to be done when all tracks have been scored"""
-    if res.ESS_time:
-        '''nothing to do'''
-        return res.fixed_LC
-    elif res.result_type in ('abs', 'dnf', 'mindist') or not res.SSS_time:
+    if res.result_type in ('abs', 'dnf', 'mindist') or not res.SSS_time:
         '''pilot did't make Start or has no track'''
         return 0
-
-    '''pilot did not make ESS'''
     ss_distance = t.SS_distance / 1000
-
-    best_dist_to_ess = (t.opt_dist_to_ESS - res.distance) / 1000  # in Km
-    missing_time = t.max_time - res.best_distance_time
-    landed_out = missing_area(missing_time, best_dist_to_ess, ss_distance)
-
-    return res.fixed_LC + landed_out
+    if res.ESS_time:
+        '''nothing to do'''
+        landed_out = 0
+    else:
+        '''pilot did not make ESS'''
+        best_dist_to_ess = (t.opt_dist_to_ESS - res.distance_flown) / 1000  # in Km
+        missing_time = t.max_time - res.best_distance_time
+        landed_out = missing_area(missing_time, best_dist_to_ess, ss_distance)
+    return (res.fixed_LC + landed_out) / (1800 * ss_distance)

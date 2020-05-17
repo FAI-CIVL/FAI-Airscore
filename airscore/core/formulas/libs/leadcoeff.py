@@ -14,6 +14,8 @@ class LeadCoeff(object):
         self.ss_distance = task.SS_distance / 1000
         self.opt_dist_to_ess = task.opt_dist_to_ESS / 1000
         self.best_dist_to_ess = [task.SS_distance / 1000]
+        self.best_distance_time = 0
+        self.best_start_time = task.start_time
         self.lib = task.formula.get_lib()
         self.summing = 0.0
 
@@ -31,6 +33,7 @@ class LeadCoeff(object):
     def update(self, result, fix, next_fix):
         """ Get lead coeff calculation formula from Formula Library"""
         self.best_dist_to_ess.append(self.opt_dist_to_ess - result.distance_flown / 1000)
+        self.best_distance_time = result.best_distance_time if not result.ESS_time else result.ESS_time
         self.summing += self.lib.lead_coeff_function(self, result, fix, next_fix)
         self.best_dist_to_ess.pop(0)
 
