@@ -512,7 +512,7 @@ def pretty_format_results(content, timeoffset=0, td=0, cd=0):
     day_time = ('_time', '_deadline')
     validity = ('_validity', '_quality')
     weight = '_weight'
-    scores = ('_score', 'penalty', '_arr_points', '_dep_points', '_dist_points', '_time_points', )
+    scores = ('_score', 'penalty', '_arr_points', '_dep_points', '_dist_points', '_time_points',)
     booleans = ['team_scoring', 'country_scoring', 'nat_team']
     percentage = ['no_goal_penalty', 'nominal_goal', 'nominal_launch', 'tolerance', 'validity_param']
     formatted = dict()
@@ -532,18 +532,47 @@ def pretty_format_results(content, timeoffset=0, td=0, cd=0):
                     if value is None:
                         '''formatting None to empty'''
                         formatted[key] = ''
+                    # Formatting Times
                     elif key in pure_time:
                         '''formatting time'''
                         formatted[key] = sec_to_string(int(value))
-                    elif key in percentage:
-                        '''formatting percentage'''
-                        formatted[key] = f"{c_round(float(value)*100, 2):.2f}%"
                     elif str(key).endswith(day_time):
                         '''formatting time with offset'''
                         formatted[key] = '' if int(value) == 0 else sec_to_string(int(value), timeoffset)
                     elif str(key) in duration:
                         '''formatting duration'''
                         formatted[key] = sec_to_duration(int(value))
+                    elif 'timestamp' in key:
+                        '''formatting timestamp'''
+                        formatted[key] = epoch_to_datetime(int(value), timeoffset)
+                    # Formatting Waypoints Table
+                    elif 'cumulative_dist' in content.keys():
+                        if key == 'radius':
+                            '''formatting wpt radius'''
+                            formatted[key] = (f"{round(float(value) / 1000, 1):.1f} Km" if float(value) > 1000
+                                              else f"{round(float(value))} m &nbsp;")
+                        elif key == 'cumulative_dist':
+                            '''formatting wpt cumulative distance'''
+                            formatted[key] = '' if float(value) == 0 else f"{round(float(value) / 1000, 2):.2f} Km"
+                        elif key == 'type':
+                            '''formatting wpt type'''
+                            formatted[key] = ('' if str(value) == 'waypoint'
+                                              else 'SS' if str(value) == 'speed'
+                                              else 'ES' if str(value) == 'endspeed'
+                                              else str(value))
+                        elif key == 'shape':
+                            '''formatting wpt shape'''
+                            formatted[key] = '' if str(value) == 'circle' else '(line)'
+                        elif key == 'shape':
+                            '''formatting wpt versus'''  # Not needed anymore?
+                            formatted[key] = '' if str(value) == 'entry' else '(exit)'
+                        else:
+                            '''name and description'''
+                            formatted[key] = str(value)
+                    # Formatting Numbers
+                    elif key in percentage:
+                        '''formatting percentage'''
+                        formatted[key] = f"{c_round(float(value) * 100, 2):.2f}%"
                     elif str(key).endswith(validity):
                         '''formatting formula validity'''
                         formatted[key] = f"{c_round(float(value), 3):.3f}"
@@ -557,12 +586,14 @@ def pretty_format_results(content, timeoffset=0, td=0, cd=0):
                         formatted[key] = f"{c_round(float(value), 1):.{td}f}"
                     elif key == 'speed':
                         formatted[key] = f"{c_round(float(value), 1):.2f}"
-                    elif 'dist' in key:
-                        '''formatting distances'''
+                    # Formatting Distances
+                    elif key in ['distance', 'distance_flown', 'stopped_distance']:
+                        '''formatting distance without unit of measure'''
                         formatted[key] = f"{round(float(value) / 1000, 2):.2f}"
-                    elif 'timestamp' in key:
-                        '''formatting timestamp'''
-                        formatted[key] = epoch_to_datetime(int(value), timeoffset)
+                    elif 'dist' in key:
+                        '''formatting distances with unit of measure'''
+                        formatted[key] = f"{round(float(value) / 1000, 1):.1f} Km"
+                    # Formatting Booleans
                     elif key in booleans:
                         '''formatting booleans'''
                         formatted[key] = value is True
@@ -582,7 +613,6 @@ def get_startgates(task_info):
         iteration = task_info['start_iteration'] or 0
         offset = task_info['time_offset'] or 0
         return [sec_to_string(start_time + i * interval, offset) for i in range(iteration + 1)]
-
 
 
 def get_task_country_json(filename):
@@ -778,7 +808,7 @@ def get_task_country_scoring(filename):
     for nat in countries:
         nation = dict(code=nat.code, name=nat.name)
         nat_pilots = sorted([p for p in data['results'] if p['nat'] == nation['code']
-                            and p['nat_team']], key=lambda k: k['score'], reverse=True)
+                             and p['nat_team']], key=lambda k: k['score'], reverse=True)
         nation['score'] = sum([p['score'] for p in nat_pilots][:size])
         for rank, p in enumerate(nat_pilots):
             p['group'] = f". {nat.name} - {nation['score']:.0f} points"
@@ -836,7 +866,7 @@ def get_comp_country_scoring(filename):
                 else:
                     p['results'][t]['score'] = f"<del>{int(p['results'][t]['pre'])}</del>"
                     p['results'][t]['perf'] = 0
-        for t in list(set(all_possible_tasks)-set(tasks)):
+        for t in list(set(all_possible_tasks) - set(tasks)):
             for idx, p in enumerate(nat_pilots):
                 p['results'][t] = {'score': ''}
         '''final nation sorting'''
@@ -852,7 +882,7 @@ def get_comp_country_scoring(filename):
     for t in teams:
         all_scores.append(t['score'])
     for row in pilots:
-        row['group'] = str(sum(map(lambda x: x > row['nation_score'], all_scores))+1) + row['group']
+        row['group'] = str(sum(map(lambda x: x > row['nation_score'], all_scores)) + 1) + row['group']
 
     return {'teams': teams, 'data': pilots, 'info': data['info'], 'formula': data['formula']}
 
@@ -936,7 +966,7 @@ def get_comp_team_scoring(filename):
                 else:
                     p['results'][t]['score'] = f"<del>{int(p['results'][t]['pre'])}</del>"
                     p['results'][t]['perf'] = 0
-        for t in list(set(all_possible_tasks)-set(tasks)):
+        for t in list(set(all_possible_tasks) - set(tasks)):
             for idx, p in enumerate(team_pilots):
                 p['results'][t] = {'score': ''}
         '''final team sorting'''
@@ -952,6 +982,6 @@ def get_comp_team_scoring(filename):
     for t in teams:
         all_scores.append(t['score'])
     for row in pilots:
-        row['group'] = str(sum(map(lambda x: x > row['team_score'], all_scores))+1) + row['group']
+        row['group'] = str(sum(map(lambda x: x > row['team_score'], all_scores)) + 1) + row['group']
 
     return {'teams': teams, 'data': pilots, 'info': data['info'], 'formula': data['formula']}

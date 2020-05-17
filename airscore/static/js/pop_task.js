@@ -93,12 +93,30 @@ $(document).ready(function() {
             // waypoints
             for (var c=0; c < json.route.length; c++)
             {
-                $('#waypoints tbody').append("<tr><td>" + json.route[c].name +
-                        "</td><td>" + json.route[c].type +
-                        "</td><td>" + json.route[c].radius +
-                        "</td><td>" + json.route[c].cumulative_dist +
-                        "</td><td>" + json.route[c].description +
-                        "</td></tr>");
+                var tr = document.createElement('tr');
+                // name
+                var td = document.createElement('td');
+                td.innerHTML = json.route[c].name
+                tr.appendChild(td)
+                // type
+                var td = document.createElement('td');
+                td.innerHTML = json.route[c].type + ' ' + json.route[c].shape
+                tr.appendChild(td)
+                // radius
+                var td = document.createElement('td');
+                td.style.textAlign = "right";
+                td.innerHTML = json.route[c].radius
+                tr.appendChild(td)
+                // cumulative distance
+                var td = document.createElement('td');
+                td.style.textAlign = "right";
+                td.innerHTML = json.route[c].cumulative_dist
+                tr.appendChild(td)
+                // description
+                var td = document.createElement('td');
+                td.innerHTML = json.route[c].description
+                tr.appendChild(td)
+                $('#waypoints tbody').append(tr);
             }
 
             // task info
