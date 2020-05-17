@@ -1634,6 +1634,7 @@ def delete_task(task_id, files=False, session=None):
     from db_tables import TblTaskWaypoint as W
     from db_tables import TblTask as T
     from db_tables import TblTaskResult as R
+    from db_tables import TblNotification as N
     from db_tables import TblResultFile as RF
     from db_tables import TblCompetition as C
     from result import delete_result
@@ -1667,8 +1668,13 @@ def delete_task(task_id, files=False, session=None):
                 '''delete result json files'''
                 for res in results:
                     delete_result(res.ref_id, res.filename, db.session)
+            tracks = db.session.query(R.track_id).filter(R.task_id == task_id)
+            if tracks:
+                track_list = [t.track_id for t in tracks]
+                db.session.query(N).filter(N.track_id.in_(track_list)).delete(synchronize_session=False)
+                db.session.query(R).filter(R.task_id == task_id).delete(synchronize_session=False)
             '''delete db entries: results, waypoints, task'''
-            db.session.query(R).filter(T.task_id == task_id).delete(synchronize_session=False)
+            # db.session.query(R).filter(T.task_id == task_id).delete(synchronize_session=False)
             db.session.query(W).filter(W.task_id == task_id).delete(synchronize_session=False)
             db.session.query(T).filter(T.task_id == task_id).delete(synchronize_session=False)
             db.session.commit()

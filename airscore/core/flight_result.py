@@ -905,9 +905,8 @@ def delete_result(trackid):
     row_deleted = None
     with Database() as db:
         try:
-            results = db.session.query(R.track_file, R.task_id).filter(R.track_id == trackid).one()
-            row_deleted = db.session.query(R.track_file, R.task_id).filter(R.track_id == trackid).delete(
-                synchronize_session=False)
+            track = db.session.query(R.track_file, R.task_id).filter(R.track_id == trackid).one()
+            track.delete(synchronize_session=False)
         except SQLAlchemyError:
             print("there was a problem deleting the track")
             return None
