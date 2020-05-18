@@ -37,7 +37,7 @@ def get_pilot_from_list(filename, pilots):
             '''found a pilot'''
             pilot.track.track_file = filename
             if not pilot.name.lower() in name:
-                pilot.track.comment = f'WARNING: Name {pilot.name.lower()} does not match with filename {string}'
+                print(f'WARNING: Name {pilot.name.lower()} does not match with filename {string}')
             return pilot, idx
 
 

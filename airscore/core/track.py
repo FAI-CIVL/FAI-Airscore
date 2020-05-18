@@ -37,11 +37,11 @@ class Track(object):
     def __str__(self):
         return "Track Object"
 
-    def __init__(self, track_file=None, track_id=None, par_id=None, track_type=None, comment=None, flight=None):
+    def __init__(self, track_file=None, track_id=None, par_id=None, track_type=None, flight=None):
         self.track_file = track_file
         self.track_id = track_id
         self.track_type = track_type
-        self.comment = comment  # should be a list?
+        # self.comment = comment  # should be a list?
         self.flight = flight  # igc_lib.Flight object
         self.par_id = par_id  # TblParticipant ID # could delete?
 
@@ -85,6 +85,12 @@ class Track(object):
         else:
             return []
 
+    @property
+    def comment(self):
+        if len(self.notifications) > 0:
+            return '; '.join([f'[{n.notification_type}] {n.comment}' for n in self.notifications])
+        else:
+            return ''
 
     @property
     def filename(self):

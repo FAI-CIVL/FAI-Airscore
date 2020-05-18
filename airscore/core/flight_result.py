@@ -164,7 +164,7 @@ class Flight_result(object):
         # self.percentage_penalty = 0
         self.airspace_plot = []
         self.infringements = []  # Infringement for each space
-        self.comment = ''  # should this be a list?
+        # self.comment = ''  # should this be a list?
         self.notifications = []  # notification objects
         self.still_flying_at_deadline = False
         # self.ID = None  # Could delete?
@@ -183,12 +183,12 @@ class Flight_result(object):
         else:
             return None
 
-    # @property
-    # def time(self):
-    #     if self.ESS_time:
-    #         return self.ESS_time - self.SSS_time
-    #     else:
-    #         return None
+    @property
+    def comment(self):
+        if len(self.notifications) > 0:
+            return '; '.join([f'[{n.notification_type}] {n.comment}' for n in self.notifications])
+        else:
+            return ''
 
     @property
     def flight_time(self):
@@ -210,7 +210,7 @@ class Flight_result(object):
     def flat_penalty(self):
         if self.notifications and sum(
                 n.flat_penalty for n in self.notifications if not n.notification_type == 'jtg') > 0:
-            return max(n.flat_penalty for n in self.notifications if not n.notification_type == 'jtg')
+            return next(n.flat_penalty for n in self.notifications if not n.notification_type == 'jtg')
         else:
             return 0
 
@@ -639,8 +639,6 @@ class Flight_result(object):
                 comment = f"Jump the gun: {diff} seconds. Penalty: {penalty} points"
                 result.notifications.append(Notification(notification_type='jtg',
                                                          flat_penalty=penalty, comment=comment))
-                # result.penalty += penalty
-                # result.comment.append(comment)
 
             '''ESS Time'''
             if any(e[0] == 'ESS' for e in result.waypoints_achieved):
@@ -866,11 +864,6 @@ def adjust_flight_results(task, lib, airspace=None):
             if ((not pilot.ESS_time and pilot.last_fix_time > last_time)
                     or (pilot.ESS_time and pilot.ss_time > maxtime)):
                 '''need to adjust pilot result'''
-                # keep airspace infringements info
-                # if task.airspace_check:
-                #     infringements = pilot.result.infringements
-                #     percentace_penalty = pilot.result.percentage_penalty
-                #     comments = pilot.result.comments
                 flight = pilot.track.flight
                 adjusted = Flight_result.check_flight(flight, task, airspace_obj=airspace, deadline=last_time)
                 pilot.result.result_type = adjusted.result_type

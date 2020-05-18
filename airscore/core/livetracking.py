@@ -62,7 +62,7 @@ class LiveTracking(object):
                     'last_altitude',
                     'turnpoints_made',
                     'height',
-                    'comment',
+                    'live_comment',
                     'pil_id']
 
     def __init__(self, task=None, airspace=None, test=False):
@@ -238,9 +238,6 @@ class LiveTracking(object):
         self.create_json_file()
 
     def create_json_file(self):
-        # from Defines import LIVETRACKDIR
-        # from os import path
-        # fullname = path.join(LIVETRACKDIR, str(self.task_id))
         try:
             with open(self.filename, 'w') as f:
                 f.write(self.json_result)
@@ -363,11 +360,6 @@ def associate_livetracks(task, response, timestamp):
             '''livetrack segment too short'''
             pil.livetrack = []
             continue
-        # if str(live_id) == '629878':
-        #     print(f' - first time: {pil.result.first_time}')
-        #     print(f' - last time: {pil.result.last_time}')
-        #     print(f' - landing time: {pil.result.landing_time}')
-        #     print(f' - fixes: {len(fixes)}')
         if pil.result.landing_time:
             '''already landed'''
             # shouldn't happen as landed pilots are filtered in tracks request
@@ -375,7 +367,7 @@ def associate_livetracks(task, response, timestamp):
         if not any(el for el in fixes if int(el['v']) > min_flight_speed):
             '''not flying'''
             pil.result.last_time = int(fixes[-1]['d']) - midnight
-            pil.result.comment = 'not flying'
+            pil.result.live_comment = 'not flying'
             pil.livetrack = []
             continue
         flight = []
@@ -392,53 +384,16 @@ def associate_livetracks(task, response, timestamp):
             height = abs(alt - ground)
             if pil.result.last_time and t < pil.result.last_time:
                 '''fix behind last scored fix'''
-                # if str(live_id) == '629878':
-                #     print(f' - fix behind last scored fix')
                 continue
             if t > timestamp - midnight:
                 '''fix ahead of cycle time'''
-                # if str(live_id) == '629878':
-                #     print(
-                #         f' - fix ahead of cycle time | timestamp: {timestamp} / midnight {midnight} / fix time: {t} / difference {t - (timestamp - midnight + 100)}')
                 break
-            # if not pil.result.first_time:
-            #     if s > min_flight_speed and height > min_alt_difference:
-            #         '''launched'''
-            #         pil.result.first_time = t
-            #         pil.result.comment = 'flying'
-            #         if str(live_id) == '629878':
-            #             print(f' - launched | first time = {t}')
-            #     else:
-            #         ''' not launched yet'''
-            #         pil.result.last_time = t
-            #         if str(live_id) == '629878':
-            #             print(f' - not launched yet | last time = {t}')
-            #         continue
             lat = int(el['ai']) / 60000
             lon = int(el['oi']) / 60000
             fix = GNSSFix(t, lat, lon, 'A', baro_alt, gnss_alt, idx, '')
             fix.alt = alt
             fix.height = height
             fix.speed = s
-            # if pil.result.first_time and s < min_flight_speed:
-            #     '''pilot seems landed'''
-            #     if not slow:
-            #         slow = True
-            #         slow_rawtime = t
-            #         slow_alt = alt
-            #     elif t - slow_rawtime > max_still_seconds and abs(alt - slow_alt) <= min_alt_difference:
-            #         ''' we assume he is landed'''
-            #         pil.result.landing_time = t - 1
-            #         pil.result.height = 0
-            #         pil.result.comment = 'landed'
-            #         break
-            # elif slow > 0:
-            #     slow = 0
-            # pil.result.height = height
-            # if str(live_id) == '629878':
-            #     print(f' - height = {pil.result.height}')
-            # if str(live_id) == '629878':
-            #     print(f' - fix added | time = {t}')
             flight.append(fix)
         pil.livetrack = flight
 
@@ -535,7 +490,7 @@ def check_livetrack(pilot, task, airspace_obj=None):
             if abs(launch.altitude - alt) > min_alt_difference and speed > min_flight_speed:
                 '''pilot launched'''
                 result.first_time = next_fix.rawtime
-                result.comment = 'flying'
+                result.live_comment = 'flying'
         else:
             '''check if pilot landed'''
             if speed < min_flight_speed:
@@ -549,7 +504,7 @@ def check_livetrack(pilot, task, airspace_obj=None):
                         '''assuming pilot landed'''
                         result.landing_time = next_fix.rawtime
                         result.landing_altitude = alt
-                        result.comment = 'landed'
+                        result.live_comment = 'landed'
                         break
             elif suspect_landing_fix is not None:
                 suspect_landing_fix = None
@@ -569,13 +524,13 @@ def check_livetrack(pilot, task, airspace_obj=None):
         '''check if task deadline has passed'''
         if task.task_deadline < next_fix.rawtime:
             # Task has ended
-            result.comment = 'flying past deadline'
+            result.live_comment = 'flying past deadline'
             break
 
         '''check if start closing time passed and pilot did not start'''
         if task.start_close_time and task.start_close_time < my_fix.rawtime and not tp.start_done:
             # start closed
-            result.comment = 'did not start before start closing time'
+            result.live_comment = 'did not start before start closing time'
             break
 
         if result.landing_time and next_fix.rawtime > result.landing_time:
@@ -714,15 +669,8 @@ def check_livetrack(pilot, task, airspace_obj=None):
                     # check
                     print(f'jump the gun: {diff} - valid: {diff <= max_jump_the_gun} - penalty: {penalty}')
                     comment = f"Jump the gun: {diff} seconds. Penalty: {penalty} points"
-                    # '''delete previous jtg notification'''
-                    # result.notifications = [n for n in result.notifications if not n.notification_type == 'jtg']
                     result.notifications.append(Notification(notification_type='jtg',
                                                              flat_penalty=penalty, comment=comment))
-                # elif restarted and any(n for n in result.notifications if n.notification_type == 'jtg'):
-                #     '''delete jtg notification'''
-                #     result.notifications = [n for n in result.notifications if not n.notification_type == 'jtg']
-                # result.penalty += penalty
-                # result.comment.append(comment)
 
         '''ESS Time'''
         if any(e[0] == 'ESS' for e in result.waypoints_achieved) and not already_ESS:
@@ -736,12 +684,11 @@ def check_livetrack(pilot, task, airspace_obj=None):
             ?p:p?PilotsReachingGoal:bestDistancep = taskDistance
         '''
         if any(e[0] == 'Goal' for e in result.waypoints_achieved):
-            # result.distance_flown = distances2go[0]
             result.distance_flown = task.opt_dist
             result.goal_time, result.goal_altitude = min(
                 [(x[1], x[2]) for x in result.waypoints_achieved if x[0] == 'Goal'], key=lambda t: t[0])
             result.result_type = 'goal'
-            result.comment = 'Goal!'
+            result.live_comment = 'Goal!'
 
     result.best_waypoint_achieved = str(result.waypoints_achieved[-1][0]) if result.waypoints_achieved else None
 
@@ -752,8 +699,6 @@ def check_livetrack(pilot, task, airspace_obj=None):
         infringements, notifications, penalty = airspace_obj.get_infringements_result_new(infringements_list)
         result.notifications.extend(notifications)
         result.notifications = clear_notifications(task, result)
-        # result.percentage_penalty = penalty
-        # result.airspace_plot = airspace_plot
     return result
 
 
