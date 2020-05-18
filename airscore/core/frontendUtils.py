@@ -889,3 +889,12 @@ def get_pretty_data(filename):
         return pretty_content
     except:
         return 'error'
+
+
+def is_shortcode_unique(shortcode: str, date: datetime.date):
+    from pathlib import Path
+    from Defines import FILEDIR
+    print(Path(FILEDIR, str(date.year), shortcode))
+    if Path(FILEDIR, str(date.year), shortcode).is_dir():
+        return False
+    return True
