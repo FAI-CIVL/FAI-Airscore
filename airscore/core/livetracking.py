@@ -190,17 +190,17 @@ class LiveTracking(object):
         return livetrack
 
     def create_result(self):
-        from result import Task_result
+        from result import TaskResult
         file_stats = dict(timestamp=self.now, status=self.status)
         headers = self.headers
-        info = {x: getattr(self.task, x) for x in Task_result.info_list if x in dir(self.task)}
+        info = {x: getattr(self.task, x) for x in TaskResult.info_list if x in dir(self.task)}
         data = []
         if not self.task:
             file_stats['status'] = 'Task is not set yet'
         elif self.task.cancelled:
             file_stats['status'] = 'Cancelled'
         else:
-            # info = {x: getattr(self.task, x) for x in Task_result.info_list if x in dir(self.task)}
+            # info = {x: getattr(self.task, x) for x in TaskResult.info_list if x in dir(self.task)}
             if not self.task.turnpoints:
                 file_stats['status'] = 'Task is not set yet'
             elif not (self.track_source and self.pilots):
@@ -222,14 +222,14 @@ class LiveTracking(object):
         self.create_json_file()
 
     def update_result(self):
-        from result import Task_result
+        from result import TaskResult
         self.result['file_stats']['timestamp'] = self.now
         '''check if status changed'''
         status = self.result['file_stats']['status']
         if not status == self.status:
             self.result['file_stats']['status'] = self.status
             self.result['headers'] = self.headers
-            self.result['info'] = {x: getattr(self.task, x) for x in Task_result.info_list if x in dir(self.task)}
+            self.result['info'] = {x: getattr(self.task, x) for x in TaskResult.info_list if x in dir(self.task)}
         else:
             for p in self.pilots:
                 result = next(r for r in self.result['data'] if r['par_id'] == p.info.par_id)

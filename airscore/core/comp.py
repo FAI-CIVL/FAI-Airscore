@@ -24,7 +24,7 @@ from db_tables import TblCompetition
 from formula import Formula
 from myconn import Database
 from participant import Participant
-from result import Comp_result, create_json_file
+from result import CompResult, create_json_file
 from task import Task
 
 
@@ -412,17 +412,17 @@ class Comp(object):
         for res in comp.results:
             '''create results dict'''
             p = next(x for x in comp.participants if x.par_id == res['par_id'])
-            r = {x: getattr(p, x) for x in Comp_result.result_list if x in dir(p)}
+            r = {x: getattr(p, x) for x in CompResult.result_list if x in dir(p)}
             r['score'] = res['score']
             r['results'] = {x: res[x] for x in res.keys() if isinstance(res[x], dict)}
             results.append(r)
         '''create json file'''
-        result = {'info': {x: getattr(comp, x) for x in Comp_result.info_list},
+        result = {'info': {x: getattr(comp, x) for x in CompResult.info_list},
                   'rankings': comp.rankings,
-                  'tasks': [{x: getattr(t, x) for x in Comp_result.task_list} for t in comp.tasks],
+                  'tasks': [{x: getattr(t, x) for x in CompResult.task_list} for t in comp.tasks],
                   'results': results,
-                  'formula': {x: getattr(comp.formula, x) for x in Comp_result.formula_list},
-                  'stats': {x: getattr(comp, x) for x in Comp_result.stats_list}
+                  'formula': {x: getattr(comp.formula, x) for x in CompResult.formula_list},
+                  'stats': {x: getattr(comp, x) for x in CompResult.stats_list}
                   }
         ref_id, filename, timestamp = create_json_file(comp_id=comp.id, task_id=None, code=comp.comp_code,
                                                        elements=result, status=status)

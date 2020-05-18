@@ -2,8 +2,8 @@
 JSON Results Creation
 
 contains
-    Task_result class
-    Comp_result class
+    TaskResult class
+    CompResult class
 
 Methods:
     Contains the list of fields that should be used during JSON file creation
@@ -24,7 +24,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import update, and_
 
 
-class Task_result:
+class TaskResult:
     """
         Task result fields lists
     """
@@ -182,7 +182,7 @@ class Task_result:
                     'pil_id']
 
 
-class Comp_result(object):
+class CompResult(object):
     """
         Comp result fields lists
     """

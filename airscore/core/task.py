@@ -39,7 +39,7 @@ from igc_lib import defaultdict
 from mapUtils import save_all_geojson_files
 from myconn import Database
 from pilot import Pilot, update_all_results
-from result import Task_result, create_json_file
+from result import TaskResult, create_json_file
 from route import distance, polar, Turnpoint, get_shortest_path, convert_turnpoints, get_line
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -650,12 +650,12 @@ class Task(object):
         pil_list += [p for p in self.pilots if p.result_type == 'dnf']
         pil_list += [p for p in self.pilots if p.result_type == 'abs']
 
-        info = {x: getattr(self, x) for x in Task_result.info_list if x in dir(self)}
-        formula = {x: getattr(self.formula, x) for x in Task_result.formula_list if x in dir(self.formula)}
-        stats = {x: getattr(self, x) for x in Task_result.stats_list if x in dir(self)}
+        info = {x: getattr(self, x) for x in TaskResult.info_list if x in dir(self)}
+        formula = {x: getattr(self.formula, x) for x in TaskResult.formula_list if x in dir(self.formula)}
+        stats = {x: getattr(self, x) for x in TaskResult.stats_list if x in dir(self)}
         route = []
         for idx, tp in enumerate(self.turnpoints):
-            wpt = {x: getattr(tp, x) for x in Task_result.route_list if x in dir(tp)}
+            wpt = {x: getattr(tp, x) for x in TaskResult.route_list if x in dir(tp)}
             wpt['cumulative_dist'] = self.partial_distance[idx]
             route.append(wpt)
         results = []
