@@ -362,20 +362,21 @@ def publish_result(filename_or_refid, ref_id=False, session=None):
         return 1
 
 
-def update_result_status(filename, status):
+def update_result_status(filename: str, status: str):
     from Defines import RESULTDIR
-    from os import path
     from pathlib import Path
     import json
+    import time
     '''check if json file exists, and updates it'''
-    file = path.join(RESULTDIR, filename)
-    if not Path(file).is_file():
+    file = Path(RESULTDIR, filename)
+    if not file.is_file():
         print(f'Json file {filename} does not exist')
         return None
     with open(file, 'r+') as f:
         '''update status in json file'''
         d = json.load(f)
         d['file_stats']['status'] = status
+        d['file_stats']['last_update'] = int(time.time())
         f.seek(0)
         f.write(json.dumps(d))
         f.truncate()
@@ -394,56 +395,99 @@ def update_result_status(filename, status):
                 return error
 
 
-def update_result_file(filename, par_id, comment=None, penalty=None):
-    """gets result file id and info to update from frontend"""
-    from db_tables import TblTaskResult
-    from sqlalchemy import and_
+def update_result_file(filename: str, par_id: int, notification: dict):
+    """ gets result filename, pilot's par_id, and notification as dict
+        notification = {'not_id': notification id if existing, can be omitted
+                        'notification_type': only 'admin' can be edited / added at the moment, can be omitted
+                        'flat_penalty': if we are adding just a comment without penalty / bonus, can be omitted
+                        'comment': text of notification
+                        }
+    """
+    from db_tables import TblNotification as N
     from Defines import RESULTDIR
-    from os import path
     from pathlib import Path
+    import time
     import json
-    file = path.join(RESULTDIR, filename)
-    if not Path(file).is_file():
+    file = Path(RESULTDIR, filename)
+    if not file.is_file():
         print(f'Json file {filename} does not exist')
         return None
+    comment = notification['comment']
+    penalty = 0 if 'flat_penalty' not in notification.keys() else float(notification['flat_penalty'])
+    not_id = None if 'not_id' not in notification.keys() else int(notification['not_id'])
+    old_penalty = 0
     with open(file, 'r+') as f:
         data = json.load(f)
         task_id = data['info']['id']
         result = next(res for res in data['results'] if res['par_id'] == par_id)
+        track_id = int(result['track_id'])
         if not result:
             print(f'Result file has no pilot with ID {par_id}')
             return None
         with Database() as db:
             try:
-                pilot = db.session.query(TblTaskResult).filter(and_(TblTaskResult.par_id == par_id,
-                                                                    TblTaskResult.task_id == task_id)).one()
-                if comment:
-                    comment = '[admin] ' + str(comment)
-                    result['comment'].append(comment)
-                    pilot.comment = comment if not pilot.comment else pilot.comment + '; ' + comment
-                if penalty is not None:
-                    result['penalty'] = penalty
+                if not_id:
+                    '''notification already existing'''
+                    row = db.session.query(N).get(not_id)
+                    old_penalty = row.flat_penalty
+                    old_comment = row.comment
+                    if old_penalty == penalty and row.comment == comment:
+                        '''nothing changed'''
+                        print(f'Result file has not changed, pilot ID {par_id}')
+                        return None
+                    row.comment = comment
+                    row.flat_penalty = penalty
+                    db.session.flush()
+                    '''updating result file'''
+                    entry = next(el for el in result['notifications'] if int(el['not_id']) == not_id)
+                    entry['comment'] = comment
+                    entry['flat_penalty'] = penalty
+                    result['comment'].replace(' '.join(['[admin]', old_comment]), ' '.join(['[admin]', comment]))
+                else:
+                    '''adding a new one'''
+                    row = N(track_id=track_id, notification_type='admin', **notification)
+                    db.session.add(row)
+                    db.session.flush()
+                    notification['not_id'] = row.not_id
+                    '''adding to result file'''
+                    result['notifications'].append(dict(not_id=row.not_id, notification_type='admin',
+                                                        percentage_penalty=0, flat_penalty=penalty, comment=comment))
+                    '''update comment'''
+                    comment = '[admin] ' + comment
+                    if not result['comment']:
+                        result['comment'] = comment
+                    else:
+                        '; '. join([result['comment'], comment])
+                '''penalty and score calculation'''
+                if (not_id and old_penalty != penalty) or (not not_id and penalty != 0):
+                    '''need to recalculate scores'''
+                    result['penalty'] += penalty - old_penalty
                     result['score'] = max(0, sum([result['arrival_score'], result['departure_score'],
-                                                  result['time_score'], result['distance_score']]) - penalty)
-                    pilot.penalty = result['penalty']
+                                                  result['time_score'], result['distance_score']]) - result['penalty'])
                     pil_list = sorted([p for p in data['results'] if p['result_type'] not in ['dnf', 'abs']],
                                       key=lambda k: k['score'], reverse=True)
                     pil_list += [p for p in data['results'] if p['result_type'] == 'dnf']
                     pil_list += [p for p in data['results'] if p['result_type'] == 'abs']
                     data['results'] = pil_list
-                db.session.flush()
+                data['file_stats']['last_update'] = int(time.time())
+                f.seek(0)
+                f.write(json.dumps(data))
+                f.truncate()
             except SQLAlchemyError as e:
-                print(f'Error updating result entry for participant ID {par_id}')
+                print(f'Error updating result db entry for participant ID {par_id}')
                 error = str(e.__dict__)
                 db.session.rollback()
                 db.session.close()
                 return error
-        f.seek(0)
-        f.write(json.dumps(data))
-        f.truncate()
+            except Exception as e:
+                print(f'Error updating result file for participant ID {par_id}')
+                error = str(e.__dict__)
+                db.session.rollback()
+                db.session.close()
+                return error
 
 
-def delete_result(ref_id, filename=None, session=None):
+def delete_result(ref_id: int, filename=None, session=None):
     from Defines import RESULTDIR
     import os
     with Database(session) as db:
@@ -491,7 +535,7 @@ def get_country_list(countries=None, iso=3):
             return error
 
 
-def open_json_file(filename):
+def open_json_file(filename: str):
     from pathlib import Path
     from os import path
     import jsonpickle

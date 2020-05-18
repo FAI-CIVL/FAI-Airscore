@@ -38,7 +38,7 @@ from db_tables import TblTaskResult
 from formulas.libs.leadcoeff import LeadCoeff
 from myconn import Database
 from route import in_goal_sector, start_made_civl, tp_made_civl, tp_time_civl, get_shortest_path, distance_flown
-from notification import Notification
+# from notification import Notification
 
 
 class Tp(object):
@@ -251,6 +251,7 @@ class Flight_result(object):
             Unfortunately the fsdb format isn't published so much of this is simply an
             exercise in reverse engineering.
         """
+        from notification import Notification
 
         result = cls()
         ID = int(res.get('id'))
@@ -365,6 +366,7 @@ class Flight_result(object):
             Returns:
                     a list of GNSSFixes of when turnpoints were achieved.
         """
+        from notification import Notification
 
         ''' Altitude Source: '''
         alt_source = 'GPS' if task.formula.scoring_altitude is None else task.formula.scoring_altitude
@@ -673,47 +675,47 @@ class Flight_result(object):
             # result.airspace_plot = airspace_plot
         return result
 
-    def to_db(self, task_id, track_id=None, session=None):
-        """ stores new calculated results to db
-            if track_id is not given, it inserts a new result
-            else it updates existing one """
-        # we should use Pilot.to_db()
-        # TODO not used anylonger, should be deleted ( Pilot.to_db() is the one in use )
-        from db_tables import TblTaskResult as R, TblParticipant as P, TblTask as T
-
-        '''database connection'''
-        with Database(session) as db:
-            if self.par_id is None:
-                '''we have a result without pilot id. Try with ID number'''
-                if self.ID is None:
-                    '''we don't have any info about pilot'''
-                    return None
-                try:
-                    comp_id = db.session.query(T).get(task_id).comp_id
-                    self.par_id = db.session.query(P.par_id).filter(
-                        and_(P.ID == self.ID, P.comp_id == comp_id)).scalar()
-                except SQLAlchemyError:
-                    print('Get registered pilot error')
-                    db.session.rollback()
-                if self.par_id is None:
-                    '''we did not find a registered pilot for the result'''
-                    return None
-
-            if track_id:
-                results = db.session.query(R)
-                r = results.get(track_id)
-            else:
-                '''create a new result'''
-                r = R(par_id=self.par_id, task_id=task_id)
-                db.session.add(r)
-                db.session.flush()
-            row_id = r.track_id
-            for a in dir(r):
-                if not a[0] == '_' and hasattr(self, a):
-                    setattr(r, a, getattr(self, a))
-            db.session.flush()
-
-        return row_id
+    # def to_db(self, task_id, track_id=None, session=None):
+    #     """ stores new calculated results to db
+    #         if track_id is not given, it inserts a new result
+    #         else it updates existing one """
+    #     # we should use Pilot.to_db()
+    #     # TODO not used anylonger, should be deleted ( Pilot.to_db() is the one in use )
+    #     from db_tables import TblTaskResult as R, TblParticipant as P, TblTask as T
+    #
+    #     '''database connection'''
+    #     with Database(session) as db:
+    #         if self.par_id is None:
+    #             '''we have a result without pilot id. Try with ID number'''
+    #             if self.ID is None:
+    #                 '''we don't have any info about pilot'''
+    #                 return None
+    #             try:
+    #                 comp_id = db.session.query(T).get(task_id).comp_id
+    #                 self.par_id = db.session.query(P.par_id).filter(
+    #                     and_(P.ID == self.ID, P.comp_id == comp_id)).scalar()
+    #             except SQLAlchemyError:
+    #                 print('Get registered pilot error')
+    #                 db.session.rollback()
+    #             if self.par_id is None:
+    #                 '''we did not find a registered pilot for the result'''
+    #                 return None
+    #
+    #         if track_id:
+    #             results = db.session.query(R)
+    #             r = results.get(track_id)
+    #         else:
+    #             '''create a new result'''
+    #             r = R(par_id=self.par_id, task_id=task_id)
+    #             db.session.add(r)
+    #             db.session.flush()
+    #         row_id = r.track_id
+    #         for a in dir(r):
+    #             if not a[0] == '_' and hasattr(self, a):
+    #                 setattr(r, a, getattr(self, a))
+    #         db.session.flush()
+    #
+    #     return row_id
 
     def to_geojson_result(self, track, task, second_interval=5):
         """Dumps the flight to geojson format used for mapping.
@@ -870,28 +872,28 @@ def adjust_flight_results(task, lib, airspace=None):
     lib.process_results(task)
 
 
-def update_status(par_id, task_id, status):
+def update_status(par_id: int, task_id: int, status=''):
     """Create or update pilot status ('abs', 'dnf', 'mindist')"""
     with Database() as db:
         try:
             result = db.session.query(TblTaskResult).filter(and_(TblTaskResult.par_id == par_id,
                                                                  TblTaskResult.task_id == task_id)).first()
             if result:
-                result.tarResultType = status
+                result.result_type = status
             else:
                 result = TblTaskResult(par_id=par_id, task_id=task_id, result_type=status)
                 db.session.add(result)
             db.session.flush()
+            return result.track_id
         except SQLAlchemyError as e:
             error = str(e.__dict__)
             print(f"Status update / Insert Error")
             db.session.rollback()
             db.session.close()
             return error
-        return result.track_id
 
 
-def delete_result(trackid):
+def delete_result(trackid: int, delete_file=False):
     from trackUtils import get_task_fullpath
     from os import remove
     from db_tables import TblTaskResult as R
@@ -900,14 +902,12 @@ def delete_result(trackid):
         try:
             track = db.session.query(R.track_file, R.task_id).filter(R.track_id == trackid).one()
             track.delete(synchronize_session=False)
+            if track.track_file is not None and delete_file:
+                full_path = get_task_fullpath(track.task_id)
+                track_file = path.join(full_path, track.track_file)
+                if path.isfile(track_file):
+                    remove(track_file)
         except SQLAlchemyError:
             print("there was a problem deleting the track")
             return None
-
-    if results.track_file is not None:
-        full_path = get_task_fullpath(results.task_id)
-        track_file = path.join(full_path, results.track_file)
-        if path.isfile(track_file):
-            remove(track_file)
-
     return row_deleted

@@ -141,9 +141,9 @@ class Pilot(object):
         from participant import Participant
         from track import Track
         from flight_result import Flight_result
-        from db_tables import TblParticipant as R
-        from db_tables import FlightResultView as F
+        from db_tables import TblParticipant as R, FlightResultView as F
         from sqlalchemy import and_
+        from notification import get_notifications
         pilot = Pilot()
         pilot.info = Participant(par_id=par_id)
         pilot.task_id = task_id
@@ -154,8 +154,9 @@ class Pilot(object):
             res = db.session.query(F).filter(and_(F.task_id == task_id, F.par_id == par_id)).first()
             if res:
                 pilot.result = Flight_result()
-                pilot.track = Track(track_file=res.track_file)
+                pilot.track = Track(track_file=res.track_file, track_id=res.track_id)
                 db.populate_obj(pilot.result, res)
+                pilot.result.notifications = get_notifications(pilot, db.session)
         return pilot
 
     @staticmethod
@@ -204,6 +205,7 @@ class Pilot(object):
             but if we organize track reading using Pilot obj. this should be useful.
             We will also be able to delete a lot of redundant info about track filename, pilot ID, task_id and so on"""
         from db_tables import TblTaskResult as R
+        from notification import update_notifications
         from sqlalchemy.exc import SQLAlchemyError
         '''checks conformity'''
         if not (self.par_id and self.task_id):
@@ -215,12 +217,14 @@ class Pilot(object):
         with Database(session) as db:
             try:
                 if self.track_id:
+                    '''read db row'''
                     r = db.session.query(R).get(self.track_id)
                     r.comment = self.comment
                     r.track_file = self.track_file
                     for attr in [a for a in dir(r) if not (a[0] == '_' or a in ['track_file', 'comment'])]:
                         if hasattr(result, attr):
                             setattr(r, attr, getattr(result, attr))
+                    db.session.flush()
                 else:
                     '''create a new result'''
                     r = R(par_id=self.par_id, task_id=self.task_id)
@@ -230,6 +234,9 @@ class Pilot(object):
                     db.session.add(r)
                     db.session.flush()
                     self.track.track_id = r.track_id
+
+                '''notifications'''
+                update_notifications(self, db.session)
                 db.session.commit()
             except SQLAlchemyError as e:
                 error = str(e.__dict__)
@@ -240,8 +247,13 @@ class Pilot(object):
 
 
 def update_all_results(task_id, pilots, session=None):
-    """get results to update from the list"""
+    """ get results to update from the list
+        It is called from Task.check_all_tracks(), so only during Task full rescoring
+        And from FSDB.add results.
+        We are then deleting all present non admin Notification from database for results, as related to old scoring.
+        """
     from db_tables import TblTaskResult as R, TblNotification as N
+    from notification import update_notifications
     from sqlalchemy import and_
     from sqlalchemy.exc import SQLAlchemyError
     insert_mappings = []
@@ -271,20 +283,10 @@ def update_all_results(task_id, pilots, session=None):
                 db.session.flush()
             '''notifications'''
             db.session.query(N).filter(and_(N.track_id.in_([r['track_id'] for r in update_mappings]),
-                                        N.notification_type.in_(['jtg', 'airspace']))).delete(synchronize_session=False)
-            for pilot in [p for p in pilots if p.notifications]:
-                for n in pilot.notifications:
-                    el = dict(track_id=pilot.track_id, notification_type=n.notification_type,
-                              flat_penalty=n.flat_penalty, percentage_penalty=n.percentage_penalty, comment=n.comment)
-                    insert_notifications_mappings.append(el)
-            if insert_notifications_mappings:
-                db.session.bulk_insert_mappings(N, insert_notifications_mappings, return_defaults=True)
-                db.session.flush()
-                for elem in insert_notifications_mappings:
-                    pilot = next(p for p in pilots if p.track.track_id == elem['track_id'])
-                    next(n for n in pilot.notifications if n.notification_type == elem['notification_type']
-                         and n.flat_penalty == elem['flat_penalty']
-                         and n.percentage_penalty == elem['percentage_penalty']).not_id = elem['not_id']
+                                            N.notification_type.in_(['jtg', 'airspace', 'track']))).delete(
+                synchronize_session=False)
+            for pilot in [p for p in pilots if len(p.notifications) > 0]:
+                update_notifications(pilot, db.session)  # no notification should have a not_id as recalculated
             db.session.commit()
         except SQLAlchemyError as e:
             error = str(e.__dict__)

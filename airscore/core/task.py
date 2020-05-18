@@ -789,23 +789,18 @@ class Task(object):
                     taskStopTime − timeOfFirstStart < minimumTime ∧ numberOfPilotsInGoal(taskStopTime) = 0 : taskValidity = 0
                 '''
                 # TODO It's not really clear if in elapsed time or multiple start, minimum duration like PG is applied
-
                 if not self.is_valid():
                     return f'task duration is not enough, task with id {self.id} is not valid, scoring is not needed'
-
                 verify_all_tracks(self, lib, airspace)
-
         else:
             '''get all results for the task'''
             verify_all_tracks(self, lib, airspace)
-
         '''store results to database'''
         print(f"updating database with new results...")
         update_all_results(self.task_id, self.pilots)
-
         '''save map files if needed'''
         save_all_geojson_files(self)
-
+        '''process results with scoring system'''
         lib.process_results(self)
 
     def get_pilots(self):
@@ -832,9 +827,7 @@ class Task(object):
         from notification import Notification
         from sqlalchemy.exc import SQLAlchemyError
         from pilot import Pilot
-
         pilots = []
-
         with Database() as db:
             try:
                 results = db.session.query(F).filter(F.task_id == self.task_id).all()
