@@ -19,7 +19,7 @@ Stuart Mackintosh - Antonio Golfari
 """
 
 from logger import Logger
-from result import Comp_result as C
+from result import CompResult as C
 
 
 def main(args):

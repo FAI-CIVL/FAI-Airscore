@@ -23,7 +23,7 @@ class Pilot(object):
     """Container class
     Attributes:
         info:           Participant Obj.
-        result:         Task_result Obj.
+        result:         TaskResult Obj.
         track:          Track Obj.
     """
 
@@ -179,7 +179,7 @@ class Pilot(object):
 
     def create_result_dict(self):
         """ creates dict() with participant, result and track information"""
-        from result import Task_result as R
+        from result import TaskResult as R
         result = {}
         result.update({x: getattr(self.info, x) for x in R.results_list if x in dir(self.info)})
         result.update({x: getattr(self.track, x) for x in R.results_list if x in dir(self.track)})
