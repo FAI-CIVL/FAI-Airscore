@@ -841,6 +841,7 @@ def _get_task_result_files(taskid):
 @blueprint.route('/_get_task_score_from_file/<taskid>/<filename>', methods=['GET'])
 @login_required
 def _get_task_score_from_file(taskid, filename):
+    from result import pretty_format_results
     from calcUtils import c_round
     error = None
     result_file = get_task_json_by_filename(filename)
@@ -849,7 +850,8 @@ def _get_task_score_from_file(taskid, filename):
     taskid = int(taskid)
     rank = 1
     all_pilots = []
-    stats = result_file['stats']
+    timeoffset = int(result_file['info']['time_offset'])
+    stats = pretty_format_results(result_file['stats'], timeoffset)
     for r in result_file['results']:
         track_id = r['track_id']
         name = r['name']
