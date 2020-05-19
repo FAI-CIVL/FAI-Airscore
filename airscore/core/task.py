@@ -116,6 +116,14 @@ class Task(object):
         self.launch_validity = 0.000
         self.stop_validity = 1.000
         self.day_quality = 0.000
+        self.dist_weight = 0
+        self.dep_weight = 0
+        self.arr_weight = 0
+        self.time_weight = 0
+        self.avail_dist_points = 0  # AvailDistPoints
+        self.avail_dep_points = 0  # AvailLeadPoints
+        self.avail_arr_points = 0  # AvailArrPoints
+        self.avail_time_points = 0  # AvailTimePoints
         self.distance = 0  # non optimised distance
         self.turnpoints = []  # list of Turnpoint objects
         self.optimised_turnpoints = []  # fixes on cylinders for opt route
@@ -1083,7 +1091,7 @@ class Task(object):
         return task
 
     @staticmethod
-    def create_from_json(task_id, filename=None):
+    def create_from_json(task_id: int, filename=None):
         """ Creates Task from JSON task file.
             If filename is empty, it gets the active one
             Inputs:
@@ -1094,10 +1102,9 @@ class Task(object):
         if not filename or not path.isfile(filename):
             '''we get the active json file'''
             filename = get_task_json_filename(task_id)
-
-        if not filename:
-            print(f"There's no active json file for task {task_id}, or given filename does not exists")
-            return None
+            if not filename:
+                print(f"There's no active json file for task {task_id}, or given filename does not exists")
+                return None
 
         print(f"task {task_id} json file: {filename}")
 

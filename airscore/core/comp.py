@@ -332,42 +332,48 @@ class Comp(object):
                 return None
 
     @staticmethod
-    def from_json(comp_id, ref_id=None):
+    def from_json(comp_id: int, ref_id=None):
         """Reads competition from json result file
         takes com_id as argument"""
         from db_tables import TblResultFile as R
 
-        if type(comp_id) is int and comp_id > 0:
+        try:
             with Database() as db:
                 if ref_id:
                     file = db.session.query(R).get(ref_id).filename
                 else:
                     file = db.session.query(R.filename).filter(
                         and_(R.comp_id == comp_id, R.task_id.is_(None), R.active == 1)).scalar()
-            if file:
-                comp = Comp(comp_id=comp_id)
-                with open(path.join(RESULTDIR, file), 'r') as f:
-                    '''read task json file'''
-                    data = json.load(f)
-                    for k, v in comp.__dict__.items():
-                        # not using update to intercept changing in formats
-                        if hasattr(comp, k):
-                            setattr(comp, k, v)
-                    # comp.as_dict().update(data['info'])
-                    comp.stats.update(data['stats'])
-                    comp.rankings.update(data['rankings'])
-                    comp.tasks.extend(data['tasks'])
-                    comp.formula = Formula.from_dict(data['formula'])
-                    comp.data.update(data['file_stats'])
-                    results = []
-                    for p in data['results']:
-                        '''get participants'''
-                        participant = Participant(comp_id=comp_id)
-                        participant.as_dict().update(p)
-                        results.append(participant)
-                    # should already be ordered, so probably not necessary
-                    comp.participants = sorted(results, key=lambda k: k.score, reverse=True)
-                return comp
+        except SQLAlchemyError as e:
+            error = str(e.__dict__)
+            print(f'cannot retrieve competition file from DB. {error}')
+            db.session.rollback()
+            db.session.close()
+            return error
+        if file:
+            comp = Comp(comp_id=comp_id)
+            with open(path.join(RESULTDIR, file), 'r') as f:
+                '''read task json file'''
+                data = json.load(f)
+                for k, v in data['info'].items():
+                    # not using update to intercept changing in formats
+                    if hasattr(comp, k):
+                        setattr(comp, k, v)
+                # comp.as_dict().update(data['info'])
+                comp.stats = dict(**data['stats'])
+                comp.rankings.update(data['rankings'])
+                comp.tasks.extend(data['tasks'])
+                comp.formula = Formula.from_dict(data['formula'])
+                comp.data = dict(**data['file_stats'])
+                results = []
+                for p in data['results']:
+                    '''get participants'''
+                    participant = Participant(comp_id=comp_id)
+                    participant.as_dict().update(p)
+                    results.append(participant)
+                # should already be ordered, so probably not necessary
+                comp.participants = sorted(results, key=lambda k: k.score, reverse=True)
+            return comp
 
     @staticmethod
     def create_results(comp_id, status=None, decimals=None):

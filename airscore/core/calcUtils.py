@@ -190,8 +190,8 @@ def sec_to_duration(rawtime):
     return string
 
 
-def get_isotime(d, t, offset=None):
+def get_isotime(d: datetime.date, t: int, offset=None):
     import datetime as dt
     from datetime import datetime as dd
     tz = dt.timedelta(seconds=offset)
-    return dd.combine(get_date(d), sec_to_time(t), tzinfo=dt.timezone(offset=tz)).isoformat()
+    return dd.combine(d, sec_to_time(t), tzinfo=dt.timezone(offset=tz)).isoformat()

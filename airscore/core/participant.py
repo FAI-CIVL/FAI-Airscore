@@ -60,7 +60,7 @@ class Participant(object):
 
     @property
     def pilot_birthdate_str(self):
-        return self.birthdate.strftime("%Y-%m-%d")
+        return '' if not self.birthdate else self.birthdate.strftime("%Y-%m-%d")
 
     @property
     def female(self):
