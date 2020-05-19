@@ -450,7 +450,7 @@ def tp_made_civl(fix, next, tp, tolerance, min_tol_m):
 
 
 def tp_time_civl(fix, next, tp):
-    """return correct time based on CIVL rules"""
+    """return correct time of achieving a turnpoint based on CIVL rules"""
 
     '''
     The time of a crossing depends on whether it actually cuts across the actual cylinder,
