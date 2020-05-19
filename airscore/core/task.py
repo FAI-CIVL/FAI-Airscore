@@ -27,7 +27,7 @@ import jsonpickle
 from sqlalchemy import and_
 from sqlalchemy.orm import aliased
 
-from Defines import RESULTDIR, MAPOBJDIR, FILEDIR
+from Defines import RESULTDIR, MAPOBJDIR, TRACKDIR
 from airspace import AirspaceCheck
 from calcUtils import json, get_date, get_datetime, decimal_to_seconds
 from compUtils import read_rankings
@@ -210,7 +210,7 @@ class Task(object):
             return
         if not self.task_path:
             self.create_path()
-        return path.join(FILEDIR, self.comp_path, self.task_path.lower())
+        return path.join(TRACKDIR, self.comp_path, self.task_path.lower())
 
     # @property
     # def last_start_time(self):
@@ -582,7 +582,7 @@ class Task(object):
         else:
             return
         if self.id:
-            full_path = path.join(FILEDIR, self.comp_path, self.task_path.lower())
+            full_path = path.join(TRACKDIR, self.comp_path, self.task_path.lower())
             if not path.exists(full_path):
                 makedirs(full_path)
             '''store to database'''
@@ -1631,7 +1631,7 @@ def delete_task(task_id, files=False, session=None):
     from db_tables import TblResultFile as RF
     from db_tables import TblCompetition as C
     from result import delete_result
-    from Defines import FILEDIR
+    from Defines import TRACKDIR
     import shutil
     from os import path
     '''delete waypoints and task from database'''
@@ -1643,7 +1643,7 @@ def delete_task(task_id, files=False, session=None):
                 info = db.session.query(T.task_path,
                                         C.comp_path).select_from(T).join(C, C.comp_id ==
                                                                          T.comp_id).filter(T.task_id == task_id).one()
-                igc_folder = path.join(FILEDIR, info.comp_path, info.task_path)
+                igc_folder = path.join(TRACKDIR, info.comp_path, info.task_path)
                 tracklog_map_folder = path.join(MAPOBJDIR, 'tracks', str(task_id))
                 task_map = path.join(MAPOBJDIR, 'tasks', str(task_id) + '.task')
 

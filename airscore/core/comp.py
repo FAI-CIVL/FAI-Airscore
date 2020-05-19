@@ -17,7 +17,7 @@ from os import path
 from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
 
-from Defines import FILEDIR, RESULTDIR, SELF_REG_DEFAULT, PILOT_DB
+from Defines import TRACKDIR, RESULTDIR, SELF_REG_DEFAULT, PILOT_DB
 from calcUtils import get_date
 from compUtils import get_tasks_result_files, get_participants, read_rankings, create_comp_path
 from db_tables import TblCompetition
@@ -113,7 +113,7 @@ class Comp(object):
     def file_path(self):
         if not self.comp_path:
             self.create_path()
-        return path.join(FILEDIR, self.comp_path)
+        return path.join(TRACKDIR, self.comp_path)
 
     @property
     def tot_validity(self):
@@ -499,13 +499,13 @@ def delete_comp(comp_id, files=True):
     from db_tables import TblParticipant as P
     from task import delete_task
     from result import delete_result
-    from Defines import FILEDIR
+    from Defines import TRACKDIR
     import shutil
     from os import path
     with Database() as db:
         # if files:
         #     '''delete tracks'''
-        #     folder = path.join(FILEDIR, db.session.query(TblCompetition).get(comp_id).comp_path)
+        #     folder = path.join(TRACKDIR, db.session.query(TblCompetition).get(comp_id).comp_path)
         #     if path.exists(folder):
         #         shutil.rmtree(folder)
         tasks = db.session.query(T.task_id).filter(T.comp_id == comp_id).all()

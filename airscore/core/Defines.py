@@ -1,6 +1,6 @@
 """
 File created from install / settongs
-Use: from Defines import BINDIR, FILEDIR
+Use: from Defines import BINDIR, TRACKDIR
 
 Antonio Golfari - 2018
 """
@@ -21,7 +21,7 @@ with open('secret.yaml', 'rb') as f:
 
 ''' Application Settings'''
 BINDIR = config['dir']['bin']  # script directory
-FILEDIR = config['dir']['tracks']  # track file directory
+TRACKDIR = config['dir']['tracks']  # track file directory
 LOGDIR = config['dir']['log']  # log files directory
 RESULTDIR = config['dir']['result']  # log files directory
 IMAGEDIR = config['dir']['image']  # image/icon files directory

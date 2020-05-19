@@ -263,13 +263,13 @@ def get_task_filepath(task_id, session=None):
     from myconn import Database
     from db_tables import TaskObjectView as T
     from sqlalchemy.exc import SQLAlchemyError
-    from Defines import FILEDIR
+    from Defines import TRACKDIR
     from os import path as p
 
     with Database(session) as db:
         try:
             task = db.session.query(T).get(task_id)
-            return p.join(FILEDIR, task.comp_path, task.task_path)
+            return p.join(TRACKDIR, task.comp_path, task.task_path)
         except SQLAlchemyError:
             print('Error trying to retrieve flie path from database')
             return None

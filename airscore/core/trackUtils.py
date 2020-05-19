@@ -11,7 +11,7 @@ from os import path, listdir, fsdecode
 from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
 
-from Defines import FILEDIR, MAPOBJDIR, track_sources, track_formats
+from Defines import TRACKDIR, MAPOBJDIR, track_sources, track_formats
 from flight_result import Flight_result
 from myconn import Database
 import re
@@ -250,7 +250,7 @@ def get_task_fullpath(task_id):
         except SQLAlchemyError:
             print(f'Get Task Path Query Error')
             return None
-    return path.join(FILEDIR, q.comp_path, q.task_path)
+    return path.join(TRACKDIR, q.comp_path, q.task_path)
 
 
 def get_unscored_pilots(task_id, xcontest=False):
