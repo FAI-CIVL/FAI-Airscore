@@ -60,21 +60,6 @@
           <table id="task_result" class="row-border stripe compact" cellspacing="0" width="100%">
           <thead>
               <tr>
-                  <th>#</th>
-                  <th>Pilot</th>
-                  <th>SS</th>
-                  <th>ES</th>
-                  <th>Time</th>
-                  <th id="altbonus">alt bonus</th>
-                  <th>Kms</th>
-                  <th>Spd p</th>
-                  <th id="leading">LO p</th>
-                  <th>Arv</th>
-                  <th>Dst p</th>
-                  <th>Pen</th>
-                  <th>Tot</th>
-<!--                  <th>Notes</th>-->
-<!--                  <th>Actions</th>-->
               </tr>
           </thead>
           </table>
@@ -156,6 +141,54 @@
 </div>
 <!-score-Modal ends here--->
 
+<!---edit-modal starts here--->
+<div id="editmodal" class="modal fade bd-example-modal-lg   " tabindex="-1" role='dialog'>
+   <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+         <div class="modal-header">
+            <h4 class="modal-title">comments and penalties/bonuses</h4>
+             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+         </div>
+          <h7 class="text-center">edit existing admin rows or add a new one</h7>
+         <div class="modal-body" id= "editmodal-body">
+            <div class="container-fluid">
+             <div class="col-md-12">
+                <table class="table table-striped " id="edit_table">
+                    <thead>
+                      <tr>
+                        <th scope="col" style="display:none;">ID</th>
+                        <th scope="col">Source</th>
+                        <th scope="col">Percentage Penalty</th>
+                        <th scope="col">Point Penalty</th>
+                        <th scope="col">Comment</th>
+
+                      </tr>
+                    </thead>
+                    <tbody id=airspace_table_body>
+
+                    </tbody>
+                  </table>
+            </div>
+                <div class="col-md-12">
+                    {{editform.penalty_bonus()}}
+                    {{editform.flat_penalty.label}} {{editform.flat_penalty()}}
+                </div>
+                <div class="col-md-12">
+                    {{editform.comment.label}}
+                    {{editform.comment}}
+                </div>
+            </div>
+               <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" id="save_adjustment" class="btn btn-primary">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<!-edit-Modal ends here--->
 {% endif %}
 
 {% endblock %}
@@ -165,10 +198,15 @@
     <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
     <script type="text/javascript" src="/static/js/pop_task_score_admin.js"></script>
     <script type="text/javascript">populate_task_scores({{taskid}},{{active_file|tojson}})</script>
+    <script src="/static/js/mindmup-editabletable.js"></script>
     <script type="text/javascript">
 
 
+var score_data = new Object();
 var active_file = '';
+table_data=[];
+
+
 
 // jQuery selection for the file select box
 var dropdown = {
@@ -360,9 +398,129 @@ function comp_publish() {
 
 }
 
+function comp_unpublish() {
+    var mydata = new Object();
+    mydata.offset = new Date().getTimezoneOffset();
+    $.ajax({
+        type: "POST",
+        url:  "{{ url_for('user._unpublish_comp_result', compid=session.compid)}}",
+        contentType: "application/json",
+        data: JSON.stringify(mydata),
+        dataType: "json",
+        success: function(response) {
+                $('#comp_header').text(response.comp_header)
+                $('#comp_unpublish').hide();
+        }
+    });
+
+}
 
 
-    </script>
+function adjust(par_id){
+    $("#edit_table tbody").empty();
+    $.each( score_data.data, function(  key, value ) {
+
+            if(value.par_id==par_id){
+
+
+                    $.each( this.notifications, function(  key, value ) {
+                    var edit='false'
+                    if(value.notification_type=='admin'){ edit='true'}
+                     $('#edit_table tbody').append('<tr><td data-editable="false" style="display:none;" class ="value">'+ value.not_id +'</td>'
+                     +'<td data-editable="false" class ="value">'+ value.notification_type +'</td>'
+                     +'<td data-editable="false" class ="value">'+ value.percentage_penalty*100 +'%</td>'
+                     +'<td data-editable='+ edit + ' class ="value">'+ value.flat_penalty +'</td>'
+                     +'<td data-editable='+ edit + ' class ="value">'+ value.comment +'</td></tr>');
+            <!--          <td data-editable="false" class ="value"><button type="button" class="btn btn-primary">Delete</button></td>-->
+          });
+          }
+          $('#save_adjustment').attr("onclick","save_adjustment("+par_id+")");
+          $('#edit_table').editableTableWidget();
+          $('#editmodal').modal('show');
+    });
+}
+
+
+function get_table_data(){
+    table_data=[];
+   // loop over each table row (tr)
+   $("#edit_table tr").each(function(){
+        var currentRow=$(this);
+        var obj={};
+        obj.not_id=parseInt(currentRow.find("td:eq(0)").text());
+        obj.source=currentRow.find("td:eq(1)").text();
+        obj.penalty=parseInt(currentRow.find("td:eq(3)").text());
+        obj.comment=currentRow.find("td:eq(4)").text();
+        if(obj.source == "admin"){
+        table_data.push(obj);
+        }
+   });
+
+
+}
+
+
+function save_adjustment(par_id){
+    var mydata = new Object();
+    mydata.filename = $('#file option:selected').val();
+    mydata.par_id = par_id;
+    mydata.changes = [];
+    mydata.new = {};
+    if($('#penalty').val()!=0 || $('#comment').val()!=''){
+    mydata.new.penalty = parseInt($('#penalty').val());
+    mydata.new.comment = $('#comment').val();
+    mydata.new.sign = $('#penalty_bonus').val();
+    }
+    //get any admin rows
+    get_table_data();
+    if (table_data!=[]) {
+    //see if there are any changes to admin rows
+      $.each(score_data.data, function(  key, value ) {
+            //find original values
+            if(value.par_id==par_id){
+                $.each( this.notifications, function(  key, value ) {
+                    if(value.notification_type == 'admin'){
+                        table_data.forEach(function(element) {
+                            if(element.not_id==value.not_id){
+                            //we have a match
+                                    if((element.comment!=value.comment)||(element.penalty!=value.flat_penalty))
+                                    {
+                                        mydata.changes.push(element);
+                                    }
+
+                            }
+
+                        });
+
+                    }
+                });
+              }
+           });
+
+    }
+    if ((mydata.new.penalty || mydata.new.comment) || mydata.changes){
+    //send the adjustment
+     $.ajax({
+        type: "POST",
+        url:  "{{ url_for('user._adjust_task_result', taskid=taskid)}}",
+        contentType: "application/json",
+        data: JSON.stringify(mydata),
+        dataType: "json",
+        success: function(response) {
+                $('#comp_header').text(response.comp_header)
+                populate_task_scores({{taskid}}, mydata.filename);
+                $('#editmodal').modal('hide');
+        }
+    });
+
+
+    }
+
+}
+
+
+
+ </script>
 
 
 {% endif %}

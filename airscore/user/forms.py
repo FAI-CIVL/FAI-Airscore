@@ -384,3 +384,9 @@ class ModifyParticipantForm(FlaskForm):
     nat_team = BooleanField('In National Team')
     team = StringField('Team')
     CIVL = IntegerField('CIVL')
+
+
+class EditScoreForm(FlaskForm):
+    penalty_bonus = SelectField(choices=[('penalty', 'Penalty'), ('bonus', 'Bonus')], id='penalty_bonus')
+    flat_penalty = IntegerField('points', default=0, id='penalty')
+    comment = TextAreaField('Comment', render_kw={"rows": 3, "cols": 50}, id='comment')

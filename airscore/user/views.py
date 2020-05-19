@@ -7,7 +7,8 @@ from flask import Blueprint, render_template, request, jsonify, json, flash, red
 from flask_login import login_required, current_user
 import frontendUtils
 from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm, \
-    TaskResultAdminForm, NewAdminForm, RegionForm, NewRegionForm, IgcParsingConfigForm, ModifyParticipantForm
+    TaskResultAdminForm, NewAdminForm, RegionForm, NewRegionForm, IgcParsingConfigForm, ModifyParticipantForm, \
+    EditScoreForm
 from comp import Comp
 from formula import list_formulas, Formula
 from task import Task, write_map_json, get_task_json_by_filename
@@ -877,17 +878,19 @@ def _get_task_score_from_file(taskid, filename):
             pilot['distanceP'] = c_round(r['distance_score'], 2)
             pilot['penalty'] = c_round(r['penalty'], 2) if r['penalty'] else ""
             pilot['score'] = c_round(r['score'], 2)
+
         else:
             pilot = dict(rank=rank, name=name, SSS='', ESS='', time='', altbonus='', distance='',
                          speedP='', leadP='', arrivalP='', distanceP='', penalty='', score=status)
         # TODO once result files have a list of comments we can activate these lines and remove the 3 dummy lines below
-        # pilot['Track Comment'] = r['comment'][0]
-        # pilot['Penalty Comment'] = r['comment'][1]
-        # pilot['Admin Comment'] = r['comment'][2]
-        pilot['Track Comment'] = 'test track comment'
-        pilot['Penalty Comment'] = 'test penalt comment'
-        pilot['Admin Comment'] = 'test admin comment'
-
+        # pilot['Track_Comment'] = r['comment'][0]
+        # pilot['Penalty_Comment'] = r['comment'][1]
+        # pilot['Admin_Comment'] = r['comment'][2]
+        # pilot['Track Comment'] = 'test track comment'
+        # pilot['Penalty Comment'] = 'test penalt comment'
+        # pilot['Admin Comment'] = 'test admin comment'
+        pilot['par_id'] = r['par_id']
+        pilot['notifications'] = r['notifications']
         all_pilots.append(pilot)
         rank += 1
 
@@ -900,6 +903,7 @@ def task_score_admin(taskid):
     taskid = int(taskid)
     task = Task.read(taskid)
     fileform = TaskResultAdminForm()
+    editform = EditScoreForm()
     active_file = None
     choices = [(1, 1), (2, 2)]
     fileform.result_file.choices = choices
@@ -913,7 +917,7 @@ def task_score_admin(taskid):
 
     return render_template('users/task_score_admin.html', fileform=fileform, taskid=taskid,
                            active_file=active_file, user_is_admin=user_is_admin, task_name=task.task_name,
-                           task_num=task.task_num)
+                           task_num=task.task_num, editform=editform)
 
 
 @blueprint.route('/_score_task/<taskid>', methods=['POST'])
@@ -1330,3 +1334,28 @@ def _check_nat_team_size(compid):
 @login_required
 def _check_team_size(compid):
     return {'message': frontendUtils.check_team_size(int(compid))}
+
+
+@blueprint.route('/_adjust_task_result/<taskid>', methods=['POST'])
+@login_required
+def _adjust_task_result(taskid):
+    from result import update_result_file
+    taskid = int(taskid)
+    data = request.json
+    if data['changes']:
+        for change in data['changes']:
+            notification = dict(not_id=change['not_id'], flat_penalty=change['penalty'],
+                                comment=change['comment'])
+            update_result_file(filename=data['filename'], par_id=int(data['par_id']), notification=notification)
+    if data['new']:
+        if data['new']['sign'] == 'penalty':
+            points = data['new']['penalty'] * -1
+        else:
+            points = data['new']['penalty']
+        notification = dict(flat_penalty=points, comment=data['new']['comment'])
+        update_result_file(filename=data['filename'], par_id=int(data['par_id']), notification=notification)
+
+    resp = jsonify(success=True)
+    return resp
+
+
