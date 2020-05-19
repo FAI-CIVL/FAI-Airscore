@@ -327,11 +327,13 @@ def points_allocation(task):
                     res.time_score *= (1 - formula.no_goal_penalty)
 
         ''' Total score'''
-        res.score = res.distance_score + res.time_score + res.arrival_score + res.departure_score
+        score = res.distance_score + res.time_score + res.arrival_score + res.departure_score
 
         ''' Apply Penalty'''
         if res.flat_penalty or res.percentage_penalty:
-            # applying flat penalty after percentage one
-            res.penalty = res.score * res.percentage_penalty + res.flat_penalty
-            res.score = max(0, res.score - res.penalty)
-
+            # applying flat penalty after percentage ones
+            penalty = score * res.percentage_penalty + res.flat_penalty
+            res.score = max(0, score - penalty)
+            res.penalty = score - res.score
+        else:
+            res.score = score

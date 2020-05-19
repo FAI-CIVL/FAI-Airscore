@@ -514,15 +514,19 @@ def points_allocation(task):
                     res.arrival_score *= (1 - formula.no_goal_penalty)
 
         ''' Total score'''
-        res.score = res.distance_score + res.time_score + res.arrival_score + res.departure_score
+        score = res.distance_score + res.time_score + res.arrival_score + res.departure_score
 
         ''' Apply Penalty'''
         if res.jtg_penalty or res.flat_penalty or res.percentage_penalty:
             ''' Jump the Gun Penalty:
                 totalScore p = max(totalScore p − jumpTheGunPenalty p , scoreForMinDistance) '''
-            res.score = max(min_dist_score, res.score - res.jtg_penalty)
+            score_after_jtg = score if res.jtg_penalty == 0 else max(min_dist_score, score - res.jtg_penalty)
             ''' Other penalties'''
             # applying flat penalty after percentage ones
-            res.penalty = res.score * res.percentage_penalty + res.flat_penalty
-            res.score = max(0, res.score - res.penalty)
-
+            other_penalty = score_after_jtg * res.percentage_penalty + res.flat_penalty
+            res.score = max(0, score_after_jtg - other_penalty)
+            res.penalty = score - res.score
+            # print(f'jtg: {res.jtg_penalty}, flat: {res.flat_penalty}, perc: {res.percentage_penalty}')
+            # print(f'pre penalty: {score}, after jtg: {score_after_jtg}, penalty: {res.penalty}, score: {res.score}')
+        else:
+            res.score = score
