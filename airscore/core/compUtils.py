@@ -6,7 +6,7 @@ Antonio Golfari - 2019
 """
 
 import json
-
+import datetime
 from sqlalchemy import and_, desc
 
 import Defines
@@ -255,7 +255,12 @@ def create_comp_code(name, date):
     else:
         string = str(names[0])[0:5]
     number = date.strftime('%y')
-    return string.upper() + number
+    i = 2
+    code = string.upper() + number
+    while not is_shortcode_unique(code, date):
+        code = string.upper() + number + '_' + str(i)
+        i += 1
+    return code
 
 
 def get_task_filepath(task_id, session=None):
@@ -308,3 +313,12 @@ def get_fsdb_task_path(task_path):
     from pathlib import PureWindowsPath
     folder = PureWindowsPath(task_path)
     return None if not folder.parts else folder.parts[-1]
+
+
+def is_shortcode_unique(shortcode: str, date: datetime.date):
+    from pathlib import Path
+    from Defines import TRACKDIR
+    print(Path(TRACKDIR, str(date.year), shortcode))
+    if Path(TRACKDIR, str(date.year), shortcode).is_dir():
+        return False
+    return True

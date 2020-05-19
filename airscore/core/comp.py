@@ -285,7 +285,7 @@ class Comp(object):
         from calcUtils import get_date
         from pathlib import Path
         from glob import glob
-        from compUtils import create_comp_code
+        from compUtils import create_comp_code, is_shortcode_unique
 
         comp = Comp()
 
@@ -301,11 +301,12 @@ class Comp(object):
         comp.locked = True
 
         '''check if we have comp_code'''
-        if short_name:
+        if short_name and is_shortcode_unique(short_name, comp.date_from):
             comp.comp_code = short_name
         else:
             comp.comp_code = create_comp_code(comp.comp_name, comp.date_from)
         comp.create_path()
+
         '''check path does not already exist'''
         if Path(comp.file_path).exists():
             '''create a new comp_code and comp_path'''
@@ -313,7 +314,6 @@ class Comp(object):
             comp.comp_code = '_'.join([comp.comp_code, str(index)])
             print(f"Comp short name already exists: changing to {comp.comp_code}")
             comp.comp_path = create_comp_path(comp.date_from, comp.comp_code)
-
         return comp
 
     def get_tasks_details(self):
