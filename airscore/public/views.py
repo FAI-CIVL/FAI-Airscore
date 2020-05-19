@@ -513,7 +513,7 @@ def registered_pilots(compid):
 @blueprint.route('/_get_participants_and_status/<compid>', methods=['GET'])
 def _get_participants_and_status(compid):
     from participant import Participant
-    pilot_list, _ = frontendUtils.get_participants(compid)
+    pilot_list, _, _ = frontendUtils.get_participants(compid)
     status = None
     participant_info = None
     if current_user:
