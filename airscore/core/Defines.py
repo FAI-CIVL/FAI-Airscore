@@ -5,20 +5,19 @@ Use: from Defines import BINDIR, TRACKDIR
 Antonio Golfari - 2018
 """
 import os
-
 import yaml
 
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
-with open('defines.yaml', 'rb') as f:
+with open('../../defines.yaml', 'rb') as f:
     """use safe_load instead load"""
     config = yaml.safe_load(f)
 
-with open('secret.yaml', 'rb') as f:
+with open('../../secret.yaml', 'rb') as f:
     """use safe_load instead load"""
     secret = yaml.safe_load(f)
-
+os.chdir(dname)
 ''' Application Settings'''
 BINDIR = config['dir']['bin']  # script directory
 TRACKDIR = config['dir']['tracks']  # track file directory

@@ -7,7 +7,7 @@
 
 # Configuration files
 .env
-airscore/core/secret.yaml
+secret.yaml
 airscore/core/dreamhost*.*
 
 # Cache files
