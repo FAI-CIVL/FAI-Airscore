@@ -71,6 +71,12 @@ function populate_task_scores(taskid, filename){
         },
        "initComplete": function(settings, json)
         {
+                    //hide SS ES for Race
+            if(json.info.task_type=='RACE'){
+                        $('#task_result').DataTable().column(2).visible( false );
+                        $('#task_result').DataTable().column(3).visible( false );
+                        }
+
         score_data = json;
                     $.each( json.stats, function( key, value ) {
                 $('#taskinfo tbody').append('<tr><td>' + key + '</td><td>' + value + '</td></tr>');

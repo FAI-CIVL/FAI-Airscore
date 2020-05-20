@@ -853,6 +853,7 @@ def _get_task_score_from_file(taskid, filename):
     all_pilots = []
     timeoffset = int(result_file['info']['time_offset'])
     stats = pretty_format_results(result_file['stats'], timeoffset)
+    info = result_file['info']
     for r in result_file['results']:
         track_id = r['track_id']
         name = r['name']
@@ -894,7 +895,7 @@ def _get_task_score_from_file(taskid, filename):
         all_pilots.append(pilot)
         rank += 1
 
-    return {'data': all_pilots,'stats': stats}
+    return {'data': all_pilots, 'stats': stats, 'info': info}
 
 
 @blueprint.route('/task_score_admin/<taskid>', methods=['GET'])
