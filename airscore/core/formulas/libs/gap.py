@@ -264,7 +264,7 @@ def pilot_leadout(task, res):
     """
     Args:
         task: Task obj.
-        res: Flight_result object
+        res: FlightResult object
     """
 
     Astart = task.avail_dep_points
@@ -302,7 +302,7 @@ def pilot_departure(task, res):
     """
     Args:
         task: Task obj.
-        res: Flight_result object
+        res: FlightResult object
     """
 
     Astart = task.avail_dep_points
@@ -329,7 +329,7 @@ def pilot_speed(task, res):
     """
     Args:
         task: Task obj.
-        res: Flight_result object
+        res: FlightResult object
     """
 
     Aspeed = task.avail_time_points
@@ -386,7 +386,7 @@ def pilot_distance(task, pil):
     """
     Args:
         task: Task obj.
-        pil: Flight_result object
+        pil: FlightResult object
     """
 
     maxdist = task.max_distance
@@ -417,8 +417,8 @@ def pilot_distance(task, pil):
 
 
 def calculate_min_dist_score(t):
-    from flight_result import Flight_result
-    p = Flight_result()
+    from flightresult import FlightResult
+    p = FlightResult()
     p.distance_flown = t.formula.min_dist
     return pilot_distance(t, p)
 
@@ -461,7 +461,7 @@ def process_results(task):
 
 
 def points_allocation(task):
-    """ Get task with pilots Flight_result obj. and calculates results"""
+    """ Get task with pilots FlightResult obj. and calculates results"""
 
     ''' Get pilot.result not ABS or DNF '''
     results = task.valid_results

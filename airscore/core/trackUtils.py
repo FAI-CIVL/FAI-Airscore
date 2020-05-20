@@ -12,7 +12,7 @@ from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
 
 from Defines import TRACKDIR, MAPOBJDIR, track_sources, track_formats
-from flight_result import Flight_result
+from flightresult import FlightResult
 from myconn import Database
 import re
 from pathlib import Path
@@ -148,8 +148,8 @@ def verify_and_import_track(pilot, task, print=print):
         airspace = AirspaceCheck.from_task(task)
     else:
         airspace = None
-    pilot.result = Flight_result.check_flight(pilot.track.flight, task, airspace_obj=airspace,
-                                              print=print)  # check flight against task
+    pilot.result = FlightResult.check_flight(pilot.track.flight, task, airspace_obj=airspace,
+                                             print=print)  # check flight against task
     pilot.to_db()
     if pilot.notifications:
         print(str(pilot.notifications))
@@ -228,7 +228,7 @@ def read_tracklog_map_result_file(track_id, task_id):
 
 
 def create_tracklog_map_result_file(track_id, task_id):
-    import flight_result
+    import flightresult
     from task import Task
     from track import Track
 
@@ -236,7 +236,7 @@ def create_tracklog_map_result_file(track_id, task_id):
     # formula = For.TaskFormula.read(task_id)
     track = Track.read_db(track_id)
     lib = task.formula.get_lib()
-    result = flight_result.Flight_result.check_flight(track.flight, task)
+    result = flightresult.FlightResult.check_flight(track.flight, task)
     result.save_tracklog_map_result_file(result.to_geojson_result(track, task), str(track_id), task_id)
 
 

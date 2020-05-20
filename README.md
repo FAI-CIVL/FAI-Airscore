@@ -18,7 +18,7 @@ see docker quickstart below
 
 #### Library files
 - track.py - Contains Track class definition. Reads IGC files using igc_lib library and creates a Track object.
-- flight_result.py - Contains Flight_result class definition. This evaluates a Track against a Task. Calculates start time, distance flown, lead co-efficient, goal time etc. 
+- flightresult.py - Contains FlightResult class definition. This evaluates a Track against a Task. Calculates start time, distance flown, lead co-efficient, goal time etc. 
 - route.py - contains low level functions for distance calculations
 - result.py - contains Task_result class and Comp_result class
 - trackUtils.py - Module for operations on tracks. importing, assigning to pilots etc

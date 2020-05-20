@@ -2,7 +2,7 @@
 Scoring Formula Script
     Defines a Scoring formula. Gets Parameters and jobs from Formula Libraries in libs folder or contains new ones.
     Name of primary functions has to be mantained:
-        - process_result : jobs done of Flight_result obj. before scoring
+        - process_result : jobs done of FlightResult obj. before scoring
         - points_allocation : main function called to calculate scoring
     Defines which classes formula applies
     Defines standard parameters values for each class
@@ -271,7 +271,7 @@ def pilot_speed(task, res):
     """
     Args:
         task: Task obj.
-        res: Flight_result object
+        res: FlightResult object
     Time points are assigned to the pilot as a function of best time and pilot time – the time the pilot took
     to complete the speed section. Slow pilots will get zero points for speed if their time to complete the
     speed section is equal to or longer than the fastest time plus the square root of the fastest time.

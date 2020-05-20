@@ -13,7 +13,7 @@ from comp import Comp
 from formula import list_formulas, Formula
 from task import Task, write_map_json, get_task_json_by_filename
 from frontendUtils import save_turnpoint
-from flight_result import update_status, delete_result
+from flightresult import update_status, delete_result
 from os import path, remove, makedirs
 from task import get_task_json_by_filename
 from calcUtils import sec_to_time

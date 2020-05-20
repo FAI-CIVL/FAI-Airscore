@@ -1,7 +1,7 @@
 """
 Flight Result Library
 
-contains Flight_result class.
+contains FlightResult class.
 contains statistics about a flight with regards to a task.
 
 Methods:
@@ -112,7 +112,7 @@ class Tp(object):
             self.pointer += 1
 
 
-class Flight_result(object):
+class FlightResult(object):
     """Set of statistics about a flight with respect a task.
     Attributes:
         real_start_time: time the pilot actually crossed relevant start gate.
@@ -172,7 +172,7 @@ class Flight_result(object):
         # self.track_file = track_file  # Could delete?
 
     def __setattr__(self, attr, value):
-        property_names = [p for p in dir(Flight_result) if isinstance(getattr(Flight_result, p), property)]
+        property_names = [p for p in dir(FlightResult) if isinstance(getattr(FlightResult, p), property)]
         if attr not in property_names:
             self.__dict__[attr] = value
 
@@ -337,7 +337,7 @@ class Flight_result(object):
         """reads result from database"""
         from db_tables import FlightResultView as R
 
-        result = Flight_result()
+        result = FlightResult()
         with Database() as db:
             # get result details.
             q = db.session.query(R)
@@ -346,7 +346,7 @@ class Flight_result(object):
 
     @staticmethod
     def from_dict(d):
-        result = Flight_result()
+        result = FlightResult()
         for key, value in d.items():
             if hasattr(result, key):
                 setattr(result, key, value)
@@ -372,7 +372,7 @@ class Flight_result(object):
         alt_source = 'GPS' if task.formula.scoring_altitude is None else task.formula.scoring_altitude
 
         '''initialize'''
-        result = Flight_result()
+        result = FlightResult()
         tolerance = task.formula.tolerance or 0
         min_tol_m = task.formula.min_tolerance or 0
         max_jump_the_gun = task.formula.max_JTG or 0  # seconds
@@ -848,7 +848,7 @@ def verify_all_tracks(task, lib, airspace=None):
             filename = path.join(task.file_path, pilot.track.track_file)
             pilot.track.flight = Flight.create_from_file(filename)
             if pilot.track.flight and pilot.track.flight.valid:
-                pilot.result = Flight_result.check_flight(pilot.track.flight, task, airspace_obj=airspace)
+                pilot.result = FlightResult.check_flight(pilot.track.flight, task, airspace_obj=airspace)
                 print(
                     f'   Goal: {bool(pilot.result.goal_time)} | dist: {pilot.result.distance} part. LC: {pilot.result.fixed_LC}')
             elif pilot.track.flight:
@@ -867,7 +867,7 @@ def adjust_flight_results(task, lib, airspace=None):
                     or (pilot.ESS_time and pilot.ss_time > maxtime)):
                 '''need to adjust pilot result'''
                 flight = pilot.track.flight
-                adjusted = Flight_result.check_flight(flight, task, airspace_obj=airspace, deadline=last_time)
+                adjusted = FlightResult.check_flight(flight, task, airspace_obj=airspace, deadline=last_time)
                 pilot.result.result_type = adjusted.result_type
     lib.process_results(task)
 

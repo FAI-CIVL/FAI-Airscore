@@ -35,7 +35,7 @@ class FSDB(object):
     def __init__(self, comp=None, tasks=None, filename=None):
         self.filename = filename  # str:  filename
         self.comp = comp  # Comp obj.
-        self.tasks = tasks  # list: Task obj. list with Flight_result obj list
+        self.tasks = tasks  # list: Task obj. list with FlightResult obj list
 
     @property
     def comp_class(self):
