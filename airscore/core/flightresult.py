@@ -675,48 +675,6 @@ class FlightResult(object):
             # result.airspace_plot = airspace_plot
         return result
 
-    # def to_db(self, task_id, track_id=None, session=None):
-    #     """ stores new calculated results to db
-    #         if track_id is not given, it inserts a new result
-    #         else it updates existing one """
-    #     # we should use Pilot.to_db()
-    #     # TODO not used anylonger, should be deleted ( Pilot.to_db() is the one in use )
-    #     from db_tables import TblTaskResult as R, TblParticipant as P, TblTask as T
-    #
-    #     '''database connection'''
-    #     with Database(session) as db:
-    #         if self.par_id is None:
-    #             '''we have a result without pilot id. Try with ID number'''
-    #             if self.ID is None:
-    #                 '''we don't have any info about pilot'''
-    #                 return None
-    #             try:
-    #                 comp_id = db.session.query(T).get(task_id).comp_id
-    #                 self.par_id = db.session.query(P.par_id).filter(
-    #                     and_(P.ID == self.ID, P.comp_id == comp_id)).scalar()
-    #             except SQLAlchemyError:
-    #                 print('Get registered pilot error')
-    #                 db.session.rollback()
-    #             if self.par_id is None:
-    #                 '''we did not find a registered pilot for the result'''
-    #                 return None
-    #
-    #         if track_id:
-    #             results = db.session.query(R)
-    #             r = results.get(track_id)
-    #         else:
-    #             '''create a new result'''
-    #             r = R(par_id=self.par_id, task_id=task_id)
-    #             db.session.add(r)
-    #             db.session.flush()
-    #         row_id = r.track_id
-    #         for a in dir(r):
-    #             if not a[0] == '_' and hasattr(self, a):
-    #                 setattr(r, a, getattr(self, a))
-    #         db.session.flush()
-    #
-    #     return row_id
-
     def to_geojson_result(self, track, task, second_interval=5):
         """Dumps the flight to geojson format used for mapping.
         Contains tracklog split into pre SSS, pre Goal and post goal parts, thermals, takeoff/landing,
