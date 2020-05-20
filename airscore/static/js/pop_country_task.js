@@ -1,7 +1,7 @@
-function populate_country_task(comPk){
+function populate_country_task(task_id){
 $(document).ready(function() {
     $('#task_result').dataTable({
-        ajax: '/_get_task_country_result/'+comPk,
+        ajax: '/_get_task_country_result/'+task_id,
         paging: false,
         searching: true,
         saveState: true,

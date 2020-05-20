@@ -549,7 +549,6 @@ def open_json_file(filename: str):
 
 
 def pretty_format_results(content, timeoffset=0, td=0, cd=0):
-    import jsonpickle
     from calcUtils import sec_to_string, sec_to_duration, epoch_to_datetime, c_round
     pure_time = ['ss_time', 'time_offset', 'fastest', 'fastest_in_goal']
     duration = ['tot_flight_time', 'SS_interval', 'max_JTG', 'validity_min_time', 'score_back_time']
@@ -849,7 +848,7 @@ def get_task_country_scoring(filename):
     all_scores = []
     if not formula['country_scoring']:
         print(f'Team Scoring is not available')
-        return None
+        return {'error': 'Team Scoring is not available'}
     countries = get_country_list(countries=set(map(lambda x: x['nat'], data['results'])))
     size = formula['team_size'] if 'country_size' not in formula.keys() else formula['country_size']
     for nat in countries:
