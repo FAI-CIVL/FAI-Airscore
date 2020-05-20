@@ -291,13 +291,17 @@ class Task(object):
         if not self.stopped_time:
             return 0
         if self.comp_class == 'PG':
-            '''Need to distinguish wether we have multiple start or elapsed time'''
+            ''' Type of Task = Race and startgates = 1:
+                    stop_time - start_time < min_validity_time: validity = 0
+                Type of Task = Elapsed time or startgates > 1:
+                    stop_time - max(start_time(p)) < min_validity_time: validity = 0
+            '''
             if (self.task_type == 'elapsed time' or self.SS_interval) and self.max_ss_time:
                 return self.stop_time - self.max_ss_time
             else:
                 return self.stop_time - self.start_time
         elif self.comp_class == 'HG':
-            # TODO is it so simple in HG? Need to check
+            '''taskStopTime − timeOfFirstStart < minimumTime'''
             return self.stop_time - self.start_time
 
     @property
@@ -767,15 +771,9 @@ class Task(object):
                 '''
                 if not self.is_valid():
                     return f'task duration is not enough, task with id {self.id} is not valid, scoring is not needed'
-
-                # min_task_duration = 3600
-                # last_time = self.stopped_time - self.formula.score_back_time
                 verify_all_tracks(self, lib, airspace)
-
                 if self.task_type == 'elapsed time' or self.SS_interval:
                     '''need to check track and get last_start_time'''
-                    # self.stats.update(lib.task_totals(self.id))
-                    # duration = last_time - self.last_start_time
                     if not self.is_valid():
                         return f'duration is not enough for all pilots, task with id {self.id} is not valid, ' \
                                f'scoring is not needed.'
@@ -796,10 +794,15 @@ class Task(object):
                     typeOfCompetition ≠ Women's : minimumTime = 90min.
                     taskStopTime − timeOfFirstStart < minimumTime ∧ numberOfPilotsInGoal(taskStopTime) = 0 : taskValidity = 0
                 '''
-                # TODO It's not really clear if in elapsed time or multiple start, minimum duration like PG is applied
                 if not self.is_valid():
                     return f'task duration is not enough, task with id {self.id} is not valid, scoring is not needed'
+                ''' Only the time window available to the last pilot started is considered for scoring. 
+                This time window is defined as the amount of time t between the last pilot’s start and 
+                the task stop time. For all pilots, only this time t after their respective start is considered 
+                for scoring.
+                '''
                 verify_all_tracks(self, lib, airspace)
+                adjust_flight_results(self, lib)
         else:
             '''get all results for the task'''
             verify_all_tracks(self, lib, airspace)
