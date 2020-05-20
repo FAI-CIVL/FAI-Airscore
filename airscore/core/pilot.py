@@ -13,7 +13,7 @@ Stuart Mackintosh - Antonio Golfari
 
 """
 
-from flight_result import Flight_result
+from flightresult import FlightResult
 from myconn import Database
 from participant import Participant
 from track import Track
@@ -140,7 +140,7 @@ class Pilot(object):
         """reads result from database"""
         from participant import Participant
         from track import Track
-        from flight_result import Flight_result
+        from flightresult import FlightResult
         from db_tables import TblParticipant as R, FlightResultView as F
         from sqlalchemy import and_
         from notification import get_notifications
@@ -153,7 +153,7 @@ class Pilot(object):
             db.populate_obj(pilot.info, q.get(par_id))
             res = db.session.query(F).filter(and_(F.task_id == task_id, F.par_id == par_id)).first()
             if res:
-                pilot.result = Flight_result()
+                pilot.result = FlightResult()
                 pilot.track = Track(track_file=res.track_file, track_id=res.track_id)
                 db.populate_obj(pilot.result, res)
                 pilot.result.notifications = get_notifications(pilot, db.session)
@@ -166,7 +166,7 @@ class Pilot(object):
         pilot.task_id = task_id
         pilot.info = info if info and isinstance(info, Participant) else Participant()
         pilot.track = track if track and isinstance(track, Track) else Track()
-        pilot.result = result if result and isinstance(result, Flight_result) else Flight_result()
+        pilot.result = result if result and isinstance(result, FlightResult) else FlightResult()
         return pilot
 
     @staticmethod
@@ -175,7 +175,7 @@ class Pilot(object):
         pilot = Pilot.create(task_id=task_id)
         pilot.track = Track.from_dict(result)
         pilot.info = Participant.from_dict(result)
-        pilot.result = Flight_result.from_dict(result)
+        pilot.result = FlightResult.from_dict(result)
         return pilot
 
     def create_result_dict(self):
@@ -192,7 +192,7 @@ class Pilot(object):
     def from_fsdb(task, data):
         """ Creates Pilot from FSDB task result"""
         info = Participant(ID=int(data.get('id')))
-        result = Flight_result.from_fsdb(data, task.SS_distance, task.departure, task.arrival, task.time_offset)
+        result = FlightResult.from_fsdb(data, task.SS_distance, task.departure, task.arrival, task.time_offset)
         track = Track()
         if data.find('FsFlightData') is not None:
             track.track_file = data.find('FsFlightData').get('tracklog_filename')
@@ -201,7 +201,7 @@ class Pilot(object):
 
     def to_db(self, session=None):
         """ stores pilot result to database.
-            we already have Flight_result.to_db()
+            we already have FlightResult.to_db()
             but if we organize track reading using Pilot obj. this should be useful.
             We will also be able to delete a lot of redundant info about track filename, pilot ID, task_id and so on"""
         from db_tables import TblTaskResult as R

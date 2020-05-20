@@ -1,6 +1,12 @@
 from factory import PostGenerationMethodCall, Sequence, Factory
 from factory.faker import faker
 import task
+from formula import TaskFormula
+from participant import Participant
+from pilot import Pilot
+from track import Track
+from flightresult import FlightResult
+from notification import Notification
 from route import Turnpoint
 from datetime import date
 from random import random
@@ -38,6 +44,42 @@ class TurnpointFactory(Factory):
 
 
 class CompFactory(Factory):
-    """Task factory"""
+    """Comp factory"""
     class Meta:
         model = comp.Comp
+
+
+class TaskFormulaFactory(Factory):
+    """TaskFormula factory"""
+    class Meta:
+        model = TaskFormula
+
+
+class PilotFactory(Factory):
+    """Pilot factory"""
+    class Meta:
+        model = Pilot
+
+
+class TrackFactory(Factory):
+    """Track factory"""
+    class Meta:
+        model = Track
+
+
+class Flight_resultFactory(Factory):
+    """FlightResult factory"""
+    class Meta:
+        model = FlightResult
+
+
+class ParticipantFactory(Factory):
+    """Participant factory"""
+    class Meta:
+        model = Participant
+
+
+class NotificationFactory(Factory):
+    """Notification factory"""
+    class Meta:
+        model = Notification

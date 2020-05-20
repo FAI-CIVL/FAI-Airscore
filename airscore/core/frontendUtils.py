@@ -320,7 +320,7 @@ def allowed_tracklog_filesize(filesize, size=5):
 
 def process_igc(task_id, par_id, tracklog):
     from track import Track
-    from flight_result import Flight_result
+    from flightresult import FlightResult
     from airspace import AirspaceCheck
     from igc_lib import Flight
     from task import Task
@@ -355,7 +355,7 @@ def process_igc(task_id, par_id, tracklog):
             airspace = AirspaceCheck.from_task(task)
         else:
             airspace = None
-        pilot.result = Flight_result.check_flight(pilot.track.flight, task, airspace_obj=airspace)
+        pilot.result = FlightResult.check_flight(pilot.track.flight, task, airspace_obj=airspace)
         print(f"track verified with task {task.task_id}\n")
         """adding track to db"""
 
@@ -396,7 +396,7 @@ def save_igc_background(task_id, par_id, tracklog, user):
 
 def process_igc_background(task_id, par_id, filename, full_file_name, user):
     from track import Track
-    from flight_result import Flight_result
+    from flightresult import FlightResult
     from airspace import AirspaceCheck
     from igc_lib import Flight
     from task import Task
@@ -425,7 +425,7 @@ def process_igc_background(task_id, par_id, filename, full_file_name, user):
             airspace = AirspaceCheck.from_task(task)
         else:
             airspace = None
-        pilot.result = Flight_result.check_flight(pilot.track.flight, task, airspace_obj=airspace, print=print)
+        pilot.result = FlightResult.check_flight(pilot.track.flight, task, airspace_obj=airspace, print=print)
         print(f"track verified with task {task.task_id}\n")
         """adding track to db"""
         pilot.to_db()

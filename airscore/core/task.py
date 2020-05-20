@@ -32,7 +32,7 @@ from airspace import AirspaceCheck
 from calcUtils import json, get_date, get_datetime, decimal_to_seconds
 from compUtils import read_rankings
 from db_tables import TblTask
-from flight_result import verify_all_tracks, adjust_flight_results
+from flightresult import verify_all_tracks, adjust_flight_results
 from formula import TaskFormula
 from geo import Geo
 from igc_lib import defaultdict
@@ -405,7 +405,7 @@ class Task(object):
     def max_distance(self):
         if self.formula:
             if self.formula.min_dist and self.pilots_launched > 0:
-                # Flight_result.distance = max(distance_flown, total_distance)
+                # FlightResult.distance = max(distance_flown, total_distance)
                 return max(max(p.distance for p in self.valid_results), self.formula.min_dist)
         return 0
 

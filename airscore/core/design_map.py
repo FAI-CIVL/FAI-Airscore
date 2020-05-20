@@ -205,11 +205,11 @@ def extract_flight_details(flight):
 # dump flight object to geojson
 def dump_flight(track, task):
     # TODO check if file already exists otherwise create and save it
-    from flight_result import Flight_result
+    from flightresult import FlightResult
     from mapUtils import get_bbox
     lib = task.formula.get_lib()
 
-    task_result = Flight_result.check_flight(track.flight, task)  # check flight against task
+    task_result = FlightResult.check_flight(track.flight, task)  # check flight against task
     geojson_file = task_result.to_geojson_result(track, task)
     bbox = get_bbox(track.flight)
 

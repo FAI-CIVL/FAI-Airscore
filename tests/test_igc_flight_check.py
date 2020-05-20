@@ -1,6 +1,6 @@
 from track import Track
 from datetime import datetime, date
-from flight_result import Flight_result
+from flightresult import FlightResult
 from obj_factories import TurnpointFactory, TaskFactory
 
 
@@ -50,7 +50,7 @@ def test_track_read():
 
 def test_track_flight_check():
     test_track = Track.read_file('/app/tests/data/test_igc_2.igc', par_id=1)
-    test_result = Flight_result.check_flight(test_track.flight, test_task)
+    test_result = FlightResult.check_flight(test_track.flight, test_task)
     assert int(test_result.distance_flown) == 64360
     assert test_result.best_waypoint_achieved == 'Goal'
     assert len(test_result.waypoints_achieved) == test_result.waypoints_made

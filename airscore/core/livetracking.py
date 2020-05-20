@@ -413,7 +413,7 @@ def check_livetrack(pilot, task, airspace_obj=None):
         Returns:
                 a list of GNSSFixes of when turnpoints were achieved.
     """
-    from flight_result import Tp, pilot_can_start, pilot_can_restart, start_number_at_time
+    from flightresult import Tp, pilot_can_start, pilot_can_restart, start_number_at_time
     from route import in_semicircle, start_made_civl, tp_made_civl, distance, \
         tp_time_civl, get_shortest_path, distance_flown
     from airspace import AirspaceCheck
