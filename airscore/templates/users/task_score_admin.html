@@ -2,7 +2,7 @@
 {% block content %}
 
 
-    <link href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css" rel="stylesheet">
 
 <body>
         <div class="container">
@@ -195,7 +195,7 @@
 {% block js %}
 {% if user_is_admin %}
 {% include "js.html" %}
-    <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
     <script type="text/javascript" src="/static/js/pop_task_score_admin.js"></script>
     <script type="text/javascript">populate_task_scores({{taskid}},{{active_file|tojson}})</script>
     <script src="/static/js/mindmup-editabletable.js"></script>
