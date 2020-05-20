@@ -46,7 +46,7 @@ class TaskResult:
                  'start_close_time',
                  'SS_interval',
                  'start_iteration',
-                 'last_start_time',
+                 # 'last_start_time',
                  'task_type',
                  'distance',
                  'opt_dist',
@@ -108,10 +108,10 @@ class TaskResult:
                   'fastest',
                   'fastest_in_goal',
                   'min_dept_time',
-                  'max_ss_time'
+                  'max_ss_time',
                   'min_ess_time',
                   'max_ess_time',
-                  'last_landing_time'
+                  'last_landing_time',
                   'max_distance',
                   'tot_distance_flown',
                   'tot_dist_over_min',
