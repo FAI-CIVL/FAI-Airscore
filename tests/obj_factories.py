@@ -54,6 +54,8 @@ class TaskFormulaFactory(Factory):
     class Meta:
         model = TaskFormula
 
+    task_id = 1
+
 
 class PilotFactory(Factory):
     """Pilot factory"""
@@ -67,7 +69,7 @@ class TrackFactory(Factory):
         model = Track
 
 
-class Flight_resultFactory(Factory):
+class FlightResultFactory(Factory):
     """FlightResult factory"""
     class Meta:
         model = FlightResult
