@@ -173,11 +173,11 @@ def get_waypoints_from_file(filename):
     try:
         with open(filename, 'r', encoding='utf-8') as file:
             dump = file.read()
-            lines = dump.splitlines()
-    except UnicodeEncodeError:
+            # lines = dump.splitlines()
+    except UnicodeDecodeError:
         with open(filename, 'r', encoding='latin-1') as file:
             dump = file.read()
-            lines = dump.splitlines()
+            # lines = dump.splitlines()
     return get_waypoints_from_filedata(dump)
 
 
