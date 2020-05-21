@@ -792,7 +792,7 @@ def pilot_get_better_start(task, time, prev_time):
     return start_number_at_time(task, time) > start_number_at_time(task, prev_time)
 
 
-def verify_all_tracks(task, lib, airspace=None):
+def verify_all_tracks(task, lib, airspace=None, print=print):
     """ Gets in input:
             task:       Task object
             lib:        Formula library module"""
@@ -806,7 +806,7 @@ def verify_all_tracks(task, lib, airspace=None):
             filename = path.join(task.file_path, pilot.track.track_file)
             pilot.track.flight = Flight.create_from_file(filename)
             if pilot.track.flight and pilot.track.flight.valid:
-                pilot.result = FlightResult.check_flight(pilot.track.flight, task, airspace_obj=airspace)
+                pilot.result = FlightResult.check_flight(pilot.track.flight, task, airspace_obj=airspace, print=print)
                 print(
                     f'   Goal: {bool(pilot.result.goal_time)} | dist: {pilot.result.distance} part. LC: {pilot.result.fixed_LC}')
             elif pilot.track.flight:

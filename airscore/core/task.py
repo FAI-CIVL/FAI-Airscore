@@ -603,7 +603,7 @@ class Task(object):
                 q.task_path = self.task_path
                 db.session.commit()
 
-    def create_results(self, status=None, mode='default'):
+    def create_results(self, status=None, mode='default', print=print):
         """
             Create Scoring
             - if necessary, recalculates all tracks (stopped task, changed task settings)
@@ -637,7 +637,7 @@ class Task(object):
             '''get airspace info if needed'''
             airspace = None if not self.airspace_check else AirspaceCheck.from_task(self)
             print(f"Processing pilots tracks...")
-            self.check_all_tracks(lib, airspace)
+            self.check_all_tracks(lib, airspace, print=print)
         else:
             ''' get pilot list and results'''
             self.get_results(lib)
@@ -731,7 +731,7 @@ class Task(object):
             return False
         return True
 
-    def check_all_tracks(self, lib=None, airspace=None):
+    def check_all_tracks(self, lib=None, airspace=None, print=print):
         """ checks all igc files against Task and creates results """
 
         if not lib:
@@ -771,7 +771,7 @@ class Task(object):
                 '''
                 if not self.is_valid():
                     return f'task duration is not enough, task with id {self.id} is not valid, scoring is not needed'
-                verify_all_tracks(self, lib, airspace)
+                verify_all_tracks(self, lib, airspace, print=print)
                 if self.task_type == 'elapsed time' or self.SS_interval:
                     '''need to check track and get last_start_time'''
                     if not self.is_valid():
@@ -801,11 +801,11 @@ class Task(object):
                 the task stop time. For all pilots, only this time t after their respective start is considered 
                 for scoring.
                 '''
-                verify_all_tracks(self, lib, airspace)
+                verify_all_tracks(self, lib, airspace, print=print)
                 adjust_flight_results(self, lib)
         else:
             '''get all results for the task'''
-            verify_all_tracks(self, lib, airspace)
+            verify_all_tracks(self, lib, airspace, print=print)
         '''store results to database'''
         print(f"updating database with new results...")
         update_all_results(self.task_id, self.pilots)
