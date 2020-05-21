@@ -270,7 +270,6 @@ def create_airspace_map_check_files(openair_filename):
         airspace_list = []
         record_number = 0
         for record, error in reader:
-
             if error:
                 raise error  # or handle it otherwise
             if record['type'] == 'airspace':
