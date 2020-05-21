@@ -1781,3 +1781,20 @@ def get_task_json_by_filename(filename):
     except:
             return None
     return json.loads(data)
+
+
+def need_full_rescore(task_id: int):
+    """Checks if Task need to be rescored, re checking all tracks:
+        - If not all tracks have been submitted or edited later than last task update or formula update
+        - if task have been stopped (but anyway task is edited to be stopped so same as first case)"""
+    from db_tables import TblTask as T, TblForComp as F, TblTaskResult as R
+    from myconn import Database
+    with Database() as db:
+        task = db.session.query(T).filter_by(task_id=task_id).one_or_none()
+        if task:
+            formula_last_update = db.session.query(F.formula_last_update).filter_by(comp_id=task.comp_id).scalar()
+            tracks = db.session.query(R.track_last_update, R.result_type).filter_by(task_id=task_id).all()
+            min_track_update = min(t.track_last_update for t in tracks if t.result_type not in ['nyp', 'abs', 'dnf'])
+            if min_track_update < max(formula_last_update, task.task_last_update):
+                return True
+    return False
