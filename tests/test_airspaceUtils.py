@@ -136,3 +136,12 @@ def test_altitude_value_error():
     with pytest.raises(ValueError, match=r".*not one of barometric, baro/gps or gps"):
         airspaceUtils.altitude(GNSSFix(rawtime=1234, lat=45, lon=9,  press_alt=1000, gnss_alt=1200, validity=1, index=1,
                                        extras=None), "radar")
+
+
+def test_read_openair():
+    file = '/app/tests/data/test_openair.txt'
+    data = airspaceUtils.read_openair(file)
+    assert len(data) == 21
+    space = next(a for a in data if a['name'] == 'ITALY ALT. RESTRICTION')
+    assert space['class'] == 'R'
+    assert space['floor'] == '10000 ft'
