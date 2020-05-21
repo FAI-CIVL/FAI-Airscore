@@ -1,6 +1,6 @@
-from route import in_goal_sector, cPoint
+from route import in_goal_sector, cPoint, get_shortest_path, distance
 from obj_factories import TurnpointFactory, TaskFactory
-from datetime import date
+import math
 from igc_lib import GNSSFix
 from geo import Geo
 import factory_objects
@@ -39,6 +39,22 @@ short_but_tolerance = GNSSFix(rawtime=1, lat=41.348, lon=21.30425,
 
 goal_tp = TurnpointFactory(lat=41.348, lon=21.3042, radius=100)
 previous_tp = TurnpointFactory(lat=41.2448, lon=21.5773)
+
+
+def test_route_distance(task=test_task):
+    task.calculate_task_length()
+    assert math.isclose(task.distance, 94624.2, abs_tol=1)
+
+
+def test_opt_route(task=test_task):
+    task.calculate_optimised_task_length()
+    assert math.isclose(task.opt_dist, 81506.1, abs_tol=1)
+    assert math.isclose(task.opt_dist_to_SS, 4799.97, abs_tol=1)
+    assert math.isclose(task.opt_dist_to_ESS, 78508.1, abs_tol=1)
+    assert math.isclose(task.SS_distance, 73708.1, abs_tol=1)
+    partial_distances = [0, 4799.9737887617, 23075.284840766, 58796.04787950, 78508.057227873, 81506.139470692]
+    for idx, d in enumerate(task.partial_distance):
+        assert math.isclose(d, partial_distances[idx], abs_tol=1)
 
 
 def test_check_in_radius():
