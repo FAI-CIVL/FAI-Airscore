@@ -2,7 +2,7 @@
 $(document).ready(function() {
 
     $('#competitions').dataTable({
-        ajax: '/get_all_comps',
+        ajax: '/_get_all_comps',
         paging: true,
         order: [[ 5, 'desc' ]],
         lengthMenu: [ 15, 30, 60, 1000 ],

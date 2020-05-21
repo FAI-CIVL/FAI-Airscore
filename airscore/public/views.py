@@ -100,8 +100,8 @@ def about():
     return render_template("public/about.html", form=form)
 
 
-@blueprint.route('/get_all_comps', methods=['GET', 'POST'])
-def get_all_comps():
+@blueprint.route('/_get_all_comps', methods=['GET', 'POST'])
+def _get_all_comps():
     return frontendUtils.get_comps()
 
 
