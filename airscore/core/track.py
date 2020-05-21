@@ -344,3 +344,15 @@ def save_igc_config_yaml(yaml_filename, yaml_data):
     except IOError:
         return None
     return True
+
+
+def create_igc_filename(file_path, date, pilot_name):
+    """creates a name for the track
+    name_surname_date_time_index.igc
+    if we use flight date then we need an index for multiple tracks"""
+    if not path.isdir(file_path):
+        makedirs(file_path)
+    index = str(len(glob.glob(file_path + '/' + pilot_name + '*.igc')) + 1).zfill(2)
+    filename = '_'.join([pilot_name, str(date), index]) + '.igc'
+    fullname = path.join(file_path, filename)
+    return fullname

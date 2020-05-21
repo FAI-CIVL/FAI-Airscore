@@ -319,7 +319,7 @@ def allowed_tracklog_filesize(filesize, size=5):
 
 
 def process_igc(task_id, par_id, tracklog):
-    from track import Track
+    from track import Track, create_igc_filename
     from flightresult import FlightResult
     from airspace import AirspaceCheck
     from igc_lib import Flight
@@ -328,18 +328,15 @@ def process_igc(task_id, par_id, tracklog):
 
     pilot = Pilot.read(par_id, task_id)
     if pilot.name:
-        filename = pilot.name.replace(' ', '_').lower() + '.IGC'
-        filename = secure_filename(filename)
+        task = Task.read(task_id)
+        fullname = create_igc_filename(task.file_path, task.date, pilot.name)
+        tracklog.save(fullname)
     else:
         return None, None
 
-    task = Task.read(task_id)
-    track_path = task.file_path
-    full_file_name = path.join(track_path, filename)
-    tracklog.save(full_file_name)
     """import track"""
-    pilot.track = Track(track_file=filename, par_id=pilot.par_id)
-    pilot.track.flight = Flight.create_from_file(full_file_name)
+    pilot.track = Track(track_file=fullname, par_id=pilot.par_id)
+    pilot.track.flight = Flight.create_from_file(fullname)
     """check result"""
     if not pilot.track:
         error = f"for {pilot.name} - Track is not a valid track file"
@@ -377,21 +374,20 @@ def process_igc(task_id, par_id, tracklog):
 
 def save_igc_background(task_id, par_id, tracklog, user):
     from task import Task
+    from track import create_igc_filename
     from pilot import Pilot
 
     pilot = Pilot.read(par_id, task_id)
     if pilot.name:
-        filename = pilot.name.replace(' ', '_').lower() + '.IGC'
-        filename = secure_filename(filename)
-        sse.publish({'message': f'IGC file saved: {filename}', 'id': par_id}, channel=user, type='info', retry=30)
+        task = Task.read(task_id)
+        fullname = create_igc_filename(task.file_path, task.date, pilot.name)
+        tracklog.save(fullname)
+        sse.publish({'message': f'IGC file saved: {fullname.split("/")[-1]}', 'id': par_id}, channel=user, type='info',
+                    retry=30)
     else:
         return None, None
 
-    task = Task.read(task_id)
-    track_path = task.file_path
-    full_file_name = path.join(track_path, filename)
-    tracklog.save(full_file_name)
-    return filename, full_file_name
+    return fullname.split("/")[-1], fullname
 
 
 def process_igc_background(task_id, par_id, filename, full_file_name, user):
