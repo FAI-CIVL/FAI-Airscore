@@ -144,8 +144,8 @@ class Task(object):
         self.locked = False
         self.task_path = None
         self.comp_path = None
-        self.track_source = None    # ['xcontest', 'flymaster'] external available sources for tracks in Defines.py
-        self.igc_config_file = None     # config yaml for igc_lib.
+        self.track_source = None  # ['xcontest', 'flymaster'] external available sources for tracks in Defines.py
+        self.igc_config_file = None  # config yaml for igc_lib.
 
         '''Formula'''
         if self.id:
@@ -650,8 +650,8 @@ class Task(object):
         '''create result elements from task, formula and results objects'''
         elements = self.create_json_elements()
         ref_id, filename, _ = create_json_file(comp_id=self.comp_id, task_id=self.id,
-                                        code='_'.join([self.comp_code, self.task_code]), elements=elements,
-                                        status=status)
+                                               code='_'.join([self.comp_code, self.task_code]), elements=elements,
+                                               status=status)
         return ref_id, filename
 
     def create_json_elements(self):
@@ -1779,7 +1779,7 @@ def get_task_json_by_filename(filename):
         with open(RESULTDIR + filename, 'r') as myfile:
             data = myfile.read()
     except:
-            return None
+        return None
     return json.loads(data)
 
 
@@ -1788,7 +1788,6 @@ def need_full_rescore(task_id: int):
         - If not all tracks have been submitted or edited later than last task update or formula update
         - if task have been stopped (but anyway task is edited to be stopped so same as first case)"""
     from db_tables import TblTask as T, TblForComp as F, TblTaskResult as R
-    from myconn import Database
     with Database() as db:
         task = db.session.query(T).filter_by(task_id=task_id).one_or_none()
         if task:
@@ -1796,5 +1795,20 @@ def need_full_rescore(task_id: int):
             tracks = db.session.query(R.track_last_update, R.result_type).filter_by(task_id=task_id).all()
             min_track_update = min(t.track_last_update for t in tracks if t.result_type not in ['nyp', 'abs', 'dnf'])
             if min_track_update < max(formula_last_update, task.task_last_update):
+                return True
+    return False
+
+
+def need_new_scoring(task_id: int):
+    """Checks if Task need to be scored:
+            - If we had new tracks after last results file generation"""
+    from db_tables import TblTaskResult as R, TblResultFile as F
+    from calcUtils import epoch_to_datetime
+    with Database() as db:
+        last_file = db.session.query(F.created).filter_by(task_id=task_id).order_by(F.created.desc()).first()
+        if last_file:
+            tracks = db.session.query(R.track_last_update, R.result_type).filter_by(task_id=task_id).all()
+            max_track_update = max(t.track_last_update for t in tracks)
+            if max_track_update > epoch_to_datetime(last_file.created):
                 return True
     return False
