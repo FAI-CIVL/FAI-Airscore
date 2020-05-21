@@ -25,15 +25,11 @@ class TaskFactory(Factory):
     class Meta:
         model = task.Task
 
-    task_id = 1
-    comp_id = 1
-
 
 class TurnpointFactory(Factory):
     """Turnpoint factory"""
     class Meta:
         model = Turnpoint
-
 
     name = Sequence(lambda n: f"TP{n}")
     description = faker.Faker().sentence(nb_words=4)
@@ -47,6 +43,8 @@ class CompFactory(Factory):
     """Comp factory"""
     class Meta:
         model = comp.Comp
+
+    comp_id = 1
 
 
 class TaskFormulaFactory(Factory):

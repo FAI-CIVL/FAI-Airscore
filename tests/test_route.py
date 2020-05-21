@@ -3,6 +3,7 @@ from obj_factories import TurnpointFactory, TaskFactory
 from datetime import date
 from igc_lib import GNSSFix
 from geo import Geo
+import factory_objects
 
 turnpoints = [
     TurnpointFactory(lat=41.3435, lon=21.2568, radius=400, how='entry', shape='circle', type='launch'),
@@ -18,26 +19,8 @@ projected_line = [cPoint(x=-3906.90986083417, y=-6423.21345696099),
                   cPoint(x=-3947.1426667070477, y=-6514.8994708094115),
                   cPoint(x=-4045.390364525586, y=-6465.428373867)]
 
-test_task = TaskFactory()
+test_task = factory_objects.test_task()
 test_task.turnpoints = turnpoints
-test_task.date = date(2019, 6, 15)
-test_task.window_open_time = 28800
-test_task.window_close_time = 46800
-test_task.check_launch = 'off'
-test_task.start_time = 41400
-test_task.start_close_time = 46800
-test_task.SS_interval = 0
-test_task.task_deadline = 57600
-test_task.stopped_time = None
-test_task.task_type = 'race'
-test_task.distance = 101297.0
-test_task.opt_dist = 64360.4
-test_task.opt_dist_to_SS = 4121.53
-test_task.opt_dist_to_ESS = 61374.1
-test_task.SS_distance = 57252.6
-test_task.time_offset = 7200
-test_task.tolerance = 0.001
-test_task.QNH = 1013.25
 test_task.geo = Geo.from_coords(41.40665, 21.351416666666665)
 test_task.projected_line = projected_line
 

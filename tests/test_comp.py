@@ -10,7 +10,6 @@ import datetime
 from obj_factories import DBFactory, CompFactory, DBFactory
 
 
-
 class TestComp:
     """Competition tests."""
     comp_id = 1
