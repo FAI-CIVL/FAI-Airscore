@@ -394,7 +394,7 @@ def task_admin(taskid):
             task.formula.formula_arrival = taskform.formula_arrival.data
             task.formula.formula_departure = taskform.formula_departure.data
             task.formula.formula_time = taskform.formula_time.data
-            task.formula.tolerance = taskform.tolerance.data / 100
+            task.formula.tolerance = taskform.tolerance.data or 0 / 100
             task.formula.max_JTG = taskform.max_JTG.data
             task.formula.no_goal_penalty = taskform.no_goal_penalty.data
             task.formula.arr_alt_bonus = taskform.arr_alt_bonus.data
@@ -442,7 +442,7 @@ def task_admin(taskid):
         taskform.formula_arrival.data = task.formula.formula_arrival
         taskform.formula_departure.data = task.formula.formula_departure
         taskform.formula_time.data = task.formula.formula_time
-        taskform.tolerance.data = task.formula.tolerance * 100
+        taskform.tolerance.data = task.formula.tolerance or 0 * 100
         taskform.max_JTG.data = task.formula.max_JTG
         taskform.no_goal_penalty.data = task.formula.no_goal_penalty
         taskform.arr_alt_bonus.data = task.formula.arr_alt_bonus
