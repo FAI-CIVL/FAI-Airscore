@@ -189,6 +189,27 @@
 </div>
 </div>
 <!-edit-Modal ends here--->
+
+<!-- process log Modal starts here -->
+<div class="modal fade" id="ProcessModal" tabindex="-1" role="dialog" aria-labelledby="ProcessModalTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="ProcessModalTitle">Tracklog Processing</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" id="process_text">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Hide</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- process log Modal ends here -->
+
 {% endif %}
 
 {% endblock %}
@@ -333,7 +354,17 @@ function Score() {
 }
 
 function FullRescore() {
-
+        $.ajax({
+        type: "POST",
+        url: "{{ url_for('user._full_rescore_task', taskid=taskid)}}",
+        contentType: "application/json",
+        dataType: "json",
+        success: function(response) {
+            if (response.redirect) {
+                window.location.href = response.redirect;
+            }
+        }
+    });
 
 
 }
@@ -518,7 +549,47 @@ function save_adjustment(par_id){
 
 }
 
+{% if production %}
 
+  var es = null;
+function initES() {
+    if (es == null || es.readyState == 2) { // this is probably not necessary.
+        es = new EventSource('{{ url_for('sse.stream', channel=current_user.username)}}');
+        es.onerror = function(e) {
+            if (es.readyState == 2) {
+                setTimeout(initES, 5000);
+            }
+        };
+
+                es.addEventListener('info', function(event) {
+        var data = JSON.parse(event.data);
+        $('#process_text').append(data.message + "<br/>");
+
+    }, false);
+
+            es.addEventListener('open_modal', function(event) {
+            $('#log_button').show();
+            $('#ProcessModal').modal('show');
+
+    }, false);
+
+    es.addEventListener('reload', function(event) {
+        var filename = $('#file option:selected').val();
+        populate_task_scores({{taskid}}, filename);
+
+    }, false);
+
+
+
+<!--    es.addEventListener('error', function(event) {-->
+<!--        alert("Failed to connect to event stream. Is Redis running?");-->
+<!--    }, false);-->
+    }
+}
+initES();
+
+
+{% endif %}
 
  </script>
 

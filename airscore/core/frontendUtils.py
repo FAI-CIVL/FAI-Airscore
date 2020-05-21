@@ -889,3 +889,19 @@ def get_pretty_data(filename):
         return pretty_content
     except:
         return 'error'
+
+
+def full_rescore(taskid, background=False, user=None):
+    from task import Task
+    task = Task.read(taskid)
+    if background:
+        print = partial(print_to_sse, id=None, channel=user)
+        print('|open_modal')
+        print('***************START*******************')
+        refid, filename = task.create_results(mode='full', status='Full Rescore', print=print)
+        print('****************END********************')
+        print(f'{filename}|reload')
+        return None
+    else:
+        refid, filename = task.create_results(mode='full')
+        return refid

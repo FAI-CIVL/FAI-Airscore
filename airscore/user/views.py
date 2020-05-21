@@ -918,7 +918,7 @@ def task_score_admin(taskid):
 
     return render_template('users/task_score_admin.html', fileform=fileform, taskid=taskid,
                            active_file=active_file, user_is_admin=user_is_admin, task_name=task.task_name,
-                           task_num=task.task_num, editform=editform)
+                           task_num=task.task_num, editform=editform, production=frontendUtils.production())
 
 
 @blueprint.route('/_score_task/<taskid>', methods=['POST'])
@@ -940,6 +940,22 @@ def _score_task(taskid):
                 comp.create_results(session['compid'], data['status'])
             return dict(redirect='/users/task_score_admin/' + str(taskid))
     return render_template('500.html')
+
+
+@blueprint.route('/_full_rescore_task/<taskid>', methods=['POST'])
+@login_required
+def _full_rescore_task(taskid):
+    taskid=int(taskid)
+    if frontendUtils.production():
+        job = current_app.task_queue.enqueue(frontendUtils.full_rescore, taskid, background=True,
+                                             user=current_user.username)
+        resp = jsonify(success=True, background=True)
+        return resp
+
+    else:
+        frontendUtils.full_rescore(taskid)
+        resp = jsonify(success=True)
+        return resp
 
 
 @blueprint.route('/_unpublish_result/<taskid>', methods=['POST'])
