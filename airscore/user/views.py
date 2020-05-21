@@ -13,7 +13,7 @@ from comp import Comp
 from formula import list_formulas, Formula
 from task import Task, write_map_json, get_task_json_by_filename
 from frontendUtils import save_turnpoint
-from flightresult import update_status, delete_result
+from flightresult import update_status, delete_track
 from os import path, remove, makedirs
 from task import get_task_json_by_filename
 from calcUtils import sec_to_time
@@ -695,11 +695,12 @@ def _set_result(taskid):
 @login_required
 def _delete_track(trackid):
     data = request.json
-    if delete_result(trackid) == 1:
+    if delete_track(trackid):
         data['Result'] = "Not Yet Processed"
         resp = jsonify(data)
         return resp
     else:
+        flash(f"There was an error trying to delete track with ID {trackid}", category='danger')
         return render_template('500.html')
 
 

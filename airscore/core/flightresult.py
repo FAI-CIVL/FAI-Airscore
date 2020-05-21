@@ -38,6 +38,8 @@ from db_tables import TblTaskResult
 from formulas.libs.leadcoeff import LeadCoeff
 from myconn import Database
 from route import in_goal_sector, start_made_civl, tp_made_civl, tp_time_civl, get_shortest_path, distance_flown
+
+
 # from notification import Notification
 
 
@@ -851,21 +853,23 @@ def update_status(par_id: int, task_id: int, status=''):
             return error
 
 
-def delete_result(trackid: int, delete_file=False):
+def delete_track(trackid: int, delete_file=False):
     from trackUtils import get_task_fullpath
-    from os import remove
-    from db_tables import TblTaskResult as R
+    from pathlib import Path
+    from db_tables import TblTaskResult
     row_deleted = None
     with Database() as db:
         try:
-            track = db.session.query(R.track_file, R.task_id).filter(R.track_id == trackid).one()
-            track.delete(synchronize_session=False)
-            if track.track_file is not None and delete_file:
-                full_path = get_task_fullpath(track.task_id)
-                track_file = path.join(full_path, track.track_file)
-                if path.isfile(track_file):
-                    remove(track_file)
+            track = db.session.query(TblTaskResult).filter_by(track_id=trackid).one_or_none()
+            if track:
+                if track.track_file is not None and delete_file:
+                    Path(get_task_fullpath(track.task_id), track.track_file).unlink(missing_ok=True)
+                db.session.delete(track)
+                row_deleted = True
+                db.session.commit()
         except SQLAlchemyError:
             print("there was a problem deleting the track")
+            db.session.rollback()
+            db.session.close()
             return None
     return row_deleted
