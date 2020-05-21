@@ -152,10 +152,14 @@ def epoch_to_datetime(sec, rawtime=0, offset=0):  # offset is not used??
         Transform epoch in datetime.datetime
     """
     try:
-        return datetime.fromtimestamp(sec + rawtime + offset).strftime('%Y-%m-%d %H:%M:%S')
+        return datetime.fromtimestamp(sec + rawtime + offset)
     except TypeError:
         print("an error occurred")
         return sec
+
+
+def epoch_to_string(sec, offset=0):
+    return epoch_to_datetime(sec, offset).strftime('%Y-%m-%d %H:%M:%S')
 
 
 def sec_to_time(sec):

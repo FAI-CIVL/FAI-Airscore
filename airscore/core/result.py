@@ -549,7 +549,7 @@ def open_json_file(filename: str):
 
 
 def pretty_format_results(content, timeoffset=0, td=0, cd=0):
-    from calcUtils import sec_to_string, sec_to_duration, epoch_to_datetime, c_round
+    from calcUtils import sec_to_string, sec_to_duration, epoch_to_string, c_round
     pure_time = ['ss_time', 'time_offset', 'fastest', 'fastest_in_goal']
     duration = ['tot_flight_time', 'SS_interval', 'max_JTG', 'validity_min_time', 'score_back_time']
     day_time = ('_time', '_deadline')
@@ -590,7 +590,7 @@ def pretty_format_results(content, timeoffset=0, td=0, cd=0):
                         formatted[key] = sec_to_duration(int(value))
                     elif 'timestamp' in key:
                         '''formatting timestamp'''
-                        formatted[key] = epoch_to_datetime(int(value), timeoffset)
+                        formatted[key] = epoch_to_string(int(value), timeoffset)
                     # Formatting Waypoints Table
                     elif 'cumulative_dist' in content.keys():
                         if key == 'radius':
