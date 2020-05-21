@@ -695,7 +695,7 @@ def _set_result(taskid):
 @login_required
 def _delete_track(trackid):
     data = request.json
-    if delete_track(trackid):
+    if delete_track(trackid, delete_file=True):
         data['Result'] = "Not Yet Processed"
         resp = jsonify(data)
         return resp
