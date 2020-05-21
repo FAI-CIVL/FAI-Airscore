@@ -23,59 +23,18 @@ from trackUtils import read_tracklog_map_result_file
 from design_map import make_map
 from flask_wtf import FlaskForm
 from wtforms import SelectField
-from calcUtils import sec_to_time
 import mapUtils
 import Defines
 from os import path
 import frontendUtils
-# import redis
-# from flask_sse import sse
 
-
-# cache = redis.Redis(host='redis', port=6379)
 blueprint = Blueprint("public", __name__, static_folder="../static")
 
-
-# def get_hit_count():
-#     retries = 5
-#     while True:
-#         try:
-#             return cache.incr('hits')
-#         except redis.exceptions.ConnectionError as exc:
-#             if retries == 0:
-#                 raise exc
-#             retries -= 1
-#             time.sleep(0.5)
-#
-#
-# @blueprint.route('/red')
-# def hello():
-#     count = get_hit_count()
-#     return 'Hello World! I have been seen {} times.\n'.format(count)
 
 @login_manager.user_loader
 def load_user(user_id):
     """Load user by ID."""
     return User.get_by_id(int(user_id))
-
-
-@blueprint.route("/old", methods=["GET", "POST"])
-def home_old():
-    """Home page."""
-    form = LoginForm(request.form)
-    current_app.logger.info("Hello from the home page!")
-    # Handle logging in
-    if request.method == "POST":
-        if form.validate_on_submit():
-            login_user(form.user)
-            flash("You are logged in.", "success")
-
-            redirect_url = request.args.get("next") or url_for("user.members")
-            return redirect(redirect_url)
-        else:
-            flash_errors(form)
-    flash("333")
-    return render_template("public/home.html", form=form)
 
 
 @blueprint.route("/", methods=["GET", "POST"])
