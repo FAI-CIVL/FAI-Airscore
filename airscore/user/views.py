@@ -931,7 +931,7 @@ def _score_task(taskid):
         data = request.json
         taskid = int(taskid)
         task = Task.read(taskid)
-        ref_id = task.create_results(data['status'])
+        ref_id, _ = task.create_results(data['status'])
         if ref_id:
             if data['autopublish']:
                 unpublish_result(taskid)

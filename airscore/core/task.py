@@ -649,10 +649,10 @@ class Task(object):
         lib.calculate_results(self)
         '''create result elements from task, formula and results objects'''
         elements = self.create_json_elements()
-        ref_id, _, _ = create_json_file(comp_id=self.comp_id, task_id=self.id,
+        ref_id, filename, _ = create_json_file(comp_id=self.comp_id, task_id=self.id,
                                         code='_'.join([self.comp_code, self.task_code]), elements=elements,
                                         status=status)
-        return ref_id
+        return ref_id, filename
 
     def create_json_elements(self):
         """ returns Dict with elements to generate json file"""
