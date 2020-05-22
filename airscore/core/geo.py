@@ -74,9 +74,10 @@ def get_proj(clat, clon, proj=PROJ):
 
 
 def create_arc_polygon(center, start, end, clockwise=True, tolerance=5):
-    """create an arc between two points, given a center"""
+    """ create an arc between two points, given a center
+        The Arc is represented as a polyline.
+        Points number is calculated as the number that makes maximum distance between arc and segment, tolerance / 2"""
     from statistics import mean
-    from math import ceil
     # points = 50
     center = Point(center[0], center[1])
     start = Point(start[0], start[1])
@@ -93,8 +94,8 @@ def create_arc_polygon(center, start, end, clockwise=True, tolerance=5):
     elif angle > 0 and not clockwise:
         angle -= 360
     # da = angle/points if clockwise else angle/points * -1
-    length = calculate_arc_length(radius, abs(angle))
-    points = ceil(length / tolerance)   # distance between points is less than tolerance
+    # length = calculate_arc_length(radius, abs(angle))
+    points = calculate_min_points(angle, radius, tolerance)   # max distance arc / segment is less than half tolerance
     da = angle / points
     dr = (dist1 - dist2)/points
     print(f"center: {center.latitude, center.longitude} | start: {start.latitude, start.longitude} | end: {end.latitude, end.longitude}")
@@ -121,4 +122,10 @@ def get_arc_angle(b1, b2):
 
 def calculate_arc_length(radius, angle):
     from math import pi
-    return (pi*radius*2) * (angle/360)
+    return (pi * radius * 2) * (angle / 360.0)
+
+
+def calculate_min_points(angle, radius, tolerance=5):
+    """ Calculates minimum number of points along the rc to have maximum distance between arc and segment
+        less that tolerance"""
+    return math.ceil(math.radians(angle) / (2 * math.acos(1 - tolerance / radius)) + 1) * 2
