@@ -348,11 +348,10 @@ def get_livetracks(task, timestamp, interval):
 def associate_livetracks(task, response, timestamp):
     from igc_lib import GNSSFix
     import time
-    from calcUtils import altitude_compensation
     '''initialise'''
     midnight = int(time.mktime(task.date.timetuple()))
     alt_source = 'GPS' if task.formula.scoring_altitude is None else task.formula.scoring_altitude
-    alt_compensation = 0 if alt_source == 'GPS' or task.QNH == 1013.25 else altitude_compensation(task.QNH)
+    alt_compensation = 0 if alt_source == 'GPS' or task.QNH == 1013.25 else task.alt_compensation
     for live_id, fixes in response.items():
         pil = next(p for p in task.pilots if p.info.live_id == live_id)
         if not pil:

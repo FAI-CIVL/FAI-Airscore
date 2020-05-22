@@ -248,6 +248,14 @@ class Task(object):
         return self.formula.arr_alt_bonus if self.formula else None
 
     @property
+    def alt_compensation(self):
+        from calcUtils import altitude_compensation
+        if self.formula.scoring_altitude == 'QNH' and not self.QNH == 1013.25:
+            return altitude_compensation(self.QNH)
+        else:
+            return 0
+
+    @property
     def stop_time(self):
         # seconds from midnight, task stopTime
         if not (self.stopped_time and self.formula.score_back_time):

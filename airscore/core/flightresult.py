@@ -369,11 +369,10 @@ class FlightResult(object):
                     a list of GNSSFixes of when turnpoints were achieved.
         """
         from notification import Notification
-        from calcUtils import altitude_compensation
 
         ''' Altitude Source: '''
         alt_source = 'GPS' if task.formula.scoring_altitude is None else task.formula.scoring_altitude
-        alt_compensation = 0 if alt_source == 'GPS' or task.QNH == 1013.25 else altitude_compensation(task.QNH)
+        alt_compensation = 0 if alt_source == 'GPS' or task.QNH == 1013.25 else task.alt_compensation
 
         '''initialize'''
         result = FlightResult()
