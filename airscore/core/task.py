@@ -250,10 +250,7 @@ class Task(object):
     @property
     def alt_compensation(self):
         from calcUtils import altitude_compensation
-        if self.formula.scoring_altitude == 'QNH' and not self.QNH == 1013.25:
-            return altitude_compensation(self.QNH)
-        else:
-            return 0
+        return 0 if self.formula.scoring_altitude == 'GPS' else altitude_compensation(self.QNH)
 
     @property
     def stop_time(self):

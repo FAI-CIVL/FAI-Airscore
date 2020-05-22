@@ -68,7 +68,7 @@ def decimal_to_seconds(d_time):
 def time_to_seconds(t):
     # h, m, s = [int(i) for i in t.strftime("%H:%M:%S").split(':')]
     # return 3600 * int(h) + 60 * int(m) + int(s)
-    return t.hour*3600 + t.minute*60 + t.second
+    return t.hour * 3600 + t.minute * 60 + t.second
 
 
 def datetime_to_seconds(t):
@@ -207,6 +207,30 @@ def altitude_compensation(QNH: float):
     """
     import math
     if math.isclose(QNH, 1013.25, abs_tol=100) and not math.isclose(QNH, 1013.25, abs_tol=0.01):
-        return (QNH - 1013.25) / 12 * 100 - 2
+        return math.floor((QNH - 1013.25) / 12 * 100 - 2)
     else:
         return 0
+
+
+''' This are functions used by FSComp to calculate exact pressure altitude.
+    I think it is an overkill. Also, I don't think Flight Levels are calculated on ISA values.'''
+def CalculateQnhAltitude(pressure: float, qnh: float):
+    import math
+    if not pressure or not qnh or qnh < 900.0 or qnh > 1100.0:
+        return 0
+    else:
+        return 288.15 / 0.0065 * (1 - math.exp(math.log(pressure / qnh) * 0.190266669078492))
+
+
+def CalculatePressure(baroAltitude: float):
+    import math
+    return 1013.25 * math.exp(5.25578129287301 * math.log(1 - 0.0065 * baroAltitude / 288.15))
+
+
+''' ISA pressure calculation'''
+def isa(alt: float):
+    """ return a 2-uplet (pressure, temperature) depending on provided altitude.
+        Units are SI (m, PA, Kelvin)
+        considering only altitudes under 11000 meters (troposphere)
+    """
+    return 1013.25 * (1 - 2.25569E-5 * alt) ** 5.25616

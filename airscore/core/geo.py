@@ -127,5 +127,5 @@ def calculate_arc_length(radius, angle):
 
 def calculate_min_points(angle, radius, tolerance=5):
     """ Calculates minimum number of points along the rc to have maximum distance between arc and segment
-        less that tolerance"""
+        less than half tolerance"""
     return math.ceil(math.radians(angle) / (2 * math.acos(1 - tolerance / radius)) + 1) * 2

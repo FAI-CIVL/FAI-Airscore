@@ -192,7 +192,7 @@ class Comp(object):
             return 0
 
     @staticmethod
-    def read(comp_id, session=None):
+    def read(comp_id: int, session=None):
         """Reads competition from database
         takes com_id as argument"""
         from db_tables import CompObjectView as C
@@ -206,13 +206,13 @@ class Comp(object):
             # get comp details.
             try:
                 q = db.session.query(C).get(comp_id)
-                # comp = Comp(comp_id=comp_id)
                 db.populate_obj(comp, q)
                 comp.formula = Formula(comp_id=comp_id)
                 db.populate_obj(comp.formula, q)
             except SQLAlchemyError:
                 print("Comp Read Error")
                 db.session.rollback()
+                db.session.close()
                 return None
         return comp
 
