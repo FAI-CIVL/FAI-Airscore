@@ -199,3 +199,14 @@ def get_isotime(d: datetime.date, t: int, offset=None):
     from datetime import datetime as dd
     tz = dt.timedelta(seconds=offset)
     return dd.combine(d, sec_to_time(t), tzinfo=dt.timezone(offset=tz)).isoformat()
+
+
+def altitude_compensation(QNH: float):
+    """ calculates pressure altitude compensation given QNH value:
+        FL0MSL[m]=[(QNH[in hPa] – 1013)/12] x 100 – 2
+    """
+    import math
+    if math.isclose(QNH, 1013.25, abs_tol=100) and not math.isclose(QNH, 1013.25, abs_tol=0.01):
+        return (QNH - 1013.25) / 12 * 100 - 2
+    else:
+        return 0

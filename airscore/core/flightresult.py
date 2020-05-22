@@ -369,9 +369,11 @@ class FlightResult(object):
                     a list of GNSSFixes of when turnpoints were achieved.
         """
         from notification import Notification
+        from calcUtils import altitude_compensation
 
         ''' Altitude Source: '''
         alt_source = 'GPS' if task.formula.scoring_altitude is None else task.formula.scoring_altitude
+        alt_compensation = 0 if alt_source == 'GPS' or task.QNH == 1013.25 else altitude_compensation(task.QNH)
 
         '''initialize'''
         result = FlightResult()
@@ -395,7 +397,8 @@ class FlightResult(object):
         result.first_time = flight.fixes[
             0].rawtime if not hasattr(flight, 'takeoff_fix') else flight.takeoff_fix.rawtime  # time of flight origin
         result.landing_time = flight.landing_fix.rawtime
-        result.landing_altitude = flight.landing_fix.gnss_alt if alt_source == 'GPS' else flight.landing_fix.press_alt
+        result.landing_altitude = (flight.landing_fix.gnss_alt if alt_source == 'GPS'
+                                   else flight.landing_fix.press_alt + alt_compensation)
 
         '''Stopped task managing'''
         if task.stopped_time:
@@ -431,7 +434,7 @@ class FlightResult(object):
             # start_time = tt.time()
             my_fix = flight.fixes[i]
             next_fix = flight.fixes[i + 1]
-            alt = next_fix.gnss_alt if alt_source == 'GPS' else next_fix.press_alt
+            alt = next_fix.gnss_alt if alt_source == 'GPS' else next_fix.press_alt + alt_compensation
 
             if alt > max_altitude:
                 max_altitude = alt
@@ -594,7 +597,7 @@ class FlightResult(object):
             '''Airspace Check'''
             if task.airspace_check and airspace_obj:
                 map_fix = [next_fix.rawtime, next_fix.lat, next_fix.lon, alt]
-                plot, penalty = airspace_obj.check_fix(next_fix, alt_source)
+                plot, penalty = airspace_obj.check_fix(next_fix, alt)
                 if plot:
                     map_fix.extend(plot)
                     '''Airspace Infringement: check if we already have a worse one'''

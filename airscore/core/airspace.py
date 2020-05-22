@@ -172,13 +172,11 @@ class AirspaceCheck(object):
         tfm = partial(pyproj.transform, from_proj, to_proj)
         return ops.transform(tfm, polygon)
 
-    def check_fix(self, fix, altitude_mode='GPS'):
+    def check_fix(self, fix, alt=None):
         """check a flight object for airspace violations
         arguments:
         fix - Flight fix object
-        altimeter - flight altitude to use in checking 'barometric' - barometric altitude,
-                                                      'gps' - GPS altitude
-                                                      'baro/gps' - barometric if present otherwise gps  (default)
+        alt - flight altitude used in flight checking. If None, fix.gnss_alt is used (GPS altitude)
         :returns
             plot - list, details of airspace infringed
             penalty - the penalty for this infringement
@@ -186,7 +184,7 @@ class AirspaceCheck(object):
         from airspaceUtils import in_bbox
 
         notification_band = self.params.notification_distance
-        alt = fix.gnss_alt if altitude_mode == 'GPS' else fix.press_alt
+        alt = fix.gnss_alt if not alt else alt
         infringement = 0
         penalty = 0
         plot = None

@@ -348,9 +348,11 @@ def get_livetracks(task, timestamp, interval):
 def associate_livetracks(task, response, timestamp):
     from igc_lib import GNSSFix
     import time
+    from calcUtils import altitude_compensation
     '''initialise'''
     midnight = int(time.mktime(task.date.timetuple()))
     alt_source = 'GPS' if task.formula.scoring_altitude is None else task.formula.scoring_altitude
+    alt_compensation = 0 if alt_source == 'GPS' or task.QNH == 1013.25 else altitude_compensation(task.QNH)
     for live_id, fixes in response.items():
         pil = next(p for p in task.pilots if p.info.live_id == live_id)
         if not pil:
@@ -379,7 +381,7 @@ def associate_livetracks(task, response, timestamp):
             s = int(el['v'])
             baro_alt = int(el['c'])
             gnss_alt = int(el['h'])
-            alt = gnss_alt if alt_source == 'GPS' else baro_alt
+            alt = gnss_alt if alt_source == 'GPS' else baro_alt + alt_compensation
             ground = int(el['s'])
             height = abs(alt - ground)
             if pil.result.last_time and t < pil.result.last_time:
@@ -419,9 +421,6 @@ def check_livetrack(pilot, task, airspace_obj=None):
     from airspace import AirspaceCheck
     from formulas.libs.leadcoeff import LeadCoeff
     from notification import Notification
-
-    ''' Altitude Source: '''
-    alt_source = 'GPS' if task.formula.scoring_altitude is None else task.formula.scoring_altitude
 
     '''initialize'''
     tolerance = task.formula.tolerance or 0
@@ -625,7 +624,7 @@ def check_livetrack(pilot, task, airspace_obj=None):
         '''Airspace Check'''
         if task.airspace_check and airspace_obj:
             map_fix = [next_fix.rawtime, next_fix.lat, next_fix.lon, alt]
-            plot, penalty = airspace_obj.check_fix(next_fix, alt_source)
+            plot, penalty = airspace_obj.check_fix(next_fix, alt)
             if plot:
                 map_fix.extend(plot)
                 '''Airspace Infringement: check if we already have a worse one'''
