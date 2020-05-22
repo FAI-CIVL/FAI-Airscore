@@ -152,9 +152,9 @@ class CompForm(FlaskForm):
     formula_departure = SelectField('Departure points', choices=[('leadout', 'Leadout'), ('departure', 'Departure'), ('off', 'Off')])
     formula_time = SelectField('Time points', choices=[('on', 'On'), ('off', 'Off')])
 
-    scoring_altitude = SelectField('Instrument Altitude', choices=[('GPS', 'GPS'), ('QNH', 'QNH')])
+    scoring_altitude = SelectField('Scoring Altitude', choices=[('GPS', 'GPS'), ('QNH', 'QNH')])
     lead_factor = DecimalField('Leadfactor', default=1)
-    no_goal_penalty = DecimalField('No goal penalty', validators=[InputRequired()], default=0)
+    no_goal_penalty = IntegerField('No goal penalty (%)', validators=[NumberRange(min=0, max=100)], default=100)
 
     tolerance = DecimalField('Turnpoint radius tolerance %', places=3, default=0)
     min_tolerance = IntegerField('Minimum turnpoint tolerance (m)')

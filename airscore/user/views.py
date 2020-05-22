@@ -219,13 +219,13 @@ def comp_settings_admin(compid):
             comp.to_db()
             formula = Formula.read(compid)
             formula.overall_validity = compform.overall_validity.data
-            formula.validity_param = compform.validity_param.data / 100
+            formula.validity_param = round((100 - compform.validity_param.data) / 100, 2)
             formula.nominal_dist = compform.nom_dist.data * 1000
             formula.nominal_goal = compform.nom_goal.data / 100
             formula.min_dist = compform.min_dist.data * 1000
             formula.nominal_launch = compform.nom_launch.data / 100
             formula.nominal_time = compform.nom_time.data * 60
-            formula.no_goal_penalty = compform.no_goal_penalty.data
+            formula.no_goal_penalty = round(compform.no_goal_penalty.data / 100, 2)
             formula.tolerance = compform.tolerance.data / 100
             formula.max_JTG = compform.max_JTG.data
             formula.formula_distance = compform.formula_distance.data
@@ -281,7 +281,7 @@ def comp_settings_admin(compid):
         formula.min_dist = 0 if not formula.min_dist else formula.min_dist
         formula.nominal_launch = 0 if not formula.nominal_launch else formula.nominal_launch
         formula.nominal_time = 0 if not formula.nominal_time else formula.nominal_time
-        compform.validity_param.data = int(formula.validity_param * 100)
+        compform.validity_param.data = 100 - int(formula.validity_param * 100)
         compform.nom_dist.data = int(formula.nominal_dist / 1000)
         compform.nom_goal.data = int(formula.nominal_goal * 100)
         compform.min_dist.data = int(formula.min_dist / 1000)
@@ -299,7 +299,7 @@ def comp_settings_admin(compid):
         compform.formula_departure.data = formula.formula_departure
         compform.lead_factor.data = formula.lead_factor
         compform.formula_time.data = formula.formula_time
-        compform.no_goal_penalty.data = formula.no_goal_penalty
+        compform.no_goal_penalty.data = int(formula.no_goal_penalty * 100)
         compform.glide_bonus.data = formula.glide_bonus
         compform.tolerance.data = formula.tolerance * 100
         compform.min_tolerance.data = formula.min_tolerance
