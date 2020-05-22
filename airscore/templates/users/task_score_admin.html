@@ -132,7 +132,7 @@
             </div>
             </div>
                <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-secondary" id="cancel_score_btn"  data-dismiss="modal">Cancel</button>
         <button type="button" id="score_btn" onclick="Score()" class="btn btn-primary">Score</button>
         <p id="score_spinner"></p>
       </div>
@@ -338,6 +338,7 @@ function Score() {
     mydata.autopublish = $("#autopublish").is(':checked');
     mydata.status = $('#status_comment').val();
     $('#score_btn').hide();
+    $('#cancel_score_btn').hide();
     $('#score_spinner').html('<div class="spinner-border" role="status"><span class="sr-only">Scoring...</span></div>');
 
     $.ajax({
