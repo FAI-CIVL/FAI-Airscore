@@ -91,6 +91,9 @@
     padding: 0px;
     font-size: 11px;
 }
+table.comment_table {
+    font-size: 0.8em;
+}
 #expandtab {
     margin: 0px;
     font-size: 10em;
