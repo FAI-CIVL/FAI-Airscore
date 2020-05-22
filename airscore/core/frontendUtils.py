@@ -901,3 +901,29 @@ def full_rescore(taskid, background=False, user=None):
     else:
         refid, filename = task.create_results(mode='full')
         return refid
+
+
+def get_task_igc_zip(task_id):
+    from trackUtils import get_task_fullpath
+    import shutil
+    import glob
+    from Defines import TEMPFILES
+
+    task_path = get_task_fullpath(task_id)
+    task_folder = task_path.split('/')[-1]
+    comp_folder = '/'.join(task_path.split('/')[:-1])
+    zip_filename = task_folder + '.zip'
+    zip_full_filename = path.join(comp_folder, zip_filename)
+    # check if there is a zip already there and is the youngest file for the task,
+    # if not delete (if there) and (re)create
+    if path.isfile(zip_full_filename):
+        zip_time = path.getctime(zip_full_filename)
+        list_of_files = glob.glob(task_path + '/*')
+        latest_file = max(list_of_files, key=path.getctime)
+        latest_file_modified = path.getctime(latest_file)
+        if latest_file_modified > zip_time:
+            Path(zip_full_filename).unlink(missing_ok=True)
+        else:
+            return zip_full_filename
+    shutil.make_archive(comp_folder + '/' + task_folder, 'zip', task_path)
+    return zip_full_filename
