@@ -361,7 +361,17 @@ def task_admin(taskid):
     taskform = TaskForm()
     turnpointform = NewTurnpointForm()
     modifyturnpointform = ModifyTurnpointForm()
-    task = Task.read(int(taskid))
+    taskid = int(taskid)
+
+    task_in_comp = False
+    for task in session['tasks']:
+        if task['task_id'] == taskid:
+            task_in_comp = True
+
+    if not task_in_comp:
+        return render_template('out_of_comp.html')
+
+    task = Task.read(taskid)
     waypoints, _ = frontendUtils.get_waypoint_choices(task.reg_id)
     turnpointform.name.choices = waypoints
     modifyturnpointform.mod_name.choices = waypoints
@@ -517,6 +527,7 @@ def _add_task(compid):
     task.igc_config_file = comp.igc_config_file
     task.to_db()
     tasks = frontendUtils.get_task_list(comp)
+    session['tasks'] = tasks['tasks']
     return tasks
 
 
@@ -663,14 +674,23 @@ def _get_tracks_processed(taskid):
 @login_required
 def track_admin(taskid):
     taskid = int(taskid)
-    task = Task.read(taskid)
+    task_in_comp = False
+    for task in session['tasks']:
+        if task['task_id'] == taskid:
+            task_num = task['task_num']
+            task_name = task['task_name']
+            task_in_comp = True
+
+    if not task_in_comp:
+        return render_template('out_of_comp.html')
+
     _, _, all_admin_ids = frontendUtils.get_comp_admins(taskid, task_id=True)
     if current_user.id in all_admin_ids:
         user_is_admin = True
     else:
         user_is_admin = None
     return render_template('users/track_admin.html', taskid=taskid, user_is_admin=user_is_admin,
-                           production=frontendUtils.production(), task_name=task.task_name, task_num=task.task_num)
+                           production=frontendUtils.production(), task_name=task_name, task_num=task_num)
 
 
 @blueprint.route('/_set_result/<taskid>', methods=['POST'])
@@ -903,7 +923,16 @@ def _get_task_score_from_file(taskid, filename):
 @login_required
 def task_score_admin(taskid):
     taskid = int(taskid)
-    task = Task.read(taskid)
+    task_in_comp = False
+    for task in session['tasks']:
+        if task['task_id'] == taskid:
+            task_num = task['task_num']
+            task_name = task['task_name']
+            task_in_comp = True
+
+    if not task_in_comp:
+        return render_template('out_of_comp.html')
+
     fileform = TaskResultAdminForm()
     editform = EditScoreForm()
     active_file = None
@@ -918,8 +947,8 @@ def task_score_admin(taskid):
         user_is_admin = None
 
     return render_template('users/task_score_admin.html', fileform=fileform, taskid=taskid,
-                           active_file=active_file, user_is_admin=user_is_admin, task_name=task.task_name,
-                           task_num=task.task_num, editform=editform, production=frontendUtils.production())
+                           active_file=active_file, user_is_admin=user_is_admin, task_name=task_name,
+                           task_num=task_num, editform=editform, production=frontendUtils.production())
 
 
 @blueprint.route('/_score_task/<taskid>', methods=['POST'])
