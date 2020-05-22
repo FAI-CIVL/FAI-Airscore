@@ -11,12 +11,12 @@
     <time>2019-07-12T10:43:43Z</time>
     <bounds minlat="45.701667" minlon="11.657728" maxlat="47.070000" maxlon="14.086111"/>
   </metadata>
-  <wpt lat="46.230833" lon="12.806944">
-    <ele>980.0</ele>
-    <time>2019-07-12T10:42:58</time>
-    <name>D01</name>
-    <cmt>T OFF MEDUNO</cmt>
-    <desc>T OFF MEDUNO</desc>
+  <wpt lat="46.258333" lon="12.673611">
+    <ele>950.0</ele>
+    <time>2020-05-22T00:16:34</time>
+    <name>T01</name>
+    <cmt>TEST WPT</cmt>
+    <desc>TEST WPT</desc>
     <sym>Dot</sym>
   </wpt>
   <wpt lat="46.274167" lon="13.176667">

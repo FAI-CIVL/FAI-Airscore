@@ -73,9 +73,12 @@ def get_proj(clat, clon, proj=PROJ):
         return tmerc
 
 
-def create_arc_polygon(center, start, end, clockwise=True):
-    """create an arc between two points, given a center"""
-    points = 50
+def create_arc_polygon(center, start, end, clockwise=True, tolerance=5):
+    """ create an arc between two points, given a center
+        The Arc is represented as a polyline.
+        Points number is calculated as the number that makes maximum distance between arc and segment, tolerance / 2"""
+    from statistics import mean
+    # points = 50
     center = Point(center[0], center[1])
     start = Point(start[0], start[1])
     end = Point(end[0], end[1])
@@ -83,7 +86,7 @@ def create_arc_polygon(center, start, end, clockwise=True):
     dist1 = geodesic(center, start).meters
     bearing2 = calcBearing(center.latitude, center.longitude, end.latitude, end.longitude)
     dist2 = geodesic(center, end).meters
-    # dist = mean(dist1, dist2)
+    radius = mean([dist1, dist2])
     angle = get_arc_angle(bearing1, bearing2)
     '''angle is negative if it is smaller counterclockwise from start to end'''
     if angle < 0 and clockwise:
@@ -91,6 +94,8 @@ def create_arc_polygon(center, start, end, clockwise=True):
     elif angle > 0 and not clockwise:
         angle -= 360
     # da = angle/points if clockwise else angle/points * -1
+    # length = calculate_arc_length(radius, abs(angle))
+    points = calculate_min_points(angle, radius, tolerance)   # max distance arc / segment is less than half tolerance
     da = angle / points
     dr = (dist1 - dist2)/points
     print(f"center: {center.latitude, center.longitude} | start: {start.latitude, start.longitude} | end: {end.latitude, end.longitude}")
@@ -114,3 +119,13 @@ def get_arc_angle(b1, b2):
         r -= 360.0
     return r
 
+
+def calculate_arc_length(radius, angle):
+    from math import pi
+    return (pi * radius * 2) * (angle / 360.0)
+
+
+def calculate_min_points(angle, radius, tolerance=5):
+    """ Calculates minimum number of points along the rc to have maximum distance between arc and segment
+        less that tolerance"""
+    return math.ceil(math.radians(angle) / (2 * math.acos(1 - tolerance / radius)) + 1) * 2
