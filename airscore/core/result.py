@@ -938,7 +938,7 @@ def get_comp_country_scoring(filename):
     for row in pilots:
         row['group'] = str(sum(map(lambda x: x > row['nation_score'], all_scores)) + 1) + row['group']
 
-    return {'teams': teams, 'data': pilots, 'info': data['info'], 'formula': data['formula']}
+    return {'teams': teams, 'data': pilots, 'info': data['info'], 'formula': data['formula'], 'stats': data['stats']}
 
 
 def get_task_team_scoring(filename):
