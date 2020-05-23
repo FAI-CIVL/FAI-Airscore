@@ -334,17 +334,18 @@ def pilot_speed(task, res):
         task: Task obj.
         res: FlightResult object
     """
+
     Aspeed = task.avail_time_points
 
     # 11.2 Time points
     Tmin = task.fastest
+    Pspeed = 0
 
     if res.ESS_time and Tmin > 0:  # checking that task has pilots in ESS, and that pilot is in ESS
         # we need to change this! It works correctly only if Time Pts is 0 when pil not in goal
         # for HG we need a fastest and a fastest in goal in TaskStatsView
         Ptime = res.ss_time
         SF = 1 - ((Ptime - Tmin) / 3600 / sqrt(Tmin / 3600)) ** (2 / 3)
-
         if SF > 0:
             Pspeed = Aspeed * SF - task.time_points_reduction
 
