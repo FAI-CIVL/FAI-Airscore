@@ -1163,6 +1163,9 @@ class Task(object):
             ''' create Pilot objects from json list'''
             task.pilots.append(Pilot.from_result(task_id, pil))
 
+        ''' get status'''
+        task.status = t['file_stats']['status']
+
         return task
 
     @staticmethod

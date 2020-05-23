@@ -252,6 +252,7 @@ class CompResult(object):
                  'task_name',
                  'task_code',
                  'date',
+                 'status',
                  'comment',
                  'opt_dist',
                  'pilots_goal',
