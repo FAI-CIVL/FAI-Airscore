@@ -967,7 +967,7 @@ def _score_task(taskid):
                 unpublish_result(taskid)
                 publish_result(ref_id, ref_id=True)
                 comp = Comp()
-                comp.create_results(session['compid'], data['status'])
+                comp.create_results(session['compid'], data['status'], name_suffix='Overview')
             return dict(redirect='/users/task_score_admin/' + str(taskid))
     return render_template('500.html')
 
@@ -996,6 +996,8 @@ def _unpublish_result(taskid):
         unpublish_result(taskid)
         header = "No published results"
         resp = jsonify(filename='', header=header)
+        comp = Comp()
+        comp.create_results(session['compid'], name_suffix='Overview')
         return resp
     return render_template('500.html')
 
@@ -1024,6 +1026,8 @@ def _publish_result(taskid):
         comp.create_results(session['compid'])
         run_at, status = data['filetext'].split('-')
         header = f"Published result ran at:{run_at} Status:{status}"
+        comp = Comp()
+        comp.create_results(session['compid'], name_suffix='Overview')
         resp = jsonify(filename=data['filename'], header=header)
         return resp
     return render_template('500.html')
@@ -1055,6 +1059,8 @@ def _change_result_status(taskid):
         from result import update_result_status
         data = request.json
         update_result_status(data['filename'], data['status'])
+        comp = Comp()
+        comp.create_results(session['compid'], data['status'], name_suffix='Overview')
         resp = jsonify(success=True)
         return resp
     return render_template('500.html')
