@@ -282,9 +282,13 @@ class CompResult(object):
                    'results']
 
 
-def create_json_file(comp_id, code, elements, task_id=None, status=None):
+def create_json_file(comp_id, code, elements, task_id=None, status=None, name_suffix=None):
     """
     creates the JSON file of results
+    :param
+    name_suffix: optional name suffix if None a timestamp will be used.
+        This is so we can overwrite comp results that are only used in front end to create competition
+         page not display results
     """
     import os
     import json
@@ -295,7 +299,10 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None):
 
     timestamp = int(time())  # timestamp of generation
     dt = datetime.fromtimestamp(timestamp).strftime('%Y%m%d_%H%M%S')
-    filename = '_'.join([code, dt]) + '.json'
+    if name_suffix:
+        filename = '_'.join([code, name_suffix]) + '.json'
+    else:
+        filename = '_'.join([code, dt]) + '.json'
 
     '''adding data section to the elements, with:
         timestamp, status'''

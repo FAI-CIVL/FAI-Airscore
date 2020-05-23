@@ -376,8 +376,12 @@ class Comp(object):
             return comp
 
     @staticmethod
-    def create_results(comp_id, status=None, decimals=None):
-        """creates the json result file and the database entry"""
+    def create_results(comp_id, status=None, decimals=None, name_suffix=None):
+        """creates the json result file and the database entry
+            :param
+        name_suffix: optional name suffix to be used in filename.
+        This is so we can overwrite comp results that are only used in front end to create competition
+         page not display results """
         from calcUtils import c_round
         comp = Comp.read(comp_id)
         '''PARAMETER: decimal positions'''
@@ -431,7 +435,7 @@ class Comp(object):
                   'stats': {x: getattr(comp, x) for x in CompResult.stats_list}
                   }
         ref_id, filename, timestamp = create_json_file(comp_id=comp.id, task_id=None, code=comp.comp_code,
-                                                       elements=result, status=status)
+                                                       elements=result, status=status, name_suffix=name_suffix)
         return comp, ref_id, filename, timestamp
 
     def get_final_scores(self, d=0):

@@ -50,6 +50,7 @@
              <button id="comp_publish" class="btn btn-danger ml-4" type="button" onclick="comp_publish();">
                 Update
             </button>
+             <p id="comp_publish_spinner"></p>
          </div>
 
     </div>
@@ -132,7 +133,7 @@
             </div>
             </div>
                <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-secondary" id="cancel_score_btn"  data-dismiss="modal">Cancel</button>
         <button type="button" id="score_btn" onclick="Score()" class="btn btn-primary">Score</button>
         <p id="score_spinner"></p>
       </div>
@@ -338,6 +339,7 @@ function Score() {
     mydata.autopublish = $("#autopublish").is(':checked');
     mydata.status = $('#status_comment').val();
     $('#score_btn').hide();
+    $('#cancel_score_btn').hide();
     $('#score_spinner').html('<div class="spinner-border" role="status"><span class="sr-only">Scoring...</span></div>');
 
     $.ajax({
@@ -418,6 +420,8 @@ var mydata = new Object();
 function comp_publish() {
     var mydata = new Object();
     mydata.offset = new Date().getTimezoneOffset();
+    $('#comp_publish').hide();
+    $('#comp_publish_spinner').html('<div class="spinner-border" role="status"><span class="sr-only">Scoring...</span></div>');
     $.ajax({
         type: "POST",
         url:  "{{ url_for('user._publish_comp_result', compid=session.compid)}}",
@@ -427,6 +431,8 @@ function comp_publish() {
         success: function(response) {
                 $('#comp_header').text(response.comp_header)
                 $('#comp_unpublish').show();
+                $('#comp_publish_spinner').html('')
+                $('#comp_publish').show();
         }
     });
 
