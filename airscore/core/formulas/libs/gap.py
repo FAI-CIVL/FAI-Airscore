@@ -211,7 +211,7 @@ def points_weight(task):
     goal_ratio = task.pilots_goal / task.pilots_launched
 
     '''
-    DistWeight:         0.9 - 1.665* goalRatio + 1.713*GolalRatio^2 - 0.587*goalRatio^3
+    DistWeight:         0.9 - 1.665* goalRatio + 1.713*GoalRatio^2 - 0.587*goalRatio^3
 
     LeadWeight:
             HG:         (1 - DistWeight)/8 * 1.4 (lead_factor = 1)
@@ -258,6 +258,9 @@ def points_weight(task):
     task.avail_dep_points = 1000 * quality * task.dep_weight  # AvailLeadPoints
     task.avail_arr_points = 1000 * quality * task.arr_weight  # AvailArrPoints
     task.avail_time_points = 1000 * quality * task.time_weight  # AvailTimePoints
+
+    '''Stopped Task'''
+    task.time_points_reduction = 0 if not task.stopped_time else calculate_time_points_reduction(task)
 
 
 def pilot_leadout(task, res):
@@ -331,13 +334,10 @@ def pilot_speed(task, res):
         task: Task obj.
         res: FlightResult object
     """
-
     Aspeed = task.avail_time_points
 
-    # C.11.2 Time points
+    # 11.2 Time points
     Tmin = task.fastest
-    Pspeed = 0
-    Ptime = 0
 
     if res.ESS_time and Tmin > 0:  # checking that task has pilots in ESS, and that pilot is in ESS
         # we need to change this! It works correctly only if Time Pts is 0 when pil not in goal
@@ -346,7 +346,7 @@ def pilot_speed(task, res):
         SF = 1 - ((Ptime - Tmin) / 3600 / sqrt(Tmin / 3600)) ** (2 / 3)
 
         if SF > 0:
-            Pspeed = Aspeed * SF
+            Pspeed = Aspeed * SF - task.time_points_reduction
 
     return Pspeed
 
@@ -421,6 +421,15 @@ def calculate_min_dist_score(t):
     p = FlightResult()
     p.distance_flown = t.formula.min_dist
     return pilot_distance(t, p)
+
+
+def calculate_time_points_reduction(t):
+    from flightresult import FlightResult
+    p = FlightResult()
+    p.distance_flown = t.opt_dist
+    p.SSS_time = t.max_ss_time
+    p.ESS_time = t.stop_time
+    return pilot_speed(t, p)
 
 
 def process_results(task):

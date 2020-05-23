@@ -128,6 +128,19 @@ def points_weight(task):
     task.avail_arr_points = 0  # AvailArrPoints
     task.avail_time_points = 1000 * quality - task.avail_dep_points - task.avail_dist_points  # AvailSpeedPoints
 
+    '''Stopped Task'''
+    if task.stopped_time and task.pilots_ess:
+        ''' 12.3.5
+            A fixed amount of points is subtracted from the time points of each pilot that makes goal in a stopped task.
+            This amount is the amount of time points a pilot would receive if he had reached ESS exactly at
+            the task stop time. This is to remove any discontinuity between pilots just before ESS and pilots who
+            had just reached ESS at task stop time.
+        '''
+        task.time_points_reduction = calculate_time_points_reduction(task)
+        task.avail_dist_points += task.time_points_reduction
+    else:
+        task.time_points_reduction = 0
+
 
 def weightRising(p):
     return (1 - 10 ** (9 * p - 9)) ** 5

@@ -266,6 +266,19 @@ def points_weight(task):
     task.avail_arr_points = 1000 * quality * task.arr_weight  # AvailArrPoints
     task.avail_time_points = 1000 * quality * task.time_weight  # AvailTimePoints
 
+    '''Stopped Task'''
+    if task.stopped_time and task.pilots_ess:
+        ''' 12.3.5
+            A fixed amount of points is subtracted from the time points of each pilot that makes goal in a stopped task.
+            This amount is the amount of time points a pilot would receive if he had reached ESS exactly at
+            the task stop time. This is to remove any discontinuity between pilots just before ESS and pilots who
+            had just reached ESS at task stop time.
+        '''
+        task.time_points_reduction = calculate_time_points_reduction(task)
+        task.avail_dist_points += task.time_points_reduction
+    else:
+        task.time_points_reduction = 0
+
 
 def pilot_speed(task, res):
     """
@@ -277,18 +290,24 @@ def pilot_speed(task, res):
     speed section is equal to or longer than the fastest time plus the square root of the fastest time.
     All times are measured in hours.
     """
-    if not (res.ESS_time and task.fastest):
+    if not res.ESS_time:
         return 0
     Aspeed = task.avail_time_points
     comp_class = task.comp_class  # HG / PG
-    # C.11.2 Time points
-    Tmin = task.fastest
-    Ptime = res.time
+    # 11.2 Time points
+    ''' min speed section time
+        If no goal penalty = 100% (PG): min ss_time if goal
+    '''
+    if task.formula.no_goal_penalty < 1 or (task.stopped_time and not task.fastest_in_goal):
+        Tmin = task.fastest
+    else:
+        Tmin = task.fastest_in_goal or 0
+    Ptime = res.ss_time
     if comp_class == 'HG':
         SF = max(0, 1 - ((Ptime - Tmin) / 3600 / sqrt(Tmin / 3600)) ** (2 / 3))
     else:
         SF = max(0, 1 - ((Ptime - Tmin) / 3600 / sqrt(Tmin / 3600)) ** (5 / 6))
-    Pspeed = Aspeed * SF
+    Pspeed = Aspeed * SF - task.time_points_reduction if SF > 0 else 0
     return Pspeed
 
 
@@ -350,6 +369,78 @@ def tot_lc_calc(res, t):
         missing_time = t.max_time - t.start_time  # TODO should be t.min_dept_time but using same as lead_coeff
         landed_out = missing_area(missing_time, best_dist_to_ess, ss_distance)
     return (res.fixed_LC + landed_out) / (1800 * ss_distance)
+
+
+def points_allocation(task):
+    """ Get task with pilots FlightResult obj. and calculates results"""
+
+    ''' Get pilot.result not ABS or DNF '''
+    results = task.valid_results
+    formula = task.formula
+
+    if task.formula.formula_distance == 'difficulty':
+        '''Difficulty Calculation'''
+        task.difficulty = difficulty_calculation(task)
+
+    ''' Calculate Min Dist Score '''
+    min_dist_score = calculate_min_dist_score(task)
+
+    ''' Score each pilot now'''
+    for res in results:
+
+        '''initialize'''
+        res.distance_score = 0
+        res.time_score = 0
+        res.arrival_score = 0
+        res.departure_score = 0
+        res.penalty = 0
+
+        if res.result_type == 'mindist':
+            res.distance_score = min_dist_score
+        else:
+            '''Pilot distance score'''
+            res.distance_score = pilot_distance(task, res)
+
+            ''' Pilot leading points'''
+            if task.departure == 'leadout' and res.result_type != 'mindist' and res.SSS_time:
+                res.departure_score = pilot_leadout(task, res)
+
+            if res.ESS_time:
+                ''' Pilot speed points'''
+                res.time_score = pilot_speed(task, res)
+
+                ''' Pilot departure points'''
+                if task.departure == 'departure' and res.result_type != 'mindist' and res.SSS_time:
+                    # does it even still exist dep. points?
+                    res.departure_score = pilot_departure(task, res)
+
+                ''' Pilot arrival points'''
+                if not (task.arrival == 'off'):
+                    res.arrival_score = pilot_arrival(task, res)
+
+                ''' Penalty for not making goal'''
+                if not res.goal_time:
+                    res.goal_time = 0
+                    res.time_score *= (1 - formula.no_goal_penalty)
+                    res.arrival_score *= (1 - formula.no_goal_penalty)
+
+        ''' Total score'''
+        score = res.distance_score + res.time_score + res.arrival_score + res.departure_score
+
+        ''' Apply Penalty'''
+        if res.jtg_penalty or res.flat_penalty or res.percentage_penalty:
+            ''' Jump the Gun Penalty:
+                totalScore p = max(totalScore p − jumpTheGunPenalty p , scoreForMinDistance) '''
+            score_after_jtg = score if res.jtg_penalty == 0 else max(min_dist_score, score - res.jtg_penalty)
+            ''' Other penalties'''
+            # applying flat penalty after percentage ones
+            other_penalty = score_after_jtg * res.percentage_penalty + res.flat_penalty
+            res.score = max(0, score_after_jtg - other_penalty)
+            res.penalty = score - res.score
+            # print(f'jtg: {res.jtg_penalty}, flat: {res.flat_penalty}, perc: {res.percentage_penalty}')
+            # print(f'pre penalty: {score}, after jtg: {score_after_jtg}, penalty: {res.penalty}, score: {res.score}')
+        else:
+            res.score = score
 
 
 def calculate_results(task):

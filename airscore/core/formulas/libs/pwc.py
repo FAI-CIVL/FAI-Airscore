@@ -170,6 +170,19 @@ def points_weight(task):
     task.avail_arr_points = 0  # AvailArrPoints
     task.avail_time_points = 1000 * quality - task.avail_dep_points - task.avail_dist_points  # AvailSpeedPoints
 
+    '''Stopped Task'''
+    if task.stopped_time and task.pilots_ess:
+        ''' 12.3.5
+            A fixed amount of points is subtracted from the time points of each pilot that makes goal in a stopped task.
+            This amount is the amount of time points a pilot would receive if he had reached ESS exactly at
+            the task stop time. This is to remove any discontinuity between pilots just before ESS and pilots who
+            had just reached ESS at task stop time.
+        '''
+        task.time_points_reduction = calculate_time_points_reduction(task)
+        task.avail_dist_points += task.time_points_reduction
+    else:
+        task.time_points_reduction = 0
+
 
 def pilot_leadout(task, res):
     """
@@ -223,7 +236,7 @@ def pilot_speed(task, res):
         Ptime = res.ss_time
         SF = 1 - ((Ptime - Tmin) / 3600 / sqrt(Tmin / 3600)) ** (5 / 6)
         if SF > 0:
-            Pspeed = Aspeed * SF
+            Pspeed = Aspeed * SF - task.time_points_reduction
 
     return Pspeed
 
@@ -250,6 +263,15 @@ def calculate_min_dist_score(t):
     p = FlightResult()
     p.distance_flown = t.formula.min_dist
     return pilot_distance(t, p)
+
+
+def calculate_time_points_reduction(t):
+    from flightresult import FlightResult
+    p = FlightResult()
+    p.distance_flown = t.opt_dist
+    p.SSS_time = t.max_ss_time
+    p.ESS_time = t.stop_time
+    return pilot_speed(t, p)
 
 
 def process_results(task):
