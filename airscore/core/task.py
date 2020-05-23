@@ -463,6 +463,13 @@ class Task(object):
             return None
 
     @property
+    def min_goal_time(self):
+        if self.pilots_goal:
+            return min(p.goal_time for p in self.valid_results if p.goal_time and p.goal_time > 0)
+        else:
+            return None
+
+    @property
     def fastest(self):
         if self.pilots_ess:
             return min(p.ss_time for p in self.valid_results if p.ESS_time and p.ESS_time > 0)
