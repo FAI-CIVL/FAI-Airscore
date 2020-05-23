@@ -15,7 +15,7 @@ class LeadCoeff(object):
         self.opt_dist_to_ess = task.opt_dist_to_ESS / 1000
         self.best_dist_to_ess = [task.SS_distance / 1000]
         self.best_distance_time = 0
-        self.best_start_time = task.start_time
+        self.best_start_time = task.start_time  # TODO should be t.min_dept_time unknown until all tracks are done
         self.lib = task.formula.get_lib()
         self.summing = 0.0
 

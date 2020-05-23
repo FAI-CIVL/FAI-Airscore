@@ -347,7 +347,7 @@ def tot_lc_calc(res, t):
     else:
         '''pilot did not make ESS'''
         best_dist_to_ess = (t.opt_dist_to_ESS - res.distance_flown) / 1000  # in Km
-        missing_time = t.max_time - res.best_distance_time
+        missing_time = t.max_time - t.start_time  # TODO should be t.min_dept_time but using same as lead_coeff
         landed_out = missing_area(missing_time, best_dist_to_ess, ss_distance)
     return (res.fixed_LC + landed_out) / (1800 * ss_distance)
 
