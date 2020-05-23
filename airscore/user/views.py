@@ -978,7 +978,7 @@ def _full_rescore_task(taskid):
     taskid=int(taskid)
     if frontendUtils.production():
         job = current_app.task_queue.enqueue(frontendUtils.full_rescore, taskid, background=True,
-                                             user=current_user.username)
+                                             user=current_user.username, job_timeout=2000)
         resp = jsonify(success=True, background=True)
         return resp
 
