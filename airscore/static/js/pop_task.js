@@ -33,9 +33,6 @@ $(document).ready(function() {
                         $('#task_result').DataTable().column(14).visible( false );
                         }
 
-            var table = $('#task_result');
-            var rows = $("tr", table).length-1;
-            var numCols = $("th", table).length;
 
             // comp info
             $('#comp_name').text(json.info.comp_name + " - " + json.info.task_name);
