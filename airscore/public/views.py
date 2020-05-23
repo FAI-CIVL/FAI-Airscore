@@ -218,7 +218,7 @@ def _get_task_result(taskid):
         dep = r['departure_score']
         arr = r['arrival_score']
         dis = r['distance_score']
-        pen = r['penalty']
+        pen = "" if r['penalty'] == '0.0' else r['penalty']
         score = r['score']
         pilot = [rank, name, nat, gl, gc, sp, ss, es, t, s, ab, d, ts, dep, arr, dis, pen, score]
         all_pilots.append(pilot)

@@ -19,10 +19,18 @@ $(document).ready(function() {
   ],
         "initComplete": function(settings, json)
         {
+            var table = $('#task_result');
+            var rows = $("tr", table).length-1;
+            var numCols = $("th", table).length;
+
             //hide SS ES for Race
             if(json.info.task_type=='RACE' && json.info.SS_interval==0){
                         $('#task_result').DataTable().column(6).visible( false );
                         $('#task_result').DataTable().column(7).visible( false );
+                        }
+            //hide Arrival when not used
+            if(json.formula.formula_arrival=='off'){
+                        $('#task_result').DataTable().column(14).visible( false );
                         }
 
             var table = $('#task_result');
