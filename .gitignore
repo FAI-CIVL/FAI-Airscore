@@ -1,26 +1,107 @@
-cgi-bin/*.yaml
-admin/dreamhost*.*
-admin/host.it*
-cgi-bin/defines.yaml*
-cgi-bin/Defines.pm
-cgi-bin/py*
-cgi-bin/.ht*
-defines.php
+## GitIgnore ##
+
+# Index files
+.DS*
 .ht*
 .travis*
-.DS*
-admin/.DS*
-cgi-bin/.DS*
-cgi-bin/log/*.txt
-cgi-bin/log/*.log
-log/*.txt
-log/*.log
-tracks/*
-json/*
+
+# Configuration files
+.env
+secret.yaml
+airscore/core/dreamhost*.*
+
+# Cache files
 _pycache_/*
 _pycache_
 *.pyc
-*.igc
+
+# data
+airscore/data/map-objects/*
+airscore/data/map-objects/tasks/*
+airscore/data/map-objects/tracks/*
+airscore/data/results/*
+airscore/data/log/*
+airscore/data/tracks/*
+airscore/data/json/*
+
+
+# Test files
+airscore/core/*.igc
+airscore/core/*.fsdb
+airscore/core/*.kml
+airscore/core/*.csv
+airscore/core/*.xml
+airscore/core/*.xsl
+airscore/core/*.xls
+airscore/core/*.xlsx
+airscore/core/*.xctsk
+airscore/core/*.zip
+airscore/core/test*
+airscore/core/*.json
+
+# Development database
+*.db
+
+# C extensions
+*.so
+
+# webpack-built files
+/airscore/static/build/
+
+# Packages
+*.egg
+*.egg-info
+build
+eggs
+parts
+bin
+var
+sdist
+develop-eggs
+.installed.cfg
+lib
+lib64
+
+# Installer logs
+pip-log.txt
+
+# Unit test / coverage reports
+.coverage
+.tox
+nosetests.xml
+
+# Translations
+*.mo
+
+# Mr Developer
+.mr.developer.cfg
+.project
+.pydevproject
+
+# Complexity
+output/*.html
+output/*/index.html
+
+# Sphinx
+docs/_build
+
+.webassets-cache
+
+# Virtualenvs
+env/
+venv/
+
+# npm
+/node_modules/
+
 .idea/*
-map.html
-*.pyc
+
+!/airscore/templates/
+/airscore/data/airspace/openair/*
+/airscore/data/airspace/check_file/*
+/.env
+/airscore/data/livetracking/
+/temp_tracks/
+/temp_tracks/*
+/airscore/data/temp/
+/airscore/data/temp/*

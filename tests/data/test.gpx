@@ -1,0 +1,1427 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1"
+     creator="GpsDump 5.32"
+     version="1.1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+  <metadata>
+    <link href="http://www.gethome.no/stein.sorensen/">
+      <text>GPS dump for www.flightlog.org</text>
+    </link>
+    <time>2019-07-12T10:43:43Z</time>
+    <bounds minlat="45.701667" minlon="11.657728" maxlat="47.070000" maxlon="14.086111"/>
+  </metadata>
+  <wpt lat="46.258333" lon="12.673611">
+    <ele>950.0</ele>
+    <time>2020-05-22T00:16:34</time>
+    <name>T01</name>
+    <cmt>TEST WPT</cmt>
+    <desc>TEST WPT</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.274167" lon="13.176667">
+    <ele>1170.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>D02</name>
+    <cmt>T OFF CUARNAN</cmt>
+    <desc>T OFF CUARNAN</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.546944" lon="12.926111">
+    <ele>1900.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>D03</name>
+    <cmt>T OFF VAL SECCA</cmt>
+    <desc>T OFF VAL SECCA</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.963333" lon="13.723611">
+    <ele>580.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>D04</name>
+    <cmt>T OFF LIJAK</cmt>
+    <desc>T OFF LIJAK</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.772500" lon="13.149444">
+    <ele>1730.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>D05</name>
+    <cmt>T OFF EMBERGER ALM</cmt>
+    <desc>T OFF EMBERGER ALM</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.029722" lon="11.826111">
+    <ele>1400.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>D06</name>
+    <cmt>T OFF MONTE AVENA</cmt>
+    <desc>T OFF MONTE AVENA</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.191667" lon="12.352811">
+    <ele>1500.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>D07</name>
+    <cmt>T OFF PIEVE ALPAGO</cmt>
+    <desc>T OFF PIEVE ALPAGO</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.418889" lon="12.748333">
+    <ele>1400.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>D08</name>
+    <cmt>T OFF PURA</cmt>
+    <desc>T OFF PURA</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.002222" lon="12.207500">
+    <ele>1120.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>D09</name>
+    <cmt>T OFF REVINE</cmt>
+    <desc>T OFF REVINE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.506111" lon="12.931944">
+    <ele>1700.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>D10</name>
+    <cmt>T OFF ZONCOLAN CUBO</cmt>
+    <desc>T OFF ZONCOLAN CUBO</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.181111" lon="13.779444">
+    <ele>1060.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>D11</name>
+    <cmt>T OFF KOBALA</cmt>
+    <desc>T OFF KOBALA</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.886667" lon="13.958889">
+    <ele>850.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>D12</name>
+    <cmt>T OFF KOVK</cmt>
+    <desc>T OFF KOVK</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.101667" lon="12.546389">
+    <ele>1160.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>D13</name>
+    <cmt>T OFF AVIANO</cmt>
+    <desc>T OFF AVIANO</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.038333" lon="12.350000">
+    <ele>1530.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>D14</name>
+    <cmt>T OFF PIZZOC</cmt>
+    <desc>T OFF PIZZOC</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.330000" lon="13.101667">
+    <ele>1150.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>D15</name>
+    <cmt>T OFF SAN SIMEONE</cmt>
+    <desc>T OFF SAN SIMEONE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.870283" lon="12.789161">
+    <ele>1995.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>D16</name>
+    <cmt>T OFF LIENZ</cmt>
+    <desc>T OFF LIENZ</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.196389" lon="12.856111">
+    <ele>230.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>A01</name>
+    <cmt>GOAL TRAVESIO</cmt>
+    <desc>GOAL TRAVESIO</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.307217" lon="13.113333">
+    <ele>220.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>A02</name>
+    <cmt>GOAL BORDANO</cmt>
+    <desc>GOAL BORDANO</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.253333" lon="13.140833">
+    <ele>190.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>A03</name>
+    <cmt>GOAL GEMONA</cmt>
+    <desc>GOAL GEMONA</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="45.947222" lon="13.711667">
+    <ele>60.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>A04</name>
+    <cmt>GOAL LIJAK</cmt>
+    <desc>GOAL LIJAK</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="45.868058" lon="13.932778">
+    <ele>102.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>A05</name>
+    <cmt>GOAL ANJA</cmt>
+    <desc>GOAL ANJA</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.185000" lon="13.722217">
+    <ele>151.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>A06</name>
+    <cmt>GOAL TOLMIN</cmt>
+    <desc>GOAL TOLMIN</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.404167" lon="12.883611">
+    <ele>370.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>A07</name>
+    <cmt>GOAL ENEMONZO</cmt>
+    <desc>GOAL ENEMONZO</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.523889" lon="13.003611">
+    <ele>560.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>A08</name>
+    <cmt>GOAL CERCIVENTO</cmt>
+    <desc>GOAL CERCIVENTO</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="45.741328" lon="11.806603">
+    <ele>95.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>A09</name>
+    <cmt>GOAL AVIOS CASSOLA</cmt>
+    <desc>GOAL AVIOS CASSOLA</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.746389" lon="13.192222">
+    <ele>593.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>A10</name>
+    <cmt>GOAL GREIFENBURG</cmt>
+    <desc>GOAL GREIFENBURG</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.241114" lon="13.582500">
+    <ele>214.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>A11</name>
+    <cmt>KOBARIDPETROL</cmt>
+    <desc>KOBARIDPETROL</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.977747" lon="12.207628">
+    <ele>225.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>A12</name>
+    <cmt>GOAL REVINE PREALPI</cmt>
+    <desc>GOAL REVINE PREALPI</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.819278" lon="12.768806">
+    <ele>680.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>A13</name>
+    <cmt>GOAL LIENZ</cmt>
+    <desc>GOAL LIENZ</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.799058" lon="12.877614">
+    <ele>639.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>A14</name>
+    <cmt>GOAL FLUGPLATZ LIENZ</cmt>
+    <desc>GOAL FLUGPLATZ LIENZ</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.580603" lon="13.629750">
+    <ele>550.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>A15</name>
+    <cmt>GOAL FLUGPLATZ NOTSCH</cmt>
+    <desc>GOAL FLUGPLATZ NOTSCH</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="45.907414" lon="13.600753">
+    <ele>57.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>A16</name>
+    <cmt>GOAL GORIZIA AIRPORT</cmt>
+    <desc>GOAL GORIZIA AIRPORT</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.158083" lon="12.369028">
+    <ele>594.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>A17</name>
+    <cmt>GOAL GARNA</cmt>
+    <desc>GOAL GARNA</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.004083" lon="11.824364">
+    <ele>312.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>A18</name>
+    <cmt>GOAL ARTEN</cmt>
+    <desc>GOAL ARTEN</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.837503" lon="12.783333">
+    <ele>670.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>A19</name>
+    <cmt>GOAL LIENZ NEW</cmt>
+    <desc>GOAL LIENZ NEW</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.068583" lon="13.367444">
+    <ele>106.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>A20</name>
+    <cmt>GOAL PREMARIACCO</cmt>
+    <desc>GOAL PREMARIACCO</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="45.910194" lon="12.149778">
+    <ele>153.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>A21</name>
+    <cmt>GOAL PIEVE DI SOLIGO</cmt>
+    <desc>GOAL PIEVE DI SOLIGO</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.235397" lon="13.073389">
+    <ele>171.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>A22</name>
+    <cmt>GOAL AVIOS AVRO</cmt>
+    <desc>GOAL AVIOS AVRO</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.191944" lon="12.955556">
+    <ele>140.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>L01</name>
+    <cmt>LANDING CAMPEIS</cmt>
+    <desc>LANDING CAMPEIS</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.030972" lon="13.597267">
+    <ele>80.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>L02</name>
+    <cmt>LANDING SOCA</cmt>
+    <desc>LANDING SOCA</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.053333" lon="12.403889">
+    <ele>990.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>L03</name>
+    <cmt>LANDING CANSIGLIO</cmt>
+    <desc>LANDING CANSIGLIO</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.044364" lon="13.789619">
+    <ele>590.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>L04</name>
+    <cmt>LANDING CEPOVAN</cmt>
+    <desc>LANDING CEPOVAN</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.224722" lon="13.227500">
+    <ele>280.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>L05</name>
+    <cmt>LANDING PLAN DI PALUT</cmt>
+    <desc>LANDING PLAN DI PALUT</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.282222" lon="13.264167">
+    <ele>370.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>L06</name>
+    <cmt>LANDING PRADIELIS</cmt>
+    <desc>LANDING PRADIELIS</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.382050" lon="13.040922">
+    <ele>298.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>L07</name>
+    <cmt>LANDING CAVAZZO</cmt>
+    <desc>LANDING CAVAZZO</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.411944" lon="12.790556">
+    <ele>540.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>L08</name>
+    <cmt>LANDING AMPEZZO</cmt>
+    <desc>LANDING AMPEZZO</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.502778" lon="12.860000">
+    <ele>530.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>L09</name>
+    <cmt>LANDING LUINCIS</cmt>
+    <desc>LANDING LUINCIS</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.388514" lon="12.665097">
+    <ele>730.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>L10</name>
+    <cmt>LANDING FORNI DI SOTTO</cmt>
+    <desc>LANDING FORNI DI SOTTO</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.418611" lon="12.579722">
+    <ele>883.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>L11</name>
+    <cmt>LANDING FORNI DI SOPRA</cmt>
+    <desc>LANDING FORNI DI SOPRA</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.501944" lon="12.478333">
+    <ele>901.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>L12</name>
+    <cmt>LANDING VIGO</cmt>
+    <desc>LANDING VIGO</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.506144" lon="13.551958">
+    <ele>789.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>L13</name>
+    <cmt>LANDING TARVISIO</cmt>
+    <desc>LANDING TARVISIO</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.425000" lon="13.013889">
+    <ele>350.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>L14</name>
+    <cmt>LANDING CASANOVA</cmt>
+    <desc>LANDING CASANOVA</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.197219" lon="13.696661">
+    <ele>165.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>L15</name>
+    <cmt>LANDING CAMP GABRJE</cmt>
+    <desc>LANDING CAMP GABRJE</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.821858" lon="12.825589">
+    <ele>651.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>L16</name>
+    <cmt>LANDING DOLSACH</cmt>
+    <desc>LANDING DOLSACH</desc>
+    <sym>Dot</sym>
+    <type>Airport</type>
+  </wpt>
+  <wpt lat="46.095000" lon="12.327222">
+    <ele>390.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B01</name>
+    <cmt>LAGO SANTA CROCE</cmt>
+    <desc>LAGO SANTA CROCE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.782753" lon="12.284644">
+    <ele>2653.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B04</name>
+    <cmt>PFANNHORN</cmt>
+    <desc>PFANNHORN</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.355833" lon="12.782778">
+    <ele>1087.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B05</name>
+    <cmt>PASSO REST</cmt>
+    <desc>PASSO REST</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.157222" lon="12.598056">
+    <ele>1500.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B06</name>
+    <cmt>PALA ALTEI</cmt>
+    <desc>PALA ALTEI</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.153611" lon="12.675000">
+    <ele>270.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B07</name>
+    <cmt>PONTE FERROVIA CELLINA</cmt>
+    <desc>PONTE FERROVIA CELLINA</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.097222" lon="12.683333">
+    <ele>220.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B08</name>
+    <cmt>SAN LEONARDO</cmt>
+    <desc>SAN LEONARDO</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.381389" lon="12.974722">
+    <ele>510.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B09</name>
+    <cmt>LAGO VERZEGNIS</cmt>
+    <desc>LAGO VERZEGNIS</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.166111" lon="12.808611">
+    <ele>230.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B10</name>
+    <cmt>COLLE</cmt>
+    <desc>COLLE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.811111" lon="12.516667">
+    <ele>2546.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B11</name>
+    <cmt>ANRASER SEE</cmt>
+    <desc>ANRASER SEE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.618611" lon="12.303333">
+    <ele>2800.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B12</name>
+    <cmt>CIMA GRANDE</cmt>
+    <desc>CIMA GRANDE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.723889" lon="12.623611">
+    <ele>2070.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B13</name>
+    <cmt>OBERTILLIACH LIFTSTATION</cmt>
+    <desc>OBERTILLIACH LIFTSTATION</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.560278" lon="13.275556">
+    <ele>1530.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B14</name>
+    <cmt>PASSO PRAMOLLO</cmt>
+    <desc>PASSO PRAMOLLO</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.315097" lon="13.241706">
+    <ele>1112.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B15</name>
+    <cmt>MONTE SFORZELE</cmt>
+    <desc>MONTE SFORZELE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.121111" lon="13.712500">
+    <ele>369.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B16</name>
+    <cmt>ALFA PUNTO DETTATO DA RONCHI</cmt>
+    <desc>ALFA PUNTO DETTATO DA RONCHI</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.575833" lon="12.863333">
+    <ele>1718.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B17</name>
+    <cmt>MONTE BIOICHIA</cmt>
+    <desc>MONTE BIOICHIA</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.934722" lon="13.597222">
+    <ele>50.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B18</name>
+    <cmt>GORIZIA PONTE ISONZO MARIA</cmt>
+    <desc>GORIZIA PONTE ISONZO MARIA</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.522778" lon="13.714167">
+    <ele>1490.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B19</name>
+    <cmt>TRE CONFINI</cmt>
+    <desc>TRE CONFINI</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.543889" lon="13.024722">
+    <ele>1077.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B20</name>
+    <cmt>CERCENAZ</cmt>
+    <desc>CERCENAZ</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.701667" lon="14.086111">
+    <ele>740.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B21</name>
+    <cmt>VOLCE NORD</cmt>
+    <desc>VOLCE NORD</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.595833" lon="13.011667">
+    <ele>2159.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B22</name>
+    <cmt>CRETA DI TIMAU</cmt>
+    <desc>CRETA DI TIMAU</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.220833" lon="12.650833">
+    <ele>1990.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B23</name>
+    <cmt>RAUT CIMA NORD</cmt>
+    <desc>RAUT CIMA NORD</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.235556" lon="12.705833">
+    <ele>1300.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B24</name>
+    <cmt>SELLA BASSA RAUT</cmt>
+    <desc>SELLA BASSA RAUT</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.550278" lon="13.091111">
+    <ele>1471.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B25</name>
+    <cmt>MALGA VALDAJER</cmt>
+    <desc>MALGA VALDAJER</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.106389" lon="12.903611">
+    <ele>130.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B26</name>
+    <cmt>SPILIMBERGO</cmt>
+    <desc>SPILIMBERGO</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.178889" lon="12.879167">
+    <ele>200.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B27</name>
+    <cmt>COOPERS</cmt>
+    <desc>COOPERS</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.507222" lon="12.988333">
+    <ele>628.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B28</name>
+    <cmt>PRIOLA</cmt>
+    <desc>PRIOLA</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.536389" lon="12.964722">
+    <ele>1008.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B29</name>
+    <cmt>COSTA</cmt>
+    <desc>COSTA</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.171944" lon="12.733056">
+    <ele>260.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B30</name>
+    <cmt>DEL MISTRO</cmt>
+    <desc>DEL MISTRO</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.230000" lon="13.804444">
+    <ele>1820.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B31</name>
+    <cmt>KRIKOV VRH</cmt>
+    <desc>KRIKOV VRH</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.356944" lon="13.437778">
+    <ele>2489.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B32</name>
+    <cmt>CANIN</cmt>
+    <desc>CANIN</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.284750" lon="13.366819">
+    <ele>1570.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B33</name>
+    <cmt>RIOBIANCO CIMA</cmt>
+    <desc>RIOBIANCO CIMA</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.295000" lon="13.182778">
+    <ele>1690.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B34</name>
+    <cmt>CHIAMPON</cmt>
+    <desc>CHIAMPON</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.339722" lon="13.006389">
+    <ele>1570.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B35</name>
+    <cmt>PICIAT</cmt>
+    <desc>PICIAT</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.300000" lon="13.084722">
+    <ele>1020.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B36</name>
+    <cmt>BRANCOT</cmt>
+    <desc>BRANCOT</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.258333" lon="13.039722">
+    <ele>193.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B37</name>
+    <cmt>PEONIS</cmt>
+    <desc>PEONIS</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.606625" lon="12.882897">
+    <ele>2723.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B39</name>
+    <cmt>COGLIANS</cmt>
+    <desc>COGLIANS</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.550278" lon="12.779444">
+    <ele>2250.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B40</name>
+    <cmt>PLEROS</cmt>
+    <desc>PLEROS</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.451944" lon="12.810278">
+    <ele>1390.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B41</name>
+    <cmt>CASERA CHIARZO-</cmt>
+    <desc>CASERA CHIARZO-</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.800278" lon="13.750833">
+    <ele>250.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B42</name>
+    <cmt>VOLCI</cmt>
+    <desc>VOLCI</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.998889" lon="13.655000">
+    <ele>660.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B43</name>
+    <cmt>MONTE SANTO GORIZIA</cmt>
+    <desc>MONTE SANTO GORIZIA</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.868056" lon="13.652500">
+    <ele>390.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B44</name>
+    <cmt>TITO</cmt>
+    <desc>TITO</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.771389" lon="14.052778">
+    <ele>1240.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B45</name>
+    <cmt>NANOS</cmt>
+    <desc>NANOS</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.198889" lon="13.116944">
+    <ele>180.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B46</name>
+    <cmt>BUJA PISCINA</cmt>
+    <desc>BUJA PISCINA</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.266136" lon="13.658381">
+    <ele>2210.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B47</name>
+    <cmt>MONTE NERO</cmt>
+    <desc>MONTE NERO</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.274167" lon="12.996667">
+    <ele>1450.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B48</name>
+    <cmt>CUAR</cmt>
+    <desc>CUAR</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.474722" lon="12.922778">
+    <ele>1640.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B49</name>
+    <cmt>MALGA CALUPA</cmt>
+    <desc>MALGA CALUPA</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.032500" lon="13.302778">
+    <ele>90.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B50</name>
+    <cmt>PRADAMANO</cmt>
+    <desc>PRADAMANO</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.091922" lon="13.431647">
+    <ele>120.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B51</name>
+    <cmt>CIVIDALE PONTE DEL DIAVOLO</cmt>
+    <desc>CIVIDALE PONTE DEL DIAVOLO</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.183056" lon="13.350833">
+    <ele>750.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B52</name>
+    <cmt>PORZUS ANTENNE</cmt>
+    <desc>PORZUS ANTENNE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.272500" lon="13.473333">
+    <ele>1390.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B53</name>
+    <cmt>CAPORETTO DECOLLO PARA</cmt>
+    <desc>CAPORETTO DECOLLO PARA</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.346944" lon="13.165278">
+    <ele>1300.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B54</name>
+    <cmt>PLAURIS BIVACCO COI</cmt>
+    <desc>PLAURIS BIVACCO COI</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.400556" lon="13.080278">
+    <ele>1881.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B55</name>
+    <cmt>AMARIANA</cmt>
+    <desc>AMARIANA</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.500000" lon="13.050833">
+    <ele>1720.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B56</name>
+    <cmt>CUCCO TABELLONE</cmt>
+    <desc>CUCCO TABELLONE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.570278" lon="13.050278">
+    <ele>2011.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B57</name>
+    <cmt>DIMON</cmt>
+    <desc>DIMON</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.169167" lon="12.653611">
+    <ele>300.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B58</name>
+    <cmt>DIGA CELLINA</cmt>
+    <desc>DIGA CELLINA</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.182500" lon="12.786667">
+    <ele>260.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B59</name>
+    <cmt>ORGNESE</cmt>
+    <desc>ORGNESE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.933611" lon="13.795556">
+    <ele>1160.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B60</name>
+    <cmt>CIAVEN</cmt>
+    <desc>CIAVEN</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.111667" lon="13.003611">
+    <ele>150.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B61</name>
+    <cmt>RODEANO</cmt>
+    <desc>RODEANO</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.164167" lon="13.007500">
+    <ele>200.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B62</name>
+    <cmt>DALL-AVA</cmt>
+    <desc>DALL-AVA</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.181111" lon="12.193611">
+    <ele>660.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B63</name>
+    <cmt>PRADELUNI</cmt>
+    <desc>PRADELUNI</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.087500" lon="11.986944">
+    <ele>490.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B64</name>
+    <cmt>CESIOMAGGIORE</cmt>
+    <desc>CESIOMAGGIORE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.927522" lon="12.152589">
+    <ele>160.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B65</name>
+    <cmt>PEDEGUARDA</cmt>
+    <desc>PEDEGUARDA</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.923611" lon="12.015833">
+    <ele>1080.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B66</name>
+    <cmt>PIANEZZE</cmt>
+    <desc>PIANEZZE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.808611" lon="11.741944">
+    <ele>720.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B67</name>
+    <cmt>COSTALUNGA</cmt>
+    <desc>COSTALUNGA</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.852500" lon="13.408611">
+    <ele>990.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B68</name>
+    <cmt>STOECKLERN CHURCH</cmt>
+    <desc>STOECKLERN CHURCH</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.903889" lon="13.333889">
+    <ele>2240.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B69</name>
+    <cmt>REISSECK SCHOBERBODEN</cmt>
+    <desc>REISSECK SCHOBERBODEN</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.196111" lon="12.867778">
+    <ele>220.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B70</name>
+    <cmt>SEDE FLYVE</cmt>
+    <desc>SEDE FLYVE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.208889" lon="13.045278">
+    <ele>160.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B71</name>
+    <cmt>CIMANO NORD EST CTR AVIANO</cmt>
+    <desc>CIMANO NORD EST CTR AVIANO</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.243056" lon="12.921667">
+    <ele>1170.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B72</name>
+    <cmt>PALA</cmt>
+    <desc>PALA</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.943889" lon="12.093056">
+    <ele>260.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B73</name>
+    <cmt>MIANE</cmt>
+    <desc>MIANE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.132500" lon="12.496389">
+    <ele>2200.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B74</name>
+    <cmt>CIMA ZIN</cmt>
+    <desc>CIMA ZIN</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.738889" lon="11.958056">
+    <ele>2273.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B75</name>
+    <cmt>PLAN DE CORONES</cmt>
+    <desc>PLAN DE CORONES</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.796667" lon="12.965833">
+    <ele>2395.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B76</name>
+    <cmt>DAMERKOPF</cmt>
+    <desc>DAMERKOPF</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.909169" lon="13.182781">
+    <ele>1870.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B77</name>
+    <cmt>POLINIKHUETTE</cmt>
+    <desc>POLINIKHUETTE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.957231" lon="13.211389">
+    <ele>1880.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B78</name>
+    <cmt>GASSNERHUETTE</cmt>
+    <desc>GASSNERHUETTE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.981389" lon="13.177500">
+    <ele>1180.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B79</name>
+    <cmt>MALNITZ RAILWAY STATION</cmt>
+    <desc>MALNITZ RAILWAY STATION</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.773611" lon="13.345000">
+    <ele>570.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B80</name>
+    <cmt>KLEBLACH BRIDGE</cmt>
+    <desc>KLEBLACH BRIDGE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.758889" lon="13.458061">
+    <ele>2140.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B81</name>
+    <cmt>GOLDECK RADIOSTATION</cmt>
+    <desc>GOLDECK RADIOSTATION</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.790281" lon="13.396111">
+    <ele>1624.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B82</name>
+    <cmt>WEISSWAENDE</cmt>
+    <desc>WEISSWAENDE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.660000" lon="13.204719">
+    <ele>1500.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B83</name>
+    <cmt>STOEFFLERBERGER ALM</cmt>
+    <desc>STOEFFLERBERGER ALM</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.716669" lon="13.294169">
+    <ele>930.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B84</name>
+    <cmt>BRIDGE WEISSENSEE NORTHBANKS</cmt>
+    <desc>BRIDGE WEISSENSEE NORTHBANKS</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.655281" lon="13.410281">
+    <ele>2050.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B85</name>
+    <cmt>SPITZEGEL PEAK</cmt>
+    <desc>SPITZEGEL PEAK</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="47.038339" lon="12.354169">
+    <ele>2570.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B86</name>
+    <cmt>SAJATHUETTE</cmt>
+    <desc>SAJATHUETTE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.732781" lon="13.022500">
+    <ele>710.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B87</name>
+    <cmt>CASTLE STEIN</cmt>
+    <desc>CASTLE STEIN</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="47.059231" lon="12.924139">
+    <ele>2498.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B88</name>
+    <cmt>ZIRMSEE</cmt>
+    <desc>ZIRMSEE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="47.070000" lon="12.701667">
+    <ele>3434.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B89</name>
+    <cmt>GROSSGLOCKNER</cmt>
+    <desc>GROSSGLOCKNER</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.905000" lon="12.731667">
+    <ele>2432.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B90</name>
+    <cmt>ALKUSER SEE</cmt>
+    <desc>ALKUSER SEE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.870311" lon="11.755706">
+    <ele>2699.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B91</name>
+    <cmt>EIDECHSSPITZ</cmt>
+    <desc>EIDECHSSPITZ</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.978622" lon="13.805283">
+    <ele>1378.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B92</name>
+    <cmt>MRZOVEC</cmt>
+    <desc>MRZOVEC</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.759450" lon="13.973050">
+    <ele>596.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B93</name>
+    <cmt>TER</cmt>
+    <desc>TER</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.854711" lon="13.745828">
+    <ele>562.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B94</name>
+    <cmt>OVCJAK</cmt>
+    <desc>OVCJAK</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.846117" lon="13.887497">
+    <ele>390.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B95</name>
+    <cmt>TRESNIK</cmt>
+    <desc>TRESNIK</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.798336" lon="13.896117">
+    <ele>523.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B96</name>
+    <cmt>SELO</cmt>
+    <desc>SELO</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.894719" lon="13.778044">
+    <ele>128.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B97</name>
+    <cmt>BATUJE</cmt>
+    <desc>BATUJE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.887783" lon="13.702500">
+    <ele>110.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>B98</name>
+    <cmt>PRVACINA</cmt>
+    <desc>PRVACINA</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.086667" lon="12.487222">
+    <ele>1510.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>M01</name>
+    <cmt>MONTECAVALLO UNO</cmt>
+    <desc>MONTECAVALLO UNO</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.010278" lon="12.418611">
+    <ele>960.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>M03</name>
+    <cmt>MONTECAVALLO TRE</cmt>
+    <desc>MONTECAVALLO TRE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.100000" lon="12.600000">
+    <ele>230.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>M05</name>
+    <cmt>MONTECAVALLO CINQUE</cmt>
+    <desc>MONTECAVALLO CINQUE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.050000" lon="12.550000">
+    <ele>150.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>M06</name>
+    <cmt>MONTECAVALLO SEI</cmt>
+    <desc>MONTECAVALLO SEI</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.072581" lon="13.117619">
+    <ele>112.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>V01</name>
+    <cmt>NOGAREDO R15</cmt>
+    <desc>NOGAREDO R15</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.002781" lon="12.799078">
+    <ele>56.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>V02</name>
+    <cmt>MURLIS R20</cmt>
+    <desc>MURLIS R20</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.927603" lon="13.377103">
+    <ele>32.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>V03</name>
+    <cmt>VISCONE R12</cmt>
+    <desc>VISCONE R12</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.974169" lon="13.083131">
+    <ele>49.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>V04</name>
+    <cmt>VILLACACCIA R30</cmt>
+    <desc>VILLACACCIA R30</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.827953" lon="12.340869">
+    <ele>40.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>V05</name>
+    <cmt>TEZZE R15</cmt>
+    <desc>TEZZE R15</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.336944" lon="11.833889">
+    <ele>1700.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>Z01</name>
+    <cmt>ZITA UNO</cmt>
+    <desc>ZITA UNO</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.559722" lon="12.450000">
+    <ele>1270.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>Z02</name>
+    <cmt>ZITA DUE</cmt>
+    <desc>ZITA DUE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.581667" lon="12.511667">
+    <ele>1120.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>Z05</name>
+    <cmt>ZITA CINQUE</cmt>
+    <desc>ZITA CINQUE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.466667" lon="13.250000">
+    <ele>1880.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>Z06</name>
+    <cmt>ZITA SEI</cmt>
+    <desc>ZITA SEI</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.199836" lon="12.829214">
+    <ele>252.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>Z07</name>
+    <cmt>TOPPO</cmt>
+    <desc>TOPPO</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.189794" lon="12.833936">
+    <ele>242.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>Z08</name>
+    <cmt>BERNARDO</cmt>
+    <desc>BERNARDO</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.590464" lon="13.596442">
+    <ele>550.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>Z09</name>
+    <cmt>ST GEORGEN</cmt>
+    <desc>ST GEORGEN</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.566392" lon="13.667167">
+    <ele>547.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>Z10</name>
+    <cmt>ARNOLDSTEIN</cmt>
+    <desc>ARNOLDSTEIN</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.280647" lon="13.109283">
+    <ele>197.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>Z11</name>
+    <cmt>GEMONA INCROCIO</cmt>
+    <desc>GEMONA INCROCIO</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.406481" lon="12.940242">
+    <ele>361.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>Z12</name>
+    <cmt>INVILLINO</cmt>
+    <desc>INVILLINO</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.766483" lon="11.657728">
+    <ele>116.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>Z13</name>
+    <cmt>VALLE SAN FLORIANO LANDING</cmt>
+    <desc>VALLE SAN FLORIANO LANDING</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.875842" lon="11.967722">
+    <ele>165.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>Z14</name>
+    <cmt>CEMENTIFICIO PIAVE</cmt>
+    <desc>CEMENTIFICIO PIAVE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="45.784689" lon="11.870203">
+    <ele>111.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>Z15</name>
+    <cmt>ONE</cmt>
+    <desc>ONE</desc>
+    <sym>Dot</sym>
+  </wpt>
+  <wpt lat="46.016181" lon="11.792075">
+    <ele>324.0</ele>
+    <time>2019-07-12T10:42:58</time>
+    <name>Z16</name>
+    <cmt>FONZASO</cmt>
+    <desc>FONZASO</desc>
+    <sym>Dot</sym>
+  </wpt>
+</gpx>

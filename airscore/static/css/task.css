@@ -1,0 +1,113 @@
+.pagination {
+	margin-bottom: 15px;
+	}
+.waypoint {
+    background: #ffffff;
+    opacity:0.6;
+    color:#000000;
+    font-size:11px;
+    font-weight:bold;
+    margin:0px;
+    padding:0px;
+    width:100%;
+    border:1px #000000 solid;
+    }
+.pilot {
+    background: #ffff00;
+    opacity:0.6;
+    color:#000000;
+    font-size:11px;
+    font-weight:bold;
+    margin:0px;
+    padding:0px;
+    width:100%;
+    border:1px #000000 solid;
+    }
+.animate {
+    background: transparent;
+    text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+    opacity:1.0;
+    color:#ffffff;
+    font-size:11px;
+    font-weight:bold;
+    margin:0px;
+    padding:0px;
+    width:100%;
+    border:0px;
+    }
+.trackmap {
+    width:100%;
+    height:100%;
+    }
+.map_control {
+    border:solid black 2px;
+    background-color:yellow;
+    opacity: 0.70;
+    color:black;
+    font-family:Arial, Helvetica, Bold, sans-serif;
+    font-size:11px;
+    text-align:left;
+    margin:5px;
+    padding:3px;
+}
+.map_panel {
+    border:solid black 2px;
+    background-color:white;
+    opacity: 0.80;
+    color:black;
+    font-family:Arial, Helvetica, Bold, sans-serif;
+    font-size:11px;
+    text-align:left;
+    margin:5px;
+    padding:3px;
+}
+.play {
+    border:solid black 2px;
+    border-radius: 5px;
+    background-color:white;
+    opacity: 1;
+    color: black;
+    font-family: Arial, Helvetica, Bold, sans-serif;
+    font-size: 2.2em;
+    line-height: 1;
+    text-align: center;
+    margin: 5px;
+    padding: 5px;
+}
+.play td {
+    margin: 0px 9px 0px 9px;
+    padding: 0px 9px 0px 9px;
+}
+.play td:hover {background-color:#f5f5f5;}
+.comp_header {
+    float: left;
+}
+.task_waypoints {
+    float: right;
+}
+.form_param {
+    line-height: 1;
+    margin: 0px;
+    padding: 0px;
+    font-size: 11px;
+}
+table.comment_table {
+    font-size: 0.8em;
+}
+#expandtab {
+    margin: 0px;
+    font-size: 10em;
+}
+@media (max-width: 576px) { .modal-dialog.modal-dialog-slideout {width: 80%}}
+body {
+  padding-top: 54px;
+}
+@media (min-width: 992px) {
+  body {
+    padding-top: 56px;
+  }
+}
+.modal-dialog-slideout {min-height: 100%; margin: 0 auto 0 0 ;background: #fff;}
+.modal.fade .modal-dialog.modal-dialog-slideout {-webkit-transform: translate(-100%,0);transform: translate(-100%,0);}
+.modal.fade.show .modal-dialog.modal-dialog-slideout {-webkit-transform: translate(0,0);transform: translate(0,0);flex-flow: column;}
+.modal-dialog-slideout .modal-content{border: 0;}

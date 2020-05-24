@@ -1,0 +1,47 @@
+{% extends "layout.html" %}
+{% block content %}
+  <body>
+<!--  <head>-->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>AirScore Competitions</title>
+
+    <!-- CSS -->
+    <link href="/static/css/task.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css" rel="stylesheet">
+    <script src="{{ static_url_for('static', filename='js/utils.js') }}"></script>
+
+
+
+
+    <div class="container" id="main">
+    <br>
+    <table id="competitions" class="row-border stripe compact mb-1" cellspacing="0" width="100%">
+    <thead>
+        <tr>
+            <th>Competition</th>
+            <th>Location</th>
+            <th></th>
+            <th>Type</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Tasks</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    </table>
+    </div>
+
+
+</body>
+
+{% endblock %}
+
+{% block js %}
+{% include "js.html" %}
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+    <script src="{{ static_url_for('static', filename='js/pop_comps.js') }}"></script>
+{% endblock %}

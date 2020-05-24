@@ -1,0 +1,59 @@
+##################
+#File created from install / settings
+#Use:   with open('config.yaml') as f:
+#           config = yaml.safe_load(f)
+#
+# ToDO: setup script to create this file"""
+##################
+
+waypoint/airspace_file_library: on # on/off ability to see and reuse waypoint and airspace files between comps.
+                                   # recommended for small user base. i.e. national associations
+use_internal_pilot_DB: yes # store pilots in airscore for use in comps.
+                           # The alternative is to import a list of competitors for each comp.
+                           # Using a internal pilot DB is recommended for clubs and national organisations.
+                           # note that even if using an internal pilot DB you can still import external pilots for a comp
+                           # (guest pilots, particular events etc.)
+
+internal_pilot_DB: # if use_internal_pilot_DB is yes the below settings are relevant
+  write_to_internal_pilot_DB: no # if Airscore store and modify pilots.
+                                 # The reason you may not want to do this is if you connect the pilot DB to an external source.
+  self_registration_default: on # Each comp can be setup that a pilot (given a login) can self register for an event.
+                                # This is the default value on creating a new competition
+
+
+competition_season:
+#start_year: previous or current offset -1 or 0
+#if season starts during previous year e.g. 2019 season starts 1st november 2018 then -1
+    start_year: -1
+    start_month: 11
+    start_day: 1
+    end_month: 10
+    end_day: 31
+
+sanctions:
+  - none
+  - league
+  - PWC
+  - FAI 2
+  - FAI 1
+
+dir:
+  bin: /app/airscore/core/
+  tracks: /app/airscore/data/tracks/
+  waypoint: /app/airscore/data/waypoints/
+  json: /app/airscore/data/json/
+  log: /app/airscore/data/log/
+  image: /app/airscore/data/images/
+  map: /app/airscore/data/map-objects/
+  result: /app/airscore/data/results/
+  airspace: /app/airscore/data/airspace/openair/
+  airspace_map: /app/airscore/data/map-objects/airspace/
+  airspace_check: /app/airscore/data/airspace/check_file/
+  livetracking: /app/airscore/data/livetracking/
+  igc_parsing_config: /app/airscore/igc_parsing_config/
+  temp_files: /app/airscore/data/temp/
+
+g_record_validation_server: http://vali.fai-civl.org/api/vali/json
+flymaster_live_server: https://lt.flymaster.net/wlb/getLiveData.php?trackers=
+
+
