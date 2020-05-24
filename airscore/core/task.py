@@ -1759,7 +1759,7 @@ def write_map_json(task_id):
             o = task.optimised_turnpoints[idx]
             r = gdist((obj.lat, obj.lon), (o.lat, o.lon)).meters
             turnpoints.append({
-                # 'radius': obj.radius,
+                'radius_label': obj.radius,
                 'radius': r,
                 'longitude': obj.lon,
                 'latitude': obj.lat,
