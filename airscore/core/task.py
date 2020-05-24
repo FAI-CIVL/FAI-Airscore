@@ -1725,10 +1725,9 @@ def get_map_json(task_id):
 
 def write_map_json(task_id):
     import os
-    from geographiclib.geodesic import Geodesic
     from mapUtils import get_route_bbox
+    from geopy.distance import GreatCircleDistance as gdist
 
-    geod = Geodesic.WGS84
     task_file = Path(MAPOBJDIR + 'tasks/' + str(task_id) + '.task')
 
     if not os.path.isdir(MAPOBJDIR + 'tasks/'):
@@ -1740,7 +1739,7 @@ def write_map_json(task_id):
     task = Task.read(task_id)
     tolerance = task.tolerance
 
-    for obj in task.turnpoints:
+    for idx, obj in enumerate(task.turnpoints):
         task_coords.append({
             'longitude': obj.lon,
             'latitude': obj.lat,
@@ -1755,9 +1754,13 @@ def write_map_json(task_id):
             goal_line.append(tuple([ends[1].lat, ends[1].lon]))
 
         else:
-            '''create tp cylinder'''
+            ''' create tp cylinder
+                radius adjustment to correct projection error'''
+            o = task.optimised_turnpoints[idx]
+            r = gdist((obj.lat, obj.lon), (o.lat, o.lon)).meters
             turnpoints.append({
-                'radius': obj.radius,
+                # 'radius': obj.radius,
+                'radius': r,
                 'longitude': obj.lon,
                 'latitude': obj.lat,
                 #         'altitude': obj.altitude,
