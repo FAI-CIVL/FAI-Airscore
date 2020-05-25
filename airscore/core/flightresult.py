@@ -808,13 +808,19 @@ def verify_all_tracks(task, lib, airspace=None, print=print):
         if pilot.result_type not in ('abs', 'dnf', 'mindist'):
             print(f"{pilot.ID}. {pilot.name}: ({pilot.track.track_file})")
             filename = path.join(task.file_path, pilot.track.track_file)
+            '''load track file'''
             pilot.track.flight = Flight.create_from_file(filename)
-            if pilot.track.flight and pilot.track.flight.valid:
-                pilot.result = FlightResult.check_flight(pilot.track.flight, task, airspace_obj=airspace, print=print)
-                print(
-                    f'   Goal: {bool(pilot.result.goal_time)} | dist: {pilot.result.distance} part. LC: {pilot.result.fixed_LC}')
-            elif pilot.track.flight:
-                print(f'Error in parsing track: {[x for x in pilot.track.flight.notes]}')
+            if pilot.track.flight:
+                pilot.track.get_notes()
+                # pilot.track.get_type()
+                if pilot.track.flight.valid:
+                    '''check flight against task'''
+                    pilot.result = FlightResult.check_flight(pilot.track.flight, task,
+                                                             airspace_obj=airspace, print=print)
+                elif pilot.track.flight:
+                    print(f'Error in parsing track: {[x for x in pilot.track.notifications]}')
+            '''unload flight object'''
+            pilot.track.flight = None
     lib.process_results(task)
 
 
