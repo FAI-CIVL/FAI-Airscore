@@ -14,7 +14,7 @@ from myconn import Database
 
 
 def get_comp(task_id: int):
-    """Get com_id from tas_id"""
+    """Get com_id from task_id"""
     from db_tables import TblTask as T
     with Database() as db:
         try:
@@ -28,7 +28,7 @@ def get_comp(task_id: int):
 
 
 def get_class(task_id: int):
-    """Get comp_id from task_id"""
+    """Get comp_class ('PG', 'HG', 'BOTH') from task_id"""
     from db_tables import CompObjectView as C
     with Database() as db:
         try:
@@ -42,7 +42,7 @@ def get_class(task_id: int):
 
 
 def get_task_date(task_id: int):
-    """Get date from task_id in date format"""
+    """Get date from task_id in datetime.date format"""
     from db_tables import TblTask as T
     with Database() as db:
         try:
@@ -56,7 +56,7 @@ def get_task_date(task_id: int):
 
 
 def get_registration(comp_id: int):
-    """Check if comp has a registration"""
+    """Check if comp has mandatory registration"""
     from db_tables import TblCompetition as C
     with Database() as db:
         try:
@@ -112,7 +112,7 @@ def is_ext(comp_id: int):
 
 
 def get_comp_json_filename(comp_id: int, latest=False):
-    """returns active json results file"""
+    """returns active json results filename, or latest if latest is True"""
     from db_tables import TblResultFile as R
     with Database() as db:
         try:
@@ -130,6 +130,7 @@ def get_comp_json_filename(comp_id: int, latest=False):
 
 
 def get_comp_json(comp_id: int, latest=False):
+    """returns json data from comp result file, default the active one or latest if latest is True"""
     filename = get_comp_json_filename(comp_id, latest)
     if not filename:
         return "error"
@@ -151,7 +152,7 @@ def get_nat_code(iso: str):
 
 
 def get_nat_name(iso: str):
-    """Get Country Code from ISO2 or ISO3"""
+    """Get Country name from ISO2 or ISO3"""
     from db_tables import TblCountryCode as CC
     if not (type(iso) is str and len(iso) in (2, 3)):
         return None
@@ -161,7 +162,7 @@ def get_nat_name(iso: str):
 
 
 def get_task_path(task_id: int):
-    """ """
+    """ returns task folder name"""
     from db_tables import TblTask as T
     if type(task_id) is int and task_id > 0:
         with Database() as db:
@@ -169,7 +170,7 @@ def get_task_path(task_id: int):
 
 
 def get_comp_path(comp_id: int):
-    """ """
+    """ returns comp folder name"""
     from db_tables import TblCompetition as C
     if type(comp_id) is int and comp_id > 0:
         with Database() as db:
@@ -177,11 +178,15 @@ def get_comp_path(comp_id: int):
 
 
 def create_comp_path(date: datetime.date, code: str):
-    from os import path
-    return path.join(str(date.year), str(code).lower())
+    """ creates comp path from input:
+        - comp date
+        - comp_code"""
+    from pathlib import Path
+    return Path(str(date.year), str(code).lower())
 
 
 def get_task_region(task_id: int):
+    """returns task region id from task_id"""
     from db_tables import TblTask as T
     with Database() as db:
         try:
@@ -194,7 +199,7 @@ def get_task_region(task_id: int):
 
 
 def get_area_wps(region_id: int):
-    """query db get all wpts names and pks for region of task and put into dictionary"""
+    """query db get all wpts names and pks for region and put into dictionary"""
     from db_tables import TblRegionWaypoint as W
     with Database() as db:
         try:
@@ -208,6 +213,7 @@ def get_area_wps(region_id: int):
 
 
 def get_wpts(task_id: int):
+    """query db get all wpts names and pks for region of task and put into dictionary"""
     region_id = get_task_region(task_id)
     return get_area_wps(region_id)
 
@@ -232,6 +238,7 @@ def get_participants(comp_id: int):
 
 
 def get_tasks_result_files(comp_id: int):
+    """ returns a list of (task_id, active result filename) for tasks in comp"""
     from db_tables import TblResultFile as R
     files = []
     with Database() as db:
@@ -273,7 +280,6 @@ def read_rankings(comp_id: int):
             db.session.rollback()
             db.session.close()
             return error
-
     if len(result) > 0:
         for res in result:
             if res.rank in rank:
@@ -284,7 +290,6 @@ def read_rankings(comp_id: int):
         rank['team'] = result.pop().team
     else:
         print(f'Ranking list is empty')
-
     return rank
 
 
@@ -311,7 +316,6 @@ def get_task_filepath(task_id: int, session=None):
     from db_tables import TaskObjectView as T
     from Defines import TRACKDIR
     from pathlib import Path
-
     with Database(session) as db:
         try:
             task = db.session.query(T).filter_by(task_id=task_id).one()
@@ -339,7 +343,6 @@ def get_formulas(comp_class):
 
     all_files = os.listdir("formulas")
     formulas = []
-
     for formula in all_files:
         fields = formula.split('.')
         if len(fields) > 1 and fields[1] == 'py' and not any(x in fields[0] for x in ('test', 'old')):
@@ -359,9 +362,10 @@ def get_fsdb_task_path(task_path):
 
 
 def is_shortcode_unique(shortcode: str, date: datetime.date):
+    """ checks if given shortcode already exists as folder, returns True / False"""
     from pathlib import Path
     from Defines import TRACKDIR
-    print(Path(TRACKDIR, str(date.year), shortcode))
+    # print(Path(TRACKDIR, str(date.year), shortcode))
     if Path(TRACKDIR, str(date.year), shortcode).is_dir():
         return False
     return True
