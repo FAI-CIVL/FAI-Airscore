@@ -8,6 +8,7 @@
 # Configuration files
 .env
 secret.yaml
+defines.yaml
 airscore/core/dreamhost*.*
 
 # Cache files
@@ -38,6 +39,8 @@ airscore/core/*.xctsk
 airscore/core/*.zip
 airscore/core/test*
 airscore/core/*.json
+airscore/core/test_files
+airscore/core/test_files/*
 
 # Development database
 *.db
@@ -105,3 +108,7 @@ venv/
 /temp_tracks/*
 /airscore/data/temp/
 /airscore/data/temp/*
+/airscore/data/waypoints/
+/airscore/data/waypoints/*
+/temp/
+/temp/*
