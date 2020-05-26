@@ -906,7 +906,7 @@ def get_comp_country_scoring(filename):
 
     for nat in countries:
         nation = dict(code=nat.code, name=nat.name)
-        nat_pilots = [p for p in data['results'] if p['nat'] == nation['code'] and p['nat_team']]
+        nat_pilots = [p for p in data['results'] if p['nat'] == nation['code'] and p['nat_team'] == 1]
         score = 0
         for t in tasks:
             '''sort pilots by task result'''
