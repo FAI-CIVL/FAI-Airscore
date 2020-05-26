@@ -41,9 +41,10 @@ class Track(object):
         self.track_file = track_file
         self.track_id = track_id
         self.track_type = track_type
-        # self.comment = comment  # should be a list?
+        self.notifications = []
         self.flight = flight  # igc_lib.Flight object
         self.par_id = par_id  # TblParticipant ID # could delete?
+        # self.comment = comment  # should be a list?
 
     @property
     def date(self):
@@ -77,14 +78,14 @@ class Track(object):
         else:
             return None
 
-    @property
-    def notifications(self):
-        """flight notifications list"""
-        from notification import Notification
-        if self.flight:
-            return [Notification(notification_type='track', comment=i) for i in self.flight.notes]
-        else:
-            return []
+    # @property
+    # def notifications(self):
+    #     """flight notifications list"""
+    #     from notification import Notification
+    #     if self.flight:
+    #         return [Notification(notification_type='track', comment=i) for i in self.flight.notes]
+    #     else:
+    #         return []
 
     @property
     def comment(self):
@@ -121,6 +122,14 @@ class Track(object):
 
     def as_dict(self):
         return self.__dict__
+
+    def get_notes(self):
+        """flight notifications list"""
+        from notification import Notification
+        if self.flight:
+            self.notifications = [Notification(notification_type='track', comment=i) for i in self.flight.notes]
+        else:
+            return []
 
     def get_pilot(self):
         """Get pilot associated to a track from its filename

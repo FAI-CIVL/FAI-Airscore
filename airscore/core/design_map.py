@@ -107,10 +107,12 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
             else:
                 col = '#3186cc'
 
+            popup = folium.Popup(f"<b>{c['name']}</b><br>Radius: {str(c['radius_label'])} m.", max_width=300)
+
             folium.Circle(
                 location=(c['latitude'], c['longitude']),
                 radius=0.0 + c['radius'],
-                popup='Wpt: ' + c['name'] + '<br>Radius: ' + str(c['radius']) + 'm.',
+                popup=popup,
                 color=col,
                 weight=2,
                 opacity=0.8,
@@ -126,7 +128,7 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
             folium.Circle(
                 location=(c['latitude'], c['longitude']),
                 radius=0.0 + c['radius'] * (1 + margin),
-                popup='Wpt: ' + c['name'] + '<br>Radius: ' + str(c['radius']) + 'm.',
+                popup=None,
                 color="#44cc44",
                 weight=0.75,
                 opacity=0.8,
@@ -136,7 +138,7 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
             folium.Circle(
                 location=(c['latitude'], c['longitude']),
                 radius=0.0 + c['radius'] * (1 - margin),
-                popup='Wpt: ' + c['name'] + '<br>Radius: ' + str(c['radius']) + 'm.',
+                popup=None,
                 color="#44cc44",
                 weight=0.75,
                 opacity=0.8,
