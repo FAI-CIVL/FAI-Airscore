@@ -19,6 +19,8 @@ with open('../../secret.yaml', 'rb') as f:
     secret = yaml.safe_load(f)
 os.chdir(dname)
 ''' Application Settings'''
+FLASKCONTAINER = config['docker']['container']  # Flask Docker Container Name
+FLASKPORT = config['docker']['port']  # Flask Docker Container Name
 BINDIR = config['dir']['bin']  # script directory
 TRACKDIR = config['dir']['tracks']  # track file directory
 LOGDIR = config['dir']['log']  # log files directory
