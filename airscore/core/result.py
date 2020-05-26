@@ -421,8 +421,8 @@ def update_result_file(filename: str, par_id: int, notification: dict):
         print(f'Json file {filename} does not exist')
         return None
     comment = notification['comment']
-    penalty = 0 if 'flat_penalty' not in notification.keys() else float(notification['flat_penalty'])
-    not_id = None if 'not_id' not in notification.keys() else int(notification['not_id'])
+    penalty = 0 if not notification.get('flat_penalty') else float(notification['flat_penalty'])
+    not_id = notification.get('not_id')
     old_penalty = 0
     with open(file, 'r+') as f:
         data = json.load(f)
