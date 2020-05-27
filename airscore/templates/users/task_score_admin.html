@@ -30,7 +30,7 @@
       Score Task
       </button>
 
-      <button class="btn btn-warning ml-4" type="button" onclick="FullRescore();">
+      <button class="btn btn-warning ml-4" type="button" data-toggle="modal" data-target="#fullscoremodal">
       Full Rescore
       </button>
            &nbsp;
@@ -142,7 +142,40 @@
 </div>
 </div>
 <!-score-Modal ends here--->
+<!---full rescore-modal starts here--->
+<div id="fullscoremodal" class="modal fade" tabindex="-1" role='dialog'>
+   <div class="modal-dialog" role="document">
+      <div class="modal-content">
+         <div class="modal-header">
+            <h4 class="modal-title">Full Rescore Task - reprocess all tracks and score</h4>
+             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+         </div>
+         <div class="modal-body" id= "fullscoremodal-body">
 
+            <div class="container-fluid">
+             <div class="col-md-12">
+             <input type="checkbox" class="form-check-input" id="fullautopublish" name="autopublish" value="1">
+            <label class="form-check-label" for="autopublish">publish results after scoring</label>
+                 <br>
+                   <br>
+                 <label for="autopublish">Status:</label>
+             <input type="text" id="fullstatus_comment" class="form-control" placeholder="partial/provisional/official etc.">
+
+             <small id="fullhelptxt" class="form-text text-muted">This can be done later also.</small>
+            </div>
+            </div>
+               <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="cancel_fullscore_btn"  data-dismiss="modal">Cancel</button>
+        <button type="button" id="fullscore_btn" onclick="FullRescore();" class="btn btn-primary">Full Rescore</button>
+        <p id="fullscore_spinner"></p>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<!-full_Rescore-Modal ends here--->
 <!---edit-modal starts here--->
 <div id="editmodal" class="modal fade bd-example-modal-lg   " tabindex="-1" role='dialog'>
    <div class="modal-dialog modal-lg" role="document">
@@ -205,7 +238,7 @@
       <div class="modal-body" id="process_text">
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Hide</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
@@ -281,7 +314,7 @@ function toggle_publish() {
 }
 
 
-function updateFiles() {
+function updateFiles(load_latest=false) {
     var mydata = new Object();
     mydata.offset = new Date().getTimezoneOffset();
     dropdown.file.attr('disabled', 'disabled');
@@ -314,7 +347,9 @@ function updateFiles() {
         active_file = response.active;
         $("#file").val(response.active);
         }
-
+        if(load_latest){
+        $("#file").val($("#file option:first").val());
+            }
         var filename = $('#file option:selected').val();
         update_publish_button(filename);
         var status = $('#file option:selected').text().split(' - ')[1];
@@ -359,15 +394,24 @@ function Score() {
 }
 
 function FullRescore() {
+        var mydata = new Object();
+        mydata.autopublish = $("#fullautopublish").is(':checked');
+        mydata.status = $('#fullstatus_comment').val();
+        $('#fullscore_btn').hide();
+        $('#cancel_fullscore_btn').hide();
+        $('#fullscore_spinner').html('<div class="spinner-border" role="status"><span class="sr-only">Preparing to score..</span></div>');
+
         $.ajax({
         type: "POST",
         url: "{{ url_for('user._full_rescore_task', taskid=taskid)}}",
         contentType: "application/json",
+        data: JSON.stringify(mydata),
         dataType: "json",
         success: function(response) {
-            if (response.redirect) {
-                window.location.href = response.redirect;
-            }
+            {% if not production %}
+             $('#fullscoremodal').modal('hide');
+            {% endif %}
+
         }
     });
 
@@ -578,7 +622,14 @@ function initES() {
 
             es.addEventListener('open_modal', function(event) {
             $('#log_button').show();
+            $('#fullscoremodal').modal('hide');
             $('#ProcessModal').modal('show');
+
+    }, false);
+
+                    es.addEventListener('track_counter', function(event) {
+        var data = JSON.parse(event.data);
+        $('#ProcessModalTitle').text('Tracklog Processing:'+ data.message);
 
     }, false);
 
@@ -588,11 +639,10 @@ function initES() {
 
     }, false);
 
+    es.addEventListener('reload_select_latest', function(event) {
+        updateFiles(load_latest=true);
+    }, false);
 
-
-<!--    es.addEventListener('error', function(event) {-->
-<!--        alert("Failed to connect to event stream. Is Redis running?");-->
-<!--    }, false);-->
     }
 }
 initES();

@@ -976,14 +976,19 @@ def _score_task(taskid):
 @login_required
 def _full_rescore_task(taskid):
     taskid=int(taskid)
+    data = request.json
     if frontendUtils.production():
         job = current_app.task_queue.enqueue(frontendUtils.full_rescore, taskid, background=True,
-                                             user=current_user.username, job_timeout=2000)
+                                             user=current_user.username,  status=data['status'],
+                                             autopublish=data['autopublish'], compid=session['compid'],
+                                             job_timeout=2000)
+
         resp = jsonify(success=True, background=True)
         return resp
 
     else:
-        frontendUtils.full_rescore(taskid)
+        frontendUtils.full_rescore(taskid, status=data['status'], autopublish=data['autopublish'],
+                                   compid=session['compid'])
         resp = jsonify(success=True)
         return resp
 

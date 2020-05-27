@@ -887,19 +887,33 @@ def get_pretty_data(filename):
         return 'error'
 
 
-def full_rescore(taskid, background=False, user=None):
+def full_rescore(taskid, background=False, status=None, autopublish=None, compid=None, user=None):
     from task import Task
+    from comp import Comp
+    from result import unpublish_result, publish_result
     task = Task.read(taskid)
     if background:
         print = partial(print_to_sse, id=None, channel=user)
         print('|open_modal')
         print('***************START*******************')
-        refid, filename = task.create_results(mode='full', status='Full Rescore', print=print)
+        refid, filename = task.create_results(mode='full', status=status, print=print)
+        if autopublish:
+            unpublish_result(taskid)
+            publish_result(refid, ref_id=True)
+            if compid:
+                comp = Comp()
+                comp.create_results(compid, name_suffix='Overview')
         print('****************END********************')
-        print(f'{filename}|reload')
+        print(f'{filename}|reload_select_latest')
         return None
     else:
-        refid, filename = task.create_results(mode='full')
+        refid, filename = task.create_results(mode='full', status=status)
+        if autopublish:
+            unpublish_result(taskid)
+            publish_result(refid, ref_id=True)
+            if compid:
+                comp = Comp()
+                comp.create_results(compid, name_suffix='Overview')
         return refid
 
 
