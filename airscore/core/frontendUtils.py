@@ -9,7 +9,7 @@ from sqlalchemy import func
 from pathlib import Path
 import jsonpickle
 from Defines import MAPOBJDIR, IGCPARSINGCONFIG, track_formats
-from design_map import make_map
+from map import make_map
 from sqlalchemy.exc import SQLAlchemyError
 from calcUtils import sec_to_time
 from os import scandir, path, environ

@@ -20,7 +20,7 @@ from airscore.utils import flash_errors
 from datetime import datetime
 from task import get_map_json, get_task_json
 from trackUtils import read_tracklog_map_result_file
-from design_map import make_map
+from map import make_map
 from flask_wtf import FlaskForm
 from wtforms import SelectField
 import mapUtils
