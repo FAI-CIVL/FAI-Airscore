@@ -30,7 +30,7 @@ from os import path, makedirs
 import jsonpickle
 from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
-
+from dataclasses import dataclass, asdict
 from Defines import MAPOBJDIR
 from airspace import AirspaceCheck
 from calcUtils import string_to_seconds, sec_to_time
@@ -112,6 +112,55 @@ class Tp(object):
     def move_to_next(self):
         if self.pointer < len(self.turnpoints):
             self.pointer += 1
+
+
+@dataclass
+class WaypointAchieved:
+    trw_id: int or None  # probably not needed as deleted each full-rescore. maybe to validate wpt by admin?
+    wpt_id: int
+    name: str
+    rawtime: int
+    lat: float
+    lon: float
+    altitude: int
+
+
+def get_waypoints_achieved(track_id, session=None):
+    """retrieves a WaypointAchieved obj list for track_id result"""
+    from db_tables import TblTrackWaypoint
+    from sqlalchemy.orm import aliased
+    t = aliased(TblTrackWaypoint)
+    achieved = []
+    with Database(session) as db:
+        try:
+            rows = db.session.query(t.trw_id, t.wpt_id, t.name, t.rawtime,
+                                    t.lat, t.lon, t.altitude).filter_by(track_id=track_id).all()
+            for w in rows:
+                achieved.append(WaypointAchieved(**w._asdict()))
+        except SQLAlchemyError:
+            print("there was a problem retrieving waypoints achieved")
+            db.session.rollback()
+            db.session.close()
+    return achieved
+
+
+def update_waypoints_achieved(pilot, session=None):
+    """deletes old entries and updates TblTrackWaypoint for result"""
+    from db_tables import TblTrackWaypoint
+    mappings = []
+    for w in pilot.result.waypoints_achieved:
+        mappings.append(dict(track_id=pilot.track_id, **asdict(w)))
+    with Database(session) as db:
+        try:
+            '''delete old entries'''
+            db.session.query(TblTrackWaypoint).filter_by(track_id=pilot.track_id).delete()
+            '''insert new rows'''
+            db.session.bulk_insert_mappings(TblTrackWaypoint, mappings)
+            db.session.commit()
+        except SQLAlchemyError:
+            print("there was a problem inserting waypoints achieved")
+            db.session.rollback()
+            db.session.close()
 
 
 class FlightResult(object):
@@ -240,7 +289,7 @@ class FlightResult(object):
     @property
     def waypoints_made(self):
         if self.waypoints_achieved:
-            return len(Counter(el[0] for el in self.waypoints_achieved if not el[0] == 'Left Launch'))
+            return len(Counter(el.name for el in self.waypoints_achieved if not el.name == 'Left Launch'))
         else:
             return 0
 
@@ -486,8 +535,7 @@ class FlightResult(object):
                     # could set this in the DB or even formula if needed..???
                     tp.next.radius = 200  # meters
                     if tp.next.in_radius(my_fix, tolerance, min_tol_m):
-                        result.waypoints_achieved.append(
-                            [tp.name, my_fix.rawtime, alt])  # pilot has achieved turnpoint
+                        result.waypoints_achieved.append(create_waypoint_achieved(my_fix, tp, my_fix.rawtime, alt))
                         tp.move_to_next()
 
                 else:
@@ -511,7 +559,8 @@ class FlightResult(object):
                 # print(f'time: {my_fix.rawtime}, start: {task.start_time} | Interval: {task.SS_interval} | my start: {result.real_start_time} | better_start: {pilot_get_better_start(task, my_fix.rawtime, result.SSS_time)} | can start: {pilot_can_start(task, tp, my_fix)} can restart: {pilot_can_restart(task, tp, my_fix, result)} | tp: {tp.name}')
                 if start_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m):
                     time = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
-                    result.waypoints_achieved.append([tp.name, time, alt])  # pilot has started
+                    result.waypoints_achieved.append(
+                        create_waypoint_achieved(my_fix, tp, time, alt))  # pilot has started
                     result.real_start_time = time
                     print(f"Pilot started SS at {sec_to_time(result.real_start_time)}")
                     result.best_distance_time = time
@@ -523,7 +572,8 @@ class FlightResult(object):
                     tp.pointer -= 1
                     time = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
                     result.waypoints_achieved.pop()
-                    result.waypoints_achieved.append([tp.name, time, alt])  # pilot has started again
+                    result.waypoints_achieved.append(
+                        create_waypoint_achieved(my_fix, tp, time, alt))  # pilot has started again
                     result.real_start_time = time
                     result.best_distance_time = time
                     print(f"Pilot restarted SS at {sec_to_time(result.real_start_time)}")
@@ -537,7 +587,8 @@ class FlightResult(object):
                         and tp.next.type in ('endspeed', 'waypoint')):
                     if tp_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m):
                         time = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
-                        result.waypoints_achieved.append([tp.name, time, alt])  # pilot has achieved turnpoint
+                        result.waypoints_achieved.append(
+                            create_waypoint_achieved(my_fix, tp, time, alt))  # pilot has achieved turnpoint
                         print(f"Pilot took {tp.name} at {sec_to_time(time)} at {alt}m")
                         tp.move_to_next()
 
@@ -545,7 +596,8 @@ class FlightResult(object):
                     if ((tp.next.shape == 'circle' and tp_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m))
                             or
                             (tp.next.shape == 'line' and (in_goal_sector(task, next_fix)))):
-                        result.waypoints_achieved.append([tp.name, next_fix.rawtime, alt])  # pilot has achieved goal
+                        result.waypoints_achieved.append(
+                            create_waypoint_achieved(next_fix, tp, next_fix.rawtime, alt))  # pilot has achieved goal
                         result.best_distance_time = next_fix.rawtime
                         print(f"Goal at {sec_to_time(next_fix.rawtime)}")
                         break
@@ -647,26 +699,27 @@ class FlightResult(object):
                                                          flat_penalty=penalty, comment=comment))
 
             '''ESS Time'''
-            if any(e[0] == 'ESS' for e in result.waypoints_achieved):
+            if any(e.name == 'ESS' for e in result.waypoints_achieved):
                 # result.ESS_time, ess_altitude = min([e[1] for e in result.waypoints_achieved if e[0] == 'ESS'])
-                result.ESS_time, result.ESS_altitude = min(
-                    [(x[1], x[2]) for x in result.waypoints_achieved if x[0] == 'ESS'], key=lambda t: t[0])
+                result.ESS_time, result.ESS_altitude = min([(x.rawtime, x.altitude) for x in result.waypoints_achieved
+                                                            if x.name == 'ESS'], key=lambda t: t[0])
                 result.speed = (task.SS_distance / 1000) / (result.ss_time / 3600)
 
                 '''Distance flown'''
                 ''' ?p:p?PilotsLandingBeforeGoal:bestDistancep = max(minimumDistance, taskDistance-min(?trackp.pointi shortestDistanceToGoal(trackp.pointi)))
                     ?p:p?PilotsReachingGoal:bestDistancep = taskDistance
                 '''
-                if any(e[0] == 'Goal' for e in result.waypoints_achieved):
+                if any(e.name == 'Goal' for e in result.waypoints_achieved):
                     # result.distance_flown = distances2go[0]
                     result.distance_flown = task.opt_dist
-                    result.goal_time, result.goal_altitude = min(
-                        [(x[1], x[2]) for x in result.waypoints_achieved if x[0] == 'Goal'], key=lambda t: t[0])
+                    result.goal_time, result.goal_altitude = min([(x.rawtime, x.altitude)
+                                                                  for x in result.waypoints_achieved
+                                                                  if x.name == 'Goal'], key=lambda t: t[0])
                     result.result_type = 'goal'
         if result.result_type != 'goal':
             print(f"Pilot landed after {result.distance_flown / 1000:.2f}km")
 
-        result.best_waypoint_achieved = str(result.waypoints_achieved[-1][0]) if result.waypoints_achieved else None
+        result.best_waypoint_achieved = str(result.waypoints_achieved[-1].name) if result.waypoints_achieved else None
 
         if lead_coeff:
             result.fixed_LC = lead_coeff.summing
@@ -883,3 +936,9 @@ def delete_track(trackid: int, delete_file=False):
             db.session.close()
             return None
     return row_deleted
+
+
+def create_waypoint_achieved(fix, tp, time: int, alt: int):
+    """creates a dictionary to be added to result.waypoints_achived"""
+    return WaypointAchieved(trw_id=None, wpt_id=tp.next.wpt_id, name=tp.name, lat=fix.lat, lon=fix.lon,
+                            rawtime=time, altitude=alt)

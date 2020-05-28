@@ -846,8 +846,9 @@ class Task(object):
 
     def get_results(self, lib=None):
         """ Loads all Pilot obj. into Task obj."""
-        from db_tables import FlightResultView as F, TblNotification as N
+        from db_tables import FlightResultView as F, TblNotification as N, TblTrackWaypoint as W
         from notification import Notification
+        from flightresult import WaypointAchieved
         from sqlalchemy.exc import SQLAlchemyError
         from pilot import Pilot
         pilots = []
@@ -855,6 +856,7 @@ class Task(object):
             try:
                 results = db.session.query(F).filter(F.task_id == self.task_id).all()
                 notifications = db.session.query(N).filter(N.track_id.in_([p.track_id for p in results])).all()
+                achieved = db.session.query(W).filter(W.track_id.in_([p.track_id for p in results])).all()
                 for row in results:
                     pilot = Pilot.create(task_id=self.task_id)
                     db.populate_obj(pilot.result, row)
@@ -868,6 +870,9 @@ class Task(object):
                             pilot.track.notifications.append(n)
                         else:
                             pilot.result.notifications.append(n)
+                    for el in [{k: getattr(w, k) for k in ['trw_id', 'wpt_id', 'name', 'rawtime', 'lat', 'lon', 'altitude']}
+                               for w in achieved if w.track_id == pilot.track_id]:
+                        pilot.result.waypoints_achieved.append(WaypointAchieved(**el))
                     if self.stopped_time and pilot.result.stopped_distance:
                         pilot.result.still_flying_at_deadline = True
                     pilots.append(pilot)
@@ -1650,6 +1655,7 @@ class Task(object):
 
 def delete_task(task_id, files=False, session=None):
     from db_tables import TblTaskWaypoint as W
+    from db_tables import TblTrackWaypoint as TW
     from db_tables import TblTask as T
     from db_tables import TblTaskResult as R
     from db_tables import TblNotification as N
@@ -1689,6 +1695,7 @@ def delete_task(task_id, files=False, session=None):
             tracks = db.session.query(R.track_id).filter(R.task_id == task_id)
             if tracks:
                 track_list = [t.track_id for t in tracks]
+                db.session.query(TW).filter(TW.track_id.in_(track_list)).delete(synchronize_session=False)
                 db.session.query(N).filter(N.track_id.in_(track_list)).delete(synchronize_session=False)
                 db.session.query(R).filter(R.task_id == task_id).delete(synchronize_session=False)
             '''delete db entries: results, waypoints, task'''

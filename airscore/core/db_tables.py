@@ -808,3 +808,16 @@ class TblTaskWaypoint(Base):
 
     task = relationship('TblTask')
 
+
+class TblTrackWaypoint(Base):
+    __tablename__ = 'tblTrackWaypoint'
+
+    trw_id = Column(INTEGER(11), primary_key=True)
+    track_id = Column(INTEGER(11), nullable=False, index=True)
+    wpt_id = Column(INTEGER(11))
+    name = Column(String(10))
+    rawtime = Column(MEDIUMINT(9), nullable=False)
+    lat = Column(Float, nullable=False)
+    lon = Column(Float, nullable=False)
+    altitude = Column(SMALLINT(6), nullable=False)
+

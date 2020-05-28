@@ -29,5 +29,8 @@ def test_track_flight_check():
     assert test_result.ESS_altitude == 880.0
     assert test_result.real_start_time == 41428
     assert test_result.flight_time == 12158.0
-    assert test_result.waypoints_achieved[1] == ['TP01', 43947, 1445.0]
+    achieved = test_result.waypoints_achieved[1]
+    assert achieved.name == 'TP01'
+    assert achieved.rawtime == 43947
+    assert achieved.altitude == 1445.0
 
