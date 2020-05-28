@@ -182,7 +182,7 @@ def create_comp_path(date: datetime.date, code: str):
         - comp date
         - comp_code"""
     from pathlib import Path
-    return Path(str(date.year), str(code).lower())
+    return Path(str(date.year), str(code).lower()).as_posix()
 
 
 def get_task_region(task_id: int):

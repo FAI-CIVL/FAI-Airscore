@@ -142,7 +142,7 @@ def get_task_turnpoints(task):
     # max_n = int(math.ceil(max_n / 10.0)) * 10
     max_n += 1
 
-    task_file = Path(MAPOBJDIR + 'tasks/' + str(task.task_id) + '.task')
+    task_file = Path(MAPOBJDIR, 'tasks', str(task.task_id) + '.task')
     if task_file.is_file():
         with open(task_file, 'r') as f:
             data = jsonpickle.decode(f.read())

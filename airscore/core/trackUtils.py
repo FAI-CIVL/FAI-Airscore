@@ -198,7 +198,7 @@ def find_pilot(name):
     return None
 
 
-def get_pil_track(par_id, task_id):
+def get_pil_track(par_id: int, task_id: int):
     """Get pilot result in a given task"""
     from db_tables import TblTaskResult as R
 
@@ -211,14 +211,14 @@ def get_pil_track(par_id, task_id):
     return track_id
 
 
-def read_tracklog_map_result_file(track_id, task_id):
+def read_tracklog_map_result_file(track_id: int, task_id: int):
     """create task and track objects"""
     import jsonpickle
     from pathlib import Path
 
     res_path = f"{MAPOBJDIR}tracks/{task_id}/"
     filename = 'result_' + str(track_id) + '.track'
-    fullname = path.join(res_path, filename)
+    fullname = Path(res_path, filename)
     # if the file does not exist
     if not Path(fullname).is_file():
         create_tracklog_map_result_file(track_id, task_id)
@@ -227,20 +227,19 @@ def read_tracklog_map_result_file(track_id, task_id):
         return jsonpickle.decode(f.read())
 
 
-def create_tracklog_map_result_file(track_id, task_id):
+def create_tracklog_map_result_file(track_id: int, task_id: int):
     import flightresult
     from task import Task
     from track import Track
 
     task = Task.read(task_id)
-    # formula = For.TaskFormula.read(task_id)
     track = Track.read_db(track_id)
-    lib = task.formula.get_lib()
+    # lib = task.formula.get_lib()
     result = flightresult.FlightResult.check_flight(track.flight, task)
     result.save_tracklog_map_result_file(result.to_geojson_result(track, task), str(track_id), task_id)
 
 
-def get_task_fullpath(task_id):
+def get_task_fullpath(task_id: int):
     from db_tables import TblTask as T, TblCompetition as C
 
     with Database() as db:
@@ -253,7 +252,7 @@ def get_task_fullpath(task_id):
     return path.join(TRACKDIR, q.comp_path, q.task_path)
 
 
-def get_unscored_pilots(task_id, xcontest=False):
+def get_unscored_pilots(task_id: int, xcontest=False):
     """ Gets list of registered pilots that still do not have a result
         Input:  task_id INT task database ID
         Output: list of Pilot obj."""
@@ -283,7 +282,7 @@ def get_unscored_pilots(task_id, xcontest=False):
     return pilot_list
 
 
-def get_pilot_from_list(filename, pilots):
+def get_pilot_from_list(filename, pilots: list):
     """ check filename against a list of Pilot Obj.
         Looks for different information in filename
 
@@ -351,105 +350,105 @@ def get_pilot_from_list(filename, pilots):
     return None, None
 
 
-def assign_tracks(task, file_dir, pilots_list, source):
-    """ This function will look for tracks in giver dir or in task_path, and tries to associate tracks to participants.
-        For the moment we give for granted pilots need to register, as for this stage only event with registration
-        are possible.
-
-        AirScore will permit to retrieve tracks from different sources and repositories. We need to be able
-        to recognise pilot from filename.
-    """
-    from pathlib import Path
-    from igc_lib import Flight
-    import shutil
-
-    # if not file_dir:
-    #     file_dir = task.file_path
-    if len(listdir(file_dir)) == 0:
-        ''' directory is empty'''
-        print(f'directory {file_dir} is empty')
-        return None
-
-    for file in listdir(file_dir):
-        filename = fsdecode(file)  # filename is without path
-        file_ext = Path(filename).suffix[1:].lower()
-        if filename.startswith((".", "_")) or file_ext not in track_formats:
-            """file is not a valid track"""
-            print(f"Not a valid filename: {filename}")
-            pass
-
-        # TODO manage track file source (comp attr?)
-        if source:
-            pilot, idx = source.get_pilot_from_list(filename, pilots_list)
-        else:
-            pilot, idx = get_pilot_from_list(filename, pilots_list)
-
-        if pilot:
-            try:
-                '''move track to task folder'''
-                file_path = task.file_path
-                full_path = path.join(file_path, filename)
-                shutil.move(filename, full_path)
-                '''add flight'''
-                pilot.track.flight = Flight.create_from_file(full_path)
-                '''check flight'''
-                pilot.result = verify_track(pilot.track, task)
-                '''remove pilot from list'''
-                pilots_list.pop(idx)
-            except IOError:
-                print(f"Error assigning track {filename} to pilot \n")
-
-
-def get_tracks_from_source(task, source=None):
-    """ Accept tracks for unscored pilots of the task
-        - Gets unscored pilots list and, if is not null:
-        - Gets tracks from server source to a temporary folder
-        - assigns tracks to pilots
-        - imports assigned track to correct task folder and, if needed, changes filename"""
-    # TODO function that loads existing results before, so we can score directly after?
-    from tempfile import TemporaryDirectory
-    import importlib
-
-    ''' Get unscored pilots list'''
-    pilots_list = get_unscored_pilots(task.task_id)
-    if len(pilots_list) == 0:
-        print(f"No pilots without tracks found registered to the comp...")
-        return
-
-    ''' load source lib'''
-    if source is None:
-        if task.track_source not in track_sources:
-            print(f"We do not have any zipfile source.")
-            return
-        else:
-            source = importlib.import_module('tracksources.' + task.track_source)
-
-    '''get zipfile'''
-    with TemporaryDirectory() as archive_dir:
-        zipfile = source.get_zipfile(task, archive_dir)
-
-        ''' Get tracks from zipfile to a temporary folder'''
-        with TemporaryDirectory() as temp_dir:
-            extract_tracks(zipfile, temp_dir)
-            assign_tracks(task, temp_dir, pilots_list, source)
+# def assign_tracks(task, file_dir, pilots_list, source):
+#     """ This function will look for tracks in giver dir or in task_path, and tries to associate tracks to participants.
+#         For the moment we give for granted pilots need to register, as for this stage only event with registration
+#         are possible.
+#
+#         AirScore will permit to retrieve tracks from different sources and repositories. We need to be able
+#         to recognise pilot from filename.
+#     """
+#     from pathlib import Path
+#     from igc_lib import Flight
+#     import shutil
+#
+#     # if not file_dir:
+#     #     file_dir = task.file_path
+#     if len(listdir(file_dir)) == 0:
+#         ''' directory is empty'''
+#         print(f'directory {file_dir} is empty')
+#         return None
+#
+#     for file in listdir(file_dir):
+#         filename = fsdecode(file)  # filename is without path
+#         file_ext = Path(filename).suffix[1:].lower()
+#         if filename.startswith((".", "_")) or file_ext not in track_formats:
+#             """file is not a valid track"""
+#             print(f"Not a valid filename: {filename}")
+#             pass
+#
+#         # TODO manage track file source (comp attr?)
+#         if source:
+#             pilot, idx = source.get_pilot_from_list(filename, pilots_list)
+#         else:
+#             pilot, idx = get_pilot_from_list(filename, pilots_list)
+#
+#         if pilot:
+#             try:
+#                 '''move track to task folder'''
+#                 file_path = task.file_path
+#                 full_path = path.join(file_path, filename)
+#                 shutil.move(filename, full_path)
+#                 '''add flight'''
+#                 pilot.track.flight = Flight.create_from_file(full_path)
+#                 '''check flight'''
+#                 pilot.result = verify_track(pilot.track, task)
+#                 '''remove pilot from list'''
+#                 pilots_list.pop(idx)
+#             except IOError:
+#                 print(f"Error assigning track {filename} to pilot \n")
 
 
-def get_tracks_from_zipfile(task, zipfile):
-    """ Accept tracks for unscored pilots of the task
-        - Gets unscored pilots list and, if is not null:
-        - Gets tracks from zipfile to a temporary folder
-        - assigns tracks to pilots
-        - imports assigned track to correct task folder and, if needed, changes filename"""
-    # TODO function that loads existing results before, so we can score directly after?
-    from tempfile import TemporaryDirectory
-
-    ''' Get unscored pilots list'''
-    pilots_list = get_unscored_pilots(task.task_id)
-    if len(pilots_list) == 0:
-        print(f"No pilots without tracks found registered to the comp...")
-        return
-
-    ''' Get tracks from zipfile to a temporary folder'''
-    with TemporaryDirectory() as temp_dir:
-        extract_tracks(zipfile, temp_dir)
-        assign_tracks(task, temp_dir, pilots_list, task.track_source)
+# def get_tracks_from_source(task, source=None):
+#     """ Accept tracks for unscored pilots of the task
+#         - Gets unscored pilots list and, if is not null:
+#         - Gets tracks from server source to a temporary folder
+#         - assigns tracks to pilots
+#         - imports assigned track to correct task folder and, if needed, changes filename"""
+#     # TODO function that loads existing results before, so we can score directly after?
+#     from tempfile import TemporaryDirectory
+#     import importlib
+#
+#     ''' Get unscored pilots list'''
+#     pilots_list = get_unscored_pilots(task.task_id)
+#     if len(pilots_list) == 0:
+#         print(f"No pilots without tracks found registered to the comp...")
+#         return
+#
+#     ''' load source lib'''
+#     if source is None:
+#         if task.track_source not in track_sources:
+#             print(f"We do not have any zipfile source.")
+#             return
+#         else:
+#             source = importlib.import_module('tracksources.' + task.track_source)
+#
+#     '''get zipfile'''
+#     with TemporaryDirectory() as archive_dir:
+#         zipfile = source.get_zipfile(task, archive_dir)
+#
+#         ''' Get tracks from zipfile to a temporary folder'''
+#         with TemporaryDirectory() as temp_dir:
+#             extract_tracks(zipfile, temp_dir)
+#             assign_tracks(task, temp_dir, pilots_list, source)
+#
+#
+# def get_tracks_from_zipfile(task, zipfile):
+#     """ Accept tracks for unscored pilots of the task
+#         - Gets unscored pilots list and, if is not null:
+#         - Gets tracks from zipfile to a temporary folder
+#         - assigns tracks to pilots
+#         - imports assigned track to correct task folder and, if needed, changes filename"""
+#     # TODO function that loads existing results before, so we can score directly after?
+#     from tempfile import TemporaryDirectory
+#
+#     ''' Get unscored pilots list'''
+#     pilots_list = get_unscored_pilots(task.task_id)
+#     if len(pilots_list) == 0:
+#         print(f"No pilots without tracks found registered to the comp...")
+#         return
+#
+#     ''' Get tracks from zipfile to a temporary folder'''
+#     with TemporaryDirectory() as temp_dir:
+#         extract_tracks(zipfile, temp_dir)
+#         assign_tracks(task, temp_dir, pilots_list, task.track_source)

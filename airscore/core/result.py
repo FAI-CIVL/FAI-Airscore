@@ -545,11 +545,10 @@ def get_country_list(countries=None, iso=3):
 
 def open_json_file(filename: str):
     from pathlib import Path
-    from os import path
     import jsonpickle
     from Defines import RESULTDIR
-    file = path.join(RESULTDIR, filename)
-    if not Path(file).is_file():
+    file = Path(RESULTDIR, filename)
+    if not file.is_file():
         print(f"error: file {filename} does not exist")
         return None
     with open(file, 'r') as f:
