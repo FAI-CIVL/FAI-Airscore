@@ -804,10 +804,8 @@ def verify_all_tracks(task, lib, airspace=None, print=print):
 
     print('getting tracks...')
     number_of_pilots = len(task.pilots)
-    track_number = 1
-    for pilot in task.pilots:
+    for track_number, pilot in enumerate(task.pilots, 1):
         print(f"{track_number}/{number_of_pilots}|track_counter")
-        track_number += 1
         print(f"type: {pilot.result_type}")
         if pilot.result_type not in ('abs', 'dnf', 'mindist'):
             print(f"{pilot.ID}. {pilot.name}: ({pilot.track.track_file})")
