@@ -113,6 +113,10 @@ def _create_comp():
     if date_to < date_from:
         flash("Start date cannot be after end date. Competition not saved", category='danger')
         return dict(redirect='/users/comp_admin')
+    if not frontendUtils.check_short_code(data['code']):
+        flash("Short name already in use. Competition not saved", category='danger')
+        return dict(redirect='/users/comp_admin')
+
     new_comp = Comp(comp_name=data['name'],
                     comp_class=data['class'],
                     comp_site=data['location'],

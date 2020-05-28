@@ -942,3 +942,12 @@ def get_task_igc_zip(task_id):
             return zip_full_filename
     shutil.make_archive(comp_folder + '/' + task_folder, 'zip', task_path)
     return zip_full_filename
+
+
+def check_short_code(comp_short_code):
+    with Database() as db:
+        code = db.session.query(TblCompetition.comp_code).filter(TblCompetition.comp_code == comp_short_code).first()
+        if code:
+            return False
+        else:
+            return True
