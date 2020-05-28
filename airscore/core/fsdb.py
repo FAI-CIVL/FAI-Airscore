@@ -147,7 +147,9 @@ class FSDB(object):
         return fsdb
 
     def to_file(self, filename=None):
-        """ """
+        """ writes a fsdb file in results folder, with default filename:
+            comp_code_datetime.fsdb
+            In the future, probably this should return xml formatted data to be downloaded from frontend"""
 
         formula = self.comp.formula
         pilots = self.comp.participants
