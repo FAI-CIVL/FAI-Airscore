@@ -126,6 +126,7 @@ def _create_comp():
     new_comp.comp_path = compUtils.create_comp_path(date_from, data['code'])
     output = new_comp.to_db()
     if type(output) == int:
+        Formula(comp_id=output).to_db()
         frontendUtils.set_comp_admin(output, current_user.id, owner=True)
         return dict(redirect='/users/comp_admin')
     else:
