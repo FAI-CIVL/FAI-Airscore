@@ -12,6 +12,10 @@ class Notification:
     percentage_penalty: float = 0.0
     comment: str = None
 
+    @staticmethod
+    def from_dict(d: dict):
+        return Notification(**d)
+
 
 def get_notifications(pilot: Pilot, session=None):
     """reads notifications from database"""

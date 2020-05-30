@@ -348,9 +348,13 @@ class FlightResult(object):
 
     @staticmethod
     def from_dict(d):
+        from notification import Notification
         result = FlightResult()
         for key, value in d.items():
-            if hasattr(result, key):
+            if key == 'notifications' and value:
+                for n in value:
+                    result.notifications.append(Notification.from_dict(n))
+            elif hasattr(result, key):
                 setattr(result, key, value)
         return result
 
