@@ -1,5 +1,4 @@
 from dataclasses import dataclass, fields
-from pilot import Pilot
 from db_tables import TblNotification as N
 from myconn import Database
 from sqlalchemy.exc import SQLAlchemyError
@@ -12,8 +11,12 @@ class Notification:
     percentage_penalty: float = 0.0
     comment: str = None
 
+    @staticmethod
+    def from_dict(d: dict):
+        return Notification(**d)
 
-def get_notifications(pilot: Pilot, session=None):
+
+def get_notifications(pilot, session=None):
     """reads notifications from database"""
     if not pilot.track_id:
         return
@@ -34,7 +37,7 @@ def get_notifications(pilot: Pilot, session=None):
             return error
 
 
-def update_notifications(pilot: Pilot, session=None):
+def update_notifications(pilot, session=None):
     """inserts and / or updates pilot's notifications"""
     if not pilot.track_id:
         return

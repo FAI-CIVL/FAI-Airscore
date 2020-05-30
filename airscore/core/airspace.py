@@ -299,7 +299,7 @@ class AirspaceCheck(object):
         Calculates penalty
         Calculates final penalty and comments
         """
-        from notification import Notification
+        from pilot.notification import Notification
         '''element: [next_fix, airspace_name, infringement_type, distance, penalty]'''
         spaces = list(set([x[1] for x in infringements_list]))
         penalty = 0

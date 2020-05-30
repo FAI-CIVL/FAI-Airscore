@@ -125,7 +125,7 @@ class Track(object):
 
     def get_notes(self):
         """flight notifications list"""
-        from notification import Notification
+        from pilot.notification import Notification
         if self.flight:
             self.notifications = [Notification(notification_type='track', comment=i) for i in self.flight.notes]
         else:
@@ -364,4 +364,4 @@ def create_igc_filename(file_path, date, pilot_name):
     index = str(len(glob.glob(file_path + '/' + pilot_name + '*.igc')) + 1).zfill(2)
     filename = '_'.join([pilot_name, str(date), index]) + '.igc'
     fullname = path.join(file_path, filename)
-    return fullname
+    return filename, fullname

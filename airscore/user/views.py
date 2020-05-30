@@ -11,9 +11,9 @@ from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointFor
     EditScoreForm
 from comp import Comp
 from formula import list_formulas, Formula
-from task import Task, write_map_json, get_task_json_by_filename
+from task import Task, write_map_json
 from frontendUtils import save_turnpoint
-from flightresult import update_status, delete_track
+from pilot.flightresult import update_status, delete_track
 from os import path, remove, makedirs
 from task import get_task_json_by_filename
 from calcUtils import sec_to_time
@@ -504,7 +504,7 @@ def waypoint_admin():
 @blueprint.route('/_register_pilots/<compid>', methods=['POST'])
 @login_required
 def _register_pilots(compid):
-    from participant import register_from_profiles_list, unregister_from_profiles_list
+    from pilot.participant import register_from_profiles_list, unregister_from_profiles_list
     data = request.json
     if data['register']:
         register_from_profiles_list(compid, data['register'])
@@ -1194,7 +1194,7 @@ def _get_registered_pilots_external(compid):
 @blueprint.route('/igc_parsing_config/<filename>', methods=['GET', 'POST'])
 @login_required
 def igc_parsing_config(filename):
-    from track import read_igc_config_yaml, save_igc_config_yaml
+    from pilot.track import read_igc_config_yaml, save_igc_config_yaml
     igc_config_form = IgcParsingConfigForm()
     filename += '.yaml'
     save = True
@@ -1278,7 +1278,7 @@ def pilot_admin():
 @blueprint.route('/_modify_participant_details/<parid>', methods=['POST'])
 @login_required
 def _modify_participant_details(parid):
-    from participant import Participant
+    from pilot.participant import Participant
     data = request.json
     participant = Participant.read(int(parid))
     participant.ID = data.get('id_num')
@@ -1305,7 +1305,7 @@ def _modify_participant_details(parid):
 @blueprint.route('/_add_participant/<compid>', methods=['POST'])
 @login_required
 def _add_participant(compid):
-    from participant import Participant
+    from pilot.participant import Participant
     data = request.json
     participant = Participant()
     participant.comp_id = int(compid)
@@ -1333,7 +1333,7 @@ def _add_participant(compid):
 @blueprint.route('/_upload_participants_excel/<compid>', methods=['POST'])
 @login_required
 def _upload_participants_excel(compid):
-    from participant import extract_participants_from_excel, mass_import_participants
+    from pilot.participant import extract_participants_from_excel, mass_import_participants
     import tempfile
     compid = int(compid)
     if request.method == "POST":
@@ -1353,7 +1353,7 @@ def _upload_participants_excel(compid):
 @blueprint.route('/_self_register/<compid>', methods=['POST'])
 @login_required
 def _self_register(compid):
-    from participant import Participant
+    from pilot.participant import Participant
     data = request.json
     participant = Participant.from_profile(data['pil_id'], comp_id=compid)
     participant.ID = data.get('id_num')
@@ -1370,7 +1370,7 @@ def _self_register(compid):
 @login_required
 def _unregister_participant(compid):
     """unregister participant from a comp"""
-    from participant import unregister_participant
+    from pilot.participant import unregister_participant
     data = request.json
     unregister_participant(compid, data['participant'])
     resp = jsonify(success=True)
@@ -1381,8 +1381,8 @@ def _unregister_participant(compid):
 @login_required
 def _unregister_all_external_participants(compid):
     """unregister participant from a comp"""
-    from participant import unregister_all_exteranl_participants
-    unregister_all_exteranl_participants(compid)
+    from pilot.participant import unregister_all_external_participants
+    unregister_all_external_participants(compid)
     resp = jsonify(success=True)
     return resp
 

@@ -13,7 +13,6 @@ from map import make_map
 from sqlalchemy.exc import SQLAlchemyError
 from calcUtils import sec_to_time
 from os import scandir, path, environ
-from werkzeug.utils import secure_filename
 import requests
 from flask_sse import sse
 from functools import partial
@@ -163,7 +162,7 @@ def get_task_turnpoints(task):
     return {'turnpoints': turnpoints, 'next_number': max_n, 'distance': total_dist, 'map': task_map}
 
 
-def get_comp_regions(compid):
+def get_comp_regions(compid: int):
     """Gets a list of dicts of: if defines.yaml waypoint library function is on - all regions
     otherwise only the regions with their comp_id field set the the compid parameter"""
     import Defines
@@ -174,7 +173,7 @@ def get_comp_regions(compid):
         return region.get_comp_regions_and_wpts(compid)
 
 
-def get_region_choices(compid):
+def get_region_choices(compid: int):
     """gets a list of regions to be used in frontend select field (choices) and details of each region (details)"""
     regions = get_comp_regions(compid)
     choices = []
@@ -185,7 +184,7 @@ def get_region_choices(compid):
     return choices, details
 
 
-def get_waypoint_choices(reg_id):
+def get_waypoint_choices(reg_id: int):
     import region
     wpts = region.get_region_wpts(reg_id)
     choices = []
@@ -199,7 +198,7 @@ def get_waypoint_choices(reg_id):
     return choices, details
 
 
-def get_pilot_list_for_track_management(taskid):
+def get_pilot_list_for_track_management(taskid: int):
     from db_tables import TblTaskResult as R, TblParticipant as P, TblTask as T
     with Database() as db:
         try:
@@ -267,7 +266,7 @@ def get_waypoint(wpt_id=None, rwp_id=None):
         return tp
 
 
-def save_turnpoint(task_id, turnpoint: Turnpoint):
+def save_turnpoint(task_id: int, turnpoint: Turnpoint):
     """save turnpoint in a task- for frontend"""
     if not (type(task_id) is int and task_id > 0):
         print("task not present in database ", task_id)
@@ -318,53 +317,53 @@ def allowed_tracklog_filesize(filesize, size=5):
         return False
 
 
-def process_igc(task_id, par_id, tracklog):
-    from track import Track, create_igc_filename
-    from flightresult import FlightResult
+def process_igc(task_id: int, par_id: int, tracklog):
+    from pilot.track import create_igc_filename
+    from calcUtils import epoch_to_date
     from airspace import AirspaceCheck
     from igc_lib import Flight
     from task import Task
-    from pilot import Pilot
+    from pilot.flightresult import FlightResult
 
-    pilot = Pilot.read(par_id, task_id)
+    pilot = FlightResult.read(par_id, task_id)
     if pilot.name:
         task = Task.read(task_id)
-        fullname = create_igc_filename(task.file_path, task.date, pilot.name)
+        filename, fullname = create_igc_filename(task.file_path, task.date, pilot.name)
         tracklog.save(fullname)
+        pilot.track_file = filename
     else:
         return None, None
 
     """import track"""
-    pilot.track = Track(track_file=fullname, par_id=pilot.par_id)
-    pilot.track.flight = Flight.create_from_file(fullname)
+    # track = Track(track_file=fullname, par_id=pilot.par_id)
+    flight = Flight.create_from_file(fullname)
     """check result"""
-    if not pilot.track:
+    if not flight:
         error = f"for {pilot.name} - Track is not a valid track file"
         return None, error
-    elif not pilot.track.date == task.date:
+    elif not epoch_to_date(flight.date_timestamp) == task.date:
         error = f"for {pilot.name} - Track has a different date from task date"
         return None, error
     else:
-        print(f"pilot {pilot.track.par_id} associated with track {pilot.track.filename} \n")
+        print(f"pilot {pilot.par_id} associated with track {pilot.track_file} \n")
 
         """checking track against task"""
         if task.airspace_check:
             airspace = AirspaceCheck.from_task(task)
         else:
             airspace = None
-        pilot.result = FlightResult.check_flight(pilot.track.flight, task, airspace_obj=airspace)
+        pilot.check_flight(flight, task, airspace_obj=airspace)
         print(f"track verified with task {task.task_id}\n")
         """adding track to db"""
-
         pilot.to_db()
         time = ''
         data = {'par_id': pilot.par_id, 'track_id': pilot.track_id}
-        if pilot.result.goal_time:
-            time = sec_to_time(pilot.result.ESS_time - pilot.result.SSS_time)
-        if pilot.result.result_type == 'goal':
+        if pilot.goal_time:
+            time = sec_to_time(pilot.ss_time)
+        if pilot.result_type == 'goal':
             data['Result'] = f'Goal {time}'
-        elif pilot.result.result_type == 'lo':
-            data['Result'] = f"LO {round(pilot.result.distance / 1000, 2)}"
+        elif pilot.result_type == 'lo':
+            data['Result'] = f"LO {round(pilot.distance / 1000, 2)}"
         if pilot.track_id:  # if there is a track, make the result a link to the map
             trackid = data['track_id']
             result = data['Result']
@@ -372,67 +371,66 @@ def process_igc(task_id, par_id, tracklog):
     return data, None
 
 
-def save_igc_background(task_id, par_id, tracklog, user):
+def save_igc_background(task_id: int, par_id: int, tracklog, user):
     from task import Task
-    from track import create_igc_filename
-    from pilot import Pilot
+    from pilot.track import create_igc_filename
+    from pilot.flightresult import FlightResult
 
-    pilot = Pilot.read(par_id, task_id)
+    pilot = FlightResult.read(par_id, task_id)
     if pilot.name:
         task = Task.read(task_id)
-        fullname = create_igc_filename(task.file_path, task.date, pilot.name)
+        filename, fullname = create_igc_filename(task.file_path, task.date, pilot.name)
         tracklog.save(fullname)
         sse.publish({'message': f'IGC file saved: {fullname.split("/")[-1]}', 'id': par_id}, channel=user, type='info',
                     retry=30)
     else:
         return None, None
 
-    return fullname.split("/")[-1], fullname
+    return filename, fullname
 
 
-def process_igc_background(task_id, par_id, filename, full_file_name, user):
-    from track import Track
-    from flightresult import FlightResult
+def process_igc_background(task_id: int, par_id: int, filename, full_file_name, user):
+    from calcUtils import epoch_to_date
+    from pilot.flightresult import FlightResult
     from airspace import AirspaceCheck
     from igc_lib import Flight
     from task import Task
-    from pilot import Pilot
     import json
-    pilot = Pilot.read(par_id, task_id)
+    pilot = FlightResult.read(par_id, task_id)
     task = Task.read(task_id)
     print = partial(print_to_sse, id=par_id, channel=user)
     print('|open_modal')
     print('***************START*******************')
     """import track"""
-    pilot.track = Track(track_file=filename, par_id=pilot.par_id)
-    pilot.track.flight = Flight.create_from_file(full_file_name)
+    # pilot.track = Track(track_file=filename, par_id=pilot.par_id)
+    flight = Flight.create_from_file(full_file_name)
     """check result"""
-    if not pilot.track:
+    if not flight:
         print(f"for {pilot.name} - Track is not a valid track file")
         return None
-    elif not pilot.track.date == task.date:
+    elif not epoch_to_date(flight.date_timestamp) == task.date:
         print(f"for {pilot.name} - Track has a different date from task date")
         return None
     else:
-        print(f"pilot {pilot.track.par_id} associated with track {pilot.track.filename} \n")
-
+        print(f"pilot {pilot.par_id} associated with track {filename} \n")
+        pilot.track_file = filename
         """checking track against task"""
         if task.airspace_check:
             airspace = AirspaceCheck.from_task(task)
         else:
             airspace = None
-        pilot.result = FlightResult.check_flight(pilot.track.flight, task, airspace_obj=airspace, print=print)
+        pilot.check_flight(flight, task, airspace_obj=airspace, print=print)
         print(f"track verified with task {task.task_id}\n")
         """adding track to db"""
         pilot.to_db()
         time = ''
         data = {'par_id': pilot.par_id, 'track_id': pilot.track_id}
-        if pilot.result.goal_time:
-            time = sec_to_time(pilot.result.ESS_time - pilot.result.SSS_time)
-        if pilot.result.result_type == 'goal':
+        if pilot.goal_time:
+            time = sec_to_time(pilot.ESS_time - pilot.SSS_time)
+        if pilot.result_type == 'goal':
             data['Result'] = f'Goal {time}'
-        elif pilot.result.result_type == 'lo':
-            data['Result'] = f"LO {round(pilot.result.distance / 1000, 2)}"
+        elif pilot.result_type == 'lo':
+            data['Result'] = f"LO {round(pilot.distance / 1000, 2)}"
         if pilot.track_id:  # if there is a track, make the result a link to the map
             trackid = data['track_id']
             result = data['Result']
@@ -463,7 +461,7 @@ def unzip_igc(zipfile):
     return tracksdir
 
 
-def process_igc_from_zip(taskid, tracksdir, user):
+def process_igc_from_zip(taskid: int, tracksdir, user):
     """function split for background use.
     tracksdir is a temp dir that will be deleted at the end of the function"""
     from task import Task
@@ -513,15 +511,13 @@ def process_igc_zip(task, zipfile):
         return 'Success'
 
 
-def get_task_result_file_list(taskid):
+def get_task_result_file_list(taskid: int):
     from db_tables import TblResultFile as R
     with Database() as db:
         try:
-            files = db.session.query(R.created, R.filename, R.status, R.active, R.ref_id).filter(
-                R.task_id == taskid).all()
-            if files:
-                files = [row._asdict() for row in files]
-
+            rows = db.session.query(R.created, R.filename, R.status, R.active, R.ref_id).filter_by(task_id=taskid).all()
+            if rows:
+                files = [row._asdict() for row in rows]
         except SQLAlchemyError:
             print("there was a problem with getting the result list")
             return None
@@ -529,7 +525,7 @@ def get_task_result_file_list(taskid):
         return files
 
 
-def number_of_tracks_processed(taskid):
+def number_of_tracks_processed(taskid: int):
     from db_tables import TblTaskResult as R, TblParticipant as P, TblTask as T
     from sqlalchemy import func
     with Database() as db:
@@ -564,22 +560,20 @@ def get_score_header(files, offset):
     return header, active
 
 
-def get_comp_admins(compid_or_taskid, task_id=False):
+def get_comp_admins(compid_or_taskid: int, task_id=False):
     """returns owner and list of admins takes compid by default or taskid if taskid is True"""
     from db_tables import TblCompAuth as CA
     from airscore.user.models import User
-    if task_id:
-        taskid = compid_or_taskid
-    else:
-        compid = compid_or_taskid
     with Database() as db:
         try:
             if task_id:
+                taskid = compid_or_taskid
                 all_admins = db.session.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth) \
                     .join(CA, User.id == CA.user_id).join(TblTask, CA.comp_id == TblTask.comp_id).filter(
                     TblTask.task_id == taskid,
                     CA.user_auth.in_(('owner', 'admin'))).all()
             else:
+                compid = compid_or_taskid
                 all_admins = db.session.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth) \
                     .join(CA, User.id == CA.user_id).filter(CA.comp_id == compid,
                                                             CA.user_auth.in_(('owner', 'admin'))).all()
@@ -605,7 +599,7 @@ def get_comp_admins(compid_or_taskid, task_id=False):
     return owner, admins, all_ids
 
 
-def set_comp_admin(compid, userid, owner=False):
+def set_comp_admin(compid: int, userid, owner=False):
     from db_tables import TblCompAuth as CA
     auth = 'owner' if owner else 'admin'
     with Database() as db:
@@ -664,7 +658,7 @@ def update_airspace_file(old_filename, new_filename):
 #     full_file_name = path.join(WAYPOINTDIR, filename)
 
 
-def get_non_registered_pilots(compid):
+def get_non_registered_pilots(compid: int):
     from db_tables import TblParticipant, PilotView
 
     p = aliased(TblParticipant)
@@ -712,7 +706,7 @@ def get_comps_with_igc_parsing(igc_config):
         return comps
 
 
-def get_comp_info(compid, task_ids=None):
+def get_comp_info(compid: int, task_ids=None):
     if task_ids is None:
         task_ids = []
     c = aliased(TblCompetition)
@@ -740,7 +734,7 @@ def get_comp_info(compid, task_ids=None):
     return comp, non_scored_tasks
 
 
-def get_participants(compid, source='all'):
+def get_participants(compid: int, source='all'):
     """get all registered pilots for a comp.
     Compid: comp_id
     source: all: all participants
@@ -774,7 +768,7 @@ def get_participants(compid, source='all'):
     return pilot_list, external, teams
 
 
-def check_team_size(compid, nat=False):
+def check_team_size(compid: int, nat=False):
     """Checks that the number of pilots in a team don't exceed the allowed number"""
     from formula import Formula
     from db_tables import TblParticipant as P
@@ -888,7 +882,7 @@ def get_pretty_data(filename):
         return 'error'
 
 
-def full_rescore(taskid, background=False, status=None, autopublish=None, compid=None, user=None):
+def full_rescore(taskid: int, background=False, status=None, autopublish=None, compid=None, user=None):
     from task import Task
     from comp import Comp
     from result import unpublish_result, publish_result
@@ -918,11 +912,10 @@ def full_rescore(taskid, background=False, status=None, autopublish=None, compid
         return refid
 
 
-def get_task_igc_zip(task_id):
+def get_task_igc_zip(task_id: int):
     from trackUtils import get_task_fullpath
     import shutil
     import glob
-    from Defines import TEMPFILES
 
     task_path = get_task_fullpath(task_id)
     task_folder = task_path.split('/')[-1]

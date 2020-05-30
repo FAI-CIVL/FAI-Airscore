@@ -6,13 +6,13 @@ Use:    import trackUtils
 Antonio Golfari - 2018
 """
 
-from os import path, listdir, fsdecode
+from os import path, listdir
 
 from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
 
-from Defines import TRACKDIR, MAPOBJDIR, track_sources, track_formats
-from flightresult import FlightResult
+from Defines import TRACKDIR, MAPOBJDIR
+from pilot.flightresult import FlightResult
 from myconn import Database
 import re
 from pathlib import Path
@@ -66,7 +66,7 @@ def get_tracks(directory):
 def assign_and_import_tracks(files, task, xcontest=False, user=None, print=print):
     """Find pilots to associate with tracks"""
     from compUtils import get_registration
-    from track import Track
+    from pilot.track import Track
     from functools import partial
     from frontendUtils import print_to_sse
 
@@ -125,37 +125,35 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None, print=print
             mytrack.task_id = task_id
             mytrack.copy_track_file(task_path=track_path, pname=full_name)
             # print(f"pilot {mytrack.par_id} associated with track {mytrack.filename}")
-            pilot.track = mytrack
-            print(f"processing {pilot.info.ID} {pilot.info.name}:")
+            # pilot.track = mytrack
+            print(f"processing {pilot.ID} {pilot.name}:")
             if user:
                 new_print = partial(print_to_sse, id=mytrack.par_id, channel=user)
                 print('***************START*******************')
             else:
                 new_print = print
-            verify_and_import_track(pilot, task, print=new_print)
+            verify_and_import_track(pilot, mytrack, task, print=new_print)
     print("*******************processed all tracks**********************")
 
 
-def import_track(pilot, task_id):
-    pilot.track.to_db(task_id)
-    return pilot.track.track_id
+# def import_track(pilot, task_id):
+#     pilot.track.to_db(task_id)
+#     return pilot.track.track_id
 
 
-def verify_and_import_track(pilot, task, print=print):
+def verify_and_import_track(pilot, track, task, print=print):
     from airspace import AirspaceCheck
 
     if task.airspace_check:
         airspace = AirspaceCheck.from_task(task)
     else:
         airspace = None
-    pilot.result = FlightResult.check_flight(pilot.track.flight, task, airspace_obj=airspace,
+    pilot.check_flight(track.flight, task, airspace_obj=airspace,
                                              print=print)  # check flight against task
     pilot.to_db()
     if pilot.notifications:
         print(str(pilot.notifications))
     print('***************END****************')
-
-    return pilot.result
 
 
 def find_pilot(name):
@@ -228,9 +226,9 @@ def read_tracklog_map_result_file(track_id: int, task_id: int):
 
 
 def create_tracklog_map_result_file(track_id: int, task_id: int):
-    import flightresult
+    from pilot import flightresult
     from task import Task
-    from track import Track
+    from pilot.track import Track
 
     task = Task.read(task_id)
     track = Track.read_db(track_id)
@@ -256,8 +254,7 @@ def get_unscored_pilots(task_id: int, xcontest=False):
     """ Gets list of registered pilots that still do not have a result
         Input:  task_id INT task database ID
         Output: list of Pilot obj."""
-    from pilot import Pilot
-    from participant import Participant
+    from pilot.flightresult import FlightResult
     from db_tables import UnscoredPilotView as U
     pilot_list = []
     with Database() as db:
@@ -269,9 +266,8 @@ def get_unscored_pilots(task_id: int, xcontest=False):
             #     q = q.filter(U.xcontest_id != None)
             # results = q.all()
             for p in results:
-                participant = Participant()
-                db.populate_obj(participant, p)
-                pilot = Pilot.create(task_id=task_id, info=participant)
+                pilot = FlightResult()
+                db.populate_obj(pilot, p)
                 pilot_list.append(pilot)
         except SQLAlchemyError as e:
             error = str(e.__dict__)
@@ -333,18 +329,18 @@ def get_pilot_from_list(filename, pilots: list):
                             a = 'fai_id'
                         pilot = next((p for p in pilots if getattr(p.info, a) == v), None)
                         if pilot:
-                            print(f'{a}, found {pilot.info.name}')
-                            filename = remove_accents('_'.join(pilot.info.name.replace('_', ' ')
+                            print(f'{a}, found {pilot.name}')
+                            filename = remove_accents('_'.join(pilot.name.replace('_', ' ')
                                                                .replace("'", ' ').lower().split()))
                             return pilot, filename
                 else:
                     '''no unique id in filename, using name'''
                     names = [str(elements[idx]).lower() for idx, val in enumerate(f) if val == 'name']
-                    pilot = next((p for p in pilots if all(n in p.info.name.lower().split() for n in names)), None)
+                    pilot = next((p for p in pilots if all(n in p.name.lower().split() for n in names)), None)
                     if pilot:
-                        print(f'using name, found {pilot.info.name}')
+                        print(f'using name, found {pilot.name}')
                         '''we found a pilot'''
-                        filename = remove_accents('_'.join(pilot.info.name.replace('_', ' ')
+                        filename = remove_accents('_'.join(pilot.name.replace('_', ' ')
                                                            .replace("'", ' ').lower().split()))
                         return pilot, filename
     return None, None

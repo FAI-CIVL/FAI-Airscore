@@ -23,7 +23,7 @@ from compUtils import get_tasks_result_files, get_participants, read_rankings, c
 from db_tables import TblCompetition
 from formula import Formula
 from myconn import Database
-from participant import Participant
+from pilot.participant import Participant
 from result import CompResult, create_json_file
 from task import Task
 
@@ -509,9 +509,6 @@ def delete_comp(comp_id, files=True):
     from db_tables import TblParticipant as P
     from task import delete_task
     from result import delete_result
-    from Defines import TRACKDIR
-    import shutil
-    from os import path
     with Database() as db:
         # if files:
         #     '''delete tracks'''

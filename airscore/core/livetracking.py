@@ -166,7 +166,7 @@ class LiveTracking(object):
 
     @property
     def pilots(self):
-        return [] if not self.task.pilots else [p for p in self.task.pilots if p.info.live_id]
+        return [] if not self.task.pilots else [p for p in self.task.pilots if p.live_id]
 
     @property
     def filename(self):
@@ -213,9 +213,7 @@ class LiveTracking(object):
                 else:
                     file_stats['status'] = 'Task Set'
                 for p in self.pilots:
-                    result = dict()
-                    result.update({x: getattr(p.info, x) for x in LiveTracking.results_list if x in dir(p.info)})
-                    result.update({x: getattr(p.result, x) for x in LiveTracking.results_list if x in dir(p.result)})
+                    result = {x: getattr(p, x) for x in LiveTracking.results_list if x in dir(p)}
                     result['notifications'] = [n.__dict__ for n in p.notifications]
                     data.append(result)
         self.result.update(dict(file_stats=file_stats, headers=headers, info=info, data=data))
@@ -232,7 +230,7 @@ class LiveTracking(object):
             self.result['info'] = {x: getattr(self.task, x) for x in TaskResult.info_list if x in dir(self.task)}
         else:
             for p in self.pilots:
-                result = next(r for r in self.result['data'] if r['par_id'] == p.info.par_id)
+                result = next(r for r in self.result['data'] if r['par_id'] == p.par_id)
                 result.update({x: getattr(p.result, x) for x in LiveTracking.results_list if x in dir(p.result)})
                 result['notifications'] = [n.__dict__ for n in p.notifications]
         self.create_json_file()
@@ -299,8 +297,8 @@ class LiveTracking(object):
                 print(f' -- Associating livetracks ...')
             associate_livetracks(self.task, response, cycle_starting_time)
             for p in self.pilots:
-                if (p.livetrack and len(p.livetrack) > min_fixes and p.livetrack[-1].rawtime > (p.result.last_time or 0)
-                        and not p.result.goal_time and not p.result.landing_time):
+                if (p.livetrack and len(p.livetrack) > min_fixes and p.livetrack[-1].rawtime > (p.last_time or 0)
+                        and not p.goal_time and not p.landing_time):
                     check_livetrack(pilot=p, task=self.task, airspace_obj=self.airspace)
             self.update_result()
             i += 1
@@ -320,17 +318,17 @@ def get_livetracks(task, timestamp, interval):
     from Defines import FM_LIVE
     request = {}
     if task.track_source.lower() == 'flymaster':
-        pilots = [p for p in task.pilots if p.info.live_id and not (p.result.landing_time or p.result.goal_time)]
+        pilots = [p for p in task.pilots if p.live_id and not (p.landing_time or p.goal_time)]
         print(f'pilots to get: {len(pilots)}')
         # url = 'https://lt.flymaster.net/wlb/getLiveData.php?trackers='
         for p in pilots:
-            live = int(p.info.live_id)
+            live = int(p.live_id)
             '''get epoch time'''
-            if not p.result.first_time:
+            if not p.first_time:
                 '''pilot not launched yet'''
                 last_time = timestamp - interval
             else:
-                last_time = int(time.mktime(task.date.timetuple()) + (p.result.last_time or task.window_open_time))
+                last_time = int(time.mktime(task.date.timetuple()) + (p.last_time or task.window_open_time))
             request[live] = last_time
         url = FM_LIVE + str(jsonpickle.encode(request))
         if request:
@@ -353,7 +351,7 @@ def associate_livetracks(task, response, timestamp):
     alt_source = 'GPS' if task.formula.scoring_altitude is None else task.formula.scoring_altitude
     alt_compensation = 0 if alt_source == 'GPS' or task.QNH == 1013.25 else task.alt_compensation
     for live_id, fixes in response.items():
-        pil = next(p for p in task.pilots if p.info.live_id == live_id)
+        pil = next(p for p in task.pilots if p.live_id == live_id)
         if not pil:
             continue
         # res = pil.result
@@ -361,14 +359,14 @@ def associate_livetracks(task, response, timestamp):
             '''livetrack segment too short'''
             pil.livetrack = []
             continue
-        if pil.result.landing_time:
+        if pil.landing_time:
             '''already landed'''
             # shouldn't happen as landed pilots are filtered in tracks request
             continue
         if not any(el for el in fixes if int(el['v']) > min_flight_speed):
             '''not flying'''
-            pil.result.last_time = int(fixes[-1]['d']) - midnight
-            pil.result.live_comment = 'not flying'
+            pil.last_time = int(fixes[-1]['d']) - midnight
+            pil.live_comment = 'not flying'
             pil.livetrack = []
             continue
         flight = []
@@ -383,7 +381,7 @@ def associate_livetracks(task, response, timestamp):
             alt = gnss_alt if alt_source == 'GPS' else baro_alt + alt_compensation
             ground = int(el['s'])
             height = abs(alt - ground)
-            if pil.result.last_time and t < pil.result.last_time:
+            if pil.last_time and t < pil.last_time:
                 '''fix behind last scored fix'''
                 continue
             if t > timestamp - midnight:
@@ -414,12 +412,12 @@ def check_livetrack(pilot, task, airspace_obj=None):
         Returns:
                 a list of GNSSFixes of when turnpoints were achieved.
     """
-    from flightresult import Tp, pilot_can_start, pilot_can_restart, start_number_at_time
+    from pilot.flightresult import Tp, pilot_can_start, pilot_can_restart, start_number_at_time
     from route import in_semicircle, start_made_civl, tp_made_civl, distance, \
         tp_time_civl, get_shortest_path, distance_flown
     from airspace import AirspaceCheck
     from formulas.libs.leadcoeff import LeadCoeff
-    from notification import Notification
+    from pilot.notification import Notification
 
     '''initialize'''
     tolerance = task.formula.tolerance or 0

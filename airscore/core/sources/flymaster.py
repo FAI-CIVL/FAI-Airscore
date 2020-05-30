@@ -34,7 +34,7 @@ def get_pilot_from_list(filename, pilots):
     for idx, pilot in enumerate(pilots):
         if pilot.ID == ID:
             '''found a pilot'''
-            pilot.track.track_file = filename
+            pilot.track_file = filename
             if not pilot.name.lower() in name:
                 print(f'WARNING: Name {pilot.name.lower()} does not match with filename {string}')
             return pilot, idx

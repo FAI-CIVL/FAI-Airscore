@@ -11,7 +11,7 @@ from tempfile import TemporaryDirectory
 from formula import TaskFormula, get_formula_lib
 from logger import Logger
 from task import Task
-from track import Track
+from pilot.track import Track
 # Use your utility module.
 from trackUtils import *
 
@@ -60,28 +60,28 @@ def main(args):
 
             if task.comp_id > 0:
                 """import track"""
-                mytrack = Track.read_file(filename=file, pilot_id=par_id)
-                """check result"""
-                if not mytrack:
-                    print(f"Track {filename} is not a valid track file \n")
-                elif not mytrack.date == task.date:
-                    print(f"track {filename} has a different date from task day \n")
-                else:
-                    """pilot is registered and has no valid track yet
-                    moving file to correct folder and adding to the list of valid tracks"""
-                    mytrack.task_id = task.id
-                    mytrack.copy_track_file()
-                    print(f"pilot {mytrack.par_id} associated with track {mytrack.filename} \n")
-                    """adding track to db"""
-                    import_track(mytrack, task_id)
-                    print(f"track imported to database with ID {mytrack.track_id}\n")
-                    """checking track against task"""
-                    formula = TaskFormula.read(task_id)
-                    lib = get_formula_lib(formula.type)
-                    verify_track(mytrack, task, lib)
-                    print(f"track {mytrack.track_id} verified with task {mytrack.task_id}\n")
-                    print("track correctly imported and results generated \n")
-                    out = (f"track_id={mytrack.track_id}")
+                # mytrack = Track.read_file(filename=file, pilot_id=par_id)
+                # """check result"""
+                # if not mytrack:
+                #     print(f"Track {filename} is not a valid track file \n")
+                # elif not mytrack.date == task.date:
+                #     print(f"track {filename} has a different date from task day \n")
+                # else:
+                #     """pilot is registered and has no valid track yet
+                #     moving file to correct folder and adding to the list of valid tracks"""
+                #     mytrack.task_id = task.id
+                #     mytrack.copy_track_file()
+                #     print(f"pilot {mytrack.par_id} associated with track {mytrack.filename} \n")
+                #     """adding track to db"""
+                #     import_track(mytrack, task_id)
+                #     print(f"track imported to database with ID {mytrack.track_id}\n")
+                #     """checking track against task"""
+                #     formula = TaskFormula.read(task_id)
+                #     lib = get_formula_lib(formula.type)
+                #     verify_track(mytrack, task, lib)
+                #     print(f"track {mytrack.track_id} verified with task {mytrack.task_id}\n")
+                #     print("track correctly imported and results generated \n")
+                #     out = (f"track_id={mytrack.track_id}")
 
             else:
                 print(f"error: task ID {task_id} does NOT belong to any Competition \n")

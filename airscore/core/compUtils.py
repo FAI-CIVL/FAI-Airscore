@@ -220,7 +220,7 @@ def get_wpts(task_id: int):
 def get_participants(comp_id: int):
     """gets registered pilots list from database"""
     from db_tables import TblParticipant as R
-    from participant import Participant
+    from pilot.participant import Participant
     pilots = []
     with Database() as db:
         try:

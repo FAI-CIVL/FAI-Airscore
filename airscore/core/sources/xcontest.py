@@ -33,9 +33,9 @@ def get_pilot_from_list(filename, pilots):
     xcontest_id = fields[2].lower()
     name = ' '.join([str(fields[1]), str(fields[0])])
     for idx, pilot in enumerate(pilots):
-        if pilot.info.xcontest_id and pilot.info.xcontest_id.lower() == xcontest_id:
+        if pilot.xcontest_id and pilot.xcontest_id.lower() == xcontest_id:
             '''found a pilot'''
-            pilot.track.track_file = filename
+            pilot.track_file = filename
             if not pilot.name.lower() in name:
                 print(f'WARNING: Name {pilot.name.lower()} does not match with filename {string}')
             return pilot, idx

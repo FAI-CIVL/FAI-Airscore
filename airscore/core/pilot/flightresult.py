@@ -23,14 +23,13 @@ Stuart Mackintosh - Antonio Golfari
 
 """
 
+from .participant import Participant
 import json
 from collections import Counter
 from os import path, makedirs
-
 import jsonpickle
 from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
-from dataclasses import dataclass, asdict
 from Defines import MAPOBJDIR
 from airspace import AirspaceCheck
 from calcUtils import string_to_seconds, sec_to_time
@@ -38,132 +37,11 @@ from db_tables import TblTaskResult
 from formulas.libs.leadcoeff import LeadCoeff
 from myconn import Database
 from route import in_goal_sector, start_made_civl, tp_made_civl, tp_time_civl, get_shortest_path, distance_flown
+from .waypointachieved import WaypointAchieved
+from .notification import Notification
 
 
-# from notification import Notification
-
-
-class Tp(object):
-    def __init__(self, task):
-        self.turnpoints = task.turnpoints
-        self.optimised_turnpoints = task.optimised_turnpoints
-        self.pointer = 0
-
-    @property
-    def next(self):
-        return self.turnpoints[self.pointer]
-
-    @property
-    def name(self):
-        if self.type == 'launch':
-            return 'Left Launch'
-        elif self.type == 'speed':
-            return 'SSS'
-        elif self.type == 'endspeed':
-            return 'ESS'
-        if self.type == 'goal':
-            return 'Goal'
-        elif self.type == 'waypoint':
-            wp = [tp for tp in self.turnpoints if tp.type == 'waypoint']
-            return 'TP{:02}'.format(wp.index(self.next) + 1)
-
-    @property
-    def total_number(self):
-        return len(self.turnpoints)
-
-    @property
-    def type(self):
-        return self.turnpoints[self.pointer].type
-
-    @property
-    def last_made(self):
-        return self.turnpoints[self.pointer] if self.pointer == 0 else self.turnpoints[self.pointer - 1]
-
-    @property
-    def last_made_index(self):
-        return 0 if self.pointer == 0 else self.pointer - 1
-
-    @property
-    def start_index(self):
-        if any(x for x in self.turnpoints if x.type == 'speed'):
-            return self.turnpoints.index(next(x for x in self.turnpoints if x.type == 'speed'))
-        else:
-            return None
-
-    @property
-    def ess_index(self):
-        if any(x for x in self.turnpoints if x.type == 'endspeed'):
-            return self.turnpoints.index(next(x for x in self.turnpoints if x.type == 'endspeed'))
-        else:
-            return None
-
-    @property
-    def start_done(self):
-        return self.start_index < self.pointer
-
-    @property
-    def ess_done(self):
-        return self.ess_index < self.pointer
-
-    @property
-    def made_all(self):
-        return True if self.pointer == self.total_number else False
-
-    def move_to_next(self):
-        if self.pointer < len(self.turnpoints):
-            self.pointer += 1
-
-
-@dataclass
-class WaypointAchieved:
-    trw_id: int or None  # probably not needed as deleted each full-rescore. maybe to validate wpt by admin?
-    wpt_id: int
-    name: str
-    rawtime: int
-    lat: float
-    lon: float
-    altitude: int
-
-
-def get_waypoints_achieved(track_id, session=None):
-    """retrieves a WaypointAchieved obj list for track_id result"""
-    from db_tables import TblTrackWaypoint
-    from sqlalchemy.orm import aliased
-    t = aliased(TblTrackWaypoint)
-    achieved = []
-    with Database(session) as db:
-        try:
-            rows = db.session.query(t.trw_id, t.wpt_id, t.name, t.rawtime,
-                                    t.lat, t.lon, t.altitude).filter_by(track_id=track_id).all()
-            for w in rows:
-                achieved.append(WaypointAchieved(**w._asdict()))
-        except SQLAlchemyError:
-            print("there was a problem retrieving waypoints achieved")
-            db.session.rollback()
-            db.session.close()
-    return achieved
-
-
-def update_waypoints_achieved(pilot, session=None):
-    """deletes old entries and updates TblTrackWaypoint for result"""
-    from db_tables import TblTrackWaypoint
-    mappings = []
-    for w in pilot.result.waypoints_achieved:
-        mappings.append(dict(track_id=pilot.track_id, **asdict(w)))
-    with Database(session) as db:
-        try:
-            '''delete old entries'''
-            db.session.query(TblTrackWaypoint).filter_by(track_id=pilot.track_id).delete()
-            '''insert new rows'''
-            db.session.bulk_insert_mappings(TblTrackWaypoint, mappings)
-            db.session.commit()
-        except SQLAlchemyError:
-            print("there was a problem inserting waypoints achieved")
-            db.session.rollback()
-            db.session.close()
-
-
-class FlightResult(object):
+class FlightResult(Participant):
     """Set of statistics about a flight with respect a task.
     Attributes:
         real_start_time: time the pilot actually crossed relevant start gate.
@@ -176,7 +54,7 @@ class FlightResult(object):
 
     def __init__(self, first_time=None, real_start_time=None, SSS_time=0, ESS_time=None, goal_time=None,
                  last_time=None, best_waypoint_achieved='No waypoints achieved', fixed_LC=0, lead_coeff=0,
-                 distance_flown=0, last_altitude=0):
+                 distance_flown=0, last_altitude=0, track_id=None, track_file=None, **kwargs):
         """
 
         :type lead_coeff: int
@@ -204,7 +82,6 @@ class FlightResult(object):
         self.last_altitude = last_altitude
         self.landing_time = 0
         self.landing_altitude = 0
-        # self.jump_the_gun = jump_the_gun  # not used at the moment
         self.result_type = 'lo'
         self.score = 0
         self.departure_score = 0
@@ -212,20 +89,26 @@ class FlightResult(object):
         self.distance_score = 0
         self.time_score = 0
         self.penalty = 0
-        # self.percentage_penalty = 0
         self.airspace_plot = []
         self.infringements = []  # Infringement for each space
-        # self.comment = ''  # should this be a list?
         self.notifications = []  # notification objects
         self.still_flying_at_deadline = False
-        # self.ID = None  # Could delete?
-        # self.par_id = par_id  # Could delete?
-        # self.track_file = track_file  # Could delete?
+        self.track_id = track_id
+        self.track_file = track_file
+
+        super().__init__(**kwargs)
 
     def __setattr__(self, attr, value):
         property_names = [p for p in dir(FlightResult) if isinstance(getattr(FlightResult, p), property)]
-        if attr not in property_names:
+        if attr in ('name', 'glider') and type(value) is str:
+            self.__dict__[attr] = value.title()
+        elif attr in ('nat', 'sex') and type(value) is str:
+            self.__dict__[attr] = value.upper()
+        elif attr not in property_names:
             self.__dict__[attr] = value
+
+    def as_dict(self):
+        return self.__dict__
 
     @property
     def ss_time(self):
@@ -279,13 +162,6 @@ class FlightResult(object):
         else:
             return 0
 
-    # @property
-    # def time_after(self):
-    #     if self.ESS_time:
-    #         return self.ESS_time - self.SSS_time
-    #     else:
-    #         return 0
-
     @property
     def waypoints_made(self):
         if self.waypoints_achieved:
@@ -293,39 +169,50 @@ class FlightResult(object):
         else:
             return 0
 
-    def as_dict(self):
-        return self.__dict__
-
     @classmethod
-    def from_fsdb(cls, res, SS_distance=None, dep=None, arr=None, offset=0):
-        """ Creates Results from FSDB FsPartecipant element, which is in xml format.
+    def from_participant(cls, participant: Participant):
+        """ Creates FlightResult obj from Participant obj.
+        """
+        if isinstance(participant, Participant):
+            result = cls()
+            result.as_dict().update(participant.as_dict())
+            return result
+
+    @staticmethod
+    def from_fsdb(elem, task):
+        """ Creates Results from FSDB FsParticipant element, which is in xml format.
             Unfortunately the fsdb format isn't published so much of this is simply an
             exercise in reverse engineering.
         """
-        from notification import Notification
+        from pilot.notification import Notification
+        offset = task.time_offset
+        dep = task.formula.formula_departure
+        arr = task.formula.formula_arrival
 
-        result = cls()
-        ID = int(res.get('id'))
+        result = FlightResult()
+        result.ID = int(elem.get('id'))
 
-        if res.find('FsFlightData') is None and res.find('FsResult') is None:
+        if elem.find('FsFlightData') is None and elem.find('FsResult') is None:
             '''pilot is abs'''
-            print(f"ID {ID}: ABS")
+            print(f"ID {result.ID}: ABS")
             result.result_type = 'abs'
             return result
-        elif res.find('FsFlightData') is None or res.find('FsFlightData').get('tracklog_filename') in [None, '']:
-            print(f"ID {ID}: No track")
-            print(f" - distance: {float(res.find('FsResult').get('distance'))}")
-            if float(res.find('FsResult').get('distance')) > 0:
+        elif elem.find('FsFlightData') is None or elem.find('FsFlightData').get('tracklog_filename') in [None, '']:
+            print(f"ID {result.ID}: No track")
+            print(f" - distance: {float(elem.find('FsResult').get('distance'))}")
+            if float(elem.find('FsResult').get('distance')) > 0:
                 '''pilot is min dist'''
-                print(f"ID {ID}: Min Dist")
+                print(f"ID {result.ID}: Min Dist")
                 result.result_type = 'mindist'
             else:
                 '''pilot is dnf'''
-                print(f"ID {ID}: DNF")
+                print(f"ID {result.ID}: DNF")
                 result.result_type = 'dnf'
             return result
 
-        d = res.find('FsFlightData')
+        if elem.find('FsFlightData') is not None:
+            result.track_file = elem.find('FsFlightData').get('tracklog_filename')
+        d = elem.find('FsFlightData')
         result.real_start_time = None if not d.get('started_ss') else string_to_seconds(d.get('started_ss')) - offset
         result.last_altitude = int(d.get('last_tracklog_point_alt')
                                    if d.get('last_tracklog_point_alt') is not None else 0)
@@ -340,9 +227,9 @@ class FlightResult(object):
             result.goal_time = (None if not d.get('finished_task')
                                 else string_to_seconds(d.get('finished_task')) - offset)
             result.result_type = 'goal'
-        if res.find('FsResult') is not None:
+        if elem.find('FsResult') is not None:
             '''reading flight data'''
-            r = res.find('FsResult')
+            r = elem.find('FsResult')
             # result['rank'] = int(r.get('rank'))
             result.score = float(r.get('points'))
             result.total_distance = float(r.get('distance')) * 1000  # in meters
@@ -352,8 +239,8 @@ class FlightResult(object):
             if result.SSS_time is not None:
                 result.ESS_time = (None if not r.get('finished_ss')
                                    else string_to_seconds(r.get('finished_ss')) - offset)
-                if SS_distance is not None and result.ESS_time is not None and result.ESS_time > 0:
-                    result.speed = (SS_distance / 1000) / ((result.ESS_time - result.SSS_time) / 3600)
+                if task.SS_distance is not None and result.ESS_time is not None and result.ESS_time > 0:
+                    result.speed = (task.SS_distance / 1000) / ((result.ESS_time - result.SSS_time) / 3600)
             else:
                 result.ESS_time = None
             result.last_altitude = int(r.get('last_altitude_above_goal'))
@@ -380,28 +267,42 @@ class FlightResult(object):
             else:
                 result.departure_score = 0  # not necessary as it it initialized to 0
             result.arrival_score = float(r.get('arrival_points')) if arr != 'off' else 0
-
         return result
 
     @staticmethod
-    def read(res_id):
+    def read(par_id: int, task_id: int):
         """reads result from database"""
         from db_tables import FlightResultView as R
-
         result = FlightResult()
         with Database() as db:
             # get result details.
-            q = db.session.query(R)
-            db.populate_obj(result, q.get(res_id))
+            try:
+                q = db.session.query(R).filter_by(par_id=par_id, task_id=task_id).one()
+                db.populate_obj(result, q)
+            except SQLAlchemyError:
+                print('DB Error retrieving task results')
+                db.session.rollback()
+                db.session.close()
         return result
 
     @staticmethod
-    def from_dict(d):
+    def from_dict(d: dict):
         result = FlightResult()
         for key, value in d.items():
-            if hasattr(result, key):
+            if key == 'notifications' and value:
+                for n in value:
+                    result.notifications.append(Notification.from_dict(n))
+            elif key == 'waypoints_achieved' and value:
+                for n in value:
+                    result.waypoints_achieved.append(WaypointAchieved.from_dict(n))
+            elif hasattr(result, key):
                 setattr(result, key, value)
         return result
+
+    @staticmethod
+    def from_result(result):
+        """ creates a Pilot obj. from result dict in Task Result json file"""
+        return FlightResult.from_dict(result)
 
     @staticmethod
     def check_flight(flight, task, airspace_obj=None, deadline=None, print=print):
@@ -417,7 +318,7 @@ class FlightResult(object):
             Returns:
                     a list of GNSSFixes of when turnpoints were achieved.
         """
-        from notification import Notification
+        from .flightpointer import FlightPointer
 
         ''' Altitude Source: '''
         alt_source = 'GPS' if task.formula.scoring_altitude is None else task.formula.scoring_altitude
@@ -460,14 +361,14 @@ class FlightResult(object):
             total_distance = 0
 
         '''Turnpoint managing'''
-        tp = Tp(task)
+        tp = FlightPointer(task)
 
         '''Airspace check managing'''
         airspace_plot = []
         infringements_list = []
         airspace_penalty = 0
         if task.airspace_check:
-            if task.airspace_check and not airspace_obj:
+            if not airspace_obj and not deadline:
                 print(f'We should not create airspace here')
                 airspace_obj = AirspaceCheck.from_task(task)
         total_fixes = len(flight.fixes)
@@ -787,6 +688,15 @@ class FlightResult(object):
         except:
             print('Error saving file:', fullname)
 
+    def create_result_dict(self):
+        """ creates dict() with all information"""
+        from result import TaskResult as R
+        result = {x: getattr(self, x) for x in R.results_list if x in dir(self)}
+        result['notifications'] = [n.__dict__ for n in self.notifications]
+        result['waypoints_achieved'] = [dict(name=w.name, lat=w.lat, lon=w.lon, rawtime=w.rawtime,
+                                             altitude=w.altitude) for w in self.waypoints_achieved]
+        return result
+
 
 def pilot_can_start(task, tp, fix):
     """ returns True if pilot, in the track fix, is in the condition to take the start gate"""
@@ -861,37 +771,36 @@ def verify_all_tracks(task, lib, airspace=None, print=print):
         print(f"{track_number}/{number_of_pilots}|track_counter")
         print(f"type: {pilot.result_type}")
         if pilot.result_type not in ('abs', 'dnf', 'mindist'):
-            print(f"{pilot.ID}. {pilot.name}: ({pilot.track.track_file})")
-            filename = path.join(task.file_path, pilot.track.track_file)
+            print(f"{pilot.ID}. {pilot.name}: ({pilot.track_file})")
+            filename = path.join(task.file_path, pilot.track_file)
             '''load track file'''
-            pilot.track.flight = Flight.create_from_file(filename)
-            if pilot.track.flight:
-                pilot.track.get_notes()
-                # pilot.track.get_type()
-                if pilot.track.flight.valid:
+            flight = Flight.create_from_file(filename)
+            if flight:
+                pilot.flight_notes = flight.notes
+                if flight.valid:
                     '''check flight against task'''
-                    pilot.result = FlightResult.check_flight(pilot.track.flight, task,
-                                                             airspace_obj=airspace, print=print)
-                elif pilot.track.flight:
-                    print(f'Error in parsing track: {[x for x in pilot.track.notifications]}')
-            '''unload flight object'''
-            pilot.track.flight = None
+                    pilot.check_flight(flight, task, airspace_obj=airspace, print=print)
+                elif flight:
+                    print(f'Error in parsing track: {[x for x in flight.notes]}')
     lib.process_results(task)
 
 
 def adjust_flight_results(task, lib, airspace=None):
     """ Called when multi-start or elapsed time task was stopped.
         We need to check again and adjust results of pilots that flew more than task duration"""
+    from igc_lib import Flight
     maxtime = task.duration
     for pilot in task.pilots:
-        if pilot.result.SSS_time:
-            last_time = pilot.result.SSS_time + maxtime
-            if ((not pilot.ESS_time and pilot.last_fix_time > last_time)
+        if pilot.SSS_time:
+            last_time = pilot.SSS_time + maxtime
+            if ((not pilot.ESS_time and pilot.best_distance_time > last_time)
                     or (pilot.ESS_time and pilot.ss_time > maxtime)):
                 '''need to adjust pilot result'''
-                flight = pilot.track.flight
-                adjusted = FlightResult.check_flight(flight, task, airspace_obj=airspace, deadline=last_time)
-                pilot.result.result_type = adjusted.result_type
+                filename = path.join(task.file_path, pilot.track_file)
+                '''load track file'''
+                flight = Flight.create_from_file(filename)
+                adjusted = FlightResult.check_flight(flight, task, airspace_obj=None, deadline=last_time)
+                pilot.result_type = adjusted.result_type
     lib.process_results(task)
 
 
@@ -942,3 +851,108 @@ def create_waypoint_achieved(fix, tp, time: int, alt: int):
     """creates a dictionary to be added to result.waypoints_achived"""
     return WaypointAchieved(trw_id=None, wpt_id=tp.next.wpt_id, name=tp.name, lat=fix.lat, lon=fix.lon,
                             rawtime=time, altitude=alt)
+
+
+def get_task_results(task_id: int):
+    from db_tables import FlightResultView as F, TblNotification as N, TblTrackWaypoint as W
+    from pilot.notification import Notification
+    from sqlalchemy.exc import SQLAlchemyError
+    pilots = []
+    with Database() as db:
+        try:
+            results = db.session.query(F).filter_by(task_id=task_id).all()
+            notifications = db.session.query(N).filter(N.track_id.in_([p.track_id for p in results])).all()
+            achieved = db.session.query(W).filter(W.track_id.in_([p.track_id for p in results])).all()
+            for row in results:
+                pilot = FlightResult()
+                db.populate_obj(pilot, row)
+                for el in [n for n in notifications if n.track_id == pilot.track_id]:
+                    n = Notification()
+                    db.populate_obj(n, el)
+                    pilot.notifications.append(n)
+                for el in [{k: getattr(w, k) for k in ['trw_id', 'wpt_id', 'name', 'rawtime', 'lat', 'lon', 'altitude']}
+                           for w in achieved if w.track_id == pilot.track_id]:
+                    pilot.waypoints_achieved.append(WaypointAchieved(**el))
+                pilots.append(pilot)
+        except SQLAlchemyError:
+            print('DB Error retrieving task results')
+            db.session.rollback()
+            db.session.close()
+            return
+    return pilots
+
+
+def update_all_results(task_id, pilots, session=None):
+    """ get results to update from the list
+        It is called from Task.check_all_tracks(), so only during Task full rescoring
+        And from FSDB.add results.
+        We are then deleting all present non admin Notification from database for results, as related to old scoring.
+        """
+    from db_tables import TblTaskResult as R, TblNotification as N, TblTrackWaypoint as W
+    from dataclasses import asdict
+    from sqlalchemy import and_
+    from sqlalchemy.exc import SQLAlchemyError
+    insert_mappings = []
+    update_mappings = []
+    notif_mappings = []
+    achieved_mappings = []
+    for pilot in pilots:
+        res = pilot.result
+        r = dict(track_id=pilot.track_id, task_id=task_id, par_id=pilot.par_id,
+                 track_file=pilot.track_file, comment=pilot.comment)
+        for key in [col for col in R.__table__.columns.keys() if col not in r.keys()]:
+            if hasattr(res, key):
+                r[key] = getattr(res, key)
+        if r['track_id']:
+            update_mappings.append(r)
+        else:
+            insert_mappings.append(r)
+
+    '''update database'''
+    with Database(session) as db:
+        try:
+            if insert_mappings:
+                db.session.bulk_insert_mappings(R, insert_mappings, return_defaults=True)
+                db.session.flush()
+                for elem in insert_mappings:
+                    next(pilot for pilot in pilots if pilot.par_id == elem['par_id']).track_id = elem['track_id']
+            if update_mappings:
+                db.session.bulk_update_mappings(R, update_mappings)
+                db.session.flush()
+            '''notifications and waypoints achieved'''
+            '''delete old entries'''
+            db.session.query(N).filter(and_(N.track_id.in_([r['track_id'] for r in update_mappings]),
+                                            N.notification_type.in_(['jtg', 'airspace', 'track']))).delete(
+                synchronize_session=False)
+            db.session.query(W).filter(W.track_id.in_([r['track_id'] for r in update_mappings])).delete(
+                synchronize_session=False)
+            '''collect new ones'''
+            for pilot in pilots:
+                notif_mappings.extend([dict(track_id=pilot.track_id, **asdict(n))
+                                       for n in pilot.notifications if not n.notification_type == 'admin'])
+                achieved_mappings.extend([dict(track_id=pilot.track_id, **asdict(w))
+                                          for w in pilot.waypoints_achieved])
+            '''bulk insert'''
+            if achieved_mappings:
+                db.session.bulk_insert_mappings(W, achieved_mappings)
+            if notif_mappings:
+                db.session.bulk_insert_mappings(N, notif_mappings, return_defaults=True)
+                db.session.flush()
+                res_not_list = [i for i in notif_mappings if i['notification_type'] in ['jtg', 'airspace']]
+                trackIds = set([i['track_id'] for i in res_not_list])
+                for idx in trackIds:
+                    pilot = next(p for p in pilots if p.track_id == idx)
+                    for i, n in enumerate([el for el in res_not_list if el['track_id'] == idx]):
+                        next(e for e in pilot.notifications if e.notification_type == n['notification_type']
+                             and e.flat_penalty == n['flat_penalty']
+                             and e.percentage_penalty == n['percentage_penalty']
+                             and e.comment == n['comment']).not_id = n['not_id']
+            db.session.commit()
+        except SQLAlchemyError as e:
+            error = str(e.__dict__)
+            print(f"Error storing pilots results to database: {error}")
+            db.session.rollback()
+            db.session.close()
+            return error
+    return True
+
