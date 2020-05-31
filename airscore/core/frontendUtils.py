@@ -1,8 +1,8 @@
-from db_tables import TblCompetition, TblTask, TblCompAuth, TblRegion, TblRegionWaypoint, TblTaskWaypoint
+from db.tables import TblCompetition, TblTask, TblCompAuth, TblRegion, TblRegionWaypoint, TblTaskWaypoint
 from route import Turnpoint
 from sqlalchemy.orm import aliased
 from flask import jsonify
-from myconn import Database
+from db.conn import db_session
 import datetime
 import ruamel.yaml
 from sqlalchemy import func
@@ -21,8 +21,8 @@ from functools import partial
 def get_comps():
     c = aliased(TblCompetition)
 
-    with Database() as db:
-        comps = (db.session.query(c.comp_id, c.comp_name, c.comp_site,
+    with db_session() as db:
+        comps = (db.query(c.comp_id, c.comp_name, c.comp_site,
                                   c.comp_class, c.sanction, c.comp_type, c.date_from,
                                   c.date_to, func.count(TblTask.task_id))
                  .outerjoin(TblTask, c.comp_id == TblTask.comp_id)
@@ -66,8 +66,8 @@ def get_admin_comps(current_userid):
     """get a list of all competitions in the DB and flag ones where owner is current user"""
     c = aliased(TblCompetition)
     ca = aliased(TblCompAuth)
-    with Database() as db:
-        comps = (db.session.query(c.comp_id, c.comp_name, c.comp_site,
+    with db_session() as db:
+        comps = (db.query(c.comp_id, c.comp_name, c.comp_site,
                                   c.date_from,
                                   c.date_to, func.count(TblTask.task_id), ca.user_id)
                  .outerjoin(TblTask, c.comp_id == TblTask.comp_id).outerjoin(ca)
@@ -199,24 +199,20 @@ def get_waypoint_choices(reg_id: int):
 
 
 def get_pilot_list_for_track_management(taskid: int):
-    from db_tables import TblTaskResult as R, TblParticipant as P, TblTask as T
-    with Database() as db:
-        try:
-            results = db.session.query(R.goal_time, R.track_file, R.track_id, R.result_type, R.distance_flown,
-                                       R.ESS_time, R.SSS_time, R.par_id).filter(
-                R.task_id == taskid).subquery()
-            pilots = db.session.query(T.task_id, P.name, P.ID, P.par_id, results.c.track_id, results.c.SSS_time,
-                                      results.c.ESS_time,
-                                      results.c.distance_flown, results.c.track_file, results.c.result_type) \
-                .outerjoin(P, T.comp_id == P.comp_id).filter(T.task_id == taskid) \
-                .outerjoin(results, results.c.par_id == P.par_id).all()
+    from db.tables import TblTaskResult as R, TblParticipant as P, TblTask as T
+    with db_session() as db:
+        results = db.query(R.goal_time, R.track_file, R.track_id, R.result_type, R.distance_flown,
+                                   R.ESS_time, R.SSS_time, R.par_id).filter(
+            R.task_id == taskid).subquery()
+        pilots = db.query(T.task_id, P.name, P.ID, P.par_id, results.c.track_id, results.c.SSS_time,
+                                  results.c.ESS_time,
+                                  results.c.distance_flown, results.c.track_file, results.c.result_type) \
+            .outerjoin(P, T.comp_id == P.comp_id).filter(T.task_id == taskid) \
+            .outerjoin(results, results.c.par_id == P.par_id).all()
 
-            if pilots:
-                pilots = [row._asdict() for row in pilots]
+        if pilots:
+            pilots = [row._asdict() for row in pilots]
 
-        except SQLAlchemyError:
-            print("there was a problem with getting the pilot list")
-            return None
     all_data = []
     for pilot in pilots:
         time = ''
@@ -249,21 +245,14 @@ def get_waypoint(wpt_id=None, rwp_id=None):
     """reads waypoint from tblTaskWaypoint or tblRegionWaypoint depending on input and returns Turnpoint object"""
     if not (wpt_id or rwp_id):
         return None
-    with Database() as db:
-        try:
-            if wpt_id:
-                result = db.session.query(TblTaskWaypoint).get(wpt_id)
-            else:
-                result = db.session.query(TblRegionWaypoint).get(rwp_id)
-            tp = Turnpoint()
-            db.populate_obj(tp, result)
-        except SQLAlchemyError as e:
-            error = str(e)
-            print(f"error creating Turnpoint obj. error{error}")
-            db.session.rollback()
-            db.session.close()
-            return None
-        return tp
+    with db_session() as db:
+        if wpt_id:
+            result = db.query(TblTaskWaypoint).get(wpt_id)
+        else:
+            result = db.query(TblRegionWaypoint).get(rwp_id)
+        tp = Turnpoint()
+        result.populate(tp)
+    return tp
 
 
 def save_turnpoint(task_id: int, turnpoint: Turnpoint):
@@ -271,27 +260,22 @@ def save_turnpoint(task_id: int, turnpoint: Turnpoint):
     if not (type(task_id) is int and task_id > 0):
         print("task not present in database ", task_id)
         return None
-    with Database() as db:
-        try:
-            if not turnpoint.wpt_id:
-                '''add new taskWaypoint'''
-                # tp = TblTaskWaypoint(**turnpoint.as_dict())
-                tp = TblTaskWaypoint()
-                db.populate_row(tp, turnpoint)
-                db.session.add(tp)
-                db.session.flush()
-            else:
-                '''update taskWaypoint'''
-                tp = db.session.query(TblTaskWaypoint).get(turnpoint.wpt_id)
-                if tp:
-                    for k, v in turnpoint.as_dict().items():
-                        if hasattr(tp, k):
-                            setattr(tp, k, v)
-                db.session.flush()
-        except SQLAlchemyError:
-            print('error saving turnpoint')
-            db.session.rollback()
-            return None
+    with db_session() as db:
+        if not turnpoint.wpt_id:
+            '''add new taskWaypoint'''
+            # tp = TblTaskWaypoint(**turnpoint.as_dict())
+            tp = TblTaskWaypoint()
+            db.populate_row(tp, turnpoint)
+            db.add(tp)
+            db.flush()
+        else:
+            '''update taskWaypoint'''
+            tp = db.query(TblTaskWaypoint).get(turnpoint.wpt_id)
+            if tp:
+                for k, v in turnpoint.as_dict().items():
+                    if hasattr(tp, k):
+                        setattr(tp, k, v)
+            db.flush()
         return 1
 
 
@@ -512,31 +496,21 @@ def process_igc_zip(task, zipfile):
 
 
 def get_task_result_file_list(taskid: int):
-    from db_tables import TblResultFile as R
-    with Database() as db:
-        try:
-            rows = db.session.query(R.created, R.filename, R.status, R.active, R.ref_id).filter_by(task_id=taskid).all()
-            if rows:
-                files = [row._asdict() for row in rows]
-        except SQLAlchemyError:
-            print("there was a problem with getting the result list")
-            return None
-
+    from db.tables import TblResultFile as R
+    with db_session() as db:
+        rows = db.query(R.created, R.filename, R.status, R.active, R.ref_id).filter_by(task_id=taskid).all()
+        if rows:
+            files = [row._asdict() for row in rows]
         return files
 
 
 def number_of_tracks_processed(taskid: int):
-    from db_tables import TblTaskResult as R, TblParticipant as P, TblTask as T
+    from db.tables import TblTaskResult as R, TblParticipant as P, TblTask as T
     from sqlalchemy import func
-    with Database() as db:
-        try:
-            results = db.session.query(func.count()).filter(R.task_id == taskid).scalar()
-            pilots = db.session.query(func.count(P.par_id)).outerjoin(T, P.comp_id == T.comp_id).filter(
-                T.task_id == taskid).scalar()
-
-        except SQLAlchemyError:
-            print("there was a problem with getting the pilot/result list")
-            return None
+    with db_session() as db:
+        results = db.query(func.count()).filter(R.task_id == taskid).scalar()
+        pilots = db.query(func.count(P.par_id)).outerjoin(T, P.comp_id == T.comp_id).filter(
+            T.task_id == taskid).scalar()
     return results, pilots
 
 
@@ -562,29 +536,22 @@ def get_score_header(files, offset):
 
 def get_comp_admins(compid_or_taskid: int, task_id=False):
     """returns owner and list of admins takes compid by default or taskid if taskid is True"""
-    from db_tables import TblCompAuth as CA
+    from db.tables import TblCompAuth as CA
     from airscore.user.models import User
-    with Database() as db:
-        try:
-            if task_id:
-                taskid = compid_or_taskid
-                all_admins = db.session.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth) \
-                    .join(CA, User.id == CA.user_id).join(TblTask, CA.comp_id == TblTask.comp_id).filter(
-                    TblTask.task_id == taskid,
-                    CA.user_auth.in_(('owner', 'admin'))).all()
-            else:
-                compid = compid_or_taskid
-                all_admins = db.session.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth) \
-                    .join(CA, User.id == CA.user_id).filter(CA.comp_id == compid,
-                                                            CA.user_auth.in_(('owner', 'admin'))).all()
-            if all_admins:
-                all_admins = [row._asdict() for row in all_admins]
-        except SQLAlchemyError as e:
-            error = str(e)
-            print(f"there was a problem with getting the admin list for comp id{compid_or_taskid} error{error}")
-            db.session.rollback()
-            db.session.close()
-            return None, None
+    with db_session() as db:
+        if task_id:
+            taskid = compid_or_taskid
+            all_admins = db.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth) \
+                .join(CA, User.id == CA.user_id).join(TblTask, CA.comp_id == TblTask.comp_id).filter(
+                TblTask.task_id == taskid,
+                CA.user_auth.in_(('owner', 'admin'))).all()
+        else:
+            compid = compid_or_taskid
+            all_admins = db.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth) \
+                .join(CA, User.id == CA.user_id).filter(CA.comp_id == compid,
+                                                        CA.user_auth.in_(('owner', 'admin'))).all()
+        if all_admins:
+            all_admins = [row._asdict() for row in all_admins]
         admins = []
         all_ids = []
         owner = None
@@ -600,56 +567,33 @@ def get_comp_admins(compid_or_taskid: int, task_id=False):
 
 
 def set_comp_admin(compid: int, userid, owner=False):
-    from db_tables import TblCompAuth as CA
+    from db.tables import TblCompAuth as CA
     auth = 'owner' if owner else 'admin'
-    with Database() as db:
-        try:
+    with db_session() as db:
             admin = CA(user_id=userid, comp_id=compid, user_auth=auth)
-            db.session.add(admin)
-            db.session.flush()
-        except SQLAlchemyError as e:
-            error = str(e)
-            print(f"there was a problem with setting the admin for comp id{compid} error{error}")
-            db.session.rollback()
-            db.session.close()
-            return None
+            db.add(admin)
+            db.flush()
     return True
 
 
 def get_all_admins():
     """returns a list of all admins in the system"""
     from airscore.user.models import User
-    with Database() as db:
-        try:
-            all_admins = db.session.query(User.id, User.username, User.first_name, User.last_name) \
-                .filter(User.is_admin == 1).all()
-            if all_admins:
-                all_admins = [row._asdict() for row in all_admins]
-        except SQLAlchemyError as e:
-            error = str(e)
-            print(f"there was a problem with getting the admin list. error{error}")
-            db.session.rollback()
-            db.session.close()
-            return None
+    with db_session() as db:
+        all_admins = db.query(User.id, User.username, User.first_name, User.last_name) \
+            .filter(User.is_admin == 1).all()
+        if all_admins:
+            all_admins = [row._asdict() for row in all_admins]
         return all_admins
 
 
 def update_airspace_file(old_filename, new_filename):
     """change the name of the openair file in all regions it is used."""
     R = aliased(TblRegion)
-    with Database() as db:
-        try:
-
-            db.session.query(R).filter(R.openair_file == old_filename).update({R.openair_file: new_filename},
-                                                                              synchronize_session=False)
-            db.session.commit()
-
-        except SQLAlchemyError as e:
-            error = str(e)
-            print(f"error trying to update openair_file file in DB. error{error}")
-            db.session.rollback()
-            db.session.close()
-            return None
+    with db_session() as db:
+        db.query(R).filter(R.openair_file == old_filename).update({R.openair_file: new_filename},
+                                                                          synchronize_session=False)
+        db.commit()
     return True
 
 
@@ -659,15 +603,15 @@ def update_airspace_file(old_filename, new_filename):
 
 
 def get_non_registered_pilots(compid: int):
-    from db_tables import TblParticipant, PilotView
+    from db.tables import TblParticipant, PilotView
 
     p = aliased(TblParticipant)
     pv = aliased(PilotView)
 
-    with Database() as db:
+    with db_session() as db:
         '''get registered pilots'''
-        reg = db.session.query(p.pil_id).filter(p.comp_id == compid).subquery()
-        non_reg = db.session.query(pv.pil_id, pv.civl_id, pv.first_name, pv.last_name). \
+        reg = db.query(p.pil_id).filter(p.comp_id == compid).subquery()
+        non_reg = db.query(pv.pil_id, pv.civl_id, pv.first_name, pv.last_name). \
             filter(reg.c.pil_id == None). \
             outerjoin(reg, reg.c.pil_id == pv.pil_id). \
             order_by(pv.first_name, pv.last_name).all()
@@ -691,19 +635,11 @@ def get_igc_parsing_config_file_list():
 
 
 def get_comps_with_igc_parsing(igc_config):
-    from db_tables import TblCompetition
+    from db.tables import TblCompetition
 
     c = aliased(TblCompetition)
-    with Database() as db:
-        try:
-            comps = db.session.query(c.comp_id).filter(c.igc_config_file == igc_config).all()
-        except SQLAlchemyError as e:
-            error = str(e)
-            print(f"error trying to update openair_file file in DB. error{error}")
-            db.session.rollback()
-            db.session.close()
-            return None
-        return comps
+    with db_session() as db:
+        return db.query(c.comp_id).filter(c.igc_config_file == igc_config).all()
 
 
 def get_comp_info(compid: int, task_ids=None):
@@ -712,8 +648,8 @@ def get_comp_info(compid: int, task_ids=None):
     c = aliased(TblCompetition)
     t = aliased(TblTask)
 
-    with Database() as db:
-        non_scored_tasks = (db.session.query(t.task_id.label('id'),
+    with db_session() as db:
+        non_scored_tasks = (db.query(t.task_id.label('id'),
                                              t.task_name,
                                              t.date,
                                              t.task_type,
@@ -721,7 +657,7 @@ def get_comp_info(compid: int, task_ids=None):
                                              t.comment).filter(t.comp_id == compid, t.task_id.notin_(task_ids))
                             .order_by(t.date.desc()).all())
 
-        competition_info = (db.session.query(
+        competition_info = (db.query(
             c.comp_id,
             c.comp_name,
             c.comp_site,
@@ -771,7 +707,7 @@ def get_participants(compid: int, source='all'):
 def check_team_size(compid: int, nat=False):
     """Checks that the number of pilots in a team don't exceed the allowed number"""
     from formula import Formula
-    from db_tables import TblParticipant as P
+    from db.tables import TblParticipant as P
     formula = Formula.read(compid)
     message = ''
     if nat:
@@ -779,11 +715,11 @@ def check_team_size(compid: int, nat=False):
     else:
         max_team_size = formula.max_team_size or 0
 
-    with Database() as db:
+    with db_session() as db:
         if nat:
-            q = db.session.query(P.nat, func.sum(P.nat_team)).filter(P.comp_id == compid).group_by(P.nat)
+            q = db.query(P.nat, func.sum(P.nat_team)).filter(P.comp_id == compid).group_by(P.nat)
         else:
-            q = db.session.query(P.team, func.count(P.team)).filter(P.comp_id == compid).group_by(P.team)
+            q = db.query(P.team, func.count(P.team)).filter(P.comp_id == compid).group_by(P.team)
         result = q.all()
         for team in result:
             if team[1] > max_team_size:
@@ -938,8 +874,8 @@ def get_task_igc_zip(task_id: int):
 
 
 def check_short_code(comp_short_code):
-    with Database() as db:
-        code = db.session.query(TblCompetition.comp_code).filter(TblCompetition.comp_code == comp_short_code).first()
+    with db_session() as db:
+        code = db.query(TblCompetition.comp_code).filter(TblCompetition.comp_code == comp_short_code).first()
         if code:
             return False
         else:

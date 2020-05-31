@@ -201,11 +201,11 @@ def map_legend(col_pilot_dict):
 
 
 def get_other_tracks(taskid, pilot_parid):
-    from db_tables import FlightResultView as R
-    from myconn import Database
+    from db.tables import FlightResultView as R
+    from db.conn import db_session
 
-    with Database() as db:
-        tracks = (db.session.query(R.track_id, R.name).filter(R.task_id == taskid, R.par_id != pilot_parid).all())
+    with db_session() as db:
+        tracks = (db.query(R.track_id, R.name).filter(R.task_id == taskid, R.par_id != pilot_parid).all())
 
     return tracks
 

@@ -13,13 +13,10 @@ Will send a confirmation to all comp admins unless in -t test mode.
 """
 
 import argparse
-import logging
 import smtplib
-import sys
 
-from myconn import Database
+from db.conn import db_session
 from sqlalchemy.exc import SQLAlchemyError
-from Defines import MYSQLUSER, MYSQLPASSWORD, MYSQLHOST, DATABASE
 
 
 class send_mail():
@@ -51,12 +48,12 @@ class send_mail():
 def get_email_list(task_id, to_all=None):
     """Get pilot emails (pilots in task without tracks)
     returns a dictionary of pilFirstName pilLastname:pilEmail."""
-    from db_tables import TblParticipant as R, PilotView as P, TblTaskResult as S, TblTask as T
+    from db.tables import TblParticipant as R, PilotView as P, TblTaskResult as S, TblTask as T
     from sqlalchemy import and_
 
-    with Database() as db:
-        comp_id = db.session.query(T).get(task_id).comp_id
-        q = (db.session.query(R.name, P.email).join(P, P.pil_id == R.pil_id).outerjoin(
+    with db_session() as db:
+        comp_id = db.query(T).get(task_id).comp_id
+        q = (db.query(R.name, P.email).join(P, P.pil_id == R.pil_id).outerjoin(
             S, and_(R.pil_id == S.pil_id, S.task_id == task_id))).filter(R.comp_id == comp_id)
         if not to_all:
             q = q.filter(S.track_id.is_(None))
@@ -68,15 +65,11 @@ def get_email_list(task_id, to_all=None):
 
 def get_task_details(task_id):
     """Get task date and location for email subject line."""
-    from db_tables import TblCompetition as C, TblTask as T
+    from db.tables import TblCompetition as C, TblTask as T
 
-    with Database() as db:
-        q = db.session.query(T.date, C.comp_site).join(C, C.comp_id == T.comp_id).filter(T.task_id == task_id)
-        try:
-            date, location = q.one()
-        except SQLAlchemyError:
-            print(f'Date, Location Query Error')
-
+    with db_session() as db:
+        q = db.query(T.date, C.comp_site).join(C, C.comp_id == T.comp_id).filter(T.task_id == task_id)
+        date, location = q.one()
     datestr = date.strftime('%m-%d')  # convert from datetime to string
     subject = datestr + ' ' + location
     return subject
@@ -84,10 +77,10 @@ def get_task_details(task_id):
 
 def get_admin_email(task_id, DB_User, DB_Password, DB):
     """Get admin email addresses"""
-    from db_tables import UserView as U, TblCompAuth as C, TblTask as T
+    from db.tables import UserView as U, TblCompAuth as C, TblTask as T
 
-    with Database() as db:
-        q = db.session.query(U.user_email).join(C, C.user_id == U.user_id).join(T, T.comp_id == C.comp_id)
+    with db_session() as db:
+        q = db.query(U.user_email).join(C, C.user_id == U.user_id).join(T, T.comp_id == C.comp_id)
         users = q.filter(T.task_id == task_id).all()
         return [u[0] for u in users]
 

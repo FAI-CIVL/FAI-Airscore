@@ -4,17 +4,17 @@ Use: python3 update_result_status.py [refPk] [status]
 
 Antonio Golfari - 2019
 """
-from db_tables import TblResultFile as R
+from db.tables import TblResultFile as R
 # Use your utility module.
-from myconn import Database
+from db.conn import db_session
 
 
 def update_result(ref_id, status):
     from os import path as p
     import json
 
-    with Database() as db:
-        result = db.session.query(R).get(ref_id)
+    with db_session() as db:
+        result = db.query(R).get(ref_id)
         file = result.filename
         '''check if json file exists, and updates it'''
         if p.isfile(file):
@@ -28,7 +28,7 @@ def update_result(ref_id, status):
                 print(f'JSON file has been updated \n')
             '''update status in database'''
             result.status = status
-            db.session.commit()
+            db.commit()
             return 1
         else:
             print(f"Couldn't find a JSON file for this result \n")

@@ -37,7 +37,7 @@ class TestUser:
     def test_factory(self, db):
         """Test user factory."""
         user = UserFactory(password="myprecious")
-        db.session.commit()
+        db.commit()
         assert bool(user.username)
         assert bool(user.email)
         assert bool(user.created_at)

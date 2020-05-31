@@ -22,7 +22,7 @@ from calcUtils import get_isotime, km, sec_to_time
 from comp import Comp
 from compUtils import is_ext
 from formula import Formula
-from myconn import Database
+from db.conn import db_session
 from pilot.participant import Participant, mass_import_participants
 from pilot.flightresult import FlightResult, update_all_results
 from task import Task
@@ -532,35 +532,27 @@ class FSDB(object):
         if self.comp.comp_id is None:
             return False
 
-        with Database(session) as db:
-            try:
-                for t in self.tasks:
-                    t.comp_id = self.comp.comp_id
-                    # t.create_path()
-                    '''recalculating legs to avoid errors when fsdb task misses launch and/or goal'''
-                    if t.geo is None:
-                        t.get_geo()
-                    t.calculate_task_length()
-                    t.calculate_optimised_task_length()
-                    '''storing'''
-                    t.to_db(db.session)
-                    '''adding folders'''
-                    t.comp_path = self.comp.comp_path
-                    Path(t.file_path).mkdir(parents=True, exist_ok=True)
-
-                db.session.commit()
-
-            except SQLAlchemyError:
-                print('Tasks storing error')
-                db.session.rollback()
-                return False
+        with db_session() as db:
+            for t in self.tasks:
+                t.comp_id = self.comp.comp_id
+                # t.create_path()
+                '''recalculating legs to avoid errors when fsdb task misses launch and/or goal'''
+                if t.geo is None:
+                    t.get_geo()
+                t.calculate_task_length()
+                t.calculate_optimised_task_length()
+                '''storing'''
+                t.to_db(db.session)
+                '''adding folders'''
+                t.comp_path = self.comp.comp_path
+                Path(t.file_path).mkdir(parents=True, exist_ok=True)
         return True
 
     def add_results(self, session=None):
         """
             Add results for each comp task to AirScore database
         """
-        from db_tables import TblTaskResult as R
+        from db.tables import TblTaskResult as R
         if self.comp.comp_id is None:
             return False
 
@@ -568,7 +560,7 @@ class FSDB(object):
             if len(t.results) == 0 or t.task_id is None:
                 print(f"task {t.task_code} does not have a db ID or has not been scored.")
                 pass
-            with Database(session) as db:
+            with db_session() as db:
                 '''get results par_id from participants'''
                 for pilot in t.pilots:
                     par = next(p for p in self.comp.participants if p.ID == pilot.ID)
@@ -576,37 +568,30 @@ class FSDB(object):
                 inserted = update_all_results(task_id=t.task_id, pilots=t.pilots, session=session)
                 if inserted:
                     '''populate results track_id'''
-                    try:
-                        results = db.session.query(R.track_id, R.par_id).filter_by(task_id=t.task_id).all()
-                        for result in results:
-                            pilot = next(p for p in t.pilots if p.par_id == result.par_id)
-                            pilot.track_id = result.track_id
-                    except SQLAlchemyError:
-                        print(f"Error trying to collect results track_id")
+                    results = db.query(R.track_id, R.par_id).filter_by(task_id=t.task_id).all()
+                    for result in results:
+                        pilot = next(p for p in t.pilots if p.par_id == result.par_id)
+                        pilot.track_id = result.track_id
         return True
 
     def add_participants(self, session=None):
         """
             Add participants to AirScore database
         """
-        from db_tables import TblParticipant as P
+        from db.tables import TblParticipant as P
 
         if self.comp.comp_id is None or len(self.comp.participants) == 0:
             print(f"Comp does not have a db ID or has not participants.")
             return False
 
-        with Database(session) as db:
+        with db_session() as db:
             inserted = mass_import_participants(self.comp.comp_id, self.comp.participants, db.session)
             if inserted:
                 '''populate participants par_id'''
-                try:
-                    results = db.session.query(P.par_id, P.ID).filter_by(comp_id=self.comp.comp_id).all()
-                    for result in results:
-                        pilot = next(p for p in self.comp.participants if p.ID == result.ID)
-                        pilot.par_id = result.par_id
-                except SQLAlchemyError:
-                    print(f"Error trying to collect participants par_id")
-                    return False
+                results = db.query(P.par_id, P.ID).filter_by(comp_id=self.comp.comp_id).all()
+                for result in results:
+                    pilot = next(p for p in self.comp.participants if p.ID == result.ID)
+                    pilot.par_id = result.par_id
         return True
 
     def add_all(self):
@@ -615,7 +600,7 @@ class FSDB(object):
         self.add_comp()
         if self.comp.comp_id is not None:
             print(f"comp ID: {self.comp.comp_id}")
-            with Database() as db:
+            with db_session() as db:
                 print(f"adding participants...")
                 self.add_participants(db.session)
                 print(f"adding tasks...")

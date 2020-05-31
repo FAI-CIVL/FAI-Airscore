@@ -27,8 +27,8 @@ class LoginForm(FlaskForm):
         if not initial_validation:
             return False
 
-        # with Database() as db:
-        #     self.user = db.session.query(User).filter_by(username=self.username.data).first()
+        # with db_session() as db:
+        #     self.user = db.query(User).filter_by(username=self.username.data).first()
 
         self.user = User.query.filter_by(username=self.username.data).first()
         if not self.user:

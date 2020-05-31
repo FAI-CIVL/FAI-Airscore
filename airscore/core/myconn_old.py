@@ -1,7 +1,7 @@
 """
 Module for mySQL connection
 Use:    import myconn
-        with Database() as db:
+        with db_session() as db:
             result = db.fetchone(query)
         
 Antonio Golfari - 2018

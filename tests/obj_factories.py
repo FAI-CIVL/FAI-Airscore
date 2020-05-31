@@ -1,4 +1,4 @@
-from factory import PostGenerationMethodCall, Sequence, Factory
+from factory import Sequence, Factory
 from factory.faker import faker
 import task
 from formula import TaskFormula
@@ -8,9 +8,8 @@ from track import Track
 from flightresult import FlightResult
 from notification import Notification
 from route import Turnpoint
-from datetime import date
 from random import random
-from myconn import Database
+from db.conn import db_session
 import comp
 
 

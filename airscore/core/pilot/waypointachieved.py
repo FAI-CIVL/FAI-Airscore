@@ -13,7 +13,7 @@ Stuart Mackintosh - Antonio Golfari
 
 from dataclasses import dataclass, asdict
 from sqlalchemy.exc import SQLAlchemyError
-from myconn import Database
+from db.conn import db_session
 
 
 @dataclass
@@ -32,37 +32,28 @@ class WaypointAchieved:
 
 def get_waypoints_achieved(track_id, session=None):
     """retrieves a WaypointAchieved obj list for track_id result"""
-    from db_tables import TblTrackWaypoint
+    from db.tables import TblTrackWaypoint
     from sqlalchemy.orm import aliased
     t = aliased(TblTrackWaypoint)
     achieved = []
-    with Database(session) as db:
-        try:
-            rows = db.session.query(t.trw_id, t.wpt_id, t.name, t.rawtime,
-                                    t.lat, t.lon, t.altitude).filter_by(track_id=track_id).all()
-            for w in rows:
-                achieved.append(WaypointAchieved(**w._asdict()))
-        except SQLAlchemyError:
-            print("there was a problem retrieving waypoints achieved")
-            db.session.rollback()
-            db.session.close()
+    with db_session() as db:
+        rows = db.query(t.trw_id, t.wpt_id, t.name, t.rawtime,
+                                t.lat, t.lon, t.altitude).filter_by(track_id=track_id).all()
+        for w in rows:
+            achieved.append(WaypointAchieved(**w._asdict()))
     return achieved
 
 
 def update_waypoints_achieved(pilot, session=None):
     """deletes old entries and updates TblTrackWaypoint for result"""
-    from db_tables import TblTrackWaypoint
+    from db.tables import TblTrackWaypoint
     mappings = []
     for w in pilot.waypoints_achieved:
         mappings.append(dict(track_id=pilot.track_id, **asdict(w)))
-    with Database(session) as db:
-        try:
-            '''delete old entries'''
-            db.session.query(TblTrackWaypoint).filter_by(track_id=pilot.track_id).delete()
-            '''insert new rows'''
-            db.session.bulk_insert_mappings(TblTrackWaypoint, mappings)
-            db.session.commit()
-        except SQLAlchemyError:
-            print("there was a problem inserting waypoints achieved")
-            db.session.rollback()
-            db.session.close()
+    with db_session() as db:
+        '''delete old entries'''
+        db.query(TblTrackWaypoint).filter_by(track_id=pilot.track_id).delete()
+        '''insert new rows'''
+        db.bulk_insert_mappings(TblTrackWaypoint, mappings)
+        db.commit()
+

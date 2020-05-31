@@ -25,15 +25,15 @@ class CRUDMixin(object):
 
     def save(self, commit=True):
         """Save the record."""
-        db.session.add(self)
+        db.add(self)
         if commit:
-            db.session.commit()
+            db.commit()
         return self
 
     def delete(self, commit=True):
         """Remove the record from the database."""
-        db.session.delete(self)
-        return commit and db.session.commit()
+        db.delete(self)
+        return commit and db.commit()
 
 
 class Model(CRUDMixin, db.Model):

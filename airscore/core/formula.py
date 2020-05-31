@@ -12,7 +12,7 @@ from os import listdir
 from sqlalchemy.orm import aliased
 from sqlalchemy.exc import SQLAlchemyError
 
-from myconn import Database
+from db.conn import db_session
 
 
 def list_formulas():
@@ -236,16 +236,13 @@ class Formula(object):
     @staticmethod
     def read(comp_id, session=None):
         """reads comp formula from database"""
-        from db_tables import TblForComp as F
+        from db.tables import TblForComp as F
 
         formula = Formula(comp_id=comp_id)
-        with Database(session) as db:
-            try:
-                q = db.session.query(F).get(comp_id)
-                if q is not None:
-                    db.populate_obj(formula, q)
-            except SQLAlchemyError:
-                print(f'Read formula from db Error: {SQLAlchemyError.code}')
+        with db_session() as db:
+            q = db.query(F).get(comp_id)
+            if q is not None:
+                q.populate(formula)
         return formula
 
     @staticmethod
@@ -325,26 +322,19 @@ class Formula(object):
 
     def to_db(self):
         """stores formula to TblForComp table in AirScore database"""
-        from db_tables import TblForComp as FC
+        from db.tables import TblForComp as FC
 
-        with Database() as db:
-            try:
-                '''check if we have already a row for the comp'''
-                row = db.session.query(FC).get(self.comp_id)
-                if row is None:
-                    row = FC(comp_id=self.comp_id)
-                    db.session.add(row)
-                    db.session.flush()
-                for k, v in self.as_dict().items():
-                    if hasattr(row, k):
-                        setattr(row, k, v)
-                db.session.flush()
-
-            except SQLAlchemyError:
-                print('cannot insert or update formula. DB insert error.')
-                db.session.rollback()
-                return None
-
+        with db_session() as db:
+            '''check if we have already a row for the comp'''
+            row = db.query(FC).get(self.comp_id)
+            if row is None:
+                row = FC(comp_id=self.comp_id)
+                db.add(row)
+                db.flush()
+            for k, v in self.as_dict().items():
+                if hasattr(row, k):
+                    setattr(row, k, v)
+            db.flush()
         return self.comp_id
 
     def get_lib(self):
@@ -389,16 +379,13 @@ class TaskFormula(Formula):
     @staticmethod
     def from_comp(comp_id, session=None):
         """reads comp formula from database"""
-        from db_tables import TblForComp as F
+        from db.tables import TblForComp as F
 
         formula = TaskFormula()
-        with Database(session) as db:
-            try:
-                q = db.session.query(F).get(comp_id)
-                if q is not None:
-                    db.populate_obj(formula, q)
-            except SQLAlchemyError:
-                print(f'Read TaskFormula from db Error: {SQLAlchemyError.code}')
+        with db_session() as db:
+            q = db.query(F).get(comp_id)
+            if q is not None:
+                q.populate(formula)
         return formula
 
     @staticmethod
@@ -409,59 +396,42 @@ class TaskFormula(Formula):
         return get_fsdb_info(TaskFormula(), fs_info.find('FsScoreFormula'))
 
     @staticmethod
-    def read(task_id, session=None):
+    def read(task_id: int, session=None):
         """reads comp formula from database"""
-        from db_tables import TaskFormulaView as F
-
-        formula = TaskFormula()
-        with Database(session) as db:
-            try:
-                q = db.session.query(F).get(task_id)
-                if q is not None:
-                    db.populate_obj(formula, q)
-            except SQLAlchemyError:
-                print(f'Read TaskFormula from db Error: {SQLAlchemyError.code}')
+        from db.tables import TaskFormulaView as F
+        formula = F.get_by_id(task_id).populate(TaskFormula())
+        # formula = TaskFormula()
+        # with db_session() as db:
+        #     q = db.query(F).get(task_id)
+        #     if q is not None:
+        #         q.populate(formula)
         return formula
 
     def to_db(self, session=None):
         """stores TaskFormula parameters to TblTask table in AirScore database"""
-        from db_tables import TblTask
-        with Database(session) as db:
-            try:
-                '''check if we have already a row for the task'''
-                row = db.session.query(TblTask).get(self.task_id)
-                for k in TaskFormula.task_overrides:
-                    setattr(row, k, getattr(self, k))
-                db.session.flush()
-            except SQLAlchemyError as e:
-                error = str(e.__dict__)
-                print(f"Error storing result to database")
-                db.session.rollback()
-                db.session.close()
-                return error
+        from db.tables import TblTask
+        with db_session() as db:
+            '''check if we have already a row for the task'''
+            row = db.query(TblTask).get(self.task_id)
+            for k in TaskFormula.task_overrides:
+                setattr(row, k, getattr(self, k))
+            db.flush()
         return True
 
     def reset(self):
         """brings back to comp formula"""
-        from db_tables import TblTask, TblForComp
+        from db.tables import TblTask, TblForComp
         t = aliased(TblTask)
         f = aliased(TblForComp)
 
-        with Database() as db:
-            try:
-                '''check if we have already a row for the comp'''
-                comp_formula = db.session.query(f).get(self.comp_id)
-                task = db.session.query(t).get(self.task_id)
-                for k in TaskFormula.task_overrides:
-                    setattr(self, k, getattr(comp_formula, k))
-                    setattr(task, k, getattr(comp_formula, k))
-                db.session.flush()
-
-            except SQLAlchemyError:
-                print('cannot reset task formula. DB error.')
-                db.session.rollback()
-                return None
-
+        with db_session() as db:
+            '''check if we have already a row for the comp'''
+            comp_formula = db.query(f).get(self.comp_id)
+            task = db.query(t).get(self.task_id)
+            for k in TaskFormula.task_overrides:
+                setattr(self, k, getattr(comp_formula, k))
+                setattr(task, k, getattr(comp_formula, k))
+            db.flush()
         return True
 
 

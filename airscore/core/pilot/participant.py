@@ -15,8 +15,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import aliased
 from calcUtils import get_date
 from sources.civlrankings import create_participant_from_CIVLID, create_participant_from_name
-from db_tables import TblParticipant as P
-from myconn import Database
+from db.tables import TblParticipant as P
+from db.conn import db_session
 
 
 class Participant(Pilot):
@@ -24,7 +24,7 @@ class Participant(Pilot):
     """
 
     def __init__(self, par_id=None, comp_id=None, ID=None, glider=None, glider_cert=None, sponsor=None,
-                 team=None, nat_team=1, status=None, paid=None, **kwargs):
+                 team=None, nat_team=1, status=None, paid=None, live_id=None, **kwargs):
 
         self.par_id = par_id  # pil_id
         self.comp_id = comp_id  # comp_id
@@ -36,7 +36,7 @@ class Participant(Pilot):
         self.nat_team = nat_team  # default 1
         self.paid = paid  # bool
         self.status = status  # 'confirmed', 'waiting list', 'wild card', 'cancelled', ?
-        self.live_id = None  # int
+        self.live_id = live_id  # int
         super().__init__(**kwargs)
 
     def __setattr__(self, attr, value):
@@ -62,19 +62,13 @@ class Participant(Pilot):
     def read(par_id: int):
         """Reads pilot registration from database
         takes pil_id as argument"""
-        with Database() as db:
+        with db_session() as db:
             # get pilot details.
-            try:
-                q = db.session.query(P).get(par_id)
-                if q:
-                    participant = Participant(par_id=par_id)
-                    db.populate_obj(participant, q)
-                    return participant
-            except SQLAlchemyError as e:
-                error = str(e.__dict__)
-                print(f"Error getting participant from database")
-                db.session.rollback()
-                db.session.close()
+            q = db.query(P).get(par_id)
+            if q:
+                participant = Participant(par_id=par_id)
+                q.populate(participant)
+                return participant
         return None
 
     @staticmethod
@@ -88,22 +82,15 @@ class Participant(Pilot):
 
     def to_db(self, session=None):
         """stores or updates Participant to AirScore database"""
-        with Database(session) as db:
-            try:
-                if not self.par_id:
-                    pil = P()
-                    db.session.add(pil)
-                    db.session.flush()
-                    self.par_id = pil.par_id
-                else:
-                    pil = db.session.query(P).get(self.par_id)
-                db.populate_row(pil, self)
-                db.session.flush()
-            except SQLAlchemyError:
-                print('Participant storing error')
-                db.session.rollback()
-                db.session.close()
-                return None
+        with db_session() as db:
+            if not self.par_id:
+                pil = P()
+                db.add(pil)
+                db.flush()
+                self.par_id = pil.par_id
+            else:
+                pil = db.query(P).get(self.par_id)
+            db.populate_row(pil, self)
         return self.par_id
 
     @staticmethod
@@ -155,29 +142,22 @@ class Participant(Pilot):
     @staticmethod
     def from_profile(pilot_id: int, comp_id=None, session=None):
         """creates a Participant obj from internal PilotView database table"""
-        from db_tables import PilotView, TblCountryCode
-        with Database(session) as db:
-            try:
-                result = db.session.query(PilotView).get(pilot_id)
-                if result:
-                    pilot = Participant(pil_id=pilot_id, comp_id=comp_id)
-                    pilot.name = ' '.join([result.first_name.title(), result.last_name.title()])
-                    pilot.glider = ' '.join([result.glider_brand.title(), result.glider])
-                    c = aliased(TblCountryCode)
-                    pilot.nat = db.session.query(c.natIso3).filter(c.natId == result.nat).scalar()
-                    for attr in ['sex', 'civl_id', 'fai_id', 'sponsor', 'xcontest_id', 'glider_cert']:
-                        if hasattr(result, attr):
-                            setattr(pilot, attr, getattr(result, attr))
-                    return pilot
-                else:
-                    print(f'Error: No result has been found for profile id {pilot_id}')
-                    return None
-            except SQLAlchemyError as e:
-                error = str(e.__dict__)
-                print(f"Error storing result to database")
-                db.session.rollback()
-                db.session.close()
-                return error
+        from db.tables import PilotView, TblCountryCode
+        with db_session() as db:
+            result = db.query(PilotView).get(pilot_id)
+            if result:
+                pilot = Participant(pil_id=pilot_id, comp_id=comp_id)
+                pilot.name = ' '.join([result.first_name.title(), result.last_name.title()])
+                pilot.glider = ' '.join([result.glider_brand.title(), result.glider])
+                c = aliased(TblCountryCode)
+                pilot.nat = db.query(c.natIso3).filter(c.natId == result.nat).scalar()
+                for attr in ['sex', 'civl_id', 'fai_id', 'sponsor', 'xcontest_id', 'glider_cert']:
+                    if hasattr(result, attr):
+                        setattr(pilot, attr, getattr(result, attr))
+                return pilot
+            else:
+                print(f'Error: No result has been found for profile id {pilot_id}')
+                return None
 
 
 def extract_participants_from_excel(comp_id: int, filename, from_CIVL=False):
@@ -249,7 +229,7 @@ def register_from_profiles_list(comp_id: int, pilots):
         print(f"error: comp_id does not exist or pilots list is empty")
         return None
     participants = []
-    with Database() as db:
+    with db_session() as db:
         for pilot in pilots:
             participants.append(Participant.from_profile(pilot, comp_id, db.session))
         mass_import_participants(comp_id, participants, db.session)
@@ -263,17 +243,9 @@ def unregister_from_profiles_list(comp_id: int, pilots):
     if not (comp_id and pilots):
         print(f"error: comp_id does not exist or pilots list is empty")
         return None
-    with Database() as db:
-        try:
-            results = db.session.query(P).filter(and_(P.comp_id == comp_id,
-                                                                   P.pil_id.in_(pilots)))
-            results.delete(synchronize_session=False)
-        except SQLAlchemyError as e:
-            error = str(e.__dict__)
-            print(f"Error deleting participants from database: {error}")
-            db.session.rollback()
-            db.session.close()
-            return error
+    with db_session() as db:
+        results = db.query(P).filter(and_(P.comp_id == comp_id, P.pil_id.in_(pilots)))
+        results.delete(synchronize_session=False)
     return True
 
 
@@ -281,32 +253,17 @@ def unregister_participant(comp_id: int, par_id: int):
     """ takes comp_id and a par_id
         unregisters participant from comp.
         in reality we don't need compid but it is a safeguard"""
-    with Database() as db:
-        try:
-            db.session.query(P).filter_by(comp_id=comp_id, par_id=par_id).delete(synchronize_session=False)
-        except SQLAlchemyError as e:
-            error = str(e.__dict__)
-            print(f"Error deleting participants from database: {error}")
-            db.session.rollback()
-            db.session.close()
-            return error
+    with db_session() as db:
+        db.query(P).filter_by(comp_id=comp_id, par_id=par_id).delete(synchronize_session=False)
     return True
 
 
 def unregister_all_external_participants(comp_id: int):
     """ takes comp_id and unregisters all participants from comp without a pil_id."""
     from sqlalchemy import and_
-
-    with Database() as db:
-        try:
-            results = db.session.query(P).filter(and_(P.comp_id == comp_id, P.pil_id == None))
-            results.delete(synchronize_session=False)
-        except SQLAlchemyError as e:
-            error = str(e.__dict__)
-            print(f"Error deleting participants from database: {error}")
-            db.session.rollback()
-            db.session.close()
-            return error
+    with db_session() as db:
+        results = db.query(P).filter(and_(P.comp_id == comp_id, P.pil_id.is_(None)))
+        results.delete(synchronize_session=False)
     return True
 
 
@@ -316,15 +273,8 @@ def mass_unregister(pilots):
     if not pilots:
         print(f"error: pilots list is empty")
         return None
-    with Database() as db:
-        try:
-            db.session.query(P).filter(P.par_id.in_(pilots)).delete(synchronize_session=False)
-        except SQLAlchemyError as e:
-            error = str(e.__dict__)
-            print(f"Error deleting participants to database: {error}")
-            db.session.rollback()
-            db.session.close()
-            return error
+    with db_session() as db:
+        db.query(P).filter(P.par_id.in_(pilots)).delete(synchronize_session=False)
     return True
 
 
@@ -347,20 +297,13 @@ def mass_import_participants(comp_id: int, participants, existing_list=None, ses
                 '''pilots seems not to be in database yet'''
                 insert_mappings.append(r)
     '''update database'''
-    with Database(session) as db:
-        try:
-            if insert_mappings:
-                db.session.bulk_insert_mappings(P, insert_mappings)
-                db.session.flush()
-                for elem in insert_mappings:
-                    next(par for par in participants if par.name == elem['name']).par_id = elem['par_id']
-            if update_mappings:
-                db.session.bulk_update_mappings(P, update_mappings)
-            db.session.commit()
-        except SQLAlchemyError as e:
-            error = str(e.__dict__)
-            print(f"Error storing participants to database: {error}")
-            db.session.rollback()
-            db.session.close()
-            return error
+    with db_session() as db:
+        if insert_mappings:
+            db.bulk_insert_mappings(P, insert_mappings)
+            db.flush()
+            for elem in insert_mappings:
+                next(par for par in participants if par.name == elem['name']).par_id = elem['par_id']
+        if update_mappings:
+            db.bulk_update_mappings(P, update_mappings)
+        db.commit()
     return True

@@ -20,8 +20,8 @@ from aerofiles.igc import Reader
 #import trackUtils
 
 #database connections
-from myconn import Database
-from db_tables import TaskView as T
+from db.conn import db_session
+from db.tables import TaskView as T
 
 
 UPLOAD_FOLDER = '/home/ubuntu/workspace/uploads/'
@@ -361,8 +361,8 @@ def index():
 
                     #testing connection to DB
                     # q = "SELECT * FROM TaskView LIMIT 1"
-                    with Database() as db:
-                        t = db.session.query(T).first()
+                    with db_session() as db:
+                        t = db.query(T).first()
                         # t = db.fetchall(q)
 #                    return render_template('home.html',flight_data=flight_results, igc_content=igc_object, mysql_query=t )
                     return render_template('home.html',flight_data=flight_results, igc_content=igc_object)

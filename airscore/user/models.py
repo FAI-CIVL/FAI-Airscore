@@ -48,7 +48,7 @@ class User(UserMixin, SurrogatePK, Model):
 
     __tablename__ = "users"
     # pil_id = Column(db.INTEGER, unique=True, nullable=False),
-    id = Column(db.INTEGER, primary_key=True, nullable=False)
+    # id = Column(db.INTEGER, primary_key=True, nullable=False)
     username = Column(db.String(80), unique=True, nullable=False)
     password = Column(db.String(128), nullable=True)
     email = Column(db.String(80), unique=True, nullable=False)

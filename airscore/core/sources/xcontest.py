@@ -12,7 +12,7 @@ import time
 
 import requests
 
-from myconn import Database
+from db.conn import db_session
 
 
 def get_pilot_from_list(filename, pilots):
@@ -45,14 +45,14 @@ def get_xc_parameters(task_id):
     """Get site info and date from database """
     # TODO I suspect the logic on xc_site will be broken if we use waypoint file instead of table
     # Should we use TblTaskWaypoint instead or manually or by adding xc_to id to launch name or description?
-    from db_tables import TaskXContestWptView as XC
+    from db.tables import TaskXContestWptView as XC
 
     site_id = 0
     takeoff_id = 0
     datestr = None
 
-    with Database() as db:
-        q = db.session.query(XC).get(task_id)
+    with db_session() as db:
+        q = db.query(XC).get(task_id)
         if q is not None:
             site_id = q.xccSiteID
             takeoff_id = q.xccToID

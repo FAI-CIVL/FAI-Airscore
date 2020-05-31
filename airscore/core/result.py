@@ -18,10 +18,10 @@ Stuart Mackintosh - Antonio Golfari
 2019
 """
 
-from db_tables import TblResultFile
-from myconn import Database
+from db.tables import TblResultFile
+from db.conn import db_session
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy import update, and_
+from sqlalchemy import and_
 
 
 class TaskResult:
@@ -318,56 +318,35 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None, name_su
     os.chown(RESULTDIR + filename, 1000, 1000)
 
     '''create database entry'''
-    with Database() as db:
+    with db_session() as db:
         result = TblResultFile(comp_id=comp_id, task_id=task_id, created=timestamp, filename=filename, status=status)
-        db.session.add(result)
-        db.session.commit()
+        db.add(result)
+        db.commit()
         ref_id = result.ref_id
     return ref_id, filename, timestamp
 
 
 def unpublish_result(taskid_or_compid, comp=False, session=None):
     """unpublish (set active to 0) all result files for a task or a comp"""
-    with Database(session) as db:
-        try:
-            if comp:
-                db.session.query(TblResultFile).filter(and_(TblResultFile.comp_id == taskid_or_compid,
-                                                            TblResultFile.task_id.is_(None))).update({'active': 0})
-            else:
-                db.session.query(TblResultFile).filter(TblResultFile.task_id == taskid_or_compid).update({'active': 0})
-            db.session.commit()
-            if not session:
-                db.session.close()
-        except SQLAlchemyError as e:
-            error = str(e.__dict__)
-            print(f"Error unpublishing result in database: {error}")
-            db.session.rollback()
-            db.session.close()
-            return error
-        return 1
+    with db_session() as db:
+        if comp:
+            db.query(TblResultFile).filter(and_(TblResultFile.comp_id == taskid_or_compid,
+                                                        TblResultFile.task_id.is_(None))).update({'active': 0})
+        else:
+            db.query(TblResultFile).filter_by(task_id=taskid_or_compid).update({'active': 0})
+    return 1
 
 
 def publish_result(filename_or_refid, ref_id=False, session=None):
     """publish (set active to 1) a result files, by default takes filename of result to publish,
     otherwise ref_id if ref_id flag True"""
 
-    with Database(session) as db:
-        try:
-            if ref_id:
-                db.session.query(TblResultFile).filter(TblResultFile.ref_id == filename_or_refid).update({'active': 1})
-            else:
-                db.session.query(TblResultFile).filter(TblResultFile.filename == filename_or_refid).update(
-                    {'active': 1})
-            db.session.commit()
-            if not session:
-                db.session.close()
-        except SQLAlchemyError as e:
-            error = str(e.__dict__)
-            print(f"Error publishing result in database: {error}")
-            db.session.rollback()
-            db.session.close()
-            return error
-        return 1
+    with db_session() as db:
+        if ref_id:
+            db.query(TblResultFile).filter_by(ref_id=filename_or_refid).update({'active': 1})
+        else:
+            db.query(TblResultFile).filter_by(filename=filename_or_refid).update({'active': 1})
+    return 1
 
 
 def update_result_status(filename: str, status: str):
@@ -390,17 +369,9 @@ def update_result_status(filename: str, status: str):
         f.truncate()
         print(f'JSON file has been updated \n')
         '''update status in database'''
-        with Database() as db:
-            try:
-                result = db.session.query(TblResultFile).filter(TblResultFile.filename == filename).one()
-                result.status = status
-                db.session.flush()
-            except SQLAlchemyError as e:
-                print(f'Error updating result file {filename}')
-                error = str(e.__dict__)
-                db.session.rollback()
-                db.session.close()
-                return error
+        with db_session() as db:
+            result = db.query(TblResultFile).filter_by(filename=filename).one()
+            result.status = status
 
 
 def update_result_file(filename: str, par_id: int, notification: dict):
@@ -411,7 +382,7 @@ def update_result_file(filename: str, par_id: int, notification: dict):
                         'comment': text of notification
                         }
     """
-    from db_tables import TblNotification as N
+    from db.tables import TblNotification as N
     from Defines import RESULTDIR
     from pathlib import Path
     import time
@@ -432,87 +403,73 @@ def update_result_file(filename: str, par_id: int, notification: dict):
         if not result:
             print(f'Result file has no pilot with ID {par_id}')
             return None
-        with Database() as db:
-            try:
-                if not_id:
-                    '''notification already existing'''
-                    row = db.session.query(N).get(not_id)
-                    old_penalty = row.flat_penalty
-                    old_comment = row.comment
-                    if old_penalty == penalty and row.comment == comment:
-                        '''nothing changed'''
-                        print(f'Result file has not changed, pilot ID {par_id}')
-                        return None
-                    row.comment = comment
-                    row.flat_penalty = penalty
-                    db.session.flush()
-                    '''updating result file'''
-                    entry = next(el for el in result['notifications'] if int(el['not_id']) == not_id)
-                    entry['comment'] = comment
-                    entry['flat_penalty'] = penalty
-                    result['comment'].replace(' '.join(['[admin]', old_comment]), ' '.join(['[admin]', comment]))
+        with db_session() as db:
+            if not_id:
+                '''notification already existing'''
+                row = db.query(N).get(not_id)
+                old_penalty = row.flat_penalty
+                old_comment = row.comment
+                if old_penalty == penalty and row.comment == comment:
+                    '''nothing changed'''
+                    print(f'Result file has not changed, pilot ID {par_id}')
+                    return None
+                row.comment = comment
+                row.flat_penalty = penalty
+                db.flush()
+                '''updating result file'''
+                entry = next(el for el in result['notifications'] if int(el['not_id']) == not_id)
+                entry['comment'] = comment
+                entry['flat_penalty'] = penalty
+                result['comment'].replace(' '.join(['[admin]', old_comment]), ' '.join(['[admin]', comment]))
+            else:
+                '''adding a new one'''
+                row = N(track_id=track_id, notification_type='admin', **notification)
+                db.add(row)
+                db.flush()
+                notification['not_id'] = row.not_id
+                '''adding to result file'''
+                result['notifications'].append(dict(not_id=row.not_id, notification_type='admin',
+                                                    percentage_penalty=0, flat_penalty=penalty, comment=comment))
+                '''update comment'''
+                comment = '[admin] ' + comment
+                if not result['comment']:
+                    result['comment'] = comment
                 else:
-                    '''adding a new one'''
-                    row = N(track_id=track_id, notification_type='admin', **notification)
-                    db.session.add(row)
-                    db.session.flush()
-                    notification['not_id'] = row.not_id
-                    '''adding to result file'''
-                    result['notifications'].append(dict(not_id=row.not_id, notification_type='admin',
-                                                        percentage_penalty=0, flat_penalty=penalty, comment=comment))
-                    '''update comment'''
-                    comment = '[admin] ' + comment
-                    if not result['comment']:
-                        result['comment'] = comment
-                    else:
-                        '; '. join([result['comment'], comment])
-                '''penalty and score calculation'''
-                if (not_id and old_penalty != penalty) or (not not_id and penalty != 0):
-                    '''need to recalculate scores'''
-                    result['penalty'] += penalty - old_penalty
-                    result['score'] = max(0, sum([result['arrival_score'], result['departure_score'],
-                                                  result['time_score'], result['distance_score']]) - result['penalty'])
-                    pil_list = sorted([p for p in data['results'] if p['result_type'] not in ['dnf', 'abs']],
-                                      key=lambda k: k['score'], reverse=True)
-                    pil_list += [p for p in data['results'] if p['result_type'] == 'dnf']
-                    pil_list += [p for p in data['results'] if p['result_type'] == 'abs']
-                    data['results'] = pil_list
-                data['file_stats']['last_update'] = int(time.time())
+                    '; '. join([result['comment'], comment])
+            '''penalty and score calculation'''
+            if (not_id and old_penalty != penalty) or (not not_id and penalty != 0):
+                '''need to recalculate scores'''
+                result['penalty'] += penalty - old_penalty
+                result['score'] = max(0, sum([result['arrival_score'], result['departure_score'],
+                                              result['time_score'], result['distance_score']]) - result['penalty'])
+                pil_list = sorted([p for p in data['results'] if p['result_type'] not in ['dnf', 'abs']],
+                                  key=lambda k: k['score'], reverse=True)
+                pil_list += [p for p in data['results'] if p['result_type'] == 'dnf']
+                pil_list += [p for p in data['results'] if p['result_type'] == 'abs']
+                data['results'] = pil_list
+            data['file_stats']['last_update'] = int(time.time())
+            try:
                 f.seek(0)
                 f.write(json.dumps(data))
                 f.truncate()
-            except SQLAlchemyError as e:
-                print(f'Error updating result db entry for participant ID {par_id}')
-                error = str(e.__dict__)
-                db.session.rollback()
-                db.session.close()
-                return error
             except Exception as e:
                 print(f'Error updating result file for participant ID {par_id}')
                 error = str(e.__dict__)
-                db.session.rollback()
-                db.session.close()
+                db.rollback()
+                db.close()
                 return error
 
 
 def delete_result(ref_id: int, filename=None, session=None):
     from Defines import RESULTDIR
     import os
-    with Database(session) as db:
-        try:
-            if not filename:
-                filename = db.session.query(TblResultFile).get(ref_id).filename
-            file = os.path.join(RESULTDIR, filename)
-            if os.path.exists(file):
-                os.remove(file)
-            db.session.query(TblResultFile).filter(TblResultFile.ref_id == ref_id).delete(synchronize_session=False)
-            db.session.commit()
-        except SQLAlchemyError as e:
-            error = str(e)
-            print(f"Error deleting result from database: {error}")
-            db.session.rollback()
-            db.session.close()
-            return error
+    with db_session() as db:
+        if not filename:
+            filename = db.query(TblResultFile).get(ref_id).filename
+        file = os.path.join(RESULTDIR, filename)
+        if os.path.exists(file):
+            os.remove(file)
+        db.query(TblResultFile).filter_by(ref_id=ref_id).delete(synchronize_session=False)
 
 
 def get_country_list(countries=None, iso=3):
@@ -525,22 +482,15 @@ def get_country_list(countries=None, iso=3):
     Returns:
         a list of objects with attributes name and code
     """
-    from db_tables import TblCountryCode as CC
-    from myconn import Database
+    from db.tables import TblCountryCode as CC
+    from db.conn import db_session
     from sqlalchemy.exc import SQLAlchemyError
     column = getattr(CC, 'natIso' + str(iso))
-    with Database() as db:
-        try:
-            query = db.session.query(CC.natName.label('name'), column.label('code'))
-            if countries:
-                return sorted(query.filter(column.in_(countries)).all(), key=lambda k: k.name)
-            return query.all()
-        except SQLAlchemyError as e:
-            error = str(e)
-            print(f"Error getting countries list from database: {error}")
-            db.session.rollback()
-            db.session.close()
-            return error
+    with db_session() as db:
+        query = db.query(CC.natName.label('name'), column.label('code'))
+        if countries:
+            return sorted(query.filter(column.in_(countries)).all(), key=lambda k: k.name)
+        return query.all()
 
 
 def open_json_file(filename: str):

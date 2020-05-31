@@ -1,16 +1,15 @@
 # coding: utf-8
 from sqlalchemy import CHAR, Column, Date, Enum, Float, ForeignKey, Index, String, TIMESTAMP, Table, Text, text, DateTime
-from sqlalchemy.dialects.mysql import BIGINT, INTEGER, LONGTEXT, MEDIUMINT, MEDIUMTEXT, SMALLINT, TINYINT, VARCHAR
-from sqlalchemy.orm import relationship
-
-from myconn import Base, metadata
-
+from sqlalchemy.dialects.mysql import BIGINT, INTEGER, LONGTEXT, MEDIUMINT, SMALLINT, TINYINT, VARCHAR
+from sqlalchemy.orm import relationship, aliased
+from .conn import db_session
+from .models import BaseModel, metadata
 
 # Created using sqlacodegen library
 # sqlacodegen mysql+pymysql://user:pwd@server/database --outfile db_tables_new.py
 
 
-class CompObjectView(Base):
+class CompObjectView(BaseModel):
     __table__ = Table('CompObjectView', metadata,
 
                       Column('comp_id', INTEGER(11), primary_key=True),
@@ -78,7 +77,7 @@ class CompObjectView(Base):
                       )
 
 
-class TaskFormulaView(Base):
+class TaskFormulaView(BaseModel):
     __table__ = Table('TaskFormulaView', metadata,
 
                       Column('task_id', INTEGER(11), primary_key=True),
@@ -119,7 +118,7 @@ class TaskFormulaView(Base):
                       )
 
 
-class FlightResultView(Base):
+class FlightResultView(BaseModel):
     __table__ = Table('FlightResultView', metadata,
 
                       Column('track_id', INTEGER(11), primary_key=True),
@@ -167,7 +166,7 @@ class FlightResultView(Base):
                       )
 
 
-class PilotView(Base):
+class PilotView(BaseModel):
     __table__ = Table('PilotView', metadata,
 
                       Column('pil_id', INTEGER(11), primary_key=True),
@@ -192,7 +191,7 @@ class PilotView(Base):
                       )
 
 
-class User(Base):
+class User(BaseModel):
     __table__ = Table('users', metadata,
 
                       Column('id', INTEGER(11), primary_key=True),
@@ -210,7 +209,7 @@ class User(Base):
                       )
 
 
-class RegionWaypointView(Base):
+class RegionWaypointView(BaseModel):
     __table__ = Table('RegionWaypointView', metadata,
 
                       Column('rwp_id', INTEGER(11), primary_key=True),
@@ -223,7 +222,7 @@ class RegionWaypointView(Base):
                       )
 
 
-class TaskAirspaceCheckView(Base):
+class TaskAirspaceCheckView(BaseModel):
     __table__ = Table('TaskAirspaceCheckView', metadata,
 
                       Column('task_id', INTEGER(11), primary_key=True),
@@ -243,7 +242,7 @@ class TaskAirspaceCheckView(Base):
                       )
 
 
-class TaskObjectView(Base):
+class TaskObjectView(BaseModel):
     __table__ = Table('TaskObjectView', metadata,
 
                       Column('task_id', INTEGER(11), primary_key=True),
@@ -287,7 +286,7 @@ class TaskObjectView(Base):
                       )
 
 
-class UnscoredPilotView(Base):
+class UnscoredPilotView(BaseModel):
     __table__ = Table('UnscoredPilotView', metadata,
 
                       Column('task_id', INTEGER(11), primary_key=True),
@@ -350,7 +349,7 @@ class UnscoredPilotView(Base):
 # )
 
 
-class TrackObjectView(Base):
+class TrackObjectView(BaseModel):
     __table__ = Table('TrackObjectView', metadata,
 
                       Column('track_id', INTEGER(11), primary_key=True),
@@ -363,7 +362,7 @@ class TrackObjectView(Base):
                       )
 
 
-class UserView(Base):
+class UserView(BaseModel):
     __table__ = Table('UserView', metadata,
 
                       Column('usePk', BIGINT(20), primary_key=True),
@@ -381,7 +380,7 @@ schema_version = Table(
 )
 
 
-class TblCertification(Base):
+class TblCertification(BaseModel):
     __tablename__ = 'tblCertification'
 
     cert_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
@@ -389,7 +388,7 @@ class TblCertification(Base):
     comp_class = Column(Enum('PG', 'HG', 'mixed'), nullable=False, server_default=text("'PG'"))
 
 
-class TblClassification(Base):
+class TblClassification(BaseModel):
     __tablename__ = 'tblClassification'
 
     cat_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
@@ -399,7 +398,7 @@ class TblClassification(Base):
     team = Column(TINYINT(1), nullable=False, server_default=text("'0'"))
 
 
-class TblCountryCode(Base):
+class TblCountryCode(BaseModel):
     __tablename__ = 'tblCountryCode'
 
     natName = Column(String(52), nullable=False)
@@ -413,7 +412,7 @@ class TblCountryCode(Base):
     natSubRegionId = Column(INTEGER(11))
 
 
-class TblForComp(Base):
+class TblForComp(BaseModel):
     __tablename__ = 'tblForComp'
 
     forPk = Column(INTEGER(11))
@@ -459,7 +458,7 @@ class TblForComp(Base):
     team_over = Column(INTEGER(2))
 
 
-class TblLadder(Base):
+class TblLadder(BaseModel):
     __tablename__ = 'tblLadder'
 
     ladder_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
@@ -471,7 +470,7 @@ class TblLadder(Base):
     external = Column(TINYINT(1), server_default=text("'0'"))
 
 
-class TblParticipant(Base):
+class TblParticipant(BaseModel):
     __tablename__ = 'tblParticipant'
     __table_args__ = (
         Index('par_pil_id', 'pil_id', 'comp_id'),
@@ -488,7 +487,7 @@ class TblParticipant(Base):
     nat = Column(CHAR(10))
     glider = Column(String(100))
     glider_cert = Column(String(20))
-    parClass = Column(String(50))
+    # parClass = Column(String(50))
     sponsor = Column(String(100))
     fai_valid = Column(TINYINT(1), nullable=False, server_default=text("'1'"))
     fai_id = Column(String(20))
@@ -501,8 +500,17 @@ class TblParticipant(Base):
     paid = Column(TINYINT(1), server_default=text("'0'"))
     hours = Column(SMALLINT(6))
 
+    @classmethod
+    def get_dicts(cls, comp_id: int) -> list:
+        """ returns a list of rows"""
+        P = aliased(cls)
+        with db_session() as db:
+            print(f'session id: {id(db)}')
+            return [el.as_dict() for el in db.query(P).filter_by(comp_id=comp_id).all()]
+            # return db.query(P).filter_by(comp_id=comp_id).all()
 
-class TblRanking(Base):
+
+class TblRanking(BaseModel):
     __tablename__ = 'tblRanking'
 
     rank_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
@@ -510,7 +518,7 @@ class TblRanking(Base):
     comp_class = Column(Enum('PG', 'HG', 'mixed'), nullable=False, server_default=text("'PG'"))
 
 
-class TblRegion(Base):
+class TblRegion(BaseModel):
     __tablename__ = 'tblRegion'
 
     reg_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
@@ -522,7 +530,7 @@ class TblRegion(Base):
     openair_file = Column(String(50))
 
 
-class TblResultFile(Base):
+class TblResultFile(BaseModel):
     __tablename__ = 'tblResultFile'
     __table_args__ = (
         Index('ref_id', 'filename'),
@@ -547,7 +555,7 @@ TblUserSession = Table(
 )
 
 
-class TblXContestCode(Base):
+class TblXContestCode(BaseModel):
     __tablename__ = 'tblXContestCodes'
 
     xccSiteID = Column(INTEGER(11))
@@ -567,7 +575,7 @@ TblClasCertRank = Table(
 )
 
 
-class TblCompetition(Base):
+class TblCompetition(BaseModel):
     __tablename__ = 'tblCompetition'
     __table_args__ = (
         Index('comp_id', 'comp_id', 'comp_name', unique=True),
@@ -605,7 +613,7 @@ class TblCompetition(Base):
     ladders = relationship('TblLadder', secondary='tblLadderComp')
 
 
-class TblCompAuth(Base):
+class TblCompAuth(BaseModel):
     __tablename__ = 'tblCompAuth'
 
     user_id = Column(INTEGER(11), primary_key=True)
@@ -654,7 +662,7 @@ TblLadderComp = Table(
 )
 
 
-class TblRegionWaypoint(Base):
+class TblRegionWaypoint(BaseModel):
     __tablename__ = 'tblRegionWaypoint'
 
     rwp_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
@@ -671,7 +679,7 @@ class TblRegionWaypoint(Base):
     reg = relationship('TblRegion')
 
 
-class TblTask(Base):
+class TblTask(BaseModel):
     __tablename__ = 'tblTask'
 
     task_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
@@ -724,7 +732,7 @@ class TblTask(Base):
     # Results = relationship('TblTaskResult', backref="task")
 
 
-class TblTaskResult(Base):
+class TblTaskResult(BaseModel):
     __tablename__ = 'tblTaskResult'
     __table_args__ = (
         Index('track_id', 'task_id', 'par_id', unique=True),
@@ -772,7 +780,7 @@ class TblTaskResult(Base):
     Participants = relationship('TblParticipant')
 
 
-class TblNotification(Base):
+class TblNotification(BaseModel):
     __tablename__ = 'tblNotification'
 
     not_id = Column(INTEGER(11), primary_key=True)
@@ -783,7 +791,7 @@ class TblNotification(Base):
     comment = Column(String(80))
 
 
-class TblTaskWaypoint(Base):
+class TblTaskWaypoint(BaseModel):
     __tablename__ = 'tblTaskWaypoint'
 
     wpt_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
@@ -808,8 +816,16 @@ class TblTaskWaypoint(Base):
 
     task = relationship('TblTask')
 
+    @classmethod
+    def from_task_id(cls, task_id: int) -> list:
+        """ returns a list of rows"""
+        W = aliased(cls)
+        with db_session() as db:
+            print(f'session id: {id(db)}')
+            return db.query(W).filter_by(task_id=task_id).order_by(W.num).all()
 
-class TblTrackWaypoint(Base):
+
+class TblTrackWaypoint(BaseModel):
     __tablename__ = 'tblTrackWaypoint'
 
     trw_id = Column(INTEGER(11), primary_key=True)

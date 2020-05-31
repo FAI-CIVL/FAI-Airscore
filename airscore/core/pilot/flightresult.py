@@ -33,9 +33,9 @@ from sqlalchemy.exc import SQLAlchemyError
 from Defines import MAPOBJDIR
 from airspace import AirspaceCheck
 from calcUtils import string_to_seconds, sec_to_time
-from db_tables import TblTaskResult
+from db.tables import TblTaskResult
 from formulas.libs.leadcoeff import LeadCoeff
-from myconn import Database
+from db.conn import db_session
 from route import in_goal_sector, start_made_civl, tp_made_civl, tp_time_civl, get_shortest_path, distance_flown
 from .waypointachieved import WaypointAchieved
 from .notification import Notification
@@ -272,17 +272,12 @@ class FlightResult(Participant):
     @staticmethod
     def read(par_id: int, task_id: int):
         """reads result from database"""
-        from db_tables import FlightResultView as R
+        from db.tables import FlightResultView as R
         result = FlightResult()
-        with Database() as db:
+        with db_session() as db:
             # get result details.
-            try:
-                q = db.session.query(R).filter_by(par_id=par_id, task_id=task_id).one()
-                db.populate_obj(result, q)
-            except SQLAlchemyError:
-                print('DB Error retrieving task results')
-                db.session.rollback()
-                db.session.close()
+            q = db.query(R).filter_by(par_id=par_id, task_id=task_id).one()
+            q.populate(result)
         return result
 
     @staticmethod
@@ -643,12 +638,12 @@ class FlightResult(Participant):
         returns the Json string."""
 
         from mapUtils import result_to_geojson
-        from db_tables import TblParticipant as p
+        from db.tables import TblParticipant as p
 
         info = {'taskid': task.id, 'task_name': task.task_name, 'comp_name': task.comp_name}
 
-        with Database() as db:
-            pilot_details = (db.session.query(p.name, p.nat, p.sex, p.glider)
+        with db_session() as db:
+            pilot_details = (db.query(p.name, p.nat, p.sex, p.glider)
                              .filter(p.par_id == track.par_id, p.comp_id == task.comp_id).one())
         pilot_details = pilot_details._asdict()
         info['pilot_name'] = pilot_details['name']
@@ -806,44 +801,29 @@ def adjust_flight_results(task, lib, airspace=None):
 
 def update_status(par_id: int, task_id: int, status=''):
     """Create or update pilot status ('abs', 'dnf', 'mindist')"""
-    with Database() as db:
-        try:
-            result = db.session.query(TblTaskResult).filter(and_(TblTaskResult.par_id == par_id,
-                                                                 TblTaskResult.task_id == task_id)).first()
-            if result:
-                result.result_type = status
-            else:
-                result = TblTaskResult(par_id=par_id, task_id=task_id, result_type=status)
-                db.session.add(result)
-            db.session.flush()
-            return result.track_id
-        except SQLAlchemyError as e:
-            error = str(e.__dict__)
-            print(f"Status update / Insert Error")
-            db.session.rollback()
-            db.session.close()
-            return error
+    with db_session() as db:
+        result = db.query(TblTaskResult).filter_by(par_id=par_id, task_id=task_id).first()
+        if result:
+            result.result_type = status
+        else:
+            result = TblTaskResult(par_id=par_id, task_id=task_id, result_type=status)
+            db.add(result)
+        db.flush()
+        return result.track_id
 
 
 def delete_track(trackid: int, delete_file=False):
     from trackUtils import get_task_fullpath
     from pathlib import Path
-    from db_tables import TblTaskResult
+    from db.tables import TblTaskResult
     row_deleted = None
-    with Database() as db:
-        try:
-            track = db.session.query(TblTaskResult).filter_by(track_id=trackid).one_or_none()
-            if track:
-                if track.track_file is not None and delete_file:
-                    Path(get_task_fullpath(track.task_id), track.track_file).unlink(missing_ok=True)
-                db.session.delete(track)
-                row_deleted = True
-                db.session.commit()
-        except SQLAlchemyError:
-            print("there was a problem deleting the track")
-            db.session.rollback()
-            db.session.close()
-            return None
+    with db_session() as db:
+        track = db.query(TblTaskResult).filter_by(track_id=trackid).one_or_none()
+        if track:
+            if track.track_file is not None and delete_file:
+                Path(get_task_fullpath(track.task_id), track.track_file).unlink(missing_ok=True)
+            db.delete(track)
+            row_deleted = True
     return row_deleted
 
 
@@ -854,31 +834,25 @@ def create_waypoint_achieved(fix, tp, time: int, alt: int):
 
 
 def get_task_results(task_id: int):
-    from db_tables import FlightResultView as F, TblNotification as N, TblTrackWaypoint as W
+    from db.tables import FlightResultView as F, TblNotification as N, TblTrackWaypoint as W
     from pilot.notification import Notification
     from sqlalchemy.exc import SQLAlchemyError
     pilots = []
-    with Database() as db:
-        try:
-            results = db.session.query(F).filter_by(task_id=task_id).all()
-            notifications = db.session.query(N).filter(N.track_id.in_([p.track_id for p in results])).all()
-            achieved = db.session.query(W).filter(W.track_id.in_([p.track_id for p in results])).all()
-            for row in results:
-                pilot = FlightResult()
-                db.populate_obj(pilot, row)
-                for el in [n for n in notifications if n.track_id == pilot.track_id]:
-                    n = Notification()
-                    db.populate_obj(n, el)
-                    pilot.notifications.append(n)
-                for el in [{k: getattr(w, k) for k in ['trw_id', 'wpt_id', 'name', 'rawtime', 'lat', 'lon', 'altitude']}
-                           for w in achieved if w.track_id == pilot.track_id]:
-                    pilot.waypoints_achieved.append(WaypointAchieved(**el))
-                pilots.append(pilot)
-        except SQLAlchemyError:
-            print('DB Error retrieving task results')
-            db.session.rollback()
-            db.session.close()
-            return
+    with db_session() as db:
+        results = db.query(F).filter_by(task_id=task_id).all()
+        notifications = db.query(N).filter(N.track_id.in_([p.track_id for p in results])).all()
+        achieved = db.query(W).filter(W.track_id.in_([p.track_id for p in results])).all()
+        for row in results:
+            pilot = FlightResult()
+            row.populate(pilot)
+            for el in [n for n in notifications if n.track_id == pilot.track_id]:
+                n = Notification()
+                el.populate(n)
+                pilot.notifications.append(n)
+            for el in [{k: getattr(w, k) for k in ['trw_id', 'wpt_id', 'name', 'rawtime', 'lat', 'lon', 'altitude']}
+                       for w in achieved if w.track_id == pilot.track_id]:
+                pilot.waypoints_achieved.append(WaypointAchieved(**el))
+            pilots.append(pilot)
     return pilots
 
 
@@ -888,7 +862,8 @@ def update_all_results(task_id, pilots, session=None):
         And from FSDB.add results.
         We are then deleting all present non admin Notification from database for results, as related to old scoring.
         """
-    from db_tables import TblTaskResult as R, TblNotification as N, TblTrackWaypoint as W
+    import itertools
+    from db.tables import TblTaskResult as R, TblNotification as N, TblTrackWaypoint as W
     from dataclasses import asdict
     from sqlalchemy import and_
     from sqlalchemy.exc import SQLAlchemyError
@@ -909,50 +884,40 @@ def update_all_results(task_id, pilots, session=None):
             insert_mappings.append(r)
 
     '''update database'''
-    with Database(session) as db:
-        try:
-            if insert_mappings:
-                db.session.bulk_insert_mappings(R, insert_mappings, return_defaults=True)
-                db.session.flush()
-                for elem in insert_mappings:
-                    next(pilot for pilot in pilots if pilot.par_id == elem['par_id']).track_id = elem['track_id']
-            if update_mappings:
-                db.session.bulk_update_mappings(R, update_mappings)
-                db.session.flush()
-            '''notifications and waypoints achieved'''
-            '''delete old entries'''
-            db.session.query(N).filter(and_(N.track_id.in_([r['track_id'] for r in update_mappings]),
-                                            N.notification_type.in_(['jtg', 'airspace', 'track']))).delete(
-                synchronize_session=False)
-            db.session.query(W).filter(W.track_id.in_([r['track_id'] for r in update_mappings])).delete(
-                synchronize_session=False)
-            '''collect new ones'''
-            for pilot in pilots:
-                notif_mappings.extend([dict(track_id=pilot.track_id, **asdict(n))
-                                       for n in pilot.notifications if not n.notification_type == 'admin'])
-                achieved_mappings.extend([dict(track_id=pilot.track_id, **asdict(w))
-                                          for w in pilot.waypoints_achieved])
-            '''bulk insert'''
-            if achieved_mappings:
-                db.session.bulk_insert_mappings(W, achieved_mappings)
-            if notif_mappings:
-                db.session.bulk_insert_mappings(N, notif_mappings, return_defaults=True)
-                db.session.flush()
-                res_not_list = [i for i in notif_mappings if i['notification_type'] in ['jtg', 'airspace']]
-                trackIds = set([i['track_id'] for i in res_not_list])
-                for idx in trackIds:
-                    pilot = next(p for p in pilots if p.track_id == idx)
-                    for i, n in enumerate([el for el in res_not_list if el['track_id'] == idx]):
-                        next(e for e in pilot.notifications if e.notification_type == n['notification_type']
-                             and e.flat_penalty == n['flat_penalty']
-                             and e.percentage_penalty == n['percentage_penalty']
-                             and e.comment == n['comment']).not_id = n['not_id']
-            db.session.commit()
-        except SQLAlchemyError as e:
-            error = str(e.__dict__)
-            print(f"Error storing pilots results to database: {error}")
-            db.session.rollback()
-            db.session.close()
-            return error
+    with db_session() as db:
+        if insert_mappings:
+            db.bulk_insert_mappings(R, insert_mappings, return_defaults=True)
+            db.flush()
+            for elem in insert_mappings:
+                next(pilot for pilot in pilots if pilot.par_id == elem['par_id']).track_id = elem['track_id']
+        if update_mappings:
+            db.bulk_update_mappings(R, update_mappings)
+            db.flush()
+        '''notifications and waypoints achieved'''
+        '''delete old entries'''
+        db.query(N).filter(and_(N.track_id.in_([r['track_id'] for r in update_mappings]),
+                                        N.notification_type.in_(['jtg', 'airspace', 'track']))).delete(
+            synchronize_session=False)
+        db.query(W).filter(W.track_id.in_([r['track_id'] for r in update_mappings])).delete(
+            synchronize_session=False)
+        '''collect new ones'''
+        for pilot in pilots:
+            notif_mappings.extend([dict(track_id=pilot.track_id, **asdict(n))
+                                   for n in pilot.notifications if not n.notification_type == 'admin'])
+            achieved_mappings.extend([dict(track_id=pilot.track_id, **asdict(w))
+                                      for w in pilot.waypoints_achieved])
+        '''bulk insert'''
+        if achieved_mappings:
+            db.bulk_insert_mappings(W, achieved_mappings)
+        if notif_mappings:
+            db.bulk_insert_mappings(N, notif_mappings, return_defaults=True)
+            db.flush()
+            notif_list = filter(lambda i: i['notification_type'] in ['jtg', 'airspace'], notif_mappings)
+            trackIds = set([i['track_id'] for i in notif_list])
+            for idx in trackIds:
+                pilot = next(p for p in pilots if p.track_id == idx)
+                for n in filter(lambda i: i['track_id'] == idx, notif_list):
+                    notif = next(el for el in pilot.notifications if el.comment == n['comment'])
+                    notif.not_id = n['not_id']
     return True
 

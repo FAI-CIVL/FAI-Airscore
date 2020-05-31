@@ -12,8 +12,7 @@ from sqlalchemy import and_
 from sqlalchemy.exc import SQLAlchemyError
 
 from Defines import TRACKDIR, MAPOBJDIR
-from pilot.flightresult import FlightResult
-from myconn import Database
+from db.conn import db_session
 import re
 from pathlib import Path
 import unicodedata
@@ -161,7 +160,7 @@ def find_pilot(name):
     info comes from FSDB file, as FsParticipant attributes, or from igc filename
     Not sure about best strategy to retrieve pilots ID from name and FAI n.
     """
-    from db_tables import PilotView as P
+    from db.tables import PilotView as P
 
     '''Gets name from string. check it is not integer'''
     if type(name) is int:
@@ -176,8 +175,8 @@ def find_pilot(name):
             fai = names.pop(0)
 
     print("Trying with name... \n")
-    with Database() as db:
-        t = db.session.query(P.pil_id)
+    with db_session() as db:
+        t = db.query(P.pil_id)
         if names:
             q = t.filter(P.last_name.in_(names))
             p = q.filter(P.first_name.in_(names))
@@ -198,10 +197,10 @@ def find_pilot(name):
 
 def get_pil_track(par_id: int, task_id: int):
     """Get pilot result in a given task"""
-    from db_tables import TblTaskResult as R
+    from db.tables import TblTaskResult as R
 
-    with Database() as db:
-        track_id = db.session.query(R.track_id).filter(
+    with db_session() as db:
+        track_id = db.query(R.track_id).filter(
             and_(R.par_id == par_id, R.task_id == task_id)).scalar()
     if track_id == 0:
         """No result found"""
@@ -238,15 +237,9 @@ def create_tracklog_map_result_file(track_id: int, task_id: int):
 
 
 def get_task_fullpath(task_id: int):
-    from db_tables import TblTask as T, TblCompetition as C
-
-    with Database() as db:
-        try:
-            q = db.session.query(T.task_path,
-                                 C.comp_path).join(C, C.comp_id == T.comp_id).filter(T.task_id == task_id).one()
-        except SQLAlchemyError:
-            print(f'Get Task Path Query Error')
-            return None
+    from db.tables import TblTask as T, TblCompetition as C
+    with db_session() as db:
+        q = db.query(T.task_path, C.comp_path).join(C, C.comp_id == T.comp_id).filter_by(task_id=task_id).one()
     return path.join(TRACKDIR, q.comp_path, q.task_path)
 
 
@@ -255,26 +248,19 @@ def get_unscored_pilots(task_id: int, xcontest=False):
         Input:  task_id INT task database ID
         Output: list of Pilot obj."""
     from pilot.flightresult import FlightResult
-    from db_tables import UnscoredPilotView as U
+    from db.tables import UnscoredPilotView as U
     pilot_list = []
-    with Database() as db:
-        try:
-            results = db.session.query(U.par_id, U.comp_id, U.ID, U.name, U.nat, U.sex, U.civl_id,
-                                       U.live_id, U.glider, U.glider_cert, U.sponsor, U.xcontest_id,
-                                       U.team, U.nat_team).filter(U.task_id == task_id).all()
-            # if xcontest:
-            #     q = q.filter(U.xcontest_id != None)
-            # results = q.all()
-            for p in results:
-                pilot = FlightResult()
-                db.populate_obj(pilot, p)
-                pilot_list.append(pilot)
-        except SQLAlchemyError as e:
-            error = str(e.__dict__)
-            print(f"Error trying to retrieve unscored pilots from database {error}")
-            db.session.rollback()
-            db.session.close()
-            return error
+    with db_session() as db:
+        results = db.query(U.par_id, U.comp_id, U.ID, U.name, U.nat, U.sex, U.civl_id,
+                                   U.live_id, U.glider, U.glider_cert, U.sponsor, U.xcontest_id,
+                                   U.team, U.nat_team).filter_by(task_id=task_id).all()
+        # if xcontest:
+        #     q = q.filter(U.xcontest_id != None)
+        # results = q.all()
+        for p in results:
+            pilot = FlightResult()
+            p.populate(pilot)
+            pilot_list.append(pilot)
     return pilot_list
 
 

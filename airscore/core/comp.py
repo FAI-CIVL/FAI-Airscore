@@ -20,9 +20,9 @@ from sqlalchemy.exc import SQLAlchemyError
 from Defines import TRACKDIR, RESULTDIR, SELF_REG_DEFAULT, PILOT_DB
 from calcUtils import get_date
 from compUtils import get_tasks_result_files, get_participants, read_rankings, create_comp_path
-from db_tables import TblCompetition
+from db.tables import TblCompetition
 from formula import Formula
-from myconn import Database
+from db.conn import db_session
 from pilot.participant import Participant
 from result import CompResult, create_json_file
 from task import Task
@@ -195,25 +195,19 @@ class Comp(object):
     def read(comp_id: int, session=None):
         """Reads competition from database
         takes com_id as argument"""
-        from db_tables import CompObjectView as C
+        from db.tables import CompObjectView as C
 
         if not (type(comp_id) is int and comp_id > 0):
             print(f"comp_id needs to be int > 0, {comp_id} was given")
             return None
 
         comp = Comp(comp_id=comp_id)
-        with Database() as db:
+        with db_session() as db:
             # get comp details.
-            try:
-                q = db.session.query(C).get(comp_id)
-                db.populate_obj(comp, q)
-                comp.formula = Formula(comp_id=comp_id)
-                db.populate_obj(comp.formula, q)
-            except SQLAlchemyError:
-                print("Comp Read Error")
-                db.session.rollback()
-                db.session.close()
-                return None
+            q = db.query(C).get(comp_id)
+            q.populate(comp)
+            comp.formula = Formula(comp_id=comp_id)
+            q.populate(comp.formula)
         return comp
 
     def create_path(self):
@@ -233,10 +227,10 @@ class Comp(object):
 
         if self.comp_id:
             '''store to database'''
-            with Database() as db:
-                q = db.session.query(TblCompetition).get(self.id)
+            with db_session() as db:
+                q = db.query(TblCompetition).get(self.id)
                 q.comp_path = self.comp_path
-                db.session.commit()
+                db.commit()
 
     def to_db(self):
         """create or update a DB entry from Comp object. If comp_id is provided it will update otherwise add a new row
@@ -254,26 +248,19 @@ class Comp(object):
             print('cannot insert an invalid competition. Need more info.')
             return None
 
-        with Database() as db:
-            try:
-                if self.comp_id is not None:
-                    row = db.session.query(TblCompetition).get(self.comp_id)
-                else:
-                    row = TblCompetition()
-                for k, v in self.as_dict().items():
-                    if hasattr(row, k):
-                        setattr(row, k, v)
-                if not self.comp_id:
-                    db.session.add(row)
-                    db.session.flush()
-                    self.comp_id = row.comp_id
-                db.session.commit()
-            except SQLAlchemyError as e:
-                error = str(e.__dict__)
-                print(f'cannot insert competition. DB insert error.{error}')
-                db.session.rollback()
-                db.session.close()
-                return error
+        with db_session() as db:
+            if self.comp_id is not None:
+                row = db.query(TblCompetition).get(self.comp_id)
+            else:
+                row = TblCompetition()
+            for k, v in self.as_dict().items():
+                if hasattr(row, k):
+                    setattr(row, k, v)
+            if not self.comp_id:
+                db.add(row)
+                db.flush()
+                self.comp_id = row.comp_id
+            db.commit()
         return self.comp_id
 
     def get_rankings(self):
@@ -318,38 +305,26 @@ class Comp(object):
 
     def get_tasks_details(self):
         """gets tasks details from database. They could be different from JSON data for scored tasks"""
-        from db_tables import TaskObjectView as T
+        from db.tables import TaskObjectView as T
 
-        with Database() as db:
-            try:
-                results = db.session.query(T.task_id, T.reg_id, T.region_name, T.task_num, T.task_name, T.date,
-                                           T.opt_dist, T.comment).filter(T.comp_id == self.comp_id).all()
-                if results:
-                    results = [row._asdict() for row in results]
-                return results
-            except SQLAlchemyError:
-                print(f"Error trying to retrieve Tasks details for Comp ID {self.comp_id}")
-                return None
+        with db_session() as db:
+            results = db.query(T.task_id, T.reg_id, T.region_name, T.task_num, T.task_name, T.date,
+                                       T.opt_dist, T.comment).filter(T.comp_id == self.comp_id).all()
+            if results:
+                results = [row._asdict() for row in results]
+            return results
 
     @staticmethod
     def from_json(comp_id: int, ref_id=None):
         """Reads competition from json result file
         takes com_id as argument"""
-        from db_tables import TblResultFile as R
-
-        try:
-            with Database() as db:
-                if ref_id:
-                    file = db.session.query(R).get(ref_id).filename
-                else:
-                    file = db.session.query(R.filename).filter(
-                        and_(R.comp_id == comp_id, R.task_id.is_(None), R.active == 1)).scalar()
-        except SQLAlchemyError as e:
-            error = str(e.__dict__)
-            print(f'cannot retrieve competition file from DB. {error}')
-            db.session.rollback()
-            db.session.close()
-            return error
+        from db.tables import TblResultFile as R
+        with db_session() as db:
+            if ref_id:
+                file = db.query(R).get(ref_id).filename
+            else:
+                file = db.query(R.filename).filter(and_(R.comp_id == comp_id,
+                                                        R.task_id.is_(None), R.active == 1)).scalar()
         if file:
             comp = Comp(comp_id=comp_id)
             with open(path.join(RESULTDIR, file), 'r') as f:
@@ -503,38 +478,31 @@ class Comp(object):
 
 def delete_comp(comp_id, files=True):
     """delete all database entries and files on disk related to comp"""
-    from db_tables import TblTask as T
-    from db_tables import TblForComp as FC
-    from db_tables import TblResultFile as RF
-    from db_tables import TblParticipant as P
+    from db.tables import TblTask as T
+    from db.tables import TblForComp as FC
+    from db.tables import TblResultFile as RF
+    from db.tables import TblParticipant as P
     from task import delete_task
     from result import delete_result
-    with Database() as db:
+    with db_session() as db:
         # if files:
         #     '''delete tracks'''
-        #     folder = path.join(TRACKDIR, db.session.query(TblCompetition).get(comp_id).comp_path)
+        #     folder = path.join(TRACKDIR, db.query(TblCompetition).get(comp_id).comp_path)
         #     if path.exists(folder):
         #         shutil.rmtree(folder)
-        tasks = db.session.query(T.task_id).filter(T.comp_id == comp_id).all()
+        tasks = db.query(T.task_id).filter(T.comp_id == comp_id).all()
         if tasks:
             '''delete tasks'''
             for task in tasks:
                 delete_task(task.task_id, files=files, session=db.session)
-        results = db.session.query(RF.ref_id).filter(RF.comp_id == comp_id).all()
+        results = db.query(RF.ref_id).filter(RF.comp_id == comp_id).all()
         if results:
             '''delete result json files'''
             for res in results:
                 delete_result(res.ref_id, files, db.session)
         '''delete db entries: formula, participants, comp'''
-        try:
-            db.session.query(P).filter(P.comp_id == comp_id).delete(synchronize_session=False)
-            db.session.query(FC).filter(FC.comp_id == comp_id).delete(synchronize_session=False)
-            db.session.query(TblCompetition).filter(TblCompetition.comp_id == comp_id).delete(synchronize_session=False)
-            db.session.commit()
-        except SQLAlchemyError as e:
-            error = str(e)
-            print(f"Error deleting comp from database: {error}")
-            db.session.rollback()
-            db.session.close()
-            return error
+        db.query(P).filter(P.comp_id == comp_id).delete(synchronize_session=False)
+        db.query(FC).filter(FC.comp_id == comp_id).delete(synchronize_session=False)
+        db.query(TblCompetition).filter(TblCompetition.comp_id == comp_id).delete(synchronize_session=False)
+        db.commit()
 

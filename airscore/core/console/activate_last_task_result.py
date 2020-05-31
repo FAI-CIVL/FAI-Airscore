@@ -16,9 +16,8 @@ import time
 
 from sqlalchemy.exc import SQLAlchemyError
 
-from db_tables import TblResultFile as Results
-from logger import Logger
-from myconn import Database
+from db.tables import TblResultFile as Results
+from db.conn import db_session
 
 
 def main(args):
@@ -32,19 +31,15 @@ def main(args):
     task_id = int(args[0])
     print(f"Task ID: {task_id} ")
 
-    with Database() as db:
-        try:
-            results = db.session.query(Results).filter(Results.task_id == task_id).all()
-            if results:
-                selected = next(r for r in results if r.active == 1)
-                selected.active = 0
-                db.session.flush()
-                new = max(results, key=lambda r: r.created)
-                new.active = 1
-                db.session.commit()
-        except SQLAlchemyError:
-            print(f'Error changing active result for task ID {task_id}')
-
+    with db_session() as db:
+        results = db.query(Results).filter(Results.task_id == task_id).all()
+        if results:
+            selected = next(r for r in results if r.active == 1)
+            selected.active = 0
+            db.flush()
+            new = max(results, key=lambda r: r.created)
+            new.active = 1
+            db.commit()
     end = time.time()
     print(f'Process Time (mins): {(end - start) / 60}')
 

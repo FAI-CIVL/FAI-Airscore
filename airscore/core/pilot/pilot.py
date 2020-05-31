@@ -23,7 +23,7 @@ class Pilot(object):
     """
 
     def __init__(self, civl_id=None, name=None, sex=None, birthdate=None, nat=None, fai_id=None, fai_valid=1,
-                 xcontest_id=None, ranking=None, pil_id=None):
+                 xcontest_id=None, pil_id=None, ranking=None, hours=None):
 
         self.civl_id = civl_id  # int
         self.name = name  # str
@@ -33,8 +33,9 @@ class Pilot(object):
         self.fai_id = fai_id  # str
         self.fai_valid = fai_valid  # bool
         self.xcontest_id = xcontest_id  # str
-        self.ranking = ranking  # WPRS Ranking?
         self.pil_id = pil_id  # PilotView id
+        self.ranking = ranking  # WPRS Ranking?
+        self.hours = hours  # flying hours last year?
 
     def __setattr__(self, attr, value):
         property_names = [p for p in dir(Pilot) if isinstance(getattr(Pilot, p), property)]
@@ -84,15 +85,15 @@ class Pilot(object):
 #     @staticmethod
 #     def from_profile(pilot_id, comp_id=None, session=None):
 #         from db_tables import PilotView, TblCountryCode
-#         with Database(session) as db:
+#         with db_session() as db:
 #             try:
-#                 result = db.session.query(PilotView).get(pilot_id)
+#                 result = db.query(PilotView).get(pilot_id)
 #                 if result:
 #                     pilot = Participant(pil_id=pilot_id, comp_id=comp_id)
 #                     pilot.name = ' '.join([result.first_name.title(), result.last_name.title()])
 #                     pilot.glider = ' '.join([result.glider_brand.title(), result.glider])
 #                     c = aliased(TblCountryCode)
-#                     pilot.nat = db.session.query(c.natIso3).filter(c.natId == result.nat).scalar()
+#                     pilot.nat = db.query(c.natIso3).filter(c.natId == result.nat).scalar()
 #                     for attr in ['sex', 'civl_id', 'fai_id', 'sponsor', 'xcontest_id', 'glider_cert']:
 #                         if hasattr(result, attr):
 #                             setattr(pilot, attr, getattr(result, attr))
@@ -103,8 +104,8 @@ class Pilot(object):
 #             except SQLAlchemyError as e:
 #                 error = str(e.__dict__)
 #                 print(f"Error storing result to database")
-#                 db.session.rollback()
-#                 db.session.close()
+#                 db.rollback()
+#                 db.close()
 #                 return error
 #
 #     @staticmethod
@@ -119,11 +120,11 @@ class Pilot(object):
 #         pilot = Pilot()
 #         pilot.info = Participant(par_id=par_id)
 #         pilot.task_id = task_id
-#         with Database() as db:
+#         with db_session() as db:
 #             # get result details.
-#             q = db.session.query(R)
+#             q = db.query(R)
 #             db.populate_obj(pilot.info, q.get(par_id))
-#             res = db.session.query(F).filter(and_(F.task_id == task_id, F.par_id == par_id)).first()
+#             res = db.query(F).filter(and_(F.task_id == task_id, F.par_id == par_id)).first()
 #             if res:
 #                 pilot.result = FlightResult()
 #                 pilot.track = Track(track_file=res.track_file, track_id=res.track_id)
@@ -190,37 +191,37 @@ class Pilot(object):
 #             return None
 #         result = self.result
 #         '''database connection'''
-#         with Database(session) as db:
+#         with db_session() as db:
 #             try:
 #                 if self.track_id:
 #                     '''read db row'''
-#                     r = db.session.query(R).get(self.track_id)
+#                     r = db.query(R).get(self.track_id)
 #                     r.comment = self.comment
 #                     r.track_file = self.track_file
 #                     for attr in [a for a in dir(r) if not (a[0] == '_' or a in ['track_file', 'comment'])]:
 #                         if hasattr(result, attr):
 #                             setattr(r, attr, getattr(result, attr))
-#                     db.session.flush()
+#                     db.flush()
 #                 else:
 #                     '''create a new result'''
 #                     r = R(par_id=self.par_id, task_id=self.task_id)
 #                     db.populate_row(r, result)
 #                     r.comment = self.comment
 #                     r.track_file = self.track_file
-#                     db.session.add(r)
-#                     db.session.flush()
+#                     db.add(r)
+#                     db.flush()
 #                     self.track.track_id = r.track_id
 #
 #                 '''notifications'''
 #                 update_notifications(self, db.session)
 #                 '''waypoints_achieved'''
 #                 update_waypoints_achieved(self, db.session)
-#                 db.session.commit()
+#                 db.commit()
 #             except SQLAlchemyError as e:
 #                 error = str(e.__dict__)
 #                 print(f"Error storing result to database")
-#                 db.session.rollback()
-#                 db.session.close()
+#                 db.rollback()
+#                 db.close()
 #                 return error
 #
 #
@@ -251,22 +252,22 @@ class Pilot(object):
 #             insert_mappings.append(r)
 #
 #     '''update database'''
-#     with Database(session) as db:
+#     with db_session() as db:
 #         try:
 #             if insert_mappings:
-#                 db.session.bulk_insert_mappings(R, insert_mappings, return_defaults=True)
-#                 db.session.flush()
+#                 db.bulk_insert_mappings(R, insert_mappings, return_defaults=True)
+#                 db.flush()
 #                 for elem in insert_mappings:
 #                     next(pilot for pilot in pilots if pilot.par_id == elem['par_id']).track.track_id = elem['track_id']
 #             if update_mappings:
-#                 db.session.bulk_update_mappings(R, update_mappings)
-#                 db.session.flush()
+#                 db.bulk_update_mappings(R, update_mappings)
+#                 db.flush()
 #             '''notifications and waypoints achieved'''
 #             '''delete old entries'''
-#             db.session.query(N).filter(and_(N.track_id.in_([r['track_id'] for r in update_mappings]),
+#             db.query(N).filter(and_(N.track_id.in_([r['track_id'] for r in update_mappings]),
 #                                             N.notification_type.in_(['jtg', 'airspace', 'track']))).delete(
 #                 synchronize_session=False)
-#             db.session.query(W).filter(W.track_id.in_([r['track_id'] for r in update_mappings])).delete(
+#             db.query(W).filter(W.track_id.in_([r['track_id'] for r in update_mappings])).delete(
 #                 synchronize_session=False)
 #             '''collect new ones'''
 #             for pilot in pilots:
@@ -276,10 +277,10 @@ class Pilot(object):
 #                                           for w in pilot.result.waypoints_achieved])
 #             '''bulk insert'''
 #             if achieved_mappings:
-#                 db.session.bulk_insert_mappings(W, achieved_mappings)
+#                 db.bulk_insert_mappings(W, achieved_mappings)
 #             if notif_mappings:
-#                 db.session.bulk_insert_mappings(N, notif_mappings, return_defaults=True)
-#                 db.session.flush()
+#                 db.bulk_insert_mappings(N, notif_mappings, return_defaults=True)
+#                 db.flush()
 #                 res_not_list = [i for i in notif_mappings if i['notification_type'] in ['jtg', 'airspace']]
 #                 trackIds = set([i['track_id'] for i in res_not_list])
 #                 for idx in trackIds:
@@ -289,11 +290,11 @@ class Pilot(object):
 #                              and e.flat_penalty == n['flat_penalty']
 #                              and e.percentage_penalty == n['percentage_penalty']
 #                              and e.comment == n['comment']).not_id = n['not_id']
-#             db.session.commit()
+#             db.commit()
 #         except SQLAlchemyError as e:
 #             error = str(e.__dict__)
 #             print(f"Error storing pilots results to database: {error}")
-#             db.session.rollback()
-#             db.session.close()
+#             db.rollback()
+#             db.close()
 #             return error
 #     return True

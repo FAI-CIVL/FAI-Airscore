@@ -344,39 +344,34 @@ class AirspaceCheck(object):
 
 
 def get_airspace_check_parameters(task_id):
-    from myconn import Database
-    from db_tables import TaskAirspaceCheckView as A
-    from sqlalchemy.exc import SQLAlchemyError
+    from db.conn import db_session
+    from db.tables import TaskAirspaceCheckView as A
 
-    with Database() as db:
-        try:
-            q = db.session.query(A).get(task_id)
-            if q.airspace_check:
-                '''calculate parameters'''
-                h_outer_band = q.h_outer_limit - q.h_boundary
-                h_inner_band = q.h_boundary - q.h_inner_limit
-                h_total_band = q.h_outer_limit - q.h_inner_limit
-                v_outer_band = q.v_outer_limit - q.v_boundary
-                v_inner_band = q.v_boundary - q.v_inner_limit
-                v_total_band = q.v_outer_limit - q.v_inner_limit
-                h_outer_penalty_per_m = 0 if not h_outer_band else q.h_boundary_penalty / h_outer_band
-                h_inner_penalty_per_m = (q.h_max_penalty if not h_inner_band
-                                         else (q.h_max_penalty - q.h_boundary_penalty) / h_inner_band)
-                v_outer_penalty_per_m = 0 if not v_outer_band else q.v_boundary_penalty / v_outer_band
-                v_inner_penalty_per_m = (q.v_max_penalty if not v_inner_band
-                                         else (q.v_max_penalty - q.v_boundary_penalty) / v_inner_band)
+    with db_session() as db:
+        q = db.query(A).get(task_id)
+        if q.airspace_check:
+            '''calculate parameters'''
+            h_outer_band = q.h_outer_limit - q.h_boundary
+            h_inner_band = q.h_boundary - q.h_inner_limit
+            h_total_band = q.h_outer_limit - q.h_inner_limit
+            v_outer_band = q.v_outer_limit - q.v_boundary
+            v_inner_band = q.v_boundary - q.v_inner_limit
+            v_total_band = q.v_outer_limit - q.v_inner_limit
+            h_outer_penalty_per_m = 0 if not h_outer_band else q.h_boundary_penalty / h_outer_band
+            h_inner_penalty_per_m = (q.h_max_penalty if not h_inner_band
+                                     else (q.h_max_penalty - q.h_boundary_penalty) / h_inner_band)
+            v_outer_penalty_per_m = 0 if not v_outer_band else q.v_boundary_penalty / v_outer_band
+            v_inner_penalty_per_m = (q.v_max_penalty if not v_inner_band
+                                     else (q.v_max_penalty - q.v_boundary_penalty) / v_inner_band)
 
-                return CheckParams(q.notification_distance, q.function, q.h_outer_limit, q.h_boundary,
-                                   q.h_boundary_penalty, q.h_inner_limit, q.h_max_penalty, q.v_outer_limit,
-                                   q.v_boundary, q.v_boundary_penalty, q.v_inner_limit, q.v_max_penalty,
-                                   h_outer_band, h_inner_band, h_total_band, v_outer_band, v_inner_band, v_total_band,
-                                   h_outer_penalty_per_m, h_inner_penalty_per_m, v_outer_penalty_per_m,
-                                   v_inner_penalty_per_m)
-            else:
-                print(f"airspace_check disabled")
-                return None
-        except SQLAlchemyError:
-            print(f'SQL Error trying to get Airspace Params from database')
+            return CheckParams(q.notification_distance, q.function, q.h_outer_limit, q.h_boundary,
+                               q.h_boundary_penalty, q.h_inner_limit, q.h_max_penalty, q.v_outer_limit,
+                               q.v_boundary, q.v_boundary_penalty, q.v_inner_limit, q.v_max_penalty,
+                               h_outer_band, h_inner_band, h_total_band, v_outer_band, v_inner_band, v_total_band,
+                               h_outer_penalty_per_m, h_inner_penalty_per_m, v_outer_penalty_per_m,
+                               v_inner_penalty_per_m)
+        else:
+            print(f"airspace_check disabled")
             return None
 
 

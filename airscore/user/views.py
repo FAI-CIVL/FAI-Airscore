@@ -39,7 +39,7 @@ def members():
 @blueprint.route('/airspace_map/<filename>')
 @login_required
 def airspace_edit(filename):
-    import design_map
+    import map
     import airspaceUtils
 
     message = ''
@@ -79,7 +79,7 @@ def airspace_edit(filename):
         message += 'Attention: There is unknown height units in the file. You should adjust to meters or ' \
                    'feet above sea level'
 
-    airspace_map = design_map.make_map(airspace_layer=spaces, bbox=bbox)
+    airspace_map = map.make_map(airspace_layer=spaces, bbox=bbox)
 
     return render_template('users/airspace_admin_map.html', airspace_list=airspace_list, file=filename,
                            map=airspace_map._repr_html_(), message=message, FL_message=fl_detail)
@@ -737,17 +737,13 @@ def _upload_track(taskid, parid):
     if request.method == "POST":
         if request.files:
             if "filesize" in request.cookies:
-
                 if not frontendUtils.allowed_tracklog_filesize(request.cookies["filesize"]):
                     print("Filesize exceeded maximum limit")
                     return redirect(request.url)
-
                 tracklog = request.files["tracklog"]
-
                 if tracklog.filename == "":
                     print("No filename")
                     return redirect(request.url)
-
                 if frontendUtils.allowed_tracklog(tracklog.filename):
                     if frontendUtils.production():
                         filename, full_file_name = frontendUtils.save_igc_background(taskid, parid, tracklog,
@@ -756,7 +752,6 @@ def _upload_track(taskid, parid):
                                                              filename, full_file_name, current_user.username)
                         resp = jsonify(success=True)
                         return resp
-
                     else:
                         data, error = frontendUtils.process_igc(taskid, parid, tracklog)
                         if data:
