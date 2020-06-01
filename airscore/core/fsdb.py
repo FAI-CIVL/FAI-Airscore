@@ -17,7 +17,6 @@ import lxml.etree as ET
 from lxml.etree import CDATA
 from sqlalchemy.exc import SQLAlchemyError
 
-from Defines import RESULTDIR
 from calcUtils import get_isotime, km, sec_to_time
 from comp import Comp
 from compUtils import is_ext
@@ -133,7 +132,7 @@ class FSDB(object):
 
         timestamp = int(time.time() + comp.time_offset * 3600)
         dt = datetime.fromtimestamp(timestamp).strftime('%Y%m%d_%H%M%S')
-        filename = RESULTDIR + '_'.join([comp.comp_code, dt]) + '.fsdb'
+        filename = '_'.join([comp.comp_code, dt]) + '.fsdb'
 
         '''get tasks and results'''
         tasks = []
@@ -145,10 +144,10 @@ class FSDB(object):
         fsdb = FSDB(comp=comp, filename=filename, tasks=tasks)
         return fsdb
 
-    def to_file(self, filename=None):
-        """ writes a fsdb file in results folder, with default filename:
-            comp_code_datetime.fsdb
-            In the future, probably this should return xml formatted data to be downloaded from frontend"""
+    def to_file(self):
+        """ returns:
+            - filename: STR
+            - fsdb:     FSDB xml data, to be used in frontend."""
 
         formula = self.comp.formula
         pilots = self.comp.participants
@@ -496,13 +495,19 @@ class FSDB(object):
                            xml_declaration=True,
                            encoding='UTF-8')
 
+        return self.filename, fsdb
+
+    def save_file(self, filename: str = None):
+        """write fsdb file to results folder, with default filename:
+            comp_code_datetime.fsdb"""
+        from Defines import RESULTDIR
+        from pathlib import Path
+        _, fsdb = self.to_file()
         if not filename:
             filename = self.filename
-
-        with open(filename, "wb") as file:
+        file = Path(RESULTDIR, filename)
+        with open(file, "wb") as file:
             file.write(fsdb)
-
-        return filename
 
     def add_comp(self, session=None):
         """
