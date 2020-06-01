@@ -5,7 +5,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 @dataclass
 class Notification:
-    not_id: int = 0  # database id
+    not_id: int = None  # database id
     notification_type: str = 'admin'  # track, airspace, jtg, admin
     flat_penalty: float = 0.0
     percentage_penalty: float = 0.0

@@ -196,19 +196,19 @@ class Comp(object):
         """Reads competition from database
         takes com_id as argument"""
         from db.tables import CompObjectView as C
-
         if not (type(comp_id) is int and comp_id > 0):
             print(f"comp_id needs to be int > 0, {comp_id} was given")
             return None
-
-        comp = Comp(comp_id=comp_id)
-        with db_session() as db:
+        try:
+            comp = Comp()
             # get comp details.
-            q = db.query(C).get(comp_id)
+            q = C.get_by_id(comp_id)
             q.populate(comp)
-            comp.formula = Formula(comp_id=comp_id)
-            q.populate(comp.formula)
-        return comp
+            comp.formula = q.populate(Formula())
+            return comp
+        except AttributeError:
+            print(f'Error: no comp found with ID {comp_id}.')
+            return None
 
     def create_path(self):
         """create filepath from # and date if not given

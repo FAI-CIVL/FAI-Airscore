@@ -8,6 +8,7 @@ Antonio Golfari - 2019
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.scoping import scoped_session
+from sqlalchemy import exc
 from Defines import MYSQLHOST, DATABASE, MYSQLUSER, MYSQLPASSWORD
 from contextlib import contextmanager
 
@@ -38,9 +39,16 @@ def db_session():
     try:
         yield session
         session.commit()
-    except:
+    except exc.SQLAlchemyError:
+        print('SQLAlchemy Error')
         session.rollback()
-        raise
+        # raise
+    except exc.IntegrityError as e:
+        print('Integrity Error')
+        session.rollback()
+    except Exception:
+        print('Exception Error')
+        session.rollback()
     finally:
         # session.expunge_all()
         # session.close()

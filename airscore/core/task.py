@@ -858,11 +858,14 @@ class Task(object):
 
     def update_task_info(self):
         """ updates database entry using Task obj"""
-        with db_session() as db:
-            print(f"taskid:{self.task_id}")
-            q = db.query(TblTask).get(self.task_id)
-            db.populate_row(q, self)
-            db.commit()
+        # with db_session() as db:
+        #     print(f"taskid:{self.task_id}")
+        #     q = db.query(TblTask).get(self.task_id)
+        #     db.populate_row(q, self)
+        #     db.commit()
+        row = TblTask.get_by_id(self.id)
+        row.from_obj(self)
+        row.update()
 
     def update_formula(self):
         self.formula.to_db()
@@ -877,10 +880,14 @@ class Task(object):
 
     def to_db(self, session=None):
         """Inserts new task or updates existent one"""
+        row = TblTask() if not self.id else TblTask.get_by_id(self.id)
+        row.from_obj(self)
+        if self.formula:
+            row.from_obj(self.formula)
+
         with db_session() as db:
             if not self.id:
-                task = TblTask(comp_id=self.comp_id, task_num=self.task_num, task_name=self.task_name,
-                               date=self.date)
+                task = TblTask(comp_id=self.comp_id, task_num=self.task_num, task_name=self.task_name, date=self.date)
                 db.add(task)
                 db.flush()
                 self.task_id = task.task_id

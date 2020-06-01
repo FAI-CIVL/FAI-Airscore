@@ -181,7 +181,7 @@ def find_pilot(name):
             q = t.filter(P.last_name.in_(names))
             p = q.filter(P.first_name.in_(names))
         else:
-            p = t.filter(P.fai_id == fai)
+            p = t.filter_by(fai_id=fai)
         pil = p.all()
         if len(pil) == 1:
             return pil.pop().pil_id
@@ -313,6 +313,8 @@ def get_pilot_from_list(filename, pilots: list):
                         elif val == 'fai':
                             v = elements[idx]
                             a = 'fai_id'
+                        else:
+                            continue
                         pilot = next((p for p in pilots if getattr(p.info, a) == v), None)
                         if pilot:
                             print(f'{a}, found {pilot.name}')
