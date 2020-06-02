@@ -131,7 +131,7 @@ class FSDB(object):
             print(f"Comp (ID {comp_id}) has not been scored yet.")
             return None
 
-        timestamp = int(time.time() + comp.time_offset * 3600)
+        timestamp = int(time.time() + comp.time_offset)
         dt = datetime.fromtimestamp(timestamp).strftime('%Y%m%d_%H%M%S')
         filename = '_'.join([comp.comp_code, dt]) + '.fsdb'
 
@@ -362,7 +362,7 @@ class FSDB(object):
                        'worst_time': round(max((x.ESS_time or 0) - (x.SSS_time or 0)
                                                for x in t.valid_results) / 3600, 14),
                        'no_of_pilots_in_competition': len(self.comp.participants),
-                       'no_of_pilots_landed_before_stop': t.pilots_landed,
+                       'no_of_pilots_landed_before_stop': 0 if not t.stopped_time else t.pilots_landed,
                        'sum_dist_over_min': km(t.tot_dist_over_min),
                        'sum_real_dist_over_min': km(t.tot_dist_over_min),  # not yet implemented
                        'best_real_dist': km(t.max_distance),  # not yet implemented
@@ -414,7 +414,7 @@ class FSDB(object):
                     res = pil.result
                     if not (res.result_type in ['mindist', 'min_dist']):
                         fd_attr = {'distance': km(res.distance_flown),
-                                   'bonus_distance': km(res.total_distance),
+                                   'bonus_distance': km(res.distance),
                                    # ?? seems 0 for PG and more than dist for HG
                                    'started_ss': '' if not res.real_start_time else get_isotime(t.date,
                                                                                                 res.real_start_time,
@@ -426,7 +426,7 @@ class FSDB(object):
                                                                                              t.time_offset),
                                    'tracklog_filename': pil.track.track_file,
                                    'lc': res.lead_coeff,
-                                   'iv': '',  # ?? not implemented
+                                   'iv': res.fixed_LC or '',
                                    'ts': get_isotime(t.date, res.first_time, t.time_offset),
                                    'alt': res.last_altitude,  # ??
                                    'bonus_alt': '',  # ?? not implemented
@@ -436,18 +436,18 @@ class FSDB(object):
                                    'last_tracklog_point_time': get_isotime(t.date, res.landing_time, t.time_offset),
                                    'last_tracklog_point_alt': res.landing_altitude,
                                    'landed_before_deadline': '1' if res.landing_time < (
-                                       t.task_deadline if not t.stopped_time else t.stopped_time) else '0'
-                                   # only deadline?
+                                       t.task_deadline if not t.stopped_time else t.stopped_time) else '0',
+                                   'reachedGoal': 1 if res.goal_time else 0
                                    }
                         for k, v in fd_attr.items():
                             pil_fd.set(k, str(v))
 
-                    r_attr = {'rank': i + 1,  # not implemented, tey should be ordered tho
+                    r_attr = {'rank': i + 1,  # not implemented, they should be ordered tho
                               # Rank IS NOT SAFE (I guess)
                               'points': round(res.score),
                               'distance': km(res.total_distance if res.total_distance else res.distance_flown),
                               'ss_time': '' if not res.ss_time else sec_to_time(res.ss_time).strftime('%H:%M:%S'),
-                              'finished_ss_rank': '',  # not implemented
+                              'finished_ss_rank': '' if not res.ESS_time and res.ESS_rank else res.ESS_rank,
                               'distance_points': 0 if not res.distance_score else round(res.distance_score, 1),
                               'time_points': 0 if not res.time_score else round(res.time_score, 1),
                               'arrival_points': 0 if not res.arrival_score else round(res.arrival_score, 1),
@@ -474,7 +474,9 @@ class FSDB(object):
                               'got_time_but_not_goal_penalty': (res.ESS_time or 0) > 0 and not res.goal_time,
                               'started_ss': '' if not res.real_start_time else get_isotime(t.date, res.SSS_time,
                                                                                            t.time_offset),
-                              'ss_time_dec_hours': 0,  # ??
+                              'finished_ss': '' if not res.ESS_time else get_isotime(t.date, res.ESS_time,
+                                                                                     t.time_offset),
+                              'ss_time_dec_hours': 0 if not res.ESS_time else round(res.ss_time / 3600, 14),
                               'ts': get_isotime(t.date, res.first_time, t.time_offset),  # flight origin time
                               'real_distance': km(res.distance_flown),
                               'last_distance': '',  # ?? last fix distance?
@@ -484,8 +486,7 @@ class FSDB(object):
                               'altitude_at_ess': res.ESS_altitude,
                               'scored_ss_time': ('' if not res.ss_time
                                                  else sec_to_time(res.ss_time).strftime('%H:%M:%S')),  # ??
-                              'landed_before_stop': res.landing_time < (t.task_deadline if not t.stopped_time
-                                                                        else t.stopped_time)
+                              'landed_before_stop': t.stopped_time and res.landing_time < t.stopped_time
                               }
 
                     for k, v in r_attr.items():
