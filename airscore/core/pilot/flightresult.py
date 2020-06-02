@@ -543,17 +543,19 @@ class FlightResult(Participant):
 
             '''Airspace Check'''
             if task.airspace_check and airspace_obj:
-                map_fix = [next_fix.rawtime, next_fix.lat, next_fix.lon, alt]
+                # map_fix = [next_fix.rawtime, next_fix.lat, next_fix.lon, alt]
                 plot, penalty = airspace_obj.check_fix(next_fix, alt)
                 if plot:
-                    map_fix.extend(plot)
+                    # map_fix.extend(plot)
                     '''Airspace Infringement: check if we already have a worse one'''
                     airspace_name = plot[2]
                     infringement_type = plot[3]
                     dist = plot[4]
-                    infringements_list.append([next_fix, airspace_name, infringement_type, dist, penalty])
+                    separation = plot[5]
+                    infringements_list.append([next_fix, airspace_name, infringement_type, dist, penalty, separation])
                 else:
-                    map_fix.extend([None, None, None, None, None])
+                    ''''''
+                    # map_fix.extend([None, None, None, None, None])
                 # airspace_plot.append(map_fix)
 
         '''final results'''
