@@ -201,12 +201,15 @@
                <div class="form-group col-md-3">
                   {{compform.airspace_check.label}} {{compform.airspace_check(size=3,**{'id': "airspace_check", 'data-toggle': 'tooltip', 'title': compform.airspace_check.description})}}
                </div>
-               <div class="form-group col-md-4">
+               <div class="form-group col-md-3">
                   {{compform.igc_parsing_file.label}} {{compform.igc_parsing_file(**{'id': "igc_config", 'data-toggle': 'tooltip', 'title': compform.igc_parsing_file.description})}}
                <a id="link_igc_config" >view/edit</a>
                </div>
-               <div  class="form-group col-md-4">
+               <div  class="form-group col-md-3">
                   {{compform.check_launch.label}} {{compform.check_launch(size=3,**{'id': "check_launch", 'data-toggle': 'tooltip', 'title': compform.check_launch.description})}}
+               </div>
+                <div  class="form-group col-md-3">
+                  {{compform.check_g_record.label}} {{compform.check_g_record(size=3,**{'id': "check_launch", 'data-toggle': 'tooltip', 'title': compform.check_g_record.description})}}
                </div>
             </div>
          </div>
