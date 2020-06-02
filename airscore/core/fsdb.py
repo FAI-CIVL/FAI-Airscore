@@ -424,7 +424,7 @@ class FSDB(object):
                                                                                              t.time_offset),
                                    'tracklog_filename': pil.track_file,
                                    'lc': pil.lead_coeff,
-                                   'iv': '',  # ?? not implemented
+                                   'iv': pil.fixed_LC or '',
                                    'ts': get_isotime(t.date, pil.first_time, t.time_offset),
                                    'alt': pil.last_altitude,  # ??
                                    'bonus_alt': '',  # ?? not implemented
@@ -434,7 +434,8 @@ class FSDB(object):
                                    'last_tracklog_point_time': get_isotime(t.date, pil.landing_time, t.time_offset),
                                    'last_tracklog_point_alt': pil.landing_altitude,
                                    'landed_before_deadline': '1' if pil.landing_time < (
-                                       t.task_deadline if not t.stopped_time else t.stopped_time) else '0'
+                                       t.task_deadline if not t.stopped_time else t.stopped_time) else '0',
+                                   'reachedGoal': 1 if pil.goal_time else 0
                                    # only deadline?
                                    }
                         for k, v in fd_attr.items():
