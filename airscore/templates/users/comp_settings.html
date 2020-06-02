@@ -251,6 +251,8 @@
                      {{compform.self_register.label}} {{compform.self_register(**{'data-toggle': 'tooltip', 'title': compform.self_register.description})}}
                    </div>
                    {% endif %}
+                    <a id="export_fsdb" class="btn btn-success" onclick="export_to_fsdb()"  href={{ url_for('user._export_fsdb', compid=compid)}}>Export to FSDB</a>
+                        <p id="fsdb_spinner"></p>
                </div>
             </div>
          </div>
@@ -639,6 +641,54 @@
                });
 
    }
+
+   function export_to_fsdb(){
+   $('#export_fsdb').hide();
+   $('#fsdb_spinner').html('<div class="spinner-border" role="status"><span class="sr-only">Preparing FSDB...</span></div>');
+   startDownloadChecker("loadingProgressOverlay", 120);
+
+   }
+
+
+   function startDownloadChecker(imageId, timeout) {
+
+    var cookieName = "ServerProcessCompleteChecker";  // Name of the cookie which is set and later overridden on the server
+    var downloadTimer = 0;  // reference to timer object
+
+    // The cookie is initially set on the client-side with a specified default timeout age (2 min. in our application)
+    // It will be overridden on the server side with a new (earlier) expiration age (the completion of the server operation),
+    // or auto-expire after 2 min.
+    setCookie(cookieName, 0, timeout);
+
+    // set timer to check for cookie every second
+    downloadTimer = window.setInterval(function () {
+
+        var cookie = getCookie(cookieName);
+
+        // If cookie expired (NOTE: this is equivalent to cookie "doesn't exist"), then clear "Loading..." and stop polling
+        if ((typeof cookie === 'undefined')) {
+               $('#export_fsdb').show();
+                $('#fsdb_spinner').html('');
+            window.clearInterval(downloadTimer);
+        }
+
+    }, 1000); // Every second
+}
+
+// These are helper JS functions for setting and retrieving a Cookie
+function setCookie(name, value, expiresInSeconds) {
+    var exdate = new Date();
+    exdate.setTime(exdate.getTime() + expiresInSeconds * 1000);
+    var c_value = escape(value) + ((expiresInSeconds == null) ? "" : "; expires=" + exdate.toUTCString());
+    document.cookie = name + "=" + c_value + '; path=/';
+}
+
+function getCookie(name) {
+    var parts = document.cookie.split(name + "=");
+    if (parts.length == 2 ) {
+        return parts.pop().split(";").shift();
+    }
+}
 
 
       

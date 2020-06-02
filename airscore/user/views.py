@@ -3,7 +3,7 @@
 from datetime import datetime
 
 from flask import Blueprint, render_template, request, jsonify, json, flash, redirect, url_for, session, Markup, \
-    current_app
+    current_app, send_file, make_response
 from flask_login import login_required, current_user
 import frontendUtils
 from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm, \
@@ -1415,5 +1415,20 @@ def _adjust_task_result(taskid):
 
     resp = jsonify(success=True)
     return resp
+
+
+@blueprint.route('/_export_fsdb/<compid>', methods=['GET'])
+@login_required
+def _export_fsdb(compid):
+    from fsdb import FSDB
+    import tempfile
+    compid = int(compid)
+    comp_fsdb = FSDB.create(compid)
+    filename, data = comp_fsdb.to_file()
+    with tempfile.NamedTemporaryFile() as tmp:
+        tmp.write(data)
+        resp = make_response(send_file(tmp.name, mimetype="text/xml", attachment_filename=filename, as_attachment=True))
+        resp.set_cookie('ServerProcessCompleteChecker', '', expires=0)
+        return resp
 
 
