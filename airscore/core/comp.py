@@ -78,6 +78,7 @@ class Comp(object):
         self.airspace_check = False  # BOOL airspace check. This setting will be passed on to new tasks
         self.check_launch = check_launch  # check launch flag. whether we check that pilots leave from launch. This setting will be passed on to new tasks
         self.self_register = PILOT_DB and SELF_REG_DEFAULT # set to true if we have pilot DB on and self reg on by default
+        self.check_g_record = False
 
         # self.formula                    = Formula.read(self.comp_id) if self.comp_id else None
 

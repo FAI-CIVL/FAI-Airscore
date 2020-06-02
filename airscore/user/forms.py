@@ -173,6 +173,7 @@ class CompForm(FlaskForm):
                                                                    'tasks will have this as a default but can be '
                                                                    'overridden. Note that this will only work if '
                                                                    'the flying area includes an airspace file')
+    check_g_record = BooleanField('Check G records', description='Check the G Record of the submitted igc files')
     igc_parsing_file = SelectField("IGC parsing config file", choices=[('1', '1'), ('2', '2')])
     self_register = BooleanField("Allow self registration", description='Allow users who are pilots to register '
                                                                         'to the competition')

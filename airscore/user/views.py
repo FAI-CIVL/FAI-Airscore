@@ -216,6 +216,7 @@ def comp_settings_admin(compid):
             comp.igc_config_file = compform.igc_parsing_file.data
             # comp.airspace_check = compform.airspace_check.data
             comp.check_launch = 'on' if compform.check_launch.data else 'off'
+            comp.check_g_record = compform.check_g_record.data
             comp.self_register = compform.self_register.data
             if compform.website.data.lower()[:7] == 'http://':
                 comp.website = compform.website.data.lower()[7:]
@@ -319,6 +320,7 @@ def comp_settings_admin(compid):
         compform.igc_parsing_file.data = comp.igc_config_file
         compform.airspace_check.data = comp.airspace_check
         compform.check_launch.data = comp.check_launch
+        compform.check_g_record.data = comp.check_g_record
         compform.self_register.data = comp.self_register
         compform.website.data = comp.website
         newtaskform.task_region.choices, _ = frontendUtils.get_region_choices(compid)
@@ -334,6 +336,7 @@ def comp_settings_admin(compid):
 
     tasks = frontendUtils.get_task_list(comp)
     session['tasks'] = tasks['tasks']
+    session['check_g_record'] = comp.check_g_record
 
     return render_template('users/comp_settings.html', compid=compid, compform=compform,
                            taskform=newtaskform, adminform=newadminform, error=error,
