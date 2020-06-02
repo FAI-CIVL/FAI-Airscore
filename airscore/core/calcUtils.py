@@ -198,7 +198,7 @@ def get_isotime(d: datetime.date, t: int, offset=None):
     import datetime as dt
     from datetime import datetime as dd
     tz = dt.timedelta(seconds=offset)
-    return dd.combine(d, sec_to_time(t), tzinfo=dt.timezone(offset=tz)).isoformat()
+    return dd.combine(d, sec_to_time(t + offset), tzinfo=dt.timezone(offset=tz)).isoformat()
 
 
 def altitude_compensation(QNH: float):
