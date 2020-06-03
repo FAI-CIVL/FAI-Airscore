@@ -744,8 +744,13 @@ def _upload_track(taskid, parid):
                 if not frontendUtils.allowed_tracklog_filesize(request.cookies["filesize"]):
                     print("Filesize exceeded maximum limit")
                     return redirect(request.url)
+                check_g_record = session['check_g_record']
 
-                tracklog = request.files["tracklog"]
+                if request.files.get("tracklog_NO_G"):
+                   tracklog = request.files["tracklog_NO_G"]
+                   check_g_record = False
+                else:
+                    tracklog = request.files["tracklog"]
 
                 if tracklog.filename == "":
                     print("No filename")
@@ -754,10 +759,14 @@ def _upload_track(taskid, parid):
                 if frontendUtils.allowed_tracklog(tracklog.filename):
                     if frontendUtils.production():
                         filename, full_file_name = frontendUtils.save_igc_background(taskid, parid, tracklog,
-                                                                                     current_user.username)
+                                                                                     current_user.username,
+                                                                                     check_g_record=check_g_record)
                         job = current_app.task_queue.enqueue(frontendUtils.process_igc_background, taskid, parid,
                                                              filename, full_file_name, current_user.username)
-                        resp = jsonify(success=True)
+                        if not filename:
+                            resp = jsonify(success=False)
+                        else:
+                            resp = jsonify(success=True)
                         return resp
 
                     else:

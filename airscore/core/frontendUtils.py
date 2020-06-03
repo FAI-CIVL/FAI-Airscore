@@ -17,6 +17,7 @@ from werkzeug.utils import secure_filename
 import requests
 from flask_sse import sse
 from functools import partial
+import json
 
 
 def get_comps():
@@ -372,18 +373,33 @@ def process_igc(task_id, par_id, tracklog):
     return data, None
 
 
-def save_igc_background(task_id, par_id, tracklog, user):
+def save_igc_background(task_id, par_id, tracklog, user, check_g_record=False):
     from task import Task
-    from track import create_igc_filename
+    from track import create_igc_filename, validate_G_record
     from pilot import Pilot
 
     pilot = Pilot.read(par_id, task_id)
+    print = partial(print_to_sse, id=par_id, channel=user)
     if pilot.name:
         task = Task.read(task_id)
         fullname = create_igc_filename(task.file_path, task.date, pilot.name)
         tracklog.save(fullname)
-        sse.publish({'message': f'IGC file saved: {fullname.split("/")[-1]}', 'id': par_id}, channel=user, type='info',
-                    retry=30)
+        print('|open_modal')
+        print('***************START*******************')
+        if check_g_record:
+            print('Checking G-Record...')
+            validation = validate_G_record(fullname)
+            if validation == 'FAILED':
+                print('G-Record not valid')
+                data = {'par_id': pilot.par_id, 'track_id': pilot.track_id, 'Result': ''}
+                print(json.dumps(data) + '|g_record_fail')
+                return None, None
+            if validation == 'ERROR':
+                print('Error trying to validate G-Record')
+                return None, None
+            if validation == 'PASSED':
+                print('G-Record is valid')
+        print(f'IGC file saved: {fullname.split("/")[-1]}')
     else:
         return None, None
 
@@ -397,12 +413,10 @@ def process_igc_background(task_id, par_id, filename, full_file_name, user):
     from igc_lib import Flight
     from task import Task
     from pilot import Pilot
-    import json
     pilot = Pilot.read(par_id, task_id)
     task = Task.read(task_id)
     print = partial(print_to_sse, id=par_id, channel=user)
-    print('|open_modal')
-    print('***************START*******************')
+
     """import track"""
     pilot.track = Track(track_file=filename, par_id=pilot.par_id)
     pilot.track.flight = Flight.create_from_file(full_file_name)
