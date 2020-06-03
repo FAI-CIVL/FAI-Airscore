@@ -1,20 +1,19 @@
-{% extends "layout.html" %}
+{% extends "base.html"%}
+
+{% block page_title %}
+  Track Management
+{% endblock %}
+
+{% block head %}
+    <style>
+      .bar {
+        height: 20px;
+        background: green;
+    }
+    </style>
+{% endblock %}
+
 {% block content %}
-<style>
-  .bar {
-    height: 20px;
-    background: green;
-}
-</style>
-
-  <body>
-<!--  <head>-->
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="">
-    <meta name="author" content="">
-
-    <title>Track Management</title>
         <div class="container">
              <h2>Task {{task_number}} {% if task_name %}
                 - {{task_name}} {% endif %}

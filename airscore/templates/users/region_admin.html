@@ -1,11 +1,16 @@
-{% extends "layout.html"%}
+{% extends "base.html"%}
+
+{% block page_title %}
+  Region Admin
+{% endblock %}
+
+{% block head %}
+    <!-- CSS -->
+    <link href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/rowgroup/1.1.1/css/rowGroup.dataTables.min.css" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
-
-<!-- CSS -->
-<link href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css" rel="stylesheet">
-<link href="https://cdn.datatables.net/rowgroup/1.1.1/css/rowGroup.dataTables.min.css" rel="stylesheet">
-
-<meta name="csrf-token" content="{{ csrf_token() }}">
 {% if error %}
 <p><strong> Error: </strong></p>
 {{error}}

@@ -1,10 +1,15 @@
-{% extends "layout.html"%}
-{% block content %}
+{% extends "base.html"%}
 
+{% block page_title %}
+  Task Scoring Admin
+{% endblock %}
 
+{% block head %}
+    <!-- CSS -->
     <link href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css" rel="stylesheet">
+{% endblock %}
 
-<body>
+{% block content %}
         <div class="container">
              <h2>Task {{task_number}} {% if task_name %}
                 - {{task_name}} {% endif %}
@@ -244,10 +249,9 @@
   </div>
 </div>
 <!-- process log Modal ends here -->
-
 {% endif %}
-
 {% endblock %}
+
 {% block js %}
 {% if user_is_admin %}
 {% include "js.html" %}

@@ -1,4 +1,10 @@
-{% extends "layout.html"%}
+{% extends "base.html"%}
+
+{% block page_title %}
+  Task Live
+{% endblock %}
+
+{% block head %}
 <style type="text/css">
     .tooltiptext {
       visibility: hidden;
@@ -17,6 +23,8 @@
       visibility: visible;
     }
 </style>
+{% endblock %}
+
 {% block content %}
 <br>
 <div class="container" id="main">
