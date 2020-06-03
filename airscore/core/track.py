@@ -280,14 +280,12 @@ class Track(object):
             index = str(len(glob.glob(task_path + '/' + pname + '*.igc')) + 1).zfill(2)
             filename = '_'.join([pname, str(self.date), index]) + '.igc'
             fullname = path.join(task_path, filename)
-            # print(f'path to copy file: {fullname}')
-            print('path to copy file:', fullname)
+            print(f'path to copy file: {fullname}')
             """copy file"""
             try:
                 copyfile(src_file, fullname)
                 self.track_file = filename
-                # print(f'file succesfully copied to : {self.filename}')
-                print('file succesfully copied to :', self.filename)
+                print(f'file succesfully copied to : {self.filename}')
             except SQLAlchemyError:
                 print('Error copying file:', fullname)
         else:
