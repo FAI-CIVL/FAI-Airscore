@@ -477,7 +477,7 @@ def unzip_igc(zipfile):
     return tracksdir
 
 
-def process_igc_from_zip(taskid, tracksdir, user):
+def process_igc_from_zip(taskid, tracksdir, user, check_g_record=False):
     """function split for background use.
     tracksdir is a temp dir that will be deleted at the end of the function"""
     from task import Task
@@ -496,7 +496,7 @@ def process_igc_from_zip(taskid, tracksdir, user):
         return None
 
     """associate tracks to pilots and import"""
-    assign_and_import_tracks(tracks, task, user=user, print=print)
+    assign_and_import_tracks(tracks, task, user=user, check_g_record=check_g_record, print=print)
     rmtree(tracksdir)
     print('|reload')
     return 'Success'

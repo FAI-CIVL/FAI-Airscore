@@ -63,12 +63,13 @@ def get_tracks(directory):
     return files
 
 
-def assign_and_import_tracks(files, task, xcontest=False, user=None, print=print):
+def assign_and_import_tracks(files, task, xcontest=False, user=None, check_g_record=False, print=print):
     """Find pilots to associate with tracks"""
     from compUtils import get_registration
-    from track import Track
+    from track import Track, validate_G_record
     from functools import partial
     from frontendUtils import print_to_sse
+    import json
 
     pilot_list = []
 
@@ -123,7 +124,7 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None, print=print
             """pilot is registered and has no valid track yet
             moving file to correct folder and adding to the list of valid tracks"""
             mytrack.task_id = task_id
-            mytrack.copy_track_file(task_path=track_path, pname=full_name)
+            filename_and_path = mytrack.copy_track_file(task_path=track_path, pname=full_name)
             # print(f"pilot {mytrack.par_id} associated with track {mytrack.filename}")
             pilot.track = mytrack
             print(f"processing {pilot.info.ID} {pilot.info.name}:")
@@ -132,6 +133,19 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None, print=print
                 print('***************START*******************')
             else:
                 new_print = print
+            if check_g_record:
+                print('Checking G-Record...')
+                validation = validate_G_record(filename_and_path)
+                if validation == 'FAILED':
+                    print('G-Record not valid')
+                    data = {'par_id': pilot.par_id, 'track_id': pilot.track_id, 'Result': ''}
+                    print(json.dumps(data) + '|g_record_fail')
+                    continue
+                if validation == 'ERROR':
+                    print('Error trying to validate G-Record')
+                    continue
+                if validation == 'PASSED':
+                    print('G-Record is valid')
             verify_and_import_track(pilot, task, print=new_print)
     print("*******************processed all tracks**********************")
 

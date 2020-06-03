@@ -290,6 +290,7 @@ class Track(object):
                 print('Error copying file:', fullname)
         else:
             print('error, path not created')
+        return fullname
 
 
 def validate_G_record(igc_filename):
