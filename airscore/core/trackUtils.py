@@ -312,7 +312,7 @@ def get_pilot_from_list(filename, pilots: list):
     # live = r'[\d]+'
     # other = r'[\da-zA-Z]+'
     filename_check = dict(name=r"[a-zA-Z']+", id=r'[\d]+', fai=r'[\da-zA-Z]+', civl=r'[\d]+', live=r'[\da-zA-Z]+',
-                          other=r"[a-zA-Z']+")
+                          other=r"[a-zA-Z0-9']+")
     format_list = [re.findall(r'[\da-zA-Z]+', el) for el in filename_formats]
 
     '''Get string'''
