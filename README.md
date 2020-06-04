@@ -6,7 +6,7 @@ Please see his readme.
 
 Backend scripts ported to python 3.6
 
-Web middle layer & front end currently being ported to flask/jquery using flask cookie cutter. work in progress 
+Web middle layer & front end has been ported to flask/jquery using flask cookie cutter.
 
 
 ### Installation:
@@ -38,11 +38,12 @@ see docker quickstart below
 ------------------------
 #### environment variables
 - Defines.py - Reads defines.yaml file
-- defines.yaml - environment variables, DB connection info, folder structure, logins etc 
+- defines.yaml - environment variables, DB connection info, folder structure, logins etc
+- secrets.yaml - DB connection info, logins etc
 - logger.py - log file setup
+- .env contians environment variables used in the docker compose files.
 
 #### executable scripts
-    these can be run from the command line and are run via PHP in web interface. Will be replaced/absorbed into Flask
 - email_pilots.py - Send a reminder email to pilots who have not uploaded a track. Not currently used.
 - bulk_igc_reader.py - Reads in a zip file full of .igc files
 - score_task.py - Script to score a task.
@@ -78,7 +79,8 @@ docker-compose up flask-dev
 To run the production version of the app
 
 ```bash
-docker-compose up flask-prod
+docker-compose -f docker-compose-production.yml up
+
 ```
 
 The list of `environment:` variables in the `docker-compose.yml` file takes precedence over any variables specified in `.env`.
@@ -98,19 +100,6 @@ docker-compose run --rm manage db upgrade
 ```
 
 A docker volume `node-modules` is created to store NPM packages and is reused across the dev and prod versions of the application. For the purposes of DB testing with `sqlite`, the file `dev.db` is mounted to all containers. This volume mount should be removed from `docker-compose.yml` if a production DB server is used.
-
-### Running locally
-
-Run the following commands to bootstrap your environment if you are unable to run the application using Docker
-
-```bash
-cd airscore
-pip install -r requirements/dev.txt
-npm install
-npm start  # run the webpack dev server and flask server using concurrently
-```
-
-You will see a pretty welcome screen.
 
 #### Database Initialization (locally)
 
@@ -135,17 +124,7 @@ FLASK_DEBUG=0
 Therefore, starting the app in "production" mode is as simple as
 
 ```bash
-docker-compose up flask-prod
-```
-
-If running without Docker
-
-```bash
-export FLASK_ENV=production
-export FLASK_DEBUG=0
-export DATABASE_URL="<YOUR DATABASE URL>"
-npm run build   # build assets with webpack
-flask run       # start the flask server
+docker-compose -f docker-compose-production.yml up
 ```
 
 ## Shell
