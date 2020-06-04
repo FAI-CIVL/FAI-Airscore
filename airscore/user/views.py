@@ -319,7 +319,7 @@ def comp_settings_admin(compid):
         compform.scoring_altitude.data = formula.scoring_altitude
         compform.igc_parsing_file.data = comp.igc_config_file
         compform.airspace_check.data = comp.airspace_check
-        compform.check_launch.data = comp.check_launch
+        compform.check_launch.data = True if comp.check_launch == 'on' else False
         compform.check_g_record.data = comp.check_g_record
         compform.self_register.data = comp.self_register
         compform.website.data = comp.website
