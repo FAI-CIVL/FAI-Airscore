@@ -211,7 +211,6 @@ def comp_settings_admin(compid):
             comp.MD_name = compform.MD_name.data
             comp.time_offset = compform.time_offset.data * 3600
             comp.restricted = 1 if compform.pilot_registration.data == 'registered' else None
-            comp.formula = compform.formula.data
             comp.locked = compform.locked.data
             comp.igc_config_file = compform.igc_parsing_file.data
             # comp.airspace_check = compform.airspace_check.data
@@ -224,6 +223,7 @@ def comp_settings_admin(compid):
                 comp.website = compform.website.data.lower()
             comp.to_db()
             formula = Formula.read(compid)
+            formula.formula_name = compform.formula.data
             formula.overall_validity = compform.overall_validity.data
             formula.validity_param = round((100 - compform.validity_param.data) / 100, 2)
             formula.nominal_dist = compform.nom_dist.data * 1000
