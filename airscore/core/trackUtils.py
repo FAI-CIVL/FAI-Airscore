@@ -88,6 +88,7 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None, check_g_rec
     else:
         print(f"We have {len(files)} tracks to associate")
     track_path = task.file_path
+    FlightParsingConfig = igc_parsing_config_from_yaml(task.igc_config_file)
 
     # print("found {} tracks \n".format(len(files)))
     for file in files:
@@ -105,11 +106,10 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None, check_g_rec
                     dropping pilot from list and creating track obj"""
                     # print(f"Found a pilot to associate with file. dropping {pilot.name} from non scored list")
                     pilot_list[:] = [d for d in pilot_list if d.par_id != pilot.par_id]
-                    mytrack = Track.read_file(filename=file)
+                    mytrack = Track.read_file(filename=file, config=FlightParsingConfig)
         else:
             """We add track if we find a pilot in database
             that has not yet been scored"""
-            FlightParsingConfig = igc_parsing_config_from_yaml(task.igc_config_file)
             mytrack = Track.read_file(filename=file, config=FlightParsingConfig)
             if get_pil_track(mytrack.par_id, task_id):
                 """pilot has already been scored"""

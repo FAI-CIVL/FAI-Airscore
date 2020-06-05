@@ -19,6 +19,7 @@ from db_tables import TblTaskResult
 from igc_lib import Flight, FlightParsingConfig
 from myconn import Database
 from trackUtils import find_pilot, get_task_fullpath
+import json
 # from notification import Notification
 
 ''' Accepted formats list
@@ -162,7 +163,7 @@ class Track(object):
         return result
 
     @classmethod
-    def read_file(cls, filename, track_id=None, par_id=None, config=None):
+    def read_file(cls, filename, track_id=None, par_id=None, config=None, print=print):
         """Reads track file and creates a track object"""
         track = cls(track_file=filename, track_id=track_id, par_id=par_id)
         track.get_type()
@@ -194,7 +195,10 @@ class Track(object):
                 # track.date = epoch_to_date(track.flight.date_timestamp)
                 return track
             else:
-                print(f'** ERROR: {track.notes}')
+                data = {'par_id': par_id, 'track_id': track_id, 'Result': 'Not Yet Processed'}
+                print(
+                    f'IGC does not meet quality standard set by igc parsing config. Notes:{track.flight.notes}')
+                print(json.dumps(data) + '|result')
         else:
             print(f"File {filename} (pilot ID {par_id}) is NOT a valid track file.")
 
