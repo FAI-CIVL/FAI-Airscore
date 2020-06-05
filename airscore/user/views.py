@@ -414,7 +414,7 @@ def task_admin(taskid):
             task.formula.formula_time = taskform.formula_time.data
             task.formula.tolerance = taskform.tolerance.data or 0 / 100
             task.formula.max_JTG = taskform.max_JTG.data
-            task.formula.no_goal_penalty = taskform.no_goal_penalty.data
+            task.formula.no_goal_penalty = taskform.no_goal_penalty.data or 0 / 100
             task.formula.arr_alt_bonus = taskform.arr_alt_bonus.data
             task.to_db()
 
@@ -462,7 +462,7 @@ def task_admin(taskid):
         taskform.formula_time.data = task.formula.formula_time
         taskform.tolerance.data = task.formula.tolerance or 0 * 100
         taskform.max_JTG.data = task.formula.max_JTG
-        taskform.no_goal_penalty.data = task.formula.no_goal_penalty
+        taskform.no_goal_penalty.data = task.formula.no_goal_penalty or 0 * 100
         taskform.arr_alt_bonus.data = task.formula.arr_alt_bonus
 
         if current_user.id not in all_admin_ids:
@@ -564,7 +564,7 @@ def _get_adv_settings():
     formula = Formula.from_preset(data['category'], data['formula'])
     settings = {'formula_distance': formula.formula_distance, 'formula_arrival': formula.formula_arrival,
                 'formula_departure': formula.formula_departure, 'lead_factor': formula.lead_factor,
-                'formula_time': formula.formula_time, 'no_goal_penalty': formula.no_goal_penalty,
+                'formula_time': formula.formula_time, 'no_goal_penalty': formula.no_goal_penalty * 100,
                 'glide_bonus': formula.glide_bonus, 'tolerance': formula.tolerance * 100,
                 'min_tolerance': formula.min_tolerance, 'arr_alt_bonus': formula.height_bonus,
                 'arr_max_height': formula.arr_max_height, 'arr_min_height': formula.arr_min_height,
