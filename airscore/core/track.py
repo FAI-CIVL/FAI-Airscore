@@ -318,7 +318,8 @@ def validate_G_record(igc_filename):
 def igc_parsing_config_from_yaml(yaml_filename):
     """reads the settings from a YAML file and creates a
     new FlightParsingConfig object for use when processing track files """
-
+    if yaml_filename[:-5].lower != '.yaml':
+        yaml_filename = yaml_filename + '.yaml'
     yaml_config = read_igc_config_yaml(yaml_filename)
     if yaml_config is None:
         return None
@@ -326,8 +327,9 @@ def igc_parsing_config_from_yaml(yaml_filename):
     config = FlightParsingConfig()
     yaml_config.pop('editable', None)
     yaml_config.pop('description', None)
+    yaml_config.pop('owner', None)
     for setting in yaml_config:
-        config.yaml_config[setting] = yaml_config['min_fixes']
+        setattr(config, setting, yaml_config[setting])
     return config
 
 

@@ -66,7 +66,7 @@ def get_tracks(directory):
 def assign_and_import_tracks(files, task, xcontest=False, user=None, check_g_record=False, print=print):
     """Find pilots to associate with tracks"""
     from compUtils import get_registration
-    from track import Track, validate_G_record
+    from track import Track, validate_G_record, igc_parsing_config_from_yaml
     from functools import partial
     from frontendUtils import print_to_sse
     import json
@@ -109,7 +109,8 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None, check_g_rec
         else:
             """We add track if we find a pilot in database
             that has not yet been scored"""
-            mytrack = Track.read_file(filename=file)
+            FlightParsingConfig = igc_parsing_config_from_yaml(task.igc_config_file)
+            mytrack = Track.read_file(filename=file, config=FlightParsingConfig)
             if get_pil_track(mytrack.par_id, task_id):
                 """pilot has already been scored"""
                 print(f"Pilot with ID {mytrack.par_id} has already a valid track for task with ID {task_id}")

@@ -320,7 +320,7 @@ def allowed_tracklog_filesize(filesize, size=5):
 
 
 def process_igc(task_id, par_id, tracklog):
-    from track import Track, create_igc_filename
+    from track import Track, create_igc_filename, igc_parsing_config_from_yaml
     from flightresult import FlightResult
     from airspace import AirspaceCheck
     from igc_lib import Flight
@@ -337,7 +337,8 @@ def process_igc(task_id, par_id, tracklog):
 
     """import track"""
     pilot.track = Track(track_file=fullname, par_id=pilot.par_id)
-    pilot.track.flight = Flight.create_from_file(fullname)
+    FlightParsingConfig = igc_parsing_config_from_yaml(task.igc_config_file)
+    pilot.track.flight = Flight.create_from_file(fullname, config_class=FlightParsingConfig)
     """check result"""
     if not pilot.track:
         error = f"for {pilot.name} - Track is not a valid track file"
@@ -407,7 +408,7 @@ def save_igc_background(task_id, par_id, tracklog, user, check_g_record=False):
 
 
 def process_igc_background(task_id, par_id, filename, full_file_name, user):
-    from track import Track
+    from track import Track, igc_parsing_config_from_yaml
     from flightresult import FlightResult
     from airspace import AirspaceCheck
     from igc_lib import Flight
@@ -419,7 +420,8 @@ def process_igc_background(task_id, par_id, filename, full_file_name, user):
 
     """import track"""
     pilot.track = Track(track_file=filename, par_id=pilot.par_id)
-    pilot.track.flight = Flight.create_from_file(full_file_name)
+    FlightParsingConfig = igc_parsing_config_from_yaml(task.igc_config_file)
+    pilot.track.flight = Flight.create_from_file(full_file_name,  config_class=FlightParsingConfig)
     data = {'par_id': pilot.par_id, 'track_id': pilot.track_id, 'Result': 'Not Yet Processed'}
     """check result"""
     if not pilot.track:
