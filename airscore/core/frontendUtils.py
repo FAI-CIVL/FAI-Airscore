@@ -420,16 +420,22 @@ def process_igc_background(task_id, par_id, filename, full_file_name, user):
     """import track"""
     pilot.track = Track(track_file=filename, par_id=pilot.par_id)
     pilot.track.flight = Flight.create_from_file(full_file_name)
+    data = {'par_id': pilot.par_id, 'track_id': pilot.track_id, 'Result': 'Not Yet Processed'}
     """check result"""
     if not pilot.track:
         print(f"for {pilot.name} - Track is not a valid track file")
+        print(json.dumps(data) + '|result')
         return None
-    elif not pilot.track.date == task.date:
+    if not pilot.flight.valid:
+        print(f'IGC does not meet quality standard set by igc parsing config. Notes:{pilot.flight.notes}')
+        print(json.dumps(data) + '|result')
+        return None
+    if not pilot.track.date == task.date:
         print(f"for {pilot.name} - Track has a different date from task date")
+        print(json.dumps(data) + '|result')
         return None
     else:
         print(f"pilot {pilot.track.par_id} associated with track {pilot.track.filename} \n")
-
         """checking track against task"""
         if task.airspace_check:
             airspace = AirspaceCheck.from_task(task)
@@ -440,7 +446,7 @@ def process_igc_background(task_id, par_id, filename, full_file_name, user):
         """adding track to db"""
         pilot.to_db()
         time = ''
-        data = {'par_id': pilot.par_id, 'track_id': pilot.track_id}
+
         if pilot.result.goal_time:
             time = sec_to_time(pilot.result.ESS_time - pilot.result.SSS_time)
         if pilot.result.result_type == 'goal':
