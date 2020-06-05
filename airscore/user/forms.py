@@ -236,8 +236,8 @@ class TaskForm(FlaskForm):
     formula_time = SelectField('Time points', choices=[('on','On'), ('off', 'Off')])
     arr_alt_bonus = DecimalField('Height bonus', validators=[InputRequired()], default=0)
     max_JTG = IntegerField("Max Jump the gun (sec)", default=0)
-    no_goal_penalty = DecimalField('No goal penalty', validators=[InputRequired()], default=0)
-    tolerance = DecimalField('Turnpoint radius tolerance %', places=3)
+    no_goal_penalty = DecimalField('No goal penalty (%)', validators=[InputRequired()], default=0)
+    tolerance = DecimalField('Turnpoint radius tolerance (%)', places=3)
 
     submit = SubmitField('Save')
 
