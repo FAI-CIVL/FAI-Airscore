@@ -167,12 +167,10 @@ class Track(object):
         """Reads track file and creates a track object"""
         track = cls(track_file=filename, track_id=track_id, par_id=par_id)
         track.get_type()
-        print('type ', track.track_type)
         if track.track_type in track_formats:
             """file is a valid track format"""
             if track.track_type == "igc":
                 """using IGC reader from aerofile library"""
-                print('reading flight')
                 if config:
                     track.flight = Flight.create_from_file(filename, config_class=config)
                 else:
@@ -187,7 +185,6 @@ class Track(object):
             I'm not creating a track without a valid flight because it would miss date property.'''
             # TODO We could change this part if we find a way to gen non-valid flight with timestamp property
             if track.valid:
-                print('track valid')
                 if not par_id:
                     track.get_pilot()
                 # track.get_glider()
