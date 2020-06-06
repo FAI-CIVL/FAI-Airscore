@@ -611,7 +611,10 @@ def _add_turnpoint(taskid):
     if data['direction'] is not None:
         tp.how = data['direction']
     if data['shape'] is not None:
-        tp.shape = data['shape']
+        if data['type'] != 'goal':
+            tp.shape = 'circle'
+        else:
+            tp.shape = data['shape']
     if save_turnpoint(taskid, tp):
         task = Task.read(taskid)
         if task.opt_dist > 0 or data['type'] == 'goal':
