@@ -1,5 +1,6 @@
 # coding: utf-8
-from sqlalchemy import CHAR, Column, Date, Enum, Float, ForeignKey, Index, String, TIMESTAMP, Table, Text, text, DateTime
+from sqlalchemy import CHAR, Column, Date, Enum, Float, ForeignKey, Index, String, TIMESTAMP, Table, Text, text, \
+    DateTime, Boolean
 from sqlalchemy.dialects.mysql import BIGINT, INTEGER, LONGTEXT, MEDIUMINT, MEDIUMTEXT, SMALLINT, TINYINT, VARCHAR
 from sqlalchemy.orm import relationship
 
@@ -75,6 +76,7 @@ class CompObjectView(Base):
                       Column('country_size', INTEGER(4)),
                       Column('max_country_size', INTEGER(4)),
                       Column('team_over', INTEGER(2)),
+                      Column('check_g_record', Boolean),
                       )
 
 
@@ -600,6 +602,7 @@ class TblCompetition(Base):
     check_launch = Column(Enum('on', 'off'), server_default=text("'off'"))
     igc_config_file = Column(String(80))
     self_register = Column(TINYINT(1))
+    check_g_record = Column(Boolean)
 
     cat = relationship('TblClassification')
     ladders = relationship('TblLadder', secondary='tblLadderComp')

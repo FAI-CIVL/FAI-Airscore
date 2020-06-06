@@ -348,9 +348,13 @@ class FlightResult(object):
 
     @staticmethod
     def from_dict(d):
+        from notification import Notification
         result = FlightResult()
         for key, value in d.items():
-            if hasattr(result, key):
+            if key == 'notifications' and value:
+                for n in value:
+                    result.notifications.append(Notification.from_dict(n))
+            elif hasattr(result, key):
                 setattr(result, key, value)
         return result
 
@@ -570,8 +574,10 @@ class FlightResult(object):
                 if fix_dist_flown > result.distance_flown:
                     '''time of trackpoint with shortest distance to ESS'''
                     result.best_distance_time = next_fix.rawtime
-                    '''updating shortest distance to ESS'''
-                    result.distance_flown = max(fix_dist_flown, task.partial_distance[tp.last_made_index])
+                    '''updating best distance flown'''
+                    # result.distance_flown = max(fix_dist_flown,
+                    #                             task.partial_distance[tp.last_made_index])  # old approach
+                    result.distance_flown = fix_dist_flown
 
                 '''stopped task
                 ∀p : p ∈ PilotsLandedBeforeGoal :
@@ -595,17 +601,19 @@ class FlightResult(object):
 
             '''Airspace Check'''
             if task.airspace_check and airspace_obj:
-                map_fix = [next_fix.rawtime, next_fix.lat, next_fix.lon, alt]
+                # map_fix = [next_fix.rawtime, next_fix.lat, next_fix.lon, alt]
                 plot, penalty = airspace_obj.check_fix(next_fix, alt)
                 if plot:
-                    map_fix.extend(plot)
+                    # map_fix.extend(plot)
                     '''Airspace Infringement: check if we already have a worse one'''
                     airspace_name = plot[2]
                     infringement_type = plot[3]
                     dist = plot[4]
-                    infringements_list.append([next_fix, airspace_name, infringement_type, dist, penalty])
+                    separation = plot[5]
+                    infringements_list.append([next_fix, airspace_name, infringement_type, dist, penalty, separation])
                 else:
-                    map_fix.extend([None, None, None, None, None])
+                    ''''''
+                    # map_fix.extend([None, None, None, None, None])
                 # airspace_plot.append(map_fix)
 
         '''final results'''
@@ -803,7 +811,9 @@ def verify_all_tracks(task, lib, airspace=None, print=print):
     from igc_lib import Flight
 
     print('getting tracks...')
-    for pilot in task.pilots:
+    number_of_pilots = len(task.pilots)
+    for track_number, pilot in enumerate(task.pilots, 1):
+        print(f"{track_number}/{number_of_pilots}|track_counter")
         print(f"type: {pilot.result_type}")
         if pilot.result_type not in ('abs', 'dnf', 'mindist'):
             print(f"{pilot.ID}. {pilot.name}: ({pilot.track.track_file})")

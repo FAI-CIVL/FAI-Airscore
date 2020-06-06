@@ -1,22 +1,21 @@
-{% extends "layout.html" %}
+{% extends "base.html"%}
+
+{% block page_title %}
+  Track Management
+{% endblock %}
+
+{% block head %}
+    <style>
+      .bar {
+        height: 20px;
+        background: green;
+    }
+    </style>
+{% endblock %}
+
 {% block content %}
-<style>
-  .bar {
-    height: 20px;
-    background: green;
-}
-</style>
-
-  <body>
-<!--  <head>-->
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="">
-    <meta name="author" content="">
-
-    <title>Track Management</title>
         <div class="container">
-             <h2>Task {{task_number}} {% if task_name %}
+             <h2>Task {{task_num}} {% if task_name %}
                 - {{task_name}} {% endif %}
              </h2>
              <br>
@@ -166,10 +165,12 @@
         }
 
  function update_row(new_data){
+        update_track_pilot_stats();
         var table = $('#tracks').dataTable();
         new_data.ID = $('#tracks').DataTable().row( $('tr#id_'+ new_data.par_id)).data()['ID'];
         new_data.name = $('#tracks').DataTable().row( $('tr#id_'+ new_data.par_id)).data()['name'];
         table.fnUpdate(new_data, $('tr#id_'+ new_data.par_id), undefined, false);
+
         }
 
    function delete_track(track_id, par_id){
@@ -213,6 +214,11 @@
         },
                       success: function () {
                            $('#bulkmodal').modal('hide');
+                           $('#zip_modal_message').show();
+                           $('#zip_progress').hide();
+                           $('#zip_spinner').hide();
+                           $('#zip_progress_text').text('');
+                           $('#zip_spinner').html('');
                            {% if not production %}
                            populate_track_admin({{taskid|tojson}});
                            update_track_pilot_stats();
@@ -233,14 +239,19 @@
 
 {% if production %}
 
-   function choose_file(par_id){
+   function choose_file(par_id, g_overide=false){
    var filename;
-   $('#fileupload' + par_id).fileupload({
+   var suffix = '';
+   if(g_overide){
+    suffix = '_NO_G'
+   }
+   $('#fileupload' + suffix + par_id).fileupload({
         dataType: 'json',
         done: function (e, data) {
             $.each(data.result.files, function (index, file) {
                 $('<p/>').text(file.name).appendTo(document.body);
                 filename = file.name;
+
             });
         },
         submit: function (e, data){
@@ -252,25 +263,10 @@
         $('#progress_percentage'+ par_id).show();
         $('#progress_percentage'+ par_id).text('uploading..')
         $('#filediv'+ par_id).show();
-
         },
-                      success: function (response) {
-                      if(response.error){
-                              $('#ABS'+ par_id).show();
-                                $('#MD'+ par_id).show();
-                                $('#DNF'+ par_id).show();
-                                $('#TrackUp'+ par_id).show();
-                                $('#upload_box'+ par_id).show();
-                                $('#filediv'+ par_id).hide();
-                        $.alert(response.error,{ type: 'danger', position: ['center', [-0.42, 0]],
-                        autoClose: false
-                        });
-                      }
-                      update_row(response);
-                      },
 
     });
-    $('#fileupload' + par_id).click();
+        $('#fileupload' + suffix + par_id).click();
 };
 
 {% else %}
@@ -283,6 +279,7 @@
             $.each(data.result.files, function (index, file) {
                 $('<p/>').text(file.name).appendTo(document.body);
                 filename = file.name;
+
             });
         },
         submit: function (e, data){
@@ -370,12 +367,12 @@ function initES() {
                 es.addEventListener('result', function(event) {
                         var data = JSON.parse(event.data);
                 if(data.message == 'error'){
-                $('#ABS'+ par_id).show();
-                                $('#MD'+ par_id).show();
-                                $('#DNF'+ par_id).show();
-                                $('#TrackUp'+ par_id).show();
-                                $('#upload_box'+ par_id).show();
-                                $('#filediv'+ par_id).hide();
+                                $('#ABS'+ data.id).show();
+                                $('#MD'+ data.id).show();
+                                $('#DNF'+ data.id).show();
+                                $('#TrackUp'+ data.id).show();
+                                $('#upload_box'+ data.id).show();
+                                $('#filediv'+ data.id).hide();
                         $.alert(response.error,{ type: 'danger', position: ['center', [-0.42, 0]],
                         autoClose: false
                                                 });
@@ -384,8 +381,21 @@ function initES() {
                 else {
                 update_row($.parseJSON(data.message));
                 }
+    }, false);
 
+                    es.addEventListener('g_record_fail', function(event) {
+                        var data = JSON.parse(event.data);
+                        data.message = JSON.parse(data.message);
 
+                                $('#ABS'+ data.id).show();
+                                $('#MD'+ data.id).show();
+                                $('#DNF'+ data.id).show();
+                                $('#TrackUp'+ data.id).show();
+                                $('#upload_box'+ data.id).show();
+                                $('#filediv'+ data.id).hide();
+                                $('#progress_percentage'+ data.id).hide();
+                        data.message.Result = '<button id="TrackUp_noG' + data.id  +'" class="btnupload btn btn-warning mt-3" onclick="choose_file(' + data.id +', true);">Upload IGC ignoring G record</button>'
+                        update_row(data.message);
     }, false);
 
     es.addEventListener('reload', function(event) {
@@ -393,8 +403,6 @@ function initES() {
         update_track_pilot_stats();
 
     }, false);
-
-
 
 <!--    es.addEventListener('error', function(event) {-->
 <!--        alert("Failed to connect to event stream. Is Redis running?");-->

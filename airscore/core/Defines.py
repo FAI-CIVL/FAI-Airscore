@@ -19,6 +19,8 @@ with open('../../secret.yaml', 'rb') as f:
     secret = yaml.safe_load(f)
 os.chdir(dname)
 ''' Application Settings'''
+FLASKCONTAINER = config['docker']['container']  # Flask Docker Container Name
+FLASKPORT = config['docker']['port']  # Flask Docker Container Port
 BINDIR = config['dir']['bin']  # script directory
 TRACKDIR = config['dir']['tracks']  # track file directory
 LOGDIR = config['dir']['log']  # log files directory
@@ -46,7 +48,15 @@ other: other not used
 examples: 
     '0068.igc' = 'id' 
     'LiveTrack Antoine Saraf.361951.20190717-113625.5836.47.igc' = 'other name name.live.other-other.other.id' '''
-filename_formats = ['id', 'other name name.live.other-other.other.id', 'fai_name', 'name_name']
+filename_formats = ['id', 'other name name.live.other-other.other.id', 'fai_name', 'name_name',
+                    'other name name name.live.other-other.other.id',
+                    'other name name name name.live.other-other.other.id',
+                    'name_name.other-other.other.id',
+                    'name_name.other-other.other.other',
+                    'name_name_name.other-other.other.id',
+                    'name_name_name_name.other-other.other.id',
+                    'other name name.live.other-other.other.other',
+                    ]
 
 ''' Waypoint file Settings'''
 wpt_formats = ['GEO', 'UTM', 'CUP', 'GPX', 'CompeGPS', 'OziExplorer']

@@ -29,10 +29,10 @@ def get_comp(task_id: int):
 
 def get_class(task_id: int):
     """Get comp_class ('PG', 'HG', 'BOTH') from task_id"""
-    from db_tables import CompObjectView as C
+    from db_tables import TaskObjectView as T
     with Database() as db:
         try:
-            comp_class = db.session.query(C.comp_class).filter_by(task_id=task_id).scalar()
+            comp_class = db.session.query(T.comp_class).filter_by(task_id=task_id).scalar()
             return comp_class
         except SQLAlchemyError:
             print(f"No db data found")
@@ -87,8 +87,7 @@ def is_registered(civl_id: int, comp_id: int):
     from db_tables import TblParticipant as R
     with Database() as db:
         try:
-            par_id = db.session.query(R.par_id).filter_by(comp_id=comp_id, civl_id=civl_id).one().scalar()
-            return par_id
+            return db.session.query(R.par_id).filter_by(comp_id=comp_id, civl_id=civl_id).scalar()
         except SQLAlchemyError:
             print(f'No pilot with CIVLID {civl_id} is registered')
             db.session.rollback()
@@ -102,7 +101,7 @@ def is_ext(comp_id: int):
     with Database() as db:
         try:
             # comps = db.session.query(C)
-            ext = db.session.query(C.external).filter_by(comp_id=comp_id).one().scalar()
+            ext = db.session.query(C.external).filter_by(comp_id=comp_id).scalar()
             return bool(ext)
         except SQLAlchemyError:
             print(f'No comp with ID {comp_id} is registered')
@@ -182,7 +181,7 @@ def create_comp_path(date: datetime.date, code: str):
         - comp date
         - comp_code"""
     from pathlib import Path
-    return Path(str(date.year), str(code).lower())
+    return Path(str(date.year), str(code).lower()).as_posix()
 
 
 def get_task_region(task_id: int):

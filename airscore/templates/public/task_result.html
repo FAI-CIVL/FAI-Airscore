@@ -1,25 +1,19 @@
-{% extends "layout.html"%}
-{% block content %}
+{% extends "base.html"%}
 
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="">
-    <meta name="author" content="">
+{% block page_title %}
+  Task Result
+{% endblock %}
 
-    <!-- <title>AirScore Competitions</title> -->
-
+{% block head %}
     <!-- CSS -->
     <link href="/static/css/task.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css" rel="stylesheet">
-
     <!-- JS -->
     <script type="text/javascript" src="/static/js/utils.js"></script>
     <script type="text/javascript" src="/static/js/microajax.minified.js"></script>
-  </head>
+{% endblock %}
 
-<body>
-
+{% block content %}
   <div class="container-fluid">
       <div class="row mt-1 mb-2">
           <div class="col comp_header" id="comp_header">
@@ -102,9 +96,6 @@
           </div>
       </div>
   </div>
-
-</body>
-
 {% endblock %}
 {% block js %}
 {% include "js.html" %}

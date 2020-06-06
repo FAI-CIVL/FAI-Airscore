@@ -223,12 +223,16 @@ class AirspaceCheck(object):
                             vert_distance = max(dist_floor, dist_ceiling)
                             violation = 1
                     if violation:
-                        result = min([(vert_distance, self.params.penalty(vert_distance, 'v')),
-                                      (horiz_distance, self.params.penalty(horiz_distance, 'h'))], key=lambda p: p[1])
+                        '''sorting list to retrieve correct value case penalty is equal'''
+                        sorted_list = sorted([(vert_distance, self.params.penalty(vert_distance, 'v'), 'vert'),
+                                              (horiz_distance, self.params.penalty(horiz_distance, 'h'), 'horiz')],
+                                             key=lambda p: p[0], reverse=True)
+                        result = min(sorted_list, key=lambda p: p[1])
                         pen = result[1]
                         if pen >= penalty:
                             '''new worse infringement'''
                             infringement_space = space
+                            separation = result[2]
                             if pen == 0:
                                 dist = max(vert_distance, horiz_distance)
                                 infringement = 'warning'
@@ -245,7 +249,7 @@ class AirspaceCheck(object):
 
         if infringement:
             plot = [infringement_space['floor'], infringement_space['ceiling'], infringement_space['name'],
-                    infringement, dist]
+                    infringement, dist, separation]
 
         return plot, penalty
 
@@ -313,14 +317,15 @@ class AirspaceCheck(object):
             pen = max(x[4] for x in fixes)
             fix = min([x for x in fixes if x[4] == pen], key=lambda x: x[3])
             dist = fix[3]
+            separation = fix[5]
             rawtime = fix[0].rawtime
             if pen == 0:
                 ''' create warning comment'''
-                comment = f"[{space}] Warning: separation less than {dist} meters"
+                comment = f"[{space}] Warning: {separation}. separation less than {dist} meters"
             else:
                 '''add fix to infringements'''
                 infringements_per_space.append({'rawtime': rawtime, 'space': space,
-                                                'distance': dist, 'penalty': pen})
+                                                'distance': dist, 'penalty': pen, 'separation': separation})
                 if fix[2] == 'full penalty':
                     comment = f"[{space}]: airspace infringement. penalty {round(pen * 100)}%"
                 else:

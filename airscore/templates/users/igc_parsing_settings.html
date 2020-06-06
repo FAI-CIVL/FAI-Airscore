@@ -1,6 +1,10 @@
-{% extends "layout.html"%}
+{% extends "base.html"%}
+
+{% block page_title %}
+  IGC Parsing
+{% endblock %}
+
 {% block content %}
-<meta name="csrf-token" content="{{ csrf_token() }}">
 {% if error %}
 <p><strong> Error: </strong></p>
 {{error}}

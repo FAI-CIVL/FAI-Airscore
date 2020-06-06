@@ -9,7 +9,7 @@ from sqlalchemy import func
 from pathlib import Path
 import jsonpickle
 from Defines import MAPOBJDIR, IGCPARSINGCONFIG, track_formats
-from design_map import make_map
+from map import make_map
 from sqlalchemy.exc import SQLAlchemyError
 from calcUtils import sec_to_time
 from os import scandir, path, environ
@@ -17,6 +17,7 @@ from werkzeug.utils import secure_filename
 import requests
 from flask_sse import sse
 from functools import partial
+import json
 
 
 def get_comps():
@@ -142,7 +143,7 @@ def get_task_turnpoints(task):
     # max_n = int(math.ceil(max_n / 10.0)) * 10
     max_n += 1
 
-    task_file = Path(MAPOBJDIR + 'tasks/' + str(task.task_id) + '.task')
+    task_file = Path(MAPOBJDIR, 'tasks', str(task.task_id) + '.task')
     if task_file.is_file():
         with open(task_file, 'r') as f:
             data = jsonpickle.decode(f.read())
@@ -319,7 +320,7 @@ def allowed_tracklog_filesize(filesize, size=5):
 
 
 def process_igc(task_id, par_id, tracklog):
-    from track import Track, create_igc_filename
+    from track import Track, create_igc_filename, igc_parsing_config_from_yaml
     from flightresult import FlightResult
     from airspace import AirspaceCheck
     from igc_lib import Flight
@@ -336,7 +337,8 @@ def process_igc(task_id, par_id, tracklog):
 
     """import track"""
     pilot.track = Track(track_file=fullname, par_id=pilot.par_id)
-    pilot.track.flight = Flight.create_from_file(fullname)
+    FlightParsingConfig = igc_parsing_config_from_yaml(task.igc_config_file)
+    pilot.track.flight = Flight.create_from_file(fullname, config_class=FlightParsingConfig)
     """check result"""
     if not pilot.track:
         error = f"for {pilot.name} - Track is not a valid track file"
@@ -372,18 +374,33 @@ def process_igc(task_id, par_id, tracklog):
     return data, None
 
 
-def save_igc_background(task_id, par_id, tracklog, user):
+def save_igc_background(task_id, par_id, tracklog, user, check_g_record=False):
     from task import Task
-    from track import create_igc_filename
+    from track import create_igc_filename, validate_G_record
     from pilot import Pilot
 
     pilot = Pilot.read(par_id, task_id)
+    print = partial(print_to_sse, id=par_id, channel=user)
     if pilot.name:
         task = Task.read(task_id)
         fullname = create_igc_filename(task.file_path, task.date, pilot.name)
         tracklog.save(fullname)
-        sse.publish({'message': f'IGC file saved: {fullname.split("/")[-1]}', 'id': par_id}, channel=user, type='info',
-                    retry=30)
+        print('|open_modal')
+        print('***************START*******************')
+        if check_g_record:
+            print('Checking G-Record...')
+            validation = validate_G_record(fullname)
+            if validation == 'FAILED':
+                print('G-Record not valid')
+                data = {'par_id': pilot.par_id, 'track_id': pilot.track_id, 'Result': ''}
+                print(json.dumps(data) + '|g_record_fail')
+                return None, None
+            if validation == 'ERROR':
+                print('Error trying to validate G-Record')
+                return None, None
+            if validation == 'PASSED':
+                print('G-Record is valid')
+        print(f'IGC file saved: {fullname.split("/")[-1]}')
     else:
         return None, None
 
@@ -391,31 +408,36 @@ def save_igc_background(task_id, par_id, tracklog, user):
 
 
 def process_igc_background(task_id, par_id, filename, full_file_name, user):
-    from track import Track
+    from track import Track, igc_parsing_config_from_yaml
     from flightresult import FlightResult
     from airspace import AirspaceCheck
     from igc_lib import Flight
     from task import Task
     from pilot import Pilot
-    import json
     pilot = Pilot.read(par_id, task_id)
     task = Task.read(task_id)
     print = partial(print_to_sse, id=par_id, channel=user)
-    print('|open_modal')
-    print('***************START*******************')
+
     """import track"""
     pilot.track = Track(track_file=filename, par_id=pilot.par_id)
-    pilot.track.flight = Flight.create_from_file(full_file_name)
+    FlightParsingConfig = igc_parsing_config_from_yaml(task.igc_config_file)
+    pilot.track.flight = Flight.create_from_file(full_file_name,  config_class=FlightParsingConfig)
+    data = {'par_id': pilot.par_id, 'track_id': pilot.track_id, 'Result': 'Not Yet Processed'}
     """check result"""
     if not pilot.track:
         print(f"for {pilot.name} - Track is not a valid track file")
+        print(json.dumps(data) + '|result')
         return None
-    elif not pilot.track.date == task.date:
+    if not pilot.flight.valid:
+        print(f'IGC does not meet quality standard set by igc parsing config. Notes:{pilot.flight.notes}')
+        print(json.dumps(data) + '|result')
+        return None
+    if not pilot.track.date == task.date:
         print(f"for {pilot.name} - Track has a different date from task date")
+        print(json.dumps(data) + '|result')
         return None
     else:
         print(f"pilot {pilot.track.par_id} associated with track {pilot.track.filename} \n")
-
         """checking track against task"""
         if task.airspace_check:
             airspace = AirspaceCheck.from_task(task)
@@ -426,7 +448,7 @@ def process_igc_background(task_id, par_id, filename, full_file_name, user):
         """adding track to db"""
         pilot.to_db()
         time = ''
-        data = {'par_id': pilot.par_id, 'track_id': pilot.track_id}
+
         if pilot.result.goal_time:
             time = sec_to_time(pilot.result.ESS_time - pilot.result.SSS_time)
         if pilot.result.result_type == 'goal':
@@ -463,7 +485,7 @@ def unzip_igc(zipfile):
     return tracksdir
 
 
-def process_igc_from_zip(taskid, tracksdir, user):
+def process_igc_from_zip(taskid, tracksdir, user, check_g_record=False):
     """function split for background use.
     tracksdir is a temp dir that will be deleted at the end of the function"""
     from task import Task
@@ -482,7 +504,7 @@ def process_igc_from_zip(taskid, tracksdir, user):
         return None
 
     """associate tracks to pilots and import"""
-    assign_and_import_tracks(tracks, task, user=user, print=print)
+    assign_and_import_tracks(tracks, task, user=user, check_g_record=check_g_record, print=print)
     rmtree(tracksdir)
     print('|reload')
     return 'Success'
@@ -821,8 +843,9 @@ def print_to_sse(text, id, channel):
 
 def push_sse(body, message_type, channel):
     """send a post request to webserver with contents of SSE to be sent"""
+    from Defines import FLASKCONTAINER, FLASKPORT
     data = {'body': body, 'type': message_type, 'channel': channel}
-    requests.post('http://web:5000/internal/see_message', json=data)
+    requests.post(f'http://{FLASKCONTAINER}:{FLASKPORT}/internal/see_message', json=data)
 
 
 def production():
@@ -887,19 +910,33 @@ def get_pretty_data(filename):
         return 'error'
 
 
-def full_rescore(taskid, background=False, user=None):
+def full_rescore(taskid, background=False, status=None, autopublish=None, compid=None, user=None):
     from task import Task
+    from comp import Comp
+    from result import unpublish_result, publish_result
     task = Task.read(taskid)
     if background:
         print = partial(print_to_sse, id=None, channel=user)
         print('|open_modal')
         print('***************START*******************')
-        refid, filename = task.create_results(mode='full', status='Full Rescore', print=print)
+        refid, filename = task.create_results(mode='full', status=status, print=print)
+        if autopublish:
+            unpublish_result(taskid)
+            publish_result(refid, ref_id=True)
+            if compid:
+                comp = Comp()
+                comp.create_results(compid, name_suffix='Overview')
         print('****************END********************')
-        print(f'{filename}|reload')
+        print(f'{filename}|reload_select_latest')
         return None
     else:
-        refid, filename = task.create_results(mode='full')
+        refid, filename = task.create_results(mode='full', status=status)
+        if autopublish:
+            unpublish_result(taskid)
+            publish_result(refid, ref_id=True)
+            if compid:
+                comp = Comp()
+                comp.create_results(compid, name_suffix='Overview')
         return refid
 
 
@@ -927,3 +964,12 @@ def get_task_igc_zip(task_id):
             return zip_full_filename
     shutil.make_archive(comp_folder + '/' + task_folder, 'zip', task_path)
     return zip_full_filename
+
+
+def check_short_code(comp_short_code):
+    with Database() as db:
+        code = db.session.query(TblCompetition.comp_code).filter(TblCompetition.comp_code == comp_short_code).first()
+        if code:
+            return False
+        else:
+            return True

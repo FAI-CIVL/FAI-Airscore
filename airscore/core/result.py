@@ -421,8 +421,8 @@ def update_result_file(filename: str, par_id: int, notification: dict):
         print(f'Json file {filename} does not exist')
         return None
     comment = notification['comment']
-    penalty = 0 if 'flat_penalty' not in notification.keys() else float(notification['flat_penalty'])
-    not_id = None if 'not_id' not in notification.keys() else int(notification['not_id'])
+    penalty = 0 if not notification.get('flat_penalty') else float(notification['flat_penalty'])
+    not_id = notification.get('not_id')
     old_penalty = 0
     with open(file, 'r+') as f:
         data = json.load(f)
@@ -545,11 +545,10 @@ def get_country_list(countries=None, iso=3):
 
 def open_json_file(filename: str):
     from pathlib import Path
-    from os import path
     import jsonpickle
     from Defines import RESULTDIR
-    file = path.join(RESULTDIR, filename)
-    if not Path(file).is_file():
+    file = Path(RESULTDIR, filename)
+    if not file.is_file():
         print(f"error: file {filename} does not exist")
         return None
     with open(file, 'r') as f:
@@ -906,7 +905,7 @@ def get_comp_country_scoring(filename):
 
     for nat in countries:
         nation = dict(code=nat.code, name=nat.name)
-        nat_pilots = [p for p in data['results'] if p['nat'] == nation['code'] and p['nat_team']]
+        nat_pilots = [p for p in data['results'] if p['nat'] == nation['code'] and p['nat_team'] == 1]
         score = 0
         for t in tasks:
             '''sort pilots by task result'''
