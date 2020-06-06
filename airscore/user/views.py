@@ -244,8 +244,8 @@ def comp_settings_admin(compid):
             formula.arr_alt_bonus = compform.arr_alt_bonus.data
             formula.arr_max_height = compform.arr_max_height.data
             formula.arr_min_height = compform.arr_min_height.data
-            formula.validity_min_time = compform.validity_min_time.data
-            formula.score_back_time = compform.scoreback_time.data
+            formula.validity_min_time = int((compform.validity_min_time.data or 0) * 60)
+            formula.score_back_time = int((compform.scoreback_time.data or 0) * 60)
             formula.JTG_penalty_per_sec = compform.JTG_penalty_per_sec.data
             formula.scoring_altitude = compform.scoring_altitude.data
             formula.team_scoring = compform.team_scoring.data
@@ -312,8 +312,8 @@ def comp_settings_admin(compid):
         compform.arr_alt_bonus.data = formula.arr_alt_bonus
         compform.arr_max_height.data = formula.arr_max_height
         compform.arr_min_height.data = formula.arr_min_height
-        compform.validity_min_time.data = formula.validity_min_time
-        compform.scoreback_time.data = formula.score_back_time
+        compform.validity_min_time.data = int((formula.validity_min_time or 0) / 60)
+        compform.scoreback_time.data = int((formula.score_back_time or 0) / 60)
         compform.max_JTG.data = formula.max_JTG
         compform.JTG_penalty_per_sec.data = formula.JTG_penalty_per_sec
         compform.scoring_altitude.data = formula.scoring_altitude
@@ -568,7 +568,8 @@ def _get_adv_settings():
                 'glide_bonus': formula.glide_bonus, 'tolerance': formula.tolerance * 100,
                 'min_tolerance': formula.min_tolerance, 'arr_alt_bonus': formula.height_bonus,
                 'arr_max_height': formula.arr_max_height, 'arr_min_height': formula.arr_min_height,
-                'validity_min_time': formula.validity_min_time, 'scoreback_time': formula.score_back_time,
+                'validity_min_time': int(formula.validity_min_time/60),
+                'scoreback_time': int(formula.score_back_time/60),
                 'max_JTG': formula.max_JTG, 'JTG_penalty_per_sec': formula.JTG_penalty_per_sec}
 
     return settings
