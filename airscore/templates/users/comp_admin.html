@@ -1,11 +1,20 @@
 
-{% extends "layout.html"%}
+{% extends "base.html"%}
+
+{% block page_title %}
+  Competition Admin
+{% endblock %}
+
+{% block head %}
+    <!-- CSS -->
+    <link href="/static/css/task.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css" rel="stylesheet">
+    <!-- JS -->
+    <script type="text/javascript" src="/static/js/utils.js"></script>
+    <script type="text/javascript" src="/static/js/microajax.minified.js"></script>
+{% endblock %}
 
 {% block content %}
-    <title>Competition Admin</title>
-
-    <link href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css" rel="stylesheet">
-
     <div class="container" id="main">
 	<div class="row">
 	<button type="button" class="btn btn-primary mr-1" data-toggle="modal" data-target="#compmodal">Create</button>

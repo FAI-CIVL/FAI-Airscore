@@ -1,18 +1,19 @@
-{% extends "layout.html"%}
-{% block content %}
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="">
-    <meta name="author" content="">
+{% extends "base.html"%}
 
+{% block page_title %}
+  Registered Pilots
+{% endblock %}
+
+{% block head %}
     <!-- CSS -->
     <link href="/static/css/task.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css" rel="stylesheet">
+    <!-- JS -->
+    <script type="text/javascript" src="/static/js/utils.js"></script>
+    <script type="text/javascript" src="/static/js/microajax.minified.js"></script>
+{% endblock %}
 
-  </head>
-
-<body>
+{% block content %}
 <div class="container" >
   <div class="row col-md-12">
 <h1 >{{comp['comp_name']}} - <small>{{comp['comp_site']}}</small></h1>
@@ -52,8 +53,6 @@ Official website:<a href='http://{{comp.website}}' target="_blank" >http://{{com
   </div>
 </div>
 
-</body>
-
 <!---edit-participant details modal starts here--->
 <div id="edit_par_modal" class="modal fade" role='dialog'>
    <div class="modal-dialog">
@@ -91,9 +90,8 @@ Official website:<a href='http://{{comp.website}}' target="_blank" >http://{{com
 </div>
 <!-edit-participant details-Modal ends here--->
 
-
-
 {% endblock %}
+
 {% block js %}
 {% include "js.html" %}
     <script type="text/javascript" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>

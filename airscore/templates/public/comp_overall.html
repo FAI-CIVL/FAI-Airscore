@@ -1,26 +1,20 @@
-{% extends "layout.html"%}
-{% block content %}
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="">
-    <meta name="author" content="">
+{% extends "base.html"%}
 
-    <title>Competition Result</title>
+{% block page_title %}
+  Competition Results - Overall
+{% endblock %}
 
+{% block head %}
     <!-- CSS -->
     <link href="/static/css/task.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css" rel="stylesheet">
-   
     <!-- JS -->
+    <script type="text/javascript" src="/static/js/utils.js"></script>
     <script type="text/javascript" src="/static/js/microajax.minified.js"></script>
-    <!-- <script src="/static/js/url.js"></script> -->
-  </head>
+{% endblock %}
 
-  <body>
-
-
-    <div class="container-fluid">
+{% block content %}
+  <div class="container-fluid">
     <div class="row">
         <div class="col col-md-7 comp_header mt-1">
         <h2 id="comp_name"></h2>
@@ -51,10 +45,8 @@
     </thead>
     </table>
     </div>
-
-</body>
-
 {% endblock %}
+
 {% block js %}
 {% include "js.html" %}
     <script type="text/javascript" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>

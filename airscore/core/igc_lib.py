@@ -572,7 +572,7 @@ class Flight:
     """
 
     @staticmethod
-    def create_from_file(filename, config_class=FlightParsingConfig):
+    def create_from_file(filename, config_class=None):
         """Creates an instance of Flight from a given file.
 
         Args:
@@ -582,7 +582,10 @@ class Flight:
         Returns:
             An instance of Flight built from the supplied IGC file.
         """
-        config = config_class()
+        if not config_class:
+            config = FlightParsingConfig()
+        else:
+            config = config_class
         fixes = []
         a_records = []
         i_records = []

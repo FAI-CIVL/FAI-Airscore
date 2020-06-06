@@ -62,12 +62,13 @@ def get_tracks(directory):
     return files
 
 
-def assign_and_import_tracks(files, task, xcontest=False, user=None, print=print):
+def assign_and_import_tracks(files, task, xcontest=False, user=None, check_g_record=False, print=print):
     """Find pilots to associate with tracks"""
     from compUtils import get_registration
-    from pilot.track import Track
+    from pilot.track import Track, validate_G_record, igc_parsing_config_from_yaml
     from functools import partial
     from frontendUtils import print_to_sse
+    import json
 
     pilot_list = []
 
@@ -86,6 +87,7 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None, print=print
     else:
         print(f"We have {len(files)} tracks to associate")
     track_path = task.file_path
+    FlightParsingConfig = igc_parsing_config_from_yaml(task.igc_config_file)
 
     # print("found {} tracks \n".format(len(files)))
     for file in files:
@@ -103,11 +105,11 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None, print=print
                     dropping pilot from list and creating track obj"""
                     # print(f"Found a pilot to associate with file. dropping {pilot.name} from non scored list")
                     pilot_list[:] = [d for d in pilot_list if d.par_id != pilot.par_id]
-                    mytrack = Track.read_file(filename=file)
+                    mytrack = Track.read_file(filename=file, config=FlightParsingConfig, print=print)
         else:
             """We add track if we find a pilot in database
             that has not yet been scored"""
-            mytrack = Track.read_file(filename=file)
+            mytrack = Track.read_file(filename=file, config=FlightParsingConfig, print=print)
             if get_pil_track(mytrack.par_id, task_id):
                 """pilot has already been scored"""
                 print(f"Pilot with ID {mytrack.par_id} has already a valid track for task with ID {task_id}")
@@ -122,7 +124,7 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None, print=print
             """pilot is registered and has no valid track yet
             moving file to correct folder and adding to the list of valid tracks"""
             mytrack.task_id = task_id
-            mytrack.copy_track_file(task_path=track_path, pname=full_name)
+            filename_and_path = mytrack.copy_track_file(task_path=track_path, pname=full_name)
             # print(f"pilot {mytrack.par_id} associated with track {mytrack.filename}")
             # pilot.track = mytrack
             print(f"processing {pilot.ID} {pilot.name}:")
@@ -131,6 +133,19 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None, print=print
                 print('***************START*******************')
             else:
                 new_print = print
+            if check_g_record:
+                print('Checking G-Record...')
+                validation = validate_G_record(filename_and_path)
+                if validation == 'FAILED':
+                    print('G-Record not valid')
+                    data = {'par_id': pilot.par_id, 'track_id': pilot.track_id, 'Result': ''}
+                    print(json.dumps(data) + '|g_record_fail')
+                    continue
+                if validation == 'ERROR':
+                    print('Error trying to validate G-Record')
+                    continue
+                if validation == 'PASSED':
+                    print('G-Record is valid')
             verify_and_import_track(pilot, mytrack, task, print=new_print)
     print("*******************processed all tracks**********************")
 
@@ -154,6 +169,7 @@ def verify_and_import_track(pilot, track, task, print=print):
         print(str(pilot.notifications))
     print('***************END****************')
 
+    return pilot
 
 def find_pilot(name):
     """Get pilot from name or fai
@@ -280,7 +296,7 @@ def get_pilot_from_list(filename, pilots: list):
     # live = r'[\d]+'
     # other = r'[\da-zA-Z]+'
     filename_check = dict(name=r"[a-zA-Z']+", id=r'[\d]+', fai=r'[\da-zA-Z]+', civl=r'[\d]+', live=r'[\da-zA-Z]+',
-                          other=r"[a-zA-Z']+")
+                          other=r"[a-zA-Z0-9']+")
     format_list = [re.findall(r'[\da-zA-Z]+', el) for el in filename_formats]
 
     '''Get string'''

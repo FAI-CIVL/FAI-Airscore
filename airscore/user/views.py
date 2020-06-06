@@ -224,7 +224,7 @@ def comp_settings_admin(compid):
                 comp.website = compform.website.data.lower()
             comp.to_db()
             formula = Formula.read(compid)
-            formula.overall_validity = compform.overall_validity.data
+            formula.overall_validity = compform.formula.data
             formula.validity_param = round((100 - compform.validity_param.data) / 100, 2)
             formula.nominal_dist = compform.nom_dist.data * 1000
             formula.nominal_goal = compform.nom_goal.data / 100
@@ -244,8 +244,8 @@ def comp_settings_admin(compid):
             formula.arr_alt_bonus = compform.arr_alt_bonus.data
             formula.arr_max_height = compform.arr_max_height.data
             formula.arr_min_height = compform.arr_min_height.data
-            formula.validity_min_time = compform.validity_min_time.data
-            formula.score_back_time = compform.scoreback_time.data
+            formula.validity_min_time = int((compform.validity_min_time.data or 0) * 60)
+            formula.score_back_time = int((compform.scoreback_time.data or 0) * 60)
             formula.JTG_penalty_per_sec = compform.JTG_penalty_per_sec.data
             formula.scoring_altitude = compform.scoring_altitude.data
             formula.team_scoring = compform.team_scoring.data
@@ -312,14 +312,14 @@ def comp_settings_admin(compid):
         compform.arr_alt_bonus.data = formula.arr_alt_bonus
         compform.arr_max_height.data = formula.arr_max_height
         compform.arr_min_height.data = formula.arr_min_height
-        compform.validity_min_time.data = formula.validity_min_time
-        compform.scoreback_time.data = formula.score_back_time
+        compform.validity_min_time.data = int((formula.validity_min_time or 0) / 60)
+        compform.scoreback_time.data = int((formula.score_back_time or 0) / 60)
         compform.max_JTG.data = formula.max_JTG
         compform.JTG_penalty_per_sec.data = formula.JTG_penalty_per_sec
         compform.scoring_altitude.data = formula.scoring_altitude
         compform.igc_parsing_file.data = comp.igc_config_file
         compform.airspace_check.data = comp.airspace_check
-        compform.check_launch.data = comp.check_launch
+        compform.check_launch.data = True if comp.check_launch == 'on' else False
         compform.check_g_record.data = comp.check_g_record
         compform.self_register.data = comp.self_register
         compform.website.data = comp.website
@@ -412,9 +412,9 @@ def task_admin(taskid):
             task.formula.formula_arrival = taskform.formula_arrival.data
             task.formula.formula_departure = taskform.formula_departure.data
             task.formula.formula_time = taskform.formula_time.data
-            task.formula.tolerance = taskform.tolerance.data or 0 / 100
+            task.formula.tolerance = (taskform.tolerance.data or 0) / 100
             task.formula.max_JTG = taskform.max_JTG.data
-            task.formula.no_goal_penalty = taskform.no_goal_penalty.data
+            task.formula.no_goal_penalty = (taskform.no_goal_penalty.data or 0) / 100
             task.formula.arr_alt_bonus = taskform.arr_alt_bonus.data
             task.to_db()
 
@@ -460,9 +460,9 @@ def task_admin(taskid):
         taskform.formula_arrival.data = task.formula.formula_arrival
         taskform.formula_departure.data = task.formula.formula_departure
         taskform.formula_time.data = task.formula.formula_time
-        taskform.tolerance.data = task.formula.tolerance or 0 * 100
+        taskform.tolerance.data = (task.formula.tolerance or 0) * 100
         taskform.max_JTG.data = task.formula.max_JTG
-        taskform.no_goal_penalty.data = task.formula.no_goal_penalty
+        taskform.no_goal_penalty.data = (task.formula.no_goal_penalty or 0) * 100
         taskform.arr_alt_bonus.data = task.formula.arr_alt_bonus
 
         if current_user.id not in all_admin_ids:
@@ -564,11 +564,12 @@ def _get_adv_settings():
     formula = Formula.from_preset(data['category'], data['formula'])
     settings = {'formula_distance': formula.formula_distance, 'formula_arrival': formula.formula_arrival,
                 'formula_departure': formula.formula_departure, 'lead_factor': formula.lead_factor,
-                'formula_time': formula.formula_time, 'no_goal_penalty': formula.no_goal_penalty,
+                'formula_time': formula.formula_time, 'no_goal_penalty': formula.no_goal_penalty * 100,
                 'glide_bonus': formula.glide_bonus, 'tolerance': formula.tolerance * 100,
                 'min_tolerance': formula.min_tolerance, 'arr_alt_bonus': formula.height_bonus,
                 'arr_max_height': formula.arr_max_height, 'arr_min_height': formula.arr_min_height,
-                'validity_min_time': formula.validity_min_time, 'scoreback_time': formula.score_back_time,
+                'validity_min_time': int(formula.validity_min_time/60),
+                'scoreback_time': int(formula.score_back_time/60),
                 'max_JTG': formula.max_JTG, 'JTG_penalty_per_sec': formula.JTG_penalty_per_sec}
 
     return settings
@@ -611,7 +612,10 @@ def _add_turnpoint(taskid):
     if data['direction'] is not None:
         tp.how = data['direction']
     if data['shape'] is not None:
-        tp.shape = data['shape']
+        if data['type'] != 'goal':
+            tp.shape = 'circle'
+        else:
+            tp.shape = data['shape']
     if save_turnpoint(taskid, tp):
         task = Task.read(taskid)
         if task.opt_dist > 0 or data['type'] == 'goal':
@@ -743,17 +747,27 @@ def _upload_track(taskid, parid):
                 if not frontendUtils.allowed_tracklog_filesize(request.cookies["filesize"]):
                     print("Filesize exceeded maximum limit")
                     return redirect(request.url)
-                tracklog = request.files["tracklog"]
+                check_g_record = session['check_g_record']
+
+                if request.files.get("tracklog_NO_G"):
+                   tracklog = request.files["tracklog_NO_G"]
+                   check_g_record = False
+                else:
+                    tracklog = request.files["tracklog"]
                 if tracklog.filename == "":
                     print("No filename")
                     return redirect(request.url)
+
                 if frontendUtils.allowed_tracklog(tracklog.filename):
                     if frontendUtils.production():
                         filename, full_file_name = frontendUtils.save_igc_background(taskid, parid, tracklog,
                                                                                      current_user.username)
                         job = current_app.task_queue.enqueue(frontendUtils.process_igc_background, taskid, parid,
                                                              filename, full_file_name, current_user.username)
-                        resp = jsonify(success=True)
+                        if not filename:
+                            resp = jsonify(success=False)
+                        else:
+                            resp = jsonify(success=True)
                         return resp
                     else:
                         data, error = frontendUtils.process_igc(taskid, parid, tracklog)

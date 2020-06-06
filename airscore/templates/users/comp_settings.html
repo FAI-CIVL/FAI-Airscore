@@ -1,6 +1,10 @@
-{% extends "layout.html"%}
+{% extends "base.html"%}
+
+{% block page_title %}
+  Competition Settings
+{% endblock %}
+
 {% block content %}
-<meta name="csrf-token" content="{{ csrf_token() }}">
 {% if error %}
 <p><strong> Error: </strong></p>
 {{error}}
@@ -247,7 +251,7 @@
             </div>
             <div class="form-row">
                <div class="form-group col-md-6">
-                  {{compform.locked.label}} {{compform.locked(**{'data-toggle': 'tooltip', 'title': compform.locked.description})}}
+<!--                  {{compform.locked.label}} {{compform.locked(**{'data-toggle': 'tooltip', 'title': compform.locked.description})}}-->
                    </div>
                    {% if self_register %}
                    <div class="form-group col-md-6">
@@ -401,6 +405,7 @@
 <!--Modal ends here--->
 
 {% endblock %}
+
 {% block js %}
 {% include "js.html" %}
 <script src="{{ static_url_for('static', filename='js/display-if.min.js') }}"></script>

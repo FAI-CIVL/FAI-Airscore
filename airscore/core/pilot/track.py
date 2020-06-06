@@ -19,6 +19,7 @@ from db.tables import TblTaskResult
 from igc_lib import Flight, FlightParsingConfig
 from db.conn import db_session
 from trackUtils import find_pilot, get_task_fullpath
+import json
 # from notification import Notification
 
 ''' Accepted formats list
@@ -158,16 +159,14 @@ class Track(object):
         return result
 
     @classmethod
-    def read_file(cls, filename, track_id=None, par_id=None, config=None):
+    def read_file(cls, filename, track_id=None, par_id=None, config=None, print=print):
         """Reads track file and creates a track object"""
         track = cls(track_file=filename, track_id=track_id, par_id=par_id)
         track.get_type()
-        print('type ', track.track_type)
         if track.track_type in track_formats:
             """file is a valid track format"""
             if track.track_type == "igc":
                 """using IGC reader from aerofile library"""
-                print('reading flight')
                 if config:
                     track.flight = Flight.create_from_file(filename, config_class=config)
                 else:
@@ -182,7 +181,6 @@ class Track(object):
             I'm not creating a track without a valid flight because it would miss date property.'''
             # TODO We could change this part if we find a way to gen non-valid flight with timestamp property
             if track.valid:
-                print('track valid')
                 if not par_id:
                     track.get_pilot()
                 # track.get_glider()
@@ -190,7 +188,10 @@ class Track(object):
                 # track.date = epoch_to_date(track.flight.date_timestamp)
                 return track
             else:
-                print(f'** ERROR: {track.notes}')
+                data = {'par_id': par_id, 'track_id': track_id, 'Result': 'Not Yet Processed'}
+                print(
+                    f'IGC does not meet quality standard set by igc parsing config. Notes:{track.flight.notes}')
+                print(json.dumps(data) + '|result')
         else:
             print(f"File {filename} (pilot ID {par_id}) is NOT a valid track file.")
 
@@ -269,18 +270,17 @@ class Track(object):
             index = str(len(glob.glob(task_path + '/' + pname + '*.igc')) + 1).zfill(2)
             filename = '_'.join([pname, str(self.date), index]) + '.igc'
             fullname = path.join(task_path, filename)
-            # print(f'path to copy file: {fullname}')
-            print('path to copy file:', fullname)
+            print(f'path to copy file: {fullname}')
             """copy file"""
             try:
                 copyfile(src_file, fullname)
                 self.track_file = filename
-                # print(f'file succesfully copied to : {self.filename}')
-                print('file succesfully copied to :', self.filename)
+                print(f'file succesfully copied to : {self.filename}')
             except:
                 print('Error copying file:', fullname)
         else:
             print('error, path not created')
+        return fullname
 
 
 def validate_G_record(igc_filename):
@@ -306,7 +306,8 @@ def validate_G_record(igc_filename):
 def igc_parsing_config_from_yaml(yaml_filename):
     """reads the settings from a YAML file and creates a
     new FlightParsingConfig object for use when processing track files """
-
+    if yaml_filename[:-5].lower != '.yaml':
+        yaml_filename = yaml_filename + '.yaml'
     yaml_config = read_igc_config_yaml(yaml_filename)
     if yaml_config is None:
         return None
@@ -314,8 +315,9 @@ def igc_parsing_config_from_yaml(yaml_filename):
     config = FlightParsingConfig()
     yaml_config.pop('editable', None)
     yaml_config.pop('description', None)
+    yaml_config.pop('owner', None)
     for setting in yaml_config:
-        config.yaml_config[setting] = yaml_config['min_fixes']
+        setattr(config, setting, yaml_config[setting])
     return config
 
 

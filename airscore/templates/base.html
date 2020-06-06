@@ -1,128 +1,91 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<!-- paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
+<!--[if lt IE 7]> <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en" dir="ltr"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js lt-ie9 lt-ie8" lang="en" dir="ltr"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js lt-ie9" lang="en" dir="ltr"> <![endif]-->
+<!--[if gt IE 8]><!-->
+<html class="no-js" lang="en" dir="ltr">
+  <!--<![endif]-->
   <head>
-    <meta charset="utf-8">
-    <title>Airscore</title>
+      <meta charset="utf-8">
+      <title>
+        {% block page_title %}
+          airscore
+        {% endblock %}
+      </title>
+
+      {% block head %}
+      {% endblock %}
+
+      <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+      <link rel="shortcut icon" href="{{static_url_for('static', filename='build/img/favicon.ico') }}">
       <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
       <link rel="stylesheet" href="/static/css/nav_bar_custom.css"  crossorigin="anonymous">
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.0/animate.min.css">
       <link rel="stylesheet" href="/static/css/bootnavbar.css"  crossorigin="anonymous">
 
+      <meta name="description" content="{% block meta_description %}{% endblock %}"/>
+      <meta name="author" content="{% block meta_author %}{% endblock %}" />
+      <!-- Mobile viewport optimized: h5bp.com/viewport -->
+      <meta name="viewport" content="width=device-width" />
 
-    <style media="screen">
-            body {
-        min-height: 75rem;
-        padding-top: 4.5rem;
+      <link rel="stylesheet" type="text/css" href="{{ static_url_for('static', filename='build/main_css.bundle.css') }}"/>
+
+      {% block css %}
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+      {% endblock %}
+
+      <style media="screen">
+        body {
+          min-height: 75rem;
+          padding-top: 4.5rem;
         }
-        </style>
+      </style>
+  </head>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" id="bootnavbar" role="navigation" >
-  <a class="navbar-brand" href="{{ url_for('public.home') }}">
-     airscore
-  </a>
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
-    aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
+  <body class="{% block body_class %}{% endblock %}">
+  {% block body %}
 
-  <div class="collapse navbar-collapse" id="navbarSupportedContent">
-    <ul class="navbar-nav mr-auto">
-      <li class="nav-item active">
-        <a class="nav-link" href="{{ url_for('public.home') }}">Competitions
-          <span class="sr-only">(current)</span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="{{ url_for('public.ladders') }}">Ladders</a>
-      </li>
-            <li class="nav-item">
-        <a class="nav-link" href="{{ url_for('public.pilots') }}">Pilots</a>
-      </li>
-    </ul>
-    {% if current_user and current_user.is_authenticated %}
-    <ul class="navbar-nav text-secondary ">
-          <li class="nav-item">
-        <a class="navbar-text">Admin:</a>
-      </li>
+  {% block nav %}
+    {% include "nav.html" %}
+  {% endblock %}
 
+  <header>{% block header %}{% endblock %}</header>
 
-      <li class="nav-item ">
-        <a class="nav-link text-primary" href="{{ url_for('user.comp_admin') }}">Competitions</a>
-      </li>
-      {% if session.comp_name %}
-
-                     <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown"
-                        aria-haspopup="true" aria-expanded="false">
-                            {{session.comp_name }}
-                    </a>
-
-                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                        <li><a class="dropdown-item" href="{{ url_for('user.comp_settings_admin', compid=session.compid) }}">Competition Settings</a></li>
-                    {% for task in session.tasks %}
-                        <li class="nav-item dropdown">
-                                <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown{{task.task_num}}" role="button" data-toggle="dropdown"
-                                    aria-haspopup="true" aria-expanded="false">
-                                    {{task.num}}
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="navbarDropdown{{task.task_num}}">
-                                    <li><a class="dropdown-item" href="{{ url_for('user.task_admin', taskid=task.task_id) }}">Settings</a></li>
-                                    {% if session.is_admin %}
-                                    <li><a class="dropdown-item" href="{{ url_for('user.track_admin', taskid=task.task_id) }}">Tracks</a></li>
-                                    <li><a class="dropdown-item" href="{{ url_for('user.task_score_admin', taskid=task.task_id) }}">Scores</a></li>
-                                    {% endif %}
-                                </ul>
-                            </li>
-                       {% endfor %}
-                    </ul>
-                </li>
-
-      {% endif %}
-       {% if session.library or (session.comp_name and session.is_admin) %}
-        <li class="nav-item">
-        <a class="nav-link text-primary" href="{{ url_for('user.region_admin') }}">Flying Areas</a>
-      </li>
-        {% endif %}
-       {% if session.is_admin %}
-                    <li class="nav-item">
-        <a class="nav-link text-primary" href="{{ url_for('user.pilot_admin') }}">Pilots</a>
-      </li>
-               {% endif %}
-    </ul>
-
-
-    <ul class="navbar-nav my-auto">
-      <li class="nav-item active">
-        <a class="nav-link" href="{{ url_for('user.members') }}">Logged in as {{ current_user.username }}</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="{{ url_for('public.logout') }}">
-          <i class="fa fa-sign-out"></i>
-        </a>
-      </li>
-    </ul>
-    {% elif form %}
-    <form class="form-inline" id="loginForm" method="POST" action="/" role="login">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-      <div class="input-group mb-2 mr-sm-2">
-        {{ form.username(placeholder="Username", class_="form-control mr-sm-1 my-auto") }} {{ form.password(placeholder="Password",
-        class_="form-control mr-sm-1 my-auto") }}
-        <button class="btn btn-light btn-primary m-auto" type="submit">Login</button>
+  <main role="main">
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %}
+      <div class="row">
+        <div class="col-md-12">
+          {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">
+            <a class="close" title="Close" href="#" data-dismiss="alert"
+              >&times;</a
+            >
+            {{ message }}
+          </div>
+          <!-- end .alert -->
+          {% endfor %}
+        </div>
+        <!-- end col-md -->
       </div>
-    </form>
-    <ul class="navbar-nav my-auto">
-      <li class="nav-item">
-        <a class="nav-link navbar-text" href="{{ url_for('public.register') }}">Create account</a>
-      </li>
-    </ul>
-    {% endif %}
-  </div><!-- /.navbar-collapse -->
-</nav>
-    </head>
-  <body>
-  <div class="godown-60" id="godown"></div>
-{% block content %}
-{% endblock %}
+      <!-- end row -->
+      {% endif %} {% endwith %}
+      <meta name="csrf-token" content="{{ csrf_token() }}">
+      {% if error %}
+      <p><strong> Error: </strong></p>
+      {{error}}
+      {% endif %}
 
+      {% block content %}
+      {% endblock %}
+  </main>
+
+  {% include "footer.html" %}
+
+  {% block js %}
+  {% endblock %}
+    <!-- end scripts -->
+  {% endblock %} <!-- end body -->
   </body>
 </html>

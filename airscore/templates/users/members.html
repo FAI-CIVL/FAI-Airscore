@@ -1,5 +1,9 @@
+{% extends "base.html"%}
 
-{% extends "layout.html" %}
+{% block page_title %}
+  Members
+{% endblock %}
+
 {% block content %}
     <div class="container">
         <h1>Welcome {{ current_user.username }}</h1>

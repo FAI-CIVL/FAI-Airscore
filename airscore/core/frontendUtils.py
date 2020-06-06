@@ -16,6 +16,7 @@ from os import scandir, path, environ
 import requests
 from flask_sse import sse
 from functools import partial
+import json
 
 
 def get_comps():
@@ -302,7 +303,7 @@ def allowed_tracklog_filesize(filesize, size=5):
 
 
 def process_igc(task_id: int, par_id: int, tracklog):
-    from pilot.track import create_igc_filename
+    from pilot.track import create_igc_filename, igc_parsing_config_from_yaml
     from calcUtils import epoch_to_date
     from airspace import AirspaceCheck
     from igc_lib import Flight
@@ -320,7 +321,8 @@ def process_igc(task_id: int, par_id: int, tracklog):
 
     """import track"""
     # track = Track(track_file=fullname, par_id=pilot.par_id)
-    flight = Flight.create_from_file(fullname)
+    FlightParsingConfig = igc_parsing_config_from_yaml(task.igc_config_file)
+    flight = Flight.create_from_file(fullname, config_class=FlightParsingConfig)
     """check result"""
     if not flight:
         error = f"for {pilot.name} - Track is not a valid track file"
@@ -355,18 +357,33 @@ def process_igc(task_id: int, par_id: int, tracklog):
     return data, None
 
 
-def save_igc_background(task_id: int, par_id: int, tracklog, user):
+def save_igc_background(task_id: int, par_id: int, tracklog, user, check_g_record=False):
     from task import Task
-    from pilot.track import create_igc_filename
+    from pilot.track import create_igc_filename, validate_G_record
     from pilot.flightresult import FlightResult
 
     pilot = FlightResult.read(par_id, task_id)
+    print = partial(print_to_sse, id=par_id, channel=user)
     if pilot.name:
         task = Task.read(task_id)
         filename, fullname = create_igc_filename(task.file_path, task.date, pilot.name)
         tracklog.save(fullname)
-        sse.publish({'message': f'IGC file saved: {fullname.split("/")[-1]}', 'id': par_id}, channel=user, type='info',
-                    retry=30)
+        print('|open_modal')
+        print('***************START*******************')
+        if check_g_record:
+            print('Checking G-Record...')
+            validation = validate_G_record(fullname)
+            if validation == 'FAILED':
+                print('G-Record not valid')
+                data = {'par_id': pilot.par_id, 'track_id': pilot.track_id, 'Result': ''}
+                print(json.dumps(data) + '|g_record_fail')
+                return None, None
+            if validation == 'ERROR':
+                print('Error trying to validate G-Record')
+                return None, None
+            if validation == 'PASSED':
+                print('G-Record is valid')
+        print(f'IGC file saved: {fullname.split("/")[-1]}')
     else:
         return None, None
 
@@ -374,6 +391,7 @@ def save_igc_background(task_id: int, par_id: int, tracklog, user):
 
 
 def process_igc_background(task_id: int, par_id: int, filename, full_file_name, user):
+    from track import igc_parsing_config_from_yaml
     from calcUtils import epoch_to_date
     from pilot.flightresult import FlightResult
     from airspace import AirspaceCheck
@@ -383,17 +401,24 @@ def process_igc_background(task_id: int, par_id: int, filename, full_file_name, 
     pilot = FlightResult.read(par_id, task_id)
     task = Task.read(task_id)
     print = partial(print_to_sse, id=par_id, channel=user)
-    print('|open_modal')
-    print('***************START*******************')
+
     """import track"""
     # pilot.track = Track(track_file=filename, par_id=pilot.par_id)
-    flight = Flight.create_from_file(full_file_name)
+    FlightParsingConfig = igc_parsing_config_from_yaml(task.igc_config_file)
+    flight = Flight.create_from_file(full_file_name, config_class=FlightParsingConfig)
+    data = {'par_id': pilot.par_id, 'track_id': pilot.track_id, 'Result': 'Not Yet Processed'}
     """check result"""
     if not flight:
         print(f"for {pilot.name} - Track is not a valid track file")
+        print(json.dumps(data) + '|result')
+        return None
+    if not flight.valid:
+        print(f'IGC does not meet quality standard set by igc parsing config. Notes:{pilot.flight.notes}')
+        print(json.dumps(data) + '|result')
         return None
     elif not epoch_to_date(flight.date_timestamp) == task.date:
         print(f"for {pilot.name} - Track has a different date from task date")
+        print(json.dumps(data) + '|result')
         return None
     else:
         print(f"pilot {pilot.par_id} associated with track {filename} \n")
@@ -408,7 +433,7 @@ def process_igc_background(task_id: int, par_id: int, filename, full_file_name, 
         """adding track to db"""
         pilot.to_db()
         time = ''
-        data = {'par_id': pilot.par_id, 'track_id': pilot.track_id}
+
         if pilot.goal_time:
             time = sec_to_time(pilot.ESS_time - pilot.SSS_time)
         if pilot.result_type == 'goal':
@@ -445,7 +470,7 @@ def unzip_igc(zipfile):
     return tracksdir
 
 
-def process_igc_from_zip(taskid: int, tracksdir, user):
+def process_igc_from_zip(taskid: int, tracksdir, user, check_g_record=False):
     """function split for background use.
     tracksdir is a temp dir that will be deleted at the end of the function"""
     from task import Task
@@ -464,7 +489,7 @@ def process_igc_from_zip(taskid: int, tracksdir, user):
         return None
 
     """associate tracks to pilots and import"""
-    assign_and_import_tracks(tracks, task, user=user, print=print)
+    assign_and_import_tracks(tracks, task, user=user, check_g_record=check_g_record, print=print)
     rmtree(tracksdir)
     print('|reload')
     return 'Success'

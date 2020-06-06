@@ -412,7 +412,7 @@ class FSDB(object):
                     pil_r = ET.SubElement(pil_p, 'FsResult')
                     if not (pil.result_type in ['mindist', 'min_dist']):
                         fd_attr = {'distance': km(pil.distance_flown),
-                                   'bonus_distance': km(pil.total_distance),
+                                   'bonus_distance': km(pil.distance),
                                    # ?? seems 0 for PG and more than dist for HG
                                    'started_ss': '' if not pil.real_start_time else get_isotime(t.date,
                                                                                                 pil.real_start_time,
@@ -483,9 +483,8 @@ class FSDB(object):
                               'altitude_bonus_seconds': 0,  # not implemented
                               'altitude_bonus_time': sec_to_time(0).strftime('%H:%M:%S'),  # not implemented
                               'altitude_at_ess': pil.ESS_altitude,
-                              'scored_ss_time': ('' if not pil.ss_time
-                                                 else sec_to_time(pil.ss_time).strftime('%H:%M:%S')),  # ??
-                              'landed_before_stop': pil.landing_time < t.stopped_time
+                              'scored_ss_time': ('' if not pil.ss_time else sec_to_time(pil.ss_time).strftime('%H:%M:%S')),
+                              'landed_before_stop': t.stopped_time and res.landing_time < t.stopped_time
                               }
 
                     for k, v in r_attr.items():
