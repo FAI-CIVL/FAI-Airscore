@@ -214,6 +214,11 @@
         },
                       success: function () {
                            $('#bulkmodal').modal('hide');
+                           $('#zip_modal_message').show();
+                           $('#zip_progress').hide();
+                           $('#zip_spinner').hide();
+                           $('#zip_progress_text').text('');
+                           $('#zip_spinner').html('');
                            {% if not production %}
                            populate_track_admin({{taskid|tojson}});
                            update_track_pilot_stats();
@@ -376,8 +381,6 @@ function initES() {
                 else {
                 update_row($.parseJSON(data.message));
                 }
-
-
     }, false);
 
                     es.addEventListener('g_record_fail', function(event) {
@@ -393,20 +396,13 @@ function initES() {
                                 $('#progress_percentage'+ data.id).hide();
                         data.message.Result = '<button id="TrackUp_noG' + data.id  +'" class="btnupload btn btn-warning mt-3" onclick="choose_file(' + data.id +', true);">Upload IGC ignoring G record</button>'
                         update_row(data.message);
-
-
-
     }, false);
-
-
 
     es.addEventListener('reload', function(event) {
         populate_track_admin({{taskid|tojson}});
         update_track_pilot_stats();
 
     }, false);
-
-
 
 <!--    es.addEventListener('error', function(event) {-->
 <!--        alert("Failed to connect to event stream. Is Redis running?");-->
