@@ -1749,7 +1749,7 @@ def write_map_json(task_id):
         if obj.shape == 'line':
             '''manage goal line'''
             goal_line = []
-            ends = get_line(task.turnpoints)
+            ends = get_line(task.turnpoints, tolerance, task.formula.min_tolerance)
             goal_line.append(tuple([ends[0].lat, ends[0].lon]))
             goal_line.append(tuple([ends[1].lat, ends[1].lon]))
 
