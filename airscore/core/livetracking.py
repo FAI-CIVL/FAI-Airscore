@@ -611,8 +611,7 @@ def check_livetrack(pilot, task, airspace_obj=None):
                                                 task.turnpoints[tp.pointer], distances2go)
                 # print(f'time: {next_fix.rawtime} | fix: {tp.name} | Simplified Distance used')
 
-            result.distance_flown = max(result.distance_flown, fix_dist_flown,
-                                        task.partial_distance[tp.last_made_index])
+            result.distance_flown = max(result.distance_flown, fix_dist_flown)
 
         '''Leading coefficient
         LC = taskTime(i)*(bestDistToESS(i-1)^2 - bestDistToESS(i)^2 )

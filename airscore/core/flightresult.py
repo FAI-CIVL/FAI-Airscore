@@ -574,8 +574,10 @@ class FlightResult(object):
                 if fix_dist_flown > result.distance_flown:
                     '''time of trackpoint with shortest distance to ESS'''
                     result.best_distance_time = next_fix.rawtime
-                    '''updating shortest distance to ESS'''
-                    result.distance_flown = max(fix_dist_flown, task.partial_distance[tp.last_made_index])
+                    '''updating best distance flown'''
+                    # result.distance_flown = max(fix_dist_flown,
+                    #                             task.partial_distance[tp.last_made_index])  # old approach
+                    result.distance_flown = fix_dist_flown
 
                 '''stopped task
                 ∀p : p ∈ PilotsLandedBeforeGoal :
