@@ -106,11 +106,11 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None, check_g_rec
                     dropping pilot from list and creating track obj"""
                     # print(f"Found a pilot to associate with file. dropping {pilot.name} from non scored list")
                     pilot_list[:] = [d for d in pilot_list if d.par_id != pilot.par_id]
-                    mytrack = Track.read_file(filename=file, config=FlightParsingConfig)
+                    mytrack = Track.read_file(filename=file, config=FlightParsingConfig, print=print)
         else:
             """We add track if we find a pilot in database
             that has not yet been scored"""
-            mytrack = Track.read_file(filename=file, config=FlightParsingConfig)
+            mytrack = Track.read_file(filename=file, config=FlightParsingConfig, print=print)
             if get_pil_track(mytrack.par_id, task_id):
                 """pilot has already been scored"""
                 print(f"Pilot with ID {mytrack.par_id} has already a valid track for task with ID {task_id}")
