@@ -908,6 +908,19 @@ class Task(object):
                 wpt.partial_distance = self.partial_distance[idx]
             db.session.commit()
 
+    def delete_task_distance(self):
+        from db_tables import TblTask as T, TblTaskWaypoint as W
+        with Database() as db:
+            '''remove optimised and total distance from task'''
+            q = db.session.query(T)
+            t = q.get(self.task_id)
+            t.distance = None
+            t.opt_dist = None
+            t.SS_distance = None
+            t.opt_dist_to_ESS = None
+            t.opt_dist_to_SS = None
+            db.session.commit()
+
     def update_task_info(self):
         # t = aliased(TblTask)
 

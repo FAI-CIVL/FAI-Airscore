@@ -95,15 +95,17 @@ def get_task_list(comp):
     max_task_num = 0
     last_region = 0
     for task in tasks:
-        taskid = task['task_id']
         tasknum = task['task_num']
         if int(tasknum) > max_task_num:
             max_task_num = int(tasknum)
             last_region = task['reg_id']
-        # if task['task_name'] is None or task['task_name'] == '':
-        #     task['task_name'] = f'Task {tasknum}'
         task['num'] = f"Task {tasknum}"
-        # task['link'] = f'<a href="/users/task_admin/{taskid}">Task {tasknum}</a>'
+        task['ready_to_score'] = False
+        # check if we have all we need to be able to accept tracks and score:
+        if (task['opt_dist'] and task['window_open_time'] and task['window_close_time'] and task['start_time'] and
+            task['start_close_time'] and task['task_deadline']):
+            task['ready_to_score'] = True
+
         task['opt_dist'] = 0 if not task['opt_dist'] else round(task['opt_dist'] / 1000, 2)
         task['opt_dist'] = f"{task['opt_dist']} km"
         if task['comment'] is None:
@@ -115,7 +117,7 @@ def get_task_list(comp):
 def get_task_turnpoints(task):
     turnpoints = task.read_turnpoints()
     max_n = 0
-    total_dist = 0
+    total_dist = ''
     for tp in turnpoints:
         tp['original_type'] = tp['type']
         tp['partial_distance'] = '' if not tp['partial_distance'] else round(tp['partial_distance'] / 1000, 2)
@@ -136,7 +138,7 @@ def get_task_turnpoints(task):
                 tp['type'] = 'Goal Line'
         else:
             tp['type'] = tp['type'].capitalize()
-    if total_dist == '':
+    if task.opt_dist is None or total_dist == '':
         total_dist = 'Distance not yet calculated'
     else:
         total_dist = str(total_dist) + "km"
