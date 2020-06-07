@@ -418,7 +418,7 @@
                  $('#import').hide() }
                $("#turnpoints tbody").remove();
                var content = '';
-
+               turnpoints = json;
                if(json.map != null){
                   $('#map').contents().find('body').html(json.map);
                }
