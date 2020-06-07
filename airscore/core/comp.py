@@ -324,7 +324,9 @@ class Comp(object):
         with Database() as db:
             try:
                 results = db.session.query(T.task_id, T.reg_id, T.region_name, T.task_num, T.task_name, T.date,
-                                           T.opt_dist, T.comment).filter(T.comp_id == self.comp_id).all()
+                                           T.opt_dist, T.comment, T.window_open_time, T.task_deadline,
+                                           T.window_close_time, T.start_time, T.start_close_time)\
+                    .filter(T.comp_id == self.comp_id).all()
                 if results:
                     results = [row._asdict() for row in results]
                 return results
