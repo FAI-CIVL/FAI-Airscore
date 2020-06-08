@@ -76,6 +76,7 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None, check_g_rec
     task_id = task.id
     comp_id = task.comp_id
     task_date = task.date
+    track_counter = 0
     """checking if comp requires a regisration.
     Then we create a list of registered pilots to check against tracks filename.
     This should be much faster than checking against all pilots in database through a query"""
@@ -124,6 +125,8 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None, check_g_rec
         else:
             """pilot is registered and has no valid track yet
             moving file to correct folder and adding to the list of valid tracks"""
+            track_counter += 1
+            print(f"Track {track_counter}|counter")
             mytrack.task_id = task_id
             filename_and_path = mytrack.copy_track_file(task_path=track_path, pname=full_name)
             # print(f"pilot {mytrack.par_id} associated with track {mytrack.filename}")

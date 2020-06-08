@@ -352,6 +352,12 @@ function initES() {
 
     }, false);
 
+                es.addEventListener('counter', function(event) {
+        var data = JSON.parse(event.data);
+        $('#ProcessModalTitle').text('Tracklog Processing. ' + data.message);
+
+    }, false);
+
                 es.addEventListener('info', function(event) {
         var data = JSON.parse(event.data);
         $('#process_text').append(data.message + "<br/>");
