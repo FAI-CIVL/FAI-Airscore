@@ -72,7 +72,6 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None, check_g_rec
     import json
 
     pilot_list = []
-
     task_id = task.id
     comp_id = task.comp_id
     task_date = task.date
@@ -90,7 +89,6 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None, check_g_rec
         print(f"We have {len(files)} tracks to associate")
     track_path = task.file_path
     FlightParsingConfig = igc_parsing_config_from_yaml(task.igc_config_file)
-
     # print("found {} tracks \n".format(len(files)))
     for file in files:
         mytrack = None
@@ -166,13 +164,15 @@ def verify_and_import_track(pilot, task, print=print):
         airspace = AirspaceCheck.from_task(task)
     else:
         airspace = None
-    pilot.result = FlightResult.check_flight(pilot.track.flight, task, airspace_obj=airspace,
-                                             print=print)  # check flight against task
+    '''check flight against task'''
+    pilot.result = FlightResult.check_flight(pilot.track.flight, task, airspace_obj=airspace, print=print)
+    '''create map file'''
+    pilot.save_tracklog_map_file(task)
+    '''save to database'''
     pilot.to_db()
     if pilot.notifications:
         print(str(pilot.notifications))
     print('***************END****************')
-
     return pilot.result
 
 
@@ -182,7 +182,6 @@ def find_pilot(name):
     Not sure about best strategy to retrieve pilots ID from name and FAI n.
     """
     from db_tables import PilotView as P
-
     '''Gets name from string. check it is not integer'''
     if type(name) is int:
         '''name is a id number'''
@@ -194,7 +193,6 @@ def find_pilot(name):
         '''check if we have fai n. in names'''
         if names[0].isdigit():
             fai = names.pop(0)
-
     print("Trying with name... \n")
     with Database() as db:
         t = db.session.query(P.pil_id)
@@ -219,7 +217,6 @@ def find_pilot(name):
 def get_pil_track(par_id: int, task_id: int):
     """Get pilot result in a given task"""
     from db_tables import TblTaskResult as R
-
     with Database() as db:
         track_id = db.session.query(R.track_id).filter(
             and_(R.par_id == par_id, R.task_id == task_id)).scalar()
@@ -229,32 +226,34 @@ def get_pil_track(par_id: int, task_id: int):
     return track_id
 
 
-def read_tracklog_map_result_file(track_id: int, task_id: int):
+def read_tracklog_map_result_file(par_id: int, task_id: int):
     """create task and track objects"""
     import jsonpickle
     from pathlib import Path
-
-    res_path = f"{MAPOBJDIR}tracks/{task_id}/"
-    filename = 'result_' + str(track_id) + '.track'
+    res_path = Path(MAPOBJDIR, 'tracks', str(task_id))
+    filename = f'{par_id}.track'
     fullname = Path(res_path, filename)
     # if the file does not exist
     if not Path(fullname).is_file():
-        create_tracklog_map_result_file(track_id, task_id)
-
+        create_tracklog_map_result_file(par_id, task_id)
     with open(fullname, 'r') as f:
         return jsonpickle.decode(f.read())
 
 
-def create_tracklog_map_result_file(track_id: int, task_id: int):
+def create_tracklog_map_result_file(par_id: int, task_id: int):
     import flightresult
     from task import Task
-    from track import Track
-
+    from pilot import Pilot
+    from igc_lib import Flight
+    from airspace import AirspaceCheck
     task = Task.read(task_id)
-    track = Track.read_db(track_id)
-    # lib = task.formula.get_lib()
-    result = flightresult.FlightResult.check_flight(track.flight, task)
-    result.save_tracklog_map_result_file(result.to_geojson_result(track, task), str(track_id), task_id)
+    airspace = None if not task.airspace_check else AirspaceCheck.from_task(task)
+    pilot = Pilot.read(par_id, task_id)
+    file = path.join(task.file_path, pilot.track.track_file)
+    '''load track file'''
+    pilot.track.flight = Flight.create_from_file(file)
+    pilot.result = flightresult.FlightResult.check_flight(pilot.track.flight, task, airspace)
+    pilot.save_tracklog_map_file(task)
 
 
 def get_task_fullpath(task_id: int):
@@ -366,107 +365,3 @@ def get_pilot_from_list(filename, pilots: list):
                                                            .replace("'", ' ').lower().split()))
                         return pilot, filename
     return None, None
-
-
-# def assign_tracks(task, file_dir, pilots_list, source):
-#     """ This function will look for tracks in giver dir or in task_path, and tries to associate tracks to participants.
-#         For the moment we give for granted pilots need to register, as for this stage only event with registration
-#         are possible.
-#
-#         AirScore will permit to retrieve tracks from different sources and repositories. We need to be able
-#         to recognise pilot from filename.
-#     """
-#     from pathlib import Path
-#     from igc_lib import Flight
-#     import shutil
-#
-#     # if not file_dir:
-#     #     file_dir = task.file_path
-#     if len(listdir(file_dir)) == 0:
-#         ''' directory is empty'''
-#         print(f'directory {file_dir} is empty')
-#         return None
-#
-#     for file in listdir(file_dir):
-#         filename = fsdecode(file)  # filename is without path
-#         file_ext = Path(filename).suffix[1:].lower()
-#         if filename.startswith((".", "_")) or file_ext not in track_formats:
-#             """file is not a valid track"""
-#             print(f"Not a valid filename: {filename}")
-#             pass
-#
-#         # TODO manage track file source (comp attr?)
-#         if source:
-#             pilot, idx = source.get_pilot_from_list(filename, pilots_list)
-#         else:
-#             pilot, idx = get_pilot_from_list(filename, pilots_list)
-#
-#         if pilot:
-#             try:
-#                 '''move track to task folder'''
-#                 file_path = task.file_path
-#                 full_path = path.join(file_path, filename)
-#                 shutil.move(filename, full_path)
-#                 '''add flight'''
-#                 pilot.track.flight = Flight.create_from_file(full_path)
-#                 '''check flight'''
-#                 pilot.result = verify_track(pilot.track, task)
-#                 '''remove pilot from list'''
-#                 pilots_list.pop(idx)
-#             except IOError:
-#                 print(f"Error assigning track {filename} to pilot \n")
-
-
-# def get_tracks_from_source(task, source=None):
-#     """ Accept tracks for unscored pilots of the task
-#         - Gets unscored pilots list and, if is not null:
-#         - Gets tracks from server source to a temporary folder
-#         - assigns tracks to pilots
-#         - imports assigned track to correct task folder and, if needed, changes filename"""
-#     # TODO function that loads existing results before, so we can score directly after?
-#     from tempfile import TemporaryDirectory
-#     import importlib
-#
-#     ''' Get unscored pilots list'''
-#     pilots_list = get_unscored_pilots(task.task_id)
-#     if len(pilots_list) == 0:
-#         print(f"No pilots without tracks found registered to the comp...")
-#         return
-#
-#     ''' load source lib'''
-#     if source is None:
-#         if task.track_source not in track_sources:
-#             print(f"We do not have any zipfile source.")
-#             return
-#         else:
-#             source = importlib.import_module('tracksources.' + task.track_source)
-#
-#     '''get zipfile'''
-#     with TemporaryDirectory() as archive_dir:
-#         zipfile = source.get_zipfile(task, archive_dir)
-#
-#         ''' Get tracks from zipfile to a temporary folder'''
-#         with TemporaryDirectory() as temp_dir:
-#             extract_tracks(zipfile, temp_dir)
-#             assign_tracks(task, temp_dir, pilots_list, source)
-#
-#
-# def get_tracks_from_zipfile(task, zipfile):
-#     """ Accept tracks for unscored pilots of the task
-#         - Gets unscored pilots list and, if is not null:
-#         - Gets tracks from zipfile to a temporary folder
-#         - assigns tracks to pilots
-#         - imports assigned track to correct task folder and, if needed, changes filename"""
-#     # TODO function that loads existing results before, so we can score directly after?
-#     from tempfile import TemporaryDirectory
-#
-#     ''' Get unscored pilots list'''
-#     pilots_list = get_unscored_pilots(task.task_id)
-#     if len(pilots_list) == 0:
-#         print(f"No pilots without tracks found registered to the comp...")
-#         return
-#
-#     ''' Get tracks from zipfile to a temporary folder'''
-#     with TemporaryDirectory() as temp_dir:
-#         extract_tracks(zipfile, temp_dir)
-#         assign_tracks(task, temp_dir, pilots_list, task.track_source)

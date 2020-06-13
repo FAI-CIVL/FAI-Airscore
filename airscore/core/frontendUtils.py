@@ -242,9 +242,10 @@ def get_pilot_list_for_track_management(taskid):
         else:
             data['Result'] = pilot['result_type'].upper()
         if pilot['track_file']:  # if there is a track, make the result a link to the map
-            trackid = data['track_id']
+            # trackid = data['track_id']
+            parid = data['par_id']
             result = data['Result']
-            data['Result'] = f'<a href="/map/{trackid}-{taskid}">{result}</a>'
+            data['Result'] = f'<a href="/map/{parid}-{taskid}">{result}</a>'
         all_data.append(data)
     return all_data
 
@@ -358,8 +359,9 @@ def process_igc(task_id, par_id, tracklog):
             airspace = None
         pilot.result = FlightResult.check_flight(pilot.track.flight, task, airspace_obj=airspace)
         print(f"track verified with task {task.task_id}\n")
+        '''create map file'''
+        pilot.save_tracklog_map_file(task)
         """adding track to db"""
-
         pilot.to_db()
         time = ''
         data = {'par_id': pilot.par_id, 'track_id': pilot.track_id}
@@ -370,9 +372,10 @@ def process_igc(task_id, par_id, tracklog):
         elif pilot.result.result_type == 'lo':
             data['Result'] = f"LO {round(pilot.result.distance / 1000, 2)}"
         if pilot.track_id:  # if there is a track, make the result a link to the map
-            trackid = data['track_id']
+            # trackid = data['track_id']
+            parid = data['par_id']
             result = data['Result']
-            data['Result'] = f'<a href="/map/{trackid}-{task.task_id}">{result}</a>'
+            data['Result'] = f'<a href="/map/{parid}-{task.task_id}">{result}</a>'
     return data, None
 
 
@@ -447,6 +450,8 @@ def process_igc_background(task_id, par_id, filename, full_file_name, user):
             airspace = None
         pilot.result = FlightResult.check_flight(pilot.track.flight, task, airspace_obj=airspace, print=print)
         print(f"track verified with task {task.task_id}\n")
+        '''create map file'''
+        pilot.save_tracklog_map_file(task)
         """adding track to db"""
         pilot.to_db()
         time = ''
@@ -458,9 +463,10 @@ def process_igc_background(task_id, par_id, filename, full_file_name, user):
         elif pilot.result.result_type == 'lo':
             data['Result'] = f"LO {round(pilot.result.distance / 1000, 2)}"
         if pilot.track_id:  # if there is a track, make the result a link to the map
-            trackid = data['track_id']
+            # trackid = data['track_id']
+            parid = data['par_id']
             result = data['Result']
-            data['Result'] = f'<a href="/map/{trackid}-{task.task_id}">{result}</a>'
+            data['Result'] = f'<a href="/map/{parid}-{task.task_id}">{result}</a>'
         print(data['Result'])
         print(json.dumps(data) + '|result')
         print('***************END****************')

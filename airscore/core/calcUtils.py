@@ -169,7 +169,7 @@ def sec_to_time(sec):
     return time(hour=h, minute=m, second=s)
 
 
-def sec_to_string(rawtime, offset=0, hours=True, seconds=True):
+def sec_to_string(rawtime: int, offset: int = 0, hours=True, seconds=True):
     sec = int(rawtime + offset)
     m, s = divmod(sec, 60)
     if hours:

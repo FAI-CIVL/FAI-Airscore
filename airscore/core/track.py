@@ -79,15 +79,6 @@ class Track(object):
         else:
             return None
 
-    # @property
-    # def notifications(self):
-    #     """flight notifications list"""
-    #     from notification import Notification
-    #     if self.flight:
-    #         return [Notification(notification_type='track', comment=i) for i in self.flight.notes]
-    #     else:
-    #         return []
-
     @property
     def comment(self):
         if len(self.notifications) > 0:
@@ -205,7 +196,6 @@ class Track(object):
         from db_tables import TrackObjectView as T
 
         track = cls(track_id=track_id)
-
         """Read general info about the track"""
         with Database() as db:
             # get track details.
@@ -218,7 +208,6 @@ class Track(object):
                 track.flight = Flight.create_from_file(path.join(full_path, track.track_file))
             except SQLAlchemyError:
                 print(f'Track Query Error: no result found')
-
         return track
 
     @staticmethod
@@ -309,7 +298,6 @@ def validate_G_record(igc_filename):
                 return r.json()['result']
             else:
                 return 'ERROR'
-
     except IOError:
         print
         "Could not read file:", igc_filename

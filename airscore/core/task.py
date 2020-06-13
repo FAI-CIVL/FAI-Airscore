@@ -36,7 +36,6 @@ from flightresult import verify_all_tracks, adjust_flight_results
 from formula import TaskFormula
 from geo import Geo
 from igc_lib import defaultdict
-from mapUtils import save_all_geojson_files
 from myconn import Database
 from pilot import Pilot, update_all_results
 from result import TaskResult, create_json_file
@@ -822,7 +821,7 @@ class Task(object):
         print(f"updating database with new results...")
         update_all_results(self.task_id, self.pilots)
         '''save map files if needed'''
-        save_all_geojson_files(self)
+        # save_all_geojson_files(self)  # done during verify_all_tracks
         '''process results with scoring system'''
         lib.process_results(self)
 
@@ -846,8 +845,9 @@ class Task(object):
 
     def get_results(self, lib=None):
         """ Loads all Pilot obj. into Task obj."""
-        from db_tables import FlightResultView as F, TblNotification as N
+        from db_tables import FlightResultView as F, TblNotification as N, TblTrackWaypoint as W
         from notification import Notification
+        from flightresult import WaypointAchieved
         from sqlalchemy.exc import SQLAlchemyError
         from pilot import Pilot
         pilots = []
@@ -855,6 +855,7 @@ class Task(object):
             try:
                 results = db.session.query(F).filter(F.task_id == self.task_id).all()
                 notifications = db.session.query(N).filter(N.track_id.in_([p.track_id for p in results])).all()
+                achieved = db.session.query(W).filter(W.track_id.in_([p.track_id for p in results])).all()
                 for row in results:
                     pilot = Pilot.create(task_id=self.task_id)
                     db.populate_obj(pilot.result, row)
@@ -868,6 +869,9 @@ class Task(object):
                             pilot.track.notifications.append(n)
                         else:
                             pilot.result.notifications.append(n)
+                    for el in [{k: getattr(w, k) for k in ['trw_id', 'wpt_id', 'name', 'rawtime', 'lat', 'lon', 'altitude']}
+                               for w in achieved if w.track_id == pilot.track_id]:
+                        pilot.result.waypoints_achieved.append(WaypointAchieved(**el))
                     if self.stopped_time and pilot.result.stopped_distance:
                         pilot.result.still_flying_at_deadline = True
                     pilots.append(pilot)
@@ -1663,6 +1667,7 @@ class Task(object):
 
 def delete_task(task_id, files=False, session=None):
     from db_tables import TblTaskWaypoint as W
+    from db_tables import TblTrackWaypoint as TW
     from db_tables import TblTask as T
     from db_tables import TblTaskResult as R
     from db_tables import TblNotification as N
@@ -1702,6 +1707,7 @@ def delete_task(task_id, files=False, session=None):
             tracks = db.session.query(R.track_id).filter(R.task_id == task_id)
             if tracks:
                 track_list = [t.track_id for t in tracks]
+                db.session.query(TW).filter(TW.track_id.in_(track_list)).delete(synchronize_session=False)
                 db.session.query(N).filter(N.track_id.in_(track_list)).delete(synchronize_session=False)
                 db.session.query(R).filter(R.task_id == task_id).delete(synchronize_session=False)
             '''delete db entries: results, waypoints, task'''
@@ -1733,24 +1739,29 @@ def get_map_json(task_id):
         goal_line = data['goal_line']
         tolerance = data['tolerance']
         bbox = data['bbox']
-    return task_coords, turnpoints, short_route, goal_line, tolerance, bbox
+        offset = None if 'offset' not in data.keys() else data['offset']
+        airspace = None if 'airspace' not in data.keys() else data['airspace']
+    return task_coords, turnpoints, short_route, goal_line, tolerance, bbox, offset, airspace
 
 
 def write_map_json(task_id):
-    import os
     from mapUtils import get_route_bbox
+    from Defines import AIRSPACEMAPDIR
     from geopy.distance import GreatCircleDistance as gdist
+    from airspaceUtils import create_airspace_map_check_files
 
-    task_file = Path(MAPOBJDIR + 'tasks/' + str(task_id) + '.task')
-
-    if not os.path.isdir(MAPOBJDIR + 'tasks/'):
-        os.makedirs(MAPOBJDIR + 'tasks/')
+    task_file = str(task_id) + '.task'
+    file_path = Path(MAPOBJDIR, 'tasks')
+    """check if directory already exists"""
+    if not file_path.is_dir():
+        file_path.mkdir(mode=0o755)
     task_coords = []
     turnpoints = []
     short_route = []
     goal_line = None
     task = Task.read(task_id)
     tolerance = task.tolerance
+    offset = task.time_offset
 
     for idx, obj in enumerate(task.turnpoints):
         task_coords.append({
@@ -1785,9 +1796,16 @@ def write_map_json(task_id):
     for obj in task.optimised_turnpoints:
         short_route.append(tuple([obj.lat, obj.lon]))
 
-    with open(task_file, 'w') as f:
+    airspace_file = None if not task.airspace_check else task.openair_file
+    if airspace_file:
+        map_file = Path(airspace_file).stem + '.map'
+        if not Path(AIRSPACEMAPDIR, map_file).is_file():
+            create_airspace_map_check_files(task.openair_file)
+
+    with open(Path(file_path, task_file), 'w') as f:
         f.write(jsonpickle.dumps({'task_coords': task_coords, 'turnpoints': turnpoints, 'short_route': short_route,
-                                  'goal_line': goal_line, 'tolerance': tolerance, 'bbox': get_route_bbox(task)}))
+                                  'goal_line': goal_line, 'tolerance': tolerance, 'bbox': get_route_bbox(task),
+                                  'offset': offset, 'airspace': airspace_file}))
 
 
 def get_task_json_filename(task_id):
