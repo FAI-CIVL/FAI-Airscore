@@ -14,25 +14,25 @@
         {% endblock %}
       </title>
 
+      <meta name="description" content="{% block meta_description %}{% endblock %}"/>
+      <meta name="author" content="{% block meta_author %}{% endblock %}" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+      <meta name="csrf-token" content="{{ csrf_token() }}">
+
+      <link rel="shortcut icon" href="{{static_url_for('static', filename='build/img/favicon.ico') }}">
+
       {% block head %}
       {% endblock %}
 
-      <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-      <link rel="shortcut icon" href="{{static_url_for('static', filename='build/img/favicon.ico') }}">
+      <!--  CSS    -->
       <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
       <link rel="stylesheet" href="/static/css/nav_bar_custom.css"  crossorigin="anonymous">
-      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.0/animate.min.css">
       <link rel="stylesheet" href="/static/css/bootnavbar.css"  crossorigin="anonymous">
-
-      <meta name="description" content="{% block meta_description %}{% endblock %}"/>
-      <meta name="author" content="{% block meta_author %}{% endblock %}" />
-      <!-- Mobile viewport optimized: h5bp.com/viewport -->
-      <meta name="viewport" content="width=device-width" />
-
-      <link rel="stylesheet" type="text/css" href="{{ static_url_for('static', filename='build/main_css.bundle.css') }}"/>
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.0/animate.min.css">
+      <!-- <link rel="stylesheet" type="text/css" href="{{ static_url_for('static', filename='build/main_css.bundle.css') }}"/>-->
+      <link rel="stylesheet" type="text/css" href="{{ static_url_for('static', filename='css/frontend.css') }}"/>
 
       {% block css %}
-        <meta name="csrf-token" content="{{ csrf_token() }}">
       {% endblock %}
 
       <style media="screen">
@@ -50,9 +50,12 @@
     {% include "nav.html" %}
   {% endblock %}
 
-  <header>{% block header %}{% endblock %}</header>
-
-  <main role="main">
+  <main role="main" style="width: 95%; margin: auto">
+      <div class='nav-back'>
+      {% block back %}
+      {% endblock %}
+      </div>
+      <header class="h2">{% block header %}{% endblock %}</header>
       {% with messages = get_flashed_messages(with_categories=true) %} {% if
       messages %}
       <div class="row">
@@ -71,7 +74,6 @@
       </div>
       <!-- end row -->
       {% endif %} {% endwith %}
-      <meta name="csrf-token" content="{{ csrf_token() }}">
       {% if error %}
       <p><strong> Error: </strong></p>
       {{error}}
@@ -79,9 +81,16 @@
 
       {% block content %}
       {% endblock %}
+
+      <div class='nav-back'>
+      {{ self.back() }}
+      </div>
+
   </main>
 
   {% include "footer.html" %}
+
+  {% include "js.html" %}
 
   {% block js %}
   {% endblock %}

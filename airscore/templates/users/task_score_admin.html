@@ -1,4 +1,4 @@
-{% extends "base.html"%}
+{% extends "admin.html"%}
 
 {% block page_title %}
   Task Scoring Admin
@@ -253,8 +253,7 @@
 {% endblock %}
 
 {% block js %}
-{% if user_is_admin %}
-{% include "js.html" %}
+    {% if user_is_admin %}
     <script type="text/javascript" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
     <script type="text/javascript" src="/static/js/pop_task_score_admin.js"></script>
     <script type="text/javascript">populate_task_scores({{taskid}},{{active_file|tojson}})</script>

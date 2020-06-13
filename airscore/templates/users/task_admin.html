@@ -1,7 +1,11 @@
-{% extends "base.html"%}
+{% extends "admin.html"%}
 
 {% block page_title %}
   Task Result
+{% endblock %}
+
+{% block css %}
+   <link rel="stylesheet" type="text/css" href="{{ static_url_for('static', filename='build/main_css.bundle.css') }}"/>
 {% endblock %}
 
 {% block content %}
@@ -371,11 +375,10 @@
       {% endif%}
 {% endblock %}
 {% block js %}
-{% include "js.html" %}
-<script src="{{ static_url_for('static', filename='js/display-if.min.js') }}"></script>
-<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.ui.widget.js') }}"></script>
-<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.iframe-transport.js') }}"></script>
-<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.fileupload.js') }}"></script>
+   <script src="{{ static_url_for('static', filename='js/display-if.min.js') }}"></script>
+   <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.ui.widget.js') }}"></script>
+   <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.iframe-transport.js') }}"></script>
+   <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.fileupload.js') }}"></script>
 <script type="text/javascript">
    var csrftoken = $('meta[name=csrf-token]').attr('content');
       $.ajaxSetup({

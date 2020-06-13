@@ -1,4 +1,4 @@
-{% extends "base.html"%}
+{% extends "admin.html"%}
 
 {% block page_title %}
   Track Management
@@ -118,9 +118,9 @@
 
   {% endif%}
 {% endblock %}
- {% if user_is_admin %}
+
+{% if user_is_admin %}
 {% block js %}
-{% include "js.html" %}
     <script src="{{ static_url_for('static', filename='js/jquery.initialize.js') }}"></script>
     <script type="text/javascript" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
     <script src="{{ static_url_for('static', filename='js/pop_track_admin.js') }}"></script>
