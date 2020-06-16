@@ -213,7 +213,6 @@ def result_to_geojson(result, task, flight, second_interval=5):
     """Dumps the flight to geojson format used for mapping.
     Contains tracklog split into pre SSS, pre Goal and post goal parts, thermals, takeoff/landing,
     result object, waypoints achieved, and bounds
-
     second_interval = resolution of tracklog. default one point every 5 seconds. regardless it will
                         keep points where waypoints were achieved.
     returns the Json string."""
@@ -225,12 +224,13 @@ def result_to_geojson(result, task, flight, second_interval=5):
     features = []
     takeoff_landing = []
     thermals = []
+    infringements = []
     point = namedtuple('fix', 'lat lon')
 
-    min_lat = track.flight.fixes[0].lat
-    min_lon = track.flight.fixes[0].lon
-    max_lat = track.flight.fixes[0].lat
-    max_lon = track.flight.fixes[0].lon
+    min_lat = flight.fixes[0].lat
+    min_lon = flight.fixes[0].lon
+    max_lat = flight.fixes[0].lat
+    max_lon = flight.fixes[0].lon
     bbox = [[min_lat, min_lon], [max_lat, max_lon]]
 
     takeoff = Point((flight.takeoff_fix.lon, flight.takeoff_fix.lat))

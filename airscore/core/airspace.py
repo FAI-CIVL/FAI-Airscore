@@ -296,10 +296,8 @@ class AirspaceCheck(object):
 
 
 def get_airspace_check_parameters(task_id):
-    from db.conn import db_session
     from db.tables import TaskAirspaceCheckView as A
 
-    # with db_session() as db:
     q = A.get_by_id(task_id)
     if q.airspace_check:
         '''calculate parameters'''

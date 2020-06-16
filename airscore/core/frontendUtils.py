@@ -10,9 +10,9 @@ from pathlib import Path
 import jsonpickle
 from Defines import MAPOBJDIR, IGCPARSINGCONFIG, track_formats
 from map import make_map
-from sqlalchemy.exc import SQLAlchemyError
 from calcUtils import sec_to_time
 from os import scandir, path, environ
+from werkzeug.utils import secure_filename
 import requests
 from flask_sse import sse
 from functools import partial
@@ -24,8 +24,8 @@ def get_comps():
 
     with db_session() as db:
         comps = (db.query(c.comp_id, c.comp_name, c.comp_site,
-                                  c.comp_class, c.sanction, c.comp_type, c.date_from,
-                                  c.date_to, func.count(TblTask.task_id))
+                          c.comp_class, c.sanction, c.comp_type, c.date_from,
+                          c.date_to, func.count(TblTask.task_id))
                  .outerjoin(TblTask, c.comp_id == TblTask.comp_id)
                  .group_by(c.comp_id))
 
@@ -69,8 +69,8 @@ def get_admin_comps(current_userid):
     ca = aliased(TblCompAuth)
     with db_session() as db:
         comps = (db.query(c.comp_id, c.comp_name, c.comp_site,
-                                  c.date_from,
-                                  c.date_to, func.count(TblTask.task_id), ca.user_id)
+                          c.date_from,
+                          c.date_to, func.count(TblTask.task_id), ca.user_id)
                  .outerjoin(TblTask, c.comp_id == TblTask.comp_id).outerjoin(ca)
                  .filter(ca.user_auth == 'owner')
                  .group_by(c.comp_id))
@@ -101,8 +101,8 @@ def get_task_list(comp):
         task['num'] = f"Task {tasknum}"
         task['ready_to_score'] = False
         # check if we have all we need to be able to accept tracks and score:
-        if (task['opt_dist'] and task['window_open_time'] and task['window_close_time'] and task['start_time'] and
-            task['start_close_time'] and task['task_deadline']):
+        if (task['opt_dist'] and task['window_open_time'] and task['window_close_time'] and task['start_time']
+                and task['start_close_time'] and task['task_deadline']):
             task['ready_to_score'] = True
 
         task['opt_dist'] = 0 if not task['opt_dist'] else round(task['opt_dist'] / 1000, 2)
@@ -205,11 +205,11 @@ def get_pilot_list_for_track_management(taskid: int):
     from db.tables import TblTaskResult as R, TblParticipant as P, TblTask as T
     with db_session() as db:
         results = db.query(R.goal_time, R.track_file, R.track_id, R.result_type, R.distance_flown,
-                                   R.ESS_time, R.SSS_time, R.par_id).filter(
+                           R.ESS_time, R.SSS_time, R.par_id).filter(
             R.task_id == taskid).subquery()
         pilots = db.query(T.task_id, P.name, P.ID, P.par_id, results.c.track_id, results.c.SSS_time,
-                                  results.c.ESS_time,
-                                  results.c.distance_flown, results.c.track_file, results.c.result_type) \
+                          results.c.ESS_time,
+                          results.c.distance_flown, results.c.track_file, results.c.result_type) \
             .outerjoin(P, T.comp_id == P.comp_id).filter(T.task_id == taskid) \
             .outerjoin(results, results.c.par_id == P.par_id).all()
 
@@ -344,7 +344,7 @@ def process_igc(task_id: int, par_id: int, tracklog):
         pilot.check_flight(flight, task, airspace_obj=airspace)
         print(f"track verified with task {task.task_id}\n")
         '''create map file'''
-        pilot.save_tracklog_map_file(task)
+        pilot.save_tracklog_map_file(task, flight)
         """adding track to db"""
         pilot.to_db()
         time = ''
@@ -397,7 +397,7 @@ def save_igc_background(task_id: int, par_id: int, tracklog, user, check_g_recor
 
 
 def process_igc_background(task_id: int, par_id: int, filename, full_file_name, user):
-    from track import igc_parsing_config_from_yaml
+    from pilot.track import igc_parsing_config_from_yaml
     from calcUtils import epoch_to_date
     from pilot.flightresult import FlightResult
     from airspace import AirspaceCheck
@@ -437,7 +437,7 @@ def process_igc_background(task_id: int, par_id: int, filename, full_file_name, 
         pilot.check_flight(flight, task, airspace_obj=airspace, print=print)
         print(f"track verified with task {task.task_id}\n")
         '''create map file'''
-        pilot.save_tracklog_map_file(task)
+        pilot.save_tracklog_map_file(task, flight)
         """adding track to db"""
         pilot.to_db()
         time = ''
@@ -604,9 +604,9 @@ def set_comp_admin(compid: int, userid, owner=False):
     from db.tables import TblCompAuth as CA
     auth = 'owner' if owner else 'admin'
     with db_session() as db:
-            admin = CA(user_id=userid, comp_id=compid, user_auth=auth)
-            db.add(admin)
-            db.flush()
+        admin = CA(user_id=userid, comp_id=compid, user_auth=auth)
+        db.add(admin)
+        db.flush()
     return True
 
 
@@ -626,7 +626,7 @@ def update_airspace_file(old_filename, new_filename):
     R = aliased(TblRegion)
     with db_session() as db:
         db.query(R).filter(R.openair_file == old_filename).update({R.openair_file: new_filename},
-                                                                          synchronize_session=False)
+                                                                  synchronize_session=False)
         db.commit()
     return True
 
@@ -684,11 +684,11 @@ def get_comp_info(compid: int, task_ids=None):
 
     with db_session() as db:
         non_scored_tasks = (db.query(t.task_id.label('id'),
-                                             t.task_name,
-                                             t.date,
-                                             t.task_type,
-                                             t.opt_dist,
-                                             t.comment).filter(t.comp_id == compid, t.task_id.notin_(task_ids))
+                                     t.task_name,
+                                     t.date,
+                                     t.task_type,
+                                     t.opt_dist,
+                                     t.comment).filter(t.comp_id == compid, t.task_id.notin_(task_ids))
                             .order_by(t.date.desc()).all())
 
         competition_info = (db.query(
@@ -820,8 +820,10 @@ def get_pretty_data(filename):
         '''time offset'''
         timeoffset = int(content['info']['time_offset'])
         '''score decimals'''
-        td = 0 if 'task_result_decimal' not in content['formula'].keys() else int(content['formula']['task_result_decimal'])
-        cd = 0 if 'task_result_decimal' not in content['formula'].keys() else int(content['formula']['task_result_decimal'])
+        td = (0 if 'task_result_decimal' not in content['formula'].keys()
+              else int(content['formula']['task_result_decimal']))
+        cd = (0 if 'task_result_decimal' not in content['formula'].keys()
+              else int(content['formula']['task_result_decimal']))
         pretty_content = dict()
         pretty_content['file_stats'] = pretty_format_results(content['file_stats'], timeoffset)
         pretty_content['info'] = pretty_format_results(content['info'], timeoffset)

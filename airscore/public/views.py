@@ -2,6 +2,7 @@
 """Public section, including homepage and signup."""
 from flask import (
     Blueprint,
+    current_app,
     flash,
     redirect,
     render_template,

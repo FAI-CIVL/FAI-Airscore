@@ -665,6 +665,37 @@ class FlightResult(Participant):
                 }
         return data
 
+    def save_tracklog_map_file(self, task, flight=None, second_interval=5):
+        """ Creates the file to be used to display pilot's track on map"""
+        from igc_lib import Flight
+        from pathlib import Path
+        from Defines import MAPOBJDIR
+        import json
+        if self.result_type not in ('abs', 'dnf', 'mindist'):
+            ID = self.par_id if not self.ID else self.ID  # registration needs to check that all pilots
+            # have a unique ID, with option to use par_id as ID for all pilots if no ID is given
+            print(f"{ID}. {self.name}: ({self.track.track_file})")
+            if not flight:
+                filename = Path(task.file_path, self.track_file)
+                '''load track file'''
+                flight = Flight.create_from_file(filename)
+            data = create_tracklog_map_file(self, task, flight, second_interval)
+            res_path = Path(MAPOBJDIR, 'tracks', str(task.id))
+            """check if directory already exists"""
+            if not res_path.is_dir():
+                res_path.mkdir(mode=0o755)
+            """creates a name for the file.
+            par_id.track"""
+            filename = f'{self.par_id}.track'
+            fullname = Path(res_path, filename)
+            """copy file"""
+            try:
+                with open(fullname, 'w') as f:
+                    json.dump(data, f)
+                return fullname
+            except:
+                print('Error saving file:', fullname)
+
     def save_tracklog_map_result_file(self, data, trackid, taskid):
         """save tracklog map result file in the correct folder as defined by DEFINES"""
         from pathlib import Path
@@ -786,7 +817,7 @@ def verify_all_tracks(task, lib, airspace=None, print=print):
                     '''check flight against task'''
                     pilot.check_flight(flight, task, airspace_obj=airspace, print=print)
                     '''create map file'''
-                    pilot.save_tracklog_map_file(flight, task)
+                    pilot.save_tracklog_map_file(task, flight)
                 elif flight:
                     print(f'Error in parsing track: {[x for x in flight.notes]}')
     lib.process_results(task)
@@ -809,7 +840,7 @@ def adjust_flight_results(task, lib, airspace=None):
                 adjusted = FlightResult.check_flight(flight, task, airspace_obj=None, deadline=last_time)
                 pilot.result_type = adjusted.result_type
                 '''create map file'''
-                pilot.save_tracklog_map_file(flight, task)
+                pilot.save_tracklog_map_file(task, flight)
     lib.process_results(task)
 
 
@@ -935,3 +966,32 @@ def update_all_results(task_id, pilots, session=None):
                     notif.not_id = n['not_id']
     return True
 
+
+def create_tracklog_map_file(pilot, task, flight, second_interval=5):
+    """Dumps the flight to geojson format used for mapping.
+    Contains tracklog split into pre SSS, pre Goal and post goal parts, thermals, takeoff/landing,
+    result object, waypoints achieved, and bounds
+    second_interval = resolution of tracklog. default one point every 5 seconds. regardless it will
+                        keep points where waypoints were achieved.
+    returns the Json string."""
+    from mapUtils import result_to_geojson
+    from pathlib import Path
+    '''create info'''
+    info = {'taskid': task.id, 'task_name': task.task_name, 'comp_name': task.comp_name,
+            'pilot_name': pilot.name, 'pilot_nat': pilot.nat, 'pilot_sex': pilot.sex,
+            'pilot_parid': pilot.par_id, 'Glider': pilot.glider,
+            'track_file': Path(task.file_path, pilot.track_file).as_posix()
+            }
+    tracklog, thermals, takeoff_landing, bbox, waypoint_achieved, infringements = result_to_geojson(pilot,
+                                                                                                    task,
+                                                                                                    flight,
+                                                                                                    second_interval)
+    data = {'info': info,
+            'tracklog': tracklog,
+            'thermals': thermals,
+            'takeoff_landing': takeoff_landing,
+            'bounds': bbox,
+            'waypoint_achieved': waypoint_achieved,
+            'infringements': infringements
+            }
+    return data

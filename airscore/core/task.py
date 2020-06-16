@@ -34,13 +34,10 @@ from pilot.flightresult import verify_all_tracks, adjust_flight_results
 from formula import TaskFormula
 from geo import Geo
 from igc_lib import defaultdict
-from mapUtils import save_all_geojson_files
 from db.conn import db_session
 from pilot.flightresult import update_all_results
 from result import TaskResult, create_json_file
 from route import distance, polar, Turnpoint, get_shortest_path, get_line
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm.scoping import scoped_session
 
 
 class Task(object):

@@ -6,13 +6,12 @@ Use:    import trackUtils
 Antonio Golfari - 2018
 """
 
-from os import path, listdir
+from os import path, listdir, fsdecode
 
 from sqlalchemy import and_
-from sqlalchemy.exc import SQLAlchemyError
-
-from Defines import TRACKDIR, MAPOBJDIR
 from db.conn import db_session
+from Defines import TRACKDIR, MAPOBJDIR, track_sources, track_formats
+from pilot.flightresult import FlightResult
 import re
 from pathlib import Path
 import unicodedata
@@ -166,7 +165,7 @@ def verify_and_import_track(pilot, track, task, print=print):
     '''check flight against task'''
     pilot.check_flight(track.flight, task, airspace_obj=airspace, print=print)
     '''create map file'''
-    pilot.save_tracklog_map_file(task)
+    pilot.save_tracklog_map_file(task, track.flight)
     '''save to database'''
     pilot.to_db()
     if pilot.notifications:
@@ -242,17 +241,16 @@ def read_tracklog_map_result_file(par_id: int, task_id: int):
 def create_tracklog_map_result_file(par_id: int, task_id: int):
     from pilot import flightresult
     from task import Task
-    from pilot.track import Track
     from igc_lib import Flight
     from airspace import AirspaceCheck
     task = Task.read(task_id)
     airspace = None if not task.airspace_check else AirspaceCheck.from_task(task)
-    pilot = Pilot.read(par_id, task_id)
+    pilot = flightresult.FlightResult.read(par_id, task_id)
     file = path.join(task.file_path, pilot.track.track_file)
     '''load track file'''
-    pilot.track.flight = Flight.create_from_file(file)
-    pilot.result = flightresult.FlightResult.check_flight(pilot.track.flight, task, airspace)
-    pilot.save_tracklog_map_file(task)
+    flight = Flight.create_from_file(file)
+    pilot.check_flight(flight, task, airspace)
+    pilot.save_tracklog_map_file(task, flight)
 
 
 def get_task_fullpath(task_id: int):

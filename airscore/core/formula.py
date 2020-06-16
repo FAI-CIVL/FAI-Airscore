@@ -10,8 +10,6 @@ import importlib
 from dataclasses import dataclass, fields
 from os import listdir
 from sqlalchemy.orm import aliased
-from sqlalchemy.exc import SQLAlchemyError
-
 from db.conn import db_session
 
 
@@ -268,48 +266,6 @@ class Formula(object):
             formula.overall_validity = 'ftv'
         else:
             formula.overall_validity = 'all'
-        # form = fs_info.find('FsScoreFormula')
-
-        # formula.formula_name = form.get('id')
-        # '''scoring parameters'''
-        # # formula.comp_class = comp.comp_class
-        # formula.min_dist = 0 + float(form.get('min_dist')) * 1000  # min. distance, meters
-        # formula.nominal_dist = 0 + float(form.get('nom_dist')) * 1000  # nom. distance, meters
-        # formula.nominal_time = 0 + int(float(form.get('nom_time')) * 3600)  # nom. time, seconds
-        # formula.nominal_launch = 0 + float(form.get('nom_launch'))  # nom. launch, perc / 100
-        # formula.nominal_goal = 0 + float(form.get('nom_goal'))  # nom. goal, perc / 100
-        # formula.scoring_altitude = 'GPS' if form.get('scoring_altitude') == 'GPS' else 'QNH'
-        # '''formula parameters'''
-        # # distance point: on, difficulty, off
-        # formula.formula_distance = ('difficulty' if form.get('use_difficulty_for_distance_points') == '1'
-        #                             else 'on' if form.get('use_distance_points') == '1' else 'off')
-        # # arrival points: position, time, off
-        # formula.formula_arrival = ('position' if form.get('use_arrival_position_points') == '1'
-        #                            else 'time' if form.get('use_arrival_time_points') == '1' else 'off')
-        # # departure points: leadout, on, off
-        # formula.formula_departure = ('leadout' if form.get('use_leading_points') == '1'
-        #                              else 'on' if form.get('use_departure_points') == '1' else 'off')
-        # # time points: on, off
-        # formula.formula_time = 'on' if form.get('use_time_points') == '1' else 'off'
-        # # leading points factor: probably needs to be linked to GAP version
-        # formula.lead_factor = (None if form.get('use_leading_points') == '0'
-        #                        else float(form.get('leading_weight_factor')
-        #                                   if form.get('leading_weight_factor') else 1))
-        # '''tolerance'''
-        # formula.tolerance = 0.0 + float(form.get('turnpoint_radius_tolerance')
-        #                                 if form.get('turnpoint_radius_tolerance') else 0.001)  # tolerance, perc / 100
-        # '''stopped task parameters'''
-        # formula.validity_min_time = 0 + int(
-        #     form.get('min_time_span_for_valid_task')) * 60  # min. time for valid task, seconds
-        # formula.score_back_time = 0 + int(form.get('score_back_time')) * 60  # Scoreback Time, seconds
-        # formula.glide_bonus = 0.0 + float(form.get('bonus_gr'))  # glide ratio
-        # '''bonus and penalties'''
-        # formula.no_goal_penalty = round(1.0 - float(form.get('time_points_if_not_in_goal')), 4)
-        # formula.arr_alt_bonus = float(form.get('aatb_factor') if form.get('final_glide_decelerator') == 'aatb' else 0)
-        # '''jump the gun'''
-        # formula.max_JTG = int(form.get('jump_the_gun_max'))  # seconds
-        # formula.JTG_penalty_per_sec = (None if form.get('jump_the_gun_factor') == '0'
-        #                                else round(1 / float(form.get('jump_the_gun_factor')), 4))
         return formula
 
     @staticmethod
@@ -480,4 +436,3 @@ def get_fsdb_info(formula, form):
     formula.JTG_penalty_per_sec = (None if form.get('jump_the_gun_factor') == '0'
                                    else round(1 / float(form.get('jump_the_gun_factor')), 4))
     return formula
-
