@@ -839,4 +839,3 @@ class TblTrackWaypoint(BaseModel):
     lat = Column(Float, nullable=False)
     lon = Column(Float, nullable=False)
     altitude = Column(SMALLINT(6), nullable=False)
-

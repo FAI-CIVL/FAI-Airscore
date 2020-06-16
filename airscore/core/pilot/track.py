@@ -79,15 +79,6 @@ class Track(object):
         else:
             return None
 
-    # @property
-    # def notifications(self):
-    #     """flight notifications list"""
-    #     from notification import Notification
-    #     if self.flight:
-    #         return [Notification(notification_type='track', comment=i) for i in self.flight.notes]
-    #     else:
-    #         return []
-
     @property
     def comment(self):
         if len(self.notifications) > 0:
@@ -201,7 +192,6 @@ class Track(object):
         from db.tables import TrackObjectView as T
 
         track = cls(track_id=track_id)
-
         """Read general info about the track"""
         with db_session() as db:
             # get track details.

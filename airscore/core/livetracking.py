@@ -691,7 +691,7 @@ def check_livetrack(pilot, task, airspace_obj=None):
         result.fixed_LC = lead_coeff.summing
 
     if task.airspace_check:
-        infringements, notifications, penalty = airspace_obj.get_infringements_result_new(infringements_list)
+        infringements, notifications, penalty = airspace_obj.get_infringements_result(infringements_list)
         result.notifications.extend(notifications)
         result.notifications = clear_notifications(task, result)
     return result

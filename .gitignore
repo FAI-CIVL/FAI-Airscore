@@ -10,6 +10,7 @@
 secret.yaml
 defines.yaml
 airscore/core/dreamhost*.*
+/dreamhost*.*
 
 # Cache files
 _pycache_/*

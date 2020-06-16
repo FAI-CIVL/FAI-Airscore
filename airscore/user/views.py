@@ -418,6 +418,12 @@ def task_admin(taskid):
             task.formula.arr_alt_bonus = taskform.arr_alt_bonus.data
             task.to_db()
 
+            for session_task in session['tasks']:
+                if session_task['task_id'] == taskid:
+                    if (task.opt_dist and task.window_open_time and task.window_close_time and task.start_time and
+                            task.start_close_time and task.task_deadline):
+                        session_task['ready_to_score'] = True
+
             flash("Saved", category='info')
 
             return redirect(url_for('user.task_admin', taskid=taskid))
@@ -464,6 +470,14 @@ def task_admin(taskid):
         taskform.max_JTG.data = task.formula.max_JTG
         taskform.no_goal_penalty.data = (task.formula.no_goal_penalty or 0) * 100
         taskform.arr_alt_bonus.data = task.formula.arr_alt_bonus
+
+        if not (task.opt_dist and task.window_open_time and task.window_close_time and task.start_time and
+                task.start_close_time and task.task_deadline):
+            flash("Task is not ready to be scored as it is missing one or more of the following: a route with goal, "
+                  "window open/close, start/close and deadline times", category='info')
+            for session_task in session['tasks']:
+                if session_task['task_id'] == taskid:
+                    session_task['ready_to_score'] = False
 
         if current_user.id not in all_admin_ids:
             taskform.submit = None
@@ -578,7 +592,19 @@ def _get_adv_settings():
 @blueprint.route('/_get_task_turnpoints/<taskid>', methods=['GET'])
 @login_required
 def _get_task_turnpoints(taskid):
-    task = Task(task_id=int(taskid))
+    taskid = int(taskid)
+    task = Task.read(taskid)
+    if (task.opt_dist and task.window_open_time and task.window_close_time
+            and task.start_time and task.start_close_time and task.task_deadline):
+        ready_to_score = True
+    else:
+        ready_to_score = False
+    for session_task in session['tasks']:
+        if session_task['task_id'] == taskid:
+            if session_task['ready_to_score'] != ready_to_score:
+                session_task['ready_to_score'] = ready_to_score
+                return {'reload': True}
+
     turnpoints = frontendUtils.get_task_turnpoints(task)
     return turnpoints
 
@@ -618,7 +644,7 @@ def _add_turnpoint(taskid):
             tp.shape = data['shape']
     if save_turnpoint(taskid, tp):
         task = Task.read(taskid)
-        if task.opt_dist > 0 or data['type'] == 'goal':
+        if task.opt_dist or data['type'] == 'goal':
             task.calculate_optimised_task_length()
             task.calculate_task_length()
             task.update_task_distance()
@@ -637,13 +663,16 @@ def _del_turnpoint(tpid):
     data = request.json
     taskid = int(data['taskid'])
     delete_turnpoint(tpid)
+    print(f"{data['partial_distance']}")
     if data['partial_distance'] != '':
         task = Task.read(taskid)
-        task.calculate_optimised_task_length()
-        task.calculate_task_length()
-        task.update_task_distance()
-        write_map_json(taskid)
-
+        if task.turnpoints[-1].type == 'goal':
+            task.calculate_optimised_task_length()
+            task.calculate_task_length()
+            task.update_task_distance()
+            write_map_json(taskid)
+        else:
+            task.delete_task_distance()
     resp = jsonify(success=True)
     return resp
 
@@ -692,9 +721,13 @@ def track_admin(taskid):
             task_num = task['task_num']
             task_name = task['task_name']
             task_in_comp = True
+            task_ready_to_score = task['ready_to_score']
 
     if not task_in_comp:
         return render_template('out_of_comp.html')
+
+    if not task_ready_to_score:
+        return render_template('task_not_ready_to_score.html')
 
     _, _, all_admin_ids = frontendUtils.get_comp_admins(taskid, task_id=True)
     if current_user.id in all_admin_ids:
@@ -893,11 +926,11 @@ def _get_task_score_from_file(taskid, filename):
     stats = pretty_format_results(result_file['stats'], timeoffset)
     info = result_file['info']
     for r in result_file['results']:
-        track_id = r['track_id']
+        parid = r['par_id']
         name = r['name']
         status = r['result_type']
         if status not in ['dnf', 'abs']:
-            pilot = {'rank': rank, 'name': f'<a href="/map/{track_id}-{taskid}">{name}</a>'}
+            pilot = {'rank': rank, 'name': f'<a href="/map/{parid}-{taskid}">{name}</a>'}
             if r['SSS_time']:
                 pilot['SSS'] = sec_to_time(r['SSS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S")
             else:
@@ -946,9 +979,13 @@ def task_score_admin(taskid):
             task_num = task['task_num']
             task_name = task['task_name']
             task_in_comp = True
+            task_ready_to_score = task['ready_to_score']
 
     if not task_in_comp:
         return render_template('out_of_comp.html')
+
+    if not task_ready_to_score:
+        return render_template('task_not_ready_to_score.html')
 
     fileform = TaskResultAdminForm()
     editform = EditScoreForm()
@@ -992,11 +1029,11 @@ def _score_task(taskid):
 @blueprint.route('/_full_rescore_task/<taskid>', methods=['POST'])
 @login_required
 def _full_rescore_task(taskid):
-    taskid=int(taskid)
+    taskid = int(taskid)
     data = request.json
     if frontendUtils.production():
         job = current_app.task_queue.enqueue(frontendUtils.full_rescore, taskid, background=True,
-                                             user=current_user.username,  status=data['status'],
+                                             user=current_user.username, status=data['status'],
                                              autopublish=data['autopublish'], compid=session['compid'],
                                              job_timeout=2000)
 
@@ -1447,5 +1484,3 @@ def _export_fsdb(compid):
         resp = make_response(send_file(tmp.name, mimetype="text/xml", attachment_filename=filename, as_attachment=True))
         resp.set_cookie('ServerProcessCompleteChecker', '', expires=0)
         return resp
-
-

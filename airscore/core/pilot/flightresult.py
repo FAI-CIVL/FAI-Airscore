@@ -554,7 +554,9 @@ class FlightResult(Participant):
                     infringement_type = plot[3]
                     dist = plot[4]
                     separation = plot[5]
-                    infringements_list.append([next_fix, airspace_name, infringement_type, dist, penalty, separation])
+                    infringements_list.append([next_fix, alt, airspace_name, infringement_type,
+                                               dist, penalty, separation])
+                    # print([next_fix, alt, airspace_name, infringement_type, dist, penalty])
                 else:
                     ''''''
                     # map_fix.extend([None, None, None, None, None])
@@ -625,14 +627,12 @@ class FlightResult(Participant):
             result.fixed_LC = lead_coeff.summing
 
         if task.airspace_check:
-            infringements, notifications, penalty = airspace_obj.get_infringements_result_new(infringements_list)
+            infringements, notifications, penalty = airspace_obj.get_infringements_result(infringements_list)
             result.infringements = infringements
             result.notifications.extend(notifications)
-            # result.percentage_penalty = penalty
-            # result.airspace_plot = airspace_plot
         return result
 
-    def to_geojson_result(self, track, task, second_interval=5):
+    def to_geojson_result(self, track, task, pilot_info=None, second_interval=5):
         """Dumps the flight to geojson format used for mapping.
         Contains tracklog split into pre SSS, pre Goal and post goal parts, thermals, takeoff/landing,
         result object, waypoints achieved, and bounds
@@ -640,46 +640,44 @@ class FlightResult(Participant):
         second_interval = resolution of tracklog. default one point every 5 seconds. regardless it will
                             keep points where waypoints were achieved.
         returns the Json string."""
-
         from mapUtils import result_to_geojson
-        from db.tables import TblParticipant as p
 
         info = {'taskid': task.id, 'task_name': task.task_name, 'comp_name': task.comp_name}
-
-        with db_session() as db:
-            pilot_details = (db.query(p.name, p.nat, p.sex, p.glider)
-                             .filter(p.par_id == track.par_id, p.comp_id == task.comp_id).one())
-        pilot_details = pilot_details._asdict()
-        info['pilot_name'] = pilot_details['name']
-        info['pilot_nat'] = pilot_details['nat']
-        info['pilot_sex'] = pilot_details['sex']
-        info['pilot_parid'] = track.par_id
-        info['Glider'] = pilot_details['glider']
-
-        tracklog, thermals, takeoff_landing, bbox, waypoint_achieved = result_to_geojson(self, track, task)
-        airspace_plot = self.airspace_plot
-
-        data = {'info': info, 'tracklog': tracklog, 'thermals': thermals, 'takeoff_landing': takeoff_landing,
-                'result': jsonpickle.dumps(self), 'bounds': bbox, 'waypoint_achieved': waypoint_achieved,
-                'airspace': airspace_plot}
-
+        if pilot_info:
+            info.update(dict(pilot_name=pilot_info.name,
+                             pilot_nat=pilot_info.nat,
+                             pilot_sex=pilot_info.sex,
+                             pilot_parid=pilot_info.par_id,
+                             Glider=pilot_info.glider))
+        else:
+            info = {}
+        tracklog, thermals, takeoff_landing, bbox, waypoint_achieved, infringements = result_to_geojson(self,
+                                                                                                        task,
+                                                                                                        track.flight,
+                                                                                                        second_interval)
+        data = {'info': info,
+                'tracklog': tracklog,
+                'thermals': thermals,
+                'takeoff_landing': takeoff_landing,
+                'bounds': bbox,
+                'waypoint_achieved': waypoint_achieved,
+                'infringements': infringements
+                }
         return data
 
     def save_tracklog_map_result_file(self, data, trackid, taskid):
         """save tracklog map result file in the correct folder as defined by DEFINES"""
-
-        res_path = f"{MAPOBJDIR}tracks/{taskid}/"
-
+        from pathlib import Path
+        # res_path = f"{MAPOBJDIR}tracks/{taskid}/"
+        res_path = Path(MAPOBJDIR, 'tracks', str(taskid))
         """check if directory already exists"""
-        if not path.isdir(res_path):
+        if not res_path.is_dir():
             makedirs(res_path)
         """creates a name for the track
         name_surname_date_time_index.igc
         if we use flight date then we need an index for multiple tracks"""
-
-        filename = 'result_' + str(trackid) + '.track'
-        fullname = path.join(res_path, filename)
-        """copy file"""
+        filename = f'{trackid}.track'
+        fullname = Path(res_path, filename)
         try:
             with open(fullname, 'w') as f:
                 json.dump(data, f)
@@ -763,6 +761,14 @@ def verify_all_tracks(task, lib, airspace=None, print=print):
             task:       Task object
             lib:        Formula library module"""
     from igc_lib import Flight
+    from pathlib import Path
+    pilots = [p for p in task.pilots if p.result_type not in ('abs', 'dnf', 'mindist')]
+    '''check if any track is missing'''
+    if any(not Path(task.file_path, p.track.track_file).is_file() for p in pilots):
+        print(f"The following tracks are missing from folder {task.file_path}:")
+        for track in [p.track.track_file for p in pilots if not Path(task.file_path, p.track.track_file).is_file()]:
+            print(f"{track}")
+        return None
 
     print('getting tracks...')
     number_of_pilots = len(task.pilots)
@@ -771,7 +777,7 @@ def verify_all_tracks(task, lib, airspace=None, print=print):
         print(f"type: {pilot.result_type}")
         if pilot.result_type not in ('abs', 'dnf', 'mindist'):
             print(f"{pilot.ID}. {pilot.name}: ({pilot.track_file})")
-            filename = path.join(task.file_path, pilot.track_file)
+            filename = Path(task.file_path, pilot.track_file)
             '''load track file'''
             flight = Flight.create_from_file(filename)
             if flight:
@@ -779,6 +785,8 @@ def verify_all_tracks(task, lib, airspace=None, print=print):
                 if flight.valid:
                     '''check flight against task'''
                     pilot.check_flight(flight, task, airspace_obj=airspace, print=print)
+                    '''create map file'''
+                    pilot.save_tracklog_map_file(flight, task)
                 elif flight:
                     print(f'Error in parsing track: {[x for x in flight.notes]}')
     lib.process_results(task)
@@ -800,6 +808,8 @@ def adjust_flight_results(task, lib, airspace=None):
                 flight = Flight.create_from_file(filename)
                 adjusted = FlightResult.check_flight(flight, task, airspace_obj=None, deadline=last_time)
                 pilot.result_type = adjusted.result_type
+                '''create map file'''
+                pilot.save_tracklog_map_file(flight, task)
     lib.process_results(task)
 
 

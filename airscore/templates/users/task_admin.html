@@ -1,7 +1,11 @@
-{% extends "base.html"%}
+{% extends "admin.html"%}
 
 {% block page_title %}
   Task Result
+{% endblock %}
+
+{% block css %}
+   <link rel="stylesheet" type="text/css" href="{{ static_url_for('static', filename='build/main_css.bundle.css') }}"/>
 {% endblock %}
 
 {% block content %}
@@ -269,6 +273,7 @@
                               <button id="save_task_button" class="btn btn-success" type="button" onclick="save_turnpoint()">
                               Add
                               </button>
+                              <p id="add_tp_spinner"></p>
                            </div>
                         </div>
                      </div>
@@ -313,7 +318,8 @@
          </div>
          <div class="modal-footer">
             <button type="button" class="btn btn-success" data-dismiss="modal">Cancel</button>
-            <button id = "delete_confirmed" type="button" class="btn btn-danger" data-dismiss="modal">Delete</button>
+            <button id = "delete_confirmed" type="button" class="btn btn-danger" >Delete</button>
+            <p id="delete_spinner"></p>
          </div>
       </div>
    </div>
@@ -369,11 +375,10 @@
       {% endif%}
 {% endblock %}
 {% block js %}
-{% include "js.html" %}
-<script src="{{ static_url_for('static', filename='js/display-if.min.js') }}"></script>
-<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.ui.widget.js') }}"></script>
-<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.iframe-transport.js') }}"></script>
-<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.fileupload.js') }}"></script>
+   <script src="{{ static_url_for('static', filename='js/display-if.min.js') }}"></script>
+   <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.ui.widget.js') }}"></script>
+   <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.iframe-transport.js') }}"></script>
+   <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.fileupload.js') }}"></script>
 <script type="text/javascript">
    var csrftoken = $('meta[name=csrf-token]').attr('content');
       $.ajaxSetup({
@@ -391,14 +396,14 @@
                contentType:"application/json",
                dataType: "json",
                success: function (response) {
-                       update_turnpoints(response)
+                       update_turnpoints(response);
                }
                });
    }
 
 
    $(document).ready(function() {
-   get_turnpoints()
+   get_turnpoints();
    });
 
 
@@ -406,13 +411,16 @@
    var taskid = {{taskid}};
 
    function update_turnpoints(json) {
+                  if(json.reload){
+                  location.reload();
+                   return;
+               }
                $('#deleteall_btn').hide();
                if(json['turnpoints'].length > 0){
                  $('#deleteall_btn').show();
                  $('#import').hide() }
                $("#turnpoints tbody").remove();
                var content = '';
-
                turnpoints = json;
                if(json.map != null){
                   $('#map').contents().find('body').html(json.map);
@@ -454,6 +462,9 @@
 
  {% if taskform.submit %}
    function save_turnpoint(){
+            $('#save_task_button').hide();
+            $('#add_tp_spinner').html('<div class="spinner-border" role="status"><span class="sr-only"></span></div>');
+
            var radius =$('#tp_radius').val();
            if($('#tp_type').val() == 'launch' ){
            radius = 400;
@@ -477,7 +488,14 @@
                data : JSON.stringify(mydata),
                dataType: "json",
                success: function () {
-                      get_turnpoints()
+               if(mydata.type == 'goal'){
+                     location.reload();
+                     }
+                else{
+                      get_turnpoints();
+                      $('#save_task_button').show();
+                      $('#add_tp_spinner').html('');
+                     }
                }
                });
 
@@ -489,6 +507,8 @@
             var mydata = new Object();
             mydata.partial_distance = partial_d;
             mydata.taskid = taskid;
+            $('#delete_confirmed').hide();
+            $('#delete_spinner').html('<div class="spinner-border" role="status"><span class="sr-only"></span></div>');
            $.ajax({
                type: "POST",
                url: '/users/_del_turnpoint/'+ tpid,
@@ -497,7 +517,10 @@
                dataType: "json",
 
                success: function () {
-                      get_turnpoints()
+                     $('#delmodal').modal('hide');
+                     $('#delete_confirmed').show();
+                     $('#delete_spinner').html('');
+                      get_turnpoints();
                }
                });
 
@@ -511,7 +534,7 @@
                contentType:"application/json",
                dataType: "json",
                success: function () {
-                      get_turnpoints()
+                      get_turnpoints();
                       $('#map').contents().find('body').html('');
                }
                });
@@ -587,7 +610,7 @@
                data : JSON.stringify(mydata),
                dataType: "json",
                success: function () {
-                      get_turnpoints()
+                      get_turnpoints();
                }
                });
 
@@ -614,7 +637,7 @@ $(function () {
 <!--         $('#progress_text').text(data.files[0].name);-->
         },
         success: function () {
-                      get_turnpoints()
+                      get_turnpoints();
                }
     });
 });

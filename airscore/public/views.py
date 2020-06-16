@@ -19,7 +19,7 @@ from airscore.utils import flash_errors
 from datetime import datetime
 from task import get_map_json, get_task_json
 from trackUtils import read_tracklog_map_result_file
-from map import make_map
+from map import make_map, get_map_render
 from flask_wtf import FlaskForm
 from wtforms import SelectField
 import mapUtils
@@ -121,7 +121,7 @@ def competition(compid):
         overall_available = True if get_comp_json(int(compid)) != 'error' else False
         for task in result_file['tasks']:
             task_ids.append(int(task['id']))
-            wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox = get_map_json(task['id'])
+            wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox, _, _ = get_map_json(task['id'])
             layer['geojson'] = None
             layer['bbox'] = bbox
             task_map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
@@ -148,7 +148,7 @@ def competition(compid):
                 task['status'] = "Task not set"
                 task['opt_dist'] = '0 km'
             else:
-                wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox = get_map_json(task['id'])
+                wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox, _, _ = get_map_json(task['id'])
                 layer['geojson'] = None
                 layer['bbox'] = bbox
                 task_map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
@@ -195,10 +195,9 @@ def _get_task_result(taskid):
     for r in results:
         rt = r['result_type']
         rank = f"<b>{r['rank']}</b>"
-        trackid = r['track_id']
-        ID = r['ID']
         n = r['name']
-        name = n if rt in ['mindist', 'nyp'] else f'<a href="/map/{trackid}-{taskid}">{n}</a>'
+        parid = r['par_id']
+        name = n if rt in ['mindist', 'nyp'] else f'<a href="/map/{parid}-{taskid}">{n}</a>'
         sex = r['sex']
         nat = r['nat']
         sp = r['sponsor']
@@ -312,27 +311,53 @@ class SelectAdditionalTracks(FlaskForm):
     tracks = SelectField('Add Tracks:', choices=track_pilot_list)
 
 
-@blueprint.route('/map/<trackidtaskid>')
-def map(trackidtaskid):
-    trackid, taskid = trackidtaskid.split("-")
-    trackid = int(trackid)
+@blueprint.route('/map/<paridtaskid>', methods=["GET", "POST"])
+def map(paridtaskid):
+    from airspaceUtils import read_airspace_map_file
+    from mapUtils import create_trackpoints_layer
+
+    parid, taskid = paridtaskid.split("-")
+    parid = int(parid)
     taskid = int(taskid)
+
+    full_tracklog = bool(request.form.get('full'))
     layer = {}
-    wpt_coords, turnpoints, short_route, goal_line, tolerance, _ = get_map_json(taskid)
-    layer['geojson'] = read_tracklog_map_result_file(trackid, taskid)
+    trackpoints = None
+    '''task map'''
+    wpt_coords, turnpoints, short_route, goal_line, tolerance, _, offset, airspace = get_map_json(taskid)
+
+    '''tracklog'''
+    layer['geojson'] = read_tracklog_map_result_file(parid, taskid)
     layer['bbox'] = layer['geojson']['bounds']
-    pilot = layer['geojson']['info']['pilot_name']
+    pilot_name = layer['geojson']['info']['pilot_name']
     task_name = layer['geojson']['info']['task_name']
-    parid = layer['geojson']['info']['pilot_parid']
+    '''full track log creation if requested'''
+    if 'track_file' in layer['geojson']['info'] and full_tracklog:
+        trackpoints = create_trackpoints_layer(layer['geojson']['info']['track_file'], offset)
     other_tracks = mapUtils.get_other_tracks(taskid, parid)
 
+    '''airspace'''
+    if airspace:
+        airspace_layer = read_airspace_map_file(airspace)['spaces']
+        infringements = layer['geojson']['infringements']
+    else:
+        airspace_layer = None
+        infringements = None
+
     map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
-                   goal_line=goal_line, margin=tolerance, thermal_layer=True, waypoint_layer=True)
+                   goal_line=goal_line, margin=tolerance, thermal_layer=True, waypoint_layer=True,
+                   airspace_layer=airspace_layer, infringements=infringements, trackpoints=trackpoints)
     waypoint_achieved_list = list(w for w in layer['geojson']['waypoint_achieved'])
     add_tracks = SelectAdditionalTracks()
     add_tracks.track_pilot_list = other_tracks
-    return render_template('public/map.html', other_tracks=other_tracks, add_tracks=add_tracks, map=map._repr_html_(),
-                           wpt_achieved=waypoint_achieved_list, task=task_name, pilot=pilot)
+    return render_template('public/map.html',
+                           other_tracks=other_tracks,
+                           add_tracks=add_tracks,
+                           map=get_map_render(map),
+                           wpt_achieved=waypoint_achieved_list,
+                           task={'name': task_name, 'id': taskid},
+                           pilot={'name': pilot_name, 'id': parid},
+                           full_tracklog=full_tracklog)
 
 
 @blueprint.route('/_map/<trackid>/<extra_trackids>')

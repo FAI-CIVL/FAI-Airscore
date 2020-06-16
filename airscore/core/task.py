@@ -806,8 +806,6 @@ class Task(object):
         '''store results to database'''
         print(f"updating database with new results...")
         update_all_results(self.task_id, self.pilots)
-        '''save map files if needed'''
-        save_all_geojson_files(self)
         '''process results with scoring system'''
         lib.process_results(self)
 
@@ -855,6 +853,18 @@ class Task(object):
                 wpt.ssr_lon = sr.lon
                 wpt.partial_distance = self.partial_distance[idx]
             # db.commit()
+            db.session.commit()
+
+    def delete_task_distance(self):
+        with db_session() as db:
+            '''remove optimised and total distance from task'''
+            t = TblTask.get_by_id(self.task_id)
+            t.distance = None
+            t.opt_dist = None
+            t.SS_distance = None
+            t.opt_dist_to_ESS = None
+            t.opt_dist_to_SS = None
+            db.commit()
 
     def update_task_info(self):
         """ updates database entry using Task obj"""
@@ -1681,8 +1691,7 @@ def delete_task(task_id, files=False, session=None):
 # function to parse task object to compilations
 def get_map_json(task_id):
     """gets task map json file if it exists, otherwise creates it. returns 5 separate objects for mapping"""
-
-    task_file = Path(MAPOBJDIR, 'tasks', str(task_id) + '.task')
+    task_file = Path(MAPOBJDIR + 'tasks/' + str(task_id) + '.task')
     if not task_file.is_file():
         write_map_json(task_id)
 
@@ -1694,24 +1703,29 @@ def get_map_json(task_id):
         goal_line = data['goal_line']
         tolerance = data['tolerance']
         bbox = data['bbox']
-    return task_coords, turnpoints, short_route, goal_line, tolerance, bbox
+        offset = None if 'offset' not in data.keys() else data['offset']
+        airspace = None if 'airspace' not in data.keys() else data['airspace']
+    return task_coords, turnpoints, short_route, goal_line, tolerance, bbox, offset, airspace
 
 
 def write_map_json(task_id):
-    import os
     from mapUtils import get_route_bbox
+    from Defines import AIRSPACEMAPDIR
     from geopy.distance import GreatCircleDistance as gdist
+    from airspaceUtils import create_airspace_map_check_files
 
-    task_file = Path(MAPOBJDIR + 'tasks/' + str(task_id) + '.task')
-
-    if not os.path.isdir(MAPOBJDIR + 'tasks/'):
-        os.makedirs(MAPOBJDIR + 'tasks/')
+    task_file = str(task_id) + '.task'
+    file_path = Path(MAPOBJDIR, 'tasks')
+    """check if directory already exists"""
+    if not file_path.is_dir():
+        file_path.mkdir(mode=0o755)
     task_coords = []
     turnpoints = []
     short_route = []
     goal_line = None
     task = Task.read(task_id)
     tolerance = task.tolerance
+    offset = task.time_offset
 
     for idx, obj in enumerate(task.turnpoints):
         task_coords.append({
@@ -1746,9 +1760,16 @@ def write_map_json(task_id):
     for obj in task.optimised_turnpoints:
         short_route.append(tuple([obj.lat, obj.lon]))
 
-    with open(task_file, 'w') as f:
+    airspace_file = None if not task.airspace_check else task.openair_file
+    if airspace_file:
+        map_file = Path(airspace_file).stem + '.map'
+        if not Path(AIRSPACEMAPDIR, map_file).is_file():
+            create_airspace_map_check_files(task.openair_file)
+
+    with open(Path(file_path, task_file), 'w') as f:
         f.write(jsonpickle.dumps({'task_coords': task_coords, 'turnpoints': turnpoints, 'short_route': short_route,
-                                  'goal_line': goal_line, 'tolerance': tolerance, 'bbox': get_route_bbox(task)}))
+                                  'goal_line': goal_line, 'tolerance': tolerance, 'bbox': get_route_bbox(task),
+                                  'offset': offset, 'airspace': airspace_file}))
 
 
 def get_task_json_filename(task_id):
