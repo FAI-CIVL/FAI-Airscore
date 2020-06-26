@@ -1,8 +1,9 @@
 """
 Module for mySQL connection using sqlalchemy
-Use:    from myconn import Database
+Use:    from db.conn import db_session
 
-Antonio Golfari - 2019
+Airscore
+Antonio Golfari, Stuart Mackintosh - 2020
 """
 
 from sqlalchemy import create_engine

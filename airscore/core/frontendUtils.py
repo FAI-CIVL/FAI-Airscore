@@ -74,7 +74,6 @@ def get_admin_comps(current_userid):
                  .outerjoin(TblTask, c.comp_id == TblTask.comp_id).outerjoin(ca)
                  .filter(ca.user_auth == 'owner')
                  .group_by(c.comp_id))
-
     all_comps = []
     for c in comps:
         comp = list(c)
