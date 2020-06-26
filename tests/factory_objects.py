@@ -90,34 +90,30 @@ def test_task():
 
 
 def dummy_pilot():
-    dummy1 = PilotFactory(
-        info=ParticipantFactory(ID=1, par_id=1, civl_id=1, name='Dummy 1', nat='NAT',
-                                sex='M', glider='Dummy Glider', sponsor='Dummy Sponsor', nat_team=1),
-        track=TrackFactory(track_id=1, track_file='trackfile1.igc'),
-        result=FlightResultFactory(first_time=37488, real_start_time=41585,
-                                   SSS_time=41400, ESS_time=49228,
-                                   goal_time=49574, last_time=49574,
-                                   fixed_LC=192078.500659298, lead_coeff=1.447741539180286,
-                                   distance_flown=81506.1394706916, last_altitude=983)
+    dummy1 = FlightResultFactory(
+        ID=1, par_id=1, civl_id=1, name='Dummy 1', nat='NAT', sex='M', glider='Dummy Glider', sponsor='Dummy Sponsor',
+        nat_team=1, track_id=1, track_file='trackfile1.igc', first_time=37488, real_start_time=41585, SSS_time=41400,
+        ESS_time=49228, goal_time=49574, last_time=49574, fixed_LC=192078.500659298, lead_coeff=1.447741539180286,
+        distance_flown=81506.1394706916, last_altitude=983
     )
-    dummy1.result.ESS_rank = 111
-    dummy1.result.speed = 33.8974323429738
-    dummy1.result.best_distance_time = 49574
-    dummy1.result.waypoints_achieved = []
-    dummy1.result.total_distance = 81506.1394706916
-    dummy1.result.max_altitude = 2772
-    dummy1.result.ESS_altitude = 972
-    dummy1.result.goal_altitude = 983
-    dummy1.result.landing_time = 49761
-    dummy1.result.landing_altitude = 634
-    dummy1.result.result_type = 'goal'
-    dummy1.result.score = 887.9918762489334
-    dummy1.result.departure_score = 126.40468300276432
-    dummy1.result.arrival_score = 0
-    dummy1.result.distance_score = 360.9733620740743
-    dummy1.result.time_score = 400.6138311720949
-    dummy1.result.penalty = 0.0
-    dummy1.result.notifications = []
-    dummy1.result.still_flying_at_deadline = False
-    dummy1.result.time_after = 569
+    dummy1.ESS_rank = 111
+    dummy1.speed = 33.8974323429738
+    dummy1.best_distance_time = 49574
+    dummy1.waypoints_achieved = []
+    dummy1.total_distance = 81506.1394706916
+    dummy1.max_altitude = 2772
+    dummy1.ESS_altitude = 972
+    dummy1.goal_altitude = 983
+    dummy1.landing_time = 49761
+    dummy1.landing_altitude = 634
+    dummy1.result_type = 'goal'
+    dummy1.score = 887.9918762489334
+    dummy1.departure_score = 126.40468300276432
+    dummy1.arrival_score = 0
+    dummy1.distance_score = 360.9733620740743
+    dummy1.time_score = 400.6138311720949
+    dummy1.penalty = 0.0
+    dummy1.notifications = []
+    dummy1.still_flying_at_deadline = False
+    dummy1.time_after = 569
     return dummy1

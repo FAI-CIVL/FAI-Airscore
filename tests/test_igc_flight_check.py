@@ -1,6 +1,6 @@
-from track import Track
+from pilot.track import Track
 from datetime import datetime, date
-from flightresult import FlightResult
+from pilot.flightresult import FlightResult
 import factory_objects
 
 test_task = factory_objects.test_task()

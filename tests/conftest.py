@@ -41,7 +41,7 @@ def db(app):
     yield _db
 
     # Explicitly close DB connection
-    _db.close()
+    _db.session.close()
     _db.drop_all()
 
 
@@ -49,5 +49,5 @@ def db(app):
 def user(db):
     """Create user for the tests."""
     user = UserFactory(password="myprecious")
-    db.commit()
+    db.session.commit()
     return user
