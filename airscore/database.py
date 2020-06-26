@@ -25,15 +25,15 @@ class CRUDMixin(object):
 
     def save(self, commit=True):
         """Save the record."""
-        db.add(self)
+        db.session.add(self)
         if commit:
-            db.commit()
+            db.session.commit()
         return self
 
     def delete(self, commit=True):
         """Remove the record from the database."""
-        db.delete(self)
-        return commit and db.commit()
+        db.session.delete(self)
+        return commit and db.session.commit()
 
 
 class Model(CRUDMixin, db.Model):
@@ -55,18 +55,16 @@ class SurrogatePK(object):
     def get_by_id(cls, record_id):
         """Get record by ID."""
         if any(
-            (
-                isinstance(record_id, basestring) and record_id.isdigit(),
-                isinstance(record_id, (int, float)),
-            )
+                (
+                        isinstance(record_id, basestring) and record_id.isdigit(),
+                        isinstance(record_id, (int, float)),
+                )
         ):
             return cls.query.get(int(record_id))
         return None
 
 
-def reference_col(
-    tablename, nullable=False, pk_name="id", foreign_key_kwargs=None, column_kwargs=None
-):
+def reference_col(tablename, nullable=False, pk_name="id", foreign_key_kwargs=None, column_kwargs=None):
     """Column that adds primary key foreign key reference.
 
     Usage: ::
