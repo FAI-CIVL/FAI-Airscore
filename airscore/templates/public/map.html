@@ -21,7 +21,7 @@
 {% block content %}
 {% if not full_tracklog %}
 <div id="full_tracklog">
-    <input style="margin-right: 0; margin-left:auto; display:block;" type="button" id="full_tracklog_button" onclick="post('/map/{{pilot.id}}-{{task.id}}', {'full': 1})" value="Full Tracklog Map" />
+    <button class="btn btn-primary" style="margin-right: 0; margin-left:auto; display:block;" id="full_tracklog_button" onclick="post('/map/1931-229', {'full': 1})">Full Tracklog Map</button>
 </div>
 {% endif %}
 
@@ -32,7 +32,7 @@
 <form action="/" method="post">
 <div class="container">
    <div class="form-group row">
-                        <label class="col-form-label col-sm-2" for="edit-states1-id">Add Tracks</label>
+                        <label class="col-form-label col-sm-2" id="edit-states1-id">Add Tracks</label>
                         <div class="col-sm-10">
                             <select name="tracks" id="select-tracks-id" class="form-control test"  multiple="multiple" style="display: none;">
                             {%for t in other_tracks%}
@@ -118,7 +118,7 @@ install();
 <script>
 function post(path, params) {
   var csrftoken = $('meta[name=csrf-token]').attr('content');
-  document.getElementById("full_tracklog_button").value="Loading...";
+  document.getElementById("full_tracklog_button").innerHTML="Loading...";
   const form = document.createElement('form');
   form.method = 'post';
   form.action = path;
