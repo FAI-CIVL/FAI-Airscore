@@ -290,11 +290,14 @@ def result_to_geojson(result, task, flight, second_interval=5):
                 pre_sss.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
             if SSS_time <= fix.rawtime <= goal_time:
                 pre_goal.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
+                if len(pre_goal) == 1:
+                    '''adding fix to pre_sss to link polylines'''
+                    pre_sss.append(pre_goal[0])
             if fix.rawtime >= goal_time:
                 post_goal.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
-
-    pre_sss.append(pre_goal[0])
-    post_goal.insert(0, pre_goal[-1])
+                if len(post_goal) == 1:
+                    '''adding fix to pre_goal to link polylines'''
+                    pre_goal.append(post_goal[0])
 
     route_multilinestring = MultiLineString([pre_sss])
     features.append(Feature(geometry=route_multilinestring, properties={"Track": "Pre_SSS"}))

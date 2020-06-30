@@ -1,6 +1,7 @@
 from pilot.track import Track
 from datetime import datetime, date
 from pilot.flightresult import FlightResult
+from pilot.waypointachieved import WaypointAchieved
 import factory_objects
 
 test_task = factory_objects.test_task()
@@ -33,4 +34,5 @@ def test_track_flight_check():
     assert achieved.name == 'TP01'
     assert achieved.rawtime == 43947
     assert achieved.altitude == 1445.0
-
+    assert achieved.lat == 45.814566666666664
+    assert achieved.lon == 9.7707166666666

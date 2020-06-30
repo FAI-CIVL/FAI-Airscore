@@ -19,14 +19,6 @@ class LeadCoeff(object):
         self.lib = task.formula.get_lib()
         self.summing = 0.0
 
-    # @property
-    # def squared_distance(self):
-    #     """ defaulting to True if not specified (should always be)"""
-    #     if self.lib and self.lib.lead_coeff_parameters:
-    #         return self.lib.lead_coeff_parameters.squared_distance
-    #     else:
-    #         return True
-
     def reset(self):
         self.summing = 0.0
 

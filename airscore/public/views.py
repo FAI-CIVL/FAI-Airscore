@@ -198,8 +198,8 @@ def _get_task_result(taskid):
         rank = f"<b>{r['rank']}</b>"
         n = r['name']
         parid = r['par_id']
-        name = n if rt in ['mindist', 'nyp'] else f'<a href="/map/{parid}-{taskid}">{n}</a>'
         sex = r['sex']
+        name = f'<span class="sex-{sex}">{n}</span>' if rt in ['mindist', 'nyp'] else f'<a class="sex-{sex}" href="/map/{parid}-{taskid}">{n}</a>'
         nat = r['nat']
         sp = r['sponsor']
         gl = r['glider']

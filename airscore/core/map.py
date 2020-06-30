@@ -178,7 +178,7 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
         folium_map.add_child(airspace_group)
 
     if trackpoints:
-        trackpoints_group = FeatureGroup(name='Trackpoints', show=False)
+        trackpoints_group = FeatureGroup(name='Trackpoints', show=True)
         for i in trackpoints:
             tooltip = folium.Tooltip(f"Time UTC: <b>{i[5]}</b> Local Time: <b>{i[6]}</b><br>"
                                      f"lat: <b>{round(i[1], 4)}</b> lon: <b>{round(i[0], 4)}</b><br>"
