@@ -16,7 +16,7 @@ class Notification:
         return Notification(**d)
 
 
-def get_notifications(pilot, session=None):
+def get_notifications(pilot):
     """reads notifications from database"""
     if not pilot.track_id:
         return
@@ -30,7 +30,7 @@ def get_notifications(pilot, session=None):
         return results
 
 
-def update_notifications(pilot, session=None):
+def update_notifications(pilot):
     """inserts and / or updates pilot's notifications"""
     if not pilot.track_id:
         return

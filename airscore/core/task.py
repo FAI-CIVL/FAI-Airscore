@@ -850,7 +850,7 @@ class Task(object):
                 wpt.ssr_lon = sr.lon
                 wpt.partial_distance = self.partial_distance[idx]
             # db.commit()
-            db.session.commit()
+            db.commit()
 
     def delete_task_distance(self):
         with db_session() as db:
@@ -885,7 +885,7 @@ class Task(object):
         self.projected_turnpoints = convert_turnpoints(self.turnpoints, self.geo)
         self.projected_line = convert_turnpoints(get_line(self.turnpoints, tol, min_tol), self.geo)
 
-    def to_db(self, session=None):
+    def to_db(self):
         """Inserts new task or updates existent one"""
         row = TblTask() if not self.id else TblTask.get_by_id(self.id)
         row.from_obj(self)
@@ -910,7 +910,7 @@ class Task(object):
             db.commit()
             '''save waypoints'''
             if self.turnpoints:
-                self.update_waypoints(session=session)
+                self.update_waypoints()
 
     def update_from_xctrack_data(self, taskfile_data):
         """processes XCTrack file that is already in memory as json data and updates the task defintion"""
@@ -1512,7 +1512,7 @@ class Task(object):
             db.question.query(W).filter(W.task_id == self.id).delete()
             db.commit()
 
-    def update_waypoints(self, session=None):
+    def update_waypoints(self):
         from db.tables import TblTaskWaypoint as W
         insert_mappings = []
         update_mappings = []
@@ -1635,7 +1635,7 @@ class Task(object):
         return task_coords, turnpoints, short_route, goal_line, tolerance, bbox
 
 
-def delete_task(task_id, files=False, session=None):
+def delete_task(task_id, files=False):
     from db.tables import TblTaskWaypoint as W
     from db.tables import TblTrackWaypoint as TW
     from db.tables import TblTask as T
@@ -1672,7 +1672,7 @@ def delete_task(task_id, files=False, session=None):
         if results:
             '''delete result json files'''
             for res in results:
-                delete_result(res.ref_id, res.filename, db.session)
+                delete_result(res.ref_id, res.filename)
         tracks = db.query(R.track_id).filter(R.task_id == task_id)
         if tracks:
             track_list = [t.track_id for t in tracks]

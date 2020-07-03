@@ -510,7 +510,7 @@ class FSDB(object):
         with open(file, "wb") as file:
             file.write(fsdb)
 
-    def add_comp(self, session=None):
+    def add_comp(self):
         """
             Add comp to AirScore database
         """
@@ -530,7 +530,7 @@ class FSDB(object):
         self.comp.formula.comp_id = self.comp.comp_id
         self.comp.formula.to_db()
 
-    def add_tasks(self, session=None):
+    def add_tasks(self):
         """
             Add comp tasks to AirScore database
         """
@@ -548,13 +548,13 @@ class FSDB(object):
                 t.calculate_task_length()
                 t.calculate_optimised_task_length()
                 '''storing'''
-                t.to_db(db.session)
+                t.to_db()
                 '''adding folders'''
                 t.comp_path = self.comp.comp_path
                 Path(t.file_path).mkdir(parents=True, exist_ok=True)
         return True
 
-    def add_results(self, session=None):
+    def add_results(self):
         """
             Add results for each comp task to AirScore database
         """
@@ -571,7 +571,7 @@ class FSDB(object):
                 for pilot in t.pilots:
                     par = next(p for p in self.comp.participants if p.ID == pilot.ID)
                     pilot.par_id = par.par_id
-                inserted = update_all_results(task_id=t.task_id, pilots=t.pilots, session=session)
+                inserted = update_all_results(task_id=t.task_id, pilots=t.pilots)
                 if inserted:
                     '''populate results track_id'''
                     results = db.query(R.track_id, R.par_id).filter_by(task_id=t.task_id).all()
@@ -580,7 +580,7 @@ class FSDB(object):
                         pilot.track_id = result.track_id
         return True
 
-    def add_participants(self, session=None):
+    def add_participants(self):
         """
             Add participants to AirScore database
         """
@@ -591,7 +591,7 @@ class FSDB(object):
             return False
 
         with db_session() as db:
-            inserted = mass_import_participants(self.comp.comp_id, self.comp.participants, db.session)
+            inserted = mass_import_participants(self.comp.comp_id, self.comp.participants)
             if inserted:
                 '''populate participants par_id'''
                 results = db.query(P.par_id, P.ID).filter_by(comp_id=self.comp.comp_id).all()
@@ -608,11 +608,11 @@ class FSDB(object):
             print(f"comp ID: {self.comp.comp_id}")
             with db_session() as db:
                 print(f"adding participants...")
-                self.add_participants(db.session)
+                self.add_participants()
                 print(f"adding tasks...")
-                self.add_tasks(db.session)
+                self.add_tasks()
                 print(f"adding results...")
-                self.add_results(db.session)
+                self.add_results()
             print(f"Done.")
             return self.comp.comp_id
         else:

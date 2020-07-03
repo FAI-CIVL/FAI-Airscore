@@ -80,7 +80,7 @@ class Participant(Pilot):
                 setattr(par, key, value)
         return par
 
-    def to_db(self, session=None):
+    def to_db(self):
         """stores or updates Participant to AirScore database"""
         with db_session() as db:
             if not self.par_id:
@@ -140,7 +140,7 @@ class Participant(Pilot):
         return pilot
 
     @staticmethod
-    def from_profile(pilot_id: int, comp_id=None, session=None):
+    def from_profile(pilot_id: int, comp_id=None):
         """creates a Participant obj from internal PilotView database table"""
         from db.tables import PilotView, TblCountryCode
         with db_session() as db:
@@ -231,8 +231,8 @@ def register_from_profiles_list(comp_id: int, pilots):
     participants = []
     with db_session() as db:
         for pilot in pilots:
-            participants.append(Participant.from_profile(pilot, comp_id, db.session))
-        mass_import_participants(comp_id, participants, db.session)
+            participants.append(Participant.from_profile(pilot, comp_id))
+        mass_import_participants(comp_id, participants)
     return True
 
 
@@ -278,7 +278,7 @@ def mass_unregister(pilots):
     return True
 
 
-def mass_import_participants(comp_id: int, participants, existing_list=None, session=None):
+def mass_import_participants(comp_id: int, participants, existing_list=None):
     """get participants to update from the list
         Before inserting rows without par_id, we need to check if pilot is already in participants
         Will create a list of dicts from database, if not given as parameter"""

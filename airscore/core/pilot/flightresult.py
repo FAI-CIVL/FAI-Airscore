@@ -881,7 +881,6 @@ def create_waypoint_achieved(fix, tp, time: int, alt: int):
 def get_task_results(task_id: int):
     from db.tables import FlightResultView as F, TblNotification as N, TblTrackWaypoint as W
     from pilot.notification import Notification
-    from sqlalchemy.exc import SQLAlchemyError
     pilots = []
     with db_session() as db:
         results = db.query(F).filter_by(task_id=task_id).all()
@@ -901,7 +900,7 @@ def get_task_results(task_id: int):
     return pilots
 
 
-def update_all_results(task_id, pilots, session=None):
+def update_all_results(task_id, pilots):
     """ get results to update from the list
         It is called from Task.check_all_tracks(), so only during Task full rescoring
         And from FSDB.add results.

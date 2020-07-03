@@ -230,7 +230,7 @@ def create_comp_code(name: str, date: datetime.date):
     return code
 
 
-def get_task_filepath(task_id: int, session=None):
+def get_task_filepath(task_id: int):
     """ returns complete trackfile path"""
     from db.conn import db_session
     from db.tables import TaskObjectView as T

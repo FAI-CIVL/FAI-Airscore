@@ -326,7 +326,7 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None, name_su
     return ref_id, filename, timestamp
 
 
-def unpublish_result(taskid_or_compid, comp=False, session=None):
+def unpublish_result(taskid_or_compid, comp=False):
     """unpublish (set active to 0) all result files for a task or a comp"""
     with db_session() as db:
         if comp:
@@ -337,7 +337,7 @@ def unpublish_result(taskid_or_compid, comp=False, session=None):
     return 1
 
 
-def publish_result(filename_or_refid, ref_id=False, session=None):
+def publish_result(filename_or_refid, ref_id=False):
     """publish (set active to 1) a result files, by default takes filename of result to publish,
     otherwise ref_id if ref_id flag True"""
 
@@ -460,7 +460,7 @@ def update_result_file(filename: str, par_id: int, notification: dict):
                 return error
 
 
-def delete_result(ref_id: int, filename=None, session=None):
+def delete_result(ref_id: int, filename=None):
     from Defines import RESULTDIR
     import os
     with db_session() as db:

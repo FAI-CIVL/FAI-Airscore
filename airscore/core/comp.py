@@ -193,7 +193,7 @@ class Comp(object):
             return 0
 
     @staticmethod
-    def read(comp_id: int, session=None):
+    def read(comp_id: int) -> object or None:
         """Reads competition from database
         takes com_id as argument"""
         from db.tables import CompObjectView as C
@@ -383,7 +383,7 @@ class Comp(object):
                     # comp.results.append({'par_id': p.par_id, 'results': []})
                     comp.results.append({'par_id': p.par_id})
                     res = comp.results[-1]
-                s = next((c_round(pil.score, decimals) for pil in task.pilots if pil.par_id == p.par_id), 0)
+                s = next((c_round(pil.score or 0, decimals) for pil in task.pilots if pil.par_id == p.par_id), 0)
                 if r > 0:  # sanity
                     perf = c_round(s / r, decimals + 3)
                     # res['results'].append({task.task_code: {'pre': s, 'perf': perf, 'score': s}})
@@ -492,19 +492,19 @@ def delete_comp(comp_id, files=True):
         #     folder = path.join(TRACKDIR, db.query(TblCompetition).get(comp_id).comp_path)
         #     if path.exists(folder):
         #         shutil.rmtree(folder)
-        tasks = db.query(T.task_id).filter(T.comp_id == comp_id).all()
+        tasks = db.query(T.task_id).filter_by(comp_id=comp_id).all()
         if tasks:
             '''delete tasks'''
             for task in tasks:
-                delete_task(task.task_id, files=files, session=db.session)
-        results = db.query(RF.ref_id).filter(RF.comp_id == comp_id).all()
+                delete_task(task.task_id, files=files)
+        results = db.query(RF.ref_id).filter_by(comp_id=comp_id).all()
         if results:
             '''delete result json files'''
             for res in results:
-                delete_result(res.ref_id, files, db.session)
+                delete_result(res.ref_id, files)
         '''delete db entries: formula, participants, comp'''
-        db.query(P).filter(P.comp_id == comp_id).delete(synchronize_session=False)
-        db.query(FC).filter(FC.comp_id == comp_id).delete(synchronize_session=False)
-        db.query(TblCompetition).filter(TblCompetition.comp_id == comp_id).delete(synchronize_session=False)
+        db.query(P).filter_by(comp_id=comp_id).delete(synchronize_session=False)
+        db.query(FC).filter_by(comp_id=comp_id).delete(synchronize_session=False)
+        db.query(TblCompetition).filter_by(comp_id=comp_id).delete(synchronize_session=False)
         db.commit()
 

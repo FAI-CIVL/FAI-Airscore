@@ -322,7 +322,7 @@ def get_airspace_map_from_task(task_id: int) -> dict:
     from db.tables import TblTask
     from db.conn import db_session
     with db_session() as db:
-        check = db.session.query(TblTask.airspace_check, TblTask.openair_file).filter_by(task_id=task_id).one()
+        check = db.query(TblTask.airspace_check, TblTask.openair_file).filter_by(task_id=task_id).one()
         if check and check.airspace_check:
             return read_airspace_map_file(check.openair_file)
     return {}

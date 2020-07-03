@@ -50,7 +50,7 @@ class Region:
                 turnpoints.append(turnpoint)
         return cls(region_id, name, filename, openair, turnpoints)
 
-    def to_db(self, session=None):
+    def to_db(self):
         """Inserts new task or updates existent one"""
         with db_session() as db:
             if not self.reg_id:
@@ -67,9 +67,9 @@ class Region:
             db.commit()
             '''save waypoints'''
             if self.turnpoints:
-                self.update_waypoints(session=session)
+                self.update_waypoints()
 
-    def update_waypoints(self, session=None):
+    def update_waypoints(self):
         insert_mappings = []
         for idx, tp in enumerate(self.turnpoints):
             wpt = dict(tp.as_dict(), reg_id=self.reg_id)

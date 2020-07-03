@@ -232,7 +232,7 @@ class Formula(object):
         return self.__dict__
 
     @staticmethod
-    def read(comp_id, session=None):
+    def read(comp_id):
         """reads comp formula from database"""
         from db.tables import TblForComp as F
 
@@ -333,7 +333,7 @@ class TaskFormula(Formula):
         return formula
 
     @staticmethod
-    def from_comp(comp_id, session=None):
+    def from_comp(comp_id):
         """reads comp formula from database"""
         from db.tables import TblForComp as F
 
@@ -352,7 +352,7 @@ class TaskFormula(Formula):
         return get_fsdb_info(TaskFormula(), fs_info.find('FsScoreFormula'))
 
     @staticmethod
-    def read(task_id: int, session=None):
+    def read(task_id: int):
         """reads comp formula from database"""
         from db.tables import TaskFormulaView as F
         formula = F.get_by_id(task_id).populate(TaskFormula())
@@ -363,7 +363,7 @@ class TaskFormula(Formula):
         #         q.populate(formula)
         return formula
 
-    def to_db(self, session=None):
+    def to_db(self):
         """stores TaskFormula parameters to TblTask table in AirScore database"""
         from db.tables import TblTask
         with db_session() as db:

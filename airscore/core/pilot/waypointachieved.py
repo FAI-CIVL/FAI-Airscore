@@ -30,7 +30,7 @@ class WaypointAchieved:
     def from_dict(d: dict):
         return WaypointAchieved(**d)
 
-def get_waypoints_achieved(track_id, session=None):
+def get_waypoints_achieved(track_id):
     """retrieves a WaypointAchieved obj list for track_id result"""
     from db.tables import TblTrackWaypoint
     from sqlalchemy.orm import aliased
@@ -44,7 +44,7 @@ def get_waypoints_achieved(track_id, session=None):
     return achieved
 
 
-def update_waypoints_achieved(pilot, session=None):
+def update_waypoints_achieved(pilot):
     """deletes old entries and updates TblTrackWaypoint for result"""
     from db.tables import TblTrackWaypoint
     mappings = []
