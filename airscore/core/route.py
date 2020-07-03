@@ -14,7 +14,7 @@ from db.conn import db_session
 
 import numpy as np
 from geographiclib.geodesic import Geodesic
-from geopy.distance import geodesic, vincenty
+from geopy.distance import geodesic
 from pyproj import Proj
 
 '''define earth model'''
@@ -247,9 +247,9 @@ def distance(p1, p2, method='fast_andoyer'):
     if method == "fast_andoyer":
         # print ("fast andoyer")
         return fast_andoyer(p1, p2)
-    elif method == "vincenty":
-        # print ("vincenty")
-        return vincenty((p1.lat, p1.lon), (p2.lat, p2.lon)).meters
+    # elif method == "vincenty":
+    #     # print ("vincenty")
+    #     return vincenty((p1.lat, p1.lon), (p2.lat, p2.lon)).meters
     elif method == "geodesic":
         # print ("geodesic")
         return geodesic((p1.lat, p1.lon), (p2.lat, p2.lon)).meters
