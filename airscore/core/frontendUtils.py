@@ -25,7 +25,7 @@ def get_comps():
     with db_session() as db:
         comps = (db.query(c.comp_id, c.comp_name, c.comp_site,
                           c.comp_class, c.sanction, c.comp_type, c.date_from,
-                          c.date_to, func.count(TblTask.task_id))
+                          c.date_to, func.count(TblTask.task_id), c.external)
                  .outerjoin(TblTask, c.comp_id == TblTask.comp_id)
                  .group_by(c.comp_id))
 
@@ -36,7 +36,11 @@ def get_comps():
         if comp[5] == 'RACE' or comp[5] == 'Route':
             compid = comp[0]
             name = comp[1]
-            comp[1] = f'<a href="/competition/{compid}">{name}</a>'
+            if comp[9]:
+                comp[1] = f'<a href="/ext_comp_result/{compid}">{name}</a>'
+                comp[8] = '[Ext.]'
+            else:
+                comp[1] = f'<a href="/competition/{compid}">{name}</a>'
         # else:
         # comp['comp_name'] = "<a href=\"comp_overall.html?comp_id=$id\">" . $row['comp_name'] . '</a>';
         if comp[3] == "PG" or "HG":
