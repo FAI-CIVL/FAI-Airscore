@@ -199,7 +199,10 @@ def _get_task_result(taskid):
         n = r['name']
         parid = r['par_id']
         sex = r['sex']
-        name = f'<span class="sex-{sex}">{n}</span>' if rt in ['mindist', 'nyp'] else f'<a class="sex-{sex}" href="/map/{parid}-{taskid}">{n}</a>'
+        if rt in ['mindist', 'nyp'] or not r['track_file']:
+            name = f'<span class="sex-{sex}">{n}</span>'
+        else:
+            name = f'<a class="sex-{sex}" href="/map/{parid}-{taskid}">{n}</a>'
         nat = r['nat']
         sp = r['sponsor']
         gl = r['glider']
@@ -229,6 +232,10 @@ def _get_task_result(taskid):
 
     result_file['data'] = all_pilots
     return result_file
+
+@blueprint.route('/ext_comp_result/<int:compid>')
+def ext_comp_result(compid):
+    return render_template('public/ext_comp_overall.html', compid=compid)
 
 
 @blueprint.route('/comp_result/<int:compid>')
