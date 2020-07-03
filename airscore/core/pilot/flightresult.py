@@ -674,7 +674,7 @@ class FlightResult(Participant):
         if self.result_type not in ('abs', 'dnf', 'mindist'):
             ID = self.par_id if not self.ID else self.ID  # registration needs to check that all pilots
             # have a unique ID, with option to use par_id as ID for all pilots if no ID is given
-            print(f"{ID}. {self.name}: ({self.track.track_file})")
+            print(f"{ID}. {self.name}: ({self.track_file})")
             if not flight:
                 filename = Path(task.file_path, self.track_file)
                 '''load track file'''
@@ -795,9 +795,9 @@ def verify_all_tracks(task, lib, airspace=None, print=print):
     from pathlib import Path
     pilots = [p for p in task.pilots if p.result_type not in ('abs', 'dnf', 'mindist')]
     '''check if any track is missing'''
-    if any(not Path(task.file_path, p.track.track_file).is_file() for p in pilots):
+    if any(not Path(task.file_path, p.track_file).is_file() for p in pilots):
         print(f"The following tracks are missing from folder {task.file_path}:")
-        for track in [p.track.track_file for p in pilots if not Path(task.file_path, p.track.track_file).is_file()]:
+        for track in [p.track_file for p in pilots if not Path(task.file_path, p.track_file).is_file()]:
             print(f"{track}")
         return None
 

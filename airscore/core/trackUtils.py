@@ -246,7 +246,7 @@ def create_tracklog_map_result_file(par_id: int, task_id: int):
     task = Task.read(task_id)
     airspace = None if not task.airspace_check else AirspaceCheck.from_task(task)
     pilot = flightresult.FlightResult.read(par_id, task_id)
-    file = path.join(task.file_path, pilot.track.track_file)
+    file = path.join(task.file_path, pilot.track_file)
     '''load track file'''
     flight = Flight.create_from_file(file)
     pilot.check_flight(flight, task, airspace)
