@@ -532,6 +532,7 @@ def process_igc_zip(task, zipfile):
 
 def get_task_result_file_list(taskid: int):
     from db.tables import TblResultFile as R
+    files = []
     with db_session() as db:
         rows = db.query(R.created, R.filename, R.status, R.active, R.ref_id).filter_by(task_id=taskid).all()
         if rows:
