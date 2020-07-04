@@ -294,12 +294,16 @@ class Formula(object):
         return self.comp_id
 
     def get_lib(self):
-
-        formula_type = self.formula_type
-        version = str(self.formula_version)
-
-        '''get formula library to use in scoring'''
-        formula_file = 'formulas.' + formula_type + version
+        """get formula library to use in scoring"""
+        # print(f'{self.formula_type}, {self.formula_version}, {self.formula_name}')
+        if self.formula_type and self.formula_version:
+            formula_type = self.formula_type
+            version = str(self.formula_version)
+            formula_file = 'formulas.' + formula_type + version
+        elif self.formula_name:
+            formula_file = 'formulas.' + str(self.formula_name).lower()
+        else:
+            return None
         try:
             lib = importlib.import_module(formula_file, package=None)
             return lib
