@@ -248,7 +248,7 @@ def get_pilot_list_for_track_management(taskid: int):
     return all_data
 
 
-def get_waypoint(wpt_id=None, rwp_id=None):
+def get_waypoint(wpt_id: int = None, rwp_id: int = None):
     """reads waypoint from tblTaskWaypoint or tblRegionWaypoint depending on input and returns Turnpoint object"""
     if not (wpt_id or rwp_id):
         return None
