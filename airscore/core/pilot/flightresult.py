@@ -900,17 +900,54 @@ def get_task_results(task_id: int):
     return pilots
 
 
+def save_track(result: FlightResult, task_id: int):
+    """ stores pilot result to database.
+        we already have FlightResult.to_db()
+        but if we organize track reading using Pilot obj. this should be useful.
+        We will also be able to delete a lot of redundant info about track filename, pilot ID, task_id and so on"""
+    from db.tables import TblTaskResult as R
+    from pilot.notification import update_notifications
+    from pilot.waypointachieved import update_waypoints_achieved
+    '''checks conformity'''
+    if not (result.par_id and task_id):
+        '''we miss info about pilot and task'''
+        print(f"Error: missing info about participant ID and/or task ID")
+        return None
+    '''database connection'''
+    with db_session() as db:
+        if result.track_id:
+            '''read db row'''
+            r = db.query(R).get(result.track_id)
+            r.comment = result.comment
+            r.track_file = result.track_file
+            for attr in [a for a in dir(r) if not (a[0] == '_' or a in ['track_file', 'comment'])]:
+                if hasattr(result, attr):
+                    setattr(r, attr, getattr(result, attr))
+            db.flush()
+        else:
+            '''create a new result'''
+            r = R.from_obj(result)
+            r.task_id = task_id
+            db.add(r)
+            db.flush()
+            result.track_id = r.track_id
+
+        '''notifications'''
+        update_notifications(result)
+        '''waypoints_achieved'''
+        update_waypoints_achieved(result)
+        db.commit()
+
+
 def update_all_results(task_id, pilots):
     """ get results to update from the list
         It is called from Task.check_all_tracks(), so only during Task full rescoring
         And from FSDB.add results.
         We are then deleting all present non admin Notification from database for results, as related to old scoring.
         """
-    import itertools
     from db.tables import TblTaskResult as R, TblNotification as N, TblTrackWaypoint as W
     from dataclasses import asdict
     from sqlalchemy import and_
-    from sqlalchemy.exc import SQLAlchemyError
     insert_mappings = []
     update_mappings = []
     notif_mappings = []

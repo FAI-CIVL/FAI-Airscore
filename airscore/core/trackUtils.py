@@ -150,28 +150,25 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None, check_g_rec
     print("*******************processed all tracks**********************")
 
 
-# def import_track(pilot, task_id):
-#     pilot.track.to_db(task_id)
-#     return pilot.track.track_id
-
-
-def verify_and_import_track(pilot, track, task, print=print):
+def verify_and_import_track(result: FlightResult, track, task, print=print):
     from airspace import AirspaceCheck
+    from pilot.flightresult import save_track
 
     if task.airspace_check:
         airspace = AirspaceCheck.from_task(task)
     else:
         airspace = None
     '''check flight against task'''
-    pilot.check_flight(track.flight, task, airspace_obj=airspace, print=print)
+    result.check_flight(track.flight, task, airspace_obj=airspace, print=print)
     '''create map file'''
-    pilot.save_tracklog_map_file(task, track.flight)
+    result.save_tracklog_map_file(task, track.flight)
     '''save to database'''
-    pilot.to_db()
-    if pilot.notifications:
-        print(str(pilot.notifications))
+    save_track(result, task.id)
+    if result.notifications:
+        print(str(result.notifications))
     print('***************END****************')
-    return pilot
+    return result
+
 
 def find_pilot(name):
     """Get pilot from name or fai
@@ -269,11 +266,11 @@ def get_unscored_pilots(task_id: int, xcontest=False):
     pilot_list = []
     with db_session() as db:
         results = db.query(U.par_id, U.comp_id, U.ID, U.name, U.nat, U.sex, U.civl_id,
-                                   U.live_id, U.glider, U.glider_cert, U.sponsor, U.xcontest_id,
-                                   U.team, U.nat_team).filter_by(task_id=task_id).all()
-        # if xcontest:
-        #     q = q.filter(U.xcontest_id != None)
-        # results = q.all()
+                           U.live_id, U.glider, U.glider_cert, U.sponsor, U.xcontest_id,
+                           U.team, U.nat_team).filter_by(task_id=task_id)
+        if xcontest:
+            results = results.filter(U.xcontest_id != None)
+        results = results.all()
         for p in results:
             pilot = FlightResult()
             p.populate(pilot)
