@@ -45,18 +45,20 @@ def get_xc_parameters(task_id):
     """Get site info and date from database """
     # TODO I suspect the logic on xc_site will be broken if we use waypoint file instead of table
     # Should we use TblTaskWaypoint instead or manually or by adding xc_to id to launch name or description?
-    from db.tables import TaskXContestWptView as XC
+    from db.tables import TblTaskWaypoint as W, TblRegionWaypoint as R, TblTask as T
 
     site_id = 0
     takeoff_id = 0
     datestr = None
 
     with db_session() as db:
-        q = db.query(XC).get(task_id)
+        q = db.query(R.xccSiteID, R.xccToID).join(W, W.rwp_id == R.rwp_id).filter(W.task_id == task_id,
+                                                                                  W.type == 'launch').one()
+        date = T.get_by_id(task_id).date
         if q is not None:
             site_id = q.xccSiteID
             takeoff_id = q.xccToID
-            date = q.tasDate
+            # date = q.tasDate
             logging.info("site_id:%s takeoff_id:%s date:%s", site_id, takeoff_id, date)
             datestr = date.strftime('%Y-%m-%d')  # convert from datetime to string
         else:
@@ -89,13 +91,14 @@ def get_zip(site_id, takeoff_id, date, login_name, password, zip_file):
     time.sleep(4)
     response = s.get(
         'https://www.xcontest.org/util/igc.archive.comp.php?date=%s&%s=%s' % (date, site_launch, location_id))
+    print(f'https://www.xcontest.org/util/igc.archive.comp.php?date={date}&{site_launch}={location_id}')
 
     if "No error" in response.text:
         logging.info("logged into xcontest and igc.archive.comp.php running with no error")
         print("logged into xcontest and igc.archive.comp.php running with no error. <br />")
     else:
-        logging.error("igc.archive.comp.php not returing as expected")
-        print("Error igc.archive.comp.php not returing as expected. See xcontest.log for details. <br />")
+        logging.error("igc.archive.comp.php not returning as expected")
+        print("Error igc.archive.comp.php not returning as expected. See xcontest.log for details. <br />")
         logging.error("web page output:\n %s", response.text)
     webpage = lxml.html.fromstring(response.content)
     zfile = requests.get(webpage.xpath('//a/@href')[0])
@@ -105,12 +108,14 @@ def get_zip(site_id, takeoff_id, date, login_name, password, zip_file):
         f.write(zfile.content)
 
 
-def get_zipfile(task, temp_folder):
+def get_zipfile(task):
     """"""
     from os import path
     import Defines
+    temp_folder = Defines.TEMPFILES
     result = ''
     task_id = task.task_id
+
 
     """get zipfile from XContest server"""
     site_id, takeoff_id, date = get_xc_parameters(task_id)
