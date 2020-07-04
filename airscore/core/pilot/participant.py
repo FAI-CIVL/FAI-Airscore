@@ -11,7 +11,6 @@ Stuart Mackintosh Antonio Golfari - 2019
 """
 
 from pilot.pilot import Pilot
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import aliased
 from calcUtils import get_date
 from sources.civlrankings import create_participant_from_CIVLID, create_participant_from_name
@@ -84,13 +83,14 @@ class Participant(Pilot):
         """stores or updates Participant to AirScore database"""
         with db_session() as db:
             if not self.par_id:
-                pil = P()
+                pil = P.from_obj(self)
                 db.add(pil)
                 db.flush()
                 self.par_id = pil.par_id
             else:
                 pil = db.query(P).get(self.par_id)
-            db.populate_row(pil, self)
+                pil.update(**self.as_dict())
+                db.flush()
         return self.par_id
 
     @staticmethod

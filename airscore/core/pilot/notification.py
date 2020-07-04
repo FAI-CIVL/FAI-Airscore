@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from db.tables import TblNotification as N
 from db.conn import db_session
-from sqlalchemy.exc import SQLAlchemyError
+
 
 @dataclass
 class Notification:

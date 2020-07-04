@@ -30,6 +30,7 @@ class WaypointAchieved:
     def from_dict(d: dict):
         return WaypointAchieved(**d)
 
+
 def get_waypoints_achieved(track_id):
     """retrieves a WaypointAchieved obj list for track_id result"""
     from db.tables import TblTrackWaypoint
@@ -38,7 +39,7 @@ def get_waypoints_achieved(track_id):
     achieved = []
     with db_session() as db:
         rows = db.query(t.trw_id, t.wpt_id, t.name, t.rawtime,
-                                t.lat, t.lon, t.altitude).filter_by(track_id=track_id).all()
+                        t.lat, t.lon, t.altitude).filter_by(track_id=track_id).all()
         for w in rows:
             achieved.append(WaypointAchieved(**w._asdict()))
     return achieved
@@ -56,4 +57,3 @@ def update_waypoints_achieved(pilot):
         '''insert new rows'''
         db.bulk_insert_mappings(TblTrackWaypoint, mappings)
         db.commit()
-
