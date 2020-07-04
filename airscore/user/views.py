@@ -794,7 +794,8 @@ def _upload_track(taskid, parid):
                 if frontendUtils.allowed_tracklog(tracklog.filename):
                     if frontendUtils.production():
                         filename, full_file_name = frontendUtils.save_igc_background(taskid, parid, tracklog,
-                                                                                     current_user.username)
+                                                                                     current_user.username,
+                                                                                     check_g_record=check_g_record)
                         job = current_app.task_queue.enqueue(frontendUtils.process_igc_background, taskid, parid,
                                                              filename, full_file_name, current_user.username)
                         if not filename:

@@ -394,7 +394,6 @@ def save_igc_background(task_id: int, par_id: int, tracklog, user, check_g_recor
         print(f'IGC file saved: {fullname.split("/")[-1]}')
     else:
         return None, None
-
     return filename, fullname
 
 
