@@ -140,21 +140,27 @@ class Participant(Pilot):
         return pilot
 
     @staticmethod
-    def from_profile(pilot_id: int, comp_id=None):
+    def from_profile(pilot_id: int, comp_id: int):
         """creates a Participant obj from internal PilotView database table"""
         from db.tables import PilotView, TblCountryCode
         with db_session() as db:
             result = db.query(PilotView).get(pilot_id)
             if result:
-                pilot = Participant(pil_id=pilot_id, comp_id=comp_id)
-                pilot.name = ' '.join([result.first_name.title(), result.last_name.title()])
-                pilot.glider = ' '.join([result.glider_brand.title(), result.glider])
-                c = aliased(TblCountryCode)
-                pilot.nat = db.query(c.natIso3).filter(c.natId == result.nat).scalar()
-                for attr in ['sex', 'civl_id', 'fai_id', 'sponsor', 'xcontest_id', 'glider_cert']:
-                    if hasattr(result, attr):
-                        setattr(pilot, attr, getattr(result, attr))
-                return pilot
+                try:
+                    pilot = Participant(pil_id=pilot_id, comp_id=comp_id)
+                    pilot.name = ' '.join([result.first_name.title(), result.last_name.title()])
+                    if result.glider_brand:
+                        pilot.glider = ' '.join([result.glider_brand.title(), result.glider])
+                    else:
+                        pilot.glider = result.glider
+                    c = aliased(TblCountryCode)
+                    pilot.nat = db.query(c.natIso3).filter(c.natId == result.nat).scalar()
+                    for attr in ['sex', 'civl_id', 'fai_id', 'sponsor', 'xcontest_id', 'glider_cert']:
+                        if hasattr(result, attr):
+                            setattr(pilot, attr, getattr(result, attr))
+                    return pilot
+                except AttributeError:
+                    print(f'Error: pilot id {pilot_id} ha no name or no last name')
             else:
                 print(f'Error: No result has been found for profile id {pilot_id}')
                 return None
@@ -222,17 +228,16 @@ def extract_participants_from_excel(comp_id: int, filename, from_CIVL=False):
     return pilots
 
 
-def register_from_profiles_list(comp_id: int, pilots):
+def register_from_profiles_list(comp_id: int, pilots: list):
     """ gets comp_id and pil_id list
         registers pilots to comp"""
     if not (comp_id and pilots):
         print(f"error: comp_id does not exist or pilots list is empty")
         return None
     participants = []
-    with db_session() as db:
-        for pilot in pilots:
-            participants.append(Participant.from_profile(pilot, comp_id))
-        mass_import_participants(comp_id, participants)
+    for pil_id in pilots:
+        participants.append(Participant.from_profile(pil_id, comp_id))
+    mass_import_participants(comp_id, participants)
     return True
 
 
@@ -278,7 +283,7 @@ def mass_unregister(pilots):
     return True
 
 
-def mass_import_participants(comp_id: int, participants, existing_list=None):
+def mass_import_participants(comp_id: int, participants: list, existing_list: list = None):
     """get participants to update from the list
         Before inserting rows without par_id, we need to check if pilot is already in participants
         Will create a list of dicts from database, if not given as parameter"""
