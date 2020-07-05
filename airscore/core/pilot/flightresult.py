@@ -82,7 +82,7 @@ class FlightResult(Participant):
         self.last_altitude = last_altitude
         self.landing_time = 0
         self.landing_altitude = 0
-        self.result_type = 'lo'
+        self.result_type = 'nyp'
         self.score = 0
         self.departure_score = 0
         self.arrival_score = 0
@@ -671,7 +671,7 @@ class FlightResult(Participant):
         from pathlib import Path
         from Defines import MAPOBJDIR
         import json
-        if self.result_type not in ('abs', 'dnf', 'mindist'):
+        if self.result_type not in ('abs', 'dnf', 'mindist', 'nyp'):
             ID = self.par_id if not self.ID else self.ID  # registration needs to check that all pilots
             # have a unique ID, with option to use par_id as ID for all pilots if no ID is given
             print(f"{ID}. {self.name}: ({self.track_file})")
@@ -805,7 +805,7 @@ def verify_all_tracks(task, lib, airspace=None, print=print):
     number_of_pilots = len(task.pilots)
     for track_number, pilot in enumerate(task.pilots, 1):
         print(f"{track_number}/{number_of_pilots}|track_counter")
-        print(f"type: {pilot.result_type}")
+        # print(f"type: {pilot.result_type}")
         if pilot.result_type not in ('abs', 'dnf', 'mindist'):
             print(f"{pilot.ID}. {pilot.name}: ({pilot.track_file})")
             filename = Path(task.file_path, pilot.track_file)

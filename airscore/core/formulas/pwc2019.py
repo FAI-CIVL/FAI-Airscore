@@ -191,7 +191,7 @@ def missing_area(time_interval, best_distance_to_ESS, ss_distance):
 def tot_lc_calc(res, t):
     """ Function to calculate final Leading Coefficient for pilots,
         that needs to be done when all tracks have been scored"""
-    if res.result_type in ('abs', 'dnf', 'mindist') or not res.SSS_time:
+    if res.result_type in ('abs', 'dnf', 'mindist', 'nyp') or not res.SSS_time:
         '''pilot did't make Start or has no track'''
         return 0
     ss_distance = t.SS_distance / 1000

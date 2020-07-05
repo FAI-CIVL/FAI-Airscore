@@ -347,7 +347,7 @@ class Task(object):
 
     @property
     def valid_results(self):
-        return [pilot for pilot in self.pilots if pilot.result_type not in ('abs', 'dnf')]
+        return [pilot for pilot in self.pilots if pilot.result_type not in ('abs', 'dnf', 'nyp')]
 
     ''' pilots stats'''
 
@@ -357,7 +357,7 @@ class Task(object):
 
     @property
     def pilots_launched(self):
-        return len(self.valid_results)
+        return len([p for p in self.pilots if p.result_type not in ('abs', 'dnf')])
 
     @property
     def pilots_ss(self):
@@ -651,8 +651,9 @@ class Task(object):
     def create_json_elements(self):
         """ returns Dict with elements to generate json file"""
 
-        pil_list = sorted([p for p in self.pilots if p.result_type not in ['dnf', 'abs']],
+        pil_list = sorted([p for p in self.pilots if p.result_type not in ['dnf', 'abs', 'nyp']],
                           key=lambda k: k.score, reverse=True)
+        pil_list += [p for p in self.pilots if p.result_type == 'nyp']
         pil_list += [p for p in self.pilots if p.result_type == 'dnf']
         pil_list += [p for p in self.pilots if p.result_type == 'abs']
 
@@ -771,7 +772,7 @@ class Task(object):
                     if not self.is_valid():
                         return f'duration is not enough for all pilots, task with id {self.id} is not valid, ' \
                                f'scoring is not needed.'
-                    adjust_flight_results(self, lib)
+                    adjust_flight_results(self, lib, airspace)
 
             elif self.comp_class == 'HG':
                 ''' In hang-gliding, stopped tasks are “scored back” by a time that is determined

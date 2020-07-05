@@ -406,7 +406,7 @@ class FSDB(object):
                 '''create pilot result for the task'''
                 pil_p = ET.SubElement(task_p, 'FsParticipant')
                 pil_p.set('id', str(pil.ID or pil.par_id))
-                if not (pil.result_type in ('abs', 'dnf')):
+                if not (pil.result_type in ('abs', 'dnf', 'nyp')):
                     '''only if pilot flew'''
                     pil_fd = ET.SubElement(pil_p, 'FsFlightData')
                     pil_r = ET.SubElement(pil_p, 'FsResult')

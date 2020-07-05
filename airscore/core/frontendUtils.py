@@ -233,7 +233,7 @@ def get_pilot_list_for_track_management(taskid: int):
             data['Result'] = f'Goal {time}'
         elif pilot['result_type'] == 'lo':
             data['Result'] = f"LO {round(pilot['distance_flown'] / 1000, 2)}"
-        elif pilot['result_type'] is None:
+        elif pilot['result_type'] is 'nyp':
             data['Result'] = "Not Yet Processed"
         elif pilot['result_type'] == "mindist":
             data['Result'] = "Min Dist"

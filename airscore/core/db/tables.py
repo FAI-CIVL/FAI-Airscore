@@ -767,7 +767,7 @@ class TblTaskResult(BaseModel):
     last_altitude = Column(SMALLINT(6), server_default=text("'0'"))
     landing_time = Column(MEDIUMINT(9), nullable=False, server_default=text("'0'"))
     landing_altitude = Column(SMALLINT(6), nullable=False, server_default=text("'0'"))
-    result_type = Column(Enum('abs', 'dnf', 'lo', 'goal', 'mindist'), server_default=text("'lo'"))
+    result_type = Column(Enum('abs', 'dnf', 'lo', 'goal', 'mindist', 'nyp'), server_default=text("'nyp'"))
     penalty = Column(Float)
     comment = Column(Text)
     place = Column(SMALLINT(6))

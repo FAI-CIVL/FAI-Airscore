@@ -192,7 +192,7 @@ def _get_task_result(taskid):
         return render_template('404.html')
 
     all_pilots = []
-    results = [p for p in result_file['results'] if p['result_type'] not in ['dnf', 'abs']]
+    results = [p for p in result_file['results'] if p['result_type'] not in ['dnf', 'abs', 'nyp']]
     for r in results:
         rt = r['result_type']
         rank = f"<b>{r['rank']}</b>"

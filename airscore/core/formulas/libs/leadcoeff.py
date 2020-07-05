@@ -51,7 +51,7 @@ def tot_lc_calc(res, t):
     """ Function to calculate final Leading Coefficient for pilots,
         that needs to be done when all tracks have been scored"""
     '''Checking if we have a assigned status without a track, and if pilot actually did the start pilon'''
-    if res.result_type in ('abs', 'dnf', 'mindist') or not res.SSS_time:
+    if res.result_type in ('abs', 'dnf', 'mindist', 'nyp') or not res.SSS_time:
         '''pilot did't make Start or has no track'''
         return 0
 

@@ -442,8 +442,9 @@ def update_result_file(filename: str, par_id: int, notification: dict):
                 result['penalty'] += penalty - old_penalty
                 result['score'] = max(0, sum([result['arrival_score'], result['departure_score'],
                                               result['time_score'], result['distance_score']]) - result['penalty'])
-                pil_list = sorted([p for p in data['results'] if p['result_type'] not in ['dnf', 'abs']],
+                pil_list = sorted([p for p in data['results'] if p['result_type'] not in ['dnf', 'abs', 'nyp']],
                                   key=lambda k: k['score'], reverse=True)
+                pil_list += [p for p in data['results'] if p['result_type'] == 'nyp']
                 pil_list += [p for p in data['results'] if p['result_type'] == 'dnf']
                 pil_list += [p for p in data['results'] if p['result_type'] == 'abs']
                 data['results'] = pil_list
