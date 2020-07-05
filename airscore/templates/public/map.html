@@ -21,7 +21,7 @@
 {% block content %}
 {% if not full_tracklog %}
 <div id="full_tracklog">
-    <button class="btn btn-primary" style="margin-right: 0; margin-left:auto; display:block;" id="full_tracklog_button" onclick="post('/map/1931-229', {'full': 1})">Full Tracklog Map</button>
+    <button class="btn btn-primary" style="margin-right: 0; margin-left:auto; display:block;" id="full_tracklog_button" onclick="post('/map/{{pilot.id}}-{{task.id}}', {'full': 1})">Full Tracklog Map</button>
 </div>
 {% endif %}
 
