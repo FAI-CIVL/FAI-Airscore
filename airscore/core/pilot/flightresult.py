@@ -300,7 +300,12 @@ class FlightResult(Participant):
         return FlightResult.from_dict(result)
 
     @staticmethod
-    def check_flight(flight, task, airspace_obj=None, deadline=None, print=print):
+    def from_flight_check(par_id, flight, task, airspace_obj=None, deadline=None, print=print):
+        """ creates a FlightResult obj. from result dict in Task Result json file"""
+        result = FlightResult.from_participant(Participant.read(par_id))
+        return result.check_flight(flight, task, airspace_obj, deadline, print)
+
+    def check_flight(self, flight, task, airspace_obj=None, deadline=None, print=print):
         """ Checks a Flight object against the task.
             Args:
                    :param flight: a Flight object
@@ -837,8 +842,8 @@ def adjust_flight_results(task, lib, airspace=None):
                 filename = path.join(task.file_path, pilot.track_file)
                 '''load track file'''
                 flight = Flight.create_from_file(filename)
-                adjusted = FlightResult.check_flight(flight, task, airspace_obj=None, deadline=last_time)
-                pilot.result_type = adjusted.result_type
+                pilot.check_flight(flight, task, airspace_obj=airspace, deadline=last_time)
+                # pilot.result_type = adjusted.result_type
                 '''create map file'''
                 pilot.save_tracklog_map_file(task, flight)
     lib.process_results(task)
