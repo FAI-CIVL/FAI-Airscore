@@ -28,6 +28,10 @@ class WaypointAchieved:
 
     @staticmethod
     def from_dict(d: dict):
+        if 'trw_id' not in d.keys():
+            d['trw_id'] = None
+        if 'wpt_id' not in d.keys():
+            d['wpt_id'] = None
         return WaypointAchieved(**d)
 
 
