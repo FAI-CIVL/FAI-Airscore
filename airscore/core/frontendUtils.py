@@ -313,14 +313,14 @@ def process_igc(task_id: int, par_id: int, tracklog):
     from airspace import AirspaceCheck
     from igc_lib import Flight
     from task import Task
-    from pilot.flightresult import FlightResult
+    from pilot.flightresult import FlightResult, save_track
 
     pilot = FlightResult.read(par_id, task_id)
     if pilot.name:
         task = Task.read(task_id)
-        filename, fullname = create_igc_filename(task.file_path, task.date, pilot.name)
+        fullname = create_igc_filename(task.file_path, task.date, pilot.name)
         tracklog.save(fullname)
-        pilot.track_file = filename
+        pilot.track_file = Path(fullname).name
     else:
         return None, None
 
@@ -348,7 +348,8 @@ def process_igc(task_id: int, par_id: int, tracklog):
         '''create map file'''
         pilot.save_tracklog_map_file(task, flight)
         """adding track to db"""
-        pilot.to_db()
+        # pilot.to_db()
+        save_track(pilot, task.id)
         time = ''
         data = {'par_id': pilot.par_id, 'track_id': pilot.track_id}
         if pilot.goal_time:
@@ -374,7 +375,7 @@ def save_igc_background(task_id: int, par_id: int, tracklog, user, check_g_recor
     print = partial(print_to_sse, id=par_id, channel=user)
     if pilot.name:
         task = Task.read(task_id)
-        filename, fullname = create_igc_filename(task.file_path, task.date, pilot.name)
+        fullname = create_igc_filename(task.file_path, task.date, pilot.name)
         tracklog.save(fullname)
         print('|open_modal')
         print('***************START*******************')
@@ -394,13 +395,13 @@ def save_igc_background(task_id: int, par_id: int, tracklog, user, check_g_recor
         print(f'IGC file saved: {fullname.split("/")[-1]}')
     else:
         return None, None
-    return filename, fullname
+    return fullname.split("/")[-1], fullname
 
 
 def process_igc_background(task_id: int, par_id: int, filename, full_file_name, user):
     from pilot.track import igc_parsing_config_from_yaml
     from calcUtils import epoch_to_date
-    from pilot.flightresult import FlightResult
+    from pilot.flightresult import FlightResult, save_track
     from airspace import AirspaceCheck
     from igc_lib import Flight
     from task import Task
@@ -440,7 +441,8 @@ def process_igc_background(task_id: int, par_id: int, filename, full_file_name, 
         '''create map file'''
         pilot.save_tracklog_map_file(task, flight)
         """adding track to db"""
-        pilot.to_db()
+        # pilot.to_db()
+        save_track(pilot, task.id)
         time = ''
 
         if pilot.goal_time:

@@ -343,4 +343,5 @@ def create_igc_filename(file_path, date, pilot_name):
     index = str(len(glob.glob(file_path + '/' + pilot_name + '*.igc')) + 1).zfill(2)
     filename = '_'.join([pilot_name, str(date), index]) + '.igc'
     fullname = path.join(file_path, filename)
-    return filename, fullname
+    return fullname
+
