@@ -550,7 +550,7 @@ def get_task_result_file_list(taskid):
         try:
             results = db.session.query(R.created, R.filename, R.status, R.active, R.ref_id).filter(
                 R.task_id == taskid).all()
-            if files:
+            if results:
                 files = [row._asdict() for row in results]
         except SQLAlchemyError:
             print("there was a problem with getting the result list")
