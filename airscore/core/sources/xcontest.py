@@ -26,19 +26,19 @@ def get_pilot_from_list(filename, pilots):
     # DE VIVO.ALESSANDRO.alexpab.2019-12-19.13-22-49.IGC
     # surname.firstname.xcontest_id.YYYY-mm-dd.hh-mm-ss.IGC
 
-    from os import path
+    from pathlib import Path
 
-    string = path.splitext(filename)[0]
+    string = Path(filename).stem
     fields = string.split('.')
     xcontest_id = fields[2].lower()
-    name = ' '.join([str(fields[1]), str(fields[0])])
+    name = ' '.join([str(fields[1]).lower(), str(fields[0]).lower()])
     for idx, pilot in enumerate(pilots):
         if pilot.xcontest_id and pilot.xcontest_id.lower() == xcontest_id:
             '''found a pilot'''
             pilot.track_file = filename
             if not pilot.name.lower() in name:
                 print(f'WARNING: Name {pilot.name.lower()} does not match with filename {string}')
-            return pilot, idx
+            return pilot, pilot.name
 
 
 def get_xc_parameters(task_id):
@@ -91,7 +91,6 @@ def get_zip(site_id, takeoff_id, date, login_name, password, zip_file):
     time.sleep(4)
     response = s.get(
         'https://www.xcontest.org/util/igc.archive.comp.php?date=%s&%s=%s' % (date, site_launch, location_id))
-    print(f'https://www.xcontest.org/util/igc.archive.comp.php?date={date}&{site_launch}={location_id}')
 
     if "No error" in response.text:
         logging.info("logged into xcontest and igc.archive.comp.php running with no error")
@@ -101,28 +100,30 @@ def get_zip(site_id, takeoff_id, date, login_name, password, zip_file):
         print("Error igc.archive.comp.php not returning as expected. See xcontest.log for details. <br />")
         logging.error("web page output:\n %s", response.text)
     webpage = lxml.html.fromstring(response.content)
-    zfile = requests.get(webpage.xpath('//a/@href')[0])
+    # print([el for el in webpage])
+    try:
+        zfile = requests.get(webpage.xpath('//a/@href')[0])
+        # save the file
+        with open(zip_file, 'wb') as f:
+            f.write(zfile.content)
+    except requests.exceptions.MissingSchema:
+        print(f'Error: Seems like there are no tracks yet for location on {date}')
 
-    # save the file
-    with open(zip_file, 'wb') as f:
-        f.write(zfile.content)
 
-
-def get_zipfile(task):
+def get_zipfile(task_id):
     """"""
-    from os import path
+    from pathlib import Path
     import Defines
     temp_folder = Defines.TEMPFILES
     result = ''
-    task_id = task.task_id
-
+    # task_id = task.task_id
 
     """get zipfile from XContest server"""
     site_id, takeoff_id, date = get_xc_parameters(task_id)
     login_name = Defines.XC_LOGIN
     password = Defines.XC_password
-    zip_name = 'igc_from_xc.zip'
-    zipfile = path.join(temp_folder, zip_name)
+    zip_name = f'xcontest-{task_id}.zip'
+    zipfile = Path(temp_folder, zip_name)
 
     get_zip(site_id, takeoff_id, date, login_name, password, zipfile)
     return zipfile
