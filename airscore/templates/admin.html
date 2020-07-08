@@ -29,8 +29,7 @@
       <link rel="stylesheet" href="/static/css/nav_bar_custom.css"  crossorigin="anonymous">
       <link rel="stylesheet" href="/static/css/bootnavbar.css"  crossorigin="anonymous">
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.0/animate.min.css">
-      <!-- <link rel="stylesheet" type="text/css" href="{{ static_url_for('static', filename='build/main_css.bundle.css') }}"/>-->
-      <link rel="stylesheet" type="text/css" href="{{ static_url_for('static', filename='css/frontend.css') }}"/>
+<!--      <link rel="stylesheet" type="text/css" href="{{ static_url_for('static', filename='build/main_css.bundle.css') }}"/>-->
 
       {% block css %}
       {% endblock %}
@@ -50,11 +49,7 @@
     {% include "nav.html" %}
   {% endblock %}
 
-  <main role="main" style="width: 95%; margin: auto">
-      <div class='nav-back'>
-      {% block back %}
-      {% endblock %}
-      </div>
+  <main role="main">
       <header class="h2">{% block header %}{% endblock %}</header>
       {% with messages = get_flashed_messages(with_categories=true) %} {% if
       messages %}
@@ -81,11 +76,6 @@
 
       {% block content %}
       {% endblock %}
-
-      <div class='nav-back'>
-      {{ self.back() }}
-      </div>
-
   </main>
 
   {% include "footer.html" %}

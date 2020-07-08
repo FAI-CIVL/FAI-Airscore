@@ -1,7 +1,6 @@
 """
 Map definition
 Creates map from track GeoJSON and Task Definition JSON
-Use: design_map <track_id> <task_id>
 
 Martino Boni,
 Stuart Mackintosh - 2019
@@ -24,7 +23,10 @@ track_style_function = lambda x: {'color': 'red' if x['properties']['Track'] == 
 
 # function to create the map template with optional geojson, circles and points objects
 def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_line=None, margin=0,
-             thermal_layer=False, waypoint_layer=False, extra_tracks=None, airspace_layer=None, bbox=None):
+             thermal_layer=False, waypoint_layer=False, extra_tracks=None, airspace_layer=None,
+             infringements=None, bbox=None, trackpoints=None):
+    """Gets elements and layers from Flask, and returns map object"""
+    '''creates layers'''
     if points is None:
         points = []
 
@@ -32,8 +34,9 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
         location = bbox_centre(bbox)
     else:
         location = [45, 10]
-    folium_map = folium.Map(location=location, zoom_start=13, tiles="Stamen Terrain", width='100%',
-                            height='75%')
+
+    folium_map = folium.Map(location=location, position='relative', zoom_start=13,
+                            tiles="Stamen Terrain", max_bounds=True, min_zoom=5, prefer_canvas=True)
     #     folium.LayerControl().add_to(folium_map)
     '''Define map borders'''
     # at this stage a track (layer_geojason has bbox inside,
@@ -76,7 +79,7 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
                 waypoints = layer_geojson['geojson']['waypoint_achieved']
                 waypoint_group = FeatureGroup(name='Waypoints Taken', show=False)
                 for w in waypoints:
-                    waypoint_group.add_child(Marker([w[1], w[0]], popup=Popup(w[5])))
+                    waypoint_group.add_child(Marker([w[1], w[0]], popup=Popup(w[6], max_width=300)))
 
                 folium_map.add_child(waypoint_group)
     """Design cylinders"""
@@ -163,12 +166,45 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
         ).add_to(folium_map)
 
     if airspace_layer:
+        airspace_group = FeatureGroup(name='Airspaces', show=False)
         for space in airspace_layer:
-            space.add_to(folium_map)
+            airspace_group.add_child(space)
+        if infringements:
+            for i in infringements:
+                popup = folium.Popup(f"<b>{i[3]}</b><br>{i[5]}. separation: {i[4]} m. <br>"
+                                     f"{i[7]} - alt. {i[2]} m.", max_width=300)
+                icon = folium.Icon(color="red", icon="times", prefix='fa')
+                airspace_group.add_child(Marker([i[1], i[0]], icon=icon, popup=popup))
+        folium_map.add_child(airspace_group)
 
-    # path where to save the map
-    # folium_map.save('templates/map.html')
+    if trackpoints:
+        trackpoints_group = FeatureGroup(name='Trackpoints', show=True)
+        for i in trackpoints:
+            tooltip = folium.Tooltip(f"Time UTC: <b>{i[5]}</b> Local Time: <b>{i[6]}</b><br>"
+                                     f"lat: <b>{round(i[1], 4)}</b> lon: <b>{round(i[0], 4)}</b><br>"
+                                     f"GPS alt: <b>{int(i[4])} m.</b> ISA Press alt: <b>{int(i[3])} m.</b>")
+            trackpoints_group.add_child(folium.CircleMarker((i[1], i[0]), radius=1, tooltip=tooltip))
+        folium_map.add_child(trackpoints_group)
+
     folium.LayerControl().add_to(folium_map)
     folium.plugins.Fullscreen().add_to(folium_map)
     folium.plugins.MeasureControl().add_to(folium_map)
     return folium_map
+
+
+def get_map_render(folium_map):
+    """ get a Folium Map object and returns a rendered Figure object"""
+    '''first, force map to render as HTML, for us to dissect'''
+    _ = folium_map._repr_html_()
+    '''get definition of map in body'''
+    html = folium_map.get_root().html.render()
+    '''html to be included in header'''
+    header = folium_map.get_root().header
+    '''clean up css and unuseful elements'''
+    # for el in ['meta_http', 'bootstrap_css', 'bootstrap_theme_css', 'jquery', 'bootstrap', 'css_style', 'map_style']:
+    for el in ['meta_http', 'bootstrap_css', 'bootstrap_theme_css', 'bootstrap', 'css_style', 'map_style']:
+        del header._children[el]
+    header = header.render()
+    '''html to be included in <script>'''
+    script = folium_map.get_root().script.render()
+    return {"header": header, "html": html, "script": script}

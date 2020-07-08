@@ -98,7 +98,6 @@
   </div>
 {% endblock %}
 {% block js %}
-{% include "js.html" %}
     <script type="text/javascript" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
     <script type="text/javascript" src="/static/js/pop_task.js"></script>
     <script type="text/javascript">populate_task({{taskid|tojson}})</script>

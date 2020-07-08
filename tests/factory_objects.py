@@ -5,14 +5,14 @@ from datetime import date
 
 def test_turnpoints():
     return [
-        TurnpointFactory(name='D05', lat=45.7129, lon=9.93693, radius=400, how='exit', shape='circle', type='launch'),
-        TurnpointFactory(name='B67', lat=45.7581, lon=9.96171, radius=2000, how='exit', type='speed'),
-        TurnpointFactory(name='B66', lat=45.8325, lon=9.7675, radius=2000),
-        TurnpointFactory(name='D05', lat=45.7129, lon=9.93693, radius=2500),
-        TurnpointFactory(name='D08', lat=45.8296, lon=9.89672, radius=400),
-        TurnpointFactory(name='P20', lat=45.8569, lon=10.1591, radius=15000),
-        TurnpointFactory(name='B49', lat=45.698, lon=9.97001, radius=400, type='endspeed'),
-        TurnpointFactory(name='A02', lat=45.6777, lon=9.94366, radius=400, type='goal')
+        TurnpointFactory(wpt_id=1, name='D05', lat=45.7129, lon=9.93693, radius=400, how='exit', type='launch'),
+        TurnpointFactory(wpt_id=2, name='B67', lat=45.7581, lon=9.96171, radius=2000, how='exit', type='speed'),
+        TurnpointFactory(wpt_id=3, name='B66', lat=45.8325, lon=9.7675, radius=2000),
+        TurnpointFactory(wpt_id=4, name='D05', lat=45.7129, lon=9.93693, radius=2500),
+        TurnpointFactory(wpt_id=5, name='D08', lat=45.8296, lon=9.89672, radius=400),
+        TurnpointFactory(wpt_id=6, name='P20', lat=45.8569, lon=10.1591, radius=15000),
+        TurnpointFactory(wpt_id=7, name='B49', lat=45.698, lon=9.97001, radius=400, type='endspeed'),
+        TurnpointFactory(wpt_id=8, name='A02', lat=45.6777, lon=9.94366, radius=400, type='goal')
     ]
 
 

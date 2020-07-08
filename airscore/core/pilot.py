@@ -140,7 +140,7 @@ class Pilot(object):
         """reads result from database"""
         from participant import Participant
         from track import Track
-        from flightresult import FlightResult
+        from flightresult import FlightResult, get_waypoints_achieved
         from db_tables import TblParticipant as R, FlightResultView as F
         from sqlalchemy import and_
         from notification import get_notifications
@@ -157,6 +157,7 @@ class Pilot(object):
                 pilot.track = Track(track_file=res.track_file, track_id=res.track_id)
                 db.populate_obj(pilot.result, res)
                 pilot.result.notifications = get_notifications(pilot, db.session)
+                pilot.result.waypoints_achieved = get_waypoints_achieved(res.track_id, db.session)
         return pilot
 
     @staticmethod
@@ -186,6 +187,8 @@ class Pilot(object):
         result.update({x: getattr(self.track, x) for x in R.results_list if x in dir(self.track)})
         result.update({x: getattr(self.result, x) for x in R.results_list if x in dir(self.result)})
         result['notifications'] = [n.__dict__ for n in self.notifications]
+        result['waypoints_achieved'] = [dict(name=w.name, lat=w.lat, lon=w.lon, rawtime=w.rawtime,
+                                             altitude=w.altitude) for w in self.result.waypoints_achieved]
         return result
 
     @staticmethod
@@ -206,6 +209,7 @@ class Pilot(object):
             We will also be able to delete a lot of redundant info about track filename, pilot ID, task_id and so on"""
         from db_tables import TblTaskResult as R
         from notification import update_notifications
+        from flightresult import update_waypoints_achieved
         from sqlalchemy.exc import SQLAlchemyError
         '''checks conformity'''
         if not (self.par_id and self.task_id):
@@ -237,6 +241,8 @@ class Pilot(object):
 
                 '''notifications'''
                 update_notifications(self, db.session)
+                '''waypoints_achieved'''
+                update_waypoints_achieved(self, db.session)
                 db.session.commit()
             except SQLAlchemyError as e:
                 error = str(e.__dict__)
@@ -245,6 +251,68 @@ class Pilot(object):
                 db.session.close()
                 return error
 
+    def save_tracklog_map_file(self, task, second_interval=5):
+        """ Creates the file to be used to display pilot's track on map"""
+        from igc_lib import Flight
+        from pathlib import Path
+        from Defines import MAPOBJDIR
+        import json
+        if self.result_type not in ('abs', 'dnf', 'mindist'):
+            ID = self.info.par_id if not self.info.ID else self.info.ID  # registration needs to check that all pilots
+            # have a unique ID, with option to use par_id as ID for all pilots if no ID is given
+            print(f"{ID}. {self.name}: ({self.track.track_file})")
+            if not self.track.flight:
+                filename = Path(task.file_path, self.track.track_file)
+                '''load track file'''
+                self.track.flight = Flight.create_from_file(filename)
+            data = create_tracklog_map_file(self, task, second_interval)
+            res_path = Path(MAPOBJDIR, 'tracks', str(task.id))
+            """check if directory already exists"""
+            if not res_path.is_dir():
+                res_path.mkdir(mode=0o755)
+            """creates a name for the file.
+            par_id.track"""
+            filename = f'{self.info.par_id}.track'
+            fullname = Path(res_path, filename)
+            """copy file"""
+            try:
+                with open(fullname, 'w') as f:
+                    json.dump(data, f)
+                return fullname
+            except:
+                print('Error saving file:', fullname)
+
+
+def create_tracklog_map_file(pilot, task, second_interval=5):
+    """Dumps the flight to geojson format used for mapping.
+    Contains tracklog split into pre SSS, pre Goal and post goal parts, thermals, takeoff/landing,
+    result object, waypoints achieved, and bounds
+
+    second_interval = resolution of tracklog. default one point every 5 seconds. regardless it will
+                        keep points where waypoints were achieved.
+    returns the Json string."""
+    from mapUtils import result_to_geojson
+    from pathlib import Path
+    '''create info'''
+    info = {'taskid': task.id, 'task_name': task.task_name, 'comp_name': task.comp_name,
+            'pilot_name': pilot.info.name, 'pilot_nat': pilot.info.nat, 'pilot_sex': pilot.info.sex,
+            'pilot_parid': pilot.info.par_id, 'Glider': pilot.info.glider,
+            'track_file': Path(task.file_path, pilot.track.track_file).as_posix()
+            }
+    tracklog, thermals, takeoff_landing, bbox, waypoint_achieved, infringements = result_to_geojson(pilot.result,
+                                                                                                    task,
+                                                                                                    pilot.track.flight,
+                                                                                                    second_interval)
+    data = {'info': info,
+            'tracklog': tracklog,
+            'thermals': thermals,
+            'takeoff_landing': takeoff_landing,
+            'bounds': bbox,
+            'waypoint_achieved': waypoint_achieved,
+            'infringements': infringements
+            }
+    return data
+
 
 def update_all_results(task_id, pilots, session=None):
     """ get results to update from the list
@@ -252,13 +320,14 @@ def update_all_results(task_id, pilots, session=None):
         And from FSDB.add results.
         We are then deleting all present non admin Notification from database for results, as related to old scoring.
         """
-    from db_tables import TblTaskResult as R, TblNotification as N
-    from notification import update_notifications
+    from db_tables import TblTaskResult as R, TblNotification as N, TblTrackWaypoint as W
+    from dataclasses import asdict
     from sqlalchemy import and_
     from sqlalchemy.exc import SQLAlchemyError
     insert_mappings = []
     update_mappings = []
-    insert_notifications_mappings = []
+    notif_mappings = []
+    achieved_mappings = []
     for pilot in pilots:
         res = pilot.result
         r = dict(track_id=pilot.track_id, task_id=task_id, par_id=pilot.par_id,
@@ -270,6 +339,7 @@ def update_all_results(task_id, pilots, session=None):
             update_mappings.append(r)
         else:
             insert_mappings.append(r)
+
     '''update database'''
     with Database(session) as db:
         try:
@@ -281,12 +351,34 @@ def update_all_results(task_id, pilots, session=None):
             if update_mappings:
                 db.session.bulk_update_mappings(R, update_mappings)
                 db.session.flush()
-            '''notifications'''
+            '''notifications and waypoints achieved'''
+            '''delete old entries'''
             db.session.query(N).filter(and_(N.track_id.in_([r['track_id'] for r in update_mappings]),
                                             N.notification_type.in_(['jtg', 'airspace', 'track']))).delete(
                 synchronize_session=False)
-            for pilot in [p for p in pilots if len(p.notifications) > 0]:
-                update_notifications(pilot, db.session)  # no notification should have a not_id as recalculated
+            db.session.query(W).filter(W.track_id.in_([r['track_id'] for r in update_mappings])).delete(
+                synchronize_session=False)
+            '''collect new ones'''
+            for pilot in pilots:
+                notif_mappings.extend([dict(track_id=pilot.track_id, **asdict(n))
+                                       for n in pilot.notifications if not n.notification_type == 'admin'])
+                achieved_mappings.extend([dict(track_id=pilot.track_id, **asdict(w))
+                                          for w in pilot.result.waypoints_achieved])
+            '''bulk insert'''
+            if achieved_mappings:
+                db.session.bulk_insert_mappings(W, achieved_mappings)
+            if notif_mappings:
+                db.session.bulk_insert_mappings(N, notif_mappings, return_defaults=True)
+                db.session.flush()
+                res_not_list = [i for i in notif_mappings if i['notification_type'] in ['jtg', 'airspace']]
+                trackIds = set([i['track_id'] for i in res_not_list])
+                for idx in trackIds:
+                    pilot = next(p for p in pilots if p.track_id == idx)
+                    for i, n in enumerate([el for el in res_not_list if el['track_id'] == idx]):
+                        next(e for e in pilot.result.notifications if e.notification_type == n['notification_type']
+                             and e.flat_penalty == n['flat_penalty']
+                             and e.percentage_penalty == n['percentage_penalty']
+                             and e.comment == n['comment']).not_id = n['not_id']
             db.session.commit()
         except SQLAlchemyError as e:
             error = str(e.__dict__)

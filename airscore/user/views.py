@@ -39,7 +39,7 @@ def members():
 @blueprint.route('/airspace_map/<filename>')
 @login_required
 def airspace_edit(filename):
-    import design_map
+    import map
     import airspaceUtils
 
     message = ''
@@ -79,7 +79,7 @@ def airspace_edit(filename):
         message += 'Attention: There is unknown height units in the file. You should adjust to meters or ' \
                    'feet above sea level'
 
-    airspace_map = design_map.make_map(airspace_layer=spaces, bbox=bbox)
+    airspace_map = map.make_map(airspace_layer=spaces, bbox=bbox)
 
     return render_template('users/airspace_admin_map.html', airspace_list=airspace_list, file=filename,
                            map=airspace_map._repr_html_(), message=message, FL_message=fl_detail)
@@ -932,11 +932,11 @@ def _get_task_score_from_file(taskid, filename):
     stats = pretty_format_results(result_file['stats'], timeoffset)
     info = result_file['info']
     for r in result_file['results']:
-        track_id = r['track_id']
+        parid = r['par_id']
         name = r['name']
         status = r['result_type']
         if status not in ['dnf', 'abs']:
-            pilot = {'rank': rank, 'name': f'<a href="/map/{track_id}-{taskid}">{name}</a>'}
+            pilot = {'rank': rank, 'name': f'<a href="/map/{parid}-{taskid}">{name}</a>'}
             if r['SSS_time']:
                 pilot['SSS'] = sec_to_time(r['SSS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S")
             else:
@@ -1035,11 +1035,11 @@ def _score_task(taskid):
 @blueprint.route('/_full_rescore_task/<taskid>', methods=['POST'])
 @login_required
 def _full_rescore_task(taskid):
-    taskid=int(taskid)
+    taskid = int(taskid)
     data = request.json
     if frontendUtils.production():
         job = current_app.task_queue.enqueue(frontendUtils.full_rescore, taskid, background=True,
-                                             user=current_user.username,  status=data['status'],
+                                             user=current_user.username, status=data['status'],
                                              autopublish=data['autopublish'], compid=session['compid'],
                                              job_timeout=2000)
 
@@ -1490,5 +1490,3 @@ def _export_fsdb(compid):
         resp = make_response(send_file(tmp.name, mimetype="text/xml", attachment_filename=filename, as_attachment=True))
         resp.set_cookie('ServerProcessCompleteChecker', '', expires=0)
         return resp
-
-
