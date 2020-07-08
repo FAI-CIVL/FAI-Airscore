@@ -38,11 +38,12 @@ def get_comps():
             name = comp[1]
             if comp[9]:
                 comp[1] = f'<a href="/ext_comp_result/{compid}">{name}</a>'
-                comp[8] = '[Ext.]'
+                comp[8] = 'Imported'
             else:
                 comp[1] = f'<a href="/competition/{compid}">{name}</a>'
         # else:
         # comp['comp_name'] = "<a href=\"comp_overall.html?comp_id=$id\">" . $row['comp_name'] . '</a>';
+        del comp[-1]
         if comp[3] == "PG" or "HG":
             hgpg = comp[3]
             comp[3] = f'<img src="/static/img/{hgpg}.png" width="100%" height="100%"</img>'
