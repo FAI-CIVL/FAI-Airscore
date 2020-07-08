@@ -38,6 +38,9 @@
         <button id="bulk_button" class="btn btn-primary ml-4" onclick="open_bulk_modal();">
             Bulk Import Tracks
         </button>
+        <button id="xcontest_button" class="btn btn-primary ml-4" onclick="xcontest_tracks();">
+            XContest
+        </button>
         <a href="{{ url_for('user.task_score_admin', taskid=taskid)}}" class="btn btn-info ml-4" type="button" >
          Manage Scores
       </a>
@@ -131,7 +134,7 @@
     <script type="text/javascript">populate_track_admin({{taskid|tojson}})</script>
     <script>
 
-   function open_bulk_modal() {
+    function open_bulk_modal() {
      $('#bulkmodal').modal('show');
     }
 
@@ -140,7 +143,7 @@
                mydata.par_id = par_id;
                mydata.Result = status;
 
-   $.ajax({
+    $.ajax({
                type: "POST",
                url: "{{ url_for('user._set_result', taskid=taskid)}}",
                contentType:"application/json",
@@ -151,8 +154,8 @@
                       update_track_pilot_stats();
                }
                });
-}
- function update_track_pilot_stats(){
+    }
+    function update_track_pilot_stats(){
        $.ajax({
                type: "GET",
                url: "{{ url_for('user._get_tracks_processed', taskid=taskid)}}",
@@ -162,22 +165,34 @@
                       $('#TracksProcessed').text('Tracks Collected: ' + response.tracks + '/' + response.pilots)
                       }
                });
-        }
+    }
 
- function update_row(new_data){
+    function get_xcontest_tracks(){
+       $.ajax({
+               type: "GET",
+               url: "{{ url_for('user._get_tracks_processed', taskid=taskid)}}",
+               contentType:"application/json",
+               dataType: "json",
+               success: function (response) {
+                      $('#TracksProcessed').text('Tracks Collected: ' + response.tracks + '/' + response.pilots)
+                      }
+               });
+    }
+
+    function update_row(new_data){
         update_track_pilot_stats();
         var table = $('#tracks').dataTable();
         new_data.ID = $('#tracks').DataTable().row( $('tr#id_'+ new_data.par_id)).data()['ID'];
         new_data.name = $('#tracks').DataTable().row( $('tr#id_'+ new_data.par_id)).data()['name'];
         table.fnUpdate(new_data, $('tr#id_'+ new_data.par_id), undefined, false);
 
-        }
+    }
 
-   function delete_track(track_id, par_id){
+    function delete_track(track_id, par_id){
                var mydata = new Object();
                mydata.track_id = track_id;
                mydata.par_id = par_id;
-   $.ajax({
+    $.ajax({
                type: "POST",
                url: "/users/_delete_track/" + track_id,
                contentType:"application/json",
@@ -188,16 +203,15 @@
                       update_track_pilot_stats();
                }
                });
-}
+    }
 
+    </script>
 
-</script>
+    <script>
 
-<script>
-
-   function choose_zip_file(){
-   var filename;
-   $('#bulk_fileupload').fileupload({
+    function choose_zip_file(){
+    var filename;
+    $('#bulk_fileupload').fileupload({
         dataType: 'json',
         done: function (e, data) {
             $.each(data.result.files, function (index, file) {

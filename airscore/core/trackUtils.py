@@ -68,6 +68,7 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None, check_g_rec
     from functools import partial
     from frontendUtils import print_to_sse
     import json
+    import sources
 
     pilot_list = []
     task_id = task.id
@@ -97,7 +98,11 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None, check_g_rec
             if len(pilot_list) > 0:
                 # print(f"checking {filename} against {len(pilot_list)} pilots...")
                 """check filenames to find pilots"""
-                pilot, full_name = get_pilot_from_list(filename, pilot_list)
+                if xcontest:
+                    pilot, full_name = sources.xcontest.get_pilot_from_list(filename, pilot_list)
+                else:
+                    pilot, full_name = get_pilot_from_list(filename, pilot_list)
+
                 if pilot:
                     """found a pilot for the track file.
                     dropping pilot from list and creating track obj"""
@@ -114,8 +119,8 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None, check_g_rec
                 mytrack = None
         """check result"""
         if not mytrack:
-            print(f"Track {filename} is not a valid track file, pilot not found in competition or pilot already has "
-                  f"a track")
+            print(f"Track {filename} is not a valid track file, pilot not found in competition or pilot "
+                  f"already has a track")
         elif not mytrack.date == task_date:
             print(f"track {filename} has a different date from task")
         else:

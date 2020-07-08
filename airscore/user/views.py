@@ -582,8 +582,8 @@ def _get_adv_settings():
                 'glide_bonus': formula.glide_bonus, 'tolerance': formula.tolerance * 100,
                 'min_tolerance': formula.min_tolerance, 'arr_alt_bonus': formula.height_bonus,
                 'arr_max_height': formula.arr_max_height, 'arr_min_height': formula.arr_min_height,
-                'validity_min_time': int(formula.validity_min_time/60),
-                'scoreback_time': int(formula.score_back_time/60),
+                'validity_min_time': int(formula.validity_min_time / 60),
+                'scoreback_time': int(formula.score_back_time / 60),
                 'max_JTG': formula.max_JTG, 'JTG_penalty_per_sec': formula.JTG_penalty_per_sec}
 
     return settings
@@ -722,6 +722,7 @@ def track_admin(taskid):
             task_name = task['task_name']
             task_in_comp = True
             task_ready_to_score = task['ready_to_score']
+            track_source = 'xcontest'  # TODO: testing, needs to be parametrize
 
     if not task_in_comp:
         return render_template('out_of_comp.html')
@@ -735,7 +736,8 @@ def track_admin(taskid):
     else:
         user_is_admin = None
     return render_template('users/track_admin.html', taskid=taskid, user_is_admin=user_is_admin,
-                           production=frontendUtils.production(), task_name=task_name, task_num=task_num)
+                           production=frontendUtils.production(), task_name=task_name, task_num=task_num,
+                           track_source=track_source)
 
 
 @blueprint.route('/_set_result/<taskid>', methods=['POST'])
@@ -783,8 +785,8 @@ def _upload_track(taskid, parid):
                 check_g_record = session['check_g_record']
 
                 if request.files.get("tracklog_NO_G"):
-                   tracklog = request.files["tracklog_NO_G"]
-                   check_g_record = False
+                    tracklog = request.files["tracklog_NO_G"]
+                    check_g_record = False
                 else:
                     tracklog = request.files["tracklog"]
                 if tracklog.filename == "":
@@ -819,6 +821,40 @@ def _upload_track(taskid, parid):
             return resp
         resp = {'error': 'request.files'}
         return resp
+
+
+@blueprint.route('/_get_xcontest_tracks/<taskid>', methods=['GET'])
+@login_required
+def _get_xcontest_tracks(taskid):
+    from sources.xcontest import get_zipfile
+    taskid = int(taskid)
+    if request.method == "GET":
+        zip_file = get_zipfile(taskid)
+
+        if not zip_file:
+            print("No filename")
+            return redirect(request.url)
+
+        if frontendUtils.allowed_tracklog(zip_file, extension=['zip']):
+            if frontendUtils.production():
+                tracksdir = frontendUtils.unzip_igc(zip_file)
+                job = current_app.task_queue.enqueue(frontendUtils.process_igc_from_zip, taskid, tracksdir,
+                                                     current_user.username,
+                                                     check_g_record=session['check_g_record'],
+                                                     track_source='xcontest',
+                                                     job_timeout=2000)
+                resp = jsonify(success=True)
+                return resp
+            else:
+                task = Task.read(taskid)
+                data = frontendUtils.process_igc_zip(task, zip_file, check_g_record=session['check_g_record'],
+                                                     track_source='xcontest')
+                resp = data
+                return resp
+
+        else:
+            print("That file extension is not allowed")
+            return redirect(request.url)
 
 
 @blueprint.route('/_upload_XCTrack/<taskid>', methods=['POST'])
@@ -866,7 +902,9 @@ def _upload_track_zip(taskid):
                     if frontendUtils.production():
                         tracksdir = frontendUtils.unzip_igc(zip_file)
                         job = current_app.task_queue.enqueue(frontendUtils.process_igc_from_zip, taskid, tracksdir,
-                                                             current_user.username, job_timeout=2000)
+                                                             current_user.username,
+                                                             check_g_record=session['check_g_record'],
+                                                             job_timeout=2000)
                         resp = jsonify(success=True)
                         return resp
                     else:

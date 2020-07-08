@@ -234,7 +234,7 @@ def get_pilot_list_for_track_management(taskid: int):
             data['Result'] = f'Goal {time}'
         elif pilot['result_type'] == 'lo':
             data['Result'] = f"LO {round(pilot['distance_flown'] / 1000, 2)}"
-        elif pilot['result_type'] is 'nyp':
+        elif pilot['result_type'] == 'nyp':
             data['Result'] = "Not Yet Processed"
         elif pilot['result_type'] == "mindist":
             data['Result'] = "Min Dist"
@@ -483,7 +483,7 @@ def unzip_igc(zipfile):
     return tracksdir
 
 
-def process_igc_from_zip(taskid: int, tracksdir, user, check_g_record=False):
+def process_igc_from_zip(taskid: int, tracksdir, user, check_g_record=False, track_source='upload'):
     """function split for background use.
     tracksdir is a temp dir that will be deleted at the end of the function"""
     from task import Task
@@ -508,7 +508,7 @@ def process_igc_from_zip(taskid: int, tracksdir, user, check_g_record=False):
     return 'Success'
 
 
-def process_igc_zip(task, zipfile):
+def process_igc_zip(task, zipfile, check_g_record=False, track_source='upload'):
     from trackUtils import extract_tracks, get_tracks, assign_and_import_tracks
     from tempfile import TemporaryDirectory
 
@@ -529,7 +529,8 @@ def process_igc_zip(task, zipfile):
             return None
 
         """associate tracks to pilots and import"""
-        assign_and_import_tracks(tracks, task)
+        xcontest = True if track_source == 'xcontest' else False
+        assign_and_import_tracks(tracks, task, xcontest=xcontest, check_g_record=check_g_record)
         return 'Success'
 
 
@@ -893,6 +894,7 @@ def get_task_igc_zip(task_id: int):
     from trackUtils import get_task_fullpath
     import shutil
     import glob
+    from Defines import TEMPFILES
 
     task_path = get_task_fullpath(task_id)
     task_folder = task_path.split('/')[-1]
