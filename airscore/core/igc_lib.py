@@ -2,29 +2,42 @@
 
 Main abstraction defined in this file is the Flight class, which
 represents a parsed IGC file. A Flight is a collection of:
-    GNNSFix objects, one per B record in the original file,
-    IGC metadata, extracted from A/I/H records
-    a list of detected Thermals,
-    a list of detected Glides.
+    - GNNSFix objects, one per B record in the original file,
+    - IGC metadata, extracted from A/I/H records
+    - a list of detected Thermals,
+    - a list of detected Glides.
+
+A Flight is assumed to have one actual flight,
+from takeoff to landing. If it has zero then it will
+be invalid, i.e. `Flight.valid` will be False.
+
+If there's more than one actual flight in the IGC file then
+the `which_flight_to_pick` option in FlightParsingConfig
+will determine behavior.
 
 For example usage see the attached igc_lib_demo.py file. Please note
 that after creating a Flight instance you should always check for its
-validity via the `valid` attribute prior to using it, as many IGC
-records are broken.
+validity via the `Flight.valid` attribute prior to using it, as many
+IGC records are broken. See `Flight.notes` for details on why a file
+was considered broken.
 """
+
+from __future__ import print_function
 
 import collections
 import datetime
 import math
 import re
 import xml.dom.minidom
+from pathlib2 import Path
+
 from collections import defaultdict
 
-import lib.geo as geo
 import lib.viterbi as viterbi
+import lib.geo as geo
 
 
-def _strip_non_printable_chars(string: str):
+def _strip_non_printable_chars(string):
     """Filters a string removing non-printable characters.
 
     Args:
@@ -52,7 +65,7 @@ def _rawtime_float_to_hms(timef):
     time = int(round(timef))
     hms = collections.namedtuple('hms', ['hours', 'minutes', 'seconds'])
 
-    return hms((time / 3600), (time % 3600) / 60, time % 60)
+    return hms((time/3600), (time % 3600)/60, time % 60)
 
 
 class Turnpoint:
@@ -91,7 +104,7 @@ class Task:
         turnpoints: A list of Turnpoint objects.
         start_time: Raw time (seconds past midnight). The time the race starts.
                     The pilots must start at or after this time.
-        task_deadline: Raw time (seconds past midnight). The time the race ends.
+        end_time: Raw time (seconds past midnight). The time the race ends.
                   The pilots must finish the race at or before this time.
                   No credit is given for distance covered after this time.
     """
@@ -119,7 +132,7 @@ class Task:
 
         start_hours, start_minutes = start_time.split(':')
         start_time = int(start_hours) * 3600 + int(start_minutes) * 60
-        task_deadline = 23 * 3600 + 59 * 60 + 59  # default task_deadline of 23:59:59
+        end_time = 23*3600 + 59*60 + 59  # default end_time of 23:59:59
 
         # Create a dictionary of names and a list of longitudes and latitudes
         # as the waypoints co-ordinates are stored separate to turnpoint
@@ -138,7 +151,7 @@ class Task:
         for point in tpoints:
             lat = coords[point.getAttribute("name")][1]
             lon = coords[point.getAttribute("name")][0]
-            radius = float(point.getAttribute("radius")) / 1000
+            radius = float(point.getAttribute("radius"))/1000
 
             if point == tpoints[0]:
                 # It is the first turnpoint, the start
@@ -164,13 +177,13 @@ class Task:
 
             turnpoint = Turnpoint(lat, lon, radius, kind)
             turnpoints.append(turnpoint)
-        task = Task(turnpoints, start_time, task_deadline)
+        task = Task(turnpoints, start_time, end_time)
         return task
 
-    def __init__(self, turnpoints, start_time, task_deadline):
+    def __init__(self, turnpoints, start_time, end_time):
         self.turnpoints = turnpoints
         self.start_time = start_time
-        self.task_deadline = task_deadline
+        self.end_time = end_time
 
     def check_flight(self, flight):
         """ Checks a Flight object against the task.
@@ -189,7 +202,7 @@ class Task:
                 # Pilot has arrived in goal (last turnpoint) so we can stop.
                 break
 
-            if self.task_deadline < fix.rawtime:
+            if self.end_time < fix.rawtime:
                 # Task has ended
                 break
 
@@ -227,7 +240,7 @@ class Task:
                     t += 1
             else:
                 assert False, (
-                        "Unknown turnpoint kind: %s" % self.turnpoints[t].kind)
+                    "Unknown turnpoint kind: %s" % self.turnpoints[t].kind)
 
         return reached_turnpoints
 
@@ -271,7 +284,7 @@ class GNSSFix:
             + '(\d\d)(\d\d)(\d\d\d)([NS])'
             + '(\d\d\d)(\d\d)(\d\d\d)([EW])'
             + '([AV])' + '([-\d]\d\d\d\d)' + '([-\d]\d\d\d\d)'
-            + '([0-9a-zA-Z]*).*$', B_record_line)
+            + '([0-9a-zA-Z\-]*).*$', B_record_line)
         if match is None:
             return None
         (hours, minutes, seconds,
@@ -280,7 +293,7 @@ class GNSSFix:
          validity, press_alt, gnss_alt,
          extras) = match.groups()
 
-        rawtime = (float(hours) * 60.0 + float(minutes)) * 60.0 + float(seconds)
+        rawtime = (float(hours)*60.0 + float(minutes))*60.0 + float(seconds)
 
         lat = float(lat_deg)
         lat += float(lat_min) / 60.0
@@ -300,8 +313,8 @@ class GNSSFix:
         return GNSSFix(rawtime, lat, lon, validity, press_alt, gnss_alt,
                        index, extras)
 
-    def __init__(self, rawtime: object, lat: object, lon: object, validity: object, press_alt: object, gnss_alt: object,
-                 index: object, extras: object) -> object:
+    def __init__(self, rawtime, lat, lon, validity, press_alt, gnss_alt,
+                 index, extras):
         """Initializer of GNSSFix. Not meant to be used directly."""
         self.rawtime = rawtime
         self.lat = lat
@@ -321,7 +334,7 @@ class GNSSFix:
         elif self.flight.alt_source == "GNSS":
             self.alt = self.gnss_alt
         else:
-            assert False
+            assert(False)
         self.timestamp = self.rawtime + flight.date_timestamp
 
     def __repr__(self):
@@ -329,9 +342,9 @@ class GNSSFix:
 
     def __str__(self):
         return (
-                "GNSSFix(rawtime=%02d:%02d:%02d, lat=%f, lon=%f, altitude=%.1f)" %
-                (_rawtime_float_to_hms(self.rawtime) +
-                 (self.lat, self.lon, self.alt)))
+            "GNSSFix(rawtime=%02d:%02d:%02d, lat=%f, lon=%f, press_alt=%.1f, gnss_alt=%.1f)" %
+            (_rawtime_float_to_hms(self.rawtime) +
+             (self.lat, self.lon, self.press_alt, self.gnss_alt)))
 
     def bearing_to(self, other):
         """Computes bearing in degrees to another GNSSFix."""
@@ -354,7 +367,7 @@ class GNSSFix:
         else:
             lat = self.lat
             lat_sign = 'N'
-        lat = int(round(lat * 60000.0))
+        lat = int(round(lat*60000.0))
         lat_deg = lat / 60000
         lat_min = (lat % 60000) / 1000
         lat_min_dec = lat % 1000
@@ -365,7 +378,7 @@ class GNSSFix:
         else:
             lon = self.lon
             lon_sign = 'E'
-        lon = int(round(lon * 60000.0))
+        lon = int(round(lon*60000.0))
         lon_deg = lon / 60000
         lon_min = (lon % 60000) / 1000
         lon_min_dec = lon % 1000
@@ -376,13 +389,13 @@ class GNSSFix:
         extras = self.extras
 
         return (
-                "B" +
-                "%02d%02d%02d" % (hours, minutes, seconds) +
-                "%02d%02d%03d%s" % (lat_deg, lat_min, lat_min_dec, lat_sign) +
-                "%03d%02d%03d%s" % (lon_deg, lon_min, lon_min_dec, lon_sign) +
-                validity +
-                "%05d%05d" % (press_alt, gnss_alt) +
-                extras)
+            "B" +
+            "%02d%02d%02d" % (hours, minutes, seconds) +
+            "%02d%02d%03d%s" % (lat_deg, lat_min, lat_min_dec, lat_sign) +
+            "%03d%02d%03d%s" % (lon_deg, lon_min, lon_min_dec, lon_sign) +
+            validity +
+            "%05d%05d" % (press_alt, gnss_alt) +
+            extras)
 
 
 class Thermal:
@@ -392,7 +405,6 @@ class Thermal:
         enter_fix: a GNSSFix, entry point of the thermal
         exit_fix: a GNSSFix, exit point of the thermal
     """
-
     def __init__(self, enter_fix, exit_fix):
         self.enter_fix = enter_fix
         self.exit_fix = exit_fix
@@ -448,7 +460,7 @@ class Glide:
 
     def alt_change(self):
         """Return the overall altitude change in the glide, meters."""
-        return self.enter_fix.alt - self.exit_fix.alt
+        return self.exit_fix.alt - self.enter_fix.alt
 
     def glide_ratio(self):
         """Returns the L/D of the glide."""
@@ -462,10 +474,10 @@ class Glide:
     def __str__(self):
         hms = _rawtime_float_to_hms(self.time_change())
         return (
-                ("Glide(dist=%.2f km, avg_speed=%.2f kph, "
-                 "avg L/D=%.2f duration=%dm %ds)") % (
-                    self.track_length, self.speed(), self.glide_ratio(),
-                    hms.minutes, hms.seconds))
+            ("Glide(dist=%.2f km, avg_speed=%.2f kph, "
+             "avg L/D=%.2f duration=%dm %ds)") % (
+                self.track_length, self.speed(), self.glide_ratio(),
+                hms.minutes, hms.seconds))
 
 
 class FlightParsingConfig(object):
@@ -501,14 +513,14 @@ class FlightParsingConfig(object):
     # gps) that report either always constant altitude, or almost
     # always constant altitude, and therefore are invalid. The unit
     # is meters/fix.
-    min_avg_abs_alt_change = 0.00   # standard 0.01
+    min_avg_abs_alt_change = 0.01
 
     # Maximum altitude change per second between fixes, meters per second.
-    # Soft limit, some fixes are allowed to exceed."""
+    # Soft limit, some fixes are allowed to exceed.
     max_alt_change_rate = 50.0
 
     # Maximum number of fixes that exceed the altitude change limit.
-    max_alt_change_violations = 250     # standard 10
+    max_alt_change_violations = 3
 
     # Absolute maximum altitude, meters.
     max_alt = 10000.0
@@ -517,11 +529,29 @@ class FlightParsingConfig(object):
     min_alt = -600.0
 
     #
-    # Thermals and flight detection parameters.
+    # Flight detection parameters.
     #
 
     # Minimum ground speed to switch to flight mode, km/h.
-    min_gsp_flight = 10
+    min_gsp_flight = 15.0
+
+    # Minimum idle time (i.e. time with speed below min_gsp_flight) to switch
+    # to landing, seconds. Exception: end of the file (tail fixes that
+    # do not trigger the above condition), no limit is applied there.
+    min_landing_time = 5.0 * 60.0
+
+    # In case there are multiple continuous segments with ground
+    # speed exceeding the limit, which one should be taken?
+    # Available options:
+    #   - "first": take the first segment, ignore the part after
+    #     the first detected landing.
+    #   - "concat": concatenate all segments; will include the down
+    #     periods between segments (legacy behavior)
+    which_flight_to_pick = "concat"
+
+    #
+    # Thermal detection parameters.
+    #
 
     # Minimum bearing change to enter a thermal, deg/sec.
     min_bearing_change_circling = 6.0
@@ -590,8 +620,8 @@ class Flight:
         a_records = []
         i_records = []
         h_records = []
-        # abs_filename = Path(filename).expanduser().absolute()
-        with open(filename, 'r', encoding='ISO-8859-1') as flight_file:
+        abs_filename = Path(filename).expanduser().absolute()
+        with abs_filename.open('r', encoding="ISO-8859-1") as flight_file:
             for line in flight_file:
                 line = line.replace('\n', '').replace('\r', '')
                 if not line:
@@ -638,7 +668,6 @@ class Flight:
         if not self.valid:
             return
 
-        # TODO check altitude source with task formula, and check it is valid
         if self.press_alt_valid:
             self.alt_source = "PRESS"
         elif self.gnss_alt_valid:
@@ -707,7 +736,7 @@ class Flight:
     def _parse_h_record(self, record):
         if record[0:5] == 'HFDTE':
             match = re.match(
-                '(?:HFDTE|HFDTEDATE:)(\d\d)(\d\d)(\d\d)',
+                '(?:HFDTE|HFDTEDATE:[ ]*)(\d\d)(\d\d)(\d\d)',
                 record, flags=re.IGNORECASE)
             if match:
                 dd, mm, yy = [_strip_non_printable_chars(group) for group in match.groups()]
@@ -784,11 +813,11 @@ class Flight:
         gnss_chgs_sum = 0.0
         for i in range(len(self.fixes) - 1):
             press_alt_delta = math.fabs(
-                self.fixes[i + 1].press_alt - self.fixes[i].press_alt)
+                self.fixes[i+1].press_alt - self.fixes[i].press_alt)
             gnss_alt_delta = math.fabs(
-                self.fixes[i + 1].gnss_alt - self.fixes[i].gnss_alt)
+                self.fixes[i+1].gnss_alt - self.fixes[i].gnss_alt)
             rawtime_delta = math.fabs(
-                self.fixes[i + 1].rawtime - self.fixes[i].rawtime)
+                self.fixes[i+1].rawtime - self.fixes[i].rawtime)
             if rawtime_delta > 0.5:
                 if (press_alt_delta / rawtime_delta >
                         self._config.max_alt_change_rate):
@@ -868,7 +897,7 @@ class Flight:
         rawtime_to_add = 0.0
         rawtime_between_fix_exceeded = 0
         for i in range(1, len(self.fixes)):
-            f0 = self.fixes[i - 1]
+            f0 = self.fixes[i-1]
             f1 = self.fixes[i]
             f1.rawtime += rawtime_to_add
 
@@ -903,12 +932,12 @@ class Flight:
         """Adds ground speed info (km/h) to self.fixes."""
         self.fixes[0].gsp = 0.0
         for i in range(1, len(self.fixes)):
-            dist = self.fixes[i].distance_to(self.fixes[i - 1])
-            rawtime = self.fixes[i].rawtime - self.fixes[i - 1].rawtime
+            dist = self.fixes[i].distance_to(self.fixes[i-1])
+            rawtime = self.fixes[i].rawtime - self.fixes[i-1].rawtime
             if math.fabs(rawtime) < 1e-5:
                 self.fixes[i].gsp = 0.0
             else:
-                self.fixes[i].gsp = dist / rawtime * 3600.0
+                self.fixes[i].gsp = dist/rawtime*3600.0
 
     def _flying_emissions(self):
         """Generates raw flying/not flying emissions from ground speed.
@@ -927,24 +956,72 @@ class Flight:
         return emissions
 
     def _compute_flight(self):
-        """Adds boolean flag .flying to self.fixes."""
+        """Adds boolean flag .flying to self.fixes.
+
+        Two pass:
+          1. Viterbi decoder
+          2. Only emit landings (0) if the downtime is more than
+             _config.min_landing_time (or it's the end of the log).
+        """
+        # Step 1: the Viterbi decoder
         emissions = self._flying_emissions()
         decoder = viterbi.SimpleViterbiDecoder(
             # More likely to start the log standing, i.e. not in flight
             init_probs=[0.80, 0.20],
             transition_probs=[
-                [0.9926, 0.0074],  # transitions from standing
-                [0.0003, 0.9997],  # transitions from flying
+                [0.9995, 0.0005],  # transitions from standing
+                [0.0005, 0.9995],  # transitions from flying
             ],
             emission_probs=[
-                [0.974, 0.026],  # emissions from standing
-                [0.031, 0.969],  # emissions from flying
+                [0.8, 0.2],  # emissions from standing
+                [0.2, 0.8],  # emissions from flying
             ])
 
-        output = decoder.decode(emissions)
+        outputs = decoder.decode(emissions)
 
-        for fix, output in zip(self.fixes, output):
-            fix.flying = (output == 1)
+        # Step 2: apply _config.min_landing_time.
+        ignore_next_downtime = False
+        apply_next_downtime = False
+        for i, (fix, output) in enumerate(zip(self.fixes, outputs)):
+            if output == 1:
+                fix.flying = True
+                # We're in flying mode, therefore reset all expectations
+                # about what's happening in the next down mode.
+                ignore_next_downtime = False
+                apply_next_downtime = False
+            else:
+                if apply_next_downtime or ignore_next_downtime:
+                    if apply_next_downtime:
+                        fix.flying = False
+                    else:
+                        fix.flying = True
+                else:
+                    # We need to determine whether to apply_next_downtime
+                    # or to ignore_next_downtime. This requires a scan into
+                    # upcoming fixes. Find the next fix on which
+                    # the Viterbi decoder said "flying".
+                    j = i + 1
+                    while j < len(self.fixes):
+                        upcoming_fix_decoded = outputs[j]
+                        if upcoming_fix_decoded == 1:
+                            break
+                        j += 1
+
+                    if j == len(self.fixes):
+                        # No such fix, end of log. Then apply.
+                        apply_next_downtime = True
+                        fix.flying = False
+                    else:
+                        # Found next flying fix.
+                        upcoming_fix = self.fixes[j]
+                        upcoming_fix_time_ahead = upcoming_fix.rawtime - fix.rawtime
+                        # If it's far enough into the future of then apply.
+                        if upcoming_fix_time_ahead >= self._config.min_landing_time:
+                            apply_next_downtime = True
+                            fix.flying = False
+                        else:
+                            ignore_next_downtime = True
+                            fix.flying = True
 
     def _compute_takeoff_landing(self):
         """Finds the takeoff and landing fixes in the log.
@@ -961,6 +1038,10 @@ class Flight:
                 takeoff_fix = fix
             if not fix.flying and was_flying:
                 landing_fix = fix
+                if self._config.which_flight_to_pick == "first":
+                    # User requested to select just the first flight in the log,
+                    # terminate now.
+                    break
             was_flying = fix.flying
 
         if takeoff_fix is None:
@@ -977,7 +1058,7 @@ class Flight:
     def _compute_bearings(self):
         """Adds bearing info to self.fixes."""
         for i in range(len(self.fixes) - 1):
-            self.fixes[i].bearing = self.fixes[i].bearing_to(self.fixes[i + 1])
+            self.fixes[i].bearing = self.fixes[i].bearing_to(self.fixes[i+1])
         self.fixes[-1].bearing = self.fixes[-2].bearing
 
     def _compute_bearing_change_rates(self):
@@ -988,7 +1069,6 @@ class Flight:
         Therefore we compute rates between points that are at least
         min_time_for_bearing_change seconds apart.
         """
-
         def find_prev_fix(curr_fix):
             """Computes the previous fix to be used in bearing rate change."""
             prev_fix = None
@@ -1016,7 +1096,7 @@ class Flight:
                         bearing_change -= 360.0
                 time_change = (self.fixes[prev_fix].timestamp -
                                self.fixes[curr_fix].timestamp)
-                change_rate = bearing_change / time_change
+                change_rate = bearing_change/time_change
                 self.fixes[curr_fix].bearing_change_rate = change_rate
 
     def _circling_emissions(self):
@@ -1029,7 +1109,7 @@ class Flight:
         for fix in self.fixes:
             bearing_change = math.fabs(fix.bearing_change_rate)
             bearing_change_enough = (
-                    bearing_change > self._config.min_bearing_change_circling)
+                bearing_change > self._config.min_bearing_change_circling)
             if fix.flying and bearing_change_enough:
                 emissions.append(1)
             else:
