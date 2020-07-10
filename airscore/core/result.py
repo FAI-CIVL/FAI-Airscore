@@ -204,7 +204,7 @@ class CompResult(object):
 
     stats_list = ['winner_score',
                   'valid_tasks',
-                  'tot_validity',
+                  'total_validity',
                   'avail_validity',
                   'tot_flights',
                   'tot_distance_flown',

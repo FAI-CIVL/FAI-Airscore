@@ -88,6 +88,7 @@ class FormulaPreset:
     JTG_penalty_per_sec: Preset
     overall_validity: Preset
     validity_param: Preset
+    validity_ref: Preset
     score_back_time: Preset
     no_goal_penalty: Preset
     glide_bonus: Preset
@@ -113,7 +114,7 @@ class Formula(object):
                  arr_alt_bonus=None, arr_min_height=None, arr_max_height=None, validity_min_time=None, max_JTG=0,
                  JTG_penalty_per_sec=None, nominal_goal=None, nominal_dist=None, nominal_time=None, nominal_launch=None,
                  scoring_altitude=None, min_dist=None, score_back_time=None, overall_validity='all', validity_param=1,
-                 task_result_decimal=0, comp_result_decimal=0):
+                 validity_ref='day_quality', task_result_decimal=0, comp_result_decimal=0):
 
         self.comp_id = comp_id
         self.formula_name = formula_name
@@ -132,8 +133,9 @@ class Formula(object):
         self.score_back_time = score_back_time  # seconds
         self.max_JTG = max_JTG
         self.JTG_penalty_per_sec = JTG_penalty_per_sec
-        self.overall_validity = overall_validity
-        self.validity_param = validity_param
+        self.overall_validity = overall_validity  # all, round, ftv
+        self.validity_param = validity_param  #
+        self.validity_ref = validity_ref  # day_quality, max_score
         self.nominal_goal = nominal_goal  # percentage / 100
         self.nominal_dist = nominal_dist  # meters
         self.nominal_time = nominal_time  # seconds

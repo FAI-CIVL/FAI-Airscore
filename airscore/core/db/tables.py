@@ -43,6 +43,7 @@ class CompObjectView(BaseModel):
                       Column('formula_name', String(50)),
                       Column('overall_validity', Enum('ftv', 'all', 'round'), server_default=text("'ftv'")),
                       Column('validity_param', Float(4), server_default=text("'0.750'")),
+                      Column('validity_ref', Enum('day_quality', 'max_score'), server_default=text("'day_quality'")),
                       Column('nominal_goal', Float(3), server_default=text("'0.30'")),
                       Column('min_dist', MEDIUMINT(9), server_default=text("'5000'")),
                       Column('nominal_dist', MEDIUMINT(9), server_default=text("'45000'")),
@@ -89,6 +90,7 @@ class TaskFormulaView(BaseModel):
                       Column('formula_name', String(50)),
                       Column('overall_validity', Enum('ftv', 'all', 'round'), server_default=text("'ftv'")),
                       Column('validity_param', Float(4), server_default=text("'0.750'")),
+                      Column('validity_ref', Enum('day_quality', 'max_score'), server_default=text("'day_quality'")),
                       Column('nominal_goal', Float(3), server_default=text("'0.30'")),
                       Column('min_dist', MEDIUMINT(9), server_default=text("'5000'")),
                       Column('nominal_dist', MEDIUMINT(9), server_default=text("'45000'")),
@@ -427,6 +429,7 @@ class TblForComp(BaseModel):
     external_name = Column(String(50))
     overall_validity = Column(Enum('ftv', 'all', 'round'), nullable=False, server_default=text("'ftv'"))
     validity_param = Column(Float, nullable=False, server_default=text("'0.75'"))
+    validity_ref = Column(Enum('day_quality', 'max_score'), server_default=text("'day_quality'"))
     nominal_goal = Column(Float, nullable=False, server_default=text("'0.3'"))
     min_dist = Column(MEDIUMINT(9), nullable=False, server_default=text("'5000'"))
     nominal_dist = Column(MEDIUMINT(9), nullable=False, server_default=text("'45000'"))

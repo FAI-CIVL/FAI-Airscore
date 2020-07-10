@@ -117,7 +117,7 @@ class Comp(object):
         return path.join(TRACKDIR, self.comp_path)
 
     @property
-    def tot_validity(self):
+    def total_validity(self):
         if len(self.tasks) > 0:
             return round(sum([t.ftv_validity for t in self.tasks]), 4)
         else:
@@ -127,9 +127,9 @@ class Comp(object):
     def avail_validity(self):
         if len(self.tasks) > 0:
             if self.formula.overall_validity == 'ftv':
-                return round(self.tot_validity * self.formula.validity_param, 4)
+                return round(self.total_validity * self.formula.validity_param, 4)
             else:
-                return self.tot_validity
+                return self.total_validity
         return 0
 
     @property

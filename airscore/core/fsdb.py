@@ -394,8 +394,7 @@ class FSDB(object):
                        'distance_validity': round(t.dist_validity, 3),
                        'stop_validity': round(t.stop_validity, 3),
                        'day_quality': round(t.day_quality, 3),
-                       'ftv_day_validity': (round(t.day_quality if not t.formula.type == 'pwc'
-                                                  else t.max_score / 1000, 4)),
+                       'ftv_day_validity': t.ftv_validity,
                        'time_points_stop_correction': 0  # not yet implemented
                        }
             for k, v in sp_attr.items():
@@ -520,8 +519,10 @@ class FSDB(object):
             '''trying to guess formula from name'''
             if 'pwc' in self.comp.formula.formula_name.lower():
                 self.comp.formula.formula_type = 'pwc'
+                self.comp.formula.validity_ref = 'max_score'
             elif 'gap' in self.comp.formula.formula_name.lower():
                 self.comp.formula.formula_type = 'gap'
+                self.comp.formula.validity_ref = 'day_quality'
             if self.comp.formula.formula_type is not None:
                 self.comp.formula.formula_version = (int(re.search("(\d+)", self.comp.formula.formula_name).group())
                                                      if re.search("(\d+)", self.comp.formula.formula_name) else None)

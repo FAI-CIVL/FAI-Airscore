@@ -308,11 +308,12 @@ class Task(object):
 
     @property
     def ftv_validity(self):
+        from calcUtils import c_round
         if not self.formula or not self.day_quality or not self.max_score:
             return 0
         if self.formula.overall_validity == 'ftv':
-            return (round(self.max_score / 1000, 4) if self.formula.formula_type == 'pwc'
-                    else round(self.day_quality, 4))
+            return c_round(self.max_score / 1000 if self.formula.validity_ref == 'max_score'
+                           else self.day_quality, 4)
         else:
             return self.day_quality
 
@@ -1654,8 +1655,8 @@ def delete_task(task_id, files=False):
         if files:
             '''delete track files'''
             info = db.query(T.task_path,
-                                    C.comp_path).select_from(T).join(C, C.comp_id ==
-                                                                     T.comp_id).filter(T.task_id == task_id).one()
+                            C.comp_path).select_from(T).join(C, C.comp_id ==
+                                                             T.comp_id).filter(T.task_id == task_id).one()
             igc_folder = path.join(TRACKDIR, info.comp_path, info.task_path)
             tracklog_map_folder = path.join(MAPOBJDIR, 'tracks', str(task_id))
             task_map = path.join(MAPOBJDIR, 'tasks', str(task_id) + '.task')
@@ -1829,4 +1830,3 @@ def get_task_path(task_id: int):
     with db_session() as db:
         row = db.query(TaskObjectView.task_path, TaskObjectView.comp_path).filter_by(task_id=task_id).one()
         return None if not (row.task_path and row.comp_path) else Path(TRACKDIR, row.comp_path, row.task_path)
-
