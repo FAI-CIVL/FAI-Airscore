@@ -8,8 +8,6 @@ Antonio Golfari - 2019
 import json
 import datetime
 import Defines
-from sqlalchemy.exc import SQLAlchemyError
-# Use your utility module.
 from db.conn import db_session
 
 

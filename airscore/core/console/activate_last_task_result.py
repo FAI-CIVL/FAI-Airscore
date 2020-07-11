@@ -13,9 +13,6 @@ Stuart Mackintosh - Antonio Golfari
 """
 
 import time
-
-from sqlalchemy.exc import SQLAlchemyError
-
 from db.tables import TblResultFile as Results
 from db.conn import db_session
 

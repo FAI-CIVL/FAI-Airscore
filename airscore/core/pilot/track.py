@@ -12,7 +12,6 @@ Antonio Golfari, Stuart Mackintosh - 2019
 import glob
 from os import path, makedirs
 from shutil import copyfile
-from sqlalchemy.exc import SQLAlchemyError
 from Defines import track_formats, IGCPARSINGCONFIG
 from calcUtils import epoch_to_date
 from db.tables import TblTaskResult

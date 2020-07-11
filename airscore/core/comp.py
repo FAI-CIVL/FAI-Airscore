@@ -15,8 +15,6 @@ import json
 from os import path
 
 from sqlalchemy import and_
-from sqlalchemy.exc import SQLAlchemyError
-
 from Defines import TRACKDIR, RESULTDIR, SELF_REG_DEFAULT, PILOT_DB
 from calcUtils import get_date
 from compUtils import get_tasks_result_files, get_participants, read_rankings, create_comp_path

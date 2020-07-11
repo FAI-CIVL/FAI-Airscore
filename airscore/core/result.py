@@ -20,7 +20,6 @@ Stuart Mackintosh - Antonio Golfari
 
 from db.tables import TblResultFile
 from db.conn import db_session
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import and_
 
 
@@ -485,7 +484,6 @@ def get_country_list(countries=None, iso=3):
     """
     from db.tables import TblCountryCode as CC
     from db.conn import db_session
-    from sqlalchemy.exc import SQLAlchemyError
     column = getattr(CC, 'natIso' + str(iso))
     with db_session() as db:
         query = db.query(CC.natName.label('name'), column.label('code'))

@@ -12,7 +12,6 @@ Stuart Mackintosh - Antonio Golfari
 """
 
 from dataclasses import dataclass, asdict
-from sqlalchemy.exc import SQLAlchemyError
 from db.conn import db_session
 
 

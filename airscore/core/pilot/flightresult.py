@@ -28,8 +28,6 @@ import json
 from collections import Counter
 from os import path, makedirs
 import jsonpickle
-from sqlalchemy import and_
-from sqlalchemy.exc import SQLAlchemyError
 from Defines import MAPOBJDIR
 from airspace import AirspaceCheck
 from calcUtils import string_to_seconds, sec_to_time

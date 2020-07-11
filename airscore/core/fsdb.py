@@ -15,8 +15,6 @@ from datetime import datetime
 
 import lxml.etree as ET
 from lxml.etree import CDATA
-from sqlalchemy.exc import SQLAlchemyError
-
 from calcUtils import get_isotime, km, sec_to_time
 from comp import Comp
 from compUtils import is_ext

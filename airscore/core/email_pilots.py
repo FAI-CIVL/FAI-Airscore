@@ -16,7 +16,6 @@ import argparse
 import smtplib
 
 from db.conn import db_session
-from sqlalchemy.exc import SQLAlchemyError
 
 
 class send_mail():
