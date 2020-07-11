@@ -833,10 +833,10 @@ def get_pretty_data(filename):
         pretty_content = dict()
         pretty_content['file_stats'] = pretty_format_results(content['file_stats'], timeoffset)
         pretty_content['info'] = pretty_format_results(content['info'], timeoffset)
-        pretty_content['info'].update(startgates=get_startgates(content['info']))
         if 'tasks' in content.keys():
             pretty_content['tasks'] = pretty_format_results(content['tasks'], timeoffset, td)
         elif 'route' in content.keys():
+            pretty_content['info'].update(startgates=get_startgates(content['info']))
             pretty_content['route'] = pretty_format_results(content['route'], timeoffset)
         pretty_content['stats'] = pretty_format_results(content['stats'], timeoffset)
         pretty_content['formula'] = pretty_format_results(content['formula'])

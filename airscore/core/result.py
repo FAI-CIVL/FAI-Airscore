@@ -516,6 +516,7 @@ def pretty_format_results(content, timeoffset=0, td=0, cd=0):
     scores = ('_score', 'penalty', '_arr_points', '_dep_points', '_dist_points', '_time_points',)
     booleans = ['team_scoring', 'country_scoring', 'nat_team']
     percentage = ['no_goal_penalty', 'nominal_goal', 'nominal_launch', 'tolerance', 'validity_param']
+    upper = ['overall_validity']
     formatted = dict()
     # content = jsonpickle.decode(content)
     # print(f'{type(content)}')
@@ -573,10 +574,15 @@ def pretty_format_results(content, timeoffset=0, td=0, cd=0):
                         else:
                             '''name and description'''
                             formatted[key] = str(value)
+                    # Formatting Text
+                    elif key in upper:
+                        '''formatting uppercase text'''
+                        formatted[key] = str(value).upper()
                     # Formatting Numbers
                     elif key in percentage:
                         '''formatting percentage'''
-                        formatted[key] = f"{c_round(float(value) * 100, 2):.2f}%"
+                        v = float(value if not key == 'validity_param' else 1-value)
+                        formatted[key] = f"{c_round(v * 100, 2):.2f}%"
                     elif str(key).endswith(validity):
                         '''formatting formula validity'''
                         formatted[key] = f"{c_round(float(value), 3):.3f}"

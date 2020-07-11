@@ -14,9 +14,9 @@ $(document).ready(function() {
             {data: 'name', title:'Name'},
             {data: 'nat', title:'NAT'},
             {data: 'sex', title:'Sex'},
-            {data: 'sponsor', title:'Sponsor'},
             {data: 'glider', title:'Glider'},
             {data: 'glider_cert', title:'EN'},
+            {data: 'sponsor', title:'Sponsor'},
             {data: 'score', title:'Total'},
             {data: 'results.T1.score', title:'T1'},
             {data: 'results.T2.score', title: 'T2'},
@@ -44,7 +44,7 @@ $(document).ready(function() {
                  },
         "columnDefs": [
             {
-                "targets": [ 1, 2, 6, 8 ],
+                "targets": [ 1, 2, 5, 7 ],
                 "visible": false
             },
             //{ "type" : "numeric", "targets": [ 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25 ] }
@@ -67,8 +67,8 @@ $(document).ready(function() {
             $('#formula tbody').append(
                         "<tr><td>Director</td><td>" + json.info.MD_name + '</td></tr>' +
                         "<tr><td>Location</td><td>" + json.info.comp_site + '</td></tr>' +
-                        "<tr><td>Formula</td><td>" + json.formula.formula + '</td></tr>' +
-                        "<tr><td>Overall Scoring</td><td>" + json.formula.overall_validity + ' (' + json.formula.validity_param*100 + ')</td></tr>');
+                        "<tr><td>Formula</td><td>" + json.formula.formula_name + '</td></tr>' +
+                        "<tr><td>Overall Scoring</td><td>" + json.formula.overall_validity + ' (' + json.formula.validity_param + ')</td></tr>');
             if (json.formula.overall_validity == 'ftv')
             {
                 $('#formula tbody').append(

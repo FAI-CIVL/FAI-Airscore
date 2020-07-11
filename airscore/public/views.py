@@ -245,21 +245,25 @@ def comp_result(compid):
 
 @blueprint.route('/_get_comp_result/<compid>', methods=['GET', 'POST'])
 def _get_comp_result(compid):
-    from compUtils import get_comp_json
-    result_file = get_comp_json(compid)
+    from compUtils import get_comp_json_filename
+    result_file = frontendUtils.get_pretty_data(get_comp_json_filename(compid))
     if result_file == 'error':
         return render_template('404.html')
     all_pilots = []
+    tasks = [t['task_code'] for t in result_file['tasks']]
     rank = 1
     for r in result_file['results']:
-        pilot = {'fai_id': r['fai_id'], 'civl_id': r['civl_id'], 'name': r['name'], 'nat': r['nat'], 'sex': r['sex'],
-                 'sponsor': r['sponsor'], 'glider': r['glider'], 'glider_cert': r['glider_cert'], 'rank': rank,
+        pilot = {'rank': rank,
+                 'fai_id': r['fai_id'], 'civl_id': r['civl_id'],
+                 'name': f"<span class='sex-{r['sex']}'>{r['name']}</span>",
+                 'nat': r['nat'], 'sex': r['sex'],
+                 'glider': r['glider'], 'glider_cert': r['glider_cert'], 'sponsor': r['sponsor'],
                  'score': f"<b>{int(r['score'])}</b>", 'results': {}}
         # setup the 20 task placeholders
         for t in range(1, 21):
             task = 'T' + str(t)
             pilot['results'][task] = {'score': ''}
-        for t, task in enumerate(r['results']):
+        for task in tasks:
             if r['results'][task]['pre'] == r['results'][task]['score']:
                 pilot['results'][task] = {'score': r['results'][task]['score']}
             else:
@@ -269,18 +273,17 @@ def _get_comp_result(compid):
         all_pilots.append(pilot)
     result_file['data'] = all_pilots
 
-    total_validity = 0
-    for task in result_file['tasks']:
-        total_validity += task['ftv_validity']
-
-    result_file['stats']['tot_validity'] = total_validity
-    all_classes = []
-    for glider_class in result_file['rankings']:
-        if glider_class[-5:].lower() == 'class':
-            comp_class = {'name': glider_class, 'limit': result_file['rankings'][glider_class][-1]}
-            all_classes.append(comp_class)
-    all_classes.reverse()
-    result_file['classes'] = all_classes
+    # total_validity = 0
+    # for task in result_file['tasks']:
+    #     total_validity += task['ftv_validity']
+    # result_file['stats']['tot_validity'] = total_validity
+    # all_classes = []
+    # for glider_class in result_file['classes']:
+    #     if glider_class[-5:].lower() == 'class':
+    #         comp_class = {'name': glider_class, 'limit': result_file['rankings'][glider_class][-1]}
+    #         all_classes.append(comp_class)
+    # all_classes.reverse()
+    # result_file['classes'] = all_classes
     return result_file
 
 
