@@ -865,13 +865,12 @@ def delete_track(trackid: int, delete_file=False):
     from pathlib import Path
     from db.tables import TblTaskResult
     row_deleted = None
-    with db_session() as db:
-        track = db.query(TblTaskResult).filter_by(track_id=trackid).one_or_none()
-        if track:
-            if track.track_file is not None and delete_file:
-                Path(get_task_fullpath(track.task_id), track.track_file).unlink(missing_ok=True)
-            db.delete(track)
-            row_deleted = True
+    track = TblTaskResult.get_by_id(trackid)
+    if track:
+        if track.track_file is not None and delete_file:
+            Path(get_task_fullpath(track.task_id), track.track_file).unlink(missing_ok=True)
+        track.delete()
+        row_deleted = True
     return row_deleted
 
 
