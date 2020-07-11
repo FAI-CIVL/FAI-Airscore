@@ -74,7 +74,7 @@ class Comp(object):
         self.website = None  # str
         self.comp_path = None  # str
         self.results = []
-        self.igc_config_file = None # config yaml for igc_lib. This setting will be passed on to new tasks
+        self.igc_config_file = None  # config yaml for igc_lib. This setting will be passed on to new tasks
         self.airspace_check = False  # BOOL airspace check. This setting will be passed on to new tasks
         self.check_launch = check_launch  # check launch flag. whether we check that pilots leave from launch. This setting will be passed on to new tasks
         self.self_register = PILOT_DB and SELF_REG_DEFAULT # set to true if we have pilot DB on and self reg on by default
@@ -139,11 +139,11 @@ class Comp(object):
                 return int(len(self.tasks) / self.formula.validity_param)
         return 0
 
-    @property
-    def airspace_check(self):
-        if self.openair_file:
-            return True
-        return False
+    # @property
+    # def airspace_check(self):
+    #     if self.openair_file:
+    #         return True
+    #     return False
 
     def as_dict(self):
         return self.__dict__
