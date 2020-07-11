@@ -257,9 +257,10 @@ def create_tracklog_map_result_file(par_id: int, task_id: int):
 
 def get_task_fullpath(task_id: int):
     from db.tables import TblTask as T, TblCompetition as C
+    from pathlib import Path
     with db_session() as db:
-        q = db.query(T.task_path, C.comp_path).join(C, C.comp_id == T.comp_id).filter_by(task_id=task_id).one()
-    return path.join(TRACKDIR, q.comp_path, q.task_path)
+        q = db.query(T.task_path, C.comp_path).join(C, C.comp_id == T.comp_id).filter(T.task_id == task_id).one()
+    return Path(TRACKDIR, q.comp_path, q.task_path)
 
 
 def get_unscored_pilots(task_id: int, xcontest=False):
