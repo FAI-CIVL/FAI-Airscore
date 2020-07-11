@@ -222,29 +222,22 @@ def get_pilot_list_for_track_management(taskid: int):
 
     all_data = []
     for pilot in pilots:
-        time = ''
-        data = {}
-        data['ID'] = pilot['ID']
-        data['name'] = pilot['name']
-        data['par_id'] = pilot['par_id']
-        data['track_id'] = pilot['track_id']
-        if pilot['ESS_time']:
-            time = sec_to_time(pilot['ESS_time'] - pilot['SSS_time'])
-        if pilot['result_type'] == 'goal':
-            data['Result'] = f'Goal {time}'
-        elif pilot['result_type'] == 'lo':
-            data['Result'] = f"LO {round(pilot['distance_flown'] / 1000, 2)}"
-        elif pilot['result_type'] == 'nyp':
-            data['Result'] = "Not Yet Processed"
+        data = {'ID': pilot['ID'], 'name': pilot['name'], 'par_id': pilot['par_id'], 'track_id': pilot['track_id']}
+        if pilot['track_file']:
+            parid = data['par_id']
+            if pilot['ESS_time']:
+                time = sec_to_time(pilot['ESS_time'] - pilot['SSS_time'])
+                if pilot['result_type'] == 'goal':
+                    result = f'Goal {time}'
+                else:
+                    result = f"ESS {round(pilot['distance_flown'] / 1000, 2)} Km (<del>{time}</del>)"
+            else:
+                result = f"LO {round(pilot['distance_flown'] / 1000, 2)} Km"
+            data['Result'] = f'<a href="/map/{parid}-{taskid}">{result}</a>'
         elif pilot['result_type'] == "mindist":
             data['Result'] = "Min Dist"
         else:
-            data['Result'] = pilot['result_type'].upper()
-        if pilot['track_file']:  # if there is a track, make the result a link to the map
-            # trackid = data['track_id']
-            parid = data['par_id']
-            result = data['Result']
-            data['Result'] = f'<a href="/map/{parid}-{taskid}">{result}</a>'
+            data['Result'] = "Not Yet Processed" if not pilot['track_id'] else pilot['result_type'].upper()
         all_data.append(data)
     return all_data
 
