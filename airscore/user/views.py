@@ -715,29 +715,26 @@ def _get_tracks_processed(taskid):
 @login_required
 def track_admin(taskid):
     taskid = int(taskid)
-    task_in_comp = False
-    for task in session['tasks']:
-        if task['task_id'] == taskid:
-            task_num = task['task_num']
-            task_name = task['task_name']
-            task_in_comp = True
-            task_ready_to_score = task['ready_to_score']
-            track_source = 'xcontest'  # TODO: testing, needs to be parametrize
+    task = next((t for t in session['tasks'] if t['task_id'] == taskid), None)
+    if task:
+        task_num = task['task_num']
+        task_name = task['task_name']
+        task_ready_to_score = task['ready_to_score']
+        track_source = task['track_source']
 
-    if not task_in_comp:
-        return render_template('out_of_comp.html')
+        if not task_ready_to_score:
+            return render_template('task_not_ready_to_score.html')
 
-    if not task_ready_to_score:
-        return render_template('task_not_ready_to_score.html')
-
-    _, _, all_admin_ids = frontendUtils.get_comp_admins(taskid, task_id=True)
-    if current_user.id in all_admin_ids:
-        user_is_admin = True
+        _, _, all_admin_ids = frontendUtils.get_comp_admins(taskid, task_id=True)
+        if current_user.id in all_admin_ids:
+            user_is_admin = True
+        else:
+            user_is_admin = None
+        return render_template('users/track_admin.html', taskid=taskid, user_is_admin=user_is_admin,
+                               production=frontendUtils.production(), task_name=task_name, task_num=task_num,
+                               track_source=track_source)
     else:
-        user_is_admin = None
-    return render_template('users/track_admin.html', taskid=taskid, user_is_admin=user_is_admin,
-                           production=frontendUtils.production(), task_name=task_name, task_num=task_num,
-                           track_source=track_source)
+        return render_template('out_of_comp.html')
 
 
 @blueprint.route('/_set_result/<taskid>', methods=['POST'])

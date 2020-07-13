@@ -103,16 +103,16 @@ def get_task_list(comp):
             max_task_num = int(tasknum)
             last_region = task['reg_id']
         task['num'] = f"Task {tasknum}"
-        task['ready_to_score'] = False
         # check if we have all we need to be able to accept tracks and score:
-        if (task['opt_dist'] and task['window_open_time'] and task['window_close_time'] and task['start_time']
-                and task['start_close_time'] and task['task_deadline']):
-            task['ready_to_score'] = True
+        task['ready_to_score'] = (task['opt_dist'] and task['window_open_time'] and task['window_close_time']
+                                  and task['start_time'] and task['start_close_time'] and task['task_deadline'])
 
         task['opt_dist'] = 0 if not task['opt_dist'] else round(task['opt_dist'] / 1000, 2)
         task['opt_dist'] = f"{task['opt_dist']} km"
         if task['comment'] is None:
             task['comment'] = ''
+        if not task['track_source']:
+            task['track_source'] = ''
         task['date'] = task['date'].strftime('%d/%m/%y')
     return {'next_task': max_task_num + 1, 'last_region': last_region, 'tasks': tasks}
 

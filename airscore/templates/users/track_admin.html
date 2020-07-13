@@ -25,9 +25,9 @@
         </div>
 
 
- {% if not user_is_admin %}
+{% if not user_is_admin %}
+    <h2>You are not authorised to access this page as you are not an admin of this competition</h2>
 
-<h2>You are not authorised to access this page as you are not an admin of this competition</h2>
 {% else %}
     <!-- CSS -->
     <link href="/static/css/task.css" rel="stylesheet">
@@ -38,9 +38,13 @@
         <button id="bulk_button" class="btn btn-primary ml-4" onclick="open_bulk_modal();">
             Bulk Import Tracks
         </button>
-        <button id="xcontest_button" class="btn btn-primary ml-4" onclick="xcontest_tracks();">
-            XContest
+
+        {% if track_source %}
+        <button id="{{ track_source }}_button" class="btn btn-primary ml-4" onclick="{{ track_source }}_tracks();">
+            {{ track_source|title }}
         </button>
+        {% endif %}
+
         <a href="{{ url_for('user.task_score_admin', taskid=taskid)}}" class="btn btn-info ml-4" type="button" >
          Manage Scores
       </a>
@@ -119,7 +123,7 @@
 </div>
 <!-- process log Modal ends here -->
 
-  {% endif%}
+  {% endif %}
 {% endblock %}
 
 {% if user_is_admin %}
