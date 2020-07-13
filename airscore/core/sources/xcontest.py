@@ -89,8 +89,10 @@ def get_zip(site_id, takeoff_id, date, login_name, password, zip_file):
 
     # send request for tracks
     time.sleep(4)
-    response = s.get(
-        'https://www.xcontest.org/util/igc.archive.comp.php?date=%s&%s=%s' % (date, site_launch, location_id))
+    # date = '2020-07-11'
+    url = f'https://www.xcontest.org/util/igc.archive.comp.php?date={date}&{site_launch}={location_id}'
+    print(url)
+    response = s.get(url)
 
     if "No error" in response.text:
         logging.info("logged into xcontest and igc.archive.comp.php running with no error")

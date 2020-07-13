@@ -476,7 +476,7 @@ def unzip_igc(zipfile):
     return tracksdir
 
 
-def process_igc_from_zip(taskid: int, tracksdir, user, check_g_record=False, track_source='upload'):
+def process_igc_from_zip(taskid: int, tracksdir, user, check_g_record=False, track_source=None):
     """function split for background use.
     tracksdir is a temp dir that will be deleted at the end of the function"""
     from task import Task
@@ -501,7 +501,7 @@ def process_igc_from_zip(taskid: int, tracksdir, user, check_g_record=False, tra
     return 'Success'
 
 
-def process_igc_zip(task, zipfile, check_g_record=False, track_source='upload'):
+def process_igc_zip(task, zipfile, check_g_record=False, track_source=None):
     from trackUtils import extract_tracks, get_tracks, assign_and_import_tracks
     from tempfile import TemporaryDirectory
 
