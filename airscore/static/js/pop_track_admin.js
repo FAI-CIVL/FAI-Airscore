@@ -50,3 +50,36 @@ function populate_track_admin(task_id){
 });
 }
 
+function open_bulk_modal() {
+    $('#bulkmodal').modal('show');
+}
+
+function filesize(elem){
+    document.cookie = `filesize=${elem.files[0].size}; SameSite=Strict; path=/`
+}
+
+function update_row(new_data){
+    update_track_pilot_stats();
+    var table = $('#tracks').dataTable();
+    new_data.ID = $('#tracks').DataTable().row( $('tr#id_'+ new_data.par_id)).data()['ID'];
+    new_data.name = $('#tracks').DataTable().row( $('tr#id_'+ new_data.par_id)).data()['name'];
+    table.fnUpdate(new_data, $('tr#id_'+ new_data.par_id), undefined, false);
+}
+
+function delete_track(track_id, par_id){
+    var mydata = new Object();
+    mydata.track_id = track_id;
+    mydata.par_id = par_id;
+    $.ajax({
+        type: "POST",
+        url: "/users/_delete_track/" + track_id,
+        contentType:"application/json",
+        data : JSON.stringify(mydata),
+        dataType: "json",
+        success: function (response, par_id) {
+            update_row(response);
+            update_track_pilot_stats();
+        }
+    });
+}
+
