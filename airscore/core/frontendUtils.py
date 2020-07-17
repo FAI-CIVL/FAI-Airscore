@@ -280,14 +280,11 @@ def save_turnpoint(task_id: int, turnpoint: Turnpoint):
 
 
 def allowed_tracklog(filename, extension=track_formats):
-    if "." not in filename:
+    ext = Path(filename).suffix
+    if not ext:
         return False
-
-    # Split the extension from the filename
-    ext = filename.rsplit(".", 1)[1]
-
     # Check if the extension is allowed (make everything uppercase)
-    if ext.upper() in [e.upper() for e in extension]:
+    if ext.strip('.').lower() in [e.lower() for e in extension]:
         return True
     else:
         return False
