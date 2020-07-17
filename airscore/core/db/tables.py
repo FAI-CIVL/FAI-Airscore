@@ -293,8 +293,8 @@ class TaskObjectView(BaseModel):
 class UnscoredPilotView(BaseModel):
     __table__ = Table('UnscoredPilotView', metadata,
 
-                      Column('task_id', INTEGER(11), primary_key=True),
-                      Column('par_id', INTEGER(11)),
+                      Column('task_id', INTEGER(11)),
+                      Column('par_id', INTEGER(11), primary_key=True),
                       Column('comp_id', INTEGER(11)),
                       Column('civl_id', INTEGER(10)),
                       Column('fai_id', String(20)),
