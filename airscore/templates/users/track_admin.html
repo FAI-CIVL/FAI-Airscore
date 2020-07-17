@@ -40,7 +40,7 @@
         </button>
 
         {% if track_source %}
-        <button id="{{ track_source }}_button" class="btn btn-primary ml-4" onclick="get_{{ track_source }}_tracks();">
+        <button id="{{ track_source }}_button" class="btn btn-primary ml-4" onclick="location.href='/users/_get_{{ track_source }}_tracks/{{ taskid }}';">
             {{ track_source|title }}
         </button>
         {% endif %}
