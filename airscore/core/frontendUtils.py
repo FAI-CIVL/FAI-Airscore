@@ -806,10 +806,11 @@ def push_sse(body, message_type, channel):
 
 def production():
     """Checks if we are running production or dev via environment variable."""
-    if environ['FLASK_DEBUG'] == '1':
-        return False
-    else:
-        return True
+    # if environ['FLASK_DEBUG'] == '1':
+    #     return False
+    # else:
+    #     return True
+    return not environ['FLASK_DEBUG'] == '1'
 
 
 def unique_filename(filename, filepath):
