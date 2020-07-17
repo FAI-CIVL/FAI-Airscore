@@ -1,7 +1,7 @@
 from db.tables import TblCompetition, TblTask, TblCompAuth, TblRegion, TblRegionWaypoint, TblTaskWaypoint
 from route import Turnpoint
 from sqlalchemy.orm import aliased
-from flask import jsonify
+from flask import current_app, jsonify
 from db.conn import db_session
 import datetime
 import ruamel.yaml
@@ -476,7 +476,7 @@ def unzip_igc(zipfile):
     return tracksdir
 
 
-def process_igc_from_zip(taskid: int, tracksdir, user, check_g_record=False, track_source=None):
+def process_archive_background(taskid: int, tracksdir, user, check_g_record=False, track_source=None):
     """function split for background use.
     tracksdir is a temp dir that will be deleted at the end of the function"""
     from task import Task
@@ -493,15 +493,14 @@ def process_igc_from_zip(taskid: int, tracksdir, user, check_g_record=False, tra
     if tracks is None:
         print(f"There are no valid tracks in zipfile")
         return None
-
     """associate tracks to pilots and import"""
-    assign_and_import_tracks(tracks, task, user=user, check_g_record=check_g_record, print=print)
+    assign_and_import_tracks(tracks, task, track_source, user=user, check_g_record=check_g_record, print=print)
     rmtree(tracksdir)
     print('|reload')
     return 'Success'
 
 
-def process_igc_zip(task, zipfile, check_g_record=False, track_source=None):
+def process_archive(task, zipfile, check_g_record=False, track_source=None):
     from trackUtils import extract_tracks, get_tracks, assign_and_import_tracks
     from tempfile import TemporaryDirectory
 
@@ -517,14 +516,33 @@ def process_igc_zip(task, zipfile, check_g_record=False, track_source=None):
             return None
         """find valid tracks"""
         tracks = get_tracks(tracksdir)
-        if tracks is None:
+        if not tracks:
             print(f"There are no valid tracks in zipfile {zipfile}, or all pilots are already been scored \n")
             return None
 
         """associate tracks to pilots and import"""
-        xcontest = True if track_source == 'xcontest' else False
-        assign_and_import_tracks(tracks, task, xcontest=xcontest, check_g_record=check_g_record)
+        assign_and_import_tracks(tracks, task, track_source, check_g_record=check_g_record)
         return 'Success'
+
+
+def process_zip_file(zip_file: Path, taskid: int, username: str, grecord: bool, track_source: str = None):
+    from task import Task
+    if production():
+        tracksdir = unzip_igc(zip_file)
+        job = current_app.task_queue.enqueue(process_archive_background,
+                                             taskid=taskid,
+                                             tracksdir=tracksdir,
+                                             user=username,
+                                             check_g_record=grecord,
+                                             track_source=track_source,
+                                             job_timeout=2000)
+        resp = jsonify(success=True)
+        return resp
+    else:
+        task = Task.read(taskid)
+        data = process_archive(task, zip_file, check_g_record=grecord, track_source=track_source)
+        resp = jsonify(success=True) if data == 'Success' else None
+        return resp
 
 
 def get_task_result_file_list(taskid: int):

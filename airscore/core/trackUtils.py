@@ -54,27 +54,29 @@ def get_tracks(directory):
 
     """check files in temporary directory, and get only tracks"""
     for file in listdir(directory):
-        print(f"checking: {file} \n")
-        if not Path(file).name.startswith(tuple(['_', '.'])) and Path(file).suffix.strip('.') in track_formats:
+        print(f"checking: {file}")
+        file = Path(directory, file)
+        if not file.name.startswith(tuple(['_', '.'])) and file.suffix.strip('.').lower() in track_formats:
             """file is a valid track"""
-            files.append(path.join(directory, file))
+            print(f"{file} is a valid track")
+            files.append(file)
+        else:
+            print(f"{file} is NOT a valid track")
     return files
 
 
-def assign_and_import_tracks(files, task, xcontest=False, user=None, check_g_record=False, print=print):
+def assign_and_import_tracks(files, task, track_source=None, user=None, check_g_record=False, print=print):
     """Find pilots to associate with tracks"""
     from compUtils import get_registration
     from pilot.track import Track, validate_G_record, igc_parsing_config_from_yaml
     from functools import partial
     from frontendUtils import print_to_sse
     import json
-    import sources
+    import importlib
 
     pilot_list = []
     task_id = task.id
     comp_id = task.comp_id
-    task_date = task.date
-    track_counter = 0
     """checking if comp requires a regisration.
     Then we create a list of registered pilots to check against tracks filename.
     This should be much faster than checking against all pilots in database through a query"""
@@ -82,33 +84,41 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None, check_g_rec
     if registration:
         """We add tracks for the registered pilots not yet scored"""
         print("Comp with registration: files will be checked against registered pilots not yet scored")
-        pilot_list = get_unscored_pilots(task_id, xcontest)
-        print(f"We have {len(pilot_list)} pilots to find tracks for")
+        pilot_list = get_unscored_pilots(task_id, track_source)
+        if len(pilot_list) == 0:
+            print(f"Pilot list is empty")
+            return
+        print(f"We have {len(pilot_list)} pilots to find tracks for, and {len(files)} tracks")
     else:
-        print(f"We have {len(files)} tracks to associate")
+        print(f"No registration required, we have {len(files)} tracks to associate")
+
+    task_date = task.date
+    track_counter = 0
     track_path = task.file_path
     FlightParsingConfig = igc_parsing_config_from_yaml(task.igc_config_file)
+
     # print("found {} tracks \n".format(len(files)))
     for file in files:
         mytrack = None
-        filename = path.basename(file)
+        filename = file.name
+        print(f'filename {filename}, {type(filename)}')
         if registration:
-            if len(pilot_list) == 0:
-                break
-            if len(pilot_list) > 0:
-                # print(f"checking {filename} against {len(pilot_list)} pilots...")
-                """check filenames to find pilots"""
-                if xcontest:
-                    pilot, full_name = sources.xcontest.get_pilot_from_list(filename, pilot_list)
-                else:
-                    pilot, full_name = get_pilot_from_list(filename, pilot_list)
+            # print(f"checking {filename} against {len(pilot_list)} pilots...")
+            """check filenames to find pilots"""
+            if track_source:
+                # print(f'Source: {track_source}')
+                ''' Use Live server filename format to get pilot '''
+                lib = importlib.import_module('.'.join(['sources', track_source]))
+                pilot = lib.get_pilot_from_list(filename, pilot_list)
+            else:
+                pilot = get_pilot_from_list(filename, pilot_list)
 
-                if pilot:
-                    """found a pilot for the track file.
-                    dropping pilot from list and creating track obj"""
-                    # print(f"Found a pilot to associate with file. dropping {pilot.name} from non scored list")
-                    pilot_list[:] = [d for d in pilot_list if d.par_id != pilot.par_id]
-                    mytrack = Track.read_file(filename=file, config=FlightParsingConfig, print=print)
+            if pilot:
+                """found a pilot for the track file.
+                dropping pilot from list and creating track obj"""
+                # print(f"Found a pilot to associate with file. dropping {pilot.name} from non scored list")
+                pilot_list[:] = [d for d in pilot_list if d.par_id != pilot.par_id]
+                mytrack = Track.read_file(filename=file, config=FlightParsingConfig, print=print)
         else:
             """We add track if we find a pilot in database
             that has not yet been scored"""
@@ -116,42 +126,46 @@ def assign_and_import_tracks(files, task, xcontest=False, user=None, check_g_rec
             if get_pil_track(mytrack.par_id, task_id):
                 """pilot has already been scored"""
                 print(f"Pilot with ID {mytrack.par_id} has already a valid track for task with ID {task_id}")
-                mytrack = None
+                continue
+            pilot = FlightResult.read(par_id=mytrack.par_id, task_id=task_id)
+
         """check result"""
         if not mytrack:
             print(f"Track {filename} is not a valid track file, pilot not found in competition or pilot "
                   f"already has a track")
+            continue
         elif not mytrack.date == task_date:
             print(f"track {filename} has a different date from task")
+            continue
+
+        """pilot is registered and has no valid track yet
+        moving file to correct folder and adding to the list of valid tracks"""
+        track_counter += 1
+        print(f"Track {track_counter}|counter")
+        mytrack.task_id = task_id
+        filename_and_path = mytrack.copy_track_file(task_path=track_path, pname=pilot.name)
+        # print(f"pilot {mytrack.par_id} associated with track {mytrack.filename}")
+        pilot.track_file = filename_and_path.name
+        print(f"processing {pilot.ID} {pilot.name}:")
+        if user:
+            new_print = partial(print_to_sse, id=mytrack.par_id, channel=user)
+            print('***************START*******************')
         else:
-            """pilot is registered and has no valid track yet
-            moving file to correct folder and adding to the list of valid tracks"""
-            track_counter += 1
-            print(f"Track {track_counter}|counter")
-            mytrack.task_id = task_id
-            filename_and_path = mytrack.copy_track_file(task_path=track_path, pname=full_name)
-            # print(f"pilot {mytrack.par_id} associated with track {mytrack.filename}")
-            # pilot.track = mytrack
-            print(f"processing {pilot.ID} {pilot.name}:")
-            if user:
-                new_print = partial(print_to_sse, id=mytrack.par_id, channel=user)
-                print('***************START*******************')
-            else:
-                new_print = print
-            if check_g_record:
-                print('Checking G-Record...')
-                validation = validate_G_record(filename_and_path)
-                if validation == 'FAILED':
-                    print('G-Record not valid')
-                    data = {'par_id': pilot.par_id, 'track_id': pilot.track_id, 'Result': ''}
-                    print(json.dumps(data) + '|g_record_fail')
-                    continue
-                if validation == 'ERROR':
-                    print('Error trying to validate G-Record')
-                    continue
-                if validation == 'PASSED':
-                    print('G-Record is valid')
-            verify_and_import_track(pilot, mytrack, task, print=new_print)
+            new_print = print
+        if check_g_record:
+            print('Checking G-Record...')
+            validation = validate_G_record(filename_and_path)
+            if validation == 'FAILED':
+                print('G-Record not valid')
+                data = {'par_id': pilot.par_id, 'track_id': pilot.track_id, 'Result': ''}
+                print(json.dumps(data) + '|g_record_fail')
+                continue
+            if validation == 'ERROR':
+                print('Error trying to validate G-Record')
+                continue
+            if validation == 'PASSED':
+                print('G-Record is valid')
+        verify_and_import_track(pilot, mytrack, task, print=new_print)
     print("*******************processed all tracks**********************")
 
 
@@ -263,7 +277,7 @@ def get_task_fullpath(task_id: int):
     return Path(TRACKDIR, q.comp_path, q.task_path)
 
 
-def get_unscored_pilots(task_id: int, xcontest=False):
+def get_unscored_pilots(task_id: int, track_source=None):
     """ Gets list of registered pilots that still do not have a result
         Input:  task_id INT task database ID
         Output: list of Pilot obj."""
@@ -271,20 +285,24 @@ def get_unscored_pilots(task_id: int, xcontest=False):
     from db.tables import UnscoredPilotView as U
     pilot_list = []
     with db_session() as db:
-        results = db.query(U.par_id, U.comp_id, U.ID, U.name, U.nat, U.sex, U.civl_id,
-                           U.live_id, U.glider, U.glider_cert, U.sponsor, U.xcontest_id,
-                           U.team, U.nat_team).filter_by(task_id=task_id)
-        if xcontest:
+        # results = db.query(U.par_id, U.comp_id, U.ID, U.name, U.nat, U.sex, U.civl_id,
+        #                    U.live_id, U.glider, U.glider_cert, U.sponsor, U.xcontest_id,
+        #                    U.team, U.nat_team).filter_by(task_id=task_id)
+        results = db.query(U).filter_by(task_id=task_id)
+        if track_source == 'xcontest':
             results = results.filter(U.xcontest_id != None)
+        elif track_source == 'flymaster':
+            results = results.filter(U.live_id != None)
         results = results.all()
         for p in results:
+            # pilot = FlightResult.from_dict(p._asdict())
             pilot = FlightResult()
             p.populate(pilot)
             pilot_list.append(pilot)
     return pilot_list
 
 
-def get_pilot_from_list(filename, pilots: list):
+def get_pilot_from_list(filename: str, pilots: list):
     """ check filename against a list of Pilot Obj.
         Looks for different information in filename
 
@@ -307,7 +325,6 @@ def get_pilot_from_list(filename, pilots: list):
     string = Path(filename).stem
     elements = re.findall(r"[\d]+|[a-zA-Z']+", string)
     num_of_el = len(elements)
-    pilot = None
     if any(el for el in format_list if len(el) == num_of_el):
         '''we have a match in number of elements between filename and accepted formats'''
         for f in [el for el in format_list if len(el) == num_of_el]:
@@ -335,12 +352,10 @@ def get_pilot_from_list(filename, pilots: list):
                             a = 'fai_id'
                         else:
                             continue
-                        pilot = next((p for p in pilots if getattr(p.info, a) == v), None)
+                        pilot = next((p for p in pilots if getattr(p, a) == v), None)
                         if pilot:
                             print(f'{a}, found {pilot.name}')
-                            filename = remove_accents('_'.join(pilot.name.replace('_', ' ')
-                                                               .replace("'", ' ').lower().split()))
-                            return pilot, filename
+                            return pilot
                 else:
                     '''no unique id in filename, using name'''
                     names = [str(elements[idx]).lower() for idx, val in enumerate(f) if val == 'name']
@@ -348,7 +363,5 @@ def get_pilot_from_list(filename, pilots: list):
                     if pilot:
                         print(f'using name, found {pilot.name}')
                         '''we found a pilot'''
-                        filename = remove_accents('_'.join(pilot.name.replace('_', ' ')
-                                                           .replace("'", ' ').lower().split()))
-                        return pilot, filename
-    return None, None
+                        return pilot
+    return None

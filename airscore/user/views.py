@@ -792,12 +792,12 @@ def _upload_track(taskid, parid):
 
                 if frontendUtils.allowed_tracklog(tracklog.filename):
                     if frontendUtils.production():
-                        filename, full_file_name = frontendUtils.save_igc_background(taskid, parid, tracklog,
-                                                                                     current_user.username,
-                                                                                     check_g_record=check_g_record)
-                        job = current_app.task_queue.enqueue(frontendUtils.process_igc_background, taskid, parid,
-                                                             filename, full_file_name, current_user.username)
-                        if not filename:
+                        file = frontendUtils.save_igc_background(taskid, parid, tracklog,
+                                                                 current_user.username,
+                                                                 check_g_record=check_g_record)
+                        job = current_app.task_queue.enqueue(frontendUtils.process_igc_background,
+                                                             taskid, parid, file, current_user.username)
+                        if not file:
                             resp = jsonify(success=False)
                         else:
                             resp = jsonify(success=True)
@@ -824,34 +824,25 @@ def _upload_track(taskid, parid):
 @login_required
 def _get_xcontest_tracks(taskid):
     from sources.xcontest import get_zipfile
+    # from Defines import TEMPFILES
+    # from pathlib import Path
     taskid = int(taskid)
     if request.method == "GET":
         zip_file = get_zipfile(taskid)
+        # zip_file = Path(TEMPFILES, 'xcontest-95.zip')  # test file
 
         if not zip_file:
             print("No filename")
+            flash("We could not find tracks on XContest for the event", category='danger')
             return redirect(request.url)
 
-        if frontendUtils.allowed_tracklog(zip_file, extension=['zip']):
-            if frontendUtils.production():
-                tracksdir = frontendUtils.unzip_igc(zip_file)
-                job = current_app.task_queue.enqueue(frontendUtils.process_igc_from_zip, taskid, tracksdir,
-                                                     current_user.username,
-                                                     check_g_record=session['check_g_record'],
-                                                     track_source='xcontest',
-                                                     job_timeout=2000)
-                resp = jsonify(success=True)
-                return resp
-            else:
-                task = Task.read(taskid)
-                data = frontendUtils.process_igc_zip(task, zip_file, check_g_record=session['check_g_record'],
-                                                     track_source='xcontest')
-                resp = data
-                return resp
+        resp = frontendUtils.process_zip_file(zip_file=zip_file,
+                                              taskid=taskid,
+                                              username=current_user.username,
+                                              grecord=session['check_g_record'],
+                                              track_source='xcontest')
+        return resp
 
-        else:
-            print("That file extension is not allowed")
-            return redirect(request.url)
 
 
 @blueprint.route('/_upload_XCTrack/<taskid>', methods=['POST'])
@@ -882,34 +873,21 @@ def _upload_track_zip(taskid):
     taskid = int(taskid)
     if request.method == "POST":
         if request.files:
-
             if "filesize" in request.cookies:
-
                 if not frontendUtils.allowed_tracklog_filesize(request.cookies["filesize"], size=50):
                     print("Filesize exceeded maximum limit")
                     return redirect(request.url)
-
                 zip_file = request.files["zip_file"]
-
                 if zip_file.filename == "":
                     print("No filename")
                     return redirect(request.url)
 
                 if frontendUtils.allowed_tracklog(zip_file.filename, extension=['zip']):
-                    if frontendUtils.production():
-                        tracksdir = frontendUtils.unzip_igc(zip_file)
-                        job = current_app.task_queue.enqueue(frontendUtils.process_igc_from_zip, taskid, tracksdir,
-                                                             current_user.username,
-                                                             check_g_record=session['check_g_record'],
-                                                             job_timeout=2000)
-                        resp = jsonify(success=True)
-                        return resp
-                    else:
-                        task = Task.read(taskid)
-                        data = frontendUtils.process_igc_zip(task, zip_file)
-                        resp = data
-                        return resp
-
+                    resp = frontendUtils.process_zip_file(zip_file=zip_file,
+                                                          taskid=taskid,
+                                                          username=current_user.username,
+                                                          grecord=session['check_g_record'])
+                    return resp
                 else:
                     print("That file extension is not allowed")
                     return redirect(request.url)
