@@ -9,10 +9,15 @@ By Stuart Mackintosh, Antonio Golfari, 2019
 
 import logging
 import time
-
 import requests
-
 from db.conn import db_session
+from pathlib import Path
+
+
+# in XContest format is:
+# DE VIVO.ALESSANDRO.alexpab.2019-12-19.13-22-49.IGC
+# surname.firstname.xcontest_id.YYYY-mm-dd.hh-mm-ss.IGC
+filename_formats = ['name.name.live.other-other-other.other-other-other']
 
 
 def get_pilot_from_list(filename, pilots):
@@ -26,19 +31,22 @@ def get_pilot_from_list(filename, pilots):
     # DE VIVO.ALESSANDRO.alexpab.2019-12-19.13-22-49.IGC
     # surname.firstname.xcontest_id.YYYY-mm-dd.hh-mm-ss.IGC
 
-    from pathlib import Path
-
+    print(f'XContest get pilot function')
     string = Path(filename).stem
     fields = string.split('.')
+    # TODO xcontest_id could contain dot. Need to change logic accordingly
     xcontest_id = fields[2].lower()
     name = ' '.join([str(fields[1]).lower(), str(fields[0]).lower()])
+    print(f'Filename: {string}, xcontest_id: {xcontest_id}')
     for idx, pilot in enumerate(pilots):
         if pilot.xcontest_id and pilot.xcontest_id.lower() == xcontest_id:
             '''found a pilot'''
-            pilot.track_file = filename
+            # pilot.track_file = filename
+            print(f'Found: Name {pilot.name.lower()}, xcontest_id: {xcontest_id}')
             if not pilot.name.lower() in name:
                 print(f'WARNING: Name {pilot.name.lower()} does not match with filename {string}')
-            return pilot, pilot.name
+            return pilot
+    return None
 
 
 def get_xc_parameters(task_id):

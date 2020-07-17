@@ -383,13 +383,13 @@ def save_igc_background(task_id: int, par_id: int, tracklog, user, check_g_recor
                 return None, None
             if validation == 'PASSED':
                 print('G-Record is valid')
-        print(f'IGC file saved: {fullname.split("/")[-1]}')
+        print(f'IGC file saved: {fullname.name}')
     else:
         return None, None
-    return fullname.split("/")[-1], fullname
+    return fullname
 
 
-def process_igc_background(task_id: int, par_id: int, filename, full_file_name, user):
+def process_igc_background(task_id: int, par_id: int, file: Path, user: str):
     from pilot.track import igc_parsing_config_from_yaml
     from calcUtils import epoch_to_date
     from pilot.flightresult import FlightResult, save_track
@@ -404,7 +404,7 @@ def process_igc_background(task_id: int, par_id: int, filename, full_file_name, 
     """import track"""
     # pilot.track = Track(track_file=filename, par_id=pilot.par_id)
     FlightParsingConfig = igc_parsing_config_from_yaml(task.igc_config_file)
-    flight = Flight.create_from_file(full_file_name, config_class=FlightParsingConfig)
+    flight = Flight.create_from_file(file, config_class=FlightParsingConfig)
     data = {'par_id': pilot.par_id, 'track_id': pilot.track_id, 'Result': 'Not Yet Processed'}
     """check result"""
     if not flight:
@@ -420,8 +420,8 @@ def process_igc_background(task_id: int, par_id: int, filename, full_file_name, 
         print(json.dumps(data) + '|result')
         return None
     else:
-        print(f"pilot {pilot.par_id} associated with track {filename} \n")
-        pilot.track_file = filename
+        print(f"pilot {pilot.par_id} associated with track {file.name} \n")
+        pilot.track_file = file.name
         """checking track against task"""
         if task.airspace_check:
             airspace = AirspaceCheck.from_task(task)
@@ -461,7 +461,7 @@ def unzip_igc(zipfile):
     from Defines import TEMPFILES
 
     """create a temporary directory"""
-    # with TemporaryDirectory() as tracksdir:
+        # with TemporaryDirectory() as tracksdir:
     tracksdir = mkdtemp(dir=TEMPFILES)
     # make readable and writable by other users as background runs in another container
     chmod(tracksdir, 0o775)

@@ -11,6 +11,7 @@ Antonio Golfari, Stuart Mackintosh - 2019
 
 import glob
 from os import path, makedirs
+from pathlib import Path
 from shutil import copyfile
 from Defines import track_formats, IGCPARSINGCONFIG
 from calcUtils import epoch_to_date
@@ -240,36 +241,23 @@ class Track(object):
         rather than query DB for each track"""
         from db.tables import TblParticipant as P
         src_file = self.filename
-        # if task_path is None:
-        #     task_path = get_task_filepath(self.task_id)
         if pname is None:
-            with db_session() as db:
-                # get pilot details.
-                name = db.query(P).get(self.par_id).name
-                if name:
-                    pname = name.replace(' ', '_').lower()
+            # get pilot details.
+            pname = P.get_by_id(self.par_id).name
         if task_path:
-            """check if directory already exists"""
-            if not path.isdir(task_path):
-                makedirs(task_path)
-            """creates a name for the track
-            name_surname_date_time_index.igc
-            if we use flight date then we need an index for multiple tracks"""
-
-            index = str(len(glob.glob(task_path + '/' + pname + '*.igc')) + 1).zfill(2)
-            filename = '_'.join([pname, str(self.date), index]) + '.igc'
-            fullname = path.join(task_path, filename)
+            fullname = create_igc_filename(task_path, self.date, pname)
             print(f'path to copy file: {fullname}')
             """copy file"""
             try:
                 copyfile(src_file, fullname)
-                self.track_file = filename
-                print(f'file succesfully copied to : {self.filename}')
+                self.track_file = fullname.name
+                print(f'file successfully copied to : {self.filename}')
+                return fullname
             except:
                 print('Error copying file:', fullname)
         else:
-            print('error, path not created')
-        return fullname
+            print('error, no path given')
+        return None
 
 
 def validate_G_record(igc_filename):
@@ -333,14 +321,17 @@ def save_igc_config_yaml(yaml_filename, yaml_data):
     return True
 
 
-def create_igc_filename(file_path, date, pilot_name):
+def create_igc_filename(file_path, date, pilot_name) -> Path:
     """creates a name for the track
     name_surname_date_time_index.igc
     if we use flight date then we need an index for multiple tracks"""
-    if not path.isdir(file_path):
-        makedirs(file_path)
-    index = str(len(glob.glob(file_path + '/' + pilot_name + '*.igc')) + 1).zfill(2)
-    filename = '_'.join([pilot_name, str(date), index]) + '.igc'
-    fullname = path.join(file_path, filename)
+    from trackUtils import remove_accents
+    if not Path(file_path).is_dir():
+        Path(file_path).mkdir(mode=0o755)
+    # pname = pilot_name.replace(' ', '_').lower()
+    pname = remove_accents('_'.join(pilot_name.replace('_', ' ').replace("'", ' ').lower().split()))
+    index = str(len(glob.glob(file_path + '/' + pname + '*.igc')) + 1).zfill(2)
+    filename = '_'.join([pname, str(date), index]) + '.igc'
+    fullname = Path(file_path, filename)
     return fullname
 
