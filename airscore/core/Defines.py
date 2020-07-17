@@ -86,3 +86,7 @@ SELF_REG_DEFAULT = config['internal_pilot_DB']['self_registration_default']
 
 '''Live Tracking servers'''
 FM_LIVE = config['flymaster_live_server']
+
+'''Telegram Bot'''
+TELEGRAM_API = secret['telegram']['API']
+TELEGRAM_CHANNEL = secret['telegram']['channel']

@@ -83,3 +83,21 @@ function delete_track(track_id, par_id){
     });
 }
 
+function send_telegram(task_id){
+    document.getElementById("telegram_button").innerHTML="Sending...";
+    document.getElementById("telegram_button").className = "btn btn-warning ml-4";
+    $.ajax({
+        type: "POST",
+        url: "/users/_send_telegram_update/" + task_id,
+        contentType:"application/json",
+        dataType: "json",
+        success: function (response) {
+            document.getElementById("telegram_button").innerHTML="Success";
+            document.getElementById("telegram_button").className = "btn btn-success ml-4";
+            setTimeout(function(){
+                document.getElementById("telegram_button").innerHTML="Update Telegram";
+                document.getElementById("telegram_button").className = "btn btn-primary ml-4";
+            }, 3000);
+        }
+    });
+}

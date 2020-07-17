@@ -946,6 +946,17 @@ def _get_task_result_files(taskid):
             'display_comp_unpublish': display_comp_unpublish}
 
 
+@blueprint.route('/_send_telegram_update/<taskid>', methods=['POST'])
+@login_required
+def _send_telegram_update(taskid):
+    """sends a telegram message with partial results and missing pilots during tracks processing"""
+    from telegram import send_download_status
+    taskid = int(taskid)
+    if request.method == "POST":
+        resp = send_download_status(taskid)
+        return jsonify(success=resp['ok'])
+
+
 @blueprint.route('/_get_task_score_from_file/<taskid>/<filename>', methods=['GET'])
 @login_required
 def _get_task_score_from_file(taskid, filename):

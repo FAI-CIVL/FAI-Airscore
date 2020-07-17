@@ -45,6 +45,10 @@
         </button>
         {% endif %}
 
+        <button id="telegram_button" class="btn btn-primary ml-4" onclick="send_telegram({{ taskid }});">
+            Update Telegram
+        </button>
+
         <a href="{{ url_for('user.task_score_admin', taskid=taskid)}}" class="btn btn-info ml-4" type="button" >
          Manage Scores
       </a>
@@ -92,7 +96,7 @@
          </div>
          <div class="modal-footer">
             <button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
-                     <button id="get_bulk_file_button" class="btn btn-primary ml-4 " onclick="choose_zip_file()">
+               <button id="get_bulk_file_button" class="btn btn-primary ml-4 " onclick="choose_zip_file()">
             Browse
         </button>
         <input id="bulk_fileupload" type="file" size="chars" class="custom-file-input"  oninput="filesize(this);" data-url="/users/_upload_track_zip/{{ taskid }}" name="zip_file" >
