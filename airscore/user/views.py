@@ -820,14 +820,14 @@ def _upload_track(taskid, parid):
         return resp
 
 
-@blueprint.route('/_get_xcontest_tracks/<taskid>', methods=['GET'])
+@blueprint.route('/_get_xcontest_tracks/<taskid>', methods=['POST'])
 @login_required
 def _get_xcontest_tracks(taskid):
     from sources.xcontest import get_zipfile
     # from Defines import TEMPFILES
     # from pathlib import Path
     taskid = int(taskid)
-    if request.method == "GET":
+    if request.method == "POST":
         zip_file = get_zipfile(taskid)
         # zip_file = Path(TEMPFILES, 'xcontest-95.zip')  # test file
 
