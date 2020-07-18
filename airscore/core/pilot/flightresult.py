@@ -313,7 +313,7 @@ class FlightResult(Participant):
                      'max_altitude', 'ESS_altitude', 'goal_altitude', 'last_altitude', 'landing_time',
                      'landing_altitude', 'result_type', 'score', 'departure_score', 'arrival_score', 'distance_score',
                      'time_score', 'penalty', 'airspace_plot', 'infringements', 'notifications',
-                     'still_flying_at_deadline', 'track_file']
+                     'still_flying_at_deadline']
         for attr in attr_list:
             setattr(self, attr, getattr(init, attr))
 
