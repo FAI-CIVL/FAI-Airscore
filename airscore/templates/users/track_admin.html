@@ -40,8 +40,7 @@
         </button>
 
         {% if track_source %}
-<!--        <button id="{{ track_source }}_button" class="btn btn-primary ml-4" onclick="location.href='/users/_get_{{ track_source }}_tracks/{{ taskid }}';">-->
-        <button id="{{ track_source }}_button" class="btn btn-primary ml-4" onclick="get_xcontest_tracks()">
+        <button id="{{ track_source }}_button" class="btn btn-primary ml-4" onclick="get_{{ track_source }}_tracks()">
             {{ track_source|title }}
         </button>
         {% endif %}
@@ -79,8 +78,6 @@
     </table>
     </div>
 
-
-</body>
 
 <!---bulk-modal starts here--->
 <div id="bulkmodal" class="modal fade" role='dialog'>
@@ -179,17 +176,19 @@
 
     function get_xcontest_tracks(){
         document.getElementById("xcontest_button").innerHTML="Getting Tracks...";
+        document.getElementById("xcontest_button").className = "btn btn-warning ml-4";
         $.ajax({
             type: "POST",
-            url: "{{ url_for('user._get_xcontest_tracks', taskid=taskid)}}",
+            url: "{{ url_for('user._get_xcontest_tracks', taskid=taskid) }}",
             contentType:"application/json",
             dataType: "json",
             success: function () {
-                    {% if not production %}
-                            populate_track_admin({{taskid|tojson}});
-                            update_track_pilot_stats();
-                            document.getElementById("xcontest_button").innerHTML="Xcontest";
-                   {% endif %}
+                 {% if not production %}
+                      populate_track_admin({{taskid|tojson}});
+                      update_track_pilot_stats();
+                 {% endif %}
+                 document.getElementById("xcontest_button").innerHTML="Xcontest";
+                 document.getElementById("xcontest_button").className = "btn btn-primary ml-4";
             }
         });
     }
