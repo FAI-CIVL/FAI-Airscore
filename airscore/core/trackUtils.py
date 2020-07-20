@@ -6,7 +6,7 @@ Use:    import trackUtils
 Antonio Golfari - 2018
 """
 
-from os import path, listdir, fsdecode
+from os import listdir, fsdecode
 
 from sqlalchemy import and_
 from db.conn import db_session
@@ -22,21 +22,21 @@ def remove_accents(input_str):
     return u"".join([c for c in nfkd_form if not unicodedata.combining(c)])
 
 
-def extract_tracks(file, dir):
+def extract_tracks(file, folder):
     """gets tracks from a zipfile"""
     from zipfile import ZipFile, is_zipfile
 
     error = 0
     """Check if file exists"""
     if is_zipfile(file):
-        print(f'extracting {file} in dir: {dir}')
+        print(f'extracting {file} in dir: {folder}')
         """Create a ZipFile Object and load file in it"""
         try:
             with ZipFile(file, 'r') as zipObj:
                 """Extract all the contents of zip file in temporary directory"""
-                zipObj.extractall(dir)
+                zipObj.extractall(folder)
         except IOError:
-            print(f"Error: extracting {file} to {dir} \n")
+            print(f"Error: extracting {file} to {folder} \n")
     else:
         print(f"reading error: {file} does not exist or is not a zip file \n")
         error = 1
@@ -290,9 +290,9 @@ def get_unscored_pilots(task_id: int, track_source=None):
         #                    U.team, U.nat_team).filter_by(task_id=task_id)
         results = db.query(U).filter_by(task_id=task_id)
         if track_source == 'xcontest':
-            results = results.filter(U.xcontest_id != None)
+            results = results.filter(U.xcontest_id.isnot(None))
         elif track_source == 'flymaster':
-            results = results.filter(U.live_id != None)
+            results = results.filter(U.live_id.isnot(None))
         results = results.all()
         for p in results:
             # pilot = FlightResult.from_dict(p._asdict())

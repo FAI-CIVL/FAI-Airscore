@@ -787,7 +787,6 @@ def print_to_sse(text, id, channel):
         :param id: int/string to identify what the message relates to (par_id etc.)
         :param channel: string to identify destination of message (not access control) such as username etc
     """
-    # from sys import stdout
     message = text.split('|')[0]
     if len(text.split('|')) > 1:
         message_type = text.split('|')[1]
@@ -795,8 +794,6 @@ def print_to_sse(text, id, channel):
         message_type = 'info'
     body = {'message': message, 'id': id}
     push_sse(body, message_type, channel=channel)
-    # print(f"pushed {body=} {message_type=} {channel=}")
-    # stdout.flush()
 
 
 def push_sse(body, message_type, channel):
@@ -808,10 +805,6 @@ def push_sse(body, message_type, channel):
 
 def production():
     """Checks if we are running production or dev via environment variable."""
-    # if environ['FLASK_DEBUG'] == '1':
-    #     return False
-    # else:
-    #     return True
     return not environ['FLASK_DEBUG'] == '1'
 
 
