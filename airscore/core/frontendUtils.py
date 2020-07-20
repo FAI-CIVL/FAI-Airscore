@@ -787,7 +787,6 @@ def print_to_sse(text, id, channel):
         :param id: int/string to identify what the message relates to (par_id etc.)
         :param channel: string to identify destination of message (not access control) such as username etc
     """
-    # from sys import stdout
     message = text.split('|')[0]
     if len(text.split('|')) > 1:
         message_type = text.split('|')[1]
@@ -795,8 +794,6 @@ def print_to_sse(text, id, channel):
         message_type = 'info'
     body = {'message': message, 'id': id}
     push_sse(body, message_type, channel=channel)
-    # print(f"pushed {body=} {message_type=} {channel=}")
-    # stdout.flush()
 
 
 def push_sse(body, message_type, channel):
@@ -808,10 +805,6 @@ def push_sse(body, message_type, channel):
 
 def production():
     """Checks if we are running production or dev via environment variable."""
-    # if environ['FLASK_DEBUG'] == '1':
-    #     return False
-    # else:
-    #     return True
     return not environ['FLASK_DEBUG'] == '1'
 
 
@@ -904,26 +897,24 @@ def full_rescore(taskid: int, background=False, status=None, autopublish=None, c
 def get_task_igc_zip(task_id: int):
     from trackUtils import get_task_fullpath
     import shutil
-    import glob
-    from Defines import TEMPFILES
+    from Defines import track_formats
 
     task_path = get_task_fullpath(task_id)
-    task_folder = task_path.split('/')[-1]
-    comp_folder = '/'.join(task_path.split('/')[:-1])
+    task_folder = task_path.parts[-1]
+    comp_folder = task_path.parent
     zip_filename = task_folder + '.zip'
-    zip_full_filename = path.join(comp_folder, zip_filename)
+    zip_full_filename = Path(comp_folder, zip_filename)
     # check if there is a zip already there and is the youngest file for the task,
     # if not delete (if there) and (re)create
-    if path.isfile(zip_full_filename):
-        zip_time = path.getctime(zip_full_filename)
-        list_of_files = glob.glob(task_path + '/*')
-        latest_file = max(list_of_files, key=path.getctime)
-        latest_file_modified = path.getctime(latest_file)
-        if latest_file_modified > zip_time:
-            Path(zip_full_filename).unlink(missing_ok=True)
+    if zip_full_filename.is_file():
+        zip_time = zip_full_filename.stat().st_mtime
+        list_of_files = [e for e in task_path.iterdir() if e.is_file() and e.suffix.strip('.').lower() in track_formats]
+        latest_file = max(file.stat().st_mtime for file in list_of_files)
+        if latest_file > zip_time:
+            zip_full_filename.unlink(missing_ok=True)
         else:
             return zip_full_filename
-    shutil.make_archive(comp_folder + '/' + task_folder, 'zip', task_path)
+    shutil.make_archive(comp_folder / task_folder, 'zip', task_path)
     return zip_full_filename
 
 
