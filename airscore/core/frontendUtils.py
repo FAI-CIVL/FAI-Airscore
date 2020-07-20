@@ -105,7 +105,8 @@ def get_task_list(comp):
         task['num'] = f"Task {tasknum}"
         # check if we have all we need to be able to accept tracks and score:
         task['ready_to_score'] = (task['opt_dist'] and task['window_open_time'] and task['window_close_time']
-                                  and task['start_time'] and task['start_close_time'] and task['task_deadline'])
+                                  and task['start_time'] and task['start_close_time']
+                                  and task['task_deadline']) is not None
 
         task['opt_dist'] = 0 if not task['opt_dist'] else round(task['opt_dist'] / 1000, 2)
         task['opt_dist'] = f"{task['opt_dist']} km"
