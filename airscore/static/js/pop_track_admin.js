@@ -92,8 +92,14 @@ function send_telegram(task_id){
         contentType:"application/json",
         dataType: "json",
         success: function (response) {
-            document.getElementById("telegram_button").innerHTML="Success";
-            document.getElementById("telegram_button").className = "btn btn-success ml-4";
+            if (response.success == true) {
+                document.getElementById("telegram_button").innerHTML="Success";
+                document.getElementById("telegram_button").className = "btn btn-success ml-4";
+            }
+            else {
+                document.getElementById("telegram_button").innerHTML="Failed";
+                document.getElementById("telegram_button").className = "btn btn-danger ml-4";
+            }
             setTimeout(function(){
                 document.getElementById("telegram_button").innerHTML="Update Telegram";
                 document.getElementById("telegram_button").className = "btn btn-primary ml-4";

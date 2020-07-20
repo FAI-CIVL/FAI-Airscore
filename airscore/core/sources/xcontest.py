@@ -29,22 +29,22 @@ def get_pilot_from_list(filename, pilots):
     """
     # in XContest format is:
     # DE VIVO.ALESSANDRO.alexpab.2019-12-19.13-22-49.IGC
+    # GALLO.LUCIANO.luciano.gallo.2020-07-18.11-22-07.IGC
+    # GIULIANI.MATTEO.MG93.2020-07-18.11-27-01.IGC
     # surname.firstname.xcontest_id.YYYY-mm-dd.hh-mm-ss.IGC
 
     print(f'XContest get pilot function')
     string = Path(filename).stem
     fields = string.split('.')
-    # TODO xcontest_id could contain dot. Need to change logic accordingly
-    xcontest_id = fields[2].lower()
+    xcontest_id = '.'.join(fields[2:-2])
     name = ' '.join([str(fields[1]).lower(), str(fields[0]).lower()])
     print(f'Filename: {string}, xcontest_id: {xcontest_id}')
     for idx, pilot in enumerate(pilots):
-        if pilot.xcontest_id and pilot.xcontest_id.lower() == xcontest_id:
+        if pilot.xcontest_id and pilot.xcontest_id.lower() == xcontest_id.lower():
             '''found a pilot'''
-            # pilot.track_file = filename
-            print(f'Found: Name {pilot.name.lower()}, xcontest_id: {xcontest_id}')
+            print(f'Found: Name {pilot.name.title()}, xcontest_id: {xcontest_id}')
             if not pilot.name.lower() in name:
-                print(f'WARNING: Name {pilot.name.lower()} does not match with filename {string}')
+                print(f'WARNING: Name {pilot.name.title()} does not match with filename {string}')
             return pilot
     return None
 

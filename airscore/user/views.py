@@ -928,11 +928,15 @@ def _get_task_result_files(taskid):
 @login_required
 def _send_telegram_update(taskid):
     """sends a telegram message with partial results and missing pilots during tracks processing"""
-    from telegram import send_download_status
+    from telegram import send_result_status
     taskid = int(taskid)
     if request.method == "POST":
-        resp = send_download_status(taskid)
-        return jsonify(success=resp['ok'])
+        info = {}
+        task = next((t for t in session['tasks'] if t['task_id'] == taskid), None)
+        if task:
+            info = dict(comp_name=session['comp_name'], task_num=task['task_num'], source=task['track_source'])
+        resp = send_result_status(taskid, info)
+        return jsonify(success=resp)
 
 
 @blueprint.route('/_get_task_score_from_file/<taskid>/<filename>', methods=['GET'])
