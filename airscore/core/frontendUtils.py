@@ -434,6 +434,7 @@ def process_igc_background(task_id: int, par_id: int, file: Path, user: str):
         """adding track to db"""
         # pilot.to_db()
         save_track(pilot, task.id)
+        data['track_id'] = pilot.track_id
         time = ''
 
         if pilot.goal_time:
