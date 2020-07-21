@@ -81,16 +81,13 @@ class Participant(Pilot):
 
     def to_db(self):
         """stores or updates Participant to AirScore database"""
-        with db_session() as db:
-            if not self.par_id:
-                pil = P.from_obj(self)
-                db.add(pil)
-                db.flush()
-                self.par_id = pil.par_id
-            else:
-                pil = db.query(P).get(self.par_id)
-                pil.update(**self.as_dict())
-                db.flush()
+        if not self.par_id:
+            row = P.from_obj(self)
+            row.save()
+            self.par_id = row.par_id
+        else:
+            row = P.get_by_id(self.par_id)
+            row.update(**self.as_dict())
         return self.par_id
 
     @staticmethod
