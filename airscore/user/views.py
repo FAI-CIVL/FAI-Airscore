@@ -1359,14 +1359,16 @@ def _modify_participant_details(parid):
     from pilot.participant import Participant
     data = request.json
     participant = Participant.read(int(parid))
-    participant.ID = data.get('id_num')
+    if data.get('id_num'):
+        participant.ID = data.get('id_num')
     if data.get('name'):
         participant.name = data.get('name')
     if data.get('sex'):
         participant.sex = data.get('sex')
-    participant.nat = data.get('nat')
+    if data.get('nat'):
+        participant.nat = data.get('nat')
     participant.glider = data.get('glider')
-    participant.certification = data.get('certification')
+    participant.glider_cert = data.get('certification')
     participant.sponsor = data.get('sponsor')
     participant.nat_team = data.get('nat_team')
     participant.team = data.get('team')

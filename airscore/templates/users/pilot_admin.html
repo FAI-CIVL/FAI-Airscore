@@ -139,8 +139,8 @@
                <div class="form-group width12">
                   {{modify_participant_form.nat.label}} {{modify_participant_form.nat(size=4, **{'id':"mod_nat"})}}
                    <div id = "mod_nat_team_section">
-                  {{modify_participant_form.nat_team.label}} {{modify_participant_form.nat_team(size=4, **{'id':"mod_nat_team"})}}
-                       </div>
+                    {{modify_participant_form.nat_team.label}} {{modify_participant_form.nat_team(size=4, **{'id':"mod_nat_team"})}}
+                   </div>
                </div>
             </div>
             <div class="form-row">
@@ -190,7 +190,7 @@
             <div class="form-row">
                <div class="form-group width6">
                   {{modify_participant_form.id_num.label}} {{modify_participant_form.id_num(size=2, **{'id':"add_id_number",})}}
-                   {{modify_participant_form.CIVL.label}} {{modify_participant_form.CIVL(size=2, **{'id':"add_civl",})}}
+                  {{modify_participant_form.CIVL.label}} {{modify_participant_form.CIVL(size=2, **{'id':"add_civl",})}}
                   {{modify_participant_form.name.label}} {{modify_participant_form.name(**{'id':"add_name",})}}
                </div>
             </div>
@@ -198,8 +198,8 @@
                <div class="form-group width12">
                   {{modify_participant_form.nat.label}} {{modify_participant_form.nat(size=4, **{'id':"add_nat"})}}
                    <div id = "add_nat_team_section">
-                  {{modify_participant_form.nat_team.label}} {{modify_participant_form.nat_team(size=4, **{'id':"add_nat_team"})}}
-                       </div>
+                      {{modify_participant_form.nat_team.label}} {{modify_participant_form.nat_team(size=4, **{'id':"add_nat_team"})}}
+                   </div>
                </div>
             </div>
             <div class="form-row">
@@ -292,22 +292,17 @@ jQuery(document).ready(function($) {
 });
 
 function get_team_size_messages(){
-
-
-if ($('#pilots').DataTable().column(9).visible()){
-       $.get( "{{ url_for('user._check_team_size', compid=session.compid)}}", function( data ) {
-  $( "#team_messages" )
-    .html( data.message )
-
-}, "json" );
+    if ($('#pilots').DataTable().column(9).visible()){
+        $.get( "{{ url_for('user._check_team_size', compid=session.compid)}}", function( data ) {
+            $( "#team_messages" )
+            .html( data.message )
+        }, "json" );
     }
-
-if ($('#pilots').DataTable().column(5).visible()){
+    if ($('#pilots').DataTable().column(5).visible()){
         $.get( "{{ url_for('user._check_nat_team_size', compid=session.compid)}}", function( data ) {
-  $( "#team_messages" )
-    .html( data.message )
-
-}, "json" );
+            $( "#team_messages" )
+            .html( data.message )
+        }, "json" );
     }
 };
 
@@ -360,35 +355,31 @@ function get_internal_pilots() {
            }
 
 
-    $(function() {
-  // event listener to pilot list change
-         $('#lstview_to, #lstview_undo, #lstview_rightAll, #lstview_rightSelected, #lstview_leftSelected, #lstview_leftAll, #lstview_redo').on('click', function() {
-			update_pilot_count();
-       });
+$(function() {
+// event listener to pilot list change
+     $('#lstview_to, #lstview_undo, #lstview_rightAll, #lstview_rightSelected, #lstview_leftSelected, #lstview_leftAll, #lstview_redo').on('click', function() {
+        update_pilot_count();
    });
+});
 
-   function register_pilots(){
-           var mydata = new Object();
-               mydata.register = new_registered_pil;
-               mydata.unregister = un_registered_pil;
-
-
-           $.ajax({
-               type: "POST",
-               url: "{{ url_for('user._register_pilots', compid=session.compid)}}",
-               contentType:"application/json",
-               data : JSON.stringify(mydata),
-               dataType: "json",
-               success: function () {
-                   {% if pilotdb %}
-                    get_internal_pilots();
-                    {% endif %}
-                      populate_registered_pilot_details({{session.compid}});
-
-               }
-               });
-
-   };
+function register_pilots(){
+   var mydata = new Object();
+       mydata.register = new_registered_pil;
+       mydata.unregister = un_registered_pil;
+   $.ajax({
+       type: "POST",
+       url: "{{ url_for('user._register_pilots', compid=session.compid)}}",
+       contentType:"application/json",
+       data : JSON.stringify(mydata),
+       dataType: "json",
+       success: function () {
+           {% if pilotdb %}
+           get_internal_pilots();
+           {% endif %}
+           populate_registered_pilot_details({{session.compid}});
+       }
+   });
+};
 
    function unregister_all_external(){
     $.ajax({
@@ -419,9 +410,9 @@ function get_internal_pilots() {
    };
 
 
- function isNotEmpty( el ){
-      return !!$.trim(el.html())
-  }
+function isNotEmpty( el ){
+    return !!$.trim(el.html())
+}
 
 
 function edit_participant(par_id){
@@ -496,9 +487,8 @@ function save_modified_participant(par_id){
                contentType:"application/json",
                data : JSON.stringify(mydata),
                dataType: "json",
-               success: function () {
-                      populate_registered_pilot_details({{session.compid}});
-
+               success: function (data) {
+                   populate_registered_pilot_details({{session.compid}});
                }
                });
 };
@@ -550,18 +540,12 @@ function save_new_participant(){
                data : JSON.stringify(mydata),
                dataType: "json",
                success: function () {
-                      $('#add_modal').hide();
-                      populate_registered_pilot_details({{session.compid}});
-
+                   $('#add_modal').hide();
+                   populate_registered_pilot_details({{session.compid}});
                }
-               });
+           });
 };
 
-
-
-
 </script>
-
-</body>
 
 {% endblock %}
