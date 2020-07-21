@@ -867,11 +867,6 @@ class Task(object):
 
     def update_task_info(self):
         """ updates database entry using Task obj"""
-        # with db_session() as db:
-        #     print(f"taskid:{self.task_id}")
-        #     q = db.query(TblTask).get(self.task_id)
-        #     db.populate_row(q, self)
-        #     db.commit()
         row = TblTask.get_by_id(self.id)
         row.from_obj(self)
         row.update()

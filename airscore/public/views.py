@@ -273,17 +273,6 @@ def _get_comp_result(compid):
         all_pilots.append(pilot)
     result_file['data'] = all_pilots
 
-    # total_validity = 0
-    # for task in result_file['tasks']:
-    #     total_validity += task['ftv_validity']
-    # result_file['stats']['tot_validity'] = total_validity
-    # all_classes = []
-    # for glider_class in result_file['classes']:
-    #     if glider_class[-5:].lower() == 'class':
-    #         comp_class = {'name': glider_class, 'limit': result_file['rankings'][glider_class][-1]}
-    #         all_classes.append(comp_class)
-    # all_classes.reverse()
-    # result_file['classes'] = all_classes
     return result_file
 
 
