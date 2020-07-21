@@ -862,17 +862,14 @@ def adjust_flight_results(task, lib, airspace=None):
     lib.process_results(task)
 
 
-def update_status(par_id: int, task_id: int, status=''):
+def update_status(par_id: int, task_id: int, status: str):
     """Create or update pilot status ('abs', 'dnf', 'mindist')"""
-    with db_session() as db:
-        result = db.query(TblTaskResult).filter_by(par_id=par_id, task_id=task_id).first()
-        if result:
-            result.result_type = status
-        else:
-            result = TblTaskResult(par_id=par_id, task_id=task_id, result_type=status)
-            db.add(result)
-        db.flush()
-        return result.track_id
+    result = FlightResult.read(par_id, task_id)
+    result.result_type = status
+    row = TblTaskResult.from_obj(result)
+    row.task_id = task_id
+    row.save_or_update()
+    return row.track_id
 
 
 def delete_track(trackid: int, delete_file=False):
