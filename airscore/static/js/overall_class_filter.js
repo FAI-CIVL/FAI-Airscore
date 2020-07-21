@@ -6,11 +6,11 @@ $.fn.dataTable.ext.search.push(
         if (flyclass == '' || flyclass == 'CCC' || flyclass == 'Open') return true;
         if (flyclass == 'D')
         {
-            if (data[8] == 'CCC') return false;
+            if (data[7] == 'CCC') return false;
             return true;
         }
 
-        if (data[8] <= flyclass)
+        if (data[7] <= flyclass)
         {
             return true;
         }
