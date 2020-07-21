@@ -67,6 +67,9 @@ class BaseModel(Base):
         self.before_update(*args, **kwargs)
         with db_session() as db:
             print(f'update session id: {id(db)}')
+            for key, value in kwargs.items():
+                if key in self.__table__.columns.keys():
+                    setattr(self, key, value)
             db.commit()
         self.after_update(*args, **kwargs)
 
