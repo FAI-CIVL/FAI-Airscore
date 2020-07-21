@@ -845,12 +845,14 @@ def get_pretty_data(filename):
         pretty_content['stats'] = pretty_format_results(content['stats'], timeoffset)
         pretty_content['formula'] = pretty_format_results(content['formula'])
         results = []
-        rank = 1
-        for r in content['results']:
+        rank = 0
+        prev = None
+        for idx, r in enumerate(content['results'], 1):
             p = pretty_format_results(r, timeoffset, td, cd)
+            if not prev == p['score']:
+                rank, prev = idx, p['score']
             p['rank'] = str(rank)
             results.append(p)
-            rank += 1
         pretty_content['results'] = results
         all_classes = []
         for glider_class in content['rankings']:

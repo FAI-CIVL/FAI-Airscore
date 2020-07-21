@@ -251,14 +251,13 @@ def _get_comp_result(compid):
         return render_template('404.html')
     all_pilots = []
     tasks = [t['task_code'] for t in result_file['tasks']]
-    rank = 1
     for r in result_file['results']:
-        pilot = {'rank': rank,
+        pilot = {'rank': f"<b>{r['rank']}</b>",
                  'fai_id': r['fai_id'], 'civl_id': r['civl_id'],
-                 'name': f"<span class='sex-{r['sex']}'>{r['name']}</span>",
+                 'name': f"<span class='sex-{r['sex']}'><b>{r['name']}</b></span>",
                  'nat': r['nat'], 'sex': r['sex'],
                  'glider': r['glider'], 'glider_cert': r['glider_cert'], 'sponsor': r['sponsor'],
-                 'score': f"<b>{int(r['score'])}</b>", 'results': {}}
+                 'score': f"<b>{r['score']}</b>", 'results': {}}
         # setup the 20 task placeholders
         for t in range(1, 21):
             task = 'T' + str(t)
@@ -269,7 +268,6 @@ def _get_comp_result(compid):
             else:
                 pilot['results'][task] = {'score': f"{int(r['results'][task]['score'])} <del>{int(r['results'][task]['pre'])}</del>"}
 
-        rank += 1
         all_pilots.append(pilot)
     result_file['data'] = all_pilots
 
