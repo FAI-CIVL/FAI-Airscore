@@ -194,35 +194,29 @@ def _get_task_result(taskid):
     all_pilots = []
     results = [p for p in result_file['results'] if p['result_type'] not in ['dnf', 'abs', 'nyp']]
     for r in results:
-        rt = r['result_type']
-        rank = f"<b>{r['rank']}</b>"
+        pilot = {'fai_id': r['fai_id'], 'civl_id': r['civl_id'], 'nat': r['nat'], 'sex': r['sex'],
+                 'glider': r['glider'], 'glider_cert': r['glider_cert'], 'sponsor': r['sponsor'],
+                 'SSS_time': r['SSS_time'], 'distance': r['distance'], 'time_score': r['time_score'],
+                 'departure_score': r['departure_score'], 'arrival_score': r['arrival_score'],
+                 'distance_score': r['distance_score'], 'score': f"<b>{r['score']}</b>",
+                 'ranks': {'rank': f"<b>{r['rank']}</b>"}}
         n = r['name']
         parid = r['par_id']
         sex = r['sex']
-        if rt in ['mindist', 'nyp'] or not r['track_file']:
-            name = f'<span class="sex-{sex}">{n}</span>'
+        if r['result_type'] in ['mindist', 'nyp'] or not r['track_file']:
+            pilot['name'] = f'<span class="sex-{sex}">{n}</span>'
         else:
-            name = f'<a class="sex-{sex}" href="/map/{parid}-{taskid}">{n}</a>'
-        nat = r['nat']
-        sp = r['sponsor']
-        gl = r['glider']
-        gc = r['glider_cert']
-        ss = r['SSS_time']
-        es = r['ESS_time']
+            pilot['name'] = f'<a class="sex-{sex}" href="/map/{parid}-{taskid}">{n}</a>'
         goal = r['goal_time']
-        t = r['ss_time']
-        s = r['speed']
-        if es and not goal:
-            es, t, s = f'<del>{es}</del>', f'<del>{t}</del>', f'<del>{s}</del>'
-        ab = ''  # alt bonus
-        d = r['distance']
-        ts = r['time_score']
-        dep = r['departure_score']
-        arr = r['arrival_score']
-        dis = r['distance_score']
-        pen = "" if r['penalty'] == '0.0' else r['penalty']
-        score = r['score']
-        pilot = [rank, name, nat, gl, gc, sp, ss, es, t, s, ab, d, ts, dep, arr, dis, pen, score]
+        pilot['ESS_time'] = r['ESS_time'] if goal else f"<del>{r['ESS_time']}</del>"
+        pilot['speed'] = r['speed'] if goal else f"<del>{r['speed']}</del>"
+        pilot['ss_time'] = r['ss_time'] if goal else f"<del>{r['ss_time']}</del>"
+        pilot['goal_time'] = goal
+        # ab = ''  # alt bonus
+        pilot['penalty'] = "" if r['penalty'] == '0.0' else r['penalty']
+        # setup 4 sub-rankings placeholders
+        for i, c in enumerate(result_file['classes'][1:], 1):
+            pilot['ranks']['class' + str(i)] = f"{r[c['limit']]}"
         all_pilots.append(pilot)
         # else:
         #     '''pilot do not have result data'''
@@ -232,6 +226,7 @@ def _get_task_result(taskid):
 
     result_file['data'] = all_pilots
     return result_file
+
 
 @blueprint.route('/ext_comp_result/<int:compid>')
 def ext_comp_result(compid):
@@ -252,12 +247,13 @@ def _get_comp_result(compid):
     all_pilots = []
     tasks = [t['task_code'] for t in result_file['tasks']]
     for r in result_file['results']:
-        pilot = {'rank': f"<b>{r['rank']}</b>",
-                 'fai_id': r['fai_id'], 'civl_id': r['civl_id'],
-                 'name': f"<span class='sex-{r['sex']}'><b>{r['name']}</b></span>",
-                 'nat': r['nat'], 'sex': r['sex'],
+        pilot = {'fai_id': r['fai_id'], 'civl_id': r['civl_id'],
+                 'name': f"<span class='sex-{r['sex']}'><b>{r['name']}</b></span>", 'nat': r['nat'], 'sex': r['sex'],
                  'glider': r['glider'], 'glider_cert': r['glider_cert'], 'sponsor': r['sponsor'],
-                 'score': f"<b>{r['score']}</b>", 'results': {}}
+                 'score': f"<b>{r['score']}</b>", 'results': {}, 'ranks': {'rank': f"<b>{r['rank']}</b>"}}
+        # setup 4 sub-rankings placeholders
+        for i, c in enumerate(result_file['classes'][1:], 1):
+            pilot['ranks']['class' + str(i)] = f"{r[c['limit']]}"
         # setup the 20 task placeholders
         for t in range(1, 21):
             task = 'T' + str(t)
