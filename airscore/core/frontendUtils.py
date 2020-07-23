@@ -19,51 +19,14 @@ import json
 
 def get_comps():
     c = aliased(TblCompetition)
-
     with db_session() as db:
         comps = (db.query(c.comp_id, c.comp_name, c.comp_site,
                           c.comp_class, c.sanction, c.comp_type, c.date_from,
-                          c.date_to, func.count(TblTask.task_id), c.external)
+                          c.date_to, func.count(TblTask.task_id).label('tasks'), c.external)
                  .outerjoin(TblTask, c.comp_id == TblTask.comp_id)
                  .group_by(c.comp_id))
 
-    all_comps = []
-    now = datetime.datetime.now().date()
-    for c in comps:
-        comp = list(c)
-        if comp[5] == 'RACE' or comp[5] == 'Route':
-            compid = comp[0]
-            name = comp[1]
-            if comp[9]:
-                comp[1] = f'<a href="/ext_comp_result/{compid}">{name}</a>'
-                comp[8] = 'Imported'
-            else:
-                comp[1] = f'<a href="/competition/{compid}">{name}</a>'
-        # else:
-        # comp['comp_name'] = "<a href=\"comp_overall.html?comp_id=$id\">" . $row['comp_name'] . '</a>';
-        del comp[-1]
-        if comp[3] == "PG" or "HG":
-            hgpg = comp[3]
-            comp[3] = f'<img src="/static/img/{hgpg}.png" width="100%" height="100%"</img>'
-        else:
-            comp[3] = ''
-        if comp[4] != 'none' and comp[4] != '':
-            comp[5] = comp[5] + ' - ' + comp[4]
-        starts = comp[6]
-        ends = comp[7]
-        if starts > now:
-            comp.append(f"Starts in {(starts - now).days} day(s)")
-        elif ends < now:
-            comp.append('Finished')
-        else:
-            comp.append('Running')
-
-        comp[6] = comp[6].strftime("%Y-%m-%d")
-        comp[7] = comp[7].strftime("%Y-%m-%d")
-        del comp[4]
-        del comp[0]
-        all_comps.append(comp)
-    return jsonify({'data': all_comps})
+    return [row._asdict() for row in comps]
 
 
 def get_admin_comps(current_userid, current_user_access=None):

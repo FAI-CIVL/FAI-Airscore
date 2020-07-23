@@ -1,26 +1,56 @@
 
 $(document).ready(function() {
-
     $('#competitions').dataTable({
         ajax: '/_get_all_comps',
-        paging: true,
-        order: [[ 5, 'desc' ]],
-        lengthMenu: [ 15, 30, 60, 1000 ],
+        order: [[ 4, 'desc' ]],
+        paging: false,
         searching: true,
-        filter: true,
+        saveState: true,
         info: false,
-        //"dom": '<"search"f><"top"l>rt<"bottom"ip><"clear">',
-        "dom": '<"#search"f>rt<"bottom"lip><"clear">',
-        "createdRow": function( row, data, index )
-        {
-            if (today() < data[4])
-            {
+        dom: '<"#search"f>rt<"bottom"lip><"clear">',
+        columns: [
+            {data: 'comp_name', title:'Competition'},
+            {data: 'comp_site', title:'Location', defaultContent: ''},
+            {data: 'comp_class', title:'Class', defaultContent: ''},
+            {data: 'comp_type', title:'Type', defaultContent: ''},
+            {data: 'date_from', title:'From', defaultContent: ''},
+            {data: 'date_to', title:'To', defaultContent: ''},
+            {data: 'tasks', title:'Tasks'},
+            {data: 'status', title:'Status'},
+        ],
+        rowId: function(data) {
+            return 'id_' + data.comp_id;
+        },
+        createdRow: function( row, data, dataIndex ) {
+            if (today() < data.date_from) {
                 $(row).addClass('text-warning');
             }
-            else if (today() < data[5])
-            {
+            else if (today() <= data.date_to) {
                 $(row).addClass('text-info');
             }
+        },
+        "columnDefs": [
+            {
+                targets: [ ],
+                visible: false
+            },
+        ],
+        "initComplete": function(settings, json) {
+            var table = $('#competitions');
+            var rows = $("tr", table).length-1;
+            // Get number of all columns
+            var numCols = table.DataTable().columns().nodes().length;
+            console.log('numCols='+numCols);
+
+            // season picker
+            $("#season option").remove(); // Remove all <option> child tags.
+            $.each(json.seasons, function(index, item) {
+                $("#season").append(
+                    $("<option></option>")
+                        .text(item)
+                        .val(item)
+                );
+            });
         }
     });
 });

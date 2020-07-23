@@ -57,7 +57,7 @@ def home():
             return redirect(redirect_url)
         else:
             flash_errors(form)
-    return render_template('public/index.html', form=form)
+    return render_template('public/index.html', form=form, now=datetime.utcnow())
 
 
 @blueprint.route("/ladders/", methods=["GET", "POST"])
@@ -173,7 +173,41 @@ def about():
 
 @blueprint.route('/_get_all_comps', methods=['GET', 'POST'])
 def _get_all_comps():
-    return frontendUtils.get_comps()
+    comps = frontendUtils.get_comps()
+    # {'comp_id': 2, 'comp_name': 'Meeting LP 2018 - 1', 'comp_site': 'Meduno', 'comp_class': 'PG', 'sanction': 'none',
+    #  'comp_type': 'RACE', 'date_from': datetime.date(2018, 4, 7), 'date_to': datetime.date(2018, 4, 8), 'external': 0}
+    data = []
+    now = datetime.now().date()
+    '''seasons'''
+    seasons = sorted(set([c['date_from'].year for c in comps]), reverse=True)
+    for c in comps:
+        compid = c['comp_id']
+        starts = c['date_from']
+        ends = c['date_to']
+        if c['comp_type'] in ('RACE', 'Route'):
+            name = c['comp_name']
+            if c['external']:
+                c['tasks'] = 'external'
+                c['comp_name'] = f'<a href="/ext_comp_result/{compid}">{name}</a>'
+            else:
+                c['comp_name'] = f'<a href="/competition/{compid}">{name}</a>'
+            if c['sanction'] and not c['sanction'] == 'none':
+                c['comp_type'] = ' - '.join([c['comp_type'], c['sanction']])
+            if c['comp_class']:
+                c['comp_class'] = f'<img src="/static/img/{c["comp_class"]}.png" width="100%" height="100%"</img>'
+            if starts > now:
+                days = (starts - now).days
+                c['status'] = f"Starts in {days} days" if days > 1 else f"Starts tomorrow"
+            elif ends < now:
+                c['status'] = 'Finished'
+            else:
+                c['status'] = 'Running'
+            c['date_from'] = c['date_from'].strftime('%Y-%m-%d')
+            c['date_to'] = c['date_to'].strftime('%Y-%m-%d')
+            data.append(c)
+    return {'data': data, 'seasons': seasons}
+
+
 
 
 @blueprint.route('/competition/<int:compid>')
