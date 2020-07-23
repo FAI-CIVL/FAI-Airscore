@@ -210,7 +210,7 @@ def comp_settings_admin(compid):
             comp.date_to = compform.date_to.data
             comp.MD_name = compform.MD_name.data
             comp.time_offset = compform.time_offset.data * 3600
-            comp.restricted = 1 if compform.pilot_registration.data == 'registered' else None
+            comp.restricted = compform.pilot_registration.data
             comp.locked = compform.locked.data
             comp.igc_config_file = compform.igc_parsing_file.data
             # comp.airspace_check = compform.airspace_check.data

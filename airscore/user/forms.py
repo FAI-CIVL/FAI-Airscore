@@ -116,7 +116,7 @@ class CompForm(FlaskForm):
                                description='The default time offset for the comp. Individual tasks will have this '
                                'as a default but can be overridden if your comp spans multiple time zones'
                                ' or over change in daylight savings')
-    pilot_registration = SelectField('Pilot Entry', choices=[('registered', 'registered'), ('open', 'open')],
+    pilot_registration = SelectField('Pilot Entry', choices=[(1, 'Registered'), (0, 'Open')], coerce=int,
                                      description='Registered - only pilots registered are flying, '
                                                  'open - all tracklogs uploaded are considered as entires')
     formulas = list_formulas()
