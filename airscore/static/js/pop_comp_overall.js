@@ -58,7 +58,7 @@ function populate_comp_overall(comPk){
                 var table = $('#results_table');
                 var rows = $("tr", table).length-1;
                 // Get number of all columns
-                var numCols = $('#results_table').DataTable().columns().nodes().length;
+                var numCols = table.DataTable().columns().nodes().length;
                 console.log('numCols='+numCols);
 
                 // comp info

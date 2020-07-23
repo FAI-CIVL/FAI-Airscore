@@ -15,18 +15,29 @@
 
 {% block content %}
     <div class="container" id="main">
-    <br>
+    <div class="row">
+        <div class="col col-md-7 comp_header mt-1">
+        <h2 id="comp_name"></h2>
+        <h4 id="comp_date"></h4>
+        <h4 id="comp_director"></h4>
+        <select name="season" id="season" class="form-control" placeholder="Seasons">
+            <option value="{{ now.year }}" selected>{{ now.year }}</option>
+        </select>
+        </div>
+        <div class="col col-md-5 parameters">
+        <table class="table table-sm" id="formula">
+        <thead class="thead-light" id="formula_hd">
+            <tr>
+            </tr>
+        </thead>
+        <tbody class="small" id="formula_bd"></tbody>
+        </table>
+        </div>
+    </div>
+
     <table id="competitions" class="row-border stripe compact mb-1" cellspacing="0" width="100%">
     <thead>
         <tr>
-            <th>Competition</th>
-            <th>Location</th>
-            <th></th>
-            <th>Type</th>
-            <th>From</th>
-            <th>To</th>
-            <th>Tasks</th>
-            <th>Status</th>
         </tr>
     </thead>
     </table>
@@ -36,4 +47,5 @@
 {% block js %}
     <script type="text/javascript" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
     <script src="{{ static_url_for('static', filename='js/pop_comps.js') }}"></script>
+    <script src="{{ static_url_for('static', filename='js/season_filter.js') }}"></script>
 {% endblock %}
