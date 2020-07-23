@@ -485,11 +485,6 @@ def delete_comp(comp_id, files=True):
     from task import delete_task
     from result import delete_result
     with db_session() as db:
-        # if files:
-        #     '''delete tracks'''
-        #     folder = path.join(TRACKDIR, db.query(TblCompetition).get(comp_id).comp_path)
-        #     if path.exists(folder):
-        #         shutil.rmtree(folder)
         tasks = db.query(T.task_id).filter_by(comp_id=comp_id).all()
         if tasks:
             '''delete tasks'''
