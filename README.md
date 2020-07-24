@@ -1,18 +1,13 @@
-# Airscore - python port
+# FAI Airscore
 
-A fork of Geoff Wongs airscore (https://github.com/geoffwong/airscore).
+This was originally a fork of Geoff Wong's Airscore (https://github.com/geoffwong/airscore).
+It has been ported to python 3.7, it's structure has been completely redesigned and many additional features added.
 
-Please see his readme.
-
-Backend scripts ported to python 3.6
-
-Web middle layer & front end has been ported to flask/jquery using flask cookie cutter.
-
+Web middle layer & front end has been ported to flask/jquery using flask cookie cutter template.
 
 ### Installation:
 
 see docker quickstart below
-
 
 ### Main scripts:
 
