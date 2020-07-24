@@ -68,7 +68,9 @@ def airspace_edit(filename):
             unknown_flag = True
 
     if fl_messages:
-        message = 'Attention: There is FL (flight level) units in the file. You should adjust to meters or ' \
+        message = 'Attention: There is FL (flight level) units in the file. To use this pilots need to know their ' \
+                  'standard altitude, or have an instrument capable of interpreting FL in openair and calculating ' \
+                  'correctly their position. Alternativley you could adjust to meters or ' \
                   'feet above sea level'
         fl_detail = ", ".join(set(fl_messages))
         fl_detail += " - Assuming an International Standard Atmosphere pressure of 1013.25 hPa (29.92 inHg) " \
