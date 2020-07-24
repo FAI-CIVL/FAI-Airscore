@@ -171,7 +171,7 @@ class FlightResultView(BaseModel):
 
 
 class PilotView(BaseModel):
-    __table__ = Table('PilotView', metadata,
+    __table__ = Table('Pilots', metadata,
 
                       Column('pil_id', INTEGER(11), primary_key=True),
                       Column('login', String(60)),
@@ -366,14 +366,14 @@ class TrackObjectView(BaseModel):
                       )
 
 
-class UserView(BaseModel):
-    __table__ = Table('UserView', metadata,
-
-                      Column('usePk', BIGINT(20), primary_key=True),
-                      Column('useName', String(250)),
-                      Column('useLogin', String(60)),
-                      Column('useEmail', String(100))
-                      )
+# class UserView(BaseModel):
+#     __table__ = Table('UserView', metadata,
+#
+#                       Column('usePk', BIGINT(20), primary_key=True),
+#                       Column('useName', String(250)),
+#                       Column('useLogin', String(60)),
+#                       Column('useEmail', String(100))
+#                       )
 
 
 schema_version = Table(
