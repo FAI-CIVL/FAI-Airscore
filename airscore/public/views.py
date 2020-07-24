@@ -58,7 +58,78 @@ def home():
 
 @blueprint.route("/ladders/", methods=["GET", "POST"])
 def ladders():
-    return render_template('public/ladders.html')
+    return render_template('public/ladders.html', now=datetime.utcnow())
+
+
+@blueprint.route('/_get_ladders', methods=['GET', 'POST'])
+def _get_ladders():
+    ladderlist = frontendUtils.get_ladders()
+    # {'comp_id': 2, 'comp_name': 'Meeting LP 2018 - 1', 'comp_site': 'Meduno', 'comp_class': 'PG', 'sanction': 'none',
+    #  'comp_type': 'RACE', 'date_from': datetime.date(2018, 4, 7), 'date_to': datetime.date(2018, 4, 8), 'external': 0}
+    data = []
+    now = datetime.now().date()
+    '''seasons'''
+    seasons = sorted(set([c['season'] for c in ladderlist]), reverse=True)
+    for c in ladderlist:
+        ladderid = c['ladder_id']
+        name = c['ladder_name']
+        season = int(c['season'])
+        '''create start and end dates'''
+        s = season-1 if c['date_from'] > c['date_to'] else season
+        starts = datetime.strptime(f"{s}-{c['date_from'].month}-{c['date_from'].day}", '%Y-%m-%d').date()
+        ends = datetime.strptime(f"{s+1}-{c['date_to'].month}-{c['date_to'].day}", '%Y-%m-%d').date()
+        c['ladder_name'] = f'<a href="/ladder_result/{ladderid}/{season}">{name} {season}</a>'
+        if c['ladder_class']:
+            cl = c['ladder_class'].lower()
+            c['ladder_class'] = f'<img src="/static/img/{cl}.png" width="100%" height="100%"</img>'
+        if starts > now:
+            days = (starts - now).days
+            c['status'] = f"Starts in {days} days" if days > 1 else f"Starts tomorrow"
+        elif ends < now:
+            c['status'] = 'Finished'
+        else:
+            c['status'] = 'Running'
+        c['date_from'] = starts.strftime('%Y-%m-%d')
+        c['date_to'] = ends.strftime('%Y-%m-%d')
+        data.append(c)
+    return {'data': data, 'seasons': seasons}
+
+
+@blueprint.route('/ladder_result/<int:ladderid>/<int:season>')
+def ladder_result(ladderid: int, season: int):
+    return render_template('public/ladder_overall.html', ladderid=ladderid, season=season)
+
+
+@blueprint.route('/_get_ladder_result/<int:ladderid>/<int:season>', methods=['GET', 'POST'])
+def _get_ladder_result(ladderid: int, season: int):
+
+    result_file = frontendUtils.get_pretty_data(frontendUtils.get_ladder_results(ladderid, season))
+    if result_file == 'error':
+        return render_template('404.html')
+    all_pilots = []
+    tasks = [t['task_code'] for t in result_file['tasks']]
+    for r in result_file['results']:
+        pilot = {'fai_id': r['fai_id'], 'civl_id': r['civl_id'],
+                 'name': f"<span class='sex-{r['sex']}'><b>{r['name']}</b></span>", 'nat': r['nat'], 'sex': r['sex'],
+                 'glider': r['glider'], 'glider_cert': r['glider_cert'], 'sponsor': r['sponsor'],
+                 'score': f"<b>{r['score']}</b>", 'results': {}, 'ranks': {'rank': f"<b>{r['rank']}</b>"}}
+        # setup 4 sub-rankings placeholders
+        for i, c in enumerate(result_file['classes'][1:], 1):
+            pilot['ranks']['class' + str(i)] = f"{r[c['limit']]}"
+        # setup the 20 task placeholders
+        for t in range(1, 21):
+            task = 'T' + str(t)
+            pilot['results'][task] = {'score': ''}
+        for task in tasks:
+            if r['results'][task]['pre'] == r['results'][task]['score']:
+                pilot['results'][task] = {'score': r['results'][task]['score']}
+            else:
+                pilot['results'][task] = {'score': f"{int(r['results'][task]['score'])} <del>{int(r['results'][task]['pre'])}</del>"}
+
+        all_pilots.append(pilot)
+    result_file['data'] = all_pilots
+
+    return result_file
 
 
 @blueprint.route('/pilots/')
