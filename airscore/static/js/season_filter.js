@@ -3,7 +3,7 @@ $.fn.dataTable.ext.search.push(
     function( settings, data, dataIndex, row, counter ) {
         var year = $('#season option:selected').val();
 
-        if ( data[4].includes(year) ) return true;
+        if ( data[3].includes(year) || data[4].includes(year) ) return true;
         return false;
     }
 );

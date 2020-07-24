@@ -29,6 +29,24 @@ def get_comps():
     return [row._asdict() for row in comps]
 
 
+def get_ladders():
+    from db.tables import TblLadder as L, TblLadderSeason as LS, TblCountryCode as C
+    with db_session() as db:
+        ladders = db.query(L.ladder_id, L.ladder_name, L.ladder_class, L.date_from, L.date_to,
+                           C.natIso3.label('nat'),
+                           LS.season) \
+                    .join(LS, L.ladder_id == LS.ladder_id) \
+                    .join(C, L.nation_code == C.natId) \
+                    .filter(LS.active == 1) \
+                    .order_by(LS.season.desc())
+
+    return [row._asdict() for row in ladders]
+
+
+def get_ladder_results(ladder_id: int, season: int) -> json:
+    """"""
+
+
 def get_admin_comps(current_userid, current_user_access=None):
     """get a list of all competitions in the DB and flag ones where owner is current user"""
     c = aliased(TblCompetition)
