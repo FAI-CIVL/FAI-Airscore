@@ -208,8 +208,6 @@ def _get_all_comps():
     return {'data': data, 'seasons': seasons}
 
 
-
-
 @blueprint.route('/competition/<int:compid>')
 def competition(compid):
     from compUtils import get_comp_json
@@ -291,8 +289,8 @@ def task_result(taskid):
 
 @blueprint.route('/_get_task_result/<int:taskid>', methods=['GET', 'POST'])
 def _get_task_result(taskid):
-    from task import get_task_json_filename
-    result_file = frontendUtils.get_pretty_data(get_task_json_filename(taskid))
+    from task import get_task_json
+    result_file = frontendUtils.get_pretty_data(get_task_json(taskid))
     if result_file == 'error':
         return render_template('404.html')
 
@@ -345,8 +343,8 @@ def comp_result(compid):
 
 @blueprint.route('/_get_comp_result/<compid>', methods=['GET', 'POST'])
 def _get_comp_result(compid):
-    from compUtils import get_comp_json_filename
-    result_file = frontendUtils.get_pretty_data(get_comp_json_filename(compid))
+    from compUtils import get_comp_json
+    result_file = frontendUtils.get_pretty_data(get_comp_json(compid))
     if result_file == 'error':
         return render_template('404.html')
     all_pilots = []
