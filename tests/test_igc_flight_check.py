@@ -12,7 +12,7 @@ def test_track_read():
     assert len(test_track.fixes) == 13856
     assert test_track.date == date(2019, 3, 9)
     assert test_track.gnss_alt_valid
-    assert test_track.press_alt_valid
+    assert test_track.press_alt_valid is False
     assert test_track.flight.valid
     assert len(test_track.flight.fixes)
     assert test_track.flight.glider_type == 'OZONE Zeno'
