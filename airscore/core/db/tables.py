@@ -600,7 +600,7 @@ class TblCompetition(BaseModel):
     MD_name = Column(String(100))
     contact = Column(String(100))
     cat_id = Column(ForeignKey('tblClassification.cat_id', ondelete='SET NULL'), index=True)
-    sanction = Column(Enum('League', 'PWC', 'FAI 2', 'none', 'FAI 1'), nullable=False, server_default=text("'none'"))
+    sanction = Column(String(20), nullable=False, server_default=text("'none'"))
     openair_file = Column(String(40))
     comp_type = Column(Enum('RACE', 'Route', 'Team-RACE'), server_default=text("'RACE'"))
     restricted = Column(TINYINT(1), server_default=text("'1'"))
