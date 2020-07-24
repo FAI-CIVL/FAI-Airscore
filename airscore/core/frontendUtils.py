@@ -785,11 +785,11 @@ def unique_filename(filename, filepath):
     return secure_filename(filename)
 
 
-def get_pretty_data(filename):
+def get_pretty_data(content: json) -> dict:
     """transforms result json file in human readable data"""
-    from result import open_json_file, pretty_format_results, get_startgates
+    from result import pretty_format_results, get_startgates
     try:
-        content = open_json_file(filename)
+        # content = open_json_file(filename)
         '''time offset'''
         timeoffset = int(content['info']['time_offset'])
         '''score decimals'''

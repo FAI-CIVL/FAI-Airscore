@@ -1775,8 +1775,9 @@ def get_task_json_filename(task_id):
 
 def get_task_json(task_id):
     """returns active json result file from task_id"""
+    from result import open_json_file
     filename = get_task_json_filename(task_id)
-    return get_task_json_by_filename(filename)
+    return open_json_file(filename)
 
 
 def get_task_json_by_filename(filename):
