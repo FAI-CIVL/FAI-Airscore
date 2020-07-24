@@ -624,20 +624,21 @@ class TblCompAuth(BaseModel):
     __tablename__ = 'tblCompAuth'
 
     user_id = Column(INTEGER(11), primary_key=True)
-    comp_id = Column(INTEGER(11), ForeignKey("tblCompetition.comp_id"), primary_key=True,)
+    comp_id = Column(INTEGER(11), ForeignKey("tblCompetition.comp_id"), primary_key=True)
     user_auth = Column(Enum('read', 'write', 'admin', 'owner'), nullable=False, server_default=text("'read'"))
     comp = relationship(TblCompetition, backref='Auth')
 
 
-TblLadderSeason = Table(
-    'tblLadderSeason', metadata,
-    Column('ladder_id', ForeignKey('tblLadder.ladder_id'), nullable=False, index=True),
-    Column('season', INTEGER(6), nullable=False, index=True),
-    Column('active', TINYINT(1), server_default=text("'1'")),
-    Column('cat_id', ForeignKey('tblClassification.cat_id'), nullable=False, index=True),
-    Column('overall_validity', Enum('all', 'ftv', 'round'), nullable=False, server_default=text("'ftv'")),
-    Column('validity_param', Float, nullable=False)
-)
+class TblLadderSeason(BaseModel):
+    __tablename__ = 'tblLadderSeason'
+
+    ladder_id = Column(ForeignKey('tblLadder.ladder_id'), nullable=False, index=True, primary_key=True)
+    season = Column(INTEGER(6), nullable=False, index=True)
+    active = Column(TINYINT(1), server_default=text("'1'"))
+    cat_id = Column(ForeignKey('tblClassification.cat_id'), nullable=False, index=True)
+    overall_validity = Column(Enum('all', 'ftv', 'round'), nullable=False, server_default=text("'ftv'"))
+    validity_param = Column(Float, nullable=False)
+
 
 TblRegionXCSites = Table(
     'tblRegionXCSites', metadata,
