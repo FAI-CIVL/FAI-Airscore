@@ -33,6 +33,7 @@ class Pilot(object):
         self.fai_id = fai_id  # str
         self.fai_valid = fai_valid  # bool
         self.xcontest_id = xcontest_id  # str
+        self.telegram_id = None  # int
         self.pil_id = pil_id  # PilotView id
         self.ranking = ranking  # WPRS Ranking?
         self.hours = hours  # flying hours last year?

@@ -191,7 +191,8 @@ class PilotView(BaseModel):
                       Column('civl_id', LONGTEXT),
                       Column('livetrack24_id', LONGTEXT),
                       Column('airtribune_id', LONGTEXT),
-                      Column('xcontest_id', LONGTEXT)
+                      Column('xcontest_id', LONGTEXT),
+                      Column('telegram_id', INTEGER(11))
                       )
 
 
@@ -498,6 +499,7 @@ class TblParticipant(BaseModel):
     fai_id = Column(String(20))
     xcontest_id = Column(String(20))
     live_id = Column(String(10))
+    telegram_id = Column(INTEGER(11))
     team = Column(String(100))
     nat_team = Column(TINYINT(4), nullable=False, server_default=text("'1'"))
     status = Column(Enum('confirmed', 'wild card', 'waiting list', 'cancelled', 'waiting for payment'))

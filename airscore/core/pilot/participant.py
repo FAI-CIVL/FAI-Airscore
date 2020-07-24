@@ -36,6 +36,7 @@ class Participant(Pilot):
         self.paid = paid  # bool
         self.status = status  # 'confirmed', 'waiting list', 'wild card', 'cancelled', ?
         self.live_id = live_id  # int
+        self.telegram_id = None  # int
         super().__init__(**kwargs)
 
     def __setattr__(self, attr, value):
