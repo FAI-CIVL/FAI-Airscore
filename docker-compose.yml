@@ -20,29 +20,15 @@ services:
     image: "airscore-development"
     container_name: flask_dev
     ports:
-      - "5000:5000"
+      - "${FLASK_PORT}:${FLASK_PORT}"
       - "2992:2992"
     environment:
-      REDIS_URL: ${REDIS_URL}
+      REDIS_URL: ${REDIS_CONTAINER}://${REDIS_CONTAINER}:6379
+      REDIS_CONTAINER: ${REDIS_CONTAINER}
+      WEB_SERVER_CONTAINER: ${WEB_SERVER_CONTAINER}
+      FLASK_CONTAINER: flask_dev
+      FLASK_PORT: ${FLASK_PORT}
       FLASK_DEBUG: 1
-    <<: *default_volumes
-
-  flask-prod:
-    build:
-      context: .
-      target: production
-      args:
-        <<: *build_args
-    image: "airscore-production"
-    container_name: flask_prod
-    ports:
-      - "5000:5000"
-    environment:
-      REDIS_URL: ${REDIS_URL}
-      FLASK_ENV: production
-      FLASK_DEBUG: 0
-      LOG_LEVEL: info
-      GUNICORN_WORKERS: 4
     <<: *default_volumes
 
   manage:
@@ -60,6 +46,7 @@ services:
 
   redis:
     image: redis
+    container_name: ${REDIS_CONTAINER}
 
 volumes:
   node-modules:

@@ -798,9 +798,12 @@ def print_to_sse(text, id, channel):
 
 def push_sse(body, message_type, channel):
     """send a post request to webserver with contents of SSE to be sent"""
-    from Defines import FLASKCONTAINER, FLASKPORT
+    from environs import Env
+    env = Env()
+    env.read_env()
     data = {'body': body, 'type': message_type, 'channel': channel}
-    requests.post(f'http://{FLASKCONTAINER}:{FLASKPORT}/internal/see_message', json=data)
+    requests.post(f"http://{env.str('FLASK_CONTAINER')}:"
+                  f"{env.str('FLASK_PORT')}/internal/see_message", json=data)
 
 
 def production():

@@ -20,15 +20,20 @@ services:
         <<: *build_args
     command: gunicorn airscore.app:create_app() -b :5000 -w ${GUNICORN_WORKERS} -k gevent
     image: master-image
-    container_name: airscore_prod
+    container_name: ${FLASK_CONTAINER}
     ports:
       - "5000:5000"
     environment:
-      REDIS_URL: ${REDIS_URL}
+      REDIS_CONTAINER: ${REDIS_CONTAINER}
+      WEB_SERVER_CONTAINER: ${WEB_SERVER_CONTAINER}
+      FLASK_CONTAINER: ${FLASK_CONTAINER}
+      FLASK_PORT: ${FLASK_PORT}
+      REDIS_URL: ${REDIS_CONTAINER}://${REDIS_CONTAINER}:6379
       FLASK_ENV: production
       FLASK_DEBUG: 0
       LOG_LEVEL: info
       GUNICORN_WORKERS: ${GUNICORN_WORKERS}
+      RQ_QUEUE: ${RQ_QUEUE}
     networks:
       - net
     restart: always
@@ -38,7 +43,10 @@ services:
     image: master-image
     depends_on:
       - redis
-    command: rqworker --name worker --url redis://redis:6379/0 airscore-jobs
+    command: rqworker --name worker --url ${REDIS_CONTAINER}://${REDIS_CONTAINER}:6379/0 ${RQ_QUEUE}
+    environment:
+      FLASK_CONTAINER: ${FLASK_CONTAINER}
+      FLASK_PORT: ${FLASK_PORT}
     networks:
       - net
     <<: *default_volumes
@@ -51,11 +59,12 @@ services:
 
   redis:
     image: redis
+    container_name: ${REDIS_CONTAINER}
     networks:
       - net
 
   nginx:
-    container_name: nginx
+    container_name: ${WEB_SERVER_CONTAINER}
     restart: always
     build: ./nginx
     ports:

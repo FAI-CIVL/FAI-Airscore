@@ -30,9 +30,9 @@ def create_app(config_object="airscore.settings"):
     app = Flask(__name__.split(".")[0]) # , debug=True)
     app.config.from_object(config_object)
     app.config.update(SESSION_COOKIE_SAMESITE='Lax')
-    app.config["REDIS_URL"] = "redis://redis:6379"
-    app.redis = Redis(host='redis', port=6379)
-    app.task_queue = rq.Queue('airscore-jobs', connection=app.redis)
+    # app.config["REDIS_URL"] = f'{app.config["REDIS_CONTAINER"]}://{app.config["REDIS_CONTAINER"]}:6379'
+    app.redis = Redis(host=app.config["REDIS_CONTAINER"], port=6379)
+    app.task_queue = rq.Queue(app.config["RQ_QUEUE"], connection=app.redis)
     register_extensions(app)
     register_blueprints(app)
     register_errorhandlers(app)
