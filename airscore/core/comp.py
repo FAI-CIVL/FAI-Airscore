@@ -434,7 +434,7 @@ class Comp(object):
         for pil in self.results:
             pil['score'] = 0
 
-            ''' if we score all tasks, or tasks are not enough to ha discards,
+            ''' if we score all tasks, or tasks are not enough to have discards,
                 or event has just one valid task regardless method,
                 we can simply sum all score values
             '''
