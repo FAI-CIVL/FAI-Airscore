@@ -17,7 +17,7 @@ from os import path
 from sqlalchemy import and_
 from Defines import TRACKDIR, RESULTDIR, SELF_REG_DEFAULT, PILOT_DB
 from calcUtils import get_date
-from compUtils import get_tasks_result_files, get_participants, read_rankings, create_comp_path
+from compUtils import get_tasks_result_files, get_participants, read_rankings, create_classifications, create_comp_path
 from db.tables import TblCompetition
 from formula import Formula
 from db.conn import db_session
@@ -263,7 +263,7 @@ class Comp(object):
         return self.comp_id
 
     def get_rankings(self):
-        self.rankings = read_rankings(self.comp_id)
+        self.rankings = create_classifications(self.cat_id)
 
     @staticmethod
     def from_fsdb(fs_comp, short_name=None):
