@@ -210,6 +210,18 @@ def altitude_compensation(QNH: float):
         return 0
 
 
+def get_season_dates(ladder_id: int, season: int, date_from: datetime.date = None, date_to: datetime.date = None):
+    from db.tables import TblLadder as L
+    if not (date_from and date_to):
+        lad = L.get_by_id(ladder_id)
+        date_from, date_to = lad.date_from, lad.date_to
+    '''create start and end dates'''
+    s = season-1 if date_from > date_to else season
+    starts = datetime.strptime(f"{s}-{date_from.month}-{date_from.day}", '%Y-%m-%d').date()
+    ends = datetime.strptime(f"{s+1}-{date_to.month}-{date_to.day}", '%Y-%m-%d').date()
+    return starts, ends
+
+
 ''' This are functions used by FSComp to calculate exact pressure altitude.
     I think it is an overkill. Also, I don't think Flight Levels are calculated on ISA values.'''
 def CalculateQnhAltitude(pressure: float, qnh: float):

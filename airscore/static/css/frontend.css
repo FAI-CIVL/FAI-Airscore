@@ -98,6 +98,10 @@
   color: deeppink;
 }
 
+.task_code, .task_code:link, .task_code:link:visited {
+  font-size: .75em;
+}
+
 /* footer */
 
 footer {

@@ -76,7 +76,7 @@ function populate_comp_overall(comPk){
                             "<tr><td>Overall Scoring</td><td>" + json.formula.overall_validity + ' (' + json.formula.validity_param + ')</td></tr>');
                 if (json.formula.overall_validity == 'ftv') {
                     $('#formula tbody').append(
-                            "<tr><td>Total Validity</td><td>" + json.stats.tot_validity + '</td></tr>');
+                            "<tr><td>Total Validity</td><td>" + json.stats.total_validity + '</td></tr>');
                 }
 
                 // remove empty cols
