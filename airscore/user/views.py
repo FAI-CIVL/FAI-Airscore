@@ -129,7 +129,7 @@ def _create_comp():
     output = new_comp.to_db()
     if type(output) == int:
         Formula(comp_id=output).to_db()
-        frontendUtils.set_comp_admin(output, current_user.id, owner=True)
+        frontendUtils.set_comp_scorekeeper(output, current_user.id, owner=True)
         return dict(redirect='/users/comp_admin')
     else:
         return render_template('500.html')
@@ -157,7 +157,7 @@ def _import_comp_fsdb():
                 f = FSDB.read(fsdb_file)
                 compid = f.add_all()
                 if compid:
-                    frontendUtils.set_comp_admin(compid, current_user.id, owner=True)
+                    frontendUtils.set_comp_scorekeeper(compid, current_user.id, owner=True)
                     resp = jsonify(success=True)
                     return resp
                 else:
@@ -191,7 +191,7 @@ def comp_settings_admin(compid):
     session['comp_name'] = comp.comp_name
 
     compform.igc_parsing_file.choices, _ = frontendUtils.get_igc_parsing_config_file_list()
-    owner, administrators, admin_ids = frontendUtils.get_comp_admins(compid)
+    owner, administrators, admin_ids = frontendUtils.get_comp_scorekeeper(compid)
     all_admins = frontendUtils.get_all_admins()
     all_admins.remove(owner)
     for admin in administrators:
@@ -348,7 +348,7 @@ def comp_settings_admin(compid):
 @blueprint.route('/_get_admins/<compid>', methods=['GET'])
 @login_required
 def _get_admins(compid):
-    owner, admins, _ = frontendUtils.get_comp_admins(compid)
+    owner, admins, _ = frontendUtils.get_comp_scorekeeper(compid)
     return {'owner': owner, 'admins': admins}
 
 
@@ -356,7 +356,7 @@ def _get_admins(compid):
 @login_required
 def _add_admin(compid):
     data = request.json
-    if frontendUtils.set_comp_admin(compid, data['id']):
+    if frontendUtils.set_comp_scorekeeper(compid, data['id']):
         resp = jsonify(success=True)
         return resp
     else:
@@ -386,7 +386,7 @@ def task_admin(taskid):
     turnpointform.name.choices = waypoints
     modifyturnpointform.mod_name.choices = waypoints
 
-    owner, administrators, all_admin_ids = frontendUtils.get_comp_admins(task.comp_id)
+    owner, administrators, all_admin_ids = frontendUtils.get_comp_scorekeeper(task.comp_id)
 
     if request.method == 'POST':
         if taskform.validate_on_submit():
@@ -498,7 +498,7 @@ def _get_admin_comps():
 @login_required
 def _delete_comp(compid):
     from comp import delete_comp
-    owner, _, _ = frontendUtils.get_comp_admins(int(compid))
+    owner, _, _ = frontendUtils.get_comp_scorekeeper(int(compid))
     if current_user.id == owner['id']:
         delete_comp(compid)
     else:
@@ -727,7 +727,7 @@ def track_admin(taskid):
         if not task_ready_to_score:
             return render_template('task_not_ready_to_score.html')
 
-        _, _, all_admin_ids = frontendUtils.get_comp_admins(taskid, task_id=True)
+        _, _, all_admin_ids = frontendUtils.get_comp_scorekeeper(taskid, task_id=True)
         if current_user.id in all_admin_ids:
             user_is_admin = True
         else:
@@ -1025,7 +1025,7 @@ def task_score_admin(taskid):
     fileform.result_file.choices = choices
     if active_file:
         fileform.result_file.data = active_file
-    _, _, all_admin_ids = frontendUtils.get_comp_admins(taskid, task_id=True)
+    _, _, all_admin_ids = frontendUtils.get_comp_scorekeeper(taskid, task_id=True)
     if current_user.id in all_admin_ids:
         user_is_admin = True
     else:

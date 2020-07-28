@@ -582,7 +582,7 @@ def get_score_header(files, offset):
     return header, active
 
 
-def get_comp_admins(compid_or_taskid: int, task_id=False):
+def get_comp_scorekeeper(compid_or_taskid: int, task_id=False):
     """returns owner and list of admins takes compid by default or taskid if taskid is True"""
     from db.tables import TblCompAuth as CA
     from airscore.user.models import User
@@ -614,7 +614,7 @@ def get_comp_admins(compid_or_taskid: int, task_id=False):
     return owner, admins, all_ids
 
 
-def set_comp_admin(compid: int, userid, owner=False):
+def set_comp_scorekeeper(compid: int, userid, owner=False):
     from db.tables import TblCompAuth as CA
     auth = 'owner' if owner else 'admin'
     with db_session() as db:
