@@ -11,10 +11,8 @@ import jsonpickle
 from Defines import MAPOBJDIR, IGCPARSINGCONFIG, track_formats
 from map import make_map
 from calcUtils import sec_to_time
-from os import scandir, path, environ
-from werkzeug.utils import secure_filename
+from os import scandir, environ
 import requests
-from flask_sse import sse
 from functools import partial
 import json
 
