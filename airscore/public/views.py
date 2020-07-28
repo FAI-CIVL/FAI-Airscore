@@ -63,6 +63,7 @@ def ladders():
 
 @blueprint.route('/_get_ladders', methods=['GET', 'POST'])
 def _get_ladders():
+    from calcUtils import get_season_dates
     ladderlist = frontendUtils.get_ladders()
     # {'comp_id': 2, 'comp_name': 'Meeting LP 2018 - 1', 'comp_site': 'Meduno', 'comp_class': 'PG', 'sanction': 'none',
     #  'comp_type': 'RACE', 'date_from': datetime.date(2018, 4, 7), 'date_to': datetime.date(2018, 4, 8), 'external': 0}
@@ -75,9 +76,8 @@ def _get_ladders():
         name = c['ladder_name']
         season = int(c['season'])
         '''create start and end dates'''
-        s = season-1 if c['date_from'] > c['date_to'] else season
-        starts = datetime.strptime(f"{s}-{c['date_from'].month}-{c['date_from'].day}", '%Y-%m-%d').date()
-        ends = datetime.strptime(f"{s+1}-{c['date_to'].month}-{c['date_to'].day}", '%Y-%m-%d').date()
+        starts, ends = get_season_dates(ladder_id=ladderid, season=season,
+                                        date_from=c['date_from'], date_to=c['date_to'])
         c['ladder_name'] = f'<a href="/ladder_result/{ladderid}/{season}">{name} {season}</a>'
         if c['ladder_class']:
             cl = c['ladder_class'].lower()
@@ -106,28 +106,28 @@ def _get_ladder_result(ladderid: int, season: int):
     result_file = frontendUtils.get_pretty_data(frontendUtils.get_ladder_results(ladderid, season))
     if result_file == 'error':
         return render_template('404.html')
+
     all_pilots = []
-    tasks = [t['task_code'] for t in result_file['tasks']]
+    columns = 0
+    # tasks = [t['task_code'] for t in result_file['tasks']]
     for r in result_file['results']:
         pilot = {'fai_id': r['fai_id'], 'civl_id': r['civl_id'],
                  'name': f"<span class='sex-{r['sex']}'><b>{r['name']}</b></span>", 'nat': r['nat'], 'sex': r['sex'],
-                 'glider': r['glider'], 'glider_cert': r['glider_cert'], 'sponsor': r['sponsor'],
-                 'score': f"<b>{r['score']}</b>", 'results': {}, 'ranks': {'rank': f"<b>{r['rank']}</b>"}}
+                 'score': f"<b>{r['score']}</b>", 'ranks': {'rank': f"<b>{r['rank']}</b>"}}
         # setup 4 sub-rankings placeholders
         for i, c in enumerate(result_file['classes'][1:], 1):
             pilot['ranks']['class' + str(i)] = f"{r[c['limit']]}"
-        # setup the 20 task placeholders
-        for t in range(1, 21):
-            task = 'T' + str(t)
-            pilot['results'][task] = {'score': ''}
-        for task in tasks:
-            if r['results'][task]['pre'] == r['results'][task]['score']:
-                pilot['results'][task] = {'score': r['results'][task]['score']}
-            else:
-                pilot['results'][task] = {'score': f"{int(r['results'][task]['score'])} <del>{int(r['results'][task]['pre'])}</del>"}
-
+        pilot['results'] = []
+        for idx, res in enumerate(r['results'], 1):
+            score = f"{res['score']}" if res['score'] == res['pre'] else f"{res['score']} <del>{res['pre']}</del>"
+            link = f"<a href=/task_result/{res['task_id']} target='_blank'>{res['task_code']}</a>"
+            html = f"<span class='task_score'>{score}</span><span class='task_code'>({link})</span>"
+            pilot['results'].append(html)
+        if len(pilot['results']) > columns:
+            columns = len(pilot['results'])
         all_pilots.append(pilot)
     result_file['data'] = all_pilots
+    result_file['columns'] = columns
 
     return result_file
 
