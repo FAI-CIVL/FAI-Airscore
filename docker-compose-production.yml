@@ -34,6 +34,12 @@ services:
       LOG_LEVEL: info
       GUNICORN_WORKERS: ${GUNICORN_WORKERS}
       RQ_QUEUE: ${RQ_QUEUE}
+      MAIL_SERVER: ${MAIL_SERVER}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USE_TLS: ${MAIL_USE_TLS}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      ADMINS: ${ADMINS}
     networks:
       - net
     restart: always

@@ -4,7 +4,6 @@ import logging
 import sys
 
 from flask import Flask, render_template
-
 from airscore import commands, public, user, internal
 from airscore.extensions import (
     bcrypt,
@@ -15,6 +14,7 @@ from airscore.extensions import (
     flask_static_digest,
     login_manager,
     migrate,
+    mail,
 )
 
 from redis import Redis
@@ -52,6 +52,7 @@ def register_extensions(app):
     debug_toolbar.init_app(app)
     migrate.init_app(app, db)
     flask_static_digest.init_app(app)
+    mail.init_app(app)
     return None
 
 

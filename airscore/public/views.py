@@ -12,8 +12,8 @@ from flask import (
     session
 )
 from flask_login import login_required, login_user, logout_user, current_user
-from airscore.extensions import login_manager
-from airscore.public.forms import LoginForm, ModifyParticipantForm
+from airscore.extensions import login_manager, mail
+from airscore.public.forms import LoginForm, ModifyParticipantForm, ResetPasswordForm, ResetPasswordRequestForm
 from airscore.user.forms import RegisterForm
 from airscore.user.models import User
 from airscore.utils import flash_errors
@@ -27,6 +27,8 @@ import mapUtils
 import Defines
 from os import path
 import frontendUtils
+from threading import Thread
+from flask_mail import Message
 
 blueprint = Blueprint("public", __name__, static_folder="../static")
 
@@ -77,7 +79,7 @@ def logout():
 
 @blueprint.route("/register/", methods=["GET", "POST"])
 def register():
-    """Register new user."""
+    """Register new scorekeeper."""
     form = RegisterForm(request.form)
     if form.validate_on_submit():
         User.create(
@@ -85,12 +87,65 @@ def register():
             email=form.email.data,
             password=form.password.data,
             active=True,
+            is_admin=False,
         )
         flash("Thank you for registering. You can now log in.", "success")
         return redirect(url_for("public.home"))
     else:
         flash_errors(form)
     return render_template("public/register.html", form=form)
+
+
+@blueprint.route("/setup_admin/", methods=["GET", "POST"])
+def setup_admin():
+    """Register 1st admin."""
+    form = RegisterForm(request.form)
+    if form.validate_on_submit():
+        User.create(
+            username=form.username.data,
+            email=form.email.data,
+            password=form.password.data,
+            active=True,
+            is_admin=True,
+        )
+        flash("Thank you for registering. You can now log in.", "success")
+        return redirect(url_for("public.home"))
+    else:
+        flash_errors(form)
+    return render_template("public/register.html", form=form)
+
+
+@blueprint.route('/reset_password_request', methods=['GET', 'POST'])
+def reset_password_request():
+    form = LoginForm(request.form)
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    reset_form = ResetPasswordRequestForm()
+    if reset_form.validate_on_submit():
+        user = User.query.filter_by(email=reset_form.email.data).first()
+        if user:
+            send_password_reset_email(user)
+        flash('Check your email for the instructions to reset your password', category='info')
+        return redirect(url_for('public.home'))
+    return render_template('public/reset_password_request.html',
+                           title='Reset Password', reset_form=reset_form, form=form)
+
+
+@blueprint.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    form = LoginForm(request.form)
+    if current_user.is_authenticated:
+        return redirect(url_for('public.home'))
+    user = User.verify_reset_password_token(token)
+    if not user:
+        return redirect(url_for('index'))
+    reset_form = ResetPasswordForm()
+    if reset_form.validate_on_submit():
+        user.set_password(reset_form.password.data)
+        user.update()
+        flash('Your password has been reset.')
+        return redirect(url_for('public.home'))
+    return render_template('public/reset_password.html', reset_form=reset_form, form=form)
 
 
 @blueprint.route("/about/")
@@ -504,3 +559,27 @@ def livetracking(taskid):
             data.append(p)
 
     return render_template('public/live.html', file_stats=file_stats, headers=headers, data=data, info=info)
+
+
+def send_async_email(app, msg):
+    with app.app_context():
+        mail.send(msg)
+
+
+def send_email(subject, sender, recipients, text_body, html_body):
+    msg = Message(subject, sender=sender, recipients=recipients)
+    msg.body = text_body
+    msg.html = html_body
+    mail.send(msg)
+    # Thread(target=send_async_email, args=(current_app, msg)).start()
+
+
+def send_password_reset_email(user):
+    token = user.get_reset_password_token()
+    send_email('[Airscore] Reset Your Password',
+               sender=current_app.config['ADMINS'][0],
+               recipients=[user.email],
+               text_body=render_template('email/reset_password.txt',
+                                         user=user, token=token),
+               html_body=render_template('email/reset_password.html',
+                                         user=user, token=token))

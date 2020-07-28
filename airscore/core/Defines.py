@@ -78,6 +78,11 @@ SANCTIONS = config['sanctions']
 WAYPOINT_AIRSPACE_FILE_LIBRARY = config['waypoint/airspace_file_library']
 
 '''pilot DB'''
+ADMIN_DB = config['use_internal_admin_DB']
+ADMIN_SELF_REG = config['internal_admin_DB']['allow_self_registration']
+
+
+'''admint DB'''
 PILOT_DB = config['use_internal_pilot_DB']
 PILOT_DB_WRITE = config['internal_pilot_DB']['write_to_internal_pilot_DB']
 SELF_REG_DEFAULT = config['internal_pilot_DB']['self_registration_default']
