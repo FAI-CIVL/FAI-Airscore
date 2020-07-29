@@ -20,18 +20,20 @@ function populate_ladder(ladderid, season){
             success: function (json) {
                 var taskNum = json.stats.valid_tasks
                 console.log('taskNum='+taskNum);
-                //    columnNames = Object.keys(data.data[0]);
                 var columns = [];
-                columns.push({data: 'ranks.rank', title:'#'});
-                columns.push({data: 'ranks.class1', title:'#', defaultContent: ''});
-                columns.push({data: 'ranks.class2', title:'#', defaultContent: ''});
-                columns.push({data: 'ranks.class3', title:'#', defaultContent: ''});
-                columns.push({data: 'ranks.class4', title:'#', defaultContent: ''});
-                columns.push({data: 'fai_id', title:'FAI'});
-                columns.push({data: 'civl_id', title:'CIVL'});
+                json.classes.forEach( function(item, index){
+                    if (index == 0) {
+                        columns.push({data: 'ranks.rank', title:'#'});
+                    }
+                    else {
+                        columns.push({data: 'ranks.class'+index.toString(), title:'#', defaultContent: '', visible: false});
+                    }
+                });
+                columns.push({data: 'fai_id', title:'FAI', defaultContent: '', visible: false});
+                columns.push({data: 'civl_id', title:'CIVL', defaultContent: '', visible: false});
                 columns.push({data: 'name', title:'Name'});
-                columns.push({data: 'nat', title:'NAT'});
-                columns.push({data: 'sex', title:'Sex'});
+                columns.push({data: 'nat', title:'NAT', defaultContent: '', visible: false});
+                columns.push({data: 'sex', title:'Sex', defaultContent: '', visible: false});
                 columns.push({data: 'score', title:'Total'});
                 for (var i=0; i<taskNum; i++ ) {
                     var col = (i+1)
@@ -48,12 +50,6 @@ function populate_ladder(ladderid, season){
                     rowId: function(data) {
                             return 'id_' + data.par_id;
                     },
-                    columnDefs: [
-                        {
-                            targets: [ 1, 2, 3, 4, 5, 6, 8, 9 ],
-                            visible: false
-                        },
-                    ],
                     initComplete: function(settings) {
                         var table = $('#results_table');
                         var rows = $("tr", table).length-1;
