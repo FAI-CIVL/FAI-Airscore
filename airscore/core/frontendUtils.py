@@ -118,7 +118,6 @@ def get_ladder_results(ladder_id: int, season: int,
                        LS.season, LS.cat_id, LS.overall_validity, LS.validity_param) \
             .join(LS) \
             .filter(L.ladder_id == ladder_id, LS.season == season).one()
-        # info = row._asdict()
         rankings = create_classifications(row.cat_id)
         info = {'ladder_name': row.ladder_name,
                 'season': row.season,
@@ -127,12 +126,14 @@ def get_ladder_results(ladder_id: int, season: int,
         formula = {'overall_validity': row.overall_validity,
                    'validity_param': row.validity_param}
 
-        '''get comps and tasks'''
-        results = db.query(C.comp_id, C.comp_code, T.task_id, T.task_num) \
-            .join(T) \
-            .join(LC) \
-            .filter(C.date_to > starts, C.date_to < ends, LC.c.ladder_id == ladder_id)
-        comps_ids = list(set(row.comp_id for row in results))
+        '''get comps and files'''
+        results = db.query(C.comp_id, R.filename) \
+                    .join(LC) \
+                    .join(R, (R.comp_id == C.comp_id) & (R.task_id.is_(None)) & (R.active == 1)) \
+                    .filter(C.date_to > starts, C.date_to < ends, LC.c.ladder_id == ladder_id)
+        comps_ids = [row.comp_id for row in results]
+        files = [row.filename for row in results]
+        print(comps_ids, files)
 
         '''create Participants list'''
         results = db.query(P) \
@@ -161,12 +162,10 @@ def get_ladder_results(ladder_id: int, season: int,
     '''try to guess orphans'''
     if orphans:
         pilots_list, orphans = find_orphan_pilots(pilots_list, orphans)
+    print(pilots_list)
 
     '''get results'''
     stats = {'tot_pilots': len(pilots_list)}
-    with db_session() as db:
-        rows = db.query(R).filter(R.comp_id.in_(comps_ids), R.task_id.is_(None), R.active == 1)
-        files = [row.filename for row in rows]
     comps = []
     tasks = []
     for file in files:
@@ -241,7 +240,7 @@ def get_ladder_results(ladder_id: int, season: int,
 
     '''order results'''
     pilots_list = sorted(pilots_list, key=lambda x: x['score'], reverse=True)
-    stats['winner_score'] = pilots_list[0]['score']
+    stats['winner_score'] = 0 if not pilots_list else pilots_list[0]['score']
     '''create json'''
     output = {'info': info,
               'comps': comps,
@@ -1026,7 +1025,8 @@ def get_pretty_data(content: dict) -> dict:
         elif 'route' in content.keys():
             pretty_content['info'].update(startgates=get_startgates(content['info']))
             pretty_content['route'] = pretty_format_results(content['route'], timeoffset)
-        pretty_content['stats'] = pretty_format_results(content['stats'], timeoffset)
+        if 'stats' in content.keys():
+            pretty_content['stats'] = pretty_format_results(content['stats'], timeoffset)
         pretty_content['formula'] = pretty_format_results(content['formula'])
         results = []
         '''rankings'''
