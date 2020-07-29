@@ -62,8 +62,8 @@ class NewTaskForm(FlaskForm):
     task_region = SelectField('Region', choices=[('1', '1'), ('2', '2')])
 
 
-class NewAdminForm(FlaskForm):
-    admin = SelectField("Admin", choices=[('1', '1'), ('2', '2')])
+class NewScorekeeperForm(FlaskForm):
+    scorekeeper = SelectField("Scorekeeper", choices=[('1', '1'), ('2', '2')])
 
 
 class CompForm(FlaskForm):

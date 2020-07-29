@@ -583,35 +583,35 @@ def get_score_header(files, offset):
 
 
 def get_comp_scorekeeper(compid_or_taskid: int, task_id=False):
-    """returns owner and list of admins takes compid by default or taskid if taskid is True"""
+    """returns owner and list of scorekeepers takes compid by default or taskid if taskid is True"""
     from db.tables import TblCompAuth as CA
     from airscore.user.models import User
     with db_session() as db:
         if task_id:
             taskid = compid_or_taskid
-            all_admins = db.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth) \
+            all_scorekeepers = db.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth) \
                 .join(CA, User.id == CA.user_id).join(TblTask, CA.comp_id == TblTask.comp_id).filter(
                 TblTask.task_id == taskid,
                 CA.user_auth.in_(('owner', 'admin'))).all()
         else:
             compid = compid_or_taskid
-            all_admins = db.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth) \
+            all_scorekeepers = db.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth) \
                 .join(CA, User.id == CA.user_id).filter(CA.comp_id == compid,
                                                         CA.user_auth.in_(('owner', 'admin'))).all()
-        if all_admins:
-            all_admins = [row._asdict() for row in all_admins]
-        admins = []
+        if all_scorekeepers:
+            all_scorekeepers = [row._asdict() for row in all_scorekeepers]
+        scorekeepers = []
         all_ids = []
         owner = None
-        for admin in all_admins:
+        for admin in all_scorekeepers:
             all_ids.append(admin['id'])
             if admin['user_auth'] == 'owner':
                 del admin['user_auth']
                 owner = admin
             else:
                 del admin['user_auth']
-                admins.append(admin)
-    return owner, admins, all_ids
+                scorekeepers.append(admin)
+    return owner, scorekeepers, all_ids
 
 
 def set_comp_scorekeeper(compid: int, userid, owner=False):
@@ -624,15 +624,16 @@ def set_comp_scorekeeper(compid: int, userid, owner=False):
     return True
 
 
-def get_all_admins():
-    """returns a list of all admins in the system"""
+def get_all_scorekeepers():
+    """returns a list of all scorekeepers in the system"""
     from airscore.user.models import User
     with db_session() as db:
-        all_admins = db.query(User.id, User.username, User.first_name, User.last_name) \
-            .filter(User.is_admin == 1).all()
-        if all_admins:
-            all_admins = [row._asdict() for row in all_admins]
-        return all_admins
+        all_scorekeepers = db.query(User.id, User.username, User.first_name, User.last_name) \
+            .filter((User.access == 'scorekeeper') | (User.access == 'admin'))\
+            .all()
+        if all_scorekeepers:
+            all_scorekeepers = [row._asdict() for row in all_scorekeepers]
+        return all_scorekeepers
 
 
 def update_airspace_file(old_filename, new_filename):

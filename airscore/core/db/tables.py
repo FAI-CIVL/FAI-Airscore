@@ -209,7 +209,7 @@ class User(BaseModel):
                       Column('phone', LONGTEXT),
                       Column('sex', String(1)),
                       Column('active', TINYINT(1)),
-                      Column('is_admin', TINYINT(1)),
+                      Column('access', Enum('pilot', 'scorekeeper', 'admin', 'pending')),
                       )
 
 

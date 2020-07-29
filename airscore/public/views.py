@@ -80,6 +80,13 @@ def logout():
 @blueprint.route("/register/", methods=["GET", "POST"])
 def register():
     """Register new scorekeeper."""
+    # if we accept self registration then they become scorekeepers automatically
+    if Defines.ADMIN_SELF_REG:
+        access = 'scorekeeper'
+    # otherwise they become pending admin approval
+    else:
+        access = 'pending'
+
     form = RegisterForm(request.form)
     if form.validate_on_submit():
         User.create(
@@ -87,7 +94,7 @@ def register():
             email=form.email.data,
             password=form.password.data,
             active=True,
-            is_admin=False,
+            access=access,
         )
         flash("Thank you for registering. You can now log in.", "success")
         return redirect(url_for("public.home"))
@@ -106,7 +113,7 @@ def setup_admin():
             email=form.email.data,
             password=form.password.data,
             active=True,
-            is_admin=True,
+            access='admin',
         )
         flash("Thank you for registering. You can now log in.", "success")
         return redirect(url_for("public.home"))

@@ -7,7 +7,7 @@ from flask import Blueprint, render_template, request, jsonify, json, flash, red
 from flask_login import login_required, current_user
 import frontendUtils
 from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm, \
-    TaskResultAdminForm, NewAdminForm, RegionForm, NewRegionForm, IgcParsingConfigForm, ModifyParticipantForm, \
+    TaskResultAdminForm, NewScorekeeperForm, RegionForm, NewRegionForm, IgcParsingConfigForm, ModifyParticipantForm, \
     EditScoreForm
 from comp import Comp
 from formula import list_formulas, Formula
@@ -180,26 +180,27 @@ def _get_formulas():
 @blueprint.route('/comp_settings_admin/<compid>', methods=['GET', 'POST'])
 @login_required
 def comp_settings_admin(compid):
+    from sys import stdout
     error = None
     compid = int(compid)
     compform = CompForm()
     newtaskform = NewTaskForm()
-    newadminform = NewAdminForm()
+    newScorekeeperform = NewScorekeeperForm()
     comp = Comp.read(compid)
     # set session variables for navbar
     session['compid'] = compid
     session['comp_name'] = comp.comp_name
 
     compform.igc_parsing_file.choices, _ = frontendUtils.get_igc_parsing_config_file_list()
-    owner, administrators, admin_ids = frontendUtils.get_comp_scorekeeper(compid)
-    all_admins = frontendUtils.get_all_admins()
-    all_admins.remove(owner)
-    for admin in administrators:
-        all_admins.remove(admin)
-    admin_choices = []
-    if all_admins:
-        for admin in all_admins:
-            admin_choices.append((admin['id'], f"{admin['first_name']} {admin['last_name']} ({admin['username']})"))
+    owner, scorekeepers, scorekeeper_ids = frontendUtils.get_comp_scorekeeper(compid)
+    all_scorekeepers = frontendUtils.get_all_scorekeepers()
+    all_scorekeepers.remove(owner)
+    for scorekeeper in scorekeepers:
+        all_scorekeepers.remove(scorekeeper)
+    scorekeeper_choices = []
+    if all_scorekeepers:
+        for scorekeeper in all_scorekeepers:
+            scorekeeper_choices.append((scorekeeper['id'], f"{scorekeeper['first_name']} {scorekeeper['last_name']} ({scorekeeper['username']})"))
     if request.method == 'POST':
         if compform.validate_on_submit():
             comp.comp_name = compform.comp_name.data
@@ -326,35 +327,35 @@ def comp_settings_admin(compid):
         compform.self_register.data = comp.self_register
         compform.website.data = comp.website
         newtaskform.task_region.choices, _ = frontendUtils.get_region_choices(compid)
-        newadminform.admin.choices = admin_choices
+        newScorekeeperform.scorekeeper.choices = scorekeeper_choices
         formulas = list_formulas()
         compform.formula.choices = [(x, x.upper()) for x in formulas[comp.comp_class]]
 
-        if current_user.id not in admin_ids:
-            session['is_admin'] = False
+        if current_user.id not in scorekeeper_ids:
+            session['is_scorekeeper'] = False
             compform.submit = None
         else:
-            session['is_admin'] = True
+            session['is_scorekeeper'] = True
 
     tasks = frontendUtils.get_task_list(comp)
     session['tasks'] = tasks['tasks']
     session['check_g_record'] = comp.check_g_record
 
     return render_template('users/comp_settings.html', compid=compid, compform=compform,
-                           taskform=newtaskform, adminform=newadminform, error=error,
+                           taskform=newtaskform, scorekeeperform=newScorekeeperform, error=error,
                            self_register=(SELF_REG_DEFAULT and PILOT_DB))
 
 
-@blueprint.route('/_get_admins/<compid>', methods=['GET'])
+@blueprint.route('/_get_scorekeepers/<compid>', methods=['GET'])
 @login_required
-def _get_admins(compid):
-    owner, admins, _ = frontendUtils.get_comp_scorekeeper(compid)
-    return {'owner': owner, 'admins': admins}
+def _get_scorekeepers(compid):
+    owner, scorekeepers, _ = frontendUtils.get_comp_scorekeeper(compid)
+    return {'owner': owner, 'scorekeepers': scorekeepers}
 
 
-@blueprint.route('/_add_admin/<compid>', methods=['POST'])
+@blueprint.route('/_add_scorekeeper/<compid>', methods=['POST'])
 @login_required
-def _add_admin(compid):
+def _add_scorekeeper(compid):
     data = request.json
     if frontendUtils.set_comp_scorekeeper(compid, data['id']):
         resp = jsonify(success=True)
@@ -386,7 +387,7 @@ def task_admin(taskid):
     turnpointform.name.choices = waypoints
     modifyturnpointform.mod_name.choices = waypoints
 
-    owner, administrators, all_admin_ids = frontendUtils.get_comp_scorekeeper(task.comp_id)
+    owner, scorekeepers, all_scorekeeper_ids = frontendUtils.get_comp_scorekeeper(task.comp_id)
 
     if request.method == 'POST':
         if taskform.validate_on_submit():
@@ -481,7 +482,7 @@ def task_admin(taskid):
                 if session_task['task_id'] == taskid:
                     session_task['ready_to_score'] = False
 
-        if current_user.id not in all_admin_ids:
+        if current_user.id not in all_scorekeeper_ids:
             taskform.submit = None
 
     return render_template('users/task_admin.html', taskid=taskid, taskform=taskform, turnpointform=turnpointform,
@@ -727,12 +728,12 @@ def track_admin(taskid):
         if not task_ready_to_score:
             return render_template('task_not_ready_to_score.html')
 
-        _, _, all_admin_ids = frontendUtils.get_comp_scorekeeper(taskid, task_id=True)
-        if current_user.id in all_admin_ids:
-            user_is_admin = True
+        _, _, all_scorekeeper_ids = frontendUtils.get_comp_scorekeeper(taskid, task_id=True)
+        if current_user.id in all_scorekeeper_ids:
+            user_is_scorekeeper = True
         else:
-            user_is_admin = None
-        return render_template('users/track_admin.html', taskid=taskid, user_is_admin=user_is_admin,
+            user_is_scorekeeper = None
+        return render_template('users/track_admin.html', taskid=taskid, user_is_scorekeeper=user_is_scorekeeper,
                                production=frontendUtils.production(), task_name=task_name, task_num=task_num,
                                track_source=track_source)
     else:
@@ -1025,14 +1026,14 @@ def task_score_admin(taskid):
     fileform.result_file.choices = choices
     if active_file:
         fileform.result_file.data = active_file
-    _, _, all_admin_ids = frontendUtils.get_comp_scorekeeper(taskid, task_id=True)
-    if current_user.id in all_admin_ids:
-        user_is_admin = True
+    _, _, all_scorekeeper_ids = frontendUtils.get_comp_scorekeeper(taskid, task_id=True)
+    if current_user.id in all_scorekeeper_ids:
+        user_is_scorekeeper = True
     else:
-        user_is_admin = None
+        user_is_scorekeeper = None
 
     return render_template('users/task_score_admin.html', fileform=fileform, taskid=taskid,
-                           active_file=active_file, user_is_admin=user_is_admin, task_name=task_name,
+                           active_file=active_file, user_is_scorekeeper=user_is_scorekeeper, task_name=task_name,
                            task_num=task_num, editform=editform, production=frontendUtils.production())
 
 

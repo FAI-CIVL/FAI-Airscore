@@ -6,6 +6,7 @@ from airscore.settings import SECRET_KEY
 from time import time
 from flask_login import UserMixin
 
+
 from airscore.database import (
     Column,
     Model,
@@ -47,7 +48,8 @@ class User(UserMixin, SurrogatePK, Model):
     last_name = Column(db.String(30), nullable=True)
     nat = Column(db.String(10))
     active = Column(db.Boolean(), default=False)
-    is_admin = Column(db.Boolean(), default=False)
+    access = Column(db.Enum('pilot', 'pending', 'scorekeeper', 'admin'),
+                    nullable=False, server_default=db.text("'pilot'"))
 
     def __init__(self, username, email, password=None, **kwargs):
         """Create instance."""

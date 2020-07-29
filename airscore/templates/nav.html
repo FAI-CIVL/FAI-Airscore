@@ -23,7 +23,7 @@
         {% if current_user and current_user.is_authenticated %}
         <ul class="navbar-nav text-secondary ">
               <li class="nav-item">
-            <a class="navbar-text">Admin:</a>
+            <a class="navbar-text">Scorekeeper:</a>
           </li>
 
 
@@ -48,7 +48,7 @@
                                     </a>
                                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown{{task.task_num}}">
                                         <li><a class="dropdown-item" href="{{ url_for('user.task_admin', taskid=task.task_id) }}">Settings</a></li>
-                                        {% if session.is_admin and task.ready_to_score %}
+                                        {% if session.is_scorekeeper and task.ready_to_score %}
                                         <li><a class="dropdown-item" href="{{ url_for('user.track_admin', taskid=task.task_id) }}">Tracks</a></li>
                                         <li><a class="dropdown-item" href="{{ url_for('user.task_score_admin', taskid=task.task_id) }}">Scores</a></li>
                                         {% endif %}
@@ -59,12 +59,12 @@
                     </li>
 
           {% endif %}
-           {% if session.library or (session.comp_name and session.is_admin) %}
+           {% if session.library or (session.comp_name and session.is_scorekeeper) %}
             <li class="nav-item">
             <a class="nav-link text-primary" href="{{ url_for('user.region_admin') }}">Flying Areas</a>
           </li>
             {% endif %}
-           {% if session.is_admin %}
+           {% if session.is_scorekeeper %}
                         <li class="nav-item">
             <a class="nav-link text-primary" href="{{ url_for('user.pilot_admin') }}">Pilots</a>
           </li>

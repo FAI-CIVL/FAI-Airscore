@@ -25,8 +25,8 @@
         </div>
 
 
-{% if not user_is_admin %}
-    <h2>You are not authorised to access this page as you are not an admin of this competition</h2>
+{% if not user_is_scorekeeper %}
+    <h2>You are not authorised to access this page as you are not a scorekeeper of this competition</h2>
 
 {% else %}
     <!-- CSS -->
@@ -128,7 +128,7 @@
   {% endif %}
 {% endblock %}
 
-{% if user_is_admin %}
+{% if user_is_scorekeeper %}
 {% block js %}
     <script src="{{ static_url_for('static', filename='js/jquery.initialize.js') }}"></script>
     <script type="text/javascript" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
