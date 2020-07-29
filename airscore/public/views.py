@@ -551,7 +551,7 @@ def _get_participants_and_status(compid):
 @blueprint.route('/live/<int:taskid>')
 def livetracking(taskid):
     from livetracking import get_live_json
-    from calcUtils import sec_to_string, time_to_seconds
+    from calcUtils import sec_to_string, time_to_seconds, c_round
     from datetime import datetime
     result_file = get_live_json(int(taskid))
     file_stats = result_file['file_stats']
@@ -579,7 +579,7 @@ def livetracking(taskid):
             elif el['ESS_time'] and (el['distance'] - task_distance) > 5:
                 res = f"[{sec_to_string(el['ss_time'])}]"
             else:
-                res = str(round(el['distance'] / 1000, 2)) + ' Km' if el['distance'] > 500 else ''
+                res = str(c_round(el['distance'] / 1000, 2)) + ' Km' if el['distance'] > 500 else ''
             '''height'''
             if not ('height' in el) or not el['first_time']:
                 height = '[not launched yet]'

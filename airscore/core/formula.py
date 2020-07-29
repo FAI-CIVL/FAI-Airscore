@@ -11,6 +11,7 @@ from dataclasses import dataclass, fields
 from os import listdir
 from sqlalchemy.orm import aliased
 from db.conn import db_session
+from calcUtils import c_round
 
 
 def list_formulas():
@@ -435,10 +436,10 @@ def get_fsdb_info(formula, form):
     formula.score_back_time = 0 + int(form.get('score_back_time')) * 60  # Scoreback Time, seconds
     formula.glide_bonus = 0.0 + float(form.get('bonus_gr'))  # glide ratio
     '''bonus and penalties'''
-    formula.no_goal_penalty = round(1.0 - float(form.get('time_points_if_not_in_goal')), 4)
+    formula.no_goal_penalty = c_round(1.0 - float(form.get('time_points_if_not_in_goal')), 4)
     formula.arr_alt_bonus = float(form.get('aatb_factor') if form.get('final_glide_decelerator') == 'aatb' else 0)
     '''jump the gun'''
     formula.max_JTG = int(form.get('jump_the_gun_max'))  # seconds
     formula.JTG_penalty_per_sec = (None if form.get('jump_the_gun_factor') == '0'
-                                   else round(1 / float(form.get('jump_the_gun_factor')), 4))
+                                   else c_round(1 / float(form.get('jump_the_gun_factor')), 4))
     return formula

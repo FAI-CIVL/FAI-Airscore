@@ -16,7 +16,7 @@ from os import path
 
 from sqlalchemy import and_
 from Defines import TRACKDIR, RESULTDIR, SELF_REG_DEFAULT, PILOT_DB
-from calcUtils import get_date
+from calcUtils import get_date, c_round
 from compUtils import get_tasks_result_files, get_participants, read_rankings, create_classifications, create_comp_path
 from db.tables import TblCompetition
 from formula import Formula
@@ -117,7 +117,7 @@ class Comp(object):
     @property
     def total_validity(self):
         if len(self.tasks) > 0:
-            return round(sum([t.ftv_validity for t in self.tasks]), 4)
+            return c_round(sum([t.ftv_validity for t in self.tasks]), 4)
         else:
             return 0
 
@@ -125,7 +125,7 @@ class Comp(object):
     def avail_validity(self):
         if len(self.tasks) > 0:
             if self.formula.overall_validity == 'ftv':
-                return round(self.total_validity * self.formula.validity_param, 4)
+                return c_round(self.total_validity * self.formula.validity_param, 4)
             else:
                 return self.total_validity
         return 0

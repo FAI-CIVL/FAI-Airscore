@@ -10,7 +10,7 @@ from pathlib import Path
 import jsonpickle
 from Defines import MAPOBJDIR, IGCPARSINGCONFIG, track_formats
 from map import make_map
-from calcUtils import sec_to_time
+from calcUtils import sec_to_time, c_round
 from os import scandir, path, environ
 from werkzeug.utils import secure_filename
 import requests
@@ -101,7 +101,7 @@ def get_ladder_results(ladder_id: int, season: int,
     """creates result json using comp results from all events in ladder"""
     from db.tables import TblParticipant as P, TblLadder as L, TblLadderComp as LC, TblLadderSeason as LS, \
         TblCompetition as C, TblTask as T, TblResultFile as R
-    from calcUtils import get_season_dates, c_round
+    from calcUtils import get_season_dates
     from compUtils import get_nat, create_classifications
     from result import open_json_file
 
@@ -190,9 +190,9 @@ def get_ladder_results(ladder_id: int, season: int,
     val = formula['overall_validity']
     param = formula['validity_param']
     stats['valid_tasks'] = len(tasks)
-    stats['total_validity'] = round(sum([t['ftv_validity'] for t in tasks]), 4)
+    stats['total_validity'] = c_round(sum([t['ftv_validity'] for t in tasks]), 4)
     stats['avail_validity'] = (0 if len(tasks) == 0
-                               else round(stats['total_validity'] * param, 4) if val == 'ftv'
+                               else c_round(stats['total_validity'] * param, 4) if val == 'ftv'
                                else stats['total_validity'])
 
     '''calculate scores'''
@@ -292,7 +292,7 @@ def get_task_list(comp):
                                   and task['start_time'] and task['start_close_time']
                                   and task['task_deadline']) is not None
 
-        task['opt_dist'] = 0 if not task['opt_dist'] else round(task['opt_dist'] / 1000, 2)
+        task['opt_dist'] = 0 if not task['opt_dist'] else c_round(task['opt_dist'] / 1000, 2)
         task['opt_dist'] = f"{task['opt_dist']} km"
         if task['comment'] is None:
             task['comment'] = ''
@@ -308,7 +308,7 @@ def get_task_turnpoints(task):
     total_dist = ''
     for tp in turnpoints:
         tp['original_type'] = tp['type']
-        tp['partial_distance'] = '' if not tp['partial_distance'] else round(tp['partial_distance'] / 1000, 2)
+        tp['partial_distance'] = '' if not tp['partial_distance'] else c_round(tp['partial_distance'] / 1000, 2)
         if int(tp['num']) > max_n:
             max_n = int(tp['num'])
             total_dist = tp['partial_distance']
@@ -627,7 +627,7 @@ def process_igc_background(task_id: int, par_id: int, file: Path, user: str):
         if pilot.result_type == 'goal':
             data['Result'] = f'Goal {time}'
         elif pilot.result_type == 'lo':
-            data['Result'] = f"LO {round(pilot.distance / 1000, 2)}"
+            data['Result'] = f"LO {c_round(pilot.distance / 1000, 2)}"
         if pilot.track_id:  # if there is a track, make the result a link to the map
             # trackid = data['track_id']
             parid = data['par_id']
