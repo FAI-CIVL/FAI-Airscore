@@ -113,12 +113,10 @@ def _get_ladder_result(ladderid: int, season: int):
 
     all_pilots = []
     columns = 0
-    # tasks = [t['task_code'] for t in result_file['tasks']]
     for r in result_file['results']:
         pilot = {'fai_id': r['fai_id'], 'civl_id': r['civl_id'],
                  'name': f"<span class='sex-{r['sex']}'><b>{r['name']}</b></span>", 'nat': r['nat'], 'sex': r['sex'],
                  'score': f"<b>{r['score']}</b>", 'ranks': {'rank': f"<b>{r['rank']}</b>"}}
-        # setup 4 sub-rankings placeholders
         for i, c in enumerate(result_file['classes'][1:], 1):
             pilot['ranks']['class' + str(i)] = f"{r[c['limit']]}"
         pilot['results'] = []
@@ -418,28 +416,46 @@ def _get_comp_result(compid):
     result_file = frontendUtils.get_pretty_data(get_comp_json(compid))
     if result_file == 'error':
         return render_template('404.html')
+
     all_pilots = []
-    tasks = [t['task_code'] for t in result_file['tasks']]
     for r in result_file['results']:
         pilot = {'fai_id': r['fai_id'], 'civl_id': r['civl_id'],
                  'name': f"<span class='sex-{r['sex']}'><b>{r['name']}</b></span>", 'nat': r['nat'], 'sex': r['sex'],
                  'glider': r['glider'], 'glider_cert': r['glider_cert'], 'sponsor': r['sponsor'],
-                 'score': f"<b>{r['score']}</b>", 'results': {}, 'ranks': {'rank': f"<b>{r['rank']}</b>"}}
-        # setup 4 sub-rankings placeholders
+                 'score': f"<b>{r['score']}</b>", 'ranks': {'rank': f"<b>{r['rank']}</b>"}}
         for i, c in enumerate(result_file['classes'][1:], 1):
             pilot['ranks']['class' + str(i)] = f"{r[c['limit']]}"
-        # setup the 20 task placeholders
-        for t in range(1, 21):
-            task = 'T' + str(t)
-            pilot['results'][task] = {'score': ''}
-        for task in tasks:
-            if r['results'][task]['pre'] == r['results'][task]['score']:
-                pilot['results'][task] = {'score': r['results'][task]['score']}
-            else:
-                pilot['results'][task] = {'score': f"{int(r['results'][task]['score'])} <del>{int(r['results'][task]['pre'])}</del>"}
-
+        pilot['results'] = []
+        for k, v in r['results'].items():
+            score = f"{v['score']}" if v['score'] == v['pre'] else f"{v['score']} <del>{v['pre']}</del>"
+            html = f"<span class='task_score'>{score}</span>"
+            pilot['results'].append(html)
         all_pilots.append(pilot)
     result_file['data'] = all_pilots
+
+
+    # all_pilots = []
+    # tasks = [t['task_code'] for t in result_file['tasks']]
+    # for r in result_file['results']:
+    #     pilot = {'fai_id': r['fai_id'], 'civl_id': r['civl_id'],
+    #              'name': f"<span class='sex-{r['sex']}'><b>{r['name']}</b></span>", 'nat': r['nat'], 'sex': r['sex'],
+    #              'glider': r['glider'], 'glider_cert': r['glider_cert'], 'sponsor': r['sponsor'],
+    #              'score': f"<b>{r['score']}</b>", 'results': {}, 'ranks': {'rank': f"<b>{r['rank']}</b>"}}
+    #     # setup 4 sub-rankings placeholders
+    #     for i, c in enumerate(result_file['classes'][1:], 1):
+    #         pilot['ranks']['class' + str(i)] = f"{r[c['limit']]}"
+    #     # setup the 20 task placeholders
+    #     for t in range(1, 21):
+    #         task = 'T' + str(t)
+    #         pilot['results'][task] = {'score': ''}
+    #     for task in tasks:
+    #         if r['results'][task]['pre'] == r['results'][task]['score']:
+    #             pilot['results'][task] = {'score': r['results'][task]['score']}
+    #         else:
+    #             pilot['results'][task] = {'score': f"{int(r['results'][task]['score'])} <del>{int(r['results'][task]['pre'])}</del>"}
+    #
+    #     all_pilots.append(pilot)
+    # result_file['data'] = all_pilots
 
     return result_file
 
