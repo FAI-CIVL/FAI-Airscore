@@ -89,3 +89,7 @@ class User(UserMixin, SurrogatePK, Model):
         except:
             return
         return User.query.get(id)
+
+    @staticmethod
+    def admin_exists():
+        return User.query.filter_by(access='admin').count() > 0

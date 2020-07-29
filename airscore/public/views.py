@@ -41,6 +41,9 @@ def load_user(user_id):
 
 @blueprint.route("/", methods=["GET", "POST"])
 def home():
+    if not current_app.config['admin_exists']:
+        return redirect(url_for('public.setup_admin'))
+
     form = LoginForm(request.form)
     # Handle logging in
     if request.method == "POST":
@@ -106,6 +109,8 @@ def register():
 @blueprint.route("/setup_admin/", methods=["GET", "POST"])
 def setup_admin():
     """Register 1st admin."""
+    if current_app.config['admin_exists']:
+        return render_template('404.html')
     form = RegisterForm(request.form)
     if form.validate_on_submit():
         User.create(
@@ -116,10 +121,11 @@ def setup_admin():
             access='admin',
         )
         flash("Thank you for registering. You can now log in.", "success")
+        current_app.config['admin_exists'] = True
         return redirect(url_for("public.home"))
     else:
         flash_errors(form)
-    return render_template("public/register.html", form=form)
+    return render_template("public/setup_admin.html", form=form)
 
 
 @blueprint.route('/reset_password_request', methods=['GET', 'POST'])
