@@ -556,7 +556,7 @@ def pretty_format_results(content, timeoffset=0, td=0, cd=0):
                                               else f"{round(float(value))} m &nbsp;")
                         elif key == 'cumulative_dist':
                             '''formatting wpt cumulative distance'''
-                            formatted[key] = '' if float(value) == 0 else f"{round(float(value) / 1000, 2):.2f} Km"
+                            formatted[key] = '' if float(value) == 0 else f"{c_round(float(value) / 1000, 2):.2f} Km"
                         elif key == 'type':
                             '''formatting wpt type'''
                             formatted[key] = ('' if str(value) == 'waypoint'
@@ -597,10 +597,10 @@ def pretty_format_results(content, timeoffset=0, td=0, cd=0):
                     # Formatting Distances
                     elif key in ['distance', 'distance_flown', 'stopped_distance']:
                         '''formatting distance without unit of measure'''
-                        formatted[key] = f"{round(float(value) / 1000, 2):.2f}"
+                        formatted[key] = f"{c_round(float(value) / 1000, 2):.2f}"
                     elif 'dist' in key:
                         '''formatting distances with unit of measure'''
-                        formatted[key] = f"{round(float(value) / 1000, 1):.1f} Km"
+                        formatted[key] = f"{c_round(float(value) / 1000, 1):.1f} Km"
                     # Formatting Booleans
                     elif key in booleans:
                         '''formatting booleans'''

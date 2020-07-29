@@ -45,7 +45,7 @@ def c_round(x, digits=0, precision=15):
 def km(dist, n=3):
     """meters to km, with n as number of decimals"""
     try:
-        return round(dist / 1000, int(n))
+        return c_round(dist / 1000, int(n))
     except ValueError:
         return None
 

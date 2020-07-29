@@ -7,6 +7,7 @@ import requests
 import json
 from Defines import TELEGRAM_API, TELEGRAM_CHANNEL
 from db.conn import db_session
+from calcUtils import c_round
 
 # telegram url
 url = f"https://api.telegram.org/bot{TELEGRAM_API}/"
@@ -32,9 +33,9 @@ def get_download_status(task_id: int):
                     if pilot.result_type == 'goal':
                         result = f'GOAL {time}'
                     else:
-                        result = f"ESS {round(pilot.distance_flown / 1000, 2)} Km (~{time}~)"
+                        result = f"ESS {c_round(pilot.distance_flown / 1000, 2)} Km (~{time}~)"
                 else:
-                    result = f"LO {round(pilot.distance_flown / 1000, 2)} Km"
+                    result = f"LO {c_round(pilot.distance_flown / 1000, 2)} Km"
                 data['result'] = result
                 valid.append(data)
             elif not pilot.result_type:
