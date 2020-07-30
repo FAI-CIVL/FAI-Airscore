@@ -46,22 +46,46 @@ function populate_ladder(ladderid, season){
                         // Get number of all columns
                         var numCols = table.DataTable().columns().nodes().length;
                         console.log('numCols='+numCols);
-
-                        // comp info
+                        // ladder info
                         $('#comp_name').text(json.info.ladder_name);
                         $('#comp_date').text(json.info.season);
                         if (json.info.ladder_class != "PG") {
                             update_classes(json.info.ladder_class);
                         }
-
-                        // some GAP parameters
+                        // comps list
+                        if (json.comps.length > 0) {
+                            let tbl = document.createElement('table');
+                            tbl.className="tasks-list";
+                            let thead = tbl.createTHead();
+                            let row = thead.insertRow();
+                            header = [ 'Event', 'Tasks' ];
+                            header.forEach(el => {
+                                let th = document.createElement("th");
+                                th.className="tasks-list";
+                                th.innerHTML = '<b>'+el+'</b>';
+                                row.appendChild(th);
+                            });
+                            json.comps.forEach(comp => {
+                                let row = tbl.insertRow();
+                                [ comp.link, comp.tasks ].forEach(el => {
+                                    let cell = row.insertCell();
+                                    cell.className="tasks-list";
+                                    cell.innerHTML = el;
+                                });
+                            });
+                            $('#comp_header').append(tbl);
+                        }
+                        else {
+                            let text = document.createTextNode('No task have been scored yet.');
+                            $('#comp_header').append(text);
+                        }
+                        // some parameters
                         $('#formula tbody').append(
                                     "<tr><td>Overall Scoring</td><td>" + json.formula.overall_validity + ' (' + json.formula.validity_param + ')</td></tr>');
                         if (json.formula.overall_validity == 'ftv') {
                             $('#formula tbody').append(
                                     "<tr><td>Total Validity</td><td>" + json.stats.total_validity + '</td></tr>');
                         }
-
                         // remove empty cols
                         for ( var i=1; i<numCols; i++ ) {
                             var empty = true;

@@ -162,7 +162,6 @@ def get_ladder_results(ladder_id: int, season: int,
     '''try to guess orphans'''
     if orphans:
         pilots_list, orphans = find_orphan_pilots(pilots_list, orphans)
-    print(pilots_list)
 
     '''get results'''
     stats = {'tot_pilots': len(pilots_list)}
@@ -174,7 +173,7 @@ def get_ladder_results(ladder_id: int, season: int,
         i = f['info']
         comp_code = i['comp_code']
         results = f['results']
-        comps.append(dict(id=i['id'], comp_code=i['comp_code'], comp_name=i['comp_name']))
+        comps.append(dict(id=i['id'], comp_code=i['comp_code'], comp_name=i['comp_name'], tasks=len(f['tasks'])))
         tasks.extend([dict(id=t['id'], ftv_validity=t['ftv_validity'], task_code=f"{i['comp_code']}_{t['task_code']}")
                       for t in f['tasks']])
         for r in results:
@@ -1020,6 +1019,8 @@ def get_pretty_data(content: dict) -> dict:
         if 'file_stats' in content.keys():
             pretty_content['file_stats'] = pretty_format_results(content['file_stats'], timeoffset)
         pretty_content['info'] = pretty_format_results(content['info'], timeoffset)
+        if 'comps' in content.keys():
+            pretty_content['comps'] = pretty_format_results(content['comps'], timeoffset, td)
         if 'tasks' in content.keys():
             pretty_content['tasks'] = pretty_format_results(content['tasks'], timeoffset, td)
         elif 'route' in content.keys():

@@ -102,6 +102,23 @@
   font-size: .75em;
 }
 
+table.tasks-list {
+  margin: 1em 0 1em 0;
+}
+
+td.tasks-list:first-child, th.tasks-list:first-child {
+  padding: 0 1em 0 0;
+}
+
+td.tasks-list, th.tasks-list {
+  padding: 0 1em 0 1em;
+}
+
+td.tasks-list:last-child, th.tasks-list:last-child {
+  padding: 0 0 0 1em;
+  text-align: right;
+}
+
 /* footer */
 
 footer {
