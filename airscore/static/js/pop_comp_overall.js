@@ -55,7 +55,33 @@ function populate_comp_overall(compid){
                         if (json.info.comp_class != "PG") {
                             update_classes(json.info.comp_class);
                         }
-
+                        // tasks
+                        if (json.tasks.length > 0) {
+                            let tbl = document.createElement('table');
+                            tbl.className="tasks-list";
+                            let thead = tbl.createTHead();
+                            let row = thead.insertRow();
+                            header = [ 'Task', 'Date', 'Distance' ];
+                            header.forEach(el => {
+                                let th = document.createElement("th");
+                                th.className="tasks-list";
+                                th.innerHTML = '<b>'+el+'</b>';
+                                row.appendChild(th);
+                            });
+                            json.tasks.forEach(task => {
+                                let row = tbl.insertRow();
+                                [ task.link, task.date, task.opt_dist ].forEach(el => {
+                                    let cell = row.insertCell();
+                                    cell.className="tasks-list";
+                                    cell.innerHTML = el;
+                                });
+                            });
+                            $('#comp_header').append(tbl);
+                        }
+                        else {
+                            let text = document.createTextNode('No task have been scored yet.');
+                            $('#comp_header').append(text);
+                        }
                         // some GAP parameters
                         $('#formula tbody').append(
                                     "<tr><td>Director</td><td>" + json.info.MD_name + '</td></tr>' +
@@ -66,7 +92,6 @@ function populate_comp_overall(compid){
                             $('#formula tbody').append(
                                     "<tr><td>Total Validity</td><td>" + json.stats.total_validity + '</td></tr>');
                         }
-
                         // remove empty cols
                         for ( var i=1; i<numCols; i++ ) {
                             var empty = true;
