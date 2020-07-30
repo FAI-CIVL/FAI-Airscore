@@ -81,106 +81,77 @@ function populate_task(taskid){
                         $('#task_date').text(json.info.date + ' ' + json.info.task_type);
                         // times
                         var tbl = document.createElement('table');
-                        var tbdy = document.createElement('tbody');
+                        tbl.className="times-list";
                         if (json.info.startgates.length > 1) {
-                            for (var i=0; i < json.info.startgates.length; i++) {
-                                var tr = document.createElement('tr');
-                                var td = document.createElement('td');
+                            stargates.forEach((el, i) => {
+                                let row = tbl.insertRow();
+                                let cell1 = row.insertCell();
                                 if (i==0) {
-                                    td.innerHTML = '<b>Startgates:</b>'
+                                    cell1.className="times-list";
+                                    cell1.innerHTML = '<b>Startgates:</b>';
                                 }
                                 else {
-                                    td.appendChild(document.createTextNode('\u0020'))
+                                    cell1.appendChild(document.createTextNode('\u0020'));
                                 }
-                                tr.appendChild(td)
-                                var td = document.createElement('td');
-                                td.style.textAlign = "right";
-                                td.innerHTML = (i+1) + '. <b>' + json.info.startgates[i] + '</b>'
-                                tr.appendChild(td);
-                                tbdy.appendChild(tr);
-                            }
+                                let cell2 = row.insertCell();
+                                cell2.className="times-list";
+                                cell2.innerHTML = (i+1) + '. <b>' + el + '</b>';
+                            });
                         }
                         else {
-                            var tr = document.createElement('tr');
-                            var td = document.createElement('td');
-                            td.innerHTML = '<b>Startgate:</b>'
-                            tr.appendChild(td);
-                            var td = document.createElement('td');
-                            td.style.textAlign = "right";
-                            td.innerHTML = '<b>' + json.info.start_time + '</b>'
-                            tr.appendChild(td);
-                            tbdy.appendChild(tr);
+                            let row = tbl.insertRow();
+                            let cell1 = row.insertCell();
+                            cell1.className="times-list";
+                            cell1.innerHTML = '<b>Startgate:</b>';
+                            let cell2 = row.insertCell();
+                            cell2.className="times-list";
+                            cell2.innerHTML = '<b>' + json.info.start_time + '</b>';
                         }
                         if (json.info.stopped_time) {
-                            var tr = document.createElement('tr');
-                            var td = document.createElement('td');
-                            td.innerHTML = '<b>Stopped: </b>'
-                            tr.appendChild(td);
-                            var td = document.createElement('td');
-                            td.style.textAlign = "right";
-                            td.innerHTML = '<b>' + json.info.stopped_time + '</b>'
-                            tr.appendChild(td)
+                            let row = tbl.insertRow();
+                            let cell1 = row.insertCell();
+                            cell1.className="times-list";
+                            cell1.innerHTML = '<b>Stopped:</b>';
+                            let cell2 = row.insertCell();
+                            cell2.className="times-list";
+                            cell2.innerHTML = '<b>' + json.info.stopped_time + '</b>';
                         }
                         else {
-                            var tr = document.createElement('tr');
-                            var td = document.createElement('td');
-                            td.innerHTML = '<b>Task Deadline: </b>'
-                            tr.appendChild(td);
-                            var td = document.createElement('td');
-                            td.style.textAlign = "right";
-                            td.innerHTML = '<b>' + json.info.task_deadline + '</b>'
-                            tr.appendChild(td);
+                            let row = tbl.insertRow();
+                            let cell1 = row.insertCell();
+                            cell1.className="times-list";
+                            cell1.innerHTML = '<b>Task Deadline: </b>';
+                            let cell2 = row.insertCell();
+                            cell2.className="times-list";
+                            cell2.innerHTML = '<b>' + json.info.task_deadline + '</b>'
                         }
-                        tbdy.appendChild(tr);
-                        tbl.appendChild(tbdy);
                         $('#comp_header').append(tbl);
                         // waypoints
-                        for (var c=0; c < json.route.length; c++) {
-                            var tr = document.createElement('tr');
-                            // name
-                            var td = document.createElement('td');
-                            td.innerHTML = json.route[c].name
-                            tr.appendChild(td);
-                            // type
-                            var td = document.createElement('td');
-                            td.innerHTML = json.route[c].type + ' ' + json.route[c].shape
-                            tr.appendChild(td);
-                            // radius
-                            var td = document.createElement('td');
-                            td.style.textAlign = "right";
-                            td.innerHTML = json.route[c].radius;
-                            tr.appendChild(td);
-                            // cumulative distance
-                            var td = document.createElement('td');
-                            td.style.textAlign = "right";
-                            td.innerHTML = json.route[c].cumulative_dist;
-                            tr.appendChild(td);
-                            // description
-                            var td = document.createElement('td');
-                            td.innerHTML = json.route[c].description;
-                            tr.appendChild(td);
-                            $('#waypoints tbody').append(tr);
-                        }
+                        var tbl = document.getElementById('waypoints');
+                        tbl.classList.add('wpt-list');
+                        var body = tbl.getElementsByTagName('tbody')[0];
+                        json.route.forEach(wpt => {
+                            let row = body.insertRow();
+                            let list = [ wpt.name, (wpt.type + ' ' + wpt.shape), wpt.radius, wpt.cumulative_dist, wpt.description];
+                            list.forEach(el => {
+                                let cell = row.insertCell();
+                                cell.classList.add('wpt-list');
+                                cell.innerHTML = el;
+                            });
+                        });
                         // comments
                         if (json.results.some(e => e.penalty != 0)) {
                             var tbl = document.createElement('table');
-                            tbl.classList.add('comment_table');
-                            var tbdy = document.createElement('tbody');
-                            var filtered = json.results.filter(e => e.penalty != 0);
+                            tbl.classList.add('comment_list');
+                            let filtered = json.results.filter(e => e.penalty != 0);
                             filtered.forEach(pilot => {
-                                var tr = document.createElement('tr');
-                                var td = document.createElement('td');
-                                td.classList.add('comment_name');
-                                td.innerHTML = '<b>' + pilot.name + ': </b>';
-                                tr.appendChild(td);
-                                var td = document.createElement('td');
-                                td.classList.add('comment_text');
-                                td.style.paddingLeft = "5px";
-                                td.innerHTML = pilot.comment;
-                                tr.appendChild(td);
-                                tbdy.appendChild(tr);
+                                let row = tbl.insertRow();
+                                [ pilot.name, pilot.comment ].forEach(el => {
+                                    let cell = row.insertCell();
+                                    cell.classList.add('comment_list');
+                                    cell.innerHTML = el;
+                                });
                             });
-                            tbl.appendChild(tbdy);
                             $('#comments').append(tbl);
                         }
                         // task info

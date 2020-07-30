@@ -119,6 +119,39 @@ td.tasks-list:last-child, th.tasks-list:last-child {
   text-align: right;
 }
 
+table.times-list {
+  margin: 1em 0 1em 0;
+}
+
+td.times-list:first-child, th.times-list:first-child {
+  padding: 0 1em 0 0;
+}
+
+td.times-list, th.times-list {
+  padding: 0 1em 0 1em;
+}
+
+td.times-list:last-child, th.times-list:last-child {
+  padding: 0 0 0 1em;
+  text-align: right;
+}
+
+table.wpt-list {
+
+}
+
+td.wpt-list:nth-child(3), td.wpt-list:nth-child(4) {
+    text-align: right;
+}
+
+td.wpt-list, th.wpt-list {
+
+}
+
+td.wpt-list:last-child, th.wpt-list:last-child {
+
+}
+
 /* footer */
 
 footer {
