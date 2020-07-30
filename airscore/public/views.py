@@ -49,6 +49,7 @@ def home():
     if request.method == "POST":
         if form.validate_on_submit():
             login_user(form.user)
+            session['is_admin'] = (form.user.access == 'admin')
             flash("You are logged in.", "success")
             redirect_url = request.args.get("next") or url_for("user.members")
             if Defines.WAYPOINT_AIRSPACE_FILE_LIBRARY:

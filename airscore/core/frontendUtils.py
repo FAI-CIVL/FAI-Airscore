@@ -636,6 +636,17 @@ def get_all_scorekeepers():
         return all_scorekeepers
 
 
+def get_all_users():
+    """returns a list of all scorekeepers in the system"""
+    from airscore.user.models import User
+    with db_session() as db:
+        all_users = db.query(User.id, User.username, User.first_name, User.last_name, User.access, User.email,
+                             User.active).all()
+        if all_users:
+            all_users = [row._asdict() for row in all_users]
+        return all_users
+
+
 def update_airspace_file(old_filename, new_filename):
     """change the name of the openair file in all regions it is used."""
     R = aliased(TblRegion)

@@ -397,3 +397,10 @@ class EditScoreForm(FlaskForm):
     penalty_bonus = SelectField(choices=[('penalty', 'Penalty'), ('bonus', 'Bonus')], id='penalty_bonus')
     flat_penalty = IntegerField('points', default=0, id='penalty')
     comment = TextAreaField('Comment', render_kw={"rows": 3, "cols": 50}, id='comment')
+
+
+class ModifyUserForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired()])
+    access = SelectField('Access Level', choices=[('pilot', 'Pilot'), ('pending', 'Pending'),
+                                                  ('scorekeeper', 'Scorekeeper'), ('admin', 'Admin'),])
+    active = BooleanField('Enabled')

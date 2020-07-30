@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """User views."""
 from datetime import datetime
-
+from functools import wraps
 from flask import Blueprint, render_template, request, jsonify, json, flash, redirect, url_for, session, Markup, \
     current_app, send_file, make_response
 from flask_login import login_required, current_user
 import frontendUtils
 from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm, \
     TaskResultAdminForm, NewScorekeeperForm, RegionForm, NewRegionForm, IgcParsingConfigForm, ModifyParticipantForm, \
-    EditScoreForm
+    EditScoreForm, ModifyUserForm
 from comp import Comp
 from formula import list_formulas, Formula
 from task import Task, write_map_json, get_task_json_by_filename
@@ -19,8 +19,23 @@ from task import get_task_json_by_filename
 from calcUtils import sec_to_time
 import time
 from Defines import SELF_REG_DEFAULT, PILOT_DB
+from airscore.user.models import User
 
 blueprint = Blueprint("user", __name__, url_prefix="/users", static_folder="../static")
+
+
+def admin_required(func):
+    '''
+    If you decorate a view with this, it will ensure that the current user is
+    an admin before calling the actual view. (If they are
+    not, it calls the :attr:`LoginManager.unauthorized` callback.)
+    '''
+    @wraps(func)
+    def decorated_view(*args, **kwargs):
+        if not session['is_admin']:
+            return current_app.login_manager.unauthorized()
+        return func(*args, **kwargs)
+    return decorated_view
 
 
 @blueprint.route("/")
@@ -349,14 +364,17 @@ def _get_scorekeepers(compid):
 
 @blueprint.route('/_get_users', methods=['GET'])
 @login_required
+@admin_required
 def _get_users():
     return {'data': frontendUtils.get_all_users()}
 
 
 @blueprint.route('/user_admin', methods=['GET'])
 @login_required
+@admin_required
 def user_admin():
-    return render_template('users/user_admin.html')
+    modify_user_form = ModifyUserForm()
+    return render_template('users/user_admin.html', modify_user_form=modify_user_form)
 
 
 @blueprint.route('/_add_scorekeeper/<compid>', methods=['POST'])
@@ -851,7 +869,6 @@ def _get_xcontest_tracks(taskid):
                                               grecord=session['check_g_record'],
                                               track_source='xcontest')
         return resp
-
 
 
 @blueprint.route('/_upload_XCTrack/<taskid>', methods=['POST'])
@@ -1524,3 +1541,19 @@ def _export_fsdb(compid):
         resp = make_response(send_file(tmp.name, mimetype="text/xml", attachment_filename=filename, as_attachment=True))
         resp.set_cookie('ServerProcessCompleteChecker', '', expires=0)
         return resp
+
+
+@blueprint.route('/_modify_user/<user_id>', methods=['POST'])
+@login_required
+@admin_required
+def _modify_user(user_id):
+    data = request.json
+    user = User.query.filter_by(id=int(user_id)).first()
+    user.email = data.get('email')
+    user.access = data.get('access')
+    user.active = (data.get('active') == 'y')
+    user.update()
+    resp = jsonify(success=True)
+    return resp
+
+

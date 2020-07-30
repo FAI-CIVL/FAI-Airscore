@@ -1,0 +1,107 @@
+{% extends "base.html"%}
+
+{% block page_title %}
+  User Admin
+{% endblock %}
+
+{% block head %}
+    <!-- CSS -->
+    <link href="/static/css/task.css" rel="stylesheet">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css" rel="stylesheet">
+    <!-- JS -->
+    <script type="text/javascript" src="/static/js/utils.js"></script>
+    <script type="text/javascript" src="/static/js/microajax.minified.js"></script>
+{% endblock %}
+
+{% block content %}
+      <div class="card card-body">
+         <div class="container">
+            <h3 class="font-weight-bold">User Details</h3>
+			    <table id="users" class="row-border compact" cellspacing="0" width="100%">
+			<thead>
+				<tr>
+				</tr>
+			</thead>
+			</table>
+         </div>
+      </div>
+<!---edit-participant details modal starts here--->
+<div id="edit_user_modal" class="modal fade" role='dialog'>
+   <div class="modal-dialog">
+      <div class="modal-content">
+         <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+            <h4 class="modal-title">Update User Details</h4>
+         </div>
+         <div class="modal-body" id= "modmodal-body">
+
+            <div class="form-row">
+               <div class="form-group col-md-12">
+                  {{modify_user_form.email.label}} {{modify_user_form.email(size=35, **{'id':"mod_email"})}}
+               </div>
+            </div>
+            <div class="form-row">
+               <div class="form-group col-md-12">
+                  {{modify_user_form.active.label}} {{modify_user_form.active(**{'id':"mod_active"})}}
+               </div>
+            </div>
+             <div class="form-row">
+               <div class="form-group col-md-12">
+                  {{modify_user_form.access.label}} {{modify_user_form.access(**{'id':"mod_access"})}}
+               </div>
+            </div>
+         </div>
+         <div class="modal-footer">
+            <button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
+            <button id = "modify_confirmed" type="button" class="btn btn-success" data-dismiss="modal">Save</button>
+         </div>
+      </div>
+   </div>
+</div>
+<!-edit-participant details-Modal ends here--->
+{% endblock %}
+
+{% block js %}
+<script type="text/javascript" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+<script src="{{ static_url_for('static', filename='js/multiselect.min.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/pop_users.js') }}"></script>
+<script type="text/javascript">
+
+jQuery(document).ready(function($) {
+    populate_users();
+});
+
+function isNotEmpty( el ){
+    return !!$.trim(el.html())
+}
+
+function edit_user(id){
+$('#mod_email').val($('#id_'+id).children('td:eq(4)').text()).change();
+$('#mod_active').prop('checked', isNotEmpty($('#id_'+id).children('td:eq(5)')));
+$('#mod_access').val($('#id_'+id).children('td:eq(6)').text()).change();
+$('#modify_confirmed').attr("onclick","save_modified_user('"+ id +"')");
+$('#edit_user_modal').modal('show');
+}
+
+function save_modified_user(id){
+           var mydata = new Object();
+               mydata.email = $('#mod_email').val();
+               mydata.active = $('#mod_active').is(':checked');
+               mydata.access = $('#mod_access').val();
+
+           $.ajax({
+               type: "POST",
+               url: "/users/_modify_user/"+id,
+               contentType:"application/json",
+               data : JSON.stringify(mydata),
+               dataType: "json",
+               success: function (data) {
+                   populate_users();
+               }
+               });
+};
+
+</script>
+
+{% endblock %}

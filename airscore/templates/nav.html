@@ -71,6 +71,22 @@
                    {% endif %}
         </ul>
 
+                  {% if session.is_admin %}
+
+                         <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown"
+                            aria-haspopup="true" aria-expanded="false">
+                                Admin
+                        </a>
+
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('user.user_admin') }}">User admin</a></li>
+                        </ul>
+                    </li>
+
+          {% endif %}
+
+
 
         <ul class="navbar-nav my-auto">
           <li class="nav-item active">
