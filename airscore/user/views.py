@@ -23,12 +23,6 @@ from Defines import SELF_REG_DEFAULT, PILOT_DB
 blueprint = Blueprint("user", __name__, url_prefix="/users", static_folder="../static")
 
 
-@blueprint.route("/test")
-@login_required
-def test():
-    return render_template('users/socketio_demo.html')
-
-
 @blueprint.route("/")
 @login_required
 def members():
@@ -351,6 +345,18 @@ def comp_settings_admin(compid):
 def _get_scorekeepers(compid):
     owner, scorekeepers, _ = frontendUtils.get_comp_scorekeeper(compid)
     return {'owner': owner, 'scorekeepers': scorekeepers}
+
+
+@blueprint.route('/_get_users', methods=['GET'])
+@login_required
+def _get_users():
+    return {'data': frontendUtils.get_all_users()}
+
+
+@blueprint.route('/user_admin', methods=['GET'])
+@login_required
+def user_admin():
+    return render_template('users/user_admin.html')
 
 
 @blueprint.route('/_add_scorekeeper/<compid>', methods=['POST'])
