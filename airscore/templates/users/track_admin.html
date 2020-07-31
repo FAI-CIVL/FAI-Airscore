@@ -175,7 +175,7 @@
     }
 
     function get_xcontest_tracks(){
-        document.getElementById("xcontest_button").innerHTML="Getting Tracks...";
+        document.getElementById("xcontest_button").innerHTML = "Getting Tracks...";
         document.getElementById("xcontest_button").className = "btn btn-warning ml-4";
         $.ajax({
             type: "POST",
@@ -187,7 +187,7 @@
                       populate_track_admin({{taskid|tojson}});
                       update_track_pilot_stats();
                  {% endif %}
-                 document.getElementById("xcontest_button").innerHTML="Xcontest";
+                 document.getElementById("xcontest_button").innerHTML = "Xcontest";
                  document.getElementById("xcontest_button").className = "btn btn-primary ml-4";
             }
         });
