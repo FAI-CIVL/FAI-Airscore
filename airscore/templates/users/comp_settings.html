@@ -1,7 +1,7 @@
 {% extends "base.html"%}
 
 {% block page_title %}
-  Competition Settings
+Competition Settings
 {% endblock %}
 
 {% block content %}
@@ -9,400 +9,457 @@
 <p><strong> Error: </strong></p>
 {{error}}
 {% endif %}
-<form method="post" action="">
-   {{compform.hidden_tag()}}
-   <div class="container">
-      <br>
-      <center>
-         <h2 class="font-weight-bold">{{compform.comp_name.data}}</h2>
-      </center>
-   </div>
-   <p>
-      <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse1" aria-expanded="false" aria-controls="collapse1">
+<form method='post' action=''>
+  {{compform.hidden_tag()}}
+  <div class='container'>
+    <br>
+    <center>
+      <h2 class='font-weight-bold'>{{compform.comp_name.data}}</h2>
+    </center>
+  </div>
+  <p>
+    <button class='btn btn-primary ml-4' type='button' data-toggle='collapse' data-target='#collapse1'
+            aria-expanded='false' aria-controls='collapse1'>
       Competition Details
-      </button>
-   </p>
-   <div class="collapse show" id="collapse1">
-      <div class="card card-body">
-         <div class="container">
-            <h3 class="font-weight-bold">Competition Details</h3>
-            <div class="form-row">
-               <div class="form-group col-md-7">
-                  {{compform.comp_name.label}} {{compform.comp_name(size=40)}}
-               </div>
-               <div  class="form-group col-md-5">
-                  {{compform.comp_code.label}} {{compform.comp_code(size=10, **{'data-toggle': 'tooltip', 'title': compform.comp_code.description})}}
-               </div>
-            </div>
-            <div  class="form-row">
-               <div class="form-group col-md-6">
-                  {{compform.comp_site.label}} {{compform.comp_site(**{'data-toggle': 'tooltip', 'title': compform.comp_site.description})}}
-               </div>
-               <div  class="form-group col-md-6">
-                  {{compform.date_from.label}} {{compform.date_from()}}
-                  {{compform.date_to.label}} {{compform.date_to()}}
-               </div>
-            </div>
-            <div class="form-row">
-               <div class="form-group col-md-12">
-                  {{compform.comp_type.label}} {{compform.comp_type()}}
-                  {{compform.comp_class.label}} {{compform.comp_class()}}
-                  {{compform.time_offset.label}} {{compform.time_offset(size=3,**{'data-toggle': 'tooltip', 'title': compform.time_offset.description})}}
-                  {{compform.pilot_registration.label}} {{compform.pilot_registration(**{'data-toggle': 'tooltip', 'title': compform.pilot_registration.description})}}
-                  {{compform.sanction.label}} {{compform.sanction(**{'data-toggle': 'tooltip', 'title': compform.sanction.description})}}
-               </div>
-            </div>
-            <div class="form-row">
-               <div class="form-group col-md-3">
-                  {{compform.MD_name.label}} {{compform.MD_name()}}
-               </div>
-                <div class="form-group col-md-3">
-                  {{compform.website.label}} {{compform.website()}}
-               </div>
-            </div>
-         </div>
+    </button>
+  </p>
+  <div class='collapse show' id='collapse1'>
+    <div class='card card-body'>
+      <div class='container'>
+        <h3 class='font-weight-bold'>Competition Details</h3>
+        <div class='form-row'>
+          <div class='form-group col-md-7'>
+            {{compform.comp_name.label}} {{compform.comp_name(size=40)}}
+          </div>
+          <div class='form-group col-md-5'>
+            {{compform.comp_code.label}} {{compform.comp_code(size=10, **{'data-toggle': 'tooltip', 'title':
+            compform.comp_code.description})}}
+          </div>
+        </div>
+        <div class='form-row'>
+          <div class='form-group col-md-6'>
+            {{compform.comp_site.label}} {{compform.comp_site(**{'data-toggle': 'tooltip', 'title':
+            compform.comp_site.description})}}
+          </div>
+          <div class='form-group col-md-6'>
+            {{compform.date_from.label}} {{compform.date_from()}}
+            {{compform.date_to.label}} {{compform.date_to()}}
+          </div>
+        </div>
+        <div class='form-row'>
+          <div class='form-group col-md-12'>
+            {{compform.comp_type.label}} {{compform.comp_type()}}
+            {{compform.comp_class.label}} {{compform.comp_class()}}
+            {{compform.time_offset.label}} {{compform.time_offset(size=3,**{'data-toggle': 'tooltip', 'title':
+            compform.time_offset.description})}}
+            {{compform.pilot_registration.label}} {{compform.pilot_registration(**{'data-toggle': 'tooltip', 'title':
+            compform.pilot_registration.description})}}
+            {{compform.sanction.label}} {{compform.sanction(**{'data-toggle': 'tooltip', 'title':
+            compform.sanction.description})}}
+          </div>
+        </div>
+        <div class='form-row'>
+          <div class='form-group col-md-3'>
+            {{compform.MD_name.label}} {{compform.MD_name()}}
+          </div>
+          <div class='form-group col-md-3'>
+            {{compform.website.label}} {{compform.website()}}
+          </div>
+        </div>
       </div>
-   </div>
-   <p>
-      <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse2" aria-expanded="false" aria-controls="collapse2">
+    </div>
+  </div>
+  <p>
+    <button class='btn btn-primary ml-4' type='button' data-toggle='collapse' data-target='#collapse2'
+            aria-expanded='false' aria-controls='collapse2'>
       Scoring Parameters
-      </button>
-   </p>
-   <div class="collapse" id="collapse2">
-   <div class="card card-body">
-      <div class="container">
-         <h3 class="font-weight-bold">Scoring Parameters</h3>
-         <div class="form-row">
-            <div class="form-group col-md-6">
-               {{compform.formula.label}} {{compform.formula(**{'data-toggle': 'tooltip', 'title': compform.formula.description})}}
-               {{compform.overall_validity.label}} {{compform.overall_validity(**{'data-toggle': 'tooltip', 'title': compform.overall_validity.description})}}
-               {{compform.validity_param.label}} {{compform.validity_param(size=3,**{'data-toggle': 'tooltip', 'title': compform.validity_param.description})}}
-            </div>
-         </div>
-         <div  class="form-row">
-            <div class="form-group col-md-2">
-               {{compform.nom_dist.label}} {{compform.nom_dist(size=3, **{'data-toggle': 'tooltip', 'title': compform.nom_dist.description})}}
-            </div>
-            <div class="form-group col-md-2">
-               {{compform.min_dist.label}} {{compform.min_dist(size=3,**{'data-toggle': 'tooltip', 'title': compform.min_dist.description})}}
-            </div>
-            <div  class="form-group col-md-2">
-               {{compform.nom_goal.label}} {{compform.nom_goal(size=3,**{'data-toggle': 'tooltip', 'title': compform.nom_goal.description})}}
-            </div>
-            <div  class="form-group col-md-2">
-               {{compform.nom_launch.label}} {{compform.nom_launch(size=3,**{'data-toggle': 'tooltip', 'title': compform.nom_launch.description})}}
-            </div>
-            <div  class="form-group col-md-2">
-               {{compform.nom_time.label}} {{compform.nom_time(size=3,**{'data-toggle': 'tooltip', 'title': compform.nom_time.description})}}
-            </div>
-         </div>
-         <div  class="form-row">
-            <div class="form-group col-md-6">
-               {{compform.scoring_altitude.label}} {{compform.scoring_altitude(**{'id': "scoring_altitude", 'data-toggle': 'tooltip', 'title': compform.scoring_altitude.description})}}
-            </div>
-         </div>
-         <p>
-            <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse25" aria-expanded="false" aria-controls="collapse25">
+    </button>
+  </p>
+  <div class='collapse' id='collapse2'>
+    <div class='card card-body'>
+      <div class='container'>
+        <h3 class='font-weight-bold'>Scoring Parameters</h3>
+        <div class='form-row'>
+          <div class='form-group col-md-6'>
+            {{compform.formula.label}} {{compform.formula(**{'data-toggle': 'tooltip', 'title':
+            compform.formula.description})}}
+            {{compform.overall_validity.label}} {{compform.overall_validity(**{'data-toggle': 'tooltip', 'title':
+            compform.overall_validity.description})}}
+            {{compform.validity_param.label}} {{compform.validity_param(size=3,**{'data-toggle': 'tooltip', 'title':
+            compform.validity_param.description})}}
+          </div>
+        </div>
+        <div class='form-row'>
+          <div class='form-group col-md-2'>
+            {{compform.nom_dist.label}} {{compform.nom_dist(size=3, **{'data-toggle': 'tooltip', 'title':
+            compform.nom_dist.description})}}
+          </div>
+          <div class='form-group col-md-2'>
+            {{compform.min_dist.label}} {{compform.min_dist(size=3,**{'data-toggle': 'tooltip', 'title':
+            compform.min_dist.description})}}
+          </div>
+          <div class='form-group col-md-2'>
+            {{compform.nom_goal.label}} {{compform.nom_goal(size=3,**{'data-toggle': 'tooltip', 'title':
+            compform.nom_goal.description})}}
+          </div>
+          <div class='form-group col-md-2'>
+            {{compform.nom_launch.label}} {{compform.nom_launch(size=3,**{'data-toggle': 'tooltip', 'title':
+            compform.nom_launch.description})}}
+          </div>
+          <div class='form-group col-md-2'>
+            {{compform.nom_time.label}} {{compform.nom_time(size=3,**{'data-toggle': 'tooltip', 'title':
+            compform.nom_time.description})}}
+          </div>
+        </div>
+        <div class='form-row'>
+          <div class='form-group col-md-6'>
+            {{compform.scoring_altitude.label}} {{compform.scoring_altitude(**{'id': "scoring_altitude", 'data-toggle':
+            'tooltip', 'title': compform.scoring_altitude.description})}}
+          </div>
+        </div>
+        <p>
+          <button class='btn btn-primary ml-4' type='button' data-toggle='collapse' data-target='#collapse25'
+                  aria-expanded='false' aria-controls='collapse25'>
             Advanced Parameters
-            </button>
-             <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse26" aria-expanded="false" aria-controls="collapse26">
-                Team Parameters
-            </button>
-         </p>
-          <div class="collapse" id="collapse26">
-            <div class="card card-body">
-               <div class="container">
-                    <div  class="form-row">
-                        <div class="form-group col-md-12">
-                        {{compform.country_scoring.label}} {{compform.country_scoring(size=3,**{'id': "cty_scoring", 'data-toggle': 'tooltip', 'title': compform.country_scoring.description})}}
-                            <div class="display-if" id="collapse26a" data-target_name="country_scoring" data-target_type="checkbox" data-target_value=true>
-                                {{compform.max_country_size.label}} {{compform.max_country_size(size=3,**{'id': "max_country_size", 'data-toggle': 'tooltip', 'title': compform.max_country_size.description})}}
-                                {{compform.country_size.label}} {{compform.country_size(size=3,**{'id': "country_size", 'data-toggle': 'tooltip', 'title': compform.country_size.description})}}
-                            </div>
-                        </div>
-                        <div class="form-group col-md-12">
-                        {{compform.team_scoring.label}} {{compform.team_scoring(size=3,**{'id': "team_scoring", 'data-toggle': 'tooltip', 'title': compform.team_scoring.description})}}
-                            <div class="display-if" id="collapse26b" data-target_name="team_scoring" data-target_type="checkbox" data-target_value=true>
-                        {{compform.max_team_size.label}} {{compform.max_team_size(size=3,**{'id': "max_team_size", 'data-toggle': 'tooltip', 'title': compform.max_team_size.description})}}
-                        {{compform.team_size.label}} {{compform.team_size(size=3,**{'id': "team_size", 'data-toggle': 'tooltip', 'title': compform.team_size.description})}}
-                            </div>
-                       </div>
+          </button>
+          <button class='btn btn-primary ml-4' type='button' data-toggle='collapse' data-target='#collapse26'
+                  aria-expanded='false' aria-controls='collapse26'>
+            Team Parameters
+          </button>
+        </p>
+        <div class='collapse' id='collapse26'>
+          <div class='card card-body'>
+            <div class='container'>
+              <div class='form-row'>
+                <div class='form-group col-md-12'>
+                  {{compform.country_scoring.label}} {{compform.country_scoring(size=3,**{'id': "cty_scoring",
+                  'data-toggle': 'tooltip', 'title': compform.country_scoring.description})}}
+                  <div class='display-if' id='collapse26a' data-target_name='country_scoring'
+                       data-target_type='checkbox' data-target_value='true'>
+                    {{compform.max_country_size.label}} {{compform.max_country_size(size=3,**{'id': "max_country_size",
+                    'data-toggle': 'tooltip', 'title': compform.max_country_size.description})}}
+                    {{compform.country_size.label}} {{compform.country_size(size=3,**{'id': "country_size",
+                    'data-toggle': 'tooltip', 'title': compform.country_size.description})}}
                   </div>
-               </div>
+                </div>
+                <div class='form-group col-md-12'>
+                  {{compform.team_scoring.label}} {{compform.team_scoring(size=3,**{'id': "team_scoring", 'data-toggle':
+                  'tooltip', 'title': compform.team_scoring.description})}}
+                  <div class='display-if' id='collapse26b' data-target_name='team_scoring' data-target_type='checkbox'
+                       data-target_value='true'>
+                    {{compform.max_team_size.label}} {{compform.max_team_size(size=3,**{'id': "max_team_size",
+                    'data-toggle': 'tooltip', 'title': compform.max_team_size.description})}}
+                    {{compform.team_size.label}} {{compform.team_size(size=3,**{'id': "team_size", 'data-toggle':
+                    'tooltip', 'title': compform.team_size.description})}}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-         <div class="collapse" id="collapse25">
-            <div class="card card-body">
-               <div class="container">
-                  <div class="form-row">
-                     <div class="form-group col-md-12">
-                        {{compform.formula_distance.label}} {{compform.formula_distance(**{'id': "formula_distance", 'data-toggle': 'tooltip', 'title': compform.formula_distance.description})}}
-                        {{compform.formula_arrival.label}} {{compform.formula_arrival(**{'id': "formula_arrival", 'data-toggle': 'tooltip', 'title': compform.formula_arrival.description})}}
-                        {{compform.formula_departure.label}} {{compform.formula_departure(**{'id': "formula_departure", 'data-toggle': 'tooltip', 'title': compform.formula_departure.description})}}
-                        {{compform.formula_time.label}} {{compform.formula_time(**{'id': "formula_time", 'data-toggle': 'tooltip', 'title': compform.formula_time.description})}}
-                     </div>
-                  </div>
-                  <div  class="form-row">
+        </div>
+        <div class='collapse' id='collapse25'>
+          <div class='card card-body'>
+            <div class='container'>
+              <div class='form-row'>
+                <div class='form-group col-md-12'>
+                  {{compform.formula_distance.label}} {{compform.formula_distance(**{'id': "formula_distance",
+                  'data-toggle': 'tooltip', 'title': compform.formula_distance.description})}}
+                  {{compform.formula_arrival.label}} {{compform.formula_arrival(**{'id': "formula_arrival",
+                  'data-toggle': 'tooltip', 'title': compform.formula_arrival.description})}}
+                  {{compform.formula_departure.label}} {{compform.formula_departure(**{'id': "formula_departure",
+                  'data-toggle': 'tooltip', 'title': compform.formula_departure.description})}}
+                  {{compform.formula_time.label}} {{compform.formula_time(**{'id': "formula_time", 'data-toggle':
+                  'tooltip', 'title': compform.formula_time.description})}}
+                </div>
+              </div>
+              <div class='form-row'>
 
-                     <div class="form-group col-md-3">
-                        {{compform.lead_factor.label}} {{compform.lead_factor(size=3,**{'id': "lead_factor", 'data-toggle': 'tooltip', 'title': compform.lead_factor.description})}}
-                     </div>
-                     <div  class="form-group col-md-3">
-                        {{compform.no_goal_penalty.label}} {{compform.no_goal_penalty(size=3,**{'id': "no_goal_penalty", 'data-toggle': 'tooltip', 'title': compform.no_goal_penalty.description})}}
-                     </div>
-                  </div>
-                   <div  class="form-row">
-                      <div class="form-group col-md-4">
-                        {{compform.tolerance.label}} {{compform.tolerance(size=3,**{'id': "tolerance", 'data-toggle': 'tooltip', 'title': compform.tolerance.description})}}
-                        </div>
-                          <div  class="form-group col-md-4">
-                          {{compform.min_tolerance.label}} {{compform.min_tolerance(size=3,**{'id': "min_tolerance", 'data-toggle': 'tooltip', 'title': compform.min_tolerance.description})}}
-                       </div>
-                  </div>
-                  <div  class="form-row">
-                        <div class="form-group col-md-12">
-                          {{compform.glide_bonus.label}} {{compform.glide_bonus(size=3,**{'id': "glide_bonus", 'data-toggle': 'tooltip', 'title': compform.glide_bonus.description})}}
-                        {{compform.arr_alt_bonus.label}} {{compform.arr_alt_bonus(size=3,**{'id': "arr_alt_bonus", 'data-toggle': 'tooltip', 'title': compform.arr_alt_bonus.description})}}
-                      {{compform.arr_max_height.label}} {{compform.arr_max_height(size=3,**{'id': "arr_max_height", 'data-toggle': 'tooltip', 'title': compform.arr_max_height.description})}}
-                        {{compform.arr_min_height.label}} {{compform.arr_min_height(size=3,**{'id': "arr_min_height", 'data-toggle': 'tooltip', 'title': compform.arr_min_height.description})}}
+                <div class='form-group col-md-3'>
+                  {{compform.lead_factor.label}} {{compform.lead_factor(size=3,**{'id': "lead_factor", 'data-toggle':
+                  'tooltip', 'title': compform.lead_factor.description})}}
+                </div>
+                <div class='form-group col-md-3'>
+                  {{compform.no_goal_penalty.label}} {{compform.no_goal_penalty(size=3,**{'id': "no_goal_penalty",
+                  'data-toggle': 'tooltip', 'title': compform.no_goal_penalty.description})}}
+                </div>
+              </div>
+              <div class='form-row'>
+                <div class='form-group col-md-4'>
+                  {{compform.tolerance.label}} {{compform.tolerance(size=3,**{'id': "tolerance", 'data-toggle':
+                  'tooltip', 'title': compform.tolerance.description})}}
+                </div>
+                <div class='form-group col-md-4'>
+                  {{compform.min_tolerance.label}} {{compform.min_tolerance(size=3,**{'id': "min_tolerance",
+                  'data-toggle': 'tooltip', 'title': compform.min_tolerance.description})}}
+                </div>
+              </div>
+              <div class='form-row'>
+                <div class='form-group col-md-12'>
+                  {{compform.glide_bonus.label}} {{compform.glide_bonus(size=3,**{'id': "glide_bonus", 'data-toggle':
+                  'tooltip', 'title': compform.glide_bonus.description})}}
+                  {{compform.arr_alt_bonus.label}} {{compform.arr_alt_bonus(size=3,**{'id': "arr_alt_bonus",
+                  'data-toggle': 'tooltip', 'title': compform.arr_alt_bonus.description})}}
+                  {{compform.arr_max_height.label}} {{compform.arr_max_height(size=3,**{'id': "arr_max_height",
+                  'data-toggle': 'tooltip', 'title': compform.arr_max_height.description})}}
+                  {{compform.arr_min_height.label}} {{compform.arr_min_height(size=3,**{'id': "arr_min_height",
+                  'data-toggle': 'tooltip', 'title': compform.arr_min_height.description})}}
 
-                        </div>
-                  </div>
-                  <div  class="form-row">
-                        <div class="form-group col-md-12">
-                        {{compform.validity_min_time.label}} {{compform.validity_min_time(size=3,**{'id': "validity_min_time", 'data-toggle': 'tooltip', 'title': compform.validity_min_time.description})}}
-                        {{compform.scoreback_time.label}} {{compform.scoreback_time(size=3,**{'id': "scoreback_time", 'data-toggle': 'tooltip', 'title': compform.scoreback_time.description})}}
-                     </div>
-                  </div>
-                    <div  class="form-row">
-                        <div class="form-group col-md-12">
-                        {{compform.max_JTG.label}} {{compform.max_JTG(size=3,**{'id': "max_JTG", 'data-toggle': 'tooltip', 'title': compform.max_JTG.description})}}
-                        {{compform.JTG_penalty_per_sec.label}} {{compform.JTG_penalty_per_sec(size=3,**{'id': "JTG_penalty_per_sec", 'data-toggle': 'tooltip', 'title': compform.JTG_penalty_per_sec.description})}}
-                     </div>
-                  </div>
-                   <div  class="form-row">
-                             <button class="btn btn-warning ml-4" type="button" onclick="get_adv_settings()">
-                            Reset Advanced Parameters
-                            </button>
+                </div>
+              </div>
+              <div class='form-row'>
+                <div class='form-group col-md-12'>
+                  {{compform.validity_min_time.label}} {{compform.validity_min_time(size=3,**{'id': "validity_min_time",
+                  'data-toggle': 'tooltip', 'title': compform.validity_min_time.description})}}
+                  {{compform.scoreback_time.label}} {{compform.scoreback_time(size=3,**{'id': "scoreback_time",
+                  'data-toggle': 'tooltip', 'title': compform.scoreback_time.description})}}
+                </div>
+              </div>
+              <div class='form-row'>
+                <div class='form-group col-md-12'>
+                  {{compform.max_JTG.label}} {{compform.max_JTG(size=3,**{'id': "max_JTG", 'data-toggle': 'tooltip',
+                  'title': compform.max_JTG.description})}}
+                  {{compform.JTG_penalty_per_sec.label}} {{compform.JTG_penalty_per_sec(size=3,**{'id':
+                  "JTG_penalty_per_sec", 'data-toggle': 'tooltip', 'title': compform.JTG_penalty_per_sec.description})}}
+                </div>
+              </div>
+              <div class='form-row'>
+                <button class='btn btn-warning ml-4' type='button' onclick='get_adv_settings()'>
+                  Reset Advanced Parameters
+                </button>
 
-                   </div>
+              </div>
 
-               </div>
             </div>
-         </div>
+          </div>
+        </div>
       </div>
-   </div>
-   </div>
-    <p>
-      <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse27" aria-expanded="false" aria-controls="collapse27">
+    </div>
+  </div>
+  <p>
+    <button class='btn btn-primary ml-4' type='button' data-toggle='collapse' data-target='#collapse27'
+            aria-expanded='false' aria-controls='collapse27'>
       Checks
-      </button>
-   </p>
-   <div class="collapse" id="collapse27">
-      <div class="card card-body">
-         <div class="container">
-            <div  class="form-row">
-               <div class="form-group col-md-3">
-                  {{compform.airspace_check.label}} {{compform.airspace_check(size=3,**{'id': "airspace_check", 'data-toggle': 'tooltip', 'title': compform.airspace_check.description})}}
-               </div>
-               <div class="form-group col-md-3">
-                  {{compform.igc_parsing_file.label}} {{compform.igc_parsing_file(**{'id': "igc_config", 'data-toggle': 'tooltip', 'title': compform.igc_parsing_file.description})}}
-               <a id="link_igc_config" >view/edit</a>
-               </div>
-               <div  class="form-group col-md-3">
-                  {{compform.check_launch.label}} {{compform.check_launch(size=3,**{'id': "check_launch", 'data-toggle': 'tooltip', 'title': compform.check_launch.description})}}
-               </div>
-                <div  class="form-group col-md-3">
-                  {{compform.check_g_record.label}} {{compform.check_g_record(size=3,**{'id': "check_launch", 'data-toggle': 'tooltip', 'title': compform.check_g_record.description})}}
-               </div>
-            </div>
-         </div>
+    </button>
+  </p>
+  <div class='collapse' id='collapse27'>
+    <div class='card card-body'>
+      <div class='container'>
+        <div class='form-row'>
+          <div class='form-group col-md-3'>
+            {{compform.airspace_check.label}} {{compform.airspace_check(size=3,**{'id': "airspace_check", 'data-toggle':
+            'tooltip', 'title': compform.airspace_check.description})}}
+          </div>
+          <div class='form-group col-md-3'>
+            {{compform.igc_parsing_file.label}} {{compform.igc_parsing_file(**{'id': "igc_config", 'data-toggle':
+            'tooltip', 'title': compform.igc_parsing_file.description})}}
+            <a id='link_igc_config'>view/edit</a>
+          </div>
+          <div class='form-group col-md-3'>
+            {{compform.check_launch.label}} {{compform.check_launch(size=3,**{'id': "check_launch", 'data-toggle':
+            'tooltip', 'title': compform.check_launch.description})}}
+          </div>
+          <div class='form-group col-md-3'>
+            {{compform.check_g_record.label}} {{compform.check_g_record(size=3,**{'id': "check_launch", 'data-toggle':
+            'tooltip', 'title': compform.check_g_record.description})}}
+          </div>
+        </div>
       </div>
-   </div>
+    </div>
+  </div>
 
 
-   <p>
-      <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse3" aria-expanded="false" aria-controls="collapse3">
+  <p>
+    <button class='btn btn-primary ml-4' type='button' data-toggle='collapse' data-target='#collapse3'
+            aria-expanded='false' aria-controls='collapse3'>
       Management
-      </button>
-   </p>
-   <div class="collapse" id="collapse3">
-      <div class="card card-body">
-         <div class="container">
-            <h3 class="font-weight-bold">Management</h3>
-            <div class="form-row">
-               <div class="form-group col-md-6">
-                   <h6 class = "font-weight-bold">Owner:</h6>
-                  <h6 id="owner"> </h6>
-                  <h6 class="font-weight-bold">Scorekeepers:</h6>
-                  <table id="scorekeeper_table">
+    </button>
+  </p>
+  <div class='collapse' id='collapse3'>
+    <div class='card card-body'>
+      <div class='container'>
+        <h3 class='font-weight-bold'>Management</h3>
+        <div class='form-row'>
+          <div class='form-group col-md-6'>
+            <h6 class='font-weight-bold'>Owner:</h6>
+            <h6 id='owner'></h6>
+            <h6 class='font-weight-bold'>Scorekeepers:</h6>
+            <table id='scorekeeper_table'>
 
-                     <TR >
+              <tr>
 
-                     </TR>
+              </tr>
 
-                  </table>
-                  {% if compform.submit %}
-                  <button id="add_scorekeeper" class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#collapse6" aria-expanded="false" aria-controls="collapse6">
-                      Add scorekeeper
-                  </button>
-                  {% endif %}
-               </div>
+            </table>
+            {% if compform.submit %}
+            <button id='add_scorekeeper' class='btn btn-secondary' type='button' data-toggle='collapse'
+                    data-target='#collapse6' aria-expanded='false' aria-controls='collapse6'>
+              Add scorekeeper
+            </button>
+            {% endif %}
+          </div>
+        </div>
+        <div class='form-row'>
+          <div class='form-group col-md-6'>
+            <!--                  {{compform.locked.label}} {{compform.locked(**{'data-toggle': 'tooltip', 'title': compform.locked.description})}}-->
+          </div>
+          {% if self_register %}
+          <div class='form-group col-md-6'>
+            {{compform.self_register.label}} {{compform.self_register(**{'data-toggle': 'tooltip', 'title':
+            compform.self_register.description})}}
+          </div>
+          {% endif %}
+          <a id='export_fsdb' class='btn btn-success' onclick='export_to_fsdb()' href='{{' url_for('user._export_fsdb',
+          compid=compid)}}>Export to FSDB</a>
+          <p id='fsdb_spinner'></p>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+  <div class='collapse' id='collapse6'>
+    <div class='card card-body'>
+      <div class='container'>
+        <div id='add_scorekeeper_form'>
+          <div class='form-row'>
+            <div class='form-group width4'>
+              {scorekeeperform.scorekeeper.label}} {{scorekeeperform.scorekeeper(**{'id':'scorekeeper_to_add', 'data-toggle': 'tooltip', 'title': scorekeeperform.scorekeeper.description})}}
             </div>
-            <div class="form-row">
-               <div class="form-group col-md-6">
-<!--                  {{compform.locked.label}} {{compform.locked(**{'data-toggle': 'tooltip', 'title': compform.locked.description})}}-->
-                   </div>
-                   {% if self_register %}
-                   <div class="form-group col-md-6">
-                     {{compform.self_register.label}} {{compform.self_register(**{'data-toggle': 'tooltip', 'title': compform.self_register.description})}}
-                   </div>
-                   {% endif %}
-                    <a id="export_fsdb" class="btn btn-success" onclick="export_to_fsdb()"  href={{ url_for('user._export_fsdb', compid=compid)}}>Export to FSDB</a>
-                        <p id="fsdb_spinner"></p>
-               </div>
-            </div>
-         </div>
-      </div>
-   </div>
-  <div class="collapse" id="collapse6">
- <div class="card card-body">
-    <div class="container">
-<div id = "add_scorekeeper_form">
-      <div class="form-row">
-      <div class="form-group width4">
-           {{scorekeeperform.scorekeeper.label}} {{scorekeeperform.scorekeeper(**{'id':'scorekeeper_to_add', 'data-toggle': 'tooltip', 'title': scorekeeperform.scorekeeper.description})}}
-      </div>
-      </div>
+          </div>
 
-      <div class="form-row">
-      <button id="save_scorekeeper_button" class="btn btn-success" type="button" onclick="add_scorekeeper()">
-      Add
-      </button>
+          <div class='form-row'>
+            <button id='save_scorekeeper_button' class='btn btn-success' type='button' onclick='add_scorekeeper()'>
+              Add
+            </button>
+          </div>
+        </div>
       </div>
-</div>
-</div>
-</div>
-</div>
+    </div>
+  </div>
 
-   <p>
-      <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse4" aria-expanded="false" aria-controls="collapse4">
+  <p>
+    <button class='btn btn-primary ml-4' type='button' data-toggle='collapse' data-target='#collapse4'
+            aria-expanded='false' aria-controls='collapse4'>
       Tasks
-      </button>
-   </p>
-   <div class="collapse" id="collapse4">
-      <div class="card card-body">
-         <div class="container">
-            <h3 class="font-weight-bold">Tasks</h3>
-            <div class="form-row">
-               <div class="form-group col-md-10">
-                  <table class="table" id="tasks">
-                                       <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Date</th>
-                        <th>Region</th>
-                        <th>Optimised Dist</th>
-                        <th>Comment</th>
-                    </tr>
-                  </thead>
-                     <tbody>
-                     </tbody>
-                  </table>
-                  <p>
-                     {% if compform.submit %}
-                     <button id="add_task" class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#collapse5" aria-expanded="false" aria-controls="collapse5">
-                     Add task
-                     </button>
-                     {% endif%}
-                  </p>
-                  <div class="collapse" id="collapse5">
-                     <div class="card card-body">
-                        <div class="container">
-<div id = "add_task_form">
-      <div class="form-row">
-      <div class="form-group width4">
-      {{taskform.task_number.label}} {{taskform.task_number(size=2, **{'id':"task_number", 'data-toggle': 'tooltip', 'title': taskform.task_number.description})}}
-      {{taskform.task_date.label}} {{taskform.task_date(**{'id':"task_date",})}}
-      {{taskform.task_region.label}} {{taskform.task_region(**{'id':"task_region",})}}
-      </div>
-      </div>
-      <div class="form-row">
-      <div class="form-group col-md-6">
-      {{taskform.task_name.label}} {{taskform.task_name(**{'id':"task_name", 'data-toggle': 'tooltip', 'title': taskform.task_name.description})}}
-      </div>
-      <div class="form-group col-md-6">
-      {{taskform.task_comment.label}} {{taskform.task_comment(**{'id':"task_comment",'data-toggle': 'tooltip', 'title': taskform.task_comment.description})}}
-      </div>
-      </div>
-      <div class="form-row">
-      <button id="save_task_button" class="btn btn-success" type="button" onclick="save_task()">
+    </button>
+  </p>
+  <div class='collapse' id='collapse4'>
+    <div class='card card-body'>
+      <div class='container'>
+        <h3 class='font-weight-bold'>Tasks</h3>
+        <div class='form-row'>
+          <div class='form-group col-md-10'>
+            <table class='table' id='tasks'>
+              <thead>
+              <tr>
+                <th>#</th>
+                <th>Date</th>
+                <th>Region</th>
+                <th>Optimised Dist</th>
+                <th>Comment</th>
+              </tr>
+              </thead>
+              <tbody>
+              </tbody>
+            </table>
+            <p>
+              {% if compform.submit %}
+              <button id='add_task' class='btn btn-secondary' type='button' data-toggle='collapse'
+                      data-target='#collapse5' aria-expanded='false' aria-controls='collapse5'>
+                Add task
+              </button>
+              {% endif%}
+            </p>
+            <div class='collapse' id='collapse5'>
+              <div class='card card-body'>
+                <div class='container'>
+                  <div id='add_task_form'>
+                    <div class='form-row'>
+                      <div class='form-group width4'>
+                        {{taskform.task_number.label}} {{taskform.task_number(size=2, **{'id':"task_number",
+                        'data-toggle': 'tooltip', 'title': taskform.task_number.description})}}
+                        {{taskform.task_date.label}} {{taskform.task_date(**{'id':"task_date",})}}
+                        {{taskform.task_region.label}} {{taskform.task_region(**{'id':"task_region",})}}
+                      </div>
+                    </div>
+                    <div class='form-row'>
+                      <div class='form-group col-md-6'>
+                        {{taskform.task_name.label}} {{taskform.task_name(**{'id':"task_name", 'data-toggle': 'tooltip',
+                        'title': taskform.task_name.description})}}
+                      </div>
+                      <div class='form-group col-md-6'>
+                        {{taskform.task_comment.label}} {{taskform.task_comment(**{'id':"task_comment",'data-toggle':
+                        'tooltip', 'title': taskform.task_comment.description})}}
+                      </div>
+                    </div>
+                    <div class='form-row'>
+                      <button id='save_task_button' class='btn btn-success' type='button' onclick='save_task()'>
       Add
       </button>
           <p id="add_task_spinner"></p>
       </div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="container">
-   <br>
-   <center>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class='container'>
+    <br>
+    <center>
       {% if compform.submit %}
       {{compform.submit(class="btn-success")}}
       {% else %}
       <b>You are not a scorekeeper of this comp</b>
       {% endif%}
-   </center>
-</div>
+    </center>
+  </div>
 
 </form>
 
-  <!----delete modal starts here--->
-<div id="modal" class="modal fade" role='dialog'>
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                <h4 class="modal-title">Please confirm</h4>
-            </div>
-            <div class="modal-body" id= "modal-body">
-                <p>Here the description starts here........</p>
-
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-success" data-dismiss="modal">Cancel</button>
-               <button id = "delete_confirmed" type="button" class="btn btn-danger" data-dismiss="modal">Delete</button>
-            </div>
-        </div>
+<!----delete modal starts here--->
+<div id='modal' class='modal fade' role='dialog'>
+  <div class='modal-dialog'>
+    <div class='modal-content'>
+      <div class='modal-header'>
+        <button type='button' class='close' data-dismiss='modal' aria-hidden='true'>×</button>
+        <h4 class='modal-title'>Please confirm</h4>
       </div>
+      <div class='modal-body' id='modal-body'>
+        <p>Here the description starts here........</p>
+
+      </div>
+      <div class='modal-footer'>
+        <button type='button' class='btn btn-success' data-dismiss='modal'>Cancel</button>
+        <button id='delete_confirmed' type='button' class='btn btn-danger' data-dismiss='modal'>Delete</button>
+      </div>
+    </div>
   </div>
+</div>
 <!--Modal ends here--->
 
-  <!----formula update modal starts here--->
-<div id="formula_modal" class="modal fade" role='dialog'>
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                <h4 class="modal-title">Please confirm</h4>
-            </div>
-            <div class="modal-body" id= "formula_modal-body">
-                <p>Here the description starts here........</p>
-
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-success" data-dismiss="modal">No</button>
-               <button id = "formula_confirmed" type="button" class="btn btn-danger" data-dismiss="modal">Yes update</button>
-            </div>task_name
-        </div>
+<!----formula update modal starts here--->
+<div id='formula_modal' class='modal fade' role='dialog'>
+  <div class='modal-dialog'>
+    <div class='modal-content'>
+      <div class='modal-header'>
+        <button type='button' class='close' data-dismiss='modal' aria-hidden='true'>×</button>
+        <h4 class='modal-title'>Please confirm</h4>
       </div>
+      <div class='modal-body' id='formula_modal-body'>
+        <p>Here the description starts here........</p>
+
+      </div>
+      <div class='modal-footer'>
+        <button type='button' class='btn btn-success' data-dismiss='modal'>No</button>
+        <button id='formula_confirmed' type='button' class='btn btn-danger' data-dismiss='modal'>Yes update</button>
+      </div>
+      task_name
+    </div>
   </div>
+</div>
 <!--Modal ends here--->
 
 {% endblock %}
@@ -410,299 +467,279 @@
 {% block js %}
 <script src="{{ static_url_for('static', filename='js/display-if.min.js') }}"></script>
 
-<script type="text/javascript">
+<script type='text/javascript'>
 
-   var csrftoken = $('meta[name=csrf-token]').attr('content');
-      $.ajaxSetup({
-       beforeSend: function(xhr, settings) {
-           if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type)) {
-               xhr.setRequestHeader("X-CSRFToken", csrftoken)
-           }
-       }
-   })
-
-   function confirm_delete(task_num, taskid) {
-	 var x = task_num;
-     var myHeading = "<p>Are you sure you want to delete Task ";
-     $("#modal-body").html(myHeading + x + '?</p>');
-     $('#delete_confirmed').attr("onclick","delete_task('"+taskid+"')");
-     $('#modal').modal('show');
+var csrftoken = $('meta[name=csrf-token]').attr('content');
+$.ajaxSetup({
+  beforeSend: function(xhr, settings) {
+    if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type)) {
+      xhr.setRequestHeader("X-CSRFToken", csrftoken)
     }
+  }
+})
 
-    $(function() {
-   
-       // jQuery selection for the 2 select boxes
-       var dropdown = {
-           category: $('#select_category'),
-           formula: $('#select_formula'),
-           igc_config: $('#igc_config')
-       };
-   
-       $('#link_igc_config').attr("href", "/users/igc_parsing_config/" + dropdown.igc_config.val());
-       // function to call XHR and update formula dropdown
-       function updateFormulas() {
-           var send = {
-               category: dropdown.category.val()
-           };
-           dropdown.formula.attr('disabled', 'disabled');
-           dropdown.formula.empty();
-           $.getJSON("{{ url_for('user._get_formulas')}}", send, function(data) {
-               data.forEach(function(item) {
-                   dropdown.formula.append(
-                       $('<option>', {
-                           value: item[0],
-                           text: item[1]
-                       })
-                   );
-               });
-               dropdown.formula.removeAttr('disabled');
-
-           });
-
-       }
-   
-       // event listener to category dropdown change
-       dropdown.category.on('change', function() {
-           updateFormulas();
-            ask_update('category');
-
-       });
-
-       // event listener to formula dropdown change
-       dropdown.formula.on('change', function() {
-           ask_update('formula');
-       });
-       // event listener to igc config dropdown change
-       dropdown.igc_config.on('change', function() {
-           $('#link_igc_config').attr("href", "/users/igc_parsing_config/" + dropdown.igc_config.val());
-       });
-
-   });
-
-   function ask_update(change) {
-	 var formula = $('#select_formula').val();
-     var field = formula;
-
-	 if(change=='category'){
-	 field=$('#select_category').val();
-	 formula = field
-	 }
-
-     var heading1 = "<p>Changing to ";
-     var heading2 = ". Do you also want to update the advanced parameters to the standard for ";
-     $("#formula_modal-body").html(heading1 + field + heading2 + formula +'?</p>');
-     $('#formula_confirmed').attr("onclick","get_adv_settings()");
-     $('#formula_modal').modal('show');
-    };
-
-
-   function delete_task(taskid){
-
-           $.ajax({
-               type: "POST",
-               url: '/users/_del_task/'+taskid,
-               success: function () {
-                      get_tasks()
-               }
-               });
-
-   };
-
-
-
-   function update_tasks(json) {
-               $("#tasks tbody").remove();
-               var content = '';
-               content += '<tbody>';
-               for (var i = 0; i < json['tasks'].length; i++) {
-               content += '><tr id="'
-               + json['tasks'][i].task_id + '">';
-               // content += '<td class="col-3">' + json['tasks'][i].link + '</td>';
-               content += '<td class="col-3">' + json['tasks'][i].task_num + '</td>';
-               content += '<td class="col-3">' + json['tasks'][i].date + '</td>';
-               content += '<td class="col-9">' + json['tasks'][i].region_name + '</td>';
-               content += '<td class="col-3">' + json['tasks'][i].opt_dist + '</td>';
-               content += '<td class="col-6">' + json['tasks'][i].comment+ '</td>';
-               content += '<td  class ="value" ><a href="/users/task_admin/' + json['tasks'][i].task_id + '" class="btn btn-info ml-3" type="button" >Settings</a></td>'
-               {% if compform.submit %}
-
-               content += '<td  class ="value" ><a href="/users/track_admin/' + json['tasks'][i].task_id + '" class="btn btn-info ml-3" type="button" >Tracks</a></td>'
-               content += '<td  class ="value" ><a href="/users/task_score_admin/' + json['tasks'][i].task_id + '" class="btn btn-info ml-3" type="button" >Scores</a></td>'
-               content += '<td  class ="value" ><button type="button" class="btn btn-danger" onclick="confirm_delete('
-               content +=  json['tasks'][i].task_num + ',' + json['tasks'][i].task_id
-               content += ')" data-toggle="confirmation" data-popout="true">Delete</button></td>'
-               {% endif %}
-
-               content += '</tr>';
-   
-               }
-               content += '</tbody>';
-   
-               $('#tasks').append(content);
-               $('#task_number').val(json['next_task']);
-               $('#task_region').val(json['last_region']);
-   
-          };
-
-   function add_scorekeeper(){
-     var mydata = new Object();
-     mydata.id = $('#scorekeeper_to_add').val();
-              $.ajax({
-               type: "POST",
-               url: "{{ url_for('user._add_scorekeeper', compid=compid)}}",
-               contentType:"application/json",
-               data : JSON.stringify(mydata),
-               dataType: "json",
-               success: function () {
-                      get_scorekeepers()
-               }
-               });
-
-   }
-
-   
-   function save_task(){
-            $('#save_task_button').hide();
-               $('#add_task_spinner').html('<div class="spinner-border" role="status"><span class="sr-only"></span></div>');
-           var mydata = new Object();
-               mydata.task_name = $('#task_name').val();
-               mydata.task_date = $('#task_date').val();
-               mydata.task_num = $('#task_number').val();
-               mydata.task_comment = $('#task_comment').val();
-               mydata.task_region = $('#task_region').val();
-   
-           $.ajax({
-               type: "POST",
-               url: "{{ url_for('user._add_task', compid=compid)}}",
-               contentType:"application/json",
-               data : JSON.stringify(mydata),
-               dataType: "json",
-               success: function () {
-                      get_tasks();
-                      $('#add_task_spinner').html('');
-                      $('#save_task_button').show();
-               }
-               });
-   
-   };
-   
-   function get_tasks(){
-    $.ajax({
-               type: "GET",
-               url: "{{ url_for('user._get_tasks', compid=compid)}}",
-               contentType:"application/json",
-               dataType: "json",
-               success: function (response) {
-                       update_tasks(response)
-               }
-               });
-   }
-   
-      function get_scorekeepers(){
-    $.ajax({
-               type: "GET",
-               url: "{{ url_for('user._get_scorekeepers', compid=compid)}}",
-               contentType:"application/json",
-               dataType: "json",
-               success: function (response) {
-               var content = '';
-               for (var i = 0; i < response['scorekeepers'].length; i++) {
-               content += '<tr><TD class="c3">'+ response['scorekeepers'][i]['first_name'] + ' '+ response['scorekeepers'][i]['last_name'] +'</TD></tr>'
-               }
-               $('#scorekeeper_table').append(content);
-               $('#owner').html(response['owner']['first_name'] + ' ' + response['owner']['last_name'] )
-               }
-   });
+function confirm_delete(task_num, taskid) {
+  var x = task_num;
+  var myHeading = "<p>Are you sure you want to delete Task ";
+  $("#modal-body").html(myHeading + x + '?</p>');
+  $('#delete_confirmed').attr("onclick","delete_task('"+taskid+"')");
+  $('#modal').modal('show');
 }
 
-   $(document).ready(function() {
-   get_tasks();
-   get_scorekeepers();
-   });
+$(function() {
+  // jQuery selection for the 2 select boxes
+  var dropdown = {
+    category: $('#select_category'),
+    formula: $('#select_formula'),
+    igc_config: $('#igc_config')
+  };
+
+  $('#link_igc_config').attr("href", "/users/igc_parsing_config/" + dropdown.igc_config.val());
+
+  // function to call XHR and update formula dropdown
+  function updateFormulas() {
+    var send = {
+      category: dropdown.category.val()
+    };
+    dropdown.formula.attr('disabled', 'disabled');
+    dropdown.formula.empty();
+    $.getJSON("{{ url_for('user._get_formulas')}}", send, function(data) {
+      data.forEach(function(item) {
+        dropdown.formula.append(
+          $('<option>', {
+             value: item[0],
+             text: item[1]
+          })
+        );
+      });
+      dropdown.formula.removeAttr('disabled');
+    });
+  }
+
+  // event listener to category dropdown change
+  dropdown.category.on('change', function() {
+    updateFormulas();
+    ask_update('category');
+  });
+
+  // event listener to formula dropdown change
+  dropdown.formula.on('change', function() {
+     ask_update('formula');
+  });
+
+  // event listener to igc config dropdown change
+  dropdown.igc_config.on('change', function() {
+     $('#link_igc_config').attr("href", "/users/igc_parsing_config/" + dropdown.igc_config.val());
+  });
+
+});
+
+function ask_update(change) {
+  var formula = $('#select_formula').val();
+  var field = formula;
+
+  if(change=='category'){
+    field=$('#select_category').val();
+    formula = field
+  }
+
+  var heading1 = "<p>Changing to ";
+  var heading2 = ". Do you also want to update the advanced parameters to the standard for ";
+  $("#formula_modal-body").html(heading1 + field + heading2 + formula +'?</p>');
+  $('#formula_confirmed').attr("onclick","get_adv_settings()");
+  $('#formula_modal').modal('show');
+};
+
+function delete_task(taskid){
+  $.ajax({
+    type: "POST",
+    url: '/users/_del_task/'+taskid,
+    success: function () {
+      get_tasks()
+    }
+  });
+
+};
+
+function update_tasks(json) {
+  $("#tasks tbody").remove();
+  var content = '';
+  content += '<tbody>';
+  for (var i = 0; i < json['tasks'].length; i++) {
+    content += '><tr id="' + json['tasks'][i].task_id + '">';
+    // content += '<td class="col-3">' + json['tasks'][i].link + '</td>';
+    content += '<td class="col-3">' + json['tasks'][i].task_num + '</td>';
+    content += '<td class="col-3">' + json['tasks'][i].date + '</td>';
+    content += '<td class="col-9">' + json['tasks'][i].region_name + '</td>';
+    content += '<td class="col-3">' + json['tasks'][i].opt_dist + '</td>';
+    content += '<td class="col-6">' + json['tasks'][i].comment+ '</td>';
+    content += '<td  class ="value" ><a href="/users/task_admin/' + json['tasks'][i].task_id + '" class="btn btn-info ml-3" type="button" >Settings</a></td>'
+
+    {% if compform.submit %}
+    content += '<td  class ="value" ><a href="/users/track_admin/' + json['tasks'][i].task_id + '" class="btn btn-info ml-3" type="button" >Tracks</a></td>'
+    content += '<td  class ="value" ><a href="/users/task_score_admin/' + json['tasks'][i].task_id + '" class="btn btn-info ml-3" type="button" >Scores</a></td>'
+    content += '<td  class ="value" ><button type="button" class="btn btn-danger" onclick="confirm_delete('
+    content +=  json['tasks'][i].task_num + ',' + json['tasks'][i].task_id
+    content += ')" data-toggle="confirmation" data-popout="true">Delete</button></td>'
+    {% endif %}
+
+    content += '</tr>';
+  }
+  content += '</tbody>';
+
+  $('#tasks').append(content);
+  $('#task_number').val(json['next_task']);
+  $('#task_region').val(json['last_region']);
+};
+
+function add_scorekeeper(){
+var mydata = new Object();
+mydata.id = $('#scorekeeper_to_add').val();
+  $.ajax({
+    type: "POST",
+    url: "{{ url_for('user._add_scorekeeper', compid=compid)}}",
+    contentType:"application/json",
+    data : JSON.stringify(mydata),
+    dataType: "json",
+    success: function () {
+      get_scorekeepers()
+    }
+  });
+}
+
+function save_task(){
+  $('#save_task_button').hide();
+  $('#add_task_spinner').html('<div class="spinner-border" role="status"><span class="sr-only"></span></div>');
+  var mydata = new Object();
+  mydata.task_name = $('#task_name').val();
+  mydata.task_date = $('#task_date').val();
+  mydata.task_num = $('#task_number').val();
+  mydata.task_comment = $('#task_comment').val();
+  mydata.task_region = $('#task_region').val();
+
+  $.ajax({
+    type: "POST",
+    url: "{{ url_for('user._add_task', compid=compid)}}",
+    contentType:"application/json",
+    data : JSON.stringify(mydata),
+    dataType: "json",
+    success: function () {
+      get_tasks();
+      $('#add_task_spinner').html('');
+      $('#save_task_button').show();
+    }
+  });
+};
+
+function get_tasks(){
+  $.ajax({
+    type: "GET",
+    url: "{{ url_for('user._get_tasks', compid=compid)}}",
+    contentType:"application/json",
+    dataType: "json",
+    success: function (response) {
+      update_tasks(response)
+    }
+  });
+}
+
+function get_admins(){
+  $.ajax({
+    type: "GET",
+    url: "{{ url_for('user._get_admins', compid=compid)}}",
+    contentType:"application/json",
+    dataType: "json",
+    success: function (response) {
+      var content = '';
+      for (var i = 0; i < response['admins'].length; i++) {
+        content += '<tr><TD class="c3">'+ response['admins'][i]['first_name'] + ' '+ response['admins'][i]['last_name'] +'</TD></tr>'
+      }
+      $('#admin_table').append(content);
+      $('#owner').html(response['owner']['first_name'] + ' ' + response['owner']['last_name'] )
+    }
+  });
+}
+
+$(document).ready(function() {
+  get_tasks();
+  get_scorekeepers();
+});
 
 
-      function get_adv_settings(){
-            var formula = new Object();
-            formula.formula = $('#select_formula').val();
-            formula.category = $('#select_category').val();
-           $.ajax({
-               type: "POST",
-               url: "{{ url_for('user._get_adv_settings')}}",
-               contentType:"application/json",
-               data : JSON.stringify(formula),
-               dataType: "json",
-               success: function (data) {
-                     $('#formula_distance').val(data.formula_distance);
-                     $('#formula_time').val(data.formula_time);
-                     $('#formula_arrival').val(data.formula_arrival);
-                     $('#formula_departure').val(data.formula_departure);
-                     $('#lead_factor').val(data.lead_factor);
-                     $('#no_goal_penalty').val(data.no_goal_penalty);
-                     $('#tolerance').val(data.tolerance);
-                     $('#min_tolerance').val(data.min_tolerance);
-                     $('#glide_bonus').val(data.glide_bonus);
-                     $('#arr_alt_bonus').val(data.arr_alt_bonus);
-                     $('#arr_max_height').val(data.arr_max_height);
-                     $('#arr_min_height').val(data.arr_min_height);
-                     $('#validity_min_time').val(data.validity_min_time);
-                     $('#scoreback_time').val(data.scoreback_time);
-                     $('#max_JTG').val(data.max_JTG);
-                     $('#JTG_penalty_per_sec').val(data.JTG_penalty_per_sec);
+function get_adv_settings(){
+  var formula = new Object();
+  formula.formula = $('#select_formula').val();
+  formula.category = $('#select_category').val();
+  $.ajax({
+    type: "POST",
+    url: "{{ url_for('user._get_adv_settings')}}",
+    contentType:"application/json",
+    data : JSON.stringify(formula),
+    dataType: "json",
+    success: function (data) {
+      $('#formula_distance').val(data.formula_distance);
+      $('#formula_time').val(data.formula_time);
+      $('#formula_arrival').val(data.formula_arrival);
+      $('#formula_departure').val(data.formula_departure);
+      $('#lead_factor').val(data.lead_factor);
+      $('#no_goal_penalty').val(data.no_goal_penalty);
+      $('#tolerance').val(data.tolerance);
+      $('#min_tolerance').val(data.min_tolerance);
+      $('#glide_bonus').val(data.glide_bonus);
+      $('#arr_alt_bonus').val(data.arr_alt_bonus);
+      $('#arr_max_height').val(data.arr_max_height);
+      $('#arr_min_height').val(data.arr_min_height);
+      $('#validity_min_time').val(data.validity_min_time);
+      $('#scoreback_time').val(data.scoreback_time);
+      $('#max_JTG').val(data.max_JTG);
+      $('#JTG_penalty_per_sec').val(data.JTG_penalty_per_sec);
+    }
+  });
+}
 
-               }
-               });
+function export_to_fsdb(){
+  $('#export_fsdb').hide();
+  $('#fsdb_spinner').html('<div class="spinner-border" role="status"><span class="sr-only">Preparing FSDB...</span></div>');
+  startDownloadChecker("loadingProgressOverlay", 120);
+}
 
-   }
+function startDownloadChecker(imageId, timeout) {
 
-   function export_to_fsdb(){
-   $('#export_fsdb').hide();
-   $('#fsdb_spinner').html('<div class="spinner-border" role="status"><span class="sr-only">Preparing FSDB...</span></div>');
-   startDownloadChecker("loadingProgressOverlay", 120);
+  var cookieName = "ServerProcessCompleteChecker";  // Name of the cookie which is set and later overridden on the server
+  var downloadTimer = 0;  // reference to timer object
 
-   }
+  // The cookie is initially set on the client-side with a specified default timeout age (2 min. in our application)
+  // It will be overridden on the server side with a new (earlier) expiration age (the completion of the server operation),
+  // or auto-expire after 2 min.
+  setCookie(cookieName, 0, timeout);
 
+  // set timer to check for cookie every second
+  downloadTimer = window.setInterval(function () {
+    var cookie = getCookie(cookieName);
 
-   function startDownloadChecker(imageId, timeout) {
-
-    var cookieName = "ServerProcessCompleteChecker";  // Name of the cookie which is set and later overridden on the server
-    var downloadTimer = 0;  // reference to timer object
-
-    // The cookie is initially set on the client-side with a specified default timeout age (2 min. in our application)
-    // It will be overridden on the server side with a new (earlier) expiration age (the completion of the server operation),
-    // or auto-expire after 2 min.
-    setCookie(cookieName, 0, timeout);
-
-    // set timer to check for cookie every second
-    downloadTimer = window.setInterval(function () {
-
-        var cookie = getCookie(cookieName);
-
-        // If cookie expired (NOTE: this is equivalent to cookie "doesn't exist"), then clear "Loading..." and stop polling
-        if ((typeof cookie === 'undefined')) {
-               $('#export_fsdb').show();
-                $('#fsdb_spinner').html('');
-            window.clearInterval(downloadTimer);
-        }
-
-    }, 1000); // Every second
+    // If cookie expired (NOTE: this is equivalent to cookie "doesn't exist"), then clear "Loading..." and stop polling
+    if ((typeof cookie === 'undefined')) {
+      $('#export_fsdb').show();
+      $('#fsdb_spinner').html('');
+      window.clearInterval(downloadTimer);
+    }
+  }, 1000); // Every second
 }
 
 // These are helper JS functions for setting and retrieving a Cookie
 function setCookie(name, value, expiresInSeconds) {
-    var exdate = new Date();
-    exdate.setTime(exdate.getTime() + expiresInSeconds * 1000);
-    var c_value = escape(value) + ((expiresInSeconds == null) ? "" : "; expires=" + exdate.toUTCString());
-    document.cookie = name + "=" + c_value + '; path=/';
+  var exdate = new Date();
+  exdate.setTime(exdate.getTime() + expiresInSeconds * 1000);
+  var c_value = escape(value) + ((expiresInSeconds == null) ? "" : "; expires=" + exdate.toUTCString());
+  document.cookie = name + "=" + c_value + '; path=/';
 }
 
 function getCookie(name) {
-    var parts = document.cookie.split(name + "=");
-    if (parts.length == 2 ) {
-        return parts.pop().split(";").shift();
-    }
+  var parts = document.cookie.split(name + "=");
+  if (parts.length == 2 ) {
+    return parts.pop().split(";").shift();
+  }
 }
 
-
-      
 </script>
 {% endblock %}

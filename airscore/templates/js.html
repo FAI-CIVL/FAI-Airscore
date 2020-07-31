@@ -1,9 +1,14 @@
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/2.4.0/umd/popper.min.js" integrity="sha256-FT/LokHAO3u6YAZv6/EKb7f2e0wXY3Ff/9Ww5NzT+Bk=" crossorigin="anonymous"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
-    <script src="{{ static_url_for('static', filename='js/bootnavbar.js') }}"></script>
+<script src='https://code.jquery.com/jquery-3.5.1.min.js'
+        integrity='sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2'
+        crossorigin='anonymous'></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/popper.js/2.4.0/umd/popper.min.js'
+        integrity='sha256-FT/LokHAO3u6YAZv6/EKb7f2e0wXY3Ff/9Ww5NzT+Bk=' crossorigin='anonymous'></script>
+<script src='https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js'
+        integrity='sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI'
+        crossorigin='anonymous'></script>
+<script src="{{ static_url_for('static', filename='js/bootnavbar.js') }}"></script>
 
-    <script>
+<script>
 
 
        var csrftoken = $('meta[name=csrf-token]').attr('content');
@@ -24,12 +29,14 @@
 
 
 
-    </script>
-    <script>
+
+</script>
+<script>
         $(function () {
             $('#main_navbar').bootnavbar({
                 //option
                 //animation: false
             });
         })
-    </script>
+
+</script>
