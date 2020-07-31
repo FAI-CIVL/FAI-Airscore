@@ -1444,7 +1444,8 @@ def _upload_participants_fsdb(compid):
                 tmp_file = Path(tmpdirname, fsdb_file.filename)
                 fsdb_file.save(tmp_file)
                 participants = frontendUtils.import_participants_from_fsdb(tmp_file)
-                mass_import_participants(compid, participants)
+                if participants:
+                    mass_import_participants(compid, participants)
             resp = jsonify(success=True)
             return resp
         resp = jsonify(success=False)
