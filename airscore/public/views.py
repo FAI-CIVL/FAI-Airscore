@@ -12,7 +12,7 @@ from flask import (
     session
 )
 from flask_login import login_required, login_user, logout_user, current_user
-from airscore.extensions import login_manager, mail
+from airscore.extensions import login_manager
 from airscore.public.forms import LoginForm, ModifyParticipantForm, ResetPasswordForm, ResetPasswordRequestForm
 from airscore.user.forms import RegisterForm
 from airscore.user.models import User
@@ -27,8 +27,6 @@ import mapUtils
 import Defines
 from os import path
 import frontendUtils
-from threading import Thread
-from flask_mail import Message
 
 blueprint = Blueprint("public", __name__, static_folder="../static")
 
@@ -138,7 +136,11 @@ def reset_password_request():
     if reset_form.validate_on_submit():
         user = User.query.filter_by(email=reset_form.email.data).first()
         if user:
-            send_password_reset_email(user)
+            if frontendUtils.production():
+                current_app.task_queue.enqueue('sendemail.send_password_reset_email', user)
+            else:
+                import sendemail
+                sendemail.send_password_reset_email(user)
         flash('Check your email for the instructions to reset your password', category='info')
         return redirect(url_for('public.home'))
     return render_template('public/reset_password_request.html',
@@ -574,26 +576,3 @@ def livetracking(taskid):
 
     return render_template('public/live.html', file_stats=file_stats, headers=headers, data=data, info=info)
 
-
-def send_async_email(app, msg):
-    with app.app_context():
-        mail.send(msg)
-
-
-def send_email(subject, sender, recipients, text_body, html_body):
-    msg = Message(subject, sender=sender, recipients=recipients)
-    msg.body = text_body
-    msg.html = html_body
-    mail.send(msg)
-    # Thread(target=send_async_email, args=(current_app, msg)).start()
-
-
-def send_password_reset_email(user):
-    token = user.get_reset_password_token()
-    send_email('[Airscore] Reset Your Password',
-               sender=current_app.config['ADMINS'][0],
-               recipients=[user.email],
-               text_body=render_template('email/reset_password.txt',
-                                         user=user, token=token),
-               html_body=render_template('email/reset_password.html',
-                                         user=user, token=token))

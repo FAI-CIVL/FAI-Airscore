@@ -20,6 +20,7 @@ from airscore.extensions import (
 from redis import Redis
 import rq
 from flask_sse import sse
+from airscore.user.models import User
 
 
 def create_app(config_object="airscore.settings"):
@@ -30,7 +31,7 @@ def create_app(config_object="airscore.settings"):
     app = Flask(__name__.split(".")[0]) # , debug=True)
     app.config.from_object(config_object)
     app.config.update(SESSION_COOKIE_SAMESITE='Lax')
-    # app.config["REDIS_URL"] = f'{app.config["REDIS_CONTAINER"]}://{app.config["REDIS_CONTAINER"]}:6379'
+    app.config["REDIS_URL"] = app.config["REDIS_URL"]
     app.redis = Redis(host=app.config["REDIS_CONTAINER"], port=6379)
     app.task_queue = rq.Queue(app.config["RQ_QUEUE"], connection=app.redis)
     register_extensions(app)
@@ -39,6 +40,8 @@ def create_app(config_object="airscore.settings"):
     register_shellcontext(app)
     register_commands(app)
     configure_logger(app)
+    with app.app_context():
+        app.config['admin_exists'] = User.admin_exists()
     return app
 
 

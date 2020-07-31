@@ -6,6 +6,5 @@ from airscore.user.models import User
 
 app = create_app()
 CSRFProtect(app)
-with app.app_context():
-    app.config['admin_exists'] = User.admin_exists()
+
 
