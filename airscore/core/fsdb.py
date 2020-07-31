@@ -57,12 +57,6 @@ class FSDB(object):
 
         """read the fsdb file"""
         root = read_fsdb_file(fp)
-        # try:
-        #     tree = ET.parse(fp)
-        #     root = tree.getroot()
-        # except ET.Error:
-        #     print("FSDB Read Error.")
-        #     return None
 
         pilots = []
         tasks = []
