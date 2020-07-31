@@ -17,6 +17,7 @@ from pilot.flightresult import update_status, delete_track
 from os import path, remove, makedirs
 from task import get_task_json_by_filename
 from calcUtils import sec_to_time
+from pathlib import Path
 import time
 from Defines import SELF_REG_DEFAULT, PILOT_DB
 
@@ -1424,6 +1425,26 @@ def _upload_participants_excel(compid):
                 excel_file.save(path.join(tmpdirname, excel_file.filename))
                 pilots = extract_participants_from_excel(compid, path.join(tmpdirname, excel_file.filename))
                 mass_import_participants(compid, pilots)
+            resp = jsonify(success=True)
+            return resp
+        resp = jsonify(success=False)
+        return resp
+
+
+@blueprint.route('/_upload_participants_fsdb/<compid>', methods=['POST'])
+@login_required
+def _upload_participants_fsdb(compid):
+    from pilot.participant import mass_import_participants
+    import tempfile
+    compid = int(compid)
+    if request.method == "POST":
+        if request.files:
+            fsdb_file = request.files["fsdb_file"]
+            with tempfile.TemporaryDirectory() as tmpdirname:
+                tmp_file = Path(tmpdirname, fsdb_file.filename)
+                fsdb_file.save(tmp_file)
+                participants = frontendUtils.import_participants_from_fsdb(tmp_file)
+                mass_import_participants(compid, participants)
             resp = jsonify(success=True)
             return resp
         resp = jsonify(success=False)

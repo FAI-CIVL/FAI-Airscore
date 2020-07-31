@@ -1119,3 +1119,20 @@ def check_short_code(comp_short_code):
             return False
         else:
             return True
+
+
+def import_participants_from_fsdb(file: Path, from_CIVL=False) -> list:
+    """read the fsdb file"""
+    from fsdb import read_fsdb_file
+    from pilot.participant import Participant
+    root = read_fsdb_file(file)
+    pilots = []
+
+    print("Getting Pilots Info...")
+    if from_CIVL:
+        print('*** get from CIVL database')
+    p = root.find('FsCompetition').find('FsParticipants')
+    for pil in p.iter('FsParticipant'):
+        pilot = Participant.from_fsdb(pil, from_CIVL=from_CIVL)
+        pilots.append(pilot)
+    return pilots
