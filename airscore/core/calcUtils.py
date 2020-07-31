@@ -53,7 +53,7 @@ def km(dist, n=3):
 def get_int(string):
     try:
         return int(string)
-    except:
+    except ValueError:
         lstr = string.replace('.', ' ').replace('_', ' ').replace('-', ' ').split()
         for i in lstr:
             if i.isdigit():
