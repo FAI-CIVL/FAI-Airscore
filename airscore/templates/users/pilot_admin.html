@@ -89,6 +89,8 @@
              <button id="manual_add_pilot_button" class="btn btn-success ml-4" data-toggle="modal" data-target="#add_modal">Add a pilot</button>
              <button id="Excel_button" class="btn btn-success ml-4">Upload Excel file</button>
              <input id="Excel_fileupload" style="width: 0%;" type="file" size="chars" class="custom-file-input"  data-url="/users/_upload_participants_excel/{{ session.compid }}" name="excel_file" >
+             <button id="FSDB_button" class="btn btn-success ml-4">Upload FSDB file</button>
+             <input id="FSDB_fileupload" style="width: 0%;" type="file" size="chars" class="custom-file-input"  data-url="/users/_upload_participants_fsdb/{{ session.compid }}" name="fsdb_file" >
              <button id="delete_external" data-toggle="modal" data-target="#delete_modal" class="btn btn-danger ml-4">Remove All</button>
          </div>
       </div>
@@ -495,6 +497,8 @@ function save_modified_participant(par_id){
 
 $('#Excel_button').click(function(){
     $('#Excel_fileupload').click();
+    document.getElementById("Excel_button").innerHTML = "Processing...";
+    document.getElementById("Excel_button").className = "btn btn-warning ml-4";
 });
 
 $(function () {
@@ -512,9 +516,39 @@ $(function () {
                     {% if pilotdb %}
                     get_internal_pilots();
                     {% endif %}
-                      populate_registered_pilot_details({{session.compid}});
+                    populate_registered_pilot_details({{session.compid}});
+                    document.getElementById("Excel_button").innerHTML = "Upload Excel File";
+                    document.getElementById("Excel_button").className = "btn btn-success ml-4";
 
                }
+    });
+});
+
+$('#FSDB_button').click(function(){
+    $('#FSDB_fileupload').click();
+    document.getElementById("FSDB_button").innerHTML = "Processing...";
+    document.getElementById("FSDB_button").className = "btn btn-warning ml-4";
+});
+
+$(function () {
+    $('#FSDB_fileupload').fileupload({
+        dataType: 'json',
+        done: function (e, data) {
+            $.each(data.result.files, function (index, file) {
+                $('<p/>').text(file.name).appendTo(document.body);
+            });
+        },
+        submit: function (e, data){
+<!--        $('#upload_box').hide();-->
+        },
+        success: function () {
+                    {% if pilotdb %}
+                    get_internal_pilots();
+                    {% endif %}
+                    populate_registered_pilot_details({{session.compid}});
+                    document.getElementById("FSDB_button").innerHTML = "Upload FSDB File";
+                    document.getElementById("FSDB_button").className = "btn btn-success ml-4";
+        }
     });
 });
 

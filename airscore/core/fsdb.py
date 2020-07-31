@@ -20,6 +20,7 @@ from comp import Comp
 from compUtils import is_ext
 from formula import Formula
 from db.conn import db_session
+from pathlib import Path
 from pilot.participant import Participant, mass_import_participants
 from pilot.flightresult import FlightResult, update_all_results
 from task import Task
@@ -44,7 +45,7 @@ class FSDB(object):
         return self.comp.formula
 
     @classmethod
-    def read(cls, fp, short_name=None, keep_task_path=False, from_CIVL=False):
+    def read(cls, fp: Path, short_name: str = None, keep_task_path=False, from_CIVL=False):
         """ A XML reader to read FSDB files
             Unfortunately the fsdb format isn't published so much of this is simply an
             exercise in reverse engineering.
@@ -55,12 +56,13 @@ class FSDB(object):
         """
 
         """read the fsdb file"""
-        try:
-            tree = ET.parse(fp)
-            root = tree.getroot()
-        except ET.Error:
-            print("FSDB Read Error.")
-            return None
+        root = read_fsdb_file(fp)
+        # try:
+        #     tree = ET.parse(fp)
+        #     root = tree.getroot()
+        # except ET.Error:
+        #     print("FSDB Read Error.")
+        #     return None
 
         pilots = []
         tasks = []
@@ -616,3 +618,17 @@ class FSDB(object):
             return self.comp.comp_id
         else:
             return None
+
+
+def read_fsdb_file(file: Path) -> ET:
+    """read the fsdb file"""
+    try:
+        tree = ET.parse(file)
+    except TypeError:
+        tree = ET.parse(file.as_posix())
+    except ET.Error:
+        print("FSDB Read Error.")
+        return None
+    finally:
+        root = tree.getroot()
+        return root
