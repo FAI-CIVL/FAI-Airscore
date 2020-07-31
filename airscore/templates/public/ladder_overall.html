@@ -1,60 +1,63 @@
 {% extends "base.html"%}
 
 {% block page_title %}
-  Ladder Results - Overall
+Ladder Results - Overall
 {% endblock %}
 
 {% block head %}
-    <!-- CSS -->
-    <link href="/static/css/task.css" rel="stylesheet">
-    <link href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css" rel="stylesheet">
-    <!-- JS -->
-    <script type="text/javascript" src="/static/js/utils.js"></script>
-    <script type="text/javascript" src="/static/js/microajax.minified.js"></script>
+<!-- CSS -->
+<link href='/static/css/task.css' rel='stylesheet'>
+<link href='https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css' rel='stylesheet'>
+<!-- JS -->
+<script type='text/javascript' src='/static/js/utils.js'></script>
+<script type='text/javascript' src='/static/js/microajax.minified.js'></script>
 {% endblock %}
 
 {% block back %}
-    <a href="/ladders/">Back to Ladders List</a>
+<a href='/ladders/'>Back to Ladders List</a>
 {% endblock %}
 
 {% block content %}
-  <div class="container-fluid">
-    <div class="row">
-        <div class="col col-md-7 comp_header mt-1" id="comp_header">
-        <h2 id="comp_name"></h2>
-        <h4 id="comp_date"></h4>
-        <h4 id="comp_director"></h4>
-        <select name="dhv" id="dhv" class="form-control" placeholder="Class">
-            <option value="" selected>Open</option>
-            <option value="A">Novice</option>
-            <option value="B">Fun</option>
-            <option value="C">Sports</option>
-            <option value="D">Serial</option>
-            <option value="CCC">Competition</option>
-        </select>
-        </div>
-        <div class="col col-md-5 parameters">
-        <table class="table table-sm" id="formula">
-        <thead class="thead-light" id="formula_hd">
-            <tr><th>Information</th><th></th></tr>
-        </thead>
-        <tbody class="small" id="formula_bd"></tbody>
-        </table>
-        </div>
+<div class='container-fluid'>
+  <div class='row'>
+    <div class='col col-md-7 comp_header mt-1' id='comp_header'>
+      <h2 id='comp_name'></h2>
+      <h4 id='comp_date'></h4>
+      <h4 id='comp_director'></h4>
+      <select name='dhv' id='dhv' class='form-control' placeholder='Class'>
+        <option value='' selected>Open</option>
+        <option value='A'>Novice</option>
+        <option value='B'>Fun</option>
+        <option value='C'>Sports</option>
+        <option value='D'>Serial</option>
+        <option value='CCC'>Competition</option>
+      </select>
     </div>
-    <table id="results_table" class="row-border compact" cellspacing="0" width="100%">
-    <thead>
+    <div class='col col-md-5 parameters'>
+      <table class='table table-sm' id='formula'>
+        <thead class='thead-light' id='formula_hd'>
         <tr>
+          <th>Information</th>
+          <th></th>
         </tr>
-    </thead>
-    </table>
+        </thead>
+        <tbody class='small' id='formula_bd'></tbody>
+      </table>
     </div>
+  </div>
+  <table id='results_table' class='row-border compact' cellspacing='0' width='100%'>
+    <thead>
+    <tr>
+    </tr>
+    </thead>
+  </table>
+</div>
 {% endblock %}
 
 {% block js %}
-    <script type="text/javascript" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
-    <script type="text/javascript" src="/static/js/enums.js"></script>
-    <script type="text/javascript" src="/static/js/class_filter.js"></script>
-    <script type="text/javascript" src="/static/js/pop_ladder.js"></script>
-    <script type="text/javascript">populate_ladder({{ladderid|tojson}}, {{season|tojson}})</script>
+<script type='text/javascript' src='https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js'></script>
+<script type='text/javascript' src='/static/js/enums.js'></script>
+<script type='text/javascript' src='/static/js/class_filter.js'></script>
+<script type='text/javascript' src='/static/js/pop_ladder.js'></script>
+<script type='text/javascript'>populate_ladder({{ladderid|tojson}}, {{season|tojson}})</script>
 {% endblock %}

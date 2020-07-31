@@ -1,100 +1,102 @@
 {% extends "base.html"%}
 
 {% block page_title %}
-  Task Live
+Task Live
 {% endblock %}
 
 {% block head %}
-<style type="text/css">
-    .tooltiptext {
-      visibility: hidden;
-      width: 120px;
-      background-color: black;
-      color: #fff;
-      border-radius: 6px;
-      padding: 5px 0;
-      position: absolute;
-      z-index: 1;
-      bottom: 100%;
-      left: 50%;
-      margin-left: -60px;
-    }
-    .noted:hover .tooltiptext {
-      visibility: visible;
-    }
+<style type='text/css'>
+  .tooltiptext {
+    visibility: hidden;
+    width: 120px;
+    background-color: black;
+    color: #fff;
+    border-radius: 6px;
+    padding: 5px 0;
+    position: absolute;
+    z-index: 1;
+    bottom: 100%;
+    left: 50%;
+    margin-left: -60px;
+  }
+  .noted:hover .tooltiptext {
+    visibility: visible;
+  }
+
 </style>
 {% endblock %}
 
 {% block content %}
 <br>
-<div class="container" id="main">
-    {% if info %}
-    <h1 class="my-4" id="comp_name">{{info['comp_name']}} - {{info['task_name']}}</h1>
-    <div class="row">
-        <h5>{{info['date']}}</h5>
-    </div>
-    <div class="row">
-        {% if headers['details'] %}
-        <h4>{{headers['main']}} - {{headers['details']}}</h4>
+<div class='container' id='main'>
+  {% if info %}
+  <h1 class='my-4' id='comp_name'>{{info['comp_name']}} - {{info['task_name']}}</h1>
+  <div class='row'>
+    <h5>{{info['date']}}</h5>
+  </div>
+  <div class='row'>
+    {% if headers['details'] %}
+    <h4>{{headers['main']}} - {{headers['details']}}</h4>
+    {% else %}
+    <h4 style='color:red;font-weight:600'>{{headers['main']}}</h4>
+    {% endif %}
+  </div>
+  {% if headers['warning'] %}
+  <div class='row'>
+    <h5 style='color:red;font-weight:600'>{{headers['warning']}}</h5>
+  </div>
+  {% endif %}
+  <div class='row'>
+    <h6>Last Update: {{file_stats['last_update']}}</h6>
+  </div>
+  {% endif %}
+  <div class='live_results'>
+    {% if data %}
+    <table>
+      <tr>
+        <th style='width:3%'>#</th>
+        <th style='width:4%'>ID</th>
+        <th style='width:25%'>Name</th>
+        <th style='width:15%'>Result</th>
+        <th style='width:38%'>Warnings</th>
+      </tr>
+      {% for pilot in data %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        {% if pilot['fem'] %}
+        <td style='color: magenta'>{{pilot['id']}}</td>
+        <td style='color: magenta'>{{pilot['name']}} [{{pilot['time']}}]</td>
         {% else %}
-        <h4 style="color:red;font-weight:600">{{headers['main']}}</h4>
+        <td>{{pilot['id']}}</td>
+        <td>{{pilot['name']}} [{{pilot['time']}}]</td>
         {% endif %}
-    </div>
-    {% if headers['warning'] %}
-    <div class="row">
-        <h5 style="color:red;font-weight:600">{{headers['warning']}}</h5>
-    </div>
-    {% endif %}
-    <div class="row">
-        <h6>Last Update: {{file_stats['last_update']}}</h6>
-    </div>
-    {% endif %}
-    <div class="live_results">
-        {% if data %}
-        <table>
-            <tr>
-                <th style="width:3%">#</th>
-                <th style="width:4%">ID</th>
-                <th style="width:25%">Name</th>
-                <th style="width:15%">Result</th>
-                <th style="width:38%">Warnings</th>
-            </tr>
-            {% for pilot in data %}
-                <tr>
-                <td>{{ loop.index }}</td>
-                {% if pilot['fem'] %}
-                    <td style="color: magenta">{{pilot['id']}}</td>
-                    <td style="color: magenta">{{pilot['name']}} [{{pilot['time']}}]</td>
-                {% else %}
-                    <td>{{pilot['id']}}</td>
-                    <td>{{pilot['name']}} [{{pilot['time']}}]</td>
-                {% endif %}
-                {% if pilot['comment'] %}
-                    <td class="noted" style="color: orange; text-decoration:underline;">
-                        {{pilot['result']}} <span style="font-size: 0.6em;">{{pilot['height']}}</span>
-                    </td>
-                    <td class="noted" style="color: orange; font-size: 0.6em;">
-                        <span class="tooltiptext">{{pilot['comment']}}</span>
-                    </td>
-                {% else %}
-                    <td>{{pilot['result']}} <span style="font-size: 0.6em;">{{pilot['height']}}</span></td>
-                    <td></td>
-                {% endif %}
-                </tr>
-            {% endfor %}
-        </table>
+        {% if pilot['comment'] %}
+        <td class='noted' style='color: orange; text-decoration:underline;'>
+          {{pilot['result']}} <span style='font-size: 0.6em;'>{{pilot['height']}}</span>
+        </td>
+        <td class='noted' style='color: orange; font-size: 0.6em;'>
+          <span class='tooltiptext'>{{pilot['comment']}}</span>
+        </td>
+        {% else %}
+        <td>{{pilot['result']}} <span style='font-size: 0.6em;'>{{pilot['height']}}</span></td>
+        <td></td>
         {% endif %}
-    </div>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+  </div>
 </div>
 {% endblock %}
 
 {% block js %}
-    <script type="text/javascript" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
-    <script>
+<script type='text/javascript' src='https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js'></script>
+<script>
      $('document').ready(function(){
         setTimeout(function(){
            window.location.reload(1);
         }, 120000);
      });
+
 </script>
 {% endblock %}
