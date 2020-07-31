@@ -160,11 +160,11 @@ function populate_task(taskid){
                         $.each( json.formula, function( key, value ) {
                             if (count < half)
                             {
-                                $('#formula1 tbody').append('<tr><td>' + key + '</td><td>' + value + '</td></tr>');
+                                $('#formula_left tbody').append('<tr><td>' + key + '</td><td>' + value + '</td></tr>');
                             }
                             else
                             {
-                                $('#formula2 tbody').append('<tr><td>' + key + '</td><td>' + value + '</td></tr>');
+                                $('#formula_right tbody').append('<tr><td>' + key + '</td><td>' + value + '</td></tr>');
                             }
                             count++;
                         });
