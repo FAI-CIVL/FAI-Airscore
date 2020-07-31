@@ -96,8 +96,8 @@ class Participant(Pilot):
             Input:
                 - pil:          lxml.etree: FsParticipant section
                 - from_CIVL:    BOOL: look for pilot on CIVL database"""
-
-        CIVLID = None if not pil.get('CIVLID') else int(pil.get('CIVLID'))
+        from calcUtils import get_int
+        CIVLID = None if not (pil.get('CIVLID')) else get_int(pil.get('CIVLID'))
         name = pil.get('name')
         # print(CIVLID, name)
         pilot = None
