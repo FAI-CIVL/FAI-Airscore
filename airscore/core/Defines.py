@@ -26,6 +26,8 @@ except IOError:
 
 os.chdir(dname)
 ''' Application Settings'''
+# FLASKCONTAINER = config['docker']['container']  # Flask Docker Container Name
+# FLASKPORT = config['docker']['port']  # Flask Docker Container Port
 BINDIR = config['dir']['bin']  # script directory
 TRACKDIR = config['dir']['tracks']  # track file directory
 LOGDIR = config['dir']['log']  # log files directory
@@ -100,3 +102,6 @@ FM_LIVE = config['flymaster_live_server']
 '''Telegram Bot'''
 TELEGRAM_API = secret.get('telegram', {}).get('API') or env.str('TELEGRAM_API')
 TELEGRAM_CHANNEL = secret.get('telegram', {}).get('channel') or env.str('TELEGRAM_CHANNEL')
+
+'''Ladders'''
+LADDERS = config['ladders']

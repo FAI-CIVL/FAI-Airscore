@@ -57,7 +57,7 @@ def home():
             return redirect(redirect_url)
         else:
             flash_errors(form)
-    return render_template('public/index.html', form=form, now=datetime.utcnow())
+    return render_template('public/index.html', form=form, now=datetime.utcnow(), ladders=Defines.LADDERS)
 
 
 @blueprint.route("/ladders/", methods=["GET", "POST"])
