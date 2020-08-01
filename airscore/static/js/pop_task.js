@@ -1,4 +1,3 @@
-
 function populate_task(taskid){
     $(document).ready(function() {
         $('#comp_name').text('Calculating Results ...');
@@ -171,6 +170,9 @@ function populate_task(taskid){
                         $.each( json.stats, function( key, value ) {
                             $('#taskinfo tbody').append('<tr><td>' + key + '</td><td>' + value + '</td></tr>');
                         });
+                        // created date
+                        let created_date = document.createTextNode('Results created: ' + json.file_stats.timestamp + ' UTC');
+                        $('#created').append(created_date);
                         // class picker
                         $("#dhv option").remove(); // Remove all <option> child tags.
                         // at the moment we provide the highest EN rating for a class and the overall_class_filter.js uses this.

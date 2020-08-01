@@ -104,6 +104,7 @@ def get_ladder_results(ladder_id: int, season: int,
     from calcUtils import get_season_dates
     from compUtils import get_nat, create_classifications
     from result import open_json_file
+    import time
 
     if not (nat and starts and ends):
         lad = L.get_by_id(ladder_id)
@@ -241,12 +242,14 @@ def get_ladder_results(ladder_id: int, season: int,
     pilots_list = sorted(pilots_list, key=lambda x: x['score'], reverse=True)
     stats['winner_score'] = 0 if not pilots_list else pilots_list[0]['score']
     '''create json'''
+    file_stats = {'timestamp': time.time()}
     output = {'info': info,
               'comps': comps,
               'formula': formula,
               'stats': stats,
               'results': pilots_list,
-              'rankings': rankings}
+              'rankings': rankings,
+              'file_stats': file_stats}
     return output
 
 
