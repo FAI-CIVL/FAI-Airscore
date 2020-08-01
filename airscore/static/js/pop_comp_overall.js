@@ -106,6 +106,9 @@ function populate_comp_overall(compid){
                                 table.DataTable().column( i ).visible( false );
                             }
                         }
+                        // created date
+                        let created_date = document.createTextNode('Results created: ' + json.file_stats.timestamp + ' UTC');
+                        $('#created').append(created_date);
                         // class picker
                         $("#dhv option").remove(); // Remove all <option> child tags.
                         // at the moment we provide the highest EN rating for a class and the overall_class_filter.js uses this.
