@@ -106,9 +106,9 @@ def get_datetime(t):
     """
         Transform string in datetime.datetime
     """
-    if t is not None:
+    try:
         return datetime.strptime(t[:19], '%Y-%m-%dT%H:%M:%S')
-    else:
+    except ValueError:
         return t
 
 
@@ -117,9 +117,9 @@ def get_date(t):
         Transform string in datetime.date
         Gets first 10 positions in string ('YYYY-mm-dd')
     """
-    if t is not None:
+    try:
         return datetime.strptime(t[:10], '%Y-%m-%d').date()
-    else:
+    except ValueError:
         return t
 
 
@@ -128,9 +128,9 @@ def get_time(t):
         Transform string in datetime.time
         Gets first 19 positions in string ('YYYY-MM-DD hh:mm:ss')
     """
-    if t is not None:
+    try:
         return datetime.strptime(t[:19], '%Y-%m-%dT%H:%M:%S').time()
-    else:
+    except ValueError:
         return t
 
 
