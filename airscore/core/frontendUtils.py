@@ -66,7 +66,7 @@ def get_comps():
     return jsonify({'data': all_comps})
 
 
-def get_admin_comps(current_userid):
+def get_admin_comps(current_userid, current_user_access=None):
     """get a list of all competitions in the DB and flag ones where owner is current user"""
     c = aliased(TblCompetition)
     ca = aliased(TblCompAuth)
@@ -83,7 +83,7 @@ def get_admin_comps(current_userid):
         comp[1] = f'<a href="/users/comp_settings_admin/{comp[0]}">{comp[1]}</a>'
         comp[3] = comp[3].strftime("%Y-%m-%d")
         comp[4] = comp[4].strftime("%Y-%m-%d")
-        if int(comp[6]) == current_userid:
+        if (int(comp[6]) == current_userid) or (current_user_access == 'admin'):
             comp[6] = 'delete'
         else:
             comp[6] = ''

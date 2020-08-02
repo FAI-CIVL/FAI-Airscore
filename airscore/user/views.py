@@ -340,7 +340,7 @@ def comp_settings_admin(compid):
         formulas = list_formulas()
         compform.formula.choices = [(x, x.upper()) for x in formulas[comp.comp_class]]
 
-        if current_user.id not in scorekeeper_ids:
+        if (current_user.id not in scorekeeper_ids) and (current_user.access != 'admin'):
             session['is_scorekeeper'] = False
             compform.submit = None
         else:
@@ -516,7 +516,7 @@ def task_admin(taskid):
 @blueprint.route('/_get_admin_comps', methods=['GET'])
 @login_required
 def _get_admin_comps():
-    return frontendUtils.get_admin_comps(current_user.id)
+    return frontendUtils.get_admin_comps(current_user.id, current_user.access)
 
 
 @blueprint.route('/_delete_comp/<compid>', methods=['POST', 'GET'])
