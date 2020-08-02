@@ -308,8 +308,7 @@ Competition Settings
             compform.self_register.description})}}
           </div>
           {% endif %}
-          <a id='export_fsdb' class='btn btn-success' onclick='export_to_fsdb()' href='{{' url_for('user._export_fsdb',
-          compid=compid)}}>Export to FSDB</a>
+          <a id='export_fsdb' class='btn btn-success' onclick='export_to_fsdb()' href="{{ url_for('user._export_fsdb', compid=compid)}}">Export to FSDB</a>
           <p id='fsdb_spinner'></p>
         </div>
       </div>
