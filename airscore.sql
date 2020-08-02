@@ -170,34 +170,6 @@ CREATE TABLE `Pilots` (
 -- --------------------------------------------------------
 
 --
--- Stand-in structure for view `PilotView`
--- (See below for the actual view)
---
-CREATE TABLE `PilotView` (
-`pil_id` bigint(20) unsigned
-,`login` varchar(60)
-,`pwd` varchar(255)
-,`email` varchar(100)
-,`first_name` longtext
-,`last_name` longtext
-,`nat` longtext
-,`phone` longtext
-,`sex` varchar(1)
-,`glider_brand` longtext
-,`glider` longtext
-,`glider_cert` longtext
-,`glider_class` varchar(12)
-,`sponsor` longtext
-,`fai_id` longtext
-,`civl_id` longtext
-,`livetrack24_id` longtext
-,`airtribune_id` longtext
-,`xcontest_id` longtext
-);
-
--- --------------------------------------------------------
-
---
 -- Stand-in structure for view `RegionWaypointView`
 -- (See below for the actual view)
 --
@@ -893,8 +865,7 @@ CREATE TABLE `UnscoredPilotView` (
 --
 
 CREATE TABLE `users` (
-  `pil_id` bigint(20) UNSIGNED NOT NULL,
-  `id` bigint(20) UNSIGNED NOT NULL,
+  `id` int(11) UNSIGNED NOT NULL,
   `username` varchar(60) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci NOT NULL DEFAULT '',
   `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci NOT NULL DEFAULT '',
   `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci NOT NULL DEFAULT '',
@@ -902,10 +873,8 @@ CREATE TABLE `users` (
   `first_name` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `last_name` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `nat` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `phone` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
-  `sex` varchar(1) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `active` int(1) NOT NULL DEFAULT '0',
-  `is_admin` int(1) NOT NULL DEFAULT '0'
+  `access` enum('pilot','scorekeeper','admin','pending') NOT NULL DEFAULT 'pilot'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -925,15 +894,6 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`lpp_db`@`66.33.192.0/255.255.224.0` SQL SECU
 DROP TABLE IF EXISTS `FlightResultView`;
 
 CREATE ALGORITHM=UNDEFINED DEFINER=`lpp_db`@`66.33.192.0/255.255.224.0` SQL SECURITY DEFINER VIEW `FlightResultView`  AS  select `T`.`track_id` AS `track_id`,`T`.`par_id` AS `par_id`,`T`.`task_id` AS `task_id`,`R`.`comp_id` AS `comp_id`,`R`.`civl_id` AS `civl_id`,`R`.`fai_id` AS `fai_id`,`R`.`pil_id` AS `pil_id`,`R`.`ID` AS `ID`,`R`.`name` AS `name`,`R`.`nat` AS `nat`,`R`.`sex` AS `sex`,`R`.`glider` AS `glider`,`R`.`glider_cert` AS `glider_cert`,`R`.`sponsor` AS `sponsor`,`R`.`team` AS `team`,`R`.`nat_team` AS `nat_team`,`R`.`live_id` AS `live_id`,`T`.`distance_flown` AS `distance_flown`,`T`.`best_distance_time` AS `best_distance_time`,`T`.`stopped_distance` AS `stopped_distance`,`T`.`stopped_altitude` AS `stopped_altitude`,`T`.`total_distance` AS `total_distance`,`T`.`speed` AS `speed`,`T`.`first_time` AS `first_time`,`T`.`real_start_time` AS `real_start_time`,`T`.`goal_time` AS `goal_time`,`T`.`last_time` AS `last_time`,`T`.`result_type` AS `result_type`,`T`.`SSS_time` AS `SSS_time`,`T`.`ESS_time` AS `ESS_time`,`T`.`waypoints_made` AS `waypoints_made`,`T`.`penalty` AS `penalty`,`T`.`comment` AS `comment`,`T`.`time_score` AS `time_score`,`T`.`distance_score` AS `distance_score`,`T`.`arrival_score` AS `arrival_score`,`T`.`departure_score` AS `departure_score`,`T`.`score` AS `score`,`T`.`lead_coeff` AS `lead_coeff`,`T`.`fixed_LC` AS `fixed_LC`,`T`.`ESS_altitude` AS `ESS_altitude`,`T`.`goal_altitude` AS `goal_altitude`,`T`.`max_altitude` AS `max_altitude`,`T`.`last_altitude` AS `last_altitude`,`T`.`landing_altitude` AS `landing_altitude`,`T`.`landing_time` AS `landing_time`,`T`.`track_file` AS `track_file`,`T`.`g_record` AS `g_record` from (`tblTaskResult` `T` join `tblParticipant` `R` on((`T`.`par_id` = `R`.`par_id`))) order by `T`.`task_id`,`T`.`score` desc ;
-
--- --------------------------------------------------------
-
---
--- Structure for view `PilotView`
---
-DROP TABLE IF EXISTS `PilotView`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`lpp_db`@`66.33.192.0/255.255.224.0` SQL SECURITY DEFINER VIEW `PilotView`  AS  select `U`.`ID` AS `pil_id`,`U`.`user_login` AS `login`,`U`.`user_pass` AS `pwd`,`U`.`user_email` AS `email`,(select `legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_value` from `legapiloti_multisite`.`wp_kdvcuk_usermeta` where ((`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`user_id` = `U`.`ID`) and (`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_key` = 'first_name')) limit 1) AS `first_name`,(select `legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_value` from `legapiloti_multisite`.`wp_kdvcuk_usermeta` where ((`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`user_id` = `U`.`ID`) and (`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_key` = 'last_name')) limit 1) AS `last_name`,(select `legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_value` from `legapiloti_multisite`.`wp_kdvcuk_usermeta` where ((`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`user_id` = `U`.`ID`) and (`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_key` = 'nazionalita')) limit 1) AS `nat`,(select `legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_value` from `legapiloti_multisite`.`wp_kdvcuk_usermeta` where ((`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`user_id` = `U`.`ID`) and (`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_key` = 'cellulare')) limit 1) AS `phone`,if(((select `legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_value` from `legapiloti_multisite`.`wp_kdvcuk_usermeta` where ((`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`user_id` = `U`.`ID`) and (`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_key` = 'sesso')) limit 1) in ('Femmina','F','Female')),'F','M') AS `sex`,(select `legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_value` from `legapiloti_multisite`.`wp_kdvcuk_usermeta` where ((`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`user_id` = `U`.`ID`) and (`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_key` = 'vela_marca')) limit 1) AS `glider_brand`,(select `legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_value` from `legapiloti_multisite`.`wp_kdvcuk_usermeta` where ((`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`user_id` = `U`.`ID`) and (`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_key` = 'vela_modello')) limit 1) AS `glider`,(select `legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_value` from `legapiloti_multisite`.`wp_kdvcuk_usermeta` where ((`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`user_id` = `U`.`ID`) and (`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_key` = 'vela_certificazione')) limit 1) AS `glider_cert`,(case (select `legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_value` from `legapiloti_multisite`.`wp_kdvcuk_usermeta` where ((`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`user_id` = `U`.`ID`) and (`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_key` = 'vela_certificazione')) limit 1) when 'A' then 'Sport Class' when 'B' then 'Sport Class' when 'C' then 'Sport Class' when 'D' then 'Serial Class' when 'CCC' then 'Open Class' else 'Open Class' end) AS `glider_class`,(select `legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_value` from `legapiloti_multisite`.`wp_kdvcuk_usermeta` where ((`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`user_id` = `U`.`ID`) and (`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_key` = 'sponsor')) limit 1) AS `sponsor`,(select `legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_value` from `legapiloti_multisite`.`wp_kdvcuk_usermeta` where ((`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`user_id` = `U`.`ID`) and (`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_key` = 'licenza_fai')) limit 1) AS `fai_id`,(select `legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_value` from `legapiloti_multisite`.`wp_kdvcuk_usermeta` where ((`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`user_id` = `U`.`ID`) and (`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_key` = 'civl_id')) limit 1) AS `civl_id`,(select `legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_value` from `legapiloti_multisite`.`wp_kdvcuk_usermeta` where ((`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`user_id` = `U`.`ID`) and (`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_key` = 'user_livetrack24')) limit 1) AS `livetrack24_id`,(select `legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_value` from `legapiloti_multisite`.`wp_kdvcuk_usermeta` where ((`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`user_id` = `U`.`ID`) and (`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_key` = 'user_airtribune')) limit 1) AS `airtribune_id`,(select `legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_value` from `legapiloti_multisite`.`wp_kdvcuk_usermeta` where ((`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`user_id` = `U`.`ID`) and (`legapiloti_multisite`.`wp_kdvcuk_usermeta`.`meta_key` = 'user_xcontest')) limit 1) AS `xcontest_id` from `legapiloti_multisite`.`wp_kdvcuk_users` `U` ;
 
 -- --------------------------------------------------------
 
@@ -1147,6 +1107,12 @@ ALTER TABLE `tblXContestCodes`
   ADD PRIMARY KEY (`xccToID`);
 
 --
+-- Indexes for table `users`
+--
+ALTER TABLE `users`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- AUTO_INCREMENT for dumped tables
 --
 
@@ -1233,6 +1199,12 @@ ALTER TABLE `tblTaskWaypoint`
 --
 ALTER TABLE `tblTrackWaypoint`
   MODIFY `trw_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `users`
+--
+ALTER TABLE `users`
+  MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
