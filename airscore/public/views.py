@@ -137,10 +137,10 @@ def reset_password_request():
         user = User.query.filter_by(email=reset_form.email.data).first()
         if user:
             if frontendUtils.production():
-                current_app.task_queue.enqueue('sendemail.send_password_reset_email', user)
+                current_app.task_queue.enqueue('send_email.send_password_reset_email', user)
             else:
-                import sendemail
-                sendemail.send_password_reset_email(user)
+                import send_email
+                send_email.send_password_reset_email(user)
         flash('Check your email for the instructions to reset your password', category='info')
         return redirect(url_for('public.home'))
     return render_template('public/reset_password_request.html',
