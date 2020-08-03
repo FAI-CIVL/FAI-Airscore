@@ -6,6 +6,9 @@ Antonio Golfari - 2018
 """
 import os
 import yaml
+from environs import Env
+env = Env()
+env.read_env()
 
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
@@ -14,9 +17,13 @@ with open('../../defines.yaml', 'rb') as f:
     """use safe_load instead load"""
     config = yaml.safe_load(f)
 
-with open('../../secret.yaml', 'rb') as f:
+try:
+    f = open('../../secret.yaml', 'rb')
     """use safe_load instead load"""
     secret = yaml.safe_load(f)
+except IOError:
+    secret = {}
+
 os.chdir(dname)
 ''' Application Settings'''
 BINDIR = config['dir']['bin']  # script directory
@@ -61,14 +68,14 @@ wpt_formats = ['GEO', 'UTM', 'CUP', 'GPX', 'CompeGPS', 'OziExplorer']
 ALLOWED_WPT_EXTENSIONS = ['wpt', 'cup', 'gpx', 'ozi']
 
 ''' Database Settings'''
-MYSQLUSER = secret['db']['User']  # mysql db user
-MYSQLPASSWORD = secret['db']['Pass']  # mysql db password
-MYSQLHOST = secret['db']['Server']  # mysql host name
-DATABASE = secret['db']['Name']  # mysql db name
+MYSQLUSER = secret.get('db', {}).get('User') or env.str('MYSQLUSER')  # mysql db user
+MYSQLPASSWORD = secret.get('db', {}).get('Pass') or env.str('MYSQLPASSWORD')# mysql db password
+MYSQLHOST = secret.get('db', {}).get('Server') or env.str('MYSQLHOST')   # mysql host name
+DATABASE = secret.get('db', {}).get('Name') or env.str('DATABASE')# mysql db name
 
 ''' Other Settings'''
-XC_LOGIN = secret['xcontest']['User']
-XC_password = secret['xcontest']['Pass']
+XC_LOGIN = secret.get('xcontest', {}).get('User') or env.str('XCONTEST_USER')
+XC_password = secret.get('xcontest', {}).get('Pass') or env.str('XCONTEST_PASS')
 G_Record_validation_Server = config['g_record_validation_server']
 
 '''Competition options'''
@@ -91,5 +98,5 @@ SELF_REG_DEFAULT = config['internal_pilot_DB']['self_registration_default']
 FM_LIVE = config['flymaster_live_server']
 
 '''Telegram Bot'''
-TELEGRAM_API = secret['telegram']['API']
-TELEGRAM_CHANNEL = secret['telegram']['channel']
+TELEGRAM_API = secret.get('telegram', {}).get('API') or env.str('TELEGRAM_API')
+TELEGRAM_CHANNEL = secret.get('telegram', {}).get('channel') or env.str('TELEGRAM_CHANNEL')
