@@ -59,5 +59,3 @@ dir:
   livetracking: /app/airscore/data/livetracking/
   igc_parsing_config: /app/airscore/igc_parsing_config/
   temp_files: /app/airscore/data/temp/
-
-
