@@ -12,9 +12,9 @@ see docker quickstart below
 #### environment variables
 - Defines.py - Reads defines.yaml file
 - defines.yaml - environment variables, DB connection info, folder structure, logins etc
-- secrets.yaml - DB connection info, logins etc
+- secret.yaml - DB connection info, logins etc
 - logger.py - log file setup
-- .env contians environment variables used in the docker compose files.
+- .env contains environment variables used in the docker compose files.
 
 ## License
 Apart from igc_lib which has a MIT license and bootstrap all rest of the code is provided under the GPL License version 2 described in the file "Copying".
@@ -23,29 +23,37 @@ If this is not present please download from www.gnu.org.
 
 ## Docker Quickstart
 
-This app can be run completely using `Docker` and `docker-compose`. **Using Docker is recommended, as it guarantees the application is run using compatible versions of Python and Node**.
+This app should be run completely using `Docker` and `docker-compose`. **Using Docker is recommended, as it guarantees the application is run using compatible versions of Python and Node**.
 
 There are three main services:
 
 To run the development version of the app
 
 ```bash
-docker-compose up flask-dev
+docker-compose -f docker-compose-dev.yml up
 ```
 
 To run the production version of the app
 
 ```bash
-docker-compose -f docker-compose-production.yml up
+docker-compose up
 
 ```
+
+The production version uses several containers running together:
+- The flask app
+- A worker container for background tasks
+- Redis (for cache and background processing queue)
+- Nginx
+
+
 
 The list of `environment:` variables in the `docker-compose.yml` file takes precedence over any variables specified in `.env`.
 
 To run any commands using the `Flask CLI`
 
 ```bash
-docker-compose run --rm manage <<COMMAND>>
+docker-compose -f docker-compose-dev.yml run --rm manage <<COMMAND>>
 ```
 
 Therefore, to initialize a database you would run
