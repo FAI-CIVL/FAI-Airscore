@@ -66,12 +66,14 @@ pg_preset = FormulaPreset(
     overall_validity=Preset(value='ftv', visible=True, editable=True),
     # FTV Parameter
     validity_param=Preset(value=0.75, visible=True, editable=True),
+    # FTV Parameter Reference: day_quality, max_score
+    validity_ref=Preset(value='max_score', visible=True, editable=True),
     # Penalty when ESS but not Goal: default is 1 for PG and 0.2 for HG
     no_goal_penalty=Preset(value=1.0, visible=False),
     # Glide Bonus for Stopped Task: default is 4 for PG and 5 for HG
     glide_bonus=Preset(value=4.0, visible=False),
     # Waypoint radius tolerance for validation: FLOAT default is 0.1%
-    tolerance=Preset(value=0.005, visible=True, editable=True),
+    tolerance=Preset(value=0.002, visible=True, editable=True),
     # Waypoint radius minimum tolerance (meters): INT default = 5
     min_tolerance=Preset(value=5, visible=True, editable=True),
     # Scoring Altitude Type: default is GPS for PG and QNH for HG
@@ -191,7 +193,7 @@ def missing_area(time_interval, best_distance_to_ESS, ss_distance):
 def tot_lc_calc(res, t):
     """ Function to calculate final Leading Coefficient for pilots,
         that needs to be done when all tracks have been scored"""
-    if res.result_type in ('abs', 'dnf', 'mindist') or not res.SSS_time:
+    if res.result_type in ('abs', 'dnf', 'mindist', 'nyp') or not res.SSS_time:
         '''pilot did't make Start or has no track'''
         return 0
     ss_distance = t.SS_distance / 1000

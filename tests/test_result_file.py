@@ -18,11 +18,7 @@ def test_result_file(task=test_task):
         assert stats[key] == getattr(test_task, key)
     results = result['results']
     for pilot in results:
-        el = next(p for p in task.pilots if p.info.ID == pilot['ID'])
+        el = next(p for p in task.pilots if p.ID == pilot['ID'])
         for key in TaskResult.results_list:
-            if hasattr(el.result, key):
-                assert pilot[key] == getattr(el.result, key)
-            elif hasattr(el.track, key):
-                assert pilot[key] == getattr(el.track, key)
-            elif hasattr(el.info, key):
-                assert pilot[key] == getattr(el.info, key)
+            if hasattr(el, key):
+                assert pilot[key] == getattr(el, key)

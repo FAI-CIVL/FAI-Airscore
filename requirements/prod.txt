@@ -41,6 +41,10 @@ Flask-DebugToolbar>=0.11.0
 # Environment variable parsing
 environs>=7.4.0
 
+#emails
+flask-mail>=0.9.1
+PyJWT>=1.7.1
+
 #airscore core
 
 aerofiles>=1.0.0

@@ -1,17 +1,16 @@
 # coding: utf-8
 from sqlalchemy import CHAR, Column, Date, Enum, Float, ForeignKey, Index, String, TIMESTAMP, Table, Text, text, \
     DateTime, Boolean
-from sqlalchemy.dialects.mysql import BIGINT, INTEGER, LONGTEXT, MEDIUMINT, MEDIUMTEXT, SMALLINT, TINYINT, VARCHAR
-from sqlalchemy.orm import relationship
-
-from myconn import Base, metadata
-
+from sqlalchemy.dialects.mysql import BIGINT, INTEGER, LONGTEXT, MEDIUMINT, SMALLINT, TINYINT, VARCHAR
+from sqlalchemy.orm import relationship, aliased
+from .conn import db_session
+from .models import BaseModel, metadata
 
 # Created using sqlacodegen library
 # sqlacodegen mysql+pymysql://user:pwd@server/database --outfile db_tables_new.py
 
 
-class CompObjectView(Base):
+class CompObjectView(BaseModel):
     __table__ = Table('CompObjectView', metadata,
 
                       Column('comp_id', INTEGER(11), primary_key=True),
@@ -22,8 +21,7 @@ class CompObjectView(Base):
                       Column('MD_name', String(100)),
                       Column('contact', String(100)),
                       Column('cat_id', INTEGER(11)),
-                      Column('sanction', Enum('League', 'PWC', 'FAI 2', 'none', 'FAI 1'),
-                             server_default=text("'none'")),
+                      Column('sanction', String(20), server_default=text("'none'")),
                       Column('comp_type', Enum('RACE', 'Route', 'Team-RACE'), server_default=text("'RACE'")),
                       Column('comp_code', String(8)),
                       Column('restricted', TINYINT(1), server_default=text("'1'")),
@@ -44,6 +42,7 @@ class CompObjectView(Base):
                       Column('formula_name', String(50)),
                       Column('overall_validity', Enum('ftv', 'all', 'round'), server_default=text("'ftv'")),
                       Column('validity_param', Float(4), server_default=text("'0.750'")),
+                      Column('validity_ref', Enum('day_quality', 'max_score'), server_default=text("'day_quality'")),
                       Column('nominal_goal', Float(3), server_default=text("'0.30'")),
                       Column('min_dist', MEDIUMINT(9), server_default=text("'5000'")),
                       Column('nominal_dist', MEDIUMINT(9), server_default=text("'45000'")),
@@ -80,7 +79,7 @@ class CompObjectView(Base):
                       )
 
 
-class TaskFormulaView(Base):
+class TaskFormulaView(BaseModel):
     __table__ = Table('TaskFormulaView', metadata,
 
                       Column('task_id', INTEGER(11), primary_key=True),
@@ -90,6 +89,7 @@ class TaskFormulaView(Base):
                       Column('formula_name', String(50)),
                       Column('overall_validity', Enum('ftv', 'all', 'round'), server_default=text("'ftv'")),
                       Column('validity_param', Float(4), server_default=text("'0.750'")),
+                      Column('validity_ref', Enum('day_quality', 'max_score'), server_default=text("'day_quality'")),
                       Column('nominal_goal', Float(3), server_default=text("'0.30'")),
                       Column('min_dist', MEDIUMINT(9), server_default=text("'5000'")),
                       Column('nominal_dist', MEDIUMINT(9), server_default=text("'45000'")),
@@ -121,7 +121,7 @@ class TaskFormulaView(Base):
                       )
 
 
-class FlightResultView(Base):
+class FlightResultView(BaseModel):
     __table__ = Table('FlightResultView', metadata,
 
                       Column('track_id', INTEGER(11), primary_key=True),
@@ -169,8 +169,8 @@ class FlightResultView(Base):
                       )
 
 
-class PilotView(Base):
-    __table__ = Table('PilotView', metadata,
+class PilotView(BaseModel):
+    __table__ = Table('Pilots', metadata,
 
                       Column('pil_id', INTEGER(11), primary_key=True),
                       Column('login', String(60)),
@@ -190,11 +190,12 @@ class PilotView(Base):
                       Column('civl_id', LONGTEXT),
                       Column('livetrack24_id', LONGTEXT),
                       Column('airtribune_id', LONGTEXT),
-                      Column('xcontest_id', LONGTEXT)
+                      Column('xcontest_id', LONGTEXT),
+                      Column('telegram_id', INTEGER(11))
                       )
 
 
-class User(Base):
+class User(BaseModel):
     __table__ = Table('users', metadata,
 
                       Column('id', INTEGER(11), primary_key=True),
@@ -208,11 +209,11 @@ class User(Base):
                       Column('phone', LONGTEXT),
                       Column('sex', String(1)),
                       Column('active', TINYINT(1)),
-                      Column('is_admin', TINYINT(1)),
+                      Column('access', Enum('pilot', 'scorekeeper', 'admin', 'pending')),
                       )
 
 
-class RegionWaypointView(Base):
+class RegionWaypointView(BaseModel):
     __table__ = Table('RegionWaypointView', metadata,
 
                       Column('rwp_id', INTEGER(11), primary_key=True),
@@ -225,7 +226,7 @@ class RegionWaypointView(Base):
                       )
 
 
-class TaskAirspaceCheckView(Base):
+class TaskAirspaceCheckView(BaseModel):
     __table__ = Table('TaskAirspaceCheckView', metadata,
 
                       Column('task_id', INTEGER(11), primary_key=True),
@@ -245,7 +246,7 @@ class TaskAirspaceCheckView(Base):
                       )
 
 
-class TaskObjectView(Base):
+class TaskObjectView(BaseModel):
     __table__ = Table('TaskObjectView', metadata,
 
                       Column('task_id', INTEGER(11), primary_key=True),
@@ -289,11 +290,11 @@ class TaskObjectView(Base):
                       )
 
 
-class UnscoredPilotView(Base):
+class UnscoredPilotView(BaseModel):
     __table__ = Table('UnscoredPilotView', metadata,
 
-                      Column('task_id', INTEGER(11), primary_key=True),
-                      Column('par_id', INTEGER(11)),
+                      Column('task_id', INTEGER(11)),
+                      Column('par_id', INTEGER(11), primary_key=True),
                       Column('comp_id', INTEGER(11)),
                       Column('civl_id', INTEGER(10)),
                       Column('fai_id', String(20)),
@@ -352,7 +353,7 @@ class UnscoredPilotView(Base):
 # )
 
 
-class TrackObjectView(Base):
+class TrackObjectView(BaseModel):
     __table__ = Table('TrackObjectView', metadata,
 
                       Column('track_id', INTEGER(11), primary_key=True),
@@ -365,14 +366,14 @@ class TrackObjectView(Base):
                       )
 
 
-class UserView(Base):
-    __table__ = Table('UserView', metadata,
-
-                      Column('usePk', BIGINT(20), primary_key=True),
-                      Column('useName', String(250)),
-                      Column('useLogin', String(60)),
-                      Column('useEmail', String(100))
-                      )
+# class UserView(BaseModel):
+#     __table__ = Table('UserView', metadata,
+#
+#                       Column('usePk', BIGINT(20), primary_key=True),
+#                       Column('useName', String(250)),
+#                       Column('useLogin', String(60)),
+#                       Column('useEmail', String(100))
+#                       )
 
 
 schema_version = Table(
@@ -383,7 +384,7 @@ schema_version = Table(
 )
 
 
-class TblCertification(Base):
+class TblCertification(BaseModel):
     __tablename__ = 'tblCertification'
 
     cert_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
@@ -391,7 +392,7 @@ class TblCertification(Base):
     comp_class = Column(Enum('PG', 'HG', 'mixed'), nullable=False, server_default=text("'PG'"))
 
 
-class TblClassification(Base):
+class TblClassification(BaseModel):
     __tablename__ = 'tblClassification'
 
     cat_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
@@ -401,7 +402,7 @@ class TblClassification(Base):
     team = Column(TINYINT(1), nullable=False, server_default=text("'0'"))
 
 
-class TblCountryCode(Base):
+class TblCountryCode(BaseModel):
     __tablename__ = 'tblCountryCode'
 
     natName = Column(String(52), nullable=False)
@@ -415,7 +416,7 @@ class TblCountryCode(Base):
     natSubRegionId = Column(INTEGER(11))
 
 
-class TblForComp(Base):
+class TblForComp(BaseModel):
     __tablename__ = 'tblForComp'
 
     forPk = Column(INTEGER(11))
@@ -428,6 +429,7 @@ class TblForComp(Base):
     external_name = Column(String(50))
     overall_validity = Column(Enum('ftv', 'all', 'round'), nullable=False, server_default=text("'ftv'"))
     validity_param = Column(Float, nullable=False, server_default=text("'0.75'"))
+    validity_ref = Column(Enum('day_quality', 'max_score'), server_default=text("'day_quality'"))
     nominal_goal = Column(Float, nullable=False, server_default=text("'0.3'"))
     min_dist = Column(MEDIUMINT(9), nullable=False, server_default=text("'5000'"))
     nominal_dist = Column(MEDIUMINT(9), nullable=False, server_default=text("'45000'"))
@@ -461,7 +463,7 @@ class TblForComp(Base):
     team_over = Column(INTEGER(2))
 
 
-class TblLadder(Base):
+class TblLadder(BaseModel):
     __tablename__ = 'tblLadder'
 
     ladder_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
@@ -473,7 +475,7 @@ class TblLadder(Base):
     external = Column(TINYINT(1), server_default=text("'0'"))
 
 
-class TblParticipant(Base):
+class TblParticipant(BaseModel):
     __tablename__ = 'tblParticipant'
     __table_args__ = (
         Index('par_pil_id', 'pil_id', 'comp_id'),
@@ -490,12 +492,13 @@ class TblParticipant(Base):
     nat = Column(CHAR(10))
     glider = Column(String(100))
     glider_cert = Column(String(20))
-    parClass = Column(String(50))
+    # parClass = Column(String(50))
     sponsor = Column(String(100))
     fai_valid = Column(TINYINT(1), nullable=False, server_default=text("'1'"))
     fai_id = Column(String(20))
     xcontest_id = Column(String(20))
     live_id = Column(String(10))
+    telegram_id = Column(INTEGER(11))
     team = Column(String(100))
     nat_team = Column(TINYINT(4), nullable=False, server_default=text("'1'"))
     status = Column(Enum('confirmed', 'wild card', 'waiting list', 'cancelled', 'waiting for payment'))
@@ -503,8 +506,17 @@ class TblParticipant(Base):
     paid = Column(TINYINT(1), server_default=text("'0'"))
     hours = Column(SMALLINT(6))
 
+    @classmethod
+    def get_dicts(cls, comp_id: int) -> list:
+        """ returns a list of rows"""
+        P = aliased(cls)
+        with db_session() as db:
+            print(f'session id: {id(db)}')
+            return [el.as_dict() for el in db.query(P).filter_by(comp_id=comp_id).all()]
+            # return db.query(P).filter_by(comp_id=comp_id).all()
 
-class TblRanking(Base):
+
+class TblRanking(BaseModel):
     __tablename__ = 'tblRanking'
 
     rank_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
@@ -512,7 +524,7 @@ class TblRanking(Base):
     comp_class = Column(Enum('PG', 'HG', 'mixed'), nullable=False, server_default=text("'PG'"))
 
 
-class TblRegion(Base):
+class TblRegion(BaseModel):
     __tablename__ = 'tblRegion'
 
     reg_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
@@ -524,7 +536,7 @@ class TblRegion(Base):
     openair_file = Column(String(50))
 
 
-class TblResultFile(Base):
+class TblResultFile(BaseModel):
     __tablename__ = 'tblResultFile'
     __table_args__ = (
         Index('ref_id', 'filename'),
@@ -549,7 +561,7 @@ TblUserSession = Table(
 )
 
 
-class TblXContestCode(Base):
+class TblXContestCode(BaseModel):
     __tablename__ = 'tblXContestCodes'
 
     xccSiteID = Column(INTEGER(11))
@@ -569,7 +581,7 @@ TblClasCertRank = Table(
 )
 
 
-class TblCompetition(Base):
+class TblCompetition(BaseModel):
     __tablename__ = 'tblCompetition'
     __table_args__ = (
         Index('comp_id', 'comp_id', 'comp_name', unique=True),
@@ -588,7 +600,7 @@ class TblCompetition(Base):
     MD_name = Column(String(100))
     contact = Column(String(100))
     cat_id = Column(ForeignKey('tblClassification.cat_id', ondelete='SET NULL'), index=True)
-    sanction = Column(Enum('League', 'PWC', 'FAI 2', 'none', 'FAI 1'), nullable=False, server_default=text("'none'"))
+    sanction = Column(String(20), nullable=False, server_default=text("'none'"))
     openair_file = Column(String(40))
     comp_type = Column(Enum('RACE', 'Route', 'Team-RACE'), server_default=text("'RACE'"))
     restricted = Column(TINYINT(1), server_default=text("'1'"))
@@ -608,7 +620,7 @@ class TblCompetition(Base):
     ladders = relationship('TblLadder', secondary='tblLadderComp')
 
 
-class TblCompAuth(Base):
+class TblCompAuth(BaseModel):
     __tablename__ = 'tblCompAuth'
 
     user_id = Column(INTEGER(11), primary_key=True)
@@ -657,7 +669,7 @@ TblLadderComp = Table(
 )
 
 
-class TblRegionWaypoint(Base):
+class TblRegionWaypoint(BaseModel):
     __tablename__ = 'tblRegionWaypoint'
 
     rwp_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
@@ -674,7 +686,7 @@ class TblRegionWaypoint(Base):
     reg = relationship('TblRegion')
 
 
-class TblTask(Base):
+class TblTask(BaseModel):
     __tablename__ = 'tblTask'
 
     task_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
@@ -727,7 +739,7 @@ class TblTask(Base):
     # Results = relationship('TblTaskResult', backref="task")
 
 
-class TblTaskResult(Base):
+class TblTaskResult(BaseModel):
     __tablename__ = 'tblTaskResult'
     __table_args__ = (
         Index('track_id', 'task_id', 'par_id', unique=True),
@@ -759,7 +771,7 @@ class TblTaskResult(Base):
     last_altitude = Column(SMALLINT(6), server_default=text("'0'"))
     landing_time = Column(MEDIUMINT(9), nullable=False, server_default=text("'0'"))
     landing_altitude = Column(SMALLINT(6), nullable=False, server_default=text("'0'"))
-    result_type = Column(Enum('abs', 'dnf', 'lo', 'goal', 'mindist'), server_default=text("'lo'"))
+    result_type = Column(Enum('abs', 'dnf', 'lo', 'goal', 'mindist', 'nyp'), server_default=text("'nyp'"))
     penalty = Column(Float)
     comment = Column(Text)
     place = Column(SMALLINT(6))
@@ -775,7 +787,7 @@ class TblTaskResult(Base):
     Participants = relationship('TblParticipant')
 
 
-class TblNotification(Base):
+class TblNotification(BaseModel):
     __tablename__ = 'tblNotification'
 
     not_id = Column(INTEGER(11), primary_key=True)
@@ -786,7 +798,7 @@ class TblNotification(Base):
     comment = Column(String(80))
 
 
-class TblTaskWaypoint(Base):
+class TblTaskWaypoint(BaseModel):
     __tablename__ = 'tblTaskWaypoint'
 
     wpt_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
@@ -811,8 +823,16 @@ class TblTaskWaypoint(Base):
 
     task = relationship('TblTask')
 
+    @classmethod
+    def from_task_id(cls, task_id: int) -> list:
+        """ returns a list of rows"""
+        W = aliased(cls)
+        with db_session() as db:
+            print(f'session id: {id(db)}')
+            return db.query(W).filter_by(task_id=task_id).order_by(W.num).all()
 
-class TblTrackWaypoint(Base):
+
+class TblTrackWaypoint(BaseModel):
     __tablename__ = 'tblTrackWaypoint'
 
     trw_id = Column(INTEGER(11), primary_key=True)
@@ -823,4 +843,3 @@ class TblTrackWaypoint(Base):
     lat = Column(Float, nullable=False)
     lon = Column(Float, nullable=False)
     altitude = Column(SMALLINT(6), nullable=False)
-

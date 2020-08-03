@@ -1,4 +1,4 @@
-from track import validate_G_record
+from pilot.track import validate_G_record
 import requests
 
 

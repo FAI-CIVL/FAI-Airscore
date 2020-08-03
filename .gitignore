@@ -113,3 +113,4 @@ venv/
 /airscore/data/waypoints/*
 /temp/
 /temp/*
+/dreamhost*

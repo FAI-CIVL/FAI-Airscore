@@ -4,7 +4,6 @@ import logging
 import sys
 
 from flask import Flask, render_template
-
 from airscore import commands, public, user, internal
 from airscore.extensions import (
     bcrypt,
@@ -15,11 +14,13 @@ from airscore.extensions import (
     flask_static_digest,
     login_manager,
     migrate,
+    mail,
 )
 
 from redis import Redis
 import rq
 from flask_sse import sse
+from airscore.user.models import User
 
 
 def create_app(config_object="airscore.settings"):
@@ -30,15 +31,17 @@ def create_app(config_object="airscore.settings"):
     app = Flask(__name__.split(".")[0]) # , debug=True)
     app.config.from_object(config_object)
     app.config.update(SESSION_COOKIE_SAMESITE='Lax')
-    app.config["REDIS_URL"] = "redis://redis:6379"
-    app.redis = Redis(host='redis', port=6379)
-    app.task_queue = rq.Queue('airscore-jobs', connection=app.redis)
+    app.config["REDIS_URL"] = app.config["REDIS_URL"]
+    app.redis = Redis(host=app.config["REDIS_CONTAINER"], port=6379)
+    app.task_queue = rq.Queue(app.config["RQ_QUEUE"], connection=app.redis)
     register_extensions(app)
     register_blueprints(app)
     register_errorhandlers(app)
     register_shellcontext(app)
     register_commands(app)
     configure_logger(app)
+    with app.app_context():
+        app.config['admin_exists'] = User.admin_exists()
     return app
 
 
@@ -52,6 +55,7 @@ def register_extensions(app):
     debug_toolbar.init_app(app)
     migrate.init_app(app, db)
     flask_static_digest.init_app(app)
+    mail.init_app(app)
     return None
 
 

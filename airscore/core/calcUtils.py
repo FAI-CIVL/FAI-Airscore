@@ -66,8 +66,6 @@ def decimal_to_seconds(d_time):
 
 
 def time_to_seconds(t):
-    # h, m, s = [int(i) for i in t.strftime("%H:%M:%S").split(':')]
-    # return 3600 * int(h) + 60 * int(m) + int(s)
     return t.hour * 3600 + t.minute * 60 + t.second
 
 

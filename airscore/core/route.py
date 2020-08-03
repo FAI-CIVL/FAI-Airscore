@@ -10,12 +10,11 @@ Stuart Mackintosh - 2019
 import math
 from collections import namedtuple
 from math import sqrt, hypot, fabs
-from myconn import Database
-from sqlalchemy.exc import SQLAlchemyError
+from db.conn import db_session
 
 import numpy as np
 from geographiclib.geodesic import Geodesic
-from geopy.distance import geodesic, vincenty
+from geopy.distance import geodesic
 from pyproj import Proj
 
 '''define earth model'''
@@ -128,21 +127,21 @@ class Turnpoint():
 
 
 def delete_turnpoint(tp_id):
-    from db_tables import TblTaskWaypoint as W
+    from db.tables import TblTaskWaypoint as W
 
     '''delete turnpoint from task in database'''
-    with Database() as db:
-        db.session.query(W).filter(W.wpt_id == tp_id).delete()
-        db.session.commit()
+    with db_session() as db:
+        db.query(W).filter(W.wpt_id == tp_id).delete()
+        db.commit()
 
 
 def delete_all_turnpoints(task_id):
-    from db_tables import TblTaskWaypoint as W
+    from db.tables import TblTaskWaypoint as W
 
     '''delete turnpoints from task in database'''
-    with Database() as db:
-        db.session.query(W).filter(W.task_id == task_id).delete()
-        db.session.commit()
+    with db_session() as db:
+        db.query(W).filter(W.task_id == task_id).delete()
+        db.commit()
 
 
 def get_proj(clat, clon, proj=PROJ):
@@ -248,9 +247,9 @@ def distance(p1, p2, method='fast_andoyer'):
     if method == "fast_andoyer":
         # print ("fast andoyer")
         return fast_andoyer(p1, p2)
-    elif method == "vincenty":
-        # print ("vincenty")
-        return vincenty((p1.lat, p1.lon), (p2.lat, p2.lon)).meters
+    # elif method == "vincenty":
+    #     # print ("vincenty")
+    #     return vincenty((p1.lat, p1.lon), (p2.lat, p2.lon)).meters
     elif method == "geodesic":
         # print ("geodesic")
         return geodesic((p1.lat, p1.lon), (p2.lat, p2.lon)).meters

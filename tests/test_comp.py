@@ -17,7 +17,7 @@ class TestComp:
                        comp_site='somewhere over the rainbow', date_from=datetime.date(2020, 2, 29),
                        date_to=datetime.date(2020, 4, 1))
 
-    @patch('comp.Database', autospec=True, spec_set=True)
+    @patch('comp.db_session', autospec=True, spec_set=True)
     def test_to_db(self, mock_db):
         """Get comp by ID."""
         self.comp.to_db()

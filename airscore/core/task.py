@@ -24,23 +24,20 @@ from os import path, makedirs, remove
 from pathlib import Path
 
 import jsonpickle
-from sqlalchemy import and_
-from sqlalchemy.orm import aliased
 
 from Defines import RESULTDIR, MAPOBJDIR, TRACKDIR
 from airspace import AirspaceCheck
-from calcUtils import json, get_date, get_datetime, decimal_to_seconds
+from calcUtils import json, get_date, decimal_to_seconds
 from compUtils import read_rankings
-from db_tables import TblTask
-from flightresult import verify_all_tracks, adjust_flight_results
+from db.tables import TblTask
+from pilot.flightresult import verify_all_tracks, adjust_flight_results
 from formula import TaskFormula
 from geo import Geo
 from igc_lib import defaultdict
-from myconn import Database
-from pilot import Pilot, update_all_results
+from db.conn import db_session
+from pilot.flightresult import update_all_results
 from result import TaskResult, create_json_file
-from route import distance, polar, Turnpoint, get_shortest_path, convert_turnpoints, get_line
-from sqlalchemy.exc import SQLAlchemyError
+from route import distance, polar, Turnpoint, get_shortest_path, get_line
 
 
 class Task(object):
@@ -96,6 +93,7 @@ class Task(object):
         self.comp_name = None
         self.comp_site = None
         self.comp_class = None
+        self.formula = None
         self.reg_id = None
         self.region_name = None
         self.date = None  # in datetime.date (Y-m-d) format
@@ -152,7 +150,7 @@ class Task(object):
         elif self.comp_id:
             self.formula = TaskFormula.from_comp(self.comp_id)
         else:
-            self.formula = None
+            self.formula = TaskFormula()
 
     def __setattr__(self, attr, value):
         import datetime
@@ -164,7 +162,7 @@ class Task(object):
                 value = value.date()
         if attr not in property_names:
             self.__dict__[attr] = value
-            if attr == 'task_id' and hasattr(self, 'formula'):
+            if attr == 'task_id' and hasattr(self, 'formula') and isinstance(self.formula, TaskFormula):
                 self.formula.__dict__[attr] = value
 
     def __str__(self):
@@ -197,7 +195,7 @@ class Task(object):
 
     @property
     def results(self):
-        return [pilot.result for pilot in self.pilots]
+        return [pilot for pilot in self.pilots]
 
     @property
     def id(self):
@@ -310,11 +308,12 @@ class Task(object):
 
     @property
     def ftv_validity(self):
+        from calcUtils import c_round
         if not self.formula or not self.day_quality or not self.max_score:
             return 0
         if self.formula.overall_validity == 'ftv':
-            return (round(self.max_score / 1000, 4) if self.formula.formula_type == 'pwc'
-                    else round(self.day_quality, 4))
+            return c_round(self.max_score / 1000 if self.formula.validity_ref == 'max_score'
+                           else self.day_quality, 4)
         else:
             return self.day_quality
 
@@ -349,7 +348,7 @@ class Task(object):
 
     @property
     def valid_results(self):
-        return [pilot.result for pilot in self.pilots if pilot.result_type not in ('abs', 'dnf')]
+        return [pilot for pilot in self.pilots if pilot.result_type not in ('abs', 'dnf', 'nyp')]
 
     ''' pilots stats'''
 
@@ -359,7 +358,7 @@ class Task(object):
 
     @property
     def pilots_launched(self):
-        return len(self.valid_results)
+        return len([p for p in self.pilots if p.result_type not in ('abs', 'dnf')])
 
     @property
     def pilots_ss(self):
@@ -536,41 +535,29 @@ class Task(object):
             return None
 
     @staticmethod
-    def read(task_id):
+    def read(task_id: int):
         """Reads Task from database
-        takes tasPk as argument"""
-        from db_tables import TaskObjectView as T, TblTaskWaypoint as W
+        takes task_id as argument"""
+        from db.tables import TaskObjectView as T, TblTaskWaypoint as W
         if not (type(task_id) is int and task_id > 0):
             print(f'Error: {task_id} is not a valid id')
             return f'Error: {task_id} is not a valid id'
-        task = Task(task_id=task_id)
-        '''get task from db'''
-        with Database() as db:
-            # get the task details.
-            try:
-                t = db.session.query(T).get(task_id)
-                if not t:
-                    db.session.close()
-                    error = f'Error: No task found with id {task_id}'
-                    print(error)
-                    return error
-                tps = db.session.query(W).filter(W.task_id == task_id).order_by(W.num)
-                db.populate_obj(task, t)
-                '''populate turnpoints'''
-                for tp in tps:
-                    turnpoint = Turnpoint(tp.lat, tp.lon, tp.radius, tp.type, tp.shape, tp.how, tp.altitude, tp.name,
-                                          tp.num, tp.description, tp.wpt_id)
-                    task.turnpoints.append(turnpoint)
-                    s_point = polar(lat=tp.ssr_lat, lon=tp.ssr_lon)
-                    task.optimised_turnpoints.append(s_point)
-                    if tp.partial_distance is not None:  # this will be None in DB before we optimise route, but we append to this list so we should not fill it with Nones
-                        task.partial_distance.append(tp.partial_distance)
-            except SQLAlchemyError as e:
-                error = str(e)
-                print(f"Error retrieving task from database: {error}")
-                db.session.rollback()
-                db.session.close()
-                return error
+        try:
+            task = Task(task_id=task_id)
+            '''get task from db'''
+            T.get_by_id(task_id).populate(task)
+        except AttributeError:
+            error = f'Error: No task found with id {task_id}'
+            print(error)
+            return error
+        '''populate turnpoints'''
+        tps = W.from_task_id(task_id)
+        for tp in tps:
+            task.turnpoints.append(tp.populate(Turnpoint()))
+            if task.opt_dist:
+                s_point = polar(lat=tp.ssr_lat, lon=tp.ssr_lon)
+                task.optimised_turnpoints.append(s_point)
+                task.partial_distance.append(tp.partial_distance)
         '''check if we already have a filepath for task'''
         if task.task_path is None or '':
             task.create_path()
@@ -579,21 +566,19 @@ class Task(object):
             task.create_projection()
         return task
 
-    def read_turnpoints(self):
+    def read_turnpoints(self) -> list:
         """Reads Task turnpoints from database, for use in front end"""
-        from db_tables import TblTaskWaypoint as W
-        with Database() as db:
-            try:
-                # get the task turnpoint details.
-                results = db.session.query(W.wpt_id, W.rwp_id, W.name, W.num, W.description, W.how, W.radius, W.shape,
-                                           W.type, W.partial_distance).filter(W.task_id == self.task_id).order_by(
-                    W.num).all()
-                if results:
-                    results = [row._asdict() for row in results]
-                return results
-            except SQLAlchemyError:
-                print(f"Error trying to retrieve Tasks details for Comp ID {self.comp_id}")
-                return None
+        from db.tables import TblTaskWaypoint as W
+        tps = W.from_task_id(self.task_id)
+        return [tp.as_dict() for tp in tps]
+        # with db_session() as db:
+        #     # get the task turnpoint details.
+        #     results = db.query(W.wpt_id, W.rwp_id, W.name, W.num, W.description, W.how, W.radius, W.shape,
+        #                                W.type, W.partial_distance).filter(W.task_id == self.task_id).order_by(
+        #         W.num).all()
+        #     if results:
+        #         results = [row._asdict() for row in results]
+        #     return results
 
     def create_path(self, track_path=None):
         """create filepath from # and date if not given
@@ -609,10 +594,9 @@ class Task(object):
             if not path.exists(full_path):
                 makedirs(full_path)
             '''store to database'''
-            with Database() as db:
-                q = db.session.query(TblTask).get(self.id)
+            with db_session() as db:
+                q = db.query(TblTask).get(self.id)
                 q.task_path = self.task_path
-                db.session.commit()
 
     def create_results(self, status=None, mode='default', print=print):
         """
@@ -668,8 +652,9 @@ class Task(object):
     def create_json_elements(self):
         """ returns Dict with elements to generate json file"""
 
-        pil_list = sorted([p for p in self.pilots if p.result_type not in ['dnf', 'abs']],
+        pil_list = sorted([p for p in self.pilots if p.result_type not in ['dnf', 'abs', 'nyp']],
                           key=lambda k: k.score, reverse=True)
+        pil_list += [p for p in self.pilots if p.result_type == 'nyp']
         pil_list += [p for p in self.pilots if p.result_type == 'dnf']
         pil_list += [p for p in self.pilots if p.result_type == 'abs']
 
@@ -689,7 +674,7 @@ class Task(object):
         # rankings = {}
         if not rankings or len(rankings) == 0:
             ''' create an overall ranking'''
-            rankings.update({'overall': [cert for cert in set([p.info.glider_cert for p in self.pilots])]})
+            rankings.update({'overall': [cert for cert in set([p.glider_cert for p in self.pilots])]})
 
         '''create json file'''
         result = {'info': info,
@@ -750,7 +735,7 @@ class Task(object):
             lib = self.formula.get_lib()
 
         ''' get pilot and tracks list'''
-        self.get_results()
+        self.get_pilots()
 
         ''' calculate projected turnpoints'''
         if not self.geo:
@@ -788,7 +773,7 @@ class Task(object):
                     if not self.is_valid():
                         return f'duration is not enough for all pilots, task with id {self.id} is not valid, ' \
                                f'scoring is not needed.'
-                    adjust_flight_results(self, lib)
+                    adjust_flight_results(self, lib, airspace)
 
             elif self.comp_class == 'HG':
                 ''' In hang-gliding, stopped tasks are “scored back” by a time that is determined
@@ -820,122 +805,71 @@ class Task(object):
         '''store results to database'''
         print(f"updating database with new results...")
         update_all_results(self.task_id, self.pilots)
-        '''save map files if needed'''
-        # save_all_geojson_files(self)  # done during verify_all_tracks
         '''process results with scoring system'''
         lib.process_results(self)
 
     def get_pilots(self):
-        from db_tables import TblParticipant as P
-        from sqlalchemy.exc import SQLAlchemyError
-        from pilot import Pilot
-        pilots = []
-        with Database() as db:
-            try:
-                results = db.session.query(P).filter(P.comp_id == self.comp_id).all()
-                for row in results:
-                    pilot = Pilot.create(task_id=self.task_id)
-                    db.populate_obj(pilot.info, row)
-                    pilots.append(pilot)
-            except SQLAlchemyError:
-                print('DB Error retrieving task results')
-                db.session.rollback()
-                return
-        self.pilots = pilots
+        """ Loads FlightResult obj. with only Participants info into Task obj."""
+        from db.tables import TblParticipant as P
+        from pilot.flightresult import FlightResult
+        self.pilots = [FlightResult(**row) for row in P.get_dicts(self.comp_id)]
 
     def get_results(self, lib=None):
-        """ Loads all Pilot obj. into Task obj."""
-        from db_tables import FlightResultView as F, TblNotification as N, TblTrackWaypoint as W
-        from notification import Notification
-        from flightresult import WaypointAchieved
-        from sqlalchemy.exc import SQLAlchemyError
-        from pilot import Pilot
-        pilots = []
-        with Database() as db:
-            try:
-                results = db.session.query(F).filter(F.task_id == self.task_id).all()
-                notifications = db.session.query(N).filter(N.track_id.in_([p.track_id for p in results])).all()
-                achieved = db.session.query(W).filter(W.track_id.in_([p.track_id for p in results])).all()
-                for row in results:
-                    pilot = Pilot.create(task_id=self.task_id)
-                    db.populate_obj(pilot.result, row)
-                    db.populate_obj(pilot.info, row)
-                    db.populate_obj(pilot.track, row)
-                    # notifications = db.session.query(N).filter(N.track_id == pilot.track.track_id).all()
-                    for el in [n for n in notifications if n.track_id == pilot.track.track_id]:
-                        n = Notification()
-                        db.populate_obj(n, el)
-                        if n.notification_type == 'track':
-                            pilot.track.notifications.append(n)
-                        else:
-                            pilot.result.notifications.append(n)
-                    for el in [{k: getattr(w, k) for k in ['trw_id', 'wpt_id', 'name', 'rawtime', 'lat', 'lon', 'altitude']}
-                               for w in achieved if w.track_id == pilot.track_id]:
-                        pilot.result.waypoints_achieved.append(WaypointAchieved(**el))
-                    if self.stopped_time and pilot.result.stopped_distance:
-                        pilot.result.still_flying_at_deadline = True
-                    pilots.append(pilot)
-            except SQLAlchemyError:
-                print('DB Error retrieving task results')
-                db.session.rollback()
-                return
+        """ Loads all FlightResult obj. into Task obj."""
+        from pilot.flightresult import get_task_results
+        pilots = get_task_results(self.id)
+        if self.stopped_time:
+            for p in pilots:
+                p.still_flying_at_deadline = p.stopped_distance > 0
         self.pilots = pilots
         if lib:
             '''prepare results for scoring'''
             lib.process_results(self)
-        # return pilots
 
     def get_geo(self):
         clat, clon = self.bbox_center
         self.geo = Geo.from_coords(clat, clon)
 
     def update_task_distance(self):
-        from db_tables import TblTask as T, TblTaskWaypoint as W
-        with Database() as db:
+        from db.tables import TblTask as T, TblTaskWaypoint as W
+        with db_session() as db:
             '''add optimised and total distance to task'''
-            q = db.session.query(T)
-            t = q.get(self.task_id)
+            t = T.get_by_id(self.task_id)
             t.distance = self.distance
             t.opt_dist = self.opt_dist
             t.SS_distance = self.SS_distance
             t.opt_dist_to_ESS = self.opt_dist_to_ESS
             t.opt_dist_to_SS = self.opt_dist_to_SS
-            db.session.commit()
 
             '''add opt legs to task wpt'''
-            w = db.session.query(W)
+            # w = db.query(W)
+            w = W.from_task_id(self.id)
             for idx, tp in enumerate(self.turnpoints):
                 sr = self.optimised_turnpoints[idx]
-                wpt = w.get(tp.id)
+                # wpt = w.get(tp.id)
+                wpt = next(p for p in w if p.wpt_id == tp.id)
                 wpt.ssr_lat = sr.lat
                 wpt.ssr_lon = sr.lon
                 wpt.partial_distance = self.partial_distance[idx]
-            db.session.commit()
+            # db.commit()
+            db.commit()
 
     def delete_task_distance(self):
-        from db_tables import TblTask as T, TblTaskWaypoint as W
-        with Database() as db:
+        with db_session() as db:
             '''remove optimised and total distance from task'''
-            q = db.session.query(T)
-            t = q.get(self.task_id)
+            t = TblTask.get_by_id(self.task_id)
             t.distance = None
             t.opt_dist = None
             t.SS_distance = None
             t.opt_dist_to_ESS = None
             t.opt_dist_to_SS = None
-            db.session.commit()
+            db.commit()
 
     def update_task_info(self):
-        # t = aliased(TblTask)
-
-        with Database() as db:
-            print(f"taskid:{self.task_id}")
-            q = db.session.query(TblTask).get(self.task_id)
-            db.populate_row(q, self)
-            # for k, v in self.as_dict().items():
-            #     if hasattr(q, k):
-            #         setattr(q, k, v)
-            db.session.commit()
+        """ updates database entry using Task obj"""
+        row = TblTask.get_by_id(self.id)
+        row.from_obj(self)
+        row.update()
 
     def update_formula(self):
         self.formula.to_db()
@@ -948,35 +882,32 @@ class Task(object):
         self.projected_turnpoints = convert_turnpoints(self.turnpoints, self.geo)
         self.projected_line = convert_turnpoints(get_line(self.turnpoints, tol, min_tol), self.geo)
 
-    def to_db(self, session=None):
+    def to_db(self):
         """Inserts new task or updates existent one"""
-        with Database(session) as db:
-            try:
-                if not self.id:
-                    task = TblTask(comp_id=self.comp_id, task_num=self.task_num, task_name=self.task_name,
-                                   date=self.date)
-                    db.session.add(task)
-                    db.session.flush()
-                    self.task_id = task.task_id
-                else:
-                    task = db.session.query(TblTask).get(self.id)
-                for k, v in self.as_dict().items():
-                    if k not in ['task_id', 'comp_id'] and hasattr(task, k):
-                        setattr(task, k, v)
-                '''save formula parameters'''
-                if self.formula:
-                    for key in TaskFormula.task_overrides:
-                        setattr(task, key, getattr(self.formula, key))
-                db.session.commit()
-                '''save waypoints'''
-                if self.turnpoints:
-                    self.update_waypoints(session=session)
-            except SQLAlchemyError as e:
-                error = str(e.__dict__)
-                print(f"Error storing task to database: {error}")
-                db.session.rollback()
-                db.session.close()
-                return error
+        row = TblTask() if not self.id else TblTask.get_by_id(self.id)
+        row.from_obj(self)
+        if self.formula:
+            row.from_obj(self.formula)
+
+        with db_session() as db:
+            if not self.id:
+                task = TblTask(comp_id=self.comp_id, task_num=self.task_num, task_name=self.task_name, date=self.date)
+                db.add(task)
+                db.flush()
+                self.task_id = task.task_id
+            else:
+                task = db.query(TblTask).get(self.id)
+            for k, v in self.as_dict().items():
+                if k not in ['task_id', 'comp_id'] and hasattr(task, k):
+                    setattr(task, k, v)
+            '''save formula parameters'''
+            if self.formula:
+                for key in TaskFormula.task_overrides:
+                    setattr(task, key, getattr(self.formula, key))
+            db.commit()
+            '''save waypoints'''
+            if self.turnpoints:
+                self.update_waypoints()
 
     def update_from_xctrack_data(self, taskfile_data):
         """processes XCTrack file that is already in memory as json data and updates the task defintion"""
@@ -1047,7 +978,6 @@ class Task(object):
     def update_from_xctrack_file(self, filename):
         """ Updates Task from xctrack file, which is in json format.
         """
-
         with open(filename, encoding='utf-8') as json_data:
             # a bit more checking..
             print("file: ", filename)
@@ -1056,7 +986,6 @@ class Task(object):
             except:
                 print("file is not a valid JSON object")
                 exit()
-
         self.update_from_xctrack_data(task_data)
 
     @staticmethod
@@ -1064,11 +993,8 @@ class Task(object):
         """ Creates Task from xctrack file, which is in json format.
         NEEDS UPDATING BUT WE CAN PROBABLY REMOVE THIS AS THE TASK SHOULD ALWAYS BE CREATED BEFORE IMPORT??
         """
-
         offset = 0
-
         task_file = filename
-
         turnpoints = []
         with open(task_file, encoding='utf-8') as json_data:
             # a bit more checking..
@@ -1130,6 +1056,7 @@ class Task(object):
                 task_id     int: task ID
                 filename    str: (opt.) json filename
         """
+        from pilot.flightresult import FlightResult
 
         if not filename or not path.isfile(filename):
             '''we get the active json file'''
@@ -1184,8 +1111,8 @@ class Task(object):
         ''' get results'''
         task.pilots = []
         for pil in t['results']:
-            ''' create Pilot objects from json list'''
-            task.pilots.append(Pilot.from_result(task_id, pil))
+            ''' create FlightResult objects from json list'''
+            task.pilots.append(FlightResult.from_result(pil))
 
         ''' get status'''
         task.status = t['file_stats']['status']
@@ -1567,7 +1494,7 @@ class Task(object):
         self.optimised_turnpoints = optimised
 
     def clear_waypoints(self):
-        from db_tables import TblTaskWaypoint as W
+        from db.tables import TblTaskWaypoint as W
 
         self.turnpoints.clear()
         self.optimised_turnpoints.clear()
@@ -1578,12 +1505,12 @@ class Task(object):
         self.projected_line.clear()
 
         '''delete waypoints from database'''
-        with Database() as db:
-            db.session.question.query(W).filter(W.task_id == self.id).delete()
-            db.session.commit()
+        with db_session() as db:
+            db.question.query(W).filter(W.task_id == self.id).delete()
+            db.commit()
 
-    def update_waypoints(self, session=None):
-        from db_tables import TblTaskWaypoint as W
+    def update_waypoints(self):
+        from db.tables import TblTaskWaypoint as W
         insert_mappings = []
         update_mappings = []
         for idx, tp in enumerate(self.turnpoints):
@@ -1599,26 +1526,19 @@ class Task(object):
                 update_mappings.append(wpt)
             else:
                 insert_mappings.append(wpt)
-        with Database(session) as db:
-            try:
-                if update_mappings:
-                    db.session.bulk_update_mappings(W, update_mappings)
-                    db.session.flush()
-                if insert_mappings:
-                    db.session.bulk_insert_mappings(W, insert_mappings, return_defaults=True)
-                    for elem in insert_mappings:
-                        next(tp for tp in self.turnpoints if tp.num == elem['num']).wpt_id = elem['wpt_id']
-                db.session.commit()
-            except SQLAlchemyError as e:
-                error = str(e.__dict__)
-                print(f"Error storing task to database: {error}")
-                db.session.rollback()
-                db.session.close()
-                return error
+        with db_session() as db:
+            if update_mappings:
+                db.bulk_update_mappings(W, update_mappings)
+                db.flush()
+            if insert_mappings:
+                db.bulk_insert_mappings(W, insert_mappings, return_defaults=True)
+                for elem in insert_mappings:
+                    next(tp for tp in self.turnpoints if tp.num == elem['num']).wpt_id = elem['wpt_id']
+            db.commit()
 
     def livetracking(self):
         from livetracking import get_livetracks, associate_livetracks, check_livetrack
-        pilots = [p for p in self.pilots if p.info.live_id]
+        pilots = [p for p in self.pilots if p.live_id]
         if not pilots:
             print(f'*** NO PILOT with Live ID. Aborting ...')
             return False
@@ -1627,10 +1547,10 @@ class Task(object):
         response = []
         print(f'*** Task Deadline: {self.task_deadline}:')
 
-        while max(p.result.last_time or 0 for p in pilots) < self.task_deadline:
+        while max(p.last_time or 0 for p in pilots) < self.task_deadline:
             '''get livetracks from flymaster live server'''
             print(f'*** Cicle {i}:')
-            print(f' -- Getting livetracks starting from time {max(p.result.last_time for p in pilots)} ...')
+            print(f' -- Getting livetracks starting from time {max(p.last_time for p in pilots)} ...')
             previous = response
             response = get_livetracks(self)
             if not response or response == previous:
@@ -1639,94 +1559,132 @@ class Task(object):
             print(f' -- Associating livetracks ...')
             associate_livetracks(self, response)
             for p in pilots:
-                if p.livetrack and p.livetrack[-2].rawtime > (p.result.last_time or 0) and not p.result.goal_time:
+                if p.livetrack and p.livetrack[-2].rawtime > (p.last_time or 0) and not p.goal_time:
                     check_livetrack(pilot=p, task=self, airspace_obj=airspace)
-                    print(f' -- -- Pilot {p.info.name}:')
+                    print(f' -- -- Pilot {p.name}:')
                     # print(f' ..... -- last fix {p.livetrack[-2].rawtime}')
-                    print(f' ..... -- rawtime: {p.result.last_time}')
-                    # print(f' ..... -- Distance: {p.result.distance_flown}')
-                    # print(f' ..... -- start: {p.result.real_start_time is not None}')
-                    # print(f' ..... -- wpt made: {p.result.waypoints_made}')
-                    # print(f' ..... -- Goal: {p.result.goal_time is not None}')
-                    # if p.result.goal_time:
-                    #     print(f' ..... -- Time: {p.result.time}')
+                    print(f' ..... -- rawtime: {p.last_time}')
+                    # print(f' ..... -- Distance: {p.distance_flown}')
+                    # print(f' ..... -- start: {p.real_start_time is not None}')
+                    # print(f' ..... -- wpt made: {p.waypoints_made}')
+                    # print(f' ..... -- Goal: {p.goal_time is not None}')
+                    # if p.goal_time:
+                    #     print(f' ..... -- Time: {p.time}')
                     #     print(f' ..... -- Waypoints:')
-                    #     print(f'{p.result.waypoints_achieved}')
+                    #     print(f'{p.waypoints_achieved}')
                     #     print(f' ..... -- Notifications:')
-                    #     print(f'{p.result.notifications}')
+                    #     print(f'{p.notifications}')
             i += 1
         for p in pilots:
             print(f'Name: {p.name}')
             print(f'Waypoints achieved:')
-            print(f'{p.result.waypoints_achieved}')
-            print(f'Distance: {p.result.distance_flown}')
-            print(f'Time: {p.result.time}')
+            print(f'{p.waypoints_achieved}')
+            print(f'Distance: {p.distance_flown}')
+            print(f'Time: {p.time}')
             print(f'Notifications:')
-            print(f'{p.result.notifications}')
+            print(f'{p.notifications}')
+
+    def create_map_json(self):
+        from mapUtils import get_route_bbox
+        from geopy.distance import GreatCircleDistance as gdist
+
+        task_coords = []
+        turnpoints = []
+        short_route = []
+        goal_line = None
+        tolerance = self.tolerance
+
+        for idx, obj in enumerate(self.turnpoints):
+            task_coords.append({
+                'longitude': obj.lon,
+                'latitude': obj.lat,
+                'name': obj.name
+            })
+
+            if obj.shape == 'line':
+                '''manage goal line'''
+                goal_line = []
+                ends = get_line(self.turnpoints)
+                goal_line.append(tuple([ends[0].lat, ends[0].lon]))
+                goal_line.append(tuple([ends[1].lat, ends[1].lon]))
+
+            else:
+                ''' create tp cylinder
+                    radius adjustment to correct projection error'''
+                o = self.optimised_turnpoints[idx]
+                r = gdist((obj.lat, obj.lon), (o.lat, o.lon)).meters
+                turnpoints.append({
+                    'radius_label': obj.radius,
+                    'radius': r,
+                    'longitude': obj.lon,
+                    'latitude': obj.lat,
+                    #         'altitude': obj.altitude,
+                    'name': obj.name,
+                    'type': obj.type,
+                    'shape': obj.shape
+                })
+
+        for obj in self.optimised_turnpoints:
+            short_route.append(tuple([obj.lat, obj.lon]))
+
+        bbox = get_route_bbox(self)
+
+        return task_coords, turnpoints, short_route, goal_line, tolerance, bbox
 
 
-def delete_task(task_id, files=False, session=None):
-    from db_tables import TblTaskWaypoint as W
-    from db_tables import TblTrackWaypoint as TW
-    from db_tables import TblTask as T
-    from db_tables import TblTaskResult as R
-    from db_tables import TblNotification as N
-    from db_tables import TblResultFile as RF
-    from db_tables import TblCompetition as C
+def delete_task(task_id, files=False):
+    from db.tables import TblTaskWaypoint as W
+    from db.tables import TblTrackWaypoint as TW
+    from db.tables import TblTask as T
+    from db.tables import TblTaskResult as R
+    from db.tables import TblNotification as N
+    from db.tables import TblResultFile as RF
+    from db.tables import TblCompetition as C
     from result import delete_result
     from Defines import TRACKDIR
     import shutil
     from os import path
     '''delete waypoints and task from database'''
     print(f"{task_id}")
-    with Database(session) as db:
-        try:
-            if files:
-                '''delete track files'''
-                info = db.session.query(T.task_path,
-                                        C.comp_path).select_from(T).join(C, C.comp_id ==
-                                                                         T.comp_id).filter(T.task_id == task_id).one()
-                igc_folder = path.join(TRACKDIR, info.comp_path, info.task_path)
-                tracklog_map_folder = path.join(MAPOBJDIR, 'tracks', str(task_id))
-                task_map = path.join(MAPOBJDIR, 'tasks', str(task_id) + '.task')
+    with db_session() as db:
+        if files:
+            '''delete track files'''
+            info = db.query(T.task_path,
+                            C.comp_path).select_from(T).join(C, C.comp_id ==
+                                                             T.comp_id).filter(T.task_id == task_id).one()
+            igc_folder = path.join(TRACKDIR, info.comp_path, info.task_path)
+            tracklog_map_folder = path.join(MAPOBJDIR, 'tracks', str(task_id))
+            task_map = path.join(MAPOBJDIR, 'tasks', str(task_id) + '.task')
 
-                # remove igc files
-                if path.exists(igc_folder):
-                    shutil.rmtree(igc_folder)
-                # remove tracklog map files
-                if path.exists(tracklog_map_folder):
-                    shutil.rmtree(tracklog_map_folder)
-                # remove task map file
-                if path.exists(task_map):
-                    remove(task_map)
-            results = db.session.query(RF.ref_id, RF.filename).filter(RF.task_id == task_id).all()
-            if results:
-                '''delete result json files'''
-                for res in results:
-                    delete_result(res.ref_id, res.filename, db.session)
-            tracks = db.session.query(R.track_id).filter(R.task_id == task_id)
-            if tracks:
-                track_list = [t.track_id for t in tracks]
-                db.session.query(TW).filter(TW.track_id.in_(track_list)).delete(synchronize_session=False)
-                db.session.query(N).filter(N.track_id.in_(track_list)).delete(synchronize_session=False)
-                db.session.query(R).filter(R.task_id == task_id).delete(synchronize_session=False)
-            '''delete db entries: results, waypoints, task'''
-            # db.session.query(R).filter(T.task_id == task_id).delete(synchronize_session=False)
-            db.session.query(W).filter(W.task_id == task_id).delete(synchronize_session=False)
-            db.session.query(T).filter(T.task_id == task_id).delete(synchronize_session=False)
-            db.session.commit()
-        except SQLAlchemyError as e:
-            error = str(e)
-            print(f"Error deleting task from database: {error}")
-            db.session.rollback()
-            db.session.close()
-            return error
+            # remove igc files
+            if path.exists(igc_folder):
+                shutil.rmtree(igc_folder)
+            # remove tracklog map files
+            if path.exists(tracklog_map_folder):
+                shutil.rmtree(tracklog_map_folder)
+            # remove task map file
+            if path.exists(task_map):
+                remove(task_map)
+        results = db.query(RF.ref_id, RF.filename).filter(RF.task_id == task_id).all()
+        if results:
+            '''delete result json files'''
+            for res in results:
+                delete_result(res.ref_id, res.filename)
+        tracks = db.query(R.track_id).filter(R.task_id == task_id)
+        if tracks:
+            track_list = [t.track_id for t in tracks]
+            db.query(TW).filter(TW.track_id.in_(track_list)).delete(synchronize_session=False)
+            db.query(N).filter(N.track_id.in_(track_list)).delete(synchronize_session=False)
+            db.query(R).filter(R.task_id == task_id).delete(synchronize_session=False)
+        '''delete db entries: results, waypoints, task'''
+        # db.query(R).filter(T.task_id == task_id).delete(synchronize_session=False)
+        db.query(W).filter(W.task_id == task_id).delete(synchronize_session=False)
+        db.query(T).filter(T.task_id == task_id).delete(synchronize_session=False)
 
 
 # function to parse task object to compilations
 def get_map_json(task_id):
     """gets task map json file if it exists, otherwise creates it. returns 5 separate objects for mapping"""
-
     task_file = Path(MAPOBJDIR + 'tasks/' + str(task_id) + '.task')
     if not task_file.is_file():
         write_map_json(task_id)
@@ -1809,39 +1767,38 @@ def write_map_json(task_id):
 
 
 def get_task_json_filename(task_id):
-    """returns active json result file"""
-    from db_tables import TblResultFile as R
-    with Database() as db:
-        filename = db.session.query(R.filename).filter(and_(
-            R.task_id == task_id, R.active == 1
-        )).scalar()
-    return filename
+    """returns active json result filename"""
+    from db.tables import TblResultFile as R
+    with db_session() as db:
+        return db.query(R.filename).filter_by(task_id=task_id, active=1).scalar()
 
 
 def get_task_json(task_id):
+    """returns active json result file from task_id"""
     filename = get_task_json_filename(task_id)
     return get_task_json_by_filename(filename)
 
 
 def get_task_json_by_filename(filename):
-    try:
-        with open(RESULTDIR + filename, 'r') as myfile:
-            data = myfile.read()
-    except:
+    """returns json data from filename"""
+    file = Path(RESULTDIR, filename)
+    if not file.is_file():
+        print(f"error: file {filename} does not exist")
         return None
-    return json.loads(data)
+    with open(file, 'r') as f:
+        return jsonpickle.decode(f.read())
 
 
 def need_full_rescore(task_id: int):
     """Checks if Task need to be rescored, re checking all tracks:
         - If not all tracks have been submitted or edited later than last task update or formula update
         - if task have been stopped (but anyway task is edited to be stopped so same as first case)"""
-    from db_tables import TblTask as T, TblForComp as F, TblTaskResult as R
-    with Database() as db:
-        task = db.session.query(T).filter_by(task_id=task_id).one_or_none()
+    from db.tables import TblTask as T, TblForComp as F, TblTaskResult as R
+    with db_session() as db:
+        task = db.query(T).filter_by(task_id=task_id).one_or_none()
         if task:
-            formula_last_update = db.session.query(F.formula_last_update).filter_by(comp_id=task.comp_id).scalar()
-            tracks = db.session.query(R.track_last_update, R.result_type).filter_by(task_id=task_id).all()
+            formula_last_update = db.query(F.formula_last_update).filter_by(comp_id=task.comp_id).scalar()
+            tracks = db.query(R.track_last_update, R.result_type).filter_by(task_id=task_id).all()
             min_track_update = min(t.track_last_update for t in tracks if t.result_type not in ['nyp', 'abs', 'dnf'])
             if min_track_update < max(formula_last_update, task.task_last_update):
                 return True
@@ -1851,13 +1808,20 @@ def need_full_rescore(task_id: int):
 def need_new_scoring(task_id: int):
     """Checks if Task need to be scored:
             - If we had new tracks after last results file generation"""
-    from db_tables import TblTaskResult as R, TblResultFile as F
+    from db.tables import TblTaskResult as R, TblResultFile as F
     from calcUtils import epoch_to_datetime
-    with Database() as db:
-        last_file = db.session.query(F.created).filter_by(task_id=task_id).order_by(F.created.desc()).first()
+    with db_session() as db:
+        last_file = db.query(F.created).filter_by(task_id=task_id).order_by(F.created.desc()).first()
         if last_file:
-            tracks = db.session.query(R.track_last_update, R.result_type).filter_by(task_id=task_id).all()
+            tracks = db.query(R.track_last_update, R.result_type).filter_by(task_id=task_id).all()
             max_track_update = max(t.track_last_update for t in tracks)
             if max_track_update > epoch_to_datetime(last_file.created):
                 return True
     return False
+
+
+def get_task_path(task_id: int):
+    from db.tables import TaskObjectView
+    with db_session() as db:
+        row = db.query(TaskObjectView.task_path, TaskObjectView.comp_path).filter_by(task_id=task_id).one()
+        return None if not (row.task_path and row.comp_path) else Path(TRACKDIR, row.comp_path, row.task_path)

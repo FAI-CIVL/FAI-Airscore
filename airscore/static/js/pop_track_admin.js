@@ -50,3 +50,60 @@ function populate_track_admin(task_id){
 });
 }
 
+function open_bulk_modal() {
+    $('#bulkmodal').modal('show');
+}
+
+function filesize(elem){
+    document.cookie = `filesize=${elem.files[0].size}; SameSite=Strict; path=/`
+}
+
+function update_row(new_data){
+    update_track_pilot_stats();
+    var table = $('#tracks').dataTable();
+    new_data.ID = $('#tracks').DataTable().row( $('tr#id_'+ new_data.par_id)).data()['ID'];
+    new_data.name = $('#tracks').DataTable().row( $('tr#id_'+ new_data.par_id)).data()['name'];
+    table.fnUpdate(new_data, $('tr#id_'+ new_data.par_id), undefined, false);
+}
+
+function delete_track(track_id, par_id){
+    var mydata = new Object();
+    mydata.track_id = track_id;
+    mydata.par_id = par_id;
+    $.ajax({
+        type: "POST",
+        url: "/users/_delete_track/" + track_id,
+        contentType:"application/json",
+        data : JSON.stringify(mydata),
+        dataType: "json",
+        success: function (response, par_id) {
+            update_row(response);
+            update_track_pilot_stats();
+        }
+    });
+}
+
+function send_telegram(task_id){
+    document.getElementById("telegram_button").innerHTML="Sending...";
+    document.getElementById("telegram_button").className = "btn btn-warning ml-4";
+    $.ajax({
+        type: "POST",
+        url: "/users/_send_telegram_update/" + task_id,
+        contentType:"application/json",
+        dataType: "json",
+        success: function (response) {
+            if (response.success == true) {
+                document.getElementById("telegram_button").innerHTML="Success";
+                document.getElementById("telegram_button").className = "btn btn-success ml-4";
+            }
+            else {
+                document.getElementById("telegram_button").innerHTML="Failed";
+                document.getElementById("telegram_button").className = "btn btn-danger ml-4";
+            }
+            setTimeout(function(){
+                document.getElementById("telegram_button").innerHTML="Update Telegram";
+                document.getElementById("telegram_button").className = "btn btn-primary ml-4";
+            }, 3000);
+        }
+    });
+}

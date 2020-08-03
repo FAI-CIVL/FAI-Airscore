@@ -6,9 +6,8 @@ usage: python3 set_pilot_status.py <task_id> <pil_id> <status>
 Stuart Mackintosh Antonio Golfari - 2019
 """
 
-from db_tables import TblTaskResult as R
-from logger import Logger
-from myconn import Database
+from db.tables import TblTaskResult as R
+from db.conn import db_session
 from task import Task as T
 
 
@@ -24,7 +23,7 @@ def main(args):
 
     print(f'task id: {task_id} par id: {par_id} status:  {status}')
 
-    with Database() as db:
+    with db_session() as db:
         result = R(task_id=task_id, par_id=par_id, result_type=status)
         if status == 'mindist':
             '''we need some more info'''
@@ -32,8 +31,8 @@ def main(args):
             result.distance_flown = task.formula.min_dist
             result.waypoints_made = 1
             result.first_time = task.window_open_time
-        db.session.add(result)
-        db.session.commit()
+        db.add(result)
+        db.commit()
         result_id = result.tarPk
 
     ''' now restore stdout function '''

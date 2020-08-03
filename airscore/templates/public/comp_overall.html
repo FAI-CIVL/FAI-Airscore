@@ -29,7 +29,7 @@
             <option value="CCC">Competition</option>
         </select>
         </div>
-        <div class="col col-md-5" class="parameters">
+        <div class="col col-md-5 parameters">
         <table class="table table-sm" id="formula">
         <thead class="thead-light" id="formula_hd">
             <tr><th>Information</th><th></th></tr>
@@ -38,7 +38,7 @@
         </table>
         </div>
     </div>
-    <table id="task_result" class="row-border compact" cellspacing="0" width="100%">
+    <table id="results_table" class="row-border compact" cellspacing="0" width="100%">
     <thead>
         <tr>
         </tr>
@@ -52,5 +52,5 @@
     <script type="text/javascript" src="/static/js/enums.js"></script>
     <script type="text/javascript" src="/static/js/pop_comp_overall.js"></script>
     <script type="text/javascript">populate_comp_overall({{compid|tojson}})</script>
-    <script type="text/javascript" src="/static/js/overall_class_filter.js"></script>
+    <script type="text/javascript" src="/static/js/class_filter.js"></script>
 {% endblock %}

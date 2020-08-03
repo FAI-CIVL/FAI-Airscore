@@ -13,7 +13,7 @@ from flask import (
 )
 from flask_login import login_required, login_user, logout_user, current_user
 from airscore.extensions import login_manager
-from airscore.public.forms import LoginForm, ModifyParticipantForm
+from airscore.public.forms import LoginForm, ModifyParticipantForm, ResetPasswordForm, ResetPasswordRequestForm
 from airscore.user.forms import RegisterForm
 from airscore.user.models import User
 from airscore.utils import flash_errors
@@ -39,11 +39,15 @@ def load_user(user_id):
 
 @blueprint.route("/", methods=["GET", "POST"])
 def home():
+    if not current_app.config['admin_exists']:
+        return redirect(url_for('public.setup_admin'))
+
     form = LoginForm(request.form)
     # Handle logging in
     if request.method == "POST":
         if form.validate_on_submit():
             login_user(form.user)
+            session['is_admin'] = (form.user.access == 'admin')
             flash("You are logged in.", "success")
             redirect_url = request.args.get("next") or url_for("user.members")
             if Defines.WAYPOINT_AIRSPACE_FILE_LIBRARY:
@@ -77,7 +81,14 @@ def logout():
 
 @blueprint.route("/register/", methods=["GET", "POST"])
 def register():
-    """Register new user."""
+    """Register new scorekeeper."""
+    # if we accept self registration then they become scorekeepers automatically
+    if Defines.ADMIN_SELF_REG:
+        access = 'scorekeeper'
+    # otherwise they become pending admin approval
+    else:
+        access = 'pending'
+
     form = RegisterForm(request.form)
     if form.validate_on_submit():
         User.create(
@@ -85,12 +96,72 @@ def register():
             email=form.email.data,
             password=form.password.data,
             active=True,
+            access=access,
         )
         flash("Thank you for registering. You can now log in.", "success")
         return redirect(url_for("public.home"))
     else:
         flash_errors(form)
     return render_template("public/register.html", form=form)
+
+
+@blueprint.route("/setup_admin/", methods=["GET", "POST"])
+def setup_admin():
+    """Register 1st admin."""
+    if current_app.config['admin_exists']:
+        return render_template('404.html')
+    form = RegisterForm(request.form)
+    if form.validate_on_submit():
+        User.create(
+            username=form.username.data,
+            email=form.email.data,
+            password=form.password.data,
+            active=True,
+            access='admin',
+        )
+        flash("Thank you for registering. You can now log in.", "success")
+        current_app.config['admin_exists'] = True
+        return redirect(url_for("public.home"))
+    else:
+        flash_errors(form)
+    return render_template("public/setup_admin.html", form=form)
+
+
+@blueprint.route('/reset_password_request', methods=['GET', 'POST'])
+def reset_password_request():
+    form = LoginForm(request.form)
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    reset_form = ResetPasswordRequestForm()
+    if reset_form.validate_on_submit():
+        user = User.query.filter_by(email=reset_form.email.data).first()
+        if user:
+            if frontendUtils.production():
+                current_app.task_queue.enqueue('sendemail.send_password_reset_email', user)
+            else:
+                import sendemail
+                sendemail.send_password_reset_email(user)
+        flash('Check your email for the instructions to reset your password', category='info')
+        return redirect(url_for('public.home'))
+    return render_template('public/reset_password_request.html',
+                           title='Reset Password', reset_form=reset_form, form=form)
+
+
+@blueprint.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    form = LoginForm(request.form)
+    if current_user.is_authenticated:
+        return redirect(url_for('public.home'))
+    user = User.verify_reset_password_token(token)
+    if not user:
+        return redirect(url_for('index'))
+    reset_form = ResetPasswordForm()
+    if reset_form.validate_on_submit():
+        user.set_password(reset_form.password.data)
+        user.update()
+        flash('Your password has been reset.')
+        return redirect(url_for('public.home'))
+    return render_template('public/reset_password.html', reset_form=reset_form, form=form)
 
 
 @blueprint.route("/about/")
@@ -192,34 +263,31 @@ def _get_task_result(taskid):
         return render_template('404.html')
 
     all_pilots = []
-    results = [p for p in result_file['results'] if p['result_type'] not in ['dnf', 'abs']]
+    results = [p for p in result_file['results'] if p['result_type'] not in ['dnf', 'abs', 'nyp']]
     for r in results:
-        rt = r['result_type']
-        rank = f"<b>{r['rank']}</b>"
+        pilot = {'fai_id': r['fai_id'], 'civl_id': r['civl_id'], 'nat': r['nat'], 'sex': r['sex'],
+                 'glider': r['glider'], 'glider_cert': r['glider_cert'], 'sponsor': r['sponsor'],
+                 'SSS_time': r['SSS_time'], 'distance': r['distance'], 'time_score': r['time_score'],
+                 'departure_score': r['departure_score'], 'arrival_score': r['arrival_score'],
+                 'distance_score': r['distance_score'], 'score': f"<b>{r['score']}</b>",
+                 'ranks': {'rank': f"<b>{r['rank']}</b>"}}
         n = r['name']
         parid = r['par_id']
         sex = r['sex']
-        name = f'<span class="sex-{sex}">{n}</span>' if rt in ['mindist', 'nyp'] else f'<a class="sex-{sex}" href="/map/{parid}-{taskid}">{n}</a>'
-        nat = r['nat']
-        sp = r['sponsor']
-        gl = r['glider']
-        gc = r['glider_cert']
-        ss = r['SSS_time']
-        es = r['ESS_time']
+        if r['result_type'] in ['mindist', 'nyp'] or not r['track_file']:
+            pilot['name'] = f'<span class="sex-{sex}">{n}</span>'
+        else:
+            pilot['name'] = f'<a class="sex-{sex}" href="/map/{parid}-{taskid}">{n}</a>'
         goal = r['goal_time']
-        t = r['ss_time']
-        s = r['speed']
-        if es and not goal:
-            es, t, s = f'<del>{es}</del>', f'<del>{t}</del>', f'<del>{s}</del>'
-        ab = ''  # alt bonus
-        d = r['distance']
-        ts = r['time_score']
-        dep = r['departure_score']
-        arr = r['arrival_score']
-        dis = r['distance_score']
-        pen = "" if r['penalty'] == '0.0' else r['penalty']
-        score = r['score']
-        pilot = [rank, name, nat, gl, gc, sp, ss, es, t, s, ab, d, ts, dep, arr, dis, pen, score]
+        pilot['ESS_time'] = r['ESS_time'] if goal else f"<del>{r['ESS_time']}</del>"
+        pilot['speed'] = r['speed'] if goal else f"<del>{r['speed']}</del>"
+        pilot['ss_time'] = r['ss_time'] if goal else f"<del>{r['ss_time']}</del>"
+        pilot['goal_time'] = goal
+        # ab = ''  # alt bonus
+        pilot['penalty'] = "" if r['penalty'] == '0.0' else r['penalty']
+        # setup 4 sub-rankings placeholders
+        for i, c in enumerate(result_file['classes'][1:], 1):
+            pilot['ranks']['class' + str(i)] = f"{r[c['limit']]}"
         all_pilots.append(pilot)
         # else:
         #     '''pilot do not have result data'''
@@ -231,6 +299,11 @@ def _get_task_result(taskid):
     return result_file
 
 
+@blueprint.route('/ext_comp_result/<int:compid>')
+def ext_comp_result(compid):
+    return render_template('public/ext_comp_overall.html', compid=compid)
+
+
 @blueprint.route('/comp_result/<int:compid>')
 def comp_result(compid):
     return render_template('public/comp_overall.html', compid=compid)
@@ -238,42 +311,33 @@ def comp_result(compid):
 
 @blueprint.route('/_get_comp_result/<compid>', methods=['GET', 'POST'])
 def _get_comp_result(compid):
-    from compUtils import get_comp_json
-    result_file = get_comp_json(compid)
+    from compUtils import get_comp_json_filename
+    result_file = frontendUtils.get_pretty_data(get_comp_json_filename(compid))
     if result_file == 'error':
         return render_template('404.html')
     all_pilots = []
-    rank = 1
+    tasks = [t['task_code'] for t in result_file['tasks']]
     for r in result_file['results']:
-        pilot = {'fai_id': r['fai_id'], 'civl_id': r['civl_id'], 'name': r['name'], 'nat': r['nat'], 'sex': r['sex'],
-                 'sponsor': r['sponsor'], 'glider': r['glider'], 'glider_cert': r['glider_cert'], 'rank': rank,
-                 'score': f"<b>{int(r['score'])}</b>", 'results': {}}
+        pilot = {'fai_id': r['fai_id'], 'civl_id': r['civl_id'],
+                 'name': f"<span class='sex-{r['sex']}'><b>{r['name']}</b></span>", 'nat': r['nat'], 'sex': r['sex'],
+                 'glider': r['glider'], 'glider_cert': r['glider_cert'], 'sponsor': r['sponsor'],
+                 'score': f"<b>{r['score']}</b>", 'results': {}, 'ranks': {'rank': f"<b>{r['rank']}</b>"}}
+        # setup 4 sub-rankings placeholders
+        for i, c in enumerate(result_file['classes'][1:], 1):
+            pilot['ranks']['class' + str(i)] = f"{r[c['limit']]}"
         # setup the 20 task placeholders
         for t in range(1, 21):
             task = 'T' + str(t)
             pilot['results'][task] = {'score': ''}
-        for t, task in enumerate(r['results']):
+        for task in tasks:
             if r['results'][task]['pre'] == r['results'][task]['score']:
                 pilot['results'][task] = {'score': r['results'][task]['score']}
             else:
                 pilot['results'][task] = {'score': f"{int(r['results'][task]['score'])} <del>{int(r['results'][task]['pre'])}</del>"}
 
-        rank += 1
         all_pilots.append(pilot)
     result_file['data'] = all_pilots
 
-    total_validity = 0
-    for task in result_file['tasks']:
-        total_validity += task['ftv_validity']
-
-    result_file['stats']['tot_validity'] = total_validity
-    all_classes = []
-    for glider_class in result_file['rankings']:
-        if glider_class[-5:].lower() == 'class':
-            comp_class = {'name': glider_class, 'limit': result_file['rankings'][glider_class][-1]}
-            all_classes.append(comp_class)
-    all_classes.reverse()
-    result_file['classes'] = all_classes
     return result_file
 
 
@@ -435,7 +499,7 @@ def registered_pilots(compid):
 
 @blueprint.route('/_get_participants_and_status/<compid>', methods=['GET'])
 def _get_participants_and_status(compid):
-    from participant import Participant
+    from pilot.participant import Participant
     pilot_list, _, _ = frontendUtils.get_participants(compid)
     status = None
     participant_info = None
@@ -511,3 +575,4 @@ def livetracking(taskid):
             data.append(p)
 
     return render_template('public/live.html', file_stats=file_stats, headers=headers, data=data, info=info)
+

@@ -12,19 +12,16 @@ Stuart Mackintosh, Antonio Golfari - 2019
 """
 
 from datetime import datetime
-from math import trunc
 
 import lxml.etree as ET
 from lxml.etree import CDATA
-from sqlalchemy.exc import SQLAlchemyError
-
 from calcUtils import get_isotime, km, sec_to_time
 from comp import Comp
 from compUtils import is_ext
 from formula import Formula
-from myconn import Database
-from participant import Participant, mass_import_participants
-from pilot import Pilot, update_all_results
+from db.conn import db_session
+from pilot.participant import Participant, mass_import_participants
+from pilot.flightresult import FlightResult, update_all_results
 from task import Task
 
 
@@ -107,7 +104,7 @@ class FSDB(object):
                     print("Getting Results Info...")
                     for res in node.iter('FsParticipant'):
                         '''pilots results'''
-                        pilot = Pilot.from_fsdb(task, res)
+                        pilot = FlightResult.from_fsdb(res, task)
                         task.pilots.append(pilot)
                 tasks.append(task)
 
@@ -395,8 +392,7 @@ class FSDB(object):
                        'distance_validity': round(t.dist_validity, 3),
                        'stop_validity': round(t.stop_validity, 3),
                        'day_quality': round(t.day_quality, 3),
-                       'ftv_day_validity': (round(t.day_quality if not t.formula.type == 'pwc'
-                                                  else t.max_score / 1000, 4)),
+                       'ftv_day_validity': t.ftv_validity,
                        'time_points_stop_correction': 0  # not yet implemented
                        }
             for k, v in sp_attr.items():
@@ -406,86 +402,85 @@ class FSDB(object):
             for i, pil in enumerate(t.pilots):
                 '''create pilot result for the task'''
                 pil_p = ET.SubElement(task_p, 'FsParticipant')
-                pil_p.set('id', str(pil.info.ID or pil.info.par_id))
-                if not (pil.result_type in ('abs', 'dnf')):
+                pil_p.set('id', str(pil.ID or pil.par_id))
+                if not (pil.result_type in ('abs', 'dnf', 'nyp')):
                     '''only if pilot flew'''
                     pil_fd = ET.SubElement(pil_p, 'FsFlightData')
                     pil_r = ET.SubElement(pil_p, 'FsResult')
-                    res = pil.result
-                    if not (res.result_type in ['mindist', 'min_dist']):
-                        fd_attr = {'distance': km(res.distance_flown),
-                                   'bonus_distance': km(res.distance),
+                    if not (pil.result_type in ['mindist', 'min_dist']):
+                        fd_attr = {'distance': km(pil.distance_flown),
+                                   'bonus_distance': km(pil.distance),
                                    # ?? seems 0 for PG and more than dist for HG
-                                   'started_ss': '' if not res.real_start_time else get_isotime(t.date,
-                                                                                                res.real_start_time,
+                                   'started_ss': '' if not pil.real_start_time else get_isotime(t.date,
+                                                                                                pil.real_start_time,
                                                                                                 t.time_offset),
-                                   'finished_ss': '' if not res.ESS_time else get_isotime(t.date, res.ESS_time,
+                                   'finished_ss': '' if not pil.ESS_time else get_isotime(t.date, pil.ESS_time,
                                                                                           t.time_offset),
-                                   'altitude_at_ess': res.ESS_altitude,
-                                   'finished_task': '' if not res.goal_time else get_isotime(t.date, res.goal_time,
+                                   'altitude_at_ess': pil.ESS_altitude,
+                                   'finished_task': '' if not pil.goal_time else get_isotime(t.date, pil.goal_time,
                                                                                              t.time_offset),
-                                   'tracklog_filename': pil.track.track_file,
-                                   'lc': res.lead_coeff,
-                                   'iv': res.fixed_LC or '',
-                                   'ts': get_isotime(t.date, res.first_time, t.time_offset),
-                                   'alt': res.last_altitude,  # ??
+                                   'tracklog_filename': pil.track_file,
+                                   'lc': pil.lead_coeff,
+                                   'iv': pil.fixed_LC or '',
+                                   'ts': get_isotime(t.date, pil.first_time, t.time_offset),
+                                   'alt': pil.last_altitude,  # ??
                                    'bonus_alt': '',  # ?? not implemented
-                                   'max_alt': res.max_altitude,
+                                   'max_alt': pil.max_altitude,
                                    'last_tracklog_point_distance': '',  # not implemented yet
                                    'bonus_last_tracklog_point_distance': '',  # ?? not implemented
-                                   'last_tracklog_point_time': get_isotime(t.date, res.landing_time, t.time_offset),
-                                   'last_tracklog_point_alt': res.landing_altitude,
-                                   'landed_before_deadline': '1' if res.landing_time < (
+                                   'last_tracklog_point_time': get_isotime(t.date, pil.landing_time, t.time_offset),
+                                   'last_tracklog_point_alt': pil.landing_altitude,
+                                   'landed_before_deadline': '1' if pil.landing_time < (
                                        t.task_deadline if not t.stopped_time else t.stopped_time) else '0',
-                                   'reachedGoal': 1 if res.goal_time else 0
+                                   'reachedGoal': 1 if pil.goal_time else 0
+                                   # only deadline?
                                    }
                         for k, v in fd_attr.items():
                             pil_fd.set(k, str(v))
 
                     r_attr = {'rank': i + 1,  # not implemented, they should be ordered tho
                               # Rank IS NOT SAFE (I guess)
-                              'points': round(res.score),
-                              'distance': km(res.total_distance if res.total_distance else res.distance_flown),
-                              'ss_time': '' if not res.ss_time else sec_to_time(res.ss_time).strftime('%H:%M:%S'),
-                              'finished_ss_rank': '' if not res.ESS_time and res.ESS_rank else res.ESS_rank,
-                              'distance_points': 0 if not res.distance_score else round(res.distance_score, 1),
-                              'time_points': 0 if not res.time_score else round(res.time_score, 1),
-                              'arrival_points': 0 if not res.arrival_score else round(res.arrival_score, 1),
+                              'points': round(pil.score),
+                              'distance': km(pil.total_distance if pil.total_distance else pil.distance_flown),
+                              'ss_time': '' if not pil.ss_time else sec_to_time(pil.ss_time).strftime('%H:%M:%S'),
+                              'finished_ss_rank': '' if not pil.ESS_time and pil.ESS_rank else pil.ESS_rank,
+                              'distance_points': 0 if not pil.distance_score else round(pil.distance_score, 1),
+                              'time_points': 0 if not pil.time_score else round(pil.time_score, 1),
+                              'arrival_points': 0 if not pil.arrival_score else round(pil.arrival_score, 1),
                               'departure_points': 0 if not t.formula.departure == 'departure' else round(
-                                  res.departure_score, 1),
+                                  pil.departure_score, 1),
                               'leading_points': 0 if not t.formula.departure == 'leadout' else round(
-                                  res.departure_score, 1),
-                              'penalty': 0 if not [n for n in res.notifications
+                                  pil.departure_score, 1),
+                              'penalty': 0 if not [n for n in pil.notifications
                                                    if n.percentage_penalty > 0] else max(
-                                  n.percentage_penalty for n in res.notifications),
-                              'penalty_points': 0 if not [n for n in res.notifications
+                                  n.percentage_penalty for n in pil.notifications),
+                              'penalty_points': 0 if not [n for n in pil.notifications
                                                           if n.flat_penalty > 0] else max(
-                                  n.flat_penalty for n in res.notifications),
-                              'penalty_reason': '; '.join([n.comment for n in res.notifications
+                                  n.flat_penalty for n in pil.notifications),
+                              'penalty_reason': '; '.join([n.comment for n in pil.notifications
                                                            if n.flat_penalty + n.percentage_penalty > 0
                                                            and not n.notification_type == 'jtg']),
-                              'penalty_points_auto': sum(n.flat_penalty for n in res.notifications
+                              'penalty_points_auto': sum(n.flat_penalty for n in pil.notifications
                                                          if n.notification_type == 'jtg'),
-                              'penalty_reason_auto': '' if not [n for n in res.notifications
+                              'penalty_reason_auto': '' if not [n for n in pil.notifications
                                                                 if n.notification_type == 'jtg'] else next(
-                                  n for n in res.notifications
+                                  n for n in pil.notifications
                                   if n.notification_type == 'jtg').flat_penalty,
                               'penalty_min_dist_points': 0,  # ??
-                              'got_time_but_not_goal_penalty': (res.ESS_time or 0) > 0 and not res.goal_time,
-                              'started_ss': '' if not res.real_start_time else get_isotime(t.date, res.SSS_time,
+                              'got_time_but_not_goal_penalty': (pil.ESS_time or 0) > 0 and not pil.goal_time,
+                              'started_ss': '' if not pil.real_start_time else get_isotime(t.date, pil.SSS_time,
                                                                                            t.time_offset),
-                              'finished_ss': '' if not res.ESS_time else get_isotime(t.date, res.ESS_time,
+                              'finished_ss': '' if not pil.ESS_time else get_isotime(t.date, pil.ESS_time,
                                                                                      t.time_offset),
-                              'ss_time_dec_hours': 0 if not res.ESS_time else round(res.ss_time / 3600, 14),
-                              'ts': get_isotime(t.date, res.first_time, t.time_offset),  # flight origin time
-                              'real_distance': km(res.distance_flown),
+                              'ss_time_dec_hours': 0 if not pil.ESS_time else round(pil.ss_time / 3600, 14),
+                              'ts': get_isotime(t.date, pil.first_time, t.time_offset),  # flight origin time
+                              'real_distance': km(pil.distance_flown),
                               'last_distance': '',  # ?? last fix distance?
-                              'last_altitude_above_goal': res.last_altitude,
+                              'last_altitude_above_goal': pil.last_altitude,
                               'altitude_bonus_seconds': 0,  # not implemented
                               'altitude_bonus_time': sec_to_time(0).strftime('%H:%M:%S'),  # not implemented
-                              'altitude_at_ess': res.ESS_altitude,
-                              'scored_ss_time': ('' if not res.ss_time
-                                                 else sec_to_time(res.ss_time).strftime('%H:%M:%S')),  # ??
+                              'altitude_at_ess': pil.ESS_altitude,
+                              'scored_ss_time': ('' if not pil.ss_time else sec_to_time(pil.ss_time).strftime('%H:%M:%S')),
                               'landed_before_stop': t.stopped_time and res.landing_time < t.stopped_time
                               }
 
@@ -512,7 +507,7 @@ class FSDB(object):
         with open(file, "wb") as file:
             file.write(fsdb)
 
-    def add_comp(self, session=None):
+    def add_comp(self):
         """
             Add comp to AirScore database
         """
@@ -522,8 +517,10 @@ class FSDB(object):
             '''trying to guess formula from name'''
             if 'pwc' in self.comp.formula.formula_name.lower():
                 self.comp.formula.formula_type = 'pwc'
+                self.comp.formula.validity_ref = 'max_score'
             elif 'gap' in self.comp.formula.formula_name.lower():
                 self.comp.formula.formula_type = 'gap'
+                self.comp.formula.validity_ref = 'day_quality'
             if self.comp.formula.formula_type is not None:
                 self.comp.formula.formula_version = (int(re.search("(\d+)", self.comp.formula.formula_name).group())
                                                      if re.search("(\d+)", self.comp.formula.formula_name) else None)
@@ -532,7 +529,7 @@ class FSDB(object):
         self.comp.formula.comp_id = self.comp.comp_id
         self.comp.formula.to_db()
 
-    def add_tasks(self, session=None):
+    def add_tasks(self):
         """
             Add comp tasks to AirScore database
         """
@@ -540,35 +537,27 @@ class FSDB(object):
         if self.comp.comp_id is None:
             return False
 
-        with Database(session) as db:
-            try:
-                for t in self.tasks:
-                    t.comp_id = self.comp.comp_id
-                    # t.create_path()
-                    '''recalculating legs to avoid errors when fsdb task misses launch and/or goal'''
-                    if t.geo is None:
-                        t.get_geo()
-                    t.calculate_task_length()
-                    t.calculate_optimised_task_length()
-                    '''storing'''
-                    t.to_db(db.session)
-                    '''adding folders'''
-                    t.comp_path = self.comp.comp_path
-                    Path(t.file_path).mkdir(parents=True, exist_ok=True)
-
-                db.session.commit()
-
-            except SQLAlchemyError:
-                print('Tasks storing error')
-                db.session.rollback()
-                return False
+        with db_session() as db:
+            for t in self.tasks:
+                t.comp_id = self.comp.comp_id
+                # t.create_path()
+                '''recalculating legs to avoid errors when fsdb task misses launch and/or goal'''
+                if t.geo is None:
+                    t.get_geo()
+                t.calculate_task_length()
+                t.calculate_optimised_task_length()
+                '''storing'''
+                t.to_db()
+                '''adding folders'''
+                t.comp_path = self.comp.comp_path
+                Path(t.file_path).mkdir(parents=True, exist_ok=True)
         return True
 
-    def add_results(self, session=None):
+    def add_results(self):
         """
             Add results for each comp task to AirScore database
         """
-        from db_tables import TblTaskResult as R
+        from db.tables import TblTaskResult as R
         if self.comp.comp_id is None:
             return False
 
@@ -576,45 +565,38 @@ class FSDB(object):
             if len(t.results) == 0 or t.task_id is None:
                 print(f"task {t.task_code} does not have a db ID or has not been scored.")
                 pass
-            with Database(session) as db:
+            with db_session() as db:
                 '''get results par_id from participants'''
                 for pilot in t.pilots:
-                    par = next(p for p in self.comp.participants if p.ID == pilot.info.ID)
-                    pilot.info.par_id = par.par_id
-                inserted = update_all_results(task_id=t.task_id, pilots=t.pilots, session=session)
+                    par = next(p for p in self.comp.participants if p.ID == pilot.ID)
+                    pilot.par_id = par.par_id
+                inserted = update_all_results(task_id=t.task_id, pilots=t.pilots)
                 if inserted:
                     '''populate results track_id'''
-                    try:
-                        results = db.session.query(R.track_id, R.par_id).filter(R.task_id == t.task_id).all()
-                        for result in results:
-                            pilot = next(p for p in t.pilots if p.info.par_id == result.par_id)
-                            pilot.track.track_id = result.track_id
-                    except SQLAlchemyError:
-                        print(f"Error trying to collect results track_id")
+                    results = db.query(R.track_id, R.par_id).filter_by(task_id=t.task_id).all()
+                    for result in results:
+                        pilot = next(p for p in t.pilots if p.par_id == result.par_id)
+                        pilot.track_id = result.track_id
         return True
 
-    def add_participants(self, session=None):
+    def add_participants(self):
         """
             Add participants to AirScore database
         """
-        from db_tables import TblParticipant as P
+        from db.tables import TblParticipant as P
 
         if self.comp.comp_id is None or len(self.comp.participants) == 0:
             print(f"Comp does not have a db ID or has not participants.")
             return False
 
-        with Database(session) as db:
-            inserted = mass_import_participants(self.comp.comp_id, self.comp.participants, db.session)
+        with db_session() as db:
+            inserted = mass_import_participants(self.comp.comp_id, self.comp.participants)
             if inserted:
                 '''populate participants par_id'''
-                try:
-                    results = db.session.query(P.par_id, P.ID).filter(P.comp_id == self.comp.comp_id).all()
-                    for result in results:
-                        pilot = next(p for p in self.comp.participants if p.ID == result.ID)
-                        pilot.par_id = result.par_id
-                except SQLAlchemyError:
-                    print(f"Error trying to collect participants par_id")
-                    return False
+                results = db.query(P.par_id, P.ID).filter_by(comp_id=self.comp.comp_id).all()
+                for result in results:
+                    pilot = next(p for p in self.comp.participants if p.ID == result.ID)
+                    pilot.par_id = result.par_id
         return True
 
     def add_all(self):
@@ -623,13 +605,13 @@ class FSDB(object):
         self.add_comp()
         if self.comp.comp_id is not None:
             print(f"comp ID: {self.comp.comp_id}")
-            with Database() as db:
+            with db_session() as db:
                 print(f"adding participants...")
-                self.add_participants(db.session)
+                self.add_participants()
                 print(f"adding tasks...")
-                self.add_tasks(db.session)
+                self.add_tasks()
                 print(f"adding results...")
-                self.add_results(db.session)
+                self.add_results()
             print(f"Done.")
             return self.comp.comp_id
         else:

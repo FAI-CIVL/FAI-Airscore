@@ -6,10 +6,6 @@
 # ToDO: setup script to create this file"""
 ##################
 
-docker:
-  container: web   # name of docker-container service running Flask. Default is web
-  port: 5000       # port used by docker-container service running Flask. Default is 5000
-
 waypoint/airspace_file_library: on # on/off ability to see and reuse waypoint and airspace files between comps.
                                    # recommended for small user base. i.e. national associations
 use_internal_pilot_DB: yes # store pilots in airscore for use in comps.

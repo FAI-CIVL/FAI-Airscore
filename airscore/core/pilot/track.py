@@ -11,13 +11,13 @@ Antonio Golfari, Stuart Mackintosh - 2019
 
 import glob
 from os import path, makedirs
+from pathlib import Path
 from shutil import copyfile
-from sqlalchemy.exc import SQLAlchemyError
 from Defines import track_formats, IGCPARSINGCONFIG
 from calcUtils import epoch_to_date
-from db_tables import TblTaskResult
+from db.tables import TblTaskResult
 from igc_lib import Flight, FlightParsingConfig
-from myconn import Database
+from db.conn import db_session
 from trackUtils import find_pilot, get_task_fullpath
 import json
 # from notification import Notification
@@ -117,7 +117,7 @@ class Track(object):
 
     def get_notes(self):
         """flight notifications list"""
-        from notification import Notification
+        from pilot.notification import Notification
         if self.flight:
             self.notifications = [Notification(notification_type='track', comment=i) for i in self.flight.notes]
         else:
@@ -141,16 +141,12 @@ class Track(object):
         result = ''
 
         # add track as result in TblTaskResult table
-        with Database() as db:
-            try:
-                # TODO: g-record still to implement
-                track = TblTaskResult(par_id=self.par_id, task_id=task_id, track_file=self.filename, g_record=1)
-                self.track_id = db.session.add(track)
-                db.session.commit()
-                result += f"track for pilot with id {self.par_id} correctly stored in database"
-            except SQLAlchemyError:
-                print('Error Inserting track into db:')
-                result += f'Error inserting track for pilot with id {self.par_id}'
+        with db_session() as db:
+            # TODO: g-record still to implement
+            track = TblTaskResult(par_id=self.par_id, task_id=task_id, track_file=self.filename, g_record=1)
+            self.track_id = db.add(track)
+            db.commit()
+            result += f"track for pilot with id {self.par_id} correctly stored in database"
         return result
 
     @classmethod
@@ -193,21 +189,18 @@ class Track(object):
     @classmethod
     def read_db(cls, track_id):
         """Creates a Track Object from a DB Track entry"""
-        from db_tables import TrackObjectView as T
+        from db.tables import TrackObjectView as T
 
         track = cls(track_id=track_id)
         """Read general info about the track"""
-        with Database() as db:
+        with db_session() as db:
             # get track details.
-            q = db.session.query(T).get(track_id)
-            try:
-                db.populate_obj(track, q)
-                """Creates the flight obj with fixes info"""
-                # task_id = q.task_id
-                full_path = get_task_fullpath(q.task_id)
-                track.flight = Flight.create_from_file(path.join(full_path, track.track_file))
-            except SQLAlchemyError:
-                print(f'Track Query Error: no result found')
+            q = db.query(T).get(track_id)
+            q.populate(track)
+            """Creates the flight obj with fixes info"""
+            # task_id = q.task_id
+            full_path = get_task_fullpath(q.task_id)
+            track.flight = Flight.create_from_file(path.join(full_path, track.track_file))
         return track
 
     @staticmethod
@@ -246,41 +239,25 @@ class Track(object):
         name could be changed as the one XContest is sending, or rename that one, as we wish
         if path or pname is None will calculate. note that if bulk importing it is better to pass these values
         rather than query DB for each track"""
-        from db_tables import TblParticipant as P
-
+        from db.tables import TblParticipant as P
         src_file = self.filename
-        # if task_path is None:
-        #     task_path = get_task_filepath(self.task_id)
-
         if pname is None:
-            with Database() as db:
-                # get pilot details.
-                name = db.session.query(P).get(self.par_id).name
-                if name:
-                    pname = name.replace(' ', '_').lower()
-
+            # get pilot details.
+            pname = P.get_by_id(self.par_id).name
         if task_path:
-            """check if directory already exists"""
-            if not path.isdir(task_path):
-                makedirs(task_path)
-            """creates a name for the track
-            name_surname_date_time_index.igc
-            if we use flight date then we need an index for multiple tracks"""
-
-            index = str(len(glob.glob(task_path + '/' + pname + '*.igc')) + 1).zfill(2)
-            filename = '_'.join([pname, str(self.date), index]) + '.igc'
-            fullname = path.join(task_path, filename)
+            fullname = create_igc_filename(task_path, self.date, pname)
             print(f'path to copy file: {fullname}')
             """copy file"""
             try:
                 copyfile(src_file, fullname)
-                self.track_file = filename
-                print(f'file succesfully copied to : {self.filename}')
-            except SQLAlchemyError:
+                self.track_file = fullname.name
+                print(f'file successfully copied to : {self.filename}')
+                return fullname
+            except:
                 print('Error copying file:', fullname)
         else:
-            print('error, path not created')
-        return fullname
+            print('error, no path given')
+        return None
 
 
 def validate_G_record(igc_filename):
@@ -299,8 +276,7 @@ def validate_G_record(igc_filename):
             else:
                 return 'ERROR'
     except IOError:
-        print
-        "Could not read file:", igc_filename
+        print(f"Could not read file:{igc_filename}")
         return 'ERROR'
 
 
@@ -345,13 +321,17 @@ def save_igc_config_yaml(yaml_filename, yaml_data):
     return True
 
 
-def create_igc_filename(file_path, date, pilot_name):
+def create_igc_filename(file_path, date, pilot_name) -> Path:
     """creates a name for the track
     name_surname_date_time_index.igc
     if we use flight date then we need an index for multiple tracks"""
-    if not path.isdir(file_path):
-        makedirs(file_path)
-    index = str(len(glob.glob(file_path + '/' + pilot_name + '*.igc')) + 1).zfill(2)
-    filename = '_'.join([pilot_name, str(date), index]) + '.igc'
-    fullname = path.join(file_path, filename)
+    from trackUtils import remove_accents
+    if not Path(file_path).is_dir():
+        Path(file_path).mkdir(mode=0o755)
+    # pname = pilot_name.replace(' ', '_').lower()
+    pname = remove_accents('_'.join(pilot_name.replace('_', ' ').replace("'", ' ').lower().split()))
+    index = str(len(glob.glob(file_path + '/' + pname + '*.igc')) + 1).zfill(2)
+    filename = '_'.join([pname, str(date), index]) + '.igc'
+    fullname = Path(file_path, filename)
     return fullname
+

@@ -24,9 +24,9 @@
             <h3 id="header"></h3>
         </div>
 
-  {% if not user_is_admin %}
+  {% if not user_is_scorekeeper %}
 
-<h2>You are not authorised to access this page as you are not an admin of this competition</h2>
+<h2>You are not authorised to access this page as you are not a scorekeeper of this competition</h2>
 {% else %}
  <div class="container">
     <div id = "display_file">
@@ -253,7 +253,7 @@
 {% endblock %}
 
 {% block js %}
-    {% if user_is_admin %}
+    {% if user_is_scorekeeper %}
     <script type="text/javascript" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
     <script type="text/javascript" src="/static/js/pop_task_score_admin.js"></script>
     <script type="text/javascript">populate_task_scores({{taskid}},{{active_file|tojson}})</script>

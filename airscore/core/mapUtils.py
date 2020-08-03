@@ -200,11 +200,11 @@ def map_legend(col_pilot_dict):
 
 
 def get_other_tracks(taskid, pilot_parid):
-    from db_tables import FlightResultView as R
-    from myconn import Database
+    from db.tables import FlightResultView as R
+    from db.conn import db_session
 
-    with Database() as db:
-        tracks = (db.session.query(R.track_id, R.name).filter(R.task_id == taskid, R.par_id != pilot_parid).all())
+    with db_session() as db:
+        tracks = (db.query(R.track_id, R.name).filter(R.task_id == taskid, R.par_id != pilot_parid).all())
 
     return tracks
 
@@ -213,7 +213,6 @@ def result_to_geojson(result, task, flight, second_interval=5):
     """Dumps the flight to geojson format used for mapping.
     Contains tracklog split into pre SSS, pre Goal and post goal parts, thermals, takeoff/landing,
     result object, waypoints achieved, and bounds
-
     second_interval = resolution of tracklog. default one point every 5 seconds. regardless it will
                         keep points where waypoints were achieved.
     returns the Json string."""
