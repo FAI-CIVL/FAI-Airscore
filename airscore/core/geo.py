@@ -95,7 +95,7 @@ def create_arc_polygon(center, start, end, clockwise=True, tolerance=5):
         angle -= 360
     # da = angle/points if clockwise else angle/points * -1
     # length = calculate_arc_length(radius, abs(angle))
-    points = calculate_min_points(angle, radius, tolerance)   # max distance arc / segment is less than half tolerance
+    points = max(1, calculate_min_points(angle, radius, tolerance))   # max distance arc / segment is less than half tolerance
     da = angle / points
     dr = (dist1 - dist2)/points
     print(f"center: {center.latitude, center.longitude} | start: {start.latitude, start.longitude} | end: {end.latitude, end.longitude}")
