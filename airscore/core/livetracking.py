@@ -298,7 +298,7 @@ class LiveTracking(object):
                 print(f' -- Associating livetracks ...')
             associate_livetracks(self.task, response, cycle_starting_time)
             for p in self.pilots:
-                if (p.livetrack and len(p.livetrack) > config.min_fixes and p.livetrack[-1].rawtime > (p.last_time or 0)
+                if (hasattr(p, 'livetrack') and len(p.livetrack) > config.min_fixes and p.livetrack[-1].rawtime > (p.last_time or 0)
                         and not p.goal_time and not p.landing_time):
                     check_livetrack(result=p, task=self.task, airspace=self.airspace)
             self.update_result()
