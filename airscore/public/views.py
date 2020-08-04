@@ -573,22 +573,19 @@ def livetracking(taskid):
         results.extend(sorted(others, key=lambda k: k['distance'], reverse=True))
         data = []
         for el in results:
-            '''result, time or distance'''
-            if el['ESS_time'] and (el['distance'] - task_distance) <= 5:
-                res = sec_to_string(el['ss_time'])
-            elif el['ESS_time'] and (el['distance'] - task_distance) > 5:
-                res = f"[{sec_to_string(el['ss_time'])}]"
+            status = ''
+            res = ''
+            '''status, time or distance'''
+            if el['first_time'] is None:
+                '''not launched'''
+                status = '[not launched yet]'
+            elif el['ESS_time']:
+                val = sec_to_string(el['ss_time'])
+                res = f"<del>{val}</del>" if not el['goal_time'] else f"<b>{val}</b>"
             else:
                 res = str(c_round(el['distance'] / 1000, 2)) + ' Km' if el['distance'] > 500 else ''
-            '''height'''
-            if not ('height' in el) or not el['first_time']:
-                height = '[not launched yet]'
-            elif el['goal_time']:
-                height = ''
-            elif el['landing_time']:
-                height = '[landed]'
-            else:
-                height = f"[{el['height']} agl]"
+                status = '[landed]' if el['landing_time'] else f"[{el['height']} agl]"
+
             '''notifications'''
             if el['notifications']:
                 comment = '; '.join([n['comment'].split('.')[0] for n in el['notifications']])
@@ -597,13 +594,13 @@ def livetracking(taskid):
             '''delay'''
             if not (el['landing_time'] or el['goal_time']) and el['last_time'] and rawtime - el['last_time'] > 120:  # 2 mins old
                 if rawtime - el['last_time'] > 600:  # 10 minutes old
-                    height = f"disconnected"
+                    status = f"disconnected"
                 else:
                     m, s = divmod(rawtime - el['last_time'], 60)
-                    height = f"[{m:02d}:{s:02d} old]"
+                    status = f"[{m:02d}:{s:02d} old]"
             time = sec_to_string(el['last_time'], info['time_offset']) if el['last_time'] else ''
             p = dict(id=el['ID'], name=el['name'], fem=1 if el['sex'] == 'F' else 0, result=res,
-                     comment=comment, time=time, height=height)
+                     comment=comment, time=time, status=status)
             data.append(p)
 
     return render_template('public/live.html', file_stats=file_stats, headers=headers, data=data, info=info)

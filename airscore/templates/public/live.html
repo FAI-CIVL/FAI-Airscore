@@ -72,13 +72,13 @@ Task Live
         {% endif %}
         {% if pilot['comment'] %}
         <td class='noted' style='color: orange; text-decoration:underline;'>
-          {{pilot['result']}} <span style='font-size: 0.6em;'>{{pilot['height']}}</span>
+          {{pilot['result']}} <span style='font-size: 0.6em;'>{{pilot['status']}}</span>
         </td>
         <td class='noted' style='color: orange; font-size: 0.6em;'>
           <span class='tooltiptext'>{{pilot['comment']}}</span>
         </td>
         {% else %}
-        <td>{{pilot['result']}} <span style='font-size: 0.6em;'>{{pilot['height']}}</span></td>
+        <td>{{pilot['result']}} <span style='font-size: 0.6em;'>{{pilot['status']}}</span></td>
         <td></td>
         {% endif %}
       </tr>
