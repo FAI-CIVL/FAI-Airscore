@@ -47,9 +47,9 @@ def igc_coords(lat: float, lon: float) -> (str, str):
     NS = 'N' if lat >= 0 else 'S'
     EW = 'E' if lon >= 0 else 'W'
     d, i = modf(abs(lat))
-    igclat = f"{int(i)}{round(d*60000)}{NS}"
+    igclat = f"{str(int(i)).zfill(2)}{str(round(d*60000)).zfill(5)}{NS}"
     d, i = modf(abs(lon))
-    igclon = f"{int(i)}{round(d*60000)}{EW}"
+    igclon = f"{str(int(i)).zfill(3)}{str(round(d*60000)).zfill(5)}{EW}"
     return igclat, igclon
 
 

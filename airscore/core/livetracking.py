@@ -489,7 +489,7 @@ def update_livetrack_file(result: FlightResult, flight: list, path: str):
             lat, lon = igc_coords(fix.lat, fix.lon)
             baro_alt = str(int(fix.press_alt)).zfill(5)
             gnss_alt = str(int(fix.gnss_alt)).zfill(5)
-            lines += f"{fixtime}{lat}{lon}A{baro_alt}{gnss_alt}\n"
+            lines += f"B{fixtime}{lat}{lon}A{baro_alt}{gnss_alt}\n"
         '''append lines'''
         f = open(file, "a+")
         f.write(lines)
