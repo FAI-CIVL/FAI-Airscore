@@ -411,7 +411,7 @@ def process_igc_background(task_id: int, par_id: int, file: Path, user: str):
         print(json.dumps(data) + '|result')
         return None
     if not flight.valid:
-        print(f'IGC does not meet quality standard set by igc parsing config. Notes:{pilot.flight.notes}')
+        print(f'IGC does not meet quality standard set by igc parsing config. Notes:{flight.notes}')
         print(json.dumps(data) + '|result')
         return None
     elif not epoch_to_date(flight.date_timestamp) == task.date:
