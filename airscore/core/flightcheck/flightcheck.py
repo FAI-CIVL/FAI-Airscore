@@ -7,23 +7,12 @@ from pilot.waypointachieved import WaypointAchieved
 from route import distance_flown, start_made_civl, tp_time_civl, tp_made_civl, \
     in_goal_sector, get_shortest_path, distance
 from calcUtils import sec_to_time
-from pilot.track import igc_parsing_config_from_yaml
-
-'''parameters for livetracking'''
-config = igc_parsing_config_from_yaml('smartphone')
-min_flight_speed = config.min_gsp_flight   # km/h
-max_flight_speed = 250  # Km/k
-max_still_seconds = 30  # max consecutive seconds under min speed not to be considered landed
-min_alt_difference = 15   # meters min altitude difference not to be considered landed
-min_fixes = 5  # min number of fixes to be considered a valid livetrack chunk
-max_alt_rate = config.max_alt_change_rate  # max altitude change rate not to be considered wrong fix
-max_alt = config.max_alt
-min_alt = config.min_alt
+from igc_lib import FlightParsingConfig
 
 
 def check_fixes(result: FlightResult, fixes: list, task: Task, tp: FlightPointer, lead_coeff: LeadCoeff = None,
-                airspace: AirspaceCheck = None, livetracking: bool = False, deadline: int = None,
-                print=print):
+                airspace: AirspaceCheck = None, livetracking: bool = False,
+                igc_parsing_config: FlightParsingConfig = None, deadline: int = None, print=print):
     """"""
     '''initialize'''
     total_fixes = len(fixes)
@@ -55,7 +44,7 @@ def check_fixes(result: FlightResult, fixes: list, task: Task, tp: FlightPointer
         '''get if pilot already started in previous track slices'''
         already_started = tp.start_done
         '''get if pilot already made ESS in previous track slices'''
-        already_ESS = any(e[0] == 'ESS' for e in result.waypoints_achieved)
+        already_ESS = any(e.name == 'ESS' for e in result.waypoints_achieved)
 
     for i in range(total_fixes - 1):
         # report percentage progress
@@ -74,7 +63,8 @@ def check_fixes(result: FlightResult, fixes: list, task: Task, tp: FlightPointer
             if next_fix.rawtime - my_fix.rawtime < 1:
                 continue
             alt_rate = abs(next_fix.alt - my_fix.alt) / (next_fix.rawtime - my_fix.rawtime)
-            if alt_rate > max_alt_rate or not (min_alt < alt < max_alt):
+            if (alt_rate > igc_parsing_config.max_alt_change_rate
+                    or not igc_parsing_config.min_alt < alt < igc_parsing_config.max_alt):
                 continue
 
             '''check flying'''
@@ -82,23 +72,26 @@ def check_fixes(result: FlightResult, fixes: list, task: Task, tp: FlightPointer
             if not result.first_time:
                 '''not launched yet'''
                 launch = next(x for x in tp.turnpoints if x.type == 'launch')
-                if distance(next_fix, launch) < 400:
-                    '''still on launch'''
-                    continue
-                if abs(launch.altitude - alt) > min_alt_difference and speed > min_flight_speed:
+                if (abs(launch.altitude - alt) > igc_parsing_config.min_alt_difference
+                        and speed > igc_parsing_config.min_gsp_flight):
                     '''pilot launched'''
                     result.first_time = next_fix.rawtime
                     result.live_comment = 'flying'
+                else:
+                    '''still on launch'''
+                    continue
+
             else:
                 '''check if pilot landed'''
-                if speed < min_flight_speed:
+                if speed < igc_parsing_config.min_gsp_flight:
                     if not suspect_landing_fix:
                         suspect_landing_fix = next_fix
                         # suspect_landing_alt = alt
                     else:
                         time_diff = next_fix.rawtime - suspect_landing_fix.rawtime
                         alt_diff = abs(alt - suspect_landing_fix.alt)
-                        if time_diff > max_still_seconds and alt_diff < min_alt_difference:
+                        if (time_diff > igc_parsing_config.max_still_seconds
+                                and alt_diff < igc_parsing_config.min_alt_difference):
                             '''assuming pilot landed'''
                             result.landing_time = next_fix.rawtime
                             result.landing_altitude = alt
@@ -109,16 +102,17 @@ def check_fixes(result: FlightResult, fixes: list, task: Task, tp: FlightPointer
         else:
             alt = next_fix.gnss_alt if alt_source == 'GPS' else next_fix.press_alt + alt_compensation
 
+            if next_fix.rawtime < result.first_time:
+                '''skip'''
+                continue
+            if result.landing_time and next_fix.rawtime > result.landing_time:
+                '''pilot landed out'''
+                # print(f'fix {i}: landed out - {next_fix.rawtime} - {alt}')
+                break
+
+        '''max altitude'''
         if alt > result.max_altitude:
             result.max_altitude = alt
-
-        '''pilot flying'''
-        if next_fix.rawtime < result.first_time:
-            continue
-        if result.landing_time and next_fix.rawtime > result.landing_time:
-            '''pilot landed out'''
-            # print(f'fix {i}: landed out - {next_fix.rawtime} - {alt}')
-            break
 
         '''handle stopped task
         Pilots who were at a position between ESS and goal at the task stop time will be scored for their 
@@ -293,6 +287,9 @@ def check_fixes(result: FlightResult, fixes: list, task: Task, tp: FlightPointer
 
     result.last_altitude = 0 if 'alt' not in locals() else alt
     result.last_time = 0 if 'next_fix' not in locals() else next_fix.rawtime
+    if livetracking:
+        result.height = (0 if not result.first_time or result.landing_time or 'next_fix' not in locals()
+                         else next_fix.height)
 
 
 def calculate_final_results(result: FlightResult, task: Task, tp: FlightPointer, lead_coeff: LeadCoeff,

@@ -23,18 +23,16 @@ from airspace import AirspaceCheck
 import time
 from datetime import datetime
 from logger import Logger
-from igc_lib import FlightParsingConfig
-
+from pathlib import Path
+from pilot.flightresult import FlightResult
+from pilot.track import igc_parsing_config_from_yaml, create_igc_filename
 
 '''parameters for livetracking'''
-min_flight_speed = FlightParsingConfig.min_gsp_flight   # km/h
-max_flight_speed = 250  # Km/k
-max_still_seconds = 30  # max consecutive seconds under min speed not to be considered landed
-min_alt_difference = 15   # meters min altitude difference not to be considered landed
-min_fixes = 5  # min number of fixes to be considered a valid livetrack chunk
-max_alt_rate = FlightParsingConfig.max_alt_change_rate  # max altitude change rate not to be considered wrong fix
-max_alt = FlightParsingConfig.max_alt
-min_alt = FlightParsingConfig.min_alt
+config = igc_parsing_config_from_yaml('smartphone')
+config.max_flight_speed = 250  # Km/k
+config.max_still_seconds = 30  # max consecutive seconds under min speed not to be considered landed
+config.min_alt_difference = 15  # meters min altitude difference not to be considered landed
+config.min_fixes = 5  # min number of fixes to be considered a valid livetrack chunk
 
 
 class LiveTracking(object):
@@ -91,6 +89,7 @@ class LiveTracking(object):
 
     @property
     def properly_set(self):
+        # print(f"task: {bool(self.task is not None)}, pilots: {bool(self.pilots)}, track_source: {bool(self.track_source)}, wpt: {bool(self.task.turnpoints)}, start: {bool(self.task.start_time is not None)}")
         return ((self.task is not None) and self.pilots and self.track_source and self.task.turnpoints
                 and (self.task.start_time is not None))
 
@@ -186,6 +185,8 @@ class LiveTracking(object):
         task.get_pilots()
         airspace = AirspaceCheck.from_task(task)
         livetrack = LiveTracking(task, airspace, test)
+        for p in livetrack.pilots:
+            create_igc_file(p, task)
         livetrack.create_result()
         return livetrack
 
@@ -231,7 +232,7 @@ class LiveTracking(object):
         else:
             for p in self.pilots:
                 result = next(r for r in self.result['data'] if r['par_id'] == p.par_id)
-                result.update({x: getattr(p.result, x) for x in LiveTracking.results_list if x in dir(p.result)})
+                result.update({x: getattr(p, x) for x in LiveTracking.results_list if x in dir(p)})
                 result['notifications'] = [n.__dict__ for n in p.notifications]
         self.create_json_file()
 
@@ -297,9 +298,9 @@ class LiveTracking(object):
                 print(f' -- Associating livetracks ...')
             associate_livetracks(self.task, response, cycle_starting_time)
             for p in self.pilots:
-                if (p.livetrack and len(p.livetrack) > min_fixes and p.livetrack[-1].rawtime > (p.last_time or 0)
+                if (p.livetrack and len(p.livetrack) > config.min_fixes and p.livetrack[-1].rawtime > (p.last_time or 0)
                         and not p.goal_time and not p.landing_time):
-                    check_livetrack(pilot=p, task=self.task, airspace_obj=self.airspace)
+                    check_livetrack(result=p, task=self.task, airspace=self.airspace)
             self.update_result()
             i += 1
             time.sleep(max(interval / 2 - (self.now - cycle_starting_time), 0))
@@ -355,7 +356,7 @@ def associate_livetracks(task, response, timestamp):
         if not pil:
             continue
         # res = pil.result
-        if len(fixes) < min_fixes:
+        if len(fixes) < config.min_fixes:
             '''livetrack segment too short'''
             pil.livetrack = []
             continue
@@ -363,7 +364,7 @@ def associate_livetracks(task, response, timestamp):
             '''already landed'''
             # shouldn't happen as landed pilots are filtered in tracks request
             continue
-        if not any(el for el in fixes if int(el['v']) > min_flight_speed):
+        if not any(el for el in fixes if int(el['v']) > config.min_gsp_flight):
             '''not flying'''
             pil.last_time = int(fixes[-1]['d']) - midnight
             pil.live_comment = 'not flying'
@@ -395,6 +396,7 @@ def associate_livetracks(task, response, timestamp):
             fix.speed = s
             flight.append(fix)
         pil.livetrack = flight
+        update_livetrack_file(pil, flight, task.file_path)
 
 
 def simulate_livetracking(task_id):
@@ -403,34 +405,21 @@ def simulate_livetracking(task_id):
     LT.run()
 
 
-def check_livetrack(pilot, task, airspace_obj=None):
+def check_livetrack(result: FlightResult, task: Task, airspace: AirspaceCheck = None):
     """ Checks a Flight object against the task.
         Args:
-               pilot:  a Pilot object
-               task:    a Task object
-               airspace_obj: a AirspaceCheck object
+               result:   a FlightResult object
+               task:     a Task object
+               airspace: a AirspaceCheck object
         Returns:
                 a list of GNSSFixes of when turnpoints were achieved.
     """
-    from pilot.flightresult import Tp, pilot_can_start, pilot_can_restart, start_number_at_time
-    from route import in_semicircle, start_made_civl, tp_made_civl, distance, \
-        tp_time_civl, get_shortest_path, distance_flown
-    from airspace import AirspaceCheck
+    from flightcheck.flightpointer import FlightPointer
+    from flightcheck.flightcheck import check_fixes, calculate_final_results
     from formulas.libs.leadcoeff import LeadCoeff
-    from pilot.notification import Notification
 
     '''initialize'''
-    tolerance = task.formula.tolerance or 0
-    min_tol_m = task.formula.min_tolerance or 0
-    max_jump_the_gun = task.formula.max_JTG or 0  # seconds
-    jtg_penalty_per_sec = 0 if max_jump_the_gun == 0 else task.formula.JTG_penalty_per_sec
-
-    # if not task.optimised_turnpoints:
-    #     task.calculate_optimised_task_length()
-    distances2go = task.distances_to_go  # Total task Opt. Distance, in legs list
-
-    result = pilot.result
-    fixes = pilot.livetrack
+    fixes = result.livetrack
 
     '''leadout coefficient'''
     if task.formula.formula_departure == 'leadout':
@@ -440,261 +429,18 @@ def check_livetrack(pilot, task, airspace_obj=None):
         lead_coeff = None
 
     '''Turnpoint managing'''
-    tp = Tp(task)
+    tp = FlightPointer(task)
     tp.pointer = result.waypoints_made + 1
-    '''get if pilot already started in previous track slices'''
-    already_started = tp.start_done
-    restarted = False
-    '''get if pilot already made ESS in previous track slices'''
-    already_ESS = any(e[0] == 'ESS' for e in result.waypoints_achieved)
 
     '''Airspace check managing'''
-    infringements_list = []
     if task.airspace_check:
-        if task.airspace_check and not airspace_obj:
+        if task.airspace_check and not airspace:
             print(f'We should not create airspace here')
-            airspace_obj = AirspaceCheck.from_task(task)
+            airspace = AirspaceCheck.from_task(task)
 
-    alt = 0
-    suspect_landing_fix = None
-    next_fix = None
+    check_fixes(result, fixes, task, tp, lead_coeff, airspace, livetracking=True, igc_parsing_config=config)
 
-    for i in range(len(fixes) - 1):
-        '''Get two consecutive trackpoints as needed to use FAI / CIVL rules logic
-        '''
-        # start_time = tt.time()
-        my_fix = fixes[i]
-        next_fix = fixes[i + 1]
-        result.last_time = next_fix.rawtime
-        alt = next_fix.alt
-
-        '''check coherence'''
-        if next_fix.rawtime - my_fix.rawtime < 1:
-            continue
-        alt_rate = abs(next_fix.alt - my_fix.alt)/(next_fix.rawtime - my_fix.rawtime)
-        if alt_rate > max_alt_rate or not (min_alt < alt < max_alt):
-            continue
-
-        '''check flying'''
-        speed = next_fix.speed  # km/h
-        if not result.first_time:
-            '''not launched yet'''
-            launch = next(x for x in tp.turnpoints if x.type == 'launch')
-            if distance(next_fix, launch) < 400:
-                '''still on launch'''
-                continue
-            if abs(launch.altitude - alt) > min_alt_difference and speed > min_flight_speed:
-                '''pilot launched'''
-                result.first_time = next_fix.rawtime
-                result.live_comment = 'flying'
-        else:
-            '''check if pilot landed'''
-            if speed < min_flight_speed:
-                if not suspect_landing_fix:
-                    suspect_landing_fix = next_fix
-                    # suspect_landing_alt = alt
-                else:
-                    time_diff = next_fix.rawtime - suspect_landing_fix.rawtime
-                    alt_diff = abs(alt - suspect_landing_fix.alt)
-                    if time_diff > max_still_seconds and alt_diff < min_alt_difference:
-                        '''assuming pilot landed'''
-                        result.landing_time = next_fix.rawtime
-                        result.landing_altitude = alt
-                        result.live_comment = 'landed'
-                        break
-            elif suspect_landing_fix is not None:
-                suspect_landing_fix = None
-
-        # if alt > result.max_altitude:
-        #     result.max_altitude = alt
-
-        # '''handle stopped task'''
-        # if task.stopped_time and next_fix.rawtime > deadline:
-        #     result.last_altitude = alt  # check the rules on this point..which alt to
-        #     break
-
-        '''check if pilot has arrived in goal (last turnpoint) so we can stop.'''
-        if tp.made_all:
-            break
-
-        '''check if task deadline has passed'''
-        if task.task_deadline < next_fix.rawtime:
-            # Task has ended
-            result.live_comment = 'flying past deadline'
-            break
-
-        '''check if start closing time passed and pilot did not start'''
-        if task.start_close_time and task.start_close_time < my_fix.rawtime and not tp.start_done:
-            # start closed
-            result.live_comment = 'did not start before start closing time'
-            break
-
-        if result.landing_time and next_fix.rawtime > result.landing_time:
-            '''pilot already landed'''
-            # this should not happen as landed pilot are filtered
-            break
-
-        '''check tp type is known'''
-        if tp.next.type not in ('launch', 'speed', 'waypoint', 'endspeed', 'goal'):
-            assert False, f"Unknown turnpoint type: {tp.type}"
-
-        '''check window is open'''
-        if task.window_open_time > next_fix.rawtime:
-            continue
-
-        '''start turnpoint managing'''
-        '''given all n crossings for a turnpoint cylinder, sorted in ascending order by their crossing time,
-        the time when the cylinder was reached is determined.
-        turnpoint[i] = SSS : reachingTime[i] = crossing[n].time
-        turnpoint[i] =? SSS : reachingTime[i] = crossing[0].time
-
-        We need to check start in 3 cases:
-        - pilot has not started yet
-        - race has multiple starts
-        - task is elapsed time
-        '''
-        if pilot_can_start(task, tp, my_fix):
-            # print(f'time: {my_fix.rawtime}, start: {task.start_time} | Interval: {task.SS_interval} | my start: {result.real_start_time} | better_start: {pilot_get_better_start(task, my_fix.rawtime, result.SSS_time)} | can start: {pilot_can_start(task, tp, my_fix)} can restart: {pilot_can_restart(task, tp, my_fix, result)} | tp: {tp.name}')
-            if start_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m):
-                t = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
-                result.waypoints_achieved.append([tp.name, t, alt])  # pilot has started
-                result.real_start_time = t
-                tp.move_to_next()
-
-        elif pilot_can_restart(task, tp, my_fix, result):
-            # print(f'time: {my_fix.rawtime}, start: {task.start_time} | Interval: {task.SS_interval} | my start: {result.real_start_time} | better_start: {pilot_get_better_start(task, my_fix.rawtime, result.SSS_time)} | can start: {pilot_can_start(task, tp, my_fix)} can restart: {pilot_can_restart(task, tp, my_fix, result)} | tp: {tp.name}')
-            if start_made_civl(my_fix, next_fix, tp.last_made, tolerance, min_tol_m):
-                tp.pointer -= 1
-                t = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
-                result.waypoints_achieved.pop()
-                result.waypoints_achieved.append([tp.name, t, alt])  # pilot has started again
-                result.real_start_time = t
-                if lead_coeff:
-                    lead_coeff.reset()
-                tp.move_to_next()
-                restarted = True
-
-        if tp.start_done:
-            '''Turnpoint managing'''
-            if (tp.next.shape == 'circle'
-                    and tp.next.type in ('endspeed', 'waypoint')):
-                if tp_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m):
-                    t = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
-                    result.waypoints_achieved.append([tp.name, t, alt])  # pilot has achieved turnpoint
-                    tp.move_to_next()
-
-            if tp.next.type == 'goal':
-                if ((tp.next.shape == 'circle' and tp_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m))
-                        or (tp.next.shape == 'line' and (in_semicircle(task, task.turnpoints, tp.pointer, my_fix)
-                                                         or in_semicircle(task, task.turnpoints, tp.pointer,
-                                                                          next_fix)))):
-                    result.waypoints_achieved.append(
-                        [tp.name, next_fix.rawtime, alt])  # pilot has achieved turnpoint
-                    break
-
-        '''update result data
-        Once launched, distance flown should be max result among:
-        - previous value;
-        - optimized dist. to last turnpoint made;
-        - total optimized distance minus opt. distance from next wpt to goal minus dist. to next wpt;
-        '''
-        if tp.pointer > 0:
-            if tp.start_done and not tp.ess_done:
-                '''optimized distance calculation each fix'''
-                fix_dist_flown = task.opt_dist - get_shortest_path(task, next_fix, tp.pointer)
-                # print(f'time: {next_fix.rawtime} | fix: {tp.name} | Optimized Distance used')
-            else:
-                '''simplified and faster distance calculation'''
-                fix_dist_flown = distance_flown(next_fix, tp.pointer, task.optimised_turnpoints,
-                                                task.turnpoints[tp.pointer], distances2go)
-                # print(f'time: {next_fix.rawtime} | fix: {tp.name} | Simplified Distance used')
-
-            result.distance_flown = max(result.distance_flown, fix_dist_flown)
-
-        '''Leading coefficient
-        LC = taskTime(i)*(bestDistToESS(i-1)^2 - bestDistToESS(i)^2 )
-        i : i ? TrackPoints In SS'''
-        if lead_coeff and tp.start_done and not tp.ess_done:
-            lead_coeff.update(result, my_fix, next_fix)
-
-        '''Airspace Check'''
-        if task.airspace_check and airspace_obj:
-            map_fix = [next_fix.rawtime, next_fix.lat, next_fix.lon, alt]
-            plot, penalty = airspace_obj.check_fix(next_fix, alt)
-            if plot:
-                map_fix.extend(plot)
-                '''Airspace Infringement: check if we already have a worse one'''
-                airspace_name = plot[2]
-                infringement_type = plot[3]
-                dist = plot[4]
-                infringements_list.append([next_fix, airspace_name, infringement_type, dist, penalty])
-            else:
-                map_fix.extend([None, None, None, None, None])
-            # airspace_plot.append(map_fix)
-
-    '''final results'''
-    result.last_altitude = alt
-    result.height = 0 if not result.first_time or result.landing_time or not next_fix else next_fix.height
-
-    # print(f'start indev: {tp.start_index}')
-    # print(f'start done: {tp.start_done}')
-    # print(f'pointer: {tp.pointer}')
-    if tp.start_done:
-        if not already_started or restarted:
-            '''
-            start time
-            if race, the first times
-            if multistart, the first time of the last gate pilot made
-            if elapsed time, the time of last fix on start
-            SS Time: the gate time'''
-            result.SSS_time = task.start_time
-
-            if task.task_type == 'RACE' and task.SS_interval:
-                result.SSS_time += max(0, (start_number_at_time(task, result.real_start_time) - 1) * task.SS_interval)
-
-            elif task.task_type == 'ELAPSED TIME':
-                result.SSS_time = result.real_start_time
-
-            '''manage jump the gun'''
-            # print(f'wayponts made: {result.waypoints_achieved}')
-            if max_jump_the_gun > 0:
-                if result.real_start_time < result.SSS_time:
-                    diff = result.SSS_time - result.real_start_time
-                    penalty = diff * jtg_penalty_per_sec
-                    # check
-                    print(f'jump the gun: {diff} - valid: {diff <= max_jump_the_gun} - penalty: {penalty}')
-                    comment = f"Jump the gun: {diff} seconds. Penalty: {penalty} points"
-                    result.notifications.append(Notification(notification_type='jtg',
-                                                             flat_penalty=penalty, comment=comment))
-
-        '''ESS Time'''
-        if any(e[0] == 'ESS' for e in result.waypoints_achieved) and not already_ESS:
-            # result.ESS_time, ess_altitude = min([e[1] for e in result.waypoints_achieved if e[0] == 'ESS'])
-            result.ESS_time, result.ESS_altitude = min(
-                [(x[1], x[2]) for x in result.waypoints_achieved if x[0] == 'ESS'], key=lambda t: t[0])
-            result.speed = (task.SS_distance / 1000) / (result.ss_time / 3600)
-
-        '''Distance flown'''
-        ''' ?p:p?PilotsLandingBeforeGoal:bestDistancep = max(minimumDistance, taskDistance-min(?trackp.pointi shortestDistanceToGoal(trackp.pointi)))
-            ?p:p?PilotsReachingGoal:bestDistancep = taskDistance
-        '''
-        if any(e[0] == 'Goal' for e in result.waypoints_achieved):
-            result.distance_flown = task.opt_dist
-            result.goal_time, result.goal_altitude = min(
-                [(x[1], x[2]) for x in result.waypoints_achieved if x[0] == 'Goal'], key=lambda t: t[0])
-            result.result_type = 'goal'
-            result.live_comment = 'Goal!'
-
-    result.best_waypoint_achieved = str(result.waypoints_achieved[-1][0]) if result.waypoints_achieved else None
-
-    if lead_coeff:
-        result.fixed_LC = lead_coeff.summing
-
-    if task.airspace_check:
-        infringements, notifications, penalty = airspace_obj.get_infringements_result(infringements_list)
-        result.notifications.extend(notifications)
-        result.notifications = clear_notifications(task, result)
-    return result
+    calculate_final_results(result, task, tp, lead_coeff, airspace, livetracking=True)
 
 
 def get_live_json(task_id):
@@ -705,7 +451,6 @@ def get_live_json(task_id):
     try:
         with open(fullname, 'r') as f:
             result = jsonpickle.decode(f.read())
-            # return jsonpickle.decode(result)
     except:
         print(f"Error reading file")
         file_stats = dict(timestamp=int(time.time()), status='Live Not Set Yet')
@@ -728,3 +473,84 @@ def clear_notifications(task, result):
         notifications.append(max([n for n in result.notifications if n.notification_type == 'airspace'
                                   and n.percentage_penalty > 0], key=lambda x: x.percentage_penalty))
     return notifications
+
+
+def update_livetrack_file(result: FlightResult, flight: list, path: str):
+    """ IGC Fix Format:
+        B1132494613837N01248410EA0006900991
+    """
+    from calcUtils import sec_to_time, igc_coords
+    file = Path(path, result.track_file)
+    if file.is_file():
+        '''create fixes lines'''
+        lines = ''
+        for fix in flight:
+            fixtime = sec_to_time(fix.rawtime).strftime("%H%M%S")
+            lat, lon = igc_coords(fix.lat, fix.lon)
+            baro_alt = str(int(fix.press_alt)).zfill(5)
+            gnss_alt = str(int(fix.gnss_alt)).zfill(5)
+            lines += f"{fixtime}{lat}{lon}A{baro_alt}{gnss_alt}\n"
+        '''append lines'''
+        f = open(file, "a+")
+        f.write(lines)
+        f.close()
+
+
+def create_igc_file(result: FlightResult, task: Task):
+    """ Flymaster IGC initialize format:
+
+        AXFMSFP Flymaster Live, V1.0, S/N 618839
+        HFFXA010
+        HFPLTPILOT:Alessandro Ploner
+        HFGTYGLIDERTYPE:
+        HFGIDGLIDERID:
+        HFDTM100GPSDATUM:WGS-1984
+        HFCIDCOMPETITIONID:72
+        HFCCLCOMPETITIONCLASS:
+        HOSITSITE:Meduno - Monte Valinis-IT
+        HFGPS:UBLOXNEO6
+        HFPRSPRESSALTSENSOR:NA
+        HFRFWFIRMWAREVERSION:202g
+        HFRHWHARDWAREVERSION:1.0R2
+        HFFTYFRTYPE:FLYMASTER,LIVE
+        HFDTE150719
+        B1132494613837N01248410EA0006900991
+        B1132504613834N01248408EA0006900990
+    """
+    if result.track_file and Path(task.file_path, result.track_file).is_file():
+        print(f"File already exists")
+        return
+
+    """check if directory already exists"""
+    if not Path(task.file_path).is_dir():
+        Path(task.file_path).mkdir(mode=0o755)
+    '''create filename'''
+    file = create_igc_filename(task.file_path, task.date, result.name)
+    result.track_file = file.name
+
+    '''create IGC header'''
+    name = result.name
+    glider = result.glider
+    ID = result.ID
+    site = task.turnpoints[0].description
+    date = task.date.strftime("%d%m%y")
+    header = f"AXFMSFP Flymaster Live, V1.0\n"
+    header += f"HFFXA010\n"
+    header += f"HFPLTPILOT:{name}\n"
+    header += f"HFGTYGLIDERTYPE:{glider}\n"
+    header += f"HFGIDGLIDERID:\n"
+    header += f"HFDTM100GPSDATUM:WGS-1984\n"
+    header += f"HFCIDCOMPETITIONID:{ID}\n"
+    header += f"HFCCLCOMPETITIONCLASS:\n"
+    header += f"HOSITSITE:{site}\n"
+    header += f"HFGPS:UBLOXNEO6\n"
+    header += f"HFPRSPRESSALTSENSOR:NA\n"
+    header += f"HFRFWFIRMWAREVERSION:202g\n"
+    header += f"HFRHWHARDWAREVERSION:1.0R2\n"
+    header += f"HFFTYFRTYPE:FLYMASTER,LIVE\n"
+    header += f"HFDTE{date}\n"
+
+    '''create file'''
+    f = open(file, "w+")
+    f.write(header)
+    f.close()

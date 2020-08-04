@@ -42,6 +42,17 @@ def c_round(x, digits=0, precision=15):
     return float(tmp.__round__(digits)) if digits > 0 else int(tmp.__round__(digits))
 
 
+def igc_coords(lat: float, lon: float) -> (str, str):
+    from math import modf
+    NS = 'N' if lat >= 0 else 'S'
+    EW = 'E' if lon >= 0 else 'W'
+    d, i = modf(abs(lat))
+    igclat = f"{int(i)}{round(d*60000)}{NS}"
+    d, i = modf(abs(lon))
+    igclon = f"{int(i)}{round(d*60000)}{EW}"
+    return igclat, igclon
+
+
 def km(dist, n=3):
     """meters to km, with n as number of decimals"""
     try:
