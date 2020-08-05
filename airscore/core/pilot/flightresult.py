@@ -581,33 +581,24 @@ def save_track(result: FlightResult, task_id: int):
         '''we miss info about pilot and task'''
         print(f"Error: missing info about participant ID and/or task ID")
         return None
-    '''database connection'''
-    with db_session() as db:
-        if result.track_id:
-            '''read db row'''
-            r = db.query(R).get(result.track_id)
-            r.comment = result.comment
-            r.track_file = result.track_file
-            for attr in [a for a in dir(r) if not (a[0] == '_' or a in ['track_file', 'comment'])]:
-                if hasattr(result, attr):
-                    setattr(r, attr, getattr(result, attr))
-            db.flush()
-        else:
-            '''create a new result'''
-            r = R.from_obj(result)
-            r.task_id = task_id
-            db.add(r)
-            db.flush()
-            result.track_id = r.track_id
 
-        '''notifications'''
-        update_notifications(result)
-        '''waypoints_achieved'''
-        update_waypoints_achieved(result)
-        db.commit()
+    if result.track_id:
+        '''read db row'''
+        row = R.get_by_id(result.track_id)
+        row.update(**result.as_dict())
+    else:
+        '''create a new result'''
+        row = R.from_obj(result)
+        row.task_id = task_id
+        row.save()
+
+    '''notifications'''
+    update_notifications(result)
+    '''waypoints_achieved'''
+    update_waypoints_achieved(result)
 
 
-def update_all_results(task_id, pilots):
+def update_all_results(pilots: list, task_id: int):
     """ get results to update from the list
         It is called from Task.check_all_tracks(), so only during Task full rescoring
         And from FSDB.add results.
@@ -621,13 +612,11 @@ def update_all_results(task_id, pilots):
     notif_mappings = []
     achieved_mappings = []
     for pilot in pilots:
-        res = pilot.result
-        r = dict(track_id=pilot.track_id, task_id=task_id, par_id=pilot.par_id,
-                 track_file=pilot.track_file, comment=pilot.comment)
-        for key in [col for col in R.__table__.columns.keys() if col not in r.keys()]:
-            if hasattr(res, key):
-                r[key] = getattr(res, key)
-        if r['track_id']:
+        r = dict(task_id=task_id)
+        for key in R.__table__.columns.keys():
+            if hasattr(pilot, key):
+                r[key] = getattr(pilot, key)
+        if pilot.track_id:
             update_mappings.append(r)
         else:
             insert_mappings.append(r)
