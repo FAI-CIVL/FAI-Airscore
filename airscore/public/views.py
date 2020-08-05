@@ -27,6 +27,7 @@ import mapUtils
 import Defines
 from os import path
 import frontendUtils
+from pathlib import Path
 
 blueprint = Blueprint("public", __name__, static_folder="../static")
 
@@ -213,6 +214,7 @@ def _get_all_comps():
 @blueprint.route('/competition/<int:compid>')
 def competition(compid):
     from compUtils import get_comp_json
+    from Defines import LIVETRACKDIR
     # get the latest comp result file, not the active one. This is so we can display tasks that have published
     # results that are not yet official and therefore in the comp overall results
     result_file = get_comp_json(int(compid), latest=True)
@@ -249,11 +251,11 @@ def competition(compid):
     if non_scored_tasks:
         for t in non_scored_tasks:
             task = t._asdict()
-            task['status'] = "Not yet scored"
             if not t.opt_dist or t.opt_dist == 0:
                 task['status'] = "Task not set"
                 task['opt_dist'] = '0 km'
             else:
+                task['status'] = "Not yet scored"
                 wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox, _, _ = get_map_json(task['id'])
                 layer['geojson'] = None
                 layer['bbox'] = bbox
@@ -261,6 +263,8 @@ def competition(compid):
                                     goal_line=goal_line, margin=tolerance)
                 task['opt_dist'] = '{:0.2f}'.format(task['opt_dist'] / 1000) + ' km'
                 task.update({'map': task_map._repr_html_()})
+                '''livetracking availability'''
+                task['live'] = Path(LIVETRACKDIR, str(task['id'])).is_file()
 
             task['tasQuality'] = "-"
             task['date'] = task['date'].strftime("%Y-%m-%d")
