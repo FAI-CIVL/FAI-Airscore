@@ -256,6 +256,7 @@ class LiveTracking(object):
         return False
 
     def run(self, interval=99):
+        from pilot.flightresult import update_all_results
         if not self.properly_set:
             print(f'Livetracking source is not set properly.')
             return
@@ -306,8 +307,12 @@ class LiveTracking(object):
             time.sleep(max(interval / 2 - (self.now - cycle_starting_time), 0))
             # t = self.timestamp
         print(f'Livetrack Ending: {datetime.fromtimestamp(self.timestamp).isoformat()}')
+        print(f'Saving results...')
+        success = update_all_results(self.pilots, self.task_id)
+        print(f'Saving success: {success}')
         Logger('OFF')
         print(f'Livetrack Ending: {datetime.fromtimestamp(self.timestamp).isoformat()}')
+        print(f'Results saved to database: {success}')
 
 
 def get_livetracks(task, timestamp, interval):
