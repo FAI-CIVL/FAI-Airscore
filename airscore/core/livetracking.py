@@ -196,6 +196,7 @@ class LiveTracking(object):
         headers = self.headers
         info = {x: getattr(self.task, x) for x in TaskResult.info_list if x in dir(self.task)}
         data = []
+        route = []
         if not self.task:
             file_stats['status'] = 'Task is not set yet'
         elif self.task.cancelled:
@@ -213,11 +214,15 @@ class LiveTracking(object):
                     file_stats['status'] = 'Stopped'
                 else:
                     file_stats['status'] = 'Task Set'
+                for idx, tp in enumerate(self.task.turnpoints):
+                    wpt = {x: getattr(tp, x) for x in TaskResult.route_list if x in dir(tp)}
+                    wpt['cumulative_dist'] = self.task.partial_distance[idx]
+                    route.append(wpt)
                 for p in self.pilots:
                     result = {x: getattr(p, x) for x in LiveTracking.results_list if x in dir(p)}
                     result['notifications'] = [n.__dict__ for n in p.notifications]
                     data.append(result)
-        self.result.update(dict(file_stats=file_stats, headers=headers, info=info, data=data))
+        self.result.update(dict(file_stats=file_stats, headers=headers, info=info, route=route, data=data))
         self.create_json_file()
 
     def update_result(self):

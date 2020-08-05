@@ -625,31 +625,40 @@ def _get_participants_and_status(compid):
 
 @blueprint.route('/live/<int:taskid>')
 def livetracking(taskid):
+    return render_template('public/live.html', taskid=taskid)
+
+
+@blueprint.route('/_get_livetracking/<taskid>', methods=['GET', 'POST'])
+def _get_livetracking(taskid):
     from livetracking import get_live_json
     from calcUtils import sec_to_string, time_to_seconds, c_round
     from datetime import datetime
     result_file = get_live_json(int(taskid))
-    file_stats = result_file['file_stats']
-    headers = result_file['headers']
-    data = result_file['data']
-    info = result_file['info']
+    formatted = frontendUtils.get_pretty_data(result_file)
+    timestamp = result_file['file_stats']['timestamp']
+    offset = result_file['info']['time_offset']
+
+    # headers = result_file['headers']
+    # data = result_file['data']
+    # info = result_file['info']
     # if file_stats['timestamp'] == 'Cancelled':
-    if info['time_offset']:
-        file_stats['last_update'] = datetime.fromtimestamp(file_stats['timestamp'] + info['time_offset']).isoformat()
+    formatted['headers'] = result_file['headers']
+    updated = datetime.fromtimestamp(timestamp + (offset or 0))
+    formatted['file_stats']['updated'] = f"Updated at {updated.strftime('%HH:%MM:%SS')} Local Time"
     if result_file['data']:
-        rawtime = time_to_seconds(datetime.fromtimestamp(file_stats['timestamp']).time())
-        task_distance = info['opt_dist']
+        rawtime = time_to_seconds(datetime.fromtimestamp(timestamp).time())
         results = []
-        goal = [p for p in result_file['data'] if p['ESS_time'] and (p['distance'] - task_distance) <= 5]
+        goal = [p for p in result_file['data'] if p['goal_time']]
         results.extend(sorted(goal, key=lambda k: k['ss_time']))
-        ess = [p for p in result_file['data'] if p['ESS_time'] and (p['distance'] - task_distance) > 5]
+        ess = [p for p in result_file['data'] if p['ESS_time']]
         results.extend(sorted(ess, key=lambda k: k['ss_time']))
-        others = [p for p in result_file['data'] if p['ESS_time'] is None]
+        others = [p for p in result_file['data'] if not p['ESS_time']]
         results.extend(sorted(others, key=lambda k: k['distance'], reverse=True))
         data = []
-        for el in results:
+        for idx, el in enumerate(results, 1):
             status = ''
             res = ''
+
             '''status, time or distance'''
             if el['first_time'] is None:
                 '''not launched'''
@@ -673,10 +682,11 @@ def livetracking(taskid):
                 else:
                     m, s = divmod(rawtime - el['last_time'], 60)
                     status = f"[{m:02d}:{s:02d} old]"
-            time = sec_to_string(el['last_time'], info['time_offset']) if el['last_time'] else ''
-            p = dict(id=el['ID'], name=el['name'], fem=1 if el['sex'] == 'F' else 0, result=res,
+            time = sec_to_string(el['last_time'], offset) if el['last_time'] else ''
+            p = dict(rank=idx, id=el['ID'], name=el['name'], sex=el['sex'], result=res,
                      comment=comment, time=time, status=status)
             data.append(p)
 
-    return render_template('public/live.html', file_stats=file_stats, headers=headers, data=data, info=info)
+        formatted['data'] = data
 
+    return formatted
