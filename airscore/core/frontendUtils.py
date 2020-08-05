@@ -1014,9 +1014,9 @@ def get_pretty_data(content: dict) -> dict:
         '''time offset'''
         timeoffset = 0 if 'time_offset' not in content['info'].keys() else int(content['info']['time_offset'])
         '''score decimals'''
-        td = (0 if 'task_result_decimal' not in content['formula'].keys()
+        td = (0 if 'formula' not in content.keys() or 'task_result_decimal' not in content['formula'].keys()
               else int(content['formula']['task_result_decimal']))
-        cd = (0 if 'task_result_decimal' not in content['formula'].keys()
+        cd = (0 if 'formula' not in content.keys() or 'task_result_decimal' not in content['formula'].keys()
               else int(content['formula']['task_result_decimal']))
         pretty_content = dict()
         if 'file_stats' in content.keys():
@@ -1031,33 +1031,36 @@ def get_pretty_data(content: dict) -> dict:
             pretty_content['route'] = pretty_format_results(content['route'], timeoffset)
         if 'stats' in content.keys():
             pretty_content['stats'] = pretty_format_results(content['stats'], timeoffset)
-        pretty_content['formula'] = pretty_format_results(content['formula'])
-        results = []
-        '''rankings'''
-        sub_classes = sorted([dict(name=c, cert=v, limit=v[-1], prev=None, rank=1, counter=0)
-                              for c, v in content['rankings'].items() if isinstance(v, list)],
-                             key=lambda x: len(x['cert']), reverse=True)
-        rank = 0
-        prev = None
-        for idx, r in enumerate(content['results'], 1):
-            p = pretty_format_results(r, timeoffset, td, cd)
-            if not prev == p['score']:
-                rank, prev = idx, p['score']
-            p['rank'] = str(rank)
-            '''sub-classes'''
-            for s in sub_classes:
-                if p['glider_cert'] and p['glider_cert'] in s['cert']:
-                    s['counter'] += 1
-                    if not s['prev'] == p['score']:
-                        s['rank'], s['prev'] = s['counter'], p['score']
-                    p[s['limit']] = f"{s['rank']} ({p['rank']})"
-                else:
-                    p[s['limit']] = ''
-            results.append(p)
-        pretty_content['results'] = results
-        pretty_content['classes'] = [{k: c[k] for k in ('name', 'limit', 'cert', 'counter')} for c in sub_classes]
+        if 'formula' in content.keys():
+            pretty_content['formula'] = pretty_format_results(content['formula'])
+        if 'results' in content.keys():
+            results = []
+            '''rankings'''
+            sub_classes = sorted([dict(name=c, cert=v, limit=v[-1], prev=None, rank=1, counter=0)
+                                  for c, v in content['rankings'].items() if isinstance(v, list)],
+                                 key=lambda x: len(x['cert']), reverse=True)
+            rank = 0
+            prev = None
+            for idx, r in enumerate(content['results'], 1):
+                p = pretty_format_results(r, timeoffset, td, cd)
+                if not prev == p['score']:
+                    rank, prev = idx, p['score']
+                p['rank'] = str(rank)
+                '''sub-classes'''
+                for s in sub_classes:
+                    if p['glider_cert'] and p['glider_cert'] in s['cert']:
+                        s['counter'] += 1
+                        if not s['prev'] == p['score']:
+                            s['rank'], s['prev'] = s['counter'], p['score']
+                        p[s['limit']] = f"{s['rank']} ({p['rank']})"
+                    else:
+                        p[s['limit']] = ''
+                results.append(p)
+            pretty_content['results'] = results
+            pretty_content['classes'] = [{k: c[k] for k in ('name', 'limit', 'cert', 'counter')} for c in sub_classes]
         return pretty_content
     except:
+        raise
         return 'error'
 
 
