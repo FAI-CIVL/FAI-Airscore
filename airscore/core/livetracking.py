@@ -309,6 +309,8 @@ class LiveTracking(object):
         print(f'Livetrack Ending: {datetime.fromtimestamp(self.timestamp).isoformat()}')
         print(f'Saving results...')
         success = update_all_results(self.pilots, self.task_id)
+        if success:
+            create_map_files(self.pilots, self.task)
         print(f'Saving success: {success}')
         Logger('OFF')
         print(f'Livetrack Ending: {datetime.fromtimestamp(self.timestamp).isoformat()}')
@@ -559,3 +561,17 @@ def create_igc_file(result: FlightResult, task: Task):
     f = open(file, "w+")
     f.write(header)
     f.close()
+
+
+def create_map_files(pilots: list, task: Task):
+    from igc_lib import Flight
+    for pilot in pilots:
+        if pilot.result_type not in ('abs', 'dnf', 'mindist'):
+            print(f"{pilot.ID}. {pilot.name}: ({pilot.track_file})")
+            filename = Path(task.file_path, pilot.track_file)
+            '''load track file'''
+            flight = Flight.create_from_file(filename)
+            if flight:
+                '''create map file'''
+                pilot.save_tracklog_map_file(task, flight)
+
