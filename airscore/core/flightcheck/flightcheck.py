@@ -225,6 +225,7 @@ def check_fixes(result: FlightResult, fixes: list, task: Task, tp: FlightPointer
                     result.best_distance_time = next_fix.rawtime
                     if not livetracking:
                         print(f"Goal at {sec_to_time(next_fix.rawtime)}")
+                    tp.done()
                     break
 
         '''update result data
@@ -293,63 +294,22 @@ def check_fixes(result: FlightResult, fixes: list, task: Task, tp: FlightPointer
 
 
 def calculate_final_results(result: FlightResult, task: Task, tp: FlightPointer, lead_coeff: LeadCoeff,
-                            airspace: AirspaceCheck = None, livetracking: bool = False, deadline: int = None,
-                            print=print):
+                            airspace: AirspaceCheck = None, deadline: int = None, print=print):
     """"""
-    from pilot.notification import Notification
-
-    max_jump_the_gun = task.formula.max_JTG or 0  # seconds
-    jtg_penalty_per_sec = 0 if max_jump_the_gun == 0 else task.formula.JTG_penalty_per_sec
-
     '''final results'''
-    if not livetracking:
-        print("100|% complete")
+    print("100|% complete")
 
     if tp.start_done:
-        '''
-        start time
-        if race, the first times
-        if multistart, the first time of the last gate pilot made
-        if elapsed time, the time of last fix on start
-        SS Time: the gate time'''
-        result.SSS_time = task.start_time
-
-        if task.task_type == 'RACE' and task.SS_interval:
-            result.SSS_time += max(0, (start_number_at_time(task, result.real_start_time) - 1) * task.SS_interval)
-
-        elif task.task_type == 'ELAPSED TIME':
-            result.SSS_time = result.real_start_time
-
-        '''manage jump the gun'''
-        # print(f'wayponts made: {result.waypoints_achieved}')
-        if max_jump_the_gun > 0 and result.real_start_time < result.SSS_time:
-            diff = result.SSS_time - result.real_start_time
-            penalty = diff * jtg_penalty_per_sec
-            # check
-            if livetracking:
-                print(f'jump the gun: {diff} - valid: {diff <= max_jump_the_gun} - penalty: {penalty}')
-            comment = f"Jump the gun: {diff} seconds. Penalty: {penalty} points"
-            result.notifications.append(Notification(notification_type='jtg', flat_penalty=penalty, comment=comment))
+        evaluate_start(result, task, tp)
 
         '''ESS Time'''
-        if any(e.name == 'ESS' for e in result.waypoints_achieved):
-            # result.ESS_time, ess_altitude = min([e[1] for e in result.waypoints_achieved if e[0] == 'ESS'])
-            result.ESS_time, result.ESS_altitude = min([(x.rawtime, x.altitude) for x in result.waypoints_achieved
-                                                        if x.name == 'ESS'], key=lambda t: t[0])
-            result.speed = (task.SS_distance / 1000) / (result.ss_time / 3600)
+        if tp.ess_done:
+            evaluate_ess(result, task)
 
-            '''Distance flown'''
-            ''' ?p:p?PilotsLandingBeforeGoal:bestDistancep = max(minimumDistance, taskDistance-min(?trackp.pointi shortestDistanceToGoal(trackp.pointi)))
-                ?p:p?PilotsReachingGoal:bestDistancep = taskDistance
-            '''
-            if any(e.name == 'Goal' for e in result.waypoints_achieved):
-                # result.distance_flown = distances2go[0]
-                result.distance_flown = task.opt_dist
-                result.goal_time, result.goal_altitude = min([(x.rawtime, x.altitude)
-                                                              for x in result.waypoints_achieved
-                                                              if x.name == 'Goal'], key=lambda t: t[0])
-                result.result_type = 'goal'
-    if result.result_type != 'goal' and not livetracking:
+            if tp.made_all:
+                evaluate_goal(result, task)
+
+    if result.result_type != 'goal':
         print(f"Pilot landed after {result.distance_flown / 1000:.2f}km")
 
     result.best_waypoint_achieved = str(result.waypoints_achieved[-1].name) if result.waypoints_achieved else None
@@ -428,3 +388,51 @@ def create_waypoint_achieved(fix, tp: FlightPointer, time: int, alt: int) -> Way
     """creates a dictionary to be added to result.waypoints_achived"""
     return WaypointAchieved(trw_id=None, wpt_id=tp.next.wpt_id, name=tp.name, lat=fix.lat, lon=fix.lon,
                             rawtime=time, altitude=alt)
+
+
+def evaluate_start(result: FlightResult, task: Task, tp: FlightPointer):
+    from pilot.notification import Notification
+    max_jump_the_gun = task.formula.max_JTG or 0  # seconds
+    jtg_penalty_per_sec = 0 if max_jump_the_gun == 0 else task.formula.JTG_penalty_per_sec
+
+    if tp.start_done:
+        '''
+        start time
+        if race, the first times
+        if multistart, the first time of the last gate pilot made
+        if elapsed time, the time of last fix on start
+        SS Time: the gate time'''
+        result.SSS_time = task.start_time
+
+        if task.task_type == 'RACE' and task.SS_interval:
+            result.SSS_time += max(0, (start_number_at_time(task, result.real_start_time) - 1) * task.SS_interval)
+
+        elif task.task_type == 'ELAPSED TIME':
+            result.SSS_time = result.real_start_time
+
+        '''manage jump the gun'''
+        if max_jump_the_gun > 0 and result.real_start_time < result.SSS_time:
+            diff = result.SSS_time - result.real_start_time
+            penalty = diff * jtg_penalty_per_sec
+            # check
+            comment = f"Jump the gun: {diff} seconds. Penalty: {penalty} points"
+            result.notifications.append(Notification(notification_type='jtg', flat_penalty=penalty, comment=comment))
+
+
+def evaluate_ess(result: FlightResult, task: Task):
+    if any(e.name == 'ESS' for e in result.waypoints_achieved):
+        result.ESS_time, result.ESS_altitude = min([(x.rawtime, x.altitude) for x in result.waypoints_achieved
+                                                    if x.name == 'ESS'], key=lambda t: t[0])
+        result.speed = (task.SS_distance / 1000) / (result.ss_time / 3600)
+
+
+def evaluate_goal(result: FlightResult, task: Task):
+    """ ?p:p?PilotsLandingBeforeGoal:bestDistancep = max(minimumDistance, taskDistance-min(?trackp.pointi shortestDistanceToGoal(trackp.pointi)))
+        ?p:p?PilotsReachingGoal:bestDistancep = taskDistance
+    """
+    if any(e.name == 'Goal' for e in result.waypoints_achieved):
+        result.distance_flown = task.opt_dist
+        result.goal_time, result.goal_altitude = min([(x.rawtime, x.altitude)
+                                                      for x in result.waypoints_achieved
+                                                      if x.name == 'Goal'], key=lambda t: t[0])
+        result.result_type = 'goal'

@@ -427,7 +427,7 @@ def check_livetrack(result: FlightResult, task: Task, airspace: AirspaceCheck = 
                 a list of GNSSFixes of when turnpoints were achieved.
     """
     from flightcheck.flightpointer import FlightPointer
-    from flightcheck.flightcheck import check_fixes, calculate_final_results
+    from flightcheck import flightcheck
     from formulas.libs.leadcoeff import LeadCoeff
 
     '''initialize'''
@@ -449,10 +449,11 @@ def check_livetrack(result: FlightResult, task: Task, airspace: AirspaceCheck = 
         if task.airspace_check and not airspace:
             print(f'We should not create airspace here')
             airspace = AirspaceCheck.from_task(task)
+    real_start_time, already_ess, previous_achieved = result.real_start_time, result.ESS_time, result.waypoints_achieved
+    flightcheck.check_fixes(result, fixes, task, tp, lead_coeff, airspace, livetracking=True, igc_parsing_config=config)
 
-    check_fixes(result, fixes, task, tp, lead_coeff, airspace, livetracking=True, igc_parsing_config=config)
-
-    calculate_final_results(result, task, tp, lead_coeff, airspace, livetracking=True)
+    calculate_incremental_results(result, task, tp, lead_coeff, airspace,
+                                  real_start_time, already_ess, previous_achieved)
 
 
 def get_live_json(task_id):
@@ -580,3 +581,29 @@ def create_map_files(pilots: list, task: Task):
                 '''create map file'''
                 pilot.save_tracklog_map_file(task, flight)
 
+
+def calculate_incremental_results(result: FlightResult, task: Task, tp, lead_coeff, airspace,
+                                  real_start_time, already_ess, previous_achieved):
+    """Incremental result update function"""
+    from flightcheck import flightcheck
+    if tp.start_done and not real_start_time == result.real_start_time:
+        '''pilot has started or restarted'''
+        result.notifications = [n for n in result.notifications if not n.notification_type == 'jtg']
+        flightcheck.evaluate_start(result, task, tp)
+    if tp.ess_done and not already_ess:
+        '''pilot made ESS'''
+        flightcheck.evaluate_ess(result, task)
+    if tp.made_all:
+        '''pilot made goal'''
+        flightcheck.evaluate_goal(result, task)
+
+    if len(result.waypoints_achieved) > len(previous_achieved):
+        result.best_waypoint_achieved = str(result.waypoints_achieved[-1].name) if result.waypoints_achieved else None
+
+    if lead_coeff:
+        result.fixed_LC = lead_coeff.summing
+
+    if task.airspace_check:
+        infringements, notifications, penalty = airspace.get_infringements_result(result.infringements)
+        result.infringements = list(set(result.infringements + infringements))
+        result.notifications = list(set((result.notifications + notifications)))
