@@ -54,20 +54,21 @@ services:
     networks:
       - net
 
-  nginx:
-    container_name: nginx
-    restart: always
-    build: ./nginx
-    ports:
-      - "80:80"
-    depends_on:
-      - web
-    networks:
-      - net
-    volumes:
-      - type: bind
-        source: ./airscore/static
-        target: /static
+#  nginx:
+#    container_name: nginx
+#    restart: always
+#    build: ./nginx
+#    ports:
+#      - "80:80"
+#    depends_on:
+#      - web
+#    networks:
+#      - net
+#    volumes:
+#      - type: bind
+#        source: ./airscore/static
+#        target: /static
+
 volumes:
   node-modules:
   static-build:
