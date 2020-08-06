@@ -573,7 +573,7 @@ def _get_livetracking(taskid):
     # if file_stats['timestamp'] == 'Cancelled':
     formatted['headers'] = result_file['headers']
     updated = datetime.fromtimestamp(timestamp + (offset or 0))
-    formatted['file_stats']['updated'] = f"Updated at {updated.strftime('%HH:%MM:%SS')} Local Time"
+    formatted['file_stats']['updated'] = f"Updated at {updated.strftime('%H:%M:%S')} Local Time"
     if result_file['data']:
         rawtime = time_to_seconds(datetime.fromtimestamp(timestamp).time())
         results = []
@@ -602,6 +602,7 @@ def _get_livetracking(taskid):
             '''notifications'''
             if el['notifications']:
                 comment = '; '.join([n['comment'].split('.')[0] for n in el['notifications']])
+                res = f"<span class='warning'>{res}</span>"
             else:
                 comment = ''
             '''delay'''
