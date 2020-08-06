@@ -97,3 +97,6 @@ class FlightPointer(object):
         if self.pointer < len(self.turnpoints):
             self.pointer += 1
 
+    def done(self):
+        self.pointer = self.total_number
+
