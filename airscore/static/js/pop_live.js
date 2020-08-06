@@ -45,8 +45,9 @@ function populate_live(taskid){
                             }
                         }
                         // comp info
-                        $('#comp_name').text(json.info.comp_name + ": " + 'Live Leaderboard');
-                        $('#task_date').text(json.info.task_name + ": " + json.headers.main);
+                        text = json.info.comp_name + " " + json.info.task_name;
+                        $('#comp_name').text(text);
+                        $('#task_date').text(json.headers.main);
                         // times
                         var tbl = document.createElement('table');
                         tbl.className="times-list";
@@ -93,6 +94,13 @@ function populate_live(taskid){
                             cell2.className="times-list";
                             cell2.innerHTML = '<b>' + json.info.task_deadline + '</b>'
                         }
+                        let row = tbl.insertRow();
+                        let cell1 = row.insertCell();
+                        cell1.className="times-list";
+                        cell1.innerHTML = '<b>Updated: </b>';
+                        let cell2 = row.insertCell();
+                        cell2.className="times-list";
+                        cell2.innerHTML = '<b>' + json.file_stats.updated + '</b>'
                         $('#comp_header').append(tbl);
                         // waypoints
                         var tbl = document.getElementById('waypoints');
@@ -114,5 +122,8 @@ function populate_live(taskid){
                 });
             }
         });
+        setTimeout(function(){
+           window.location.reload(1);
+        }, 120000);
     });
 }

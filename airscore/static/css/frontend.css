@@ -152,6 +152,11 @@ td.wpt-list:last-child, th.wpt-list:last-child {
 
 }
 
+.warning {
+  color: orange;
+  text-decoration:underline;
+}
+
 /* footer */
 
 footer {
