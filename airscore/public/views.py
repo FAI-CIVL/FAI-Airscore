@@ -579,7 +579,7 @@ def _get_livetracking(taskid):
         results = []
         goal = [p for p in result_file['data'] if p['goal_time']]
         results.extend(sorted(goal, key=lambda k: k['ss_time']))
-        ess = [p for p in result_file['data'] if p['ESS_time']]
+        ess = [p for p in result_file['data'] if p['ESS_time'] and not p['goal_time']]
         results.extend(sorted(ess, key=lambda k: k['ss_time']))
         others = [p for p in result_file['data'] if not p['ESS_time']]
         results.extend(sorted(others, key=lambda k: k['distance'], reverse=True))
