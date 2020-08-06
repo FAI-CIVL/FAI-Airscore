@@ -684,8 +684,8 @@ def _get_livetracking(taskid):
                     m, s = divmod(rawtime - el['last_time'], 60)
                     status = f"[{m:02d}:{s:02d} old]"
             time = sec_to_string(el['last_time'], offset) if el['last_time'] else ''
-            p = dict(rank=idx, id=el['ID'], name=el['name'], sex=el['sex'], result=res,
-                     comment=comment, time=time, status=status)
+            p = dict(rank=idx, id=el['ID'], name=f"<span class='sex-{el['sex']}'>{el['name']}</span>", sex=el['sex'],
+                     result=res, comment=comment, time=time, status=status)
             data.append(p)
 
         formatted['data'] = data
