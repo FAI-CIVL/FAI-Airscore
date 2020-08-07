@@ -591,6 +591,7 @@ def save_track(result: FlightResult, task_id: int):
         row = R.from_obj(result)
         row.task_id = task_id
         row.save()
+        result.track_id = row.track_id
 
     '''notifications'''
     update_notifications(result)
