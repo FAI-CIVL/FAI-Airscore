@@ -563,14 +563,11 @@ def _get_livetracking(taskid):
     from calcUtils import sec_to_string, time_to_seconds, c_round
     from datetime import datetime
     result_file = get_live_json(int(taskid))
+
     formatted = frontendUtils.get_pretty_data(result_file)
     timestamp = result_file['file_stats']['timestamp']
     offset = result_file['info']['time_offset']
 
-    # headers = result_file['headers']
-    # data = result_file['data']
-    # info = result_file['info']
-    # if file_stats['timestamp'] == 'Cancelled':
     formatted['headers'] = result_file['headers']
     updated = datetime.fromtimestamp(timestamp + (offset or 0))
     formatted['file_stats']['updated'] = f"Updated at {updated.strftime('%H:%M:%S')} Local Time"
@@ -597,7 +594,13 @@ def _get_livetracking(taskid):
                 res = f"<del>{val}</del>" if not el['goal_time'] else f"<b>{val}</b>"
             else:
                 res = str(c_round(el['distance'] / 1000, 2)) + ' Km' if el['distance'] > 500 else ''
-                status = '[landed]' if el['landing_time'] else f"[{el['height']} agl]"
+                '''display status or altitude and height if reading is correct'''
+                if el['landing_time']:
+                    status = '[landed]'
+                elif -100 < el['last_altitude'] < 10000:
+                    status = f"{el['last_altitude']} m. [{el['height']} agl]"
+                else:
+                    status = 'unreliable altitude reading'
 
             '''notifications'''
             if el['notifications']:

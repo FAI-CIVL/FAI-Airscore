@@ -30,8 +30,8 @@ from pilot.track import igc_parsing_config_from_yaml, create_igc_filename
 '''parameters for livetracking'''
 config = igc_parsing_config_from_yaml('smartphone')
 config.max_flight_speed = 250  # Km/k
-config.max_still_seconds = 30  # max consecutive seconds under min speed not to be considered landed
-config.min_alt_difference = 15  # meters min altitude difference not to be considered landed
+config.max_still_seconds = 60  # max consecutive seconds under min speed not to be considered landed
+config.min_alt_difference = 50  # meters min altitude difference not to be considered landed
 config.min_fixes = 5  # min number of fixes to be considered a valid livetrack chunk
 
 
@@ -187,6 +187,9 @@ class LiveTracking(object):
         livetrack = LiveTracking(task, airspace, test)
         for p in livetrack.pilots:
             create_igc_file(p, task)
+            p.result_type = 'lo'
+            # p.saved_to_db = False
+            p.suspect_landing_fix = None
         livetrack.create_result()
         return livetrack
 
@@ -261,7 +264,6 @@ class LiveTracking(object):
         return False
 
     def run(self, interval=99):
-        from pilot.flightresult import update_all_results
         if not self.properly_set:
             print(f'Livetracking source is not set properly.')
             return
@@ -302,24 +304,26 @@ class LiveTracking(object):
                 print(f' -- NO RESPONSE or NO NEW FIXES ...')
             else:
                 print(f' -- Associating livetracks ...')
-            associate_livetracks(self.task, response, cycle_starting_time)
+                associate_livetracks(self.task, response, cycle_starting_time)
             for p in self.pilots:
                 if (hasattr(p, 'livetrack') and len(p.livetrack) > config.min_fixes and p.livetrack[-1].rawtime > (p.last_time or 0)
                         and not p.goal_time and not p.landing_time):
                     check_livetrack(result=p, task=self.task, airspace=self.airspace)
+                elif (p.landing_time or p.goal_time) and not p.track_id:
+                    '''save track'''
+                    save_livetrack_result(p, self.task)
+                    print(f"result saved: track_id: {p.track_id}")
             self.update_result()
             i += 1
             time.sleep(max(interval / 2 - (self.now - cycle_starting_time), 0))
             # t = self.timestamp
         print(f'Livetrack Ending: {datetime.fromtimestamp(self.timestamp).isoformat()}')
         print(f'Saving results...')
-        success = update_all_results(self.pilots, self.task_id)
-        if success:
-            create_map_files(self.pilots, self.task)
-        print(f'Saving success: {success}')
+        for p in [el for el in self.pilots if not el.track_id]:
+            save_livetrack_result(p, self.task)
+
         Logger('OFF')
         print(f'Livetrack Ending: {datetime.fromtimestamp(self.timestamp).isoformat()}')
-        print(f'Results saved to database: {success}')
 
 
 def get_livetracks(task, timestamp, interval):
@@ -383,9 +387,6 @@ def associate_livetracks(task, response, timestamp):
             pil.livetrack = []
             continue
         flight = []
-        # slow = 0
-        # slow_alt = 0
-        # slow_rawtime = 0
         for idx, el in enumerate(fixes):
             t = int(el['d']) - midnight
             s = int(el['v'])
@@ -436,7 +437,7 @@ def check_livetrack(result: FlightResult, task: Task, airspace: AirspaceCheck = 
     '''leadout coefficient'''
     if task.formula.formula_departure == 'leadout':
         lead_coeff = LeadCoeff(task)
-        lead_coeff.summing = result.fixed_LC or 0.0
+        # lead_coeff.summing = result.fixed_LC or 0.0
     else:
         lead_coeff = None
 
@@ -601,9 +602,23 @@ def calculate_incremental_results(result: FlightResult, task: Task, tp, lead_coe
         result.best_waypoint_achieved = str(result.waypoints_achieved[-1].name) if result.waypoints_achieved else None
 
     if lead_coeff:
-        result.fixed_LC = lead_coeff.summing
+        result.fixed_LC += lead_coeff.summing
 
     if task.airspace_check:
-        infringements, notifications, penalty = airspace.get_infringements_result(result.infringements)
-        result.infringements = list(set(result.infringements + infringements))
-        result.notifications = list(set((result.notifications + notifications)))
+        _, notifications, penalty = airspace.get_infringements_result(result.infringements)
+        # result.infringements.extend([el for el in infringements if el not in result.infringements])
+        result.notifications = [el for el in result.notifications if not el.notification_type == 'airspace']
+        result.notifications.extend(notifications)
+
+
+def save_livetrack_result(p: FlightResult, task: Task):
+    from igc_lib import Flight
+    from pilot.flightresult import save_track
+    flight = Flight.create_from_file(Path(task.file_path, p.track_file))
+    if flight.valid:
+        save_track(p, task.id)
+        p.save_tracklog_map_file(task, flight)
+        # p.saved_to_db = True
+    else:
+        print(f"{p.track_file} is not a valid igc. Result not saved.")
+
