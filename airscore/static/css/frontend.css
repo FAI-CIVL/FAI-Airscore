@@ -157,6 +157,29 @@ td.wpt-list:last-child, th.wpt-list:last-child {
   text-decoration:underline;
 }
 
+#comments, #other_pilots {
+  clear: both;
+  margin: 15px;
+}
+
+table.comments {
+  margin: .75em .5em 2em 0;
+  width: 100%;
+}
+
+table.other_pilots_list {
+  margin: .75em .5em 2em 0;
+  width: auto;
+}
+
+td.other_pilots_list, td.comments {
+  padding: 0 .75em 0 0;
+}
+
+div.hidden {
+  display: none;
+}
+
 /* footer */
 
 footer {
