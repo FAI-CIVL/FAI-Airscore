@@ -140,18 +140,40 @@ function populate_task(taskid){
                         });
                         // comments
                         if (json.results.some(e => e.penalty != 0)) {
-                            var tbl = document.createElement('table');
+                            let tbl = document.createElement('table');
                             tbl.classList.add('comment_list');
                             let filtered = json.results.filter(e => e.penalty != 0);
                             filtered.forEach(pilot => {
                                 let row = tbl.insertRow();
-                                [ pilot.name, pilot.comment ].forEach(el => {
+                                [ pilot.name + ': ', pilot.comment ].forEach(el => {
                                     let cell = row.insertCell();
                                     cell.classList.add('comment_list');
                                     cell.innerHTML = el;
                                 });
                             });
                             $('#comments').append(tbl);
+                        }
+                        else {
+                          $('#comments').addClass('hidden');
+                        }
+                        // other pilots
+                        let types = ['abs', 'nyp', 'dnf'];
+                        if (json.results.some(e => types.includes(e.result_type))) {
+                            let tbl = document.createElement('table');
+                            tbl.classList.add('other_pilots_list');
+                            let filtered = json.results.filter(e => types.includes(e.result_type));
+                            filtered.forEach(pilot => {
+                                let row = tbl.insertRow();
+                                [ pilot.name, pilot.result_type ].forEach(el => {
+                                    let cell = row.insertCell();
+                                    cell.classList.add('other_pilots_list');
+                                    cell.innerHTML = el;
+                                });
+                            });
+                            $('#other_pilots').append(tbl);
+                        }
+                        else {
+                          $('#other_pilots').addClass('hidden');
                         }
                         // task info
                         var half = Object.keys(json.formula).length / 2;
@@ -190,3 +212,7 @@ function populate_task(taskid){
         });
     });
 }
+
+//function checkOtherPilots(pilot) {
+//  return pilot.result_type in ('abs', 'nyp', 'dnf');
+//}
