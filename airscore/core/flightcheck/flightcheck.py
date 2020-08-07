@@ -40,7 +40,6 @@ def check_fixes(result: FlightResult, fixes: list, task: Task, tp: FlightPointer
     if not livetracking:
         percentage_complete = 0
     else:
-        suspect_landing_fix = None
         '''get if pilot already started in previous track slices'''
         already_started = tp.start_done
         '''get if pilot already made ESS in previous track slices'''
@@ -84,12 +83,12 @@ def check_fixes(result: FlightResult, fixes: list, task: Task, tp: FlightPointer
             else:
                 '''check if pilot landed'''
                 if speed < igc_parsing_config.min_gsp_flight:
-                    if not suspect_landing_fix:
-                        suspect_landing_fix = next_fix
+                    if not result.suspect_landing_fix:
+                        result.suspect_landing_fix = next_fix
                         # suspect_landing_alt = alt
                     else:
-                        time_diff = next_fix.rawtime - suspect_landing_fix.rawtime
-                        alt_diff = abs(alt - suspect_landing_fix.alt)
+                        time_diff = next_fix.rawtime - result.suspect_landing_fix.rawtime
+                        alt_diff = abs(alt - result.suspect_landing_fix.alt)
                         if (time_diff > igc_parsing_config.max_still_seconds
                                 and alt_diff < igc_parsing_config.min_alt_difference):
                             '''assuming pilot landed'''
@@ -97,8 +96,8 @@ def check_fixes(result: FlightResult, fixes: list, task: Task, tp: FlightPointer
                             result.landing_altitude = alt
                             result.live_comment = 'landed'
                             break
-                elif suspect_landing_fix is not None:
-                    suspect_landing_fix = None
+                elif result.suspect_landing_fix is not None:
+                    result.suspect_landing_fix = None
         else:
             alt = next_fix.gnss_alt if alt_source == 'GPS' else next_fix.press_alt + alt_compensation
 
@@ -319,7 +318,7 @@ def calculate_final_results(result: FlightResult, task: Task, tp: FlightPointer,
 
     if task.airspace_check:
         infringements, notifications, penalty = airspace.get_infringements_result(result.infringements)
-        result.infringements.extend(infringements)
+        result.infringements = infringements
         result.notifications.extend(notifications)
 
 
