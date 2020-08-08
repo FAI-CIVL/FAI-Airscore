@@ -24,6 +24,7 @@ class UserFactory(BaseFactory):
     email = Sequence(lambda n: f"user{n}@example.com")
     password = PostGenerationMethodCall("set_password", "example")
     active = True
+    access = 'scorekeeper'
 
     class Meta:
         """Factory configuration."""
