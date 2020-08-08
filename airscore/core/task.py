@@ -804,7 +804,7 @@ class Task(object):
             verify_all_tracks(self, lib, airspace, print=print)
         '''store results to database'''
         print(f"updating database with new results...")
-        update_all_results(self.task_id, self.pilots)
+        update_all_results(self.pilots, self.task_id)
         '''process results with scoring system'''
         lib.process_results(self)
 
@@ -1560,7 +1560,7 @@ class Task(object):
             associate_livetracks(self, response)
             for p in pilots:
                 if p.livetrack and p.livetrack[-2].rawtime > (p.last_time or 0) and not p.goal_time:
-                    check_livetrack(pilot=p, task=self, airspace_obj=airspace)
+                    check_livetrack(result=p, task=self, airspace=airspace)
                     print(f' -- -- Pilot {p.name}:')
                     # print(f' ..... -- last fix {p.livetrack[-2].rawtime}')
                     print(f' ..... -- rawtime: {p.last_time}')
