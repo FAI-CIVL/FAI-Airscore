@@ -5,21 +5,27 @@ It has been ported to python 3.7, it's structure has been completely redesigned 
 
 Web middle layer & front end has been ported to flask/jquery using flask cookie cutter template.
 
+### Features:
+GAP based Paragliding and Hang Gliding scoring from IGC files.
+- Formulas are defined in script files which makes implementing new variants easy. (current formulas are GAP 2016-2020 and PWC 2016, 17, 19)
+- Scorekeeper access to setup competitions and score tasks.
+- Competition scoring with task scores and overall scores publishable to public area of website.
+- Airspace infringement detection and penalty application
+- Interactive tracklog and task maps
+- Ability to have an in house database of pilots, waypoints and airspaces for re-use in multiple competitions
+- Live leaderboard and scoring from live tracking servers. (e.g. Flymaster)
+ 
+
 ### Installation:
 
-see docker quickstart below
+#### Database setup
+Airscore uses a Mysql database. The database is not included in the docker containers. You will need to setup or use a hosted mysql server.
+Once you have the DB server, use the file airscore.sql to create the table and views. Database credentials should be saved in the .env file (see below)
 
-#### environment variables
-- Defines.py - Reads defines.yaml file
-- defines.yaml - environment variables, DB connection info, folder structure, logins etc
-- secret.yaml - DB connection info, logins etc
-- logger.py - log file setup
-- .env contains environment variables used in the docker compose files.
-
-## License
-Apart from igc_lib which has a MIT license and bootstrap all rest of the code is provided under the GPL License version 2 described in the file "Copying".
-
-If this is not present please download from www.gnu.org.
+#### Environment and configuration variables
+defines.yaml.example and .env.example should be renamed or copied wihout ".example" to create the two config files.
+- defines.yaml - folder structure and Airscore configuration - there are several options
+- .env contains environment variables used in the docker compose files, database and email server credentials.
 
 ## Docker Quickstart
 
@@ -46,51 +52,7 @@ The production version uses several containers running together:
 - Redis (for cache and background processing queue)
 - Nginx
 
-
-
-The list of `environment:` variables in the `docker-compose.yml` file takes precedence over any variables specified in `.env`.
-
-To run any commands using the `Flask CLI`
-
-```bash
-docker-compose -f docker-compose-dev.yml run --rm manage <<COMMAND>>
-```
-
-Therefore, to initialize a database you would run
-
-```bash
-docker-compose run --rm manage db init
-docker-compose run --rm manage db migrate
-docker-compose run --rm manage db upgrade
-```
-
 A docker volume `node-modules` is created to store NPM packages and is reused across the dev and prod versions of the application. For the purposes of DB testing with `sqlite`, the file `dev.db` is mounted to all containers. This volume mount should be removed from `docker-compose.yml` if a production DB server is used.
-
-#### Database Initialization (locally)
-
-Once you have installed your DBMS, run the following to create your app's
-database tables and perform the initial migration
-
-```bash
-flask db init
-flask db migrate
-flask db upgrade
-```
-
-## Deployment
-
-When using Docker, reasonable production defaults are set in `docker-compose.yml`
-
-```text
-FLASK_ENV=production
-FLASK_DEBUG=0
-```
-
-Therefore, starting the app in "production" mode is as simple as
-
-```bash
-docker-compose -f docker-compose-production.yml up
-```
 
 ## Shell
 
@@ -108,7 +70,7 @@ By default, you will have access to the flask `app`.
 To run all tests, run
 
 ```bash
-docker-compose run --rm manage test
+docker-compose -f docker-compose-dev.yml run --rm manage test
 flask test # If running locally without Docker
 ```
 
@@ -121,55 +83,7 @@ flask lint # If running locally without Docker
 
 The `lint` command will attempt to fix any linting/style errors in the code. If you only want to know if the code will pass CI and do not wish for the linter to make changes, add the `--check` argument.
 
-## Migrations
+## License
+Apart from igc_lib which has a MIT license and bootstrap all rest of the code is provided under the GPL License version 2 described in the file "Copying".
 
-Whenever a database migration needs to be made. Run the following commands
-
-```bash
-docker-compose run --rm manage db migrate
-flask db migrate # If running locally without Docker
-```
-
-This will generate a new migration script. Then run
-
-```bash
-docker-compose run --rm manage db upgrade
-flask db upgrade # If running locally without Docker
-```
-
-To apply the migration.
-
-For a full migration command reference, run `docker-compose run --rm manage db --help`.
-
-If you will deploy your application remotely (e.g on Heroku) you should add the `migrations` folder to version control.
-You can do this after `flask db migrate` by running the following commands
-
-```bash
-git add migrations/*
-git commit -m "Add migrations"
-```
-
-Make sure folder `migrations/versions` is not empty.
-
-## Asset Management
-
-Files placed inside the `assets` directory and its subdirectories
-(excluding `js` and `css`) will be copied by webpack's
-`file-loader` into the `static/build` directory. In production, the plugin
-`Flask-Static-Digest` zips the webpack content and tags them with a MD5 hash.
-As a result, you must use the `static_url_for` function when including static content,
-as it resolves the correct file name, including the MD5 hash.
-For example
-
-```html
-<link rel="shortcut icon" href="{{static_url_for('static', filename='build/img/favicon.ico') }}">
-```
-
-If all of your static files are managed this way, then their filenames will change whenever their
-contents do, and you can ask Flask to tell web browsers that they
-should cache all your assets forever by including the following line
-in ``.env``:
-
-```text
-SEND_FILE_MAX_AGE_DEFAULT=31556926  # one year
-```
+If this is not present please download from www.gnu.org.
