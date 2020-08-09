@@ -77,7 +77,7 @@ flask test # If running locally without Docker
 To run the linter, run
 
 ```bash
-docker-compose run --rm manage lint
+docker-compose -f docker-compose-dev.yml run --rm manage lint
 flask lint # If running locally without Docker
 ```
 
