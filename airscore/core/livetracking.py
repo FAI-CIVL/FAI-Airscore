@@ -434,16 +434,18 @@ def check_livetrack(result: FlightResult, task: Task, airspace: AirspaceCheck = 
     '''initialize'''
     fixes = result.livetrack
 
-    '''leadout coefficient'''
-    if task.formula.formula_departure == 'leadout':
-        lead_coeff = LeadCoeff(task)
-        # lead_coeff.summing = result.fixed_LC or 0.0
-    else:
-        lead_coeff = None
-
     '''Turnpoint managing'''
     tp = FlightPointer(task)
     tp.pointer = result.waypoints_made + 1
+
+    '''leadout coefficient'''
+    if task.formula.formula_departure == 'leadout':
+        lead_coeff = LeadCoeff(task)
+        # print(f"{result.name} - cycle init Lead Coeff: {lead_coeff.summing}, fixed LC: {result.fixed_LC}")
+        if tp.start_done:
+            lead_coeff.best_dist_to_ess = [lead_coeff.opt_dist_to_ess - result.distance_flown / 1000]
+    else:
+        lead_coeff = None
 
     '''Airspace check managing'''
     if task.airspace_check:
