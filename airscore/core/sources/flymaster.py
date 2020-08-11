@@ -8,8 +8,14 @@ By Stuart Mackintosh, Antonio Golfari, 2019
 # TODO probably better add all sources to a sources folder? Create a sources package?
 import logging
 import time
-
+from pathlib import Path
 import requests
+
+
+# in Flymaster format is:
+# LiveTrack Antoine Saraf.361951.20190717-113625.5836.47.igc = 'other name name.live.other-other.other.id'
+# Other name surname.live_id.YYYYmmdd-hhmmss.ID.igc
+filename_formats = ['other name name.live.other-other.other.id']
 
 
 def get_pilot_from_list(filename, pilots):
@@ -25,16 +31,18 @@ def get_pilot_from_list(filename, pilots):
     # Participant.ID is the last number
     # The first number is pilot LIVE id, which we could get from pilot list excel file
     # TODO we should make AirScore format similar to this one
-    from os import path
 
-    string = path.splitext(filename)[0]
+    print(f'Flymaster get pilot function')
+    string = Path(filename).stem
     fields = string.split('.')
     ID = int(fields[-1])
+    live = int(fields[1])
     name = fields[0].lower()
     for idx, pilot in enumerate(pilots):
-        if pilot.ID == ID:
+        # using live_id
+        if pilot.live_id == live:
             '''found a pilot'''
-            pilot.track.track_file = filename
+            # pilot.track_file = filename
             if not pilot.name.lower() in name:
                 print(f'WARNING: Name {pilot.name.lower()} does not match with filename {string}')
             return pilot, idx

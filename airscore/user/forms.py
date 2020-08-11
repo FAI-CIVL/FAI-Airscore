@@ -29,6 +29,12 @@ class RegisterForm(FlaskForm):
         "Verify password",
         [DataRequired(), EqualTo("password", message="Passwords must match")],
     )
+    first_name = StringField(
+        "First name", validators=[DataRequired(), Length(min=1, max=25)]
+    )
+    last_name = StringField(
+        "Last name", validators=[DataRequired(), Length(min=2, max=25)]
+    )
 
     def __init__(self, *args, **kwargs):
         """Create instance."""
@@ -62,8 +68,8 @@ class NewTaskForm(FlaskForm):
     task_region = SelectField('Region', choices=[('1', '1'), ('2', '2')])
 
 
-class NewAdminForm(FlaskForm):
-    admin = SelectField("Admin", choices=[('1', '1'), ('2', '2')])
+class NewScorekeeperForm(FlaskForm):
+    scorekeeper = SelectField("Scorekeeper", choices=[('1', '1'), ('2', '2')])
 
 
 class CompForm(FlaskForm):
@@ -116,7 +122,7 @@ class CompForm(FlaskForm):
                                description='The default time offset for the comp. Individual tasks will have this '
                                'as a default but can be overridden if your comp spans multiple time zones'
                                ' or over change in daylight savings')
-    pilot_registration = SelectField('Pilot Entry', choices=[('registered', 'registered'), ('open', 'open')],
+    pilot_registration = SelectField('Pilot Entry', choices=[(1, 'Registered'), (0, 'Open')], coerce=int,
                                      description='Registered - only pilots registered are flying, '
                                                  'open - all tracklogs uploaded are considered as entires')
     formulas = list_formulas()
@@ -391,3 +397,10 @@ class EditScoreForm(FlaskForm):
     penalty_bonus = SelectField(choices=[('penalty', 'Penalty'), ('bonus', 'Bonus')], id='penalty_bonus')
     flat_penalty = IntegerField('points', default=0, id='penalty')
     comment = TextAreaField('Comment', render_kw={"rows": 3, "cols": 50}, id='comment')
+
+
+class ModifyUserForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired()])
+    access = SelectField('Access Level', choices=[('pilot', 'Pilot'), ('pending', 'Pending'),
+                                                  ('scorekeeper', 'Scorekeeper'), ('admin', 'Admin'),])
+    active = BooleanField('Enabled')

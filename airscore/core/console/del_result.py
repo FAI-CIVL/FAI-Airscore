@@ -5,22 +5,22 @@ Use: python3 del_result.py [ref_id]
 Antonio Golfari - 2019
 """
 # Use your utility module.
-from myconn import Database
+from db.conn import db_session
 
 
 def delete_result(ref_id):
     import os
     from os import path as p
-    from db_tables import TblResultFile as R
+    from db.tables import TblResultFile as R
 
     if type(ref_id) is int and ref_id > 0:
-        with Database() as db:
+        with db_session() as db:
             '''check if json file exists, and deletes it'''
-            q = db.session.query(R)
+            q = db.query(R)
             result = q.get(ref_id).delete()
             file = result.filename
-            db.session.delete(result)
-            db.session.commit()
+            db.delete(result)
+            db.commit()
 
         if p.isfile(file):
             os.remove(file)

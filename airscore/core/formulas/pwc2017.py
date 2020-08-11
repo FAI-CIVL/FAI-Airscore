@@ -67,6 +67,8 @@ pg_preset = FormulaPreset(
     overall_validity=Preset(value='ftv', visible=True, editable=True),
     # FTV Parameter
     validity_param=Preset(value=0.75, visible=True, editable=True),
+    # FTV Parameter Reference: day_quality, max_score
+    validity_ref=Preset(value='max_score', visible=True, editable=True),
     # Penalty when ESS but not Goal: default is 1 for PG and 0.2 for HG
     no_goal_penalty=Preset(value=1.0, visible=False),
     # Glide Bonus for Stopped Task: default is 4 for PG and 5 for HG

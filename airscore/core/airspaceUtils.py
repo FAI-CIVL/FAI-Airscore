@@ -317,6 +317,17 @@ def read_airspace_map_file(openair_filename):
         return jsonpickle.decode(f.read())
 
 
+def get_airspace_map_from_task(task_id: int) -> dict:
+    """get airspace map data from task ID"""
+    from db.tables import TblTask
+    from db.conn import db_session
+    with db_session() as db:
+        check = db.query(TblTask.airspace_check, TblTask.openair_file).filter_by(task_id=task_id).one()
+        if check and check.airspace_check:
+            return read_airspace_map_file(check.openair_file)
+    return {}
+
+
 def read_airspace_check_file(openair_filename):
     """Read airspace check file if it exists. Create if not.
         arguent: openair file name
@@ -360,32 +371,3 @@ def altitude(fix, altimeter):
         return fix.gnss_alt
     else:
         raise ValueError(f"altimeter choice({altimeter}) not one of barometric, baro/gps or gps")
-
-# def arc_map(element, info):
-#     if element['type'] == 'arc':
-#         if len(re.sub("[^0-9]", "", info['floor'])) > 0:
-#             floor_ft = int(re.sub("[^0-9]", "", info['floor']))
-#             floor = f"{info['floor']}/{(floor_ft * Ft_in_meters)} m"
-#         else:
-#             floor = info['floor']
-#
-#         if len(re.sub("[^0-9]", "", info['ceiling'])) > 0:
-#             ceiling_ft = int(re.sub("[^0-9]", "", info['ceiling']))
-#             ceiling = f"{info['ceiling']}/{(ceiling_ft * Ft_in_meters)} m"
-#         else:
-#             ceiling = info['ceiling']
-#
-#         radius = f"{element['radius']} NM/{element['radius'] * NM_in_meters}m"
-#         return folium.Circle(
-#                 location=(element['center'][0], element['center'][1]),
-#                 popup=f"{info['name']} Class {info['class']} floor:{floor} ceiling:{ceiling} Radius:{radius}",
-#                 radius=element['radius'] * NM_in_meters,
-#                 color=colours[info['class']],
-#                 weight=2,
-#                 opacity=0.8,
-#                 fill=True,
-#                 fill_opacity=0.2,
-#                 fill_color=colours[info['class']]
-#                 )
-#     else:
-#         return None

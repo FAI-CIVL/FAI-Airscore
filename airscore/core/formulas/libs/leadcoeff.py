@@ -19,14 +19,6 @@ class LeadCoeff(object):
         self.lib = task.formula.get_lib()
         self.summing = 0.0
 
-    # @property
-    # def squared_distance(self):
-    #     """ defaulting to True if not specified (should always be)"""
-    #     if self.lib and self.lib.lead_coeff_parameters:
-    #         return self.lib.lead_coeff_parameters.squared_distance
-    #     else:
-    #         return True
-
     def reset(self):
         self.summing = 0.0
 
@@ -59,7 +51,7 @@ def tot_lc_calc(res, t):
     """ Function to calculate final Leading Coefficient for pilots,
         that needs to be done when all tracks have been scored"""
     '''Checking if we have a assigned status without a track, and if pilot actually did the start pilon'''
-    if res.result_type in ('abs', 'dnf', 'mindist') or not res.SSS_time:
+    if res.result_type in ('abs', 'dnf', 'mindist', 'nyp') or not res.SSS_time:
         '''pilot did't make Start or has no track'''
         return 0
 
@@ -88,13 +80,13 @@ def tot_lc_calc(res, t):
 
 def store_lc(res_id, lead_coeff):
     """store LC to database"""
-    from db_tables import TblTaskResult as R
-    from myconn import Database
+    from db.tables import TblTaskResult as R
+    from db.conn import db_session
     # It shouldn't be necessary any longer, as we should not store final LC
 
-    with Database() as db:
-        q = db.session.query(R)
+    with db_session() as db:
+        q = db.query(R)
         res = q.get(res_id)
         res.lead_coeff = lead_coeff
-        db.session.commit()
+        db.commit()
 

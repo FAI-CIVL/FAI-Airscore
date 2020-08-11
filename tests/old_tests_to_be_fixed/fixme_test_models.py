@@ -41,7 +41,7 @@ class TestUser:
         assert bool(user.username)
         assert bool(user.email)
         assert bool(user.created_at)
-        assert user.is_admin is False
+        assert user.access != 'admin'
         assert user.active is True
         assert user.check_password("myprecious")
 

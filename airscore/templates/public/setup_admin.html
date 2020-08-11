@@ -1,0 +1,36 @@
+{% extends "base.html"%}
+
+{% block page_title %}
+  Register
+{% endblock %}
+
+{% block content %}
+<div class="container-narrow">
+  <h1 class="mt-5">Setup 1st Admin Account</h1>
+    <h3 class="mt-5">Once setup, this admin will be able to add other admins</h3>
+    <br/>
+    <form id="registerForm" class="form form-register" method="POST" action="" role="form">
+           {{ form.csrf_token }}
+            <div class="form-group">
+                {{form.username.label}}
+                {{form.username(placeholder="Username", class_="form-control")}}
+            </div>
+            <div class="form-group">
+                {{form.email.label}}
+                {{form.email(placeholder="Email", class_="form-control")}}
+                <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
+            </div>
+            <div class="form-group">
+                {{form.password.label}}
+                {{form.password(placeholder="Password", class_="form-control")}}
+            </div>
+            <div class="form-group">
+                {{form.confirm.label}}
+                {{form.confirm(placeholder="Password (again)", class_="form-control")}}
+            </div>
+            <p><input class="btn btn-primary" type="submit" value="Register"></p>
+    </form>
+
+</div>
+{% endblock %}
+

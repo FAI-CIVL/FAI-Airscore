@@ -10,6 +10,7 @@
 secret.yaml
 defines.yaml
 airscore/core/dreamhost*.*
+/dreamhost*.*
 
 # Cache files
 _pycache_/*
@@ -112,3 +113,4 @@ venv/
 /airscore/data/waypoints/*
 /temp/
 /temp/*
+/dreamhost*

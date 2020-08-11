@@ -234,8 +234,8 @@
                <div class="form-group col-md-6">
                    <h6 class = "font-weight-bold">Owner:</h6>
                   <h6 id="owner"> </h6>
-                  <h6 class="font-weight-bold">Admins:</h6>
-                  <table id="admin_table">
+                  <h6 class="font-weight-bold">Scorekeepers:</h6>
+                  <table id="scorekeeper_table">
 
                      <TR >
 
@@ -243,8 +243,8 @@
 
                   </table>
                   {% if compform.submit %}
-                  <button id="add_admin" class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#collapse6" aria-expanded="false" aria-controls="collapse6">
-                      Add admin
+                  <button id="add_scorekeeper" class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#collapse6" aria-expanded="false" aria-controls="collapse6">
+                      Add scorekeeper
                   </button>
                   {% endif %}
                </div>
@@ -268,15 +268,15 @@
   <div class="collapse" id="collapse6">
  <div class="card card-body">
     <div class="container">
-<div id = "add_admin_form">
+<div id = "add_scorekeeper_form">
       <div class="form-row">
       <div class="form-group width4">
-           {{adminform.admin.label}} {{adminform.admin(**{'id':'admin_to_add', 'data-toggle': 'tooltip', 'title': adminform.admin.description})}}
+           {{scorekeeperform.scorekeeper.label}} {{scorekeeperform.scorekeeper(**{'id':'scorekeeper_to_add', 'data-toggle': 'tooltip', 'title': scorekeeperform.scorekeeper.description})}}
       </div>
       </div>
 
       <div class="form-row">
-      <button id="save_admin_button" class="btn btn-success" type="button" onclick="add_administrator()">
+      <button id="save_scorekeeper_button" class="btn btn-success" type="button" onclick="add_scorekeeper()">
       Add
       </button>
       </div>
@@ -355,7 +355,7 @@
       {% if compform.submit %}
       {{compform.submit(class="btn-success")}}
       {% else %}
-      <b>You are not an admin of this comp</b>
+      <b>You are not a scorekeeper of this comp</b>
       {% endif%}
    </center>
 </div>
@@ -407,7 +407,6 @@
 {% endblock %}
 
 {% block js %}
-{% include "js.html" %}
 <script src="{{ static_url_for('static', filename='js/display-if.min.js') }}"></script>
 
 <script type="text/javascript">
@@ -544,17 +543,17 @@
    
           };
 
-   function add_administrator(){
+   function add_scorekeeper(){
      var mydata = new Object();
-     mydata.id = $('#admin_to_add').val();
+     mydata.id = $('#scorekeeper_to_add').val();
               $.ajax({
                type: "POST",
-               url: "{{ url_for('user._add_admin', compid=compid)}}",
+               url: "{{ url_for('user._add_scorekeeper', compid=compid)}}",
                contentType:"application/json",
                data : JSON.stringify(mydata),
                dataType: "json",
                success: function () {
-                      get_admins()
+                      get_scorekeepers()
                }
                });
 
@@ -594,18 +593,18 @@
                });
    }
    
-      function get_admins(){
+      function get_scorekeepers(){
     $.ajax({
                type: "GET",
-               url: "{{ url_for('user._get_admins', compid=compid)}}",
+               url: "{{ url_for('user._get_scorekeepers', compid=compid)}}",
                contentType:"application/json",
                dataType: "json",
                success: function (response) {
                var content = '';
-               for (var i = 0; i < response['admins'].length; i++) {
-               content += '<tr><TD class="c3">'+ response['admins'][i]['first_name'] + ' '+ response['admins'][i]['last_name'] +'</TD></tr>'
+               for (var i = 0; i < response['scorekeepers'].length; i++) {
+               content += '<tr><TD class="c3">'+ response['scorekeepers'][i]['first_name'] + ' '+ response['scorekeepers'][i]['last_name'] +'</TD></tr>'
                }
-               $('#admin_table').append(content);
+               $('#scorekeeper_table').append(content);
                $('#owner').html(response['owner']['first_name'] + ' ' + response['owner']['last_name'] )
                }
    });
@@ -613,7 +612,7 @@
 
    $(document).ready(function() {
    get_tasks();
-   get_admins();
+   get_scorekeepers();
    });
 
 

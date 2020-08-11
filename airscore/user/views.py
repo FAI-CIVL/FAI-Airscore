@@ -1,32 +1,41 @@
 # -*- coding: utf-8 -*-
 """User views."""
 from datetime import datetime
-
+from functools import wraps
 from flask import Blueprint, render_template, request, jsonify, json, flash, redirect, url_for, session, Markup, \
     current_app, send_file, make_response
 from flask_login import login_required, current_user
 import frontendUtils
 from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm, \
-    TaskResultAdminForm, NewAdminForm, RegionForm, NewRegionForm, IgcParsingConfigForm, ModifyParticipantForm, \
-    EditScoreForm
+    TaskResultAdminForm, NewScorekeeperForm, RegionForm, NewRegionForm, IgcParsingConfigForm, ModifyParticipantForm, \
+    EditScoreForm, ModifyUserForm
 from comp import Comp
 from formula import list_formulas, Formula
 from task import Task, write_map_json, get_task_json_by_filename
 from frontendUtils import save_turnpoint
-from flightresult import update_status, delete_track
+from pilot.flightresult import update_status, delete_track
 from os import path, remove, makedirs
 from task import get_task_json_by_filename
 from calcUtils import sec_to_time
 import time
 from Defines import SELF_REG_DEFAULT, PILOT_DB
+from airscore.user.models import User
 
 blueprint = Blueprint("user", __name__, url_prefix="/users", static_folder="../static")
 
 
-@blueprint.route("/test")
-@login_required
-def test():
-    return render_template('users/socketio_demo.html')
+def admin_required(func):
+    '''
+    If you decorate a view with this, it will ensure that the current user is
+    an admin before calling the actual view. (If they are
+    not, it calls the :attr:`LoginManager.unauthorized` callback.)
+    '''
+    @wraps(func)
+    def decorated_view(*args, **kwargs):
+        if not session['is_admin']:
+            return current_app.login_manager.unauthorized()
+        return func(*args, **kwargs)
+    return decorated_view
 
 
 @blueprint.route("/")
@@ -39,7 +48,7 @@ def members():
 @blueprint.route('/airspace_map/<filename>')
 @login_required
 def airspace_edit(filename):
-    import design_map
+    import map
     import airspaceUtils
 
     message = ''
@@ -68,7 +77,9 @@ def airspace_edit(filename):
             unknown_flag = True
 
     if fl_messages:
-        message = 'Attention: There is FL (flight level) units in the file. You should adjust to meters or ' \
+        message = 'Attention: There is FL (flight level) units in the file. To use this pilots need to know their ' \
+                  'standard altitude, or have an instrument capable of interpreting FL in openair and calculating ' \
+                  'correctly their position. Alternativley you could adjust to meters or ' \
                   'feet above sea level'
         fl_detail = ", ".join(set(fl_messages))
         fl_detail += " - Assuming an International Standard Atmosphere pressure of 1013.25 hPa (29.92 inHg) " \
@@ -79,7 +90,7 @@ def airspace_edit(filename):
         message += 'Attention: There is unknown height units in the file. You should adjust to meters or ' \
                    'feet above sea level'
 
-    airspace_map = design_map.make_map(airspace_layer=spaces, bbox=bbox)
+    airspace_map = map.make_map(airspace_layer=spaces, bbox=bbox)
 
     return render_template('users/airspace_admin_map.html', airspace_list=airspace_list, file=filename,
                            map=airspace_map._repr_html_(), message=message, FL_message=fl_detail)
@@ -127,7 +138,7 @@ def _create_comp():
     output = new_comp.to_db()
     if type(output) == int:
         Formula(comp_id=output).to_db()
-        frontendUtils.set_comp_admin(output, current_user.id, owner=True)
+        frontendUtils.set_comp_scorekeeper(output, current_user.id, owner=True)
         return dict(redirect='/users/comp_admin')
     else:
         return render_template('500.html')
@@ -155,7 +166,7 @@ def _import_comp_fsdb():
                 f = FSDB.read(fsdb_file)
                 compid = f.add_all()
                 if compid:
-                    frontendUtils.set_comp_admin(compid, current_user.id, owner=True)
+                    frontendUtils.set_comp_scorekeeper(compid, current_user.id, owner=True)
                     resp = jsonify(success=True)
                     return resp
                 else:
@@ -178,26 +189,27 @@ def _get_formulas():
 @blueprint.route('/comp_settings_admin/<compid>', methods=['GET', 'POST'])
 @login_required
 def comp_settings_admin(compid):
+    from sys import stdout
     error = None
     compid = int(compid)
     compform = CompForm()
     newtaskform = NewTaskForm()
-    newadminform = NewAdminForm()
+    newScorekeeperform = NewScorekeeperForm()
     comp = Comp.read(compid)
     # set session variables for navbar
     session['compid'] = compid
     session['comp_name'] = comp.comp_name
 
     compform.igc_parsing_file.choices, _ = frontendUtils.get_igc_parsing_config_file_list()
-    owner, administrators, admin_ids = frontendUtils.get_comp_admins(compid)
-    all_admins = frontendUtils.get_all_admins()
-    all_admins.remove(owner)
-    for admin in administrators:
-        all_admins.remove(admin)
-    admin_choices = []
-    if all_admins:
-        for admin in all_admins:
-            admin_choices.append((admin['id'], f"{admin['first_name']} {admin['last_name']} ({admin['username']})"))
+    owner, scorekeepers, scorekeeper_ids = frontendUtils.get_comp_scorekeeper(compid)
+    all_scorekeepers = frontendUtils.get_all_scorekeepers()
+    all_scorekeepers.remove(owner)
+    for scorekeeper in scorekeepers:
+        all_scorekeepers.remove(scorekeeper)
+    scorekeeper_choices = []
+    if all_scorekeepers:
+        for scorekeeper in all_scorekeepers:
+            scorekeeper_choices.append((scorekeeper['id'], f"{scorekeeper['first_name']} {scorekeeper['last_name']} ({scorekeeper['username']})"))
     if request.method == 'POST':
         if compform.validate_on_submit():
             comp.comp_name = compform.comp_name.data
@@ -210,7 +222,7 @@ def comp_settings_admin(compid):
             comp.date_to = compform.date_to.data
             comp.MD_name = compform.MD_name.data
             comp.time_offset = compform.time_offset.data * 3600
-            comp.restricted = 1 if compform.pilot_registration.data == 'registered' else None
+            comp.restricted = compform.pilot_registration.data
             comp.locked = compform.locked.data
             comp.igc_config_file = compform.igc_parsing_file.data
             # comp.airspace_check = compform.airspace_check.data
@@ -324,37 +336,52 @@ def comp_settings_admin(compid):
         compform.self_register.data = comp.self_register
         compform.website.data = comp.website
         newtaskform.task_region.choices, _ = frontendUtils.get_region_choices(compid)
-        newadminform.admin.choices = admin_choices
+        newScorekeeperform.scorekeeper.choices = scorekeeper_choices
         formulas = list_formulas()
         compform.formula.choices = [(x, x.upper()) for x in formulas[comp.comp_class]]
 
-        if current_user.id not in admin_ids:
-            session['is_admin'] = False
+        if (current_user.id not in scorekeeper_ids) and (current_user.access != 'admin'):
+            session['is_scorekeeper'] = False
             compform.submit = None
         else:
-            session['is_admin'] = True
+            session['is_scorekeeper'] = True
 
     tasks = frontendUtils.get_task_list(comp)
     session['tasks'] = tasks['tasks']
     session['check_g_record'] = comp.check_g_record
 
     return render_template('users/comp_settings.html', compid=compid, compform=compform,
-                           taskform=newtaskform, adminform=newadminform, error=error,
+                           taskform=newtaskform, scorekeeperform=newScorekeeperform, error=error,
                            self_register=(SELF_REG_DEFAULT and PILOT_DB))
 
 
-@blueprint.route('/_get_admins/<compid>', methods=['GET'])
+@blueprint.route('/_get_scorekeepers/<compid>', methods=['GET'])
 @login_required
-def _get_admins(compid):
-    owner, admins, _ = frontendUtils.get_comp_admins(compid)
-    return {'owner': owner, 'admins': admins}
+def _get_scorekeepers(compid):
+    owner, scorekeepers, _ = frontendUtils.get_comp_scorekeeper(compid)
+    return {'owner': owner, 'scorekeepers': scorekeepers}
 
 
-@blueprint.route('/_add_admin/<compid>', methods=['POST'])
+@blueprint.route('/_get_users', methods=['GET'])
 @login_required
-def _add_admin(compid):
+@admin_required
+def _get_users():
+    return {'data': frontendUtils.get_all_users()}
+
+
+@blueprint.route('/user_admin', methods=['GET'])
+@login_required
+@admin_required
+def user_admin():
+    modify_user_form = ModifyUserForm()
+    return render_template('users/user_admin.html', modify_user_form=modify_user_form)
+
+
+@blueprint.route('/_add_scorekeeper/<compid>', methods=['POST'])
+@login_required
+def _add_scorekeeper(compid):
     data = request.json
-    if frontendUtils.set_comp_admin(compid, data['id']):
+    if frontendUtils.set_comp_scorekeeper(compid, data['id']):
         resp = jsonify(success=True)
         return resp
     else:
@@ -384,7 +411,7 @@ def task_admin(taskid):
     turnpointform.name.choices = waypoints
     modifyturnpointform.mod_name.choices = waypoints
 
-    owner, administrators, all_admin_ids = frontendUtils.get_comp_admins(task.comp_id)
+    owner, scorekeepers, all_scorekeeper_ids = frontendUtils.get_comp_scorekeeper(task.comp_id)
 
     if request.method == 'POST':
         if taskform.validate_on_submit():
@@ -479,7 +506,7 @@ def task_admin(taskid):
                 if session_task['task_id'] == taskid:
                     session_task['ready_to_score'] = False
 
-        if current_user.id not in all_admin_ids:
+        if current_user.id not in all_scorekeeper_ids:
             taskform.submit = None
 
     return render_template('users/task_admin.html', taskid=taskid, taskform=taskform, turnpointform=turnpointform,
@@ -489,14 +516,14 @@ def task_admin(taskid):
 @blueprint.route('/_get_admin_comps', methods=['GET'])
 @login_required
 def _get_admin_comps():
-    return frontendUtils.get_admin_comps(current_user.id)
+    return frontendUtils.get_admin_comps(current_user.id, current_user.access)
 
 
 @blueprint.route('/_delete_comp/<compid>', methods=['POST', 'GET'])
 @login_required
 def _delete_comp(compid):
     from comp import delete_comp
-    owner, _, _ = frontendUtils.get_comp_admins(int(compid))
+    owner, _, _ = frontendUtils.get_comp_scorekeeper(int(compid))
     if current_user.id == owner['id']:
         delete_comp(compid)
     else:
@@ -521,7 +548,7 @@ def waypoint_admin():
 @blueprint.route('/_register_pilots/<compid>', methods=['POST'])
 @login_required
 def _register_pilots(compid):
-    from participant import register_from_profiles_list, unregister_from_profiles_list
+    from pilot.participant import register_from_profiles_list, unregister_from_profiles_list
     data = request.json
     if data['register']:
         register_from_profiles_list(compid, data['register'])
@@ -582,8 +609,8 @@ def _get_adv_settings():
                 'glide_bonus': formula.glide_bonus, 'tolerance': formula.tolerance * 100,
                 'min_tolerance': formula.min_tolerance, 'arr_alt_bonus': formula.height_bonus,
                 'arr_max_height': formula.arr_max_height, 'arr_min_height': formula.arr_min_height,
-                'validity_min_time': int(formula.validity_min_time/60),
-                'scoreback_time': int(formula.score_back_time/60),
+                'validity_min_time': int(formula.validity_min_time / 60),
+                'scoreback_time': int(formula.score_back_time / 60),
                 'max_JTG': formula.max_JTG, 'JTG_penalty_per_sec': formula.JTG_penalty_per_sec}
 
     return settings
@@ -715,27 +742,26 @@ def _get_tracks_processed(taskid):
 @login_required
 def track_admin(taskid):
     taskid = int(taskid)
-    task_in_comp = False
-    for task in session['tasks']:
-        if task['task_id'] == taskid:
-            task_num = task['task_num']
-            task_name = task['task_name']
-            task_in_comp = True
-            task_ready_to_score = task['ready_to_score']
+    task = next((t for t in session['tasks'] if t['task_id'] == taskid), None)
+    if task:
+        task_num = task['task_num']
+        task_name = task['task_name']
+        task_ready_to_score = task['ready_to_score']
+        track_source = task['track_source']
 
-    if not task_in_comp:
-        return render_template('out_of_comp.html')
+        if not task_ready_to_score:
+            return render_template('task_not_ready_to_score.html')
 
-    if not task_ready_to_score:
-        return render_template('task_not_ready_to_score.html')
-
-    _, _, all_admin_ids = frontendUtils.get_comp_admins(taskid, task_id=True)
-    if current_user.id in all_admin_ids:
-        user_is_admin = True
+        _, _, all_scorekeeper_ids = frontendUtils.get_comp_scorekeeper(taskid, task_id=True)
+        if current_user.id in all_scorekeeper_ids:
+            user_is_scorekeeper = True
+        else:
+            user_is_scorekeeper = None
+        return render_template('users/track_admin.html', taskid=taskid, user_is_scorekeeper=user_is_scorekeeper,
+                               production=frontendUtils.production(), task_name=task_name, task_num=task_num,
+                               track_source=track_source)
     else:
-        user_is_admin = None
-    return render_template('users/track_admin.html', taskid=taskid, user_is_admin=user_is_admin,
-                           production=frontendUtils.production(), task_name=task_name, task_num=task_num)
+        return render_template('out_of_comp.html')
 
 
 @blueprint.route('/_set_result/<taskid>', methods=['POST'])
@@ -777,35 +803,32 @@ def _upload_track(taskid, parid):
     if request.method == "POST":
         if request.files:
             if "filesize" in request.cookies:
-
                 if not frontendUtils.allowed_tracklog_filesize(request.cookies["filesize"]):
                     print("Filesize exceeded maximum limit")
                     return redirect(request.url)
                 check_g_record = session['check_g_record']
 
                 if request.files.get("tracklog_NO_G"):
-                   tracklog = request.files["tracklog_NO_G"]
-                   check_g_record = False
+                    tracklog = request.files["tracklog_NO_G"]
+                    check_g_record = False
                 else:
                     tracklog = request.files["tracklog"]
-
                 if tracklog.filename == "":
                     print("No filename")
                     return redirect(request.url)
 
                 if frontendUtils.allowed_tracklog(tracklog.filename):
                     if frontendUtils.production():
-                        filename, full_file_name = frontendUtils.save_igc_background(taskid, parid, tracklog,
-                                                                                     current_user.username,
-                                                                                     check_g_record=check_g_record)
-                        job = current_app.task_queue.enqueue(frontendUtils.process_igc_background, taskid, parid,
-                                                             filename, full_file_name, current_user.username)
-                        if not filename:
+                        file = frontendUtils.save_igc_background(taskid, parid, tracklog,
+                                                                 current_user.username,
+                                                                 check_g_record=check_g_record)
+                        job = current_app.task_queue.enqueue(frontendUtils.process_igc_background,
+                                                             taskid, parid, file, current_user.username)
+                        if not file:
                             resp = jsonify(success=False)
                         else:
                             resp = jsonify(success=True)
                         return resp
-
                     else:
                         data, error = frontendUtils.process_igc(taskid, parid, tracklog)
                         if data:
@@ -821,6 +844,30 @@ def _upload_track(taskid, parid):
             resp = {'error': 'filesize not sent'}
             return resp
         resp = {'error': 'request.files'}
+        return resp
+
+
+@blueprint.route('/_get_xcontest_tracks/<taskid>', methods=['POST'])
+@login_required
+def _get_xcontest_tracks(taskid):
+    from sources.xcontest import get_zipfile
+    # from Defines import TEMPFILES
+    # from pathlib import Path
+    taskid = int(taskid)
+    if request.method == "POST":
+        zip_file = get_zipfile(taskid)
+        # zip_file = Path(TEMPFILES, 'xcontest-95.zip')  # test file
+
+        if not zip_file:
+            print("No filename")
+            flash("We could not find tracks on XContest for the event", category='danger')
+            return redirect(request.url)
+
+        resp = frontendUtils.process_zip_file(zip_file=zip_file,
+                                              taskid=taskid,
+                                              username=current_user.username,
+                                              grecord=session['check_g_record'],
+                                              track_source='xcontest')
         return resp
 
 
@@ -852,34 +899,21 @@ def _upload_track_zip(taskid):
     taskid = int(taskid)
     if request.method == "POST":
         if request.files:
-
             if "filesize" in request.cookies:
-
                 if not frontendUtils.allowed_tracklog_filesize(request.cookies["filesize"], size=50):
                     print("Filesize exceeded maximum limit")
                     return redirect(request.url)
-
                 zip_file = request.files["zip_file"]
-
                 if zip_file.filename == "":
                     print("No filename")
                     return redirect(request.url)
 
                 if frontendUtils.allowed_tracklog(zip_file.filename, extension=['zip']):
-                    if frontendUtils.production():
-                        tracksdir = frontendUtils.unzip_igc(zip_file)
-                        job = current_app.task_queue.enqueue(frontendUtils.process_igc_from_zip, taskid, tracksdir,
-                                                             current_user.username,
-                                                             check_g_record=session['check_g_record'],
-                                                             job_timeout=2000)
-                        resp = jsonify(success=True)
-                        return resp
-                    else:
-                        task = Task.read(taskid)
-                        data = frontendUtils.process_igc_zip(task, zip_file)
-                        resp = data
-                        return resp
-
+                    resp = frontendUtils.process_zip_file(zip_file=zip_file,
+                                                          taskid=taskid,
+                                                          username=current_user.username,
+                                                          grecord=session['check_g_record'])
+                    return resp
                 else:
                     print("That file extension is not allowed")
                     return redirect(request.url)
@@ -916,6 +950,21 @@ def _get_task_result_files(taskid):
             'display_comp_unpublish': display_comp_unpublish}
 
 
+@blueprint.route('/_send_telegram_update/<taskid>', methods=['POST'])
+@login_required
+def _send_telegram_update(taskid):
+    """sends a telegram message with partial results and missing pilots during tracks processing"""
+    from telegram import send_result_status
+    taskid = int(taskid)
+    if request.method == "POST":
+        info = {}
+        task = next((t for t in session['tasks'] if t['task_id'] == taskid), None)
+        if task:
+            info = dict(comp_name=session['comp_name'], task_num=task['task_num'], source=task['track_source'])
+        resp = send_result_status(taskid, info)
+        return jsonify(success=resp)
+
+
 @blueprint.route('/_get_task_score_from_file/<taskid>/<filename>', methods=['GET'])
 @login_required
 def _get_task_score_from_file(taskid, filename):
@@ -932,11 +981,11 @@ def _get_task_score_from_file(taskid, filename):
     stats = pretty_format_results(result_file['stats'], timeoffset)
     info = result_file['info']
     for r in result_file['results']:
-        track_id = r['track_id']
+        parid = r['par_id']
         name = r['name']
         status = r['result_type']
         if status not in ['dnf', 'abs']:
-            pilot = {'rank': rank, 'name': f'<a href="/map/{track_id}-{taskid}">{name}</a>'}
+            pilot = {'rank': rank, 'name': f'<a href="/map/{parid}-{taskid}">{name}</a>'}
             if r['SSS_time']:
                 pilot['SSS'] = sec_to_time(r['SSS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S")
             else:
@@ -1000,14 +1049,14 @@ def task_score_admin(taskid):
     fileform.result_file.choices = choices
     if active_file:
         fileform.result_file.data = active_file
-    _, _, all_admin_ids = frontendUtils.get_comp_admins(taskid, task_id=True)
-    if current_user.id in all_admin_ids:
-        user_is_admin = True
+    _, _, all_scorekeeper_ids = frontendUtils.get_comp_scorekeeper(taskid, task_id=True)
+    if current_user.id in all_scorekeeper_ids:
+        user_is_scorekeeper = True
     else:
-        user_is_admin = None
+        user_is_scorekeeper = None
 
     return render_template('users/task_score_admin.html', fileform=fileform, taskid=taskid,
-                           active_file=active_file, user_is_admin=user_is_admin, task_name=task_name,
+                           active_file=active_file, user_is_scorekeeper=user_is_scorekeeper, task_name=task_name,
                            task_num=task_num, editform=editform, production=frontendUtils.production())
 
 
@@ -1035,11 +1084,11 @@ def _score_task(taskid):
 @blueprint.route('/_full_rescore_task/<taskid>', methods=['POST'])
 @login_required
 def _full_rescore_task(taskid):
-    taskid=int(taskid)
+    taskid = int(taskid)
     data = request.json
     if frontendUtils.production():
         job = current_app.task_queue.enqueue(frontendUtils.full_rescore, taskid, background=True,
-                                             user=current_user.username,  status=data['status'],
+                                             user=current_user.username, status=data['status'],
                                              autopublish=data['autopublish'], compid=session['compid'],
                                              job_timeout=2000)
 
@@ -1249,7 +1298,7 @@ def _get_registered_pilots_external(compid):
 @blueprint.route('/igc_parsing_config/<filename>', methods=['GET', 'POST'])
 @login_required
 def igc_parsing_config(filename):
-    from track import read_igc_config_yaml, save_igc_config_yaml
+    from pilot.track import read_igc_config_yaml, save_igc_config_yaml
     igc_config_form = IgcParsingConfigForm()
     filename += '.yaml'
     save = True
@@ -1333,17 +1382,19 @@ def pilot_admin():
 @blueprint.route('/_modify_participant_details/<parid>', methods=['POST'])
 @login_required
 def _modify_participant_details(parid):
-    from participant import Participant
+    from pilot.participant import Participant
     data = request.json
     participant = Participant.read(int(parid))
-    participant.ID = data.get('id_num')
+    if data.get('id_num'):
+        participant.ID = data.get('id_num')
     if data.get('name'):
         participant.name = data.get('name')
     if data.get('sex'):
         participant.sex = data.get('sex')
-    participant.nat = data.get('nat')
+    if data.get('nat'):
+        participant.nat = data.get('nat')
     participant.glider = data.get('glider')
-    participant.certification = data.get('certification')
+    participant.glider_cert = data.get('certification')
     participant.sponsor = data.get('sponsor')
     participant.nat_team = data.get('nat_team')
     participant.team = data.get('team')
@@ -1360,7 +1411,7 @@ def _modify_participant_details(parid):
 @blueprint.route('/_add_participant/<compid>', methods=['POST'])
 @login_required
 def _add_participant(compid):
-    from participant import Participant
+    from pilot.participant import Participant
     data = request.json
     participant = Participant()
     participant.comp_id = int(compid)
@@ -1388,7 +1439,7 @@ def _add_participant(compid):
 @blueprint.route('/_upload_participants_excel/<compid>', methods=['POST'])
 @login_required
 def _upload_participants_excel(compid):
-    from participant import extract_participants_from_excel, mass_import_participants
+    from pilot.participant import extract_participants_from_excel, mass_import_participants
     import tempfile
     compid = int(compid)
     if request.method == "POST":
@@ -1408,7 +1459,7 @@ def _upload_participants_excel(compid):
 @blueprint.route('/_self_register/<compid>', methods=['POST'])
 @login_required
 def _self_register(compid):
-    from participant import Participant
+    from pilot.participant import Participant
     data = request.json
     participant = Participant.from_profile(data['pil_id'], comp_id=compid)
     participant.ID = data.get('id_num')
@@ -1425,7 +1476,7 @@ def _self_register(compid):
 @login_required
 def _unregister_participant(compid):
     """unregister participant from a comp"""
-    from participant import unregister_participant
+    from pilot.participant import unregister_participant
     data = request.json
     unregister_participant(compid, data['participant'])
     resp = jsonify(success=True)
@@ -1436,8 +1487,8 @@ def _unregister_participant(compid):
 @login_required
 def _unregister_all_external_participants(compid):
     """unregister participant from a comp"""
-    from participant import unregister_all_exteranl_participants
-    unregister_all_exteranl_participants(compid)
+    from pilot.participant import unregister_all_external_participants
+    unregister_all_external_participants(compid)
     resp = jsonify(success=True)
     return resp
 
@@ -1490,5 +1541,19 @@ def _export_fsdb(compid):
         resp = make_response(send_file(tmp.name, mimetype="text/xml", attachment_filename=filename, as_attachment=True))
         resp.set_cookie('ServerProcessCompleteChecker', '', expires=0)
         return resp
+
+
+@blueprint.route('/_modify_user/<user_id>', methods=['POST'])
+@login_required
+@admin_required
+def _modify_user(user_id):
+    data = request.json
+    user = User.query.filter_by(id=int(user_id)).first()
+    user.email = data.get('email')
+    user.access = data.get('access')
+    user.active = (data.get('active') == 'y')
+    user.update()
+    resp = jsonify(success=True)
+    return resp
 
 

@@ -246,11 +246,9 @@ class AirspaceCheck(object):
                                         '''do not need to check other spaces for the fix'''
                                         infringement = 'full penalty'
                                         break
-
         if infringement:
             plot = [infringement_space['floor'], infringement_space['ceiling'], infringement_space['name'],
                     infringement, dist, separation]
-
         return plot, penalty
 
     def get_infringements_result(self, infringements_list):
@@ -260,52 +258,9 @@ class AirspaceCheck(object):
         Calculates penalty
         Calculates final penalty and comments
         """
+        from pilot.notification import Notification
         '''element: [next_fix, airspace_name, infringement_type, distance, penalty]'''
-        spaces = list(set([x[1] for x in infringements_list]))
-        penalty = 0
-        max_pen_fix = None
-        infringements_per_space = []
-        comments = []
-        '''check distance and penalty for each space in which we recorded an infringement'''
-        for space in spaces:
-            fixes = [fix for fix in infringements_list if fix[1] == space]
-            pen = max(x[4] for x in fixes)
-            fix = min([x for x in fixes if x[4] == pen], key=lambda x: x[3])
-            dist = fix[3]
-            rawtime = fix[0].rawtime
-            if pen == 0:
-                ''' create warning comment'''
-                comments.append(f"{space} Warning: separation less than {dist} meters")
-            else:
-                '''add fix to infringements'''
-                infringements_per_space.append({'rawtime': rawtime, 'space': space,
-                                                'distance': dist, 'penalty': pen})
-                if pen > penalty:
-                    penalty = pen
-                    max_pen_fix = fix
-
-        '''final calculation'''
-        if penalty > 0:
-            '''we have a penalty'''
-            space = max_pen_fix[1]
-            if max_pen_fix[2] == 'full penalty':
-                comments = [f"{space}: airspace infringement. penalty {round(penalty * 100)}%"]
-            else:
-                dist = max_pen_fix[3]
-                comments = [f"{space}: {round(dist)}m from limit. penalty {round(penalty * 100)}%"]
-
-        return infringements_per_space, comments, penalty
-
-    def get_infringements_result_new(self, infringements_list):
-        """
-        Airspace Warnings and Penalties Managing
-        Creates a list of worst infringement for each airspace in infringements_list
-        Calculates penalty
-        Calculates final penalty and comments
-        """
-        from notification import Notification
-        '''element: [next_fix, airspace_name, infringement_type, distance, penalty]'''
-        spaces = list(set([x[1] for x in infringements_list]))
+        spaces = list(set([x[2] for x in infringements_list]))
         penalty = 0
         max_pen_fix = None
         infringements_per_space = []
@@ -313,20 +268,23 @@ class AirspaceCheck(object):
         notifications = []
         '''check distance and penalty for each space in which we recorded an infringement'''
         for space in spaces:
-            fixes = [fix for fix in infringements_list if fix[1] == space]
-            pen = max(x[4] for x in fixes)
-            fix = min([x for x in fixes if x[4] == pen], key=lambda x: x[3])
-            dist = fix[3]
-            separation = fix[5]
+            fixes = [fix for fix in infringements_list if fix[2] == space]
+            pen = max(x[5] for x in fixes)
+            fix = min([x for x in fixes if x[5] == pen], key=lambda x: x[4])
+            dist = fix[4]
             rawtime = fix[0].rawtime
+            lat = fix[0].lat
+            lon = fix[0].lon
+            alt = fix[1]
+            separation = fix[6]
             if pen == 0:
                 ''' create warning comment'''
                 comment = f"[{space}] Warning: {separation}. separation less than {dist} meters"
             else:
                 '''add fix to infringements'''
-                infringements_per_space.append({'rawtime': rawtime, 'space': space,
-                                                'distance': dist, 'penalty': pen, 'separation': separation})
-                if fix[2] == 'full penalty':
+                infringements_per_space.append(dict(rawtime=rawtime, lat=lat, lon=lon, alt=alt, space=space,
+                                                    distance=dist, penalty=pen, separation=separation))
+                if fix[3] == 'full penalty':
                     comment = f"[{space}]: airspace infringement. penalty {round(pen * 100)}%"
                 else:
                     comment = f"[{space}]: {round(dist)}m from limit. penalty {round(pen * 100)}%"
@@ -334,55 +292,37 @@ class AirspaceCheck(object):
                     penalty = pen
                     max_pen_fix = fix
             notifications.append(Notification(notification_type='airspace', percentage_penalty=pen, comment=comment))
-
-        # '''final calculation'''
-        # if penalty > 0:
-        #     '''we have a penalty'''
-        #     space = max_pen_fix[1]
-        #     if max_pen_fix[2] == 'full penalty':
-        #         comments = [f"{space}: airspace infringement. penalty {round(penalty * 100)}%"]
-        #     else:
-        #         dist = max_pen_fix[3]
-        #         comments = [f"{space}: {round(dist)}m from limit. penalty {round(penalty * 100)}%"]
-
         return infringements_per_space, notifications, penalty
 
 
 def get_airspace_check_parameters(task_id):
-    from myconn import Database
-    from db_tables import TaskAirspaceCheckView as A
-    from sqlalchemy.exc import SQLAlchemyError
+    from db.tables import TaskAirspaceCheckView as A
 
-    with Database() as db:
-        try:
-            q = db.session.query(A).get(task_id)
-            if q.airspace_check:
-                '''calculate parameters'''
-                h_outer_band = q.h_outer_limit - q.h_boundary
-                h_inner_band = q.h_boundary - q.h_inner_limit
-                h_total_band = q.h_outer_limit - q.h_inner_limit
-                v_outer_band = q.v_outer_limit - q.v_boundary
-                v_inner_band = q.v_boundary - q.v_inner_limit
-                v_total_band = q.v_outer_limit - q.v_inner_limit
-                h_outer_penalty_per_m = 0 if not h_outer_band else q.h_boundary_penalty / h_outer_band
-                h_inner_penalty_per_m = (q.h_max_penalty if not h_inner_band
-                                         else (q.h_max_penalty - q.h_boundary_penalty) / h_inner_band)
-                v_outer_penalty_per_m = 0 if not v_outer_band else q.v_boundary_penalty / v_outer_band
-                v_inner_penalty_per_m = (q.v_max_penalty if not v_inner_band
-                                         else (q.v_max_penalty - q.v_boundary_penalty) / v_inner_band)
+    q = A.get_by_id(task_id)
+    if q.airspace_check:
+        '''calculate parameters'''
+        h_outer_band = q.h_outer_limit - q.h_boundary
+        h_inner_band = q.h_boundary - q.h_inner_limit
+        h_total_band = q.h_outer_limit - q.h_inner_limit
+        v_outer_band = q.v_outer_limit - q.v_boundary
+        v_inner_band = q.v_boundary - q.v_inner_limit
+        v_total_band = q.v_outer_limit - q.v_inner_limit
+        h_outer_penalty_per_m = 0 if not h_outer_band else q.h_boundary_penalty / h_outer_band
+        h_inner_penalty_per_m = (q.h_max_penalty if not h_inner_band
+                                 else (q.h_max_penalty - q.h_boundary_penalty) / h_inner_band)
+        v_outer_penalty_per_m = 0 if not v_outer_band else q.v_boundary_penalty / v_outer_band
+        v_inner_penalty_per_m = (q.v_max_penalty if not v_inner_band
+                                 else (q.v_max_penalty - q.v_boundary_penalty) / v_inner_band)
 
-                return CheckParams(q.notification_distance, q.function, q.h_outer_limit, q.h_boundary,
-                                   q.h_boundary_penalty, q.h_inner_limit, q.h_max_penalty, q.v_outer_limit,
-                                   q.v_boundary, q.v_boundary_penalty, q.v_inner_limit, q.v_max_penalty,
-                                   h_outer_band, h_inner_band, h_total_band, v_outer_band, v_inner_band, v_total_band,
-                                   h_outer_penalty_per_m, h_inner_penalty_per_m, v_outer_penalty_per_m,
-                                   v_inner_penalty_per_m)
-            else:
-                print(f"airspace_check disabled")
-                return None
-        except SQLAlchemyError:
-            print(f'SQL Error trying to get Airspace Params from database')
-            return None
+        return CheckParams(q.notification_distance, q.function, q.h_outer_limit, q.h_boundary,
+                           q.h_boundary_penalty, q.h_inner_limit, q.h_max_penalty, q.v_outer_limit,
+                           q.v_boundary, q.v_boundary_penalty, q.v_inner_limit, q.v_max_penalty,
+                           h_outer_band, h_inner_band, h_total_band, v_outer_band, v_inner_band, v_total_band,
+                           h_outer_penalty_per_m, h_inner_penalty_per_m, v_outer_penalty_per_m,
+                           v_inner_penalty_per_m)
+    else:
+        print(f"airspace_check disabled")
+        return None
 
 
 def fl_to_meters(flight_level, qnh=1013.25):

@@ -259,14 +259,14 @@ def pilot_distance(task, pil):
 
 
 def calculate_min_dist_score(t):
-    from flightresult import FlightResult
+    from pilot.flightresult import FlightResult
     p = FlightResult()
     p.distance_flown = t.formula.min_dist
     return pilot_distance(t, p)
 
 
 def calculate_time_points_reduction(t):
-    from flightresult import FlightResult
+    from pilot.flightresult import FlightResult
     p = FlightResult()
     p.distance_flown = t.opt_dist
     p.SSS_time = t.max_ss_time
@@ -283,16 +283,8 @@ def process_results(task):
         return None
 
     for idx, res in enumerate(results, 1):
-        # '''Handle Stopped Task'''
-        # if task.stopped_time and res.stopped_distance:
-        #     print("Stopped height bonus: ", (formula.glide_bonus * (res.last_altitude - task.goal_altitude)))
-        #     res.total_distance = min((res.distance_flown +
-        #                               formula.glide_bonus * (res.last_altitude - task.goal_altitude)),
-        #                              task.SS_distance)
-        # else:
-        #     res.total_distance = res.distance_flown
         '''set pilot to min distance if they're below that ..'''
-        res.total_distance = max(formula.min_dist, res.distance)
+        res.total_distance = max(formula.min_dist, res.distance or 0)
 
         if res.ESS_time:
             ''' Time after first on ESS'''

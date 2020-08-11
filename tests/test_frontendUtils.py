@@ -5,8 +5,8 @@ import frontendUtils
 import region
 # from myconn import Database
 from autoapp import create_app
-from unittest.mock import MagicMock
-from frontendUtils import Database
+from unittest.mock import patch, MagicMock
+from frontendUtils import db_session
 from faker import Faker
 from random import random
 from json import loads
@@ -92,12 +92,11 @@ def row():
 def test_get_admin_comps(monkeypatch):
     MockResponse = MagicMock(autospec=True)
     myquery = query()
-    MockResponse.query.return_value.outerjoin.return_value.outerjoin.return_value.filter.return_value\
-        .group_by.return_value = myquery
+    MockResponse.return_value.__enter__.return_value.query.return_value.outerjoin.return_value.outerjoin.return_value.filter.return_value.group_by.return_value = myquery
     with app.app_context():
-        monkeypatch.setattr(Database, 'session', MockResponse)
-        result = frontendUtils.get_admin_comps(123)
-        print(result)
+        with patch('frontendUtils.db_session', MockResponse):
+            result = frontendUtils.get_admin_comps(123)
+        # print(result)
         assert result.json['data'][0][1] == '<a href="/users/comp_settings_admin/' + str(myquery[0][0])+'">'\
             + myquery[0][1] + '</a>'
         assert result.json['data'][0][3] == myquery[0][3].strftime("%Y-%m-%d")

@@ -1,14 +1,4 @@
-##################
-#File created from install / settings
-#Use:   with open('config.yaml') as f:
-#           config = yaml.safe_load(f)
-#
-# ToDO: setup script to create this file"""
-##################
-
-docker:
-  container: web   # name of docker-container service running Flask. Default is web
-  port: 5000       # port used by docker-container service running Flask. Default is 5000
+################## Airscore settings ##################
 
 waypoint/airspace_file_library: on # on/off ability to see and reuse waypoint and airspace files between comps.
                                    # recommended for small user base. i.e. national associations
@@ -24,6 +14,9 @@ internal_pilot_DB: # if use_internal_pilot_DB is yes the below settings are rele
   self_registration_default: on # Each comp can be setup that a pilot (given a login) can self register for an event.
                                 # This is the default value on creating a new competition
 
+use_internal_admin_DB: yes # use internal table for admins and scorekeepers
+internal_admin_DB: # if use_internal_admin_DB is yes the below settings are relevant
+  allow_self_registration: yes # allows anyone to create a scorekeeper account
 
 competition_season:
 #start_year: previous or current offset -1 or 0
@@ -41,6 +34,12 @@ sanctions:
   - FAI 2
   - FAI 1
 
+g_record_validation_server: http://vali.fai-civl.org/api/vali/json
+flymaster_live_server: https://lt.flymaster.net/wlb/getLiveData.php?trackers=
+
+ladders: off # ladder calculations - summing up several comps into a leaderboard.
+
+# folder structure, this is not intended for users to alter.
 dir:
   bin: /app/airscore/core/
   tracks: /app/airscore/data/tracks/
@@ -56,8 +55,5 @@ dir:
   livetracking: /app/airscore/data/livetracking/
   igc_parsing_config: /app/airscore/igc_parsing_config/
   temp_files: /app/airscore/data/temp/
-
-g_record_validation_server: http://vali.fai-civl.org/api/vali/json
-flymaster_live_server: https://lt.flymaster.net/wlb/getLiveData.php?trackers=
 
 

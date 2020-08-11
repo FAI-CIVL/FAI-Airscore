@@ -9,10 +9,15 @@ By Stuart Mackintosh, Antonio Golfari, 2019
 
 import logging
 import time
-
 import requests
+from db.conn import db_session
+from pathlib import Path
 
-from myconn import Database
+
+# in XContest format is:
+# DE VIVO.ALESSANDRO.alexpab.2019-12-19.13-22-49.IGC
+# surname.firstname.xcontest_id.YYYY-mm-dd.hh-mm-ss.IGC
+filename_formats = ['name.name.live.other-other-other.other-other-other']
 
 
 def get_pilot_from_list(filename, pilots):
@@ -24,39 +29,44 @@ def get_pilot_from_list(filename, pilots):
     """
     # in XContest format is:
     # DE VIVO.ALESSANDRO.alexpab.2019-12-19.13-22-49.IGC
+    # GALLO.LUCIANO.luciano.gallo.2020-07-18.11-22-07.IGC
+    # GIULIANI.MATTEO.MG93.2020-07-18.11-27-01.IGC
     # surname.firstname.xcontest_id.YYYY-mm-dd.hh-mm-ss.IGC
 
-    from os import path
-
-    string = path.splitext(filename)[0]
+    print(f'XContest get pilot function')
+    string = Path(filename).stem
     fields = string.split('.')
-    xcontest_id = fields[2].lower()
-    name = ' '.join([str(fields[1]), str(fields[0])])
+    xcontest_id = '.'.join(fields[2:-2])
+    name = ' '.join([str(fields[1]).lower(), str(fields[0]).lower()])
+    print(f'Filename: {string}, xcontest_id: {xcontest_id}')
     for idx, pilot in enumerate(pilots):
-        if pilot.info.xcontest_id and pilot.info.xcontest_id.lower() == xcontest_id:
+        if pilot.xcontest_id and pilot.xcontest_id.lower() == xcontest_id.lower():
             '''found a pilot'''
-            pilot.track.track_file = filename
+            print(f'Found: Name {pilot.name.title()}, xcontest_id: {xcontest_id}')
             if not pilot.name.lower() in name:
-                print(f'WARNING: Name {pilot.name.lower()} does not match with filename {string}')
-            return pilot, idx
+                print(f'WARNING: Name {pilot.name.title()} does not match with filename {string}')
+            return pilot
+    return None
 
 
 def get_xc_parameters(task_id):
     """Get site info and date from database """
     # TODO I suspect the logic on xc_site will be broken if we use waypoint file instead of table
     # Should we use TblTaskWaypoint instead or manually or by adding xc_to id to launch name or description?
-    from db_tables import TaskXContestWptView as XC
+    from db.tables import TblTaskWaypoint as W, TblRegionWaypoint as R, TblTask as T
 
     site_id = 0
     takeoff_id = 0
     datestr = None
 
-    with Database() as db:
-        q = db.session.query(XC).get(task_id)
+    with db_session() as db:
+        q = db.query(R.xccSiteID, R.xccToID).join(W, W.rwp_id == R.rwp_id).filter(W.task_id == task_id,
+                                                                                  W.type == 'launch').one()
+        date = T.get_by_id(task_id).date
         if q is not None:
             site_id = q.xccSiteID
             takeoff_id = q.xccToID
-            date = q.tasDate
+            # date = q.tasDate
             logging.info("site_id:%s takeoff_id:%s date:%s", site_id, takeoff_id, date)
             datestr = date.strftime('%Y-%m-%d')  # convert from datetime to string
         else:
@@ -87,37 +97,43 @@ def get_zip(site_id, takeoff_id, date, login_name, password, zip_file):
 
     # send request for tracks
     time.sleep(4)
-    response = s.get(
-        'https://www.xcontest.org/util/igc.archive.comp.php?date=%s&%s=%s' % (date, site_launch, location_id))
+    # date = '2020-07-11'
+    url = f'https://www.xcontest.org/util/igc.archive.comp.php?date={date}&{site_launch}={location_id}'
+    print(url)
+    response = s.get(url)
 
     if "No error" in response.text:
         logging.info("logged into xcontest and igc.archive.comp.php running with no error")
         print("logged into xcontest and igc.archive.comp.php running with no error. <br />")
     else:
-        logging.error("igc.archive.comp.php not returing as expected")
-        print("Error igc.archive.comp.php not returing as expected. See xcontest.log for details. <br />")
+        logging.error("igc.archive.comp.php not returning as expected")
+        print("Error igc.archive.comp.php not returning as expected. See xcontest.log for details. <br />")
         logging.error("web page output:\n %s", response.text)
     webpage = lxml.html.fromstring(response.content)
-    zfile = requests.get(webpage.xpath('//a/@href')[0])
+    # print([el for el in webpage])
+    try:
+        zfile = requests.get(webpage.xpath('//a/@href')[0])
+        # save the file
+        with open(zip_file, 'wb') as f:
+            f.write(zfile.content)
+    except requests.exceptions.MissingSchema:
+        print(f'Error: Seems like there are no tracks yet for location on {date}')
 
-    # save the file
-    with open(zip_file, 'wb') as f:
-        f.write(zfile.content)
 
-
-def get_zipfile(task, temp_folder):
+def get_zipfile(task_id):
     """"""
-    from os import path
+    from pathlib import Path
     import Defines
+    temp_folder = Defines.TEMPFILES
     result = ''
-    task_id = task.task_id
+    # task_id = task.task_id
 
     """get zipfile from XContest server"""
     site_id, takeoff_id, date = get_xc_parameters(task_id)
     login_name = Defines.XC_LOGIN
     password = Defines.XC_password
-    zip_name = 'igc_from_xc.zip'
-    zipfile = path.join(temp_folder, zip_name)
+    zip_name = f'xcontest-{task_id}.zip'
+    zipfile = Path(temp_folder, zip_name)
 
     get_zip(site_id, takeoff_id, date, login_name, password, zipfile)
     return zipfile

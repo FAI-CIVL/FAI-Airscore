@@ -5,25 +5,34 @@
 {% endblock %}
 
 {% block head %}
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.1.0/dist/leaflet.css"
-       integrity="sha512-wcw6ts8Anuw10Mzh9Ytw4pylW8+NAD4ch3lqm9lzAsTxg0GFeJgoAtxuCLREZSC5lUXdVyo/7yfsqFjQ4S+aKw=="
-       crossorigin=""/>
-       <!-- Make sure you put this AFTER Leaflet's CSS -->
-
-    <!--<script src="/static/leaflet.elevation-0.0.4.js" crossorigin="anonymous"></script>-->
-    <link rel="stylesheet" href="/static/css/BsMultiSelect.css" crossorigin="anonymous">
 {% endblock %}
 
+{% block css %}
+    {{map.header|safe}}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@dashboardcode/bsmultiselect@0.6.0/dist/css/BsMultiSelect.min.css">
+{% endblock %}
+
+{% block back %}
+    <a href="/task_result/{{task.id}}">Back to results</a>
+{% endblock %}
+
+{% block header %}Track Map: {{task.name}} {{pilot.name}}{% endblock %}
+
 {% block content %}
-<h1>Track Map: {{task}} {{pilot}}</h1>
-<div id="map" style="width:90%; margin: auto; border: none;">
-    {{map|safe}}
+{% if not full_tracklog %}
+<div id="full_tracklog">
+    <button class="btn btn-primary" style="margin-right: 0; margin-left:auto; display:block;" id="full_tracklog_button" onclick="post('/map/{{pilot.id}}-{{task.id}}', {'full': 1})">Full Tracklog Map</button>
+</div>
+{% endif %}
+
+<div id="map" style="position: relative; width: 100%; height: 600px; margin: auto; border: none;">
+    {{map.html|safe}}
 </div>
 
 <form action="/" method="post">
 <div class="container">
    <div class="form-group row">
-                        <label class="col-form-label col-sm-2" for="edit-states1-id">Add Tracks</label>
+                        <label class="col-form-label col-sm-2" id="edit-states1-id">Add Tracks</label>
                         <div class="col-sm-10">
                             <select name="tracks" id="select-tracks-id" class="form-control test"  multiple="multiple" style="display: none;">
                             {%for t in other_tracks%}
@@ -42,8 +51,8 @@
     <thead>
       <tr>
         <th scope="col">Waypoint</th>
-        <th scope="col">GPS Alt</th>
-        <th scope="col">Baro Alt</th>
+        <th scope="col">Alt</th>
+        <th scope="col"> - </th>
         <th scope="col">Time of day</th>
         <th scope="col">Straight line dist<br> from previous (km)</th>
         <th scope="col">Time from previous</th>
@@ -51,29 +60,34 @@
       </tr>
     </thead>
     <tbody id=wpt_achieved_table_body>
-
       {%for w in wpt_achieved %}
         <tr>
-          <td>{{w[4]}}</td>
-          <td>{{w[2]}}</td>
           <td>{{w[3]}}</td>
+          <td>{{w[2]}}</td>
+          <td> - </td>
           <td>{{w[5]}}</td>
+          <td>{{w[7]}}</td>
           <td>{{w[8]}}</td>
           <td>{{w[9]}}</td>
-          <td>{{w[10]}}</td>
         </tr>
       {% endfor %}
-
     </tbody>
   </table>
 </div>
+{% endblock %}
 
+{% block js %}
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@dashboardcode/bsmultiselect@0.6.0/dist/js/BsMultiSelect.min.js"></script>
+    <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 
-<script>var $multiSelects = $("select[multiple='multiple']");
+<script>
+var $multiSelects = $("select[multiple='multiple']");
 function install(){
                 $multiSelects.bsMultiSelect();
 }
-install();</script>
+install();
+</script>
 
 <script>
   tracks=[]
@@ -97,14 +111,37 @@ install();</script>
 });
 </script>
 
-{% endblock %}
+<script>
+    {{map.script|safe}}
+</script>
 
-{% block js %}
-{% include "js.html" %}
-    <script type="text/javascript" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
-    <script type="text/javascript" src="/static/js/BsMultiSelect.js"></script>
-    <script src="https://unpkg.com/leaflet@1.1.0/dist/leaflet.js"
-      integrity="sha512-mNqn2Wg7tSToJhvHcqfzLMU6J4mkOImSPTxVZAdo+lcPlk+GhZmYgACEe0x35K7YzW1zJ7XyJV/TT1MrdXvMcA=="
-      crossorigin=""></script>
-     <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script>
+function post(path, params) {
+  var csrftoken = $('meta[name=csrf-token]').attr('content');
+  document.getElementById("full_tracklog_button").innerHTML="Loading...";
+  const form = document.createElement('form');
+  form.method = 'post';
+  form.action = path;
+
+  const hiddenField = document.createElement('input');
+  hiddenField.type = 'hidden';
+  hiddenField.name = 'csrf_token';
+  hiddenField.value = csrftoken;
+  form.appendChild(hiddenField);
+
+  for (const key in params) {
+    if (params.hasOwnProperty(key)) {
+      const hiddenField = document.createElement('input');
+      hiddenField.type = 'hidden';
+      hiddenField.name = key;
+      hiddenField.value = params[key];
+      form.appendChild(hiddenField);
+    }
+  }
+
+  document.body.appendChild(form);
+  form.submit();
+}
+</script>
+
 {% endblock %}

@@ -23,98 +23,23 @@ Stuart Mackintosh - Antonio Golfari
 
 """
 
+from .participant import Participant
 import json
 from collections import Counter
 from os import path, makedirs
-
 import jsonpickle
-from sqlalchemy import and_
-from sqlalchemy.exc import SQLAlchemyError
-
 from Defines import MAPOBJDIR
 from airspace import AirspaceCheck
 from calcUtils import string_to_seconds, sec_to_time
-from db_tables import TblTaskResult
+from db.tables import TblTaskResult
 from formulas.libs.leadcoeff import LeadCoeff
-from myconn import Database
+from db.conn import db_session
 from route import in_goal_sector, start_made_civl, tp_made_civl, tp_time_civl, get_shortest_path, distance_flown
+from .waypointachieved import WaypointAchieved
+from .notification import Notification
 
 
-# from notification import Notification
-
-
-class Tp(object):
-    def __init__(self, task):
-        self.turnpoints = task.turnpoints
-        self.optimised_turnpoints = task.optimised_turnpoints
-        self.pointer = 0
-
-    @property
-    def next(self):
-        return self.turnpoints[self.pointer]
-
-    @property
-    def name(self):
-        if self.type == 'launch':
-            return 'Left Launch'
-        elif self.type == 'speed':
-            return 'SSS'
-        elif self.type == 'endspeed':
-            return 'ESS'
-        if self.type == 'goal':
-            return 'Goal'
-        elif self.type == 'waypoint':
-            wp = [tp for tp in self.turnpoints if tp.type == 'waypoint']
-            return 'TP{:02}'.format(wp.index(self.next) + 1)
-
-    @property
-    def total_number(self):
-        return len(self.turnpoints)
-
-    @property
-    def type(self):
-        return self.turnpoints[self.pointer].type
-
-    @property
-    def last_made(self):
-        return self.turnpoints[self.pointer] if self.pointer == 0 else self.turnpoints[self.pointer - 1]
-
-    @property
-    def last_made_index(self):
-        return 0 if self.pointer == 0 else self.pointer - 1
-
-    @property
-    def start_index(self):
-        if any(x for x in self.turnpoints if x.type == 'speed'):
-            return self.turnpoints.index(next(x for x in self.turnpoints if x.type == 'speed'))
-        else:
-            return None
-
-    @property
-    def ess_index(self):
-        if any(x for x in self.turnpoints if x.type == 'endspeed'):
-            return self.turnpoints.index(next(x for x in self.turnpoints if x.type == 'endspeed'))
-        else:
-            return None
-
-    @property
-    def start_done(self):
-        return self.start_index < self.pointer
-
-    @property
-    def ess_done(self):
-        return self.ess_index < self.pointer
-
-    @property
-    def made_all(self):
-        return True if self.pointer == self.total_number else False
-
-    def move_to_next(self):
-        if self.pointer < len(self.turnpoints):
-            self.pointer += 1
-
-
-class FlightResult(object):
+class FlightResult(Participant):
     """Set of statistics about a flight with respect a task.
     Attributes:
         real_start_time: time the pilot actually crossed relevant start gate.
@@ -127,7 +52,7 @@ class FlightResult(object):
 
     def __init__(self, first_time=None, real_start_time=None, SSS_time=0, ESS_time=None, goal_time=None,
                  last_time=None, best_waypoint_achieved='No waypoints achieved', fixed_LC=0, lead_coeff=0,
-                 distance_flown=0, last_altitude=0):
+                 distance_flown=0, last_altitude=0, track_id=None, track_file=None, **kwargs):
         """
 
         :type lead_coeff: int
@@ -155,28 +80,33 @@ class FlightResult(object):
         self.last_altitude = last_altitude
         self.landing_time = 0
         self.landing_altitude = 0
-        # self.jump_the_gun = jump_the_gun  # not used at the moment
-        self.result_type = 'lo'
+        self.result_type = 'nyp'
         self.score = 0
         self.departure_score = 0
         self.arrival_score = 0
         self.distance_score = 0
         self.time_score = 0
         self.penalty = 0
-        # self.percentage_penalty = 0
         self.airspace_plot = []
         self.infringements = []  # Infringement for each space
-        # self.comment = ''  # should this be a list?
         self.notifications = []  # notification objects
         self.still_flying_at_deadline = False
-        # self.ID = None  # Could delete?
-        # self.par_id = par_id  # Could delete?
-        # self.track_file = track_file  # Could delete?
+        self.track_id = track_id
+        self.track_file = track_file
+
+        super().__init__(**kwargs)
 
     def __setattr__(self, attr, value):
         property_names = [p for p in dir(FlightResult) if isinstance(getattr(FlightResult, p), property)]
-        if attr not in property_names:
+        if attr in ('name', 'glider') and type(value) is str:
+            self.__dict__[attr] = value.title()
+        elif attr in ('nat', 'sex') and type(value) is str:
+            self.__dict__[attr] = value.upper()
+        elif attr not in property_names:
             self.__dict__[attr] = value
+
+    def as_dict(self):
+        return self.__dict__
 
     @property
     def ss_time(self):
@@ -230,53 +160,57 @@ class FlightResult(object):
         else:
             return 0
 
-    # @property
-    # def time_after(self):
-    #     if self.ESS_time:
-    #         return self.ESS_time - self.SSS_time
-    #     else:
-    #         return 0
-
     @property
     def waypoints_made(self):
         if self.waypoints_achieved:
-            return len(Counter(el[0] for el in self.waypoints_achieved if not el[0] == 'Left Launch'))
+            return len(Counter(el.name for el in self.waypoints_achieved if not el.name == 'Left Launch'))
         else:
             return 0
 
-    def as_dict(self):
-        return self.__dict__
-
     @classmethod
-    def from_fsdb(cls, res, SS_distance=None, dep=None, arr=None, offset=0):
-        """ Creates Results from FSDB FsPartecipant element, which is in xml format.
+    def from_participant(cls, participant: Participant):
+        """ Creates FlightResult obj from Participant obj.
+        """
+        if isinstance(participant, Participant):
+            result = cls()
+            result.as_dict().update(participant.as_dict())
+            return result
+
+    @staticmethod
+    def from_fsdb(elem, task):
+        """ Creates Results from FSDB FsParticipant element, which is in xml format.
             Unfortunately the fsdb format isn't published so much of this is simply an
             exercise in reverse engineering.
         """
-        from notification import Notification
+        from pilot.notification import Notification
+        offset = task.time_offset
+        dep = task.formula.formula_departure
+        arr = task.formula.formula_arrival
 
-        result = cls()
-        ID = int(res.get('id'))
+        result = FlightResult()
+        result.ID = int(elem.get('id'))
 
-        if res.find('FsFlightData') is None and res.find('FsResult') is None:
+        if elem.find('FsFlightData') is None and elem.find('FsResult') is None:
             '''pilot is abs'''
-            print(f"ID {ID}: ABS")
+            print(f"ID {result.ID}: ABS")
             result.result_type = 'abs'
             return result
-        elif res.find('FsFlightData') is None or res.find('FsFlightData').get('tracklog_filename') in [None, '']:
-            print(f"ID {ID}: No track")
-            print(f" - distance: {float(res.find('FsResult').get('distance'))}")
-            if float(res.find('FsResult').get('distance')) > 0:
+        elif elem.find('FsFlightData') is None or elem.find('FsFlightData').get('tracklog_filename') in [None, '']:
+            print(f"ID {result.ID}: No track")
+            print(f" - distance: {float(elem.find('FsResult').get('distance'))}")
+            if float(elem.find('FsResult').get('distance')) > 0:
                 '''pilot is min dist'''
-                print(f"ID {ID}: Min Dist")
+                print(f"ID {result.ID}: Min Dist")
                 result.result_type = 'mindist'
             else:
                 '''pilot is dnf'''
-                print(f"ID {ID}: DNF")
+                print(f"ID {result.ID}: DNF")
                 result.result_type = 'dnf'
             return result
 
-        d = res.find('FsFlightData')
+        if elem.find('FsFlightData') is not None:
+            result.track_file = elem.find('FsFlightData').get('tracklog_filename')
+        d = elem.find('FsFlightData')
         result.real_start_time = None if not d.get('started_ss') else string_to_seconds(d.get('started_ss')) - offset
         result.last_altitude = int(d.get('last_tracklog_point_alt')
                                    if d.get('last_tracklog_point_alt') is not None else 0)
@@ -291,9 +225,9 @@ class FlightResult(object):
             result.goal_time = (None if not d.get('finished_task')
                                 else string_to_seconds(d.get('finished_task')) - offset)
             result.result_type = 'goal'
-        if res.find('FsResult') is not None:
+        if elem.find('FsResult') is not None:
             '''reading flight data'''
-            r = res.find('FsResult')
+            r = elem.find('FsResult')
             # result['rank'] = int(r.get('rank'))
             result.score = float(r.get('points'))
             result.total_distance = float(r.get('distance')) * 1000  # in meters
@@ -303,8 +237,8 @@ class FlightResult(object):
             if result.SSS_time is not None:
                 result.ESS_time = (None if not r.get('finished_ss')
                                    else string_to_seconds(r.get('finished_ss')) - offset)
-                if SS_distance is not None and result.ESS_time is not None and result.ESS_time > 0:
-                    result.speed = (SS_distance / 1000) / ((result.ESS_time - result.SSS_time) / 3600)
+                if task.SS_distance is not None and result.ESS_time is not None and result.ESS_time > 0:
+                    result.speed = (task.SS_distance / 1000) / ((result.ESS_time - result.SSS_time) / 3600)
             else:
                 result.ESS_time = None
             result.last_altitude = int(r.get('last_altitude_above_goal'))
@@ -331,35 +265,59 @@ class FlightResult(object):
             else:
                 result.departure_score = 0  # not necessary as it it initialized to 0
             result.arrival_score = float(r.get('arrival_points')) if arr != 'off' else 0
-
         return result
 
     @staticmethod
-    def read(res_id):
+    def read(par_id: int, task_id: int):
         """reads result from database"""
-        from db_tables import FlightResultView as R
-
+        from db.tables import FlightResultView as R, TblParticipant as P
         result = FlightResult()
-        with Database() as db:
-            # get result details.
-            q = db.session.query(R)
-            db.populate_obj(result, q.get(res_id))
+        with db_session() as db:
+            q = db.query(R).filter_by(par_id=par_id, task_id=task_id).first()
+            if not q:
+                '''we do not have a result. Creating obj from Participant'''
+                q = P.get_by_id(par_id)
+            q.populate(result)
         return result
 
     @staticmethod
-    def from_dict(d):
-        from notification import Notification
+    def from_dict(d: dict):
         result = FlightResult()
         for key, value in d.items():
             if key == 'notifications' and value:
                 for n in value:
                     result.notifications.append(Notification.from_dict(n))
+            elif key == 'waypoints_achieved' and value:
+                for n in value:
+                    result.waypoints_achieved.append(WaypointAchieved.from_dict(n))
             elif hasattr(result, key):
                 setattr(result, key, value)
         return result
 
     @staticmethod
-    def check_flight(flight, task, airspace_obj=None, deadline=None, print=print):
+    def from_result(result):
+        """ creates a Pilot obj. from result dict in Task Result json file"""
+        return FlightResult.from_dict(result)
+
+    @staticmethod
+    def from_flight_check(par_id, flight, task, airspace_obj=None, deadline=None, print=print):
+        """ creates a FlightResult obj. from result dict in Task Result json file"""
+        result = FlightResult.from_participant(Participant.read(par_id))
+        return result.check_flight(flight, task, airspace_obj, deadline, print)
+
+    def reset(self):
+        init = FlightResult()
+        attr_list = ['first_time', 'real_start_time', 'SSS_time', 'ESS_time', 'ESS_rank', 'speed', 'goal_time',
+                     'last_time', 'best_waypoint_achieved', 'waypoints_achieved', 'fixed_LC', 'lead_coeff',
+                     'distance_flown', 'best_distance_time', 'stopped_distance', 'stopped_altitude', 'total_distance',
+                     'max_altitude', 'ESS_altitude', 'goal_altitude', 'last_altitude', 'landing_time',
+                     'landing_altitude', 'result_type', 'score', 'departure_score', 'arrival_score', 'distance_score',
+                     'time_score', 'penalty', 'airspace_plot', 'infringements', 'notifications',
+                     'still_flying_at_deadline']
+        for attr in attr_list:
+            setattr(self, attr, getattr(init, attr))
+
+    def check_flight(self, flight, task, airspace_obj=None, deadline=None, print=print):
         """ Checks a Flight object against the task.
             Args:
                    :param flight: a Flight object
@@ -372,14 +330,16 @@ class FlightResult(object):
             Returns:
                     a list of GNSSFixes of when turnpoints were achieved.
         """
-        from notification import Notification
+        from .flightpointer import FlightPointer
 
         ''' Altitude Source: '''
         alt_source = 'GPS' if task.formula.scoring_altitude is None else task.formula.scoring_altitude
         alt_compensation = 0 if alt_source == 'GPS' or task.QNH == 1013.25 else task.alt_compensation
 
         '''initialize'''
-        result = FlightResult()
+        if not self.result_type == 'nyp':
+            self.reset()
+        self.result_type = 'lo'
         tolerance = task.formula.tolerance or 0
         min_tol_m = task.formula.min_tolerance or 0
         max_jump_the_gun = task.formula.max_JTG or 0  # seconds
@@ -388,6 +348,7 @@ class FlightResult(object):
         percentage_complete = 0
 
         if not task.optimised_turnpoints:
+            # this should not happen
             task.calculate_optimised_task_length()
         distances2go = task.distances_to_go  # Total task Opt. Distance, in legs list
 
@@ -397,11 +358,12 @@ class FlightResult(object):
         else:
             lead_coeff = None
 
-        result.first_time = flight.fixes[
-            0].rawtime if not hasattr(flight, 'takeoff_fix') else flight.takeoff_fix.rawtime  # time of flight origin
-        result.landing_time = flight.landing_fix.rawtime
-        result.landing_altitude = (flight.landing_fix.gnss_alt if alt_source == 'GPS'
-                                   else flight.landing_fix.press_alt + alt_compensation)
+        '''flight origin'''
+        self.first_time = flight.fixes[0].rawtime if not hasattr(flight, 'takeoff_fix') else flight.takeoff_fix.rawtime
+        '''flight end'''
+        self.landing_time = flight.landing_fix.rawtime
+        self.landing_altitude = (flight.landing_fix.gnss_alt if alt_source == 'GPS'
+                                 else flight.landing_fix.press_alt + alt_compensation)
 
         '''Stopped task managing'''
         if task.stopped_time:
@@ -415,14 +377,14 @@ class FlightResult(object):
             total_distance = 0
 
         '''Turnpoint managing'''
-        tp = Tp(task)
+        tp = FlightPointer(task)
 
         '''Airspace check managing'''
         airspace_plot = []
         infringements_list = []
         airspace_penalty = 0
         if task.airspace_check:
-            if task.airspace_check and not airspace_obj:
+            if not airspace_obj and not deadline:
                 print(f'We should not create airspace here')
                 airspace_obj = AirspaceCheck.from_task(task)
         total_fixes = len(flight.fixes)
@@ -443,9 +405,9 @@ class FlightResult(object):
                 max_altitude = alt
 
             '''pilot flying'''
-            if next_fix.rawtime < result.first_time:
+            if next_fix.rawtime < self.first_time:
                 continue
-            if result.landing_time and next_fix.rawtime > result.landing_time:
+            if self.landing_time and next_fix.rawtime > self.landing_time:
                 '''pilot landed out'''
                 # print(f'fix {i}: landed out - {next_fix.rawtime} - {alt}')
                 break
@@ -457,13 +419,13 @@ class FlightResult(object):
             at task stop time.
             '''
             if task.stopped_time and next_fix.rawtime > deadline and not tp.ess_done:
-                result.still_flying_at_deadline = True
+                self.still_flying_at_deadline = True
                 break
 
             '''check if task deadline has passed'''
             if task.task_deadline < next_fix.rawtime:
                 # Task has ended
-                result.still_flying_at_deadline = True
+                self.still_flying_at_deadline = True
                 break
 
             '''check if pilot has arrived in goal (last turnpoint) so we can stop.'''
@@ -490,10 +452,8 @@ class FlightResult(object):
                     # could set this in the DB or even formula if needed..???
                     tp.next.radius = 200  # meters
                     if tp.next.in_radius(my_fix, tolerance, min_tol_m):
-                        result.waypoints_achieved.append(
-                            [tp.name, my_fix.rawtime, alt])  # pilot has achieved turnpoint
+                        self.waypoints_achieved.append(create_waypoint_achieved(my_fix, tp, my_fix.rawtime, alt))
                         tp.move_to_next()
-
                 else:
                     tp.move_to_next()
 
@@ -512,25 +472,27 @@ class FlightResult(object):
             - task is elapsed time
             '''
             if pilot_can_start(task, tp, my_fix):
-                # print(f'time: {my_fix.rawtime}, start: {task.start_time} | Interval: {task.SS_interval} | my start: {result.real_start_time} | better_start: {pilot_get_better_start(task, my_fix.rawtime, result.SSS_time)} | can start: {pilot_can_start(task, tp, my_fix)} can restart: {pilot_can_restart(task, tp, my_fix, result)} | tp: {tp.name}')
+                # print(f'time: {my_fix.rawtime}, start: {task.start_time} | Interval: {task.SS_interval} | my start: {self.real_start_time} | better_start: {pilot_get_better_start(task, my_fix.rawtime, self.SSS_time)} | can start: {pilot_can_start(task, tp, my_fix)} can restart: {pilot_can_restart(task, tp, my_fix, self)} | tp: {tp.name}')
                 if start_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m):
                     time = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
-                    result.waypoints_achieved.append([tp.name, time, alt])  # pilot has started
-                    result.real_start_time = time
-                    print(f"Pilot started SS at {sec_to_time(result.real_start_time)}")
-                    result.best_distance_time = time
+                    self.waypoints_achieved.append(
+                        create_waypoint_achieved(my_fix, tp, time, alt))  # pilot has started
+                    self.real_start_time = time
+                    print(f"Pilot started SS at {sec_to_time(self.real_start_time)}")
+                    self.best_distance_time = time
                     tp.move_to_next()
 
-            elif pilot_can_restart(task, tp, my_fix, result):
-                # print(f'time: {my_fix.rawtime}, start: {task.start_time} | Interval: {task.SS_interval} | my start: {result.real_start_time} | better_start: {pilot_get_better_start(task, my_fix.rawtime, result.SSS_time)} | can start: {pilot_can_start(task, tp, my_fix)} can restart: {pilot_can_restart(task, tp, my_fix, result)} | tp: {tp.name}')
+            elif pilot_can_restart(task, tp, my_fix, self):
+                # print(f'time: {my_fix.rawtime}, start: {task.start_time} | Interval: {task.SS_interval} | my start: {self.real_start_time} | better_start: {pilot_get_better_start(task, my_fix.rawtime, self.SSS_time)} | can start: {pilot_can_start(task, tp, my_fix)} can restart: {pilot_can_restart(task, tp, my_fix, self)} | tp: {tp.name}')
                 if start_made_civl(my_fix, next_fix, tp.last_made, tolerance, min_tol_m):
                     tp.pointer -= 1
                     time = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
-                    result.waypoints_achieved.pop()
-                    result.waypoints_achieved.append([tp.name, time, alt])  # pilot has started again
-                    result.real_start_time = time
-                    result.best_distance_time = time
-                    print(f"Pilot restarted SS at {sec_to_time(result.real_start_time)}")
+                    self.waypoints_achieved.pop()
+                    self.waypoints_achieved.append(
+                        create_waypoint_achieved(my_fix, tp, time, alt))  # pilot has started again
+                    self.real_start_time = time
+                    self.best_distance_time = time
+                    print(f"Pilot restarted SS at {sec_to_time(self.real_start_time)}")
                     if lead_coeff:
                         lead_coeff.reset()
                     tp.move_to_next()
@@ -541,7 +503,8 @@ class FlightResult(object):
                         and tp.next.type in ('endspeed', 'waypoint')):
                     if tp_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m):
                         time = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
-                        result.waypoints_achieved.append([tp.name, time, alt])  # pilot has achieved turnpoint
+                        self.waypoints_achieved.append(
+                            create_waypoint_achieved(my_fix, tp, time, alt))  # pilot has achieved turnpoint
                         print(f"Pilot took {tp.name} at {sec_to_time(time)} at {alt}m")
                         tp.move_to_next()
 
@@ -549,8 +512,9 @@ class FlightResult(object):
                     if ((tp.next.shape == 'circle' and tp_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m))
                             or
                             (tp.next.shape == 'line' and (in_goal_sector(task, next_fix)))):
-                        result.waypoints_achieved.append([tp.name, next_fix.rawtime, alt])  # pilot has achieved goal
-                        result.best_distance_time = next_fix.rawtime
+                        self.waypoints_achieved.append(
+                            create_waypoint_achieved(next_fix, tp, next_fix.rawtime, alt))  # pilot has achieved goal
+                        self.best_distance_time = next_fix.rawtime
                         print(f"Goal at {sec_to_time(next_fix.rawtime)}")
                         break
 
@@ -571,13 +535,13 @@ class FlightResult(object):
                                                     task.turnpoints[tp.pointer], distances2go)
                     # print(f'time: {next_fix.rawtime} | fix: {tp.name} | Simplified Distance used')
 
-                if fix_dist_flown > result.distance_flown:
+                if fix_dist_flown > self.distance_flown:
                     '''time of trackpoint with shortest distance to ESS'''
-                    result.best_distance_time = next_fix.rawtime
+                    self.best_distance_time = next_fix.rawtime
                     '''updating best distance flown'''
-                    # result.distance_flown = max(fix_dist_flown,
+                    # self.distance_flown = max(fix_dist_flown,
                     #                             task.partial_distance[tp.last_made_index])  # old approach
-                    result.distance_flown = fix_dist_flown
+                    self.distance_flown = fix_dist_flown
 
                 '''stopped task
                 ∀p : p ∈ PilotsLandedBeforeGoal :
@@ -597,7 +561,7 @@ class FlightResult(object):
             LC = taskTime(i)*(bestDistToESS(i-1)^2 - bestDistToESS(i)^2 )
             i : i ? TrackPoints In SS'''
             if lead_coeff and tp.start_done and not tp.ess_done:
-                lead_coeff.update(result, my_fix, next_fix)
+                lead_coeff.update(self, my_fix, next_fix)
 
             '''Airspace Check'''
             if task.airspace_check and airspace_obj:
@@ -610,7 +574,9 @@ class FlightResult(object):
                     infringement_type = plot[3]
                     dist = plot[4]
                     separation = plot[5]
-                    infringements_list.append([next_fix, airspace_name, infringement_type, dist, penalty, separation])
+                    infringements_list.append([next_fix, alt, airspace_name, infringement_type,
+                                               dist, penalty, separation])
+                    # print([next_fix, alt, airspace_name, infringement_type, dist, penalty])
                 else:
                     ''''''
                     # map_fix.extend([None, None, None, None, None])
@@ -618,15 +584,15 @@ class FlightResult(object):
 
         '''final results'''
         print("100|% complete")
-        result.max_altitude = max_altitude
-        result.last_altitude = 0 if 'alt' not in locals() else alt
-        result.last_time = 0 if 'next_fix' not in locals() else next_fix.rawtime
+        self.max_altitude = max_altitude
+        self.last_altitude = 0 if 'alt' not in locals() else alt
+        self.last_time = 0 if 'next_fix' not in locals() else next_fix.rawtime
 
         '''manage stopped tasks'''
-        if task.stopped_time and result.still_flying_at_deadline:
-            result.stopped_distance = stopped_distance
-            result.stopped_altitude = stopped_altitude
-            result.total_distance = total_distance
+        if task.stopped_time and self.still_flying_at_deadline:
+            self.stopped_distance = stopped_distance
+            self.stopped_altitude = stopped_altitude
+            self.total_distance = total_distance
 
         if tp.start_done:
             '''
@@ -635,59 +601,56 @@ class FlightResult(object):
             if multistart, the first time of the last gate pilot made
             if elapsed time, the time of last fix on start
             SS Time: the gate time'''
-            result.SSS_time = task.start_time
+            self.SSS_time = task.start_time
 
             if task.task_type == 'RACE' and task.SS_interval:
-                result.SSS_time += max(0, (start_number_at_time(task, result.real_start_time) - 1) * task.SS_interval)
+                self.SSS_time += max(0, (start_number_at_time(task, self.real_start_time) - 1) * task.SS_interval)
 
             elif task.task_type == 'ELAPSED TIME':
-                result.SSS_time = result.real_start_time
+                self.SSS_time = self.real_start_time
 
             '''manage jump the gun'''
-            # print(f'wayponts made: {result.waypoints_achieved}')
-            if max_jump_the_gun > 0 and result.real_start_time < result.SSS_time:
-                diff = result.SSS_time - result.real_start_time
+            # print(f'wayponts made: {self.waypoints_achieved}')
+            if max_jump_the_gun > 0 and self.real_start_time < self.SSS_time:
+                diff = self.SSS_time - self.real_start_time
                 penalty = diff * jtg_penalty_per_sec
                 # check
                 print(f'jump the gun: {diff} - valid: {diff <= max_jump_the_gun} - penalty: {penalty}')
                 comment = f"Jump the gun: {diff} seconds. Penalty: {penalty} points"
-                result.notifications.append(Notification(notification_type='jtg',
-                                                         flat_penalty=penalty, comment=comment))
+                self.notifications.append(Notification(notification_type='jtg', flat_penalty=penalty, comment=comment))
 
             '''ESS Time'''
-            if any(e[0] == 'ESS' for e in result.waypoints_achieved):
-                # result.ESS_time, ess_altitude = min([e[1] for e in result.waypoints_achieved if e[0] == 'ESS'])
-                result.ESS_time, result.ESS_altitude = min(
-                    [(x[1], x[2]) for x in result.waypoints_achieved if x[0] == 'ESS'], key=lambda t: t[0])
-                result.speed = (task.SS_distance / 1000) / (result.ss_time / 3600)
+            if any(e.name == 'ESS' for e in self.waypoints_achieved):
+                # self.ESS_time, ess_altitude = min([e[1] for e in self.waypoints_achieved if e[0] == 'ESS'])
+                self.ESS_time, self.ESS_altitude = min([(x.rawtime, x.altitude) for x in self.waypoints_achieved
+                                                        if x.name == 'ESS'], key=lambda t: t[0])
+                self.speed = (task.SS_distance / 1000) / (self.ss_time / 3600)
 
                 '''Distance flown'''
                 ''' ?p:p?PilotsLandingBeforeGoal:bestDistancep = max(minimumDistance, taskDistance-min(?trackp.pointi shortestDistanceToGoal(trackp.pointi)))
                     ?p:p?PilotsReachingGoal:bestDistancep = taskDistance
                 '''
-                if any(e[0] == 'Goal' for e in result.waypoints_achieved):
-                    # result.distance_flown = distances2go[0]
-                    result.distance_flown = task.opt_dist
-                    result.goal_time, result.goal_altitude = min(
-                        [(x[1], x[2]) for x in result.waypoints_achieved if x[0] == 'Goal'], key=lambda t: t[0])
-                    result.result_type = 'goal'
-        if result.result_type != 'goal':
-            print(f"Pilot landed after {result.distance_flown / 1000:.2f}km")
+                if any(e.name == 'Goal' for e in self.waypoints_achieved):
+                    # self.distance_flown = distances2go[0]
+                    self.distance_flown = task.opt_dist
+                    self.goal_time, self.goal_altitude = min([(x.rawtime, x.altitude)
+                                                              for x in self.waypoints_achieved
+                                                              if x.name == 'Goal'], key=lambda t: t[0])
+                    self.result_type = 'goal'
+        if self.result_type != 'goal':
+            print(f"Pilot landed after {self.distance_flown / 1000:.2f}km")
 
-        result.best_waypoint_achieved = str(result.waypoints_achieved[-1][0]) if result.waypoints_achieved else None
+        self.best_waypoint_achieved = str(self.waypoints_achieved[-1].name) if self.waypoints_achieved else None
 
         if lead_coeff:
-            result.fixed_LC = lead_coeff.summing
+            self.fixed_LC = lead_coeff.summing
 
         if task.airspace_check:
-            infringements, notifications, penalty = airspace_obj.get_infringements_result_new(infringements_list)
-            result.infringements = infringements
-            result.notifications.extend(notifications)
-            # result.percentage_penalty = penalty
-            # result.airspace_plot = airspace_plot
-        return result
+            infringements, notifications, penalty = airspace_obj.get_infringements_result(infringements_list)
+            self.infringements = infringements
+            self.notifications.extend(notifications)
 
-    def to_geojson_result(self, track, task, second_interval=5):
+    def to_geojson_result(self, track, task, pilot_info=None, second_interval=5):
         """Dumps the flight to geojson format used for mapping.
         Contains tracklog split into pre SSS, pre Goal and post goal parts, thermals, takeoff/landing,
         result object, waypoints achieved, and bounds
@@ -695,52 +658,90 @@ class FlightResult(object):
         second_interval = resolution of tracklog. default one point every 5 seconds. regardless it will
                             keep points where waypoints were achieved.
         returns the Json string."""
-
         from mapUtils import result_to_geojson
-        from db_tables import TblParticipant as p
 
         info = {'taskid': task.id, 'task_name': task.task_name, 'comp_name': task.comp_name}
-
-        with Database() as db:
-            pilot_details = (db.session.query(p.name, p.nat, p.sex, p.glider)
-                             .filter(p.par_id == track.par_id, p.comp_id == task.comp_id).one())
-        pilot_details = pilot_details._asdict()
-        info['pilot_name'] = pilot_details['name']
-        info['pilot_nat'] = pilot_details['nat']
-        info['pilot_sex'] = pilot_details['sex']
-        info['pilot_parid'] = track.par_id
-        info['Glider'] = pilot_details['glider']
-
-        tracklog, thermals, takeoff_landing, bbox, waypoint_achieved = result_to_geojson(self, track, task)
-        airspace_plot = self.airspace_plot
-
-        data = {'info': info, 'tracklog': tracklog, 'thermals': thermals, 'takeoff_landing': takeoff_landing,
-                'result': jsonpickle.dumps(self), 'bounds': bbox, 'waypoint_achieved': waypoint_achieved,
-                'airspace': airspace_plot}
-
+        if pilot_info:
+            info.update(dict(pilot_name=pilot_info.name,
+                             pilot_nat=pilot_info.nat,
+                             pilot_sex=pilot_info.sex,
+                             pilot_parid=pilot_info.par_id,
+                             Glider=pilot_info.glider))
+        else:
+            info = {}
+        tracklog, thermals, takeoff_landing, bbox, waypoint_achieved, infringements = result_to_geojson(self,
+                                                                                                        task,
+                                                                                                        track.flight,
+                                                                                                        second_interval)
+        data = {'info': info,
+                'tracklog': tracklog,
+                'thermals': thermals,
+                'takeoff_landing': takeoff_landing,
+                'bounds': bbox,
+                'waypoint_achieved': waypoint_achieved,
+                'infringements': infringements
+                }
         return data
+
+    def save_tracklog_map_file(self, task, flight=None, second_interval=5):
+        """ Creates the file to be used to display pilot's track on map"""
+        from igc_lib import Flight
+        from pathlib import Path
+        from Defines import MAPOBJDIR
+        import json
+        if self.result_type not in ('abs', 'dnf', 'mindist', 'nyp'):
+            ID = self.par_id if not self.ID else self.ID  # registration needs to check that all pilots
+            # have a unique ID, with option to use par_id as ID for all pilots if no ID is given
+            print(f"{ID}. {self.name}: ({self.track_file})")
+            if not flight:
+                filename = Path(task.file_path, self.track_file)
+                '''load track file'''
+                flight = Flight.create_from_file(filename)
+            data = create_tracklog_map_file(self, task, flight, second_interval)
+            res_path = Path(MAPOBJDIR, 'tracks', str(task.id))
+            """check if directory already exists"""
+            if not res_path.is_dir():
+                res_path.mkdir(mode=0o755)
+            """creates a name for the file.
+            par_id.track"""
+            filename = f'{self.par_id}.track'
+            fullname = Path(res_path, filename)
+            """copy file"""
+            try:
+                with open(fullname, 'w') as f:
+                    json.dump(data, f)
+                return fullname
+            except:
+                print('Error saving file:', fullname)
 
     def save_tracklog_map_result_file(self, data, trackid, taskid):
         """save tracklog map result file in the correct folder as defined by DEFINES"""
-
-        res_path = f"{MAPOBJDIR}tracks/{taskid}/"
-
+        from pathlib import Path
+        # res_path = f"{MAPOBJDIR}tracks/{taskid}/"
+        res_path = Path(MAPOBJDIR, 'tracks', str(taskid))
         """check if directory already exists"""
-        if not path.isdir(res_path):
+        if not res_path.is_dir():
             makedirs(res_path)
         """creates a name for the track
         name_surname_date_time_index.igc
         if we use flight date then we need an index for multiple tracks"""
-
-        filename = 'result_' + str(trackid) + '.track'
-        fullname = path.join(res_path, filename)
-        """copy file"""
+        filename = f'{trackid}.track'
+        fullname = Path(res_path, filename)
         try:
             with open(fullname, 'w') as f:
                 json.dump(data, f)
             return fullname
         except:
             print('Error saving file:', fullname)
+
+    def create_result_dict(self):
+        """ creates dict() with all information"""
+        from result import TaskResult as R
+        result = {x: getattr(self, x) for x in R.results_list if x in dir(self)}
+        result['notifications'] = [n.__dict__ for n in self.notifications]
+        result['waypoints_achieved'] = [dict(name=w.name, lat=w.lat, lon=w.lon, rawtime=w.rawtime,
+                                             altitude=w.altitude) for w in self.waypoints_achieved]
+        return result
 
 
 def pilot_can_start(task, tp, fix):
@@ -809,85 +810,238 @@ def verify_all_tracks(task, lib, airspace=None, print=print):
             task:       Task object
             lib:        Formula library module"""
     from igc_lib import Flight
+    from pathlib import Path
+    pilots = [p for p in task.pilots if p.result_type not in ('abs', 'dnf', 'mindist')]
+    '''check if any track is missing'''
+    if any(not Path(task.file_path, p.track_file).is_file() for p in pilots):
+        print(f"The following tracks are missing from folder {task.file_path}:")
+        for track in [p.track_file for p in pilots if not Path(task.file_path, p.track_file).is_file()]:
+            print(f"{track}")
+        return None
 
     print('getting tracks...')
     number_of_pilots = len(task.pilots)
     for track_number, pilot in enumerate(task.pilots, 1):
         print(f"{track_number}/{number_of_pilots}|track_counter")
-        print(f"type: {pilot.result_type}")
+        # print(f"type: {pilot.result_type}")
         if pilot.result_type not in ('abs', 'dnf', 'mindist'):
-            print(f"{pilot.ID}. {pilot.name}: ({pilot.track.track_file})")
-            filename = path.join(task.file_path, pilot.track.track_file)
+            print(f"{pilot.ID}. {pilot.name}: ({pilot.track_file})")
+            filename = Path(task.file_path, pilot.track_file)
             '''load track file'''
-            pilot.track.flight = Flight.create_from_file(filename)
-            if pilot.track.flight:
-                pilot.track.get_notes()
-                # pilot.track.get_type()
-                if pilot.track.flight.valid:
+            flight = Flight.create_from_file(filename)
+            if flight:
+                pilot.flight_notes = flight.notes
+                if flight.valid:
                     '''check flight against task'''
-                    pilot.result = FlightResult.check_flight(pilot.track.flight, task,
-                                                             airspace_obj=airspace, print=print)
-                elif pilot.track.flight:
-                    print(f'Error in parsing track: {[x for x in pilot.track.notifications]}')
-            '''unload flight object'''
-            pilot.track.flight = None
+                    pilot.check_flight(flight, task, airspace_obj=airspace, print=print)
+                    '''create map file'''
+                    pilot.save_tracklog_map_file(task, flight)
+                elif flight:
+                    print(f'Error in parsing track: {[x for x in flight.notes]}')
     lib.process_results(task)
 
 
 def adjust_flight_results(task, lib, airspace=None):
     """ Called when multi-start or elapsed time task was stopped.
         We need to check again and adjust results of pilots that flew more than task duration"""
+    from igc_lib import Flight
     maxtime = task.duration
     for pilot in task.pilots:
-        if pilot.result.SSS_time:
-            last_time = pilot.result.SSS_time + maxtime
-            if ((not pilot.ESS_time and pilot.last_fix_time > last_time)
+        if pilot.SSS_time:
+            last_time = pilot.SSS_time + maxtime
+            if ((not pilot.ESS_time and pilot.best_distance_time > last_time)
                     or (pilot.ESS_time and pilot.ss_time > maxtime)):
                 '''need to adjust pilot result'''
-                flight = pilot.track.flight
-                adjusted = FlightResult.check_flight(flight, task, airspace_obj=airspace, deadline=last_time)
-                pilot.result.result_type = adjusted.result_type
+                filename = path.join(task.file_path, pilot.track_file)
+                '''load track file'''
+                flight = Flight.create_from_file(filename)
+                pilot.check_flight(flight, task, airspace_obj=airspace, deadline=last_time)
+                # pilot.result_type = adjusted.result_type
+                '''create map file'''
+                pilot.save_tracklog_map_file(task, flight)
     lib.process_results(task)
 
 
-def update_status(par_id: int, task_id: int, status=''):
+def update_status(par_id: int, task_id: int, status: str):
     """Create or update pilot status ('abs', 'dnf', 'mindist')"""
-    with Database() as db:
-        try:
-            result = db.session.query(TblTaskResult).filter(and_(TblTaskResult.par_id == par_id,
-                                                                 TblTaskResult.task_id == task_id)).first()
-            if result:
-                result.result_type = status
-            else:
-                result = TblTaskResult(par_id=par_id, task_id=task_id, result_type=status)
-                db.session.add(result)
-            db.session.flush()
-            return result.track_id
-        except SQLAlchemyError as e:
-            error = str(e.__dict__)
-            print(f"Status update / Insert Error")
-            db.session.rollback()
-            db.session.close()
-            return error
+    result = FlightResult.read(par_id, task_id)
+    result.result_type = status
+    row = TblTaskResult.from_obj(result)
+    row.task_id = task_id
+    row.save_or_update()
+    return row.track_id
 
 
 def delete_track(trackid: int, delete_file=False):
     from trackUtils import get_task_fullpath
     from pathlib import Path
-    from db_tables import TblTaskResult
+    from db.tables import TblTaskResult
     row_deleted = None
-    with Database() as db:
-        try:
-            track = db.session.query(TblTaskResult).filter_by(track_id=trackid).one_or_none()
-            if track:
-                if track.track_file is not None and delete_file:
-                    Path(get_task_fullpath(track.task_id), track.track_file).unlink(missing_ok=True)
-                db.session.delete(track)
-                row_deleted = True
-                db.session.commit()
-        except SQLAlchemyError:
-            print("there was a problem deleting the track")
-            db.session.rollback()
-            db.session.close()
-            return None
+    track = TblTaskResult.get_by_id(trackid)
+    if track:
+        if track.track_file is not None and delete_file:
+            Path(get_task_fullpath(track.task_id), track.track_file).unlink(missing_ok=True)
+        track.delete()
+        row_deleted = True
     return row_deleted
+
+
+def create_waypoint_achieved(fix, tp, time: int, alt: int):
+    """creates a dictionary to be added to result.waypoints_achived"""
+    return WaypointAchieved(trw_id=None, wpt_id=tp.next.wpt_id, name=tp.name, lat=fix.lat, lon=fix.lon,
+                            rawtime=time, altitude=alt)
+
+
+def get_task_results(task_id: int):
+    from db.tables import FlightResultView as F, TblNotification as N, TblTrackWaypoint as W
+    from pilot.notification import Notification
+    pilots = []
+    with db_session() as db:
+        results = db.query(F).filter_by(task_id=task_id).all()
+        notifications = db.query(N).filter(N.track_id.in_([p.track_id for p in results])).all()
+        achieved = db.query(W).filter(W.track_id.in_([p.track_id for p in results])).all()
+        for row in results:
+            pilot = FlightResult()
+            row.populate(pilot)
+            for el in [n for n in notifications if n.track_id == pilot.track_id]:
+                n = Notification()
+                el.populate(n)
+                pilot.notifications.append(n)
+            for el in [{k: getattr(w, k) for k in ['trw_id', 'wpt_id', 'name', 'rawtime', 'lat', 'lon', 'altitude']}
+                       for w in achieved if w.track_id == pilot.track_id]:
+                pilot.waypoints_achieved.append(WaypointAchieved(**el))
+            pilots.append(pilot)
+    return pilots
+
+
+def save_track(result: FlightResult, task_id: int):
+    """ stores pilot result to database.
+        we already have FlightResult.to_db()
+        but if we organize track reading using Pilot obj. this should be useful.
+        We will also be able to delete a lot of redundant info about track filename, pilot ID, task_id and so on"""
+    from db.tables import TblTaskResult as R
+    from pilot.notification import update_notifications
+    from pilot.waypointachieved import update_waypoints_achieved
+    '''checks conformity'''
+    if not (result.par_id and task_id):
+        '''we miss info about pilot and task'''
+        print(f"Error: missing info about participant ID and/or task ID")
+        return None
+    '''database connection'''
+    with db_session() as db:
+        if result.track_id:
+            '''read db row'''
+            r = db.query(R).get(result.track_id)
+            r.comment = result.comment
+            r.track_file = result.track_file
+            for attr in [a for a in dir(r) if not (a[0] == '_' or a in ['track_file', 'comment'])]:
+                if hasattr(result, attr):
+                    setattr(r, attr, getattr(result, attr))
+            db.flush()
+        else:
+            '''create a new result'''
+            r = R.from_obj(result)
+            r.task_id = task_id
+            db.add(r)
+            db.flush()
+            result.track_id = r.track_id
+
+        '''notifications'''
+        update_notifications(result)
+        '''waypoints_achieved'''
+        update_waypoints_achieved(result)
+        db.commit()
+
+
+def update_all_results(task_id, pilots):
+    """ get results to update from the list
+        It is called from Task.check_all_tracks(), so only during Task full rescoring
+        And from FSDB.add results.
+        We are then deleting all present non admin Notification from database for results, as related to old scoring.
+        """
+    from db.tables import TblTaskResult as R, TblNotification as N, TblTrackWaypoint as W
+    from dataclasses import asdict
+    from sqlalchemy import and_
+    insert_mappings = []
+    update_mappings = []
+    notif_mappings = []
+    achieved_mappings = []
+    for pilot in pilots:
+        res = pilot.result
+        r = dict(track_id=pilot.track_id, task_id=task_id, par_id=pilot.par_id,
+                 track_file=pilot.track_file, comment=pilot.comment)
+        for key in [col for col in R.__table__.columns.keys() if col not in r.keys()]:
+            if hasattr(res, key):
+                r[key] = getattr(res, key)
+        if r['track_id']:
+            update_mappings.append(r)
+        else:
+            insert_mappings.append(r)
+
+    '''update database'''
+    with db_session() as db:
+        if insert_mappings:
+            db.bulk_insert_mappings(R, insert_mappings, return_defaults=True)
+            db.flush()
+            for elem in insert_mappings:
+                next(pilot for pilot in pilots if pilot.par_id == elem['par_id']).track_id = elem['track_id']
+        if update_mappings:
+            db.bulk_update_mappings(R, update_mappings)
+            db.flush()
+        '''notifications and waypoints achieved'''
+        '''delete old entries'''
+        db.query(N).filter(and_(N.track_id.in_([r['track_id'] for r in update_mappings]),
+                                N.notification_type.in_(['jtg', 'airspace', 'track']))).delete(
+            synchronize_session=False)
+        db.query(W).filter(W.track_id.in_([r['track_id'] for r in update_mappings])).delete(
+            synchronize_session=False)
+        '''collect new ones'''
+        for pilot in pilots:
+            notif_mappings.extend([dict(track_id=pilot.track_id, **asdict(n))
+                                   for n in pilot.notifications if not n.notification_type == 'admin'])
+            achieved_mappings.extend([dict(track_id=pilot.track_id, **asdict(w))
+                                      for w in pilot.waypoints_achieved])
+        '''bulk insert'''
+        if achieved_mappings:
+            db.bulk_insert_mappings(W, achieved_mappings)
+        if notif_mappings:
+            db.bulk_insert_mappings(N, notif_mappings, return_defaults=True)
+            db.flush()
+            notif_list = filter(lambda i: i['notification_type'] in ['jtg', 'airspace'], notif_mappings)
+            trackIds = set([i['track_id'] for i in notif_list])
+            for idx in trackIds:
+                pilot = next(p for p in pilots if p.track_id == idx)
+                for n in filter(lambda i: i['track_id'] == idx, notif_list):
+                    notif = next(el for el in pilot.notifications if el.comment == n['comment'])
+                    notif.not_id = n['not_id']
+    return True
+
+
+def create_tracklog_map_file(pilot, task, flight, second_interval=5):
+    """Dumps the flight to geojson format used for mapping.
+    Contains tracklog split into pre SSS, pre Goal and post goal parts, thermals, takeoff/landing,
+    result object, waypoints achieved, and bounds
+    second_interval = resolution of tracklog. default one point every 5 seconds. regardless it will
+                        keep points where waypoints were achieved.
+    returns the Json string."""
+    from mapUtils import result_to_geojson
+    from pathlib import Path
+    '''create info'''
+    info = {'taskid': task.id, 'task_name': task.task_name, 'comp_name': task.comp_name,
+            'pilot_name': pilot.name, 'pilot_nat': pilot.nat, 'pilot_sex': pilot.sex,
+            'pilot_parid': pilot.par_id, 'Glider': pilot.glider,
+            'track_file': Path(task.file_path, pilot.track_file).as_posix()
+            }
+    tracklog, thermals, takeoff_landing, bbox, waypoint_achieved, infringements = result_to_geojson(pilot,
+                                                                                                    task,
+                                                                                                    flight,
+                                                                                                    second_interval)
+    data = {'info': info,
+            'tracklog': tracklog,
+            'thermals': thermals,
+            'takeoff_landing': takeoff_landing,
+            'bounds': bbox,
+            'waypoint_achieved': waypoint_achieved,
+            'infringements': infringements
+            }
+    return data

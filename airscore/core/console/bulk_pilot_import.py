@@ -10,19 +10,18 @@ from pathlib import Path
 
 # Use your utility module.
 from compUtils import *
-from logger import Logger
 
 
 def read_membership(file):
     """Read CSV File"""
-    from db_tables import PilotView as P
-    from myconn import Database
+    from db.tables import PilotView as P
+    from db.conn import db_session
     from sqlalchemy import and_, or_
 
     with open(file, encoding='utf-8') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
 
-        with Database() as db:
+        with db_session() as db:
             for row in csv_reader:
                 fai_id = row[0]
                 first_name = row[1]
@@ -42,7 +41,7 @@ def read_membership(file):
 
                 """Check if pilot exists in pilots main table"""
                 pil_id = 0
-                result = db.session.query(P.pil_id).filter(or_(
+                result = db.query(P.pil_id).filter(or_(
                     and_(P.last_name.like(cond1), P.first_name.like(cond2)),
                     and_(P.last_name.like(cond2), P.first_name.like(cond1)),
                     and_(P.last_name.like(cond1), P.fai_id == fai_id))).all()
@@ -56,7 +55,7 @@ def read_membership(file):
                         pil_id = candidate.pop().pil_id
                 if not pil_id:
                     """Check if FAI exists"""
-                    result = db.session.query(P.pil_id).filter(P.fai_id == fai_id).all()
+                    result = db.query(P.pil_id).filter(P.fai_id == fai_id).all()
                     if len(result) == 1:
                         pil_id = result.pop().pil_id
                 if not pil_id:

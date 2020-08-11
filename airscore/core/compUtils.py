@@ -8,124 +8,72 @@ Antonio Golfari - 2019
 import json
 import datetime
 import Defines
-from sqlalchemy.exc import SQLAlchemyError
-# Use your utility module.
-from myconn import Database
+from db.conn import db_session
 
 
 def get_comp(task_id: int):
     """Get com_id from task_id"""
-    from db_tables import TblTask as T
-    with Database() as db:
-        try:
-            comp_id = db.session.query(T.comp_id).filter_by(task_id=task_id).scalar()
-            return comp_id
-        except SQLAlchemyError:
-            print(f"No db data found")
-            db.session.rollback()
-            db.session.close()
-            return None
+    from db.tables import TblTask as T
+    with db_session() as db:
+        comp_id = db.query(T.comp_id).filter_by(task_id=task_id).scalar()
+        return comp_id
 
 
 def get_class(task_id: int):
     """Get comp_class ('PG', 'HG', 'BOTH') from task_id"""
-    from db_tables import TaskObjectView as T
-    with Database() as db:
-        try:
-            comp_class = db.session.query(T.comp_class).filter_by(task_id=task_id).scalar()
-            return comp_class
-        except SQLAlchemyError:
-            print(f"No db data found")
-            db.session.rollback()
-            db.session.close()
-            return None
+    from db.tables import TaskObjectView as T
+    with db_session() as db:
+        comp_class = db.query(T.comp_class).filter_by(task_id=task_id).scalar()
+        return comp_class
 
 
 def get_task_date(task_id: int):
     """Get date from task_id in datetime.date format"""
-    from db_tables import TblTask as T
-    with Database() as db:
-        try:
-            task_date = db.session.query(T.date).filter_by(task_id=task_id).scalar()
-            return task_date
-        except SQLAlchemyError:
-            print(f"No db data found")
-            db.session.rollback()
-            db.session.close()
-            return None
+    from db.tables import TblTask as T
+    with db_session() as db:
+        return db.query(T.date).filter_by(task_id=task_id).scalar()
 
 
 def get_registration(comp_id: int):
     """Check if comp has mandatory registration"""
-    from db_tables import TblCompetition as C
-    with Database() as db:
-        try:
-            restricted = db.session.query(C.restricted).filter_by(comp_id=comp_id).scalar()
-            return bool(restricted)
-        except SQLAlchemyError:
-            print(f"No db data found")
-            db.session.rollback()
-            db.session.close()
-            return None
+    from db.tables import TblCompetition as C
+    with db_session() as db:
+        restricted = db.query(C.restricted).filter_by(comp_id=comp_id).scalar()
+        return bool(restricted)
 
 
 def get_offset(task_id: int):
-    from db_tables import TblTask as T
-    with Database() as db:
-        try:
-            off = db.session.query(T.time_offset).filter_by(task_id=task_id).scalar()
-            return off
-        except SQLAlchemyError:
-            print(f"No db data found")
-            db.session.rollback()
-            db.session.close()
-            return None
+    from db.tables import TblTask as T
+    with db_session() as db:
+        return db.query(T.time_offset).filter_by(task_id=task_id).scalar()
 
 
 def is_registered(civl_id: int, comp_id: int):
     """Check if pilot is registered to the comp"""
-    from db_tables import TblParticipant as R
-    with Database() as db:
-        try:
-            return db.session.query(R.par_id).filter_by(comp_id=comp_id, civl_id=civl_id).scalar()
-        except SQLAlchemyError:
-            print(f'No pilot with CIVLID {civl_id} is registered')
-            db.session.rollback()
-            db.session.close()
-            return False
+    from db.tables import TblParticipant as R
+    with db_session() as db:
+        return db.query(R.par_id).filter_by(comp_id=comp_id, civl_id=civl_id).scalar()
 
 
 def is_ext(comp_id: int):
     """True if competition is external"""
-    from db_tables import TblCompetition as C
-    with Database() as db:
-        try:
-            # comps = db.session.query(C)
-            ext = db.session.query(C.external).filter_by(comp_id=comp_id).scalar()
-            return bool(ext)
-        except SQLAlchemyError:
-            print(f'No comp with ID {comp_id} is registered')
-            db.session.rollback()
-            db.session.close()
-            return False
+    from db.tables import TblCompetition as C
+    with db_session() as db:
+        # comps = db.query(C)
+        ext = db.query(C.external).filter_by(comp_id=comp_id).scalar()
+        return bool(ext)
 
 
 def get_comp_json_filename(comp_id: int, latest=False):
     """returns active json results filename, or latest if latest is True"""
-    from db_tables import TblResultFile as R
-    with Database() as db:
-        try:
-            results = db.session.query(R.filename).filter_by(comp_id=comp_id, task_id=None)
-            if latest:
-                filename = results.order_by(R.ref_id.desc()).limit(1).scalar()
-            else:
-                filename = results.filter_by(active=1).scalar()
-            return filename
-        except SQLAlchemyError:
-            print(f"No file found")
-            db.session.rollback()
-            db.session.close()
-            return False
+    from db.tables import TblResultFile as R
+    with db_session() as db:
+        results = db.query(R.filename).filter_by(comp_id=comp_id, task_id=None)
+        if latest:
+            filename = results.order_by(R.ref_id.desc()).limit(1).scalar()
+        else:
+            filename = results.filter_by(active=1).scalar()
+        return filename
 
 
 def get_comp_json(comp_id: int, latest=False):
@@ -142,38 +90,38 @@ def get_comp_json(comp_id: int, latest=False):
 
 def get_nat_code(iso: str):
     """Get Country Code from ISO2 or ISO3"""
-    from db_tables import TblCountryCode as CC
+    from db.tables import TblCountryCode as CC
     if not (type(iso) is str and len(iso) in (2, 3)):
         return None
     column = getattr(CC, 'natIso' + str(len(iso)))
-    with Database() as db:
-        return db.session.query(CC.natId).filter(column == iso).limit(1).scalar()
+    with db_session() as db:
+        return db.query(CC.natId).filter(column == iso).limit(1).scalar()
 
 
 def get_nat_name(iso: str):
     """Get Country name from ISO2 or ISO3"""
-    from db_tables import TblCountryCode as CC
+    from db.tables import TblCountryCode as CC
     if not (type(iso) is str and len(iso) in (2, 3)):
         return None
     column = getattr(CC, 'natIso' + str(len(iso)))
-    with Database() as db:
-        return db.session.query(CC.natName).filter(column == iso).limit(1).scalar()
+    with db_session() as db:
+        return db.query(CC.natName).filter(column == iso).limit(1).scalar()
 
 
 def get_task_path(task_id: int):
     """ returns task folder name"""
-    from db_tables import TblTask as T
+    from db.tables import TblTask as T
     if type(task_id) is int and task_id > 0:
-        with Database() as db:
-            return db.session.query(T.task_path).filter_by(task_id=task_id).limit(1).scalar()
+        with db_session() as db:
+            return db.query(T.task_path).filter_by(task_id=task_id).limit(1).scalar()
 
 
 def get_comp_path(comp_id: int):
     """ returns comp folder name"""
-    from db_tables import TblCompetition as C
+    from db.tables import TblCompetition as C
     if type(comp_id) is int and comp_id > 0:
-        with Database() as db:
-            return db.session.query(C.comp_path).filter_by(comp_id=comp_id).limit(1).scalar()
+        with db_session() as db:
+            return db.query(C.comp_path).filter_by(comp_id=comp_id).limit(1).scalar()
 
 
 def create_comp_path(date: datetime.date, code: str):
@@ -186,29 +134,17 @@ def create_comp_path(date: datetime.date, code: str):
 
 def get_task_region(task_id: int):
     """returns task region id from task_id"""
-    from db_tables import TblTask as T
-    with Database() as db:
-        try:
-            return db.session.query(T.reg_id).filter_by(task_id=task_id).limit(1).scalar()
-        except SQLAlchemyError:
-            print(f"No db data")
-            db.session.rollback()
-            db.session.close()
-            return False
+    from db.tables import TblTask as T
+    with db_session() as db:
+        return db.query(T.reg_id).filter_by(task_id=task_id).limit(1).scalar()
 
 
 def get_area_wps(region_id: int):
     """query db get all wpts names and pks for region and put into dictionary"""
-    from db_tables import TblRegionWaypoint as W
-    with Database() as db:
-        try:
-            wps = db.session.query(W.name, W.rwp_id).filter_by(reg_id=region_id, old=0).order_by(W.name).all()
-            return dict(wps)
-        except SQLAlchemyError:
-            print(f"No db data")
-            db.session.rollback()
-            db.session.close()
-            return False
+    from db.tables import TblRegionWaypoint as W
+    with db_session() as db:
+        wps = db.query(W.name, W.rwp_id).filter_by(reg_id=region_id, old=0).order_by(W.name).all()
+        return dict(wps)
 
 
 def get_wpts(task_id: int):
@@ -219,66 +155,49 @@ def get_wpts(task_id: int):
 
 def get_participants(comp_id: int):
     """gets registered pilots list from database"""
-    from db_tables import TblParticipant as R
-    from participant import Participant
+    from db.tables import TblParticipant as R
+    from pilot.participant import Participant
     pilots = []
-    with Database() as db:
-        try:
-            results = db.session.query(R).filter_by(comp_id=comp_id).all()
-            for p in results:
-                pil = Participant(comp_id=comp_id)
-                db.populate_obj(pil, p)
-                pilots.append(pil)
-        except SQLAlchemyError:
-            print(f"No db data")
-            db.session.rollback()
-            db.session.close()
+    with db_session() as db:
+        results = db.query(R).filter_by(comp_id=comp_id).all()
+        for p in results:
+            pil = Participant(comp_id=comp_id)
+            p.populate(pil)
+            pilots.append(pil)
     return pilots
 
 
 def get_tasks_result_files(comp_id: int):
     """ returns a list of (task_id, active result filename) for tasks in comp"""
-    from db_tables import TblResultFile as R
+    from db.tables import TblResultFile as R
     files = []
-    with Database() as db:
-        try:
-            '''getting active json files list'''
-            results = db.session.query(R.task_id, R.filename.label('file'))
-            files = results.filter(R.task_id.isnot(None)).filter_by(comp_id=comp_id, active=1).order_by(R.task_id).all()
-        except SQLAlchemyError:
-            print(f"No db data")
-            db.session.rollback()
-            db.session.close()
+    with db_session() as db:
+        '''getting active json files list'''
+        results = db.query(R.task_id, R.filename.label('file'))
+        files = results.filter(R.task_id.isnot(None)).filter_by(comp_id=comp_id, active=1).order_by(R.task_id).all()
     return files
 
 
 def read_rankings(comp_id: int):
     """reads sub rankings list for the task and creates a dictionary"""
-    from db_tables import TblClasCertRank as CC, TblCompetition as C, TblRanking as R, TblCertification as CCT, \
+    from db.tables import TblClasCertRank as CC, TblCompetition as C, TblRanking as R, TblCertification as CCT, \
         TblClassification as CT
     from sqlalchemy import and_
     rank = dict()
-    with Database() as db:
+    with db_session() as db:
         '''get rankings definitions'''
-        try:
-            class_id = db.session.query(C.cat_id).filter_by(comp_id=comp_id).scalar()
-            if not class_id:
-                print(f'Comp with ID {comp_id} does not exist or has no classifications id')
-                db.session.close()
-                return rank
-            query = db.session.query(R.rank_name.label('rank'), CCT.cert_name.label('cert'), CT.female, CT.team) \
-                .select_from(R) \
-                .join(CC, R.rank_id == CC.c.rank_id) \
-                .join(CCT, and_(CCT.cert_id <= CC.c.cert_id, CCT.comp_class == R.comp_class)) \
-                .join(CT, CT.cat_id == CC.c.cat_id) \
-                .filter(and_(CC.c.cert_id > 0, CC.c.cat_id == class_id))
-            result = query.all()
-        except SQLAlchemyError as e:
-            print(f'Ranking Query Error')
-            error = str(e.__dict__)
-            db.session.rollback()
-            db.session.close()
-            return error
+        class_id = db.query(C.cat_id).filter_by(comp_id=comp_id).scalar()
+        if not class_id:
+            print(f'Comp with ID {comp_id} does not exist or has no classifications id')
+            db.close()
+            return rank
+        query = db.query(R.rank_name.label('rank'), CCT.cert_name.label('cert'), CT.female, CT.team) \
+            .select_from(R) \
+            .join(CC, R.rank_id == CC.c.rank_id) \
+            .join(CCT, and_(CCT.cert_id <= CC.c.cert_id, CCT.comp_class == R.comp_class)) \
+            .join(CT, CT.cat_id == CC.c.cat_id) \
+            .filter(and_(CC.c.cert_id > 0, CC.c.cat_id == class_id))
+        result = query.all()
     if len(result) > 0:
         for res in result:
             if res.rank in rank:
@@ -309,21 +228,15 @@ def create_comp_code(name: str, date: datetime.date):
     return code
 
 
-def get_task_filepath(task_id: int, session=None):
+def get_task_filepath(task_id: int):
     """ returns complete trackfile path"""
-    from myconn import Database
-    from db_tables import TaskObjectView as T
+    from db.conn import db_session
+    from db.tables import TaskObjectView as T
     from Defines import TRACKDIR
     from pathlib import Path
-    with Database(session) as db:
-        try:
-            task = db.session.query(T).filter_by(task_id=task_id).one()
-            return Path(TRACKDIR, task.comp_path, task.task_path)
-        except SQLAlchemyError:
-            print('Error trying to retrieve flie path from database')
-            db.session.rollback()
-            db.session.close()
-            return None
+    with db_session() as db:
+        task = db.query(T).filter_by(task_id=task_id).one()
+        return Path(TRACKDIR, task.comp_path, task.task_path)
 
 
 def get_formulas(comp_class):

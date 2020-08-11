@@ -1,23 +1,22 @@
-from factory import PostGenerationMethodCall, Sequence, Factory
+from factory import Sequence, Factory
 from factory.faker import faker
 import task
 from formula import TaskFormula
-from participant import Participant
-from pilot import Pilot
-from track import Track
-from flightresult import FlightResult
-from notification import Notification
+from pilot.participant import Participant
+from pilot.pilot import Pilot
+from pilot.track import Track
+from pilot.flightresult import FlightResult
+from pilot.notification import Notification
 from route import Turnpoint
-from datetime import date
 from random import random
-from myconn import Database
+from db.conn import db_session
 import comp
 
 
 class DBFactory(Factory):
     """db factory"""
     class Meta:
-        model = Database
+        model = db_session
 
 
 class TaskFactory(Factory):

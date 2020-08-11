@@ -119,15 +119,14 @@
 <!--Modal ends here--->
 {% endblock %}
 {% block js %}
-{% include "js.html" %}
-<script src="{{ static_url_for('static', filename='js/display-if.min.js') }}"></script>
-<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.ui.widget.js') }}"></script>
-<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.iframe-transport.js') }}"></script>
-<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.fileupload.js') }}"></script>
+    <script src="{{ static_url_for('static', filename='js/display-if.min.js') }}"></script>
+    <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.ui.widget.js') }}"></script>
+    <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.iframe-transport.js') }}"></script>
+    <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.fileupload.js') }}"></script>
     <script type="text/javascript" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
     <script type="text/javascript" src="https://cdn.datatables.net/rowgroup/1.1.1/js/dataTables.rowGroup.min.js"></script>
+    <script type="text/javascript" src="/static/js/pop_waypoints.js"></script>
 
-<script type="text/javascript" src="/static/js/pop_waypoints.js"></script>
 <script type="text/javascript">
    var csrftoken = $('meta[name=csrf-token]').attr('content');
       $.ajaxSetup({
