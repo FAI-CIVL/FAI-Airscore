@@ -231,6 +231,8 @@ def comp_settings_admin(compid):
             comp.self_register = compform.self_register.data
             if compform.website.data.lower()[:7] == 'http://':
                 comp.website = compform.website.data.lower()[7:]
+            elif compform.website.data.lower()[:8] == 'https://':
+                comp.website = compform.website.data.lower()[8:]
             else:
                 comp.website = compform.website.data.lower()
             comp.to_db()
