@@ -115,9 +115,6 @@ function populate_live(taskid){
                                 cell.innerHTML = el;
                             });
                         });
-                        // created date
-                        let created_date = document.createTextNode('Results created: ' + json.file_stats.timestamp + ' UTC');
-                        $('#created').append(created_date);
                     }
                 });
             }

@@ -193,7 +193,7 @@ function populate_task(taskid){
                             $('#taskinfo tbody').append('<tr><td>' + key + '</td><td>' + value + '</td></tr>');
                         });
                         // created date
-                        let created_date = document.createTextNode('Results created: ' + json.file_stats.timestamp + ' UTC');
+                        let created_date = document.createTextNode('Results created: ' + json.file_stats.timestamp + ' (Local Time)');
                         $('#created').append(created_date);
                         // class picker
                         $("#dhv option").remove(); // Remove all <option> child tags.
