@@ -85,7 +85,7 @@ def _get_ladders():
                                         date_from=c['date_from'], date_to=c['date_to'])
         c['ladder_name'] = f'<a href="/ladder_result/{ladderid}/{season}">{name} {season}</a>'
         if c['ladder_class']:
-            cl = c['ladder_class'].lower()
+            cl = c['ladder_class'].upper()
             c['ladder_class'] = f'<img src="/static/img/{cl}.png" width="100%" height="100%"</img>'
         if starts > now:
             days = (starts - now).days
