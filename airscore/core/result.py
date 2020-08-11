@@ -68,6 +68,7 @@ class TaskResult:
                     'formula_version',
                     'overall_validity',  # 'ftv', 'all',
                     'validity_param',
+                    'validity_ref',  # 'day_quality', 'max_score'
                     'formula_distance',  # 'on', 'difficulty', 'off'
                     'formula_arrival',  # 'position', 'time', 'off'
                     'formula_departure',  # 'on', 'leadout', 'off'
