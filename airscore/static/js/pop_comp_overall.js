@@ -61,7 +61,15 @@ function populate_comp_overall(compid){
                             tbl.className="tasks-list";
                             let thead = tbl.createTHead();
                             let row = thead.insertRow();
-                            header = [ 'Task', 'Date', 'Distance' ];
+                            console.log('validity='+json.formula.overall_validity);
+                            if (json.formula.overall_validity == 'FTV') {
+                                header = [ 'Task', 'Date', 'Distance', 'FTV Validity' ];
+                                keys = [ 'link', 'date', 'opt_dist', 'ftv_validity' ]
+                            }
+                            else {
+                                header = [ 'Task', 'Date', 'Distance' ];
+                                keys = [ 'link', 'date', 'opt_dist' ]
+                            }
                             header.forEach(el => {
                                 let th = document.createElement("th");
                                 th.className="tasks-list";
@@ -70,10 +78,10 @@ function populate_comp_overall(compid){
                             });
                             json.tasks.forEach(task => {
                                 let row = tbl.insertRow();
-                                [ task.link, task.date, task.opt_dist ].forEach(el => {
+                                keys.forEach(el => {
                                     let cell = row.insertCell();
                                     cell.className="tasks-list";
-                                    cell.innerHTML = el;
+                                    cell.innerHTML = task[el];
                                 });
                             });
                             $('#comp_header').append(tbl);
