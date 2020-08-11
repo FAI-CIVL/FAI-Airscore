@@ -114,7 +114,8 @@ td.tasks-list, th.tasks-list {
   padding: 0 1em 0 1em;
 }
 
-td.tasks-list:last-child, th.tasks-list:last-child {
+td.tasks-list:last-child, th.tasks-list:last-child,
+td.tasks-list:nth-child(3), th.tasks-list:nth-child(3) {
   padding: 0 0 0 1em;
   text-align: right;
 }
