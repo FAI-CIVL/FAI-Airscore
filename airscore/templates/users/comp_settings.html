@@ -339,6 +339,7 @@
       <button id="save_task_button" class="btn btn-success" type="button" onclick="save_task()">
       Add
       </button>
+          <p id="add_task_spinner"></p>
       </div>
 </div>
 </div>
@@ -561,6 +562,8 @@
 
    
    function save_task(){
+            $('#save_task_button').hide();
+               $('#add_task_spinner').html('<div class="spinner-border" role="status"><span class="sr-only"></span></div>');
            var mydata = new Object();
                mydata.task_name = $('#task_name').val();
                mydata.task_date = $('#task_date').val();
@@ -575,7 +578,9 @@
                data : JSON.stringify(mydata),
                dataType: "json",
                success: function () {
-                      get_tasks()
+                      get_tasks();
+                      $('#add_task_spinner').html('');
+                      $('#save_task_button').show();
                }
                });
    
