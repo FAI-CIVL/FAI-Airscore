@@ -340,78 +340,74 @@ Competition Settings
     <button class='btn btn-primary ml-4' type='button' data-toggle='collapse' data-target='#collapse4'
             aria-expanded='false' aria-controls='collapse4'>
       Tasks
-    </button>
-  </p>
-  <div class='collapse' id='collapse4'>
-    <div class='card card-body'>
-      <div class='container'>
-        <h3 class='font-weight-bold'>Tasks</h3>
-        <div class='form-row'>
-          <div class='form-group col-md-10'>
-            <table class='table' id='tasks'>
-              <thead>
-              <tr>
-                <th>#</th>
-                <th>Date</th>
-                <th>Region</th>
-                <th>Optimised Dist</th>
-                <th>Comment</th>
-              </tr>
-              </thead>
-              <tbody>
-              </tbody>
-            </table>
-            <p>
-              {% if compform.submit %}
-              <button id='add_task' class='btn btn-secondary' type='button' data-toggle='collapse'
-                      data-target='#collapse5' aria-expanded='false' aria-controls='collapse5'>
-                Add task
-              </button>
-              {% endif%}
-            </p>
-            <div class='collapse' id='collapse5'>
-              <div class='card card-body'>
-                <div class='container'>
-                  <div id='add_task_form'>
-                    <div class='form-row'>
-                      <div class='form-group width4'>
-                        {{taskform.task_number.label}} {{taskform.task_number(size=2, **{'id':"task_number",
-                        'data-toggle': 'tooltip', 'title': taskform.task_number.description})}}
-                        {{taskform.task_date.label}} {{taskform.task_date(**{'id':"task_date",})}}
-                        {{taskform.task_region.label}} {{taskform.task_region(**{'id':"task_region",})}}
-                      </div>
-                    </div>
-                    <div class='form-row'>
-                      <div class='form-group col-md-6'>
-                        {{taskform.task_name.label}} {{taskform.task_name(**{'id':"task_name", 'data-toggle': 'tooltip',
-                        'title': taskform.task_name.description})}}
-                      </div>
-                      <div class='form-group col-md-6'>
-                        {{taskform.task_comment.label}} {{taskform.task_comment(**{'id':"task_comment",'data-toggle':
-                        'tooltip', 'title': taskform.task_comment.description})}}
-                      </div>
-                    </div>
-                    <div class='form-row'>
-                      <button id='save_task_button' class='btn btn-success' type='button' onclick='save_task()'>
-                        Add
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      </button>
+   </p>
+   <div class="collapse" id="collapse4">
+      <div class="card card-body">
+         <div class="container">
+            <h3 class="font-weight-bold">Tasks</h3>
+            <div class="form-row">
+               <div class="form-group col-md-10">
+                  <table class="table" id="tasks">
+                                       <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Date</th>
+                        <th>Region</th>
+                        <th>Optimised Dist</th>
+                        <th>Comment</th>
+                    </tr>
+                  </thead>
+                     <tbody>
+                     </tbody>
+                  </table>
+                  <p>
+                     {% if compform.submit %}
+                     <button id="add_task" class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#collapse5" aria-expanded="false" aria-controls="collapse5">
+                     Add task
+                     </button>
+                     {% endif%}
+                  </p>
+                  <div class="collapse" id="collapse5">
+                     <div class="card card-body">
+                        <div class="container">
+<div id = "add_task_form">
+      <div class="form-row">
+      <div class="form-group width4">
+      {{taskform.task_number.label}} {{taskform.task_number(size=2, **{'id':"task_number", 'data-toggle': 'tooltip', 'title': taskform.task_number.description})}}
+      {{taskform.task_date.label}} {{taskform.task_date(**{'id':"task_date",})}}
+      {{taskform.task_region.label}} {{taskform.task_region(**{'id':"task_region",})}}
       </div>
-    </div>
-  </div>
-  <div class='container'>
-    <br>
-    <center>
+      </div>
+      <div class="form-row">
+      <div class="form-group col-md-6">
+      {{taskform.task_name.label}} {{taskform.task_name(**{'id':"task_name", 'data-toggle': 'tooltip', 'title': taskform.task_name.description})}}
+      </div>
+      <div class="form-group col-md-6">
+      {{taskform.task_comment.label}} {{taskform.task_comment(**{'id':"task_comment",'data-toggle': 'tooltip', 'title': taskform.task_comment.description})}}
+      </div>
+      </div>
+      <div class="form-row">
+      <button id="save_task_button" class="btn btn-success" type="button" onclick="save_task()">
+      Add
+      </button>
+      </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="container">
+   <br>
+   <center>
       {% if compform.submit %}
       {{compform.submit(class="btn-success")}}
       {% else %}
-      <b>You are not an admin of this comp</b>
+      <b>You are not a scorekeeper of this comp</b>
       {% endif%}
     </center>
   </div>
@@ -606,53 +602,59 @@ mydata.id = $('#admin_to_add').val();
   });
 }
 
-function save_task(){
-  var mydata = new Object();
-  mydata.task_name = $('#task_name').val();
-  mydata.task_date = $('#task_date').val();
-  mydata.task_num = $('#task_number').val();
-  mydata.task_comment = $('#task_comment').val();
-  mydata.task_region = $('#task_region').val();
+   
+ function save_task(){
+          $('#save_task_button').hide();
+             $('#add_task_spinner').html('<div class="spinner-border" role="status"><span class="sr-only"></span></div>');
+         var mydata = new Object();
+             mydata.task_name = $('#task_name').val();
+             mydata.task_date = $('#task_date').val();
+             mydata.task_num = $('#task_number').val();
+             mydata.task_comment = $('#task_comment').val();
+             mydata.task_region = $('#task_region').val();
 
-  $.ajax({
-    type: "POST",
-    url: "{{ url_for('user._add_task', compid=compid)}}",
-    contentType:"application/json",
-    data : JSON.stringify(mydata),
-    dataType: "json",
-    success: function () {
-      get_tasks()
-    }
-  });
-};
+         $.ajax({
+             type: "POST",
+             url: "{{ url_for('user._add_task', compid=compid)}}",
+             contentType:"application/json",
+             data : JSON.stringify(mydata),
+             dataType: "json",
+             success: function () {
+                    get_tasks();
+                    $('#add_task_spinner').html('');
+                    $('#save_task_button').show();
+             }
+             });
+
+ };
 
 function get_tasks(){
   $.ajax({
-    type: "GET",
-    url: "{{ url_for('user._get_tasks', compid=compid)}}",
-    contentType:"application/json",
-    dataType: "json",
-    success: function (response) {
-      update_tasks(response)
-    }
-  });
-}
+     type: "GET",
+     url: "{{ url_for('user._get_tasks', compid=compid)}}",
+     contentType:"application/json",
+     dataType: "json",
+     success: function (response) {
+       update_tasks(response)
+     }
+   });
+ }
 
-function get_admins(){
+function get_scorekeepers(){
   $.ajax({
-    type: "GET",
-    url: "{{ url_for('user._get_admins', compid=compid)}}",
-    contentType:"application/json",
-    dataType: "json",
-    success: function (response) {
-      var content = '';
-      for (var i = 0; i < response['admins'].length; i++) {
-        content += '<tr><TD class="c3">'+ response['admins'][i]['first_name'] + ' '+ response['admins'][i]['last_name'] +'</TD></tr>'
-      }
-      $('#admin_table').append(content);
-      $('#owner').html(response['owner']['first_name'] + ' ' + response['owner']['last_name'] )
-    }
-  });
+     type: "GET",
+     url: "{{ url_for('user._get_scorekeepers', compid=compid)}}",
+     contentType:"application/json",
+     dataType: "json",
+     success: function (response) {
+       var content = '';
+       for (var i = 0; i < response['scorekeepers'].length; i++) {
+          content += '<tr><TD class="c3">'+ response['scorekeepers'][i]['first_name'] + ' '+ response['scorekeepers'][i]['last_name'] +'</TD></tr>'
+       }
+       $('#scorekeeper_table').append(content);
+       $('#owner').html(response['owner']['first_name'] + ' ' + response['owner']['last_name'] )
+     }
+   });
 }
 
 $(document).ready(function() {
