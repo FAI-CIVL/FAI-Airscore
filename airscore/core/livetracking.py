@@ -84,6 +84,10 @@ class LiveTracking(object):
         return None if not self.task else self.task.task_id
 
     @property
+    def flying_pilots(self):
+        return [p for p in self.pilots if not (p.landing_time or p.goal_time)]
+
+    @property
     def track_source(self):
         return None if not self.task else self.task.track_source
 
@@ -165,7 +169,8 @@ class LiveTracking(object):
 
     @property
     def pilots(self):
-        return [] if not self.task.pilots else [p for p in self.task.pilots if p.live_id]
+        return [] if not self.task else [p for p in self.task.pilots
+                                         if p.live_id and p.result_type not in ('dnf', 'abs')]
 
     @property
     def filename(self):
@@ -299,20 +304,21 @@ class LiveTracking(object):
             print(f' -- Getting livetracks ...')
             cycle_starting_time = self.now
             previous = response
-            response = get_livetracks(self.task, cycle_starting_time, interval)
+            response = get_livetracks(self.task, self.flying_pilots, cycle_starting_time, interval)
             if not response or response == previous:
                 print(f' -- NO RESPONSE or NO NEW FIXES ...')
             else:
                 print(f' -- Associating livetracks ...')
-                associate_livetracks(self.task, response, cycle_starting_time)
-            for p in self.pilots:
-                if (hasattr(p, 'livetrack') and len(p.livetrack) > config.min_fixes and p.livetrack[-1].rawtime > (p.last_time or 0)
-                        and not p.goal_time and not p.landing_time):
+                associate_livetracks(self.task, self.flying_pilots, response, cycle_starting_time)
+            for p in self.flying_pilots:
+                if (hasattr(p, 'livetrack')
+                        and len(p.livetrack) > config.min_fixes
+                        and p.livetrack[-1].rawtime > (p.last_time or 0)):
                     check_livetrack(result=p, task=self.task, airspace=self.airspace)
-                elif (p.landing_time or p.goal_time) and not p.track_id:
-                    '''save track'''
-                    save_livetrack_result(p, self.task)
-                    print(f"result saved: track_id: {p.track_id}")
+                    if (p.landing_time or p.goal_time) and not p.track_id:
+                        '''pilot landed or made goal, save track result'''
+                        save_livetrack_result(p, self.task, self.airspace)
+                        print(f"result saved: track_id: {p.track_id}")
             self.update_result()
             i += 1
             time.sleep(max(interval / 2 - (self.now - cycle_starting_time), 0))
@@ -320,13 +326,13 @@ class LiveTracking(object):
         print(f'Livetrack Ending: {datetime.fromtimestamp(self.timestamp).isoformat()}')
         print(f'Saving results...')
         for p in [el for el in self.pilots if not el.track_id]:
-            save_livetrack_result(p, self.task)
+            save_livetrack_result(p, self.task, self.airspace)
 
         Logger('OFF')
         print(f'Livetrack Ending: {datetime.fromtimestamp(self.timestamp).isoformat()}')
 
 
-def get_livetracks(task, timestamp, interval):
+def get_livetracks(task: Task, pilots: list, timestamp, interval):
     """ Requests live tracks fixes to Livetracking Server
         Flymaster gives back chunks of 100 fixes for each live_id """
     import requests
@@ -335,7 +341,8 @@ def get_livetracks(task, timestamp, interval):
     from Defines import FM_LIVE
     request = {}
     if task.track_source.lower() == 'flymaster':
-        pilots = [p for p in task.pilots if p.live_id and not (p.landing_time or p.goal_time)]
+        # pilots = [p for p in task.pilots
+        #           if p.live_id and not (p.landing_time or p.goal_time or p.result_type in ('dnf', 'abs'))]
         print(f'pilots to get: {len(pilots)}')
         # url = 'https://lt.flymaster.net/wlb/getLiveData.php?trackers='
         for p in pilots:
@@ -360,7 +367,7 @@ def get_livetracks(task, timestamp, interval):
                 print(f'Error trying to get tracks: {err}')
 
 
-def associate_livetracks(task, response, timestamp):
+def associate_livetracks(task: Task, pilots: list, response, timestamp):
     from igc_lib import GNSSFix
     import time
     '''initialise'''
@@ -368,7 +375,7 @@ def associate_livetracks(task, response, timestamp):
     alt_source = 'GPS' if task.formula.scoring_altitude is None else task.formula.scoring_altitude
     alt_compensation = 0 if alt_source == 'GPS' or task.QNH == 1013.25 else task.alt_compensation
     for live_id, fixes in response.items():
-        pil = next(p for p in task.pilots if p.live_id == live_id)
+        pil = next((p for p in pilots if p.live_id == live_id), None)
         if not pil:
             continue
         # res = pil.result
@@ -605,6 +612,7 @@ def calculate_incremental_results(result: FlightResult, task: Task, tp, lead_coe
 
     if lead_coeff:
         result.fixed_LC += lead_coeff.summing
+        # print(f"{result.name} - cycle end Lead Coeff: {lead_coeff.summing}, fixed LC: {result.fixed_LC}")
 
     if task.airspace_check:
         _, notifications, penalty = airspace.get_infringements_result(result.infringements)
@@ -613,14 +621,21 @@ def calculate_incremental_results(result: FlightResult, task: Task, tp, lead_coe
         result.notifications.extend(notifications)
 
 
-def save_livetrack_result(p: FlightResult, task: Task):
+def save_livetrack_result(p: FlightResult, task: Task, airspace: AirspaceCheck = None):
     from igc_lib import Flight
     from pilot.flightresult import save_track
-    flight = Flight.create_from_file(Path(task.file_path, p.track_file))
-    if flight.valid:
-        save_track(p, task.id)
-        p.save_tracklog_map_file(task, flight)
-        # p.saved_to_db = True
-    else:
-        print(f"{p.track_file} is not a valid igc. Result not saved.")
+    try:
+        flight = Flight.create_from_file(Path(task.file_path, p.track_file))
+        if flight.valid:
+            print(f"flight valid. Livetracking LC: {p.fixed_LC} distance: {p.distance_flown} time: {p.ss_time}")
+            # test = FlightResult()
+            # test.check_flight(flight, task, airspace)
+            # print(f"Calculated LC: {test.fixed_LC} distance: {test.distance_flown} time: {test.ss_time}")
+            # print(f"Difference %: {(test.fixed_LC - p.fixed_LC) / p.fixed_LC * 100}")
+            save_track(p, task.id)
+            p.save_tracklog_map_file(task, flight)
+        else:
+            print(f"{p.track_file} is not a valid igc. Result not saved.")
+    except:
+        print(f"{p.track_file} Error trying to save result.")
 
