@@ -10,7 +10,7 @@ from pathlib import Path
 import jsonpickle
 from Defines import MAPOBJDIR, IGCPARSINGCONFIG, track_formats
 from map import make_map
-from calcUtils import sec_to_time
+from calcUtils import sec_to_time, c_round
 from os import scandir, path, environ
 from werkzeug.utils import secure_filename
 import requests
@@ -19,53 +19,238 @@ from functools import partial
 import json
 
 
-def get_comps():
+def get_comps() -> list:
     c = aliased(TblCompetition)
-
     with db_session() as db:
         comps = (db.query(c.comp_id, c.comp_name, c.comp_site,
                           c.comp_class, c.sanction, c.comp_type, c.date_from,
-                          c.date_to, func.count(TblTask.task_id), c.external)
+                          c.date_to, func.count(TblTask.task_id).label('tasks'), c.external)
                  .outerjoin(TblTask, c.comp_id == TblTask.comp_id)
                  .group_by(c.comp_id))
 
-    all_comps = []
-    now = datetime.datetime.now().date()
-    for c in comps:
-        comp = list(c)
-        if comp[5] == 'RACE' or comp[5] == 'Route':
-            compid = comp[0]
-            name = comp[1]
-            if comp[9]:
-                comp[1] = f'<a href="/ext_comp_result/{compid}">{name}</a>'
-                comp[8] = 'Imported'
-            else:
-                comp[1] = f'<a href="/competition/{compid}">{name}</a>'
-        # else:
-        # comp['comp_name'] = "<a href=\"comp_overall.html?comp_id=$id\">" . $row['comp_name'] . '</a>';
-        del comp[-1]
-        if comp[3] == "PG" or "HG":
-            hgpg = comp[3]
-            comp[3] = f'<img src="/static/img/{hgpg}.png" width="100%" height="100%"</img>'
-        else:
-            comp[3] = ''
-        if comp[4] != 'none' and comp[4] != '':
-            comp[5] = comp[5] + ' - ' + comp[4]
-        starts = comp[6]
-        ends = comp[7]
-        if starts > now:
-            comp.append(f"Starts in {(starts - now).days} day(s)")
-        elif ends < now:
-            comp.append('Finished')
-        else:
-            comp.append('Running')
+    return [row._asdict() for row in comps]
 
-        comp[6] = comp[6].strftime("%Y-%m-%d")
-        comp[7] = comp[7].strftime("%Y-%m-%d")
-        del comp[4]
-        del comp[0]
-        all_comps.append(comp)
-    return jsonify({'data': all_comps})
+
+def find_orphan_pilots(pilots_list: list, orphans: list) -> (list, list):
+    """ Tries to guess participants that do not have a pil_id, and associate them to other participants or
+        to a pilot in database"""
+    from db.tables import PilotView as P
+    from calcUtils import get_int
+    pilots_found = []
+    still_orphans = []
+    ''' find a match among pilots already in list'''
+    print(f"trying to find pilots from orphans...")
+    for p in orphans:
+        name, civl_id, comp_id = p['name'], p['civl_id'], p['comp_id']
+        found = next((el for el in pilots_list
+                      if (el['name'] == name or (civl_id and civl_id == el['civl_id']))
+                      and comp_id not in el[comp_id]), None)
+        if found:
+            '''adding to existing pilot'''
+            found['par_ids'].append(p['par_id'])
+            found['comp_ids'].append(comp_id)
+        else:
+            still_orphans.append(p)
+    ''' find a match among pilots in database if still we have orphans'''
+    orphans = []
+    if still_orphans:
+        with db_session() as db:
+            pilots = db.query(P).all()
+            for p in still_orphans:
+                name, civl_id, comp_id = p['name'].title(), p['civl_id'], p['comp_id']
+                row = next((el for el in pilots
+                            if ((el.first_name and el.last_name
+                                 and el.first_name.title() in name and el.last_name.title() in name)
+                                or (civl_id and el.civl_id and civl_id == get_int(el.civl_id)))), None)
+                if row:
+                    '''check if we already found the same pilot in orphans'''
+                    found = next((el for el in pilots_found
+                                  if el['pil_id'] == row.pil_id), None)
+                    if found:
+                        found['par_ids'].append(p['par_id'])
+                        found['comp_ids'].append(comp_id)
+                    else:
+                        name = f"{row.first_name.title()} {row.last_name.title()}"
+                        pilot = dict(comp_ids=[p['comp_id']], par_ids=[p['par_id']], pil_id=int(row.pil_id),
+                                     civl_id=get_int(row.civl_id), fai_id=row.fai_id, name=name, sex=p['sex'],
+                                     nat=p['nat'], glider=p['glider'], glider_cert=p['glider_cert'], results=[])
+                        pilots_found.append(pilot)
+                else:
+                    orphans.append(p)
+    pilots_list.extend(pilots_found)
+
+    return pilots_list, orphans
+
+
+def get_ladders() -> list:
+    from db.tables import TblLadder as L, TblLadderSeason as LS, TblCountryCode as C
+    with db_session() as db:
+        ladders = db.query(L.ladder_id, L.ladder_name, L.ladder_class, L.date_from, L.date_to,
+                           C.natIso3.label('nat'),
+                           LS.season) \
+            .join(LS, L.ladder_id == LS.ladder_id) \
+            .join(C, L.nation_code == C.natId) \
+            .filter(LS.active == 1) \
+            .order_by(LS.season.desc())
+
+    return [row._asdict() for row in ladders]
+
+
+def get_ladder_results(ladder_id: int, season: int,
+                       nat: str = None, starts: datetime.date = None, ends: datetime.date = None) -> json:
+    """creates result json using comp results from all events in ladder"""
+    from db.tables import TblParticipant as P, TblLadder as L, TblLadderComp as LC, TblLadderSeason as LS, \
+        TblCompetition as C, TblTask as T, TblResultFile as R
+    from calcUtils import get_season_dates
+    from compUtils import get_nat, create_classifications
+    from result import open_json_file
+    import time
+
+    if not (nat and starts and ends):
+        lad = L.get_by_id(ladder_id)
+        nat_code, date_from, date_to = lad.nation_code, lad.date_from, lad.date_to
+        nat = get_nat(nat_code)
+        '''get season start and end day'''
+        starts, ends = get_season_dates(ladder_id=ladder_id, season=season, date_from=date_from, date_to=date_to)
+    with db_session() as db:
+        '''get ladder info'''
+        # probably we could keep this from ladder list page?
+        row = db.query(L.ladder_id, L.ladder_name, L.ladder_class,
+                       LS.season, LS.cat_id, LS.overall_validity, LS.validity_param) \
+            .join(LS) \
+            .filter(L.ladder_id == ladder_id, LS.season == season).one()
+        rankings = create_classifications(row.cat_id)
+        info = {'ladder_name': row.ladder_name,
+                'season': row.season,
+                'ladder_class': row.ladder_class,
+                'id': row.ladder_id}
+        formula = {'overall_validity': row.overall_validity,
+                   'validity_param': row.validity_param}
+
+        '''get comps and files'''
+        results = db.query(C.comp_id, R.filename) \
+                    .join(LC) \
+                    .join(R, (R.comp_id == C.comp_id) & (R.task_id.is_(None)) & (R.active == 1)) \
+                    .filter(C.date_to > starts, C.date_to < ends, LC.c.ladder_id == ladder_id)
+        comps_ids = [row.comp_id for row in results]
+        files = [row.filename for row in results]
+        print(comps_ids, files)
+
+        '''create Participants list'''
+        results = db.query(P) \
+            .filter(P.comp_id.in_(comps_ids), P.nat == nat) \
+            .order_by(P.pil_id, P.comp_id).all()
+        pilots_list = []
+        orphans = []
+        for row in results:
+            if row.pil_id:
+                p = next((el for el in pilots_list if el['pil_id'] == row.pil_id), None)
+                if p:
+                    '''add par_id'''
+                    p['par_ids'].append(row.par_id)
+                    p['comp_ids'].append(row.comp_id)
+                else:
+                    '''insert a new pilot'''
+                    p = dict(comp_ids=[row.comp_id], par_ids=[row.par_id], pil_id=row.pil_id, civl_id=row.civl_id,
+                             fai_id=row.fai_id, name=row.name, sex=row.sex, nat=row.nat,
+                             glider=row.glider, glider_cert=row.glider_cert, results=[])
+                    pilots_list.append(p)
+            else:
+                p = dict(comp_id=row.comp_id, pil_id=row.pil_id, par_id=row.par_id, civl_id=row.civl_id,
+                         fai_id=row.fai_id, name=row.name, sex=row.sex, nat=row.nat,
+                         glider=row.glider, glider_cert=row.glider_cert)
+                orphans.append(p)
+    '''try to guess orphans'''
+    if orphans:
+        pilots_list, orphans = find_orphan_pilots(pilots_list, orphans)
+
+    '''get results'''
+    stats = {'tot_pilots': len(pilots_list)}
+    comps = []
+    tasks = []
+    for file in files:
+        f = open_json_file(file)
+        '''get comp info'''
+        i = f['info']
+        comp_code = i['comp_code']
+        results = f['results']
+        comps.append(dict(id=i['id'], comp_code=i['comp_code'], comp_name=i['comp_name'], tasks=len(f['tasks'])))
+        tasks.extend([dict(id=t['id'], ftv_validity=t['ftv_validity'], task_code=f"{i['comp_code']}_{t['task_code']}")
+                      for t in f['tasks']])
+        for r in results:
+            p = next((el for el in pilots_list if r['par_id'] in el['par_ids']), None)
+            if p:
+                scores = r['results']
+                for i, s in scores.items():
+                    idx, code = next((t['id'], t['task_code']) for t in tasks if f"{comp_code}_{i}" == t['task_code'])
+                    p['results'].append({'task_id': idx, 'task_code': code, **s})
+
+    '''get params'''
+    val = formula['overall_validity']
+    param = formula['validity_param']
+    stats['valid_tasks'] = len(tasks)
+    stats['total_validity'] = c_round(sum([t['ftv_validity'] for t in tasks]), 4)
+    stats['avail_validity'] = (0 if len(tasks) == 0
+                               else c_round(stats['total_validity'] * param, 4) if val == 'ftv'
+                               else stats['total_validity'])
+
+    '''calculate scores'''
+    for pil in pilots_list:
+        dropped = 0 if not (val == 'round' and param) else int(len(pil['results']) / param)
+        pil['score'] = 0
+
+        '''reset scores in list'''
+        for res in pil['results']:
+            res['score'] = res['pre']
+
+        ''' if we score all tasks, or tasks are not enough to have discards,
+            or event has just one valid task regardless method,
+            we can simply sum all score values
+        '''
+        if not ((val == 'all')
+                or (val == 'round' and dropped == 0)
+                or (len(tasks) < 2)
+                or len(pil['results']) < 2):
+            '''create a ordered list of results, score desc (perf desc if ftv)'''
+            sorted_results = sorted(pil['results'],
+                                    key=lambda x: (x['perf'], x['pre'] if val == 'ftv' else x['pre']), reverse=True)
+            if val == 'round' and dropped:
+                for i in range(1, dropped + 1):
+                    sorted_results[-i]['score'] = 0  # getting id of worst result task
+            elif val == 'ftv':
+                '''ftv calculation'''
+                pval = stats['avail_validity']
+                for res in sorted_results:
+                    if not (pval > 0):
+                        res['score'] = 0
+                    else:
+                        '''get ftv_validity of corresponding task'''
+                        tval = next(t['ftv_validity'] for t in tasks if t['task_code'] == res['task_code'])
+                        if pval > tval:
+                            '''we can use the whole score'''
+                            pval -= tval
+                        else:
+                            '''we need to calculate proportion'''
+                            res['score'] = c_round(res['score'] * (pval / tval))
+                            pval = 0
+
+            '''calculates final pilot score'''
+            pil['results'] = sorted_results
+            pil['score'] = sum(r['score'] for r in sorted_results)
+
+    '''order results'''
+    pilots_list = sorted(pilots_list, key=lambda x: x['score'], reverse=True)
+    stats['winner_score'] = 0 if not pilots_list else pilots_list[0]['score']
+    '''create json'''
+    file_stats = {'timestamp': time.time()}
+    output = {'info': info,
+              'comps': comps,
+              'formula': formula,
+              'stats': stats,
+              'results': pilots_list,
+              'rankings': rankings,
+              'file_stats': file_stats}
+    return output
 
 
 def get_admin_comps(current_userid):
@@ -108,7 +293,7 @@ def get_task_list(comp):
                                   and task['start_time'] and task['start_close_time']
                                   and task['task_deadline']) is not None
 
-        task['opt_dist'] = 0 if not task['opt_dist'] else round(task['opt_dist'] / 1000, 2)
+        task['opt_dist'] = 0 if not task['opt_dist'] else c_round(task['opt_dist'] / 1000, 2)
         task['opt_dist'] = f"{task['opt_dist']} km"
         if task['comment'] is None:
             task['comment'] = ''
@@ -124,7 +309,7 @@ def get_task_turnpoints(task):
     total_dist = ''
     for tp in turnpoints:
         tp['original_type'] = tp['type']
-        tp['partial_distance'] = '' if not tp['partial_distance'] else round(tp['partial_distance'] / 1000, 2)
+        tp['partial_distance'] = '' if not tp['partial_distance'] else c_round(tp['partial_distance'] / 1000, 2)
         if int(tp['num']) > max_n:
             max_n = int(tp['num'])
             total_dist = tp['partial_distance']
@@ -208,18 +393,7 @@ def get_waypoint_choices(reg_id: int):
 
 def get_pilot_list_for_track_management(taskid: int):
     from db.tables import TblTaskResult as R, TblParticipant as P, TblTask as T
-    with db_session() as db:
-        results = db.query(R.goal_time, R.track_file, R.track_id, R.result_type, R.distance_flown,
-                           R.ESS_time, R.SSS_time, R.par_id).filter(
-            R.task_id == taskid).subquery()
-        pilots = db.query(T.task_id, P.name, P.ID, P.par_id, results.c.track_id, results.c.SSS_time,
-                          results.c.ESS_time,
-                          results.c.distance_flown, results.c.track_file, results.c.result_type) \
-            .outerjoin(P, T.comp_id == P.comp_id).filter(T.task_id == taskid) \
-            .outerjoin(results, results.c.par_id == P.par_id).all()
-
-        if pilots:
-            pilots = [row._asdict() for row in pilots]
+    pilots = [row._asdict() for row in R.get_task_results(taskid)]
 
     all_data = []
     for pilot in pilots:
@@ -413,7 +587,7 @@ def process_igc_background(task_id: int, par_id: int, file: Path, user: str):
         print(json.dumps(data) + '|result')
         return None
     if not flight.valid:
-        print(f'IGC does not meet quality standard set by igc parsing config. Notes:{pilot.flight.notes}')
+        print(f'IGC does not meet quality standard set by igc parsing config. Notes:{flight.notes}')
         print(json.dumps(data) + '|result')
         return None
     elif not epoch_to_date(flight.date_timestamp) == task.date:
@@ -443,7 +617,7 @@ def process_igc_background(task_id: int, par_id: int, file: Path, user: str):
         if pilot.result_type == 'goal':
             data['Result'] = f'Goal {time}'
         elif pilot.result_type == 'lo':
-            data['Result'] = f"LO {round(pilot.distance / 1000, 2)}"
+            data['Result'] = f"LO {c_round(pilot.distance / 1000, 2)}"
         if pilot.track_id:  # if there is a track, make the result a link to the map
             # trackid = data['track_id']
             parid = data['par_id']
@@ -822,54 +996,60 @@ def unique_filename(filename, filepath):
     return secure_filename(filename)
 
 
-def get_pretty_data(filename):
+def get_pretty_data(content: dict) -> dict:
     """transforms result json file in human readable data"""
-    from result import open_json_file, pretty_format_results, get_startgates
+    from result import pretty_format_results, get_startgates
     try:
-        content = open_json_file(filename)
         '''time offset'''
-        timeoffset = int(content['info']['time_offset'])
+        timeoffset = 0 if 'time_offset' not in content['info'].keys() else int(content['info']['time_offset'])
         '''score decimals'''
-        td = (0 if 'task_result_decimal' not in content['formula'].keys()
+        td = (0 if 'formula' not in content.keys() or 'task_result_decimal' not in content['formula'].keys()
               else int(content['formula']['task_result_decimal']))
-        cd = (0 if 'task_result_decimal' not in content['formula'].keys()
+        cd = (0 if 'formula' not in content.keys() or 'task_result_decimal' not in content['formula'].keys()
               else int(content['formula']['task_result_decimal']))
         pretty_content = dict()
-        pretty_content['file_stats'] = pretty_format_results(content['file_stats'], timeoffset)
+        if 'file_stats' in content.keys():
+            pretty_content['file_stats'] = pretty_format_results(content['file_stats'], timeoffset)
         pretty_content['info'] = pretty_format_results(content['info'], timeoffset)
+        if 'comps' in content.keys():
+            pretty_content['comps'] = pretty_format_results(content['comps'], timeoffset, td)
         if 'tasks' in content.keys():
             pretty_content['tasks'] = pretty_format_results(content['tasks'], timeoffset, td)
         elif 'route' in content.keys():
             pretty_content['info'].update(startgates=get_startgates(content['info']))
             pretty_content['route'] = pretty_format_results(content['route'], timeoffset)
-        pretty_content['stats'] = pretty_format_results(content['stats'], timeoffset)
-        pretty_content['formula'] = pretty_format_results(content['formula'])
-        results = []
-        '''rankings'''
-        sub_classes = sorted([dict(name=c, cert=v, limit=v[-1], prev=None, rank=1, counter=0)
-                              for c, v in content['rankings'].items() if isinstance(v, list)],
-                             key=lambda x: len(x['cert']), reverse=True)
-        rank = 0
-        prev = None
-        for idx, r in enumerate(content['results'], 1):
-            p = pretty_format_results(r, timeoffset, td, cd)
-            if not prev == p['score']:
-                rank, prev = idx, p['score']
-            p['rank'] = str(rank)
-            '''sub-classes'''
-            for s in sub_classes:
-                if p['glider_cert'] and p['glider_cert'] in s['cert']:
-                    s['counter'] += 1
-                    if not s['prev'] == p['score']:
-                        s['rank'], s['prev'] = s['counter'], p['score']
-                    p[s['limit']] = f"{s['rank']} ({p['rank']})"
-                else:
-                    p[s['limit']] = ''
-            results.append(p)
-        pretty_content['results'] = results
-        pretty_content['classes'] = [{k: c[k] for k in ('name', 'limit', 'cert', 'counter')} for c in sub_classes]
+        if 'stats' in content.keys():
+            pretty_content['stats'] = pretty_format_results(content['stats'], timeoffset)
+        if 'formula' in content.keys():
+            pretty_content['formula'] = pretty_format_results(content['formula'])
+        if 'results' in content.keys():
+            results = []
+            '''rankings'''
+            sub_classes = sorted([dict(name=c, cert=v, limit=v[-1], prev=None, rank=1, counter=0)
+                                  for c, v in content['rankings'].items() if isinstance(v, list)],
+                                 key=lambda x: len(x['cert']), reverse=True)
+            rank = 0
+            prev = None
+            for idx, r in enumerate(content['results'], 1):
+                p = pretty_format_results(r, timeoffset, td, cd)
+                if not prev == p['score']:
+                    rank, prev = idx, p['score']
+                p['rank'] = str(rank)
+                '''sub-classes'''
+                for s in sub_classes:
+                    if p['glider_cert'] and p['glider_cert'] in s['cert']:
+                        s['counter'] += 1
+                        if not s['prev'] == p['score']:
+                            s['rank'], s['prev'] = s['counter'], p['score']
+                        p[s['limit']] = f"{s['rank']} ({p['rank']})"
+                    else:
+                        p[s['limit']] = ''
+                results.append(p)
+            pretty_content['results'] = results
+            pretty_content['classes'] = [{k: c[k] for k in ('name', 'limit', 'cert', 'counter')} for c in sub_classes]
         return pretty_content
     except:
+        raise
         return 'error'
 
 
@@ -934,3 +1114,20 @@ def check_short_code(comp_short_code):
             return False
         else:
             return True
+
+
+def import_participants_from_fsdb(file: Path, from_CIVL=False) -> list:
+    """read the fsdb file"""
+    from fsdb import read_fsdb_file
+    from pilot.participant import Participant
+    root = read_fsdb_file(file)
+    pilots = []
+
+    print("Getting Pilots Info...")
+    if from_CIVL:
+        print('*** get from CIVL database')
+    p = root.find('FsCompetition').find('FsParticipants')
+    for pil in p.iter('FsParticipant'):
+        pilot = Participant.from_fsdb(pil, from_CIVL=from_CIVL)
+        pilots.append(pilot)
+    return pilots

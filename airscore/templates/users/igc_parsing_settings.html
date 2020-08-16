@@ -1,7 +1,7 @@
 {% extends "base.html"%}
 
 {% block page_title %}
-  IGC Parsing
+IGC Parsing
 {% endblock %}
 
 {% block content %}
@@ -9,246 +9,275 @@
 <p><strong> Error: </strong></p>
 {{error}}
 {% endif %}
-<form method="post" action="">
-   {{configform.hidden_tag()}}
-   <div class="container">
-      <br>
-      <center>
-        <h1>Setting: {{name}}</h1>
-          <h5>{{description}}</h5>
-      </center>
-   </div>
-   <p>
-      <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse1" aria-expanded="false" aria-controls="collapse1">
+<form method='post' action=''>
+  {{configform.hidden_tag()}}
+  <div class='container'>
+    <br>
+    <center>
+      <h1>Setting: {{name}}</h1>
+      <h5>{{description}}</h5>
+    </center>
+  </div>
+  <p>
+    <button class='btn btn-primary ml-4' type='button' data-toggle='collapse' data-target='#collapse1'
+            aria-expanded='false' aria-controls='collapse1'>
       Flight validation parameters
-      </button>
-   </p>
-   <div class="collapse show" id="collapse1">
-      <div class="card card-body">
-         <div class="container">
-            <h3 class="font-weight-bold">Flight validation parameters</h3>
-             <div class="alert alert-info" role="alert">
-               <h5>These are the settings that are used to decide if an igc file is of a good enough quality to use for scoring. This should not be confused with G-record checking. Mouse over a field for help.</h5>
-             </div>
-             <div class="form-row">
-               <div class="form-group col-md-7">
-                  {{configform.min_fixes.label}} {{configform.min_fixes(size=5, **{'data-toggle': 'tooltip', 'title': configform.min_fixes.description})}}
-               </div>
-            </div>
-            <div class="form-row">
-               <div  class="form-group col-md-5">
-                  {{configform.min_seconds_between_fixes.label}} {{configform.min_seconds_between_fixes(size=5, **{'data-toggle': 'tooltip', 'title': configform.min_seconds_between_fixes.description})}}
-               </div>
-               <div  class="form-group col-md-5">
-                  {{configform.max_seconds_between_fixes.label}} {{configform.max_seconds_between_fixes(size=5, **{'data-toggle': 'tooltip', 'title': configform.max_seconds_between_fixes.description})}}
-               </div>
-               <div  class="form-group col-md-5">
-                  {{configform.max_time_violations.label}} {{configform.max_time_violations(size=5, **{'data-toggle': 'tooltip', 'title': configform.max_time_violations.description})}}
-               </div>
-            </div>
+    </button>
+  </p>
+  <div class='collapse show' id='collapse1'>
+    <div class='card card-body'>
+      <div class='container'>
+        <h3 class='font-weight-bold'>Flight validation parameters</h3>
+        <div class='alert alert-info' role='alert'>
+          <h5>These are the settings that are used to decide if an igc file is of a good enough quality to use for
+            scoring. This should not be confused with G-record checking. Mouse over a field for help.</h5>
+        </div>
+        <div class='form-row'>
+          <div class='form-group col-md-7'>
+            {{configform.min_fixes.label}} {{configform.min_fixes(size=5, **{'data-toggle': 'tooltip', 'title':
+            configform.min_fixes.description})}}
+          </div>
+        </div>
+        <div class='form-row'>
+          <div class='form-group col-md-5'>
+            {{configform.min_seconds_between_fixes.label}} {{configform.min_seconds_between_fixes(size=5,
+            **{'data-toggle': 'tooltip', 'title': configform.min_seconds_between_fixes.description})}}
+          </div>
+          <div class='form-group col-md-5'>
+            {{configform.max_seconds_between_fixes.label}} {{configform.max_seconds_between_fixes(size=5,
+            **{'data-toggle': 'tooltip', 'title': configform.max_seconds_between_fixes.description})}}
+          </div>
+          <div class='form-group col-md-5'>
+            {{configform.max_time_violations.label}} {{configform.max_time_violations(size=5, **{'data-toggle':
+            'tooltip', 'title': configform.max_time_violations.description})}}
+          </div>
+        </div>
 
-            <div class="form-row">
-               <div  class="form-group col-md-5">
-                  {{configform.max_new_days_in_flight.label}} {{configform.max_new_days_in_flight(size=5, **{'data-toggle': 'tooltip', 'title': configform.max_new_days_in_flight.description})}}
-               </div>
-            </div>
-            <div class="form-row">
-                <div  class="form-group col-md-5">
-                  {{configform.min_avg_abs_alt_change.label}} {{configform.min_avg_abs_alt_change(size=5, **{'data-toggle': 'tooltip', 'title': configform.min_avg_abs_alt_change.description})}}
-               </div>
-               <div  class="form-group col-md-5">
-                  {{configform.max_alt_change_rate.label}} {{configform.max_alt_change_rate(size=5, **{'data-toggle': 'tooltip', 'title': configform.max_alt_change_rate.description})}}
-               </div>
-               <div  class="form-group col-md-5">
-                  {{configform.max_alt_change_violations.label}} {{configform.max_alt_change_violations(size=5, **{'data-toggle': 'tooltip', 'title': configform.max_alt_change_violations.description})}}
-               </div>
-            </div>
-            <div class="form-row">
-               <div  class="form-group col-md-5">
-                  {{configform.min_alt.label}} {{configform.min_alt(size=8, **{'data-toggle': 'tooltip', 'title': configform.min_alt.description})}}
-               </div>
-               <div  class="form-group col-md-5">
-                  {{configform.max_alt.label}} {{configform.max_alt(size=8, **{'data-toggle': 'tooltip', 'title': configform.max_alt.description})}}
-               </div>
-            </div>
+        <div class='form-row'>
+          <div class='form-group col-md-5'>
+            {{configform.max_new_days_in_flight.label}} {{configform.max_new_days_in_flight(size=5, **{'data-toggle':
+            'tooltip', 'title': configform.max_new_days_in_flight.description})}}
+          </div>
+        </div>
+        <div class='form-row'>
+          <div class='form-group col-md-5'>
+            {{configform.min_avg_abs_alt_change.label}} {{configform.min_avg_abs_alt_change(size=5, **{'data-toggle':
+            'tooltip', 'title': configform.min_avg_abs_alt_change.description})}}
+          </div>
+          <div class='form-group col-md-5'>
+            {{configform.max_alt_change_rate.label}} {{configform.max_alt_change_rate(size=5, **{'data-toggle':
+            'tooltip', 'title': configform.max_alt_change_rate.description})}}
+          </div>
+          <div class='form-group col-md-5'>
+            {{configform.max_alt_change_violations.label}} {{configform.max_alt_change_violations(size=5,
+            **{'data-toggle': 'tooltip', 'title': configform.max_alt_change_violations.description})}}
+          </div>
+        </div>
+        <div class='form-row'>
+          <div class='form-group col-md-5'>
+            {{configform.min_alt.label}} {{configform.min_alt(size=8, **{'data-toggle': 'tooltip', 'title':
+            configform.min_alt.description})}}
+          </div>
+          <div class='form-group col-md-5'>
+            {{configform.max_alt.label}} {{configform.max_alt(size=8, **{'data-toggle': 'tooltip', 'title':
+            configform.max_alt.description})}}
+          </div>
+        </div>
 
-         </div>
       </div>
-   </div>
-   <p>
-      <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse2" aria-expanded="false" aria-controls="collapse2">
+    </div>
+  </div>
+  <p>
+    <button class='btn btn-primary ml-4' type='button' data-toggle='collapse' data-target='#collapse2'
+            aria-expanded='false' aria-controls='collapse2'>
       Flight detection parameters
-      </button>
-   </p>
-   <div class="collapse" id="collapse2">
-   <div class="card card-body">
-      <div class="container">
-         <h3 class="font-weight-bold">Flight detection parameters</h3>
-          <div class="alert alert-info" role="alert">
-          <h6>These are the settings that are used to detect takeoff and landing. These probably don't need to be changed. Mouse over a field for help.</h6>
+    </button>
+  </p>
+  <div class='collapse' id='collapse2'>
+    <div class='card card-body'>
+      <div class='container'>
+        <h3 class='font-weight-bold'>Flight detection parameters</h3>
+        <div class='alert alert-info' role='alert'>
+          <h6>These are the settings that are used to detect takeoff and landing. These probably don't need to be
+            changed. Mouse over a field for help.</h6>
+        </div>
+        <div class='form-row'>
+          <div class='form-group col-md-2'>
+            {{configform.min_gsp_flight.label}} {{configform.min_gsp_flight(size=5, **{'data-toggle': 'tooltip',
+            'title': configform.min_gsp_flight.description})}}
           </div>
-         <div  class="form-row">
-            <div class="form-group col-md-2">
-               {{configform.min_gsp_flight.label}} {{configform.min_gsp_flight(size=5, **{'data-toggle': 'tooltip', 'title': configform.min_gsp_flight.description})}}
-            </div>
-         </div>
-         <div  class="form-row">
-            <div class="form-group col-md-2">
-               {{configform.min_landing_time.label}} {{configform.min_landing_time(size=10, **{'data-toggle': 'tooltip', 'title': configform.min_landing_time.description})}}
-            </div>
-         </div>
-         <div  class="form-row">
-            <div class="form-group col-md-2">
-               {{configform.which_flight_to_pick.label}} {{configform.which_flight_to_pick(**{'data-toggle': 'tooltip', 'title': configform.which_flight_to_pick.description})}}
-            </div>
-         </div>
+        </div>
+        <div class='form-row'>
+          <div class='form-group col-md-2'>
+            {{configform.min_landing_time.label}} {{configform.min_landing_time(size=10, **{'data-toggle': 'tooltip',
+            'title': configform.min_landing_time.description})}}
+          </div>
+        </div>
+        <div class='form-row'>
+          <div class='form-group col-md-2'>
+            {{configform.which_flight_to_pick.label}} {{configform.which_flight_to_pick(**{'data-toggle': 'tooltip',
+            'title': configform.which_flight_to_pick.description})}}
+          </div>
+        </div>
       </div>
-   </div>
-   </div>
-   <p>
-      <button class="btn btn-primary ml-4" type="button" data-toggle="collapse" data-target="#collapse3" aria-expanded="false" aria-controls="collapse3">
+    </div>
+  </div>
+  <p>
+    <button class='btn btn-primary ml-4' type='button' data-toggle='collapse' data-target='#collapse3'
+            aria-expanded='false' aria-controls='collapse3'>
       Thermal detection parameters
-      </button>
-   </p>
-   <div class="collapse" id="collapse3">
-       <div class="card card-body">
-      <div class="container">
-         <h3 class="font-weight-bold">Thermal detection parameters</h3>
-          <div class="alert alert-info" role="alert">
-          <h6>These are the settings that are used to detect thermals. Thermal detection is not used for scoring. It is for information purposes only. Mouse over a field for help.</h6>
+    </button>
+  </p>
+  <div class='collapse' id='collapse3'>
+    <div class='card card-body'>
+      <div class='container'>
+        <h3 class='font-weight-bold'>Thermal detection parameters</h3>
+        <div class='alert alert-info' role='alert'>
+          <h6>These are the settings that are used to detect thermals. Thermal detection is not used for scoring. It is
+            for information purposes only. Mouse over a field for help.</h6>
+        </div>
+        <div class='form-row'>
+          <div class='form-group col-md-2'>
+            {{configform.min_bearing_change_circling.label}} {{configform.min_bearing_change_circling(size=5,
+            **{'data-toggle': 'tooltip', 'title': configform.min_bearing_change_circling.description})}}
           </div>
-         <div  class="form-row">
-            <div class="form-group col-md-2">
-               {{configform.min_bearing_change_circling.label}} {{configform.min_bearing_change_circling(size=5, **{'data-toggle': 'tooltip', 'title': configform.min_bearing_change_circling.description})}}
-            </div>
-         </div>
-         <div  class="form-row">
-            <div class="form-group col-md-2">
-               {{configform.min_time_for_bearing_change.label}} {{configform.min_time_for_bearing_change(size=5, **{'data-toggle': 'tooltip', 'title': configform.min_time_for_bearing_change.description})}}
-            </div>
-         </div>
-         <div  class="form-row">
-            <div class="form-group col-md-2">
-               {{configform.min_time_for_thermal.label}} {{configform.min_time_for_thermal(size=5, **{'data-toggle': 'tooltip', 'title': configform.min_time_for_thermal.description})}}
-            </div>
-         </div>
+        </div>
+        <div class='form-row'>
+          <div class='form-group col-md-2'>
+            {{configform.min_time_for_bearing_change.label}} {{configform.min_time_for_bearing_change(size=5,
+            **{'data-toggle': 'tooltip', 'title': configform.min_time_for_bearing_change.description})}}
+          </div>
+        </div>
+        <div class='form-row'>
+          <div class='form-group col-md-2'>
+            {{configform.min_time_for_thermal.label}} {{configform.min_time_for_thermal(size=5, **{'data-toggle':
+            'tooltip', 'title': configform.min_time_for_thermal.description})}}
+          </div>
+        </div>
       </div>
-   </div>
-   </div>
-   <div class="container">
-   <br>
-   <center>
+    </div>
+  </div>
+  <div class='container'>
+    <br>
+    <center>
       {% if save %}
-       <button id = "save" type="button" class="btn btn-danger" data-toggle="modal" data-target="#save_modal" data-dismiss="modal">Save</button>
+      <button id='save' type='button' class='btn btn-danger' data-toggle='modal' data-target='#save_modal'
+              data-dismiss='modal'>Save
+      </button>
 
       {% endif%}
-        <button type="button" class="btn btn-primary" id="save-as" data-toggle="modal" data-target="#save_as_modal">Save as</button>
-       {% if save %}
-       <button id = "delete" type="button" class="btn btn-danger" data-toggle="modal" data-target="#delete_modal" data-dismiss="modal">Delete</button>
+      <button type='button' class='btn btn-primary' id='save-as' data-toggle='modal' data-target='#save_as_modal'>Save
+        as
+      </button>
+      {% if save %}
+      <button id='delete' type='button' class='btn btn-danger' data-toggle='modal' data-target='#delete_modal'
+              data-dismiss='modal'>Delete
+      </button>
 
       {% endif%}
-   </center>
-</div>
-
+    </center>
+  </div>
 
 
   <!----delete modal starts here--->
-<div id="delete_modal" class="modal fade" role='dialog'>
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                <h4 class="modal-title">Please confirm</h4>
-            </div>
-            <div class="modal-body" id= "modal-body">
-                <p>Warning: if there are any competitions using this setting you will not be able to delete it.</p>
+  <div id='delete_modal' class='modal fade' role='dialog'>
+    <div class='modal-dialog'>
+      <div class='modal-content'>
+        <div class='modal-header'>
+          <button type='button' class='close' data-dismiss='modal' aria-hidden='true'>×</button>
+          <h4 class='modal-title'>Please confirm</h4>
+        </div>
+        <div class='modal-body' id='modal-body'>
+          <p>Warning: if there are any competitions using this setting you will not be able to delete it.</p>
 
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-               <button id = "delete_confirmed" type="button" class="btn btn-default" onclick="delete_config()" data-dismiss="modal">Delete</button>
-            </div>
+        </div>
+        <div class='modal-footer'>
+          <button type='button' class='btn btn-default' data-dismiss='modal'>Cancel</button>
+          <button id='delete_confirmed' type='button' class='btn btn-default' onclick='delete_config()'
+                  data-dismiss='modal'>Delete
+          </button>
         </div>
       </div>
+    </div>
   </div>
-<!--Modal ends here--->
+  <!--Modal ends here--->
 
   <!----save update modal starts here--->
-<div id="save_modal" class="modal fade" role='dialog'>
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                <h4 class="modal-title">Save changes</h4>
-            </div>
-            <div class="modal-body" id= "save_modal-body">
-                 {{configform.description.label}} {{configform.description(size=50, **{'data-toggle': 'tooltip', 'title': configform.description.description})}}
+  <div id='save_modal' class='modal fade' role='dialog'>
+    <div class='modal-dialog'>
+      <div class='modal-content'>
+        <div class='modal-header'>
+          <button type='button' class='close' data-dismiss='modal' aria-hidden='true'>×</button>
+          <h4 class='modal-title'>Save changes</h4>
+        </div>
+        <div class='modal-body' id='save_modal-body'>
+          {{configform.description.label}} {{configform.description(size=50, **{'data-toggle': 'tooltip', 'title':
+          configform.description.description})}}
 
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-               {{configform.save(**{'class': 'btn btn-success'})}}
-            </div>
+        </div>
+        <div class='modal-footer'>
+          <button type='button' class='btn btn-default' data-dismiss='modal'>Cancel</button>
+          {{configform.save(**{'class': 'btn btn-success'})}}
         </div>
       </div>
+    </div>
   </div>
-<!--Modal ends here--->
+  <!--Modal ends here--->
 
   <!----save as update modal starts here--->
-<div id="save_as_modal" class="modal fade" role='dialog'>
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                <h4 class="modal-title">Save changes as</h4>
-            </div>
-            <div class="modal-body" id= "save_as_modal-body">
-                <div  class="form-row">
-                 {{configform.description.label}} {{configform.description(size=50, **{'data-toggle': 'tooltip', 'title': configform.description.description})}}
-                 </div>
-                    <div  class="form-row">
-                    {{configform.new_name.label}} {{configform.new_name}}
-                    </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-warning" data-dismiss="modal">Cancel</button>
-               {{configform.save_as(**{'class': 'btn btn-success'})}}
-            </div>
+  <div id='save_as_modal' class='modal fade' role='dialog'>
+    <div class='modal-dialog'>
+      <div class='modal-content'>
+        <div class='modal-header'>
+          <button type='button' class='close' data-dismiss='modal' aria-hidden='true'>×</button>
+          <h4 class='modal-title'>Save changes as</h4>
+        </div>
+        <div class='modal-body' id='save_as_modal-body'>
+          <div class='form-row'>
+            {{configform.description.label}} {{configform.description(size=50, **{'data-toggle': 'tooltip', 'title':
+            configform.description.description})}}
+          </div>
+          <div class='form-row'>
+            {{configform.new_name.label}} {{configform.new_name}}
+          </div>
+        </div>
+        <div class='modal-footer'>
+          <button type='button' class='btn btn-warning' data-dismiss='modal'>Cancel</button>
+          {{configform.save_as(**{'class': 'btn btn-success'})}}
         </div>
       </div>
+    </div>
   </div>
-<!--Modal ends here--->
+  <!--Modal ends here--->
 
 </form>
 {% endblock %}
 {% block js %}
 <script src="{{ static_url_for('static', filename='js/display-if.min.js') }}"></script>
 
-<script type="text/javascript">
+<script type='text/javascript'>
 
-   var csrftoken = $('meta[name=csrf-token]').attr('content');
-      $.ajaxSetup({
-       beforeSend: function(xhr, settings) {
-           if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type)) {
-               xhr.setRequestHeader("X-CSRFToken", csrftoken)
-           }
-       }
-   })
+var csrftoken = $('meta[name=csrf-token]').attr('content');
+$.ajaxSetup({
+  beforeSend: function(xhr, settings) {
+    if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type)) {
+      xhr.setRequestHeader("X-CSRFToken", csrftoken)
+    }
+  }
+})
 
 {% if save %}
-
-
-   function delete_config(){
-
-           $.ajax({
-               type: "POST",
-               url: '/users/_del_igc_config/{{name}}',
-               success: function () {
-                    alert("Deleted");                }
-               });
-
-   };
+function delete_config(){
+  $.ajax({
+    type: "POST",
+    url: '/users/_del_igc_config/{{name}}',
+    success: function () {
+      alert("Deleted");
+    }
+  });
+};
 
 {% endif %}
+
 </script>
 {% endblock %}

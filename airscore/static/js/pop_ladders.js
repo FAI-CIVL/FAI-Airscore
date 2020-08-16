@@ -1,25 +1,25 @@
 
 $(document).ready(function() {
     $('#competitions').dataTable({
-        ajax: '/_get_all_comps',
-        order: [[ 4, 'desc' ]],
+        ajax: '/_get_ladders',
+//        order: [[ 4, 'desc' ]],
         paging: false,
         searching: true,
         saveState: true,
         info: false,
         dom: '<"#search"f>rt<"bottom"lip><"clear">',
         columns: [
-            {data: 'comp_name', title:'Competition'},
-            {data: 'comp_site', title:'Location', defaultContent: ''},
-            {data: 'comp_class', title:'Class', defaultContent: ''},
-            {data: 'comp_type', title:'Type', defaultContent: ''},
-            {data: 'date_from', title:'From', defaultContent: ''},
-            {data: 'date_to', title:'To', defaultContent: ''},
-            {data: 'tasks', title:'Tasks'},
-            {data: 'status', title:'Status'},
+            {data: 'ladder_name', title: 'Name'},
+            {data: 'nat', title: 'Nat', defaultContent: ''},
+            {data: 'ladder_class', title: 'Class', defaultContent: ''},
+            {data: 'season', title: 'Season', defaultContent: ''},
+//            {data: 'comp_type', title:'Type', defaultContent: ''},
+//            {data: 'date_from', title:'From', defaultContent: ''},
+//            {data: 'date_to', title:'To', defaultContent: ''},
+            {data: 'status', title: 'Status'},
         ],
         rowId: function(data) {
-            return 'id_' + data.comp_id;
+            return 'id_' + data.ladder_id;
         },
         createdRow: function( row, data, dataIndex ) {
             if (today() < data.date_from) {
@@ -34,6 +34,10 @@ $(document).ready(function() {
                 targets: [ ],
                 visible: false
             },
+            {
+                targets: [ 2 ],
+                width: 40
+            }
         ],
         "initComplete": function(settings, json) {
             var table = $('#competitions');

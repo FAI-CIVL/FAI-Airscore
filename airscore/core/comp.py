@@ -16,8 +16,8 @@ from os import path
 
 from sqlalchemy import and_
 from Defines import TRACKDIR, RESULTDIR, SELF_REG_DEFAULT, PILOT_DB
-from calcUtils import get_date
-from compUtils import get_tasks_result_files, get_participants, read_rankings, create_comp_path
+from calcUtils import get_date, c_round
+from compUtils import get_tasks_result_files, get_participants, read_rankings, create_classifications, create_comp_path
 from db.tables import TblCompetition
 from formula import Formula
 from db.conn import db_session
@@ -117,7 +117,7 @@ class Comp(object):
     @property
     def total_validity(self):
         if len(self.tasks) > 0:
-            return round(sum([t.ftv_validity for t in self.tasks]), 4)
+            return c_round(sum([t.ftv_validity for t in self.tasks]), 4)
         else:
             return 0
 
@@ -125,7 +125,7 @@ class Comp(object):
     def avail_validity(self):
         if len(self.tasks) > 0:
             if self.formula.overall_validity == 'ftv':
-                return round(self.total_validity * self.formula.validity_param, 4)
+                return c_round(self.total_validity * self.formula.validity_param, 4)
             else:
                 return self.total_validity
         return 0
@@ -263,7 +263,7 @@ class Comp(object):
         return self.comp_id
 
     def get_rankings(self):
-        self.rankings = read_rankings(self.comp_id)
+        self.rankings = create_classifications(self.cat_id)
 
     @staticmethod
     def from_fsdb(fs_comp, short_name=None):
@@ -434,7 +434,7 @@ class Comp(object):
         for pil in self.results:
             pil['score'] = 0
 
-            ''' if we score all tasks, or tasks are not enough to ha discards,
+            ''' if we score all tasks, or tasks are not enough to have discards,
                 or event has just one valid task regardless method,
                 we can simply sum all score values
             '''
@@ -485,11 +485,6 @@ def delete_comp(comp_id, files=True):
     from task import delete_task
     from result import delete_result
     with db_session() as db:
-        # if files:
-        #     '''delete tracks'''
-        #     folder = path.join(TRACKDIR, db.query(TblCompetition).get(comp_id).comp_path)
-        #     if path.exists(folder):
-        #         shutil.rmtree(folder)
         tasks = db.query(T.task_id).filter_by(comp_id=comp_id).all()
         if tasks:
             '''delete tasks'''

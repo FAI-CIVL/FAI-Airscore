@@ -15,11 +15,12 @@ from datetime import datetime
 
 import lxml.etree as ET
 from lxml.etree import CDATA
-from calcUtils import get_isotime, km, sec_to_time
+from calcUtils import get_isotime, km, sec_to_time, c_round
 from comp import Comp
 from compUtils import is_ext
 from formula import Formula
 from db.conn import db_session
+from pathlib import Path
 from pilot.participant import Participant, mass_import_participants
 from pilot.flightresult import FlightResult, update_all_results
 from task import Task
@@ -44,7 +45,7 @@ class FSDB(object):
         return self.comp.formula
 
     @classmethod
-    def read(cls, fp, short_name=None, keep_task_path=False, from_CIVL=False):
+    def read(cls, fp: Path, short_name: str = None, keep_task_path=False, from_CIVL=False):
         """ A XML reader to read FSDB files
             Unfortunately the fsdb format isn't published so much of this is simply an
             exercise in reverse engineering.
@@ -55,12 +56,7 @@ class FSDB(object):
         """
 
         """read the fsdb file"""
-        try:
-            tree = ET.parse(fp)
-            root = tree.getroot()
-        except ET.Error:
-            print("FSDB Read Error.")
-            return None
+        root = read_fsdb_file(fp)
 
         pilots = []
         tasks = []
@@ -158,7 +154,7 @@ class FSDB(object):
                      'to': self.comp.date_to,
                      'utc_offset': self.comp.time_offset / 3600,
                      'discipline': self.comp.comp_class.lower(),
-                     'ftv_factor': round(1 - formula.validity_param, 2),
+                     'ftv_factor': c_round(1 - formula.validity_param, 4),
                      'fai_sanctioning': (1 if self.comp.sanction == 'FAI 1'
                                          else 2 if self.comp.sanction == 'FAI 2' else 0)
                      }
@@ -172,10 +168,10 @@ class FSDB(object):
                         'day_quality_override': 0,  # still to implement
                         'bonus_gr': formula.glide_bonus,
                         'jump_the_gun_factor': (0 if formula.max_JTG == 0
-                                                else round(1 / formula.JTG_penalty_per_sec, 1)),
+                                                else c_round(1 / formula.JTG_penalty_per_sec, 1)),
                         'jump_the_gun_max': formula.max_JTG,
                         'normalize_1000_before_day_quality': 0,  # still to implement
-                        'time_points_if_not_in_goal': round(1 - formula.no_goal_penalty, 1),
+                        'time_points_if_not_in_goal': c_round(1 - formula.no_goal_penalty, 1),
                         'use_1000_points_for_max_day_quality': 0,  # still to implement
                         'use_arrival_position_points': 1 if formula.formula_arrival == 'position' else 0,
                         'use_arrival_time_points': 1 if formula.formula_arrival == 'time' else 0,
@@ -193,12 +189,12 @@ class FSDB(object):
                         'score_back_time': formula.score_back_time / 60,
                         'use_proportional_leading_weight_if_nobody_in_goal': '',  # still to implement
                         'leading_weight_factor': (0 if formula.formula_departure != 'leadout'
-                                                  else round(formula.lead_factor, 3)),
+                                                  else c_round(formula.lead_factor, 3)),
                         'turnpoint_radius_tolerance': formula.tolerance,
                         'use_arrival_altitude_points': 0 if formula.arr_alt_bonus == 0 else ''  # still to implement
                         }
         if formula.arr_alt_bonus > 0:
-            formula_attr['aatb_factor'] = round(formula.arr_alt_bonus, 3)
+            formula_attr['aatb_factor'] = c_round(formula.arr_alt_bonus, 3)
 
         '''create the file structure'''
         root = ET.Element('Fs')
@@ -374,11 +370,11 @@ class FSDB(object):
                        'max_time_to_get_time_points': round(0 / 3600, 14),  # not yet implemented
                        'no_of_pilots_with_time_points': len([x for x in t.valid_results if x.time_score > 0]),
                        'goal_ratio': (0 if t.pilots_launched == 0 else round(t.pilots_goal / t.pilots_launched, 15)),
-                       'arrival_weight': 0 if t.arrival == 0 else round(t.arr_weight, 3),
-                       'departure_weight': 0 if t.departure != 'on' else round(t.dep_weight, 3),
-                       'leading_weight': 0 if t.departure != 'leadout' else round(t.dep_weight, 3),
-                       'time_weight': 0 if t.arrival == 'off' else round(t.time_weight, 3),
-                       'distance_weight': round(t.dist_weight, 3),  # not yet implemented
+                       'arrival_weight': 0 if t.arrival == 0 else c_round(t.arr_weight, 3),
+                       'departure_weight': 0 if t.departure != 'on' else c_round(t.dep_weight, 3),
+                       'leading_weight': 0 if t.departure != 'leadout' else c_round(t.dep_weight, 3),
+                       'time_weight': 0 if t.arrival == 'off' else c_round(t.time_weight, 3),
+                       'distance_weight': c_round(t.dist_weight, 3),  # not yet implemented
                        'smallest_leading_coefficient': round(t.min_lead_coeff, 14),
                        'available_points_distance': round(t.avail_dist_points, 14),
                        'available_points_time': round(t.avail_time_points, 14),
@@ -387,11 +383,11 @@ class FSDB(object):
                        'available_points_leading': (0 if not t.formula.departure == 'leadout'
                                                     else round(t.avail_dep_points, 14)),
                        'available_points_arrival': round(t.avail_arr_points, 14),
-                       'time_validity': round(t.time_validity, 3),
-                       'launch_validity': round(t.launch_validity, 3),
-                       'distance_validity': round(t.dist_validity, 3),
-                       'stop_validity': round(t.stop_validity, 3),
-                       'day_quality': round(t.day_quality, 3),
+                       'time_validity': c_round(t.time_validity, 3),
+                       'launch_validity': c_round(t.launch_validity, 3),
+                       'distance_validity': c_round(t.dist_validity, 3),
+                       'stop_validity': c_round(t.stop_validity, 3),
+                       'day_quality': c_round(t.day_quality, 3),
                        'ftv_day_validity': t.ftv_validity,
                        'time_points_stop_correction': 0  # not yet implemented
                        }
@@ -440,16 +436,16 @@ class FSDB(object):
 
                     r_attr = {'rank': i + 1,  # not implemented, they should be ordered tho
                               # Rank IS NOT SAFE (I guess)
-                              'points': round(pil.score),
+                              'points': c_round(pil.score),
                               'distance': km(pil.total_distance if pil.total_distance else pil.distance_flown),
                               'ss_time': '' if not pil.ss_time else sec_to_time(pil.ss_time).strftime('%H:%M:%S'),
                               'finished_ss_rank': '' if not pil.ESS_time and pil.ESS_rank else pil.ESS_rank,
-                              'distance_points': 0 if not pil.distance_score else round(pil.distance_score, 1),
-                              'time_points': 0 if not pil.time_score else round(pil.time_score, 1),
-                              'arrival_points': 0 if not pil.arrival_score else round(pil.arrival_score, 1),
-                              'departure_points': 0 if not t.formula.departure == 'departure' else round(
+                              'distance_points': 0 if not pil.distance_score else c_round(pil.distance_score, 1),
+                              'time_points': 0 if not pil.time_score else c_round(pil.time_score, 1),
+                              'arrival_points': 0 if not pil.arrival_score else c_round(pil.arrival_score, 1),
+                              'departure_points': 0 if not t.formula.departure == 'departure' else c_round(
                                   pil.departure_score, 1),
-                              'leading_points': 0 if not t.formula.departure == 'leadout' else round(
+                              'leading_points': 0 if not t.formula.departure == 'leadout' else c_round(
                                   pil.departure_score, 1),
                               'penalty': 0 if not [n for n in pil.notifications
                                                    if n.percentage_penalty > 0] else max(
@@ -616,3 +612,17 @@ class FSDB(object):
             return self.comp.comp_id
         else:
             return None
+
+
+def read_fsdb_file(file: Path) -> ET:
+    """read the fsdb file"""
+    try:
+        tree = ET.parse(file)
+    except TypeError:
+        tree = ET.parse(file.as_posix())
+    except ET.Error:
+        print("FSDB Read Error.")
+        return None
+    finally:
+        root = tree.getroot()
+        return root

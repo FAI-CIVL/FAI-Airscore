@@ -90,3 +90,6 @@ FM_LIVE = config['flymaster_live_server']
 '''Telegram Bot'''
 TELEGRAM_API = secret['telegram']['API']
 TELEGRAM_CHANNEL = secret['telegram']['channel']
+
+'''Ladders'''
+LADDERS = config['ladders']

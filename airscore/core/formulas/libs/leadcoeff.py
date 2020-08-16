@@ -81,12 +81,8 @@ def tot_lc_calc(res, t):
 def store_lc(res_id, lead_coeff):
     """store LC to database"""
     from db.tables import TblTaskResult as R
-    from db.conn import db_session
     # It shouldn't be necessary any longer, as we should not store final LC
+    row = R.get_by_id(res_id)
+    row.update(lead_coeff=lead_coeff)
 
-    with db_session() as db:
-        q = db.query(R)
-        res = q.get(res_id)
-        res.lead_coeff = lead_coeff
-        db.commit()
 

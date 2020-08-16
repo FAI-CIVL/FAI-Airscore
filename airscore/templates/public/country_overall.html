@@ -1,49 +1,52 @@
 {% extends "base.html"%}
 
 {% block page_title %}
-  Competition Results - Country
+Competition Results - Country
 {% endblock %}
 
 {% block head %}
-    <!-- CSS -->
-    <link href="/static/css/task.css" rel="stylesheet">
-    <link href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css" rel="stylesheet">
-    <!-- JS -->
-    <script type="text/javascript" src="/static/js/utils.js"></script>
-    <script type="text/javascript" src="/static/js/microajax.minified.js"></script>
+<!-- CSS -->
+<link href='/static/css/task.css' rel='stylesheet'>
+<link href='https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css' rel='stylesheet'>
+<!-- JS -->
+<script type='text/javascript' src='/static/js/utils.js'></script>
+<script type='text/javascript' src='/static/js/microajax.minified.js'></script>
 {% endblock %}
 
 {% block content %}
-    <div class="container-fluid">
-    <div class="row">
-        <div class="col col-md-7 comp_header mt-1">
-        <h2 id="comp_name"></h2>
-        <h4 id="comp_date"></h4>
-        <h4 id="comp_director"></h4>
-        </div>
-        <div class="col col-md-5" class="parameters">
-        <table class="table table-sm" id="formula">
-        <thead class="thead-light" id="formula_hd">
-            <tr><th>Information</th><th></th></tr>
-        </thead>
-        <tbody class="small" id="formula_bd"></tbody>
-        </table>
-        </div>
+<div class='container-fluid'>
+  <div class='row'>
+    <div class='col col-md-7 comp_header mt-1'>
+      <h2 id='comp_name'></h2>
+      <h4 id='comp_date'></h4>
+      <h4 id='comp_director'></h4>
     </div>
-    <table id="task_result" class="row-border compact" cellspacing="0" width="100%">
-    <thead>
+    <div class='col col-md-5' class='parameters'>
+      <table class='table table-sm' id='formula'>
+        <thead class='thead-light' id='formula_hd'>
         <tr>
+          <th>Information</th>
+          <th></th>
         </tr>
-    </thead>
-    </table>
+        </thead>
+        <tbody class='small' id='formula_bd'></tbody>
+      </table>
     </div>
+  </div>
+  <table id='task_result' class='row-border compact' cellspacing='0' width='100%'>
+    <thead>
+    <tr>
+    </tr>
+    </thead>
+  </table>
+</div>
 {% endblock %}
 
 {% endblock %}
 {% block js %}
-    <script type="text/javascript" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
-    <script type="text/javascript" src="https://cdn.datatables.net/rowgroup/1.1.1/js/dataTables.rowGroup.min.js"></script>
-    <script type="text/javascript" src="/static/js/enums.js"></script>
-    <script type="text/javascript" src="/static/js/pop_country_overall.js"></script>
-    <script type="text/javascript">populate_country_overall({{compid|tojson}})</script>
+<script type='text/javascript' src='https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js'></script>
+<script type='text/javascript' src='https://cdn.datatables.net/rowgroup/1.1.1/js/dataTables.rowGroup.min.js'></script>
+<script type='text/javascript' src='/static/js/enums.js'></script>
+<script type='text/javascript' src='/static/js/pop_country_overall.js'></script>
+<script type='text/javascript'>populate_country_overall({{compid|tojson}})</script>
 {% endblock %}

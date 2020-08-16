@@ -78,14 +78,9 @@ def get_comp_json_filename(comp_id: int, latest=False):
 
 def get_comp_json(comp_id: int, latest=False):
     """returns json data from comp result file, default the active one or latest if latest is True"""
+    from result import open_json_file
     filename = get_comp_json_filename(comp_id, latest)
-    if not filename:
-        return "error"
-    with open(Defines.RESULTDIR + filename, 'r') as myfile:
-        data = myfile.read()
-    if not data:
-        return "error"
-    return json.loads(data)
+    return open_json_file(filename) if filename else 'error'
 
 
 def get_nat_code(iso: str):
@@ -106,6 +101,11 @@ def get_nat_name(iso: str):
     column = getattr(CC, 'natIso' + str(len(iso)))
     with db_session() as db:
         return db.query(CC.natName).filter(column == iso).limit(1).scalar()
+
+
+def get_nat(nat_code: int, iso: int = 3) -> str:
+    from db.tables import TblCountryCode as CC
+    return CC.get_by_id(nat_code).natIso3 if iso == 3 else CC.get_by_id(nat_code).natIso2
 
 
 def get_task_path(task_id: int):
@@ -178,25 +178,19 @@ def get_tasks_result_files(comp_id: int):
     return files
 
 
-def read_rankings(comp_id: int):
-    """reads sub rankings list for the task and creates a dictionary"""
+def create_classifications(cat_id: int) -> dict:
+    """create the output to generate classifications list"""
     from db.tables import TblClasCertRank as CC, TblCompetition as C, TblRanking as R, TblCertification as CCT, \
         TblClassification as CT
-    from sqlalchemy import and_
     rank = dict()
     with db_session() as db:
         '''get rankings definitions'''
-        class_id = db.query(C.cat_id).filter_by(comp_id=comp_id).scalar()
-        if not class_id:
-            print(f'Comp with ID {comp_id} does not exist or has no classifications id')
-            db.close()
-            return rank
         query = db.query(R.rank_name.label('rank'), CCT.cert_name.label('cert'), CT.female, CT.team) \
             .select_from(R) \
             .join(CC, R.rank_id == CC.c.rank_id) \
-            .join(CCT, and_(CCT.cert_id <= CC.c.cert_id, CCT.comp_class == R.comp_class)) \
+            .join(CCT, (CCT.cert_id <= CC.c.cert_id) & (CCT.comp_class == R.comp_class)) \
             .join(CT, CT.cat_id == CC.c.cat_id) \
-            .filter(and_(CC.c.cert_id > 0, CC.c.cat_id == class_id))
+            .filter(CC.c.cert_id > 0, CC.c.cat_id == cat_id)
         result = query.all()
     if len(result) > 0:
         for res in result:
@@ -209,6 +203,14 @@ def read_rankings(comp_id: int):
     else:
         print(f'Ranking list is empty')
     return rank
+
+
+def read_rankings(comp_id: int) -> dict:
+    """reads sub rankings list for the task and creates a dictionary"""
+    from db.tables import TblCompetition as C
+    '''get rankings definitions'''
+    cat_id = C.get_by_id(comp_id).cat_id
+    return create_classifications(cat_id)
 
 
 def create_comp_code(name: str, date: datetime.date):

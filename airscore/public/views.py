@@ -27,6 +27,7 @@ import mapUtils
 import Defines
 from os import path
 import frontendUtils
+from pathlib import Path
 
 blueprint = Blueprint("public", __name__, static_folder="../static")
 
@@ -53,12 +54,85 @@ def home():
             return redirect(redirect_url)
         else:
             flash_errors(form)
-    return render_template('public/index.html', form=form)
+    return render_template('public/index.html', form=form, now=datetime.utcnow(), ladders=Defines.LADDERS)
 
 
 @blueprint.route("/ladders/", methods=["GET", "POST"])
 def ladders():
-    return render_template('public/ladders.html')
+    return render_template('public/ladders.html', now=datetime.utcnow())
+
+
+@blueprint.route('/_get_ladders', methods=['GET', 'POST'])
+def _get_ladders():
+    from calcUtils import get_season_dates
+    ladderlist = frontendUtils.get_ladders()
+    # {'comp_id': 2, 'comp_name': 'Meeting LP 2018 - 1', 'comp_site': 'Meduno', 'comp_class': 'PG', 'sanction': 'none',
+    #  'comp_type': 'RACE', 'date_from': datetime.date(2018, 4, 7), 'date_to': datetime.date(2018, 4, 8), 'external': 0}
+    data = []
+    now = datetime.now().date()
+    '''seasons'''
+    seasons = sorted(set([c['season'] for c in ladderlist]), reverse=True)
+    for c in ladderlist:
+        ladderid = c['ladder_id']
+        name = c['ladder_name']
+        season = int(c['season'])
+        '''create start and end dates'''
+        starts, ends = get_season_dates(ladder_id=ladderid, season=season,
+                                        date_from=c['date_from'], date_to=c['date_to'])
+        c['ladder_name'] = f'<a href="/ladder_result/{ladderid}/{season}">{name} {season}</a>'
+        if c['ladder_class']:
+            cl = c['ladder_class'].upper()
+            c['ladder_class'] = f'<img src="/static/img/{cl}.png" width="100%" height="100%"</img>'
+        if starts > now:
+            days = (starts - now).days
+            c['status'] = f"Starts in {days} days" if days > 1 else f"Starts tomorrow"
+        elif ends < now:
+            c['status'] = 'Finished'
+        else:
+            c['status'] = 'Running'
+        c['date_from'] = starts.strftime('%Y-%m-%d')
+        c['date_to'] = ends.strftime('%Y-%m-%d')
+        data.append(c)
+    return {'data': data, 'seasons': seasons}
+
+
+@blueprint.route('/ladder_result/<int:ladderid>/<int:season>')
+def ladder_result(ladderid: int, season: int):
+    return render_template('public/ladder_overall.html', ladderid=ladderid, season=season)
+
+
+@blueprint.route('/_get_ladder_result/<int:ladderid>/<int:season>', methods=['GET', 'POST'])
+def _get_ladder_result(ladderid: int, season: int):
+
+    result_file = frontendUtils.get_pretty_data(frontendUtils.get_ladder_results(ladderid, season))
+    if result_file == 'error':
+        return render_template('404.html')
+
+    for t in result_file['comps']:
+        link, code = f"/competition/{t['id']}", t['comp_name']
+        t['link'] = f"<a href='{link}' target='_blank'>{code}</a>"
+
+    all_pilots = []
+    columns = 0
+    for r in result_file['results']:
+        pilot = {'fai_id': r['fai_id'], 'civl_id': r['civl_id'],
+                 'name': f"<span class='sex-{r['sex']}'><b>{r['name']}</b></span>", 'nat': r['nat'], 'sex': r['sex'],
+                 'score': f"<b>{r['score']}</b>", 'ranks': {'rank': f"<b>{r['rank']}</b>"}}
+        for i, c in enumerate(result_file['classes'][1:], 1):
+            pilot['ranks']['class' + str(i)] = f"{r[c['limit']]}"
+        pilot['results'] = []
+        for idx, res in enumerate(r['results'], 1):
+            score = f"{res['score']}" if res['score'] == res['pre'] else f"{res['score']} <del>{res['pre']}</del>"
+            link = f"<a href=/task_result/{res['task_id']} target='_blank'>{res['task_code']}</a>"
+            html = f"<span class='task_score'>{score}</span><span class='task_code'>({link})</span>"
+            pilot['results'].append(html)
+        if len(pilot['results']) > columns:
+            columns = len(pilot['results'])
+        all_pilots.append(pilot)
+    result_file['data'] = all_pilots
+    result_file['columns'] = columns
+
+    return result_file
 
 
 @blueprint.route('/pilots/')
@@ -102,12 +176,45 @@ def about():
 
 @blueprint.route('/_get_all_comps', methods=['GET', 'POST'])
 def _get_all_comps():
-    return frontendUtils.get_comps()
+    comps = frontendUtils.get_comps()
+    # {'comp_id': 2, 'comp_name': 'Meeting LP 2018 - 1', 'comp_site': 'Meduno', 'comp_class': 'PG', 'sanction': 'none',
+    #  'comp_type': 'RACE', 'date_from': datetime.date(2018, 4, 7), 'date_to': datetime.date(2018, 4, 8), 'external': 0}
+    data = []
+    now = datetime.now().date()
+    '''seasons'''
+    seasons = sorted(set([c['date_from'].year for c in comps]), reverse=True)
+    for c in comps:
+        compid = c['comp_id']
+        starts = c['date_from']
+        ends = c['date_to']
+        if c['comp_type'] in ('RACE', 'Route'):
+            name = c['comp_name']
+            if c['external']:
+                c['tasks'] = 'external'
+                c['comp_name'] = f'<a href="/ext_comp_result/{compid}">{name}</a>'
+            else:
+                c['comp_name'] = f'<a href="/competition/{compid}">{name}</a>'
+            if c['sanction'] and not c['sanction'] == 'none':
+                c['comp_type'] = ' - '.join([c['comp_type'], c['sanction']])
+            if c['comp_class']:
+                c['comp_class'] = f'<img src="/static/img/{c["comp_class"]}.png" width="100%" height="100%"</img>'
+            if starts > now:
+                days = (starts - now).days
+                c['status'] = f"Starts in {days} days" if days > 1 else f"Starts tomorrow"
+            elif ends < now:
+                c['status'] = 'Finished'
+            else:
+                c['status'] = 'Running'
+            c['date_from'] = c['date_from'].strftime('%Y-%m-%d')
+            c['date_to'] = c['date_to'].strftime('%Y-%m-%d')
+            data.append(c)
+    return {'data': data, 'seasons': seasons}
 
 
 @blueprint.route('/competition/<int:compid>')
 def competition(compid):
     from compUtils import get_comp_json
+    from Defines import LIVETRACKDIR
     # get the latest comp result file, not the active one. This is so we can display tasks that have published
     # results that are not yet official and therefore in the comp overall results
     result_file = get_comp_json(int(compid), latest=True)
@@ -144,11 +251,11 @@ def competition(compid):
     if non_scored_tasks:
         for t in non_scored_tasks:
             task = t._asdict()
-            task['status'] = "Not yet scored"
             if not t.opt_dist or t.opt_dist == 0:
                 task['status'] = "Task not set"
                 task['opt_dist'] = '0 km'
             else:
+                task['status'] = "Not yet scored"
                 wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox, _, _ = get_map_json(task['id'])
                 layer['geojson'] = None
                 layer['bbox'] = bbox
@@ -156,6 +263,8 @@ def competition(compid):
                                     goal_line=goal_line, margin=tolerance)
                 task['opt_dist'] = '{:0.2f}'.format(task['opt_dist'] / 1000) + ' km'
                 task.update({'map': task_map._repr_html_()})
+                '''livetracking availability'''
+                task['live'] = Path(LIVETRACKDIR, str(task['id'])).is_file()
 
             task['tasQuality'] = "-"
             task['date'] = task['date'].strftime("%Y-%m-%d")
@@ -186,8 +295,8 @@ def task_result(taskid):
 
 @blueprint.route('/_get_task_result/<int:taskid>', methods=['GET', 'POST'])
 def _get_task_result(taskid):
-    from task import get_task_json_filename
-    result_file = frontendUtils.get_pretty_data(get_task_json_filename(taskid))
+    from task import get_task_json
+    result_file = frontendUtils.get_pretty_data(get_task_json(taskid))
     if result_file == 'error':
         return render_template('404.html')
 
@@ -240,30 +349,28 @@ def comp_result(compid):
 
 @blueprint.route('/_get_comp_result/<compid>', methods=['GET', 'POST'])
 def _get_comp_result(compid):
-    from compUtils import get_comp_json_filename
-    result_file = frontendUtils.get_pretty_data(get_comp_json_filename(compid))
+    from compUtils import get_comp_json
+    result_file = frontendUtils.get_pretty_data(get_comp_json(compid))
     if result_file == 'error':
         return render_template('404.html')
+
+    for t in result_file['tasks']:
+        link, code = f"/task_result/{t['id']}", t['task_code']
+        t['link'] = f"<a href='{link}' target='_blank'>{code}</a>"
+
     all_pilots = []
-    tasks = [t['task_code'] for t in result_file['tasks']]
     for r in result_file['results']:
         pilot = {'fai_id': r['fai_id'], 'civl_id': r['civl_id'],
                  'name': f"<span class='sex-{r['sex']}'><b>{r['name']}</b></span>", 'nat': r['nat'], 'sex': r['sex'],
                  'glider': r['glider'], 'glider_cert': r['glider_cert'], 'sponsor': r['sponsor'],
-                 'score': f"<b>{r['score']}</b>", 'results': {}, 'ranks': {'rank': f"<b>{r['rank']}</b>"}}
-        # setup 4 sub-rankings placeholders
+                 'score': f"<b>{r['score']}</b>", 'ranks': {'rank': f"<b>{r['rank']}</b>"}}
         for i, c in enumerate(result_file['classes'][1:], 1):
             pilot['ranks']['class' + str(i)] = f"{r[c['limit']]}"
-        # setup the 20 task placeholders
-        for t in range(1, 21):
-            task = 'T' + str(t)
-            pilot['results'][task] = {'score': ''}
-        for task in tasks:
-            if r['results'][task]['pre'] == r['results'][task]['score']:
-                pilot['results'][task] = {'score': r['results'][task]['score']}
-            else:
-                pilot['results'][task] = {'score': f"{int(r['results'][task]['score'])} <del>{int(r['results'][task]['pre'])}</del>"}
-
+        pilot['results'] = []
+        for k, v in r['results'].items():
+            score = f"{v['score']}" if v['score'] == v['pre'] else f"{v['score']} <del>{v['pre']}</del>"
+            html = f"<span class='task_score'>{score}</span>"
+            pilot['results'].append(html)
         all_pilots.append(pilot)
     result_file['data'] = all_pilots
 
@@ -447,60 +554,72 @@ def _get_participants_and_status(compid):
 
 @blueprint.route('/live/<int:taskid>')
 def livetracking(taskid):
+    return render_template('public/live.html', taskid=taskid)
+
+
+@blueprint.route('/_get_livetracking/<taskid>', methods=['GET', 'POST'])
+def _get_livetracking(taskid):
     from livetracking import get_live_json
-    from calcUtils import sec_to_string, time_to_seconds
+    from calcUtils import sec_to_string, time_to_seconds, c_round
     from datetime import datetime
     result_file = get_live_json(int(taskid))
-    file_stats = result_file['file_stats']
-    headers = result_file['headers']
-    data = result_file['data']
-    info = result_file['info']
-    # if file_stats['timestamp'] == 'Cancelled':
-    if info['time_offset']:
-        file_stats['last_update'] = datetime.fromtimestamp(file_stats['timestamp'] + info['time_offset']).isoformat()
+
+    formatted = frontendUtils.get_pretty_data(result_file)
+    timestamp = result_file['file_stats']['timestamp']
+    offset = result_file['info']['time_offset']
+
+    formatted['headers'] = result_file['headers']
+    updated = datetime.fromtimestamp(timestamp + (offset or 0))
+    formatted['file_stats']['updated'] = f"Updated at {updated.strftime('%H:%M:%S')} Local Time"
     if result_file['data']:
-        rawtime = time_to_seconds(datetime.fromtimestamp(file_stats['timestamp']).time())
-        task_distance = info['opt_dist']
+        rawtime = time_to_seconds(datetime.fromtimestamp(timestamp).time())
         results = []
-        goal = [p for p in result_file['data'] if p['ESS_time'] and (p['distance'] - task_distance) <= 5]
+        goal = [p for p in result_file['data'] if p['goal_time']]
         results.extend(sorted(goal, key=lambda k: k['ss_time']))
-        ess = [p for p in result_file['data'] if p['ESS_time'] and (p['distance'] - task_distance) > 5]
+        ess = [p for p in result_file['data'] if p['ESS_time'] and not p['goal_time']]
         results.extend(sorted(ess, key=lambda k: k['ss_time']))
-        others = [p for p in result_file['data'] if p['ESS_time'] is None]
+        others = [p for p in result_file['data'] if not p['ESS_time']]
         results.extend(sorted(others, key=lambda k: k['distance'], reverse=True))
         data = []
-        for el in results:
-            '''result, time or distance'''
-            if el['ESS_time'] and (el['distance'] - task_distance) <= 5:
-                res = sec_to_string(el['ss_time'])
-            elif el['ESS_time'] and (el['distance'] - task_distance) > 5:
-                res = f"[{sec_to_string(el['ss_time'])}]"
+        for idx, el in enumerate(results, 1):
+            status = ''
+            res = ''
+
+            '''status, time or distance'''
+            if el['first_time'] is None:
+                '''not launched'''
+                status = '[not launched yet]'
+            elif el['ESS_time']:
+                val = sec_to_string(el['ss_time'])
+                res = f"<del>{val}</del>" if not el['goal_time'] else f"<b>{val}</b>"
             else:
-                res = str(round(el['distance'] / 1000, 2)) + ' Km' if el['distance'] > 500 else ''
-            '''height'''
-            if not ('height' in el) or not el['first_time']:
-                height = '[not launched yet]'
-            elif el['goal_time']:
-                height = ''
-            elif el['landing_time']:
-                height = '[landed]'
-            else:
-                height = f"[{el['height']} agl]"
+                res = str(c_round(el['distance'] / 1000, 2)) + ' Km' if el['distance'] > 500 else ''
+                '''display status or altitude and height if reading is correct'''
+                if el['landing_time']:
+                    status = '[landed]'
+                elif -100 < el['last_altitude'] < 10000:
+                    status = f"{el['last_altitude']} m. [{el['height']} agl]"
+                else:
+                    status = 'unreliable altitude reading'
+
             '''notifications'''
             if el['notifications']:
                 comment = '; '.join([n['comment'].split('.')[0] for n in el['notifications']])
+                res = f"<span class='warning'>{res}</span>"
             else:
                 comment = ''
             '''delay'''
             if not (el['landing_time'] or el['goal_time']) and el['last_time'] and rawtime - el['last_time'] > 120:  # 2 mins old
                 if rawtime - el['last_time'] > 600:  # 10 minutes old
-                    height = f"disconnected"
+                    status = f"disconnected"
                 else:
                     m, s = divmod(rawtime - el['last_time'], 60)
-                    height = f"[{m:02d}:{s:02d} old]"
-            time = sec_to_string(el['last_time'], info['time_offset']) if el['last_time'] else ''
-            p = dict(id=el['ID'], name=el['name'], fem=1 if el['sex'] == 'F' else 0, result=res,
-                     comment=comment, time=time, height=height)
+                    status = f"[{m:02d}:{s:02d} old]"
+            time = sec_to_string(el['last_time'], offset) if el['last_time'] else ''
+            p = dict(rank=idx, id=el['ID'], name=f"<span class='sex-{el['sex']}'>{el['name']}</span>", sex=el['sex'],
+                     result=res, comment=comment, time=time, status=status)
             data.append(p)
 
-    return render_template('public/live.html', file_stats=file_stats, headers=headers, data=data, info=info)
+        formatted['data'] = data
+
+    return formatted

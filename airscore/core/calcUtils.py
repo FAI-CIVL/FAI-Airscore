@@ -42,10 +42,21 @@ def c_round(x, digits=0, precision=15):
     return float(tmp.__round__(digits)) if digits > 0 else int(tmp.__round__(digits))
 
 
+def igc_coords(lat: float, lon: float) -> (str, str):
+    from math import modf
+    NS = 'N' if lat >= 0 else 'S'
+    EW = 'E' if lon >= 0 else 'W'
+    d, i = modf(abs(lat))
+    igclat = f"{str(int(i)).zfill(2)}{str(round(d*60000)).zfill(5)}{NS}"
+    d, i = modf(abs(lon))
+    igclon = f"{str(int(i)).zfill(3)}{str(round(d*60000)).zfill(5)}{EW}"
+    return igclat, igclon
+
+
 def km(dist, n=3):
     """meters to km, with n as number of decimals"""
     try:
-        return round(dist / 1000, int(n))
+        return c_round(dist / 1000, int(n))
     except ValueError:
         return None
 
@@ -53,7 +64,7 @@ def km(dist, n=3):
 def get_int(string):
     try:
         return int(string)
-    except:
+    except ValueError:
         lstr = string.replace('.', ' ').replace('_', ' ').replace('-', ' ').split()
         for i in lstr:
             if i.isdigit():
@@ -106,9 +117,9 @@ def get_datetime(t):
     """
         Transform string in datetime.datetime
     """
-    if t is not None:
+    try:
         return datetime.strptime(t[:19], '%Y-%m-%dT%H:%M:%S')
-    else:
+    except ValueError:
         return t
 
 
@@ -117,9 +128,9 @@ def get_date(t):
         Transform string in datetime.date
         Gets first 10 positions in string ('YYYY-mm-dd')
     """
-    if t is not None:
+    try:
         return datetime.strptime(t[:10], '%Y-%m-%d').date()
-    else:
+    except ValueError:
         return t
 
 
@@ -128,9 +139,9 @@ def get_time(t):
         Transform string in datetime.time
         Gets first 19 positions in string ('YYYY-MM-DD hh:mm:ss')
     """
-    if t is not None:
+    try:
         return datetime.strptime(t[:19], '%Y-%m-%dT%H:%M:%S').time()
-    else:
+    except ValueError:
         return t
 
 
@@ -208,6 +219,18 @@ def altitude_compensation(QNH: float):
         return math.floor((QNH - 1013.25) / 12 * 100 - 2)
     else:
         return 0
+
+
+def get_season_dates(ladder_id: int, season: int, date_from: datetime.date = None, date_to: datetime.date = None):
+    from db.tables import TblLadder as L
+    if not (date_from and date_to):
+        lad = L.get_by_id(ladder_id)
+        date_from, date_to = lad.date_from, lad.date_to
+    '''create start and end dates'''
+    s = season-1 if date_from > date_to else season
+    starts = datetime.strptime(f"{s}-{date_from.month}-{date_from.day}", '%Y-%m-%d').date()
+    ends = datetime.strptime(f"{s+1}-{date_to.month}-{date_to.day}", '%Y-%m-%d').date()
+    return starts, ends
 
 
 ''' This are functions used by FSComp to calculate exact pressure altitude.

@@ -1,261 +1,251 @@
-
 {% extends "base.html"%}
 
 {% block page_title %}
-  Competition Admin
+Competition Admin
 {% endblock %}
 
 {% block head %}
-    <!-- CSS -->
-    <link href="/static/css/task.css" rel="stylesheet">
-    <link href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css" rel="stylesheet">
-    <!-- JS -->
-    <script type="text/javascript" src="/static/js/utils.js"></script>
-    <script type="text/javascript" src="/static/js/microajax.minified.js"></script>
+<!-- CSS -->
+<link href='/static/css/task.css' rel='stylesheet'>
+<link href='https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css' rel='stylesheet'>
+<!-- JS -->
+<script type='text/javascript' src='/static/js/utils.js'></script>
+<script type='text/javascript' src='/static/js/microajax.minified.js'></script>
 {% endblock %}
 
 {% block content %}
-    <div class="container" id="main">
-	<div class="row">
-	<button type="button" class="btn btn-primary mr-1" data-toggle="modal" data-target="#compmodal">Create</button>
-    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#importmodal">Import</button>
-	</div>
-	<div class="row">
-    <table id="competitions" class="row-border stripe compact mb-1 mt-2" cellspacing="0" width="100%">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Competition</th>
-            <th>Location</th>
-            <th>From</th>
-            <th>To</th>
-            <th>Tasks</th>
-            <th></th>
-        </tr>
-    </thead>
+<div class='container' id='main'>
+  <div class='row'>
+    <button type='button' class='btn btn-primary mr-1' data-toggle='modal' data-target='#compmodal'>Create</button>
+    <button type='button' class='btn btn-primary' data-toggle='modal' data-target='#importmodal'>Import</button>
+  </div>
+  <div class='row'>
+    <table id='competitions' class='row-border stripe compact mb-1 mt-2' cellspacing='0' width='100%'>
+      <thead>
+      <tr>
+        <th>ID</th>
+        <th>Competition</th>
+        <th>Location</th>
+        <th>From</th>
+        <th>To</th>
+        <th>Tasks</th>
+        <th></th>
+      </tr>
+      </thead>
     </table>
-    </div>
-    </div>
- <!-- delete Modal -->
-	<div class="modal fade" id="deletemodal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
-	<div class="modal-dialog modal-dialog-centered" role="document">
+  </div>
+</div>
+<!-- delete Modal -->
+<div class='modal fade' id='deletemodal' tabindex='-1' role='dialog' aria-labelledby='exampleModalCenterTitle'
+     aria-hidden='true'>
+  <div class='modal-dialog modal-dialog-centered' role='document'>
 
-      <div class="modal-content">
-        <div class="modal-header">
-          <h4 class="modal-title">Delete Competition</h4>
-          <button type="button" class="close" data-dismiss="modal">&times;</button>
-        </div>
-
-
-         <div class="modal-body" id= "deletemodal-body">
-            <p >Warning: This will delete the competition and any associated, tasks, tracklogs and results.
-            </p>
-               <label for="confirmbox">To confirm please type "delete" in the box and press the delete button</label><br>
-                <input type="text" id="confirmbox" name="confirm"><br>
-         </div>
-         <div class="modal-footer">
-             <button id="delete_comp_button" class="btn btn-danger ml-4" onclick="delete_comp()">
-            Delete
-        </button>
-                       <button type="button" class="btn btn-primary" data-dismiss="modal">Cancel</button>
-         </div>
+    <div class='modal-content'>
+      <div class='modal-header'>
+        <h4 class='modal-title'>Delete Competition</h4>
+        <button type='button' class='close' data-dismiss='modal'>&times;</button>
       </div>
 
-    </div>
-	</div>
- <!-- end delete Modal -->
 
- <!-- import Modal -->
-	<div class="modal fade" id="importmodal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
-	<div class="modal-dialog modal-dialog-centered" role="document">
-
-      <div class="modal-content">
-        <div class="modal-header">
-          <h4 class="modal-title">Import Competition</h4>
-          <button type="button" class="close" data-dismiss="modal">&times;</button>
-        </div>
-
-
-         <div class="modal-body" id= "importmodal-body">
-            <p id ="fsdb_modal_message">Please provide a FSDB file.</p>
-             <div id="fsdb_progress" ><div class="bar" style="width: 0%;"><p id="fsdb_progress_text"></p></div></div>
-             <p id="fsdb_spinner"></p>
-         </div>
-         <div class="modal-footer">
-             <button id="get_fsdb_file_button" class="btn btn-primary ml-4 " onclick="choose_fsdb_file()">
-            Browse
+      <div class='modal-body' id='deletemodal-body'>
+        <p>Warning: This will delete the competition and any associated, tasks, tracklogs and results.
+        </p>
+        <label for='confirmbox'>To confirm please type "delete" in the box and press the delete button</label><br>
+        <input type='text' id='confirmbox' name='confirm'><br>
+      </div>
+      <div class='modal-footer'>
+        <button id='delete_comp_button' class='btn btn-danger ml-4' onclick='delete_comp()'>
+          Delete
         </button>
-                       <button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
-        <input id="fsdb_fileupload" type="file" size="chars" class="custom-file-input"  oninput="filesize(this);" data-url="/users/_import_comp_fsdb/" name="fsdb_file" >
+        <button type='button' class='btn btn-primary' data-dismiss='modal'>Cancel</button>
+      </div>
+    </div>
 
-         </div>
+  </div>
+</div>
+<!-- end delete Modal -->
+
+<!-- import Modal -->
+<div class='modal fade' id='importmodal' tabindex='-1' role='dialog' aria-labelledby='exampleModalCenterTitle'
+     aria-hidden='true'>
+  <div class='modal-dialog modal-dialog-centered' role='document'>
+
+    <div class='modal-content'>
+      <div class='modal-header'>
+        <h4 class='modal-title'>Import Competition</h4>
+        <button type='button' class='close' data-dismiss='modal'>&times;</button>
       </div>
 
-    </div>
-	</div>
- <!-- end import Modal -->
 
- <!-- create Modal -->
-	<div class="modal fade" id="compmodal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
-	<div class="modal-dialog modal-dialog-centered" role="document">
-
-      <div class="modal-content">
-        <div class="modal-header">
-          <h4 class="modal-title">Create Competition</h4>
-          <button type="button" class="close" data-dismiss="modal">&times;</button>
+      <div class='modal-body' id='importmodal-body'>
+        <p id='fsdb_modal_message'>Please provide a FSDB file.</p>
+        <div id='fsdb_progress'>
+          <div class='bar' style='width: 0%;'><p id='fsdb_progress_text'></p></div>
         </div>
+        <p id='fsdb_spinner'></p>
+      </div>
+      <div class='modal-footer'>
+        <button id='get_fsdb_file_button' class='btn btn-primary ml-4 ' onclick='choose_fsdb_file()'>
+          Browse
+        </button>
+        <button type='button' class='btn btn-danger' data-dismiss='modal'>Cancel</button>
+        <input id='fsdb_fileupload' type='file' size='chars' class='custom-file-input' oninput='filesize(this);'
+               data-url='/users/_import_comp_fsdb/' name='fsdb_file'>
 
-        <div class="modal-body">
-		    <form id="createcomp" action="javascript:void(0);" method="post">
-		    <div class="form-group">
-		    <div class="form-row" id="route">
-			  	<label for="Name" class="col-2 col-form-label">Name</label>
-			    <div class="col-10">
-			 		<input class="form-control required" type="text" value="" id="compname">
-			    </div>
-		    </div>
-            <div class="form-row" id="route2">
-            <label for="code" class="col-2 col-form-label">Short name</label>
-            <div class="col-10">
-                <input class="form-control required" type="text" value="" id="compcode">
+      </div>
+    </div>
+
+  </div>
+</div>
+<!-- end import Modal -->
+
+<!-- create Modal -->
+<div class='modal fade' id='compmodal' tabindex='-1' role='dialog' aria-labelledby='exampleModalCenterTitle'
+     aria-hidden='true'>
+  <div class='modal-dialog modal-dialog-centered' role='document'>
+
+    <div class='modal-content'>
+      <div class='modal-header'>
+        <h4 class='modal-title'>Create Competition</h4>
+        <button type='button' class='close' data-dismiss='modal'>&times;</button>
+      </div>
+
+      <div class='modal-body'>
+        <form id='createcomp' action='javascript:void(0);' method='post'>
+          <div class='form-group'>
+            <div class='form-row' id='route'>
+              <label for='Name' class='col-2 col-form-label'>Name</label>
+              <div class='col-10'>
+                <input class='form-control required' type='text' value='' id='compname'>
+              </div>
             </div>
+            <div class='form-row' id='route2'>
+              <label for='code' class='col-2 col-form-label'>Short name</label>
+              <div class='col-10'>
+                <input class='form-control required' type='text' value='' id='compcode'>
+              </div>
             </div>
-                <div class="form-row" id="route3">
-            <label for="class" class="col-2 col-form-label">Class</label>
-            <div class="col-10">
-                 <select class="form-control required" type="select" value="" id="compclass">
-                    <option value="HG">HG</option>
-                    <option value="PG">PG</option>
+            <div class='form-row' id='route3'>
+              <label for='class' class='col-2 col-form-label'>Class</label>
+              <div class='col-10'>
+                <select class='form-control required' type='select' value='' id='compclass'>
+                  <option value='HG'>HG</option>
+                  <option value='PG'>PG</option>
                 </select>
+              </div>
             </div>
+            <div class='form-row' id='route4'>
+              <label for='location' class='col-2 col-form-label'>Location</label>
+              <div class='col-10'>
+                <input class='form-control required' type='text' value='' id='compsite'>
+              </div>
             </div>
-            		    <div class="form-row" id="route4">
-			  	<label for="location" class="col-2 col-form-label">Location</label>
-			    <div class="col-10">
-			 		<input class="form-control required" type="text" value="" id="compsite">
-			    </div>
-		    </div>
 
-			<div class="form-group row">
-			  <label for="date-from" class="col-2 1ol-form-label">From</label>
-			  <div class="col-10">
-			    <input class="form-control required" type="date" value= {{today}} id="datefrom">
-			  </div>
-			  <label for="date-to" class="col-2 col-form-label">To</label>
-			  <div class="col-10">
-			    <input class="form-control required" type="date" value= {{today}} id="dateto">
-			  </div>
-			</div>
-			</div>
-			</form>
-        </div>
+            <div class='form-group row'>
+              <label for='date-from' class='col-2 1ol-form-label'>From</label>
+              <div class='col-10'>
+                <input class='form-control required' type='date' value='{{today}}' id='datefrom'>
+              </div>
+              <label for='date-to' class='col-2 col-form-label'>To</label>
+              <div class='col-10'>
+                <input class='form-control required' type='date' value='{{today}}' id='dateto'>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
 
-        <div class="modal-footer">
-          <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="create_comp();">Create</button>
-          <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
-        </div>
-
+      <div class='modal-footer'>
+        <button type='button' class='btn btn-primary' data-dismiss='modal' onclick='create_comp();'>Create</button>
+        <button type='button' class='btn btn-danger' data-dismiss='modal'>Close</button>
       </div>
 
     </div>
-	</div>
- <!-- end create Modal -->
+
+  </div>
+</div>
+<!-- end create Modal -->
 
 {% endblock %}
 
 {% block js %}
-    <script type="text/javascript" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
-    <script src="{{ static_url_for('static', filename='js/pop_admin_comps.js') }}"></script>
-    <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.ui.widget.js') }}"></script>
-    <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.iframe-transport.js') }}"></script>
-    <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.fileupload.js') }}"></script>
-    <script>
+<script type='text/javascript' src='https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js'></script>
+<script src="{{ static_url_for('static', filename='js/pop_admin_comps.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.ui.widget.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.iframe-transport.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.fileupload.js') }}"></script>
+<script>
 
-    var compid_to_delete = null;
+var compid_to_delete = null;
 
-  function filesize(elem){
-    document.cookie = `filesize=${elem.files[0].size}; SameSite=Strict; path=/`
-  }
+function filesize(elem){
+  document.cookie = `filesize=${elem.files[0].size}; SameSite=Strict; path=/`
+}
 
-   function choose_fsdb_file(){
-   var filename;
-   $('#fsdb_fileupload').fileupload({
-        dataType: 'json',
-        done: function (e, data) {
-            $.each(data.result.files, function (index, file) {
-                $('<p/>').text(file.name).appendTo(document.body);
-                filename = file.name;
-            });
-        },
-        submit: function (e, data){
-        $('#fsdb_modal_message').hide();
-        $('#fsdb_progress').show();
-        $('#fsdb_progress_text').text(data.files[0].name + ' - processing');
-        $('#fsdb_spinner').html('<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>');
-        },
-                              success: function(response) {
-            if (response.redirect) {
-                window.location.href = response.redirect;
-            }
-            else{
-
-            $('#importmodal').modal('hide');
-            get_comps();
-            }
-            },
-
-
-                     progress: function (e, data) {
-        var progress = parseInt(data.loaded / data.total * 100, 10);
-        $('#fsdb_progress .bar').css(
-            'width',
-            progress + '%'
-        );
+function choose_fsdb_file(){
+  var filename;
+  $('#fsdb_fileupload').fileupload({
+    dataType: 'json',
+    done: function (e, data) {
+      $.each(data.result.files, function (index, file) {
+        $('<p/>').text(file.name).appendTo(document.body);
+        filename = file.name;
+      });
+    },
+    submit: function (e, data){
+      $('#fsdb_modal_message').hide();
+      $('#fsdb_progress').show();
+      $('#fsdb_progress_text').text(data.files[0].name + ' - processing');
+      $('#fsdb_spinner').html('<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>');
+    },
+    success: function(response) {
+      if (response.redirect) {
+        window.location.href = response.redirect;
+      }
+      else {
+        $('#importmodal').modal('hide');
+        get_comps();
+      }
+    },
+    progress: function (e, data) {
+      var progress = parseInt(data.loaded / data.total * 100, 10);
+      $('#fsdb_progress .bar').css(
+        'width',
+        progress + '%'
+      );
     }
-    });
-    $('#fsdb_fileupload').click();
+  });
+  $('#fsdb_fileupload').click();
 };
 
-
-
-
-
-
-
-function confirm_delete_comp(compid)
-{
-compid_to_delete = compid;
-$('#deletemodal').modal('show');
+function confirm_delete_comp(compid) {
+  compid_to_delete = compid;
+  $('#deletemodal').modal('show');
 }
 
-
-function delete_comp()
-{
-if($('#confirmbox').val().toUpperCase() == 'DELETE'){
-$.ajax({
-        type: "POST",
-        url: '/users/_delete_comp/' + compid_to_delete,
-        success: function(response) {
-            if (response.redirect) {
-                window.location.href = response.redirect;
-            }
-            else{
-
-            $('#deletemodal').modal('hide');
-            get_comps();
-            }
+function delete_comp() {
+  if($('#confirmbox').val().toUpperCase() == 'DELETE'){
+    $.ajax({
+      type: "POST",
+      url: '/users/_delete_comp/' + compid_to_delete,
+      success: function(response) {
+        if (response.redirect) {
+          window.location.href = response.redirect;
         }
+        else {
+          $('#deletemodal').modal('hide');
+          get_comps();
+        }
+      }
     });
+  }
+  $('#deletemodal').modal('hide');
 }
-
-$('#deletemodal').modal('hide');
-
-}
-
 
 $(document).ready(function() {
-get_comps();
-    });
-    </script>
-    <script src="{{ static_url_for('static', filename='js/utils.js') }}"></script>
+  get_comps();
+});
+
+</script>
+<script src="{{ static_url_for('static', filename='js/utils.js') }}"></script>
 {% endblock %}

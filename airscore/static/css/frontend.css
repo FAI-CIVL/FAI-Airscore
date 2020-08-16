@@ -98,6 +98,89 @@
   color: deeppink;
 }
 
+.task_code, .task_code:link, .task_code:link:visited {
+  font-size: .75em;
+}
+
+table.tasks-list {
+  margin: 1em 0 1em 0;
+}
+
+td.tasks-list:first-child, th.tasks-list:first-child {
+  padding: 0 1em 0 0;
+}
+
+td.tasks-list, th.tasks-list {
+  padding: 0 1em 0 1em;
+}
+
+td.tasks-list:last-child, th.tasks-list:last-child,
+td.tasks-list:nth-child(3), th.tasks-list:nth-child(3) {
+  padding: 0 0 0 1em;
+  text-align: right;
+}
+
+table.times-list {
+  margin: 1em 0 1em 0;
+}
+
+td.times-list:first-child, th.times-list:first-child {
+  padding: 0 1em 0 0;
+}
+
+td.times-list, th.times-list {
+  padding: 0 1em 0 1em;
+}
+
+td.times-list:last-child, th.times-list:last-child {
+  padding: 0 0 0 1em;
+  text-align: right;
+}
+
+table.wpt-list {
+
+}
+
+td.wpt-list:nth-child(3), td.wpt-list:nth-child(4) {
+    text-align: right;
+}
+
+td.wpt-list, th.wpt-list {
+
+}
+
+td.wpt-list:last-child, th.wpt-list:last-child {
+
+}
+
+.warning {
+  color: orange;
+  text-decoration:underline;
+}
+
+#comments, #other_pilots {
+  clear: both;
+  margin: 15px;
+}
+
+table.comments {
+  margin: .75em .5em 2em 0;
+  width: 100%;
+}
+
+table.other_pilots_list {
+  margin: .75em .5em 2em 0;
+  width: auto;
+}
+
+td.other_pilots_list, td.comments {
+  padding: 0 .75em 0 0;
+}
+
+div.hidden {
+  display: none;
+}
+
 /* footer */
 
 footer {

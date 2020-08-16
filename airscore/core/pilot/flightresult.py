@@ -27,7 +27,6 @@ from .participant import Participant
 import json
 from collections import Counter
 from os import path, makedirs
-import jsonpickle
 from Defines import MAPOBJDIR
 from airspace import AirspaceCheck
 from calcUtils import string_to_seconds, sec_to_time
@@ -330,27 +329,21 @@ class FlightResult(Participant):
             Returns:
                     a list of GNSSFixes of when turnpoints were achieved.
         """
-        from .flightpointer import FlightPointer
-
-        ''' Altitude Source: '''
-        alt_source = 'GPS' if task.formula.scoring_altitude is None else task.formula.scoring_altitude
-        alt_compensation = 0 if alt_source == 'GPS' or task.QNH == 1013.25 else task.alt_compensation
+        from flightcheck.flightpointer import FlightPointer
+        from flightcheck.flightcheck import check_fixes, calculate_final_results
 
         '''initialize'''
         if not self.result_type == 'nyp':
             self.reset()
         self.result_type = 'lo'
-        tolerance = task.formula.tolerance or 0
-        min_tol_m = task.formula.min_tolerance or 0
-        max_jump_the_gun = task.formula.max_JTG or 0  # seconds
-        jtg_penalty_per_sec = 0 if max_jump_the_gun == 0 else task.formula.JTG_penalty_per_sec
-        max_altitude = 0
-        percentage_complete = 0
 
         if not task.optimised_turnpoints:
             # this should not happen
             task.calculate_optimised_task_length()
-        distances2go = task.distances_to_go  # Total task Opt. Distance, in legs list
+
+        ''' Altitude Source: '''
+        alt_source = 'GPS' if task.formula.scoring_altitude is None else task.formula.scoring_altitude
+        alt_compensation = 0 if alt_source == 'GPS' or task.QNH == 1013.25 else task.alt_compensation
 
         '''leadout coefficient'''
         if task.formula.formula_departure == 'leadout':
@@ -365,290 +358,18 @@ class FlightResult(Participant):
         self.landing_altitude = (flight.landing_fix.gnss_alt if alt_source == 'GPS'
                                  else flight.landing_fix.press_alt + alt_compensation)
 
-        '''Stopped task managing'''
-        if task.stopped_time:
-            if not deadline:
-                '''Using stop_time (stopped_time - score_back_time)'''
-                deadline = task.stop_time
-            goal_altitude = task.goal_altitude or 0
-            glide_ratio = task.formula.glide_bonus or 0
-            stopped_distance = 0
-            stopped_altitude = 0
-            total_distance = 0
-
         '''Turnpoint managing'''
         tp = FlightPointer(task)
 
         '''Airspace check managing'''
-        airspace_plot = []
-        infringements_list = []
-        airspace_penalty = 0
         if task.airspace_check:
             if not airspace_obj and not deadline:
                 print(f'We should not create airspace here')
                 airspace_obj = AirspaceCheck.from_task(task)
-        total_fixes = len(flight.fixes)
-        for i in range(total_fixes - 1):
-            # report percentage progress
-            if int(i / len(flight.fixes) * 100) > percentage_complete:
-                percentage_complete = int(i / len(flight.fixes) * 100)
-                print(f"{percentage_complete}|% complete")
 
-            '''Get two consecutive trackpoints as needed to use FAI / CIVL rules logic
-            '''
-            # start_time = tt.time()
-            my_fix = flight.fixes[i]
-            next_fix = flight.fixes[i + 1]
-            alt = next_fix.gnss_alt if alt_source == 'GPS' else next_fix.press_alt + alt_compensation
+        check_fixes(self, flight.fixes, task, tp, lead_coeff, airspace_obj, deadline=deadline, print=print)
 
-            if alt > max_altitude:
-                max_altitude = alt
-
-            '''pilot flying'''
-            if next_fix.rawtime < self.first_time:
-                continue
-            if self.landing_time and next_fix.rawtime > self.landing_time:
-                '''pilot landed out'''
-                # print(f'fix {i}: landed out - {next_fix.rawtime} - {alt}')
-                break
-
-            '''handle stopped task
-            Pilots who were at a position between ESS and goal at the task stop time will be scored for their 
-            complete flight, including the portion flown after the task stop time. 
-            This is to remove any discontinuity between pilots just before goal and pilots who had just reached goal 
-            at task stop time.
-            '''
-            if task.stopped_time and next_fix.rawtime > deadline and not tp.ess_done:
-                self.still_flying_at_deadline = True
-                break
-
-            '''check if task deadline has passed'''
-            if task.task_deadline < next_fix.rawtime:
-                # Task has ended
-                self.still_flying_at_deadline = True
-                break
-
-            '''check if pilot has arrived in goal (last turnpoint) so we can stop.'''
-            if tp.made_all:
-                break
-
-            '''check if start closing time passed and pilot did not start'''
-            if task.start_close_time and task.start_close_time < my_fix.rawtime and not tp.start_done:
-                # start closed
-                break
-
-            '''check tp type is known'''
-            if tp.next.type not in ('launch', 'speed', 'waypoint', 'endspeed', 'goal'):
-                assert False, f"Unknown turnpoint type: {tp.type}"
-
-            '''check window is open'''
-            if task.window_open_time > next_fix.rawtime:
-                continue
-
-            '''launch turnpoint managing'''
-            if tp.type == "launch":
-                if task.check_launch == 'on':
-                    # Set radius to check to 200m (in the task def it will be 0)
-                    # could set this in the DB or even formula if needed..???
-                    tp.next.radius = 200  # meters
-                    if tp.next.in_radius(my_fix, tolerance, min_tol_m):
-                        self.waypoints_achieved.append(create_waypoint_achieved(my_fix, tp, my_fix.rawtime, alt))
-                        tp.move_to_next()
-                else:
-                    tp.move_to_next()
-
-            # to do check for restarts for elapsed time tasks and those that allow jump the gun
-            # if started and task.task_type != 'race' or result.jump_the_gun is not None:
-
-            '''start turnpoint managing'''
-            '''given all n crossings for a turnpoint cylinder, sorted in ascending order by their crossing time,
-            the time when the cylinder was reached is determined.
-            turnpoint[i] = SSS : reachingTime[i] = crossing[n].time
-            turnpoint[i] =? SSS : reachingTime[i] = crossing[0].time
-
-            We need to check start in 3 cases:
-            - pilot has not started yet
-            - race has multiple starts
-            - task is elapsed time
-            '''
-            if pilot_can_start(task, tp, my_fix):
-                # print(f'time: {my_fix.rawtime}, start: {task.start_time} | Interval: {task.SS_interval} | my start: {self.real_start_time} | better_start: {pilot_get_better_start(task, my_fix.rawtime, self.SSS_time)} | can start: {pilot_can_start(task, tp, my_fix)} can restart: {pilot_can_restart(task, tp, my_fix, self)} | tp: {tp.name}')
-                if start_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m):
-                    time = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
-                    self.waypoints_achieved.append(
-                        create_waypoint_achieved(my_fix, tp, time, alt))  # pilot has started
-                    self.real_start_time = time
-                    print(f"Pilot started SS at {sec_to_time(self.real_start_time)}")
-                    self.best_distance_time = time
-                    tp.move_to_next()
-
-            elif pilot_can_restart(task, tp, my_fix, self):
-                # print(f'time: {my_fix.rawtime}, start: {task.start_time} | Interval: {task.SS_interval} | my start: {self.real_start_time} | better_start: {pilot_get_better_start(task, my_fix.rawtime, self.SSS_time)} | can start: {pilot_can_start(task, tp, my_fix)} can restart: {pilot_can_restart(task, tp, my_fix, self)} | tp: {tp.name}')
-                if start_made_civl(my_fix, next_fix, tp.last_made, tolerance, min_tol_m):
-                    tp.pointer -= 1
-                    time = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
-                    self.waypoints_achieved.pop()
-                    self.waypoints_achieved.append(
-                        create_waypoint_achieved(my_fix, tp, time, alt))  # pilot has started again
-                    self.real_start_time = time
-                    self.best_distance_time = time
-                    print(f"Pilot restarted SS at {sec_to_time(self.real_start_time)}")
-                    if lead_coeff:
-                        lead_coeff.reset()
-                    tp.move_to_next()
-
-            if tp.start_done:
-                '''Turnpoint managing'''
-                if (tp.next.shape == 'circle'
-                        and tp.next.type in ('endspeed', 'waypoint')):
-                    if tp_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m):
-                        time = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
-                        self.waypoints_achieved.append(
-                            create_waypoint_achieved(my_fix, tp, time, alt))  # pilot has achieved turnpoint
-                        print(f"Pilot took {tp.name} at {sec_to_time(time)} at {alt}m")
-                        tp.move_to_next()
-
-                if tp.ess_done and tp.type == 'goal':
-                    if ((tp.next.shape == 'circle' and tp_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m))
-                            or
-                            (tp.next.shape == 'line' and (in_goal_sector(task, next_fix)))):
-                        self.waypoints_achieved.append(
-                            create_waypoint_achieved(next_fix, tp, next_fix.rawtime, alt))  # pilot has achieved goal
-                        self.best_distance_time = next_fix.rawtime
-                        print(f"Goal at {sec_to_time(next_fix.rawtime)}")
-                        break
-
-            '''update result data
-            Once launched, distance flown should be max result among:
-            - previous value;
-            - optimized dist. to last turnpoint made;
-            - total optimized distance minus opt. distance from next wpt to goal minus dist. to next wpt;
-            '''
-            if tp.pointer > 0:
-                if tp.start_done and not tp.ess_done:
-                    '''optimized distance calculation each fix'''
-                    fix_dist_flown = task.opt_dist - get_shortest_path(task, next_fix, tp.pointer)
-                    # print(f'time: {next_fix.rawtime} | fix: {tp.name} | Optimized Distance used')
-                else:
-                    '''simplified and faster distance calculation'''
-                    fix_dist_flown = distance_flown(next_fix, tp.pointer, task.optimised_turnpoints,
-                                                    task.turnpoints[tp.pointer], distances2go)
-                    # print(f'time: {next_fix.rawtime} | fix: {tp.name} | Simplified Distance used')
-
-                if fix_dist_flown > self.distance_flown:
-                    '''time of trackpoint with shortest distance to ESS'''
-                    self.best_distance_time = next_fix.rawtime
-                    '''updating best distance flown'''
-                    # self.distance_flown = max(fix_dist_flown,
-                    #                             task.partial_distance[tp.last_made_index])  # old approach
-                    self.distance_flown = fix_dist_flown
-
-                '''stopped task
-                ∀p : p ∈ PilotsLandedBeforeGoal :
-                    bestDistance p = max(minimumDistance, 
-                                         taskDistance − min(∀trackp.pointi : shortestDistanceToGoal(trackp.pointi )−(trackp .pointi .altitude−GoalAltitude)*GlideRatio)) 
-                ∀p :p ∈ PilotsReachedGoal : bestDistance p = taskDistance
-                '''
-                if task.stopped_time and glide_ratio and total_distance < task.opt_dist:
-                    alt_over_goal = max(0, alt - goal_altitude)
-                    if fix_dist_flown + glide_ratio * alt_over_goal > total_distance:
-                        '''calculate total distance with glide bonus'''
-                        stopped_distance = fix_dist_flown
-                        stopped_altitude = alt
-                        total_distance = min(fix_dist_flown + glide_ratio * alt_over_goal, task.opt_dist)
-
-            '''Leading coefficient
-            LC = taskTime(i)*(bestDistToESS(i-1)^2 - bestDistToESS(i)^2 )
-            i : i ? TrackPoints In SS'''
-            if lead_coeff and tp.start_done and not tp.ess_done:
-                lead_coeff.update(self, my_fix, next_fix)
-
-            '''Airspace Check'''
-            if task.airspace_check and airspace_obj:
-                # map_fix = [next_fix.rawtime, next_fix.lat, next_fix.lon, alt]
-                plot, penalty = airspace_obj.check_fix(next_fix, alt)
-                if plot:
-                    # map_fix.extend(plot)
-                    '''Airspace Infringement: check if we already have a worse one'''
-                    airspace_name = plot[2]
-                    infringement_type = plot[3]
-                    dist = plot[4]
-                    separation = plot[5]
-                    infringements_list.append([next_fix, alt, airspace_name, infringement_type,
-                                               dist, penalty, separation])
-                    # print([next_fix, alt, airspace_name, infringement_type, dist, penalty])
-                else:
-                    ''''''
-                    # map_fix.extend([None, None, None, None, None])
-                # airspace_plot.append(map_fix)
-
-        '''final results'''
-        print("100|% complete")
-        self.max_altitude = max_altitude
-        self.last_altitude = 0 if 'alt' not in locals() else alt
-        self.last_time = 0 if 'next_fix' not in locals() else next_fix.rawtime
-
-        '''manage stopped tasks'''
-        if task.stopped_time and self.still_flying_at_deadline:
-            self.stopped_distance = stopped_distance
-            self.stopped_altitude = stopped_altitude
-            self.total_distance = total_distance
-
-        if tp.start_done:
-            '''
-            start time
-            if race, the first times
-            if multistart, the first time of the last gate pilot made
-            if elapsed time, the time of last fix on start
-            SS Time: the gate time'''
-            self.SSS_time = task.start_time
-
-            if task.task_type == 'RACE' and task.SS_interval:
-                self.SSS_time += max(0, (start_number_at_time(task, self.real_start_time) - 1) * task.SS_interval)
-
-            elif task.task_type == 'ELAPSED TIME':
-                self.SSS_time = self.real_start_time
-
-            '''manage jump the gun'''
-            # print(f'wayponts made: {self.waypoints_achieved}')
-            if max_jump_the_gun > 0 and self.real_start_time < self.SSS_time:
-                diff = self.SSS_time - self.real_start_time
-                penalty = diff * jtg_penalty_per_sec
-                # check
-                print(f'jump the gun: {diff} - valid: {diff <= max_jump_the_gun} - penalty: {penalty}')
-                comment = f"Jump the gun: {diff} seconds. Penalty: {penalty} points"
-                self.notifications.append(Notification(notification_type='jtg', flat_penalty=penalty, comment=comment))
-
-            '''ESS Time'''
-            if any(e.name == 'ESS' for e in self.waypoints_achieved):
-                # self.ESS_time, ess_altitude = min([e[1] for e in self.waypoints_achieved if e[0] == 'ESS'])
-                self.ESS_time, self.ESS_altitude = min([(x.rawtime, x.altitude) for x in self.waypoints_achieved
-                                                        if x.name == 'ESS'], key=lambda t: t[0])
-                self.speed = (task.SS_distance / 1000) / (self.ss_time / 3600)
-
-                '''Distance flown'''
-                ''' ?p:p?PilotsLandingBeforeGoal:bestDistancep = max(minimumDistance, taskDistance-min(?trackp.pointi shortestDistanceToGoal(trackp.pointi)))
-                    ?p:p?PilotsReachingGoal:bestDistancep = taskDistance
-                '''
-                if any(e.name == 'Goal' for e in self.waypoints_achieved):
-                    # self.distance_flown = distances2go[0]
-                    self.distance_flown = task.opt_dist
-                    self.goal_time, self.goal_altitude = min([(x.rawtime, x.altitude)
-                                                              for x in self.waypoints_achieved
-                                                              if x.name == 'Goal'], key=lambda t: t[0])
-                    self.result_type = 'goal'
-        if self.result_type != 'goal':
-            print(f"Pilot landed after {self.distance_flown / 1000:.2f}km")
-
-        self.best_waypoint_achieved = str(self.waypoints_achieved[-1].name) if self.waypoints_achieved else None
-
-        if lead_coeff:
-            self.fixed_LC = lead_coeff.summing
-
-        if task.airspace_check:
-            infringements, notifications, penalty = airspace_obj.get_infringements_result(infringements_list)
-            self.infringements = infringements
-            self.notifications.extend(notifications)
+        calculate_final_results(self, task, tp, lead_coeff, airspace_obj, deadline=deadline, print=print)
 
     def to_geojson_result(self, track, task, pilot_info=None, second_interval=5):
         """Dumps the flight to geojson format used for mapping.
@@ -744,67 +465,6 @@ class FlightResult(Participant):
         return result
 
 
-def pilot_can_start(task, tp, fix):
-    """ returns True if pilot, in the track fix, is in the condition to take the start gate"""
-    '''start turnpoint managing'''
-    '''given all n crossings for a turnpoint cylinder, sorted in ascending order by their crossing time,
-    the time when the cylinder was reached is determined.
-    turnpoint[i] = SSS : reachingTime[i] = crossing[n].time
-    turnpoint[i] =? SSS : reachingTime[i] = crossing[0].time
-
-    We need to check start in 3 cases:
-    - pilot has not started yet
-    - race has multiple starts
-    - task is elapsed time
-    '''
-    max_jump_the_gun = task.formula.max_JTG or 0
-    if ((tp.type == "speed")
-            and
-            (fix.rawtime >= (task.start_time - max_jump_the_gun))
-            and
-            (not task.start_close_time or fix.rawtime <= task.start_close_time)):
-        return True
-    else:
-        return False
-
-
-def pilot_can_restart(task, tp, fix, result):
-    """ returns True if pilot, in the track fix, is in the condition to take the start gate"""
-    '''start turnpoint managing'''
-    '''given all n crossings for a turnpoint cylinder, sorted in ascending order by their crossing time,
-    the time when the cylinder was reached is determined.
-    turnpoint[i] = SSS : reachingTime[i] = crossing[n].time
-    turnpoint[i] =? SSS : reachingTime[i] = crossing[0].time
-
-    We need to check start in 3 cases:
-    - pilot has not started yet
-    - race has multiple starts
-    - task is elapsed time
-    '''
-    max_jump_the_gun = task.formula.max_JTG or 0
-    if tp.last_made.type == "speed" and (not task.start_close_time or fix.rawtime < task.start_close_time):
-        if task.task_type == 'ELAPSED TIME':
-            return True
-        elif max_jump_the_gun > 0 and result.real_start_time < task.start_time:
-            return True
-        elif task.SS_interval and pilot_get_better_start(task, fix.rawtime, result.real_start_time):
-            return True
-    return False
-
-
-def start_number_at_time(task, time):
-    if time < task.start_time or (task.start_close_time and time > task.start_close_time):
-        return 0
-    elif task.total_start_number <= 1:
-        return task.total_start_number
-    elif task.SS_interval > 0:
-        return 1 + int((time - task.start_time) / task.SS_interval)
-
-
-def pilot_get_better_start(task, time, prev_time):
-    return start_number_at_time(task, time) > start_number_at_time(task, prev_time)
-
-
 def verify_all_tracks(task, lib, airspace=None, print=print):
     """ Gets in input:
             task:       Task object
@@ -886,31 +546,27 @@ def delete_track(trackid: int, delete_file=False):
     return row_deleted
 
 
-def create_waypoint_achieved(fix, tp, time: int, alt: int):
-    """creates a dictionary to be added to result.waypoints_achived"""
-    return WaypointAchieved(trw_id=None, wpt_id=tp.next.wpt_id, name=tp.name, lat=fix.lat, lon=fix.lon,
-                            rawtime=time, altitude=alt)
-
-
 def get_task_results(task_id: int):
-    from db.tables import FlightResultView as F, TblNotification as N, TblTrackWaypoint as W
+    from db.tables import FlightResultView as F, TblNotification as N, TblTrackWaypoint as W, TblTaskResult as R
     from pilot.notification import Notification
     pilots = []
-    with db_session() as db:
-        results = db.query(F).filter_by(task_id=task_id).all()
-        notifications = db.query(N).filter(N.track_id.in_([p.track_id for p in results])).all()
-        achieved = db.query(W).filter(W.track_id.in_([p.track_id for p in results])).all()
-        for row in results:
-            pilot = FlightResult()
-            row.populate(pilot)
-            for el in [n for n in notifications if n.track_id == pilot.track_id]:
-                n = Notification()
-                el.populate(n)
-                pilot.notifications.append(n)
-            for el in [{k: getattr(w, k) for k in ['trw_id', 'wpt_id', 'name', 'rawtime', 'lat', 'lon', 'altitude']}
-                       for w in achieved if w.track_id == pilot.track_id]:
-                pilot.waypoints_achieved.append(WaypointAchieved(**el))
-            pilots.append(pilot)
+    results = R.get_task_results(task_id)
+    track_list = list(filter(None, map(lambda x: x.track_id, results)))
+    notifications = N.from_track_list(track_list)
+    achieved = W.get_dict_list(track_list)
+    for row in results:
+        p = FlightResult.from_dict(row._asdict())
+        if not row.result_type:
+            p.result_type = 'nyp'
+        for el in [n for n in notifications if n.track_id == p.track_id]:
+            n = Notification()
+            el.populate(n)
+            p.notifications.append(n)
+        if p.result_type in ('lo', 'goal'):
+            wa = list(filter(lambda x: x['track_id'] == p.track_id, achieved))
+            for el in wa:
+                p.waypoints_achieved.append(WaypointAchieved.from_dict(el))
+        pilots.append(p)
     return pilots
 
 
@@ -927,33 +583,25 @@ def save_track(result: FlightResult, task_id: int):
         '''we miss info about pilot and task'''
         print(f"Error: missing info about participant ID and/or task ID")
         return None
-    '''database connection'''
-    with db_session() as db:
-        if result.track_id:
-            '''read db row'''
-            r = db.query(R).get(result.track_id)
-            r.comment = result.comment
-            r.track_file = result.track_file
-            for attr in [a for a in dir(r) if not (a[0] == '_' or a in ['track_file', 'comment'])]:
-                if hasattr(result, attr):
-                    setattr(r, attr, getattr(result, attr))
-            db.flush()
-        else:
-            '''create a new result'''
-            r = R.from_obj(result)
-            r.task_id = task_id
-            db.add(r)
-            db.flush()
-            result.track_id = r.track_id
 
-        '''notifications'''
-        update_notifications(result)
-        '''waypoints_achieved'''
-        update_waypoints_achieved(result)
-        db.commit()
+    if result.track_id:
+        '''read db row'''
+        row = R.get_by_id(result.track_id)
+        row.update(**result.as_dict())
+    else:
+        '''create a new result'''
+        row = R.from_obj(result)
+        row.task_id = task_id
+        row.save()
+        result.track_id = row.track_id
+
+    '''notifications'''
+    update_notifications(result)
+    '''waypoints_achieved'''
+    update_waypoints_achieved(result)
 
 
-def update_all_results(task_id, pilots):
+def update_all_results(pilots: list, task_id: int):
     """ get results to update from the list
         It is called from Task.check_all_tracks(), so only during Task full rescoring
         And from FSDB.add results.
@@ -967,13 +615,11 @@ def update_all_results(task_id, pilots):
     notif_mappings = []
     achieved_mappings = []
     for pilot in pilots:
-        res = pilot.result
-        r = dict(track_id=pilot.track_id, task_id=task_id, par_id=pilot.par_id,
-                 track_file=pilot.track_file, comment=pilot.comment)
-        for key in [col for col in R.__table__.columns.keys() if col not in r.keys()]:
-            if hasattr(res, key):
-                r[key] = getattr(res, key)
-        if r['track_id']:
+        r = dict(task_id=task_id)
+        for key in R.__table__.columns.keys():
+            if hasattr(pilot, key):
+                r[key] = getattr(pilot, key)
+        if pilot.track_id:
             update_mappings.append(r)
         else:
             insert_mappings.append(r)

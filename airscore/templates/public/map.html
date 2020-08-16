@@ -1,85 +1,90 @@
 {% extends "base.html"%}
 
 {% block page_title %}
-  Tracklog Map
+Tracklog Map
 {% endblock %}
 
 {% block head %}
 {% endblock %}
 
 {% block css %}
-    {{map.header|safe}}
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@dashboardcode/bsmultiselect@0.6.0/dist/css/BsMultiSelect.min.css">
+{{map.header|safe}}
+<link rel='stylesheet'
+      href='https://cdn.jsdelivr.net/npm/@dashboardcode/bsmultiselect@0.6.0/dist/css/BsMultiSelect.min.css'>
 {% endblock %}
 
 {% block back %}
-    <a href="/task_result/{{task.id}}">Back to results</a>
+<a href='/task_result/{{task.id}}'>Back to results</a>
 {% endblock %}
 
 {% block header %}Track Map: {{task.name}} {{pilot.name}}{% endblock %}
 
 {% block content %}
 {% if not full_tracklog %}
-<div id="full_tracklog">
-    <button class="btn btn-primary" style="margin-right: 0; margin-left:auto; display:block;" id="full_tracklog_button" onclick="post('/map/{{pilot.id}}-{{task.id}}', {'full': 1})">Full Tracklog Map</button>
+<div id='full_tracklog'>
+  <button class='btn btn-primary' style='margin-right: 0; margin-left:auto; display:block;' id='full_tracklog_button'
+          onclick="post('/map/{{pilot.id}}-{{task.id}}', {'full': 1})">Full Tracklog Map
+  </button>
 </div>
 {% endif %}
 
-<div id="map" style="position: relative; width: 100%; height: 600px; margin: auto; border: none;">
-    {{map.html|safe}}
+<div id='map' style='position: relative; width: 100%; height: 600px; margin: auto; border: none;'>
+  {{map.html|safe}}
 </div>
 
-<form action="/" method="post">
-<div class="container">
-   <div class="form-group row">
-                        <label class="col-form-label col-sm-2" id="edit-states1-id">Add Tracks</label>
-                        <div class="col-sm-10">
-                            <select name="tracks" id="select-tracks-id" class="form-control test"  multiple="multiple" style="display: none;">
-                            {%for t in other_tracks%}
-                            <option value="{{t[0]}}">{{t[1]}}</option>
-                            {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-<button type="button" class="btn btn-primary" id="submit-tracks">Get Tracks</button>
-</div>
+<form action='/' method='post'>
+  <div class='container'>
+    <div class='form-group row'>
+      <label class='col-form-label col-sm-2' id='edit-states1-id'>Add Tracks</label>
+      <div class='col-sm-10'>
+        <select name='tracks' id='select-tracks-id' class='form-control test' multiple='multiple'
+                style='display: none;'>
+          {%for t in other_tracks%}
+          <option value='{{t[0]}}'>{{t[1]}}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <button type='button' class='btn btn-primary' id='submit-tracks'>Get Tracks</button>
+  </div>
 
 </form>
 
-<div class="container">
-  <table class="table table-striped " id="wpt_achieved_table">
+<div class='container'>
+  <table class='table table-striped ' id='wpt_achieved_table'>
     <thead>
-      <tr>
-        <th scope="col">Waypoint</th>
-        <th scope="col">Alt</th>
-        <th scope="col"> - </th>
-        <th scope="col">Time of day</th>
-        <th scope="col">Straight line dist<br> from previous (km)</th>
-        <th scope="col">Time from previous</th>
-        <th scope="col">Speed from previous (kph)</th>
-      </tr>
+    <tr>
+      <th scope='col'>Waypoint</th>
+      <th scope='col'>Alt</th>
+      <th scope='col'> -</th>
+      <th scope='col'>Time of day</th>
+      <th scope='col'>Straight line dist<br> from previous (km)</th>
+      <th scope='col'>Time from previous</th>
+      <th scope='col'>Speed from previous (kph)</th>
+    </tr>
     </thead>
-    <tbody id=wpt_achieved_table_body>
-      {%for w in wpt_achieved %}
-        <tr>
-          <td>{{w[3]}}</td>
-          <td>{{w[2]}}</td>
-          <td> - </td>
-          <td>{{w[5]}}</td>
-          <td>{{w[7]}}</td>
-          <td>{{w[8]}}</td>
-          <td>{{w[9]}}</td>
-        </tr>
-      {% endfor %}
+    <tbody id='wpt_achieved_table_body'>
+    {%for w in wpt_achieved %}
+    <tr>
+      <td>{{w[3]}}</td>
+      <td>{{w[2]}}</td>
+      <td> -</td>
+      <td>{{w[5]}}</td>
+      <td>{{w[7]}}</td>
+      <td>{{w[8]}}</td>
+      <td>{{w[9]}}</td>
+    </tr>
+    {% endfor %}
     </tbody>
   </table>
 </div>
 {% endblock %}
 
 {% block js %}
-    <script type="text/javascript" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@dashboardcode/bsmultiselect@0.6.0/dist/js/BsMultiSelect.min.js"></script>
-    <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script type='text/javascript' src='https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js'></script>
+<script type='text/javascript'
+        src='https://cdn.jsdelivr.net/npm/@dashboardcode/bsmultiselect@0.6.0/dist/js/BsMultiSelect.min.js'></script>
+<script src='https://d3js.org/d3.v3.min.js' charset='utf-8'></script>
 
 <script>
 var $multiSelects = $("select[multiple='multiple']");
@@ -87,6 +92,7 @@ function install(){
                 $multiSelects.bsMultiSelect();
 }
 install();
+
 </script>
 
 <script>
@@ -109,10 +115,12 @@ install();
         }
     });
 });
+
 </script>
 
 <script>
     {{map.script|safe}}
+
 </script>
 
 <script>
@@ -142,6 +150,7 @@ function post(path, params) {
   document.body.appendChild(form);
   form.submit();
 }
+
 </script>
 
 {% endblock %}
