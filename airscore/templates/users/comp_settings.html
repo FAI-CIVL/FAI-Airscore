@@ -640,21 +640,21 @@ function get_tasks(){
    });
  }
 
-function get_scorekeepers(){
+function get_admins(){
   $.ajax({
-     type: "GET",
-     url: "{{ url_for('user._get_scorekeepers', compid=compid)}}",
-     contentType:"application/json",
-     dataType: "json",
-     success: function (response) {
-       var content = '';
-       for (var i = 0; i < response['scorekeepers'].length; i++) {
-          content += '<tr><TD class="c3">'+ response['scorekeepers'][i]['first_name'] + ' '+ response['scorekeepers'][i]['last_name'] +'</TD></tr>'
-       }
-       $('#scorekeeper_table').append(content);
-       $('#owner').html(response['owner']['first_name'] + ' ' + response['owner']['last_name'] )
-     }
-   });
+    type: "GET",
+    url: "{{ url_for('user._get_admins', compid=compid)}}",
+    contentType:"application/json",
+    dataType: "json",
+    success: function (response) {
+      var content = '';
+      for (var i = 0; i < response['admins'].length; i++) {
+        content += '<tr><TD class="c3">'+ response['admins'][i]['first_name'] + ' '+ response['admins'][i]['last_name'] +'</TD></tr>'
+      }
+      $('#admin_table').append(content);
+      $('#owner').html(response['owner']['first_name'] + ' ' + response['owner']['last_name'] )
+    }
+  });
 }
 
 $(document).ready(function() {
