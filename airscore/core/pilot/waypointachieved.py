@@ -11,7 +11,7 @@ Stuart Mackintosh - Antonio Golfari
 
 """
 
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, fields
 from db.conn import db_session
 
 
@@ -27,11 +27,12 @@ class WaypointAchieved:
 
     @staticmethod
     def from_dict(d: dict):
+        keys = [k.name for k in fields(WaypointAchieved)]
         if 'trw_id' not in d.keys():
             d['trw_id'] = None
         if 'wpt_id' not in d.keys():
             d['wpt_id'] = None
-        return WaypointAchieved(**d)
+        return WaypointAchieved(**{k: v for k, v in d.items() if k in keys})
 
 
 def get_waypoints_achieved(track_id):
@@ -40,11 +41,9 @@ def get_waypoints_achieved(track_id):
     from sqlalchemy.orm import aliased
     t = aliased(TblTrackWaypoint)
     achieved = []
-    with db_session() as db:
-        rows = db.query(t.trw_id, t.wpt_id, t.name, t.rawtime,
-                        t.lat, t.lon, t.altitude).filter_by(track_id=track_id).all()
-        for w in rows:
-            achieved.append(WaypointAchieved(**w._asdict()))
+    rows = t.get_all(track_id=track_id)
+    for w in rows:
+        achieved.append(WaypointAchieved.from_dict(w.as_dict()))
     return achieved
 
 

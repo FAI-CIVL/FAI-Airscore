@@ -571,14 +571,6 @@ class Task(object):
         from db.tables import TblTaskWaypoint as W
         tps = W.from_task_id(self.task_id)
         return [tp.as_dict() for tp in tps]
-        # with db_session() as db:
-        #     # get the task turnpoint details.
-        #     results = db.query(W.wpt_id, W.rwp_id, W.name, W.num, W.description, W.how, W.radius, W.shape,
-        #                                W.type, W.partial_distance).filter(W.task_id == self.task_id).order_by(
-        #         W.num).all()
-        #     if results:
-        #         results = [row._asdict() for row in results]
-        #     return results
 
     def create_path(self, track_path=None):
         """create filepath from # and date if not given
