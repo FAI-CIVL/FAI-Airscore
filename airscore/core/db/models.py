@@ -1,4 +1,5 @@
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm.exc import MultipleResultsFound
 from .conn import db_session, Session
 Base = declarative_base()
 metadata = Base.metadata
@@ -17,6 +18,22 @@ class BaseModel(Base):
         with db_session() as db:
             print(f'get_by_id session id: {id(db)}')
             return db.query(cls).get(int(value))
+
+    @classmethod
+    def get_all(cls, **kvargs):
+        with db_session() as db:
+            print(f'get_all session id: {id(db)}')
+            return db.query(cls).filter_by(**kvargs).all()
+
+    @classmethod
+    def get_one(cls, **kvargs):
+        with db_session() as db:
+            print(f'get_one session id: {id(db)}')
+            try:
+                return db.query(cls).filter_by(**kvargs).one_or_none()
+            except MultipleResultsFound:
+                print(f"Error: Multiple results found")
+                return None
 
     @classmethod
     def from_obj(cls, obj):
