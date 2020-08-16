@@ -793,7 +793,7 @@ class TblTaskResult(BaseModel):
         p = aliased(TblParticipant)
         t = aliased(TblTask)
         with db_session() as db:
-            objects = db.query(cls.track_id, cls.par_id, cls.task_id,
+            objects = db.query(cls.track_id, p.par_id, t.task_id,
                                p.comp_id, p.civl_id, p.fai_id, p.pil_id, p.ID, p.name, p.nat, p.sex,
                                p.glider, p.glider_cert, p.sponsor, p.team, p.nat_team, p.live_id,
                                cls.distance_flown, cls.best_distance_time, cls.stopped_distance,
@@ -842,6 +842,11 @@ class TblNotification(BaseModel):
     percentage_penalty = Column(Float(5), nullable=False, server_default=text("'0.0000'"))
     comment = Column(String(80))
 
+    @classmethod
+    def from_track_list(cls, ids: list) -> list:
+        with db_session() as db:
+            return db.query(cls).filter(cls.track_id.in_(ids)).all()
+
 
 class TblTaskWaypoint(BaseModel):
     __tablename__ = 'tblTaskWaypoint'
@@ -879,6 +884,9 @@ class TblTaskWaypoint(BaseModel):
 
 class TblTrackWaypoint(BaseModel):
     __tablename__ = 'tblTrackWaypoint'
+    __table_args__ = (
+        Index('track_id'),
+    )
 
     trw_id = Column(INTEGER(11), primary_key=True)
     track_id = Column(INTEGER(11), nullable=False, index=True)
@@ -888,3 +896,18 @@ class TblTrackWaypoint(BaseModel):
     lat = Column(Float, nullable=False)
     lon = Column(Float, nullable=False)
     altitude = Column(SMALLINT(6), nullable=False)
+
+    @classmethod
+    def from_track_list(cls, ids: list) -> list:
+        with db_session() as db:
+            return db.query(cls).filter(cls.track_id.in_(ids)).all()
+
+    @classmethod
+    def from_track(cls, track_id: int) -> list:
+        with db_session() as db:
+            return db.query(cls).filter_by(track_id=track_id).all()
+
+    @classmethod
+    def get_dict_list(cls, ids: list) -> list:
+        with db_session() as db:
+            return [el.as_dict() for el in db.query(cls).filter(cls.track_id.in_(ids)).all()]
