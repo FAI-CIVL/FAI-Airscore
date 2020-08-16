@@ -393,18 +393,7 @@ def get_waypoint_choices(reg_id: int):
 
 def get_pilot_list_for_track_management(taskid: int):
     from db.tables import TblTaskResult as R, TblParticipant as P, TblTask as T
-    with db_session() as db:
-        results = db.query(R.goal_time, R.track_file, R.track_id, R.result_type, R.distance_flown,
-                           R.ESS_time, R.SSS_time, R.par_id).filter(
-            R.task_id == taskid).subquery()
-        pilots = db.query(T.task_id, P.name, P.ID, P.par_id, results.c.track_id, results.c.SSS_time,
-                          results.c.ESS_time,
-                          results.c.distance_flown, results.c.track_file, results.c.result_type) \
-            .outerjoin(P, T.comp_id == P.comp_id).filter(T.task_id == taskid) \
-            .outerjoin(results, results.c.par_id == P.par_id).all()
-
-        if pilots:
-            pilots = [row._asdict() for row in pilots]
+    pilots = [row._asdict() for row in R.get_task_results(taskid)]
 
     all_data = []
     for pilot in pilots:
