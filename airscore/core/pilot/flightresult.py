@@ -547,24 +547,26 @@ def delete_track(trackid: int, delete_file=False):
 
 
 def get_task_results(task_id: int):
-    from db.tables import FlightResultView as F, TblNotification as N, TblTrackWaypoint as W
+    from db.tables import FlightResultView as F, TblNotification as N, TblTrackWaypoint as W, TblTaskResult as R
     from pilot.notification import Notification
     pilots = []
-    with db_session() as db:
-        results = db.query(F).filter_by(task_id=task_id).all()
-        notifications = db.query(N).filter(N.track_id.in_([p.track_id for p in results])).all()
-        achieved = db.query(W).filter(W.track_id.in_([p.track_id for p in results])).all()
-        for row in results:
-            pilot = FlightResult()
-            row.populate(pilot)
-            for el in [n for n in notifications if n.track_id == pilot.track_id]:
-                n = Notification()
-                el.populate(n)
-                pilot.notifications.append(n)
-            for el in [{k: getattr(w, k) for k in ['trw_id', 'wpt_id', 'name', 'rawtime', 'lat', 'lon', 'altitude']}
-                       for w in achieved if w.track_id == pilot.track_id]:
-                pilot.waypoints_achieved.append(WaypointAchieved(**el))
-            pilots.append(pilot)
+    results = R.get_task_results(task_id)
+    track_list = list(filter(None, map(lambda x: x.track_id, results)))
+    notifications = N.from_track_list(track_list)
+    achieved = W.get_dict_list(track_list)
+    for row in results:
+        p = FlightResult.from_dict(row._asdict())
+        if not row.result_type:
+            p.result_type = 'nyp'
+        for el in [n for n in notifications if n.track_id == p.track_id]:
+            n = Notification()
+            el.populate(n)
+            p.notifications.append(n)
+        if p.result_type in ('lo', 'goal'):
+            wa = list(filter(lambda x: x['track_id'] == p.track_id, achieved))
+            for el in wa:
+                p.waypoints_achieved.append(WaypointAchieved.from_dict(el))
+        pilots.append(p)
     return pilots
 
 
