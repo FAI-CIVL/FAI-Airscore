@@ -285,9 +285,6 @@ def get_unscored_pilots(task_id: int, track_source=None):
     from db.tables import UnscoredPilotView as U
     pilot_list = []
     with db_session() as db:
-        # results = db.query(U.par_id, U.comp_id, U.ID, U.name, U.nat, U.sex, U.civl_id,
-        #                    U.live_id, U.glider, U.glider_cert, U.sponsor, U.xcontest_id,
-        #                    U.team, U.nat_team).filter_by(task_id=task_id)
         results = db.query(U).filter_by(task_id=task_id)
         if track_source == 'xcontest':
             results = results.filter(U.xcontest_id.isnot(None))
@@ -295,10 +292,7 @@ def get_unscored_pilots(task_id: int, track_source=None):
             results = results.filter(U.live_id.isnot(None))
         results = results.all()
         for p in results:
-            # pilot = FlightResult.from_dict(p._asdict())
-            pilot = FlightResult()
-            p.populate(pilot)
-            pilot_list.append(pilot)
+            pilot_list.append(p.populate(FlightResult()))
     return pilot_list
 
 

@@ -199,10 +199,9 @@ class Comp(object):
             print(f"comp_id needs to be int > 0, {comp_id} was given")
             return None
         try:
-            comp = Comp()
             # get comp details.
             q = C.get_by_id(comp_id)
-            q.populate(comp)
+            comp = q.populate(Comp())
             comp.formula = q.populate(Formula())
             return comp
         except AttributeError:

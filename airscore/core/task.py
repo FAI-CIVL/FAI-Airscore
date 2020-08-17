@@ -542,22 +542,22 @@ class Task(object):
         if not (type(task_id) is int and task_id > 0):
             print(f'Error: {task_id} is not a valid id')
             return f'Error: {task_id} is not a valid id'
-        try:
-            task = Task(task_id=task_id)
-            '''get task from db'''
-            T.get_by_id(task_id).populate(task)
-        except AttributeError:
-            error = f'Error: No task found with id {task_id}'
-            print(error)
-            return error
-        '''populate turnpoints'''
-        tps = W.from_task_id(task_id)
-        for tp in tps:
-            task.turnpoints.append(tp.populate(Turnpoint()))
-            if task.opt_dist:
-                s_point = polar(lat=tp.ssr_lat, lon=tp.ssr_lon)
-                task.optimised_turnpoints.append(s_point)
-                task.partial_distance.append(tp.partial_distance)
+        with db_session() as db:
+            try:
+                '''get task from db'''
+                task = db.query(T).get(task_id).populate(Task())
+            except AttributeError:
+                error = f'Error: No task found with id {task_id}'
+                print(error)
+                return error
+            '''populate turnpoints'''
+            tps = db.query(W).filter_by(task_id=task_id)
+            for tp in tps:
+                task.turnpoints.append(tp.populate(Turnpoint()))
+                if task.opt_dist:
+                    s_point = polar(lat=tp.ssr_lat, lon=tp.ssr_lon)
+                    task.optimised_turnpoints.append(s_point)
+                    task.partial_distance.append(tp.partial_distance)
         '''check if we already have a filepath for task'''
         if task.task_path is None or '':
             task.create_path()

@@ -161,9 +161,7 @@ def get_participants(comp_id: int):
     with db_session() as db:
         results = db.query(R).filter_by(comp_id=comp_id).all()
         for p in results:
-            pil = Participant(comp_id=comp_id)
-            p.populate(pil)
-            pilots.append(pil)
+            pilots.append(p.populate(Participant()))
     return pilots
 
 
@@ -232,13 +230,12 @@ def create_comp_code(name: str, date: datetime.date):
 
 def get_task_filepath(task_id: int):
     """ returns complete trackfile path"""
-    from db.conn import db_session
+    # from db.conn import db_session
     from db.tables import TaskObjectView as T
     from Defines import TRACKDIR
     from pathlib import Path
-    with db_session() as db:
-        task = db.query(T).filter_by(task_id=task_id).one()
-        return Path(TRACKDIR, task.comp_path, task.task_path)
+    task = T.get_one(task_id=task_id)
+    return Path(TRACKDIR, task.comp_path, task.task_path)
 
 
 def get_formulas(comp_class):

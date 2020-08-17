@@ -65,9 +65,7 @@ class Participant(Pilot):
             # get pilot details.
             q = db.query(P).get(par_id)
             if q:
-                participant = Participant(par_id=par_id)
-                q.populate(participant)
-                return participant
+                return q.populate(Participant())
         return None
 
     @staticmethod

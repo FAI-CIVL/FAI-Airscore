@@ -362,13 +362,10 @@ class TaskFormula(Formula):
     def read(task_id: int):
         """reads comp formula from database"""
         from db.tables import TaskFormulaView as F
-        formula = F.get_by_id(task_id).populate(TaskFormula())
-        # formula = TaskFormula()
-        # with db_session() as db:
-        #     q = db.query(F).get(task_id)
-        #     if q is not None:
-        #         q.populate(formula)
-        return formula
+        with db_session() as db:
+            q = db.query(F).get(task_id)
+            if q is not None:
+                return q.populate(TaskFormula())
 
     def to_db(self):
         """stores TaskFormula parameters to TblTask table in AirScore database"""

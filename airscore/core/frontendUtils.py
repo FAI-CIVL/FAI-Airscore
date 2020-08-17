@@ -426,9 +426,8 @@ def get_waypoint(wpt_id: int = None, rwp_id: int = None):
             result = db.query(TblTaskWaypoint).get(wpt_id)
         else:
             result = db.query(TblRegionWaypoint).get(rwp_id)
-        tp = Turnpoint()
-        result.populate(tp)
-    return tp
+        if result:
+            return result.populate(Turnpoint())
 
 
 def save_turnpoint(task_id: int, turnpoint: Turnpoint):
