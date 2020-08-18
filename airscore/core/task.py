@@ -545,7 +545,7 @@ class Task(object):
         with db_session() as db:
             try:
                 '''get task from db'''
-                task = db.query(T).get(task_id).populate(Task())
+                task = db.query(T).get(task_id).populate(Task(task_id=task_id))
             except AttributeError:
                 error = f'Error: No task found with id {task_id}'
                 print(error)
