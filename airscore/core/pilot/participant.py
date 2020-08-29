@@ -80,7 +80,7 @@ class Participant(Pilot):
     def to_db(self):
         """stores or updates Participant to AirScore database"""
         if not self.par_id:
-            row = P.from_obj(self)
+            row = P().from_obj(self)
             row.save()
             self.par_id = row.par_id
         else:

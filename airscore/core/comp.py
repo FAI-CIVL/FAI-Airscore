@@ -246,19 +246,10 @@ class Comp(object):
             print('cannot insert an invalid competition. Need more info.')
             return None
 
-        with db_session() as db:
-            if self.comp_id is not None:
-                row = db.query(TblCompetition).get(self.comp_id)
-            else:
-                row = TblCompetition()
-            for k, v in self.as_dict().items():
-                if hasattr(row, k):
-                    setattr(row, k, v)
-            if not self.comp_id:
-                db.add(row)
-                db.flush()
-                self.comp_id = row.comp_id
-            db.commit()
+        row = TblCompetition() if not self.comp_id else TblCompetition.get_by_id(self.comp_id)
+        row.from_obj(self)
+        row.save_or_update()
+        self.comp_id = row.comp_id
         return self.comp_id
 
     def get_rankings(self):

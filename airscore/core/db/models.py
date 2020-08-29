@@ -35,19 +35,17 @@ class BaseModel(Base):
                 print(f"Error: Multiple results found")
                 return None
 
-    @classmethod
-    def from_obj(cls, obj):
+    def from_obj(self, obj):
         """ populate a Table row object from an object
             Input:
                 obj  - OBJ: object"""
         try:
-            row = cls()
-            for x in row.__table__.columns.keys():
+            for x in self.__table__.columns.keys():
                 if hasattr(obj, x):
-                    setattr(row, x, getattr(obj, x))
-            return row
+                    setattr(self, x, getattr(obj, x))
+            return self
         except TypeError as e:
-            print(f'Error populating table row: obj is not iterable')
+            print(f'Error populating table row: obj is not iterable ({e})')
 
     def populate(self, obj: object) -> object:
         """ Associate query result with class object attributes, using same name

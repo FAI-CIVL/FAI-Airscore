@@ -438,8 +438,7 @@ def save_turnpoint(task_id: int, turnpoint: Turnpoint):
     with db_session() as db:
         if not turnpoint.wpt_id:
             '''add new taskWaypoint'''
-            # tp = TblTaskWaypoint(**turnpoint.as_dict())
-            tp = TblTaskWaypoint.from_obj(turnpoint)
+            tp = TblTaskWaypoint().from_obj(turnpoint)
             db.add(tp)
             db.flush()
         else:

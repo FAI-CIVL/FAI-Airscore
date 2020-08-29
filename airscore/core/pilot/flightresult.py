@@ -526,7 +526,7 @@ def update_status(par_id: int, task_id: int, status: str):
     """Create or update pilot status ('abs', 'dnf', 'mindist')"""
     result = FlightResult.read(par_id, task_id)
     result.result_type = status
-    row = TblTaskResult.from_obj(result)
+    row = TblTaskResult().from_obj(result)
     row.task_id = task_id
     row.save_or_update()
     return row.track_id
@@ -590,7 +590,7 @@ def save_track(result: FlightResult, task_id: int):
         row.update(**result.as_dict())
     else:
         '''create a new result'''
-        row = R.from_obj(result)
+        row = R().from_obj(result)
         row.task_id = task_id
         row.save()
         result.track_id = row.track_id
