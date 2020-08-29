@@ -15,37 +15,34 @@ def get_comp(task_id: int):
     """Get com_id from task_id"""
     from db.tables import TblTask as T
     with db_session() as db:
-        comp_id = db.query(T.comp_id).filter_by(task_id=task_id).scalar()
-        return comp_id
+        return db.query(T).get(task_id).comp_id
 
 
 def get_class(task_id: int):
     """Get comp_class ('PG', 'HG', 'BOTH') from task_id"""
     from db.tables import TaskObjectView as T
     with db_session() as db:
-        comp_class = db.query(T.comp_class).filter_by(task_id=task_id).scalar()
-        return comp_class
+        return db.query(T).get(task_id).comp_class
 
 
 def get_task_date(task_id: int):
     """Get date from task_id in datetime.date format"""
     from db.tables import TblTask as T
     with db_session() as db:
-        return db.query(T.date).filter_by(task_id=task_id).scalar()
+        return db.query(T).get(task_id).date
 
 
 def get_registration(comp_id: int):
     """Check if comp has mandatory registration"""
     from db.tables import TblCompetition as C
     with db_session() as db:
-        restricted = db.query(C.restricted).filter_by(comp_id=comp_id).scalar()
-        return bool(restricted)
+        return bool(db.query(C).get(comp_id).restricted)
 
 
 def get_offset(task_id: int):
     from db.tables import TblTask as T
     with db_session() as db:
-        return db.query(T.time_offset).filter_by(task_id=task_id).scalar()
+        return db.query(T).get(task_id).time_offset
 
 
 def is_registered(civl_id: int, comp_id: int):
@@ -59,9 +56,7 @@ def is_ext(comp_id: int):
     """True if competition is external"""
     from db.tables import TblCompetition as C
     with db_session() as db:
-        # comps = db.query(C)
-        ext = db.query(C.external).filter_by(comp_id=comp_id).scalar()
-        return bool(ext)
+        return bool(db.query(C).get(comp_id).external)
 
 
 def get_comp_json_filename(comp_id: int, latest=False):
@@ -70,10 +65,9 @@ def get_comp_json_filename(comp_id: int, latest=False):
     with db_session() as db:
         results = db.query(R.filename).filter_by(comp_id=comp_id, task_id=None)
         if latest:
-            filename = results.order_by(R.ref_id.desc()).limit(1).scalar()
+            return results.order_by(R.ref_id.desc()).limit(1).scalar()
         else:
-            filename = results.filter_by(active=1).scalar()
-        return filename
+            return results.filter_by(active=1).scalar()
 
 
 def get_comp_json(comp_id: int, latest=False):
@@ -113,7 +107,7 @@ def get_task_path(task_id: int):
     from db.tables import TblTask as T
     if type(task_id) is int and task_id > 0:
         with db_session() as db:
-            return db.query(T.task_path).filter_by(task_id=task_id).limit(1).scalar()
+            return db.query(T).get(task_id).task_path
 
 
 def get_comp_path(comp_id: int):
@@ -121,7 +115,7 @@ def get_comp_path(comp_id: int):
     from db.tables import TblCompetition as C
     if type(comp_id) is int and comp_id > 0:
         with db_session() as db:
-            return db.query(C.comp_path).filter_by(comp_id=comp_id).limit(1).scalar()
+            return db.query(C).get(comp_id).comp_path
 
 
 def create_comp_path(date: datetime.date, code: str):
@@ -136,7 +130,7 @@ def get_task_region(task_id: int):
     """returns task region id from task_id"""
     from db.tables import TblTask as T
     with db_session() as db:
-        return db.query(T.reg_id).filter_by(task_id=task_id).limit(1).scalar()
+        return db.query(T).get(task_id).reg_id
 
 
 def get_area_wps(region_id: int):
@@ -230,7 +224,6 @@ def create_comp_code(name: str, date: datetime.date):
 
 def get_task_filepath(task_id: int):
     """ returns complete trackfile path"""
-    # from db.conn import db_session
     from db.tables import TaskObjectView as T
     from Defines import TRACKDIR
     from pathlib import Path
