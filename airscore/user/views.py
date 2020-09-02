@@ -109,8 +109,8 @@ def comp_admin():
 def _create_comp():
     import compUtils
     data = request.json
-    date_from = datetime.strptime(data['datefrom'], '%Y-%m-%d')
-    date_to = datetime.strptime(data['dateto'], '%Y-%m-%d')
+    date_from = datetime.strptime(data['datefrom'], '%Y-%m-%d').date()
+    date_to = datetime.strptime(data['dateto'], '%Y-%m-%d').date()
     if date_to < date_from:
         flash("Start date cannot be after end date. Competition not saved", category='danger')
         return dict(redirect='/users/comp_admin')

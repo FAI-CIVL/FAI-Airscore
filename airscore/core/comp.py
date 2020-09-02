@@ -245,7 +245,8 @@ class Comp(object):
 
         row = TblCompetition() if not self.comp_id else TblCompetition.get_by_id(self.comp_id)
         row.from_obj(self)
-        self.comp_id = row.save_or_update()
+        row.save_or_update()
+        self.comp_id = row.comp_id
         return self.comp_id
 
     def get_rankings(self):
