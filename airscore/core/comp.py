@@ -470,20 +470,18 @@ def delete_comp(comp_id, files=True):
     from db.tables import TblParticipant as P
     from task import delete_task
     from result import delete_result
-    with db_session() as db:
-        tasks = db.query(T.task_id).filter_by(comp_id=comp_id).all()
-        if tasks:
-            '''delete tasks'''
-            for task in tasks:
-                delete_task(task.task_id, files=files)
-        results = db.query(RF.ref_id).filter_by(comp_id=comp_id).all()
+
+    tasks = T.query.with_entities(T.task_id).filter_by(comp_id=comp_id).all()
+    if tasks:
+        '''delete tasks'''
+        for task in tasks:
+            delete_task(task.task_id, files=files)
+        results = RF.query.with_entities(RF.ref_id).filter_by(comp_id=comp_id).all()
         if results:
             '''delete result json files'''
             for res in results:
                 delete_result(res.ref_id, files)
         '''delete db entries: formula, participants, comp'''
-        db.query(P).filter_by(comp_id=comp_id).delete(synchronize_session=False)
-        db.query(FC).filter_by(comp_id=comp_id).delete(synchronize_session=False)
-        db.query(TblCompetition).filter_by(comp_id=comp_id).delete(synchronize_session=False)
-        db.commit()
-
+        P.delete_all(comp_id=comp_id)
+        FC.delete_all(comp_id=comp_id)
+        TblCompetition.get_by_id(comp_id).delete()
