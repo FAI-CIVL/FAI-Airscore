@@ -9,7 +9,6 @@ Antonio Golfari - 2019
 """
 
 from route import Turnpoint
-from db.conn import db_session
 from db.tables import TblRegion as R, RegionWaypointView as RWV, TblRegionWaypoint as RW
 
 
@@ -61,6 +60,8 @@ class Region:
             self.update_waypoints()
 
     def update_waypoints(self):
+        from db.conn import db_session
+
         insert_mappings = []
         for idx, tp in enumerate(self.turnpoints):
             wpt = dict(tp.as_dict(), reg_id=self.reg_id)

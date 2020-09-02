@@ -10,7 +10,6 @@ By Stuart Mackintosh, Antonio Golfari, 2019
 import logging
 import time
 import requests
-from db.conn import db_session
 from pathlib import Path
 
 

@@ -628,13 +628,13 @@ def _add_turnpoint(taskid):
             '''changing wpt'''
             tp = get_waypoint(rwp_id=rwp_id)
             tp.wpt_id = wpt_id
-            tp.task_id = taskid
+            # tp.task_id = taskid
         else:
             tp = get_waypoint(wpt_id=wpt_id)
     else:
         '''add waypoint'''
         tp = get_waypoint(rwp_id=rwp_id)
-        tp.task_id = taskid
+        # tp.task_id = taskid
     tp.num = int(data['number'])
     tp.radius = int(data['radius'])
     tp.type = data['type']

@@ -34,7 +34,6 @@ from pilot.flightresult import verify_all_tracks, adjust_flight_results
 from formula import TaskFormula
 from geo import Geo
 from igc_lib import defaultdict
-from db.conn import db_session
 from pilot.flightresult import update_all_results
 from result import TaskResult, create_json_file
 from route import distance, polar, Turnpoint, get_shortest_path, get_line
@@ -1163,11 +1162,9 @@ class Task(object):
         from compUtils import get_fsdb_task_path
         from calcUtils import get_date, get_time, time_to_seconds
 
-        tas = dict()
         stats = dict()
         turnpoints = []
         optimised_legs = []
-        # results = []
 
         task = cls()
 
@@ -1181,26 +1178,6 @@ class Task(object):
 
         """formula info"""
         formula = TaskFormula.from_fsdb(t)
-        # f = t.find('FsScoreFormula')
-        # formula = TaskFormula()
-        # formula.formula_name = f.get('id')
-        # formula.arr_alt_bonus = 'off'
-        # if ((f.get('use_arrival_altitude_points') is not None and float(f.get('use_arrival_altitude_points')) > 0)
-        #         or f.get('use_arrival_altitude_points') == 'aatb'):
-        #     formula.arr_alt_bonus = 'on'
-        # """Departure and Arrival from formula"""
-        # formula.formula_arrival = 'position' if float(f.get('use_arrival_position_points')) == 1 else 'time' if float(
-        #     f.get(
-        #         'use_arrival_position_points')) == 1 else 'off'  # not sure if and which type Airscore is supporting at the moment
-        # formula.tolerance = 0.0 + float(f.get('turnpoint_radius_tolerance')
-        #                                 if f.get('turnpoint_radius_tolerance') else 0.1)  # tolerance, perc / 100
-        #
-        # if float(f.get('use_departure_points')) > 0:
-        #     formula.formula_departure = 'on'
-        # elif float(f.get('use_leading_points')) > 0:
-        #     formula.formula_departure = 'leadout'
-        # else:
-        #     formula.formula_departure = 'off'
 
         """Task Status"""
         node = t.find('FsTaskState')
@@ -1354,60 +1331,12 @@ class Task(object):
                 turnpoint.num = len(turnpoints) + 1
                 turnpoints.append(turnpoint)
 
-            # turnpoint = Turnpoint(float(w.get('lat')), float(w.get('lon')), int(w.get('radius')))
-            # turnpoint.id = len(turnpoints) + 1
-            # turnpoint.name = w.get('id')
-            # turnpoint.altitude = int(w.get('altitude'))
-            # print(f"    {turnpoint.id}  {turnpoint.name}  {turnpoint.radius}")
-            # if turnpoint.id == 1:
-            #     turnpoint.type = 'launch'
-            #     task.date = get_date(w.get('open'))
-            #     task.window_open_time = time_to_seconds(get_time(w.get('open')))
-            #     task.window_close_time = time_to_seconds(get_time(w.get('close')))
-            #     # sanity
-            #     if task.window_close_time <= task.window_open_time:
-            #         task.window_close_time = None
-            #     if 'free distance' in task.task_type:
-            #         # print('Sono in launch - free')
-            #         '''get start and close time for free distance task types'''
-            #         task.start_time = time_to_seconds(get_time(w.get('open')))
-            #         task.start_close_time = time_to_seconds(get_time(w.get('close')))
-            #         # task.task_deadline = get_datetime(w.get('close'))
-            #     if turnpoint.id == sswpt:
-            #         '''need to manage tasks where first wpt is ss. adding a point as launch'''
-            #         turnpoints.append(turnpoint)
-            # if turnpoint.id == sswpt:
-            #     # print('Sono in ss')
-            #     turnpoint.type = 'speed'
-            #     task.start_close_time = time_to_seconds(get_time(w.get('close')))
-            #     if 'elapsed time' in task.task_type:
-            #         '''get start for elapsed time task types'''
-            #         task.start_time = time_to_seconds(get_time(w.get('open')))
-            # elif turnpoint.id == eswpt:
-            #     # print('Sono in es')
-            #     turnpoint.type = 'endspeed'
-            #     task.task_deadline = time_to_seconds(get_time(w.get('close')))
-            #     if turnpoint.id == len(node.findall('FsTurnpoint')):
-            #         '''need to manage tasks where last wpt is es. adding a point as es'''
-            #         turnpoints.append(turnpoint)
-            # if turnpoint.id == len(node.findall('FsTurnpoint')):
-            #     # print('Sono in goal')
-            #     turnpoint.type = 'goal'
-            #     if gtype == 'LINE':
-            #         turnpoint.shape = 'line'
-            # # else:
-            # #     wpt['tawType'] = 'waypoint'
-            #
-            # turnpoints.append(turnpoint)
-
-        # tas['route'] = route
         task.formula = formula
         task.turnpoints = turnpoints
         task.calculate_task_length()
         # print ("Tot. Dist.: {}".format(task.distance))
         task.stats = stats
         task.partial_distance = optimised_legs
-        # task.results = results
         # print ("{} - date: {} - type: {} - dist.: {} - opt. dist.: {}".format(task.task_name, task.window_open_time.date(), task.task_type, task.distance, task.opt_dist))
         # print ("open: {} - start: {} - close: {} - end: {} \n".format(task.window_open_time, task.start_time, task.start_close_time, task.task_deadline))
 
@@ -1479,6 +1408,7 @@ class Task(object):
 
     def update_waypoints(self):
         from db.tables import TblTaskWaypoint as W
+        from db.conn import db_session
         insert_mappings = []
         update_mappings = []
         for idx, tp in enumerate(self.turnpoints):
@@ -1608,6 +1538,7 @@ def delete_task(task_id, files=False):
     from db.tables import TblNotification as N
     from db.tables import TblResultFile as RF
     from db.tables import TblCompetition as C
+    from db.conn import db_session
     from result import delete_result
     from Defines import TRACKDIR
     import shutil
@@ -1786,8 +1717,10 @@ def need_new_scoring(task_id: int):
     return False
 
 
-def get_task_path(task_id: int):
-    from db.tables import TaskObjectView
-    with db_session() as db:
-        row = db.query(TaskObjectView.task_path, TaskObjectView.comp_path).filter_by(task_id=task_id).one()
-        return None if not (row.task_path and row.comp_path) else Path(TRACKDIR, row.comp_path, row.task_path)
+# def get_task_path(task_id: int):
+#     from db.tables import TblTask as T, TblCompetition as C
+#     from pathlib import Path
+#     task_path, comp_path = T.query.with_entities(T.task_path, C.comp_path) \
+#         .join(C, C.comp_id == T.comp_id) \
+#         .filter(T.task_id == task_id).one()
+#     return Path(TRACKDIR, comp_path, task_path)

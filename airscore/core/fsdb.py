@@ -19,7 +19,6 @@ from calcUtils import get_isotime, km, sec_to_time, c_round
 from comp import Comp
 from compUtils import is_ext
 from formula import Formula
-from db.conn import db_session
 from pathlib import Path
 from pilot.participant import Participant, mass_import_participants
 from pilot.flightresult import FlightResult, update_all_results

@@ -15,7 +15,6 @@ from sqlalchemy.orm import aliased
 from calcUtils import get_date
 from sources.civlrankings import create_participant_from_CIVLID, create_participant_from_name
 from db.tables import TblParticipant as P
-from db.conn import db_session
 
 
 class Participant(Pilot):
@@ -238,12 +237,13 @@ def unregister_from_profiles_list(comp_id: int, pilots: list):
     """ takes comp_id and list of pil_id
         unregisters pilots from comp"""
     from sqlalchemy import and_
-    # from db.models import session
+    from db.conn import db_session
+
     if not (comp_id and pilots):
         print(f"error: comp_id does not exist or pilots list is empty")
         return None
     with db_session() as db:
-        P.query.filter(and_(P.comp_id == comp_id, P.pil_id.in_(pilots))).delete()
+        P.query.filter(and_(P.comp_id == comp_id, P.pil_id.in_(pilots))).delete(synchronize_session=False)
         db.commit()
     return True
 
@@ -260,8 +260,10 @@ def unregister_participant(comp_id: int, par_id: int):
 def unregister_all_external_participants(comp_id: int):
     """ takes comp_id and unregisters all participants from comp without a pil_id."""
     from sqlalchemy import and_
+    from db.conn import db_session
+
     with db_session() as db:
-        P.query.filter(and_(P.comp_id == comp_id, P.pil_id.is_(None))).delete()
+        P.query.filter(and_(P.comp_id == comp_id, P.pil_id.is_(None))).delete(synchronize_session=False)
         db.commit()
     return True
 
@@ -269,11 +271,13 @@ def unregister_all_external_participants(comp_id: int):
 def mass_unregister(pilots):
     """ gets par_id list
         unregisters pilots from comp"""
+    from db.conn import db_session
+
     if not pilots:
         print(f"error: pilots list is empty")
         return None
     with db_session() as db:
-        P.query.filter(P.par_id.in_(pilots)).delete()
+        P.query.filter(P.par_id.in_(pilots)).delete(synchronize_session=False)
         db.commit()
     return True
 
@@ -283,6 +287,7 @@ def mass_import_participants(comp_id: int, participants: list, existing_list: li
         Before inserting rows without par_id, we need to check if pilot is already in participants
         Will create a list of dicts from database, if not given as parameter"""
     from compUtils import get_participants
+    from db.conn import db_session
 
     insert_mappings = []
     update_mappings = []

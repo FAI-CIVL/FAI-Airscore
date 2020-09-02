@@ -10,8 +10,6 @@ Stuart Mackintosh - 2019
 import math
 from collections import namedtuple
 from math import sqrt, hypot, fabs
-from db.conn import db_session
-
 import numpy as np
 from geographiclib.geodesic import Geodesic
 from geopy.distance import geodesic

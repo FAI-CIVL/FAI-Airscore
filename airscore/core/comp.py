@@ -20,7 +20,6 @@ from calcUtils import get_date, c_round
 from compUtils import get_tasks_result_files, get_participants, read_rankings, create_classifications, create_comp_path
 from db.tables import TblCompetition
 from formula import Formula
-from db.conn import db_session
 from pilot.participant import Participant
 from result import CompResult, create_json_file
 from task import Task
@@ -75,7 +74,7 @@ class Comp(object):
         self.igc_config_file = None  # config yaml for igc_lib. This setting will be passed on to new tasks
         self.airspace_check = False  # BOOL airspace check. This setting will be passed on to new tasks
         self.check_launch = check_launch  # check launch flag. whether we check that pilots leave from launch. This setting will be passed on to new tasks
-        self.self_register = PILOT_DB and SELF_REG_DEFAULT # set to true if we have pilot DB on and self reg on by default
+        self.self_register = PILOT_DB and SELF_REG_DEFAULT  # set to true if we have pilot DB on and self reg on by default
         self.check_g_record = False
 
         # self.formula                    = Formula.read(self.comp_id) if self.comp_id else None

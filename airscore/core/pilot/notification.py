@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from db.tables import TblNotification as N
-from db.conn import db_session
 
 
 @dataclass
@@ -29,6 +28,8 @@ def get_notifications(pilot):
 
 def update_notifications(pilot):
     """inserts and / or updates pilot's notifications"""
+    from db.conn import db_session
+
     if not pilot.track_id:
         return
     with db_session() as db:

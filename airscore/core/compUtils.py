@@ -5,10 +5,7 @@ Use:    import compUtils
 Antonio Golfari - 2019
 """
 
-import json
 import datetime
-import Defines
-from db.conn import db_session
 
 
 def get_comp(task_id: int):

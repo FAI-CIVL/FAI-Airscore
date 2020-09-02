@@ -6,7 +6,6 @@ For a description of the Bot API, see this page: https://core.telegram.org/bots/
 import requests
 import json
 from Defines import TELEGRAM_API, TELEGRAM_CHANNEL
-from db.conn import db_session
 from calcUtils import c_round
 
 # telegram url

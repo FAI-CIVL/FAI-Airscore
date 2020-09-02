@@ -6,11 +6,9 @@ Use:    import trackUtils
 Antonio Golfari - 2018
 """
 
-from os import listdir, fsdecode
+from os import listdir
 
-from sqlalchemy import and_
-from db.conn import db_session
-from Defines import TRACKDIR, MAPOBJDIR, track_sources, track_formats
+from Defines import TRACKDIR, MAPOBJDIR
 from pilot.flightresult import FlightResult
 import re
 from pathlib import Path

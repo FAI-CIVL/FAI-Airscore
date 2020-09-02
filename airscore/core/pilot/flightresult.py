@@ -32,8 +32,6 @@ from airspace import AirspaceCheck
 from calcUtils import string_to_seconds, sec_to_time
 from db.tables import TblTaskResult
 from formulas.libs.leadcoeff import LeadCoeff
-from db.conn import db_session
-from route import in_goal_sector, start_made_civl, tp_made_civl, tp_time_civl, get_shortest_path, distance_flown
 from .waypointachieved import WaypointAchieved
 from .notification import Notification
 
@@ -609,6 +607,7 @@ def update_all_results(pilots: list, task_id: int):
     from db.tables import TblTaskResult as R, TblNotification as N, TblTrackWaypoint as W
     from dataclasses import asdict
     from sqlalchemy import and_
+    from db.conn import db_session
     insert_mappings = []
     update_mappings = []
     notif_mappings = []

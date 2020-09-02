@@ -15,8 +15,6 @@ Will send a confirmation to all comp admins unless in -t test mode.
 import argparse
 import smtplib
 
-from db.conn import db_session
-
 
 class send_mail():
     def __init__(self, server, username, password):

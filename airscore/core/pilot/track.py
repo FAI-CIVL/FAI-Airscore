@@ -17,7 +17,6 @@ from Defines import track_formats, IGCPARSINGCONFIG
 from calcUtils import epoch_to_date
 from db.tables import TblTaskResult
 from igc_lib import Flight, FlightParsingConfig
-from db.conn import db_session
 from trackUtils import find_pilot, get_task_fullpath
 import json
 # from notification import Notification

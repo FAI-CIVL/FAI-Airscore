@@ -12,7 +12,6 @@ Stuart Mackintosh - Antonio Golfari
 """
 
 from dataclasses import dataclass, asdict, fields
-from db.conn import db_session
 
 
 @dataclass
@@ -50,6 +49,8 @@ def get_waypoints_achieved(track_id):
 def update_waypoints_achieved(pilot):
     """deletes old entries and updates TblTrackWaypoint for result"""
     from db.tables import TblTrackWaypoint
+    from db.conn import db_session
+
     mappings = []
     for w in pilot.waypoints_achieved:
         mappings.append(dict(track_id=pilot.track_id, **asdict(w)))

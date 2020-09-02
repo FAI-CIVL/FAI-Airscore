@@ -19,7 +19,6 @@ Stuart Mackintosh - Antonio Golfari
 """
 
 from db.tables import TblResultFile
-from db.conn import db_session
 from sqlalchemy import and_
 
 
@@ -380,6 +379,7 @@ def update_result_file(filename: str, par_id: int, notification: dict):
                         }
     """
     from db.tables import TblNotification as N
+    from db.conn import db_session
     from Defines import RESULTDIR
     from pathlib import Path
     import time

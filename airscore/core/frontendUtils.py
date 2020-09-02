@@ -2,7 +2,6 @@ from db.tables import TblCompetition, TblTask, TblCompAuth, TblRegion, TblRegion
 from route import Turnpoint
 from sqlalchemy.orm import aliased
 from flask import current_app, jsonify
-from db.conn import db_session
 import datetime
 import ruamel.yaml
 from sqlalchemy import func
@@ -186,7 +185,7 @@ def get_ladder_results(ladder_id: int, season: int,
     stats['total_validity'] = c_round(sum([t['ftv_validity'] for t in tasks]), 4)
     stats['avail_validity'] = (0 if len(tasks) == 0
                                else c_round(stats['total_validity'] * param, 4) if val == 'ftv'
-                               else stats['total_validity'])
+    else stats['total_validity'])
 
     '''calculate scores'''
     for pil in pilots_list:
