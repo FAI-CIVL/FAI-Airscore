@@ -40,6 +40,10 @@ def load_user(user_id):
 
 @blueprint.route("/", methods=["GET", "POST"])
 def home():
+    """ Home page """
+    '''reset session compid if present'''
+    if 'compid' in session.keys():
+        session.pop('compid')
     form = LoginForm(request.form)
     # Handle logging in
     if request.method == "POST":
@@ -103,7 +107,6 @@ def ladder_result(ladderid: int, season: int):
 
 @blueprint.route('/_get_ladder_result/<int:ladderid>/<int:season>', methods=['GET', 'POST'])
 def _get_ladder_result(ladderid: int, season: int):
-
     result_file = frontendUtils.get_pretty_data(frontendUtils.get_ladder_results(ladderid, season))
     if result_file == 'error':
         return render_template('404.html')
@@ -239,6 +242,7 @@ def competition(compid):
             task.update({'map': task_map._repr_html_()})
             all_tasks.append(task)
 
+    session['compid'] = compid
     comp, non_scored_tasks = frontendUtils.get_comp_info(compid, task_ids)
     comp_start = comp['date_from']
     if comp['date_from']:
@@ -290,7 +294,10 @@ def competition(compid):
 
 @blueprint.route('/task_result/<int:taskid>')
 def task_result(taskid):
-    return render_template('public/task_result.html', taskid=taskid)
+    from compUtils import get_comp
+    if not session['compid']:
+        session['compid'] = get_comp(taskid)
+    return render_template('public/task_result.html', taskid=taskid, compid=session['compid'])
 
 
 @blueprint.route('/_get_task_result/<int:taskid>', methods=['GET', 'POST'])
@@ -329,9 +336,9 @@ def _get_task_result(taskid):
         all_pilots.append(pilot)
         # else:
         #     '''pilot do not have result data'''
-            # TODO at the moment js raises error trying to order scores, leaving non flying pilots out of datatable
-            # pilot = [f'<b>{rank}</b>', f'{name}', r['nat'], r['glider'], r['glider_cert'], r['sponsor'], "", "", "", "",
-            #          "", "", "", "", "", "", "", f"{r['result_type'].upper()}"]
+        # TODO at the moment js raises error trying to order scores, leaving non flying pilots out of datatable
+        # pilot = [f'<b>{rank}</b>', f'{name}', r['nat'], r['glider'], r['glider_cert'], r['sponsor'], "", "", "", "",
+        #          "", "", "", "", "", "", "", f"{r['result_type'].upper()}"]
 
     result_file['data'] = all_pilots
     return result_file
@@ -394,6 +401,9 @@ def _get_comp_country_result(compid):
 
 @blueprint.route('/country_task/<int:taskid>')
 def country_task(taskid):
+    from compUtils import get_comp
+    if not session['compid']:
+        session['compid'] = get_comp(taskid)
     return render_template('public/country_task.html', taskid=taskid)
 
 
@@ -554,6 +564,9 @@ def _get_participants_and_status(compid):
 
 @blueprint.route('/live/<int:taskid>')
 def livetracking(taskid):
+    from compUtils import get_comp
+    if not session['compid']:
+        session['compid'] = get_comp(taskid)
     return render_template('public/live.html', taskid=taskid)
 
 
