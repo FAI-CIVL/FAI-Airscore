@@ -271,12 +271,11 @@ class FlightResult(Participant):
         """reads result from database"""
         from db.tables import FlightResultView as R, TblParticipant as P
         result = FlightResult()
-        with db_session() as db:
-            q = db.query(R).filter_by(par_id=par_id, task_id=task_id).first()
-            if not q:
-                '''we do not have a result. Creating obj from Participant'''
-                q = P.get_by_id(par_id)
-            q.populate(result)
+        q = R.query.filter_by(par_id=par_id, task_id=task_id).first()
+        if not q:
+            '''we do not have a result. Creating obj from Participant'''
+            q = P.query.get(par_id)
+        q.populate(result)
         return result
 
     @staticmethod

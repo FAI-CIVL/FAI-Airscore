@@ -18,28 +18,28 @@ def get_download_status(task_id: int):
     from calcUtils import sec_to_time
     valid = []
     missing = []
-    with db_session() as db:
-        results = db.query(P.ID, P.name, R.result_type, R.distance_flown, R.SSS_time, R.ESS_time, R.goal_time) \
-                    .join(T, P.comp_id == T.comp_id) \
-                    .outerjoin(R, (R.par_id == P.par_id) & (R.task_id == T.task_id)) \
-                    .filter(T.task_id == task_id).all()
-        pilots = len(results)
-        valid_results = [p for p in results if p.result_type not in ('abs', 'dnf', 'mindist', None)]
-        for pilot in results:
-            data = {'ID': pilot.ID, 'name': pilot.name}
-            if pilot in valid_results:
-                if pilot.ESS_time:
-                    time = sec_to_time(pilot.ESS_time - pilot.SSS_time)
-                    if pilot.result_type == 'goal':
-                        result = f'GOAL {time}'
-                    else:
-                        result = f"ESS {c_round(pilot.distance_flown / 1000, 2)} Km (~{time}~)"
+    results = P.query.with_entities(P.ID, P.name,
+                                    R.result_type, R.distance_flown, R.SSS_time, R.ESS_time, R.goal_time) \
+                     .join(T, P.comp_id == T.comp_id) \
+                     .outerjoin(R, (R.par_id == P.par_id) & (R.task_id == T.task_id)) \
+                     .filter(T.task_id == task_id).all()
+    pilots = len(results)
+    valid_results = [p for p in results if p.result_type not in ('abs', 'dnf', 'mindist', None)]
+    for pilot in results:
+        data = {'ID': pilot.ID, 'name': pilot.name}
+        if pilot in valid_results:
+            if pilot.ESS_time:
+                time = sec_to_time(pilot.ESS_time - pilot.SSS_time)
+                if pilot.result_type == 'goal':
+                    result = f'GOAL {time}'
                 else:
-                    result = f"LO {c_round(pilot.distance_flown / 1000, 2)} Km"
-                data['result'] = result
-                valid.append(data)
-            elif not pilot.result_type:
-                missing.append(data)
+                    result = f"ESS {c_round(pilot.distance_flown / 1000, 2)} Km (~{time}~)"
+            else:
+                result = f"LO {c_round(pilot.distance_flown / 1000, 2)} Km"
+            data['result'] = result
+            valid.append(data)
+        elif not pilot.result_type:
+            missing.append(data)
     return pilots, valid, missing
 
 
@@ -47,9 +47,8 @@ def get_active_result(task_id: int) -> dict:
     """Reads competition from json result file
     takes com_id as argument"""
     from db.tables import TblResultFile as R
-    with db_session() as db:
-        file = db.query(R).filter_by(task_id=task_id, active=1).first()
-        return file.as_dict() if file else {}
+    file = R.query.filter_by(task_id=task_id, active=1).first()
+    return file.as_dict() if file else {}
 
 
 def get_info(task_id: int):

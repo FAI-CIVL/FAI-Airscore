@@ -41,10 +41,9 @@ def get_waypoints_achieved(track_id):
     from sqlalchemy.orm import aliased
     t = aliased(TblTrackWaypoint)
     achieved = []
-    with db_session() as db:
-        rows = db.query(t).filter_by(track_id=track_id)
-        for w in rows:
-            achieved.append(WaypointAchieved.from_dict(w.as_dict()))
+    rows = t.query.filter_by(track_id=track_id)
+    for w in rows:
+        achieved.append(WaypointAchieved.from_dict(w.as_dict()))
     return achieved
 
 

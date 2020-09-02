@@ -239,12 +239,9 @@ class Formula(object):
         """reads comp formula from database"""
         from db.tables import TblForComp as F
 
-        formula = Formula(comp_id=comp_id)
-        with db_session() as db:
-            q = db.query(F).get(comp_id)
-            if q is not None:
-                q.populate(formula)
-        return formula
+        q = F.query.get(comp_id)
+        if q is not None:
+            return q.populate(Formula(comp_id=comp_id))
 
     @staticmethod
     def from_preset(comp_class, formula_name):
@@ -283,17 +280,13 @@ class Formula(object):
         """stores formula to TblForComp table in AirScore database"""
         from db.tables import TblForComp as FC
 
-        with db_session() as db:
-            '''check if we have already a row for the comp'''
-            row = db.query(FC).get(self.comp_id)
-            if row is None:
-                row = FC(comp_id=self.comp_id)
-                db.add(row)
-                db.flush()
-            for k, v in self.as_dict().items():
-                if hasattr(row, k):
-                    setattr(row, k, v)
-            db.flush()
+        '''check if we have already a row for the comp'''
+        row = FC.query.get(self.comp_id)
+        if row is None:
+            row = FC(comp_id=self.comp_id)
+        row.from_obj(self)
+        row.save_or_update()
+        self.comp_id = row.comp_id
         return self.comp_id
 
     def get_lib(self):
@@ -344,12 +337,9 @@ class TaskFormula(Formula):
         """reads comp formula from database"""
         from db.tables import TblForComp as F
 
-        formula = TaskFormula()
-        with db_session() as db:
-            q = db.query(F).get(comp_id)
-            if q is not None:
-                q.populate(formula)
-        return formula
+        q = F.query(F).get(comp_id)
+        if q is not None:
+            return q.populate(TaskFormula())
 
     @staticmethod
     def from_fsdb(fs_info):
@@ -362,20 +352,18 @@ class TaskFormula(Formula):
     def read(task_id: int):
         """reads comp formula from database"""
         from db.tables import TaskFormulaView as F
-        with db_session() as db:
-            q = db.query(F).get(task_id)
-            if q is not None:
-                return q.populate(TaskFormula())
+        q = F.query.get(task_id)
+        if q is not None:
+            return q.populate(TaskFormula())
 
     def to_db(self):
         """stores TaskFormula parameters to TblTask table in AirScore database"""
-        from db.tables import TblTask
-        with db_session() as db:
-            '''check if we have already a row for the task'''
-            row = db.query(TblTask).get(self.task_id)
-            for k in TaskFormula.task_overrides:
-                setattr(row, k, getattr(self, k))
-            db.flush()
+        from db.tables import TblTask as T
+        '''check if we have already a row for the task'''
+        row = T.query.get(self.task_id)
+        for k in TaskFormula.task_overrides:
+            setattr(row, k, getattr(self, k))
+        row.update()
         return True
 
     def reset(self):
@@ -384,14 +372,13 @@ class TaskFormula(Formula):
         t = aliased(TblTask)
         f = aliased(TblForComp)
 
-        with db_session() as db:
-            '''check if we have already a row for the comp'''
-            comp_formula = db.query(f).get(self.comp_id)
-            task = db.query(t).get(self.task_id)
-            for k in TaskFormula.task_overrides:
-                setattr(self, k, getattr(comp_formula, k))
-                setattr(task, k, getattr(comp_formula, k))
-            db.flush()
+        '''check if we have already a row for the comp'''
+        comp_formula = f.query.get(self.comp_id)
+        task = t.query.get(self.task_id)
+        for k in TaskFormula.task_overrides:
+            setattr(self, k, getattr(comp_formula, k))
+            setattr(task, k, getattr(comp_formula, k))
+        task.update()
         return True
 
 

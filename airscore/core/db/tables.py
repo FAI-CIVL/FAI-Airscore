@@ -510,10 +510,7 @@ class TblParticipant(BaseModel):
     def get_dicts(cls, comp_id: int) -> list:
         """ returns a list of rows"""
         P = aliased(cls)
-        with db_session() as db:
-            print(f'session id: {id(db)}')
-            return [el.as_dict() for el in db.query(P).filter_by(comp_id=comp_id).all()]
-            # return db.query(P).filter_by(comp_id=comp_id).all()
+        return [el.as_dict() for el in P.get_all(comp_id=comp_id)]
 
 
 class TblRanking(BaseModel):
@@ -791,43 +788,41 @@ class TblTaskResult(BaseModel):
     def get_task_results(cls, task_id: int) -> list:
         p = aliased(TblParticipant)
         t = aliased(TblTask)
-        with db_session() as db:
-            objects = db.query(cls.track_id, p.par_id, t.task_id,
-                               p.comp_id, p.civl_id, p.fai_id, p.pil_id, p.ID, p.name, p.nat, p.sex,
-                               p.glider, p.glider_cert, p.sponsor, p.team, p.nat_team, p.live_id,
-                               cls.distance_flown, cls.best_distance_time, cls.stopped_distance,
-                               cls.stopped_altitude, cls.total_distance, cls.speed, cls.first_time,
-                               cls.real_start_time, cls.goal_time, cls.last_time, cls.result_type,
-                               cls.SSS_time, cls.ESS_time, cls.waypoints_made, cls.penalty, cls.comment,
-                               cls.time_score, cls.distance_score, cls.arrival_score, cls.departure_score,
-                               cls.score, cls.lead_coeff, cls.fixed_LC, cls.ESS_altitude, cls.goal_altitude,
-                               cls.max_altitude, cls.last_altitude, cls.landing_altitude, cls.landing_time,
-                               cls.track_file, cls.g_record) \
-                        .join(t, t.comp_id == p.comp_id) \
-                        .outerjoin(cls, (cls.task_id == t.task_id) & (cls.par_id == p.par_id)) \
-                        .filter(t.task_id == task_id)
-            return objects.all()
+        objects = p.query.with_entities(cls.track_id, p.par_id, t.task_id,
+                                        p.comp_id, p.civl_id, p.fai_id, p.pil_id, p.ID, p.name, p.nat, p.sex,
+                                        p.glider, p.glider_cert, p.sponsor, p.team, p.nat_team, p.live_id,
+                                        cls.distance_flown, cls.best_distance_time, cls.stopped_distance,
+                                        cls.stopped_altitude, cls.total_distance, cls.speed, cls.first_time,
+                                        cls.real_start_time, cls.goal_time, cls.last_time, cls.result_type,
+                                        cls.SSS_time, cls.ESS_time, cls.waypoints_made, cls.penalty, cls.comment,
+                                        cls.time_score, cls.distance_score, cls.arrival_score, cls.departure_score,
+                                        cls.score, cls.lead_coeff, cls.fixed_LC, cls.ESS_altitude, cls.goal_altitude,
+                                        cls.max_altitude, cls.last_altitude, cls.landing_altitude, cls.landing_time,
+                                        cls.track_file, cls.g_record) \
+            .join(t, t.comp_id == p.comp_id) \
+            .outerjoin(cls, (cls.task_id == t.task_id) & (cls.par_id == p.par_id)) \
+            .filter(t.task_id == task_id)
+        return objects.all()
 
     @classmethod
     def get_task_flights(cls, task_id: int) -> list:
         p = aliased(TblParticipant)
         t = aliased(TblTask)
-        with db_session() as db:
-            objects = db.query(cls.track_id, cls.par_id, cls.task_id,
-                               p.comp_id, p.civl_id, p.fai_id, p.pil_id, p.ID, p.name, p.nat, p.sex,
-                               p.glider, p.glider_cert, p.sponsor, p.team, p.nat_team, p.live_id,
-                               cls.distance_flown, cls.best_distance_time, cls.stopped_distance,
-                               cls.stopped_altitude, cls.total_distance, cls.speed, cls.first_time,
-                               cls.real_start_time, cls.goal_time, cls.last_time, cls.result_type,
-                               cls.SSS_time, cls.ESS_time, cls.waypoints_made, cls.penalty, cls.comment,
-                               cls.time_score, cls.distance_score, cls.arrival_score, cls.departure_score,
-                               cls.score, cls.lead_coeff, cls.fixed_LC, cls.ESS_altitude, cls.goal_altitude,
-                               cls.max_altitude, cls.last_altitude, cls.landing_altitude, cls.landing_time,
-                               cls.track_file, cls.g_record) \
-                        .join(t, t.comp_id == p.comp_id) \
-                        .outerjoin(cls, (cls.task_id == t.task_id) & (cls.par_id == p.par_id)) \
-                        .filter(t.task_id == task_id)
-            return objects.filter(cls.result_type.in_(['lo', 'goal'])).all()
+        objects = p.query.with_entities(cls.track_id, cls.par_id, cls.task_id,
+                                        p.comp_id, p.civl_id, p.fai_id, p.pil_id, p.ID, p.name, p.nat, p.sex,
+                                        p.glider, p.glider_cert, p.sponsor, p.team, p.nat_team, p.live_id,
+                                        cls.distance_flown, cls.best_distance_time, cls.stopped_distance,
+                                        cls.stopped_altitude, cls.total_distance, cls.speed, cls.first_time,
+                                        cls.real_start_time, cls.goal_time, cls.last_time, cls.result_type,
+                                        cls.SSS_time, cls.ESS_time, cls.waypoints_made, cls.penalty, cls.comment,
+                                        cls.time_score, cls.distance_score, cls.arrival_score, cls.departure_score,
+                                        cls.score, cls.lead_coeff, cls.fixed_LC, cls.ESS_altitude, cls.goal_altitude,
+                                        cls.max_altitude, cls.last_altitude, cls.landing_altitude, cls.landing_time,
+                                        cls.track_file, cls.g_record) \
+                         .join(t, t.comp_id == p.comp_id) \
+                         .outerjoin(cls, (cls.task_id == t.task_id) & (cls.par_id == p.par_id)) \
+                         .filter(t.task_id == task_id)
+        return objects.filter(cls.result_type.in_(['lo', 'goal'])).all()
 
 
 class TblNotification(BaseModel):
@@ -843,8 +838,7 @@ class TblNotification(BaseModel):
 
     @classmethod
     def from_track_list(cls, ids: list) -> list:
-        with db_session() as db:
-            return db.query(cls).filter(cls.track_id.in_(ids)).all()
+        return cls.query.filter(cls.track_id.in_(ids)).all()
 
 
 class TblTaskWaypoint(BaseModel):
@@ -875,10 +869,7 @@ class TblTaskWaypoint(BaseModel):
     @classmethod
     def from_task_id(cls, task_id: int) -> list:
         """ returns a list of rows"""
-        W = aliased(cls)
-        with db_session() as db:
-            print(f'session id: {id(db)}')
-            return db.query(W).filter_by(task_id=task_id).order_by(W.num).all()
+        return cls.query.filter_by(task_id=task_id).order_by(cls.num).all()
 
 
 class TblTrackWaypoint(BaseModel):
@@ -898,15 +889,12 @@ class TblTrackWaypoint(BaseModel):
 
     @classmethod
     def from_track_list(cls, ids: list) -> list:
-        with db_session() as db:
-            return db.query(cls).filter(cls.track_id.in_(ids)).all()
+        return cls.query.filter(cls.track_id.in_(ids)).all()
 
     @classmethod
     def from_track(cls, track_id: int) -> list:
-        with db_session() as db:
-            return db.query(cls).filter_by(track_id=track_id).all()
+        return cls.query.filter_by(track_id=track_id).all()
 
     @classmethod
     def get_dict_list(cls, ids: list) -> list:
-        with db_session() as db:
-            return [el.as_dict() for el in db.query(cls).filter(cls.track_id.in_(ids)).all()]
+        return [el.as_dict() for el in cls.query.filter(cls.track_id.in_(ids)).all()]

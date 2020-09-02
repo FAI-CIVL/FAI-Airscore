@@ -201,12 +201,7 @@ def map_legend(col_pilot_dict):
 
 def get_other_tracks(taskid, pilot_parid):
     from db.tables import FlightResultView as R
-    from db.conn import db_session
-
-    with db_session() as db:
-        tracks = (db.query(R.track_id, R.name).filter(R.task_id == taskid, R.par_id != pilot_parid).all())
-
-    return tracks
+    return R.query.with_entities(R.track_id, R.name).filter(R.task_id == taskid, R.par_id != pilot_parid).all()
 
 
 def result_to_geojson(result, task, flight, second_interval=5):

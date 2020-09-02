@@ -542,22 +542,21 @@ class Task(object):
         if not (type(task_id) is int and task_id > 0):
             print(f'Error: {task_id} is not a valid id')
             return f'Error: {task_id} is not a valid id'
-        with db_session() as db:
-            try:
-                '''get task from db'''
-                task = db.query(T).get(task_id).populate(Task(task_id=task_id))
-            except AttributeError:
-                error = f'Error: No task found with id {task_id}'
-                print(error)
-                return error
-            '''populate turnpoints'''
-            tps = db.query(W).filter_by(task_id=task_id)
-            for tp in tps:
-                task.turnpoints.append(tp.populate(Turnpoint()))
-                if task.opt_dist:
-                    s_point = polar(lat=tp.ssr_lat, lon=tp.ssr_lon)
-                    task.optimised_turnpoints.append(s_point)
-                    task.partial_distance.append(tp.partial_distance)
+        try:
+            '''get task from db'''
+            task = T.query.get(task_id).populate(Task(task_id=task_id))
+        except AttributeError:
+            error = f'Error: No task found with id {task_id}'
+            print(error)
+            return error
+        '''populate turnpoints'''
+        tps = W.query.filter_by(task_id=task_id)
+        for tp in tps:
+            task.turnpoints.append(tp.populate(Turnpoint()))
+            if task.opt_dist:
+                s_point = polar(lat=tp.ssr_lat, lon=tp.ssr_lon)
+                task.optimised_turnpoints.append(s_point)
+                task.partial_distance.append(tp.partial_distance)
         '''check if we already have a filepath for task'''
         if task.task_path is None or '':
             task.create_path()
@@ -586,9 +585,8 @@ class Task(object):
             if not path.exists(full_path):
                 makedirs(full_path)
             '''store to database'''
-            with db_session() as db:
-                q = db.query(TblTask).get(self.id)
-                q.task_path = self.task_path
+            q = TblTask.query.get(self.id)
+            q.update(task_path=self.task_path)
 
     def create_results(self, status=None, mode='default', print=print):
         """
@@ -824,38 +822,34 @@ class Task(object):
 
     def update_task_distance(self):
         from db.tables import TblTask as T, TblTaskWaypoint as W
-        with db_session() as db:
-            '''add optimised and total distance to task'''
-            t = T.get_by_id(self.task_id)
-            t.distance = self.distance
-            t.opt_dist = self.opt_dist
-            t.SS_distance = self.SS_distance
-            t.opt_dist_to_ESS = self.opt_dist_to_ESS
-            t.opt_dist_to_SS = self.opt_dist_to_SS
+        '''add optimised and total distance to task'''
+        t = T.get_by_id(self.task_id)
+        t.distance = self.distance
+        t.opt_dist = self.opt_dist
+        t.SS_distance = self.SS_distance
+        t.opt_dist_to_ESS = self.opt_dist_to_ESS
+        t.opt_dist_to_SS = self.opt_dist_to_SS
+        t.update()
 
-            '''add opt legs to task wpt'''
-            # w = db.query(W)
-            w = W.from_task_id(self.id)
-            for idx, tp in enumerate(self.turnpoints):
-                sr = self.optimised_turnpoints[idx]
-                # wpt = w.get(tp.id)
-                wpt = next(p for p in w if p.wpt_id == tp.id)
-                wpt.ssr_lat = sr.lat
-                wpt.ssr_lon = sr.lon
-                wpt.partial_distance = self.partial_distance[idx]
-            # db.commit()
-            db.commit()
+        '''add opt legs to task wpt'''
+        w = W.from_task_id(self.id)
+        for idx, tp in enumerate(self.turnpoints):
+            sr = self.optimised_turnpoints[idx]
+            wpt = next(p for p in w if p.wpt_id == tp.id)
+            wpt.ssr_lat = sr.lat
+            wpt.ssr_lon = sr.lon
+            wpt.partial_distance = self.partial_distance[idx]
+        W.bulk_save(w)
 
     def delete_task_distance(self):
-        with db_session() as db:
-            '''remove optimised and total distance from task'''
-            t = TblTask.get_by_id(self.task_id)
-            t.distance = None
-            t.opt_dist = None
-            t.SS_distance = None
-            t.opt_dist_to_ESS = None
-            t.opt_dist_to_SS = None
-            db.commit()
+        """remove optimised and total distance from task"""
+        t = TblTask.get_by_id(self.task_id)
+        t.distance = None
+        t.opt_dist = None
+        t.SS_distance = None
+        t.opt_dist_to_ESS = None
+        t.opt_dist_to_SS = None
+        t.update()
 
     def update_task_info(self):
         """ updates database entry using Task obj"""
@@ -878,28 +872,14 @@ class Task(object):
         """Inserts new task or updates existent one"""
         row = TblTask() if not self.id else TblTask.get_by_id(self.id)
         row.from_obj(self)
+        '''save formula parameters'''
         if self.formula:
-            row.from_obj(self.formula)
-
-        with db_session() as db:
-            if not self.id:
-                task = TblTask(comp_id=self.comp_id, task_num=self.task_num, task_name=self.task_name, date=self.date)
-                db.add(task)
-                db.flush()
-                self.task_id = task.task_id
-            else:
-                task = db.query(TblTask).get(self.id)
-            for k, v in self.as_dict().items():
-                if k not in ['task_id', 'comp_id'] and hasattr(task, k):
-                    setattr(task, k, v)
-            '''save formula parameters'''
-            if self.formula:
-                for key in TaskFormula.task_overrides:
-                    setattr(task, key, getattr(self.formula, key))
-            db.commit()
-            '''save waypoints'''
-            if self.turnpoints:
-                self.update_waypoints()
+            for key in TaskFormula.task_overrides:
+                setattr(row, key, getattr(self.formula, key))
+        self.task_id = row.save_or_update()
+        '''save waypoints'''
+        if self.turnpoints:
+            self.update_waypoints()
 
     def update_from_xctrack_data(self, taskfile_data):
         """processes XCTrack file that is already in memory as json data and updates the task defintion"""
@@ -1487,7 +1467,6 @@ class Task(object):
 
     def clear_waypoints(self):
         from db.tables import TblTaskWaypoint as W
-
         self.turnpoints.clear()
         self.optimised_turnpoints.clear()
         self.optimised_legs.clear()
@@ -1495,11 +1474,8 @@ class Task(object):
         self.legs.clear()
         self.projected_turnpoints.clear()
         self.projected_line.clear()
-
         '''delete waypoints from database'''
-        with db_session() as db:
-            db.question.query(W).filter(W.task_id == self.id).delete()
-            db.commit()
+        W.delete_all(task_id=self.id)
 
     def update_waypoints(self):
         from db.tables import TblTaskWaypoint as W
@@ -1657,21 +1633,21 @@ def delete_task(task_id, files=False):
             # remove task map file
             if path.exists(task_map):
                 remove(task_map)
-        results = db.query(RF.ref_id, RF.filename).filter(RF.task_id == task_id).all()
+        results = db.query(RF.ref_id, RF.filename).filter_by(task_id=task_id).all()
         if results:
             '''delete result json files'''
             for res in results:
                 delete_result(res.ref_id, res.filename)
-        tracks = db.query(R.track_id).filter(R.task_id == task_id)
+        tracks = db.query(R.track_id).filter_by(task_id=task_id)
         if tracks:
             track_list = [t.track_id for t in tracks]
             db.query(TW).filter(TW.track_id.in_(track_list)).delete(synchronize_session=False)
             db.query(N).filter(N.track_id.in_(track_list)).delete(synchronize_session=False)
-            db.query(R).filter(R.task_id == task_id).delete(synchronize_session=False)
+            db.query(R).filter_by(task_id=task_id).delete(synchronize_session=False)
         '''delete db entries: results, waypoints, task'''
         # db.query(R).filter(T.task_id == task_id).delete(synchronize_session=False)
-        db.query(W).filter(W.task_id == task_id).delete(synchronize_session=False)
-        db.query(T).filter(T.task_id == task_id).delete(synchronize_session=False)
+        db.query(W).filter_by(task_id=task_id).delete(synchronize_session=False)
+        db.query(T).filter_by(task_id=task_id).delete(synchronize_session=False)
 
 
 # function to parse task object to compilations
@@ -1761,8 +1737,7 @@ def write_map_json(task_id):
 def get_task_json_filename(task_id):
     """returns active json result filename"""
     from db.tables import TblResultFile as R
-    with db_session() as db:
-        return db.query(R.filename).filter_by(task_id=task_id, active=1).scalar()
+    return R.query.with_entities(R.filename).filter_by(task_id=task_id, active=1).scalar()
 
 
 def get_task_json(task_id):
@@ -1787,14 +1762,13 @@ def need_full_rescore(task_id: int):
         - If not all tracks have been submitted or edited later than last task update or formula update
         - if task have been stopped (but anyway task is edited to be stopped so same as first case)"""
     from db.tables import TblTask as T, TblForComp as F, TblTaskResult as R
-    with db_session() as db:
-        task = db.query(T).filter_by(task_id=task_id).one_or_none()
-        if task:
-            formula_last_update = db.query(F.formula_last_update).filter_by(comp_id=task.comp_id).scalar()
-            tracks = db.query(R.track_last_update, R.result_type).filter_by(task_id=task_id).all()
-            min_track_update = min(t.track_last_update for t in tracks if t.result_type not in ['nyp', 'abs', 'dnf'])
-            if min_track_update < max(formula_last_update, task.task_last_update):
-                return True
+    task = T.query.get(task_id)
+    if task:
+        formula_last_update = F.query.get(task.comp_id).formula_last_update
+        tracks = R.get_all(task_id=task_id)
+        min_track_update = min(t.track_last_update for t in tracks if t.result_type not in ['nyp', 'abs', 'dnf'])
+        if min_track_update < max(formula_last_update, task.task_last_update):
+            return True
     return False
 
 
@@ -1803,13 +1777,12 @@ def need_new_scoring(task_id: int):
             - If we had new tracks after last results file generation"""
     from db.tables import TblTaskResult as R, TblResultFile as F
     from calcUtils import epoch_to_datetime
-    with db_session() as db:
-        last_file = db.query(F.created).filter_by(task_id=task_id).order_by(F.created.desc()).first()
-        if last_file:
-            tracks = db.query(R.track_last_update, R.result_type).filter_by(task_id=task_id).all()
-            max_track_update = max(t.track_last_update for t in tracks)
-            if max_track_update > epoch_to_datetime(last_file.created):
-                return True
+    last_file = F.query.with_entities(F.created).filter_by(task_id=task_id).order_by(F.created.desc()).first()
+    if last_file:
+        tracks = R.get_all(task_id=task_id)
+        max_track_update = max(t.track_last_update for t in tracks)
+        if max_track_update > epoch_to_datetime(last_file.created):
+            return True
     return False
 
 

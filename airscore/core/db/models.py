@@ -1,10 +1,12 @@
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.exc import MultipleResultsFound
-from .conn import db_session, Session
-Base = declarative_base()
-metadata = Base.metadata
+from sqlalchemy.exc import DatabaseError
+from .conn import Session
 
-# db = Session()
+Base = declarative_base()
+Base.query = Session.query_property()
+metadata = Base.metadata
+session = Session()
 
 
 class BaseModel(Base):
@@ -15,25 +17,22 @@ class BaseModel(Base):
 
     @classmethod
     def get_by_id(cls, value: int):
-        with db_session() as db:
-            print(f'get_by_id session id: {id(db)}')
-            return db.query(cls).get(int(value))
+        print(f'get_by_id session id: {id(session)}')
+        return cls.query.get(int(value))
 
     @classmethod
     def get_all(cls, **kvargs):
-        with db_session() as db:
-            print(f'get_all session id: {id(db)}')
-            return db.query(cls).filter_by(**kvargs).all()
+        print(f'get_all session id: {id(session)}')
+        return cls.query.filter_by(**kvargs).all()
 
     @classmethod
     def get_one(cls, **kvargs):
-        with db_session() as db:
-            print(f'get_one session id: {id(db)}')
-            try:
-                return db.query(cls).filter_by(**kvargs).one_or_none()
-            except MultipleResultsFound:
-                print(f"Error: Multiple results found")
-                return None
+        print(f'get_one session id: {id(session)}')
+        try:
+            return cls.query.filter_by(**kvargs).one_or_none()
+        except MultipleResultsFound:
+            print(f"Error: Multiple results found")
+            return None
 
     def from_obj(self, obj):
         """ populate a Table row object from an object
@@ -67,10 +66,11 @@ class BaseModel(Base):
 
     def save(self):
         self.before_save()
-        with db_session() as db:
-            print(f'save session id: {id(db)}')
-            db.add(self)
+        print(f'save session id: {id(session)}')
+        idx = session.add(self)
+        self._commit()
         self.after_save()
+        return idx
 
     def before_update(self, *args, **kwargs):
         pass
@@ -80,47 +80,12 @@ class BaseModel(Base):
 
     def update(self, *args, **kwargs):
         self.before_update(*args, **kwargs)
-        with db_session() as db:
-            print(f'update session id: {id(db)}')
-            for key, value in kwargs.items():
-                if key in self.__table__.columns.keys():
-                    setattr(self, key, value)
-            db.commit()
+        print(f'update session id: {id(session)}')
+        for key, value in kwargs.items():
+            if key in self.__table__.columns.keys():
+                setattr(self, key, value)
+        self._commit()
         self.after_update(*args, **kwargs)
-
-    def delete(self, commit=True):
-        with db_session() as db:
-            print(f'delete session id: {id(db)}')
-            db.delete(self)
-
-    @classmethod
-    def before_bulk_create(cls, iterable, *args, **kwargs):
-        pass
-
-    @classmethod
-    def after_bulk_create(cls, model_objs, *args, **kwargs):
-        pass
-
-    @classmethod
-    def bulk_create(cls, iterable, *args, **kwargs):
-        cls.before_bulk_create(iterable, *args, **kwargs)
-        model_objs = []
-        for data in iterable:
-            if not isinstance(data, cls):
-                data = cls(**data)
-            model_objs.append(data)
-        with db_session() as db:
-            print(f'bulk_save session id: {id(db)}')
-            db.bulk_save_objects(model_objs)
-        cls.after_bulk_create(model_objs, *args, **kwargs)
-        return model_objs
-
-    @classmethod
-    def bulk_create_or_none(cls, iterable, *args, **kwargs):
-        try:
-            return cls.bulk_create(iterable, *args, **kwargs)
-        except:
-            return None
 
     def save_or_update(self):
         try:
@@ -129,6 +94,70 @@ class BaseModel(Base):
             if idv and self.get_by_id(idv):
                 self.update()
             else:
-                self.save()
-        except:
+                idv = self.save()
+            return idv
+        except DatabaseError as e:
+            print(f'Database error: rolling back... ({e})')
             return None
+
+    def delete(self):
+        print(f'delete session id: {id(session)}')
+        session.delete(self)
+        self._commit()
+
+    @classmethod
+    def delete_all(cls, **kvargs):
+        print(f'delete all session id: {id(session)}')
+        cls.query.filter_by(**kvargs).delete(synchronize_session=False)
+        session.commit()
+
+    @classmethod
+    def before_bulk_save(cls, iterable, *args, **kwargs):
+        pass
+
+    @classmethod
+    def after_bulk_save(cls, model_objs, *args, **kwargs):
+        pass
+
+    @classmethod
+    def bulk_save(cls, iterable, *args, **kwargs):
+        cls.before_bulk_save(iterable, *args, **kwargs)
+        model_objs = []
+        for data in iterable:
+            if not isinstance(data, cls):
+                data = cls(**data)
+            model_objs.append(data)
+        print(f'bulk_save session id: {id(session)}')
+        try:
+            session.bulk_save_objects(model_objs)
+            session.flush()
+        except DatabaseError as e:
+            print(f'Database error: rolling back... ({e})')
+            session.rollback()
+        else:
+            session.commit()
+        cls.after_bulk_save(model_objs, *args, **kwargs)
+        return model_objs
+
+    @classmethod
+    def bulk_save_or_none(cls, iterable, *args, **kwargs):
+        try:
+            return cls.bulk_save(iterable, *args, **kwargs)
+        except DatabaseError:
+            return None
+
+    def _flush(self):
+        try:
+            session.flush()
+        except DatabaseError as e:
+            print(f'Database error: rolling back... ({e})')
+            session.rollback()
+            # raise
+
+    def _commit(self):
+        try:
+            session.commit()
+        except DatabaseError as e:
+            print(f'Database error: rolling back... ({e})')
+            session.rollback()
+            # raise

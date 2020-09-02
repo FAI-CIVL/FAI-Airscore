@@ -59,18 +59,18 @@ def get_xc_parameters(task_id):
     takeoff_id = 0
     datestr = None
 
-    with db_session() as db:
-        q = db.query(R.xccSiteID, R.xccToID).join(W, W.rwp_id == R.rwp_id).filter(W.task_id == task_id,
-                                                                                  W.type == 'launch').one()
-        date = T.get_by_id(task_id).date
-        if q is not None:
-            site_id = q.xccSiteID
-            takeoff_id = q.xccToID
-            # date = q.tasDate
-            logging.info("site_id:%s takeoff_id:%s date:%s", site_id, takeoff_id, date)
-            datestr = date.strftime('%Y-%m-%d')  # convert from datetime to string
-        else:
-            print('Error: no site found for the task')
+    q = R.query.with_entities(R.xccSiteID, R.xccToID)\
+               .join(W, W.rwp_id == R.rwp_id)\
+               .filter(W.task_id == task_id, W.type == 'launch').one()
+    date = T.get_by_id(task_id).date
+    if q is not None:
+        site_id = q.xccSiteID
+        takeoff_id = q.xccToID
+        # date = q.tasDate
+        logging.info("site_id:%s takeoff_id:%s date:%s", site_id, takeoff_id, date)
+        datestr = date.strftime('%Y-%m-%d')  # convert from datetime to string
+    else:
+        print('Error: no site found for the task')
 
     return site_id, takeoff_id, datestr
 

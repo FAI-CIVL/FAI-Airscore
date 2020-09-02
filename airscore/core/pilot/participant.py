@@ -61,11 +61,10 @@ class Participant(Pilot):
     def read(par_id: int):
         """Reads pilot registration from database
         takes pil_id as argument"""
-        with db_session() as db:
-            # get pilot details.
-            q = db.query(P).get(par_id)
-            if q:
-                return q.populate(Participant())
+        # get pilot details.
+        q = P.query.get(par_id)
+        if q:
+            return q.populate(Participant())
         return None
 
     @staticmethod
@@ -138,27 +137,26 @@ class Participant(Pilot):
     def from_profile(pilot_id: int, comp_id: int):
         """creates a Participant obj from internal PilotView database table"""
         from db.tables import PilotView, TblCountryCode
-        with db_session() as db:
-            result = db.query(PilotView).get(pilot_id)
-            if result:
-                try:
-                    pilot = Participant(pil_id=pilot_id, comp_id=comp_id)
-                    pilot.name = ' '.join([result.first_name.title(), result.last_name.title()])
-                    if result.glider_brand:
-                        pilot.glider = ' '.join([result.glider_brand.title(), result.glider])
-                    else:
-                        pilot.glider = result.glider
-                    c = aliased(TblCountryCode)
-                    pilot.nat = db.query(c.natIso3).filter(c.natId == result.nat).scalar()
-                    for attr in ['sex', 'civl_id', 'fai_id', 'sponsor', 'xcontest_id', 'glider_cert']:
-                        if hasattr(result, attr):
-                            setattr(pilot, attr, getattr(result, attr))
-                    return pilot
-                except AttributeError:
-                    print(f'Error: pilot id {pilot_id} ha no name or no last name')
-            else:
-                print(f'Error: No result has been found for profile id {pilot_id}')
-                return None
+        result = PilotView.query.get(pilot_id)
+        if result:
+            try:
+                pilot = Participant(pil_id=pilot_id, comp_id=comp_id)
+                pilot.name = ' '.join([result.first_name.title(), result.last_name.title()])
+                if result.glider_brand:
+                    pilot.glider = ' '.join([result.glider_brand.title(), result.glider])
+                else:
+                    pilot.glider = result.glider
+                c = aliased(TblCountryCode)
+                pilot.nat = c.get_one(natId=result.nat).natIso3
+                for attr in ['sex', 'civl_id', 'fai_id', 'sponsor', 'xcontest_id', 'glider_cert']:
+                    if hasattr(result, attr):
+                        setattr(pilot, attr, getattr(result, attr))
+                return pilot
+            except AttributeError:
+                print(f'Error: pilot id {pilot_id} ha no name or no last name')
+        else:
+            print(f'Error: No result has been found for profile id {pilot_id}')
+            return None
 
 
 def extract_participants_from_excel(comp_id: int, filename, from_CIVL=False):
@@ -236,16 +234,17 @@ def register_from_profiles_list(comp_id: int, pilots: list):
     return True
 
 
-def unregister_from_profiles_list(comp_id: int, pilots):
+def unregister_from_profiles_list(comp_id: int, pilots: list):
     """ takes comp_id and list of pil_id
         unregisters pilots from comp"""
     from sqlalchemy import and_
+    # from db.models import session
     if not (comp_id and pilots):
         print(f"error: comp_id does not exist or pilots list is empty")
         return None
     with db_session() as db:
-        results = db.query(P).filter(and_(P.comp_id == comp_id, P.pil_id.in_(pilots)))
-        results.delete(synchronize_session=False)
+        P.query.filter(and_(P.comp_id == comp_id, P.pil_id.in_(pilots))).delete()
+        db.commit()
     return True
 
 
@@ -253,8 +252,8 @@ def unregister_participant(comp_id: int, par_id: int):
     """ takes comp_id and a par_id
         unregisters participant from comp.
         in reality we don't need compid but it is a safeguard"""
-    with db_session() as db:
-        db.query(P).filter_by(comp_id=comp_id, par_id=par_id).delete(synchronize_session=False)
+    row = P.query.filter_by(comp_id=comp_id, par_id=par_id)
+    row.delete()
     return True
 
 
@@ -262,8 +261,8 @@ def unregister_all_external_participants(comp_id: int):
     """ takes comp_id and unregisters all participants from comp without a pil_id."""
     from sqlalchemy import and_
     with db_session() as db:
-        results = db.query(P).filter(and_(P.comp_id == comp_id, P.pil_id.is_(None)))
-        results.delete(synchronize_session=False)
+        P.query.filter(and_(P.comp_id == comp_id, P.pil_id.is_(None))).delete()
+        db.commit()
     return True
 
 
@@ -274,7 +273,8 @@ def mass_unregister(pilots):
         print(f"error: pilots list is empty")
         return None
     with db_session() as db:
-        db.query(P).filter(P.par_id.in_(pilots)).delete(synchronize_session=False)
+        P.query.filter(P.par_id.in_(pilots)).delete()
+        db.commit()
     return True
 
 

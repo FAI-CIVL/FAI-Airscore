@@ -225,10 +225,8 @@ class Comp(object):
 
         if self.comp_id:
             '''store to database'''
-            with db_session() as db:
-                q = db.query(TblCompetition).get(self.id)
-                q.comp_path = self.comp_path
-                db.commit()
+            q = TblCompetition.query.get(self.id)
+            q.update(comp_path=self.comp_path)
 
     def to_db(self):
         """create or update a DB entry from Comp object. If comp_id is provided it will update otherwise add a new row
@@ -248,8 +246,7 @@ class Comp(object):
 
         row = TblCompetition() if not self.comp_id else TblCompetition.get_by_id(self.comp_id)
         row.from_obj(self)
-        row.save_or_update()
-        self.comp_id = row.comp_id
+        self.comp_id = row.save_or_update()
         return self.comp_id
 
     def get_rankings(self):
@@ -296,25 +293,24 @@ class Comp(object):
         """gets tasks details from database. They could be different from JSON data for scored tasks"""
         from db.tables import TaskObjectView as T
 
-        with db_session() as db:
-            results = db.query(T.task_id, T.reg_id, T.region_name, T.task_num, T.task_name, T.date, T.opt_dist,
-                               T.comment, T.window_open_time, T.task_deadline, T.window_close_time,
-                               T.start_time, T.start_close_time, T.track_source).filter_by(comp_id=self.comp_id).all()
-            if results:
-                results = [row._asdict() for row in results]
-            return results
+        results = T.query.with_entities(T.task_id, T.reg_id, T.region_name, T.task_num, T.task_name, T.date, T.opt_dist,
+                                        T.comment, T.window_open_time, T.task_deadline, T.window_close_time,
+                                        T.start_time, T.start_close_time, T.track_source) \
+            .filter_by(comp_id=self.comp_id).all()
+        if results:
+            results = [row._asdict() for row in results]
+        return results
 
     @staticmethod
     def from_json(comp_id: int, ref_id=None):
         """Reads competition from json result file
         takes com_id as argument"""
         from db.tables import TblResultFile as R
-        with db_session() as db:
-            if ref_id:
-                file = db.query(R).get(ref_id).filename
-            else:
-                file = db.query(R.filename).filter(and_(R.comp_id == comp_id,
-                                                        R.task_id.is_(None), R.active == 1)).scalar()
+        if ref_id:
+            file = R.query.get(ref_id).filename
+        else:
+            file = R.query.with_entities(R.filename).filter(and_(R.comp_id == comp_id,
+                                                                 R.task_id.is_(None), R.active == 1)).scalar()
         if file:
             comp = Comp(comp_id=comp_id)
             with open(path.join(RESULTDIR, file), 'r') as f:

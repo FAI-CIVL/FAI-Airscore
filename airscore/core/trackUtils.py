@@ -208,33 +208,30 @@ def find_pilot(name):
         if names[0].isdigit():
             fai = names.pop(0)
     print("Trying with name... \n")
-    with db_session() as db:
-        t = db.query(P.pil_id)
-        if names:
-            q = t.filter(P.last_name.in_(names))
-            p = q.filter(P.first_name.in_(names))
-        else:
-            p = t.filter_by(fai_id=fai)
-        pil = p.all()
+    t = P.query.with_entities(P.pil_id)
+    if names:
+        q = t.filter(P.last_name.in_(names))
+        p = q.filter(P.first_name.in_(names))
+    else:
+        p = t.filter_by(fai_id=fai)
+    pil = p.all()
+    if len(pil) == 1:
+        return pil.pop().pil_id
+    '''try one more time if we have both names and fai'''
+    if fai and names:
+        if not pil:
+            p = q  # if we have zero results, try with only lastname and fai
+        pil = p.filter(P.fai_id == fai).all()
         if len(pil) == 1:
             return pil.pop().pil_id
-        '''try one more time if we have both names and fai'''
-        if fai and names:
-            if not pil:
-                p = q  # if we have zero results, try with only lastname and fai
-            pil = p.filter(P.fai_id == fai).all()
-            if len(pil) == 1:
-                return pil.pop().pil_id
     return None
 
 
 def get_pil_track(par_id: int, task_id: int):
     """Get pilot result in a given task"""
     from db.tables import TblTaskResult as R
-    with db_session() as db:
-        track_id = db.query(R.track_id).filter(
-            and_(R.par_id == par_id, R.task_id == task_id)).scalar()
-    if track_id == 0:
+    track_id = R.query.with_entities(R.track_id).filter_by(par_id=par_id, task_id=task_id).scalar()
+    if not track_id:
         """No result found"""
         print(f"Pilot with ID {par_id} has not been scored yet on task ID {task_id} \n")
     return track_id
@@ -272,9 +269,10 @@ def create_tracklog_map_result_file(par_id: int, task_id: int):
 def get_task_fullpath(task_id: int):
     from db.tables import TblTask as T, TblCompetition as C
     from pathlib import Path
-    with db_session() as db:
-        q = db.query(T.task_path, C.comp_path).join(C, C.comp_id == T.comp_id).filter(T.task_id == task_id).one()
-    return Path(TRACKDIR, q.comp_path, q.task_path)
+    task_path, comp_path = T.query.with_entities(T.task_path, C.comp_path)\
+                                  .join(C, C.comp_id == T.comp_id)\
+                                  .filter(T.task_id == task_id).one()
+    return Path(TRACKDIR, comp_path, task_path)
 
 
 def get_unscored_pilots(task_id: int, track_source=None):
@@ -284,15 +282,14 @@ def get_unscored_pilots(task_id: int, track_source=None):
     from pilot.flightresult import FlightResult
     from db.tables import UnscoredPilotView as U
     pilot_list = []
-    with db_session() as db:
-        results = db.query(U).filter_by(task_id=task_id)
-        if track_source == 'xcontest':
-            results = results.filter(U.xcontest_id.isnot(None))
-        elif track_source == 'flymaster':
-            results = results.filter(U.live_id.isnot(None))
-        results = results.all()
-        for p in results:
-            pilot_list.append(p.populate(FlightResult()))
+    results = U.query.filter_by(task_id=task_id)
+    if track_source == 'xcontest':
+        results = results.filter(U.xcontest_id.isnot(None))
+    elif track_source == 'flymaster':
+        results = results.filter(U.live_id.isnot(None))
+    results = results.all()
+    for p in results:
+        pilot_list.append(p.populate(FlightResult()))
     return pilot_list
 
 

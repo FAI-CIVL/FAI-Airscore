@@ -533,20 +533,18 @@ class FSDB(object):
         if self.comp.comp_id is None:
             return False
 
-        with db_session() as db:
-            for t in self.tasks:
-                t.comp_id = self.comp.comp_id
-                # t.create_path()
-                '''recalculating legs to avoid errors when fsdb task misses launch and/or goal'''
-                if t.geo is None:
-                    t.get_geo()
-                t.calculate_task_length()
-                t.calculate_optimised_task_length()
-                '''storing'''
-                t.to_db()
-                '''adding folders'''
-                t.comp_path = self.comp.comp_path
-                Path(t.file_path).mkdir(parents=True, exist_ok=True)
+        for t in self.tasks:
+            t.comp_id = self.comp.comp_id
+            '''recalculating legs to avoid errors when fsdb task misses launch and/or goal'''
+            if t.geo is None:
+                t.get_geo()
+            t.calculate_task_length()
+            t.calculate_optimised_task_length()
+            '''storing'''
+            t.to_db()
+            '''adding folders'''
+            t.comp_path = self.comp.comp_path
+            Path(t.file_path).mkdir(parents=True, exist_ok=True)
         return True
 
     def add_results(self):
@@ -561,18 +559,17 @@ class FSDB(object):
             if len(t.results) == 0 or t.task_id is None:
                 print(f"task {t.task_code} does not have a db ID or has not been scored.")
                 pass
-            with db_session() as db:
-                '''get results par_id from participants'''
-                for pilot in t.pilots:
-                    par = next(p for p in self.comp.participants if p.ID == pilot.ID)
-                    pilot.par_id = par.par_id
-                inserted = update_all_results(task_id=t.task_id, pilots=t.pilots)
-                if inserted:
-                    '''populate results track_id'''
-                    results = db.query(R.track_id, R.par_id).filter_by(task_id=t.task_id).all()
-                    for result in results:
-                        pilot = next(p for p in t.pilots if p.par_id == result.par_id)
-                        pilot.track_id = result.track_id
+            '''get results par_id from participants'''
+            for pilot in t.pilots:
+                par = next(p for p in self.comp.participants if p.ID == pilot.ID)
+                pilot.par_id = par.par_id
+            inserted = update_all_results(task_id=t.task_id, pilots=t.pilots)
+            if inserted:
+                '''populate results track_id'''
+                results = R.query.with_entities(R.track_id, R.par_id).filter_by(task_id=t.task_id).all()
+                for result in results:
+                    pilot = next(p for p in t.pilots if p.par_id == result.par_id)
+                    pilot.track_id = result.track_id
         return True
 
     def add_participants(self):
@@ -585,14 +582,13 @@ class FSDB(object):
             print(f"Comp does not have a db ID or has not participants.")
             return False
 
-        with db_session() as db:
-            inserted = mass_import_participants(self.comp.comp_id, self.comp.participants)
-            if inserted:
-                '''populate participants par_id'''
-                results = db.query(P.par_id, P.ID).filter_by(comp_id=self.comp.comp_id).all()
-                for result in results:
-                    pilot = next(p for p in self.comp.participants if p.ID == result.ID)
-                    pilot.par_id = result.par_id
+        inserted = mass_import_participants(self.comp.comp_id, self.comp.participants)
+        if inserted:
+            '''populate participants par_id'''
+            results = P.query.with_entities(P.par_id, P.ID).filter_by(comp_id=self.comp.comp_id).all()
+            for result in results:
+                pilot = next(p for p in self.comp.participants if p.ID == result.ID)
+                pilot.par_id = result.par_id
         return True
 
     def add_all(self):
@@ -601,13 +597,12 @@ class FSDB(object):
         self.add_comp()
         if self.comp.comp_id is not None:
             print(f"comp ID: {self.comp.comp_id}")
-            with db_session() as db:
-                print(f"adding participants...")
-                self.add_participants()
-                print(f"adding tasks...")
-                self.add_tasks()
-                print(f"adding results...")
-                self.add_results()
+            print(f"adding participants...")
+            self.add_participants()
+            print(f"adding tasks...")
+            self.add_tasks()
+            print(f"adding results...")
+            self.add_results()
             print(f"Done.")
             return self.comp.comp_id
         else:

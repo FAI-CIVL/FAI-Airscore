@@ -318,22 +318,20 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None, name_su
     os.chown(RESULTDIR + filename, 1000, 1000)
 
     '''create database entry'''
-    with db_session() as db:
-        result = TblResultFile(comp_id=comp_id, task_id=task_id, created=timestamp, filename=filename, status=status)
-        db.add(result)
-        db.commit()
-        ref_id = result.ref_id
+    result = TblResultFile(comp_id=comp_id, task_id=task_id, created=timestamp, filename=filename, status=status)
+    result.add()
+    ref_id = result.ref_id
     return ref_id, filename, timestamp
 
 
 def unpublish_result(taskid_or_compid, comp=False):
     """unpublish (set active to 0) all result files for a task or a comp"""
-    with db_session() as db:
-        if comp:
-            db.query(TblResultFile).filter(and_(TblResultFile.comp_id == taskid_or_compid,
-                                                        TblResultFile.task_id.is_(None))).update({'active': 0})
-        else:
-            db.query(TblResultFile).filter_by(task_id=taskid_or_compid).update({'active': 0})
+    if comp:
+        results = TblResultFile.query.filter(and_(TblResultFile.comp_id == taskid_or_compid,
+                                                  TblResultFile.task_id.is_(None)))
+    else:
+        results = TblResultFile.query.filter_by(task_id=taskid_or_compid)
+    results.update(active=0)
     return 1
 
 
@@ -341,11 +339,11 @@ def publish_result(filename_or_refid, ref_id=False):
     """publish (set active to 1) a result files, by default takes filename of result to publish,
     otherwise ref_id if ref_id flag True"""
 
-    with db_session() as db:
-        if ref_id:
-            db.query(TblResultFile).filter_by(ref_id=filename_or_refid).update({'active': 1})
-        else:
-            db.query(TblResultFile).filter_by(filename=filename_or_refid).update({'active': 1})
+    if ref_id:
+        result = TblResultFile.query.filter_by(ref_id=filename_or_refid)
+    else:
+        result = TblResultFile.query.filter_by(filename=filename_or_refid)
+    result.update(active=1)
     return 1
 
 
@@ -369,9 +367,8 @@ def update_result_status(filename: str, status: str):
         f.truncate()
         print(f'JSON file has been updated \n')
         '''update status in database'''
-        with db_session() as db:
-            result = db.query(TblResultFile).filter_by(filename=filename).one()
-            result.status = status
+        result = TblResultFile.get_one(filename=filename)
+        result.update(status=status)
 
 
 def update_result_file(filename: str, par_id: int, notification: dict):
@@ -435,7 +432,7 @@ def update_result_file(filename: str, par_id: int, notification: dict):
                 if not result['comment']:
                     result['comment'] = comment
                 else:
-                    '; '. join([result['comment'], comment])
+                    '; '.join([result['comment'], comment])
             '''penalty and score calculation'''
             if (not_id and old_penalty != penalty) or (not not_id and penalty != 0):
                 '''need to recalculate scores'''
@@ -464,13 +461,12 @@ def update_result_file(filename: str, par_id: int, notification: dict):
 def delete_result(ref_id: int, filename=None):
     from Defines import RESULTDIR
     import os
-    with db_session() as db:
-        if not filename:
-            filename = db.query(TblResultFile).get(ref_id).filename
-        file = os.path.join(RESULTDIR, filename)
-        if os.path.exists(file):
-            os.remove(file)
-        db.query(TblResultFile).filter_by(ref_id=ref_id).delete(synchronize_session=False)
+    if not filename:
+        filename = TblResultFile.query.get(ref_id).filename
+    file = os.path.join(RESULTDIR, filename)
+    if os.path.exists(file):
+        os.remove(file)
+    TblResultFile.query.get(ref_id).delete()
 
 
 def get_country_list(countries=None, iso=3):
@@ -484,13 +480,11 @@ def get_country_list(countries=None, iso=3):
         a list of objects with attributes name and code
     """
     from db.tables import TblCountryCode as CC
-    from db.conn import db_session
     column = getattr(CC, 'natIso' + str(iso))
-    with db_session() as db:
-        query = db.query(CC.natName.label('name'), column.label('code'))
-        if countries:
-            return sorted(query.filter(column.in_(countries)).all(), key=lambda k: k.name)
-        return query.all()
+    query = CC.query.with_entities(CC.natName.label('name'), column.label('code'))
+    if countries:
+        return sorted(query.filter(column.in_(countries)).all(), key=lambda k: k.name)
+    return query.all()
 
 
 def open_json_file(filename: str):
@@ -562,8 +556,8 @@ def pretty_format_results(content, timeoffset=0, td=0, cd=0):
                             '''formatting wpt type'''
                             formatted[key] = ('' if str(value) == 'waypoint'
                                               else 'SS' if str(value) == 'speed'
-                                              else 'ES' if str(value) == 'endspeed'
-                                              else str(value))
+                            else 'ES' if str(value) == 'endspeed'
+                            else str(value))
                         elif key == 'shape':
                             '''formatting wpt shape'''
                             formatted[key] = '' if str(value) == 'circle' else '(line)'
@@ -580,7 +574,7 @@ def pretty_format_results(content, timeoffset=0, td=0, cd=0):
                     # Formatting Numbers
                     elif key in percentage:
                         '''formatting percentage'''
-                        v = float(value if not key == 'validity_param' else 1-value)
+                        v = float(value if not key == 'validity_param' else 1 - value)
                         formatted[key] = f"{c_round(v * 100, 2):.2f}%"
                     elif str(key).endswith(validity):
                         '''formatting formula validity'''

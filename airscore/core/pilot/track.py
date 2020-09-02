@@ -138,16 +138,11 @@ class Track(object):
         """Imports track to db"""
         # TODO in the new workflow we should have a Pilot obj, with Track as attr. so we should add() in Pilot
         # TODO G record check
-        result = ''
-
         # add track as result in TblTaskResult table
-        with db_session() as db:
-            # TODO: g-record still to implement
-            track = TblTaskResult(par_id=self.par_id, task_id=task_id, track_file=self.filename, g_record=1)
-            self.track_id = db.add(track)
-            db.commit()
-            result += f"track for pilot with id {self.par_id} correctly stored in database"
-        return result
+        # TODO: g-record still to implement
+        track = TblTaskResult(par_id=self.par_id, task_id=task_id, track_file=self.filename, g_record=1)
+        self.track_id = track.save()
+        return f"track for pilot with id {self.par_id} correctly stored in database"
 
     @classmethod
     def read_file(cls, filename, track_id=None, par_id=None, config=None, print=print):
@@ -193,14 +188,13 @@ class Track(object):
 
         track = cls(track_id=track_id)
         """Read general info about the track"""
-        with db_session() as db:
-            # get track details.
-            q = db.query(T).get(track_id)
-            q.populate(track)
-            """Creates the flight obj with fixes info"""
-            # task_id = q.task_id
-            full_path = get_task_fullpath(q.task_id)
-            track.flight = Flight.create_from_file(path.join(full_path, track.track_file))
+        # get track details.
+        q = T.query.get(track_id)
+        q.populate(track)
+        """Creates the flight obj with fixes info"""
+        # task_id = q.task_id
+        full_path = get_task_fullpath(q.task_id)
+        track.flight = Flight.create_from_file(path.join(full_path, track.track_file))
         return track
 
     @staticmethod

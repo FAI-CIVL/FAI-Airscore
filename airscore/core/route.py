@@ -128,21 +128,15 @@ class Turnpoint():
 
 
 def delete_turnpoint(tp_id):
+    """delete turnpoint from task in database"""
     from db.tables import TblTaskWaypoint as W
-
-    '''delete turnpoint from task in database'''
-    with db_session() as db:
-        db.query(W).filter(W.wpt_id == tp_id).delete()
-        db.commit()
+    W.query.get(tp_id).delete()
 
 
 def delete_all_turnpoints(task_id):
+    """delete turnpoints from task in database"""
     from db.tables import TblTaskWaypoint as W
-
-    '''delete turnpoints from task in database'''
-    with db_session() as db:
-        db.query(W).filter(W.task_id == task_id).delete()
-        db.commit()
+    W.delete_all(task_id=task_id)
 
 
 def get_proj(clat, clon, proj=PROJ):

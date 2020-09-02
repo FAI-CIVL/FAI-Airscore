@@ -27,6 +27,7 @@ class LoginForm(FlaskForm):
         if not initial_validation:
             return False
 
+        # original flask database
         # with db_session() as db:
         #     self.user = db.query(User).filter_by(username=self.username.data).first()
 

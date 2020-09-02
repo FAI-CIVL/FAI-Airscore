@@ -40,7 +40,7 @@ def db_session():
     print(f'with session id: {id(session)}')
     try:
         yield session
-        session.commit()
+        # session.flush()
     except SQLAlchemyError:
         print('SQLAlchemy Error')
         session.rollback()

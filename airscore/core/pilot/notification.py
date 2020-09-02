@@ -21,13 +21,10 @@ def get_notifications(pilot):
     if not pilot.track_id:
         return
     notifications = []
-    with db_session() as db:
-        results = db.query(N).filter(N.track_id == pilot.track_id).all()
-        for n in [el for el in results if el.notification_type in ['jtg', 'airspace']]:
-            notification = Notification()
-            n.populate(notification)
-            notifications.append(notification)
-        return results
+    results = N.query.filter_by(track_id=pilot.track_id).all()
+    for n in [el for el in results if el.notification_type in ['jtg', 'airspace']]:
+        notifications.append(n.populate(Notification()))
+    return results
 
 
 def update_notifications(pilot):

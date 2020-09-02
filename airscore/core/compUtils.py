@@ -14,60 +14,52 @@ from db.conn import db_session
 def get_comp(task_id: int):
     """Get com_id from task_id"""
     from db.tables import TblTask as T
-    with db_session() as db:
-        return db.query(T).get(task_id).comp_id
+    return T.query.get(task_id).comp_id
 
 
 def get_class(task_id: int):
     """Get comp_class ('PG', 'HG', 'BOTH') from task_id"""
     from db.tables import TaskObjectView as T
-    with db_session() as db:
-        return db.query(T).get(task_id).comp_class
+    return T.query.get(task_id).comp_class
 
 
 def get_task_date(task_id: int):
     """Get date from task_id in datetime.date format"""
     from db.tables import TblTask as T
-    with db_session() as db:
-        return db.query(T).get(task_id).date
+    return T.query.get(task_id).date
 
 
 def get_registration(comp_id: int):
     """Check if comp has mandatory registration"""
     from db.tables import TblCompetition as C
-    with db_session() as db:
-        return bool(db.query(C).get(comp_id).restricted)
+    return bool(C.query.get(comp_id).restricted)
 
 
 def get_offset(task_id: int):
     from db.tables import TblTask as T
-    with db_session() as db:
-        return db.query(T).get(task_id).time_offset
+    return T.query.get(task_id).time_offset
 
 
 def is_registered(civl_id: int, comp_id: int):
     """Check if pilot is registered to the comp"""
     from db.tables import TblParticipant as R
-    with db_session() as db:
-        return db.query(R.par_id).filter_by(comp_id=comp_id, civl_id=civl_id).scalar()
+    return R.query.with_entities(R.par_id).filter_by(comp_id=comp_id, civl_id=civl_id).scalar()
 
 
 def is_ext(comp_id: int):
     """True if competition is external"""
     from db.tables import TblCompetition as C
-    with db_session() as db:
-        return bool(db.query(C).get(comp_id).external)
+    return bool(C.query.get(comp_id).external)
 
 
 def get_comp_json_filename(comp_id: int, latest=False):
     """returns active json results filename, or latest if latest is True"""
     from db.tables import TblResultFile as R
-    with db_session() as db:
-        results = db.query(R.filename).filter_by(comp_id=comp_id, task_id=None)
-        if latest:
-            return results.order_by(R.ref_id.desc()).limit(1).scalar()
-        else:
-            return results.filter_by(active=1).scalar()
+    results = R.query.with_entities(R.filename).filter_by(comp_id=comp_id, task_id=None)
+    if latest:
+        return results.order_by(R.ref_id.desc()).limit(1).scalar()
+    else:
+        return results.filter_by(active=1).scalar()
 
 
 def get_comp_json(comp_id: int, latest=False):
@@ -83,8 +75,7 @@ def get_nat_code(iso: str):
     if not (type(iso) is str and len(iso) in (2, 3)):
         return None
     column = getattr(CC, 'natIso' + str(len(iso)))
-    with db_session() as db:
-        return db.query(CC.natId).filter(column == iso).limit(1).scalar()
+    return CC.query.with_entities(CC.natId).filter(column == iso).limit(1).scalar()
 
 
 def get_nat_name(iso: str):
@@ -93,8 +84,7 @@ def get_nat_name(iso: str):
     if not (type(iso) is str and len(iso) in (2, 3)):
         return None
     column = getattr(CC, 'natIso' + str(len(iso)))
-    with db_session() as db:
-        return db.query(CC.natName).filter(column == iso).limit(1).scalar()
+    return CC.query.with_entities(CC.natName).filter(column == iso).limit(1).scalar()
 
 
 def get_nat(nat_code: int, iso: int = 3) -> str:
@@ -106,16 +96,14 @@ def get_task_path(task_id: int):
     """ returns task folder name"""
     from db.tables import TblTask as T
     if type(task_id) is int and task_id > 0:
-        with db_session() as db:
-            return db.query(T).get(task_id).task_path
+        return T.query.get(task_id).task_path
 
 
 def get_comp_path(comp_id: int):
     """ returns comp folder name"""
     from db.tables import TblCompetition as C
     if type(comp_id) is int and comp_id > 0:
-        with db_session() as db:
-            return db.query(C).get(comp_id).comp_path
+        return C.query.get(comp_id).comp_path
 
 
 def create_comp_path(date: datetime.date, code: str):
@@ -129,16 +117,14 @@ def create_comp_path(date: datetime.date, code: str):
 def get_task_region(task_id: int):
     """returns task region id from task_id"""
     from db.tables import TblTask as T
-    with db_session() as db:
-        return db.query(T).get(task_id).reg_id
+    return T.query.get(task_id).reg_id
 
 
 def get_area_wps(region_id: int):
     """query db get all wpts names and pks for region and put into dictionary"""
     from db.tables import TblRegionWaypoint as W
-    with db_session() as db:
-        wps = db.query(W.name, W.rwp_id).filter_by(reg_id=region_id, old=0).order_by(W.name).all()
-        return dict(wps)
+    wps = W.query.with_entities(W.name, W.rwp_id).filter_by(reg_id=region_id, old=0).order_by(W.name).all()
+    return dict(wps)
 
 
 def get_wpts(task_id: int):
@@ -152,10 +138,9 @@ def get_participants(comp_id: int):
     from db.tables import TblParticipant as R
     from pilot.participant import Participant
     pilots = []
-    with db_session() as db:
-        results = db.query(R).filter_by(comp_id=comp_id).all()
-        for p in results:
-            pilots.append(p.populate(Participant()))
+    results = R.query.filter_by(comp_id=comp_id).all()
+    for p in results:
+        pilots.append(p.populate(Participant()))
     return pilots
 
 
@@ -163,10 +148,9 @@ def get_tasks_result_files(comp_id: int):
     """ returns a list of (task_id, active result filename) for tasks in comp"""
     from db.tables import TblResultFile as R
     files = []
-    with db_session() as db:
-        '''getting active json files list'''
-        results = db.query(R.task_id, R.filename.label('file'))
-        files = results.filter(R.task_id.isnot(None)).filter_by(comp_id=comp_id, active=1).order_by(R.task_id).all()
+    '''getting active json files list'''
+    results = R.query.with_entities(R.task_id, R.filename.label('file'))
+    files = results.filter(R.task_id.isnot(None)).filter_by(comp_id=comp_id, active=1).order_by(R.task_id).all()
     return files
 
 
@@ -175,15 +159,14 @@ def create_classifications(cat_id: int) -> dict:
     from db.tables import TblClasCertRank as CC, TblCompetition as C, TblRanking as R, TblCertification as CCT, \
         TblClassification as CT
     rank = dict()
-    with db_session() as db:
-        '''get rankings definitions'''
-        query = db.query(R.rank_name.label('rank'), CCT.cert_name.label('cert'), CT.female, CT.team) \
-            .select_from(R) \
-            .join(CC, R.rank_id == CC.c.rank_id) \
-            .join(CCT, (CCT.cert_id <= CC.c.cert_id) & (CCT.comp_class == R.comp_class)) \
-            .join(CT, CT.cat_id == CC.c.cat_id) \
-            .filter(CC.c.cert_id > 0, CC.c.cat_id == cat_id)
-        result = query.all()
+    '''get rankings definitions'''
+    query = R.query.with_entities(R.rank_name.label('rank'), CCT.cert_name.label('cert'), CT.female, CT.team) \
+        .select_from(R) \
+        .join(CC, R.rank_id == CC.c.rank_id) \
+        .join(CCT, (CCT.cert_id <= CC.c.cert_id) & (CCT.comp_class == R.comp_class)) \
+        .join(CT, CT.cat_id == CC.c.cat_id) \
+        .filter(CC.c.cert_id > 0, CC.c.cat_id == cat_id)
+    result = query.all()
     if len(result) > 0:
         for res in result:
             if res.rank in rank:

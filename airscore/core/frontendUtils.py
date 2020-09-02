@@ -21,12 +21,11 @@ import json
 
 def get_comps() -> list:
     c = aliased(TblCompetition)
-    with db_session() as db:
-        comps = (db.query(c.comp_id, c.comp_name, c.comp_site,
-                          c.comp_class, c.sanction, c.comp_type, c.date_from,
-                          c.date_to, func.count(TblTask.task_id).label('tasks'), c.external)
-                 .outerjoin(TblTask, c.comp_id == TblTask.comp_id)
-                 .group_by(c.comp_id))
+    comps = (c.query.with_entities(c.comp_id, c.comp_name, c.comp_site,
+                                   c.comp_class, c.sanction, c.comp_type, c.date_from,
+                                   c.date_to, func.count(TblTask.task_id).label('tasks'), c.external)
+             .outerjoin(TblTask, c.comp_id == TblTask.comp_id)
+             .group_by(c.comp_id))
 
     return [row._asdict() for row in comps]
 
@@ -54,29 +53,27 @@ def find_orphan_pilots(pilots_list: list, orphans: list) -> (list, list):
     ''' find a match among pilots in database if still we have orphans'''
     orphans = []
     if still_orphans:
-        with db_session() as db:
-            pilots = db.query(P).all()
-            for p in still_orphans:
-                name, civl_id, comp_id = p['name'].title(), p['civl_id'], p['comp_id']
-                row = next((el for el in pilots
-                            if ((el.first_name and el.last_name
-                                 and el.first_name.title() in name and el.last_name.title() in name)
-                                or (civl_id and el.civl_id and civl_id == get_int(el.civl_id)))), None)
-                if row:
-                    '''check if we already found the same pilot in orphans'''
-                    found = next((el for el in pilots_found
-                                  if el['pil_id'] == row.pil_id), None)
-                    if found:
-                        found['par_ids'].append(p['par_id'])
-                        found['comp_ids'].append(comp_id)
-                    else:
-                        name = f"{row.first_name.title()} {row.last_name.title()}"
-                        pilot = dict(comp_ids=[p['comp_id']], par_ids=[p['par_id']], pil_id=int(row.pil_id),
-                                     civl_id=get_int(row.civl_id), fai_id=row.fai_id, name=name, sex=p['sex'],
-                                     nat=p['nat'], glider=p['glider'], glider_cert=p['glider_cert'], results=[])
-                        pilots_found.append(pilot)
+        pilots = P.query.all()
+        for p in still_orphans:
+            name, civl_id, comp_id = p['name'].title(), p['civl_id'], p['comp_id']
+            row = next((el for el in pilots
+                        if ((el.first_name and el.last_name
+                             and el.first_name.title() in name and el.last_name.title() in name)
+                            or (civl_id and el.civl_id and civl_id == get_int(el.civl_id)))), None)
+            if row:
+                '''check if we already found the same pilot in orphans'''
+                found = next((el for el in pilots_found if el['pil_id'] == row.pil_id), None)
+                if found:
+                    found['par_ids'].append(p['par_id'])
+                    found['comp_ids'].append(comp_id)
                 else:
-                    orphans.append(p)
+                    name = f"{row.first_name.title()} {row.last_name.title()}"
+                    pilot = dict(comp_ids=[p['comp_id']], par_ids=[p['par_id']], pil_id=int(row.pil_id),
+                                 civl_id=get_int(row.civl_id), fai_id=row.fai_id, name=name, sex=p['sex'],
+                                 nat=p['nat'], glider=p['glider'], glider_cert=p['glider_cert'], results=[])
+                    pilots_found.append(pilot)
+            else:
+                orphans.append(p)
     pilots_list.extend(pilots_found)
 
     return pilots_list, orphans
@@ -84,14 +81,13 @@ def find_orphan_pilots(pilots_list: list, orphans: list) -> (list, list):
 
 def get_ladders() -> list:
     from db.tables import TblLadder as L, TblLadderSeason as LS, TblCountryCode as C
-    with db_session() as db:
-        ladders = db.query(L.ladder_id, L.ladder_name, L.ladder_class, L.date_from, L.date_to,
-                           C.natIso3.label('nat'),
-                           LS.season) \
-            .join(LS, L.ladder_id == LS.ladder_id) \
-            .join(C, L.nation_code == C.natId) \
-            .filter(LS.active == 1) \
-            .order_by(LS.season.desc())
+    ladders = L.query.with_entities(L.ladder_id, L.ladder_name, L.ladder_class, L.date_from, L.date_to,
+                                    C.natIso3.label('nat'),
+                                    LS.season) \
+        .join(LS, L.ladder_id == LS.ladder_id) \
+        .join(C, L.nation_code == C.natId) \
+        .filter(LS.active == 1) \
+        .order_by(LS.season.desc())
 
     return [row._asdict() for row in ladders]
 
@@ -112,54 +108,52 @@ def get_ladder_results(ladder_id: int, season: int,
         nat = get_nat(nat_code)
         '''get season start and end day'''
         starts, ends = get_season_dates(ladder_id=ladder_id, season=season, date_from=date_from, date_to=date_to)
-    with db_session() as db:
-        '''get ladder info'''
-        # probably we could keep this from ladder list page?
-        row = db.query(L.ladder_id, L.ladder_name, L.ladder_class,
-                       LS.season, LS.cat_id, LS.overall_validity, LS.validity_param) \
-            .join(LS) \
-            .filter(L.ladder_id == ladder_id, LS.season == season).one()
-        rankings = create_classifications(row.cat_id)
-        info = {'ladder_name': row.ladder_name,
-                'season': row.season,
-                'ladder_class': row.ladder_class,
-                'id': row.ladder_id}
-        formula = {'overall_validity': row.overall_validity,
-                   'validity_param': row.validity_param}
 
-        '''get comps and files'''
-        results = db.query(C.comp_id, R.filename) \
-                    .join(LC) \
-                    .join(R, (R.comp_id == C.comp_id) & (R.task_id.is_(None)) & (R.active == 1)) \
-                    .filter(C.date_to > starts, C.date_to < ends, LC.c.ladder_id == ladder_id)
-        comps_ids = [row.comp_id for row in results]
-        files = [row.filename for row in results]
-        print(comps_ids, files)
+    '''get ladder info'''
+    # probably we could keep this from ladder list page?
+    row = L.query.with_entities(L.ladder_id, L.ladder_name, L.ladder_class,
+                                LS.season, LS.cat_id, LS.overall_validity, LS.validity_param) \
+        .join(LS) \
+        .filter(L.ladder_id == ladder_id, LS.season == season).one()
+    rankings = create_classifications(row.cat_id)
+    info = {'ladder_name': row.ladder_name,
+            'season': row.season,
+            'ladder_class': row.ladder_class,
+            'id': row.ladder_id}
+    formula = {'overall_validity': row.overall_validity,
+               'validity_param': row.validity_param}
 
-        '''create Participants list'''
-        results = db.query(P) \
-            .filter(P.comp_id.in_(comps_ids), P.nat == nat) \
-            .order_by(P.pil_id, P.comp_id).all()
-        pilots_list = []
-        orphans = []
-        for row in results:
-            if row.pil_id:
-                p = next((el for el in pilots_list if el['pil_id'] == row.pil_id), None)
-                if p:
-                    '''add par_id'''
-                    p['par_ids'].append(row.par_id)
-                    p['comp_ids'].append(row.comp_id)
-                else:
-                    '''insert a new pilot'''
-                    p = dict(comp_ids=[row.comp_id], par_ids=[row.par_id], pil_id=row.pil_id, civl_id=row.civl_id,
-                             fai_id=row.fai_id, name=row.name, sex=row.sex, nat=row.nat,
-                             glider=row.glider, glider_cert=row.glider_cert, results=[])
-                    pilots_list.append(p)
+    '''get comps and files'''
+    results = C.query.with_entities(C.comp_id, R.filename) \
+        .join(LC) \
+        .join(R, (R.comp_id == C.comp_id) & (R.task_id.is_(None)) & (R.active == 1)) \
+        .filter(C.date_to > starts, C.date_to < ends, LC.c.ladder_id == ladder_id)
+    comps_ids = [row.comp_id for row in results]
+    files = [row.filename for row in results]
+    print(comps_ids, files)
+
+    '''create Participants list'''
+    results = P.query.filter(P.comp_id.in_(comps_ids), P.nat == nat).order_by(P.pil_id, P.comp_id).all()
+    pilots_list = []
+    orphans = []
+    for row in results:
+        if row.pil_id:
+            p = next((el for el in pilots_list if el['pil_id'] == row.pil_id), None)
+            if p:
+                '''add par_id'''
+                p['par_ids'].append(row.par_id)
+                p['comp_ids'].append(row.comp_id)
             else:
-                p = dict(comp_id=row.comp_id, pil_id=row.pil_id, par_id=row.par_id, civl_id=row.civl_id,
+                '''insert a new pilot'''
+                p = dict(comp_ids=[row.comp_id], par_ids=[row.par_id], pil_id=row.pil_id, civl_id=row.civl_id,
                          fai_id=row.fai_id, name=row.name, sex=row.sex, nat=row.nat,
-                         glider=row.glider, glider_cert=row.glider_cert)
-                orphans.append(p)
+                         glider=row.glider, glider_cert=row.glider_cert, results=[])
+                pilots_list.append(p)
+        else:
+            p = dict(comp_id=row.comp_id, pil_id=row.pil_id, par_id=row.par_id, civl_id=row.civl_id,
+                     fai_id=row.fai_id, name=row.name, sex=row.sex, nat=row.nat,
+                     glider=row.glider, glider_cert=row.glider_cert)
+            orphans.append(p)
     '''try to guess orphans'''
     if orphans:
         pilots_list, orphans = find_orphan_pilots(pilots_list, orphans)
@@ -257,13 +251,12 @@ def get_admin_comps(current_userid):
     """get a list of all competitions in the DB and flag ones where owner is current user"""
     c = aliased(TblCompetition)
     ca = aliased(TblCompAuth)
-    with db_session() as db:
-        comps = (db.query(c.comp_id, c.comp_name, c.comp_site,
-                          c.date_from,
-                          c.date_to, func.count(TblTask.task_id), ca.user_id)
-                 .outerjoin(TblTask, c.comp_id == TblTask.comp_id).outerjoin(ca)
-                 .filter(ca.user_auth == 'owner')
-                 .group_by(c.comp_id))
+    comps = (c.query.with_entities(c.comp_id, c.comp_name, c.comp_site, c.date_from, c.date_to,
+                                   func.count(TblTask.task_id),
+                                   ca.user_id)
+             .outerjoin(TblTask, c.comp_id == TblTask.comp_id).outerjoin(ca)
+             .filter(ca.user_auth == 'owner')
+             .group_by(c.comp_id))
     all_comps = []
     for c in comps:
         comp = list(c)
@@ -421,13 +414,13 @@ def get_waypoint(wpt_id: int = None, rwp_id: int = None):
     """reads waypoint from tblTaskWaypoint or tblRegionWaypoint depending on input and returns Turnpoint object"""
     if not (wpt_id or rwp_id):
         return None
-    with db_session() as db:
-        if wpt_id:
-            result = db.query(TblTaskWaypoint).get(wpt_id)
-        else:
-            result = db.query(TblRegionWaypoint).get(rwp_id)
-        if result:
-            return result.populate(Turnpoint())
+    if wpt_id:
+        w, idx = aliased(TblTaskWaypoint), wpt_id
+    else:
+        w, idx = aliased(TblRegionWaypoint), rwp_id
+    result = w.query.get(wpt_id)
+    if result:
+        return result.populate(Turnpoint())
 
 
 def save_turnpoint(task_id: int, turnpoint: Turnpoint):
@@ -435,21 +428,11 @@ def save_turnpoint(task_id: int, turnpoint: Turnpoint):
     if not (type(task_id) is int and task_id > 0):
         print("task not present in database ", task_id)
         return None
-    with db_session() as db:
-        if not turnpoint.wpt_id:
-            '''add new taskWaypoint'''
-            tp = TblTaskWaypoint().from_obj(turnpoint)
-            db.add(tp)
-            db.flush()
-        else:
-            '''update taskWaypoint'''
-            tp = db.query(TblTaskWaypoint).get(turnpoint.wpt_id)
-            if tp:
-                for k, v in turnpoint.as_dict().items():
-                    if hasattr(tp, k):
-                        setattr(tp, k, v)
-            db.flush()
-        return 1
+    w = aliased(TblTaskWaypoint)
+    tp = TblTaskWaypoint(task_id=task_id) if not turnpoint.wpt_id else w.query.get(turnpoint.wpt_id)
+    tp.from_obj(turnpoint)
+    tp.save_or_update()
+    return 1
 
 
 def allowed_tracklog(filename, extension=track_formats):
@@ -719,20 +702,19 @@ def process_zip_file(zip_file: Path, taskid: int, username: str, grecord: bool, 
 def get_task_result_file_list(taskid: int):
     from db.tables import TblResultFile as R
     files = []
-    with db_session() as db:
-        rows = db.query(R.created, R.filename, R.status, R.active, R.ref_id).filter_by(task_id=taskid).all()
-        if rows:
-            files = [row._asdict() for row in rows]
-        return files
+    rows = R.query.with_entities(R.created, R.filename, R.status, R.active, R.ref_id).filter_by(task_id=taskid).all()
+    if rows:
+        files = [row._asdict() for row in rows]
+    return files
 
 
 def number_of_tracks_processed(taskid: int):
     from db.tables import TblTaskResult as R, TblParticipant as P, TblTask as T
     from sqlalchemy import func
-    with db_session() as db:
-        results = db.query(func.count()).filter(R.task_id == taskid).scalar()
-        pilots = db.query(func.count(P.par_id)).outerjoin(T, P.comp_id == T.comp_id).filter(
-            T.task_id == taskid).scalar()
+    results = R.query.with_entities(func.count(R.track_id)).filter_by(task_id=taskid).scalar()
+    pilots = P.query.with_entities(func.count(P.par_id)) \
+        .outerjoin(T, P.comp_id == T.comp_id) \
+        .filter_by(task_id=taskid).scalar()
     return results, pilots
 
 
@@ -760,68 +742,55 @@ def get_comp_admins(compid_or_taskid: int, task_id=False):
     """returns owner and list of admins takes compid by default or taskid if taskid is True"""
     from db.tables import TblCompAuth as CA
     from airscore.user.models import User
-    with db_session() as db:
-        if task_id:
-            taskid = compid_or_taskid
-            all_admins = db.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth) \
-                .join(CA, User.id == CA.user_id).join(TblTask, CA.comp_id == TblTask.comp_id).filter(
-                TblTask.task_id == taskid,
-                CA.user_auth.in_(('owner', 'admin'))).all()
+    if task_id:
+        taskid = compid_or_taskid
+        all_admins = User.query.with_entities(User.id, User.username, User.first_name, User.last_name, CA.user_auth) \
+            .join(CA, User.id == CA.user_id) \
+            .join(TblTask, CA.comp_id == TblTask.comp_id) \
+            .filter(TblTask.task_id == taskid, CA.user_auth.in_(('owner', 'admin'))).all()
+    else:
+        compid = compid_or_taskid
+        all_admins = User.query.with_entities(User.id, User.username, User.first_name, User.last_name, CA.user_auth) \
+            .join(CA, User.id == CA.user_id) \
+            .filter(CA.comp_id == compid, CA.user_auth.in_(('owner', 'admin'))).all()
+    if all_admins:
+        all_admins = [row._asdict() for row in all_admins]
+    admins = []
+    all_ids = []
+    owner = None
+    for admin in all_admins:
+        all_ids.append(admin['id'])
+        if admin['user_auth'] == 'owner':
+            del admin['user_auth']
+            owner = admin
         else:
-            compid = compid_or_taskid
-            all_admins = db.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth) \
-                .join(CA, User.id == CA.user_id).filter(CA.comp_id == compid,
-                                                        CA.user_auth.in_(('owner', 'admin'))).all()
-        if all_admins:
-            all_admins = [row._asdict() for row in all_admins]
-        admins = []
-        all_ids = []
-        owner = None
-        for admin in all_admins:
-            all_ids.append(admin['id'])
-            if admin['user_auth'] == 'owner':
-                del admin['user_auth']
-                owner = admin
-            else:
-                del admin['user_auth']
-                admins.append(admin)
+            del admin['user_auth']
+            admins.append(admin)
     return owner, admins, all_ids
 
 
 def set_comp_admin(compid: int, userid, owner=False):
     from db.tables import TblCompAuth as CA
     auth = 'owner' if owner else 'admin'
-    with db_session() as db:
-        admin = CA(user_id=userid, comp_id=compid, user_auth=auth)
-        db.add(admin)
-        db.flush()
+    admin = CA(user_id=userid, comp_id=compid, user_auth=auth)
+    admin.save()
     return True
 
 
 def get_all_admins():
     """returns a list of all admins in the system"""
-    from airscore.user.models import User
-    with db_session() as db:
-        all_admins = db.query(User.id, User.username, User.first_name, User.last_name) \
-            .filter(User.is_admin == 1).all()
-        if all_admins:
-            all_admins = [row._asdict() for row in all_admins]
-        return all_admins
+    from airscore.user.models import User as U
+    all_admins = U.query.with_entities(U.id, U.username, U.first_name, U.last_name).filter_by(is_admin=1).all()
+    if all_admins:
+        all_admins = [row._asdict() for row in all_admins]
+    return all_admins
 
 
 def update_airspace_file(old_filename, new_filename):
     """change the name of the openair file in all regions it is used."""
     R = aliased(TblRegion)
-    with db_session() as db:
-        db.query(R).filter(R.openair_file == old_filename).update({R.openair_file: new_filename},
-                                                                  synchronize_session=False)
-        db.commit()
+    R.query.filter_by(openair_file=old_filename).update(openair_file=new_filename)
     return True
-
-
-# def save_waypoint_file(file):
-#     from Defines import WAYPOINTDIR, AIRSPACEDIR
-#     full_file_name = path.join(WAYPOINTDIR, filename)
 
 
 def get_non_registered_pilots(compid: int):
@@ -830,15 +799,14 @@ def get_non_registered_pilots(compid: int):
     p = aliased(TblParticipant)
     pv = aliased(PilotView)
 
-    with db_session() as db:
-        '''get registered pilots'''
-        reg = db.query(p.pil_id).filter(p.comp_id == compid).subquery()
-        non_reg = db.query(pv.pil_id, pv.civl_id, pv.first_name, pv.last_name). \
-            filter(reg.c.pil_id == None). \
-            outerjoin(reg, reg.c.pil_id == pv.pil_id). \
-            order_by(pv.first_name, pv.last_name).all()
+    '''get registered pilots'''
+    reg = p.query.with_entities(p.pil_id).filter_by(comp_id=compid).subquery()
+    non_reg = pv.query.with_entities(pv.pil_id, pv.civl_id, pv.first_name, pv.last_name) \
+        .outerjoin(reg, reg.c.pil_id == pv.pil_id) \
+        .filter(reg.c.pil_id.is_(None)) \
+        .order_by(pv.first_name, pv.last_name).all()
 
-        non_registered = [row._asdict() for row in non_reg]
+    non_registered = [row._asdict() for row in non_reg]
     return non_registered
 
 
@@ -858,10 +826,8 @@ def get_igc_parsing_config_file_list():
 
 def get_comps_with_igc_parsing(igc_config):
     from db.tables import TblCompetition
-
     c = aliased(TblCompetition)
-    with db_session() as db:
-        return db.query(c.comp_id).filter(c.igc_config_file == igc_config).all()
+    return c.query.with_entities(c.comp_id).filter_by(igc_config_file=igc_config).all()
 
 
 def get_comp_info(compid: int, task_ids=None):
@@ -870,23 +836,21 @@ def get_comp_info(compid: int, task_ids=None):
     c = aliased(TblCompetition)
     t = aliased(TblTask)
 
-    with db_session() as db:
-        non_scored_tasks = (db.query(t.task_id.label('id'),
-                                     t.task_name,
-                                     t.date,
-                                     t.task_type,
-                                     t.opt_dist,
-                                     t.comment).filter(t.comp_id == compid, t.task_id.notin_(task_ids))
-                            .order_by(t.date.desc()).all())
+    non_scored_tasks = (t.query.with_entities(t.task_id.label('id'),
+                                              t.task_name,
+                                              t.date,
+                                              t.task_type,
+                                              t.opt_dist,
+                                              t.comment).filter(t.comp_id == compid, t.task_id.notin_(task_ids))
+                               .order_by(t.date.desc()).all())
 
-        competition_info = (db.query(
-            c.comp_id,
-            c.comp_name,
-            c.comp_site,
-            c.date_from,
-            c.date_to,
-            c.self_register,
-            c.website).filter(c.comp_id == compid).one())
+    competition_info = (c.query.with_entities(c.comp_id,
+                                              c.comp_name,
+                                              c.comp_site,
+                                              c.date_from,
+                                              c.date_to,
+                                              c.self_register,
+                                              c.website).filter_by(comp_id=compid).one())
     comp = competition_info._asdict()
 
     return comp, non_scored_tasks
@@ -937,15 +901,14 @@ def check_team_size(compid: int, nat=False):
     else:
         max_team_size = formula.max_team_size or 0
 
-    with db_session() as db:
-        if nat:
-            q = db.query(P.nat, func.sum(P.nat_team)).filter(P.comp_id == compid).group_by(P.nat)
-        else:
-            q = db.query(P.team, func.count(P.team)).filter(P.comp_id == compid).group_by(P.team)
-        result = q.all()
-        for team in result:
-            if team[1] > max_team_size:
-                message += f"<p>Team {team[0]} has {team[1]} members - only {max_team_size} allowed.</p>"
+    if nat:
+        q = P.query.with_entities(P.nat, func.sum(P.nat_team)).filter_by(comp_id=compid).group_by(P.nat)
+    else:
+        q = P.query.with_entities(P.team, func.count(P.team)).filter_by(comp_id=compid).group_by(P.team)
+    result = q.all()
+    for team in result:
+        if team[1] > max_team_size:
+            message += f"<p>Team {team[0]} has {team[1]} members - only {max_team_size} allowed.</p>"
     return message
 
 
@@ -1106,12 +1069,11 @@ def get_task_igc_zip(task_id: int):
 
 
 def check_short_code(comp_short_code):
-    with db_session() as db:
-        code = db.query(TblCompetition.comp_code).filter(TblCompetition.comp_code == comp_short_code).first()
-        if code:
-            return False
-        else:
-            return True
+    code = TblCompetition.get_one(comp_code=comp_short_code)
+    if code:
+        return False
+    else:
+        return True
 
 
 def import_participants_from_fsdb(file: Path, from_CIVL=False) -> list:
