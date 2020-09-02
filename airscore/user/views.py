@@ -112,7 +112,7 @@ def save_airspace():
 @blueprint.route('/comp_admin', methods=['GET', 'POST'])
 @login_required
 def comp_admin():
-    return render_template('users/comp_admin.html', today=datetime.today().strftime('%d-%m-%Y'))
+    return render_template('users/comp_admin.html', today=datetime.today().strftime('%Y-%m-%d'))
 
 
 @blueprint.route('/_create_comp', methods=['PUT'])
