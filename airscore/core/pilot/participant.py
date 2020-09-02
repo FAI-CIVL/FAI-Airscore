@@ -252,7 +252,7 @@ def unregister_participant(comp_id: int, par_id: int):
     """ takes comp_id and a par_id
         unregisters participant from comp.
         in reality we don't need compid but it is a safeguard"""
-    row = P.query.filter_by(comp_id=comp_id, par_id=par_id)
+    row = P.get_one(comp_id=comp_id, par_id=par_id)
     row.delete()
     return True
 
