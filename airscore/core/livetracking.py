@@ -84,6 +84,11 @@ class LiveTracking(object):
         return None if not self.task else self.task.task_id
 
     @property
+    def pilots(self):
+        return [] if not self.task else [p for p in self.task.pilots
+                                         if p.live_id and p.result_type not in ('dnf', 'abs')]
+
+    @property
     def flying_pilots(self):
         return [p for p in self.pilots if not (p.landing_time or p.goal_time)]
 
@@ -166,11 +171,6 @@ class LiveTracking(object):
                 stopped = sec_to_string(self.task.stopped_time, self.task.time_offset, seconds=False)
                 warning = f'Task has been stopped at {stopped} (Local Time).'
         return dict(main=main, warning=warning, details=details)
-
-    @property
-    def pilots(self):
-        return [] if not self.task else [p for p in self.task.pilots
-                                         if p.live_id and p.result_type not in ('dnf', 'abs')]
 
     @property
     def filename(self):
@@ -271,6 +271,9 @@ class LiveTracking(object):
     def run(self, interval=99):
         if not self.properly_set:
             print(f'Livetracking source is not set properly.')
+            print(f"task: {bool(self.task is not None)}, pilots: {bool(self.pilots)}, "
+                  f"track_source: {bool(self.track_source)}, wpt: {bool(self.task.turnpoints)}, "
+                  f"start: {bool(self.task.start_time is not None)}")
             return
         Logger('ON', 'livetracking.txt')
         i = 0
@@ -280,11 +283,15 @@ class LiveTracking(object):
         print(f'Livetrack Starting: {datetime.fromtimestamp(self.timestamp).isoformat()}')
         if self.test:
             print(f'Test Starting Timestamp: {datetime.fromtimestamp(self.now).isoformat()}')
-        if self.opening_timestamp - interval > self.now:
+        elif self.opening_timestamp - interval > self.now:
             '''wait window opening'''
             print(f'Waiting for window opening: {self.opening_timestamp - interval - self.now} seconds ...')
             time.sleep(self.opening_timestamp - interval - self.now)
-        while self.opening_timestamp - interval <= self.now <= self.ending_timestamp + interval:
+        # elif self.opening_timestamp + interval < self.now:
+        #     '''we need to catch up with task'''
+
+        while ((self.opening_timestamp - interval <= self.now <= self.ending_timestamp + interval)
+                and len(self.flying_pilots) > 0):
             '''check task did not change'''
             if self.task_has_changed():
                 print(f'*** *** Cycle {i} ({self.timestamp}): TASK HAS CHANGED ***')
