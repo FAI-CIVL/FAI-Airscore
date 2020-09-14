@@ -69,6 +69,7 @@ def get_int(string):
         for i in lstr:
             if i.isdigit():
                 return int(i)
+    except TypeError:
         return None
 
 
