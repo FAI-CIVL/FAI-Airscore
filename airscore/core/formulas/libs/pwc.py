@@ -328,7 +328,7 @@ def points_allocation(task):
             res.distance_score = pilot_distance(task, res)
 
             ''' Pilot leading points'''
-            if task.departure == 'leadout' and res.result_type != 'mindist' and res.SSS_time:
+            if task.departure == 'leadout' and res.SSS_time:
                 res.departure_score = pilot_leadout(task, res)
 
             if res.ESS_time:
