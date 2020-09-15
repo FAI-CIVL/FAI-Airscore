@@ -215,6 +215,7 @@ def extract_participants_from_excel(comp_id: int, filename, from_CIVL=False):
         pil.comp_id = comp_id
         pil.birthdate = None if row[4] is None else row[4].date()  # row[4] should be datetime
         pil.glider = row[5]
+        pil.glider_cert = row[12]
         pil.sponsor = row[7]
         pil.team = row[11]
         pil.fai_id = row[8]
