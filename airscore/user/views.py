@@ -231,6 +231,8 @@ def comp_settings_admin(compid):
             comp.self_register = compform.self_register.data
             if compform.website.data.lower()[:7] == 'http://':
                 comp.website = compform.website.data.lower()[7:]
+            elif compform.website.data.lower()[:8] == 'https://':
+                comp.website = compform.website.data.lower()[8:]
             else:
                 comp.website = compform.website.data.lower()
             comp.to_db()
@@ -1422,7 +1424,7 @@ def _add_participant(compid):
         participant.sex = data.get('sex')
     participant.nat = data.get('nat')
     participant.glider = data.get('glider')
-    participant.certification = data.get('certification')
+    participant.glider_cert = data.get('certification')
     participant.sponsor = data.get('sponsor')
     participant.nat_team = data.get('nat_team')
     participant.team = data.get('team')
@@ -1465,7 +1467,7 @@ def _self_register(compid):
     participant.ID = data.get('id_num')
     participant.nat = data.get('nat')
     participant.glider = data.get('glider')
-    participant.certification = data.get('certification')
+    participant.glider_cert = data.get('certification')
     participant.sponsor = data.get('sponsor')
     participant.to_db()
     resp = jsonify(success=True)
