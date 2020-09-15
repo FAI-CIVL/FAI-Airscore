@@ -41,8 +41,8 @@ IGCPARSINGCONFIG = config['dir']['igc_parsing_config']  # igc parsing config fil
 TEMPFILES = config['dir']['temp_files']  # tempfile folder when we need one that can be seen by other containers. e.g. workers
 
 ''' Track file Settings'''
-track_sources = ['xcontest', 'flymaster']     # external available sources for tracks
-track_formats = ['igc']   # track accepted formats
+track_sources = [s for s in config['igc_sources'] if config['igc_sources'][s]]  # external available sources for tracks
+track_formats = ['igc']   # accepted track formats
 '''accepted filename formats
 id
 name
