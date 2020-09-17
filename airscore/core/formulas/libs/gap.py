@@ -51,6 +51,8 @@ def difficulty_calculation(task):
         return []
 
     pilot_lo = task.pilots_launched - task.pilots_goal
+    print(f"best_dist: {best_dist}, pilot_lo: {pilot_lo}")
+    print(f"distspread: {distspread}")
 
     ''' the difficulty for each 100-meter section of the task is calculated
         by counting the number of pilots who landed further along the task'''
@@ -63,6 +65,7 @@ def difficulty_calculation(task):
         kmdiff.append(Diffslot(i, diff))
 
     sum_diff = sum([x.diff for x in kmdiff])
+    print(f"sum_diff: {sum_diff}")
 
     ''' Relative difficulty is then calculated by dividing each 100-meter slot’s
         difficulty by twice the sum of all difficulty values.'''
@@ -347,7 +350,7 @@ def pilot_speed(task, res):
         Ptime = res.ss_time
         SF = 1 - ((Ptime - Tmin) / 3600 / sqrt(Tmin / 3600)) ** (2 / 3)
         if SF > 0:
-            Pspeed = Aspeed * SF - task.time_points_reduction
+            Pspeed = Aspeed * SF - (task.time_points_reduction if hasattr(task, 'time_points_reduction') else 0)
 
     return Pspeed
 

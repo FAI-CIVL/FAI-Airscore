@@ -802,9 +802,15 @@ class Task(object):
 
     def get_pilots(self):
         """ Loads FlightResult obj. with only Participants info into Task obj."""
-        from db.tables import TblParticipant as P
+        from db.tables import TblParticipant as P, TblTaskResult as R
         from pilot.flightresult import FlightResult
         self.pilots = [FlightResult(**row) for row in P.get_dicts(self.comp_id)]
+        tracks = R.get_all(task_id=self.id)
+        if tracks:
+            for p in self.pilots:
+                res = next((x for x in tracks if x.par_id == p.par_id), None)
+                if res:
+                    p.track_id, p.track_file, p.result_type = res.track_id, res.track_file, res.result_type
 
     def get_results(self, lib=None):
         """ Loads all FlightResult obj. into Task obj."""

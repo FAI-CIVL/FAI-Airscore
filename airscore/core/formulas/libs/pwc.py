@@ -236,7 +236,7 @@ def pilot_speed(task, res):
         Ptime = res.ss_time
         SF = 1 - ((Ptime - Tmin) / 3600 / sqrt(Tmin / 3600)) ** (5 / 6)
         if SF > 0:
-            Pspeed = Aspeed * SF - task.time_points_reduction
+            Pspeed = Aspeed * SF - (task.time_points_reduction if hasattr(task, 'time_points_reduction') else 0)
 
     return Pspeed
 
