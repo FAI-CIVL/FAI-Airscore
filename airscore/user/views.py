@@ -395,6 +395,7 @@ def _add_scorekeeper(compid):
 @login_required
 def task_admin(taskid):
     from calcUtils import sec_to_time, time_to_seconds
+    from region import get_openair
     error = None
     taskform = TaskForm()
     turnpointform = NewTurnpointForm()
@@ -437,6 +438,8 @@ def task_admin(taskid):
             task.check_launch = 'on' if taskform.check_launch.data else 'off'
             task.airspace_check = taskform.airspace_check.data
             # task.openair_file = taskform.openair_file  # TODO get a list of openair files for this comp (in the case of defines.yaml airspace_file_library: off otherwise all openair files available)
+            if task.airspace_check and task.reg_id and not task.openair_file:
+                task.openair_file = get_openair(reg_id=task.reg_id)
             task.QNH = taskform.QNH.data
             task.formula.formula_distance = taskform.formula_distance.data
             task.formula.formula_arrival = taskform.formula_arrival.data
@@ -564,6 +567,7 @@ def _register_pilots(compid):
 @blueprint.route('/_add_task/<compid>', methods=['POST'])
 @login_required
 def _add_task(compid):
+    from region import get_openair
     comp = Comp.read(int(compid))
     # comp.comp_id = compid
     data = request.json
@@ -575,6 +579,8 @@ def _add_task(compid):
     task.reg_id = int(data['task_region'])
     task.time_offset = comp.time_offset
     task.airspace_check = comp.airspace_check
+    if task.airspace_check and task.reg_id:
+        task.openair_file = get_openair(reg_id=task.reg_id)
     task.check_launch = comp.check_launch
     task.igc_config_file = comp.igc_config_file
     task.to_db()
