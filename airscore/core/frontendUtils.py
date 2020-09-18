@@ -484,7 +484,7 @@ def process_igc(task_id: int, par_id: int, tracklog):
     pilot = FlightResult.read(par_id, task_id)
     if pilot.name:
         task = Task.read(task_id)
-        fullname = create_igc_filename(task.file_path, task.date, pilot.name)
+        fullname = create_igc_filename(task.file_path, task.date, pilot.name, pilot.ID)
         tracklog.save(fullname)
         pilot.track_file = Path(fullname).name
     else:
@@ -541,7 +541,7 @@ def save_igc_background(task_id: int, par_id: int, tracklog, user, check_g_recor
     print = partial(print_to_sse, id=par_id, channel=user)
     if pilot.name:
         task = Task.read(task_id)
-        fullname = create_igc_filename(task.file_path, task.date, pilot.name)
+        fullname = create_igc_filename(task.file_path, task.date, pilot.name, pilot.ID)
         tracklog.save(fullname)
         print('|open_modal')
         print('***************START*******************')

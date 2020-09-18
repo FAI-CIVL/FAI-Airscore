@@ -555,7 +555,7 @@ def create_igc_file(result: FlightResult, task: Task):
     if not Path(task.file_path).is_dir():
         Path(task.file_path).mkdir(mode=0o755)
     '''create filename'''
-    file = create_igc_filename(task.file_path, task.date, result.name)
+    file = create_igc_filename(task.file_path, task.date, result.name, result.ID)
     result.track_file = file.name
 
     '''create IGC header'''
