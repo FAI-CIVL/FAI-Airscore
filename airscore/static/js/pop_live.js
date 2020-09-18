@@ -9,6 +9,7 @@ function populate_live(taskid){
             success: function (json) {
                 var columns = [];
                 columns.push({data: 'rank', title:'#'});
+                columns.push({data: 'id', title:'ID', defaultContent: ''});
                 columns.push({data: 'name', title:'Name'});
                 columns.push({data: 'sex', title:'Sex', defaultContent: '', visible: false});
                 columns.push({data: 'result', title:'Result', defaultContent: ''});

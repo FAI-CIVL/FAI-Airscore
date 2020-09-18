@@ -374,7 +374,7 @@ def _get_task_result(taskid):
     all_pilots = []
     results = [p for p in result_file['results'] if p['result_type'] not in ['dnf', 'abs', 'nyp']]
     for r in results:
-        pilot = {'fai_id': r['fai_id'], 'civl_id': r['civl_id'], 'nat': r['nat'], 'sex': r['sex'],
+        pilot = {'id': r['ID'], 'fai_id': r['fai_id'], 'civl_id': r['civl_id'], 'nat': r['nat'], 'sex': r['sex'],
                  'glider': r['glider'], 'glider_cert': r['glider_cert'], 'sponsor': r['sponsor'],
                  'SSS_time': r['SSS_time'], 'distance': r['distance'], 'time_score': r['time_score'],
                  'departure_score': r['departure_score'], 'arrival_score': r['arrival_score'],
@@ -431,7 +431,7 @@ def _get_comp_result(compid):
 
     all_pilots = []
     for r in result_file['results']:
-        pilot = {'fai_id': r['fai_id'], 'civl_id': r['civl_id'],
+        pilot = {'id': r['ID'], 'fai_id': r['fai_id'], 'civl_id': r['civl_id'],
                  'name': f"<span class='sex-{r['sex']}'><b>{r['name']}</b></span>", 'nat': r['nat'], 'sex': r['sex'],
                  'glider': r['glider'], 'glider_cert': r['glider_cert'], 'sponsor': r['sponsor'],
                  'score': f"<b>{r['score']}</b>", 'ranks': {'rank': f"<b>{r['rank']}</b>"}}

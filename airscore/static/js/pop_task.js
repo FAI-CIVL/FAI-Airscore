@@ -16,6 +16,7 @@ function populate_task(taskid){
                         columns.push({data: 'ranks.class'+index.toString(), title:'#', defaultContent: '', visible: false});
                     }
                 });
+                columns.push({data: 'id', title:'ID', defaultContent: ''});
                 columns.push({data: 'fai_id', title:'FAI', defaultContent: '', visible: false});
                 columns.push({data: 'civl_id', title:'CIVL', defaultContent: '', visible: false});
                 columns.push({data: 'name', title:'Name'});
