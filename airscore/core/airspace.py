@@ -139,7 +139,7 @@ class AirspaceCheck(object):
                     space['floor'] = fl_to_meters(space['floor'], qnh)
                     space['floor_unit'] = 'm'
                 if space['ceiling_unit'] == 'FL':
-                    space['ceiling'] = fl_to_meters(space['floor'], qnh)
+                    space['ceiling'] = fl_to_meters(space['ceiling'], qnh)
                     space['ceiling_unit'] = 'm'
                 ''' create object and bbox'''
                 if space['shape'] == 'circle':
