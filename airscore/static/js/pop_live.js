@@ -80,10 +80,10 @@ function populate_live(taskid){
                         if (json.info.stopped_time) {
                             let row = tbl.insertRow();
                             let cell1 = row.insertCell();
-                            cell1.className="times-list";
+                            cell1.className="times-list red";
                             cell1.innerHTML = '<b>Stopped:</b>';
                             let cell2 = row.insertCell();
-                            cell2.className="times-list";
+                            cell2.className="times-list red";
                             cell2.innerHTML = '<b>' + json.info.stopped_time + '</b>';
                         }
                         else {

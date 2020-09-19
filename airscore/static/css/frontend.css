@@ -137,6 +137,10 @@ td.times-list:last-child, th.times-list:last-child {
   text-align: right;
 }
 
+td.red {
+  color: red;
+}
+
 table.wpt-list {
 
 }
