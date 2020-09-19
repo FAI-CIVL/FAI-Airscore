@@ -79,6 +79,7 @@ function populate_task(taskid){
                         // comp info
                         $('#comp_name').text(json.info.comp_name + " - " + json.info.task_name);
                         $('#task_date').text(json.info.date + ' ' + json.info.task_type);
+                        $('#status').text(json.file_stats.status);
                         // times
                         var tbl = document.createElement('table');
                         tbl.className="times-list";
