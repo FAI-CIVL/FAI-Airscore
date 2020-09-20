@@ -592,6 +592,10 @@ def pretty_format_results(content, timeoffset=0, td=0, cd=0):
                         '''formatting scores'''
                         formatted[key] = f"{c_round(float(value), 1):.1f}"
                     elif key == 'score':
+                        # TODO need to decide which rounding to use and has to be the same in comp results
+                        # guess scores parts' decimals should be 1 more of final score decimals?
+                        # changed comp results to be consistent with task results, but string formatting is rounding Half Even, should use something as below
+                        # formatted[key] = f"{c_round(float(value) or 0, td):.{td}f}"
                         formatted[key] = f"{c_round(float(value), 1):.{td}f}"
                     elif key == 'speed':
                         formatted[key] = '' if float(value) == 0 else f"{c_round(float(value), 1):.2f}"

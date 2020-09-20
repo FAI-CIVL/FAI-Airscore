@@ -381,7 +381,11 @@ class Comp(object):
                     # comp.results.append({'par_id': p.par_id, 'results': []})
                     comp.results.append({'par_id': p.par_id})
                     res = comp.results[-1]
-                s = next((c_round(pil.score or 0, decimals) for pil in task.pilots if pil.par_id == p.par_id), 0)
+                # TODO need to decide which rounding to use and has to be the same in task results
+                # this is less than desirable, just to be consistent with task results
+                s = next((c_round(float(f"{c_round(float(pil.score), 1):.{decimals}f}"), decimals)
+                          for pil in task.pilots if pil.par_id == p.par_id), 0)
+                # s = next((c_round(pil.score or 0, decimals) for pil in task.pilots if pil.par_id == p.par_id), 0)
                 if r > 0:  # sanity
                     perf = c_round(s / r, decimals + 3)
                     # res['results'].append({task.task_code: {'pre': s, 'perf': perf, 'score': s}})
