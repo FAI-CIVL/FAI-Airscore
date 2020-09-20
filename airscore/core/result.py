@@ -21,6 +21,7 @@ Stuart Mackintosh - Antonio Golfari
 from db.tables import TblResultFile
 from db.conn import db_session
 from sqlalchemy import and_
+import json
 
 
 class TaskResult:
@@ -181,6 +182,267 @@ class TaskResult:
                     'track_file',
                     'pil_id']
 
+    @staticmethod
+    def to_html(json_file: str):
+        """ create a HTML file from json result file"""
+        from frontendUtils import get_pretty_data
+        res = get_pretty_data(open_json_file(json_file))
+        title = f"{res['info']['comp_name']} - {res['info']['task_name']}"
+        filename = f"{res['info']['comp_name'].replace(' - ', '_').replace(' ', '_')}_T{res['info']['task_num']}.html"
+
+        '''HTML head'''
+        html_file = f"""
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>{title}</title>
+    <style>
+          tr.fs_res_res_row:hover
+          {{
+          background: yellow;
+          }}
+          div.fs_res
+          {{
+          font-family: Verdana, Arial, Helvetica, sans-serif;
+          font-size: xx-small;
+          }}
+          table.fs_res
+          {{
+          border:solid 1px gray;
+          border-collapse:collapse;
+          font-size: xx-small;
+          }}
+          td.fs_res
+          {{
+          border:solid 1px gray;
+          vertical-align:top;
+          padding:5px;
+          }}
+          th.fs_res
+          {{
+          border:solid 1px gray;
+          vertical-align:center;
+          }}
+    </style>
+</head>
+"""
+        '''HTML headings'''
+        dist = res['info']['opt_dist']
+        html_file += f"""
+<body>
+<div>
+  <div class="fs_res">
+    <h2>{res['info']['comp_name']}</h2>
+    <h2>{res['info']['task_name']}</h2>
+    <h3>{res['info']['date']}</h3>
+    <h4>{res['info']['task_type']} {dist} km</h4>
+    <p>{res['file_stats']['status']}</p>
+    <br>
+"""
+
+        '''Task Route table'''
+        html_file += f"""
+    <table class="fs_res">
+      <thead>
+          <thead>
+            <tr>
+              <th class="fs_res">Id</th>
+              <th class="fs_res"></th>
+              <th class="fs_res">Radius</th>
+              <th class="fs_res">Dist.</th>
+              <th class="fs_res">Description</th>
+            </tr>
+          </thead>
+      </thead>
+      <tbody>
+"""
+        for wp in res['route']:
+            html_file += f"""
+        <tr>
+          <td class="fs_res">{wp['name']}</td>
+          <td class="fs_res" align="right">{wp['type']}</td>
+          <td class="fs_res">{wp['radius']}</td>
+          <td class="fs_res" align="right">{wp['cumulative_dist']}</td>
+          <td class="fs_res" align="right">{wp['description']}</td>
+        </tr>
+"""
+        html_file += f"""
+      </tbody>
+    </table>
+    <h3>Start: {res['info']['start_time']}</h3>
+    <h3>{'Deadline: ' + res['info']['task_deadline'] if not res['info']['stopped_time'] 
+        else 'Stopped: ' + res['info']['stopped_time']}</h3>
+  </div>
+  <br>
+"""
+
+        '''Main results table'''
+        html_file += f"""
+    <table class="fs_res">
+      <thead>
+        <tr>
+          <th class="fs_res">#</th>
+          <th class="fs_res">Id</th>
+          <th class="fs_res">Name</th>
+          <th class="fs_res">Nat</th>
+          <th class="fs_res">Glider</th>
+          <th class="fs_res">Sponsor</th>
+          <th class="fs_res">Time<br>[h:m:s]</th>
+          <th class="fs_res">Speed<br>[km/h]</th>
+          <th class="fs_res">Distance<br>[km]</th>
+          <th class="fs_res">Dist.<br>Points</th>
+          <th class="fs_res">Lead.<br>Points</th>
+          <th class="fs_res">Time<br>Points</th>
+          <th class="fs_res">Total</th>
+        </tr>
+      </thead>
+"""
+        for p in [x for x in res['results'] if x['result_type'] not in ['abs', 'nyp', 'dnf']]:
+            if p['ESS_time'] and not p['goal_time']:
+                p['ESS_time'] = f"<del>{p['ESS_time']}</del>"
+                p['ss_time'] = f"<del>{p['ss_time']}</del>"
+                p['speed'] = f"<del>{p['speed']}</del>"
+            if float(p['penalty']) > 0:
+                p['score'] = f"<span style='color:red'>*{p['score']}</span>"
+            html_file += f"""
+      <tr class="fs_res_res_row" onmouseover="this.className = 'hover'" onmouseout="this.className='fs_res_res_row'">
+        <td class="fs_res" align="right">{p['rank']}</td>
+        <td class="fs_res">{p['ID']}</td>
+        <td class="fs_res">{p['name']}</td>
+        <td class="fs_res">{p['nat']}</td>
+        <td class="fs_res">{p['glider']}</td>
+        <td class="fs_res">{p['sponsor']}</td>
+        <td class="fs_res">{p['ss_time']}</td>
+        <td class="fs_res" align="right">{p['speed']}</td>
+        <td class="fs_res" align="right">{p['distance']}</td>
+        <td class="fs_res" align="right">{p['distance_score']}</td>
+        <td class="fs_res" align="right">{p['departure_score']}</td>
+        <td class="fs_res" align="right">{p['time_score']}</td>
+        <td class="fs_res" align="right">{p['score']}</td>
+      </tr>
+"""
+        html_file += f"""
+    </table>
+  </div>
+  <br>
+"""
+
+        ''' Comments Table'''
+        if any(p for p in res['results'] if float(p['penalty'] or 0) != 0):
+            html_file += f"""
+  <div class="fs_res"><h4>Penalties:</h4>
+    <br>
+    <table class="fs_res">
+"""
+            for p in [x for x in res['results'] if float(x['penalty']) != 0]:
+                html_file += f"""
+      <tr class="fs_res_res_row">
+        <td class="fs_res">{p['ID']}</td>
+        <td class="fs_res">{p['name']}</td>
+        <td class="fs_res">{p['nat']}</td>
+        <td class="fs_res">{p['comment']}</td>
+      </tr>
+"""
+            html_file += f"""
+    </table>
+  </div>
+  <br>
+"""
+
+        ''' NYP Table'''
+        if any(p for p in res['results'] if p['result_type'] == 'nyp'):
+            html_file += f"""
+  <div class="fs_res"><h4>Not Yet Plotted:</h4>
+    <br>
+    <table class="fs_res">
+"""
+            for p in [x for x in res['results'] if x['result_type'] == 'nyp']:
+                html_file += f"""
+      <tr class="fs_res_res_row">
+        <td class="fs_res">{p['ID']}</td>
+        <td class="fs_res">{p['name']}</td>
+        <td class="fs_res">{p['nat']}</td>
+      </tr>
+"""
+            html_file += f"""
+    </table>
+  </div>
+  <br>
+"""
+
+        ''' ABS DNF Table'''
+        if any(p for p in res['results'] if p['result_type'] in ['abs', 'dnf']):
+            html_file += f"""
+  <div class="fs_res"><h4>Other Pilots:</h4>
+    <br>
+    <table class="fs_res">
+"""
+            for p in [x for x in res['results'] if x['result_type'] in ['abs', 'dnf']]:
+                html_file += f"""
+      <tr class="fs_res_res_row">
+        <td class="fs_res">{p['ID']}</td>
+        <td class="fs_res">{p['name']}</td>
+        <td class="fs_res">{p['nat']}</td>
+        <td class="fs_res">{p['result_type']}</td>
+      </tr>
+"""
+            html_file += f"""
+    </table>
+  </div>
+  <br>
+"""
+
+        ''' Stats Table'''
+        html_file += f"""
+  <div class="fs_res"><h4>Stats:</h4>
+    <br>
+    <table class="fs_res">
+"""
+        for key, value in res['stats'].items():
+            html_file += f"""
+      <tr class="fs_res_res_row">
+        <td class="fs_res">{key}</td>
+        <td class="fs_res">{value}</td>
+      </tr>
+"""
+        html_file += f"""
+    </table>
+  </div>
+  <br>
+"""
+
+        ''' Stats Table'''
+        html_file += f"""
+  <div class="fs_res"><h4>Stats:</h4>
+    <br>
+    <table class="fs_res">
+"""
+        for key, value in res['formula'].items():
+            html_file += f"""
+      <tr class="fs_res_res_row">
+        <td class="fs_res">{key}</td>
+        <td class="fs_res">{value}</td>
+      </tr>
+"""
+        html_file += f"""
+    </table>
+  </div>
+  <br>
+"""
+
+        '''HTML closure'''
+        html_file += f"""
+</div>
+</body>
+</html>
+"""
+
+        '''Write HTML String to file'''
+        with open(filename, "w") as file:
+            file.write(html_file)
+        return html_file
+
 
 class CompResult(object):
     """
@@ -281,6 +543,152 @@ class CompResult(object):
                    'score',
                    'results']
 
+    @staticmethod
+    def to_html(json_file: str):
+        """ create a HTML file from json result file"""
+        from frontendUtils import get_pretty_data
+        res = get_pretty_data(open_json_file(json_file))
+        title = f"{res['info']['comp_name']}"
+        filename = f"{res['info']['comp_name'].replace(' - ', '_').replace(' ', '_')}_after_{res['tasks'][-1]['task_code']}.html"
+
+        '''HTML head'''
+        html_file = f"""
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>{title}</title>
+    <style>
+          tr.fs_res_res_row:hover
+          {{
+          background: yellow;
+          }}
+          div.fs_res
+          {{
+          font-family: Verdana, Arial, Helvetica, sans-serif;
+          font-size: xx-small;
+          }}
+          table.fs_res
+          {{
+          border:solid 1px gray;
+          border-collapse:collapse;
+          font-size: xx-small;
+          }}
+          td.fs_res
+          {{
+          border:solid 1px gray;
+          vertical-align:top;
+          padding:5px;
+          }}
+          th.fs_res
+          {{
+          border:solid 1px gray;
+          vertical-align:center;
+          }}
+    </style>
+</head>
+"""
+        '''HTML headings'''
+        html_file += f"""
+<body>
+<div>
+  <div class="fs_res">
+    <h2>{res['info']['comp_name']} - {res['info']['sanction']} Event</h2>
+    <h3>{res['info']['date_from']} to {res['info']['date_to']}</h3>
+    <h4>{res['info']['comp_site']}</h4>
+    <p>{res['file_stats']['status']}</p>
+    <br>
+"""
+
+        '''Tasks table'''
+        html_file += f"""
+    <table class="fs_res">
+      <thead>
+        <tr>
+          <th class="fs_res"></th>
+          <th class="fs_res"></th>
+          <th class="fs_res">dist.</th>
+          <th class="fs_res">Validity</th>
+        </tr>
+      </thead>
+      <tbody>
+"""
+        for task in res['tasks']:
+            html_file += f"""
+        <tr>
+          <td class="fs_res">{task['task_name']}</td>
+          <td class="fs_res" align="right">{task['date']}</td>
+          <td class="fs_res">{task['opt_dist']} Km</td>
+          <td class="fs_res" align="right">{task['ftv_validity']}</td>
+        </tr>
+"""
+        html_file += f"""
+      </tbody>
+    </table>
+  </div>
+  <br>
+"""
+
+        '''Main results table'''
+        html_file += f"""
+    <table class="fs_res">
+      <thead>
+        <tr>
+          <th class="fs_res">#</th>
+          <th class="fs_res">Id</th>
+          <th class="fs_res">Name</th>
+          <th class="fs_res">Nat</th>
+          <th class="fs_res">Glider</th>
+          <th class="fs_res">Sponsor</th>
+          <th class="fs_res">Total</th>
+"""
+        for t in res['tasks']:
+            html_file += f"""
+          <th class="fs_res">{t['task_code']}</th>
+"""
+        html_file += """
+        </tr>
+      </thead>
+"""
+        for p in res['results']:
+            html_file += f"""
+      <tr class="fs_res_res_row" onmouseover="this.className = 'hover'" onmouseout="this.className='fs_res_res_row'">
+        <td class="fs_res" align="right">{p['rank']}</td>
+        <td class="fs_res">{p['ID']}</td>
+        <td class="fs_res">{p['name']}</td>
+        <td class="fs_res">{p['nat']}</td>
+        <td class="fs_res">{p['glider']}</td>
+        <td class="fs_res">{p['sponsor']}</td>
+        <td class="fs_res">{p['score']}</td>
+"""
+            for idx, t in enumerate(res['tasks']):
+                code = t['task_code']
+                pre, score = p['results'][code]['pre'], p['results'][code]['score']
+                result = score if score == pre else f"{score} <del>{pre}</del>"
+                html_file += f"""
+        <td class="fs_res" align="right">{result}</td>
+"""
+            html_file += f"""
+      </tr>
+"""
+        html_file += f"""
+    </table>
+  </div>
+  <br>
+"""
+
+        '''HTML closure'''
+        html_file += f"""
+</div>
+</body>
+</html>
+"""
+
+        '''Write HTML String to file'''
+        with open(filename, "w") as file:
+            file.write(html_file)
+        return html_file
+
 
 def create_json_file(comp_id, code, elements, task_id=None, status=None, name_suffix=None):
     """
@@ -291,7 +699,6 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None, name_su
          page not display results
     """
     import os
-    import json
     from time import time
     from datetime import datetime
     from Defines import RESULTDIR
@@ -352,7 +759,6 @@ def publish_result(filename_or_refid, ref_id=False):
 def update_result_status(filename: str, status: str):
     from Defines import RESULTDIR
     from pathlib import Path
-    import json
     import time
     '''check if json file exists, and updates it'''
     file = Path(RESULTDIR, filename)
@@ -386,7 +792,6 @@ def update_result_file(filename: str, par_id: int, notification: dict):
     from Defines import RESULTDIR
     from pathlib import Path
     import time
-    import json
     file = Path(RESULTDIR, filename)
     if not file.is_file():
         print(f'Json file {filename} does not exist')
