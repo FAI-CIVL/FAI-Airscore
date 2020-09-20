@@ -91,7 +91,7 @@ def airspace_edit(filename):
         message += 'Attention: There is unknown height units in the file. You should adjust to meters or ' \
                    'feet above sea level'
 
-    airspace_map = map.make_map(airspace_layer=spaces, bbox=bbox)
+    airspace_map = map.make_map(airspace_layer=spaces, show_airspace=True, bbox=bbox)
 
     return render_template('users/airspace_admin_map.html', airspace_list=airspace_list, file=filename,
                            map=airspace_map._repr_html_(), message=message, FL_message=fl_detail)

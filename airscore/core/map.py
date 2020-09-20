@@ -23,8 +23,8 @@ track_style_function = lambda x: {'color': 'red' if x['properties']['Track'] == 
 
 # function to create the map template with optional geojson, circles and points objects
 def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_line=None, margin=0,
-             thermal_layer=False, waypoint_layer=False, extra_tracks=None, airspace_layer=None,
-             infringements=None, bbox=None, trackpoints=None):
+             thermal_layer=False, show_thermal=False, waypoint_layer=False, show_waypoint=False, extra_tracks=None,
+             airspace_layer=None, show_airspace=False, infringements=None, bbox=None, trackpoints=None):
     """Gets elements and layers from Flask, and returns map object"""
     '''creates layers'''
     if points is None:
@@ -66,7 +66,7 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
 
             if thermal_layer:
                 thermals = layer_geojson['geojson']['thermals']
-                thermal_group = FeatureGroup(name='Thermals', show=False)
+                thermal_group = FeatureGroup(name='Thermals', show=show_thermal)
 
                 for t in thermals:
                     # icon = Icon(color='blue', icon_color='black', icon='sync-alt', angle=0, prefix='fas')
@@ -77,7 +77,7 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
 
             if waypoint_layer:
                 waypoints = layer_geojson['geojson']['waypoint_achieved']
-                waypoint_group = FeatureGroup(name='Waypoints Taken', show=False)
+                waypoint_group = FeatureGroup(name='Waypoints Taken', show=show_waypoint)
                 for w in waypoints:
                     waypoint_group.add_child(Marker([w[1], w[0]], popup=Popup(w[6], max_width=300)))
 
@@ -166,7 +166,7 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
         ).add_to(folium_map)
 
     if airspace_layer:
-        airspace_group = FeatureGroup(name='Airspaces', show=False)
+        airspace_group = FeatureGroup(name='Airspaces', show=show_airspace)
         for space in airspace_layer:
             airspace_group.add_child(space)
         if infringements:

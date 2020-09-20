@@ -509,16 +509,20 @@ def map(paridtaskid):
     other_tracks = mapUtils.get_other_tracks(taskid, parid)
 
     '''airspace'''
+    show_airspace = False
     if airspace:
         airspace_layer = read_airspace_map_file(airspace)['spaces']
         infringements = layer['geojson']['infringements']
+        if infringements:
+            show_airspace = True
     else:
         airspace_layer = None
         infringements = None
 
     map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
                    goal_line=goal_line, margin=tolerance, thermal_layer=True, waypoint_layer=True,
-                   airspace_layer=airspace_layer, infringements=infringements, trackpoints=trackpoints)
+                   airspace_layer=airspace_layer, show_airspace=show_airspace, infringements=infringements,
+                   trackpoints=trackpoints)
     waypoint_achieved_list = list(w for w in layer['geojson']['waypoint_achieved'])
     add_tracks = SelectAdditionalTracks()
     add_tracks.track_pilot_list = other_tracks
