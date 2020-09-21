@@ -22,7 +22,7 @@ function populate_comp_overall(compid){
                 columns.push({data: 'fai_id', title:'FAI', defaultContent: '', visible: false});
                 columns.push({data: 'civl_id', title:'CIVL', defaultContent: '', visible: false});
                 columns.push({data: 'name', title:'Name'});
-                columns.push({data: 'nat', title:'NAT', defaultContent: '', visible: false});
+                columns.push({data: 'nat', title:'NAT', name:'NAT', defaultContent: ''});
                 columns.push({data: 'sex', title:'Sex', defaultContent: '', visible: false});
                 columns.push({data: 'glider', title:'Glider', defaultContent: ''});
                 columns.push({data: 'glider_cert', title:'Class', defaultContent: '', visible: false});
@@ -101,18 +101,32 @@ function populate_comp_overall(compid){
                             $('#formula tbody').append(
                                     "<tr><td>Total Validity</td><td>" + json.stats.total_validity + '</td></tr>');
                         }
-                        // remove empty cols
-                        for ( var i=1; i<numCols; i++ ) {
+                        // remove empty cols and NAT if all pilots are from a single country
+                        var natId = table.DataTable().column('NAT:name').index();
+                        var natRef = table.DataTable().column(natId).data()[0];
+                        console.log('Nat idx='+natId);
+                        console.log('Nat ref='+natRef);
+                        for ( var col=1; col<numCols; col++ ) {
                             var empty = true;
-                            table.DataTable().column(i).data().each( function (e, i) {
-                                if (e != "") {
-                                    empty = false;
+                            table.DataTable().column(col).data().each( val => {
+                                if (col == natId) {
+                                    if (val != natRef) {
+                                        console.log(val+'!='+natRef);
+                                        empty = false;
+                                    }
+                                }
+                                else {
+                                    if (val != "") {
+                                        empty = false;
+                                    }
+                                }
+                                if (!empty) {
                                     return false;
                                 }
                             } );
 
                             if (empty) {
-                                table.DataTable().column( i ).visible( false );
+                                table.DataTable().column( col ).visible( false );
                             }
                         }
                         // created date
