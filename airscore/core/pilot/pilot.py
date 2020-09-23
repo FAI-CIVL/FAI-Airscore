@@ -47,7 +47,7 @@ class Pilot(object):
 
     @property
     def pilot_birthdate_str(self):
-        return '' if not self.birthdate else self.birthdate.strftime("%Y-%m-%d")
+        return '' if isinstance(self.birthdate, (type(None), str)) else self.birthdate.strftime("%Y-%m-%d")
 
     @property
     def female(self):
