@@ -1592,3 +1592,37 @@ def _modify_user(user_id):
     return resp
 
 
+
+
+@blueprint.route('/_download/<string:filetype>/<string:filename>', methods=['GET', 'POST'])
+@login_required
+def _download_file(filetype: str, filename: str):
+    from io import BytesIO
+    mem = BytesIO()
+    if filetype == 'participants_html':
+        comp_id = int(filename)
+        file, name = frontendUtils.create_participants_html(comp_id)
+        mimetype = "text/html"
+    elif filetype == 'participants_fsdb':
+        comp_id = int(filename)
+        file, name = frontendUtils.create_participants_fsdb(comp_id)
+        mimetype = "text/xml"
+    elif filetype == 'task_html':
+        file, name = frontendUtils.create_task_html(filename)
+        mimetype = "text/html"
+    elif filetype == 'comp_html':
+        comp_id = int(filename)
+        file, name = frontendUtils.create_comp_html(comp_id)
+        mimetype = "text/html"
+    else:
+        return render_template('500.html')
+    if isinstance(file, str):
+        mem.write(file.encode('utf-8'))
+    else:
+        mem.write(file)
+    mem.seek(0)
+    resp = make_response(send_file(mem, mimetype=mimetype, attachment_filename=name,
+                                   as_attachment=True, cache_timeout=0))
+    resp.set_cookie('ServerProcessCompleteChecker', '', expires=0)
+    return resp
+    # return send_file(mem, mimetype="text/html", attachment_filename='participants.html', as_attachment=True)

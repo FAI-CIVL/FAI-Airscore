@@ -72,6 +72,14 @@ function populate_task_scores(taskid, filename){
                 });
             }
         });
+        console.log("location.href='/users/_download/task_html/"+filename+"'")
+        if ( filename == null ) {
+            document.getElementById('download_task_html').style.display = "none";
+        }
+        else {
+            document.getElementById('download_task_html').style.display = "block";
+            document.getElementById('download_task_html').setAttribute( "onClick", "location.href='/users/_download/task_html/"+filename+"'" );
+        }
     });
 }
 

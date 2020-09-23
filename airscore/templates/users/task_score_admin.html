@@ -30,7 +30,7 @@ Task Scoring Admin
 {% else %}
 <div class='container'>
   <div id='display_file'>
-    <div class='form-row form-group col-md-12'>
+    <div id='task_row' class='form-row form-group col-md-12'>
       <button class='btn btn-primary ml-4' type='button' onclick='Score_modal();'>
         Score Task
       </button>
@@ -46,8 +46,11 @@ Task Scoring Admin
       <button id='change_status' class='btn btn-primary ml-4' type='button' onclick='open_status_modal();'>
         Edit Status
       </button>
+      <button id='download_task_html' class='btn btn-primary ml-4' type='button'>
+        Task HTML
+      </button>
     </div>
-    <div class='form-row form-group col-md-12'>
+    <div id='comp_row' class='form-row form-group col-md-12'>
       <h5 id='comp_header'></h5>
       <button id='comp_unpublish' class='btn btn-danger ml-4' type='button' onclick='comp_unpublish();'>
         Remove
@@ -55,7 +58,10 @@ Task Scoring Admin
       <button id='comp_publish' class='btn btn-danger ml-4' type='button' onclick='comp_publish();'>
         Update
       </button>
-      <p id='comp_publish_spinner'></p>
+      <p id='comp_publish_spinner' style="width: 8rem; min-width: 8rem"></p>
+      <button id='download_comp_html' class='btn btn-primary ml-4' onclick="location.href='/users/_download/comp_html/{{session.compid}}'" type='button'>
+        Comp HTML
+      </button>
     </div>
 
   </div>
@@ -87,7 +93,6 @@ Task Scoring Admin
   </div>
 
 </div>
-</body>
 <!---status-modal starts here--->
 <div id='statusmodal' class='modal fade' tabindex='-1' role='dialog'>
   <div class='modal-dialog' role='document'>
@@ -411,7 +416,6 @@ function FullRescore() {
 
 $(document).ready(function() {
   updateFiles();
-
   // Event listener to the file picker to redraw on input
   $('#file').change(function() {
     var filename = $('#file option:selected').val();

@@ -1149,3 +1149,39 @@ def import_participants_from_fsdb(file: Path, from_CIVL=False) -> list:
         pilot = Participant.from_fsdb(pil, from_CIVL=from_CIVL)
         pilots.append(pilot)
     return pilots
+
+
+def create_participants_html(comp_id: int) -> (str, str) or None:
+    from comp import Comp
+    try:
+        comp = Comp.read(comp_id)
+        return comp.create_participants_html()
+    except Exception:
+        return None
+
+
+def create_participants_fsdb(comp_id: int) -> (str, str) or None:
+    from fsdb import FSDB
+    try:
+        return FSDB.create_participants(comp_id)
+    except Exception:
+        raise
+        return None
+
+
+def create_task_html(file: str) -> (str, str) or None:
+    from result import TaskResult
+    try:
+        return TaskResult.to_html(file)
+    except Exception:
+        return None
+
+
+def create_comp_html(comp_id: int) -> (str, str) or None:
+    from result import CompResult
+    from compUtils import get_comp_json_filename
+    try:
+        file = get_comp_json_filename(comp_id)
+        return CompResult.to_html(file)
+    except Exception:
+        return None

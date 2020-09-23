@@ -479,6 +479,45 @@ class Comp(object):
         ''' order list'''
         self.results = sorted(self.results, key=lambda x: x['score'], reverse=True)
 
+    def create_participants_html(self, write: bool = False):
+        """ create a HTML file from participants list"""
+        from exports.html import HTML
+        from time import time
+        from datetime import datetime
+        title = f"{self.comp_name}"
+        filename = f"{self.comp_name.replace(' - ', '_').replace(' ', '_')}_participants.html"
+        self.participants = get_participants(self.comp_id)
+        participants = sorted(self.participants,
+                              key=lambda x: x.ID if all(el.ID for el in self.participants) else x.name)
+        num = len(participants)
+        html_file = HTML(filename)
+        '''HTML head'''
+        html_file.add_head(title)
+        '''HTML headings'''
+        html_file.add_headings([f"{self.comp_name} - {self.sanction} Event",
+                                f"{self.date_from} to {self.date_to}",
+                                f"{self.comp_site}"])
+
+        '''Participants table'''
+        thead = ['Id', 'Name', 'Nat', 'Glider', 'Sponsor']
+        keys = ['ID', 'name', 'nat', 'glider', 'sponsor']
+        right_align = [0]
+        tbody = []
+        for p in participants:
+            tbody.append([getattr(p, k) or '' for k in keys])
+        html_file.add_table(title=f'{num} Participants', css_class='results', right_align=right_align, thead=thead, tbody=tbody)
+
+        '''HTML footer'''
+        timestamp = int(time())  # timestamp of generation
+        dt = datetime.fromtimestamp(timestamp).strftime('%Y%m%d_%H%M%S')
+        html_file.add_footer(dt)
+
+        if write:
+            '''Write HTML String to file'''
+            html_file.write()
+        else:
+            return html_file.content, html_file.filename
+
 
 def delete_comp(comp_id, files=True):
     """delete all database entries and files on disk related to comp"""

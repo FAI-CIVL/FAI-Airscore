@@ -55,6 +55,7 @@ function populate_registered_pilot_details(compid){
              ],
               initComplete: function(settings, json) {
                    $('#total_pilots').text('Total pilots registered: ' + json.data.length );
+                   if(json.data.length > 0){ $('#download_section').show(); }else{ $('#download_section').hide(); }
                    $('#total_external_pilots').text(json.external);
                    $('#delete_external').hide();
                    if(json.external > 0){ $('#delete_external').show();}

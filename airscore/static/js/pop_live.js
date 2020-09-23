@@ -44,6 +44,10 @@ function populate_live(taskid){
                             if (empty) {
                                 table.DataTable().column( i ).visible( false );
                             }
+                            const titles = ['#', 'ID']
+                            if (titles.includes((table.DataTable().column( i ).title)) {
+
+                            }
                         }
                         // comp info
                         text = json.info.comp_name + " " + json.info.task_name;
