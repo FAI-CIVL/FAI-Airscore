@@ -1,0 +1,64 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>{{ title }}</title>
+    <style>
+          table.results tbody tr:hover {
+            background: yellow;
+          }
+          div {
+            font-family: Verdana, Arial, Helvetica, sans-serif;
+            font-size: xx-small;
+          }
+          div.main, div.results, div.simple, div.footer, div.noborder {
+            margin-bottom: 2em;
+          }
+          div.route {
+            margin-bottom: 0.5em;
+          }
+          table.simple, table.route {
+            border:solid 1px gray;
+            border-collapse:collapse;
+            font-size: xx-small;
+          }
+          table.results {
+            border:solid 1px gray;
+            border-collapse:collapse;
+            font-size: xx-small;
+          }
+          table.noborder {
+            border:none;
+            font-size: xx-small;
+          }
+          td.simple, td.results, td.route {
+            border:solid 1px gray;
+            vertical-align:top;
+            padding:5px;
+          }
+          td.bold {
+            font-weight: bold;
+          }
+          th.simple, th.results, th.route {
+            border:solid 1px gray;
+            vertical-align:center;
+          }
+          td.right, th.right {
+            text-align:right;
+          }
+    </style>
+</head>
+<body>
+<div id='main' class="main">
+<div id="headings" class="simple">
+    {% block headings %}
+    {% endblock %}
+</div>
+    {% block content %}
+    {% endblock %}
+</div>
+<div id='footer' class='footer'>
+  <h4>Created by Airscore on {{ timestamp }}</h4>
+</div>
+</body>
+</html>
