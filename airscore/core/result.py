@@ -183,24 +183,40 @@ class TaskResult:
                     'pil_id']
 
     @staticmethod
-    def to_html(json_file: str, write: bool = False):
+    def to_html(json_file: str) -> (str, dict):
         """ create a HTML file from json result file"""
         from frontendUtils import get_pretty_data
-        from exports.html import HTML
         res = get_pretty_data(open_json_file(json_file))
         title = f"{res['info']['comp_name']} - {res['info']['task_name']}"
         filename = f"{res['info']['comp_name'].replace(' - ', '_').replace(' ', '_')}_T{res['info']['task_num']}.html"
-        html_file = HTML(filename)
-        '''HTML head'''
-        html_file.add_head(title)
+
         '''HTML headings'''
         dist = res['info']['opt_dist']
         task_type = f"{res['info']['task_type']} {dist}"
-        html_file.add_headings([res['info']['comp_name'], res['info']['task_name'], res['info']['date'],
-                                task_type, res['file_stats']['status']])
+        headings = [res['info']['comp_name'], res['info']['task_name'], res['info']['date'],
+                         task_type, res['file_stats']['status']]
 
         '''Task Route table'''
-        html_file.add_route_table(res['info'], res['route'])
+        right_align = [2, 3]
+        thead = ['id', '', 'Radius', 'Dist.', 'Description']
+        rows = []
+        for wp in res['route']:
+            rows.append([wp['name'], wp['type'], wp['radius'], wp['cumulative_dist'], wp['description']])
+
+        route = dict(css_class='route', right_align=right_align, thead=thead, tbody=rows)
+
+        ''' Times table'''
+        times = []
+        if not res['info']['start_iteration']:
+            times.append(['Startgate:', res['info']['start_time']])
+        else:
+            for idx, el in enumerate(res['info']['startgates']):
+                times.append(['Startgates:' if idx == 0 else ' ', el])
+        if not res['info']['stopped_time']:
+            times.append(['Deadline:', res['info']['task_deadline']])
+        else:
+            times.append(['Stopped:', res['info']['stopped_time']])
+        times = dict(css_class='bold noborder', tbody=times)
 
         '''Main results table'''
         thead = ['#', 'Id', 'Name', 'Nat', 'Glider', 'Sponsor']
@@ -241,7 +257,9 @@ class TaskResult:
             if float(p['penalty']) > 0:
                 p['score'] = f"<span style='color:red'>*{p['score']}</span>"
             tbody.append([p[k] for k in keys])
-        html_file.add_table(css_class='results', right_align=right_align, thead=thead, tbody=tbody)
+        results = dict(css_class='results', right_align=right_align, thead=thead, tbody=tbody)
+
+        tables = [route, times, results]
 
         ''' Comments Table'''
         if any(p for p in res['results'] if float(p['penalty'] or 0) != 0):
@@ -249,7 +267,8 @@ class TaskResult:
             right_align = [0]
             for p in [x for x in res['results'] if float(x['penalty'] or 0) != 0]:
                 comments.append([p['ID'], p['name'], p['nat'], p['comment']])
-            html_file.add_table(title='Penalties:', css_class='results', right_align=right_align, tbody=comments)
+            comments = dict(title='Penalties:', css_class='results', right_align=right_align, tbody=comments)
+            tables.append(comments)
 
         ''' NYP Table'''
         if any(p for p in res['results'] if p['result_type'] == 'nyp'):
@@ -257,7 +276,8 @@ class TaskResult:
             right_align = [0]
             for p in [x for x in res['results'] if x['result_type'] == 'nyp']:
                 nyp.append([p['ID'], p['name'], p['nat']])
-            html_file.add_table(title='Not Yet Plotted:', css_class='simple', right_align=right_align, tbody=nyp)
+            nyp = dict(title='Not Yet Plotted:', css_class='simple', right_align=right_align, tbody=nyp)
+            tables.append(nyp)
 
         ''' ABS DNF Table'''
         if any(p for p in res['results'] if p['result_type'] in ['abs', 'dnf']):
@@ -265,30 +285,28 @@ class TaskResult:
             right_align = [0]
             for p in [x for x in res['results'] if x['result_type'] in ['abs', 'dnf']]:
                 others.append([p['ID'], p['name'], p['nat'], p['result_type']])
-            html_file.add_table(title='Other Pilots:', css_class='simple', right_align=right_align, tbody=others)
+            absdnf = dict(title='Other Pilots:', css_class='simple', right_align=right_align, tbody=others)
+            tables.append(absdnf)
 
         ''' Stats Table'''
         stats = []
         right_align = [1]
         for key, value in res['stats'].items():
             stats.append([key, value])
-        html_file.add_table(title='Stats:', css_class='simple', right_align=right_align, tbody=stats)
+        stats = dict(title='Stats:', css_class='simple', right_align=right_align, tbody=stats)
+        tables.append(stats)
 
         ''' Formula Table'''
         formula = []
         right_align = [1]
         for key, value in res['formula'].items():
             formula.append([key, value])
-        html_file.add_table(title='Formula:', css_class='simple', right_align=right_align, tbody=formula)
+        formula = dict(title='Formula:', css_class='simple', right_align=right_align, tbody=formula)
 
-        '''HTML footer'''
-        html_file.add_footer(res['file_stats']['timestamp'])
+        tables.append(formula)
+        timestamp = res['file_stats']['timestamp']
 
-        if write:
-            '''Write HTML String to file'''
-            html_file.write()
-        else:
-            return html_file.content, html_file.filename
+        return filename, dict(title=title, headings=headings, tables=tables, timestamp=timestamp)
 
 
 class CompResult(object):
@@ -391,20 +409,17 @@ class CompResult(object):
                    'results']
 
     @staticmethod
-    def to_html(json_file: str, write: bool = False):
+    def to_html(json_file: str) -> (str, dict):
         """ create a HTML file from json result file"""
         from frontendUtils import get_pretty_data
-        from exports.html import HTML
         res = get_pretty_data(open_json_file(json_file))
         title = f"{res['info']['comp_name']}"
         filename = f"{res['info']['comp_name'].replace(' - ', '_').replace(' ', '_')}_after_{res['tasks'][-1]['task_code']}.html"
-        html_file = HTML(filename)
-        '''HTML head'''
-        html_file.add_head(title)
+
         '''HTML headings'''
-        html_file.add_headings([f"{res['info']['comp_name']} - {res['info']['sanction']} Event",
-                                f"{res['info']['date_from']} to {res['info']['date_to']}",
-                                f"{res['info']['comp_site']}", f"{res['file_stats']['status']}"])
+        headings = [f"{res['info']['comp_name']} - {res['info']['sanction']} Event",
+                    f"{res['info']['date_from']} to {res['info']['date_to']}",
+                    f"{res['info']['comp_site']}", f"{res['file_stats']['status']}"]
 
         '''Tasks table'''
         tasks = []
@@ -414,7 +429,7 @@ class CompResult(object):
             row = [t['task_name'], t['date'], t['opt_dist'],
                    t['ftv_validity'] if res['formula']['overall_validity'] == 'ftv' else t['day_quality']]
             tasks.append(row)
-        html_file.add_table(title='Tasks', css_class='simple', right_align=right_align, thead=thead, tbody=tasks)
+        tasks = dict(title='Tasks', css_class='simple', right_align=right_align, thead=thead, tbody=tasks)
 
         '''Main results table'''
         thead = ['#', 'Id', 'Name', 'Nat', 'Glider', 'Sponsor', 'Total']
@@ -432,16 +447,11 @@ class CompResult(object):
                 result = score if score == pre else f"{score} <del>{pre}</del>"
                 row.append(result)
             tbody.append(row)
-        html_file.add_table(css_class='results', right_align=right_align, thead=thead, tbody=tbody)
+        results = dict(css_class='results', right_align=right_align, thead=thead, tbody=tbody)
+        tables = [tasks, results]
+        timestamp = res['file_stats']['timestamp']
 
-        '''HTML footer'''
-        html_file.add_footer(res['file_stats']['timestamp'])
-
-        if write:
-            '''Write HTML String to file'''
-            html_file.write()
-        else:
-            return html_file.content, html_file.filename
+        return filename, dict(title=title, headings=headings, tables=tables, timestamp=timestamp)
 
 
 def create_json_file(comp_id, code, elements, task_id=None, status=None, name_suffix=None):
@@ -739,7 +749,7 @@ def pretty_format_results(content, timeoffset=0, td=0, cd=0):
                     # Formatting Numbers
                     elif key in percentage:
                         '''formatting percentage'''
-                        v = float(value if not key == 'validity_param' else 1-value)
+                        v = float(value if not key == 'validity_param' else 1 - value)
                         formatted[key] = f"{c_round(v * 100, 2):.2f}%"
                     elif str(key).endswith(validity):
                         '''formatting formula validity'''

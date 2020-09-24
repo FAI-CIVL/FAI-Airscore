@@ -501,14 +501,14 @@ class FSDB(object):
                            xml_declaration=True,
                            encoding='UTF-8')
 
-        return fsdb, self.filename
+        return self.filename, fsdb
 
     def save_file(self, filename: str = None):
         """write fsdb file to results folder, with default filename:
             comp_code_datetime.fsdb"""
         from Defines import RESULTDIR
         from pathlib import Path
-        fsdb, _ = self.to_file()
+        _, fsdb = self.to_file()
         if not filename:
             filename = self.filename
         file = Path(RESULTDIR, filename)

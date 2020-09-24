@@ -75,7 +75,7 @@ class Comp(object):
         self.igc_config_file = None  # config yaml for igc_lib. This setting will be passed on to new tasks
         self.airspace_check = False  # BOOL airspace check. This setting will be passed on to new tasks
         self.check_launch = check_launch  # check launch flag. whether we check that pilots leave from launch. This setting will be passed on to new tasks
-        self.self_register = PILOT_DB and SELF_REG_DEFAULT # set to true if we have pilot DB on and self reg on by default
+        self.self_register = PILOT_DB and SELF_REG_DEFAULT  # set to true if we have pilot DB on and self reg on by default
         self.check_g_record = False
 
         # self.formula                    = Formula.read(self.comp_id) if self.comp_id else None
@@ -479,24 +479,21 @@ class Comp(object):
         ''' order list'''
         self.results = sorted(self.results, key=lambda x: x['score'], reverse=True)
 
-    def create_participants_html(self, write: bool = False):
+    def create_participants_html(self) -> (str, dict):
         """ create a HTML file from participants list"""
-        from exports.html import HTML
         from time import time
-        from datetime import datetime
+        from calcUtils import epoch_to_string
         title = f"{self.comp_name}"
         filename = f"{self.comp_name.replace(' - ', '_').replace(' ', '_')}_participants.html"
         self.participants = get_participants(self.comp_id)
         participants = sorted(self.participants,
                               key=lambda x: x.ID if all(el.ID for el in self.participants) else x.name)
         num = len(participants)
-        html_file = HTML(filename)
-        '''HTML head'''
-        html_file.add_head(title)
+
         '''HTML headings'''
-        html_file.add_headings([f"{self.comp_name} - {self.sanction} Event",
-                                f"{self.date_from} to {self.date_to}",
-                                f"{self.comp_site}"])
+        headings = [f"{self.comp_name} - {self.sanction} Event",
+                    f"{self.date_from} to {self.date_to}",
+                    f"{self.comp_site}"]
 
         '''Participants table'''
         thead = ['Id', 'Name', 'Nat', 'Glider', 'Sponsor']
@@ -505,18 +502,13 @@ class Comp(object):
         tbody = []
         for p in participants:
             tbody.append([getattr(p, k) or '' for k in keys])
-        html_file.add_table(title=f'{num} Participants', css_class='results', right_align=right_align, thead=thead, tbody=tbody)
+        participants = dict(title=f'{num} Participants', css_class='simple', right_align=right_align, thead=thead,
+                            tbody=tbody)
 
-        '''HTML footer'''
-        timestamp = int(time())  # timestamp of generation
-        dt = datetime.fromtimestamp(timestamp).strftime('%Y%m%d_%H%M%S')
-        html_file.add_footer(dt)
+        dt = int(time())  # timestamp of generation
+        timestamp = epoch_to_string(dt, self.time_offset)
 
-        if write:
-            '''Write HTML String to file'''
-            html_file.write()
-        else:
-            return html_file.content, html_file.filename
+        return filename, dict(title=title, headings=headings, tables=[participants], timestamp=timestamp)
 
 
 def delete_comp(comp_id, files=True):
@@ -543,4 +535,3 @@ def delete_comp(comp_id, files=True):
         db.query(FC).filter_by(comp_id=comp_id).delete(synchronize_session=False)
         db.query(TblCompetition).filter_by(comp_id=comp_id).delete(synchronize_session=False)
         db.commit()
-

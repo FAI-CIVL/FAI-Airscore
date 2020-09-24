@@ -1601,19 +1601,28 @@ def _download_file(filetype: str, filename: str):
     mem = BytesIO()
     if filetype == 'participants_html':
         comp_id = int(filename)
-        file, name = frontendUtils.create_participants_html(comp_id)
+        name, content = frontendUtils.create_participants_html(comp_id)
         mimetype = "text/html"
+        file = render_template('/users/export_template.html',
+                               title=content['title'], headings=content['headings'], tables=content['tables'],
+                               timestamp=content['timestamp'])
     elif filetype == 'participants_fsdb':
         comp_id = int(filename)
-        file, name = frontendUtils.create_participants_fsdb(comp_id)
+        name, file = frontendUtils.create_participants_fsdb(comp_id)
         mimetype = "text/xml"
     elif filetype == 'task_html':
-        file, name = frontendUtils.create_task_html(filename)
+        name, content = frontendUtils.create_task_html(filename)
         mimetype = "text/html"
+        file = render_template('/users/export_template.html',
+                               title=content['title'], headings=content['headings'], tables=content['tables'],
+                               timestamp=content['timestamp'])
     elif filetype == 'comp_html':
         comp_id = int(filename)
-        file, name = frontendUtils.create_comp_html(comp_id)
+        name, content = frontendUtils.create_comp_html(comp_id)
         mimetype = "text/html"
+        file = render_template('/users/export_template.html',
+                               title=content['title'], headings=content['headings'], tables=content['tables'],
+                               timestamp=content['timestamp'])
     else:
         return render_template('500.html')
     if isinstance(file, str):
