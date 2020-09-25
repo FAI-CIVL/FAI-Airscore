@@ -1597,41 +1597,36 @@ def _modify_user(user_id):
 @blueprint.route('/_download/<string:filetype>/<string:filename>', methods=['GET', 'POST'])
 @login_required
 def _download_file(filetype: str, filename: str):
-    from io import BytesIO
-    mem = BytesIO()
-    if filetype == 'participants_html':
-        comp_id = int(filename)
-        name, content = frontendUtils.create_participants_html(comp_id)
-        mimetype = "text/html"
-        file = render_template('/users/export_template.html',
-                               title=content['title'], headings=content['headings'], tables=content['tables'],
-                               timestamp=content['timestamp'])
-    elif filetype == 'participants_fsdb':
+    if 'html' in filetype:
+        if filetype == 'participants_html':
+            comp_id = int(filename)
+            name, content = frontendUtils.create_participants_html(comp_id)
+        elif filetype == 'task_html':
+            name, content = frontendUtils.create_task_html(filename)
+        elif filetype == 'comp_html':
+            comp_id = int(filename)
+            name, content = frontendUtils.create_comp_html(comp_id)
+        else:
+            return render_template('500.html')
+
+        if isinstance(content, list):
+            ''' we need to create a zip file with multiple result files'''
+            for el in content:
+                el['content'] = frontendUtils.render_html_file(el['content'])
+            file = frontendUtils.create_inmemory_zipfile(content)
+            mimetype = "application/zip"
+        else:
+            file = frontendUtils.render_html_file(content)
+            mimetype = "text/html"
+
+    elif 'fsdb' in filetype:
         comp_id = int(filename)
         name, file = frontendUtils.create_participants_fsdb(comp_id)
         mimetype = "text/xml"
-    elif filetype == 'task_html':
-        name, content = frontendUtils.create_task_html(filename)
-        mimetype = "text/html"
-        file = render_template('/users/export_template.html',
-                               title=content['title'], headings=content['headings'], tables=content['tables'],
-                               timestamp=content['timestamp'])
-    elif filetype == 'comp_html':
-        comp_id = int(filename)
-        name, content = frontendUtils.create_comp_html(comp_id)
-        mimetype = "text/html"
-        file = render_template('/users/export_template.html',
-                               title=content['title'], headings=content['headings'], tables=content['tables'],
-                               timestamp=content['timestamp'])
     else:
         return render_template('500.html')
-    if isinstance(file, str):
-        mem.write(file.encode('utf-8'))
-    else:
-        mem.write(file)
-    mem.seek(0)
+    mem = frontendUtils.create_stream_content(file)
     resp = make_response(send_file(mem, mimetype=mimetype, attachment_filename=name,
                                    as_attachment=True, cache_timeout=0))
     resp.set_cookie('ServerProcessCompleteChecker', '', expires=0)
     return resp
-    # return send_file(mem, mimetype="text/html", attachment_filename='participants.html', as_attachment=True)

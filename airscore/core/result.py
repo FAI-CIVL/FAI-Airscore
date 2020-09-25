@@ -183,18 +183,21 @@ class TaskResult:
                     'pil_id']
 
     @staticmethod
-    def to_html(json_file: str) -> (str, dict):
+    def to_html(json_file: str) -> (str, dict or list):
         """ create a HTML file from json result file"""
         from frontendUtils import get_pretty_data
-        res = get_pretty_data(open_json_file(json_file))
-        title = f"{res['info']['comp_name']} - {res['info']['task_name']}"
-        filename = f"{res['info']['comp_name'].replace(' - ', '_').replace(' ', '_')}_T{res['info']['task_num']}.html"
+        import re
 
-        '''HTML headings'''
-        dist = res['info']['opt_dist']
-        task_type = f"{res['info']['task_type']} {dist}"
-        headings = [res['info']['comp_name'], res['info']['task_name'], res['info']['date'],
-                         task_type, res['file_stats']['status']]
+        res = get_pretty_data(open_json_file(json_file))
+        comp_name = res['info']['comp_name']
+        task_name = res['info']['task_name']
+        task_code = f"T{res['info']['task_num']}"
+        if len(res['classes']) > 0:
+            classes = res['classes']
+            zipfile = f"{re.sub('[ ,.-]', '_', comp_name)}_{task_code}.zip"
+        else:
+            zipfile = False
+            classes = [{'name': ''}]
 
         '''Task Route table'''
         right_align = [2, 3]
@@ -202,7 +205,6 @@ class TaskResult:
         rows = []
         for wp in res['route']:
             rows.append([wp['name'], wp['type'], wp['radius'], wp['cumulative_dist'], wp['description']])
-
         route = dict(css_class='route', right_align=right_align, thead=thead, tbody=rows)
 
         ''' Times table'''
@@ -218,95 +220,125 @@ class TaskResult:
             times.append(['Stopped:', res['info']['stopped_time']])
         times = dict(css_class='bold noborder', tbody=times)
 
-        '''Main results table'''
+        '''Main results table header'''
         thead = ['#', 'Id', 'Name', 'Nat', 'Glider', 'Sponsor']
-        keys = ['rank', 'ID', 'name', 'nat', 'glider', 'sponsor']
-        right_align = [0, 1]
+        results_keys = []
+        res_align = [0, 1]
+
         if len(res['info']['startgates']) > 1:
             thead.extend(['SS', 'ES'])
-            keys.extend(['SSS_time', 'ESS_time'])
+            results_keys.extend(['SSS_time', 'ESS_time'])
         thead.extend(['time', 'speed', 'distance'])
-        keys.extend(['ss_time', 'speed', 'distance'])
-        right_align.extend([len(thead) - 2, len(thead) - 1])
+        results_keys.extend(['ss_time', 'speed', 'distance'])
+        res_align.extend([len(thead) - 2, len(thead) - 1])
         if not res['formula']['formula_distance'] == 'off':
             thead.append('Dist. Pts')
-            keys.append('distance_score')
-            right_align.append(len(thead) - 1)
+            results_keys.append('distance_score')
+            res_align.append(len(thead) - 1)
         if not res['formula']['formula_departure'] == 'off':
             dep_label = 'Lead. Pts' if res['formula']['formula_departure'] == 'leadout' else 'Dep. Pts'
             thead.append(dep_label)
-            keys.append('departure_score')
-            right_align.append(len(thead) - 1)
+            results_keys.append('departure_score')
+            res_align.append(len(thead) - 1)
         if not res['formula']['formula_time'] == 'off':
             thead.append('Time Pts')
-            keys.append('time_score')
-            right_align.append(len(thead) - 1)
+            results_keys.append('time_score')
+            res_align.append(len(thead) - 1)
         if not res['formula']['formula_arrival'] == 'off':
             thead.append('Arr. Pts')
-            keys.append('arrival_score')
-            right_align.append(len(thead) - 1)
+            results_keys.append('arrival_score')
+            res_align.append(len(thead) - 1)
         thead.append('Total')
-        keys.append('score')
-        right_align.append(len(thead) - 1)
-        tbody = []
-        for p in [x for x in res['results'] if x['result_type'] not in ['abs', 'nyp', 'dnf']]:
-            if p['ESS_time'] and not p['goal_time']:
-                p['ESS_time'] = f"<del>{p['ESS_time']}</del>"
-                p['ss_time'] = f"<del>{p['ss_time']}</del>"
-                p['speed'] = f"<del>{p['speed']}</del>"
-            if float(p['penalty']) > 0:
-                p['score'] = f"<span style='color:red'>*{p['score']}</span>"
-            tbody.append([p[k] for k in keys])
-        results = dict(css_class='results', right_align=right_align, thead=thead, tbody=tbody)
+        results_keys.append('score')
+        res_align.append(len(thead) - 1)
 
-        tables = [route, times, results]
+        response = []
+        for idx, c in enumerate(classes):
+            class_name = comp_name if not c['name'] else f"{comp_name} {c['name']}"
+            title = f"{class_name} - {task_name}"
+            filename = f"{re.sub('[ ,.-]', '_', class_name)}_{task_code}.html"
 
-        ''' Comments Table'''
-        if any(p for p in res['results'] if float(p['penalty'] or 0) != 0):
-            comments = []
-            right_align = [0]
-            for p in [x for x in res['results'] if float(x['penalty'] or 0) != 0]:
-                comments.append([p['ID'], p['name'], p['nat'], p['comment']])
-            comments = dict(title='Penalties:', css_class='results', right_align=right_align, tbody=comments)
-            tables.append(comments)
+            '''HTML headings'''
+            dist = res['info']['opt_dist']
+            task_type = f"{res['info']['task_type']} {dist}"
+            headings = [class_name, task_name, res['info']['date'], task_type, res['file_stats']['status']]
 
-        ''' NYP Table'''
-        if any(p for p in res['results'] if p['result_type'] == 'nyp'):
-            nyp = []
-            right_align = [0]
-            for p in [x for x in res['results'] if x['result_type'] == 'nyp']:
-                nyp.append([p['ID'], p['name'], p['nat']])
-            nyp = dict(title='Not Yet Plotted:', css_class='simple', right_align=right_align, tbody=nyp)
-            tables.append(nyp)
+            if idx > 0:
+                ''' manage sub-rankings'''
+                pilots = [p for p in res['results'] if p['glider_cert'] in c['cert']]
+                keys = [c['limit'], 'ID', 'name', 'nat', 'glider', 'sponsor']
+            else:
+                pilots = [p for p in res['results']]
+                keys = ['rank', 'ID', 'name', 'nat', 'glider', 'sponsor']
+            keys.extend(results_keys)
 
-        ''' ABS DNF Table'''
-        if any(p for p in res['results'] if p['result_type'] in ['abs', 'dnf']):
-            others = []
-            right_align = [0]
-            for p in [x for x in res['results'] if x['result_type'] in ['abs', 'dnf']]:
-                others.append([p['ID'], p['name'], p['nat'], p['result_type']])
-            absdnf = dict(title='Other Pilots:', css_class='simple', right_align=right_align, tbody=others)
-            tables.append(absdnf)
+            '''Main results table body'''
+            tbody = []
+            for p in [x for x in pilots if x['result_type'] not in ['abs', 'nyp', 'dnf']]:
+                if idx == 0:
+                    if p['ESS_time'] and not p['goal_time']:
+                        p['ESS_time'] = f"<del>{p['ESS_time']}</del>"
+                        p['ss_time'] = f"<del>{p['ss_time']}</del>"
+                        p['speed'] = f"<del>{p['speed']}</del>"
+                    if float(p['penalty']) > 0:
+                        p['score'] = f"<span style='color:red'>*{p['score']}</span>"
+                tbody.append([p[k] for k in keys])
+            results = dict(css_class='results', right_align=res_align, thead=thead, tbody=tbody)
 
-        ''' Stats Table'''
-        stats = []
-        right_align = [1]
-        for key, value in res['stats'].items():
-            stats.append([key, value])
-        stats = dict(title='Stats:', css_class='simple', right_align=right_align, tbody=stats)
-        tables.append(stats)
+            tables = [route, times, results]
 
-        ''' Formula Table'''
-        formula = []
-        right_align = [1]
-        for key, value in res['formula'].items():
-            formula.append([key, value])
-        formula = dict(title='Formula:', css_class='simple', right_align=right_align, tbody=formula)
+            ''' Comments Table'''
+            if any(p for p in pilots if float(p['penalty'] or 0) != 0):
+                comments = []
+                right_align = [0]
+                for p in [x for x in pilots if float(x['penalty'] or 0) != 0]:
+                    comments.append([p['ID'], p['name'], p['nat'], p['comment']])
+                comments = dict(title='Penalties:', css_class='results', right_align=right_align, tbody=comments)
+                tables.append(comments)
 
-        tables.append(formula)
-        timestamp = res['file_stats']['timestamp']
+            ''' NYP Table'''
+            if any(p for p in pilots if p['result_type'] == 'nyp'):
+                nyp = []
+                right_align = [0]
+                for p in [x for x in pilots if x['result_type'] == 'nyp']:
+                    nyp.append([p['ID'], p['name'], p['nat']])
+                nyp = dict(title='Not Yet Plotted:', css_class='simple', right_align=right_align, tbody=nyp)
+                tables.append(nyp)
 
-        return filename, dict(title=title, headings=headings, tables=tables, timestamp=timestamp)
+            ''' ABS DNF Table'''
+            if any(p for p in pilots if p['result_type'] in ['abs', 'dnf']):
+                others = []
+                right_align = [0]
+                for p in [x for x in pilots if x['result_type'] in ['abs', 'dnf']]:
+                    others.append([p['ID'], p['name'], p['nat'], p['result_type']])
+                absdnf = dict(title='Other Pilots:', css_class='simple', right_align=right_align, tbody=others)
+                tables.append(absdnf)
+
+            ''' Stats Table'''
+            stats = []
+            right_align = [1]
+            for key, value in res['stats'].items():
+                stats.append([key, value])
+            stats = dict(title='Stats:', css_class='simple', right_align=right_align, tbody=stats)
+            tables.append(stats)
+
+            ''' Formula Table'''
+            formula = []
+            right_align = [1]
+            for key, value in res['formula'].items():
+                formula.append([key, value])
+            formula = dict(title='Formula:', css_class='simple', right_align=right_align, tbody=formula)
+
+            tables.append(formula)
+            timestamp = res['file_stats']['timestamp']
+            response.append(dict(filename=filename,
+                                 content=dict(title=title, headings=headings, tables=tables, timestamp=timestamp)))
+
+        if zipfile:
+            return zipfile, response
+        else:
+            result = response.pop()
+            return result['filename'], result['content']
 
 
 class CompResult(object):
@@ -409,17 +441,19 @@ class CompResult(object):
                    'results']
 
     @staticmethod
-    def to_html(json_file: str) -> (str, dict):
+    def to_html(json_file: str) -> (str, dict or list):
         """ create a HTML file from json result file"""
         from frontendUtils import get_pretty_data
-        res = get_pretty_data(open_json_file(json_file))
-        title = f"{res['info']['comp_name']}"
-        filename = f"{res['info']['comp_name'].replace(' - ', '_').replace(' ', '_')}_after_{res['tasks'][-1]['task_code']}.html"
+        import re
 
-        '''HTML headings'''
-        headings = [f"{res['info']['comp_name']} - {res['info']['sanction']} Event",
-                    f"{res['info']['date_from']} to {res['info']['date_to']}",
-                    f"{res['info']['comp_site']}", f"{res['file_stats']['status']}"]
+        res = get_pretty_data(open_json_file(json_file))
+        comp_name = f"{res['info']['comp_name']}"
+        if len(res['classes']) > 0:
+            classes = res['classes']
+            zipfile = f"{re.sub('[ ,.-]', '_', comp_name)}_after_{res['tasks'][-1]['task_code']}.zip"
+        else:
+            zipfile = False
+            classes = [{'name': ''}]
 
         '''Tasks table'''
         tasks = []
@@ -433,25 +467,51 @@ class CompResult(object):
 
         '''Main results table'''
         thead = ['#', 'Id', 'Name', 'Nat', 'Glider', 'Sponsor', 'Total']
-        keys = ['rank', 'ID', 'name', 'nat', 'glider', 'sponsor', 'score']
         right_align = [0, 1, 6]
         for t in res['tasks']:
             thead.append(t['task_code'])
             right_align.append(len(thead) - 1)
-        tbody = []
-        for p in res['results']:
-            row = [p[k] for k in keys]
-            for idx, t in enumerate(res['tasks']):
-                code = t['task_code']
-                pre, score = p['results'][code]['pre'], p['results'][code]['score']
-                result = score if score == pre else f"{score} <del>{pre}</del>"
-                row.append(result)
-            tbody.append(row)
-        results = dict(css_class='results', right_align=right_align, thead=thead, tbody=tbody)
-        tables = [tasks, results]
-        timestamp = res['file_stats']['timestamp']
 
-        return filename, dict(title=title, headings=headings, tables=tables, timestamp=timestamp)
+        response = []
+        for idx, c in enumerate(classes):
+            title = comp_name if not c['name'] else f"{comp_name} {c['name']}"
+            filename = f"{re.sub('[ ,.-]', '_', title)}_after_{res['tasks'][-1]['task_code']}.html"
+
+            '''HTML headings'''
+            headings = [f"{res['info']['comp_name']} - {res['info']['sanction']} Event",
+                        f"{c['name']}",
+                        f"{res['info']['date_from']} to {res['info']['date_to']}",
+                        f"{res['info']['comp_site']}",
+                        f"{res['file_stats']['status']}"]
+
+            if idx > 0:
+                ''' manage sub-rankings'''
+                pilots = [p for p in res['results'] if p['glider_cert'] in c['cert']]
+                keys = [c['limit'], 'ID', 'name', 'nat', 'glider', 'sponsor', 'score']
+            else:
+                pilots = [p for p in res['results']]
+                keys = ['rank', 'ID', 'name', 'nat', 'glider', 'sponsor', 'score']
+
+            tbody = []
+            for p in pilots:
+                row = [p[k] for k in keys]
+                for t in res['tasks']:
+                    code = t['task_code']
+                    pre, score = p['results'][code]['pre'], p['results'][code]['score']
+                    result = score if score == pre else f"{score} <del>{pre}</del>"
+                    row.append(result)
+                tbody.append(row)
+            results = dict(css_class='results', right_align=right_align, thead=thead, tbody=tbody)
+            tables = [tasks, results]
+            timestamp = res['file_stats']['timestamp']
+            response.append(dict(filename=filename,
+                                 content=dict(title=title, headings=headings, tables=tables, timestamp=timestamp)))
+
+        if zipfile:
+            return zipfile, response
+        else:
+            result = response.pop()
+            return result['filename'], result['content']
 
 
 def create_json_file(comp_id, code, elements, task_id=None, status=None, name_suffix=None):
@@ -767,7 +827,7 @@ def pretty_format_results(content, timeoffset=0, td=0, cd=0):
                         # formatted[key] = f"{c_round(float(value) or 0, td):.{td}f}"
                         formatted[key] = f"{c_round(float(value), 1):.{td}f}"
                     elif key == 'speed':
-                        formatted[key] = '' if float(value) == 0 else f"{c_round(float(value), 1):.2f}"
+                        formatted[key] = '' if float(value) == 0 else f"{c_round(float(value), 1):.1f}"
                     # Formatting Distances
                     elif key in ['distance', 'distance_flown', 'stopped_distance']:
                         '''formatting distance without unit of measure'''

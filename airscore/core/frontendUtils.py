@@ -1168,7 +1168,7 @@ def create_participants_fsdb(comp_id: int) -> (str, str) or None:
         return None
 
 
-def create_task_html(file: str) -> (str, dict) or None:
+def create_task_html(file: str) -> (str, dict or list) or None:
     from result import TaskResult
     try:
         return TaskResult.to_html(file)
@@ -1176,11 +1176,54 @@ def create_task_html(file: str) -> (str, dict) or None:
         return None
 
 
-def create_comp_html(comp_id: int) -> (str, dict) or None:
+def create_comp_html(comp_id: int) -> (str, dict or list) or None:
     from result import CompResult
     from compUtils import get_comp_json_filename
     try:
         file = get_comp_json_filename(comp_id)
         return CompResult.to_html(file)
     except Exception:
+        return None
+
+
+def create_inmemory_zipfile(files: list):
+    import zipfile
+    import time
+    import io
+
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
+        now = time.localtime(time.time())[:6]
+        for el in files:
+            name = el['filename']
+            info = zipfile.ZipInfo(name)
+            info.date_time = now
+            info.compress_type = zipfile.ZIP_DEFLATED
+            zip_file.writestr(info, el['content'])
+    return zip_buffer
+
+
+def render_html_file(content: dict) -> str:
+    """ render export html template:
+        dict(title: str, headings: list, tables: list, timestamp: str)"""
+    from flask import render_template
+    return render_template('/users/export_template.html',
+                           title=content['title'], headings=content['headings'], tables=content['tables'],
+                           timestamp=content['timestamp'])
+
+
+def create_stream_content(content):
+    """ returns bytelike object"""
+    from io import BytesIO
+    mem = BytesIO()
+    try:
+        if isinstance(content, str):
+            mem.write(content.encode('utf-8'))
+        elif isinstance(content, BytesIO):
+            mem.write(content.getvalue())
+        else:
+            mem.write(content)
+        mem.seek(0)
+        return mem
+    except TypeError:
         return None
