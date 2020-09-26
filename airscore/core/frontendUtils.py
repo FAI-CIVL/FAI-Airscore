@@ -388,7 +388,7 @@ def save_igc_background(task_id: int, par_id: int, tracklog, user, check_g_recor
     return fullname
 
 
-def process_igc_background(task_id: int, par_id: int, file: Path, user: str):
+def process_igc_background(task_id: int, par_id: int, file: Path, user: str, check_validity=True):
     from pilot.track import igc_parsing_config_from_yaml
     from calcUtils import epoch_to_date
     from pilot.flightresult import FlightResult, save_track
@@ -402,7 +402,11 @@ def process_igc_background(task_id: int, par_id: int, file: Path, user: str):
 
     """import track"""
     # pilot.track = Track(track_file=filename, par_id=pilot.par_id)
-    FlightParsingConfig = igc_parsing_config_from_yaml(task.igc_config_file)
+    if check_validity:
+        FlightParsingConfig = igc_parsing_config_from_yaml(task.igc_config_file)
+    else:
+        FlightParsingConfig = igc_parsing_config_from_yaml('_overide')
+
     flight = Flight.create_from_file(file, config_class=FlightParsingConfig)
     data = {'par_id': pilot.par_id, 'track_id': pilot.track_id, 'Result': 'Not Yet Processed'}
     """check result"""
@@ -412,7 +416,9 @@ def process_igc_background(task_id: int, par_id: int, file: Path, user: str):
         return None
     if not flight.valid:
         print(f'IGC does not meet quality standard set by igc parsing config. Notes:{flight.notes}')
-        print(json.dumps(data) + '|result')
+        # data['Result'] = 'Not Yet Processed - the IGC was of poor quality. Upload backup file or overide check'
+        data = {'par_id': pilot.par_id, 'track_id': pilot.track_id, 'Result': ''}
+        print(json.dumps(data) + '|valid_fail')
         return None
     elif not epoch_to_date(flight.date_timestamp) == task.date:
         print(f"for {pilot.name} - Track has a different date from task date")
@@ -685,7 +691,7 @@ def get_igc_parsing_config_file_list():
     configs = []
     choices = []
     for file in scandir(IGCPARSINGCONFIG):
-        if file.name.endswith(".yaml"):
+        if file.name.endswith(".yaml") and not file.name.startswith("_"):
             with open(file.path) as fp:
                 config = yaml.load(fp)
             configs.append({'file': file.name, 'name': file.name[:-5], 'description': config['description'],

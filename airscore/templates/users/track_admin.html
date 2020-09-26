@@ -281,6 +281,21 @@
                     update_row($.parseJSON(data.message));
                 }
             }, false);
+
+             es.addEventListener('valid_fail', function(event) {
+                var data = JSON.parse(event.data);
+                data.message = JSON.parse(data.message);
+                $('#ABS'+ data.id).show();
+                $('#MD'+ data.id).show();
+                $('#DNF'+ data.id).show();
+                $('#TrackUp'+ data.id).show();
+                $('#upload_box'+ data.id).show();
+                $('#filediv'+ data.id).hide();
+                $('#progress_percentage'+ data.id).hide();
+                data.message.Result = '<button id="TrackUp_noV' + data.id  +'" class="btnupload btn btn-warning mt-3" onclick="choose_file(' + data.id +', false, true);">Upload IGC ignoring quality check & G record</button>'
+                update_row(data.message);
+            }, false);
+
             es.addEventListener('g_record_fail', function(event) {
                 var data = JSON.parse(event.data);
                 data.message = JSON.parse(data.message);
@@ -304,11 +319,14 @@
         }
     }
 
-    function choose_file(par_id, g_overide=false){
+    function choose_file(par_id, g_overide=false, v_overide=false){
         var filename;
         var suffix = '';
         if(g_overide){
             suffix = '_NO_G'
+        }
+        if(v_overide){
+            suffix = '_NO_V'
         }
         $('#fileupload' + suffix + par_id).fileupload({
             dataType: 'json',

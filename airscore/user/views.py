@@ -809,9 +809,14 @@ def _upload_track(taskid, parid):
                     print("Filesize exceeded maximum limit")
                     return redirect(request.url)
                 check_g_record = session['check_g_record']
+                check_validity = True
 
                 if request.files.get("tracklog_NO_G"):
                     tracklog = request.files["tracklog_NO_G"]
+                    check_g_record = False
+                elif request.files.get("tracklog_NO_V"):
+                    tracklog = request.files["tracklog_NO_V"]
+                    check_validity = False
                     check_g_record = False
                 else:
                     tracklog = request.files["tracklog"]
@@ -825,7 +830,7 @@ def _upload_track(taskid, parid):
                                                                  current_user.username,
                                                                  check_g_record=check_g_record)
                         job = current_app.task_queue.enqueue(frontendUtils.process_igc_background,
-                                                             taskid, parid, file, current_user.username)
+                                                             taskid, parid, file, current_user.username, check_validity)
                         if not file:
                             resp = jsonify(success=False)
                         else:
