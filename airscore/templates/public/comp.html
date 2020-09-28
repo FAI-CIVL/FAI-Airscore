@@ -29,10 +29,10 @@
 {%for task in tasks%}
 <div class="container">
   <div class="row">
-    <div class="col">
+        <div class="col-md-7">
        {{task['map']|safe}}
     </div>
-    <div class="col">
+    <div class="col-md-5">
       <h3 id="task_hd">{{task['task_name']}}</h3>
       <h4>{{task['date']}}</h4>
       {% if task.comment %}
