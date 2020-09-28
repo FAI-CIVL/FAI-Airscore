@@ -477,7 +477,7 @@ class FSDB(object):
                               'altitude_bonus_time': sec_to_time(0).strftime('%H:%M:%S'),  # not implemented
                               'altitude_at_ess': pil.ESS_altitude,
                               'scored_ss_time': ('' if not pil.ss_time else sec_to_time(pil.ss_time).strftime('%H:%M:%S')),
-                              'landed_before_stop': t.stopped_time and res.landing_time < t.stopped_time
+                              'landed_before_stop': t.stopped_time and pil.landing_time < t.stopped_time
                               }
 
                     for k, v in r_attr.items():
