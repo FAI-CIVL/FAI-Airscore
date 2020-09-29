@@ -83,15 +83,15 @@ G_Record_validation_Server = config['g_record_validation_server']
 '''Competition options'''
 SANCTIONS = config['sanctions']
 
-'''file libraries'''
+'''File libraries'''
 WAYPOINT_AIRSPACE_FILE_LIBRARY = config['waypoint/airspace_file_library']
 
-'''pilot DB'''
+'''Admin DB'''
 ADMIN_DB = config['use_internal_admin_DB']
 ADMIN_SELF_REG = config['internal_admin_DB']['allow_self_registration']
 
 
-'''admint DB'''
+'''Pilot DB'''
 PILOT_DB = config['use_internal_pilot_DB']
 PILOT_DB_WRITE = config['internal_pilot_DB']['write_to_internal_pilot_DB']
 SELF_REG_DEFAULT = config['internal_pilot_DB']['self_registration_default']

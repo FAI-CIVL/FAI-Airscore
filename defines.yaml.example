@@ -36,7 +36,7 @@ sanctions:
 
 igc_sources:
   xcontest: off
-  flymaster_livetrack: on
+  flymaster: on
 
 g_record_validation_server: http://vali.fai-civl.org/api/vali/json
 flymaster_live_server: https://lt.flymaster.net/wlb/getLiveData.php?trackers=

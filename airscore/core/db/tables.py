@@ -493,7 +493,6 @@ class TblParticipant(BaseModel):
     nat = Column(CHAR(10))
     glider = Column(String(100))
     glider_cert = Column(String(20))
-    # parClass = Column(String(50))
     sponsor = Column(String(100))
     fai_valid = Column(TINYINT(1), nullable=False, server_default=text("'1'"))
     fai_id = Column(String(20))
@@ -514,7 +513,6 @@ class TblParticipant(BaseModel):
         with db_session() as db:
             print(f'session id: {id(db)}')
             return [el.as_dict() for el in db.query(P).filter_by(comp_id=comp_id).all()]
-            # return db.query(P).filter_by(comp_id=comp_id).all()
 
 
 class TblRanking(BaseModel):
