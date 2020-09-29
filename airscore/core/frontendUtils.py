@@ -11,10 +11,8 @@ import jsonpickle
 from Defines import MAPOBJDIR, IGCPARSINGCONFIG, track_formats
 from map import make_map
 from calcUtils import sec_to_time, c_round
-from os import scandir, path, environ
-from werkzeug.utils import secure_filename
+from os import scandir, environ
 import requests
-from flask_sse import sse
 from functools import partial
 import json
 
@@ -1067,7 +1065,7 @@ def get_pretty_data(content: dict) -> dict:
             pretty_content['classes'] = [{k: c[k] for k in ('name', 'limit', 'cert', 'counter')} for c in sub_classes]
         return pretty_content
     except:
-        raise
+        # raise
         return 'error'
 
 

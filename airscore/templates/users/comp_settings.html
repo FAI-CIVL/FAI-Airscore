@@ -246,21 +246,17 @@ Competition Settings
       <div class='container'>
         <div class='form-row'>
           <div class='form-group col-md-3'>
-            {{compform.airspace_check.label}} {{compform.airspace_check(size=3,**{'id': "airspace_check", 'data-toggle':
-            'tooltip', 'title': compform.airspace_check.description})}}
+            {{compform.airspace_check.label}} {{compform.airspace_check(size=3,**{'id': "airspace_check", 'data-toggle': 'tooltip', 'title': compform.airspace_check.description})}}
           </div>
           <div class='form-group col-md-3'>
-            {{compform.igc_parsing_file.label}} {{compform.igc_parsing_file(**{'id': "igc_config", 'data-toggle':
-            'tooltip', 'title': compform.igc_parsing_file.description})}}
+            {{compform.igc_parsing_file.label}} {{compform.igc_parsing_file(**{'id': "igc_config", 'data-toggle': 'tooltip', 'title': compform.igc_parsing_file.description})}}
             <a id='link_igc_config'>view/edit</a>
           </div>
           <div class='form-group col-md-3'>
-            {{compform.check_launch.label}} {{compform.check_launch(size=3,**{'id': "check_launch", 'data-toggle':
-            'tooltip', 'title': compform.check_launch.description})}}
+            {{compform.check_launch.label}} {{compform.check_launch(size=3,**{'id': "check_launch", 'data-toggle': 'tooltip', 'title': compform.check_launch.description})}}
           </div>
           <div class='form-group col-md-3'>
-            {{compform.check_g_record.label}} {{compform.check_g_record(size=3,**{'id': "check_launch", 'data-toggle':
-            'tooltip', 'title': compform.check_g_record.description})}}
+            {{compform.check_g_record.label}} {{compform.check_g_record(size=3,**{'id': "check_launch", 'data-toggle': 'tooltip', 'title': compform.check_g_record.description})}}
           </div>
         </div>
       </div>
@@ -304,8 +300,7 @@ Competition Settings
           </div>
           {% if self_register %}
           <div class='form-group col-md-6'>
-            {{compform.self_register.label}} {{compform.self_register(**{'data-toggle': 'tooltip', 'title':
-            compform.self_register.description})}}
+            {{compform.self_register.label}} {{compform.self_register(**{'data-toggle': 'tooltip', 'title': compform.self_register.description})}}
           </div>
           {% endif %}
           <a id='export_fsdb' class='btn btn-success' onclick='export_to_fsdb()' href="{{ url_for('user._export_fsdb', compid=compid)}}">Export to FSDB</a>
@@ -374,20 +369,17 @@ Competition Settings
                   <div id='add_task_form'>
                     <div class='form-row'>
                       <div class='form-group width4'>
-                        {{taskform.task_number.label}} {{taskform.task_number(size=2, **{'id':"task_number",
-                        'data-toggle': 'tooltip', 'title': taskform.task_number.description})}}
+                        {{taskform.task_number.label}} {{taskform.task_number(size=2, **{'id':"task_number", 'data-toggle': 'tooltip', 'title': taskform.task_number.description})}}
                         {{taskform.task_date.label}} {{taskform.task_date(**{'id':"task_date",})}}
                         {{taskform.task_region.label}} {{taskform.task_region(**{'id':"task_region",})}}
                       </div>
                     </div>
                     <div class='form-row'>
                       <div class='form-group col-md-6'>
-                        {{taskform.task_name.label}} {{taskform.task_name(**{'id':"task_name", 'data-toggle': 'tooltip',
-                        'title': taskform.task_name.description})}}
+                        {{taskform.task_name.label}} {{taskform.task_name(**{'id':"task_name", 'data-toggle': 'tooltip', 'title': taskform.task_name.description})}}
                       </div>
                       <div class='form-group col-md-6'>
-                        {{taskform.task_comment.label}} {{taskform.task_comment(**{'id':"task_comment",'data-toggle':
-                        'tooltip', 'title': taskform.task_comment.description})}}
+                        {{taskform.task_comment.label}} {{taskform.task_comment(**{'id':"task_comment",'data-toggle': 'tooltip', 'title': taskform.task_comment.description})}}
                       </div>
                     </div>
                     <div class='form-row'>

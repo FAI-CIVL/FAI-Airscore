@@ -1,6 +1,6 @@
 <nav class='navbar navbar-expand-lg navbar-dark bg-dark fixed-top' id='bootnavbar' role='navigation'>
   <a class='navbar-brand' href="{{ url_for('public.home') }}">
-    FAI airscore
+    FAI Airscore
   </a>
   <button class='navbar-toggler' type='button' data-toggle='collapse' data-target='#navbarSupportedContent'
           aria-controls='navbarSupportedContent'
@@ -42,8 +42,7 @@
         </a>
 
         <ul class='dropdown-menu' aria-labelledby='navbarDropdown'>
-          <li><a class='dropdown-item' href="{{ url_for('user.comp_settings_admin', compid=session.compid) }}">Competition
-            Settings</a></li>
+          <li><a class='dropdown-item' href="{{ url_for('user.comp_settings_admin', compid=session.compid) }}">Competition Settings</a></li>
           {% for task in session.tasks %}
           <li class='nav-item dropdown'>
             <a class='dropdown-item dropdown-toggle' href='#' id='navbarDropdown{{task.task_num}}' role='button'
@@ -77,8 +76,7 @@
       </li>
       {% endif %}
     </ul>
-
-    {% if session.is_admin %}
+      {% if session.is_admin %}
 
     <li class="nav-item dropdown">
         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown"
@@ -92,7 +90,6 @@
     </li>
 
           {% endif %}
-
 
     <ul class='navbar-nav my-auto'>
       <li class='nav-item active'>
@@ -112,22 +109,22 @@
         form.password(placeholder="Password",
         class_="form-control mr-sm-1 my-auto") }}
         <button class='btn btn-light btn-primary m-auto' type='submit'>Login</button>
-          </div>
-        </form>
-             {% if config.ADMIN_SELF_REG %}
-            <ul class='navbar-nav my-auto'>
-              <li class='nav-item'>
-                <a class='nav-link navbar-text' href="{{ url_for('public.register') }}">Create account</a>
-              </li>
-            </ul>
-            {% endif %}
-             {% if config.ADMIN_SELF_REG and config.ADMIN_DB %}
-                  <ul class="navbar-nav my-auto">
-                  <li class="nav-item">
-                    <a class="nav-link navbar-text" href="{{ url_for('public.reset_password_request') }}">Forgot password</a>
-                  </li>
-                </ul>
-             {% endif %}
+      </div>
+    </form>
+      {% if config.ADMIN_SELF_REG %}
+          <ul class='navbar-nav my-auto'>
+            <li class='nav-item'>
+              <a class='nav-link navbar-text' href="{{ url_for('public.register') }}">Create account</a>
+            </li>
+          </ul>
+      {% endif %}
+      {% if config.ADMIN_SELF_REG and config.ADMIN_DB %}
+          <ul class='navbar-nav my-auto'>
+          <li class='nav-item'>
+            <a class='nav-link navbar-text' href="{{ url_for('public.reset_password_request') }}">Forgot password</a>
+          </li>
+        </ul>
+      {% endif %}
     {% endif %}
   </div><!-- /.navbar-collapse -->
 </nav>

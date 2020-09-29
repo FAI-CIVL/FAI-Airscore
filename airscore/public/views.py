@@ -40,6 +40,7 @@ def load_user(user_id):
 
 @blueprint.route("/", methods=["GET", "POST"])
 def home():
+    """ Home page """
     if not current_app.config['admin_exists']:
         return redirect(url_for('public.setup_admin'))
 
@@ -107,7 +108,6 @@ def ladder_result(ladderid: int, season: int):
 
 @blueprint.route('/_get_ladder_result/<int:ladderid>/<int:season>', methods=['GET', 'POST'])
 def _get_ladder_result(ladderid: int, season: int):
-
     result_file = frontendUtils.get_pretty_data(frontendUtils.get_ladder_results(ladderid, season))
     if result_file == 'error':
         return render_template('404.html')
@@ -400,9 +400,9 @@ def _get_task_result(taskid):
         all_pilots.append(pilot)
         # else:
         #     '''pilot do not have result data'''
-            # TODO at the moment js raises error trying to order scores, leaving non flying pilots out of datatable
-            # pilot = [f'<b>{rank}</b>', f'{name}', r['nat'], r['glider'], r['glider_cert'], r['sponsor'], "", "", "", "",
-            #          "", "", "", "", "", "", "", f"{r['result_type'].upper()}"]
+        # TODO at the moment js raises error trying to order scores, leaving non flying pilots out of datatable
+        # pilot = [f'<b>{rank}</b>', f'{name}', r['nat'], r['glider'], r['glider_cert'], r['sponsor'], "", "", "", "",
+        #          "", "", "", "", "", "", "", f"{r['result_type'].upper()}"]
 
     result_file['data'] = all_pilots
     return result_file
