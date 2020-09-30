@@ -564,14 +564,14 @@ function update_tasks(json) {
     content += '<td class="col-9">' + json['tasks'][i].region_name + '</td>';
     content += '<td class="col-3">' + json['tasks'][i].opt_dist + '</td>';
     content += '<td class="col-6">' + json['tasks'][i].comment+ '</td>';
-    content += '<td  class ="value" ><a href="/users/task_admin/' + json['tasks'][i].task_id + '" class="btn btn-info ml-3" type="button" >Settings</a></td>'
+    content += '<td  class ="value" ><a href="/users/task_admin/' + json['tasks'][i].task_id + '" class="btn btn-info ml-3" type="button" >Settings</a></td>';
 
     {% if compform.submit %}
-    content += '<td  class ="value" ><a href="/users/track_admin/' + json['tasks'][i].task_id + '" class="btn btn-info ml-3" type="button" >Tracks</a></td>'
-    content += '<td  class ="value" ><a href="/users/task_score_admin/' + json['tasks'][i].task_id + '" class="btn btn-info ml-3" type="button" >Scores</a></td>'
+    content += '<td  class ="value" ><a href="/users/track_admin/' + json['tasks'][i].task_id + '" class="btn btn-info ml-3" type="button" >Tracks</a></td>';
+    content += '<td  class ="value" ><a href="/users/task_score_admin/' + json['tasks'][i].task_id + '" class="btn btn-info ml-3" type="button" >Scores</a></td>';
     content += '<td  class ="value" ><button type="button" class="btn btn-danger" onclick="confirm_delete('
-    content +=  json['tasks'][i].task_num + ',' + json['tasks'][i].task_id
-    content += ')" data-toggle="confirmation" data-popout="true">Delete</button></td>'
+    content +=  json['tasks'][i].task_num + ',' + json['tasks'][i].task_id;
+    content += ')" data-toggle="confirmation" data-popout="true">Delete</button></td>';
     {% endif %}
 
     content += '</tr>';
@@ -643,12 +643,12 @@ function get_scorekeepers(){
      success: function (response) {
        var content = '';
        for (var i = 0; i < response['scorekeepers'].length; i++) {
-       content += '<tr><TD class="c3">'+ response['scorekeepers'][i]['first_name'] + ' '+ response['scorekeepers'][i]['last_name'] +'</TD></tr>'
+         content += '<tr><TD class="c3">'+ response['scorekeepers'][i]['first_name'] + ' '+ response['scorekeepers'][i]['last_name'] +'</TD></tr>'
        }
-         $('#scorekeeper_table').append(content);
-         $('#owner').html(response['owner']['first_name'] + ' ' + response['owner']['last_name'] )
-       }
-     });
+       $('#scorekeeper_table').append(content);
+       $('#owner').html(response['owner']['first_name'] + ' ' + response['owner']['last_name'] );
+     }
+  });
 }
 
 $(document).ready(function() {

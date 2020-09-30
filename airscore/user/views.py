@@ -26,11 +26,11 @@ blueprint = Blueprint("user", __name__, url_prefix="/users", static_folder="../s
 
 
 def admin_required(func):
-    '''
+    """
     If you decorate a view with this, it will ensure that the current user is
     an admin before calling the actual view. (If they are
     not, it calls the :attr:`LoginManager.unauthorized` callback.)
-    '''
+    """
     @wraps(func)
     def decorated_view(*args, **kwargs):
         if not session['is_admin']:
