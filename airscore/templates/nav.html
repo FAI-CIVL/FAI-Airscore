@@ -111,14 +111,14 @@
         <button class='btn btn-light btn-primary m-auto' type='submit'>Login</button>
       </div>
     </form>
-      {% if config.ADMIN_SELF_REG %}
+      {% if config.ADMIN_DB and config.ADMIN_SELF_REG %}
           <ul class='navbar-nav my-auto'>
             <li class='nav-item'>
               <a class='nav-link navbar-text' href="{{ url_for('public.register') }}">Create account</a>
             </li>
           </ul>
       {% endif %}
-      {% if config.ADMIN_SELF_REG and config.ADMIN_DB %}
+      {% if config.ADMIN_DB and config.ADMIN_SELF_REG %}
           <ul class='navbar-nav my-auto'>
           <li class='nav-item'>
             <a class='nav-link navbar-text' href="{{ url_for('public.reset_password_request') }}">Forgot password</a>

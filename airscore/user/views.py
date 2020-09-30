@@ -376,8 +376,9 @@ def _get_users():
 @login_required
 @admin_required
 def user_admin():
+    from Defines import ADMIN_DB
     modify_user_form = ModifyUserForm()
-    return render_template('users/user_admin.html', modify_user_form=modify_user_form)
+    return render_template('users/user_admin.html', modify_user_form=modify_user_form, editable=bool(ADMIN_DB))
 
 
 @blueprint.route('/_add_scorekeeper/<compid>', methods=['POST'])
