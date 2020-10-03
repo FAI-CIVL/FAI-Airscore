@@ -17,6 +17,18 @@ from functools import partial
 import json
 
 
+def create_menu(active: str = '') -> list:
+    import Defines
+    menu = [dict(title='Competitions', url='public.home', css='nav-item')]
+    if Defines.LADDERS:
+        menu.append(dict(title='Ladders', url='public.ladders', css='nav-item'))
+    # menu.append(dict(title='Areas', url='public.areas',
+    #                  css='nav-item' if active not in ['pilots'] else 'nav-item active'))
+    menu.append(dict(title='Pilots', url='public.pilots', css='nav-item'))
+
+    return menu
+
+
 def get_comps() -> list:
     c = aliased(TblCompetition)
     with db_session() as db:
@@ -259,9 +271,9 @@ def get_admin_comps(current_userid, current_user_access=None):
         comps = (db.query(c.comp_id, c.comp_name, c.comp_site,
                           c.date_from,
                           c.date_to, func.count(TblTask.task_id), ca.user_id)
-                 .outerjoin(TblTask, c.comp_id == TblTask.comp_id).outerjoin(ca)
-                 .filter(ca.user_auth == 'owner')
-                 .group_by(c.comp_id))
+                   .outerjoin(TblTask, c.comp_id == TblTask.comp_id).outerjoin(ca)
+                   .filter(ca.user_auth == 'owner')
+                   .group_by(c.comp_id))
     all_comps = []
     for c in comps:
         comp = list(c)
@@ -809,8 +821,8 @@ def get_all_scorekeepers():
     from airscore.user.models import User
     with db_session() as db:
         all_scorekeepers = db.query(User.id, User.username, User.first_name, User.last_name) \
-            .filter((User.access == 'scorekeeper') | (User.access == 'admin'))\
-            .all()
+                             .filter((User.access == 'scorekeeper') | (User.access == 'admin')) \
+                             .all()
         if all_scorekeepers:
             all_scorekeepers = [row._asdict() for row in all_scorekeepers]
         return all_scorekeepers
