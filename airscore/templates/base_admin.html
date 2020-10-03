@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<!-- paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
+<!--[if lt IE 7]>
+<html class='no-js lt-ie9 lt-ie8 lt-ie7' lang='en' dir='ltr'> <![endif]-->
+<!--[if IE 7]>
+<html class='no-js lt-ie9 lt-ie8' lang='en' dir='ltr'> <![endif]-->
+<!--[if IE 8]>
+<html class='no-js lt-ie9' lang='en' dir='ltr'> <![endif]-->
+<!--[if gt IE 8]><!-->
+<html class='no-js' lang='en' dir='ltr'>
+<!--<![endif]-->
+<head>
+  <meta charset='utf-8'>
+  <title>
+    {% block page_title %}
+    FAI Airscore - Administration
+    {% endblock %}
+  </title>
+
+  <meta name='description' content='{% block meta_description %}{% endblock %}'/>
+  <meta name='author' content='{% block meta_author %}{% endblock %}'/>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0, shrink-to-fit=no'>
+  <meta name='csrf-token' content='{{ csrf_token() }}'>
+
+  <link rel='shortcut icon' href="{{static_url_for('static', filename='build/img/favicon.ico') }}">
+
+  {% block head %}
+  {% endblock %}
+
+  <!--  CSS    -->
+  <link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css'
+        integrity='sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk' crossorigin='anonymous'>
+  <link rel='stylesheet' href='/static/css/nav_bar_custom.css' crossorigin='anonymous'>
+  <link rel='stylesheet' href='/static/css/bootnavbar.css' crossorigin='anonymous'>
+  <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.0/animate.min.css'>
+  <!-- <link rel="stylesheet" type="text/css" href="{{ static_url_for('static', filename='build/main_css.bundle.css') }}"/>-->
+  <link rel='stylesheet' type='text/css' href="{{ static_url_for('static', filename='css/frontend_admin.css') }}"/>
+
+  {% block css %}
+  {% endblock %}
+
+  <style media='screen'>
+        body {
+          min-height: 75rem;
+          padding-top: 4.5rem;
+        }
+
+  </style>
+</head>
+
+<body class='{% block body_class %}admin{% endblock %}'>
+{% block body %}
+
+{% block nav %}
+{% include "nav_admin.html" %}
+{% endblock %}
+
+<main role='main' style='width: 95%; margin: auto'>
+  <div class='nav-back'>
+    {% block back %}
+    {% endblock %}
+  </div>
+  <header class='h2'>{% block header %}{% endblock %}</header>
+  {% with messages = get_flashed_messages(with_categories=true) %} {% if
+  messages %}
+  <div class='row'>
+    <div class='col-md-12'>
+      {% for category, message in messages %}
+      <div class='alert alert-{{ category }}'>
+        <a class='close' title='Close' href='#' data-dismiss='alert'
+        >&times;</a
+        >
+        {{ message }}
+      </div>
+      <!-- end .alert -->
+      {% endfor %}
+    </div>
+    <!-- end col-md -->
+  </div>
+  <!-- end row -->
+  {% endif %} {% endwith %}
+  {% if error %}
+  <p><strong> Error: </strong></p>
+  {{error}}
+  {% endif %}
+
+  {% block content %}
+  {% endblock %}
+
+  <div class='nav-back'>
+    {{ self.back() }}
+  </div>
+
+</main>
+
+{% include "footer.html" %}
+
+{% include "js.html" %}
+
+{% block js %}
+{% endblock %}
+<!-- end scripts -->
+{% endblock %} <!-- end body -->
+</body>
+</html>

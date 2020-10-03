@@ -1,0 +1,96 @@
+<nav class='navbar navbar-expand-lg navbar-dark bg-dark fixed-top admin' id='bootnavbar' role='navigation'>
+  <a class='navbar-brand' href="{{ url_for('user.comp_admin') }}">
+    FAI Airscore - Administration
+  </a>
+  <button class='navbar-toggler' type='button' data-toggle='collapse' data-target='#navbarSupportedContent'
+          aria-controls='navbarSupportedContent'
+          aria-expanded='false' aria-label='Toggle navigation'>
+    <span class='navbar-toggler-icon'></span>
+  </button>
+  <div class='collapse navbar-collapse' id='navbarSupportedContent'>
+    {% if current_user and current_user.is_authenticated %}
+    <ul class='navbar-nav my-auto'>
+      <li class='nav-item'>
+        <a class='nav-link' href="{{ url_for('public.home') }}">Public Website
+        </a>
+      </li>
+    </ul>
+
+    <ul class='navbar-nav my-auto'>
+      <li class='nav-item'>
+        <a class='nav-link main' href="{{ url_for('user.comp_admin') }}">Competitions</a>
+      </li>
+      {% if session.is_scorekeeper or session.is_admin %}
+      <li class='nav-item'>
+        <a class='nav-link main' href="{{ url_for('user.region_admin') }}">Flying Areas</a>
+      </li>
+<!--      <li class='nav-item active'>-->
+<!--        <a class='nav-link' href="{{ url_for('user.pilot_admin') }}">Pilots</a>-->
+<!--      </li>-->
+      {% endif %}
+      {% if session.is_admin %}
+      <li class='nav-item'>
+        <a class="nav-link main" href="{{ url_for('user.user_admin') }}">Users</a>
+      </li>
+      {% endif %}
+    </ul>
+
+    {% if session.comp_name %}
+    <ul class='navbar-nav text-primary mr-auto'>
+      <li class='nav-item dropdown'>
+        <a class='nav-link dropdown-toggle' href='#' id='compDropdown' role='button' data-toggle='dropdown'
+           aria-haspopup='true' aria-expanded='false'>
+          {{session.comp_name }}
+        </a>
+
+        <ul class='dropdown-menu' aria-labelledby='compDropdown'>
+          <li>
+            <a class='dropdown-item' href="{{ url_for('user.comp_settings_admin', compid=session.compid) }}">Competition Settings</a>
+          </li>
+          <li>
+            <a class='dropdown-item' href="{{ url_for('user.pilot_admin', compid=session.compid) }}">Registered Pilots</a>
+          </li>
+          {% for task in session.tasks %}
+          <li class='nav-item dropdown'>
+            <a class='dropdown-item dropdown-toggle' href='#' id='compDropdown{{task.task_num}}' role='button'
+               data-toggle='dropdown'
+               aria-haspopup='true' aria-expanded='false'>
+              {{task.num}}
+            </a>
+            <ul class='dropdown-menu' aria-labelledby='compDropdown{{task.task_num}}'>
+              <li><a class='dropdown-item' href="{{ url_for('user.task_admin', taskid=task.task_id) }}">Settings</a>
+              </li>
+              {% if session.is_scorekeeper and task.ready_to_score %}
+              <li><a class='dropdown-item' href="{{ url_for('user.track_admin', taskid=task.task_id) }}">Tracks</a></li>
+              <li><a class='dropdown-item' href="{{ url_for('user.task_score_admin', taskid=task.task_id) }}">Scores</a>
+              </li>
+              {% endif %}
+            </ul>
+          </li>
+          {% endfor %}
+        </ul>
+      </li>
+    </ul>
+    {% endif %}
+    {% endif %}
+
+    <ul class='navbar-nav ml-auto'>
+      <li class='nav-item'>
+        <span class='navbar-text pre-wrap'>Logged in as </span>
+      </li>
+      <li class='nav-item'>
+        <span class='navbar-text'>{% if session.is_admin %} Admin: {% elif session.is_scorekeeper %} Scorekeeper: {% endif %}</span>
+      </li>
+      <li class='nav-item active'>
+        <a class='nav-link' href="{{ url_for('user.members') }}">{{ current_user.username }}</a>
+      </li>
+      <li class='nav-item active'>
+        <a class='nav-link' href="{{ url_for('public.logout') }}">
+          <i class='fa fa-sign-out'></i>
+        </a>
+      </li>
+    </ul>
+
+  </div><!-- /.navbar-collapse -->
+</nav>
+<div class='godown-60' id='godown'></div>
