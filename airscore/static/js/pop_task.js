@@ -10,15 +10,15 @@ function populate_task(taskid){
                 var columns = [];
                 json.classes.forEach( function(item, index) {
                     if (index == 0) {
-                        columns.push({data: 'ranks.rank', title:'#'});
+                        columns.push({data: 'ranks.rank', title:'#', className: "text-right"});
                     }
                     else {
-                        columns.push({data: 'ranks.class'+index.toString(), title:'#', defaultContent: '', visible: false});
+                        columns.push({data: 'ranks.class'+index.toString(), title:'#', className: "text-right", defaultContent: '', visible: false});
                     }
                 });
-                columns.push({data: 'id', title:'ID', defaultContent: ''});
-                columns.push({data: 'fai_id', title:'FAI', defaultContent: '', visible: false});
-                columns.push({data: 'civl_id', title:'CIVL', defaultContent: '', visible: false});
+                columns.push({data: 'id', title:'ID', className: "text-right", defaultContent: ''});
+                columns.push({data: 'fai_id', title:'FAI', className: "text-right", defaultContent: '', visible: false});
+                columns.push({data: 'civl_id', title:'CIVL', className: "text-right", defaultContent: '', visible: false});
                 columns.push({data: 'name', title:'Name'});
                 columns.push({data: 'nat', title:'NAT', name:'NAT', defaultContent: ''});
                 columns.push({data: 'sex', title:'Sex', defaultContent: '', visible: false});
@@ -35,17 +35,17 @@ function populate_task(taskid){
                     columns.push({data: 'ESS_time', title:'ES', defaultContent: ''});
                 }
                 columns.push({data: 'ss_time', title:'Time', defaultContent: ''});
-                columns.push({data: 'speed', title:'Kph', defaultContent: ''});
-                columns.push({data: 'distance', title:'Dist', defaultContent: ''});
-                columns.push({data: 'time_score', title:'TimeP', defaultContent: ''});
-                columns.push({data: 'departure_score', title:'LoP', defaultContent: ''});
+                columns.push({data: 'speed', title:'Kph', className: "text-right", defaultContent: ''});
+                columns.push({data: 'distance', title:'Dist', className: "text-right", defaultContent: ''});
+                columns.push({data: 'time_score', title:'TimeP', className: "text-right", defaultContent: ''});
+                columns.push({data: 'departure_score', title:'LoP', className: "text-right", defaultContent: ''});
                 //add Arrival only when used
                 if(json.formula.formula_arrival!='off'){
-                    columns.push({data: 'arrival_score', title:'ArrP', defaultContent: ''});
+                    columns.push({data: 'arrival_score', title:'ArrP', className: "text-right", defaultContent: ''});
                 }
-                columns.push({data: 'distance_score', title:'DstP', defaultContent: ''});
-                columns.push({data: 'penalty', title:'PenP', defaultContent: ''});
-                columns.push({data: 'score', title:'Score', defaultContent: ''});
+                columns.push({data: 'distance_score', title:'DstP', className: "text-right", defaultContent: ''});
+                columns.push({data: 'penalty', title:'PenP', className: "text-right", defaultContent: ''});
+                columns.push({data: 'score', title:'Score', className: "text-right", defaultContent: ''});
                 $('#results_table').DataTable( {
                     data: json.data,
                     paging: false,

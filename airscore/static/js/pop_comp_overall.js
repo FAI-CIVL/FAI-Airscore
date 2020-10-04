@@ -12,25 +12,25 @@ function populate_comp_overall(compid){
                 var columns = [];
                 json.classes.forEach( function(item, index){
                     if (index == 0) {
-                        columns.push({data: 'ranks.rank', title:'#'});
+                        columns.push({data: 'ranks.rank', title:'#', className: "text-right"});
                     }
                     else {
-                        columns.push({data: 'ranks.class'+index.toString(), title:'#', defaultContent: '', visible: false});
+                        columns.push({data: 'ranks.class'+index.toString(), title:'#', className: "text-right", defaultContent: '', visible: false});
                     }
                 });
-                columns.push({data: 'id', title:'ID', defaultContent: ''});
-                columns.push({data: 'fai_id', title:'FAI', defaultContent: '', visible: false});
-                columns.push({data: 'civl_id', title:'CIVL', defaultContent: '', visible: false});
+                columns.push({data: 'id', title:'ID', className: "text-right", defaultContent: ''});
+                columns.push({data: 'fai_id', title:'FAI', className: "text-right", defaultContent: '', visible: false});
+                columns.push({data: 'civl_id', title:'CIVL', className: "text-right", defaultContent: '', visible: false});
                 columns.push({data: 'name', title:'Name'});
                 columns.push({data: 'nat', title:'NAT', name:'NAT', defaultContent: ''});
                 columns.push({data: 'sex', title:'Sex', defaultContent: '', visible: false});
                 columns.push({data: 'glider', title:'Glider', defaultContent: ''});
                 columns.push({data: 'glider_cert', title:'Class', defaultContent: '', visible: false});
                 columns.push({data: 'sponsor', title:'Sponsor', defaultContent: ''});
-                columns.push({data: 'score', title:'Total'});
+                columns.push({data: 'score', title:'Total', className: "text-right"});
                 json.tasks.forEach( function(item, index) {
                     var code = item.task_code
-                    columns.push({data: 'results.'+index.toString(), title: code, defaultContent: ''});
+                    columns.push({data: 'results.'+index.toString(), title: code, className: "text-right", defaultContent: ''});
                 });
                 $('#results_table').DataTable( {
                     data: json.data,
