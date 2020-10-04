@@ -35,8 +35,8 @@ def get_comps() -> list:
         comps = (db.query(c.comp_id, c.comp_name, c.comp_site,
                           c.comp_class, c.sanction, c.comp_type, c.date_from,
                           c.date_to, func.count(TblTask.task_id).label('tasks'), c.external)
-                 .outerjoin(TblTask, c.comp_id == TblTask.comp_id)
-                 .group_by(c.comp_id))
+                   .outerjoin(TblTask, c.comp_id == TblTask.comp_id)
+                   .group_by(c.comp_id))
 
     return [row._asdict() for row in comps]
 
@@ -98,10 +98,10 @@ def get_ladders() -> list:
         ladders = db.query(L.ladder_id, L.ladder_name, L.ladder_class, L.date_from, L.date_to,
                            C.natIso3.label('nat'),
                            LS.season) \
-            .join(LS, L.ladder_id == LS.ladder_id) \
-            .join(C, L.nation_code == C.natId) \
-            .filter(LS.active == 1) \
-            .order_by(LS.season.desc())
+                    .join(LS, L.ladder_id == LS.ladder_id) \
+                    .join(C, L.nation_code == C.natId) \
+                    .filter(LS.active == 1) \
+                    .order_by(LS.season.desc())
 
     return [row._asdict() for row in ladders]
 
@@ -127,8 +127,8 @@ def get_ladder_results(ladder_id: int, season: int,
         # probably we could keep this from ladder list page?
         row = db.query(L.ladder_id, L.ladder_name, L.ladder_class,
                        LS.season, LS.cat_id, LS.overall_validity, LS.validity_param) \
-            .join(LS) \
-            .filter(L.ladder_id == ladder_id, LS.season == season).one()
+                .join(LS) \
+                .filter(L.ladder_id == ladder_id, LS.season == season).one()
         rankings = create_classifications(row.cat_id)
         info = {'ladder_name': row.ladder_name,
                 'season': row.season,
@@ -148,8 +148,8 @@ def get_ladder_results(ladder_id: int, season: int,
 
         '''create Participants list'''
         results = db.query(P) \
-            .filter(P.comp_id.in_(comps_ids), P.nat == nat) \
-            .order_by(P.pil_id, P.comp_id).all()
+                    .filter(P.comp_id.in_(comps_ids), P.nat == nat) \
+                    .order_by(P.pil_id, P.comp_id).all()
         pilots_list = []
         orphans = []
         for row in results:
