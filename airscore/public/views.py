@@ -60,13 +60,18 @@ def home():
         else:
             flash_errors(form)
     return render_template('public/index.html',
-                           form=form, now=datetime.utcnow(), menu=frontendUtils.create_menu())
+                           form=form, now=datetime.utcnow())
+
+
+@blueprint.context_processor
+def create_menu():
+    return dict(menu=frontendUtils.create_menu())
 
 
 @blueprint.route("/ladders/", methods=["GET", "POST"])
 def ladders():
     return render_template('public/ladders.html',
-                           now=datetime.utcnow(), menu=frontendUtils.create_menu())
+                           now=datetime.utcnow())
 
 
 @blueprint.route('/_get_ladders', methods=['GET', 'POST'])
@@ -106,7 +111,7 @@ def _get_ladders():
 @blueprint.route('/ladder_result/<int:ladderid>/<int:season>')
 def ladder_result(ladderid: int, season: int):
     return render_template('public/ladder_overall.html',
-                           ladderid=ladderid, season=season, menu=frontendUtils.create_menu())
+                           ladderid=ladderid, season=season)
 
 
 @blueprint.route('/_get_ladder_result/<int:ladderid>/<int:season>', methods=['GET', 'POST'])
@@ -181,7 +186,7 @@ def register():
     else:
         flash_errors(form)
     return render_template("public/register.html",
-                           form=form, menu=frontendUtils.create_menu())
+                           form=form)
 
 
 @blueprint.route("/setup_admin/", methods=["GET", "POST"])
@@ -204,7 +209,7 @@ def setup_admin():
     else:
         flash_errors(form)
     return render_template("public/setup_admin.html",
-                           form=form, menu=frontendUtils.create_menu())
+                           form=form)
 
 
 @blueprint.route('/reset_password_request', methods=['GET', 'POST'])
@@ -224,7 +229,7 @@ def reset_password_request():
         flash('Check your email for the instructions to reset your password', category='info')
         return redirect(url_for('public.home'))
     return render_template('public/reset_password_request.html',
-                           title='Reset Password', reset_form=reset_form, form=form, menu=frontendUtils.create_menu())
+                           title='Reset Password', reset_form=reset_form, form=form)
 
 
 @blueprint.route('/reset_password/<token>', methods=['GET', 'POST'])
@@ -242,7 +247,7 @@ def reset_password(token):
         flash('Your password has been reset.')
         return redirect(url_for('public.home'))
     return render_template('public/reset_password.html',
-                           reset_form=reset_form, form=form, menu=frontendUtils.create_menu())
+                           reset_form=reset_form, form=form)
 
 
 @blueprint.route("/about/")
@@ -250,7 +255,7 @@ def about():
     """About page."""
     form = LoginForm(request.form)
     return render_template("public/about.html",
-                           form=form, menu=frontendUtils.create_menu())
+                           form=form)
 
 
 @blueprint.route('/_get_all_comps', methods=['GET', 'POST'])
@@ -326,7 +331,7 @@ def competition(compid):
         comp['date_to'] = comp['date_to'].strftime("%Y-%m-%d")
     if comp_start > datetime.now().date():
         return render_template('public/future_competition.html',
-                               comp=comp, menu=frontendUtils.create_menu())
+                               comp=comp)
 
     if non_scored_tasks:
         for t in non_scored_tasks:
@@ -353,7 +358,7 @@ def competition(compid):
 
     return render_template('public/comp.html',
                            tasks=all_tasks, comp=comp, overall_available=overall_available,
-                           country_scores=country_scores, menu=frontendUtils.create_menu())
+                           country_scores=country_scores)
 
 
 # @blueprint.route('/registered_pilots/<int:compid>')
@@ -372,7 +377,7 @@ def competition(compid):
 @blueprint.route('/task_result/<int:taskid>')
 def task_result(taskid):
     return render_template('public/task_result.html',
-                           taskid=taskid, menu=frontendUtils.create_menu())
+                           taskid=taskid)
 
 
 @blueprint.route('/_get_task_result/<int:taskid>', methods=['GET', 'POST'])
@@ -422,13 +427,13 @@ def _get_task_result(taskid):
 @blueprint.route('/ext_comp_result/<int:compid>')
 def ext_comp_result(compid):
     return render_template('public/ext_comp_overall.html',
-                           compid=compid, menu=frontendUtils.create_menu())
+                           compid=compid)
 
 
 @blueprint.route('/comp_result/<int:compid>')
 def comp_result(compid):
     return render_template('public/comp_overall.html',
-                           compid=compid, menu=frontendUtils.create_menu())
+                           compid=compid)
 
 
 @blueprint.route('/_get_comp_result/<compid>', methods=['GET', 'POST'])
@@ -464,7 +469,7 @@ def _get_comp_result(compid):
 @blueprint.route('/country_overall/<int:compid>')
 def country_overall(compid):
     return render_template('public/country_overall.html',
-                           compid=compid, menu=frontendUtils.create_menu())
+                           compid=compid)
 
 
 @blueprint.route('/_get_comp_country_result/<compid>', methods=['GET'])
@@ -480,7 +485,7 @@ def _get_comp_country_result(compid):
 @blueprint.route('/country_task/<int:taskid>')
 def country_task(taskid):
     return render_template('public/country_task.html',
-                           taskid=taskid, menu=frontendUtils.create_menu())
+                           taskid=taskid)
 
 
 @blueprint.route('/_get_task_country_result/<taskid>', methods=['GET'])
@@ -622,7 +627,7 @@ def registered_pilots(compid):
         comp['date_to'] = comp['date_to'].strftime("%Y-%m-%d")
     return render_template('public/registered_pilots.html',
                            modify_participant_form=modify_participant_form, compid=compid,
-                           comp=comp, menu=frontendUtils.create_menu())
+                           comp=comp)
 
 
 @blueprint.route('/_get_participants_and_status/<compid>', methods=['GET'])
@@ -647,7 +652,7 @@ def _get_participants_and_status(compid):
 @blueprint.route('/live/<int:taskid>')
 def livetracking(taskid):
     return render_template('public/live.html',
-                           taskid=taskid, menu=frontendUtils.create_menu())
+                           taskid=taskid)
 
 
 @blueprint.route('/_get_livetracking/<taskid>', methods=['GET', 'POST'])

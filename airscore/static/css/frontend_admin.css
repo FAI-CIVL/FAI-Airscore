@@ -114,6 +114,56 @@ nav.admin .main:hover {
     color: rgba(255,255,255,1)!important;
 }
 
+/* Header */
+
+header.h2 {
+    padding-bottom: .5rem;
+    border-bottom: 2px solid #550055;
+    margin-bottom: 1rem;
+}
+
+/* Form */
+
+div.tab-pane {
+  display: flex;
+  flex-flow: column wrap;
+  justify-content: left;
+}
+
+div.tab-pane section {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: left;
+}
+
+h3.form-title {
+  width: 90%;
+  height: auto;
+  text-align: left;
+  margin: 1rem 0 1rem 0;
+}
+
+section.tab-row {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: left;
+  max-width: 90%;
+  min-width: 80%
+  height: auto;
+  border: 1px solid #a2a2a2;
+  text-align: left;
+  margin: 1rem 0 1rem 0;
+}
+
+.tab-row .form-element {
+  margin: .5rem 1rem .5rem 1rem;
+}
+
+div.tab-content .form-element input,
+div.tab-content .form-element select {
+  min-height: 1.8rem;
+}
+
 /* Results */
 
 .sex-F, .sex-F:link, .sex-F:link:visited {
