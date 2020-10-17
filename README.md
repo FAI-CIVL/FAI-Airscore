@@ -85,8 +85,8 @@ airscore includes or not.
     - [ ] Leading
     - [ ] Departure
 * Leading Area as a Function of Time and Distance Tweaks
-    - [x] Use distance; a = t * d
-    - [x] Use distance squared; a = t * d^2
+    - [ ] Use distance; a = t * d
+    - [ ] Use distance squared; a = t * d^2
     - [ ] Use PWCA weighting; a = w(t, d)
 * Parameter Tweaks
     - [ ] Day quality override
