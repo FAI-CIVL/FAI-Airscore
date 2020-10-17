@@ -1,6 +1,6 @@
 # FAI Airscore
 
-This was originally a fork of Geoff Wong's Airscore (https://github.com/geoffwong/airscore).
+This was originally a fork of Geoff Wong's [airScore](https://github.com/geoffwong/airscore).
 It has been ported to python 3.7, it's structure has been completely redesigned and many additional features added.
 
 Web middle layer & front end has been ported to flask/jquery using flask cookie cutter template.
