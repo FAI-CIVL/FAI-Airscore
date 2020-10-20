@@ -96,6 +96,12 @@ class BaseModel(Base):
             db.delete(self)
 
     @classmethod
+    def delete_all(cls, **kvargs):
+        with db_session() as db:
+            print(f'delete all session id: {id(db)}')
+            db.query(cls).filter_by(**kvargs).delete()
+
+    @classmethod
     def before_bulk_create(cls, iterable, *args, **kwargs):
         pass
 
