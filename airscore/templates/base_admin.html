@@ -28,10 +28,11 @@
   {% endblock %}
 
   <!--  CSS    -->
-  <link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css'
-        integrity='sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk' crossorigin='anonymous'>
-  <link rel='stylesheet' href='/static/css/nav_bar_custom.css' crossorigin='anonymous'>
-  <link rel='stylesheet' href='/static/css/bootnavbar.css' crossorigin='anonymous'>
+<!--  <link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css'-->
+<!--        integrity='sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk' crossorigin='anonymous'>-->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css" integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2" crossorigin="anonymous">
+  <link rel='stylesheet' href="{{ static_url_for('static', filename='css/nav_bar_custom.css') }}" crossorigin='anonymous'>
+  <link rel='stylesheet' href="{{ static_url_for('static', filename='css/bootnavbar.css') }}" crossorigin='anonymous'>
   <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.0/animate.min.css'>
   <!-- <link rel="stylesheet" type="text/css" href="{{ static_url_for('static', filename='build/main_css.bundle.css') }}"/>-->
   <link rel='stylesheet' type='text/css' href="{{ static_url_for('static', filename='css/frontend_admin.css') }}"/>
@@ -61,15 +62,13 @@
     {% endblock %}
   </div>
   <header class='h2'>{% block header %}{% endblock %}</header>
-  {% with messages = get_flashed_messages(with_categories=true) %} {% if
-  messages %}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
   <div class='row'>
     <div class='col-md-12'>
       {% for category, message in messages %}
       <div class='alert alert-{{ category }}'>
-        <a class='close' title='Close' href='#' data-dismiss='alert'
-        >&times;</a
-        >
+        <a class='close' title='Close' href='#' data-dismiss='alert'>&times;</a>
         {{ message }}
       </div>
       <!-- end .alert -->
@@ -78,10 +77,13 @@
     <!-- end col-md -->
   </div>
   <!-- end row -->
-  {% endif %} {% endwith %}
+  {% endif %}
+  {% endwith %}
   {% if error %}
-  <p><strong> Error: </strong></p>
-  {{error}}
+  <div class='row'>
+    <p><strong> Error: </strong></p>
+    {{error}}
+  </div>
   {% endif %}
 
   {% block content %}

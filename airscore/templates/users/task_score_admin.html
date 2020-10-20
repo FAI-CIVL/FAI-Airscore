@@ -9,90 +9,123 @@ Task Scoring Admin
 <link href='https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css' rel='stylesheet'>
 {% endblock %}
 
+{% block back %}
+<a href="{{ url_for('user.comp_settings_admin', compid=compid)}}" class='btn btn-info' type='button'>
+  Back to Competition Settings
+</a>
+<a href="{{ url_for('user.task_admin', taskid=taskid)}}" class='btn btn-info ml-2' type='button'>
+  Task Settings
+</a>
+<a href="{{ url_for('user.track_admin', taskid=taskid)}}" class='btn btn-info ml-2' type='button'>
+  Manage Tracks
+</a>
+{% endblock %}
+
+{% block header %}
+{{session.comp_name}} - Task {{task_num}}
+{% endblock %}
+
 {% block content %}
-<div class='container'>
-  <h2>Task {{task_num}} {% if task_name %}
-    - {{task_name}} {% endif %}
-  </h2>
-  <br>
-  <h4>{{session.comp_name}}</h4>
-  <br>
-  <h5 id='title_dist'></h5>
-</div>
+<!-- Settings Tab Section -->
+<div role="tabpanel" class="tab-panel">
+  <!-- Nav tabs -->
+  <ul role="tablist" id="tab-list" class="nav nav-tabs">
+    <li role="presentation" class="nav-item"><a role="tab" data-toggle="tab" class="nav-link active" id="task_result_tab" href="#task_results" aria-controls="task_results">Task Results</a></li>
+    <li role="presentation" class="nav-item"><a role="tab" data-toggle="tab" class="nav-link" id="comp_result_tab" href="#comp_result" aria-controls="comp_result">Comp Results</a></li>
+  </ul>
 
-<div class='text-center'>
-  <h3 id='header'></h3>
-</div>
-
-{% if not user_is_scorekeeper %}
-
-<h2>You are not authorised to access this page as you are not a scorekeeper of this competition</h2>
-{% else %}
-<div class='container'>
-  <div id='display_file'>
-    <div id='task_row' class='form-row form-group col-md-12'>
-      <button class='btn btn-primary ml-4' type='button' onclick='Score_modal();'>
-        Score Task
-      </button>
-
-      <button class='btn btn-warning ml-4' type='button' data-toggle='modal' data-target='#fullscoremodal'>
-        Full Rescore
-      </button>
-      &nbsp;
-      {{fileform.result_file.label}}&nbsp;{{fileform.result_file(**{'id':"file"})}}
-      <button id='publish' class='btn btn-danger ml-4' type='button' onclick='toggle_publish();'>
-        Un-publish results
-      </button>
-      <button id='change_status' class='btn btn-primary ml-4' type='button' onclick='open_status_modal();'>
-        Edit Status
-      </button>
-      <button id='download_task_html' class='btn btn-primary ml-4' type='button'>
-        Task HTML
-      </button>
+  <!-- Tab panes -->
+  <div class="tab-content">
+    <div role="tabpanel" class="tab-pane column-wrap fade show active" id="task_results">
+      <h4 class='tab-title font-weight-bold'>Task Results:</h4>
+      <section class="tab-row row-wrap button">
+          {% if not user_is_scorekeeper %}
+          <h4>You are not a scorekeeper of this competition, thus you cannot access most of functionalities in this page.</h4>
+          {% else %}
+          <button class='btn btn-primary' type='button' onclick='Score_modal();'>
+            Score Task
+          </button>
+          <button class='btn btn-warning ml-2' type='button' data-toggle='modal' data-target='#fullscoremodal'>
+            Full Rescore
+          </button>
+          {% endif %}
+      </section>
+      <section class="tab-row row-wrap form">
+          <h5 id='task_result_header'></h5>
+      </section>
+      {% if user_is_scorekeeper %}
+      {% from "macros.html" import render_field with context %}
+      <section class="tab-row row-wrap form">
+          {{ render_field(fileform.result_file) }}
+          <button id='publish' class='btn btn-danger' type='button' onclick='toggle_publish();'>
+            Un-publish results
+          </button>
+          <button id='change_status' class='btn btn-primary ml-2' type='button' onclick='open_status_modal();'>
+            Edit Status
+          </button>
+          <button id='download_task_html' class='btn btn-primary ml-2' type='button'>
+            Task HTML
+          </button>
+      </section>
+      {% endif %}
     </div>
-    <div id='comp_row' class='form-row form-group col-md-12'>
-      <h5 id='comp_header'></h5>
-      <button id='comp_unpublish' class='btn btn-danger ml-4' type='button' onclick='comp_unpublish();'>
-        Remove
-      </button>
-      <button id='comp_publish' class='btn btn-danger ml-4' type='button' onclick='comp_publish();'>
-        Update
-      </button>
-      <p id='comp_publish_spinner' style="width: 8rem; min-width: 8rem"></p>
-      <button id='download_comp_html' class='btn btn-primary ml-4' onclick="location.href='/users/_download/comp_html/{{session.compid}}'" type='button'>
-        Comp HTML
-      </button>
+    <div role="tabpanel" class="tab-pane column-wrap fade" id="comp_result">
+      <h4 class='tab-title font-weight-bold'>Comp Results:</h4>
+      {% if user_is_scorekeeper %}
+      <section class="tab-row row-wrap button">
+          <button id='comp_publish' class='btn btn-danger' type='button' onclick='comp_publish();'>
+            Update
+          </button>
+          <p id='comp_publish_spinner' style="width: 8rem; min-width: 8rem"></p>
+      </section>
+      {% endif %}
+      <section class="tab-row row-wrap form">
+          <h5 id='comp_header'></h5>
+      </section>
+      <section class="tab-row row-wrap form">
+          {% if user_is_scorekeeper %}
+          <button id='comp_unpublish' class='btn btn-danger' type='button' onclick='comp_unpublish();'>
+            Remove
+          </button>
+          <button id='download_comp_html' class='btn btn-primary ml-2' onclick="location.href='/users/_download/comp_html/{{session.compid}}'" type='button'>
+            Comp HTML
+          </button>
+          {% endif %}
+      </section>
     </div>
-
   </div>
 </div>
-<div class='container-fluid'>
-  <div class='row mb-3'>
-    <div class='col w-100'>
+
+<!-- Task result Tab Section -->
+<div role="tabpanel" class="tab-panel">
+  <!-- Nav tabs -->
+  <ul role="tablist" id="task_tab-list" class="nav nav-tabs">
+    <li role="presentation" class="nav-item"><a role="tab" data-toggle="tab" class="nav-link active" id="task_table_tab" href="#task_table" aria-controls="task_table">Results</a></li>
+    <li role="presentation" class="nav-item"><a role="tab" data-toggle="tab" class="nav-link" id="task_stats_tab" href="#task_stats" aria-controls="task_stats">Task Stats</a></li>
+  </ul>
+
+  <!-- Tab panes -->
+  <div class="tab-content">
+    <div role="tabpanel" class="tab-pane column-wrap fade show active" id="task_table">
       <table id='task_result' class='row-border stripe compact' cellspacing='0' width='100%'>
-        <thead>
-        <tr>
-        </tr>
+      </table>
+    </div>
+    <div role="tabpanel" class="tab-pane column-wrap fade" id="task_stats">
+      <table class='table table-sm form_param' id='taskinfo'>
+        <thead class='thead-light small' id='taskinfo_hd'>
+          <tr>
+            <th>Task Metric</th>
+            <th>Value</th>
+          </tr>
         </thead>
+        <tbody class='small' id='taskinfo_bd'>
+        </tbody>
       </table>
     </div>
   </div>
-
 </div>
-<div class='container-fluid'>
-  <div class='col-sm form_param'>
-    <table class='table table-sm form_param' id='taskinfo'>
-      <thead class='thead-light small' id='taskinfo_hd'>
-      <tr>
-        <th>Task Metric</th>
-        <th>Value</th>
-      </tr>
-      </thead>
-      <tbody class='small' id='taskinfo_bd'></tbody>
-    </table>
-  </div>
 
-</div>
+{% if user_is_scorekeeper %}
 <!---status-modal starts here--->
 <div id='statusmodal' class='modal fade' tabindex='-1' role='dialog'>
   <div class='modal-dialog' role='document'>
@@ -121,7 +154,7 @@ Task Scoring Admin
     </div>
   </div>
 </div>
-<!-status-Modal ends here--->
+<!---status-Modal ends here--->
 
 <!---score-modal starts here--->
 <div id='scoremodal' class='modal fade' tabindex='-1' role='dialog'>
@@ -155,7 +188,8 @@ Task Scoring Admin
     </div>
   </div>
 </div>
-<!-score-Modal ends here--->
+<!---score-Modal ends here--->
+
 <!---full rescore-modal starts here--->
 <div id='fullscoremodal' class='modal fade' tabindex='-1' role='dialog'>
   <div class='modal-dialog' role='document'>
@@ -191,7 +225,8 @@ Task Scoring Admin
     </div>
   </div>
 </div>
-<!-full_Rescore-Modal ends here--->
+<!---full_Rescore-Modal ends here--->
+
 <!---edit-modal starts here--->
 <div id='editmodal' class='modal fade bd-example-modal-lg   ' tabindex='-1' role='dialog'>
   <div class='modal-dialog modal-lg' role='document'>
@@ -239,9 +274,9 @@ Task Scoring Admin
     </div>
   </div>
 </div>
-<!-edit-Modal ends here--->
+<!---edit-Modal ends here--->
 
-<!-- process log Modal starts here -->
+<!---process log Modal starts here -->
 <div class='modal fade' id='ProcessModal' tabindex='-1' role='dialog' aria-labelledby='ProcessModalTitle'
      aria-hidden='true'>
   <div class='modal-dialog modal-dialog-scrollable' role='document'>
@@ -267,9 +302,9 @@ Task Scoring Admin
 {% block js %}
 {% if user_is_scorekeeper %}
 <script type='text/javascript' src='https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js'></script>
-<script type='text/javascript' src='/static/js/pop_task_score_admin.js'></script>
+<script type='text/javascript' src="{{ static_url_for('static', filename='js/pop_task_score_admin.js') }}"></script>
+<script type='text/javascript' src="{{ static_url_for('static', filename='js/mindmup-editabletable.js') }}"></script>
 <script type='text/javascript'>populate_task_scores({{taskid}},{{active_file|tojson}})</script>
-<script src='/static/js/mindmup-editabletable.js'></script>
 <script type='text/javascript'>
 
 var score_data = new Object();
@@ -278,7 +313,7 @@ table_data=[];
 
 // jQuery selection for the file select box
 var dropdown = {
-  file: $('#file')
+  file: $('#result_file')
 };
 
 function update_publish_button(filename) {
@@ -294,8 +329,8 @@ function update_publish_button(filename) {
 
 function toggle_publish() {
   var mydata = new Object();
-  mydata.filetext = $('#file option:selected').text();
-  mydata.filename = $('#file option:selected').val();
+  mydata.filetext = $('#result_file option:selected').text();
+  mydata.filename = $('#result_file option:selected').val();
   var url = ''
   if (mydata.filename == active_file) {
     url = "{{ url_for('user._unpublish_result', taskid=taskid)}}"
@@ -313,7 +348,7 @@ function toggle_publish() {
     success: function(response) {
       active_file = response.filename
       update_publish_button(mydata.filename);
-      $('#header').text(response.header)
+      $('#task_result_header').text(response.header)
     }
   });
 }
@@ -331,7 +366,7 @@ function updateFiles(load_latest=false) {
     data: JSON.stringify(mydata),
     dataType: "json",
     success: function(response) {
-      $('#header').text(response.header)
+      $('#task_result_header').text(response.header)
       $('#comp_header').text(response.comp_header)
       if (response.display_comp_unpublish) {
           $('#comp_unpublish').show();
@@ -350,14 +385,14 @@ function updateFiles(load_latest=false) {
       dropdown.file.removeAttr('disabled');
       if(response.active){
         active_file = response.active;
-        $("#file").val(response.active);
+        $("#result_file").val(response.active);
       }
       if(load_latest){
-        $("#file").val($("#file option:first").val());
+        $("#result_file").val($("#result_file option:first").val());
       }
-      var filename = $('#file option:selected').val();
+      var filename = $('#result_file option:selected').val();
       update_publish_button(filename);
-      var status = $('#file option:selected').text().split(' - ')[1];
+      var status = $('#result_file option:selected').text().split(' - ')[1];
       $('#status_modal_comment').val(status);
       populate_task_scores({{taskid}}, filename);
     }
@@ -417,9 +452,9 @@ function FullRescore() {
 $(document).ready(function() {
   updateFiles();
   // Event listener to the file picker to redraw on input
-  $('#file').change(function() {
-    var filename = $('#file option:selected').val();
-    var status = $('#file option:selected').text().split(' - ')[1];
+  $('#result_file').change(function() {
+    var filename = $('#result_file option:selected').val();
+    var status = $('#result_file option:selected').text().split(' - ')[1];
     update_publish_button(filename);
     populate_task_scores({{taskid}}, filename);
     $('#status_modal_comment').val(status);
@@ -429,7 +464,7 @@ $(document).ready(function() {
 function change_status() {
 var mydata = new Object();
   mydata.status = $('#status_modal_comment').val();
-  mydata.filename = $('#file option:selected').val();
+  mydata.filename = $('#result_file option:selected').val();
   $.ajax({
     type: "POST",
     url: "{{ url_for('user._change_result_status', taskid=taskid)}}",
@@ -520,7 +555,7 @@ function get_table_data(){
 
 function save_adjustment(par_id){
   var mydata = new Object();
-  mydata.filename = $('#file option:selected').val();
+  mydata.filename = $('#result_file option:selected').val();
   mydata.par_id = par_id;
   mydata.changes = [];
   mydata.new = {};
@@ -596,7 +631,7 @@ function initES() {
     }, false);
 
     es.addEventListener('reload', function(event) {
-      var filename = $('#file option:selected').val();
+      var filename = $('#result_file option:selected').val();
       populate_task_scores({{taskid}}, filename);
     }, false);
 

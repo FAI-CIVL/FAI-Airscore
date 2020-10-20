@@ -5,12 +5,14 @@ Competition Admin
 
 {% block head %}
 <!-- CSS -->
-<link href='/static/css/task.css' rel='stylesheet'>
+<link href="{{ static_url_for('static', filename='css/task.css') }}" rel='stylesheet'>
 <link href='https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css' rel='stylesheet'>
 <!-- JS -->
 <script type='text/javascript' src='/static/js/utils.js'></script>
 <script type='text/javascript' src='/static/js/microajax.minified.js'></script>
 {% endblock %}
+
+{% block header %}Competitions:{% endblock %}
 
 {% block content %}
 <div class='container' id='main'>
