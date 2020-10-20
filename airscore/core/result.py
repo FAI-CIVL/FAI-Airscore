@@ -30,6 +30,7 @@ class TaskResult:
     """
 
     info_list = ['id',
+                 'comp_id',
                  'comp_name',
                  'comp_site',
                  'comp_class',
