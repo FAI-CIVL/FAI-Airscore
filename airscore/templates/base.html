@@ -30,8 +30,8 @@
   <!--  CSS    -->
   <link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css'
         integrity='sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk' crossorigin='anonymous'>
-  <link rel='stylesheet' href='/static/css/nav_bar_custom.css' crossorigin='anonymous'>
-  <link rel='stylesheet' href='/static/css/bootnavbar.css' crossorigin='anonymous'>
+  <link rel='stylesheet' href="{{ static_url_for('static', filename='css/nav_bar_custom.css') }}" crossorigin='anonymous'>
+  <link rel='stylesheet' href="{{ static_url_for('static', filename='css/bootnavbar.css') }}" crossorigin='anonymous'>
   <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.0/animate.min.css'>
   <!-- <link rel="stylesheet" type="text/css" href="{{ static_url_for('static', filename='build/main_css.bundle.css') }}"/>-->
   <link rel='stylesheet' type='text/css' href="{{ static_url_for('static', filename='css/frontend.css') }}"/>
