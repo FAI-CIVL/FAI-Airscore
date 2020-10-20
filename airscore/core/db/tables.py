@@ -38,6 +38,7 @@ class CompObjectView(BaseModel):
                       Column('check_launch', Enum('on', 'off'), server_default=text("'off'")),
                       Column('igc_config_file', String(80)),
                       Column('self_register', TINYINT(1), server_default=text("'0'")),
+                      Column('track_source', String(40)),
                       Column('formula_type', String(10)),
                       Column('formula_version', INTEGER(8)),
                       Column('formula_name', String(50)),
@@ -612,11 +613,12 @@ TblCompAirspaceCheck = Table(
     Column('v_max_penalty', Float(3), nullable=False, server_default=text("'1'"))
 )
 
-TblLadderComp = Table(
-    'tblLadderComp', metadata,
-    Column('ladder_id', ForeignKey('tblLadder.ladder_id', ondelete='CASCADE'), index=True),
-    Column('comp_id', ForeignKey('tblCompetition.comp_id', ondelete='CASCADE'), index=True)
-)
+
+class TblLadderComp(BaseModel):
+    __tablename__ = 'tblLadderComp'
+
+    ladder_id = Column(ForeignKey('tblLadder.ladder_id', ondelete='CASCADE'), index=True)
+    comp_id = Column(ForeignKey('tblCompetition.comp_id', ondelete='CASCADE'), primary_key=True, index=True)
 
 
 class TblRegionWaypoint(BaseModel):
