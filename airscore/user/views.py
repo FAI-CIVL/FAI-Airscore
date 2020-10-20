@@ -227,7 +227,7 @@ def comp_settings_admin(compid: int):
             comp.MD_name = compform.MD_name.data
             comp.cat_id = compform.cat_id.data
             comp.track_source = compform.track_source.data
-            comp.time_offset = compform.time_offset.data * 3600
+            comp.time_offset = compform.time_offset.data
             comp.restricted = compform.pilot_registration.data
             comp.locked = compform.locked.data
             comp.igc_config_file = compform.igc_parsing_file.data
@@ -299,7 +299,7 @@ def comp_settings_admin(compid: int):
         compform.MD_name.data = comp.MD_name
         compform.cat_id.data = comp.cat_id
         compform.track_source.data = comp.track_source
-        compform.time_offset.data = comp.time_offset / 3600
+        compform.time_offset.data = int(comp.time_offset)
         compform.pilot_registration.data = comp.restricted
         compform.formula.data = formula.formula_name
         compform.overall_validity.data = formula.overall_validity
@@ -455,16 +455,16 @@ def task_admin(taskid):
             task.comment = taskform.comment.data
             task.date = taskform.date.data
             task.task_type = taskform.task_type.data
-            task.window_open_time = time_to_seconds(taskform.window_open_time.data) - taskform.time_offset.data * 3600
-            task.window_close_time = time_to_seconds(taskform.window_close_time.data) - taskform.time_offset.data * 3600
-            task.start_time = time_to_seconds(taskform.start_time.data) - taskform.time_offset.data * 3600
-            task.start_close_time = time_to_seconds(taskform.start_close_time.data) - taskform.time_offset.data * 3600
+            task.window_open_time = time_to_seconds(taskform.window_open_time.data) - taskform.time_offset.data
+            task.window_close_time = time_to_seconds(taskform.window_close_time.data) - taskform.time_offset.data
+            task.start_time = time_to_seconds(taskform.start_time.data) - taskform.time_offset.data
+            task.start_close_time = time_to_seconds(taskform.start_close_time.data) - taskform.time_offset.data
             task.stopped_time = None if taskform.stopped_time.data is None else \
-                time_to_seconds(taskform.stopped_time.data) - taskform.time_offset.data * 3600
-            task.task_deadline = time_to_seconds(taskform.task_deadline.data) - taskform.time_offset.data * 3600
+                time_to_seconds(taskform.stopped_time.data) - taskform.time_offset.data
+            task.task_deadline = time_to_seconds(taskform.task_deadline.data) - taskform.time_offset.data
             task.SS_interval = taskform.SS_interval.data * 60  # (convert from min to sec)
             task.start_iteration = taskform.start_iteration.data
-            task.time_offset = taskform.time_offset.data * 3600
+            task.time_offset = taskform.time_offset.data
             task.check_launch = 'on' if taskform.check_launch.data else 'off'
             task.airspace_check = taskform.airspace_check.data
             # task.openair_file = taskform.openair_file  # TODO get a list of openair files for this comp (in the case of defines.yaml airspace_file_library: off otherwise all openair files available)
@@ -518,7 +518,7 @@ def task_admin(taskid):
                                                                                      + offset) % 86400)
         taskform.SS_interval.data = round(task.SS_interval / 60)  # (convert from sec to min)
         taskform.start_iteration.data = task.start_iteration
-        taskform.time_offset.data = round(offset / 3600, 1)
+        taskform.time_offset.data = offset
         taskform.check_launch.data = False if task.check_launch == 'off' else True
         taskform.airspace_check.data = task.airspace_check
         # taskform.openair_file.data = task.openair_file # TODO get a list of openair files for this comp (in the case of defines.yaml airspace_file_library: off otherwise all openair files available)

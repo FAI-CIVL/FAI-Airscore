@@ -45,7 +45,7 @@ Competition Settings
             {{ render_field(compform.comp_site, 40) }}
             {{ render_field(compform.date_from, 15) }}
             {{ render_field(compform.date_to, 15) }}
-            {{ render_field(compform.time_offset, 5, tooltip=True) }}
+            {{ render_field(compform.time_offset, tooltip=True) }}
         </section>
         <section class="tab-row row-wrap form">
             {{ render_field(compform.MD_name, 40) }}
@@ -341,5 +341,6 @@ Competition Settings
   {% if ladderform %}
   var link_save_comp_ladders = "{{ url_for('user._save_comp_ladders', compid=compid)}}";
   {% endif %}
+  console.log('timezone='+{{ compform.time_offset.data }});
 </script>
 {% endblock %}

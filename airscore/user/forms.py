@@ -3,7 +3,7 @@
 from datetime import date
 
 from flask_wtf import FlaskForm
-from wtforms import PasswordField, StringField, IntegerField, SelectField, DecimalField, BooleanField, SubmitField,\
+from wtforms import PasswordField, StringField, IntegerField, SelectField, DecimalField, BooleanField, SubmitField, \
     FileField, TextAreaField, SelectMultipleField, widgets
 
 from wtforms.fields.html5 import DateField, TimeField
@@ -79,7 +79,7 @@ class NewScorekeeperForm(FlaskForm):
 
 class CompForm(FlaskForm):
     from formula import list_formulas
-    from frontendUtils import list_classifications, list_track_sources
+    from frontendUtils import list_classifications, list_track_sources, list_gmt_offset
 
     help_nom_launch = "When pilots do not take off for safety reasons, to avoid difficult launch conditions or bad " \
                       "conditions in the air, Launch Validity is reduced.. Nominal Launch defines a threshold as a " \
@@ -124,16 +124,23 @@ class CompForm(FlaskForm):
     date_from = DateField('Start Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
     date_to = DateField('End Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
     MD_name = StringField('Race Director')
-    time_offset = DecimalField('GMT offset', validators=[InputRequired()], places=2, render_kw=dict(maxlength=5),
-                               description='The default time offset for the comp. Individual tasks will have this '
-                               'as a default but can be overridden if your comp spans multiple time zones'
-                               ' or over change in daylight savings')
+    # time_offset = DecimalField('GMT offset', validators=[InputRequired()], places=2, render_kw=dict(maxlength=5),
+    #                            description='The default time offset for the comp. Individual tasks will have this '
+    #                            'as a default but can be overridden if your comp spans multiple time zones'
+    #                            ' or over change in daylight savings')
+    timezones = list_gmt_offset()
+    time_offset = SelectField('GMT Offset', choices=timezones, id='select_time_offset', coerce=int, default=0,
+                              description='The default time offset for the comp. Individual tasks will have this '
+                              'as a default but can be overridden if your comp spans multiple time zones'
+                              ' or over change in daylight savings')
+
     pilot_registration = SelectField('Pilot Entry', choices=[(1, 'Registered'), (0, 'Open')], coerce=int,
                                      description='Registered - only pilots registered are flying, '
                                                  'open - all tracklogs uploaded are considered as entires')
     classifications = list_classifications()
     cat_id = SelectField('Classification', choices=[(x['cat_id'], x['cat_name'])
-                                                    for x in classifications['ALL']], id='select_classification')
+                                                    for x in classifications['ALL']], coerce=int, default=0,
+                         id='select_classification')
 
     track_sources = list_track_sources()
     track_source = SelectField('Track Source', choices=track_sources, id='select_source',
@@ -145,12 +152,13 @@ class CompForm(FlaskForm):
                           description="If locked, a rescore will not change displayed results")
 
     # formula object/table
-    overall_validity = SelectField('Scoring', choices=[('all', 'ALL'), ('ftv', 'FTV'), ('round', 'ROUND')]) # TblForComp comOverallScore  ??what is round?? do we also need old drop tasks?
+    overall_validity = SelectField('Scoring', choices=[('all', 'ALL'), ('ftv', 'FTV'), ('round', 'ROUND')])
     validity_param = IntegerField('FTV percentage', validators=[NumberRange(min=0, max=100)])
     nom_dist = IntegerField('Nominal Distance (km)', description=help_nom_distance)
     nom_goal = IntegerField('Nominal Goal (%)', description=help_nom_goal, validators=[NumberRange(min=0, max=100)])
     min_dist = IntegerField('Minimum Distance (km)', description=help_min_distance)
-    nom_launch = IntegerField('Nominal Launch (%)', description=help_nom_launch, validators=[NumberRange(min=0, max=100)])
+    nom_launch = IntegerField('Nominal Launch (%)', description=help_nom_launch,
+                              validators=[NumberRange(min=0, max=100)])
     nom_time = IntegerField('Nominal Time (min)', description=help_nom_time)
 
     team_scoring = BooleanField('Team Scoring')
@@ -167,9 +175,12 @@ class CompForm(FlaskForm):
 
     team_over = IntegerField('Team over- what is this??', validators=[Optional(strip_whitespace=True)])
 
-    formula_distance = SelectField('Distance points', choices=[('on', 'On'), ('difficulty', 'Difficulty'), ('off', 'Off')])
-    formula_arrival = SelectField('Arrival points', choices=[('position', 'Position'), ('time', 'Time'), ('off', 'Off')])
-    formula_departure = SelectField('Departure points', choices=[('leadout', 'Leadout'), ('departure', 'Departure'), ('off', 'Off')])
+    formula_distance = SelectField('Distance points',
+                                   choices=[('on', 'On'), ('difficulty', 'Difficulty'), ('off', 'Off')])
+    formula_arrival = SelectField('Arrival points',
+                                  choices=[('position', 'Position'), ('time', 'Time'), ('off', 'Off')])
+    formula_departure = SelectField('Departure points',
+                                    choices=[('leadout', 'Leadout'), ('departure', 'Departure'), ('off', 'Off')])
     formula_time = SelectField('Time points', choices=[('on', 'On'), ('off', 'Off')])
 
     scoring_altitude = SelectField('Scoring Altitude', choices=[('GPS', 'GPS'), ('QNH', 'QNH')])
@@ -211,14 +222,15 @@ class CompForm(FlaskForm):
 
 
 class TaskForm(FlaskForm):
+    from frontendUtils import list_gmt_offset
     # general
     comp_name = ""
     task_name = StringField("Task Name", description='optional. If you want to give the task a name. '
                                                      'If left blank it will default to "Task #"')
     task_num = IntegerField("Task Number", validators=[NumberRange(min=0, max=50)],
-                               description='task number, by default one more than the last task')
+                            description='task number, by default one more than the last task')
     comment = StringField('Comment', description='Sometimes you may wish to make a comment that will show up'
-                                                ' in the competition overview page. e.g. "task stopped at 14:34"')
+                                                 ' in the competition overview page. e.g. "task stopped at 14:34"')
     date = DateField('Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
     task_type = SelectField('Type', choices=[('race', 'Race'), ('elapsed_time', 'Elapsed time')])
     # times
@@ -234,9 +246,15 @@ class TaskForm(FlaskForm):
     start_iteration = IntegerField('Number of gates', description='number of start iterations: 0 is indefinite up to '
                                                                   'start close time',
                                    validators=[Optional(strip_whitespace=True)])
-    time_offset = DecimalField('GMT offset', validators=[InputRequired()], places=1, render_kw=dict(maxlength=5),
-                               description='The time offset for the task. Default value taken from the competition '
-                                           'time offset')
+    # time_offset = DecimalField('GMT offset', validators=[InputRequired()], places=1, render_kw=dict(maxlength=5),
+    #                            description='The time offset for the task. Default value taken from the competition '
+    #                                        'time offset')
+
+    timezones = list_gmt_offset()
+    time_offset = SelectField('GMT Offset', choices=timezones, id='select_time_offset', coerce=int, default=0,
+                              description='The time offset for the task. Default value taken from the competition '
+                              'time offset')
+
     check_launch = BooleanField('Check launch', description='If we check pilots leaving launch - i.e. launch is like '
                                                             'an exit cylinder')
     # region = SelectField('Waypoint file', choices=[(1,'1'), (2,'2')])
@@ -253,7 +271,7 @@ class TaskForm(FlaskForm):
                                                              ('off', 'Off')])
     formula_departure = SelectField('Departure points', choices=[('leadout', 'Leadout'), ('departure', 'Departure'),
                                                                  ('off', 'Off')])
-    formula_time = SelectField('Time points', choices=[('on','On'), ('off', 'Off')])
+    formula_time = SelectField('Time points', choices=[('on', 'On'), ('off', 'Off')])
     arr_alt_bonus = DecimalField('Height bonus', validators=[InputRequired()], default=0)
     max_JTG = IntegerField("Max Jump the gun (sec)", default=0)
     no_goal_penalty = IntegerField('No goal penalty (%)', validators=[InputRequired()], default=100)
@@ -305,12 +323,10 @@ class ModifyTurnpointForm(FlaskForm):
 
 
 class TaskResultAdminForm(FlaskForm):
-
     result_file = SelectField('Scoring run')
 
 
 class NewRegionForm(FlaskForm):
-
     name = StringField("Area name", validators=[DataRequired()],
                        description='This is the name that will appear when choosing an area for a task')
     waypoint_file = FileField("Waypoint file", validators=[DataRequired()])
@@ -398,8 +414,8 @@ class ModifyParticipantForm(FlaskForm):
     glider = StringField('Glider')
     sponsor = StringField('Sponsor')
     status = SelectField('Status', choices=[('waiting for payment', 'waiting for payment'), ('cancelled', 'cancelled'),
-                                             ('waiting list', 'waiting list'), ('wild card', 'wild card'),
-                                             ('confirmed', 'confirmed')])
+                                            ('waiting list', 'waiting list'), ('wild card', 'wild card'),
+                                            ('confirmed', 'confirmed')])
     certification = StringField('Certification')
     paid = SelectField('Paid', choices=[(1, 'Yes'), (0, 'No')])
     nat_team = BooleanField('In National Team')
@@ -416,7 +432,7 @@ class EditScoreForm(FlaskForm):
 class ModifyUserForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired()])
     access = SelectField('Access Level', choices=[('pilot', 'Pilot'), ('pending', 'Pending'),
-                                                  ('scorekeeper', 'Scorekeeper'), ('admin', 'Admin'),])
+                                                  ('scorekeeper', 'Scorekeeper'), ('admin', 'Admin'), ])
     active = BooleanField('Enabled')
 
 

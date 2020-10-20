@@ -1293,9 +1293,9 @@ def list_gmt_offset() -> list:
     while tz <= 14:
         offset = int(tz * 3600)
         sign = '-' if tz < 0 else '+'
-        i, d = divmod(tz)
+        i, d = divmod(abs(tz), 1)
         h = int(i)
-        m = None if not d else int(d * 60)
+        m = '00' if not d else int(d * 60)
         text = f"{sign}{h}:{m}"
         offsets.append((offset, text))
         if tz in (5.5, 8.5, 12.5):

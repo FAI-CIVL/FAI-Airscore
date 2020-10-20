@@ -9,7 +9,6 @@ $(document).ready(function() {
     igc_config: $('#igc_parsing_file')
   };
 
-  console.log('cat: '+dropdown.category+' for: '+dropdown.formula+' igc: '+dropdown.igc_config);
   document.getElementById("link_igc_config").setAttribute("href", "/users/igc_parsing_config/" + dropdown.igc_config.val());
 
   // function to call XHR and update formula dropdown
