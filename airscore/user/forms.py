@@ -4,7 +4,7 @@ from datetime import date
 
 from flask_wtf import FlaskForm
 from wtforms import PasswordField, StringField, IntegerField, SelectField, DecimalField, BooleanField, SubmitField,\
-    FileField, TextAreaField
+    FileField, TextAreaField, SelectMultipleField, widgets
 
 from wtforms.fields.html5 import DateField, TimeField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange, Optional, InputRequired
@@ -57,6 +57,11 @@ class RegisterForm(FlaskForm):
         return True
 
 
+class MultiCheckboxField(SelectMultipleField):
+    widget = widgets.ListWidget(prefix_label=False)
+    option_widget = widgets.CheckboxInput()
+
+
 class NewTaskForm(FlaskForm):
     task_name = StringField("Task Name", description='optional. If you want to give the task a name. '
                                                      'If left blank it will default to "Task #"')
@@ -74,6 +79,7 @@ class NewScorekeeperForm(FlaskForm):
 
 class CompForm(FlaskForm):
     from formula import list_formulas
+    from frontendUtils import list_classifications, list_track_sources
 
     help_nom_launch = "When pilots do not take off for safety reasons, to avoid difficult launch conditions or bad " \
                       "conditions in the air, Launch Validity is reduced.. Nominal Launch defines a threshold as a " \
@@ -125,6 +131,14 @@ class CompForm(FlaskForm):
     pilot_registration = SelectField('Pilot Entry', choices=[(1, 'Registered'), (0, 'Open')], coerce=int,
                                      description='Registered - only pilots registered are flying, '
                                                  'open - all tracklogs uploaded are considered as entires')
+    classifications = list_classifications()
+    cat_id = SelectField('Classification', choices=[(x['cat_id'], x['cat_name'])
+                                                    for x in classifications['ALL']], id='select_classification')
+
+    track_sources = list_track_sources()
+    track_source = SelectField('Track Source', choices=track_sources, id='select_source',
+                               default=None, description='Select Tracks source if available')
+
     formulas = list_formulas()
     formula = SelectField('Formula', choices=[(x, x.upper()) for x in formulas['ALL']], id='select_formula')
     locked = BooleanField('Scoring Locked',
@@ -162,7 +176,7 @@ class CompForm(FlaskForm):
     lead_factor = DecimalField('Leadfactor', default=1)
     no_goal_penalty = IntegerField('No goal penalty (%)', validators=[NumberRange(min=0, max=100)], default=100)
 
-    tolerance = DecimalField('Turnpoint radius tolerance %', places=3, default=0)
+    tolerance = DecimalField('Turnpoint radius tolerance %', places=1, default=0.1)
     min_tolerance = IntegerField('Minimum turnpoint tolerance (m)')
     glide_bonus = DecimalField('Glide bonus', validators=[InputRequired()], default=0)
     arr_alt_bonus = DecimalField('Height bonus', validators=[InputRequired()], default=0)
@@ -216,11 +230,11 @@ class TaskForm(FlaskForm):
     task_deadline = TimeField('Deadline', format='%H:%M', validators=[DataRequired()])
 
     # other
-    SS_interval = DecimalField('Gate interval (mins)')
+    SS_interval = IntegerField('Gate interval (mins)', default=0)
     start_iteration = IntegerField('Number of gates', description='number of start iterations: 0 is indefinite up to '
                                                                   'start close time',
                                    validators=[Optional(strip_whitespace=True)])
-    time_offset = DecimalField('GMT offset', validators=[InputRequired()], places=2, render_kw=dict(maxlength=5),
+    time_offset = DecimalField('GMT offset', validators=[InputRequired()], places=1, render_kw=dict(maxlength=5),
                                description='The time offset for the task. Default value taken from the competition '
                                            'time offset')
     check_launch = BooleanField('Check launch', description='If we check pilots leaving launch - i.e. launch is like '
@@ -230,9 +244,9 @@ class TaskForm(FlaskForm):
     # airspace
     airspace_check = BooleanField('Airspace checking')
     # openair_file = SelectField('Openair file', choices=[(1,'1'), (2,'2')])
-    QNH = DecimalField('QNH', validators=[NumberRange(min=900, max=1100)])
+    QNH = DecimalField('QNH', validators=[NumberRange(min=900, max=1100)], places=2, default=1013.25)
 
-    #formula overides
+    # formula overides
     formula_distance = SelectField('Distance points', choices=[('on', 'On'), ('difficulty', 'Difficulty'),
                                                                ('off', 'Off')])
     formula_arrival = SelectField('Arrival points', choices=[('position', 'Position'), ('time', 'Time'),
@@ -242,8 +256,8 @@ class TaskForm(FlaskForm):
     formula_time = SelectField('Time points', choices=[('on','On'), ('off', 'Off')])
     arr_alt_bonus = DecimalField('Height bonus', validators=[InputRequired()], default=0)
     max_JTG = IntegerField("Max Jump the gun (sec)", default=0)
-    no_goal_penalty = DecimalField('No goal penalty (%)', validators=[InputRequired()], default=0)
-    tolerance = DecimalField('Turnpoint radius tolerance (%)', places=3)
+    no_goal_penalty = IntegerField('No goal penalty (%)', validators=[InputRequired()], default=100)
+    tolerance = DecimalField('Turnpoint radius tolerance (%)', places=1)
 
     submit = SubmitField('Save')
 
@@ -404,3 +418,8 @@ class ModifyUserForm(FlaskForm):
     access = SelectField('Access Level', choices=[('pilot', 'Pilot'), ('pending', 'Pending'),
                                                   ('scorekeeper', 'Scorekeeper'), ('admin', 'Admin'),])
     active = BooleanField('Enabled')
+
+
+class CompLaddersForm(FlaskForm):
+    ladders = MultiCheckboxField('Active Ladders', coerce=int)
+    submit = SubmitField('Save')

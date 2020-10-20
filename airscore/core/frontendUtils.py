@@ -314,6 +314,8 @@ def get_task_list(comp):
 
 
 def get_task_turnpoints(task):
+    from task import get_map_json
+    from airspaceUtils import read_airspace_map_file
     turnpoints = task.read_turnpoints()
     max_n = 0
     total_dist = ''
@@ -344,21 +346,21 @@ def get_task_turnpoints(task):
     # max_n = int(math.ceil(max_n / 10.0)) * 10
     max_n += 1
 
-    task_file = Path(MAPOBJDIR, 'tasks', str(task.task_id) + '.task')
-    if task_file.is_file():
-        with open(task_file, 'r') as f:
-            data = jsonpickle.decode(f.read())
-            task_coords = data['task_coords']
-            map_turnpoints = data['turnpoints']
-            short_route = data['short_route']
-            goal_line = data['goal_line']
-            tolerance = data['tolerance']
-            bbox = data['bbox']
-            layer = {'geojson': None, 'bbox': bbox}
-            task_map = make_map(layer_geojson=layer, points=task_coords, circles=map_turnpoints, polyline=short_route,
-                                goal_line=goal_line, margin=tolerance)
-            task_map = task_map._repr_html_()
+    if task.opt_dist:
+        '''task map'''
+        task_coords, task_turnpoints, short_route, goal_line, tolerance, bbox, offset, airspace = get_map_json(task.id)
+        layer = {'geojson': None, 'bbox': bbox}
+        '''airspace'''
+        show_airspace = False
+        if airspace:
+            airspace_layer = read_airspace_map_file(airspace)['spaces']
+        else:
+            airspace_layer = None
 
+        task_map = make_map(layer_geojson=layer, points=task_coords, circles=task_turnpoints, polyline=short_route,
+                            goal_line=goal_line, margin=tolerance, waypoint_layer=True, airspace_layer=airspace_layer,
+                            show_airspace=show_airspace)
+        task_map = task_map._repr_html_()
     else:
         task_map = None
 
@@ -760,7 +762,6 @@ def get_score_header(files, offset):
     active_status = None
     active = None
     header = "This task has not been scored"
-    offset = (int(offset) / 60 * -1) * 3600
     for file in files:
         published = time.ctime(file['created'] + offset)
         if int(file['active']) == 1:
@@ -772,6 +773,17 @@ def get_score_header(files, offset):
     elif len(files) > 0:
         header = "No published results"
     return header, active
+
+
+# def get_user_module():
+#     """ returns correct User class based on ADMIN_DB parameter in Defines """
+#     from Defines import ADMIN_DB
+#     import importlib
+#     if ADMIN_DB:
+#         lib = 'airscore.user.models'
+#     else:
+#         lib = 'db.tables'
+#     return getattr(importlib.import_module(lib), 'User')
 
 
 def get_comp_scorekeeper(compid_or_taskid: int, task_id=False):
@@ -1237,3 +1249,129 @@ def create_stream_content(content):
         return mem
     except TypeError:
         return None
+
+
+def list_classifications() -> dict:
+    """Lists all classifications stored in database.
+    :returns a dictionary with 3 lists.
+        all: a list of all classifications
+        pg: a list of all classifications that are of class pg or mixed
+        hg: a list of all classifications that are of class hg or mixed"""
+    from db.tables import TblClassification as C
+    all_classifications = []
+    hg_classifications = []
+    pg_classifications = []
+
+    results = C.get_all()
+    for el in results:
+        all_classifications.append(el.as_dict())
+        if el.comp_class in ('PG', 'mixed'):
+            pg_classifications.append(el.as_dict())
+        if el.comp_class in ('HG', 'mixed'):
+            hg_classifications.append(el.as_dict())
+    return {'ALL': sorted(all_classifications, key=lambda x: x['cat_name']),
+            'PG': sorted(pg_classifications, key=lambda x: x['cat_name']),
+            'HG': sorted(hg_classifications, key=lambda x: x['cat_name'])}
+
+
+def list_track_sources() -> list:
+    """Lists all track sources enabled in Defines.
+        :returns a list of (value, text)."""
+    from Defines import track_sources
+    sources = [(None, ' -')]
+    for el in track_sources:
+        sources.append((el, el))
+    return sources
+
+
+def list_gmt_offset() -> list:
+    """Lists GMT offsets.
+            :returns a list of (value, text)."""
+    tz = -12.0
+
+    offsets = []
+    while tz <= 14:
+        offset = int(tz * 3600)
+        sign = '-' if tz < 0 else '+'
+        i, d = divmod(tz)
+        h = int(i)
+        m = None if not d else int(d * 60)
+        text = f"{sign}{h}:{m}"
+        offsets.append((offset, text))
+        if tz in (5.5, 8.5, 12.5):
+            odd = int((tz + 0.25) * 3600)
+            offsets.append((odd, f"{sign}{h}:45"))
+        tz += 0.5
+
+    return offsets
+
+
+def list_ladders(day: datetime.date = datetime.datetime.now().date(), ladder_class: str = None) -> list:
+    """Lists all ladders stored in database, if ladders are active in settings.
+    :returns a list."""
+    from calcUtils import get_season_dates
+    from Defines import LADDERS
+    if not LADDERS:
+        ''' Ladders are disabled in Settings'''
+        return []
+    ladders = []
+    results = [el for el in get_ladders()]
+    for el in results:
+        '''create start and end dates'''
+        starts, ends = get_season_dates(ladder_id=el['ladder_id'], season=int(el['season']),
+                                        date_from=el['date_from'], date_to=el['date_to'])
+        if starts < day < ends and (ladder_class is None or el['ladder_class'] == ladder_class):
+            ladders.append(el)
+
+    return ladders
+
+
+def get_comp_ladders(comp_id: int) -> list:
+    from db.tables import TblLadderComp as LC
+    return [el.ladder_id for el in LC.get_all(comp_id=comp_id)]
+
+
+def save_comp_ladders(comp_id: int, ladder_ids: list or None) -> bool:
+    from db.tables import TblLadderComp as LC
+    try:
+        '''delete previous entries'''
+        LC.delete_all(comp_id=comp_id)
+        if ladder_ids:
+            '''save entries'''
+            # if isinstance(ladder_ids, int):
+            #     ladder_ids = [ladder_ids]
+            results = []
+            for el in ladder_ids:
+                results.append(LC(comp_id=comp_id, ladder_id=el))
+            LC.bulk_create(results)
+        return True
+    except Exception:
+        raise
+        return False
+
+
+def get_task_result_files(task_id: int, comp_id: int = None, offset: int = None) -> dict:
+    from compUtils import get_comp_json, get_comp, get_offset
+    import time
+    if not offset:
+        offset = get_offset(task_id)
+    files = get_task_result_file_list(task_id)
+    comp_file = get_comp_json(comp_id or get_comp(task_id))
+
+    if comp_file == 'error':
+        comp_header = "No overall competition results published"
+        display_comp_unpublish = False
+    else:
+        comp_published = time.ctime(comp_file['file_stats']['timestamp'] + offset)
+        comp_header = f"Overall competition results published: {comp_published}"
+        display_comp_unpublish = True
+    header, active = get_score_header(files, offset)
+    choices = []
+
+    for file in files:
+        published = time.ctime(file['created'] + offset)
+        choices.append((file['filename'], f"{published} - {file['status']}"))
+    choices.reverse()
+
+    return {'choices': choices, 'header': header, 'active': active, 'comp_header': comp_header,
+            'display_comp_unpublish': display_comp_unpublish}

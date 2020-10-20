@@ -8,7 +8,7 @@ from flask_login import login_required, current_user
 import frontendUtils
 from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm, \
     TaskResultAdminForm, NewScorekeeperForm, RegionForm, NewRegionForm, IgcParsingConfigForm, ModifyParticipantForm, \
-    EditScoreForm, ModifyUserForm
+    EditScoreForm, ModifyUserForm, CompLaddersForm
 from comp import Comp
 from formula import list_formulas, Formula
 from task import Task, write_map_json, get_task_json_by_filename
@@ -19,7 +19,7 @@ from task import get_task_json_by_filename
 from calcUtils import sec_to_time
 from pathlib import Path
 import time
-from Defines import SELF_REG_DEFAULT, PILOT_DB
+from Defines import SELF_REG_DEFAULT, PILOT_DB, LADDERS
 from airscore.user.models import User
 
 blueprint = Blueprint("user", __name__, url_prefix="/users", static_folder="../static")
@@ -31,11 +31,13 @@ def admin_required(func):
     an admin before calling the actual view. (If they are
     not, it calls the :attr:`LoginManager.unauthorized` callback.)
     """
+
     @wraps(func)
     def decorated_view(*args, **kwargs):
         if not session['is_admin']:
             return current_app.login_manager.unauthorized()
         return func(*args, **kwargs)
+
     return decorated_view
 
 
@@ -189,8 +191,7 @@ def _get_formulas():
 
 @blueprint.route('/comp_settings_admin/<compid>', methods=['GET', 'POST'])
 @login_required
-def comp_settings_admin(compid):
-    from sys import stdout
+def comp_settings_admin(compid: int):
     error = None
     compid = int(compid)
     compform = CompForm()
@@ -210,7 +211,9 @@ def comp_settings_admin(compid):
     scorekeeper_choices = []
     if all_scorekeepers:
         for scorekeeper in all_scorekeepers:
-            scorekeeper_choices.append((scorekeeper['id'], f"{scorekeeper['first_name']} {scorekeeper['last_name']} ({scorekeeper['username']})"))
+            scorekeeper_choices.append((scorekeeper['id'],
+                                        f"{scorekeeper['first_name']} {scorekeeper['last_name']} ({scorekeeper['username']})"))
+
     if request.method == 'POST':
         if compform.validate_on_submit():
             comp.comp_name = compform.comp_name.data
@@ -222,11 +225,13 @@ def comp_settings_admin(compid):
             comp.date_from = compform.date_from.data
             comp.date_to = compform.date_to.data
             comp.MD_name = compform.MD_name.data
+            comp.cat_id = compform.cat_id.data
+            comp.track_source = compform.track_source.data
             comp.time_offset = compform.time_offset.data * 3600
             comp.restricted = compform.pilot_registration.data
             comp.locked = compform.locked.data
             comp.igc_config_file = compform.igc_parsing_file.data
-            # comp.airspace_check = compform.airspace_check.data
+            comp.airspace_check = compform.airspace_check.data
             comp.check_launch = 'on' if compform.check_launch.data else 'off'
             comp.check_g_record = compform.check_g_record.data
             comp.self_register = compform.self_register.data
@@ -237,6 +242,7 @@ def comp_settings_admin(compid):
             else:
                 comp.website = compform.website.data.lower()
             comp.to_db()
+
             formula = Formula.read(compid)
             formula.formula_name = compform.formula.data
             formula.overall_validity = compform.overall_validity.data
@@ -270,7 +276,6 @@ def comp_settings_admin(compid):
             formula.country_size = compform.country_size.data
             formula.max_country_size = compform.max_country_size.data
             formula.team_over = compform.team_over.data
-
             formula.to_db()
 
             flash(f"{compform.comp_name.data} saved", category='info')
@@ -292,6 +297,8 @@ def comp_settings_admin(compid):
         compform.date_from.data = comp.date_from
         compform.date_to.data = comp.date_to
         compform.MD_name.data = comp.MD_name
+        compform.cat_id.data = comp.cat_id
+        compform.track_source.data = comp.track_source
         compform.time_offset.data = comp.time_offset / 3600
         compform.pilot_registration.data = comp.restricted
         compform.formula.data = formula.formula_name
@@ -349,12 +356,23 @@ def comp_settings_admin(compid):
         else:
             session['is_scorekeeper'] = True
 
+    ''' Ladders if active in settings'''
+    if LADDERS:
+        ladderform = CompLaddersForm()
+        ladderform.ladders.choices = [(el['ladder_id'], el['ladder_name'])
+                                      for el in frontendUtils.list_ladders(comp.date_to, comp.comp_class)]
+        comp_ladders = frontendUtils.get_comp_ladders(compid)
+        ladderform.ladders.data = comp_ladders
+    else:
+        ladderform = None
+
     tasks = frontendUtils.get_task_list(comp)
     session['tasks'] = tasks['tasks']
     session['check_g_record'] = comp.check_g_record
 
     return render_template('users/comp_settings.html', compid=compid, compform=compform,
-                           taskform=newtaskform, scorekeeperform=newScorekeeperform, error=error,
+                           taskform=newtaskform, scorekeeperform=newScorekeeperform, ladderform=ladderform,
+                           error=error,
                            self_register=(SELF_REG_DEFAULT and PILOT_DB))
 
 
@@ -363,6 +381,17 @@ def comp_settings_admin(compid):
 def _get_scorekeepers(compid):
     owner, scorekeepers, _ = frontendUtils.get_comp_scorekeeper(compid)
     return {'owner': owner, 'scorekeepers': scorekeepers}
+
+
+@blueprint.route('/_save_comp_ladders/<int:compid>', methods=['POST'])
+@login_required
+def _save_comp_ladders(compid: int):
+    checked = request.json['checked']
+    if frontendUtils.save_comp_ladders(compid, checked):
+        resp = jsonify(success=True)
+    else:
+        resp = jsonify(success=False)
+    return resp
 
 
 @blueprint.route('/_get_users', methods=['GET'])
@@ -487,9 +516,9 @@ def task_admin(taskid):
                                                                                    + offset) % 86400)
         taskform.task_deadline.data = "" if not task.task_deadline else sec_to_time((task.task_deadline
                                                                                      + offset) % 86400)
-        taskform.SS_interval.data = task.SS_interval / 60  # (convert from sec to min)
+        taskform.SS_interval.data = round(task.SS_interval / 60)  # (convert from sec to min)
         taskform.start_iteration.data = task.start_iteration
-        taskform.time_offset.data = offset / 3600
+        taskform.time_offset.data = round(offset / 3600, 1)
         taskform.check_launch.data = False if task.check_launch == 'off' else True
         taskform.airspace_check.data = task.airspace_check
         # taskform.openair_file.data = task.openair_file # TODO get a list of openair files for this comp (in the case of defines.yaml airspace_file_library: off otherwise all openair files available)
@@ -500,9 +529,9 @@ def task_admin(taskid):
         taskform.formula_arrival.data = task.formula.formula_arrival
         taskform.formula_departure.data = task.formula.formula_departure
         taskform.formula_time.data = task.formula.formula_time
-        taskform.tolerance.data = (task.formula.tolerance or 0) * 100
+        taskform.tolerance.data = round((task.formula.tolerance or 0) * 100, 1)
         taskform.max_JTG.data = task.formula.max_JTG
-        taskform.no_goal_penalty.data = (task.formula.no_goal_penalty or 0) * 100
+        taskform.no_goal_penalty.data = round((task.formula.no_goal_penalty or 0) * 100)
         taskform.arr_alt_bonus.data = task.formula.arr_alt_bonus
 
         if not (task.opt_dist and task.window_open_time and task.window_close_time and task.start_time and
@@ -941,28 +970,30 @@ def _upload_track_zip(taskid):
 @blueprint.route('/_get_task_result_files/<taskid>', methods=['POST'])
 @login_required
 def _get_task_result_files(taskid):
-    from compUtils import get_comp_json
     data = request.json
-    offset = (int(data['offset']) / 60 * -1) * 3600
-    files = frontendUtils.get_task_result_file_list(int(taskid))
-    comp_file = get_comp_json(int(session['compid']))
+    offset = ((int(data['offset']) / 60 * -1) * 3600)
+    compid = int(session['compid'])
 
-    if comp_file == 'error':
-        comp_header = "No overall competition results published"
-        display_comp_unpublish = False
-    else:
-        comp_published = time.ctime(comp_file['file_stats']['timestamp'] + offset)
-        comp_header = f"Overall competition results published: {comp_published}"
-        display_comp_unpublish = True
-    header, active = frontendUtils.get_score_header(files, data['offset'])
-    choices = []
-
-    for file in files:
-        published = time.ctime(file['created'] + offset)
-        choices.append((file['filename'], f"{published} - {file['status']}"))
-    choices.reverse()
-    return {'choices': choices, 'header': header, 'active': active, 'comp_header': comp_header,
-            'display_comp_unpublish': display_comp_unpublish}
+    return frontendUtils.get_task_result_files(int(taskid), compid, int(offset))
+    # files = frontendUtils.get_task_result_file_list(int(taskid))
+    # comp_file = get_comp_json(int(session['compid']))
+    #
+    # if comp_file == 'error':
+    #     comp_header = "No overall competition results published"
+    #     display_comp_unpublish = False
+    # else:
+    #     comp_published = time.ctime(comp_file['file_stats']['timestamp'] + offset)
+    #     comp_header = f"Overall competition results published: {comp_published}"
+    #     display_comp_unpublish = True
+    # header, active = frontendUtils.get_score_header(files, data['offset'])
+    # choices = []
+    #
+    # for file in files:
+    #     published = time.ctime(file['created'] + offset)
+    #     choices.append((file['filename'], f"{published} - {file['status']}"))
+    # choices.reverse()
+    # return {'choices': choices, 'header': header, 'active': active, 'comp_header': comp_header,
+    #         'display_comp_unpublish': display_comp_unpublish}
 
 
 @blueprint.route('/_send_telegram_update/<taskid>', methods=['POST'])
@@ -1059,6 +1090,7 @@ def task_score_admin(taskid):
 
     fileform = TaskResultAdminForm()
     editform = EditScoreForm()
+    result_files = frontendUtils.get_task_result_files(taskid, int(session['compid']))
     active_file = None
     choices = [(1, 1), (2, 2)]
     fileform.result_file.choices = choices
@@ -1571,6 +1603,10 @@ def _export_fsdb(compid):
     import tempfile
     compid = int(compid)
     comp_fsdb = FSDB.create(compid)
+    if not comp_fsdb:
+        '''comp has not been scored yet'''
+        flash("Comp has not been scored yet. Aborting FSDB file creation.", category='danger')
+        return redirect(f'/users/comp_settings_admin/{compid}')
     filename, data = comp_fsdb.to_file()
     with tempfile.NamedTemporaryFile() as tmp:
         tmp.write(data)
@@ -1591,8 +1627,6 @@ def _modify_user(user_id):
     user.update()
     resp = jsonify(success=True)
     return resp
-
-
 
 
 @blueprint.route('/_download/<string:filetype>/<string:filename>', methods=['GET', 'POST'])
