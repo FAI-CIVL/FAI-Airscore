@@ -1,7 +1,4 @@
-
-
 function populate_track_admin(task_id){
-    $(document).ready(function(){
     $('#tracks').DataTable({
         destroy: true,
         ajax: '/users/_get_tracks_admin/'+task_id,
@@ -47,9 +44,7 @@ function populate_track_admin(task_id){
         }                 }],
         initComplete: function() {
              $(".hideatstart").hide();},
-});
-
-});
+    });
 }
 
 function open_bulk_modal() {
@@ -109,3 +104,262 @@ function send_telegram(task_id){
         }
     });
 }
+
+function set_result(par_id, status){
+  var mydata = new Object();
+  mydata.par_id = par_id;
+  mydata.Result = status;
+
+  $.ajax({
+    type: "POST",
+    url: url_set_result,
+    contentType:"application/json",
+    data : JSON.stringify(mydata),
+    dataType: "json",
+    success: function (response, par_id) {
+      update_row(response);
+      update_track_pilot_stats();
+    }
+  });
+}
+
+function update_track_pilot_stats(){
+  $.ajax({
+    type: "GET",
+    url: url_get_tracks_processed,
+    contentType:"application/json",
+    dataType: "json",
+    success: function (response) {
+      $('#TracksProcessed').text('Tracks Collected: ' + response.tracks + '/' + response.pilots)
+    }
+  });
+}
+
+function get_xcontest_tracks(){
+  document.getElementById("xcontest_button").innerHTML = "Getting Tracks...";
+  document.getElementById("xcontest_button").className = "btn btn-warning ml-4";
+  $.ajax({
+    type: "POST",
+    url: url_get_xcontest_tracks,
+    contentType:"application/json",
+    dataType: "json",
+    success: function () {
+      if (production == false){
+        populate_track_admin(taskid);
+        update_track_pilot_stats();
+      }
+      document.getElementById("xcontest_button").innerHTML = "Xcontest";
+      document.getElementById("xcontest_button").className = "btn btn-primary ml-4";
+    }
+  });
+}
+
+function choose_zip_file(){
+  var filename;
+  $('#bulk_fileupload').fileupload({
+    dataType: 'json',
+    done: function (e, data) {
+      $.each(data.result.files, function (index, file) {
+        $('<p/>').text(file.name).appendTo(document.body);
+        filename = file.name;
+      });
+    },
+    submit: function (e, data){
+      $('#zip_modal_message').hide();
+      $('#zip_progress').show();
+      $('#zip_spinner').show();
+      $('#zip_progress_text').text(data.files[0].name + ' - processing');
+      $('#zip_spinner').html('<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>');
+    },
+    success: function () {
+      $('#bulkmodal').modal('hide');
+      $('#zip_modal_message').show();
+      $('#zip_progress').hide();
+      $('#zip_spinner').hide();
+      $('#zip_progress_text').text('');
+      $('#zip_spinner').html('');
+      if (production == false){
+        populate_track_admin(taskid);
+        update_track_pilot_stats();
+      }
+    },
+    progress: function (e, data) {
+      var progress = parseInt(data.loaded / data.total * 100, 10);
+      $('#zip_progress .bar').css(
+        'width',
+        progress + '%'
+      );
+    }
+  });
+  $('#bulk_fileupload').click();
+};
+
+$(document).ready(function(){
+    populate_track_admin(taskid);
+    update_track_pilot_stats();
+
+    if (production == true) {
+        var es = null;
+
+        function initES() {
+          if (es == null || es.readyState == 2) { // this is probably not necessary.
+            es = new EventSource(url_sse_stream);
+            es.onerror = function(e) {
+              if (es.readyState == 2) {
+                setTimeout(initES, 5000);
+              }
+            };
+            es.addEventListener('% complete', function(event) {
+              var data = JSON.parse(event.data);
+              $('#progress_percentage'+ data.id).text(data.message + ' % complete');
+            }, false);
+            es.addEventListener('counter', function(event) {
+              var data = JSON.parse(event.data);
+              $('#ProcessModalTitle').text('Tracklog Processing. ' + data.message);
+            }, false);
+            es.addEventListener('info', function(event) {
+              var data = JSON.parse(event.data);
+              $('#process_text').append(data.message + "<br/>");
+            }, false);
+            es.addEventListener('open_modal', function(event) {
+              $('#log_button').show();
+              $('#ProcessModal').modal('show');
+            }, false);
+            es.addEventListener('result', function(event) {
+              var data = JSON.parse(event.data);
+              if(data.message == 'error'){
+                $('#ABS'+ data.id).show();
+                $('#MD'+ data.id).show();
+                $('#DNF'+ data.id).show();
+                $('#TrackUp'+ data.id).show();
+                $('#upload_box'+ data.id).show();
+                $('#filediv'+ data.id).hide();
+                $.alert(response.error,{
+                  type: 'danger',
+                  position: ['center', [-0.42, 0]],
+                  autoClose: false
+                });
+                update_track_pilot_stats();
+              }
+              else {
+                update_row($.parseJSON(data.message));
+              }
+            }, false);
+            es.addEventListener('valid_fail', function(event) {
+              var data = JSON.parse(event.data);
+              data.message = JSON.parse(data.message);
+              $('#ABS'+ data.id).show();
+              $('#MD'+ data.id).show();
+              $('#DNF'+ data.id).show();
+              $('#TrackUp'+ data.id).show();
+              $('#upload_box'+ data.id).show();
+              $('#filediv'+ data.id).hide();
+              $('#progress_percentage'+ data.id).hide();
+              data.message.Result = '<button id="TrackUp_noV' + data.id  +'" class="btnupload btn btn-warning mt-3" onclick="choose_file(' + data.id +', false, true);">Upload IGC ignoring quality check & G record</button>'
+              update_row(data.message);
+            }, false);
+            es.addEventListener('g_record_fail', function(event) {
+              var data = JSON.parse(event.data);
+              data.message = JSON.parse(data.message);
+              $('#ABS'+ data.id).show();
+              $('#MD'+ data.id).show();
+              $('#DNF'+ data.id).show();
+              $('#TrackUp'+ data.id).show();
+              $('#upload_box'+ data.id).show();
+              $('#filediv'+ data.id).hide();
+              $('#progress_percentage'+ data.id).hide();
+              data.message.Result = '<button id="TrackUp_noG' + data.id  +'" class="btnupload btn btn-warning mt-3" onclick="choose_file(' + data.id +', true);">Upload IGC ignoring G record</button>'
+              update_row(data.message);
+            }, false);
+            es.addEventListener('reload', function(event) {
+              populate_track_admin(taskid);
+              update_track_pilot_stats();
+            }, false);
+        <!--        es.addEventListener('error', function(event) {-->
+        <!--            alert("Failed to connect to event stream. Is Redis running?");-->
+        <!--        }, false);-->
+          }
+        }
+
+        function choose_file(par_id, g_overide=false, v_overide=false){
+          var filename;
+          var suffix = '';
+          if(g_overide){
+              suffix = '_NO_G'
+                }
+                if(v_overide){
+                    suffix = '_NO_V'
+          }
+          $('#fileupload' + suffix + par_id).fileupload({
+            dataType: 'json',
+            done: function (e, data) {
+              $.each(data.result.files, function (index, file) {
+                $('<p/>').text(file.name).appendTo(document.body);
+                filename = file.name;
+              });
+            },
+            submit: function (e, data){
+              $('#ABS'+ par_id).hide();
+              $('#MD'+ par_id).hide();
+              $('#DNF'+ par_id).hide();
+              $('#TrackUp'+ par_id).hide();
+              $('#upload_box'+ par_id).hide();
+              $('#progress_percentage'+ par_id).show();
+              $('#progress_percentage'+ par_id).text('uploading..');
+              $('#filediv'+ par_id).show();
+            },
+          });
+          $('#fileupload' + suffix + par_id).click();
+        };
+
+        initES();
+    }
+    else {
+        function choose_file(par_id){
+          var filename;
+          $('#fileupload' + par_id).fileupload({
+            dataType: 'json',
+            done: function (e, data) {
+              $.each(data.result.files, function (index, file) {
+                $('<p/>').text(file.name).appendTo(document.body);
+                filename = file.name;
+              });
+            },
+            submit: function (e, data){
+              $('#ABS'+ par_id).hide();
+              $('#MD'+ par_id).hide();
+              $('#DNF'+ par_id).hide();
+              $('#TrackUp'+ par_id).hide();
+              $('#upload_box'+ par_id).hide();
+              $('#filediv'+ par_id).show();
+              $('#progress_text'+ par_id).text(data.files[0].name + ' - processing');
+              $('#spinner' + par_id).html('<div class="spinner-border" role="status"><span class="sr-only"></span></div>');
+            },
+            success: function (response) {
+              if(response.error){
+                $('#ABS'+ par_id).show();
+                $('#MD'+ par_id).show();
+                $('#DNF'+ par_id).show();
+                $('#TrackUp'+ par_id).show();
+                $('#upload_box'+ par_id).show();
+                $('#filediv'+ par_id).hide();
+                $.alert(response.error,{
+                  type: 'danger',
+                  position: ['center', [-0.42, 0]],
+                  autoClose: false
+                });
+            }
+            update_row(response);
+            },
+            progress: function (e, data) {
+              var progress = parseInt(data.loaded / data.total * 100, 10);
+              $('#progress'+ par_id+' .bar').css(
+                'width',
+                progress + '%'
+              );
+            }
+          });
+          $('#fileupload' + par_id).click();
+        };
+    }
+});
