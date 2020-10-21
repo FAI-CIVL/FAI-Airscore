@@ -5,6 +5,12 @@
 Competition Settings
 {% endblock %}
 
+{% block back %}
+<a href="{{ url_for('user.pilot_admin', compid=compid)}}" class='btn btn-info' type='button'>
+  Registered Pilots
+</a>
+{% endblock %}
+
 {% block header %} {{compform.comp_name.data}} {% endblock %}
 
 {% block content %}
