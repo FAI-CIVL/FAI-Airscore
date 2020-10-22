@@ -16,8 +16,8 @@ from os import path
 
 from sqlalchemy import and_
 from Defines import TRACKDIR, RESULTDIR, SELF_REG_DEFAULT, PILOT_DB
-from calcUtils import get_date
-from compUtils import get_tasks_result_files, get_participants, read_rankings, create_comp_path
+from calcUtils import get_date, c_round
+from compUtils import get_tasks_result_files, get_participants, read_rankings, create_classifications, create_comp_path
 from db.tables import TblCompetition
 from formula import Formula
 from db.conn import db_session
@@ -75,7 +75,7 @@ class Comp(object):
         self.igc_config_file = None  # config yaml for igc_lib. This setting will be passed on to new tasks
         self.airspace_check = False  # BOOL airspace check. This setting will be passed on to new tasks
         self.check_launch = check_launch  # check launch flag. whether we check that pilots leave from launch. This setting will be passed on to new tasks
-        self.self_register = PILOT_DB and SELF_REG_DEFAULT # set to true if we have pilot DB on and self reg on by default
+        self.self_register = PILOT_DB and SELF_REG_DEFAULT  # set to true if we have pilot DB on and self reg on by default
         self.check_g_record = False
 
         # self.formula                    = Formula.read(self.comp_id) if self.comp_id else None
@@ -117,7 +117,7 @@ class Comp(object):
     @property
     def total_validity(self):
         if len(self.tasks) > 0:
-            return round(sum([t.ftv_validity for t in self.tasks]), 4)
+            return c_round(sum([t.ftv_validity for t in self.tasks]), 4)
         else:
             return 0
 
@@ -125,7 +125,7 @@ class Comp(object):
     def avail_validity(self):
         if len(self.tasks) > 0:
             if self.formula.overall_validity == 'ftv':
-                return round(self.total_validity * self.formula.validity_param, 4)
+                return c_round(self.total_validity * self.formula.validity_param, 4)
             else:
                 return self.total_validity
         return 0
@@ -263,7 +263,7 @@ class Comp(object):
         return self.comp_id
 
     def get_rankings(self):
-        self.rankings = read_rankings(self.comp_id)
+        self.rankings = create_classifications(self.cat_id)
 
     @staticmethod
     def from_fsdb(fs_comp, short_name=None):
@@ -381,7 +381,11 @@ class Comp(object):
                     # comp.results.append({'par_id': p.par_id, 'results': []})
                     comp.results.append({'par_id': p.par_id})
                     res = comp.results[-1]
-                s = next((c_round(pil.score or 0, decimals) for pil in task.pilots if pil.par_id == p.par_id), 0)
+                # TODO need to decide which rounding to use and has to be the same in task results
+                # this is less than desirable, just to be consistent with task results
+                s = next((c_round(float(f"{c_round(float(pil.score), 1):.{decimals}f}"), decimals)
+                          for pil in task.pilots if pil.par_id == p.par_id), 0)
+                # s = next((c_round(pil.score or 0, decimals) for pil in task.pilots if pil.par_id == p.par_id), 0)
                 if r > 0:  # sanity
                     perf = c_round(s / r, decimals + 3)
                     # res['results'].append({task.task_code: {'pre': s, 'perf': perf, 'score': s}})
@@ -434,7 +438,7 @@ class Comp(object):
         for pil in self.results:
             pil['score'] = 0
 
-            ''' if we score all tasks, or tasks are not enough to ha discards,
+            ''' if we score all tasks, or tasks are not enough to have discards,
                 or event has just one valid task regardless method,
                 we can simply sum all score values
             '''
@@ -475,6 +479,37 @@ class Comp(object):
         ''' order list'''
         self.results = sorted(self.results, key=lambda x: x['score'], reverse=True)
 
+    def create_participants_html(self) -> (str, dict):
+        """ create a HTML file from participants list"""
+        from time import time
+        from calcUtils import epoch_to_string
+        title = f"{self.comp_name}"
+        filename = f"{self.comp_name.replace(' - ', '_').replace(' ', '_')}_participants.html"
+        self.participants = get_participants(self.comp_id)
+        participants = sorted(self.participants,
+                              key=lambda x: x.ID if all(el.ID for el in self.participants) else x.name)
+        num = len(participants)
+
+        '''HTML headings'''
+        headings = [f"{self.comp_name} - {self.sanction} Event",
+                    f"{self.date_from} to {self.date_to}",
+                    f"{self.comp_site}"]
+
+        '''Participants table'''
+        thead = ['Id', 'Name', 'Nat', 'Glider', 'Sponsor']
+        keys = ['ID', 'name', 'nat', 'glider', 'sponsor']
+        right_align = [0]
+        tbody = []
+        for p in participants:
+            tbody.append([getattr(p, k) or '' for k in keys])
+        participants = dict(title=f'{num} Participants', css_class='simple', right_align=right_align, thead=thead,
+                            tbody=tbody)
+
+        dt = int(time())  # timestamp of generation
+        timestamp = epoch_to_string(dt, self.time_offset)
+
+        return filename, dict(title=title, headings=headings, tables=[participants], timestamp=timestamp)
+
 
 def delete_comp(comp_id, files=True):
     """delete all database entries and files on disk related to comp"""
@@ -485,11 +520,6 @@ def delete_comp(comp_id, files=True):
     from task import delete_task
     from result import delete_result
     with db_session() as db:
-        # if files:
-        #     '''delete tracks'''
-        #     folder = path.join(TRACKDIR, db.query(TblCompetition).get(comp_id).comp_path)
-        #     if path.exists(folder):
-        #         shutil.rmtree(folder)
         tasks = db.query(T.task_id).filter_by(comp_id=comp_id).all()
         if tasks:
             '''delete tasks'''
@@ -505,4 +535,3 @@ def delete_comp(comp_id, files=True):
         db.query(FC).filter_by(comp_id=comp_id).delete(synchronize_session=False)
         db.query(TblCompetition).filter_by(comp_id=comp_id).delete(synchronize_session=False)
         db.commit()
-

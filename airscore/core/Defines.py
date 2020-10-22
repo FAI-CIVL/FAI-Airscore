@@ -26,6 +26,8 @@ except IOError:
 
 os.chdir(dname)
 ''' Application Settings'''
+# FLASKCONTAINER = config['docker']['container']  # Flask Docker Container Name
+# FLASKPORT = config['docker']['port']  # Flask Docker Container Port
 BINDIR = config['dir']['bin']  # script directory
 TRACKDIR = config['dir']['tracks']  # track file directory
 LOGDIR = config['dir']['log']  # log files directory
@@ -41,8 +43,8 @@ IGCPARSINGCONFIG = config['dir']['igc_parsing_config']  # igc parsing config fil
 TEMPFILES = config['dir']['temp_files']  # tempfile folder when we need one that can be seen by other containers. e.g. workers
 
 ''' Track file Settings'''
-track_sources = ['xcontest', 'flymaster']     # external available sources for tracks
-track_formats = ['igc']   # track accepted formats
+track_sources = [s for s in config['igc_sources'] if config['igc_sources'][s]]  # external available sources for tracks
+track_formats = ['igc']   # accepted track formats
 '''accepted filename formats
 id
 name
@@ -81,15 +83,15 @@ G_Record_validation_Server = config['g_record_validation_server']
 '''Competition options'''
 SANCTIONS = config['sanctions']
 
-'''file libraries'''
+'''File libraries'''
 WAYPOINT_AIRSPACE_FILE_LIBRARY = config['waypoint/airspace_file_library']
 
-'''pilot DB'''
+'''Admin DB'''
 ADMIN_DB = config['use_internal_admin_DB']
 ADMIN_SELF_REG = config['internal_admin_DB']['allow_self_registration']
 
 
-'''admint DB'''
+'''Pilot DB'''
 PILOT_DB = config['use_internal_pilot_DB']
 PILOT_DB_WRITE = config['internal_pilot_DB']['write_to_internal_pilot_DB']
 SELF_REG_DEFAULT = config['internal_pilot_DB']['self_registration_default']
@@ -100,3 +102,6 @@ FM_LIVE = config['flymaster_live_server']
 '''Telegram Bot'''
 TELEGRAM_API = secret.get('telegram', {}).get('API') or env.str('TELEGRAM_API')
 TELEGRAM_CHANNEL = secret.get('telegram', {}).get('channel') or env.str('TELEGRAM_CHANNEL')
+
+'''Ladders'''
+LADDERS = config['ladders']

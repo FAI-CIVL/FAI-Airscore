@@ -17,6 +17,7 @@ from pilot.flightresult import update_status, delete_track
 from os import path, remove, makedirs
 from task import get_task_json_by_filename
 from calcUtils import sec_to_time
+from pathlib import Path
 import time
 from Defines import SELF_REG_DEFAULT, PILOT_DB
 from airscore.user.models import User
@@ -90,7 +91,7 @@ def airspace_edit(filename):
         message += 'Attention: There is unknown height units in the file. You should adjust to meters or ' \
                    'feet above sea level'
 
-    airspace_map = map.make_map(airspace_layer=spaces, bbox=bbox)
+    airspace_map = map.make_map(airspace_layer=spaces, show_airspace=True, bbox=bbox)
 
     return render_template('users/airspace_admin_map.html', airspace_list=airspace_list, file=filename,
                            map=airspace_map._repr_html_(), message=message, FL_message=fl_detail)
@@ -111,7 +112,7 @@ def save_airspace():
 @blueprint.route('/comp_admin', methods=['GET', 'POST'])
 @login_required
 def comp_admin():
-    return render_template('users/comp_admin.html', today=datetime.today().strftime('%d-%m-%Y'))
+    return render_template('users/comp_admin.html', today=datetime.today().strftime('%Y-%m-%d'))
 
 
 @blueprint.route('/_create_comp', methods=['PUT'])
@@ -231,6 +232,8 @@ def comp_settings_admin(compid):
             comp.self_register = compform.self_register.data
             if compform.website.data.lower()[:7] == 'http://':
                 comp.website = compform.website.data.lower()[7:]
+            elif compform.website.data.lower()[:8] == 'https://':
+                comp.website = compform.website.data.lower()[8:]
             else:
                 comp.website = compform.website.data.lower()
             comp.to_db()
@@ -392,6 +395,7 @@ def _add_scorekeeper(compid):
 @login_required
 def task_admin(taskid):
     from calcUtils import sec_to_time, time_to_seconds
+    from region import get_openair
     error = None
     taskform = TaskForm()
     turnpointform = NewTurnpointForm()
@@ -434,6 +438,8 @@ def task_admin(taskid):
             task.check_launch = 'on' if taskform.check_launch.data else 'off'
             task.airspace_check = taskform.airspace_check.data
             # task.openair_file = taskform.openair_file  # TODO get a list of openair files for this comp (in the case of defines.yaml airspace_file_library: off otherwise all openair files available)
+            if task.airspace_check and task.reg_id and not task.openair_file:
+                task.openair_file = get_openair(reg_id=task.reg_id)
             task.QNH = taskform.QNH.data
             task.formula.formula_distance = taskform.formula_distance.data
             task.formula.formula_arrival = taskform.formula_arrival.data
@@ -561,6 +567,7 @@ def _register_pilots(compid):
 @blueprint.route('/_add_task/<compid>', methods=['POST'])
 @login_required
 def _add_task(compid):
+    from region import get_openair
     comp = Comp.read(int(compid))
     # comp.comp_id = compid
     data = request.json
@@ -572,6 +579,8 @@ def _add_task(compid):
     task.reg_id = int(data['task_region'])
     task.time_offset = comp.time_offset
     task.airspace_check = comp.airspace_check
+    if task.airspace_check and task.reg_id:
+        task.openair_file = get_openair(reg_id=task.reg_id)
     task.check_launch = comp.check_launch
     task.igc_config_file = comp.igc_config_file
     task.to_db()
@@ -807,9 +816,14 @@ def _upload_track(taskid, parid):
                     print("Filesize exceeded maximum limit")
                     return redirect(request.url)
                 check_g_record = session['check_g_record']
+                check_validity = True
 
                 if request.files.get("tracklog_NO_G"):
                     tracklog = request.files["tracklog_NO_G"]
+                    check_g_record = False
+                elif request.files.get("tracklog_NO_V"):
+                    tracklog = request.files["tracklog_NO_V"]
+                    check_validity = False
                     check_g_record = False
                 else:
                     tracklog = request.files["tracklog"]
@@ -823,7 +837,7 @@ def _upload_track(taskid, parid):
                                                                  current_user.username,
                                                                  check_g_record=check_g_record)
                         job = current_app.task_queue.enqueue(frontendUtils.process_igc_background,
-                                                             taskid, parid, file, current_user.username)
+                                                             taskid, parid, file, current_user.username, check_validity)
                         if not file:
                             resp = jsonify(success=False)
                         else:
@@ -984,7 +998,7 @@ def _get_task_score_from_file(taskid, filename):
         parid = r['par_id']
         name = r['name']
         status = r['result_type']
-        if status not in ['dnf', 'abs']:
+        if status not in ['dnf', 'abs', 'nyp']:
             pilot = {'rank': rank, 'name': f'<a href="/map/{parid}-{taskid}">{name}</a>'}
             if r['SSS_time']:
                 pilot['SSS'] = sec_to_time(r['SSS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S")
@@ -1422,7 +1436,7 @@ def _add_participant(compid):
         participant.sex = data.get('sex')
     participant.nat = data.get('nat')
     participant.glider = data.get('glider')
-    participant.certification = data.get('certification')
+    participant.glider_cert = data.get('certification')
     participant.sponsor = data.get('sponsor')
     participant.nat_team = data.get('nat_team')
     participant.team = data.get('team')
@@ -1456,6 +1470,27 @@ def _upload_participants_excel(compid):
         return resp
 
 
+@blueprint.route('/_upload_participants_fsdb/<compid>', methods=['POST'])
+@login_required
+def _upload_participants_fsdb(compid):
+    from pilot.participant import mass_import_participants
+    import tempfile
+    compid = int(compid)
+    if request.method == "POST":
+        if request.files:
+            fsdb_file = request.files["fsdb_file"]
+            with tempfile.TemporaryDirectory() as tmpdirname:
+                tmp_file = Path(tmpdirname, fsdb_file.filename)
+                fsdb_file.save(tmp_file)
+                participants = frontendUtils.import_participants_from_fsdb(tmp_file)
+                if participants:
+                    mass_import_participants(compid, participants)
+            resp = jsonify(success=True)
+            return resp
+        resp = jsonify(success=False)
+        return resp
+
+
 @blueprint.route('/_self_register/<compid>', methods=['POST'])
 @login_required
 def _self_register(compid):
@@ -1465,7 +1500,7 @@ def _self_register(compid):
     participant.ID = data.get('id_num')
     participant.nat = data.get('nat')
     participant.glider = data.get('glider')
-    participant.certification = data.get('certification')
+    participant.glider_cert = data.get('certification')
     participant.sponsor = data.get('sponsor')
     participant.to_db()
     resp = jsonify(success=True)
@@ -1557,3 +1592,41 @@ def _modify_user(user_id):
     return resp
 
 
+
+
+@blueprint.route('/_download/<string:filetype>/<string:filename>', methods=['GET', 'POST'])
+@login_required
+def _download_file(filetype: str, filename: str):
+    if 'html' in filetype:
+        if filetype == 'participants_html':
+            comp_id = int(filename)
+            name, content = frontendUtils.create_participants_html(comp_id)
+        elif filetype == 'task_html':
+            name, content = frontendUtils.create_task_html(filename)
+        elif filetype == 'comp_html':
+            comp_id = int(filename)
+            name, content = frontendUtils.create_comp_html(comp_id)
+        else:
+            return render_template('500.html')
+
+        if isinstance(content, list):
+            ''' we need to create a zip file with multiple result files'''
+            for el in content:
+                el['content'] = frontendUtils.render_html_file(el['content'])
+            file = frontendUtils.create_inmemory_zipfile(content)
+            mimetype = "application/zip"
+        else:
+            file = frontendUtils.render_html_file(content)
+            mimetype = "text/html"
+
+    elif 'fsdb' in filetype:
+        comp_id = int(filename)
+        name, file = frontendUtils.create_participants_fsdb(comp_id)
+        mimetype = "text/xml"
+    else:
+        return render_template('500.html')
+    mem = frontendUtils.create_stream_content(file)
+    resp = make_response(send_file(mem, mimetype=mimetype, attachment_filename=name,
+                                   as_attachment=True, cache_timeout=0))
+    resp.set_cookie('ServerProcessCompleteChecker', '', expires=0)
+    return resp

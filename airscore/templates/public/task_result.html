@@ -1,87 +1,114 @@
 {% extends "base.html"%}
 
 {% block page_title %}
-  Task Result
+Task Result
 {% endblock %}
 
 {% block head %}
-    <!-- CSS -->
-    <link href="/static/css/task.css" rel="stylesheet">
-    <link href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css" rel="stylesheet">
-    <!-- JS -->
-    <script type="text/javascript" src="/static/js/utils.js"></script>
-    <script type="text/javascript" src="/static/js/microajax.minified.js"></script>
+<!-- CSS -->
+<link href='/static/css/task.css' rel='stylesheet'>
+<link href='https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css' rel='stylesheet'>
+<!-- JS -->
+<script type='text/javascript' src='/static/js/utils.js'></script>
+<script type='text/javascript' src='/static/js/microajax.minified.js'></script>
+{% endblock %}
+
+{% block back %}
+<a href='/competition/{{ compid }}'>Back to Competition</a>
 {% endblock %}
 
 {% block content %}
-  <div class="container-fluid">
-      <div class="row mt-1 mb-2">
-          <div class="col comp_header" id="comp_header">
-          <h2 id="comp_name"></h2>
-          <h3 id="task_date"></h3>
-          <select name="dhv" id="dhv" class="form-control" placeholder="Class">
-              <option value="" selected>Open</option>
-              <option value="A">Novice</option>
-              <option value="B">Fun</option>
-              <option value="C">Sports</option>
-              <option value="D">Serial</option>
-              <option value="CCC">Competition</option>
-          </select>
-          </div>
-          <div class="col task_waypoints">
-          <table class="table table-sm" id="waypoints">
-          <thead class="thead-light" id="wpts_hd">
-              <tr><th style="width:10%">Point</th><th style="width:15%">Type</th><th style="width:10%; text-align:right;">Size</th><th style="width:10%; text-align:right;">Dist</th><th>Description</th></tr>
-          </thead>
-          <tbody class="small" id="wpts_bd"></tbody>
-          </table>
-          </div>
-      </div>
-      <div class="row mb-3">
-          <div class="col w-100">
-            <table id="results_table" class="row-border compact" cellspacing="0" width="100%">
-            <thead>
-                <tr>
-                </tr>
-            </thead>
-            </table>
-          </div>
-      </div>
-      <div class="row">
-          <div id="comments" class="col w-100">
-          </div>
-      </div>
-      <div class="row">
-          <div class="col-sm">
-          <table class="table table-sm form_param" id="formula1">
-          <thead class="thead-light small" id="formula_hd">
-              <tr><th>GAP Parameter</th><th>Setting</th></tr>
-          </thead>
-          <tbody class="small" id="formula_bd"></tbody>
-          </table>
-          </div>
-          <div class="col-sm">
-          <table class="table table-sm form_param" id="formula2">
-          <thead class="thead-light small" id="formula_hd">
-              <tr><th>GAP Parameter</th><th>Setting</th></tr>
-          </thead>
-          <tbody class="small" id="formula_bd"></tbody>
-          </table>
-          </div>
-          <div class="col-sm form_param">
-          <table class="table table-sm form_param" id="taskinfo">
-          <thead class="thead-light small" id="taskinfo_hd">
-              <tr><th>Task Metric</th><th>Value</th></tr>
-          </thead>
-          <tbody class="small" id="taskinfo_bd"></tbody>
-          </table>
-          </div>
-      </div>
+<div class='container-fluid'>
+  <div class='row mt-1 mb-2'>
+    <div class='col comp_header' id='comp_header'>
+      <h2 id='comp_name'></h2>
+      <h3 id='task_date'></h3>
+      <h4 id='status'></h4>
+      <select name='dhv' id='dhv' class='form-control' placeholder='Class'>
+        <option value='' selected>Open</option>
+<!--        <option value='A'>Novice</option>-->
+<!--        <option value='B'>Fun</option>-->
+<!--        <option value='C'>Sports</option>-->
+<!--        <option value='D'>Serial</option>-->
+<!--        <option value='CCC'>Competition</option>-->
+      </select>
+    </div>
+    <div class='col task_waypoints'>
+      <table class='table table-sm' id='waypoints'>
+        <thead class='thead-light' id='wpts_hd'>
+        <tr>
+          <th style='width:10%'>Point</th>
+          <th style='width:12%'>Type</th>
+          <th style='width:15%; text-align:right;'>Size</th>
+          <th style='width:18%; text-align:right;'>Dist</th>
+          <th>Description</th>
+        </tr>
+        </thead>
+        <tbody class='small' id='wpts_bd'></tbody>
+      </table>
+    </div>
   </div>
+  <div class='row mb-3'>
+    <div class='col w-100'>
+      <table id='results_table' class='row-border compact' cellspacing='0' width='100%'>
+        <thead>
+        <tr>
+        </tr>
+        </thead>
+      </table>
+      <p>
+        <span id='created' class=''></span>
+      </p>
+    </div>
+  </div>
+  <div class='row'>
+    <div id='comments' class='w-100'>
+      <h4 id='comments_header'>Notifications</h4>
+    </div>
+    <div id='other_pilots' class='w-100'>
+      <h4 id='other_pilots_header'>Other Pilots</h4>
+    </div>
+  </div>
+  <div class='row'>
+    <div class='col-sm'>
+      <table class='table table-sm form_param' id='formula_left'>
+        <thead class='thead-light small'>
+        <tr>
+          <th>GAP Parameter</th>
+          <th>Setting</th>
+        </tr>
+        </thead>
+        <tbody class='small'></tbody>
+      </table>
+    </div>
+    <div class='col-sm'>
+      <table class='table table-sm form_param' id='formula_right'>
+        <thead class='thead-light small'>
+        <tr>
+          <th>GAP Parameter</th>
+          <th>Setting</th>
+        </tr>
+        </thead>
+        <tbody class='small'></tbody>
+      </table>
+    </div>
+    <div class='col-sm form_param'>
+      <table class='table table-sm form_param' id='taskinfo'>
+        <thead class='thead-light small'>
+        <tr>
+          <th>Task Metric</th>
+          <th>Value</th>
+        </tr>
+        </thead>
+        <tbody class='small'></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 {% endblock %}
 {% block js %}
-    <script type="text/javascript" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
-    <script type="text/javascript" src="/static/js/pop_task.js"></script>
-    <script type="text/javascript">populate_task({{taskid|tojson}})</script>
-    <script type="text/javascript" src="/static/js/class_filter.js"></script>
+<script type='text/javascript' src='https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js'></script>
+<script type='text/javascript' src='/static/js/pop_task.js'></script>
+<script type='text/javascript'>populate_task({{taskid|tojson}})</script>
+<script type='text/javascript' src='/static/js/class_filter.js'></script>
 {% endblock %}

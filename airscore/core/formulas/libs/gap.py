@@ -20,11 +20,16 @@ from math import sqrt
 def difficulty_calculation(task):
 
     formula = task.formula
-    results = task.valid_results
+    pilot_lo = task.pilots_launched - task.pilots_goal
+    lo_results = [p for p in task.valid_results if not p.goal_time]
+    best_dist_flown = task.max_distance / 1000  # Km
+    if not lo_results:
+        '''all pilots are in goal'''
+        return []
 
     @dataclass
     class Diffslot:
-        dist: int
+        dist_x10: int
         diff: int = 0
         rel_diff: float = 0.0
         diff_score: float = 0.0
@@ -32,47 +37,49 @@ def difficulty_calculation(task):
     '''distance spread'''
     min_dist_kmx10 = int(formula.min_dist / 100)  # min_dist (Km) * 10
     distspread = dict()
-    best_dist = 0
-    best_dist_kmx10 = 0
-    for p in results:
-        if not p.goal_time:
-            dist = int(max(p.distance / 100, min_dist_kmx10))
-            if dist in distspread.keys():
-                distspread[dist] += 1
-            else:
-                distspread[dist] = 1
-            if dist > best_dist_kmx10:
-                best_dist_kmx10 = dist
-            if p.distance / 1000 > best_dist:
-                best_dist = p.distance / 1000
+    best_dist = 0  # best dist. (Km)
+    best_dist_kmx10 = 0  # best dist. (Km) * 10
+
+    for p in lo_results:
+        dist_kmx10 = max(int(p.distance / 100), min_dist_kmx10)
+        dist = p.distance / 1000  # Km
+        distspread[dist_kmx10] = 1 if dist_kmx10 not in distspread.keys() else distspread[dist_kmx10] + 1
+        if dist_kmx10 > best_dist_kmx10:
+            best_dist_kmx10 = dist_kmx10
+        if dist > best_dist:
+            best_dist = dist
 
     # Sanity
     if best_dist == 0:
         return []
 
-    pilot_lo = task.pilots_launched - task.pilots_goal
-
     ''' the difficulty for each 100-meter section of the task is calculated
         by counting the number of pilots who landed further along the task'''
-    look_ahead = max(30, round(30 * best_dist / pilot_lo))
+    best_dist_kmx10r = int((best_dist_kmx10 + 10) / 10) * 10
+    look_ahead = max(30, round(30 * best_dist_flown / pilot_lo))
     kmdiff = []
 
-    for i in range(best_dist_kmx10 + 10):
+    for i in range(best_dist_kmx10r):
         diff = sum([0 if x not in distspread.keys() else distspread[x]
-                    for x in range(i, min(i + look_ahead, best_dist_kmx10))])
+                    for x in range(i, min(i + look_ahead, best_dist_kmx10r))])
         kmdiff.append(Diffslot(i, diff))
 
     sum_diff = sum([x.diff for x in kmdiff])
 
     ''' Relative difficulty is then calculated by dividing each 100-meter slot’s
         difficulty by twice the sum of all difficulty values.'''
-    # sum_rel_diff = 0
-    sum_rel_diff = sum([(0.5 * x.diff / sum_diff) for x in kmdiff if x.dist <= min_dist_kmx10])
-    for i, el in enumerate(kmdiff):
-        el.rel_diff = 0.5 * el.diff / sum_diff
-        if el.dist > min_dist_kmx10:
+
+    sum_rel_diff = 0 if sum_diff == 0 else sum([(0.5*x.diff/sum_diff) for x in kmdiff if x.dist_x10 <= min_dist_kmx10])
+    for el in kmdiff:
+        if el.dist_x10 <= min_dist_kmx10:
+            el.diff_score = sum_rel_diff
+        elif el.dist_x10 >= best_dist_kmx10:
+            el.diff_score = 0.5
+        else:
+            if sum_diff > 0:
+                el.rel_diff = 0.5 * el.diff / sum_diff
             sum_rel_diff += el.rel_diff
-        el.diff_score = sum_rel_diff if el.dist < best_dist_kmx10 else 0.5
+            el.diff_score = sum_rel_diff
 
     return kmdiff
 
@@ -347,7 +354,7 @@ def pilot_speed(task, res):
         Ptime = res.ss_time
         SF = 1 - ((Ptime - Tmin) / 3600 / sqrt(Tmin / 3600)) ** (2 / 3)
         if SF > 0:
-            Pspeed = Aspeed * SF - task.time_points_reduction
+            Pspeed = Aspeed * SF - (task.time_points_reduction if hasattr(task, 'time_points_reduction') else 0)
 
     return Pspeed
 
@@ -493,7 +500,7 @@ def points_allocation(task):
             res.distance_score = pilot_distance(task, res)
 
             ''' Pilot leading points'''
-            if task.departure == 'leadout' and res.result_type != 'mindist' and res.SSS_time:
+            if task.departure == 'leadout' and res.SSS_time:
                 res.departure_score = pilot_leadout(task, res)
 
             if res.ESS_time:
@@ -501,7 +508,7 @@ def points_allocation(task):
                 res.time_score = pilot_speed(task, res)
 
                 ''' Pilot departure points'''
-                if task.departure == 'departure' and res.result_type != 'mindist' and res.SSS_time:
+                if task.departure == 'departure' and res.SSS_time:
                     # does it even still exist dep. points?
                     res.departure_score = pilot_departure(task, res)
 

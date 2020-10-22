@@ -139,7 +139,7 @@ class AirspaceCheck(object):
                     space['floor'] = fl_to_meters(space['floor'], qnh)
                     space['floor_unit'] = 'm'
                 if space['ceiling_unit'] == 'FL':
-                    space['ceiling'] = fl_to_meters(space['floor'], qnh)
+                    space['ceiling'] = fl_to_meters(space['ceiling'], qnh)
                     space['ceiling_unit'] = 'm'
                 ''' create object and bbox'''
                 if space['shape'] == 'circle':
@@ -292,6 +292,7 @@ class AirspaceCheck(object):
                     penalty = pen
                     max_pen_fix = fix
             notifications.append(Notification(notification_type='airspace', percentage_penalty=pen, comment=comment))
+        notifications = sorted(notifications, key=lambda x: x.percentage_penalty, reverse=True)
         return infringements_per_space, notifications, penalty
 
 

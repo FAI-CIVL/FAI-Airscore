@@ -571,14 +571,6 @@ class Task(object):
         from db.tables import TblTaskWaypoint as W
         tps = W.from_task_id(self.task_id)
         return [tp.as_dict() for tp in tps]
-        # with db_session() as db:
-        #     # get the task turnpoint details.
-        #     results = db.query(W.wpt_id, W.rwp_id, W.name, W.num, W.description, W.how, W.radius, W.shape,
-        #                                W.type, W.partial_distance).filter(W.task_id == self.task_id).order_by(
-        #         W.num).all()
-        #     if results:
-        #         results = [row._asdict() for row in results]
-        #     return results
 
     def create_path(self, track_path=None):
         """create filepath from # and date if not given
@@ -804,15 +796,21 @@ class Task(object):
             verify_all_tracks(self, lib, airspace, print=print)
         '''store results to database'''
         print(f"updating database with new results...")
-        update_all_results(self.task_id, self.pilots)
+        update_all_results(self.pilots, self.task_id)
         '''process results with scoring system'''
         lib.process_results(self)
 
     def get_pilots(self):
         """ Loads FlightResult obj. with only Participants info into Task obj."""
-        from db.tables import TblParticipant as P
+        from db.tables import TblParticipant as P, TblTaskResult as R
         from pilot.flightresult import FlightResult
         self.pilots = [FlightResult(**row) for row in P.get_dicts(self.comp_id)]
+        tracks = R.get_all(task_id=self.id)
+        if tracks:
+            for p in self.pilots:
+                res = next((x for x in tracks if x.par_id == p.par_id), None)
+                if res:
+                    p.track_id, p.track_file, p.result_type = res.track_id, res.track_file, res.result_type
 
     def get_results(self, lib=None):
         """ Loads all FlightResult obj. into Task obj."""
@@ -1560,7 +1558,7 @@ class Task(object):
             associate_livetracks(self, response)
             for p in pilots:
                 if p.livetrack and p.livetrack[-2].rawtime > (p.last_time or 0) and not p.goal_time:
-                    check_livetrack(pilot=p, task=self, airspace_obj=airspace)
+                    check_livetrack(result=p, task=self, airspace=airspace)
                     print(f' -- -- Pilot {p.name}:')
                     # print(f' ..... -- last fix {p.livetrack[-2].rawtime}')
                     print(f' ..... -- rawtime: {p.last_time}')
@@ -1775,8 +1773,9 @@ def get_task_json_filename(task_id):
 
 def get_task_json(task_id):
     """returns active json result file from task_id"""
+    from result import open_json_file
     filename = get_task_json_filename(task_id)
-    return get_task_json_by_filename(filename)
+    return open_json_file(filename)
 
 
 def get_task_json_by_filename(filename):

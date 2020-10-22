@@ -234,30 +234,30 @@ class Track(object):
                 self.track_type = None
             print(f"  ** FILENAME: {self.filename} TYPE: {self.track_type} \n")
 
-    def copy_track_file(self, task_path, pname=None):
-        """copy track file in the correct folder and with correct name
-        name could be changed as the one XContest is sending, or rename that one, as we wish
-        if path or pname is None will calculate. note that if bulk importing it is better to pass these values
-        rather than query DB for each track"""
-        from db.tables import TblParticipant as P
-        src_file = self.filename
-        if pname is None:
-            # get pilot details.
-            pname = P.get_by_id(self.par_id).name
-        if task_path:
-            fullname = create_igc_filename(task_path, self.date, pname)
-            print(f'path to copy file: {fullname}')
-            """copy file"""
-            try:
-                copyfile(src_file, fullname)
-                self.track_file = fullname.name
-                print(f'file successfully copied to : {self.filename}')
-                return fullname
-            except:
-                print('Error copying file:', fullname)
-        else:
-            print('error, no path given')
-        return None
+    # def copy_track_file(self, task_path, pname=None):
+    #     """copy track file in the correct folder and with correct name
+    #     name could be changed as the one XContest is sending, or rename that one, as we wish
+    #     if path or pname is None will calculate. note that if bulk importing it is better to pass these values
+    #     rather than query DB for each track"""
+    #     from db.tables import TblParticipant as P
+    #     src_file = self.filename
+    #     if pname is None:
+    #         # get pilot details.
+    #         pname = P.get_by_id(self.par_id).name
+    #     if task_path:
+    #         fullname = create_igc_filename(task_path, self.date, pname)
+    #         print(f'path to copy file: {fullname}')
+    #         """copy file"""
+    #         try:
+    #             copyfile(src_file, fullname)
+    #             self.track_file = fullname.name
+    #             print(f'file successfully copied to : {self.filename}')
+    #             return fullname
+    #         except:
+    #             print('Error copying file:', fullname)
+    #     else:
+    #         print('error, no path given')
+    #     return None
 
 
 def validate_G_record(igc_filename):
@@ -321,7 +321,7 @@ def save_igc_config_yaml(yaml_filename, yaml_data):
     return True
 
 
-def create_igc_filename(file_path, date, pilot_name) -> Path:
+def create_igc_filename(file_path, date, pilot_name: str, pilot_id: int = None) -> Path:
     """creates a name for the track
     name_surname_date_time_index.igc
     if we use flight date then we need an index for multiple tracks"""
@@ -331,7 +331,10 @@ def create_igc_filename(file_path, date, pilot_name) -> Path:
     # pname = pilot_name.replace(' ', '_').lower()
     pname = remove_accents('_'.join(pilot_name.replace('_', ' ').replace("'", ' ').lower().split()))
     index = str(len(glob.glob(file_path + '/' + pname + '*.igc')) + 1).zfill(2)
-    filename = '_'.join([pname, str(date), index]) + '.igc'
+    if pilot_id:
+        filename = '_'.join([pname, str(date), index]) + f'.{pilot_id}.igc'
+    else:
+        filename = '_'.join([pname, str(date), index]) + '.igc'
     fullname = Path(file_path, filename)
     return fullname
 

@@ -1,0 +1,44 @@
+{% extends "export_base.html"%}
+
+{% block headings %}
+  {% for el in headings %}
+    {% if loop.index < 3 %}
+      <h2> {{ el }}</h2>
+    {% elif loop.index == 3 %}
+      <h3> {{ el }}</h3>
+    {% else %}
+      <h4> {{ el }}</h4>
+    {% endif %}
+  {% endfor %}
+{% endblock %}
+
+{% block content %}
+  {% for el in tables %}
+    {% set class = el.css_class if el.css_class is defined else 'simple' %}
+    {% set title = el.title if el.title is defined else '' %}
+    <div id="{{ title|lower }}" class="{{ class }}">
+    {% if el.title %}
+      <h4>{{ title }}:</h4>
+    {% endif %}
+    <table class="{{ class }}">
+    <thead>
+    <tr>
+    {% for label in el.thead %}
+      <th class="{{ class }}">{{ label }}</th>
+    {% endfor %}
+    </tr>
+    </thead>
+    <tbody>
+    {% for row in el.tbody %}
+      <tr>
+      {% for col in row %}
+        {% set right = ' right' if loop.index0 in el.right_align else '' %}
+        <td class="{{ class }}{{ right }}">{{ col|safe }}</td>
+      {% endfor %}
+      </tr>
+    {% endfor %}
+    </tbody>
+    </table>
+    </div>
+  {% endfor %}
+{% endblock %}

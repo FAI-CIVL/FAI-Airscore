@@ -1,43 +1,43 @@
 {% extends "base.html"%}
 
 {% block page_title %}
-  Register
+Register
 {% endblock %}
 
 {% block content %}
-<div class="container-narrow">
-  <h1 class="mt-5">Register</h1>
-    <br/>
-    <form id="registerForm" class="form form-register" method="POST" action="" role="form">
-           {{ form.csrf_token }}
-            <div class="form-group">
-                {{form.username.label}}
-                {{form.username(placeholder="Username", class_="form-control")}}
-            </div>
-            <div class="form-group">
-                {{form.first_name.label}}
-                {{form.first_name(placeholder="First name", class_="form-control")}}
-            </div>
-            <div class="form-group">
-                {{form.last_name.label}}
-                {{form.last_name(placeholder="Last name", class_="form-control")}}
-            </div>
-            <div class="form-group">
-                {{form.email.label}}
-                {{form.email(placeholder="Email", class_="form-control")}}
-                <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
-            </div>
-            <div class="form-group">
-                {{form.password.label}}
-                {{form.password(placeholder="Password", class_="form-control")}}
-            </div>
-            <div class="form-group">
-                {{form.confirm.label}}
-                {{form.confirm(placeholder="Password (again)", class_="form-control")}}
-            </div>
-            <p><input class="btn btn-primary" type="submit" value="Register"></p>
-    </form>
-    <p><em>Already registered?</em> Use the top bar to login.</p>
+<div class='container-narrow'>
+  <h1 class='mt-5'>Register</h1>
+  <br/>
+  <form id='registerForm' class='form form-register' method='POST' action='' role='form'>
+    {{ form.csrf_token }}
+    <div class='form-group'>
+      {{form.username.label}}
+      {{form.username(placeholder="Username", class_="form-control")}}
+    </div>
+    <div class="form-group">
+      {{form.first_name.label}}
+      {{form.first_name(placeholder="First name", class_="form-control")}}
+    </div>
+    <div class="form-group">
+      {{form.last_name.label}}
+      {{form.last_name(placeholder="Last name", class_="form-control")}}
+    </div>
+    <div class='form-group'>
+      {{form.email.label}}
+      {{form.email(placeholder="Email", class_="form-control")}}
+      <small id='emailHelp' class='form-text text-muted'>We'll never share your email with anyone else.</small>
+    </div>
+    <div class='form-group'>
+      {{form.password.label}}
+      {{form.password(placeholder="Password", class_="form-control")}}
+    </div>
+    <div class='form-group'>
+      {{form.confirm.label}}
+      {{form.confirm(placeholder="Password (again)", class_="form-control")}}
+    </div>
+    <p><input class='btn btn-primary' type='submit' value='Register'></p>
+  </form>
+  <p><em>Already registered?</em> Click <a href='/'>here</a> to login.</p>
 </div>
 {% endblock %}
 

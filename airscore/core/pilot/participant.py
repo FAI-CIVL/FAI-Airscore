@@ -36,7 +36,6 @@ class Participant(Pilot):
         self.paid = paid  # bool
         self.status = status  # 'confirmed', 'waiting list', 'wild card', 'cancelled', ?
         self.live_id = live_id  # int
-        self.telegram_id = None  # int
         super().__init__(**kwargs)
 
     def __setattr__(self, attr, value):
@@ -97,8 +96,8 @@ class Participant(Pilot):
             Input:
                 - pil:          lxml.etree: FsParticipant section
                 - from_CIVL:    BOOL: look for pilot on CIVL database"""
-
-        CIVLID = None if not pil.get('CIVLID') else int(pil.get('CIVLID'))
+        from calcUtils import get_int
+        CIVLID = None if not (pil.get('CIVLID')) else get_int(pil.get('CIVLID'))
         name = pil.get('name')
         # print(CIVLID, name)
         pilot = None
@@ -215,6 +214,7 @@ def extract_participants_from_excel(comp_id: int, filename, from_CIVL=False):
         pil.comp_id = comp_id
         pil.birthdate = None if row[4] is None else row[4].date()  # row[4] should be datetime
         pil.glider = row[5]
+        pil.glider_cert = row[12]
         pil.sponsor = row[7]
         pil.team = row[11]
         pil.fai_id = row[8]

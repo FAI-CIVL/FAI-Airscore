@@ -6,6 +6,7 @@ from sqlalchemy.orm import relationship, aliased
 from .conn import db_session
 from .models import BaseModel, metadata
 
+
 # Created using sqlacodegen library
 # sqlacodegen mysql+pymysql://user:pwd@server/database --outfile db_tables_new.py
 
@@ -492,7 +493,6 @@ class TblParticipant(BaseModel):
     nat = Column(CHAR(10))
     glider = Column(String(100))
     glider_cert = Column(String(20))
-    # parClass = Column(String(50))
     sponsor = Column(String(100))
     fai_valid = Column(TINYINT(1), nullable=False, server_default=text("'1'"))
     fai_id = Column(String(20))
@@ -513,7 +513,6 @@ class TblParticipant(BaseModel):
         with db_session() as db:
             print(f'session id: {id(db)}')
             return [el.as_dict() for el in db.query(P).filter_by(comp_id=comp_id).all()]
-            # return db.query(P).filter_by(comp_id=comp_id).all()
 
 
 class TblRanking(BaseModel):
@@ -624,20 +623,21 @@ class TblCompAuth(BaseModel):
     __tablename__ = 'tblCompAuth'
 
     user_id = Column(INTEGER(11), primary_key=True)
-    comp_id = Column(INTEGER(11), ForeignKey("tblCompetition.comp_id"), primary_key=True,)
+    comp_id = Column(INTEGER(11), ForeignKey("tblCompetition.comp_id"), primary_key=True)
     user_auth = Column(Enum('read', 'write', 'admin', 'owner'), nullable=False, server_default=text("'read'"))
     comp = relationship(TblCompetition, backref='Auth')
 
 
-TblLadderSeason = Table(
-    'tblLadderSeason', metadata,
-    Column('ladder_id', ForeignKey('tblLadder.ladder_id'), nullable=False, index=True),
-    Column('season', INTEGER(6), nullable=False, index=True),
-    Column('active', TINYINT(1), server_default=text("'1'")),
-    Column('cat_id', ForeignKey('tblClassification.cat_id'), nullable=False, index=True),
-    Column('overall_validity', Enum('all', 'ftv', 'round'), nullable=False, server_default=text("'ftv'")),
-    Column('validity_param', Float, nullable=False)
-)
+class TblLadderSeason(BaseModel):
+    __tablename__ = 'tblLadderSeason'
+
+    ladder_id = Column(ForeignKey('tblLadder.ladder_id'), nullable=False, index=True, primary_key=True)
+    season = Column(INTEGER(6), nullable=False, index=True)
+    active = Column(TINYINT(1), server_default=text("'1'"))
+    cat_id = Column(ForeignKey('tblClassification.cat_id'), nullable=False, index=True)
+    overall_validity = Column(Enum('all', 'ftv', 'round'), nullable=False, server_default=text("'ftv'"))
+    validity_param = Column(Float, nullable=False)
+
 
 TblRegionXCSites = Table(
     'tblRegionXCSites', metadata,
@@ -786,16 +786,64 @@ class TblTaskResult(BaseModel):
     # Participants = relationship('TblParticipant', backref="taskresults", lazy="subquery")
     Participants = relationship('TblParticipant')
 
+    @classmethod
+    def get_task_results(cls, task_id: int) -> list:
+        p = aliased(TblParticipant)
+        t = aliased(TblTask)
+        with db_session() as db:
+            objects = db.query(cls.track_id, p.par_id, t.task_id,
+                               p.comp_id, p.civl_id, p.fai_id, p.pil_id, p.ID, p.name, p.nat, p.sex,
+                               p.glider, p.glider_cert, p.sponsor, p.team, p.nat_team, p.live_id,
+                               cls.distance_flown, cls.best_distance_time, cls.stopped_distance,
+                               cls.stopped_altitude, cls.total_distance, cls.speed, cls.first_time,
+                               cls.real_start_time, cls.goal_time, cls.last_time, cls.result_type,
+                               cls.SSS_time, cls.ESS_time, cls.waypoints_made, cls.penalty, cls.comment,
+                               cls.time_score, cls.distance_score, cls.arrival_score, cls.departure_score,
+                               cls.score, cls.lead_coeff, cls.fixed_LC, cls.ESS_altitude, cls.goal_altitude,
+                               cls.max_altitude, cls.last_altitude, cls.landing_altitude, cls.landing_time,
+                               cls.track_file, cls.g_record) \
+                        .join(t, t.comp_id == p.comp_id) \
+                        .outerjoin(cls, (cls.task_id == t.task_id) & (cls.par_id == p.par_id)) \
+                        .filter(t.task_id == task_id)
+            return objects.all()
+
+    @classmethod
+    def get_task_flights(cls, task_id: int) -> list:
+        p = aliased(TblParticipant)
+        t = aliased(TblTask)
+        with db_session() as db:
+            objects = db.query(cls.track_id, cls.par_id, cls.task_id,
+                               p.comp_id, p.civl_id, p.fai_id, p.pil_id, p.ID, p.name, p.nat, p.sex,
+                               p.glider, p.glider_cert, p.sponsor, p.team, p.nat_team, p.live_id,
+                               cls.distance_flown, cls.best_distance_time, cls.stopped_distance,
+                               cls.stopped_altitude, cls.total_distance, cls.speed, cls.first_time,
+                               cls.real_start_time, cls.goal_time, cls.last_time, cls.result_type,
+                               cls.SSS_time, cls.ESS_time, cls.waypoints_made, cls.penalty, cls.comment,
+                               cls.time_score, cls.distance_score, cls.arrival_score, cls.departure_score,
+                               cls.score, cls.lead_coeff, cls.fixed_LC, cls.ESS_altitude, cls.goal_altitude,
+                               cls.max_altitude, cls.last_altitude, cls.landing_altitude, cls.landing_time,
+                               cls.track_file, cls.g_record) \
+                        .join(t, t.comp_id == p.comp_id) \
+                        .outerjoin(cls, (cls.task_id == t.task_id) & (cls.par_id == p.par_id)) \
+                        .filter(t.task_id == task_id)
+            return objects.filter(cls.result_type.in_(['lo', 'goal'])).all()
+
 
 class TblNotification(BaseModel):
     __tablename__ = 'tblNotification'
 
     not_id = Column(INTEGER(11), primary_key=True)
     track_id = Column(INTEGER(11), nullable=False, index=True)
-    notification_type = Column(Enum('admin', 'track', 'jtg', 'airspace'), nullable=False, server_default=text("'admin'"))
+    notification_type = Column(Enum('admin', 'track', 'jtg', 'airspace'), nullable=False,
+                               server_default=text("'admin'"))
     flat_penalty = Column(Float(8), nullable=False, server_default=text("'0.0000'"))
     percentage_penalty = Column(Float(5), nullable=False, server_default=text("'0.0000'"))
     comment = Column(String(80))
+
+    @classmethod
+    def from_track_list(cls, ids: list) -> list:
+        with db_session() as db:
+            return db.query(cls).filter(cls.track_id.in_(ids)).all()
 
 
 class TblTaskWaypoint(BaseModel):
@@ -834,6 +882,9 @@ class TblTaskWaypoint(BaseModel):
 
 class TblTrackWaypoint(BaseModel):
     __tablename__ = 'tblTrackWaypoint'
+    __table_args__ = (
+        Index('track_id'),
+    )
 
     trw_id = Column(INTEGER(11), primary_key=True)
     track_id = Column(INTEGER(11), nullable=False, index=True)
@@ -843,3 +894,18 @@ class TblTrackWaypoint(BaseModel):
     lat = Column(Float, nullable=False)
     lon = Column(Float, nullable=False)
     altitude = Column(SMALLINT(6), nullable=False)
+
+    @classmethod
+    def from_track_list(cls, ids: list) -> list:
+        with db_session() as db:
+            return db.query(cls).filter(cls.track_id.in_(ids)).all()
+
+    @classmethod
+    def from_track(cls, track_id: int) -> list:
+        with db_session() as db:
+            return db.query(cls).filter_by(track_id=track_id).all()
+
+    @classmethod
+    def get_dict_list(cls, ids: list) -> list:
+        with db_session() as db:
+            return [el.as_dict() for el in db.query(cls).filter(cls.track_id.in_(ids)).all()]

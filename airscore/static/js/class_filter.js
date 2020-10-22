@@ -14,7 +14,8 @@ $(document).ready(function() {
         var table = $('#results_table').DataTable();
         var flyclass = $('#dhv option:selected').val();
         var idx = $('#dhv option:selected').index();
-        for ( var i=0; i<=3; i++ ) {
+        var classes = $('#dhv option').length - 1
+        for ( var i=0; i<=classes; i++ ) {
             var v = false;
             if ( i == idx ) {
                 v = true;

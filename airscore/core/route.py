@@ -16,6 +16,7 @@ import numpy as np
 from geographiclib.geodesic import Geodesic
 from geopy.distance import geodesic
 from pyproj import Proj
+from calcUtils import c_round
 
 '''define earth model'''
 # EARTHMODEL = Proj("+init=EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth
@@ -483,7 +484,7 @@ def tp_time_civl(fix, next, tp):
         d1 = abs(distance(tp, fix) - tp.radius)
         d2 = abs(distance(tp, next) - tp.radius)
         speed = (d1 + d2) / (next.rawtime - fix.rawtime)
-        t = round((fix.rawtime + d1 / speed), 2)
+        t = c_round((fix.rawtime + d1 / speed), 2)
         return t
 
 
@@ -540,7 +541,7 @@ def rawtime_float_to_hms(timef):
     Returns:
         A namedtuple with hours, minutes and seconds elements
     """
-    time = int(round(timef))
+    time = int(c_round(timef))
     hms = namedtuple('hms', ['hours', 'minutes', 'seconds'])
 
     return hms(math.floor(time / 3600), math.floor((time % 3600) / 60), math.floor(time % 60))
@@ -678,7 +679,7 @@ def opt_wp_exit(opt, t1, exit):
 
         p = geod.Direct(opt.lat, opt.lon, bearing, dist)
         point = Turnpoint(lat=p['lat2'], lon=p['lon2'], type='optimised', radius=0, shape='optimised', how='optimised')
-        dist_from_centre = int(round(geod.Inverse(point.lat, point.lon, exit.lat, exit.lon)['s12']))
+        dist_from_centre = int(c_round(geod.Inverse(point.lat, point.lon, exit.lat, exit.lon)['s12']))
         if dist_from_centre > exit.radius:
             if direction != 'plus':
                 d1 = d1 / 2  # if we change direction halve the increment
@@ -706,7 +707,7 @@ def opt_wp_enter(opt, t1, enter):
 
         p = geod.Direct(opt.lat, opt.lon, bearing, dist)
         point = Turnpoint(lat=p['lat2'], lon=p['lon2'], type='optimised', radius=0, shape='optimised', how='optimised')
-        dist_from_centre = int(round(geod.Inverse(point.lat, point.lon, enter.lat, enter.lon)['s12']))
+        dist_from_centre = int(c_round(geod.Inverse(point.lat, point.lon, enter.lat, enter.lon)['s12']))
         if dist_from_centre > enter.radius:
             if direction != 'plus':
                 d1 = d1 / 2  # if we change direction halve the increment
