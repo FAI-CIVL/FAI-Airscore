@@ -123,6 +123,7 @@ airscore includes or not.
     - [x] Overall
     - [x] Female
     - [x] Country
+    - [x] Teams
     - [x] Ties
     - [x] Fixed Total Validity
  * IGC checks
