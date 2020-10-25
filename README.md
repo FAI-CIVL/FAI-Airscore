@@ -14,7 +14,112 @@ GAP based Paragliding and Hang Gliding scoring from IGC files.
 - Interactive tracklog and task maps
 - Ability to have an in house database of pilots, waypoints and airspaces for re-use in multiple competitions
 - Live leaderboard and scoring from live tracking servers. (e.g. Flymaster)
- 
+
+The GAP rules have changed over the years. Here are the features that
+airscore includes or not.
+
+* Scoring Method
+    - [ ] GAP
+        - [ ] GAP2000
+        - [ ] GAP2002
+        - [ ] OzGAP2005
+        - [ ] GAP2007
+        - [ ] GAP2008
+        - [ ] GAP2011
+        - [ ] GAP2013
+        - [ ] GAP2014
+        - [ ] GAP2015
+        - [ ] GAP2016
+        - [ ] GAP2018
+        - [ ] GAP2020
+    - [ ] PWC (GAP variant)
+        - [ ] PWC2007
+        - [ ] PWC2008
+        - [ ] PWC2009
+        - [ ] PWC2011
+        - [ ] PWC2012
+        - [ ] PWC2013
+        - [ ] PWC2014
+        - [ ] PWC2015
+        - [ ] PWC2016
+        - [ ] PWC2017
+        - [ ] GAP2019
+    - [ ] Linear distance
+    - [ ] Time-based scoring (TBS)
+* Earth Model
+    - [ ] FAI sphere
+    - [ ] WGS84 ellipsoid
+* Distance Method
+    - [ ] Pythagorus on a UTM plane
+    - [ ] Haversines on the sphere
+    - [ ] Vincenty on the ellipsoid
+    - [ ] Andoyer on the ellipsoid
+* Type of Task
+    - [ ] Race
+    - [ ] Elapsed time
+    - [ ] Open distance (can be declared but not yet scored)
+* Shape of Zone
+    - [ ] Cylinder
+    - [ ] Inverted cone (can be defined but treated as a cylinder)
+* Shape of Goal
+    - [ ] Circle
+    - [ ] Line
+* Final Glide Decelerator
+    - [ ] Conical end of speed section (CESS)
+    - [ ] Arrival altitude time bonus (AATB)
+* Source of Altitude
+    - [ ] GPS
+    - [ ] Pressure (QNH)
+* Validities
+    - [ ] Task (day quality)
+    - [ ] Launch
+    - [ ] Distance
+    - [ ] Time
+    - [ ] Stop
+* Points
+    - [ ] Linear distance (reach)
+    - [ ] Distance difficulty (effort)
+    - [ ] Arrival position
+    - [ ] Arrival time
+    - [ ] Time (speed)
+    - [ ] Leading
+    - [ ] Departure
+* Leading Area as a Function of Time and Distance Tweaks
+    - [ ] Use distance; a = t * d
+    - [ ] Use distance squared; a = t * d^2
+    - [ ] Use PWCA weighting; a = w(t, d)
+* Parameter Tweaks
+    - [ ] Day quality override
+    - [ ] 1000 points for winner if no pilot made goal
+    - [ ] 1000 points for winner before day quality applied
+    - [ ] Double leading points weight
+    - [ ] Proportional leading points weight if no pilot made goal
+    - [ ] Adjustable stopped task bonus glide ratio (fixed at 4:1 for PG and 5:1 for HG)
+* Special Cases
+    - [ ] End of the speed section but not goal
+    - [ ] Early start
+    - [ ] Stopped tasks
+* Stopped Tasks
+    - [ ] Stopped task time as announcement minus score back
+    - [ ] Requirements checking, goal or duration
+    - [ ] Score time window
+    - [ ] Time points for pilots at or after the end of the speed section
+    - [ ] Distance points with altitude bonus
+* Penalties
+    - [ ] Absolute
+    - [ ] Fractional
+    - [ ] Jump-the-gun factor
+    - [ ] Jump-the-gun maximum
+* Task Ranking
+    - [ ] Overall
+    - [ ] Female
+    - [ ] Country
+* Competition Ranking
+    - [ ] Overall
+    - [ ] Female
+    - [ ] Country
+    - [ ] Ties
+    - [ ] Fixed Total Validity
 
 ### Installation:
 
