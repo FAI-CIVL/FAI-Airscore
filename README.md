@@ -29,9 +29,9 @@ airscore includes or not.
         - [ ] GAP2013
         - [ ] GAP2014
         - [ ] GAP2015
-        - [ ] GAP2016
-        - [ ] GAP2018
-        - [ ] GAP2020
+        - [x] GAP2016
+        - [x] GAP2018
+        - [x] GAP2020
     - [ ] PWC (GAP variant)
         - [ ] PWC2007
         - [ ] PWC2008
@@ -41,85 +41,93 @@ airscore includes or not.
         - [ ] PWC2013
         - [ ] PWC2014
         - [ ] PWC2015
-        - [ ] PWC2016
-        - [ ] PWC2017
-        - [ ] GAP2019
+        - [x] PWC2016
+        - [x] PWC2017
+        - [x] GAP2019
     - [ ] Linear distance
     - [ ] Time-based scoring (TBS)
 * Earth Model
     - [ ] FAI sphere
-    - [ ] WGS84 ellipsoid
+    - [x] WGS84 ellipsoid
 * Distance Method
     - [ ] Pythagorus on a UTM plane
     - [ ] Haversines on the sphere
     - [ ] Vincenty on the ellipsoid
-    - [ ] Andoyer on the ellipsoid
+    - [x] Andoyer on the ellipsoid
 * Type of Task
-    - [ ] Race
-    - [ ] Elapsed time
-    - [ ] Open distance (can be declared but not yet scored)
+    - [x] Race
+    - [x] Elapsed time
+    - [x] Open distance (can be declared but not yet scored)
 * Shape of Zone
-    - [ ] Cylinder
+    - [x] Cylinder
     - [ ] Inverted cone (can be defined but treated as a cylinder)
 * Shape of Goal
-    - [ ] Circle
-    - [ ] Line
+    - [x] Circle
+    - [x] Line
 * Final Glide Decelerator
     - [ ] Conical end of speed section (CESS)
-    - [ ] Arrival altitude time bonus (AATB)
+    - [x] Arrival altitude time bonus (AATB)
 * Source of Altitude
-    - [ ] GPS
-    - [ ] Pressure (QNH)
+    - [x] GPS
+    - [x] Pressure (QNH)
 * Validities
-    - [ ] Task (day quality)
-    - [ ] Launch
-    - [ ] Distance
-    - [ ] Time
-    - [ ] Stop
+    - [x] Task (day quality)
+    - [x] Launch
+    - [x] Distance
+    - [x] Time
+    - [x] Stop
 * Points
-    - [ ] Linear distance (reach)
-    - [ ] Distance difficulty (effort)
-    - [ ] Arrival position
-    - [ ] Arrival time
-    - [ ] Time (speed)
-    - [ ] Leading
-    - [ ] Departure
+    - [x] Linear distance (reach)
+    - [x] Distance difficulty (effort)
+    - [x] Arrival position
+    - [x] Arrival time
+    - [x] Time (speed)
+    - [x] Leading
+    - [x] Departure
 * Leading Area as a Function of Time and Distance Tweaks
-    - [ ] Use distance; a = t * d
-    - [ ] Use distance squared; a = t * d^2
-    - [ ] Use PWCA weighting; a = w(t, d)
+    - [x] Use distance; a = t * d
+    - [x] Use distance squared; a = t * d^2
+    - [x] Use PWCA weighting; a = w(t, d)
 * Parameter Tweaks
     - [ ] Day quality override
     - [ ] 1000 points for winner if no pilot made goal
     - [ ] 1000 points for winner before day quality applied
-    - [ ] Double leading points weight
+    - [x] Leading points weight
     - [ ] Proportional leading points weight if no pilot made goal
-    - [ ] Adjustable stopped task bonus glide ratio (fixed at 4:1 for PG and 5:1 for HG)
+    - [x] Adjustable stopped task bonus glide ratio (fixed at 4:1 for PG and 5:1 for HG)
+    - [x] Adjustable turnpoint radius tolerance fractional
+    - [x] Adjustable turnpoint radius tolerance absolute minimum
 * Special Cases
-    - [ ] End of the speed section but not goal
-    - [ ] Early start
-    - [ ] Stopped tasks
+    - [x] End of the speed section but not goal (adjustable penalty)
+    - [x] Early start
+    - [x] Stopped tasks
 * Stopped Tasks
-    - [ ] Stopped task time as announcement minus score back
-    - [ ] Requirements checking, goal or duration
-    - [ ] Score time window
-    - [ ] Time points for pilots at or after the end of the speed section
-    - [ ] Distance points with altitude bonus
+    - [x] Stopped task time as announcement minus score back
+    - [x] Requirements checking, goal or duration
+    - [x] Score time window
+    - [x] Time points for pilots at or after the end of the speed section
+    - [x] Distance points with altitude bonus
 * Penalties
-    - [ ] Absolute
-    - [ ] Fractional
-    - [ ] Jump-the-gun factor
-    - [ ] Jump-the-gun maximum
+    - [x] Absolute
+    - [x] Fractional
+    - [x] Jump-the-gun factor
+    - [x] Jump-the-gun maximum
+    - [x] Airspace
 * Task Ranking
-    - [ ] Overall
-    - [ ] Female
-    - [ ] Country
+    - [x] Overall
+    - [x] Female
+    - [x] Class
+    - [x] Country
+    - [x] Teams
 * Competition Ranking
-    - [ ] Overall
-    - [ ] Female
-    - [ ] Country
-    - [ ] Ties
-    - [ ] Fixed Total Validity
+    - [x] Overall
+    - [x] Female
+    - [x] Country
+    - [x] Ties
+    - [x] Fixed Total Validity
+ * IGC checks
+    - [x] G-record checking
+    - [x] file quality checking
 
 ### Installation:
 
