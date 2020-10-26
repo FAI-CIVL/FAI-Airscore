@@ -380,7 +380,7 @@ class FSDB(object):
                                                  else get_isotime(t.date, t.min_ess_time, t.time_offset)),
                            'max_time_to_get_time_points': round(0 / 3600, 14),  # not yet implemented
                            'no_of_pilots_with_time_points': len([x for x in t.valid_results if x.time_score > 0]),
-                           'goal_ratio': (0 if t.pilots_launched == 0 else round(t.pilots_goal/t.pilots_launched, 15)),
+                           'goalratio': (0 if t.pilots_launched == 0 else round(t.pilots_goal/t.pilots_launched, 15)),
                            'arrival_weight': 0 if t.arrival == 0 else c_round(t.arr_weight, 3),
                            'departure_weight': 0 if t.departure != 'on' else c_round(t.dep_weight, 3),
                            'leading_weight': 0 if t.departure != 'leadout' else c_round(t.dep_weight, 3),
