@@ -151,7 +151,7 @@ function delete_all_tp(){
         dataType: "json",
         success: function () {
             get_turnpoints();
-            $('#map').contents().find('body').html('');
+            $('#map_container').html('');
         }
     });
 }
