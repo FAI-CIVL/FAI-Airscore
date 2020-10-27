@@ -1235,11 +1235,12 @@ def _get_regions():
     return {'choices': choices, 'details': details}
 
 
-@blueprint.route('/_get_wpts/<regid>', methods=['GET'])
+@blueprint.route('/_get_wpts/<int:regid>', methods=['POST'])
 @login_required
-def _get_wpts(regid):
-    choices, details = frontendUtils.get_waypoint_choices(regid)
-    return {'choices': choices, 'data': details}
+def _get_wpts(regid: int):
+    # choices, details = frontendUtils.get_waypoint_choices(regid)
+    airspace = request.json.get('airspace')
+    return frontendUtils.get_region_waypoints(regid, airspace)
 
 
 @blueprint.route('/region_admin', methods=['GET', 'POST'])

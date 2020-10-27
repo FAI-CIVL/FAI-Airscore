@@ -313,7 +313,7 @@ def get_task_list(comp):
     return {'next_task': max_task_num + 1, 'last_region': last_region, 'tasks': tasks}
 
 
-def get_task_turnpoints(task):
+def get_task_turnpoints(task) -> dict:
     from task import get_map_json
     from airspaceUtils import read_airspace_map_file
     turnpoints = task.read_turnpoints()
@@ -1375,3 +1375,15 @@ def get_task_result_files(task_id: int, comp_id: int = None, offset: int = None)
 
     return {'choices': choices, 'header': header, 'active': active, 'comp_header': comp_header,
             'display_comp_unpublish': display_comp_unpublish}
+
+
+def get_region_waypoints(reg_id: int, airspace: str = None) -> dict:
+    from mapUtils import create_waypoints_layer, create_airspace_layer
+    _, waypoints = get_waypoint_choices(reg_id)
+    points_layer, bbox = create_waypoints_layer(reg_id)
+    if airspace:
+        airspace_layer, _ = create_airspace_layer(reg_id, airspace)
+    else:
+        airspace_layer = None
+    region_map = make_map(points=points_layer, airspace_layer=airspace_layer, show_airspace=False, bbox=bbox)
+    return {'waypoints': waypoints, 'map': region_map._repr_html_(), 'airspace': airspace}

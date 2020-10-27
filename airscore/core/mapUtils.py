@@ -318,7 +318,7 @@ def result_to_geojson(result, task, flight, second_interval=5):
     return tracklog, thermals, takeoff_landing, bbox, waypoints_achieved, infringements
 
 
-def create_trackpoints_layer(file: str, offset: int = 0):
+def create_trackpoints_layer(file: str, offset: int = 0) -> list:
     from igc_lib import Flight
     from calcUtils import sec_to_string
     try:
@@ -334,3 +334,32 @@ def create_trackpoints_layer(file: str, offset: int = 0):
         print(f'Error: cannot create trackpoints map layer from track: {file}')
         return None
     return points
+
+
+def create_waypoints_layer(reg_id: int) -> (list, list):
+    from db.tables import TblRegionWaypoint as R
+    from db.conn import db_session
+    points = []
+    bbox = []
+    with db_session() as db:
+        results = db.query(R).filter_by(reg_id=reg_id, old=False).all()
+        if results:
+            bbox = [[results[0].lat, results[0].lon], [results[0].lat, results[0].lon]]
+            for wp in results:
+                points.append(dict(name=wp.name, longitude=wp.lon, latitude=wp.lat))
+                bbox = checkbbox(wp.lat, wp.lon, bbox)
+    return points, bbox
+
+
+def create_airspace_layer(reg_id: int, airspace: str = None) -> (list, list):
+    from db.tables import TblRegion as R
+    from airspaceUtils import read_airspace_map_file
+    airspace_layer = []
+    bbox = []
+    if not airspace:
+        airspace = R.get_by_id(reg_id).openair_file
+    if airspace:
+        data = read_airspace_map_file(airspace)
+        airspace_layer = data['spaces']
+        bbox = data['bbox']
+    return airspace_layer, bbox
