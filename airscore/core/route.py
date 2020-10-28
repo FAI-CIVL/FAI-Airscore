@@ -17,6 +17,7 @@ from geographiclib.geodesic import Geodesic
 from geopy.distance import geodesic
 from pyproj import Proj
 from calcUtils import c_round
+from haversine import haversine, Unit
 
 '''define earth model'''
 # EARTHMODEL = Proj("+init=EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth
@@ -245,6 +246,7 @@ def cartesian2polar(xyz):
 
 
 def distance(p1, p2, method='fast_andoyer'):
+    return haversine((p1.lat, p1.lon), (p2.lat, p2.lon), unit=Unit.METERS)
     if method == "fast_andoyer":
         # print ("fast andoyer")
         return fast_andoyer(p1, p2)
