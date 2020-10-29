@@ -74,14 +74,8 @@ Region Admin
       </thead>
     </table>
   </div>
-  <div class='panel' id='map_button_panel'>
-<!--    <section class="panel-row thin button">-->
-<!--      <button class='btn btn-primary' type='button' data-toggle='collapse' data-target='#map_panel'-->
-<!--          aria-expanded='false' aria-controls='map_panel'>-->
-<!--        Map-->
-<!--      </button>-->
-<!--    </section>-->
-    <section class='panel-row' id='map_panel'>
+  <div class='panel' id='map_panel'>
+    <section class='panel-row'>
       <div class='task-map embed-responsive' id="map_container">
       </div>
     </section>
@@ -109,7 +103,9 @@ Region Admin
   </div>
 </div>
 <!--Modal ends here--->
+
 {% endblock %}
+
 {% block js %}
 <script type='text/javascript' src='https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js'></script>
 <script type='text/javascript' src='https://cdn.datatables.net/rowgroup/1.1.1/js/dataTables.rowGroup.min.js'></script>
