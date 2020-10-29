@@ -367,16 +367,12 @@ def competition(compid):
 
 @blueprint.route('/task_result/<int:taskid>')
 def task_result(taskid):
-    return render_template('public/task_result.html', taskid=taskid)
-
-
-@blueprint.route('/_get_task_result/<int:taskid>', methods=['GET', 'POST'])
-def _get_task_result(taskid):
     from task import get_task_json
     result_file = frontendUtils.get_pretty_data(get_task_json(taskid))
     if result_file == 'error':
         return render_template('404.html')
 
+    compid = int(result_file['info']['comp_id'])
     all_pilots = []
     results = [p for p in result_file['results'] if p['result_type'] not in ['dnf', 'abs', 'nyp']]
     for r in results:
@@ -400,18 +396,12 @@ def _get_task_result(taskid):
         pilot['goal_time'] = goal
         # ab = ''  # alt bonus
         pilot['penalty'] = "" if r['penalty'] == '0.0' else r['penalty']
-        # setup 4 sub-rankings placeholders
+        # setup sub-rankings
         for i, c in enumerate(result_file['classes'][1:], 1):
             pilot['ranks']['class' + str(i)] = f"{r[c['limit']]}"
         all_pilots.append(pilot)
-        # else:
-        #     '''pilot do not have result data'''
-        # TODO at the moment js raises error trying to order scores, leaving non flying pilots out of datatable
-        # pilot = [f'<b>{rank}</b>', f'{name}', r['nat'], r['glider'], r['glider_cert'], r['sponsor'], "", "", "", "",
-        #          "", "", "", "", "", "", "", f"{r['result_type'].upper()}"]
-
     result_file['data'] = all_pilots
-    return result_file
+    return render_template('public/task_result.html', taskid=taskid, compid=compid, results=result_file)
 
 
 @blueprint.route('/ext_comp_result/<int:compid>')
@@ -421,11 +411,6 @@ def ext_comp_result(compid):
 
 @blueprint.route('/comp_result/<int:compid>')
 def comp_result(compid):
-    return render_template('public/comp_overall.html', compid=compid)
-
-
-@blueprint.route('/_get_comp_result/<compid>', methods=['GET', 'POST'])
-def _get_comp_result(compid):
     from compUtils import get_comp_json
     result_file = frontendUtils.get_pretty_data(get_comp_json(compid))
     if result_file == 'error':
@@ -450,8 +435,7 @@ def _get_comp_result(compid):
             pilot['results'].append(html)
         all_pilots.append(pilot)
     result_file['data'] = all_pilots
-
-    return result_file
+    return render_template('public/comp_overall.html', compid=compid, results=result_file)
 
 
 @blueprint.route('/country_overall/<int:compid>')
