@@ -1,5 +1,5 @@
 function populate_users(editable){
-    console.log('editable='+editable)
+    console.log('editable='+editable);
     $('#users').dataTable({
         ajax: '/users/_get_users',
         info: true,
@@ -37,10 +37,79 @@ function populate_users(editable){
             }
         }]
     })
-};
-
+}
 
 function modify_user(id){
-$('#edit_user_modal').modal('show');
+    $('#edit_user_modal').modal('show');
 }
+
+function isNotEmpty( el ){
+    return !!$.trim(el.html());
+}
+
+function isNotEmpty( el ){
+    return !!$.trim(el.html());
+}
+
+function edit_user(id){
+    $('#mod_email').val($('#id_'+id).children('td:eq(4)').text()).change();
+    $('#mod_active').prop('checked', isNotEmpty($('#id_'+id).children('td:eq(5)')));
+    $('#mod_access').val($('#id_'+id).children('td:eq(6)').text()).change();
+    $('#modify_confirmed').attr("onclick","save_modified_user('"+ id +"')");
+    $('#edit_user_modal').modal('show');
+}
+
+function save_modified_user(id){
+    var mydata = new Object();
+    mydata.email = $('#mod_email').val();
+    mydata.active = $('#mod_active').is(':checked');
+    mydata.access = $('#mod_access').val();
+
+    $.ajax({
+        type: "POST",
+        url: "/users/_modify_user/"+id,
+        contentType:"application/json",
+        data : JSON.stringify(mydata),
+        dataType: "json",
+        success: function (data) {
+           populate_users();
+        }
+    });
+}
+
+jQuery(document).ready(function($) {
+    populate_users(editable);
+});
+
+
+function edit_user(id){
+    $('#mod_email').val($('#id_'+id).children('td:eq(4)').text()).change();
+    $('#mod_active').prop('checked', isNotEmpty($('#id_'+id).children('td:eq(5)')));
+    $('#mod_access').val($('#id_'+id).children('td:eq(6)').text()).change();
+    $('#modify_confirmed').attr("onclick","save_modified_user('"+ id +"')");
+    $('#edit_user_modal').modal('show');
+}
+
+function save_modified_user(id){
+    var mydata = new Object();
+    mydata.email = $('#mod_email').val();
+    mydata.active = $('#mod_active').is(':checked');
+    mydata.access = $('#mod_access').val();
+
+    $.ajax({
+        type: "POST",
+        url: "/users/_modify_user/"+id,
+        contentType:"application/json",
+        data : JSON.stringify(mydata),
+        dataType: "json",
+        success: function (data) {
+           populate_users();
+        }
+    });
+}
+
+jQuery(document).ready(function($) {
+    populate_users(editable);
+});
+
 
