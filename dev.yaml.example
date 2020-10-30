@@ -1,0 +1,18 @@
+##################
+# settings file for development outside of docker container where env vars (set in docker) are not available.
+# rename to dev.yaml to activate
+##################
+
+db:
+  Server: xx
+  Name: xxx
+  User: xx
+  Pass: xx
+
+xcontest:
+  User: xxx
+  Pass: xxx
+
+telegram:
+  API: 11111111111111
+  channel: 111111111111
