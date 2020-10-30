@@ -56,6 +56,8 @@ services:
     command: --default-authentication-plugin=mysql_native_password
     restart: always
     container_name: mysql_db_local
+    security_opt:
+      - seccomp:unconfined
     environment:
       MYSQL_ROOT_PASSWORD: airscore
       MYSQL_DATABASE: airscore
