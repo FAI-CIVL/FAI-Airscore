@@ -6,9 +6,12 @@ $(document).ready(function() {
   var dropdown = {
     category: $('#select_category'),
     formula: $('#select_formula'),
-    igc_config: $('#igc_parsing_file')
+    igc_config: $('#igc_parsing_file'),
+    classification: $('#select_classification')
   };
 
+  console.log('class='+dropdown.classification.val());
+  update_rankings( dropdown.classification.val() );
   document.getElementById("link_igc_config").setAttribute("href", "/users/igc_parsing_config/" + dropdown.igc_config.val());
 
   // function to call XHR and update formula dropdown
@@ -45,6 +48,12 @@ $(document).ready(function() {
   // event listener to igc config dropdown change
   dropdown.igc_config.on('change', function() {
      $('#link_igc_config').attr("href", "/users/igc_parsing_config/" + dropdown.igc_config.val());
+  });
+
+  // event listener to classification dropdown change
+  dropdown.classification.on('change', function() {
+     let cat_id = dropdown.classification.val()
+     update_rankings(cat_id);
   });
 
 });
@@ -272,6 +281,33 @@ function get_adv_settings(){
       $('#JTG_penalty_per_sec').val(data.JTG_penalty_per_sec);
     }
   });
+}
+
+function update_rankings( cat_id ) {
+    let classification = classifications.find(el => el.cat_id == cat_id );
+    let cat = classification.categories;
+    let name = classification.cat_name
+    let columns = [];
+    columns.push({data: 'title', title:'rankings:', defaultContent: ''});
+    columns.push({data: 'members', render: function ( data ) { return data.join(', ')}});
+
+    $('#rankings').DataTable({
+        data: cat,
+        destroy: true,
+        paging: false,
+        bAutoWidth: false,
+        responsive: true,
+        saveState: true,
+        info: false,
+        dom: 'lrtip',
+        columns: columns,
+        initComplete: function(settings, json) {
+            // Female Ranking
+            let female = (classification.female == 1).toString();
+            console.log('female='+female);
+            $('#rankings').DataTable().row.add({title: 'Female', members: [female]}).draw();
+        }
+    });
 }
 
 function export_to_fsdb(){

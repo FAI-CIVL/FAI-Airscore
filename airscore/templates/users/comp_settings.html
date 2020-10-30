@@ -135,8 +135,10 @@ Competition Settings
       </div>
       <div role="tabpanel" class="tab-pane column-wrap fade" id="results">
         <h4 class='tab-title font-weight-bold'>Results:</h4>
-        <section class="tab-row row-wrap form">
+        <section class="tab-row column-wrap form">
             {{ render_field(compform.cat_id) }}
+            <table class="rankings dataTable no-footer" id="rankings">
+            </table>
         </section>
         <section class="tab-row row-wrap form">
           {{ render_field(compform.country_scoring, tooltip=True) }}
@@ -338,6 +340,7 @@ Competition Settings
 <script  type=text/javascript>
   var compid = {{ compid|tojson }};
   var comp_admin = {{ compform.submit|tojson }};
+  var classifications = {{ classifications|tojson }};
   var link_get_tasks = "{{ url_for('user._get_tasks', compid=compid)}}";
   var link_add_task = "{{ url_for('user._add_task', compid=compid)}}";
   var link_get_scorekeepers = "{{ url_for('user._get_scorekeepers', compid=compid)}}";

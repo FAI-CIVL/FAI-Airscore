@@ -291,6 +291,22 @@ section.form h6 {
   min-width: max-content;
 }
 
+table.rankings {
+  max-width: 40rem;
+  margin-top: 1rem;
+}
+table.rankings thead {
+  margin-bottom: 1rem;
+}
+
+table.rankings th {
+  padding-bottom: .3rem;
+  border-bottom: 1px solid grey;
+}
+
+table.rankings td {
+  padding: 0 1rem .3rem 0;
+}
 
 /* Results */
 

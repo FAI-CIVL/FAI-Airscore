@@ -1274,6 +1274,38 @@ def list_classifications() -> dict:
             'HG': sorted(hg_classifications, key=lambda x: x['cat_name'])}
 
 
+def get_classifications_details(comp_class: str = None) -> list:
+    from db.tables import TblClasCertRank as CC, TblRanking as R, TblCertification as CCT, TblClassification as CT
+    output = []
+    with db_session() as db:
+        query = db.query(CT.cat_id, CT.cat_name, CT.comp_class,
+                         CT.female, CT.team, R.rank_name.label('rank'), CCT.cert_name.label('cert')) \
+                  .select_from(R) \
+                  .join(CC, R.rank_id == CC.c.rank_id) \
+                  .join(CCT, (CCT.cert_id <= CC.c.cert_id) & (CCT.comp_class == R.comp_class)) \
+                  .join(CT, CT.cat_id == CC.c.cat_id) \
+                  .filter(CC.c.cert_id > 0)
+        if comp_class:
+            query = query.filter(CT.comp_class == comp_class)
+        results = query.all()
+
+    if results:
+        classifications = set(x.cat_id for x in results)
+        for cl in classifications:
+            elements = [x for x in results if x.cat_id == cl]
+            classification = dict(cat_id=cl, cat_name=elements[0].cat_name, comp_class=elements[0].comp_class,
+                                  female=elements[0].female, team=elements[0].team)
+            classification['categories'] = []
+            for res in elements:
+                el = next((x for x in classification['categories'] if x['title'] == res.rank), None)
+                if el:
+                    el['members'].append(res.cert)
+                else:
+                    classification['categories'].append(dict(title=res.rank, members=[res.cert]))
+            output.append(classification)
+    return output
+
+
 def list_track_sources() -> list:
     """Lists all track sources enabled in Defines.
         :returns a list of (value, text)."""

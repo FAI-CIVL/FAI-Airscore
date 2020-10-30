@@ -367,12 +367,13 @@ def comp_settings_admin(compid: int):
         ladderform = None
 
     tasks = frontendUtils.get_task_list(comp)
+    classifications = frontendUtils.get_classifications_details(comp_class=comp.comp_class)
     session['tasks'] = tasks['tasks']
     session['check_g_record'] = comp.check_g_record
 
     return render_template('users/comp_settings.html', compid=compid, compform=compform,
                            taskform=newtaskform, scorekeeperform=newScorekeeperform, ladderform=ladderform,
-                           error=error,
+                           classifications=classifications, error=error,
                            self_register=(SELF_REG_DEFAULT and PILOT_DB))
 
 
