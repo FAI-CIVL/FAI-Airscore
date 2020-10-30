@@ -1,3 +1,4 @@
+USE airscore
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET AUTOCOMMIT = 0;
@@ -42,6 +43,7 @@ CREATE TABLE `CompObjectView` (
 ,`igc_config_file` varchar(80)
 ,`self_register` tinyint(1)
 ,`check_g_record` tinyint(1)
+,`track_source` varchar(40)
 ,`formula_type` varchar(10)
 ,`formula_version` int(8)
 ,`formula_name` varchar(50)
@@ -420,24 +422,6 @@ CREATE TABLE `tblCompetition` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `tblCountryCode`
---
-
-CREATE TABLE `tblCountryCode` (
-  `natName` varchar(52) NOT NULL,
-  `natIso2` varchar(2) NOT NULL,
-  `natIso3` varchar(3) NOT NULL,
-  `natId` int(11) NOT NULL,
-  `natIso` varchar(13) DEFAULT NULL,
-  `natRegion` varchar(8) DEFAULT NULL,
-  `natSubRegion` varchar(25) DEFAULT NULL,
-  `natRegionId` int(11) DEFAULT NULL,
-  `natSubRegionId` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `tblForComp`
 --
 
@@ -502,6 +486,281 @@ CREATE TABLE `tblLadder` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
+--
+-- Table structure for table `tblCountryCode`
+--
+
+CREATE TABLE `tblCountryCode` (
+  `natName` varchar(52) NOT NULL,
+  `natIso2` varchar(2) NOT NULL,
+  `natIso3` varchar(3) NOT NULL,
+  `natId` int(11) NOT NULL,
+  `natIso` varchar(13) DEFAULT NULL,
+  `natRegion` varchar(8) DEFAULT NULL,
+  `natSubRegion` varchar(25) DEFAULT NULL,
+  `natRegionId` int(11) DEFAULT NULL,
+  `natSubRegionId` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Dumping data for table `tblCountryCode`
+--
+
+INSERT INTO `tblCountryCode` (`natName`, `natIso2`, `natIso3`, `natId`, `natIso`, `natRegion`, `natSubRegion`, `natRegionId`, `natSubRegionId`) VALUES
+('Afghanistan', 'AF', 'AFG', 4, NULL, 'Asia', 'Southern Asia', 142, 34),
+('Albania', 'AL', 'ALB', 8, NULL, 'Europe', 'Southern Europe', 150, 39),
+('Antarctica', 'AQ', 'ATA', 10, NULL, NULL, NULL, NULL, NULL),
+('Algeria', 'DZ', 'DZA', 12, NULL, 'Africa', 'Northern Africa', 2, 15),
+('American Samoa', 'AS', 'ASM', 16, NULL, 'Oceania', 'Polynesia', 9, 61),
+('Andorra', 'AD', 'AND', 20, NULL, 'Europe', 'Southern Europe', 150, 39),
+('Angola', 'AO', 'AGO', 24, NULL, 'Africa', 'Middle Africa', 2, 17),
+('Antigua and Barbuda', 'AG', 'ATG', 28, NULL, 'Americas', 'Caribbean', 19, 29),
+('Azerbaijan', 'AZ', 'AZE', 31, NULL, 'Asia', 'Western Asia', 142, 145),
+('Argentina', 'AR', 'ARG', 32, NULL, 'Americas', 'South America', 19, 5),
+('Australia', 'AU', 'AUS', 36, NULL, 'Oceania', 'Australia and New Zealand', 9, 53),
+('Austria', 'AT', 'AUT', 40, NULL, 'Europe', 'Western Europe', 150, 155),
+('Bahamas', 'BS', 'BHS', 44, NULL, 'Americas', 'Caribbean', 19, 29),
+('Bahrain', 'BH', 'BHR', 48, NULL, 'Asia', 'Western Asia', 142, 145),
+('Bangladesh', 'BD', 'BGD', 50, NULL, 'Asia', 'Southern Asia', 142, 34),
+('Armenia', 'AM', 'ARM', 51, NULL, 'Asia', 'Western Asia', 142, 145),
+('Barbados', 'BB', 'BRB', 52, NULL, 'Americas', 'Caribbean', 19, 29),
+('Belgium', 'BE', 'BEL', 56, NULL, 'Europe', 'Western Europe', 150, 155),
+('Bermuda', 'BM', 'BMU', 60, NULL, 'Americas', 'Northern America', 19, 21),
+('Bhutan', 'BT', 'BTN', 64, NULL, 'Asia', 'Southern Asia', 142, 34),
+('Bolivia (Plurinational State of)', 'BO', 'BOL', 68, NULL, 'Americas', 'South America', 19, 5),
+('Bosnia and Herzegovina', 'BA', 'BIH', 70, NULL, 'Europe', 'Southern Europe', 150, 39),
+('Botswana', 'BW', 'BWA', 72, NULL, 'Africa', 'Southern Africa', 2, 18),
+('Bouvet Island', 'BV', 'BVT', 74, NULL, NULL, NULL, NULL, NULL),
+('Brazil', 'BR', 'BRA', 76, NULL, 'Americas', 'South America', 19, 5),
+('Belize', 'BZ', 'BLZ', 84, NULL, 'Americas', 'Central America', 19, 13),
+('British Indian Ocean Territory', 'IO', 'IOT', 86, NULL, NULL, NULL, NULL, NULL),
+('Solomon Islands', 'SB', 'SLB', 90, NULL, 'Oceania', 'Melanesia', 9, 54),
+('Virgin Islands (British)', 'VG', 'VGB', 92, NULL, 'Americas', 'Caribbean', 19, 29),
+('Brunei Darussalam', 'BN', 'BRN', 96, NULL, 'Asia', 'South-Eastern Asia', 142, 35),
+('Bulgaria', 'BG', 'BGR', 100, NULL, 'Europe', 'Eastern Europe', 150, 151),
+('Myanmar', 'MM', 'MMR', 104, NULL, 'Asia', 'South-Eastern Asia', 142, 35),
+('Burundi', 'BI', 'BDI', 108, NULL, 'Africa', 'Eastern Africa', 2, 14),
+('Belarus', 'BY', 'BLR', 112, NULL, 'Europe', 'Eastern Europe', 150, 151),
+('Cambodia', 'KH', 'KHM', 116, NULL, 'Asia', 'South-Eastern Asia', 142, 35),
+('Cameroon', 'CM', 'CMR', 120, NULL, 'Africa', 'Middle Africa', 2, 17),
+('Canada', 'CA', 'CAN', 124, NULL, 'Americas', 'Northern America', 19, 21),
+('Cabo Verde', 'CV', 'CPV', 132, NULL, 'Africa', 'Western Africa', 2, 11),
+('Cayman Islands', 'KY', 'CYM', 136, NULL, 'Americas', 'Caribbean', 19, 29),
+('Central African Republic', 'CF', 'CAF', 140, NULL, 'Africa', 'Middle Africa', 2, 17),
+('Sri Lanka', 'LK', 'LKA', 144, NULL, 'Asia', 'Southern Asia', 142, 34),
+('Chad', 'TD', 'TCD', 148, NULL, 'Africa', 'Middle Africa', 2, 17),
+('Chile', 'CL', 'CHL', 152, NULL, 'Americas', 'South America', 19, 5),
+('China', 'CN', 'CHN', 156, NULL, 'Asia', 'Eastern Asia', 142, 30),
+('Taiwan, Province of China', 'TW', 'TWN', 158, NULL, 'Asia', 'Eastern Asia', 142, 30),
+('Christmas Island', 'CX', 'CXR', 162, NULL, NULL, NULL, NULL, NULL),
+('Cocos (Keeling) Islands', 'CC', 'CCK', 166, NULL, NULL, NULL, NULL, NULL),
+('Colombia', 'CO', 'COL', 170, NULL, 'Americas', 'South America', 19, 5),
+('Comoros', 'KM', 'COM', 174, NULL, 'Africa', 'Eastern Africa', 2, 14),
+('Mayotte', 'YT', 'MYT', 175, NULL, 'Africa', 'Eastern Africa', 2, 14),
+('Congo', 'CG', 'COG', 178, NULL, 'Africa', 'Middle Africa', 2, 17),
+('Congo (Democratic Republic of the)', 'CD', 'COD', 180, NULL, 'Africa', 'Middle Africa', 2, 17),
+('Cook Islands', 'CK', 'COK', 184, NULL, 'Oceania', 'Polynesia', 9, 61),
+('Costa Rica', 'CR', 'CRI', 188, NULL, 'Americas', 'Central America', 19, 13),
+('Croatia', 'HR', 'HRV', 191, NULL, 'Europe', 'Southern Europe', 150, 39),
+('Cuba', 'CU', 'CUB', 192, NULL, 'Americas', 'Caribbean', 19, 29),
+('Cyprus', 'CY', 'CYP', 196, NULL, 'Asia', 'Western Asia', 142, 145),
+('Czech Republic', 'CZ', 'CZE', 203, NULL, 'Europe', 'Eastern Europe', 150, 151),
+('Benin', 'BJ', 'BEN', 204, NULL, 'Africa', 'Western Africa', 2, 11),
+('Denmark', 'DK', 'DNK', 208, NULL, 'Europe', 'Northern Europe', 150, 154),
+('Dominica', 'DM', 'DMA', 212, NULL, 'Americas', 'Caribbean', 19, 29),
+('Dominican Republic', 'DO', 'DOM', 214, NULL, 'Americas', 'Caribbean', 19, 29),
+('Ecuador', 'EC', 'ECU', 218, NULL, 'Americas', 'South America', 19, 5),
+('El Salvador', 'SV', 'SLV', 222, NULL, 'Americas', 'Central America', 19, 13),
+('Equatorial Guinea', 'GQ', 'GNQ', 226, NULL, 'Africa', 'Middle Africa', 2, 17),
+('Ethiopia', 'ET', 'ETH', 231, NULL, 'Africa', 'Eastern Africa', 2, 14),
+('Eritrea', 'ER', 'ERI', 232, NULL, 'Africa', 'Eastern Africa', 2, 14),
+('Estonia', 'EE', 'EST', 233, NULL, 'Europe', 'Northern Europe', 150, 154),
+('Faroe Islands', 'FO', 'FRO', 234, NULL, 'Europe', 'Northern Europe', 150, 154),
+('Falkland Islands (Malvinas)', 'FK', 'FLK', 238, NULL, 'Americas', 'South America', 19, 5),
+('South Georgia and the South Sandwich Islands', 'GS', 'SGS', 239, NULL, NULL, NULL, NULL, NULL),
+('Fiji', 'FJ', 'FJI', 242, NULL, 'Oceania', 'Melanesia', 9, 54),
+('Finland', 'FI', 'FIN', 246, NULL, 'Europe', 'Northern Europe', 150, 154),
+('Åland Islands', 'AX', 'ALA', 248, NULL, 'Europe', 'Northern Europe', 150, 154),
+('France', 'FR', 'FRA', 250, NULL, 'Europe', 'Western Europe', 150, 155),
+('French Guiana', 'GF', 'GUF', 254, NULL, 'Americas', 'South America', 19, 5),
+('French Polynesia', 'PF', 'PYF', 258, NULL, 'Oceania', 'Polynesia', 9, 61),
+('French Southern Territories', 'TF', 'ATF', 260, NULL, NULL, NULL, NULL, NULL),
+('Djibouti', 'DJ', 'DJI', 262, NULL, 'Africa', 'Eastern Africa', 2, 14),
+('Gabon', 'GA', 'GAB', 266, NULL, 'Africa', 'Middle Africa', 2, 17),
+('Georgia', 'GE', 'GEO', 268, NULL, 'Asia', 'Western Asia', 142, 145),
+('Gambia', 'GM', 'GMB', 270, NULL, 'Africa', 'Western Africa', 2, 11),
+('Palestine, State of', 'PS', 'PSE', 275, NULL, 'Asia', 'Western Asia', 142, 145),
+('Germany', 'DE', 'DEU', 276, NULL, 'Europe', 'Western Europe', 150, 155),
+('Ghana', 'GH', 'GHA', 288, NULL, 'Africa', 'Western Africa', 2, 11),
+('Gibraltar', 'GI', 'GIB', 292, NULL, 'Europe', 'Southern Europe', 150, 39),
+('Kiribati', 'KI', 'KIR', 296, NULL, 'Oceania', 'Micronesia', 9, 57),
+('Greece', 'GR', 'GRC', 300, NULL, 'Europe', 'Southern Europe', 150, 39),
+('Greenland', 'GL', 'GRL', 304, NULL, 'Americas', 'Northern America', 19, 21),
+('Grenada', 'GD', 'GRD', 308, NULL, 'Americas', 'Caribbean', 19, 29),
+('Guadeloupe', 'GP', 'GLP', 312, NULL, 'Americas', 'Caribbean', 19, 29),
+('Guam', 'GU', 'GUM', 316, NULL, 'Oceania', 'Micronesia', 9, 57),
+('Guatemala', 'GT', 'GTM', 320, NULL, 'Americas', 'Central America', 19, 13),
+('Guinea', 'GN', 'GIN', 324, NULL, 'Africa', 'Western Africa', 2, 11),
+('Guyana', 'GY', 'GUY', 328, NULL, 'Americas', 'South America', 19, 5),
+('Haiti', 'HT', 'HTI', 332, NULL, 'Americas', 'Caribbean', 19, 29),
+('Heard Island and McDonald Islands', 'HM', 'HMD', 334, NULL, NULL, NULL, NULL, NULL),
+('Holy See', 'VA', 'VAT', 336, NULL, 'Europe', 'Southern Europe', 150, 39),
+('Honduras', 'HN', 'HND', 340, NULL, 'Americas', 'Central America', 19, 13),
+('Hong Kong', 'HK', 'HKG', 344, NULL, 'Asia', 'Eastern Asia', 142, 30),
+('Hungary', 'HU', 'HUN', 348, NULL, 'Europe', 'Eastern Europe', 150, 151),
+('Iceland', 'IS', 'ISL', 352, NULL, 'Europe', 'Northern Europe', 150, 154),
+('India', 'IN', 'IND', 356, NULL, 'Asia', 'Southern Asia', 142, 34),
+('Indonesia', 'ID', 'IDN', 360, NULL, 'Asia', 'South-Eastern Asia', 142, 35),
+('Iran (Islamic Republic of)', 'IR', 'IRN', 364, NULL, 'Asia', 'Southern Asia', 142, 34),
+('Iraq', 'IQ', 'IRQ', 368, NULL, 'Asia', 'Western Asia', 142, 145),
+('Ireland', 'IE', 'IRL', 372, NULL, 'Europe', 'Northern Europe', 150, 154),
+('Israel', 'IL', 'ISR', 376, NULL, 'Asia', 'Western Asia', 142, 145),
+('Italy', 'IT', 'ITA', 380, NULL, 'Europe', 'Southern Europe', 150, 39),
+('Côte d\'Ivoire', 'CI', 'CIV', 384, NULL, 'Africa', 'Western Africa', 2, 11),
+('Jamaica', 'JM', 'JAM', 388, NULL, 'Americas', 'Caribbean', 19, 29),
+('Japan', 'JP', 'JPN', 392, NULL, 'Asia', 'Eastern Asia', 142, 30),
+('Kazakhstan', 'KZ', 'KAZ', 398, NULL, 'Asia', 'Central Asia', 142, 143),
+('Jordan', 'JO', 'JOR', 400, NULL, 'Asia', 'Western Asia', 142, 145),
+('Kenya', 'KE', 'KEN', 404, NULL, 'Africa', 'Eastern Africa', 2, 14),
+('Korea (Democratic People\'s Republic of)', 'KP', 'PRK', 408, NULL, 'Asia', 'Eastern Asia', 142, 30),
+('Korea (Republic of)', 'KR', 'KOR', 410, NULL, 'Asia', 'Eastern Asia', 142, 30),
+('Kuwait', 'KW', 'KWT', 414, NULL, 'Asia', 'Western Asia', 142, 145),
+('Kyrgyzstan', 'KG', 'KGZ', 417, NULL, 'Asia', 'Central Asia', 142, 143),
+('Lao People\'s Democratic Republic', 'LA', 'LAO', 418, NULL, 'Asia', 'South-Eastern Asia', 142, 35),
+('Lebanon', 'LB', 'LBN', 422, NULL, 'Asia', 'Western Asia', 142, 145),
+('Lesotho', 'LS', 'LSO', 426, NULL, 'Africa', 'Southern Africa', 2, 18),
+('Latvia', 'LV', 'LVA', 428, NULL, 'Europe', 'Northern Europe', 150, 154),
+('Liberia', 'LR', 'LBR', 430, NULL, 'Africa', 'Western Africa', 2, 11),
+('Libya', 'LY', 'LBY', 434, NULL, 'Africa', 'Northern Africa', 2, 15),
+('Liechtenstein', 'LI', 'LIE', 438, NULL, 'Europe', 'Western Europe', 150, 155),
+('Lithuania', 'LT', 'LTU', 440, NULL, 'Europe', 'Northern Europe', 150, 154),
+('Luxembourg', 'LU', 'LUX', 442, NULL, 'Europe', 'Western Europe', 150, 155),
+('Macao', 'MO', 'MAC', 446, NULL, 'Asia', 'Eastern Asia', 142, 30),
+('Madagascar', 'MG', 'MDG', 450, NULL, 'Africa', 'Eastern Africa', 2, 14),
+('Malawi', 'MW', 'MWI', 454, NULL, 'Africa', 'Eastern Africa', 2, 14),
+('Malaysia', 'MY', 'MYS', 458, NULL, 'Asia', 'South-Eastern Asia', 142, 35),
+('Maldives', 'MV', 'MDV', 462, NULL, 'Asia', 'Southern Asia', 142, 34),
+('Mali', 'ML', 'MLI', 466, NULL, 'Africa', 'Western Africa', 2, 11),
+('Malta', 'MT', 'MLT', 470, NULL, 'Europe', 'Southern Europe', 150, 39),
+('Martinique', 'MQ', 'MTQ', 474, NULL, 'Americas', 'Caribbean', 19, 29),
+('Mauritania', 'MR', 'MRT', 478, NULL, 'Africa', 'Western Africa', 2, 11),
+('Mauritius', 'MU', 'MUS', 480, NULL, 'Africa', 'Eastern Africa', 2, 14),
+('Mexico', 'MX', 'MEX', 484, NULL, 'Americas', 'Central America', 19, 13),
+('Monaco', 'MC', 'MCO', 492, NULL, 'Europe', 'Western Europe', 150, 155),
+('Mongolia', 'MN', 'MNG', 496, NULL, 'Asia', 'Eastern Asia', 142, 30),
+('Moldova (Republic of)', 'MD', 'MDA', 498, NULL, 'Europe', 'Eastern Europe', 150, 151),
+('Montenegro', 'ME', 'MNE', 499, NULL, 'Europe', 'Southern Europe', 150, 39),
+('Montserrat', 'MS', 'MSR', 500, NULL, 'Americas', 'Caribbean', 19, 29),
+('Morocco', 'MA', 'MAR', 504, NULL, 'Africa', 'Northern Africa', 2, 15),
+('Mozambique', 'MZ', 'MOZ', 508, NULL, 'Africa', 'Eastern Africa', 2, 14),
+('Oman', 'OM', 'OMN', 512, NULL, 'Asia', 'Western Asia', 142, 145),
+('Namibia', 'NA', 'NAM', 516, NULL, 'Africa', 'Southern Africa', 2, 18),
+('Nauru', 'NR', 'NRU', 520, NULL, 'Oceania', 'Micronesia', 9, 57),
+('Nepal', 'NP', 'NPL', 524, NULL, 'Asia', 'Southern Asia', 142, 34),
+('Netherlands', 'NL', 'NLD', 528, NULL, 'Europe', 'Western Europe', 150, 155),
+('Curaçao', 'CW', 'CUW', 531, NULL, 'Americas', 'Caribbean', 19, 29),
+('Aruba', 'AW', 'ABW', 533, NULL, 'Americas', 'Caribbean', 19, 29),
+('Sint Maarten (Dutch part)', 'SX', 'SXM', 534, NULL, 'Americas', 'Caribbean', 19, 29),
+('Bonaire, Sint Eustatius and Saba', 'BQ', 'BES', 535, NULL, 'Americas', 'Caribbean', 19, 29),
+('New Caledonia', 'NC', 'NCL', 540, NULL, 'Oceania', 'Melanesia', 9, 54),
+('Vanuatu', 'VU', 'VUT', 548, NULL, 'Oceania', 'Melanesia', 9, 54),
+('New Zealand', 'NZ', 'NZL', 554, NULL, 'Oceania', 'Australia and New Zealand', 9, 53),
+('Nicaragua', 'NI', 'NIC', 558, NULL, 'Americas', 'Central America', 19, 13),
+('Niger', 'NE', 'NER', 562, NULL, 'Africa', 'Western Africa', 2, 11),
+('Nigeria', 'NG', 'NGA', 566, NULL, 'Africa', 'Western Africa', 2, 11),
+('Niue', 'NU', 'NIU', 570, NULL, 'Oceania', 'Polynesia', 9, 61),
+('Norfolk Island', 'NF', 'NFK', 574, NULL, 'Oceania', 'Australia and New Zealand', 9, 53),
+('Norway', 'NO', 'NOR', 578, NULL, 'Europe', 'Northern Europe', 150, 154),
+('Northern Mariana Islands', 'MP', 'MNP', 580, NULL, 'Oceania', 'Micronesia', 9, 57),
+('United States Minor Outlying Islands', 'UM', 'UMI', 581, NULL, NULL, NULL, NULL, NULL),
+('Micronesia (Federated States of)', 'FM', 'FSM', 583, NULL, 'Oceania', 'Micronesia', 9, 57),
+('Marshall Islands', 'MH', 'MHL', 584, NULL, 'Oceania', 'Micronesia', 9, 57),
+('Palau', 'PW', 'PLW', 585, NULL, 'Oceania', 'Micronesia', 9, 57),
+('Pakistan', 'PK', 'PAK', 586, NULL, 'Asia', 'Southern Asia', 142, 34),
+('Panama', 'PA', 'PAN', 591, NULL, 'Americas', 'Central America', 19, 13),
+('Papua New Guinea', 'PG', 'PNG', 598, NULL, 'Oceania', 'Melanesia', 9, 54),
+('Paraguay', 'PY', 'PRY', 600, NULL, 'Americas', 'South America', 19, 5),
+('Peru', 'PE', 'PER', 604, NULL, 'Americas', 'South America', 19, 5),
+('Philippines', 'PH', 'PHL', 608, NULL, 'Asia', 'South-Eastern Asia', 142, 35),
+('Pitcairn', 'PN', 'PCN', 612, NULL, 'Oceania', 'Polynesia', 9, 61),
+('Poland', 'PL', 'POL', 616, NULL, 'Europe', 'Eastern Europe', 150, 151),
+('Portugal', 'PT', 'PRT', 620, NULL, 'Europe', 'Southern Europe', 150, 39),
+('Guinea-Bissau', 'GW', 'GNB', 624, NULL, 'Africa', 'Western Africa', 2, 11),
+('Timor-Leste', 'TL', 'TLS', 626, NULL, 'Asia', 'South-Eastern Asia', 142, 35),
+('Puerto Rico', 'PR', 'PRI', 630, NULL, 'Americas', 'Caribbean', 19, 29),
+('Qatar', 'QA', 'QAT', 634, NULL, 'Asia', 'Western Asia', 142, 145),
+('Réunion', 'RE', 'REU', 638, NULL, 'Africa', 'Eastern Africa', 2, 14),
+('Romania', 'RO', 'ROU', 642, NULL, 'Europe', 'Eastern Europe', 150, 151),
+('Russian Federation', 'RU', 'RUS', 643, NULL, 'Europe', 'Eastern Europe', 150, 151),
+('Rwanda', 'RW', 'RWA', 646, NULL, 'Africa', 'Eastern Africa', 2, 14),
+('Saint Barthélemy', 'BL', 'BLM', 652, NULL, 'Americas', 'Caribbean', 19, 29),
+('Saint Helena, Ascension and Tristan da Cunha', 'SH', 'SHN', 654, NULL, 'Africa', 'Western Africa', 2, 11),
+('Saint Kitts and Nevis', 'KN', 'KNA', 659, NULL, 'Americas', 'Caribbean', 19, 29),
+('Anguilla', 'AI', 'AIA', 660, NULL, 'Americas', 'Caribbean', 19, 29),
+('Saint Lucia', 'LC', 'LCA', 662, NULL, 'Americas', 'Caribbean', 19, 29),
+('Saint Martin (French part)', 'MF', 'MAF', 663, NULL, 'Americas', 'Caribbean', 19, 29),
+('Saint Pierre and Miquelon', 'PM', 'SPM', 666, NULL, 'Americas', 'Northern America', 19, 21),
+('Saint Vincent and the Grenadines', 'VC', 'VCT', 670, NULL, 'Americas', 'Caribbean', 19, 29),
+('San Marino', 'SM', 'SMR', 674, NULL, 'Europe', 'Southern Europe', 150, 39),
+('Sao Tome and Principe', 'ST', 'STP', 678, NULL, 'Africa', 'Middle Africa', 2, 17),
+('Saudi Arabia', 'SA', 'SAU', 682, NULL, 'Asia', 'Western Asia', 142, 145),
+('Senegal', 'SN', 'SEN', 686, NULL, 'Africa', 'Western Africa', 2, 11),
+('Serbia', 'RS', 'SRB', 688, NULL, 'Europe', 'Southern Europe', 150, 39),
+('Seychelles', 'SC', 'SYC', 690, NULL, 'Africa', 'Eastern Africa', 2, 14),
+('Sierra Leone', 'SL', 'SLE', 694, NULL, 'Africa', 'Western Africa', 2, 11),
+('Singapore', 'SG', 'SGP', 702, NULL, 'Asia', 'South-Eastern Asia', 142, 35),
+('Slovakia', 'SK', 'SVK', 703, NULL, 'Europe', 'Eastern Europe', 150, 151),
+('Viet Nam', 'VN', 'VNM', 704, NULL, 'Asia', 'South-Eastern Asia', 142, 35),
+('Slovenia', 'SI', 'SVN', 705, NULL, 'Europe', 'Southern Europe', 150, 39),
+('Somalia', 'SO', 'SOM', 706, NULL, 'Africa', 'Eastern Africa', 2, 14),
+('South Africa', 'ZA', 'ZAF', 710, NULL, 'Africa', 'Southern Africa', 2, 18),
+('Zimbabwe', 'ZW', 'ZWE', 716, NULL, 'Africa', 'Eastern Africa', 2, 14),
+('Spain', 'ES', 'ESP', 724, NULL, 'Europe', 'Southern Europe', 150, 39),
+('South Sudan', 'SS', 'SSD', 728, NULL, 'Africa', 'Eastern Africa', 2, 14),
+('Sudan', 'SD', 'SDN', 729, NULL, 'Africa', 'Northern Africa', 2, 15),
+('Western Sahara', 'EH', 'ESH', 732, NULL, 'Africa', 'Northern Africa', 2, 15),
+('Suriname', 'SR', 'SUR', 740, NULL, 'Americas', 'South America', 19, 5),
+('Svalbard and Jan Mayen', 'SJ', 'SJM', 744, NULL, 'Europe', 'Northern Europe', 150, 154),
+('Swaziland', 'SZ', 'SWZ', 748, NULL, 'Africa', 'Southern Africa', 2, 18),
+('Sweden', 'SE', 'SWE', 752, NULL, 'Europe', 'Northern Europe', 150, 154),
+('Switzerland', 'CH', 'CHE', 756, NULL, 'Europe', 'Western Europe', 150, 155),
+('Syrian Arab Republic', 'SY', 'SYR', 760, NULL, 'Asia', 'Western Asia', 142, 145),
+('Tajikistan', 'TJ', 'TJK', 762, NULL, 'Asia', 'Central Asia', 142, 143),
+('Thailand', 'TH', 'THA', 764, NULL, 'Asia', 'South-Eastern Asia', 142, 35),
+('Togo', 'TG', 'TGO', 768, NULL, 'Africa', 'Western Africa', 2, 11),
+('Tokelau', 'TK', 'TKL', 772, NULL, 'Oceania', 'Polynesia', 9, 61),
+('Tonga', 'TO', 'TON', 776, NULL, 'Oceania', 'Polynesia', 9, 61),
+('Trinidad and Tobago', 'TT', 'TTO', 780, NULL, 'Americas', 'Caribbean', 19, 29),
+('United Arab Emirates', 'AE', 'ARE', 784, NULL, 'Asia', 'Western Asia', 142, 145),
+('Tunisia', 'TN', 'TUN', 788, NULL, 'Africa', 'Northern Africa', 2, 15),
+('Turkey', 'TR', 'TUR', 792, NULL, 'Asia', 'Western Asia', 142, 145),
+('Turkmenistan', 'TM', 'TKM', 795, NULL, 'Asia', 'Central Asia', 142, 143),
+('Turks and Caicos Islands', 'TC', 'TCA', 796, NULL, 'Americas', 'Caribbean', 19, 29),
+('Tuvalu', 'TV', 'TUV', 798, NULL, 'Oceania', 'Polynesia', 9, 61),
+('Uganda', 'UG', 'UGA', 800, NULL, 'Africa', 'Eastern Africa', 2, 14),
+('Ukraine', 'UA', 'UKR', 804, NULL, 'Europe', 'Eastern Europe', 150, 151),
+('Macedonia (the former Yugoslav Republic of)', 'MK', 'MKD', 807, NULL, 'Europe', 'Southern Europe', 150, 39),
+('Egypt', 'EG', 'EGY', 818, NULL, 'Africa', 'Northern Africa', 2, 15),
+('United Kingdom of Great Britain and Northern Ireland', 'GB', 'GBR', 826, NULL, 'Europe', 'Northern Europe', 150, 154),
+('Guernsey', 'GG', 'GGY', 831, NULL, 'Europe', 'Northern Europe', 150, 154),
+('Jersey', 'JE', 'JEY', 832, NULL, 'Europe', 'Northern Europe', 150, 154),
+('Isle of Man', 'IM', 'IMN', 833, NULL, 'Europe', 'Northern Europe', 150, 154),
+('Tanzania, United Republic of', 'TZ', 'TZA', 834, NULL, 'Africa', 'Eastern Africa', 2, 14),
+('United States of America', 'US', 'USA', 840, NULL, 'Americas', 'Northern America', 19, 21),
+('Virgin Islands (U.S.)', 'VI', 'VIR', 850, NULL, 'Americas', 'Caribbean', 19, 29),
+('Burkina Faso', 'BF', 'BFA', 854, NULL, 'Africa', 'Western Africa', 2, 11),
+('Uruguay', 'UY', 'URY', 858, NULL, 'Americas', 'South America', 19, 5),
+('Uzbekistan', 'UZ', 'UZB', 860, NULL, 'Asia', 'Central Asia', 142, 143),
+('Venezuela (Bolivarian Republic of)', 'VE', 'VEN', 862, NULL, 'Americas', 'South America', 19, 5),
+('Wallis and Futuna', 'WF', 'WLF', 876, NULL, 'Oceania', 'Polynesia', 9, 61),
+('Samoa', 'WS', 'WSM', 882, NULL, 'Oceania', 'Polynesia', 9, 61),
+('Yemen', 'YE', 'YEM', 887, NULL, 'Asia', 'Western Asia', 142, 145),
+('Zambia', 'ZM', 'ZMB', 894, NULL, 'Africa', 'Eastern Africa', 2, 14);
+
+--
+-- Indexes for dumped tables
+--
+
 
 --
 -- Table structure for table `tblLadderComp`
@@ -884,7 +1143,7 @@ CREATE TABLE `users` (
 --
 DROP TABLE IF EXISTS `CompObjectView`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`lpp_db`@`66.33.192.0/255.255.224.0` SQL SECURITY DEFINER VIEW `CompObjectView`  AS  select `C`.`comp_id` AS `comp_id`,`C`.`comp_name` AS `comp_name`,`C`.`comp_site` AS `comp_site`,`C`.`date_from` AS `date_from`,`C`.`date_to` AS `date_to`,`C`.`MD_name` AS `MD_name`,`C`.`contact` AS `contact`,`C`.`cat_id` AS `cat_id`,`C`.`sanction` AS `sanction`,`C`.`comp_type` AS `comp_type`,`C`.`comp_code` AS `comp_code`,`C`.`restricted` AS `restricted`,`C`.`time_offset` AS `time_offset`,`C`.`comp_class` AS `comp_class`,`C`.`openair_file` AS `openair_file`,`C`.`stylesheet` AS `stylesheet`,`C`.`locked` AS `locked`,`C`.`comp_path` AS `comp_path`,`C`.`external` AS `external`,`C`.`website` AS `website`,`C`.`airspace_check` AS `airspace_check`,`C`.`check_launch` AS `check_launch`,`C`.`igc_config_file` AS `igc_config_file`,`C`.`self_register` AS `self_register`,`C`.`check_g_record` AS `check_g_record`,`FC`.`formula_type` AS `formula_type`,`FC`.`formula_version` AS `formula_version`,ifnull(`FC`.`external_name`,ifnull(`FC`.`formula_name`,concat(upper(`FC`.`formula_type`),`FC`.`formula_version`))) AS `formula_name`,`FC`.`overall_validity` AS `overall_validity`,`FC`.`validity_param` AS `validity_param`,`FC`.`validity_ref` AS `validity_ref`,`FC`.`nominal_goal` AS `nominal_goal`,`FC`.`min_dist` AS `min_dist`,`FC`.`nominal_dist` AS `nominal_dist`,`FC`.`nominal_time` AS `nominal_time`,`FC`.`nominal_launch` AS `nominal_launch`,`FC`.`formula_distance` AS `formula_distance`,`FC`.`formula_arrival` AS `formula_arrival`,`FC`.`formula_departure` AS `formula_departure`,`FC`.`lead_factor` AS `lead_factor`,`FC`.`formula_time` AS `formula_time`,`FC`.`no_goal_penalty` AS `no_goal_penalty`,`FC`.`glide_bonus` AS `glide_bonus`,`FC`.`tolerance` AS `tolerance`,`FC`.`min_tolerance` AS `min_tolerance`,`FC`.`arr_alt_bonus` AS `arr_alt_bonus`,`FC`.`arr_min_height` AS `arr_min_height`,`FC`.`arr_max_height` AS `arr_max_height`,`FC`.`validity_min_time` AS `validity_min_time`,`FC`.`score_back_time` AS `score_back_time`,`FC`.`max_JTG` AS `max_JTG`,`FC`.`JTG_penalty_per_sec` AS `JTG_penalty_per_sec`,`FC`.`scoring_altitude` AS `scoring_altitude`,`FC`.`task_result_decimal` AS `task_result_decimal`,`FC`.`comp_result_decimal` AS `comp_result_decimal`,`FC`.`team_scoring` AS `team_scoring`,`FC`.`team_size` AS `team_size`,`FC`.`max_team_size` AS `max_team_size`,`FC`.`country_scoring` AS `country_scoring`,`FC`.`country_size` AS `country_size`,`FC`.`max_country_size` AS `max_country_size`,`FC`.`team_over` AS `team_over` from (`tblCompetition` `C` left join `tblForComp` `FC` on((`C`.`comp_id` = `FC`.`comp_id`))) order by (case when (`C`.`comp_name` like '%test%') then `C`.`comp_name` else `C`.`date_to` end) desc ;
+CREATE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `CompObjectView`  AS  select `C`.`comp_id` AS `comp_id`,`C`.`comp_name` AS `comp_name`,`C`.`comp_site` AS `comp_site`,`C`.`date_from` AS `date_from`,`C`.`date_to` AS `date_to`,`C`.`MD_name` AS `MD_name`,`C`.`contact` AS `contact`,`C`.`cat_id` AS `cat_id`,`C`.`sanction` AS `sanction`,`C`.`comp_type` AS `comp_type`,`C`.`comp_code` AS `comp_code`,`C`.`restricted` AS `restricted`,`C`.`time_offset` AS `time_offset`,`C`.`comp_class` AS `comp_class`,`C`.`openair_file` AS `openair_file`,`C`.`stylesheet` AS `stylesheet`,`C`.`locked` AS `locked`,`C`.`comp_path` AS `comp_path`,`C`.`external` AS `external`,`C`.`website` AS `website`,`C`.`airspace_check` AS `airspace_check`,`C`.`check_launch` AS `check_launch`,`C`.`igc_config_file` AS `igc_config_file`,`C`.`self_register` AS `self_register`,`C`.`check_g_record` AS `check_g_record`,`C`.`track_source` AS `track_source`,`FC`.`formula_type` AS `formula_type`,`FC`.`formula_version` AS `formula_version`,ifnull(`FC`.`external_name`,ifnull(`FC`.`formula_name`,concat(upper(`FC`.`formula_type`),`FC`.`formula_version`))) AS `formula_name`,`FC`.`overall_validity` AS `overall_validity`,`FC`.`validity_param` AS `validity_param`,`FC`.`validity_ref` AS `validity_ref`,`FC`.`nominal_goal` AS `nominal_goal`,`FC`.`min_dist` AS `min_dist`,`FC`.`nominal_dist` AS `nominal_dist`,`FC`.`nominal_time` AS `nominal_time`,`FC`.`nominal_launch` AS `nominal_launch`,`FC`.`formula_distance` AS `formula_distance`,`FC`.`formula_arrival` AS `formula_arrival`,`FC`.`formula_departure` AS `formula_departure`,`FC`.`lead_factor` AS `lead_factor`,`FC`.`formula_time` AS `formula_time`,`FC`.`no_goal_penalty` AS `no_goal_penalty`,`FC`.`glide_bonus` AS `glide_bonus`,`FC`.`tolerance` AS `tolerance`,`FC`.`min_tolerance` AS `min_tolerance`,`FC`.`arr_alt_bonus` AS `arr_alt_bonus`,`FC`.`arr_min_height` AS `arr_min_height`,`FC`.`arr_max_height` AS `arr_max_height`,`FC`.`validity_min_time` AS `validity_min_time`,`FC`.`score_back_time` AS `score_back_time`,`FC`.`max_JTG` AS `max_JTG`,`FC`.`JTG_penalty_per_sec` AS `JTG_penalty_per_sec`,`FC`.`scoring_altitude` AS `scoring_altitude`,`FC`.`task_result_decimal` AS `task_result_decimal`,`FC`.`comp_result_decimal` AS `comp_result_decimal`,`FC`.`team_scoring` AS `team_scoring`,`FC`.`team_size` AS `team_size`,`FC`.`max_team_size` AS `max_team_size`,`FC`.`country_scoring` AS `country_scoring`,`FC`.`country_size` AS `country_size`,`FC`.`max_country_size` AS `max_country_size`,`FC`.`team_over` AS `team_over` from (`tblCompetition` `C` left join `tblForComp` `FC` on((`C`.`comp_id` = `FC`.`comp_id`))) order by (case when (`C`.`comp_name` like '%test%') then `C`.`comp_name` else `C`.`date_to` end) desc ;
 
 -- --------------------------------------------------------
 
@@ -893,7 +1152,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`lpp_db`@`66.33.192.0/255.255.224.0` SQL SECU
 --
 DROP TABLE IF EXISTS `FlightResultView`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`lpp_db`@`66.33.192.0/255.255.224.0` SQL SECURITY DEFINER VIEW `FlightResultView`  AS  select `T`.`track_id` AS `track_id`,`T`.`par_id` AS `par_id`,`T`.`task_id` AS `task_id`,`R`.`comp_id` AS `comp_id`,`R`.`civl_id` AS `civl_id`,`R`.`fai_id` AS `fai_id`,`R`.`pil_id` AS `pil_id`,`R`.`ID` AS `ID`,`R`.`name` AS `name`,`R`.`nat` AS `nat`,`R`.`sex` AS `sex`,`R`.`glider` AS `glider`,`R`.`glider_cert` AS `glider_cert`,`R`.`sponsor` AS `sponsor`,`R`.`team` AS `team`,`R`.`nat_team` AS `nat_team`,`R`.`live_id` AS `live_id`,`T`.`distance_flown` AS `distance_flown`,`T`.`best_distance_time` AS `best_distance_time`,`T`.`stopped_distance` AS `stopped_distance`,`T`.`stopped_altitude` AS `stopped_altitude`,`T`.`total_distance` AS `total_distance`,`T`.`speed` AS `speed`,`T`.`first_time` AS `first_time`,`T`.`real_start_time` AS `real_start_time`,`T`.`goal_time` AS `goal_time`,`T`.`last_time` AS `last_time`,`T`.`result_type` AS `result_type`,`T`.`SSS_time` AS `SSS_time`,`T`.`ESS_time` AS `ESS_time`,`T`.`waypoints_made` AS `waypoints_made`,`T`.`penalty` AS `penalty`,`T`.`comment` AS `comment`,`T`.`time_score` AS `time_score`,`T`.`distance_score` AS `distance_score`,`T`.`arrival_score` AS `arrival_score`,`T`.`departure_score` AS `departure_score`,`T`.`score` AS `score`,`T`.`lead_coeff` AS `lead_coeff`,`T`.`fixed_LC` AS `fixed_LC`,`T`.`ESS_altitude` AS `ESS_altitude`,`T`.`goal_altitude` AS `goal_altitude`,`T`.`max_altitude` AS `max_altitude`,`T`.`last_altitude` AS `last_altitude`,`T`.`landing_altitude` AS `landing_altitude`,`T`.`landing_time` AS `landing_time`,`T`.`track_file` AS `track_file`,`T`.`g_record` AS `g_record` from (`tblTaskResult` `T` join `tblParticipant` `R` on((`T`.`par_id` = `R`.`par_id`))) order by `T`.`task_id`,`T`.`score` desc ;
+CREATE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `FlightResultView`  AS  select `T`.`track_id` AS `track_id`,`T`.`par_id` AS `par_id`,`T`.`task_id` AS `task_id`,`R`.`comp_id` AS `comp_id`,`R`.`civl_id` AS `civl_id`,`R`.`fai_id` AS `fai_id`,`R`.`pil_id` AS `pil_id`,`R`.`ID` AS `ID`,`R`.`name` AS `name`,`R`.`nat` AS `nat`,`R`.`sex` AS `sex`,`R`.`glider` AS `glider`,`R`.`glider_cert` AS `glider_cert`,`R`.`sponsor` AS `sponsor`,`R`.`team` AS `team`,`R`.`nat_team` AS `nat_team`,`R`.`live_id` AS `live_id`,`T`.`distance_flown` AS `distance_flown`,`T`.`best_distance_time` AS `best_distance_time`,`T`.`stopped_distance` AS `stopped_distance`,`T`.`stopped_altitude` AS `stopped_altitude`,`T`.`total_distance` AS `total_distance`,`T`.`speed` AS `speed`,`T`.`first_time` AS `first_time`,`T`.`real_start_time` AS `real_start_time`,`T`.`goal_time` AS `goal_time`,`T`.`last_time` AS `last_time`,`T`.`result_type` AS `result_type`,`T`.`SSS_time` AS `SSS_time`,`T`.`ESS_time` AS `ESS_time`,`T`.`waypoints_made` AS `waypoints_made`,`T`.`penalty` AS `penalty`,`T`.`comment` AS `comment`,`T`.`time_score` AS `time_score`,`T`.`distance_score` AS `distance_score`,`T`.`arrival_score` AS `arrival_score`,`T`.`departure_score` AS `departure_score`,`T`.`score` AS `score`,`T`.`lead_coeff` AS `lead_coeff`,`T`.`fixed_LC` AS `fixed_LC`,`T`.`ESS_altitude` AS `ESS_altitude`,`T`.`goal_altitude` AS `goal_altitude`,`T`.`max_altitude` AS `max_altitude`,`T`.`last_altitude` AS `last_altitude`,`T`.`landing_altitude` AS `landing_altitude`,`T`.`landing_time` AS `landing_time`,`T`.`track_file` AS `track_file`,`T`.`g_record` AS `g_record` from (`tblTaskResult` `T` join `tblParticipant` `R` on((`T`.`par_id` = `R`.`par_id`))) order by `T`.`task_id`,`T`.`score` desc ;
 
 -- --------------------------------------------------------
 
@@ -902,7 +1161,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`lpp_db`@`66.33.192.0/255.255.224.0` SQL SECU
 --
 DROP TABLE IF EXISTS `RegionWaypointView`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`lpp_db`@`66.33.192.0/255.255.224.0` SQL SECURITY DEFINER VIEW `RegionWaypointView`  AS  select `tblRegionWaypoint`.`rwp_id` AS `rwp_id`,`tblRegionWaypoint`.`reg_id` AS `region_id`,`tblRegionWaypoint`.`name` AS `name`,`tblRegionWaypoint`.`lat` AS `lat`,`tblRegionWaypoint`.`lon` AS `lon`,`tblRegionWaypoint`.`altitude` AS `altitude`,`tblRegionWaypoint`.`description` AS `description` from `tblRegionWaypoint` where (`tblRegionWaypoint`.`old` = 0) ;
+CREATE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `RegionWaypointView`  AS  select `tblRegionWaypoint`.`rwp_id` AS `rwp_id`,`tblRegionWaypoint`.`reg_id` AS `region_id`,`tblRegionWaypoint`.`name` AS `name`,`tblRegionWaypoint`.`lat` AS `lat`,`tblRegionWaypoint`.`lon` AS `lon`,`tblRegionWaypoint`.`altitude` AS `altitude`,`tblRegionWaypoint`.`description` AS `description` from `tblRegionWaypoint` where (`tblRegionWaypoint`.`old` = 0) ;
 
 -- --------------------------------------------------------
 
@@ -911,7 +1170,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`lpp_db`@`66.33.192.0/255.255.224.0` SQL SECU
 --
 DROP TABLE IF EXISTS `TaskAirspaceCheckView`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`lpp_db`@`66.33.192.0/255.255.224.0` SQL SECURITY DEFINER VIEW `TaskAirspaceCheckView`  AS  select `T`.`task_id` AS `task_id`,`T`.`airspace_check` AS `airspace_check`,`A`.`notification_distance` AS `notification_distance`,`A`.`function` AS `function`,`A`.`h_outer_limit` AS `h_outer_limit`,`A`.`h_inner_limit` AS `h_inner_limit`,`A`.`h_boundary` AS `h_boundary`,`A`.`h_boundary_penalty` AS `h_boundary_penalty`,`A`.`h_max_penalty` AS `h_max_penalty`,`A`.`v_outer_limit` AS `v_outer_limit`,`A`.`v_inner_limit` AS `v_inner_limit`,`A`.`v_boundary` AS `v_boundary`,`A`.`v_boundary_penalty` AS `v_boundary_penalty`,`A`.`v_max_penalty` AS `v_max_penalty` from ((`tblTask` `T` join `tblCompetition` `C` on((`T`.`comp_id` = `C`.`comp_id`))) left join `tblCompAirspaceCheck` `A` on((`T`.`comp_id` = `A`.`comp_id`))) order by `T`.`task_id` ;
+CREATE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `TaskAirspaceCheckView`  AS  select `T`.`task_id` AS `task_id`,`T`.`airspace_check` AS `airspace_check`,`A`.`notification_distance` AS `notification_distance`,`A`.`function` AS `function`,`A`.`h_outer_limit` AS `h_outer_limit`,`A`.`h_inner_limit` AS `h_inner_limit`,`A`.`h_boundary` AS `h_boundary`,`A`.`h_boundary_penalty` AS `h_boundary_penalty`,`A`.`h_max_penalty` AS `h_max_penalty`,`A`.`v_outer_limit` AS `v_outer_limit`,`A`.`v_inner_limit` AS `v_inner_limit`,`A`.`v_boundary` AS `v_boundary`,`A`.`v_boundary_penalty` AS `v_boundary_penalty`,`A`.`v_max_penalty` AS `v_max_penalty` from ((`tblTask` `T` join `tblCompetition` `C` on((`T`.`comp_id` = `C`.`comp_id`))) left join `tblCompAirspaceCheck` `A` on((`T`.`comp_id` = `A`.`comp_id`))) order by `T`.`task_id` ;
 
 -- --------------------------------------------------------
 
@@ -920,7 +1179,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`lpp_db`@`66.33.192.0/255.255.224.0` SQL SECU
 --
 DROP TABLE IF EXISTS `TaskFormulaView`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`lpp_db`@`66.33.192.0/255.255.224.0` SQL SECURITY DEFINER VIEW `TaskFormulaView`  AS  select `FC`.`comp_id` AS `comp_id`,`T`.`task_id` AS `task_id`,`FC`.`formula_type` AS `formula_type`,`FC`.`formula_version` AS `formula_version`,ifnull(`FC`.`external_name`,ifnull(`FC`.`formula_name`,concat(upper(`FC`.`formula_type`),`FC`.`formula_version`))) AS `formula_name`,`FC`.`overall_validity` AS `overall_validity`,`FC`.`validity_param` AS `validity_param`,`FC`.`validity_ref` AS `validity_ref`,`FC`.`nominal_goal` AS `nominal_goal`,`FC`.`min_dist` AS `min_dist`,`FC`.`nominal_dist` AS `nominal_dist`,`FC`.`nominal_time` AS `nominal_time`,`FC`.`nominal_launch` AS `nominal_launch`,`T`.`formula_distance` AS `formula_distance`,`T`.`formula_departure` AS `formula_departure`,`T`.`formula_arrival` AS `formula_arrival`,`T`.`formula_time` AS `formula_time`,`FC`.`lead_factor` AS `lead_factor`,`T`.`no_goal_penalty` AS `no_goal_penalty`,`FC`.`glide_bonus` AS `glide_bonus`,`T`.`tolerance` AS `tolerance`,`FC`.`min_tolerance` AS `min_tolerance`,`T`.`arr_alt_bonus` AS `arr_alt_bonus`,`FC`.`arr_min_height` AS `arr_min_height`,`FC`.`arr_max_height` AS `arr_max_height`,`FC`.`validity_min_time` AS `validity_min_time`,`FC`.`score_back_time` AS `score_back_time`,`T`.`max_JTG` AS `max_JTG`,`FC`.`JTG_penalty_per_sec` AS `JTG_penalty_per_sec`,`FC`.`scoring_altitude` AS `scoring_altitude`,`FC`.`team_scoring` AS `team_scoring`,`FC`.`team_size` AS `team_size`,`FC`.`max_team_size` AS `max_team_size`,`FC`.`country_scoring` AS `country_scoring`,`FC`.`country_size` AS `country_size`,`FC`.`max_country_size` AS `max_country_size` from (`tblTask` `T` join `tblForComp` `FC` on((`T`.`comp_id` = `FC`.`comp_id`))) order by `T`.`task_id` ;
+CREATE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `TaskFormulaView`  AS  select `FC`.`comp_id` AS `comp_id`,`T`.`task_id` AS `task_id`,`FC`.`formula_type` AS `formula_type`,`FC`.`formula_version` AS `formula_version`,ifnull(`FC`.`external_name`,ifnull(`FC`.`formula_name`,concat(upper(`FC`.`formula_type`),`FC`.`formula_version`))) AS `formula_name`,`FC`.`overall_validity` AS `overall_validity`,`FC`.`validity_param` AS `validity_param`,`FC`.`validity_ref` AS `validity_ref`,`FC`.`nominal_goal` AS `nominal_goal`,`FC`.`min_dist` AS `min_dist`,`FC`.`nominal_dist` AS `nominal_dist`,`FC`.`nominal_time` AS `nominal_time`,`FC`.`nominal_launch` AS `nominal_launch`,`T`.`formula_distance` AS `formula_distance`,`T`.`formula_departure` AS `formula_departure`,`T`.`formula_arrival` AS `formula_arrival`,`T`.`formula_time` AS `formula_time`,`FC`.`lead_factor` AS `lead_factor`,`T`.`no_goal_penalty` AS `no_goal_penalty`,`FC`.`glide_bonus` AS `glide_bonus`,`T`.`tolerance` AS `tolerance`,`FC`.`min_tolerance` AS `min_tolerance`,`T`.`arr_alt_bonus` AS `arr_alt_bonus`,`FC`.`arr_min_height` AS `arr_min_height`,`FC`.`arr_max_height` AS `arr_max_height`,`FC`.`validity_min_time` AS `validity_min_time`,`FC`.`score_back_time` AS `score_back_time`,`T`.`max_JTG` AS `max_JTG`,`FC`.`JTG_penalty_per_sec` AS `JTG_penalty_per_sec`,`FC`.`scoring_altitude` AS `scoring_altitude`,`FC`.`team_scoring` AS `team_scoring`,`FC`.`team_size` AS `team_size`,`FC`.`max_team_size` AS `max_team_size`,`FC`.`country_scoring` AS `country_scoring`,`FC`.`country_size` AS `country_size`,`FC`.`max_country_size` AS `max_country_size` from (`tblTask` `T` join `tblForComp` `FC` on((`T`.`comp_id` = `FC`.`comp_id`))) order by `T`.`task_id` ;
 
 -- --------------------------------------------------------
 
@@ -929,7 +1188,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`lpp_db`@`66.33.192.0/255.255.224.0` SQL SECU
 --
 DROP TABLE IF EXISTS `TaskObjectView`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`lpp_db`@`66.33.192.0/255.255.224.0` SQL SECURITY DEFINER VIEW `TaskObjectView`  AS  select `T`.`task_id` AS `task_id`,`C`.`comp_code` AS `comp_code`,`C`.`comp_name` AS `comp_name`,`C`.`comp_site` AS `comp_site`,`T`.`time_offset` AS `time_offset`,`C`.`comp_class` AS `comp_class`,`T`.`comp_id` AS `comp_id`,`T`.`date` AS `date`,`T`.`task_name` AS `task_name`,`T`.`task_num` AS `task_num`,`T`.`reg_id` AS `reg_id`,`R`.`description` AS `region_name`,`T`.`window_open_time` AS `window_open_time`,`T`.`task_deadline` AS `task_deadline`,`T`.`window_close_time` AS `window_close_time`,`T`.`check_launch` AS `check_launch`,`T`.`start_time` AS `start_time`,`T`.`SS_interval` AS `SS_interval`,`T`.`start_iteration` AS `start_iteration`,`T`.`start_close_time` AS `start_close_time`,`T`.`stopped_time` AS `stopped_time`,upper(`T`.`task_type`) AS `task_type`,`T`.`distance` AS `distance`,`T`.`opt_dist` AS `opt_dist`,`T`.`opt_dist_to_SS` AS `opt_dist_to_SS`,`T`.`opt_dist_to_ESS` AS `opt_dist_to_ESS`,`T`.`SS_distance` AS `SS_distance`,`T`.`QNH` AS `QNH`,`T`.`comment` AS `comment`,`T`.`locked` AS `locked`,`T`.`airspace_check` AS `airspace_check`,`T`.`openair_file` AS `openair_file`,`T`.`cancelled` AS `cancelled`,`C`.`track_source` AS `track_source`,`T`.`task_path` AS `task_path`,`C`.`comp_path` AS `comp_path`,`C`.`igc_config_file` AS `igc_config_file` from ((`tblTask` `T` join `tblCompetition` `C` on((`T`.`comp_id` = `C`.`comp_id`))) left join `tblRegion` `R` on((`T`.`reg_id` = `R`.`reg_id`))) order by `T`.`date` ;
+CREATE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `TaskObjectView`  AS  select `T`.`task_id` AS `task_id`,`C`.`comp_code` AS `comp_code`,`C`.`comp_name` AS `comp_name`,`C`.`comp_site` AS `comp_site`,`T`.`time_offset` AS `time_offset`,`C`.`comp_class` AS `comp_class`,`T`.`comp_id` AS `comp_id`,`T`.`date` AS `date`,`T`.`task_name` AS `task_name`,`T`.`task_num` AS `task_num`,`T`.`reg_id` AS `reg_id`,`R`.`description` AS `region_name`,`T`.`window_open_time` AS `window_open_time`,`T`.`task_deadline` AS `task_deadline`,`T`.`window_close_time` AS `window_close_time`,`T`.`check_launch` AS `check_launch`,`T`.`start_time` AS `start_time`,`T`.`SS_interval` AS `SS_interval`,`T`.`start_iteration` AS `start_iteration`,`T`.`start_close_time` AS `start_close_time`,`T`.`stopped_time` AS `stopped_time`,upper(`T`.`task_type`) AS `task_type`,`T`.`distance` AS `distance`,`T`.`opt_dist` AS `opt_dist`,`T`.`opt_dist_to_SS` AS `opt_dist_to_SS`,`T`.`opt_dist_to_ESS` AS `opt_dist_to_ESS`,`T`.`SS_distance` AS `SS_distance`,`T`.`QNH` AS `QNH`,`T`.`comment` AS `comment`,`T`.`locked` AS `locked`,`T`.`airspace_check` AS `airspace_check`,`T`.`openair_file` AS `openair_file`,`T`.`cancelled` AS `cancelled`,`C`.`track_source` AS `track_source`,`T`.`task_path` AS `task_path`,`C`.`comp_path` AS `comp_path`,`C`.`igc_config_file` AS `igc_config_file` from ((`tblTask` `T` join `tblCompetition` `C` on((`T`.`comp_id` = `C`.`comp_id`))) left join `tblRegion` `R` on((`T`.`reg_id` = `R`.`reg_id`))) order by `T`.`date` ;
 
 -- --------------------------------------------------------
 
@@ -938,7 +1197,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`lpp_db`@`66.33.192.0/255.255.224.0` SQL SECU
 --
 DROP TABLE IF EXISTS `TrackObjectView`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`lpp_db`@`66.33.192.0/255.255.224.0` SQL SECURITY DEFINER VIEW `TrackObjectView`  AS  select `T`.`track_id` AS `track_id`,`T`.`par_id` AS `par_id`,`T`.`task_id` AS `task_id`,`R`.`civl_id` AS `civl_id`,`R`.`glider` AS `glider`,`R`.`glider_cert` AS `glider_cert`,`T`.`track_file` AS `track_file` from (`tblTaskResult` `T` join `tblParticipant` `R` on((`T`.`par_id` = `R`.`par_id`))) where (`T`.`track_file` is not null) order by `T`.`track_id` ;
+CREATE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `TrackObjectView`  AS  select `T`.`track_id` AS `track_id`,`T`.`par_id` AS `par_id`,`T`.`task_id` AS `task_id`,`R`.`civl_id` AS `civl_id`,`R`.`glider` AS `glider`,`R`.`glider_cert` AS `glider_cert`,`T`.`track_file` AS `track_file` from (`tblTaskResult` `T` join `tblParticipant` `R` on((`T`.`par_id` = `R`.`par_id`))) where (`T`.`track_file` is not null) order by `T`.`track_id` ;
 
 -- --------------------------------------------------------
 
@@ -947,7 +1206,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`lpp_db`@`66.33.192.0/255.255.224.0` SQL SECU
 --
 DROP TABLE IF EXISTS `UnscoredPilotView`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`lpp_db`@`66.33.192.0/255.255.224.0` SQL SECURITY DEFINER VIEW `UnscoredPilotView`  AS  select `T`.`task_id` AS `task_id`,`R`.`par_id` AS `par_id`,`R`.`comp_id` AS `comp_id`,`R`.`civl_id` AS `civl_id`,`R`.`fai_id` AS `fai_id`,`R`.`pil_id` AS `pil_id`,`R`.`ID` AS `ID`,`R`.`name` AS `name`,`R`.`sex` AS `sex`,`R`.`nat` AS `nat`,`R`.`glider` AS `glider`,`R`.`glider_cert` AS `glider_cert`,`R`.`sponsor` AS `sponsor`,`R`.`xcontest_id` AS `xcontest_id`,`R`.`live_id` AS `live_id`,`R`.`team` AS `team`,`R`.`nat_team` AS `nat_team` from ((`tblParticipant` `R` join `tblTask` `T` on((`R`.`comp_id` = `T`.`comp_id`))) left join `tblTaskResult` `TR` on(((`T`.`task_id` = `TR`.`task_id`) and (`R`.`par_id` = `TR`.`par_id`)))) where isnull(`TR`.`track_id`) order by `T`.`task_id`,`R`.`par_id` ;
+CREATE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `UnscoredPilotView`  AS  select `T`.`task_id` AS `task_id`,`R`.`par_id` AS `par_id`,`R`.`comp_id` AS `comp_id`,`R`.`civl_id` AS `civl_id`,`R`.`fai_id` AS `fai_id`,`R`.`pil_id` AS `pil_id`,`R`.`ID` AS `ID`,`R`.`name` AS `name`,`R`.`sex` AS `sex`,`R`.`nat` AS `nat`,`R`.`glider` AS `glider`,`R`.`glider_cert` AS `glider_cert`,`R`.`sponsor` AS `sponsor`,`R`.`xcontest_id` AS `xcontest_id`,`R`.`live_id` AS `live_id`,`R`.`team` AS `team`,`R`.`nat_team` AS `nat_team` from ((`tblParticipant` `R` join `tblTask` `T` on((`R`.`comp_id` = `T`.`comp_id`))) left join `tblTaskResult` `TR` on(((`T`.`task_id` = `TR`.`task_id`) and (`R`.`par_id` = `TR`.`par_id`)))) where isnull(`TR`.`track_id`) order by `T`.`task_id`,`R`.`par_id` ;
 
 --
 -- Indexes for dumped tables
@@ -986,12 +1245,6 @@ ALTER TABLE `tblCompetition`
   ADD PRIMARY KEY (`comp_id`) USING BTREE,
   ADD UNIQUE KEY `comp_id` (`comp_id`,`comp_name`),
   ADD KEY `cla_foreign` (`cat_id`);
-
---
--- Indexes for table `tblCountryCode`
---
-ALTER TABLE `tblCountryCode`
-  ADD PRIMARY KEY (`natId`);
 
 --
 -- Indexes for table `tblForComp`
@@ -1040,6 +1293,12 @@ ALTER TABLE `tblParticipant`
 --
 ALTER TABLE `tblRanking`
   ADD PRIMARY KEY (`rank_id`);
+
+--
+-- Indexes for table `tblCountryCode`
+--
+ALTER TABLE `tblCountryCode`
+  ADD PRIMARY KEY (`natId`);
 
 --
 -- Indexes for table `tblRegion`
