@@ -208,14 +208,14 @@ Again there are 2 options to run the app.
 If you are developing you may still want to run the production version as some features of Airscore are incompatible with the flask development web server.
 Airscore will still work, however some features will not display. If you are running the development configuration the flask development server will provide useful debugging info in the browser.
 
-Note that the first time you run the docker-compose the database setup may take longer than the application start up. In that case there will be an error. Simply wait untill the database is finished (evident in the shell) and stop and restart (ctl-c to stop)
-To avoid this run the database service by itself the first time. 
+Note that the first time you run the docker-compose the database setup may take longer than the application start up. In that case there will be an error. Simply wait until the database is finished (evident in the shell) and stop and restart (ctl-c to stop)
+However you can avoid this by running the database service by itself the first time:
 
 ```bash
 sudo docker-compose -f docker-compose-dev-local.yml up db 
 ```
 
-Once it has finished setting up you can stop it and run all services together with the below command.
+Once it has finished setting up you can stop it and run all services together with one of the below commands.
 
 To run the development configuration of the app
 
