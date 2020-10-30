@@ -192,6 +192,8 @@ def setup_admin():
             password=form.password.data,
             active=True,
             access='admin',
+            first_name=form.first_name.data,
+            last_name=form.last_name.data,
         )
         flash("Thank you for registering. You can now log in.", "success")
         current_app.config['admin_exists'] = True
