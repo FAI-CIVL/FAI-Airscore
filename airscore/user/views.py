@@ -1429,7 +1429,10 @@ def _add_participant(compid):
     data = request.json
     participant = Participant()
     participant.comp_id = int(compid)
-    participant.ID = data.get('id_num')
+    id_num = data.get('id_num')
+    if not isinstance(id, int):
+        id_num = None
+    participant.ID = id_num
     if data.get('name'):
         participant.name = data.get('name')
     if data.get('sex'):
