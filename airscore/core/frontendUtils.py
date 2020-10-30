@@ -1068,6 +1068,8 @@ def get_pretty_data(content: dict) -> dict:
             sub_classes = sorted([dict(name=c, cert=v, limit=v[-1], prev=None, rank=1, counter=0)
                                   for c, v in content['rankings'].items() if isinstance(v, list)],
                                  key=lambda x: len(x['cert']), reverse=True)
+            if content['rankings']['female']:
+                sub_classes.append(dict(name='Female', cert='female', limit='female', prev=None, rank=1, counter=0))
             rank = 0
             prev = None
             for idx, r in enumerate(content['results'], 1):
@@ -1077,7 +1079,8 @@ def get_pretty_data(content: dict) -> dict:
                 p['rank'] = str(rank)
                 '''sub-classes'''
                 for s in sub_classes:
-                    if p['glider_cert'] and p['glider_cert'] in s['cert']:
+                    if ((p['glider_cert'] and p['glider_cert'] in s['cert']) if not s['name'] == 'Female'
+                                                                             else p['sex'] == 'F'):
                         s['counter'] += 1
                         if not s['prev'] == p['score']:
                             s['rank'], s['prev'] = s['counter'], p['score']
