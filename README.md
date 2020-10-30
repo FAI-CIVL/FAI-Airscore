@@ -135,13 +135,18 @@ airscore includes or not.
 Airscore is setup to be installed and run inside Docker containers.
 For production use, Airscore needs a MySQL database to connect to. You will need to setup or use a hosted mysql server.
 For development use, there is the choice of using an hosted database as above in production or a MySQL database that is in a docker container on the same system as Airscore.
+
+
 ---------------------------------------------
+
 ### Hosted Database option (Production and Development)
 #### Database setup
+
 The database is not included in the docker containers. 
 Once you have the DB server, use the file airscore.sql to create the table and views. Database credentials should be saved in the .env file (see below)
 
 #### Environment and configuration variables
+
 defines.yaml.example and .env.example should be renamed or copied without ".example" to create the two config files.
 - defines.yaml - folder structure and Airscore configuration - there are several options
 - .env contains environment variables used in the docker compose files, database and email server credentials.
@@ -204,6 +209,13 @@ If you are developing you may still want to run the production version as some f
 Airscore will still work, however some features will not display. If you are running the development configuration the flask development server will provide useful debugging info in the browser.
 
 Note that the first time you run the docker-compose the database setup may take longer than the application start up. In that case there will be an error. Simply wait untill the database is finished (evident in the shell) and stop and restart (ctl-c to stop)
+To avoid this run the database service by itself the first time. 
+
+```bash
+sudo docker-compose -f docker-compose-dev-local.yml up db 
+```
+
+Once it has finished setting up you can stop it and run all services together with the below command.
 
 To run the development configuration of the app
 
