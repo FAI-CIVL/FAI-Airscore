@@ -1,0 +1,158 @@
+version: '3.6'
+
+x-build-args: &build_args
+  INSTALL_PYTHON_VERSION: 3.8.2
+  INSTALL_NODE_VERSION: 12
+
+x-default-volumes: &default_volumes
+  volumes:
+    - ./:/app
+    - node-modules:/app/node_modules
+    - ./dev.db:/tmp/dev.db
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile_production
+      target: production
+      args:
+        <<: *build_args
+    command: gunicorn airscore.app:create_app() -b :5000 -w ${GUNICORN_WORKERS} -k gevent
+    image: master-image
+    container_name: ${FLASK_CONTAINER}
+    ports:
+      - "5000:5000"
+    environment:
+      REDIS_CONTAINER: ${REDIS_CONTAINER}
+      WEB_SERVER_CONTAINER: ${WEB_SERVER_CONTAINER}
+      FLASK_CONTAINER: ${FLASK_CONTAINER}
+      FLASK_PORT: ${FLASK_PORT}
+      REDIS_URL: ${REDIS_CONTAINER}://${REDIS_CONTAINER}:6379
+      FLASK_ENV: production
+      FLASK_DEBUG: 0
+      LOG_LEVEL: info
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS}
+      RQ_QUEUE: ${RQ_QUEUE}
+      MAIL_SERVER: ${MAIL_SERVER}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USE_TLS: ${MAIL_USE_TLS}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      ADMINS: ${ADMINS}
+      MYSQLHOST: db
+      DATABASE: airscore
+      MYSQLUSER: root
+      MYSQLPASSWORD: airscore
+      DATABASE_URI: mysql+pymysql://root:airscore@db:3306/airscore
+      XCONTEST_USER: ${XCONTEST_USER}
+      XCONTEST_PASS: ${XCONTEST_PASS}
+      TELEGRAM_API: ${TELEGRAM_API}
+      TELEGRAM_CHANNEL: ${TELEGRAM_CHANNEL}
+    networks:
+      - net
+    restart: always
+    <<: *default_volumes
+
+  worker:
+    image: master-image
+    depends_on:
+      - redis
+    command: rqworker --name worker --url ${REDIS_CONTAINER}://${REDIS_CONTAINER}:6379/0 ${RQ_QUEUE}
+    environment:
+      FLASK_CONTAINER: ${FLASK_CONTAINER}
+      FLASK_PORT: ${FLASK_PORT}
+      REDIS_URL: ${REDIS_CONTAINER}://${REDIS_CONTAINER}:6379
+      RQ_QUEUE: ${RQ_QUEUE}
+      MAIL_SERVER: ${MAIL_SERVER}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USE_TLS: ${MAIL_USE_TLS}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MYSQLHOST: db
+      DATABASE: airscore
+      MYSQLUSER: root
+      MYSQLPASSWORD: airscore
+      DATABASE_URI: mysql+pymysql://root:airscore@db:3306/airscore
+      XCONTEST_USER: ${XCONTEST_USER}
+      XCONTEST_PASS: ${XCONTEST_PASS}
+      TELEGRAM_API: ${TELEGRAM_API}
+      TELEGRAM_CHANNEL: ${TELEGRAM_CHANNEL}
+    networks:
+      - net
+    <<: *default_volumes
+  # uncomment to have a another worker
+  #  worker2:
+  #    image: master-image
+  #    depends_on:
+  #      - redis
+  #    command: rqworker --name worker2 --url redis://redis:6379/0
+
+  redis:
+    image: redis
+    container_name: ${REDIS_CONTAINER}
+    networks:
+      - net
+
+  nginx:
+    container_name: ${WEB_SERVER_CONTAINER}
+    restart: always
+    build: ./nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - web
+    networks:
+      - net
+    volumes:
+      - type: bind
+        source: ./airscore/static
+        target: /static
+
+  db:
+    image: mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    container_name: mysql_db_local
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      MYSQL_ROOT_PASSWORD: airscore
+      MYSQL_DATABASE: airscore
+    volumes:
+      - ./dev.db:/var/lib/mysql:rw
+      - type: bind
+        source: ./airscore.sql
+        target: /docker-entrypoint-initdb.d/airscore.sql
+    ports:
+      - "3306:3306"
+    networks:
+      - net
+  adminer:
+    image: adminer
+    restart: always
+    container_name: adminer
+    ports:
+      - 8080:8080
+    networks:
+      - net
+
+volumes:
+  node-modules:
+  static-build:
+  dev-db:
+  aircore-sql:
+
+networks:
+  net:
+
+
+#
+#  dashboard:
+#    image: master-image
+#    ports:
+#      - 5555:5555
+#    depends_on:
+#      - redis
+#    command: rq-dashboard --port 5555 --redis-url redis://redis:6379/0
+
