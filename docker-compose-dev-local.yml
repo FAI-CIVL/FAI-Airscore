@@ -1,0 +1,79 @@
+version: '3.6'
+
+x-build-args: &build_args
+  INSTALL_PYTHON_VERSION: 3.8.2
+  INSTALL_NODE_VERSION: 12
+
+x-default-volumes: &default_volumes
+  volumes:
+    - ./:/app
+    - node-modules:/app/node_modules
+    - ./dev.db:/tmp/dev.db
+
+services:
+  flask-dev-local:
+    build:
+      context: .
+      target: development
+      args:
+        <<: *build_args
+    image: "airscore-development-local"
+    container_name: flask_dev_local
+    ports:
+      - "${FLASK_PORT}:${FLASK_PORT}"
+      - "2992:2992"
+    environment:
+      REDIS_URL: ${REDIS_CONTAINER}://${REDIS_CONTAINER}:6379
+      REDIS_CONTAINER: ${REDIS_CONTAINER}
+      WEB_SERVER_CONTAINER: ${WEB_SERVER_CONTAINER}
+      FLASK_CONTAINER: flask_dev
+      FLASK_PORT: ${FLASK_PORT}
+      FLASK_ENV: development
+      FLASK_DEBUG: 1
+      MAIL_SERVER: ${MAIL_SERVER}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USE_TLS: ${MAIL_USE_TLS}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      ADMINS: ${ADMINS}
+      MYSQLHOST: db
+      DATABASE: airscore
+      MYSQLUSER: root
+      MYSQLPASSWORD: airscore
+      DATABASE_URI: mysql+pymysql://root:airscore@db:3306/airscore
+      XCONTEST_USER: ${XCONTEST_USER}
+      XCONTEST_PASS: ${XCONTEST_PASS}
+      TELEGRAM_API: ${TELEGRAM_API}
+      TELEGRAM_CHANNEL: ${TELEGRAM_CHANNEL}
+    <<: *default_volumes
+
+  redis:
+    image: redis
+    container_name: ${REDIS_CONTAINER}
+
+  db:
+    image: mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    container_name: mysql_db_local
+    environment:
+      MYSQL_ROOT_PASSWORD: airscore
+      MYSQL_DATABASE: airscore
+    volumes:
+      - ./dev.db:/var/lib/mysql:rw
+      - type: bind
+        source: ./airscore.sql
+        target: /docker-entrypoint-initdb.d/airscore.sql
+    ports:
+      - "3306:3306"
+  adminer:
+    image: adminer
+    restart: always
+    container_name: adminer
+    ports:
+      - 8080:8080
+volumes:
+  node-modules:
+  static-build:
+  dev-db:
+  aircore-sql:
