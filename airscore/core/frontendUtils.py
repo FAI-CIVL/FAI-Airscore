@@ -420,7 +420,7 @@ def get_pilot_list_for_track_management(taskid: int):
                     result = f"ESS {round(pilot['distance_flown'] / 1000, 2)} Km (<del>{time}</del>)"
             else:
                 result = f"LO {round(pilot['distance_flown'] / 1000, 2)} Km"
-            data['Result'] = f'<a href="/map/{parid}-{taskid}">{result}</a>'
+            data['Result'] = f'<a href="/map/{parid}-{taskid}?back_link=0" target="_blank">{result}</a>'
         elif pilot['result_type'] == "mindist":
             data['Result'] = "Min Dist"
         else:

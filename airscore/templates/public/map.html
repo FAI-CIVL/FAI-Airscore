@@ -14,7 +14,9 @@ Tracklog Map
 {% endblock %}
 
 {% block back %}
+{% if back_link %}
 <a href='/task_result/{{task.id}}'>Back to results</a>
+{% endif %}
 {% endblock %}
 
 {% block header %}Track Map: {{task.name}} {{pilot.name}}{% endblock %}

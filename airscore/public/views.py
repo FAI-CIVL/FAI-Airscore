@@ -516,7 +516,10 @@ def map(paridtaskid):
     waypoint_achieved_list = list(w for w in layer['geojson']['waypoint_achieved'])
     add_tracks = SelectAdditionalTracks()
     add_tracks.track_pilot_list = other_tracks
+    '''back_link'''
+    back_link = True if 'back_link' not in request.args else bool(request.args.get('get_link'))
     return render_template('public/map.html',
+                           back_link=back_link,
                            other_tracks=other_tracks,
                            add_tracks=add_tracks,
                            map=get_map_render(map),
