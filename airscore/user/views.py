@@ -1589,12 +1589,10 @@ def _modify_user(user_id):
     user = User.query.filter_by(id=int(user_id)).first()
     user.email = data.get('email')
     user.access = data.get('access')
-    user.active = (data.get('active') == 'y')
+    user.active = data.get('active')
     user.update()
     resp = jsonify(success=True)
     return resp
-
-
 
 
 @blueprint.route('/_download/<string:filetype>/<string:filename>', methods=['GET', 'POST'])

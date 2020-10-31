@@ -77,8 +77,14 @@ function isNotEmpty( el ){
 }
 
 function edit_user(id){
+var active;
 $('#mod_email').val($('#id_'+id).children('td:eq(4)').text()).change();
-$('#mod_active').prop('checked', isNotEmpty($('#id_'+id).children('td:eq(5)')));
+
+if ($('#id_'+id).children('td:eq(5)') === 'true')
+{active=true}
+else {active=false}
+
+$('#mod_active').prop('checked',);
 $('#mod_access').val($('#id_'+id).children('td:eq(6)').text()).change();
 $('#modify_confirmed').attr("onclick","save_modified_user('"+ id +"')");
 $('#edit_user_modal').modal('show');
