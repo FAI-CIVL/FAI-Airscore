@@ -571,14 +571,18 @@ def multimap(trackid, extra_trackids):
 
 @blueprint.route('/download/<filetype>/<filename>', methods=['GET'])
 def download_file(filetype, filename):
-    if filetype == 'airspace':
+    if filetype == 'waypoints':
+        waypoints_path = Defines.WAYPOINTDIR
+        file = path.join(waypoints_path, filename)
+    elif filetype == 'airspace':
         airspace_path = Defines.AIRSPACEDIR
-        fullname = path.join(airspace_path, filename)
-        return send_file(fullname, as_attachment=True)
-    if filetype == 'igc_zip':
+        file = path.join(airspace_path, filename)
+    elif filetype == 'igc_zip':
         task_id = filename
-        zip_file = frontendUtils.get_task_igc_zip(int(task_id))
-        return send_file(zip_file, as_attachment=True)
+        file = frontendUtils.get_task_igc_zip(int(task_id))
+    else:
+        file = None
+    return send_file(file, as_attachment=True) if file else None
 
 
 @blueprint.route('/_get_participants/<compid>', methods=['GET'])

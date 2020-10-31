@@ -24,13 +24,19 @@ function update_details(){
   let waypoints_filename = region_details[dropdown.region.val()].filename;
   let openair_filename = region_details[dropdown.region.val()].openair;
   if(waypoints_filename){
-    $('#region_wpt_filename').text('Waypoint file: ' + waypoints_filename )
+    $('#region_wpt_filename').html('Waypoint file: <a href="/download/waypoints/' + waypoints_filename + '">' + waypoints_filename +'</a>');
   }
   else { $('#region_wpt_filename').text('Waypoint file: None') }
   if(openair_filename){
-    $('#region_oair_filename').html('Airspace file: <a href="/users/airspace_map/' + openair_filename + '">' + openair_filename +'</a>')
+    $('#region_oair_filename').html('Airspace file: <a href="/download/airspace/' + openair_filename + '">' + openair_filename +'</a>');
+    $('#edit_openair_button').attr("onclick","window.location.href='/users/airspace_map/" + openair_filename +"'");
+    $('#edit_openair_button').attr("hidden", false);
   }
-  else { $('#region_oair_filename').text('Airspace file: None') }
+  else {
+    $('#region_oair_filename').text('Airspace file: None');
+    $('#edit_openair_button').attr("onclick","");
+    $('#edit_openair_button').attr("hidden", true);
+  }
 
   $('#region_wpt_no').text('Waypoints : ');
   populate_waypoints(regid, openair_filename);
