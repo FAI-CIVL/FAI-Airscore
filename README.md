@@ -156,6 +156,7 @@ If you wish to develop on the host system and run airscore code outside of the d
 ## Application start
 
 This app should be run completely using `Docker` and `docker-compose`. **Using Docker is recommended, as it guarantees the application is run using compatible versions of Python and Node**.
+You may need to install docker and docker-compose on your system.
 
 There are 2 options to run the app. One is the production configuration and one development.
 If you are developing you may still want to run the production version as some features of Airscore are incompatible with the flask development web server.
@@ -171,8 +172,9 @@ To run the production configuration of the app
 
 ```bash
 docker-compose up
-
 ```
+
+Once the app is running you can navigate to localhost port 5000 (typically http://0.0.0.0:5000 or http://127.0.0.1:5000 or htttp://http://localhost:5000) in your browser to use Airscore.
 
 The production version uses several containers running together:
 - The flask app
@@ -227,8 +229,11 @@ To run the production configuration of the app
 
 ```bash
 sudo docker-compose -f docker-compose-prod-local.yml up
-
 ```
+
+Once the app is running you can navigate to localhost port 5000 (typically http://0.0.0.0:5000 or http://127.0.0.1:5000 or htttp://http://localhost:5000) in your browser to use Airscore.
+Adminer is on localhost port 8080
+
 ------------------------------------------------
 
 ## Shell
@@ -246,15 +251,15 @@ By default, you will have access to the flask `app`.
 To run all tests, run
 
 ```bash
-docker-compose -f docker-compose-dev.yml run --rm manage test
-flask test # If running locally without Docker
+sudo docker-compose -f docker-compose-dev.yml run --rm manage test
+flask test # If running from within docker
 ```
 
 To run the linter, run
 
 ```bash
-docker-compose -f docker-compose-dev.yml run --rm manage lint
-flask lint # If running locally without Docker
+sudo docker-compose -f docker-compose-dev.yml run --rm manage lint
+flask lint # If running from within docker
 ```
 
 The `lint` command will attempt to fix any linting/style errors in the code. If you only want to know if the code will pass CI and do not wish for the linter to make changes, add the `--check` argument.
