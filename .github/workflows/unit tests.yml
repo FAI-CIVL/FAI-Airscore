@@ -1,37 +1,37 @@
-# This is a basic workflow to help you get started with Actions
+# # This is a basic workflow to help you get started with Actions
 
-name: CI
+# name: CI
 
-# Controls when the action will run. Triggers the workflow on push or pull request
-# events but only for the development branch
-on:
-  push:
-    branches: [ development ]
-  pull_request:
-    branches: [ development ]
+# # Controls when the action will run. Triggers the workflow on push or pull request
+# # events but only for the development branch
+# on:
+#   push:
+#     branches: [ development ]
+#   pull_request:
+#     branches: [ development ]
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
-jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
-    runs-on: ubuntu-latest
-    steps:
-        - uses: actions/checkout@v2
-        - name: Install Python 3
-          uses: actions/setup-python@v1
-          with:
-            python-version: 3.6
-        - name: Install dependencies
-          run: |
-            python -m pip install --upgrade pip
-            pip install -r requirements/dev.txt
-            # nvm install 12
-            # nvm use 12
-            # npm install
+# # A workflow run is made up of one or more jobs that can run sequentially or in parallel
+# jobs:
+#   # This workflow contains a single job called "build"
+#   build:
+#     # The type of runner that the job will run on
+#     runs-on: ubuntu-latest
+#     steps:
+#         - uses: actions/checkout@v2
+#         - name: Install Python 3
+#           uses: actions/setup-python@v1
+#           with:
+#             python-version: 3.6
+#         - name: Install dependencies
+#           run: |
+#             python -m pip install --upgrade pip
+#             pip install -r requirements/dev.txt
+#             # nvm install 12
+#             # nvm use 12
+#             # npm install
               
-        - name: before script
-          run: cp .env.example .env
+#         - name: before script
+#           run: cp .env.example .env
 
-        - name: test
-          run: flask test
+#         - name: test
+#           run: flask test
