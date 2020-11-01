@@ -46,38 +46,6 @@ services:
       TELEGRAM_CHANNEL: ${TELEGRAM_CHANNEL}
     <<: *default_volumes
 
-  manage:
-    build:
-      context: .
-      target: manage
-    environment:
-      FLASK_ENV: production
-      FLASK_DEBUG: 0
-      REDIS_URL: redis://redis:6379
-      REDIS_CONTAINER: redis
-      WEB_SERVER_CONTAINER: dummy
-      FLASK_CONTAINER: flask_dev
-      FLASK_PORT: 3214
-      MAIL_SERVER: dummy
-      MAIL_PORT: 123
-      MAIL_USE_TLS: dummy
-      MAIL_USERNAME: dummy
-      MAIL_PASSWORD: dummy
-      ADMINS: dummy
-      MYSQLHOST: dummy
-      DATABASE: dummy
-      MYSQLUSER: dummy
-      MYSQLPASSWORD: dummy
-      XCONTEST_USER: dummy
-      XCONTEST_PASS: dummy
-      TELEGRAM_API: dummy
-      TELEGRAM_CHANNEL: dummy
-    image: "airscore-manage"
-    container_name: manage
-    stdin_open: true
-    tty: true
-    <<: *default_volumes
-
   redis:
     image: redis
     container_name: ${REDIS_CONTAINER}
