@@ -1,20 +1,20 @@
-name: Docker Image CI
+# name: Docker Image CI
 
-on:
-  push:
-    branches: [ development ]
-  pull_request:
-    branches: [ development ]
+# on:
+#   push:
+#     branches: [ development ]
+#   pull_request:
+#     branches: [ development ]
 
-jobs:
+# jobs:
 
-  build:
+#   build:
 
-    runs-on: ubuntu-latest
+#     runs-on: ubuntu-latest
 
-    steps:
-    - uses: actions/checkout@v2
-    - name: Build the Docker image
-      run: docker-compose -f docker-compose-tests.yml run --rm manage
-    - name: Run tests
-      run: flask test
+#     steps:
+#     - uses: actions/checkout@v2
+#     - name: Build the Docker image
+#       run: docker-compose -f docker-compose-tests.yml run --rm manage
+#     - name: Run tests
+#       run: flask test
