@@ -18,7 +18,7 @@ function populate_waypoints(regid, airspace){
 
 function update_waypoints(waypoints) {
     var wpts_num = waypoints.length;
-    $('#waypoints').dataTable({
+    $('#waypoints').DataTable({
         data: waypoints,
         paging: false,
         saveState: true,
@@ -28,23 +28,18 @@ function update_waypoints(waypoints) {
         "dom": '<"#search"f>rt<"bottom"lip><"clear">',
         destroy: true,
         columns: [
-            {data: 'Class', title:'Class'},
-            {data: 'name', title:'Name'},
-            {data: 'description', title:'Description'},
-            {data: 'altitude', title:'Alt'},
-            {data: 'lat', title:'Lat'},
-            {data: 'lon', title:'Lon'},
+            {data: 'name', title:'Name', defaultContent: ''},
+            {data: 'description', title:'Description', defaultContent: ''},
+            {data: 'altitude', title:'Alt', defaultContent: ''},
+            {data: 'lat', title:'Lat', defaultContent: ''},
+            {data: 'lon', title:'Lon', defaultContent: ''},
         ],
         orderFixed: [[0, 'asc'],[1, 'asc']],
         rowGroup: {
-            dataSrc: ['Class']
+            dataSrc: function(row) {
+                        return row.name.substr(0, 1);
+                     }
         },
-        columnDefs: [
-            {
-                "targets": [0],
-                "visible": false
-            },
-        ],
         initComplete: function(settings, json) {
            $('#region_wpt_no').text('Waypoints : ' + wpts_num);
         }

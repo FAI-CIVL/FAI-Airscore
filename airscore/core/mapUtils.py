@@ -336,27 +336,47 @@ def create_trackpoints_layer(file: str, offset: int = 0) -> list:
     return points
 
 
-def create_waypoints_layer(reg_id: int) -> (list, list):
-    from db.tables import TblRegionWaypoint as R
-    from db.conn import db_session
+def get_points_and_bbox(waypoints: list, radius: int = 250) -> tuple:
+    bbox = [[waypoints[0].lat, waypoints[0].lon], [waypoints[0].lat, waypoints[0].lon]]
     points = []
-    bbox = []
-    with db_session() as db:
-        results = db.query(R).filter_by(reg_id=reg_id, old=False).all()
-        if results:
-            bbox = [[results[0].lat, results[0].lon], [results[0].lat, results[0].lon]]
-            for wp in results:
-                points.append(dict(name=wp.name, longitude=wp.lon, latitude=wp.lat))
-                bbox = checkbbox(wp.lat, wp.lon, bbox)
+    for wp in waypoints:
+        type = ('launch' if wp.name[0] == 'D'
+                else 'speed' if wp.name[0] in ('A', 'L')
+                else 'restricted' if wp.name[0] == 'X'
+                else 'waypoint')
+        points.append({'name': wp.name,
+                       'description': wp.description,
+                       'longitude': wp.lon,
+                       'latitude': wp.lat,
+                       'altitude': wp.altitude,
+                       'radius': radius,
+                       'type': type})
+        bbox = checkbbox(wp.lat, wp.lon, bbox)
     return points, bbox
 
 
-def create_airspace_layer(reg_id: int, airspace: str = None) -> (list, list):
+def create_waypoints_layer(reg_id: int, region=None, radius: int = 250) -> (list, list):
+    from db.tables import TblRegionWaypoint as R
+    from db.conn import db_session
+    points, bbox = [], []
+    if region:
+        points, bbox = get_points_and_bbox(region.turnpoints, radius)
+    else:
+        with db_session() as db:
+            results = db.query(R).filter_by(reg_id=reg_id, old=False).all()
+            if results:
+                points, bbox = get_points_and_bbox(results, radius)
+    return points, bbox
+
+
+def create_airspace_layer(reg_id: int, region=None, airspace: str = None) -> (list, list):
     from db.tables import TblRegion as R
     from airspaceUtils import read_airspace_map_file
     airspace_layer = []
     bbox = []
-    if not airspace:
+    if region:
+        airspace = region.openair_file
+    elif not airspace:
         airspace = R.get_by_id(reg_id).openair_file
     if airspace:
         data = read_airspace_map_file(airspace)

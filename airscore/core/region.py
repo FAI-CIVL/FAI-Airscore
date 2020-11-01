@@ -14,12 +14,12 @@ from db.tables import TblRegion as R, RegionWaypointView as RWV, TblRegionWaypoi
 
 
 class Region:
-    def __init__(self, reg_id=None, comp_id=None, name=None, filename=None, openair=None, turnpoints=[]):
+    def __init__(self, reg_id=None, comp_id=None, name=None, waypoint_file=None, openair_file=None, turnpoints=[]):
         self.name = name
         self.reg_id = reg_id
         self.comp_id = comp_id
-        self.filename = filename
-        self.openair = openair
+        self.waypoint_file = waypoint_file
+        self.openair_file = openair_file
         self.turnpoints = turnpoints
 
     @classmethod
@@ -27,14 +27,12 @@ class Region:
         """
         reads region waypoints
         """
-
         turnpoints = []
-
         with db_session() as db:
             q = db.query(R.description.label('name'),
-                                 R.waypoint_file.label('filename'),
-                                 R.openair_file.label('openair')).filter(R.reg_id == region_id).first()
-            name, filename, openair = q.name, q.filename, q.openair
+                         R.waypoint_file,
+                         R.openair_file).filter(R.reg_id == region_id).first()
+            name, waypoint_file, openair_file = q.name, q.waypoint_file, q.openair_file
             w = db.query(RWV).filter(RWV.region_id == region_id).all()
             for tp in w:
                 if tp.name[0] == 'D':
@@ -48,26 +46,19 @@ class Region:
                 turnpoint = Turnpoint(radius=400, type=type, shape='circle', how='entry')
                 tp.populate(turnpoint)
                 turnpoints.append(turnpoint)
-        return cls(region_id, name, filename, openair, turnpoints)
+        return cls(region_id, name=name, waypoint_file=waypoint_file, openair_file=openair_file, turnpoints=turnpoints)
 
     def to_db(self):
         """Inserts new task or updates existent one"""
-        with db_session() as db:
-            if not self.reg_id:
-                region = R(comp_id=self.comp_id, description=self.name, waypoint_file=self.filename,
-                           openair_file=self.openair)
-                db.add(region)
-                db.flush()
-                self.reg_id = region.reg_id
-            # else:
-            #     task = db.query(R).get(self.reg_id)
-            # # for k, v in self.as_dict().items():
-            # #     if k not in ['reg_id', 'comp_id'] and hasattr(task, k):
-            # #         setattr(task, k, v)
-            db.commit()
-            '''save waypoints'''
-            if self.turnpoints:
-                self.update_waypoints()
+        region = R(comp_id=self.comp_id, description=self.name, waypoint_file=self.waypoint_file,
+                   openair_file=self.openair_file)
+        if self.reg_id:
+            region.reg_id = self.reg_id
+        region.save_or_update()
+        self.reg_id = region.reg_id
+        '''save waypoints'''
+        if self.turnpoints:
+            self.update_waypoints()
 
     def update_waypoints(self):
         insert_mappings = []
@@ -84,9 +75,9 @@ class Region:
 def get_all_regions():
     with db_session() as db:
         results = db.query(R.reg_id,
-                                   R.description.label('name'),
-                                   R.waypoint_file.label('filename'),
-                                   R.openair_file.label('openair')).order_by(R.description).all()
+                           R.description.label('name'),
+                           R.waypoint_file.label('filename'),
+                           R.openair_file.label('openair')).order_by(R.description).all()
         if results:
             results = [row._asdict() for row in results]
         return {'regions': results}
@@ -95,15 +86,15 @@ def get_all_regions():
 def get_comp_regions_and_wpts(compid):
     with db_session() as db:
         region_results = db.query(R.reg_id,
-                                          R.description.label('name'),
-                                          R.waypoint_file.label('filename'),
-                                          R.openair_file.label('openair')) \
+                                  R.description.label('name'),
+                                  R.waypoint_file.label('filename'),
+                                  R.openair_file.label('openair')) \
             .filter_by(comp_id=compid).all()
 
         wpt_results = db.query(RW.reg_id,
-                                       RW.rwp_id,
-                                       RW.name,
-                                       RW.description).join(R).filter_by(reg_id=RW.reg_id, comp_id=compid).all()
+                               RW.rwp_id,
+                               RW.name,
+                               RW.description).join(R).filter_by(reg_id=RW.reg_id, comp_id=compid).all()
 
         if region_results:
             region_results = [row._asdict() for row in region_results]
@@ -116,14 +107,16 @@ def get_comp_regions_and_wpts(compid):
 def get_region_wpts(reg_id):
     with db_session() as db:
         wpt_results = db.query(RW.reg_id,
-                                       RW.rwp_id,
-                                       RW.name,
-                                       RW.lat,
-                                       RW.lon,
-                                       RW.altitude,
-                                       RW.xccSiteID,
-                                       RW.xccToID,
-                                       RW.description).join(R).filter_by(reg_id=reg_id).order_by(RW.name).all()
+                               RW.rwp_id,
+                               RW.name,
+                               RW.lat,
+                               RW.lon,
+                               RW.altitude,
+                               RW.xccSiteID,
+                               RW.xccToID,
+                               RW.description) \
+                        .join(R) \
+                        .filter_by(reg_id=reg_id).filter(RW.old == 0).order_by(RW.name).all()
 
         if wpt_results:
             wpt_results = [row._asdict() for row in wpt_results]

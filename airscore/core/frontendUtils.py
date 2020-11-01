@@ -392,15 +392,9 @@ def get_region_choices(compid: int):
 def get_waypoint_choices(reg_id: int):
     import region
     wpts = region.get_region_wpts(reg_id)
-    choices = []
-    details = []
+    choices = [(wpt['rwp_id'], wpt['name'] + ' - ' + wpt['description']) for wpt in wpts]
 
-    for wpt in wpts:
-        choices.append((wpt['rwp_id'], wpt['name'] + ' - ' + wpt['description']))
-        wpt['Class'] = wpt['name'][0]
-        details.append(wpt)
-
-    return choices, details
+    return choices, wpts
 
 
 def get_pilot_list_for_track_management(taskid: int):
@@ -1412,13 +1406,13 @@ def get_task_result_files(task_id: int, comp_id: int = None, offset: int = None)
             'display_comp_unpublish': display_comp_unpublish}
 
 
-def get_region_waypoints(reg_id: int, airspace: str = None) -> dict:
+def get_region_waypoints(reg_id: int, region=None, airspace: str = None) -> tuple:
     from mapUtils import create_waypoints_layer, create_airspace_layer
     _, waypoints = get_waypoint_choices(reg_id)
     points_layer, bbox = create_waypoints_layer(reg_id)
     if airspace:
-        airspace_layer, _ = create_airspace_layer(reg_id, airspace)
+        airspace_layer, _ = create_airspace_layer(reg_id, airspace=airspace)
     else:
         airspace_layer = None
-    region_map = make_map(points=points_layer, airspace_layer=airspace_layer, show_airspace=False, bbox=bbox)
-    return {'waypoints': waypoints, 'map': region_map._repr_html_(), 'airspace': airspace}
+    region_map = make_map(points=points_layer, circles=points_layer, airspace_layer=airspace_layer, show_airspace=False, bbox=bbox)
+    return waypoints, region_map, airspace
