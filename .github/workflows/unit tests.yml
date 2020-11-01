@@ -26,9 +26,9 @@ jobs:
           run: |
             python -m pip install --upgrade pip
             pip install -r requirements/dev.txt
-            nvm install 12
-            nvm use 12
-            npm install
+            # nvm install 12
+            # nvm use 12
+            # npm install
               
         - name: before script
           run: cp .env.example .env
