@@ -72,12 +72,15 @@ class Region:
                 next(tp for tp in self.turnpoints if tp.num == elem['num']).wpt_id = elem['wpt_id']
 
 
-def get_all_regions():
+def get_all_regions(reg_ids: list = None):
     with db_session() as db:
         results = db.query(R.reg_id,
                            R.description.label('name'),
                            R.waypoint_file.label('filename'),
-                           R.openair_file.label('openair')).order_by(R.description).all()
+                           R.openair_file.label('openair')).order_by(R.description)
+        if reg_ids:
+            results = results.filter(R.reg_id.in_(reg_ids))
+        results = results.all()
         if results:
             results = [row._asdict() for row in results]
         return {'regions': results}

@@ -16,8 +16,12 @@ Flying Area Map
 {% endblock %}
 
 {% block back %}
-{% if back_link %}
-<a href='/{{back_link}}'>Back to {{ back_link }}</a>
+{% if args and args.regids %}
+<a href="{{ url_for('public.regions', **args) }}">Back to Comp Areas</a>
+{% elif args and args.compid %}
+<a href="{{ url_for('public.competition', compid=args.compid) }}">Back to Competition</a>
+{% else %}
+<a href="{{ url_for('public.regions') }}">Back to Regions</a>
 {% endif %}
 {% endblock %}
 

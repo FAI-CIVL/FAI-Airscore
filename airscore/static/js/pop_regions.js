@@ -1,4 +1,4 @@
-function populate_regions ( regions ){
+function populate_regions ( regions, args ){
     $('#regions').dataTable({
         data: regions,
         paging: false,
@@ -8,7 +8,7 @@ function populate_regions ( regions ){
         dom: '<"#search"f>rt<"bottom"lip><"clear">',
         columns: [
             {data: 'reg_id', title: 'ID', defaultContent: '', visible: false},
-            {data: 'name', title: 'Name', width: 300, defaultContent: '', render: function ( data, type, row ) { return '<a href="/region_map/'+row.reg_id+'?back_link=regions">'+data+'</a>'}},
+            {data: 'name', title: 'Name', width: 300, defaultContent: '', render: function ( data, type, row ) { return create_link(data, row.reg_id, args )}},
             {data: 'filename', title: 'Waypoints', defaultContent: '', render: function ( data ) { return '<a class="btn btn-primary" href="/download/waypoints/'+data+'">Download</a>'}},
             {data: 'openair', title: 'Openair', defaultContent: '', render: function ( data ) { if ( data ) {return '<a class="btn btn-primary" href="/download/airspace/'+data+'">Download</a>'}}}
         ],
@@ -26,6 +26,11 @@ function populate_regions ( regions ){
     });
 }
 
+function create_link( data, regid, args ) {
+    if ( args == null ) {return '<a href="/region_map/'+regid+'">'+data+'</a>'}
+    else {return '<a href="/region_map/'+regid+'?'+args+'">'+data+'</a>'}
+}
+
 $(document).ready(function() {
-    populate_regions(regions)
+    populate_regions(regions, link_args);
 });

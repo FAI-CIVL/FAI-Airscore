@@ -377,6 +377,17 @@ def get_comp_regions(compid: int):
         return region.get_comp_regions_and_wpts(compid)
 
 
+def get_regions_used_in_comp(compid: int, tasks: bool = False) -> list:
+    """returns a list of reg_id of regions used in a competition.
+        Used for waypoints and area map link in competition page"""
+    from db.tables import TblRegion as R, TblTask as T
+    regions = [el.reg_id for el in R.get_all(comp_id=compid)]
+    if tasks:
+        regions.extend([el.reg_id for el in T.get_all(comp_id=compid)])
+        regions = list(set(regions))
+    return regions
+
+
 def get_region_choices(compid: int):
     """gets a list of regions to be used in frontend select field (choices) and details of each region (details)"""
     regions = get_comp_regions(compid)
