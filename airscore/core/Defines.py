@@ -105,3 +105,7 @@ TELEGRAM_CHANNEL = secret.get('telegram', {}).get('channel') or env.str('TELEGRA
 
 '''Ladders'''
 LADDERS = config['ladders']
+
+
+'''FAI Sphere'''
+FAI_SPHERE = config['FAI_sphere']

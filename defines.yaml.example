@@ -59,3 +59,11 @@ dir:
   livetracking: /app/airscore/data/livetracking/
   igc_parsing_config: /app/airscore/igc_parsing_config/
   temp_files: /app/airscore/data/temp/
+
+##########################################################################################################################
+# FAI Sphere. Note that the use of FAI Sphere is obsolete with both PG and HG recommended to use the WGS84 ellipsoid by CIVL.
+# this setting is only intended for testing Airscore against old competitions that were run with the FAI Sphere.
+# Set to off to use WGS84, on for FAI Sphere.
+
+
+FAI_sphere: off
