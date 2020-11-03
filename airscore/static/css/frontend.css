@@ -104,6 +104,14 @@ nav .main:hover {
     color: rgba(255,255,255,1)!important;
 }
 
+/* Header */
+
+header.h2 {
+    padding-bottom: .5rem;
+    border-bottom: 2px solid #343a40;
+    margin-bottom: 1rem;
+}
+
 /* Results */
 
 .sex-F, .sex-F:link, .sex-F:link:visited {
@@ -195,6 +203,20 @@ td.other_pilots_list, td.comments {
 
 div.hidden {
   display: none;
+}
+
+/* table lists */
+
+.button {
+  margin: 1rem 0 1rem 0;
+}
+
+.collapse-button {
+  margin: 1rem 0 1rem 0;
+}
+
+.collapse {
+  margin-bottom: 1rem;
 }
 
 /* footer */
