@@ -517,7 +517,7 @@ def map(paridtaskid):
     add_tracks = SelectAdditionalTracks()
     add_tracks.track_pilot_list = other_tracks
     '''back_link'''
-    back_link = True if 'back_link' not in request.args else bool(request.args.get('get_link'))
+    back_link = True if 'back_link' not in request.args else bool(request.args.get('back_link'))
     return render_template('public/map.html',
                            back_link=back_link,
                            other_tracks=other_tracks,
@@ -574,15 +574,20 @@ def download_file(filetype, filename):
     if filetype == 'waypoints':
         waypoints_path = Defines.WAYPOINTDIR
         file = path.join(waypoints_path, filename)
+        mimetype = "text/plain"
     elif filetype == 'airspace':
         airspace_path = Defines.AIRSPACEDIR
         file = path.join(airspace_path, filename)
+        mimetype = "text/plain"
     elif filetype == 'igc_zip':
         task_id = filename
         file = frontendUtils.get_task_igc_zip(int(task_id))
+        mimetype = "application/zip"
     else:
         file = None
-    return send_file(file, as_attachment=True) if file else None
+        mimetype = "text/plain"
+
+    return send_file(file, mimetype=mimetype, as_attachment=True) if file else None
 
 
 @blueprint.route('/_get_participants/<compid>', methods=['GET'])

@@ -41,7 +41,7 @@ function update_waypoints(waypoints) {
                      }
         },
         initComplete: function(settings, json) {
-           $('#region_wpt_no').text('Waypoints : ' + wpts_num);
+           $('#region_wpt_no').text('Waypoints: ' + wpts_num);
         }
    });
 }

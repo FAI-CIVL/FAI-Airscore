@@ -127,9 +127,9 @@
 
 {% if user_is_scorekeeper %}
 {% block js %}
+<script type='text/javascript' src='https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js'></script>
 <script src="{{ static_url_for('static', filename='js/jquery.initialize.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/utils.js') }}"></script>
-<script type='text/javascript' src='https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js'></script>
 <script src="{{ static_url_for('static', filename='js/pop_track_admin.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.ui.widget.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.iframe-transport.js') }}"></script>

@@ -95,7 +95,9 @@
 /* Admin Menu */
 
 body.admin {
-  background-color: #fffcff!important;
+  background-color: #fffcff !important;
+  display: flex;
+  flex-flow: column wrap;
 }
 
 nav.admin {
@@ -308,6 +310,11 @@ table.rankings td {
   padding: 0 1rem .3rem 0;
 }
 
+#map_panel {
+  max-width: 90vw;
+  min-height: 40vw;
+}
+
 /* Results */
 
 .sex-F, .sex-F:link, .sex-F:link:visited {
@@ -410,6 +417,7 @@ div.nav-back {
 /* footer */
 
 footer {
+  clear: both;
   margin-top: 45px;
   padding-top: 5px;
   border-top: 1px solid #eaeaea;

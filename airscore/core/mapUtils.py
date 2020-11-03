@@ -329,10 +329,10 @@ def create_trackpoints_layer(file: str, offset: int = 0) -> list:
                            sec_to_string(fix.rawtime), sec_to_string(fix.rawtime, offset)])
     except FileNotFoundError:
         print(f'Error: file not found {file}')
-        return None
+        return []
     except Exception:
         print(f'Error: cannot create trackpoints map layer from track: {file}')
-        return None
+        return []
     return points
 
 

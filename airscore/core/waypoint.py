@@ -254,7 +254,7 @@ def get_turnpoints_from_file_storage(file_storage):
     '''try to open file in different encodings'''
     # Logger('ON', 'read_waypoints.txt')
     try:
-        file = file_storage.stream.read().decode('utf-8')
+        file = file_storage.stream.read().decode('UTF-8')
     except UnicodeDecodeError:
         file_storage.stream.seek(0)
         file = file_storage.stream.read().decode('latin-1')
