@@ -369,17 +369,20 @@ def create_waypoints_layer(reg_id: int, region=None, radius: int = 250) -> (list
     return points, bbox
 
 
-def create_airspace_layer(reg_id: int, region=None, airspace: str = None) -> (list, list):
+def create_airspace_layer(reg_id: int, region=None, openair_file: str = None) -> (list, list):
     from db.tables import TblRegion as R
     from airspaceUtils import read_airspace_map_file
     airspace_layer = []
+    airspace_list = []
     bbox = []
-    if region:
-        airspace = region.openair_file
-    elif not airspace:
-        airspace = R.get_by_id(reg_id).openair_file
-    if airspace:
-        data = read_airspace_map_file(airspace)
+    if not openair_file:
+        if region:
+            openair_file = region.openair_file
+        else:
+            openair_file = R.get_by_id(reg_id).openair_file
+    if openair_file:
+        data = read_airspace_map_file(openair_file)
         airspace_layer = data['spaces']
+        airspace_list = data['airspace_list']
         bbox = data['bbox']
-    return airspace_layer, bbox
+    return openair_file, airspace_layer, airspace_list, bbox

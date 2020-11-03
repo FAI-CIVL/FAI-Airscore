@@ -529,6 +529,36 @@ def map(paridtaskid):
                            full_tracklog=full_tracklog)
 
 
+@blueprint.route('/regions/')
+def regions():
+    from region import get_all_regions
+    result = get_all_regions()
+    return render_template('public/regions.html', regions=result['regions'])
+
+
+@blueprint.route('/region_map/<int:regid>', methods=["GET", "POST"])
+def region_map(regid: int):
+    from map import get_map_render
+    from region import Region
+    region = Region.read_db(regid)
+    waypoints, reg_map, airspace_list, _ = frontendUtils.get_region_waypoints(regid, region=region)
+    '''back_link'''
+    back_link, compid = None, None
+    if 'back_link' in request.args:
+        back_link = request.args.get('back_link')
+        if 'param' in request.args:
+            back_link += '/' + str(request.args.get('param'))
+
+    return render_template('public/region_map.html',
+                           regid=regid,
+                           name=region.name,
+                           back_link=back_link,
+                           map=get_map_render(reg_map),
+                           waypoints=waypoints,
+                           airspace=airspace_list,
+                           waypoint_file=region.waypoint_file, openair_file=region.openair_file)
+
+
 @blueprint.route('/_map/<trackid>/<extra_trackids>')
 def multimap(trackid, extra_trackids):
     trackids = []

@@ -22,9 +22,8 @@ def create_menu(active: str = '') -> list:
     menu = [dict(title='Competitions', url='public.home', css='nav-item')]
     if Defines.LADDERS:
         menu.append(dict(title='Ladders', url='public.ladders', css='nav-item'))
-    # menu.append(dict(title='Areas', url='public.areas',
-    #                  css='nav-item' if active not in ['pilots'] else 'nav-item active'))
-    menu.append(dict(title='Pilots', url='public.pilots', css='nav-item'))
+    menu.extend([dict(title='Pilots', url='public.pilots', css='nav-item'),
+                dict(title='Flying Areas', url='public.regions', css='nav-item')])
 
     return menu
 
@@ -1406,13 +1405,12 @@ def get_task_result_files(task_id: int, comp_id: int = None, offset: int = None)
             'display_comp_unpublish': display_comp_unpublish}
 
 
-def get_region_waypoints(reg_id: int, region=None, airspace: str = None) -> tuple:
+def get_region_waypoints(reg_id: int, region=None, openair_file: str = None) -> tuple:
     from mapUtils import create_waypoints_layer, create_airspace_layer
     _, waypoints = get_waypoint_choices(reg_id)
     points_layer, bbox = create_waypoints_layer(reg_id)
-    if airspace:
-        airspace_layer, _ = create_airspace_layer(reg_id, airspace=airspace)
-    else:
-        airspace_layer = None
-    region_map = make_map(points=points_layer, circles=points_layer, airspace_layer=airspace_layer, show_airspace=False, bbox=bbox)
-    return waypoints, region_map, airspace
+    openair_file, airspace_layer, airspace_list, _ = create_airspace_layer(reg_id, region=region, openair_file=openair_file)
+
+    region_map = make_map(points=points_layer, circles=points_layer,
+                          airspace_layer=airspace_layer, show_airspace=False, bbox=bbox)
+    return waypoints, region_map, airspace_list, openair_file
