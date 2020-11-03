@@ -1260,7 +1260,7 @@ def region_admin():
 
     if request.method == "POST":
         if request.files:
-            if not path.isdir(WAYPOINTDIR):
+            if not Path(WAYPOINTDIR).is_dir():
                 makedirs(WAYPOINTDIR)
             waypoint_file = request.files["waypoint_file"]
             airspace_file = request.files["openair_file"]
@@ -1287,30 +1287,29 @@ def region_admin():
                                            new_region_form=new_region)
                 '''save file'''
                 wpt_filename = unique_filename(waypoint_file.filename, WAYPOINTDIR)
-                fullpath = path.join(WAYPOINTDIR, wpt_filename)
+                fullpath = Path(WAYPOINTDIR, wpt_filename)
+                waypoint_file.seek(0)
                 waypoint_file.save(fullpath)
 
                 if airspace_file:
+                    if not Path(AIRSPACEDIR).is_dir():
+                        makedirs(AIRSPACEDIR)
                     # save airspace file
-                    fullpath = path.join(AIRSPACEDIR, airspace_file.filename)
-                    i = 1
-                    air_new_filename = airspace_file.filename
-                    while path.exists(fullpath):
-                        air_new_filename = f"{i}_{airspace_file.filename}"
-                        fullpath = path.join(AIRSPACEDIR, air_new_filename)
-                        i += 1
-                    # airspace_file.save(fullpath)
-                    with open(fullpath, 'w') as f:
-                        f.write(airspace_file_data)
+                    air_filename = unique_filename(airspace_file.filename, AIRSPACEDIR)
+                    fullpath = Path(AIRSPACEDIR, air_filename)
+                    airspace_file.seek(0)
+                    airspace_file.save(fullpath)
+                    # with open(fullpath, 'w') as f:
+                    #     f.write(airspace_file_data)
                     flash(Markup(f'Open air file added, please check it <a href="'
-                                 f'{url_for("user.airspace_edit", filename=air_new_filename)}" '
+                                 f'{url_for("user.airspace_edit", filename=air_filename)}" '
                                  f'class="alert-link">here</a>'), category='info')
                 else:
-                    air_new_filename = None
+                    air_filename = None
 
                 # write to DB
-                region = Region(name=new_region.name.data, comp_id=compid, filename=wpt_filename,
-                                openair=air_new_filename, turnpoints=wpts)
+                region = Region(name=new_region.name.data, comp_id=compid, waypoint_file=wpt_filename,
+                                openair_file=air_filename, turnpoints=wpts)
                 region.to_db()
                 flash(f"Waypoint file format: {wpt_format}, {len(wpts)} waypoints. ", category='info')
                 flash(f"Region {new_region.name.data} added", category='info')
