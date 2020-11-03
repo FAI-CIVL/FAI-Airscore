@@ -132,33 +132,49 @@ airscore includes or not.
 
 ### Installation:
 
+Airscore is setup to be installed and run inside Docker containers.
+For production use, Airscore needs a MySQL database to connect to. You will need to setup or use a hosted mysql server.
+For development use, there is the choice of using an hosted database as above in production or a MySQL database that is in a docker container on the same system as Airscore.
+
+
+---------------------------------------------
+
+### Hosted Database option (Production and Development)
 #### Database setup
-Airscore uses a Mysql database. The database is not included in the docker containers. You will need to setup or use a hosted mysql server.
+
+The database is not included in the docker containers. 
 Once you have the DB server, use the file airscore.sql to create the table and views. Database credentials should be saved in the .env file (see below)
 
 #### Environment and configuration variables
-defines.yaml.example and .env.example should be renamed or copied wihout ".example" to create the two config files.
+
+defines.yaml.example and .env.example should be renamed or copied without ".example" to create the two config files.
 - defines.yaml - folder structure and Airscore configuration - there are several options
 - .env contains environment variables used in the docker compose files, database and email server credentials.
 
-## Docker Quickstart
+If you wish to develop on the host system and run airscore code outside of the docker containers, use the file dev.yaml (rename it from dev.yaml example) to set the variables that would otherwise be environment variables inside the docker containers (and therefore inaccessible to the host system). If the file is present these settings will override what is in the .env file
+
+## Application start
 
 This app should be run completely using `Docker` and `docker-compose`. **Using Docker is recommended, as it guarantees the application is run using compatible versions of Python and Node**.
+You may need to install docker and docker-compose on your system.
 
-There are three main services:
+There are 2 options to run the app. One is the production configuration and one development.
+If you are developing you may still want to run the production version as some features of Airscore are incompatible with the flask development web server.
+Airscore will still work, however some features will not display. If you are running the development configuration the flask development server will provide useful debugging info in the browser.
 
-To run the development version of the app
+To run the development configuration of the app
 
 ```bash
 docker-compose -f docker-compose-dev.yml up
 ```
 
-To run the production version of the app
+To run the production configuration of the app
 
 ```bash
 docker-compose up
-
 ```
+
+Once the app is running you can navigate to localhost port 5000 (typically http://0.0.0.0:5000 or http://127.0.0.1:5000 or htttp://http://localhost:5000) in your browser to use Airscore.
 
 The production version uses several containers running together:
 - The flask app
@@ -168,13 +184,64 @@ The production version uses several containers running together:
 
 A docker volume `node-modules` is created to store NPM packages and is reused across the dev and prod versions of the application. For the purposes of DB testing with `sqlite`, the file `dev.db` is mounted to all containers. This volume mount should be removed from `docker-compose.yml` if a production DB server is used.
 
+-------------------------------------------------
+### Local Development Database option
+
+The database is included in the docker containers. 
+The first time the containers run, the database will be setup from the included airscore.sql file.
+The data will persist when the containers are stopped or rebuilt as it is stored in the dev.db directory on the host system.
+If you wish to reset the database (delete and recreate) simply delete the contents of the dev.db directory and restart the docker-compose.
+
+As well as the database, the setup also includes Adminer which is browser based DB admin utility. You can access this by navigating to http://localhost:8080/
+and logging in with the credentials in the docker-compose file (defaults are: server:db, username:root, password:airscore, database:airscore)
+
+#### Environment and configuration variables
+defines.yaml.example and .env.example should be renamed or copied without ".example" to create the two config files.
+- defines.yaml - folder structure and Airscore configuration - there are several options
+- .env contains environment variables used in the docker compose files, database and email server credentials.
+
+If you wish to develop on the host system and run Airscore code outside of the docker containers, use the file dev.yaml (rename it from dev.yaml example) to set the variables that would otherwise be environment variables inside the docker containers (and therefore inaccessible to the host system). If the file is present these settings will override what is in the .env file
+
+## Application start
+
+This app should be run completely using `Docker` and `docker-compose`. **Using Docker is recommended, as it guarantees the application is run using compatible versions of Python and Node**.
+
+Again there are 2 options to run the app.
+If you are developing you may still want to run the production version as some features of Airscore are incompatible with the flask development web server.
+Airscore will still work, however some features will not display. If you are running the development configuration the flask development server will provide useful debugging info in the browser.
+
+Note that the first time you run the docker-compose the database setup may take longer than the application start up. In that case there will be an error. Simply wait until the database is finished (evident in the shell) and stop and restart (ctl-c to stop)
+However you can avoid this by running the database service by itself the first time:
+
+```bash
+sudo docker-compose -f docker-compose-dev-local.yml up db 
+```
+
+Once it has finished setting up you can stop it and run all services together with one of the below commands.
+
+To run the development configuration of the app
+
+```bash
+sudo docker-compose -f docker-compose-dev-local.yml up
+```
+
+To run the production configuration of the app
+
+```bash
+sudo docker-compose -f docker-compose-prod-local.yml up
+```
+
+Once the app is running you can navigate to localhost port 5000 (typically http://0.0.0.0:5000 or http://127.0.0.1:5000 or htttp://http://localhost:5000) in your browser to use Airscore.
+Adminer is on localhost port 8080
+
+------------------------------------------------
+
 ## Shell
 
 To open the interactive shell, run
 
 ```bash
 docker-compose run --rm manage db shell
-flask shell # If running locally without Docker
 ```
 
 By default, you will have access to the flask `app`.
@@ -184,15 +251,15 @@ By default, you will have access to the flask `app`.
 To run all tests, run
 
 ```bash
-docker-compose -f docker-compose-dev.yml run --rm manage test
-flask test # If running locally without Docker
+sudo docker-compose -f docker-compose-dev.yml run --rm manage test
+flask test # If running from within docker
 ```
 
 To run the linter, run
 
 ```bash
-docker-compose -f docker-compose-dev.yml run --rm manage lint
-flask lint # If running locally without Docker
+sudo docker-compose -f docker-compose-dev.yml run --rm manage lint
+flask lint # If running from within docker
 ```
 
 The `lint` command will attempt to fix any linting/style errors in the code. If you only want to know if the code will pass CI and do not wish for the linter to make changes, add the `--check` argument.

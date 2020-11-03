@@ -318,7 +318,7 @@ def comp_settings_admin(compid):
         compform.formula_distance.data = formula.formula_distance
         compform.formula_arrival.data = formula.formula_arrival
         compform.formula_departure.data = formula.formula_departure
-        compform.lead_factor.data = formula.lead_factor
+        compform.lead_factor.data = formula.lead_factor or 1
         compform.formula_time.data = formula.formula_time
         compform.no_goal_penalty.data = int(formula.no_goal_penalty * 100)
         compform.glide_bonus.data = formula.glide_bonus
@@ -1429,7 +1429,10 @@ def _add_participant(compid):
     data = request.json
     participant = Participant()
     participant.comp_id = int(compid)
-    participant.ID = data.get('id_num')
+    id_num = data.get('id_num')
+    if not isinstance(id, int):
+        id_num = None
+    participant.ID = id_num
     if data.get('name'):
         participant.name = data.get('name')
     if data.get('sex'):
@@ -1586,12 +1589,10 @@ def _modify_user(user_id):
     user = User.query.filter_by(id=int(user_id)).first()
     user.email = data.get('email')
     user.access = data.get('access')
-    user.active = (data.get('active') == 'y')
+    user.active = data.get('active')
     user.update()
     resp = jsonify(success=True)
     return resp
-
-
 
 
 @blueprint.route('/_download/<string:filetype>/<string:filename>', methods=['GET', 'POST'])

@@ -290,10 +290,12 @@ class Formula(object):
                 row = FC(comp_id=self.comp_id)
                 db.add(row)
                 db.flush()
-            for k, v in self.as_dict().items():
-                if hasattr(row, k):
-                    setattr(row, k, v)
-            db.flush()
+            else:
+                for k, v in self.as_dict().items():
+                    if hasattr(row, k):
+                        setattr(row, k, v)
+                db.flush()
+            db.commit()
         return self.comp_id
 
     def get_lib(self):

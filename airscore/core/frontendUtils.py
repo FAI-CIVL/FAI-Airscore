@@ -261,7 +261,7 @@ def get_admin_comps(current_userid, current_user_access=None):
                           c.date_to, func.count(TblTask.task_id), ca.user_id)
                  .outerjoin(TblTask, c.comp_id == TblTask.comp_id).outerjoin(ca)
                  .filter(ca.user_auth == 'owner')
-                 .group_by(c.comp_id))
+                 .group_by(c.comp_id, ca.user_id))
     all_comps = []
     for c in comps:
         comp = list(c)
