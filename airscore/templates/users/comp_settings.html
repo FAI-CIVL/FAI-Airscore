@@ -16,6 +16,15 @@ Competition Settings
 <form method='post' action=''>
   {{compform.hidden_tag()}}
 
+  <!-- Save Settings button -->
+  <div class='tab-save'>
+    {% if compform.submit %}
+    {{compform.submit(class="btn btn-success")}}
+    {% else %}
+    <b>You are not a scorekeeper of this comp</b>
+    {% endif%}
+  </div>
+
   <!-- Settings Tab Section -->
   <div role="tabpanel" class="tab-panel">
     <!-- Nav tabs -->
@@ -27,15 +36,6 @@ Competition Settings
     </ul>
 
     <div class="tab-content">
-      <!-- Save Settings button -->
-      <div class='tab-save'>
-        {% if compform.submit %}
-        {{compform.submit(class="btn btn-success")}}
-        {% else %}
-        <b>You are not a scorekeeper of this comp</b>
-        {% endif%}
-      </div>
-
       <!-- Tab panes -->
       {% from "macros.html" import render_field with context %}
       <div role="tabpanel" class="tab-pane column-wrap fade show active" id="details">
