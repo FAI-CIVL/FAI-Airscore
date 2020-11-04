@@ -69,6 +69,9 @@ class FSDB(object):
         """Formula"""
         comp.formula = Formula.from_fsdb(fs_comp)
         comp.formula.comp_class = comp.comp_class
+        
+        '''adding standard igc config'''
+        comp.igc_config_file = 'standard'
 
         """Pilots"""
         print("Getting Pilots Info...")
