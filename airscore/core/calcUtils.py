@@ -131,7 +131,7 @@ def get_date(t):
     """
     try:
         return datetime.strptime(t[:10], '%Y-%m-%d').date()
-    except ValueError:
+    except (ValueError, TypeError) as e:
         return t
 
 
