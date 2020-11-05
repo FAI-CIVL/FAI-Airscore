@@ -42,7 +42,8 @@ class Comp(object):
 
     def __init__(self, comp_id=None, comp_name=None, comp_site=None, date_from=None, comp_code=None, date_to=None,
                  comp_class=None, region=None, comp_type='RACE', restricted=True, locked=False, external=False,
-                 check_launch='off'):
+                 igc_config_file='standard', airspace_check=False, check_launch='off', check_g_record=False,
+                 track_source=None):
 
         self.comp_id = comp_id  # com_id
         self.comp_name = comp_name  # str
@@ -72,11 +73,12 @@ class Comp(object):
         self.website = None  # str
         self.comp_path = None  # str
         self.results = []
-        self.igc_config_file = None  # config yaml for igc_lib. This setting will be passed on to new tasks
-        self.airspace_check = False  # BOOL airspace check. This setting will be passed on to new tasks
+        self.igc_config_file = igc_config_file  # config yaml for igc_lib. This setting will be passed on to new tasks
+        self.airspace_check = airspace_check  # BOOL airspace check. This setting will be passed on to new tasks
         self.check_launch = check_launch  # check launch flag. whether we check that pilots leave from launch. This setting will be passed on to new tasks
         self.self_register = PILOT_DB and SELF_REG_DEFAULT  # set to true if we have pilot DB on and self reg on by default
-        self.check_g_record = False
+        self.check_g_record = check_g_record
+        self.track_source = track_source  # external tracks source (flymaster, xcontest, ...)
 
         # self.formula                    = Formula.read(self.comp_id) if self.comp_id else None
 
