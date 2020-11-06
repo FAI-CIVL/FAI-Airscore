@@ -1,6 +1,6 @@
 function populate_task(taskid){
     $(document).ready(function() {
-        $('#comp_name').text('Calculating Results ...');
+        $('#comp_name').text('Loading Results ...');
         $.ajax({
             type: "POST",
             url: '/_get_task_result/'+taskid,

@@ -1,7 +1,7 @@
 
 function populate_ladder(ladderid, season){
     $(document).ready(function() {
-        $('#comp_name').text('Calculating Results ...');
+        $('#comp_name').text('Loading Results ...');
         $.ajax({
             type: "POST",
             url: '/_get_ladder_result/'+ladderid+'/'+season,
