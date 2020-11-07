@@ -40,8 +40,9 @@ def create_app(config_object="airscore.settings"):
     register_shellcontext(app)
     register_commands(app)
     configure_logger(app)
-    with app.app_context():
-        app.config['admin_exists'] = User.admin_exists()
+    if app.config["SQLALCHEMY_DATABASE_URI"] != 'test': # don't query the DB when unit testing
+        with app.app_context():
+            app.config['admin_exists'] = User.admin_exists()
     return app
 
 
