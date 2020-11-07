@@ -47,7 +47,7 @@ EXPOSE 5000
 ENTRYPOINT ["/bin/bash", "shell_scripts/supervisord_entrypoint.sh"]
 CMD ["-c", "/etc/supervisor/supervisord.conf"]
 
-# =================================== MANAGE ===================================
-FROM base AS manage
+# =================================== TESTS ===================================
+FROM base AS tests
 RUN pip install --user -r requirements/dev.txt
 ENTRYPOINT [ "flask" ]
