@@ -19,6 +19,17 @@
 </div>
 {% endmacro %}
 
+
+{% macro render_disabled(field) %}
+<div class="form-element">
+  <div class="form-label">{{ field.label }}:</div>
+  <div class="form-input">
+    {{ field(readonly=true) }}
+  </div>
+</div>
+{% endmacro %}
+
+
 {% macro render_info(id, label, value, class=None) %}
 {% if class %}
   {% set css = class %}
