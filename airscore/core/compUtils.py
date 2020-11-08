@@ -209,8 +209,11 @@ def read_rankings(comp_id: int) -> dict:
     """reads sub rankings list for the task and creates a dictionary"""
     from db.tables import TblCompetition as C
     '''get rankings definitions'''
-    cat_id = C.get_by_id(comp_id).cat_id
-    return create_classifications(cat_id)
+    try:
+        return create_classifications(C.get_by_id(comp_id).cat_id)
+    except (TypeError, AttributeError) as e:
+        print(f'Error trying to retrieve rankings for comp id {comp_id}.')
+        return {}
 
 
 def create_comp_code(name: str, date: datetime.date):
