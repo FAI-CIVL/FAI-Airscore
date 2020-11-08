@@ -371,6 +371,10 @@ def comp_settings_admin(compid: int):
     session['tasks'] = tasks['tasks']
     session['check_g_record'] = comp.check_g_record
 
+    if not compform.formula.data:
+        '''Comp has not been initialised yet'''
+        flash(f"Comp has not been properly set yet. Check all parameters and save.", category='warning')
+
     return render_template('users/comp_settings.html', compid=compid, compform=compform,
                            taskform=newtaskform, scorekeeperform=newScorekeeperform, ladderform=ladderform,
                            classifications=classifications, error=error,
