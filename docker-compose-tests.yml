@@ -18,6 +18,7 @@ services:
     environment:
       FLASK_ENV: production
       FLASK_DEBUG: 0
+      FLASK_APP: autoapp.py
       REDIS_URL: redis://redis:6379
       REDIS_CONTAINER: redis
       WEB_SERVER_CONTAINER: dummy
@@ -38,6 +39,7 @@ services:
       XCONTEST_PASS: dummy
       TELEGRAM_API: dummy
       TELEGRAM_CHANNEL: dummy
+
     image: "airscore-manage"
     container_name: tests
     stdin_open: true
