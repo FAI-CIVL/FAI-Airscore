@@ -1244,7 +1244,7 @@ def _get_regions():
 @login_required
 def _get_wpts(regid: int):
     airspace = request.json.get('airspace')
-    waypoints, region_map, _ = frontendUtils.get_region_waypoints(regid, airspace)
+    waypoints, region_map, _, _ = frontendUtils.get_region_waypoints(regid, airspace=airspace)
     return {'waypoints': waypoints, 'map': region_map._repr_html_(), 'airspace': airspace}
 
 
