@@ -1,3 +1,5 @@
+[![Unit_Tests Actions Status](https://github.com/FAI-CIVL/FAI-Airscore/workflows/Unit_Tests/badge.svg)](https://github.com/FAI-CIVL/FAI-Airscore/actions)
+
 # FAI Airscore
 
 This was originally a fork of Geoff Wong's [airScore](https://github.com/geoffwong/airscore).
