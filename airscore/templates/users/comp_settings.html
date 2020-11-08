@@ -13,16 +13,18 @@ Competition Settings
 {% block header %} {{compform.comp_name.data}} {% endblock %}
 
 {% block content %}
-<form method='post' action=''>
+<form method='post' id="main_comp_settings_form">
   {{compform.hidden_tag()}}
 
   <!-- Save Settings button -->
-  <div class='tab-save'>
+  <div class='tab-save row-wrap'>
     {% if compform.submit %}
-    {{compform.submit(class="btn btn-success")}}
+      {{compform.submit(class="btn btn-outline-secondary", id="main_comp_save_button")}}
+      <h6 class="ml-4 mt-2 pr-1 pl-1" id="save_button_warning_text"></h6>
     {% else %}
-    <b>You are not a scorekeeper of this comp</b>
+    <h6>You are not a scorekeeper of this comp</h6>
     {% endif%}
+
   </div>
 
   <!-- Settings Tab Section -->
@@ -56,7 +58,12 @@ Competition Settings
             {{ render_field(compform.MD_name, 40) }}
             {{ render_field(compform.website, 20) }}
             {{ render_field(compform.comp_type) }}
+        </section>
+        <section class="tab-row row-wrap form">
             {{ render_field(compform.pilot_registration, tooltip=True) }}
+            {% if self_register %}
+            {{ render_field(compform.self_register, tooltip=True) }}
+            {% endif %}
         </section>
       </div>
       <div role="tabpanel" class="tab-pane column-wrap fade" id="formula">
@@ -157,108 +164,103 @@ Competition Settings
       </div>
     </div>
   </div>
-
-  <!-- Tasks Section -->
-  <div class="panel-content column-wrap">
-    <div class="panel-switch">
-      <button class='btn btn-primary' type='button' data-toggle='collapse' data-target='#task_list'
-              aria-expanded='false' aria-controls='task_list'>
-        Tasks
-      </button>
-    </div>
-    <div class='panel collapse' id='task_list'>
-      <section class="panel-row row-wrap button">
-        {% if compform.submit %}
-        <button id='add_task_button' class='btn btn-secondary' type='button' onclick='add_task()'>
-          Add task
-        </button>
-        {% endif%}
-      </section>
-      <section class="panel-row row-wrap form">
-        <table class='table' id='tasks'>
-        </table>
-      </section>
-    </div>
-  </div>
-
-  {% if ladderform %}
-  <!-- Ladder Section -->
-  <div class="panel-content column-wrap">
-    <div class="panel-switch">
-      <button class='btn btn-primary' type='button' data-toggle='collapse' data-target='#ladder_list'
-              aria-expanded='false' aria-controls='ladder_list'>
-        Ladders
-      </button>
-    </div>
-    <div class='panel collapse' id='ladder_list'>
-      <section class="panel-row row-wrap button">
-        {% if compform.submit %}
-        <button id='save_ladders_button' class='btn btn-success' type='button' onclick='save_ladders()'>
-          Save
-        </button>
-        {% endif%}
-      </section>
-      <section class="panel-row row-wrap form">
-        {% for ladder in ladderform.ladders %}
-          {{ render_field(ladder) }}
-        {% endfor %}
-      </section>
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- Managing Section -->
-  <div class="panel-content column-wrap" id="event-management-section">
-    <div class="panel-switch">
-      <button class='btn btn-primary' type='button' data-toggle='collapse' data-target='#roles_management_panel'
-              aria-expanded='false' aria-controls='roles_management_panel'>
-        Event Management
-      </button>
-    </div>
-    <div class='panel collapse' id='roles_management_panel'>
-      <h4 class='panel-title font-weight-bold'>Roles Management:</h4>
-      <section class="panel-row row-wrap form">
-        <div class='form-group col-md-6'>
-          <h6 class='font-weight-bold'>Owner:</h6>
-          <h6 id='owner'></h6>
-          <h6 class='font-weight-bold'>Scorekeepers:</h6>
-          <table id='scorekeeper_table'>
-            <tr>
-            </tr>
-          </table>
-          {% if compform.submit %}
-          <button id='add_scorekeeper_switch' class='btn btn-secondary' type='button' data-toggle='collapse'
-                  data-target='#add_sk' aria-expanded='false' aria-controls='add_sk'>
-            Add scorekeeper
-          </button>
-          {% endif %}
-        </div>
-        <div class="panel-content column-wrap">
-          <div class='panel collapse' id='add_sk'>
-            <section class="panel-row row-wrap form">
-              {{ render_field(scorekeeperform.scorekeeper, tooltip=True) }}
-            </section>
-            <section class="panel-row row-wrap button">
-              <button id='save_scorekeeper_button' class='btn btn-success' type='button' onclick='add_scorekeeper()'>
-              Add
-              </button>
-            </section>
-          </div>
-        </div>
-      </section>
-      <section class="panel-row row-wrap form">
-        {% if self_register %}
-        {{ render_field(compform.self_register, tooltip=True) }}
-        {% endif %}
-      </section>
-      <h4 class='panel-title font-weight-bold'>Download:</h4>
-      <section class="panel-row row-wrap button">
-        <a id='export_fsdb' class='btn btn-success' onclick='export_to_fsdb()' href="{{ url_for('user._export_fsdb', compid=compid)}}">Export to FSDB</a>
-        <p id='fsdb_spinner'></p>
-      </section>
-    </div>
-  </div>
 </form>
+
+<!-- Tasks Section -->
+<div class="panel-content column-wrap">
+  <div class="panel-switch">
+    <button class='btn btn-primary' type='button' data-toggle='collapse' data-target='#task_list'
+            aria-expanded='false' aria-controls='task_list'>
+      Tasks
+    </button>
+  </div>
+  <div class='panel collapse' id='task_list'>
+    <section class="panel-row row-wrap button">
+      {% if compform.submit %}
+      <button id='add_task_button' class='btn btn-secondary' type='button' onclick='add_task()'>
+        Add task
+      </button>
+      {% endif%}
+    </section>
+    <section class="panel-row row-wrap form">
+      <table class='table' id='tasks'>
+      </table>
+    </section>
+  </div>
+</div>
+
+{% if ladderform %}
+<!-- Ladder Section -->
+<div class="panel-content column-wrap">
+  <div class="panel-switch">
+    <button class='btn btn-primary' type='button' data-toggle='collapse' data-target='#ladder_list'
+            aria-expanded='false' aria-controls='ladder_list'>
+      Ladders
+    </button>
+  </div>
+  <div class='panel collapse' id='ladder_list'>
+    <section class="panel-row row-wrap button">
+      {% if compform.submit %}
+      <button id='save_ladders_button' class='btn btn-success' type='button' onclick='save_ladders()'>
+        Save
+      </button>
+      {% endif%}
+    </section>
+    <section class="panel-row row-wrap form">
+      {% for ladder in ladderform.ladders %}
+        {{ render_field(ladder) }}
+      {% endfor %}
+    </section>
+  </div>
+</div>
+{% endif %}
+
+<!-- Managing Section -->
+<div class="panel-content column-wrap" id="event-management-section">
+  <div class="panel-switch">
+    <button class='btn btn-primary' type='button' data-toggle='collapse' data-target='#roles_management_panel'
+            aria-expanded='false' aria-controls='roles_management_panel'>
+      Event Management
+    </button>
+  </div>
+  <div class='panel collapse' id='roles_management_panel'>
+    <h4 class='panel-title font-weight-bold'>Roles Management:</h4>
+    <section class="panel-row row-wrap form">
+      <div class='form-group col-md-6'>
+        <h6 class='font-weight-bold'>Owner:</h6>
+        <h6 id='owner'></h6>
+        <h6 class='font-weight-bold'>Scorekeepers:</h6>
+        <table id='scorekeeper_table'>
+          <tr>
+          </tr>
+        </table>
+        {% if compform.submit %}
+        <button id='add_scorekeeper_switch' class='btn btn-secondary' type='button' data-toggle='collapse'
+                data-target='#add_sk' aria-expanded='false' aria-controls='add_sk'>
+          Add scorekeeper
+        </button>
+        {% endif %}
+      </div>
+      <div class="panel-content column-wrap">
+        <div class='panel collapse' id='add_sk'>
+          <section class="panel-row row-wrap form">
+            {{ render_field(scorekeeperform.scorekeeper, tooltip=True) }}
+          </section>
+          <section class="panel-row row-wrap button">
+            <button id='save_scorekeeper_button' class='btn btn-success' type='button' onclick='add_scorekeeper()'>
+            Add
+            </button>
+          </section>
+        </div>
+      </div>
+    </section>
+    <h4 class='panel-title font-weight-bold'>Download:</h4>
+    <section class="panel-row row-wrap button">
+      <a id='export_fsdb' class='btn btn-success' onclick='export_to_fsdb()' href="{{ url_for('user._export_fsdb', compid=compid)}}">Export to FSDB</a>
+      <p id='fsdb_spinner'></p>
+    </section>
+  </div>
+</div>
 
 <!----add task modal starts here--->
 <div id='add_task_modal' class='modal fade' role='dialog'>

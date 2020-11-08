@@ -56,6 +56,12 @@ $(document).ready(function() {
      update_rankings(cat_id);
   });
 
+  $('#main_comp_settings_form :input').change(function(){
+    console.log('form changed');
+    $('#main_comp_save_button').removeClass( "btn-outline-secondary" ).addClass( "btn-warning" );
+    $('#save_button_warning_text').addClass('bg-warning').html('Competition needs to be saved');
+  });
+
 });
 
 function ask_update(change) {
