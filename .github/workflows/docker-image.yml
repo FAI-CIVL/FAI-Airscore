@@ -14,6 +14,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: add defines.yaml
+      run: mv defines.yaml.example defines.yaml
     - name: Build the Docker image
       run: docker-compose -f docker-compose-tests.yml build
     - name: Run tests
