@@ -480,8 +480,6 @@ class FSDB(object):
                                   'got_time_but_not_goal_penalty': (pil.ESS_time or 0) > 0 and not pil.goal_time,
                                   'started_ss': '' if not pil.real_start_time else get_isotime(t.date, pil.SSS_time,
                                                                                                t.time_offset),
-                                  'finished_ss': '' if not pil.ESS_time else get_isotime(t.date, pil.ESS_time,
-                                                                                         t.time_offset),
                                   'ss_time_dec_hours': 0 if not pil.ESS_time else round(pil.ss_time / 3600, 14),
                                   'ts': get_isotime(t.date, pil.first_time, t.time_offset),  # flight origin time
                                   'real_distance': km(pil.distance_flown),
@@ -494,6 +492,8 @@ class FSDB(object):
                                                      else sec_to_time(pil.ss_time).strftime('%H:%M:%S')),
                                   'landed_before_stop': t.stopped_time and pil.landing_time < t.stopped_time
                                   }
+                        if pil.ESS_time:
+                            r_attr['finished_ss'] = get_isotime(t.date, pil.ESS_time, t.time_offset),
 
                         for k, v in r_attr.items():
                             pil_r.set(k, str(v))
