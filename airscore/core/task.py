@@ -380,7 +380,7 @@ class Task(object):
     ''' distance stats'''
 
     @property
-    def tot_distance_flown(self):
+    def tot_dist_flown(self):
         if self.formula:
             if self.formula.min_dist and self.pilots_launched > 0:
                 return sum([p.distance_flown for p in self.valid_results if p.distance_flown])

@@ -172,9 +172,9 @@ class Comp(object):
             return 0
 
     @property
-    def tot_distance_flown(self):
+    def tot_dist_flown(self):
         if len(self.tasks) > 0:
-            return sum([t.tot_distance_flown for t in self.tasks])
+            return sum([t.tot_dist_flown for t in self.tasks])
         else:
             return 0
 

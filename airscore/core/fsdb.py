@@ -363,7 +363,7 @@ class FSDB(object):
                                [x for x in t.valid_results if x.distance_flown > t.formula.nominal_dist]),
                            'no_of_pilots_reaching_es': t.pilots_ess,
                            'no_of_pilots_reaching_goal': t.pilots_goal,
-                           'sum_flown_distance': km(t.tot_distance_flown),
+                           'sum_flown_distance': km(t.tot_dist_flown),
                            'best_dist': km(t.max_distance or 0),
                            'best_time': round((t.fastest or 0) / 3600, 14),
                            'worst_time': round(max((x.ESS_time or 0) - (x.SSS_time or 0)
