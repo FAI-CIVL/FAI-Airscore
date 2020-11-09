@@ -264,7 +264,10 @@ def result_to_geojson(result, task, flight, second_interval=5):
                 straight_line_dist = distance(previous, current) / 1000
                 time_taken = (tp.rawtime - waypoints_achieved[-1][4])
                 time_takenHMS = rawtime_float_to_hms(time_taken)
-                speed = straight_line_dist / (time_taken / 3600)
+                if time_taken > 0:
+                    speed = straight_line_dist / (time_taken / 3600)
+                else:
+                    speed = 0
                 achieved.append(round(straight_line_dist, 2))
                 achieved.append("%02d:%02d:%02d" % time_takenHMS)
                 achieved.append(round(speed, 2))
