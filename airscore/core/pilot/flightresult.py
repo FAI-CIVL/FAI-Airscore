@@ -471,7 +471,7 @@ def verify_all_tracks(task, lib, airspace=None, print=print):
             lib:        Formula library module"""
     from igc_lib import Flight
     from pathlib import Path
-    pilots = [p for p in task.pilots if p.result_type not in ('abs', 'dnf', 'mindist')]
+    pilots = [p for p in task.pilots if p.result_type not in ('abs', 'dnf', 'mindist') and p.track_file]
     '''check if any track is missing'''
     if any(not Path(task.file_path, p.track_file).is_file() for p in pilots):
         print(f"The following tracks are missing from folder {task.file_path}:")
@@ -484,7 +484,7 @@ def verify_all_tracks(task, lib, airspace=None, print=print):
     for track_number, pilot in enumerate(task.pilots, 1):
         print(f"{track_number}/{number_of_pilots}|track_counter")
         # print(f"type: {pilot.result_type}")
-        if pilot.result_type not in ('abs', 'dnf', 'mindist'):
+        if pilot.result_type not in ('abs', 'dnf', 'mindist') and pilot.track_file:
             print(f"{pilot.ID}. {pilot.name}: ({pilot.track_file})")
             filename = Path(task.file_path, pilot.track_file)
             '''load track file'''
