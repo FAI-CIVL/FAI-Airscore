@@ -23,7 +23,7 @@ class Pilot(object):
     """
 
     def __init__(self, civl_id=None, name=None, sex=None, birthdate=None, nat=None, fai_id=None, fai_valid=1,
-                 xcontest_id=None, pil_id=None, ranking=None, hours=None):
+                 xcontest_id=None, telegram_id=None, pil_id=None, ranking=None, hours=None):
 
         self.civl_id = civl_id  # int
         self.name = name  # str
@@ -33,7 +33,7 @@ class Pilot(object):
         self.fai_id = fai_id  # str
         self.fai_valid = fai_valid  # bool
         self.xcontest_id = xcontest_id  # str
-        self.telegram_id = None  # int
+        self.telegram_id = telegram_id  # int
         self.pil_id = pil_id  # PilotView id
         self.ranking = ranking  # WPRS Ranking?
         self.hours = hours  # flying hours last year?
