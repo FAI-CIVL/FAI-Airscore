@@ -17,6 +17,9 @@ internal_pilot_DB: # if use_internal_pilot_DB is yes the below settings are rele
 use_internal_admin_DB: yes # use internal table for admins and scorekeepers
 internal_admin_DB: # if use_internal_admin_DB is yes the below settings are relevant
   allow_self_registration: yes # allows anyone to create a scorekeeper account
+external_admin_DB: # if use_internal_admin_DB is no the below settings are relevant
+  auth_url: https://legapiloti.it/wp-json/wp/v2/users/me
+  auth_type: rest  # rest, ajax, ...
 
 competition_season:
 #start_year: previous or current offset -1 or 0

@@ -321,7 +321,7 @@ def result_to_geojson(result, task, flight, second_interval=5):
     return tracklog, thermals, takeoff_landing, bbox, waypoints_achieved, infringements
 
 
-def create_trackpoints_layer(file: str, offset: int = 0):
+def create_trackpoints_layer(file: str, offset: int = 0) -> list:
     from igc_lib import Flight
     from calcUtils import sec_to_string
     try:
@@ -332,8 +332,60 @@ def create_trackpoints_layer(file: str, offset: int = 0):
                            sec_to_string(fix.rawtime), sec_to_string(fix.rawtime, offset)])
     except FileNotFoundError:
         print(f'Error: file not found {file}')
-        return None
+        return []
     except Exception:
         print(f'Error: cannot create trackpoints map layer from track: {file}')
-        return None
+        return []
     return points
+
+
+def get_points_and_bbox(waypoints: list, radius: int = 250) -> tuple:
+    bbox = [[waypoints[0].lat, waypoints[0].lon], [waypoints[0].lat, waypoints[0].lon]]
+    points = []
+    for wp in waypoints:
+        type = ('launch' if wp.name[0] == 'D'
+                else 'speed' if wp.name[0] in ('A', 'L')
+                else 'restricted' if wp.name[0] == 'X'
+                else 'waypoint')
+        points.append({'name': wp.name,
+                       'description': wp.description,
+                       'longitude': wp.lon,
+                       'latitude': wp.lat,
+                       'altitude': wp.altitude,
+                       'radius': radius,
+                       'type': type})
+        bbox = checkbbox(wp.lat, wp.lon, bbox)
+    return points, bbox
+
+
+def create_waypoints_layer(reg_id: int, region=None, radius: int = 250) -> (list, list):
+    from db.tables import TblRegionWaypoint as R
+    from db.conn import db_session
+    points, bbox = [], []
+    if region:
+        points, bbox = get_points_and_bbox(region.turnpoints, radius)
+    else:
+        with db_session() as db:
+            results = db.query(R).filter_by(reg_id=reg_id, old=False).all()
+            if results:
+                points, bbox = get_points_and_bbox(results, radius)
+    return points, bbox
+
+
+def create_airspace_layer(reg_id: int, region=None, openair_file: str = None) -> (list, list):
+    from db.tables import TblRegion as R
+    from airspaceUtils import read_airspace_map_file
+    airspace_layer = []
+    airspace_list = []
+    bbox = []
+    if not openair_file:
+        if region:
+            openair_file = region.openair_file
+        else:
+            openair_file = R.get_by_id(reg_id).openair_file
+    if openair_file:
+        data = read_airspace_map_file(openair_file)
+        airspace_layer = data['spaces']
+        airspace_list = data['airspace_list']
+        bbox = data['bbox']
+    return openair_file, airspace_layer, airspace_list, bbox

@@ -90,6 +90,8 @@ WAYPOINT_AIRSPACE_FILE_LIBRARY = config['waypoint/airspace_file_library']
 '''Admin DB'''
 ADMIN_DB = config['use_internal_admin_DB']
 ADMIN_SELF_REG = config['internal_admin_DB']['allow_self_registration']
+ADMIN_AUTH_URL = config['external_admin_DB']['auth_url']
+ADMIN_AUTH_TYPE = config['external_admin_DB']['auth_type']
 
 
 '''Pilot DB'''

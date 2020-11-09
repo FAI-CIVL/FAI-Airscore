@@ -38,6 +38,11 @@ def load_user(user_id):
     return User.get_by_id(int(user_id))
 
 
+@blueprint.context_processor
+def create_menu():
+    return dict(menu=frontendUtils.create_menu())
+
+
 @blueprint.route("/", methods=["GET", "POST"])
 def home():
     """ Home page """
@@ -59,7 +64,7 @@ def home():
             return redirect(redirect_url)
         else:
             flash_errors(form)
-    return render_template('public/index.html', form=form, now=datetime.utcnow(), ladders=Defines.LADDERS)
+    return render_template('public/index.html', form=form, now=datetime.utcnow())
 
 
 @blueprint.route("/ladders/", methods=["GET", "POST"])
@@ -344,7 +349,12 @@ def competition(compid):
             all_tasks.append(task)
     all_tasks.sort(key=lambda k: k['date'], reverse=True)
 
-    return render_template('public/comp.html', tasks=all_tasks, comp=comp, overall_available=overall_available,
+    '''regions'''
+    tasks = bool(len(all_tasks))
+    regids = frontendUtils.get_regions_used_in_comp(compid, tasks)
+
+    return render_template('public/comp.html',
+                           tasks=all_tasks, comp=comp, regids=regids, overall_available=overall_available,
                            country_scores=country_scores)
 
 
@@ -363,16 +373,12 @@ def competition(compid):
 
 @blueprint.route('/task_result/<int:taskid>')
 def task_result(taskid):
-    return render_template('public/task_result.html', taskid=taskid)
-
-
-@blueprint.route('/_get_task_result/<int:taskid>', methods=['GET', 'POST'])
-def _get_task_result(taskid):
     from task import get_task_json
     result_file = frontendUtils.get_pretty_data(get_task_json(taskid))
     if result_file == 'error':
         return render_template('404.html')
 
+    compid = int(result_file['info']['comp_id'])
     all_pilots = []
     results = [p for p in result_file['results'] if p['result_type'] not in ['dnf', 'abs', 'nyp']]
     for r in results:
@@ -396,18 +402,12 @@ def _get_task_result(taskid):
         pilot['goal_time'] = goal
         # ab = ''  # alt bonus
         pilot['penalty'] = "" if r['penalty'] == '0.0' else r['penalty']
-        # setup 4 sub-rankings placeholders
+        # setup sub-rankings
         for i, c in enumerate(result_file['classes'][1:], 1):
             pilot['ranks']['class' + str(i)] = f"{r[c['limit']]}"
         all_pilots.append(pilot)
-        # else:
-        #     '''pilot do not have result data'''
-        # TODO at the moment js raises error trying to order scores, leaving non flying pilots out of datatable
-        # pilot = [f'<b>{rank}</b>', f'{name}', r['nat'], r['glider'], r['glider_cert'], r['sponsor'], "", "", "", "",
-        #          "", "", "", "", "", "", "", f"{r['result_type'].upper()}"]
-
     result_file['data'] = all_pilots
-    return result_file
+    return render_template('public/task_result.html', taskid=taskid, compid=compid, results=result_file)
 
 
 @blueprint.route('/ext_comp_result/<int:compid>')
@@ -417,11 +417,6 @@ def ext_comp_result(compid):
 
 @blueprint.route('/comp_result/<int:compid>')
 def comp_result(compid):
-    return render_template('public/comp_overall.html', compid=compid)
-
-
-@blueprint.route('/_get_comp_result/<compid>', methods=['GET', 'POST'])
-def _get_comp_result(compid):
     from compUtils import get_comp_json
     result_file = frontendUtils.get_pretty_data(get_comp_json(compid))
     if result_file == 'error':
@@ -446,8 +441,7 @@ def _get_comp_result(compid):
             pilot['results'].append(html)
         all_pilots.append(pilot)
     result_file['data'] = all_pilots
-
-    return result_file
+    return render_template('public/comp_overall.html', compid=compid, results=result_file)
 
 
 @blueprint.route('/country_overall/<int:compid>')
@@ -528,7 +522,10 @@ def map(paridtaskid):
     waypoint_achieved_list = list(w for w in layer['geojson']['waypoint_achieved'])
     add_tracks = SelectAdditionalTracks()
     add_tracks.track_pilot_list = other_tracks
+    '''back_link'''
+    back_link = True if 'back_link' not in request.args else bool(request.args.get('back_link'))
     return render_template('public/map.html',
+                           back_link=back_link,
                            other_tracks=other_tracks,
                            add_tracks=add_tracks,
                            map=get_map_render(map),
@@ -536,6 +533,33 @@ def map(paridtaskid):
                            task={'name': task_name, 'id': taskid},
                            pilot={'name': pilot_name, 'id': parid},
                            full_tracklog=full_tracklog)
+
+
+@blueprint.route('/regions/')
+@blueprint.route('/regions')
+def regions():
+    from region import get_all_regions
+    args = None if not request.args else request.args
+    result = get_all_regions(None if not args else [int(el) for el in args.get('regids').split(',')])
+    return render_template('public/regions.html', regions=result['regions'], args=args)
+
+
+@blueprint.route('/region_map/<int:regid>', methods=["GET", "POST"])
+def region_map(regid: int):
+    from map import get_map_render
+    from region import Region
+    region = Region.read_db(regid)
+    waypoints, reg_map, airspace_list, _ = frontendUtils.get_region_waypoints(regid, region=region)
+    args = None if not request.args else request.args
+
+    return render_template('public/region_map.html',
+                           regid=regid,
+                           name=region.name,
+                           args=args,
+                           map=get_map_render(reg_map),
+                           waypoints=waypoints,
+                           airspace=airspace_list,
+                           waypoint_file=region.waypoint_file, openair_file=region.openair_file)
 
 
 @blueprint.route('/_map/<trackid>/<extra_trackids>')
@@ -580,14 +604,23 @@ def multimap(trackid, extra_trackids):
 
 @blueprint.route('/download/<filetype>/<filename>', methods=['GET'])
 def download_file(filetype, filename):
-    if filetype == 'airspace':
+    if filetype == 'waypoints':
+        waypoints_path = Defines.WAYPOINTDIR
+        file = path.join(waypoints_path, filename)
+        mimetype = "text/plain"
+    elif filetype == 'airspace':
         airspace_path = Defines.AIRSPACEDIR
-        fullname = path.join(airspace_path, filename)
-        return send_file(fullname, as_attachment=True)
-    if filetype == 'igc_zip':
+        file = path.join(airspace_path, filename)
+        mimetype = "text/plain"
+    elif filetype == 'igc_zip':
         task_id = filename
-        zip_file = frontendUtils.get_task_igc_zip(int(task_id))
-        return send_file(zip_file, as_attachment=True)
+        file = frontendUtils.get_task_igc_zip(int(task_id))
+        mimetype = "application/zip"
+    else:
+        file = None
+        mimetype = "text/plain"
+
+    return send_file(file, mimetype=mimetype, as_attachment=True) if file else None
 
 
 @blueprint.route('/_get_participants/<compid>', methods=['GET'])
@@ -606,8 +639,8 @@ def registered_pilots(compid):
         comp['date_from'] = comp['date_from'].strftime("%Y-%m-%d")
     if comp['date_to']:
         comp['date_to'] = comp['date_to'].strftime("%Y-%m-%d")
-    return render_template('public/registered_pilots.html', modify_participant_form=modify_participant_form,
-                           compid=compid, comp=comp)
+    return render_template('public/registered_pilots.html',
+                           modify_participant_form=modify_participant_form, compid=compid, comp=comp)
 
 
 @blueprint.route('/_get_participants_and_status/<compid>', methods=['GET'])

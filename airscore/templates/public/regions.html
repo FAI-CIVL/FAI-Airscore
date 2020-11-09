@@ -1,0 +1,46 @@
+{% extends "base.html"%}
+
+{% block page_title %}
+Flying Areas
+{% endblock %}
+
+{% block head %}
+<!-- CSS -->
+<link href="{{ static_url_for('static', filename='css/task.css') }}" rel='stylesheet'>
+<link href='https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css' rel='stylesheet'>
+<!-- JS -->
+<script type='text/javascript' src='/static/js/utils.js'></script>
+<script type='text/javascript' src='/static/js/microajax.minified.js'></script>
+{% endblock %}
+
+{% block back %}
+{% if args %}
+<a href="{{ url_for('public.competition', compid=args.compid) }}">Back to Competition</a>
+{% endif %}
+{% endblock %}
+
+{% block header %} {% if args %} {{ args.compname }} - {% endif %} Flying Areas: {% endblock %}
+
+{% block content %}
+<div class='container' id='main'>
+  <div class='row'>
+  </div>
+
+  <table id='regions' class='row-border stripe compact mb-1' cellspacing='0' width='100%'>
+  </table>
+</div>
+{% endblock %}
+
+{% block js %}
+<script type='text/javascript' src='https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js'></script>
+<script src="{{ static_url_for('static', filename='js/pop_regions.js') }}"></script>
+<script type='text/javascript'>
+  var regions = JSON.parse('{{ regions|tojson }}');
+  {% if args %}
+  {% set link_args = ['regids=' + args.regids, 'compid=' + args.compid, 'compname=' + args.compname]|join('&') %}
+  {% else %}
+  {% set link_args = None %}
+  {% endif %}
+  var link_args = {{ link_args|tojson }}
+</script>
+{% endblock %}

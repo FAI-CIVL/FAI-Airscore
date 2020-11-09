@@ -1,0 +1,43 @@
+
+{% macro render_field(field, width=None, tooltip=False) %}
+<div class="form-element">
+  <div class="form-label">{{ field.label }}:</div>
+  <div class="form-input">
+    {% if tooltip %}
+      {{ field(size=width, **{'data-toggle': 'tooltip', 'title': field.description})|safe }}
+    {% else %}
+      {{ field(size=width)|safe }}
+    {% endif %}
+    {% if field.errors %}
+      <ul class=errors>
+      {% for error in field.errors %}
+        <li>{{ error }}</li>
+      {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+
+{% macro render_disabled(field) %}
+<div class="form-element">
+  <div class="form-label">{{ field.label }}:</div>
+  <div class="form-input">
+    {{ field(readonly=true) }}
+  </div>
+</div>
+{% endmacro %}
+
+
+{% macro render_info(id, label, value, class=None) %}
+{% if class %}
+  {% set css = class %}
+{% else %}
+  {% set css = 'form-info' %}
+{% endif %}
+<div class="form-element">
+  <div class="form-label"><label for="{{ id }}">{{ label }}</label>:</div>
+  <div class="form-input"><span class="" id="{{ id }}" >{{ value }}</span></div>
+</div>
+{% endmacro %}
