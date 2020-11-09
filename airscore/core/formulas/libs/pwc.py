@@ -224,10 +224,13 @@ def pilot_speed(task, res):
         res: FlightResult object
     """
 
+    if not res.ESS_time:
+        return 0
+
     Aspeed = task.avail_time_points
 
     # C.6.2 Time Points
-    Tmin = task.fastest
+    Tmin = task.fastest or 0  # Sanity check should not be needed here
     Pspeed = 0
 
     if res.ESS_time and Tmin > 0:  # checking that task has pilots in ESS, and that pilot is in ESS
