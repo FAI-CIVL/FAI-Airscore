@@ -1,17 +1,17 @@
-$(document).ready(function() {
-  get_tasks( compid );
-  get_scorekeepers( compid );
-
-  // jQuery selection for the 2 select boxes
-  var dropdown = {
+// jQuery selection for the 2 select boxes
+var dropdown = {
     category: $('#select_category'),
     formula: $('#select_formula'),
     igc_config: $('#igc_parsing_file'),
     classification: $('#select_classification')
-  };
+};
 
-  console.log('class='+dropdown.classification.val());
-  update_rankings( dropdown.classification.val() );
+$(document).ready(function() {
+  get_tasks( compid );
+  get_scorekeepers( compid );
+
+  console.log('class='+dropdown.category.val()+', '+dropdown.classification.val());
+  populate_rankings( dropdown.category.val() );
   document.getElementById("link_igc_config").setAttribute("href", "/users/igc_parsing_config/" + dropdown.igc_config.val());
 
   // function to call XHR and update formula dropdown
@@ -36,6 +36,7 @@ $(document).ready(function() {
 
   // event listener to category dropdown change
   dropdown.category.on('change', function() {
+    populate_rankings(dropdown.category.val())
     updateFormulas();
     ask_update('category');
   });
@@ -289,31 +290,58 @@ function get_adv_settings(){
   });
 }
 
-function update_rankings( cat_id ) {
-    let classification = classifications.find(el => el.cat_id == cat_id );
-    let cat = classification.categories;
-    let name = classification.cat_name
-    let columns = [];
-    columns.push({data: 'title', title:'rankings:', defaultContent: ''});
-    columns.push({data: 'members', render: function ( data ) { return data.join(', ')}});
-
-    $('#rankings').DataTable({
-        data: cat,
-        destroy: true,
-        paging: false,
-        bAutoWidth: false,
-        responsive: true,
-        saveState: true,
-        info: false,
-        dom: 'lrtip',
-        columns: columns,
-        initComplete: function(settings, json) {
-            // Female Ranking
-            let female = (classification.female == 1).toString();
-            console.log('female='+female);
-            $('#rankings').DataTable().row.add({title: 'Female', members: [female]}).draw();
+function populate_rankings(category) {
+//    let select_list = $('#select_classification select');
+    console.log('class='+category);
+    let selected = $('#select_classification').val()
+    $('#select_classification').empty();
+    console.log('class num='+classifications.length);
+    classifications.forEach( el => {
+        console.log('el class='+el.comp_class);
+        if ( el.comp_class == category ) {
+            $('#select_classification').append($('<option>', {
+                value: el.cat_id,
+                html: el.cat_name
+            }));
+            if ( el.cat_id == selected ) { $('#select_classification').val(el.cat_id); };
         }
     });
+    // check season is selected
+    if ( !$('#select_classification').val() ) {
+        $('#select_classification').val($("#select_classification option:first").val());
+    }
+
+    update_rankings( dropdown.classification.val() )
+}
+
+function update_rankings( cat_id ) {
+    let classification = classifications.find(el => el.cat_id == cat_id );
+    if ( classification ) {
+        console.log('cat_id='+cat_id);
+        let cat = classification.categories;
+        let name = classification.cat_name
+        let columns = [];
+        columns.push({data: 'title', title:'rankings:', defaultContent: ''});
+        columns.push({data: 'members', render: function ( data ) { return data.join(', ')}});
+
+        $('#rankings').DataTable({
+            data: cat,
+            destroy: true,
+            paging: false,
+            bAutoWidth: false,
+            responsive: true,
+            saveState: true,
+            info: false,
+            dom: 'lrtip',
+            columns: columns,
+            initComplete: function(settings, json) {
+                // Female Ranking
+                let female = (classification.female == 1).toString();
+                console.log('female='+female);
+                $('#rankings').DataTable().row.add({title: 'Female', members: [female]}).draw();
+            }
+        });
+    }
 }
 
 function export_to_fsdb(){

@@ -367,7 +367,7 @@ def comp_settings_admin(compid: int):
         ladderform = None
 
     tasks = frontendUtils.get_task_list(comp)
-    classifications = frontendUtils.get_classifications_details(comp_class=comp.comp_class)
+    classifications = frontendUtils.get_classifications_details()
     session['tasks'] = tasks['tasks']
     session['check_g_record'] = comp.check_g_record
 
