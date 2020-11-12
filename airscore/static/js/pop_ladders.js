@@ -1,5 +1,4 @@
-
-$(document).ready(function() {
+function populate_ladders() {
     $('#competitions').dataTable({
         ajax: '/_get_ladders',
         paging: false,
@@ -43,14 +42,10 @@ $(document).ready(function() {
             console.log('numCols='+numCols);
 
             // season picker
-            $("#season option").remove(); // Remove all <option> child tags.
-            $.each(json.seasons, function(index, item) {
-                $("#season").append(
-                    $("<option></option>")
-                        .text(item)
-                        .val(item)
-                );
-            });
+            populate_season_picker(json.seasons, selected);
         }
     });
+}
+$(document).ready(function() {
+    populate_ladders();
 });
