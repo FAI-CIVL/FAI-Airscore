@@ -1122,6 +1122,15 @@ def _score_task(taskid):
         data = request.json
         taskid = int(taskid)
         task = Task.read(taskid)
+
+        if frontendUtils.production() and task.stopped_time:
+            job = current_app.task_queue.enqueue(frontendUtils.full_rescore, taskid, background=True,
+                                                 user=current_user.username, status=data['status'],
+                                                 autopublish=data['autopublish'], compid=session['compid'],
+                                                 job_timeout=2000)
+
+            resp = jsonify(success=True, background=True)
+            return resp
         ref_id, _ = task.create_results(data['status'])
         if ref_id:
             if data['autopublish']:
