@@ -124,10 +124,7 @@ class CompForm(FlaskForm):
     date_from = DateField('Start Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
     date_to = DateField('End Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
     MD_name = StringField('Race Director')
-    # time_offset = DecimalField('GMT offset', validators=[InputRequired()], places=2, render_kw=dict(maxlength=5),
-    #                            description='The default time offset for the comp. Individual tasks will have this '
-    #                            'as a default but can be overridden if your comp spans multiple time zones'
-    #                            ' or over change in daylight savings')
+
     timezones = list_gmt_offset()
     time_offset = SelectField('GMT Offset', choices=timezones, id='select_time_offset', coerce=int, default=0,
                               description='The default time offset for the comp. Individual tasks will have this '
@@ -137,6 +134,7 @@ class CompForm(FlaskForm):
     pilot_registration = SelectField('Pilot Entry', choices=[(1, 'Registered'), (0, 'Open')], coerce=int,
                                      description='Registered - only pilots registered are flying, '
                                                  'open - all tracklogs uploaded are considered as entires')
+
     classifications = list_classifications()
     cat_id = SelectField('Classification', choices=[(x['cat_id'], x['cat_name'])
                                                     for x in classifications['ALL']], coerce=int, default=0,

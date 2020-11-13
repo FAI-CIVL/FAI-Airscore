@@ -1029,7 +1029,7 @@ def unique_filename(filename, filepath):
     return secure_filename(filename)
 
 
-def get_pretty_data(content: dict) -> dict:
+def get_pretty_data(content: dict) -> dict or str:
     """transforms result json file in human readable data"""
     from result import pretty_format_results, get_startgates
     try:
@@ -1084,7 +1084,7 @@ def get_pretty_data(content: dict) -> dict:
             pretty_content['results'] = results
             pretty_content['classes'] = [{k: c[k] for k in ('name', 'limit', 'cert', 'counter')} for c in sub_classes]
         return pretty_content
-    except:
+    except Exception:
         # raise
         return 'error'
 
