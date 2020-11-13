@@ -385,7 +385,7 @@ def get_regions_used_in_comp(compid: int, tasks: bool = False) -> list:
     if tasks:
         regions.extend([el.reg_id for el in T.get_all(comp_id=compid)])
         regions = list(set(regions))
-    return regions
+    return [el for el in regions if el is not None]
 
 
 def get_region_choices(compid: int):
