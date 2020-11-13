@@ -45,7 +45,7 @@ airscore includes or not.
         - [ ] PWC2015
         - [x] PWC2016
         - [x] PWC2017
-        - [x] GAP2019
+        - [x] PWC2019
     - [ ] Linear distance
     - [ ] Time-based scoring (TBS)
 * Earth Model
