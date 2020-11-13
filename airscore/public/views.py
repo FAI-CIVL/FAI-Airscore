@@ -523,7 +523,7 @@ def map(paridtaskid):
     add_tracks = SelectAdditionalTracks()
     add_tracks.track_pilot_list = other_tracks
     '''back_link'''
-    back_link = True if 'back_link' not in request.args else bool(request.args.get('back_link'))
+    back_link = True if 'back_link' not in request.args else request.args.get('back_link')
     return render_template('public/map.html',
                            back_link=back_link,
                            other_tracks=other_tracks,
