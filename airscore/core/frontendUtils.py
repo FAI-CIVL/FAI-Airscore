@@ -1306,7 +1306,7 @@ def list_track_sources() -> list:
     """Lists all track sources enabled in Defines.
         :returns a list of (value, text)."""
     from Defines import track_sources
-    sources = [(None, ' -')]
+    sources = [('', ' -')]
     for el in track_sources:
         sources.append((el, el))
     return sources

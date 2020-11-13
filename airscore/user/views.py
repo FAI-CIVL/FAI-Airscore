@@ -226,7 +226,7 @@ def comp_settings_admin(compid: int):
             comp.date_to = compform.date_to.data
             comp.MD_name = compform.MD_name.data
             comp.cat_id = compform.cat_id.data
-            comp.track_source = compform.track_source.data
+            comp.track_source = compform.track_source.data if not '' else None
             comp.time_offset = compform.time_offset.data
             comp.restricted = compform.pilot_registration.data
             comp.locked = compform.locked.data
