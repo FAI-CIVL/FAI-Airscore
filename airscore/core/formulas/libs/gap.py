@@ -14,6 +14,7 @@ Add support for FAI Sphere ???
 """
 
 from dataclasses import dataclass
+from pilot.flightresult import FlightResult
 from math import sqrt
 
 
@@ -24,8 +25,9 @@ def difficulty_calculation(task):
     lo_results = [p for p in task.valid_results if not p.goal_time]
     best_dist_flown = task.max_distance / 1000  # Km
     if not lo_results:
-        '''all pilots are in goal'''
-        return []
+        '''all pilots are in goal
+        I calculate diff array just for correct min_distance_points calculation'''
+        lo_results.append(FlightResult(name='dummy', distance_flown=formula.min_dist))
 
     @dataclass
     class Diffslot:
