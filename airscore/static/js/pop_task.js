@@ -89,7 +89,7 @@ function populate_task(json){
             var tbl = document.createElement('table');
             tbl.className="times-list";
             if (json.info.startgates.length > 1) {
-                stargates.forEach((el, i) => {
+                json.info.startgates.forEach((el, i) => {
                     let row = tbl.insertRow();
                     let cell1 = row.insertCell();
                     if (i==0) {
