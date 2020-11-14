@@ -389,7 +389,7 @@ class FSDB(object):
                            'leading_weight': 0 if t.departure != 'leadout' else c_round(t.dep_weight, 3),
                            'time_weight': 0 if t.arrival == 'off' else c_round(t.time_weight, 3),
                            'distance_weight': c_round(t.dist_weight, 3),  # not yet implemented
-                           'smallest_leading_coefficient': round(t.min_lead_coeff, 14),
+                           'smallest_leading_coefficient': '' if not t.min_lead_coeff else round(t.min_lead_coeff, 14),
                            'available_points_distance': round(t.avail_dist_points, 14),
                            'available_points_time': round(t.avail_time_points, 14),
                            'available_points_departure': (0 if not t.formula.departure == 'departure'
@@ -481,7 +481,8 @@ class FSDB(object):
                                   'started_ss': '' if not pil.real_start_time else get_isotime(t.date, pil.SSS_time,
                                                                                                t.time_offset),
                                   'ss_time_dec_hours': 0 if not pil.ESS_time else round(pil.ss_time / 3600, 14),
-                                  'ts': get_isotime(t.date, pil.first_time, t.time_offset),  # flight origin time
+                                  'ts': ('' if not pil.first_time
+                                         else get_isotime(t.date, pil.first_time, t.time_offset)),  # flight origin time
                                   'real_distance': km(pil.distance_flown),
                                   'last_distance': '',  # ?? last fix distance?
                                   'last_altitude_above_goal': pil.last_altitude,
