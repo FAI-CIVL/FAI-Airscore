@@ -186,6 +186,9 @@ function Score() {
     data: JSON.stringify(mydata),
     dataType: "json",
     success: function(response) {
+      if (production) {
+        $('#scoremodal').modal('hide');
+      }
       if (response.redirect) {
         window.location.href = response.redirect;
       }
