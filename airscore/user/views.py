@@ -163,7 +163,7 @@ def _import_comp_fsdb():
             if fsdb_file.filename == "":
                 print("No filename")
                 return redirect(request.url)
-            if frontendUtils.allowed_tracklog(fsdb_file.filename, extension=['fsdb']):
+            if frontendUtils.allowed_tracklog(fsdb_file.filename, extension=['fsdb', 'xml']):
                 f = FSDB.read(fsdb_file)
                 compid = f.add_all()
                 if compid:
