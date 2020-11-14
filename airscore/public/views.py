@@ -700,3 +700,22 @@ def _get_livetracking(taskid):
         formatted['data'] = data
 
     return formatted
+
+
+@blueprint.route('/flaretiming_yaml/<compid>/norm-score', methods=['GET'])
+def _norm_score_yaml(compid):
+    from flaretiming import ft_score
+    from ruamel import yaml
+    import io
+    yaml = yaml.YAML()
+    yaml.representer.ignore_aliases = lambda *data: True
+    buf = io.BytesIO()
+    yaml.dump(ft_score(int(compid)), buf)
+    buf.seek(0)
+    return send_file(buf, as_attachment=True, mimetype="text/plain", attachment_filename='norm-score.yaml')
+
+
+@blueprint.route('/flaretiming/<compid>/norm-score', methods=['GET'])
+def _norm_score(compid):
+    from flaretiming import ft_score
+    return ft_score(int(compid))
