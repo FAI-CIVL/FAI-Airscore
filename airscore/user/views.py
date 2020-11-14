@@ -1490,7 +1490,7 @@ def _add_participant(compid):
     participant.sponsor = data.get('sponsor')
     participant.nat_team = data.get('nat_team')
     participant.team = data.get('team')
-    participant.civl_id = data.get('CIVL')
+    participant.civl_id = data.get('CIVL') if isinstance(data.get('CIVL'), int) else None
     if data.get('status'):
         participant.status = data.get('status')
     if data.get('paid'):
