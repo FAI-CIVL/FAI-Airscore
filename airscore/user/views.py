@@ -792,6 +792,7 @@ def track_admin(taskid):
         task_name = task['task_name']
         task_ready_to_score = task['ready_to_score']
         track_source = task['track_source']
+        compid = int(session['compid'])
 
         if not task_ready_to_score:
             return render_template('task_not_ready_to_score.html')
@@ -801,9 +802,9 @@ def track_admin(taskid):
             user_is_scorekeeper = True
         else:
             user_is_scorekeeper = None
-        return render_template('users/track_admin.html', taskid=taskid, user_is_scorekeeper=user_is_scorekeeper,
-                               production=frontendUtils.production(), task_name=task_name, task_num=task_num,
-                               track_source=track_source)
+        return render_template('users/track_admin.html', taskid=taskid, compid=compid,
+                               user_is_scorekeeper=user_is_scorekeeper, production=frontendUtils.production(),
+                               task_name=task_name, task_num=task_num, track_source=track_source)
     else:
         return render_template('out_of_comp.html')
 
@@ -1086,6 +1087,7 @@ def task_score_admin(taskid):
             task_name = task['task_name']
             task_in_comp = True
             task_ready_to_score = task['ready_to_score']
+            compid = int(session['compid'])
 
     if not task_in_comp:
         return render_template('out_of_comp.html')
@@ -1095,7 +1097,7 @@ def task_score_admin(taskid):
 
     fileform = TaskResultAdminForm()
     editform = EditScoreForm()
-    result_files = frontendUtils.get_task_result_files(taskid, int(session['compid']))
+    # result_files = frontendUtils.get_task_result_files(taskid, compid)
     active_file = None
     choices = [(1, 1), (2, 2)]
     fileform.result_file.choices = choices
@@ -1107,7 +1109,7 @@ def task_score_admin(taskid):
     else:
         user_is_scorekeeper = None
 
-    return render_template('users/task_score_admin.html', fileform=fileform, taskid=taskid,
+    return render_template('users/task_score_admin.html', fileform=fileform, taskid=taskid, compid=compid,
                            active_file=active_file, user_is_scorekeeper=user_is_scorekeeper, task_name=task_name,
                            task_num=task_num, editform=editform, production=frontendUtils.production())
 
