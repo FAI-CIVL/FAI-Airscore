@@ -54,6 +54,7 @@ dir:
   json: /app/airscore/data/json/
   log: /app/airscore/data/log/
   image: /app/airscore/data/images/
+  files: /app/airscore/data/files/
   map: /app/airscore/data/map-objects/
   result: /app/airscore/data/results/
   airspace: /app/airscore/data/airspace/openair/
