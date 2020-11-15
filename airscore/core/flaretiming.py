@@ -165,18 +165,31 @@ def ft_route(comp_id):
     route = []
     for t in tasks:
         task = Task.read(t['task_id'])
+        task.calculate_task_length()
         task.calculate_optimised_task_length()
         wpts = []
+        opt_wpts = []
+
         for tp in task.turnpoints:
             wpts.append({'lat': tp.lat,
                          'lon': tp.lon})
 
-        point = {'distance': km(task.opt_dist/1000),
+        for tp in task.optimised_turnpoints:
+            opt_wpts.append({'lat': tp.lat,
+                             'lon': tp.lon})
+
+        point = {'distance': km(task.distance/1000),
+                 'legs': [km(l / 1000) for l in task.legs],
+                 'legsSum': [km(l / 1000) for l in cumsum(task.legs).tolist()],
+                 'flipSum': [km(l / 1000) for l in cumsum(task.legs[::-1]).tolist()[::-1]],
+                 'waypoints': wpts}
+
+        ellipse = {'distance': km(task.opt_dist/1000),
                  'legs': [km(l / 1000) for l in task.optimised_legs],
                  'legsSum': [km(l / 1000) for l in cumsum(task.optimised_legs).tolist()],
                  'flipSum': [km(l / 1000) for l in cumsum(task.optimised_legs[::-1]).tolist()[::-1]],
-                 'waypoints': wpts}
+                 'waypoints': opt_wpts}
         route.append({'point': point,
-                      'ellipse': point})
+                      'ellipse': ellipse})
 
     return route
