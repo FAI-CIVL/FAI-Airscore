@@ -383,9 +383,7 @@ $(document).ready(function() {
 
   populate_task_scores(taskid,active_file);
 
-  if (production == true) {
-    var es = null;
-    function initES() {
+  function initES() {
       if (es == null || es.readyState == 2) { // this is probably not necessary.
         es = new EventSource(url_sse_stream);
         es.onerror = function(e) {
@@ -416,9 +414,11 @@ $(document).ready(function() {
         es.addEventListener('reload_select_latest', function(event) {
           updateFiles(load_latest=true);
         }, false);
-
       }
-    }
-  initES();
+  }
+
+  if (production == true) {
+    var es = null;
+    initES();
   }
 });
