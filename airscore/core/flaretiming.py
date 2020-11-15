@@ -152,3 +152,31 @@ def ft_score(comp_id):
             'validityWorkingTime': validityWorkingTime,
             'score': score}
 
+
+def ft_route(comp_id):
+    from numpy import cumsum
+    from task import Task
+
+    def km(distance_in_km, decimals=5):
+        return f"{distance_in_km:.{decimals}f} km"
+
+    comp = Comp(comp_id)
+    tasks = comp.get_tasks_details()
+    route = []
+    for t in tasks:
+        task = Task.read(t['task_id'])
+        task.calculate_optimised_task_length()
+        wpts = []
+        for tp in task.turnpoints:
+            wpts.append({'lat': tp.lat,
+                         'lon': tp.lon})
+
+        point = {'distance': km(task.opt_dist/1000),
+                 'legs': [km(l / 1000) for l in task.optimised_legs],
+                 'legsSum': [km(l / 1000) for l in cumsum(task.optimised_legs).tolist()],
+                 'flipSum': [km(l / 1000) for l in cumsum(task.optimised_legs[::-1]).tolist()[::-1]],
+                 'waypoints': wpts}
+        route.append({'point': point,
+                      'ellipse': point})
+
+    return route

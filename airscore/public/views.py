@@ -9,7 +9,8 @@ from flask import (
     request,
     url_for,
     send_file,
-    session
+    session,
+    jsonify
 )
 from flask_login import login_required, login_user, logout_user, current_user
 from airscore.extensions import login_manager
@@ -719,3 +720,22 @@ def _norm_score_yaml(compid):
 def _norm_score(compid):
     from flaretiming import ft_score
     return ft_score(int(compid))
+
+
+@blueprint.route('/flaretiming_yaml/<compid>/norm-route', methods=['GET'])
+def _norm_route_yaml(compid):
+    from flaretiming import ft_route
+    from ruamel import yaml
+    import io
+    yaml = yaml.YAML()
+    yaml.representer.ignore_aliases = lambda *data: True
+    buf = io.BytesIO()
+    yaml.dump(ft_route(int(compid)), buf)
+    buf.seek(0)
+    return send_file(buf, as_attachment=True, mimetype="text/plain", attachment_filename='norm-route.yaml')
+
+
+@blueprint.route('/flaretiming/<compid>/norm-route', methods=['GET'])
+def _norm_route(compid):
+    from flaretiming import ft_route
+    return jsonify(ft_route(int(compid)))
