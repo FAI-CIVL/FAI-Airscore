@@ -1,15 +1,15 @@
-from task import get_task_json
+from task import Task, get_task_json
 from comp import Comp
 import statistics
+from datetime import timedelta, time, datetime
 
 
 def km(distance_in_km, decimals=5):
     """takes an int or float of meters and returns a string in kilometers to {decimals} places with 'km' as a postfix"""
-    return f"{distance_in_km/1000:.{decimals}f} km"
+    return f"{distance_in_km / 1000:.{decimals}f} km"
 
 
 def ft_score(comp_id):
-
     comp = Comp(comp_id)
     tasks = comp.get_tasks_details()
     task_results = []
@@ -40,6 +40,7 @@ def ft_score(comp_id):
     score = []
 
     for task in task_results:
+        task_obj = Task.read(task['info']['id'])
         fastest = None
         stats = task['stats']
         formula = task['formula']
@@ -60,7 +61,15 @@ def ft_score(comp_id):
                 elif result['score'] < prev_score:
                     rank += 1
                 prev_score = result['score']
-
+                ss = None
+                es = None
+                if result['SSS_time']:
+                    ss = (datetime.combine(task_obj.date, time())
+                          + timedelta(seconds=result['SSS_time'] - task_obj.time_offset)).strftime('%Y-%m-%dT%H:%M:%SZ')
+                    if result['ESS_time']:
+                        es = (datetime.combine(task_obj.date, time())
+                              + timedelta(seconds=result['ESS_time'] - task_obj.time_offset)).strftime(
+                            '%Y-%m-%dT%H:%M:%SZ')
                 results.append([[str(result['ID'] or str(result['par_id'])),
                                  result['name']],
                                 {'breakdown': {
@@ -86,8 +95,8 @@ def ft_score(comp_id):
                                         'flown': km(result['distance_flown'], 6)
                                     },
                                     'landedMade': '123.977000km',
-                                    'ss': result['SSS_time'],  # TODO FORMAT 2012 - 01 - 05T03: 03:12Z,
-                                    'es': result['ESS_time'],
+                                    'ss': ss,
+                                    'es': es,
                                     'timeElapsed': result['ss_time'],  # TODO check that this is correct
                                     'leadingArea': '1261556.0000 km ^ 2 s',
                                     'leadingCoef': result['lead_coeff']
