@@ -405,20 +405,23 @@ class IgcParsingConfigForm(FlaskForm):
 
 
 class ModifyParticipantForm(FlaskForm):
-    name = StringField('Name')
-    id_num = IntegerField('ID')
-    nat = StringField('Nat', validators=[Length(3)])
+    from frontendUtils import list_countries
+    name = StringField('Name', validators=[DataRequired()])
+    id_num = IntegerField('ID', validators=[Optional(strip_whitespace=True), NumberRange(min=0, max=999999)])
+    countries = list_countries()
+    nat = SelectField('Nat', choices=[(x['code'], x['name']) for x in countries], coerce=str, id='select_country')
     sex = SelectField('Sex', choices=[('M', 'M'), ('F', 'F')])
-    glider = StringField('Glider')
-    sponsor = StringField('Sponsor')
+    glider = StringField('Glider', validators=[Optional(strip_whitespace=True)])
+    sponsor = StringField('Sponsor', validators=[Optional(strip_whitespace=True)])
     status = SelectField('Status', choices=[('waiting for payment', 'waiting for payment'), ('cancelled', 'cancelled'),
                                             ('waiting list', 'waiting list'), ('wild card', 'wild card'),
                                             ('confirmed', 'confirmed')])
-    certification = StringField('Certification')
+    certification = StringField('Certification', validators=[Optional(strip_whitespace=True)])
     paid = SelectField('Paid', choices=[(1, 'Yes'), (0, 'No')])
-    nat_team = BooleanField('In National Team')
-    team = StringField('Team')
-    CIVL = IntegerField('CIVL')
+    nat_team = BooleanField('In National Team', default=1)
+    team = StringField('Team', validators=[Optional(strip_whitespace=True)])
+    CIVL = IntegerField('CIVL', default=None,
+                        validators=[Optional(strip_whitespace=True), NumberRange(min=0, max=999999)])
 
 
 class EditScoreForm(FlaskForm):

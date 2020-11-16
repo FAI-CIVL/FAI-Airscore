@@ -1,13 +1,20 @@
 
-{% macro render_field(field, width=None, tooltip=False) %}
+{% macro render_field(field, width=None, tooltip=False, id=None) %}
+{% set args = dict() %}
+{% if width %}
+{%  set _ = args.update({'size': width}) %}
+{% endif %}
+{% if tooltip %}
+{%  set _ = args.update({'data-toggle': 'tooltip'}) %}
+{%  set _ = args.update({'title': field.description}) %}
+{% endif %}
+{% if id %}
+{%  set _ = args.update({'id': id}) %}
+{% endif %}
 <div class="form-element">
   <div class="form-label">{{ field.label }}:</div>
   <div class="form-input">
-    {% if tooltip %}
-      {{ field(size=width, **{'data-toggle': 'tooltip', 'title': field.description})|safe }}
-    {% else %}
-      {{ field(size=width)|safe }}
-    {% endif %}
+    {{ field(**args)|safe }}
     {% if field.errors %}
       <ul class=errors>
       {% for error in field.errors %}

@@ -1456,12 +1456,12 @@ def _modify_participant_details(parid):
         participant.sex = data.get('sex')
     if data.get('nat'):
         participant.nat = data.get('nat')
-    participant.glider = data.get('glider')
-    participant.glider_cert = data.get('certification')
-    participant.sponsor = data.get('sponsor')
-    participant.nat_team = data.get('nat_team')
-    participant.team = data.get('team')
-    participant.civl_id = data.get('CIVL')
+    participant.glider = data.get('glider') or None
+    participant.glider_cert = data.get('certification') or None
+    participant.sponsor = data.get('sponsor') or None
+    participant.nat_team = bool(data.get('nat_team'))
+    participant.team = data.get('team') or None
+    participant.civl_id = data.get('CIVL') if isinstance(data.get('CIVL'), int) else None
     if data.get('status'):
         participant.status = data.get('status')
     if data.get('paid'):
@@ -1487,11 +1487,11 @@ def _add_participant(compid):
     if data.get('sex'):
         participant.sex = data.get('sex')
     participant.nat = data.get('nat')
-    participant.glider = data.get('glider')
-    participant.glider_cert = data.get('certification')
-    participant.sponsor = data.get('sponsor')
-    participant.nat_team = data.get('nat_team')
-    participant.team = data.get('team')
+    participant.glider = data.get('glider') or None
+    participant.glider_cert = data.get('certification') or None
+    participant.sponsor = data.get('sponsor') or None
+    participant.nat_team = bool(data.get('nat_team'))
+    participant.team = data.get('team') or None
     participant.civl_id = data.get('CIVL') if isinstance(data.get('CIVL'), int) else None
     if data.get('status'):
         participant.status = data.get('status')

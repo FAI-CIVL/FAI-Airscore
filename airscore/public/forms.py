@@ -3,7 +3,7 @@
 from flask_wtf import FlaskForm
 from wtforms import PasswordField, StringField, IntegerField, SelectField, SubmitField
 from airscore.user.models import User
-from wtforms.validators import DataRequired, Length, Email, EqualTo
+from wtforms.validators import DataRequired, Length, Email, EqualTo, Optional, NumberRange
 
 
 class LoginForm(FlaskForm):
@@ -60,11 +60,13 @@ class LoginForm(FlaskForm):
 
 
 class ModifyParticipantForm(FlaskForm):
-    id_num = IntegerField('ID')
-    nat = StringField('Nat', validators=[Length(3)])
-    glider = StringField('Glider')
-    sponsor = StringField('Sponsor')
-    certification = StringField('Certification')
+    from frontendUtils import list_countries
+    id_num = IntegerField('ID', validators=[Optional(strip_whitespace=True), NumberRange(min=0, max=999999)])
+    countries = list_countries()
+    nat = SelectField('Nat', choices=[(x['code'], x['name']) for x in countries], coerce=str, id='select_country')
+    glider = StringField('Glider', validators=[Optional(strip_whitespace=True)])
+    sponsor = StringField('Sponsor', validators=[Optional(strip_whitespace=True)])
+    certification = StringField('Certification', validators=[Optional(strip_whitespace=True)])
 
 
 class ResetPasswordRequestForm(FlaskForm):

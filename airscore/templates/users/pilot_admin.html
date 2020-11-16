@@ -158,50 +158,33 @@ Pilot Admin
       <div class='modal-header'>
         <h4 class='modal-title'>Update Participant Details</h4>
       </div>
+      {% from "macros.html" import render_field with context %}
       <div class='modal-body' id='modmodal-body'>
         <div class='form-row'>
-          <div class='form-group width6'>
-            {{modify_participant_form.id_num.label}} {{modify_participant_form.id_num(size=2,
-            **{'id':"mod_id_number",})}}
-            {{modify_participant_form.CIVL.label}} {{modify_participant_form.CIVL(size=2, **{'id':"mod_civl",})}}
-            {{modify_participant_form.name.label}} {{modify_participant_form.name(**{'id':"mod_name",})}}
-          </div>
-        </div>
-        <div class='form-row'>
-          <div class='form-group width12'>
-            {{modify_participant_form.nat.label}} {{modify_participant_form.nat(size=4, **{'id':"mod_nat"})}}
-            <div id='mod_nat_team_section'>
-              {{modify_participant_form.nat_team.label}} {{modify_participant_form.nat_team(size=4,
-              **{'id':"mod_nat_team"})}}
-            </div>
-          </div>
-        </div>
-        <div class='form-row'>
-          <div class='form-group col-md-12'>
-            {{modify_participant_form.sex.label}} {{modify_participant_form.sex(**{'id':"mod_sex"})}}
-          </div>
-        </div>
-        <div class='form-row'>
-          <div class='form-group col-md-12'>
-            {{modify_participant_form.glider.label}} {{modify_participant_form.glider(**{'id':"mod_glider"})}}
-            {{modify_participant_form.certification.label}} {{modify_participant_form.certification(size=4,
-            **{'id':"mod_certification"})}}
-          </div>
-          <div class='form-group col-md-12'>
-            <div class='form-group col-md-6'>
-              {{modify_participant_form.sponsor.label}} {{modify_participant_form.sponsor(size=30,
-              **{'id':"mod_sponsor"})}}
-            </div>
-          </div>
-          <div class='form-group col-md-12'>
-            <div id='mod_team_section' class='form-group col-md-6'>
-              {{modify_participant_form.team.label}} {{modify_participant_form.team(size=30, **{'id':"mod_team"})}}
-            </div>
-          </div>
-          <div class='form-group col-md-12'>
-            {{modify_participant_form.status.label}} {{modify_participant_form.status(**{'id':"mod_status"})}}
-            {{modify_participant_form.paid.label}} {{modify_participant_form.paid( **{'id':"mod_paid"})}}
-          </div>
+          <section class="pl-1 row-wrap panel-row">
+            {{ render_field(modify_participant_form.id_num, width=3, id='mod_id_number') }}
+            {{ render_field(modify_participant_form.CIVL, width=5, id='mod_civl') }}
+            {{ render_field(modify_participant_form.name, width=30, id='mod_name') }}
+          </section>
+          <section class="pl-1 row-wrap panel-row">
+            {{ render_field(modify_participant_form.nat, id='mod_nat') }}
+            {{ render_field(modify_participant_form.sex, id='mod_sex') }}
+          </section>
+          <section class="pl-1 row-wrap panel-row">
+            {{ render_field(modify_participant_form.glider, width=30, id='mod_glider') }}
+            {{ render_field(modify_participant_form.certification, width=4, id='mod_certification') }}
+          </section>
+          <section class="pl-1 row-wrap panel-row">
+            {{ render_field(modify_participant_form.sponsor, width=40, id='mod_sponsor') }}
+          </section>
+          <section class="pl-1 row-wrap panel-row">
+            {{ render_field(modify_participant_form.team, width=30, id='mod_team') }}
+            {{ render_field(modify_participant_form.nat_team, id='mod_nat_team') }}
+          </section>
+          <section class="pl-1 row-wrap panel-row">
+            {{ render_field(modify_participant_form.status, id='mod_status') }}
+            {{ render_field(modify_participant_form.paid, id='mod_paid') }}
+          </section>
         </div>
       </div>
       <div class='modal-footer'>
@@ -211,9 +194,9 @@ Pilot Admin
     </div>
   </div>
 </div>
-<!-edit-participant details-Modal ends here--->
+<!--- edit-participant details-Modal ends here--->
 
-<!---add-participant details modal starts here--->
+<!--- add-participant details modal starts here--->
 <div id='add_modal' class='modal fade' role='dialog'>
   <div class='modal-dialog'>
     <div class='modal-content'>
@@ -222,48 +205,30 @@ Pilot Admin
       </div>
       <div class='modal-body' id='addmodal-body'>
         <div class='form-row'>
-          <div class='form-group width6'>
-            {{modify_participant_form.id_num.label}} {{modify_participant_form.id_num(size=2,
-            **{'id':"add_id_number",})}}
-            {{modify_participant_form.CIVL.label}} {{modify_participant_form.CIVL(size=2, **{'id':"add_civl",})}}
-            {{modify_participant_form.name.label}} {{modify_participant_form.name(**{'id':"add_name",})}}
-          </div>
-        </div>
-        <div class='form-row'>
-          <div class='form-group width12'>
-            {{modify_participant_form.nat.label}} {{modify_participant_form.nat(size=4, **{'id':"add_nat"})}}
-            <div id='add_nat_team_section'>
-              {{modify_participant_form.nat_team.label}} {{modify_participant_form.nat_team(size=4,
-              **{'id':"add_nat_team"})}}
-            </div>
-          </div>
-        </div>
-        <div class='form-row'>
-          <div class='form-group col-md-12'>
-            {{modify_participant_form.sex.label}} {{modify_participant_form.sex(**{'id':"add_sex"})}}
-          </div>
-        </div>
-        <div class='form-row'>
-          <div class='form-group col-md-12 '>
-            {{modify_participant_form.glider.label}} {{modify_participant_form.glider(**{'id':"add_glider"})}}
-            {{modify_participant_form.certification.label}} {{modify_participant_form.certification(size=4,
-            **{'id':"add_certification"})}}
-          </div>
-          <div class='form-group col-md-12'>
-            <div class='form-group col-md-6'>
-              {{modify_participant_form.sponsor.label}} {{modify_participant_form.sponsor(size=30,
-              **{'id':"add_sponsor"})}}
-            </div>
-          </div>
-          <div class='form-group col-md-12'>
-            <div id='add_team_section' class='form-group col-md-6'>
-              {{modify_participant_form.team.label}} {{modify_participant_form.team(size=30, **{'id':"add_team"})}}
-            </div>
-          </div>
-          <div class='form-group col-md-12'>
-            {{modify_participant_form.status.label}} {{modify_participant_form.status(**{'id':"add_status"})}}
-            {{modify_participant_form.paid.label}} {{modify_participant_form.paid( **{'id':"add_paid"})}}
-          </div>
+          <section class="pl-1 row-wrap panel-row">
+            {{ render_field(modify_participant_form.id_num, width=3, id='add_id_number') }}
+            {{ render_field(modify_participant_form.CIVL, width=5, id='add_civl') }}
+            {{ render_field(modify_participant_form.name, width=30, id='add_name') }}
+          </section>
+          <section class="pl-1 row-wrap panel-row">
+            {{ render_field(modify_participant_form.nat, id='add_nat') }}
+            {{ render_field(modify_participant_form.sex, id='add_sex') }}
+          </section>
+          <section class="pl-1 row-wrap panel-row">
+            {{ render_field(modify_participant_form.glider, width=30, id='add_glider') }}
+            {{ render_field(modify_participant_form.certification, width=4, id='add_certification') }}
+          </section>
+          <section class="pl-1 row-wrap panel-row">
+            {{ render_field(modify_participant_form.sponsor, width=40, id='add_sponsor') }}
+          </section>
+          <section class="pl-1 row-wrap panel-row">
+            {{ render_field(modify_participant_form.team, width=30, id='add_team') }}
+            {{ render_field(modify_participant_form.nat_team, id='add_nat_team') }}
+          </section>
+          <section class="pl-1 row-wrap panel-row">
+            {{ render_field(modify_participant_form.status, id='add_status') }}
+            {{ render_field(modify_participant_form.paid, id='add_paid') }}
+          </section>
         </div>
       </div>
       <div class='modal-footer'>

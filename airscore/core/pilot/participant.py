@@ -151,7 +151,7 @@ class Participant(Pilot):
                     else:
                         pilot.glider = result.glider
                     c = aliased(TblCountryCode)
-                    pilot.nat = db.query(c.natIso3).filter(c.natId == result.nat).scalar()
+                    pilot.nat = db.query(c.natIoc).filter(c.natId == result.nat).scalar()
                     for attr in ['sex', 'civl_id', 'fai_id', 'sponsor', 'xcontest_id', 'glider_cert']:
                         if hasattr(result, attr):
                             setattr(pilot, attr, getattr(result, attr))

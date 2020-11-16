@@ -95,7 +95,7 @@ def get_ladders() -> list:
     from db.tables import TblLadder as L, TblLadderSeason as LS, TblCountryCode as C
     with db_session() as db:
         ladders = db.query(L.ladder_id, L.ladder_name, L.ladder_class, L.date_from, L.date_to,
-                           C.natIso3.label('nat'),
+                           C.natIoc.label('nat'),
                            LS.season) \
                     .join(LS, L.ladder_id == LS.ladder_id) \
                     .join(C, L.nation_code == C.natId) \
@@ -1268,6 +1268,13 @@ def list_classifications() -> dict:
     return {'ALL': sorted(all_classifications, key=lambda x: x['cat_name']),
             'PG': sorted(pg_classifications, key=lambda x: x['cat_name']),
             'HG': sorted(hg_classifications, key=lambda x: x['cat_name'])}
+
+
+def list_countries() -> list:
+    """Lists all countries with IOC code stored in database.
+    :returns a list of dicts {name, code}"""
+    from db.tables import TblCountryCode
+    return TblCountryCode.get_list()
 
 
 def get_classifications_details(comp_class: str = None) -> list:
