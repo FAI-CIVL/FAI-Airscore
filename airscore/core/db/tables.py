@@ -342,6 +342,7 @@ class TblCertification(BaseModel):
     cert_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
     cert_name = Column(String(15), nullable=False)
     comp_class = Column(Enum('PG', 'HG', 'mixed'), nullable=False, server_default=text("'PG'"))
+    cert_order = Column(TINYINT(1), nullable=False)
 
 
 class TblClassification(BaseModel):
@@ -361,11 +362,24 @@ class TblCountryCode(BaseModel):
     natIso2 = Column(String(2), nullable=False)
     natIso3 = Column(String(3), nullable=False)
     natId = Column(INTEGER(11), primary_key=True)
-    natIso = Column(String(13))
+    natIoc = Column(String(3))
     natRegion = Column(String(8))
     natSubRegion = Column(String(25))
     natRegionId = Column(INTEGER(11))
     natSubRegionId = Column(INTEGER(11))
+
+    @classmethod
+    def get_list(cls, countries: set = None, iso: int = None) -> list:
+        """ returns a list of dict"""
+        CC = aliased(cls)
+        column = getattr(CC, 'natIoc') if not iso else getattr(CC, 'natIso' + str(iso))
+        with db_session() as db:
+            print(f'session id: {id(db)}')
+            query = db.query(CC.natName.label('name'), column.label('code')).filter(column.isnot(None))
+            if countries:
+                query = query.filter(column.in_(countries))
+            results = query.order_by(CC.natName).all()
+            return [el._asdict() for el in results]
 
 
 class TblForComp(BaseModel):
