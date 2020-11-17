@@ -6,7 +6,9 @@ from datetime import timedelta, time, datetime
 
 def km(distance_in_km, decimals=5):
     """takes an int or float of meters and returns a string in kilometers to {decimals} places with 'km' as a postfix"""
-    return f"{distance_in_km / 1000:.{decimals}f} km"
+    if distance_in_km:
+        return f"{distance_in_km / 1000:.{decimals}f} km"
+    return None
 
 
 def ft_score(comp_id):
@@ -16,7 +18,9 @@ def ft_score(comp_id):
 
     def h(time_in_hours, decimals=5):
         """takes an int or float of seconds and returns a string in hours to {decimals} places with 'h' as a postfix"""
-        return f"{time_in_hours / (60 * 60):.{decimals}f} h"
+        if time_in_hours:
+            return f"{time_in_hours / (60 * 60):.{decimals}f} h"
+        return None
 
     def fraction(points, avail_points):
         if not avail_points or (avail_points == 0):
@@ -97,8 +101,8 @@ def ft_score(comp_id):
                                     'landedMade': '123.977000km',
                                     'ss': ss,
                                     'es': es,
-                                    'timeElapsed': result['ss_time'],  # TODO check that this is correct
-                                    'leadingArea': '1261556.0000 km ^ 2 s',
+                                    'timeElapsed': h(result['ss_time']),  # TODO check that this is correct
+                                    'leadingArea': None,
                                     'leadingCoef': result['lead_coeff']
                                 }
                                 ])
@@ -206,6 +210,10 @@ def ft_route(comp_id):
                    'flipSum': [km(leg) for leg in cumsum(task.optimised_legs[::-1]).tolist()[::-1]],
                    'waypoints': opt_wpts}
         route.append({'point': point,
-                      'ellipse': ellipse})
+                      'ellipse': ellipse,
+                      'sphere': None,
+                      'projected': None,
+                      'planar': None,
+                      'spherical': None})
 
     return route
