@@ -137,9 +137,11 @@ class BaseModel(Base):
         try:
             key = next((c.name for c in self.__table__.columns.values() if c.primary_key), None)
             idv = getattr(self, key)
-            if idv and self.get_by_id(idv):
-                self.update()
-            else:
-                self.save()
-        except:
+            if idv:
+                row = self.get_by_id(idv)
+                if row:
+                    return row.update(**self.as_dict())
+            self.save()
+        except Exception as e:
+            print(f'save_or_update db error: {e}')
             return None
