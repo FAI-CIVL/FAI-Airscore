@@ -617,7 +617,7 @@ def download_file(filetype: str, filename):
         file = frontendUtils.get_task_igc_zip(task_id)
         mimetype = "application/zip"
     elif filetype == 'file':
-        file = path.join(Defines.FILEDIR, filename)
+        file = path.join(Defines.EXAMPLEFILEDIR, filename)
         mimetype = "application/octet-stream"
     else:
         file = None

@@ -54,13 +54,13 @@ dir:
   json: /app/airscore/data/json/
   log: /app/airscore/data/log/
   image: /app/airscore/data/images/
-  files: /app/airscore/data/files/
   map: /app/airscore/data/map-objects/
   result: /app/airscore/data/results/
   airspace: /app/airscore/data/airspace/openair/
   airspace_map: /app/airscore/data/map-objects/airspace/
   airspace_check: /app/airscore/data/airspace/check_file/
   livetracking: /app/airscore/data/livetracking/
+  example_file: /app/airscore/example_files/
   igc_parsing_config: /app/airscore/igc_parsing_config/
   temp_files: /app/airscore/data/temp/
 
