@@ -350,6 +350,8 @@ class Comp(object):
                     results.append(participant)
                 # should already be ordered, so probably not necessary
                 comp.participants = sorted(results, key=lambda k: k.score, reverse=True)
+                if any(el for el in comp.participants if el.live_id):
+                    comp.track_source = 'flymaster'
             return comp
 
     @staticmethod

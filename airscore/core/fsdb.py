@@ -158,6 +158,15 @@ class FSDB(object):
 
         formula = self.comp.formula
         pilots = self.comp.participants
+        custom = {}
+        if any(el for el in pilots if el.fai_id):
+            custom['fai_n'] = 'fai_id'
+        if any(el for el in pilots if el.glider_cert):
+            custom['class'] = 'glider_cert'
+        if any(el for el in pilots if el.team):
+            custom['team'] = 'team'
+        if any(el for el in pilots if el.live_id):
+            custom['LIVE'] = 'live_id'
 
         '''create dicts of attributes for each section'''
         comp_attr = {'id': '',  # still to do
@@ -173,13 +182,13 @@ class FSDB(object):
                      }
 
         formula_attr = {'id': formula.formula_name,
-                        'min_dist': km(formula.min_dist, 1),
-                        'nom_dist': km(formula.nominal_dist, 1),
+                        'min_dist': km(formula.min_dist, 0),
+                        'nom_dist': km(formula.nominal_dist, 0),
                         'nom_time': formula.nominal_time / 3600,
                         'nom_launch': formula.nominal_launch,
                         'nom_goal': formula.nominal_goal,
                         'day_quality_override': 0,  # still to implement
-                        'bonus_gr': formula.glide_bonus,
+                        'bonus_gr': int(formula.glide_bonus or 0) or '',
                         'jump_the_gun_factor': (0 if formula.max_JTG == 0
                                                 else c_round(1 / formula.JTG_penalty_per_sec, 1)),
                         'jump_the_gun_max': formula.max_JTG,
@@ -199,7 +208,7 @@ class FSDB(object):
                         'final_glide_decelerator': 'none' if formula.arr_alt_bonus == 0 else 'aatb',
                         'no_final_glide_decelerator_reason': '',
                         'min_time_span_for_valid_task': 60 if self.comp_class == 'PG' else 0,  # still to implement
-                        'score_back_time': formula.score_back_time / 60,
+                        'score_back_time': int((formula.score_back_time or 0) / 60) or '',
                         'use_proportional_leading_weight_if_nobody_in_goal': '',  # still to implement
                         'leading_weight_factor': (0 if formula.formula_departure != 'leadout'
                                                   else c_round(formula.lead_factor, 3)),
@@ -232,28 +241,26 @@ class FSDB(object):
             pil = ET.SubElement(participants, 'FsParticipant')
             pilot_attr = {'id': p.ID or p.par_id,
                           'name': p.name,
-                          'birthday': p.pilot_birthdate_str,
-                          'glider': p.glider,
+                          'birthday': p.pilot_birthdate_str or '',
+                          'glider': p.glider or '',
                           'glider_main_colors': '',
                           'fai_licence': 1 if p.fai_id else 0,
                           'female': p.female,
-                          'nat_code_3166_a3': p.nat,
-                          'sponsor': p.sponsor,
-                          'CIVLID': p.civl_id,
+                          'nat_code_3166_a3': p.nat or '',
+                          'sponsor': p.sponsor or '',
+                          'CIVLID': p.civl_id or '',
                           }
-            custom_attr = {'fai_n': p.fai_id,
-                           'class': p.glider_cert,
-                           'team': p.team,
-                           'LIVE': p.live_id
-                           }
+
+            custom_attr = {k: getattr(p, v) or '' for k, v in custom.items()} if custom else {}
 
             for k, v in pilot_attr.items():
                 pil.set(k, str(v))
-            cus = ET.SubElement(pil, 'FsCustomAttributes')
-            for k, v in custom_attr.items():
-                sub = ET.SubElement(cus, 'FsCustomAttribute')
-                sub.set('name', k)
-                sub.set('value', str(v))
+            if custom_attr:
+                cus = ET.SubElement(pil, 'FsCustomAttributes')
+                for k, v in custom_attr.items():
+                    sub = ET.SubElement(cus, 'FsCustomAttribute')
+                    sub.set('name', k)
+                    sub.set('value', str(v))
 
         if not participants_fsdb:
             '''FsTasks'''
@@ -274,7 +281,7 @@ class FSDB(object):
 
                 '''FsTaskState'''
                 task_s.set('task_state', ('REGULAR' if not t.stopped_time else 'STOPPED'))  # ?
-                task_s.set('score_back_time', str(t.formula.score_back_time / 60))
+                task_s.set('score_back_time', f'{int(t.formula.score_back_time / 60)}')
                 task_s.set('cancel_reason', t.comment)
 
                 '''FsScoreFormula'''
@@ -426,20 +433,20 @@ class FSDB(object):
                                                                                                     t.time_offset),
                                        'finished_ss': '' if not pil.ESS_time else get_isotime(t.date, pil.ESS_time,
                                                                                               t.time_offset),
-                                       'altitude_at_ess': pil.ESS_altitude,
+                                       'altitude_at_ess': int(pil.ESS_altitude or 0),
                                        'finished_task': '' if not pil.goal_time else get_isotime(t.date, pil.goal_time,
                                                                                                  t.time_offset),
                                        'tracklog_filename': pil.track_file,
                                        'lc': pil.lead_coeff,
                                        'iv': pil.fixed_LC or '',
                                        'ts': get_isotime(t.date, pil.first_time, t.time_offset),
-                                       'alt': pil.last_altitude,  # ??
+                                       'alt': int(pil.last_altitude or 0),  # ??
                                        'bonus_alt': '',  # ?? not implemented
-                                       'max_alt': pil.max_altitude,
+                                       'max_alt': int(pil.max_altitude or 0),
                                        'last_tracklog_point_distance': '',  # not implemented yet
                                        'bonus_last_tracklog_point_distance': '',  # ?? not implemented
                                        'last_tracklog_point_time': get_isotime(t.date, pil.landing_time, t.time_offset),
-                                       'last_tracklog_point_alt': pil.landing_altitude,
+                                       'last_tracklog_point_alt': int(pil.landing_altitude or 0),
                                        'landed_before_deadline': '1' if pil.landing_time < (
                                            t.task_deadline if not t.stopped_time else t.stopped_time) else '0',
                                        'reachedGoal': 1 if pil.goal_time else 0
@@ -485,10 +492,10 @@ class FSDB(object):
                                          else get_isotime(t.date, pil.first_time, t.time_offset)),  # flight origin time
                                   'real_distance': km(pil.distance_flown),
                                   'last_distance': '',  # ?? last fix distance?
-                                  'last_altitude_above_goal': pil.last_altitude,
+                                  'last_altitude_above_goal': int(pil.last_altitude or 0),
                                   'altitude_bonus_seconds': 0,  # not implemented
                                   'altitude_bonus_time': sec_to_time(0).strftime('%H:%M:%S'),  # not implemented
-                                  'altitude_at_ess': pil.ESS_altitude,
+                                  'altitude_at_ess': int(pil.ESS_altitude or 0),
                                   'scored_ss_time': ('' if not pil.ss_time
                                                      else sec_to_time(pil.ss_time).strftime('%H:%M:%S')),
                                   'landed_before_stop': t.stopped_time and pil.landing_time < t.stopped_time

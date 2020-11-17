@@ -114,26 +114,26 @@ class Participant(Pilot):
                 print('*** no result in CIVL database, getting data from FSDB file')
             pilot = Participant(name=name, civl_id=CIVLID)
             pilot.sex = 'F' if int(pil.get('female') if pil.get('female') else 0) > 0 else 'M'
-            pilot.nat = pil.get('nat_code_3166_a3')
-        pilot.birthdate = get_date(pil.get('birthday'))
+            pilot.nat = pil.get('nat_code_3166_a3') or None
+        pilot.birthdate = get_date(pil.get('birthday') or None)
         pilot.ID = int(pil.get('id'))
-        pilot.glider = pil.get('glider')
-        pilot.sponsor = pil.get('sponsor')
+        pilot.glider = pil.get('glider') or None
+        pilot.sponsor = pil.get('sponsor') or None
         """check fai is int"""
-        if pil.get('fai_licence'):
-            pilot.fai_valid = True
-            pilot.fai_id = pil.get('fai_licence')
-        else:
+        if pil.get('fai_licence') in (0, '0', '', None):
             pilot.fai_valid = False
             pilot.fai_id = None
+        else:
+            pilot.fai_valid = True
+            pilot.fai_id = None if pil.get('fai_licence') == '1' else pil.get('fai_licence')
         """check Live ID"""
         node = pil.find('FsCustomAttributes')
         if node is not None:
             childs = node.findall('FsCustomAttribute')
-            live = next(el for el in childs if el.get('name') == 'Live')
+            live = next((el for el in childs if el.get('name').title() == 'Live'), None)
             if live is not None:
                 pilot.live_id = int(live.get('value'))
-                print(pilot.live_id)
+                # print(pilot.live_id)
         return pilot
 
     @staticmethod
