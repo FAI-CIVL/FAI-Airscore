@@ -10,7 +10,6 @@ $(document).ready(function() {
   get_tasks( compid );
   get_scorekeepers( compid );
 
-  console.log('class='+dropdown.category.val()+', '+dropdown.classification.val());
   populate_rankings( dropdown.category.val() );
   document.getElementById("link_igc_config").setAttribute("href", "/users/igc_parsing_config/" + dropdown.igc_config.val());
 
@@ -292,12 +291,9 @@ function get_adv_settings(){
 
 function populate_rankings(category) {
 //    let select_list = $('#select_classification select');
-    console.log('class='+category);
     let selected = $('#select_classification').val()
     $('#select_classification').empty();
-    console.log('class num='+classifications.length);
     classifications.forEach( el => {
-        console.log('el class='+el.comp_class);
         if ( el.comp_class == category ) {
             $('#select_classification').append($('<option>', {
                 value: el.cat_id,

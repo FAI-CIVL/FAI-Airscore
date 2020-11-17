@@ -612,7 +612,6 @@ def _register_pilots(compid: int):
 def _add_task(compid: int):
     from region import get_openair
     comp = Comp.read(compid)
-    # comp.comp_id = compid
     data = request.json
     task = Task(comp_id=compid)
     task.task_name = data['task_name']
