@@ -65,10 +65,10 @@ def ft_score(comp_id):
                 es = None
                 if result['SSS_time']:
                     ss = (datetime.combine(task_obj.date, time())
-                          + timedelta(seconds=result['SSS_time'] - task_obj.time_offset)).strftime('%Y-%m-%dT%H:%M:%SZ')
+                          + timedelta(seconds=result['SSS_time'])).strftime('%Y-%m-%dT%H:%M:%SZ')
                     if result['ESS_time']:
                         es = (datetime.combine(task_obj.date, time())
-                              + timedelta(seconds=result['ESS_time'] - task_obj.time_offset)).strftime(
+                              + timedelta(seconds=result['ESS_time'])).strftime(
                             '%Y-%m-%dT%H:%M:%SZ')
                 results.append([[str(result['ID'] or str(result['par_id'])),
                                  result['name']],
