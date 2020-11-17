@@ -385,6 +385,7 @@ def comp_settings_admin(compid: int):
     classifications = frontendUtils.get_classifications_details()
     session['tasks'] = tasks['tasks']
     session['check_g_record'] = comp.check_g_record
+    session['track_source'] = comp.track_source
 
     if not compform.formula.data:
         '''Comp has not been initialised yet'''
