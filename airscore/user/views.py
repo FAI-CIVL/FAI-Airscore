@@ -1009,7 +1009,7 @@ def _get_task_score_from_file(taskid: int, filename: str):
         name = r['name']
         status = r['result_type']
         if status not in ['dnf', 'abs', 'nyp']:
-            pilot = {'rank': rank, 'name': f'<a href="/map/{parid}-{taskid}">{name}</a>'}
+            pilot = {'rank': rank, 'name': f'<a href="/map/{parid}-{taskid}?back_link=0" target="_blank">{name}</a>'}
             if r['SSS_time']:
                 pilot['SSS'] = sec_to_time(r['SSS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S")
             else:

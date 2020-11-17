@@ -488,7 +488,7 @@ def map(paridtaskid):
     parid = int(parid)
     taskid = int(taskid)
 
-    full_tracklog = bool(request.form.get('full'))
+    full_tracklog = bool(request.form.get('full') or request.args.get('full'))
     layer = {}
     trackpoints = None
     '''task map'''

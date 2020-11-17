@@ -11,39 +11,40 @@ function populate_track_admin(task_id){
             {data: 'ID', name:'ID'},
             {data: 'name', name:'Name'},
             {data: 'Result', name:'Result'},
-            {data: null}],
-              rowId: function(data) {
+            {data: null}
+        ],
+        rowId: function(data) {
                 return 'id_' + data.par_id;
-                },
+        },
         columnDefs:[{
             targets: [-1],  render: function (a, b, data, d) {
-            if(data['Result']=='Not Yet Processed' | data['Result'].indexOf("G record") >= 0){
-            var buttons;
-            buttons =
-             '<button id="ABS' + data.par_id  +'" class="btn btn-primary mt-3" type="button" onclick="set_result(' + data.par_id +',\'abs\')">Set ABS</button> '
-             +'<button id="MD' + data.par_id  +'" class="btn btn-primary mt-3" type="button" onclick="set_result(' + data.par_id +',\'mindist\')">Set Min Dist</button> '
-             +'<button id="DNF' + data.par_id  +'" class="btn btn-primary mt-3" type="button" onclick="set_result(' + data.par_id +',\'dnf\')">Set DNF</button> '
-             +'<button id="TrackUp' + data.par_id  +'" class="btnupload btn btn-primary mt-3" onclick="choose_file(' + data.par_id +');">Upload Track</button>'
-//             +'<button id="TrackUp_overide_check' + data.par_id  +'" class="hideatstart btnupload btn btn-warning mt-3" onclick="choose_file(' + data.par_id +', false, true);">Upload Track - Overide quality check</button>'
-             +'<div class = "hideatstart"  id="progress_percentage'+ data.par_id+ '" ><p id="progress_percentage _text'+data.par_id +'"></p></div>'
-             +' <div id="filediv' + data.par_id  +'" class = "hideatstart" > <input id="fileupload' + data.par_id +'" type="file" size="chars" class="custom-file-input"  oninput="filesize(this);" data-url="/users/_upload_track/'+ task_id + '/' + data.par_id + '" name="tracklog" >'
-             + ' <div id="filediv' + data.par_id  +'" class = "hideatstart" > <input id="fileupload_NO_G' + data.par_id +'" type="file" size="chars" class="custom-file-input"  oninput="filesize(this);" data-url="/users/_upload_track/'+ task_id + '/' + data.par_id + '" name="tracklog_NO_G" >'
-             + ' <div id="filediv' + data.par_id  +'" class = "hideatstart" > <input id="fileupload_NO_V' + data.par_id +'" type="file" size="chars" class="custom-file-input"  oninput="filesize(this);" data-url="/users/_upload_track/'+ task_id + '/' + data.par_id + '" name="tracklog_NO_V" >'
-//             +'<div id="progress'+ data.par_id+ '" ><div class="bar" style="width: 0%;"><p id="spinner'+ data.par_id + '"></p><p id="progress_text'+data.par_id +'"></p></div></div>'
-             +'</div>'
-
-             ;
-             return buttons;
+                if(data['Result']=='Not Yet Processed' | data['Result'].indexOf("G record") >= 0){
+                    var buttons;
+                    buttons =
+                     '<button id="ABS' + data.par_id  +'" class="btn btn-primary mt-3" type="button" onclick="set_result(' + data.par_id +',\'abs\')">Set ABS</button> '
+                     +'<button id="MD' + data.par_id  +'" class="btn btn-primary mt-3" type="button" onclick="set_result(' + data.par_id +',\'mindist\')">Set Min Dist</button> '
+                     +'<button id="DNF' + data.par_id  +'" class="btn btn-primary mt-3" type="button" onclick="set_result(' + data.par_id +',\'dnf\')">Set DNF</button> '
+                     +'<button id="TrackUp' + data.par_id  +'" class="btnupload btn btn-primary mt-3" onclick="choose_file(' + data.par_id +');">Upload Track</button>'
+        //             +'<button id="TrackUp_overide_check' + data.par_id  +'" class="hideatstart btnupload btn btn-warning mt-3" onclick="choose_file(' + data.par_id +', false, true);">Upload Track - Overide quality check</button>'
+                     +'<div class = "hideatstart"  id="progress_percentage'+ data.par_id+ '" ><p id="progress_percentage _text'+data.par_id +'"></p></div>'
+                     +' <div id="filediv' + data.par_id  +'" class = "hideatstart" > <input id="fileupload' + data.par_id +'" type="file" size="chars" class="custom-file-input"  oninput="filesize(this);" data-url="/users/_upload_track/'+ task_id + '/' + data.par_id + '" name="tracklog" >'
+                     + ' <div id="filediv' + data.par_id  +'" class = "hideatstart" > <input id="fileupload_NO_G' + data.par_id +'" type="file" size="chars" class="custom-file-input"  oninput="filesize(this);" data-url="/users/_upload_track/'+ task_id + '/' + data.par_id + '" name="tracklog_NO_G" >'
+                     + ' <div id="filediv' + data.par_id  +'" class = "hideatstart" > <input id="fileupload_NO_V' + data.par_id +'" type="file" size="chars" class="custom-file-input"  oninput="filesize(this);" data-url="/users/_upload_track/'+ task_id + '/' + data.par_id + '" name="tracklog_NO_V" >'
+        //             +'<div id="progress'+ data.par_id+ '" ><div class="bar" style="width: 0%;"><p id="spinner'+ data.par_id + '"></p><p id="progress_text'+data.par_id +'"></p></div></div>'
+                     +'</div>';
+                    return buttons;
+                }
+                else if (data['Result']=='Processing..') {
+                    return data['file']
+                }
+                else {
+                    return '<button class="btn btn-danger mt-3" type="button" onclick="delete_track('+ data.track_id +','+ data.par_id +')">Delete Track</button> ';
+                }
             }
-            else if (data['Result']=='Processing..') {
-            return data['file']
-                        }
-
-           else{ return '<button class="btn btn-danger mt-3" type="button" onclick="delete_track('+ data.track_id +','+ data.par_id +')">Delete Track</button> ';}
-
-        }                 }],
+        }],
         initComplete: function() {
-             $(".hideatstart").hide();},
+            $(".hideatstart").hide();
+        },
     });
 }
 
