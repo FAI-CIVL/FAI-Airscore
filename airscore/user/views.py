@@ -241,7 +241,7 @@ def comp_settings_admin(compid: int):
             comp.date_to = compform.date_to.data
             comp.MD_name = compform.MD_name.data
             comp.cat_id = compform.cat_id.data
-            comp.track_source = compform.track_source.data if not '' else None
+            comp.track_source = compform.track_source.data if compform.track_source.data not in ('', None) else None
             comp.time_offset = compform.time_offset.data
             comp.restricted = compform.pilot_registration.data
             comp.locked = compform.locked.data
@@ -1318,7 +1318,7 @@ def _get_non_and_registered_pilots_internal(compid: int):
 @blueprint.route('/_get_non_and_registered_pilots/<int:compid>', methods=['GET', 'POST'])
 @login_required
 def _get_registered_pilots_external(compid: int):
-    registered_pilots, _ = frontendUtils.get_participants(compid, source='external')
+    registered_pilots, _, _ = frontendUtils.get_participants(compid, source='external')
     return {'registered_pilots': registered_pilots}
 
 
@@ -1418,9 +1418,10 @@ def _modify_participant_details(parid: int):
     data = request.json
     participant = Participant.read(parid)
     if data.get('id_num'):
-        participant.ID = data.get('id_num')
+        participant.ID = int(data.get('id_num')) if str(data.get('id_num')).isdigit() else None
     if data.get('name'):
         participant.name = data.get('name')
+    participant.civl_id = int(data.get('CIVL')) if str(data.get('CIVL')).isdigit() else None
     if data.get('sex'):
         participant.sex = data.get('sex')
     if data.get('nat'):
@@ -1430,7 +1431,8 @@ def _modify_participant_details(parid: int):
     participant.sponsor = data.get('sponsor') or None
     participant.nat_team = bool(data.get('nat_team'))
     participant.team = data.get('team') or None
-    participant.civl_id = data.get('CIVL') if isinstance(data.get('CIVL'), int) else None
+    participant.live_id = data.get('live_id') or None
+    participant.xcontest_id = data.get('xcontest_id') or None
     if data.get('status'):
         participant.status = data.get('status')
     if data.get('paid'):
@@ -1447,21 +1449,22 @@ def _add_participant(compid: int):
     data = request.json
     participant = Participant()
     participant.comp_id = compid
-    id_num = data.get('id_num')
-    if not isinstance(id, int):
-        id_num = None
-    participant.ID = id_num
+    if data.get('id_num'):
+        participant.ID = int(data.get('id_num')) if str(data.get('id_num')).isdigit() else None
     if data.get('name'):
         participant.name = data.get('name')
+    participant.civl_id = int(data.get('CIVL')) if str(data.get('CIVL')).isdigit() else None
     if data.get('sex'):
         participant.sex = data.get('sex')
-    participant.nat = data.get('nat')
+    if data.get('nat'):
+        participant.nat = data.get('nat')
     participant.glider = data.get('glider') or None
     participant.glider_cert = data.get('certification') or None
     participant.sponsor = data.get('sponsor') or None
     participant.nat_team = bool(data.get('nat_team'))
     participant.team = data.get('team') or None
-    participant.civl_id = data.get('CIVL') if isinstance(data.get('CIVL'), int) else None
+    participant.live_id = data.get('live_id') or None
+    participant.xcontest_id = data.get('xcontest_id') or None
     if data.get('status'):
         participant.status = data.get('status')
     if data.get('paid'):

@@ -315,6 +315,10 @@ table.rankings td {
   min-height: 40vw;
 }
 
+.pilots-table {
+  font-size: 0.75rem;
+}
+
 /* Results */
 
 .sex-F, .sex-F:link, .sex-F:link:visited {

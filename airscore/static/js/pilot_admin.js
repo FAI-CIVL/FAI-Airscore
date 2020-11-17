@@ -6,13 +6,14 @@ var un_registered_pil=[];
 var num_internal_pilots = 0;
 
 function get_team_size_messages() {
-  if ($('#pilots').DataTable().column(9).visible()) {
+  let table = $('#pilots').DataTable();
+  if (table.column('team:name').visible()) {
     $.get( check_team_size_url, function( data ) {
       $( "#team_messages" )
       .html( data.message )
     }, "json" );
   }
-  if ($('#pilots').DataTable().column(5).visible()) {
+  if (table.column('nat_team:name').visible()) {
     $.get( check_nat_team_size_url, function( data ) {
       $( "#team_messages" )
       .html( data.message )
@@ -109,52 +110,69 @@ function remove_participant(par_id) {
 };
 
 function isNotEmpty( el ) {
-  return !!$.trim(el.html())
+  return el != null && el != String.Empty
 }
 
 function edit_participant(par_id) {
+  let table = $('#pilots').DataTable();
+  let row = '#id_'+par_id;
+  let data = table.row( row ).data();
+  let paid = 0
+  if (data['paid'] == 'Y') paid = 1;
+  console.log('par_id='+data['par_id']);
   var team = 0;
   var nat_team = 0;
-  if ($('#pilots').DataTable().column(9).visible()) {
+  if (table.column('team:name').visible()) {
     team = 1;
   }
-  if ($('#pilots').DataTable().column(5).visible()) {
+  if (table.column('nat_team:name').visible()) {
     nat_team = 1;
   }
-  $('#mod_id_number').val($('#id_'+par_id).children('td:eq(0)').text()).change();
-  $('#mod_civl').val($('#id_'+par_id).children('td:eq(1)').text()).change();
-  $('#mod_name').val($('#id_'+par_id).children('td:eq(2)').text()).change();
-  $('#mod_sex').val($('#id_'+par_id).children('td:eq(3)').text()).change();
-  $('#mod_nat').val($('#id_'+par_id).children('td:eq(4)').text()).change();
-  $('#mod_glider').val($('#id_'+par_id).children('td:eq(5)').text()).change();
-  $('#mod_certification').val($('#id_'+par_id).children('td:eq(6)').text()).change();
-  $('#mod_sponsor').val($('#id_'+par_id).children('td:eq(7)').text()).change();
-  $('#mod_status').val($('#id_'+par_id).children('td:eq(8)').text()).change();
-  $('#mod_paid').val($('#id_'+par_id).children('td:eq(9)').text()).change();
+  console.log('team='+team+', '+nat_team);
+  $('#mod_id_number').val(data['ID']).change();
+  $('#mod_civl').val(data['civl_id']).change();
+  $('#mod_name').val(data['name']).change();
+  $('#mod_sex').val(data['sex']).change();
+  $('#mod_nat').val(data['nat']).change();
+  $('#mod_glider').val(data['glider']).change();
+  $('#mod_certification').val(data['glider_cert']).change();
+  $('#mod_sponsor').val(data['sponsor']).change();
+  $('#mod_status').val(data['status']).change();
+  $('#mod_paid').val(paid).change();
   $('#modify_confirmed').attr("onclick","save_modified_participant('"+ par_id +"')");
 
+  // Team Sections
   if (nat_team) {
-    $('#mod_nat_team').prop('checked', isNotEmpty($('#id_'+par_id).children('td:eq(5)')));
-    $('#mod_glider').val($('#id_'+par_id).children('td:eq(6)').text()).change();
-    $('#mod_certification').val($('#id_'+par_id).children('td:eq(7)').text()).change();
-    $('#mod_sponsor').val($('#id_'+par_id).children('td:eq(8)').text()).change();
-    $('#mod_nat_team_section').show();}
+    $('#mod_nat_team').prop("checked", isNotEmpty(data['nat_team']) );
+    $('#mod_nat_team_section').show();
+  }
   else {$('#mod_nat_team_section').hide(); }
 
   if (team) {
-    if(nat_team) {
-      $('#mod_team').val($('#id_'+par_id).children('td:eq(9)').text()).change();
-      $('#mod_status').val($('#id_'+par_id).children('td:eq(10)').text()).change();
-      $('#mod_paid').val($('#id_'+par_id).children('td:eq(11)').text()).change();
-    }
-    else {
-      $('#mod_team').val($('#id_'+par_id).children('td:eq(8)').text()).change();
-      $('#mod_status').val($('#id_'+par_id).children('td:eq(9)').text()).change();
-      $('#mod_paid').val($('#id_'+par_id).children('td:eq(10)').text()).change();
-    }
-    $('#mod_team_section').show();
+      $('#mod_team').val(data['team']).change();
+      $('#mod_team_section').show();
   }
   else {$('#mod_team_section').hide(); }
+
+  if ( team || nat_team ) $('#mod_all_team_section').show(); else $('#mod_all_team_section').hide();
+
+  // Track Sources Section
+  if(track_source){
+    if(track_source == 'xcontest'){
+        $('#mod_xcontest_id').val(data['xcontest_id']).change();
+        $('#mod_xcontest_section').show();
+        $('#mod_flymaster_section').hide();
+    }
+    else if(track_source == 'flymaster'){
+        $('#mod_live_id').val(data['live_id']).change();
+        $('#mod_flymaster_section').show();
+        $('#mod_xcontest_section').hide();
+    }
+    $('#mod_track_source_section').show();
+  }
+  else {
+    $('#mod_track_source_section').hide();
+  }
 
   $('#edit_par_modal').modal('show');
 }
@@ -173,6 +191,8 @@ function save_modified_participant(par_id) {
   mydata.CIVL = $('#mod_civl').val();
   mydata.team = $('#mod_team').val();
   mydata.nat_team = $('#mod_nat_team').is(':checked');
+  mydata.live_id = $('#mod_live_id').val();
+  mydata.xcontest_id = $('#mod_xcontest_id').val();
 
   $.ajax({
     type: "POST",
@@ -200,6 +220,9 @@ function save_new_participant(){
   mydata.CIVL = $('#add_civl').val();
   mydata.team = $('#add_team').val();
   mydata.nat_team = $('#add_nat_team').is(':checked');
+  mydata.live_id = $('#add_live_id').val();
+  mydata.xcontest_id = $('#add_xcontest_id').val();
+
   $.ajax({
     type: "POST",
     url: "/users/_add_participant/"+ compid,
