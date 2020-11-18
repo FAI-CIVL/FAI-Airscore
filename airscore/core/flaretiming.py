@@ -2,6 +2,7 @@ from task import Task, get_task_json
 from comp import Comp
 import statistics
 from datetime import timedelta, time, datetime
+from formulas.libs.gap import difficulty_calculation
 
 
 def km(distance_in_km, decimals=5):
@@ -9,6 +10,22 @@ def km(distance_in_km, decimals=5):
     if distance_in_km:
         return f"{distance_in_km / 1000:.{decimals}f} km"
     return None
+
+
+def lf_df(task, pil_distance):
+    """
+    calculates the linear distance factor and difficulty factor from GAP
+    Args:
+        task: Task obj.
+        pil_distance: distance flown
+    """
+    maxdist = task.max_distance
+    diff = task.difficulty
+    lf = 0.5 * pil_distance / maxdist
+    dist10 = int(pil_distance / 100)  # int(dist in Km * 10)
+    df = diff[dist10].diff_score + ((diff[dist10 + 1].diff_score - diff[dist10].diff_score)
+                                        * (pil_distance / 100 - dist10))
+    return lf, df
 
 
 def ft_score(comp_id):
@@ -45,6 +62,8 @@ def ft_score(comp_id):
 
     for task in task_results:
         task_obj = Task.read(task['info']['id'])
+        task_obj.get_results()
+        task_obj.difficulty = difficulty_calculation(task_obj)
         fastest = None
         stats = task['stats']
         formula = task['formula']
@@ -60,6 +79,11 @@ def ft_score(comp_id):
         for result in task['results']:
             if result['result_type'] != 'abs':
                 distances.append(result['distance_flown'])
+                if result['goal_time']:
+                    lf = 0.5
+                    df = 0.5
+                else:
+                    lf, df = lf_df(task_obj, result['distance_flown'])
                 if not prev_score:
                     rank = 1
                 elif result['score'] < prev_score:
@@ -81,8 +105,8 @@ def ft_score(comp_id):
                                     'leading': result['departure_score'],
                                     'arrival': result['arrival_score'],
                                     'time': result['time_score'],
-                                    'effort': 297.26,  # TODO
-                                    'reach': 297.18  # TODO
+                                    'effort': df,
+                                    'reach': lf,
                                 },
                                     'place': str(rank),
                                     'total': result['score'],
@@ -91,14 +115,14 @@ def ft_score(comp_id):
                                         'leading': fraction(result['departure_score'], stats['avail_dep_points']),
                                         'arrival': fraction(result['arrival_score'], stats['avail_arr_points']),
                                         'time': fraction(result['time_score'], stats['avail_time_points']),
-                                        'effort': 1,  # TODO
-                                        'reach': 0.99969724  # TODO
+                                        'effort': fraction(df, 0.5),
+                                        'reach': fraction(lf, 0.5),
                                     },
                                     'reach': {
                                         'extra': km(result['distance'], 6),  # TODO check that this is correct
                                         'flown': km(result['distance_flown'], 6)
                                     },
-                                    'landedMade': '123.977000km',
+                                    'landedMade': None,  # TODO
                                     'ss': ss,
                                     'es': es,
                                     'timeElapsed': h(result['ss_time']),  # TODO check that this is correct
@@ -164,7 +188,7 @@ def ft_score(comp_id):
                                         # TODO extra (flown distance + glide bonus in stopped tasks)
                                         'flown': km(stats['max_distance']),
                                     },
-                                    'ssBestTime': 'null-TODO'  # TODO
+                                    'ssBestTime': fastest
                                     })
 
     return {'bestTime': bestTime,
