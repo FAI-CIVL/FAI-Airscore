@@ -1259,12 +1259,14 @@ def list_classifications() -> dict:
     pg_classifications = []
 
     results = C.get_all()
-    for el in results:
-        all_classifications.append(el.as_dict())
-        if el.comp_class in ('PG', 'mixed'):
-            pg_classifications.append(el.as_dict())
-        if el.comp_class in ('HG', 'mixed'):
-            hg_classifications.append(el.as_dict())
+    if results:
+        for el in results:
+            all_classifications.append(el.as_dict())
+            if el.comp_class in ('PG', 'mixed'):
+                pg_classifications.append(el.as_dict())
+            if el.comp_class in ('HG', 'mixed'):
+                hg_classifications.append(el.as_dict())
+
     return {'ALL': sorted(all_classifications, key=lambda x: x['cat_name']),
             'PG': sorted(pg_classifications, key=lambda x: x['cat_name']),
             'HG': sorted(hg_classifications, key=lambda x: x['cat_name'])}
@@ -1274,7 +1276,8 @@ def list_countries() -> list:
     """Lists all countries with IOC code stored in database.
     :returns a list of dicts {name, code}"""
     from db.tables import TblCountryCode
-    return TblCountryCode.get_list()
+    clist = TblCountryCode.get_list()
+    return clist or []
 
 
 def get_classifications_details(comp_class: str = None) -> list:
