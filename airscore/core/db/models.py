@@ -71,8 +71,11 @@ class BaseModel(Base):
         self.before_save()
         with db_session() as db:
             print(f'save session id: {id(db)}')
+            key = next((c.name for c in self.__table__.columns.values() if c.primary_key), None)
             db.add(self)
+            db.flush()
         self.after_save()
+        return getattr(self, key)
 
     def before_update(self, *args, **kwargs):
         pass
@@ -94,6 +97,12 @@ class BaseModel(Base):
         with db_session() as db:
             print(f'delete session id: {id(db)}')
             db.delete(self)
+
+    @classmethod
+    def delete_all(cls, **kvargs):
+        with db_session() as db:
+            print(f'delete all session id: {id(db)}')
+            db.query(cls).filter_by(**kvargs).delete()
 
     @classmethod
     def before_bulk_create(cls, iterable, *args, **kwargs):

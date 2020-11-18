@@ -110,7 +110,8 @@ def test_get_admin_comps(monkeypatch):
         assert result.json['data'][1][0] == myquery[1][0]
         assert result.json['data'][1][6] == 'delete'
 
-        result = frontendUtils.get_admin_comps(111)
+        with patch('frontendUtils.db_session', MockResponse):
+            result = frontendUtils.get_admin_comps(111)
         assert result.json['data'][1][6] == ''
 # @patch.object()
 # def test_get_comp():

@@ -1,0 +1,22 @@
+name: Unit_Tests
+
+on:
+  push:
+    branches: [ development ]
+  pull_request:
+    branches: [ development ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: add defines.yaml
+      run: mv defines.yaml.example defines.yaml
+    - name: Build the Docker image
+      run: docker-compose -f docker-compose-tests.yml build
+    - name: Run tests
+      run: docker-compose -f docker-compose-tests.yml run --rm tests test

@@ -163,7 +163,7 @@ def _import_comp_fsdb():
             if fsdb_file.filename == "":
                 print("No filename")
                 return redirect(request.url)
-            if frontendUtils.allowed_tracklog(fsdb_file.filename, extension=['fsdb']):
+            if frontendUtils.allowed_tracklog(fsdb_file.filename, extension=['fsdb', 'xml']):
                 f = FSDB.read(fsdb_file)
                 compid = f.add_all()
                 if compid:
@@ -1084,6 +1084,15 @@ def _score_task(taskid):
         data = request.json
         taskid = int(taskid)
         task = Task.read(taskid)
+
+        if frontendUtils.production() and task.stopped_time:
+            job = current_app.task_queue.enqueue(frontendUtils.full_rescore, taskid, background=True,
+                                                 user=current_user.username, status=data['status'],
+                                                 autopublish=data['autopublish'], compid=session['compid'],
+                                                 job_timeout=2000)
+
+            resp = jsonify(success=True, background=True)
+            return resp
         ref_id, _ = task.create_results(data['status'])
         if ref_id:
             if data['autopublish']:

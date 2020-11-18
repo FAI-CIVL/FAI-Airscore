@@ -1,3 +1,5 @@
+[![Unit_Tests Actions Status](https://github.com/FAI-CIVL/FAI-Airscore/workflows/Unit_Tests/badge.svg)](https://github.com/FAI-CIVL/FAI-Airscore/actions)
+
 # FAI Airscore
 
 This was originally a fork of Geoff Wong's [airScore](https://github.com/geoffwong/airscore).
@@ -43,7 +45,7 @@ airscore includes or not.
         - [ ] PWC2015
         - [x] PWC2016
         - [x] PWC2017
-        - [x] GAP2019
+        - [x] PWC2019
     - [ ] Linear distance
     - [ ] Time-based scoring (TBS)
 * Earth Model
@@ -236,33 +238,15 @@ Adminer is on localhost port 8080
 
 ------------------------------------------------
 
-## Shell
-
-To open the interactive shell, run
-
-```bash
-docker-compose run --rm manage db shell
-```
-
-By default, you will have access to the flask `app`.
-
-## Running Tests/Linter
+## Running Tests
 
 To run all tests, run
 
 ```bash
-sudo docker-compose -f docker-compose-dev.yml run --rm manage test
+sudo docker-compose -f docker-compose-tests.yml run --rm tests test
+
 flask test # If running from within docker
 ```
-
-To run the linter, run
-
-```bash
-sudo docker-compose -f docker-compose-dev.yml run --rm manage lint
-flask lint # If running from within docker
-```
-
-The `lint` command will attempt to fix any linting/style errors in the code. If you only want to know if the code will pass CI and do not wish for the linter to make changes, add the `--check` argument.
 
 ## License
 Apart from igc_lib which has a MIT license and bootstrap all rest of the code is provided under the GPL License version 2 described in the file "Copying".

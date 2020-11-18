@@ -11,13 +11,17 @@ x-default-volumes: &default_volumes
     - ./dev.db:/tmp/dev.db
 
 services:
-  manage:
+  tests:
     build:
       context: .
-      target: manage
+      target: tests
     environment:
       FLASK_ENV: production
       FLASK_DEBUG: 0
+      FLASK_APP: autoapp.py
+      SECRET_KEY: not-so-secret
+      SEND_FILE_MAX_AGE_DEFAULT: 0
+#      PYTHONPATH: ${app}:src
       REDIS_URL: redis://redis:6379
       REDIS_CONTAINER: redis
       WEB_SERVER_CONTAINER: dummy
@@ -33,12 +37,19 @@ services:
       DATABASE: dummy
       MYSQLUSER: dummy
       MYSQLPASSWORD: dummy
+      DATABASE_URI: test
       XCONTEST_USER: dummy
       XCONTEST_PASS: dummy
       TELEGRAM_API: dummy
       TELEGRAM_CHANNEL: dummy
+      REDIS_CONTAINER: dummy
+      WEB_SERVER_CONTAINER: dummy
+      FLASK_CONTAINER: airscore_prod
+      FLASK_PORT: 5000
+      RQ_QUEUE: dummy
+
     image: "airscore-manage"
-    container_name: manage
+    container_name: tests
     stdin_open: true
     tty: true
     <<: *default_volumes

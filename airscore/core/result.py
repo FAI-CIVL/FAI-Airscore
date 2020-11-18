@@ -114,7 +114,7 @@ class TaskResult:
                   'max_ess_time',
                   'last_landing_time',
                   'max_distance',
-                  'tot_distance_flown',
+                  'tot_dist_flown',
                   'tot_dist_over_min',
                   'day_quality',
                   'ftv_validity',
@@ -366,7 +366,7 @@ class CompResult(object):
                   'total_validity',
                   'avail_validity',
                   'tot_flights',
-                  'tot_distance_flown',
+                  'tot_dist_flown',
                   'tot_flight_time',
                   'tot_pilots']
 

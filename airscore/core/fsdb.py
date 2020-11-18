@@ -363,7 +363,7 @@ class FSDB(object):
                                [x for x in t.valid_results if x.distance_flown > t.formula.nominal_dist]),
                            'no_of_pilots_reaching_es': t.pilots_ess,
                            'no_of_pilots_reaching_goal': t.pilots_goal,
-                           'sum_flown_distance': km(t.tot_distance_flown),
+                           'sum_flown_distance': km(t.tot_dist_flown),
                            'best_dist': km(t.max_distance or 0),
                            'best_time': round((t.fastest or 0) / 3600, 14),
                            'worst_time': round(max((x.ESS_time or 0) - (x.SSS_time or 0)
@@ -480,8 +480,6 @@ class FSDB(object):
                                   'got_time_but_not_goal_penalty': (pil.ESS_time or 0) > 0 and not pil.goal_time,
                                   'started_ss': '' if not pil.real_start_time else get_isotime(t.date, pil.SSS_time,
                                                                                                t.time_offset),
-                                  'finished_ss': '' if not pil.ESS_time else get_isotime(t.date, pil.ESS_time,
-                                                                                         t.time_offset),
                                   'ss_time_dec_hours': 0 if not pil.ESS_time else round(pil.ss_time / 3600, 14),
                                   'ts': get_isotime(t.date, pil.first_time, t.time_offset),  # flight origin time
                                   'real_distance': km(pil.distance_flown),
@@ -494,6 +492,8 @@ class FSDB(object):
                                                      else sec_to_time(pil.ss_time).strftime('%H:%M:%S')),
                                   'landed_before_stop': t.stopped_time and pil.landing_time < t.stopped_time
                                   }
+                        if pil.ESS_time:
+                            r_attr['finished_ss'] = get_isotime(t.date, pil.ESS_time, t.time_offset),
 
                         for k, v in r_attr.items():
                             pil_r.set(k, str(v))
