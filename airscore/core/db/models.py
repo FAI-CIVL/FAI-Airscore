@@ -42,6 +42,14 @@ class BaseModel(Base):
                 obj  - OBJ: object"""
         try:
             row = cls()
+
+            ''' get row if exists'''
+            key = next((c.name for c in cls.__table__.columns.values() if c.primary_key), None)
+            if hasattr(obj, key) and getattr(obj, key) is not None:
+                result = cls.get_by_id(getattr(obj, key))
+                if result:
+                    row = result
+
             for x in row.__table__.columns.keys():
                 if hasattr(obj, x):
                     setattr(row, x, getattr(obj, x))
