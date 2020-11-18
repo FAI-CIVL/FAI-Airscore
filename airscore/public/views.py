@@ -38,6 +38,11 @@ def load_user(user_id):
     return User.get_by_id(int(user_id))
 
 
+@blueprint.context_processor
+def create_menu():
+    return dict(menu=frontendUtils.create_menu())
+
+
 @blueprint.route("/", methods=["GET", "POST"])
 def home():
     """ Home page """
@@ -59,7 +64,7 @@ def home():
             return redirect(redirect_url)
         else:
             flash_errors(form)
-    return render_template('public/index.html', form=form, now=datetime.utcnow(), ladders=Defines.LADDERS)
+    return render_template('public/index.html', form=form, now=datetime.utcnow())
 
 
 @blueprint.route("/ladders/", methods=["GET", "POST"])
@@ -285,12 +290,12 @@ def _get_all_comps():
 
 
 @blueprint.route('/competition/<int:compid>')
-def competition(compid):
+def competition(compid: int):
     from compUtils import get_comp_json
     from Defines import LIVETRACKDIR
     # get the latest comp result file, not the active one. This is so we can display tasks that have published
     # results that are not yet official and therefore in the comp overall results
-    result_file = get_comp_json(int(compid), latest=True)
+    result_file = get_comp_json(compid, latest=True)
     all_tasks = []
     layer = {}
     country_scores = False
@@ -344,35 +349,36 @@ def competition(compid):
             all_tasks.append(task)
     all_tasks.sort(key=lambda k: k['date'], reverse=True)
 
-    return render_template('public/comp.html', tasks=all_tasks, comp=comp, overall_available=overall_available,
+    '''regions'''
+    tasks = bool(len(all_tasks))
+    regids = frontendUtils.get_regions_used_in_comp(compid, tasks)
+
+    return render_template('public/comp.html',
+                           tasks=all_tasks, comp=comp, regids=regids, overall_available=overall_available,
                            country_scores=country_scores)
 
 
 # @blueprint.route('/registered_pilots/<int:compid>')
-# def registered_pilots(compid):
+# def registered_pilots(compid: int):
 #     """ List of registered pilots for an event.
 #         Creates a Register to the event button if pilot is not yet registered"""
 #     return render_template('public/registered_pilots.html', compid=compid)
 #
 #
-# @blueprint.route('/_get_registered_pilots/<compid>', methods=['GET'])
-# def _get_registered_pilots(compid):
+# @blueprint.route('/_get_registered_pilots/<int:compid>', methods=['GET'])
+# def _get_registered_pilots(compid: int):
 #     comp, pilot_list, pilot = frontendUtils.get_registered_pilots(compid, current_user)
 #     return dict(info=comp, data=pilot_list, pilot=pilot)
 
 
 @blueprint.route('/task_result/<int:taskid>')
-def task_result(taskid):
-    return render_template('public/task_result.html', taskid=taskid)
-
-
-@blueprint.route('/_get_task_result/<int:taskid>', methods=['GET', 'POST'])
-def _get_task_result(taskid):
+def task_result(taskid: int):
     from task import get_task_json
     result_file = frontendUtils.get_pretty_data(get_task_json(taskid))
     if result_file == 'error':
         return render_template('404.html')
 
+    compid = int(result_file['info']['comp_id'])
     all_pilots = []
     results = [p for p in result_file['results'] if p['result_type'] not in ['dnf', 'abs', 'nyp']]
     for r in results:
@@ -396,32 +402,21 @@ def _get_task_result(taskid):
         pilot['goal_time'] = goal
         # ab = ''  # alt bonus
         pilot['penalty'] = "" if r['penalty'] == '0.0' else r['penalty']
-        # setup 4 sub-rankings placeholders
+        # setup sub-rankings
         for i, c in enumerate(result_file['classes'][1:], 1):
             pilot['ranks']['class' + str(i)] = f"{r[c['limit']]}"
         all_pilots.append(pilot)
-        # else:
-        #     '''pilot do not have result data'''
-        # TODO at the moment js raises error trying to order scores, leaving non flying pilots out of datatable
-        # pilot = [f'<b>{rank}</b>', f'{name}', r['nat'], r['glider'], r['glider_cert'], r['sponsor'], "", "", "", "",
-        #          "", "", "", "", "", "", "", f"{r['result_type'].upper()}"]
-
     result_file['data'] = all_pilots
-    return result_file
+    return render_template('public/task_result.html', taskid=taskid, compid=compid, results=result_file)
 
 
 @blueprint.route('/ext_comp_result/<int:compid>')
-def ext_comp_result(compid):
+def ext_comp_result(compid: int):
     return render_template('public/ext_comp_overall.html', compid=compid)
 
 
 @blueprint.route('/comp_result/<int:compid>')
-def comp_result(compid):
-    return render_template('public/comp_overall.html', compid=compid)
-
-
-@blueprint.route('/_get_comp_result/<compid>', methods=['GET', 'POST'])
-def _get_comp_result(compid):
+def comp_result(compid: int):
     from compUtils import get_comp_json
     result_file = frontendUtils.get_pretty_data(get_comp_json(compid))
     if result_file == 'error':
@@ -446,17 +441,16 @@ def _get_comp_result(compid):
             pilot['results'].append(html)
         all_pilots.append(pilot)
     result_file['data'] = all_pilots
-
-    return result_file
+    return render_template('public/comp_overall.html', compid=compid, results=result_file)
 
 
 @blueprint.route('/country_overall/<int:compid>')
-def country_overall(compid):
+def country_overall(compid: int):
     return render_template('public/country_overall.html', compid=compid)
 
 
-@blueprint.route('/_get_comp_country_result/<compid>', methods=['GET'])
-def _get_comp_country_result(compid):
+@blueprint.route('/_get_comp_country_result/<int:compid>', methods=['GET'])
+def _get_comp_country_result(compid: int):
     from compUtils import get_comp_json_filename
     from result import get_comp_country_scoring
     filename = get_comp_json_filename(compid)
@@ -466,12 +460,12 @@ def _get_comp_country_result(compid):
 
 
 @blueprint.route('/country_task/<int:taskid>')
-def country_task(taskid):
+def country_task(taskid: int):
     return render_template('public/country_task.html', taskid=taskid)
 
 
-@blueprint.route('/_get_task_country_result/<taskid>', methods=['GET'])
-def _get_task_country_result(taskid):
+@blueprint.route('/_get_task_country_result/<int:taskid>', methods=['GET'])
+def _get_task_country_result(taskid: int):
     from task import get_task_json_filename
     from result import get_task_country_scoring
     filename = get_task_json_filename(taskid)
@@ -494,7 +488,7 @@ def map(paridtaskid):
     parid = int(parid)
     taskid = int(taskid)
 
-    full_tracklog = bool(request.form.get('full'))
+    full_tracklog = bool(request.form.get('full') or request.args.get('full'))
     layer = {}
     trackpoints = None
     '''task map'''
@@ -528,7 +522,10 @@ def map(paridtaskid):
     waypoint_achieved_list = list(w for w in layer['geojson']['waypoint_achieved'])
     add_tracks = SelectAdditionalTracks()
     add_tracks.track_pilot_list = other_tracks
+    '''back_link'''
+    back_link = True if 'back_link' not in request.args else request.args.get('back_link')
     return render_template('public/map.html',
+                           back_link=back_link,
                            other_tracks=other_tracks,
                            add_tracks=add_tracks,
                            map=get_map_render(map),
@@ -538,8 +535,35 @@ def map(paridtaskid):
                            full_tracklog=full_tracklog)
 
 
-@blueprint.route('/_map/<trackid>/<extra_trackids>')
-def multimap(trackid, extra_trackids):
+@blueprint.route('/regions/')
+@blueprint.route('/regions')
+def regions():
+    from region import get_all_regions
+    args = None if not request.args else request.args
+    result = get_all_regions(None if not args else [int(el) for el in args.get('regids').split(',')])
+    return render_template('public/regions.html', regions=result['regions'], args=args)
+
+
+@blueprint.route('/region_map/<int:regid>', methods=["GET", "POST"])
+def region_map(regid: int):
+    from map import get_map_render
+    from region import Region
+    region = Region.read_db(regid)
+    waypoints, reg_map, airspace_list, _ = frontendUtils.get_region_waypoints(regid, region=region)
+    args = None if not request.args else request.args
+
+    return render_template('public/region_map.html',
+                           regid=regid,
+                           name=region.name,
+                           args=args,
+                           map=get_map_render(reg_map),
+                           waypoints=waypoints,
+                           airspace=airspace_list,
+                           waypoint_file=region.waypoint_file, openair_file=region.openair_file)
+
+
+@blueprint.route('/_map/<int:trackid>/<extra_trackids>')
+def multimap(trackid: int, extra_trackids):
     trackids = []
     for t in extra_trackids.split(','):
         trackids.append(t)
@@ -578,26 +602,38 @@ def multimap(trackid, extra_trackids):
     return map
 
 
-@blueprint.route('/download/<filetype>/<filename>', methods=['GET'])
-def download_file(filetype, filename):
-    if filetype == 'airspace':
+@blueprint.route('/download/<string:filetype>/<filename>', methods=['GET'])
+def download_file(filetype: str, filename):
+    if filetype == 'waypoints':
+        waypoints_path = Defines.WAYPOINTDIR
+        file = path.join(waypoints_path, filename)
+        mimetype = "text/plain"
+    elif filetype == 'airspace':
         airspace_path = Defines.AIRSPACEDIR
-        fullname = path.join(airspace_path, filename)
-        return send_file(fullname, as_attachment=True)
-    if filetype == 'igc_zip':
-        task_id = filename
-        zip_file = frontendUtils.get_task_igc_zip(int(task_id))
-        return send_file(zip_file, as_attachment=True)
+        file = path.join(airspace_path, filename)
+        mimetype = "text/plain"
+    elif filetype == 'igc_zip':
+        task_id = int(filename)
+        file = frontendUtils.get_task_igc_zip(task_id)
+        mimetype = "application/zip"
+    elif filetype == 'file':
+        file = path.join(Defines.EXAMPLEFILEDIR, filename)
+        mimetype = "application/octet-stream"
+    else:
+        file = None
+        mimetype = "text/plain"
+
+    return send_file(file, mimetype=mimetype, as_attachment=True) if file else None
 
 
-@blueprint.route('/_get_participants/<compid>', methods=['GET'])
-def _get_participants(compid):
+@blueprint.route('/_get_participants/<int:compid>', methods=['GET'])
+def _get_participants(compid: int):
     pilot_list, external, teams = frontendUtils.get_participants(compid)
     return {'data': pilot_list, 'external': external, 'teams': teams}
 
 
 @blueprint.route('/registered_pilots/<int:compid>')
-def registered_pilots(compid):
+def registered_pilots(compid: int):
     """ List of registered pilots for an event.
         Creates a Register to the event button if pilot is not yet registered"""
     modify_participant_form = ModifyParticipantForm()
@@ -606,12 +642,12 @@ def registered_pilots(compid):
         comp['date_from'] = comp['date_from'].strftime("%Y-%m-%d")
     if comp['date_to']:
         comp['date_to'] = comp['date_to'].strftime("%Y-%m-%d")
-    return render_template('public/registered_pilots.html', modify_participant_form=modify_participant_form,
-                           compid=compid, comp=comp)
+    return render_template('public/registered_pilots.html',
+                           modify_participant_form=modify_participant_form, compid=compid, comp=comp)
 
 
-@blueprint.route('/_get_participants_and_status/<compid>', methods=['GET'])
-def _get_participants_and_status(compid):
+@blueprint.route('/_get_participants_and_status/<int:compid>', methods=['GET'])
+def _get_participants_and_status(compid: int):
     from pilot.participant import Participant
     pilot_list, _, _ = frontendUtils.get_participants(compid)
     status = None
@@ -630,16 +666,16 @@ def _get_participants_and_status(compid):
 
 
 @blueprint.route('/live/<int:taskid>')
-def livetracking(taskid):
+def livetracking(taskid: int):
     return render_template('public/live.html', taskid=taskid)
 
 
-@blueprint.route('/_get_livetracking/<taskid>', methods=['GET', 'POST'])
-def _get_livetracking(taskid):
+@blueprint.route('/_get_livetracking/<int:taskid>', methods=['GET', 'POST'])
+def _get_livetracking(taskid: int):
     from livetracking import get_live_json
     from calcUtils import sec_to_string, time_to_seconds, c_round
     from datetime import datetime
-    result_file = get_live_json(int(taskid))
+    result_file = get_live_json(taskid)
 
     formatted = frontendUtils.get_pretty_data(result_file)
     timestamp = result_file['file_stats']['timestamp']

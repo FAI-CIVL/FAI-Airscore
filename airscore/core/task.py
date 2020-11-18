@@ -1189,11 +1189,9 @@ class Task(object):
         from compUtils import get_fsdb_task_path
         from calcUtils import get_date, get_time, time_to_seconds
 
-        tas = dict()
         stats = dict()
         turnpoints = []
         optimised_legs = []
-        # results = []
 
         task = cls()
 
@@ -1207,26 +1205,6 @@ class Task(object):
 
         """formula info"""
         formula = TaskFormula.from_fsdb(t)
-        # f = t.find('FsScoreFormula')
-        # formula = TaskFormula()
-        # formula.formula_name = f.get('id')
-        # formula.arr_alt_bonus = 'off'
-        # if ((f.get('use_arrival_altitude_points') is not None and float(f.get('use_arrival_altitude_points')) > 0)
-        #         or f.get('use_arrival_altitude_points') == 'aatb'):
-        #     formula.arr_alt_bonus = 'on'
-        # """Departure and Arrival from formula"""
-        # formula.formula_arrival = 'position' if float(f.get('use_arrival_position_points')) == 1 else 'time' if float(
-        #     f.get(
-        #         'use_arrival_position_points')) == 1 else 'off'  # not sure if and which type Airscore is supporting at the moment
-        # formula.tolerance = 0.0 + float(f.get('turnpoint_radius_tolerance')
-        #                                 if f.get('turnpoint_radius_tolerance') else 0.1)  # tolerance, perc / 100
-        #
-        # if float(f.get('use_departure_points')) > 0:
-        #     formula.formula_departure = 'on'
-        # elif float(f.get('use_leading_points')) > 0:
-        #     formula.formula_departure = 'leadout'
-        # else:
-        #     formula.formula_departure = 'off'
 
         """Task Status"""
         node = t.find('FsTaskState')
@@ -1236,8 +1214,7 @@ class Task(object):
         if state == 'CANCELLED':
             """I don't need if cancelled"""
             return None
-        task.stopped_time = time_to_seconds(get_time(node.get('stop_time'))) - offset
-        # task.stopped_time = get_datetime(node.get('stop_time')) if not (state == 'REGULAR') else None
+        task.stopped_time = None if not node.get('stop_time') else time_to_seconds(get_time(node.get('stop_time'))) - offset
         """Task Stats"""
         p = t.find('FsTaskScoreParams')
         '''a non scored task could miss this element'''
@@ -1311,10 +1288,8 @@ class Task(object):
                 startgates = len(node.findall('FsStartGate'))
                 task.task_type = 'race'
                 task.start_time = time_to_seconds(get_time(node.find('FsStartGate').get('open'))) - offset
-                # print ("gates: {}".format(startgates))
                 if startgates > 1:
                     '''race with multiple start gates'''
-                    # print ("MULTIPLE STARTS")
                     task.start_iteration = startgates - 1
                     time = time_to_seconds(get_time(node.findall('FsStartGate')[1].get('open'))) - offset
                     task.SS_interval = time - task.start_time
@@ -1380,53 +1355,6 @@ class Task(object):
                 turnpoint.num = len(turnpoints) + 1
                 turnpoints.append(turnpoint)
 
-            # turnpoint = Turnpoint(float(w.get('lat')), float(w.get('lon')), int(w.get('radius')))
-            # turnpoint.id = len(turnpoints) + 1
-            # turnpoint.name = w.get('id')
-            # turnpoint.altitude = int(w.get('altitude'))
-            # print(f"    {turnpoint.id}  {turnpoint.name}  {turnpoint.radius}")
-            # if turnpoint.id == 1:
-            #     turnpoint.type = 'launch'
-            #     task.date = get_date(w.get('open'))
-            #     task.window_open_time = time_to_seconds(get_time(w.get('open')))
-            #     task.window_close_time = time_to_seconds(get_time(w.get('close')))
-            #     # sanity
-            #     if task.window_close_time <= task.window_open_time:
-            #         task.window_close_time = None
-            #     if 'free distance' in task.task_type:
-            #         # print('Sono in launch - free')
-            #         '''get start and close time for free distance task types'''
-            #         task.start_time = time_to_seconds(get_time(w.get('open')))
-            #         task.start_close_time = time_to_seconds(get_time(w.get('close')))
-            #         # task.task_deadline = get_datetime(w.get('close'))
-            #     if turnpoint.id == sswpt:
-            #         '''need to manage tasks where first wpt is ss. adding a point as launch'''
-            #         turnpoints.append(turnpoint)
-            # if turnpoint.id == sswpt:
-            #     # print('Sono in ss')
-            #     turnpoint.type = 'speed'
-            #     task.start_close_time = time_to_seconds(get_time(w.get('close')))
-            #     if 'elapsed time' in task.task_type:
-            #         '''get start for elapsed time task types'''
-            #         task.start_time = time_to_seconds(get_time(w.get('open')))
-            # elif turnpoint.id == eswpt:
-            #     # print('Sono in es')
-            #     turnpoint.type = 'endspeed'
-            #     task.task_deadline = time_to_seconds(get_time(w.get('close')))
-            #     if turnpoint.id == len(node.findall('FsTurnpoint')):
-            #         '''need to manage tasks where last wpt is es. adding a point as es'''
-            #         turnpoints.append(turnpoint)
-            # if turnpoint.id == len(node.findall('FsTurnpoint')):
-            #     # print('Sono in goal')
-            #     turnpoint.type = 'goal'
-            #     if gtype == 'LINE':
-            #         turnpoint.shape = 'line'
-            # # else:
-            # #     wpt['tawType'] = 'waypoint'
-            #
-            # turnpoints.append(turnpoint)
-
-        # tas['route'] = route
         task.formula = formula
         task.turnpoints = turnpoints
         task.calculate_task_length()

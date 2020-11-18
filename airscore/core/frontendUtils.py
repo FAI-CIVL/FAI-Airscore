@@ -17,14 +17,25 @@ from functools import partial
 import json
 
 
+def create_menu(active: str = '') -> list:
+    import Defines
+    menu = [dict(title='Competitions', url='public.home', css='nav-item')]
+    if Defines.LADDERS:
+        menu.append(dict(title='Ladders', url='public.ladders', css='nav-item'))
+    menu.extend([dict(title='Pilots', url='public.pilots', css='nav-item'),
+                dict(title='Flying Areas', url='public.regions', css='nav-item')])
+
+    return menu
+
+
 def get_comps() -> list:
     c = aliased(TblCompetition)
     with db_session() as db:
         comps = (db.query(c.comp_id, c.comp_name, c.comp_site,
                           c.comp_class, c.sanction, c.comp_type, c.date_from,
                           c.date_to, func.count(TblTask.task_id).label('tasks'), c.external)
-                 .outerjoin(TblTask, c.comp_id == TblTask.comp_id)
-                 .group_by(c.comp_id))
+                   .outerjoin(TblTask, c.comp_id == TblTask.comp_id)
+                   .group_by(c.comp_id))
 
     return [row._asdict() for row in comps]
 
@@ -84,12 +95,12 @@ def get_ladders() -> list:
     from db.tables import TblLadder as L, TblLadderSeason as LS, TblCountryCode as C
     with db_session() as db:
         ladders = db.query(L.ladder_id, L.ladder_name, L.ladder_class, L.date_from, L.date_to,
-                           C.natIso3.label('nat'),
+                           C.natIoc.label('nat'),
                            LS.season) \
-            .join(LS, L.ladder_id == LS.ladder_id) \
-            .join(C, L.nation_code == C.natId) \
-            .filter(LS.active == 1) \
-            .order_by(LS.season.desc())
+                    .join(LS, L.ladder_id == LS.ladder_id) \
+                    .join(C, L.nation_code == C.natId) \
+                    .filter(LS.active == 1) \
+                    .order_by(LS.season.desc())
 
     return [row._asdict() for row in ladders]
 
@@ -115,8 +126,8 @@ def get_ladder_results(ladder_id: int, season: int,
         # probably we could keep this from ladder list page?
         row = db.query(L.ladder_id, L.ladder_name, L.ladder_class,
                        LS.season, LS.cat_id, LS.overall_validity, LS.validity_param) \
-            .join(LS) \
-            .filter(L.ladder_id == ladder_id, LS.season == season).one()
+                .join(LS) \
+                .filter(L.ladder_id == ladder_id, LS.season == season).one()
         rankings = create_classifications(row.cat_id)
         info = {'ladder_name': row.ladder_name,
                 'season': row.season,
@@ -136,8 +147,8 @@ def get_ladder_results(ladder_id: int, season: int,
 
         '''create Participants list'''
         results = db.query(P) \
-            .filter(P.comp_id.in_(comps_ids), P.nat == nat) \
-            .order_by(P.pil_id, P.comp_id).all()
+                    .filter(P.comp_id.in_(comps_ids), P.nat == nat) \
+                    .order_by(P.pil_id, P.comp_id).all()
         pilots_list = []
         orphans = []
         for row in results:
@@ -259,9 +270,9 @@ def get_admin_comps(current_userid, current_user_access=None):
         comps = (db.query(c.comp_id, c.comp_name, c.comp_site,
                           c.date_from,
                           c.date_to, func.count(TblTask.task_id), ca.user_id)
-                 .outerjoin(TblTask, c.comp_id == TblTask.comp_id).outerjoin(ca)
-                 .filter(ca.user_auth == 'owner')
-                 .group_by(c.comp_id, ca.user_id))
+                   .outerjoin(TblTask, c.comp_id == TblTask.comp_id).outerjoin(ca)
+                   .filter(ca.user_auth == 'owner')
+                   .group_by(c.comp_id, ca.user_id))
     all_comps = []
     for c in comps:
         comp = list(c)
@@ -301,7 +312,9 @@ def get_task_list(comp):
     return {'next_task': max_task_num + 1, 'last_region': last_region, 'tasks': tasks}
 
 
-def get_task_turnpoints(task):
+def get_task_turnpoints(task) -> dict:
+    from task import get_map_json
+    from airspaceUtils import read_airspace_map_file
     turnpoints = task.read_turnpoints()
     max_n = 0
     total_dist = ''
@@ -332,21 +345,21 @@ def get_task_turnpoints(task):
     # max_n = int(math.ceil(max_n / 10.0)) * 10
     max_n += 1
 
-    task_file = Path(MAPOBJDIR, 'tasks', str(task.task_id) + '.task')
-    if task_file.is_file():
-        with open(task_file, 'r') as f:
-            data = jsonpickle.decode(f.read())
-            task_coords = data['task_coords']
-            map_turnpoints = data['turnpoints']
-            short_route = data['short_route']
-            goal_line = data['goal_line']
-            tolerance = data['tolerance']
-            bbox = data['bbox']
-            layer = {'geojson': None, 'bbox': bbox}
-            task_map = make_map(layer_geojson=layer, points=task_coords, circles=map_turnpoints, polyline=short_route,
-                                goal_line=goal_line, margin=tolerance)
-            task_map = task_map._repr_html_()
+    if task.opt_dist:
+        '''task map'''
+        task_coords, task_turnpoints, short_route, goal_line, tolerance, bbox, offset, airspace = get_map_json(task.id)
+        layer = {'geojson': None, 'bbox': bbox}
+        '''airspace'''
+        show_airspace = False
+        if airspace:
+            airspace_layer = read_airspace_map_file(airspace)['spaces']
+        else:
+            airspace_layer = None
 
+        task_map = make_map(layer_geojson=layer, points=task_coords, circles=task_turnpoints, polyline=short_route,
+                            goal_line=goal_line, margin=tolerance, waypoint_layer=True, airspace_layer=airspace_layer,
+                            show_airspace=show_airspace)
+        task_map = task_map._repr_html_()
     else:
         task_map = None
 
@@ -364,6 +377,17 @@ def get_comp_regions(compid: int):
         return region.get_comp_regions_and_wpts(compid)
 
 
+def get_regions_used_in_comp(compid: int, tasks: bool = False) -> list:
+    """returns a list of reg_id of regions used in a competition.
+        Used for waypoints and area map link in competition page"""
+    from db.tables import TblRegion as R, TblTask as T
+    regions = [el.reg_id for el in R.get_all(comp_id=compid)]
+    if tasks:
+        regions.extend([el.reg_id for el in T.get_all(comp_id=compid)])
+        regions = list(set(regions))
+    return [el for el in regions if el is not None]
+
+
 def get_region_choices(compid: int):
     """gets a list of regions to be used in frontend select field (choices) and details of each region (details)"""
     regions = get_comp_regions(compid)
@@ -378,15 +402,9 @@ def get_region_choices(compid: int):
 def get_waypoint_choices(reg_id: int):
     import region
     wpts = region.get_region_wpts(reg_id)
-    choices = []
-    details = []
+    choices = [(wpt['rwp_id'], wpt['name'] + ' - ' + wpt['description']) for wpt in wpts]
 
-    for wpt in wpts:
-        choices.append((wpt['rwp_id'], wpt['name'] + ' - ' + wpt['description']))
-        wpt['Class'] = wpt['name'][0]
-        details.append(wpt)
-
-    return choices, details
+    return choices, wpts
 
 
 def get_pilot_list_for_track_management(taskid: int):
@@ -406,7 +424,7 @@ def get_pilot_list_for_track_management(taskid: int):
                     result = f"ESS {round(pilot['distance_flown'] / 1000, 2)} Km (<del>{time}</del>)"
             else:
                 result = f"LO {round(pilot['distance_flown'] / 1000, 2)} Km"
-            data['Result'] = f'<a href="/map/{parid}-{taskid}">{result}</a>'
+            data['Result'] = f'<a href="/map/{parid}-{taskid}?back_link=0&full=1" target="_blank">{result}</a>'
         elif pilot['result_type'] == "mindist":
             data['Result'] = "Min Dist"
         else:
@@ -748,7 +766,6 @@ def get_score_header(files, offset):
     active_status = None
     active = None
     header = "This task has not been scored"
-    offset = (int(offset) / 60 * -1) * 3600
     for file in files:
         published = time.ctime(file['created'] + offset)
         if int(file['active']) == 1:
@@ -809,8 +826,8 @@ def get_all_scorekeepers():
     from airscore.user.models import User
     with db_session() as db:
         all_scorekeepers = db.query(User.id, User.username, User.first_name, User.last_name) \
-            .filter((User.access == 'scorekeeper') | (User.access == 'admin'))\
-            .all()
+                             .filter((User.access == 'scorekeeper') | (User.access == 'admin')) \
+                             .all()
         if all_scorekeepers:
             all_scorekeepers = [row._asdict() for row in all_scorekeepers]
         return all_scorekeepers
@@ -1012,7 +1029,7 @@ def unique_filename(filename, filepath):
     return secure_filename(filename)
 
 
-def get_pretty_data(content: dict) -> dict:
+def get_pretty_data(content: dict) -> dict or str:
     """transforms result json file in human readable data"""
     from result import pretty_format_results, get_startgates
     try:
@@ -1044,6 +1061,8 @@ def get_pretty_data(content: dict) -> dict:
             sub_classes = sorted([dict(name=c, cert=v, limit=v[-1], prev=None, rank=1, counter=0)
                                   for c, v in content['rankings'].items() if isinstance(v, list)],
                                  key=lambda x: len(x['cert']), reverse=True)
+            if content['rankings']['female']:
+                sub_classes.append(dict(name='Female', cert='female', limit='female', prev=None, rank=1, counter=0))
             rank = 0
             prev = None
             for idx, r in enumerate(content['results'], 1):
@@ -1053,7 +1072,8 @@ def get_pretty_data(content: dict) -> dict:
                 p['rank'] = str(rank)
                 '''sub-classes'''
                 for s in sub_classes:
-                    if p['glider_cert'] and p['glider_cert'] in s['cert']:
+                    if ((p['glider_cert'] and p['glider_cert'] in s['cert']) if not s['name'] == 'Female'
+                                                                             else p['sex'] == 'F'):
                         s['counter'] += 1
                         if not s['prev'] == p['score']:
                             s['rank'], s['prev'] = s['counter'], p['score']
@@ -1064,7 +1084,7 @@ def get_pretty_data(content: dict) -> dict:
             pretty_content['results'] = results
             pretty_content['classes'] = [{k: c[k] for k in ('name', 'limit', 'cert', 'counter')} for c in sub_classes]
         return pretty_content
-    except:
+    except Exception:
         # raise
         return 'error'
 
@@ -1225,3 +1245,179 @@ def create_stream_content(content):
         return mem
     except TypeError:
         return None
+
+
+def list_classifications() -> dict:
+    """Lists all classifications stored in database.
+    :returns a dictionary with 3 lists.
+        all: a list of all classifications
+        pg: a list of all classifications that are of class pg or mixed
+        hg: a list of all classifications that are of class hg or mixed"""
+    from db.tables import TblClassification as C
+    all_classifications = []
+    hg_classifications = []
+    pg_classifications = []
+
+    results = C.get_all()
+    for el in results:
+        all_classifications.append(el.as_dict())
+        if el.comp_class in ('PG', 'mixed'):
+            pg_classifications.append(el.as_dict())
+        if el.comp_class in ('HG', 'mixed'):
+            hg_classifications.append(el.as_dict())
+    return {'ALL': sorted(all_classifications, key=lambda x: x['cat_name']),
+            'PG': sorted(pg_classifications, key=lambda x: x['cat_name']),
+            'HG': sorted(hg_classifications, key=lambda x: x['cat_name'])}
+
+
+def list_countries() -> list:
+    """Lists all countries with IOC code stored in database.
+    :returns a list of dicts {name, code}"""
+    from db.tables import TblCountryCode
+    return TblCountryCode.get_list()
+
+
+def get_classifications_details(comp_class: str = None) -> list:
+    from db.tables import TblClasCertRank as CC, TblRanking as R, TblCertification as CCT, TblClassification as CT
+    output = []
+    with db_session() as db:
+        query = db.query(CT.cat_id, CT.cat_name, CT.comp_class,
+                         CT.female, CT.team, R.rank_name.label('rank'), CCT.cert_name.label('cert')) \
+                  .select_from(R) \
+                  .join(CC, R.rank_id == CC.c.rank_id) \
+                  .join(CCT, (CCT.cert_id <= CC.c.cert_id) & (CCT.comp_class == R.comp_class)) \
+                  .join(CT, CT.cat_id == CC.c.cat_id) \
+                  .filter(CC.c.cert_id > 0)
+        if comp_class:
+            query = query.filter(CT.comp_class == comp_class)
+        results = query.all()
+
+    if results:
+        classifications = set(x.cat_id for x in results)
+        for cl in classifications:
+            elements = [x for x in results if x.cat_id == cl]
+            classification = dict(cat_id=cl, cat_name=elements[0].cat_name, comp_class=elements[0].comp_class,
+                                  female=elements[0].female, team=elements[0].team)
+            classification['categories'] = []
+            for res in elements:
+                el = next((x for x in classification['categories'] if x['title'] == res.rank), None)
+                if el:
+                    el['members'].append(res.cert)
+                else:
+                    classification['categories'].append(dict(title=res.rank, members=[res.cert]))
+            output.append(classification)
+    return output
+
+
+def list_track_sources() -> list:
+    """Lists all track sources enabled in Defines.
+        :returns a list of (value, text)."""
+    from Defines import track_sources
+    sources = [('', ' -')]
+    for el in track_sources:
+        sources.append((el, el))
+    return sources
+
+
+def list_gmt_offset() -> list:
+    """Lists GMT offsets.
+            :returns a list of (value, text)."""
+    tz = -12.0
+
+    offsets = []
+    while tz <= 14:
+        offset = int(tz * 3600)
+        sign = '-' if tz < 0 else '+'
+        i, d = divmod(abs(tz), 1)
+        h = int(i)
+        m = '00' if not d else int(d * 60)
+        text = f"{sign}{h}:{m}"
+        offsets.append((offset, text))
+        if tz in (5.5, 8.5, 12.5):
+            odd = int((tz + 0.25) * 3600)
+            offsets.append((odd, f"{sign}{h}:45"))
+        tz += 0.5
+
+    return offsets
+
+
+def list_ladders(day: datetime.date = datetime.datetime.now().date(), ladder_class: str = None) -> list:
+    """Lists all ladders stored in database, if ladders are active in settings.
+    :returns a list."""
+    from calcUtils import get_season_dates
+    from Defines import LADDERS
+    if not LADDERS:
+        ''' Ladders are disabled in Settings'''
+        return []
+    ladders = []
+    results = [el for el in get_ladders()]
+    for el in results:
+        '''create start and end dates'''
+        starts, ends = get_season_dates(ladder_id=el['ladder_id'], season=int(el['season']),
+                                        date_from=el['date_from'], date_to=el['date_to'])
+        if starts < day < ends and (ladder_class is None or el['ladder_class'] == ladder_class):
+            ladders.append(el)
+
+    return ladders
+
+
+def get_comp_ladders(comp_id: int) -> list:
+    from db.tables import TblLadderComp as LC
+    return [el.ladder_id for el in LC.get_all(comp_id=comp_id)]
+
+
+def save_comp_ladders(comp_id: int, ladder_ids: list or None) -> bool:
+    from db.tables import TblLadderComp as LC
+    try:
+        '''delete previous entries'''
+        LC.delete_all(comp_id=comp_id)
+        if ladder_ids:
+            '''save entries'''
+            # if isinstance(ladder_ids, int):
+            #     ladder_ids = [ladder_ids]
+            results = []
+            for el in ladder_ids:
+                results.append(LC(comp_id=comp_id, ladder_id=el))
+            LC.bulk_create(results)
+        return True
+    except Exception:
+        raise
+        return False
+
+
+def get_task_result_files(task_id: int, comp_id: int = None, offset: int = None) -> dict:
+    from compUtils import get_comp_json, get_comp, get_offset
+    import time
+    if not offset:
+        offset = get_offset(task_id)
+    files = get_task_result_file_list(task_id)
+    comp_file = get_comp_json(comp_id or get_comp(task_id))
+
+    if comp_file == 'error':
+        comp_header = "No overall competition results published"
+        display_comp_unpublish = False
+    else:
+        comp_published = time.ctime(comp_file['file_stats']['timestamp'] + offset)
+        comp_header = f"Overall competition results published: {comp_published}"
+        display_comp_unpublish = True
+    header, active = get_score_header(files, offset)
+    choices = []
+
+    for file in files:
+        published = time.ctime(file['created'] + offset)
+        choices.append((file['filename'], f"{published} - {file['status']}"))
+    choices.reverse()
+
+    return {'choices': choices, 'header': header, 'active': active, 'comp_header': comp_header,
+            'display_comp_unpublish': display_comp_unpublish}
+
+
+def get_region_waypoints(reg_id: int, region=None, openair_file: str = None) -> tuple:
+    from mapUtils import create_waypoints_layer, create_airspace_layer
+    _, waypoints = get_waypoint_choices(reg_id)
+    points_layer, bbox = create_waypoints_layer(reg_id)
+    openair_file, airspace_layer, airspace_list, _ = create_airspace_layer(reg_id, region=region, openair_file=openair_file)
+
+    region_map = make_map(points=points_layer, circles=points_layer,
+                          airspace_layer=airspace_layer, show_airspace=False, bbox=bbox)
+    return waypoints, region_map, airspace_list, openair_file

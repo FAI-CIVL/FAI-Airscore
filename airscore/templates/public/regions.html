@@ -1,7 +1,7 @@
 {% extends "base.html"%}
 
 {% block page_title %}
-AirScore Ladders
+Flying Areas
 {% endblock %}
 
 {% block head %}
@@ -13,27 +13,34 @@ AirScore Ladders
 <script type='text/javascript' src='/static/js/microajax.minified.js'></script>
 {% endblock %}
 
-{% block header %} Ladders: {% endblock %}
+{% block back %}
+{% if args %}
+<a href="{{ url_for('public.competition', compid=args.compid) }}">Back to Competition</a>
+{% endif %}
+{% endblock %}
+
+{% block header %} {% if args %} {{ args.compname }} - {% endif %} Flying Areas: {% endblock %}
 
 {% block content %}
 <div class='container' id='main'>
   <div class='row'>
-    <div class='col col-md-3 comp_header mt-1'>
-      <select name='season' id='season' class='form-control' placeholder='Seasons'>
-      </select>
-    </div>
   </div>
 
-  <table id='competitions' class='row-border stripe compact mb-1' cellspacing='0' width='100%'>
+  <table id='regions' class='row-border stripe compact mb-1' cellspacing='0' width='100%'>
   </table>
 </div>
 {% endblock %}
 
 {% block js %}
 <script type='text/javascript' src='https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js'></script>
-<script src="{{ static_url_for('static', filename='js/pop_ladders.js') }}"></script>
-<script src="{{ static_url_for('static', filename='js/season_filter.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/pop_regions.js') }}"></script>
 <script type='text/javascript'>
-  var selected = {{ now.year|tojson }};
+  var regions = JSON.parse('{{ regions|tojson }}');
+  {% if args %}
+  {% set link_args = ['regids=' + args.regids, 'compid=' + args.compid, 'compname=' + args.compname]|join('&') %}
+  {% else %}
+  {% set link_args = None %}
+  {% endif %}
+  var link_args = {{ link_args|tojson }}
 </script>
 {% endblock %}

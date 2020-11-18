@@ -376,7 +376,7 @@ def start_number_at_time(task: Task, time: int) -> int:
     elif task.total_start_number <= 1:
         return task.total_start_number
     elif task.SS_interval > 0:
-        return 1 + int((time - task.start_time) / task.SS_interval)
+        return min(1 + int((time - task.start_time) / task.SS_interval), task.total_start_number)
 
 
 def pilot_get_better_start(task: Task, time: int, prev_time: int) -> bool:

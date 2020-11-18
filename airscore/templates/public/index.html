@@ -4,6 +4,8 @@
 AirScore Competitions
 {% endblock %}
 
+{% block header %} Competitions: {% endblock %}
+
 {% block head %}
 <!-- CSS -->
 <link href='/static/css/task.css' rel='stylesheet'>
@@ -16,12 +18,11 @@ AirScore Competitions
 {% block content %}
 <div class='container' id='main'>
   <div class='row'>
-    <div class='col col-md-7 comp_header mt-1'>
+    <div class='col col-md-3 comp_header mt-1'>
       <h2 id='comp_name'></h2>
       <h4 id='comp_date'></h4>
       <h4 id='comp_director'></h4>
       <select name='season' id='season' class='form-control' placeholder='Seasons'>
-        <option value='{{ now.year }}' selected>{{ now.year }}</option>
       </select>
     </div>
     <div class='col col-md-5 parameters'>
@@ -48,4 +49,7 @@ AirScore Competitions
 <script type='text/javascript' src='https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js'></script>
 <script src="{{ static_url_for('static', filename='js/pop_comps.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/season_filter.js') }}"></script>
+<script type='text/javascript'>
+  var selected = {{ now.year|tojson }};
+</script>
 {% endblock %}

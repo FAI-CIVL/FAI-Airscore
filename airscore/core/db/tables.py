@@ -38,6 +38,7 @@ class CompObjectView(BaseModel):
                       Column('check_launch', Enum('on', 'off'), server_default=text("'off'")),
                       Column('igc_config_file', String(80)),
                       Column('self_register', TINYINT(1), server_default=text("'0'")),
+                      Column('track_source', String(40)),
                       Column('formula_type', String(10)),
                       Column('formula_version', INTEGER(8)),
                       Column('formula_name', String(50)),
@@ -314,46 +315,6 @@ class UnscoredPilotView(BaseModel):
                       )
 
 
-# TaskObjectView = Table(
-#     'TaskObjectView', metadata,
-#     Column('task_id', INTEGER(11), server_default=text("'0'")),
-#     Column('comp_code', String(8)),
-#     Column('comp_name', String(100)),
-#     Column('comp_site', String(100)),
-#     Column('time_offset', MEDIUMINT(9), server_default=text("'0'")),
-#     Column('comp_class', Enum('PG', 'HG', 'mixed'), server_default=text("'PG'")),
-#     Column('comp_id', INTEGER(11)),
-#     Column('date', Date),
-#     Column('task_name', String(100)),
-#     Column('task_num', TINYINT(4)),
-#     Column('reg_id', INTEGER(11)),
-#     Column('window_open_time', MEDIUMINT(9)),
-#     Column('task_deadline', MEDIUMINT(9)),
-#     Column('window_close_time', MEDIUMINT(9)),
-#     Column('check_launch', Enum('on', 'off'), server_default=text("'off'")),
-#     Column('start_time', MEDIUMINT(9)),
-#     Column('SS_interval', SMALLINT(6), server_default=text("'0'")),
-#     Column('start_iteration', TINYINT(4)),
-#     Column('start_close_time', MEDIUMINT(9)),
-#     Column('stopped_time', MEDIUMINT(9)),
-#     Column('task_type', String(21)),
-#     Column('distance', Float),
-#     Column('opt_dist', Float),
-#     Column('opt_dist_to_SS', Float),
-#     Column('opt_dist_to_ESS', Float),
-#     Column('SS_distance', Float),
-#     Column('QNH', Float, server_default=text("'1013.25'")),
-#     Column('comment', Text),
-#     Column('locked', TINYINT(3), server_default=text("'0'")),
-#     Column('airspace_check', TINYINT(1)),
-#     Column('openair_file', String(40)),
-#     Column('cancelled', TINYINT(1), server_default=text("'1'")),
-#     Column('track_source', String(40)),
-#     Column('task_path', String(40)),
-#     Column('comp_path', String(40))
-# )
-
-
 class TrackObjectView(BaseModel):
     __table__ = Table('TrackObjectView', metadata,
 
@@ -365,16 +326,6 @@ class TrackObjectView(BaseModel):
                       Column('glider_cert', String(20)),
                       Column('track_file', String(255)),
                       )
-
-
-# class UserView(BaseModel):
-#     __table__ = Table('UserView', metadata,
-#
-#                       Column('usePk', BIGINT(20), primary_key=True),
-#                       Column('useName', String(250)),
-#                       Column('useLogin', String(60)),
-#                       Column('useEmail', String(100))
-#                       )
 
 
 schema_version = Table(
@@ -391,6 +342,7 @@ class TblCertification(BaseModel):
     cert_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
     cert_name = Column(String(15), nullable=False)
     comp_class = Column(Enum('PG', 'HG', 'mixed'), nullable=False, server_default=text("'PG'"))
+    cert_order = Column(TINYINT(1), nullable=False)
 
 
 class TblClassification(BaseModel):
@@ -410,11 +362,24 @@ class TblCountryCode(BaseModel):
     natIso2 = Column(String(2), nullable=False)
     natIso3 = Column(String(3), nullable=False)
     natId = Column(INTEGER(11), primary_key=True)
-    natIso = Column(String(13))
+    natIoc = Column(String(3))
     natRegion = Column(String(8))
     natSubRegion = Column(String(25))
     natRegionId = Column(INTEGER(11))
     natSubRegionId = Column(INTEGER(11))
+
+    @classmethod
+    def get_list(cls, countries: set = None, iso: int = None) -> list:
+        """ returns a list of dict"""
+        CC = aliased(cls)
+        column = getattr(CC, 'natIoc') if not iso else getattr(CC, 'natIso' + str(iso))
+        with db_session() as db:
+            print(f'session id: {id(db)}')
+            query = db.query(CC.natName.label('name'), column.label('code')).filter(column.isnot(None))
+            if countries:
+                query = query.filter(column.in_(countries))
+            results = query.order_by(CC.natName).all()
+            return [el._asdict() for el in results]
 
 
 class TblForComp(BaseModel):
@@ -662,11 +627,12 @@ TblCompAirspaceCheck = Table(
     Column('v_max_penalty', Float(3), nullable=False, server_default=text("'1'"))
 )
 
-TblLadderComp = Table(
-    'tblLadderComp', metadata,
-    Column('ladder_id', ForeignKey('tblLadder.ladder_id', ondelete='CASCADE'), index=True),
-    Column('comp_id', ForeignKey('tblCompetition.comp_id', ondelete='CASCADE'), index=True)
-)
+
+class TblLadderComp(BaseModel):
+    __tablename__ = 'tblLadderComp'
+
+    ladder_id = Column(ForeignKey('tblLadder.ladder_id', ondelete='CASCADE'), index=True)
+    comp_id = Column(ForeignKey('tblCompetition.comp_id', ondelete='CASCADE'), primary_key=True, index=True)
 
 
 class TblRegionWaypoint(BaseModel):

@@ -1,8 +1,6 @@
-
-$(document).ready(function() {
+function populate_ladders() {
     $('#competitions').dataTable({
         ajax: '/_get_ladders',
-//        order: [[ 4, 'desc' ]],
         paging: false,
         searching: true,
         saveState: true,
@@ -13,9 +11,6 @@ $(document).ready(function() {
             {data: 'nat', title: 'Nat', defaultContent: ''},
             {data: 'ladder_class', title: 'Class', defaultContent: ''},
             {data: 'season', title: 'Season', defaultContent: ''},
-//            {data: 'comp_type', title:'Type', defaultContent: ''},
-//            {data: 'date_from', title:'From', defaultContent: ''},
-//            {data: 'date_to', title:'To', defaultContent: ''},
             {data: 'status', title: 'Status'},
         ],
         rowId: function(data) {
@@ -47,14 +42,10 @@ $(document).ready(function() {
             console.log('numCols='+numCols);
 
             // season picker
-            $("#season option").remove(); // Remove all <option> child tags.
-            $.each(json.seasons, function(index, item) {
-                $("#season").append(
-                    $("<option></option>")
-                        .text(item)
-                        .val(item)
-                );
-            });
+            populate_season_picker(json.seasons, selected);
         }
     });
+}
+$(document).ready(function() {
+    populate_ladders();
 });

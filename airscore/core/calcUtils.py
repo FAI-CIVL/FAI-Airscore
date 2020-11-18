@@ -53,10 +53,10 @@ def igc_coords(lat: float, lon: float) -> (str, str):
     return igclat, igclon
 
 
-def km(dist, n=3):
+def km(dist: float, n: int = 3):
     """meters to km, with n as number of decimals"""
     try:
-        return c_round(dist / 1000, int(n))
+        return c_round(dist / 1000, n)
     except ValueError:
         return None
 

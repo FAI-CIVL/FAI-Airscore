@@ -283,19 +283,8 @@ class Formula(object):
         """stores formula to TblForComp table in AirScore database"""
         from db.tables import TblForComp as FC
 
-        with db_session() as db:
-            '''check if we have already a row for the comp'''
-            row = db.query(FC).get(self.comp_id)
-            if row is None:
-                row = FC(comp_id=self.comp_id)
-                db.add(row)
-                db.flush()
-            else:
-                for k, v in self.as_dict().items():
-                    if hasattr(row, k):
-                        setattr(row, k, v)
-                db.flush()
-            db.commit()
+        row = FC.from_obj(self)
+        row.save_or_update()
         return self.comp_id
 
     def get_lib(self):

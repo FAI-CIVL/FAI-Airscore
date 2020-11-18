@@ -350,6 +350,8 @@ class Comp(object):
                     results.append(participant)
                 # should already be ordered, so probably not necessary
                 comp.participants = sorted(results, key=lambda k: k.score, reverse=True)
+                if any(el for el in comp.participants if el.live_id):
+                    comp.track_source = 'flymaster'
             return comp
 
     @staticmethod
@@ -385,7 +387,7 @@ class Comp(object):
                     res = comp.results[-1]
                 # TODO need to decide which rounding to use and has to be the same in task results
                 # this is less than desirable, just to be consistent with task results
-                s = next((c_round(float(f"{c_round(float(pil.score), 1):.{decimals}f}"), decimals)
+                s = next((c_round(float(f"{c_round(float(pil.score or 0), 1):.{decimals}f}"), decimals)
                           for pil in task.pilots if pil.par_id == p.par_id), 0)
                 # s = next((c_round(pil.score or 0, decimals) for pil in task.pilots if pil.par_id == p.par_id), 0)
                 if r > 0:  # sanity

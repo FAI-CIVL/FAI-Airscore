@@ -30,6 +30,7 @@ class TaskResult:
     """
 
     info_list = ['id',
+                 'comp_id',
                  'comp_name',
                  'comp_site',
                  'comp_class',
@@ -702,24 +703,18 @@ def delete_result(ref_id: int, filename=None):
         db.query(TblResultFile).filter_by(ref_id=ref_id).delete(synchronize_session=False)
 
 
-def get_country_list(countries=None, iso=3):
+def get_country_list(countries: set = None, iso: int = None) -> list:
     """
     Returns a list of countries code and names.
     If a list of codes is not given, returns the whole countries set.
     Args:
-        countries: list of country codes
-        iso: 2 or 3
+        countries: set of country codes
+        iso: 2 or 3 if None, return standard IOC codes; default: None
     Returns:
         a list of objects with attributes name and code
     """
     from db.tables import TblCountryCode as CC
-    from db.conn import db_session
-    column = getattr(CC, 'natIso' + str(iso))
-    with db_session() as db:
-        query = db.query(CC.natName.label('name'), column.label('code'))
-        if countries:
-            return sorted(query.filter(column.in_(countries)).all(), key=lambda k: k.name)
-        return query.all()
+    return CC.get_list(countries=countries, iso=iso)
 
 
 def open_json_file(filename: str):
@@ -871,18 +866,17 @@ def get_task_country_json(filename):
     data = open_json_file(filename)
     formula = data['formula']
     if not formula['country_scoring']:
-        print(f'Team Scoring is not available')
+        print(f'Country Scoring is not available')
         return None
     countries = get_country_list(countries=set(map(lambda x: x['nat'], data['results'])))
     size = formula['team_size'] if 'country_size' not in formula.keys() else formula['country_size']
     results = []
     for nat in countries:
-        nation = dict(code=nat.code, name=nat.name)
-        nat_pilots = sorted([p for p in data['results'] if p['nat'] == nation['code']
+        nat_pilots = sorted([p for p in data['results'] if p['nat'] == nat['code']
                              and p['nat_team']], key=lambda k: k['score'], reverse=True)
-        nation['pilots'] = nat_pilots
-        nation['score'] = sum([p['score'] for p in nat_pilots][:size])
-        results.append(nation)
+        nat['pilots'] = nat_pilots
+        nat['score'] = sum([p['score'] for p in nat_pilots][:size])
+        results.append(nat)
     results = sorted(results, key=lambda k: k['score'], reverse=True)
     return jsonpickle.encode(results)
 
@@ -904,7 +898,7 @@ def get_comp_country_json(filename):
     data = open_json_file(filename)
     formula = data['formula']
     if not formula['country_scoring']:
-        print(f'Team Scoring is not available')
+        print(f'Country Scoring is not available')
         return None
     '''get info: countries list, team size, task codes'''
     countries = get_country_list(countries=set(map(lambda x: x['nat'], data['results'])))
@@ -912,8 +906,7 @@ def get_comp_country_json(filename):
     tasks = [t['task_code'] for t in data['tasks']]
     results = []
     for nat in countries:
-        nation = dict(code=nat.code, name=nat.name)
-        nat_pilots = [p for p in data['results'] if p['nat'] == nation['code'] and p['nat_team']]
+        nat_pilots = [p for p in data['results'] if p['nat'] == nat['code'] and p['nat_team']]
         score = 0
         for t in tasks:
             '''sort pilots by task result'''
@@ -931,15 +924,11 @@ def get_comp_country_json(filename):
         for p in nat_pilots:
             p['score'] = sum(p['results'][t]['score'] for t in tasks)
         nat_pilots = sorted(nat_pilots, key=lambda k: k['score'], reverse=True)
-        nation['pilots'] = nat_pilots
-        nation['score'] = score
-        results.append(nation)
+        nat['pilots'] = nat_pilots
+        nat['score'] = score
+        results.append(nat)
     results = sorted(results, key=lambda k: k['score'], reverse=True)
     return jsonpickle.encode(results)
-    # for idx, nat in enumerate(results, 1):
-    #     print(f"{idx}. - {nat['name']}: {nat['score']}")
-    #     for p in nat['pilots']:
-    #         print(f" - {p['name']}: {[(t, p['results'][t]['score']) for t in tasks]} - {p['score']}")
 
 
 def get_comp_team_json(filename):
@@ -991,10 +980,6 @@ def get_comp_team_json(filename):
         results.append(team)
     results = sorted(results, key=lambda k: k['score'], reverse=True)
     return jsonpickle.encode(results)
-    # for idx, team in enumerate(results, 1):
-    #     print(f"{idx}. - {team['name']}: {team['score']}")
-    #     for p in team['pilots']:
-    #         print(f" - {p['name']}: {[(t, p['results'][t]['score']) for t in tasks]} - {p['score']}")
 
 
 def get_task_team_json(filename):
@@ -1026,10 +1011,6 @@ def get_task_team_json(filename):
         results.append(team)
     results = sorted(results, key=lambda k: k['score'], reverse=True)
     return jsonpickle.encode(results)
-    # for idx, team in enumerate(results, 1):
-    #     print(f"{idx}. - {team['name']}: {team['score']}")
-    #     for p in team['pilots']:
-    #         print(f" - {p['name']}: {p['score']}")
 
 
 def get_task_country_scoring(filename):
@@ -1043,23 +1024,22 @@ def get_task_country_scoring(filename):
     teams = []
     all_scores = []
     if not formula['country_scoring']:
-        print(f'Team Scoring is not available')
-        return {'error': 'Team Scoring is not available'}
+        print(f'Country Scoring is not available')
+        return {'error': 'Country Scoring is not available'}
     countries = get_country_list(countries=set(map(lambda x: x['nat'], data['results'])))
     size = formula['team_size'] if 'country_size' not in formula.keys() else formula['country_size']
     for nat in countries:
-        nation = dict(code=nat.code, name=nat.name)
-        nat_pilots = sorted([p for p in data['results'] if p['nat'] == nation['code']
+        nat_pilots = sorted([p for p in data['results'] if p['nat'] == nat['code']
                              and p['nat_team']], key=lambda k: k['score'], reverse=True)
-        nation['score'] = sum([p['score'] for p in nat_pilots][:size])
+        nat['score'] = sum([p['score'] for p in nat_pilots][:size])
         for rank, p in enumerate(nat_pilots):
-            p['group'] = f". {nat.name} - {nation['score']:.0f} points"
-            p['nation_score'] = nation['score']
+            p['group'] = f". {nat['name']} - {nat['score']:.0f} points"
+            p['nation_score'] = nat['score']
             if rank >= size:
                 p['score'] = f"<del>{p['score']:.2f}</del>"
             else:
                 p['score'] = f"{p['score']:.2f}"
-        teams.append(nation)
+        teams.append(nat)
         pilots.extend(nat_pilots)
     # get rank after sort
     for t in teams:
@@ -1077,7 +1057,7 @@ def get_comp_country_scoring(filename):
     data = open_json_file(filename)
     formula = data['formula']
     if not formula['country_scoring']:
-        print(f'Team Scoring is not available')
+        print(f'Country Scoring is not available')
         return None
     '''get info: countries list, team size, task codes'''
     countries = get_country_list(countries=set(map(lambda x: x['nat'], data['results'])))
@@ -1093,8 +1073,7 @@ def get_comp_country_scoring(filename):
         all_possible_tasks.append('T' + str(t))
 
     for nat in countries:
-        nation = dict(code=nat.code, name=nat.name)
-        nat_pilots = [p for p in data['results'] if p['nat'] == nation['code'] and p['nat_team'] == 1]
+        nat_pilots = [p for p in data['results'] if p['nat'] == nat['code'] and p['nat_team'] == 1]
         score = 0
         for t in tasks:
             '''sort pilots by task result'''
@@ -1114,12 +1093,12 @@ def get_comp_country_scoring(filename):
         '''final nation sorting'''
         for p in nat_pilots:
             p['score'] = sum(p['results'][t]['score'] for t in tasks if not isinstance(p['results'][t]['score'], str))
-            p['group'] = f". {nat.name} - {score:.0f} points"
+            p['group'] = f". {nat['name']} - {score:.0f} points"
             p['nation_score'] = score
         nat_pilots = sorted(nat_pilots, key=lambda k: k['score'], reverse=True)
         pilots.extend(nat_pilots)
-        nation['score'] = score
-        teams.append(nation)
+        nat['score'] = score
+        teams.append(nat)
     # get rank after sort
     for t in teams:
         all_scores.append(t['score'])
