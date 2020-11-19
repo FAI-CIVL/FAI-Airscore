@@ -42,6 +42,14 @@ class BaseModel(Base):
                 obj  - OBJ: object"""
         try:
             row = cls()
+
+            ''' get row if exists'''
+            key = next((c.name for c in cls.__table__.columns.values() if c.primary_key), None)
+            if hasattr(obj, key) and getattr(obj, key) is not None:
+                result = cls.get_by_id(getattr(obj, key))
+                if result:
+                    row = result
+
             for x in row.__table__.columns.keys():
                 if hasattr(obj, x):
                     setattr(row, x, getattr(obj, x))
@@ -137,9 +145,11 @@ class BaseModel(Base):
         try:
             key = next((c.name for c in self.__table__.columns.values() if c.primary_key), None)
             idv = getattr(self, key)
-            if idv and self.get_by_id(idv):
-                self.update()
-            else:
-                self.save()
-        except:
+            if idv:
+                row = self.get_by_id(idv)
+                if row:
+                    return row.update(**self.as_dict())
+            self.save()
+        except Exception as e:
+            print(f'save_or_update db error: {e}')
             return None

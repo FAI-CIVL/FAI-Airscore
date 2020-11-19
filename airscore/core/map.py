@@ -97,7 +97,13 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
             else:
                 col = '#3186cc'
 
-            popup = folium.Popup(f"<b>{c['name']}</b><br>Radius: {str(c['radius_label'])} m.", max_width=300)
+            if 'radius_label' in c.keys():
+                text = f"<b>{c['name']}</b><br>Radius: {str(c['radius_label'])} m."
+            elif 'altitude' in c.keys():
+                text = f"<b>{c['name']}</b><br>{str(c['description'])}<br>Altitude: {str(c['altitude'])} m."
+            else:
+                text = f"<b>{c['name']}</b>"
+            popup = folium.Popup(text, max_width=300)
 
             folium.Circle(
                 location=(c['latitude'], c['longitude']),
@@ -138,15 +144,25 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
     """Plot waypoints"""
     if points:
         for p in points:
-            folium.Marker(
-                location=[p['latitude'], p['longitude']],
-                popup=p['name'],
-                icon=folium.features.DivIcon(
-                    icon_size=(20, 20),
-                    icon_anchor=(0, 0),
-                    html='<div class="waypoint-label">%s</div>' % p['name'],
-                )
-            ).add_to(folium_map)
+            if layer_geojson:
+                wp = folium.Marker(
+                        location=[p['latitude'], p['longitude']],
+                        popup=p['name'],
+                        icon=folium.features.DivIcon(
+                            icon_size=(40, 20),
+                            icon_anchor=(0, 0),
+                            html=f'<div class="waypoint-label">{p["name"]}</div>'
+                        )
+                    )
+            else:
+                wp = folium.Marker(
+                        location=[p['latitude'], p['longitude']],
+                        icon=folium.features.DivIcon(
+                            icon_anchor=(0, 0),
+                            html=f'<div style="background-color: darkblue; color: wheat; width: fit-content; padding: .1rem .2rem;">{p["name"]}</div>'
+                        )
+                    )
+            wp.add_to(folium_map)
 
     """Design optimised route"""
     if polyline:

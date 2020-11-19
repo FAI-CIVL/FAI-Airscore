@@ -108,7 +108,7 @@ Task Result
 {% endblock %}
 {% block js %}
 <script type='text/javascript' src='https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js'></script>
-<script type='text/javascript' src='/static/js/pop_task.js'></script>
-<script type='text/javascript'>populate_task({{taskid|tojson}})</script>
-<script type='text/javascript' src='/static/js/class_filter.js'></script>
+<script src="{{ static_url_for('static', filename='js/pop_task.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/class_filter.js') }}"></script>
+<script type='text/javascript'>populate_task({{results|tojson}})</script>
 {% endblock %}

@@ -8,7 +8,7 @@ from flask_login import login_required, current_user
 import frontendUtils
 from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm, \
     TaskResultAdminForm, NewScorekeeperForm, RegionForm, NewRegionForm, IgcParsingConfigForm, ModifyParticipantForm, \
-    EditScoreForm, ModifyUserForm
+    EditScoreForm, ModifyUserForm, CompLaddersForm
 from comp import Comp
 from formula import list_formulas, Formula
 from task import Task, write_map_json, get_task_json_by_filename
@@ -19,24 +19,42 @@ from task import get_task_json_by_filename
 from calcUtils import sec_to_time
 from pathlib import Path
 import time
-from Defines import SELF_REG_DEFAULT, PILOT_DB
+from Defines import SELF_REG_DEFAULT, PILOT_DB, LADDERS
 from airscore.user.models import User
 
 blueprint = Blueprint("user", __name__, url_prefix="/users", static_folder="../static")
 
 
 def admin_required(func):
-    '''
+    """
     If you decorate a view with this, it will ensure that the current user is
     an admin before calling the actual view. (If they are
     not, it calls the :attr:`LoginManager.unauthorized` callback.)
-    '''
+    """
+
     @wraps(func)
     def decorated_view(*args, **kwargs):
         if not session['is_admin']:
             return current_app.login_manager.unauthorized()
         return func(*args, **kwargs)
+
     return decorated_view
+
+
+def check_coherence(func):
+    """
+    Checks if compid or taskid is coherent with session value
+    """
+    @wraps(func)
+    def decorated_function(*args, **kwargs):
+        if (('compid' in kwargs.keys() and session['compid'] and not kwargs['compid'] == session['compid'])
+                or ('taskid' in kwargs.keys() and session['tasks']
+                    and kwargs['taskid'] not in [el['task_id'] for el in session['tasks']])):
+            flash(f"You requested a competition not in your session. Please select the correct one.", category='danger')
+            return render_template('users/comp_admin.html')
+        return func(*args, **kwargs)
+
+    return decorated_function
 
 
 @blueprint.route("/")
@@ -46,9 +64,9 @@ def members():
     return render_template("users/members.html")
 
 
-@blueprint.route('/airspace_map/<filename>')
+@blueprint.route('/airspace_map/<string:filename>')
 @login_required
-def airspace_edit(filename):
+def airspace_edit(filename: str):
     import map
     import airspaceUtils
 
@@ -187,12 +205,10 @@ def _get_formulas():
     return jsonify(formula_choices)
 
 
-@blueprint.route('/comp_settings_admin/<compid>', methods=['GET', 'POST'])
+@blueprint.route('/comp_settings_admin/<int:compid>', methods=['GET', 'POST'])
 @login_required
-def comp_settings_admin(compid):
-    from sys import stdout
+def comp_settings_admin(compid: int):
     error = None
-    compid = int(compid)
     compform = CompForm()
     newtaskform = NewTaskForm()
     newScorekeeperform = NewScorekeeperForm()
@@ -210,7 +226,9 @@ def comp_settings_admin(compid):
     scorekeeper_choices = []
     if all_scorekeepers:
         for scorekeeper in all_scorekeepers:
-            scorekeeper_choices.append((scorekeeper['id'], f"{scorekeeper['first_name']} {scorekeeper['last_name']} ({scorekeeper['username']})"))
+            scorekeeper_choices.append((scorekeeper['id'],
+                                        f"{scorekeeper['first_name']} {scorekeeper['last_name']} ({scorekeeper['username']})"))
+
     if request.method == 'POST':
         if compform.validate_on_submit():
             comp.comp_name = compform.comp_name.data
@@ -222,11 +240,13 @@ def comp_settings_admin(compid):
             comp.date_from = compform.date_from.data
             comp.date_to = compform.date_to.data
             comp.MD_name = compform.MD_name.data
-            comp.time_offset = compform.time_offset.data * 3600
+            comp.cat_id = compform.cat_id.data
+            comp.track_source = compform.track_source.data if compform.track_source.data not in ('', None) else None
+            comp.time_offset = compform.time_offset.data
             comp.restricted = compform.pilot_registration.data
             comp.locked = compform.locked.data
             comp.igc_config_file = compform.igc_parsing_file.data
-            # comp.airspace_check = compform.airspace_check.data
+            comp.airspace_check = compform.airspace_check.data
             comp.check_launch = 'on' if compform.check_launch.data else 'off'
             comp.check_g_record = compform.check_g_record.data
             comp.self_register = compform.self_register.data
@@ -237,6 +257,7 @@ def comp_settings_admin(compid):
             else:
                 comp.website = compform.website.data.lower()
             comp.to_db()
+
             formula = Formula.read(compid)
             formula.formula_name = compform.formula.data
             formula.overall_validity = compform.overall_validity.data
@@ -270,7 +291,6 @@ def comp_settings_admin(compid):
             formula.country_size = compform.country_size.data
             formula.max_country_size = compform.max_country_size.data
             formula.team_over = compform.team_over.data
-
             formula.to_db()
 
             flash(f"{compform.comp_name.data} saved", category='info')
@@ -292,7 +312,9 @@ def comp_settings_admin(compid):
         compform.date_from.data = comp.date_from
         compform.date_to.data = comp.date_to
         compform.MD_name.data = comp.MD_name
-        compform.time_offset.data = comp.time_offset / 3600
+        compform.cat_id.data = comp.cat_id
+        compform.track_source.data = comp.track_source
+        compform.time_offset.data = int(comp.time_offset)
         compform.pilot_registration.data = comp.restricted
         compform.formula.data = formula.formula_name
         compform.overall_validity.data = formula.overall_validity
@@ -349,20 +371,48 @@ def comp_settings_admin(compid):
         else:
             session['is_scorekeeper'] = True
 
+    ''' Ladders if active in settings'''
+    if LADDERS:
+        ladderform = CompLaddersForm()
+        ladderform.ladders.choices = [(el['ladder_id'], el['ladder_name'])
+                                      for el in frontendUtils.list_ladders(comp.date_to, comp.comp_class)]
+        comp_ladders = frontendUtils.get_comp_ladders(compid)
+        ladderform.ladders.data = comp_ladders
+    else:
+        ladderform = None
+
     tasks = frontendUtils.get_task_list(comp)
+    classifications = frontendUtils.get_classifications_details()
     session['tasks'] = tasks['tasks']
     session['check_g_record'] = comp.check_g_record
+    session['track_source'] = comp.track_source
+
+    if not compform.formula.data:
+        '''Comp has not been initialised yet'''
+        flash(f"Comp has not been properly set yet. Check all parameters and save.", category='warning')
 
     return render_template('users/comp_settings.html', compid=compid, compform=compform,
-                           taskform=newtaskform, scorekeeperform=newScorekeeperform, error=error,
+                           taskform=newtaskform, scorekeeperform=newScorekeeperform, ladderform=ladderform,
+                           classifications=classifications, error=error,
                            self_register=(SELF_REG_DEFAULT and PILOT_DB))
 
 
-@blueprint.route('/_get_scorekeepers/<compid>', methods=['GET'])
+@blueprint.route('/_get_scorekeepers/<int:compid>', methods=['GET'])
 @login_required
-def _get_scorekeepers(compid):
+def _get_scorekeepers(compid: int):
     owner, scorekeepers, _ = frontendUtils.get_comp_scorekeeper(compid)
     return {'owner': owner, 'scorekeepers': scorekeepers}
+
+
+@blueprint.route('/_save_comp_ladders/<int:compid>', methods=['POST'])
+@login_required
+def _save_comp_ladders(compid: int):
+    checked = request.json['checked']
+    if frontendUtils.save_comp_ladders(compid, checked):
+        resp = jsonify(success=True)
+    else:
+        resp = jsonify(success=False)
+    return resp
 
 
 @blueprint.route('/_get_users', methods=['GET'])
@@ -376,13 +426,14 @@ def _get_users():
 @login_required
 @admin_required
 def user_admin():
+    from Defines import ADMIN_DB
     modify_user_form = ModifyUserForm()
-    return render_template('users/user_admin.html', modify_user_form=modify_user_form)
+    return render_template('users/user_admin.html', modify_user_form=modify_user_form, editable=bool(ADMIN_DB))
 
 
-@blueprint.route('/_add_scorekeeper/<compid>', methods=['POST'])
+@blueprint.route('/_add_scorekeeper/<int:compid>', methods=['POST'])
 @login_required
-def _add_scorekeeper(compid):
+def _add_scorekeeper(compid: int):
     data = request.json
     if frontendUtils.set_comp_scorekeeper(compid, data['id']):
         resp = jsonify(success=True)
@@ -391,24 +442,16 @@ def _add_scorekeeper(compid):
         return render_template('500.html')
 
 
-@blueprint.route('/task_admin/<taskid>', methods=['GET', 'POST'])
+@blueprint.route('/task_admin/<int:taskid>', methods=['GET', 'POST'])
 @login_required
-def task_admin(taskid):
+@check_coherence
+def task_admin(taskid: int):
     from calcUtils import sec_to_time, time_to_seconds
     from region import get_openair
     error = None
     taskform = TaskForm()
     turnpointform = NewTurnpointForm()
     modifyturnpointform = ModifyTurnpointForm()
-    taskid = int(taskid)
-
-    task_in_comp = False
-    for task in session['tasks']:
-        if task['task_id'] == taskid:
-            task_in_comp = True
-
-    if not task_in_comp:
-        return render_template('out_of_comp.html')
 
     task = Task.read(taskid)
     waypoints, _ = frontendUtils.get_waypoint_choices(task.reg_id)
@@ -425,16 +468,16 @@ def task_admin(taskid):
             task.comment = taskform.comment.data
             task.date = taskform.date.data
             task.task_type = taskform.task_type.data
-            task.window_open_time = time_to_seconds(taskform.window_open_time.data) - taskform.time_offset.data * 3600
-            task.window_close_time = time_to_seconds(taskform.window_close_time.data) - taskform.time_offset.data * 3600
-            task.start_time = time_to_seconds(taskform.start_time.data) - taskform.time_offset.data * 3600
-            task.start_close_time = time_to_seconds(taskform.start_close_time.data) - taskform.time_offset.data * 3600
+            task.window_open_time = time_to_seconds(taskform.window_open_time.data) - taskform.time_offset.data
+            task.window_close_time = time_to_seconds(taskform.window_close_time.data) - taskform.time_offset.data
+            task.start_time = time_to_seconds(taskform.start_time.data) - taskform.time_offset.data
+            task.start_close_time = time_to_seconds(taskform.start_close_time.data) - taskform.time_offset.data
             task.stopped_time = None if taskform.stopped_time.data is None else \
-                time_to_seconds(taskform.stopped_time.data) - taskform.time_offset.data * 3600
-            task.task_deadline = time_to_seconds(taskform.task_deadline.data) - taskform.time_offset.data * 3600
+                time_to_seconds(taskform.stopped_time.data) - taskform.time_offset.data
+            task.task_deadline = time_to_seconds(taskform.task_deadline.data) - taskform.time_offset.data
             task.SS_interval = taskform.SS_interval.data * 60  # (convert from min to sec)
             task.start_iteration = taskform.start_iteration.data
-            task.time_offset = taskform.time_offset.data * 3600
+            task.time_offset = taskform.time_offset.data
             task.check_launch = 'on' if taskform.check_launch.data else 'off'
             task.airspace_check = taskform.airspace_check.data
             # task.openair_file = taskform.openair_file  # TODO get a list of openair files for this comp (in the case of defines.yaml airspace_file_library: off otherwise all openair files available)
@@ -486,9 +529,9 @@ def task_admin(taskid):
                                                                                    + offset) % 86400)
         taskform.task_deadline.data = "" if not task.task_deadline else sec_to_time((task.task_deadline
                                                                                      + offset) % 86400)
-        taskform.SS_interval.data = task.SS_interval / 60  # (convert from sec to min)
+        taskform.SS_interval.data = round(task.SS_interval / 60)  # (convert from sec to min)
         taskform.start_iteration.data = task.start_iteration
-        taskform.time_offset.data = offset / 3600
+        taskform.time_offset.data = offset
         taskform.check_launch.data = False if task.check_launch == 'off' else True
         taskform.airspace_check.data = task.airspace_check
         # taskform.openair_file.data = task.openair_file # TODO get a list of openair files for this comp (in the case of defines.yaml airspace_file_library: off otherwise all openair files available)
@@ -499,9 +542,9 @@ def task_admin(taskid):
         taskform.formula_arrival.data = task.formula.formula_arrival
         taskform.formula_departure.data = task.formula.formula_departure
         taskform.formula_time.data = task.formula.formula_time
-        taskform.tolerance.data = (task.formula.tolerance or 0) * 100
+        taskform.tolerance.data = round((task.formula.tolerance or 0) * 100, 1)
         taskform.max_JTG.data = task.formula.max_JTG
-        taskform.no_goal_penalty.data = (task.formula.no_goal_penalty or 0) * 100
+        taskform.no_goal_penalty.data = round((task.formula.no_goal_penalty or 0) * 100)
         taskform.arr_alt_bonus.data = task.formula.arr_alt_bonus
 
         if not (task.opt_dist and task.window_open_time and task.window_close_time and task.start_time and
@@ -525,11 +568,11 @@ def _get_admin_comps():
     return frontendUtils.get_admin_comps(current_user.id, current_user.access)
 
 
-@blueprint.route('/_delete_comp/<compid>', methods=['POST', 'GET'])
+@blueprint.route('/_delete_comp/<int:compid>', methods=['POST', 'GET'])
 @login_required
-def _delete_comp(compid):
+def _delete_comp(compid: int):
     from comp import delete_comp
-    owner, _, _ = frontendUtils.get_comp_scorekeeper(int(compid))
+    owner, _, _ = frontendUtils.get_comp_scorekeeper(compid)
     if current_user.id == owner['id']:
         delete_comp(compid)
     else:
@@ -551,9 +594,9 @@ def waypoint_admin():
     return render_template('users/waypoint_admin.html')
 
 
-@blueprint.route('/_register_pilots/<compid>', methods=['POST'])
+@blueprint.route('/_register_pilots/<int:compid>', methods=['POST'])
 @login_required
-def _register_pilots(compid):
+def _register_pilots(compid: int):
     from pilot.participant import register_from_profiles_list, unregister_from_profiles_list
     data = request.json
     if data['register']:
@@ -564,12 +607,11 @@ def _register_pilots(compid):
     return resp
 
 
-@blueprint.route('/_add_task/<compid>', methods=['POST'])
+@blueprint.route('/_add_task/<int:compid>', methods=['POST'])
 @login_required
-def _add_task(compid):
+def _add_task(compid: int):
     from region import get_openair
-    comp = Comp.read(int(compid))
-    # comp.comp_id = compid
+    comp = Comp.read(compid)
     data = request.json
     task = Task(comp_id=compid)
     task.task_name = data['task_name']
@@ -589,18 +631,18 @@ def _add_task(compid):
     return tasks
 
 
-@blueprint.route('/_del_task/<taskid>', methods=['POST'])
+@blueprint.route('/_del_task/<int:taskid>', methods=['POST'])
 @login_required
-def _del_task(taskid):
+def _del_task(taskid: int):
     from task import delete_task
     delete_task(taskid)
     resp = jsonify(success=True)
     return resp
 
 
-@blueprint.route('/_get_tasks/<compid>', methods=['GET'])
+@blueprint.route('/_get_tasks/<int:compid>', methods=['GET'])
 @login_required
-def _get_tasks(compid):
+def _get_tasks(compid: int):
     comp = Comp()
     comp.comp_id = compid
     tasks = frontendUtils.get_task_list(comp)
@@ -625,10 +667,9 @@ def _get_adv_settings():
     return settings
 
 
-@blueprint.route('/_get_task_turnpoints/<taskid>', methods=['GET'])
+@blueprint.route('/_get_task_turnpoints/<int:taskid>', methods=['GET'])
 @login_required
-def _get_task_turnpoints(taskid):
-    taskid = int(taskid)
+def _get_task_turnpoints(taskid: int):
     task = Task.read(taskid)
     if (task.opt_dist and task.window_open_time and task.window_close_time
             and task.start_time and task.start_close_time and task.task_deadline):
@@ -645,14 +686,13 @@ def _get_task_turnpoints(taskid):
     return turnpoints
 
 
-@blueprint.route('/_add_turnpoint/<taskid>', methods=['POST'])
+@blueprint.route('/_add_turnpoint/<int:taskid>', methods=['POST'])
 @login_required
-def _add_turnpoint(taskid):
+def _add_turnpoint(taskid: int):
     """add turnpoint to the task,if rwp_id is not null then update instead of insert (add)
     if turnpoint is goal or we are updating and goal exists then calculate opt dist and dist."""
     from frontendUtils import get_waypoint
     data = request.json
-    taskid = int(taskid)
     rwp_id = None if not data['rwp_id'] else int(data['rwp_id'])
     if data['wpt_id']:
         '''modify waypoint'''
@@ -713,11 +753,10 @@ def _del_turnpoint(tpid):
     return resp
 
 
-@blueprint.route('/_del_all_turnpoints/<taskid>', methods=['POST'])
+@blueprint.route('/_del_all_turnpoints/<int:taskid>', methods=['POST'])
 @login_required
-def _del_all_turnpoints(taskid):
+def _del_all_turnpoints(taskid: int):
     """delete a turnpoint from the task"""
-    taskid = int(taskid)
     from route import delete_all_turnpoints
     from task import Task
     from Defines import MAPOBJDIR
@@ -734,50 +773,47 @@ def _del_all_turnpoints(taskid):
     return resp
 
 
-@blueprint.route('/_get_tracks_admin/<taskid>', methods=['GET'])
+@blueprint.route('/_get_tracks_admin/<int:taskid>', methods=['GET'])
 @login_required
-def _get_tracks_admin(taskid):
+def _get_tracks_admin(taskid: int):
     return {'data': frontendUtils.get_pilot_list_for_track_management(taskid)}
 
 
-@blueprint.route('/_get_tracks_processed/<taskid>', methods=['GET'])
+@blueprint.route('/_get_tracks_processed/<int:taskid>', methods=['GET'])
 @login_required
-def _get_tracks_processed(taskid):
+def _get_tracks_processed(taskid: int):
     tracks, pilots = frontendUtils.number_of_tracks_processed(taskid)
     return {'tracks': tracks, 'pilots': pilots}
 
 
-@blueprint.route('/track_admin/<taskid>', methods=['GET'])
+@blueprint.route('/track_admin/<int:taskid>', methods=['GET'])
 @login_required
-def track_admin(taskid):
-    taskid = int(taskid)
+@check_coherence
+def track_admin(taskid: int):
     task = next((t for t in session['tasks'] if t['task_id'] == taskid), None)
-    if task:
-        task_num = task['task_num']
-        task_name = task['task_name']
-        task_ready_to_score = task['ready_to_score']
-        track_source = task['track_source']
+    task_num = task['task_num']
+    task_name = task['task_name']
+    task_ready_to_score = task['ready_to_score']
+    track_source = task['track_source']
+    compid = int(session['compid'])
 
-        if not task_ready_to_score:
-            return render_template('task_not_ready_to_score.html')
+    if not task_ready_to_score:
+        return render_template('task_not_ready_to_score.html')
 
-        _, _, all_scorekeeper_ids = frontendUtils.get_comp_scorekeeper(taskid, task_id=True)
-        if current_user.id in all_scorekeeper_ids:
-            user_is_scorekeeper = True
-        else:
-            user_is_scorekeeper = None
-        return render_template('users/track_admin.html', taskid=taskid, user_is_scorekeeper=user_is_scorekeeper,
-                               production=frontendUtils.production(), task_name=task_name, task_num=task_num,
-                               track_source=track_source)
+    _, _, all_scorekeeper_ids = frontendUtils.get_comp_scorekeeper(taskid, task_id=True)
+    if current_user.id in all_scorekeeper_ids:
+        user_is_scorekeeper = True
     else:
-        return render_template('out_of_comp.html')
+        user_is_scorekeeper = None
+    return render_template('users/track_admin.html', taskid=taskid, compid=compid,
+                           user_is_scorekeeper=user_is_scorekeeper, production=frontendUtils.production(),
+                           task_name=task_name, task_num=task_num, track_source=track_source)
 
 
-@blueprint.route('/_set_result/<taskid>', methods=['POST'])
+@blueprint.route('/_set_result/<int:taskid>', methods=['POST'])
 @login_required
-def _set_result(taskid):
+def _set_result(taskid: int):
     data = request.json
-    taskid = int(taskid)
     trackid = update_status(data['par_id'], taskid, data['Result'])
     print(trackid)
 
@@ -804,11 +840,9 @@ def _delete_track(trackid):
         return render_template('500.html')
 
 
-@blueprint.route('/_upload_track/<taskid>/<parid>', methods=['POST'])
+@blueprint.route('/_upload_track/<int:taskid>/<int:parid>', methods=['POST'])
 @login_required
-def _upload_track(taskid, parid):
-    taskid = int(taskid)
-    parid = int(parid)
+def _upload_track(taskid: int, parid: int):
     if request.method == "POST":
         if request.files:
             if "filesize" in request.cookies:
@@ -861,16 +895,12 @@ def _upload_track(taskid, parid):
         return resp
 
 
-@blueprint.route('/_get_xcontest_tracks/<taskid>', methods=['POST'])
+@blueprint.route('/_get_xcontest_tracks/<int:taskid>', methods=['POST'])
 @login_required
-def _get_xcontest_tracks(taskid):
+def _get_xcontest_tracks(taskid: int):
     from sources.xcontest import get_zipfile
-    # from Defines import TEMPFILES
-    # from pathlib import Path
-    taskid = int(taskid)
     if request.method == "POST":
         zip_file = get_zipfile(taskid)
-        # zip_file = Path(TEMPFILES, 'xcontest-95.zip')  # test file
 
         if not zip_file:
             print("No filename")
@@ -885,11 +915,10 @@ def _get_xcontest_tracks(taskid):
         return resp
 
 
-@blueprint.route('/_upload_XCTrack/<taskid>', methods=['POST'])
+@blueprint.route('/_upload_XCTrack/<int:taskid>', methods=['POST'])
 @login_required
-def _upload_XCTrack(taskid):
+def _upload_XCTrack(taskid: int):
     """takes an upload of an xctrack task file and processes it and saves the task to the DB"""
-    taskid = int(taskid)
     if request.method == "POST":
         if request.files:
             task_file = json.load(request.files["track_file"])
@@ -907,10 +936,9 @@ def _upload_XCTrack(taskid):
             return resp
 
 
-@blueprint.route('/_upload_track_zip/<taskid>', methods=['POST'])
+@blueprint.route('/_upload_track_zip/<int:taskid>', methods=['POST'])
 @login_required
-def _upload_track_zip(taskid):
-    taskid = int(taskid)
+def _upload_track_zip(taskid: int):
     if request.method == "POST":
         if request.files:
             if "filesize" in request.cookies:
@@ -937,39 +965,21 @@ def _upload_track_zip(taskid):
         return resp
 
 
-@blueprint.route('/_get_task_result_files/<taskid>', methods=['POST'])
+@blueprint.route('/_get_task_result_files/<int:taskid>', methods=['POST'])
 @login_required
-def _get_task_result_files(taskid):
-    from compUtils import get_comp_json
+def _get_task_result_files(taskid: int):
     data = request.json
-    offset = (int(data['offset']) / 60 * -1) * 3600
-    files = frontendUtils.get_task_result_file_list(int(taskid))
-    comp_file = get_comp_json(int(session['compid']))
+    offset = ((int(data['offset']) / 60 * -1) * 3600)
+    compid = int(session['compid'])
 
-    if comp_file == 'error':
-        comp_header = "No overall competition results published"
-        display_comp_unpublish = False
-    else:
-        comp_published = time.ctime(comp_file['file_stats']['timestamp'] + offset)
-        comp_header = f"Overall competition results published: {comp_published}"
-        display_comp_unpublish = True
-    header, active = frontendUtils.get_score_header(files, data['offset'])
-    choices = []
-
-    for file in files:
-        published = time.ctime(file['created'] + offset)
-        choices.append((file['filename'], f"{published} - {file['status']}"))
-    choices.reverse()
-    return {'choices': choices, 'header': header, 'active': active, 'comp_header': comp_header,
-            'display_comp_unpublish': display_comp_unpublish}
+    return frontendUtils.get_task_result_files(int(taskid), compid, int(offset))
 
 
-@blueprint.route('/_send_telegram_update/<taskid>', methods=['POST'])
+@blueprint.route('/_send_telegram_update/<int:taskid>', methods=['POST'])
 @login_required
-def _send_telegram_update(taskid):
+def _send_telegram_update(taskid: int):
     """sends a telegram message with partial results and missing pilots during tracks processing"""
     from telegram import send_result_status
-    taskid = int(taskid)
     if request.method == "POST":
         info = {}
         task = next((t for t in session['tasks'] if t['task_id'] == taskid), None)
@@ -979,16 +989,15 @@ def _send_telegram_update(taskid):
         return jsonify(success=resp)
 
 
-@blueprint.route('/_get_task_score_from_file/<taskid>/<filename>', methods=['GET'])
+@blueprint.route('/_get_task_score_from_file/<int:taskid>/<string:filename>', methods=['GET'])
 @login_required
-def _get_task_score_from_file(taskid, filename):
+def _get_task_score_from_file(taskid: int, filename: str):
     from result import pretty_format_results
     from calcUtils import c_round
     error = None
     result_file = get_task_json_by_filename(filename)
     if not result_file:
         return {'data': ''}
-    taskid = int(taskid)
     rank = 1
     all_pilots = []
     timeoffset = int(result_file['info']['time_offset'])
@@ -999,7 +1008,7 @@ def _get_task_score_from_file(taskid, filename):
         name = r['name']
         status = r['result_type']
         if status not in ['dnf', 'abs', 'nyp']:
-            pilot = {'rank': rank, 'name': f'<a href="/map/{parid}-{taskid}">{name}</a>'}
+            pilot = {'rank': rank, 'name': f'<a href="/map/{parid}-{taskid}?back_link=0" target="_blank">{name}</a>'}
             if r['SSS_time']:
                 pilot['SSS'] = sec_to_time(r['SSS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S")
             else:
@@ -1038,26 +1047,22 @@ def _get_task_score_from_file(taskid, filename):
     return {'data': all_pilots, 'stats': stats, 'info': info}
 
 
-@blueprint.route('/task_score_admin/<taskid>', methods=['GET'])
+@blueprint.route('/task_score_admin/<int:taskid>', methods=['GET'])
 @login_required
-def task_score_admin(taskid):
-    taskid = int(taskid)
-    task_in_comp = False
-    for task in session['tasks']:
-        if task['task_id'] == taskid:
-            task_num = task['task_num']
-            task_name = task['task_name']
-            task_in_comp = True
-            task_ready_to_score = task['ready_to_score']
-
-    if not task_in_comp:
-        return render_template('out_of_comp.html')
+@check_coherence
+def task_score_admin(taskid: int):
+    task = next((el for el in session['tasks'] if el['task_id'] == taskid), None)
+    task_num = task['task_num']
+    task_name = task['task_name']
+    task_ready_to_score = task['ready_to_score']
+    compid = int(session['compid'])
 
     if not task_ready_to_score:
         return render_template('task_not_ready_to_score.html')
 
     fileform = TaskResultAdminForm()
     editform = EditScoreForm()
+    # result_files = frontendUtils.get_task_result_files(taskid, compid)
     active_file = None
     choices = [(1, 1), (2, 2)]
     fileform.result_file.choices = choices
@@ -1069,20 +1074,19 @@ def task_score_admin(taskid):
     else:
         user_is_scorekeeper = None
 
-    return render_template('users/task_score_admin.html', fileform=fileform, taskid=taskid,
+    return render_template('users/task_score_admin.html', fileform=fileform, taskid=taskid, compid=compid,
                            active_file=active_file, user_is_scorekeeper=user_is_scorekeeper, task_name=task_name,
                            task_num=task_num, editform=editform, production=frontendUtils.production())
 
 
-@blueprint.route('/_score_task/<taskid>', methods=['POST'])
+@blueprint.route('/_score_task/<int:taskid>', methods=['POST'])
 @login_required
-def _score_task(taskid):
+def _score_task(taskid: int):
     if request.method == "POST":
         from result import unpublish_result, publish_result
         """score task, request data should contain status: the score status (provisional, official etc),
         autopublish: True or False. indicates if to publish results automatically after scoring"""
         data = request.json
-        taskid = int(taskid)
         task = Task.read(taskid)
 
         if frontendUtils.production() and task.stopped_time:
@@ -1104,10 +1108,9 @@ def _score_task(taskid):
     return render_template('500.html')
 
 
-@blueprint.route('/_full_rescore_task/<taskid>', methods=['POST'])
+@blueprint.route('/_full_rescore_task/<int:taskid>', methods=['POST'])
 @login_required
-def _full_rescore_task(taskid):
-    taskid = int(taskid)
+def _full_rescore_task(taskid: int):
     data = request.json
     if frontendUtils.production():
         job = current_app.task_queue.enqueue(frontendUtils.full_rescore, taskid, background=True,
@@ -1125,9 +1128,9 @@ def _full_rescore_task(taskid):
         return resp
 
 
-@blueprint.route('/_unpublish_result/<taskid>', methods=['POST'])
+@blueprint.route('/_unpublish_result/<int:taskid>', methods=['POST'])
 @login_required
-def _unpublish_result(taskid):
+def _unpublish_result(taskid: int):
     if request.method == "POST":
         from result import unpublish_result
         unpublish_result(taskid)
@@ -1139,9 +1142,9 @@ def _unpublish_result(taskid):
     return render_template('500.html')
 
 
-@blueprint.route('/_unpublish_comp_result/<compid>', methods=['POST'])
+@blueprint.route('/_unpublish_comp_result/<int:compid>', methods=['POST'])
 @login_required
-def _unpublish_comp_result(compid):
+def _unpublish_comp_result(compid: int):
     if request.method == "POST":
         from result import unpublish_result
         unpublish_result(compid, comp=True)
@@ -1151,9 +1154,9 @@ def _unpublish_comp_result(compid):
     return render_template('500.html')
 
 
-@blueprint.route('/_publish_result/<taskid>', methods=['POST'])
+@blueprint.route('/_publish_result/<int:taskid>', methods=['POST'])
 @login_required
-def _publish_result(taskid):
+def _publish_result(taskid: int):
     if request.method == "POST":
         from result import publish_result, unpublish_result
         data = request.json
@@ -1170,9 +1173,9 @@ def _publish_result(taskid):
     return render_template('500.html')
 
 
-@blueprint.route('/_publish_comp_result/<compid>', methods=['POST'])
+@blueprint.route('/_publish_comp_result/<int:compid>', methods=['POST'])
 @login_required
-def _publish_comp_result(compid):
+def _publish_comp_result(compid: int):
     if request.method == "POST":
         from result import publish_result, unpublish_result
         data = request.json
@@ -1189,9 +1192,9 @@ def _publish_comp_result(compid):
     return render_template('500.html')
 
 
-@blueprint.route('/_change_result_status/<taskid>', methods=['POST'])
+@blueprint.route('/_change_result_status/<int:taskid>', methods=['POST'])
 @login_required
-def _change_result_status(taskid):
+def _change_result_status(taskid: int):
     if request.method == "POST":
         from result import update_result_status
         data = request.json
@@ -1211,11 +1214,12 @@ def _get_regions():
     return {'choices': choices, 'details': details}
 
 
-@blueprint.route('/_get_wpts/<regid>', methods=['GET'])
+@blueprint.route('/_get_wpts/<int:regid>', methods=['POST'])
 @login_required
-def _get_wpts(regid):
-    choices, details = frontendUtils.get_waypoint_choices(regid)
-    return {'choices': choices, 'data': details}
+def _get_wpts(regid: int):
+    openair_file = request.json.get('airspace')
+    waypoints, region_map, _, _ = frontendUtils.get_region_waypoints(regid, openair_file=openair_file)
+    return {'waypoints': waypoints, 'map': region_map._repr_html_(), 'airspace': openair_file}
 
 
 @blueprint.route('/region_admin', methods=['GET', 'POST'])
@@ -1234,7 +1238,7 @@ def region_admin():
 
     if request.method == "POST":
         if request.files:
-            if not path.isdir(WAYPOINTDIR):
+            if not Path(WAYPOINTDIR).is_dir():
                 makedirs(WAYPOINTDIR)
             waypoint_file = request.files["waypoint_file"]
             airspace_file = request.files["openair_file"]
@@ -1261,30 +1265,29 @@ def region_admin():
                                            new_region_form=new_region)
                 '''save file'''
                 wpt_filename = unique_filename(waypoint_file.filename, WAYPOINTDIR)
-                fullpath = path.join(WAYPOINTDIR, wpt_filename)
+                fullpath = Path(WAYPOINTDIR, wpt_filename)
+                waypoint_file.seek(0)
                 waypoint_file.save(fullpath)
 
                 if airspace_file:
+                    if not Path(AIRSPACEDIR).is_dir():
+                        makedirs(AIRSPACEDIR)
                     # save airspace file
-                    fullpath = path.join(AIRSPACEDIR, airspace_file.filename)
-                    i = 1
-                    air_new_filename = airspace_file.filename
-                    while path.exists(fullpath):
-                        air_new_filename = f"{i}_{airspace_file.filename}"
-                        fullpath = path.join(AIRSPACEDIR, air_new_filename)
-                        i += 1
-                    # airspace_file.save(fullpath)
-                    with open(fullpath, 'w') as f:
-                        f.write(airspace_file_data)
+                    air_filename = unique_filename(airspace_file.filename, AIRSPACEDIR)
+                    fullpath = Path(AIRSPACEDIR, air_filename)
+                    airspace_file.seek(0)
+                    airspace_file.save(fullpath)
+                    # with open(fullpath, 'w') as f:
+                    #     f.write(airspace_file_data)
                     flash(Markup(f'Open air file added, please check it <a href="'
-                                 f'{url_for("user.airspace_edit", filename=air_new_filename)}" '
+                                 f'{url_for("user.airspace_edit", filename=air_filename)}" '
                                  f'class="alert-link">here</a>'), category='info')
                 else:
-                    air_new_filename = None
+                    air_filename = None
 
                 # write to DB
-                region = Region(name=new_region.name.data, comp_id=compid, filename=wpt_filename,
-                                openair=air_new_filename, turnpoints=wpts)
+                region = Region(name=new_region.name.data, comp_id=compid, waypoint_file=wpt_filename,
+                                openair_file=air_filename, turnpoints=wpts)
                 region.to_db()
                 flash(f"Waypoint file format: {wpt_format}, {len(wpts)} waypoints. ", category='info')
                 flash(f"Region {new_region.name.data} added", category='info')
@@ -1292,9 +1295,9 @@ def region_admin():
     return render_template('users/region_admin.html', region_select=region_select, new_region_form=new_region)
 
 
-@blueprint.route('/_delete_region/<regid>', methods=['POST'])
+@blueprint.route('/_delete_region/<int:regid>', methods=['POST'])
 @login_required
-def _delete_region(regid):
+def _delete_region(regid: int):
     from region import delete_region
     delete_region(regid)
     # flash text goes on the second next page refresh, instead of after deleting.
@@ -1305,22 +1308,22 @@ def _delete_region(regid):
 
 @blueprint.route('/_get_non_and_registered_pilots/<compid>', methods=['GET', 'POST'])
 @login_required
-def _get_non_and_registered_pilots_internal(compid):
+def _get_non_and_registered_pilots_internal(compid: int):
     registered_pilots, _, _ = frontendUtils.get_participants(compid, source='internal')
     non_registered_pilots = frontendUtils.get_non_registered_pilots(compid)
     return jsonify({'non_registered_pilots': non_registered_pilots, 'registered_pilots': registered_pilots})
 
 
-@blueprint.route('/_get_non_and_registered_pilots/<compid>', methods=['GET', 'POST'])
+@blueprint.route('/_get_non_and_registered_pilots/<int:compid>', methods=['GET', 'POST'])
 @login_required
-def _get_registered_pilots_external(compid):
-    registered_pilots, _ = frontendUtils.get_participants(compid, source='external')
+def _get_registered_pilots_external(compid: int):
+    registered_pilots, _, _ = frontendUtils.get_participants(compid, source='external')
     return {'registered_pilots': registered_pilots}
 
 
-@blueprint.route('/igc_parsing_config/<filename>', methods=['GET', 'POST'])
+@blueprint.route('/igc_parsing_config/<string:filename>', methods=['GET', 'POST'])
 @login_required
-def igc_parsing_config(filename):
+def igc_parsing_config(filename: str):
     from pilot.track import read_igc_config_yaml, save_igc_config_yaml
     igc_config_form = IgcParsingConfigForm()
     filename += '.yaml'
@@ -1380,9 +1383,9 @@ def igc_parsing_config(filename):
                            description=config['description'], configform=igc_config_form)
 
 
-@blueprint.route('/_del_igc_config/<filename>', methods=['POST'])
+@blueprint.route('/_del_igc_config/<string:filename>', methods=['POST'])
 @login_required
-def _del_igc_config(filename):
+def _del_igc_config(filename: str):
     from Defines import IGCPARSINGCONFIG
     filename += '.yaml'
     comps = frontendUtils.get_comps_with_igc_parsing(filename)
@@ -1395,33 +1398,40 @@ def _del_igc_config(filename):
     return "File Deleted"
 
 
-@blueprint.route('/pilot_admin', methods=['GET', 'POST'])
+@blueprint.route('/pilot_admin/<int:compid>', methods=['GET', 'POST'])
 @login_required
-def pilot_admin():
+@check_coherence
+def pilot_admin(compid: int):
+    """ Registered Pilots list
+        Add / Edit Pilots"""
     modify_participant_form = ModifyParticipantForm()
-    return render_template('users/pilot_admin.html', modify_participant_form=modify_participant_form, pilotdb=PILOT_DB)
+    comp = Comp.read(compid)
+    return render_template('users/pilot_admin.html', compid=compid, track_source=comp.track_source,
+                           modify_participant_form=modify_participant_form, pilotdb=PILOT_DB)
 
 
-@blueprint.route('/_modify_participant_details/<parid>', methods=['POST'])
+@blueprint.route('/_modify_participant_details/<int:parid>', methods=['POST'])
 @login_required
-def _modify_participant_details(parid):
+def _modify_participant_details(parid: int):
     from pilot.participant import Participant
     data = request.json
-    participant = Participant.read(int(parid))
+    participant = Participant.read(parid)
     if data.get('id_num'):
-        participant.ID = data.get('id_num')
+        participant.ID = int(data.get('id_num')) if str(data.get('id_num')).isdigit() else None
     if data.get('name'):
         participant.name = data.get('name')
+    participant.civl_id = int(data.get('CIVL')) if str(data.get('CIVL')).isdigit() else None
     if data.get('sex'):
         participant.sex = data.get('sex')
     if data.get('nat'):
         participant.nat = data.get('nat')
-    participant.glider = data.get('glider')
-    participant.glider_cert = data.get('certification')
-    participant.sponsor = data.get('sponsor')
-    participant.nat_team = data.get('nat_team')
-    participant.team = data.get('team')
-    participant.civl_id = data.get('CIVL')
+    participant.glider = data.get('glider') or None
+    participant.glider_cert = data.get('certification') or None
+    participant.sponsor = data.get('sponsor') or None
+    participant.nat_team = bool(data.get('nat_team'))
+    participant.team = data.get('team') or None
+    participant.live_id = data.get('live_id') or None
+    participant.xcontest_id = data.get('xcontest_id') or None
     if data.get('status'):
         participant.status = data.get('status')
     if data.get('paid'):
@@ -1431,28 +1441,29 @@ def _modify_participant_details(parid):
     return resp
 
 
-@blueprint.route('/_add_participant/<compid>', methods=['POST'])
+@blueprint.route('/_add_participant/<int:compid>', methods=['POST'])
 @login_required
-def _add_participant(compid):
+def _add_participant(compid: int):
     from pilot.participant import Participant
     data = request.json
     participant = Participant()
-    participant.comp_id = int(compid)
-    id_num = data.get('id_num')
-    if not isinstance(id, int):
-        id_num = None
-    participant.ID = id_num
+    participant.comp_id = compid
+    if data.get('id_num'):
+        participant.ID = int(data.get('id_num')) if str(data.get('id_num')).isdigit() else None
     if data.get('name'):
         participant.name = data.get('name')
+    participant.civl_id = int(data.get('CIVL')) if str(data.get('CIVL')).isdigit() else None
     if data.get('sex'):
         participant.sex = data.get('sex')
-    participant.nat = data.get('nat')
-    participant.glider = data.get('glider')
-    participant.glider_cert = data.get('certification')
-    participant.sponsor = data.get('sponsor')
-    participant.nat_team = data.get('nat_team')
-    participant.team = data.get('team')
-    participant.civl_id = data.get('CIVL')
+    if data.get('nat'):
+        participant.nat = data.get('nat')
+    participant.glider = data.get('glider') or None
+    participant.glider_cert = data.get('certification') or None
+    participant.sponsor = data.get('sponsor') or None
+    participant.nat_team = bool(data.get('nat_team'))
+    participant.team = data.get('team') or None
+    participant.live_id = data.get('live_id') or None
+    participant.xcontest_id = data.get('xcontest_id') or None
     if data.get('status'):
         participant.status = data.get('status')
     if data.get('paid'):
@@ -1462,12 +1473,11 @@ def _add_participant(compid):
     return resp
 
 
-@blueprint.route('/_upload_participants_excel/<compid>', methods=['POST'])
+@blueprint.route('/_upload_participants_excel/<int:compid>', methods=['POST'])
 @login_required
-def _upload_participants_excel(compid):
+def _upload_participants_excel(compid: int):
     from pilot.participant import extract_participants_from_excel, mass_import_participants
     import tempfile
-    compid = int(compid)
     if request.method == "POST":
         if request.files:
             excel_file = request.files["excel_file"]
@@ -1482,12 +1492,11 @@ def _upload_participants_excel(compid):
         return resp
 
 
-@blueprint.route('/_upload_participants_fsdb/<compid>', methods=['POST'])
+@blueprint.route('/_upload_participants_fsdb/<int:compid>', methods=['POST'])
 @login_required
-def _upload_participants_fsdb(compid):
+def _upload_participants_fsdb(compid: int):
     from pilot.participant import mass_import_participants
     import tempfile
-    compid = int(compid)
     if request.method == "POST":
         if request.files:
             fsdb_file = request.files["fsdb_file"]
@@ -1503,9 +1512,9 @@ def _upload_participants_fsdb(compid):
         return resp
 
 
-@blueprint.route('/_self_register/<compid>', methods=['POST'])
+@blueprint.route('/_self_register/<int:compid>', methods=['POST'])
 @login_required
-def _self_register(compid):
+def _self_register(compid: int):
     from pilot.participant import Participant
     data = request.json
     participant = Participant.from_profile(data['pil_id'], comp_id=compid)
@@ -1519,9 +1528,9 @@ def _self_register(compid):
     return resp
 
 
-@blueprint.route('/_unregister_participant/<compid>', methods=['POST'])
+@blueprint.route('/_unregister_participant/<int:compid>', methods=['POST'])
 @login_required
-def _unregister_participant(compid):
+def _unregister_participant(compid: int):
     """unregister participant from a comp"""
     from pilot.participant import unregister_participant
     data = request.json
@@ -1530,9 +1539,9 @@ def _unregister_participant(compid):
     return resp
 
 
-@blueprint.route('/_unregister_all_external_participants/<compid>', methods=['POST'])
+@blueprint.route('/_unregister_all_external_participants/<int:compid>', methods=['POST'])
 @login_required
-def _unregister_all_external_participants(compid):
+def _unregister_all_external_participants(compid: int):
     """unregister participant from a comp"""
     from pilot.participant import unregister_all_external_participants
     unregister_all_external_participants(compid)
@@ -1540,23 +1549,22 @@ def _unregister_all_external_participants(compid):
     return resp
 
 
-@blueprint.route('/_check_nat_team_size/<compid>', methods=['GET'])
+@blueprint.route('/_check_nat_team_size/<int:compid>', methods=['GET'])
 @login_required
-def _check_nat_team_size(compid):
-    return {'message': frontendUtils.check_team_size(int(compid), nat=True)}
+def _check_nat_team_size(compid: int):
+    return {'message': frontendUtils.check_team_size(compid, nat=True)}
 
 
-@blueprint.route('/_check_team_size/<compid>', methods=['GET'])
+@blueprint.route('/_check_team_size/<int:compid>', methods=['GET'])
 @login_required
-def _check_team_size(compid):
-    return {'message': frontendUtils.check_team_size(int(compid))}
+def _check_team_size(compid: int):
+    return {'message': frontendUtils.check_team_size(compid)}
 
 
-@blueprint.route('/_adjust_task_result/<taskid>', methods=['POST'])
+@blueprint.route('/_adjust_task_result/<int:taskid>', methods=['POST'])
 @login_required
-def _adjust_task_result(taskid):
+def _adjust_task_result(taskid: int):
     from result import update_result_file
-    taskid = int(taskid)
     data = request.json
     if data['changes']:
         for change in data['changes']:
@@ -1575,13 +1583,16 @@ def _adjust_task_result(taskid):
     return resp
 
 
-@blueprint.route('/_export_fsdb/<compid>', methods=['GET'])
+@blueprint.route('/_export_fsdb/<int:compid>', methods=['GET'])
 @login_required
-def _export_fsdb(compid):
+def _export_fsdb(compid: int):
     from fsdb import FSDB
     import tempfile
-    compid = int(compid)
     comp_fsdb = FSDB.create(compid)
+    if not comp_fsdb:
+        '''comp has not been scored yet'''
+        flash("Comp has not been scored yet. Aborting FSDB file creation.", category='danger')
+        return redirect(f'/users/comp_settings_admin/{compid}')
     filename, data = comp_fsdb.to_file()
     with tempfile.NamedTemporaryFile() as tmp:
         tmp.write(data)
@@ -1590,12 +1601,12 @@ def _export_fsdb(compid):
         return resp
 
 
-@blueprint.route('/_modify_user/<user_id>', methods=['POST'])
+@blueprint.route('/_modify_user/<int:user_id>', methods=['POST'])
 @login_required
 @admin_required
-def _modify_user(user_id):
+def _modify_user(user_id: int):
     data = request.json
-    user = User.query.filter_by(id=int(user_id)).first()
+    user = User.query.filter_by(id=user_id).first()
     user.email = data.get('email')
     user.access = data.get('access')
     user.active = data.get('active')
@@ -1604,9 +1615,9 @@ def _modify_user(user_id):
     return resp
 
 
-@blueprint.route('/_download/<string:filetype>/<string:filename>', methods=['GET', 'POST'])
+@blueprint.route('/_download/<string:filetype>/<filename>', methods=['GET', 'POST'])
 @login_required
-def _download_file(filetype: str, filename: str):
+def _download_file(filetype: str, filename):
     if 'html' in filetype:
         if filetype == 'participants_html':
             comp_id = int(filename)

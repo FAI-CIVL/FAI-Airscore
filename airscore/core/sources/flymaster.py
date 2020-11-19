@@ -54,44 +54,17 @@ def get_xc_parameters(task_id):
     # Should we use TblTaskWaypoint instead or manually or by adding xc_to id to launch name or description?
 
 
-def get_zip(site_id, takeoff_id, date, login_name, password, zip_destination, zip_name):
-    """Get the zip of igc files from xcontest."""
+def get_zip(date, login_name, password, zip_file):
+    """Get the zip of igc files from flymaster."""
     import lxml.html
 
-    # determine if we have takeoff id or only site id. preferable to use more specific takeoff id.
-    if takeoff_id:
-        location_id = takeoff_id
-        site_launch = 'launch'
-    else:
-        location_id = site_id
-        site_launch = 'site'
-    # setup web stuff
-    form = {}
-    s = requests.session()
-    form['login[username]'] = login_name
-    form['login[password]'] = password
-
-    # login om main page
-    response = s.post('https://www.xcontest.org/world/en/', data=form)
-
-    # send request for tracks
-    time.sleep(4)
-    response = s.get(
-        'https://www.xcontest.org/util/igc.archive.comp.php?date=%s&%s=%s' % (date, site_launch, location_id))
-
-    if "No error" in response.text:
-        logging.info("logged into xcontest and igc.archive.comp.php running with no error")
-        print("logged into xcontest and igc.archive.comp.php running with no error. <br />")
-    else:
-        logging.error("igc.archive.comp.php not returing as expected")
-        print("Error igc.archive.comp.php not returing as expected. See xcontest.log for details. <br />")
-        logging.error("web page output:\n %s", response.text)
-    webpage = lxml.html.fromstring(response.content)
-    zfile = requests.get(webpage.xpath('//a/@href')[0])
-
-    # save the file
-    with open(zip_destination + '/' + zip_name, 'wb') as f:
-        f.write(zfile.content)
+    try:
+        zfile = requests.get()
+        # save the file
+        with open(zip_file, 'wb') as f:
+            f.write(zfile.content)
+    except requests.exceptions.MissingSchema:
+        print(f'Error: Seems like there are no tracks yet on {date}')
 
 
 def get_zipfile(task, temp_folder):
@@ -101,12 +74,10 @@ def get_zipfile(task, temp_folder):
     result = ''
     task_id = task.task_id
 
-    """get zipfile from XContest server"""
-    site_id, takeoff_id, date = get_parameters(task_id)
-    login_name = Defines.x
-    password = Defines.x
+    """get zipfile from Flymaster server"""
+
     zip_name = 'igc_from_fm.zip'
     zipfile = path.join(temp_folder, zip_name)
 
-    get_zip(site_id, takeoff_id, date, login_name, password, zipfile)
+    get_zip(zipfile)
     return zipfile

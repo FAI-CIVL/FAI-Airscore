@@ -17,6 +17,9 @@ internal_pilot_DB: # if use_internal_pilot_DB is yes the below settings are rele
 use_internal_admin_DB: yes # use internal table for admins and scorekeepers
 internal_admin_DB: # if use_internal_admin_DB is yes the below settings are relevant
   allow_self_registration: yes # allows anyone to create a scorekeeper account
+external_admin_DB: # if use_internal_admin_DB is no the below settings are relevant
+  auth_url: https://auth_server  # auth server
+  auth_type: rest  # rest, ajax, ...
 
 competition_season:
 #start_year: previous or current offset -1 or 0
@@ -57,6 +60,7 @@ dir:
   airspace_map: /app/airscore/data/map-objects/airspace/
   airspace_check: /app/airscore/data/airspace/check_file/
   livetracking: /app/airscore/data/livetracking/
+  example_file: /app/airscore/example_files/
   igc_parsing_config: /app/airscore/igc_parsing_config/
   temp_files: /app/airscore/data/temp/
 
