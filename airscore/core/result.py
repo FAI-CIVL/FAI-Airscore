@@ -721,12 +721,14 @@ def open_json_file(filename: str):
     from pathlib import Path
     import jsonpickle
     from Defines import RESULTDIR
-    file = Path(RESULTDIR, filename)
-    if not file.is_file():
+    try:
+        with open(Path(RESULTDIR, filename), 'r') as f:
+            return jsonpickle.decode(f.read())
+    except TypeError:
+        print(f"error: {filename} is not a proper filename")
+    except FileNotFoundError:
         print(f"error: file {filename} does not exist")
-        return None
-    with open(file, 'r') as f:
-        return jsonpickle.decode(f.read())
+    return None
 
 
 def pretty_format_results(content, timeoffset=0, td=0, cd=0):
