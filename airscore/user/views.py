@@ -1063,7 +1063,6 @@ def task_score_admin(taskid: int):
 
     fileform = TaskResultAdminForm()
     editform = EditScoreForm()
-    # result_files = frontendUtils.get_task_result_files(taskid, compid)
     active_file = None
     choices = [(1, 1), (2, 2)]
     fileform.result_file.choices = choices
@@ -1084,7 +1083,6 @@ def task_score_admin(taskid: int):
 @login_required
 def _score_task(taskid: int):
     if request.method == "POST":
-        from result import unpublish_result, publish_result
         """score task, request data should contain status: the score status (provisional, official etc),
         autopublish: True or False. indicates if to publish results automatically after scoring"""
         data = request.json
@@ -1098,13 +1096,11 @@ def _score_task(taskid: int):
 
             resp = jsonify(success=True, background=True)
             return resp
-        ref_id, _ = task.create_results(data['status'])
+        ref_id, filename = task.create_results(data['status'])
         if ref_id:
             if data['autopublish']:
-                unpublish_result(taskid)
-                publish_result(ref_id, ref_id=True)
-                comp = Comp()
-                comp.create_results(session['compid'], data['status'], name_suffix='Overview')
+                frontendUtils.publish_task_result(taskid, filename)
+                frontendUtils.update_comp_result(session['compid'], status=data['status'], name_suffix='Overview')
             return dict(redirect='/users/task_score_admin/' + str(taskid))
     return render_template('500.html')
 
@@ -1133,12 +1129,10 @@ def _full_rescore_task(taskid: int):
 @login_required
 def _unpublish_result(taskid: int):
     if request.method == "POST":
-        from result import unpublish_result
-        unpublish_result(taskid)
+        frontendUtils.unpublish_task_result(taskid)
         header = "No published results"
         resp = jsonify(filename='', header=header)
-        comp = Comp()
-        comp.create_results(session['compid'], name_suffix='Overview')
+        frontendUtils.update_comp_result(session['compid'], name_suffix='Overview')
         return resp
     return render_template('500.html')
 
@@ -1147,8 +1141,7 @@ def _unpublish_result(taskid: int):
 @login_required
 def _unpublish_comp_result(compid: int):
     if request.method == "POST":
-        from result import unpublish_result
-        unpublish_result(compid, comp=True)
+        frontendUtils.unpublish_comp_result(compid)
         comp_header = "No overall competition results published"
         resp = jsonify(filename='', comp_header=comp_header)
         return resp
@@ -1159,18 +1152,15 @@ def _unpublish_comp_result(compid: int):
 @login_required
 def _publish_result(taskid: int):
     if request.method == "POST":
-        from result import publish_result, unpublish_result
         data = request.json
-        unpublish_result(taskid)
-        publish_result(data['filename'])
-        comp = Comp()
-        comp.create_results(session['compid'])
-        run_at, status = data['filetext'].split('-')
-        header = f"Published result ran at:{run_at} Status:{status}"
-        comp = Comp()
-        comp.create_results(session['compid'], name_suffix='Overview')
-        resp = jsonify(filename=data['filename'], header=header)
-        return resp
+        frontendUtils.publish_task_result(taskid, data['filename'])
+        refid, _, timestamp = frontendUtils.update_comp_result(session['compid'], name_suffix='Overview')
+        if refid:
+            comp_published, status = data['filetext'].split('-')
+            header = f"Published result ran at:{comp_published} Status:{status}"
+            resp = jsonify(filename=data['filename'], header=header)
+            return resp
+        return jsonify(comp_header='There was a problem creating comp result: do we miss some task results files?')
     return render_template('500.html')
 
 
@@ -1178,18 +1168,15 @@ def _publish_result(taskid: int):
 @login_required
 def _publish_comp_result(compid: int):
     if request.method == "POST":
-        from result import publish_result, unpublish_result
         data = request.json
         offset = (int(data['offset']) / 60 * -1) * 3600
-
-        unpublish_result(compid, comp=True)
-        comp = Comp()
-        _, ref_id, filename, timestamp = comp.create_results(session['compid'])
-        publish_result(ref_id, ref_id=True)
-        comp_published = time.ctime(timestamp + offset)
-        comp_header = f"Overall competition results published: {comp_published}"
-        resp = jsonify(comp_header=comp_header)
-        return resp
+        refid, _, timestamp = frontendUtils.update_comp_result(compid)
+        if refid:
+            comp_published = time.ctime(timestamp + offset)
+            comp_header = f"Overall competition results published: {comp_published}"
+            resp = jsonify(comp_header=comp_header)
+            return resp
+        return jsonify(comp_header='There was a problem creating comp result: do we miss some task results files?')
     return render_template('500.html')
 
 
@@ -1200,8 +1187,7 @@ def _change_result_status(taskid: int):
         from result import update_result_status
         data = request.json
         update_result_status(data['filename'], data['status'])
-        comp = Comp()
-        comp.create_results(session['compid'], data['status'], name_suffix='Overview')
+        frontendUtils.update_comp_result(session['compid'], status=data['status'], name_suffix='Overview')
         resp = jsonify(success=True)
         return resp
     return render_template('500.html')
