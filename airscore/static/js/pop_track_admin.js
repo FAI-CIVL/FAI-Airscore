@@ -273,8 +273,8 @@ function choose_file_test(par_id){
   $('#fileupload' + par_id).click();
 };
 
-function choose_file(par_id) {
-    if (production == true) choose_file_prod(par_id); else choose_file_test(par_id);
+function choose_file(par_id, g_overide=false, v_overide=false) {
+    if (production == true) choose_file_prod(par_id, g_overide, v_overide); else choose_file_test(par_id);
 }
 
 $(document).ready(function(){

@@ -42,9 +42,11 @@
   </button>
   {% endif %}
 
+  {% if telegram %}
   <button id='telegram_button' class='btn btn-primary ml-2' onclick='send_telegram({{ taskid }});'>
-    Update Telegram
+    Send Telegram Update
   </button>
+  {% endif %}
 
   <button type='button' id='log_button' class='hideatstart btn btn-success ml-2' data-toggle='modal'
           data-target='#ProcessModal'>

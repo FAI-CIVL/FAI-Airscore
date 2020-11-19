@@ -790,6 +790,7 @@ def _get_tracks_processed(taskid: int):
 @login_required
 @check_coherence
 def track_admin(taskid: int):
+    from Defines import TELEGRAM
     task = next((t for t in session['tasks'] if t['task_id'] == taskid), None)
     task_num = task['task_num']
     task_name = task['task_name']
@@ -807,7 +808,7 @@ def track_admin(taskid: int):
         user_is_scorekeeper = None
     return render_template('users/track_admin.html', taskid=taskid, compid=compid,
                            user_is_scorekeeper=user_is_scorekeeper, production=frontendUtils.production(),
-                           task_name=task_name, task_num=task_num, track_source=track_source)
+                           task_name=task_name, task_num=task_num, track_source=track_source, telegram=TELEGRAM)
 
 
 @blueprint.route('/_set_result/<int:taskid>', methods=['POST'])
