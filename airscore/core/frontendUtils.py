@@ -1446,7 +1446,7 @@ def unpublish_comp_result(comp_id: int):
     unpublish_result(comp_id, comp=True)
 
 
-def update_comp_result(comp_id: int, status: str = None, name_suffix: str = None) -> tuple or bool:
+def update_comp_result(comp_id: int, status: str = None, name_suffix: str = None) -> tuple:
     """Unpublish any active result, and creates a new one"""
     from result import publish_result, unpublish_result
     from comp import Comp
@@ -1454,7 +1454,7 @@ def update_comp_result(comp_id: int, status: str = None, name_suffix: str = None
         _, ref_id, filename, timestamp = Comp.create_results(comp_id, status=status, name_suffix=name_suffix)
     except (FileNotFoundError, Exception) as e:
         print(f'Comp results creation error. Probably we miss some task results files?')
-        return False
+        return False, None, None
     unpublish_result(comp_id, comp=True)
     publish_result(ref_id, ref_id=True)
     return ref_id, filename, timestamp

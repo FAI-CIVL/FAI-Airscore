@@ -1063,7 +1063,6 @@ def task_score_admin(taskid: int):
 
     fileform = TaskResultAdminForm()
     editform = EditScoreForm()
-    # result_files = frontendUtils.get_task_result_files(taskid, compid)
     active_file = None
     choices = [(1, 1), (2, 2)]
     fileform.result_file.choices = choices
@@ -1155,11 +1154,13 @@ def _publish_result(taskid: int):
     if request.method == "POST":
         data = request.json
         frontendUtils.publish_task_result(taskid, data['filename'])
-        _, _, timestamp = frontendUtils.update_comp_result(session['compid'], name_suffix='Overview')
-        comp_published, status = data['filetext'].split('-')
-        header = f"Published result ran at:{comp_published} Status:{status}"
-        resp = jsonify(filename=data['filename'], header=header)
-        return resp
+        refid, _, timestamp = frontendUtils.update_comp_result(session['compid'], name_suffix='Overview')
+        if refid:
+            comp_published, status = data['filetext'].split('-')
+            header = f"Published result ran at:{comp_published} Status:{status}"
+            resp = jsonify(filename=data['filename'], header=header)
+            return resp
+        return jsonify(comp_header='There was a problem creating comp result: do we miss some task results files?')
     return render_template('500.html')
 
 
@@ -1169,11 +1170,13 @@ def _publish_comp_result(compid: int):
     if request.method == "POST":
         data = request.json
         offset = (int(data['offset']) / 60 * -1) * 3600
-        _, _, timestamp = frontendUtils.update_comp_result(compid)
-        comp_published = time.ctime(timestamp + offset)
-        comp_header = f"Overall competition results published: {comp_published}"
-        resp = jsonify(comp_header=comp_header)
-        return resp
+        refid, _, timestamp = frontendUtils.update_comp_result(compid)
+        if refid:
+            comp_published = time.ctime(timestamp + offset)
+            comp_header = f"Overall competition results published: {comp_published}"
+            resp = jsonify(comp_header=comp_header)
+            return resp
+        return jsonify(comp_header='There was a problem creating comp result: do we miss some task results files?')
     return render_template('500.html')
 
 
