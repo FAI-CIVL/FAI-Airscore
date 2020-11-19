@@ -44,7 +44,11 @@ igc_sources:
 g_record_validation_server: http://vali.fai-civl.org/api/vali/json
 flymaster_live_server: https://lt.flymaster.net/wlb/getLiveData.php?trackers=
 
-ladders: off # ladder calculations - summing up several comps into a leaderboard.
+# Telegram Bot Service.
+telegram: off  # switch telegram bot update feature on or off
+
+# Ladders / League Ranking System - summing up several comps into a leaderboard.
+ladders: off  # switch ladder classifications on or off
 
 # folder structure, this is not intended for users to alter.
 dir:

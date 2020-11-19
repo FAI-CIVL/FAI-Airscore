@@ -104,6 +104,7 @@ SELF_REG_DEFAULT = config['internal_pilot_DB']['self_registration_default']
 FM_LIVE = config['flymaster_live_server']
 
 '''Telegram Bot'''
+TELEGRAM = config['telegram']
 TELEGRAM_API = dev.get('telegram', {}).get('API') or env.str('TELEGRAM_API')
 TELEGRAM_CHANNEL = dev.get('telegram', {}).get('channel') or env.str('TELEGRAM_CHANNEL')
 
