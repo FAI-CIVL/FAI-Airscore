@@ -263,16 +263,17 @@ def pilot_distance(task, pil):
 
 def calculate_min_dist_score(t):
     from pilot.flightresult import FlightResult
-    p = FlightResult()
+    p = FlightResult(ID=0, name='dummy min_dist')
     p.distance_flown = t.formula.min_dist
     return pilot_distance(t, p)
 
 
 def calculate_time_points_reduction(t):
     from pilot.flightresult import FlightResult
-    p = FlightResult()
+    p = FlightResult(ID=0, name='dummy time_points_reduction')
     p.distance_flown = t.opt_dist
-    p.SSS_time = t.max_ss_time
+    # p.SSS_time = t.max_ss_time rules states this is the correct one, but in multiple starts could easily be < fastest
+    p.SSS_time = t.start_time
     p.ESS_time = t.stop_time
     return pilot_speed(t, p)
 
