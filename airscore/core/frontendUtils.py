@@ -1099,23 +1099,19 @@ def full_rescore(taskid: int, background=False, status=None, autopublish=None, c
         print('|open_modal')
         print('***************START*******************')
         refid, filename = task.create_results(mode='full', status=status, print=print)
-        if autopublish:
-            unpublish_result(taskid)
-            publish_result(refid, ref_id=True)
+        if refid and autopublish:
+            publish_task_result(taskid, filename)
             if compid:
-                comp = Comp()
-                comp.create_results(compid, name_suffix='Overview')
+                update_comp_result(compid)
         print('****************END********************')
-        print(f'{filename}|reload_select_latest')
+        print(f'{filename or "ERROR"}|reload_select_latest')
         return None
     else:
         refid, filename = task.create_results(mode='full', status=status)
-        if autopublish:
-            unpublish_result(taskid)
-            publish_result(refid, ref_id=True)
+        if refid and autopublish:
+            publish_task_result(taskid, filename)
             if compid:
-                comp = Comp()
-                comp.create_results(compid, name_suffix='Overview')
+                update_comp_result(compid, name_suffix='Overview')
         return refid
 
 
@@ -1424,3 +1420,41 @@ def get_region_waypoints(reg_id: int, region=None, openair_file: str = None) -> 
     region_map = make_map(points=points_layer, circles=points_layer,
                           airspace_layer=airspace_layer, show_airspace=False, bbox=bbox)
     return waypoints, region_map, airspace_list, openair_file
+
+
+def unpublish_task_result(task_id: int):
+    """Unpublish any active result"""
+    from result import unpublish_result
+    unpublish_result(task_id)
+
+
+def publish_task_result(task_id: int, filename: str) -> bool:
+    """Unpublish any active result, and publish the given one"""
+    from result import publish_result, unpublish_result
+    try:
+        unpublish_result(task_id)
+        publish_result(filename)
+        return True
+    except (FileNotFoundError, Exception) as e:
+        print(f'Error trying to publish result')
+        return False
+
+
+def unpublish_comp_result(comp_id: int):
+    """Unpublish any active result"""
+    from result import unpublish_result
+    unpublish_result(comp_id, comp=True)
+
+
+def update_comp_result(comp_id: int, status: str = None, name_suffix: str = None) -> tuple or bool:
+    """Unpublish any active result, and creates a new one"""
+    from result import publish_result, unpublish_result
+    from comp import Comp
+    try:
+        _, ref_id, filename, timestamp = Comp.create_results(comp_id, status=status, name_suffix=name_suffix)
+    except (FileNotFoundError, Exception) as e:
+        print(f'Comp results creation error. Probably we miss some task results files?')
+        return False
+    unpublish_result(comp_id, comp=True)
+    publish_result(ref_id, ref_id=True)
+    return ref_id, filename, timestamp
