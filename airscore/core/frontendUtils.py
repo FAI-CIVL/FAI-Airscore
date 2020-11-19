@@ -1387,6 +1387,7 @@ def save_comp_ladders(comp_id: int, ladder_ids: list or None) -> bool:
 def get_task_result_files(task_id: int, comp_id: int = None, offset: int = None) -> dict:
     from compUtils import get_comp_json, get_comp, get_offset
     import time
+    from Defines import RESULTDIR
     if not offset:
         offset = get_offset(task_id)
     files = get_task_result_file_list(task_id)
@@ -1404,7 +1405,8 @@ def get_task_result_files(task_id: int, comp_id: int = None, offset: int = None)
 
     for file in files:
         published = time.ctime(file['created'] + offset)
-        choices.append((file['filename'], f"{published} - {file['status']}"))
+        status = file['status'] if Path(RESULTDIR, file['filename']).is_file() else f"FILE NOT FOUND"
+        choices.append((file['filename'], f'{published} - {status}'))
     choices.reverse()
 
     return {'choices': choices, 'header': header, 'active': active, 'comp_header': comp_header,

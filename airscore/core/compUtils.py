@@ -79,8 +79,8 @@ def get_comp_json_filename(comp_id: int, latest=False):
 def get_comp_json(comp_id: int, latest=False):
     """returns json data from comp result file, default the active one or latest if latest is True"""
     from result import open_json_file
-    filename = get_comp_json_filename(comp_id, latest)
-    return open_json_file(filename) if filename else 'error'
+    data = open_json_file(get_comp_json_filename(comp_id, latest))
+    return data if isinstance(data, dict) else 'error'
 
 
 def get_nat_code(iso: str):
