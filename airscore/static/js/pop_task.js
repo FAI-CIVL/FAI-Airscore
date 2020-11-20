@@ -1,5 +1,5 @@
 function populate_task(json){
-    $('#comp_name').text('Calculating Results ...');
+    $('#comp_name').text('Loading Results ...');
     var columns = [];
     json.classes.forEach( function(item, index) {
         if (index == 0) {
