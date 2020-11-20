@@ -148,11 +148,10 @@ def ft_score(comp_id):
 
         validityWorkingDistance.append({'area': NomDistArea,
                                         'flying': stats['pilots_launched'],
-                                        'minimumDistance': km(formula['min_dist']),
-                                        'nominalDistance': km(formula['nominal_dist']),
+                                        'minimumDistance': km(formula['min_dist'], 3),
+                                        'nominalDistance': km(formula['nominal_dist'], 1),
                                         'nominalGoal': formula['nominal_goal'],
                                         'reachMax': {'extra': km(stats['max_distance']),
-                                                     # TODO extra (flown distance + glide bonus in stopped tasks)
                                                      'flown': km(stats['max_distance'])},
                                         'sum': km(stats['tot_dist_flown'])})
 
