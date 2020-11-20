@@ -272,8 +272,8 @@ def calculate_time_points_reduction(t):
     from pilot.flightresult import FlightResult
     p = FlightResult(ID=0, name='dummy time_points_reduction')
     p.distance_flown = t.opt_dist
-    # p.SSS_time = t.max_ss_time rules states this is the correct one, but in multiple starts could easily be < fastest
-    p.SSS_time = t.start_time
+    # rules state max start time among all pilot but will be corrected
+    p.SSS_time = max(p.SSS_time for p in t.valid_results if p.ESS_time > 0)
     p.ESS_time = t.stop_time
     return pilot_speed(t, p)
 
