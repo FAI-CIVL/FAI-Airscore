@@ -71,6 +71,8 @@ def ft_score(comp_id):
             fastest = h(task['stats']['fastest_in_goal'])
 
         bestTime.append(fastest)
+        ssTimes = []
+        distances_flown=[]
 
         results = []
         rank = 1
@@ -78,7 +80,8 @@ def ft_score(comp_id):
         distances = []
         for result in task['results']:
             if result['result_type'] != 'abs':
-                distances.append(result['distance_flown'])
+                distances.append(result['distance'])
+                distances_flown.append(result['distance_flown'])
                 if result['goal_time']:
                     lf = 0.5
                     df = 0.5
@@ -95,6 +98,7 @@ def ft_score(comp_id):
                     ss = (datetime.combine(task_obj.date, time())
                           + timedelta(seconds=result['SSS_time'])).strftime('%Y-%m-%dT%H:%M:%SZ')
                     if result['ESS_time']:
+                        ssTimes.append(result['ESS_time']-result['real_start_time'])
                         es = (datetime.combine(task_obj.date, time())
                               + timedelta(seconds=result['ESS_time'])).strftime(
                             '%Y-%m-%dT%H:%M:%SZ')
@@ -171,23 +175,22 @@ def ft_score(comp_id):
                                             'stdDev': km(statistics.stdev(distances), 6),
                                         },
                                         'flown': {
-                                            'max': km(stats['max_distance'], 6),
-                                            'mean': km(stats['tot_dist_flown'] / stats['pilots_launched'], 6),
-                                            'stdDev': km(statistics.stdev(distances), 6),
+                                            'max': km(max(distances_flown), 6),
+                                            'mean': km(sum(distances_flown) / stats['pilots_launched'], 6),
+                                            'stdDev': km(statistics.stdev(distances_flown), 6),
                                         }
                                     },
                                     'stillFlying': stats['pilots_launched'] - stats['pilots_landed']
                                     })
 
-        validityWorkingTime.append({'gsBestTime': 'null-TODO',  # TODO
+        validityWorkingTime.append({'gsBestTime': fastest,
                                     'nominalDistance': km(formula['nominal_dist'], 1),
                                     'nominalTime': h(formula['nominal_time'], 6),
                                     'reachMax': {
                                         'extra': km(stats['max_distance']),
-                                        # TODO extra (flown distance + glide bonus in stopped tasks)
-                                        'flown': km(stats['max_distance']),
+                                        'flown': km(max(distances_flown)),
                                     },
-                                    'ssBestTime': fastest
+                                    'ssBestTime': h(min(ssTimes))
                                     })
 
     return {'bestTime': bestTime,
