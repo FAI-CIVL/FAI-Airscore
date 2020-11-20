@@ -210,6 +210,7 @@ class FlightResult(Participant):
         if elem.find('FsFlightData') is not None:
             result.track_file = elem.find('FsFlightData').get('tracklog_filename')
         d = elem.find('FsFlightData')
+        result.result_type = 'lo'
         result.real_start_time = None if not d.get('started_ss') else string_to_seconds(d.get('started_ss')) - offset
         result.last_altitude = float(d.get('last_tracklog_point_alt' or 0))
         result.max_altitude = int(d.get('max_alt')
@@ -218,10 +219,7 @@ class FlightResult(Participant):
         result.lead_coeff = None if d.get('lc') is None else float(d.get('lc'))
         if not d.get('finished_ss') == "":
             result.ESS_altitude = float(d.get('altitude_at_ess') or 0)
-        if d.get('reachedGoal') == "1":
-            result.goal_time = (None if not d.get('finished_task')
-                                else string_to_seconds(d.get('finished_task')) - offset)
-            result.result_type = 'goal'
+
         if elem.find('FsResult') is not None:
             '''reading flight data'''
             r = elem.find('FsResult')
@@ -236,24 +234,21 @@ class FlightResult(Participant):
                                    else string_to_seconds(r.get('finished_ss')) - offset)
                 if task.SS_distance is not None and result.ESS_time is not None and result.ESS_time > 0:
                     result.speed = (task.SS_distance / 1000) / ((result.ESS_time - result.SSS_time) / 3600)
+                    result.ESS_rank = None if not r.get('finished_ss_rank') else int(r.get('finished_ss_rank'))
+                if d.get('reachedGoal') == "1" or (result.ESS_time and task.fake_goal_turnpoint):
+                    result.goal_time = (None if not d.get('finished_task')
+                                        else string_to_seconds(d.get('finished_task')) - offset)
+                    result.result_type = 'goal'
             else:
                 result.ESS_time = None
             result.last_altitude = int(r.get('last_altitude_above_goal'))
             result.distance_score = float(r.get('distance_points'))
             result.time_score = float(r.get('time_points'))
             result.penalty = 0  # fsdb score is already decreased by penalties
-            if not r.get('penalty_reason') == "":
-                notification = Notification()
-                if r.get('penalty') != "0":
-                    notification.percentage_penalty = float(r.get('penalty'))
-                else:
-                    notification.flat_penalty = float(r.get('penalty_points'))
-                notification.comment = r.get('penalty_reason')
-                result.notifications.append(notification)
             if not r.get('penalty_reason_auto') == "":
                 notification = Notification(notification_type='jtg',
-                                            flat_penalty=r.get('penalty_points_auto'),
-                                            comment=r.get('penalty_reason_auto'))
+                                            flat_penalty=float(r.get('penalty_points_auto')),
+                                            comment=(r.get('penalty_reason_auto')))
                 result.notifications.append(notification)
             if dep == 'on':
                 result.departure_score = float(r.get('departure_points'))
@@ -262,6 +257,15 @@ class FlightResult(Participant):
             else:
                 result.departure_score = 0  # not necessary as it it initialized to 0
             result.arrival_score = float(r.get('arrival_points')) if arr != 'off' else 0
+        if elem.find('FsResultPenalty') is not None:
+            '''reading penalties'''
+            pen = elem.find('FsResultPenalty')
+            notification = Notification(notification_type='admin',
+                                        percentage_penalty=float(pen.get('penalty')),
+                                        flat_penalty=float(pen.get('penalty_points')),
+                                        comment=pen.get('penalty_reason'))
+            result.notifications.append(notification)
+
         return result
 
     @staticmethod
@@ -520,7 +524,7 @@ def adjust_flight_results(task, lib, airspace=None):
     lib.process_results(task)
 
 
-def update_status(par_id: int, task_id: int, status: str):
+def update_status(par_id: int, task_id: int, status: str) -> int:
     """Create or update pilot status ('abs', 'dnf', 'mindist')"""
     result = FlightResult.read(par_id, task_id)
     result.result_type = status

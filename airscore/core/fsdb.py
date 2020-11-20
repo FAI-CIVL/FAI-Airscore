@@ -104,6 +104,7 @@ class FSDB(object):
                     for res in node.iter('FsParticipant'):
                         '''pilots results'''
                         pilot = FlightResult.from_fsdb(res, task)
+                        pilot.name = next((p.name for p in pilots if p.ID == pilot.ID), f'Pilot {pilot.ID}')
                         task.pilots.append(pilot)
                 tasks.append(task)
 
