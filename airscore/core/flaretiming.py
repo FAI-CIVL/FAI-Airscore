@@ -87,7 +87,7 @@ def ft_score(comp_id):
                     df = 0.5
                 else:
                     lf, df = lf_df(task_obj, result['distance_flown'])
-                if not prev_score:
+                if prev_score is None:
                     rank = 1
                 elif result['score'] < prev_score:
                     rank += 1
