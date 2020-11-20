@@ -2,6 +2,13 @@ var turnpoints;
 
 $(document).ready(function() {
   get_turnpoints();
+
+  $('#main_task_settings_form :input').change(function(){
+    console.log('form changed');
+    $('#main_task_save_button').removeClass( "btn-outline-secondary" ).addClass( "btn-warning" );
+    $('#save_button_warning_text').addClass('bg-warning').html('Task needs to be saved');
+  });
+
 });
 
 function get_turnpoints(){
