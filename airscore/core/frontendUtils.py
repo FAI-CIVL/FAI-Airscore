@@ -269,7 +269,7 @@ def get_admin_comps(current_userid, current_user_access=None):
     with db_session() as db:
         comps = (db.query(c.comp_id, c.comp_name, c.comp_site,
                           c.date_from,
-                          c.date_to, func.count(TblTask.task_id), ca.user_id)
+                          c.date_to, func.count(TblTask.task_id), c.external, ca.user_id)
                    .outerjoin(TblTask, c.comp_id == TblTask.comp_id).outerjoin(ca)
                    .filter(ca.user_auth == 'owner')
                    .group_by(c.comp_id, ca.user_id))
@@ -279,10 +279,11 @@ def get_admin_comps(current_userid, current_user_access=None):
         comp[1] = f'<a href="/users/comp_settings_admin/{comp[0]}">{comp[1]}</a>'
         comp[3] = comp[3].strftime("%Y-%m-%d")
         comp[4] = comp[4].strftime("%Y-%m-%d")
-        if (int(comp[6]) == current_userid) or (current_user_access == 'admin'):
-            comp[6] = 'delete'
+        comp[6] = 'Imported' if comp[6] else ''
+        if (int(comp[7]) == current_userid) or (current_user_access == 'admin'):
+            comp[7] = 'delete'
         else:
-            comp[6] = ''
+            comp[7] = ''
         all_comps.append(comp)
     return jsonify({'data': all_comps})
 
