@@ -12,6 +12,20 @@ def km(distance_in_km, decimals=5):
     return None
 
 
+def h(time_in_hours, decimals=5):
+    """takes an int or float of seconds and returns a string in hours to {decimals} places with 'h' as a postfix"""
+    if time_in_hours:
+        return f"{time_in_hours / (60 * 60):.{decimals}f} h"
+    return None
+
+
+def fraction(points, avail_points):
+    if not avail_points or (avail_points == 0):
+        return 0
+    else:
+        return points / avail_points
+
+
 def lf_df(task, pil_distance):
     """
     calculates the linear distance factor and difficulty factor from GAP
@@ -24,7 +38,7 @@ def lf_df(task, pil_distance):
     lf = 0.5 * pil_distance / maxdist
     dist10 = int(pil_distance / 100)  # int(dist in Km * 10)
     df = diff[dist10].diff_score + ((diff[dist10 + 1].diff_score - diff[dist10].diff_score)
-                                        * (pil_distance / 100 - dist10))
+                                    * (pil_distance / 100 - dist10))
     return lf, df
 
 
@@ -32,18 +46,6 @@ def ft_score(comp_id):
     comp = Comp(comp_id)
     tasks = comp.get_tasks_details()
     task_results = []
-
-    def h(time_in_hours, decimals=5):
-        """takes an int or float of seconds and returns a string in hours to {decimals} places with 'h' as a postfix"""
-        if time_in_hours:
-            return f"{time_in_hours / (60 * 60):.{decimals}f} h"
-        return None
-
-    def fraction(points, avail_points):
-        if not avail_points or (avail_points == 0):
-            return 0
-        else:
-            return points / avail_points
 
     for task in tasks:
         task_results.append(get_task_json(task['task_id']))
@@ -72,7 +74,7 @@ def ft_score(comp_id):
 
         bestTime.append(fastest)
         ssTimes = []
-        distances_flown=[]
+        distances_flown = []
 
         results = []
         rank = 1
@@ -98,7 +100,7 @@ def ft_score(comp_id):
                     ss = (datetime.combine(task_obj.date, time())
                           + timedelta(seconds=result['SSS_time'])).strftime('%Y-%m-%dT%H:%M:%SZ')
                     if result['ESS_time']:
-                        ssTimes.append(result['ESS_time']-result['real_start_time'])
+                        ssTimes.append(result['ESS_time'] - result['real_start_time'])
                         es = (datetime.combine(task_obj.date, time())
                               + timedelta(seconds=result['ESS_time'])).strftime(
                             '%Y-%m-%dT%H:%M:%SZ')
@@ -243,3 +245,82 @@ def ft_route(comp_id):
                       'spherical': None})
 
     return route
+
+
+def ft_arrival(comp_id):
+    comp = Comp(comp_id)
+    tasks = comp.get_tasks_details()
+
+    # for task in tasks:
+    #     task_results.append(get_task_json(task['task_id']))
+
+    pilotsAtEss = []
+    arrivalRank = []
+    for task in tasks:
+        # pilotsAtEss.append(task['stats']['pilots_ess'])
+        task_obj = Task.read(task['task_id'])
+        task_obj.get_results()
+        pilotsAtEss.append(task_obj.pilots_ess)
+        task_arrivals = []
+        for pilot in task_obj.pilots:
+            if pilot.ESS_time:
+                task_arrivals.append([pilot.ESS_time, pilot.ID, pilot.name, pilot.arrival_score])
+        if task_arrivals:
+            task_arrivals.sort(key=lambda l: l[0])
+
+            first = task_arrivals[0][0]
+            first_points = task_arrivals[0][3]
+            task_arrival_rank = []
+            rank = 1
+            prev = first
+            for arrival in task_arrivals:
+                if arrival[0] != prev:
+                    rank += 1
+                task_arrival_rank.append([[str(arrival[1]),
+                                          arrival[2]],
+                                          {'lag': h(arrival[0] - first),
+                                           'rank': str(rank),
+                                           'frac': fraction(arrival[3], first_points)},
+                                          ])
+            arrivalRank.append(task_arrival_rank)
+    return {'pilotsAtEss': pilotsAtEss,
+            'arrivalRank': arrivalRank}
+
+#
+#     pilotsAtEss:
+#     - 0
+#     - 32
+#     - 46
+#     - 37
+#     - 27
+#     - 46
+#     - 7
+#     - 29
+#     arrivalRank:
+#     - []
+#     - - - - '103'
+#     - Roberto
+#     Nichele
+#
+#
+# - lag: 0.000000
+# h
+# rank: '1'
+# frac: 1
+# - - - '89'
+# - Scott
+# Barrett
+# - lag: 0.003611
+# h
+# rank: '2'
+# frac: 0.93333713
+# - - - '60'
+# - Rohan
+# Holtkamp
+# - lag: 0.018611
+# h
+# rank: '3'
+# frac: 0.87052124
+# - - - '99'
+#
+#

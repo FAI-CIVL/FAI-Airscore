@@ -775,3 +775,22 @@ def _norm_route_yaml(compid):
 def _norm_route(compid):
     from flaretiming import ft_route
     return jsonify(ft_route(int(compid)))
+
+
+@blueprint.route('/flaretiming_yaml/<compid>/norm-arrival', methods=['GET'])
+def _norm_arrival_yaml(compid):
+    from flaretiming import ft_arrival
+    from ruamel import yaml
+    import io
+    yaml = yaml.YAML()
+    yaml.representer.ignore_aliases = lambda *data: True
+    buf = io.BytesIO()
+    yaml.dump(ft_arrival(int(compid)), buf)
+    buf.seek(0)
+    return send_file(buf, as_attachment=True, mimetype="text/plain", attachment_filename='norm-arrival.yaml')
+
+
+@blueprint.route('/flaretiming/<compid>/norm-arrival', methods=['GET'])
+def _norm_arrival(compid):
+    from flaretiming import ft_arrival
+    return jsonify(ft_arrival(int(compid)))
