@@ -1460,3 +1460,41 @@ def update_comp_result(comp_id: int, status: str = None, name_suffix: str = None
     unpublish_result(comp_id, comp=True)
     publish_result(ref_id, ref_id=True)
     return ref_id, filename, timestamp
+
+
+def convert_external_comp(comp_id: int) -> bool:
+    from sqlalchemy.exc import SQLAlchemyError
+    from db.tables import TblCompetition as C
+    from db.tables import TblTask as T
+    from db.tables import TblTrackWaypoint as TW
+    from db.tables import TblTaskResult as R
+    from db.tables import TblNotification as N
+    from task import Task
+    try:
+        with db_session() as db:
+            tasks = [el for el, in db.query(T.task_id).filter_by(comp_id=comp_id).distinct()]
+            if tasks:
+                '''clear tasks results'''
+                results = db.query(R).filter(R.task_id.in_(tasks))
+                if results:
+                    tracks = [el.track_id for el in results.all()]
+                    db.query(TW).filter(TW.track_id.in_(tracks)).delete(synchronize_session=False)
+                    db.query(N).filter(N.track_id.in_(tracks)).delete(synchronize_session=False)
+                    results.delete(synchronize_session=False)
+                '''recalculate task distances'''
+                for task_id in tasks:
+                    task = Task.read(task_id)
+                    '''get projection'''
+                    task.create_projection()
+                    task.calculate_task_length()
+                    task.calculate_optimised_task_length()
+                    '''Storing calculated values to database'''
+                    task.update_task_distance()
+            '''unset external flag'''
+            comp = C.get_by_id(comp_id)
+            comp.update(external=0)
+            return True
+    except (SQLAlchemyError, Exception):
+        print(f'There was an Error trying to convert comp ID {comp_id}.')
+        return False
+

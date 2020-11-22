@@ -62,6 +62,12 @@ $(document).ready(function() {
     $('#save_button_warning_text').addClass('bg-warning').html('Competition needs to be saved');
   });
 
+  // external event conversion
+  $('#confirm_convert').click( function(){ $('#confirm_convert_modal').modal('show'); });
+  $('#convert_confirmed').click( function(){
+    window.location.href = "/users/_convert_external_comp/"+compid;
+  });
+
 });
 
 function ask_update(change) {

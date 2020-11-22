@@ -43,6 +43,23 @@ Competition Settings
       {% set readonly = session.external %}
       <div role="tabpanel" class="tab-pane column-wrap fade show active" id="details">
         <h4 class='tab-title font-weight-bold'>Competition Details:</h4>
+        {% if session.external %}
+        <section class="tab-row column-wrap form">
+            <h5 class="text-info bg-warning p-1">External Event</h5>
+            <p class="description">{{ compform.external.description }}</p>
+            <p class="description">It is possible to convert Event to Airscore format. Following process will occur:</p>
+            <ul>
+              <li>All task definitions (distance, optimise distance) will be recalculated</li>
+              <li>All pilots will be set NYP for all tasks.</li>
+            </ul>
+          <p class="description">Once converted, <strong>the process cannot be undone</strong>.<br/>Original imported results will still be available.</p>
+          <section class="panel-row row-wrap button">
+            <button class='btn btn-warning' type='button' id='confirm_convert'>
+              Convert Event
+            </button>
+          </section>
+        </section>
+        {% endif %}
         <section class="tab-row row-wrap form">
             {{ render_field(compform.comp_name, 40, disabled=readonly) }}
             {{ render_field(compform.comp_code, 20, tooltip=True) }}
@@ -330,6 +347,26 @@ Competition Settings
         <button id='formula_confirmed' type='button' class='btn btn-danger' data-dismiss='modal'>Yes update</button>
       </div>
       task_name
+    </div>
+  </div>
+</div>
+<!--Modal ends here--->
+
+<!----convert event modal starts here--->
+<div id='confirm_convert_modal' class='modal fade' role='dialog'>
+  <div class='modal-dialog'>
+    <div class='modal-content'>
+      <div class='modal-header'>
+        <h4 class='modal-title'>Please confirm:</h4>
+      </div>
+      <div class='modal-body'>
+        <p>Event will be converted to Airscore format</p>
+      </div>
+      <div class='modal-footer'>
+        <button type='button' class='btn btn-success' data-dismiss='modal'>Cancel</button>
+        <button id='convert_confirmed' type='button' class='btn btn-danger'
+                data-dismiss='modal'>Yes convert</button>
+      </div>
     </div>
   </div>
 </div>

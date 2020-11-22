@@ -403,6 +403,24 @@ def comp_settings_admin(compid: int):
                            self_register=(SELF_REG_DEFAULT and PILOT_DB))
 
 
+@blueprint.route('/_convert_external_comp/<int:compid>', methods=['GET', 'POST'])
+@login_required
+@check_coherence
+def convert_external_comp(compid: int):
+    if not session['external']:
+        flash("Event does not seem to be external. Conversion aborted", category='danger')
+        return redirect(url_for('user.comp_settings_admin', compid=compid))
+
+    '''starting conversion'''
+    success = frontendUtils.convert_external_comp(compid)
+
+    if success:
+        flash("Event converted.", category='success')
+    else:
+        flash("Event converted.", category='success')
+    return redirect(url_for('user.comp_settings_admin', compid=compid))
+
+
 @blueprint.route('/_get_scorekeepers/<int:compid>', methods=['GET'])
 @login_required
 def _get_scorekeepers(compid: int):
