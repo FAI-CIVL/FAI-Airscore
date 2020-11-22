@@ -49,15 +49,17 @@ function populate_task_scores(taskid, filename){
                 });
                 return(airspace + track + JTG + admin);
             }
-            else{ return ("");}
+            else { return (""); }
 
             }},
 
             {
             targets: [-1],  render: function (a, b, data, d) {
+            if (!external){
                 return ('<td  class ="value" ><button type="button" class="btn btn-primary" onclick="adjust('
                    +  data.par_id + ')" data-toggle="confirmation" data-popout="true">Edit</button></td>');
-
+            }
+            else { return (""); }
             }}
         ],
 
@@ -71,7 +73,6 @@ function populate_task_scores(taskid, filename){
             });
         }
     });
-    console.log("location.href='/users/_download/task_html/"+filename+"'")
     if ( filename == null ) {
         document.getElementById('download_task_html').style.display = "none";
     }
@@ -147,7 +148,7 @@ function updateFiles(load_latest=false) {
           })
         );
       });
-      dropdown.file.removeAttr('disabled');
+      if (!external) dropdown.file.removeAttr('disabled');
       if(response.active){
         active_file = response.active;
         $("#result_file").val(response.active);

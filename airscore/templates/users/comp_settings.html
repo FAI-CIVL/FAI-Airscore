@@ -40,48 +40,49 @@ Competition Settings
     <div class="tab-content">
       <!-- Tab panes -->
       {% from "macros.html" import render_field with context %}
+      {% set readonly = session.external %}
       <div role="tabpanel" class="tab-pane column-wrap fade show active" id="details">
         <h4 class='tab-title font-weight-bold'>Competition Details:</h4>
         <section class="tab-row row-wrap form">
-            {{ render_field(compform.comp_name, 40) }}
+            {{ render_field(compform.comp_name, 40, disabled=readonly) }}
             {{ render_field(compform.comp_code, 20, tooltip=True) }}
             {{ render_field(compform.sanction, tooltip=True) }}
-            {{ render_field(compform.comp_class) }}
+            {{ render_field(compform.comp_class, disabled=readonly) }}
         </section>
         <section class="tab-row row-wrap form">
-            {{ render_field(compform.comp_site, 40) }}
-            {{ render_field(compform.date_from, 15) }}
-            {{ render_field(compform.date_to, 15) }}
-            {{ render_field(compform.time_offset, tooltip=True) }}
+            {{ render_field(compform.comp_site, 40, disabled=readonly) }}
+            {{ render_field(compform.date_from, 15, disabled=readonly) }}
+            {{ render_field(compform.date_to, 15, disabled=readonly) }}
+            {{ render_field(compform.time_offset, tooltip=True, disabled=readonly) }}
         </section>
         <section class="tab-row row-wrap form">
             {{ render_field(compform.MD_name, 40) }}
             {{ render_field(compform.website, 20) }}
-            {{ render_field(compform.comp_type) }}
+            {{ render_field(compform.comp_type, disabled=readonly) }}
         </section>
         <section class="tab-row row-wrap form">
-            {{ render_field(compform.pilot_registration, tooltip=True) }}
+            {{ render_field(compform.pilot_registration, tooltip=True, disabled=readonly) }}
             {% if self_register %}
-            {{ render_field(compform.self_register, tooltip=True) }}
+            {{ render_field(compform.self_register, tooltip=True, disabled=readonly) }}
             {% endif %}
         </section>
       </div>
       <div role="tabpanel" class="tab-pane column-wrap fade" id="formula">
         <h4 class='tab-title font-weight-bold'>Formula Parameters:</h4>
         <section class="tab-row row-wrap form">
-            {{ render_field(compform.formula, tooltip=True) }}
-            {{ render_field(compform.overall_validity, tooltip=True) }}
-            {{ render_field(compform.validity_param, 5, tooltip=True) }}
+            {{ render_field(compform.formula, tooltip=True, disabled=readonly) }}
+            {{ render_field(compform.overall_validity, tooltip=True, disabled=readonly) }}
+            {{ render_field(compform.validity_param, 5, tooltip=True, disabled=readonly) }}
         </section>
         <section class="tab-row row-wrap form">
-            {{ render_field(compform.min_dist, 5, tooltip=True) }}
-            {{ render_field(compform.nom_dist, 5, tooltip=True) }}
-            {{ render_field(compform.nom_time, 5, tooltip=True) }}
-            {{ render_field(compform.nom_launch, 5, tooltip=True) }}
-            {{ render_field(compform.nom_goal, 5, tooltip=True) }}
+            {{ render_field(compform.min_dist, 5, tooltip=True, disabled=readonly) }}
+            {{ render_field(compform.nom_dist, 5, tooltip=True, disabled=readonly) }}
+            {{ render_field(compform.nom_time, 5, tooltip=True, disabled=readonly) }}
+            {{ render_field(compform.nom_launch, 5, tooltip=True, disabled=readonly) }}
+            {{ render_field(compform.nom_goal, 5, tooltip=True, disabled=readonly) }}
         </section>
         <section class="tab-row row-wrap form">
-            {{ render_field(compform.scoring_altitude, tooltip=True) }}
+            {{ render_field(compform.scoring_altitude, tooltip=True, disabled=readonly) }}
         </section>
         <section class="tab-row row-wrap button">
           <button class='btn btn-primary' type='button' data-toggle='collapse' data-target='#adv_params'
@@ -91,59 +92,61 @@ Competition Settings
         </section>
         <section class="tab-row column-wrap collapse" id='adv_params'>
           <section class="panel-row row-wrap form">
-            {{ render_field(compform.formula_distance, tooltip=True) }}
-            {{ render_field(compform.formula_time, tooltip=True) }}
-            {{ render_field(compform.formula_departure, tooltip=True) }}
-            {{ render_field(compform.formula_arrival, tooltip=True) }}
+            {{ render_field(compform.formula_distance, tooltip=True, disabled=readonly) }}
+            {{ render_field(compform.formula_time, tooltip=True, disabled=readonly) }}
+            {{ render_field(compform.formula_departure, tooltip=True, disabled=readonly) }}
+            {{ render_field(compform.formula_arrival, tooltip=True, disabled=readonly) }}
           </section>
           <section class="panel-row row-wrap form">
-            {{ render_field(compform.lead_factor, 10, tooltip=True) }}
+            {{ render_field(compform.lead_factor, 10, tooltip=True, disabled=readonly) }}
           </section>
           <section class="panel-row row-wrap form">
-            {{ render_field(compform.no_goal_penalty, 10, tooltip=True) }}
-            {{ render_field(compform.tolerance, 10, tooltip=True) }}
-            {{ render_field(compform.min_tolerance, 10, tooltip=True) }}
+            {{ render_field(compform.no_goal_penalty, 10, tooltip=True, disabled=readonly) }}
+            {{ render_field(compform.tolerance, 10, tooltip=True, disabled=readonly) }}
+            {{ render_field(compform.min_tolerance, 10, tooltip=True, disabled=readonly) }}
           </section>
           <section class="panel-row row-wrap form">
-            {{ render_field(compform.validity_min_time, 10, tooltip=True) }}
-            {{ render_field(compform.scoreback_time, 10, tooltip=True) }}
-            {{ render_field(compform.glide_bonus, tooltip=True) }}
+            {{ render_field(compform.validity_min_time, 10, tooltip=True, disabled=readonly) }}
+            {{ render_field(compform.scoreback_time, 10, tooltip=True, disabled=readonly) }}
+            {{ render_field(compform.glide_bonus, tooltip=True, disabled=readonly) }}
           </section>
           <section class="panel-row row-wrap form">
-            {{ render_field(compform.arr_alt_bonus, 10, tooltip=True) }}
-            {{ render_field(compform.arr_min_height, 10, tooltip=True) }}
-            {{ render_field(compform.arr_max_height, 10, tooltip=True) }}
+            {{ render_field(compform.arr_alt_bonus, 10, tooltip=True, disabled=readonly) }}
+            {{ render_field(compform.arr_min_height, 10, tooltip=True, disabled=readonly) }}
+            {{ render_field(compform.arr_max_height, 10, tooltip=True, disabled=readonly) }}
           </section>
           <section class="panel-row row-wrap form">
-            {{ render_field(compform.max_JTG, 10, tooltip=True) }}
-            {{ render_field(compform.JTG_penalty_per_sec, 10, tooltip=True) }}
+            {{ render_field(compform.max_JTG, 10, tooltip=True, disabled=readonly) }}
+            {{ render_field(compform.JTG_penalty_per_sec, 10, tooltip=True, disabled=readonly) }}
           </section>
+          {% if compform.submit and not readonly %}
           <section class="panel-row row-wrap button">
                 <button class='btn btn-warning' type='button' onclick='get_adv_settings()'>
                   Reset Advanced Parameters
                 </button>
           </section>
+          {% endif %}
         </section>
       </div>
       <div role="tabpanel" class="tab-pane column-wrap fade" id="tracks">
         <h4 class='tab-title font-weight-bold'>Track Management:</h4>
         <section class="tab-row row-wrap form">
-          {{ render_field(compform.track_source, tooltip=True) }}
+          {{ render_field(compform.track_source, tooltip=True, disabled=readonly) }}
         </section>
         <section class="tab-row row-wrap form">
-          {{ render_field(compform.airspace_check, tooltip=True) }}
+          {{ render_field(compform.airspace_check, tooltip=True, disabled=readonly) }}
           <div>
-            {{ render_field(compform.igc_parsing_file, tooltip=True) }}
+            {{ render_field(compform.igc_parsing_file, tooltip=True, disabled=readonly) }}
             <a class="form-link" id='link_igc_config'>view/edit</a>
           </div>
-          {{ render_field(compform.check_launch, tooltip=True) }}
-          {{ render_field(compform.check_g_record, tooltip=True) }}
+          {{ render_field(compform.check_launch, tooltip=True, disabled=readonly) }}
+          {{ render_field(compform.check_g_record, tooltip=True, disabled=readonly) }}
         </section>
       </div>
       <div role="tabpanel" class="tab-pane column-wrap fade" id="results">
         <h4 class='tab-title font-weight-bold'>Results:</h4>
         <section class="tab-row column-wrap form">
-            {{ render_field(compform.cat_id) }}
+            {{ render_field(compform.cat_id, disabled=readonly) }}
             <table class="rankings dataTable no-footer" id="rankings">
             </table>
         </section>
@@ -176,7 +179,7 @@ Competition Settings
   </div>
   <div class='panel collapse' id='task_list'>
     <section class="panel-row row-wrap button">
-      {% if compform.submit %}
+      {% if compform.submit and not readonly %}
       <button id='add_task_button' class='btn btn-secondary' type='button' onclick='add_task()'>
         Add task
       </button>
@@ -316,7 +319,6 @@ Competition Settings
   <div class='modal-dialog'>
     <div class='modal-content'>
       <div class='modal-header'>
-        <button type='button' class='close' data-dismiss='modal' aria-hidden='true'>×</button>
         <h4 class='modal-title'>Please confirm</h4>
       </div>
       <div class='modal-body' id='formula_modal-body'>
@@ -342,6 +344,7 @@ Competition Settings
 <script  type=text/javascript>
   var compid = {{ compid|tojson }};
   var comp_admin = {{ compform.submit|tojson }};
+  var external = {{ session.external|tojson }};
   var classifications = {{ classifications|tojson }};
   var link_get_tasks = "{{ url_for('user._get_tasks', compid=compid)}}";
   var link_add_task = "{{ url_for('user._add_task', compid=compid)}}";

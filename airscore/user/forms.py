@@ -208,6 +208,9 @@ class CompForm(FlaskForm):
                                                                         'to the competition')
     website = StringField("Competition website", description='If you have an official website for the comp. e.g.'
                                                              ' Airtribune or other')
+    external = BooleanField('External Event', description='External Events are imported, results are not calculated '
+                                                          'throught Airscore, and are Read Only. Remove the flag to '
+                                                          'reset all task results and recalculate in Airscore.')
     submit = SubmitField('Save')
 
     def validate_on_submit(self):
@@ -231,6 +234,9 @@ class TaskForm(FlaskForm):
                                                  ' in the competition overview page. e.g. "task stopped at 14:34"')
     date = DateField('Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
     task_type = SelectField('Type', choices=[('race', 'Race'), ('elapsed_time', 'Elapsed time')])
+    region = SelectField('Region', id='select_region', choices=[(0, ' -')], default=0, coerce=int,
+                         validators=[Optional()], description='Determines the Waypoint listed, and the airspace used')
+
     # times
     window_open_time = TimeField('Window open', format='%H:%M', validators=[DataRequired()])
     start_time = TimeField('Start time', format='%H:%M', validators=[DataRequired()])

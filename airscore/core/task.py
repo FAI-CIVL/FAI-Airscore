@@ -1607,7 +1607,7 @@ def delete_task(task_id, files=False):
             db.query(TW).filter(TW.track_id.in_(track_list)).delete(synchronize_session=False)
             db.query(N).filter(N.track_id.in_(track_list)).delete(synchronize_session=False)
             db.query(R).filter(R.task_id == task_id).delete(synchronize_session=False)
-        '''delete db entries: results, waypoints, task'''
+        '''delete db entries: waypoints, task'''
         # db.query(R).filter(T.task_id == task_id).delete(synchronize_session=False)
         db.query(W).filter(W.task_id == task_id).delete(synchronize_session=False)
         db.query(T).filter(T.task_id == task_id).delete(synchronize_session=False)

@@ -67,9 +67,10 @@ function update_turnpoints(json) {
                                                                }});
   columns.push({data: 'radius', title: 'Radius', name: 'radius', className: "text-right", defaultContent: ''});
   columns.push({data: 'partial_distance', title: 'Dist.', name: 'dist', className: "text-right", defaultContent: ''});
-  columns.push({data: 'wpt_id', render: function ( data, type, row ) { return '<button class="btn btn-warning ml-3" type="button" onclick="modify_tp(' + data + ')" data-toggle="confirmation" data-popout="true">Modify</button>'}});
-  columns.push({data: 'wpt_id', render: function ( data, type, row ) { return '<button class="btn btn-danger ml-3" type="button" onclick="confirm_delete(' + data + ')" data-toggle="confirmation" data-popout="true">Delete</button>'}});
-
+  if (!external){
+    columns.push({data: 'wpt_id', render: function ( data, type, row ) { return '<button class="btn btn-warning ml-3" type="button" onclick="modify_tp(' + data + ')" data-toggle="confirmation" data-popout="true">Modify</button>'}});
+    columns.push({data: 'wpt_id', render: function ( data, type, row ) { return '<button class="btn btn-danger ml-3" type="button" onclick="confirm_delete(' + data + ')" data-toggle="confirmation" data-popout="true">Delete</button>'}});
+  }
   $('#task_wpt_table').DataTable( {
     data: json.turnpoints,
     destroy: true,

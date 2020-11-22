@@ -16,9 +16,11 @@ Task Scoring Admin
 <a href="{{ url_for('user.task_admin', taskid=taskid)}}" class='btn btn-info ml-2' type='button'>
   Task Settings
 </a>
+{% if not session.external %}
 <a href="{{ url_for('user.track_admin', taskid=taskid)}}" class='btn btn-info ml-2' type='button'>
   Tracks
 </a>
+{% endif %}
 {% endblock %}
 
 {% block header %}
@@ -26,6 +28,7 @@ Task Scoring Admin
 {% endblock %}
 
 {% block content %}
+{% set readonly = session.external %}
 <!-- Settings Tab Section -->
 <div role="tabpanel" class="tab-panel">
   <!-- Nav tabs -->
@@ -41,6 +44,8 @@ Task Scoring Admin
       <section class="tab-row row-wrap button">
           {% if not user_is_scorekeeper %}
           <h4>You are not a scorekeeper of this competition, thus you cannot access most of functionalities in this page.</h4>
+          {% elif session.external %}
+          <h4>Competition is imported, thus you cannot access most of functionalities in this page.</h4>
           {% else %}
           <button class='btn btn-primary' type='button' onclick='Score_modal();'>
             Score Task
@@ -56,7 +61,7 @@ Task Scoring Admin
       {% if user_is_scorekeeper %}
       {% from "macros.html" import render_field with context %}
       <section class="tab-row row-wrap form">
-          {{ render_field(fileform.result_file) }}
+          {{ render_field(fileform.result_file, disabled=readonly) }}
           <button id='publish' class='btn btn-danger' type='button' onclick='toggle_publish();'>
             Un-publish results
           </button>
@@ -308,6 +313,7 @@ Task Scoring Admin
   var production = {{ production|tojson }};
   var taskid = {{ taskid|tojson }};
   var active_file = {{active_file|tojson}};
+  var external = {{ session.external|tojson }};
   var url_publish_result = "{{ url_for('user._publish_result', taskid=taskid)}}";
   var url_unpublish_result = "{{ url_for('user._unpublish_result', taskid=taskid)}}";
   var url_get_task_result_files = "{{ url_for('user._get_task_result_files', taskid=taskid)}}";
