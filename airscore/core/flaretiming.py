@@ -211,6 +211,7 @@ def ft_route(comp_id):
     comp = Comp(comp_id)
     tasks = comp.get_tasks_details()
     route = []
+
     for t in tasks:
         task = Task.read(t['task_id'])
         task.calculate_task_length()
@@ -256,15 +257,22 @@ def ft_arrival(comp_id):
 
     pilotsAtEss = []
     arrivalRank = []
+    task_results = []
+
     for task in tasks:
-        # pilotsAtEss.append(task['stats']['pilots_ess'])
-        task_obj = Task.read(task['task_id'])
+        task_results.append(get_task_json(task['task_id']))
+
+    for task in task_results:
+        task_obj = Task.read(task['info']['id'])
         task_obj.get_results()
         pilotsAtEss.append(task_obj.pilots_ess)
         task_arrivals = []
-        for pilot in task_obj.pilots:
-            if pilot.ESS_time:
-                task_arrivals.append([pilot.ESS_time, pilot.ID, pilot.name, pilot.arrival_score])
+
+        for result in task['results']:
+            if result['result_type'] != 'abs':
+
+                if result['ESS_time']:
+                    task_arrivals.append([result['ESS_time'], result['ID'], result['name'], result['arrival_score']])
         if task_arrivals:
             task_arrivals.sort(key=lambda l: l[0])
 
