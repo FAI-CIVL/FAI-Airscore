@@ -1157,7 +1157,7 @@ def _publish_result(taskid: int):
         refid, _, timestamp = frontendUtils.update_comp_result(session['compid'], name_suffix='Overview')
         if refid:
             comp_published, status = data['filetext'].split('-')
-            header = f"Published result ran at:{comp_published} Status:{status}"
+            header = f"Published result ran at: {comp_published} Status:{status}"
             resp = jsonify(filename=data['filename'], header=header)
             return resp
         return jsonify(comp_header='There was a problem creating comp result: do we miss some task results files?')

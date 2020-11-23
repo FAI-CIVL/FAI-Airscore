@@ -368,6 +368,29 @@ var dropdown = {
   file: $('#result_file')
 };
 
+function update_buttons(filename, status) {
+  if (status == 'FILE NOT FOUND') {
+    console.log('Result file is missing');
+    $('#publish').text('Publish results');
+    $('#publish').addClass('btn-secondary').removeClass('btn-success').removeClass('btn-danger');
+    $('#publish').prop('disabled', true);
+    $('#change_status').addClass('btn-secondary').removeClass('btn-primary');
+    $('#change_status').prop('disabled', true);
+    $('#download_task_html').addClass('btn-secondary').removeClass('btn-primary');
+    $('#download_task_html').prop('disabled', true);
+  }
+  else {
+    console.log('Result file is ok');
+    $('#publish').removeClass('btn-secondary');
+    $('#publish').prop('disabled', false);
+    update_publish_button(filename);
+    $('#change_status').removeClass('btn-secondary').addClass('btn-primary');
+    $('#change_status').prop('disabled', false);
+    $('#download_task_html').removeClass('btn-secondary').addClass('btn-primary');
+    $('#download_task_html').prop('disabled', false);
+  }
+}
+
 $(document).ready(function() {
 
   updateFiles();
@@ -376,7 +399,7 @@ $(document).ready(function() {
   $('#result_file').change(function() {
     var filename = $('#result_file option:selected').val();
     var status = $('#result_file option:selected').text().split(' - ')[1];
-    update_publish_button(filename);
+    update_buttons(filename, status);
     populate_task_scores(taskid, filename);
     $('#status_modal_comment').val(status);
   });

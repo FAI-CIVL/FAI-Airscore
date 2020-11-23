@@ -762,18 +762,17 @@ def number_of_tracks_processed(taskid: int):
 
 def get_score_header(files, offset):
     import time
-    active_published = None
-    active_status = None
+    from Defines import RESULTDIR
     active = None
     header = "This task has not been scored"
-    for file in files:
+    file = next((el for el in files if int(el['active']) == 1), None)
+    if file:
         published = time.ctime(file['created'] + offset)
-        if int(file['active']) == 1:
-            active_published = published
-            active_status = file['status']
-            active = file['filename']
-    if active_published:
-        header = f"Published result ran: {active_published} Status: {active_status}"
+        '''check file exists'''
+        if Path(RESULTDIR, file['filename']).is_file():
+            header = f"Published result ran at: {published} Status: {file['status']}"
+        else:
+            header = f"WARNING: Active result file is not found! (ran: {published})"
     elif len(files) > 0:
         header = "No published results"
     return header, active
