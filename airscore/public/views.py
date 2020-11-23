@@ -200,7 +200,7 @@ def setup_admin():
             first_name=form.first_name.data,
             last_name=form.last_name.data,
         )
-        flash("Thank you for registering. You can now log in.", "success")
+        flash("Thank you for registering. You are now logged in.", "success")
         current_app.config['admin_exists'] = True
         return redirect(url_for("public.home"))
     else:
