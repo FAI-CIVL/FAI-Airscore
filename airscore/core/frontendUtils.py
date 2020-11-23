@@ -433,6 +433,33 @@ def get_pilot_list_for_track_management(taskid: int):
     return all_data
 
 
+def get_pilot_list_for_leaderboard(taskid: int):
+    from db.tables import TblTaskResult as R
+    pilots = [row._asdict() for row in R.get_task_results(taskid)]
+
+    all_data = []
+    for pilot in pilots:
+        data = {'par_id': pilot['par_id'], 'ID': pilot['ID'], 'name': pilot['name'], 'sex': pilot['sex'],
+                'track_id': pilot['track_id'], 'comment': pilot['comment']}
+        if pilot['track_file']:
+            parid = data['par_id']
+            if pilot['ESS_time']:
+                time = sec_to_time(pilot['ESS_time'] - pilot['SSS_time'])
+                if pilot['result_type'] == 'goal':
+                    result = f'Goal {time}'
+                else:
+                    result = f"ESS {round(pilot['distance_flown'] / 1000, 2)} Km (<del>{time}</del>)"
+            else:
+                result = f"LO {round(pilot['distance_flown'] / 1000, 2)} Km"
+            data['Result'] = f'<a href="/map/{parid}-{taskid}?back_link=0&full=1" target="_blank">{result}</a>'
+        elif pilot['result_type'] == "mindist":
+            data['Result'] = "Min Dist"
+        else:
+            data['Result'] = "Not Yet Processed" if not pilot['track_id'] else pilot['result_type'].upper()
+        all_data.append(data)
+    return all_data
+
+
 def get_waypoint(wpt_id: int = None, rwp_id: int = None):
     """reads waypoint from tblTaskWaypoint or tblRegionWaypoint depending on input and returns Turnpoint object"""
     if not (wpt_id or rwp_id):
@@ -1459,3 +1486,17 @@ def update_comp_result(comp_id: int, status: str = None, name_suffix: str = None
     unpublish_result(comp_id, comp=True)
     publish_result(ref_id, ref_id=True)
     return ref_id, filename, timestamp
+
+
+def task_has_valid_results(task_id: int) -> bool:
+    from db.tables import TblTaskResult as TR
+    return bool(TR.get_task_flights(task_id))
+
+
+def get_task_info(task_id: int) -> dict:
+    from task import Task
+    result = {}
+    task = Task.read(task_id)
+    if task:
+        result = task.create_json_elements()
+    return result

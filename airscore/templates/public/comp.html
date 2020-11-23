@@ -67,18 +67,25 @@
           </tbody>
         </table>
         <br>
-        {% if task['status'] == "Not yet scored" and task['status'] != "Task not set" and task['live'] %}
+        {% if task['status'] != "Task not set" %}
+        {% if task['status'] == "Not yet scored" %}
+        {% if task['live'] %}
         <p>
           <a href="{{ url_for('public.livetracking', taskid=task['id']) }}" class='btn btn-primary'>Live Leaderboard</a>
         </p>
+        {% elif task['tracks_status'] %}
+        <p>
+          <a href="{{ url_for('public.tracks', taskid=task['id']) }}" class='btn btn-primary'>Tracks Status</a>
+        </p>
         {% endif %}
-        {% if task['status'] != "Not yet scored" and task['status'] != "Task not set"%}
+        {% else %}
         <p>
           <a href="{{ url_for('public.download_file', filetype='igc_zip', filename=task['id']) }}">IGC</a>
         </p>
         <a href="{{ url_for('public.task_result', taskid=task['id']) }}" class='btn btn-primary'>Task Scores</a>
         {% if country_scores %}
         <a href="{{ url_for('public.country_task', taskid=task['id']) }}" class='btn btn-primary'>Nations</a>
+        {% endif %}
         {% endif %}
         {% endif %}
         <td><strong>{{task['status']}}</strong></td>

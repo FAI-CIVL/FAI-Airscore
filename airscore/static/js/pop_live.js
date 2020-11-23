@@ -40,12 +40,12 @@ function populate_live(taskid){
                                     empty = false;
                                     return false;
                                 }
-                            } );
+                            });
                             if (empty) {
                                 table.DataTable().column( i ).visible( false );
                             }
                             const titles = ['#', 'ID']
-                            if (titles.includes((table.DataTable().column( i ).title)) {
+                            if (titles.includes((table.DataTable().column( i ).title))) {
 
                             }
                         }
@@ -57,7 +57,7 @@ function populate_live(taskid){
                         var tbl = document.createElement('table');
                         tbl.className="times-list";
                         if (json.info.startgates.length > 1) {
-                            stargates.forEach((el, i) => {
+                            json.info.startgates.forEach((el, i) => {
                                 let row = tbl.insertRow();
                                 let cell1 = row.insertCell();
                                 if (i==0) {

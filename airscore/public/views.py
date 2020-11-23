@@ -343,6 +343,8 @@ def competition(compid: int):
                 task.update({'map': task_map._repr_html_()})
                 '''livetracking availability'''
                 task['live'] = Path(LIVETRACKDIR, str(task['id'])).is_file()
+                '''tracks download status'''
+                task['tracks_status'] = frontendUtils.task_has_valid_results(task['id'])
 
             task['tasQuality'] = "-"
             task['date'] = task['date'].strftime("%Y-%m-%d")
@@ -736,3 +738,22 @@ def _get_livetracking(taskid: int):
         formatted['data'] = data
 
     return formatted
+
+
+@blueprint.route('/tracks/<int:taskid>')
+def tracks(taskid: int):
+    data = frontendUtils.get_task_info(taskid)
+    offset = data['info']['time_offset']
+    formatted = frontendUtils.get_pretty_data(data)
+    return render_template('public/tracks.html',
+                           taskid=taskid, info=formatted['info'], route=formatted['route'], offset=offset)
+
+
+@blueprint.route('/_get_tracks_status/<int:taskid>', methods=['GET', 'POST'])
+def _get_tracks_status(taskid: int):
+    import time
+    from calcUtils import epoch_to_datetime
+    timestamp = int(time.time())
+    offset = 0 if 'offset' not in request.args else request.args.get('offset')
+    timestamp = (epoch_to_datetime(timestamp, offset=offset)).strftime('%H:%M:%S')
+    return {'data': frontendUtils.get_pilot_list_for_leaderboard(taskid), 'timestamp': timestamp}
