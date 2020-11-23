@@ -269,7 +269,7 @@ def _get_all_comps():
             name = c['comp_name']
             if c['external']:
                 c['tasks'] = 'external'
-                c['comp_name'] = f'<a href="/ext_comp_result/{compid}">{name}</a>'
+                c['comp_name'] = f'<a href="/ext_competition/{compid}">{name}</a>'
             else:
                 c['comp_name'] = f'<a href="/competition/{compid}">{name}</a>'
             if c['sanction'] and not c['sanction'] == 'none':
@@ -358,6 +358,68 @@ def competition(compid: int):
                            country_scores=country_scores)
 
 
+@blueprint.route('/ext_competition/<int:compid>')
+def ext_competition(compid: int):
+    from compUtils import get_comp_json
+    # get the latest comp result file, not the active one. This is so we can display tasks that have published
+    # results that are not yet official and therefore in the comp overall results
+    result_file = get_comp_json(compid, latest=True)
+    all_tasks = []
+    layer = {}
+    country_scores = False
+    task_ids = []
+    overall_available = False
+    if result_file != 'error':
+        if result_file['formula'].get('country_scoring') == 1:
+            country_scores = True
+        overall_available = True if get_comp_json(int(compid)) != 'error' else False
+        for task in result_file['tasks']:
+            task_ids.append(int(task['id']))
+            wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox, _, _ = get_map_json(task['id'])
+            layer['geojson'] = None
+            layer['bbox'] = bbox
+            task_map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
+                                goal_line=goal_line, margin=tolerance)
+            task['opt_dist'] = '{:0.2f}'.format(task['opt_dist'] / 1000) + ' km'
+            task['tasQuality'] = '{:0.2f}'.format(task['day_quality'])
+            task.update({'map': task_map._repr_html_()})
+            all_tasks.append(task)
+
+    comp, non_scored_tasks = frontendUtils.get_comp_info(compid, task_ids)
+    comp_start = comp['date_from']
+    if comp['date_from']:
+        comp['date_from'] = comp['date_from'].strftime("%Y-%m-%d")
+    if comp['date_to']:
+        comp['date_to'] = comp['date_to'].strftime("%Y-%m-%d")
+    if comp_start > datetime.now().date():
+        return render_template('public/future_competition.html', comp=comp)
+
+    if non_scored_tasks:
+        for t in non_scored_tasks:
+            task = t._asdict()
+            if not t.opt_dist or t.opt_dist == 0:
+                task['status'] = "Task not set"
+                task['opt_dist'] = '0 km'
+            else:
+                task['status'] = "Not yet scored"
+                wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox, _, _ = get_map_json(task['id'])
+                layer['geojson'] = None
+                layer['bbox'] = bbox
+                task_map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
+                                    goal_line=goal_line, margin=tolerance)
+                task['opt_dist'] = '{:0.2f}'.format(task['opt_dist'] / 1000) + ' km'
+                task.update({'map': task_map._repr_html_()})
+
+            task['tasQuality'] = "-"
+            task['date'] = task['date'].strftime("%Y-%m-%d")
+            all_tasks.append(task)
+    all_tasks.sort(key=lambda k: k['date'], reverse=True)
+
+    return render_template('public/ext_comp.html',
+                           tasks=all_tasks, comp=comp, overall_available=overall_available,
+                           country_scores=country_scores)
+
+
 # @blueprint.route('/registered_pilots/<int:compid>')
 # def registered_pilots(compid: int):
 #     """ List of registered pilots for an event.
@@ -412,7 +474,34 @@ def task_result(taskid: int):
 
 @blueprint.route('/ext_comp_result/<int:compid>')
 def ext_comp_result(compid: int):
-    return render_template('public/ext_comp_overall.html', compid=compid)
+    from compUtils import get_comp_json, read_rankings
+    content = get_comp_json(compid)
+    if not content['rankings']:
+        content['rankings'] = read_rankings(compid)
+    result_file = frontendUtils.get_pretty_data(content)
+    if result_file == 'error':
+        return render_template('404.html')
+
+    for t in result_file['tasks']:
+        link, code = f"/task_result/{t['id']}", t['task_code']
+        t['link'] = f"<a href='{link}' target='_blank'>{code}</a>"
+
+    all_pilots = []
+    for r in result_file['results']:
+        pilot = {'id': r['ID'], 'fai_id': r['fai_id'], 'civl_id': r['civl_id'],
+                 'name': f"<span class='sex-{r['sex']}'><b>{r['name']}</b></span>", 'nat': r['nat'], 'sex': r['sex'],
+                 'glider': r['glider'], 'glider_cert': r['glider_cert'], 'sponsor': r['sponsor'],
+                 'score': f"<b>{r['score']}</b>", 'ranks': {'rank': f"<b>{r['rank']}</b>"}}
+        for i, c in enumerate(result_file['classes'][1:], 1):
+            pilot['ranks']['class' + str(i)] = f"{r[c['limit']]}"
+        pilot['results'] = []
+        for k, v in r['results'].items():
+            score = f"{v['score']}" if v['score'] == v['pre'] else f"{v['score']} <del>{v['pre']}</del>"
+            html = f"<span class='task_score'>{score}</span>"
+            pilot['results'].append(html)
+        all_pilots.append(pilot)
+    result_file['data'] = all_pilots
+    return render_template('public/ext_comp_overall.html', compid=compid, results=result_file)
 
 
 @blueprint.route('/comp_result/<int:compid>')

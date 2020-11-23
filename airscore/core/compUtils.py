@@ -210,6 +210,10 @@ def read_rankings(comp_id: int) -> dict:
     from db.tables import TblCompetition as C
     '''get rankings definitions'''
     try:
+        comp = C.get_by_id(comp_id)
+        if not comp.cat_id:
+            '''assign default classification for comp class'''
+            comp.cat_id = 1 if comp.comp_class == 'PG' else 2
         return create_classifications(C.get_by_id(comp_id).cat_id)
     except (TypeError, AttributeError) as e:
         print(f'Error trying to retrieve rankings for comp id {comp_id}.')
