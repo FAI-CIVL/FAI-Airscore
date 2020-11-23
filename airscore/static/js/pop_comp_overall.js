@@ -1,5 +1,5 @@
 function populate_comp_overall(json){
-    $('#comp_name').text('Calculating Results ...');
+    $('#comp_name').text('Loading Results ...');
     var taskNum = json.stats.valid_tasks
     console.log('taskNum='+taskNum);
     var columns = [];

@@ -2,6 +2,25 @@ var turnpoints;
 
 $(document).ready(function() {
   get_turnpoints();
+
+  $('#main_task_settings_form :input').change(function(){
+    console.log('form changed');
+    $('#main_task_save_button').removeClass( "btn-outline-secondary" ).addClass( "btn-warning" );
+    $('#save_button_warning_text').addClass('bg-warning').html('Task needs to be saved');
+  });
+
+  let stopped = $('#stopped_time').val();
+  if (stopped) {
+    console.log('Stopped Task');
+    $('#stopped').addClass('show');;
+  }
+
+  let multigate = $('#SS_interval').val();
+  if (multigate && multigate>0) {
+    console.log('Multigate');
+    $('#multi_start').addClass('show');;
+  }
+
 });
 
 function get_turnpoints(){

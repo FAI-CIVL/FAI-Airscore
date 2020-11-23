@@ -484,20 +484,12 @@ class Task(object):
     @property
     def last_landing_time(self):
         """ Landing time of last pilot in flight"""
-        if self.pilots_launched:
-            return max((p.last_time if not p.landing_time else p.landing_time)
-                       for p in self.valid_results if p.last_time)
-        else:
-            return None
+        return max(((p.landing_time or p.last_time or 0) for p in self.valid_results), default=None)
 
     @property
     def last_landout_time(self):
         """ Landing time of last pilot landed out"""
-        if self.pilots_launched:
-            return max((p.last_time if not p.landing_time else p.landing_time)
-                       for p in self.valid_results if p.last_time and not p.ESS_time)
-        else:
-            return None
+        return max(((p.landing_time or p.last_time or 0) for p in self.valid_results if not p.ESS_time), default=None)
 
     @property
     def max_time(self):
@@ -1210,11 +1202,13 @@ class Task(object):
         node = t.find('FsTaskState')
         formula.score_back_time = int(node.get('score_back_time')) * 60
         state = node.get('task_state')
-        task.comment = ': '.join([state, node.get('cancel_reason')])
+        task.comment = state if not node.get('cancel_reason') else ': '.join([state, node.get('cancel_reason')])
         if state == 'CANCELLED':
             """I don't need if cancelled"""
             return None
-        task.stopped_time = None if not node.get('stop_time') else time_to_seconds(get_time(node.get('stop_time'))) - offset
+        elif state == 'STOPPED':
+            task.stopped_time = time_to_seconds(get_time(node.get('stop_time'))) - offset
+
         """Task Stats"""
         p = t.find('FsTaskScoreParams')
         '''a non scored task could miss this element'''
@@ -1238,7 +1232,7 @@ class Task(object):
             stats['avail_dep_points'] = 0 if p is None else float(p.get('available_points_leading'))
             stats['avail_time_points'] = 0 if p is None else float(p.get('available_points_time'))
             stats['avail_arr_points'] = 0 if p is None else float(p.get('available_points_arrival'))
-        except:
+        except Exception:
             stats['day_quality'] = 0
             stats['dist_validity'] = 0
             stats['time_validity'] = 0
@@ -1248,11 +1242,6 @@ class Task(object):
             stats['avail_dep_points'] = 0
             stats['avail_time_points'] = 0
             stats['avail_arr_points'] = 0
-        stats['fastest'] = 0 if p is None else decimal_to_seconds(float(p.get('best_time'))) if float(
-            p.get('best_time')) > 0 else 0
-        if p is not None:
-            for l in p.iter('FsTaskDistToTp'):
-                optimised_legs.append(float(l.get('distance')) * 1000)
 
         node = t.find('FsTaskDefinition')
         qnh = None if node is None else float(node.get('qnh_setting').replace(',', '.')
@@ -1324,7 +1313,7 @@ class Task(object):
                     turnpoint.type = 'speed'
                     task.start_close_time = time_to_seconds(get_time(w.get('close'))) - offset
                     '''guess start direction: exit if launch is same wpt'''
-                    launch = next(p for p in turnpoints if p.type == 'launch')
+                    launch = next(el for el in turnpoints if el.type == 'launch')
                     if launch.lat == turnpoint.lat and launch.lon == turnpoint.lon:
                         turnpoint.how = 'exit'
                     if 'elapsed time' in task.task_type:
@@ -1354,6 +1343,22 @@ class Task(object):
                 turnpoint.name = w.get('id')
                 turnpoint.num = len(turnpoints) + 1
                 turnpoints.append(turnpoint)
+
+        '''partial distance'''
+        if p is not None:
+            stats['fastest'] = decimal_to_seconds(float(p.get('best_time') or 0))
+            if sswpt == 1:
+                '''add leading zero as task did not have a launch wpt'''
+                optimised_legs.append(0)
+            for el in p.iter('FsTaskDistToTp'):
+                optimised_legs.append(float(el.get('distance')) * 1000)
+            if eswpt == last:
+                '''add trailing value as task did not have a goal wpt'''
+                optimised_legs.append(optimised_legs[-1])
+                '''add a flag to notify we added a fake goal'''
+                task.fake_goal_turnpoint = True
+            else:
+                task.fake_goal_turnpoint = False
 
         task.formula = formula
         task.turnpoints = turnpoints

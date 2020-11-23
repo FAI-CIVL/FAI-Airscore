@@ -104,6 +104,7 @@ class FSDB(object):
                     for res in node.iter('FsParticipant'):
                         '''pilots results'''
                         pilot = FlightResult.from_fsdb(res, task)
+                        pilot.name = next((p.name for p in pilots if p.ID == pilot.ID), f'Pilot {pilot.ID}')
                         task.pilots.append(pilot)
                 tasks.append(task)
 
@@ -618,6 +619,21 @@ class FSDB(object):
                     pilot.par_id = result.par_id
         return True
 
+    def create_results_files(self):
+        from result import create_json_file
+        for task in self.tasks:
+            task.comp_id = self.comp.comp_id
+            task.comp_name = self.comp.comp_name
+            task.comp_site = self.comp.comp_site
+            task.comp_class = self.comp.comp_class
+            elements = task.create_json_elements()
+            ref_id, filename, _ = create_json_file(comp_id=self.comp.comp_id, task_id=task.id,
+                                                   code='_'.join([self.comp.comp_code, task.task_code]),
+                                                   elements=elements,
+                                                   status='Imported from FSDB')
+            print(f' - created file {filename} for {task.task_name}')
+        _, ref_id, filename, timestamp = Comp.create_results(self.comp.comp_id)
+
     def add_all(self):
         print(f"add all FSDB info to database...")
         print(f"adding comp...")
@@ -631,6 +647,8 @@ class FSDB(object):
                 self.add_tasks()
                 print(f"adding results...")
                 self.add_results()
+                print(f"creating original results files...")
+                self.create_results_files()
             print(f"Done.")
             return self.comp.comp_id
         else:
