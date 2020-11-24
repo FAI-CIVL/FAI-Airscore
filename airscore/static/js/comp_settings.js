@@ -62,6 +62,12 @@ $(document).ready(function() {
     $('#save_button_warning_text').addClass('bg-warning').html('Competition needs to be saved');
   });
 
+  // external event conversion
+  $('#confirm_convert').click( function(){ $('#confirm_convert_modal').modal('show'); });
+  $('#convert_confirmed').click( function(){
+    window.location.href = "/users/_convert_external_comp/"+compid;
+  });
+
 });
 
 function ask_update(change) {
@@ -117,9 +123,13 @@ function get_tasks() {
       columns.push({data: 'opt_dist', title:'Dist.', name:'dist', className: "text-right", defaultContent: ''});
       columns.push({data: 'comment', title:'Comment', name:'comment', defaultContent: ''});
       columns.push({data: 'task_id', render: function ( data ) { return '<button class="btn btn-info ml-3" type="button" onclick="window.location.href = \'/users/task_admin/' + data + '\'">Settings</button>'}});
-      columns.push({data: 'task_id', render: function ( data ) { return '<button class="btn btn-info ml-3" type="button" onclick="window.location.href = \'/users/track_admin/' + data + '\'">Tracks</button>'}});
+      if (!external){
+        columns.push({data: 'task_id', render: function ( data ) { return '<button class="btn btn-info ml-3" type="button" onclick="window.location.href = \'/users/track_admin/' + data + '\'">Tracks</button>'}});
+      }
       columns.push({data: 'task_id', render: function ( data ) { return '<button class="btn btn-info ml-3" type="button" onclick="window.location.href = \'/users/task_score_admin/' + data + '\'">Scores</button>'}});
-      columns.push({data: 'task_id', render: function ( data, type, row ) { return '<button class="btn btn-danger" type="button" onclick="confirm_delete( ' + row.task_num + ', ' + data + ' )" data-toggle="confirmation" data-popout="true">Delete</button>'}});
+      if (!external){
+        columns.push({data: 'task_id', render: function ( data, type, row ) { return '<button class="btn btn-danger" type="button" onclick="confirm_delete( ' + row.task_num + ', ' + data + ' )" data-toggle="confirmation" data-popout="true">Delete</button>'}});
+      }
 
       $('#tasks').DataTable( {
         data: json.tasks,

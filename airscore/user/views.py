@@ -216,6 +216,7 @@ def comp_settings_admin(compid: int):
     # set session variables for navbar
     session['compid'] = compid
     session['comp_name'] = comp.comp_name
+    session['external'] = comp.external
 
     compform.igc_parsing_file.choices, _ = frontendUtils.get_igc_parsing_config_file_list()
     owner, scorekeepers, scorekeeper_ids = frontendUtils.get_comp_scorekeeper(compid)
@@ -250,6 +251,7 @@ def comp_settings_admin(compid: int):
             comp.check_launch = 'on' if compform.check_launch.data else 'off'
             comp.check_g_record = compform.check_g_record.data
             comp.self_register = compform.self_register.data
+            comp.external = compform.external.data
             if compform.website.data.lower()[:7] == 'http://':
                 comp.website = compform.website.data.lower()[7:]
             elif compform.website.data.lower()[:8] == 'https://':
@@ -360,6 +362,7 @@ def comp_settings_admin(compid: int):
         compform.check_g_record.data = comp.check_g_record
         compform.self_register.data = comp.self_register
         compform.website.data = comp.website
+        compform.external.data = comp.external
         newtaskform.task_region.choices, _ = frontendUtils.get_region_choices(compid)
         newScorekeeperform.scorekeeper.choices = scorekeeper_choices
         formulas = list_formulas()
@@ -390,11 +393,32 @@ def comp_settings_admin(compid: int):
     if not compform.formula.data:
         '''Comp has not been initialised yet'''
         flash(f"Comp has not been properly set yet. Check all parameters and save.", category='warning')
+    if comp.external:
+        '''External Event'''
+        flash(f"This is an External Event. Settings and Results are Read Only.", category='warning')
 
     return render_template('users/comp_settings.html', compid=compid, compform=compform,
                            taskform=newtaskform, scorekeeperform=newScorekeeperform, ladderform=ladderform,
                            classifications=classifications, error=error,
                            self_register=(SELF_REG_DEFAULT and PILOT_DB))
+
+
+@blueprint.route('/_convert_external_comp/<int:compid>', methods=['GET', 'POST'])
+@login_required
+@check_coherence
+def convert_external_comp(compid: int):
+    if not session['external']:
+        flash("Event does not seem to be external. Conversion aborted", category='danger')
+        return redirect(url_for('user.comp_settings_admin', compid=compid))
+
+    '''starting conversion'''
+    success = frontendUtils.convert_external_comp(compid)
+
+    if success:
+        flash("Event converted.", category='success')
+    else:
+        flash("Event converted.", category='success')
+    return redirect(url_for('user.comp_settings_admin', compid=compid))
 
 
 @blueprint.route('/_get_scorekeepers/<int:compid>', methods=['GET'])
@@ -454,6 +478,7 @@ def task_admin(taskid: int):
     modifyturnpointform = ModifyTurnpointForm()
 
     task = Task.read(taskid)
+    taskform.region.choices.extend(frontendUtils.get_region_choices(session['compid'])[0])
     waypoints, _ = frontendUtils.get_waypoint_choices(task.reg_id)
     turnpointform.name.choices = waypoints
     modifyturnpointform.mod_name.choices = waypoints
@@ -468,6 +493,7 @@ def task_admin(taskid: int):
             task.comment = taskform.comment.data
             task.date = taskform.date.data
             task.task_type = taskform.task_type.data
+            task.reg_id = taskform.region.data if taskform.region.data not in (0, '', None) else None
             task.window_open_time = time_to_seconds(taskform.window_open_time.data) - taskform.time_offset.data
             task.window_close_time = time_to_seconds(taskform.window_close_time.data) - taskform.time_offset.data
             task.start_time = time_to_seconds(taskform.start_time.data) - taskform.time_offset.data
@@ -507,7 +533,7 @@ def task_admin(taskid: int):
         else:
             for item in taskform:
                 if item.errors:
-                    flash(f"{item.label.text}: {', '.join(x for x in item.errors)}", category='danger')
+                    flash(f"{item.label.text} ({item.data}, {type(item.data)}): {', '.join(x for x in item.errors)}", category='danger')
 
     if request.method == 'GET':
         offset = task.time_offset if task.time_offset else 0
@@ -517,6 +543,7 @@ def task_admin(taskid: int):
         taskform.comment.data = task.comment
         taskform.date.data = task.date
         taskform.task_type.data = task.task_type
+        taskform.region.data = task.reg_id or 0
         taskform.window_open_time.data = "" if not task.window_open_time else sec_to_time((task.window_open_time
                                                                                            + offset) % 86400)
         taskform.window_close_time.data = "" if not task.window_close_time else sec_to_time((task.window_close_time
@@ -557,6 +584,9 @@ def task_admin(taskid: int):
 
         if current_user.id not in all_scorekeeper_ids:
             taskform.submit = None
+        if session['external']:
+            '''External Event'''
+            flash(f"This is an External Event. Settings and Results are Read Only.", category='warning')
 
     return render_template('users/task_admin.html', taskid=taskid, taskform=taskform, turnpointform=turnpointform,
                            modifyturnpointform=modifyturnpointform, compid=task.comp_id, error=error)
@@ -1082,6 +1112,10 @@ def task_score_admin(taskid: int):
     else:
         user_is_scorekeeper = None
 
+    if session['external']:
+        '''External Event'''
+        flash(f"This is an External Event. Settings and Results are Read Only.", category='warning')
+
     return render_template('users/task_score_admin.html', fileform=fileform, taskid=taskid, compid=compid,
                            active_file=active_file, user_is_scorekeeper=user_is_scorekeeper, task_name=task_name,
                            task_num=task_num, editform=editform, production=frontendUtils.production(),
@@ -1414,6 +1448,11 @@ def pilot_admin(compid: int):
         Add / Edit Pilots"""
     modify_participant_form = ModifyParticipantForm()
     comp = Comp.read(compid)
+
+    if session['external']:
+        '''External Event'''
+        flash(f"This is an External Event. Settings and Results are Read Only.", category='warning')
+
     return render_template('users/pilot_admin.html', compid=compid, track_source=comp.track_source,
                            modify_participant_form=modify_participant_form, pilotdb=PILOT_DB)
 

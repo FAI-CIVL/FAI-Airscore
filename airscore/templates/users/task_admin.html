@@ -12,9 +12,11 @@ Task Settings
 <a href="{{ url_for('user.comp_settings_admin', compid=compid)}}" class='btn btn-info' type='button'>
   Back to Competition Settings
 </a>
+{% if not session.external %}
 <a href="{{ url_for('user.track_admin', taskid=taskid)}}" class='btn btn-info ml-2' type='button'>
   Tracks
 </a>
+{% endif %}
 <a href="{{ url_for('user.task_score_admin', taskid=taskid)}}" class='btn btn-info ml-2' type='button'>
   Task Scores
 </a>
@@ -56,18 +58,25 @@ Task Settings
       <!-- Tab panes -->
       {% if taskform.submit %}
       {% from "macros.html" import render_field with context %}
+      {% set readonly = session.external %}
       <div role="tabpanel" class="tab-pane column-wrap fade show active" id="details">
         <h4 class='tab-title font-weight-bold'>Task Details:</h4>
         <section class="tab-row row-wrap form">
-            {{ render_field(taskform.task_num, 2) }}
-            {{ render_field(taskform.task_name, 20) }}
+            {{ render_field(taskform.task_num, 2, disabled=readonly) }}
+            {{ render_field(taskform.task_name, 20, disabled=readonly) }}
+        </section>
+        {% if not readonly %}
+        <section class="tab-row row-wrap form">
+            {{ render_field(taskform.region, tooltip=True) }}
+            <a class="btn btn-primary mt-4" href="{{ url_for('user.region_admin', compid=session.compid) }}">Add / Edit Comp regions</a>
+        </section>
+        {% endif %}
+        <section class="tab-row row-wrap form">
+            {{ render_field(taskform.date, 15, disabled=readonly) }}
+            {{ render_field(taskform.time_offset, tooltip=True, disabled=readonly) }}
         </section>
         <section class="tab-row row-wrap form">
-            {{ render_field(taskform.date, 15) }}
-            {{ render_field(taskform.time_offset, tooltip=True) }}
-        </section>
-        <section class="tab-row row-wrap form">
-            {{ render_field(taskform.task_type, tooltip=True) }}
+            {{ render_field(taskform.task_type, tooltip=True, disabled=readonly) }}
             {{ render_field(taskform.comment, 40, tooltip=True) }}
         </section>
       </div>
@@ -80,38 +89,38 @@ Task Settings
           </div>
         </section>
         <section class="tab-row row-wrap form">
-            {{ render_field(taskform.formula_distance, tooltip=True) }}
-            {{ render_field(taskform.formula_departure, tooltip=True) }}
-            {{ render_field(taskform.formula_time, tooltip=True) }}
-            {{ render_field(taskform.formula_arrival, tooltip=True) }}
+            {{ render_field(taskform.formula_distance, tooltip=True, disabled=readonly) }}
+            {{ render_field(taskform.formula_departure, tooltip=True, disabled=readonly) }}
+            {{ render_field(taskform.formula_time, tooltip=True, disabled=readonly) }}
+            {{ render_field(taskform.formula_arrival, tooltip=True, disabled=readonly) }}
         </section>
         <section class="tab-row row-wrap form">
-            {{ render_field(taskform.tolerance, 3, tooltip=True) }}
-            {{ render_field(taskform.no_goal_penalty, 4, tooltip=True) }}
+            {{ render_field(taskform.tolerance, 3, tooltip=True, disabled=readonly) }}
+            {{ render_field(taskform.no_goal_penalty, 4, tooltip=True, disabled=readonly) }}
         </section>
         <section class="tab-row row-wrap form">
-            {{ render_field(taskform.max_JTG, 4, tooltip=True) }}
-            {{ render_field(taskform.arr_alt_bonus, 4, tooltip=True) }}
+            {{ render_field(taskform.max_JTG, 4, tooltip=True, disabled=readonly) }}
+            {{ render_field(taskform.arr_alt_bonus, 4, tooltip=True, disabled=readonly) }}
         </section>
       </div>
       <div role="tabpanel" class="tab-pane column-wrap fade" id="checking">
         <h4 class='tab-title font-weight-bold'>Tracks Checking Parameters:</h4>
         <section class="tab-row row-wrap form">
-            {{ render_field(taskform.check_launch, tooltip=True) }}
-            {{ render_field(taskform.airspace_check, tooltip=True) }}
-            {{ render_field(taskform.QNH, 7, tooltip=True) }}
+            {{ render_field(taskform.check_launch, tooltip=True, disabled=readonly) }}
+            {{ render_field(taskform.airspace_check, tooltip=True, disabled=readonly) }}
+            {{ render_field(taskform.QNH, 7, tooltip=True, disabled=readonly) }}
         </section>
       </div>
       <div role="tabpanel" class="tab-pane column-wrap fade" id="timing">
         <h4 class='tab-title font-weight-bold'>Task Timing:</h4>
         <section class="tab-row row-wrap form">
-            {{ render_field(taskform.window_open_time, 3, tooltip=True) }}
-            {{ render_field(taskform.window_close_time, 3, tooltip=True) }}
-            {{ render_field(taskform.task_deadline, 3, tooltip=True) }}
+            {{ render_field(taskform.window_open_time, 3, tooltip=True, disabled=readonly) }}
+            {{ render_field(taskform.window_close_time, 3, tooltip=True, disabled=readonly) }}
+            {{ render_field(taskform.task_deadline, 3, tooltip=True, disabled=readonly) }}
         </section>
         <section class="tab-row row-wrap form">
-            {{ render_field(taskform.start_time, 3, tooltip=True) }}
-            {{ render_field(taskform.start_close_time, 3, tooltip=True) }}
+            {{ render_field(taskform.start_time, 3, tooltip=True, disabled=readonly) }}
+            {{ render_field(taskform.start_close_time, 3, tooltip=True, disabled=readonly) }}
           <button class='btn btn-primary ml-4 collapsed' type='button' data-toggle='collapse' data-target='#multi_start'
                     aria-expanded='false' aria-controls='multi_start'>
               Multi Start Settings
@@ -119,8 +128,8 @@ Task Settings
         </section>
         <section class="tab-row row-wrap collapse" id='multi_start'>
             <section class="panel-row row-wrap form">
-            {{ render_field(taskform.SS_interval, 3, tooltip=True) }}
-            {{ render_field(taskform.start_iteration, 2, tooltip=True) }}
+            {{ render_field(taskform.SS_interval, 3, tooltip=True, disabled=readonly) }}
+            {{ render_field(taskform.start_iteration, 2, tooltip=True, disabled=readonly) }}
             </section>
         </section>
         <section class="tab-row row-wrap button">
@@ -131,7 +140,7 @@ Task Settings
         </section>
         <section class="tab-row row-wrap form collapse" id='stopped'>
             <section class="panel-row row-wrap">
-            {{ render_field(taskform.stopped_time, 3, tooltip=True) }}
+            {{ render_field(taskform.stopped_time, 3, tooltip=True, disabled=readonly) }}
             </section>
         </section>
       </div>
@@ -149,7 +158,7 @@ Task Settings
     </div>
     <div class='panel collapse show' id='task_waypoints'>
       <h4 class='tab-title font-weight-bold'>Task Waypoints:</h4>
-      {% if taskform.submit %}
+      {% if taskform.submit and not readonly %}
       <section class="panel-row row-wrap button">
         <button id='delete_all_btn' class='btn btn-danger ml-5 ' onclick='confirm_delete_all();' type='button'>
           Clear Task
@@ -168,8 +177,9 @@ Task Settings
       </section>
       {% endif%}
       <section class="panel-row row-wrap form">
-        {% if taskform.submit %}
         <div class='panel' id='wpt_list'>
+          {% if taskform.submit and not readonly %}
+          {% if taskform.region.data %}
           <section class="tab-row row-wrap form">
             {{ render_field(turnpointform.name, 8, tooltip=True) }}
           </section>
@@ -201,8 +211,13 @@ Task Settings
             </button>
             <p id='add_tp_spinner'></p>
           </section>
+          {% else %}
+          <section class="panel-row row-wrap form">
+            <p class="p-2 description">Select an existing Region or create a new one for the task to display a waypoint list.</p>
+          </section>
+          {% endif %}
+          {% endif %}
         </div>
-        {% endif%}
         <div class='panel' id="task_wpt">
           <table class='table' id='task_wpt_table'>
           </table>
@@ -217,7 +232,7 @@ Task Settings
   </div>
 </form>
 
-{% if taskform.submit %}
+{% if taskform.submit and not readonly %}
 <!--- delete-modal starts here--->
 <div id='delmodal' class='modal fade' role='dialog'>
   <div class='modal-dialog'>
@@ -298,8 +313,8 @@ Task Settings
   </div>
 </div>
 <!--- modify-Modal ends here --->
-
 {% endif%}
+
 {% endblock %}
 {% block js %}
 <script src="{{ static_url_for('static', filename='js/display-if.min.js') }}"></script>
@@ -310,6 +325,7 @@ Task Settings
 <script src="{{ static_url_for('static', filename='js/task_admin.js') }}"></script>
 <script type=text/javascript>
   var compid = {{ compid|tojson }};
+  var external = {{ session.external|tojson }};
   var taskid = {{ taskid|tojson }};
   var task_admin = {{ taskform.submit|tojson }};
   var url_get_task_turnpoints = "{{ url_for('user._get_task_turnpoints', taskid=taskid)}}";

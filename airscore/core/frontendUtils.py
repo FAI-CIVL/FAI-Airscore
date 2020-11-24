@@ -269,7 +269,7 @@ def get_admin_comps(current_userid, current_user_access=None):
     with db_session() as db:
         comps = (db.query(c.comp_id, c.comp_name, c.comp_site,
                           c.date_from,
-                          c.date_to, func.count(TblTask.task_id), ca.user_id)
+                          c.date_to, func.count(TblTask.task_id), c.external, ca.user_id)
                    .outerjoin(TblTask, c.comp_id == TblTask.comp_id).outerjoin(ca)
                    .filter(ca.user_auth == 'owner')
                    .group_by(c.comp_id, ca.user_id))
@@ -279,10 +279,11 @@ def get_admin_comps(current_userid, current_user_access=None):
         comp[1] = f'<a href="/users/comp_settings_admin/{comp[0]}">{comp[1]}</a>'
         comp[3] = comp[3].strftime("%Y-%m-%d")
         comp[4] = comp[4].strftime("%Y-%m-%d")
-        if (int(comp[6]) == current_userid) or (current_user_access == 'admin'):
-            comp[6] = 'delete'
+        comp[6] = 'Imported' if comp[6] else ''
+        if (int(comp[7]) == current_userid) or (current_user_access == 'admin'):
+            comp[7] = 'delete'
         else:
-            comp[6] = ''
+            comp[7] = ''
         all_comps.append(comp)
     return jsonify({'data': all_comps})
 
@@ -433,7 +434,7 @@ def get_pilot_list_for_track_management(taskid: int):
     return all_data
 
 
-def get_pilot_list_for_leaderboard(taskid: int):
+def get_pilot_list_for_tracks_status(taskid: int):
     from db.tables import TblTaskResult as R
     pilots = [row._asdict() for row in R.get_task_results(taskid)]
 
@@ -1500,3 +1501,41 @@ def get_task_info(task_id: int) -> dict:
     if task:
         result = task.create_json_elements()
     return result
+
+
+def convert_external_comp(comp_id: int) -> bool:
+    from sqlalchemy.exc import SQLAlchemyError
+    from db.tables import TblCompetition as C
+    from db.tables import TblTask as T
+    from db.tables import TblTrackWaypoint as TW
+    from db.tables import TblTaskResult as R
+    from db.tables import TblNotification as N
+    from task import Task
+    try:
+        with db_session() as db:
+            tasks = [el for el, in db.query(T.task_id).filter_by(comp_id=comp_id).distinct()]
+            if tasks:
+                '''clear tasks results'''
+                results = db.query(R).filter(R.task_id.in_(tasks))
+                if results:
+                    tracks = [el.track_id for el in results.all()]
+                    db.query(TW).filter(TW.track_id.in_(tracks)).delete(synchronize_session=False)
+                    db.query(N).filter(N.track_id.in_(tracks)).delete(synchronize_session=False)
+                    results.delete(synchronize_session=False)
+                '''recalculate task distances'''
+                for task_id in tasks:
+                    task = Task.read(task_id)
+                    '''get projection'''
+                    task.create_projection()
+                    task.calculate_task_length()
+                    task.calculate_optimised_task_length()
+                    '''Storing calculated values to database'''
+                    task.update_task_distance()
+            '''unset external flag'''
+            comp = C.get_by_id(comp_id)
+            comp.update(external=0)
+            return True
+    except (SQLAlchemyError, Exception):
+        print(f'There was an Error trying to convert comp ID {comp_id}.')
+        return False
+

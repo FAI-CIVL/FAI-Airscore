@@ -1,5 +1,5 @@
 
-{% macro render_field(field, width=None, tooltip=False, id=None) %}
+{% macro render_field(field, width=None, tooltip=False, id=None, disabled=false) %}
 {% set args = dict() %}
 {% if width %}
 {%  set _ = args.update({'size': width}) %}
@@ -10,6 +10,9 @@
 {% endif %}
 {% if id %}
 {%  set _ = args.update({'id': id}) %}
+{% endif %}
+{% if disabled %}
+{%  set _ = args.update({'disabled': readonly}) %}
 {% endif %}
 <div class="form-element">
   <div class="form-label">{{ field.label }}:</div>

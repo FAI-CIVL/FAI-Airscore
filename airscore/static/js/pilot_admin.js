@@ -38,23 +38,27 @@ function get_internal_pilots() {
   $.getJSON(get_non_and_registered_pilots_internal_url,function(data) {
     registered = data.registered_pilots
     non_registered = data.non_registered_pilots
-    non_registered.forEach(function(item) {
-      $('#lstview').append(
-        $('<option>', {
-          value: item.pil_id,
-          text: item.first_name + ' ' + item.last_name + ' - ' + item.civl_id
-        })
-      );
-    });
-    registered.forEach(function(item) {
-      $('#lstview_to').append(
-        $('<option>', {
-           value: item.pil_id,
-           text: item.name + ' - ' + item.civl_id
-        })
-      );
-      registered_pil.push(item.pil_id);
-    });
+    if (non_registered){
+        non_registered.forEach(function(item) {
+          $('#lstview').append(
+            $('<option>', {
+              value: item.pil_id,
+              text: item.first_name + ' ' + item.last_name + ' - ' + item.civl_id
+            })
+          );
+        });
+    }
+    if (registered){
+        registered.forEach(function(item) {
+          $('#lstview_to').append(
+            $('<option>', {
+               value: item.pil_id,
+               text: item.name + ' - ' + item.civl_id
+            })
+          );
+          registered_pil.push(item.pil_id);
+        });
+    }
     update_pilot_count();
   });
 }
@@ -248,7 +252,7 @@ jQuery(document).ready(function($) {
       }
     });
     if (pilotdb) get_internal_pilots();
-    populate_registered_pilot_details(compid);
+    populate_registered_pilot_details(compid, external_comp);
 
     // listeners
     $('#upload_excel_button').click(function() {

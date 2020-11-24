@@ -1216,32 +1216,36 @@ class Task(object):
         task.distance = None  # need to calculate distance through centers
         task.opt_dist_to_ESS = None if p is None else float(p.get('launch_to_ess_distance')) * 1000
         task.SS_distance = None if p is None else float(p.get('ss_distance')) * 1000
-        stats['pilots_present'] = None if p is None else int(p.get('no_of_pilots_present'))
-        stats['pilots_launched'] = None if p is None else int(p.get('no_of_pilots_flying'))
-        stats['pilots_goal'] = None if p is None else int(p.get('no_of_pilots_reaching_goal'))
-        stats['max_distance'] = None if p is None else float(p.get('best_dist')) * 1000  # in meters
-        stats['totdistovermin'] = None if p is None else float(p.get('sum_flown_distance')) * 1000  # in meters
         try:
             '''happens this values are error strings'''
-            stats['day_quality'] = 0 if p is None else float(p.get('day_quality'))
-            stats['dist_validity'] = 0 if p is None else float(p.get('distance_validity'))
-            stats['time_validity'] = 0 if p is None else float(p.get('time_validity'))
-            stats['launch_validity'] = 0 if p is None else float(p.get('launch_validity'))
-            stats['stop_validity'] = 0 if p is None else float(p.get('stop_validity'))
-            stats['avail_dist_points'] = 0 if p is None else float(p.get('available_points_distance'))
-            stats['avail_dep_points'] = 0 if p is None else float(p.get('available_points_leading'))
-            stats['avail_time_points'] = 0 if p is None else float(p.get('available_points_time'))
-            stats['avail_arr_points'] = 0 if p is None else float(p.get('available_points_arrival'))
-        except Exception:
-            stats['day_quality'] = 0
-            stats['dist_validity'] = 0
-            stats['time_validity'] = 0
-            stats['launch_validity'] = 0
-            stats['stop_validity'] = 0
-            stats['avail_dist_points'] = 0
-            stats['avail_dep_points'] = 0
-            stats['avail_time_points'] = 0
-            stats['avail_arr_points'] = 0
+            task.day_quality = 0 if p is None else float(p.get('day_quality') or 0)
+            task.dist_validity = 0 if p is None else float(p.get('distance_validity') or 0)
+            task.time_validity = 0 if p is None else float(p.get('time_validity') or 0)
+            task.launch_validity = 0 if p is None else float(p.get('launch_validity') or 0)
+            task.stop_validity = 0 if p is None else float(p.get('stop_validity') or 0)
+            task.dist_weight = 0 if p is None else float(p.get('distance_weight') or 0)
+            task.dep_weight = 0 if p is None else float(p.get('leading_weight') or 0)
+            task.time_weight = 0 if p is None else float(p.get('time_weight') or 0)
+            task.arr_weight = 0 if p is None else float(p.get('arrival_weight') or 0)
+            task.avail_dist_points = 0 if p is None else float(p.get('available_points_distance') or 0)
+            task.avail_dep_points = 0 if p is None else float(p.get('available_points_leading') or 0)
+            task.avail_time_points = 0 if p is None else float(p.get('available_points_time') or 0)
+            task.avail_arr_points = 0 if p is None else float(p.get('available_points_arrival') or 0)
+        except (ValueError, Exception):
+            print(f"Error creating Task scoring parameters from FSDB file")
+            task.day_quality = 0
+            task.dist_validity = 0
+            task.time_validity = 0
+            task.launch_validity = 0
+            task.stop_validity = 0
+            task.dist_weight = 0
+            task.dep_weight = 0
+            task.time_weight = 0
+            task.arr_weight = 0
+            task.avail_dist_points = 0
+            task.avail_dep_points = 0
+            task.avail_time_points = 0
+            task.avail_arr_points = 0
 
         node = t.find('FsTaskDefinition')
         qnh = None if node is None else float(node.get('qnh_setting').replace(',', '.')
@@ -1607,7 +1611,7 @@ def delete_task(task_id, files=False):
             db.query(TW).filter(TW.track_id.in_(track_list)).delete(synchronize_session=False)
             db.query(N).filter(N.track_id.in_(track_list)).delete(synchronize_session=False)
             db.query(R).filter(R.task_id == task_id).delete(synchronize_session=False)
-        '''delete db entries: results, waypoints, task'''
+        '''delete db entries: waypoints, task'''
         # db.query(R).filter(T.task_id == task_id).delete(synchronize_session=False)
         db.query(W).filter(W.task_id == task_id).delete(synchronize_session=False)
         db.query(T).filter(T.task_id == task_id).delete(synchronize_session=False)

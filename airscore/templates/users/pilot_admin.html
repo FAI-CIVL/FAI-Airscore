@@ -25,6 +25,7 @@ Pilot Admin
 {% endblock %}
 
 {% block content %}
+{% if not session.external %}
 <p>
   <button class='btn btn-primary ml-4' type='button' data-toggle='collapse' data-target='#collapse1'
           aria-expanded='false' aria-controls='collapse1'>
@@ -40,11 +41,8 @@ Pilot Admin
     </button>
   </p>
   <div class='collapse' id='collapse3'>
-
-
     <div class='card card-body'>
       <div class='container'>
-
         <center>
           <h3 class='font-weight-bold'>Register Pilots</h3>
           <div class='row'>
@@ -54,7 +52,6 @@ Pilot Admin
               <select name='from[]' id='lstview' class='form-control' size='25' multiple='multiple'>
               </select>
             </div>
-
             <div id='buttons' class='mt-5 pt-5 col-xs-2'>
               <button type='button' id='lstview_undo' class='btn btn-danger btn-block'>undo</button>
               <button type='button' id='lstview_rightAll' class='btn btn-default btn-block'><i
@@ -67,19 +64,15 @@ Pilot Admin
                       class='fa fa-backward'></i></button>
               <button type='button' id='lstview_redo' class='btn btn-warning btn-block'>redo</button>
             </div>
-
             <div class='col-xs-5'>
               <h4 id='registered'>Registered pilots</h4>
               <h6>(Name - civl id)</h6>
               <select name='to[]' id='lstview_to' class='form-control' size='25' multiple='multiple'>
-
               </select>
-
             </div>
           </div>
           <button type='button' onclick='register_pilots();' class='btn btn-success'>Save</button>
         </center>
-
       </div>
     </div>
   </div>
@@ -90,8 +83,9 @@ Pilot Admin
       External Pilots
     </button>
   </p>
+
   <div class='collapse' id='collapse4'>
-    {% endif %}
+  {% endif %}
 
     <div class='card card-body'>
       <div class='container'>
@@ -113,12 +107,13 @@ Pilot Admin
         </button>
       </div>
     </div>
-  </div>
-
   {% if pilotdb %}
+  </div>
+  {% endif %}
 
 </div>
 {% endif %}
+
 <p>
   <button class='btn btn-primary ml-4' type='button' data-toggle='collapse' data-target='#collapse2'
           aria-expanded='false' aria-controls='collapse2'>
@@ -332,6 +327,7 @@ Pilot Admin
 <script type='text/javascript'>
 var pilotdb = {{ pilotdb|tojson }};
 var compid = {{ session.compid|tojson }};
+var external_comp = {{ session.external|tojson }};
 var track_source = {{ session.track_source|tojson }};
 var unregister_participant_url = "{{ url_for('user._unregister_participant', compid=session.compid) }}";
 var check_team_size_url = "{{ url_for('user._check_team_size', compid=session.compid) }}";

@@ -13,10 +13,14 @@ Competition Results - Overall
 <script type='text/javascript' src='/static/js/microajax.minified.js'></script>
 {% endblock %}
 
+{% block back %}
+<a href="{{ url_for('public.ext_competition', compid=compid) }}">Back to Competition</a>
+{% endblock %}
+
 {% block content %}
 <div class='container-fluid'>
   <div class='row'>
-    <div class='col col-md-7 comp_header mt-1'>
+    <div class='col col-md-7 comp_header mt-1' id='comp_header'>
       <h2 id='comp_name'></h2>
       <h4 id='comp_date'></h4>
       <h4 id='comp_director'></h4>
@@ -29,7 +33,7 @@ Competition Results - Overall
         <option value='CCC'>Competition</option>
       </select>
     </div>
-    <div class='col col-md-5' class='parameters'>
+    <div class='col col-md-5 parameters'>
       <table class='table table-sm' id='formula'>
         <thead class='thead-light' id='formula_hd'>
         <tr>
@@ -41,19 +45,22 @@ Competition Results - Overall
       </table>
     </div>
   </div>
-  <table id='task_result' class='row-border compact' cellspacing='0' width='100%'>
+  <table id='results_table' class='row-border compact' cellspacing='0' width='100%'>
     <thead>
     <tr>
     </tr>
     </thead>
   </table>
+  <p>
+    <span id='created' class=''></span>
+  </p>
 </div>
 {% endblock %}
 
 {% block js %}
 <script type='text/javascript' src='https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js'></script>
-<script type='text/javascript' src='/static/js/enums.js'></script>
-<script type='text/javascript' src='/static/js/pop_comp_overall.js'></script>
-<script type='text/javascript'>populate_comp_overall({{compid|tojson}})</script>
-<script type='text/javascript' src='/static/js/overall_class_filter.js'></script>
+<script src="{{ static_url_for('static', filename='js/enums.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/pop_comp_overall.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/class_filter.js') }}"></script>
+<script type='text/javascript'>populate_comp_overall({{results|tojson}})</script>
 {% endblock %}
