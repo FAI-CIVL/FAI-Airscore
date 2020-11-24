@@ -845,4 +845,4 @@ def _get_tracks_status(taskid: int):
     timestamp = int(time.time())
     offset = 0 if 'offset' not in request.args else request.args.get('offset')
     timestamp = (epoch_to_datetime(timestamp, offset=offset)).strftime('%H:%M:%S')
-    return {'data': frontendUtils.get_pilot_list_for_leaderboard(taskid), 'timestamp': timestamp}
+    return {'data': frontendUtils.get_pilot_list_for_tracks_status(taskid), 'timestamp': timestamp}
