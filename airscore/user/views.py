@@ -1056,10 +1056,18 @@ def task_score_admin(taskid: int):
     task_num = task['task_num']
     task_name = task['task_name']
     task_ready_to_score = task['ready_to_score']
+    valid_results = frontendUtils.task_has_valid_results(taskid)
     compid = int(session['compid'])
 
+    score_active = False
     if not task_ready_to_score:
-        return render_template('task_not_ready_to_score.html')
+        flash(message='Task has not all the parameters nacessary to score. Please complete setup in settings.',
+              category='warning')
+        # return render_template('task_not_ready_to_score.html')
+    elif not valid_results:
+        flash(message='Task has no valid results. Scoring is not possible yet.', category='warning')
+    else:
+        score_active = True
 
     fileform = TaskResultAdminForm()
     editform = EditScoreForm()
@@ -1076,7 +1084,8 @@ def task_score_admin(taskid: int):
 
     return render_template('users/task_score_admin.html', fileform=fileform, taskid=taskid, compid=compid,
                            active_file=active_file, user_is_scorekeeper=user_is_scorekeeper, task_name=task_name,
-                           task_num=task_num, editform=editform, production=frontendUtils.production())
+                           task_num=task_num, editform=editform, production=frontendUtils.production(),
+                           score_active=score_active)
 
 
 @blueprint.route('/_score_task/<int:taskid>', methods=['POST'])

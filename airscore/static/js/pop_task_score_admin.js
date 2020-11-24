@@ -134,32 +134,40 @@ function updateFiles(load_latest=false) {
       $('#task_result_header').text(response.header)
       $('#comp_header').text(response.comp_header)
       if (response.display_comp_unpublish) {
-          $('#comp_unpublish').show();
+        $('#comp_unpublish').show();
       }
       else {
         $('#comp_unpublish').hide();
       }
-      response.choices.forEach(function(item) {
-        dropdown.file.append(
-          $('<option>', {
-            value: item[0],
-            text: item[1]
-          })
-        );
-      });
-      dropdown.file.removeAttr('disabled');
-      if(response.active){
-        active_file = response.active;
-        $("#result_file").val(response.active);
+      if (response.choices.length == 0) {
+        $('#scoring_runs_section').hide();
+        $('#task_results_panel').hide();
       }
-      if(load_latest){
-        $("#result_file").val($("#result_file option:first").val());
+      else {
+        $('#scoring_runs_section').show();
+        $('#task_results_panel').show();
+        response.choices.forEach(function(item) {
+          dropdown.file.append(
+            $('<option>', {
+              value: item[0],
+              text: item[1]
+            })
+          );
+        });
+        dropdown.file.removeAttr('disabled');
+        if(response.active){
+          active_file = response.active;
+          $("#result_file").val(response.active);
+        }
+        if(load_latest){
+          $("#result_file").val($("#result_file option:first").val());
+        }
+        var filename = $('#result_file option:selected').val();
+        update_publish_button(filename);
+        var status = $('#result_file option:selected').text().split(' - ')[1];
+        $('#status_modal_comment').val(status);
+        populate_task_scores(taskid, filename);
       }
-      var filename = $('#result_file option:selected').val();
-      update_publish_button(filename);
-      var status = $('#result_file option:selected').text().split(' - ')[1];
-      $('#status_modal_comment').val(status);
-      populate_task_scores(taskid, filename);
     }
   });
 }

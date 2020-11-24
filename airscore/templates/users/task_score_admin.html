@@ -37,37 +37,44 @@ Task Scoring Admin
   <!-- Tab panes -->
   <div class="tab-content">
     <div role="tabpanel" class="tab-pane column-wrap fade show active" id="task_results">
-      <h4 class='tab-title font-weight-bold'>Task Results:</h4>
-      <section class="tab-row row-wrap button">
-          {% if not user_is_scorekeeper %}
-          <h4>You are not a scorekeeper of this competition, thus you cannot access most of functionalities in this page.</h4>
-          {% else %}
-          <button class='btn btn-primary' type='button' onclick='Score_modal();'>
-            Score Task
-          </button>
-          <button class='btn btn-warning ml-2' type='button' data-toggle='modal' data-target='#fullscoremodal'>
-            Full Rescore
-          </button>
-          {% endif %}
-      </section>
-      <section class="tab-row row-wrap form">
-          <h5 id='task_result_header'></h5>
-      </section>
-      {% if user_is_scorekeeper %}
-      {% from "macros.html" import render_field with context %}
-      <section class="tab-row row-wrap form">
-          {{ render_field(fileform.result_file) }}
-          <button id='publish' class='btn btn-danger' type='button' onclick='toggle_publish();'>
-            Un-publish results
-          </button>
-          <button id='change_status' class='btn btn-primary ml-2' type='button' onclick='open_status_modal();'>
-            Edit Status
-          </button>
-          <button id='download_task_html' class='btn btn-primary ml-2' type='button'>
-            Task HTML
-          </button>
+      {% if score_active %}
+      <section class="tab-row column-wrap form" id="process_task_section">
+        <h4 class='tab-title font-weight-bold'>Process Task:</h4>
+        <section class="panel-row row-wrap button">
+            {% if not user_is_scorekeeper %}
+            <h4>You are not a scorekeeper of this competition, thus you cannot access most of functionalities in this page.</h4>
+            {% else %}
+            <button class='btn btn-primary' type='button' onclick='Score_modal();'>
+              Score Task
+            </button>
+            <button class='btn btn-warning ml-2' type='button' data-toggle='modal' data-target='#fullscoremodal'>
+              Full Rescore
+            </button>
+            {% endif %}
+        </section>
       </section>
       {% endif %}
+      <section class="tab-row column-wrap form" id="task_results_section">
+        <h4 class='tab-title font-weight-bold'>Task Results:</h4>
+        <section class="tab-row row-wrap form">
+            <h5 id='task_result_header'></h5>
+        </section>
+        {% if user_is_scorekeeper %}
+        {% from "macros.html" import render_field with context %}
+        <section class="tab-row row-wrap button" id="scoring_runs_section">
+            {{ render_field(fileform.result_file) }}
+            <button id='publish' class='btn btn-danger mt-4' type='button' onclick='toggle_publish();'>
+              Un-publish results
+            </button>
+            <button id='change_status' class='btn btn-primary ml-2 mt-4' type='button' onclick='open_status_modal();'>
+              Edit Status
+            </button>
+            <button id='download_task_html' class='btn btn-primary ml-2 mt-4' type='button'>
+              Task HTML
+            </button>
+        </section>
+        {% endif %}
+      </section>
     </div>
     <div role="tabpanel" class="tab-pane column-wrap fade" id="comp_result">
       <h4 class='tab-title font-weight-bold'>Comp Results:</h4>
@@ -97,7 +104,7 @@ Task Scoring Admin
 </div>
 
 <!-- Task result Tab Section -->
-<div role="tabpanel" class="tab-panel">
+<div role="tabpanel" class="tab-panel" id="task_results_panel">
   <!-- Nav tabs -->
   <ul role="tablist" id="task_tab-list" class="nav nav-tabs">
     <li role="presentation" class="nav-item"><a role="tab" data-toggle="tab" class="nav-link active" id="task_table_tab" href="#task_table" aria-controls="task_table">Results</a></li>
