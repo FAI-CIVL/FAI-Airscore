@@ -1202,6 +1202,18 @@ def _change_result_status(taskid: int):
     return render_template('500.html')
 
 
+@blueprint.route('/_delete_task_result/<int:taskid>', methods=['POST'])
+@login_required
+def _delete_task_result(taskid: int):
+    if request.method == "POST":
+        from result import delete_result
+        data = request.json
+        delete_result(data['filename'], delete_file=data['deletefile'])
+        resp = jsonify(success=True)
+        return resp
+    return render_template('500.html')
+
+
 @blueprint.route('/_get_regions', methods=['GET'])
 @login_required
 def _get_regions():

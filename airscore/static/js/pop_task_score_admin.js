@@ -84,11 +84,13 @@ function populate_task_scores(taskid, filename){
 function update_publish_button(filename) {
   if (filename == active_file) {
     $('#publish').text('Un-Publish results');
-    $('#publish').addClass('btn-danger').removeClass('btn-success');
+    $('#publish').addClass('btn-warning').removeClass('btn-success');
+    $('#delete_result').prop('disabled', true);;
   }
   else {
     $('#publish').text('Publish results');
-    $('#publish').addClass('btn-success').removeClass('btn-danger');
+    $('#publish').addClass('btn-success').removeClass('btn-warning');
+    $('#delete_result').prop('disabled', false);;
   }
 }
 
@@ -178,6 +180,14 @@ function Score_modal() {
 
 function open_status_modal() {
   $('#statusmodal').modal('show');
+}
+
+function delete_result_modal() {
+  let selected = $('#result_file option:selected').text().split(' - ');
+  let ran = selected[0];
+  let status = selected[1];
+  $('#delete_description').html('Ran: <strong class="text-info">'+ran+'</strong>; Status: <strong class="text-info">'+status+'</strong>');
+  $('#deletemodal').modal('show');
 }
 
 function Score() {
@@ -367,6 +377,25 @@ function save_adjustment(par_id){
   }
 }
 
+function delete_result(){
+  var mydata = new Object();
+  mydata.deletefile = $("#deletefile").is(':checked');
+  mydata.filename = $('#result_file option:selected').val();
+  console.log('delete filename: '+mydata.filename+', checked: '+mydata.deletefile)
+  $.ajax({
+    type: "POST",
+    url:  '/users/_delete_task_result/'+taskid,
+    contentType: "application/json",
+    data: JSON.stringify(mydata),
+    dataType: "json",
+    success: function(response) {
+      $('#comp_header').text(response.comp_header)
+      updateFiles();
+      $('#deletemodal').modal('hide');
+    }
+  });
+}
+
 var score_data = new Object();
 var active_file = '';
 table_data = [];
@@ -380,7 +409,7 @@ function update_buttons(filename, status) {
   if (status == 'FILE NOT FOUND') {
     console.log('Result file is missing');
     $('#publish').text('Publish results');
-    $('#publish').addClass('btn-secondary').removeClass('btn-success').removeClass('btn-danger');
+    $('#publish').addClass('btn-secondary').removeClass('btn-success').removeClass('btn-warning');
     $('#publish').prop('disabled', true);
     $('#change_status').addClass('btn-secondary').removeClass('btn-primary');
     $('#change_status').prop('disabled', true);
