@@ -1090,10 +1090,12 @@ def task_score_admin(taskid: int):
     compid = int(session['compid'])
 
     score_active = False
-    if not task_ready_to_score:
+    if session['external']:
+        '''External Event'''
+        flash(f"This is an External Event. Settings and Results are Read Only.", category='warning')
+    elif not task_ready_to_score:
         flash(message='Task has not all the parameters nacessary to score. Please complete setup in settings.',
               category='warning')
-        # return render_template('task_not_ready_to_score.html')
     elif not valid_results:
         flash(message='Task has no valid results. Scoring is not possible yet.', category='warning')
     else:
@@ -1111,10 +1113,6 @@ def task_score_admin(taskid: int):
         user_is_scorekeeper = True
     else:
         user_is_scorekeeper = None
-
-    if session['external']:
-        '''External Event'''
-        flash(f"This is an External Event. Settings and Results are Read Only.", category='warning')
 
     return render_template('users/task_score_admin.html', fileform=fileform, taskid=taskid, compid=compid,
                            active_file=active_file, user_is_scorekeeper=user_is_scorekeeper, task_name=task_name,

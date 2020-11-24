@@ -46,8 +46,6 @@ Task Scoring Admin
         <section class="panel-row row-wrap button">
           {% if not user_is_scorekeeper %}
           <h4>You are not a scorekeeper of this competition, thus you cannot access most of functionalities in this page.</h4>
-          {% elif session.external %}
-          <h4>Competition is imported, thus you cannot access most of functionalities in this page.</h4>
           {% else %}
           <button class='btn btn-primary' type='button' onclick='Score_modal();'>
             Score Task

@@ -91,7 +91,7 @@ function update_publish_button(filename) {
   else {
     $('#publish').text('Publish results');
     $('#publish').addClass('btn-success').removeClass('btn-warning');
-    $('#delete_result').prop('disabled', false);;
+    if (!external) $('#delete_result').prop('disabled', false);
   }
 }
 
@@ -158,6 +158,7 @@ function updateFiles(load_latest=false) {
           );
         });
         if (!external) dropdown.file.removeAttr('disabled');
+        else $('delete_result').prop('disabled', true);
         if(response.active){
           active_file = response.active;
           $("#result_file").val(response.active);

@@ -44,19 +44,19 @@ def db_session():
     except SQLAlchemyError:
         print('SQLAlchemy Error')
         session.rollback()
-        # raise
+        raise
     except IntegrityError as e:
         print('Integrity Error')
         session.rollback()
-        # raise
+        raise
     except Exception:
         print('Exception Error')
         session.rollback()
-        # raise
+        raise
     except NoResultFound:
         print('No Result Found for Query')
         session.rollback()
-        # raise
+        raise
     finally:
         # session.expunge_all()
         # session.close()
