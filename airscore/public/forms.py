@@ -60,10 +60,8 @@ class LoginForm(FlaskForm):
 
 
 class ModifyParticipantForm(FlaskForm):
-    from frontendUtils import list_countries
     id_num = IntegerField('ID', validators=[Optional(strip_whitespace=True), NumberRange(min=0, max=999999)])
-    countries = list_countries()
-    nat = SelectField('Nat', choices=[(x['code'], x['name']) for x in countries], coerce=str, id='select_country')
+    nat = SelectField('Nat', coerce=str, id='select_country')
     glider = StringField('Glider', validators=[Optional(strip_whitespace=True)])
     sponsor = StringField('Sponsor', validators=[Optional(strip_whitespace=True)])
     certification = StringField('Certification', validators=[Optional(strip_whitespace=True)])

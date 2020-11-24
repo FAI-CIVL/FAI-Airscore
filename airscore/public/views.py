@@ -728,6 +728,7 @@ def registered_pilots(compid: int):
     """ List of registered pilots for an event.
         Creates a Register to the event button if pilot is not yet registered"""
     modify_participant_form = ModifyParticipantForm()
+    modify_participant_form.nat.choices = [(x['code'], x['name']) for x in frontendUtils.list_countries()]
     comp, _ = frontendUtils.get_comp_info(compid)
     if comp['date_from']:
         comp['date_from'] = comp['date_from'].strftime("%Y-%m-%d")

@@ -79,7 +79,7 @@ class NewScorekeeperForm(FlaskForm):
 
 class CompForm(FlaskForm):
     from formula import list_formulas
-    from frontendUtils import list_classifications, list_track_sources, list_gmt_offset
+    from frontendUtils import list_track_sources, list_gmt_offset
 
     help_nom_launch = "When pilots do not take off for safety reasons, to avoid difficult launch conditions or bad " \
                       "conditions in the air, Launch Validity is reduced.. Nominal Launch defines a threshold as a " \
@@ -135,10 +135,7 @@ class CompForm(FlaskForm):
                                      description='Registered - only pilots registered are flying, '
                                                  'open - all tracklogs uploaded are considered as entires')
 
-    classifications = list_classifications()
-    cat_id = SelectField('Classification', choices=[(x['cat_id'], x['cat_name'])
-                                                    for x in classifications['ALL']], coerce=int, default=0,
-                         id='select_classification')
+    cat_id = SelectField('Classification', coerce=int, default=0, id='select_classification')
 
     track_sources = list_track_sources()
     track_source = SelectField('Track Source', choices=track_sources, id='select_source',
@@ -411,13 +408,11 @@ class IgcParsingConfigForm(FlaskForm):
 
 
 class ModifyParticipantForm(FlaskForm):
-    from frontendUtils import list_countries
     id_num = IntegerField('ID', validators=[Optional(strip_whitespace=True), NumberRange(min=0, max=999999)])
     CIVL = IntegerField('CIVL', default=None,
                         validators=[Optional(strip_whitespace=True), NumberRange(min=0, max=999999)])
     name = StringField('Name', validators=[DataRequired()])
-    countries = list_countries()
-    nat = SelectField('Nat', choices=[(x['code'], x['name']) for x in countries], coerce=str, id='select_country')
+    nat = SelectField('Nat', coerce=str, id='select_country')
     sex = SelectField('Sex', choices=[('M', 'M'), ('F', 'F')])
     glider = StringField('Glider', validators=[Optional(strip_whitespace=True)])
     certification = StringField('Certification', validators=[Optional(strip_whitespace=True)])

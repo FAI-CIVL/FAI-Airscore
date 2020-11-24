@@ -8,12 +8,18 @@ def fake_create_classifications():
     return []
 
 
+@patch('airscore.core.compUtils.read_rankings')
+def fake_read_rankings():
+    return []
+
+
 test_task = factory_objects.test_task()
 test_task.pilots = [factory_objects.dummy_pilot()]
 
 
 def test_result_file(task=test_task):
-    with patch('compUtils.create_classifications', return_value=[]) as patched:
+    with patch('compUtils.create_classifications', return_value=[]) as class_patched, \
+            patch('task.read_rankings', return_value={}) as rank_patched:
         result = task.create_json_elements()
         formula = result['formula']
         for key in TaskResult.formula_list:

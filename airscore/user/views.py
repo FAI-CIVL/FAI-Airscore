@@ -230,6 +230,8 @@ def comp_settings_admin(compid: int):
             scorekeeper_choices.append((scorekeeper['id'],
                                         f"{scorekeeper['first_name']} {scorekeeper['last_name']} ({scorekeeper['username']})"))
 
+    compform.cat_id.choices = [(x['cat_id'], x['cat_name']) for x in frontendUtils.list_classifications()['ALL']]
+
     if request.method == 'POST':
         if compform.validate_on_submit():
             comp.comp_name = compform.comp_name.data
@@ -1445,6 +1447,7 @@ def pilot_admin(compid: int):
     """ Registered Pilots list
         Add / Edit Pilots"""
     modify_participant_form = ModifyParticipantForm()
+    modify_participant_form.nat.choices = [(x['code'], x['name']) for x in frontendUtils.list_countries()]
     comp = Comp.read(compid)
 
     if session['external']:
