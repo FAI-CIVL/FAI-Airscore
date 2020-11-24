@@ -1600,7 +1600,7 @@ def delete_task(task_id, files=False):
         if results:
             '''delete result json files'''
             for res in results:
-                delete_result(res.ref_id, res.filename)
+                delete_result(res.filename, delete_file=files)
         tracks = db.query(R.track_id).filter(R.task_id == task_id)
         if tracks:
             track_list = [t.track_id for t in tracks]

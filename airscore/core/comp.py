@@ -529,11 +529,12 @@ def delete_comp(comp_id, files=True):
             '''delete tasks'''
             for task in tasks:
                 delete_task(task.task_id, files=files)
-        results = db.query(RF.ref_id).filter_by(comp_id=comp_id).all()
+        results = db.query(RF.filename).filter_by(comp_id=comp_id).all()
         if results:
             '''delete result json files'''
             for res in results:
-                delete_result(res.ref_id, files)
+                print(f"result: {res.filename}")
+                delete_result(res.filename, delete_file=files)
         '''delete db entries: formula, participants, comp'''
         db.query(P).filter_by(comp_id=comp_id).delete(synchronize_session=False)
         db.query(FC).filter_by(comp_id=comp_id).delete(synchronize_session=False)

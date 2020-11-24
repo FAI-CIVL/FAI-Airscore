@@ -549,13 +549,14 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None, name_su
         f.write(content)
     os.chown(RESULTDIR + filename, 1000, 1000)
 
-    '''create database entry'''
-    with db_session() as db:
-        result = TblResultFile(comp_id=comp_id, task_id=task_id, created=timestamp, filename=filename, status=status)
-        db.add(result)
-        db.commit()
-        ref_id = result.ref_id
-    return ref_id, filename, timestamp
+    '''create or update database entry'''
+    row = TblResultFile.get_one(filename=filename)
+    if row:
+        row.update(comp_id=comp_id, task_id=task_id, created=timestamp, filename=filename, status=status)
+    else:
+        row = TblResultFile(comp_id=comp_id, task_id=task_id, created=timestamp, filename=filename, status=status)
+        row.save()
+    return row.ref_id, filename, timestamp
 
 
 def unpublish_result(taskid_or_compid, comp=False):
@@ -691,16 +692,13 @@ def update_result_file(filename: str, par_id: int, notification: dict):
                 return error
 
 
-def delete_result(ref_id: int, filename=None):
+def delete_result(filename: str, delete_file=False):
     from Defines import RESULTDIR
-    import os
-    with db_session() as db:
-        if not filename:
-            filename = db.query(TblResultFile).get(ref_id).filename
-        file = os.path.join(RESULTDIR, filename)
-        if os.path.exists(file):
-            os.remove(file)
-        db.query(TblResultFile).filter_by(ref_id=ref_id).delete(synchronize_session=False)
+    from pathlib import Path
+    if delete_file:
+        Path(RESULTDIR, filename).unlink(missing_ok=True)
+    row = TblResultFile.get_one(filename=filename)
+    row.delete()
 
 
 def get_country_list(countries: set = None, iso: int = None) -> list:
