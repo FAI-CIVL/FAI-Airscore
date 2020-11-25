@@ -1131,14 +1131,22 @@ def _score_task(taskid: int):
         data = request.json
         task = Task.read(taskid)
 
-        if frontendUtils.production() and task.stopped_time:
-            job = current_app.task_queue.enqueue(frontendUtils.full_rescore, taskid, background=True,
-                                                 user=current_user.username, status=data['status'],
-                                                 autopublish=data['autopublish'], compid=session['compid'],
-                                                 job_timeout=2000)
-
-            resp = jsonify(success=True, background=True)
+        if task.stopped_time:
+            '''If stopped time, to be sure all pilots are computed with correct task time, we need to reprocedd all 
+            tracks. We could do this only once and than only if there are new tracks added.'''
+            # TODO: stopped task process could be optimised
+            if frontendUtils.production():
+                job = current_app.task_queue.enqueue(frontendUtils.full_rescore, taskid, background=True,
+                                                     user=current_user.username, status=data['status'],
+                                                     autopublish=data['autopublish'], compid=session['compid'],
+                                                     job_timeout=2000)
+                resp = jsonify(success=True, background=True)
+            else:
+                frontendUtils.full_rescore(taskid, status=data['status'], autopublish=data['autopublish'],
+                                           compid=session['compid'])
+                resp = jsonify(success=True)
             return resp
+
         ref_id, filename = task.create_results(data['status'])
         if ref_id:
             if data['autopublish']:
