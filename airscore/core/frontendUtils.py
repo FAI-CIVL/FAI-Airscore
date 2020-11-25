@@ -1118,8 +1118,6 @@ def get_pretty_data(content: dict) -> dict or str:
 
 def full_rescore(taskid: int, background=False, status=None, autopublish=None, compid=None, user=None):
     from task import Task
-    from comp import Comp
-    from result import unpublish_result, publish_result
     task = Task.read(taskid)
     if background:
         print = partial(print_to_sse, id=None, channel=user)
@@ -1129,7 +1127,7 @@ def full_rescore(taskid: int, background=False, status=None, autopublish=None, c
         if refid and autopublish:
             publish_task_result(taskid, filename)
             if compid:
-                update_comp_result(compid)
+                update_comp_result(compid, name_suffix='Overview')
         print('****************END********************')
         print(f'{filename or "ERROR"}|reload_select_latest')
         return None
@@ -1477,15 +1475,12 @@ def unpublish_comp_result(comp_id: int):
 
 def update_comp_result(comp_id: int, status: str = None, name_suffix: str = None) -> tuple:
     """Unpublish any active result, and creates a new one"""
-    from result import publish_result, unpublish_result
     from comp import Comp
     try:
         _, ref_id, filename, timestamp = Comp.create_results(comp_id, status=status, name_suffix=name_suffix)
     except (FileNotFoundError, Exception) as e:
         print(f'Comp results creation error. Probably we miss some task results files?')
         return False, None, None
-    unpublish_result(comp_id, comp=True)
-    publish_result(ref_id, ref_id=True)
     return ref_id, filename, timestamp
 
 

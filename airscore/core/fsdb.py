@@ -632,7 +632,7 @@ class FSDB(object):
                                                    elements=elements,
                                                    status='Imported from FSDB')
             print(f' - created file {filename} for {task.task_name}')
-        _, ref_id, filename, timestamp = Comp.create_results(self.comp.comp_id)
+        Comp.create_results(self.comp.comp_id, status='Created from FSDB imported results', name_suffix='Overview')
 
     def add_all(self):
         print(f"add all FSDB info to database...")
