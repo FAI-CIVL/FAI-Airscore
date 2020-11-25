@@ -7,7 +7,7 @@ from flask import Blueprint, render_template, request, jsonify, json, flash, red
 from flask_login import login_required, current_user
 import frontendUtils
 from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm, \
-    TaskResultAdminForm, NewScorekeeperForm, RegionForm, NewRegionForm, IgcParsingConfigForm, ModifyParticipantForm, \
+    ResultAdminForm, NewScorekeeperForm, RegionForm, NewRegionForm, IgcParsingConfigForm, ModifyParticipantForm, \
     EditScoreForm, ModifyUserForm, CompLaddersForm
 from comp import Comp
 from formula import list_formulas, Formula
@@ -1103,7 +1103,7 @@ def task_score_admin(taskid: int):
     else:
         score_active = True
 
-    fileform = TaskResultAdminForm()
+    fileform = ResultAdminForm()
     editform = EditScoreForm()
     active_file = None
     choices = [(1, 1), (2, 2)]
