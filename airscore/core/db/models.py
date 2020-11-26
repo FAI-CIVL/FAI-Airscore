@@ -1,6 +1,8 @@
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.exc import MultipleResultsFound
-from .conn import db_session, Session
+
+from .conn import Session, db_session
+
 Base = declarative_base()
 metadata = Base.metadata
 

@@ -13,8 +13,9 @@ Stuart Mackintosh - Antonio Golfari
 """
 
 import time
-from db.tables import TblResultFile as Results
+
 from db.conn import db_session
+from db.tables import TblResultFile as Results
 
 
 def main(args):

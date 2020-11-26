@@ -1,7 +1,8 @@
-from airscore.extensions import mail
-from flask_mail import Message
-from airscore.app import create_app
 from flask import render_template, url_for
+from flask_mail import Message
+
+from airscore.app import create_app
+from airscore.extensions import mail
 
 app = create_app()
 app.app_context().push()

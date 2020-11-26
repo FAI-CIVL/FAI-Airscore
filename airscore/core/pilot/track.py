@@ -10,16 +10,18 @@ Antonio Golfari, Stuart Mackintosh - 2019
 """
 
 import glob
-from os import path, makedirs
+import json
+from os import makedirs, path
 from pathlib import Path
 from shutil import copyfile
-from Defines import track_formats, IGCPARSINGCONFIG
+
 from calcUtils import epoch_to_date
-from db.tables import TblTaskResult
-from igc_lib import Flight, FlightParsingConfig
 from db.conn import db_session
+from db.tables import TblTaskResult
+from Defines import IGCPARSINGCONFIG, track_formats
+from igc_lib import Flight, FlightParsingConfig
 from trackUtils import find_pilot, get_task_fullpath
-import json
+
 # from notification import Notification
 
 ''' Accepted formats list
@@ -265,8 +267,8 @@ def validate_G_record(igc_filename):
     Assumtion is that the protocol is the same as the FAI server (POST)
     :argument igc_filename (full path and filename of igc_file)
     :returns PASSED, FAILED or ERROR"""
-    from requests import post
     from Defines import G_Record_validation_Server
+    from requests import post
     try:
         with open(igc_filename, 'rb') as igc:
             file = {'igcfile': igc}

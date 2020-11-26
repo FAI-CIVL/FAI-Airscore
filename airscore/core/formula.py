@@ -9,9 +9,10 @@ Antonio Golfari - 2019
 import importlib
 from dataclasses import dataclass, fields
 from os import listdir
-from sqlalchemy.orm import aliased
-from db.conn import db_session
+
 from calcUtils import c_round
+from db.conn import db_session
+from sqlalchemy.orm import aliased
 
 
 def list_formulas():
@@ -374,7 +375,7 @@ class TaskFormula(Formula):
 
     def reset(self):
         """brings back to comp formula"""
-        from db.tables import TblTask, TblForComp
+        from db.tables import TblForComp, TblTask
         t = aliased(TblTask)
         f = aliased(TblForComp)
 

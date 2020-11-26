@@ -12,17 +12,17 @@ Stuart Mackintosh, Antonio Golfari - 2019
 """
 
 from datetime import datetime
+from pathlib import Path
 
 import lxml.etree as ET
-from lxml.etree import CDATA
-from calcUtils import get_isotime, km, sec_to_time, c_round
+from calcUtils import c_round, get_isotime, km, sec_to_time
 from comp import Comp
 from compUtils import is_ext
-from formula import Formula
 from db.conn import db_session
-from pathlib import Path
-from pilot.participant import Participant, mass_import_participants
+from formula import Formula
+from lxml.etree import CDATA
 from pilot.flightresult import FlightResult, update_all_results
+from pilot.participant import Participant, mass_import_participants
 from task import Task
 
 
@@ -518,8 +518,9 @@ class FSDB(object):
     def save_file(self, filename: str = None):
         """write fsdb file to results folder, with default filename:
             comp_code_datetime.fsdb"""
-        from Defines import RESULTDIR
         from pathlib import Path
+
+        from Defines import RESULTDIR
         _, fsdb = self.to_file()
         if not filename:
             filename = self.filename

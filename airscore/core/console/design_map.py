@@ -8,13 +8,15 @@ Stuart Mackintosh - 2019
 """
 
 import itertools
+
 import folium
 import folium.plugins
 from folium.features import CustomIcon
 from folium.map import FeatureGroup, Marker, Popup
 from geographiclib.geodesic import Geodesic
-from mapUtils import get_region_bbox, get_route_bbox, bbox_centre
+from mapUtils import bbox_centre, get_region_bbox, get_route_bbox
 from task import Task
+
 geod = Geodesic.WGS84
 
 # select the library to parse the igc to geojson
@@ -200,8 +202,8 @@ def extract_flight_details(flight):
 # dump flight object to geojson
 def dump_flight(track, task):
     # TODO check if file already exists otherwise create and save it
-    from pilot.flightresult import FlightResult
     from mapUtils import get_bbox
+    from pilot.flightresult import FlightResult
     lib = task.formula.get_lib()
     task_result = FlightResult.check_flight(track.flight, task)  # check flight against task
     geojson_file = task_result.to_geojson_result(track, task)
@@ -241,6 +243,7 @@ def main(mode, val, track_id):
     """Main module"""
     from task import get_map_json
     from trackUtils import read_tracklog_map_result_file
+
     #     log_dir = d.LOGDIR
     #     print("log setup")
     #     logging.basicConfig(filename=log_dir + 'main.log',level=logging.INFO,format='%(asctime)s %(message)s')

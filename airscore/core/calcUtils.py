@@ -7,7 +7,7 @@ Antonio Golfari - 2018
 
 import decimal
 import json
-from datetime import date, time, datetime
+from datetime import date, datetime, time
 
 
 class DateTimeEncoder(json.JSONEncoder):
@@ -35,7 +35,7 @@ class CJsonEncoder(json.JSONEncoder):
 
 
 def c_round(x, digits=0, precision=15):
-    from decimal import Decimal, getcontext, ROUND_HALF_UP
+    from decimal import ROUND_HALF_UP, Decimal, getcontext
     round_context = getcontext()
     round_context.rounding = ROUND_HALF_UP
     tmp = round(Decimal(x), precision)

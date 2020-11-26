@@ -14,15 +14,21 @@ Stuart Mackintosh Antonio Golfari - 2019
 import json
 from os import path
 
-from sqlalchemy import and_
-from Defines import TRACKDIR, RESULTDIR, SELF_REG_DEFAULT, PILOT_DB
-from calcUtils import get_date, c_round
-from compUtils import get_tasks_result_files, get_participants, read_rankings, create_classifications, create_comp_path
-from db.tables import TblCompetition
-from formula import Formula
+from calcUtils import c_round, get_date
+from compUtils import (
+    create_classifications,
+    create_comp_path,
+    get_participants,
+    get_tasks_result_files,
+    read_rankings,
+)
 from db.conn import db_session
+from db.tables import TblCompetition
+from Defines import PILOT_DB, RESULTDIR, SELF_REG_DEFAULT, TRACKDIR
+from formula import Formula
 from pilot.participant import Participant
 from result import CompResult, create_json_file
+from sqlalchemy import and_
 from task import Task
 
 
@@ -270,9 +276,10 @@ class Comp(object):
     @staticmethod
     def from_fsdb(fs_comp, short_name=None):
         """gets comp and formula info from FSDB file"""
-        from calcUtils import get_date
-        from pathlib import Path
         from glob import glob
+        from pathlib import Path
+
+        from calcUtils import get_date
         from compUtils import create_comp_code, is_shortcode_unique
 
         comp = Comp()
@@ -486,6 +493,7 @@ class Comp(object):
     def create_participants_html(self) -> (str, dict):
         """ create a HTML file from participants list"""
         from time import time
+
         from calcUtils import epoch_to_string
         title = f"{self.comp_name}"
         filename = f"{self.comp_name.replace(' - ', '_').replace(' ', '_')}_participants.html"
@@ -517,12 +525,12 @@ class Comp(object):
 
 def delete_comp(comp_id, files=True):
     """delete all database entries and files on disk related to comp"""
-    from db.tables import TblTask as T
     from db.tables import TblForComp as FC
-    from db.tables import TblResultFile as RF
     from db.tables import TblParticipant as P
-    from task import delete_task
+    from db.tables import TblResultFile as RF
+    from db.tables import TblTask as T
     from result import delete_result
+    from task import delete_task
     with db_session() as db:
         tasks = db.query(T.task_id).filter_by(comp_id=comp_id).all()
         if tasks:

@@ -8,9 +8,11 @@ Use: import region
 Antonio Golfari - 2019
 """
 
-from route import Turnpoint
 from db.conn import db_session
-from db.tables import TblRegion as R, RegionWaypointView as RWV, TblRegionWaypoint as RW
+from db.tables import RegionWaypointView as RWV
+from db.tables import TblRegion as R
+from db.tables import TblRegionWaypoint as RW
+from route import Turnpoint
 
 
 class Region:
@@ -128,10 +130,11 @@ def get_region_wpts(reg_id):
 
 def delete_region(reg_id):
     """delete all database entries and files on disk related to comp"""
+    import os
+
     from db.tables import TblRegion as R
     from db.tables import TblRegionWaypoint as RW
-    from Defines import WAYPOINTDIR, AIRSPACEDIR
-    import os
+    from Defines import AIRSPACEDIR, WAYPOINTDIR
     with db_session() as db:
         waypoint_filename = db.query(R).get(reg_id).waypoint_file
         openair_filename = db.query(R).get(reg_id).openair_file

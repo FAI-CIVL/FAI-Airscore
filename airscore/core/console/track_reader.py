@@ -10,8 +10,8 @@ from tempfile import TemporaryDirectory
 
 from formula import TaskFormula, get_formula_lib
 from logger import Logger
-from task import Task
 from pilot.track import Track
+from task import Task
 # Use your utility module.
 from trackUtils import *
 

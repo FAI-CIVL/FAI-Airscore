@@ -101,7 +101,7 @@ def get_airspace_bbox(reader):
 
 
 def map_legend(col_pilot_dict):
-    from branca.element import Template, MacroElement
+    from branca.element import MacroElement, Template
     legend_txt = ""
     for pilot in col_pilot_dict:
         legend_txt += (
@@ -200,8 +200,8 @@ def map_legend(col_pilot_dict):
 
 
 def get_other_tracks(taskid, pilot_parid):
-    from db.tables import FlightResultView as R
     from db.conn import db_session
+    from db.tables import FlightResultView as R
 
     with db_session() as db:
         tracks = (db.query(R.track_id, R.name).filter(R.task_id == taskid, R.par_id != pilot_parid).all())
@@ -218,8 +218,9 @@ def result_to_geojson(result, task, flight, second_interval=5):
     returns the Json string."""
 
     from collections import namedtuple
-    from route import rawtime_float_to_hms, distance
-    from geojson import Point, Feature, FeatureCollection, MultiLineString
+
+    from geojson import Feature, FeatureCollection, MultiLineString, Point
+    from route import distance, rawtime_float_to_hms
 
     features = []
     takeoff_landing = []
@@ -322,8 +323,8 @@ def result_to_geojson(result, task, flight, second_interval=5):
 
 
 def create_trackpoints_layer(file: str, offset: int = 0) -> list:
-    from igc_lib import Flight
     from calcUtils import sec_to_string
+    from igc_lib import Flight
     try:
         flight = Flight.create_from_file(file)
         points = []
@@ -359,8 +360,8 @@ def get_points_and_bbox(waypoints: list, radius: int = 250) -> tuple:
 
 
 def create_waypoints_layer(reg_id: int, region=None, radius: int = 250) -> (list, list):
-    from db.tables import TblRegionWaypoint as R
     from db.conn import db_session
+    from db.tables import TblRegionWaypoint as R
     points, bbox = [], []
     if region:
         points, bbox = get_points_and_bbox(region.turnpoints, radius)
@@ -373,8 +374,8 @@ def create_waypoints_layer(reg_id: int, region=None, radius: int = 250) -> (list
 
 
 def create_airspace_layer(reg_id: int, region=None, openair_file: str = None) -> (list, list):
-    from db.tables import TblRegion as R
     from airspaceUtils import read_airspace_map_file
+    from db.tables import TblRegion as R
     airspace_layer = []
     airspace_list = []
     bbox = []

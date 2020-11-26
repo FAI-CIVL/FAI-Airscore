@@ -6,8 +6,8 @@ usage: python3 set_pilot_status.py <task_id> <pil_id> <status>
 Stuart Mackintosh Antonio Golfari - 2019
 """
 
-from db.tables import TblTaskResult as R
 from db.conn import db_session
+from db.tables import TblTaskResult as R
 from task import Task as T
 
 

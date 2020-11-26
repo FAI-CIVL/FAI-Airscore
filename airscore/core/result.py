@@ -18,10 +18,11 @@ Stuart Mackintosh - Antonio Golfari
 2019
 """
 
-from db.tables import TblResultFile
-from db.conn import db_session
-from sqlalchemy import and_
 import json
+
+from db.conn import db_session
+from db.tables import TblResultFile
+from sqlalchemy import and_
 
 
 class TaskResult:
@@ -186,8 +187,9 @@ class TaskResult:
     @staticmethod
     def to_html(json_file: str) -> (str, dict or list):
         """ create a HTML file from json result file"""
-        from frontendUtils import get_pretty_data
         import re
+
+        from frontendUtils import get_pretty_data
 
         res = get_pretty_data(open_json_file(json_file))
         comp_name = res['info']['comp_name']
@@ -444,8 +446,9 @@ class CompResult(object):
     @staticmethod
     def to_html(json_file: str) -> (str, dict or list):
         """ create a HTML file from json result file"""
-        from frontendUtils import get_pretty_data
         import re
+
+        from frontendUtils import get_pretty_data
 
         res = get_pretty_data(open_json_file(json_file))
         comp_name = f"{res['info']['comp_name']}"
@@ -524,10 +527,11 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None, name_su
          page not display results
     """
     import os
-    from time import time
     from datetime import datetime
-    from Defines import RESULTDIR
+    from time import time
+
     from calcUtils import CJsonEncoder
+    from Defines import RESULTDIR
 
     timestamp = int(time())  # timestamp of generation
     dt = datetime.fromtimestamp(timestamp).strftime('%Y%m%d_%H%M%S')
@@ -583,9 +587,10 @@ def publish_result(filename_or_refid, ref_id=False):
 
 
 def update_result_status(filename: str, status: str):
-    from Defines import RESULTDIR
-    from pathlib import Path
     import time
+    from pathlib import Path
+
+    from Defines import RESULTDIR
     '''check if json file exists, and updates it'''
     file = Path(RESULTDIR, filename)
     if not file.is_file():
@@ -614,10 +619,11 @@ def update_result_file(filename: str, par_id: int, notification: dict):
                         'comment': text of notification
                         }
     """
+    import time
+    from pathlib import Path
+
     from db.tables import TblNotification as N
     from Defines import RESULTDIR
-    from pathlib import Path
-    import time
     file = Path(RESULTDIR, filename)
     if not file.is_file():
         print(f'Json file {filename} does not exist')
@@ -693,8 +699,9 @@ def update_result_file(filename: str, par_id: int, notification: dict):
 
 
 def delete_result(filename: str, delete_file=False):
-    from Defines import RESULTDIR
     from pathlib import Path
+
+    from Defines import RESULTDIR
     if delete_file:
         Path(RESULTDIR, filename).unlink(missing_ok=True)
     row = TblResultFile.get_one(filename=filename)
@@ -717,6 +724,7 @@ def get_country_list(countries: set = None, iso: int = None) -> list:
 
 def open_json_file(filename: str):
     from pathlib import Path
+
     import jsonpickle
     from Defines import RESULTDIR
     try:
@@ -730,7 +738,7 @@ def open_json_file(filename: str):
 
 
 def pretty_format_results(content, timeoffset=0, td=0, cd=0):
-    from calcUtils import sec_to_string, sec_to_duration, epoch_to_string, c_round
+    from calcUtils import c_round, epoch_to_string, sec_to_duration, sec_to_string
     pure_time = ['ss_time', 'time_offset', 'fastest', 'fastest_in_goal']
     duration = ['tot_flight_time', 'SS_interval', 'max_JTG', 'validity_min_time', 'score_back_time']
     day_time = ('_time', '_deadline')

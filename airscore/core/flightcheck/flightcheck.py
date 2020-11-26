@@ -1,13 +1,21 @@
-from .flightpointer import FlightPointer
-from pilot.flightresult import FlightResult
-from task import Task
 from airspace import AirspaceCheck
-from formulas.libs.leadcoeff import LeadCoeff
-from pilot.waypointachieved import WaypointAchieved
-from route import distance_flown, start_made_civl, tp_time_civl, tp_made_civl, \
-    in_goal_sector, get_shortest_path, distance
 from calcUtils import sec_to_time
+from formulas.libs.leadcoeff import LeadCoeff
 from igc_lib import FlightParsingConfig
+from pilot.flightresult import FlightResult
+from pilot.waypointachieved import WaypointAchieved
+from route import (
+    distance,
+    distance_flown,
+    get_shortest_path,
+    in_goal_sector,
+    start_made_civl,
+    tp_made_civl,
+    tp_time_civl,
+)
+from task import Task
+
+from .flightpointer import FlightPointer
 
 
 def check_fixes(result: FlightResult, fixes: list, task: Task, tp: FlightPointer, lead_coeff: LeadCoeff = None,

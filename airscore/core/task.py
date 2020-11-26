@@ -20,24 +20,26 @@ TO DO:
 Add support for FAI Sphere ???
 """
 
-from os import path, makedirs, remove
+from os import makedirs, path, remove
 from pathlib import Path
 
 import jsonpickle
-
-from Defines import RESULTDIR, MAPOBJDIR, TRACKDIR
 from airspace import AirspaceCheck
-from calcUtils import json, get_date, decimal_to_seconds
+from calcUtils import decimal_to_seconds, get_date, json
 from compUtils import read_rankings
+from db.conn import db_session
 from db.tables import TblTask
-from pilot.flightresult import verify_all_tracks, adjust_flight_results
+from Defines import MAPOBJDIR, RESULTDIR, TRACKDIR
 from formula import TaskFormula
 from geo import Geo
 from igc_lib import defaultdict
-from db.conn import db_session
-from pilot.flightresult import update_all_results
+from pilot.flightresult import (
+    adjust_flight_results,
+    update_all_results,
+    verify_all_tracks,
+)
 from result import TaskResult, create_json_file
-from route import distance, polar, Turnpoint, get_shortest_path, get_line
+from route import Turnpoint, distance, get_line, get_shortest_path, polar
 
 
 class Task(object):
@@ -530,7 +532,8 @@ class Task(object):
     def read(task_id: int):
         """Reads Task from database
         takes task_id as argument"""
-        from db.tables import TaskObjectView as T, TblTaskWaypoint as W
+        from db.tables import TaskObjectView as T
+        from db.tables import TblTaskWaypoint as W
         if not (type(task_id) is int and task_id > 0):
             print(f'Error: {task_id} is not a valid id')
             return f'Error: {task_id} is not a valid id'
@@ -794,7 +797,8 @@ class Task(object):
 
     def get_pilots(self):
         """ Loads FlightResult obj. with only Participants info into Task obj."""
-        from db.tables import TblParticipant as P, TblTaskResult as R
+        from db.tables import TblParticipant as P
+        from db.tables import TblTaskResult as R
         from pilot.flightresult import FlightResult
         self.pilots = [FlightResult(**row) for row in P.get_dicts(self.comp_id)]
         tracks = R.get_all(task_id=self.id)
@@ -821,7 +825,8 @@ class Task(object):
         self.geo = Geo.from_coords(clat, clon)
 
     def update_task_distance(self):
-        from db.tables import TblTask as T, TblTaskWaypoint as W
+        from db.tables import TblTask as T
+        from db.tables import TblTaskWaypoint as W
         with db_session() as db:
             '''add optimised and total distance to task'''
             t = T.get_by_id(self.task_id)
@@ -866,7 +871,7 @@ class Task(object):
 
     def create_projection(self):
         """creates geo.Geo flat projection, projected turnpoints and line/semicircle bisecting segment extremes"""
-        from route import get_line, convert_turnpoints
+        from route import convert_turnpoints, get_line
         self.get_geo()
         tol, min_tol = self.formula.tolerance, self.formula.min_tolerance
         self.projected_turnpoints = convert_turnpoints(self.turnpoints, self.geo)
@@ -901,8 +906,8 @@ class Task(object):
 
     def update_from_xctrack_data(self, taskfile_data):
         """processes XCTrack file that is already in memory as json data and updates the task defintion"""
-        from compUtils import get_wpts
         from calcUtils import string_to_seconds
+        from compUtils import get_wpts
 
         startopenzulu = taskfile_data['sss']['timeGates'][0]
         deadlinezulu = taskfile_data['goal']['deadline']
@@ -1177,9 +1182,9 @@ class Task(object):
             Unfortunately the fsdb format isn't published so much of this is simply an
             exercise in reverse engineering.
         """
-        from formula import TaskFormula
-        from compUtils import get_fsdb_task_path
         from calcUtils import get_date, get_time, time_to_seconds
+        from compUtils import get_fsdb_task_path
+        from formula import TaskFormula
 
         stats = dict()
         turnpoints = []
@@ -1472,7 +1477,7 @@ class Task(object):
             db.commit()
 
     def livetracking(self):
-        from livetracking import get_livetracks, associate_livetracks, check_livetrack
+        from livetracking import associate_livetracks, check_livetrack, get_livetracks
         pilots = [p for p in self.pilots if p.live_id]
         if not pilots:
             print(f'*** NO PILOT with Live ID. Aborting ...')
@@ -1520,8 +1525,8 @@ class Task(object):
             print(f'{p.notifications}')
 
     def create_map_json(self):
-        from mapUtils import get_route_bbox
         from geopy.distance import GreatCircleDistance as gdist
+        from mapUtils import get_route_bbox
 
         task_coords = []
         turnpoints = []
@@ -1568,17 +1573,18 @@ class Task(object):
 
 
 def delete_task(task_id, files=False):
-    from db.tables import TblTaskWaypoint as W
-    from db.tables import TblTrackWaypoint as TW
-    from db.tables import TblTask as T
-    from db.tables import TblTaskResult as R
-    from db.tables import TblNotification as N
-    from db.tables import TblResultFile as RF
-    from db.tables import TblCompetition as C
-    from result import delete_result
-    from Defines import TRACKDIR
     import shutil
     from os import path
+
+    from db.tables import TblCompetition as C
+    from db.tables import TblNotification as N
+    from db.tables import TblResultFile as RF
+    from db.tables import TblTask as T
+    from db.tables import TblTaskResult as R
+    from db.tables import TblTaskWaypoint as W
+    from db.tables import TblTrackWaypoint as TW
+    from Defines import TRACKDIR
+    from result import delete_result
     '''delete waypoints and task from database'''
     print(f"{task_id}")
     with db_session() as db:
@@ -1638,10 +1644,10 @@ def get_map_json(task_id):
 
 
 def write_map_json(task_id):
-    from mapUtils import get_route_bbox
+    from airspaceUtils import create_airspace_map_check_files
     from Defines import AIRSPACEMAPDIR
     from geopy.distance import GreatCircleDistance as gdist
-    from airspaceUtils import create_airspace_map_check_files
+    from mapUtils import get_route_bbox
 
     task_file = str(task_id) + '.task'
     file_path = Path(MAPOBJDIR, 'tasks')
@@ -1729,7 +1735,9 @@ def need_full_rescore(task_id: int):
     """Checks if Task need to be rescored, re checking all tracks:
         - If not all tracks have been submitted or edited later than last task update or formula update
         - if task have been stopped (but anyway task is edited to be stopped so same as first case)"""
-    from db.tables import TblTask as T, TblForComp as F, TblTaskResult as R
+    from db.tables import TblForComp as F
+    from db.tables import TblTask as T
+    from db.tables import TblTaskResult as R
     with db_session() as db:
         task = db.query(T).filter_by(task_id=task_id).one_or_none()
         if task:
@@ -1744,8 +1752,9 @@ def need_full_rescore(task_id: int):
 def need_new_scoring(task_id: int):
     """Checks if Task need to be scored:
             - If we had new tracks after last results file generation"""
-    from db.tables import TblTaskResult as R, TblResultFile as F
     from calcUtils import epoch_to_datetime
+    from db.tables import TblResultFile as F
+    from db.tables import TblTaskResult as R
     with db_session() as db:
         last_file = db.query(F.created).filter_by(task_id=task_id).order_by(F.created.desc()).first()
         if last_file:

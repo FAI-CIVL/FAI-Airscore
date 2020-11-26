@@ -1,11 +1,33 @@
 # coding: utf-8
-from sqlalchemy import CHAR, Column, Date, Enum, Float, ForeignKey, Index, String, TIMESTAMP, Table, Text, text, \
-    DateTime, Boolean
-from sqlalchemy.dialects.mysql import BIGINT, INTEGER, LONGTEXT, MEDIUMINT, SMALLINT, TINYINT, VARCHAR
-from sqlalchemy.orm import relationship, aliased
+from sqlalchemy import (
+    CHAR,
+    TIMESTAMP,
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Index,
+    String,
+    Table,
+    Text,
+    text,
+)
+from sqlalchemy.dialects.mysql import (
+    BIGINT,
+    INTEGER,
+    LONGTEXT,
+    MEDIUMINT,
+    SMALLINT,
+    TINYINT,
+    VARCHAR,
+)
+from sqlalchemy.orm import aliased, relationship
+
 from .conn import db_session
 from .models import BaseModel, metadata
-
 
 # Created using sqlacodegen library
 # sqlacodegen mysql+pymysql://user:pwd@server/database --outfile db_tables_new.py

@@ -8,8 +8,8 @@ Scoring Formula Script
     Defines standard parameters values for each class
 """
 from formula import FormulaPreset, Preset
-from formulas.libs.pwc import *
 from formulas.libs.leadcoeff import *
+from formulas.libs.pwc import *
 
 ''' Formula Info'''
 # Formula Name: usually the filename in capital letters

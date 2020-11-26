@@ -6,13 +6,14 @@ Airscore
 Antonio Golfari, Stuart Mackintosh - 2020
 """
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm.scoping import scoped_session
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError
-from sqlalchemy.orm.exc import NoResultFound
-from Defines import MYSQLHOST, DATABASE, MYSQLUSER, MYSQLPASSWORD
 from contextlib import contextmanager
+
+from Defines import DATABASE, MYSQLHOST, MYSQLPASSWORD, MYSQLUSER
+from sqlalchemy import create_engine
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm.scoping import scoped_session
 
 '''basic connection'''
 host = MYSQLHOST

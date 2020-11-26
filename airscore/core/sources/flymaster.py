@@ -9,8 +9,8 @@ By Stuart Mackintosh, Antonio Golfari, 2019
 import logging
 import time
 from pathlib import Path
-import requests
 
+import requests
 
 # in Flymaster format is:
 # LiveTrack Antoine Saraf.361951.20190717-113625.5836.47.igc = 'other name name.live.other-other.other.id'
@@ -70,6 +70,7 @@ def get_zip(date, login_name, password, zip_file):
 def get_zipfile(task, temp_folder):
     """"""
     from os import path
+
     import Defines
     result = ''
     task_id = task.task_id

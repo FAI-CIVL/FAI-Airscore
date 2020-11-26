@@ -4,11 +4,12 @@ Use: python3 del_track.py [track_id]
 
 Antonio Golfari - 2019
 """
-from db.tables import TblTaskResult as R
 # Use your utility module.
 import os
-from db.conn import db_session
 from os import path
+
+from db.conn import db_session
+from db.tables import TblTaskResult as R
 
 
 def delete_track(result_id):

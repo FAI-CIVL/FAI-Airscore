@@ -1,9 +1,8 @@
 import math
 
-from geopy import distance, Point
+from geopy import Point, distance
 from geopy.distance import geodesic
 from pyproj import Proj, Transformer
-
 from route import calcBearing
 
 '''define earth model'''
@@ -78,6 +77,7 @@ def create_arc_polygon(center, start, end, clockwise=True, tolerance=5):
         The Arc is represented as a polyline.
         Points number is calculated as the number that makes maximum distance between arc and segment, tolerance / 2"""
     from statistics import mean
+
     # points = 50
     center = Point(center[0], center[1])
     start = Point(start[0], start[1])

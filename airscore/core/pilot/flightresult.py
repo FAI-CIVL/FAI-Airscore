@@ -23,19 +23,28 @@ Stuart Mackintosh - Antonio Golfari
 
 """
 
-from .participant import Participant
 import json
 from collections import Counter
-from os import path, makedirs
-from Defines import MAPOBJDIR
+from os import makedirs, path
+
 from airspace import AirspaceCheck
-from calcUtils import string_to_seconds, sec_to_time
-from db.tables import TblTaskResult
-from formulas.libs.leadcoeff import LeadCoeff
+from calcUtils import sec_to_time, string_to_seconds
 from db.conn import db_session
-from route import in_goal_sector, start_made_civl, tp_made_civl, tp_time_civl, get_shortest_path, distance_flown
-from .waypointachieved import WaypointAchieved
+from db.tables import TblTaskResult
+from Defines import MAPOBJDIR
+from formulas.libs.leadcoeff import LeadCoeff
+from route import (
+    distance_flown,
+    get_shortest_path,
+    in_goal_sector,
+    start_made_civl,
+    tp_made_civl,
+    tp_time_civl,
+)
+
 from .notification import Notification
+from .participant import Participant
+from .waypointachieved import WaypointAchieved
 
 
 class FlightResult(Participant):
@@ -271,7 +280,8 @@ class FlightResult(Participant):
     @staticmethod
     def read(par_id: int, task_id: int):
         """reads result from database"""
-        from db.tables import FlightResultView as R, TblParticipant as P
+        from db.tables import FlightResultView as R
+        from db.tables import TblParticipant as P
         result = FlightResult()
         with db_session() as db:
             q = db.query(R).filter_by(par_id=par_id, task_id=task_id).first()
@@ -331,8 +341,8 @@ class FlightResult(Participant):
             Returns:
                     a list of GNSSFixes of when turnpoints were achieved.
         """
+        from flightcheck.flightcheck import calculate_final_results, check_fixes
         from flightcheck.flightpointer import FlightPointer
-        from flightcheck.flightcheck import check_fixes, calculate_final_results
 
         '''initialize'''
         if not self.result_type == 'nyp':
@@ -408,10 +418,11 @@ class FlightResult(Participant):
 
     def save_tracklog_map_file(self, task, flight=None, second_interval=5):
         """ Creates the file to be used to display pilot's track on map"""
-        from igc_lib import Flight
-        from pathlib import Path
-        from Defines import MAPOBJDIR
         import json
+        from pathlib import Path
+
+        from Defines import MAPOBJDIR
+        from igc_lib import Flight
         if self.result_type not in ('abs', 'dnf', 'mindist', 'nyp'):
             ID = self.par_id if not self.ID else self.ID  # registration needs to check that all pilots
             # have a unique ID, with option to use par_id as ID for all pilots if no ID is given
@@ -440,6 +451,7 @@ class FlightResult(Participant):
     def save_tracklog_map_result_file(self, data, trackid, taskid):
         """save tracklog map result file in the correct folder as defined by DEFINES"""
         from pathlib import Path
+
         # res_path = f"{MAPOBJDIR}tracks/{taskid}/"
         res_path = Path(MAPOBJDIR, 'tracks', str(taskid))
         """check if directory already exists"""
@@ -471,8 +483,9 @@ def verify_all_tracks(task, lib, airspace=None, print=print):
     """ Gets in input:
             task:       Task object
             lib:        Formula library module"""
-    from igc_lib import Flight
     from pathlib import Path
+
+    from igc_lib import Flight
     pilots = [p for p in task.pilots if p.result_type not in ('abs', 'dnf', 'mindist') and p.track_file]
     '''check if any track is missing'''
     if any(not Path(task.file_path, p.track_file).is_file() for p in pilots):
@@ -535,9 +548,10 @@ def update_status(par_id: int, task_id: int, status: str) -> int:
 
 
 def delete_track(trackid: int, delete_file=False):
-    from trackUtils import get_task_fullpath
     from pathlib import Path
+
     from db.tables import TblTaskResult
+    from trackUtils import get_task_fullpath
     row_deleted = None
     track = TblTaskResult.get_by_id(trackid)
     if track:
@@ -549,7 +563,10 @@ def delete_track(trackid: int, delete_file=False):
 
 
 def get_task_results(task_id: int):
-    from db.tables import FlightResultView as F, TblNotification as N, TblTrackWaypoint as W, TblTaskResult as R
+    from db.tables import FlightResultView as F
+    from db.tables import TblNotification as N
+    from db.tables import TblTaskResult as R
+    from db.tables import TblTrackWaypoint as W
     from pilot.notification import Notification
     pilots = []
     results = R.get_task_results(task_id)
@@ -609,8 +626,11 @@ def update_all_results(pilots: list, task_id: int):
         And from FSDB.add results.
         We are then deleting all present non admin Notification from database for results, as related to old scoring.
         """
-    from db.tables import TblTaskResult as R, TblNotification as N, TblTrackWaypoint as W
     from dataclasses import asdict
+
+    from db.tables import TblNotification as N
+    from db.tables import TblTaskResult as R
+    from db.tables import TblTrackWaypoint as W
     from sqlalchemy import and_
     insert_mappings = []
     update_mappings = []
@@ -672,8 +692,9 @@ def create_tracklog_map_file(pilot, task, flight, second_interval=5):
     second_interval = resolution of tracklog. default one point every 5 seconds. regardless it will
                         keep points where waypoints were achieved.
     returns the Json string."""
-    from mapUtils import result_to_geojson
     from pathlib import Path
+
+    from mapUtils import result_to_geojson
     '''create info'''
     info = {'taskid': task.id, 'task_name': task.task_name, 'comp_name': task.comp_name,
             'pilot_name': pilot.name, 'pilot_nat': pilot.nat, 'pilot_sex': pilot.sex,

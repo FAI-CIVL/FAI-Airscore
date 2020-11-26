@@ -5,8 +5,9 @@ Use:    import compUtils
 Antonio Golfari - 2019
 """
 
-import json
 import datetime
+import json
+
 import Defines
 from db.conn import db_session
 
@@ -180,8 +181,11 @@ def get_tasks_result_files(comp_id: int):
 
 def create_classifications(cat_id: int) -> dict:
     """create the output to generate classifications list"""
-    from db.tables import TblClasCertRank as CC, TblCompetition as C, TblRanking as R, TblCertification as CCT, \
-        TblClassification as CT
+    from db.tables import TblCertification as CCT
+    from db.tables import TblClasCertRank as CC
+    from db.tables import TblClassification as CT
+    from db.tables import TblCompetition as C
+    from db.tables import TblRanking as R
     rank = dict()
     with db_session() as db:
         '''get rankings definitions'''
@@ -239,10 +243,11 @@ def create_comp_code(name: str, date: datetime.date):
 
 def get_task_filepath(task_id: int):
     """ returns complete trackfile path"""
+    from pathlib import Path
+
     from db.conn import db_session
     from db.tables import TaskObjectView as T
     from Defines import TRACKDIR
-    from pathlib import Path
     with db_session() as db:
         task = db.query(T).filter_by(task_id=task_id).one()
         return Path(TRACKDIR, task.comp_path, task.task_path)
@@ -253,8 +258,8 @@ def get_formulas(comp_class):
         To be used if frontend to get formula multiplechoice populated
         output:
             List of formula name"""
-    import os
     import importlib
+    import os
     from dataclasses import dataclass
 
     @dataclass
@@ -285,7 +290,9 @@ def get_fsdb_task_path(task_path):
 def is_shortcode_unique(shortcode: str, date: datetime.date):
     """ checks if given shortcode already exists as folder, returns True / False"""
     from pathlib import Path
+
     from Defines import TRACKDIR
+
     # print(Path(TRACKDIR, str(date.year), shortcode))
     if Path(TRACKDIR, str(date.year), shortcode).is_dir():
         return False

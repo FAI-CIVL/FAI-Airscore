@@ -4,24 +4,22 @@ import sys
 
 sys.path.append('/home/ubuntu/workspace/igc_lib/')
 
-from flask import Flask, flash, request, redirect, url_for, json
-from flask import render_template
-import folium
-from werkzeug.utils import secure_filename
-
-#using igc_lib library to parse igc to geojson
-from igc_lib.igc_lib import Flight
 #import igc_lib.lib.dumpers as dumpers
 import itertools
 
+import folium
 #using aerofiles library to parse igc to geojson
 from aerofiles.igc import Reader
-
-#import trackUtils
-
 #database connections
 from db.conn import db_session
 from db.tables import TaskView as T
+from flask import Flask, flash, json, redirect, render_template, request, url_for
+#using igc_lib library to parse igc to geojson
+from igc_lib.igc_lib import Flight
+from werkzeug.utils import secure_filename
+
+#import trackUtils
+
 
 
 UPLOAD_FOLDER = '/home/ubuntu/workspace/uploads/'
@@ -60,7 +58,14 @@ def checkbbox(lat,lon,bbox):
 def dump_flight_to_geojson(flight, geojson_filename_local):
     """Dumps the flight to geojson format. """
 
-    from geojson import Point, Feature, FeatureCollection, MultiPoint, MultiLineString, dump
+    from geojson import (
+        Feature,
+        FeatureCollection,
+        MultiLineString,
+        MultiPoint,
+        Point,
+        dump,
+    )
 
     assert flight.valid
 
@@ -245,6 +250,7 @@ def get_task_fromfile(jsontask):
 # function to create geojson object (mainly for tracks)
 def get_track(records,geojson_filename_local):
     from geojson import Feature, FeatureCollection, LineString, dump
+
     # records structure [[], [{'LAD': 9, 'LOD': 3, 'time': datetime.time(14, 19, 53), 'lat': 45.92198333333333, 'pressure_alt': 0, 'gps_alt': 1155, 'lon': 8.673833333333333, 'validity': 'A'}, { ...
     features = []
 

@@ -1,15 +1,14 @@
 from dataclasses import dataclass
 from functools import partial
-from math import sqrt, pow, log
+from math import log, pow, sqrt
 
 import geopy
 import pyproj
+from airspaceUtils import read_airspace_check_file
+from route import Turnpoint, distance
 from shapely import ops
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
-
-from airspaceUtils import read_airspace_check_file
-from route import distance, Turnpoint
 
 
 @dataclass(frozen=True)
@@ -327,7 +326,7 @@ def get_airspace_check_parameters(task_id):
 
 
 def fl_to_meters(flight_level, qnh=1013.25):
-    from airspaceUtils import hPa_in_feet, Ft_in_meters
+    from airspaceUtils import Ft_in_meters, hPa_in_feet
     d = 1013.25 - qnh
     feet = flight_level * 100 - hPa_in_feet * d
     meters = feet * Ft_in_meters

@@ -9,17 +9,18 @@ Stuart Mackintosh - 2019
 
 import math
 from collections import namedtuple
-from math import sqrt, hypot, fabs
-from db.conn import db_session
-from Defines import FAI_SPHERE
+from math import fabs, hypot, sqrt
 
 import numpy as np
+from calcUtils import c_round
+from db.conn import db_session
+from Defines import FAI_SPHERE
 from geographiclib.geodesic import Geodesic
 from geopy.distance import geodesic
 from pyproj import Proj
-from calcUtils import c_round
+
 if FAI_SPHERE:
-    from haversine import haversine, Unit
+    from haversine import Unit, haversine
 
 '''define earth model'''
 # EARTHMODEL = Proj("+init=EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth

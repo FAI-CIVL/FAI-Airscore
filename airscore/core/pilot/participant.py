@@ -10,12 +10,15 @@ Use: from participant import Participant
 Stuart Mackintosh Antonio Golfari - 2019
 """
 
-from pilot.pilot import Pilot
-from sqlalchemy.orm import aliased
 from calcUtils import get_date
-from sources.civlrankings import create_participant_from_CIVLID, create_participant_from_name
-from db.tables import TblParticipant as P
 from db.conn import db_session
+from db.tables import TblParticipant as P
+from pilot.pilot import Pilot
+from sources.civlrankings import (
+    create_participant_from_CIVLID,
+    create_participant_from_name,
+)
+from sqlalchemy.orm import aliased
 
 
 class Participant(Pilot):

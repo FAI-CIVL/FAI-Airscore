@@ -9,10 +9,10 @@ By Stuart Mackintosh, Antonio Golfari, 2019
 
 import logging
 import time
-import requests
-from db.conn import db_session
 from pathlib import Path
 
+import requests
+from db.conn import db_session
 
 # in XContest format is:
 # DE VIVO.ALESSANDRO.alexpab.2019-12-19.13-22-49.IGC
@@ -53,7 +53,9 @@ def get_xc_parameters(task_id):
     """Get site info and date from database """
     # TODO I suspect the logic on xc_site will be broken if we use waypoint file instead of table
     # Should we use TblTaskWaypoint instead or manually or by adding xc_to id to launch name or description?
-    from db.tables import TblTaskWaypoint as W, TblRegionWaypoint as R, TblTask as T
+    from db.tables import TblRegionWaypoint as R
+    from db.tables import TblTask as T
+    from db.tables import TblTaskWaypoint as W
 
     site_id = 0
     takeoff_id = 0
@@ -123,6 +125,7 @@ def get_zip(site_id, takeoff_id, date, login_name, password, zip_file):
 def get_zipfile(task_id):
     """"""
     from pathlib import Path
+
     import Defines
     temp_folder = Defines.TEMPFILES
     result = ''

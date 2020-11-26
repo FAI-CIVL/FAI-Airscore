@@ -5,8 +5,10 @@ Use: from Defines import BINDIR, TRACKDIR
 Antonio Golfari - 2018
 """
 import os
+
 import yaml
 from environs import Env
+
 env = Env()
 env.read_env()
 

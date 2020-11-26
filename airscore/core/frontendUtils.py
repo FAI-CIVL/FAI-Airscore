@@ -1,20 +1,28 @@
-from db.tables import TblCompetition, TblTask, TblCompAuth, TblRegion, TblRegionWaypoint, TblTaskWaypoint
-from route import Turnpoint
-from sqlalchemy.orm import aliased
-from flask import current_app, jsonify
-from db.conn import db_session
 import datetime
-import ruamel.yaml
-from sqlalchemy import func
-from pathlib import Path
-import jsonpickle
-from Defines import MAPOBJDIR, IGCPARSINGCONFIG, track_formats
-from map import make_map
-from calcUtils import sec_to_time, c_round
-from os import scandir, environ
-import requests
-from functools import partial
 import json
+from functools import partial
+from os import environ, scandir
+from pathlib import Path
+
+import jsonpickle
+import requests
+import ruamel.yaml
+from calcUtils import c_round, sec_to_time
+from db.conn import db_session
+from db.tables import (
+    TblCompAuth,
+    TblCompetition,
+    TblRegion,
+    TblRegionWaypoint,
+    TblTask,
+    TblTaskWaypoint,
+)
+from Defines import IGCPARSINGCONFIG, MAPOBJDIR, track_formats
+from flask import current_app, jsonify
+from map import make_map
+from route import Turnpoint
+from sqlalchemy import func
+from sqlalchemy.orm import aliased
 
 
 def create_menu(active: str = '') -> list:
@@ -43,8 +51,8 @@ def get_comps() -> list:
 def find_orphan_pilots(pilots_list: list, orphans: list) -> (list, list):
     """ Tries to guess participants that do not have a pil_id, and associate them to other participants or
         to a pilot in database"""
-    from db.tables import PilotView as P
     from calcUtils import get_int
+    from db.tables import PilotView as P
     pilots_found = []
     still_orphans = []
     ''' find a match among pilots already in list'''
@@ -92,7 +100,9 @@ def find_orphan_pilots(pilots_list: list, orphans: list) -> (list, list):
 
 
 def get_ladders() -> list:
-    from db.tables import TblLadder as L, TblLadderSeason as LS, TblCountryCode as C
+    from db.tables import TblCountryCode as C
+    from db.tables import TblLadder as L
+    from db.tables import TblLadderSeason as LS
     with db_session() as db:
         ladders = db.query(L.ladder_id, L.ladder_name, L.ladder_class, L.date_from, L.date_to,
                            C.natIoc.label('nat'),
@@ -108,12 +118,18 @@ def get_ladders() -> list:
 def get_ladder_results(ladder_id: int, season: int,
                        nat: str = None, starts: datetime.date = None, ends: datetime.date = None) -> json:
     """creates result json using comp results from all events in ladder"""
-    from db.tables import TblParticipant as P, TblLadder as L, TblLadderComp as LC, TblLadderSeason as LS, \
-        TblCompetition as C, TblTask as T, TblResultFile as R
-    from calcUtils import get_season_dates
-    from compUtils import get_nat, create_classifications
-    from result import open_json_file
     import time
+
+    from calcUtils import get_season_dates
+    from compUtils import create_classifications, get_nat
+    from db.tables import TblCompetition as C
+    from db.tables import TblLadder as L
+    from db.tables import TblLadderComp as LC
+    from db.tables import TblLadderSeason as LS
+    from db.tables import TblParticipant as P
+    from db.tables import TblResultFile as R
+    from db.tables import TblTask as T
+    from result import open_json_file
 
     if not (nat and starts and ends):
         lad = L.get_by_id(ladder_id)
@@ -314,8 +330,8 @@ def get_task_list(comp):
 
 
 def get_task_turnpoints(task) -> dict:
-    from task import get_map_json
     from airspaceUtils import read_airspace_map_file
+    from task import get_map_json
     turnpoints = task.read_turnpoints()
     max_n = 0
     total_dist = ''
@@ -381,7 +397,8 @@ def get_comp_regions(compid: int):
 def get_regions_used_in_comp(compid: int, tasks: bool = False) -> list:
     """returns a list of reg_id of regions used in a competition.
         Used for waypoints and area map link in competition page"""
-    from db.tables import TblRegion as R, TblTask as T
+    from db.tables import TblRegion as R
+    from db.tables import TblTask as T
     regions = [el.reg_id for el in R.get_all(comp_id=compid)]
     if tasks:
         regions.extend([el.reg_id for el in T.get_all(comp_id=compid)])
@@ -409,7 +426,9 @@ def get_waypoint_choices(reg_id: int):
 
 
 def get_pilot_list_for_track_management(taskid: int):
-    from db.tables import TblTaskResult as R, TblParticipant as P, TblTask as T
+    from db.tables import TblParticipant as P
+    from db.tables import TblTask as T
+    from db.tables import TblTaskResult as R
     pilots = [row._asdict() for row in R.get_task_results(taskid)]
 
     all_data = []
@@ -518,12 +537,12 @@ def allowed_tracklog_filesize(filesize, size=5):
 
 
 def process_igc(task_id: int, par_id: int, tracklog):
-    from pilot.track import create_igc_filename, igc_parsing_config_from_yaml
-    from calcUtils import epoch_to_date
     from airspace import AirspaceCheck
+    from calcUtils import epoch_to_date
     from igc_lib import Flight
-    from task import Task
     from pilot.flightresult import FlightResult, save_track
+    from pilot.track import create_igc_filename, igc_parsing_config_from_yaml
+    from task import Task
 
     pilot = FlightResult.read(par_id, task_id)
     if pilot.name:
@@ -577,9 +596,9 @@ def process_igc(task_id: int, par_id: int, tracklog):
 
 
 def save_igc_background(task_id: int, par_id: int, tracklog, user, check_g_record=False):
-    from task import Task
-    from pilot.track import create_igc_filename, validate_G_record
     from pilot.flightresult import FlightResult
+    from pilot.track import create_igc_filename, validate_G_record
+    from task import Task
 
     pilot = FlightResult.read(par_id, task_id)
     print = partial(print_to_sse, id=par_id, channel=user)
@@ -609,13 +628,14 @@ def save_igc_background(task_id: int, par_id: int, tracklog, user, check_g_recor
 
 
 def process_igc_background(task_id: int, par_id: int, file: Path, user: str, check_validity=True):
-    from pilot.track import igc_parsing_config_from_yaml
-    from calcUtils import epoch_to_date
-    from pilot.flightresult import FlightResult, save_track
-    from airspace import AirspaceCheck
-    from igc_lib import Flight
-    from task import Task
     import json
+
+    from airspace import AirspaceCheck
+    from calcUtils import epoch_to_date
+    from igc_lib import Flight
+    from pilot.flightresult import FlightResult, save_track
+    from pilot.track import igc_parsing_config_from_yaml
+    from task import Task
     pilot = FlightResult.read(par_id, task_id)
     task = Task.read(task_id)
     print = partial(print_to_sse, id=par_id, channel=user)
@@ -681,10 +701,11 @@ def process_igc_background(task_id: int, par_id: int, file: Path, user: str, che
 
 def unzip_igc(zipfile):
     """split function for background in production"""
-    from trackUtils import extract_tracks
-    from tempfile import mkdtemp
     from os import chmod
+    from tempfile import mkdtemp
+
     from Defines import TEMPFILES
+    from trackUtils import extract_tracks
 
     """create a temporary directory"""
     # with TemporaryDirectory() as tracksdir:
@@ -702,9 +723,10 @@ def unzip_igc(zipfile):
 def process_archive_background(taskid: int, tracksdir, user, check_g_record=False, track_source=None):
     """function split for background use.
     tracksdir is a temp dir that will be deleted at the end of the function"""
-    from task import Task
-    from trackUtils import get_tracks, assign_and_import_tracks
     from shutil import rmtree
+
+    from task import Task
+    from trackUtils import assign_and_import_tracks, get_tracks
     print = partial(print_to_sse, id=None, channel=user)
     print('|open_modal')
     task = Task.read(taskid)
@@ -724,8 +746,9 @@ def process_archive_background(taskid: int, tracksdir, user, check_g_record=Fals
 
 
 def process_archive(task, zipfile, check_g_record=False, track_source=None):
-    from trackUtils import extract_tracks, get_tracks, assign_and_import_tracks
     from tempfile import TemporaryDirectory
+
+    from trackUtils import assign_and_import_tracks, extract_tracks, get_tracks
 
     if task.opt_dist == 0:
         print('task not optimised.. optimising')
@@ -779,7 +802,9 @@ def get_task_result_file_list(taskid: int):
 
 
 def number_of_tracks_processed(taskid: int):
-    from db.tables import TblTaskResult as R, TblParticipant as P, TblTask as T
+    from db.tables import TblParticipant as P
+    from db.tables import TblTask as T
+    from db.tables import TblTaskResult as R
     from sqlalchemy import func
     with db_session() as db:
         results = db.query(func.count()).filter(R.task_id == taskid).scalar()
@@ -790,6 +815,7 @@ def number_of_tracks_processed(taskid: int):
 
 def get_score_header(files, offset):
     import time
+
     from Defines import RESULTDIR
     active = None
     header = "This task has not been scored"
@@ -809,6 +835,7 @@ def get_score_header(files, offset):
 def get_comp_scorekeeper(compid_or_taskid: int, task_id=False):
     """returns owner and list of scorekeepers takes compid by default or taskid if taskid is True"""
     from db.tables import TblCompAuth as CA
+
     from airscore.user.models import User
     with db_session() as db:
         if task_id:
@@ -887,7 +914,7 @@ def update_airspace_file(old_filename, new_filename):
 
 
 def get_non_registered_pilots(compid: int):
-    from db.tables import TblParticipant, PilotView
+    from db.tables import PilotView, TblParticipant
 
     p = aliased(TblParticipant)
     pv = aliased(PilotView)
@@ -990,8 +1017,8 @@ def get_participants(compid: int, source='all'):
 
 def check_team_size(compid: int, nat=False):
     """Checks that the number of pilots in a team don't exceed the allowed number"""
-    from formula import Formula
     from db.tables import TblParticipant as P
+    from formula import Formula
     formula = Formula.read(compid)
     message = ''
     if nat:
@@ -1044,9 +1071,10 @@ def production():
 
 def unique_filename(filename, filepath):
     """checks file does not already exist and creates a unique and secure filename"""
-    from pathlib import Path
-    from os.path import join
     import glob
+    from os.path import join
+    from pathlib import Path
+
     from werkzeug.utils import secure_filename
     fullpath = join(filepath, filename)
     if Path(fullpath).is_file():
@@ -1058,7 +1086,7 @@ def unique_filename(filename, filepath):
 
 def get_pretty_data(content: dict) -> dict or str:
     """transforms result json file in human readable data"""
-    from result import pretty_format_results, get_startgates
+    from result import get_startgates, pretty_format_results
     try:
         '''time offset'''
         timeoffset = 0 if 'time_offset' not in content['info'].keys() else int(content['info']['time_offset'])
@@ -1117,9 +1145,9 @@ def get_pretty_data(content: dict) -> dict or str:
 
 
 def full_rescore(taskid: int, background=False, status=None, autopublish=None, compid=None, user=None):
-    from task import Task
     from comp import Comp
-    from result import unpublish_result, publish_result
+    from result import publish_result, unpublish_result
+    from task import Task
     task = Task.read(taskid)
     if background:
         print = partial(print_to_sse, id=None, channel=user)
@@ -1143,9 +1171,10 @@ def full_rescore(taskid: int, background=False, status=None, autopublish=None, c
 
 
 def get_task_igc_zip(task_id: int):
-    from trackUtils import get_task_fullpath
     import shutil
+
     from Defines import track_formats
+    from trackUtils import get_task_fullpath
 
     task_path = get_task_fullpath(task_id)
     task_folder = task_path.parts[-1]
@@ -1218,8 +1247,8 @@ def create_task_html(file: str) -> (str, dict or list) or None:
 
 
 def create_comp_html(comp_id: int) -> (str, dict or list) or None:
-    from result import CompResult
     from compUtils import get_comp_json_filename
+    from result import CompResult
     try:
         file = get_comp_json_filename(comp_id)
         return CompResult.to_html(file)
@@ -1228,9 +1257,9 @@ def create_comp_html(comp_id: int) -> (str, dict or list) or None:
 
 
 def create_inmemory_zipfile(files: list):
-    import zipfile
-    import time
     import io
+    import time
+    import zipfile
 
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
@@ -1304,7 +1333,10 @@ def list_countries() -> list:
 
 
 def get_classifications_details(comp_class: str = None) -> list:
-    from db.tables import TblClasCertRank as CC, TblRanking as R, TblCertification as CCT, TblClassification as CT
+    from db.tables import TblCertification as CCT
+    from db.tables import TblClasCertRank as CC
+    from db.tables import TblClassification as CT
+    from db.tables import TblRanking as R
     output = []
     with db_session() as db:
         query = db.query(CT.cat_id, CT.cat_name, CT.comp_class,
@@ -1412,8 +1444,9 @@ def save_comp_ladders(comp_id: int, ladder_ids: list or None) -> bool:
 
 
 def get_task_result_files(task_id: int, comp_id: int = None, offset: int = None) -> dict:
-    from compUtils import get_comp_json, get_comp, get_offset
     import time
+
+    from compUtils import get_comp, get_comp_json, get_offset
     from Defines import RESULTDIR
     if not offset:
         offset = get_offset(task_id)
@@ -1441,7 +1474,7 @@ def get_task_result_files(task_id: int, comp_id: int = None, offset: int = None)
 
 
 def get_region_waypoints(reg_id: int, region=None, openair_file: str = None) -> tuple:
-    from mapUtils import create_waypoints_layer, create_airspace_layer
+    from mapUtils import create_airspace_layer, create_waypoints_layer
     _, waypoints = get_waypoint_choices(reg_id)
     points_layer, bbox = create_waypoints_layer(reg_id)
     openair_file, airspace_layer, airspace_list, _ = create_airspace_layer(reg_id, region=region, openair_file=openair_file)
@@ -1477,8 +1510,8 @@ def unpublish_comp_result(comp_id: int):
 
 def update_comp_result(comp_id: int, status: str = None, name_suffix: str = None) -> tuple:
     """Unpublish any active result, and creates a new one"""
-    from result import publish_result, unpublish_result
     from comp import Comp
+    from result import publish_result, unpublish_result
     try:
         _, ref_id, filename, timestamp = Comp.create_results(comp_id, status=status, name_suffix=name_suffix)
     except (FileNotFoundError, Exception) as e:
@@ -1504,12 +1537,12 @@ def get_task_info(task_id: int) -> dict:
 
 
 def convert_external_comp(comp_id: int) -> bool:
-    from sqlalchemy.exc import SQLAlchemyError
     from db.tables import TblCompetition as C
-    from db.tables import TblTask as T
-    from db.tables import TblTrackWaypoint as TW
-    from db.tables import TblTaskResult as R
     from db.tables import TblNotification as N
+    from db.tables import TblTask as T
+    from db.tables import TblTaskResult as R
+    from db.tables import TblTrackWaypoint as TW
+    from sqlalchemy.exc import SQLAlchemyError
     from task import Task
     try:
         with db_session() as db:

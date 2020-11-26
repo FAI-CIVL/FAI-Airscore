@@ -14,8 +14,8 @@ from compUtils import *
 
 def read_membership(file):
     """Read CSV File"""
-    from db.tables import PilotView as P
     from db.conn import db_session
+    from db.tables import PilotView as P
     from sqlalchemy import and_, or_
 
     with open(file, encoding='utf-8') as csv_file:

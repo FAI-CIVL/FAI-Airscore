@@ -18,14 +18,15 @@ s is the height of ground (SRTM)
 b bearing
 v velocity
 """
-from task import Task
-from airspace import AirspaceCheck
 import time
 from datetime import datetime
-from logger import Logger
 from pathlib import Path
+
+from airspace import AirspaceCheck
+from logger import Logger
 from pilot.flightresult import FlightResult
-from pilot.track import igc_parsing_config_from_yaml, create_igc_filename
+from pilot.track import create_igc_filename, igc_parsing_config_from_yaml
+from task import Task
 
 '''parameters for livetracking'''
 config = igc_parsing_config_from_yaml('smartphone')
@@ -174,8 +175,9 @@ class LiveTracking(object):
 
     @property
     def filename(self):
-        from Defines import LIVETRACKDIR
         from os import path
+
+        from Defines import LIVETRACKDIR
         return None if not self.task else path.join(LIVETRACKDIR, str(self.task_id))
 
     @staticmethod
@@ -342,10 +344,10 @@ class LiveTracking(object):
 def get_livetracks(task: Task, pilots: list, timestamp, interval):
     """ Requests live tracks fixes to Livetracking Server
         Flymaster gives back chunks of 100 fixes for each live_id """
-    import requests
     import jsonpickle
-    from requests.exceptions import HTTPError
+    import requests
     from Defines import FM_LIVE
+    from requests.exceptions import HTTPError
     request = {}
     if task.track_source.lower() == 'flymaster':
         # pilots = [p for p in task.pilots
@@ -375,8 +377,9 @@ def get_livetracks(task: Task, pilots: list, timestamp, interval):
 
 
 def associate_livetracks(task: Task, pilots: list, response, timestamp):
-    from igc_lib import GNSSFix
     import time
+
+    from igc_lib import GNSSFix
     '''initialise'''
     midnight = int(time.mktime(task.date.timetuple()))
     alt_source = 'GPS' if task.formula.scoring_altitude is None else task.formula.scoring_altitude
@@ -441,8 +444,8 @@ def check_livetrack(result: FlightResult, task: Task, airspace: AirspaceCheck = 
         Returns:
                 a list of GNSSFixes of when turnpoints were achieved.
     """
-    from flightcheck.flightpointer import FlightPointer
     from flightcheck import flightcheck
+    from flightcheck.flightpointer import FlightPointer
     from formulas.libs.leadcoeff import LeadCoeff
 
     '''initialize'''
@@ -474,9 +477,10 @@ def check_livetrack(result: FlightResult, task: Task, airspace: AirspaceCheck = 
 
 
 def get_live_json(task_id):
-    from Defines import LIVETRACKDIR
     from os import path
+
     import jsonpickle
+    from Defines import LIVETRACKDIR
     fullname = path.join(LIVETRACKDIR, str(task_id))
     try:
         with open(fullname, 'r') as f:
@@ -509,7 +513,7 @@ def update_livetrack_file(result: FlightResult, flight: list, path: str):
     """ IGC Fix Format:
         B1132494613837N01248410EA0006900991
     """
-    from calcUtils import sec_to_time, igc_coords
+    from calcUtils import igc_coords, sec_to_time
     file = Path(path, result.track_file)
     if file.is_file():
         '''create fixes lines'''

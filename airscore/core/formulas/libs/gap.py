@@ -14,8 +14,9 @@ Add support for FAI Sphere ???
 """
 
 from dataclasses import dataclass
-from pilot.flightresult import FlightResult
 from math import sqrt
+
+from pilot.flightresult import FlightResult
 
 
 def difficulty_calculation(task):

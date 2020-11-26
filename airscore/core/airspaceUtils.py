@@ -11,11 +11,10 @@ import json
 import re
 from os import path
 
+import Defines
 import folium
 import jsonpickle
 from aerofiles import openair
-
-import Defines
 from geo import create_arc_polygon
 from mapUtils import get_airspace_bbox
 
@@ -319,8 +318,8 @@ def read_airspace_map_file(openair_filename):
 
 def get_airspace_map_from_task(task_id: int) -> dict:
     """get airspace map data from task ID"""
-    from db.tables import TblTask
     from db.conn import db_session
+    from db.tables import TblTask
     with db_session() as db:
         check = db.query(TblTask.airspace_check, TblTask.openair_file).filter_by(task_id=task_id).one()
         if check and check.airspace_check:

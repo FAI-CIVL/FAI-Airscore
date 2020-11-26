@@ -236,6 +236,7 @@ def get_turnpoints_from_file(filename, data=False):
 
 def allowed_wpt_extensions(filename):
     from Defines import ALLOWED_WPT_EXTENSIONS
+
     # We only want files with a . in the filename
     if not "." in filename:
         return False
