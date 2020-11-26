@@ -295,7 +295,7 @@ def competition(compid: int):
     from Defines import LIVETRACKDIR
     # get the latest comp result file, not the active one. This is so we can display tasks that have published
     # results that are not yet official and therefore in the comp overall results
-    result_file = get_comp_json(compid, latest=True)
+    result_file = get_comp_json(compid)
     all_tasks = []
     layer = {}
     country_scores = False
@@ -438,7 +438,12 @@ def ext_competition(compid: int):
 @blueprint.route('/task_result/<int:taskid>')
 def task_result(taskid: int):
     from task import get_task_json
-    result_file = frontendUtils.get_pretty_data(get_task_json(taskid))
+    from result import open_json_file
+    if 'file' in request.args:
+        file = open_json_file(request.args.get('file'))
+    else:
+        file = get_task_json(taskid)
+    result_file = frontendUtils.get_pretty_data(file)
     if result_file == 'error':
         return render_template('404.html')
 
@@ -509,7 +514,12 @@ def ext_comp_result(compid: int):
 @blueprint.route('/comp_result/<int:compid>')
 def comp_result(compid: int):
     from compUtils import get_comp_json
-    result_file = frontendUtils.get_pretty_data(get_comp_json(compid))
+    from result import open_json_file
+    if 'file' in request.args:
+        file = open_json_file(request.args.get('file'))
+    else:
+        file = get_comp_json(compid)
+    result_file = frontendUtils.get_pretty_data(file)
     if result_file == 'error':
         return render_template('404.html')
 

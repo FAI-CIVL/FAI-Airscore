@@ -768,14 +768,16 @@ def process_zip_file(zip_file: Path, taskid: int, username: str, grecord: bool, 
         return resp
 
 
-def get_task_result_file_list(taskid: int):
+def get_task_result_file_list(taskid: int, comp_id: int) -> dict:
     from db.tables import TblResultFile as R
-    files = []
     with db_session() as db:
-        rows = db.query(R.created, R.filename, R.status, R.active, R.ref_id).filter_by(task_id=taskid).all()
-        if rows:
-            files = [row._asdict() for row in rows]
-        return files
+        task_results = db.query(R.created, R.filename, R.status, R.active, R.ref_id).filter_by(task_id=taskid).all()
+        comp_results = db.query(R.created, R.filename, R.status, R.active, R.ref_id).filter(R.comp_id == comp_id,
+                                                                                            R.task_id.is_(None)).all()
+
+        tasks_files = [row._asdict() for row in task_results]
+        comp_files = [row._asdict() for row in comp_results]
+        return {'task': tasks_files, 'comp': comp_files}
 
 
 def number_of_tracks_processed(taskid: int):
@@ -792,13 +794,16 @@ def get_score_header(files, offset):
     import time
     from Defines import RESULTDIR
     active = None
-    header = "This task has not been scored"
+    header = f"It has not been scored"
     file = next((el for el in files if int(el['active']) == 1), None)
     if file:
+        active = file['filename']
         published = time.ctime(file['created'] + offset)
         '''check file exists'''
         if Path(RESULTDIR, file['filename']).is_file():
-            header = f"Published result ran at: {published} Status: {file['status']}"
+            header = 'Auto Generated Result ' if 'Overview' in file['filename'] else "Published Result "
+            header += f"ran at: {published} "
+            header += f"Status: {file['status'] if not file['status'] in ('', None, 'None') else 'No status'}"
         else:
             header = f"WARNING: Active result file is not found! (ran: {published})"
     elif len(files) > 0:
@@ -1405,7 +1410,7 @@ def save_comp_ladders(comp_id: int, ladder_ids: list or None) -> bool:
             LC.bulk_create(results)
         return True
     except Exception:
-        raise
+        # raise
         return False
 
 
@@ -1415,27 +1420,35 @@ def get_task_result_files(task_id: int, comp_id: int = None, offset: int = None)
     from Defines import RESULTDIR
     if not offset:
         offset = get_offset(task_id)
-    files = get_task_result_file_list(task_id)
-    comp_file = get_comp_json(comp_id or get_comp(task_id))
+    files = get_task_result_file_list(task_id, comp_id or get_comp(task_id))
 
-    if comp_file == 'error':
-        comp_header = "No overall competition results published"
-        display_comp_unpublish = False
-    else:
-        comp_published = time.ctime(comp_file['file_stats']['timestamp'] + offset)
-        comp_header = f"Overall competition results published: {comp_published}"
-        display_comp_unpublish = True
-    header, active = get_score_header(files, offset)
-    choices = []
+    task_header, task_active = get_score_header(files['task'], offset)
+    comp_header, comp_active = get_score_header(files['comp'], offset)
+    task_choices = []
+    comp_choices = []
 
-    for file in files:
+    for file in files['task']:
         published = time.ctime(file['created'] + offset)
-        status = file['status'] if Path(RESULTDIR, file['filename']).is_file() else f"FILE NOT FOUND"
-        choices.append((file['filename'], f'{published} - {status}'))
-    choices.reverse()
+        if not Path(RESULTDIR, file['filename']).is_file():
+            status = f"FILE NOT FOUND"
+        else:
+            status = '' if file['status'] in [None, 'None'] else file['status']
+        task_choices.append((file['filename'], f'{published} - {status}' if status else f'{published}'))
+    task_choices.reverse()
 
-    return {'choices': choices, 'header': header, 'active': active, 'comp_header': comp_header,
-            'display_comp_unpublish': display_comp_unpublish}
+    for file in files['comp']:
+        published = time.ctime(file['created'] + offset)
+        if not Path(RESULTDIR, file['filename']).is_file():
+            status = f"FILE NOT FOUND"
+        else:
+            status = '' if file['status'] in [None, 'None'] else file['status']
+            if 'Overview' in file['filename']:
+                status = 'Auto Generated ' + status
+        comp_choices.append((file['filename'], f'{published} - {status}' if status else f'{published}'))
+    comp_choices.reverse()
+
+    return {'task_choices': task_choices, 'task_header': task_header, 'task_active': task_active,
+            'comp_choices': comp_choices, 'comp_header': comp_header, 'comp_active': comp_active}
 
 
 def get_region_waypoints(reg_id: int, region=None, openair_file: str = None) -> tuple:
@@ -1471,6 +1484,18 @@ def unpublish_comp_result(comp_id: int):
     """Unpublish any active result"""
     from result import unpublish_result
     unpublish_result(comp_id, comp=True)
+
+
+def publish_comp_result(comp_id: int, filename: str) -> bool:
+    """Unpublish any active result, and publish the given one"""
+    from result import publish_result, unpublish_result
+    try:
+        unpublish_result(comp_id, comp=True)
+        publish_result(filename)
+        return True
+    except (FileNotFoundError, Exception) as e:
+        print(f'Error trying to publish result')
+        return False
 
 
 def update_comp_result(comp_id: int, status: str = None, name_suffix: str = None) -> tuple:
