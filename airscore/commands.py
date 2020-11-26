@@ -55,7 +55,7 @@ def lint(fix_imports, check):
             exit(rv)
 
     isort_args = ["-rc"]
-    black_args = ["-S"]
+    black_args = ["-S", "-l 120"]
     if check:
         isort_args.append("-c")
         black_args.append("--check")
