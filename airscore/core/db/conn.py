@@ -25,13 +25,9 @@ connectionString = f'mysql+pymysql://{user}:{passwd}@{host}/{dbase}?charset=utf8
 # engine = create_engine(connectionString,
 #                        pool_pre_ping=True,
 #                        echo=True)       # pool_pre_ping could be deleted if MySQL is stable
-engine = create_engine(connectionString,
-                       pool_pre_ping=True,
-                       convert_unicode=True)
+engine = create_engine(connectionString, pool_pre_ping=True, convert_unicode=True)
 
-Session = scoped_session(sessionmaker(autocommit=False,
-                                      autoflush=False,
-                                      bind=engine))
+Session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
 
 
 @contextmanager

@@ -99,4 +99,3 @@ class FlightPointer(object):
 
     def done(self):
         self.pointer = self.total_number
-

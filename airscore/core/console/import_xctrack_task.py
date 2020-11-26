@@ -7,10 +7,10 @@ from task import Task
 def main(args):
 
     """Main module. Takes task_id and filename as parameters"""
-    #wpNum = 0 #one or zero start???
+    # wpNum = 0 #one or zero start???
 
     ##check parameter is good.
-    if (len(args)==2 and args[0].isdigit() and args[1][-6:] == '.xctsk'):
+    if len(args) == 2 and args[0].isdigit() and args[1][-6:] == '.xctsk':
         task_id = int(args[0])
         task_file = args[1]
     else:
@@ -49,5 +49,6 @@ def main(args):
     ''' now restore stdout function '''
     # Logger('OFF')
 
-if __name__== "__main__":
+
+if __name__ == "__main__":
     main(sys.argv[1:])

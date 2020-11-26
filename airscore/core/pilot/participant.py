@@ -22,11 +22,23 @@ from sqlalchemy.orm import aliased
 
 
 class Participant(Pilot):
-    """Participant definition, DB operations
-    """
+    """Participant definition, DB operations"""
 
-    def __init__(self, par_id=None, comp_id=None, ID=None, glider=None, glider_cert=None, sponsor=None,
-                 team=None, nat_team=1, status=None, paid=None, live_id=None, **kwargs):
+    def __init__(
+        self,
+        par_id=None,
+        comp_id=None,
+        ID=None,
+        glider=None,
+        glider_cert=None,
+        sponsor=None,
+        team=None,
+        nat_team=1,
+        status=None,
+        paid=None,
+        live_id=None,
+        **kwargs,
+    ):
 
         self.par_id = par_id  # pil_id
         self.comp_id = comp_id  # comp_id
@@ -96,10 +108,11 @@ class Participant(Pilot):
     @staticmethod
     def from_fsdb(pil, from_CIVL=False):
         """gets pilot obj. from FSDB file
-            Input:
-                - pil:          lxml.etree: FsParticipant section
-                - from_CIVL:    BOOL: look for pilot on CIVL database"""
+        Input:
+            - pil:          lxml.etree: FsParticipant section
+            - from_CIVL:    BOOL: look for pilot on CIVL database"""
         from calcUtils import get_int
+
         CIVLID = None if not (pil.get('CIVLID')) else get_int(pil.get('CIVLID'))
         name = pil.get('name')
         # print(CIVLID, name)
@@ -143,6 +156,7 @@ class Participant(Pilot):
     def from_profile(pilot_id: int, comp_id: int):
         """creates a Participant obj from internal PilotView database table"""
         from db.tables import PilotView, TblCountryCode
+
         with db_session() as db:
             result = db.query(PilotView).get(pilot_id)
             if result:
@@ -182,6 +196,7 @@ def extract_participants_from_excel(comp_id: int, filename, from_CIVL=False):
     """
     from openpyxl import load_workbook
     from openpyxl.utils.exceptions import InvalidFileException
+
     '''create logging and disable output'''
     # Logger('ON', 'import_participants.txt')
     print(f"Comp ID: {comp_id} | filename: {filename}")
@@ -200,10 +215,7 @@ def extract_participants_from_excel(comp_id: int, filename, from_CIVL=False):
     if not (sheet['A1'].value == 'id'):
         exit()
     pilots = []
-    for row in sheet.iter_rows(min_row=2,
-                               min_col=1,
-                               max_col=14,
-                               values_only=True):
+    for row in sheet.iter_rows(min_row=2, min_col=1, max_col=14, values_only=True):
         if not row[0]:
             'EOF'
             break
@@ -230,8 +242,8 @@ def extract_participants_from_excel(comp_id: int, filename, from_CIVL=False):
 
 
 def register_from_profiles_list(comp_id: int, pilots: list):
-    """ gets comp_id and pil_id list
-        registers pilots to comp"""
+    """gets comp_id and pil_id list
+    registers pilots to comp"""
     if not (comp_id and pilots):
         print(f"error: comp_id does not exist or pilots list is empty")
         return None
@@ -243,9 +255,10 @@ def register_from_profiles_list(comp_id: int, pilots: list):
 
 
 def unregister_from_profiles_list(comp_id: int, pilots):
-    """ takes comp_id and list of pil_id
-        unregisters pilots from comp"""
+    """takes comp_id and list of pil_id
+    unregisters pilots from comp"""
     from sqlalchemy import and_
+
     if not (comp_id and pilots):
         print(f"error: comp_id does not exist or pilots list is empty")
         return None
@@ -256,9 +269,9 @@ def unregister_from_profiles_list(comp_id: int, pilots):
 
 
 def unregister_participant(comp_id: int, par_id: int):
-    """ takes comp_id and a par_id
-        unregisters participant from comp.
-        in reality we don't need compid but it is a safeguard"""
+    """takes comp_id and a par_id
+    unregisters participant from comp.
+    in reality we don't need compid but it is a safeguard"""
     with db_session() as db:
         db.query(P).filter_by(comp_id=comp_id, par_id=par_id).delete(synchronize_session=False)
     return True
@@ -267,6 +280,7 @@ def unregister_participant(comp_id: int, par_id: int):
 def unregister_all_external_participants(comp_id: int):
     """ takes comp_id and unregisters all participants from comp without a pil_id."""
     from sqlalchemy import and_
+
     with db_session() as db:
         results = db.query(P).filter(and_(P.comp_id == comp_id, P.pil_id.is_(None)))
         results.delete(synchronize_session=False)
@@ -274,8 +288,8 @@ def unregister_all_external_participants(comp_id: int):
 
 
 def mass_unregister(pilots):
-    """ gets par_id list
-        unregisters pilots from comp"""
+    """gets par_id list
+    unregisters pilots from comp"""
     if not pilots:
         print(f"error: pilots list is empty")
         return None
@@ -286,8 +300,8 @@ def mass_unregister(pilots):
 
 def mass_import_participants(comp_id: int, participants: list, existing_list: list = None):
     """get participants to update from the list
-        Before inserting rows without par_id, we need to check if pilot is already in participants
-        Will create a list of dicts from database, if not given as parameter"""
+    Before inserting rows without par_id, we need to check if pilot is already in participants
+    Will create a list of dicts from database, if not given as parameter"""
     from compUtils import get_participants
 
     insert_mappings = []

@@ -31,8 +31,8 @@ class LeadCoeff(object):
 
 
 def lead_coeff_function(lc, result, fix, next_fix):
-    """ Lead Coefficient formula from GAP2016
-        This is the default function if not present in Formula library"""
+    """Lead Coefficient formula from GAP2016
+    This is the default function if not present in Formula library"""
     '''Leading coefficient
         LC = taskTime(i)*(bestDistToESS(i-1)^2 - bestDistToESS(i)^2 )
         i : i ? TrackPoints In SS'''
@@ -48,8 +48,8 @@ def lead_coeff_area(time, distance, ss_distance):
 
 
 def tot_lc_calc(res, t):
-    """ Function to calculate final Leading Coefficient for pilots,
-        that needs to be done when all tracks have been scored"""
+    """Function to calculate final Leading Coefficient for pilots,
+    that needs to be done when all tracks have been scored"""
     '''Checking if we have a assigned status without a track, and if pilot actually did the start pilon'''
     if res.result_type in ('abs', 'dnf', 'mindist', 'nyp') or not res.SSS_time:
         '''pilot did't make Start or has no track'''
@@ -85,5 +85,3 @@ def store_lc(res_id, lead_coeff):
     # It shouldn't be necessary any longer, as we should not store final LC
     row = R.get_by_id(res_id)
     row.update(lead_coeff=lead_coeff)
-
-

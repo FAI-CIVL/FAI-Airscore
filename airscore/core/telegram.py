@@ -19,13 +19,17 @@ def get_download_status(task_id: int):
     from db.tables import TblParticipant as P
     from db.tables import TblTask as T
     from db.tables import TblTaskResult as R
+
     valid = []
     missing = []
     with db_session() as db:
-        results = db.query(P.ID, P.name, R.result_type, R.distance_flown, R.SSS_time, R.ESS_time, R.goal_time) \
-                    .join(T, P.comp_id == T.comp_id) \
-                    .outerjoin(R, (R.par_id == P.par_id) & (R.task_id == T.task_id)) \
-                    .filter(T.task_id == task_id).all()
+        results = (
+            db.query(P.ID, P.name, R.result_type, R.distance_flown, R.SSS_time, R.ESS_time, R.goal_time)
+            .join(T, P.comp_id == T.comp_id)
+            .outerjoin(R, (R.par_id == P.par_id) & (R.task_id == T.task_id))
+            .filter(T.task_id == task_id)
+            .all()
+        )
         pilots = len(results)
         valid_results = [p for p in results if p.result_type not in ('abs', 'dnf', 'mindist', None)]
         for pilot in results:
@@ -50,6 +54,7 @@ def get_active_result(task_id: int) -> dict:
     """Reads competition from json result file
     takes com_id as argument"""
     from db.tables import TblResultFile as R
+
     with db_session() as db:
         file = db.query(R).filter_by(task_id=task_id, active=1).first()
         return file.as_dict() if file else {}
@@ -57,6 +62,7 @@ def get_active_result(task_id: int) -> dict:
 
 def get_info(task_id: int):
     from db.tables import TaskObjectView as T
+
     t = T.get_by_id(task_id)
     return t.as_dict()
 
@@ -65,6 +71,7 @@ def send_result_status(task_id: int, info: dict):
     import time
 
     from calcUtils import epoch_to_string
+
     pilots, valid, missing = get_download_status(task_id)
     print(pilots, valid, missing)
     result = get_active_result(task_id)

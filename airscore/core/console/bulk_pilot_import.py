@@ -41,10 +41,17 @@ def read_membership(file):
 
                 """Check if pilot exists in pilots main table"""
                 pil_id = 0
-                result = db.query(P.pil_id).filter(or_(
-                    and_(P.last_name.like(cond1), P.first_name.like(cond2)),
-                    and_(P.last_name.like(cond2), P.first_name.like(cond1)),
-                    and_(P.last_name.like(cond1), P.fai_id == fai_id))).all()
+                result = (
+                    db.query(P.pil_id)
+                    .filter(
+                        or_(
+                            and_(P.last_name.like(cond1), P.first_name.like(cond2)),
+                            and_(P.last_name.like(cond2), P.first_name.like(cond1)),
+                            and_(P.last_name.like(cond1), P.fai_id == fai_id),
+                        )
+                    )
+                    .all()
+                )
                 if len(result) == 1:
                     '''we found the pilot'''
                     pil_id = result.pop().pil_id
@@ -95,9 +102,7 @@ if __name__ == "__main__":
     import sys
 
     '''check parameter is good'''
-    if not (sys.argv[1]
-
-            and len(sys.argv) == 3):
+    if not (sys.argv[1] and len(sys.argv) == 3):
         print("number of arguments != 2 and/or task_id not a number")
         print("Use: python3 bulk_igc_reader.py <task_id> <csv file>")
         exit()

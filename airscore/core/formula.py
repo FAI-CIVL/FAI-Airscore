@@ -110,13 +110,41 @@ class Formula(object):
     Create an object Formula
     """
 
-    def __init__(self, comp_id=None, formula_name=None, formula_type=None, formula_version=None, comp_class=None,
-                 formula_distance=None, formula_arrival=None, formula_departure=None, lead_factor=None,
-                 formula_time=None, no_goal_penalty=None, glide_bonus=None, tolerance=0.001, min_tolerance=5,
-                 arr_alt_bonus=None, arr_min_height=None, arr_max_height=None, validity_min_time=None, max_JTG=0,
-                 JTG_penalty_per_sec=None, nominal_goal=None, nominal_dist=None, nominal_time=None, nominal_launch=None,
-                 scoring_altitude=None, min_dist=None, score_back_time=None, overall_validity='all', validity_param=1,
-                 validity_ref='day_quality', task_result_decimal=0, comp_result_decimal=0):
+    def __init__(
+        self,
+        comp_id=None,
+        formula_name=None,
+        formula_type=None,
+        formula_version=None,
+        comp_class=None,
+        formula_distance=None,
+        formula_arrival=None,
+        formula_departure=None,
+        lead_factor=None,
+        formula_time=None,
+        no_goal_penalty=None,
+        glide_bonus=None,
+        tolerance=0.001,
+        min_tolerance=5,
+        arr_alt_bonus=None,
+        arr_min_height=None,
+        arr_max_height=None,
+        validity_min_time=None,
+        max_JTG=0,
+        JTG_penalty_per_sec=None,
+        nominal_goal=None,
+        nominal_dist=None,
+        nominal_time=None,
+        nominal_launch=None,
+        scoring_altitude=None,
+        min_dist=None,
+        score_back_time=None,
+        overall_validity='all',
+        validity_param=1,
+        validity_ref='day_quality',
+        task_result_decimal=0,
+        comp_result_decimal=0,
+    ):
 
         self.comp_id = comp_id
         self.formula_name = formula_name
@@ -163,26 +191,28 @@ class Formula(object):
             # don't attempt to compare against unrelated types
             return NotImplemented
 
-        return self.formula_name == other.formula_name \
-               and self.formula_distance == other.formula_distance \
-               and self.formula_arrival == other.formula_arrival \
-               and self.formula_departure == other.formula_departure \
-               and self.lead_factor == other.lead_factor \
-               and self.formula_time == other.formula_time \
-               and self.arr_alt_bonus == other.arr_alt_bonus \
-               and self.arr_min_height == other.arr_min_height \
-               and self.arr_max_height == other.arr_max_height \
-               and self.validity_min_time == other.validity_min_time \
-               and self.max_JTG == other.max_JTG \
-               and self.JTG_penalty_per_sec == other.JTG_penalty_per_sec \
-               and self.overall_validity == other.overall_validity \
-               and self.validity_param == other.validity_param \
-               and self.score_back_time == other.score_back_time \
-               and self.no_goal_penalty == other.no_goal_penalty \
-               and self.glide_bonus == other.glide_bonus \
-               and self.tolerance == other.tolerance \
-               and self.min_tolerance == other.min_tolerance \
-               and self.scoring_altitude == other.scoring_altitude
+        return (
+            self.formula_name == other.formula_name
+            and self.formula_distance == other.formula_distance
+            and self.formula_arrival == other.formula_arrival
+            and self.formula_departure == other.formula_departure
+            and self.lead_factor == other.lead_factor
+            and self.formula_time == other.formula_time
+            and self.arr_alt_bonus == other.arr_alt_bonus
+            and self.arr_min_height == other.arr_min_height
+            and self.arr_max_height == other.arr_max_height
+            and self.validity_min_time == other.validity_min_time
+            and self.max_JTG == other.max_JTG
+            and self.JTG_penalty_per_sec == other.JTG_penalty_per_sec
+            and self.overall_validity == other.overall_validity
+            and self.validity_param == other.validity_param
+            and self.score_back_time == other.score_back_time
+            and self.no_goal_penalty == other.no_goal_penalty
+            and self.glide_bonus == other.glide_bonus
+            and self.tolerance == other.tolerance
+            and self.min_tolerance == other.min_tolerance
+            and self.scoring_altitude == other.scoring_altitude
+        )
 
     @property
     def type(self):
@@ -262,7 +292,7 @@ class Formula(object):
     @staticmethod
     def from_fsdb(fs_info):
         """Get formula info from FSDB file
-            type can be 'comp' or 'task'
+        type can be 'comp' or 'task'
         """
         formula = get_fsdb_info(Formula(), fs_info.find('FsScoreFormula'))
         formula.validity_param = 1.0 - float(fs_info.get('ftv_factor'))
@@ -312,14 +342,16 @@ class TaskFormula(Formula):
     Creates an Object with all task parameters
     """
 
-    task_overrides = ['formula_distance',
-                      'formula_arrival',
-                      'formula_departure',
-                      'formula_time',
-                      'arr_alt_bonus',
-                      'max_JTG',
-                      'no_goal_penalty',
-                      'tolerance']
+    task_overrides = [
+        'formula_distance',
+        'formula_arrival',
+        'formula_departure',
+        'formula_time',
+        'arr_alt_bonus',
+        'max_JTG',
+        'no_goal_penalty',
+        'tolerance',
+    ]
 
     def __init__(self, task_id=None):
         self.task_id = task_id
@@ -346,7 +378,7 @@ class TaskFormula(Formula):
     @staticmethod
     def from_fsdb(fs_info):
         """Get formula info from FSDB file
-            type can be 'comp' or 'task'
+        type can be 'comp' or 'task'
         """
         return get_fsdb_info(TaskFormula(), fs_info.find('FsScoreFormula'))
 
@@ -354,6 +386,7 @@ class TaskFormula(Formula):
     def read(task_id: int):
         """reads comp formula from database"""
         from db.tables import TaskFormulaView as F
+
         formula = F.get_by_id(task_id).populate(TaskFormula())
         # formula = TaskFormula()
         # with db_session() as db:
@@ -365,6 +398,7 @@ class TaskFormula(Formula):
     def to_db(self):
         """stores TaskFormula parameters to TblTask table in AirScore database"""
         from db.tables import TblTask
+
         with db_session() as db:
             '''check if we have already a row for the task'''
             row = db.query(TblTask).get(self.task_id)
@@ -376,6 +410,7 @@ class TaskFormula(Formula):
     def reset(self):
         """brings back to comp formula"""
         from db.tables import TblForComp, TblTask
+
         t = aliased(TblTask)
         f = aliased(TblForComp)
 
@@ -405,26 +440,45 @@ def get_fsdb_info(formula, form):
     # print(f"Altitude.: {formula.scoring_altitude}")
     '''formula parameters'''
     # distance point: on, difficulty, off
-    formula.formula_distance = ('difficulty' if form.get('use_difficulty_for_distance_points') == '1'
-                                else 'on' if form.get('use_distance_points') == '1' else 'off')
+    formula.formula_distance = (
+        'difficulty'
+        if form.get('use_difficulty_for_distance_points') == '1'
+        else 'on'
+        if form.get('use_distance_points') == '1'
+        else 'off'
+    )
     # arrival points: position, time, off
-    formula.formula_arrival = ('position' if form.get('use_arrival_position_points') == '1'
-                               else 'time' if form.get('use_arrival_time_points') == '1' else 'off')
+    formula.formula_arrival = (
+        'position'
+        if form.get('use_arrival_position_points') == '1'
+        else 'time'
+        if form.get('use_arrival_time_points') == '1'
+        else 'off'
+    )
     # departure points: leadout, on, off
-    formula.formula_departure = ('leadout' if form.get('use_leading_points') == '1'
-                                 else 'on' if form.get('use_departure_points') == '1' else 'off')
+    formula.formula_departure = (
+        'leadout'
+        if form.get('use_leading_points') == '1'
+        else 'on'
+        if form.get('use_departure_points') == '1'
+        else 'off'
+    )
     # time points: on, off
     formula.formula_time = 'on' if form.get('use_time_points') == '1' else 'off'
     # leading points factor: probably needs to be linked to GAP version
-    formula.lead_factor = (None if form.get('use_leading_points') == '0'
-                           else float(form.get('leading_weight_factor')
-                                      if form.get('leading_weight_factor') else 1))
+    formula.lead_factor = (
+        None
+        if form.get('use_leading_points') == '0'
+        else float(form.get('leading_weight_factor') if form.get('leading_weight_factor') else 1)
+    )
     '''tolerance'''
-    formula.tolerance = 0.0 + float(form.get('turnpoint_radius_tolerance')
-                                    if form.get('turnpoint_radius_tolerance') else 0.001)  # tolerance, perc / 100
+    formula.tolerance = 0.0 + float(
+        form.get('turnpoint_radius_tolerance') if form.get('turnpoint_radius_tolerance') else 0.001
+    )  # tolerance, perc / 100
     '''stopped task parameters'''
-    formula.validity_min_time = 0 + int(
-        form.get('min_time_span_for_valid_task')) * 60  # min. time for valid task, seconds
+    formula.validity_min_time = (
+        0 + int(form.get('min_time_span_for_valid_task')) * 60
+    )  # min. time for valid task, seconds
     formula.score_back_time = 0 + int(form.get('score_back_time')) * 60  # Scoreback Time, seconds
     formula.glide_bonus = 0.0 + float(form.get('bonus_gr'))  # glide ratio
     '''bonus and penalties'''
@@ -432,6 +486,7 @@ def get_fsdb_info(formula, form):
     formula.arr_alt_bonus = float(form.get('aatb_factor') if form.get('final_glide_decelerator') == 'aatb' else 0)
     '''jump the gun'''
     formula.max_JTG = int(form.get('jump_the_gun_max'))  # seconds
-    formula.JTG_penalty_per_sec = (None if form.get('jump_the_gun_factor') == '0'
-                                   else c_round(1 / float(form.get('jump_the_gun_factor')), 4))
+    formula.JTG_penalty_per_sec = (
+        None if form.get('jump_the_gun_factor') == '0' else c_round(1 / float(form.get('jump_the_gun_factor')), 4)
+    )
     return formula

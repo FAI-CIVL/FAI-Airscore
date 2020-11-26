@@ -12,6 +12,7 @@ from formula import TaskFormula, get_formula_lib
 from logger import Logger
 from pilot.track import Track
 from task import Task
+
 # Use your utility module.
 from trackUtils import *
 
@@ -96,10 +97,7 @@ if __name__ == "__main__":
     import sys
 
     '''check parameter is good'''
-    if not (sys.argv[1]
-            and sys.argv[1].isdigit()
-            and int(sys.argv[1]) > 0
-            and len(sys.argv) > 4):
+    if not (sys.argv[1] and sys.argv[1].isdigit() and int(sys.argv[1]) > 0 and len(sys.argv) > 4):
         print("number of arguments != 1 and/or task_id not a number")
         print("usage: track_reader.py [tasPk] [tempfile] [filename] [parPk]")
         exit()

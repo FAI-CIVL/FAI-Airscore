@@ -34,7 +34,7 @@ def main(args):
     task.update_task_distance()
     # delete and recreate and task json file for maps
     try:
-        os.remove(Defines.MAPOBJDIR+str(task.id) + '.task')
+        os.remove(Defines.MAPOBJDIR + str(task.id) + '.task')
     except OSError:
         pass
     write_map_json(task_id)
@@ -48,5 +48,6 @@ def main(args):
     if opt_dist:
         print('Opt. Dist. = {}'.format(opt_dist))
 
-if __name__== "__main__":
+
+if __name__ == "__main__":
     main(sys.argv[1:])

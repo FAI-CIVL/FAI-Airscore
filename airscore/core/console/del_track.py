@@ -34,6 +34,7 @@ def delete_track(result_id):
 
 def main(args):
     from logger import Logger
+
     '''create logging and disable output'''
     Logger('ON', 'task_full_rescore.txt')
 

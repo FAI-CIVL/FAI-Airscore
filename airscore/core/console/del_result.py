@@ -37,6 +37,7 @@ def delete_result(ref_id):
 
 def main(args):
     from logger import Logger
+
     '''create logging and disable output'''
     Logger('ON', 'del_result.txt')
 

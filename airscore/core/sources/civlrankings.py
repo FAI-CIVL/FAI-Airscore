@@ -47,9 +47,9 @@ def create_participant_from_CIVLID(civl_id):
 
 def create_participant_from_name(name):
     """get pilot info from pilot name database and create Participant obj
-        It's almost sure that we get more than one result.
-        This function gives back a Participant ONLY if we get a single result.
-        get_pilots_from_name gives a list of Dict"""
+    It's almost sure that we get more than one result.
+    This function gives back a Participant ONLY if we get a single result.
+    get_pilots_from_name gives a list of Dict"""
     from pilot.participant import Participant
 
     body = f"""<?xml version="1.0" encoding="utf-8"?>
@@ -101,7 +101,11 @@ def get_pilots_from_name(name):
     results = data.findall('.//{http://civlrankings.fai.org/}Person')
     pilots = []
     for p in results:
-        pil = {'name': p[0].text, 'civl_id': int(p[5].text), 'nat': p[1].text,
-               'sex': 'F' if p[6].text == 'true' else 'M'}
+        pil = {
+            'name': p[0].text,
+            'civl_id': int(p[5].text),
+            'nat': p[1].text,
+            'sex': 'F' if p[6].text == 'true' else 'M',
+        }
         pilots.append(pil)
     return pilots

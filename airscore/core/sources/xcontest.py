@@ -21,11 +21,11 @@ filename_formats = ['name.name.live.other-other-other.other-other-other']
 
 
 def get_pilot_from_list(filename, pilots):
-    """ check filename against a list of Pilot Obj.
-        Looks for different information in filename
+    """check filename against a list of Pilot Obj.
+    Looks for different information in filename
 
-        filename:   STR file name
-        pilots:     LIST Participants Obj.
+    filename:   STR file name
+    pilots:     LIST Participants Obj.
     """
     # in XContest format is:
     # DE VIVO.ALESSANDRO.alexpab.2019-12-19.13-22-49.IGC
@@ -62,8 +62,12 @@ def get_xc_parameters(task_id):
     datestr = None
 
     with db_session() as db:
-        q = db.query(R.xccSiteID, R.xccToID).join(W, W.rwp_id == R.rwp_id).filter(W.task_id == task_id,
-                                                                                  W.type == 'launch').one()
+        q = (
+            db.query(R.xccSiteID, R.xccToID)
+            .join(W, W.rwp_id == R.rwp_id)
+            .filter(W.task_id == task_id, W.type == 'launch')
+            .one()
+        )
         date = T.get_by_id(task_id).date
         if q is not None:
             site_id = q.xccSiteID
@@ -127,6 +131,7 @@ def get_zipfile(task_id):
     from pathlib import Path
 
     import Defines
+
     temp_folder = Defines.TEMPFILES
     result = ''
     # task_id = task.task_id

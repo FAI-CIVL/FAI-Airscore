@@ -33,8 +33,19 @@ track_style_function = lambda x: {'color': 'red' if x['properties']['Track'] == 
 
 
 # function to create the map template with optional geojson, circles and points objects
-def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_line=None, margin=0,
-             thermal_layer=False, waypoint_layer=False, extra_tracks=None, airspace_layer=None, bbox=None):
+def make_map(
+    layer_geojson=None,
+    points=None,
+    circles=None,
+    polyline=None,
+    goal_line=None,
+    margin=0,
+    thermal_layer=False,
+    waypoint_layer=False,
+    extra_tracks=None,
+    airspace_layer=None,
+    bbox=None,
+):
     if points is None:
         points = []
 
@@ -42,8 +53,7 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
         location = bbox_centre(bbox)
     else:
         location = [45, 10]
-    folium_map = folium.Map(location=location, zoom_start=13, tiles="Stamen Terrain", width='100%',
-                            height='75%')
+    folium_map = folium.Map(location=location, zoom_start=13, tiles="Stamen Terrain", width='100%', height='75%')
     #     folium.LayerControl().add_to(folium_map)
     '''Define map borders'''
     # at this stage a track (layer_geojason has bbox inside,
@@ -64,12 +74,16 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
             folium.GeoJson(track, name='Flight', style_function=track_style_function).add_to(folium_map)
             if extra_tracks:
                 extra_track_style_function = lambda colour: (
-                    lambda x: {'color': colour if x['properties']['Track'] == 'Pre_Goal' else 'grey'})
+                    lambda x: {'color': colour if x['properties']['Track'] == 'Pre_Goal' else 'grey'}
+                )
 
                 for extra_track in extra_tracks:
                     colour = extra_track['colour']
-                    folium.GeoJson(extra_track['track'], name=extra_track['name'],
-                                   style_function=extra_track_style_function(colour)).add_to(folium_map)
+                    folium.GeoJson(
+                        extra_track['track'],
+                        name=extra_track['name'],
+                        style_function=extra_track_style_function(colour),
+                    ).add_to(folium_map)
 
             if thermal_layer:
                 thermals = layer_geojson['geojson']['thermals']
@@ -115,7 +129,7 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
                 opacity=0.8,
                 fill=True,
                 fill_opacity=0.2,
-                fill_color=col
+                fill_color=col,
             ).add_to(folium_map)
 
     """Plot tolerance cylinders"""
@@ -129,7 +143,7 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
                 color="#44cc44",
                 weight=0.75,
                 opacity=0.8,
-                fill=False
+                fill=False,
             ).add_to(folium_map)
 
             folium.Circle(
@@ -139,7 +153,7 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
                 color="#44cc44",
                 weight=0.75,
                 opacity=0.8,
-                fill=False
+                fill=False,
             ).add_to(folium_map)
 
     """Plot waypoints"""
@@ -152,25 +166,15 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
                     icon_size=(20, 20),
                     icon_anchor=(0, 0),
                     html='<div class="waypoint-label">%s</div>' % p['name'],
-                )
+                ),
             ).add_to(folium_map)
 
     """Design optimised route"""
     if polyline:
-        folium.PolyLine(
-            locations=polyline,
-            weight=1.5,
-            opacity=0.75,
-            color='#2176bc'
-        ).add_to(folium_map)
+        folium.PolyLine(locations=polyline, weight=1.5, opacity=0.75, color='#2176bc').add_to(folium_map)
 
     if goal_line:
-        folium.PolyLine(
-            locations=goal_line,
-            weight=1.5,
-            opacity=0.75,
-            color='#800000'
-        ).add_to(folium_map)
+        folium.PolyLine(locations=goal_line, weight=1.5, opacity=0.75, color='#800000').add_to(folium_map)
 
     if airspace_layer:
         for space in airspace_layer:
@@ -204,6 +208,7 @@ def dump_flight(track, task):
     # TODO check if file already exists otherwise create and save it
     from mapUtils import get_bbox
     from pilot.flightresult import FlightResult
+
     lib = task.formula.get_lib()
     task_result = FlightResult.check_flight(track.flight, task)  # check flight against task
     geojson_file = task_result.to_geojson_result(track, task)
@@ -219,22 +224,19 @@ def get_region(region_id):
     turnpoints = []
 
     for obj in region.turnpoints:
-        wpt_coords.append({
-            'longitude': obj.lon,
-            'latitude': obj.lat,
-            'name': obj.name
-        })
+        wpt_coords.append({'longitude': obj.lon, 'latitude': obj.lat, 'name': obj.name})
 
-        turnpoints.append({
-            'radius': obj.radius,
-            'longitude': obj.lon,
-            'latitude': obj.lat,
-            #         'altitude': obj.altitude,
-            'name': obj.name,
-            'type': obj.type,
-            'shape': obj.shape
-
-        })
+        turnpoints.append(
+            {
+                'radius': obj.radius,
+                'longitude': obj.lon,
+                'latitude': obj.lat,
+                #         'altitude': obj.altitude,
+                'name': obj.name,
+                'type': obj.type,
+                'shape': obj.shape,
+            }
+        )
 
     return region, wpt_coords, turnpoints
 
@@ -274,8 +276,14 @@ def main(mode, val, track_id):
             layer['bbox'] = get_route_bbox(task)
             layer['geojson'] = None
 
-    map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
-                   goal_line=goal_line, margin=tolerance)
+    map = make_map(
+        layer_geojson=layer,
+        points=wpt_coords,
+        circles=turnpoints,
+        polyline=short_route,
+        goal_line=goal_line,
+        margin=tolerance,
+    )
     # map.save(map_file)
     # os.chown(map_file, 1000, 1000)
     html_string = map.get_root().render()

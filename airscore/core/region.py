@@ -31,9 +31,11 @@ class Region:
         """
         turnpoints = []
         with db_session() as db:
-            q = db.query(R.description.label('name'),
-                         R.waypoint_file,
-                         R.openair_file).filter(R.reg_id == region_id).first()
+            q = (
+                db.query(R.description.label('name'), R.waypoint_file, R.openair_file)
+                .filter(R.reg_id == region_id)
+                .first()
+            )
             name, waypoint_file, openair_file = q.name, q.waypoint_file, q.openair_file
             w = db.query(RWV).filter(RWV.region_id == region_id).all()
             for tp in w:
@@ -52,8 +54,12 @@ class Region:
 
     def to_db(self):
         """Inserts new task or updates existent one"""
-        region = R(comp_id=self.comp_id, description=self.name, waypoint_file=self.waypoint_file,
-                   openair_file=self.openair_file)
+        region = R(
+            comp_id=self.comp_id,
+            description=self.name,
+            waypoint_file=self.waypoint_file,
+            openair_file=self.openair_file,
+        )
         if self.reg_id:
             region.reg_id = self.reg_id
         region.save_or_update()
@@ -76,10 +82,9 @@ class Region:
 
 def get_all_regions(reg_ids: list = None):
     with db_session() as db:
-        results = db.query(R.reg_id,
-                           R.description.label('name'),
-                           R.waypoint_file.label('filename'),
-                           R.openair_file.label('openair')).order_by(R.description)
+        results = db.query(
+            R.reg_id, R.description.label('name'), R.waypoint_file.label('filename'), R.openair_file.label('openair')
+        ).order_by(R.description)
         if reg_ids:
             results = results.filter(R.reg_id.in_(reg_ids))
         results = results.all()
@@ -90,16 +95,23 @@ def get_all_regions(reg_ids: list = None):
 
 def get_comp_regions_and_wpts(compid):
     with db_session() as db:
-        region_results = db.query(R.reg_id,
-                                  R.description.label('name'),
-                                  R.waypoint_file.label('filename'),
-                                  R.openair_file.label('openair')) \
-            .filter_by(comp_id=compid).all()
+        region_results = (
+            db.query(
+                R.reg_id,
+                R.description.label('name'),
+                R.waypoint_file.label('filename'),
+                R.openair_file.label('openair'),
+            )
+            .filter_by(comp_id=compid)
+            .all()
+        )
 
-        wpt_results = db.query(RW.reg_id,
-                               RW.rwp_id,
-                               RW.name,
-                               RW.description).join(R).filter_by(reg_id=RW.reg_id, comp_id=compid).all()
+        wpt_results = (
+            db.query(RW.reg_id, RW.rwp_id, RW.name, RW.description)
+            .join(R)
+            .filter_by(reg_id=RW.reg_id, comp_id=compid)
+            .all()
+        )
 
         if region_results:
             region_results = [row._asdict() for row in region_results]
@@ -111,17 +123,16 @@ def get_comp_regions_and_wpts(compid):
 
 def get_region_wpts(reg_id):
     with db_session() as db:
-        wpt_results = db.query(RW.reg_id,
-                               RW.rwp_id,
-                               RW.name,
-                               RW.lat,
-                               RW.lon,
-                               RW.altitude,
-                               RW.xccSiteID,
-                               RW.xccToID,
-                               RW.description) \
-                        .join(R) \
-                        .filter_by(reg_id=reg_id).filter(RW.old == 0).order_by(RW.name).all()
+        wpt_results = (
+            db.query(
+                RW.reg_id, RW.rwp_id, RW.name, RW.lat, RW.lon, RW.altitude, RW.xccSiteID, RW.xccToID, RW.description
+            )
+            .join(R)
+            .filter_by(reg_id=reg_id)
+            .filter(RW.old == 0)
+            .order_by(RW.name)
+            .all()
+        )
 
         if wpt_results:
             wpt_results = [row._asdict() for row in wpt_results]
@@ -135,6 +146,7 @@ def delete_region(reg_id):
     from db.tables import TblRegion as R
     from db.tables import TblRegionWaypoint as RW
     from Defines import AIRSPACEDIR, WAYPOINTDIR
+
     with db_session() as db:
         waypoint_filename = db.query(R).get(reg_id).waypoint_file
         openair_filename = db.query(R).get(reg_id).openair_file

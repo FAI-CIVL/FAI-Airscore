@@ -19,10 +19,10 @@ def send_password_reset_email(user):
     with app.app_context(), app.test_request_context():
 
         token = user.get_reset_password_token()
-        send_email('[Airscore] Reset Your Password',
-                   sender=app.config['ADMINS'],
-                   recipients=[user.email],
-                   text_body=render_template('email/reset_password.txt',
-                                             user=user, token=token),
-                   html_body=render_template('email/reset_password.html',
-                                             user=user, token=token))
+        send_email(
+            '[Airscore] Reset Your Password',
+            sender=app.config['ADMINS'],
+            recipients=[user.email],
+            text_body=render_template('email/reset_password.txt', user=user, token=token),
+            html_body=render_template('email/reset_password.html', user=user, token=token),
+        )

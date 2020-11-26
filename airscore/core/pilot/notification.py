@@ -40,11 +40,15 @@ def update_notifications(pilot):
             insert_notifications_mappings = []
             update_notifications_mappings = []
             for n in pilot.notifications:
-                el = dict(track_id=pilot.track_id, notification_type=n.notification_type,
-                          flat_penalty=n.flat_penalty, percentage_penalty=n.percentage_penalty,
-                          comment=n.comment)
+                el = dict(
+                    track_id=pilot.track_id,
+                    notification_type=n.notification_type,
+                    flat_penalty=n.flat_penalty,
+                    percentage_penalty=n.percentage_penalty,
+                    comment=n.comment,
+                )
                 if n.not_id:
-                    el['not_id'] = n.not_id,
+                    el['not_id'] = (n.not_id,)
                     update_notifications_mappings.append(el)
                 else:
                     insert_notifications_mappings.append(el)

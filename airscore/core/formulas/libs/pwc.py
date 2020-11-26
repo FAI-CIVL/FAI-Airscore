@@ -112,9 +112,13 @@ def stopped_validity(task):
     max_distance = task.max_distance / 1000  # bestDistFlown in Km
     std_dev = task.std_dev_dist / 1000  # stDevDistFlown in Km
 
-    stopv = min(1.000,
-                (sqrt((max_distance - avgdist) / (distlaunchtoess - max_distance + 1) * sqrt(std_dev / 5))
-                 + (task.pilots_landed / task.pilots_launched) ** 3))
+    stopv = min(
+        1.000,
+        (
+            sqrt((max_distance - avgdist) / (distlaunchtoess - max_distance + 1) * sqrt(std_dev / 5))
+            + (task.pilots_landed / task.pilots_launched) ** 3
+        ),
+    )
     return stopv
 
 
@@ -139,8 +143,7 @@ def day_quality(task):
     task.launch_validity = launch_validity(task)
     task.dist_validity = distance_validity(task)
     task.time_validity = time_validity(task)
-    task.day_quality = min(
-        (task.stop_validity * task.launch_validity * task.dist_validity * task.time_validity), 1.000)
+    task.day_quality = min((task.stop_validity * task.launch_validity * task.dist_validity * task.time_validity), 1.000)
 
 
 def points_weight(task):
@@ -172,12 +175,12 @@ def points_weight(task):
 
     '''Stopped Task'''
     if task.stopped_time and task.pilots_ess:
-        ''' 12.3.5
-            A fixed amount of points is subtracted from the time points of each pilot that makes goal in a stopped task.
-            This amount is the amount of time points a pilot would receive if he had reached ESS exactly at
-            the task stop time. This is to remove any discontinuity between pilots just before ESS and pilots who
-            had just reached ESS at task stop time.
-        '''
+        """12.3.5
+        A fixed amount of points is subtracted from the time points of each pilot that makes goal in a stopped task.
+        This amount is the amount of time points a pilot would receive if he had reached ESS exactly at
+        the task stop time. This is to remove any discontinuity between pilots just before ESS and pilots who
+        had just reached ESS at task stop time.
+        """
         task.time_points_reduction = calculate_time_points_reduction(task)
         task.avail_dist_points += task.time_points_reduction
     else:
@@ -263,6 +266,7 @@ def pilot_distance(task, pil):
 
 def calculate_min_dist_score(t):
     from pilot.flightresult import FlightResult
+
     p = FlightResult(ID=0, name='dummy min_dist')
     p.distance_flown = t.formula.min_dist
     return pilot_distance(t, p)
@@ -270,6 +274,7 @@ def calculate_min_dist_score(t):
 
 def calculate_time_points_reduction(t):
     from pilot.flightresult import FlightResult
+
     p = FlightResult(ID=0, name='dummy time_points_reduction')
     p.distance_flown = t.opt_dist
     # rules state max start time among all pilot but will be corrected
@@ -342,7 +347,7 @@ def points_allocation(task):
                 ''' Penalty for not making goal'''
                 if not res.goal_time:
                     res.goal_time = 0
-                    res.time_score *= (1 - formula.no_goal_penalty)
+                    res.time_score *= 1 - formula.no_goal_penalty
 
         ''' Total score'''
         score = res.distance_score + res.time_score + res.arrival_score + res.departure_score

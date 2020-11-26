@@ -48,6 +48,7 @@ def get_UTM(lines):
     ['B00', '32T', '0468693', '5164352', '1440', 'B00144', 'ANDERMATT', 'LANDING']
     """
     from pyproj import Proj
+
     wpts = []
     '''create UTM proj'''
     map = lines[0].split()[1]
@@ -70,6 +71,7 @@ def get_CUP(lines):
     ['T OFF MEDUNO', 'D01', '', '4613.850N', '01248.417E', '980.0m', '1', '', '', '', '']
     """
     import csv
+
     wpts = []
     reader = csv.reader(lines)
     for row in reader:
@@ -98,6 +100,7 @@ def get_GPX(dump):
     ['T OFF MEDUNO', 'D01', '', '4613.850N', '01248.417E', '980.0m', '1', '', '', '', '']
     """
     import lxml.etree as ET
+
     try:
         # pp(dump)
         tree = ET.XML(dump)
@@ -148,23 +151,24 @@ def get_OziExplorer(lines):
         code = str(wp[1])
         lat = float(wp[2][0:-2])
         lon = float(wp[3][0:-2])
-        alt = int(float(wp[14]))*0.3048
+        alt = int(float(wp[14])) * 0.3048
         desc = wp[10]
         wpts.append([code, lat, lon, alt, desc])
     return wpts
 
 
 def get_waypoints_from_file(filename):
-    """ Reads waypoint file, in different formats:
-        - GEO
-        - UTM
-        - SeeYou CUP
-        - GPX
-        - CompeGPS
-        returns a list of list:
-        [code lat lon alt desc]"""
+    """Reads waypoint file, in different formats:
+    - GEO
+    - UTM
+    - SeeYou CUP
+    - GPX
+    - CompeGPS
+    returns a list of list:
+    [code lat lon alt desc]"""
 
     from pathlib import Path
+
     if not Path(filename).is_file():
         print(f"error: file {filename} does not exist")
         return []
@@ -216,10 +220,11 @@ def get_waypoints_from_filedata(filedata):
 
 
 def get_turnpoints_from_file(filename, data=False):
-    """ takes a filename or filedata (if data=True)
+    """takes a filename or filedata (if data=True)
     Returns a list of Turnpoints objects from waypoint file
-        """
+    """
     from route import Turnpoint
+
     if data:
         file_format, wpts = get_waypoints_from_filedata(filename)
     else:
@@ -252,6 +257,7 @@ def allowed_wpt_extensions(filename):
 def get_turnpoints_from_file_storage(file_storage):
     """used in flask frontend"""
     from logger import Logger
+
     '''try to open file in different encodings'''
     # Logger('ON', 'read_waypoints.txt')
     try:

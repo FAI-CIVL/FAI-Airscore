@@ -37,6 +37,7 @@ def update_result(ref_id, status):
 
 def main(args):
     from logger import Logger
+
     """Main module"""
     '''create logging and disable output'''
     Logger('ON', 'update_result.txt')

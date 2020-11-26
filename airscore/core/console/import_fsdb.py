@@ -36,10 +36,12 @@ def main(args):
     file = str(args[0])
     print(f"FSDB file: {file} ")
 
-    print(f"{'None' if len(args) == 1 else args[1]} | {'None' if len(args) < 3 else args[2]} | {'None' if len(args) < 4 else args[3]}")
+    print(
+        f"{'None' if len(args) == 1 else args[1]} | {'None' if len(args) < 3 else args[2]} | {'None' if len(args) < 4 else args[3]}"
+    )
     short_name = None if (len(args) <= 1 or args[1] == '0') else str(args[1])
-    keep_task_path = (len(args) > 2 and int(args[2]) == 1)
-    from_CIVL = (len(args) > 3 and int(args[3]) == 1)
+    keep_task_path = len(args) > 2 and int(args[2]) == 1
+    from_CIVL = len(args) > 3 and int(args[3]) == 1
     print(f"short_name: {short_name} | keep_task_path: {keep_task_path} | from_CIVL: {from_CIVL}")
 
     '''read FSDB file'''
@@ -70,7 +72,8 @@ if __name__ == "__main__":
     if not sys.argv[1]:
         print("number of arguments less than minimum")
         print(
-            "usage: python3 import_fsdb.py <filename> (opt.)<'short_name'> (opt. keep_task_path)<0/1> (opt. from_CIVL)<0/1>")
+            "usage: python3 import_fsdb.py <filename> (opt.)<'short_name'> (opt. keep_task_path)<0/1> (opt. from_CIVL)<0/1>"
+        )
         sys.exit()
 
     main(sys.argv[1:])
