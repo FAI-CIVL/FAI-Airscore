@@ -323,8 +323,9 @@ class ModifyTurnpointForm(FlaskForm):
     mod_how = SelectField('SSS Direction', choices=[('entry', 'Out/Enter'), ('exit', 'In/Exit')])
 
 
-class TaskResultAdminForm(FlaskForm):
-    result_file = SelectField('Scoring run')
+class ResultAdminForm(FlaskForm):
+    task_result_file = SelectField('Scoring run')
+    comp_result_file = SelectField('Scoring run')
 
 
 class NewRegionForm(FlaskForm):
