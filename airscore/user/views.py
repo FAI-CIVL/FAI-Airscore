@@ -1215,7 +1215,7 @@ def _publish_result(taskid: int):
                 status = status.replace('Auto Generated ', '')
             else:
                 header = "Published Result "
-            status = 'No status' if status in (None, 'None') or status.lstrip() is '' else status.lstrip()
+            status = 'No status' if status in (None, 'None') or status.lstrip() == '' else status.lstrip()
             header += f"ran at: {published} Status: {status}"
             resp = jsonify(filename=data['filename'], header=header)
             return resp
