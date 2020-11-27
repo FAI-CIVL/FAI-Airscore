@@ -2,10 +2,13 @@ from task import Task, get_task_json
 from comp import Comp
 import statistics
 from datetime import timedelta, time, datetime
-from formulas.libs.gap import difficulty_calculation
+from dataclasses import dataclass
+from pilot.flightresult import FlightResult
+import collections
+from math import sqrt
 
 
-def km(distance_in_km, decimals=5):
+def km(distance_in_km, decimals=5) -> str:
     """takes an int or float of meters and returns a string in kilometers to {decimals} places with 'km' as a postfix"""
     if distance_in_km:
         return f"{distance_in_km / 1000:.{decimals}f} km"
@@ -65,7 +68,7 @@ def ft_score(comp_id):
     for task in task_results:
         task_obj = Task.read(task['info']['id'])
         task_obj.get_results()
-        task_obj.difficulty = difficulty_calculation(task_obj)
+        task_obj.difficulty, _, _, _ = difficulty_calculation(task_obj)
         fastest = None
         stats = task['stats']
         formula = task['formula']
@@ -294,41 +297,142 @@ def ft_arrival(comp_id):
     return {'pilotsAtEss': pilotsAtEss,
             'arrivalRank': arrivalRank}
 
-#
-#     pilotsAtEss:
-#     - 0
-#     - 32
-#     - 46
-#     - 37
-#     - 27
-#     - 46
-#     - 7
-#     - 29
-#     arrivalRank:
-#     - []
-#     - - - - '103'
-#     - Roberto
-#     Nichele
-#
-#
-# - lag: 0.000000
-# h
-# rank: '1'
-# frac: 1
-# - - - '89'
-# - Scott
-# Barrett
-# - lag: 0.003611
-# h
-# rank: '2'
-# frac: 0.93333713
-# - - - '60'
-# - Rohan
-# Holtkamp
-# - lag: 0.018611
-# h
-# rank: '3'
-# frac: 0.87052124
-# - - - '99'
-#
-#
+
+def difficulty_calculation(task):
+
+    formula = task.formula
+    pilot_lo = task.pilots_launched - task.pilots_goal
+    lo_results = [p for p in task.valid_results if not p.goal_time]
+    best_dist_flown = task.max_distance / 1000  # Km
+    if not lo_results:
+        '''all pilots are in goal
+        I calculate diff array just for correct min_distance_points calculation'''
+        lo_results.append(FlightResult(name='dummy', distance_flown=formula.min_dist))
+
+    @dataclass
+    class Diffslot:
+        dist_x10: int
+        diff: int = 0
+        rel_diff: float = 0.0
+        diff_score: float = 0.0
+
+    '''distance spread'''
+    min_dist_kmx10 = int(formula.min_dist / 100)  # min_dist (Km) * 10
+    distspread = dict()
+    detailed_distspread = dict()
+    best_dist = 0  # best dist. (Km)
+    best_dist_kmx10 = 0  # best dist. (Km) * 10
+
+    for p in lo_results:
+        detail = {'name': p.name,
+                  'ID': p.ID,
+                  'dist': p.distance,
+                 }
+        dist_kmx10 = max(int(p.distance / 100), min_dist_kmx10)
+        dist = p.distance / 1000  # Km
+        distspread[dist_kmx10] = 1 if dist_kmx10 not in distspread.keys() else distspread[dist_kmx10] + 1
+
+        if dist_kmx10 not in detailed_distspread.keys():
+            detailed_distspread[dist_kmx10] = [detail]
+        else:
+            detailed_distspread[dist_kmx10].append(detail)
+        if dist_kmx10 > best_dist_kmx10:
+            best_dist_kmx10 = dist_kmx10
+        if dist > best_dist:
+            best_dist = dist
+
+    # Sanity
+    if best_dist == 0:
+        return []
+
+    ''' the difficulty for each 100-meter section of the task is calculated
+        by counting the number of pilots who landed further along the task'''
+    best_dist_kmx10r = int((best_dist_kmx10 + 10) / 10) * 10
+    look_ahead = max(30, round(30 * best_dist_flown / pilot_lo))
+    kmdiff = []
+
+    for i in range(best_dist_kmx10r):
+        diff = sum([0 if x not in distspread.keys() else distspread[x]
+                    for x in range(i, min(i + look_ahead, best_dist_kmx10r))])
+        kmdiff.append(Diffslot(i, diff))
+
+    sum_diff = sum([x.diff for x in kmdiff])
+
+    ''' Relative difficulty is then calculated by dividing each 100-meter slot’s
+        difficulty by twice the sum of all difficulty values.'''
+
+    sum_rel_diff = 0 if sum_diff == 0 else sum([(0.5*x.diff/sum_diff) for x in kmdiff if x.dist_x10 <= min_dist_kmx10])
+    for el in kmdiff:
+        if el.dist_x10 <= min_dist_kmx10:
+            el.diff_score = sum_rel_diff
+        elif el.dist_x10 >= best_dist_kmx10:
+            el.diff_score = 0.5
+        else:
+            if sum_diff > 0:
+                el.rel_diff = 0.5 * el.diff / sum_diff
+            sum_rel_diff += el.rel_diff
+            el.diff_score = sum_rel_diff
+
+    return kmdiff, sum_diff, look_ahead, detailed_distspread
+
+
+def ft_landout(comp_id):
+    comp = Comp.read(comp_id)
+    tasks = comp.get_tasks_details()
+    task_results = []
+
+    for task in tasks:
+        task_results.append(get_task_json(task['task_id']))
+
+    minDistance = km(comp.formula.min_dist, 3)
+    bestDistance = []
+    chunking = []
+    landout = []
+    lookahead = []
+    difficulty = []
+
+    for task in task_results:
+        task_obj = Task.read(task['info']['id'])
+        task_obj.get_results()
+
+        bestDistance.append(km(task_obj.max_distance, 6))
+        task_obj.difficulty, sumDiff, look_ahead, d = difficulty_calculation(task_obj)
+        detail = collections.OrderedDict(sorted(d.items()))
+
+        chunking.append({'startChunk': [0, '0.0 km'],
+                         'endChunk': [task_obj.difficulty[-1].dist_x10, km(task_obj.difficulty[-1].dist_x10*10, 1)],
+                         'sumOf': sumDiff,
+                         })
+        all_downers = task_obj.pilots_launched - task_obj.pilots_goal
+        landout.append(all_downers)
+        lookahead.append(look_ahead)
+        task_difficulty = []
+        downed = 0
+        for i, chunk in enumerate(detail):
+            if detail[chunk]:
+                downs = []
+                downers = []
+                for pilot in detail[chunk]:
+                    downs.append(km(pilot['dist'], 3))
+                    downers.append([pilot['name'],
+                                    pilot['ID']])
+                downed = downed + len(detail[chunk])
+                task_difficulty.append({
+                                        'chunk': chunk,
+                                        'startChunk': km(chunk*100, 1),
+                                        'endChunk': km((chunk+1)*100, 1),
+                                        'endAhead': "??????", # TODO
+                                        'down': len(detail[chunk]),
+                                        'downs': downs,
+                                        'downers': downers,
+                                        'downward': all_downers - downed
+                                        })
+        difficulty.append(task_difficulty)
+    return {
+            'minDistance': minDistance,
+            'bestDistance': bestDistance,
+            'chunking': chunking,
+            'landout': landout,
+            'lookahead': lookahead,
+            'difficulty': difficulty,
+            }

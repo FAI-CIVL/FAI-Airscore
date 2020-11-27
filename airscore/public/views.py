@@ -905,3 +905,23 @@ def _norm_arrival_yaml(compid):
 def _norm_arrival(compid):
     from flaretiming import ft_arrival
     return jsonify(ft_arrival(int(compid)))
+
+
+@blueprint.route('/flaretiming_yaml/<compid>/norm-landout', methods=['GET'])
+def _norm_landout_yaml(compid):
+    from flaretiming import ft_landout
+    from ruamel import yaml
+    import io
+    yaml = yaml.YAML()
+    yaml.representer.ignore_aliases = lambda *data: True
+    buf = io.BytesIO()
+    yaml.dump(ft_landout(int(compid)), buf)
+    buf.seek(0)
+    return send_file(buf, as_attachment=True, mimetype="text/plain", attachment_filename='norm-arrival.yaml')
+
+
+@blueprint.route('/flaretiming/<compid>/norm-landout', methods=['GET'])
+def _norm_landout(compid):
+    from flaretiming import ft_landout
+    return jsonify(ft_landout(int(compid)))
+
