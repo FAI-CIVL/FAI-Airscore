@@ -185,35 +185,39 @@ def get_waypoints_from_file(filename):
     return get_waypoints_from_filedata(dump)
 
 
-def get_waypoints_from_filedata(filedata):
+def get_waypoints_from_filedata(filedata: str) -> tuple:
     """Reads wpts from filedata"""
     wpts = []
     file_format = None
     lines = filedata.splitlines()
-    if str(lines[0]).startswith('$FormatGEO'):
-        pp('GEO')
-        file_format = 'GEO'
-        wpts = get_GEO(lines[1:])
-    elif str(lines[0]).startswith('$FormatUTM'):
-        pp('UTM')
-        file_format = 'UTM'
-        wpts = get_UTM(lines[1:])
-    elif str(lines[0]).startswith(('Title,Code,', 'name,code,')):
-        pp('CUP')
-        file_format = 'CUP'
-        wpts = get_CUP(lines[1:])
-    elif str(lines[0]).startswith('<?xml ver'):
-        pp('GPX')
-        file_format = 'GPX'
-        wpts = get_GPX(filedata.encode())
-    elif str(lines[0]).startswith('G  WGS 84'):
-        pp('CompeGPS')
-        file_format = 'CompeGPS'
-        wpts = get_CompeGPS(lines[2:])
-    elif str(lines[0]).startswith('OziExplorer Waypoint File'):
-        pp('OziExplorer')
-        file_format = 'OziExplorer'
-        wpts = get_OziExplorer(lines[4:])
+    try:
+        if str(lines[0]).startswith('$FormatGEO'):
+            pp('GEO')
+            file_format = 'GEO'
+            wpts = get_GEO(lines[1:])
+        elif str(lines[0]).startswith('$FormatUTM'):
+            pp('UTM')
+            file_format = 'UTM'
+            wpts = get_UTM(lines[1:])
+        elif str(lines[0]).startswith(('Title,Code,', 'name,code,')):
+            pp('CUP')
+            file_format = 'CUP'
+            wpts = get_CUP(lines[1:])
+        elif str(lines[0]).startswith('<?xml ver'):
+            pp('GPX')
+            file_format = 'GPX'
+            wpts = get_GPX(filedata.encode())
+        elif str(lines[0]).startswith('G  WGS 84'):
+            pp('CompeGPS')
+            file_format = 'CompeGPS'
+            wpts = get_CompeGPS(lines[2:])
+        elif str(lines[0]).startswith('OziExplorer Waypoint File'):
+            pp('OziExplorer')
+            file_format = 'OziExplorer'
+            wpts = get_OziExplorer(lines[4:])
+    except (IndexError, Exception):
+        print(f'Error: cannot recognise file format')
+        return 'error', None
     print(f'format: {file_format}')
 
     return file_format, wpts
