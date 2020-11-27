@@ -917,7 +917,7 @@ def _norm_landout_yaml(compid):
     buf = io.BytesIO()
     yaml.dump(ft_landout(int(compid)), buf)
     buf.seek(0)
-    return send_file(buf, as_attachment=True, mimetype="text/plain", attachment_filename='norm-arrival.yaml')
+    return send_file(buf, as_attachment=True, mimetype="text/plain", attachment_filename='norm-landout.yaml')
 
 
 @blueprint.route('/flaretiming/<compid>/norm-landout', methods=['GET'])
