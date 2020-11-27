@@ -6,15 +6,15 @@ Use:    import trackUtils
 Antonio Golfari - 2018
 """
 
-from os import listdir, fsdecode
-
-from sqlalchemy import and_
-from db.conn import db_session
-from Defines import TRACKDIR, MAPOBJDIR, track_sources, track_formats
-from pilot.flightresult import FlightResult
 import re
-from pathlib import Path
 import unicodedata
+from os import fsdecode, listdir
+from pathlib import Path
+
+from db.conn import db_session
+from Defines import MAPOBJDIR, TRACKDIR, track_formats, track_sources
+from pilot.flightresult import FlightResult
+from sqlalchemy import and_
 
 
 def remove_accents(input_str):
@@ -47,6 +47,7 @@ def extract_tracks(file, folder):
 def get_tracks(directory):
     """Checks files and imports what appear to be tracks"""
     from Defines import track_formats
+
     files = []
 
     print(f"Directory: {directory} \n")
@@ -67,12 +68,13 @@ def get_tracks(directory):
 
 def assign_and_import_tracks(files, task, track_source=None, user=None, check_g_record=False, print=print):
     """Find pilots to associate with tracks"""
-    from compUtils import get_registration
-    from pilot.track import Track, validate_G_record, igc_parsing_config_from_yaml
-    from functools import partial
-    from frontendUtils import print_to_sse
-    import json
     import importlib
+    import json
+    from functools import partial
+
+    from compUtils import get_registration
+    from frontendUtils import print_to_sse
+    from pilot.track import Track, igc_parsing_config_from_yaml, validate_G_record
 
     pilot_list = []
     task_id = task.id
@@ -131,8 +133,10 @@ def assign_and_import_tracks(files, task, track_source=None, user=None, check_g_
 
         """check result"""
         if not mytrack:
-            print(f"Track {filename} is not a valid track file, pilot not found in competition or pilot "
-                  f"already has a track")
+            print(
+                f"Track {filename} is not a valid track file, pilot not found in competition or pilot "
+                f"already has a track"
+            )
             continue
         elif not mytrack.date == task_date:
             print(f"track {filename} has a different date from task")
@@ -231,9 +235,9 @@ def find_pilot(name):
 def get_pil_track(par_id: int, task_id: int):
     """Get pilot result in a given task"""
     from db.tables import TblTaskResult as R
+
     with db_session() as db:
-        track_id = db.query(R.track_id).filter(
-            and_(R.par_id == par_id, R.task_id == task_id)).scalar()
+        track_id = db.query(R.track_id).filter(and_(R.par_id == par_id, R.task_id == task_id)).scalar()
     if track_id == 0:
         """No result found"""
         print(f"Pilot with ID {par_id} has not been scored yet on task ID {task_id} \n")
@@ -242,8 +246,10 @@ def get_pil_track(par_id: int, task_id: int):
 
 def read_tracklog_map_result_file(par_id: int, task_id: int):
     """create task and track objects"""
-    import jsonpickle
     from pathlib import Path
+
+    import jsonpickle
+
     res_path = Path(MAPOBJDIR, 'tracks', str(task_id))
     filename = f'{par_id}.track'
     fullname = Path(res_path, filename)
@@ -255,10 +261,11 @@ def read_tracklog_map_result_file(par_id: int, task_id: int):
 
 
 def create_tracklog_map_result_file(par_id: int, task_id: int):
+    from airspace import AirspaceCheck
+    from igc_lib import Flight
     from pilot import flightresult
     from task import Task
-    from igc_lib import Flight
-    from airspace import AirspaceCheck
+
     task = Task.read(task_id)
     airspace = None if not task.airspace_check else AirspaceCheck.from_task(task)
     pilot = flightresult.FlightResult.read(par_id, task_id)
@@ -270,19 +277,23 @@ def create_tracklog_map_result_file(par_id: int, task_id: int):
 
 
 def get_task_fullpath(task_id: int):
-    from db.tables import TblTask as T, TblCompetition as C
     from pathlib import Path
+
+    from db.tables import TblCompetition as C
+    from db.tables import TblTask as T
+
     with db_session() as db:
         q = db.query(T.task_path, C.comp_path).join(C, C.comp_id == T.comp_id).filter(T.task_id == task_id).one()
     return Path(TRACKDIR, q.comp_path, q.task_path)
 
 
 def get_unscored_pilots(task_id: int, track_source=None):
-    """ Gets list of registered pilots that still do not have a result
-        Input:  task_id INT task database ID
-        Output: list of Pilot obj."""
-    from pilot.flightresult import FlightResult
+    """Gets list of registered pilots that still do not have a result
+    Input:  task_id INT task database ID
+    Output: list of Pilot obj."""
     from db.tables import UnscoredPilotView as U
+    from pilot.flightresult import FlightResult
+
     pilot_list = []
     with db_session() as db:
         results = db.query(U).filter_by(task_id=task_id)
@@ -299,13 +310,14 @@ def get_unscored_pilots(task_id: int, track_source=None):
 
 
 def get_pilot_from_list(filename: str, pilots: list):
-    """ check filename against a list of Pilot Obj.
-        Looks for different information in filename
+    """check filename against a list of Pilot Obj.
+    Looks for different information in filename
 
-        filename:   STR file name
-        pilots:     LIST Participants Obj.
+    filename:   STR file name
+    pilots:     LIST Participants Obj.
     """
     from Defines import filename_formats
+
     '''prepare filename formats'''
     # name = r'[a-zA-Z]+'
     # id = r'[\d]+'
@@ -313,8 +325,9 @@ def get_pilot_from_list(filename: str, pilots: list):
     # civl = r'[0-9]+'
     # live = r'[\d]+'
     # other = r'[\da-zA-Z]+'
-    filename_check = dict(name=r"[a-zA-Z']+", id=r'[\d]+', fai=r'[\da-zA-Z]+', civl=r'[\d]+', live=r'[\da-zA-Z]+',
-                          other=r"[a-zA-Z0-9']+")
+    filename_check = dict(
+        name=r"[a-zA-Z']+", id=r'[\d]+', fai=r'[\da-zA-Z]+', civl=r'[\d]+', live=r'[\da-zA-Z]+', other=r"[a-zA-Z0-9']+"
+    )
     format_list = [re.findall(r'[\da-zA-Z]+', el) for el in filename_formats]
 
     '''Get string'''

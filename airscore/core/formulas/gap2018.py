@@ -35,7 +35,6 @@ pg_preset = FormulaPreset(
     formula_name=Preset(value=formula_name, visible=True, editable=True),
     formula_type=Preset(value=formula_type, visible=True, editable=True),
     formula_version=Preset(value=formula_version, visible=True, editable=True),
-
     # Editable part starts here
     # Distance Points: on, difficulty, off
     formula_distance=Preset(value='on', visible=True, editable=True),
@@ -82,7 +81,7 @@ pg_preset = FormulaPreset(
     # Decimals to be displayed in Task results: default is 0
     task_result_decimal=Preset(value=0, visible=False, editable=False),
     # Decimals to be displayed in Comp results: default is 0
-    comp_result_decimal=Preset(value=0, visible=False, editable=False)
+    comp_result_decimal=Preset(value=0, visible=False, editable=False),
 )
 
 hg_preset = FormulaPreset(
@@ -90,7 +89,6 @@ hg_preset = FormulaPreset(
     formula_name=Preset(value=formula_name, visible=True, editable=True),
     formula_type=Preset(value=formula_type, visible=True, editable=True),
     formula_version=Preset(value=formula_version, visible=True, editable=True),
-
     # Editable part starts here
     # Distance Points: on, difficulty, off
     formula_distance=Preset(value='difficulty', visible=True, editable=True),
@@ -137,16 +135,16 @@ hg_preset = FormulaPreset(
     # Decimals to be displayed in Task results: default is 0
     task_result_decimal=Preset(value=0, visible=False, editable=False),
     # Decimals to be displayed in Comp results: default is 0
-    comp_result_decimal=Preset(value=0, visible=False, editable=False)
+    comp_result_decimal=Preset(value=0, visible=False, editable=False),
 )
 
 
 def calculate_results(task):
-    """ Method to get to final results:
-            Task validity calculation: day_quality(task);
-            Points Weights calculation: points_weight(task);
-            Points Allocation: points_allocation(task);
-        Methods that are not on the script, are recalled from main library (pwc or gap) """
+    """Method to get to final results:
+        Task validity calculation: day_quality(task);
+        Points Weights calculation: points_weight(task);
+        Points Allocation: points_allocation(task);
+    Methods that are not on the script, are recalled from main library (pwc or gap)"""
 
     # dist_validity, time_validity, launch_validity, stop_validity, day_quality
     day_quality(task)

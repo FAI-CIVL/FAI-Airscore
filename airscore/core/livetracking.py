@@ -18,14 +18,15 @@ s is the height of ground (SRTM)
 b bearing
 v velocity
 """
-from task import Task
-from airspace import AirspaceCheck
 import time
 from datetime import datetime
-from logger import Logger
 from pathlib import Path
+
+from airspace import AirspaceCheck
+from logger import Logger
 from pilot.flightresult import FlightResult
-from pilot.track import igc_parsing_config_from_yaml, create_igc_filename
+from pilot.track import create_igc_filename, igc_parsing_config_from_yaml
+from task import Task
 
 '''parameters for livetracking'''
 config = igc_parsing_config_from_yaml('smartphone')
@@ -36,32 +37,34 @@ config.min_fixes = 5  # min number of fixes to be considered a valid livetrack c
 
 
 class LiveTracking(object):
-    results_list = ['par_id',
-                    'ID',
-                    'civl_id',
-                    'name',
-                    'sponsor',
-                    'nat',
-                    'sex',
-                    'glider',
-                    'glider_cert',
-                    'team',
-                    'nat_team',
-                    'live_id',
-                    'distance',
-                    'first_time',
-                    'SSS_time',
-                    'real_start_time',
-                    'ESS_time',
-                    'goal_time',
-                    'ss_time',
-                    'last_time',
-                    'landing_time',
-                    'last_altitude',
-                    'turnpoints_made',
-                    'height',
-                    'live_comment',
-                    'pil_id']
+    results_list = [
+        'par_id',
+        'ID',
+        'civl_id',
+        'name',
+        'sponsor',
+        'nat',
+        'sex',
+        'glider',
+        'glider_cert',
+        'team',
+        'nat_team',
+        'live_id',
+        'distance',
+        'first_time',
+        'SSS_time',
+        'real_start_time',
+        'ESS_time',
+        'goal_time',
+        'ss_time',
+        'last_time',
+        'landing_time',
+        'last_altitude',
+        'turnpoints_made',
+        'height',
+        'live_comment',
+        'pil_id',
+    ]
 
     def __init__(self, task=None, airspace=None, test=False):
         self.task = task  # Task object
@@ -77,6 +80,7 @@ class LiveTracking(object):
     @property
     def json_result(self):
         import jsonpickle
+
         return jsonpickle.encode(self.result, unpicklable=False)
 
     @property
@@ -85,8 +89,9 @@ class LiveTracking(object):
 
     @property
     def pilots(self):
-        return [] if not self.task else [p for p in self.task.pilots
-                                         if p.live_id and p.result_type not in ('dnf', 'abs')]
+        return (
+            [] if not self.task else [p for p in self.task.pilots if p.live_id and p.result_type not in ('dnf', 'abs')]
+        )
 
     @property
     def flying_pilots(self):
@@ -99,8 +104,13 @@ class LiveTracking(object):
     @property
     def properly_set(self):
         # print(f"task: {bool(self.task is not None)}, pilots: {bool(self.pilots)}, track_source: {bool(self.track_source)}, wpt: {bool(self.task.turnpoints)}, start: {bool(self.task.start_time is not None)}")
-        return ((self.task is not None) and self.pilots and self.track_source and self.task.turnpoints
-                and (self.task.start_time is not None))
+        return (
+            (self.task is not None)
+            and self.pilots
+            and self.track_source
+            and self.task.turnpoints
+            and (self.task.start_time is not None)
+        )
 
     @property
     def unix_date(self):
@@ -148,6 +158,7 @@ class LiveTracking(object):
     @property
     def headers(self):
         from calcUtils import sec_to_string
+
         main = ''
         details = ''
         warning = ''
@@ -174,8 +185,10 @@ class LiveTracking(object):
 
     @property
     def filename(self):
-        from Defines import LIVETRACKDIR
         from os import path
+
+        from Defines import LIVETRACKDIR
+
         return None if not self.task else path.join(LIVETRACKDIR, str(self.task_id))
 
     @staticmethod
@@ -200,6 +213,7 @@ class LiveTracking(object):
 
     def create_result(self):
         from result import TaskResult
+
         file_stats = dict(timestamp=self.now, status=self.status)
         headers = self.headers
         info = {x: getattr(self.task, x) for x in TaskResult.info_list if x in dir(self.task)}
@@ -235,6 +249,7 @@ class LiveTracking(object):
 
     def update_result(self):
         from result import TaskResult
+
         self.result['file_stats']['timestamp'] = self.now
         '''check if status changed'''
         status = self.result['file_stats']['status']
@@ -271,9 +286,11 @@ class LiveTracking(object):
     def run(self, interval=99):
         if not self.properly_set:
             print(f'Livetracking source is not set properly.')
-            print(f"task: {bool(self.task is not None)}, pilots: {bool(self.pilots)}, "
-                  f"track_source: {bool(self.track_source)}, wpt: {bool(self.task.turnpoints)}, "
-                  f"start: {bool(self.task.start_time is not None)}")
+            print(
+                f"task: {bool(self.task is not None)}, pilots: {bool(self.pilots)}, "
+                f"track_source: {bool(self.track_source)}, wpt: {bool(self.task.turnpoints)}, "
+                f"start: {bool(self.task.start_time is not None)}"
+            )
             return
         Logger('ON', 'livetracking.txt')
         i = 0
@@ -290,8 +307,9 @@ class LiveTracking(object):
         # elif self.opening_timestamp + interval < self.now:
         #     '''we need to catch up with task'''
 
-        while ((self.opening_timestamp - interval <= self.now <= self.ending_timestamp + interval)
-                and len(self.flying_pilots) > 0):
+        while (self.opening_timestamp - interval <= self.now <= self.ending_timestamp + interval) and len(
+            self.flying_pilots
+        ) > 0:
             '''check task did not change'''
             if self.task_has_changed():
                 print(f'*** *** Cycle {i} ({self.timestamp}): TASK HAS CHANGED ***')
@@ -318,9 +336,11 @@ class LiveTracking(object):
                 print(f' -- Associating livetracks ...')
                 associate_livetracks(self.task, self.flying_pilots, response, cycle_starting_time)
             for p in self.flying_pilots:
-                if (hasattr(p, 'livetrack')
-                        and len(p.livetrack) > config.min_fixes
-                        and p.livetrack[-1].rawtime > (p.last_time or 0)):
+                if (
+                    hasattr(p, 'livetrack')
+                    and len(p.livetrack) > config.min_fixes
+                    and p.livetrack[-1].rawtime > (p.last_time or 0)
+                ):
                     check_livetrack(result=p, task=self.task, airspace=self.airspace)
                     if (p.landing_time or p.goal_time) and not p.track_id:
                         '''pilot landed or made goal, save track result'''
@@ -340,12 +360,13 @@ class LiveTracking(object):
 
 
 def get_livetracks(task: Task, pilots: list, timestamp, interval):
-    """ Requests live tracks fixes to Livetracking Server
-        Flymaster gives back chunks of 100 fixes for each live_id """
-    import requests
+    """Requests live tracks fixes to Livetracking Server
+    Flymaster gives back chunks of 100 fixes for each live_id"""
     import jsonpickle
-    from requests.exceptions import HTTPError
+    import requests
     from Defines import FM_LIVE
+    from requests.exceptions import HTTPError
+
     request = {}
     if task.track_source.lower() == 'flymaster':
         # pilots = [p for p in task.pilots
@@ -375,8 +396,10 @@ def get_livetracks(task: Task, pilots: list, timestamp, interval):
 
 
 def associate_livetracks(task: Task, pilots: list, response, timestamp):
-    from igc_lib import GNSSFix
     import time
+
+    from igc_lib import GNSSFix
+
     '''initialise'''
     midnight = int(time.mktime(task.date.timetuple()))
     alt_source = 'GPS' if task.formula.scoring_altitude is None else task.formula.scoring_altitude
@@ -433,16 +456,16 @@ def simulate_livetracking(task_id):
 
 
 def check_livetrack(result: FlightResult, task: Task, airspace: AirspaceCheck = None):
-    """ Checks a Flight object against the task.
-        Args:
-               result:   a FlightResult object
-               task:     a Task object
-               airspace: a AirspaceCheck object
-        Returns:
-                a list of GNSSFixes of when turnpoints were achieved.
+    """Checks a Flight object against the task.
+    Args:
+           result:   a FlightResult object
+           task:     a Task object
+           airspace: a AirspaceCheck object
+    Returns:
+            a list of GNSSFixes of when turnpoints were achieved.
     """
-    from flightcheck.flightpointer import FlightPointer
     from flightcheck import flightcheck
+    from flightcheck.flightpointer import FlightPointer
     from formulas.libs.leadcoeff import LeadCoeff
 
     '''initialize'''
@@ -469,14 +492,17 @@ def check_livetrack(result: FlightResult, task: Task, airspace: AirspaceCheck = 
     real_start_time, already_ess, previous_achieved = result.real_start_time, result.ESS_time, result.waypoints_achieved
     flightcheck.check_fixes(result, fixes, task, tp, lead_coeff, airspace, livetracking=True, igc_parsing_config=config)
 
-    calculate_incremental_results(result, task, tp, lead_coeff, airspace,
-                                  real_start_time, already_ess, previous_achieved)
+    calculate_incremental_results(
+        result, task, tp, lead_coeff, airspace, real_start_time, already_ess, previous_achieved
+    )
 
 
 def get_live_json(task_id):
-    from Defines import LIVETRACKDIR
     from os import path
+
     import jsonpickle
+    from Defines import LIVETRACKDIR
+
     fullname = path.join(LIVETRACKDIR, str(task_id))
     try:
         with open(fullname, 'r') as f:
@@ -497,19 +523,25 @@ def clear_notifications(task, result):
     notifications = []
     if jtg and any(n for n in result.notifications if n.notification_type == 'jtg'):
         if result.real_start_time < task.start_time:
-            notifications.append(min([n for n in result.notifications if n.notification_type == 'jtg'],
-                                     key=lambda x: x.flat_penalty))
+            notifications.append(
+                min([n for n in result.notifications if n.notification_type == 'jtg'], key=lambda x: x.flat_penalty)
+            )
     if any(n for n in result.notifications if n.notification_type == 'airspace' and n.percentage_penalty > 0):
-        notifications.append(max([n for n in result.notifications if n.notification_type == 'airspace'
-                                  and n.percentage_penalty > 0], key=lambda x: x.percentage_penalty))
+        notifications.append(
+            max(
+                [n for n in result.notifications if n.notification_type == 'airspace' and n.percentage_penalty > 0],
+                key=lambda x: x.percentage_penalty,
+            )
+        )
     return notifications
 
 
 def update_livetrack_file(result: FlightResult, flight: list, path: str):
-    """ IGC Fix Format:
-        B1132494613837N01248410EA0006900991
+    """IGC Fix Format:
+    B1132494613837N01248410EA0006900991
     """
-    from calcUtils import sec_to_time, igc_coords
+    from calcUtils import igc_coords, sec_to_time
+
     file = Path(path, result.track_file)
     if file.is_file():
         '''create fixes lines'''
@@ -527,25 +559,25 @@ def update_livetrack_file(result: FlightResult, flight: list, path: str):
 
 
 def create_igc_file(result: FlightResult, task: Task):
-    """ Flymaster IGC initialize format:
+    """Flymaster IGC initialize format:
 
-        AXFMSFP Flymaster Live, V1.0, S/N 618839
-        HFFXA010
-        HFPLTPILOT:Alessandro Ploner
-        HFGTYGLIDERTYPE:
-        HFGIDGLIDERID:
-        HFDTM100GPSDATUM:WGS-1984
-        HFCIDCOMPETITIONID:72
-        HFCCLCOMPETITIONCLASS:
-        HOSITSITE:Meduno - Monte Valinis-IT
-        HFGPS:UBLOXNEO6
-        HFPRSPRESSALTSENSOR:NA
-        HFRFWFIRMWAREVERSION:202g
-        HFRHWHARDWAREVERSION:1.0R2
-        HFFTYFRTYPE:FLYMASTER,LIVE
-        HFDTE150719
-        B1132494613837N01248410EA0006900991
-        B1132504613834N01248408EA0006900990
+    AXFMSFP Flymaster Live, V1.0, S/N 618839
+    HFFXA010
+    HFPLTPILOT:Alessandro Ploner
+    HFGTYGLIDERTYPE:
+    HFGIDGLIDERID:
+    HFDTM100GPSDATUM:WGS-1984
+    HFCIDCOMPETITIONID:72
+    HFCCLCOMPETITIONCLASS:
+    HOSITSITE:Meduno - Monte Valinis-IT
+    HFGPS:UBLOXNEO6
+    HFPRSPRESSALTSENSOR:NA
+    HFRFWFIRMWAREVERSION:202g
+    HFRHWHARDWAREVERSION:1.0R2
+    HFFTYFRTYPE:FLYMASTER,LIVE
+    HFDTE150719
+    B1132494613837N01248410EA0006900991
+    B1132504613834N01248408EA0006900990
     """
     if result.track_file and Path(task.file_path, result.track_file).is_file():
         print(f"File already exists")
@@ -588,6 +620,7 @@ def create_igc_file(result: FlightResult, task: Task):
 
 def create_map_files(pilots: list, task: Task):
     from igc_lib import Flight
+
     for pilot in pilots:
         if pilot.result_type not in ('abs', 'dnf', 'mindist'):
             print(f"{pilot.ID}. {pilot.name}: ({pilot.track_file})")
@@ -599,10 +632,12 @@ def create_map_files(pilots: list, task: Task):
                 pilot.save_tracklog_map_file(task, flight)
 
 
-def calculate_incremental_results(result: FlightResult, task: Task, tp, lead_coeff, airspace,
-                                  real_start_time, already_ess, previous_achieved):
+def calculate_incremental_results(
+    result: FlightResult, task: Task, tp, lead_coeff, airspace, real_start_time, already_ess, previous_achieved
+):
     """Incremental result update function"""
     from flightcheck import flightcheck
+
     if tp.start_done and not real_start_time == result.real_start_time:
         '''pilot has started or restarted'''
         result.notifications = [n for n in result.notifications if not n.notification_type == 'jtg']
@@ -631,6 +666,7 @@ def calculate_incremental_results(result: FlightResult, task: Task, tp, lead_coe
 def save_livetrack_result(p: FlightResult, task: Task, airspace: AirspaceCheck = None):
     from igc_lib import Flight
     from pilot.flightresult import save_track
+
     try:
         flight = Flight.create_from_file(Path(task.file_path, p.track_file))
         if flight.valid:
@@ -645,4 +681,3 @@ def save_livetrack_result(p: FlightResult, task: Task, airspace: AirspaceCheck =
             print(f"{p.track_file} is not a valid igc. Result not saved.")
     except:
         print(f"{p.track_file} Error trying to save result.")
-

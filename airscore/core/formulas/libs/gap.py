@@ -14,8 +14,9 @@ Add support for FAI Sphere ???
 """
 
 from dataclasses import dataclass
-from pilot.flightresult import FlightResult
 from math import sqrt
+
+from pilot.flightresult import FlightResult
 
 
 def difficulty_calculation(task):
@@ -25,8 +26,8 @@ def difficulty_calculation(task):
     lo_results = [p for p in task.valid_results if not p.goal_time]
     best_dist_flown = task.max_distance / 1000  # Km
     if not lo_results:
-        '''all pilots are in goal
-        I calculate diff array just for correct min_distance_points calculation'''
+        """all pilots are in goal
+        I calculate diff array just for correct min_distance_points calculation"""
         lo_results.append(FlightResult(name='dummy', distance_flown=formula.min_dist))
 
     @dataclass
@@ -62,8 +63,12 @@ def difficulty_calculation(task):
     kmdiff = []
 
     for i in range(best_dist_kmx10r):
-        diff = sum([0 if x not in distspread.keys() else distspread[x]
-                    for x in range(i, min(i + look_ahead, best_dist_kmx10r))])
+        diff = sum(
+            [
+                0 if x not in distspread.keys() else distspread[x]
+                for x in range(i, min(i + look_ahead, best_dist_kmx10r))
+            ]
+        )
         kmdiff.append(Diffslot(i, diff))
 
     sum_diff = sum([x.diff for x in kmdiff])
@@ -71,7 +76,9 @@ def difficulty_calculation(task):
     ''' Relative difficulty is then calculated by dividing each 100-meter slot’s
         difficulty by twice the sum of all difficulty values.'''
 
-    sum_rel_diff = 0 if sum_diff == 0 else sum([(0.5*x.diff/sum_diff) for x in kmdiff if x.dist_x10 <= min_dist_kmx10])
+    sum_rel_diff = (
+        0 if sum_diff == 0 else sum([(0.5 * x.diff / sum_diff) for x in kmdiff if x.dist_x10 <= min_dist_kmx10])
+    )
     for el in kmdiff:
         if el.dist_x10 <= min_dist_kmx10:
             el.diff_score = sum_rel_diff
@@ -177,9 +184,13 @@ def stopped_validity(task):
     max_distance = task.max_distance / 1000  # bestDistFlown in Km
     std_dev = task.std_dev_dist / 1000  # stDevDistFlown in Km
 
-    stopv = min(1.000,
-                (sqrt((max_distance - avgdist) / (distlaunchtoess - max_distance + 1) * sqrt(std_dev / 5))
-                 + (task.pilots_landed / task.pilots_launched) ** 3))
+    stopv = min(
+        1.000,
+        (
+            sqrt((max_distance - avgdist) / (distlaunchtoess - max_distance + 1) * sqrt(std_dev / 5))
+            + (task.pilots_landed / task.pilots_launched) ** 3
+        ),
+    )
     return stopv
 
 
@@ -204,8 +215,7 @@ def day_quality(task):
     task.launch_validity = launch_validity(task)
     task.dist_validity = distance_validity(task)
     task.time_validity = time_validity(task)
-    task.day_quality = min(
-        (task.stop_validity * task.launch_validity * task.dist_validity * task.time_validity), 1.000)
+    task.day_quality = min((task.stop_validity * task.launch_validity * task.dist_validity * task.time_validity), 1.000)
 
 
 def points_weight(task):
@@ -269,8 +279,9 @@ def points_weight(task):
     task.avail_time_points = 1000 * quality * task.time_weight  # AvailTimePoints
 
     '''Stopped Task'''
-    task.time_points_reduction = 0 if not (task.stopped_time and task.pilots_ess) \
-        else calculate_time_points_reduction(task)
+    task.time_points_reduction = (
+        0 if not (task.stopped_time and task.pilots_ess) else calculate_time_points_reduction(task)
+    )
 
 
 def pilot_leadout(task, res):
@@ -366,15 +377,15 @@ def pilot_speed(task, res):
 
 
 def pilot_arrival(task, res):
-    """ 11.4 Arrival points
-        Arrival points depend on the position at which a pilot crosses ESS:
-        The first pilot completing the speed section receives the maximum
-        available arrival points, while the others are awarded arrival points
-        according to the number of pilots who reached ESS before them.
-        The last pilot to reach ESS will always receive at least 20%
-        of the available arrival points.
-        ACp = 1 − (PositionAtESSp − 1) / NumberOfPilotsReachingESS
-        AFp = 0.2 + 0.037*ACp + 0.13*ACp**2 + 0.633*ACp**3
+    """11.4 Arrival points
+    Arrival points depend on the position at which a pilot crosses ESS:
+    The first pilot completing the speed section receives the maximum
+    available arrival points, while the others are awarded arrival points
+    according to the number of pilots who reached ESS before them.
+    The last pilot to reach ESS will always receive at least 20%
+    of the available arrival points.
+    ACp = 1 − (PositionAtESSp − 1) / NumberOfPilotsReachingESS
+    AFp = 0.2 + 0.037*ACp + 0.13*ACp**2 + 0.633*ACp**3
     """
 
     Aarrival = task.avail_arr_points
@@ -415,16 +426,17 @@ def pilot_distance(task, pil):
 
     elif task.formula.formula_distance == 'difficulty':
         # HG Default
-        ''' One half of the available distance points are assigned to each pilot
-            linearly, based on the pilot’s distance flown in relation to the best
-            distance flown in the task.
-            The other half is assigned taking into consideration the difficulty
-            of the kilometers flown.'''
+        """One half of the available distance points are assigned to each pilot
+        linearly, based on the pilot’s distance flown in relation to the best
+        distance flown in the task.
+        The other half is assigned taking into consideration the difficulty
+        of the kilometers flown."""
         diff = task.difficulty
         LF = 0.5 * pil.distance / maxdist
         dist10 = int(pil.distance / 100)  # int(dist in Km * 10)
-        DF = diff[dist10].diff_score + ((diff[dist10 + 1].diff_score - diff[dist10].diff_score)
-                                        * (pil.distance / 100 - dist10))
+        DF = diff[dist10].diff_score + (
+            (diff[dist10 + 1].diff_score - diff[dist10].diff_score) * (pil.distance / 100 - dist10)
+        )
         Pdist = Adistance * (LF + DF)
 
     return Pdist
@@ -432,6 +444,7 @@ def pilot_distance(task, pil):
 
 def calculate_min_dist_score(t):
     from pilot.flightresult import FlightResult
+
     p = FlightResult(ID=0, name='dummy min_dist')
     p.distance_flown = t.formula.min_dist
     return pilot_distance(t, p)
@@ -439,6 +452,7 @@ def calculate_min_dist_score(t):
 
 def calculate_time_points_reduction(t):
     from pilot.flightresult import FlightResult
+
     p = FlightResult(ID=0, name='dummy time_points_reduction')
     p.distance_flown = t.opt_dist
     # rules state max start time among all pilot but will be corrected
@@ -526,16 +540,16 @@ def points_allocation(task):
                 ''' Penalty for not making goal'''
                 if not res.goal_time:
                     res.goal_time = 0
-                    res.time_score *= (1 - formula.no_goal_penalty)
-                    res.arrival_score *= (1 - formula.no_goal_penalty)
+                    res.time_score *= 1 - formula.no_goal_penalty
+                    res.arrival_score *= 1 - formula.no_goal_penalty
 
         ''' Total score'''
         score = res.distance_score + res.time_score + res.arrival_score + res.departure_score
 
         ''' Apply Penalty'''
         if res.jtg_penalty or res.flat_penalty or res.percentage_penalty:
-            ''' Jump the Gun Penalty:
-                totalScore p = max(totalScore p − jumpTheGunPenalty p , scoreForMinDistance) '''
+            """Jump the Gun Penalty:
+            totalScore p = max(totalScore p − jumpTheGunPenalty p , scoreForMinDistance)"""
             score_after_jtg = score if res.jtg_penalty == 0 else max(min_dist_score, score - res.jtg_penalty)
             ''' Other penalties'''
             # applying flat penalty after percentage ones

@@ -49,15 +49,17 @@ function populate_task_scores(taskid, filename){
                 });
                 return(airspace + track + JTG + admin);
             }
-            else{ return ("");}
+            else { return (""); }
 
             }},
 
             {
             targets: [-1],  render: function (a, b, data, d) {
+            if (!external){
                 return ('<td  class ="value" ><button type="button" class="btn btn-primary" onclick="adjust('
                    +  data.par_id + ')" data-toggle="confirmation" data-popout="true">Edit</button></td>');
-
+            }
+            else { return (""); }
             }}
         ],
 
@@ -71,7 +73,6 @@ function populate_task_scores(taskid, filename){
             });
         }
     });
-    console.log("location.href='/users/_download/task_html/"+filename+"'")
     if ( filename == null ) {
         document.getElementById('download_task_html').style.display = "none";
     }
@@ -84,11 +85,13 @@ function populate_task_scores(taskid, filename){
 function update_publish_button(filename) {
   if (filename == active_file) {
     $('#publish').text('Un-Publish results');
-    $('#publish').addClass('btn-danger').removeClass('btn-success');
+    $('#publish').addClass('btn-warning').removeClass('btn-success');
+    $('#delete_result').prop('disabled', true);;
   }
   else {
     $('#publish').text('Publish results');
-    $('#publish').addClass('btn-success').removeClass('btn-danger');
+    $('#publish').addClass('btn-success').removeClass('btn-warning');
+    if (!external) $('#delete_result').prop('disabled', false);
   }
 }
 
@@ -134,32 +137,41 @@ function updateFiles(load_latest=false) {
       $('#task_result_header').text(response.header)
       $('#comp_header').text(response.comp_header)
       if (response.display_comp_unpublish) {
-          $('#comp_unpublish').show();
+        $('#comp_unpublish').show();
       }
       else {
         $('#comp_unpublish').hide();
       }
-      response.choices.forEach(function(item) {
-        dropdown.file.append(
-          $('<option>', {
-            value: item[0],
-            text: item[1]
-          })
-        );
-      });
-      dropdown.file.removeAttr('disabled');
-      if(response.active){
-        active_file = response.active;
-        $("#result_file").val(response.active);
+      if (response.choices.length == 0) {
+        $('#scoring_runs_section').hide();
+        $('#task_results_panel').hide();
       }
-      if(load_latest){
-        $("#result_file").val($("#result_file option:first").val());
+      else {
+        $('#scoring_runs_section').show();
+        $('#task_results_panel').show();
+        response.choices.forEach(function(item) {
+          dropdown.file.append(
+            $('<option>', {
+              value: item[0],
+              text: item[1]
+            })
+          );
+        });
+        if (!external) dropdown.file.removeAttr('disabled');
+        else $('delete_result').prop('disabled', true);
+        if(response.active){
+          active_file = response.active;
+          $("#result_file").val(response.active);
+        }
+        if(load_latest){
+          $("#result_file").val($("#result_file option:first").val());
+        }
+        var filename = $('#result_file option:selected').val();
+        update_publish_button(filename);
+        var status = $('#result_file option:selected').text().split(' - ')[1];
+        $('#status_modal_comment').val(status);
+        populate_task_scores(taskid, filename);
       }
-      var filename = $('#result_file option:selected').val();
-      update_publish_button(filename);
-      var status = $('#result_file option:selected').text().split(' - ')[1];
-      $('#status_modal_comment').val(status);
-      populate_task_scores(taskid, filename);
     }
   });
 }
@@ -170,6 +182,14 @@ function Score_modal() {
 
 function open_status_modal() {
   $('#statusmodal').modal('show');
+}
+
+function delete_result_modal() {
+  let selected = $('#result_file option:selected').text().split(' - ');
+  let ran = selected[0];
+  let status = selected[1];
+  $('#delete_description').html('Ran: <strong class="text-info">'+ran+'</strong>; Status: <strong class="text-info">'+status+'</strong>');
+  $('#deletemodal').modal('show');
 }
 
 function Score() {
@@ -359,6 +379,25 @@ function save_adjustment(par_id){
   }
 }
 
+function delete_result(){
+  var mydata = new Object();
+  mydata.deletefile = $("#deletefile").is(':checked');
+  mydata.filename = $('#result_file option:selected').val();
+  console.log('delete filename: '+mydata.filename+', checked: '+mydata.deletefile)
+  $.ajax({
+    type: "POST",
+    url:  '/users/_delete_task_result/'+taskid,
+    contentType: "application/json",
+    data: JSON.stringify(mydata),
+    dataType: "json",
+    success: function(response) {
+      $('#comp_header').text(response.comp_header)
+      updateFiles();
+      $('#deletemodal').modal('hide');
+    }
+  });
+}
+
 var score_data = new Object();
 var active_file = '';
 table_data = [];
@@ -368,6 +407,29 @@ var dropdown = {
   file: $('#result_file')
 };
 
+function update_buttons(filename, status) {
+  if (status == 'FILE NOT FOUND') {
+    console.log('Result file is missing');
+    $('#publish').text('Publish results');
+    $('#publish').addClass('btn-secondary').removeClass('btn-success').removeClass('btn-warning');
+    $('#publish').prop('disabled', true);
+    $('#change_status').addClass('btn-secondary').removeClass('btn-primary');
+    $('#change_status').prop('disabled', true);
+    $('#download_task_html').addClass('btn-secondary').removeClass('btn-primary');
+    $('#download_task_html').prop('disabled', true);
+  }
+  else {
+    console.log('Result file is ok');
+    $('#publish').removeClass('btn-secondary');
+    $('#publish').prop('disabled', false);
+    update_publish_button(filename);
+    $('#change_status').removeClass('btn-secondary').addClass('btn-primary');
+    $('#change_status').prop('disabled', false);
+    $('#download_task_html').removeClass('btn-secondary').addClass('btn-primary');
+    $('#download_task_html').prop('disabled', false);
+  }
+}
+
 $(document).ready(function() {
 
   updateFiles();
@@ -376,7 +438,7 @@ $(document).ready(function() {
   $('#result_file').change(function() {
     var filename = $('#result_file option:selected').val();
     var status = $('#result_file option:selected').text().split(' - ')[1];
-    update_publish_button(filename);
+    update_buttons(filename, status);
     populate_task_scores(taskid, filename);
     $('#status_modal_comment').val(status);
   });

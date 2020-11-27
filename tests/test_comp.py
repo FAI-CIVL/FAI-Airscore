@@ -15,7 +15,7 @@ class TestComp:
     comp_id = 1
     comp = CompFactory(comp_id=comp_id, comp_code='abc123', comp_class='PG', comp_name='test comp',
                        comp_site='somewhere over the rainbow', date_from=datetime.date(2020, 2, 29),
-                       date_to=datetime.date(2020, 4, 1))
+                       date_to=datetime.date(2020, 4, 1), external=0)
 
     @patch('comp.db_session', autospec=True, spec_set=True)
     def test_to_db(self, mock_db):

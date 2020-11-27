@@ -1,15 +1,11 @@
 # from alchemy_mock.mocking import UnifiedAlchemyMagicMock, mock
 import pytest
-from datetime import datetime
 import frontendUtils
 import region
-# from myconn import Database
 from autoapp import create_app
 from unittest.mock import patch, MagicMock
-from frontendUtils import db_session
 from faker import Faker
 from random import random
-from json import loads
 fake = Faker()
 app = create_app()
 
@@ -85,8 +81,9 @@ def row():
     d1 = fake.date_object()
     d2 = fake.date_object()
     tasks = int(random()*10)
+    external = round(random())
     owner = 123
-    return id, name, place, d1, d2, tasks, owner
+    return id, name, place, d1, d2, tasks, external, owner
 
 
 def test_get_admin_comps(monkeypatch):
@@ -102,17 +99,18 @@ def test_get_admin_comps(monkeypatch):
         assert result.json['data'][0][3] == myquery[0][3].strftime("%Y-%m-%d")
         assert result.json['data'][0][4] == myquery[0][4].strftime("%Y-%m-%d")
         assert result.json['data'][0][0] == myquery[0][0]
-        assert result.json['data'][0][6] == 'delete'
+        assert result.json['data'][0][7] == 'delete'
         assert result.json['data'][1][1] == '<a href="/users/comp_settings_admin/' + str(myquery[1][0])+'">' \
             + myquery[1][1] + '</a>'
         assert result.json['data'][1][3] == myquery[1][3].strftime("%Y-%m-%d")
         assert result.json['data'][1][4] == myquery[1][4].strftime("%Y-%m-%d")
         assert result.json['data'][1][0] == myquery[1][0]
-        assert result.json['data'][1][6] == 'delete'
+        assert result.json['data'][1][7] == 'delete'
 
         with patch('frontendUtils.db_session', MockResponse):
             result = frontendUtils.get_admin_comps(111)
-        assert result.json['data'][1][6] == ''
+        assert result.json['data'][1][7] == ''
+
 # @patch.object()
 # def test_get_comp():
 #     comp = compUtils.get_comp(1)

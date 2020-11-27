@@ -35,7 +35,6 @@ pg_preset = FormulaPreset(
     formula_name=Preset(value=formula_name, visible=True, editable=True),
     formula_type=Preset(value=formula_type, visible=True, editable=True),
     formula_version=Preset(value=formula_version, visible=True, editable=True),
-
     # Editable part starts here
     # Distance Points: on, difficulty, off
     formula_distance=Preset(value='on', visible=True, editable=False),
@@ -56,8 +55,9 @@ pg_preset = FormulaPreset(
     # ESS Max Altitude
     arr_max_height=Preset(value=None, visible=True, editable=True),
     # Minimum flight time for task validation (minutes)
-    validity_min_time=Preset(value=None, visible=True, editable=False,
-                             calculated=True, comment='calculated from nominal distance'),
+    validity_min_time=Preset(
+        value=None, visible=True, editable=False, calculated=True, comment='calculated from nominal distance'
+    ),
     # Score back time for Stopped Tasks (minutes)
     score_back_time=Preset(value=300, visible=True, editable=True, comment='default: 5 mins'),
     # Jump the Gun: 1 or 0
@@ -83,7 +83,7 @@ pg_preset = FormulaPreset(
     # Decimals to be displayed in Task results: default is 0
     task_result_decimal=Preset(value=1, visible=False, editable=False),
     # Decimals to be displayed in Comp results: default is 0
-    comp_result_decimal=Preset(value=0, visible=False, editable=False)
+    comp_result_decimal=Preset(value=0, visible=False, editable=False),
 )
 
 hg_preset = FormulaPreset(
@@ -91,7 +91,6 @@ hg_preset = FormulaPreset(
     formula_name=Preset(value=formula_name, visible=True, editable=True),
     formula_type=Preset(value=formula_type, visible=True, editable=True),
     formula_version=Preset(value=formula_version, visible=True, editable=True),
-
     # Editable part starts here
     # Distance Points: on, difficulty, off
     formula_distance=Preset(value='difficulty', visible=True, editable=True),
@@ -138,11 +137,13 @@ hg_preset = FormulaPreset(
     # Decimals to be displayed in Task results: default is 0
     task_result_decimal=Preset(value=0, visible=False, editable=False),
     # Decimals to be displayed in Comp results: default is 0
-    comp_result_decimal=Preset(value=0, visible=False, editable=False)
+    comp_result_decimal=Preset(value=0, visible=False, editable=False),
 )
 
 
 ''' Function to calculate parameters (if needed)'''
+
+
 def calculate_parameters(args):
     """
     Args:
@@ -159,6 +160,8 @@ def calculate_parameters(args):
 
 
 ''' Scoring Functions'''
+
+
 def launch_validity(task):
     """
     9.1 Launch Validity
@@ -202,8 +205,7 @@ def day_quality(task):
     task.launch_validity = launch_validity(task)
     task.dist_validity = distance_validity(task)
     task.time_validity = time_validity(task)
-    task.day_quality = min(
-        (task.stop_validity * task.launch_validity * task.dist_validity * task.time_validity), 1.000)
+    task.day_quality = min((task.stop_validity * task.launch_validity * task.dist_validity * task.time_validity), 1.000)
 
 
 def points_weight(task):
@@ -223,12 +225,12 @@ def points_weight(task):
     goal_ratio = task.pilots_goal / task.pilots_launched
 
     if comp_class == 'HG':
-        '''
+        """
         DistWeight:         0.9 - 1.665* goalRatio + 1.713*GolalRatio^2 - 0.587*goalRatio^3
         LeadWeight:         (1 - DistWeight)/8 * 1.4 (lead_factor = 1)
         ArrWeight:          (1 - DistWeight)/8
         TimeWeight:         1 − DistWeight − LeadWeight − ArrWeight
-        '''
+        """
         ''' Distance Weight'''
         if task.formula.formula_distance != 'off':
             task.dist_weight = 0.9 - 1.665 * goal_ratio + 1.713 * goal_ratio ** 2 - 0.587 * goal_ratio ** 3
@@ -242,14 +244,14 @@ def points_weight(task):
             task.dep_weight = (1 - task.dist_weight) / 8 * 1.4 * formula.lead_factor
 
     elif comp_class == 'PG':
-        '''
+        """
         DistWeight:
             GoalRatio = 0:  DistanceWeight = 0.838
             GoalRatio > 0:  DistanceWeight = 0.805 - 1.374*GoalRatio + 1.413*GoalRatio**2 - 0.484*GoalRatio**3
         LeadWeight:         0.162
         ArrWeight:          0
         TimeWeight:         1 − DistWeight − LeadWeight − ArrWeight
-        '''
+        """
         ''' Distance Weight'''
         if task.formula.formula_distance != 'off':
             if goal_ratio == 0:
@@ -272,12 +274,12 @@ def points_weight(task):
 
     '''Stopped Task'''
     if task.stopped_time and task.pilots_ess:
-        ''' 12.3.5
-            A fixed amount of points is subtracted from the time points of each pilot that makes goal in a stopped task.
-            This amount is the amount of time points a pilot would receive if he had reached ESS exactly at
-            the task stop time. This is to remove any discontinuity between pilots just before ESS and pilots who
-            had just reached ESS at task stop time.
-        '''
+        """12.3.5
+        A fixed amount of points is subtracted from the time points of each pilot that makes goal in a stopped task.
+        This amount is the amount of time points a pilot would receive if he had reached ESS exactly at
+        the task stop time. This is to remove any discontinuity between pilots just before ESS and pilots who
+        had just reached ESS at task stop time.
+        """
         task.time_points_reduction = calculate_time_points_reduction(task)
         task.avail_dist_points += task.time_points_reduction
     else:
@@ -358,8 +360,8 @@ def missing_area(time_interval, best_distance_to_ESS, ss_distance):
 
 
 def tot_lc_calc(res, t):
-    """ Function to calculate final Leading Coefficient for pilots,
-        that needs to be done when all tracks have been scored"""
+    """Function to calculate final Leading Coefficient for pilots,
+    that needs to be done when all tracks have been scored"""
     if res.result_type in ('abs', 'dnf', 'mindist', 'nyp') or not res.SSS_time:
         '''pilot did't make Start or has no track'''
         return 0
@@ -425,16 +427,16 @@ def points_allocation(task):
                 ''' Penalty for not making goal'''
                 if not res.goal_time:
                     res.goal_time = 0
-                    res.time_score *= (1 - formula.no_goal_penalty)
-                    res.arrival_score *= (1 - formula.no_goal_penalty)
+                    res.time_score *= 1 - formula.no_goal_penalty
+                    res.arrival_score *= 1 - formula.no_goal_penalty
 
         ''' Total score'''
         score = res.distance_score + res.time_score + res.arrival_score + res.departure_score
 
         ''' Apply Penalty'''
         if res.jtg_penalty or res.flat_penalty or res.percentage_penalty:
-            ''' Jump the Gun Penalty:
-                totalScore p = max(totalScore p − jumpTheGunPenalty p , scoreForMinDistance) '''
+            """Jump the Gun Penalty:
+            totalScore p = max(totalScore p − jumpTheGunPenalty p , scoreForMinDistance)"""
             score_after_jtg = score if res.jtg_penalty == 0 else max(min_dist_score, score - res.jtg_penalty)
             ''' Other penalties'''
             # applying flat penalty after percentage ones
@@ -448,11 +450,11 @@ def points_allocation(task):
 
 
 def calculate_results(task):
-    """ Method to get to final results:
-            Task validity calculation: day_quality(task);
-            Points Weights calculation: points_weight(task);
-            Points Allocation: points_allocation(task);
-        Methods that are not on the script, are recalled from main library (pwc or gap) """
+    """Method to get to final results:
+        Task validity calculation: day_quality(task);
+        Points Weights calculation: points_weight(task);
+        Points Allocation: points_allocation(task);
+    Methods that are not on the script, are recalled from main library (pwc or gap)"""
 
     # dist_validity, time_validity, launch_validity, stop_validity, day_quality
     day_quality(task)

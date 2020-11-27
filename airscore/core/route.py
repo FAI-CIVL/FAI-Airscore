@@ -9,17 +9,18 @@ Stuart Mackintosh - 2019
 
 import math
 from collections import namedtuple
-from math import sqrt, hypot, fabs
-from db.conn import db_session
-from Defines import FAI_SPHERE
+from math import fabs, hypot, sqrt
 
 import numpy as np
+from calcUtils import c_round
+from db.conn import db_session
+from Defines import FAI_SPHERE
 from geographiclib.geodesic import Geodesic
 from geopy.distance import geodesic
 from pyproj import Proj
-from calcUtils import c_round
+
 if FAI_SPHERE:
-    from haversine import haversine, Unit
+    from haversine import Unit, haversine
 
 '''define earth model'''
 # EARTHMODEL = Proj("+init=EPSG:4326")  # LatLon with WGS84 datum used by GPS units and Google Earth
@@ -43,8 +44,9 @@ f = 0.0033528106647474805  # WGS84 flattening
 # b = ELLIPSOIDS['WGS-84'][1] * 1000  # WGS84 minor meters: 6356752.3142
 # f = ELLIPSOIDS['WGS-84'][2] #WGS84 flattening
 
-class Turnpoint():
-    """ single turnpoint in a task.
+
+class Turnpoint:
+    """single turnpoint in a task.
     Attributes:
         id: progressive number
         lat: a float, latitude in degrees
@@ -62,8 +64,21 @@ class Turnpoint():
         how: "entry" or "exit"
     """
 
-    def __init__(self, lat=None, lon=None, radius=None, type='waypoint', shape='circle', how='entry', altitude=None,
-                 name=None, num=None, description=None, wpt_id=None, rwp_id=None):
+    def __init__(
+        self,
+        lat=None,
+        lon=None,
+        radius=None,
+        type='waypoint',
+        shape='circle',
+        how='entry',
+        altitude=None,
+        name=None,
+        num=None,
+        description=None,
+        wpt_id=None,
+        rwp_id=None,
+    ):
         self.name = name
         self.num = num
         self.wpt_id = wpt_id  # tawPk
@@ -77,8 +92,9 @@ class Turnpoint():
         self.altitude = altitude
         self.description = description
 
-        assert type in ["launch", "speed", "waypoint", "endspeed", "goal", "optimised", "restricted"], \
+        assert type in ["launch", "speed", "waypoint", "endspeed", "goal", "optimised", "restricted"], (
             "turnpoint type is not valid: %r" % type
+        )
         assert shape in ["line", "circle", "optimised"], "turnpoint shape is not valid: %r" % shape
         assert how in ["entry", "exit", "optimised"], "turnpoint how (direction) is not valid: %r" % how
 
@@ -167,7 +183,8 @@ def get_proj(clat, clon, proj=PROJ):
     else:
         '''custom Mercatore projection'''
         tmerc = Proj(
-            f"+proj=tmerc +lat_0={clat} +lon_0={clon} +k_0=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
+            f"+proj=tmerc +lat_0={clat} +lon_0={clon} +k_0=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+        )
         return tmerc
 
 
@@ -183,12 +200,12 @@ class polar(object):
 
 class cPoint(object):
     """object to be used in planar distance calculations
-        x       (float)     the x coordinate
-        y       (float)     the y coordinate
-        radius  (int)       the radius in metres
-        type    (str)       "fix", "launch", "speed", "cylinder", "endspeed", "goal"
-        fx      (float)     the x coordinate of the fix
-        fy      (float)     the y coordinate of the fix
+    x       (float)     the x coordinate
+    y       (float)     the y coordinate
+    radius  (int)       the radius in metres
+    type    (str)       "fix", "launch", "speed", "cylinder", "endspeed", "goal"
+    fx      (float)     the x coordinate of the fix
+    fy      (float)     the y coordinate of the fix
     """
 
     def __str__(self):
@@ -330,10 +347,9 @@ def find_closest(P1, P2, P3=None, method='fast_andoyer'):
         result = cartesian2polar(CL)
         return result
 
-    u = ((C2[0] - C1[0]) * (C3[0] - C1[0]) + (C2[1] - C1[1]) * (C3[1] - C1[1]) +
-         (C2[2] - C1[2]) * (C3[2] - C1[2])) / ((C3[0] - C1[0]) * (C3[0] - C1[0]) +
-                                               + (C3[1] - C1[1]) * (C3[1] - C1[1])
-                                               + (C3[2] - C1[2]) * (C3[2] - C1[2]))
+    u = ((C2[0] - C1[0]) * (C3[0] - C1[0]) + (C2[1] - C1[1]) * (C3[1] - C1[1]) + (C2[2] - C1[2]) * (C3[2] - C1[2])) / (
+        (C3[0] - C1[0]) * (C3[0] - C1[0]) + +(C3[1] - C1[1]) * (C3[1] - C1[1]) + (C3[2] - C1[2]) * (C3[2] - C1[2])
+    )
     # print "u=$u cart dist=", vector_length($T), " polar dist=", distance($P1, $P2), "\n";
 
     N = C1 + (u * (C3 - C1))
@@ -382,8 +398,8 @@ def find_closest(P1, P2, P3=None, method='fast_andoyer'):
 
 def check_start(state, fix, tp, tolerance, min_tol_m):
     """check if pilot
-            is in correct position to take the start cylinder [state = 'ready'],
-            and if he takes the start [state = 'started']"""
+    is in correct position to take the start cylinder [state = 'ready'],
+    and if he takes the start [state = 'started']"""
 
     if tp.how == "entry":
         # pilot must have at least 1 fix outside the start after the start time then enter
@@ -447,9 +463,9 @@ def tp_made_civl(fix, next, tp, tolerance, min_tol_m):
     This version DOES NOT USE a Entry/Exit flag
     """
 
-    condition = ((not (tp.in_radius(fix, -tolerance, -min_tol_m)) and (tp.in_radius(next, tolerance, min_tol_m)))
-                 or
-                 (not (tp.in_radius(next, -tolerance, -min_tol_m)) and (tp.in_radius(fix, tolerance, min_tol_m))))
+    condition = (not (tp.in_radius(fix, -tolerance, -min_tol_m)) and (tp.in_radius(next, tolerance, min_tol_m))) or (
+        not (tp.in_radius(next, -tolerance, -min_tol_m)) and (tp.in_radius(fix, tolerance, min_tol_m))
+    )
 
     return condition
 
@@ -479,13 +495,13 @@ def tp_time_civl(fix, next, tp):
     crossing.time = interpolateTime(trackpoint[j],trackpoint[j+1])
     '''
 
-    if ((tp.in_radius(fix, 0, 0) and tp.in_radius(next, 0, 0))
-            or
-            (not (tp.in_radius(fix, 0, 0)) and not (tp.in_radius(next, 0, 0)))):
+    if (tp.in_radius(fix, 0, 0) and tp.in_radius(next, 0, 0)) or (
+        not (tp.in_radius(fix, 0, 0)) and not (tp.in_radius(next, 0, 0))
+    ):
         return fix.rawtime if tp.type != 'endspeed' else next.rawtime
     else:
-        '''interpolate time:
-        Will use distance from radius of the two points, and the proportion of times'''
+        """interpolate time:
+        Will use distance from radius of the two points, and the proportion of times"""
         d1 = abs(distance(tp, fix) - tp.radius)
         d2 = abs(distance(tp, next) - tp.radius)
         speed = (d1 + d2) / (next.rawtime - fix.rawtime)
@@ -495,6 +511,7 @@ def tp_time_civl(fix, next, tp):
 
 def in_semicircle(wpts, idx, fix, t=0.001, min_t=5):
     from geopy import Point
+
     wpt = wpts[idx]
     print(f'distance from center: {distance(wpt, fix)} m')
     if wpt.in_radius(fix, t, min_t):
@@ -554,10 +571,9 @@ def rawtime_float_to_hms(timef):
 
 def distance_flown(fix, i, short_route, wpt, distances_to_go):
     """Calculate distance flown
-        For exit wpts it uses distance from cylinders"""
+    For exit wpts it uses distance from cylinders"""
 
-    if (wpt.how == 'entry'
-            or wpt.shape == 'line'):
+    if wpt.how == 'entry' or wpt.shape == 'line':
         dist_to_next = distance(fix, short_route[i])
     else:
         dist_to_center = distance(fix, wpt)
@@ -668,8 +684,9 @@ def opt_wp(p1, p2, p3, r2):
 
     # print('final angle:', angle)
     opt_point = geod.Direct(p2.lat, p2.lon, angle, r2)
-    return Turnpoint(lat=opt_point['lat2'], lon=opt_point['lon2'], type='optimised', radius=0, shape='optimised',
-                     how='optimised')
+    return Turnpoint(
+        lat=opt_point['lat2'], lon=opt_point['lon2'], type='optimised', radius=0, shape='optimised', how='optimised'
+    )
 
 
 def opt_wp_exit(opt, t1, exit):
@@ -749,10 +766,12 @@ def get_line(turnpoints, tol=0.001, min_t=5):
             lon4, lat4, az = g.fwd(clon, clat, az2, ln + t)
             # print(f'Line: {lat1}, {lon1} - {lat2}, {lon2}')
 
-            return [Turnpoint(lat1, lon1, 0, 'optimised', 'optimised', 'optimised'),
-                    Turnpoint(lat2, lon2, 0, 'optimised', 'optimised', 'optimised'),
-                    Turnpoint(lat3, lon3, 0, 'optimised', 'optimised', 'optimised'),
-                    Turnpoint(lat4, lon4, 0, 'optimised', 'optimised', 'optimised')]
+            return [
+                Turnpoint(lat1, lon1, 0, 'optimised', 'optimised', 'optimised'),
+                Turnpoint(lat2, lon2, 0, 'optimised', 'optimised', 'optimised'),
+                Turnpoint(lat3, lon3, 0, 'optimised', 'optimised', 'optimised'),
+                Turnpoint(lat4, lon4, 0, 'optimised', 'optimised', 'optimised'),
+            ]
 
     ''' if all waypoints have same coordinates, returns a north-south line'''
     lon1, lat1, az = g.fwd(clon, clat, 0, ln)
@@ -760,10 +779,12 @@ def get_line(turnpoints, tol=0.001, min_t=5):
     lon3, lat3, az = g.fwd(clon, clat, 90, t)
     lon4, lat4, az = g.fwd(clon, clat, 270, ln + t)
 
-    return [Turnpoint(lat1, lon1, 0, 'optimised', 'optimised', 'optimised'),
-            Turnpoint(lat2, lon2, 0, 'optimised', 'optimised', 'optimised'),
-            Turnpoint(lat3, lon3, 0, 'optimised', 'optimised', 'optimised'),
-            Turnpoint(lat4, lon4, 0, 'optimised', 'optimised', 'optimised')]
+    return [
+        Turnpoint(lat1, lon1, 0, 'optimised', 'optimised', 'optimised'),
+        Turnpoint(lat2, lon2, 0, 'optimised', 'optimised', 'optimised'),
+        Turnpoint(lat3, lon3, 0, 'optimised', 'optimised', 'optimised'),
+        Turnpoint(lat4, lon4, 0, 'optimised', 'optimised', 'optimised'),
+    ]
 
 
 """
@@ -775,8 +796,8 @@ BEGIN HERE
 
 
 def get_shortest_path(task, fix=None, pointer=None):
-    """ Inputs:
-            task  - Obj: task object
+    """Inputs:
+    task  - Obj: task object
     """
     import sys
 
@@ -827,7 +848,7 @@ def get_shortest_path(task, fix=None, pointer=None):
         planar_dist = optimize_path(points, count, ESS_index, line)
         ''' See if the difference between the last distance id
             smaller than the tolerance'''
-        finished = (last_dist - planar_dist < tolerance)
+        finished = last_dist - planar_dist < tolerance
         last_dist = planar_dist
         opsCount -= 1
     # print(f'iterations made: {count * 10 - opsCount} | distance: {planar_dist}')
@@ -843,9 +864,9 @@ def get_shortest_path(task, fix=None, pointer=None):
 
 
 def convert_turnpoints(turnpoints, geo):
-    """ transform Turnpoints (lon, lat) to projected points (x, y)
-        input:
-        task  - Task obj
+    """transform Turnpoints (lon, lat) to projected points (x, y)
+    input:
+    task  - Task obj
     """
     result = []
 
@@ -857,10 +878,10 @@ def convert_turnpoints(turnpoints, geo):
 
 
 def revert_opt_points(points, geo):
-    """ transform projected points (x, y) to Turnpoints (lon, lat)
-        input:
-        points - List
-        geo - Geo obj
+    """transform projected points (x, y) to Turnpoints (lon, lat)
+    input:
+    points - List
+    geo - Geo obj
     """
     result = []
     for p in points:
@@ -871,14 +892,14 @@ def revert_opt_points(points, geo):
 
 
 def optimize_path(points, count, ESS_index, line):
-    """ Inputs:
-            points      - array of point objects
-            count       - number of points (not needed)
-            ESS_index   - index of the ESS point, or -1 (not needed, we have type)
-            line        - goal line endpoints, or empty array"""
+    """Inputs:
+    points      - array of point objects
+    count       - number of points (not needed)
+    ESS_index   - index of the ESS point, or -1 (not needed, we have type)
+    line        - goal line endpoints, or empty array"""
 
     dist = 0
-    hasLine = (len(line) >= 2)
+    hasLine = len(line) >= 2
     for idx in range(1, count):
         '''Get the target cylinder c and its preceding and succeeding points'''
         c, a, b = get_target_points(points, count, idx, ESS_index)
@@ -896,10 +917,10 @@ def optimize_path(points, count, ESS_index, line):
 
 def get_target_points(points, count, index, ESS_index):
     """Inputs:
-        points  - array of point objects
-        count   - number of points
-        index   - index of the target cylinder (from 1 upwards)
-        ESS_index - index of the ESS point, or -1 """
+    points  - array of point objects
+    count   - number of points
+    index   - index of the target cylinder (from 1 upwards)
+    ESS_index - index of the ESS point, or -1"""
 
     '''Set point C to the target cylinder'''
     c = points[index]
@@ -917,7 +938,7 @@ def get_target_points(points, count, index, ESS_index):
 
 def process_cylinder(c, a, b):
     """Inputs:
-        c, a, b - target cylinder, previous point, next point"""
+    c, a, b - target cylinder, previous point, next point"""
 
     distAC, distBC, distAB, distCtoAB = get_relative_distances(c, a, b)
     if distAB == 0.0:
@@ -931,22 +952,21 @@ def process_cylinder(c, a, b):
         if distAC < c.radius and distBC < c.radius:
             '''A and B are inside the circle'''
             set_reflection(c, a, b)
-        elif (distAC < c.radius and distBC > c.radius or
-              (distAC > c.radius and distBC < c.radius)):
+        elif distAC < c.radius and distBC > c.radius or (distAC > c.radius and distBC < c.radius):
             '''One point inside, one point outside the circle'''
             set_intersection_1(c, a, b, distAB)
         elif distAC > c.radius and distBC > c.radius:
             '''A and B are outside the circle'''
             set_intersection_2(c, a, b, distAB)
     else:
-        '''A and B are outside the circle and the AB segment is
-        either tangent to it or or does not intersect it'''
+        """A and B are outside the circle and the AB segment is
+        either tangent to it or or does not intersect it"""
         set_reflection(c, a, b)
 
 
 def get_relative_distances(c, a, b):
     """Inputs:
-        c, a, b - target cylinder, previous point, next point"""
+    c, a, b - target cylinder, previous point, next point"""
 
     '''Calculate distances AC, BC and AB'''
     distAC = hypot(a.x - c.x, a.y - c.y)
@@ -976,8 +996,8 @@ def get_relative_distances(c, a, b):
 
 def get_intersection_points(c, a, b, distAB):
     """Inputs:
-            c, a, b - target cylinder, previous point, next point
-            distAB  - AB line segment length"""
+    c, a, b - target cylinder, previous point, next point
+    distAB  - AB line segment length"""
 
     '''Find e, which is on the AB line perpendicular to c center'''
     dx = (b.x - a.x) / distAB
@@ -998,8 +1018,8 @@ def get_intersection_points(c, a, b, distAB):
 
 def point_on_circle(c, a, b, distAC, distBC, distAB, distCtoAB):
     """Inputs:
-        c, a, b - target cylinder, previous point, next point
-        Distances between the points"""
+    c, a, b - target cylinder, previous point, next point
+    Distances between the points"""
 
     if fabs(distAC - c.radius) < 0.0001:
         '''A on the circle (perhaps B as well): use A position'''
@@ -1024,9 +1044,9 @@ def point_on_circle(c, a, b, distAC, distBC, distAB, distCtoAB):
 
 def project_on_circle(c, x, y, lenght):
     """Inputs:
-        c       - the circle
-        x, y    - coordinates of the point to project
-        len     - line segment length, from c to the point"""
+    c       - the circle
+    x, y    - coordinates of the point to project
+    len     - line segment length, from c to the point"""
     if lenght == 0.0:
         '''The default direction is eastwards (90 degrees)'''
         c.fx = c.radius + c.x
@@ -1038,8 +1058,8 @@ def project_on_circle(c, x, y, lenght):
 
 def set_intersection_1(c, a, b, distAB):
     """Inputs:
-        c, a, b     - target cylinder, previous point, next point
-        distAB      - AB line segment length"""
+    c, a, b     - target cylinder, previous point, next point
+    distAB      - AB line segment length"""
 
     '''Get the intersection points (s1, s2)'''
     s1, s2, e = get_intersection_points(c, a, b, distAB)
@@ -1056,8 +1076,8 @@ def set_intersection_1(c, a, b, distAB):
 
 def set_intersection_2(c, a, b, distAB):
     """Inputs:
-         c, a, b    - target cylinder, previous point, next point
-         distAB     - AB line segment length"""
+    c, a, b    - target cylinder, previous point, next point
+    distAB     - AB line segment length"""
 
     '''Get the intersection points (s1, s2) and midpoint (e)'''
     s1, s2, e = get_intersection_points(c, a, b, distAB)
@@ -1075,7 +1095,7 @@ def set_intersection_2(c, a, b, distAB):
 
 def set_reflection(c, a, b):
     """Inputs:
-        c, a, b - target circle, previous point, next point"""
+    c, a, b - target circle, previous point, next point"""
 
     ''' The lengths of the adjacent triangle sides (af, bf) are
         proportional to the lengths of the cut AB segments (ak, bk)'''
@@ -1092,8 +1112,8 @@ def set_reflection(c, a, b):
 
 def process_line(line, c, a):
     """Inputs:
-        line - array of goal line endpoints
-        c, a - target (goal), previous point"""
+    line - array of goal line endpoints
+    c, a - target (goal), previous point"""
 
     g1, g2 = line[0], line[1]
     len2 = (g1.x - g2.x) ** 2 + (g1.y - g2.y) ** 2

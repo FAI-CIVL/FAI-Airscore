@@ -11,19 +11,26 @@ import json
 import re
 from os import path
 
+import Defines
 import folium
 import jsonpickle
 from aerofiles import openair
-
-import Defines
 from geo import create_arc_polygon
 from mapUtils import get_airspace_bbox
 
 NM_in_meters = 1852.00
 Ft_in_meters = 0.3048000
 hPa_in_feet = 27.3053
-colours = {'P': '#d42c31', 'D': '#d42c31', 'R': '#d42c31', 'GP': '#d42c31', 'C': '#d42c31', 'Z': '#d42c31',
-           'CTR': '#d42c31', 'Q': '#d42c31', }
+colours = {
+    'P': '#d42c31',
+    'D': '#d42c31',
+    'R': '#d42c31',
+    'GP': '#d42c31',
+    'C': '#d42c31',
+    'Z': '#d42c31',
+    'CTR': '#d42c31',
+    'Q': '#d42c31',
+}
 
 
 def read_openair(filename):
@@ -56,10 +63,16 @@ def write_openair(data, filename):
 
 def airspace_info(record):
     """Creates a dictionary containing details on an airspace for use in front end"""
-    return {'name': record['name'], 'class': record['class'], 'floor_description': record['floor'],
-            'floor': convert_height(record['floor'])[1], 'floor_unit': convert_height(record['floor'])[2],
-            'ceiling_description': record['ceiling'],
-            'ceiling': convert_height(record['ceiling'])[1], 'ceiling_unit': convert_height(record['ceiling'])[2]}
+    return {
+        'name': record['name'],
+        'class': record['class'],
+        'floor_description': record['floor'],
+        'floor': convert_height(record['floor'])[1],
+        'floor_unit': convert_height(record['floor'])[2],
+        'ceiling_description': record['ceiling'],
+        'ceiling': convert_height(record['ceiling'])[1],
+        'ceiling_unit': convert_height(record['ceiling'])[2],
+    }
 
 
 def convert_height(height_string):
@@ -87,7 +100,9 @@ def convert_height(height_string):
             info = f"{meters} m"
 
     elif height_string == 'GND':
-        meters = 0  # this should probably be something like -500m to cope with dead sea etc (or less for GPS/Baro error?)
+        meters = (
+            0  # this should probably be something like -500m to cope with dead sea etc (or less for GPS/Baro error?)
+        )
         info = "GND / 0 m"
     else:
         return height_string, None, "Unknown height unit"
@@ -111,7 +126,7 @@ def circle_map(element, info):
             opacity=0.8,
             fill=True,
             fill_opacity=0.2,
-            fill_color=colours[info['class']]
+            fill_color=colours[info['class']],
         )
     else:
         return None
@@ -122,14 +137,16 @@ def circle_check(element, info):
     takes circular airspace as input, which may only be part of an airspace"""
     if element['type'] == 'circle':
 
-        return {'shape': 'circle',
-                'location': (element['center'][0], element['center'][1]),
-                'radius': element['radius'] * NM_in_meters,
-                'floor': info['floor'],
-                'floor_unit': info['floor_unit'],
-                'ceiling': info['ceiling'],
-                'ceiling_unit': info['ceiling_unit'],
-                'name': info['name']}
+        return {
+            'shape': 'circle',
+            'location': (element['center'][0], element['center'][1]),
+            'radius': element['radius'] * NM_in_meters,
+            'floor': info['floor'],
+            'floor_unit': info['floor_unit'],
+            'ceiling': info['ceiling'],
+            'ceiling_unit': info['ceiling_unit'],
+            'name': info['name'],
+        }
     else:
         return None
 
@@ -143,8 +160,9 @@ def polygon_map(record):
             locations.append(element['location'])
         elif element['type'] == 'arc':
             print(f"{record['name']}: * ARC DETECTED *")
-            locations.extend(create_arc_polygon(element['center'], element['start'],
-                                                element['end'], element['clockwise']))
+            locations.extend(
+                create_arc_polygon(element['center'], element['start'], element['end'], element['clockwise'])
+            )
 
     if not locations:
         return None
@@ -160,7 +178,7 @@ def polygon_map(record):
         opacity=0.8,
         fill=True,
         fill_opacity=0.2,
-        fill_color=colours[record['class']]
+        fill_color=colours[record['class']],
     )
 
 
@@ -172,8 +190,9 @@ def polygon_check(record, info):
         if element['type'] == 'point':
             locations.append(element['location'])
         elif element['type'] == 'arc':
-            locations.extend(create_arc_polygon(element['center'], element['start'],
-                                                element['end'], element['clockwise']))
+            locations.extend(
+                create_arc_polygon(element['center'], element['start'], element['end'], element['clockwise'])
+            )
 
     if not locations:
         return None
@@ -181,13 +200,15 @@ def polygon_check(record, info):
     floor, _, _ = convert_height(record['floor'])
     ceiling, _, _ = convert_height(record['ceiling'])
 
-    return {'shape': 'polygon',
-            'locations': locations,
-            'floor': info['floor'],
-            'floor_unit': info['floor_unit'],
-            'ceiling': info['ceiling'],
-            'ceiling_unit': info['ceiling_unit'],
-            'name': info['name']}
+    return {
+        'shape': 'polygon',
+        'locations': locations,
+        'floor': info['floor'],
+        'floor_unit': info['floor_unit'],
+        'ceiling': info['ceiling'],
+        'ceiling_unit': info['ceiling_unit'],
+        'name': info['name'],
+    }
 
 
 def create_new_airspace_file(mod_data):
@@ -296,8 +317,8 @@ def create_airspace_map_check_files(openair_filename):
 
 def read_airspace_map_file(openair_filename):
     """Read airspace map file if it exists. Create if not.
-        argument: openair file name
-        returns: dictionary containing spaces object and bbox """
+    argument: openair file name
+    returns: dictionary containing spaces object and bbox"""
     from pathlib import Path
 
     mapfile_path = Defines.AIRSPACEMAPDIR
@@ -319,8 +340,9 @@ def read_airspace_map_file(openair_filename):
 
 def get_airspace_map_from_task(task_id: int) -> dict:
     """get airspace map data from task ID"""
-    from db.tables import TblTask
     from db.conn import db_session
+    from db.tables import TblTask
+
     with db_session() as db:
         check = db.query(TblTask.airspace_check, TblTask.openair_file).filter_by(task_id=task_id).one()
         if check and check.airspace_check:
@@ -330,8 +352,8 @@ def get_airspace_map_from_task(task_id: int) -> dict:
 
 def read_airspace_check_file(openair_filename):
     """Read airspace check file if it exists. Create if not.
-        arguent: openair file name
-        returns: dictionary containing spaces object and bbox """
+    arguent: openair file name
+    returns: dictionary containing spaces object and bbox"""
     from pathlib import Path
 
     checkfile_path = Defines.AIRSPACECHECKDIR

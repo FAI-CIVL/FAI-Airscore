@@ -16,6 +16,7 @@ class Reader:
     """
     A reader for the KML flight log file format.
     """
+
     def __init__(self):
         self.reader = None
 
@@ -24,7 +25,7 @@ class Reader:
         """read the xml file"""
         tree = ET.parse(fp)
         root = tree.getroot()
-        #print("Root: {} \n".format(root.tag))
+        # print("Root: {} \n".format(root.tag))
 
         """Define result dict() parts"""
         logger_id = [[], None]
@@ -43,19 +44,19 @@ class Reader:
         """get track infos"""
         for el in root.iter('Metadata'):
             if el.get('type') == 'track':
-                message += (f"TYPE: {el.get('type')} \n")
+                message += f"TYPE: {el.get('type')} \n"
                 """get track source"""
-                source = ("{} ver. {}".format(el.get('src'), el.get('v')))
-                message += (f"Source: {source} \n")
+                source = "{} ver. {}".format(el.get('src'), el.get('v'))
+                message += f"Source: {source} \n"
                 """get first point time"""
                 start = el.find('FsInfo').get('time_of_first_point')
-                message += (f"Start: {start} \n")
+                message += f"Start: {start} \n"
                 """get instrument if available"""
                 try:
                     instrument = el.find('FsInfo').get('instrument')
                 except:
                     instrument = ''
-                message += (f"Instrument: {instrument} \n")
+                message += f"Instrument: {instrument} \n"
                 """get time from first point"""
                 timelist = el.find('FsInfo').find('SecondsFromTimeOfFirstPoint').text.split()
                 """get pressure altitude and security hash
@@ -69,7 +70,7 @@ class Reader:
                     preslist = [0] * len(timelist)
                 try:
                     hash = el.find('FsInfo').get('hash')
-                    message += (f"Hash: {hash} \n")
+                    message += f"Hash: {hash} \n"
                 except:
                     hash = None
 
@@ -89,13 +90,13 @@ class Reader:
         security_records[1].append(hash)
 
         """create a fix list"""
-        pointlist = [ ]
+        pointlist = []
         for i in range(len(timelist)):
             """calculate point time"""
             d = int(timelist[i])
             gpstime = (flightdate + datetime.timedelta(seconds=d)).time()
             """split coord in lat, lon, gpsalt"""
-            var = [ ]
+            var = []
             try:
                 var = coordlist[i].split(',')
             except:
@@ -105,21 +106,21 @@ class Reader:
             """create list of fix"""
             fix_records[1].append(self.decode_B_record(pointlist[i]))
 
-
         """returns the result dict()"""
-        return dict(logger_id=logger_id,                            # A record
-                    fix_records=fix_records,                        # B records
-                    task=task,                                      # C records
-                    dgps_records=dgps_records,                      # D records
-                    event_records=event_records,                    # E records
-                    satellite_records=satellite_records,            # F records
-                    security_records=security_records,              # G records
-                    header=header,                                  # H records
-                    fix_record_extensions=fix_record_extensions,    # I records
-                    k_record_extensions=k_record_extensions,        # J records
-                    k_records=k_records,                            # K records
-                    comment_records=comment_records,                # L records
-                    )
+        return dict(
+            logger_id=logger_id,  # A record
+            fix_records=fix_records,  # B records
+            task=task,  # C records
+            dgps_records=dgps_records,  # D records
+            event_records=event_records,  # E records
+            satellite_records=satellite_records,  # F records
+            security_records=security_records,  # G records
+            header=header,  # H records
+            fix_record_extensions=fix_record_extensions,  # I records
+            k_record_extensions=k_record_extensions,  # J records
+            k_records=k_records,  # K records
+            comment_records=comment_records,  # L records
+        )
 
     @staticmethod
     def decode_B_record(line):
@@ -134,17 +135,12 @@ class Reader:
 
     @staticmethod
     def decode_A_record(src):
-        return {
-            'manufacturer': '',
-            'id': '',
-            'id_addition': src
-        }
+        return {'manufacturer': '', 'id': '', 'id_addition': src}
 
     @staticmethod
     def decode_H_record(instrument, date):
         if instrument is not '':
-            manufacturer, model = instrument.split(' ',1)
-            value = {'logger_manufacturer': manufacturer,
-                            'logger_model': model}
+            manufacturer, model = instrument.split(' ', 1)
+            value = {'logger_manufacturer': manufacturer, 'logger_model': model}
         value['utc_date'] = date
         return value

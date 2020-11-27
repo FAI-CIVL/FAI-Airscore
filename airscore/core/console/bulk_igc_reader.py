@@ -71,10 +71,7 @@ if __name__ == "__main__":
     import sys
 
     '''check parameter is good'''
-    if not (sys.argv[1]
-            and sys.argv[1].isdigit()
-            and int(sys.argv[1]) > 0
-            and len(sys.argv) == 3):
+    if not (sys.argv[1] and sys.argv[1].isdigit() and int(sys.argv[1]) > 0 and len(sys.argv) == 3):
         print("number of arguments != 2 and/or task_id not a number")
         print("Use: python3 bulk_igc_reader.py <task_id> <zipfile>")
         exit()

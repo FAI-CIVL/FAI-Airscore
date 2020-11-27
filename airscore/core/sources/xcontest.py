@@ -9,10 +9,10 @@ By Stuart Mackintosh, Antonio Golfari, 2019
 
 import logging
 import time
-import requests
-from db.conn import db_session
 from pathlib import Path
 
+import requests
+from db.conn import db_session
 
 # in XContest format is:
 # DE VIVO.ALESSANDRO.alexpab.2019-12-19.13-22-49.IGC
@@ -21,11 +21,11 @@ filename_formats = ['name.name.live.other-other-other.other-other-other']
 
 
 def get_pilot_from_list(filename, pilots):
-    """ check filename against a list of Pilot Obj.
-        Looks for different information in filename
+    """check filename against a list of Pilot Obj.
+    Looks for different information in filename
 
-        filename:   STR file name
-        pilots:     LIST Participants Obj.
+    filename:   STR file name
+    pilots:     LIST Participants Obj.
     """
     # in XContest format is:
     # DE VIVO.ALESSANDRO.alexpab.2019-12-19.13-22-49.IGC
@@ -53,15 +53,21 @@ def get_xc_parameters(task_id):
     """Get site info and date from database """
     # TODO I suspect the logic on xc_site will be broken if we use waypoint file instead of table
     # Should we use TblTaskWaypoint instead or manually or by adding xc_to id to launch name or description?
-    from db.tables import TblTaskWaypoint as W, TblRegionWaypoint as R, TblTask as T
+    from db.tables import TblRegionWaypoint as R
+    from db.tables import TblTask as T
+    from db.tables import TblTaskWaypoint as W
 
     site_id = 0
     takeoff_id = 0
     datestr = None
 
     with db_session() as db:
-        q = db.query(R.xccSiteID, R.xccToID).join(W, W.rwp_id == R.rwp_id).filter(W.task_id == task_id,
-                                                                                  W.type == 'launch').one()
+        q = (
+            db.query(R.xccSiteID, R.xccToID)
+            .join(W, W.rwp_id == R.rwp_id)
+            .filter(W.task_id == task_id, W.type == 'launch')
+            .one()
+        )
         date = T.get_by_id(task_id).date
         if q is not None:
             site_id = q.xccSiteID
@@ -123,7 +129,9 @@ def get_zip(site_id, takeoff_id, date, login_name, password, zip_file):
 def get_zipfile(task_id):
     """"""
     from pathlib import Path
+
     import Defines
+
     temp_folder = Defines.TEMPFILES
     result = ''
     # task_id = task.task_id

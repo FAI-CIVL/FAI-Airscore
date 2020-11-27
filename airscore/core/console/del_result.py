@@ -11,6 +11,7 @@ from db.conn import db_session
 def delete_result(ref_id):
     import os
     from os import path as p
+
     from db.tables import TblResultFile as R
 
     if type(ref_id) is int and ref_id > 0:
@@ -36,6 +37,7 @@ def delete_result(ref_id):
 
 def main(args):
     from logger import Logger
+
     '''create logging and disable output'''
     Logger('ON', 'del_result.txt')
 

@@ -34,7 +34,6 @@ pg_preset = FormulaPreset(
     formula_name=Preset(value=formula_name, visible=True, editable=True),
     formula_type=Preset(value=formula_type, visible=True),
     formula_version=Preset(value=formula_version, visible=True),
-
     # Editable part starts here
     # Distance Points: on, difficulty, off
     formula_distance=Preset(value='on', visible=False),
@@ -81,16 +80,16 @@ pg_preset = FormulaPreset(
     # Decimals to be displayed in Task results: default is 0
     task_result_decimal=Preset(value=0, visible=False, editable=False),
     # Decimals to be displayed in Comp results: default is 0
-    comp_result_decimal=Preset(value=0, visible=False, editable=False)
+    comp_result_decimal=Preset(value=0, visible=False, editable=False),
 )
 
 
 def calculate_results(task):
-    """ Method to get to final results:
-            Task validity calculation: day_quality(task);
-            Points Weights calculation: points_weight(task);
-            Points Allocation: points_allocation(task);
-        Methods that are not on the script, are recalled from main library (pwc or gap) """
+    """Method to get to final results:
+        Task validity calculation: day_quality(task);
+        Points Weights calculation: points_weight(task);
+        Points Allocation: points_allocation(task);
+    Methods that are not on the script, are recalled from main library (pwc or gap)"""
 
     # dist_validity, time_validity, launch_validity, stop_validity, day_quality
     day_quality(task)
@@ -132,12 +131,12 @@ def points_weight(task):
 
     '''Stopped Task'''
     if task.stopped_time and task.pilots_ess:
-        ''' 12.3.5
-            A fixed amount of points is subtracted from the time points of each pilot that makes goal in a stopped task.
-            This amount is the amount of time points a pilot would receive if he had reached ESS exactly at
-            the task stop time. This is to remove any discontinuity between pilots just before ESS and pilots who
-            had just reached ESS at task stop time.
-        '''
+        """12.3.5
+        A fixed amount of points is subtracted from the time points of each pilot that makes goal in a stopped task.
+        This amount is the amount of time points a pilot would receive if he had reached ESS exactly at
+        the task stop time. This is to remove any discontinuity between pilots just before ESS and pilots who
+        had just reached ESS at task stop time.
+        """
         task.time_points_reduction = calculate_time_points_reduction(task)
         task.avail_dist_points += task.time_points_reduction
     else:
@@ -191,8 +190,8 @@ def missing_area(time_interval, best_distance_to_ESS, ss_distance):
 
 
 def tot_lc_calc(res, t):
-    """ Function to calculate final Leading Coefficient for pilots,
-        that needs to be done when all tracks have been scored"""
+    """Function to calculate final Leading Coefficient for pilots,
+    that needs to be done when all tracks have been scored"""
     if res.result_type in ('abs', 'dnf', 'mindist', 'nyp') or not res.SSS_time:
         '''pilot did't make Start or has no track'''
         return 0

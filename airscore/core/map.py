@@ -22,9 +22,24 @@ track_style_function = lambda x: {'color': 'red' if x['properties']['Track'] == 
 
 
 # function to create the map template with optional geojson, circles and points objects
-def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_line=None, margin=0,
-             thermal_layer=False, show_thermal=False, waypoint_layer=False, show_waypoint=False, extra_tracks=None,
-             airspace_layer=None, show_airspace=False, infringements=None, bbox=None, trackpoints=None):
+def make_map(
+    layer_geojson=None,
+    points=None,
+    circles=None,
+    polyline=None,
+    goal_line=None,
+    margin=0,
+    thermal_layer=False,
+    show_thermal=False,
+    waypoint_layer=False,
+    show_waypoint=False,
+    extra_tracks=None,
+    airspace_layer=None,
+    show_airspace=False,
+    infringements=None,
+    bbox=None,
+    trackpoints=None,
+):
     """Gets elements and layers from Flask, and returns map object"""
     '''creates layers'''
     if points is None:
@@ -35,8 +50,15 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
     else:
         location = [45, 10]
 
-    folium_map = folium.Map(location=location, position='relative', zoom_start=13,
-                            tiles="Stamen Terrain", max_bounds=True, min_zoom=5, prefer_canvas=True)
+    folium_map = folium.Map(
+        location=location,
+        position='relative',
+        zoom_start=13,
+        tiles="Stamen Terrain",
+        max_bounds=True,
+        min_zoom=5,
+        prefer_canvas=True,
+    )
     #     folium.LayerControl().add_to(folium_map)
     '''Define map borders'''
     # at this stage a track (layer_geojason has bbox inside,
@@ -57,12 +79,16 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
             folium.GeoJson(track, name='Flight', style_function=track_style_function).add_to(folium_map)
             if extra_tracks:
                 extra_track_style_function = lambda colour: (
-                    lambda x: {'color': colour if x['properties']['Track'] == 'Pre_Goal' else 'grey'})
+                    lambda x: {'color': colour if x['properties']['Track'] == 'Pre_Goal' else 'grey'}
+                )
 
                 for extra_track in extra_tracks:
                     colour = extra_track['colour']
-                    folium.GeoJson(extra_track['track'], name=extra_track['name'],
-                                   style_function=extra_track_style_function(colour)).add_to(folium_map)
+                    folium.GeoJson(
+                        extra_track['track'],
+                        name=extra_track['name'],
+                        style_function=extra_track_style_function(colour),
+                    ).add_to(folium_map)
 
             if thermal_layer:
                 thermals = layer_geojson['geojson']['thermals']
@@ -114,7 +140,7 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
                 opacity=0.8,
                 fill=True,
                 fill_opacity=0.2,
-                fill_color=col
+                fill_color=col,
             ).add_to(folium_map)
 
     """Plot tolerance cylinders"""
@@ -128,7 +154,7 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
                 color="#44cc44",
                 weight=0.75,
                 opacity=0.8,
-                fill=False
+                fill=False,
             ).add_to(folium_map)
 
             folium.Circle(
@@ -138,7 +164,7 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
                 color="#44cc44",
                 weight=0.75,
                 opacity=0.8,
-                fill=False
+                fill=False,
             ).add_to(folium_map)
 
     """Plot waypoints"""
@@ -146,40 +172,28 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
         for p in points:
             if layer_geojson:
                 wp = folium.Marker(
-                        location=[p['latitude'], p['longitude']],
-                        popup=p['name'],
-                        icon=folium.features.DivIcon(
-                            icon_size=(40, 20),
-                            icon_anchor=(0, 0),
-                            html=f'<div class="waypoint-label">{p["name"]}</div>'
-                        )
-                    )
+                    location=[p['latitude'], p['longitude']],
+                    popup=p['name'],
+                    icon=folium.features.DivIcon(
+                        icon_size=(40, 20), icon_anchor=(0, 0), html=f'<div class="waypoint-label">{p["name"]}</div>'
+                    ),
+                )
             else:
                 wp = folium.Marker(
-                        location=[p['latitude'], p['longitude']],
-                        icon=folium.features.DivIcon(
-                            icon_anchor=(0, 0),
-                            html=f'<div style="background-color: darkblue; color: wheat; width: fit-content; padding: .1rem .2rem;">{p["name"]}</div>'
-                        )
-                    )
+                    location=[p['latitude'], p['longitude']],
+                    icon=folium.features.DivIcon(
+                        icon_anchor=(0, 0),
+                        html=f'<div style="background-color: darkblue; color: wheat; width: fit-content; padding: .1rem .2rem;">{p["name"]}</div>',
+                    ),
+                )
             wp.add_to(folium_map)
 
     """Design optimised route"""
     if polyline:
-        folium.PolyLine(
-            locations=polyline,
-            weight=1.5,
-            opacity=0.75,
-            color='#2176bc'
-        ).add_to(folium_map)
+        folium.PolyLine(locations=polyline, weight=1.5, opacity=0.75, color='#2176bc').add_to(folium_map)
 
     if goal_line:
-        folium.PolyLine(
-            locations=goal_line,
-            weight=1.5,
-            opacity=0.75,
-            color='#800000'
-        ).add_to(folium_map)
+        folium.PolyLine(locations=goal_line, weight=1.5, opacity=0.75, color='#800000').add_to(folium_map)
 
     if airspace_layer:
         airspace_group = FeatureGroup(name='Airspaces', show=show_airspace)
@@ -187,8 +201,9 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
             airspace_group.add_child(space)
         if infringements:
             for i in infringements:
-                popup = folium.Popup(f"<b>{i[3]}</b><br>{i[5]}. separation: {i[4]} m. <br>"
-                                     f"{i[7]} - alt. {i[2]} m.", max_width=300)
+                popup = folium.Popup(
+                    f"<b>{i[3]}</b><br>{i[5]}. separation: {i[4]} m. <br>" f"{i[7]} - alt. {i[2]} m.", max_width=300
+                )
                 icon = folium.Icon(color="red", icon="times", prefix='fa')
                 airspace_group.add_child(Marker([i[1], i[0]], icon=icon, popup=popup))
         folium_map.add_child(airspace_group)
@@ -196,9 +211,11 @@ def make_map(layer_geojson=None, points=None, circles=None, polyline=None, goal_
     if trackpoints:
         trackpoints_group = FeatureGroup(name='Trackpoints', show=True)
         for i in trackpoints:
-            tooltip = folium.Tooltip(f"Time UTC: <b>{i[5]}</b> Local Time: <b>{i[6]}</b><br>"
-                                     f"lat: <b>{round(i[1], 4)}</b> lon: <b>{round(i[0], 4)}</b><br>"
-                                     f"GPS alt: <b>{int(i[4])} m.</b> ISA Press alt: <b>{int(i[3])} m.</b>")
+            tooltip = folium.Tooltip(
+                f"Time UTC: <b>{i[5]}</b> Local Time: <b>{i[6]}</b><br>"
+                f"lat: <b>{round(i[1], 4)}</b> lon: <b>{round(i[0], 4)}</b><br>"
+                f"GPS alt: <b>{int(i[4])} m.</b> ISA Press alt: <b>{int(i[3])} m.</b>"
+            )
             trackpoints_group.add_child(folium.CircleMarker((i[1], i[0]), radius=1, tooltip=tooltip))
         folium_map.add_child(trackpoints_group)
 

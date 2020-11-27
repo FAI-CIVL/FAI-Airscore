@@ -12,17 +12,17 @@ Stuart Mackintosh, Antonio Golfari - 2019
 """
 
 from datetime import datetime
+from pathlib import Path
 
 import lxml.etree as ET
-from lxml.etree import CDATA
-from calcUtils import get_isotime, km, sec_to_time, c_round
+from calcUtils import c_round, get_isotime, km, sec_to_time
 from comp import Comp
 from compUtils import is_ext
-from formula import Formula
 from db.conn import db_session
-from pathlib import Path
-from pilot.participant import Participant, mass_import_participants
+from formula import Formula
+from lxml.etree import CDATA
 from pilot.flightresult import FlightResult, update_all_results
+from pilot.participant import Participant, mass_import_participants
 from task import Task
 
 
@@ -46,13 +46,13 @@ class FSDB(object):
 
     @classmethod
     def read(cls, fp: Path, short_name: str = None, keep_task_path=False, from_CIVL=False):
-        """ A XML reader to read FSDB files
-            Unfortunately the fsdb format isn't published so much of this is simply an
-            exercise in reverse engineering.
+        """A XML reader to read FSDB files
+        Unfortunately the fsdb format isn't published so much of this is simply an
+        exercise in reverse engineering.
 
-            Input:
-                - fp:           STR: filepath
-                - from_CIVL:    BOOL: look for pilot on CIVL database
+        Input:
+            - fp:           STR: filepath
+            - from_CIVL:    BOOL: look for pilot on CIVL database
         """
 
         """read the fsdb file"""
@@ -69,7 +69,7 @@ class FSDB(object):
         """Formula"""
         comp.formula = Formula.from_fsdb(fs_comp)
         comp.formula.comp_class = comp.comp_class
-        
+
         '''adding standard igc config'''
         comp.igc_config_file = 'standard'
 
@@ -112,9 +112,9 @@ class FSDB(object):
 
     @classmethod
     def create(cls, comp_id, ref_id=None):
-        """ creates a FSDB Object from an AirScore competition
-            input:
-                - comp_id       int: comp_id event ID"""
+        """creates a FSDB Object from an AirScore competition
+        input:
+            - comp_id       int: comp_id event ID"""
         import time
 
         '''check comp is not an external event'''
@@ -146,6 +146,7 @@ class FSDB(object):
     def create_participants(comp_id: int):
         """ create FSDB file with participants, to use for Flymaster Livetracking setup on lt.flymaster.net site"""
         from compUtils import get_participants
+
         fsdb = FSDB()
         fsdb.comp = Comp.read(comp_id)
         fsdb.filename = f"{fsdb.comp.comp_name.replace(' - ', '_').replace(' ', '_')}_participants.fsdb"
@@ -153,9 +154,9 @@ class FSDB(object):
         return fsdb.to_file(participants_fsdb=True)
 
     def to_file(self, participants_fsdb: bool = False):
-        """ returns:
-            - filename: STR
-            - fsdb:     FSDB xml data, to be used in frontend."""
+        """returns:
+        - filename: STR
+        - fsdb:     FSDB xml data, to be used in frontend."""
 
         formula = self.comp.formula
         pilots = self.comp.participants
@@ -170,52 +171,51 @@ class FSDB(object):
             custom['LIVE'] = 'live_id'
 
         '''create dicts of attributes for each section'''
-        comp_attr = {'id': '',  # still to do
-                     'name': self.comp.comp_name,
-                     'location': self.comp.comp_site,
-                     'from': self.comp.date_from,
-                     'to': self.comp.date_to,
-                     'utc_offset': self.comp.time_offset / 3600,
-                     'discipline': self.comp.comp_class.lower(),
-                     'ftv_factor': c_round(1 - formula.validity_param, 4),
-                     'fai_sanctioning': (1 if self.comp.sanction == 'FAI 1'
-                                         else 2 if self.comp.sanction == 'FAI 2' else 0)
-                     }
+        comp_attr = {
+            'id': '',  # still to do
+            'name': self.comp.comp_name,
+            'location': self.comp.comp_site,
+            'from': self.comp.date_from,
+            'to': self.comp.date_to,
+            'utc_offset': self.comp.time_offset / 3600,
+            'discipline': self.comp.comp_class.lower(),
+            'ftv_factor': c_round(1 - formula.validity_param, 4),
+            'fai_sanctioning': (1 if self.comp.sanction == 'FAI 1' else 2 if self.comp.sanction == 'FAI 2' else 0),
+        }
 
-        formula_attr = {'id': formula.formula_name,
-                        'min_dist': km(formula.min_dist, 0),
-                        'nom_dist': km(formula.nominal_dist, 0),
-                        'nom_time': formula.nominal_time / 3600,
-                        'nom_launch': formula.nominal_launch,
-                        'nom_goal': formula.nominal_goal,
-                        'day_quality_override': 0,  # still to implement
-                        'bonus_gr': int(formula.glide_bonus or 0) or '',
-                        'jump_the_gun_factor': (0 if formula.max_JTG == 0
-                                                else c_round(1 / formula.JTG_penalty_per_sec, 1)),
-                        'jump_the_gun_max': formula.max_JTG,
-                        'normalize_1000_before_day_quality': 0,  # still to implement
-                        'time_points_if_not_in_goal': c_round(1 - formula.no_goal_penalty, 1),
-                        'use_1000_points_for_max_day_quality': 0,  # still to implement
-                        'use_arrival_position_points': 1 if formula.formula_arrival == 'position' else 0,
-                        'use_arrival_time_points': 1 if formula.formula_arrival == 'time' else 0,
-                        'use_departure_points': 1 if formula.formula_departure == 'departure' else 0,
-                        'use_difficulty_for_distance_points': 1 if formula.formula_distance == 'difficulty' else 0,
-                        'use_distance_points': 1 if formula.formula_distance != 'off' else 0,
-                        'use_distance_squared_for_LC': 1 if formula.comp_class == 'PG' else 0,  # still to implement
-                        'use_leading_points': 1 if formula.formula_departure == 'leadout' else 0,
-                        'use_semi_circle_control_zone_for_goal_line': 1,  # still to implement
-                        'use_time_points': 1 if formula.formula_time == 'on' else 0,
-                        'scoring_altitude': 'GPS' if formula.scoring_altitude == 'GPS' else 'QNH',
-                        'final_glide_decelerator': 'none' if formula.arr_alt_bonus == 0 else 'aatb',
-                        'no_final_glide_decelerator_reason': '',
-                        'min_time_span_for_valid_task': 60 if self.comp_class == 'PG' else 0,  # still to implement
-                        'score_back_time': int((formula.score_back_time or 0) / 60) or '',
-                        'use_proportional_leading_weight_if_nobody_in_goal': '',  # still to implement
-                        'leading_weight_factor': (0 if formula.formula_departure != 'leadout'
-                                                  else c_round(formula.lead_factor, 3)),
-                        'turnpoint_radius_tolerance': formula.tolerance,
-                        'use_arrival_altitude_points': 0 if formula.arr_alt_bonus == 0 else ''  # still to implement
-                        }
+        formula_attr = {
+            'id': formula.formula_name,
+            'min_dist': km(formula.min_dist, 0),
+            'nom_dist': km(formula.nominal_dist, 0),
+            'nom_time': formula.nominal_time / 3600,
+            'nom_launch': formula.nominal_launch,
+            'nom_goal': formula.nominal_goal,
+            'day_quality_override': 0,  # still to implement
+            'bonus_gr': int(formula.glide_bonus or 0) or '',
+            'jump_the_gun_factor': (0 if formula.max_JTG == 0 else c_round(1 / formula.JTG_penalty_per_sec, 1)),
+            'jump_the_gun_max': formula.max_JTG,
+            'normalize_1000_before_day_quality': 0,  # still to implement
+            'time_points_if_not_in_goal': c_round(1 - formula.no_goal_penalty, 1),
+            'use_1000_points_for_max_day_quality': 0,  # still to implement
+            'use_arrival_position_points': 1 if formula.formula_arrival == 'position' else 0,
+            'use_arrival_time_points': 1 if formula.formula_arrival == 'time' else 0,
+            'use_departure_points': 1 if formula.formula_departure == 'departure' else 0,
+            'use_difficulty_for_distance_points': 1 if formula.formula_distance == 'difficulty' else 0,
+            'use_distance_points': 1 if formula.formula_distance != 'off' else 0,
+            'use_distance_squared_for_LC': 1 if formula.comp_class == 'PG' else 0,  # still to implement
+            'use_leading_points': 1 if formula.formula_departure == 'leadout' else 0,
+            'use_semi_circle_control_zone_for_goal_line': 1,  # still to implement
+            'use_time_points': 1 if formula.formula_time == 'on' else 0,
+            'scoring_altitude': 'GPS' if formula.scoring_altitude == 'GPS' else 'QNH',
+            'final_glide_decelerator': 'none' if formula.arr_alt_bonus == 0 else 'aatb',
+            'no_final_glide_decelerator_reason': '',
+            'min_time_span_for_valid_task': 60 if self.comp_class == 'PG' else 0,  # still to implement
+            'score_back_time': int((formula.score_back_time or 0) / 60) or '',
+            'use_proportional_leading_weight_if_nobody_in_goal': '',  # still to implement
+            'leading_weight_factor': (0 if formula.formula_departure != 'leadout' else c_round(formula.lead_factor, 3)),
+            'turnpoint_radius_tolerance': formula.tolerance,
+            'use_arrival_altitude_points': 0 if formula.arr_alt_bonus == 0 else '',  # still to implement
+        }
         if formula.arr_alt_bonus > 0:
             formula_attr['aatb_factor'] = c_round(formula.arr_alt_bonus, 3)
 
@@ -240,17 +240,18 @@ class FSDB(object):
         participants = ET.SubElement(comp, 'FsParticipants')
         for p in pilots:
             pil = ET.SubElement(participants, 'FsParticipant')
-            pilot_attr = {'id': p.ID or p.par_id,
-                          'name': p.name,
-                          'birthday': p.pilot_birthdate_str or '',
-                          'glider': p.glider or '',
-                          'glider_main_colors': '',
-                          'fai_licence': 1 if p.fai_id else 0,
-                          'female': p.female,
-                          'nat_code_3166_a3': p.nat or '',
-                          'sponsor': p.sponsor or '',
-                          'CIVLID': p.civl_id or '',
-                          }
+            pilot_attr = {
+                'id': p.ID or p.par_id,
+                'name': p.name,
+                'birthday': p.pilot_birthdate_str or '',
+                'glider': p.glider or '',
+                'glider_main_colors': '',
+                'fai_licence': 1 if p.fai_id else 0,
+                'female': p.female,
+                'nat_code_3166_a3': p.nat or '',
+                'sponsor': p.sponsor or '',
+                'CIVLID': p.civl_id or '',
+            }
 
             custom_attr = {k: getattr(p, v) or '' for k, v in custom.items()} if custom else {}
 
@@ -288,33 +289,38 @@ class FSDB(object):
                 '''FsScoreFormula'''
                 # we permit just few changes in single tasks from comp formula, so we just update those
                 tf_attr = formula_attr
-                tf_attr.update({'jump_the_gun_factor': (0 if not t.formula.JTG_penalty_per_sec
-                                                        else round(1 / t.formula.JTG_penalty_per_sec, 1)),
-                                'time_points_if_not_in_goal': 1 - t.formula.no_goal_penalty,
-                                'use_arrival_position_points': 1 if t.formula.arrival == 'position' else 0,
-                                'use_arrival_time_points': 1 if t.formula.arrival == 'time' else 0,
-                                'use_departure_points': 1 if t.formula.departure == 'departure' else 0,
-                                'use_difficulty_for_distance_points': 1 if t.formula.distance == 'difficulty' else 0,
-                                'use_distance_points': 0 if t.formula.distance == 'off' else 1,
-                                'use_leading_points': 0 if t.formula.departure == 'off' else 1,
-                                'use_time_points': 0 if t.formula.time == 'off' else 1,
-                                'scoring_altitude': 'GPS' if t.formula.scoring_altitude == 'GPS' else 'QNH',
-                                'final_glide_decelerator': 'none' if t.formula.arr_alt_bonus == 0 else 'aatb',
-                                'use_arrival_altitude_points': 0 if t.formula.arr_alt_bonus == 0 else 1,
-                                'turnpoint_radius_tolerance': t.formula.tolerance,
-                                })
+                tf_attr.update(
+                    {
+                        'jump_the_gun_factor': (
+                            0 if not t.formula.JTG_penalty_per_sec else round(1 / t.formula.JTG_penalty_per_sec, 1)
+                        ),
+                        'time_points_if_not_in_goal': 1 - t.formula.no_goal_penalty,
+                        'use_arrival_position_points': 1 if t.formula.arrival == 'position' else 0,
+                        'use_arrival_time_points': 1 if t.formula.arrival == 'time' else 0,
+                        'use_departure_points': 1 if t.formula.departure == 'departure' else 0,
+                        'use_difficulty_for_distance_points': 1 if t.formula.distance == 'difficulty' else 0,
+                        'use_distance_points': 0 if t.formula.distance == 'off' else 1,
+                        'use_leading_points': 0 if t.formula.departure == 'off' else 1,
+                        'use_time_points': 0 if t.formula.time == 'off' else 1,
+                        'scoring_altitude': 'GPS' if t.formula.scoring_altitude == 'GPS' else 'QNH',
+                        'final_glide_decelerator': 'none' if t.formula.arr_alt_bonus == 0 else 'aatb',
+                        'use_arrival_altitude_points': 0 if t.formula.arr_alt_bonus == 0 else 1,
+                        'turnpoint_radius_tolerance': t.formula.tolerance,
+                    }
+                )
 
                 for k, v in tf_attr.items():
                     task_f.set(k, str(v))
 
                 '''FsTaskDefinition'''
                 tps = t.turnpoints
-                td_attr = {'ss': [i + 1 for i, tp in enumerate(tps) if tp.type == 'speed'].pop(0),
-                           'es': [i + 1 for i, tp in enumerate(tps) if tp.type == 'endspeed'].pop(0),
-                           'goal': next(tp.shape for tp in tps if tp.type == 'goal').upper(),
-                           'groundstart': 0,  # still to implement
-                           'qnh_setting': 1013.25  # still to implement
-                           }
+                td_attr = {
+                    'ss': [i + 1 for i, tp in enumerate(tps) if tp.type == 'speed'].pop(0),
+                    'es': [i + 1 for i, tp in enumerate(tps) if tp.type == 'endspeed'].pop(0),
+                    'goal': next(tp.shape for tp in tps if tp.type == 'goal').upper(),
+                    'groundstart': 0,  # still to implement
+                    'qnh_setting': 1013.25,  # still to implement
+                }
 
                 for k, v in td_attr.items():
                     task_d.set(k, str(v))
@@ -333,14 +339,15 @@ class FSDB(object):
 
                 for i, tp in enumerate(tps):
                     task_tp = ET.SubElement(task_d, 'FsTurnpoint')
-                    tp_attr = {'id': tp.name,
-                               'lat': round(tp.lat, 5),
-                               'lon': round(tp.lon, 5),
-                               'altitude': tp.altitude,
-                               'radius': tp.radius,
-                               'open': t_open if i < (td_attr['ss'] - 1) else ss_open,
-                               'close': w_close if i == 0 else ss_close if i == (td_attr['ss'] - 1) else t_close
-                               }
+                    tp_attr = {
+                        'id': tp.name,
+                        'lat': round(tp.lat, 5),
+                        'lon': round(tp.lon, 5),
+                        'altitude': tp.altitude,
+                        'radius': tp.radius,
+                        'open': t_open if i < (td_attr['ss'] - 1) else ss_open,
+                        'close': w_close if i == 0 else ss_close if i == (td_attr['ss'] - 1) else t_close,
+                    }
                     for k, v in tp_attr.items():
                         task_tp.set(k, str(v))
 
@@ -361,58 +368,62 @@ class FSDB(object):
 
                 '''FsTaskScoreParams'''
                 launch_ess = [t.partial_distance[i] for i, tp in enumerate(t.turnpoints) if tp.type == 'endspeed'].pop()
-                sp_attr = {'ss_distance': km(t.SS_distance),
-                           'task_distance': km(t.opt_dist),
-                           'launch_to_ess_distance': km(launch_ess),
-                           'no_of_pilots_present': t.pilots_present,
-                           'no_of_pilots_flying': t.pilots_launched,
-                           'no_of_pilots_lo': t.pilots_launched - t.pilots_goal,
-                           'no_of_pilots_reaching_nom_dist': len(
-                               [x for x in t.valid_results if x.distance_flown > t.formula.nominal_dist]),
-                           'no_of_pilots_reaching_es': t.pilots_ess,
-                           'no_of_pilots_reaching_goal': t.pilots_goal,
-                           'sum_flown_distance': km(t.tot_dist_flown),
-                           'best_dist': km(t.max_distance or 0),
-                           'best_time': round((t.fastest or 0) / 3600, 14),
-                           'worst_time': round(max((x.ESS_time or 0) - (x.SSS_time or 0)
-                                                   for x in t.valid_results) / 3600, 14),
-                           'no_of_pilots_in_competition': len(self.comp.participants),
-                           'no_of_pilots_landed_before_stop': 0 if not t.stopped_time else t.pilots_landed,
-                           'sum_dist_over_min': km(t.tot_dist_over_min),
-                           'sum_real_dist_over_min': km(t.tot_dist_over_min),  # not yet implemented
-                           'best_real_dist': km(t.max_distance),  # not yet implemented
-                           'last_start_time': get_isotime(t.date,
-                                                          max([x.SSS_time for x in t.valid_results if
-                                                               x.SSS_time is not None]),
-                                                          t.time_offset),
-                           'first_start_time': ('' if not t.min_dept_time
-                                                else get_isotime(t.date, t.min_dept_time, t.time_offset)),
-                           'first_finish_time': ('' if not t.min_ess_time
-                                                 else get_isotime(t.date, t.min_ess_time, t.time_offset)),
-                           'max_time_to_get_time_points': round(0 / 3600, 14),  # not yet implemented
-                           'no_of_pilots_with_time_points': len([x for x in t.valid_results if x.time_score > 0]),
-                           'goalratio': (0 if t.pilots_launched == 0 else round(t.pilots_goal/t.pilots_launched, 15)),
-                           'arrival_weight': 0 if t.arrival == 0 else c_round(t.arr_weight, 3),
-                           'departure_weight': 0 if t.departure != 'on' else c_round(t.dep_weight, 3),
-                           'leading_weight': 0 if t.departure != 'leadout' else c_round(t.dep_weight, 3),
-                           'time_weight': 0 if t.arrival == 'off' else c_round(t.time_weight, 3),
-                           'distance_weight': c_round(t.dist_weight, 3),  # not yet implemented
-                           'smallest_leading_coefficient': '' if not t.min_lead_coeff else round(t.min_lead_coeff, 14),
-                           'available_points_distance': round(t.avail_dist_points, 14),
-                           'available_points_time': round(t.avail_time_points, 14),
-                           'available_points_departure': (0 if not t.formula.departure == 'departure'
-                                                          else round(t.avail_dep_points, 14)),
-                           'available_points_leading': (0 if not t.formula.departure == 'leadout'
-                                                        else round(t.avail_dep_points, 14)),
-                           'available_points_arrival': round(t.avail_arr_points, 14),
-                           'time_validity': c_round(t.time_validity, 3),
-                           'launch_validity': c_round(t.launch_validity, 3),
-                           'distance_validity': c_round(t.dist_validity, 3),
-                           'stop_validity': c_round(t.stop_validity, 3),
-                           'day_quality': c_round(t.day_quality, 3),
-                           'ftv_day_validity': t.ftv_validity,
-                           'time_points_stop_correction': 0  # not yet implemented
-                           }
+                sp_attr = {
+                    'ss_distance': km(t.SS_distance),
+                    'task_distance': km(t.opt_dist),
+                    'launch_to_ess_distance': km(launch_ess),
+                    'no_of_pilots_present': t.pilots_present,
+                    'no_of_pilots_flying': t.pilots_launched,
+                    'no_of_pilots_lo': t.pilots_launched - t.pilots_goal,
+                    'no_of_pilots_reaching_nom_dist': len(
+                        [x for x in t.valid_results if x.distance_flown > t.formula.nominal_dist]
+                    ),
+                    'no_of_pilots_reaching_es': t.pilots_ess,
+                    'no_of_pilots_reaching_goal': t.pilots_goal,
+                    'sum_flown_distance': km(t.tot_dist_flown),
+                    'best_dist': km(t.max_distance or 0),
+                    'best_time': round((t.fastest or 0) / 3600, 14),
+                    'worst_time': round(max((x.ESS_time or 0) - (x.SSS_time or 0) for x in t.valid_results) / 3600, 14),
+                    'no_of_pilots_in_competition': len(self.comp.participants),
+                    'no_of_pilots_landed_before_stop': 0 if not t.stopped_time else t.pilots_landed,
+                    'sum_dist_over_min': km(t.tot_dist_over_min),
+                    'sum_real_dist_over_min': km(t.tot_dist_over_min),  # not yet implemented
+                    'best_real_dist': km(t.max_distance),  # not yet implemented
+                    'last_start_time': get_isotime(
+                        t.date, max([x.SSS_time for x in t.valid_results if x.SSS_time is not None]), t.time_offset
+                    ),
+                    'first_start_time': (
+                        '' if not t.min_dept_time else get_isotime(t.date, t.min_dept_time, t.time_offset)
+                    ),
+                    'first_finish_time': (
+                        '' if not t.min_ess_time else get_isotime(t.date, t.min_ess_time, t.time_offset)
+                    ),
+                    'max_time_to_get_time_points': round(0 / 3600, 14),  # not yet implemented
+                    'no_of_pilots_with_time_points': len([x for x in t.valid_results if x.time_score > 0]),
+                    'goalratio': (0 if t.pilots_launched == 0 else round(t.pilots_goal / t.pilots_launched, 15)),
+                    'arrival_weight': 0 if t.arrival == 0 else c_round(t.arr_weight, 3),
+                    'departure_weight': 0 if t.departure != 'on' else c_round(t.dep_weight, 3),
+                    'leading_weight': 0 if t.departure != 'leadout' else c_round(t.dep_weight, 3),
+                    'time_weight': 0 if t.arrival == 'off' else c_round(t.time_weight, 3),
+                    'distance_weight': c_round(t.dist_weight, 3),  # not yet implemented
+                    'smallest_leading_coefficient': '' if not t.min_lead_coeff else round(t.min_lead_coeff, 14),
+                    'available_points_distance': round(t.avail_dist_points, 14),
+                    'available_points_time': round(t.avail_time_points, 14),
+                    'available_points_departure': (
+                        0 if not t.formula.departure == 'departure' else round(t.avail_dep_points, 14)
+                    ),
+                    'available_points_leading': (
+                        0 if not t.formula.departure == 'leadout' else round(t.avail_dep_points, 14)
+                    ),
+                    'available_points_arrival': round(t.avail_arr_points, 14),
+                    'time_validity': c_round(t.time_validity, 3),
+                    'launch_validity': c_round(t.launch_validity, 3),
+                    'distance_validity': c_round(t.dist_validity, 3),
+                    'stop_validity': c_round(t.stop_validity, 3),
+                    'day_quality': c_round(t.day_quality, 3),
+                    'ftv_day_validity': t.ftv_validity,
+                    'time_points_stop_correction': 0,  # not yet implemented
+                }
                 for k, v in sp_attr.items():
                     task_sp.set(k, str(v))
 
@@ -426,100 +437,113 @@ class FSDB(object):
                         pil_fd = ET.SubElement(pil_p, 'FsFlightData')
                         pil_r = ET.SubElement(pil_p, 'FsResult')
                         if not (pil.result_type in ['mindist', 'min_dist']):
-                            fd_attr = {'distance': km(pil.distance_flown),
-                                       'bonus_distance': km(pil.distance),
-                                       # ?? seems 0 for PG and more than dist for HG
-                                       'started_ss': '' if not pil.real_start_time else get_isotime(t.date,
-                                                                                                    pil.real_start_time,
-                                                                                                    t.time_offset),
-                                       'finished_ss': '' if not pil.ESS_time else get_isotime(t.date, pil.ESS_time,
-                                                                                              t.time_offset),
-                                       'altitude_at_ess': int(pil.ESS_altitude or 0),
-                                       'finished_task': '' if not pil.goal_time else get_isotime(t.date, pil.goal_time,
-                                                                                                 t.time_offset),
-                                       'tracklog_filename': pil.track_file,
-                                       'lc': pil.lead_coeff,
-                                       'iv': pil.fixed_LC or '',
-                                       'ts': get_isotime(t.date, pil.first_time, t.time_offset),
-                                       'alt': int(pil.last_altitude or 0),  # ??
-                                       'bonus_alt': '',  # ?? not implemented
-                                       'max_alt': int(pil.max_altitude or 0),
-                                       'last_tracklog_point_distance': '',  # not implemented yet
-                                       'bonus_last_tracklog_point_distance': '',  # ?? not implemented
-                                       'last_tracklog_point_time': get_isotime(t.date, pil.landing_time, t.time_offset),
-                                       'last_tracklog_point_alt': int(pil.landing_altitude or 0),
-                                       'landed_before_deadline': '1' if pil.landing_time < (
-                                           t.task_deadline if not t.stopped_time else t.stopped_time) else '0',
-                                       'reachedGoal': 1 if pil.goal_time else 0
-                                       # only deadline?
-                                       }
+                            fd_attr = {
+                                'distance': km(pil.distance_flown),
+                                'bonus_distance': km(pil.distance),
+                                # ?? seems 0 for PG and more than dist for HG
+                                'started_ss': ''
+                                if not pil.real_start_time
+                                else get_isotime(t.date, pil.real_start_time, t.time_offset),
+                                'finished_ss': ''
+                                if not pil.ESS_time
+                                else get_isotime(t.date, pil.ESS_time, t.time_offset),
+                                'altitude_at_ess': int(pil.ESS_altitude or 0),
+                                'finished_task': ''
+                                if not pil.goal_time
+                                else get_isotime(t.date, pil.goal_time, t.time_offset),
+                                'tracklog_filename': pil.track_file,
+                                'lc': pil.lead_coeff,
+                                'iv': pil.fixed_LC or '',
+                                'ts': get_isotime(t.date, pil.first_time, t.time_offset),
+                                'alt': int(pil.last_altitude or 0),  # ??
+                                'bonus_alt': '',  # ?? not implemented
+                                'max_alt': int(pil.max_altitude or 0),
+                                'last_tracklog_point_distance': '',  # not implemented yet
+                                'bonus_last_tracklog_point_distance': '',  # ?? not implemented
+                                'last_tracklog_point_time': get_isotime(t.date, pil.landing_time, t.time_offset),
+                                'last_tracklog_point_alt': int(pil.landing_altitude or 0),
+                                'landed_before_deadline': '1'
+                                if pil.landing_time < (t.task_deadline if not t.stopped_time else t.stopped_time)
+                                else '0',
+                                'reachedGoal': 1 if pil.goal_time else 0
+                                # only deadline?
+                            }
                             for k, v in fd_attr.items():
                                 pil_fd.set(k, str(v))
 
-                        r_attr = {'rank': i + 1,  # not implemented, they should be ordered tho
-                                  # Rank IS NOT SAFE (I guess)
-                                  'points': c_round(pil.score),
-                                  'distance': km(pil.total_distance if pil.total_distance else pil.distance_flown),
-                                  'ss_time': '' if not pil.ss_time else sec_to_time(pil.ss_time).strftime('%H:%M:%S'),
-                                  'finished_ss_rank': '' if not pil.ESS_time and pil.ESS_rank else pil.ESS_rank,
-                                  'distance_points': 0 if not pil.distance_score else c_round(pil.distance_score, 1),
-                                  'time_points': 0 if not pil.time_score else c_round(pil.time_score, 1),
-                                  'arrival_points': 0 if not pil.arrival_score else c_round(pil.arrival_score, 1),
-                                  'departure_points': 0 if not t.formula.departure == 'departure' else c_round(
-                                      pil.departure_score, 1),
-                                  'leading_points': 0 if not t.formula.departure == 'leadout' else c_round(
-                                      pil.departure_score, 1),
-                                  'penalty': 0 if not [n for n in pil.notifications
-                                                       if n.percentage_penalty > 0] else max(
-                                      n.percentage_penalty for n in pil.notifications),
-                                  'penalty_points': 0 if not [n for n in pil.notifications
-                                                              if n.flat_penalty > 0] else max(
-                                      n.flat_penalty for n in pil.notifications),
-                                  'penalty_reason': '; '.join([n.comment for n in pil.notifications
-                                                               if n.flat_penalty + n.percentage_penalty > 0
-                                                               and not n.notification_type == 'jtg']),
-                                  'penalty_points_auto': sum(n.flat_penalty for n in pil.notifications
-                                                             if n.notification_type == 'jtg'),
-                                  'penalty_reason_auto': '' if not [n for n in pil.notifications
-                                                                    if n.notification_type == 'jtg'] else next(
-                                      n for n in pil.notifications
-                                      if n.notification_type == 'jtg').flat_penalty,
-                                  'penalty_min_dist_points': 0,  # ??
-                                  'got_time_but_not_goal_penalty': (pil.ESS_time or 0) > 0 and not pil.goal_time,
-                                  'started_ss': '' if not pil.real_start_time else get_isotime(t.date, pil.SSS_time,
-                                                                                               t.time_offset),
-                                  'ss_time_dec_hours': 0 if not pil.ESS_time else round(pil.ss_time / 3600, 14),
-                                  'ts': ('' if not pil.first_time
-                                         else get_isotime(t.date, pil.first_time, t.time_offset)),  # flight origin time
-                                  'real_distance': km(pil.distance_flown),
-                                  'last_distance': '',  # ?? last fix distance?
-                                  'last_altitude_above_goal': int(pil.last_altitude or 0),
-                                  'altitude_bonus_seconds': 0,  # not implemented
-                                  'altitude_bonus_time': sec_to_time(0).strftime('%H:%M:%S'),  # not implemented
-                                  'altitude_at_ess': int(pil.ESS_altitude or 0),
-                                  'scored_ss_time': ('' if not pil.ss_time
-                                                     else sec_to_time(pil.ss_time).strftime('%H:%M:%S')),
-                                  'landed_before_stop': t.stopped_time and pil.landing_time < t.stopped_time
-                                  }
+                        r_attr = {
+                            'rank': i + 1,  # not implemented, they should be ordered tho
+                            # Rank IS NOT SAFE (I guess)
+                            'points': c_round(pil.score),
+                            'distance': km(pil.total_distance if pil.total_distance else pil.distance_flown),
+                            'ss_time': '' if not pil.ss_time else sec_to_time(pil.ss_time).strftime('%H:%M:%S'),
+                            'finished_ss_rank': '' if not pil.ESS_time and pil.ESS_rank else pil.ESS_rank,
+                            'distance_points': 0 if not pil.distance_score else c_round(pil.distance_score, 1),
+                            'time_points': 0 if not pil.time_score else c_round(pil.time_score, 1),
+                            'arrival_points': 0 if not pil.arrival_score else c_round(pil.arrival_score, 1),
+                            'departure_points': 0
+                            if not t.formula.departure == 'departure'
+                            else c_round(pil.departure_score, 1),
+                            'leading_points': 0
+                            if not t.formula.departure == 'leadout'
+                            else c_round(pil.departure_score, 1),
+                            'penalty': 0
+                            if not [n for n in pil.notifications if n.percentage_penalty > 0]
+                            else max(n.percentage_penalty for n in pil.notifications),
+                            'penalty_points': 0
+                            if not [n for n in pil.notifications if n.flat_penalty > 0]
+                            else max(n.flat_penalty for n in pil.notifications),
+                            'penalty_reason': '; '.join(
+                                [
+                                    n.comment
+                                    for n in pil.notifications
+                                    if n.flat_penalty + n.percentage_penalty > 0 and not n.notification_type == 'jtg'
+                                ]
+                            ),
+                            'penalty_points_auto': sum(
+                                n.flat_penalty for n in pil.notifications if n.notification_type == 'jtg'
+                            ),
+                            'penalty_reason_auto': ''
+                            if not [n for n in pil.notifications if n.notification_type == 'jtg']
+                            else next(n for n in pil.notifications if n.notification_type == 'jtg').flat_penalty,
+                            'penalty_min_dist_points': 0,  # ??
+                            'got_time_but_not_goal_penalty': (pil.ESS_time or 0) > 0 and not pil.goal_time,
+                            'started_ss': ''
+                            if not pil.real_start_time
+                            else get_isotime(t.date, pil.SSS_time, t.time_offset),
+                            'ss_time_dec_hours': 0 if not pil.ESS_time else round(pil.ss_time / 3600, 14),
+                            'ts': (
+                                '' if not pil.first_time else get_isotime(t.date, pil.first_time, t.time_offset)
+                            ),  # flight origin time
+                            'real_distance': km(pil.distance_flown),
+                            'last_distance': '',  # ?? last fix distance?
+                            'last_altitude_above_goal': int(pil.last_altitude or 0),
+                            'altitude_bonus_seconds': 0,  # not implemented
+                            'altitude_bonus_time': sec_to_time(0).strftime('%H:%M:%S'),  # not implemented
+                            'altitude_at_ess': int(pil.ESS_altitude or 0),
+                            'scored_ss_time': (
+                                '' if not pil.ss_time else sec_to_time(pil.ss_time).strftime('%H:%M:%S')
+                            ),
+                            'landed_before_stop': t.stopped_time and pil.landing_time < t.stopped_time,
+                        }
                         if pil.ESS_time:
-                            r_attr['finished_ss'] = get_isotime(t.date, pil.ESS_time, t.time_offset),
+                            r_attr['finished_ss'] = (get_isotime(t.date, pil.ESS_time, t.time_offset),)
 
                         for k, v in r_attr.items():
                             pil_r.set(k, str(v))
 
         '''creates the file to store'''
-        fsdb = ET.tostring(root,
-                           pretty_print=True,
-                           xml_declaration=True,
-                           encoding='UTF-8')
+        fsdb = ET.tostring(root, pretty_print=True, xml_declaration=True, encoding='UTF-8')
 
         return self.filename, fsdb
 
     def save_file(self, filename: str = None):
         """write fsdb file to results folder, with default filename:
-            comp_code_datetime.fsdb"""
-        from Defines import RESULTDIR
+        comp_code_datetime.fsdb"""
         from pathlib import Path
+
+        from Defines import RESULTDIR
+
         _, fsdb = self.to_file()
         if not filename:
             filename = self.filename
@@ -529,7 +553,7 @@ class FSDB(object):
 
     def add_comp(self):
         """
-            Add comp to AirScore database
+        Add comp to AirScore database
         """
         import re
 
@@ -542,8 +566,11 @@ class FSDB(object):
                 self.comp.formula.formula_type = 'gap'
                 self.comp.formula.validity_ref = 'day_quality'
             if self.comp.formula.formula_type is not None:
-                self.comp.formula.formula_version = (int(re.search("(\d+)", self.comp.formula.formula_name).group())
-                                                     if re.search("(\d+)", self.comp.formula.formula_name) else None)
+                self.comp.formula.formula_version = (
+                    int(re.search("(\d+)", self.comp.formula.formula_name).group())
+                    if re.search("(\d+)", self.comp.formula.formula_name)
+                    else None
+                )
 
         self.comp.to_db()
         self.comp.formula.comp_id = self.comp.comp_id
@@ -551,9 +578,10 @@ class FSDB(object):
 
     def add_tasks(self):
         """
-            Add comp tasks to AirScore database
+        Add comp tasks to AirScore database
         """
         from pathlib import Path
+
         if self.comp.comp_id is None:
             return False
 
@@ -575,9 +603,10 @@ class FSDB(object):
 
     def add_results(self):
         """
-            Add results for each comp task to AirScore database
+        Add results for each comp task to AirScore database
         """
         from db.tables import TblTaskResult as R
+
         if self.comp.comp_id is None:
             return False
 
@@ -601,7 +630,7 @@ class FSDB(object):
 
     def add_participants(self):
         """
-            Add participants to AirScore database
+        Add participants to AirScore database
         """
         from db.tables import TblParticipant as P
 
@@ -621,16 +650,20 @@ class FSDB(object):
 
     def create_results_files(self):
         from result import create_json_file
+
         for task in self.tasks:
             task.comp_id = self.comp.comp_id
             task.comp_name = self.comp.comp_name
             task.comp_site = self.comp.comp_site
             task.comp_class = self.comp.comp_class
             elements = task.create_json_elements()
-            ref_id, filename, _ = create_json_file(comp_id=self.comp.comp_id, task_id=task.id,
-                                                   code='_'.join([self.comp.comp_code, task.task_code]),
-                                                   elements=elements,
-                                                   status='Imported from FSDB')
+            ref_id, filename, _ = create_json_file(
+                comp_id=self.comp.comp_id,
+                task_id=task.id,
+                code='_'.join([self.comp.comp_code, task.task_code]),
+                elements=elements,
+                status='Imported from FSDB',
+            )
             print(f' - created file {filename} for {task.task_name}')
         _, ref_id, filename, timestamp = Comp.create_results(self.comp.comp_id)
 

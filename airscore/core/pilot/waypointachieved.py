@@ -11,7 +11,8 @@ Stuart Mackintosh - Antonio Golfari
 
 """
 
-from dataclasses import dataclass, asdict, fields
+from dataclasses import asdict, dataclass, fields
+
 from db.conn import db_session
 
 
@@ -39,6 +40,7 @@ def get_waypoints_achieved(track_id):
     """retrieves a WaypointAchieved obj list for track_id result"""
     from db.tables import TblTrackWaypoint
     from sqlalchemy.orm import aliased
+
     t = aliased(TblTrackWaypoint)
     achieved = []
     rows = t.get_all(track_id=track_id)
@@ -50,6 +52,7 @@ def get_waypoints_achieved(track_id):
 def update_waypoints_achieved(pilot):
     """deletes old entries and updates TblTrackWaypoint for result"""
     from db.tables import TblTrackWaypoint
+
     mappings = []
     for w in pilot.waypoints_achieved:
         mappings.append(dict(track_id=pilot.track_id, **asdict(w)))

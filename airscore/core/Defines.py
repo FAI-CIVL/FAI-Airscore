@@ -5,8 +5,10 @@ Use: from Defines import BINDIR, TRACKDIR
 Antonio Golfari - 2018
 """
 import os
+
 import yaml
 from environs import Env
+
 env = Env()
 env.read_env()
 
@@ -42,11 +44,13 @@ AIRSPACECHECKDIR = config['dir']['airspace_check']  # airspace check files direc
 WAYPOINTDIR = config['dir']['waypoint']  # waypoint files directory
 LIVETRACKDIR = config['dir']['livetracking']  # waypoint files directory
 IGCPARSINGCONFIG = config['dir']['igc_parsing_config']  # igc parsing config files
-TEMPFILES = config['dir']['temp_files']  # tempfile folder when we need one that can be seen by other containers. e.g. workers
+TEMPFILES = config['dir'][
+    'temp_files'
+]  # tempfile folder when we need one that can be seen by other containers. e.g. workers
 
 ''' Track file Settings'''
 track_sources = [s for s in config['igc_sources'] if config['igc_sources'][s]]  # external available sources for tracks
-track_formats = ['igc']   # accepted track formats
+track_formats = ['igc']  # accepted track formats
 '''accepted filename formats
 id
 name
@@ -57,15 +61,19 @@ other: other not used
 examples: 
     '0068.igc' = 'id' 
     'LiveTrack Antoine Saraf.361951.20190717-113625.5836.47.igc' = 'other name name.live.other-other.other.id' '''
-filename_formats = ['id', 'other name name.live.other-other.other.id', 'fai_name', 'name_name',
-                    'other name name name.live.other-other.other.id',
-                    'other name name name name.live.other-other.other.id',
-                    'name_name.other-other.other.id',
-                    'name_name.other-other.other.other',
-                    'name_name_name.other-other.other.id',
-                    'name_name_name_name.other-other.other.id',
-                    'other name name.live.other-other.other.other',
-                    ]
+filename_formats = [
+    'id',
+    'other name name.live.other-other.other.id',
+    'fai_name',
+    'name_name',
+    'other name name name.live.other-other.other.id',
+    'other name name name name.live.other-other.other.id',
+    'name_name.other-other.other.id',
+    'name_name.other-other.other.other',
+    'name_name_name.other-other.other.id',
+    'name_name_name_name.other-other.other.id',
+    'other name name.live.other-other.other.other',
+]
 
 ''' Waypoint file Settings'''
 wpt_formats = ['GEO', 'UTM', 'CUP', 'GPX', 'CompeGPS', 'OziExplorer']
@@ -73,9 +81,9 @@ ALLOWED_WPT_EXTENSIONS = ['wpt', 'cup', 'gpx', 'ozi']
 
 ''' Database Settings'''
 MYSQLUSER = dev.get('db', {}).get('User') or env.str('MYSQLUSER')  # mysql db user
-MYSQLPASSWORD = dev.get('db', {}).get('Pass') or env.str('MYSQLPASSWORD')# mysql db password
-MYSQLHOST = dev.get('db', {}).get('Server') or env.str('MYSQLHOST')   # mysql host name
-DATABASE = dev.get('db', {}).get('Name') or env.str('DATABASE')# mysql db name
+MYSQLPASSWORD = dev.get('db', {}).get('Pass') or env.str('MYSQLPASSWORD')  # mysql db password
+MYSQLHOST = dev.get('db', {}).get('Server') or env.str('MYSQLHOST')  # mysql host name
+DATABASE = dev.get('db', {}).get('Name') or env.str('DATABASE')  # mysql db name
 
 ''' Other Settings'''
 XC_LOGIN = dev.get('xcontest', {}).get('User') or env.str('XCONTEST_USER')

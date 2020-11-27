@@ -1,4 +1,4 @@
-function populate_registered_pilot_details(compid){
+function populate_registered_pilot_details(compid, readonly=false){
   $.ajax({
     type: "GET",
     url: '/_get_participants/' + compid,
@@ -20,11 +20,13 @@ function populate_registered_pilot_details(compid){
           {data: 'status', title: "Status", width: '2rem', defaultContent: ''},
           {data: 'paid', title: "Paid", width: '1rem', defaultContent: ''},
           {data: 'xcontest_id', title: 'XContest ID', name: 'xcontest_id', width: '2rem', visible: false, defaultContent: ''},
-          {data: 'live_id', title: 'Live ID', name: 'live_id', width: '2.5rem', visible: false, defaultContent: ''},
-          {data: 'pil_id', title: "Source", render: function ( data ) { if (data){ return 'internal' } else { return 'external'}}},
-          {data: 'par_id', orderable: false, searchable: false, render: function ( data ) { return '<td  class ="value" ><button type="button" class="btn btn-primary" onclick="edit_participant(' +  data + ')" data-toggle="confirmation" data-popout="true">Edit</button></td>'}},
-          {data: 'par_id', orderable: false, searchable: false, render: function ( data ) { return '<td  class ="value" ><button type="button" class="btn btn-danger" onclick="remove_participant(' +  data + ')" data-toggle="confirmation" data-popout="true">Remove</button></td>'}}
+          {data: 'live_id', title: 'Live ID', name: 'live_id', width: '2.5rem', visible: false, defaultContent: ''}
       ];
+      if (!external_comp) {
+        columns.push({data: 'pil_id', title: "Source", render: function ( data ) { if (data){ return 'internal' } else { return 'external'}}});
+        columns.push({data: 'par_id', orderable: false, searchable: false, render: function ( data ) { return '<td  class ="value" ><button type="button" class="btn btn-primary" onclick="edit_participant(' +  data + ')" data-toggle="confirmation" data-popout="true">Edit</button></td>'}});
+        columns.push({data: 'par_id', orderable: false, searchable: false, render: function ( data ) { return '<td  class ="value" ><button type="button" class="btn btn-danger" onclick="remove_participant(' +  data + ')" data-toggle="confirmation" data-popout="true">Remove</button></td>'}});
+      }
 
       $('#pilots').DataTable({
         data: json.data,

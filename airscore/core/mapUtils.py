@@ -86,8 +86,9 @@ def get_airspace_bbox(reader):
                 longitudes.append(element['end'][1])
                 latitudes.append(element['center'][0])
                 longitudes.append(element['center'][1])
-            elif element['type'] == 'circle' or element[
-                'type'] == 'arc':  # hopefully capture case of arc defined by radius and angles - treat as circle
+            elif (
+                element['type'] == 'circle' or element['type'] == 'arc'
+            ):  # hopefully capture case of arc defined by radius and angles - treat as circle
                 # Get N,E,S & W most points of circle
                 cardinals = [0, 90, 180, 270]
                 for c in cardinals:
@@ -101,11 +102,13 @@ def get_airspace_bbox(reader):
 
 
 def map_legend(col_pilot_dict):
-    from branca.element import Template, MacroElement
+    from branca.element import MacroElement, Template
+
     legend_txt = ""
     for pilot in col_pilot_dict:
         legend_txt += (
-                "<li><span style='background:" + col_pilot_dict[pilot] + ";opacity:0.7;'></span>" + pilot + "</li>")
+            "<li><span style='background:" + col_pilot_dict[pilot] + ";opacity:0.7;'></span>" + pilot + "</li>"
+        )
 
     first_block = """
     {% macro html(this, kwargs) %}
@@ -200,11 +203,11 @@ def map_legend(col_pilot_dict):
 
 
 def get_other_tracks(taskid, pilot_parid):
-    from db.tables import FlightResultView as R
     from db.conn import db_session
+    from db.tables import FlightResultView as R
 
     with db_session() as db:
-        tracks = (db.query(R.track_id, R.name).filter(R.task_id == taskid, R.par_id != pilot_parid).all())
+        tracks = db.query(R.track_id, R.name).filter(R.task_id == taskid, R.par_id != pilot_parid).all()
 
     return tracks
 
@@ -218,8 +221,9 @@ def result_to_geojson(result, task, flight, second_interval=5):
     returns the Json string."""
 
     from collections import namedtuple
-    from route import rawtime_float_to_hms, distance
-    from geojson import Point, Feature, FeatureCollection, MultiLineString
+
+    from geojson import Feature, FeatureCollection, MultiLineString, Point
+    from route import distance, rawtime_float_to_hms
 
     features = []
     takeoff_landing = []
@@ -239,8 +243,13 @@ def result_to_geojson(result, task, flight, second_interval=5):
     takeoff_landing.append(Feature(geometry=landing, properties={"Landing": "Landing"}))
 
     for thermal in flight.thermals:
-        thermals.append((thermal.enter_fix.lon, thermal.enter_fix.lat,
-                         f'{thermal.vertical_velocity():.1f}m/s gain:{thermal.alt_change():.0f}m'))
+        thermals.append(
+            (
+                thermal.enter_fix.lon,
+                thermal.enter_fix.lat,
+                f'{thermal.vertical_velocity():.1f}m/s gain:{thermal.alt_change():.0f}m',
+            )
+        )
 
     pre_sss = []
     pre_goal = []
@@ -254,15 +263,21 @@ def result_to_geojson(result, task, flight, second_interval=5):
 
     if len(result.waypoints_achieved) > 0:
         for idx, tp in enumerate(result.waypoints_achieved):
-            time = ("%02d:%02d:%02d" % rawtime_float_to_hms(tp.rawtime + task.time_offset))
-            achieved = [tp.lon, tp.lat, tp.altitude, tp.name, tp.rawtime, time, f'<b>{tp.name}</b> <br>'
-                                                                                f'alt: <b>{tp.altitude:.0f} m.</b><br>'
-                                                                                f'time: <b>{time}</b>']
+            time = "%02d:%02d:%02d" % rawtime_float_to_hms(tp.rawtime + task.time_offset)
+            achieved = [
+                tp.lon,
+                tp.lat,
+                tp.altitude,
+                tp.name,
+                tp.rawtime,
+                time,
+                f'<b>{tp.name}</b> <br>' f'alt: <b>{tp.altitude:.0f} m.</b><br>' f'time: <b>{time}</b>',
+            ]
             if idx > 0:
                 current = point(lon=tp.lon, lat=tp.lat)
                 previous = point(lon=waypoints_achieved[-1][0], lat=waypoints_achieved[-1][1])
                 straight_line_dist = distance(previous, current) / 1000
-                time_taken = (tp.rawtime - waypoints_achieved[-1][4])
+                time_taken = tp.rawtime - waypoints_achieved[-1][4]
                 time_takenHMS = rawtime_float_to_hms(time_taken)
                 if time_taken > 0:
                     speed = straight_line_dist / (time_taken / 3600)
@@ -279,9 +294,11 @@ def result_to_geojson(result, task, flight, second_interval=5):
     for fix in flight.fixes:
         bbox = checkbbox(fix.lat, fix.lon, bbox)
         keep = False
-        if (fix.rawtime >= lastfix.rawtime + second_interval
-                or any(tp for tp in result.waypoints_achieved if tp.rawtime == fix.rawtime)
-                or any(tp for tp in result.infringements if int(tp['rawtime']) == fix.rawtime)):
+        if (
+            fix.rawtime >= lastfix.rawtime + second_interval
+            or any(tp for tp in result.waypoints_achieved if tp.rawtime == fix.rawtime)
+            or any(tp for tp in result.infringements if int(tp['rawtime']) == fix.rawtime)
+        ):
             '''keep fixes that validate a turnpoint or cause an infringement'''
             ###
             # print(f'rawtime: {fix.rawtime}')
@@ -314,22 +331,42 @@ def result_to_geojson(result, task, flight, second_interval=5):
     '''airspace infringements'''
     if result.infringements:
         for entry in result.infringements:
-            time = ("%02d:%02d:%02d" % rawtime_float_to_hms(entry['rawtime'] + task.time_offset))
-            infringements.append([entry['lon'], entry['lat'], int(entry['alt']), entry['space'], int(entry['distance']),
-                                  entry['separation'], int(entry['rawtime']), time])
+            time = "%02d:%02d:%02d" % rawtime_float_to_hms(entry['rawtime'] + task.time_offset)
+            infringements.append(
+                [
+                    entry['lon'],
+                    entry['lat'],
+                    int(entry['alt']),
+                    entry['space'],
+                    int(entry['distance']),
+                    entry['separation'],
+                    int(entry['rawtime']),
+                    time,
+                ]
+            )
 
     return tracklog, thermals, takeoff_landing, bbox, waypoints_achieved, infringements
 
 
 def create_trackpoints_layer(file: str, offset: int = 0) -> list:
-    from igc_lib import Flight
     from calcUtils import sec_to_string
+    from igc_lib import Flight
+
     try:
         flight = Flight.create_from_file(file)
         points = []
         for fix in flight.fixes:
-            points.append([fix.lon, fix.lat, fix.rawtime, fix.press_alt, fix.gnss_alt,
-                           sec_to_string(fix.rawtime), sec_to_string(fix.rawtime, offset)])
+            points.append(
+                [
+                    fix.lon,
+                    fix.lat,
+                    fix.rawtime,
+                    fix.press_alt,
+                    fix.gnss_alt,
+                    sec_to_string(fix.rawtime),
+                    sec_to_string(fix.rawtime, offset),
+                ]
+            )
     except FileNotFoundError:
         print(f'Error: file not found {file}')
         return []
@@ -343,24 +380,34 @@ def get_points_and_bbox(waypoints: list, radius: int = 250) -> tuple:
     bbox = [[waypoints[0].lat, waypoints[0].lon], [waypoints[0].lat, waypoints[0].lon]]
     points = []
     for wp in waypoints:
-        type = ('launch' if wp.name[0] == 'D'
-                else 'speed' if wp.name[0] in ('A', 'L')
-                else 'restricted' if wp.name[0] == 'X'
-                else 'waypoint')
-        points.append({'name': wp.name,
-                       'description': wp.description,
-                       'longitude': wp.lon,
-                       'latitude': wp.lat,
-                       'altitude': wp.altitude,
-                       'radius': radius,
-                       'type': type})
+        type = (
+            'launch'
+            if wp.name[0] == 'D'
+            else 'speed'
+            if wp.name[0] in ('A', 'L')
+            else 'restricted'
+            if wp.name[0] == 'X'
+            else 'waypoint'
+        )
+        points.append(
+            {
+                'name': wp.name,
+                'description': wp.description,
+                'longitude': wp.lon,
+                'latitude': wp.lat,
+                'altitude': wp.altitude,
+                'radius': radius,
+                'type': type,
+            }
+        )
         bbox = checkbbox(wp.lat, wp.lon, bbox)
     return points, bbox
 
 
 def create_waypoints_layer(reg_id: int, region=None, radius: int = 250) -> (list, list):
-    from db.tables import TblRegionWaypoint as R
     from db.conn import db_session
+    from db.tables import TblRegionWaypoint as R
+
     points, bbox = [], []
     if region:
         points, bbox = get_points_and_bbox(region.turnpoints, radius)
@@ -373,8 +420,9 @@ def create_waypoints_layer(reg_id: int, region=None, radius: int = 250) -> (list
 
 
 def create_airspace_layer(reg_id: int, region=None, openair_file: str = None) -> (list, list):
-    from db.tables import TblRegion as R
     from airspaceUtils import read_airspace_map_file
+    from db.tables import TblRegion as R
+
     airspace_layer = []
     airspace_list = []
     bbox = []

@@ -62,6 +62,7 @@ function update_row(new_data){
     new_data.ID = $('#tracks').DataTable().row( $('tr#id_'+ new_data.par_id)).data()['ID'];
     new_data.name = $('#tracks').DataTable().row( $('tr#id_'+ new_data.par_id)).data()['name'];
     table.fnUpdate(new_data, $('tr#id_'+ new_data.par_id), undefined, false);
+    $(".hideatstart").hide();
 }
 
 function delete_track(track_id, par_id){

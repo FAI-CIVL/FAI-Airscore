@@ -18,176 +18,177 @@ Stuart Mackintosh - Antonio Golfari
 2019
 """
 
-from db.tables import TblResultFile
-from db.conn import db_session
-from sqlalchemy import and_
 import json
+
+from db.conn import db_session
+from db.tables import TblResultFile
+from sqlalchemy import and_
 
 
 class TaskResult:
     """
-        Task result fields lists
+    Task result fields lists
     """
 
-    info_list = ['id',
-                 'comp_id',
-                 'comp_name',
-                 'comp_site',
-                 'comp_class',
-                 'date',
-                 'task_name',
-                 'task_num',
-                 'time_offset',
-                 'comment',
-                 'window_open_time',
-                 'task_deadline',
-                 'window_close_time',
-                 'check_launch',
-                 'start_time',
-                 'start_close_time',
-                 'SS_interval',
-                 'start_iteration',
-                 # 'last_start_time',
-                 'task_type',
-                 'distance',
-                 'opt_dist',
-                 'SS_distance',
-                 'stopped_time',
-                 'goal_altitude']
+    info_list = [
+        'id',
+        'comp_id',
+        'comp_name',
+        'comp_site',
+        'comp_class',
+        'date',
+        'task_name',
+        'task_num',
+        'time_offset',
+        'comment',
+        'window_open_time',
+        'task_deadline',
+        'window_close_time',
+        'check_launch',
+        'start_time',
+        'start_close_time',
+        'SS_interval',
+        'start_iteration',
+        # 'last_start_time',
+        'task_type',
+        'distance',
+        'opt_dist',
+        'SS_distance',
+        'stopped_time',
+        'goal_altitude',
+    ]
 
-    route_list = ['name',
-                  'description',
-                  'how',
-                  'radius',
-                  'shape',
-                  'type',
-                  'lat',
-                  'lon',
-                  'altitude']
+    route_list = ['name', 'description', 'how', 'radius', 'shape', 'type', 'lat', 'lon', 'altitude']
 
-    formula_list = ['formula_name',
-                    'formula_type',
-                    'formula_version',
-                    'overall_validity',  # 'ftv', 'all',
-                    'validity_param',
-                    'validity_ref',  # 'day_quality', 'max_score'
-                    'formula_distance',  # 'on', 'difficulty', 'off'
-                    'formula_arrival',  # 'position', 'time', 'off'
-                    'formula_departure',  # 'on', 'leadout', 'off'
-                    'lead_factor',  # float
-                    'formula_time',  # 'on', 'off'
-                    'arr_alt_bonus',  # float
-                    'arr_min_height',  # int
-                    'arr_max_height',  # int
-                    'validity_min_time',  # seconds
-                    'score_back_time',  # seconds
-                    'max_JTG',
-                    'JTG_penalty_per_sec',
-                    'nominal_goal',  # percentage / 100
-                    'nominal_dist',  # meters
-                    'nominal_time',  # seconds
-                    'nominal_launch',  # percentage / 100
-                    'min_dist',  # meters
-                    'score_back_time',  # seconds
-                    'no_goal_penalty',
-                    'glide_bonus',
-                    'tolerance',  # percentage / 100
-                    'scoring_altitude',  # 'GPS', 'QNH'
-                    'task_result_decimal',
-                    'team_scoring',
-                    'team_size',
-                    'max_team_size',
-                    'country_scoring',
-                    'country_size',
-                    'max_country_size'
-                    ]
+    formula_list = [
+        'formula_name',
+        'formula_type',
+        'formula_version',
+        'overall_validity',  # 'ftv', 'all',
+        'validity_param',
+        'validity_ref',  # 'day_quality', 'max_score'
+        'formula_distance',  # 'on', 'difficulty', 'off'
+        'formula_arrival',  # 'position', 'time', 'off'
+        'formula_departure',  # 'on', 'leadout', 'off'
+        'lead_factor',  # float
+        'formula_time',  # 'on', 'off'
+        'arr_alt_bonus',  # float
+        'arr_min_height',  # int
+        'arr_max_height',  # int
+        'validity_min_time',  # seconds
+        'score_back_time',  # seconds
+        'max_JTG',
+        'JTG_penalty_per_sec',
+        'nominal_goal',  # percentage / 100
+        'nominal_dist',  # meters
+        'nominal_time',  # seconds
+        'nominal_launch',  # percentage / 100
+        'min_dist',  # meters
+        'score_back_time',  # seconds
+        'no_goal_penalty',
+        'glide_bonus',
+        'tolerance',  # percentage / 100
+        'scoring_altitude',  # 'GPS', 'QNH'
+        'task_result_decimal',
+        'team_scoring',
+        'team_size',
+        'max_team_size',
+        'country_scoring',
+        'country_size',
+        'max_country_size',
+    ]
 
-    stats_list = ['pilots_launched',
-                  'pilots_present',
-                  'pilots_ess',
-                  'pilots_landed',
-                  'pilots_goal',
-                  'fastest',
-                  'fastest_in_goal',
-                  'min_dept_time',
-                  'max_ss_time',
-                  'min_ess_time',
-                  'max_ess_time',
-                  'last_landing_time',
-                  'max_distance',
-                  'tot_dist_flown',
-                  'tot_dist_over_min',
-                  'day_quality',
-                  'ftv_validity',
-                  'dist_validity',
-                  'time_validity',
-                  'launch_validity',
-                  'stop_validity',
-                  'arr_weight',
-                  'dep_weight',
-                  'time_weight',
-                  'dist_weight',
-                  'avail_dist_points',
-                  'avail_dep_points',
-                  'avail_time_points',
-                  'avail_arr_points',
-                  'max_score',
-                  'min_lead_coeff',
-                  'tot_flight_time']
+    stats_list = [
+        'pilots_launched',
+        'pilots_present',
+        'pilots_ess',
+        'pilots_landed',
+        'pilots_goal',
+        'fastest',
+        'fastest_in_goal',
+        'min_dept_time',
+        'max_ss_time',
+        'min_ess_time',
+        'max_ess_time',
+        'last_landing_time',
+        'max_distance',
+        'tot_dist_flown',
+        'tot_dist_over_min',
+        'day_quality',
+        'ftv_validity',
+        'dist_validity',
+        'time_validity',
+        'launch_validity',
+        'stop_validity',
+        'arr_weight',
+        'dep_weight',
+        'time_weight',
+        'dist_weight',
+        'avail_dist_points',
+        'avail_dep_points',
+        'avail_time_points',
+        'avail_arr_points',
+        'max_score',
+        'min_lead_coeff',
+        'tot_flight_time',
+    ]
 
-    results_list = ['track_id',
-                    'par_id',
-                    'ID',
-                    'civl_id',
-                    'fai_id',
-                    'name',
-                    'sponsor',
-                    'nat',
-                    'sex',
-                    'glider',
-                    'glider_cert',
-                    'team',
-                    'nat_team',
-                    'distance_flown',
-                    'stopped_distance',
-                    'stopped_altitude',
-                    'distance',
-                    'ss_time',
-                    'speed',
-                    'real_start_time',
-                    'goal_time',
-                    'result_type',
-                    'SSS_time',
-                    'ESS_time',
-                    'ESS_rank',
-                    'turnpoints_made',
-                    'waypoints_achieved',
-                    'distance_score',
-                    'time_score',
-                    'departure_score',
-                    'arrival_score',
-                    'score',
-                    'penalty',
-                    'infringements',
-                    'comment',
-                    'lead_coeff',
-                    'ESS_altitude',
-                    'goal_altitude',
-                    'last_altitude',
-                    'max_altitude',
-                    'first_time',
-                    'last_time',
-                    'landing_altitude',
-                    'landing_time',
-                    'flight_time',
-                    'track_file',
-                    'pil_id']
+    results_list = [
+        'track_id',
+        'par_id',
+        'ID',
+        'civl_id',
+        'fai_id',
+        'name',
+        'sponsor',
+        'nat',
+        'sex',
+        'glider',
+        'glider_cert',
+        'team',
+        'nat_team',
+        'distance_flown',
+        'stopped_distance',
+        'stopped_altitude',
+        'distance',
+        'ss_time',
+        'speed',
+        'real_start_time',
+        'goal_time',
+        'result_type',
+        'SSS_time',
+        'ESS_time',
+        'ESS_rank',
+        'turnpoints_made',
+        'waypoints_achieved',
+        'distance_score',
+        'time_score',
+        'departure_score',
+        'arrival_score',
+        'score',
+        'penalty',
+        'infringements',
+        'comment',
+        'lead_coeff',
+        'ESS_altitude',
+        'goal_altitude',
+        'last_altitude',
+        'max_altitude',
+        'first_time',
+        'last_time',
+        'landing_altitude',
+        'landing_time',
+        'flight_time',
+        'track_file',
+        'pil_id',
+    ]
 
     @staticmethod
     def to_html(json_file: str) -> (str, dict or list):
         """ create a HTML file from json result file"""
-        from frontendUtils import get_pretty_data
         import re
+
+        from frontendUtils import get_pretty_data
 
         res = get_pretty_data(open_json_file(json_file))
         comp_name = res['info']['comp_name']
@@ -332,8 +333,11 @@ class TaskResult:
 
             tables.append(formula)
             timestamp = res['file_stats']['timestamp']
-            response.append(dict(filename=filename,
-                                 content=dict(title=title, headings=headings, tables=tables, timestamp=timestamp)))
+            response.append(
+                dict(
+                    filename=filename, content=dict(title=title, headings=headings, tables=tables, timestamp=timestamp)
+                )
+            )
 
         if zipfile:
             return zipfile, response
@@ -344,108 +348,118 @@ class TaskResult:
 
 class CompResult(object):
     """
-        Comp result fields lists
+    Comp result fields lists
     """
 
-    info_list = ['id',
-                 'comp_name',
-                 'comp_class',
-                 'comp_type',
-                 'comp_site',
-                 'date_from',
-                 'date_to',
-                 'sanction',
-                 'MD_name',
-                 'contact',
-                 'comp_code',
-                 'restricted',
-                 'time_offset',
-                 'website']
+    info_list = [
+        'id',
+        'comp_name',
+        'comp_class',
+        'comp_type',
+        'comp_site',
+        'date_from',
+        'date_to',
+        'sanction',
+        'MD_name',
+        'contact',
+        'comp_code',
+        'restricted',
+        'time_offset',
+        'website',
+    ]
 
-    stats_list = ['winner_score',
-                  'valid_tasks',
-                  'total_validity',
-                  'avail_validity',
-                  'tot_flights',
-                  'tot_dist_flown',
-                  'tot_flight_time',
-                  'tot_pilots']
+    stats_list = [
+        'winner_score',
+        'valid_tasks',
+        'total_validity',
+        'avail_validity',
+        'tot_flights',
+        'tot_dist_flown',
+        'tot_flight_time',
+        'tot_pilots',
+    ]
 
-    formula_list = ['formula_name',
-                    'formula_type',
-                    'formula_version',
-                    'comp_class',  # 'HG', 'PG'
-                    'overall_validity',  # 'ftv', 'all',
-                    'validity_param',
-                    'formula_distance',  # 'on', 'difficulty', 'off'
-                    'formula_arrival',  # 'position', 'time', 'off'
-                    'formula_departure',  # 'on', 'leadout', 'off'
-                    'lead_factor',  # float
-                    'formula_time',  # 'on', 'off'
-                    'arr_alt_bonus',  # float
-                    'arr_min_height',  # int
-                    'arr_max_height',  # int
-                    'validity_min_time',  # seconds
-                    'score_back_time',  # seconds
-                    'max_JTG',  # seconds
-                    'JTG_penalty_per_sec',
-                    'nominal_goal',  # percentage / 100
-                    'nominal_dist',  # meters
-                    'nominal_time',  # seconds
-                    'nominal_launch',  # percentage / 100
-                    'min_dist',  # meters
-                    'score_back_time',  # seconds
-                    'no_goal_penalty',  # percentage / 100
-                    'glide_bonus',
-                    'tolerance',  # percentage / 100
-                    'scoring_altitude',  # 'GPS', 'QNH'
-                    'comp_result_decimal',
-                    'team_scoring',
-                    'team_size',
-                    'max_team_size',
-                    'country_scoring',
-                    'country_size',
-                    'max_country_size'
-                    ]
+    formula_list = [
+        'formula_name',
+        'formula_type',
+        'formula_version',
+        'comp_class',  # 'HG', 'PG'
+        'overall_validity',  # 'ftv', 'all',
+        'validity_param',
+        'formula_distance',  # 'on', 'difficulty', 'off'
+        'formula_arrival',  # 'position', 'time', 'off'
+        'formula_departure',  # 'on', 'leadout', 'off'
+        'lead_factor',  # float
+        'formula_time',  # 'on', 'off'
+        'arr_alt_bonus',  # float
+        'arr_min_height',  # int
+        'arr_max_height',  # int
+        'validity_min_time',  # seconds
+        'score_back_time',  # seconds
+        'max_JTG',  # seconds
+        'JTG_penalty_per_sec',
+        'nominal_goal',  # percentage / 100
+        'nominal_dist',  # meters
+        'nominal_time',  # seconds
+        'nominal_launch',  # percentage / 100
+        'min_dist',  # meters
+        'score_back_time',  # seconds
+        'no_goal_penalty',  # percentage / 100
+        'glide_bonus',
+        'tolerance',  # percentage / 100
+        'scoring_altitude',  # 'GPS', 'QNH'
+        'comp_result_decimal',
+        'team_scoring',
+        'team_size',
+        'max_team_size',
+        'country_scoring',
+        'country_size',
+        'max_country_size',
+    ]
 
-    task_list = ['id',
-                 'task_name',
-                 'task_code',
-                 'date',
-                 'status',
-                 'comment',
-                 'opt_dist',
-                 'pilots_goal',
-                 'day_quality',
-                 'ftv_validity',
-                 'max_score',
-                 'task_type']
+    task_list = [
+        'id',
+        'task_name',
+        'task_code',
+        'date',
+        'status',
+        'comment',
+        'opt_dist',
+        'pilots_goal',
+        'day_quality',
+        'ftv_validity',
+        'max_score',
+        'task_type',
+    ]
 
     ''' result_list comes from Participant obj, and RegisteredPilotView
         available fields are: (`par_id`, `comp_id`, `civl_id`, `fai_id`, `pil_id`, `ID`, `name`, `sex`, `nat`,
                             `glider`, `class`, `sponsor`, `team`, `nat_team`, 'results')'''
-    result_list = ['ID',
-                   'par_id',
-                   'civl_id',
-                   'fai_id',
-                   'name',
-                   'sex',
-                   'nat',
-                   'glider',
-                   'glider_cert',
-                   'sponsor',
-                   'team',
-                   'nat_team',
-                   'status',
-                   'pil_id',
-                   'score',
-                   'results']
+    result_list = [
+        'ID',
+        'par_id',
+        'civl_id',
+        'fai_id',
+        'name',
+        'sex',
+        'nat',
+        'glider',
+        'glider_cert',
+        'sponsor',
+        'team',
+        'nat_team',
+        'status',
+        'pil_id',
+        'score',
+        'results',
+    ]
 
     @staticmethod
     def to_html(json_file: str) -> (str, dict or list):
         """ create a HTML file from json result file"""
-        from frontendUtils import get_pretty_data
         import re
+
+        from frontendUtils import get_pretty_data
 
         res = get_pretty_data(open_json_file(json_file))
         comp_name = f"{res['info']['comp_name']}"
@@ -461,8 +475,12 @@ class CompResult(object):
         thead = [' ', ' ', 'Dist.', 'Validity']
         right_align = [2, 3]
         for t in res['tasks']:
-            row = [t['task_name'], t['date'], t['opt_dist'],
-                   t['ftv_validity'] if res['formula']['overall_validity'] == 'ftv' else t['day_quality']]
+            row = [
+                t['task_name'],
+                t['date'],
+                t['opt_dist'],
+                t['ftv_validity'] if res['formula']['overall_validity'] == 'ftv' else t['day_quality'],
+            ]
             tasks.append(row)
         tasks = dict(title='Tasks', css_class='simple', right_align=right_align, thead=thead, tbody=tasks)
 
@@ -479,11 +497,13 @@ class CompResult(object):
             filename = f"{re.sub('[ ,.-]', '_', title)}_after_{res['tasks'][-1]['task_code']}.html"
 
             '''HTML headings'''
-            headings = [f"{res['info']['comp_name']} - {res['info']['sanction']} Event",
-                        f"{c['name']}",
-                        f"{res['info']['date_from']} to {res['info']['date_to']}",
-                        f"{res['info']['comp_site']}",
-                        f"{res['file_stats']['status']}"]
+            headings = [
+                f"{res['info']['comp_name']} - {res['info']['sanction']} Event",
+                f"{c['name']}",
+                f"{res['info']['date_from']} to {res['info']['date_to']}",
+                f"{res['info']['comp_site']}",
+                f"{res['file_stats']['status']}",
+            ]
 
             if idx > 0:
                 ''' manage sub-rankings'''
@@ -505,8 +525,11 @@ class CompResult(object):
             results = dict(css_class='results', right_align=right_align, thead=thead, tbody=tbody)
             tables = [tasks, results]
             timestamp = res['file_stats']['timestamp']
-            response.append(dict(filename=filename,
-                                 content=dict(title=title, headings=headings, tables=tables, timestamp=timestamp)))
+            response.append(
+                dict(
+                    filename=filename, content=dict(title=title, headings=headings, tables=tables, timestamp=timestamp)
+                )
+            )
 
         if zipfile:
             return zipfile, response
@@ -524,10 +547,11 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None, name_su
          page not display results
     """
     import os
-    from time import time
     from datetime import datetime
-    from Defines import RESULTDIR
+    from time import time
+
     from calcUtils import CJsonEncoder
+    from Defines import RESULTDIR
 
     timestamp = int(time())  # timestamp of generation
     dt = datetime.fromtimestamp(timestamp).strftime('%Y%m%d_%H%M%S')
@@ -549,21 +573,23 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None, name_su
         f.write(content)
     os.chown(RESULTDIR + filename, 1000, 1000)
 
-    '''create database entry'''
-    with db_session() as db:
-        result = TblResultFile(comp_id=comp_id, task_id=task_id, created=timestamp, filename=filename, status=status)
-        db.add(result)
-        db.commit()
-        ref_id = result.ref_id
-    return ref_id, filename, timestamp
+    '''create or update database entry'''
+    row = TblResultFile.get_one(filename=filename)
+    if row:
+        row.update(comp_id=comp_id, task_id=task_id, created=timestamp, filename=filename, status=status)
+    else:
+        row = TblResultFile(comp_id=comp_id, task_id=task_id, created=timestamp, filename=filename, status=status)
+        row.save()
+    return row.ref_id, filename, timestamp
 
 
 def unpublish_result(taskid_or_compid, comp=False):
     """unpublish (set active to 0) all result files for a task or a comp"""
     with db_session() as db:
         if comp:
-            db.query(TblResultFile).filter(and_(TblResultFile.comp_id == taskid_or_compid,
-                                                TblResultFile.task_id.is_(None))).update({'active': 0})
+            db.query(TblResultFile).filter(
+                and_(TblResultFile.comp_id == taskid_or_compid, TblResultFile.task_id.is_(None))
+            ).update({'active': 0})
         else:
             db.query(TblResultFile).filter_by(task_id=taskid_or_compid).update({'active': 0})
     return 1
@@ -582,9 +608,11 @@ def publish_result(filename_or_refid, ref_id=False):
 
 
 def update_result_status(filename: str, status: str):
-    from Defines import RESULTDIR
-    from pathlib import Path
     import time
+    from pathlib import Path
+
+    from Defines import RESULTDIR
+
     '''check if json file exists, and updates it'''
     file = Path(RESULTDIR, filename)
     if not file.is_file():
@@ -606,17 +634,19 @@ def update_result_status(filename: str, status: str):
 
 
 def update_result_file(filename: str, par_id: int, notification: dict):
-    """ gets result filename, pilot's par_id, and notification as dict
-        notification = {'not_id': notification id if existing, can be omitted
-                        'notification_type': only 'admin' can be edited / added at the moment, can be omitted
-                        'flat_penalty': if we are adding just a comment without penalty / bonus, can be omitted
-                        'comment': text of notification
-                        }
+    """gets result filename, pilot's par_id, and notification as dict
+    notification = {'not_id': notification id if existing, can be omitted
+                    'notification_type': only 'admin' can be edited / added at the moment, can be omitted
+                    'flat_penalty': if we are adding just a comment without penalty / bonus, can be omitted
+                    'comment': text of notification
+                    }
     """
+    import time
+    from pathlib import Path
+
     from db.tables import TblNotification as N
     from Defines import RESULTDIR
-    from pathlib import Path
-    import time
+
     file = Path(RESULTDIR, filename)
     if not file.is_file():
         print(f'Json file {filename} does not exist')
@@ -658,8 +688,15 @@ def update_result_file(filename: str, par_id: int, notification: dict):
                 db.flush()
                 notification['not_id'] = row.not_id
                 '''adding to result file'''
-                result['notifications'].append(dict(not_id=row.not_id, notification_type='admin',
-                                                    percentage_penalty=0, flat_penalty=penalty, comment=comment))
+                result['notifications'].append(
+                    dict(
+                        not_id=row.not_id,
+                        notification_type='admin',
+                        percentage_penalty=0,
+                        flat_penalty=penalty,
+                        comment=comment,
+                    )
+                )
                 '''update comment'''
                 comment = '[admin] ' + comment
                 if not result['comment']:
@@ -670,10 +707,23 @@ def update_result_file(filename: str, par_id: int, notification: dict):
             if (not_id and old_penalty != penalty) or (not not_id and penalty != 0):
                 '''need to recalculate scores'''
                 result['penalty'] += penalty - old_penalty
-                result['score'] = max(0, sum([result['arrival_score'], result['departure_score'],
-                                              result['time_score'], result['distance_score']]) - result['penalty'])
-                pil_list = sorted([p for p in data['results'] if p['result_type'] not in ['dnf', 'abs', 'nyp']],
-                                  key=lambda k: k['score'], reverse=True)
+                result['score'] = max(
+                    0,
+                    sum(
+                        [
+                            result['arrival_score'],
+                            result['departure_score'],
+                            result['time_score'],
+                            result['distance_score'],
+                        ]
+                    )
+                    - result['penalty'],
+                )
+                pil_list = sorted(
+                    [p for p in data['results'] if p['result_type'] not in ['dnf', 'abs', 'nyp']],
+                    key=lambda k: k['score'],
+                    reverse=True,
+                )
                 pil_list += [p for p in data['results'] if p['result_type'] == 'nyp']
                 pil_list += [p for p in data['results'] if p['result_type'] == 'dnf']
                 pil_list += [p for p in data['results'] if p['result_type'] == 'abs']
@@ -691,16 +741,15 @@ def update_result_file(filename: str, par_id: int, notification: dict):
                 return error
 
 
-def delete_result(ref_id: int, filename=None):
+def delete_result(filename: str, delete_file=False):
+    from pathlib import Path
+
     from Defines import RESULTDIR
-    import os
-    with db_session() as db:
-        if not filename:
-            filename = db.query(TblResultFile).get(ref_id).filename
-        file = os.path.join(RESULTDIR, filename)
-        if os.path.exists(file):
-            os.remove(file)
-        db.query(TblResultFile).filter_by(ref_id=ref_id).delete(synchronize_session=False)
+
+    if delete_file:
+        Path(RESULTDIR, filename).unlink(missing_ok=True)
+    row = TblResultFile.get_one(filename=filename)
+    row.delete()
 
 
 def get_country_list(countries: set = None, iso: int = None) -> list:
@@ -714,13 +763,16 @@ def get_country_list(countries: set = None, iso: int = None) -> list:
         a list of objects with attributes name and code
     """
     from db.tables import TblCountryCode as CC
+
     return CC.get_list(countries=countries, iso=iso)
 
 
 def open_json_file(filename: str):
     from pathlib import Path
+
     import jsonpickle
     from Defines import RESULTDIR
+
     try:
         with open(Path(RESULTDIR, filename), 'r') as f:
             return jsonpickle.decode(f.read())
@@ -732,13 +784,21 @@ def open_json_file(filename: str):
 
 
 def pretty_format_results(content, timeoffset=0, td=0, cd=0):
-    from calcUtils import sec_to_string, sec_to_duration, epoch_to_string, c_round
+    from calcUtils import c_round, epoch_to_string, sec_to_duration, sec_to_string
+
     pure_time = ['ss_time', 'time_offset', 'fastest', 'fastest_in_goal']
     duration = ['tot_flight_time', 'SS_interval', 'max_JTG', 'validity_min_time', 'score_back_time']
     day_time = ('_time', '_deadline')
     validity = ('_validity', '_quality')
     weight = '_weight'
-    scores = ('_score', 'penalty', '_arr_points', '_dep_points', '_dist_points', '_time_points',)
+    scores = (
+        '_score',
+        'penalty',
+        '_arr_points',
+        '_dep_points',
+        '_dist_points',
+        '_time_points',
+    )
     booleans = ['team_scoring', 'country_scoring', 'nat_team']
     percentage = ['no_goal_penalty', 'nominal_goal', 'nominal_launch', 'tolerance', 'validity_param']
     upper = ['overall_validity']
@@ -779,17 +839,25 @@ def pretty_format_results(content, timeoffset=0, td=0, cd=0):
                     elif 'cumulative_dist' in content.keys():
                         if key == 'radius':
                             '''formatting wpt radius'''
-                            formatted[key] = (f"{round(float(value) / 1000, 1):.1f} Km" if float(value) > 1000
-                                              else f"{round(float(value))} m &nbsp;")
+                            formatted[key] = (
+                                f"{round(float(value) / 1000, 1):.1f} Km"
+                                if float(value) > 1000
+                                else f"{round(float(value))} m &nbsp;"
+                            )
                         elif key == 'cumulative_dist':
                             '''formatting wpt cumulative distance'''
                             formatted[key] = '' if float(value) == 0 else f"{c_round(float(value) / 1000, 2):.2f} Km"
                         elif key == 'type':
                             '''formatting wpt type'''
-                            formatted[key] = ('' if str(value) == 'waypoint'
-                                              else 'SS' if str(value) == 'speed'
-                                              else 'ES' if str(value) == 'endspeed'
-                                              else str(value))
+                            formatted[key] = (
+                                ''
+                                if str(value) == 'waypoint'
+                                else 'SS'
+                                if str(value) == 'speed'
+                                else 'ES'
+                                if str(value) == 'endspeed'
+                                else str(value)
+                            )
                         elif key == 'shape':
                             '''formatting wpt shape'''
                             formatted[key] = '' if str(value) == 'circle' else '(line)'
@@ -846,6 +914,7 @@ def pretty_format_results(content, timeoffset=0, td=0, cd=0):
 def get_startgates(task_info):
     """creates a list of startgates time from start_time, SS_interval, start_iteration"""
     from calcUtils import sec_to_string
+
     start_time = task_info['start_time'] or 0
     if start_time:
         interval = task_info['SS_interval'] or 0
@@ -865,6 +934,7 @@ def get_task_country_json(filename):
         pilots: list of pilots dict, as in result json file. Only pilots in National team.
     So in frontend every result after the max team size should be formatted as deleted"""
     import jsonpickle
+
     data = open_json_file(filename)
     formula = data['formula']
     if not formula['country_scoring']:
@@ -874,8 +944,11 @@ def get_task_country_json(filename):
     size = formula['team_size'] if 'country_size' not in formula.keys() else formula['country_size']
     results = []
     for nat in countries:
-        nat_pilots = sorted([p for p in data['results'] if p['nat'] == nat['code']
-                             and p['nat_team']], key=lambda k: k['score'], reverse=True)
+        nat_pilots = sorted(
+            [p for p in data['results'] if p['nat'] == nat['code'] and p['nat_team']],
+            key=lambda k: k['score'],
+            reverse=True,
+        )
         nat['pilots'] = nat_pilots
         nat['score'] = sum([p['score'] for p in nat_pilots][:size])
         results.append(nat)
@@ -897,6 +970,7 @@ def get_comp_country_json(filename):
             score: actual score if used, 0 otherwise
     So in frontend every result is taken from pre, formatted as deleted if perf == 0"""
     import jsonpickle
+
     data = open_json_file(filename)
     formula = data['formula']
     if not formula['country_scoring']:
@@ -946,6 +1020,7 @@ def get_comp_team_json(filename):
             score: actual score if used, 0 otherwise
     So in frontend every result is taken from pre, formatted as deleted if perf == 0"""
     import jsonpickle
+
     data = open_json_file(filename)
     formula = data['formula']
     if not formula['team_scoring']:
@@ -993,8 +1068,9 @@ def get_task_team_json(filename):
         score: team score
         pilots: list of team pilots dict, as in result json file.
     So in frontend every result after the max team size should be formatted as deleted.
-    Only pilots with team different from None or '' """
+    Only pilots with team different from None or ''"""
     import jsonpickle
+
     data = open_json_file(filename)
     formula = data['formula']
     if not formula['team_scoring']:
@@ -1006,8 +1082,9 @@ def get_task_team_json(filename):
     results = []
     for el in teams:
         team = dict(name=el)
-        team_pilots = sorted([p for p in pilots if p['team'].strip().title() == team['name']],
-                             key=lambda k: k['score'], reverse=True)
+        team_pilots = sorted(
+            [p for p in pilots if p['team'].strip().title() == team['name']], key=lambda k: k['score'], reverse=True
+        )
         team['pilots'] = team_pilots
         team['score'] = sum([p['score'] for p in team_pilots][:size])
         results.append(team)
@@ -1017,8 +1094,8 @@ def get_task_team_json(filename):
 
 def get_task_country_scoring(filename):
     """takes a task result filename and outputs a nested dict ready to be jsonified for the front end
-        each pilot has attributes for their nation and nation score to allow grouping in datatables js.
-        Scores are given html strikethough <del> if they do not count towards nation total
+    each pilot has attributes for their nation and nation score to allow grouping in datatables js.
+    Scores are given html strikethough <del> if they do not count towards nation total
     """
     data = open_json_file(filename)
     formula = data['formula']
@@ -1031,8 +1108,11 @@ def get_task_country_scoring(filename):
     countries = get_country_list(countries=set(map(lambda x: x['nat'], data['results'])))
     size = formula['team_size'] if 'country_size' not in formula.keys() else formula['country_size']
     for nat in countries:
-        nat_pilots = sorted([p for p in data['results'] if p['nat'] == nat['code']
-                             and p['nat_team']], key=lambda k: k['score'], reverse=True)
+        nat_pilots = sorted(
+            [p for p in data['results'] if p['nat'] == nat['code'] and p['nat_team']],
+            key=lambda k: k['score'],
+            reverse=True,
+        )
         nat['score'] = sum([p['score'] for p in nat_pilots][:size])
         for rank, p in enumerate(nat_pilots):
             p['group'] = f". {nat['name']} - {nat['score']:.0f} points"
@@ -1053,8 +1133,8 @@ def get_task_country_scoring(filename):
 
 def get_comp_country_scoring(filename):
     """takes a competition result filename and outputs a nested dict ready to be jsonified for the front end
-        each pilot has attributes for their nation and nation score to allow grouping in datatables js.
-        Scores are given html strikethough <del> if they do not count towards nation total
+    each pilot has attributes for their nation and nation score to allow grouping in datatables js.
+    Scores are given html strikethough <del> if they do not count towards nation total
     """
     data = open_json_file(filename)
     formula = data['formula']
@@ -1112,8 +1192,8 @@ def get_comp_country_scoring(filename):
 
 def get_task_team_scoring(filename):
     """takes a task result filename and outputs a nested dict ready to be jsonified for the front end
-        each pilot has attributes for their nation and nation score to allow grouping in datatables js.
-        Scores are given html strikethough <del> if they do not count towards nation total
+    each pilot has attributes for their nation and nation score to allow grouping in datatables js.
+    Scores are given html strikethough <del> if they do not count towards nation total
     """
     data = open_json_file(filename)
     formula = data['formula']
@@ -1128,8 +1208,11 @@ def get_task_team_scoring(filename):
     size = formula['team_size']
     for el in teams_list:
         team = dict(name=el)
-        team_pilots = sorted([p for p in pilots_list if p['team'].strip().title() == team['name']],
-                             key=lambda k: k['score'], reverse=True)
+        team_pilots = sorted(
+            [p for p in pilots_list if p['team'].strip().title() == team['name']],
+            key=lambda k: k['score'],
+            reverse=True,
+        )
         team['pilots'] = team_pilots
         team['score'] = sum([p['score'] for p in team_pilots][:size])
         for rank, p in enumerate(team_pilots):
@@ -1151,8 +1234,8 @@ def get_task_team_scoring(filename):
 
 def get_comp_team_scoring(filename):
     """takes a competition result filename and outputs a nested dict ready to be jsonified for the front end
-        each pilot has attributes for their nation and nation score to allow grouping in datatables js.
-        Scores are given html strikethough <del> if they do not count towards nation total
+    each pilot has attributes for their nation and nation score to allow grouping in datatables js.
+    Scores are given html strikethough <del> if they do not count towards nation total
     """
     data = open_json_file(filename)
     formula = data['formula']

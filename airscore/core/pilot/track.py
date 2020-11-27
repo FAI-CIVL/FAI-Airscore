@@ -10,16 +10,18 @@ Antonio Golfari, Stuart Mackintosh - 2019
 """
 
 import glob
-from os import path, makedirs
+import json
+from os import makedirs, path
 from pathlib import Path
 from shutil import copyfile
-from Defines import track_formats, IGCPARSINGCONFIG
+
 from calcUtils import epoch_to_date
-from db.tables import TblTaskResult
-from igc_lib import Flight, FlightParsingConfig
 from db.conn import db_session
+from db.tables import TblTaskResult
+from Defines import IGCPARSINGCONFIG, track_formats
+from igc_lib import Flight, FlightParsingConfig
 from trackUtils import find_pilot, get_task_fullpath
-import json
+
 # from notification import Notification
 
 ''' Accepted formats list
@@ -118,6 +120,7 @@ class Track(object):
     def get_notes(self):
         """flight notifications list"""
         from pilot.notification import Notification
+
         if self.flight:
             self.notifications = [Notification(notification_type='track', comment=i) for i in self.flight.notes]
         else:
@@ -161,7 +164,9 @@ class Track(object):
                 if config:
                     track.flight = Flight.create_from_file(filename, config_class=config)
                 else:
-                    track.flight = Flight.create_from_file(filename, )
+                    track.flight = Flight.create_from_file(
+                        filename,
+                    )
             # elif track.type == "kml":
             """using KML reader created by Antonio Golfari
             To be rewritten for igc_lib"""
@@ -180,8 +185,7 @@ class Track(object):
                 return track
             else:
                 data = {'par_id': par_id, 'track_id': track_id, 'Result': 'Not Yet Processed'}
-                print(
-                    f'IGC does not meet quality standard set by igc parsing config. Notes:{track.flight.notes}')
+                print(f'IGC does not meet quality standard set by igc parsing config. Notes:{track.flight.notes}')
                 print(json.dumps(data) + '|result')
         else:
             print(f"File {filename} (pilot ID {par_id}) is NOT a valid track file.")
@@ -240,6 +244,7 @@ class Track(object):
         if path or pname is None will calculate. note that if bulk importing it is better to pass these values
         rather than query DB for each track"""
         from db.tables import TblParticipant as P
+
         src_file = self.filename
         if pname is None:
             # get pilot details.
@@ -265,8 +270,9 @@ def validate_G_record(igc_filename):
     Assumtion is that the protocol is the same as the FAI server (POST)
     :argument igc_filename (full path and filename of igc_file)
     :returns PASSED, FAILED or ERROR"""
-    from requests import post
     from Defines import G_Record_validation_Server
+    from requests import post
+
     try:
         with open(igc_filename, 'rb') as igc:
             file = {'igcfile': igc}
@@ -282,7 +288,7 @@ def validate_G_record(igc_filename):
 
 def igc_parsing_config_from_yaml(yaml_filename):
     """reads the settings from a YAML file and creates a
-    new FlightParsingConfig object for use when processing track files """
+    new FlightParsingConfig object for use when processing track files"""
     if yaml_filename[:-5].lower != '.yaml':
         yaml_filename = yaml_filename + '.yaml'
     yaml_config = read_igc_config_yaml(yaml_filename)
@@ -300,6 +306,7 @@ def igc_parsing_config_from_yaml(yaml_filename):
 
 def read_igc_config_yaml(yaml_filename):
     import ruamel.yaml
+
     yaml = ruamel.yaml.YAML()
     full_filename = path.join(IGCPARSINGCONFIG, yaml_filename)
     try:
@@ -307,10 +314,11 @@ def read_igc_config_yaml(yaml_filename):
             return yaml.load(fp)
     except IOError:
         return None
-    
+
 
 def save_igc_config_yaml(yaml_filename, yaml_data):
     import ruamel.yaml
+
     yaml = ruamel.yaml.YAML()
     full_filename = path.join(IGCPARSINGCONFIG, yaml_filename)
     try:
@@ -326,6 +334,7 @@ def create_igc_filename(file_path, date, pilot_name: str, pilot_id: int = None) 
     name_surname_date_time_index.igc
     if we use flight date then we need an index for multiple tracks"""
     from trackUtils import remove_accents
+
     if not Path(file_path).is_dir():
         Path(file_path).mkdir(mode=0o755)
     # pname = pilot_name.replace(' ', '_').lower()
@@ -337,4 +346,3 @@ def create_igc_filename(file_path, date, pilot_name: str, pilot_id: int = None) 
         filename = '_'.join([pname, str(date), index]) + '.igc'
     fullname = Path(file_path, filename)
     return fullname
-

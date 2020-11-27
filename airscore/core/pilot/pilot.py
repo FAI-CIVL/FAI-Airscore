@@ -22,8 +22,21 @@ class Pilot(object):
         track:          Track Obj.
     """
 
-    def __init__(self, civl_id=None, name=None, sex=None, birthdate=None, nat=None, fai_id=None, fai_valid=1,
-                 xcontest_id=None, telegram_id=None, pil_id=None, ranking=None, hours=None):
+    def __init__(
+        self,
+        civl_id=None,
+        name=None,
+        sex=None,
+        birthdate=None,
+        nat=None,
+        fai_id=None,
+        fai_valid=1,
+        xcontest_id=None,
+        telegram_id=None,
+        pil_id=None,
+        ranking=None,
+        hours=None,
+    ):
 
         self.civl_id = civl_id  # int
         self.name = name  # str
@@ -61,11 +74,6 @@ class Pilot(object):
         out += 'Pilot:'
         out += f'{self.name} - CIVL_ID {self.civl_id} \n'
         return out
-
-
-
-
-
 
 
 #

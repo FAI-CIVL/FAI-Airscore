@@ -9,8 +9,8 @@ By Stuart Mackintosh, Antonio Golfari, 2019
 import logging
 import time
 from pathlib import Path
-import requests
 
+import requests
 
 # in Flymaster format is:
 # LiveTrack Antoine Saraf.361951.20190717-113625.5836.47.igc = 'other name name.live.other-other.other.id'
@@ -19,11 +19,11 @@ filename_formats = ['other name name.live.other-other.other.id']
 
 
 def get_pilot_from_list(filename, pilots):
-    """ check filename against a list of Pilot Obj.
-        Looks for different information in filename
+    """check filename against a list of Pilot Obj.
+    Looks for different information in filename
 
-        filename:   STR file name
-        pilots:     LIST Participants Obj.
+    filename:   STR file name
+    pilots:     LIST Participants Obj.
     """
     # in Flymaster Livetrack format is:
     # LiveTrack Gerd Doenhuber.845196.20190717-110908.11448.56.igc
@@ -70,7 +70,9 @@ def get_zip(date, login_name, password, zip_file):
 def get_zipfile(task, temp_folder):
     """"""
     from os import path
+
     import Defines
+
     result = ''
     task_id = task.task_id
 

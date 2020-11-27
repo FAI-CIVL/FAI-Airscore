@@ -1,9 +1,8 @@
 import math
 
-from geopy import distance, Point
+from geopy import Point, distance
 from geopy.distance import geodesic
 from pyproj import Proj, Transformer
-
 from route import calcBearing
 
 '''define earth model'''
@@ -32,18 +31,18 @@ class Geo(object):
         return Geo(proj)
 
     def convert(self, lon, lat):
-        """ transform Turnpoints position (lon, lat) to projection coordinates (x, y)
-            input:
-            lat, lon      - coordinates
+        """transform Turnpoints position (lon, lat) to projection coordinates (x, y)
+        input:
+        lat, lon      - coordinates
         """
         t = self.to_proj
         x, y = t.transform(lon, lat)
         return x, y
 
     def revert(self, x, y, direction='to'):
-        """ transform projected coordinates (x, y) to geoid position (lon, lat)
-            input:
-            c1, c2      - coordinates
+        """transform projected coordinates (x, y) to geoid position (lon, lat)
+        input:
+        c1, c2      - coordinates
         """
         t = self.to_geod
         lon, lat = t.transform(x, y)
@@ -69,15 +68,17 @@ def get_proj(clat, clon, proj=PROJ):
     else:
         '''custom Mercatore projection'''
         tmerc = Proj(
-            f"+proj=tmerc +lat_0={clat} +lon_0={clon} +k_0=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
+            f"+proj=tmerc +lat_0={clat} +lon_0={clon} +k_0=1 +x_0=0 +y_0=0 +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+        )
         return tmerc
 
 
 def create_arc_polygon(center, start, end, clockwise=True, tolerance=5):
-    """ create an arc between two points, given a center
-        The Arc is represented as a polyline.
-        Points number is calculated as the number that makes maximum distance between arc and segment, tolerance / 2"""
+    """create an arc between two points, given a center
+    The Arc is represented as a polyline.
+    Points number is calculated as the number that makes maximum distance between arc and segment, tolerance / 2"""
     from statistics import mean
+
     # points = 50
     center = Point(center[0], center[1])
     start = Point(start[0], start[1])
@@ -95,15 +96,19 @@ def create_arc_polygon(center, start, end, clockwise=True, tolerance=5):
         angle -= 360
     # da = angle/points if clockwise else angle/points * -1
     # length = calculate_arc_length(radius, abs(angle))
-    points = max(1, calculate_min_points(angle, radius, tolerance))   # max distance arc / segment is less than half tolerance
+    points = max(
+        1, calculate_min_points(angle, radius, tolerance)
+    )  # max distance arc / segment is less than half tolerance
     da = angle / points
-    dr = (dist1 - dist2)/points
-    print(f"center: {center.latitude, center.longitude} | start: {start.latitude, start.longitude} | end: {end.latitude, end.longitude}")
+    dr = (dist1 - dist2) / points
+    print(
+        f"center: {center.latitude, center.longitude} | start: {start.latitude, start.longitude} | end: {end.latitude, end.longitude}"
+    )
     print(f"radius: {dist1} | clockwise: {clockwise} | angle: {angle}")
     print(f"points: {points} | dAngle: {da} | dRadius: {dr}")
     interpolation_list = []
     for i in range(1, points):
-        pt = distance.distance(meters=dist1 + dr*i).destination(center, bearing1 + da*i)
+        pt = distance.distance(meters=dist1 + dr * i).destination(center, bearing1 + da * i)
         p = (pt.latitude, pt.longitude)
         interpolation_list.append(p)
     print(interpolation_list)
@@ -122,10 +127,11 @@ def get_arc_angle(b1, b2):
 
 def calculate_arc_length(radius, angle):
     from math import pi
+
     return (pi * radius * 2) * (angle / 360.0)
 
 
 def calculate_min_points(angle, radius, tolerance=5):
-    """ Calculates minimum number of points along the rc to have maximum distance between arc and segment
-        less than half tolerance"""
+    """Calculates minimum number of points along the rc to have maximum distance between arc and segment
+    less than half tolerance"""
     return math.ceil(math.radians(angle) / (2 * math.acos(1 - tolerance / radius)) + 1) * 2

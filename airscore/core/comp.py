@@ -14,15 +14,21 @@ Stuart Mackintosh Antonio Golfari - 2019
 import json
 from os import path
 
-from sqlalchemy import and_
-from Defines import TRACKDIR, RESULTDIR, SELF_REG_DEFAULT, PILOT_DB
-from calcUtils import get_date, c_round
-from compUtils import get_tasks_result_files, get_participants, read_rankings, create_classifications, create_comp_path
-from db.tables import TblCompetition
-from formula import Formula
+from calcUtils import c_round, get_date
+from compUtils import (
+    create_classifications,
+    create_comp_path,
+    get_participants,
+    get_tasks_result_files,
+    read_rankings,
+)
 from db.conn import db_session
+from db.tables import TblCompetition
+from Defines import PILOT_DB, RESULTDIR, SELF_REG_DEFAULT, TRACKDIR
+from formula import Formula
 from pilot.participant import Participant
 from result import CompResult, create_json_file
+from sqlalchemy import and_
 from task import Task
 
 
@@ -40,10 +46,26 @@ class Comp(object):
 
     """
 
-    def __init__(self, comp_id=None, comp_name=None, comp_site=None, date_from=None, comp_code=None, date_to=None,
-                 comp_class=None, region=None, comp_type='RACE', restricted=True, locked=False, external=False,
-                 igc_config_file='standard', airspace_check=False, check_launch='off', check_g_record=False,
-                 track_source=None):
+    def __init__(
+        self,
+        comp_id=None,
+        comp_name=None,
+        comp_site=None,
+        date_from=None,
+        comp_code=None,
+        date_to=None,
+        comp_class=None,
+        region=None,
+        comp_type='RACE',
+        restricted=True,
+        locked=False,
+        external=False,
+        igc_config_file='standard',
+        airspace_check=False,
+        check_launch='off',
+        check_g_record=False,
+        track_source=None,
+    ):
 
         self.comp_id = comp_id  # com_id
         self.comp_name = comp_name  # str
@@ -76,7 +98,9 @@ class Comp(object):
         self.igc_config_file = igc_config_file  # config yaml for igc_lib. This setting will be passed on to new tasks
         self.airspace_check = airspace_check  # BOOL airspace check. This setting will be passed on to new tasks
         self.check_launch = check_launch  # check launch flag. whether we check that pilots leave from launch. This setting will be passed on to new tasks
-        self.self_register = PILOT_DB and SELF_REG_DEFAULT  # set to true if we have pilot DB on and self reg on by default
+        self.self_register = (
+            PILOT_DB and SELF_REG_DEFAULT
+        )  # set to true if we have pilot DB on and self reg on by default
         self.check_g_record = check_g_record
         self.track_source = track_source  # external tracks source (flymaster, xcontest, ...)
 
@@ -84,6 +108,7 @@ class Comp(object):
 
     def __setattr__(self, attr, value):
         import datetime
+
         if attr in ('date_from', 'date_to'):
             if type(value) is str:
                 value = get_date(value)
@@ -197,6 +222,7 @@ class Comp(object):
         """Reads competition from database
         takes com_id as argument"""
         from db.tables import CompObjectView as C
+
         if not (type(comp_id) is int and comp_id > 0):
             print(f"comp_id needs to be int > 0, {comp_id} was given")
             return None
@@ -213,7 +239,7 @@ class Comp(object):
 
     def create_path(self):
         """create filepath from # and date if not given
-            and store it in database"""
+        and store it in database"""
         from compUtils import create_comp_code
 
         if self.comp_path:
@@ -235,13 +261,13 @@ class Comp(object):
 
     def to_db(self):
         """create or update a DB entry from Comp object. If comp_id is provided it will update otherwise add a new row
-            mandatory info for a comp:
-                comp_name
-                comp_code (short name)
-                date_from
-                date_to
-                comp_class (PG or HG)
-                comp_site - location of the comp. String can be site name or general description
+        mandatory info for a comp:
+            comp_name
+            comp_code (short name)
+            date_from
+            date_to
+            comp_class (PG or HG)
+            comp_site - location of the comp. String can be site name or general description
         """
 
         '''check we have the minimum required info'''
@@ -270,9 +296,10 @@ class Comp(object):
     @staticmethod
     def from_fsdb(fs_comp, short_name=None):
         """gets comp and formula info from FSDB file"""
-        from calcUtils import get_date
-        from pathlib import Path
         from glob import glob
+        from pathlib import Path
+
+        from calcUtils import get_date
         from compUtils import create_comp_code, is_shortcode_unique
 
         comp = Comp()
@@ -283,8 +310,13 @@ class Comp(object):
         comp.date_from = get_date(fs_comp.get('from'))
         comp.date_to = get_date(fs_comp.get('to'))
         comp.time_offset = int(float(fs_comp.get('utc_offset')) * 3600)
-        comp.sanction = ('FAI 1' if fs_comp.get('fai_sanctioning') == '1'
-                         else 'FAI 2' if fs_comp.get('fai_sanctioning') == '2' else 'none')
+        comp.sanction = (
+            'FAI 1'
+            if fs_comp.get('fai_sanctioning') == '1'
+            else 'FAI 2'
+            if fs_comp.get('fai_sanctioning') == '2'
+            else 'none'
+        )
         comp.external = True
         comp.locked = True
 
@@ -309,9 +341,26 @@ class Comp(object):
         from db.tables import TaskObjectView as T
 
         with db_session() as db:
-            results = db.query(T.task_id, T.reg_id, T.region_name, T.task_num, T.task_name, T.date, T.opt_dist,
-                               T.comment, T.window_open_time, T.task_deadline, T.window_close_time,
-                               T.start_time, T.start_close_time, T.track_source).filter_by(comp_id=self.comp_id).all()
+            results = (
+                db.query(
+                    T.task_id,
+                    T.reg_id,
+                    T.region_name,
+                    T.task_num,
+                    T.task_name,
+                    T.date,
+                    T.opt_dist,
+                    T.comment,
+                    T.window_open_time,
+                    T.task_deadline,
+                    T.window_close_time,
+                    T.start_time,
+                    T.start_close_time,
+                    T.track_source,
+                )
+                .filter_by(comp_id=self.comp_id)
+                .all()
+            )
             if results:
                 results = [row._asdict() for row in results]
             return results
@@ -321,12 +370,14 @@ class Comp(object):
         """Reads competition from json result file
         takes com_id as argument"""
         from db.tables import TblResultFile as R
+
         with db_session() as db:
             if ref_id:
                 file = db.query(R).get(ref_id).filename
             else:
-                file = db.query(R.filename).filter(and_(R.comp_id == comp_id,
-                                                        R.task_id.is_(None), R.active == 1)).scalar()
+                file = (
+                    db.query(R.filename).filter(and_(R.comp_id == comp_id, R.task_id.is_(None), R.active == 1)).scalar()
+                )
         if file:
             comp = Comp(comp_id=comp_id)
             with open(path.join(RESULTDIR, file), 'r') as f:
@@ -360,8 +411,9 @@ class Comp(object):
             :param
         name_suffix: optional name suffix to be used in filename.
         This is so we can overwrite comp results that are only used in front end to create competition
-         page not display results """
+         page not display results"""
         from calcUtils import c_round
+
         comp = Comp.read(comp_id)
         '''PARAMETER: decimal positions'''
         if decimals is None or not isinstance(decimals, int):
@@ -387,8 +439,14 @@ class Comp(object):
                     res = comp.results[-1]
                 # TODO need to decide which rounding to use and has to be the same in task results
                 # this is less than desirable, just to be consistent with task results
-                s = next((c_round(float(f"{c_round(float(pil.score or 0), 1):.{decimals}f}"), decimals)
-                          for pil in task.pilots if pil.par_id == p.par_id), 0)
+                s = next(
+                    (
+                        c_round(float(f"{c_round(float(pil.score or 0), 1):.{decimals}f}"), decimals)
+                        for pil in task.pilots
+                        if pil.par_id == p.par_id
+                    ),
+                    0,
+                )
                 # s = next((c_round(pil.score or 0, decimals) for pil in task.pilots if pil.par_id == p.par_id), 0)
                 if r > 0:  # sanity
                     perf = c_round(s / r, decimals + 3)
@@ -410,28 +468,30 @@ class Comp(object):
             r['results'] = {x: res[x] for x in res.keys() if isinstance(res[x], dict)}
             results.append(r)
         '''create json file'''
-        result = {'info': {x: getattr(comp, x) for x in CompResult.info_list},
-                  'rankings': comp.rankings,
-                  'tasks': [{x: getattr(t, x) for x in CompResult.task_list} for t in comp.tasks],
-                  'results': results,
-                  'formula': {x: getattr(comp.formula, x) for x in CompResult.formula_list},
-                  'stats': {x: getattr(comp, x) for x in CompResult.stats_list}
-                  }
-        ref_id, filename, timestamp = create_json_file(comp_id=comp.id, task_id=None, code=comp.comp_code,
-                                                       elements=result, status=status, name_suffix=name_suffix)
+        result = {
+            'info': {x: getattr(comp, x) for x in CompResult.info_list},
+            'rankings': comp.rankings,
+            'tasks': [{x: getattr(t, x) for x in CompResult.task_list} for t in comp.tasks],
+            'results': results,
+            'formula': {x: getattr(comp.formula, x) for x in CompResult.formula_list},
+            'stats': {x: getattr(comp, x) for x in CompResult.stats_list},
+        }
+        ref_id, filename, timestamp = create_json_file(
+            comp_id=comp.id, task_id=None, code=comp.comp_code, elements=result, status=status, name_suffix=name_suffix
+        )
         return comp, ref_id, filename, timestamp
 
     def get_final_scores(self, d=0):
         """calculate final scores depending on overall validity:
-            - all:      sum of all tasks results
-            - round:    task discard every [param] tasks
-            - ftv:      calculate task scores and total score based on FTV [param]
+        - all:      sum of all tasks results
+        - round:    task discard every [param] tasks
+        - ftv:      calculate task scores and total score based on FTV [param]
 
-            input:
-                results:    participant list
-                tasks:      tasks list
-                formula:    comp formula dict
-                d:          decimals on single tasks score, default 0
+        input:
+            results:    participant list
+            tasks:      tasks list
+            formula:    comp formula dict
+            d:          decimals on single tasks score, default 0
         """
         from calcUtils import c_round
 
@@ -446,13 +506,14 @@ class Comp(object):
                 or event has just one valid task regardless method,
                 we can simply sum all score values
             '''
-            if not ((val == 'all')
-                    or (val == 'round' and self.dropped_tasks == 0)
-                    or (len(self.tasks) < 2)):
+            if not ((val == 'all') or (val == 'round' and self.dropped_tasks == 0) or (len(self.tasks) < 2)):
                 '''create a ordered list of results, perf desc'''
                 # sorted_results = sorted(pil['results'], key=lambda x: (x[1]['perf'], x[1]['pre']), reverse=True)
-                sorted_results = sorted([x for x in pil.items() if isinstance(x[1], dict)],
-                                        key=lambda x: (x[1]['perf'], x[1]['pre']), reverse=True)
+                sorted_results = sorted(
+                    [x for x in pil.items() if isinstance(x[1], dict)],
+                    key=lambda x: (x[1]['perf'], x[1]['pre']),
+                    reverse=True,
+                )
 
                 if val == 'round' and len(self.tasks) >= param:
                     '''we need to order by score desc and sum only the ones we need'''
@@ -486,18 +547,23 @@ class Comp(object):
     def create_participants_html(self) -> (str, dict):
         """ create a HTML file from participants list"""
         from time import time
+
         from calcUtils import epoch_to_string
+
         title = f"{self.comp_name}"
         filename = f"{self.comp_name.replace(' - ', '_').replace(' ', '_')}_participants.html"
         self.participants = get_participants(self.comp_id)
-        participants = sorted(self.participants,
-                              key=lambda x: x.ID if all(el.ID for el in self.participants) else x.name)
+        participants = sorted(
+            self.participants, key=lambda x: x.ID if all(el.ID for el in self.participants) else x.name
+        )
         num = len(participants)
 
         '''HTML headings'''
-        headings = [f"{self.comp_name} - {self.sanction} Event",
-                    f"{self.date_from} to {self.date_to}",
-                    f"{self.comp_site}"]
+        headings = [
+            f"{self.comp_name} - {self.sanction} Event",
+            f"{self.date_from} to {self.date_to}",
+            f"{self.comp_site}",
+        ]
 
         '''Participants table'''
         thead = ['Id', 'Name', 'Nat', 'Glider', 'Sponsor']
@@ -506,8 +572,9 @@ class Comp(object):
         tbody = []
         for p in participants:
             tbody.append([getattr(p, k) or '' for k in keys])
-        participants = dict(title=f'{num} Participants', css_class='simple', right_align=right_align, thead=thead,
-                            tbody=tbody)
+        participants = dict(
+            title=f'{num} Participants', css_class='simple', right_align=right_align, thead=thead, tbody=tbody
+        )
 
         dt = int(time())  # timestamp of generation
         timestamp = epoch_to_string(dt, self.time_offset)
@@ -517,23 +584,25 @@ class Comp(object):
 
 def delete_comp(comp_id, files=True):
     """delete all database entries and files on disk related to comp"""
-    from db.tables import TblTask as T
     from db.tables import TblForComp as FC
-    from db.tables import TblResultFile as RF
     from db.tables import TblParticipant as P
-    from task import delete_task
+    from db.tables import TblResultFile as RF
+    from db.tables import TblTask as T
     from result import delete_result
+    from task import delete_task
+
     with db_session() as db:
         tasks = db.query(T.task_id).filter_by(comp_id=comp_id).all()
         if tasks:
             '''delete tasks'''
             for task in tasks:
                 delete_task(task.task_id, files=files)
-        results = db.query(RF.ref_id).filter_by(comp_id=comp_id).all()
+        results = db.query(RF.filename).filter_by(comp_id=comp_id).all()
         if results:
             '''delete result json files'''
             for res in results:
-                delete_result(res.ref_id, files)
+                print(f"result: {res.filename}")
+                delete_result(res.filename, delete_file=files)
         '''delete db entries: formula, participants, comp'''
         db.query(P).filter_by(comp_id=comp_id).delete(synchronize_session=False)
         db.query(FC).filter_by(comp_id=comp_id).delete(synchronize_session=False)

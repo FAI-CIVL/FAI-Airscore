@@ -7,7 +7,7 @@ Antonio Golfari - 2018
 
 import decimal
 import json
-from datetime import date, time, datetime
+from datetime import date, datetime, time
 
 
 class DateTimeEncoder(json.JSONEncoder):
@@ -35,7 +35,8 @@ class CJsonEncoder(json.JSONEncoder):
 
 
 def c_round(x, digits=0, precision=15):
-    from decimal import Decimal, getcontext, ROUND_HALF_UP
+    from decimal import ROUND_HALF_UP, Decimal, getcontext
+
     round_context = getcontext()
     round_context.rounding = ROUND_HALF_UP
     tmp = round(Decimal(x), precision)
@@ -44,6 +45,7 @@ def c_round(x, digits=0, precision=15):
 
 def igc_coords(lat: float, lon: float) -> (str, str):
     from math import modf
+
     NS = 'N' if lat >= 0 else 'S'
     EW = 'E' if lon >= 0 else 'W'
     d, i = modf(abs(lat))
@@ -88,6 +90,7 @@ def datetime_to_seconds(t):
 def string_to_seconds(string):
     """gets as input any date time string, with standard time as 14:15:00"""
     import re
+
     reg = re.compile(r'\d\d:\d\d:\d\d')
     try:
         time_str = reg.findall(string).pop()
@@ -116,7 +119,7 @@ def time_difference(t1, t2):
 
 def get_datetime(t):
     """
-        Transform string in datetime.datetime
+    Transform string in datetime.datetime
     """
     try:
         return datetime.strptime(t[:19], '%Y-%m-%dT%H:%M:%S')
@@ -126,8 +129,8 @@ def get_datetime(t):
 
 def get_date(t):
     """
-        Transform string in datetime.date
-        Gets first 10 positions in string ('YYYY-mm-dd')
+    Transform string in datetime.date
+    Gets first 10 positions in string ('YYYY-mm-dd')
     """
     try:
         return datetime.strptime(t[:10], '%Y-%m-%d').date()
@@ -137,8 +140,8 @@ def get_date(t):
 
 def get_time(t):
     """
-        Transform string in datetime.time
-        Gets first 19 positions in string ('YYYY-MM-DD hh:mm:ss')
+    Transform string in datetime.time
+    Gets first 19 positions in string ('YYYY-MM-DD hh:mm:ss')
     """
     try:
         return datetime.strptime(t[:19], '%Y-%m-%dT%H:%M:%S').time()
@@ -148,7 +151,7 @@ def get_time(t):
 
 def epoch_to_date(sec, offset=0):
     """
-        Transform string in datetime.datetime
+    Transform string in datetime.datetime
     """
     try:
         return datetime.fromtimestamp(sec + offset).date()
@@ -159,7 +162,7 @@ def epoch_to_date(sec, offset=0):
 
 def epoch_to_datetime(sec, rawtime=0, offset=0):  # offset is not used??
     """
-        Transform epoch in datetime.datetime
+    Transform epoch in datetime.datetime
     """
     try:
         return datetime.fromtimestamp(sec + rawtime + offset)
@@ -207,15 +210,17 @@ def sec_to_duration(rawtime):
 def get_isotime(d: datetime.date, t: int, offset=None):
     import datetime as dt
     from datetime import datetime as dd
+
     tz = dt.timedelta(seconds=offset)
     return dd.combine(d, sec_to_time(t + offset), tzinfo=dt.timezone(offset=tz)).isoformat()
 
 
 def altitude_compensation(QNH: float):
-    """ calculates pressure altitude compensation given QNH value:
-        FL0MSL[m]=[(QNH[in hPa] – 1013)/12] x 100 – 2
+    """calculates pressure altitude compensation given QNH value:
+    FL0MSL[m]=[(QNH[in hPa] – 1013)/12] x 100 – 2
     """
     import math
+
     if math.isclose(QNH, 1013.25, abs_tol=100) and not math.isclose(QNH, 1013.25, abs_tol=0.01):
         return math.floor((QNH - 1013.25) / 12 * 100 - 2)
     else:
@@ -224,11 +229,12 @@ def altitude_compensation(QNH: float):
 
 def get_season_dates(ladder_id: int, season: int, date_from: datetime.date = None, date_to: datetime.date = None):
     from db.tables import TblLadder as L
+
     if not (date_from and date_to):
         lad = L.get_by_id(ladder_id)
         date_from, date_to = lad.date_from, lad.date_to
     '''create start and end dates'''
-    s = season-1 if date_from > date_to else season
+    s = season - 1 if date_from > date_to else season
     starts = datetime.strptime(f"{s}-{date_from.month}-{date_from.day}", '%Y-%m-%d').date()
     ends = datetime.strptime(f"{s+1}-{date_to.month}-{date_to.day}", '%Y-%m-%d').date()
     return starts, ends
@@ -236,8 +242,11 @@ def get_season_dates(ladder_id: int, season: int, date_from: datetime.date = Non
 
 ''' This are functions used by FSComp to calculate exact pressure altitude.
     I think it is an overkill. Also, I don't think Flight Levels are calculated on ISA values.'''
+
+
 def CalculateQnhAltitude(pressure: float, qnh: float):
     import math
+
     if not pressure or not qnh or qnh < 900.0 or qnh > 1100.0:
         return 0
     else:
@@ -246,13 +255,16 @@ def CalculateQnhAltitude(pressure: float, qnh: float):
 
 def CalculatePressure(baroAltitude: float):
     import math
+
     return 1013.25 * math.exp(5.25578129287301 * math.log(1 - 0.0065 * baroAltitude / 288.15))
 
 
 ''' ISA pressure calculation'''
+
+
 def isa(alt: float):
-    """ return a 2-uplet (pressure, temperature) depending on provided altitude.
-        Units are SI (m, PA, Kelvin)
-        considering only altitudes under 11000 meters (troposphere)
+    """return a 2-uplet (pressure, temperature) depending on provided altitude.
+    Units are SI (m, PA, Kelvin)
+    considering only altitudes under 11000 meters (troposphere)
     """
-    return 1013.25 * (1 - 2.25569E-5 * alt) ** 5.25616
+    return 1013.25 * (1 - 2.25569e-5 * alt) ** 5.25616

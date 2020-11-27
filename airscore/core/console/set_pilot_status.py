@@ -6,8 +6,8 @@ usage: python3 set_pilot_status.py <task_id> <pil_id> <status>
 Stuart Mackintosh Antonio Golfari - 2019
 """
 
-from db.tables import TblTaskResult as R
 from db.conn import db_session
+from db.tables import TblTaskResult as R
 from task import Task as T
 
 
@@ -46,9 +46,11 @@ def main(args):
 if __name__ == "__main__":
     import sys
 
-    if not ((sys.argv[1].isdigit() and int(sys.argv[1]) > 0) and
-            (sys.argv[2].isdigit() and int(sys.argv[2]) > 0) and
-            (sys.argv[3] in ('abs', 'dnf', 'mindist'))):
+    if not (
+        (sys.argv[1].isdigit() and int(sys.argv[1]) > 0)
+        and (sys.argv[2].isdigit() and int(sys.argv[2]) > 0)
+        and (sys.argv[3] in ('abs', 'dnf', 'mindist'))
+    ):
         print("number of arguments != 3 and/or task_id or pil_id not a number")
         exit()
     main(sys.argv[1:])

@@ -1,18 +1,35 @@
-from .flightpointer import FlightPointer
-from pilot.flightresult import FlightResult
-from task import Task
 from airspace import AirspaceCheck
-from formulas.libs.leadcoeff import LeadCoeff
-from pilot.waypointachieved import WaypointAchieved
-from route import distance_flown, start_made_civl, tp_time_civl, tp_made_civl, \
-    in_goal_sector, get_shortest_path, distance
 from calcUtils import sec_to_time
+from formulas.libs.leadcoeff import LeadCoeff
 from igc_lib import FlightParsingConfig
+from pilot.flightresult import FlightResult
+from pilot.waypointachieved import WaypointAchieved
+from route import (
+    distance,
+    distance_flown,
+    get_shortest_path,
+    in_goal_sector,
+    start_made_civl,
+    tp_made_civl,
+    tp_time_civl,
+)
+from task import Task
+
+from .flightpointer import FlightPointer
 
 
-def check_fixes(result: FlightResult, fixes: list, task: Task, tp: FlightPointer, lead_coeff: LeadCoeff = None,
-                airspace: AirspaceCheck = None, livetracking: bool = False,
-                igc_parsing_config: FlightParsingConfig = None, deadline: int = None, print=print):
+def check_fixes(
+    result: FlightResult,
+    fixes: list,
+    task: Task,
+    tp: FlightPointer,
+    lead_coeff: LeadCoeff = None,
+    airspace: AirspaceCheck = None,
+    livetracking: bool = False,
+    igc_parsing_config: FlightParsingConfig = None,
+    deadline: int = None,
+    print=print,
+):
     """"""
     '''initialize'''
     total_fixes = len(fixes)
@@ -62,8 +79,10 @@ def check_fixes(result: FlightResult, fixes: list, task: Task, tp: FlightPointer
             if next_fix.rawtime - my_fix.rawtime < 1:
                 continue
             alt_rate = abs(next_fix.alt - my_fix.alt) / (next_fix.rawtime - my_fix.rawtime)
-            if (alt_rate > igc_parsing_config.max_alt_change_rate
-                    or not igc_parsing_config.min_alt < alt < igc_parsing_config.max_alt):
+            if (
+                alt_rate > igc_parsing_config.max_alt_change_rate
+                or not igc_parsing_config.min_alt < alt < igc_parsing_config.max_alt
+            ):
                 continue
 
             '''check flying'''
@@ -71,8 +90,10 @@ def check_fixes(result: FlightResult, fixes: list, task: Task, tp: FlightPointer
             if not result.first_time:
                 '''not launched yet'''
                 launch = next(x for x in tp.turnpoints if x.type == 'launch')
-                if (abs(launch.altitude - alt) > igc_parsing_config.min_alt_difference
-                        and speed > igc_parsing_config.min_gsp_flight):
+                if (
+                    abs(launch.altitude - alt) > igc_parsing_config.min_alt_difference
+                    and speed > igc_parsing_config.min_gsp_flight
+                ):
                     '''pilot launched'''
                     result.first_time = next_fix.rawtime
                     result.live_comment = 'flying'
@@ -89,8 +110,10 @@ def check_fixes(result: FlightResult, fixes: list, task: Task, tp: FlightPointer
                     else:
                         time_diff = next_fix.rawtime - result.suspect_landing_fix.rawtime
                         alt_diff = abs(alt - result.suspect_landing_fix.alt)
-                        if (time_diff > igc_parsing_config.max_still_seconds
-                                and alt_diff < igc_parsing_config.min_alt_difference):
+                        if (
+                            time_diff > igc_parsing_config.max_still_seconds
+                            and alt_diff < igc_parsing_config.min_alt_difference
+                        ):
                             '''assuming pilot landed'''
                             result.landing_time = next_fix.rawtime
                             result.landing_altitude = alt
@@ -179,8 +202,7 @@ def check_fixes(result: FlightResult, fixes: list, task: Task, tp: FlightPointer
             # print(f'time: {my_fix.rawtime}, start: {task.start_time} | Interval: {task.SS_interval} | my start: {result.real_start_time} | better_start: {pilot_get_better_start(task, my_fix.rawtime, result.SSS_time)} | can start: {pilot_can_start(task, tp, my_fix)} can restart: {pilot_can_restart(task, tp, my_fix, result)} | tp: {tp.name}')
             if start_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m):
                 time = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
-                result.waypoints_achieved.append(
-                    create_waypoint_achieved(my_fix, tp, time, alt))  # pilot has started
+                result.waypoints_achieved.append(create_waypoint_achieved(my_fix, tp, time, alt))  # pilot has started
                 result.real_start_time = time
                 if not livetracking:
                     print(f"Pilot started SS at {sec_to_time(result.real_start_time)}")
@@ -194,7 +216,8 @@ def check_fixes(result: FlightResult, fixes: list, task: Task, tp: FlightPointer
                 time = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
                 result.waypoints_achieved.pop()
                 result.waypoints_achieved.append(
-                    create_waypoint_achieved(my_fix, tp, time, alt))  # pilot has started again
+                    create_waypoint_achieved(my_fix, tp, time, alt)
+                )  # pilot has started again
                 result.real_start_time = time
                 result.best_distance_time = time
                 if not livetracking:
@@ -205,22 +228,23 @@ def check_fixes(result: FlightResult, fixes: list, task: Task, tp: FlightPointer
 
         if tp.start_done:
             '''Turnpoint managing'''
-            if (tp.next.shape == 'circle'
-                    and tp.next.type in ('endspeed', 'waypoint')):
+            if tp.next.shape == 'circle' and tp.next.type in ('endspeed', 'waypoint'):
                 if tp_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m):
                     time = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
                     result.waypoints_achieved.append(
-                        create_waypoint_achieved(my_fix, tp, time, alt))  # pilot has achieved turnpoint
+                        create_waypoint_achieved(my_fix, tp, time, alt)
+                    )  # pilot has achieved turnpoint
                     if not livetracking:
                         print(f"Pilot took {tp.name} at {sec_to_time(time)} at {alt}m")
                     tp.move_to_next()
 
             if tp.ess_done and tp.type == 'goal':
-                if ((tp.next.shape == 'circle' and tp_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m))
-                        or
-                        (tp.next.shape == 'line' and (in_goal_sector(task, next_fix)))):
+                if (tp.next.shape == 'circle' and tp_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m)) or (
+                    tp.next.shape == 'line' and (in_goal_sector(task, next_fix))
+                ):
                     result.waypoints_achieved.append(
-                        create_waypoint_achieved(next_fix, tp, next_fix.rawtime, alt))  # pilot has achieved goal
+                        create_waypoint_achieved(next_fix, tp, next_fix.rawtime, alt)
+                    )  # pilot has achieved goal
                     result.best_distance_time = next_fix.rawtime
                     if not livetracking:
                         print(f"Goal at {sec_to_time(next_fix.rawtime)}")
@@ -240,8 +264,9 @@ def check_fixes(result: FlightResult, fixes: list, task: Task, tp: FlightPointer
                 # print(f'time: {next_fix.rawtime} | fix: {tp.name} | Optimized Distance used')
             else:
                 '''simplified and faster distance calculation'''
-                fix_dist_flown = distance_flown(next_fix, tp.pointer, task.optimised_turnpoints,
-                                                task.turnpoints[tp.pointer], distances2go)
+                fix_dist_flown = distance_flown(
+                    next_fix, tp.pointer, task.optimised_turnpoints, task.turnpoints[tp.pointer], distances2go
+                )
                 # print(f'time: {next_fix.rawtime} | fix: {tp.name} | Simplified Distance used')
 
             if fix_dist_flown > result.distance_flown:
@@ -281,19 +306,28 @@ def check_fixes(result: FlightResult, fixes: list, task: Task, tp: FlightPointer
                 infringement_type = plot[3]
                 dist = plot[4]
                 separation = plot[5]
-                result.infringements.append([next_fix, alt, airspace_name, infringement_type,
-                                             dist, penalty, separation])
+                result.infringements.append(
+                    [next_fix, alt, airspace_name, infringement_type, dist, penalty, separation]
+                )
                 # print([next_fix, alt, airspace_name, infringement_type, dist, penalty])
 
     result.last_altitude = 0 if 'alt' not in locals() else alt
     result.last_time = 0 if 'next_fix' not in locals() else next_fix.rawtime
     if livetracking:
-        result.height = (0 if not result.first_time or result.landing_time or 'next_fix' not in locals()
-                         else next_fix.height)
+        result.height = (
+            0 if not result.first_time or result.landing_time or 'next_fix' not in locals() else next_fix.height
+        )
 
 
-def calculate_final_results(result: FlightResult, task: Task, tp: FlightPointer, lead_coeff: LeadCoeff,
-                            airspace: AirspaceCheck = None, deadline: int = None, print=print):
+def calculate_final_results(
+    result: FlightResult,
+    task: Task,
+    tp: FlightPointer,
+    lead_coeff: LeadCoeff,
+    airspace: AirspaceCheck = None,
+    deadline: int = None,
+    print=print,
+):
     """"""
     '''final results'''
     print("100|% complete")
@@ -336,11 +370,11 @@ def pilot_can_start(task, tp, fix):
     - task is elapsed time
     '''
     max_jump_the_gun = task.formula.max_JTG or 0
-    if ((tp.type == "speed")
-            and
-            (fix.rawtime >= (task.start_time - max_jump_the_gun))
-            and
-            (not task.start_close_time or fix.rawtime <= task.start_close_time)):
+    if (
+        (tp.type == "speed")
+        and (fix.rawtime >= (task.start_time - max_jump_the_gun))
+        and (not task.start_close_time or fix.rawtime <= task.start_close_time)
+    ):
         return True
     else:
         return False
@@ -385,22 +419,24 @@ def pilot_get_better_start(task: Task, time: int, prev_time: int) -> bool:
 
 def create_waypoint_achieved(fix, tp: FlightPointer, time: int, alt: int) -> WaypointAchieved:
     """creates a dictionary to be added to result.waypoints_achived"""
-    return WaypointAchieved(trw_id=None, wpt_id=tp.next.wpt_id, name=tp.name, lat=fix.lat, lon=fix.lon,
-                            rawtime=time, altitude=alt)
+    return WaypointAchieved(
+        trw_id=None, wpt_id=tp.next.wpt_id, name=tp.name, lat=fix.lat, lon=fix.lon, rawtime=time, altitude=alt
+    )
 
 
 def evaluate_start(result: FlightResult, task: Task, tp: FlightPointer):
     from pilot.notification import Notification
+
     max_jump_the_gun = task.formula.max_JTG or 0  # seconds
     jtg_penalty_per_sec = 0 if max_jump_the_gun == 0 else task.formula.JTG_penalty_per_sec
 
     if tp.start_done:
-        '''
+        """
         start time
         if race, the first times
         if multistart, the first time of the last gate pilot made
         if elapsed time, the time of last fix on start
-        SS Time: the gate time'''
+        SS Time: the gate time"""
         result.SSS_time = task.start_time
 
         if task.task_type == 'RACE' and task.SS_interval:
@@ -420,18 +456,19 @@ def evaluate_start(result: FlightResult, task: Task, tp: FlightPointer):
 
 def evaluate_ess(result: FlightResult, task: Task):
     if any(e.name == 'ESS' for e in result.waypoints_achieved):
-        result.ESS_time, result.ESS_altitude = min([(x.rawtime, x.altitude) for x in result.waypoints_achieved
-                                                    if x.name == 'ESS'], key=lambda t: t[0])
+        result.ESS_time, result.ESS_altitude = min(
+            [(x.rawtime, x.altitude) for x in result.waypoints_achieved if x.name == 'ESS'], key=lambda t: t[0]
+        )
         result.speed = (task.SS_distance / 1000) / (result.ss_time / 3600)
 
 
 def evaluate_goal(result: FlightResult, task: Task):
-    """ ?p:p?PilotsLandingBeforeGoal:bestDistancep = max(minimumDistance, taskDistance-min(?trackp.pointi shortestDistanceToGoal(trackp.pointi)))
-        ?p:p?PilotsReachingGoal:bestDistancep = taskDistance
+    """?p:p?PilotsLandingBeforeGoal:bestDistancep = max(minimumDistance, taskDistance-min(?trackp.pointi shortestDistanceToGoal(trackp.pointi)))
+    ?p:p?PilotsReachingGoal:bestDistancep = taskDistance
     """
     if any(e.name == 'Goal' for e in result.waypoints_achieved):
         result.distance_flown = task.opt_dist
-        result.goal_time, result.goal_altitude = min([(x.rawtime, x.altitude)
-                                                      for x in result.waypoints_achieved
-                                                      if x.name == 'Goal'], key=lambda t: t[0])
+        result.goal_time, result.goal_altitude = min(
+            [(x.rawtime, x.altitude) for x in result.waypoints_achieved if x.name == 'Goal'], key=lambda t: t[0]
+        )
         result.result_type = 'goal'

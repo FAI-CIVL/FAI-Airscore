@@ -1,29 +1,42 @@
-from db.tables import TblCompetition, TblTask, TblCompAuth, TblRegion, TblRegionWaypoint, TblTaskWaypoint
-from route import Turnpoint
-from sqlalchemy.orm import aliased
-from flask import current_app, jsonify
-from db.conn import db_session
 import datetime
-import ruamel.yaml
-from sqlalchemy import func
-from pathlib import Path
-import jsonpickle
-from Defines import MAPOBJDIR, IGCPARSINGCONFIG, track_formats
-from map import make_map
-from calcUtils import sec_to_time, c_round
-from os import scandir, environ
-import requests
-from functools import partial
 import json
+from functools import partial
+from os import environ, scandir
+from pathlib import Path
+
+import jsonpickle
+import requests
+import ruamel.yaml
+from calcUtils import c_round, sec_to_time
+from db.conn import db_session
+from db.tables import (
+    TblCompAuth,
+    TblCompetition,
+    TblRegion,
+    TblRegionWaypoint,
+    TblTask,
+    TblTaskWaypoint,
+)
+from Defines import IGCPARSINGCONFIG, MAPOBJDIR, track_formats
+from flask import current_app, jsonify
+from map import make_map
+from route import Turnpoint
+from sqlalchemy import func
+from sqlalchemy.orm import aliased
 
 
 def create_menu(active: str = '') -> list:
     import Defines
+
     menu = [dict(title='Competitions', url='public.home', css='nav-item')]
     if Defines.LADDERS:
         menu.append(dict(title='Ladders', url='public.ladders', css='nav-item'))
-    menu.extend([dict(title='Pilots', url='public.pilots', css='nav-item'),
-                dict(title='Flying Areas', url='public.regions', css='nav-item')])
+    menu.extend(
+        [
+            dict(title='Pilots', url='public.pilots', css='nav-item'),
+            dict(title='Flying Areas', url='public.regions', css='nav-item'),
+        ]
+    )
 
     return menu
 
@@ -31,29 +44,46 @@ def create_menu(active: str = '') -> list:
 def get_comps() -> list:
     c = aliased(TblCompetition)
     with db_session() as db:
-        comps = (db.query(c.comp_id, c.comp_name, c.comp_site,
-                          c.comp_class, c.sanction, c.comp_type, c.date_from,
-                          c.date_to, func.count(TblTask.task_id).label('tasks'), c.external)
-                   .outerjoin(TblTask, c.comp_id == TblTask.comp_id)
-                   .group_by(c.comp_id))
+        comps = (
+            db.query(
+                c.comp_id,
+                c.comp_name,
+                c.comp_site,
+                c.comp_class,
+                c.sanction,
+                c.comp_type,
+                c.date_from,
+                c.date_to,
+                func.count(TblTask.task_id).label('tasks'),
+                c.external,
+            )
+            .outerjoin(TblTask, c.comp_id == TblTask.comp_id)
+            .group_by(c.comp_id)
+        )
 
     return [row._asdict() for row in comps]
 
 
 def find_orphan_pilots(pilots_list: list, orphans: list) -> (list, list):
-    """ Tries to guess participants that do not have a pil_id, and associate them to other participants or
-        to a pilot in database"""
-    from db.tables import PilotView as P
+    """Tries to guess participants that do not have a pil_id, and associate them to other participants or
+    to a pilot in database"""
     from calcUtils import get_int
+    from db.tables import PilotView as P
+
     pilots_found = []
     still_orphans = []
     ''' find a match among pilots already in list'''
     print(f"trying to find pilots from orphans...")
     for p in orphans:
         name, civl_id, comp_id = p['name'], p['civl_id'], p['comp_id']
-        found = next((el for el in pilots_list
-                      if (el['name'] == name or (civl_id and civl_id == el['civl_id']))
-                      and comp_id not in el[comp_id]), None)
+        found = next(
+            (
+                el
+                for el in pilots_list
+                if (el['name'] == name or (civl_id and civl_id == el['civl_id'])) and comp_id not in el[comp_id]
+            ),
+            None,
+        )
         if found:
             '''adding to existing pilot'''
             found['par_ids'].append(p['par_id'])
@@ -67,22 +97,43 @@ def find_orphan_pilots(pilots_list: list, orphans: list) -> (list, list):
             pilots = db.query(P).all()
             for p in still_orphans:
                 name, civl_id, comp_id = p['name'].title(), p['civl_id'], p['comp_id']
-                row = next((el for el in pilots
-                            if ((el.first_name and el.last_name
-                                 and el.first_name.title() in name and el.last_name.title() in name)
-                                or (civl_id and el.civl_id and civl_id == get_int(el.civl_id)))), None)
+                row = next(
+                    (
+                        el
+                        for el in pilots
+                        if (
+                            (
+                                el.first_name
+                                and el.last_name
+                                and el.first_name.title() in name
+                                and el.last_name.title() in name
+                            )
+                            or (civl_id and el.civl_id and civl_id == get_int(el.civl_id))
+                        )
+                    ),
+                    None,
+                )
                 if row:
                     '''check if we already found the same pilot in orphans'''
-                    found = next((el for el in pilots_found
-                                  if el['pil_id'] == row.pil_id), None)
+                    found = next((el for el in pilots_found if el['pil_id'] == row.pil_id), None)
                     if found:
                         found['par_ids'].append(p['par_id'])
                         found['comp_ids'].append(comp_id)
                     else:
                         name = f"{row.first_name.title()} {row.last_name.title()}"
-                        pilot = dict(comp_ids=[p['comp_id']], par_ids=[p['par_id']], pil_id=int(row.pil_id),
-                                     civl_id=get_int(row.civl_id), fai_id=row.fai_id, name=name, sex=p['sex'],
-                                     nat=p['nat'], glider=p['glider'], glider_cert=p['glider_cert'], results=[])
+                        pilot = dict(
+                            comp_ids=[p['comp_id']],
+                            par_ids=[p['par_id']],
+                            pil_id=int(row.pil_id),
+                            civl_id=get_int(row.civl_id),
+                            fai_id=row.fai_id,
+                            name=name,
+                            sex=p['sex'],
+                            nat=p['nat'],
+                            glider=p['glider'],
+                            glider_cert=p['glider_cert'],
+                            results=[],
+                        )
                         pilots_found.append(pilot)
                 else:
                     orphans.append(p)
@@ -92,28 +143,40 @@ def find_orphan_pilots(pilots_list: list, orphans: list) -> (list, list):
 
 
 def get_ladders() -> list:
-    from db.tables import TblLadder as L, TblLadderSeason as LS, TblCountryCode as C
+    from db.tables import TblCountryCode as C
+    from db.tables import TblLadder as L
+    from db.tables import TblLadderSeason as LS
+
     with db_session() as db:
-        ladders = db.query(L.ladder_id, L.ladder_name, L.ladder_class, L.date_from, L.date_to,
-                           C.natIoc.label('nat'),
-                           LS.season) \
-                    .join(LS, L.ladder_id == LS.ladder_id) \
-                    .join(C, L.nation_code == C.natId) \
-                    .filter(LS.active == 1) \
-                    .order_by(LS.season.desc())
+        ladders = (
+            db.query(
+                L.ladder_id, L.ladder_name, L.ladder_class, L.date_from, L.date_to, C.natIoc.label('nat'), LS.season
+            )
+            .join(LS, L.ladder_id == LS.ladder_id)
+            .join(C, L.nation_code == C.natId)
+            .filter(LS.active == 1)
+            .order_by(LS.season.desc())
+        )
 
     return [row._asdict() for row in ladders]
 
 
-def get_ladder_results(ladder_id: int, season: int,
-                       nat: str = None, starts: datetime.date = None, ends: datetime.date = None) -> json:
+def get_ladder_results(
+    ladder_id: int, season: int, nat: str = None, starts: datetime.date = None, ends: datetime.date = None
+) -> json:
     """creates result json using comp results from all events in ladder"""
-    from db.tables import TblParticipant as P, TblLadder as L, TblLadderComp as LC, TblLadderSeason as LS, \
-        TblCompetition as C, TblTask as T, TblResultFile as R
-    from calcUtils import get_season_dates
-    from compUtils import get_nat, create_classifications
-    from result import open_json_file
     import time
+
+    from calcUtils import get_season_dates
+    from compUtils import create_classifications, get_nat
+    from db.tables import TblCompetition as C
+    from db.tables import TblLadder as L
+    from db.tables import TblLadderComp as LC
+    from db.tables import TblLadderSeason as LS
+    from db.tables import TblParticipant as P
+    from db.tables import TblResultFile as R
+    from db.tables import TblTask as T
+    from result import open_json_file
 
     if not (nat and starts and ends):
         lad = L.get_by_id(ladder_id)
@@ -124,31 +187,36 @@ def get_ladder_results(ladder_id: int, season: int,
     with db_session() as db:
         '''get ladder info'''
         # probably we could keep this from ladder list page?
-        row = db.query(L.ladder_id, L.ladder_name, L.ladder_class,
-                       LS.season, LS.cat_id, LS.overall_validity, LS.validity_param) \
-                .join(LS) \
-                .filter(L.ladder_id == ladder_id, LS.season == season).one()
+        row = (
+            db.query(
+                L.ladder_id, L.ladder_name, L.ladder_class, LS.season, LS.cat_id, LS.overall_validity, LS.validity_param
+            )
+            .join(LS)
+            .filter(L.ladder_id == ladder_id, LS.season == season)
+            .one()
+        )
         rankings = create_classifications(row.cat_id)
-        info = {'ladder_name': row.ladder_name,
-                'season': row.season,
-                'ladder_class': row.ladder_class,
-                'id': row.ladder_id}
-        formula = {'overall_validity': row.overall_validity,
-                   'validity_param': row.validity_param}
+        info = {
+            'ladder_name': row.ladder_name,
+            'season': row.season,
+            'ladder_class': row.ladder_class,
+            'id': row.ladder_id,
+        }
+        formula = {'overall_validity': row.overall_validity, 'validity_param': row.validity_param}
 
         '''get comps and files'''
-        results = db.query(C.comp_id, R.filename) \
-                    .join(LC) \
-                    .join(R, (R.comp_id == C.comp_id) & (R.task_id.is_(None)) & (R.active == 1)) \
-                    .filter(C.date_to > starts, C.date_to < ends, LC.c.ladder_id == ladder_id)
+        results = (
+            db.query(C.comp_id, R.filename)
+            .join(LC)
+            .join(R, (R.comp_id == C.comp_id) & (R.task_id.is_(None)) & (R.active == 1))
+            .filter(C.date_to > starts, C.date_to < ends, LC.c.ladder_id == ladder_id)
+        )
         comps_ids = [row.comp_id for row in results]
         files = [row.filename for row in results]
         print(comps_ids, files)
 
         '''create Participants list'''
-        results = db.query(P) \
-                    .filter(P.comp_id.in_(comps_ids), P.nat == nat) \
-                    .order_by(P.pil_id, P.comp_id).all()
+        results = db.query(P).filter(P.comp_id.in_(comps_ids), P.nat == nat).order_by(P.pil_id, P.comp_id).all()
         pilots_list = []
         orphans = []
         for row in results:
@@ -160,14 +228,33 @@ def get_ladder_results(ladder_id: int, season: int,
                     p['comp_ids'].append(row.comp_id)
                 else:
                     '''insert a new pilot'''
-                    p = dict(comp_ids=[row.comp_id], par_ids=[row.par_id], pil_id=row.pil_id, civl_id=row.civl_id,
-                             fai_id=row.fai_id, name=row.name, sex=row.sex, nat=row.nat,
-                             glider=row.glider, glider_cert=row.glider_cert, results=[])
+                    p = dict(
+                        comp_ids=[row.comp_id],
+                        par_ids=[row.par_id],
+                        pil_id=row.pil_id,
+                        civl_id=row.civl_id,
+                        fai_id=row.fai_id,
+                        name=row.name,
+                        sex=row.sex,
+                        nat=row.nat,
+                        glider=row.glider,
+                        glider_cert=row.glider_cert,
+                        results=[],
+                    )
                     pilots_list.append(p)
             else:
-                p = dict(comp_id=row.comp_id, pil_id=row.pil_id, par_id=row.par_id, civl_id=row.civl_id,
-                         fai_id=row.fai_id, name=row.name, sex=row.sex, nat=row.nat,
-                         glider=row.glider, glider_cert=row.glider_cert)
+                p = dict(
+                    comp_id=row.comp_id,
+                    pil_id=row.pil_id,
+                    par_id=row.par_id,
+                    civl_id=row.civl_id,
+                    fai_id=row.fai_id,
+                    name=row.name,
+                    sex=row.sex,
+                    nat=row.nat,
+                    glider=row.glider,
+                    glider_cert=row.glider_cert,
+                )
                 orphans.append(p)
     '''try to guess orphans'''
     if orphans:
@@ -184,8 +271,12 @@ def get_ladder_results(ladder_id: int, season: int,
         comp_code = i['comp_code']
         results = f['results']
         comps.append(dict(id=i['id'], comp_code=i['comp_code'], comp_name=i['comp_name'], tasks=len(f['tasks'])))
-        tasks.extend([dict(id=t['id'], ftv_validity=t['ftv_validity'], task_code=f"{i['comp_code']}_{t['task_code']}")
-                      for t in f['tasks']])
+        tasks.extend(
+            [
+                dict(id=t['id'], ftv_validity=t['ftv_validity'], task_code=f"{i['comp_code']}_{t['task_code']}")
+                for t in f['tasks']
+            ]
+        )
         for r in results:
             p = next((el for el in pilots_list if r['par_id'] in el['par_ids']), None)
             if p:
@@ -199,9 +290,13 @@ def get_ladder_results(ladder_id: int, season: int,
     param = formula['validity_param']
     stats['valid_tasks'] = len(tasks)
     stats['total_validity'] = c_round(sum([t['ftv_validity'] for t in tasks]), 4)
-    stats['avail_validity'] = (0 if len(tasks) == 0
-                               else c_round(stats['total_validity'] * param, 4) if val == 'ftv'
-                               else stats['total_validity'])
+    stats['avail_validity'] = (
+        0
+        if len(tasks) == 0
+        else c_round(stats['total_validity'] * param, 4)
+        if val == 'ftv'
+        else stats['total_validity']
+    )
 
     '''calculate scores'''
     for pil in pilots_list:
@@ -216,13 +311,11 @@ def get_ladder_results(ladder_id: int, season: int,
             or event has just one valid task regardless method,
             we can simply sum all score values
         '''
-        if not ((val == 'all')
-                or (val == 'round' and dropped == 0)
-                or (len(tasks) < 2)
-                or len(pil['results']) < 2):
+        if not ((val == 'all') or (val == 'round' and dropped == 0) or (len(tasks) < 2) or len(pil['results']) < 2):
             '''create a ordered list of results, score desc (perf desc if ftv)'''
-            sorted_results = sorted(pil['results'],
-                                    key=lambda x: (x['perf'], x['pre'] if val == 'ftv' else x['pre']), reverse=True)
+            sorted_results = sorted(
+                pil['results'], key=lambda x: (x['perf'], x['pre'] if val == 'ftv' else x['pre']), reverse=True
+            )
             if val == 'round' and dropped:
                 for i in range(1, dropped + 1):
                     sorted_results[-i]['score'] = 0  # getting id of worst result task
@@ -252,13 +345,15 @@ def get_ladder_results(ladder_id: int, season: int,
     stats['winner_score'] = 0 if not pilots_list else pilots_list[0]['score']
     '''create json'''
     file_stats = {'timestamp': time.time()}
-    output = {'info': info,
-              'comps': comps,
-              'formula': formula,
-              'stats': stats,
-              'results': pilots_list,
-              'rankings': rankings,
-              'file_stats': file_stats}
+    output = {
+        'info': info,
+        'comps': comps,
+        'formula': formula,
+        'stats': stats,
+        'results': pilots_list,
+        'rankings': rankings,
+        'file_stats': file_stats,
+    }
     return output
 
 
@@ -267,22 +362,33 @@ def get_admin_comps(current_userid, current_user_access=None):
     c = aliased(TblCompetition)
     ca = aliased(TblCompAuth)
     with db_session() as db:
-        comps = (db.query(c.comp_id, c.comp_name, c.comp_site,
-                          c.date_from,
-                          c.date_to, func.count(TblTask.task_id), ca.user_id)
-                   .outerjoin(TblTask, c.comp_id == TblTask.comp_id).outerjoin(ca)
-                   .filter(ca.user_auth == 'owner')
-                   .group_by(c.comp_id, ca.user_id))
+        comps = (
+            db.query(
+                c.comp_id,
+                c.comp_name,
+                c.comp_site,
+                c.date_from,
+                c.date_to,
+                func.count(TblTask.task_id),
+                c.external,
+                ca.user_id,
+            )
+            .outerjoin(TblTask, c.comp_id == TblTask.comp_id)
+            .outerjoin(ca)
+            .filter(ca.user_auth == 'owner')
+            .group_by(c.comp_id, ca.user_id)
+        )
     all_comps = []
     for c in comps:
         comp = list(c)
         comp[1] = f'<a href="/users/comp_settings_admin/{comp[0]}">{comp[1]}</a>'
         comp[3] = comp[3].strftime("%Y-%m-%d")
         comp[4] = comp[4].strftime("%Y-%m-%d")
-        if (int(comp[6]) == current_userid) or (current_user_access == 'admin'):
-            comp[6] = 'delete'
+        comp[6] = 'Imported' if comp[6] else ''
+        if (int(comp[7]) == current_userid) or (current_user_access == 'admin'):
+            comp[7] = 'delete'
         else:
-            comp[6] = ''
+            comp[7] = ''
         all_comps.append(comp)
     return jsonify({'data': all_comps})
 
@@ -298,9 +404,14 @@ def get_task_list(comp):
             last_region = task['reg_id']
         task['num'] = f"Task {tasknum}"
         # check if we have all we need to be able to accept tracks and score:
-        task['ready_to_score'] = (task['opt_dist'] and task['window_open_time'] and task['window_close_time']
-                                  and task['start_time'] and task['start_close_time']
-                                  and task['task_deadline']) is not None
+        task['ready_to_score'] = (
+            task['opt_dist']
+            and task['window_open_time']
+            and task['window_close_time']
+            and task['start_time']
+            and task['start_close_time']
+            and task['task_deadline']
+        ) is not None
 
         task['opt_dist'] = 0 if not task['opt_dist'] else c_round(task['opt_dist'] / 1000, 2)
         task['opt_dist'] = f"{task['opt_dist']} km"
@@ -313,8 +424,9 @@ def get_task_list(comp):
 
 
 def get_task_turnpoints(task) -> dict:
-    from task import get_map_json
     from airspaceUtils import read_airspace_map_file
+    from task import get_map_json
+
     turnpoints = task.read_turnpoints()
     max_n = 0
     total_dist = ''
@@ -356,9 +468,17 @@ def get_task_turnpoints(task) -> dict:
         else:
             airspace_layer = None
 
-        task_map = make_map(layer_geojson=layer, points=task_coords, circles=task_turnpoints, polyline=short_route,
-                            goal_line=goal_line, margin=tolerance, waypoint_layer=True, airspace_layer=airspace_layer,
-                            show_airspace=show_airspace)
+        task_map = make_map(
+            layer_geojson=layer,
+            points=task_coords,
+            circles=task_turnpoints,
+            polyline=short_route,
+            goal_line=goal_line,
+            margin=tolerance,
+            waypoint_layer=True,
+            airspace_layer=airspace_layer,
+            show_airspace=show_airspace,
+        )
         task_map = task_map._repr_html_()
     else:
         task_map = None
@@ -371,6 +491,7 @@ def get_comp_regions(compid: int):
     otherwise only the regions with their comp_id field set the the compid parameter"""
     import Defines
     import region
+
     if Defines.WAYPOINT_AIRSPACE_FILE_LIBRARY:
         return region.get_all_regions()
     else:
@@ -379,8 +500,10 @@ def get_comp_regions(compid: int):
 
 def get_regions_used_in_comp(compid: int, tasks: bool = False) -> list:
     """returns a list of reg_id of regions used in a competition.
-        Used for waypoints and area map link in competition page"""
-    from db.tables import TblRegion as R, TblTask as T
+    Used for waypoints and area map link in competition page"""
+    from db.tables import TblRegion as R
+    from db.tables import TblTask as T
+
     regions = [el.reg_id for el in R.get_all(comp_id=compid)]
     if tasks:
         regions.extend([el.reg_id for el in T.get_all(comp_id=compid)])
@@ -401,6 +524,7 @@ def get_region_choices(compid: int):
 
 def get_waypoint_choices(reg_id: int):
     import region
+
     wpts = region.get_region_wpts(reg_id)
     choices = [(wpt['rwp_id'], wpt['name'] + ' - ' + wpt['description']) for wpt in wpts]
 
@@ -408,12 +532,49 @@ def get_waypoint_choices(reg_id: int):
 
 
 def get_pilot_list_for_track_management(taskid: int):
-    from db.tables import TblTaskResult as R, TblParticipant as P, TblTask as T
+    from db.tables import TblParticipant as P
+    from db.tables import TblTask as T
+    from db.tables import TblTaskResult as R
+
     pilots = [row._asdict() for row in R.get_task_results(taskid)]
 
     all_data = []
     for pilot in pilots:
         data = {'ID': pilot['ID'], 'name': pilot['name'], 'par_id': pilot['par_id'], 'track_id': pilot['track_id']}
+        if pilot['track_file']:
+            parid = data['par_id']
+            if pilot['ESS_time']:
+                time = sec_to_time(pilot['ESS_time'] - pilot['SSS_time'])
+                if pilot['result_type'] == 'goal':
+                    result = f'Goal {time}'
+                else:
+                    result = f"ESS {round(pilot['distance_flown'] / 1000, 2)} Km (<del>{time}</del>)"
+            else:
+                result = f"LO {round(pilot['distance_flown'] / 1000, 2)} Km"
+            data['Result'] = f'<a href="/map/{parid}-{taskid}?back_link=0&full=1" target="_blank">{result}</a>'
+        elif pilot['result_type'] == "mindist":
+            data['Result'] = "Min Dist"
+        else:
+            data['Result'] = "Not Yet Processed" if not pilot['track_id'] else pilot['result_type'].upper()
+        all_data.append(data)
+    return all_data
+
+
+def get_pilot_list_for_tracks_status(taskid: int):
+    from db.tables import TblTaskResult as R
+
+    pilots = [row._asdict() for row in R.get_task_results(taskid)]
+
+    all_data = []
+    for pilot in pilots:
+        data = {
+            'par_id': pilot['par_id'],
+            'ID': pilot['ID'],
+            'name': pilot['name'],
+            'sex': pilot['sex'],
+            'track_id': pilot['track_id'],
+            'comment': pilot['comment'],
+        }
         if pilot['track_file']:
             parid = data['par_id']
             if pilot['ESS_time']:
@@ -490,12 +651,12 @@ def allowed_tracklog_filesize(filesize, size=5):
 
 
 def process_igc(task_id: int, par_id: int, tracklog):
-    from pilot.track import create_igc_filename, igc_parsing_config_from_yaml
-    from calcUtils import epoch_to_date
     from airspace import AirspaceCheck
+    from calcUtils import epoch_to_date
     from igc_lib import Flight
-    from task import Task
     from pilot.flightresult import FlightResult, save_track
+    from pilot.track import create_igc_filename, igc_parsing_config_from_yaml
+    from task import Task
 
     pilot = FlightResult.read(par_id, task_id)
     if pilot.name:
@@ -549,9 +710,9 @@ def process_igc(task_id: int, par_id: int, tracklog):
 
 
 def save_igc_background(task_id: int, par_id: int, tracklog, user, check_g_record=False):
-    from task import Task
-    from pilot.track import create_igc_filename, validate_G_record
     from pilot.flightresult import FlightResult
+    from pilot.track import create_igc_filename, validate_G_record
+    from task import Task
 
     pilot = FlightResult.read(par_id, task_id)
     print = partial(print_to_sse, id=par_id, channel=user)
@@ -581,13 +742,15 @@ def save_igc_background(task_id: int, par_id: int, tracklog, user, check_g_recor
 
 
 def process_igc_background(task_id: int, par_id: int, file: Path, user: str, check_validity=True):
-    from pilot.track import igc_parsing_config_from_yaml
-    from calcUtils import epoch_to_date
-    from pilot.flightresult import FlightResult, save_track
-    from airspace import AirspaceCheck
-    from igc_lib import Flight
-    from task import Task
     import json
+
+    from airspace import AirspaceCheck
+    from calcUtils import epoch_to_date
+    from igc_lib import Flight
+    from pilot.flightresult import FlightResult, save_track
+    from pilot.track import igc_parsing_config_from_yaml
+    from task import Task
+
     pilot = FlightResult.read(par_id, task_id)
     task = Task.read(task_id)
     print = partial(print_to_sse, id=par_id, channel=user)
@@ -653,10 +816,11 @@ def process_igc_background(task_id: int, par_id: int, file: Path, user: str, che
 
 def unzip_igc(zipfile):
     """split function for background in production"""
-    from trackUtils import extract_tracks
-    from tempfile import mkdtemp
     from os import chmod
+    from tempfile import mkdtemp
+
     from Defines import TEMPFILES
+    from trackUtils import extract_tracks
 
     """create a temporary directory"""
     # with TemporaryDirectory() as tracksdir:
@@ -674,9 +838,11 @@ def unzip_igc(zipfile):
 def process_archive_background(taskid: int, tracksdir, user, check_g_record=False, track_source=None):
     """function split for background use.
     tracksdir is a temp dir that will be deleted at the end of the function"""
-    from task import Task
-    from trackUtils import get_tracks, assign_and_import_tracks
     from shutil import rmtree
+
+    from task import Task
+    from trackUtils import assign_and_import_tracks, get_tracks
+
     print = partial(print_to_sse, id=None, channel=user)
     print('|open_modal')
     task = Task.read(taskid)
@@ -696,8 +862,9 @@ def process_archive_background(taskid: int, tracksdir, user, check_g_record=Fals
 
 
 def process_archive(task, zipfile, check_g_record=False, track_source=None):
-    from trackUtils import extract_tracks, get_tracks, assign_and_import_tracks
     from tempfile import TemporaryDirectory
+
+    from trackUtils import assign_and_import_tracks, extract_tracks, get_tracks
 
     if task.opt_dist == 0:
         print('task not optimised.. optimising')
@@ -722,15 +889,18 @@ def process_archive(task, zipfile, check_g_record=False, track_source=None):
 
 def process_zip_file(zip_file: Path, taskid: int, username: str, grecord: bool, track_source: str = None):
     from task import Task
+
     if production():
         tracksdir = unzip_igc(zip_file)
-        job = current_app.task_queue.enqueue(process_archive_background,
-                                             taskid=taskid,
-                                             tracksdir=tracksdir,
-                                             user=username,
-                                             check_g_record=grecord,
-                                             track_source=track_source,
-                                             job_timeout=2000)
+        job = current_app.task_queue.enqueue(
+            process_archive_background,
+            taskid=taskid,
+            tracksdir=tracksdir,
+            user=username,
+            check_g_record=grecord,
+            track_source=track_source,
+            job_timeout=2000,
+        )
         resp = jsonify(success=True)
         return resp
     else:
@@ -742,6 +912,7 @@ def process_zip_file(zip_file: Path, taskid: int, username: str, grecord: bool, 
 
 def get_task_result_file_list(taskid: int):
     from db.tables import TblResultFile as R
+
     files = []
     with db_session() as db:
         rows = db.query(R.created, R.filename, R.status, R.active, R.ref_id).filter_by(task_id=taskid).all()
@@ -751,29 +922,34 @@ def get_task_result_file_list(taskid: int):
 
 
 def number_of_tracks_processed(taskid: int):
-    from db.tables import TblTaskResult as R, TblParticipant as P, TblTask as T
+    from db.tables import TblParticipant as P
+    from db.tables import TblTask as T
+    from db.tables import TblTaskResult as R
     from sqlalchemy import func
+
     with db_session() as db:
         results = db.query(func.count()).filter(R.task_id == taskid).scalar()
-        pilots = db.query(func.count(P.par_id)).outerjoin(T, P.comp_id == T.comp_id).filter(
-            T.task_id == taskid).scalar()
+        pilots = (
+            db.query(func.count(P.par_id)).outerjoin(T, P.comp_id == T.comp_id).filter(T.task_id == taskid).scalar()
+        )
     return results, pilots
 
 
 def get_score_header(files, offset):
     import time
-    active_published = None
-    active_status = None
+
+    from Defines import RESULTDIR
+
     active = None
     header = "This task has not been scored"
-    for file in files:
+    file = next((el for el in files if int(el['active']) == 1), None)
+    if file:
         published = time.ctime(file['created'] + offset)
-        if int(file['active']) == 1:
-            active_published = published
-            active_status = file['status']
-            active = file['filename']
-    if active_published:
-        header = f"Published result ran: {active_published} Status: {active_status}"
+        '''check file exists'''
+        if Path(RESULTDIR, file['filename']).is_file():
+            header = f"Published result ran at: {published} Status: {file['status']}"
+        else:
+            header = f"WARNING: Active result file is not found! (ran: {published})"
     elif len(files) > 0:
         header = "No published results"
     return header, active
@@ -782,19 +958,27 @@ def get_score_header(files, offset):
 def get_comp_scorekeeper(compid_or_taskid: int, task_id=False):
     """returns owner and list of scorekeepers takes compid by default or taskid if taskid is True"""
     from db.tables import TblCompAuth as CA
+
     from airscore.user.models import User
+
     with db_session() as db:
         if task_id:
             taskid = compid_or_taskid
-            all_scorekeepers = db.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth) \
-                .join(CA, User.id == CA.user_id).join(TblTask, CA.comp_id == TblTask.comp_id).filter(
-                TblTask.task_id == taskid,
-                CA.user_auth.in_(('owner', 'admin'))).all()
+            all_scorekeepers = (
+                db.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth)
+                .join(CA, User.id == CA.user_id)
+                .join(TblTask, CA.comp_id == TblTask.comp_id)
+                .filter(TblTask.task_id == taskid, CA.user_auth.in_(('owner', 'admin')))
+                .all()
+            )
         else:
             compid = compid_or_taskid
-            all_scorekeepers = db.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth) \
-                .join(CA, User.id == CA.user_id).filter(CA.comp_id == compid,
-                                                        CA.user_auth.in_(('owner', 'admin'))).all()
+            all_scorekeepers = (
+                db.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth)
+                .join(CA, User.id == CA.user_id)
+                .filter(CA.comp_id == compid, CA.user_auth.in_(('owner', 'admin')))
+                .all()
+            )
         if all_scorekeepers:
             all_scorekeepers = [row._asdict() for row in all_scorekeepers]
         scorekeepers = []
@@ -813,6 +997,7 @@ def get_comp_scorekeeper(compid_or_taskid: int, task_id=False):
 
 def set_comp_scorekeeper(compid: int, userid, owner=False):
     from db.tables import TblCompAuth as CA
+
     auth = 'owner' if owner else 'admin'
     with db_session() as db:
         admin = CA(user_id=userid, comp_id=compid, user_auth=auth)
@@ -824,10 +1009,13 @@ def set_comp_scorekeeper(compid: int, userid, owner=False):
 def get_all_scorekeepers():
     """returns a list of all scorekeepers in the system"""
     from airscore.user.models import User
+
     with db_session() as db:
-        all_scorekeepers = db.query(User.id, User.username, User.first_name, User.last_name) \
-                             .filter((User.access == 'scorekeeper') | (User.access == 'admin')) \
-                             .all()
+        all_scorekeepers = (
+            db.query(User.id, User.username, User.first_name, User.last_name)
+            .filter((User.access == 'scorekeeper') | (User.access == 'admin'))
+            .all()
+        )
         if all_scorekeepers:
             all_scorekeepers = [row._asdict() for row in all_scorekeepers]
         return all_scorekeepers
@@ -836,9 +1024,11 @@ def get_all_scorekeepers():
 def get_all_users():
     """returns a list of all scorekeepers in the system"""
     from airscore.user.models import User
+
     with db_session() as db:
-        all_users = db.query(User.id, User.username, User.first_name, User.last_name, User.access, User.email,
-                             User.active).all()
+        all_users = db.query(
+            User.id, User.username, User.first_name, User.last_name, User.access, User.email, User.active
+        ).all()
         if all_users:
             all_users = [row._asdict() for row in all_users]
         return all_users
@@ -848,8 +1038,9 @@ def update_airspace_file(old_filename, new_filename):
     """change the name of the openair file in all regions it is used."""
     R = aliased(TblRegion)
     with db_session() as db:
-        db.query(R).filter(R.openair_file == old_filename).update({R.openair_file: new_filename},
-                                                                  synchronize_session=False)
+        db.query(R).filter(R.openair_file == old_filename).update(
+            {R.openair_file: new_filename}, synchronize_session=False
+        )
         db.commit()
     return True
 
@@ -860,7 +1051,7 @@ def update_airspace_file(old_filename, new_filename):
 
 
 def get_non_registered_pilots(compid: int):
-    from db.tables import TblParticipant, PilotView
+    from db.tables import PilotView, TblParticipant
 
     p = aliased(TblParticipant)
     pv = aliased(PilotView)
@@ -868,10 +1059,13 @@ def get_non_registered_pilots(compid: int):
     with db_session() as db:
         '''get registered pilots'''
         reg = db.query(p.pil_id).filter(p.comp_id == compid).subquery()
-        non_reg = db.query(pv.pil_id, pv.civl_id, pv.first_name, pv.last_name). \
-            filter(reg.c.pil_id == None). \
-            outerjoin(reg, reg.c.pil_id == pv.pil_id). \
-            order_by(pv.first_name, pv.last_name).all()
+        non_reg = (
+            db.query(pv.pil_id, pv.civl_id, pv.first_name, pv.last_name)
+            .filter(reg.c.pil_id == None)
+            .outerjoin(reg, reg.c.pil_id == pv.pil_id)
+            .order_by(pv.first_name, pv.last_name)
+            .all()
+        )
 
         non_registered = [row._asdict() for row in non_reg]
     return non_registered
@@ -885,8 +1079,14 @@ def get_igc_parsing_config_file_list():
         if file.name.endswith(".yaml") and not file.name.startswith("_"):
             with open(file.path) as fp:
                 config = yaml.load(fp)
-            configs.append({'file': file.name, 'name': file.name[:-5], 'description': config['description'],
-                            'editable': config['editable']})
+            configs.append(
+                {
+                    'file': file.name,
+                    'name': file.name[:-5],
+                    'description': config['description'],
+                    'editable': config['editable'],
+                }
+            )
             choices.append((file.name[:-5], file.name[:-5]))
     return choices, configs
 
@@ -906,22 +1106,18 @@ def get_comp_info(compid: int, task_ids=None):
     t = aliased(TblTask)
 
     with db_session() as db:
-        non_scored_tasks = (db.query(t.task_id.label('id'),
-                                     t.task_name,
-                                     t.date,
-                                     t.task_type,
-                                     t.opt_dist,
-                                     t.comment).filter(t.comp_id == compid, t.task_id.notin_(task_ids))
-                            .order_by(t.date.desc()).all())
+        non_scored_tasks = (
+            db.query(t.task_id.label('id'), t.task_name, t.date, t.task_type, t.opt_dist, t.comment)
+            .filter(t.comp_id == compid, t.task_id.notin_(task_ids))
+            .order_by(t.date.desc())
+            .all()
+        )
 
-        competition_info = (db.query(
-            c.comp_id,
-            c.comp_name,
-            c.comp_site,
-            c.date_from,
-            c.date_to,
-            c.self_register,
-            c.website).filter(c.comp_id == compid).one())
+        competition_info = (
+            db.query(c.comp_id, c.comp_name, c.comp_site, c.date_from, c.date_to, c.self_register, c.website)
+            .filter(c.comp_id == compid)
+            .one()
+        )
     comp = competition_info._asdict()
 
     return comp, non_scored_tasks
@@ -935,6 +1131,7 @@ def get_participants(compid: int, source='all'):
             external: only participants not in pilot table (without pil_id)"""
     from compUtils import get_participants
     from formula import Formula
+
     pilots = get_participants(compid)
     pilot_list = []
     external = 0
@@ -955,16 +1152,22 @@ def get_participants(compid: int, source='all'):
                 external += 1
                 pilot_list.append(pilot.as_dict())
     formula = Formula.read(compid)
-    teams = {'country_scoring': formula.country_scoring, 'max_country_size': formula.max_country_size,
-             'country_size': formula.country_size, 'team_scoring': formula.team_scoring, 'team_size': formula.team_size,
-             'max_team_size': formula.max_team_size}
+    teams = {
+        'country_scoring': formula.country_scoring,
+        'max_country_size': formula.max_country_size,
+        'country_size': formula.country_size,
+        'team_scoring': formula.team_scoring,
+        'team_size': formula.team_size,
+        'max_team_size': formula.max_team_size,
+    }
     return pilot_list, external, teams
 
 
 def check_team_size(compid: int, nat=False):
     """Checks that the number of pilots in a team don't exceed the allowed number"""
-    from formula import Formula
     from db.tables import TblParticipant as P
+    from formula import Formula
+
     formula = Formula.read(compid)
     message = ''
     if nat:
@@ -1006,8 +1209,9 @@ def print_to_sse(text, id, channel):
 def push_sse(body, message_type, channel):
     """send a post request to webserver with contents of SSE to be sent"""
     data = {'body': body, 'type': message_type, 'channel': channel}
-    requests.post(f"http://{environ.get('FLASK_CONTAINER')}:"
-                  f"{environ.get('FLASK_PORT')}/internal/see_message", json=data)
+    requests.post(
+        f"http://{environ.get('FLASK_CONTAINER')}:" f"{environ.get('FLASK_PORT')}/internal/see_message", json=data
+    )
 
 
 def production():
@@ -1017,10 +1221,12 @@ def production():
 
 def unique_filename(filename, filepath):
     """checks file does not already exist and creates a unique and secure filename"""
-    from pathlib import Path
-    from os.path import join
     import glob
+    from os.path import join
+    from pathlib import Path
+
     from werkzeug.utils import secure_filename
+
     fullpath = join(filepath, filename)
     if Path(fullpath).is_file():
         index = str(len(glob.glob(fullpath)) + 1).zfill(2)
@@ -1031,15 +1237,22 @@ def unique_filename(filename, filepath):
 
 def get_pretty_data(content: dict) -> dict or str:
     """transforms result json file in human readable data"""
-    from result import pretty_format_results, get_startgates
+    from result import get_startgates, pretty_format_results
+
     try:
         '''time offset'''
         timeoffset = 0 if 'time_offset' not in content['info'].keys() else int(content['info']['time_offset'])
         '''score decimals'''
-        td = (0 if 'formula' not in content.keys() or 'task_result_decimal' not in content['formula'].keys()
-              else int(content['formula']['task_result_decimal']))
-        cd = (0 if 'formula' not in content.keys() or 'task_result_decimal' not in content['formula'].keys()
-              else int(content['formula']['task_result_decimal']))
+        td = (
+            0
+            if 'formula' not in content.keys() or 'task_result_decimal' not in content['formula'].keys()
+            else int(content['formula']['task_result_decimal'])
+        )
+        cd = (
+            0
+            if 'formula' not in content.keys() or 'task_result_decimal' not in content['formula'].keys()
+            else int(content['formula']['task_result_decimal'])
+        )
         pretty_content = dict()
         if 'file_stats' in content.keys():
             pretty_content['file_stats'] = pretty_format_results(content['file_stats'], timeoffset)
@@ -1058,9 +1271,15 @@ def get_pretty_data(content: dict) -> dict or str:
         if 'results' in content.keys():
             results = []
             '''rankings'''
-            sub_classes = sorted([dict(name=c, cert=v, limit=v[-1], prev=None, rank=1, counter=0)
-                                  for c, v in content['rankings'].items() if isinstance(v, list)],
-                                 key=lambda x: len(x['cert']), reverse=True)
+            sub_classes = sorted(
+                [
+                    dict(name=c, cert=v, limit=v[-1], prev=None, rank=1, counter=0)
+                    for c, v in content['rankings'].items()
+                    if isinstance(v, list)
+                ],
+                key=lambda x: len(x['cert']),
+                reverse=True,
+            )
             if content['rankings']['female']:
                 sub_classes.append(dict(name='Female', cert='female', limit='female', prev=None, rank=1, counter=0))
             rank = 0
@@ -1072,8 +1291,11 @@ def get_pretty_data(content: dict) -> dict or str:
                 p['rank'] = str(rank)
                 '''sub-classes'''
                 for s in sub_classes:
-                    if ((p['glider_cert'] and p['glider_cert'] in s['cert']) if not s['name'] == 'Female'
-                                                                             else p['sex'] == 'F'):
+                    if (
+                        (p['glider_cert'] and p['glider_cert'] in s['cert'])
+                        if not s['name'] == 'Female'
+                        else p['sex'] == 'F'
+                    ):
                         s['counter'] += 1
                         if not s['prev'] == p['score']:
                             s['rank'], s['prev'] = s['counter'], p['score']
@@ -1090,9 +1312,10 @@ def get_pretty_data(content: dict) -> dict or str:
 
 
 def full_rescore(taskid: int, background=False, status=None, autopublish=None, compid=None, user=None):
-    from task import Task
     from comp import Comp
-    from result import unpublish_result, publish_result
+    from result import publish_result, unpublish_result
+    from task import Task
+
     task = Task.read(taskid)
     if background:
         print = partial(print_to_sse, id=None, channel=user)
@@ -1116,9 +1339,10 @@ def full_rescore(taskid: int, background=False, status=None, autopublish=None, c
 
 
 def get_task_igc_zip(task_id: int):
-    from trackUtils import get_task_fullpath
     import shutil
+
     from Defines import track_formats
+    from trackUtils import get_task_fullpath
 
     task_path = get_task_fullpath(task_id)
     task_folder = task_path.parts[-1]
@@ -1152,6 +1376,7 @@ def import_participants_from_fsdb(file: Path, from_CIVL=False) -> list:
     """read the fsdb file"""
     from fsdb import read_fsdb_file
     from pilot.participant import Participant
+
     root = read_fsdb_file(file)
     pilots = []
 
@@ -1167,6 +1392,7 @@ def import_participants_from_fsdb(file: Path, from_CIVL=False) -> list:
 
 def create_participants_html(comp_id: int) -> (str, dict) or None:
     from comp import Comp
+
     try:
         comp = Comp.read(comp_id)
         return comp.create_participants_html()
@@ -1176,6 +1402,7 @@ def create_participants_html(comp_id: int) -> (str, dict) or None:
 
 def create_participants_fsdb(comp_id: int) -> (str, str) or None:
     from fsdb import FSDB
+
     try:
         return FSDB.create_participants(comp_id)
     except Exception:
@@ -1184,6 +1411,7 @@ def create_participants_fsdb(comp_id: int) -> (str, str) or None:
 
 def create_task_html(file: str) -> (str, dict or list) or None:
     from result import TaskResult
+
     try:
         return TaskResult.to_html(file)
     except Exception:
@@ -1191,8 +1419,9 @@ def create_task_html(file: str) -> (str, dict or list) or None:
 
 
 def create_comp_html(comp_id: int) -> (str, dict or list) or None:
-    from result import CompResult
     from compUtils import get_comp_json_filename
+    from result import CompResult
+
     try:
         file = get_comp_json_filename(comp_id)
         return CompResult.to_html(file)
@@ -1201,9 +1430,9 @@ def create_comp_html(comp_id: int) -> (str, dict or list) or None:
 
 
 def create_inmemory_zipfile(files: list):
-    import zipfile
-    import time
     import io
+    import time
+    import zipfile
 
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
@@ -1218,17 +1447,23 @@ def create_inmemory_zipfile(files: list):
 
 
 def render_html_file(content: dict) -> str:
-    """ render export html template:
-        dict(title: str, headings: list, tables: list, timestamp: str)"""
+    """render export html template:
+    dict(title: str, headings: list, tables: list, timestamp: str)"""
     from flask import render_template
-    return render_template('/users/export_template.html',
-                           title=content['title'], headings=content['headings'], tables=content['tables'],
-                           timestamp=content['timestamp'])
+
+    return render_template(
+        '/users/export_template.html',
+        title=content['title'],
+        headings=content['headings'],
+        tables=content['tables'],
+        timestamp=content['timestamp'],
+    )
 
 
 def create_stream_content(content):
     """ returns bytelike object"""
     from io import BytesIO
+
     mem = BytesIO()
     try:
         if isinstance(content, str):
@@ -1250,6 +1485,7 @@ def list_classifications() -> dict:
         pg: a list of all classifications that are of class pg or mixed
         hg: a list of all classifications that are of class hg or mixed"""
     from db.tables import TblClassification as C
+
     all_classifications = []
     hg_classifications = []
     pg_classifications = []
@@ -1263,30 +1499,46 @@ def list_classifications() -> dict:
             if el.comp_class in ('HG', 'mixed'):
                 hg_classifications.append(el.as_dict())
 
-    return {'ALL': sorted(all_classifications, key=lambda x: x['cat_name']),
-            'PG': sorted(pg_classifications, key=lambda x: x['cat_name']),
-            'HG': sorted(hg_classifications, key=lambda x: x['cat_name'])}
+    return {
+        'ALL': sorted(all_classifications, key=lambda x: x['cat_name']),
+        'PG': sorted(pg_classifications, key=lambda x: x['cat_name']),
+        'HG': sorted(hg_classifications, key=lambda x: x['cat_name']),
+    }
 
 
 def list_countries() -> list:
     """Lists all countries with IOC code stored in database.
     :returns a list of dicts {name, code}"""
     from db.tables import TblCountryCode
+
     clist = TblCountryCode.get_list()
     return clist or []
 
 
 def get_classifications_details(comp_class: str = None) -> list:
-    from db.tables import TblClasCertRank as CC, TblRanking as R, TblCertification as CCT, TblClassification as CT
+    from db.tables import TblCertification as CCT
+    from db.tables import TblClasCertRank as CC
+    from db.tables import TblClassification as CT
+    from db.tables import TblRanking as R
+
     output = []
     with db_session() as db:
-        query = db.query(CT.cat_id, CT.cat_name, CT.comp_class,
-                         CT.female, CT.team, R.rank_name.label('rank'), CCT.cert_name.label('cert')) \
-                  .select_from(R) \
-                  .join(CC, R.rank_id == CC.c.rank_id) \
-                  .join(CCT, (CCT.cert_id <= CC.c.cert_id) & (CCT.comp_class == R.comp_class)) \
-                  .join(CT, CT.cat_id == CC.c.cat_id) \
-                  .filter(CC.c.cert_id > 0)
+        query = (
+            db.query(
+                CT.cat_id,
+                CT.cat_name,
+                CT.comp_class,
+                CT.female,
+                CT.team,
+                R.rank_name.label('rank'),
+                CCT.cert_name.label('cert'),
+            )
+            .select_from(R)
+            .join(CC, R.rank_id == CC.c.rank_id)
+            .join(CCT, (CCT.cert_id <= CC.c.cert_id) & (CCT.comp_class == R.comp_class))
+            .join(CT, CT.cat_id == CC.c.cat_id)
+            .filter(CC.c.cert_id > 0)
+        )
         if comp_class:
             query = query.filter(CT.comp_class == comp_class)
         results = query.all()
@@ -1295,8 +1547,13 @@ def get_classifications_details(comp_class: str = None) -> list:
         classifications = set(x.cat_id for x in results)
         for cl in classifications:
             elements = [x for x in results if x.cat_id == cl]
-            classification = dict(cat_id=cl, cat_name=elements[0].cat_name, comp_class=elements[0].comp_class,
-                                  female=elements[0].female, team=elements[0].team)
+            classification = dict(
+                cat_id=cl,
+                cat_name=elements[0].cat_name,
+                comp_class=elements[0].comp_class,
+                female=elements[0].female,
+                team=elements[0].team,
+            )
             classification['categories'] = []
             for res in elements:
                 el = next((x for x in classification['categories'] if x['title'] == res.rank), None)
@@ -1310,8 +1567,9 @@ def get_classifications_details(comp_class: str = None) -> list:
 
 def list_track_sources() -> list:
     """Lists all track sources enabled in Defines.
-        :returns a list of (value, text)."""
+    :returns a list of (value, text)."""
     from Defines import track_sources
+
     sources = [('', ' -')]
     for el in track_sources:
         sources.append((el, el))
@@ -1320,7 +1578,7 @@ def list_track_sources() -> list:
 
 def list_gmt_offset() -> list:
     """Lists GMT offsets.
-            :returns a list of (value, text)."""
+    :returns a list of (value, text)."""
     tz = -12.0
 
     offsets = []
@@ -1345,6 +1603,7 @@ def list_ladders(day: datetime.date = datetime.datetime.now().date(), ladder_cla
     :returns a list."""
     from calcUtils import get_season_dates
     from Defines import LADDERS
+
     if not LADDERS:
         ''' Ladders are disabled in Settings'''
         return []
@@ -1352,8 +1611,9 @@ def list_ladders(day: datetime.date = datetime.datetime.now().date(), ladder_cla
     results = [el for el in get_ladders()]
     for el in results:
         '''create start and end dates'''
-        starts, ends = get_season_dates(ladder_id=el['ladder_id'], season=int(el['season']),
-                                        date_from=el['date_from'], date_to=el['date_to'])
+        starts, ends = get_season_dates(
+            ladder_id=el['ladder_id'], season=int(el['season']), date_from=el['date_from'], date_to=el['date_to']
+        )
         if starts < day < ends and (ladder_class is None or el['ladder_class'] == ladder_class):
             ladders.append(el)
 
@@ -1362,11 +1622,13 @@ def list_ladders(day: datetime.date = datetime.datetime.now().date(), ladder_cla
 
 def get_comp_ladders(comp_id: int) -> list:
     from db.tables import TblLadderComp as LC
+
     return [el.ladder_id for el in LC.get_all(comp_id=comp_id)]
 
 
 def save_comp_ladders(comp_id: int, ladder_ids: list or None) -> bool:
     from db.tables import TblLadderComp as LC
+
     try:
         '''delete previous entries'''
         LC.delete_all(comp_id=comp_id)
@@ -1385,9 +1647,11 @@ def save_comp_ladders(comp_id: int, ladder_ids: list or None) -> bool:
 
 
 def get_task_result_files(task_id: int, comp_id: int = None, offset: int = None) -> dict:
-    from compUtils import get_comp_json, get_comp, get_offset
     import time
+
+    from compUtils import get_comp, get_comp_json, get_offset
     from Defines import RESULTDIR
+
     if not offset:
         offset = get_offset(task_id)
     files = get_task_result_file_list(task_id)
@@ -1409,30 +1673,41 @@ def get_task_result_files(task_id: int, comp_id: int = None, offset: int = None)
         choices.append((file['filename'], f'{published} - {status}'))
     choices.reverse()
 
-    return {'choices': choices, 'header': header, 'active': active, 'comp_header': comp_header,
-            'display_comp_unpublish': display_comp_unpublish}
+    return {
+        'choices': choices,
+        'header': header,
+        'active': active,
+        'comp_header': comp_header,
+        'display_comp_unpublish': display_comp_unpublish,
+    }
 
 
 def get_region_waypoints(reg_id: int, region=None, openair_file: str = None) -> tuple:
-    from mapUtils import create_waypoints_layer, create_airspace_layer
+    from mapUtils import create_airspace_layer, create_waypoints_layer
+
     _, waypoints = get_waypoint_choices(reg_id)
     points_layer, bbox = create_waypoints_layer(reg_id)
-    openair_file, airspace_layer, airspace_list, _ = create_airspace_layer(reg_id, region=region, openair_file=openair_file)
+    openair_file, airspace_layer, airspace_list, _ = create_airspace_layer(
+        reg_id, region=region, openair_file=openair_file
+    )
 
-    region_map = make_map(points=points_layer, circles=points_layer,
-                          airspace_layer=airspace_layer, show_airspace=False, bbox=bbox)
+    region_map = make_map(
+        points=points_layer, circles=points_layer, airspace_layer=airspace_layer, show_airspace=False, bbox=bbox
+    )
     return waypoints, region_map, airspace_list, openair_file
 
 
 def unpublish_task_result(task_id: int):
     """Unpublish any active result"""
     from result import unpublish_result
+
     unpublish_result(task_id)
 
 
 def publish_task_result(task_id: int, filename: str) -> bool:
     """Unpublish any active result, and publish the given one"""
     from result import publish_result, unpublish_result
+
     try:
         unpublish_result(task_id)
         publish_result(filename)
@@ -1445,13 +1720,15 @@ def publish_task_result(task_id: int, filename: str) -> bool:
 def unpublish_comp_result(comp_id: int):
     """Unpublish any active result"""
     from result import unpublish_result
+
     unpublish_result(comp_id, comp=True)
 
 
 def update_comp_result(comp_id: int, status: str = None, name_suffix: str = None) -> tuple:
     """Unpublish any active result, and creates a new one"""
-    from result import publish_result, unpublish_result
     from comp import Comp
+    from result import publish_result, unpublish_result
+
     try:
         _, ref_id, filename, timestamp = Comp.create_results(comp_id, status=status, name_suffix=name_suffix)
     except (FileNotFoundError, Exception) as e:
@@ -1460,3 +1737,57 @@ def update_comp_result(comp_id: int, status: str = None, name_suffix: str = None
     unpublish_result(comp_id, comp=True)
     publish_result(ref_id, ref_id=True)
     return ref_id, filename, timestamp
+
+
+def task_has_valid_results(task_id: int) -> bool:
+    from db.tables import TblTaskResult as TR
+
+    return bool(TR.get_task_flights(task_id))
+
+
+def get_task_info(task_id: int) -> dict:
+    from task import Task
+
+    result = {}
+    task = Task.read(task_id)
+    if task:
+        result = task.create_json_elements()
+    return result
+
+
+def convert_external_comp(comp_id: int) -> bool:
+    from db.tables import TblCompetition as C
+    from db.tables import TblNotification as N
+    from db.tables import TblTask as T
+    from db.tables import TblTaskResult as R
+    from db.tables import TblTrackWaypoint as TW
+    from sqlalchemy.exc import SQLAlchemyError
+    from task import Task
+
+    try:
+        with db_session() as db:
+            tasks = [el for el, in db.query(T.task_id).filter_by(comp_id=comp_id).distinct()]
+            if tasks:
+                '''clear tasks results'''
+                results = db.query(R).filter(R.task_id.in_(tasks))
+                if results:
+                    tracks = [el.track_id for el in results.all()]
+                    db.query(TW).filter(TW.track_id.in_(tracks)).delete(synchronize_session=False)
+                    db.query(N).filter(N.track_id.in_(tracks)).delete(synchronize_session=False)
+                    results.delete(synchronize_session=False)
+                '''recalculate task distances'''
+                for task_id in tasks:
+                    task = Task.read(task_id)
+                    '''get projection'''
+                    task.create_projection()
+                    task.calculate_task_length()
+                    task.calculate_optimised_task_length()
+                    '''Storing calculated values to database'''
+                    task.update_task_distance()
+            '''unset external flag'''
+            comp = C.get_by_id(comp_id)
+            comp.update(external=0)
+            return True
+    except (SQLAlchemyError, Exception):
+        print(f'There was an Error trying to convert comp ID {comp_id}.')
+        return False

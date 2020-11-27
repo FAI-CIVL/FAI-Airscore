@@ -4,14 +4,14 @@ Use: python3 update_result_status.py [refPk] [status]
 
 Antonio Golfari - 2019
 """
-from db.tables import TblResultFile as R
 # Use your utility module.
 from db.conn import db_session
+from db.tables import TblResultFile as R
 
 
 def update_result(ref_id, status):
-    from os import path as p
     import json
+    from os import path as p
 
     with db_session() as db:
         result = db.query(R).get(ref_id)
@@ -37,6 +37,7 @@ def update_result(ref_id, status):
 
 def main(args):
     from logger import Logger
+
     """Main module"""
     '''create logging and disable output'''
     Logger('ON', 'update_result.txt')

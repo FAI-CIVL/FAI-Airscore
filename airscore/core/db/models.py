@@ -1,6 +1,8 @@
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm.exc import MultipleResultsFound
-from .conn import db_session, Session
+
+from .conn import Session, db_session
+
 Base = declarative_base()
 metadata = Base.metadata
 
@@ -37,9 +39,9 @@ class BaseModel(Base):
 
     @classmethod
     def from_obj(cls, obj):
-        """ populate a Table row object from an object
-            Input:
-                obj  - OBJ: object"""
+        """populate a Table row object from an object
+        Input:
+            obj  - OBJ: object"""
         try:
             row = cls()
 
@@ -58,10 +60,10 @@ class BaseModel(Base):
             print(f'Error populating table row: obj is not iterable')
 
     def populate(self, obj: object) -> object:
-        """ Associate query result with class object attributes, using same name
-            Input:
-                obj     - OBJ: object with attributes to populate with query result
-                result  - OBJ: query result (should be one row)"""
+        """Associate query result with class object attributes, using same name
+        Input:
+            obj     - OBJ: object with attributes to populate with query result
+            result  - OBJ: query result (should be one row)"""
         '''check if result has one row'''
         row = self[0] if isinstance(self, list) else self
         for x in obj.__dict__.keys():
