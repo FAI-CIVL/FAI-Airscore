@@ -295,7 +295,7 @@ def competition(compid: int):
     from Defines import LIVETRACKDIR
     # get the latest comp result file, not the active one. This is so we can display tasks that have published
     # results that are not yet official and therefore in the comp overall results
-    result_file = get_comp_json(compid)
+    result_file = get_comp_json(compid, overview=True)
     all_tasks = []
     layer = {}
     country_scores = False
@@ -304,7 +304,7 @@ def competition(compid: int):
     if result_file != 'error':
         if result_file['formula'].get('country_scoring') == 1:
             country_scores = True
-        overall_available = True if get_comp_json(int(compid)) != 'error' else False
+        overall_available = True if get_comp_json(compid) != 'error' else False
         for task in result_file['tasks']:
             task_ids.append(int(task['id']))
             wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox, _, _ = get_map_json(task['id'])
@@ -374,7 +374,7 @@ def ext_competition(compid: int):
     if result_file != 'error':
         if result_file['formula'].get('country_scoring') == 1:
             country_scores = True
-        overall_available = True if get_comp_json(int(compid)) != 'error' else False
+        overall_available = True if get_comp_json(compid) != 'error' else False
         for task in result_file['tasks']:
             task_ids.append(int(task['id']))
             wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox, _, _ = get_map_json(task['id'])

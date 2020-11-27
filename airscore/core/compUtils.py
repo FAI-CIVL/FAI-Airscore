@@ -72,7 +72,7 @@ def is_ext(comp_id: int):
         return bool(ext)
 
 
-def get_comp_json_filename(comp_id: int, latest=False):
+def get_comp_json_filename(comp_id: int, latest: bool = False, overview: bool = False):
     """returns active json results filename, or latest if latest is True"""
     from db.tables import TblResultFile as R
 
@@ -80,16 +80,18 @@ def get_comp_json_filename(comp_id: int, latest=False):
         results = db.query(R.filename).filter_by(comp_id=comp_id, task_id=None)
         if latest:
             filename = results.order_by(R.ref_id.desc()).limit(1).scalar()
+        elif overview:
+            filename = next(row for row in results if 'Overview' in row.filename).filename
         else:
             filename = results.filter_by(active=1).scalar()
         return filename
 
 
-def get_comp_json(comp_id: int, latest=False):
+def get_comp_json(comp_id: int, latest: bool = False, overview: bool = False):
     """returns json data from comp result file, default the active one or latest if latest is True"""
     from result import open_json_file
 
-    data = open_json_file(get_comp_json_filename(comp_id, latest))
+    data = open_json_file(get_comp_json_filename(comp_id, latest, overview))
     return data if isinstance(data, dict) else 'error'
 
 
