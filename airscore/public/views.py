@@ -650,8 +650,14 @@ def region_map(regid: int):
     from map import get_map_render
     from region import Region
     region = Region.read_db(regid)
+    openair_file = region.openair_file
     waypoints, reg_map, airspace_list, _ = frontendUtils.get_region_waypoints(regid, region=region)
     args = None if not request.args else request.args
+
+    if openair_file and not airspace_list:
+        '''probably file is missing'''
+        flash('Openair file seems to be missing or format is wrong. Please contact Organisers', category='warning')
+        openair_file = None
 
     return render_template('public/region_map.html',
                            regid=regid,
@@ -660,7 +666,7 @@ def region_map(regid: int):
                            map=get_map_render(reg_map),
                            waypoints=waypoints,
                            airspace=airspace_list,
-                           waypoint_file=region.waypoint_file, openair_file=region.openair_file)
+                           waypoint_file=region.waypoint_file, openair_file=openair_file)
 
 
 @blueprint.route('/_map/<int:trackid>/<extra_trackids>')
