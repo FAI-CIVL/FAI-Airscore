@@ -414,14 +414,15 @@ def ft_landout(comp_id):
                 downers = []
                 for pilot in detail[chunk]:
                     downs.append(km(pilot['dist'], 3))
-                    downers.append([pilot['name'],
-                                    pilot['ID']])
+                    downers.append([str(pilot['ID']),
+                                    pilot['name'],
+                                    ])
                 downed = downed + len(detail[chunk])
                 task_difficulty.append({
                                         'chunk': chunk,
                                         'startChunk': km(chunk*100, 1),
                                         'endChunk': km((chunk+1)*100, 1),
-                                        'endAhead': "??????", # TODO
+                                        'endAhead': km((chunk+look_ahead)*100, 1),
                                         'down': len(detail[chunk]),
                                         'downs': downs,
                                         'downers': downers,
