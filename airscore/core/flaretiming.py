@@ -1,11 +1,11 @@
-from task import Task, get_task_json
+from task import Task, get_task_json_filename
 from comp import Comp
 import statistics
 from datetime import timedelta, time, datetime
 from dataclasses import dataclass
 from pilot.flightresult import FlightResult
 import collections
-from math import sqrt
+from result import open_json_file
 
 
 def km(distance_in_km, decimals=5) -> str:
@@ -51,7 +51,9 @@ def ft_score(comp_id):
     task_results = []
 
     for task in tasks:
-        task_results.append(get_task_json(task['task_id']))
+        filename = get_task_json_filename(task['task_id'])
+        if filename:
+            task_results.append(open_json_file(filename))
 
     # comp_result = get_comp_json(comp_id)
     # if comp_result == 'error':
@@ -84,7 +86,7 @@ def ft_score(comp_id):
         prev_score = None
         distances = []
         for result in task['results']:
-            if result['result_type'] != 'abs':
+            if result['result_type'] != 'abs' and result['result_type'] != 'nyp':
                 distances.append(result['distance'])
                 distances_flown.append(result['distance_flown'])
                 if result['goal_time']:
@@ -263,7 +265,9 @@ def ft_arrival(comp_id):
     task_results = []
 
     for task in tasks:
-        task_results.append(get_task_json(task['task_id']))
+        filename = get_task_json_filename(task['task_id'])
+        if filename:
+            task_results.append(open_json_file(filename))
 
     for task in task_results:
         task_obj = Task.read(task['info']['id'])
@@ -272,7 +276,7 @@ def ft_arrival(comp_id):
         task_arrivals = []
 
         for result in task['results']:
-            if result['result_type'] != 'abs':
+            if result['result_type'] != 'abs' and result['result_type'] != 'nyp':
 
                 if result['ESS_time']:
                     task_arrivals.append([result['ESS_time'], result['ID'], result['name'], result['arrival_score']])
@@ -382,7 +386,9 @@ def ft_landout(comp_id):
     task_results = []
 
     for task in tasks:
-        task_results.append(get_task_json(task['task_id']))
+        filename = get_task_json_filename(task['task_id'])
+        if filename:
+            task_results.append(open_json_file(filename))
 
     minDistance = km(comp.formula.min_dist, 3)
     bestDistance = []
