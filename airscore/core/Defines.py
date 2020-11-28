@@ -66,6 +66,7 @@ filename_formats = [
     'other name name.live.other-other.other.id',
     'fai_name',
     'name_name',
+    'name_name_id',
     'other name name name.live.other-other.other.id',
     'other name name name name.live.other-other.other.id',
     'name_name.other-other.other.id',
