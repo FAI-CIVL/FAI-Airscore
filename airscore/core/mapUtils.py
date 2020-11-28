@@ -432,8 +432,14 @@ def create_airspace_layer(reg_id: int, region=None, openair_file: str = None) ->
         else:
             openair_file = R.get_by_id(reg_id).openair_file
     if openair_file:
-        data = read_airspace_map_file(openair_file)
-        airspace_layer = data['spaces']
-        airspace_list = data['airspace_list']
-        bbox = data['bbox']
+        try:
+            data = read_airspace_map_file(openair_file)
+            airspace_layer = data['spaces']
+            airspace_list = data['airspace_list']
+            bbox = data['bbox']
+        except (TypeError, Exception):
+            print(f"Error creating airspace error. Is the file missing?")
+            airspace_layer = None
+            airspace_list = None
+            bbox = None
     return openair_file, airspace_layer, airspace_list, bbox

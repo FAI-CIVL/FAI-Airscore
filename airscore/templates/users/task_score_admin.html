@@ -60,50 +60,80 @@ Task Scoring Admin
       <section class="tab-row column-wrap form" id="task_results_section">
         <h4 class='tab-title font-weight-bold'>Task Results:</h4>
         <section class="tab-row row-wrap form">
-            <h5 id='task_result_header'></h5>
+            <h5 class="mt-2" id='task_result_header'></h5>
+            <button id='download_task_html' class='btn btn-primary ml-5' onclick="" type='button'>
+              Download HTML
+            </button>
         </section>
         {% if user_is_scorekeeper %}
         {% from "macros.html" import render_field with context %}
-        <section class="tab-row row-wrap button" id="scoring_runs_section">
-            {{ render_field(fileform.result_file, disabled=readonly) }}
-            <button id='publish' class='btn btn-warning mt-4' type='button' onclick='toggle_publish();'>
-              Un-publish results
-            </button>
-            <button id='change_status' class='btn btn-primary ml-2 mt-4' type='button' onclick='open_status_modal();'>
-              Edit Status
-            </button>
-            <button id='download_task_html' class='btn btn-primary ml-2 mt-4' type='button'>
-              Task HTML
-            </button>
-            <button id='delete_result' class='btn btn-danger ml-2 mt-4' type='button' onclick='delete_result_modal();' disabled>
-              Delete Result
-            </button>
+        <section class="tab-row column-wrap button" id="scoring_runs_section">
+            {{ render_field(fileform.task_result_file, disabled=readonly) }}
+            <section class="row-wrap">
+              <button id='publish' class='btn btn-warning mt-3' type='button' onclick='toggle_publish();'>
+                Un-publish results
+              </button>
+              <button id='change_status' class='btn btn-primary ml-2 mt-3' type='button' onclick='open_status_modal();'>
+                Edit Status
+              </button>
+              <button id='task_preview' class='btn btn-primary ml-2 mt-3' onclick="" type='button'>
+                Preview
+              </button>
+              <button id='delete_result' class='btn btn-danger ml-2 mt-3' type='button' onclick='delete_result_modal();' disabled>
+                Delete Result
+              </button>
+            </section>
         </section>
         {% endif %}
       </section>
     </div>
+
     <div role="tabpanel" class="tab-pane column-wrap fade" id="comp_result">
-      <h4 class='tab-title font-weight-bold'>Comp Results:</h4>
-      {% if user_is_scorekeeper %}
-      <section class="tab-row row-wrap button">
-          <button id='comp_publish' class='btn btn-danger' type='button' onclick='comp_publish();'>
-            Update
-          </button>
-          <p id='comp_publish_spinner' style="width: 8rem; min-width: 8rem"></p>
+      {% if score_active %}
+      <section class="tab-row column-wrap form" id="process_comp_section">
+        <h4 class='tab-title font-weight-bold'>Process Event:</h4>
+        <section class="panel-row column-wrap form">
+          {% if not user_is_scorekeeper %}
+          <h4>You are not a scorekeeper of this competition, thus you cannot access most of functionalities in this page.</h4>
+          {% else %}
+          <p class="description">Comp results are automatically computed each time task active result is created or changed. <br />You can just activate this <i class="font-weight-bold text-info">Auto Generated</i> file to have always updated event results each time a new task is scored and activated, or create and manage your own result files.</p>
+          <section class="panel-row row-wrap button">
+            <button id='comp_calculate_button' class='btn btn-danger' type='button' onclick='comp_calculate();'>
+              Calculate Event result
+            </button>
+            <p id='comp_calculate_spinner' style="width: 8rem; min-width: 8rem"></p>
+          </section>
+          {% endif %}
+        </section>
       </section>
       {% endif %}
-      <section class="tab-row row-wrap form">
-          <h5 id='comp_header'></h5>
-      </section>
-      <section class="tab-row row-wrap form">
-          {% if user_is_scorekeeper %}
-          <button id='comp_unpublish' class='btn btn-danger' type='button' onclick='comp_unpublish();'>
-            Remove
-          </button>
-          <button id='download_comp_html' class='btn btn-primary ml-2' onclick="location.href='/users/_download/comp_html/{{session.compid}}'" type='button'>
-            Comp HTML
-          </button>
-          {% endif %}
+      <section class="tab-row column-wrap form" id="comp_results_section">
+        <h4 class='tab-title font-weight-bold'>Comp Results:</h4>
+        <section class="tab-row row-wrap form">
+            <h5 class="mt-2" id='comp_header'></h5>
+            <button id='download_comp_html' class='btn btn-primary ml-5' onclick="location.href='/users/_download/comp_html/{{session.compid}}'" type='button'>
+              Download HTML
+            </button>
+        </section>
+        {% if user_is_scorekeeper %}
+        <section class="tab-row column-wrap button" id="comp_scoring_runs_section">
+            {{ render_field(fileform.comp_result_file, disabled=readonly) }}
+            <section class="row-wrap">
+              <button id='comp_publish' class='btn btn-warning mt-3' type='button' onclick='toggle_publish(iscomp=true);'>
+                Un-publish
+              </button>
+              <button id='change_comp_status' class='btn btn-primary ml-2 mt-3' type='button' onclick='open_status_modal(iscomp=true);'>
+                Edit Status
+              </button>
+              <button id='comp_preview' class='btn btn-primary ml-2 mt-3' onclick="" type='button'>
+                Preview
+              </button>
+              <button id='delete_comp_result' class='btn btn-danger ml-2 mt-3' type='button' onclick='delete_result_modal(iscomp=true);' disabled>
+                Delete Result
+              </button>
+            </section>
+        </section>
+        {% endif %}
       </section>
     </div>
   </div>
@@ -154,7 +184,8 @@ Task Scoring Admin
           <div class='col-md-12'>
 
             <br>
-            <label for='autopublish'>Status:</label>
+            <input type="hidden" id="status_modal_filename" value="">
+            <label for='status_modal_comment'>Status:</label>
             <input type='text' id='status_modal_comment' class='form-control'
                    placeholder='partial/provisional/official etc.'>
           </div>
@@ -262,11 +293,9 @@ Task Scoring Admin
                 <th scope='col'>Percentage Penalty</th>
                 <th scope='col'>Point Penalty</th>
                 <th scope='col'>Comment</th>
-
               </tr>
               </thead>
-              <tbody id='airspace_table_body'>
-
+              <tbody>
               </tbody>
             </table>
           </div>
@@ -294,7 +323,7 @@ Task Scoring Admin
   <div class='modal-dialog' role='document'>
     <div class='modal-content'>
       <div class='modal-header'>
-        <h4 class='modal-title'>Delete Task Result</h4>
+        <h4 class='modal-title' id="delete_modal_title">Delete Task Result</h4>
         <button type='button' class='close' data-dismiss='modal' aria-label='Close'>
           <span aria-hidden='true'>&times;</span>
         </button>
@@ -304,8 +333,9 @@ Task Scoring Admin
           <div class='col-md-12'>
             <input type='checkbox' class='form-check-input' id='deletefile' name='deletefile' value='1'>
             <label class='form-check-label text-danger font-weight-bold' for='deletefile'>Permanently delete result file from disk</label>
-            <p class="description mt-4">Following Result will be deleted:</p>
-            <p class="description mt-1" id="delete_description"></p>
+            <p class="mt-4">Following Result will be deleted:</p>
+            <p class="mt-1" id="delete_description"></p>
+            <input type="hidden" id="delete_modal_filename" value="">
           </div>
         </div>
         <div class='modal-footer'>
@@ -349,7 +379,7 @@ Task Scoring Admin
 <script type='text/javascript'>
   var production = {{ production|tojson }};
   var taskid = {{ taskid|tojson }};
-  var active_file = {{active_file|tojson}};
+  var compid = {{ session.compid|tojson }};
   var external = {{ session.external|tojson }};
   var url_publish_result = "{{ url_for('user._publish_result', taskid=taskid)}}";
   var url_unpublish_result = "{{ url_for('user._unpublish_result', taskid=taskid)}}";
@@ -357,8 +387,7 @@ Task Scoring Admin
   var url_score_task = "{{ url_for('user._score_task', taskid=taskid)}}";
   var url_full_rescore_task = "{{ url_for('user._full_rescore_task', taskid=taskid)}}";
   var url_change_result_status = "{{ url_for('user._change_result_status', taskid=taskid)}}";
-  var url_publish_comp_result = "{{ url_for('user._publish_comp_result', compid=session.compid)}}";
-  var url_unpublish_comp_result = "{{ url_for('user._unpublish_comp_result', compid=session.compid)}}";
+  var url_calculate_comp_result = "{{ url_for('user._calculate_comp_result', compid=session.compid)}}";
   var url_adjust_task_result = "{{ url_for('user._adjust_task_result', taskid=taskid)}}";
   var url_sse_stream = "{{ url_for('sse.stream', channel=current_user.username)}}";
 </script>

@@ -209,7 +209,9 @@ h3.form-title {
 }
 
 p.description {
-  max-width: fit-content;
+  max-width: 50rem;
+  text-align: justify;
+  text-justify: inter-word;
 }
 
 section.form, section.show, section.collapsing {

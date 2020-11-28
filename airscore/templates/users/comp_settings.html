@@ -45,13 +45,13 @@ Competition Settings
         <h4 class='tab-title font-weight-bold'>Competition Details:</h4>
         {% if session.external %}
         <section class="tab-row column-wrap form">
-            <h5 class="text-info bg-warning p-1">External Event</h5>
-            <p class="description">{{ compform.external.description }}</p>
-            <p class="description">It is possible to convert Event to Airscore format. Following process will occur:</p>
-            <ul>
-              <li>All task definitions (distance, optimise distance) will be recalculated</li>
-              <li>All pilots will be set NYP for all tasks.</li>
-            </ul>
+          <h5 class="text-info bg-warning p-1">External Event</h5>
+          <p class="description">{{ compform.external.description }}</p>
+          <p class="description">It is possible to convert Event to Airscore format. Following process will occur:</p>
+          <ul>
+            <li>All task definitions (distance, optimise distance) will be recalculated</li>
+            <li>All pilots will be set NYP for all tasks.</li>
+          </ul>
           <p class="description">Once converted, <strong>the process cannot be undone</strong>.<br/>Original imported results will still be available.</p>
           <section class="panel-row row-wrap button">
             <button class='btn btn-warning' type='button' id='confirm_convert'>

@@ -296,7 +296,7 @@ def competition(compid: int):
     from Defines import LIVETRACKDIR
     # get the latest comp result file, not the active one. This is so we can display tasks that have published
     # results that are not yet official and therefore in the comp overall results
-    result_file = get_comp_json(compid, latest=True)
+    result_file = get_comp_json(compid, overview=True)
     all_tasks = []
     layer = {}
     country_scores = False
@@ -305,7 +305,7 @@ def competition(compid: int):
     if result_file != 'error':
         if result_file['formula'].get('country_scoring') == 1:
             country_scores = True
-        overall_available = True if get_comp_json(int(compid)) != 'error' else False
+        overall_available = True if get_comp_json(compid) != 'error' else False
         for task in result_file['tasks']:
             task_ids.append(int(task['id']))
             wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox, _, _ = get_map_json(task['id'])
@@ -375,7 +375,7 @@ def ext_competition(compid: int):
     if result_file != 'error':
         if result_file['formula'].get('country_scoring') == 1:
             country_scores = True
-        overall_available = True if get_comp_json(int(compid)) != 'error' else False
+        overall_available = True if get_comp_json(compid) != 'error' else False
         for task in result_file['tasks']:
             task_ids.append(int(task['id']))
             wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox, _, _ = get_map_json(task['id'])
@@ -439,7 +439,12 @@ def ext_competition(compid: int):
 @blueprint.route('/task_result/<int:taskid>')
 def task_result(taskid: int):
     from task import get_task_json
-    result_file = frontendUtils.get_pretty_data(get_task_json(taskid))
+    from result import open_json_file
+    if 'file' in request.args:
+        file = open_json_file(request.args.get('file'))
+    else:
+        file = get_task_json(taskid)
+    result_file = frontendUtils.get_pretty_data(file)
     if result_file == 'error':
         return render_template('404.html')
 
@@ -510,7 +515,12 @@ def ext_comp_result(compid: int):
 @blueprint.route('/comp_result/<int:compid>')
 def comp_result(compid: int):
     from compUtils import get_comp_json
-    result_file = frontendUtils.get_pretty_data(get_comp_json(compid))
+    from result import open_json_file
+    if 'file' in request.args:
+        file = open_json_file(request.args.get('file'))
+    else:
+        file = get_comp_json(compid)
+    result_file = frontendUtils.get_pretty_data(file)
     if result_file == 'error':
         return render_template('404.html')
 
@@ -641,8 +651,14 @@ def region_map(regid: int):
     from map import get_map_render
     from region import Region
     region = Region.read_db(regid)
+    openair_file = region.openair_file
     waypoints, reg_map, airspace_list, _ = frontendUtils.get_region_waypoints(regid, region=region)
     args = None if not request.args else request.args
+
+    if openair_file and not airspace_list:
+        '''probably file is missing'''
+        flash('Openair file seems to be missing or format is wrong. Please contact Organisers', category='warning')
+        openair_file = None
 
     return render_template('public/region_map.html',
                            regid=regid,
@@ -651,7 +667,7 @@ def region_map(regid: int):
                            map=get_map_render(reg_map),
                            waypoints=waypoints,
                            airspace=airspace_list,
-                           waypoint_file=region.waypoint_file, openair_file=region.openair_file)
+                           waypoint_file=region.waypoint_file, openair_file=openair_file)
 
 
 @blueprint.route('/_map/<int:trackid>/<extra_trackids>')
