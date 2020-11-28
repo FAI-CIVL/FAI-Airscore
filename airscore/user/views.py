@@ -1305,8 +1305,7 @@ def region_admin():
             '''airspace file'''
             if airspace_file in ['', None]:
                 airspace_file = None
-            else:
-                airspace_file_data = airspace_file.read().decode('UTF-8')
+                air_filename = None
 
             '''waypoint file'''
             if waypoint_file:  # there should always be a file as it is a required field
@@ -1332,18 +1331,16 @@ def region_admin():
                 if airspace_file:
                     if not Path(AIRSPACEDIR).is_dir():
                         makedirs(AIRSPACEDIR)
-                    # save airspace file
-                    air_filename = unique_filename(airspace_file.filename, AIRSPACEDIR)
-                    fullpath = Path(AIRSPACEDIR, air_filename)
-                    airspace_file.seek(0)
-                    airspace_file.save(fullpath)
-                    # with open(fullpath, 'w') as f:
-                    #     f.write(airspace_file_data)
-                    flash(Markup(f'Open air file added, please check it <a href="'
-                                 f'{url_for("user.airspace_edit", filename=air_filename)}" '
-                                 f'class="alert-link">here</a>'), category='info')
-                else:
-                    air_filename = None
+                    # check airspace file
+                    number, air_filename, modified = frontendUtils.check_openair_file(airspace_file)
+                    if number > 0:
+                        if modified:
+                            flash(f'openair file has been modified as it contains error, check result.', 'warning')
+                        flash(Markup(f'Open air file added, {number} zones imported. Please check it <a href="'
+                                     f'{url_for("user.airspace_edit", filename=air_filename)}" '
+                                     f'class="alert-link">here</a>'), category='info')
+                    else:
+                        flash(f'ERROR importing openair file, check file format is correct and retry.', 'danger')
 
                 # write to DB
                 region = Region(name=new_region.name.data, comp_id=compid, waypoint_file=wpt_filename,
