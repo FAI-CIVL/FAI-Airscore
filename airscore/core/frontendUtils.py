@@ -1813,3 +1813,51 @@ def convert_external_comp(comp_id: int) -> bool:
     except (SQLAlchemyError, Exception):
         print(f'There was an Error trying to convert comp ID {comp_id}.')
         return False
+
+
+def check_openair_file(file) -> tuple:
+    from airspaceUtils import openair_content_to_data, save_airspace_map_check_files
+    from Defines import AIRSPACEDIR
+    from tempfile import TemporaryDirectory
+    from shutil import copyfile
+
+    modified = False
+    with TemporaryDirectory() as tempdir:
+        tempfile = Path(tempdir, file.filename)
+        file.seek(0)
+        file.save(tempfile)
+
+        filename = None
+        with open(tempfile, 'r+', encoding="utf-8") as fp:
+            try:
+                record_number, airspace_list, mapspaces, checkspaces, bbox = openair_content_to_data(fp)
+            except (TypeError, ValueError, Exception):
+                '''Try to correct content format'''
+                fp.seek(0)
+                content = ''
+                for line in fp:
+                    if not line.startswith('*'):
+                        content += line.replace('  ', ' ')
+                    else:
+                        content += line
+                fp.seek(0)
+                fp.truncate()
+                fp.write(content)
+                fp.seek(0)
+                try:
+                    record_number, airspace_list, mapspaces, checkspaces, bbox = openair_content_to_data(fp)
+                    modified = True
+                except (TypeError, ValueError, Exception):
+                    '''Failure'''
+                    record_number = 0
+            finally:
+                fp.close()
+
+        if record_number > 0:
+            filename = unique_filename(file.filename, AIRSPACEDIR)
+            save_airspace_map_check_files(filename, airspace_list, mapspaces, checkspaces, bbox)
+            # save airspace file
+            fullpath = Path(AIRSPACEDIR, filename)
+            copyfile(tempfile, fullpath)
+
+    return record_number, filename, modified

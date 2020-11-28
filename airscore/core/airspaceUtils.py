@@ -9,7 +9,7 @@ Stuart Mackintosh - Antonio Golfari
 
 import json
 import re
-from os import path
+from pathlib import Path
 
 import Defines
 import folium
@@ -38,7 +38,7 @@ def read_openair(filename):
     returns airspaces object (openair.reader)"""
     space = None
     airspace_path = Defines.AIRSPACEDIR
-    fullname = path.join(airspace_path, filename)
+    fullname = Path(airspace_path, filename)
     with open(fullname) as fp:
         reader = openair.Reader(fp)
 
@@ -56,7 +56,7 @@ def write_openair(data, filename):
     space = None
     airspace_path = Defines.AIRSPACEDIR
     # airspace_path = '/home/stuart/Documents/projects/Airscore_git/airscore/airscore/data/airspace/openair/'
-    fullname = path.join(airspace_path, filename)
+    fullname = Path(airspace_path, filename)
     with open(fullname, 'w') as fp:
         fp.write(data)
 
@@ -214,7 +214,7 @@ def polygon_check(record, info):
 def create_new_airspace_file(mod_data):
     airspace_path = Defines.AIRSPACEDIR
     # airspace_path = '/home/stuart/Documents/projects/Airscore_git/airscore/airscore/data/airspace/openair/'
-    fullname = path.join(airspace_path, mod_data['old_filename'])
+    fullname = Path(airspace_path, mod_data['old_filename'])
     new_file = mod_data['new_filename']
 
     if new_file[-4:] != '.txt':
@@ -263,56 +263,13 @@ def modify_airspace(file, spacename, old, new):
 def create_airspace_map_check_files(openair_filename):
     """Creates file with folium objects for mapping and file used for checking flights.
     :argument: openair_filename located in AIRSPACEDIR"""
-    from itertools import tee
-
-    mapspaces = []
-    checkspaces = []
 
     airspace_path = Defines.AIRSPACEDIR
-    mapfile_path = Defines.AIRSPACEMAPDIR
-    checkfile_path = Defines.AIRSPACECHECKDIR
-
-    if openair_filename[-4:] != '.txt':
-        mapfile_name = openair_filename + '.map'
-        checkfile_name = openair_filename + '.check'
-    else:
-        mapfile_name = openair_filename[:-4] + '.map'
-        checkfile_name = openair_filename[:-4] + '.check'
-
-    openair_fullname = path.join(airspace_path, openair_filename)
-    mapfile_fullname = path.join(mapfile_path, mapfile_name)
-    checkfile_fullname = path.join(checkfile_path, checkfile_name)
+    openair_fullname = Path(airspace_path, openair_filename)
 
     with open(openair_fullname) as fp:
-        reader = openair.Reader(fp)
-
-        reader, reader_2 = tee(reader)
-        bbox = get_airspace_bbox(reader_2)
-        airspace_list = []
-        record_number = 0
-        for record, error in reader:
-            if error:
-                raise error  # or handle it otherwise
-            if record['type'] == 'airspace':
-                details = airspace_info(record)
-                details['id'] = record_number
-                airspace_list.append(details)
-                polygon = polygon_map(record)
-                if polygon:
-                    mapspaces.append(polygon)
-                    checkspaces.append(polygon_check(record, details))
-                for element in record['elements']:
-                    if element['type'] == 'circle':
-                        mapspaces.append(circle_map(element, record))
-                        checkspaces.append(circle_check(element, details))
-            record_number += 1
-
-        map_data = {'spaces': mapspaces, 'airspace_list': airspace_list, 'bbox': bbox}
-        check_data = {'spaces': checkspaces, 'bbox': bbox}
-        with open(mapfile_fullname, 'w') as mapfile:
-            mapfile.write(jsonpickle.encode(map_data))
-        with open(checkfile_fullname, 'w') as checkfile:
-            checkfile.write(json.dumps(check_data))
+        _, airspace_list, mapspaces, checkspaces, bbox = openair_content_to_data(fp)
+        save_airspace_map_check_files(openair_filename, airspace_list, mapspaces, checkspaces, bbox)
 
 
 def read_airspace_map_file(openair_filename):
@@ -328,7 +285,7 @@ def read_airspace_map_file(openair_filename):
     else:
         mapfile_name = openair_filename[:-4] + '.map'
 
-    mapfile_fullname = path.join(mapfile_path, mapfile_name)
+    mapfile_fullname = Path(mapfile_path, mapfile_name)
 
     # if the file does not exist
     if not Path(mapfile_fullname).is_file():
@@ -363,7 +320,7 @@ def read_airspace_check_file(openair_filename):
     else:
         checkfile_name = openair_filename[:-4] + '.check'
 
-    checkfile_fullname = path.join(checkfile_path, checkfile_name)
+    checkfile_fullname = Path(checkfile_path, checkfile_name)
 
     # if the file does not exist
     if not Path(checkfile_fullname).is_file():
@@ -393,3 +350,57 @@ def altitude(fix, altimeter):
         return fix.gnss_alt
     else:
         raise ValueError(f"altimeter choice({altimeter}) not one of barometric, baro/gps or gps")
+
+
+def openair_content_to_data(content) -> tuple:
+    from itertools import tee
+
+    mapspaces = []
+    checkspaces = []
+    reader = openair.Reader(content)
+    reader, reader_2 = tee(reader)
+    bbox = get_airspace_bbox(reader_2)
+    airspace_list = []
+    record_number = 0
+
+    for record, error in reader:
+        if error:
+            raise error  # or handle it otherwise
+        if record['type'] == 'airspace':
+            details = airspace_info(record)
+            details['id'] = record_number
+            airspace_list.append(details)
+            polygon = polygon_map(record)
+            if polygon:
+                mapspaces.append(polygon)
+                checkspaces.append(polygon_check(record, details))
+            for element in record['elements']:
+                if element['type'] == 'circle':
+                    mapspaces.append(circle_map(element, record))
+                    checkspaces.append(circle_check(element, details))
+            record_number += 1
+
+    return record_number, airspace_list, mapspaces, checkspaces, bbox
+
+
+def save_airspace_map_check_files(openair_filename, airspace_list, mapspaces, checkspaces, bbox):
+
+    mapfile_path = Defines.AIRSPACEMAPDIR
+    checkfile_path = Defines.AIRSPACECHECKDIR
+
+    if openair_filename[-4:] != '.txt':
+        mapfile_name = openair_filename + '.map'
+        checkfile_name = openair_filename + '.check'
+    else:
+        mapfile_name = openair_filename[:-4] + '.map'
+        checkfile_name = openair_filename[:-4] + '.check'
+
+    mapfile_fullname = Path(mapfile_path, mapfile_name)
+    checkfile_fullname = Path(checkfile_path, checkfile_name)
+
+    map_data = {'spaces': mapspaces, 'airspace_list': airspace_list, 'bbox': bbox}
+    check_data = {'spaces': checkspaces, 'bbox': bbox}
+    with open(mapfile_fullname, 'w') as mapfile:
+        mapfile.write(jsonpickle.encode(map_data))
+    with open(checkfile_fullname, 'w') as checkfile:
+        checkfile.write(json.dumps(check_data))
