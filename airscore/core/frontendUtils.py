@@ -17,7 +17,7 @@ from db.tables import (
     TblTask,
     TblTaskWaypoint,
 )
-from Defines import IGCPARSINGCONFIG, MAPOBJDIR, track_formats
+from Defines import IGCPARSINGCONFIG, MAPOBJDIR, track_formats, filename_formats
 from flask import current_app, jsonify
 from map import make_map
 from route import Turnpoint
@@ -1862,3 +1862,8 @@ def check_openair_file(file) -> tuple:
             copyfile(tempfile, fullpath)
 
     return record_number, filename, modified
+
+
+def get_igc_filename_formats_list() -> list:
+    """ returns track filename formats that are automatically recognised when bulk importing through zip file"""
+    return filename_formats

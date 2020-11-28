@@ -819,12 +819,14 @@ def track_admin(taskid: int):
     if not task_ready_to_score:
         return render_template('task_not_ready_to_score.html')
 
+    formats = frontendUtils.get_igc_filename_formats_list()
+
     _, _, all_scorekeeper_ids = frontendUtils.get_comp_scorekeeper(taskid, task_id=True)
     if current_user.id in all_scorekeeper_ids:
         user_is_scorekeeper = True
     else:
         user_is_scorekeeper = None
-    return render_template('users/track_admin.html', taskid=taskid, compid=compid,
+    return render_template('users/track_admin.html', taskid=taskid, compid=compid, filename_formats=formats,
                            user_is_scorekeeper=user_is_scorekeeper, production=frontendUtils.production(),
                            task_name=task_name, task_num=task_num, track_source=track_source, telegram=TELEGRAM)
 

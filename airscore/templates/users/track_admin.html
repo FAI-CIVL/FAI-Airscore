@@ -78,12 +78,16 @@
   <div class='modal-dialog'>
     <div class='modal-content'>
       <div class='modal-header'>
-        <button type='button' class='close' data-dismiss='modal' aria-hidden='true'>×</button>
-        <h4 class='modal-title'></h4>
+        <h4 class='modal-title'>Bulk IGC Zip File Upload</h4>
       </div>
       <div class='modal-body' id='bulkmodal-body'>
-        <p id='zip_modal_message'>Please provide a ZIP file containing .igc files. The files should be named as such:
-          FAI.igc or LASTNAME_FIRSTNAME.igc</p>
+        <p id='zip_modal_message'>Please provide a ZIP file containing .igc files. Airscore will try to recognise pilot by track filename.<br/>
+          Usual filename formats as Flymaster Live, FSComp, CompCheck are supported, as well as any of the following:</p>
+        <p class="text-info" id="igc_filename_list">
+          {% for format in filename_formats %}
+          {{ format }}, <br />
+          {% endfor %}
+        </p>
         <div id='zip_progress'>
           <div class='bar' style='width: 0%;'><p id='zip_progress_text'></p></div>
         </div>
