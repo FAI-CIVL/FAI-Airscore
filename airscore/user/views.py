@@ -524,8 +524,7 @@ def task_admin(taskid: int):
 
             for session_task in session['tasks']:
                 if session_task['task_id'] == taskid:
-                    if (task.opt_dist and task.window_open_time and task.window_close_time and task.start_time and
-                            task.start_close_time and task.task_deadline):
+                    if task.ready_to_score:
                         session_task['ready_to_score'] = True
 
             flash("Saved", category='info')
@@ -576,8 +575,7 @@ def task_admin(taskid: int):
         taskform.no_goal_penalty.data = round((task.formula.no_goal_penalty or 0) * 100)
         taskform.arr_alt_bonus.data = task.formula.arr_alt_bonus
 
-        if not (task.opt_dist and task.window_open_time and task.window_close_time and task.start_time and
-                task.start_close_time and task.task_deadline):
+        if not task.ready_to_score:
             flash("Task is not ready to be scored as it is missing one or more of the following: a route with goal, "
                   "window open/close, start/close and deadline times", category='info')
             for session_task in session['tasks']:

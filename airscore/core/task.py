@@ -233,6 +233,16 @@ class Task(object):
         return 'T' + str(self.task_num)
 
     @property
+    def ready_to_score(self) -> bool:
+        return bool(self.opt_dist and self.window_open_time and self.window_close_time
+                    and self.start_time and self.start_close_time and self.task_deadline)
+
+    @property
+    def is_set(self) -> bool:
+        tps = [el.type for el in self.turnpoints]
+        return all(el in tps for el in ['launch', 'speed', 'endspeed', 'goal'])
+
+    @property
     def file_path(self):
         if not self.comp_path:
             return
