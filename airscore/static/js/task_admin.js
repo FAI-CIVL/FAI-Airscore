@@ -69,7 +69,7 @@ function update_turnpoints(json) {
   columns.push({data: 'partial_distance', title: 'Dist.', name: 'dist', className: "text-right", defaultContent: ''});
   if (!external){
     columns.push({data: 'wpt_id', render: function ( data, type, row ) { return '<button class="btn btn-warning ml-3" type="button" onclick="modify_tp(' + data + ')" data-toggle="confirmation" data-popout="true">Modify</button>'}});
-    columns.push({data: 'wpt_id', render: function ( data, type, row ) { return '<button class="btn btn-danger ml-3" type="button" onclick="confirm_delete(' + data + ')" data-toggle="confirmation" data-popout="true">Delete</button>'}});
+    columns.push({data: 'wpt_id', render: function ( data, type, row ) { return '<button class="btn btn-danger ml-3" type="button" onclick="confirm_delete(' + row.num + ',' + data + ',' + row.partial_distance + ')" data-toggle="confirmation" data-popout="true">Delete</button>'}});
   }
   $('#task_wpt_table').DataTable( {
     data: json.turnpoints,
