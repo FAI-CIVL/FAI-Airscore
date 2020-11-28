@@ -701,19 +701,11 @@ def _get_adv_settings():
 @login_required
 def _get_task_turnpoints(taskid: int):
     task = Task.read(taskid)
-    if (task.opt_dist and task.window_open_time and task.window_close_time
-            and task.start_time and task.start_close_time and task.task_deadline):
-        ready_to_score = True
-    else:
-        ready_to_score = False
     for session_task in session['tasks']:
         if session_task['task_id'] == taskid:
-            if session_task['ready_to_score'] != ready_to_score:
-                session_task['ready_to_score'] = ready_to_score
-                return {'reload': True}
-
-    turnpoints = frontendUtils.get_task_turnpoints(task)
-    return turnpoints
+            if session_task['ready_to_score'] != task.ready_to_score:
+                session_task['ready_to_score'] = task.ready_to_score
+    return frontendUtils.get_task_turnpoints(task)
 
 
 @blueprint.route('/_add_turnpoint/<int:taskid>', methods=['POST'])
@@ -755,10 +747,8 @@ def _add_turnpoint(taskid: int):
             task.calculate_task_length()
             task.update_task_distance()
             write_map_json(taskid)
-        turnpoints = frontendUtils.get_task_turnpoints(task)
-        return turnpoints
-    else:
-        return render_template('500.html')
+        return frontendUtils.get_task_turnpoints(task)
+    return render_template('500.html')
 
 
 @blueprint.route('/_del_turnpoint/<tpid>', methods=['POST'])
@@ -769,9 +759,8 @@ def _del_turnpoint(tpid):
     data = request.json
     taskid = int(data['taskid'])
     delete_turnpoint(tpid)
-    print(f"{data['partial_distance']}")
+    task = Task.read(taskid)
     if data['partial_distance'] != '':
-        task = Task.read(taskid)
         if task.turnpoints[-1].type == 'goal':
             task.calculate_optimised_task_length()
             task.calculate_task_length()
@@ -779,8 +768,7 @@ def _del_turnpoint(tpid):
             write_map_json(taskid)
         else:
             task.delete_task_distance()
-    resp = jsonify(success=True)
-    return resp
+    return frontendUtils.get_task_turnpoints(task)
 
 
 @blueprint.route('/_del_all_turnpoints/<int:taskid>', methods=['POST'])

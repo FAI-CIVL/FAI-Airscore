@@ -483,7 +483,8 @@ def get_task_turnpoints(task) -> dict:
     else:
         task_map = None
 
-    return {'turnpoints': turnpoints, 'next_number': max_n, 'distance': total_dist, 'map': task_map}
+    return {'turnpoints': turnpoints, 'next_number': max_n, 'distance': total_dist,
+            'map': task_map, 'task_set': task.is_set}
 
 
 def get_comp_regions(compid: int):
