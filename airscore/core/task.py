@@ -1628,7 +1628,6 @@ class Task(object):
 
 def delete_task(task_id, files=False):
     import shutil
-    from os import path
 
     from db.tables import TblCompetition as C
     from db.tables import TblNotification as N
@@ -1652,18 +1651,18 @@ def delete_task(task_id, files=False):
                 .filter(T.task_id == task_id)
                 .one()
             )
-            igc_folder = path.join(TRACKDIR, info.comp_path, info.task_path)
-            tracklog_map_folder = path.join(MAPOBJDIR, 'tracks', str(task_id))
-            task_map = path.join(MAPOBJDIR, 'tasks', str(task_id) + '.task')
+            igc_folder = Path(TRACKDIR, info.comp_path, info.task_path)
+            tracklog_map_folder = Path(MAPOBJDIR, 'tracks', str(task_id))
+            task_map = Path(MAPOBJDIR, 'tasks', str(task_id) + '.task')
 
             # remove igc files
-            if path.exists(igc_folder):
+            if igc_folder.is_dir():
                 shutil.rmtree(igc_folder)
             # remove tracklog map files
-            if path.exists(tracklog_map_folder):
+            if tracklog_map_folder.is_dir():
                 shutil.rmtree(tracklog_map_folder)
             # remove task map file
-            if path.exists(task_map):
+            if task_map.is_dir():
                 remove(task_map)
         results = db.query(RF.ref_id, RF.filename).filter(RF.task_id == task_id).all()
         if results:

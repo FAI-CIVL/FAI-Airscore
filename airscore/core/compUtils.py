@@ -7,9 +7,10 @@ Antonio Golfari - 2019
 
 import datetime
 import json
-
 import Defines
+
 from db.conn import db_session
+from pathlib import Path
 
 
 def get_comp(task_id: int):
@@ -127,25 +128,22 @@ def get_task_path(task_id: int):
     """ returns task folder name"""
     from db.tables import TblTask as T
 
-    if type(task_id) is int and task_id > 0:
-        with db_session() as db:
-            return db.query(T.task_path).filter_by(task_id=task_id).limit(1).scalar()
+    if isinstance(task_id, int) and task_id > 0:
+        return T.get_by_id(task_id).task_path
 
 
 def get_comp_path(comp_id: int):
     """ returns comp folder name"""
     from db.tables import TblCompetition as C
 
-    if type(comp_id) is int and comp_id > 0:
-        with db_session() as db:
-            return db.query(C.comp_path).filter_by(comp_id=comp_id).limit(1).scalar()
+    if isinstance(comp_id, int) and comp_id > 0:
+        return C.get_by_id(comp_id).comp_path
 
 
 def create_comp_path(date: datetime.date, code: str):
     """creates comp path from input:
     - comp date
     - comp_code"""
-    from pathlib import Path
 
     return Path(str(date.year), str(code).lower()).as_posix()
 
@@ -316,11 +314,7 @@ def get_fsdb_task_path(task_path):
 
 def is_shortcode_unique(shortcode: str, date: datetime.date):
     """ checks if given shortcode already exists as folder, returns True / False"""
-    from pathlib import Path
 
-    from Defines import TRACKDIR
-
-    # print(Path(TRACKDIR, str(date.year), shortcode))
-    if Path(TRACKDIR, str(date.year), shortcode).is_dir():
+    if Path(Defines.TRACKDIR, str(date.year), shortcode).is_dir():
         return False
     return True

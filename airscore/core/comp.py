@@ -12,7 +12,6 @@ Stuart Mackintosh Antonio Golfari - 2019
 """
 
 import json
-from os import path
 
 from calcUtils import c_round, get_date
 from compUtils import (
@@ -30,6 +29,7 @@ from pilot.participant import Participant
 from result import CompResult, create_json_file
 from sqlalchemy import and_
 from task import Task
+from pathlib import Path
 
 
 class Comp(object):
@@ -139,7 +139,7 @@ class Comp(object):
     def file_path(self):
         if not self.comp_path:
             self.create_path()
-        return path.join(TRACKDIR, self.comp_path)
+        return Path(TRACKDIR, self.comp_path)
 
     @property
     def total_validity(self):
@@ -297,7 +297,6 @@ class Comp(object):
     def from_fsdb(fs_comp, short_name=None):
         """gets comp and formula info from FSDB file"""
         from glob import glob
-        from pathlib import Path
 
         from calcUtils import get_date
         from compUtils import create_comp_code, is_shortcode_unique
@@ -380,7 +379,7 @@ class Comp(object):
                 )
         if file:
             comp = Comp(comp_id=comp_id)
-            with open(path.join(RESULTDIR, file), 'r') as f:
+            with open(Path(RESULTDIR, file), 'r') as f:
                 '''read task json file'''
                 data = json.load(f)
                 for k, v in data['info'].items():
@@ -590,6 +589,10 @@ def delete_comp(comp_id, files=True):
     from db.tables import TblTask as T
     from result import delete_result
     from task import delete_task
+    from compUtils import get_comp_path
+    from shutil import rmtree
+
+    comp_path = get_comp_path(comp_id)
 
     with db_session() as db:
         tasks = db.query(T.task_id).filter_by(comp_id=comp_id).all()
@@ -608,3 +611,5 @@ def delete_comp(comp_id, files=True):
         db.query(FC).filter_by(comp_id=comp_id).delete(synchronize_session=False)
         db.query(TblCompetition).filter_by(comp_id=comp_id).delete(synchronize_session=False)
         db.commit()
+    if files and Path(TRACKDIR, comp_path).is_dir():
+        rmtree(Path(TRACKDIR, comp_path), ignore_errors=True)
