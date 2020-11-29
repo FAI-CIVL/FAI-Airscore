@@ -294,10 +294,8 @@ class Comp(object):
         self.rankings = create_classifications(self.cat_id)
 
     @staticmethod
-    def from_fsdb(fs_comp, short_name=None):
+    def from_fsdb(fs_comp, short_name: str = None):
         """gets comp and formula info from FSDB file"""
-        from glob import glob
-
         from calcUtils import get_date
         from compUtils import create_comp_code, is_shortcode_unique
 
@@ -326,13 +324,6 @@ class Comp(object):
             comp.comp_code = create_comp_code(comp.comp_name, comp.date_from)
         comp.create_path()
 
-        '''check path does not already exist'''
-        if Path(comp.file_path).exists():
-            '''create a new comp_code and comp_path'''
-            index = len(glob(comp.file_path + '*/')) + 1
-            comp.comp_code = '_'.join([comp.comp_code, str(index)])
-            print(f"Comp short name already exists: changing to {comp.comp_code}")
-            comp.comp_path = create_comp_path(comp.date_from, comp.comp_code)
         return comp
 
     def get_tasks_details(self):

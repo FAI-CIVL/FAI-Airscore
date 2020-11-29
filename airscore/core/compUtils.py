@@ -247,9 +247,14 @@ def read_rankings(comp_id: int) -> dict:
         return {}
 
 
-def create_comp_code(name: str, date: datetime.date):
+def create_comp_code(name: str, date: datetime.date) -> str:
     """creates comp_code from name and date if nothing was given
-    standard code is 6 chars + 2 numbers"""
+    standard code is 6 chars + 2 numbers, checks that folder does not exist, otherwise adds an index.
+    """
+    from calcUtils import toBase62
+    import random
+    import string
+
     names = [n for n in name.split() if not any(char.isdigit() for char in str(n))]
     if len(names) >= 2:
         string = str(names[0])[0:3] + str(names[1])[0:3]
@@ -258,9 +263,16 @@ def create_comp_code(name: str, date: datetime.date):
     number = date.strftime('%y')
     i = 2
     code = string.upper() + number
-    while not is_shortcode_unique(code, date):
-        code = string.upper() + number + '_' + str(i)
-        i += 1
+    while True:
+        if not is_shortcode_unique(code, date):
+            if i < 60:
+                code = string.upper() + number + '_' + toBase62(i)
+                i += 1
+            else:
+                '''generate random 6 char'''
+                code = ''.join(random.choices(string.ascii_uppercase, k=6)) + number
+        break
+
     return code
 
 
