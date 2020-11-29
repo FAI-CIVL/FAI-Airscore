@@ -302,19 +302,24 @@ def mass_import_participants(comp_id: int, participants: list, existing_list: li
     """get participants to update from the list
     Before inserting rows without par_id, we need to check if pilot is already in participants
     Will create a list of dicts from database, if not given as parameter"""
-    from compUtils import get_participants
 
     insert_mappings = []
     update_mappings = []
+    assigned_ids = []
     if not existing_list:
-        existing_list = [p.as_dict() for p in get_participants(comp_id)]
+        existing_list = P.get_dicts(comp_id)
     for par in participants:
         r = {**par.as_dict(), 'comp_id': comp_id}
-        if r['par_id']:
+        existing = next((el for el in existing_list if el['par_id'] == r['par_id']), None)
+        if r['par_id'] and existing is not None:
+            '''keep assigned ID'''
+            r['ID'] = existing['ID']
             update_mappings.append(r)
         else:
             if not any(p for p in existing_list if p['name'] == r['name']):
                 '''pilots seems not to be in database yet'''
+                r['ID'] = assign_id(comp_id, given_id=r['ID'], participants=existing_list, assigned_ids=assigned_ids)
+                assigned_ids.append(r['ID'])
                 insert_mappings.append(r)
     '''update database'''
     with db_session() as db:
@@ -327,3 +332,22 @@ def mass_import_participants(comp_id: int, participants: list, existing_list: li
             db.bulk_update_mappings(P, update_mappings)
         db.commit()
     return True
+
+
+def assign_id(comp_id: int, given_id: int = None, participants: list = None, assigned_ids: list = None) -> int:
+    """ assigns pilots and ID if not given and if not unique
+        comp_id: comp_id
+        given_id: ID that was given if any
+        participants: list of participants dicts"""
+
+    if not participants:
+        participants = P.get_dicts(comp_id)
+    assigned_ids = [el['ID'] for el in participants] + (assigned_ids or [])
+    if not given_id or given_id in assigned_ids or not isinstance(given_id, int) or not (0 < given_id < 99999):
+        given_id = 101
+        while True:
+            if given_id in assigned_ids:
+                given_id += 1
+            else:
+                break
+    return given_id
