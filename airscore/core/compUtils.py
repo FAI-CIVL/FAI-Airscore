@@ -271,9 +271,8 @@ def create_comp_code(name: str, date: datetime.date) -> str:
             else:
                 '''generate random 6 char'''
                 code = ''.join(random.choices(string.ascii_uppercase, k=6)) + number
-        break
-
-    return code
+        else:
+            return code
 
 
 def get_task_filepath(task_id: int):
