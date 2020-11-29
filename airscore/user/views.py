@@ -1495,12 +1495,12 @@ def _modify_participant_details(parid: int):
 @blueprint.route('/_add_participant/<int:compid>', methods=['POST'])
 @login_required
 def _add_participant(compid: int):
-    from pilot.participant import Participant
+    from pilot.participant import Participant, assign_id
     data = request.json
     participant = Participant()
     participant.comp_id = compid
-    if data.get('id_num'):
-        participant.ID = int(data.get('id_num')) if str(data.get('id_num')).isdigit() else None
+    participant.ID = assign_id(compid, given_id=(int(data.get('id_num'))
+                                                 if str(data.get('id_num')).isdigit() else None))
     if data.get('name'):
         participant.name = data.get('name')
     participant.civl_id = int(data.get('CIVL')) if str(data.get('CIVL')).isdigit() else None
