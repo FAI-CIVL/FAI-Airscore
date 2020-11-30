@@ -113,7 +113,7 @@ class Participant(Pilot):
             - from_CIVL:    BOOL: look for pilot on CIVL database"""
         from calcUtils import get_int
 
-        CIVLID = None if not (pil.get('CIVLID')) else get_int(pil.get('CIVLID'))
+        CIVLID = get_int(pil.get('CIVLID'))
         name = pil.get('name')
         # print(CIVLID, name)
         pilot = None
@@ -132,7 +132,7 @@ class Participant(Pilot):
             pilot.sex = 'F' if int(pil.get('female') if pil.get('female') else 0) > 0 else 'M'
             pilot.nat = pil.get('nat_code_3166_a3') or None
         pilot.birthdate = get_date(pil.get('birthday') or None)
-        pilot.ID = int(pil.get('id'))
+        pilot.ID = get_int(pil.get('id'))
         pilot.glider = pil.get('glider') or None
         pilot.sponsor = pil.get('sponsor') or None
         """check fai is int"""

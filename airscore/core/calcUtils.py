@@ -64,6 +64,8 @@ def km(dist: float, n: int = 3):
 
 
 def get_int(string):
+    if isinstance(string, (int, float)):
+        return c_round(string)
     try:
         return int(string)
     except ValueError:
