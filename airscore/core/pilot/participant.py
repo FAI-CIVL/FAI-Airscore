@@ -298,7 +298,16 @@ def mass_unregister(pilots):
     return True
 
 
-def mass_import_participants(comp_id: int, participants: list, existing_list: list = None):
+def unregister_all(comp_id: int):
+    """gets comp_id
+    unregisters all registered pilots from comp"""
+
+    with db_session() as db:
+        db.query(P).filter_by(comp_id=comp_id).delete(synchronize_session=False)
+    return True
+
+
+def mass_import_participants(comp_id: int, participants: list, check_ids=True, existing_list: list = None):
     """get participants to update from the list
     Before inserting rows without par_id, we need to check if pilot is already in participants
     Will create a list of dicts from database, if not given as parameter"""
@@ -306,20 +315,22 @@ def mass_import_participants(comp_id: int, participants: list, existing_list: li
     insert_mappings = []
     update_mappings = []
     assigned_ids = []
-    if not existing_list:
+    if check_ids and not existing_list:
         existing_list = P.get_dicts(comp_id)
     for par in participants:
         r = {**par.as_dict(), 'comp_id': comp_id}
         existing = next((el for el in existing_list if el['par_id'] == r['par_id']), None)
         if r['par_id'] and existing is not None:
-            '''keep assigned ID'''
-            r['ID'] = existing['ID']
+            if check_ids:
+                '''keep assigned ID'''
+                r['ID'] = existing['ID']
             update_mappings.append(r)
         else:
             if not any(p for p in existing_list if p['name'] == r['name']):
                 '''pilots seems not to be in database yet'''
-                r['ID'] = assign_id(comp_id, given_id=r['ID'], participants=existing_list, assigned_ids=assigned_ids)
-                assigned_ids.append(r['ID'])
+                if check_ids:
+                    r['ID'] = assign_id(comp_id, r['ID'], participants=existing_list, assigned_ids=assigned_ids)
+                    assigned_ids.append(r['ID'])
                 insert_mappings.append(r)
     '''update database'''
     with db_session() as db:
@@ -353,3 +364,16 @@ def assign_id(comp_id: int, given_id: int = None, participants: list = None, ass
             else:
                 break
     return given_id
+
+
+def get_valid_ids(comp_id: int, participants: list) -> list:
+    """ gets a list of pilots and checks their ID validity against registered pilots and correct formats
+        returns a list of pilots with correct IDs"""
+    '''get participants already in competition, to avoid same id'''
+    registered = P.get_dicts(comp_id)
+    assigned_ids = []
+    for p in participants:
+        p.ID = assign_id(comp_id, p.ID, registered, assigned_ids)
+        assigned_ids.append(p.ID)
+    return participants
+
