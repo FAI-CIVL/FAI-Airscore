@@ -91,7 +91,7 @@ Pilot Admin
       <div class='container'>
         <h4 style='float:left'>Registered {% if pilotdb %}External {% endif %}Pilots:</h4>
         <h4 id='total_external_pilots'></h4>
-        <button id='manual_add_pilot_button' class='btn btn-success ml-4' data-toggle='modal' data-target='#add_modal'>
+        <button id='manual_add_pilot_button' class='btn btn-success ml-4' onclick="add_participant()">
           Add a pilot
         </button>
         <button id='Excel_button' class='btn btn-success ml-4' data-toggle='modal' data-target='#excel_modal'>
@@ -149,6 +149,8 @@ Pilot Admin
       <div class='modal-body' id='modmodal-body'>
         <div class='form-row'>
           <section class="pl-1 row-wrap panel-row">
+            <input type="hidden" id="mod_original_id_number" value="">
+            <input type="hidden" id="mod_last_id_number" value="">
             {{ render_field(modify_participant_form.id_num, width=3, id='mod_id_number') }}
             {{ render_field(modify_participant_form.CIVL, width=5, id='mod_civl') }}
             {{ render_field(modify_participant_form.name, width=30, id='mod_name') }}
@@ -205,6 +207,8 @@ Pilot Admin
       <div class='modal-body' id='addmodal-body'>
         <div class='form-row'>
           <section class="pl-1 row-wrap panel-row">
+            <input type="hidden" id="add_original_id_number" value="">
+            <input type="hidden" id="add_last_id_number" value="">
             {{ render_field(modify_participant_form.id_num, width=3, id='add_id_number') }}
             {{ render_field(modify_participant_form.CIVL, width=5, id='add_civl') }}
             {{ render_field(modify_participant_form.name, width=30, id='add_name') }}
@@ -319,11 +323,10 @@ Pilot Admin
 {% block js %}
 <script type='text/javascript' src='https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js'></script>
 <script src="{{ static_url_for('static', filename='js/multiselect.min.js') }}"></script>
-<script src="{{ static_url_for('static', filename='js/pop_registered_pilots_admin.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/pilot_admin.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.ui.widget.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.iframe-transport.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.fileupload.js') }}"></script>
-<script src="{{ static_url_for('static', filename='js/pilot_admin.js') }}"></script>
 <script type='text/javascript'>
 var pilotdb = {{ pilotdb|tojson }};
 var compid = {{ session.compid|tojson }};
