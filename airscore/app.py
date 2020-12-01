@@ -17,6 +17,7 @@ from airscore.extensions import (
     mail,
 )
 
+from pathlib import Path
 from redis import Redis
 import rq
 from flask_sse import sse
@@ -43,7 +44,7 @@ def create_app(config_object="airscore.settings"):
     if app.config["SQLALCHEMY_DATABASE_URI"] != 'test':  # don't query the DB when unit testing
         with app.app_context():
             app.config['admin_exists'] = User.admin_exists()
-    create_app_folders()
+        create_app_folders()
     return app
 
 
@@ -110,7 +111,7 @@ def configure_logger(app):
 def create_app_folders():
     """Created folders if not existing"""
     import Defines
-    from pathlib import Path
+
     for app_dir in [Defines.TRACKDIR,
                     Defines.LOGDIR,
                     Defines.RESULTDIR,
