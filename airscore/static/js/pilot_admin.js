@@ -397,7 +397,7 @@ jQuery(document).ready(function($) {
     $('#Excel_fileupload').click();
   });
 
-  $('#FSDB_button').click(function(){
+  $('#upload_fsdb_button').click(function(){
     $('#FSDB_fileupload').click();
   });
 

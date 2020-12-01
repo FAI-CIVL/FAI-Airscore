@@ -97,11 +97,9 @@ Pilot Admin
         <button id='Excel_button' class='btn btn-success ml-4' data-toggle='modal' data-target='#excel_modal'>
           Upload Excel file
         </button>
-        <button id='FSDB_button' class='btn btn-success ml-4'>
+        <button id='FSDB_button' class='btn btn-success ml-4' data-toggle='modal' data-target='#fsdb_upload_modal'>
           Upload FSDB file
         </button>
-        <input id='FSDB_fileupload' style='width: 0%;' type='file' size='chars' class='custom-file-input'
-               data-url='/users/_upload_participants_fsdb/{{ session.compid }}' name='fsdb_file'>
         <button id='delete_external' data-toggle='modal' data-target='#delete_modal' class='btn btn-danger ml-4'>Remove
           All
         </button>
@@ -129,7 +127,7 @@ Pilot Admin
         <button id='download_html' onclick="location.href='/users/_download/participants_html/{{session.compid}}'" class='btn btn-primary ml-4'>HTML list</button>
         <button id='download_fsdb' onclick="location.href='/users/_download/participants_fsdb/{{session.compid}}'" class='btn btn-primary ml-4'>FSDB List</button>
       </div>
-      <h6 class='text-danger' id='team_messages'></h6>
+      <h6 class='text-danger font-weight-bold mt-3' id='team_messages'></h6>
       <table id='pilots' class='row-border table-hover compact pilots-table' cellspacing='0' width='100%'>
         <thead class="thead-dark">
         </thead>
@@ -255,7 +253,7 @@ Pilot Admin
     </div>
   </div>
 </div>
-<!-add-participant details-Modal ends here--->
+<!-- add-participant details-Modal ends here--->
 
 <!-- delete Modal -->
 <div id='delete_modal' class='modal fade' role='dialog'>
@@ -308,9 +306,34 @@ Pilot Admin
         </div>
         <div class='modal-footer'>
           <button type='button' class='btn btn-secondary' data-dismiss='modal'>Cancel</button>
-          <button id='upload_excel_button' class='btn btn-success ml-4' data-dismiss="modal">Upload Excel file</button>
+          <button id='upload_excel_button' class='btn btn-primary ml-4' data-dismiss="modal">Browse...</button>
           <input id='Excel_fileupload' style='width: 0%;' type='file' size='chars' class='custom-file-input'
                data-url='/users/_upload_participants_excel/{{ session.compid }}' name='excel_file'>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!--- upload excel file Modal ends here--->
+
+<!--- upload FSDB file Modal starts here--->
+<div id='fsdb_upload_modal' class='modal fade' tabindex='-1' role='dialog'>
+  <div class='modal-dialog' role='document'>
+    <div class='modal-content'>
+      <div class='modal-header'>
+        <h4 class='modal-title'>Import Participants from FSDB File</h4>
+      </div>
+      <div class='modal-body' id='fsdb_upload_modal-body'>
+        <div class='container-fluid'>
+          <div class='col-md-12'>
+            <p class="text-danger font-weight-bold">This process will delete any pilot already registered in this event.</p>
+          </div>
+        </div>
+        <div class='modal-footer'>
+          <button type='button' class='btn btn-secondary' data-dismiss='modal'>Cancel</button>
+          <button id='upload_fsdb_button' class='btn btn-primary ml-4' data-dismiss="modal">Browse...</button>
+          <input id='FSDB_fileupload' style='width: 0%;' type='file' size='chars' class='custom-file-input'
+               data-url='/users/_upload_participants_fsdb/{{ session.compid }}' name='fsdb_file'>
         </div>
       </div>
     </div>

@@ -1550,8 +1550,9 @@ def _upload_participants_excel(compid: int):
 @blueprint.route('/_upload_participants_fsdb/<int:compid>', methods=['POST'])
 @login_required
 def _upload_participants_fsdb(compid: int):
-    from pilot.participant import mass_import_participants
+    from pilot.participant import unregister_all, mass_import_participants
     import tempfile
+
     if request.method == "POST":
         if request.files:
             fsdb_file = request.files["fsdb_file"]
@@ -1560,7 +1561,8 @@ def _upload_participants_fsdb(compid: int):
                 fsdb_file.save(tmp_file)
                 participants = frontendUtils.import_participants_from_fsdb(tmp_file)
                 if participants:
-                    mass_import_participants(compid, participants)
+                    unregister_all(compid)
+                    mass_import_participants(compid, participants, check_ids=False)
             resp = jsonify(success=True)
             return resp
         resp = jsonify(success=False)
