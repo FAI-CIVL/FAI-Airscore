@@ -639,7 +639,7 @@ class FSDB(object):
             return False
 
         with db_session() as db:
-            inserted = mass_import_participants(self.comp.comp_id, self.comp.participants)
+            inserted = mass_import_participants(self.comp.comp_id, self.comp.participants, check_ids=False)
             if inserted:
                 '''populate participants par_id'''
                 results = db.query(P.par_id, P.ID).filter_by(comp_id=self.comp.comp_id).all()

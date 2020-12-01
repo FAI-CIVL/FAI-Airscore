@@ -1536,7 +1536,11 @@ def _upload_participants_excel(compid: int):
                 # filename = secure_filename(excel_file.filename)
                 excel_file.save(path.join(tmpdirname, excel_file.filename))
                 pilots = extract_participants_from_excel(compid, path.join(tmpdirname, excel_file.filename))
-                mass_import_participants(compid, pilots)
+
+                # should we delete all participants when uploading a excel list?
+                pilots = frontendUtils.check_participants_ids(compid, pilots)
+
+                mass_import_participants(compid, pilots, check_ids=False)
             resp = jsonify(success=True)
             return resp
         resp = jsonify(success=False)

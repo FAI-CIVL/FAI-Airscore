@@ -197,9 +197,6 @@ def extract_participants_from_excel(comp_id: int, filename, from_CIVL=False):
     from openpyxl import load_workbook
     from openpyxl.utils.exceptions import InvalidFileException
 
-    '''create logging and disable output'''
-    # Logger('ON', 'import_participants.txt')
-    print(f"Comp ID: {comp_id} | filename: {filename}")
     '''load excel file'''
     try:
         workbook = load_workbook(filename=filename)
@@ -213,8 +210,10 @@ def extract_participants_from_excel(comp_id: int, filename, from_CIVL=False):
     sheet = workbook.active
     '''check validity'''
     if not (sheet['A1'].value == 'id'):
-        exit()
+        print('excel file does not seem to be the correct template.')
+        return
     pilots = []
+
     for row in sheet.iter_rows(min_row=2, min_col=1, max_col=14, values_only=True):
         if not row[0]:
             'EOF'
@@ -236,21 +235,21 @@ def extract_participants_from_excel(comp_id: int, filename, from_CIVL=False):
         pil.fai_valid = 0 if row[8] is None else 1
         pil.live_id = row[13]
         pilots.append(pil)
-    # ''' now restore stdout function '''
-    # Logger('OFF')
+
     return pilots
 
 
-def register_from_profiles_list(comp_id: int, pilots: list):
+def register_from_profiles_list(comp_id: int, pilots_ids: list):
     """gets comp_id and pil_id list
     registers pilots to comp"""
-    if not (comp_id and pilots):
+    if not (comp_id and pilots_ids):
         print(f"error: comp_id does not exist or pilots list is empty")
         return None
     participants = []
-    for pil_id in pilots:
+    for pil_id in pilots_ids:
         participants.append(Participant.from_profile(pil_id, comp_id))
-    mass_import_participants(comp_id, participants)
+    participants = get_valid_ids(comp_id, participants)
+    mass_import_participants(comp_id, participants, check_ids=False)
     return True
 
 
@@ -307,7 +306,7 @@ def unregister_all(comp_id: int):
     return True
 
 
-def mass_import_participants(comp_id: int, participants: list, check_ids=True, existing_list: list = None):
+def mass_import_participants(comp_id: int, participants: list, check_ids=True):
     """get participants to update from the list
     Before inserting rows without par_id, we need to check if pilot is already in participants
     Will create a list of dicts from database, if not given as parameter"""
@@ -315,15 +314,17 @@ def mass_import_participants(comp_id: int, participants: list, check_ids=True, e
     insert_mappings = []
     update_mappings = []
     assigned_ids = []
-    if check_ids and not existing_list:
-        existing_list = P.get_dicts(comp_id)
+
+    existing_list = P.get_dicts(comp_id)
     for par in participants:
         r = {**par.as_dict(), 'comp_id': comp_id}
         existing = next((el for el in existing_list if el['par_id'] == r['par_id']), None)
         if r['par_id'] and existing is not None:
-            if check_ids:
-                '''keep assigned ID'''
-                r['ID'] = existing['ID']
+            if check_ids and r['ID'] != existing['ID']:
+                assigned_id = assign_id(comp_id, r['ID'], participants=existing_list, assigned_ids=assigned_ids)
+                '''keep former ID if existing, and new is different and already taken'''
+                r['ID'] = existing['ID'] or assigned_id
+                existing['ID'] = r['ID']
             update_mappings.append(r)
         else:
             if not any(p for p in existing_list if p['name'] == r['name']):

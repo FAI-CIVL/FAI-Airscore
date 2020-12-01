@@ -1867,3 +1867,10 @@ def check_openair_file(file) -> tuple:
 def get_igc_filename_formats_list() -> list:
     """ returns track filename formats that are automatically recognised when bulk importing through zip file"""
     return filename_formats
+
+
+def check_participants_ids(comp_id: int, pilots: list) -> list:
+    """ gets a list of pilots and checks their ID validity against registered pilots and correct formats
+        returns a list of pilots with correct IDs"""
+    from pilot.participant import get_valid_ids
+    return get_valid_ids(comp_id, pilots)
