@@ -1232,7 +1232,7 @@ class Task(object):
         Unfortunately the fsdb format isn't published so much of this is simply an
         exercise in reverse engineering.
         """
-        from calcUtils import get_date, get_time, time_to_seconds
+        from calcUtils import get_int, get_date, get_time, time_to_seconds
         from compUtils import get_fsdb_task_path
         from formula import TaskFormula
 
@@ -1255,7 +1255,7 @@ class Task(object):
 
         """Task Status"""
         node = t.find('FsTaskState')
-        formula.score_back_time = int(node.get('score_back_time')) * 60
+        formula.score_back_time = get_int(node.get('score_back_time')) * 60
         state = node.get('task_state')
         task.comment = state if not node.get('cancel_reason') else ': '.join([state, node.get('cancel_reason')])
         if state == 'CANCELLED':
@@ -1325,10 +1325,10 @@ class Task(object):
                 task.bearing_lat = float(node.find('FsHeadingpoint').get('lat'))
                 task_bearing_lon = float(node.find('FsHeadingpoint').get('lon'))
         else:
-            sswpt = int(node.get('ss'))
-            eswpt = int(node.get('es'))
+            sswpt = get_int(node.get('ss'))
+            eswpt = get_int(node.get('es'))
             gtype = node.get('goal')
-            gstart = int(node.get('groundstart'))
+            gstart = get_int(node.get('groundstart'))
             last = len(node.findall('FsTurnpoint'))
             if node.find('FsStartGate') is None:
                 """elapsed time
