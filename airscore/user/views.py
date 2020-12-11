@@ -1084,10 +1084,10 @@ def task_score_admin(taskid: int):
         '''External Event'''
         flash(f"This is an External Event. Settings and Results are Read Only.", category='warning')
     elif not task_ready_to_score:
-        flash(message='Task has not all the parameters nacessary to score. Please complete setup in settings.',
+        flash(message='Task has not all the parameters necessary to score. Please complete setup and save settings.',
               category='warning')
     elif not valid_results:
-        flash(message='Task has no valid results. Scoring is not possible yet.', category='warning')
+        flash(message='Task has no valid tracks. Scoring is not possible yet.', category='warning')
     else:
         score_active = True
 
