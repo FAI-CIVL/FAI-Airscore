@@ -233,6 +233,16 @@ class Task(object):
         return 'T' + str(self.task_num)
 
     @property
+    def ready_to_score(self) -> bool:
+        return bool(self.opt_dist and self.window_open_time and self.window_close_time
+                    and self.start_time and self.start_close_time and self.task_deadline)
+
+    @property
+    def is_set(self) -> bool:
+        tps = [el.type for el in self.turnpoints]
+        return all(el in tps for el in ['launch', 'speed', 'endspeed', 'goal'])
+
+    @property
     def file_path(self):
         if not self.comp_path:
             return
@@ -1222,7 +1232,7 @@ class Task(object):
         Unfortunately the fsdb format isn't published so much of this is simply an
         exercise in reverse engineering.
         """
-        from calcUtils import get_date, get_time, time_to_seconds
+        from calcUtils import get_int, get_date, get_time, time_to_seconds
         from compUtils import get_fsdb_task_path
         from formula import TaskFormula
 
@@ -1245,7 +1255,7 @@ class Task(object):
 
         """Task Status"""
         node = t.find('FsTaskState')
-        formula.score_back_time = int(node.get('score_back_time')) * 60
+        formula.score_back_time = get_int(node.get('score_back_time')) * 60
         state = node.get('task_state')
         task.comment = state if not node.get('cancel_reason') else ': '.join([state, node.get('cancel_reason')])
         if state == 'CANCELLED':
@@ -1315,10 +1325,10 @@ class Task(object):
                 task.bearing_lat = float(node.find('FsHeadingpoint').get('lat'))
                 task_bearing_lon = float(node.find('FsHeadingpoint').get('lon'))
         else:
-            sswpt = int(node.get('ss'))
-            eswpt = int(node.get('es'))
+            sswpt = get_int(node.get('ss'))
+            eswpt = get_int(node.get('es'))
             gtype = node.get('goal')
-            gstart = int(node.get('groundstart'))
+            gstart = get_int(node.get('groundstart'))
             last = len(node.findall('FsTurnpoint'))
             if node.find('FsStartGate') is None:
                 """elapsed time
@@ -1618,7 +1628,6 @@ class Task(object):
 
 def delete_task(task_id, files=False):
     import shutil
-    from os import path
 
     from db.tables import TblCompetition as C
     from db.tables import TblNotification as N
@@ -1642,18 +1651,18 @@ def delete_task(task_id, files=False):
                 .filter(T.task_id == task_id)
                 .one()
             )
-            igc_folder = path.join(TRACKDIR, info.comp_path, info.task_path)
-            tracklog_map_folder = path.join(MAPOBJDIR, 'tracks', str(task_id))
-            task_map = path.join(MAPOBJDIR, 'tasks', str(task_id) + '.task')
+            igc_folder = Path(TRACKDIR, info.comp_path, info.task_path)
+            tracklog_map_folder = Path(MAPOBJDIR, 'tracks', str(task_id))
+            task_map = Path(MAPOBJDIR, 'tasks', str(task_id) + '.task')
 
             # remove igc files
-            if path.exists(igc_folder):
+            if igc_folder.is_dir():
                 shutil.rmtree(igc_folder)
             # remove tracklog map files
-            if path.exists(tracklog_map_folder):
+            if tracklog_map_folder.is_dir():
                 shutil.rmtree(tracklog_map_folder)
             # remove task map file
-            if path.exists(task_map):
+            if task_map.is_dir():
                 remove(task_map)
         results = db.query(RF.ref_id, RF.filename).filter(RF.task_id == task_id).all()
         if results:

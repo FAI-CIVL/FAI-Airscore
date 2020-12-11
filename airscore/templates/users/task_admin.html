@@ -27,6 +27,10 @@ Task Settings
 {% endblock %}
 
 {% block content %}
+<div>
+  <h5 class="info text-info" id='task_distance'></h5>
+</div>
+
 <form method='post' id="main_task_settings_form">
   {{taskform.hidden_tag()}}
 
@@ -38,10 +42,6 @@ Task Settings
     {% else %}
     <b>You are not a scorekeeper of this comp</b>
     {% endif%}
-  </div>
-
-  <div class='container'>
-    <h5 id='title_dist'></h5>
   </div>
 
   <!-- Settings Tab Section -->

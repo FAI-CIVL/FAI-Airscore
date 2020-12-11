@@ -17,6 +17,7 @@ from airscore.extensions import (
     mail,
 )
 
+from pathlib import Path
 from redis import Redis
 import rq
 from flask_sse import sse
@@ -28,7 +29,7 @@ def create_app(config_object="airscore.settings"):
 
     :param config_object: The configuration object to use.
     """
-    app = Flask(__name__.split(".")[0]) # , debug=True)
+    app = Flask(__name__.split(".")[0])  # , debug=True)
     app.config.from_object(config_object)
     app.config.update(SESSION_COOKIE_SAMESITE='Lax')
     # app.config["REDIS_URL"] = app.config["REDIS_URL"]
@@ -40,9 +41,10 @@ def create_app(config_object="airscore.settings"):
     register_shellcontext(app)
     register_commands(app)
     configure_logger(app)
-    if app.config["SQLALCHEMY_DATABASE_URI"] != 'test': # don't query the DB when unit testing
+    if app.config["SQLALCHEMY_DATABASE_URI"] != 'test':  # don't query the DB when unit testing
         with app.app_context():
             app.config['admin_exists'] = User.admin_exists()
+        create_app_folders()
     return app
 
 
@@ -104,3 +106,22 @@ def configure_logger(app):
     handler = logging.StreamHandler(sys.stdout)
     if not app.logger.handlers:
         app.logger.addHandler(handler)
+
+
+def create_app_folders():
+    """Created folders if not existing"""
+    import Defines
+
+    for app_dir in [Defines.TRACKDIR,
+                    Defines.LOGDIR,
+                    Defines.RESULTDIR,
+                    Defines.MAPOBJDIR,
+                    Defines.AIRSPACEDIR,
+                    Defines.AIRSPACEMAPDIR,
+                    Defines.AIRSPACECHECKDIR,
+                    Defines.WAYPOINTDIR,
+                    Defines.LIVETRACKDIR,
+                    Defines.IGCPARSINGCONFIG,
+                    Defines.TEMPFILES]:
+        if not Path(app_dir).is_dir():
+            Path(app_dir).mkdir(mode=0o755, parents=True)

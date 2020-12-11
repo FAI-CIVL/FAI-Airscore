@@ -253,15 +253,10 @@ def pilot_distance(task, pil):
         pil: FlightResult object
         task: Task obj.
     """
-
-    maxdist = task.max_distance
-    Adistance = task.avail_dist_points
     if pil.goal_time:
-        return Adistance
+        return task.avail_dist_points
 
-    Pdist = Adistance * pil.distance / maxdist
-
-    return Pdist
+    return pil.distance / task.max_distance * task.avail_dist_points
 
 
 def calculate_min_dist_score(t):

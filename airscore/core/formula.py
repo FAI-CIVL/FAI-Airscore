@@ -426,6 +426,7 @@ class TaskFormula(Formula):
 
 
 def get_fsdb_info(formula, form):
+    from calcUtils import get_int
     formula.formula_name = form.get('id')
     '''scoring parameters'''
     # formula.comp_class = comp.comp_class
@@ -477,15 +478,15 @@ def get_fsdb_info(formula, form):
     )  # tolerance, perc / 100
     '''stopped task parameters'''
     formula.validity_min_time = (
-        0 + int(form.get('min_time_span_for_valid_task')) * 60
+        0 + get_int(form.get('min_time_span_for_valid_task')) * 60
     )  # min. time for valid task, seconds
-    formula.score_back_time = 0 + int(form.get('score_back_time')) * 60  # Scoreback Time, seconds
+    formula.score_back_time = 0 + get_int(form.get('score_back_time')) * 60  # Scoreback Time, seconds
     formula.glide_bonus = 0.0 + float(form.get('bonus_gr'))  # glide ratio
     '''bonus and penalties'''
     formula.no_goal_penalty = c_round(1.0 - float(form.get('time_points_if_not_in_goal')), 4)
     formula.arr_alt_bonus = float(form.get('aatb_factor') if form.get('final_glide_decelerator') == 'aatb' else 0)
     '''jump the gun'''
-    formula.max_JTG = int(form.get('jump_the_gun_max'))  # seconds
+    formula.max_JTG = get_int(form.get('jump_the_gun_max'))  # seconds
     formula.JTG_penalty_per_sec = (
         None if form.get('jump_the_gun_factor') == '0' else c_round(1 / float(form.get('jump_the_gun_factor')), 4)
     )

@@ -1,4 +1,9 @@
 var turnpoints;
+var task = {
+  isset: null,
+  ready_to_score: null
+}
+
 
 $(document).ready(function() {
   get_turnpoints();
@@ -30,23 +35,13 @@ function get_turnpoints(){
     contentType:"application/json",
     dataType: "json",
     success: function (response) {
-      if(response.reload){
-        location.reload();
+      if(task.isset == null){
+        task.isset = response.task_set;
+      }
+      else if (task.isset != response.task_set) {
+        task.isset = response.task_set;
+        location.reload(true);
         return;
-      }
-      if(response.map != null) {
-        $('#map_container').html(response.map);
-        $('#map_container').attr("hidden", false);
-      }
-      else{
-        $('#map_container').attr("hidden", true);
-      }
-      if(response.turnpoints.length > 0) {
-        $('#import_task_btn').hide()
-      }
-      else {
-        $('#delete_all_btn').hide();
-        $('#import_task_btn').show()
       }
       update_turnpoints(response);
     }
@@ -56,6 +51,28 @@ function get_turnpoints(){
 function update_turnpoints(json) {
   $('#delete_all_btn').hide();
   turnpoints = json.turnpoints;
+
+  if(json.map != null) {
+    $('#map_container').html(json.map);
+    $('#map_container').attr("hidden", false);
+  }
+  else{
+    $('#map_container').attr("hidden", true);
+  }
+  if(turnpoints.length > 0) {
+    $('#import_task_btn').hide()
+  }
+  else {
+    $('#delete_all_btn').hide();
+    $('#import_task_btn').show()
+  }
+  if (json.distance == 'Distance not yet calculated') {
+    $('#task_distance').removeClass('text-info').addClass('text-warning').html(json.distance);
+  }
+  else {
+    $('#task_distance').removeClass('text-warning').addClass('text-info').html('Task is set: Optimised distance is '+json.distance);
+  }
+
   var columns = [];
 
   columns.push({data: 'num', title: '#', className: "text-right", defaultContent: ''});
@@ -69,10 +86,10 @@ function update_turnpoints(json) {
   columns.push({data: 'partial_distance', title: 'Dist.', name: 'dist', className: "text-right", defaultContent: ''});
   if (!external){
     columns.push({data: 'wpt_id', render: function ( data, type, row ) { return '<button class="btn btn-warning ml-3" type="button" onclick="modify_tp(' + data + ')" data-toggle="confirmation" data-popout="true">Modify</button>'}});
-    columns.push({data: 'wpt_id', render: function ( data, type, row ) { return '<button class="btn btn-danger ml-3" type="button" onclick="confirm_delete(' + data + ')" data-toggle="confirmation" data-popout="true">Delete</button>'}});
+    columns.push({data: 'wpt_id', render: function ( data, type, row ) { return '<button class="btn btn-danger ml-3" type="button" onclick="confirm_delete(' + row.num + ',' + data + ',' + row.partial_distance + ')" data-toggle="confirmation" data-popout="true">Delete</button>'}});
   }
   $('#task_wpt_table').DataTable( {
-    data: json.turnpoints,
+    data: turnpoints,
     destroy: true,
     paging: false,
     responsive: true,
@@ -103,7 +120,7 @@ function update_turnpoints(json) {
       }
     }
   });
-  $('#number').val(json['next_number']);
+  $('#number').val(json.next_number);
   $('#delete_all_btn').show();
 }
 
@@ -129,14 +146,17 @@ function save_turnpoint(){
     contentType:"application/json",
     data : JSON.stringify(mydata),
     dataType: "json",
-    success: function () {
-      if(mydata.type == 'goal') {
-        location.reload();
+    success: function (response) {
+      if(task.isset != null && response.task_set != task.isset) {
+//        update_turnpoints(response);
+        console.log('js: '+task.isset+', response: '+response.task_set)
+        location.reload(true);
+        return;
       }
       else {
-        get_turnpoints();
         $('#save_task_button').show();
         $('#add_tp_spinner').html('');
+        update_turnpoints(response);
       }
     }
   });
@@ -154,11 +174,17 @@ function delete_tp(tpid, partial_d){
         contentType:"application/json",
         data : JSON.stringify(mydata),
         dataType: "json",
-        success: function () {
-            $('#delmodal').modal('hide');
-            $('#delete_confirmed').show();
-            $('#delete_spinner').html('');
-            get_turnpoints();
+        success: function (response) {
+          if(task.isset != null && response.task_set != task.isset) {
+            console.log('js: '+task.isset+', response: '+response.task_set)
+            location.reload(true);
+            return;
+          }
+          $('#delmodal').modal('hide');
+          $('#delete_confirmed').show();
+          $('#delete_spinner').html('');
+          $('#map_container').html('');
+          update_turnpoints(response);
         }
     });
 }
@@ -231,8 +257,13 @@ function save_modified_turnpoint(id){
        contentType:"application/json",
        data : JSON.stringify(mydata),
        dataType: "json",
-       success: function () {
-           get_turnpoints();
+       success: function (response) {
+         if(task.isset != null && response.task_set != task.isset) {
+           console.log('js: '+task.isset+', response: '+response.task_set)
+           location.reload(true);
+           return;
+         }
+         update_turnpoints(response);
        }
    });
 }

@@ -21,21 +21,21 @@ from pilot.flightresult import FlightResult
 
 def difficulty_calculation(task):
 
-    formula = task.formula
-    pilot_lo = task.pilots_launched - task.pilots_goal
-    lo_results = [p for p in task.valid_results if not p.goal_time]
-    best_dist_flown = task.max_distance / 1000  # Km
-    if not lo_results:
-        """all pilots are in goal
-        I calculate diff array just for correct min_distance_points calculation"""
-        lo_results.append(FlightResult(name='dummy', distance_flown=formula.min_dist))
-
     @dataclass
     class Diffslot:
         dist_x10: int
         diff: int = 0
         rel_diff: float = 0.0
         diff_score: float = 0.0
+
+    formula = task.formula
+    best_dist_flown = max(task.max_distance, formula.min_dist) / 1000  # Km
+    lo_results = [p for p in task.valid_results if not p.goal_time]
+    if not lo_results:
+        """all pilots are in goal
+        I calculate diff array just for correct min_distance_points calculation"""
+        lo_results.append(FlightResult(name='dummy', distance_flown=formula.min_dist))
+    pilots_lo = len(lo_results)
 
     '''distance spread'''
     min_dist_kmx10 = int(formula.min_dist / 100)  # min_dist (Km) * 10
@@ -59,7 +59,7 @@ def difficulty_calculation(task):
     ''' the difficulty for each 100-meter section of the task is calculated
         by counting the number of pilots who landed further along the task'''
     best_dist_kmx10r = int((best_dist_kmx10 + 10) / 10) * 10
-    look_ahead = max(30, round(30 * best_dist_flown / pilot_lo))
+    look_ahead = max(30, round(30 * best_dist_flown / pilots_lo))
     kmdiff = []
 
     for i in range(best_dist_kmx10r):
@@ -414,15 +414,12 @@ def pilot_distance(task, pil):
         pil: FlightResult object
     """
 
-    maxdist = task.max_distance
-    Adistance = task.avail_dist_points
-
     if pil.goal_time:
-        return Adistance
+        return task.avail_dist_points
 
     if task.formula.formula_distance == 'on':
         # PG Default
-        Pdist = Adistance * pil.distance / maxdist
+        return pil.distance / task.max_distance * task.avail_dist_points
 
     elif task.formula.formula_distance == 'difficulty':
         # HG Default
@@ -432,14 +429,12 @@ def pilot_distance(task, pil):
         The other half is assigned taking into consideration the difficulty
         of the kilometers flown."""
         diff = task.difficulty
-        LF = 0.5 * pil.distance / maxdist
+        linear_fraction = 0.5 * pil.distance / task.max_distance
         dist10 = int(pil.distance / 100)  # int(dist in Km * 10)
-        DF = diff[dist10].diff_score + (
-            (diff[dist10 + 1].diff_score - diff[dist10].diff_score) * (pil.distance / 100 - dist10)
-        )
-        Pdist = Adistance * (LF + DF)
-
-    return Pdist
+        diff_fraction = diff[dist10].diff_score
+        if len(diff) > dist10 + 1 and diff[dist10+1].diff_score > diff_fraction:
+            diff_fraction += ((diff[dist10 + 1].diff_score - diff[dist10].diff_score) * (pil.distance / 100 - dist10))
+        return task.avail_dist_points * (linear_fraction + diff_fraction)
 
 
 def calculate_min_dist_score(t):

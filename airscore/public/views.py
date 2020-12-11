@@ -436,6 +436,46 @@ def ext_competition(compid: int):
 #     return dict(info=comp, data=pilot_list, pilot=pilot)
 
 
+@blueprint.route('/ext_task_result/<int:taskid>')
+def ext_task_result(taskid: int):
+    from task import get_task_json
+    from result import open_json_file
+    if 'file' in request.args:
+        file = open_json_file(request.args.get('file'))
+    else:
+        file = get_task_json(taskid)
+    result_file = frontendUtils.get_pretty_data(file)
+    if result_file == 'error':
+        return render_template('404.html')
+
+    compid = int(result_file['info']['comp_id'])
+    all_pilots = []
+    results = [p for p in result_file['results'] if p['result_type'] not in ['dnf', 'abs', 'nyp']]
+    for r in results:
+        pilot = {'id': r['ID'], 'fai_id': r['fai_id'], 'civl_id': r['civl_id'], 'nat': r['nat'], 'sex': r['sex'],
+                 'glider': r['glider'], 'glider_cert': r['glider_cert'], 'sponsor': r['sponsor'],
+                 'SSS_time': r['SSS_time'], 'distance': r['distance'], 'time_score': r['time_score'],
+                 'departure_score': r['departure_score'], 'arrival_score': r['arrival_score'],
+                 'distance_score': r['distance_score'], 'score': f"<b>{r['score']}</b>",
+                 'ranks': {'rank': f"<b>{r['rank']}</b>"}}
+        n = r['name']
+        sex = r['sex']
+        pilot['name'] = f'<span class="sex-{sex}">{n}</span>'
+        goal = r['goal_time']
+        pilot['ESS_time'] = r['ESS_time'] if goal else f"<del>{r['ESS_time']}</del>"
+        pilot['speed'] = r['speed'] if goal else f"<del>{r['speed']}</del>"
+        pilot['ss_time'] = r['ss_time'] if goal else f"<del>{r['ss_time']}</del>"
+        pilot['goal_time'] = goal
+        # ab = ''  # alt bonus
+        pilot['penalty'] = "" if r['penalty'] == '0.0' else r['penalty']
+        # setup sub-rankings
+        for i, c in enumerate(result_file['classes'][1:], 1):
+            pilot['ranks']['class' + str(i)] = f"{r[c['limit']]}"
+        all_pilots.append(pilot)
+    result_file['data'] = all_pilots
+    return render_template('public/ext_task_result.html', taskid=taskid, compid=compid, results=result_file)
+
+
 @blueprint.route('/task_result/<int:taskid>')
 def task_result(taskid: int):
     from task import get_task_json
@@ -491,7 +531,7 @@ def ext_comp_result(compid: int):
         return render_template('404.html')
 
     for t in result_file['tasks']:
-        link, code = f"/task_result/{t['id']}", t['task_code']
+        link, code = f"/ext_task_result/{t['id']}", t['task_code']
         t['link'] = f"<a href='{link}' target='_blank'>{code}</a>"
 
     all_pilots = []

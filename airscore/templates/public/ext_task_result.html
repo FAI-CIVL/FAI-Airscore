@@ -14,7 +14,7 @@ Task Result
 {% endblock %}
 
 {% block back %}
-<a href='/competition/{{ compid }}'>Back to Competition</a>
+<a href='/ext_competition/{{ compid }}'>Back to Competition</a>
 {% endblock %}
 
 {% block content %}
@@ -22,6 +22,7 @@ Task Result
   <div class='row mt-1 mb-2'>
     <div class='col comp_header' id='comp_header'>
       <h2 id='comp_name'></h2>
+      <h4 class='mb-2 text-info' id='ext_comp_header'>Imported Event - Not scored in Airscore</h4>
       <h4 id='task_date'></h4>
       <h4 id='status'></h4>
       <select name='dhv' id='dhv' class='form-control col-md-4' placeholder='Class'>

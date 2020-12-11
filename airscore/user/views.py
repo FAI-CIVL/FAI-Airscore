@@ -524,8 +524,7 @@ def task_admin(taskid: int):
 
             for session_task in session['tasks']:
                 if session_task['task_id'] == taskid:
-                    if (task.opt_dist and task.window_open_time and task.window_close_time and task.start_time and
-                            task.start_close_time and task.task_deadline):
+                    if task.ready_to_score:
                         session_task['ready_to_score'] = True
 
             flash("Saved", category='info')
@@ -576,8 +575,7 @@ def task_admin(taskid: int):
         taskform.no_goal_penalty.data = round((task.formula.no_goal_penalty or 0) * 100)
         taskform.arr_alt_bonus.data = task.formula.arr_alt_bonus
 
-        if not (task.opt_dist and task.window_open_time and task.window_close_time and task.start_time and
-                task.start_close_time and task.task_deadline):
+        if not task.ready_to_score:
             flash("Task is not ready to be scored as it is missing one or more of the following: a route with goal, "
                   "window open/close, start/close and deadline times", category='info')
             for session_task in session['tasks']:
@@ -703,19 +701,11 @@ def _get_adv_settings():
 @login_required
 def _get_task_turnpoints(taskid: int):
     task = Task.read(taskid)
-    if (task.opt_dist and task.window_open_time and task.window_close_time
-            and task.start_time and task.start_close_time and task.task_deadline):
-        ready_to_score = True
-    else:
-        ready_to_score = False
     for session_task in session['tasks']:
         if session_task['task_id'] == taskid:
-            if session_task['ready_to_score'] != ready_to_score:
-                session_task['ready_to_score'] = ready_to_score
-                return {'reload': True}
-
-    turnpoints = frontendUtils.get_task_turnpoints(task)
-    return turnpoints
+            if session_task['ready_to_score'] != task.ready_to_score:
+                session_task['ready_to_score'] = task.ready_to_score
+    return frontendUtils.get_task_turnpoints(task)
 
 
 @blueprint.route('/_add_turnpoint/<int:taskid>', methods=['POST'])
@@ -757,10 +747,8 @@ def _add_turnpoint(taskid: int):
             task.calculate_task_length()
             task.update_task_distance()
             write_map_json(taskid)
-        turnpoints = frontendUtils.get_task_turnpoints(task)
-        return turnpoints
-    else:
-        return render_template('500.html')
+        return frontendUtils.get_task_turnpoints(task)
+    return render_template('500.html')
 
 
 @blueprint.route('/_del_turnpoint/<tpid>', methods=['POST'])
@@ -771,9 +759,8 @@ def _del_turnpoint(tpid):
     data = request.json
     taskid = int(data['taskid'])
     delete_turnpoint(tpid)
-    print(f"{data['partial_distance']}")
+    task = Task.read(taskid)
     if data['partial_distance'] != '':
-        task = Task.read(taskid)
         if task.turnpoints[-1].type == 'goal':
             task.calculate_optimised_task_length()
             task.calculate_task_length()
@@ -781,8 +768,7 @@ def _del_turnpoint(tpid):
             write_map_json(taskid)
         else:
             task.delete_task_distance()
-    resp = jsonify(success=True)
-    return resp
+    return frontendUtils.get_task_turnpoints(task)
 
 
 @blueprint.route('/_del_all_turnpoints/<int:taskid>', methods=['POST'])
@@ -833,12 +819,14 @@ def track_admin(taskid: int):
     if not task_ready_to_score:
         return render_template('task_not_ready_to_score.html')
 
+    formats = frontendUtils.get_igc_filename_formats_list()
+
     _, _, all_scorekeeper_ids = frontendUtils.get_comp_scorekeeper(taskid, task_id=True)
     if current_user.id in all_scorekeeper_ids:
         user_is_scorekeeper = True
     else:
         user_is_scorekeeper = None
-    return render_template('users/track_admin.html', taskid=taskid, compid=compid,
+    return render_template('users/track_admin.html', taskid=taskid, compid=compid, filename_formats=formats,
                            user_is_scorekeeper=user_is_scorekeeper, production=frontendUtils.production(),
                            task_name=task_name, task_num=task_num, track_source=track_source, telegram=TELEGRAM)
 
@@ -1096,10 +1084,10 @@ def task_score_admin(taskid: int):
         '''External Event'''
         flash(f"This is an External Event. Settings and Results are Read Only.", category='warning')
     elif not task_ready_to_score:
-        flash(message='Task has not all the parameters nacessary to score. Please complete setup in settings.',
+        flash(message='Task has not all the parameters necessary to score. Please complete setup and save settings.',
               category='warning')
     elif not valid_results:
-        flash(message='Task has no valid results. Scoring is not possible yet.', category='warning')
+        flash(message='Task has no valid tracks. Scoring is not possible yet.', category='warning')
     else:
         score_active = True
 
@@ -1305,8 +1293,7 @@ def region_admin():
             '''airspace file'''
             if airspace_file in ['', None]:
                 airspace_file = None
-            else:
-                airspace_file_data = airspace_file.read().decode('UTF-8')
+                air_filename = None
 
             '''waypoint file'''
             if waypoint_file:  # there should always be a file as it is a required field
@@ -1332,18 +1319,16 @@ def region_admin():
                 if airspace_file:
                     if not Path(AIRSPACEDIR).is_dir():
                         makedirs(AIRSPACEDIR)
-                    # save airspace file
-                    air_filename = unique_filename(airspace_file.filename, AIRSPACEDIR)
-                    fullpath = Path(AIRSPACEDIR, air_filename)
-                    airspace_file.seek(0)
-                    airspace_file.save(fullpath)
-                    # with open(fullpath, 'w') as f:
-                    #     f.write(airspace_file_data)
-                    flash(Markup(f'Open air file added, please check it <a href="'
-                                 f'{url_for("user.airspace_edit", filename=air_filename)}" '
-                                 f'class="alert-link">here</a>'), category='info')
-                else:
-                    air_filename = None
+                    # check airspace file
+                    number, air_filename, modified = frontendUtils.check_openair_file(airspace_file)
+                    if number > 0:
+                        if modified:
+                            flash(f'openair file has been modified as it contains error, check result.', 'warning')
+                        flash(Markup(f'Open air file added, {number} zones imported. Please check it <a href="'
+                                     f'{url_for("user.airspace_edit", filename=air_filename)}" '
+                                     f'class="alert-link">here</a>'), category='info')
+                    else:
+                        flash(f'ERROR importing openair file, check file format is correct and retry.', 'danger')
 
                 # write to DB
                 region = Region(name=new_region.name.data, comp_id=compid, waypoint_file=wpt_filename,
@@ -1510,12 +1495,12 @@ def _modify_participant_details(parid: int):
 @blueprint.route('/_add_participant/<int:compid>', methods=['POST'])
 @login_required
 def _add_participant(compid: int):
-    from pilot.participant import Participant
+    from pilot.participant import Participant, assign_id
     data = request.json
     participant = Participant()
     participant.comp_id = compid
-    if data.get('id_num'):
-        participant.ID = int(data.get('id_num')) if str(data.get('id_num')).isdigit() else None
+    participant.ID = assign_id(compid, given_id=(int(data.get('id_num'))
+                                                 if str(data.get('id_num')).isdigit() else None))
     if data.get('name'):
         participant.name = data.get('name')
     participant.civl_id = int(data.get('CIVL')) if str(data.get('CIVL')).isdigit() else None
@@ -1551,7 +1536,11 @@ def _upload_participants_excel(compid: int):
                 # filename = secure_filename(excel_file.filename)
                 excel_file.save(path.join(tmpdirname, excel_file.filename))
                 pilots = extract_participants_from_excel(compid, path.join(tmpdirname, excel_file.filename))
-                mass_import_participants(compid, pilots)
+
+                # should we delete all participants when uploading a excel list?
+                pilots = frontendUtils.check_participants_ids(compid, pilots)
+
+                mass_import_participants(compid, pilots, check_ids=False)
             resp = jsonify(success=True)
             return resp
         resp = jsonify(success=False)
@@ -1561,8 +1550,9 @@ def _upload_participants_excel(compid: int):
 @blueprint.route('/_upload_participants_fsdb/<int:compid>', methods=['POST'])
 @login_required
 def _upload_participants_fsdb(compid: int):
-    from pilot.participant import mass_import_participants
+    from pilot.participant import unregister_all, mass_import_participants
     import tempfile
+
     if request.method == "POST":
         if request.files:
             fsdb_file = request.files["fsdb_file"]
@@ -1571,7 +1561,8 @@ def _upload_participants_fsdb(compid: int):
                 fsdb_file.save(tmp_file)
                 participants = frontendUtils.import_participants_from_fsdb(tmp_file)
                 if participants:
-                    mass_import_participants(compid, participants)
+                    unregister_all(compid)
+                    mass_import_participants(compid, participants, check_ids=False)
             resp = jsonify(success=True)
             return resp
         resp = jsonify(success=False)

@@ -113,7 +113,7 @@ class Participant(Pilot):
             - from_CIVL:    BOOL: look for pilot on CIVL database"""
         from calcUtils import get_int
 
-        CIVLID = None if not (pil.get('CIVLID')) else get_int(pil.get('CIVLID'))
+        CIVLID = get_int(pil.get('CIVLID'))
         name = pil.get('name')
         # print(CIVLID, name)
         pilot = None
@@ -132,7 +132,7 @@ class Participant(Pilot):
             pilot.sex = 'F' if int(pil.get('female') if pil.get('female') else 0) > 0 else 'M'
             pilot.nat = pil.get('nat_code_3166_a3') or None
         pilot.birthdate = get_date(pil.get('birthday') or None)
-        pilot.ID = int(pil.get('id'))
+        pilot.ID = get_int(pil.get('id'))
         pilot.glider = pil.get('glider') or None
         pilot.sponsor = pil.get('sponsor') or None
         """check fai is int"""
@@ -197,9 +197,6 @@ def extract_participants_from_excel(comp_id: int, filename, from_CIVL=False):
     from openpyxl import load_workbook
     from openpyxl.utils.exceptions import InvalidFileException
 
-    '''create logging and disable output'''
-    # Logger('ON', 'import_participants.txt')
-    print(f"Comp ID: {comp_id} | filename: {filename}")
     '''load excel file'''
     try:
         workbook = load_workbook(filename=filename)
@@ -213,8 +210,10 @@ def extract_participants_from_excel(comp_id: int, filename, from_CIVL=False):
     sheet = workbook.active
     '''check validity'''
     if not (sheet['A1'].value == 'id'):
-        exit()
+        print('excel file does not seem to be the correct template.')
+        return
     pilots = []
+
     for row in sheet.iter_rows(min_row=2, min_col=1, max_col=14, values_only=True):
         if not row[0]:
             'EOF'
@@ -236,21 +235,21 @@ def extract_participants_from_excel(comp_id: int, filename, from_CIVL=False):
         pil.fai_valid = 0 if row[8] is None else 1
         pil.live_id = row[13]
         pilots.append(pil)
-    # ''' now restore stdout function '''
-    # Logger('OFF')
+
     return pilots
 
 
-def register_from_profiles_list(comp_id: int, pilots: list):
+def register_from_profiles_list(comp_id: int, pilots_ids: list):
     """gets comp_id and pil_id list
     registers pilots to comp"""
-    if not (comp_id and pilots):
+    if not (comp_id and pilots_ids):
         print(f"error: comp_id does not exist or pilots list is empty")
         return None
     participants = []
-    for pil_id in pilots:
+    for pil_id in pilots_ids:
         participants.append(Participant.from_profile(pil_id, comp_id))
-    mass_import_participants(comp_id, participants)
+    participants = get_valid_ids(comp_id, participants)
+    mass_import_participants(comp_id, participants, check_ids=False)
     return True
 
 
@@ -298,23 +297,41 @@ def mass_unregister(pilots):
     return True
 
 
-def mass_import_participants(comp_id: int, participants: list, existing_list: list = None):
+def unregister_all(comp_id: int):
+    """gets comp_id
+    unregisters all registered pilots from comp"""
+
+    with db_session() as db:
+        db.query(P).filter_by(comp_id=comp_id).delete(synchronize_session=False)
+    return True
+
+
+def mass_import_participants(comp_id: int, participants: list, check_ids=True):
     """get participants to update from the list
     Before inserting rows without par_id, we need to check if pilot is already in participants
     Will create a list of dicts from database, if not given as parameter"""
-    from compUtils import get_participants
 
     insert_mappings = []
     update_mappings = []
-    if not existing_list:
-        existing_list = [p.as_dict() for p in get_participants(comp_id)]
+    assigned_ids = []
+
+    existing_list = P.get_dicts(comp_id)
     for par in participants:
         r = {**par.as_dict(), 'comp_id': comp_id}
-        if r['par_id']:
+        existing = next((el for el in existing_list if el['par_id'] == r['par_id']), None)
+        if r['par_id'] and existing is not None:
+            if check_ids and r['ID'] != existing['ID']:
+                assigned_id = assign_id(comp_id, r['ID'], participants=existing_list, assigned_ids=assigned_ids)
+                '''keep former ID if existing, and new is different and already taken'''
+                r['ID'] = existing['ID'] or assigned_id
+                existing['ID'] = r['ID']
             update_mappings.append(r)
         else:
             if not any(p for p in existing_list if p['name'] == r['name']):
                 '''pilots seems not to be in database yet'''
+                if check_ids:
+                    r['ID'] = assign_id(comp_id, r['ID'], participants=existing_list, assigned_ids=assigned_ids)
+                    assigned_ids.append(r['ID'])
                 insert_mappings.append(r)
     '''update database'''
     with db_session() as db:
@@ -327,3 +344,37 @@ def mass_import_participants(comp_id: int, participants: list, existing_list: li
             db.bulk_update_mappings(P, update_mappings)
         db.commit()
     return True
+
+
+def assign_id(comp_id: int, given_id: int = None, participants: list = None, assigned_ids: list = None) -> int:
+    """ assigns pilots and ID if not given and if not unique
+        comp_id: comp_id
+        given_id: ID that was given if any
+        participants: list of participants dicts"""
+    from calcUtils import get_int
+
+    if not participants:
+        participants = P.get_dicts(comp_id)
+    assigned_ids = [el['ID'] for el in participants] + (assigned_ids or [])
+    given_id = get_int(given_id)  # returns int or None
+    if not given_id or not (0 < given_id < 99999) or given_id in assigned_ids:
+        given_id = 101
+        while True:
+            if given_id in assigned_ids:
+                given_id += 1
+            else:
+                break
+    return given_id
+
+
+def get_valid_ids(comp_id: int, participants: list) -> list:
+    """ gets a list of pilots and checks their ID validity against registered pilots and correct formats
+        returns a list of pilots with correct IDs"""
+    '''get participants already in competition, to avoid same id'''
+    registered = P.get_dicts(comp_id)
+    assigned_ids = []
+    for p in participants:
+        p.ID = assign_id(comp_id, p.ID, registered, assigned_ids)
+        assigned_ids.append(p.ID)
+    return participants
+

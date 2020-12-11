@@ -64,6 +64,8 @@ def km(dist: float, n: int = 3):
 
 
 def get_int(string):
+    if isinstance(string, (int, float)):
+        return c_round(string)
     try:
         return int(string)
     except ValueError:
@@ -268,3 +270,19 @@ def isa(alt: float):
     considering only altitudes under 11000 meters (troposphere)
     """
     return 1013.25 * (1 - 2.25569e-5 * alt) ** 5.25616
+
+
+def toBase62(b10: int) -> str or None:
+    # modified from Dr. Zhihua Lai's original on GitHub
+    from math import floor
+
+    b = 62
+    base = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    r = b10 % b
+    res = base[r]
+    q = floor(b10 / b)
+    while q:
+        r = q % b
+        q = floor(q / b)
+        res = base[int(r)] + res
+    return res

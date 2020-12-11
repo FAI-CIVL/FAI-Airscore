@@ -7,9 +7,10 @@ Antonio Golfari - 2019
 
 import datetime
 import json
-
 import Defines
+
 from db.conn import db_session
+from pathlib import Path
 
 
 def get_comp(task_id: int):
@@ -127,25 +128,22 @@ def get_task_path(task_id: int):
     """ returns task folder name"""
     from db.tables import TblTask as T
 
-    if type(task_id) is int and task_id > 0:
-        with db_session() as db:
-            return db.query(T.task_path).filter_by(task_id=task_id).limit(1).scalar()
+    if isinstance(task_id, int) and task_id > 0:
+        return T.get_by_id(task_id).task_path
 
 
 def get_comp_path(comp_id: int):
     """ returns comp folder name"""
     from db.tables import TblCompetition as C
 
-    if type(comp_id) is int and comp_id > 0:
-        with db_session() as db:
-            return db.query(C.comp_path).filter_by(comp_id=comp_id).limit(1).scalar()
+    if isinstance(comp_id, int) and comp_id > 0:
+        return C.get_by_id(comp_id).comp_path
 
 
 def create_comp_path(date: datetime.date, code: str):
     """creates comp path from input:
     - comp date
     - comp_code"""
-    from pathlib import Path
 
     return Path(str(date.year), str(code).lower()).as_posix()
 
@@ -249,9 +247,14 @@ def read_rankings(comp_id: int) -> dict:
         return {}
 
 
-def create_comp_code(name: str, date: datetime.date):
+def create_comp_code(name: str, date: datetime.date) -> str:
     """creates comp_code from name and date if nothing was given
-    standard code is 6 chars + 2 numbers"""
+    standard code is 6 chars + 2 numbers, checks that folder does not exist, otherwise adds an index.
+    """
+    from calcUtils import toBase62
+    import random
+    import string
+
     names = [n for n in name.split() if not any(char.isdigit() for char in str(n))]
     if len(names) >= 2:
         string = str(names[0])[0:3] + str(names[1])[0:3]
@@ -260,10 +263,16 @@ def create_comp_code(name: str, date: datetime.date):
     number = date.strftime('%y')
     i = 2
     code = string.upper() + number
-    while not is_shortcode_unique(code, date):
-        code = string.upper() + number + '_' + str(i)
-        i += 1
-    return code
+    while True:
+        if not is_shortcode_unique(code, date):
+            if i < 60:
+                code = string.upper() + number + '_' + toBase62(i)
+                i += 1
+            else:
+                '''generate random 6 char'''
+                code = ''.join(random.choices(string.ascii_uppercase, k=6)) + number
+        else:
+            return code
 
 
 def get_task_filepath(task_id: int):
@@ -316,11 +325,7 @@ def get_fsdb_task_path(task_path):
 
 def is_shortcode_unique(shortcode: str, date: datetime.date):
     """ checks if given shortcode already exists as folder, returns True / False"""
-    from pathlib import Path
 
-    from Defines import TRACKDIR
-
-    # print(Path(TRACKDIR, str(date.year), shortcode))
-    if Path(TRACKDIR, str(date.year), shortcode).is_dir():
+    if Path(Defines.TRACKDIR, str(date.year), shortcode).is_dir():
         return False
     return True
