@@ -36,13 +36,15 @@ def lf_df(task, pil_distance):
         task: Task obj.
         pil_distance: distance flown
     """
-    maxdist = task.max_distance
     diff = task.difficulty
-    lf = 0.5 * pil_distance / maxdist
+    linear_fraction = 0.5 * pil_distance / task.max_distance
     dist10 = int(pil_distance / 100)  # int(dist in Km * 10)
-    df = diff[dist10].diff_score + ((diff[dist10 + 1].diff_score - diff[dist10].diff_score)
-                                    * (pil_distance / 100 - dist10))
-    return lf, df
+    diff_fraction = diff[dist10].diff_score
+    if len(diff) > dist10 + 1:
+        if diff[dist10 + 1].diff_score > diff_fraction:
+            diff_fraction += ((diff[dist10 + 1].diff_score - diff[dist10].diff_score) * (pil_distance / 100 - dist10))
+
+    return linear_fraction, diff_fraction
 
 
 def ft_score(comp_id):
@@ -320,6 +322,15 @@ def difficulty_calculation(task):
         rel_diff: float = 0.0
         diff_score: float = 0.0
 
+    formula = task.formula
+    best_dist_flown = max(task.max_distance, formula.min_dist) / 1000  # Km
+    lo_results = [p for p in task.valid_results if not p.goal_time]
+    if not lo_results:
+        """all pilots are in goal
+        I calculate diff array just for correct min_distance_points calculation"""
+        lo_results.append(FlightResult(name='dummy', distance_flown=formula.min_dist))
+    pilots_lo = len(lo_results)
+
     '''distance spread'''
     min_dist_kmx10 = int(formula.min_dist / 100)  # min_dist (Km) * 10
     distspread = dict()
@@ -352,7 +363,7 @@ def difficulty_calculation(task):
     ''' the difficulty for each 100-meter section of the task is calculated
         by counting the number of pilots who landed further along the task'''
     best_dist_kmx10r = int((best_dist_kmx10 + 10) / 10) * 10
-    look_ahead = max(30, round(30 * best_dist_flown / pilot_lo))
+    look_ahead = max(30, round(30 * best_dist_flown / pilots_lo))
     kmdiff = []
 
     for i in range(best_dist_kmx10r):
