@@ -191,6 +191,10 @@ def ft_score(comp_id):
                                     },
                                     'stillFlying': stats['pilots_launched'] - stats['pilots_landed']
                                     })
+        if not ssTimes:
+            min_ssTime = None
+        else:
+            min_ssTime = min(ssTimes)
 
         validityWorkingTime.append({'gsBestTime': fastest,
                                     'nominalDistance': km(formula['nominal_dist'], 1),
@@ -199,7 +203,7 @@ def ft_score(comp_id):
                                         'extra': km(stats['max_distance']),
                                         'flown': km(max(distances_flown)),
                                     },
-                                    'ssBestTime': h(min(ssTimes))
+                                    'ssBestTime': h(min_ssTime)
                                     })
 
     return {'bestTime': bestTime,
