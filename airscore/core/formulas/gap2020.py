@@ -305,14 +305,15 @@ def pilot_speed(task, res):
         If no goal penalty = 100% (PG): min ss_time if goal
     '''
     if task.formula.no_goal_penalty < 1 or (task.stopped_time and not task.fastest_in_goal):
-        Tmin = task.fastest
+        Tmin = task.fastest / 3600  # decimal hours
     else:
-        Tmin = task.fastest_in_goal or 0
-    Ptime = res.ss_time
+        Tmin = task.fastest_in_goal / 3600 or 0
+    Ptime = res.ss_time / 3600  # decimal hours
     if comp_class == 'HG':
-        SF = max(0, 1 - ((Ptime - Tmin) / 3600 / sqrt(Tmin / 3600)) ** (2 / 3))
+        SF = max(0, 1 - ((Ptime - Tmin) / sqrt(Tmin)) ** (2 / 3))
     else:
-        SF = max(0, 1 - ((Ptime - Tmin) / 3600 / sqrt(Tmin / 3600)) ** (5 / 6))
+        print(f'comp class = {comp_class}, using 5/6')
+        SF = max(0, 1 - ((Ptime - Tmin) / sqrt(Tmin)) ** (5 / 6))
     Pspeed = Aspeed * SF - task.time_points_reduction if SF > 0 else 0
     return Pspeed
 
