@@ -1,6 +1,7 @@
 from obj_factories import TaskFormulaFactory, TaskFactory, CompFactory, TurnpointFactory, PilotFactory, \
     ParticipantFactory, FlightResultFactory, TrackFactory
 from datetime import date
+import random
 
 
 def test_turnpoints():
@@ -117,3 +118,58 @@ def dummy_pilot():
     dummy1.still_flying_at_deadline = False
     dummy1.time_after = 569
     return dummy1
+
+
+def simulate_pilot(task: TaskFactory, result_type: str = 'lo') -> FlightResultFactory:
+    """create a random pilot fligtResult based on task and result type"""
+    if not task:
+        task = test_task()
+
+    ID = random.randint(1, 999)
+    dummy = FlightResultFactory(
+        ID=ID,
+        par_id=random.randint(1, 999),
+        civl_id=random.randint(1, 99999),
+        name=f'Dummy {ID}',
+        nat='NAT', sex='M',
+        glider='Dummy Glider',
+        sponsor='Dummy Sponsor',
+        nat_team=1,
+        track_id=random.randint(1, 99999),
+        track_file=f'trackfile{ID}.igc',
+        first_time=task.window_open_time,
+        real_start_time=0,
+        SSS_time=0,
+        ESS_time=0,
+        goal_time=0,
+        fixed_LC=0,
+        last_altitude=100
+    )
+
+    dummy.result_type = result_type
+    if result_type == 'goal':
+        dummy.real_start_time = task.start_time+random.randint(0, 119)
+        dummy.SSS_time = task.start_time
+        dummy.ESS_time = random.randint(task.start_time+3600, task.task_deadline-300)
+        dummy.goal_time = dummy.ESS_time + 240
+        dummy.last_time = dummy.goal_time
+        dummy.fixed_LC = random.randint(100000, 200000)
+        dummy.distance_flown = task.opt_dist
+    elif result_type == 'lo':
+        dummy.distance_flown = round(random.uniform(500, task.opt_dist - 1), 1)
+        if dummy.distance_flown > task.opt_dist_to_SS:
+            dummy.real_start_time = task.start_time + random.randint(0, 119)
+            dummy.SSS_time = task.start_time
+            dummy.fixed_LC = random.randint(200000, 400000)
+        if dummy.distance_flown > task.opt_dist_to_ESS:
+            dummy.ESS_time = random.randint(task.start_time+3600, task.task_deadline-300)
+        dummy.last_time = random.randint(max(dummy.ESS_time, dummy.real_start_time, dummy.first_time),
+                                         task.task_deadline)
+    else:
+        dummy.distance_flown = round(random.uniform(500, task.formula.min_dist - 1), 1)
+        dummy.last_time = random.randint(dummy.first_time+100, task.task_deadline)
+        dummy.result_type = 'lo'
+    dummy.max_altitude = random.randint(1000, 2453)
+    dummy.landing_time = dummy.last_time
+
+    return dummy
