@@ -302,7 +302,7 @@ def comp_settings_admin(compid: int):
         else:
             for item in compform:
                 if item.errors:
-                    flash(f"{item.label.text}: {', '.join(x for x in item.errors)}", category='danger')
+                    flash(f"{item.label.text} ({item.data}): {', '.join(x for x in item.errors)}", category='danger')
                     return redirect(url_for('user.comp_settings_admin', compid=compid))
 
     if request.method == 'GET':
@@ -534,7 +534,7 @@ def task_admin(taskid: int):
         else:
             for item in taskform:
                 if item.errors:
-                    flash(f"{item.label.text} ({item.data}, {type(item.data)}): {', '.join(x for x in item.errors)}", category='danger')
+                    flash(f"{item.label.text} ({item.data}): {', '.join(x for x in item.errors)}", category='danger')
 
     if request.method == 'GET':
         offset = task.time_offset if task.time_offset else 0
