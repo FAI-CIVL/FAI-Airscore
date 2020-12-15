@@ -1283,17 +1283,18 @@ def region_admin():
     compid = session.get('compid')
     regions, _ = get_region_choices(compid)
     region_select.region.choices = regions
+    air_filename = None
 
     if request.method == "POST":
         if request.files:
             if not Path(WAYPOINTDIR).is_dir():
                 makedirs(WAYPOINTDIR)
             waypoint_file = request.files["waypoint_file"]
-            airspace_file = request.files["openair_file"]
             '''airspace file'''
-            if airspace_file in ['', None]:
+            if request.files["openair_file"].filename:
+                airspace_file = request.files["openair_file"]
+            else:
                 airspace_file = None
-                air_filename = None
 
             '''waypoint file'''
             if waypoint_file:  # there should always be a file as it is a required field
@@ -1310,6 +1311,7 @@ def region_admin():
                     flash("Waypoint file format not supported or file is not a waypoint file", category='danger')
                     return render_template('users/region_admin.html', region_select=region_select,
                                            new_region_form=new_region)
+
                 '''save file'''
                 wpt_filename = unique_filename(waypoint_file.filename, WAYPOINTDIR)
                 fullpath = Path(WAYPOINTDIR, wpt_filename)
@@ -1319,7 +1321,7 @@ def region_admin():
                 if airspace_file:
                     if not Path(AIRSPACEDIR).is_dir():
                         makedirs(AIRSPACEDIR)
-                    # check airspace file
+                    '''check airspace file'''
                     number, air_filename, modified = frontendUtils.check_openair_file(airspace_file)
                     if number > 0:
                         if modified:
@@ -1330,7 +1332,7 @@ def region_admin():
                     else:
                         flash(f'ERROR importing openair file, check file format is correct and retry.', 'danger')
 
-                # write to DB
+                '''write to DB'''
                 region = Region(name=new_region.name.data, comp_id=compid, waypoint_file=wpt_filename,
                                 openair_file=air_filename, turnpoints=wpts)
                 region.to_db()
