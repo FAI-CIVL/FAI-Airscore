@@ -82,7 +82,7 @@ def get_comp_json_filename(comp_id: int, latest: bool = False, overview: bool = 
         if latest:
             filename = results.order_by(R.ref_id.desc()).limit(1).scalar()
         elif overview:
-            filename = next(row for row in results if 'Overview' in row.filename).filename
+            filename = results.filter(R.filename.like('%Overview%')).limit(1).scalar()
         else:
             filename = results.filter_by(active=1).scalar()
         return filename
