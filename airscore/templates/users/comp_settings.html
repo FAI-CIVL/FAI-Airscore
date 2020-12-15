@@ -287,23 +287,23 @@ Competition Settings
   <div class='modal-dialog'>
     <div class='modal-content'>
       <div class='modal-header'>
-        <button type='button' class='close' data-dismiss='modal' aria-hidden='true'>×</button>
         <h4 class='modal-title'>Add Task</h4>
       </div>
       <div class='modal-body'>
-        <section class="tab-row row-wrap form">
+        <section class="panel-row row-wrap form">
             {{ render_field(taskform.task_number, 2, tooltip=True) }}
             {{ render_field(taskform.task_date) }}
             {{ render_field(taskform.task_region) }}
         </section>
-        <section class="tab-row row-wrap form">
+        <section class="panel-row row-wrap form">
             {{ render_field(taskform.task_name, 10, tooltip=True) }}
             {{ render_field(taskform.task_comment, 20, tooltip=True) }}
         </section>
-        <section class="tab-row row-wrap button">
-          <button id='save_task_button' class='btn btn-success' type='button' onclick='save_task()'>Add Task</button>
-          <p id='add_task_spinner'></p>
-        </section>
+       </div>
+      <div class='modal-footer'>
+        <p id='add_task_spinner'></p>
+        <button type='button' class='btn btn-danger' data-dismiss='modal'>Cancel</button>
+        <button id='save_task_button' class='btn btn-success' type='button' onclick='save_task()'>Add Task</button>
       </div>
     </div>
   </div>
@@ -315,7 +315,6 @@ Competition Settings
   <div class='modal-dialog'>
     <div class='modal-content'>
       <div class='modal-header'>
-        <button type='button' class='close' data-dismiss='modal' aria-hidden='true'>×</button>
         <h4 class='modal-title'>Please confirm</h4>
       </div>
       <div class='modal-body' id='modal-body'>
