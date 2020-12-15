@@ -1,7 +1,37 @@
-import factory_objects
+import obj_factories
+import json
+from pathlib import Path
 
 
-def simulate_difficulty_calc(task: factory_objects.test_task(), res: list) -> list:
+def create_test_task(data: dict) -> obj_factories.TaskFactory:
+    task = obj_factories.TaskFactory()
+    task.as_dict().update(data.get('info'))
+    formula = obj_factories.TaskFormulaFactory(task_id=1)
+    formula.as_dict().update(data.get('formula'))
+    task.formula = formula
+    return task
+
+
+def create_test_pilots(data: dict) -> list:
+    res = data.get('results')
+    pilots = []
+    for r in res:
+        pilot = obj_factories.FlightResultFactory()
+        pilot.as_dict().update(r)
+        pilots.append(pilot)
+    return pilots
+
+
+def read_test_results() -> tuple:
+    file = Path('/app/tests/data/test_results.json')
+    with open(file, 'r') as f:
+        content = json.load(f)
+    task = create_test_task(content)
+    pilots = create_test_pilots(content)
+    return task, pilots
+
+
+def simulate_difficulty_calc(task: obj_factories.TaskFactory, res: list) -> list:
     lib = task.formula.get_lib()
     task.pilots = res
     return lib.difficulty_calculation(task)
@@ -9,54 +39,50 @@ def simulate_difficulty_calc(task: factory_objects.test_task(), res: list) -> li
 
 def test_diff_calc():
     """testing Difficulty Calculation Routine"""
-    test_task = factory_objects.test_task()
-    test_task.formula.formula_name = 'GAP2020'
-    test_task.formula.formula_type = 'gap'
-    test_task.formula.formula_version = 2020
+    test_task, pilots = read_test_results()
 
     '''no pilots'''
-    pilots = []
-    diff = simulate_difficulty_calc(test_task, pilots)
+    empty = []
+    diff = simulate_difficulty_calc(test_task, empty)
     kmx10 = int(test_task.formula.min_dist/100)
     kmx10r = int((kmx10 + 10) / 10) * 10
     assert len(diff) == kmx10r
     assert diff[kmx10 + 1].diff_score == 0.5
 
     '''one pilot in goal, no pilot landed out'''
-    pilots.append(factory_objects.simulate_pilot(test_task, 'goal'))
-    diff = simulate_difficulty_calc(test_task, pilots)
+    one_in_goal = [pilots[0]]
+    print(f'one in goal pilots: {len(one_in_goal)}')
+    diff = simulate_difficulty_calc(test_task, one_in_goal)
     assert len(diff) == kmx10r
     assert diff[kmx10 + 1].diff_score == 0.5
 
-    '''random pilots distribution, one pilot in goal'''
-    for i in range(50):
-        pilots.append(factory_objects.simulate_pilot(test_task, 'lo'))
+    '''all pilots'''
+    print(f'all pilots: {len(pilots)}')
     diff = simulate_difficulty_calc(test_task, pilots)
-    best_dist_lo = max(max([p.distance for p in pilots if p.goal_time == 0], default=0), test_task.formula.min_dist)
+    lo_pilots = [p for p in pilots if p.result_type == 'lo']
+    best_dist_lo = max(max([p.distance for p in lo_pilots], default=0), test_task.formula.min_dist)
     kmx10 = int(best_dist_lo / 100)
     kmx10r = int((kmx10 + 10) / 10) * 10
     assert len(diff) == kmx10r
     assert diff[kmx10 + 1].diff_score == 0.5
     assert diff[kmx10 - 1].diff_score < 0.5
 
-    '''random pilots distribution, no pilots in goal'''
-    pilots = []
-    for i in range(50):
-        pilots.append(factory_objects.simulate_pilot(test_task, 'lo'))
-    diff = simulate_difficulty_calc(test_task, pilots)
-    best_dist_lo = max(max([p.distance for p in pilots if p.goal_time == 0], default=0), test_task.formula.min_dist)
+    '''only pilots not in goal'''
+    not_in_goal = [p for p in pilots if not p.result_type == 'goal']
+    print(f'only not in goal pilots: {len(not_in_goal)}')
+    diff = simulate_difficulty_calc(test_task, not_in_goal)
+    best_dist_lo = max(max([p.distance for p in not_in_goal], default=0), test_task.formula.min_dist)
     kmx10 = int(best_dist_lo / 100)
     kmx10r = int((kmx10 + 10) / 10) * 10
     assert len(diff) == kmx10r
     assert diff[kmx10 + 1].diff_score == 0.5
     assert diff[kmx10 - 1].diff_score < 0.5
 
-    '''random pilots distribution, max distance shorter than min_dist'''
-    pilots = []
-    for i in range(50):
-        pilots.append(factory_objects.simulate_pilot(test_task, 'min_dist'))
-    diff = simulate_difficulty_calc(test_task, pilots)
-    best_dist_lo = max(max([p.distance for p in pilots if p.goal_time == 0], default=0), test_task.formula.min_dist)
+    '''max distance shorter than min_dist'''
+    short = [p for p in pilots if 0 < p.distance < test_task.formula.min_dist]
+    print(f'only min dist pilots: {len(short)}')
+    diff = simulate_difficulty_calc(test_task, short)
+    best_dist_lo = max(max([p.distance for p in short], default=0), test_task.formula.min_dist)
     kmx10 = int(best_dist_lo / 100)
     kmx10r = int((kmx10 + 10) / 10) * 10
     assert len(diff) == kmx10r
