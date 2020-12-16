@@ -706,7 +706,7 @@ def process_igc(task_id: int, par_id: int, tracklog):
             # trackid = data['track_id']
             parid = data['par_id']
             result = data['Result']
-            data['Result'] = f'<a href="/map/{parid}-{task.task_id}">{result}</a>'
+            data['Result'] = f'<a href="/map/{parid}-{task.task_id}?back_link=0" target="_blank">{result}</a>'
     return data, None
 
 
@@ -808,7 +808,7 @@ def process_igc_background(task_id: int, par_id: int, file: Path, user: str, che
             # trackid = data['track_id']
             parid = data['par_id']
             result = data['Result']
-            data['Result'] = f'<a href="/map/{parid}-{task.task_id}">{result}</a>'
+            data['Result'] = f'<a href="/map/{parid}-{task.task_id}?back_link=0" target="_blank">{result}</a>'
         print(data['Result'])
         print(json.dumps(data) + '|result')
         print('***************END****************')
