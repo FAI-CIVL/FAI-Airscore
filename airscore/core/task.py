@@ -387,6 +387,22 @@ class Task(object):
     def valid_results(self):
         return [pilot for pilot in self.pilots if pilot.result_type not in ('abs', 'dnf', 'nyp')]
 
+    @property
+    def results_with_SSS_time(self):
+        return [pilot for pilot in self.valid_results if pilot.SSS_time and pilot.SSS_time > 0]
+
+    @property
+    def results_with_ESS_time(self):
+        return [pilot for pilot in self.valid_results if pilot.ESS_time and pilot.ESS_time > 0]
+
+    @property
+    def results_in_goal(self):
+        return [pilot for pilot in self.valid_results if pilot.goal_time and pilot.goal_time > 0]
+
+    @property
+    def results_landed_out(self):
+        return [pilot for pilot in self.valid_results if not pilot.result_type == 'goal']
+
     ''' pilots stats'''
 
     @property
@@ -399,15 +415,19 @@ class Task(object):
 
     @property
     def pilots_ss(self):
-        return len([p for p in self.valid_results if p.SSS_time])
+        return len(self.results_with_SSS_time)
 
     @property
     def pilots_ess(self):
-        return len([p for p in self.valid_results if p.ESS_time])
+        return len(self.results_with_ESS_time)
 
     @property
     def pilots_goal(self):
-        return len([p for p in self.valid_results if p.goal_time])
+        return len(self.results_in_goal)
+
+    @property
+    def pilots_lo(self):
+        return len(self.results_landed_out)
 
     # pilots already landed at task deadline / stop time
     @property
@@ -432,92 +452,62 @@ class Task(object):
 
     @property
     def std_dev_dist(self):
-        if self.formula:
-            from statistics import stdev
-
-            if self.formula.min_dist and self.pilots_launched > 0:
-                return stdev([max(p.distance_flown, self.formula.min_dist) for p in self.valid_results])
-        return 0
+        from statistics import stdev, StatisticsError
+        try:
+            return stdev([max(p.distance_flown, self.formula.min_dist) for p in self.valid_results])
+        except (StatisticsError, IndexError, AttributeError, Exception):
+            return 0
 
     @property
     def max_distance_flown(self):
         if self.formula:
-            if self.formula.min_dist and self.pilots_launched > 0:
-                return max(max(p.distance_flown for p in self.valid_results), self.formula.min_dist)
+            return max(max((p.distance_flown for p in self.valid_results), default=0), self.formula.min_dist or 0)
         return 0
 
     @property
     def max_distance(self):
         if self.formula:
-            if self.formula.min_dist and self.pilots_launched > 0:
-                # FlightResult.distance = max(distance_flown, total_distance)
-                return max(max(p.distance for p in self.valid_results), self.formula.min_dist)
+            # FlightResult.distance = max(distance_flown, total_distance)
+            return max(max((p.distance for p in self.valid_results), default=0), self.formula.min_dist or 0)
         return 0
 
     '''time stats'''
 
     @property
     def min_dept_time(self):
-        if self.pilots_ss:
-            return min(p.real_start_time for p in self.valid_results if p.real_start_time and p.real_start_time > 0)
-        else:
-            return None
+        return min((p.real_start_time for p in self.results_with_SSS_time), default=None)
 
     @property
     def max_dept_time(self):
-        if self.pilots_ss:
-            return max(p.real_start_time for p in self.valid_results if p.real_start_time and p.real_start_time > 0)
-        else:
-            return None
+        return max((p.real_start_time for p in self.results_with_SSS_time), default=None)
 
     @property
     def min_ss_time(self):
-        if self.pilots_ss:
-            return min(p.SSS_time for p in self.valid_results if p.SSS_time and p.SSS_time > 0)
-        else:
-            return None
+        return min((p.SSS_time for p in self.results_with_SSS_time), default=None)
 
     @property
     def max_ss_time(self):
-        if self.pilots_ss:
-            return max(p.SSS_time for p in self.valid_results if p.SSS_time and p.SSS_time > 0)
-        else:
-            return None
+        return max((p.SSS_time for p in self.results_with_SSS_time), default=None)
 
     @property
     def min_ess_time(self):
-        if self.pilots_ess:
-            return min(p.ESS_time for p in self.valid_results if p.ESS_time and p.ESS_time > 0)
-        else:
-            return None
+        return min((p.ESS_time for p in self.results_with_ESS_time), default=None)
 
     @property
     def max_ess_time(self):
-        if self.pilots_ess:
-            return max(p.ESS_time for p in self.valid_results if p.ESS_time and p.ESS_time > 0)
-        else:
-            return None
+        return max((p.ESS_time for p in self.results_with_ESS_time), default=None)
 
     @property
     def min_goal_time(self):
-        if self.pilots_goal:
-            return min(p.goal_time for p in self.valid_results if p.goal_time and p.goal_time > 0)
-        else:
-            return None
+        return min((p.goal_time for p in self.results_in_goal), default=None)
 
     @property
     def fastest(self):
-        if self.pilots_ess:
-            return min(p.ss_time for p in self.valid_results if p.ESS_time and p.ESS_time > 0)
-        else:
-            return None
+        return min((p.ss_time for p in self.results_with_ESS_time), default=None)
 
     @property
     def fastest_in_goal(self):
-        if self.pilots_goal:
-            return min(p.ss_time for p in self.valid_results if p.goal_time and p.goal_time > 0)
-        else:
-            return None
+        return min((p.ss_time for p in self.results_in_goal), default=None)
 
     @property
     def last_landing_time(self):
@@ -553,17 +543,11 @@ class Task(object):
 
     @property
     def min_lead_coeff(self):
-        if len([p for p in self.valid_results if p.lead_coeff]) > 0:
-            return min(p.lead_coeff for p in self.valid_results if p.lead_coeff is not None and p.lead_coeff > 0)
-        else:
-            return None
+        return min((p.lead_coeff for p in self.results_with_SSS_time), default=None)
 
     @property
     def max_score(self):
-        if len([p for p in self.valid_results if p.score]) > 0:
-            return max(p.score for p in self.valid_results if p.score)
-        else:
-            return None
+        return max((p.score for p in self.valid_results if p.score is not None), default=None)
 
     @staticmethod
     def read(task_id: int):
