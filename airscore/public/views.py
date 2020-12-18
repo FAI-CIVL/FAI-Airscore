@@ -9,7 +9,8 @@ from flask import (
     request,
     url_for,
     send_file,
-    session
+    session,
+    jsonify
 )
 from flask_login import login_required, login_user, logout_user, current_user
 from airscore.extensions import login_manager
@@ -903,3 +904,80 @@ def _get_tracks_status(taskid: int):
     offset = 0 if 'offset' not in request.args else request.args.get('offset')
     timestamp = (epoch_to_datetime(timestamp, offset=offset)).strftime('%H:%M:%S')
     return {'data': frontendUtils.get_pilot_list_for_tracks_status(taskid), 'timestamp': timestamp}
+
+
+@blueprint.route('/flaretiming_yaml/<compid>/norm-score', methods=['GET'])
+def _norm_score_yaml(compid):
+    from flaretiming import ft_score
+    from ruamel import yaml
+    import io
+    yaml = yaml.YAML()
+    yaml.representer.ignore_aliases = lambda *data: True
+    buf = io.BytesIO()
+    yaml.dump(ft_score(int(compid)), buf)
+    buf.seek(0)
+    return send_file(buf, as_attachment=True, mimetype="text/plain", attachment_filename='norm-score.yaml')
+
+
+@blueprint.route('/flaretiming/<compid>/norm-score', methods=['GET'])
+def _norm_score(compid):
+    from flaretiming import ft_score
+    return ft_score(int(compid))
+
+
+@blueprint.route('/flaretiming_yaml/<compid>/norm-route', methods=['GET'])
+def _norm_route_yaml(compid):
+    from flaretiming import ft_route
+    from ruamel import yaml
+    import io
+    yaml = yaml.YAML()
+    yaml.representer.ignore_aliases = lambda *data: True
+    buf = io.BytesIO()
+    yaml.dump(ft_route(int(compid)), buf)
+    buf.seek(0)
+    return send_file(buf, as_attachment=True, mimetype="text/plain", attachment_filename='norm-route.yaml')
+
+
+@blueprint.route('/flaretiming/<compid>/norm-route', methods=['GET'])
+def _norm_route(compid):
+    from flaretiming import ft_route
+    return jsonify(ft_route(int(compid)))
+
+
+@blueprint.route('/flaretiming_yaml/<compid>/norm-arrival', methods=['GET'])
+def _norm_arrival_yaml(compid):
+    from flaretiming import ft_arrival
+    from ruamel import yaml
+    import io
+    yaml = yaml.YAML()
+    yaml.representer.ignore_aliases = lambda *data: True
+    buf = io.BytesIO()
+    yaml.dump(ft_arrival(int(compid)), buf)
+    buf.seek(0)
+    return send_file(buf, as_attachment=True, mimetype="text/plain", attachment_filename='norm-arrival.yaml')
+
+
+@blueprint.route('/flaretiming/<compid>/norm-arrival', methods=['GET'])
+def _norm_arrival(compid):
+    from flaretiming import ft_arrival
+    return jsonify(ft_arrival(int(compid)))
+
+
+@blueprint.route('/flaretiming_yaml/<compid>/norm-landout', methods=['GET'])
+def _norm_landout_yaml(compid):
+    from flaretiming import ft_landout
+    from ruamel import yaml
+    import io
+    yaml = yaml.YAML()
+    yaml.representer.ignore_aliases = lambda *data: True
+    buf = io.BytesIO()
+    yaml.dump(ft_landout(int(compid)), buf)
+    buf.seek(0)
+    return send_file(buf, as_attachment=True, mimetype="text/plain", attachment_filename='norm-landout.yaml')
+
+
+@blueprint.route('/flaretiming/<compid>/norm-landout', methods=['GET'])
+def _norm_landout(compid):
+    from flaretiming import ft_landout
+    return jsonify(ft_landout(int(compid)))
+
