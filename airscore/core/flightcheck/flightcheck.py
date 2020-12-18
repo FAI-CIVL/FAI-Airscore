@@ -395,7 +395,7 @@ def pilot_can_restart(task: Task, tp: FlightPointer, fix, result: FlightResult) 
     '''
     max_jump_the_gun = task.formula.max_JTG or 0
     if tp.last_made.type == "speed" and (not task.start_close_time or fix.rawtime < task.start_close_time):
-        if task.task_type == 'ELAPSED TIME':
+        if task.task_type == 'elapsed time':
             return True
         elif max_jump_the_gun > 0 and result.real_start_time < task.start_time:
             return True
@@ -439,11 +439,11 @@ def evaluate_start(result: FlightResult, task: Task, tp: FlightPointer):
         SS Time: the gate time"""
         result.SSS_time = task.start_time
 
-        if task.task_type == 'RACE' and task.SS_interval:
+        if task.task_type.lower() == 'race' and task.SS_interval:
             result.SSS_time += max(0, (start_number_at_time(task, result.real_start_time) - 1) * task.SS_interval)
 
-        elif task.task_type == 'ELAPSED TIME':
-            result.SSS_time = result.real_start_time
+        elif task.task_type == 'elapsed time':
+            result.SSS_time = max(result.real_start_time, task.start_time)  # jtg in elapsed time
 
         '''manage jump the gun'''
         if max_jump_the_gun > 0 and result.real_start_time < result.SSS_time:

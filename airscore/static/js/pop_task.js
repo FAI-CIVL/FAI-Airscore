@@ -19,7 +19,7 @@ function populate_task(json){
     columns.push({data: 'glider_cert', title:'Class', defaultContent: '', visible: false});
     columns.push({data: 'sponsor', title:'Sponsor', defaultContent: ''});
     //hide SS ES for Race
-    if(json.info.task_type=='RACE' && json.info.SS_interval==0){
+    if(json.info.task_type=='race' && json.info.SS_interval==0){
         columns.push({data: 'SSS_time', title:'SS', defaultContent: '', visible: false});
         columns.push({data: 'ESS_time', title:'ES', defaultContent: '', visible: false});
     }
