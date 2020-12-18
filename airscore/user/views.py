@@ -344,7 +344,7 @@ def comp_settings_admin(compid: int):
         compform.formula_distance.data = formula.formula_distance
         compform.formula_arrival.data = formula.formula_arrival
         compform.formula_departure.data = formula.formula_departure
-        compform.lead_factor.data = formula.lead_factor or 1
+        compform.lead_factor.data = 1 if formula.lead_factor is None else formula.lead_factor
         compform.formula_time.data = formula.formula_time
         compform.no_goal_penalty.data = int(formula.no_goal_penalty * 100)
         compform.glide_bonus.data = formula.glide_bonus
