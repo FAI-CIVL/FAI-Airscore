@@ -355,7 +355,7 @@ class Task(object):
 
     @property
     def total_start_number(self):
-        if self.task_type == 'RACE' and self.SS_interval:
+        if self.task_type.lower() == 'race' and self.SS_interval:
             if self.start_iteration:
                 return self.start_iteration + 1
             else:
@@ -763,7 +763,7 @@ class Task(object):
             print(f'We are executing Stopped Task Routine')
             if self.comp_class == 'PG':
                 """
-                If (class == 'PG' and (SS_Interval or type == 'ELAPSED TIME')
+                If (class == 'PG' and (SS_Interval or type == 'elapsed time')
                     We cannot check tracks just once.
                     We need to find last_SS_time and then check again tracks until duration == stopTime - last_SS_time
 
@@ -958,9 +958,9 @@ class Task(object):
             self.start_close_time = self.start_time + 3600
 
         if taskfile_data['sss']['type'] == 'ELAPSED-TIME':
-            self.task_type = 'ELAPSED TIME'
+            self.task_type = 'elapsed time'
         else:
-            self.task_type = 'RACE'
+            self.task_type = 'race'
             '''manage multi start'''
             self.SS_interval = 0
             if len(taskfile_data['sss']['timeGates']) > 1:
@@ -1037,7 +1037,7 @@ class Task(object):
 
         startopenzulu = t['sss']['timeGates'][0]
         deadlinezulu = t['goal']['deadline']
-        task_type = 'RACE' if t['sss']['type'] == 'RACE' else 'ELAPSED TIME'
+        task_type = 'race' if t['sss']['type'].lower() == 'race' else 'elapsed time'
 
         startzulu_split = startopenzulu.split(":")  # separate hours, minutes and seconds.
         deadlinezulu_split = deadlinezulu.split(":")  # separate hours, minutes and seconds.
