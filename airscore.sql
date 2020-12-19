@@ -462,7 +462,7 @@ CREATE TABLE `tblForComp` (
   `formula_distance` enum('on','difficulty','off') NOT NULL DEFAULT 'on',
   `formula_arrival` enum('position','time','off') NOT NULL DEFAULT 'off',
   `formula_departure` enum('leadout','departure','off') NOT NULL DEFAULT 'leadout',
-  `lead_factor` float(4,2) DEFAULT NULL,
+  `lead_factor` float(4,2) NOT NULL DEFAULT '1.00',
   `formula_time` enum('on','off') NOT NULL DEFAULT 'on',
   `no_goal_penalty` float(4,3) NOT NULL DEFAULT '1.000',
   `glide_bonus` float(4,2) NOT NULL DEFAULT '4.00',

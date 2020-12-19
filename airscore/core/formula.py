@@ -120,7 +120,7 @@ class Formula(object):
         formula_distance=None,
         formula_arrival=None,
         formula_departure=None,
-        lead_factor=None,
+        lead_factor=1.0,
         formula_time=None,
         no_goal_penalty=None,
         glide_bonus=None,
@@ -468,9 +468,9 @@ def get_fsdb_info(formula, form):
     formula.formula_time = 'on' if form.get('use_time_points') == '1' else 'off'
     # leading points factor: probably needs to be linked to GAP version
     formula.lead_factor = (
-        None
-        if form.get('use_leading_points') == '0'
-        else float(form.get('leading_weight_factor') if form.get('leading_weight_factor') else 1)
+        1
+        if form.get('use_leading_points') == '0' or not form.get('leading_weight_factor')
+        else float(form.get('leading_weight_factor'))
     )
     '''tolerance'''
     formula.tolerance = 0.0 + float(

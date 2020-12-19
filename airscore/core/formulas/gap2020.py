@@ -43,7 +43,7 @@ pg_preset = FormulaPreset(
     # Departure Points: on, leadout, off
     formula_departure=Preset(value='leadout', visible=True, editable=False),
     # Lead Factor: factor for Leadou Points calculation formula
-    lead_factor=Preset(value=None, visible=False, editable=False),
+    lead_factor=Preset(value=1.0, visible=False, editable=False),
     # Squared Distances used for LeadCoeff: factor for Leadou Points calculation formula
     # lead_squared_distance=Preset(value=True, visible=True, editable=True),
     # Time Points: on, off
