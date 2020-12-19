@@ -170,7 +170,7 @@ class LiveTracking(object):
         elif not self.properly_set:
             main = "Livetracking source is not set properly."
         else:
-            task_type = 'Race to Goal' if self.task.task_type.lower() == 'race' else self.task.task_type.title()
+            task_type = 'Race to Goal' if self.task.task_type == 'race' else self.task.task_type.title()
             main = f"Task Set: {round(self.task.opt_dist / 1000, 1)} Km {task_type}."
             if not self.task.start_time:
                 details = 'Times are not set yet.'

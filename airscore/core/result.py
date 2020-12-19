@@ -262,7 +262,7 @@ class TaskResult:
 
             '''HTML headings'''
             dist = res['info']['opt_dist']
-            task_type = f"{res['info']['task_type']} {dist}"
+            task_type = f"{res['info']['task_type'].title()} {dist}"
             headings = [class_name, task_name, res['info']['date'], task_type, res['file_stats']['status']]
 
             if idx > 0:

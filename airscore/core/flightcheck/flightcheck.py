@@ -439,7 +439,7 @@ def evaluate_start(result: FlightResult, task: Task, tp: FlightPointer):
         SS Time: the gate time"""
         result.SSS_time = task.start_time
 
-        if task.task_type.lower() == 'race' and task.SS_interval:
+        if task.task_type == 'race' and task.SS_interval:
             result.SSS_time += max(0, (start_number_at_time(task, result.real_start_time) - 1) * task.SS_interval)
 
         elif task.task_type == 'elapsed time':

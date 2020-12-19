@@ -171,6 +171,8 @@ class Task(object):
                 value = get_date(value)
             elif isinstance(value, datetime.datetime):
                 value = value.date()
+        elif attr == 'task_type' and isinstance(value, str):
+            value = value.lower()
         if attr not in property_names:
             self.__dict__[attr] = value
             if attr == 'task_id' and hasattr(self, 'formula') and isinstance(self.formula, TaskFormula):
@@ -355,7 +357,7 @@ class Task(object):
 
     @property
     def total_start_number(self):
-        if self.task_type.lower() == 'race' and self.SS_interval:
+        if self.task_type == 'race' and self.SS_interval:
             if self.start_iteration:
                 return self.start_iteration + 1
             else:
