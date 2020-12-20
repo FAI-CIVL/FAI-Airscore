@@ -137,7 +137,7 @@ class Formula(object):
         score_back_time=None,
         overall_validity='all',
         validity_param=1,
-        validity_ref='day_quality',
+        validity_ref='max_score',
         task_result_decimal=0,
         comp_result_decimal=0,
     ):

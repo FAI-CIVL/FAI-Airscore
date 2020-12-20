@@ -445,7 +445,7 @@ CREATE TABLE `tblForComp` (
   `formula_name` varchar(20) DEFAULT NULL,
   `overall_validity` enum('ftv','all','round') NOT NULL DEFAULT 'ftv',
   `validity_param` float(4,3) NOT NULL DEFAULT '0.750',
-  `validity_ref` enum('day_quality','max_score') DEFAULT 'day_quality',
+  `validity_ref` enum('day_quality','max_score') DEFAULT 'max_score',
   `nominal_goal` float(3,2) NOT NULL DEFAULT '0.30',
   `min_dist` mediumint(9) NOT NULL DEFAULT '5000',
   `nominal_dist` mediumint(9) NOT NULL DEFAULT '45000',
