@@ -113,7 +113,7 @@ class Participant(Pilot):
             - from_CIVL:    BOOL: look for pilot on CIVL database"""
         from calcUtils import get_int
 
-        CIVLID = get_int(pil.get('CIVLID'))
+        CIVLID = get_int(pil.get('CIVLID')) or None
         name = pil.get('name')
         # print(CIVLID, name)
         pilot = None
@@ -356,7 +356,7 @@ def assign_id(comp_id: int, given_id: int = None, participants: list = None, ass
     if not participants:
         participants = P.get_dicts(comp_id)
     assigned_ids = [el['ID'] for el in participants] + (assigned_ids or [])
-    given_id = get_int(given_id)  # returns int or None
+    given_id = get_int(given_id) or None  # returns int or None
     if not given_id or not (0 < given_id < 99999) or given_id in assigned_ids:
         given_id = 101
         while True:

@@ -15,7 +15,7 @@ from datetime import datetime
 from pathlib import Path
 
 import lxml.etree as ET
-from calcUtils import c_round, get_isotime, km, sec_to_time
+from calcUtils import c_round, get_isotime, km, sec_to_time, get_int
 from comp import Comp
 from compUtils import is_ext
 from db.conn import db_session
@@ -191,7 +191,7 @@ class FSDB(object):
             'nom_launch': formula.nominal_launch,
             'nom_goal': formula.nominal_goal,
             'day_quality_override': 0,  # still to implement
-            'bonus_gr': int(formula.glide_bonus or 0) or '',
+            'bonus_gr': get_int(formula.glide_bonus) or '',
             'jump_the_gun_factor': (0 if formula.max_JTG == 0 else c_round(1 / formula.JTG_penalty_per_sec, 1)),
             'jump_the_gun_max': formula.max_JTG,
             'normalize_1000_before_day_quality': 0,  # still to implement
@@ -447,7 +447,7 @@ class FSDB(object):
                                 'finished_ss': ''
                                 if not pil.ESS_time
                                 else get_isotime(t.date, pil.ESS_time, t.time_offset),
-                                'altitude_at_ess': int(pil.ESS_altitude or 0),
+                                'altitude_at_ess': get_int(pil.ESS_altitude),
                                 'finished_task': ''
                                 if not pil.goal_time
                                 else get_isotime(t.date, pil.goal_time, t.time_offset),
@@ -455,13 +455,13 @@ class FSDB(object):
                                 'lc': pil.lead_coeff,
                                 'iv': pil.fixed_LC or '',
                                 'ts': get_isotime(t.date, pil.first_time, t.time_offset),
-                                'alt': int(pil.last_altitude or 0),  # ??
+                                'alt': get_int(pil.last_altitude),  # ??
                                 'bonus_alt': '',  # ?? not implemented
-                                'max_alt': int(pil.max_altitude or 0),
+                                'max_alt': get_int(pil.max_altitude),
                                 'last_tracklog_point_distance': '',  # not implemented yet
                                 'bonus_last_tracklog_point_distance': '',  # ?? not implemented
                                 'last_tracklog_point_time': get_isotime(t.date, pil.landing_time, t.time_offset),
-                                'last_tracklog_point_alt': int(pil.landing_altitude or 0),
+                                'last_tracklog_point_alt': get_int(pil.landing_altitude),
                                 'landed_before_deadline': '1'
                                 if pil.landing_time < (t.task_deadline if not t.stopped_time else t.stopped_time)
                                 else '0',
@@ -517,10 +517,10 @@ class FSDB(object):
                             ),  # flight origin time
                             'real_distance': km(pil.distance_flown),
                             'last_distance': '',  # ?? last fix distance?
-                            'last_altitude_above_goal': int(pil.last_altitude or 0),
+                            'last_altitude_above_goal': get_int(pil.last_altitude),
                             'altitude_bonus_seconds': 0,  # not implemented
                             'altitude_bonus_time': sec_to_time(0).strftime('%H:%M:%S'),  # not implemented
-                            'altitude_at_ess': int(pil.ESS_altitude or 0),
+                            'altitude_at_ess': get_int(pil.ESS_altitude),
                             'scored_ss_time': (
                                 '' if not pil.ss_time else sec_to_time(pil.ss_time).strftime('%H:%M:%S')
                             ),

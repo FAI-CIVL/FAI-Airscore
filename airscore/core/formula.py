@@ -478,9 +478,8 @@ def get_fsdb_info(formula, form):
     )  # tolerance, perc / 100
     '''stopped task parameters'''
     formula.validity_min_time = (
-        0 + get_int(form.get('min_time_span_for_valid_task')) * 60
-    )  # min. time for valid task, seconds
-    formula.score_back_time = 0 + get_int(form.get('score_back_time')) * 60  # Scoreback Time, seconds
+            get_int(form.get('min_time_span_for_valid_task')) * 60)  # min. time for valid task, seconds
+    formula.score_back_time = get_int(form.get('score_back_time')) * 60  # Scoreback Time, seconds
     formula.glide_bonus = 0.0 + float(form.get('bonus_gr'))  # glide ratio
     '''bonus and penalties'''
     formula.no_goal_penalty = c_round(1.0 - float(form.get('time_points_if_not_in_goal')), 4)

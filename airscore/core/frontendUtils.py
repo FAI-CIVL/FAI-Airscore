@@ -125,7 +125,7 @@ def find_orphan_pilots(pilots_list: list, orphans: list) -> (list, list):
                             comp_ids=[p['comp_id']],
                             par_ids=[p['par_id']],
                             pil_id=int(row.pil_id),
-                            civl_id=get_int(row.civl_id),
+                            civl_id=get_int(row.civl_id) or None,
                             fai_id=row.fai_id,
                             name=name,
                             sex=p['sex'],

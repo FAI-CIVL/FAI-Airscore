@@ -63,9 +63,9 @@ def km(dist: float, n: int = 3):
         return None
 
 
-def get_int(string):
+def get_int(string) -> int:
     if isinstance(string, (int, float)):
-        return c_round(string)
+        return int(string)
     try:
         return int(string)
     except ValueError:
@@ -73,8 +73,9 @@ def get_int(string):
         for i in lstr:
             if i.isdigit():
                 return int(i)
+        return 0
     except TypeError:
-        return None
+        return 0
 
 
 def decimal_to_seconds(d_time):
