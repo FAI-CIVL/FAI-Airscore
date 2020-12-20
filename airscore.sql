@@ -444,7 +444,6 @@ CREATE TABLE `tblCompetition` (
 --
 
 CREATE TABLE `tblForComp` (
-  `forPk` int(11) DEFAULT NULL,
   `comp_id` int(11) NOT NULL,
   `formula_last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `formula_type` varchar(10) DEFAULT NULL,
@@ -832,13 +831,12 @@ CREATE TABLE `tblParticipant` (
   `civl_id` int(10) DEFAULT NULL,
   `pil_id` int(11) DEFAULT NULL,
   `ID` int(4) DEFAULT NULL,
-  `name` varchar(50) DEFAULT NULL,
+  `name` varchar(100) DEFAULT NULL,
   `birthdate` date DEFAULT NULL,
   `sex` enum('M','F') NOT NULL DEFAULT 'M',
   `nat` char(10) DEFAULT NULL,
   `glider` varchar(100) DEFAULT NULL,
   `glider_cert` varchar(20) DEFAULT NULL,
-  `parClass` varchar(50) DEFAULT NULL,
   `sponsor` varchar(100) DEFAULT NULL,
   `fai_valid` tinyint(1) NOT NULL DEFAULT '1',
   `fai_id` varchar(20) DEFAULT NULL,

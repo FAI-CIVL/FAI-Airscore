@@ -416,7 +416,6 @@ class TblCountryCode(BaseModel):
 class TblForComp(BaseModel):
     __tablename__ = 'tblForComp'
 
-    forPk = Column(INTEGER(11))
     comp_id = Column(INTEGER(11), ForeignKey('tblCompetition.comp_id'), primary_key=True)
     formula_last_update = Column(
         TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
@@ -482,7 +481,7 @@ class TblParticipant(BaseModel):
     civl_id = Column(INTEGER(10), index=True)
     pil_id = Column(INTEGER(11))
     ID = Column(INTEGER(4))
-    name = Column(String(50))
+    name = Column(String(100))
     birthdate = Column(Date)
     sex = Column(Enum('M', 'F'), nullable=False, server_default=text("'M'"))
     nat = Column(CHAR(10))
