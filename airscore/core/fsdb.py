@@ -555,22 +555,6 @@ class FSDB(object):
         """
         Add comp to AirScore database
         """
-        import re
-
-        if self.comp.formula.formula_name and not self.comp.formula.formula_type:
-            '''trying to guess formula from name'''
-            if 'pwc' in self.comp.formula.formula_name.lower():
-                self.comp.formula.formula_type = 'pwc'
-                self.comp.formula.validity_ref = 'max_score'
-            elif 'gap' in self.comp.formula.formula_name.lower():
-                self.comp.formula.formula_type = 'gap'
-                self.comp.formula.validity_ref = 'day_quality'
-            if self.comp.formula.formula_type is not None:
-                self.comp.formula.formula_version = (
-                    int(re.search(r"(\d+)", self.comp.formula.formula_name).group())
-                    if re.search(r"(\d+)", self.comp.formula.formula_name)
-                    else None
-                )
 
         self.comp.to_db()
         self.comp.formula.comp_id = self.comp.comp_id

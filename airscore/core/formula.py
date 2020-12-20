@@ -291,7 +291,18 @@ class Formula(object):
         """Get formula info from FSDB file
         type can be 'comp' or 'task'
         """
-        formula = get_fsdb_info(Formula(), fs_info.find('FsScoreFormula'))
+        data = fs_info.find('FsScoreFormula')
+        formula_name = data.get('id')
+        comp_class = fs_info.get('discipline').upper()
+        '''check if formula exists'''
+        lib = get_formula_lib_by_name(formula_name)
+        if lib:
+            '''gets preset values'''
+            formula = Formula.from_preset(comp_class, formula_name)
+        else:
+            formula = Formula()
+        formula = get_fsdb_info(formula, fs_info.find('FsScoreFormula'))
+        formula.comp_class = comp_class
         formula.validity_param = 1.0 - float(fs_info.get('ftv_factor'))
         if formula.validity_param < 1:
             formula.overall_validity = 'ftv'
