@@ -567,8 +567,8 @@ class FSDB(object):
                 self.comp.formula.validity_ref = 'day_quality'
             if self.comp.formula.formula_type is not None:
                 self.comp.formula.formula_version = (
-                    int(re.search("(\d+)", self.comp.formula.formula_name).group())
-                    if re.search("(\d+)", self.comp.formula.formula_name)
+                    int(re.search(r"(\d+)", self.comp.formula.formula_name).group())
+                    if re.search(r"(\d+)", self.comp.formula.formula_name)
                     else None
                 )
 

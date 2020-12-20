@@ -196,7 +196,7 @@ class TaskResult:
         task_code = f"T{res['info']['task_num']}"
         if len(res['classes']) > 0:
             classes = res['classes']
-            zipfile = f"{re.sub('[ ,.-]', '_', comp_name)}_{task_code}.zip"
+            zipfile = f"{re.sub(r'[ ,.-]', '_', comp_name)}_{task_code}.zip"
         else:
             zipfile = False
             classes = [{'name': ''}]
@@ -258,7 +258,7 @@ class TaskResult:
         for idx, c in enumerate(classes):
             class_name = comp_name if not c['name'] else f"{comp_name} {c['name']}"
             title = f"{class_name} - {task_name}"
-            filename = f"{re.sub('[ ,.-]', '_', class_name)}_{task_code}.html"
+            filename = f"{re.sub(r'[ ,.-]', '_', class_name)}_{task_code}.html"
 
             '''HTML headings'''
             dist = res['info']['opt_dist']
@@ -465,7 +465,7 @@ class CompResult(object):
         comp_name = f"{res['info']['comp_name']}"
         if len(res['classes']) > 0:
             classes = res['classes']
-            zipfile = f"{re.sub('[ ,.-]', '_', comp_name)}_after_{res['tasks'][-1]['task_code']}.zip"
+            zipfile = f"{re.sub(r'[ ,.-]', '_', comp_name)}_after_{res['tasks'][-1]['task_code']}.zip"
         else:
             zipfile = False
             classes = [{'name': ''}]
@@ -494,7 +494,7 @@ class CompResult(object):
         response = []
         for idx, c in enumerate(classes):
             title = comp_name if not c['name'] else f"{comp_name} {c['name']}"
-            filename = f"{re.sub('[ ,.-]', '_', title)}_after_{res['tasks'][-1]['task_code']}.html"
+            filename = f"{re.sub(r'[ ,.-]', '_', title)}_after_{res['tasks'][-1]['task_code']}.html"
 
             '''HTML headings'''
             headings = [

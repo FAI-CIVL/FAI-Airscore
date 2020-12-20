@@ -84,22 +84,22 @@ def convert_height(height_string):
     if height_string == '0':
         return '0', 0, "m"
 
-    if re.search("FL", height_string):
-        height = int(re.sub("[^0-9]", "", height_string))
+    if re.search(r"FL", height_string):
+        height = int(re.sub(r"[^0-9]", "", height_string))
         return height_string, height, "FL"
 
-    elif re.search("ft", height_string):
-        if len(re.sub("[^0-9]", "", height_string)) > 0:
-            feet = int(re.sub("[^0-9]", "", height_string))
+    elif re.search(r"ft", height_string):
+        if len(re.sub(r"[^0-9]", "", height_string)) > 0:
+            feet = int(re.sub(r"[^0-9]", "", height_string))
             meters = round(feet * Ft_in_meters, 1)
             info = f"{height_string}/{meters} m"
 
-    elif re.search("m", height_string) or re.search("MSL", height_string):
-        if len(re.sub("[^0-9]", "", height_string)) > 0:
-            meters = int(re.sub("[^0-9]", "", height_string))
+    elif re.search(r"m", height_string) or re.search(r"MSL", height_string):
+        if len(re.sub(r"[^0-9]", "", height_string)) > 0:
+            meters = int(re.sub(r"[^0-9]", "", height_string))
             info = f"{meters} m"
 
-    elif height_string == 'GND':
+    elif height_string in ('GND', 'SFC'):
         meters = (
             0  # this should probably be something like -500m to cope with dead sea etc (or less for GPS/Baro error?)
         )
