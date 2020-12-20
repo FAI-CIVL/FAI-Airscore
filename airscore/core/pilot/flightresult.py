@@ -237,7 +237,7 @@ class FlightResult(Participant):
         d = elem.find('FsFlightData')
         result.result_type = 'lo'
         result.real_start_time = None if not d.get('started_ss') else string_to_seconds(d.get('started_ss')) - offset
-        result.last_altitude = float(d.get('last_tracklog_point_alt' or 0))
+        result.last_altitude = float(d.get('last_tracklog_point_alt') or 0)
         result.max_altitude = int(d.get('max_alt') if d.get('max_alt') is not None else 0)
         result.track_file = d.get('tracklog_filename')
         result.lead_coeff = None if d.get('lc') is None else float(d.get('lc'))
