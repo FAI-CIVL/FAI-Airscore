@@ -74,8 +74,6 @@ class Preset:
 @dataclass(frozen=True)
 class FormulaPreset:
     formula_name: Preset
-    formula_type: Preset
-    formula_version: Preset
     formula_distance: Preset
     formula_arrival: Preset
     formula_departure: Preset
@@ -114,8 +112,6 @@ class Formula(object):
         self,
         comp_id=None,
         formula_name=None,
-        formula_type=None,
-        formula_version=None,
         comp_class=None,
         formula_distance=None,
         formula_arrival=None,
@@ -148,8 +144,6 @@ class Formula(object):
 
         self.comp_id = comp_id
         self.formula_name = formula_name
-        self.formula_type = formula_type
-        self.formula_version = formula_version
         self.comp_class = comp_class  # 'HG', 'PG'
         self.formula_distance = formula_distance  # 'on', 'difficulty', 'off'
         self.formula_arrival = formula_arrival  # 'position', 'time', 'off'
@@ -215,8 +209,24 @@ class Formula(object):
         )
 
     @property
+    def formula_type(self):
+        import re
+        try:
+            return re.search(r"[a-zA-Z]*", self.formula_name).group().lower()
+        except (TypeError, AttributeError):
+            return None
+
+    @property
     def type(self):
         return self.formula_type
+
+    @property
+    def formula_version(self):
+        import re
+        try:
+            return int(re.search(r"(\d+)", self.formula_name).group())
+        except (TypeError, AttributeError):
+            return None
 
     @property
     def version(self):

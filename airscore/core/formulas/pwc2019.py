@@ -13,10 +13,6 @@ from formulas.libs.pwc import *
 ''' Formula Info'''
 # Formula Name: usually the filename in capital letters
 formula_name = 'PWC2019'
-# Formula Type: pwc, gap, aat, any formula in libs folder
-formula_type = 'pwc'
-# Formula Version: INT, usually identified with year
-formula_version = '2019'
 # Comp Class: PG, HG, BOTH
 formula_class = 'PG'
 
@@ -32,8 +28,6 @@ formula_class = 'PG'
 pg_preset = FormulaPreset(
     # This part should not be edited
     formula_name=Preset(value=formula_name, visible=True, editable=True),
-    formula_type=Preset(value=formula_type, visible=True),
-    formula_version=Preset(value=formula_version, visible=True),
     # Editable part starts here
     # Distance Points: on, difficulty, off
     formula_distance=Preset(value='on', visible=False),

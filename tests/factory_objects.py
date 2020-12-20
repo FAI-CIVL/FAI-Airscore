@@ -25,8 +25,6 @@ def test_partial_distance():
 def test_formula():
     f = TaskFormulaFactory()
     f.formula_name = 'PWC2016'
-    f.formula_type = 'pwc'
-    f.formula_version = 2016
     f.overall_validity = 'ftv'
     f.validity_param = 0.75
     f.formula_distance = 'on'

@@ -62,8 +62,6 @@ class TaskResult:
 
     formula_list = [
         'formula_name',
-        'formula_type',
-        'formula_version',
         'overall_validity',  # 'ftv', 'all',
         'validity_param',
         'validity_ref',  # 'day_quality', 'max_score'
@@ -381,8 +379,6 @@ class CompResult(object):
 
     formula_list = [
         'formula_name',
-        'formula_type',
-        'formula_version',
         'comp_class',  # 'HG', 'PG'
         'overall_validity',  # 'ftv', 'all',
         'validity_param',

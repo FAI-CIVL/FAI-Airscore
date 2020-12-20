@@ -14,10 +14,6 @@ from formulas.libs.leadcoeff import *
 ''' Formula Info'''
 # Formula Name: usually the filename in capital letters
 formula_name = 'GAP2016'
-# Formula Type: pwc, gap, aat, any formula in libs folder
-formula_type = 'gap'
-# Formula Version: INT, usually identified with year
-formula_version = '2016'
 # Comp Class: PG, HG, BOTH
 formula_class = 'BOTH'
 
@@ -33,8 +29,6 @@ formula_class = 'BOTH'
 pg_preset = FormulaPreset(
     # This part should not be edited
     formula_name=Preset(value=formula_name, visible=True, editable=True),
-    formula_type=Preset(value=formula_type, visible=True, editable=True),
-    formula_version=Preset(value=formula_version, visible=True, editable=True),
     # Editable part starts here
     # Distance Points: on, difficulty, off
     formula_distance=Preset(value='on', visible=True, editable=True),
@@ -87,8 +81,6 @@ pg_preset = FormulaPreset(
 hg_preset = FormulaPreset(
     # This part should not be edited
     formula_name=Preset(value=formula_name, visible=True, editable=True),
-    formula_type=Preset(value=formula_type, visible=True, editable=True),
-    formula_version=Preset(value=formula_version, visible=True, editable=True),
     # Editable part starts here
     # Distance Points: on, difficulty, off
     formula_distance=Preset(value='difficulty', visible=True, editable=True),

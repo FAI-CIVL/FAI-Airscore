@@ -62,8 +62,6 @@ class CompObjectView(BaseModel):
         Column('igc_config_file', String(80)),
         Column('self_register', TINYINT(1), server_default=text("'0'")),
         Column('track_source', String(40)),
-        Column('formula_type', String(10)),
-        Column('formula_version', INTEGER(8)),
         Column('formula_name', String(50)),
         Column('overall_validity', Enum('ftv', 'all', 'round'), server_default=text("'ftv'")),
         Column('validity_param', Float(4), server_default=text("'0.750'")),
@@ -109,8 +107,6 @@ class TaskFormulaView(BaseModel):
         metadata,
         Column('task_id', INTEGER(11), primary_key=True),
         Column('comp_id', INTEGER(11), index=True),
-        Column('formula_type', String(10)),
-        Column('formula_version', INTEGER(8)),
         Column('formula_name', String(50)),
         Column('overall_validity', Enum('ftv', 'all', 'round'), server_default=text("'ftv'")),
         Column('validity_param', Float(4), server_default=text("'0.750'")),
@@ -420,10 +416,7 @@ class TblForComp(BaseModel):
     formula_last_update = Column(
         TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
     )
-    formula_type = Column(String(10))
-    formula_version = Column(INTEGER(8))
     formula_name = Column(String(20))
-    external_name = Column(String(50))
     overall_validity = Column(Enum('ftv', 'all', 'round'), nullable=False, server_default=text("'ftv'"))
     validity_param = Column(Float, nullable=False, server_default=text("'0.75'"))
     validity_ref = Column(Enum('day_quality', 'max_score'), server_default=text("'day_quality'"))
