@@ -146,9 +146,9 @@ class Participant(Pilot):
         node = pil.find('FsCustomAttributes')
         if node is not None:
             childs = node.findall('FsCustomAttribute')
-            live = next((el for el in childs if el.get('name').title() == 'Live'), None)
-            if live and live.isdigit():
-                pilot.live_id = int(live.get('value'))
+            live = next((el.get('value') for el in childs if el.get('name').lower() == 'live'), None)
+            if live is not None and live.isdigit():
+                pilot.live_id = int(live)
                 # print(pilot.live_id)
         return pilot
 
