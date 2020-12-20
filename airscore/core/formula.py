@@ -38,28 +38,15 @@ def list_formulas():
     return {'ALL': all_formulas, 'PG': pg_formulas, 'HG': hg_formulas}
 
 
-def get_formula_lib_by_name(formula_name):
+def get_formula_lib_by_name(formula_name: str):
     """get formula library to use in scoring"""
-    # formula = read_formula(comp_id)
-    formula_file = 'formulas.' + formula_name
+    formula_file = 'formulas.' + formula_name.lower()
     try:
         lib = importlib.import_module(formula_file, package=None)
         return lib
-    except:
+    except(ModuleNotFoundError, Exception):
         print(f'formula file {formula_file} not found.')
-        exit()
-
-
-def get_formula_lib(formula_type, formula_version):
-    """get formula library to use in scoring"""
-    # formula = read_formula(comp_id)
-    formula_file = 'formulas.' + formula_type + str(formula_version)
-    try:
-        lib = importlib.import_module(formula_file, package=None)
-        return lib
-    except:
-        print(f'formula file {formula_file} not found.')
-        exit()
+        return None
 
 
 @dataclass(frozen=True)
@@ -330,21 +317,7 @@ class Formula(object):
 
     def get_lib(self):
         """get formula library to use in scoring"""
-        # print(f'{self.formula_type}, {self.formula_version}, {self.formula_name}')
-        if self.formula_type and self.formula_version:
-            formula_type = self.formula_type
-            version = str(self.formula_version)
-            formula_file = 'formulas.' + formula_type + version
-        elif self.formula_name:
-            formula_file = 'formulas.' + str(self.formula_name).lower()
-        else:
-            return None
-        try:
-            lib = importlib.import_module(formula_file, package=None)
-            return lib
-        except:
-            print('formula file {} not found.'.format(formula_file))
-            exit()
+        return get_formula_lib_by_name(self.formula_name)
 
 
 class TaskFormula(Formula):
@@ -398,11 +371,6 @@ class TaskFormula(Formula):
         from db.tables import TaskFormulaView as F
 
         formula = F.get_by_id(task_id).populate(TaskFormula())
-        # formula = TaskFormula()
-        # with db_session() as db:
-        #     q = db.query(F).get(task_id)
-        #     if q is not None:
-        #         q.populate(formula)
         return formula
 
     def to_db(self):
@@ -439,7 +407,6 @@ def get_fsdb_info(formula, form):
     from calcUtils import get_int
     formula.formula_name = form.get('id')
     '''scoring parameters'''
-    # formula.comp_class = comp.comp_class
     formula.min_dist = 0 + float(form.get('min_dist')) * 1000  # min. distance, meters
     formula.nominal_dist = 0 + float(form.get('nom_dist')) * 1000  # nom. distance, meters
     formula.nominal_time = 0 + int(float(form.get('nom_time')) * 3600)  # nom. time, seconds
