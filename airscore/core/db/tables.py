@@ -16,7 +16,6 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects.mysql import (
-    BIGINT,
     INTEGER,
     LONGTEXT,
     MEDIUMINT,
