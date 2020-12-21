@@ -367,8 +367,17 @@ def comp_settings_admin(compid: int):
         compform.external.data = comp.external
         newtaskform.task_region.choices, _ = frontendUtils.get_region_choices(compid)
         newScorekeeperform.scorekeeper.choices = scorekeeper_choices
-        formulas = list_formulas()
-        compform.formula.choices = [(x, x.upper()) for x in formulas[comp.comp_class]]
+        formulas = [(x, x.upper()) for x in list_formulas().get(comp.comp_class)]
+        '''cope with external or converted events with invalid formulas'''
+        if formula.formula_name not in (el[0] for el in formulas):
+            value = formula.formula_name
+            if comp.external:
+                text = formula.formula_name
+            else:
+                text = ' ---'
+                flash(f"Please select a valid Scoring Formula from list and Save.", category='warning')
+            formulas.append((value, text))
+        compform.formula.choices = formulas
 
         if (current_user.id not in scorekeeper_ids) and (current_user.access != 'admin'):
             session['is_scorekeeper'] = False
@@ -398,7 +407,6 @@ def comp_settings_admin(compid: int):
     if comp.external:
         '''External Event'''
         flash(f"This is an External Event. Settings and Results are Read Only.", category='warning')
-
     return render_template('users/comp_settings.html', compid=compid, compform=compform,
                            taskform=newtaskform, scorekeeperform=newScorekeeperform, ladderform=ladderform,
                            classifications=classifications, error=error,
@@ -419,7 +427,7 @@ def convert_external_comp(compid: int):
     if success:
         flash("Event converted.", category='success')
     else:
-        flash("Event converted.", category='success')
+        flash("There was an error trying to convert this event.", category='danger')
     return redirect(url_for('user.comp_settings_admin', compid=compid))
 
 
