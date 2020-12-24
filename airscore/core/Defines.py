@@ -33,6 +33,7 @@ os.chdir(dname)
 # FLASKPORT = config['docker']['port']  # Flask Docker Container Port
 BINDIR = config['dir']['bin']  # script directory
 TRACKDIR = config['dir']['tracks']  # track file directory
+TRACKMAPDIR = config['dir']['tracks_map']  # tracks files for the map directory
 LOGDIR = config['dir']['log']  # log files directory
 RESULTDIR = config['dir']['result']  # log files directory
 IMAGEDIR = config['dir']['image']  # image/icon files directory

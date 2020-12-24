@@ -54,6 +54,7 @@ ladders: off  # switch ladder classifications on or off
 dir:
   bin: /app/airscore/core/
   tracks: /app/airscore/data/tracks/
+  tracks_map: /app/airscore/data/map-objects/tracks/
   waypoint: /app/airscore/data/waypoints/
   json: /app/airscore/data/json/
   log: /app/airscore/data/log/

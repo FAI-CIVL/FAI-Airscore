@@ -113,6 +113,7 @@ def create_app_folders():
     import Defines
 
     for app_dir in [Defines.TRACKDIR,
+                    Defines.TRACKMAPDIR,
                     Defines.LOGDIR,
                     Defines.RESULTDIR,
                     Defines.MAPOBJDIR,
