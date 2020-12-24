@@ -37,6 +37,7 @@ def extract_tracks(file, folder):
                 zipObj.extractall(folder)
         except IOError:
             print(f"Error: extracting {file} to {folder} \n")
+            error = 1
     else:
         print(f"reading error: {file} does not exist or is not a zip file \n")
         error = 1
