@@ -136,124 +136,70 @@ Pilot Admin
   </div>
 </div>
 
-<!---edit-participant details modal starts here--->
-<div id='edit_par_modal' class='modal fade' role='dialog'>
+<!--- add-edit-participant details modal starts here--->
+<div id='mod_modal' class='modal fade' role='dialog'>
   <div class='modal-dialog'>
     <div class='modal-content'>
-      <div class='modal-header'>
-        <h4 class='modal-title'>Update Participant Details</h4>
-      </div>
-      {% from "macros.html" import render_field with context %}
-      <div class='modal-body' id='modmodal-body'>
-        <div class='form-row'>
-          <section class="pl-1 row-wrap panel-row">
-            <input type="hidden" id="mod_original_id_number" value="">
-            <input type="hidden" id="mod_last_id_number" value="">
-            {{ render_field(modify_participant_form.id_num, width=3, id='mod_id_number') }}
-            {{ render_field(modify_participant_form.CIVL, width=5, id='mod_civl') }}
-            {{ render_field(modify_participant_form.name, width=30, id='mod_name') }}
-          </section>
-          <section class="pl-1 row-wrap panel-row">
-            {{ render_field(modify_participant_form.nat, id='mod_nat') }}
-            {{ render_field(modify_participant_form.sex, id='mod_sex') }}
-          </section>
-          <section class="pl-1 row-wrap panel-row">
-            {{ render_field(modify_participant_form.glider, width=30, id='mod_glider') }}
-            {{ render_field(modify_participant_form.certification, width=4, id='mod_certification') }}
-          </section>
-          <section class="pl-1 row-wrap panel-row">
-            {{ render_field(modify_participant_form.sponsor, width=40, id='mod_sponsor') }}
-          </section>
-          <section class="pl-1 row-wrap panel-row" id="mod_all_team_section">
-            <section id="mod_team_section">
-            {{ render_field(modify_participant_form.team, width=30, id='mod_team') }}
-            </section>
-            <section id="mod_nat_team_section">
-            {{ render_field(modify_participant_form.nat_team, id='mod_nat_team') }}
-            </section>
-          </section>
-          <section class="pl-1 row-wrap panel-row" id="mod_track_source_section">
-            <section id="mod_flymaster_section">
-            {{ render_field(modify_participant_form.live_id, width=7, id='mod_live_id') }}
-            </section>
-            <section id="mod_xcontest_section">
-            {{ render_field(modify_participant_form.xcontest_id, width=10, id='mod_xcontest_id') }}
-            </section>
-          </section>
-          <section class="pl-1 row-wrap panel-row">
-            {{ render_field(modify_participant_form.status, id='mod_status') }}
-            {{ render_field(modify_participant_form.paid, id='mod_paid') }}
-          </section>
+      <form method='post' id="participant_form">
+      {{ participant_form.hidden_tag() }}
+        <div class='modal-header'>
+          <h4 class='modal-title'>Update Participant Details</h4>
         </div>
-      </div>
-      <div class='modal-footer'>
-        <button type='button' class='btn btn-danger' data-dismiss='modal'>Cancel</button>
-        <button id='modify_confirmed' type='button' class='btn btn-success' data-dismiss='modal'>Save</button>
-      </div>
+        {% from "macros.html" import render_field with context %}
+        <div class='modal-body' id='mod_modal-body'>
+          <div class='form-row'>
+            <section class="pl-1 row-wrap panel-row">
+              <input type="hidden" id="mod_original_id_number" value="">
+              <input type="hidden" id="mod_last_id_number" value="">
+              <input type="hidden" id="mod_par_id" value="">
+              {{ render_field(participant_form.id_num, width=3, id='mod_id_number') }}
+              {{ render_field(participant_form.CIVL, width=5, id='mod_civl') }}
+              {{ render_field(participant_form.name, width=30, id='mod_name') }}
+            </section>
+            <section class="pl-1 row-wrap panel-row">
+              {{ render_field(participant_form.nat, id='mod_nat') }}
+              {{ render_field(participant_form.sex, id='mod_sex') }}
+            </section>
+            <section class="pl-1 row-wrap panel-row">
+              {{ render_field(participant_form.glider, width=30, id='mod_glider') }}
+              {{ render_field(participant_form.certification, width=4, id='mod_certification') }}
+            </section>
+            <section class="pl-1 row-wrap panel-row">
+              {{ render_field(participant_form.sponsor, width=40, id='mod_sponsor') }}
+            </section>
+            <section class="pl-1 row-wrap panel-row" id="mod_all_team_section">
+              <section id="mod_team_section">
+              {{ render_field(participant_form.team, width=40, id='mod_team') }}
+              </section>
+              <section id="mod_nat_team_section">
+              {{ render_field(participant_form.nat_team, id='mod_nat_team') }}
+              </section>
+            </section>
+            <section class="pl-1 row-wrap panel-row" id="mod_track_source_section">
+              <section id="mod_flymaster_section">
+              {{ render_field(participant_form.live_id, width=7, id='mod_live_id') }}
+              </section>
+              <section id="mod_xcontest_section">
+              {{ render_field(participant_form.xcontest_id, width=10, id='mod_xcontest_id') }}
+              </section>
+            </section>
+            <section class="pl-1 row-wrap panel-row">
+              {{ render_field(participant_form.status, id='mod_status') }}
+              {{ render_field(participant_form.paid, id='mod_paid') }}
+            </section>
+          </div>
+        </div>
+        <div class='modal-errors'>
+        </div>
+        <div class='modal-footer'>
+          <button type='button' class='btn btn-danger' data-dismiss='modal'>Cancel</button>
+          {{participant_form.submit(class="btn btn-success", id="mod_confirmed")}}
+        </div>
+      </form>
     </div>
   </div>
 </div>
-<!--- edit-participant details-Modal ends here--->
-
-<!--- add-participant details modal starts here--->
-<div id='add_modal' class='modal fade' role='dialog'>
-  <div class='modal-dialog'>
-    <div class='modal-content'>
-      <div class='modal-header'>
-        <h4 class='modal-title'>Add a pilot</h4>
-      </div>
-      <div class='modal-body' id='addmodal-body'>
-        <div class='form-row'>
-          <section class="pl-1 row-wrap panel-row">
-            <input type="hidden" id="add_original_id_number" value="">
-            <input type="hidden" id="add_last_id_number" value="">
-            {{ render_field(modify_participant_form.id_num, width=3, id='add_id_number') }}
-            {{ render_field(modify_participant_form.CIVL, width=5, id='add_civl') }}
-            {{ render_field(modify_participant_form.name, width=30, id='add_name') }}
-          </section>
-          <section class="pl-1 row-wrap panel-row">
-            {{ render_field(modify_participant_form.nat, id='add_nat') }}
-            {{ render_field(modify_participant_form.sex, id='add_sex') }}
-          </section>
-          <section class="pl-1 row-wrap panel-row">
-            {{ render_field(modify_participant_form.glider, width=30, id='add_glider') }}
-            {{ render_field(modify_participant_form.certification, width=4, id='add_certification') }}
-          </section>
-          <section class="pl-1 row-wrap panel-row">
-            {{ render_field(modify_participant_form.sponsor, width=40, id='add_sponsor') }}
-          </section>
-          <section class="pl-1 row-wrap panel-row" id="add_all_team_section">
-            <section id="add_team_section">
-            {{ render_field(modify_participant_form.team, width=30, id='add_team') }}
-            </section>
-            <section id="add_nat_team_section">
-            {{ render_field(modify_participant_form.nat_team, id='add_nat_team') }}
-            </section>
-          </section>
-          <section class="pl-1 row-wrap panel-row" id="add_track_source_section">
-            <section id="add_flymaster_section">
-            {{ render_field(modify_participant_form.live_id, width=7, id='add_live_id') }}
-            </section>
-            <section id="add_xcontest_section">
-            {{ render_field(modify_participant_form.xcontest_id, width=10, id='add_xcontest_id') }}
-            </section>
-          </section>
-          <section class="pl-1 row-wrap panel-row">
-            {{ render_field(modify_participant_form.status, id='add_status') }}
-            {{ render_field(modify_participant_form.paid, id='add_paid') }}
-          </section>
-        </div>
-      </div>
-      <div class='modal-footer'>
-        <button type='button' class='btn btn-danger' data-dismiss='modal'>Cancel</button>
-        <button id='add_confirmed' type='button' class='btn btn-success' onclick='save_new_participant();'
-                data-dismiss='modal'>Save
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-<!-- add-participant details-Modal ends here--->
+<!--- add-edit-participant details-Modal ends here--->
 
 <!-- delete Modal -->
 <div id='delete_modal' class='modal fade' role='dialog'>
@@ -346,10 +292,11 @@ Pilot Admin
 {% block js %}
 <script type='text/javascript' src='https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js'></script>
 <script src="{{ static_url_for('static', filename='js/multiselect.min.js') }}"></script>
-<script src="{{ static_url_for('static', filename='js/pilot_admin.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.ui.widget.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.iframe-transport.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.fileupload.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/pilot_admin.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/flashed_message.js') }}"></script>
 <script type='text/javascript'>
 var pilotdb = {{ pilotdb|tojson }};
 var compid = {{ session.compid|tojson }};

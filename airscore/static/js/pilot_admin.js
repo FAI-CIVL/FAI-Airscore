@@ -119,24 +119,18 @@ function isNotEmpty( el ) {
 }
 
 function edit_participant(par_id) {
+  cleanup_modal('mod_modal')
   let table = $('#pilots').DataTable();
   let row = '#id_'+par_id;
   let data = table.row( row ).data();
   let paid = 0
   if (data['paid'] == 'Y') paid = 1;
   console.log('par_id='+data['par_id']);
-  var team = 0;
-  var nat_team = 0;
-  if (table.column('team:name').visible()) {
-    team = 1;
-  }
-  if (table.column('nat_team:name').visible()) {
-    nat_team = 1;
-  }
-  console.log(IDs);
+  $('#mod_par_id').val('').val(data['par_id']);
   $('#mod_original_id_number').val('').val(data['ID']);
   $('#mod_last_id_number').val('').val(data['ID']);
   $('#mod_id_number').val(data['ID']);
+
   $('#mod_civl').val(data['civl_id']);
   $('#mod_name').val(data['name']);
   $('#mod_sex').val(data['sex']);
@@ -148,113 +142,72 @@ function edit_participant(par_id) {
   $('#mod_paid').val(paid);
   $('#modify_confirmed').attr("onclick","save_modified_participant('"+ par_id +"')");
 
-  // Team Sections
-  if (nat_team) {
-    $('#mod_nat_team').prop("checked", isNotEmpty(data['nat_team']) );
-    $('#mod_nat_team_section').show();
-  }
-  else {$('#mod_nat_team_section').hide(); }
+  $('#mod_nat_team').prop("checked", isNotEmpty(data['nat_team']) );
+  $('#mod_team').val(data['team'])
+  $('#mod_xcontest_id').val(data['xcontest_id'])
+  $('#mod_live_id').val(data['live_id'])
 
-  if (team) {
-      $('#mod_team').val(data['team']).change();
-      $('#mod_team_section').show();
-  }
-  else {$('#mod_team_section').hide(); }
-
-  if ( team || nat_team ) $('#mod_all_team_section').show(); else $('#mod_all_team_section').hide();
-
-  // Track Sources Section
-  if(track_source){
-    if(track_source == 'xcontest'){
-        $('#mod_xcontest_id').val(data['xcontest_id']).change();
-        $('#mod_xcontest_section').show();
-        $('#mod_flymaster_section').hide();
-    }
-    else if(track_source == 'flymaster'){
-        $('#mod_live_id').val(data['live_id']).change();
-        $('#mod_flymaster_section').show();
-        $('#mod_xcontest_section').hide();
-    }
-    $('#mod_track_source_section').show();
-  }
-  else {
-    $('#mod_track_source_section').hide();
-  }
-
-  $('#edit_par_modal').modal('show');
+  $('#mod_modal').modal('show');
 }
 
-function save_modified_participant(par_id) {
-  $('#mod_original_id_number').val('');
-  $('#mod_last_id_number').val('');
-  var mydata = new Object();
-  mydata.id_num = $('#mod_id_number').val();
-  mydata.name = $('#mod_name').val();
-  mydata.sex = $('#mod_sex').val();
-  mydata.nat = $('#mod_nat').val();
-  mydata.glider = $('#mod_glider').val();
-  mydata.certification = $('#mod_certification').val();
-  mydata.sponsor = $('#mod_sponsor').val();
-  mydata.status = $('#mod_status').val();
-  mydata.paid = $('#mod_paid').val();
-  mydata.CIVL = $('#mod_civl').val();
-  mydata.team = $('#mod_team').val();
-  mydata.nat_team = $('#mod_nat_team').is(':checked');
-  mydata.live_id = $('#mod_live_id').val();
-  mydata.xcontest_id = $('#mod_xcontest_id').val();
-
+$('#participant_form').submit( function (e) {
+  e.preventDefault(); // block the traditional submission of the form.
+  $('#mod_modal .modal-errors').empty();  // delete all previous errors
+  let mydata = $('#participant_form').serialize();
+  let parid = $('#mod_par_id').val()
+  let url = "/users/_add_participant/"+ compid;
+  if ( parid ) url = "/users/_modify_participant_details/"+parid;
   $.ajax({
     type: "POST",
-    url: "/users/_modify_participant_details/"+par_id,
-    contentType:"application/json",
-    data : JSON.stringify(mydata),
-    dataType: "json",
-    success: function (data) {
-      populate_registered_pilot_details(compid);
+    url: url,
+    data: mydata, // serializes the form's elements.
+    success: function (response) {
+      // console.log(response);  // display the returned data in the console.
+      if (response.success) {
+        populate_registered_pilot_details(compid);
+        $('#mod_modal').modal('toggle');
+        let message = 'Pilot successfully registered.';
+        if ( parid ) message = 'Pilot successfully updated.';
+        create_flashed_message(message, 'info');
+      }
+      else {
+        if (response.errors) {
+          let keys = Object.keys(response.errors);
+          console.log('Error! ('+keys.length+')');
+          keys.forEach( key => {
+            let text = response.errors[key][0];
+            $('#mod_modal-body div').find("[name='"+key+"']").css('background-color', 'orange');
+            let message = document.createElement( "p" );
+            message.classList.add('alert', 'alert-danger');
+            message.innerText = key + ': ' + text;
+            $('#mod_modal .modal-errors').append(message);
+          })
+        }
+      }
     }
   });
-};
+});
+
+function cleanup_modal (modal) {
+  let body = modal + '-body';
+  let names = ['CIVL', 'name', 'glider', 'certification', 'sponsor', 'live_id', 'xcontest_id', 'team'];
+  $('#'+modal+' .modal-errors').empty();  // delete all previous errors
+  $('#'+body+' [name]').each( function( i, el ) {
+    if ( names.includes($(el).attr('name')) ) $(el).val('');
+    $(el).removeAttr('style');
+  });
+}
 
 function add_participant() {
+  cleanup_modal('mod_modal');
+  $('#mod_par_id').val('');
   let id = assign_id();
-  $('#add_original_id_number').val(id);
-  $('#add_last_id_number').val(id);
-  $('#add_id_number').val(id);
+  $('#mod_original_id_number').val(id);
+  $('#mod_last_id_number').val(id);
+  $('#mod_id_number').val(id);
 
-  $('#add_modal').modal('show');
+  $('#mod_modal').modal('show');
 }
-
-function save_new_participant(){
-  $('#add_original_id_number').val('');
-  $('#add_last_id_number').val('');
-  var mydata = new Object();
-  mydata.id_num = $('#add_id_number').val();
-  mydata.name = $('#add_name').val();
-  mydata.sex = $('#add_sex').val();
-  mydata.nat = $('#add_nat').val();
-  mydata.glider = $('#add_glider').val();
-  mydata.certification = $('#add_certification').val();
-  mydata.sponsor = $('#add_sponsor').val();
-  mydata.status = $('#add_status').val();
-  mydata.paid = $('#add_paid').val();
-  mydata.CIVL = $('#add_civl').val();
-  mydata.team = $('#add_team').val();
-  mydata.nat_team = $('#add_nat_team').is(':checked');
-  mydata.live_id = $('#add_live_id').val();
-  mydata.xcontest_id = $('#add_xcontest_id').val();
-
-  $.ajax({
-    type: "POST",
-    url: "/users/_add_participant/"+ compid,
-    contentType:"application/json",
-    data : JSON.stringify(mydata),
-    dataType: "json",
-    success: function () {
-      $('#add_modal').hide();
-      populate_registered_pilot_details(compid);
-    }
-  });
-};
 
 function check_id_number(input, orig, last) {
   let modified = parseInt(input.val()); // value given in input
@@ -263,11 +216,11 @@ function check_id_number(input, orig, last) {
   let ids_list = IDs.filter(item => item != original);
 
   if( (modified != original && ids_list.includes(modified)) || !modified || modified < 1 ) {
-    console.log('value already exists or is invalid');
+    // console.log('value already exists or is invalid');
     input.val(valid);
   }
   else {
-    console.log('value is ok');
+    // console.log('value is ok');
     last.val(modified);
   }
 }
@@ -346,12 +299,14 @@ function populate_registered_pilot_details(compid, readonly=false){
                 $.get( '/users/_check_nat_team_size/' + compid, function( data ) {
                 $( "#team_messages" ).html( data.message )}, "json" );
                 $('#add_nat_team_section').show();
+                $('#mod_nat_team_section').show();
             }
             if(json.teams.team_scoring){
                 $('#pilots').DataTable().column('team:name').visible( true );
                 $.get( '/users/_check_team_size/' + compid, function( data ) {
                 $( "#team_messages" ).html( data.message )}, "json" );
                 $('#add_team_section').show();
+                $('#mod_team_section').show();
             }
             if ( json.teams.team_scoring || json.teams.country_scoring ) $('#add_all_team_section').show(); else $('#add_all_team_section').hide();
 
@@ -361,16 +316,22 @@ function populate_registered_pilot_details(compid, readonly=false){
                     $('#pilots').DataTable().column('xcontest_id:name').visible( true );
                     $('#add_xcontest_section').show();
                     $('#add_flymaster_section').hide();
+                    $('#mod_xcontest_section').show();
+                    $('#mod_flymaster_section').hide();
                 }
                 else if(track_source == 'flymaster'){
                     $('#pilots').DataTable().column('live_id:name').visible( true );
                     $('#add_flymaster_section').show();
                     $('#add_xcontest_section').hide();
+                    $('#mod_flymaster_section').show();
+                    $('#mod_xcontest_section').hide();
                 }
                 $('#add_track_source_section').show();
+                $('#mod_track_source_section').show();
             }
             else {
                 $('#add_track_source_section').hide();
+                $('#mod_track_source_section').hide();
             }
         }
       });

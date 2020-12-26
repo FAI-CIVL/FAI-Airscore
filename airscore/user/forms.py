@@ -408,25 +408,32 @@ class IgcParsingConfigForm(FlaskForm):
         return result
 
 
-class ModifyParticipantForm(FlaskForm):
-    id_num = IntegerField('ID', validators=[Optional(strip_whitespace=True), NumberRange(min=0, max=999999)])
+class ParticipantForm(FlaskForm):
+    name_desc = 'Required, max 100 characters'
+    sp_desc = 'Max 100 characters'
+    id_num = IntegerField('ID', validators=[DataRequired(), NumberRange(min=0, max=999999)])
     CIVL = IntegerField('CIVL', default=None,
                         validators=[Optional(strip_whitespace=True), NumberRange(min=0, max=999999)])
-    name = StringField('Name', validators=[DataRequired()])
-    nat = SelectField('Nat', coerce=str, id='select_country')
-    sex = SelectField('Sex', choices=[('M', 'M'), ('F', 'F')])
-    glider = StringField('Glider', validators=[Optional(strip_whitespace=True)])
+    name = StringField('Name', validators=[DataRequired(), Length(min=1, max=100)], description=name_desc)
+    nat = SelectField('Nat', coerce=str, validators=[DataRequired(), Length(min=3, max=3)], id='select_country')
+    sex = SelectField('Sex', choices=[('M', 'M'), ('F', 'F')], default='M')
+    glider = StringField('Glider', validators=[Optional(strip_whitespace=True), Length(max=100)])
     certification = StringField('Certification', validators=[Optional(strip_whitespace=True)])
-    sponsor = StringField('Sponsor', validators=[Optional(strip_whitespace=True)])
-    team = StringField('Team', validators=[Optional(strip_whitespace=True)])
+    sponsor = StringField('Sponsor', validators=[Optional(strip_whitespace=True), Length(max=100)], description=sp_desc)
+    team = StringField('Team', validators=[Optional(strip_whitespace=True)], default=None)
     nat_team = BooleanField('In National Team', default=1)
     live_id = IntegerField('Live ID', default=None,
                            validators=[Optional(strip_whitespace=True), NumberRange(min=0, max=9999999)])
     xcontest_id = StringField('XContest ID', default=None, validators=[Optional(strip_whitespace=True)])
-    status = SelectField('Status', choices=[('waiting for payment', 'waiting for payment'), ('cancelled', 'cancelled'),
-                                            ('waiting list', 'waiting list'), ('wild card', 'wild card'),
-                                            ('confirmed', 'confirmed')])
-    paid = SelectField('Paid', choices=[(1, 'Yes'), (0, 'No')])
+    status = SelectField('Status', choices=[('', ' -'), ('waiting for payment', 'waiting for payment'),
+                                            ('cancelled', 'cancelled'), ('waiting list', 'waiting list'),
+                                            ('wild card', 'wild card'), ('confirmed', 'confirmed')], default=None)
+    paid = SelectField('Paid', choices=[(1, 'Yes'), (0, 'No')], default=0)
+
+    submit = SubmitField('Save')
+
+    def validate_on_submit(self):
+        return super(ParticipantForm, self).validate()
 
 
 class EditScoreForm(FlaskForm):

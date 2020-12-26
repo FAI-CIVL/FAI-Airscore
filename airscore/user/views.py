@@ -7,7 +7,7 @@ from flask import Blueprint, render_template, request, jsonify, json, flash, red
 from flask_login import login_required, current_user
 import frontendUtils
 from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm, \
-    ResultAdminForm, NewScorekeeperForm, RegionForm, NewRegionForm, IgcParsingConfigForm, ModifyParticipantForm, \
+    ResultAdminForm, NewScorekeeperForm, RegionForm, NewRegionForm, IgcParsingConfigForm, ParticipantForm, \
     EditScoreForm, ModifyUserForm, CompLaddersForm
 from comp import Comp
 from formula import list_formulas, Formula
@@ -1459,8 +1459,8 @@ def _del_igc_config(filename: str):
 def pilot_admin(compid: int):
     """ Registered Pilots list
         Add / Edit Pilots"""
-    modify_participant_form = ModifyParticipantForm()
-    modify_participant_form.nat.choices = [(x['code'], x['name']) for x in frontendUtils.list_countries()]
+    participant_form = ParticipantForm()
+    participant_form.nat.choices = [(x['code'], x['name']) for x in frontendUtils.list_countries()]
     comp = Comp.read(compid)
 
     if session['external']:
@@ -1468,70 +1468,70 @@ def pilot_admin(compid: int):
         flash(f"This is an External Event. Settings and Results are Read Only.", category='warning')
 
     return render_template('users/pilot_admin.html', compid=compid, track_source=comp.track_source,
-                           modify_participant_form=modify_participant_form, pilotdb=PILOT_DB)
+                           participant_form=participant_form, pilotdb=PILOT_DB)
 
 
 @blueprint.route('/_modify_participant_details/<int:parid>', methods=['POST'])
 @login_required
 def _modify_participant_details(parid: int):
-    from pilot.participant import Participant
-    data = request.json
-    participant = Participant.read(parid)
-    if data.get('id_num'):
-        participant.ID = int(data.get('id_num')) if str(data.get('id_num')).isdigit() else None
-    if data.get('name'):
-        participant.name = data.get('name')
-    participant.civl_id = int(data.get('CIVL')) if str(data.get('CIVL')).isdigit() else None
-    if data.get('sex'):
-        participant.sex = data.get('sex')
-    if data.get('nat'):
-        participant.nat = data.get('nat')
-    participant.glider = data.get('glider') or None
-    participant.glider_cert = data.get('certification') or None
-    participant.sponsor = data.get('sponsor') or None
-    participant.nat_team = bool(data.get('nat_team'))
-    participant.team = data.get('team') or None
-    participant.live_id = data.get('live_id') or None
-    participant.xcontest_id = data.get('xcontest_id') or None
-    if data.get('status'):
-        participant.status = data.get('status')
-    if data.get('paid'):
-        participant.paid = data.get('paid')
-    participant.to_db()
-    resp = jsonify(success=True)
-    return resp
+    from pilot.participant import Participant, formatted_string
+
+    form = ParticipantForm()
+    form.nat.choices = [(x['code'], x['name']) for x in frontendUtils.list_countries()]
+
+    if request.method == 'POST' and form.validate_on_submit():
+        participant = Participant.read(parid)
+
+        participant.ID = form.id_num.data
+        participant.name = formatted_string(form.name.data)
+        participant.civl_id = int(form.CIVL.data) if str(form.CIVL.data).isdigit() else None
+        participant.sex = form.sex.data
+        participant.nat = form.nat.data
+        participant.glider = form.glider.data or None
+        participant.glider_cert = form.certification.data or None
+        participant.sponsor = formatted_string(form.sponsor.data, title=False) or None
+        participant.nat_team = bool(form.nat_team.data)
+        participant.team = form.team.data or None
+        participant.live_id = form.live_id.data or None
+        participant.xcontest_id = form.xcontest_id.data or None
+        participant.status = form.status.data or None
+        participant.paid = form.paid.data or None
+        participant.to_db()
+        return jsonify(success=True)
+    return jsonify(success=False, errors=form.errors)
 
 
 @blueprint.route('/_add_participant/<int:compid>', methods=['POST'])
 @login_required
 def _add_participant(compid: int):
-    from pilot.participant import Participant, assign_id
-    data = request.json
-    participant = Participant()
-    participant.comp_id = compid
-    participant.ID = assign_id(compid, given_id=(int(data.get('id_num'))
-                                                 if str(data.get('id_num')).isdigit() else None))
-    if data.get('name'):
-        participant.name = data.get('name')
-    participant.civl_id = int(data.get('CIVL')) if str(data.get('CIVL')).isdigit() else None
-    if data.get('sex'):
-        participant.sex = data.get('sex')
-    if data.get('nat'):
-        participant.nat = data.get('nat')
-    participant.glider = data.get('glider') or None
-    participant.glider_cert = data.get('certification') or None
-    participant.sponsor = data.get('sponsor') or None
-    participant.nat_team = bool(data.get('nat_team'))
-    participant.team = data.get('team') or None
-    participant.live_id = data.get('live_id') or None
-    participant.xcontest_id = data.get('xcontest_id') or None
-    if data.get('status'):
-        participant.status = data.get('status')
-    if data.get('paid'):
-        participant.paid = data.get('paid')
-    participant.to_db()
-    resp = jsonify(success=True)
-    return resp
+    from pilot.participant import Participant, assign_id, formatted_string
+
+    form = ParticipantForm()
+    form.nat.choices = [(x['code'], x['name']) for x in frontendUtils.list_countries()]
+
+    if request.method == 'POST' and form.validate_on_submit():
+        # data = request.json
+        participant = Participant()
+        participant.comp_id = compid
+        participant.ID = assign_id(compid, given_id=form.id_num.data)
+        participant.name = formatted_string(form.name.data)
+        participant.civl_id = int(form.CIVL.data) if str(form.CIVL.data).isdigit() else None
+        participant.sex = form.sex.data
+        participant.nat = form.nat.data
+        participant.glider = form.glider.data or None
+        participant.glider_cert = form.certification.data or None
+        participant.sponsor = formatted_string(form.sponsor.data, title=False) or None
+        participant.nat_team = bool(form.nat_team.data)
+        participant.team = form.team.data or None
+        participant.live_id = form.live_id.data or None
+        participant.xcontest_id = form.xcontest_id.data or None
+        if form.status.data:
+            participant.status = form.status.data
+        if form.paid.data:
+            participant.paid = form.paid.data
+        participant.to_db()
+        return jsonify(success=True)
+    return jsonify(success=False, errors=form.errors)
 
 
 @blueprint.route('/_upload_participants_excel/<int:compid>', methods=['POST'])
