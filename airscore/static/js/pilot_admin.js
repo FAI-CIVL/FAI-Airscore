@@ -370,8 +370,6 @@ jQuery(document).ready(function($) {
     check_id_number($('#add_id_number'), $('#add_original_id_number'), $('#add_last_id_number'));
   });
 
-
-
   $(function () {
     $('#Excel_fileupload').fileupload({
       dataType: 'json',
@@ -381,24 +379,33 @@ jQuery(document).ready(function($) {
         });
       },
       submit: function (e, data){
-        console.log('submit...');
         document.getElementById("Excel_button").innerHTML = "Processing...";
         document.getElementById("Excel_button").className = "btn btn-warning ml-4";
       },
-      success: function () {
-        console.log('success...');
-        if (pilotdb) get_internal_pilots();
-        populate_registered_pilot_details(compid);
-        document.getElementById("Excel_button").innerHTML = "Done";
-        document.getElementById("Excel_button").className = "btn btn-success ml-4";
+      // Response received
+      success: function (response) {
+        console.log(response);
+        if (response.success) {
+          if (pilotdb) get_internal_pilots();
+          populate_registered_pilot_details(compid);
+          document.getElementById("Excel_button").innerHTML = "Done";
+          document.getElementById("Excel_button").className = "btn btn-success ml-4";
+          create_flashed_message('Participants successfully imported from excel file.', 'info');
+        }
+        else {
+          create_flashed_message('There was an error trying to import participants from excel file.', 'danger');
+          if (response.error) create_flashed_message(response.error, 'warning');
+        }
       },
-      fail: function () {
+      // Response missing
+      fail: function (e) {
         console.log('fail...');
+        console.log(e);
         document.getElementById("Excel_button").innerHTML = "Failed";
         document.getElementById("Excel_button").className = "btn btn-danger ml-4";
+        create_flashed_message('There was an error trying to import participants from excel file.', 'danger');
       },
       complete: function () {
-        console.log('complete...');
         setTimeout(function(){
           document.getElementById("Excel_button").innerHTML = "Upload Excel File";
           document.getElementById("Excel_button").className = "btn btn-success ml-4";
@@ -419,16 +426,30 @@ jQuery(document).ready(function($) {
         document.getElementById("FSDB_button").innerHTML = "Processing...";
         document.getElementById("FSDB_button").className = "btn btn-warning ml-4";
       },
-      success: function () {
-        if (pilotdb) get_internal_pilots();
-        populate_registered_pilot_details(compid);
-        document.getElementById("FSDB_button").innerHTML = "Done";
-        document.getElementById("FSDB_button").className = "btn btn-success ml-4";
+      // Response received
+      success: function (response) {
+        console.log('success...');
+        console.log(response);
+        if (response.success){
+          if (pilotdb) get_internal_pilots();
+          populate_registered_pilot_details(compid);
+          document.getElementById("FSDB_button").innerHTML = "Done";
+          document.getElementById("FSDB_button").className = "btn btn-success ml-4";
+          create_flashed_message('Participants successfully imported from FSDB file.', 'info');
+        }
+        else {
+          create_flashed_message('There was an error trying to import participants from FSDB file.', 'danger');
+          if (response.error) create_flashed_message(response.error, 'warning');
+        }
       },
-      fail: function () {
+      // Response missing
+      fail: function (e) {
         console.log('fail...');
+        console.log(e);
         document.getElementById("FSDB_button").innerHTML = "Failed";
         document.getElementById("FSDB_button").className = "btn btn-danger ml-4";
+        create_flashed_message('There was an error trying to import participants from FSDB file.', 'danger');
+        if ( e.error ) create_flashed_message(e.error, 'warning');
       },
       complete: function () {
         setTimeout(function(){
@@ -438,4 +459,5 @@ jQuery(document).ready(function($) {
       }
     });
   });
+
 });

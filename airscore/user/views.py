@@ -1539,22 +1539,24 @@ def _add_participant(compid: int):
 def _upload_participants_excel(compid: int):
     from pilot.participant import extract_participants_from_excel, mass_import_participants
     import tempfile
-    if request.method == "POST":
-        if request.files:
+
+    if request.method == "POST" and "excel_file" in request.files:
+        try:
             excel_file = request.files["excel_file"]
+            if not excel_file:
+                return jsonify(success=False, error='Error: not a valid excel file.')
             with tempfile.TemporaryDirectory() as tmpdirname:
-                # filename = secure_filename(excel_file.filename)
                 excel_file.save(path.join(tmpdirname, excel_file.filename))
                 pilots = extract_participants_from_excel(compid, path.join(tmpdirname, excel_file.filename))
-
+                if not pilots:
+                    return jsonify(success=False, error='Error: not a valid excel file or has no participants.')
                 # should we delete all participants when uploading a excel list?
                 pilots = frontendUtils.check_participants_ids(compid, pilots)
-
                 mass_import_participants(compid, pilots, check_ids=False)
-            resp = jsonify(success=True)
-            return resp
-        resp = jsonify(success=False)
-        return resp
+            return jsonify(success=True)
+        except (FileNotFoundError, TypeError, Exception):
+            return jsonify(success=False, error='Internal error trying to parse excel file.')
+    return jsonify(success=False, error='Error: no file was given.')
 
 
 @blueprint.route('/_upload_participants_fsdb/<int:compid>', methods=['POST'])
@@ -1563,20 +1565,23 @@ def _upload_participants_fsdb(compid: int):
     from pilot.participant import unregister_all, mass_import_participants
     import tempfile
 
-    if request.method == "POST":
-        if request.files:
+    if request.method == "POST" and "fsdb_file" in request.files:
+        try:
             fsdb_file = request.files["fsdb_file"]
+            if not fsdb_file:
+                return jsonify(success=False, error='Error: not a valid FSDB file.')
             with tempfile.TemporaryDirectory() as tmpdirname:
                 tmp_file = Path(tmpdirname, fsdb_file.filename)
                 fsdb_file.save(tmp_file)
                 participants = frontendUtils.import_participants_from_fsdb(tmp_file)
-                if participants:
-                    unregister_all(compid)
-                    mass_import_participants(compid, participants, check_ids=False)
-            resp = jsonify(success=True)
-            return resp
-        resp = jsonify(success=False)
-        return resp
+                if not participants:
+                    return jsonify(success=False, error='Error: not a valid FSDB file or has no participants.')
+                unregister_all(compid)
+                mass_import_participants(compid, participants, check_ids=False)
+            return jsonify(success=True)
+        except (FileNotFoundError, TypeError, Exception):
+            return jsonify(success=False, error='Internal error trying to parse FSDB file.')
+    return jsonify(success=False, error='Error: no file was given.')
 
 
 @blueprint.route('/_self_register/<int:compid>', methods=['POST'])
