@@ -55,7 +55,7 @@ class Participant(Pilot):
 
     def __setattr__(self, attr, value):
         property_names = [p for p in dir(Participant) if isinstance(getattr(Participant, p), property)]
-        if attr in ('name', 'glider') and type(value) is str:
+        if attr == 'glider' and type(value) is str:
             self.__dict__[attr] = value.title()
         elif attr in ('nat', 'sex') and type(value) is str:
             self.__dict__[attr] = value.upper()
@@ -396,5 +396,5 @@ def formatted_string(string: str, length: int = 100, title: bool = True) -> str:
                 while string[idx] != ' ':
                     idx -= 1
                 string = string[:idx]
-    return string.title() if title else string
+    return string
 
