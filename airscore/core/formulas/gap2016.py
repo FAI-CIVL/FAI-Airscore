@@ -66,8 +66,8 @@ pg_preset = FormulaPreset(
     no_goal_penalty=Preset(value=1.0, visible=True, editable=True),
     # Glide Bonus for Stopped Task: default is 4 for PG and 5 for HG
     glide_bonus=Preset(value=4.0, visible=True, editable=True),
-    # Waypoint radius tolerance for validation: FLOAT default is 0.1%
-    tolerance=Preset(value=0.002, visible=True, editable=True),
+    # Waypoint radius tolerance for validation: FLOAT default is 0.5%
+    tolerance=Preset(value=0.005, visible=True, editable=True),
     # Waypoint radius minimum tolerance (meters): INT default = 5
     min_tolerance=Preset(value=5, visible=True, editable=True),
     # Scoring Altitude Type: default is GPS for PG and QNH for HG
@@ -118,8 +118,8 @@ hg_preset = FormulaPreset(
     no_goal_penalty=Preset(value=0.20, visible=True, editable=True),
     # Glide Bonus for Stopped Task: default is 4 for PG and 5 for HG
     glide_bonus=Preset(value=5.0, visible=True, editable=True),
-    # Waypoint radius tolerance for validation: FLOAT default is 0.1%
-    tolerance=Preset(value=0.002, visible=True, editable=True),
+    # Waypoint radius tolerance for validation: FLOAT default is 0.5%
+    tolerance=Preset(value=0.005, visible=True, editable=True),
     # Waypoint radius minimum tolerance (meters): INT default = 5
     min_tolerance=Preset(value=5, visible=True, editable=True),
     # Scoring Altitude Type: default is GPS for PG and QNH for HG
