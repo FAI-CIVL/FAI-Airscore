@@ -490,7 +490,7 @@ class FlightResult(Participant):
             res_path = Path(MAPOBJDIR, 'tracks', str(task.id))
             """check if directory already exists"""
             if not res_path.is_dir():
-                res_path.mkdir(mode=0o755)
+                res_path.mkdir(mode=0o755, parents=True)
             """creates a name for the file.
             par_id.track"""
             filename = f'{self.par_id}.track'
@@ -511,7 +511,7 @@ class FlightResult(Participant):
         res_path = Path(MAPOBJDIR, 'tracks', str(taskid))
         """check if directory already exists"""
         if not res_path.is_dir():
-            makedirs(res_path)
+            res_path.mkdir(mode=0o755, parents=True)
         """creates a name for the track
         name_surname_date_time_index.igc
         if we use flight date then we need an index for multiple tracks"""
