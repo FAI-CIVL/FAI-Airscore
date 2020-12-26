@@ -3,7 +3,7 @@ function populate_track_admin(task_id){
         destroy: true,
         ajax: '/users/_get_tracks_admin/'+task_id,
         paging: true,
-        order: [[ 1, 'desc' ]],
+        order: [[ 1, 'asc' ]],
         lengthMenu: [60, 150 ],
         searching: true,
         info: false,
