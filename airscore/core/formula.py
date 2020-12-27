@@ -461,9 +461,8 @@ def get_fsdb_info(formula, form):
         else float(form.get('leading_weight_factor'))
     )
     '''tolerance'''
-    formula.tolerance = 0.0 + float(
-        form.get('turnpoint_radius_tolerance') if form.get('turnpoint_radius_tolerance') else 0.001
-    )  # tolerance, perc / 100
+    if form.get('turnpoint_radius_tolerance'):
+        formula.tolerance = float(form.get('turnpoint_radius_tolerance'))  # tolerance, perc / 100
     '''stopped task parameters'''
     formula.validity_min_time = (
             get_int(form.get('min_time_span_for_valid_task')) * 60)  # min. time for valid task, seconds
