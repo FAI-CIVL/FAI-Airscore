@@ -960,7 +960,7 @@ def _norm_arrival_yaml(compid):
 @blueprint.route('/flaretiming/<compid>/mask-arrival', methods=['GET'])
 def _norm_arrival(compid):
     from flaretiming import ft_arrival
-    return jsonify(ft_arrival(int(compid)))
+    return ft_arrival(int(compid))
 
 
 @blueprint.route('/flaretiming_yaml/<compid>/land-out', methods=['GET'])
@@ -979,5 +979,5 @@ def _norm_landout_yaml(compid):
 @blueprint.route('/flaretiming/<compid>/land-out', methods=['GET'])
 def _norm_landout(compid):
     from flaretiming import ft_landout
-    return jsonify(ft_landout(int(compid)))
+    return ft_landout(int(compid))
 
