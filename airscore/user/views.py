@@ -1036,8 +1036,12 @@ def _get_task_score_from_file(taskid: int, filename: str):
         parid = r['par_id']
         name = r['name']
         status = r['result_type']
+        pilot = dict(par_id=parid, rank=rank, name=name, SSS='', ESS='', time='', altbonus='', distance='',
+                     speedP='', leadP='', arrivalP='', distanceP='', penalty='', score=status,
+                     notifications=r['notifications'])
         if status not in ['dnf', 'abs', 'nyp']:
-            pilot = {'rank': rank, 'name': f'<a href="/map/{parid}-{taskid}?back_link=0" target="_blank">{name}</a>'}
+            if not session['external']:
+                pilot['name'] = f'<a href="/map/{parid}-{taskid}?back_link=0" target="_blank">{name}</a>'
             if r['SSS_time']:
                 pilot['SSS'] = sec_to_time(r['SSS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S")
             else:
@@ -1058,9 +1062,6 @@ def _get_task_score_from_file(taskid: int, filename: str):
             pilot['penalty'] = c_round(r['penalty'], 2) if r['penalty'] else ""
             pilot['score'] = c_round(r['score'], 2)
 
-        else:
-            pilot = dict(rank=rank, name=name, SSS='', ESS='', time='', altbonus='', distance='',
-                         speedP='', leadP='', arrivalP='', distanceP='', penalty='', score=status)
         # TODO once result files have a list of comments we can activate these lines and remove the 3 dummy lines below
         # pilot['Track_Comment'] = r['comment'][0]
         # pilot['Penalty_Comment'] = r['comment'][1]
@@ -1068,8 +1069,6 @@ def _get_task_score_from_file(taskid: int, filename: str):
         # pilot['Track Comment'] = 'test track comment'
         # pilot['Penalty Comment'] = 'test penalt comment'
         # pilot['Admin Comment'] = 'test admin comment'
-        pilot['par_id'] = r['par_id']
-        pilot['notifications'] = r['notifications']
         all_pilots.append(pilot)
         rank += 1
 
