@@ -1792,7 +1792,9 @@ def convert_external_comp(comp_id: int) -> bool:
             tasks = [el for el, in db.query(T.task_id).filter_by(comp_id=comp_id).distinct()]
             if tasks:
                 '''clear tasks results'''
-                results = db.query(R).filter(R.task_id.in_(tasks))
+                results = db.query(R)\
+                    .filter(R.task_id.in_(tasks))\
+                    .filter(R.result_type.notin_(['abs', 'dnf', 'mindist']))
                 if results:
                     tracks = [el.track_id for el in results.all()]
                     db.query(TW).filter(TW.track_id.in_(tracks)).delete(synchronize_session=False)
