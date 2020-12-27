@@ -414,66 +414,65 @@ class TaskFormula(Formula):
         return True
 
 
-def get_fsdb_info(formula, form):
+def get_fsdb_info(formula: Formula or TaskFormula, fsdb_data) -> Formula or TaskFormula:
+    """Updates a Formula or TaskFormula object with data from an FSDB file"""
     from calcUtils import get_int
-    formula.formula_name = form.get('id')
+    formula.formula_name = fsdb_data.get('id')
     '''scoring parameters'''
-    formula.min_dist = 0 + float(form.get('min_dist')) * 1000  # min. distance, meters
-    formula.nominal_dist = 0 + float(form.get('nom_dist')) * 1000  # nom. distance, meters
-    formula.nominal_time = 0 + int(float(form.get('nom_time')) * 3600)  # nom. time, seconds
-    formula.nominal_launch = 0 + float(form.get('nom_launch'))  # nom. launch, perc / 100
-    formula.nominal_goal = 0 + float(form.get('nom_goal'))  # nom. goal, perc / 100
-    formula.scoring_altitude = 'GPS' if form.get('scoring_altitude') == 'GPS' else 'QNH'
-    # print(f"min. dist.: {float(form.get('min_dist'))} - {formula.min_dist}")
-    # print(f"nom. dist.: {float(form.get('nom_dist'))} - {formula.nominal_dist}")
+    formula.min_dist = 0 + float(fsdb_data.get('min_dist')) * 1000  # min. distance, meters
+    formula.nominal_dist = 0 + float(fsdb_data.get('nom_dist')) * 1000  # nom. distance, meters
+    formula.nominal_time = 0 + int(float(fsdb_data.get('nom_time')) * 3600)  # nom. time, seconds
+    formula.nominal_launch = 0 + float(fsdb_data.get('nom_launch'))  # nom. launch, perc / 100
+    formula.nominal_goal = 0 + float(fsdb_data.get('nom_goal'))  # nom. goal, perc / 100
+    formula.scoring_altitude = 'GPS' if fsdb_data.get('scoring_altitude') == 'GPS' else 'QNH'
+    # print(f"min. dist.: {float(fsdb_data.get('min_dist'))} - {formula.min_dist}")
+    # print(f"nom. dist.: {float(fsdb_data.get('nom_dist'))} - {formula.nominal_dist}")
     # print(f"Altitude.: {formula.scoring_altitude}")
     '''formula parameters'''
-    # distance point: on, difficulty, off
+    '''distance point: on, difficulty, off'''
     formula.formula_distance = (
         'difficulty'
-        if form.get('use_difficulty_for_distance_points') == '1'
+        if fsdb_data.get('use_difficulty_for_distance_points') == '1'
         else 'on'
-        if form.get('use_distance_points') == '1'
+        if fsdb_data.get('use_distance_points') == '1'
         else 'off'
     )
-    # arrival points: position, time, off
+    '''arrival points: position, time, off'''
     formula.formula_arrival = (
         'position'
-        if form.get('use_arrival_position_points') == '1'
+        if fsdb_data.get('use_arrival_position_points') == '1'
         else 'time'
-        if form.get('use_arrival_time_points') == '1'
+        if fsdb_data.get('use_arrival_time_points') == '1'
         else 'off'
     )
     # departure points: leadout, on, off
     formula.formula_departure = (
         'leadout'
-        if form.get('use_leading_points') == '1'
+        if fsdb_data.get('use_leading_points') == '1'
         else 'on'
-        if form.get('use_departure_points') == '1'
+        if fsdb_data.get('use_departure_points') == '1'
         else 'off'
     )
-    # time points: on, off
-    formula.formula_time = 'on' if form.get('use_time_points') == '1' else 'off'
-    # leading points factor: probably needs to be linked to GAP version
-    formula.lead_factor = (
-        1
-        if form.get('use_leading_points') == '0' or not form.get('leading_weight_factor')
-        else float(form.get('leading_weight_factor'))
-    )
+    '''time points: on, off'''
+    formula.formula_time = 'on' if fsdb_data.get('use_time_points') == '1' else 'off'
+    '''leading points factor'''
+    if fsdb_data.get('leading_weight_factor'):
+        formula.lead_factor = float(fsdb_data.get('leading_weight_factor'))
     '''tolerance'''
-    if form.get('turnpoint_radius_tolerance'):
-        formula.tolerance = float(form.get('turnpoint_radius_tolerance'))  # tolerance, perc / 100
+    if fsdb_data.get('turnpoint_radius_tolerance'):
+        formula.tolerance = 0.0 + float(fsdb_data.get('turnpoint_radius_tolerance'))  # tolerance, perc / 100
     '''stopped task parameters'''
     formula.validity_min_time = (
-            get_int(form.get('min_time_span_for_valid_task')) * 60)  # min. time for valid task, seconds
-    formula.score_back_time = get_int(form.get('score_back_time')) * 60  # Scoreback Time, seconds
-    formula.glide_bonus = 0.0 + float(form.get('bonus_gr'))  # glide ratio
+            get_int(fsdb_data.get('min_time_span_for_valid_task')) * 60)  # min. time for valid task, seconds
+    formula.score_back_time = get_int(fsdb_data.get('score_back_time')) * 60  # Scoreback Time, seconds
+    formula.glide_bonus = 0.0 + float(fsdb_data.get('bonus_gr'))  # glide ratio
     '''bonus and penalties'''
-    formula.no_goal_penalty = c_round(1.0 - float(form.get('time_points_if_not_in_goal')), 4)
-    formula.arr_alt_bonus = float(form.get('aatb_factor') if form.get('final_glide_decelerator') == 'aatb' else 0)
+    formula.no_goal_penalty = c_round(1.0 - float(fsdb_data.get('time_points_if_not_in_goal')), 4)
+    if fsdb_data.get('final_glide_decelerator') == 'aatb':
+        formula.arr_alt_bonus = float(fsdb_data.get('aatb_factor'))
     '''jump the gun'''
-    formula.max_JTG = get_int(form.get('jump_the_gun_max'))  # seconds
-    formula.JTG_penalty_per_sec = (
-        None if form.get('jump_the_gun_factor') == '0' else c_round(1 / float(form.get('jump_the_gun_factor')), 4)
-    )
+    if not fsdb_data.get('jump_the_gun_factor') == '0':
+        formula.max_JTG = get_int(fsdb_data.get('jump_the_gun_max'))  # seconds
+        formula.JTG_penalty_per_sec = c_round(1 / float(fsdb_data.get('jump_the_gun_factor')), 4)
+
     return formula
