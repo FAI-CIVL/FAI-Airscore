@@ -380,6 +380,11 @@ def get_valid_ids(comp_id: int, participants: list) -> list:
 
 
 def formatted_string(string: str, length: int = 100, title: bool = True) -> str:
+    """function to format participant string attributes that could be longer than database field.
+    it tries to shorten string parts starting from last word, replacing with dotted initial letter, until string length
+    is within given limit.
+    If fails, returns the given string truncated within given length limit."""
+
     if not isinstance(string, str):
         return ''
     if len(string) > length:
