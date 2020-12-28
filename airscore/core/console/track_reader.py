@@ -27,13 +27,13 @@ def main(args):
 
     out = 0
     """Get tasPk"""
-    task_id = 0 + int(args[0])
+    task_id = int(args[0])
     """Get file"""
     tempfile = str(args[1])
     """Get filename"""
     filename = str(args[2])
     """get pilot"""
-    par_id = 0 + int(args[3])
+    par_id = int(args[3])
 
     '''create logging and disable output'''
     Logger('ON', 'track_reader.txt')
