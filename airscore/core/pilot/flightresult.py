@@ -213,76 +213,68 @@ class FlightResult(Participant):
 
         result = FlightResult()
         result.ID = int(elem.get('id'))
-
-        if elem.find('FsFlightData') is None and elem.find('FsResult') is None:
+        fdata = elem.find('FsFlightData')
+        fres = elem.find('FsResult')
+        if fdata is None:
             '''pilot is abs'''
-            print(f"ID {result.ID}: ABS")
             result.result_type = 'abs'
             return result
-        elif elem.find('FsFlightData') is None or elem.find('FsFlightData').get('tracklog_filename') in [None, '']:
-            print(f"ID {result.ID}: No track")
-            print(f" - distance: {float(elem.find('FsResult').get('distance'))}")
-            if float(elem.find('FsResult').get('distance')) > 0:
-                '''pilot is min dist'''
-                print(f"ID {result.ID}: Min Dist")
-                result.result_type = 'mindist'
-            else:
-                '''pilot is dnf'''
-                print(f"ID {result.ID}: DNF")
-                result.result_type = 'dnf'
+
+        if not fdata.items() and float(fres.get('distance')) == 0:
+            '''pilot is dnf'''
+            result.result_type = 'dnf'
             return result
 
-        if elem.find('FsFlightData') is not None:
-            result.track_file = elem.find('FsFlightData').get('tracklog_filename')
-        d = elem.find('FsFlightData')
-        result.result_type = 'lo'
-        result.real_start_time = None if not d.get('started_ss') else string_to_seconds(d.get('started_ss')) - offset
-        result.last_altitude = float(d.get('last_tracklog_point_alt') or 0)
-        result.max_altitude = int(d.get('max_alt') if d.get('max_alt') is not None else 0)
-        result.track_file = d.get('tracklog_filename')
-        result.lead_coeff = None if d.get('lc') is None else float(d.get('lc'))
-        if not d.get('finished_ss') == "":
-            result.ESS_altitude = float(d.get('altitude_at_ess') or 0)
+        if fdata.get('tracklog_filename') in [None, '']:
+            '''pilot is min dist'''
+            result.result_type = 'mindist'
+        else:
+            result.track_file = fdata.get('tracklog_filename')
+            result.result_type = 'lo'
+        result.real_start_time = None if not fdata.get('started_ss') else string_to_seconds(fdata.get('started_ss')) - offset
+        result.last_altitude = float(fdata.get('last_tracklog_point_alt') or 0)
+        result.max_altitude = int(fdata.get('max_alt') if fdata.get('max_alt') is not None else 0)
+        result.track_file = fdata.get('tracklog_filename')
+        result.lead_coeff = None if fdata.get('lc') is None else float(fdata.get('lc'))
+        if not fdata.get('finished_ss') == "":
+            result.ESS_altitude = float(fdata.get('altitude_at_ess') or 0)
 
-        if elem.find('FsResult') is not None:
+        if fres is not None:
             '''reading flight data'''
-            r = elem.find('FsResult')
-            # result['rank'] = int(r.get('rank'))
-            result.score = float(r.get('points'))
-            result.total_distance = float(r.get('distance')) * 1000  # in meters
-            result.distance_flown = float(r.get('real_distance')) * 1000  # in meters
-            # print ("start_ss: {}".format(r.get('started_ss')))
-            result.SSS_time = None if not r.get('started_ss') else string_to_seconds(r.get('started_ss')) - offset
+            result.score = float(fres.get('points'))
+            result.total_distance = float(fres.get('distance')) * 1000  # in meters
+            result.distance_flown = float(fres.get('real_distance')) * 1000  # in meters
+            result.SSS_time = None if not fres.get('started_ss') else string_to_seconds(fres.get('started_ss')) - offset
             if result.SSS_time is not None:
-                result.ESS_time = None if not r.get('finished_ss') else string_to_seconds(r.get('finished_ss')) - offset
+                result.ESS_time = None if not fres.get('finished_ss') else string_to_seconds(fres.get('finished_ss')) - offset
                 if task.SS_distance is not None and result.ESS_time is not None and result.ESS_time > 0:
                     result.speed = (task.SS_distance / 1000) / ((result.ESS_time - result.SSS_time) / 3600)
-                    result.ESS_rank = None if not r.get('finished_ss_rank') else int(r.get('finished_ss_rank'))
-                if d.get('reachedGoal') == "1" or (result.ESS_time and task.fake_goal_turnpoint):
+                    result.ESS_rank = None if not fres.get('finished_ss_rank') else int(fres.get('finished_ss_rank'))
+                if fdata.get('reachedGoal') == "1" or (result.ESS_time and task.fake_goal_turnpoint):
                     result.goal_time = (
-                        None if not d.get('finished_task') else string_to_seconds(d.get('finished_task')) - offset
+                        None if not fdata.get('finished_task') else string_to_seconds(fdata.get('finished_task')) - offset
                     )
                     result.result_type = 'goal'
             else:
                 result.ESS_time = None
-            result.last_altitude = int(r.get('last_altitude_above_goal'))
-            result.distance_score = float(r.get('distance_points'))
-            result.time_score = float(r.get('time_points'))
+            result.last_altitude = int(fres.get('last_altitude_above_goal'))
+            result.distance_score = float(fres.get('distance_points'))
+            result.time_score = float(fres.get('time_points'))
             result.penalty = 0  # fsdb score is already decreased by penalties
-            if not r.get('penalty_reason_auto') == "":
+            if not fres.get('penalty_reason_auto') == "":
                 notification = Notification(
                     notification_type='jtg',
-                    flat_penalty=float(r.get('penalty_points_auto')),
-                    comment=(r.get('penalty_reason_auto')),
+                    flat_penalty=float(fres.get('penalty_points_auto')),
+                    comment=(fres.get('penalty_reason_auto')),
                 )
                 result.notifications.append(notification)
             if dep == 'on':
-                result.departure_score = float(r.get('departure_points'))
+                result.departure_score = float(fres.get('departure_points'))
             elif dep == 'leadout':
-                result.departure_score = float(r.get('leading_points'))
+                result.departure_score = float(fres.get('leading_points'))
             else:
                 result.departure_score = 0  # not necessary as it it initialized to 0
-            result.arrival_score = float(r.get('arrival_points')) if arr != 'off' else 0
+            result.arrival_score = float(fres.get('arrival_points')) if arr != 'off' else 0
         if elem.find('FsResultPenalty') is not None:
             '''reading penalties'''
             pen = elem.find('FsResultPenalty')
