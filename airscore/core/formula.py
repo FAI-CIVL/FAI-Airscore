@@ -419,11 +419,11 @@ def get_fsdb_info(formula: Formula or TaskFormula, fsdb_data) -> Formula or Task
     from calcUtils import get_int
     formula.formula_name = fsdb_data.get('id')
     '''scoring parameters'''
-    formula.min_dist = 0 + float(fsdb_data.get('min_dist')) * 1000  # min. distance, meters
-    formula.nominal_dist = 0 + float(fsdb_data.get('nom_dist')) * 1000  # nom. distance, meters
-    formula.nominal_time = 0 + int(float(fsdb_data.get('nom_time')) * 3600)  # nom. time, seconds
-    formula.nominal_launch = 0 + float(fsdb_data.get('nom_launch'))  # nom. launch, perc / 100
-    formula.nominal_goal = 0 + float(fsdb_data.get('nom_goal'))  # nom. goal, perc / 100
+    formula.min_dist = float(fsdb_data.get('min_dist')) * 1000  # min. distance, meters
+    formula.nominal_dist = float(fsdb_data.get('nom_dist')) * 1000  # nom. distance, meters
+    formula.nominal_time = int(float(fsdb_data.get('nom_time')) * 3600)  # nom. time, seconds
+    formula.nominal_launch = float(fsdb_data.get('nom_launch'))  # nom. launch, perc / 100
+    formula.nominal_goal = float(fsdb_data.get('nom_goal'))  # nom. goal, perc / 100
     formula.scoring_altitude = 'GPS' if fsdb_data.get('scoring_altitude') == 'GPS' else 'QNH'
     # print(f"min. dist.: {float(fsdb_data.get('min_dist'))} - {formula.min_dist}")
     # print(f"nom. dist.: {float(fsdb_data.get('nom_dist'))} - {formula.nominal_dist}")
@@ -460,12 +460,12 @@ def get_fsdb_info(formula: Formula or TaskFormula, fsdb_data) -> Formula or Task
         formula.lead_factor = float(fsdb_data.get('leading_weight_factor'))
     '''tolerance'''
     if fsdb_data.get('turnpoint_radius_tolerance'):
-        formula.tolerance = 0.0 + float(fsdb_data.get('turnpoint_radius_tolerance'))  # tolerance, perc / 100
+        formula.tolerance = float(fsdb_data.get('turnpoint_radius_tolerance'))  # tolerance, perc / 100
     '''stopped task parameters'''
     formula.validity_min_time = (
             get_int(fsdb_data.get('min_time_span_for_valid_task')) * 60)  # min. time for valid task, seconds
     formula.score_back_time = get_int(fsdb_data.get('score_back_time')) * 60  # Scoreback Time, seconds
-    formula.glide_bonus = 0.0 + float(fsdb_data.get('bonus_gr'))  # glide ratio
+    formula.glide_bonus = float(fsdb_data.get('bonus_gr'))  # glide ratio
     '''bonus and penalties'''
     formula.no_goal_penalty = c_round(1.0 - float(fsdb_data.get('time_points_if_not_in_goal')), 4)
     if fsdb_data.get('final_glide_decelerator') == 'aatb':

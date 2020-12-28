@@ -40,7 +40,7 @@ def main(args):
 
     print("starting..")
     '''Main module. Takes track_id as parameter'''
-    track_id = 0 + int(args[0])
+    track_id = int(args[0])
 
     """Delete track"""
     out = delete_track(track_id)

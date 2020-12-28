@@ -44,7 +44,7 @@ def main(args):
 
     print("starting..")
     '''Main module. Takes refPk and status as parameters'''
-    ref_id = 0 + int(args[0])
+    ref_id = int(args[0])
     status = str(args[1])
 
     """Update result"""

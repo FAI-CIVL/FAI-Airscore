@@ -1230,7 +1230,7 @@ class Task(object):
 
         task.check_launch = 'off'
         task.task_name = t.get('name')
-        task.task_num = 0 + int(t.get('id'))
+        task.task_num = int(t.get('id'))
         print(f"task {task.task_num} - name: {task.task_name}")
         task.time_offset = offset
         if keep_task_path:

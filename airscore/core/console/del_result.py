@@ -44,7 +44,7 @@ def main(args):
     print("starting..")
     '''Main module. Takes ref_id as parameter'''
     """Get ref_id"""
-    result = 0 + int(args[0])
+    result = int(args[0])
 
     """Delete result"""
     out = delete_result(result)

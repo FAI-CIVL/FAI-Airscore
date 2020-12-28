@@ -24,7 +24,7 @@ def main(args):
     print("starting..")
     '''Main module. Takes task_id as parameter'''
 
-    task_id = 0 + int(args[0])
+    task_id = int(args[0])
     """Get zip filename"""
     zipfile = str(args[1])
 
