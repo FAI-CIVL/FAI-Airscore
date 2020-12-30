@@ -968,30 +968,25 @@ def _upload_XCTrack(taskid: int):
 @blueprint.route('/_upload_track_zip/<int:taskid>', methods=['POST'])
 @login_required
 def _upload_track_zip(taskid: int):
+    from Defines import track_formats
     if request.method == "POST":
-        if request.files:
-            if "filesize" in request.cookies:
-                if not frontendUtils.allowed_tracklog_filesize(request.cookies["filesize"], size=50):
-                    print("Filesize exceeded maximum limit")
-                    return redirect(request.url)
-                zip_file = request.files["zip_file"]
-                if zip_file.filename == "":
-                    print("No filename")
-                    return redirect(request.url)
+        if not request.files or "filesize" not in request.cookies:
+            return jsonify(success=False, error='No Zip file was given.')
+        elif not frontendUtils.allowed_tracklog_filesize(request.cookies["filesize"], size=50):
+            '''Filesize exceeded maximum limit'''
+            return jsonify(success=False, error='Filesize exceeded maximum limit.')
+        zip_file = request.files["zip_file"]
+        '''check if file is an archive, is not corrupt, and contains files with requested extension'''
+        valid, error = frontendUtils.check_zip_file(zip_file, track_formats)
+        if not valid:
+            return jsonify(success=False, error=error)
 
-                if frontendUtils.allowed_tracklog(zip_file.filename, extension=['zip']):
-                    resp = frontendUtils.process_zip_file(zip_file=zip_file,
-                                                          taskid=taskid,
-                                                          username=current_user.username,
-                                                          grecord=session['check_g_record'])
-                    return resp
-                else:
-                    print("That file extension is not allowed")
-                    return redirect(request.url)
-            resp = {'error': 'filesize'}
-            return resp
-        resp = {'error': 'request.files'}
+        resp = frontendUtils.process_zip_file(zip_file=zip_file,
+                                              taskid=taskid,
+                                              username=current_user.username,
+                                              grecord=session['check_g_record'])
         return resp
+
 
 
 @blueprint.route('/_get_task_result_files/<int:taskid>', methods=['POST'])

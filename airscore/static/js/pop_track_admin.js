@@ -167,13 +167,26 @@ function choose_zip_file(){
       });
     },
     submit: function (e, data){
+      $("bulk_button").text('Processing...');
+      $("bulk_button").removeClass("btn-primary").addClass('btn btn-warning');
       $('#zip_modal_message').hide();
       $('#zip_progress').show();
       $('#zip_spinner').show();
       $('#zip_progress_text').text(data.files[0].name + ' - processing');
       $('#zip_spinner').html('<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>');
     },
-    success: function () {
+    success: function (response) {
+      console.log('success...');
+      console.log(response);
+      if (response.success){
+        $("bulk_button").text('Done');
+        $("bulk_button").removeClass("btn-warning").addClass('btn-success');
+        create_flashed_message('Archive successfully processed.', 'info');
+      }
+      else {
+        create_flashed_message('There was an error trying to process archive.', 'danger');
+        if (response.error) create_flashed_message(response.error, 'warning');
+      }
       $('#bulkmodal').modal('hide');
       $('#zip_modal_message').show();
       $('#zip_progress').hide();
@@ -191,6 +204,12 @@ function choose_zip_file(){
         'width',
         progress + '%'
       );
+    },
+    complete: function () {
+      setTimeout(function(){
+        $("bulk_button").text('Bulk Import Tracks');
+        $("bulk_button").removeClass('btn-warning').removeClass('btn-success').addClass('btn-primary');
+      }, 3000);
     }
   });
   $('#bulk_fileupload').click();
@@ -279,89 +298,89 @@ function choose_file(par_id, g_overide=false, v_overide=false) {
 }
 
 $(document).ready(function(){
-    populate_track_admin(taskid);
-    update_track_pilot_stats();
-    console.log('production='+production);
+  populate_track_admin(taskid);
+  update_track_pilot_stats();
+  console.log('production='+production);
 
-    function initES() {
-      if (es == null || es.readyState == 2) { // this is probably not necessary.
-        es = new EventSource(url_sse_stream);
-        es.onerror = function(e) {
-          if (es.readyState == 2) {
-            setTimeout(initES, 5000);
-          }
-        };
-        es.addEventListener('% complete', function(event) {
-          var data = JSON.parse(event.data);
-          $('#progress_percentage'+ data.id).text(data.message + ' % complete');
-        }, false);
-        es.addEventListener('counter', function(event) {
-          var data = JSON.parse(event.data);
-          $('#ProcessModalTitle').text('Tracklog Processing. ' + data.message);
-        }, false);
-        es.addEventListener('info', function(event) {
-          var data = JSON.parse(event.data);
-          $('#process_text').append(data.message + "<br/>");
-        }, false);
-        es.addEventListener('open_modal', function(event) {
-          $('#log_button').show();
-          $('#ProcessModal').modal('show');
-        }, false);
-        es.addEventListener('result', function(event) {
-          var data = JSON.parse(event.data);
-          if(data.message == 'error'){
-            $('#ABS'+ data.id).show();
-            $('#MD'+ data.id).show();
-            $('#DNF'+ data.id).show();
-            $('#TrackUp'+ data.id).show();
-            $('#upload_box'+ data.id).show();
-            $('#filediv'+ data.id).hide();
-            $.alert(response.error,{
-              type: 'danger',
-              position: ['center', [-0.42, 0]],
-              autoClose: false
-            });
-            update_track_pilot_stats();
-          }
-          else {
-            update_row($.parseJSON(data.message));
-          }
-        }, false);
-        es.addEventListener('valid_fail', function(event) {
-          var data = JSON.parse(event.data);
-          data.message = JSON.parse(data.message);
+  function initES() {
+    if (es == null || es.readyState == 2) { // this is probably not necessary.
+      es = new EventSource(url_sse_stream);
+      es.onerror = function(e) {
+        if (es.readyState == 2) {
+          setTimeout(initES, 5000);
+        }
+      };
+      es.addEventListener('% complete', function(event) {
+        var data = JSON.parse(event.data);
+        $('#progress_percentage'+ data.id).text(data.message + ' % complete');
+      }, false);
+      es.addEventListener('counter', function(event) {
+        var data = JSON.parse(event.data);
+        $('#ProcessModalTitle').text('Tracklog Processing. ' + data.message);
+      }, false);
+      es.addEventListener('info', function(event) {
+        var data = JSON.parse(event.data);
+        $('#process_text').append(data.message + "<br/>");
+      }, false);
+      es.addEventListener('open_modal', function(event) {
+        $('#log_button').show();
+        $('#ProcessModal').modal('show');
+      }, false);
+      es.addEventListener('result', function(event) {
+        var data = JSON.parse(event.data);
+        if(data.message == 'error'){
           $('#ABS'+ data.id).show();
           $('#MD'+ data.id).show();
           $('#DNF'+ data.id).show();
           $('#TrackUp'+ data.id).show();
           $('#upload_box'+ data.id).show();
           $('#filediv'+ data.id).hide();
-          $('#progress_percentage'+ data.id).hide();
-          data.message.Result = '<button id="TrackUp_noV' + data.id  +'" class="btnupload btn btn-warning mt-3" onclick="choose_file(' + data.id +', false, true);">Upload IGC ignoring quality check & G record</button>'
-          update_row(data.message);
-        }, false);
-        es.addEventListener('g_record_fail', function(event) {
-          var data = JSON.parse(event.data);
-          data.message = JSON.parse(data.message);
-          $('#ABS'+ data.id).show();
-          $('#MD'+ data.id).show();
-          $('#DNF'+ data.id).show();
-          $('#TrackUp'+ data.id).show();
-          $('#upload_box'+ data.id).show();
-          $('#filediv'+ data.id).hide();
-          $('#progress_percentage'+ data.id).hide();
-          data.message.Result = '<button id="TrackUp_noG' + data.id  +'" class="btnupload btn btn-warning mt-3" onclick="choose_file(' + data.id +', true);">Upload IGC ignoring G record</button>'
-          update_row(data.message);
-        }, false);
-        es.addEventListener('reload', function(event) {
-          populate_track_admin(taskid);
+          $.alert(response.error,{
+            type: 'danger',
+            position: ['center', [-0.42, 0]],
+            autoClose: false
+          });
           update_track_pilot_stats();
-        }, false);
-      }
+        }
+        else {
+          update_row($.parseJSON(data.message));
+        }
+      }, false);
+      es.addEventListener('valid_fail', function(event) {
+        var data = JSON.parse(event.data);
+        data.message = JSON.parse(data.message);
+        $('#ABS'+ data.id).show();
+        $('#MD'+ data.id).show();
+        $('#DNF'+ data.id).show();
+        $('#TrackUp'+ data.id).show();
+        $('#upload_box'+ data.id).show();
+        $('#filediv'+ data.id).hide();
+        $('#progress_percentage'+ data.id).hide();
+        data.message.Result = '<button id="TrackUp_noV' + data.id  +'" class="btnupload btn btn-warning mt-3" onclick="choose_file(' + data.id +', false, true);">Upload IGC ignoring quality check & G record</button>'
+        update_row(data.message);
+      }, false);
+      es.addEventListener('g_record_fail', function(event) {
+        var data = JSON.parse(event.data);
+        data.message = JSON.parse(data.message);
+        $('#ABS'+ data.id).show();
+        $('#MD'+ data.id).show();
+        $('#DNF'+ data.id).show();
+        $('#TrackUp'+ data.id).show();
+        $('#upload_box'+ data.id).show();
+        $('#filediv'+ data.id).hide();
+        $('#progress_percentage'+ data.id).hide();
+        data.message.Result = '<button id="TrackUp_noG' + data.id  +'" class="btnupload btn btn-warning mt-3" onclick="choose_file(' + data.id +', true);">Upload IGC ignoring G record</button>'
+        update_row(data.message);
+      }, false);
+      es.addEventListener('reload', function(event) {
+        populate_track_admin(taskid);
+        update_track_pilot_stats();
+      }, false);
     }
+  }
 
-    if (production == true) {
-        var es = null;
-        initES();
-    }
+  if (production == true) {
+      var es = null;
+      initES();
+  }
 });
