@@ -1876,3 +1876,17 @@ def check_participants_ids(comp_id: int, pilots: list) -> list:
         returns a list of pilots with correct IDs"""
     from pilot.participant import get_valid_ids
     return get_valid_ids(comp_id, pilots)
+
+
+def check_zip_file(file: Path, extensions: list = None) -> tuple:
+    """function to check if zip file is a valid archive and is not empty"""
+    from zipfile import ZipFile, is_zipfile
+    if not is_zipfile(file):
+        return False, 'File is not a valid archive.'
+    zipfile = ZipFile(file)
+    if zipfile.testzip():
+        return False, 'Zip file is corrupt.'
+    elements = zipfile.namelist()
+    if not elements or extensions and not any(el for el in elements if Path(el).suffix[1:] in extensions):
+        return False, f'Zip file is empty or does not contain any file with extension: {", ".join(extensions)}.'
+    return True, 'success'
