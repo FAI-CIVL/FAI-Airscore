@@ -1473,7 +1473,7 @@ def pilot_admin(compid: int):
 @blueprint.route('/_modify_participant_details/<int:parid>', methods=['POST'])
 @login_required
 def _modify_participant_details(parid: int):
-    from pilot.participant import Participant, formatted_string
+    from pilot.participant import Participant, abbreviate
 
     form = ParticipantForm()
     form.nat.choices = [(x['code'], x['name']) for x in frontendUtils.list_countries()]
@@ -1482,13 +1482,13 @@ def _modify_participant_details(parid: int):
         participant = Participant.read(parid)
 
         participant.ID = form.id_num.data
-        participant.name = formatted_string(form.name.data)
+        participant.name = abbreviate(form.name.data)
         participant.civl_id = int(form.CIVL.data) if str(form.CIVL.data).isdigit() else None
         participant.sex = form.sex.data
         participant.nat = form.nat.data
         participant.glider = form.glider.data or None
         participant.glider_cert = form.certification.data or None
-        participant.sponsor = formatted_string(form.sponsor.data, title=False) or None
+        participant.sponsor = abbreviate(form.sponsor.data) or None
         participant.nat_team = bool(form.nat_team.data)
         participant.team = form.team.data or None
         participant.live_id = form.live_id.data or None
@@ -1503,7 +1503,7 @@ def _modify_participant_details(parid: int):
 @blueprint.route('/_add_participant/<int:compid>', methods=['POST'])
 @login_required
 def _add_participant(compid: int):
-    from pilot.participant import Participant, assign_id, formatted_string
+    from pilot.participant import Participant, assign_id, abbreviate
 
     form = ParticipantForm()
     form.nat.choices = [(x['code'], x['name']) for x in frontendUtils.list_countries()]
@@ -1513,13 +1513,13 @@ def _add_participant(compid: int):
         participant = Participant()
         participant.comp_id = compid
         participant.ID = assign_id(compid, given_id=form.id_num.data)
-        participant.name = formatted_string(form.name.data)
+        participant.name = abbreviate(form.name.data)
         participant.civl_id = int(form.CIVL.data) if str(form.CIVL.data).isdigit() else None
         participant.sex = form.sex.data
         participant.nat = form.nat.data
         participant.glider = form.glider.data or None
         participant.glider_cert = form.certification.data or None
-        participant.sponsor = formatted_string(form.sponsor.data, title=False) or None
+        participant.sponsor = abbreviate(form.sponsor.data) or None
         participant.nat_team = bool(form.nat_team.data)
         participant.team = form.team.data or None
         participant.live_id = form.live_id.data or None

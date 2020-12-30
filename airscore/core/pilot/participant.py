@@ -128,13 +128,13 @@ class Participant(Pilot):
             '''get all pilot info from fsdb file'''
             if from_CIVL:
                 print('*** no result in CIVL database, getting data from FSDB file')
-            pilot = Participant(name=formatted_string(name), civl_id=CIVLID)
+            pilot = Participant(name=abbreviate(name), civl_id=CIVLID)
             pilot.sex = 'F' if int(pil.get('female') if pil.get('female') else 0) > 0 else 'M'
             pilot.nat = pil.get('nat_code_3166_a3') or None
         pilot.birthdate = get_date(pil.get('birthday') or None)
         pilot.ID = get_int(pil.get('id'))
-        pilot.glider = formatted_string(pil.get('glider'), title=False) or None
-        pilot.sponsor = formatted_string(pil.get('sponsor'), title=False) or None
+        pilot.glider = abbreviate(pil.get('glider')) or None
+        pilot.sponsor = abbreviate(pil.get('sponsor')) or None
         """check fai is int"""
         if pil.get('fai_licence') in (0, '0', '', None):
             pilot.fai_valid = False
@@ -162,7 +162,7 @@ class Participant(Pilot):
             if result:
                 try:
                     pilot = Participant(pil_id=pilot_id, comp_id=comp_id)
-                    pilot.name = formatted_string(' '.join([result.first_name, result.last_name]))
+                    pilot.name = abbreviate(' '.join([result.first_name, result.last_name]))
                     if result.glider_brand:
                         pilot.glider = ' '.join([result.glider_brand.title(), result.glider])
                     else:
@@ -223,13 +223,13 @@ def extract_participants_from_excel(comp_id: int, filename, from_CIVL=False):
         if from_CIVL and row[9]:
             pil = create_participant_from_CIVLID(row[9])
         if pil is None:
-            pil = Participant(civl_id=row[9], name=formatted_string(row[1]), nat=row[2], sex='F' if row[3] == 1 else 'M')
+            pil = Participant(civl_id=row[9], name=abbreviate(row[1]), nat=row[2], sex='F' if row[3] == 1 else 'M')
         pil.ID = row[0]
         pil.comp_id = comp_id
         pil.birthdate = None if row[4] is None else row[4].date()  # row[4] should be datetime
-        pil.glider = formatted_string(row[5], title=False) or None
+        pil.glider = abbreviate(row[5]) or None
         pil.glider_cert = row[12]
-        pil.sponsor = formatted_string(row[7], title=False) or None
+        pil.sponsor = abbreviate(row[7]) or None
         pil.team = row[11]
         pil.fai_id = row[8]
         pil.fai_valid = 0 if row[8] is None else 1
@@ -379,7 +379,7 @@ def get_valid_ids(comp_id: int, participants: list) -> list:
     return participants
 
 
-def formatted_string(string: str, length: int = 100, title: bool = True) -> str:
+def abbreviate(string: str, length: int = 100) -> str:
     """function to format participant string attributes that could be longer than database field.
     it tries to shorten string parts starting from last word, replacing with dotted initial letter, until string length
     is within given limit.
