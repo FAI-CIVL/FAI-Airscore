@@ -12,6 +12,7 @@ Stuart Mackintosh Antonio Golfari - 2019
 """
 
 import json
+from pathlib import Path
 
 from calcUtils import c_round, get_date
 from compUtils import (
@@ -29,7 +30,6 @@ from pilot.participant import Participant
 from result import CompResult, create_json_file
 from sqlalchemy import and_
 from task import Task
-from pathlib import Path
 
 
 class Comp(object):
@@ -574,14 +574,15 @@ class Comp(object):
 
 def delete_comp(comp_id, files=True):
     """delete all database entries and files on disk related to comp"""
+    from shutil import rmtree
+
+    from compUtils import get_comp_path
     from db.tables import TblForComp as FC
     from db.tables import TblParticipant as P
     from db.tables import TblResultFile as RF
     from db.tables import TblTask as T
     from result import delete_result
     from task import delete_task
-    from compUtils import get_comp_path
-    from shutil import rmtree
 
     comp_path = get_comp_path(comp_id)
 

@@ -231,7 +231,9 @@ class FlightResult(Participant):
         else:
             result.track_file = fdata.get('tracklog_filename')
             result.result_type = 'lo'
-        result.real_start_time = None if not fdata.get('started_ss') else string_to_seconds(fdata.get('started_ss')) - offset
+        result.real_start_time = (
+            None if not fdata.get('started_ss') else string_to_seconds(fdata.get('started_ss')) - offset
+        )
         result.last_altitude = float(fdata.get('last_tracklog_point_alt') or 0)
         result.max_altitude = int(fdata.get('max_alt') if fdata.get('max_alt') is not None else 0)
         result.track_file = fdata.get('tracklog_filename')
@@ -246,13 +248,17 @@ class FlightResult(Participant):
             result.distance_flown = float(fres.get('real_distance')) * 1000  # in meters
             result.SSS_time = None if not fres.get('started_ss') else string_to_seconds(fres.get('started_ss')) - offset
             if result.SSS_time is not None:
-                result.ESS_time = None if not fres.get('finished_ss') else string_to_seconds(fres.get('finished_ss')) - offset
+                result.ESS_time = (
+                    None if not fres.get('finished_ss') else string_to_seconds(fres.get('finished_ss')) - offset
+                )
                 if task.SS_distance is not None and result.ESS_time is not None and result.ESS_time > 0:
                     result.speed = (task.SS_distance / 1000) / ((result.ESS_time - result.SSS_time) / 3600)
                     result.ESS_rank = None if not fres.get('finished_ss_rank') else int(fres.get('finished_ss_rank'))
                 if fdata.get('reachedGoal') == "1" or (result.ESS_time and task.fake_goal_turnpoint):
                     result.goal_time = (
-                        None if not fdata.get('finished_task') else string_to_seconds(fdata.get('finished_task')) - offset
+                        None
+                        if not fdata.get('finished_task')
+                        else string_to_seconds(fdata.get('finished_task')) - offset
                     )
                     result.result_type = 'goal'
             else:

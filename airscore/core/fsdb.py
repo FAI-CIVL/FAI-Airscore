@@ -15,7 +15,7 @@ from datetime import datetime
 from pathlib import Path
 
 import lxml.etree as ET
-from calcUtils import c_round, get_isotime, km, sec_to_time, get_int
+from calcUtils import c_round, get_int, get_isotime, km, sec_to_time
 from comp import Comp
 from compUtils import is_ext
 from db.conn import db_session

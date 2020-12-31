@@ -17,7 +17,7 @@ from db.tables import (
     TblTask,
     TblTaskWaypoint,
 )
-from Defines import IGCPARSINGCONFIG, MAPOBJDIR, track_formats, filename_formats
+from Defines import IGCPARSINGCONFIG, MAPOBJDIR, filename_formats, track_formats
 from flask import current_app, jsonify
 from map import make_map
 from route import Turnpoint
@@ -483,8 +483,13 @@ def get_task_turnpoints(task) -> dict:
     else:
         task_map = None
 
-    return {'turnpoints': turnpoints, 'next_number': max_n, 'distance': total_dist,
-            'map': task_map, 'task_set': task.is_set}
+    return {
+        'turnpoints': turnpoints,
+        'next_number': max_n,
+        'distance': total_dist,
+        'map': task_map,
+        'task_set': task.is_set,
+    }
 
 
 def get_comp_regions(compid: int):
@@ -917,8 +922,11 @@ def get_task_result_file_list(taskid: int, comp_id: int) -> dict:
     files = []
     with db_session() as db:
         task_results = db.query(R.created, R.filename, R.status, R.active, R.ref_id).filter_by(task_id=taskid).all()
-        comp_results = db.query(R.created, R.filename, R.status, R.active, R.ref_id).filter(R.comp_id == comp_id,
-                                                                                            R.task_id.is_(None)).all()
+        comp_results = (
+            db.query(R.created, R.filename, R.status, R.active, R.ref_id)
+            .filter(R.comp_id == comp_id, R.task_id.is_(None))
+            .all()
+        )
 
         tasks_files = [row._asdict() for row in task_results]
         comp_files = [row._asdict() for row in comp_results]
@@ -1686,12 +1694,13 @@ def get_task_result_files(task_id: int, comp_id: int = None, offset: int = None)
         comp_choices.append((file['filename'], f'{published} - {status}' if status else f'{published}'))
     comp_choices.reverse()
 
-    return {'task_choices': task_choices,
-            'task_header': task_header,
-            'task_active': task_active,
-            'comp_choices': comp_choices,
-            'comp_header': comp_header,
-            'comp_active': comp_active
+    return {
+        'task_choices': task_choices,
+        'task_header': task_header,
+        'task_active': task_active,
+        'comp_choices': comp_choices,
+        'comp_header': comp_header,
+        'comp_active': comp_active,
     }
 
 
@@ -1765,12 +1774,14 @@ def update_comp_result(comp_id: int, status: str = None, name_suffix: str = None
 def task_has_valid_results(task_id: int) -> bool:
 
     from db.tables import TblTaskResult as TR
+
     return bool(TR.get_task_flights(task_id))
 
 
 def get_task_info(task_id: int) -> dict:
 
     from task import Task
+
     result = {}
     task = Task.read(task_id)
     if task:
@@ -1792,9 +1803,9 @@ def convert_external_comp(comp_id: int) -> bool:
             tasks = [el for el, in db.query(T.task_id).filter_by(comp_id=comp_id).distinct()]
             if tasks:
                 '''clear tasks results'''
-                results = db.query(R)\
-                    .filter(R.task_id.in_(tasks))\
-                    .filter(R.result_type.notin_(['abs', 'dnf', 'mindist']))
+                results = (
+                    db.query(R).filter(R.task_id.in_(tasks)).filter(R.result_type.notin_(['abs', 'dnf', 'mindist']))
+                )
                 if results:
                     tracks = [el.track_id for el in results.all()]
                     db.query(TW).filter(TW.track_id.in_(tracks)).delete(synchronize_session=False)
@@ -1819,10 +1830,11 @@ def convert_external_comp(comp_id: int) -> bool:
 
 
 def check_openair_file(file) -> tuple:
+    from shutil import copyfile
+    from tempfile import TemporaryDirectory
+
     from airspaceUtils import openair_content_to_data, save_airspace_map_check_files
     from Defines import AIRSPACEDIR
-    from tempfile import TemporaryDirectory
-    from shutil import copyfile
 
     modified = False
     with TemporaryDirectory() as tempdir:
@@ -1872,15 +1884,17 @@ def get_igc_filename_formats_list() -> list:
 
 
 def check_participants_ids(comp_id: int, pilots: list) -> list:
-    """ gets a list of pilots and checks their ID validity against registered pilots and correct formats
-        returns a list of pilots with correct IDs"""
+    """gets a list of pilots and checks their ID validity against registered pilots and correct formats
+    returns a list of pilots with correct IDs"""
     from pilot.participant import get_valid_ids
+
     return get_valid_ids(comp_id, pilots)
 
 
 def check_zip_file(file: Path, extensions: list = None) -> tuple:
     """function to check if zip file is a valid archive and is not empty"""
     from zipfile import ZipFile, is_zipfile
+
     if not is_zipfile(file):
         return False, 'File is not a valid archive.'
     zipfile = ZipFile(file)

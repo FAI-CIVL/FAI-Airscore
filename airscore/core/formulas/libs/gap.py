@@ -20,7 +20,6 @@ from pilot.flightresult import FlightResult
 
 
 def difficulty_calculation(task):
-
     @dataclass
     class Diffslot:
         dist_x10: int
@@ -432,8 +431,8 @@ def pilot_distance(task, pil):
         linear_fraction = 0.5 * pil.distance / task.max_distance
         dist10 = int(pil.distance / 100)  # int(dist in Km * 10)
         diff_fraction = diff[dist10].diff_score
-        if len(diff) > dist10 + 1 and diff[dist10+1].diff_score > diff_fraction:
-            diff_fraction += ((diff[dist10 + 1].diff_score - diff[dist10].diff_score) * (pil.distance / 100 - dist10))
+        if len(diff) > dist10 + 1 and diff[dist10 + 1].diff_score > diff_fraction:
+            diff_fraction += (diff[dist10 + 1].diff_score - diff[dist10].diff_score) * (pil.distance / 100 - dist10)
         return task.avail_dist_points * (linear_fraction + diff_fraction)
 
 

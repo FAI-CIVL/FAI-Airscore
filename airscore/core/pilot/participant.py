@@ -347,10 +347,10 @@ def mass_import_participants(comp_id: int, participants: list, check_ids=True):
 
 
 def assign_id(comp_id: int, given_id: int = None, participants: list = None, assigned_ids: list = None) -> int:
-    """ assigns pilots and ID if not given and if not unique
-        comp_id: comp_id
-        given_id: ID that was given if any
-        participants: list of participants dicts"""
+    """assigns pilots and ID if not given and if not unique
+    comp_id: comp_id
+    given_id: ID that was given if any
+    participants: list of participants dicts"""
     from calcUtils import get_int
 
     if not participants:
@@ -368,8 +368,8 @@ def assign_id(comp_id: int, given_id: int = None, participants: list = None, ass
 
 
 def get_valid_ids(comp_id: int, participants: list) -> list:
-    """ gets a list of pilots and checks their ID validity against registered pilots and correct formats
-        returns a list of pilots with correct IDs"""
+    """gets a list of pilots and checks their ID validity against registered pilots and correct formats
+    returns a list of pilots with correct IDs"""
     '''get participants already in competition, to avoid same id'''
     registered = P.get_dicts(comp_id)
     assigned_ids = []
@@ -393,7 +393,7 @@ def abbreviate(string: str, length: int = 100) -> str:
         while len(string) > length:
             try:
                 idx = data.index(next(el for el in data if len(el) > 2))
-                data[idx] = data[idx][0]+'.'
+                data[idx] = data[idx][0] + '.'
                 string = ' '.join(reversed(data))
                 print(f'name: {string}')
             except (ValueError, StopIteration):
@@ -402,4 +402,3 @@ def abbreviate(string: str, length: int = 100) -> str:
                     idx -= 1
                 string = string[:idx]
     return string
-

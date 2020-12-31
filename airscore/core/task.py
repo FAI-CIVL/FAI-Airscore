@@ -236,8 +236,14 @@ class Task(object):
 
     @property
     def ready_to_score(self) -> bool:
-        return bool(self.opt_dist and self.window_open_time and self.window_close_time
-                    and self.start_time and self.start_close_time and self.task_deadline)
+        return bool(
+            self.opt_dist
+            and self.window_open_time
+            and self.window_close_time
+            and self.start_time
+            and self.start_close_time
+            and self.task_deadline
+        )
 
     @property
     def is_set(self) -> bool:
@@ -454,7 +460,8 @@ class Task(object):
 
     @property
     def std_dev_dist(self):
-        from statistics import stdev, StatisticsError
+        from statistics import StatisticsError, stdev
+
         try:
             return stdev([max(p.distance_flown, self.formula.min_dist) for p in self.valid_results])
         except (StatisticsError, IndexError, AttributeError, Exception):
@@ -1218,7 +1225,7 @@ class Task(object):
         Unfortunately the fsdb format isn't published so much of this is simply an
         exercise in reverse engineering.
         """
-        from calcUtils import get_int, get_date, get_time, time_to_seconds
+        from calcUtils import get_date, get_int, get_time, time_to_seconds
         from compUtils import get_fsdb_task_path
         from formula import TaskFormula
 

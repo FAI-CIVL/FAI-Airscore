@@ -44,7 +44,7 @@ def get_formula_lib_by_name(formula_name: str):
     try:
         lib = importlib.import_module(formula_file, package=None)
         return lib
-    except(ModuleNotFoundError, Exception):
+    except (ModuleNotFoundError, Exception):
         print(f'formula file {formula_file} not found.')
         return None
 
@@ -198,6 +198,7 @@ class Formula(object):
     @property
     def formula_type(self):
         import re
+
         try:
             return re.search(r"[a-zA-Z]*", self.formula_name).group().lower()
         except (TypeError, AttributeError):
@@ -210,6 +211,7 @@ class Formula(object):
     @property
     def formula_version(self):
         import re
+
         try:
             return int(re.search(r"(\d+)", self.formula_name).group())
         except (TypeError, AttributeError):
@@ -417,6 +419,7 @@ class TaskFormula(Formula):
 def get_fsdb_info(formula: Formula or TaskFormula, fsdb_data) -> Formula or TaskFormula:
     """Updates a Formula or TaskFormula object with data from an FSDB file"""
     from calcUtils import get_int
+
     formula.formula_name = fsdb_data.get('id')
     '''scoring parameters'''
     formula.min_dist = float(fsdb_data.get('min_dist')) * 1000  # min. distance, meters
@@ -463,7 +466,8 @@ def get_fsdb_info(formula: Formula or TaskFormula, fsdb_data) -> Formula or Task
         formula.tolerance = float(fsdb_data.get('turnpoint_radius_tolerance'))  # tolerance, perc / 100
     '''stopped task parameters'''
     formula.validity_min_time = (
-            get_int(fsdb_data.get('min_time_span_for_valid_task')) * 60)  # min. time for valid task, seconds
+        get_int(fsdb_data.get('min_time_span_for_valid_task')) * 60
+    )  # min. time for valid task, seconds
     formula.score_back_time = get_int(fsdb_data.get('score_back_time')) * 60  # Scoreback Time, seconds
     formula.glide_bonus = float(fsdb_data.get('bonus_gr'))  # glide ratio
     '''bonus and penalties'''

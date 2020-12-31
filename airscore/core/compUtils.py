@@ -7,10 +7,10 @@ Antonio Golfari - 2019
 
 import datetime
 import json
-import Defines
-
-from db.conn import db_session
 from pathlib import Path
+
+import Defines
+from db.conn import db_session
 
 
 def get_comp(task_id: int):
@@ -251,9 +251,10 @@ def create_comp_code(name: str, date: datetime.date) -> str:
     """creates comp_code from name and date if nothing was given
     standard code is 6 chars + 2 numbers, checks that folder does not exist, otherwise adds an index.
     """
-    from calcUtils import toBase62
     import random
     import string
+
+    from calcUtils import toBase62
 
     names = [n for n in name.split() if not any(char.isdigit() for char in str(n))]
     if len(names) >= 2:
