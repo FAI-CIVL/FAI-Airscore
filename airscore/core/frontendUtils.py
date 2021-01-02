@@ -1759,6 +1759,20 @@ def publish_comp_result(comp_id: int, filename: str) -> bool:
         return False
 
 
+def publish_all_results(comp_id: int):
+    """used for imported event autopublish:
+    sets active all results of a given comp, assuming there is only one per task and final"""
+    from db.tables import TblResultFile as R
+    from db.conn import db_session
+    from comp import Comp
+    with db_session() as db:
+        results = db.query(R).filter_by(comp_id=comp_id)
+        for row in results:
+            row.active = 1
+    '''update comp result'''
+    Comp.create_results(comp_id, status='Created from FSDB imported results', name_suffix='Overview')
+
+
 def update_comp_result(comp_id: int, status: str = None, name_suffix: str = None) -> tuple:
     """Unpublish any active result, and creates a new one"""
     from comp import Comp
