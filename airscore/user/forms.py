@@ -77,6 +77,27 @@ class NewScorekeeperForm(FlaskForm):
     scorekeeper = SelectField("Scorekeeper", choices=[('1', '1'), ('2', '2')])
 
 
+class NewCompForm(FlaskForm):
+    comp_name = StringField("Comp Name", validators=[DataRequired()])
+    comp_code = StringField('Short name',
+                            validators=[Optional(strip_whitespace=True), Length(max=8, message='max 8 chars')],
+                            description='An abbreviated name (max 8 chars) e.g. PGEuro20, '
+                                        'if empty will be calculated from name')
+    comp_class = SelectField('Category', choices=[('PG', 'PG'), ('HG', 'HG')])
+    comp_site = StringField('Location', validators=[DataRequired()], description='location of the competition')
+    date_from = DateField('Start Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
+    date_to = DateField('End Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
+
+    submit = SubmitField('Create')
+
+    def validate_on_submit(self):
+        result = super(NewCompForm, self).validate()
+        if self.date_from.data > self.date_to.data:
+            self.date_from.errors.append('Competition end date is before start date')
+            return False
+        return result
+
+
 class CompForm(FlaskForm):
     from formula import list_formulas
     from frontendUtils import list_track_sources, list_gmt_offset
