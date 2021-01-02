@@ -75,22 +75,25 @@ Competition Admin
     <div class='modal-content'>
       <div class='modal-header'>
         <h4 class='modal-title'>Import Competition</h4>
-        <button type='button' class='close' data-dismiss='modal'>&times;</button>
       </div>
-
-
       <div class='modal-body' id='importmodal-body'>
-        <p id='fsdb_modal_message'>Please provide a FSDB file.</p>
+        <div class='container-fluid'>
+          <div class='col-md-12'>
+            <p id='fsdb_modal_message'>Please provide a FSDB file.</p>
+            <input type='checkbox' class='form-check-input' id='autopublish' name='autopublish'>
+            <label class='form-check-label' for='autopublish'>publish results after importing</label>
+          </div>
+        </div>
         <div id='fsdb_progress'>
           <div class='bar' style='width: 0%;'><p id='fsdb_progress_text'></p></div>
         </div>
         <p id='fsdb_spinner'></p>
       </div>
       <div class='modal-footer'>
-        <button id='get_fsdb_file_button' class='btn btn-primary ml-4 ' onclick='choose_fsdb_file()'>
+        <button id='get_fsdb_file_button' class='btn btn-primary ml-4 '>
           Browse
         </button>
-        <button type='button' class='btn btn-danger' data-dismiss='modal'>Cancel</button>
+        <button id='fsdb_cancel' type='button' class='btn btn-danger' data-dismiss='modal'>Cancel</button>
         <input id='fsdb_fileupload' type='file' size='chars' class='custom-file-input' oninput='filesize(this);'
                data-url='/users/_import_comp_fsdb/' name='fsdb_file'>
 
@@ -107,61 +110,84 @@ Competition Admin
   <div class='modal-dialog modal-dialog-centered' role='document'>
 
     <div class='modal-content'>
-      <div class='modal-header'>
-        <h4 class='modal-title'>Create Competition</h4>
-        <button type='button' class='close' data-dismiss='modal'>&times;</button>
-      </div>
-
-      <div class='modal-body'>
-        <form id='createcomp' action='javascript:void(0);' method='post'>
-          <div class='form-group'>
-            <div class='form-row' id='route'>
-              <label for='Name' class='col-2 col-form-label'>Name</label>
-              <div class='col-10'>
-                <input class='form-control required' type='text' value='' id='compname'>
-              </div>
-            </div>
-            <div class='form-row' id='route2'>
-              <label for='code' class='col-2 col-form-label'>Short name</label>
-              <div class='col-10'>
-                <input class='form-control required' type='text' value='' id='compcode'>
-              </div>
-            </div>
-            <div class='form-row' id='route3'>
-              <label for='class' class='col-2 col-form-label'>Class</label>
-              <div class='col-10'>
-                <select class='form-control required' type='select' value='' id='compclass'>
-                  <option value='HG'>HG</option>
-                  <option value='PG'>PG</option>
-                </select>
-              </div>
-            </div>
-            <div class='form-row' id='route4'>
-              <label for='location' class='col-2 col-form-label'>Location</label>
-              <div class='col-10'>
-                <input class='form-control required' type='text' value='' id='compsite'>
-              </div>
-            </div>
-
-            <div class='form-group row'>
-              <label for='date-from' class='col-2 1ol-form-label'>From</label>
-              <div class='col-10'>
-                <input class='form-control required' type='date' value='{{today}}' id='datefrom'>
-              </div>
-              <label for='date-to' class='col-2 col-form-label'>To</label>
-              <div class='col-10'>
-                <input class='form-control required' type='date' value='{{today}}' id='dateto'>
-              </div>
-            </div>
+      <form method='post' id="new_comp_form">
+        {{ new_comp_form.hidden_tag() }}
+        <div class='modal-header'>
+          <h4 class='modal-title'>Create Competition</h4>
+          <button type='button' class='close' data-dismiss='modal'>&times;</button>
+        </div>
+        {% from "macros.html" import render_field with context %}
+        <div class='modal-body'>
+          <div class='form-row'>
+            <section class="pl-1 row-wrap panel-row">
+              {{ render_field(new_comp_form.comp_name, width=40) }}
+            </section>
+            <section class="pl-1 row-wrap panel-row">
+              {{ render_field(new_comp_form.comp_code, width=8) }}
+              {{ render_field(new_comp_form.comp_class) }}
+            </section>
+            <section class="pl-1 row-wrap panel-row">
+              {{ render_field(new_comp_form.comp_site, width=40) }}
+            </section>
+            <section class="pl-1 row-wrap panel-row">
+              {{ render_field(new_comp_form.date_from) }}
+              {{ render_field(new_comp_form.date_to) }}
+            </section>
           </div>
-        </form>
-      </div>
+    <!--        <form id='createcomp' action='javascript:void(0);' method='post'>-->
+    <!--          <div class='form-group'>-->
+    <!--            <div class='form-row' id='route'>-->
+    <!--              <label for='Name' class='col-2 col-form-label'>Name</label>-->
+    <!--              <div class='col-10'>-->
+    <!--                <input class='form-control required' type='text' value='' id='compname'>-->
+    <!--              </div>-->
+    <!--            </div>-->
+    <!--            <div class='form-row' id='route2'>-->
+    <!--              <label for='code' class='col-2 col-form-label'>Short name</label>-->
+    <!--              <div class='col-10'>-->
+    <!--                <input class='form-control required' type='text' value='' id='compcode'>-->
+    <!--              </div>-->
+    <!--            </div>-->
+    <!--            <div class='form-row' id='route3'>-->
+    <!--              <label for='class' class='col-2 col-form-label'>Class</label>-->
+    <!--              <div class='col-10'>-->
+    <!--                <select class='form-control required' type='select' value='' id='compclass'>-->
+    <!--                  <option value='HG'>HG</option>-->
+    <!--                  <option value='PG'>PG</option>-->
+    <!--                </select>-->
+    <!--              </div>-->
+    <!--            </div>-->
+    <!--            <div class='form-row' id='route4'>-->
+    <!--              <label for='location' class='col-2 col-form-label'>Location</label>-->
+    <!--              <div class='col-10'>-->
+    <!--                <input class='form-control required' type='text' value='' id='compsite'>-->
+    <!--              </div>-->
+    <!--            </div>-->
 
-      <div class='modal-footer'>
-        <button type='button' class='btn btn-primary' data-dismiss='modal' onclick='create_comp();'>Create</button>
-        <button type='button' class='btn btn-danger' data-dismiss='modal'>Close</button>
-      </div>
-
+    <!--            <div class='form-group row'>-->
+    <!--              <label for='date-from' class='col-2 1ol-form-label'>From</label>-->
+    <!--              <div class='col-10'>-->
+    <!--                <input class='form-control required' type='date' value='{{today}}' id='datefrom'>-->
+    <!--              </div>-->
+    <!--              <label for='date-to' class='col-2 col-form-label'>To</label>-->
+    <!--              <div class='col-10'>-->
+    <!--                <input class='form-control required' type='date' value='{{today}}' id='dateto'>-->
+    <!--              </div>-->
+    <!--            </div>-->
+    <!--          </div>-->
+    <!--        </form>-->
+        </div>
+        <div class='modal-errors'>
+        </div>
+        <div class='modal-footer'>
+          <button type='button' class='btn btn-danger' data-dismiss='modal'>Cancel</button>
+          {{new_comp_form.submit(class="btn btn-success", id="new_comp_submit")}}
+        </div>
+<!--        <div class='modal-footer'>-->
+<!--          <button type='button' class='btn btn-primary' data-dismiss='modal' onclick='create_comp();'>Create</button>-->
+<!--          <button type='button' class='btn btn-danger' data-dismiss='modal'>Close</button>-->
+<!--        </div>-->
+      </form>
     </div>
 
   </div>
@@ -173,81 +199,9 @@ Competition Admin
 {% block js %}
 <script type='text/javascript' src='https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js'></script>
 <script src="{{ static_url_for('static', filename='js/pop_admin_comps.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/utils.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.ui.widget.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.iframe-transport.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.fileupload.js') }}"></script>
-<script>
-
-var compid_to_delete = null;
-
-function filesize(elem){
-  document.cookie = `filesize=${elem.files[0].size}; SameSite=Strict; path=/`
-}
-
-function choose_fsdb_file(){
-  var filename;
-  $('#fsdb_fileupload').fileupload({
-    dataType: 'json',
-    done: function (e, data) {
-      $.each(data.result.files, function (index, file) {
-        $('<p/>').text(file.name).appendTo(document.body);
-        filename = file.name;
-      });
-    },
-    submit: function (e, data){
-      $('#fsdb_modal_message').hide();
-      $('#fsdb_progress').show();
-      $('#fsdb_progress_text').text(data.files[0].name + ' - processing');
-      $('#fsdb_spinner').html('<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>');
-    },
-    success: function(response) {
-      if (response.redirect) {
-        window.location.href = response.redirect;
-      }
-      else {
-        $('#importmodal').modal('hide');
-        get_comps();
-      }
-    },
-    progress: function (e, data) {
-      var progress = parseInt(data.loaded / data.total * 100, 10);
-      $('#fsdb_progress .bar').css(
-        'width',
-        progress + '%'
-      );
-    }
-  });
-  $('#fsdb_fileupload').click();
-};
-
-function confirm_delete_comp(compid) {
-  compid_to_delete = compid;
-  $('#deletemodal').modal('show');
-}
-
-function delete_comp() {
-  if($('#confirmbox').val().toUpperCase() == 'DELETE'){
-    $.ajax({
-      type: "POST",
-      url: '/users/_delete_comp/' + compid_to_delete,
-      success: function(response) {
-        if (response.redirect) {
-          window.location.href = response.redirect;
-        }
-        else {
-          $('#deletemodal').modal('hide');
-          get_comps();
-        }
-      }
-    });
-  }
-  $('#deletemodal').modal('hide');
-}
-
-$(document).ready(function() {
-  get_comps();
-});
-
-</script>
-<script src="{{ static_url_for('static', filename='js/utils.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/flashed_message.js') }}"></script>
 {% endblock %}

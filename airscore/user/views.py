@@ -8,7 +8,7 @@ from flask_login import login_required, current_user
 import frontendUtils
 from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm, \
     ResultAdminForm, NewScorekeeperForm, RegionForm, NewRegionForm, IgcParsingConfigForm, ParticipantForm, \
-    EditScoreForm, ModifyUserForm, CompLaddersForm
+    EditScoreForm, ModifyUserForm, CompLaddersForm, NewCompForm
 from comp import Comp
 from formula import list_formulas, Formula
 from task import Task, write_map_json, get_task_json_by_filename
@@ -130,37 +130,38 @@ def save_airspace():
 @blueprint.route('/comp_admin', methods=['GET', 'POST'])
 @login_required
 def comp_admin():
-    return render_template('users/comp_admin.html', today=datetime.today().strftime('%Y-%m-%d'))
+    return render_template('users/comp_admin.html',
+                           today=datetime.today().strftime('%Y-%m-%d'), new_comp_form=NewCompForm())
 
 
-@blueprint.route('/_create_comp', methods=['PUT'])
+@blueprint.route('/_create_comp', methods=['POST'])
 @login_required
 def _create_comp():
     import compUtils
-    data = request.json
-    date_from = datetime.strptime(data['datefrom'], '%Y-%m-%d')
-    date_to = datetime.strptime(data['dateto'], '%Y-%m-%d')
-    if date_to < date_from:
-        flash("Start date cannot be after end date. Competition not saved", category='danger')
-        return dict(redirect='/users/comp_admin')
-    if not frontendUtils.check_short_code(data['code']):
-        flash("Short name already in use. Competition not saved", category='danger')
-        return dict(redirect='/users/comp_admin')
 
-    new_comp = Comp(comp_name=data['name'],
-                    comp_class=data['class'],
-                    comp_site=data['location'],
-                    comp_code=data['code'],
-                    date_from=date_from,
-                    date_to=date_to)
-    new_comp.comp_path = compUtils.create_comp_path(date_from, data['code'])
-    output = new_comp.to_db()
-    if type(output) == int:
-        Formula(comp_id=output).to_db()
-        frontendUtils.set_comp_scorekeeper(output, current_user.id, owner=True)
-        return dict(redirect='/users/comp_admin')
-    else:
-        return render_template('500.html')
+    form = NewCompForm()
+    errors = []
+
+    if request.method == 'POST' and form.validate_on_submit():
+        if not frontendUtils.check_short_code(form.comp_code.data):
+            errors.append("Short name already in use.")
+        if errors:
+            return jsonify(success=False, errors=errors)
+
+        new_comp = Comp(comp_name=form.comp_name.data,
+                        comp_class=form.comp_class.data,
+                        comp_site=form.comp_site.data,
+                        comp_code=form.comp_code.data,
+                        date_from=form.date_from.data,
+                        date_to=form.date_to.data)
+        new_comp.comp_path = compUtils.create_comp_path(new_comp.date_from, new_comp.comp_code)
+        output = new_comp.to_db()
+        if isinstance(output, int):
+            Formula(comp_id=output).to_db()
+            frontendUtils.set_comp_scorekeeper(output, current_user.id, owner=True)
+            return jsonify(success=True)
+
+    return jsonify(success=False, errors=form.errors)
 
 
 @blueprint.route('/_import_comp_fsdb/', methods=['POST'])
@@ -168,32 +169,25 @@ def _create_comp():
 def _import_comp_fsdb():
     from fsdb import FSDB
     if request.method == "POST":
-        if request.files:
+        if not request.files or "filesize" not in request.cookies:
+            return jsonify(success=False, error='No FSDB file was given.')
+        elif not frontendUtils.allowed_tracklog_filesize(request.cookies["filesize"], size=50):
+            '''Filesize exceeded maximum limit'''
+            return jsonify(success=False, error='Filesize exceeded maximum limit.')
 
-            if "filesize" in request.cookies:
+        fsdb_file = request.files["fsdb_file"]
+        autopublish = bool(request.form.get('autopublish') == 'true')
+        if not fsdb_file.filename or not frontendUtils.allowed_tracklog(fsdb_file.filename, extension=['fsdb', 'xml']):
+            return jsonify(success=False, error='File is not a valid FSDB file.')
 
-                if not frontendUtils.allowed_tracklog_filesize(request.cookies["filesize"]):
-                    print("Filesize exceeded maximum limit")
-                    return redirect(request.url)
-
-            fsdb_file = request.files["fsdb_file"]
-
-            if fsdb_file.filename == "":
-                print("No filename")
-                return redirect(request.url)
-            if frontendUtils.allowed_tracklog(fsdb_file.filename, extension=['fsdb', 'xml']):
-                f = FSDB.read(fsdb_file)
-                compid = f.add_all()
-                if compid:
-                    frontendUtils.set_comp_scorekeeper(compid, current_user.id, owner=True)
-                    resp = jsonify(success=True)
-                    return resp
-                else:
-                    return render_template('500.html')
-
-            else:
-                print("That file extension is not allowed")
-                return redirect(request.url)
+        f = FSDB.read(fsdb_file)
+        compid = f.add_all()
+        if compid:
+            frontendUtils.set_comp_scorekeeper(compid, current_user.id, owner=True)
+            if autopublish:
+                frontendUtils.publish_all_results(comp_id=compid)
+            return jsonify(success=True, autopublish=autopublish, form=request.form)
+        return jsonify(success=False, error='There was an error reading or importing FSDB file.')
 
 
 @blueprint.route('/_get_formulas/')
