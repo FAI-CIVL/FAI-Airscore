@@ -236,8 +236,7 @@ class CompForm(FlaskForm):
         if self.date_from.data > self.date_to.data:
             self.date_from.errors.append('Competition end date is before start date')
             return False
-        else:
-            return result
+        return result
 
 
 class TaskForm(FlaskForm):
