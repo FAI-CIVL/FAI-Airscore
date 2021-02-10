@@ -93,8 +93,19 @@ function unregister_all_external() {
     type: "POST",
     url: unregister_all_external_participants_url,
     dataType: "json",
-    success: function () {
-      populate_registered_pilot_details(compid);
+    success: function ( response ) {
+      if (response.success) {
+//        let message = 'Participants successfully deleted.';
+//        create_flashed_message(message, 'warning');
+        window.location.reload();
+      }
+      else {
+        if (response.error) {
+          let message = 'There was an error removing participants.';
+          create_flashed_message(message, 'danger');
+          populate_registered_pilot_details(compid, external_comp);
+        }
+      }
     }
   });
 }
@@ -133,6 +144,7 @@ function edit_participant(par_id) {
 
   $('#mod_civl').val(data['civl_id']);
   $('#mod_name').val(data['name']);
+  $('#mod_birthdate').val(moment(data['birthdate']).format('YYYY-MM-DD'));
   $('#mod_sex').val(data['sex']);
   $('#mod_nat').val(data['nat']);
   $('#mod_glider').val(data['glider']);
@@ -146,6 +158,7 @@ function edit_participant(par_id) {
   $('#mod_team').val(data['team'])
   $('#mod_xcontest_id').val(data['xcontest_id'])
   $('#mod_live_id').val(data['live_id'])
+  $.each( data.custom, (key, value) => $('#attr_'+key).val(value) );
 
   $('#mod_modal').modal('show');
 }
@@ -190,7 +203,7 @@ $('#participant_form').submit( function (e) {
 
 function cleanup_modal (modal) {
   let body = modal + '-body';
-  let names = ['CIVL', 'name', 'glider', 'certification', 'sponsor', 'live_id', 'xcontest_id', 'team'];
+  let names = ['CIVL', 'name', 'birthdate', 'glider', 'sponsor', 'live_id', 'xcontest_id', 'team'];
   $('#'+modal+' .modal-errors').empty();  // delete all previous errors
   $('#'+body+' [name]').each( function( i, el ) {
     if ( names.includes($(el).attr('name')) ) $(el).val('');
@@ -232,29 +245,33 @@ function assign_id() {
 }
 
 function populate_registered_pilot_details(compid, readonly=false){
-  $.ajax({
+    $.ajax({
     type: "GET",
     url: '/_get_participants/' + compid,
     contentType:"application/json",
     dataType: "json",
     success: function (json) {
       var columns = [
-          {data: 'par_id', title: 'par_id', name: 'par_id', visible: false, searchable: false, defaultContent: ''},
-          {data: 'ID', title:'#', name: 'ID', width: '1rem', className: "text-right", defaultContent: ''},
-          {data: 'civl_id', title:'CIVLID', width: '1.5rem', className: "text-right", defaultContent: ''},
-          {data: 'name', title:'Pilot', width: '350px', render: function ( data, type, row ) { let span = '<span>'; if (row.sex == 'F'){span='<span class="sex-F">'}; return span + data + '</span>'}},
-          {data: 'sex', title:'Sex', name:'sex', visible: false, defaultContent: ''},
-          {data: 'nat', title:'NAT', width: '1.2rem', name:'nat', defaultContent: ''},
-          {data: 'glider', title: "Glider", width: '200px', defaultContent: ''},
-          {data: 'glider_cert', title: "Cert.", width: '1rem', defaultContent: ''},
-          {data: 'sponsor', title: "Sponsor", width: '250px', defaultContent: ''},
-          {data: 'team', title: "Team", name: 'team', width: '4rem', visible: false, searchable: false, defaultContent: ''},
-          {data: 'nat_team', title: "Nat team", name: 'nat_team', width: '1rem', visible: false, searchable: false, defaultContent: ''},
-          {data: 'status', title: "Status", width: '2rem', defaultContent: ''},
-          {data: 'paid', title: "Paid", width: '1rem', defaultContent: ''},
-          {data: 'xcontest_id', title: 'XContest ID', name: 'xcontest_id', width: '2rem', visible: false, defaultContent: ''},
-          {data: 'live_id', title: 'Live ID', name: 'live_id', width: '2.5rem', visible: false, defaultContent: ''}
+        {data: 'par_id', title: 'par_id', name: 'par_id', visible: false, searchable: false, defaultContent: ''},
+        {data: 'ID', title:'#', name: 'ID', width: '1rem', className: "text-right", defaultContent: ''},
+        {data: 'civl_id', title:'CIVLID', width: '1.5rem', className: "text-right", defaultContent: ''},
+        {data: 'name', title:'Pilot', width: '350px', render: function ( data, type, row ) { let span = '<span>'; if (row.sex == 'F'){span='<span class="sex-F">'}; return span + data + '</span>'}},
+        {data: 'birthdate', title:'Birthdate', name:'birthdate', visible: false, defaultContent: ''},
+        {data: 'sex', title:'Sex', name:'sex', visible: false, defaultContent: ''},
+        {data: 'nat', title:'NAT', width: '1.2rem', name:'nat', defaultContent: ''},
+        {data: 'glider', title: "Glider", width: '200px', defaultContent: ''},
+        {data: 'glider_cert', title: "Cert.", width: '1rem', defaultContent: ''},
+        {data: 'sponsor', title: "Sponsor", width: '250px', defaultContent: ''},
+        {data: 'team', title: "Team", name: 'team', width: '4rem', visible: false, searchable: false, defaultContent: ''},
+        {data: 'nat_team', title: "Nat team", name: 'nat_team', width: '1rem', visible: false, searchable: false, defaultContent: ''},
+        {data: 'status', title: "Status", width: '2rem', defaultContent: ''},
+        {data: 'paid', title: "Paid", width: '1rem', defaultContent: ''},
+        {data: 'xcontest_id', title: 'XContest ID', name: 'xcontest_id', width: '2rem', visible: false, defaultContent: ''},
+        {data: 'live_id', title: 'Live ID', name: 'live_id', width: '2.5rem', visible: false, defaultContent: ''}
       ];
+//      $.each(json.data[0].custom, (key, value) => columns.push({data: 'custom.'+key, title: attributes.find(x => x.attr_id == key).attr_name, name: 'attr_'+key} ));
+      console.log(attributes);
+      $.each(attributes, (idx, el) => columns.push({data: 'custom.'+el.attr_id, title: el.attr_value, name: 'attr_'+el.attr_id, defaultContent: ''} ));
       if (!external_comp) {
         columns.push({data: 'pil_id', title: "Source", render: function ( data ) { if (data){ return 'internal' } else { return 'external'}}});
         columns.push({data: 'par_id', orderable: false, searchable: false, render: function ( data ) { return '<td  class ="value" ><button type="button" class="btn btn-primary" onclick="edit_participant(' +  data + ')" data-toggle="confirmation" data-popout="true">Edit</button></td>'}});
@@ -339,7 +356,133 @@ function populate_registered_pilot_details(compid, readonly=false){
   });
 }
 
-jQuery(document).ready(function($) {
+function populate_custom_attributes(compid, readonly=false){
+    $.ajax({
+    type: "GET",
+    url: '/users/_get_custom_attributes/' + compid,
+    contentType:"application/json",
+    dataType: "json",
+    success: function (json) {
+      var columns = [
+        {data: 'attr_id', title: 'id', name: 'attr_id', visible: false, searchable: false, defaultContent: ''},
+        {data: 'attr_value', title:'Attribute', name: 'attr_value', defaultContent: ''}
+      ];
+      if (!readonly) {
+        columns.push({data: 'attr_id', orderable: false, searchable: false, render: function ( data ) { return '<td  class ="value" ><button type="button" class="btn btn-primary" onclick="edit_attribute(' +  data + ');">Edit</button></td>'}});
+        columns.push({data: 'attr_id', orderable: false, searchable: false, render: function ( data, type, row ) { if (row.used) return 'Attribute is used in Rankings'; else return '<td  class ="value" ><button type="button" class="btn btn-danger" onclick="remove_attribute(' +  data + ');">Remove</button></td>';}});
+      }
+
+      $('#attributes_table').DataTable({
+        data: json,
+        destroy: true,
+        paging: false,
+        responsive: true,
+        saveState: true,
+        info: false,
+        bAutoWidth: false,
+        searching: false,
+        filter: false,
+        columns: columns,
+        rowId: function(data) {
+          return 'id_' + data.attr_id;
+        },
+        initComplete: function(data) {
+          if( json.length > 0 ) {
+            $('#total_attributes').text( json.length + ' attributes.' );
+            $('#attributes_table').show();
+          }
+          else {
+            $('#total_attributes').text( 'No attributes' );
+            $('#attributes_table').hide();
+          }
+        }
+      });
+    }
+  });
+}
+
+function remove_attribute( attr_id ) {
+  let data = get_row_info('#attributes_table', attr_id);
+  $('#remove_attr_id').val('').val(attr_id);
+  $('#delete_attr_name').text(data.attr_value);
+  console.log('data='+ attr_id + ', '+$('#remove_attr_id').val());
+
+//  $('#attribute_confirmed').attr("onclick",'confirm_remove_attribute('+attr_id+');');
+  $('#remove-attribute_modal').modal('show');
+}
+
+function confirm_remove_attribute() {
+  let attr_id = $('#remove_attr_id').val()
+  let url = '/users/_remove_custom_attribute/' + attr_id;
+  $.ajax({
+    type: "POST",
+    url: url,
+    contentType:"application/json",
+    success: function ( response ) {
+      if (response.success){
+//        populate_custom_attributes(compid, external_comp);
+//        populate_registered_pilot_details(compid, external_comp);
+//        create_flashed_message('Attribute successfully deleted.', 'warning');
+        window.location.reload();
+      }
+      else {
+        create_flashed_message('There was an error trying to delete attribute.', 'danger');
+      }
+   }
+  });
+}
+
+function get_row_info(table_id, row_id) {
+  let table = $(table_id).DataTable();
+  let row = '#id_'+row_id;
+  return table.row( row ).data();
+}
+
+function edit_attribute( attr_id ) {
+  let data = get_row_info('#attributes_table', attr_id);
+  console.log('data='+ attr_id);
+  $('#attr_id').val(attr_id);
+  $('#attr_value').val(data.attr_value);
+  $('#attr_modal').modal('show');
+}
+
+function new_attribute() {
+  $('#attr_id').val('');
+  $('#attr_value').val('');
+  $('#attr_modal').modal('show');
+}
+
+function save_custom_attribute() {
+  let url = '/users/_add_custom_attribute/' + compid;
+  let mydata = {};
+  mydata.attr_value = $('#attr_value').val();
+  if ( $('#attr_id').val() ) {
+    mydata.attr_id = $('#attr_id').val();
+    mydata.comp_id = compid;
+    url = '/users/_edit_custom_attribute/' + mydata.attr_id;
+  }
+  console.log('data='+ JSON.stringify(mydata));
+  $.ajax({
+    type: "POST",
+    url: url,
+    contentType:"application/json",
+    data : JSON.stringify(mydata),
+    dataType: "json",
+    success: function ( response ) {
+      if (response.success){
+//        populate_custom_attributes(compid, external_comp);
+//        populate_registered_pilot_details(compid, external_comp);
+//        create_flashed_message('Attribute save.', 'info');
+        window.location.reload();
+      }
+      else {
+        create_flashed_message('There was an error trying to save attribute.', 'danger');
+      }
+   }
+  });
+}
+
+$(document).ready(function() {
   $('#delete_external').hide();
   $('#add_nat_team_section').hide();
   $('#add_team_section').hide();
@@ -352,6 +495,7 @@ jQuery(document).ready(function($) {
   });
   if (pilotdb) get_internal_pilots();
   populate_registered_pilot_details(compid, external_comp);
+  populate_custom_attributes(compid, external_comp);
 
   // listeners
   $('#upload_excel_button').click(function() {
@@ -387,10 +531,11 @@ jQuery(document).ready(function($) {
         console.log(response);
         if (response.success) {
           if (pilotdb) get_internal_pilots();
-          populate_registered_pilot_details(compid);
+//          populate_registered_pilot_details(compid, external_comp);
           document.getElementById("Excel_button").innerHTML = "Done";
           document.getElementById("Excel_button").className = "btn btn-success ml-4";
-          create_flashed_message('Participants successfully imported from excel file.', 'info');
+//          create_flashed_message('Participants successfully imported from excel file.', 'info');
+          window.location.reload();
         }
         else {
           create_flashed_message('There was an error trying to import participants from excel file.', 'danger');
@@ -432,10 +577,11 @@ jQuery(document).ready(function($) {
         console.log(response);
         if (response.success){
           if (pilotdb) get_internal_pilots();
-          populate_registered_pilot_details(compid);
+//          populate_registered_pilot_details(compid, external_comp);
           document.getElementById("FSDB_button").innerHTML = "Done";
           document.getElementById("FSDB_button").className = "btn btn-success ml-4";
-          create_flashed_message('Participants successfully imported from FSDB file.', 'info');
+//          create_flashed_message('Participants successfully imported from FSDB file.', 'info');
+          window.location.reload();
         }
         else {
           create_flashed_message('There was an error trying to import participants from FSDB file.', 'danger');

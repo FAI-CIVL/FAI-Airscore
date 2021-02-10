@@ -34,7 +34,7 @@ Competition Settings
       <li role="presentation" class="nav-item"><a role="tab" data-toggle="tab" class="nav-link active" id="details-tab " href="#details" aria-controls="details" aria-selected="true">Details</a></li>
       <li role="presentation" class="nav-item"><a role="tab" data-toggle="tab" class="nav-link" href="#formula" aria-controls="formula">Formula</a></li>
       <li role="presentation" class="nav-item"><a role="tab" data-toggle="tab" class="nav-link" href="#tracks" aria-controls="tracks">Tracks</a></li>
-      <li role="presentation" class="nav-item"><a role="tab" data-toggle="tab" class="nav-link" href="#results" aria-controls="results">Results</a></li>
+      <li role="presentation" class="nav-item"><a role="tab" data-toggle="tab" class="nav-link" href="#rankings" aria-controls="rankings">Rankings</a></li>
     </ul>
 
     <div class="tab-content">
@@ -160,12 +160,16 @@ Competition Settings
           {{ render_field(compform.check_g_record, tooltip=True, disabled=readonly) }}
         </section>
       </div>
-      <div role="tabpanel" class="tab-pane column-wrap fade" id="results">
-        <h4 class='tab-title font-weight-bold'>Results:</h4>
+      <div role="tabpanel" class="tab-pane column-wrap fade" id="rankings">
+        <h4 class='tab-title font-weight-bold'>Rankings:</h4>
         <section class="tab-row column-wrap form">
-            {{ render_field(compform.cat_id, disabled=readonly) }}
-            <table class="rankings dataTable no-footer" id="rankings">
-            </table>
+          <table class="rankings dataTable no-footer" id="rankings_table">
+          </table>
+        </section>
+        <section class="tab-row button">
+          <button id='add_ranking_button' class='btn btn-success' onclick="add_ranking()" type="button">
+            Add
+          </button>
         </section>
         <section class="tab-row row-wrap form">
           {{ render_field(compform.country_scoring, tooltip=True) }}
@@ -371,17 +375,67 @@ Competition Settings
 </div>
 <!--Modal ends here--->
 
+<!--- add-edit-participant details modal starts here--->
+<div id='rank_modal' class='modal fade' role='dialog'>
+  <div class='modal-dialog'>
+    <div class='modal-content'>
+      <form method='post' id="ranking_form">
+        <div class='modal-header'>
+          <h4 class='modal-title'>Update Ranking Details</h4>
+        </div>
+        {% from "macros.html" import render_field with context %}
+        <div class='modal-body' id='rank_modal-body'>
+          <div class='form-row'>
+            <section class="pl-1 row-wrap panel-row">
+              <input type="hidden" id="rank_id" name="rank_id" value="">
+              {{ render_field(rankingform.rank_name, width=30) }}
+              {{ render_field(rankingform.rank_type) }}
+            </section>
+            <section class="pl-1 row-wrap panel-row" id="rank_cert">
+              {{ render_field(rankingform.cert_id) }}
+            </section>
+            <section class="pl-1 row-wrap panel-row" id="rank_date">
+              {{ render_field(rankingform.min_date, 15) }}
+              {{ render_field(rankingform.max_date, 15) }}
+            </section>
+            <section class="pl-1 row-wrap panel-row" id="rank_attr">
+              {{ render_field(rankingform.attr_id) }}
+            </section>
+            <section class="pl-1 row-wrap panel-row" id="rank_value">
+              <p id="rank_value_comment"></p>
+              {{ render_field(rankingform.rank_value, 30) }}
+            </section>
+            <section class="pl-1 row-wrap panel-row" id="custom_link">
+              <a href="{{ url_for('user.pilot_admin', compid=compid)}}" class='btn btn-info' type='button'>
+                Custom Attributes
+              </a>
+            </section>
+          </div>
+        </div>
+        <div class='modal-errors'>
+        </div>
+        <div class='modal-footer'>
+          <button type='button' class='btn btn-danger' data-dismiss='modal'>Cancel</button>
+          {{rankingform.submit(class="btn btn-success", id="rank_submit")}}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<!--- add-edit-participant details-Modal ends here--->
+
 {% endblock %}
 
 {% block js %}
 <script type='text/javascript' src='https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js'></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
 <script src="{{ static_url_for('static', filename='js/display-if.min.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/comp_settings.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/flashed_message.js') }}"></script>
 <script  type=text/javascript>
   var compid = {{ compid|tojson }};
   var comp_admin = {{ compform.submit|tojson }};
   var external = {{ session.external|tojson }};
-  var classifications = {{ classifications|tojson }};
   var link_get_tasks = "{{ url_for('user._get_tasks', compid=compid)}}";
   var link_add_task = "{{ url_for('user._add_task', compid=compid)}}";
   var link_get_scorekeepers = "{{ url_for('user._get_scorekeepers', compid=compid)}}";

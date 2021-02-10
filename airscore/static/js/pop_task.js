@@ -1,44 +1,43 @@
 function populate_task(json){
     $('#comp_name').text('Loading Results ...');
     var columns = [];
-    json.classes.forEach( function(item, index) {
-        if (index == 0) {
-            columns.push({data: 'ranks.rank', title:'#', className: "text-right"});
-        }
-        else {
-            columns.push({data: 'ranks.class'+index.toString(), title:'#', className: "text-right", defaultContent: '', visible: false});
-        }
+    json.data.forEach( function(item, index) {
+      console.log(item);
     });
-    columns.push({data: 'id', title:'ID', className: "text-right", defaultContent: ''});
-    columns.push({data: 'fai_id', title:'FAI', className: "text-right", defaultContent: '', visible: false});
-    columns.push({data: 'civl_id', title:'CIVL', className: "text-right", defaultContent: '', visible: false});
-    columns.push({data: 'name', title:'Name'});
-    columns.push({data: 'nat', title:'NAT', name:'NAT', defaultContent: ''});
-    columns.push({data: 'sex', title:'Sex', defaultContent: '', visible: false});
-    columns.push({data: 'glider', title:'Glider', defaultContent: ''});
-    columns.push({data: 'glider_cert', title:'Class', defaultContent: '', visible: false});
-    columns.push({data: 'sponsor', title:'Sponsor', defaultContent: ''});
+    // Rankings
+    json.rankings.forEach( function(item, index) {
+      columns.push({data: 'rankings.'+item.rank_id.toString(), title: item.rank_id.toString(), name: item.rank_id.toString(), className: "text-right", defaultContent: '', visible: (index === 0) ? true : false});
+    });
+    columns.push({data: 'id', title: 'ID', className: "text-right", defaultContent: ''});
+    columns.push({data: 'fai_id', title: 'FAI', className: "text-right", defaultContent: '', visible: false});
+    columns.push({data: 'civl_id', title: 'CIVL', className: "text-right", defaultContent: '', visible: false});
+    columns.push({data: 'name', title: 'Name'});
+    columns.push({data: 'nat', title: 'NAT', name:'NAT', defaultContent: ''});
+    columns.push({data: 'sex', title: 'Sex', defaultContent: '', visible: false});
+    columns.push({data: 'glider', title:' Glider', defaultContent: ''});
+    columns.push({data: 'glider_cert', title: 'Class', defaultContent: '', visible: false});
+    columns.push({data: 'sponsor', title:' Sponsor', defaultContent: ''});
     //hide SS ES for Race
     if(json.info.task_type=='race' && json.info.SS_interval==0){
-        columns.push({data: 'SSS_time', title:'SS', defaultContent: '', visible: false});
-        columns.push({data: 'ESS_time', title:'ES', defaultContent: '', visible: false});
+        columns.push({data: 'SSS_time', title: 'SS', defaultContent: '', visible: false});
+        columns.push({data: 'ESS_time', title: 'ES', defaultContent: '', visible: false});
     }
     else {
-        columns.push({data: 'SSS_time', title:'SS', defaultContent: ''});
-        columns.push({data: 'ESS_time', title:'ES', defaultContent: ''});
+        columns.push({data: 'SSS_time', title: 'SS', defaultContent: ''});
+        columns.push({data: 'ESS_time', title: 'ES', defaultContent: ''});
     }
-    columns.push({data: 'ss_time', title:'Time', defaultContent: ''});
-    columns.push({data: 'speed', title:'Kph', className: "text-right", defaultContent: ''});
-    columns.push({data: 'distance', title:'Dist', className: "text-right", defaultContent: ''});
-    columns.push({data: 'time_score', title:'TimeP', className: "text-right", defaultContent: ''});
-    columns.push({data: 'departure_score', title:'LoP', className: "text-right", defaultContent: ''});
+    columns.push({data: 'ss_time', title:' Time', defaultContent: ''});
+    columns.push({data: 'speed', title: 'Kph', className: "text-right", defaultContent: ''});
+    columns.push({data: 'distance', title: 'Dist', className: "text-right", defaultContent: ''});
+    columns.push({data: 'time_score', title: 'TimeP', className: "text-right", defaultContent: ''});
+    columns.push({data: 'departure_score', title: 'LoP', className: "text-right", defaultContent: ''});
     //add Arrival only when used
     if(json.formula.formula_arrival!='off'){
-        columns.push({data: 'arrival_score', title:'ArrP', className: "text-right", defaultContent: ''});
+        columns.push({data: 'arrival_score', title: 'ArrP', className: "text-right", defaultContent: ''});
     }
-    columns.push({data: 'distance_score', title:'DstP', className: "text-right", defaultContent: ''});
-    columns.push({data: 'penalty', title:'PenP', className: "text-right", defaultContent: ''});
-    columns.push({data: 'score', title:'Score', className: "text-right", defaultContent: ''});
+    columns.push({data: 'distance_score', title: 'DstP', className: "text-right", defaultContent: ''});
+    columns.push({data: 'penalty', title: 'PenP', className: "text-right", defaultContent: ''});
+    columns.push({data: 'score', title: 'Score', className: "text-right", defaultContent: ''});
     $('#results_table').DataTable( {
         data: json.data,
         paging: false,
@@ -206,11 +205,11 @@ function populate_task(json){
             $("#dhv option").remove(); // Remove all <option> child tags.
             // at the moment we provide the highest EN rating for a class and the overall_class_filter.js uses this.
             // if we want to be more specific and pass a list of all EN ratings inside a class we can do something like this: https://stackoverflow.com/questions/15759863/get-array-values-from-an-option-select-with-javascript-to-populate-text-fields
-            $.each(json.classes, function(index, item) {
+            $.each(json.rankings, function(index, item) {
                 $("#dhv").append(
                     $("<option></option>")
-                        .text(item.name)
-                        .val(item.limit)
+                        .text(item.rank_name)
+                        .val(item.rank_id)
                 );
             });
         }

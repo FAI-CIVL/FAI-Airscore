@@ -47,14 +47,17 @@ $(document).ready(function() {
 
             // some GAP parameters
             $('#formula tbody').append(
-                        "<tr><td>Director</td><td>" + json.info.MD_name + '</td></tr>' +
-                        "<tr><td>Location</td><td>" + json.info.comp_site + '</td></tr>' +
-                        "<tr><td>Formula</td><td>" + json.formula.formula + '</td></tr>' +
-                        "<tr><td>Overall Scoring</td><td>" + json.formula.overall_validity + ' (' + json.formula.validity_param*100 + ')</td></tr>');
-            if (json.formula.overall_validity == 'ftv')
-            {
+                    "<tr><td>Director</td><td>" + json.info.MD_name + '</td></tr>' +
+                    "<tr><td>Location</td><td>" + json.info.comp_site + '</td></tr>' +
+                    "<tr><td>Formula</td><td>" + json.formula.formula_name + '</td></tr>' +
+                    "<tr><td>Overall Scoring</td><td>" + json.formula.overall_validity);
+            if (json.formula.overall_validity == 'ftv') {
                 $('#formula tbody').append(
-                        "<tr><td>Total Validity</td><td>" + json.stats.tot_validity + '</td></tr>');
+                    ' (' + json.formula.validity_param*100 + ')</td></tr>' +
+                    "<tr><td>Total Validity</td><td>" + json.stats.total_validity + '</td></tr>');
+            }
+            else {
+                    $('#formula tbody').append('</td></tr>');
             }
 
 

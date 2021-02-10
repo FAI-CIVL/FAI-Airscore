@@ -173,15 +173,23 @@ def get_wpts(task_id: int):
 
 def get_participants(comp_id: int):
     """gets registered pilots list from database"""
-    from db.tables import TblParticipant as R
+    from db.tables import TblParticipant as R, TblCompAttribute as CA, TblParticipantMeta as PA
     from pilot.participant import Participant
 
     pilots = []
     with db_session() as db:
-        results = db.query(R).filter_by(comp_id=comp_id).all()
+        results = db.query(R).filter_by(comp_id=comp_id) or []
+        attr_list = db.query(CA).filter_by(comp_id=comp_id) or []
+        pilots_attributes = db.query(PA).filter(PA.attr_id.in_(el.attr_id for el in attr_list)) or []
         for p in results:
             pil = Participant(comp_id=comp_id)
             p.populate(pil)
+            # print(f'pilot {pil.name}, {pil.custom}')
+            for el in attr_list:
+                val = next((x.meta_value for x in pilots_attributes
+                            if x.attr_id == el.attr_id and x.par_id == p.par_id), None)
+                # print(f'attr {el.attr_name} ({el.attr_id}), {val}')
+                pil.custom[el.attr_id] = val
             pilots.append(pil)
     return pilots
 
@@ -198,61 +206,11 @@ def get_tasks_result_files(comp_id: int):
     return files
 
 
-def create_classifications(cat_id: int) -> dict:
-    """create the output to generate classifications list"""
-    from db.tables import TblCertification as CCT
-    from db.tables import TblClasCertRank as CC
-    from db.tables import TblClassification as CT
-    from db.tables import TblCompetition as C
-    from db.tables import TblRanking as R
-
-    rank = dict()
-    with db_session() as db:
-        '''get rankings definitions'''
-        query = (
-            db.query(R.rank_name.label('rank'), CCT.cert_name.label('cert'), CT.female, CT.team)
-            .select_from(R)
-            .join(CC, R.rank_id == CC.c.rank_id)
-            .join(CCT, (CCT.cert_id <= CC.c.cert_id) & (CCT.comp_class == R.comp_class))
-            .join(CT, CT.cat_id == CC.c.cat_id)
-            .filter(CC.c.cert_id > 0, CC.c.cat_id == cat_id)
-        )
-        result = query.all()
-    if len(result) > 0:
-        for res in result:
-            if res.rank in rank:
-                rank[res.rank].append(res.cert)
-            else:
-                rank[res.rank] = [res.cert]
-        rank['female'] = result.pop().female
-        rank['team'] = result.pop().team
-    else:
-        print(f'Ranking list is empty')
-    return rank
-
-
-def read_rankings(comp_id: int) -> dict:
-    """reads sub rankings list for the task and creates a dictionary"""
-    from db.tables import TblCompetition as C
-
-    '''get rankings definitions'''
-    try:
-        comp = C.get_by_id(comp_id)
-        if not comp.cat_id:
-            '''assign default classification for comp class'''
-            comp.cat_id = 1 if comp.comp_class == 'PG' else 2
-        return create_classifications(C.get_by_id(comp_id).cat_id)
-    except (TypeError, AttributeError) as e:
-        print(f'Error trying to retrieve rankings for comp id {comp_id}.')
-        return {}
-
-
 def create_comp_code(name: str, date: datetime.date) -> str:
     """creates comp_code from name and date if nothing was given
     standard code is 6 chars + 2 numbers, checks that folder does not exist, otherwise adds an index.
     """
     import random
-    import string
 
     from calcUtils import toBase62
 

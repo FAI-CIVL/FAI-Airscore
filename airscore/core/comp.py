@@ -16,11 +16,9 @@ from pathlib import Path
 
 from calcUtils import c_round, get_date
 from compUtils import (
-    create_classifications,
     create_comp_path,
     get_participants,
-    get_tasks_result_files,
-    read_rankings,
+    get_tasks_result_files
 )
 from db.conn import db_session
 from db.tables import TblCompetition
@@ -30,6 +28,7 @@ from pilot.participant import Participant
 from result import CompResult, create_json_file
 from sqlalchemy import and_
 from task import Task
+from ranking import create_rankings
 
 
 class Comp(object):
@@ -76,13 +75,10 @@ class Comp(object):
         self.region = region  # Region object
         self.participants = []  # list of Participant obj
         self.tasks = []  # list of Task obj.
-        # self.stats = dict()  # event statistics
-        self.rankings = dict()  # rankings
-        # self.data = dict()
+        self.rankings = []  # rankings
         self.formula = None  # Formula obj.
         self.MD_name = None  # str
         self.contact = None  # str
-        self.cat_id = None  # cat_id
         self.sanction = None  # 'League', 'PWC', 'FAI 1', 'FAI 2', 'none'
         self.comp_type = comp_type  # 'RACE', 'Route', 'Team-RACE'
         self.comp_code = comp_code  # str 8 chars codename
@@ -291,7 +287,7 @@ class Comp(object):
         return self.comp_id
 
     def get_rankings(self):
-        self.rankings = create_classifications(self.cat_id)
+        self.rankings = create_rankings(self.comp_id, self.comp_class)
 
     @staticmethod
     def from_fsdb(fs_comp, short_name: str = None):
@@ -379,7 +375,7 @@ class Comp(object):
                         setattr(comp, k, v)
                 # comp.as_dict().update(data['info'])
                 comp.stats = dict(**data['stats'])
-                comp.rankings.update(data['rankings'])
+                comp.rankings = data['rankings']
                 comp.tasks.extend(data['tasks'])
                 comp.formula = Formula.from_dict(data['formula'])
                 comp.data = dict(**data['file_stats'])

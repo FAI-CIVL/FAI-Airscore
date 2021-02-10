@@ -3,13 +3,18 @@ import factory_objects
 from unittest.mock import patch
 
 
-@patch('airscore.core.task.create_classifications')
-def fake_create_classifications():
-    return []
+# @patch('airscore.core.task.create_classifications')
+# def fake_create_classifications():
+#     return []
+#
+#
+# @patch('airscore.core.compUtils.read_rankings')
+# def fake_read_rankings():
+#     return []
 
 
-@patch('airscore.core.compUtils.read_rankings')
-def fake_read_rankings():
+@patch('airscore.core.ranking.create_rankings')
+def fake_create_rankings():
     return []
 
 
@@ -18,8 +23,7 @@ test_task.pilots = [factory_objects.dummy_pilot()]
 
 
 def test_result_file(task=test_task):
-    with patch('compUtils.create_classifications', return_value=[]) as class_patched, \
-            patch('task.read_rankings', return_value={}) as rank_patched:
+    with patch('ranking.create_rankings', return_value={}) as create_ranking_patched:
         result = task.create_json_elements()
         formula = result['formula']
         for key in TaskResult.formula_list:

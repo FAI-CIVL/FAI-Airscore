@@ -26,7 +26,7 @@ from pathlib import Path
 import jsonpickle
 from airspace import AirspaceCheck
 from calcUtils import decimal_to_seconds, get_date, json
-from compUtils import read_rankings
+from ranking import create_rankings
 from db.conn import db_session
 from db.tables import TblTask
 from Defines import MAPOBJDIR, RESULTDIR, TRACKDIR
@@ -694,11 +694,11 @@ class Task(object):
         for pil in pil_list:
             res = pil.create_result_dict()
             results.append(res)
-        rankings = read_rankings(self.comp_id)
-        # rankings = {}
-        if not rankings or len(rankings) == 0:
-            ''' create an overall ranking'''
-            rankings.update({'overall': [cert for cert in set([p.glider_cert for p in self.pilots])]})
+        # rankings = read_rankings(self.comp_id)
+        rankings = create_rankings(self.comp_id, self.comp_class)
+        # if not rankings or len(rankings) == 0:
+        #     ''' create an overall ranking'''
+        #     rankings.update({'overall': [cert for cert in set([p.glider_cert for p in self.pilots])]})
 
         '''create json file'''
         result = {
@@ -839,15 +839,15 @@ class Task(object):
         """ Loads FlightResult obj. with only Participants info into Task obj."""
         from db.tables import TblParticipant as P
         from db.tables import TblTaskResult as R
-        from pilot.flightresult import FlightResult
-
-        self.pilots = [FlightResult(**row) for row in P.get_dicts(self.comp_id)]
-        tracks = R.get_all(task_id=self.id)
-        if tracks:
-            for p in self.pilots:
-                res = next((x for x in tracks if x.par_id == p.par_id), None)
-                if res:
-                    p.track_id, p.track_file, p.result_type = res.track_id, res.track_file, res.result_type
+        from pilot.flightresult import FlightResult, get_task_pilots
+        self.pilots = get_task_pilots(task_id=self.id, comp_id=self.comp_id)
+        # self.pilots = [FlightResult(**row) for row in P.get_dicts(self.comp_id)]
+        # tracks = R.get_all(task_id=self.id)
+        # if tracks:
+        #     for p in self.pilots:
+        #         res = next((x for x in tracks if x.par_id == p.par_id), None)
+        #         if res:
+        #             p.track_id, p.track_file, p.result_type = res.track_id, res.track_file, res.result_type
 
     def get_results(self, lib=None):
         """ Loads all FlightResult obj. into Task obj."""

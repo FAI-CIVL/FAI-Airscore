@@ -138,6 +138,7 @@ class TaskResult:
         'civl_id',
         'fai_id',
         'name',
+        'birthdate',
         'sponsor',
         'nat',
         'sex',
@@ -179,6 +180,7 @@ class TaskResult:
         'flight_time',
         'track_file',
         'pil_id',
+        'custom'
     ]
 
     @staticmethod
@@ -437,6 +439,7 @@ class CompResult(object):
         'civl_id',
         'fai_id',
         'name',
+        'birthdate',
         'sex',
         'nat',
         'glider',
@@ -448,6 +451,7 @@ class CompResult(object):
         'pil_id',
         'score',
         'results',
+        'custom'
     ]
 
     @staticmethod
@@ -737,11 +741,32 @@ def update_result_file(filename: str, par_id: int, notification: dict):
                 return error
 
 
+def update_results_rankings(comp_id: int, comp_class: str = None) -> bool:
+    """ Updates rankings list in results json files of a comp if rankings are changed """
+    from ranking import create_rankings
+    from calcUtils import CJsonEncoder
+
+    with db_session() as db:
+        files = [Path(RESULTDIR, res.filename) for res in db.query(TblResultFile).filter_by(comp_id=comp_id)
+                 if Path(RESULTDIR, res.filename).is_file()]
+    if files:
+        rankings = create_rankings(comp_id, comp_class)
+        try:
+            for file in files:
+                with open(file, 'r+') as f:
+                    data = json.load(f)
+                    data['rankings'] = rankings
+                    f.seek(0)
+                    f.write(json.dumps(data, cls=CJsonEncoder))
+                    f.truncate()
+            return True
+        except Exception as e:
+            # raise
+            print(f'Error updating result file: {str(e.__dict__)}')
+            return False
+
+
 def delete_result(filename: str, delete_file=False):
-    from pathlib import Path
-
-    from Defines import RESULTDIR
-
     if delete_file:
         Path(RESULTDIR, filename).unlink(missing_ok=True)
     row = TblResultFile.get_one(filename=filename)

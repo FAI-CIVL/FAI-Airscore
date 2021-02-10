@@ -457,7 +457,7 @@ def ext_task_result(taskid: int):
                  'SSS_time': r['SSS_time'], 'distance': r['distance'], 'time_score': r['time_score'],
                  'departure_score': r['departure_score'], 'arrival_score': r['arrival_score'],
                  'distance_score': r['distance_score'], 'score': f"<b>{r['score']}</b>",
-                 'ranks': {'rank': f"<b>{r['rank']}</b>"}}
+                 'rankings': r['rankings']}
         n = r['name']
         sex = r['sex']
         pilot['name'] = f'<span class="sex-{sex}">{n}</span>'
@@ -468,9 +468,6 @@ def ext_task_result(taskid: int):
         pilot['goal_time'] = goal
         # ab = ''  # alt bonus
         pilot['penalty'] = "" if r['penalty'] == '0.0' else r['penalty']
-        # setup sub-rankings
-        for i, c in enumerate(result_file['classes'][1:], 1):
-            pilot['ranks']['class' + str(i)] = f"{r[c['limit']]}"
         all_pilots.append(pilot)
     result_file['data'] = all_pilots
     return render_template('public/ext_task_result.html', taskid=taskid, compid=compid, results=result_file)
@@ -497,7 +494,7 @@ def task_result(taskid: int):
                  'SSS_time': r['SSS_time'], 'distance': r['distance'], 'time_score': r['time_score'],
                  'departure_score': r['departure_score'], 'arrival_score': r['arrival_score'],
                  'distance_score': r['distance_score'], 'score': f"<b>{r['score']}</b>",
-                 'ranks': {'rank': f"<b>{r['rank']}</b>"}}
+                 'rankings': r['rankings']}
         n = r['name']
         parid = r['par_id']
         sex = r['sex']
@@ -512,9 +509,6 @@ def task_result(taskid: int):
         pilot['goal_time'] = goal
         # ab = ''  # alt bonus
         pilot['penalty'] = "" if r['penalty'] == '0.0' else r['penalty']
-        # setup sub-rankings
-        for i, c in enumerate(result_file['classes'][1:], 1):
-            pilot['ranks']['class' + str(i)] = f"{r[c['limit']]}"
         all_pilots.append(pilot)
     result_file['data'] = all_pilots
     return render_template('public/task_result.html', taskid=taskid, compid=compid, results=result_file)
@@ -522,10 +516,8 @@ def task_result(taskid: int):
 
 @blueprint.route('/ext_comp_result/<int:compid>')
 def ext_comp_result(compid: int):
-    from compUtils import get_comp_json, read_rankings
+    from compUtils import get_comp_json
     content = get_comp_json(compid)
-    if not content['rankings']:
-        content['rankings'] = read_rankings(compid)
     result_file = frontendUtils.get_pretty_data(content)
     if result_file == 'error':
         return render_template('404.html')
@@ -539,10 +531,7 @@ def ext_comp_result(compid: int):
         pilot = {'id': r['ID'], 'fai_id': r['fai_id'], 'civl_id': r['civl_id'],
                  'name': f"<span class='sex-{r['sex']}'><b>{r['name']}</b></span>", 'nat': r['nat'], 'sex': r['sex'],
                  'glider': r['glider'], 'glider_cert': r['glider_cert'], 'sponsor': r['sponsor'],
-                 'score': f"<b>{r['score']}</b>", 'ranks': {'rank': f"<b>{r['rank']}</b>"}}
-        for i, c in enumerate(result_file['classes'][1:], 1):
-            pilot['ranks']['class' + str(i)] = f"{r[c['limit']]}"
-        pilot['results'] = []
+                 'score': f"<b>{r['score']}</b>", 'rankings': r['rankings'], 'results': []}
         for k, v in r['results'].items():
             score = f"{v['score']}" if v['score'] == v['pre'] else f"{v['score']} <del>{v['pre']}</del>"
             html = f"<span class='task_score'>{score}</span>"
@@ -573,10 +562,7 @@ def comp_result(compid: int):
         pilot = {'id': r['ID'], 'fai_id': r['fai_id'], 'civl_id': r['civl_id'],
                  'name': f"<span class='sex-{r['sex']}'><b>{r['name']}</b></span>", 'nat': r['nat'], 'sex': r['sex'],
                  'glider': r['glider'], 'glider_cert': r['glider_cert'], 'sponsor': r['sponsor'],
-                 'score': f"<b>{r['score']}</b>", 'ranks': {'rank': f"<b>{r['rank']}</b>"}}
-        for i, c in enumerate(result_file['classes'][1:], 1):
-            pilot['ranks']['class' + str(i)] = f"{r[c['limit']]}"
-        pilot['results'] = []
+                 'score': f"<b>{r['score']}</b>", 'rankings': r['rankings'], 'results': []}
         for k, v in r['results'].items():
             score = f"{v['score']}" if v['score'] == v['pre'] else f"{v['score']} <del>{v['pre']}</del>"
             html = f"<span class='task_score'>{score}</span>"

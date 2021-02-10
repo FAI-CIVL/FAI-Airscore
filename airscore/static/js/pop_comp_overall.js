@@ -3,13 +3,9 @@ function populate_comp_overall(json){
     var taskNum = json.stats.valid_tasks
     console.log('taskNum='+taskNum);
     var columns = [];
-    json.classes.forEach( function(item, index){
-        if (index == 0) {
-            columns.push({data: 'ranks.rank', title:'#', className: "text-right"});
-        }
-        else {
-            columns.push({data: 'ranks.class'+index.toString(), title:'#', className: "text-right", defaultContent: '', visible: false});
-        }
+    // rankings
+    json.rankings.forEach( function(item, index) {
+      columns.push({data: 'rankings.'+item.rank_id.toString(), title: item.rank_id.toString(), name: item.rank_id.toString(), className: "text-right", defaultContent: '', visible: (index === 0) ? true : false});
     });
     columns.push({data: 'id', title:'ID', className: "text-right", defaultContent: ''});
     columns.push({data: 'fai_id', title:'FAI', className: "text-right", defaultContent: '', visible: false});
@@ -126,11 +122,11 @@ function populate_comp_overall(json){
             $("#dhv option").remove(); // Remove all <option> child tags.
             // at the moment we provide the highest EN rating for a class and the overall_class_filter.js uses this.
             // if we want to be more specific and pass a list of all EN ratings inside a class we can do something like this: https://stackoverflow.com/questions/15759863/get-array-values-from-an-option-select-with-javascript-to-populate-text-fields
-            $.each(json.classes, function(index, item) {
+            $.each(json.rankings, function(index, item) {
                 $("#dhv").append(
                     $("<option></option>")
-                        .text(item.name)
-                        .val(item.limit)
+                        .text(item.rank_name)
+                        .val(item.rank_id)
                 );
             });
         }

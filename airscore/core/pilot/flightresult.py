@@ -622,31 +622,49 @@ def delete_track(trackid: int, delete_file=False):
     return row_deleted
 
 
-def get_task_results(task_id: int):
-    from db.tables import FlightResultView as F
-    from db.tables import TblNotification as N
-    from db.tables import TblTaskResult as R
-    from db.tables import TblTrackWaypoint as W
+def get_task_results(task_id: int, comp_id: int = None) -> list:
+    from db.tables import TblNotification as N, TblTaskResult as R, TblTrackWaypoint as W, TblTask as T
     from pilot.notification import Notification
+    from compUtils import get_participants
 
-    pilots = []
-    results = R.get_task_results(task_id)
+    if not comp_id:
+        comp_id = T.get_by_id(task_id).comp_id
+    results = R.get_all(task_id=task_id)
+    pilots = [FlightResult.from_participant(p) for p in get_participants(comp_id)]
     track_list = list(filter(None, map(lambda x: x.track_id, results)))
     notifications = N.from_track_list(track_list)
     achieved = W.get_dict_list(track_list)
-    for row in results:
-        p = FlightResult.from_dict(row._asdict())
-        if not row.result_type:
-            p.result_type = 'nyp'
-        for el in [n for n in notifications if n.track_id == p.track_id]:
-            n = Notification()
-            el.populate(n)
-            p.notifications.append(n)
-        if p.result_type in ('lo', 'goal'):
-            wa = list(filter(lambda x: x['track_id'] == p.track_id, achieved))
-            for el in wa:
-                p.waypoints_achieved.append(WaypointAchieved.from_dict(el))
-        pilots.append(p)
+    for pilot in pilots:
+        result = next((p for p in results if pilot.par_id == p.par_id), None)
+        if result:
+            R.populate(result, pilot)
+            if not pilot.result_type:
+                pilot.result_type = 'nyp'
+            for el in [n for n in notifications if n.track_id == pilot.track_id]:
+                n = Notification()
+                el.populate(n)
+                pilot.notifications.append(n)
+            if pilot.result_type in ('lo', 'goal'):
+                wa = list(filter(lambda x: x['track_id'] == pilot.track_id, achieved))
+                for el in wa:
+                    pilot.waypoints_achieved.append(WaypointAchieved.from_dict(el))
+    return pilots
+
+
+def get_task_pilots(task_id: int, comp_id: int = None) -> list:
+    """ Loads FlightResult obj. with only Participants info into Task obj."""
+    from db.tables import TblTask as T, TblTaskResult as R
+    from compUtils import get_participants
+
+    if not comp_id:
+        comp_id = T.get_by_id(task_id).comp_id
+    pilots = [FlightResult.from_participant(p) for p in get_participants(comp_id)]
+    tracks = R.get_all(task_id=task_id)
+    if tracks:
+        for p in pilots:
+            res = next((x for x in tracks if x.par_id == p.par_id), None)
+            if res:
+                p.track_id, p.track_file, p.result_type = res.track_id, res.track_file, res.result_type
     return pilots
 
 

@@ -43,7 +43,6 @@ class CompObjectView(BaseModel):
         Column('date_to', Date),
         Column('MD_name', String(100)),
         Column('contact', String(100)),
-        Column('cat_id', INTEGER(11)),
         Column('sanction', String(20), server_default=text("'none'")),
         Column('comp_type', Enum('RACE', 'Route', 'Team-RACE'), server_default=text("'RACE'")),
         Column('comp_code', String(8)),
@@ -371,16 +370,6 @@ class TblCertification(BaseModel):
     cert_order = Column(TINYINT(1), nullable=False)
 
 
-class TblClassification(BaseModel):
-    __tablename__ = 'tblClassification'
-
-    cat_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
-    cat_name = Column(String(60), nullable=False)
-    comp_class = Column(Enum('PG', 'HG', 'mixed'), nullable=False, server_default=text("'PG'"))
-    female = Column(TINYINT(1), nullable=False, server_default=text("'1'"))
-    team = Column(TINYINT(1), nullable=False, server_default=text("'0'"))
-
-
 class TblCountryCode(BaseModel):
     __tablename__ = 'tblCountryCode'
 
@@ -458,7 +447,7 @@ class TblLadder(BaseModel):
     ladder_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
     ladder_name = Column(String(100), nullable=False)
     ladder_class = Column(Enum('PG', 'HG'), nullable=False, server_default=text("'PG'"))
-    nation_code = Column(INTEGER(11), server_default=text("'380'"))
+    nat = Column(String(10))
     date_from = Column(Date)
     date_to = Column(Date)
     external = Column(TINYINT(1), server_default=text("'0'"))
@@ -491,6 +480,11 @@ class TblParticipant(BaseModel):
     ranking = Column(MEDIUMINT(9))
     paid = Column(TINYINT(1), server_default=text("'0'"))
     hours = Column(SMALLINT(6))
+    child_par_attr = relationship(
+        "TblParticipantMeta", back_populates="parent_par",
+        cascade="all, delete",
+        passive_deletes=True
+    )
 
     @classmethod
     def get_dicts(cls, comp_id: int) -> list:
@@ -499,14 +493,6 @@ class TblParticipant(BaseModel):
         with db_session() as db:
             print(f'session id: {id(db)}')
             return [el.as_dict() for el in db.query(P).filter_by(comp_id=comp_id).all()]
-
-
-class TblRanking(BaseModel):
-    __tablename__ = 'tblRanking'
-
-    rank_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
-    rank_name = Column(String(40), nullable=False)
-    comp_class = Column(Enum('PG', 'HG', 'mixed'), nullable=False, server_default=text("'PG'"))
 
 
 class TblRegion(BaseModel):
@@ -557,15 +543,6 @@ class TblXContestCode(BaseModel):
     xccCountryName = Column(String(42))
 
 
-TblClasCertRank = Table(
-    'tblClasCertRank',
-    metadata,
-    Column('cat_id', ForeignKey('tblClassification.cat_id', ondelete='CASCADE'), nullable=False, index=True),
-    Column('cert_id', ForeignKey('tblCertification.cert_id'), index=True),
-    Column('rank_id', ForeignKey('tblRanking.rank_id'), nullable=False, index=True),
-)
-
-
 class TblCompetition(BaseModel):
     __tablename__ = 'tblCompetition'
     __table_args__ = (Index('comp_id', 'comp_id', 'comp_name', unique=True),)
@@ -583,7 +560,6 @@ class TblCompetition(BaseModel):
     time_offset = Column(MEDIUMINT(9), nullable=False, server_default=text("'0'"))
     MD_name = Column(String(100))
     contact = Column(String(100))
-    cat_id = Column(ForeignKey('tblClassification.cat_id', ondelete='SET NULL'), index=True)
     sanction = Column(String(20), nullable=False, server_default=text("'none'"))
     openair_file = Column(String(40))
     comp_type = Column(Enum('RACE', 'Route', 'Team-RACE'), server_default=text("'RACE'"))
@@ -600,8 +576,12 @@ class TblCompetition(BaseModel):
     self_register = Column(TINYINT(1))
     check_g_record = Column(Boolean)
 
-    cat = relationship('TblClassification')
     ladders = relationship('TblLadder', secondary='tblLadderComp')
+    child_comp_attr = relationship(
+        "TblCompAttribute", back_populates="parent_comp",
+        cascade="all, delete",
+        passive_deletes=True
+    )
 
 
 class TblCompAuth(BaseModel):
@@ -613,13 +593,72 @@ class TblCompAuth(BaseModel):
     comp = relationship(TblCompetition, backref='Auth')
 
 
+class TblCompAttribute(BaseModel):
+    __tablename__ = 'tblCompAttribute'
+
+    attr_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
+    comp_id = Column(INTEGER(11), ForeignKey("tblCompetition.comp_id"), nullable=False)
+    attr_key = Column(String(100), nullable=False)
+    attr_value = Column(String(100), nullable=True)
+    comp = relationship(TblCompetition, backref='CompAttr')
+    child_attr = relationship(
+        "TblParticipantMeta", back_populates="parent_comp_attr",
+        cascade="all, delete",
+        passive_deletes=True
+    )
+    parent_comp = relationship('TblCompetition', back_populates="child_comp_attr")
+
+
+class TblCompRanking(BaseModel):
+    __tablename__ = 'tblCompRanking'
+
+    rank_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
+    comp_id = Column(INTEGER(11), ForeignKey("tblCompetition.comp_id"), nullable=False)
+    rank_name = Column(String(40), nullable=False)
+    rank_type = Column(String(40), nullable=False, server_default=text("'cert'"))
+    cert_id = Column(INTEGER(11), ForeignKey("tblCertification.cert_id"), nullable=True)
+    min_date = Column(Date)
+    max_date = Column(Date)
+    attr_id = Column(INTEGER(11), ForeignKey("tblCompAttribute.attr_id"), nullable=True)
+    rank_value = Column(String(100))
+    comp = relationship('TblCompetition')
+    cert = relationship('TblCertification')
+    attr = relationship('TblCompAttribute')
+
+
+class TblParticipantMeta(BaseModel):
+    __tablename__ = 'tblParticipantMeta'
+
+    pat_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
+    par_id = Column(INTEGER(11), ForeignKey("tblParticipant.par_id", ondelete="CASCADE"), nullable=False)
+    attr_id = Column(INTEGER(11), ForeignKey("tblCompAttribute.attr_id", ondelete="CASCADE"), nullable=False)
+    meta_value = Column(String(100))
+    parent_par = relationship('TblParticipant', back_populates='child_par_attr')
+    parent_comp_attr = relationship('TblCompAttribute', back_populates="child_attr")
+
+
+class TblLadderRanking(BaseModel):
+    __tablename__ = 'tblLadderRanking'
+
+    rank_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
+    ladder_id = Column(INTEGER(11), ForeignKey("tblLadder.ladder_id"), nullable=False)
+    rank_name = Column(String(40), nullable=False)
+    rank_type = Column(String(40), nullable=False, server_default=text("'cert'"))
+    cert_id = Column(INTEGER(11), ForeignKey("tblCertification.cert_id"), nullable=True)
+    min_date = Column(Date)
+    max_date = Column(Date)
+    rank_key = Column(String(100))
+    rank_value = Column(String(100))
+    ladder = relationship('TblLadder')
+    ladder_cert = relationship('TblCertification')
+
+
 class TblLadderSeason(BaseModel):
     __tablename__ = 'tblLadderSeason'
 
     ladder_id = Column(ForeignKey('tblLadder.ladder_id'), nullable=False, index=True, primary_key=True)
     season = Column(INTEGER(6), nullable=False, index=True)
     active = Column(TINYINT(1), server_default=text("'1'"))
-    cat_id = Column(ForeignKey('tblClassification.cat_id'), nullable=False, index=True)
     overall_validity = Column(Enum('all', 'ftv', 'round'), nullable=False, server_default=text("'ftv'"))
     validity_param = Column(Float, nullable=False)
 

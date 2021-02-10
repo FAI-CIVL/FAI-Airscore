@@ -168,14 +168,13 @@ def get_ladder_results(
     import time
 
     from calcUtils import get_season_dates
-    from compUtils import create_classifications, get_nat
+    from compUtils import get_nat
     from db.tables import TblCompetition as C
     from db.tables import TblLadder as L
     from db.tables import TblLadderComp as LC
     from db.tables import TblLadderSeason as LS
     from db.tables import TblParticipant as P
     from db.tables import TblResultFile as R
-    from db.tables import TblTask as T
     from result import open_json_file
 
     if not (nat and starts and ends):
@@ -1253,6 +1252,7 @@ def unique_filename(filename, filepath):
 def get_pretty_data(content: dict) -> dict or str:
     """transforms result json file in human readable data"""
     from result import get_startgates, pretty_format_results
+    from calcUtils import get_date
 
     try:
         '''time offset'''
@@ -1286,43 +1286,53 @@ def get_pretty_data(content: dict) -> dict or str:
         if 'results' in content.keys():
             results = []
             '''rankings'''
-            sub_classes = sorted(
-                [
-                    dict(name=c, cert=v, limit=v[-1], prev=None, rank=1, counter=0)
-                    for c, v in content['rankings'].items()
-                    if isinstance(v, list)
-                ],
-                key=lambda x: len(x['cert']),
-                reverse=True,
-            )
-            if content['rankings']['female']:
-                sub_classes.append(dict(name='Female', cert='female', limit='female', prev=None, rank=1, counter=0))
+            rankings = [dict(rank=1, counter=0, prev=None, **rank) for rank in content['rankings']]
+
             rank = 0
             prev = None
             for idx, r in enumerate(content['results'], 1):
                 p = pretty_format_results(r, timeoffset, td, cd)
-                if not prev == p['score']:
-                    rank, prev = idx, p['score']
-                p['rank'] = str(rank)
-                '''sub-classes'''
-                for s in sub_classes:
-                    if (
-                        (p['glider_cert'] and p['glider_cert'] in s['cert'])
-                        if not s['name'] == 'Female'
-                        else p['sex'] == 'F'
-                    ):
-                        s['counter'] += 1
-                        if not s['prev'] == p['score']:
-                            s['rank'], s['prev'] = s['counter'], p['score']
-                        p[s['limit']] = f"{s['rank']} ({p['rank']})"
-                    else:
-                        p[s['limit']] = ''
+                '''rankings'''
+                if 'result_type' not in p.keys() or p['result_type'] not in ('nyp', 'abs', 'dnf'):
+                    if not prev == p['score']:
+                        rank, prev = idx, p['score']
+                    p['rank'] = str(rank)
+
+                    p['rankings'] = {}
+                    for s in rankings:
+                        if s['rank_type'] == 'overall':
+                            p['rankings'][s['rank_id']] = rank
+                            s['counter'] += 1
+                        elif (
+                                (s['rank_type'] == 'cert' and p['glider_cert'] in s['certs'])
+                                or (s['rank_type'] == 'female' and p['sex'] == 'F')
+                                or (s['rank_type'] == 'nat' and p['nat'] == s['nat'])
+                                or (s['rank_type'] == 'custom' and 'custom' in p.keys()
+                                    and p['custom'][str(s['attr_id'])] == s['rank_value'])
+                                or (s['rank_type'] == 'birthdate' and 'birthdate' in p.keys()
+                                    and isinstance(get_date(p['birthdate']), datetime.date)
+                                    and (
+                                            (s['min_date'] and get_date(s['min_date']) <= get_date(p['birthdate']))
+                                            or (s['max_date'] and get_date(s['max_date']) >= get_date(p['birthdate']))
+                                    ))
+                        ):
+                            s['counter'] += 1
+                            if not s['prev'] == p['score']:
+                                s['rank'], s['prev'] = s['counter'], p['score']
+                            p['rankings'][s['rank_id']] = f"{s['rank']} ({p['rank']})"
+                        else:
+                            p['rankings'][s['rank_id']] = ''
+
                 results.append(p)
             pretty_content['results'] = results
-            pretty_content['classes'] = [{k: c[k] for k in ('name', 'limit', 'cert', 'counter')} for c in sub_classes]
+            # pretty_content['classes'] = [{k: c[k] for k in ('name', 'limit', 'cert', 'counter')} for c in sub_classes]
+            pretty_content['rankings'] = [
+                {k: c[k] for k in ('rank_id', 'rank_name', 'description', 'counter')} for c in rankings
+            ]
+
         return pretty_content
     except Exception:
-        # raise
+        raise
         return 'error'
 
 
@@ -1385,22 +1395,50 @@ def check_short_code(comp_short_code):
             return True
 
 
-def import_participants_from_fsdb(file: Path, from_CIVL=False) -> list:
+def import_participants_from_fsdb(comp_id: int, file: Path, from_CIVL=False) -> dict:
     """read the fsdb file"""
-    from fsdb import read_fsdb_file
-    from pilot.participant import Participant
+    from fsdb import FSDB
+    from pilot.participant import unregister_all
+    from ranking import delete_meta
 
-    root = read_fsdb_file(file)
-    pilots = []
+    try:
+        fsdb = FSDB.read(file, from_CIVL=from_CIVL)
+        if len(fsdb.comp.participants) == 0:
+            return dict(success=False, error='Error: not a valid FSDB file or has no participants.')
 
-    print("Getting Pilots Info...")
-    if from_CIVL:
-        print('*** get from CIVL database')
-    p = root.find('FsCompetition').find('FsParticipants')
-    for pil in p.iter('FsParticipant'):
-        pilot = Participant.from_fsdb(pil, from_CIVL=from_CIVL)
-        pilots.append(pilot)
-    return pilots
+        if fsdb.custom_attributes:
+            delete_meta(comp_id=comp_id)
+            fsdb.add_custom_attributes(comp_id=comp_id)
+        unregister_all(comp_id=comp_id)
+        if fsdb.add_participants(comp_id=comp_id):
+            return dict(success=True)
+        return dict(success=False, error='Error: Participants were not imported correctly.')
+    except (FileNotFoundError, TypeError, Exception):
+        # raise
+        return dict(success=False, error='Internal error trying to parse FSDB file.')
+
+
+def import_participants_from_excel_file(comp_id: int, excel_file: Path) -> dict:
+    from pilot.participant import unregister_all, extract_participants_from_excel, mass_import_participants
+    from ranking import delete_meta
+
+    pilots, custom_attributes = extract_participants_from_excel(comp_id, excel_file)
+    if not pilots:
+        return jsonify(success=False, error='Error: not a valid excel file or has no participants.')
+    if custom_attributes:
+        delete_meta(comp_id)
+        for attr in custom_attributes:
+            attr.to_db()
+        for pil in pilots:
+            '''creates Participant.custom'''
+            for attr in pil.attributes:
+                attr_id = next((el.attr_id for el in custom_attributes if el.attr_value == attr['attr_value']), None)
+                pil.custom[attr_id] = attr['meta_value']
+            pil.attributes = None
+    unregister_all(comp_id)
+    if mass_import_participants(comp_id, pilots, check_ids=False):
+        return dict(success=True)
+    return dict(success=False, error='Error: Participants were not imported correctly.')
 
 
 def create_participants_html(comp_id: int) -> (str, dict) or None:
@@ -1491,34 +1529,6 @@ def create_stream_content(content):
         return None
 
 
-def list_classifications() -> dict:
-    """Lists all classifications stored in database.
-    :returns a dictionary with 3 lists.
-        all: a list of all classifications
-        pg: a list of all classifications that are of class pg or mixed
-        hg: a list of all classifications that are of class hg or mixed"""
-    from db.tables import TblClassification as C
-
-    all_classifications = []
-    hg_classifications = []
-    pg_classifications = []
-
-    results = C.get_all()
-    if results:
-        for el in results:
-            all_classifications.append(el.as_dict())
-            if el.comp_class in ('PG', 'mixed'):
-                pg_classifications.append(el.as_dict())
-            if el.comp_class in ('HG', 'mixed'):
-                hg_classifications.append(el.as_dict())
-
-    return {
-        'ALL': sorted(all_classifications, key=lambda x: x['cat_name']),
-        'PG': sorted(pg_classifications, key=lambda x: x['cat_name']),
-        'HG': sorted(hg_classifications, key=lambda x: x['cat_name']),
-    }
-
-
 def list_countries() -> list:
     """Lists all countries with IOC code stored in database.
     :returns a list of dicts {name, code}"""
@@ -1526,56 +1536,6 @@ def list_countries() -> list:
 
     clist = TblCountryCode.get_list()
     return clist or []
-
-
-def get_classifications_details(comp_class: str = None) -> list:
-    from db.tables import TblCertification as CCT
-    from db.tables import TblClasCertRank as CC
-    from db.tables import TblClassification as CT
-    from db.tables import TblRanking as R
-
-    output = []
-    with db_session() as db:
-        query = (
-            db.query(
-                CT.cat_id,
-                CT.cat_name,
-                CT.comp_class,
-                CT.female,
-                CT.team,
-                R.rank_name.label('rank'),
-                CCT.cert_name.label('cert'),
-            )
-            .select_from(R)
-            .join(CC, R.rank_id == CC.c.rank_id)
-            .join(CCT, (CCT.cert_id <= CC.c.cert_id) & (CCT.comp_class == R.comp_class))
-            .join(CT, CT.cat_id == CC.c.cat_id)
-            .filter(CC.c.cert_id > 0)
-        )
-        if comp_class:
-            query = query.filter(CT.comp_class == comp_class)
-        results = query.all()
-
-    if results:
-        classifications = set(x.cat_id for x in results)
-        for cl in classifications:
-            elements = [x for x in results if x.cat_id == cl]
-            classification = dict(
-                cat_id=cl,
-                cat_name=elements[0].cat_name,
-                comp_class=elements[0].comp_class,
-                female=elements[0].female,
-                team=elements[0].team,
-            )
-            classification['categories'] = []
-            for res in elements:
-                el = next((x for x in classification['categories'] if x['title'] == res.rank), None)
-                if el:
-                    el['members'].append(res.cert)
-                else:
-                    classification['categories'].append(dict(title=res.rank, members=[res.cert]))
-            output.append(classification)
-    return output
 
 
 def list_track_sources() -> list:
@@ -1647,8 +1607,6 @@ def save_comp_ladders(comp_id: int, ladder_ids: list or None) -> bool:
         LC.delete_all(comp_id=comp_id)
         if ladder_ids:
             '''save entries'''
-            # if isinstance(ladder_ids, int):
-            #     ladder_ids = [ladder_ids]
             results = []
             for el in ladder_ids:
                 results.append(LC(comp_id=comp_id, ladder_id=el))
@@ -1918,3 +1876,60 @@ def check_zip_file(file: Path, extensions: list = None) -> tuple:
     if not elements or extensions and not any(el for el in elements if Path(el).suffix[1:] in extensions):
         return False, f'Zip file is empty or does not contain any file with extension: {", ".join(extensions)}.'
     return True, 'success'
+
+
+def get_comp_rankings(comp_id: int) -> list:
+    from ranking import CompRanking
+    rankings = []
+    rows = CompRanking.read_all(comp_id)
+    for el in rows:
+        rankings.append(dict(description=el.description, **el.as_dict()))
+    return rankings
+
+
+def get_certifications_details() -> dict:
+    from db.tables import TblCertification as CCT
+    certifications = {}
+    with db_session() as db:
+        certs = db.query(CCT).order_by(CCT.comp_class, CCT.cert_order.desc())
+        for cl in ('PG', 'HG'):
+            certifications[cl] = [{'cert_id': el.cert_id, 'cert_name': el.cert_name}
+                                  for el in certs if el.comp_class == cl]
+    return certifications
+
+
+def get_comp_meta(comp_id: int) -> list:
+    from db.tables import TblCompAttribute as CA, TblCompRanking as CR
+    with db_session() as db:
+        results = db.query(CA).filter_by(comp_id=comp_id)
+        ranks = [el.attr_id for el in db.query(CR).filter_by(comp_id=comp_id).distinct() if el.attr_id]
+        return [{'attr_id': el.attr_id,
+                 'attr_key': el.attr_key,
+                 'attr_value': el.attr_value,
+                 'used': True if el.attr_id in ranks else False} for el in results]
+
+
+def delete_comp_attribute(attr_id: int) -> bool:
+    from db.tables import TblCompAttribute as CA
+    with db_session() as db:
+        try:
+            db.query(CA).get(attr_id).delete()
+            return True
+        except Exception:
+            # raise
+            return False
+
+
+def create_new_comp(comp, user_id: int) -> dict:
+    from compUtils import create_comp_path
+    from formula import Formula
+    from ranking import create_overall_ranking
+
+    comp.comp_path = create_comp_path(comp.date_from, comp.comp_code)
+    output = comp.to_db()
+    if isinstance(output, int):
+        Formula(comp_id=comp.comp_id).to_db()
+        set_comp_scorekeeper(comp.comp_id, user_id, owner=True)
+        create_overall_ranking(comp.comp_id)
+        return {'success': True}
+    return {'success': False, 'errors': {'Error': ['There was an error trying to save new Competition']}}

@@ -3,15 +3,17 @@ var dropdown = {
     category: $('#select_category'),
     formula: $('#select_formula'),
     igc_config: $('#igc_parsing_file'),
-    classification: $('#select_classification')
+    classification: $('#select_classification'),
+    ranking_type: $('#rank_type')
 };
 
 $(document).ready(function() {
   get_tasks( compid );
   get_scorekeepers( compid );
 
-  populate_rankings( dropdown.category.val() );
+//  populate_rankings( dropdown.category.val() );
   document.getElementById("link_igc_config").setAttribute("href", "/users/igc_parsing_config/" + dropdown.igc_config.val());
+  update_rankings();
 
   // function to call XHR and update formula dropdown
   function updateFormulas() {
@@ -50,10 +52,10 @@ $(document).ready(function() {
      $('#link_igc_config').attr("href", "/users/igc_parsing_config/" + dropdown.igc_config.val());
   });
 
-  // event listener to classification dropdown change
-  dropdown.classification.on('change', function() {
-     let cat_id = dropdown.classification.val()
-     update_rankings(cat_id);
+  // event listener to ranking type dropdown change
+  dropdown.ranking_type.on('change', function() {
+     let rank_type = dropdown.ranking_type.val()
+     update_ranking_modal(rank_type);
   });
 
   $('#main_comp_settings_form :input').change(function(){
@@ -299,55 +301,184 @@ function get_adv_settings(){
   });
 }
 
-function populate_rankings(category) {
-//    let select_list = $('#select_classification select');
-    let selected = $('#select_classification').val()
-    $('#select_classification').empty();
-    classifications.forEach( el => {
-        if ( el.comp_class == category ) {
-            $('#select_classification').append($('<option>', {
-                value: el.cat_id,
-                html: el.cat_name
-            }));
-            if ( el.cat_id == selected ) { $('#select_classification').val(el.cat_id); };
-        }
-    });
-    // check season is selected
-    if ( !$('#select_classification').val() ) {
-        $('#select_classification').val($("#select_classification option:first").val());
+function update_rankings() {
+  $('#rankings_table').DataTable({
+    ajax: '/users/_get_comp_rankings/'+compid,
+    destroy: true,
+    paging: false,
+    responsive: true,
+    saveState: true,
+    info: false,
+    bAutoWidth: false,
+    searching: false,
+    ordering: false,
+    filter: false,
+    columns: [
+        {data: 'rank_id', title: 'ID', name: 'ID', visible: false},
+        {data: 'rank_name', name: 'Name'},
+        {data: 'rank_type', name: 'Type', visible: false, defaultContent: ''},
+        {data: 'cert_id', name: 'Cert', visible: false, defaultContent: ''},
+        {data: 'min_date', name: 'Date From', visible: false, defaultContent: ''},
+        {data: 'max_date', name: 'Date To', visible: false, defaultContent: ''},
+        {data: 'attr_id', name: 'Attr ID', visible: false, defaultContent: ''},
+        {data: 'attr_value', name: 'Attr Value', visible: false, defaultContent: ''},
+        {data: 'description', name: 'Description'},
+        {data: 'rank_id', orderable: false, searchable: false, render: function ( data ) { return '<td  class ="value" ><button type="button" class="btn btn-primary" onclick="edit_ranking(' +  data + ')" data-toggle="confirmation" data-popout="true">Edit</button></td>'}},
+        {data: 'rank_id', orderable: false, searchable: false, render: function ( data ) { return '<td  class ="value" ><button type="button" class="btn btn-danger" onclick="delete_ranking(' +  data + ')" data-toggle="confirmation" data-popout="true">Delete</button></td>'}}
+    ],
+    rowId: function(data) {
+          return 'id_' + data.rank_id;
+        },
+    initComplete: function(settings, json) {
     }
-
-    update_rankings( dropdown.classification.val() )
+  });
 }
 
-function update_rankings( cat_id ) {
-    let classification = classifications.find(el => el.cat_id == cat_id );
-    if ( classification ) {
-        console.log('cat_id='+cat_id);
-        let cat = classification.categories;
-        let name = classification.cat_name
-        let columns = [];
-        columns.push({data: 'title', title:'rankings:', defaultContent: ''});
-        columns.push({data: 'members', render: function ( data ) { return data.join(', ')}});
+function add_ranking() {
+  cleanup_modal('rank_modal');
+  $('#rank_type').val($('#rank_type option:first').val());
+  update_ranking_modal($('#rank_type').val());
+  $('#rank_modal').modal('show');
+}
 
-        $('#rankings').DataTable({
-            data: cat,
-            destroy: true,
-            paging: false,
-            bAutoWidth: false,
-            responsive: true,
-            saveState: true,
-            info: false,
-            dom: 'lrtip',
-            columns: columns,
-            initComplete: function(settings, json) {
-                // Female Ranking
-                let female = (classification.female == 1).toString();
-                console.log('female='+female);
-                $('#rankings').DataTable().row.add({title: 'Female', members: [female]}).draw();
-            }
-        });
+function edit_ranking(cranid) {
+  cleanup_modal('rank_modal')
+  let table = $('#rankings_table').DataTable();
+  let row = '#id_'+cranid;
+  let data = table.row( row ).data();
+  console.log('rank_id='+data['rank_id']+' rank_type='+data['rank_type']);
+  console.log('min date='+moment(data['min_date']).format('YYYY-MM-DD'));
+  [data['min_date'], data['max_date']].forEach( el => el = moment(el).format('YYYY-MM-DD'));
+  if ( data['min_date'] ) data['min_date'] = moment(data['min_date']).format('YYYY-MM-DD');
+  if ( data['max_date'] ) data['max_date'] = moment(data['max_date']).format('YYYY-MM-DD');
+  update_ranking_modal(data['rank_type']);
+  $('#rank_modal [name]').each( function( i, el ) {
+    if (data[$(el).attr('name')]) $(el).val(data[$(el).attr('name')]);
+  });
+
+  $('#rank_modal').modal('show');
+}
+
+function delete_ranking( cranid ) {
+  $.ajax({
+    type: "POST",
+    url: "/users/_delete_ranking/"+ cranid,
+    contentType:"application/json",
+    dataType: "json",
+    success: function (response) {
+      let message = 'Ranking successfully removed.';
+      if (response.success) {
+        create_flashed_message(message, 'warning');
+        update_rankings();
+      }
+      else {
+        message = 'Error: unable to delete ranking.';
+        create_flashed_message(message, 'danger');
+      }
     }
+  });
+}
+
+function cleanup_modal (modal) {
+  let body = modal + '-body';
+  let names = ['rank_id', 'rank_name', 'cert_id', 'min_date', 'max_date', 'attr_id', 'rank_value'];
+  $('#'+modal+' .modal-errors').empty();  // delete all previous errors
+  $('#'+body+' [name]').each( ( i, el ) => {
+    if ( names.includes($(el).attr('name')) ) $(el).val('');
+    $(el).removeAttr('style');
+  });
+}
+
+function update_ranking_modal(rank_type) {
+  console.log('rank_type: '+rank_type);
+  let names = ['#cert_id', '#min_date', '#max_date', '#attr_id', '#rank_value'];
+  $.each( names,  (i, el) => $(el).val(''));
+  $.each([$('#rank_cert'), $('#rank_date'), $('#rank_attr'), $('#rank_value'), $('#custom_link')],  (i, el) => el.hide());
+  if (rank_type == 'cert') {
+    $('#cert_id').val($('#cert_id option:first').val());
+    $('#rank_cert').show();
+  }
+  else if (rank_type == 'birthdate') $('#rank_date').show();
+  else if (rank_type == 'nat') {
+    $('#rank_value').show();
+    $('label[for=rank_value]').html('FAI 3 Letters Nation Code');
+  }
+  else if (rank_type == 'female') {
+    $('#rank_value').show();
+    $('label[for=rank_value]').html('Minimum number of female participants');
+  }
+  else if (rank_type == 'custom') {
+    $('#attr_id').val($('#attr_id option:first').val());
+    $('label[for=rank_value]').html('Attribute Value');
+    $.each([$('#rank_attr'), $('#rank_value'), $('#custom_link')], ( (i, el) => el.show()));
+  };
+}
+
+$('#ranking_form').submit( function (e) {
+  e.preventDefault(); // block the traditional submission of the form.
+  $('#rank_modal .modal-errors').empty();  // delete all previous errors
+  if ( check_ranking_modal() ) {
+    let mydata = $('#ranking_form').serialize();
+    let cranid = $('#rank_id').val()
+    let url = "/users/_add_comp_ranking/"+ compid;
+    if ( cranid ) url = "/users/_modify_comp_ranking/"+cranid;
+    $.ajax({
+      type: "POST",
+      url: url,
+      data: mydata, // serializes the form's elements.
+      success: function (response) {
+        // console.log(response);  // display the returned data in the console.
+        if (response.success) {
+          update_rankings();
+          $('#rank_modal').modal('toggle');
+          let message = 'Ranking successfully added.';
+          if ( cranid ) message = 'Ranking successfully updated.';
+          create_flashed_message(message, 'info');
+        }
+        else {
+          if (response.errors) write_modal_messages(response.errors)
+        }
+      }
+    });
+  }
+})
+
+function write_modal_messages( errors ) {
+  let keys = Object.keys( errors );
+  console.log('Error! ('+keys.length+')');
+  keys.forEach( key => {
+    let text = errors[key][0];
+    $('#rank_modal-body div').find("[name='"+key+"']").css('background-color', 'orange');
+    let message = document.createElement( "p" );
+    message.classList.add('alert', 'alert-danger');
+    message.innerText = key + ': ' + text;
+    $('#rank_modal .modal-errors').append(message);
+  })
+}
+
+function check_ranking_modal() {
+  let type = $('#rank_type').val();
+  let rank_value = $('#rank_value').val();
+  let min_date = $('#min_date').val();
+  let max_date = $('#max_date').val();
+  let errors = {};
+  if ( type == 'custom' && !rank_value ) {
+    message = 'Fill Attribute Value Field';
+    errors['rank_value'] = [message];
+  }
+  else if ( type == 'nat' && !rank_value ) {
+    message = 'Fill Nat Code Field';
+    errors['rank_value'] = [message];
+  }
+  else if ( type == 'birthdate' && !min_date && !max_date ) {
+    message = 'At least one date must be filled';
+    errors['min_date'] = [message];
+  };
+  if ( Object.keys(errors).length ) {
+    write_modal_messages( errors );
+    return false;
+  }
+  else return true;
 }
 
 function export_to_fsdb(){

@@ -40,14 +40,27 @@
 {% endmacro %}
 
 
-{% macro render_info(id, label, value, class=None) %}
+{% macro render_info(info_id, label, value, class=None) %}
 {% if class %}
   {% set css = class %}
 {% else %}
   {% set css = 'form-info' %}
 {% endif %}
 <div class="form-element">
-  <div class="form-label"><label for="{{ id }}">{{ label }}</label>:</div>
-  <div class="form-input"><span class="" id="{{ id }}" >{{ value }}</span></div>
+  <div class="form-label"><label for="{{ info_id }}">{{ label }}</label>:</div>
+  <div class="form-input"><span class="" id="{{ info_id }}" >{{ value }}</span></div>
+</div>
+{% endmacro %}
+
+
+{% macro render_input(id, label, size, value=None, class=None) %}
+{% if class %}
+  {% set css = class %}
+{% else %}
+  {% set css = '' %}
+{% endif %}
+<div class="form-element">
+  <div class="form-label"><label for="{{ id }}">{{ label }}:</label></div>
+  <div class="form-input"><input class="{{ css }}" id="{{ id }}" name="{{ id }}" type="text" size="35"></div>
 </div>
 {% endmacro %}

@@ -8,7 +8,7 @@ from flask_login import login_required, current_user
 import frontendUtils
 from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm, \
     ResultAdminForm, NewScorekeeperForm, RegionForm, NewRegionForm, IgcParsingConfigForm, ParticipantForm, \
-    EditScoreForm, ModifyUserForm, CompLaddersForm, NewCompForm
+    EditScoreForm, ModifyUserForm, CompLaddersForm, NewCompForm, CompRankingForm
 from comp import Comp
 from formula import list_formulas, Formula
 from task import Task, write_map_json, get_task_json_by_filename
@@ -137,14 +137,13 @@ def comp_admin():
 @blueprint.route('/_create_comp', methods=['POST'])
 @login_required
 def _create_comp():
-    import compUtils
 
     form = NewCompForm()
     errors = []
 
     if request.method == 'POST' and form.validate_on_submit():
         if not frontendUtils.check_short_code(form.comp_code.data):
-            errors.append("Short name already in use.")
+            errors = {'comp_code': ["Short name is invalid or already in use."]}
         if errors:
             return jsonify(success=False, errors=errors)
 
@@ -154,12 +153,8 @@ def _create_comp():
                         comp_code=form.comp_code.data,
                         date_from=form.date_from.data,
                         date_to=form.date_to.data)
-        new_comp.comp_path = compUtils.create_comp_path(new_comp.date_from, new_comp.comp_code)
-        output = new_comp.to_db()
-        if isinstance(output, int):
-            Formula(comp_id=output).to_db()
-            frontendUtils.set_comp_scorekeeper(output, current_user.id, owner=True)
-            return jsonify(success=True)
+        response = frontendUtils.create_new_comp(new_comp, current_user.id)
+        return jsonify(response)
 
     return jsonify(success=False, errors=form.errors)
 
@@ -206,10 +201,12 @@ def comp_settings_admin(compid: int):
     compform = CompForm()
     newtaskform = NewTaskForm()
     newScorekeeperform = NewScorekeeperForm()
+    rankingform = CompRankingForm()
     comp = Comp.read(compid)
     # set session variables for navbar
     session['compid'] = compid
     session['comp_name'] = comp.comp_name
+    session['comp_class'] = comp.comp_class
     session['external'] = comp.external
 
     compform.igc_parsing_file.choices, _ = frontendUtils.get_igc_parsing_config_file_list()
@@ -224,10 +221,34 @@ def comp_settings_admin(compid: int):
             scorekeeper_choices.append((scorekeeper['id'],
                                         f"{scorekeeper['first_name']} {scorekeeper['last_name']} ({scorekeeper['username']})"))
 
-    compform.cat_id.choices = [(x['cat_id'], x['cat_name']) for x in frontendUtils.list_classifications()['ALL']]
+    certifications = frontendUtils.get_certifications_details()
+    rankingform.cert_id.choices = [(x['cert_id'], x['cert_name']) for x in certifications[comp.comp_class]]
+    rankingform.attr_id.choices = [(x['attr_id'], x['attr_value']) for x in frontendUtils.get_comp_meta(compid)]
 
     if request.method == 'POST':
-        if compform.validate_on_submit():
+        if comp.external:
+            comp.comp_code = compform.comp_code.data
+            comp.sanction = compform.sanction.data
+            comp.MD_name = compform.MD_name.data
+            if compform.website.data.lower()[:7] == 'http://':
+                comp.website = compform.website.data.lower()[7:]
+            elif compform.website.data.lower()[:8] == 'https://':
+                comp.website = compform.website.data.lower()[8:]
+            else:
+                comp.website = compform.website.data.lower()
+            comp.to_db()
+            formula = Formula.read(compid)
+            formula.team_scoring = compform.team_scoring.data
+            formula.team_size = compform.team_size.data
+            formula.max_team_size = compform.max_team_size.data
+            formula.country_scoring = compform.country_scoring.data
+            formula.country_size = compform.country_size.data
+            formula.max_country_size = compform.max_country_size.data
+            formula.team_over = compform.team_over.data
+            formula.to_db()
+            flash(f"{comp.comp_name} saved", category='info')
+
+        elif compform.validate_on_submit():
             comp.comp_name = compform.comp_name.data
             comp.comp_code = compform.comp_code.data
             comp.sanction = compform.sanction.data
@@ -237,7 +258,6 @@ def comp_settings_admin(compid: int):
             comp.date_from = compform.date_from.data
             comp.date_to = compform.date_to.data
             comp.MD_name = compform.MD_name.data
-            comp.cat_id = compform.cat_id.data
             comp.track_source = compform.track_source.data if compform.track_source.data not in ('', None) else None
             comp.time_offset = compform.time_offset.data
             comp.restricted = compform.pilot_registration.data
@@ -292,12 +312,12 @@ def comp_settings_admin(compid: int):
             formula.to_db()
 
             flash(f"{compform.comp_name.data} saved", category='info')
-            return redirect(url_for('user.comp_settings_admin', compid=compid))
+            # return redirect(url_for('user.comp_settings_admin', compid=compid))
         else:
             for item in compform:
                 if item.errors:
                     flash(f"{item.label.text} ({item.data}): {', '.join(x for x in item.errors)}", category='danger')
-                    return redirect(url_for('user.comp_settings_admin', compid=compid))
+        return redirect(url_for('user.comp_settings_admin', compid=compid))
 
     if request.method == 'GET':
         formula = Formula.read(compid)
@@ -310,7 +330,6 @@ def comp_settings_admin(compid: int):
         compform.date_from.data = comp.date_from
         compform.date_to.data = comp.date_to
         compform.MD_name.data = comp.MD_name
-        compform.cat_id.data = comp.cat_id
         compform.track_source.data = comp.track_source
         compform.time_offset.data = int(comp.time_offset)
         compform.pilot_registration.data = comp.restricted
@@ -390,7 +409,7 @@ def comp_settings_admin(compid: int):
         ladderform = None
 
     tasks = frontendUtils.get_task_list(comp)
-    classifications = frontendUtils.get_classifications_details()
+    # classifications = frontendUtils.get_classifications_details()
     session['tasks'] = tasks['tasks']
     session['check_g_record'] = comp.check_g_record
     session['track_source'] = comp.track_source
@@ -403,7 +422,7 @@ def comp_settings_admin(compid: int):
         flash(f"This is an External Event. Settings and Results are Read Only.", category='warning')
     return render_template('users/comp_settings.html', compid=compid, compform=compform,
                            taskform=newtaskform, scorekeeperform=newScorekeeperform, ladderform=ladderform,
-                           classifications=classifications, error=error,
+                           rankingform=rankingform, certifications=certifications, error=error,
                            self_register=(SELF_REG_DEFAULT and PILOT_DB))
 
 
@@ -490,7 +509,12 @@ def task_admin(taskid: int):
     owner, scorekeepers, all_scorekeeper_ids = frontendUtils.get_comp_scorekeeper(task.comp_id)
 
     if request.method == 'POST':
-        if taskform.validate_on_submit():
+        if session['external']:
+            task.comment = taskform.comment.data
+            task.to_db()
+            flash(f"{task.task_name} saved", category='info')
+
+        elif taskform.validate_on_submit():
             task.comp_name = taskform.comp_name
             task.task_name = taskform.task_name.data
             task.task_num = taskform.task_num.data
@@ -523,20 +547,18 @@ def task_admin(taskid: int):
             task.formula.no_goal_penalty = (taskform.no_goal_penalty.data or 0) / 100
             task.formula.arr_alt_bonus = taskform.arr_alt_bonus.data
             task.to_db()
-
             for session_task in session['tasks']:
                 if session_task['task_id'] == taskid:
                     if task.ready_to_score:
                         session_task['ready_to_score'] = True
-
             flash("Saved", category='info')
-
-            return redirect(url_for('user.task_admin', taskid=taskid))
 
         else:
             for item in taskform:
                 if item.errors:
                     flash(f"{item.label.text} ({item.data}): {', '.join(x for x in item.errors)}", category='danger')
+
+        return redirect(url_for('user.task_admin', taskid=taskid))
 
     if request.method == 'GET':
         offset = task.time_offset if task.time_offset else 0
@@ -1447,16 +1469,23 @@ def _del_igc_config(filename: str):
 def pilot_admin(compid: int):
     """ Registered Pilots list
         Add / Edit Pilots"""
+    from ranking import CompAttribute
+
     participant_form = ParticipantForm()
-    participant_form.nat.choices = [(x['code'], x['name']) for x in frontendUtils.list_countries()]
     comp = Comp.read(compid)
+
+    participant_form.nat.choices = [(x['code'], x['name']) for x in frontendUtils.list_countries()]
+    participant_form.certification.choices = [(x['cert_name'], x['cert_name'])
+                                              for x in frontendUtils.get_certifications_details()[comp.comp_class]]
+
+    attributes = CompAttribute.read_meta(compid)
 
     if session['external']:
         '''External Event'''
         flash(f"This is an External Event. Settings and Results are Read Only.", category='warning')
 
     return render_template('users/pilot_admin.html', compid=compid, track_source=comp.track_source,
-                           participant_form=participant_form, pilotdb=PILOT_DB)
+                           participant_form=participant_form, pilotdb=PILOT_DB, attributes=attributes)
 
 
 @blueprint.route('/_modify_participant_details/<int:parid>', methods=['POST'])
@@ -1472,6 +1501,7 @@ def _modify_participant_details(parid: int):
 
         participant.ID = form.id_num.data
         participant.name = abbreviate(form.name.data)
+        participant.birthdate = form.birthdate.data or None
         participant.civl_id = int(form.CIVL.data) if str(form.CIVL.data).isdigit() else None
         participant.sex = form.sex.data
         participant.nat = form.nat.data
@@ -1484,6 +1514,9 @@ def _modify_participant_details(parid: int):
         participant.xcontest_id = form.xcontest_id.data or None
         participant.status = form.status.data or None
         participant.paid = form.paid.data or None
+        ''' Comp custom attributes'''
+        for key, value in participant.custom.items():
+            participant.custom[key] = request.form.get('attr_' + str(key)) or None
         participant.to_db()
         return jsonify(success=True)
     return jsonify(success=False, errors=form.errors)
@@ -1503,6 +1536,7 @@ def _add_participant(compid: int):
         participant.comp_id = compid
         participant.ID = assign_id(compid, given_id=form.id_num.data)
         participant.name = abbreviate(form.name.data)
+        participant.birthdate = form.birthdate.data or None
         participant.civl_id = int(form.CIVL.data) if str(form.CIVL.data).isdigit() else None
         participant.sex = form.sex.data
         participant.nat = form.nat.data
@@ -1517,6 +1551,9 @@ def _add_participant(compid: int):
             participant.status = form.status.data
         if form.paid.data:
             participant.paid = form.paid.data
+        ''' Comp custom attributes'''
+        for key, value in {k: request.form.get(k) for k in request.form.keys() if 'attr_' in k}.items():
+            participant.custom[int(key.split('_')[-1])] = value or None
         participant.to_db()
         return jsonify(success=True)
     return jsonify(success=False, errors=form.errors)
@@ -1525,7 +1562,6 @@ def _add_participant(compid: int):
 @blueprint.route('/_upload_participants_excel/<int:compid>', methods=['POST'])
 @login_required
 def _upload_participants_excel(compid: int):
-    from pilot.participant import extract_participants_from_excel, mass_import_participants
     import tempfile
 
     if request.method == "POST" and "excel_file" in request.files:
@@ -1534,14 +1570,9 @@ def _upload_participants_excel(compid: int):
             if not excel_file:
                 return jsonify(success=False, error='Error: not a valid excel file.')
             with tempfile.TemporaryDirectory() as tmpdirname:
-                excel_file.save(path.join(tmpdirname, excel_file.filename))
-                pilots = extract_participants_from_excel(compid, path.join(tmpdirname, excel_file.filename))
-                if not pilots:
-                    return jsonify(success=False, error='Error: not a valid excel file or has no participants.')
-                # should we delete all participants when uploading a excel list?
-                pilots = frontendUtils.check_participants_ids(compid, pilots)
-                mass_import_participants(compid, pilots, check_ids=False)
-            return jsonify(success=True)
+                file_path = Path(tmpdirname, excel_file.filename)
+                excel_file.save(file_path)
+                return jsonify(frontendUtils.import_participants_from_excel_file(compid, file_path))
         except (FileNotFoundError, TypeError, Exception):
             return jsonify(success=False, error='Internal error trying to parse excel file.')
     return jsonify(success=False, error='Error: no file was given.')
@@ -1550,7 +1581,6 @@ def _upload_participants_excel(compid: int):
 @blueprint.route('/_upload_participants_fsdb/<int:compid>', methods=['POST'])
 @login_required
 def _upload_participants_fsdb(compid: int):
-    from pilot.participant import unregister_all, mass_import_participants
     import tempfile
 
     if request.method == "POST" and "fsdb_file" in request.files:
@@ -1561,13 +1591,9 @@ def _upload_participants_fsdb(compid: int):
             with tempfile.TemporaryDirectory() as tmpdirname:
                 tmp_file = Path(tmpdirname, fsdb_file.filename)
                 fsdb_file.save(tmp_file)
-                participants = frontendUtils.import_participants_from_fsdb(tmp_file)
-                if not participants:
-                    return jsonify(success=False, error='Error: not a valid FSDB file or has no participants.')
-                unregister_all(compid)
-                mass_import_participants(compid, participants, check_ids=False)
-            return jsonify(success=True)
+                return jsonify(frontendUtils.import_participants_from_fsdb(comp_id=compid, file=tmp_file))
         except (FileNotFoundError, TypeError, Exception):
+            raise
             return jsonify(success=False, error='Internal error trying to parse FSDB file.')
     return jsonify(success=False, error='Error: no file was given.')
 
@@ -1604,9 +1630,8 @@ def _unregister_participant(compid: int):
 def _unregister_all_external_participants(compid: int):
     """unregister participant from a comp"""
     from pilot.participant import unregister_all_external_participants
-    unregister_all_external_participants(compid)
-    resp = jsonify(success=True)
-    return resp
+    resp = unregister_all_external_participants(compid)
+    return jsonify(success=resp)
 
 
 @blueprint.route('/_check_nat_team_size/<int:compid>', methods=['GET'])
@@ -1711,3 +1736,97 @@ def _download_file(filetype: str, filename):
                                    as_attachment=True, cache_timeout=0))
     resp.set_cookie('ServerProcessCompleteChecker', '', expires=0)
     return resp
+
+
+@blueprint.route('/_get_comp_rankings/<int:compid>', methods=['GET'])
+@login_required
+def _get_comp_rankings(compid: int):
+    return jsonify({'data': frontendUtils.get_comp_rankings(compid)})
+
+
+@blueprint.route('/_modify_comp_ranking/<int:cranid>', methods=['POST'])
+@login_required
+def _modify_comp_ranking(cranid: int):
+    from ranking import CompRanking
+    from result import update_results_rankings
+
+    form = CompRankingForm()
+
+    if request.method == 'POST' and form.validate_on_submit():
+        rank = CompRanking.read(cranid)
+
+        rank.rank_name = form.rank_name.data
+        rank.rank_type = form.rank_type.data
+        rank.cert_id = form.cert_id.data or None
+        rank.min_date = form.min_date.data if rank.rank_type == 'birthdate' else None
+        rank.max_date = form.max_date.data if rank.rank_type == 'birthdate' else None
+        rank.attr_id = form.attr_id.data if rank.rank_type == 'custom' else None
+        rank.rank_value = form.rank_value.data or None
+        rank.to_db()
+        update_results_rankings(comp_id=session['compid'])
+        return jsonify(success=True)
+    return jsonify(success=False, errors=form.errors)
+
+
+@blueprint.route('/_add_comp_ranking/<int:compid>', methods=['POST'])
+@login_required
+def _add_comp_ranking(compid: int):
+    from ranking import CompRanking
+    from result import update_results_rankings
+
+    form = CompRankingForm()
+
+    if request.method == 'POST' and form.validate_on_submit():
+        rank = CompRanking(comp_id=compid)
+
+        rank.rank_name = form.rank_name.data
+        rank.rank_type = form.rank_type.data
+        rank.cert_id = form.cert_id.data or None
+        rank.min_date = form.min_date.data if rank.rank_type == 'birthdate' else None
+        rank.max_date = form.max_date.data if rank.rank_type == 'birthdate' else None
+        rank.attr_id = form.attr_id.data if rank.rank_type == 'custom' else None
+        rank.rank_value = form.rank_value.data or None
+        rank.to_db()
+        update_results_rankings(comp_id=compid)
+        return jsonify(success=True)
+    return jsonify(success=False, errors=form.errors)
+
+
+@blueprint.route('/_get_custom_attributes/<int:compid>', methods=['GET', 'POST'])
+@login_required
+def _get_custom_attributes(compid: int):
+
+    return jsonify(frontendUtils.get_comp_meta(compid))
+
+
+@blueprint.route('/_add_custom_attribute/<int:compid>', methods=['GET', 'POST'])
+@login_required
+def _add_custom_attribute(compid: int):
+    from ranking import CompAttribute
+    data = request.json
+    attribute = CompAttribute(attr_key='meta', attr_value=data['attr_value'], comp_id=compid)
+    attribute.to_db()
+    return jsonify(success=bool(attribute.attr_id))
+
+
+@blueprint.route('/_edit_custom_attribute/<int:attrid>', methods=['GET', 'POST'])
+@login_required
+def _edit_custom_attribute(attrid: int):
+    from ranking import CompAttribute
+    data = request.json
+    attribute = CompAttribute(attr_key='meta', **data)
+    attribute.to_db()
+    return jsonify(success=bool(attribute.attr_id))
+
+
+@blueprint.route('/_remove_custom_attribute/<int:attrid>', methods=['GET', 'POST'])
+@login_required
+def _remove_custom_attribute(attrid: int):
+    return jsonify(success=bool(frontendUtils.delete_comp_attribute(attrid)))
+
+
+@blueprint.route('/_delete_ranking/<int:cranid>', methods=['GET', 'POST'])
+@login_required
+def _delete_ranking(cranid: int):
+    from ranking import delete_ranking
+    return jsonify(success=delete_ranking(session['compid'], cranid))

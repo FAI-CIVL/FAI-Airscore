@@ -18,20 +18,21 @@ import lxml.etree as ET
 from calcUtils import c_round, get_int, get_isotime, km, sec_to_time
 from comp import Comp
 from compUtils import is_ext
-from db.conn import db_session
 from formula import Formula
 from lxml.etree import CDATA
 from pilot.flightresult import FlightResult, update_all_results
 from pilot.participant import Participant, mass_import_participants
 from task import Task
+from ranking import get_fsdb_custom_attributes
 
 
 class FSDB(object):
     """ A Class to deal with FSComp FSDB files  """
 
-    def __init__(self, comp=None, tasks=None, filename=None):
+    def __init__(self, comp=None, tasks=None, filename=None, custom_attributes=None):
         self.filename = filename  # str:  filename
         self.comp = comp  # Comp obj.
+        self.custom_attributes = custom_attributes  # list: CompAttribute obj. list
         self.tasks = tasks  # list: Task obj. list with FlightResult obj list
 
     @property
@@ -60,6 +61,7 @@ class FSDB(object):
 
         pilots = []
         tasks = []
+        comp_attributes = []
 
         """Comp Info"""
         print("Getting Comp Info...")
@@ -78,37 +80,40 @@ class FSDB(object):
         if from_CIVL:
             print('*** get from CIVL database')
         p = root.find('FsCompetition').find('FsParticipants')
-        for pil in p.iter('FsParticipant'):
-            pilot = Participant.from_fsdb(pil, from_CIVL=from_CIVL)
-            # pp(pilot.as_dict())
-            pilots.append(pilot)
+        if p is not None:
+            comp_attributes = get_fsdb_custom_attributes(p)
+            for pil in p.iter('FsParticipant'):
+                pilot = Participant.from_fsdb(pil, from_CIVL=from_CIVL)
+                # pp(pilot.as_dict())
+                pilots.append(pilot)
 
-        comp.participants = pilots
+            comp.participants = pilots
 
         """Tasks"""
         print("Getting Tasks Info...")
         t = root.find('FsCompetition').find('FsTasks')
-        for tas in t.iter('FsTask'):
-            '''create task obj'''
-            task = Task.from_fsdb(tas, comp.time_offset, keep_task_path)
-            '''check if task was valid'''
-            if task is not None:
-                if not task.task_path:
-                    task.create_path()
-                # task.time_offset = int(comp.time_offset)
-                """Task Results"""
-                node = tas.find('FsParticipants')
-                if node is not None:
-                    task.pilots = []
-                    print("Getting Results Info...")
-                    for res in node.iter('FsParticipant'):
-                        '''pilots results'''
-                        pilot = FlightResult.from_fsdb(res, task)
-                        pilot.name = next((p.name for p in pilots if p.ID == pilot.ID), f'Pilot {pilot.ID}')
-                        task.pilots.append(pilot)
-                tasks.append(task)
+        if t is not None:
+            for tas in t.iter('FsTask'):
+                '''create task obj'''
+                task = Task.from_fsdb(tas, comp.time_offset, keep_task_path)
+                '''check if task was valid'''
+                if task is not None:
+                    if not task.task_path:
+                        task.create_path()
+                    # task.time_offset = int(comp.time_offset)
+                    """Task Results"""
+                    node = tas.find('FsParticipants')
+                    if node is not None:
+                        task.pilots = []
+                        print("Getting Results Info...")
+                        for res in node.iter('FsParticipant'):
+                            '''pilots results'''
+                            pilot = FlightResult.from_fsdb(res, task)
+                            # pilot.name = next((p.name for p in pilots if p.ID == pilot.ID), f'Pilot {pilot.ID}')
+                            task.pilots.append(pilot)
+                    tasks.append(task)
 
-        return cls(comp, tasks, fp)
+        return cls(comp, tasks, fp, comp_attributes)
 
     @classmethod
     def create(cls, comp_id, ref_id=None):
@@ -540,8 +545,6 @@ class FSDB(object):
     def save_file(self, filename: str = None):
         """write fsdb file to results folder, with default filename:
         comp_code_datetime.fsdb"""
-        from pathlib import Path
-
         from Defines import RESULTDIR
 
         _, fsdb = self.to_file()
@@ -555,41 +558,49 @@ class FSDB(object):
         """
         Add comp to AirScore database
         """
+        from ranking import create_overall_ranking
 
         self.comp.to_db()
         self.comp.formula.comp_id = self.comp.comp_id
         self.comp.formula.to_db()
+        create_overall_ranking(self.comp.comp_id)
 
-    def add_tasks(self):
+    def add_custom_attributes(self, comp_id: int = None):
+        """
+        Add comp to AirScore database
+        """
+        if self.custom_attributes and (comp_id is not None or self.comp.comp_id is not None):
+            for attr in self.custom_attributes:
+                attr.comp_id = comp_id or self.comp.comp_id
+                attr.to_db()
+
+    def add_tasks(self, comp_id: int = None):
         """
         Add comp tasks to AirScore database
         """
-        from pathlib import Path
 
-        if self.comp.comp_id is None:
+        if comp_id is None and self.comp.comp_id is None:
             return False
-
-        with db_session() as db:
-            for t in self.tasks:
-                t.comp_id = self.comp.comp_id
-                # t.create_path()
-                '''recalculating legs to avoid errors when fsdb task misses launch and/or goal'''
-                if t.geo is None:
-                    t.get_geo()
-                t.calculate_task_length()
-                t.calculate_optimised_task_length()
-                '''storing'''
-                t.to_db()
-                '''adding folders'''
-                t.comp_path = self.comp.comp_path
-                Path(t.file_path).mkdir(parents=True, exist_ok=True)
+        for t in self.tasks:
+            t.comp_id = comp_id or self.comp.comp_id
+            # t.create_path()
+            '''recalculating legs to avoid errors when fsdb task misses launch and/or goal'''
+            if t.geo is None:
+                t.get_geo()
+            t.calculate_task_length()
+            t.calculate_optimised_task_length()
+            '''storing'''
+            t.to_db()
+            '''adding folders'''
+            t.comp_path = self.comp.comp_path
+            Path(t.file_path).mkdir(parents=True, exist_ok=True)
         return True
 
     def add_results(self):
         """
         Add results for each comp task to AirScore database
         """
-        from db.tables import TblTaskResult as R
+        from result import TaskResult
 
         if self.comp.comp_id is None:
             return False
@@ -598,39 +609,38 @@ class FSDB(object):
             if len(t.results) == 0 or t.task_id is None:
                 print(f"task {t.task_code} does not have a db ID or has not been scored.")
                 pass
-            with db_session() as db:
-                '''get results par_id from participants'''
-                for pilot in t.pilots:
-                    par = next(p for p in self.comp.participants if p.ID == pilot.ID)
-                    pilot.par_id = par.par_id
-                inserted = update_all_results(task_id=t.task_id, pilots=t.pilots)
-                if inserted:
-                    '''populate results track_id'''
-                    results = db.query(R.track_id, R.par_id).filter_by(task_id=t.task_id).all()
-                    for result in results:
-                        pilot = next(p for p in t.pilots if p.par_id == result.par_id)
-                        pilot.track_id = result.track_id
+            '''get results par_id from participants'''
+            for pilot in t.pilots:
+                par = next(p for p in self.comp.participants if p.ID == pilot.ID)
+                [setattr(pilot, attr, getattr(par, attr)) for attr in TaskResult.results_list if hasattr(par, attr)]
+            inserted = update_all_results(task_id=t.task_id, pilots=t.pilots)
+            if not inserted:
+                return False
+
         return True
 
-    def add_participants(self):
+    def add_participants(self, comp_id: int = None):
         """
         Add participants to AirScore database
         """
-        from db.tables import TblParticipant as P
 
-        if self.comp.comp_id is None or len(self.comp.participants) == 0:
+        if (comp_id is None and self.comp.comp_id is None) or len(self.comp.participants) == 0:
             print(f"Comp does not have a db ID or has not participants.")
             return False
 
-        with db_session() as db:
-            inserted = mass_import_participants(self.comp.comp_id, self.comp.participants, check_ids=False)
-            if inserted:
-                '''populate participants par_id'''
-                results = db.query(P.par_id, P.ID).filter_by(comp_id=self.comp.comp_id).all()
-                for result in results:
-                    pilot = next(p for p in self.comp.participants if p.ID == result.ID)
-                    pilot.par_id = result.par_id
-        return True
+        for p in self.comp.participants:
+            p.comp_id = comp_id or self.comp.comp_id
+            if self.custom_attributes and hasattr(p, 'attributes'):
+                '''creates Participant.custom'''
+                for attr in p.attributes:
+                    attr_id = next((el.attr_id for el in self.custom_attributes
+                                    if el.attr_value == attr['attr_value']), None)
+                    p.custom[attr_id] = attr['meta_value']
+                p.attributes = None
+
+        response = mass_import_participants(comp_id or self.comp.comp_id, self.comp.participants, check_ids=False)
+
+        return response
 
     def create_results_files(self):
         from result import create_json_file
@@ -657,11 +667,12 @@ class FSDB(object):
         self.add_comp()
         if self.comp.comp_id is not None:
             print(f"comp ID: {self.comp.comp_id}")
-            with db_session() as db:
-                print(f"adding participants...")
-                self.add_participants()
-                print(f"adding tasks...")
-                self.add_tasks()
+            self.add_custom_attributes()
+            print(f"adding participants...")
+            par_resp = self.add_participants()
+            print(f"adding tasks...")
+            tasks_resp = self.add_tasks()
+            if par_resp and tasks_resp:
                 print(f"adding results...")
                 self.add_results()
                 print(f"creating original results files...")

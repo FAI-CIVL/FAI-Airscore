@@ -4,7 +4,7 @@ SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET AUTOCOMMIT = 0;
 START TRANSACTION;
 SET time_zone = "+00:00";
-
+SET NAMES utf8mb4;
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -25,7 +25,6 @@ CREATE TABLE `CompObjectView` (
 ,`date_to` date
 ,`MD_name` varchar(100)
 ,`contact` varchar(100)
-,`cat_id` int(11)
 ,`sanction` varchar(20)
 ,`comp_type` enum('RACE','Route','Team-RACE')
 ,`comp_code` varchar(10)
@@ -165,7 +164,7 @@ CREATE TABLE `Pilots` (
   `airtribune_id` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `xcontest_id` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `telegram_id` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
@@ -193,7 +192,7 @@ CREATE TABLE `schema_version` (
   `svKey` int(11) NOT NULL DEFAULT '0',
   `svWhen` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `svExtra` varchar(256) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -318,7 +317,7 @@ CREATE TABLE `tblCertification` (
   `cert_name` varchar(15) NOT NULL,
   `comp_class` enum('PG','HG','mixed') NOT NULL DEFAULT 'PG',
   `cert_order` tinyint NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 INSERT INTO tblCertification (cert_id, cert_name, comp_class, cert_order) VALUES
 (1, 'A', 'PG', 1),
@@ -328,40 +327,6 @@ INSERT INTO tblCertification (cert_id, cert_name, comp_class, cert_order) VALUES
 (5, 'CCC', 'PG', 5),
 (6, 'Class 1', 'HG', 1),
 (7, 'Class 5', 'HG', 2);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `tblClasCertRank`
---
-
-CREATE TABLE `tblClasCertRank` (
-  `cat_id` int(11) NOT NULL,
-  `cert_id` int(11) DEFAULT NULL,
-  `rank_id` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-INSERT INTO tblClasCertRank (cat_id, cert_id, rank_id) VALUES
-(1, 5, 1),
-(2, 7, 5);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `tblClassification`
---
-
-CREATE TABLE `tblClassification` (
-  `cat_id` int(11) NOT NULL,
-  `cat_name` varchar(60) NOT NULL,
-  `comp_class` enum('PG','HG','mixed') NOT NULL DEFAULT 'PG',
-  `female` tinyint(1) NOT NULL DEFAULT '1',
-  `team` tinyint(1) NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-INSERT INTO tblClassification (cat_id, cat_name, comp_class, female, team) VALUES
-(1, 'Overall', 'PG', 1, 0),
-(2, 'Overall', 'HG', 1, 0);
 
 -- --------------------------------------------------------
 
@@ -383,7 +348,7 @@ CREATE TABLE `tblCompAirspaceCheck` (
   `v_boundary_penalty` float(3,2) NOT NULL DEFAULT '0.10',
   `v_inner_limit` smallint(4) NOT NULL DEFAULT '30',
   `v_max_penalty` float(3,2) NOT NULL DEFAULT '1.00'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -395,7 +360,7 @@ CREATE TABLE `tblCompAuth` (
   `user_id` int(11) NOT NULL,
   `comp_id` int(11) NOT NULL,
   `user_auth` enum('read','write','admin','owner') NOT NULL DEFAULT 'read'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -415,7 +380,6 @@ CREATE TABLE `tblCompetition` (
   `time_offset` mediumint(9) NOT NULL DEFAULT '0',
   `MD_name` varchar(100) DEFAULT NULL,
   `contact` varchar(100) DEFAULT NULL,
-  `cat_id` int(11) DEFAULT NULL,
   `sanction` varchar(20) NOT NULL DEFAULT 'none',
   `openair_file` varchar(40) DEFAULT NULL,
   `comp_type` enum('RACE','Route','Team-RACE') DEFAULT 'RACE',
@@ -431,7 +395,38 @@ CREATE TABLE `tblCompetition` (
   `check_launch` enum('on','off') NOT NULL DEFAULT 'off',
   `self_register` tinyint(1) NOT NULL DEFAULT '0',
   `check_g_record` tinyint(1) DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblCompAttribute`
+--
+
+CREATE TABLE `tblCompAttribute` (
+  `attr_id` int NOT NULL,
+  `comp_id` int NOT NULL,
+  `attr_key` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `attr_value` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblCompRanking`
+--
+
+CREATE TABLE `tblCompRanking` (
+  `rank_id` int NOT NULL,
+  `comp_id` int NOT NULL,
+  `rank_name` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `rank_type` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'cert',
+  `cert_id` int DEFAULT NULL,
+  `min_date` date DEFAULT NULL,
+  `max_date` date DEFAULT NULL,
+  `attr_id` int DEFAULT NULL,
+  `rank_value` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -477,7 +472,7 @@ CREATE TABLE `tblForComp` (
   `country_size` int(4) DEFAULT NULL,
   `max_country_size` int(4) DEFAULT NULL,
   `team_over` int(2) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -486,14 +481,32 @@ CREATE TABLE `tblForComp` (
 --
 
 CREATE TABLE `tblLadder` (
-  `ladder_id` int(11) NOT NULL,
-  `ladder_name` varchar(100) NOT NULL,
-  `ladder_class` enum('PG','HG') NOT NULL DEFAULT 'PG',
-  `nation_code` int(11) DEFAULT '380',
+  `ladder_id` int NOT NULL,
+  `ladder_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `ladder_class` enum('PG','HG') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'PG',
+  `nat` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `date_from` date DEFAULT NULL,
   `date_to` date DEFAULT NULL,
   `external` tinyint(1) DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tblLadderRanking`
+--
+
+CREATE TABLE `tblLadderRanking` (
+  `rank_id` int NOT NULL,
+  `ladder_id` int NOT NULL,
+  `rank_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `rank_type` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'cert',
+  `cert_id` int DEFAULT NULL,
+  `min_date` date DEFAULT NULL,
+  `max_date` date DEFAULT NULL,
+  `rank_key` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `rank_value` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 --
@@ -510,7 +523,7 @@ CREATE TABLE `tblCountryCode` (
   `natSubRegion` varchar(25) DEFAULT NULL,
   `natRegionId` int(11) DEFAULT NULL,
   `natSubRegionId` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `tblCountryCode`
@@ -780,7 +793,7 @@ INSERT INTO `tblCountryCode` (`natName`, `natIso2`, `natIso3`, `natId`, `natIoc`
 CREATE TABLE `tblLadderComp` (
   `ladder_id` int(11) DEFAULT NULL,
   `comp_id` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -792,10 +805,9 @@ CREATE TABLE `tblLadderSeason` (
   `ladder_id` int(11) NOT NULL,
   `season` int(6) NOT NULL,
   `active` tinyint(1) DEFAULT '1',
-  `cat_id` int(11) NOT NULL,
   `overall_validity` enum('all','ftv','round') NOT NULL DEFAULT 'ftv',
   `validity_param` float NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -810,7 +822,7 @@ CREATE TABLE `tblNotification` (
   `flat_penalty` float(8,4) NOT NULL DEFAULT '0.0000',
   `percentage_penalty` float(5,4) NOT NULL DEFAULT '0.0000',
   `comment` varchar(80) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -842,26 +854,20 @@ CREATE TABLE `tblParticipant` (
   `ranking` mediumint(9) DEFAULT NULL,
   `paid` tinyint(1) DEFAULT '0',
   `hours` smallint(6) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `tblRanking`
+-- Table structure for table `tblParticipantMeta`
 --
 
-CREATE TABLE `tblRanking` (
-  `rank_id` int(11) NOT NULL,
-  `rank_name` varchar(40) NOT NULL,
-  `comp_class` enum('PG','HG','mixed') NOT NULL DEFAULT 'PG'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-INSERT INTO tblRanking (rank_id, rank_name, comp_class) VALUES
-(1, 'Overall', 'PG'),
-(2, 'Serial Class', 'PG'),
-(3, 'Sport Class', 'PG'),
-(4, 'Fun Class', 'PG'),
-(5, 'Overall', 'HG');
+CREATE TABLE `tblParticipantMeta` (
+  `pat_id` int NOT NULL,
+  `par_id` int NOT NULL,
+  `attr_id` int NOT NULL,
+  `meta_value` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -877,7 +883,7 @@ CREATE TABLE `tblRegion` (
   `description` varchar(64) NOT NULL,
   `waypoint_file` varchar(50) NOT NULL,
   `openair_file` varchar(50) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -896,7 +902,7 @@ CREATE TABLE `tblRegionWaypoint` (
   `old` tinyint(1) NOT NULL DEFAULT '0',
   `xccSiteID` int(11) DEFAULT NULL,
   `xccToID` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -907,7 +913,7 @@ CREATE TABLE `tblRegionWaypoint` (
 CREATE TABLE `tblRegionXCSites` (
   `reg_id` int(11) NOT NULL,
   `xccSiteID` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -923,7 +929,7 @@ CREATE TABLE `tblResultFile` (
   `filename` varchar(80) CHARACTER SET latin1 DEFAULT NULL,
   `status` varchar(255) CHARACTER SET latin1 DEFAULT NULL,
   `active` tinyint(1) NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -971,7 +977,7 @@ CREATE TABLE `tblTask` (
   `comment` text,
   `locked` tinyint(3) NOT NULL DEFAULT '0',
   `task_path` varchar(40) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -1016,7 +1022,7 @@ CREATE TABLE `tblTaskResult` (
   `score` double DEFAULT NULL,
   `lead_coeff` double DEFAULT NULL,
   `fixed_LC` double DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -1043,7 +1049,7 @@ CREATE TABLE `tblTaskWaypoint` (
   `ssr_lat` float DEFAULT NULL,
   `ssr_lon` float DEFAULT NULL,
   `partial_distance` double DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -1060,7 +1066,7 @@ CREATE TABLE `tblTrackWaypoint` (
   `lat` float NOT NULL,
   `lon` float NOT NULL,
   `altitude` smallint(6) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -1074,7 +1080,7 @@ CREATE TABLE `tblUserSession` (
   `user_IP` varchar(32) DEFAULT NULL,
   `session_start` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `session_end` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -1090,7 +1096,7 @@ CREATE TABLE `tblXContestCodes` (
   `xccAlt` int(11) DEFAULT NULL,
   `xccISO` varchar(2) NOT NULL,
   `xccCountryName` varchar(42) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -1151,7 +1157,7 @@ CREATE TABLE `users` (
   `nat` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `active` int(1) NOT NULL DEFAULT '0',
   `access` enum('pilot','scorekeeper','admin','pending') NOT NULL DEFAULT 'pilot'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
@@ -1160,7 +1166,7 @@ CREATE TABLE `users` (
 --
 DROP TABLE IF EXISTS `CompObjectView`;
 
-CREATE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `CompObjectView`  AS  select `C`.`comp_id` AS `comp_id`,`C`.`comp_name` AS `comp_name`,`C`.`comp_site` AS `comp_site`,`C`.`date_from` AS `date_from`,`C`.`date_to` AS `date_to`,`C`.`MD_name` AS `MD_name`,`C`.`contact` AS `contact`,`C`.`cat_id` AS `cat_id`,`C`.`sanction` AS `sanction`,`C`.`comp_type` AS `comp_type`,`C`.`comp_code` AS `comp_code`,`C`.`restricted` AS `restricted`,`C`.`time_offset` AS `time_offset`,`C`.`comp_class` AS `comp_class`,`C`.`openair_file` AS `openair_file`,`C`.`stylesheet` AS `stylesheet`,`C`.`locked` AS `locked`,`C`.`comp_path` AS `comp_path`,`C`.`external` AS `external`,`C`.`website` AS `website`,`C`.`airspace_check` AS `airspace_check`,`C`.`check_launch` AS `check_launch`,`C`.`igc_config_file` AS `igc_config_file`,`C`.`self_register` AS `self_register`,`C`.`check_g_record` AS `check_g_record`,`C`.`track_source` AS `track_source`,`FC`.`formula_name` AS `formula_name`,`FC`.`overall_validity` AS `overall_validity`,`FC`.`validity_param` AS `validity_param`,`FC`.`validity_ref` AS `validity_ref`,`FC`.`nominal_goal` AS `nominal_goal`,`FC`.`min_dist` AS `min_dist`,`FC`.`nominal_dist` AS `nominal_dist`,`FC`.`nominal_time` AS `nominal_time`,`FC`.`nominal_launch` AS `nominal_launch`,`FC`.`formula_distance` AS `formula_distance`,`FC`.`formula_arrival` AS `formula_arrival`,`FC`.`formula_departure` AS `formula_departure`,`FC`.`lead_factor` AS `lead_factor`,`FC`.`formula_time` AS `formula_time`,`FC`.`no_goal_penalty` AS `no_goal_penalty`,`FC`.`glide_bonus` AS `glide_bonus`,`FC`.`tolerance` AS `tolerance`,`FC`.`min_tolerance` AS `min_tolerance`,`FC`.`arr_alt_bonus` AS `arr_alt_bonus`,`FC`.`arr_min_height` AS `arr_min_height`,`FC`.`arr_max_height` AS `arr_max_height`,`FC`.`validity_min_time` AS `validity_min_time`,`FC`.`score_back_time` AS `score_back_time`,`FC`.`max_JTG` AS `max_JTG`,`FC`.`JTG_penalty_per_sec` AS `JTG_penalty_per_sec`,`FC`.`scoring_altitude` AS `scoring_altitude`,`FC`.`task_result_decimal` AS `task_result_decimal`,`FC`.`comp_result_decimal` AS `comp_result_decimal`,`FC`.`team_scoring` AS `team_scoring`,`FC`.`team_size` AS `team_size`,`FC`.`max_team_size` AS `max_team_size`,`FC`.`country_scoring` AS `country_scoring`,`FC`.`country_size` AS `country_size`,`FC`.`max_country_size` AS `max_country_size`,`FC`.`team_over` AS `team_over` from (`tblCompetition` `C` left join `tblForComp` `FC` on((`C`.`comp_id` = `FC`.`comp_id`))) order by (case when (`C`.`comp_name` like '%test%') then `C`.`comp_name` else `C`.`date_to` end) desc ;
+CREATE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `CompObjectView`  AS  select `C`.`comp_id` AS `comp_id`,`C`.`comp_name` AS `comp_name`,`C`.`comp_site` AS `comp_site`,`C`.`date_from` AS `date_from`,`C`.`date_to` AS `date_to`,`C`.`MD_name` AS `MD_name`,`C`.`contact` AS `contact`,`C`.`sanction` AS `sanction`,`C`.`comp_type` AS `comp_type`,`C`.`comp_code` AS `comp_code`,`C`.`restricted` AS `restricted`,`C`.`time_offset` AS `time_offset`,`C`.`comp_class` AS `comp_class`,`C`.`openair_file` AS `openair_file`,`C`.`stylesheet` AS `stylesheet`,`C`.`locked` AS `locked`,`C`.`comp_path` AS `comp_path`,`C`.`external` AS `external`,`C`.`website` AS `website`,`C`.`airspace_check` AS `airspace_check`,`C`.`check_launch` AS `check_launch`,`C`.`igc_config_file` AS `igc_config_file`,`C`.`self_register` AS `self_register`,`C`.`check_g_record` AS `check_g_record`,`C`.`track_source` AS `track_source`,`FC`.`formula_name` AS `formula_name`,`FC`.`overall_validity` AS `overall_validity`,`FC`.`validity_param` AS `validity_param`,`FC`.`validity_ref` AS `validity_ref`,`FC`.`nominal_goal` AS `nominal_goal`,`FC`.`min_dist` AS `min_dist`,`FC`.`nominal_dist` AS `nominal_dist`,`FC`.`nominal_time` AS `nominal_time`,`FC`.`nominal_launch` AS `nominal_launch`,`FC`.`formula_distance` AS `formula_distance`,`FC`.`formula_arrival` AS `formula_arrival`,`FC`.`formula_departure` AS `formula_departure`,`FC`.`lead_factor` AS `lead_factor`,`FC`.`formula_time` AS `formula_time`,`FC`.`no_goal_penalty` AS `no_goal_penalty`,`FC`.`glide_bonus` AS `glide_bonus`,`FC`.`tolerance` AS `tolerance`,`FC`.`min_tolerance` AS `min_tolerance`,`FC`.`arr_alt_bonus` AS `arr_alt_bonus`,`FC`.`arr_min_height` AS `arr_min_height`,`FC`.`arr_max_height` AS `arr_max_height`,`FC`.`validity_min_time` AS `validity_min_time`,`FC`.`score_back_time` AS `score_back_time`,`FC`.`max_JTG` AS `max_JTG`,`FC`.`JTG_penalty_per_sec` AS `JTG_penalty_per_sec`,`FC`.`scoring_altitude` AS `scoring_altitude`,`FC`.`task_result_decimal` AS `task_result_decimal`,`FC`.`comp_result_decimal` AS `comp_result_decimal`,`FC`.`team_scoring` AS `team_scoring`,`FC`.`team_size` AS `team_size`,`FC`.`max_team_size` AS `max_team_size`,`FC`.`country_scoring` AS `country_scoring`,`FC`.`country_size` AS `country_size`,`FC`.`max_country_size` AS `max_country_size`,`FC`.`team_over` AS `team_over` from (`tblCompetition` `C` left join `tblForComp` `FC` on((`C`.`comp_id` = `FC`.`comp_id`))) order by (case when (`C`.`comp_name` like '%test%') then `C`.`comp_name` else `C`.`date_to` end) desc ;
 
 -- --------------------------------------------------------
 
@@ -1236,20 +1242,6 @@ ALTER TABLE `tblCertification`
   ADD PRIMARY KEY (`cert_id`);
 
 --
--- Indexes for table `tblClasCertRank`
---
-ALTER TABLE `tblClasCertRank`
-  ADD KEY `ccr_cla_foreign` (`cat_id`),
-  ADD KEY `ccr_cert_foreign` (`cert_id`),
-  ADD KEY `ccr_rank_foreign` (`rank_id`);
-
---
--- Indexes for table `tblClassification`
---
-ALTER TABLE `tblClassification`
-  ADD PRIMARY KEY (`cat_id`);
-
---
 -- Indexes for table `tblCompAirspaceCheck`
 --
 ALTER TABLE `tblCompAirspaceCheck`
@@ -1260,8 +1252,23 @@ ALTER TABLE `tblCompAirspaceCheck`
 --
 ALTER TABLE `tblCompetition`
   ADD PRIMARY KEY (`comp_id`) USING BTREE,
-  ADD UNIQUE KEY `comp_id` (`comp_id`,`comp_name`),
-  ADD KEY `cla_foreign` (`cat_id`);
+  ADD UNIQUE KEY `comp_id` (`comp_id`,`comp_name`);
+
+--
+-- Indexes for table `tblCompAttribute`
+--
+ALTER TABLE `tblCompAttribute`
+  ADD PRIMARY KEY (`attr_id`),
+  ADD KEY `comp_id` (`comp_id`);
+
+--
+-- Indexes for table `tblCompRanking`
+--
+ALTER TABLE `tblCompRanking`
+  ADD PRIMARY KEY (`rank_id`),
+  ADD KEY `comp_id` (`comp_id`),
+  ADD KEY `attr_id` (`attr_id`),
+  ADD KEY `cert_id` (`cert_id`);
 
 --
 -- Indexes for table `tblForComp`
@@ -1276,6 +1283,14 @@ ALTER TABLE `tblLadder`
   ADD PRIMARY KEY (`ladder_id`);
 
 --
+-- Indexes for table `tblLadder`
+--
+ALTER TABLE `tblLadderRanking`
+  ADD PRIMARY KEY (`rank_id`),
+  ADD KEY `cert_id` (`cert_id`),
+  ADD KEY `ladder_id` (`ladder_id`);
+
+--
 -- Indexes for table `tblLadderComp`
 --
 ALTER TABLE `tblLadderComp`
@@ -1286,7 +1301,6 @@ ALTER TABLE `tblLadderComp`
 -- Indexes for table `tblLadderSeason`
 --
 ALTER TABLE `tblLadderSeason`
-  ADD KEY `season_cla_foreign` (`cat_id`),
   ADD KEY `season_lad_foreign` (`ladder_id`),
   ADD KEY `seasonYear` (`season`);
 
@@ -1306,10 +1320,12 @@ ALTER TABLE `tblParticipant`
   ADD KEY `civl_id` (`civl_id`);
 
 --
--- Indexes for table `tblRanking`
+-- Indexes for table `tblParticipantMeta`
 --
-ALTER TABLE `tblRanking`
-  ADD PRIMARY KEY (`rank_id`);
+ALTER TABLE `tblParticipantMeta`
+  ADD PRIMARY KEY (`pat_id`),
+  ADD KEY `par_id` (`par_id`),
+  ADD KEY `attr_id` (`attr_id`);
 
 --
 -- Indexes for table `tblCountryCode`
@@ -1399,22 +1415,34 @@ ALTER TABLE `tblCertification`
   MODIFY `cert_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `tblClassification`
---
-ALTER TABLE `tblClassification`
-  MODIFY `cat_id` int(11) NOT NULL AUTO_INCREMENT;
-
---
 -- AUTO_INCREMENT for table `tblCompetition`
 --
 ALTER TABLE `tblCompetition`
   MODIFY `comp_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `tblCompAttribute`
+--
+ALTER TABLE `tblCompAttribute`
+  MODIFY `attr_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tblCompRanking`
+--
+ALTER TABLE `tblCompRanking`
+  MODIFY `rank_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `tblLadder`
 --
 ALTER TABLE `tblLadder`
   MODIFY `ladder_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tblLadderRanking`
+--
+ALTER TABLE `tblLadderRanking`
+  MODIFY `rank_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tblNotification`
@@ -1429,10 +1457,10 @@ ALTER TABLE `tblParticipant`
   MODIFY `par_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `tblRanking`
+-- AUTO_INCREMENT for table `tblParticipantMeta`
 --
-ALTER TABLE `tblRanking`
-  MODIFY `rank_id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `tblParticipantMeta`
+  MODIFY `pat_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `tblRegion`
@@ -1481,6 +1509,40 @@ ALTER TABLE `tblTrackWaypoint`
 --
 ALTER TABLE `users`
   MODIFY `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+
+--
+-- CONSTRAINS
+--
+
+--
+-- Constraints for table `tblCompAttribute`
+--
+ALTER TABLE `tblCompAttribute`
+  ADD CONSTRAINT `tblCompAttribute_ibfk_2` FOREIGN KEY (`comp_id`) REFERENCES `tblCompetition` (`comp_id`) ON DELETE CASCADE ON UPDATE RESTRICT;
+
+--
+-- Constraints for table `tblCompRanking`
+--
+ALTER TABLE `tblCompRanking`
+  ADD CONSTRAINT `tblCompRanking_ibfk_4` FOREIGN KEY (`comp_id`) REFERENCES `tblCompetition` (`comp_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `tblCompRanking_ibfk_6` FOREIGN KEY (`attr_id`) REFERENCES `tblCompAttribute` (`attr_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `tblCompRanking_ibfk_7` FOREIGN KEY (`cert_id`) REFERENCES `tblCertification` (`cert_id`);
+
+--
+-- Indexes for table `tblLadder`
+--
+ALTER TABLE `tblLadderRanking`
+  ADD CONSTRAINT `tblLadderRanking_ibfk_2` FOREIGN KEY (`cert_id`) REFERENCES `tblCertification` (`cert_id`),
+  ADD CONSTRAINT `tblLadderRanking_ibfk_3` FOREIGN KEY (`ladder_id`) REFERENCES `tblLadder` (`ladder_id`) ON DELETE CASCADE ON UPDATE RESTRICT;
+
+--
+-- Indexes for table `tblParticipantMeta`
+--
+ALTER TABLE `tblParticipantMeta`
+  ADD CONSTRAINT `tblParticipantMeta_ibfk_3` FOREIGN KEY (`par_id`) REFERENCES `tblParticipant` (`par_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `tblParticipantMeta_ibfk_4` FOREIGN KEY (`attr_id`) REFERENCES `tblCompAttribute` (`attr_id`) ON DELETE CASCADE;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

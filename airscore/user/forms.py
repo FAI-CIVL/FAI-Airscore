@@ -62,6 +62,15 @@ class MultiCheckboxField(SelectMultipleField):
     option_widget = widgets.CheckboxInput()
 
 
+class NonValidatingSelectField(SelectField):
+    """
+    Attempt to make an open ended select field that can accept dynamic
+    choices added by the browser.
+    """
+    def pre_validate(self, form):
+        pass
+
+
 class NewTaskForm(FlaskForm):
     task_name = StringField("Task Name", description='optional. If you want to give the task a name. '
                                                      'If left blank it will default to "Task #"')
@@ -155,8 +164,6 @@ class CompForm(FlaskForm):
     pilot_registration = SelectField('Pilot Entry', choices=[(1, 'Registered'), (0, 'Open')], coerce=int,
                                      description='Registered - only pilots registered are flying, '
                                                  'open - all tracklogs uploaded are considered as entires')
-
-    cat_id = SelectField('Classification', coerce=int, default=0, id='select_classification')
 
     track_sources = list_track_sources()
     track_source = SelectField('Track Source', choices=track_sources, id='select_source',
@@ -435,10 +442,12 @@ class ParticipantForm(FlaskForm):
     CIVL = IntegerField('CIVL', default=None,
                         validators=[Optional(strip_whitespace=True), NumberRange(min=0, max=999999)])
     name = StringField('Name', validators=[DataRequired(), Length(min=1, max=100)], description=name_desc)
-    nat = SelectField('Nat', coerce=str, validators=[DataRequired(), Length(min=3, max=3)], id='select_country')
+    birthdate = DateField('Birthdate', format='%Y-%m-%d', validators=[Optional(strip_whitespace=True)], default=None)
+    nat = SelectField('Nationality', coerce=str, validators=[DataRequired(), Length(min=3, max=3)], id='select_country')
     sex = SelectField('Sex', choices=[('M', 'M'), ('F', 'F')], default='M')
     glider = StringField('Glider', validators=[Optional(strip_whitespace=True), Length(max=100)])
-    certification = StringField('Certification', validators=[Optional(strip_whitespace=True)])
+    certification = NonValidatingSelectField('Certification',
+                                             validators=[Optional(strip_whitespace=True)], default=None)
     sponsor = StringField('Sponsor', validators=[Optional(strip_whitespace=True), Length(max=100)], description=sp_desc)
     team = StringField('Team', validators=[Optional(strip_whitespace=True)], default=None)
     nat_team = BooleanField('In National Team', default=1)
@@ -471,4 +480,19 @@ class ModifyUserForm(FlaskForm):
 
 class CompLaddersForm(FlaskForm):
     ladders = MultiCheckboxField('Active Ladders', coerce=int)
+    submit = SubmitField('Save')
+
+
+class CompRankingForm(FlaskForm):
+    name_desc = 'Required, max 40 characters'
+    rank_name = StringField('Name', validators=[DataRequired(), Length(min=1, max=40)], description=name_desc)
+    rank_type = SelectField('Ranking Type', choices=[('overall', 'Overall'), ('cert', 'Certification'),
+                                                     ('birthdate', 'Birthdate'), ('female', 'Female'),
+                                                     ('nat', 'Nationality'), ('custom', 'Custom')], default='cert')
+    cert_id = NonValidatingSelectField('Certification', validators=[Optional(strip_whitespace=True)], default=None)
+    min_date = DateField('Starting from', format='%Y-%m-%d', validators=[Optional(strip_whitespace=True)], default=None)
+    max_date = DateField('Up to', format='%Y-%m-%d', validators=[Optional(strip_whitespace=True)], default=None)
+    attr_id = NonValidatingSelectField('Custom Attribute', validators=[Optional(strip_whitespace=True)], default=None)
+    rank_value = StringField('Attribute Value', validators=[Optional(strip_whitespace=True)], default=None)
+
     submit = SubmitField('Save')

@@ -2,20 +2,29 @@
 function updateRegions() {
   dropdown.region.attr('disabled', 'disabled');
   dropdown.region.empty();
-  $.getJSON(url_get_regions,
-      function(data) {
-        region_details = data.details
-        data.choices.forEach(function(item) {
-          dropdown.region.append(
-            $('<option>', {
-              value: item[0],
-              text: item[1]
-            })
-          );
-        });
-        dropdown.region.removeAttr('disabled');
-        $("#select_region").val(data.choices[0][0]);
-        update_details();
+  $.getJSON( url_get_regions, function(data) {
+    region_details = data.details
+    if ( data.choices.length ) {
+      data.choices.forEach(function(item) {
+        dropdown.region.append(
+          $('<option>', {
+            value: item[0],
+            text: item[1]
+          })
+        );
+      });
+      dropdown.region.removeAttr('disabled');
+      $("#select_region").val(data.choices[0][0]);
+      update_details();
+      $("#region_details").show();
+      $("#wpt_button_panel").show();
+      $("#wpt_list").show();
+    }
+    else {
+      $("#region_details").hide();
+      $("#wpt_button_panel").hide();
+      $("#wpt_list").hide();
+    }
   });
 }
 
