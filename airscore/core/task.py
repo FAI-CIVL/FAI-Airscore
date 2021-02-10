@@ -668,7 +668,7 @@ class Task(object):
             task_id=self.id,
             code='_'.join([self.comp_code, self.task_code]),
             elements=elements,
-            status=status,
+            status=status
         )
         return ref_id, filename
 
@@ -694,11 +694,7 @@ class Task(object):
         for pil in pil_list:
             res = pil.create_result_dict()
             results.append(res)
-        # rankings = read_rankings(self.comp_id)
         rankings = create_rankings(self.comp_id, self.comp_class)
-        # if not rankings or len(rankings) == 0:
-        #     ''' create an overall ranking'''
-        #     rankings.update({'overall': [cert for cert in set([p.glider_cert for p in self.pilots])]})
 
         '''create json file'''
         result = {
@@ -707,7 +703,7 @@ class Task(object):
             'results': results,
             'formula': formula,
             'stats': stats,
-            'rankings': rankings,
+            'rankings': rankings
         }
         return result
 
@@ -837,17 +833,8 @@ class Task(object):
 
     def get_pilots(self):
         """ Loads FlightResult obj. with only Participants info into Task obj."""
-        from db.tables import TblParticipant as P
-        from db.tables import TblTaskResult as R
-        from pilot.flightresult import FlightResult, get_task_pilots
+        from pilot.flightresult import get_task_pilots
         self.pilots = get_task_pilots(task_id=self.id, comp_id=self.comp_id)
-        # self.pilots = [FlightResult(**row) for row in P.get_dicts(self.comp_id)]
-        # tracks = R.get_all(task_id=self.id)
-        # if tracks:
-        #     for p in self.pilots:
-        #         res = next((x for x in tracks if x.par_id == p.par_id), None)
-        #         if res:
-        #             p.track_id, p.track_file, p.result_type = res.track_id, res.track_file, res.result_type
 
     def get_results(self, lib=None):
         """ Loads all FlightResult obj. into Task obj."""
@@ -889,7 +876,6 @@ class Task(object):
                 wpt.ssr_lat = sr.lat
                 wpt.ssr_lon = sr.lon
                 wpt.partial_distance = self.partial_distance[idx]
-            # db.commit()
             db.commit()
 
     def delete_task_distance(self):

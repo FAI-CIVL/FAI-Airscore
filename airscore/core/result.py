@@ -23,6 +23,8 @@ import json
 from db.conn import db_session
 from db.tables import TblResultFile
 from sqlalchemy import and_
+from Defines import RESULTDIR
+from pathlib import Path
 
 
 class TaskResult:
@@ -551,7 +553,6 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None, name_su
     from time import time
 
     from calcUtils import CJsonEncoder
-    from Defines import RESULTDIR
 
     timestamp = int(time())  # timestamp of generation
     dt = datetime.fromtimestamp(timestamp).strftime('%Y%m%d_%H%M%S')
@@ -562,7 +563,7 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None, name_su
 
     '''adding data section to the elements, with:
         timestamp, status'''
-    result = {'file_stats': {'timestamp': timestamp, 'status': status}}
+    result = {'file_stats': {'result_type': 'task' if task_id else 'comp', 'timestamp': timestamp, 'status': status}}
     result.update(elements)
 
     '''creating json formatting'''
@@ -609,9 +610,6 @@ def publish_result(filename_or_refid, ref_id=False):
 
 def update_result_status(filename: str, status: str):
     import time
-    from pathlib import Path
-
-    from Defines import RESULTDIR
 
     '''check if json file exists, and updates it'''
     file = Path(RESULTDIR, filename)
@@ -642,10 +640,7 @@ def update_result_file(filename: str, par_id: int, notification: dict):
                     }
     """
     import time
-    from pathlib import Path
-
     from db.tables import TblNotification as N
-    from Defines import RESULTDIR
 
     file = Path(RESULTDIR, filename)
     if not file.is_file():
@@ -789,10 +784,7 @@ def get_country_list(countries: set = None, iso: int = None) -> list:
 
 
 def open_json_file(filename: str):
-    from pathlib import Path
-
     import jsonpickle
-    from Defines import RESULTDIR
 
     try:
         with open(Path(RESULTDIR, filename), 'r') as f:
@@ -853,7 +845,7 @@ def pretty_format_results(content, timeoffset=0, td=0, cd=0):
                     elif str(key) in duration:
                         '''formatting duration'''
                         formatted[key] = sec_to_duration(int(value))
-                    elif 'timestamp' in key:
+                    elif 'timestamp' in str(key):
                         '''formatting timestamp'''
                         formatted[key] = epoch_to_string(int(value), timeoffset)
                     # Formatting Waypoints Table
@@ -918,7 +910,7 @@ def pretty_format_results(content, timeoffset=0, td=0, cd=0):
                     elif key in ['distance', 'distance_flown', 'stopped_distance']:
                         '''formatting distance without unit of measure'''
                         formatted[key] = f"{c_round(float(value) / 1000, 2):.2f}"
-                    elif 'dist' in key:
+                    elif 'dist' in str(key):
                         '''formatting distances with unit of measure'''
                         formatted[key] = f"{c_round(float(value) / 1000, 1):.1f} Km"
                     # Formatting Booleans

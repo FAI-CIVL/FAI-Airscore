@@ -505,7 +505,6 @@ class FlightResult(Participant):
         """save tracklog map result file in the correct folder as defined by DEFINES"""
         from pathlib import Path
 
-        # res_path = f"{MAPOBJDIR}tracks/{taskid}/"
         res_path = Path(MAPOBJDIR, 'tracks', str(taskid))
         """check if directory already exists"""
         if not res_path.is_dir():
