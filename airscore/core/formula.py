@@ -475,6 +475,8 @@ def get_fsdb_info(formula: Formula or TaskFormula, fsdb_data) -> Formula or Task
     '''tolerance'''
     if fsdb_data.get('turnpoint_radius_tolerance'):
         formula.tolerance = float(fsdb_data.get('turnpoint_radius_tolerance'))  # tolerance, perc / 100
+    if fsdb_data.get('turnpoint_radius_minimum_absolute_tolerance'):
+        formula.min_tolerance = get_int(fsdb_data.get('turnpoint_radius_minimum_absolute_tolerance'))  # m
     '''stopped task parameters'''
     formula.validity_min_time = (
         get_int(fsdb_data.get('min_time_span_for_valid_task')) * 60
@@ -489,5 +491,9 @@ def get_fsdb_info(formula: Formula or TaskFormula, fsdb_data) -> Formula or Task
     if not fsdb_data.get('jump_the_gun_factor') == '0':
         formula.max_JTG = get_int(fsdb_data.get('jump_the_gun_max'))  # seconds
         formula.JTG_penalty_per_sec = c_round(1 / float(fsdb_data.get('jump_the_gun_factor')), 4)
+    '''results decimals'''
+    if fsdb_data.get('number_of_decimals_task_results'):
+        formula.task_result_decimal = get_int(fsdb_data.get('number_of_decimals_task_results'))
+        formula.comp_result_decimal = get_int(fsdb_data.get('number_of_decimals_competition_results'))
 
     return formula
