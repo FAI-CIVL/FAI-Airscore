@@ -104,7 +104,7 @@ function updateFiles(load_latest=false) {
         el.dropdown.empty().attr('disabled', 'disabled');
         el.header.html(header)
         if (choices.length == 0) {
-          el.scoring_runs_section.hide();
+          el.scoring_section.hide();
         }
         else {
           el.scoring_section.show();

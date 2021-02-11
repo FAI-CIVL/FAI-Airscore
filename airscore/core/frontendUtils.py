@@ -1265,8 +1265,8 @@ def get_pretty_data(content: dict) -> dict or str:
         )
         cd = (
             0
-            if 'formula' not in content.keys() or 'task_result_decimal' not in content['formula'].keys()
-            else int(content['formula']['task_result_decimal'])
+            if 'formula' not in content.keys() or 'comp_result_decimal' not in content['formula'].keys()
+            else int(content['formula']['comp_result_decimal'])
         )
         pretty_content = dict()
         if 'file_stats' in content.keys():
