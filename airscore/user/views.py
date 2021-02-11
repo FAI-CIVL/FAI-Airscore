@@ -707,7 +707,11 @@ def _get_tasks(compid: int):
 @login_required
 def _get_adv_settings():
     data = request.json
-    formula = Formula.from_preset(data['category'], data['formula'])
+    formula = Formula.read(data.get('compid'))
+    formula.reset(data.get('category'), data.get('formula'))
+    formula.to_db()
+
+    # formula = Formula.from_preset(data['category'], data['formula'])
     settings = {'formula_distance': formula.formula_distance, 'formula_arrival': formula.formula_arrival,
                 'formula_departure': formula.formula_departure, 'lead_factor': formula.lead_factor,
                 'formula_time': formula.formula_time, 'no_goal_penalty': formula.no_goal_penalty * 100,

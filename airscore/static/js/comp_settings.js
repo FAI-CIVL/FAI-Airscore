@@ -274,6 +274,8 @@ function get_adv_settings(){
   var formula = new Object();
   formula.formula = $('#select_formula').val();
   formula.category = $('#select_category').val();
+  formula.compid = compid;
+  console.log(formula);
   $.ajax({
     type: "POST",
     url: link_get_adv_settings,

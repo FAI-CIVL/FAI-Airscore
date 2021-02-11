@@ -7,7 +7,7 @@ Antonio Golfari - 2019
 """
 
 import importlib
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, asdict
 from os import listdir
 
 from calcUtils import c_round
@@ -88,6 +88,10 @@ class FormulaPreset:
     def as_formula(self):
         """ gets presets' value"""
         return {x.name: getattr(self, x.name).value for x in fields(self)}
+
+    def has_calculated_values(self):
+        """ returns True if any value needs to be calculated using lib.calculate_parameters()"""
+        return any(v.get('calculated') for k, v in asdict(self).items())
 
 
 class Formula(object):
@@ -277,15 +281,10 @@ class Formula(object):
         return formula
 
     @staticmethod
-    def from_preset(comp_class, formula_name):
+    def from_preset(comp_class: str, formula_name: str):
         """ Create Formula obj. from preset values in formula script"""
-        preset = None
-        lib_name = 'formulas.' + formula_name.lower()
-        lib = importlib.import_module(lib_name)
-        if comp_class in ('PG', 'mixed'):
-            preset = lib.pg_preset
-        elif comp_class == 'HG':
-            preset = lib.hg_preset
+        lib = get_formula_lib_by_name(formula_name)
+        preset = lib.pg_preset if comp_class in ('PG', 'mixed') else lib.hg_preset
         return Formula(**preset.as_formula())
 
     @staticmethod
@@ -319,6 +318,18 @@ class Formula(object):
             if hasattr(formula, key):
                 setattr(formula, key, value)
         return formula
+
+    def reset(self, comp_class: str, formula_name: str):
+        lib = get_formula_lib_by_name(formula_name)
+        preset = lib.pg_preset if comp_class in ('PG', 'mixed') else lib.hg_preset
+        self.as_dict().update(preset.as_formula())
+        self.calculate_parameters(lib)
+
+    def calculate_parameters(self, lib=None):
+        if not lib:
+            lib = get_formula_lib_by_name(self.formula_name)
+        if 'calculate_parameters' in dir(lib):
+            lib.calculate_parameters(self.as_dict())
 
     def to_db(self):
         """stores formula to TblForComp table in AirScore database"""

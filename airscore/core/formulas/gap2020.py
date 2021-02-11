@@ -127,7 +127,7 @@ hg_preset = FormulaPreset(
     # Scoring Altitude Type: default is GPS for PG and QNH for HG
     scoring_altitude=Preset(value='QNH', visible=True, editable=True),
     # Decimals to be displayed in Task results: default is 0
-    task_result_decimal=Preset(value=0, visible=False, editable=False),
+    task_result_decimal=Preset(value=1, visible=False, editable=False),
     # Decimals to be displayed in Comp results: default is 0
     comp_result_decimal=Preset(value=0, visible=False, editable=False),
 )
