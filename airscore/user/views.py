@@ -309,6 +309,7 @@ def comp_settings_admin(compid: int):
             formula.country_size = compform.country_size.data
             formula.max_country_size = compform.max_country_size.data
             formula.team_over = compform.team_over.data
+            formula.calculate_parameters()
             formula.to_db()
 
             flash(f"{compform.comp_name.data} saved", category='info')
