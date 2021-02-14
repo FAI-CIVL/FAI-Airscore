@@ -408,6 +408,7 @@ class CompResult(object):
         'glide_bonus',
         'tolerance',  # percentage / 100
         'scoring_altitude',  # 'GPS', 'QNH'
+        'task_result_decimal',
         'comp_result_decimal',
         'team_scoring',
         'team_size',

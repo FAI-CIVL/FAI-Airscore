@@ -131,6 +131,7 @@ class TaskFormulaView(BaseModel):
         Column('max_JTG', SMALLINT(6)),
         Column('JTG_penalty_per_sec', Float(4)),
         Column('scoring_altitude', Enum('GPS', 'QNH'), server_default=text("'GPS'")),
+        Column('task_result_decimal', INTEGER(4)),
         Column('team_scoring', TINYINT(1)),
         Column('team_size', INTEGER(4)),
         Column('max_team_size', INTEGER(4)),
