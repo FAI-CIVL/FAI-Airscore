@@ -11,7 +11,7 @@ function populate_task(json){
     json.rankings.forEach( function(item, index) {
       columns.push({data: 'rankings.'+item.rank_id.toString(), title: '#', name: item.rank_id.toString(), className: "text-right", defaultContent: '', visible: (index === 0) ? true : false});
     });
-    columns.push({data: 'id', title: 'ID', className: "text-right", defaultContent: ''});
+    columns.push({data: 'ID', title: 'ID', className: "text-right", defaultContent: ''});
     columns.push({data: 'fai_id', title: 'FAI', className: "text-right", defaultContent: '', visible: false});
     columns.push({data: 'civl_id', title: 'CIVL', className: "text-right", defaultContent: '', visible: false});
     columns.push({data: 'name', title: 'Name'});
