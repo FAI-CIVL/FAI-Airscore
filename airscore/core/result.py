@@ -192,16 +192,15 @@ class TaskResult:
 
         from frontendUtils import get_pretty_data
 
-        res = get_pretty_data(open_json_file(json_file))
+        res = get_pretty_data(open_json_file(json_file), export=True)
         comp_name = res['info']['comp_name']
         task_name = res['info']['task_name']
         task_code = f"T{res['info']['task_num']}"
-        if len(res['classes']) > 0:
-            classes = res['classes']
+        rankings = res['rankings']
+        if len(rankings) > 1:
             zipfile = f"{re.sub(r'[ ,.-]', '_', comp_name)}_{task_code}.zip"
         else:
             zipfile = False
-            classes = [{'name': ''}]
 
         '''Task Route table'''
         right_align = [2, 3]
@@ -257,8 +256,8 @@ class TaskResult:
         res_align.append(len(thead) - 1)
 
         response = []
-        for idx, c in enumerate(classes):
-            class_name = comp_name if not c['name'] else f"{comp_name} {c['name']}"
+        for idx, c in enumerate(rankings):
+            class_name = comp_name if not c['rank_name'] else f"{comp_name} {c['rank_name']}"
             title = f"{class_name} - {task_name}"
             filename = f"{re.sub(r'[ ,.-]', '_', class_name)}_{task_code}.html"
 
@@ -267,35 +266,23 @@ class TaskResult:
             task_type = f"{res['info']['task_type'].title()} {dist}"
             headings = [class_name, task_name, res['info']['date'], task_type, res['file_stats']['status']]
 
-            if idx > 0:
-                ''' manage sub-rankings'''
-                pilots = [p for p in res['results'] if p['glider_cert'] in c['cert']]
-                keys = [c['limit'], 'ID', 'name', 'nat', 'glider', 'sponsor']
-            else:
-                pilots = [p for p in res['results']]
-                keys = ['rank', 'ID', 'name', 'nat', 'glider', 'sponsor']
+            pilots = [p for p in res['results'] if p['rankings'][c['rank_id']]]
+            keys = [c['rank_id'], 'ID', 'name', 'nat', 'glider', 'sponsor']
             keys.extend(results_keys)
 
             '''Main results table body'''
             tbody = []
             for p in [x for x in pilots if x['result_type'] not in ['abs', 'nyp', 'dnf']]:
-                if idx == 0:
-                    if p['ESS_time'] and not p['goal_time']:
-                        p['ESS_time'] = f"<del>{p['ESS_time']}</del>"
-                        p['ss_time'] = f"<del>{p['ss_time']}</del>"
-                        p['speed'] = f"<del>{p['speed']}</del>"
-                    if float(p['penalty']) > 0:
-                        p['score'] = f"<span style='color:red'>*{p['score']}</span>"
-                tbody.append([p[k] for k in keys])
+                tbody.append([p['rankings'][k] if i == 0 else p[k] for i, k in enumerate(keys)])
             results = dict(css_class='results', right_align=res_align, thead=thead, tbody=tbody)
 
             tables = [route, times, results]
 
             ''' Comments Table'''
-            if any(p for p in pilots if float(p['penalty'] or 0) != 0):
+            if any(p for p in pilots if p['penalty']):
                 comments = []
                 right_align = [0]
-                for p in [x for x in pilots if float(x['penalty'] or 0) != 0]:
+                for p in [x for x in pilots if x['penalty']]:
                     comments.append([p['ID'], p['name'], p['nat'], p['comment']])
                 comments = dict(title='Penalties:', css_class='results', right_align=right_align, tbody=comments)
                 tables.append(comments)
@@ -464,14 +451,13 @@ class CompResult(object):
 
         from frontendUtils import get_pretty_data
 
-        res = get_pretty_data(open_json_file(json_file))
+        res = get_pretty_data(open_json_file(json_file), export=True)
         comp_name = f"{res['info']['comp_name']}"
-        if len(res['classes']) > 0:
-            classes = res['classes']
+        rankings = res['rankings']
+        if len(res['rankings']) > 1:
             zipfile = f"{re.sub(r'[ ,.-]', '_', comp_name)}_after_{res['tasks'][-1]['task_code']}.zip"
         else:
             zipfile = False
-            classes = [{'name': ''}]
 
         '''Tasks table'''
         tasks = []
@@ -495,30 +481,25 @@ class CompResult(object):
             right_align.append(len(thead) - 1)
 
         response = []
-        for idx, c in enumerate(classes):
-            title = comp_name if not c['name'] else f"{comp_name} {c['name']}"
+        for idx, c in enumerate(rankings):
+            title = comp_name if not c['rank_name'] else f"{comp_name} {c['rank_name']}"
             filename = f"{re.sub(r'[ ,.-]', '_', title)}_after_{res['tasks'][-1]['task_code']}.html"
 
             '''HTML headings'''
             headings = [
                 f"{res['info']['comp_name']} - {res['info']['sanction']} Event",
-                f"{c['name']}",
+                f"{c['rank_name']}",
                 f"{res['info']['date_from']} to {res['info']['date_to']}",
                 f"{res['info']['comp_site']}",
                 f"{res['file_stats']['status']}",
             ]
 
-            if idx > 0:
-                ''' manage sub-rankings'''
-                pilots = [p for p in res['results'] if p['glider_cert'] in c['cert']]
-                keys = [c['limit'], 'ID', 'name', 'nat', 'glider', 'sponsor', 'score']
-            else:
-                pilots = [p for p in res['results']]
-                keys = ['rank', 'ID', 'name', 'nat', 'glider', 'sponsor', 'score']
+            pilots = [p for p in res['results'] if p['rankings'][c['rank_id']]]
+            keys = [c['rank_id'], 'ID', 'name', 'nat', 'glider', 'sponsor', 'score']
 
             tbody = []
             for p in pilots:
-                row = [p[k] for k in keys]
+                row = [p['rankings'][k] if i == 0 else p[k] for i, k in enumerate(keys)]
                 for t in res['tasks']:
                     code = t['task_code']
                     pre, score = p['results'][code]['pre'], p['results'][code]['score']
@@ -897,14 +878,8 @@ def pretty_format_results(content, timeoffset=0, td=0, cd=0):
                         '''formatting formula weight'''
                         formatted[key] = f"{c_round(float(value), 3):.3f}"
                     elif str(key).endswith(scores):
-                        '''formatting scores'''
-                        formatted[key] = f"{c_round(float(value), 1):.1f}"
-                    elif key == 'score':
-                        # TODO need to decide which rounding to use and has to be the same in comp results
-                        # guess scores parts' decimals should be 1 more of final score decimals?
-                        # changed comp results to be consistent with task results, but string formatting is rounding Half Even, should use something as below
-                        # formatted[key] = f"{c_round(float(value) or 0, td):.{td}f}"
-                        formatted[key] = f"{c_round(float(value), 1):.{td}f}"
+                        '''formatting partial scores'''
+                        formatted[key] = f"{c_round(float(value), 1):.1f}" if value else ""
                     elif key == 'speed':
                         formatted[key] = '' if float(value) == 0 else f"{c_round(float(value), 1):.1f}"
                     # Formatting Distances

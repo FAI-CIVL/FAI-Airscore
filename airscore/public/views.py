@@ -449,27 +449,7 @@ def ext_task_result(taskid: int):
         return render_template('404.html')
 
     compid = int(result_file['info']['comp_id'])
-    all_pilots = []
-    results = [p for p in result_file['results'] if p['result_type'] not in ['dnf', 'abs', 'nyp']]
-    for r in results:
-        pilot = {'id': r['ID'], 'fai_id': r['fai_id'], 'civl_id': r['civl_id'], 'nat': r['nat'], 'sex': r['sex'],
-                 'glider': r['glider'], 'glider_cert': r['glider_cert'], 'sponsor': r['sponsor'],
-                 'SSS_time': r['SSS_time'], 'distance': r['distance'], 'time_score': r['time_score'],
-                 'departure_score': r['departure_score'], 'arrival_score': r['arrival_score'],
-                 'distance_score': r['distance_score'], 'score': f"<b>{r['score']}</b>",
-                 'rankings': r['rankings']}
-        n = r['name']
-        sex = r['sex']
-        pilot['name'] = f'<span class="sex-{sex}">{n}</span>'
-        goal = r['goal_time']
-        pilot['ESS_time'] = r['ESS_time'] if goal else f"<del>{r['ESS_time']}</del>"
-        pilot['speed'] = r['speed'] if goal else f"<del>{r['speed']}</del>"
-        pilot['ss_time'] = r['ss_time'] if goal else f"<del>{r['ss_time']}</del>"
-        pilot['goal_time'] = goal
-        # ab = ''  # alt bonus
-        pilot['penalty'] = "" if r['penalty'] == '0.0' else r['penalty']
-        all_pilots.append(pilot)
-    result_file['data'] = all_pilots
+
     return render_template('public/ext_task_result.html', taskid=taskid, compid=compid, results=result_file)
 
 
@@ -486,31 +466,7 @@ def task_result(taskid: int):
         return render_template('404.html')
 
     compid = int(result_file['info']['comp_id'])
-    all_pilots = []
-    results = [p for p in result_file['results'] if p['result_type'] not in ['dnf', 'abs', 'nyp']]
-    for r in results:
-        pilot = {'id': r['ID'], 'fai_id': r['fai_id'], 'civl_id': r['civl_id'], 'nat': r['nat'], 'sex': r['sex'],
-                 'glider': r['glider'], 'glider_cert': r['glider_cert'], 'sponsor': r['sponsor'],
-                 'SSS_time': r['SSS_time'], 'distance': r['distance'], 'time_score': r['time_score'],
-                 'departure_score': r['departure_score'], 'arrival_score': r['arrival_score'],
-                 'distance_score': r['distance_score'], 'score': f"<b>{r['score']}</b>",
-                 'rankings': r['rankings']}
-        n = r['name']
-        parid = r['par_id']
-        sex = r['sex']
-        if r['result_type'] in ['mindist', 'nyp'] or not r['track_file']:
-            pilot['name'] = f'<span class="sex-{sex}">{n}</span>'
-        else:
-            pilot['name'] = f'<a class="sex-{sex}" href="/map/{parid}-{taskid}">{n}</a>'
-        goal = r['goal_time']
-        pilot['ESS_time'] = r['ESS_time'] if goal else f"<del>{r['ESS_time']}</del>"
-        pilot['speed'] = r['speed'] if goal else f"<del>{r['speed']}</del>"
-        pilot['ss_time'] = r['ss_time'] if goal else f"<del>{r['ss_time']}</del>"
-        pilot['goal_time'] = goal
-        # ab = ''  # alt bonus
-        pilot['penalty'] = "" if r['penalty'] == '0.0' else r['penalty']
-        all_pilots.append(pilot)
-    result_file['data'] = all_pilots
+
     return render_template('public/task_result.html', taskid=taskid, compid=compid, results=result_file)
 
 
@@ -526,18 +482,6 @@ def ext_comp_result(compid: int):
         link, code = f"/ext_task_result/{t['id']}", t['task_code']
         t['link'] = f"<a href='{link}' target='_blank'>{code}</a>"
 
-    all_pilots = []
-    for r in result_file['results']:
-        pilot = {'id': r['ID'], 'fai_id': r['fai_id'], 'civl_id': r['civl_id'],
-                 'name': f"<span class='sex-{r['sex']}'><b>{r['name']}</b></span>", 'nat': r['nat'], 'sex': r['sex'],
-                 'glider': r['glider'], 'glider_cert': r['glider_cert'], 'sponsor': r['sponsor'],
-                 'score': f"<b>{r['score']}</b>", 'rankings': r['rankings'], 'results': []}
-        for k, v in r['results'].items():
-            score = f"{v['score']}" if v['score'] == v['pre'] else f"{v['score']} <del>{v['pre']}</del>"
-            html = f"<span class='task_score'>{score}</span>"
-            pilot['results'].append(html)
-        all_pilots.append(pilot)
-    result_file['data'] = all_pilots
     return render_template('public/ext_comp_overall.html', compid=compid, results=result_file)
 
 
@@ -557,18 +501,6 @@ def comp_result(compid: int):
         link, code = f"/task_result/{t['id']}", t['task_code']
         t['link'] = f"<a href='{link}' target='_blank'>{code}</a>"
 
-    all_pilots = []
-    for r in result_file['results']:
-        pilot = {'id': r['ID'], 'fai_id': r['fai_id'], 'civl_id': r['civl_id'],
-                 'name': f"<span class='sex-{r['sex']}'><b>{r['name']}</b></span>", 'nat': r['nat'], 'sex': r['sex'],
-                 'glider': r['glider'], 'glider_cert': r['glider_cert'], 'sponsor': r['sponsor'],
-                 'score': f"<b>{r['score']}</b>", 'rankings': r['rankings'], 'results': []}
-        for k, v in r['results'].items():
-            score = f"{v['score']}" if v['score'] == v['pre'] else f"{v['score']} <del>{v['pre']}</del>"
-            html = f"<span class='task_score'>{score}</span>"
-            pilot['results'].append(html)
-        all_pilots.append(pilot)
-    result_file['data'] = all_pilots
     return render_template('public/comp_overall.html', compid=compid, results=result_file)
 
 

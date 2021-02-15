@@ -404,10 +404,17 @@ class Comp(object):
         '''PARAMETER: decimal positions'''
         if decimals is None or not isinstance(decimals, int):
             decimals = comp.formula.comp_result_decimal
+        td = comp.formula.task_result_decimal
         '''retrieve active task result files and reads info'''
         files = get_tasks_result_files(comp_id)
         '''initialize obj attributes'''
         comp.participants = get_participants(comp_id)
+        comp.results.extend(
+            [
+                dict(results={}, **{x: getattr(p, x) for x in CompResult.result_list if x in dir(p)})
+                for p in comp.participants
+            ]
+        )
         ''' get rankings '''
         comp.get_rankings()
         for idx, t in enumerate(files):
@@ -416,49 +423,19 @@ class Comp(object):
             ''' task validity (if not using ftv, ftv_validity = day_quality)'''
             r = task.ftv_validity * 1000
             '''get pilots result'''
-            for p in comp.participants:
-                res = next((d for d in comp.results if d.get('par_id', None) == p.par_id), False)
-                if res is False:
-                    ''' create pilot result Dict (once)'''
-                    # comp.results.append({'par_id': p.par_id, 'results': []})
-                    comp.results.append({'par_id': p.par_id})
-                    res = comp.results[-1]
-                # TODO need to decide which rounding to use and has to be the same in task results
-                # this is less than desirable, just to be consistent with task results
-                s = next(
-                    (
-                        c_round(float(f"{c_round(float(pil.score or 0), 1):.{decimals}f}"), decimals)
-                        for pil in task.pilots
-                        if pil.par_id == p.par_id
-                    ),
-                    0,
-                )
-                # s = next((c_round(pil.score or 0, decimals) for pil in task.pilots if pil.par_id == p.par_id), 0)
-                if r > 0:  # sanity
-                    perf = c_round(s / r, decimals + 3)
-                    # res['results'].append({task.task_code: {'pre': s, 'perf': perf, 'score': s}})
-                    res.update({task.task_code: {'pre': s, 'perf': perf, 'score': s}})
-                else:
-                    # res['results'].append({task.task_code: {'pre': s, 'perf': 0, 'score': 0}})
-                    res.update({task.task_code: {'pre': s, 'perf': 0, 'score': 0}})
+            for p in comp.results:
+                s = next((res.score for res in task.pilots if res.par_id == p['par_id']), 0)
+                perf = c_round(s / r, td + 3)
+                p['results'][task.task_code] = {'pre': c_round(s, td), 'perf': perf, 'score': c_round(s, td)}
 
         '''calculate final score'''
         comp.get_final_scores(decimals)
-        ''' create result elements'''
-        results = []
-        for res in comp.results:
-            '''create results dict'''
-            p = next(x for x in comp.participants if x.par_id == res['par_id'])
-            r = {x: getattr(p, x) for x in CompResult.result_list if x in dir(p)}
-            r['score'] = res['score']
-            r['results'] = {x: res[x] for x in res.keys() if isinstance(res[x], dict)}
-            results.append(r)
         '''create json file'''
         result = {
             'info': {x: getattr(comp, x) for x in CompResult.info_list},
             'rankings': comp.rankings,
             'tasks': [{x: getattr(t, x) for x in CompResult.task_list} for t in comp.tasks],
-            'results': results,
+            'results': comp.results,
             'formula': {x: getattr(comp.formula, x) for x in CompResult.formula_list},
             'stats': {x: getattr(comp, x) for x in CompResult.stats_list},
         }
@@ -467,7 +444,7 @@ class Comp(object):
         )
         return comp, ref_id, filename, timestamp
 
-    def get_final_scores(self, d=0):
+    def get_final_scores(self, cd=0):
         """calculate final scores depending on overall validity:
         - all:      sum of all tasks results
         - round:    task discard every [param] tasks
@@ -484,6 +461,7 @@ class Comp(object):
         val = self.formula.overall_validity
         param = self.formula.validity_param
         avail_validity = self.avail_validity
+        td = self.formula.task_result_decimal
 
         for pil in self.results:
             pil['score'] = 0
@@ -496,7 +474,7 @@ class Comp(object):
                 '''create a ordered list of results, perf desc'''
                 # sorted_results = sorted(pil['results'], key=lambda x: (x[1]['perf'], x[1]['pre']), reverse=True)
                 sorted_results = sorted(
-                    [x for x in pil.items() if isinstance(x[1], dict)],
+                    pil['results'],
                     key=lambda x: (x[1]['perf'], x[1]['pre']),
                     reverse=True,
                 )
@@ -505,14 +483,14 @@ class Comp(object):
                     '''we need to order by score desc and sum only the ones we need'''
                     for i in range(self.dropped_tasks):
                         idx = sorted_results.pop()[0]  # getting id of worst result task
-                        pil[idx]['score'] = 0
+                        pil['results'][idx]['score'] = 0
 
                 elif val == 'ftv' and len(self.tasks) > 1:
                     '''ftv calculation'''
                     pval = avail_validity
                     for idx, s in sorted_results:
                         if not (pval > 0):
-                            pil[idx]['score'] = 0
+                            pil['results'][idx]['score'] = 0
                         else:
                             '''get ftv_validity of corresponding task'''
                             tval = next(t.ftv_validity for t in self.tasks if t.task_code == idx)
@@ -521,11 +499,11 @@ class Comp(object):
                                 pval -= tval
                             else:
                                 '''we need to calculate proportion'''
-                                pil[idx]['score'] = c_round(pil[idx]['score'] * (pval / tval), d)
+                                pil['results'][idx]['score'] = c_round(pil['results'][idx]['score'] * (pval / tval), td)
                                 pval = 0
 
             '''calculates final pilot score'''
-            pil['score'] = sum(pil[x]['score'] for x in pil.keys() if isinstance(pil[x], dict))
+            pil['score'] = c_round(sum(pil['results'][x]['score'] for x in pil['results'].keys()), cd)
 
         ''' order list'''
         self.results = sorted(self.results, key=lambda x: x['score'], reverse=True)

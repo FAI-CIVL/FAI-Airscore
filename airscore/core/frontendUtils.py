@@ -1249,7 +1249,7 @@ def unique_filename(filename, filepath):
     return secure_filename(filename)
 
 
-def get_pretty_data(content: dict) -> dict or str:
+def get_pretty_data(content: dict, export=False) -> dict or str:
     """transforms result json file in human readable data"""
     from result import get_startgates, pretty_format_results
     from calcUtils import get_date
@@ -1257,6 +1257,8 @@ def get_pretty_data(content: dict) -> dict or str:
     try:
         '''time offset'''
         timeoffset = 0 if 'time_offset' not in content['info'].keys() else int(content['info']['time_offset'])
+        '''result file type'''
+        result_type = content['file_stats']['result_type']
         '''score decimals'''
         td = (
             0
@@ -1273,9 +1275,9 @@ def get_pretty_data(content: dict) -> dict or str:
             pretty_content['file_stats'] = pretty_format_results(content['file_stats'], timeoffset)
         pretty_content['info'] = pretty_format_results(content['info'], timeoffset)
         if 'comps' in content.keys():
-            pretty_content['comps'] = pretty_format_results(content['comps'], timeoffset, td)
+            pretty_content['comps'] = pretty_format_results(content['comps'], timeoffset)
         if 'tasks' in content.keys():
-            pretty_content['tasks'] = pretty_format_results(content['tasks'], timeoffset, td)
+            pretty_content['tasks'] = pretty_format_results(content['tasks'], timeoffset)
         elif 'route' in content.keys():
             pretty_content['info'].update(startgates=get_startgates(content['info']))
             pretty_content['route'] = pretty_format_results(content['route'], timeoffset)
@@ -1291,41 +1293,70 @@ def get_pretty_data(content: dict) -> dict or str:
             rank = 0
             prev = None
             for idx, r in enumerate(content['results'], 1):
-                p = pretty_format_results(r, timeoffset, td, cd)
+                # p = pretty_format_results(r, timeoffset, td, cd)
                 '''rankings'''
-                if 'result_type' not in p.keys() or p['result_type'] not in ('nyp', 'abs', 'dnf'):
-                    if not prev == p['score']:
-                        rank, prev = idx, p['score']
-                    p['rank'] = str(rank)
-
-                    p['rankings'] = {}
+                if result_type == 'comp' or r['result_type']:
+                    d = cd if result_type == 'comp' else td
+                    r['score'] = c_round(r['score'], d)
+                    if not prev == r['score']:
+                        rank, prev = idx, r['score']
+                    r['rank'] = rank
+                    r['rankings'] = {}
                     for s in rankings:
                         if s['rank_type'] == 'overall':
-                            p['rankings'][s['rank_id']] = rank
+                            r['rankings'][s['rank_id']] = rank
                             s['counter'] += 1
                         elif (
-                                (s['rank_type'] == 'cert' and p['glider_cert'] in s['certs'])
-                                or (s['rank_type'] == 'female' and p['sex'] == 'F')
-                                or (s['rank_type'] == 'nat' and p['nat'] == s['nat'])
-                                or (s['rank_type'] == 'custom' and 'custom' in p.keys()
-                                    and p['custom'][str(s['attr_id'])] == s['rank_value'])
-                                or (s['rank_type'] == 'birthdate' and 'birthdate' in p.keys()
-                                    and isinstance(get_date(p['birthdate']), datetime.date)
+                                (s['rank_type'] == 'cert' and r['glider_cert'] in s['certs'])
+                                or (s['rank_type'] == 'female' and r['sex'] == 'F')
+                                or (s['rank_type'] == 'nat' and r['nat'] == s['nat'])
+                                or (s['rank_type'] == 'custom' and 'custom' in r.keys()
+                                    and r['custom'][str(s['attr_id'])] == s['rank_value'])
+                                or (s['rank_type'] == 'birthdate' and 'birthdate' in r.keys()
+                                    and isinstance(get_date(r['birthdate']), datetime.date)
                                     and (
-                                            (s['min_date'] and get_date(s['min_date']) <= get_date(p['birthdate']))
-                                            or (s['max_date'] and get_date(s['max_date']) >= get_date(p['birthdate']))
+                                            (s['min_date'] and get_date(s['min_date']) <= get_date(r['birthdate']))
+                                            or (s['max_date'] and get_date(s['max_date']) >= get_date(r['birthdate']))
                                     ))
                         ):
                             s['counter'] += 1
-                            if not s['prev'] == p['score']:
-                                s['rank'], s['prev'] = s['counter'], p['score']
-                            p['rankings'][s['rank_id']] = f"{s['rank']} ({p['rank']})"
+                            if not s['prev'] == r['score']:
+                                s['rank'], s['prev'] = s['counter'], r['score']
+                            r['rankings'][s['rank_id']] = f"{s['rank']} ({r['rank']})"
                         else:
-                            p['rankings'][s['rank_id']] = ''
-
-                results.append(p)
+                            r['rankings'][s['rank_id']] = ''
+                    if result_type == 'comp':
+                        r['name'] = f"<span class='sex-{r['sex']}'><b>{r['name']}</b></span>"
+                        '''task results format'''
+                        for k, v in r['results'].items():
+                            if v['score'] == v['pre']:
+                                v['score'] = f"{v['score']:.{td}f}"
+                            else:
+                                v['score'] = f"{v['score']:.{td}f} <del>{v['pre']:.{td}f}</del>"
+                        r['score'] = f"<strong>{r['score']:.{cd}f}</strong>"
+                        r = pretty_format_results(r, timeoffset)
+                    elif result_type == 'task':
+                        task_id = content['info']['id']
+                        if export or not r['track_file']:
+                            r['name'] = f"<span class='sex-{r['sex']}'><b>{r['name']}</b></span>"
+                        else:
+                            r['name'] = f"<a class='sex-{r['sex']}' href='/map/{r['par_id']}-{task_id}'>" \
+                                        f"<b>{r['name']}</b></a>"
+                        if r['penalty']:
+                            p = r['penalty']
+                            style = f"{'danger' if p > 0 else 'success'}"
+                            r['penalty'] = f"<strong class='text-{style}'>{p:.{td}f}</strong>"
+                            r['score'] = f"<strong class='text-{style}'>{r['score']:.{td}f}</strong>"
+                        else:
+                            r['score'] = f"<strong>{r['score']:.{td}f}</strong>"
+                        r = pretty_format_results(r, timeoffset)
+                        goal = r['goal_time']
+                        r['ESS_time'] = r['ESS_time'] if goal else f"<del>{r['ESS_time']}</del>"
+                        r['speed'] = r['speed'] if goal else f"<del>{r['speed']}</del>"
+                        r['ss_time'] = r['ss_time'] if goal else f"<del>{r['ss_time']}</del>"
+                        # ab = ''  # alt bonus
+                results.append(r)
             pretty_content['results'] = results
-            # pretty_content['classes'] = [{k: c[k] for k in ('name', 'limit', 'cert', 'counter')} for c in sub_classes]
             pretty_content['rankings'] = [
                 {k: c[k] for k in ('rank_id', 'rank_name', 'description', 'counter')} for c in rankings
             ]

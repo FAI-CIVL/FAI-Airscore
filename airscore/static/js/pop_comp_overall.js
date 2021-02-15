@@ -5,7 +5,7 @@ function populate_comp_overall(json){
     var columns = [];
     // rankings
     json.rankings.forEach( function(item, index) {
-      columns.push({data: 'rankings.'+item.rank_id.toString(), title: item.rank_id.toString(), name: item.rank_id.toString(), className: "text-right", defaultContent: '', visible: (index === 0) ? true : false});
+      columns.push({data: 'rankings.'+item.rank_id.toString(), title: '#', name: item.rank_id.toString(), className: "text-right", defaultContent: '', visible: (index === 0) ? true : false});
     });
     columns.push({data: 'id', title:'ID', className: "text-right", defaultContent: ''});
     columns.push({data: 'fai_id', title:'FAI', className: "text-right", defaultContent: '', visible: false});
@@ -19,10 +19,10 @@ function populate_comp_overall(json){
     columns.push({data: 'score', title:'Total', className: "text-right"});
     json.tasks.forEach( function(item, index) {
         var code = item.task_code
-        columns.push({data: 'results.'+index.toString(), title: code, className: "text-right", defaultContent: ''});
+        columns.push({data: 'results.'+code+'.score', title: code, className: "text-right", defaultContent: ''});
     });
     $('#results_table').DataTable( {
-        data: json.data,
+        data: json.results,
         paging: false,
         searching: true,
         saveState: true,
