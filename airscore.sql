@@ -197,29 +197,6 @@ CREATE TABLE `schema_version` (
 -- --------------------------------------------------------
 
 --
--- Stand-in structure for view `TaskAirspaceCheckView`
--- (See below for the actual view)
---
-CREATE TABLE `TaskAirspaceCheckView` (
-`task_id` int(11)
-,`airspace_check` tinyint(1)
-,`notification_distance` smallint(4)
-,`function` enum('linear','non-linear')
-,`h_outer_limit` smallint(4)
-,`h_inner_limit` smallint(4)
-,`h_boundary` smallint(4)
-,`h_boundary_penalty` float(3,2)
-,`h_max_penalty` float(3,2)
-,`v_outer_limit` smallint(4)
-,`v_inner_limit` smallint(4)
-,`v_boundary` smallint(4)
-,`v_boundary_penalty` float(3,2)
-,`v_max_penalty` float(3,2)
-);
-
--- --------------------------------------------------------
-
---
 -- Stand-in structure for view `TaskFormulaView`
 -- (See below for the actual view)
 --
@@ -332,22 +309,24 @@ INSERT INTO tblCertification (cert_id, cert_name, comp_class, cert_order) VALUES
 -- --------------------------------------------------------
 
 --
--- Table structure for table `tblCompAirspaceCheck`
+-- Table structure for table `tblAirspaceCheck`
 --
 
-CREATE TABLE `tblCompAirspaceCheck` (
-  `comp_id` int(11) NOT NULL,
-  `notification_distance` smallint(4) NOT NULL DEFAULT '100',
-  `function` enum('linear','non-linear') NOT NULL DEFAULT 'linear',
-  `h_outer_limit` smallint(4) NOT NULL DEFAULT '70',
-  `h_boundary` smallint(4) NOT NULL DEFAULT '0',
+CREATE TABLE `tblAirspaceCheck` (
+  `check_id` int NOT NULL,
+  `comp_id` int NOT NULL,
+  `task_id` int DEFAULT NULL,
+  `notification_distance` smallint NOT NULL DEFAULT '100',
+  `function` enum('linear','non-linear') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'linear',
+  `h_outer_limit` smallint NOT NULL DEFAULT '70',
+  `h_boundary` smallint NOT NULL DEFAULT '0',
   `h_boundary_penalty` float(3,2) NOT NULL DEFAULT '0.10',
-  `h_inner_limit` smallint(4) NOT NULL DEFAULT '-30',
+  `h_inner_limit` smallint NOT NULL DEFAULT '-30',
   `h_max_penalty` float(3,2) NOT NULL DEFAULT '1.00',
-  `v_outer_limit` smallint(4) NOT NULL DEFAULT '70',
-  `v_boundary` smallint(4) NOT NULL DEFAULT '0',
+  `v_outer_limit` smallint NOT NULL DEFAULT '70',
+  `v_boundary` smallint NOT NULL DEFAULT '0',
   `v_boundary_penalty` float(3,2) NOT NULL DEFAULT '0.10',
-  `v_inner_limit` smallint(4) NOT NULL DEFAULT '30',
+  `v_inner_limit` smallint NOT NULL DEFAULT '-30',
   `v_max_penalty` float(3,2) NOT NULL DEFAULT '1.00'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -1190,15 +1169,6 @@ CREATE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `Regio
 -- --------------------------------------------------------
 
 --
--- Structure for view `TaskAirspaceCheckView`
---
-DROP TABLE IF EXISTS `TaskAirspaceCheckView`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY DEFINER VIEW `TaskAirspaceCheckView`  AS  select `T`.`task_id` AS `task_id`,`T`.`airspace_check` AS `airspace_check`,`A`.`notification_distance` AS `notification_distance`,`A`.`function` AS `function`,`A`.`h_outer_limit` AS `h_outer_limit`,`A`.`h_inner_limit` AS `h_inner_limit`,`A`.`h_boundary` AS `h_boundary`,`A`.`h_boundary_penalty` AS `h_boundary_penalty`,`A`.`h_max_penalty` AS `h_max_penalty`,`A`.`v_outer_limit` AS `v_outer_limit`,`A`.`v_inner_limit` AS `v_inner_limit`,`A`.`v_boundary` AS `v_boundary`,`A`.`v_boundary_penalty` AS `v_boundary_penalty`,`A`.`v_max_penalty` AS `v_max_penalty` from ((`tblTask` `T` join `tblCompetition` `C` on((`T`.`comp_id` = `C`.`comp_id`))) left join `tblCompAirspaceCheck` `A` on((`T`.`comp_id` = `A`.`comp_id`))) order by `T`.`task_id` ;
-
--- --------------------------------------------------------
-
---
 -- Structure for view `TaskFormulaView`
 --
 DROP TABLE IF EXISTS `TaskFormulaView`;
@@ -1243,10 +1213,12 @@ ALTER TABLE `tblCertification`
   ADD PRIMARY KEY (`cert_id`);
 
 --
--- Indexes for table `tblCompAirspaceCheck`
+-- Indexes for table `tblAirspaceCheck`
 --
-ALTER TABLE `tblCompAirspaceCheck`
-  ADD UNIQUE KEY `comp_id` (`comp_id`);
+ALTER TABLE `tblAirspaceCheck`
+  ADD PRIMARY KEY (`check_id`),
+  ADD KEY `comp_id` (`comp_id`),
+  ADD KEY `task_id` (`task_id`);
 
 --
 -- Indexes for table `tblCompetition`
@@ -1418,6 +1390,12 @@ ALTER TABLE `tblCertification`
 --
 -- AUTO_INCREMENT for table `tblCompetition`
 --
+ALTER TABLE `tblAirspaceCheck`
+  MODIFY `check_id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tblCompetition`
+--
 ALTER TABLE `tblCompetition`
   MODIFY `comp_id` int(11) NOT NULL AUTO_INCREMENT;
 
@@ -1515,6 +1493,13 @@ ALTER TABLE `users`
 --
 -- CONSTRAINS
 --
+
+--
+-- Constraints for table `tblAirspaceCheck`
+--
+ALTER TABLE `tblAirspaceCheck`
+  ADD CONSTRAINT `tblAirspaceCheck_ibfk_2` FOREIGN KEY (`comp_id`) REFERENCES `tblCompetition` (`comp_id`) ON DELETE CASCADE ON UPDATE RESTRICT,
+  ADD CONSTRAINT `tblAirspaceCheck_ibfk_3` FOREIGN KEY (`task_id`) REFERENCES `tblTask` (`task_id`) ON DELETE CASCADE ON UPDATE RESTRICT;
 
 --
 -- Constraints for table `tblCompAttribute`

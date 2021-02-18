@@ -250,27 +250,6 @@ class RegionWaypointView(BaseModel):
     )
 
 
-class TaskAirspaceCheckView(BaseModel):
-    __table__ = Table(
-        'TaskAirspaceCheckView',
-        metadata,
-        Column('task_id', INTEGER(11), primary_key=True),
-        Column('airspace_check', TINYINT(1)),
-        Column('notification_distance', SMALLINT(4)),
-        Column('function', Enum('linear', 'non-linear'), server_default=text("'linear'")),
-        Column('h_outer_limit', SMALLINT(4)),
-        Column('h_inner_limit', SMALLINT(4)),
-        Column('h_boundary', SMALLINT(4)),
-        Column('h_boundary_penalty', Float(3)),
-        Column('h_max_penalty', Float(3)),
-        Column('v_outer_limit', SMALLINT(4)),
-        Column('v_inner_limit', SMALLINT(4)),
-        Column('v_boundary', SMALLINT(4)),
-        Column('v_boundary_penalty', Float(3)),
-        Column('v_max_penalty', Float(3)),
-    )
-
-
 class TaskObjectView(BaseModel):
     __table__ = Table(
         'TaskObjectView',
@@ -583,6 +562,11 @@ class TblCompetition(BaseModel):
         cascade="all, delete",
         passive_deletes=True
     )
+    child_comp_check = relationship(
+        "TblAirspaceCheck", back_populates="parent_comp_check",
+        cascade="all, delete",
+        passive_deletes=True
+    )
 
 
 class TblCompAuth(BaseModel):
@@ -671,23 +655,28 @@ TblRegionXCSites = Table(
     Column('xccSiteID', INTEGER(11), nullable=False, index=True),
 )
 
-TblCompAirspaceCheck = Table(
-    'tblCompAirspaceCheck',
-    metadata,
-    Column('comp_id', ForeignKey('tblCompetition.comp_id', ondelete='CASCADE'), nullable=False, unique=True),
-    Column('notification_distance', SMALLINT(4), nullable=False, server_default=text("'100'")),
-    Column('function', Enum('linear', 'non-linear'), nullable=False, server_default=text("'linear'")),
-    Column('h_outer_limit', SMALLINT(4), nullable=False, server_default=text("'70'")),
-    Column('h_boundary', SMALLINT(4), nullable=False, server_default=text("'0'")),
-    Column('h_boundary_penalty', Float(3), nullable=False, server_default=text("'0.1'")),
-    Column('h_inner_limit', SMALLINT(4), nullable=False, server_default=text("'-30'")),
-    Column('h_max_penalty', Float(3), nullable=False, server_default=text("'1'")),
-    Column('v_outer_limit', SMALLINT(4), nullable=False, server_default=text("'70'")),
-    Column('v_boundary', SMALLINT(4), nullable=False, server_default=text("'0'")),
-    Column('v_boundary_penalty', Float(3), nullable=False, server_default=text("'0.1'")),
-    Column('v_inner_limit', SMALLINT(4), nullable=False, server_default=text("'30'")),
-    Column('v_max_penalty', Float(3), nullable=False, server_default=text("'1'")),
-)
+
+class TblAirspaceCheck(BaseModel):
+    __tablename__ = 'tblAirspaceCheck'
+
+    check_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
+    comp_id = Column(ForeignKey('tblCompetition.comp_id', ondelete='CASCADE'), nullable=False)
+    task_id = Column(INTEGER(11), ForeignKey("tblTask.task_id", ondelete='CASCADE'), nullable=True)
+    notification_distance = Column(SMALLINT(4), nullable=False, server_default=text("'100'"))
+    function = Column(Enum('linear', 'non-linear'), nullable=False, server_default=text("'linear'"))
+    h_outer_limit = Column(SMALLINT(4), nullable=False, server_default=text("'70'"))
+    h_boundary = Column(SMALLINT(4), nullable=False, server_default=text("'0'"))
+    h_boundary_penalty = Column(Float(3), nullable=False, server_default=text("'0.1'"))
+    h_inner_limit = Column(SMALLINT(4), nullable=False, server_default=text("'-30'"))
+    h_max_penalty = Column(Float(3), nullable=False, server_default=text("'1'"))
+    v_outer_limit = Column(SMALLINT(4), nullable=False, server_default=text("'70'"))
+    v_boundary = Column(SMALLINT(4), nullable=False, server_default=text("'0'"))
+    v_boundary_penalty = Column(Float(3), nullable=False, server_default=text("'0.1'"))
+    v_inner_limit = Column(SMALLINT(4), nullable=False, server_default=text("'-30'"))
+    v_max_penalty = Column(Float(3), nullable=False, server_default=text("'1'"))
+
+    parent_comp_check = relationship('TblCompetition', back_populates='child_comp_check')
+    parent_task_check = relationship('TblTask', back_populates="child_task_check")
 
 
 class TblLadderComp(BaseModel):
@@ -764,9 +753,11 @@ class TblTask(BaseModel):
     reg = relationship('TblRegion')
     comp = relationship('TblCompetition')
     Results = relationship('TblTaskResult')
-
-    # comp = relationship('TblCompetition', backref="tasks", lazy='subquery')
-    # Results = relationship('TblTaskResult', backref="task")
+    child_task_check = relationship(
+        "TblAirspaceCheck", back_populates="parent_task_check",
+        cascade="all, delete",
+        passive_deletes=True
+    )
 
 
 class TblTaskResult(BaseModel):
