@@ -155,13 +155,20 @@ Competition Settings
           {{ render_field(compform.track_source, tooltip=True, disabled=readonly) }}
         </section>
         <section class="tab-row row-wrap form">
-          {{ render_field(compform.airspace_check, tooltip=True, disabled=readonly) }}
           <div>
             {{ render_field(compform.igc_parsing_file, tooltip=True, disabled=readonly) }}
             <a class="form-link" id='link_igc_config'>view/edit</a>
           </div>
           {{ render_field(compform.check_launch, tooltip=True, disabled=readonly) }}
           {{ render_field(compform.check_g_record, tooltip=True, disabled=readonly) }}
+          <div class="row-wrap">
+            {{ render_field(compform.airspace_check, tooltip=True, disabled=readonly) }}
+            {% if compform.airspace_check.data %}
+            <a href="{{ url_for('user.airspace_check_admin', compid=compid) }}" class='btn btn-info ml-2' type='button'>
+              Parameters
+            </a>
+          {% endif %}
+          </div>
         </section>
       </div>
       <div role="tabpanel" class="tab-pane column-wrap fade" id="rankings">

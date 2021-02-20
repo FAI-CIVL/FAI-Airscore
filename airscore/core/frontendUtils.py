@@ -1951,10 +1951,25 @@ def delete_comp_attribute(attr_id: int) -> bool:
             return False
 
 
+def save_airspace_check(comp_id: int, task_id: int, obj: dict) -> bool:
+    """At the moment Airspace check is considering each event has just one parameters setup, but arguments are
+    ready to create task settings. I don't think there is this need at the moment.
+    task_id is always None"""
+    from db.tables import TblAirspaceCheck as A
+    try:
+        row = A.get_one(comp_id=comp_id, task_id=task_id)
+        row.update(**obj)
+        return True
+    except Exception:
+        # raise
+        return False
+
+
 def create_new_comp(comp, user_id: int) -> dict:
     from compUtils import create_comp_path
     from formula import Formula
     from ranking import create_overall_ranking
+    from airspace import create_check_parameters
 
     comp.comp_path = create_comp_path(comp.date_from, comp.comp_code)
     output = comp.to_db()
@@ -1962,5 +1977,6 @@ def create_new_comp(comp, user_id: int) -> dict:
         Formula(comp_id=comp.comp_id).to_db()
         set_comp_scorekeeper(comp.comp_id, user_id, owner=True)
         create_overall_ranking(comp.comp_id)
+        create_check_parameters(comp.comp_id)
         return {'success': True}
     return {'success': False, 'errors': {'Error': ['There was an error trying to save new Competition']}}

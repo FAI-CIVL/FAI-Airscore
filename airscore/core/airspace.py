@@ -296,7 +296,7 @@ class AirspaceCheck(object):
             separation = fix[6]
             if pen == 0:
                 ''' create warning comment'''
-                comment = f"[{space}] Warning: {separation}. separation less than {dist} meters"
+                comment = f"[{space}] Warning: {separation}. separation less than {round(dist)} meters"
             else:
                 '''add fix to infringements'''
                 infringements_per_space.append(
@@ -371,6 +371,28 @@ def get_airspace_check_parameters(comp_id: int, task_id: int = None) -> CheckPar
     else:
         print(f"airspace_check disabled")
         return None
+
+
+def save_airspace_check_parameters(param: CheckParams, comp_id: int, task_id: int = None):
+    row = A.get_one(comp_id=comp_id, task_id=task_id)
+    if row:
+        row.update(**asdict(param))
+    else:
+        row = A.from_obj(param)
+        row.comp_id = comp_id
+        row.task_id = task_id
+        row.save()
+
+
+def create_check_parameters(comp_id: int, task_id: int = None):
+    if task_id:
+        row = A.get_one(comp_id=comp_id, task_id=None)
+        params = A(**row.as_dict())
+        params.check_id = None
+        params.task_id = task_id
+    else:
+        params = A(comp_id=comp_id)
+    params.save()
 
 
 def fl_to_meters(flight_level, qnh=1013.25):

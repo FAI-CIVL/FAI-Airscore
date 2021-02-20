@@ -8,7 +8,7 @@ from flask_login import login_required, current_user
 import frontendUtils
 from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm, \
     ResultAdminForm, NewScorekeeperForm, RegionForm, NewRegionForm, IgcParsingConfigForm, ParticipantForm, \
-    EditScoreForm, ModifyUserForm, CompLaddersForm, NewCompForm, CompRankingForm
+    EditScoreForm, ModifyUserForm, CompLaddersForm, NewCompForm, CompRankingForm, AirspaceCheckForm
 from comp import Comp
 from formula import list_formulas, Formula
 from task import Task, write_map_json, get_task_json_by_filename
@@ -113,6 +113,49 @@ def airspace_edit(filename: str):
 
     return render_template('users/airspace_admin_map.html', airspace_list=airspace_list, file=filename,
                            map=airspace_map._repr_html_(), message=message, FL_message=fl_detail)
+
+
+@blueprint.route('/airspace_check_admin', methods=['GET', 'POST'])
+@login_required
+@check_coherence
+def airspace_check_admin():
+    from airspace import get_airspace_check_parameters
+    compid = request.args.get('compid')
+    taskid = request.args.get('taskid')
+
+    if request.method == 'POST':
+        checkform = AirspaceCheckForm()
+        '''adjusting parameters'''
+        if checkform.function.data == 'non-linear' or not checkform.double_step.data:
+            checkform.h_boundary.data = checkform.h_inner_limit.data
+            checkform.h_boundary_penalty.data = checkform.h_max_penalty.data
+            checkform.v_boundary.data = checkform.v_inner_limit.data
+            checkform.v_boundary_penalty.data = checkform.v_max_penalty.data
+        if checkform.h_v.data:
+            params = ['outer_limit', 'boundary', 'inner_limit', 'boundary_penalty', 'max_penalty']
+            for el in params:
+                getattr(checkform, f'v_{el}').data = getattr(checkform, f'h_{el}').data
+        if checkform.validate_on_submit():
+            resp = frontendUtils.save_airspace_check(compid, taskid, obj={el.name: el.data for el in checkform})
+            flash(f'Settings saved.', 'info') if resp else flash(f'There was an error, saving failed.', 'danger')
+        else:
+            for item in checkform:
+                if item.errors:
+                    flash(f"{item.label.text} ({item.data}): {', '.join(x for x in item.errors)}", category='danger')
+        # flash(f'{checkform.h_boundary.data}, {checkform.h_inner_limit.data}, {checkform.h_outer_limit.data}', 'info')
+        return redirect(url_for('user.airspace_check_admin', compid=compid, taskid=taskid))
+
+    elif request.method == 'GET':
+        params = get_airspace_check_parameters(compid, taskid)
+        checkform = AirspaceCheckForm(obj=params)
+        '''adding frontend switches'''
+        checkform.double_step.data = (params.h_boundary != params.h_inner_limit
+                                      or params.v_boundary != params.v_inner_limit)
+        checkform.h_v.data = not all(getattr(params, f"h_{e}") == getattr(params, f"v_{e}")
+                                     for e in ('outer_limit', 'boundary', 'inner_limit',
+                                               'boundary_penalty', 'max_penalty'))
+
+    return render_template('users/airspace_check_admin.html', compid=compid, taskid=taskid, checkform=checkform)
 
 
 @blueprint.route('/save_airspace', methods=['PUT'])

@@ -1,0 +1,191 @@
+{% extends "base_admin.html"%}
+
+{% block page_title %}
+Airspace Check Settings
+{% endblock %}
+
+{% block css %}
+<link rel='stylesheet' type='text/css' href="{{ static_url_for('static', filename='build/main_css.bundle.css') }}"/>
+{% endblock %}
+
+{% block back %}
+{% if taskid %}
+<a href="{{ url_for('user.task_admin', taskid=taskid)}}" class='btn btn-info' type='button'>
+  Back to Task Settings
+</a>
+{% elif compid %}
+<a href="{{ url_for('user.comp_settings_admin', compid=compid)}}" class='btn btn-info' type='button'>
+  Back to Competition Settings
+</a>
+{% endif %}
+{% endblock %}
+
+{% block header %}
+Airspace Check Settings
+{% endblock %}
+
+{% block content %}
+<form method='post' id="airspace_check_form">
+  {{ checkform.hidden_tag() }}
+
+  <!-- Save Settings button -->
+  <div class='tab-save row-wrap'>
+    {% if checkform.submit %}
+    {{checkform.submit(class="btn btn-outline-secondary", id="airspace_check_save_button")}}
+    <h6 class="ml-4 mt-2 pr-1 pl-1" id="save_button_warning_text"></h6>
+    {% else %}
+    <b>You are not a scorekeeper of this comp</b>
+    {% endif%}
+  </div>
+
+  <!-- Settings Tab Section -->
+  <div role="tabpanel" class="tab-panel">
+    <!-- Nav tabs -->
+    <ul role="tablist" id="tab-list" class="nav nav-tabs">
+      <li role="presentation" class="nav-item"><a role="tab" data-toggle="tab" class="nav-link active" href="#details" aria-controls="details">Penalty Details</a></li>
+      <li role="presentation" class="nav-item"><a role="tab" data-toggle="tab" class="nav-link" href="#ctr_list" aria-controls="ctr_list">Control Zones</a></li>
+    </ul>
+
+    <div class="tab-content">
+      <!-- Tab panes -->
+      {% if checkform.submit %}
+      {% from "macros.html" import render_field with context %}
+      {% set readonly = session.external %}
+      <div role="tabpanel" class="tab-pane column-wrap fade show active" id="details">
+        <h4 class='tab-title font-weight-bold'>Penalty Formula Details:</h4>
+        <section class="tab-row row-wrap form">
+          <div class='alert alert-warning' role='alert'>
+            <h4>Distances are in meters from Forbidden zones border.<br>Negative numbers are positions inside the zone.<br />
+            Progressive (PWC Style) changes penalty factor along a curve, steeper reaching inner limit. </h4>
+          </div>
+        </section>
+        <section class="tab-row row-wrap form">
+            {{ render_field(checkform.notification_distance, 5, disabled=readonly) }}
+        </section>
+        <section class="tab-row row-wrap form">
+            {{ render_field(checkform.function, disabled=readonly) }}
+          <div id="double_step_div">
+            {{ render_field(checkform.double_step, disabled=readonly) }}
+          </div>
+        </section>
+        <section class="tab-row column-wrap form" id="h_limits">
+          <section class="row-wrap">
+            {{ render_field(checkform.h_outer_limit, 5, disabled=readonly) }}
+          </section>
+          <section class="row-wrap" id="h_boundary_section">
+            {{ render_field(checkform.h_boundary, 5, tooltip=True, disabled=readonly) }}
+            {{ render_field(checkform.h_boundary_penalty, tooltip=True, disabled=readonly) }}
+          </section>
+          <section class="row-wrap">
+            {{ render_field(checkform.h_inner_limit, 5, tooltip=True, disabled=readonly) }}
+            {{ render_field(checkform.h_max_penalty, tooltip=True, disabled=readonly) }}
+          </section>
+        </section>
+        <section class="tab-row row-wrap form">
+            {{ render_field(checkform.h_v, disabled=readonly) }}
+        </section>
+        <section class="tab-row column-wrap form" id="v_limits">
+          <section class="row-wrap">
+            {{ render_field(checkform.v_outer_limit, 5, disabled=readonly) }}
+          </section>
+          <section class="row-wrap" id="v_boundary_section">
+            {{ render_field(checkform.v_boundary, 5, tooltip=True, disabled=readonly) }}
+            {{ render_field(checkform.v_boundary_penalty, tooltip=True, disabled=readonly) }}
+          </section>
+          <section class="row-wrap">
+            {{ render_field(checkform.v_inner_limit, 5, tooltip=True, disabled=readonly) }}
+            {{ render_field(checkform.v_max_penalty, tooltip=True, disabled=readonly) }}
+          </section>
+        </section>
+      </div>
+      <div role="tabpanel" class="tab-pane column-wrap fade" id="ctr_list">
+        <h4 class='tab-title font-weight-bold'>Control Zones List:</h4>
+        <section class="tab-row row-wrap form">
+          <div class='alert alert-warning' role='alert'>
+            <h4>These settings are inherited from the settings for this competition.<br>Change them here if you want to
+            overide for this task only.</h4>
+          </div>
+        </section>
+        <section class="tab-row row-wrap form">
+
+        </section>
+        <section class="tab-row row-wrap form">
+
+        </section>
+        <section class="tab-row row-wrap form">
+
+        </section>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Task Waypoints Section -->
+  <div class="panel-content column-wrap">
+    <div class='panel collapse show' id='task_waypoints'>
+      <h4 class='tab-title font-weight-bold'>Task Waypoints:</h4>
+      {% if checkform.submit and not readonly %}
+      <section class="panel-row row-wrap button">
+        <button id='delete_all_btn' class='btn btn-danger ml-5 ' onclick='confirm_delete_all();' type='button'>
+          Clear Task
+        </button>
+        <button id='import_task_btn' class='btn btn-secondary ml-5 ' type='button' data-toggle='collapse' data-target='#import_task'
+                aria-expanded='false' aria-controls='import_task'>
+          Import
+        </button>
+        <div class='panel collapse' id='import_task'>
+          <section class="panel-row row-wrap button">
+            <button id='XCTrack_button' class='btn btn-success ml-4 '>Import XCTrack Task File...</button>
+            <input id='XCTrack_fileupload' type='file' size='chars' class='custom-file-input'
+                   oninput='filesize(this);' data-url='/users/_upload_XCTrack/{{ taskid }}' name='track_file'>
+          </section>
+        </div>
+      </section>
+      {% endif%}
+      <!--- map --->
+      <section class="panel-row row-wrap form">
+        <div class='task-map embed-responsive' id="map_container" hidden>
+        </div>
+      </section>
+    </div>
+  </div>
+</form>
+
+{% if checkform.submit and not readonly %}
+<!--- delete-modal starts here--->
+<div id='delmodal' class='modal fade' role='dialog'>
+  <div class='modal-dialog'>
+    <div class='modal-content'>
+      <div class='modal-header'>
+        <h4 class='modal-title'>Please confirm</h4>
+      </div>
+      <div class='modal-body' id='delmodal-body'>
+        <p>Here the description starts here........</p>
+      </div>
+      <div class='modal-footer'>
+        <button type='button' class='btn btn-success' data-dismiss='modal'>Cancel</button>
+        <button id='delete_confirmed' type='button' class='btn btn-danger'>Delete</button>
+        <p id='delete_spinner'></p>
+      </div>
+    </div>
+  </div>
+</div>
+<!--- delete-Modal ends here --->
+{% endif%}
+
+{% endblock %}
+
+{% block js %}
+<script src="{{ static_url_for('static', filename='js/display-if.min.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.ui.widget.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.iframe-transport.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.fileupload.js') }}"></script>
+<script type='text/javascript' src='https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js'></script>
+<script src="{{ static_url_for('static', filename='js/airspace_check_admin.js') }}"></script>
+<script type=text/javascript>
+  var compid = {{ compid|tojson }};
+  var external = {{ session.external|tojson }};
+  var taskid = {{ taskid|tojson }};
+  var task_admin = {{ checkform.submit|tojson }};
+</script>
+{% endblock %}

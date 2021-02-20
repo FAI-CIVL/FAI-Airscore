@@ -13,6 +13,10 @@ import Defines
 from .models import User
 
 
+percentage_choices = [(0.1, '10%'), (0.2, '20%'), (0.3, '30%'), (0.4, '40%'), (0.5, '50%'),
+                      (0.6, '60%'), (0.7, '70%'), (0.8, '80%'), (0.9, '90%'), (1.0, '100%')]
+
+
 class RegisterForm(FlaskForm):
     """Register form."""
 
@@ -496,3 +500,60 @@ class CompRankingForm(FlaskForm):
     rank_value = StringField('Attribute Value', validators=[Optional(strip_whitespace=True)], default=None)
 
     submit = SubmitField('Save')
+
+
+class AirspaceCheckForm(FlaskForm):
+    name_desc = 'Required, max 40 characters'
+    notification_distance = IntegerField('Proximity Notification Distance (m.)', default=100,
+                                         validators=[Optional(strip_whitespace=True), NumberRange(min=-100, max=999)])
+    function = SelectField('Function Type', default='linear',
+                           choices=[('linear', 'Linear'), ('non-linear', 'Progressive')])
+    double_step = BooleanField('Double Step', default=0)
+    h_v = BooleanField('Different Vertical Limits', default=0)
+    h_outer_limit = IntegerField('Horiz. Outer Limit (m.)', default=50,
+                                 validators=[Optional(strip_whitespace=True), NumberRange(min=-100, max=999)])
+    h_boundary = IntegerField('Horiz. Boundary (m.)', default=0,
+                              validators=[Optional(strip_whitespace=True), NumberRange(min=-100, max=999)])
+    h_inner_limit = IntegerField('Horiz. Inner Limit (m.)', default=-30,
+                                 validators=[Optional(strip_whitespace=True), NumberRange(min=-100, max=999)])
+    h_boundary_penalty = SelectField('Boundary Penalty', choices=percentage_choices, default=0.2)
+    h_max_penalty = SelectField('Full Penalty', choices=percentage_choices, default=1)
+    v_outer_limit = IntegerField('Vert. Outer Limit (m.)', default=50,
+                                 validators=[Optional(strip_whitespace=True), NumberRange(min=-100, max=999)])
+    v_boundary = IntegerField('Vert. Boundary (m.)', default=0,
+                              validators=[Optional(strip_whitespace=True), NumberRange(min=-100, max=999)])
+    v_inner_limit = IntegerField('Vert. Inner Limit (m.)', default=-30,
+                                 validators=[Optional(strip_whitespace=True), NumberRange(min=-100, max=999)])
+    v_boundary_penalty = SelectField('Boundary Penalty', choices=percentage_choices, default=0.2)
+    v_max_penalty = SelectField('Full Penalty', choices=percentage_choices, default=1)
+
+    submit = SubmitField('Save')
+
+    def validate_on_submit(self):
+        result = super(AirspaceCheckForm, self).validate()
+        if self.h_outer_limit.data < self.h_inner_limit.data:
+            self.h_inner_limit.errors.append('cannot be greater than outer limit')
+            result = False
+        if self.v_outer_limit.data < self.v_inner_limit.data:
+            self.v_inner_limit.errors.append('cannot be greater than outer limit')
+            result = False
+        if self.function.data == 'linear' and self.double_step.data:
+            if self.h_outer_limit.data < self.h_boundary.data:
+                self.h_boundary.errors.append('cannot be greater than outer limit')
+                result = False
+            if self.h_boundary.data < self.h_inner_limit.data:
+                self.h_boundary.errors.append('cannot be smaller than inner limit')
+                result = False
+            if self.v_outer_limit.data < self.v_boundary.data:
+                self.v_boundary.errors.append('cannot be greater than outer limit')
+                result = False
+            if self.v_boundary.data < self.v_inner_limit.data:
+                self.v_boundary.errors.append('cannot be smaller than inner limit')
+                result = False
+            if self.h_boundary_penalty.data > self.h_max_penalty.data:
+                self.h_boundary_penalty.errors.append('cannot be greater than max penalty')
+                result = False
+            if self.v_boundary_penalty.data > self.v_max_penalty.data:
+                self.v_boundary_penalty.errors.append('cannot be greater than max penalty')
+                result = False
+        return result
