@@ -1,54 +1,73 @@
 ################## Airscore settings ##################
 
-waypoint/airspace_file_library: on # on/off ability to see and reuse waypoint and airspace files between comps.
-                                   # recommended for small user base. i.e. national associations
-use_internal_pilot_DB: yes # store pilots in airscore for use in comps.
-                           # The alternative is to import a list of competitors for each comp.
-                           # Using a internal pilot DB is recommended for clubs and national organisations.
-                           # note that even if using an internal pilot DB you can still import external pilots for a comp
-                           # (guest pilots, particular events etc.)
+# on/off ability to see and reuse waypoint and airspace files between comps.
+# recommended for small user base. i.e. national associations
+waypoint/airspace_file_library: on
 
-internal_pilot_DB: # if use_internal_pilot_DB is yes the below settings are relevant
-  write_to_internal_pilot_DB: no # if Airscore store and modify pilots.
-                                 # The reason you may not want to do this is if you connect the pilot DB to an external source.
-  self_registration_default: on # Each comp can be setup that a pilot (given a login) can self register for an event.
-                                # This is the default value on creating a new competition
+# store pilots in airscore for use in comps.
+# The alternative is to import a list of competitors for each comp.
+# Using a internal pilot DB is recommended for clubs and national organisations.
+# note that even if using an internal pilot DB you can still import external pilots for a comp
+# (guest pilots, particular events etc.)
+use_internal_pilot_DB: no
 
-use_internal_admin_DB: yes # use internal table for admins and scorekeepers
-internal_admin_DB: # if use_internal_admin_DB is yes the below settings are relevant
-  allow_self_registration: yes # allows anyone to create a scorekeeper account
-external_admin_DB: # if use_internal_admin_DB is no the below settings are relevant
-  auth_url: https://auth_server  # auth server
+# if use_internal_pilot_DB is yes the below settings are relevant
+internal_pilot_DB:
+  # if Airscore store and modify pilots.
+  # The reason you may not want to do this is if you connect the pilot DB to an external source.
+  write_to_internal_pilot_DB: no
+
+  # Each comp can be setup that a pilot (given a login) can self register for an event.
+  # This is the default value on creating a new competition
+  self_registration_default: on
+
+  # Each event can be setup that a pilot does not need to register, uploading a relevant track will do it.
+  # Default in no and at the moment code is not complete to permit this yet.
+  allow_open_event: no
+
+# use internal table for admins and scorekeepers
+use_internal_admin_DB: yes
+
+# if use_internal_admin_DB is yes the below settings are relevant
+internal_admin_DB:
+  # allows anyone to create a scorekeeper account
+  allow_self_registration: yes
+
+# if use_internal_admin_DB is no the below settings are relevant
+external_admin_DB:
+  auth_url: https://legapiloti.it/wp-json/wp/v2/users/me
   auth_type: rest  # rest, ajax, ...
 
 competition_season:
-#start_year: previous or current offset -1 or 0
-#if season starts during previous year e.g. 2019 season starts 1st november 2018 then -1
-    start_year: -1
-    start_month: 11
-    start_day: 1
-    end_month: 10
-    end_day: 31
+  #start_year: previous or current offset -1 or 0
+  #if season starts during previous year e.g. 2019 season starts 1st november 2018 then -1
+  start_year: -1
+  start_month: 11
+  start_day: 1
+  end_month: 10
+  end_day: 31
 
 sanctions:
   - none
-  - league
+  - League
   - PWC
   - FAI 2
   - FAI 1
 
 igc_sources:
-  xcontest: off
+  xcontest: on
   flymaster: on
 
 g_record_validation_server: http://vali.fai-civl.org/api/vali/json
 flymaster_live_server: https://lt.flymaster.net/wlb/getLiveData.php?trackers=
 
 # Telegram Bot Service.
-telegram: off  # switch telegram bot update feature on or off
+# switch telegram bot update feature on or off
+telegram: off
 
 # Ladders / League Ranking System - summing up several comps into a leaderboard.
-ladders: off  # switch ladder classifications on or off
+# switch ladder classifications on or off
+ladders: off
 
 # folder structure, this is not intended for users to alter.
 dir:
@@ -72,6 +91,4 @@ dir:
 # FAI Sphere. Note that the use of FAI Sphere is obsolete with both PG and HG recommended to use the WGS84 ellipsoid by CIVL.
 # this setting is only intended for testing Airscore against old competitions that were run with the FAI Sphere.
 # Set to off to use WGS84, on for FAI Sphere.
-
-
 FAI_sphere: off

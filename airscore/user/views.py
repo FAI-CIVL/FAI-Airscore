@@ -19,7 +19,7 @@ from task import get_task_json_by_filename
 from calcUtils import sec_to_time
 from pathlib import Path
 import time
-from Defines import SELF_REG_DEFAULT, PILOT_DB, LADDERS
+from Defines import SELF_REG_DEFAULT, PILOT_DB, OPEN_EVENT, LADDERS
 from airscore.user.models import User
 
 blueprint = Blueprint("user", __name__, url_prefix="/users", static_folder="../static")
@@ -424,7 +424,7 @@ def comp_settings_admin(compid: int):
     return render_template('users/comp_settings.html', compid=compid, compform=compform,
                            taskform=newtaskform, scorekeeperform=newScorekeeperform, ladderform=ladderform,
                            rankingform=rankingform, certifications=certifications, error=error,
-                           self_register=(SELF_REG_DEFAULT and PILOT_DB))
+                           allow_open_event=OPEN_EVENT, self_register=(SELF_REG_DEFAULT and PILOT_DB))
 
 
 @blueprint.route('/_convert_external_comp/<int:compid>', methods=['GET', 'POST'])

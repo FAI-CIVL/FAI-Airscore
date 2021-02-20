@@ -107,6 +107,7 @@ ADMIN_AUTH_TYPE = config['external_admin_DB']['auth_type']
 PILOT_DB = config['use_internal_pilot_DB']
 PILOT_DB_WRITE = config['internal_pilot_DB']['write_to_internal_pilot_DB']
 SELF_REG_DEFAULT = config['internal_pilot_DB']['self_registration_default']
+OPEN_EVENT = config['internal_pilot_DB']['allow_open_event']
 
 '''Live Tracking servers'''
 FM_LIVE = config['flymaster_live_server']
