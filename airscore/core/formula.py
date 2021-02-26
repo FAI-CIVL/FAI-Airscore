@@ -27,11 +27,14 @@ def list_formulas():
     for file in listdir('formulas'):
         if file[-3:] == '.py':
             formula_lib = get_formula_lib_by_name(file[:-3])
-            all_formulas.append(formula_lib.formula_name)
-            if formula_lib.formula_class == 'PG' or formula_lib.formula_class == 'BOTH':
-                pg_formulas.append(formula_lib.formula_name)
-            if formula_lib.formula_class == 'HG' or formula_lib.formula_class == 'BOTH':
-                hg_formulas.append(formula_lib.formula_name)
+            try:
+                all_formulas.append(formula_lib.formula_name)
+                if formula_lib.formula_class == 'PG' or formula_lib.formula_class == 'BOTH':
+                    pg_formulas.append(formula_lib.formula_name)
+                if formula_lib.formula_class == 'HG' or formula_lib.formula_class == 'BOTH':
+                    hg_formulas.append(formula_lib.formula_name)
+            except (AttributeError, Exception):
+                pass
     all_formulas = sorted(all_formulas)
     hg_formulas = sorted(hg_formulas)
     pg_formulas = sorted(pg_formulas)
@@ -42,8 +45,7 @@ def get_formula_lib_by_name(formula_name: str):
     """get formula library to use in scoring"""
     formula_file = 'formulas.' + formula_name.lower()
     try:
-        lib = importlib.import_module(formula_file, package=None)
-        return lib
+        return importlib.import_module(formula_file, package=None)
     except (ModuleNotFoundError, Exception):
         print(f'formula file {formula_file} not found.')
         return None
