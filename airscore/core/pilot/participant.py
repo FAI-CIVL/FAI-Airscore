@@ -159,7 +159,7 @@ class Participant(Pilot):
             pilot.attributes = []
             for el in childs:
                 if el.get('value') in (None, ''):
-                    pass
+                    continue
                 elif el.get('name').lower() == 'live' and el.get('value').isdigit():
                     pilot.live_id = int(el.get('value'))
                 elif el.get('name').lower() == 'team':
