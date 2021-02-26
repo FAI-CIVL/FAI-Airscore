@@ -165,7 +165,7 @@ def check_fixes(
             break
 
         '''check tp type is known'''
-        if tp.next.type not in ('launch', 'speed', 'waypoint', 'endspeed', 'goal'):
+        if tp.type not in ('launch', 'speed', 'waypoint', 'endspeed', 'goal'):
             assert False, f"Unknown turnpoint type: {tp.type}"
 
         '''check window is open'''
