@@ -141,23 +141,21 @@ def get_region_wpts(reg_id):
 
 def delete_region(reg_id):
     """delete all database entries and files on disk related to comp"""
-    import os
-
     from db.tables import TblRegion as R
     from db.tables import TblRegionWaypoint as RW
     from Defines import AIRSPACEDIR, WAYPOINTDIR
+    from pathlib import Path
 
     with db_session() as db:
         waypoint_filename = db.query(R).get(reg_id).waypoint_file
         openair_filename = db.query(R).get(reg_id).openair_file
         files_to_delete = []
         if waypoint_filename:
-            files_to_delete.append(os.path.join(WAYPOINTDIR, waypoint_filename))
+            files_to_delete.append(Path(WAYPOINTDIR, waypoint_filename))
         if openair_filename:
-            files_to_delete.append(os.path.join(AIRSPACEDIR, openair_filename))
+            files_to_delete.append(Path(AIRSPACEDIR, openair_filename))
         for file in files_to_delete:
-            if os.path.exists(file):
-                os.remove(file)
+            file.unlink(missing_ok=True)
         db.query(RW).filter_by(reg_id=reg_id).delete(synchronize_session=False)
         db.query(R).filter_by(reg_id=reg_id).delete(synchronize_session=False)
 

@@ -25,8 +25,7 @@ Stuart Mackintosh - Antonio Golfari
 
 import json
 from collections import Counter
-from os import makedirs, path
-
+from pathlib import Path
 from airspace import AirspaceCheck
 from calcUtils import sec_to_time, string_to_seconds
 from db.conn import db_session
@@ -585,7 +584,7 @@ def adjust_flight_results(task, lib, airspace=None):
                 pilot.ESS_time and pilot.ss_time > maxtime
             ):
                 '''need to adjust pilot result'''
-                filename = path.join(task.file_path, pilot.track_file)
+                filename = Path(task.file_path, pilot.track_file)
                 '''load track file'''
                 flight = Flight.create_from_file(filename)
                 pilot.check_flight(flight, task, airspace_obj=airspace, deadline=last_time)

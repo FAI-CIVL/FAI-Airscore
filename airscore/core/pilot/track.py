@@ -11,7 +11,6 @@ Antonio Golfari, Stuart Mackintosh - 2019
 
 import glob
 import json
-from os import makedirs, path
 from pathlib import Path
 from shutil import copyfile
 
@@ -134,8 +133,7 @@ class Track(object):
         # TODO in the new workflow we should have a Pilot obj, with Track as attr. so get_pilot should be in Pilot
         if self.par_id is None:
             """Get string"""
-            fields = path.splitext(path.basename(self.filename))
-            self.par_id = find_pilot(fields[0])
+            self.par_id = find_pilot(Path(self.filename).stem)
 
     def to_db(self, task_id):
         """Imports track to db"""
@@ -204,7 +202,7 @@ class Track(object):
             """Creates the flight obj with fixes info"""
             # task_id = q.task_id
             full_path = get_task_fullpath(q.task_id)
-            track.flight = Flight.create_from_file(path.join(full_path, track.track_file))
+            track.flight = Flight.create_from_file(Path(full_path, track.track_file))
         return track
 
     @staticmethod

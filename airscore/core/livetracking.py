@@ -185,11 +185,9 @@ class LiveTracking(object):
 
     @property
     def filename(self):
-        from os import path
-
         from Defines import LIVETRACKDIR
 
-        return None if not self.task else path.join(LIVETRACKDIR, str(self.task_id))
+        return None if not self.task else Path(LIVETRACKDIR, str(self.task_id))
 
     @staticmethod
     def read(task_id):
@@ -498,12 +496,10 @@ def check_livetrack(result: FlightResult, task: Task, airspace: AirspaceCheck = 
 
 
 def get_live_json(task_id):
-    from os import path
-
     import jsonpickle
     from Defines import LIVETRACKDIR
 
-    fullname = path.join(LIVETRACKDIR, str(task_id))
+    fullname = Path(LIVETRACKDIR, str(task_id))
     try:
         with open(fullname, 'r') as f:
             result = jsonpickle.decode(f.read())
