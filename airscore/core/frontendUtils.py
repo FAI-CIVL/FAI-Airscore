@@ -4,7 +4,6 @@ from functools import partial
 from os import environ, scandir
 from pathlib import Path
 
-import jsonpickle
 import requests
 import ruamel.yaml
 from calcUtils import c_round, sec_to_time
@@ -537,31 +536,16 @@ def get_waypoint_choices(reg_id: int):
 
 
 def get_pilot_list_for_track_management(taskid: int):
-    from db.tables import TblParticipant as P
-    from db.tables import TblTask as T
-    from db.tables import TblTaskResult as R
+    from pilot.flightresult import get_task_results
 
-    pilots = [row._asdict() for row in R.get_task_results(taskid)]
+    pilots = get_task_results(taskid)
 
     all_data = []
     for pilot in pilots:
-        data = {'ID': pilot['ID'], 'name': pilot['name'], 'par_id': pilot['par_id'], 'track_id': pilot['track_id']}
-        if pilot['track_file']:
-            parid = data['par_id']
-            if pilot['ESS_time']:
-                time = sec_to_time(pilot['ESS_time'] - pilot['SSS_time'])
-                if pilot['result_type'] == 'goal':
-                    result = f'Goal {time}'
-                else:
-                    result = f"ESS {round(pilot['distance_flown'] / 1000, 2)} Km (<del>{time}</del>)"
-            else:
-                result = f"LO {round(pilot['distance_flown'] / 1000, 2)} Km"
-            data['Result'] = f'<a href="/map/{parid}-{taskid}?back_link=0&full=1" target="_blank">{result}</a>'
-        elif pilot['result_type'] == "mindist":
-            data['Result'] = "Min Dist"
-        else:
-            data['Result'] = "Not Yet Processed" if not pilot['track_id'] else pilot['result_type'].upper()
+        data = {e: getattr(pilot, e) for e in ('ID', 'name')}
+        data.update(track_result_output(pilot, task_id=taskid))
         all_data.append(data)
+
     return all_data
 
 

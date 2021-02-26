@@ -613,32 +613,27 @@ def delete_track(trackid: int, delete_file=False):
     return row_deleted
 
 
-def get_task_results(task_id: int, comp_id: int = None) -> list:
-    from db.tables import TblNotification as N, TblTaskResult as R, TblTrackWaypoint as W, TblTask as T
+def get_task_results(task_id: int) -> list:
+    from db.tables import TblNotification as N, TblTaskResult as R, TblTrackWaypoint as W
     from pilot.notification import Notification
-    from compUtils import get_participants
 
-    if not comp_id:
-        comp_id = T.get_by_id(task_id).comp_id
-    results = R.get_all(task_id=task_id)
-    pilots = [FlightResult.from_participant(p) for p in get_participants(comp_id)]
-    track_list = list(filter(None, map(lambda x: x.track_id, results)))
+    pilots = [R.populate(p, FlightResult()) for p in R.get_task_results(task_id)]
+    track_list = list(filter(None, map(lambda x: x.track_id, pilots)))
     notifications = N.from_track_list(track_list)
     achieved = W.get_dict_list(track_list)
     for pilot in pilots:
-        result = next((p for p in results if pilot.par_id == p.par_id), None)
-        if result:
-            R.populate(result, pilot)
-            if not pilot.result_type:
-                pilot.result_type = 'nyp'
-            for el in [n for n in notifications if n.track_id == pilot.track_id]:
-                n = Notification()
-                el.populate(n)
-                pilot.notifications.append(n)
+        if not pilot.result_type:
+            pilot.result_type = 'nyp'
+        else:
+            pil_notif = list(filter(lambda x: x.track_id == pilot.track_id, notifications))
+            if pil_notif:
+                pilot.notifications = [el.populate(Notification()) for el in pil_notif]
+                notifications = list(filter(lambda x: x not in pil_notif, notifications))
             if pilot.result_type in ('lo', 'goal'):
                 wa = list(filter(lambda x: x['track_id'] == pilot.track_id, achieved))
-                for el in wa:
-                    pilot.waypoints_achieved.append(WaypointAchieved.from_dict(el))
+                if wa:
+                    pilot.waypoints_achieved = [WaypointAchieved.from_dict(el) for el in wa]
+                    achieved = list(filter(lambda x: x not in wa, achieved))
     return pilots
 
 
