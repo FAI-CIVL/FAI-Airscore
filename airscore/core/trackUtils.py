@@ -70,128 +70,80 @@ def get_tracks(directory):
 def assign_and_import_tracks(files, task, track_source=None, user=None, check_g_record=False, print=print):
     """Find pilots to associate with tracks"""
     import importlib
-    import json
     from functools import partial
+    from frontendUtils import print_to_sse, track_result_output
+    from pilot.flightresult import update_all_results
+    import json
 
-    from compUtils import get_registration
-    from frontendUtils import print_to_sse
-    from pilot.track import Track, igc_parsing_config_from_yaml, validate_G_record
-
-    pilot_list = []
     task_id = task.id
-    comp_id = task.comp_id
-    """checking if comp requires a regisration.
+    """checking if comp requires a registration.
     Then we create a list of registered pilots to check against tracks filename.
     This should be much faster than checking against all pilots in database through a query"""
-    registration = get_registration(comp_id)
-    if registration:
-        """We add tracks for the registered pilots not yet scored"""
-        print("Comp with registration: files will be checked against registered pilots not yet scored")
-        pilot_list = get_unscored_pilots(task_id, track_source)
-        if len(pilot_list) == 0:
-            print(f"Pilot list is empty")
-            return
-        print(f"We have {len(pilot_list)} pilots to find tracks for, and {len(files)} tracks")
+    # TODO: at the moment we need to cover only events where participants are registered
+    #  this part will be adjusted as soon as we want to accept open events.
+
+    """We add tracks for the registered pilots not yet scored"""
+    pilot_list = get_unscored_pilots(task_id, track_source)
+    if len(pilot_list) == 0:
+        print(f"Pilot list is empty")
+        return
+
+    pilots_to_save = []
+    if track_source:
+        ''' Use Live server filename format to get pilot '''
+        lib = importlib.import_module('.'.join(['sources', track_source]))
     else:
-        print(f"No registration required, we have {len(files)} tracks to associate")
+        lib = importlib.import_module('trackUtils')
 
-    task_date = task.date
+    print(f"We have {len(pilot_list)} pilots to find tracks for, and {len(files)} tracks")
     track_counter = 0
-    track_path = task.file_path
     FlightParsingConfig = igc_parsing_config_from_yaml(task.igc_config_file)
+    airspace = None if not task.airspace_check else AirspaceCheck.from_task(task)
 
-    # print("found {} tracks \n".format(len(files)))
     for file in files:
-        mytrack = None
         filename = file.name
+
+        '''check igc file is correct'''
+        mytrack, error = import_igc_file(file, task, parsing_config=FlightParsingConfig, check_g_record=check_g_record)
+        if error:
+            '''error importing igc file'''
+            print(f'Error: {filename} - {error}')
+            continue
+
         print(f'filename {filename}, {type(filename)}')
-        if registration:
-            # print(f"checking {filename} against {len(pilot_list)} pilots...")
-            """check filenames to find pilots"""
-            if track_source:
-                # print(f'Source: {track_source}')
-                ''' Use Live server filename format to get pilot '''
-                lib = importlib.import_module('.'.join(['sources', track_source]))
-                pilot = lib.get_pilot_from_list(filename, pilot_list)
-            else:
-                pilot = get_pilot_from_list(filename, pilot_list)
-
-            if pilot:
-                """found a pilot for the track file.
-                dropping pilot from list and creating track obj"""
-                # print(f"Found a pilot to associate with file. dropping {pilot.name} from non scored list")
-                pilot_list[:] = [d for d in pilot_list if d.par_id != pilot.par_id]
-                mytrack = Track.read_file(filename=file, config=FlightParsingConfig, print=print)
-        else:
-            """We add track if we find a pilot in database
-            that has not yet been scored"""
-            mytrack = Track.read_file(filename=file, config=FlightParsingConfig, print=print)
-            if get_pil_track(mytrack.par_id, task_id):
-                """pilot has already been scored"""
-                print(f"Pilot with ID {mytrack.par_id} has already a valid track for task with ID {task_id}")
-                continue
-            pilot = FlightResult.read(par_id=mytrack.par_id, task_id=task_id)
-
-        """check result"""
-        if not mytrack:
-            print(
-                f"Track {filename} is not a valid track file, pilot not found in competition or pilot "
-                f"already has a track"
-            )
+        """check filenames to find pilots"""
+        pilot = lib.get_pilot_from_list(filename, pilot_list)
+        if not pilot:
+            print(f'No pilot to associate with {filename}, or pilot already has a track.')
             continue
-        elif not mytrack.date == task_date:
-            print(f"track {filename} has a different date from task")
-            continue
+
+        """found a pilot for the track file. dropping pilot from list and creating track obj"""
+        pilot_list[:] = [d for d in pilot_list if d.par_id != pilot.par_id]
 
         """pilot is registered and has no valid track yet
         moving file to correct folder and adding to the list of valid tracks"""
         track_counter += 1
         print(f"Track {track_counter}|counter")
-        mytrack.task_id = task_id
-        filename_and_path = mytrack.copy_track_file(task_path=track_path, pname=pilot.name)
-        # print(f"pilot {mytrack.par_id} associated with track {mytrack.filename}")
-        pilot.track_file = filename_and_path.name
+        pilot.track_file = save_igc_file(file, task.file_path, task.date, pilot.name, pilot.ID)
+
         print(f"processing {pilot.ID} {pilot.name}:")
         if user:
-            new_print = partial(print_to_sse, id=mytrack.par_id, channel=user)
+            pilot_print = partial(print_to_sse, id=pilot.par_id, channel=user)
             print('***************START*******************')
         else:
-            new_print = print
-        if check_g_record:
-            print('Checking G-Record...')
-            validation = validate_G_record(filename_and_path)
-            if validation == 'FAILED':
-                print('G-Record not valid')
-                data = {'par_id': pilot.par_id, 'track_id': pilot.track_id, 'Result': ''}
-                print(json.dumps(data) + '|g_record_fail')
-                continue
-            if validation == 'ERROR':
-                print('Error trying to validate G-Record')
-                continue
-            if validation == 'PASSED':
-                print('G-Record is valid')
-        verify_and_import_track(pilot, mytrack, task, print=new_print)
+            pilot_print = print
+        check_flight(pilot, mytrack, task, airspace, print=pilot_print)
+        if pilot.notifications:
+            print(f"NOTES:<br /> {'<br />'.join(n.comment for n in pilot.notifications)}")
+
+        pilots_to_save.append(pilot)
+        data = track_result_output(pilot, task.task_id)
+        pilot_print(f'{json.dumps(data)}|result')
+        print('***************END****************')
     print("*******************processed all tracks**********************")
 
-
-def verify_and_import_track(result: FlightResult, track, task, print=print):
-    from airspace import AirspaceCheck
-    from pilot.flightresult import save_track
-
-    if task.airspace_check:
-        airspace = AirspaceCheck.from_task(task)
-    else:
-        airspace = None
-    '''check flight against task'''
-    result.check_flight(track.flight, task, airspace_obj=airspace, print=print)
-    '''create map file'''
-    result.save_tracklog_map_file(task, track.flight)
-    '''save to database'''
-    save_track(result, task.id)
-    if result.notifications:
-        print(str(result.notifications))
-    print('***************END****************')
-    return result
+    '''save all succesfully processed pilots to database'''
+    update_all_results([p for p in pilots_to_save], task_id)
 
 
 def find_pilot(name):

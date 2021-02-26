@@ -959,26 +959,9 @@ def _upload_track(taskid: int, parid: int):
                     return redirect(request.url)
 
                 if frontendUtils.allowed_tracklog(tracklog.filename):
-                    if frontendUtils.production():
-                        file = frontendUtils.save_igc_background(taskid, parid, tracklog,
-                                                                 current_user.username,
-                                                                 check_g_record=check_g_record)
-                        job = current_app.task_queue.enqueue(frontendUtils.process_igc_background,
-                                                             taskid, parid, file, current_user.username, check_validity)
-                        if not file:
-                            resp = jsonify(success=False)
-                        else:
-                            resp = jsonify(success=True)
-                        return resp
-                    else:
-                        data, error = frontendUtils.process_igc(taskid, parid, tracklog)
-                        if data:
-                            resp = jsonify(data)
-                            return resp
-                        else:
-                            error = tracklog.filename + ' ' + error
-                            resp = jsonify({'error': error})
-                            return resp
+                    resp, error = frontendUtils.process_igc(taskid, parid, tracklog, current_user.username,
+                                                            check_g_record, check_validity)
+                    return jsonify(success=resp, error=error)
                 else:
                     print("That file extension is not allowed")
                     return redirect(request.url)
