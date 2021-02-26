@@ -9,6 +9,7 @@ Scoring Formula Script
 """
 from formula import FormulaPreset, Preset
 from formulas.libs.pwc import *
+from formulas import lclib
 
 ''' Formula Info'''
 # Formula Name: usually the filename in capital letters
@@ -137,65 +138,25 @@ def points_weight(task):
         task.time_points_reduction = 0
 
 
-def weightRising(p):
-    return (1 - 10 ** (9 * p - 9)) ** 5
-
-
-def weightFalling(p):
-    return (1 - 10 ** (-3 * p)) ** 2
-
-
-def weight_calc(dist_to_ess, ss_distance):
-    p = dist_to_ess / ss_distance
-    return weightRising(p) * weightFalling(p)
-
-
 def lead_coeff_function(lc, result, fix, next_fix):
-    """ Lead Coefficient formula from PWC2019"""
-    ''' C.6.3.1 Leading Coefficient (LC)
-        Each started pilot’s track log is used to calculate the Leading Coefficient (LC), by calculating the area 
-        underneath a graph defined by each track point’s time, and the distance to ESS at that time. 
-        The times used for this calculation are given in seconds from the moment when the first pilot crossed SSS, 
-        to the time when the last pilot reached ESS. For pilots who land out after the last pilot reached ESS, 
-        the calculation keeps going until they land. The distances used for the LC calculation are given in Kilometers 
-        and are the distance from each point’s position to ESS, starting from SSS, but never more than any previously 
-        reached distance. This means that the graph never “goes back”: even if the pilot flies away from goal 
-        for a while, the corresponding points in the graph will use the previously reached best distance towards ESS. 
-        Important: Previous versions of the formula used distances to ESS squared to increase the number of 
-        Leading Points awarded for leading out early in the task. 
-        This version uses a more complex weighting according to distance from ESS to give no leading points 
-        at the start, rising rapidly afterwards to give a similar linear function of distance from ESS after 
-        about 20% of the speed section.
-    '''
-    weight = weight_calc(lc.best_dist_to_ess[1], lc.ss_distance)
-    # time_interval = next_fix.rawtime - fix.rawtime
-    time = next_fix.rawtime - lc.best_start_time
-    progress = lc.best_dist_to_ess[0] - lc.best_dist_to_ess[1]
-    # print(f'weight: {weight}, progress: {progress}, time: {time}')
-    if progress <= 0 or weight == 0:
-        return 0
+    """
+    PWC2019 leading Coefficient Calculation
+    11.3.1 Leading coefficient
+    PG: weighted area calculation
+    """
+    if lc.comp_class == 'HG':
+        return lclib.classic.lc_calculation(lc, result, fix, next_fix)
     else:
-        return weight * progress * time
-
-
-def missing_area(time_interval, best_distance_to_ESS, ss_distance):
-    p = best_distance_to_ESS / ss_distance
-    return weightFalling(p) * time_interval * best_distance_to_ESS
+        return lclib.weightedarea.lc_calculation(lc, result, fix, next_fix)
 
 
 def tot_lc_calc(res, t):
     """Function to calculate final Leading Coefficient for pilots,
-    that needs to be done when all tracks have been scored"""
-    if res.result_type in ('abs', 'dnf', 'mindist', 'nyp') or not res.SSS_time:
-        '''pilot did't make Start or has no track'''
-        return 0
-    ss_distance = t.SS_distance / 1000
-    if res.ESS_time:
-        '''nothing to do'''
-        landed_out = 0
+    that needs to be done when all tracks have been scored
+    PG: weighted area calculation
+    """
+    if t.comp_class == 'HG':
+        return lclib.classic.tot_lc_calculation(res, t)
     else:
-        '''pilot did not make ESS'''
-        best_dist_to_ess = (t.opt_dist_to_ESS - res.distance_flown) / 1000  # in Km
-        missing_time = t.max_time - t.start_time  # TODO should be t.min_dept_time but using same as lead_coeff
-        landed_out = missing_area(missing_time, best_dist_to_ess, ss_distance)
-    return (res.fixed_LC + landed_out) / (1800 * ss_distance)
+        return lclib.weightedarea.tot_lc_calculation(res, t)
+

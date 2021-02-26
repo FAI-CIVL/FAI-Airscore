@@ -7,6 +7,7 @@ contains
 
 Stuart Mackintosh, Antonio Golfari - 2019
 """
+from formulas import lclib
 
 
 class LeadCoeff(object):
@@ -15,8 +16,9 @@ class LeadCoeff(object):
         self.opt_dist_to_ess = task.opt_dist_to_ESS / 1000
         self.best_dist_to_ess = [task.SS_distance / 1000]
         self.best_distance_time = 0
-        self.best_start_time = task.start_time  # TODO should be t.min_dept_time unknown until all tracks are done
+        self.best_start_time = task.start_time
         self.lib = task.formula.get_lib()
+        self.comp_class = task.comp_class
         self.summing = 0.0
 
     def reset(self):
@@ -32,50 +34,16 @@ class LeadCoeff(object):
 
 def lead_coeff_function(lc, result, fix, next_fix):
     """Lead Coefficient formula from GAP2016
+    Default fallback
     This is the default function if not present in Formula library"""
-    '''Leading coefficient
-        LC = taskTime(i)*(bestDistToESS(i-1)^2 - bestDistToESS(i)^2 )
-        i : i ? TrackPoints In SS'''
-    if lc.best_dist_to_ess[0] == lc.best_dist_to_ess[1]:
-        return 0
-    else:
-        task_time = next_fix.rawtime - result.real_start_time
-        return task_time * (lc.best_dist_to_ess[0] ** 2 - lc.best_dist_to_ess[1] ** 2) / (1800 * (lc.ss_distance ** 2))
-
-
-def lead_coeff_area(time, distance, ss_distance):
-    return distance ** 2 * time / (1800 * (ss_distance ** 2))
+    return lclib.classic.lc_calculation(lc, result, fix, next_fix)
 
 
 def tot_lc_calc(res, t):
-    """Function to calculate final Leading Coefficient for pilots,
-    that needs to be done when all tracks have been scored"""
-    '''Checking if we have a assigned status without a track, and if pilot actually did the start pilon'''
-    if res.result_type in ('abs', 'dnf', 'mindist', 'nyp') or not res.SSS_time:
-        '''pilot did't make Start or has no track'''
-        return 0
-
-    ss_distance = t.SS_distance / 1000
-    late_start_area = 0
-    landed_out = 0
-
-    '''add the leading part, from start time of first pilot to start, to my start time'''
-    if res.real_start_time > t.min_dept_time:
-        late_start_area = lead_coeff_area((res.real_start_time - t.min_dept_time), ss_distance, ss_distance)
-
-    '''add the trailing part if pilot did not make ESS, from pilot start time to task max time'''
-    if not res.ESS_time:
-        '''find task_deadline to use for LC calculation'''
-        if t.max_ess_time:
-            max_time = min(max(res.last_time, t.max_ess_time), t.max_time)  # max_time comparing should't be necessary
-        else:
-            max_time = t.max_time
-
-        best_dist_to_ess = (t.opt_dist_to_ESS - res.distance) / 1000  # in Km
-        task_time = max_time - res.real_start_time
-        landed_out = lead_coeff_area(task_time, best_dist_to_ess, ss_distance)
-
-    return late_start_area + res.fixed_LC + landed_out
+    """Lead Coefficient formula from GAP2016
+    Default fallback
+    This is the default function if not present in Formula library"""
+    return lclib.classic.tot_lc_calculation(res, t)
 
 
 def store_lc(res_id, lead_coeff):
