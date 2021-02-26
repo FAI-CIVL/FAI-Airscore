@@ -32,6 +32,21 @@ class FlightPointer(object):
         self.turnpoints = task.turnpoints
         self.optimised_turnpoints = task.optimised_turnpoints
         self.pointer = 0
+        self.descriptions = []
+
+        idx = 1
+        for tp in self.turnpoints:
+            if tp.type == 'launch':
+                self.descriptions.append('Left Launch')
+            elif tp.type == 'speed':
+                self.descriptions.append('SSS')
+            elif tp.type == 'endspeed':
+                self.descriptions.append('ESS')
+            elif tp.type == 'goal':
+                self.descriptions.append('Goal')
+            elif tp.type == 'waypoint':
+                self.descriptions.append(f'TP{str(idx).zfill(2)}')
+                idx += 1
 
     @property
     def next(self):
@@ -39,17 +54,7 @@ class FlightPointer(object):
 
     @property
     def name(self):
-        if self.type == 'launch':
-            return 'Left Launch'
-        elif self.type == 'speed':
-            return 'SSS'
-        elif self.type == 'endspeed':
-            return 'ESS'
-        if self.type == 'goal':
-            return 'Goal'
-        elif self.type == 'waypoint':
-            wp = [tp for tp in self.turnpoints if tp.type == 'waypoint']
-            return 'TP{:02}'.format(wp.index(self.next) + 1)
+        return self.descriptions[self.pointer]
 
     @property
     def total_number(self):
