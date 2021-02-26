@@ -160,7 +160,7 @@ def delete_region(reg_id):
         db.query(R).filter_by(reg_id=reg_id).delete(synchronize_session=False)
 
 
-def get_openair(reg_id: int) -> str:
+def get_openair(reg_id: int) -> str or None:
     try:
         return R.get_by_id(reg_id).openair_file
     except AttributeError:

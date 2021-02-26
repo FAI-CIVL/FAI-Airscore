@@ -93,7 +93,9 @@ Competition Settings
         <section class="tab-row row-wrap form">
             {{ render_field(compform.formula, tooltip=True, disabled=readonly) }}
             {{ render_field(compform.overall_validity, tooltip=True, disabled=readonly) }}
+            <div id="validity_param_div" {% if compform.overall_validity.data == 'all' %}style="display:none"{% endif %}>
             {{ render_field(compform.validity_param, 5, tooltip=True, disabled=readonly) }}
+            </div>
         </section>
         <section class="tab-row row-wrap form">
             {{ render_field(compform.min_dist, 5, tooltip=True, disabled=readonly) }}

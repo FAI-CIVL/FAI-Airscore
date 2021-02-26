@@ -166,8 +166,8 @@ class CompForm(FlaskForm):
                               ' or over change in daylight savings')
 
     pilot_registration = SelectField('Pilot Entry', choices=[(1, 'Registered'), (0, 'Open')], coerce=int,
-                                     description='Registered - only pilots registered are flying, '
-                                                 'open - all tracklogs uploaded are considered as entires')
+                                     default=1, description='Registered - only pilots registered are flying, '
+                                                            'open - all tracklogs uploaded are considered as entires')
 
     track_sources = list_track_sources()
     track_source = SelectField('Track Source', choices=track_sources, id='select_source',

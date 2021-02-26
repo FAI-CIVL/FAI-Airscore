@@ -200,7 +200,6 @@ def get_pil_track(par_id: int, task_id: int):
 def read_tracklog_map_result_file(par_id: int, task_id: int):
     """create task and track objects"""
     from pathlib import Path
-
     import jsonpickle
 
     res_path = Path(MAPOBJDIR, 'tracks', str(task_id))
