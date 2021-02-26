@@ -10,10 +10,11 @@ import re
 import unicodedata
 from os import fsdecode, listdir
 from pathlib import Path
-
+from airspace import AirspaceCheck
 from db.conn import db_session
-from Defines import MAPOBJDIR, TRACKDIR, track_formats, track_sources
-from pilot.flightresult import FlightResult
+from Defines import MAPOBJDIR, TRACKDIR, track_formats, track_sources, IGCPARSINGCONFIG
+from igc_lib import Flight
+from pilot.flightresult import FlightResult, save_track
 from sqlalchemy import and_
 
 
@@ -47,7 +48,6 @@ def extract_tracks(file, folder):
 
 def get_tracks(directory):
     """Checks files and imports what appear to be tracks"""
-    from Defines import track_formats
 
     files = []
 
@@ -55,9 +55,9 @@ def get_tracks(directory):
     print(f"Looking for files \n")
 
     """check files in temporary directory, and get only tracks"""
-    for file in listdir(directory):
-        print(f"checking: {file}")
-        file = Path(directory, file)
+    for el in listdir(directory):
+        print(f"checking: {el}")
+        file = Path(directory, el)
         if not file.name.startswith(tuple(['_', '.'])) and file.suffix.strip('.').lower() in track_formats:
             """file is a valid track"""
             print(f"{file} is a valid track")
@@ -263,7 +263,6 @@ def read_tracklog_map_result_file(par_id: int, task_id: int):
 
 def create_tracklog_map_result_file(par_id: int, task_id: int):
     from airspace import AirspaceCheck
-    from igc_lib import Flight
     from pilot import flightresult
     from task import Task
 
@@ -331,8 +330,14 @@ def get_pilot_from_list(filename: str, pilots: list):
     )
     format_list = [re.findall(r'[\da-zA-Z]+', el) for el in filename_formats]
 
-    '''Get string'''
     string = Path(filename).stem
+    '''testing before against preferred format: Pilot ID as last element, string.ID.igc'''
+    if string.split('.')[-1].isdigit():
+        pilot = next((p for p in pilots if p.ID == int(string.split('.')[-1])), None)
+        if pilot:
+            print(f'found {pilot.ID} {pilot.name} using ID in filename')
+            return pilot
+    '''Get string'''
     elements = re.findall(r"[\d]+|[a-zA-Z']+", string)
     num_of_el = len(elements)
     if any(el for el in format_list if len(el) == num_of_el):
@@ -375,3 +380,137 @@ def get_pilot_from_list(filename: str, pilots: list):
                         '''we found a pilot'''
                         return pilot
     return None
+
+
+def validate_G_record(igc_filename):
+    """validates g record by passing the file to a validation server.
+    Assumption is that the protocol is the same as the FAI server (POST)
+    :argument igc_filename (full path and filename of igc_file)
+    :returns PASSED, FAILED or ERROR"""
+    from Defines import G_Record_validation_Server
+    from requests import post
+
+    try:
+        with open(igc_filename, 'rb') as igc:
+            file = {'igcfile': igc}
+            r = post(G_Record_validation_Server, files=file)
+            if r.json()['result'] in ('PASSED', 'FAILED'):
+                return r.json()['result']
+            else:
+                return 'ERROR'
+    except IOError:
+        print(f"Could not read file:{igc_filename}")
+        return 'ERROR'
+
+
+def igc_parsing_config_from_yaml(yaml_filename):
+    """reads the settings from a YAML file and creates a
+    new FlightParsingConfig object for use when processing track files"""
+    from igc_lib import FlightParsingConfig
+    if yaml_filename[:-5].lower != '.yaml':
+        yaml_filename = yaml_filename + '.yaml'
+    yaml_config = read_igc_config_yaml(yaml_filename)
+    if yaml_config is None:
+        return None
+
+    config = FlightParsingConfig()
+    yaml_config.pop('editable', None)
+    yaml_config.pop('description', None)
+    yaml_config.pop('owner', None)
+    for setting in yaml_config:
+        setattr(config, setting, yaml_config[setting])
+    return config
+
+
+def read_igc_config_yaml(yaml_filename):
+    import ruamel.yaml
+
+    yaml = ruamel.yaml.YAML()
+    full_filename = Path(IGCPARSINGCONFIG, yaml_filename)
+    try:
+        with open(full_filename) as fp:
+            return yaml.load(fp)
+    except IOError:
+        return None
+
+
+def save_igc_config_yaml(yaml_filename, yaml_data):
+    import ruamel.yaml
+
+    yaml = ruamel.yaml.YAML()
+    full_filename = Path(IGCPARSINGCONFIG, yaml_filename)
+    try:
+        with open(full_filename, 'w') as fp:
+            yaml.dump(yaml_data, fp)
+    except IOError:
+        return None
+    return True
+
+
+def create_igc_filename(file_path: str, date, pilot_name: str, pilot_id: int = None) -> Path:
+    """creates a name for the track
+    name_surname_date_time_index.igc
+    if we use flight date then we need an index for multiple tracks"""
+    import glob
+
+    if not Path(file_path).is_dir():
+        Path(file_path).mkdir(mode=0o755)
+    pname = remove_accents('_'.join(pilot_name.replace('_', ' ').replace("'", ' ').lower().split()))
+    index = str(len(glob.glob(file_path + '/' + pname + '*.igc')) + 1).zfill(2)
+    if pilot_id:
+        filename = '_'.join([pname, str(date), index]) + f'.{pilot_id}.igc'
+    else:
+        filename = '_'.join([pname, str(date), index]) + '.igc'
+    fullname = Path(file_path, filename)
+    return fullname
+
+
+def import_igc_file(file, task, parsing_config, check_g_record=False) -> Flight or str:
+    from calcUtils import epoch_to_date
+    if check_g_record:
+        print('Checking G-Record...')
+        validation = validate_G_record(file)
+        if validation == 'FAILED':
+            return False, {'code': 'g_record_fail', 'text': f'G-Record not valid'}
+        elif validation == 'ERROR':
+            return False, {'code': 'g_record_error', 'text': f'Error trying to validate G-Record'}
+
+    flight = Flight.create_from_file(filename=file, config_class=parsing_config)
+
+    '''check flight'''
+    if not flight:
+        return (False,
+                {'code': 'track_error',
+                 'text': f"Track is not a valid track file, pilot not found in competition "
+                         f"or pilot already has a track"})
+    elif not flight.valid:
+        return (False,
+                {'code': 'track_error',
+                 'text': f"IGC does not meet quality standard set by igc parsing config. "
+                         f"Notes: {'; '.join(flight.notes)}"})
+
+    elif not epoch_to_date(flight.date_timestamp) == task.date:
+        return False, {'code': 'track_error', 'text': f"track has a different date from task"}
+
+    return flight, None
+
+
+def check_flight(result: FlightResult, track: Flight, task, airspace=None, print=print):
+    if task.airspace_check and not airspace:
+        print(f'should not be here')
+        airspace = AirspaceCheck.from_task(task)
+    '''check flight against task'''
+    result.check_flight(track, task, airspace_obj=airspace, print=print)
+    '''create map file'''
+    result.save_tracklog_map_file(task, track)
+    # '''save to database'''
+    # save_track(result, task.id)
+
+
+def save_igc_file(file, task_path: str, task_date, pilot_name, pid: int = None) -> str:
+    fullname = create_igc_filename(task_path, task_date, pilot_name, pid)
+    if isinstance(file, (Path, str)):
+        file.rename(fullname)
+    else:
+        file.save(fullname)
+    return Path(fullname).name

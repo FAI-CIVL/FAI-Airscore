@@ -25,7 +25,7 @@ from pathlib import Path
 from airspace import AirspaceCheck
 from logger import Logger
 from pilot.flightresult import FlightResult
-from pilot.track import create_igc_filename, igc_parsing_config_from_yaml
+from trackUtils import create_igc_filename, igc_parsing_config_from_yaml
 from task import Task
 
 '''parameters for livetracking'''

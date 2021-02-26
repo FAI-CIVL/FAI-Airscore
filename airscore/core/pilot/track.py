@@ -9,7 +9,11 @@ and creates an object containing all info about the flight
 Antonio Golfari, Stuart Mackintosh - 2019
 """
 
-import glob
+# This library is not used at the moment.
+# I decided to leave the code here as in the future we could decide to use it,
+# especially is we need to use different tracks formats.
+# At the moment we use igc_lib library, and just IGC format.
+
 import json
 from pathlib import Path
 from shutil import copyfile
@@ -17,11 +21,9 @@ from shutil import copyfile
 from calcUtils import epoch_to_date
 from db.conn import db_session
 from db.tables import TblTaskResult
-from Defines import IGCPARSINGCONFIG, track_formats
-from igc_lib import Flight, FlightParsingConfig
-from trackUtils import find_pilot, get_task_fullpath
-
-# from notification import Notification
+from Defines import track_formats
+from igc_lib import Flight
+from trackUtils import find_pilot, get_task_fullpath, create_igc_filename
 
 ''' Accepted formats list
     When checking tracks, this are formats that will be accepted and processed
@@ -236,85 +238,30 @@ class Track(object):
                 self.track_type = None
             print(f"  ** FILENAME: {self.filename} TYPE: {self.track_type} \n")
 
+    def copy_track_file(self, task_path, pname=None, pid=None):
+        """copy track file in the correct folder and with correct name
+        name could be changed as the one XContest is sending, or rename that one, as we wish
+        if path or pname is None will calculate. note that if bulk importing it is better to pass these values
+        rather than query DB for each track"""
+        from db.tables import TblParticipant as P
 
-def validate_G_record(igc_filename):
-    """validates g record by passing the file to a validation server.
-    Assumtion is that the protocol is the same as the FAI server (POST)
-    :argument igc_filename (full path and filename of igc_file)
-    :returns PASSED, FAILED or ERROR"""
-    from Defines import G_Record_validation_Server
-    from requests import post
-
-    try:
-        with open(igc_filename, 'rb') as igc:
-            file = {'igcfile': igc}
-            r = post(G_Record_validation_Server, files=file)
-            if r.json()['result'] in ('PASSED', 'FAILED'):
-                return r.json()['result']
-            else:
-                return 'ERROR'
-    except IOError:
-        print(f"Could not read file:{igc_filename}")
-        return 'ERROR'
-
-
-def igc_parsing_config_from_yaml(yaml_filename):
-    """reads the settings from a YAML file and creates a
-    new FlightParsingConfig object for use when processing track files"""
-    if yaml_filename[:-5].lower != '.yaml':
-        yaml_filename = yaml_filename + '.yaml'
-    yaml_config = read_igc_config_yaml(yaml_filename)
-    if yaml_config is None:
+        src_file = self.filename
+        if pname is None:
+            # get pilot details.
+            pilot = P.get_by_id(self.par_id)
+            pname = pilot.name
+            pid = pilot.ID
+        if task_path:
+            fullname = create_igc_filename(task_path, self.date, pname, pid)
+            print(f'path to copy file: {fullname}')
+            """copy file"""
+            try:
+                copyfile(src_file, fullname)
+                self.track_file = fullname.name
+                print(f'file successfully copied to : {self.filename}')
+                return fullname
+            except:
+                print('Error copying file:', fullname)
+        else:
+            print('error, no path given')
         return None
-
-    config = FlightParsingConfig()
-    yaml_config.pop('editable', None)
-    yaml_config.pop('description', None)
-    yaml_config.pop('owner', None)
-    for setting in yaml_config:
-        setattr(config, setting, yaml_config[setting])
-    return config
-
-
-def read_igc_config_yaml(yaml_filename):
-    import ruamel.yaml
-
-    yaml = ruamel.yaml.YAML()
-    full_filename = path.join(IGCPARSINGCONFIG, yaml_filename)
-    try:
-        with open(full_filename) as fp:
-            return yaml.load(fp)
-    except IOError:
-        return None
-
-
-def save_igc_config_yaml(yaml_filename, yaml_data):
-    import ruamel.yaml
-
-    yaml = ruamel.yaml.YAML()
-    full_filename = path.join(IGCPARSINGCONFIG, yaml_filename)
-    try:
-        with open(full_filename, 'w') as fp:
-            yaml.dump(yaml_data, fp)
-    except IOError:
-        return None
-    return True
-
-
-def create_igc_filename(file_path, date, pilot_name: str, pilot_id: int = None) -> Path:
-    """creates a name for the track
-    name_surname_date_time_index.igc
-    if we use flight date then we need an index for multiple tracks"""
-    from trackUtils import remove_accents
-
-    if not Path(file_path).is_dir():
-        Path(file_path).mkdir(mode=0o755)
-    # pname = pilot_name.replace(' ', '_').lower()
-    pname = remove_accents('_'.join(pilot_name.replace('_', ' ').replace("'", ' ').lower().split()))
-    index = str(len(glob.glob(file_path + '/' + pname + '*.igc')) + 1).zfill(2)
-    if pilot_id:
-        filename = '_'.join([pname, str(date), index]) + f'.{pilot_id}.igc'
-    else:
-        filename = '_'.join([pname, str(date), index]) + '.igc'
-    fullname = Path(file_path, filename)
-    return fullname

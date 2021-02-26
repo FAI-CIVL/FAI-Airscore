@@ -660,7 +660,7 @@ def process_igc(task_id: int, par_id: int, tracklog):
     from calcUtils import epoch_to_date
     from igc_lib import Flight
     from pilot.flightresult import FlightResult, save_track
-    from pilot.track import create_igc_filename, igc_parsing_config_from_yaml
+    from trackUtils import check_flight, igc_parsing_config_from_yaml, import_igc_file, save_igc_file
     from task import Task
 
     pilot = FlightResult.read(par_id, task_id)
