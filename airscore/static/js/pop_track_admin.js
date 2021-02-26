@@ -342,7 +342,7 @@ $(document).ready(function(){
           });
           update_track_pilot_stats();
         }
-        else if (data.par_id){
+        else if (data.id){
           update_row($.parseJSON(data.message));
         }
       }, false);

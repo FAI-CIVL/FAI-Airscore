@@ -5,7 +5,7 @@ Competition Settings
 {% endblock %}
 
 {% block back %}
-<a href="{{ url_for('user.pilot_admin', compid=compid)}}" class='btn btn-info' type='button'>
+<a href="{{ url_for('user.pilot_admin', compid=compid)}}" class='btn btn-info'>
   Registered Pilots
 </a>
 {% endblock %}
@@ -164,7 +164,7 @@ Competition Settings
           <div class="row-wrap">
             {{ render_field(compform.airspace_check, tooltip=True, disabled=readonly) }}
             {% if compform.airspace_check.data %}
-            <a href="{{ url_for('user.airspace_check_admin', compid=compid) }}" class='btn btn-info ml-2' type='button'>
+            <a href="{{ url_for('user.airspace_check_admin', compid=compid) }}" class='btn btn-info ml-2'>
               Parameters
             </a>
           {% endif %}
@@ -386,7 +386,7 @@ Competition Settings
 </div>
 <!--Modal ends here--->
 
-<!--- add-edit-participant details modal starts here--->
+<!--- add-edit-ranking modal starts here--->
 <div id='rank_modal' class='modal fade' role='dialog'>
   <div class='modal-dialog'>
     <div class='modal-content'>
@@ -412,12 +412,12 @@ Competition Settings
             <section class="pl-1 row-wrap panel-row" id="rank_attr">
               {{ render_field(rankingform.attr_id) }}
             </section>
-            <section class="pl-1 row-wrap panel-row" id="rank_value">
+            <section class="pl-1 row-wrap panel-row" id="rank_key_value">
               <p id="rank_value_comment"></p>
               {{ render_field(rankingform.rank_value, 30) }}
             </section>
             <section class="pl-1 row-wrap panel-row" id="custom_link">
-              <a href="{{ url_for('user.pilot_admin', compid=compid)}}" class='btn btn-info' type='button'>
+              <a href="{{ url_for('user.pilot_admin', compid=compid)}}" class='btn btn-info'>
                 Custom Attributes
               </a>
             </section>
@@ -433,7 +433,7 @@ Competition Settings
     </div>
   </div>
 </div>
-<!--- add-edit-participant details-Modal ends here--->
+<!--- add-edit-ranking-Modal ends here--->
 
 {% endblock %}
 

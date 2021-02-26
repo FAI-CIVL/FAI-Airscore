@@ -9,15 +9,15 @@ Task Settings
 {% endblock %}
 
 {% block back %}
-<a href="{{ url_for('user.comp_settings_admin', compid=compid)}}" class='btn btn-info' type='button'>
+<a href="{{ url_for('user.comp_settings_admin', compid=compid)}}" class='btn btn-info'>
   Back to Competition Settings
 </a>
 {% if not session.external %}
-<a href="{{ url_for('user.track_admin', taskid=taskid)}}" class='btn btn-info ml-2' type='button'>
+<a href="{{ url_for('user.track_admin', taskid=taskid)}}" class='btn btn-info ml-2'>
   Tracks
 </a>
 {% endif %}
-<a href="{{ url_for('user.task_score_admin', taskid=taskid)}}" class='btn btn-info ml-2' type='button'>
+<a href="{{ url_for('user.task_score_admin', taskid=taskid)}}" class='btn btn-info ml-2'>
   Task Scores
 </a>
 {% endblock %}
@@ -110,7 +110,7 @@ Task Settings
             {{ render_field(taskform.QNH, 7, tooltip=True, disabled=readonly) }}
             {{ render_field(taskform.airspace_check, tooltip=True, disabled=readonly) }}
             {% if taskform.airspace_check.data %}
-            <a href="{{ url_for('user.airspace_check_admin', compid=compid) }}" class='btn btn-info ml-2' type='button'>
+            <a href="{{ url_for('user.airspace_check_admin', compid=compid) }}" class='btn btn-info ml-2'>
               Parameters
             </a>
             {% endif %}

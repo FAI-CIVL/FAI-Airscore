@@ -10,13 +10,13 @@
 {% endblock %}
 
 {% block back %}
-<a href="{{ url_for('user.comp_settings_admin', compid=compid)}}" class='btn btn-info' type='button'>
+<a href="{{ url_for('user.comp_settings_admin', compid=compid)}}" class='btn btn-info'>
   Back to Competition Settings
 </a>
-<a href="{{ url_for('user.task_admin', taskid=taskid)}}" class='btn btn-info ml-2' type='button'>
+<a href="{{ url_for('user.task_admin', taskid=taskid)}}" class='btn btn-info ml-2'>
   Task Settings
 </a>
-<a href="{{ url_for('user.task_score_admin', taskid=taskid)}}" class='btn btn-info ml-2' type='button'>
+<a href="{{ url_for('user.task_score_admin', taskid=taskid)}}" class='btn btn-info ml-2'>
   Task Scores
 </a>
 {% endblock %}

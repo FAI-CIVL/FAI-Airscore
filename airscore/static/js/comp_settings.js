@@ -2,6 +2,7 @@
 var dropdown = {
     category: $('#select_category'),
     formula: $('#select_formula'),
+    scoring: $('#overall_validity'),
     igc_config: $('#igc_parsing_file'),
     classification: $('#select_classification'),
     ranking_type: $('#rank_type')
@@ -11,7 +12,7 @@ $(document).ready(function() {
   get_tasks( compid );
   get_scorekeepers( compid );
 
-//  populate_rankings( dropdown.category.val() );
+  // populate_rankings( dropdown.category.val() );
   document.getElementById("link_igc_config").setAttribute("href", "/users/igc_parsing_config/" + dropdown.igc_config.val());
   update_rankings();
 
@@ -45,6 +46,13 @@ $(document).ready(function() {
   // event listener to formula dropdown change
   dropdown.formula.on('change', function() {
      ask_update('formula');
+  });
+
+  // event listener to scoring dropdown change
+  dropdown.scoring.on('change', function() {
+    console.log(dropdown.scoring.val());
+    if (dropdown.scoring.val() == 'all') $('#validity_param_div').hide(); else $('#validity_param_div').show();
+
   });
 
   // event listener to igc config dropdown change
@@ -395,24 +403,24 @@ function update_ranking_modal(rank_type) {
   console.log('rank_type: '+rank_type);
   let names = ['#cert_id', '#min_date', '#max_date', '#attr_id', '#rank_value'];
   $.each( names,  (i, el) => $(el).val(''));
-  $.each([$('#rank_cert'), $('#rank_date'), $('#rank_attr'), $('#rank_value'), $('#custom_link')],  (i, el) => el.hide());
+  $.each([$('#rank_cert'), $('#rank_date'), $('#rank_attr'), $('#rank_key_value'), $('#custom_link')],  (i, el) => el.hide());
   if (rank_type == 'cert') {
     $('#cert_id').val($('#cert_id option:first').val());
     $('#rank_cert').show();
   }
   else if (rank_type == 'birthdate') $('#rank_date').show();
   else if (rank_type == 'nat') {
-    $('#rank_value').show();
+    $('#rank_key_value').show();
     $('label[for=rank_value]').html('FAI 3 Letters Nation Code');
   }
   else if (rank_type == 'female') {
-    $('#rank_value').show();
+    $('#rank_key_value').show();
     $('label[for=rank_value]').html('Minimum number of female participants');
   }
   else if (rank_type == 'custom') {
     $('#attr_id').val($('#attr_id option:first').val());
     $('label[for=rank_value]').html('Attribute Value');
-    $.each([$('#rank_attr'), $('#rank_value'), $('#custom_link')], ( (i, el) => el.show()));
+    $.each([$('#rank_attr'), $('#rank_key_value'), $('#custom_link')], ( (i, el) => el.show()));
   };
 }
 
@@ -421,9 +429,9 @@ $('#ranking_form').submit( function (e) {
   $('#rank_modal .modal-errors').empty();  // delete all previous errors
   if ( check_ranking_modal() ) {
     let mydata = $('#ranking_form').serialize();
-    let cranid = $('#rank_id').val()
+    let rankid = $('#rank_id').val()
     let url = "/users/_add_comp_ranking/"+ compid;
-    if ( cranid ) url = "/users/_modify_comp_ranking/"+cranid;
+    if ( rankid ) url = "/users/_modify_comp_ranking/"+rankid;
     $.ajax({
       type: "POST",
       url: url,
@@ -434,7 +442,7 @@ $('#ranking_form').submit( function (e) {
           update_rankings();
           $('#rank_modal').modal('toggle');
           let message = 'Ranking successfully added.';
-          if ( cranid ) message = 'Ranking successfully updated.';
+          if ( rankid ) message = 'Ranking successfully updated.';
           create_flashed_message(message, 'info');
         }
         else {

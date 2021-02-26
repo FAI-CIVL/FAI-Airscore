@@ -10,11 +10,11 @@ Airspace Check Settings
 
 {% block back %}
 {% if taskid %}
-<a href="{{ url_for('user.task_admin', taskid=taskid)}}" class='btn btn-info' type='button'>
+<a href="{{ url_for('user.task_admin', taskid=taskid)}}" class='btn btn-info'>
   Back to Task Settings
 </a>
 {% elif compid %}
-<a href="{{ url_for('user.comp_settings_admin', compid=compid)}}" class='btn btn-info' type='button'>
+<a href="{{ url_for('user.comp_settings_admin', compid=compid)}}" class='btn btn-info'>
   Back to Competition Settings
 </a>
 {% endif %}
