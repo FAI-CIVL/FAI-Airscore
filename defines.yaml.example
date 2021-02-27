@@ -2,7 +2,7 @@
 
 # on/off ability to see and reuse waypoint and airspace files between comps.
 # recommended for small user base. i.e. national associations
-waypoint/airspace_file_library: on
+waypoint/airspace_file_library: off
 
 # store pilots in airscore for use in comps.
 # The alternative is to import a list of competitors for each comp.
@@ -55,7 +55,7 @@ sanctions:
   - FAI 1
 
 igc_sources:
-  xcontest: on
+  xcontest: off
   flymaster: on
 
 g_record_validation_server: http://vali.fai-civl.org/api/vali/json
