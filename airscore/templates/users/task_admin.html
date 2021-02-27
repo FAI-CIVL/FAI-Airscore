@@ -188,7 +188,7 @@ Task Settings
           <section class="tab-row row-wrap form">
             {{ render_field(turnpointform.name, 8, tooltip=True) }}
           </section>
-          <section class="tab-row row-wrap form">
+          <section class="tab-row row-wrap form" id="new_waypoint_form">
             {{ render_field(turnpointform.number, 2, tooltip=True) }}
             {{ render_field(turnpointform.type, tooltip=True) }}
             <div class='display-if' data-target_name='type' data-target_type='select'
@@ -211,7 +211,7 @@ Task Settings
             </div>
           </section>
           <section class="panel-row row-wrap button">
-            <button id='save_task_button' class='btn btn-success' type='button' onclick='save_turnpoint()'>
+            <button id='add_waypoint_button' class='btn btn-success' type='button' onclick='save_turnpoint()'>
               Add
             </button>
             <p id='add_tp_spinner'></p>

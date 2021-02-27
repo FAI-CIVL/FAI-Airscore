@@ -101,23 +101,43 @@ function update_turnpoints(json) {
       return 'id_' + data.wpt_id;
     },
     initComplete: function(settings) {
-      var table = $('#task_wpt_table');
-      var rows = $("tr", table).length-1;
-      // Get number of all columns
-      var numCols = table.DataTable().columns().nodes().length;
-      console.log('numCols='+numCols);
-      for ( var col=1; col<numCols; col++ ) {
-        var empty = true;
-        table.DataTable().column(col).data().each( val => {
-          if (val != "") {
-            empty = false;
-            return false;
-          }
-        });
-        if (empty) {
-          table.DataTable().column( col ).visible( false );
-        }
+      var table = $('#task_wpt_table').DataTable();
+      var rows = $("tr", $('#task_wpt_table')).length-1;
+
+      // manage wpt type selector
+      $("#type").children('option').hide();
+      $("#new_waypoint_form").show();
+      $("#type").prop('disabled', false).val('');
+      $("#add_waypoint_button").prop('disabled', false);
+      let wpt_type = table
+                      .column('type:name')
+                      .data()
+                      .toArray();
+      if ( !wpt_type.find(a =>a.includes('Launch')) ) {
+        $("#type option[value='launch']").show();
+        $("#type").val('launch');
       }
+      else if ( !wpt_type.find(a =>a.includes('SSS')) ) {
+        $("#type option[value='speed']").show();
+        $("#type option[value='waypoint']").show();
+        $("#type").val('speed');
+      }
+      else if ( !wpt_type.find(a =>a.includes('ESS')) ) {
+        $("#type option[value='endspeed']").show();
+        $("#type option[value='waypoint']").show();
+        $("#type").val('waypoint');
+      }
+      else if ( !wpt_type.find(a =>a.includes('Goal')) ) {
+        $("#type option[value='goal']").show();
+        $("#type option[value='waypoint']").show();
+        $("#type").val('goal');
+      }
+      else {
+        $("#add_waypoint_button").prop('disabled', true);
+        $("#type").prop('disabled', true).val('');
+        $("#new_waypoint_form").hide();
+      }
+      $("#type").trigger('change');
     }
   });
   $('#number').val(json.next_number);
@@ -125,7 +145,7 @@ function update_turnpoints(json) {
 }
 
 function save_turnpoint(){
-  $('#save_task_button').hide();
+  $('#add_waypoint_button').hide();
   $('#add_tp_spinner').html('<div class="spinner-border" role="status"><span class="sr-only"></span></div>');
 
   var radius = $('#radius').val();
@@ -148,13 +168,12 @@ function save_turnpoint(){
     dataType: "json",
     success: function (response) {
       if(task.isset != null && response.task_set != task.isset) {
-//        update_turnpoints(response);
         console.log('js: '+task.isset+', response: '+response.task_set)
         location.reload(true);
         return;
       }
       else {
-        $('#save_task_button').show();
+        $('#add_waypoint_button').show();
         $('#add_tp_spinner').html('');
         update_turnpoints(response);
       }
@@ -164,7 +183,7 @@ function save_turnpoint(){
 
 function delete_tp(tpid, partial_d){
     var mydata = new Object();
-    mydata.partial_distance = partial_d;
+    mydata.partial_distance = partial_d ? partial_d : "";
     mydata.taskid = taskid;
     $('#delete_confirmed').hide();
     $('#delete_spinner').html('<div class="spinner-border" role="status"><span class="sr-only"></span></div>');
