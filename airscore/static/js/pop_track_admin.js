@@ -225,39 +225,38 @@ function get_lt_status() {
       $('#lt_modal_button').hide();
       console.log(response);
       if ( response.success ) {
-        $('#lt_details_main').text(response.status);
+        $('#lt_details_main').html('STATUS: ' + response.status);
         if (response.meta) {
           let data = '';
           $.each(response.meta, key => {
             let title = key.replace(/_/g,' ');
+            let value = response.meta[key];
             if (key == 'last_update') {
               let time = parseInt(new Date().getTime() / 1000);
-              let elapsed = time - parseInt(response.meta[key]);
-              console.log('time: ' + time + 'last update: ' + parseInt(response.meta[key]));
-              data += title + ': ' + elapsed + ' seconds ago<br />';
+              value = time - parseInt(response.meta[key]);
             }
-            else {
-              data += title + ': ' + response.meta[key] + '<br />';
-            }
+            data += title + ':  <span class="font-weight-bold">' + value + '</span><br />';
           });
           $('#lt_details_secondary').html(data);
         }
         $('#lt_modal_button').attr("onclick","window.open('/live/"+taskid+"', '_blank')").text('LIVE Rankings').show();
-        $('#livetracking_button').text('Live Tracking Info');
+        $('#livetracking_button').removeClass( "btn-primary btn-warning" ).addClass( "btn-success" ).text('Live Tracking Info');
+        update_track_pilot_stats();
       }
       else if ( response.error) {
         $('#lt_details_main').text('ERROR');
         $('#lt_details_secondary').text(response.error);
         $('#lt_modal_button').attr("onclick","start_livetracking()").text('TRY AGAIN').show();
-        $('#livetracking_button').text('Live Tracking');
+        $('#livetracking_button').removeClass( "btn-primary btn-success" ).addClass( "btn-warning" ).text('Live Tracking');
+        update_track_pilot_stats();
       }
       else {
         $('#lt_details_main').text('Start Live Tracking');
         $('#lt_details_secondary').text('');
         $('#lt_modal_button').attr("onclick","start_livetracking()").text('START').show();
         $('#livetracking_button').text('Live Tracking');
+        $('#livetracking_button').removeClass( "btn-warning btn-success" ).addClass( "btn-primary" ).text('Live Tracking');
       }
-      $('#lt_modal').modal('show');
     }
   });
 }
@@ -361,8 +360,21 @@ function choose_file(par_id, g_overide=false, v_overide=false) {
 }
 
 $(document).ready(function(){
+
   populate_track_admin(taskid);
   update_track_pilot_stats();
+
+  // check livetracking status if feature is available
+  if ( $('#livetracking_button').length ) {
+    get_lt_status();
+
+    // listener
+    $('#livetracking_button').click( function() {
+      get_lt_status();
+      $('#lt_modal').modal('show');
+    });
+  }
+
   console.log('production='+production);
 
   function initES() {

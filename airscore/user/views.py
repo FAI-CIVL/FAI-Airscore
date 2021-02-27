@@ -1866,10 +1866,23 @@ def _delete_ranking(rankid: int):
 @blueprint.route('/_get_lt_info/<int:taskid>', methods=['GET', 'POST'])
 @login_required
 def _get_lt_info(taskid: int):
+    from Defines import LIVETRACKDIR
+    from result import open_json_file
+    from calcUtils import epoch_to_string
     job_id = f'job_livetracking_task_{taskid}'
     job = current_app.task_queue.fetch_job(job_id)
     if job is None:
-        resp = {'success': False, 'status': 'unknown'}
+        '''check if we have a lt file'''
+        if Path(LIVETRACKDIR, str(taskid)).is_file():
+            data = open_json_file(Path(LIVETRACKDIR, str(taskid)))
+            timestamp = epoch_to_string(data['file_stats']['timestamp'], data['info']['time_offset'])
+            resp = {
+                'success': True,
+                'status': 'ended',
+                'meta': {'timestamp': timestamp }
+            }
+        else:
+            resp = {'success': False, 'status': 'unknown'}
     elif job.is_failed:
         resp = {'success': False, 'error': job.exc_info.strip().split('\n')[-1]}
     else:

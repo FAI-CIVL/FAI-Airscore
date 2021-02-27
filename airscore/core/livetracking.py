@@ -286,7 +286,7 @@ class LiveTracking(object):
         from calcUtils import epoch_to_string
 
         job = get_current_job()
-        job.meta.update({'last_update': time.time(), 'last_update_string': '', 'pilots_flying': 0, 'lt_status': ''})
+        job.meta.update({'last_update': time.time(), 'timestamp': '', 'pilots_flying': 0, 'lt_status': ''})
 
         if not self.properly_set:
             print(f'Livetracking source is not set properly.')
