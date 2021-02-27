@@ -215,6 +215,69 @@ function choose_zip_file(){
   $('#bulk_fileupload').click();
 }
 
+function get_lt_status() {
+  $.ajax({
+    type: "GET",
+    url: '/users/_get_lt_info/'+taskid,
+    contentType:"application/json",
+    dataType: "json",
+    success: function ( response ) {
+      $('#lt_modal_button').hide();
+      console.log(response);
+      if ( response.success ) {
+        $('#lt_details_main').text(response.status);
+        if (response.meta) {
+          let data = '';
+          $.each(response.meta, key => {
+            let title = key.replace(/_/g,' ');
+            if (key == 'last_update') {
+              let time = parseInt(new Date().getTime() / 1000);
+              let elapsed = time - parseInt(response.meta[key]);
+              console.log('time: ' + time + 'last update: ' + parseInt(response.meta[key]));
+              data += title + ': ' + elapsed + ' seconds ago<br />';
+            }
+            else {
+              data += title + ': ' + response.meta[key] + '<br />';
+            }
+          });
+          $('#lt_details_secondary').html(data);
+        }
+        $('#lt_modal_button').attr("onclick","window.open('/live/"+taskid+"', '_blank')").text('LIVE Rankings').show();
+        $('#livetracking_button').text('Live Tracking Info');
+      }
+      else if ( response.error) {
+        $('#lt_details_main').text('ERROR');
+        $('#lt_details_secondary').text(response.error);
+        $('#lt_modal_button').attr("onclick","start_livetracking()").text('TRY AGAIN').show();
+        $('#livetracking_button').text('Live Tracking');
+      }
+      else {
+        $('#lt_details_main').text('Start Live Tracking');
+        $('#lt_details_secondary').text('');
+        $('#lt_modal_button').attr("onclick","start_livetracking()").text('START').show();
+        $('#livetracking_button').text('Live Tracking');
+      }
+      $('#lt_modal').modal('show');
+    }
+  });
+}
+
+function start_livetracking() {
+  $.ajax({
+    type: "GET",
+    url: '/users/_start_task_livetracking/'+taskid,
+    contentType:"application/json",
+    dataType: "json",
+    success: function ( response ) {
+      $('#lt_modal_button').hide();
+      if ( response.success ) {
+        $('#livetracking_button').text('Live Tracking Info');
+      }
+      $('#lt_modal').modal('hide');
+    }
+  });
+}
+
 function choose_file_prod(par_id, g_overide=false, v_overide=false){
   var filename;
   var suffix = '';
@@ -310,6 +373,14 @@ $(document).ready(function(){
           setTimeout(initES, 5000);
         }
       };
+      es.addEventListener('flashed', function(event) {
+        var data = JSON.parse(event.data);
+        create_flashed_message(data.message, 'warning');
+      }, false);
+      es.addEventListener('track_error', function(event) {
+        var data = JSON.parse(event.data);
+        create_flashed_message(data.message, 'warning');
+      }, false);
       es.addEventListener('% complete', function(event) {
         var data = JSON.parse(event.data);
         $('#progress_percentage'+ data.id).text(data.message + ' % complete');

@@ -212,7 +212,7 @@ class LiveTracking(object):
     def create_result(self):
         from result import TaskResult
 
-        file_stats = dict(timestamp=self.now, status=self.status)
+        file_stats = dict(timestamp=self.now, result_type='task',  status=self.status)
         headers = self.headers
         info = {x: getattr(self.task, x) for x in TaskResult.info_list if x in dir(self.task)}
         data = []
@@ -282,6 +282,12 @@ class LiveTracking(object):
         return False
 
     def run(self, interval=99):
+        from rq import get_current_job
+        from calcUtils import epoch_to_string
+
+        job = get_current_job()
+        job.meta.update({'last_update': time.time(), 'last_update_string': '', 'pilots_flying': 0, 'lt_status': ''})
+
         if not self.properly_set:
             print(f'Livetracking source is not set properly.')
             print(
@@ -289,8 +295,11 @@ class LiveTracking(object):
                 f"track_source: {bool(self.track_source)}, wpt: {bool(self.task.turnpoints)}, "
                 f"start: {bool(self.task.start_time is not None)}"
             )
-            return
+            job.meta['lt_status'] = f'Livetracking source is not set properly.'
+            return False, f'Livetracking source is not set properly.'
+
         Logger('ON', 'livetracking.txt')
+        job.meta['lt_status'] = f'Livetracking is running.'
         i = 0
         response = {}
         print(f'Window open: {datetime.fromtimestamp(self.opening_timestamp).isoformat()}')
@@ -305,9 +314,8 @@ class LiveTracking(object):
         # elif self.opening_timestamp + interval < self.now:
         #     '''we need to catch up with task'''
 
-        while (self.opening_timestamp - interval <= self.now <= self.ending_timestamp + interval) and len(
-            self.flying_pilots
-        ) > 0:
+        while ((self.opening_timestamp - interval <= self.now <= self.ending_timestamp + interval)
+               and len(self.flying_pilots) > 0):
             '''check task did not change'''
             if self.task_has_changed():
                 print(f'*** *** Cycle {i} ({self.timestamp}): TASK HAS CHANGED ***')
@@ -315,13 +323,22 @@ class LiveTracking(object):
                 if not self.properly_set:
                     print(f'* Task not properly set.')
                     print(f'* Livetrack Stopping: {datetime.fromtimestamp(self.timestamp).isoformat()}')
+                    job.meta['lt_status'] = f'Livetracking stopped as Task has changed and is not properly set.'
+                    job.save_meta()
                     break
                 elif self.task.cancelled:
                     print(f'* Task Cancelled.')
                     print(f'* Livetrack Stopping: {datetime.fromtimestamp(self.timestamp).isoformat()}')
+                    job.meta['lt_status'] = f'Livetracking stopped as task has been canceled.'
+                    job.save_meta()
                     break
                 elif self.opening_timestamp > self.now - interval:
                     time.sleep(self.opening_timestamp - (self.now - interval))
+                    job.meta['lt_status'] = f'Task has been postponed. Livetracking updated.'
+                elif self.task.stopped_time:
+                    job.meta['lt_status'] = f'Task has been stopped. Livetracking ending.'
+                    job.save_meta()
+                    break
             '''get livetracks from flymaster live server'''
             print(f'*** Cycle {i} ({self.timestamp}):')
             print(f' -- Getting livetracks ...')
@@ -346,6 +363,14 @@ class LiveTracking(object):
                         print(f"result saved: track_id: {p.track_id}")
             self.update_result()
             i += 1
+
+            '''update background job meta data'''
+            job.meta['pilots_flying'] = len(self.flying_pilots)
+            job.meta['last_update'] = self.timestamp
+            job.meta['timestamp'] = epoch_to_string(self.now, self.task.time_offset)
+            job.save_meta()
+
+            '''wait next track pull'''
             time.sleep(max(interval / 2 - (self.now - cycle_starting_time), 0))
             # t = self.timestamp
         print(f'Livetrack Ending: {datetime.fromtimestamp(self.timestamp).isoformat()}')
@@ -355,6 +380,8 @@ class LiveTracking(object):
 
         Logger('OFF')
         print(f'Livetrack Ending: {datetime.fromtimestamp(self.timestamp).isoformat()}')
+        job.meta['lt_status'] += f' Livetracking has ended. Tracks saved.'
+        job.save_meta()
 
 
 def get_livetracks(task: Task, pilots: list, timestamp, interval):
@@ -503,7 +530,7 @@ def get_live_json(task_id):
     try:
         with open(fullname, 'r') as f:
             result = jsonpickle.decode(f.read())
-    except:
+    except (FileNotFoundError, Exception):
         print(f"Error reading file")
         file_stats = dict(timestamp=int(time.time()), status='Live Not Set Yet')
         headers = {}

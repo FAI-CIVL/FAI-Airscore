@@ -1905,6 +1905,22 @@ def save_airspace_check(comp_id: int, task_id: int, obj: dict) -> bool:
         return False
 
 
+def start_livetracking(task_id: int):
+    if production():
+        job_id = f'job_livetracking_task_{task_id}'
+        job = current_app.task_queue.enqueue(run_livetracking_background,
+                                             task_id,
+                                             job_id=job_id,
+                                             job_timeout=36000)
+        return job.get_id()
+
+
+def run_livetracking_background(task_id: int):
+    from livetracking import LiveTracking
+    lt = LiveTracking.read(task_id)
+    lt.run()
+
+
 def create_new_comp(comp, user_id: int) -> dict:
     from compUtils import create_comp_path
     from formula import Formula

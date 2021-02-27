@@ -1420,7 +1420,7 @@ def _get_registered_pilots_external(compid: int):
 @blueprint.route('/igc_parsing_config/<string:filename>', methods=['GET', 'POST'])
 @login_required
 def igc_parsing_config(filename: str):
-    from pilot.track import read_igc_config_yaml, save_igc_config_yaml
+    from trackUtils import read_igc_config_yaml, save_igc_config_yaml
     igc_config_form = IgcParsingConfigForm()
     filename += '.yaml'
     save = True
@@ -1856,8 +1856,35 @@ def _remove_custom_attribute(attrid: int):
     return jsonify(success=bool(frontendUtils.delete_comp_attribute(attrid)))
 
 
-@blueprint.route('/_delete_ranking/<int:cranid>', methods=['GET', 'POST'])
+@blueprint.route('/_delete_ranking/<int:rankid>', methods=['GET', 'POST'])
 @login_required
-def _delete_ranking(cranid: int):
+def _delete_ranking(rankid: int):
     from ranking import delete_ranking
-    return jsonify(success=delete_ranking(session['compid'], cranid))
+    return jsonify(success=delete_ranking(session['compid'], rankid))
+
+
+@blueprint.route('/_get_lt_info/<int:taskid>', methods=['GET', 'POST'])
+@login_required
+def _get_lt_info(taskid: int):
+    job_id = f'job_livetracking_task_{taskid}'
+    job = current_app.task_queue.fetch_job(job_id)
+    if job is None:
+        resp = {'success': False, 'status': 'unknown'}
+    elif job.is_failed:
+        resp = {'success': False, 'error': job.exc_info.strip().split('\n')[-1]}
+    else:
+        resp = {
+            'success': True,
+            'status': job.get_status(),
+            'meta': job.meta,
+            'result': job.result,
+        }
+
+    return jsonify(resp)
+
+
+@blueprint.route('/_start_task_livetracking/<int:taskid>', methods=['GET', 'POST'])
+@login_required
+def _start_task_livetracking(taskid: int):
+    job_id = frontendUtils.start_livetracking(taskid)
+    return jsonify(success=True, job_id=job_id)
