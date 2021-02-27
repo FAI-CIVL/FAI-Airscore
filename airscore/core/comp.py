@@ -472,12 +472,7 @@ class Comp(object):
             '''
             if not ((val == 'all') or (val == 'round' and self.dropped_tasks == 0) or (len(self.tasks) < 2)):
                 '''create a ordered list of results, perf desc'''
-                # sorted_results = sorted(pil['results'], key=lambda x: (x[1]['perf'], x[1]['pre']), reverse=True)
-                sorted_results = sorted(
-                    pil['results'],
-                    key=lambda x: (x[1]['perf'], x[1]['pre']),
-                    reverse=True,
-                )
+                sorted_results = sorted(pil['results'].items(), key=lambda x: (x[1]['perf'], x[1]['pre']), reverse=True)
 
                 if val == 'round' and len(self.tasks) >= param:
                     '''we need to order by score desc and sum only the ones we need'''
