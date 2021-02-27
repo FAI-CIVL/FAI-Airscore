@@ -452,6 +452,8 @@ def get_fsdb_info(formula: Formula or TaskFormula, fsdb_data) -> Formula or Task
         else 'on'
         if fsdb_data.get('use_distance_points') == '1'
         else 'off'
+        if fsdb_data.get('use_distance_points') == '0'
+        else formula.formula_distance
     )
     '''arrival points: position, time, off'''
     formula.formula_arrival = (
@@ -460,6 +462,8 @@ def get_fsdb_info(formula: Formula or TaskFormula, fsdb_data) -> Formula or Task
         else 'time'
         if fsdb_data.get('use_arrival_time_points') == '1'
         else 'off'
+        if fsdb_data.get('use_arrival_time_points') == '0' and fsdb_data.get('use_arrival_position_points') == '0'
+        else formula.formula_arrival
     )
     # departure points: leadout, on, off
     formula.formula_departure = (
@@ -468,9 +472,13 @@ def get_fsdb_info(formula: Formula or TaskFormula, fsdb_data) -> Formula or Task
         else 'on'
         if fsdb_data.get('use_departure_points') == '1'
         else 'off'
+        if fsdb_data.get('use_departure_points') == '0' and fsdb_data.get('use_leading_points') == '0'
+        else formula.formula_departure
     )
     '''time points: on, off'''
-    formula.formula_time = 'on' if fsdb_data.get('use_time_points') == '1' else 'off'
+    formula.formula_time = ('on' if fsdb_data.get('use_time_points') == '1'
+                            else 'off'if fsdb_data.get('use_time_points') == '0'
+                            else formula.formula_time)
     '''leading points factor'''
     if fsdb_data.get('leading_weight_factor'):
         formula.lead_factor = float(fsdb_data.get('leading_weight_factor'))
@@ -480,13 +488,17 @@ def get_fsdb_info(formula: Formula or TaskFormula, fsdb_data) -> Formula or Task
     if fsdb_data.get('turnpoint_radius_minimum_absolute_tolerance'):
         formula.min_tolerance = get_int(fsdb_data.get('turnpoint_radius_minimum_absolute_tolerance'))  # m
     '''stopped task parameters'''
-    formula.validity_min_time = (
-        get_int(fsdb_data.get('min_time_span_for_valid_task')) * 60
-    )  # min. time for valid task, seconds
-    formula.score_back_time = get_int(fsdb_data.get('score_back_time')) * 60  # Scoreback Time, seconds
-    formula.glide_bonus = float(fsdb_data.get('bonus_gr'))  # glide ratio
+    if fsdb_data.get('min_time_span_for_valid_task'):
+        formula.validity_min_time = (
+            get_int(fsdb_data.get('min_time_span_for_valid_task')) * 60
+        )  # min. time for valid task, seconds
+    if fsdb_data.get('score_back_time'):
+        formula.score_back_time = get_int(fsdb_data.get('score_back_time')) * 60  # Scoreback Time, seconds
+    if fsdb_data.get('bonus_gr'):
+        formula.glide_bonus = float(fsdb_data.get('bonus_gr'))  # glide ratio
     '''bonus and penalties'''
-    formula.no_goal_penalty = c_round(1.0 - float(fsdb_data.get('time_points_if_not_in_goal')), 4)
+    if fsdb_data.get('time_points_if_not_in_goal'):
+        formula.no_goal_penalty = c_round(1.0 - float(fsdb_data.get('time_points_if_not_in_goal')), 4)
     if fsdb_data.get('final_glide_decelerator') == 'aatb':
         formula.arr_alt_bonus = float(fsdb_data.get('aatb_factor'))
     '''jump the gun'''
