@@ -15,23 +15,33 @@ def create_test_task(data: dict) -> obj_factories.TaskFactory:
     return task
 
 
-def create_test_pilots(data: dict) -> list:
+def create_test_pilots(data: dict, el=None) -> list:
     res = data.get('results')
     pilots = []
     for r in res:
         pilot = obj_factories.FlightResultFactory()
-        pilot.as_dict().update(r)
+
+        for key, value in r.items():
+            if key == 'notifications' and value:
+                pilot.notifications = [obj_factories.NotificationFactory(notification_type=el['notification_type'],
+                                                                         flat_penalty=el['flat_penalty'],
+                                                                         percentage_penalty=el['percentage_penalty'],
+                                                                         comment=el['comment']) for el in value]
+            elif hasattr(pilot, key):
+                setattr(pilot, key, value)
+
         pilots.append(pilot)
     return pilots
 
 
 def read_test_results() -> tuple:
-    file = Path('/app/tests/data/test_results.json')
+    file = Path('/app/tests/data/test_gap2020_hg.json')
     with open(file, 'r') as f:
         content = json.load(f)
     task = create_test_task(content)
     pilots = create_test_pilots(content)
-    return task, pilots
+    stats = content.get('stats')
+    return task, pilots, stats
 
 
 def simulate_difficulty_calc(task: obj_factories.TaskFactory, res: list) -> list:
@@ -42,7 +52,7 @@ def simulate_difficulty_calc(task: obj_factories.TaskFactory, res: list) -> list
 
 def test_diff_calc():
     """testing Difficulty Calculation Routine"""
-    test_task, pilots = read_test_results()
+    test_task, pilots, _ = read_test_results()
 
     '''no pilots'''
     empty = []
@@ -95,16 +105,13 @@ def test_diff_calc():
 
 def test_score_calculation():
     """testing scoring Calculation Routine"""
-    test_task, pilots = read_test_results()
+    test_task, pilots, stats = read_test_results()
     lib = test_task.formula.get_lib()
     absents = [p for p in pilots if p.result_type == 'abs']
     valid_results = [p for p in pilots if p.result_type not in ('abs', 'dnf', 'nyp')]
     non_valid_results = [p for p in pilots if p.result_type in ('abs', 'dnf', 'nyp')]
     lo_pilots = [p for p in pilots if not p.goal_time]
     no_ess_pilots = [p for p in pilots if not p.ESS_time]
-    original_max_score = max((p.score for p in pilots), default=0)
-    for p in valid_results:
-        print(f'{p.name} - LC = {p.fixed_LC}')
 
     '''no pilots'''
     test_task.pilots = []
@@ -135,35 +142,39 @@ def test_score_calculation():
 
     '''only landed out pilots'''
     test_task.pilots = lo_pilots
-    lib.process_results(test_task)
+    # lib.process_results(test_task)
     lib.calculate_results(test_task)
     assert set(test_task.valid_results) == set(p for p in lo_pilots if p in valid_results)
     assert test_task.pilots_present == len([p for p in lo_pilots if not p.result_type == 'abs'])
-    assert test_task.pilots_ess == 0
+    assert test_task.pilots_ess == stats.get('pilots_ess') - stats.get('pilots_goal')
     assert test_task.pilots_goal == 0
-    assert math.isclose(test_task.day_quality, 0.4437791595392983, abs_tol=0.001)
+    assert test_task.day_quality < stats.get('day_quality')
     assert test_task.max_distance == max((p.distance for p in lo_pilots), default=0)
-    assert math.isclose(test_task.max_distance, 69391.6, abs_tol=1)
-    assert math.isclose(test_task.std_dev_dist, 36021.7899821593, abs_tol=1)
-    assert math.isclose(test_task.max_score, 407.1673788773062, abs_tol=0.5)
+    assert test_task.max_distance < test_task.opt_dist
+    assert test_task.max_score < stats.get('max_score')
 
     '''all pilots'''
     test_task.pilots = pilots
-    lib.process_results(test_task)
     lib.calculate_results(test_task)
     assert set(test_task.valid_results) == set(p for p in pilots if p in valid_results)
-    assert len(test_task.pilots) == 14
+    assert len(test_task.pilots) == len(pilots)
     assert test_task.pilots_present == len([p for p in pilots if not p.result_type == 'abs'])
-    assert test_task.pilots_present == 12
-    assert test_task.pilots_ss == 10
-    assert test_task.pilots_ess == 8
-    assert test_task.pilots_goal == 8
-    assert math.isclose(test_task.day_quality, 0.9929303958092204, abs_tol=0.001)
+    assert test_task.pilots_present == stats.get('pilots_present')
+    assert test_task.pilots_ess == stats.get('pilots_ess')
+    assert test_task.pilots_goal == stats.get('pilots_goal')
+    assert math.isclose(test_task.day_quality, stats.get('day_quality'), abs_tol=0.001)
+    assert math.isclose(test_task.dep_weight, stats.get('dep_weight'), abs_tol=0.001)
+    assert math.isclose(test_task.dist_weight, stats.get('dist_weight'), abs_tol=0.001)
+    assert math.isclose(test_task.time_weight, stats.get('time_weight'), abs_tol=0.001)
+    assert math.isclose(test_task.arr_weight, stats.get('arr_weight'), abs_tol=0.001)
     assert test_task.max_distance == max((p.distance for p in pilots), default=0)
-    assert test_task.max_distance == test_task.opt_dist
-    assert math.isclose(test_task.max_distance, 85360.5, abs_tol=1)
-    assert math.isclose(test_task.std_dev_dist, 31344.312107696805, abs_tol=1)
-    assert math.isclose(test_task.max_score, 992.9303958092204, abs_tol=0.5)
-    assert math.isclose(test_task.max_score, original_max_score, abs_tol=0.5)
+    assert test_task.max_distance <= test_task.opt_dist
+    if stats.get('pilots_goal') > 0:
+        assert test_task.max_distance == test_task.opt_dist
+    assert math.isclose(test_task.max_score, stats.get('max_score'), abs_tol=0.5)
+    assert math.isclose(test_task.min_lead_coeff, stats.get('min_lead_coeff'), abs_tol=0.0001)
+
+
+
 
 
