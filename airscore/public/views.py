@@ -214,7 +214,10 @@ def confirm_user(token):
     email = frontendUtils.confirm_token(token)
     user = User.query.filter_by(email=email).first()
     if not (email and user):
-        flash('the email does not exist, or the token has expired. Please contact Administrators', 'warning')
+        flash('The email does not exist, or the token has expired. Please contact Administrators', 'warning')
+        return redirect(url_for('public.home'))
+    elif user.active:
+        flash('User is already active. Please contact Administrators', 'warning')
         return redirect(url_for('public.home'))
 
     form = RegisterForm(obj=user)
