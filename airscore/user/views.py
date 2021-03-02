@@ -8,7 +8,7 @@ from flask_login import login_required, current_user
 import frontendUtils
 from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm, \
     ResultAdminForm, NewScorekeeperForm, RegionForm, NewRegionForm, IgcParsingConfigForm, ParticipantForm, \
-    EditScoreForm, ModifyUserForm, CompLaddersForm, NewCompForm, CompRankingForm, AirspaceCheckForm
+    EditScoreForm, ModifyUserForm, CompLaddersForm, NewCompForm, CompRankingForm, AirspaceCheckForm, UserForm
 from comp import Comp
 from formula import list_formulas, Formula
 from task import Task, write_map_json, get_task_json_by_filename
@@ -519,7 +519,10 @@ def _get_users():
 def user_admin():
     from Defines import ADMIN_DB
     modify_user_form = ModifyUserForm()
-    return render_template('users/user_admin.html', modify_user_form=modify_user_form, editable=bool(ADMIN_DB))
+    user_form = UserForm()
+    user_form.nat.choices = [(x['code'], x['name']) for x in frontendUtils.list_countries()]
+    return render_template('users/user_admin.html',
+                           user_form=user_form, modify_user_form=modify_user_form, editable=bool(ADMIN_DB))
 
 
 @blueprint.route('/_add_scorekeeper/<int:compid>', methods=['POST'])
@@ -1717,18 +1720,54 @@ def _export_fsdb(compid: int):
         return resp
 
 
+@blueprint.route('/_add_user/', methods=['POST'])
+@login_required
+@admin_required
+def add_user():
+    """Register a new user (admin, scorekeeper."""
+    # from email import send_email
+    data = request.json
+    form = UserForm()
+    if form.validate_on_submit():
+        '''create user entry in database'''
+        user = User(
+            username=form.email.data,
+            email=form.email.data,
+            password=frontendUtils.generate_random_password(),  # create a temporary password
+            active=False,
+            access=form.access.data,
+            first_name=form.first_name.data,
+            last_name=form.last_name.data,
+            nat=form.nat.data
+        )
+        user.save()
+        email_copy = bool(request.form.get('email_copy'))
+        '''send registration email'''
+        token = frontendUtils.generate_confirmation_token(user.email)
+        confirm_url = url_for('user.confirm_user', token=token, _external=True)
+        html = render_template('email/register.html', user=user, confirm_url=confirm_url)
+        body = render_template('email/register.txt', user=user, confirm_url=confirm_url)
+        subject = "[AirScore Registration] Please confirm your email"
+        recipients = [user.email] if not email_copy else [user.email, current_user.email]
+        frontendUtils.send_email(recipients=recipients, subject=subject, text_body=body, html_body=html)
+        return jsonify(success=True)
+    return jsonify(success=False, errors=form.errors)
+
+
 @blueprint.route('/_modify_user/<int:user_id>', methods=['POST'])
 @login_required
 @admin_required
 def _modify_user(user_id: int):
-    data = request.json
-    user = User.query.filter_by(id=user_id).first()
-    user.email = data.get('email')
-    user.access = data.get('access')
-    user.active = data.get('active')
-    user.update()
-    resp = jsonify(success=True)
-    return resp
+    form = UserForm()
+
+    if request.method == 'POST' and form.validate_on_submit():
+        user = User.query.filter_by(id=user_id).first()
+        for x in user.__table__.columns.keys():
+            if hasattr(form, x):
+                setattr(user, x, getattr(form, x).data)
+        user.update()
+        return jsonify(success=True)
+    return jsonify(success=False, errors=form.errors)
 
 
 @blueprint.route('/_download/<string:filetype>/<filename>', methods=['GET', 'POST'])

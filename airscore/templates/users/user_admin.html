@@ -13,7 +13,11 @@
 {% block header %} User Details {% endblock %}
 
 {% block content %}
-<div class="panel-content column-wrap">
+<div class='row mb-3'>
+  <button type="button" class="btn btn-primary ml-3" onclick="edit_user()">Add</button>
+</div>
+
+<div class='row'>
   <div class='panel thin' id='users_panel'>
     <section class="panel-row form">
       <table id="users" class="row-border compact" cellspacing="0" width="100%">
@@ -26,39 +30,56 @@
   </div>
 </div>
 
-<!--- edit-participant details modal starts here--->
-<div id="edit_user_modal" class="modal fade" role='dialog'>
-   <div class="modal-dialog">
-      <div class="modal-content">
-         <div class="modal-header">
-            <h4 class="modal-title">Update User Details</h4>
-         </div>
-         <div class="modal-body" id= "modmodal-body">
+{% from "macros.html" import render_field with context %}
+{% from "macros.html" import render_checkbox with context %}
 
-            <div class="form-row">
-               <div class="form-group col-md-12">
-                  {{modify_user_form.email.label}} {{modify_user_form.email(size=35, **{'id':"mod_email"})}}
-               </div>
-            </div>
-            <div class="form-row">
-               <div class="form-group col-md-12">
-                  {{modify_user_form.active.label}} {{modify_user_form.active(**{'id':"mod_active"})}}
-               </div>
-            </div>
-             <div class="form-row">
-               <div class="form-group col-md-12">
-                  {{modify_user_form.access.label}} {{modify_user_form.access(**{'id':"mod_access"})}}
-               </div>
-            </div>
-         </div>
-         <div class="modal-footer">
-            <button type="button" class="btn btn-danger" data-dismiss="modal">Cancel</button>
-            <button id = "modify_confirmed" type="button" class="btn btn-success" data-dismiss="modal">Save</button>
-         </div>
+<!--- edit-user details modal starts here--->
+<div id="user_modal" class="modal fade" role='dialog'>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method='post' id="user_form">
+      {{ user_form.hidden_tag() }}
+      <div class="modal-header">
+        <h4 class="modal-title">Update User Details</h4>
       </div>
-   </div>
+      <div class="modal-body" id= "user_modal-body">
+        <div class="form-row">
+          <section class="pl-1 column-wrap panel-row" id="username_section">
+            <input type="hidden" id="user_id" name="user_id" value="">
+            {{ render_field(user_form.username, width=40, disabled=True) }}
+          </section>
+          <section class="pl-1 column-wrap panel-row">
+            {{ render_field(user_form.access) }}
+          </section>
+          <section class="pl-1 row-wrap panel-row">
+            {{ render_field(user_form.first_name, width=40) }}
+            {{ render_field(user_form.last_name, width=40) }}
+          </section>
+          <section class="pl-1 column-wrap panel-row">
+            {{ render_field(user_form.email, width=40) }}
+          </section>
+          <section class="pl-1 row-wrap panel-row">
+            {{ render_field(user_form.nat) }}
+          </section>
+          <section class="pl-1 row-wrap panel-row" id="active_section">
+            {{ render_field(user_form.active) }}
+          </section>
+          <section class="pl-1 column-wrap panel-row" id="email_copy_section">
+            {{ render_checkbox(id='email_copy', label='Send me a copy of registration email', checked=true) }}
+          </section>
+        </div>
+      </div>
+      <div class='modal-errors'>
+      </div>
+      <div class='modal-footer'>
+      <button type='button' class='btn btn-danger' data-dismiss='modal'>Cancel</button>
+      {{user_form.submit(class="btn btn-success", id="confirmed")}}
+      </div>
+      </form>
+    </div>
+  </div>
 </div>
-<!--- edit-participant details-Modal ends here--->
+<!--- edit-user details-Modal ends here--->
 {% endblock %}
 
 {% block js %}
@@ -66,9 +87,8 @@
 <script src="{{ static_url_for('static', filename='js/pop_users.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/utils.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/microajax.minified.js') }}"></script>
-
+<script src="{{ static_url_for('static', filename='js/flashed_message.js') }}"></script>
 <script type="text/javascript">
   var editable = {{ editable|tojson }};
 </script>
-
 {% endblock %}

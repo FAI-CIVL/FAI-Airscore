@@ -39,6 +39,7 @@ class RegisterForm(FlaskForm):
     last_name = StringField(
         "Last name", validators=[DataRequired(), Length(min=2, max=25)]
     )
+    submit = SubmitField('Save')
 
     def __init__(self, *args, **kwargs):
         """Create instance."""
@@ -57,6 +58,16 @@ class RegisterForm(FlaskForm):
         user = User.query.filter_by(email=self.email.data).first()
         if user:
             self.email.errors.append("Email already registered")
+            return False
+        return True
+
+    def validate_on_activation(self, user_id):
+        initial_validation = super(RegisterForm, self).validate()
+        if not initial_validation:
+            return False
+        user = User.query.filter_by(email=self.email.data).first()
+        if user and not user.id == user_id:
+            self.email.errors.append("This email is already registered with another user.")
             return False
         return True
 
@@ -475,11 +486,28 @@ class EditScoreForm(FlaskForm):
     comment = TextAreaField('Comment', render_kw={"rows": 3, "cols": 50}, id='comment')
 
 
-class ModifyUserForm(FlaskForm):
-    email = StringField('Email', validators=[DataRequired()])
+class UserForm(FlaskForm):
+    first_name = StringField('First Name', validators=[DataRequired(), Length(min=1, max=40)])
+    last_name = StringField('Last Name', validators=[DataRequired(), Length(min=2, max=40)])
+    nat = NonValidatingSelectField('Nationality', validators=[Optional(strip_whitespace=True)], default=None)
+    username = StringField("Username")
+    email = StringField('Email', validators=[DataRequired(), Email()])
     access = SelectField('Access Level', choices=[('pilot', 'Pilot'), ('pending', 'Pending'),
-                                                  ('scorekeeper', 'Scorekeeper'), ('admin', 'Admin'), ])
-    active = BooleanField('Enabled')
+                                                  ('scorekeeper', 'Scorekeeper'), ('admin', 'Admin'), ],
+                         default='pilot')
+    active = BooleanField('Enabled', default=1)
+
+    submit = SubmitField('Save')
+
+
+class ModifyUserForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    access = SelectField('Access Level', choices=[('pilot', 'Pilot'), ('pending', 'Pending'),
+                                                  ('scorekeeper', 'Scorekeeper'), ('admin', 'Admin'), ],
+                         default='pilot')
+    active = BooleanField('Enabled', default=1)
+
+    submit = SubmitField('Save')
 
 
 class CompLaddersForm(FlaskForm):

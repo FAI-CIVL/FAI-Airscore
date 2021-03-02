@@ -1,0 +1,66 @@
+{% extends "base.html"%}
+
+{% block page_title %}
+Confirm Registration
+{% endblock %}
+
+{% block head %}
+<!-- CSS -->
+<link href='/static/css/task.css' rel='stylesheet'>
+<link href='https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css' rel='stylesheet'>
+{% endblock %}
+
+{% block back %}
+<a href="{{ url_for('public.home')}}" class='btn btn-info'>
+  Back to AirScore Home Page
+</a>
+{% endblock %}
+
+{% block header %}
+Complete Registration
+{% endblock %}
+
+{% block content %}
+{% from "macros.html" import render_field with context %}
+<div class='row'>
+  <div class='panel thin' id='users_panel'>
+    <form method='post' id="user_form">
+    {{ user_form.hidden_tag() }}
+      <div class="form-row col-md-4 col-lg-12">
+        <section class="pl-1 col-md-4 col-lg-12">
+          <input type="hidden" id="user_id" name="user_id" value="">
+          <input type="hidden" id="username" name="username" value="">
+        </section>
+        <section class="pl-1 mb-2 col-md-3 col-lg-8">
+          <p class="text-white bg-info p-1">Please check your data.<br /></p>
+          {{ render_field(user_form.first_name, width=10, disabled=True) }}
+          {{ render_field(user_form.last_name, width=10, disabled=True) }}
+        </section>
+        <section class="pl-1 mb-2 col-md-3 col-lg-8">
+          <p class="text-white bg-info p-1">Your email address will be used as username to login.<br />
+            If you wish, you may change it here.</p>
+          {{ render_field(user_form.email, width=30) }}
+        </section>
+        <section class="pl-1 mb-2 col-md-3 col-lg-8" id="password_section">
+          <p class="text-white bg-info p-1">Please enter a password (min 6 characters).<br /></p>
+          {{ render_field(user_form.password, width=30, autocomplete='new password') }}
+          {{ render_field(user_form.confirm, width=30, autocomplete='new password') }}
+        </section>
+        <section class="pl-1 mb-3 col-md-4 col-lg-12">
+          <button type='button' class='btn btn-danger ml-1' data-dismiss='modal'>Cancel</button>
+          {{user_form.submit(class="btn btn-success ml-4", id="confirmed")}}
+        </section>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block js %}
+<script src="{{ static_url_for('static', filename='js/pop_confirm_user.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/flashed_message.js') }}"></script>
+<script type="text/javascript">
+  var user_id = {{ user.id }};
+</script>
+{% endblock %}

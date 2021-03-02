@@ -1,5 +1,5 @@
 
-{% macro render_field(field, width=None, tooltip=False, id=None, disabled=false) %}
+{% macro render_field(field, width=None, tooltip=False, id=None, disabled=false, autocomplete=None, class=None) %}
 {% set args = dict() %}
 {% if width %}
 {%  set _ = args.update({'size': width}) %}
@@ -12,7 +12,15 @@
 {%  set _ = args.update({'id': id}) %}
 {% endif %}
 {% if disabled %}
-{%  set _ = args.update({'disabled': readonly}) %}
+{%  set _ = args.update({'readonly': disabled}) %}
+{% endif %}
+{% if autocomplete %}
+{%  set _ = args.update({'autocomplete': autocomplete}) %}
+{% endif %}
+{% if class %}
+{%  set _ = args.update({'class': class}) %}
+{% else %}
+{%  set _ = args.update({'class': 'form-control form-control-sm'}) %}
 {% endif %}
 <div class="form-element">
   <div class="form-label">{{ field.label }}:</div>
@@ -54,13 +62,15 @@
 
 
 {% macro render_input(id, label, size, value=None, class=None) %}
-{% if class %}
-  {% set css = class %}
-{% else %}
-  {% set css = '' %}
-{% endif %}
 <div class="form-element">
   <div class="form-label"><label for="{{ id }}">{{ label }}:</label></div>
-  <div class="form-input"><input class="{{ css }}" id="{{ id }}" name="{{ id }}" type="text" size="35"></div>
+  <div class="form-input"><input type="text" class="form-control form-control-sm {% if class %} {{ class }} {% endif %}" id="{{ id }}" name="{{ id }}" size="{{ size }}"></div>
+</div>
+{% endmacro %}
+
+{% macro render_checkbox(id, label, checked=false, value=None, class=None) %}
+<div class="form-element">
+  <div class="form-label"><label for="{{ id }}">{{ label }}:</label></div>
+  <div class="form-input"><input type="checkbox" {% if checked %} checked {% endif %} class="form-control form-control-sm {% if class %} {{ class }} {% endif %}" id="{{ id }}" name="{{ id }}"></div>
 </div>
 {% endmacro %}

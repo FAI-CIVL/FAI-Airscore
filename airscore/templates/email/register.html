@@ -1,0 +1,13 @@
+<p>Dear {{ user.first_name }},</p>
+<p>
+    You were added to Airscore users as {{ user.access }}!
+    To complete your registration, please visit this page:
+    <a href="{{ confirm_url }}">
+        click here
+    </a>.
+</p>
+<p>Alternatively, you can paste the following link in your browser's address bar:</p>
+<p>{{ confirm_url }}</p>
+<p>The link will be valid for 24 hours. If the link expired, please contact administrators.</p>
+<p>Regards,</p>
+<p>The Airscore Team</p>

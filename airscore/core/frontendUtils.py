@@ -981,11 +981,57 @@ def get_all_users():
 
     with db_session() as db:
         all_users = db.query(
-            User.id, User.username, User.first_name, User.last_name, User.access, User.email, User.active
+            User.id, User.username, User.first_name, User.last_name, User.access, User.email, User.active, User.nat
         ).all()
         if all_users:
             all_users = [row._asdict() for row in all_users]
         return all_users
+
+
+def generate_random_password() -> str:
+    import secrets
+    import string
+    alphabet = string.ascii_letters + string.digits
+    password = ''.join(secrets.choice(alphabet) for i in range(20))  # for a 20-character password
+    return password
+
+
+def generate_serializer():
+    from itsdangerous import URLSafeTimedSerializer
+    from airscore.settings import SECRET_KEY
+    return URLSafeTimedSerializer(SECRET_KEY)
+
+
+def generate_confirmation_token(email):
+    from airscore.settings import SECURITY_PASSWORD_SALT
+    serializer = generate_serializer()
+    return serializer.dumps(email, salt=SECURITY_PASSWORD_SALT)
+
+
+def confirm_token(token, expiration=86400):
+    from airscore.settings import SECURITY_PASSWORD_SALT
+    serializer = generate_serializer()
+    try:
+        email = serializer.loads(
+            token,
+            salt=SECURITY_PASSWORD_SALT,
+            max_age=expiration
+        )
+    except:
+        return False
+    return email
+
+
+def send_email(recipients, subject, text_body, html_body, sender=None):
+    from airscore.extensions import mail
+    from airscore.settings import ADMINS
+    mail.send_message(
+        recipients=recipients,
+        subject=subject,
+        body=text_body,
+        html=html_body,
+        sender=sender or ADMINS
+    )
 
 
 def update_airspace_file(old_filename, new_filename):

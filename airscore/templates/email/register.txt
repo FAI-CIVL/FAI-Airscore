@@ -1,0 +1,12 @@
+Dear {{ user.first_name }},
+
+You were added to Airscore users as {{ user.access }}!
+To complete your registration, please visit this page:
+
+{{ confirm_url }}
+
+The link will be valid for 24 hours. If the link expired, please contact administrators.</p>
+
+Regards,
+
+The Airscore Team

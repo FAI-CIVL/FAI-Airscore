@@ -209,6 +209,37 @@ def setup_admin():
     return render_template("public/setup_admin.html", form=form)
 
 
+@blueprint.route('/confirm_user/<token>', methods=['GET', 'POST'])
+def confirm_user(token):
+    email = frontendUtils.confirm_token(token)
+    user = User.query.filter_by(email=email).first()
+    if not (email and user):
+        flash('the email does not exist, or the token has expired. Please contact Administrators', 'warning')
+        return redirect(url_for('public.home'))
+
+    form = RegisterForm(obj=user)
+    form.password.data = form.confirm.data = None
+
+    return render_template('public/confirm_user.html', user=user, user_form=form)
+
+
+@blueprint.route('/_activate_user/', methods=['GET', 'POST'])
+def _activate_user():
+    form = RegisterForm(request.form)
+    user_id = int(request.form.get('user_id'))
+    if form.validate_on_activation(user_id):
+        user = User.query.filter_by(id=user_id).first()
+        if not user:
+            return jsonify(success=False, error='User does not exist. Please contact Administrators')
+        user.email = form.email.data
+        user.username = form.username.data
+        user.set_password(form.password.data)
+        user.active = True
+        user.update()
+        return jsonify(success=True)
+    return jsonify(success=False, errors=form.errors)
+
+
 @blueprint.route('/reset_password_request', methods=['GET', 'POST'])
 def reset_password_request():
     form = LoginForm(request.form)
@@ -221,8 +252,12 @@ def reset_password_request():
             if frontendUtils.production():
                 current_app.task_queue.enqueue('send_email.send_password_reset_email', user)
             else:
-                import send_email
-                send_email.send_password_reset_email(user)
+                # import email
+                token = user.get_reset_password_token()
+                subject = '[Airscore] Reset Your Password'
+                text = render_template('email/reset_password.txt', user=user, token=token),
+                html = render_template('email/reset_password.html', user=user, token=token),
+                frontendUtils.send_email(recipients=user.email, subject=subject, text_body=text, html_body=html)
         flash('Check your email for the instructions to reset your password', category='info')
         return redirect(url_for('public.home'))
     return render_template('public/reset_password_request.html',
