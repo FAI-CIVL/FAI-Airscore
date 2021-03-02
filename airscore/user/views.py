@@ -1745,7 +1745,7 @@ def add_user():
         email_copy = bool(request.form.get('email_copy'))
         '''send registration email'''
         token = frontendUtils.generate_confirmation_token(user.email)
-        confirm_url = url_for('user.confirm_user', token=token, _external=True)
+        confirm_url = url_for('public.confirm_user', token=token, _external=True)
         html = render_template('email/register.html', user=user, confirm_url=confirm_url)
         body = render_template('email/register.txt', user=user, confirm_url=confirm_url)
         subject = "[AirScore Registration] Please confirm your email"
