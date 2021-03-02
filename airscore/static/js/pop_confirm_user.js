@@ -15,8 +15,16 @@ $('#user_form').submit( function (e) {
     data: mydata, // serializes the form's elements.
     success: function (response) {
       if (response.success) {
-        let message = 'User successfully activated. You can now login.';
+        let message = "User successfully activated. You'll be redirected to home page.";
         create_flashed_message(message, 'info');
+        // delete form
+        $("#users_panel").empty();
+        // add message
+        let newdiv = document.createElement( "p" );
+        newdiv.setAttribute("id", "success_message");
+        newdiv.setAttribute("class", "text-white bg-info p-1 ml-3");
+        newdiv.innerHTML = "Your account has been activated. Now you'll be able to login and access admin section.<br />For any question, contact administrators.";
+        $("#users_panel").append(newdiv);
         setTimeout(function () {
             window.open('/');
         }, 5000);
@@ -38,6 +46,7 @@ $('#user_form').submit( function (e) {
 });
 
 function cleanup_errors() {
+  $("#flashed_messages").empty();
   $('#user_form [name]').each( ( i, el ) => $(el).removeAttr('style') );
 }
 
