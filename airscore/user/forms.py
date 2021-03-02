@@ -499,6 +499,21 @@ class UserForm(FlaskForm):
 
     submit = SubmitField('Save')
 
+    def validate(self):
+        """Validate the form."""
+        initial_validation = super(UserForm, self).validate()
+        if not initial_validation:
+            return False
+        user = User.query.filter_by(username=self.username.data).first()
+        if user:
+            self.username.errors.append("Username (email) already registered")
+            return False
+        user = User.query.filter_by(email=self.email.data).first()
+        if user:
+            self.email.errors.append("Email already registered")
+            return False
+        return True
+
 
 class ModifyUserForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
