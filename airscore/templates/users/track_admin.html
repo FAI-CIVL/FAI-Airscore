@@ -164,13 +164,13 @@
 
 {% if user_is_scorekeeper %}
 {% block js %}
-<script src="{{ static_url_for('static', filename='js/jquery.initialize.js') }}"></script>
+<!--<script src="{{ static_url_for('static', filename='js/jquery.initialize.js') }}"></script>-->
 <script src="{{ static_url_for('static', filename='js/utils.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/pop_track_admin.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.ui.widget.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.iframe-transport.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.fileupload.js') }}"></script>
-<script src="{{ static_url_for('static', filename='js/jquery-alert.js') }}"></script>
+<!--<script src="{{ static_url_for('static', filename='js/jquery-alert.js') }}"></script>-->
 <script src="{{ static_url_for('static', filename='js/flashed_message.js') }}"></script>
 <script>
   var production = {{ production|tojson }};

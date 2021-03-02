@@ -1431,7 +1431,6 @@ def import_participants_from_fsdb(comp_id: int, file: Path, from_CIVL=False) -> 
             return dict(success=True)
         return dict(success=False, error='Error: Participants were not imported correctly.')
     except (FileNotFoundError, TypeError, Exception):
-        # raise
         return dict(success=False, error='Internal error trying to parse FSDB file.')
 
 

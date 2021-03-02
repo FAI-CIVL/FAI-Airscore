@@ -84,12 +84,14 @@ def airspace_edit(filename: str):
     for space in airspace_list:
         if space["floor_unit"] == "FL":
             fl_messages.append(
-                f"{space['floor_description']} is {int(space['floor']) * 100} ft or {int(space['floor']) * 100 * 0.3048} m ")
+                f"{space['floor_description']} is {int(space['floor']) * 100} ft "
+                f"or {int(space['floor']) * 100 * 0.3048} m ")
             space['floor'] = None
 
         if space["ceiling_unit"] == "FL":
             fl_messages.append(
-                f"{space['ceiling_description']} is {int(space['ceiling']) * 100} ft or {int(space['ceiling']) * 100 * 0.3048} m ")
+                f"{space['ceiling_description']} is {int(space['ceiling']) * 100} ft "
+                f"or {int(space['ceiling']) * 100 * 0.3048} m ")
             space['ceiling'] = None
 
         if space["floor_unit"] == "Unknown height unit" or space["ceiling_unit"] == "Unknown height unit":
@@ -142,7 +144,6 @@ def airspace_check_admin():
             for item in checkform:
                 if item.errors:
                     flash(f"{item.label.text} ({item.data}): {', '.join(x for x in item.errors)}", category='danger')
-        # flash(f'{checkform.h_boundary.data}, {checkform.h_inner_limit.data}, {checkform.h_outer_limit.data}', 'info')
         return redirect(url_for('user.airspace_check_admin', compid=compid, taskid=taskid))
 
     elif request.method == 'GET':

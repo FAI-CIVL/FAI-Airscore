@@ -167,7 +167,7 @@ $('#participant_form').submit( function (e) {
   e.preventDefault(); // block the traditional submission of the form.
   $('#mod_modal .modal-errors').empty();  // delete all previous errors
   let mydata = $('#participant_form').serialize();
-  let parid = $('#mod_par_id').val()
+  let parid = $('#mod_par_id').val();
   let url = "/users/_add_participant/"+ compid;
   if ( parid ) url = "/users/_modify_participant_details/"+parid;
   $.ajax({
