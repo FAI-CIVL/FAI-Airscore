@@ -1,0 +1,15 @@
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  <div class='row'>
+    <div class='col-md-12' id="flashed_messages">
+      {% if messages %}
+      {% for category, message in messages %}
+        <div class='alert alert-{{ category }}'>
+          <a class='close' title='Close' href='#' data-dismiss='alert'>&times;</a>
+          {{ message }}
+        </div>
+      <!-- end .alert -->
+      {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+  {% endwith %}

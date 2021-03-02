@@ -57,38 +57,20 @@
 {% endblock %}
 
 <main role='main' style='width: 95%; margin: auto'>
-  <div class='nav-back'>
+  <div class='mt-3 mb-3'>
     {% block back %}
     {% endblock %}
   </div>
   <header class='h2'>{% block header %}{% endblock %}</header>
-  {% with messages = get_flashed_messages(with_categories=true) %} {% if
-  messages %}
-  <div class='row'>
-    <div class='col-md-12'>
-      {% for category, message in messages %}
-      <div class='alert alert-{{ category }}'>
-        <a class='close' title='Close' href='#' data-dismiss='alert'
-        >&times;</a
-        >
-        {{ message }}
-      </div>
-      <!-- end .alert -->
-      {% endfor %}
-    </div>
-    <!-- end col-md -->
-  </div>
-  <!-- end row -->
-  {% endif %} {% endwith %}
-  {% if error %}
-  <p><strong> Error: </strong></p>
-  {{error}}
-  {% endif %}
+
+  {% include "messages.html" %}
+
+  {% include "error.html" %}
 
   {% block content %}
   {% endblock %}
 
-  <div class='nav-back'>
+  <div class='mt-3 mb-3'>
     {{ self.back() }}
   </div>
 
@@ -99,8 +81,7 @@
 {% include "js.html" %}
 
 {% block js %}
-{% endblock %}
-<!-- end scripts -->
+{% endblock %} <!-- end scripts -->
 {% endblock %} <!-- end body -->
 </body>
 </html>
