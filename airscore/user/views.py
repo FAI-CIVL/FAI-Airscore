@@ -58,6 +58,25 @@ def check_coherence(func):
     return decorated_function
 
 
+def check_editor(func):
+    """
+    If you decorate a view with this, it will add a flashed message notifying editing restrictions
+    to non event scorers or admins
+    """
+
+    @wraps(func)
+    def decorated_view(*args, **kwargs):
+        if session['compid'] and 'is_editor' not in session.keys():
+            '''should never be here'''
+            session['is_editor'] = frontendUtils.check_comp_editor(session['compid'], current_user)
+        if not current_user.is_admin or session['is_editor']:
+            flash(f"You are not a scorekeeper for this event. You won't be able to modify settings.",
+                  category='warning')
+        return func(*args, **kwargs)
+
+    return decorated_view
+
+
 @blueprint.route("/")
 @login_required
 def members():
@@ -121,6 +140,7 @@ def airspace_edit(filename: str):
 @blueprint.route('/airspace_check_admin', methods=['GET', 'POST'])
 @login_required
 @check_coherence
+@check_editor
 def airspace_check_admin():
     from airspace import get_airspace_check_parameters
     compid = request.args.get('compid')
@@ -542,6 +562,7 @@ def _add_scorekeeper(compid: int):
 @blueprint.route('/task_admin/<int:taskid>', methods=['GET', 'POST'])
 @login_required
 @check_coherence
+@check_editor
 def task_admin(taskid: int):
     from calcUtils import sec_to_time, time_to_seconds
     from region import get_openair
@@ -885,6 +906,7 @@ def _get_tracks_processed(taskid: int):
 @blueprint.route('/track_admin/<int:taskid>', methods=['GET'])
 @login_required
 @check_coherence
+@check_editor
 def track_admin(taskid: int):
     from Defines import TELEGRAM
     task = next((t for t in session['tasks'] if t['task_id'] == taskid), None)
@@ -1121,6 +1143,7 @@ def _get_task_score_from_file(taskid: int, filename: str):
 @blueprint.route('/task_score_admin/<int:taskid>', methods=['GET'])
 @login_required
 @check_coherence
+@check_editor
 def task_score_admin(taskid: int):
     task = next((el for el in session['tasks'] if el['task_id'] == taskid), None)
     task_num = task['task_num']
@@ -1498,6 +1521,7 @@ def _del_igc_config(filename: str):
 @blueprint.route('/pilot_admin/<int:compid>', methods=['GET', 'POST'])
 @login_required
 @check_coherence
+@check_editor
 def pilot_admin(compid: int):
     """ Registered Pilots list
         Add / Edit Pilots"""
