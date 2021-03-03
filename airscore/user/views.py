@@ -51,7 +51,8 @@ def check_coherence(func):
                 or ('taskid' in kwargs.keys() and session['tasks']
                     and kwargs['taskid'] not in [el['task_id'] for el in session['tasks']])):
             flash(f"You requested a competition not in your session. Please select the correct one.", category='danger')
-            return render_template('users/comp_admin.html')
+            return render_template('users/comp_admin.html',
+                                   today=datetime.today().strftime('%Y-%m-%d'), new_comp_form=NewCompForm())
         return func(*args, **kwargs)
 
     return decorated_function
