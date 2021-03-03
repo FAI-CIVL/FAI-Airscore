@@ -476,7 +476,7 @@ def comp_settings_admin(compid: int):
         ladderform = None
 
     tasks = frontendUtils.get_task_list(comp)
-    # classifications = frontendUtils.get_classifications_details()
+
     session['tasks'] = tasks['tasks']
     session['check_g_record'] = comp.check_g_record
     session['track_source'] = comp.track_source
@@ -577,8 +577,6 @@ def task_admin(taskid: int):
     turnpointform.name.choices = waypoints
     modifyturnpointform.mod_name.choices = waypoints
 
-    owner, scorekeepers, all_scorekeeper_ids = frontendUtils.get_comp_scorekeeper(task.comp_id)
-
     if request.method == 'POST':
         if session['external']:
             task.comment = taskform.comment.data
@@ -622,7 +620,7 @@ def task_admin(taskid: int):
                 if session_task['task_id'] == taskid:
                     if task.ready_to_score:
                         session_task['ready_to_score'] = True
-            flash("Saved", category='info')
+            flash("Task Saved", category='info')
 
         else:
             for item in taskform:
@@ -672,7 +670,7 @@ def task_admin(taskid: int):
 
         if not task.ready_to_score:
             flash("Task is not ready to be scored as it is missing one or more of the following: a route with goal, "
-                  "window open/close, start/close and deadline times", category='info')
+                  "window open/close, start/close and deadline times", category='warning')
             for session_task in session['tasks']:
                 if session_task['task_id'] == taskid:
                     session_task['ready_to_score'] = False
@@ -782,7 +780,6 @@ def _get_adv_settings():
     formula.reset(data.get('category'), data.get('formula'))
     formula.to_db()
 
-    # formula = Formula.from_preset(data['category'], data['formula'])
     settings = {'formula_distance': formula.formula_distance, 'formula_arrival': formula.formula_arrival,
                 'formula_departure': formula.formula_departure, 'lead_factor': formula.lead_factor,
                 'formula_time': formula.formula_time, 'no_goal_penalty': formula.no_goal_penalty * 100,
@@ -1170,15 +1167,15 @@ def task_score_admin(taskid: int):
     fileform.task_result_file.choices = choices
     fileform.comp_result_file.choices = choices
 
-    _, _, all_scorekeeper_ids = frontendUtils.get_comp_scorekeeper(taskid, task_id=True)
-    if current_user.id in all_scorekeeper_ids:
-        user_is_scorekeeper = True
-    else:
-        user_is_scorekeeper = None
+    # _, _, all_scorekeeper_ids = frontendUtils.get_comp_scorekeeper(taskid, task_id=True)
+    # if current_user.id in all_scorekeeper_ids:
+    #     user_is_scorekeeper = True
+    # else:
+    #     user_is_scorekeeper = None
 
     return render_template('users/task_score_admin.html', fileform=fileform, taskid=taskid, compid=compid,
-                           user_is_scorekeeper=user_is_scorekeeper, task_name=task_name, score_active=score_active,
-                           task_num=task_num, editform=editform, production=frontendUtils.production())
+                           task_name=task_name, score_active=score_active, task_num=task_num, editform=editform,
+                           production=frontendUtils.production())
 
 
 @blueprint.route('/_score_task/<int:taskid>', methods=['POST'])
