@@ -1778,11 +1778,13 @@ def task_has_valid_results(task_id: int) -> bool:
 def get_task_info(task_id: int) -> dict:
 
     from task import Task
+    import time
 
     result = {}
     task = Task.read(task_id)
     if task:
         result = task.create_json_elements()
+        result['file_stats'] = {'result_type': 'task', "timestamp": int(time.time()), "status": "tracks status"}
     return result
 
 

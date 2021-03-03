@@ -1055,7 +1055,6 @@ def _upload_track_zip(taskid: int):
         return resp
 
 
-
 @blueprint.route('/_get_task_result_files/<int:taskid>', methods=['POST'])
 @login_required
 def _get_task_result_files(taskid: int):
