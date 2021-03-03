@@ -72,6 +72,16 @@ class User(UserMixin, SurrogatePK, Model):
         """Full user name."""
         return f"{self.first_name} {self.last_name}"
 
+    @property
+    def is_admin(self):
+        """True if access is admin."""
+        return bool(self.access == 'admin')
+
+    @property
+    def is_scorekeeper(self):
+        """True if access is scorekeeper."""
+        return bool(self.access == 'scorekeeper')
+
     def __repr__(self):
         """Represent instance as a unique string."""
         return f"<User({self.username!r})>"
