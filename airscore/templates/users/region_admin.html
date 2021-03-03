@@ -17,6 +17,7 @@ Region Admin
 {% from "macros.html" import render_info with context %}
 
 <div class="panel-content column-wrap">
+  {% if session.is_editor %}
   <div class='panel thin' id='add_button_panel'>
     <section class="panel-row thin button">
       <button id='add_area_btn' class='btn btn-primary' type='button' data-toggle='collapse' data-target='#add_area'
@@ -44,12 +45,15 @@ Region Admin
       </section>
     </form>
   </div>
+  {% endif %}
   <div class='panel' id='region_details'>
     <section class="panel-row row-wrap form">
       {{ render_field(region_select.region) }}
+      {% if session.is_editor %}
       <button type='button' class='btn btn-danger' onclick='confirm_delete()' data-toggle='confirmation'
                 data-popout='true'>Delete
       </button>
+      {% endif %}
     </section>
     <section class="panel-row column-wrap form">
       <div class="row-wrap">
@@ -60,7 +64,9 @@ Region Admin
       </div>
       <div class="row-wrap">
         <h5 id='region_oair_filename'></h5>
+        {% if session.is_editor %}
         <button id='edit_openair_button' class='btn btn-warning ml-4' type='button' hidden>Edit</button>
+        {% endif %}
       </div>
     </section>
   </div>
@@ -88,6 +94,7 @@ Region Admin
   </div>
 </div>
 
+{% if session.is_editor %}
 <!---delete modal starts here--->
 <div id='modal' class='modal fade' role='dialog'>
   <div class='modal-dialog'>
@@ -107,6 +114,7 @@ Region Admin
   </div>
 </div>
 <!---Modal ends here--->
+{% endif %}
 
 {% endblock %}
 
@@ -119,6 +127,8 @@ Region Admin
 <script src="{{ static_url_for('static', filename='js/pop_waypoints.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/region_admin.js') }}"></script>
 <script type='text/javascript'>
+  var external_comp = {{ session.external|tojson }};
+  var is_editor = {{ session.is_editor|tojson }};
   var url_get_regions = "{{ url_for('user._get_regions') }}";
 </script>
 {% endblock %}

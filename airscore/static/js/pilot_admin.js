@@ -273,9 +273,13 @@ function populate_registered_pilot_details(compid, readonly=false){
       console.log(attributes);
       $.each(attributes, (idx, el) => columns.push({data: 'custom.'+el.attr_id, title: el.attr_value, name: 'attr_'+el.attr_id, defaultContent: ''} ));
       if (!external_comp) {
-        columns.push({data: 'pil_id', title: "Source", render: function ( data ) { if (data){ return 'internal' } else { return 'external'}}});
-        columns.push({data: 'par_id', orderable: false, searchable: false, render: function ( data ) { return '<td  class ="value" ><button type="button" class="btn btn-primary" onclick="edit_participant(' +  data + ')" data-toggle="confirmation" data-popout="true">Edit</button></td>'}});
-        columns.push({data: 'par_id', orderable: false, searchable: false, render: function ( data ) { return '<td  class ="value" ><button type="button" class="btn btn-danger" onclick="remove_participant(' +  data + ')" data-toggle="confirmation" data-popout="true">Remove</button></td>'}});
+        if ( pilotdb ) {
+          columns.push({data: 'pil_id', title: "Source", render: function ( data ) { if (data){ return 'internal' } else { return 'external'}}});
+        }
+        if ( is_editor ) {
+          columns.push({data: 'par_id', orderable: false, searchable: false, render: function ( data ) { return '<td  class ="value" ><button type="button" class="btn btn-primary" onclick="edit_participant(' +  data + ')" data-toggle="confirmation" data-popout="true">Edit</button></td>'}});
+          columns.push({data: 'par_id', orderable: false, searchable: false, render: function ( data ) { return '<td  class ="value" ><button type="button" class="btn btn-danger" onclick="remove_participant(' +  data + ')" data-toggle="confirmation" data-popout="true">Remove</button></td>'}});
+        }
       }
 
       $('#pilots').DataTable({
@@ -495,7 +499,7 @@ $(document).ready(function() {
   });
   if (pilotdb) get_internal_pilots();
   populate_registered_pilot_details(compid, external_comp);
-  populate_custom_attributes(compid, external_comp);
+  populate_custom_attributes(compid, (external_comp || !is_editor));
 
   // listeners
   $('#upload_excel_button').click(function() {

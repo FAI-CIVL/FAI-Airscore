@@ -439,10 +439,11 @@ def comp_settings_admin(compid: int):
         compform.formula.choices = formulas
 
         if (current_user.id not in scorekeeper_ids) and (current_user.access != 'admin'):
-            session['is_scorekeeper'] = False
+            session['is_editor'] = False
             compform.submit = None
+            flash(f"You are not a scorekeeper for this comp. You won't be able to modify settings.", category='warning')
         else:
-            session['is_scorekeeper'] = True
+            session['is_editor'] = True
 
     ''' Ladders if active in settings'''
     if LADDERS:
@@ -655,7 +656,7 @@ def task_admin(taskid: int):
                 if session_task['task_id'] == taskid:
                     session_task['ready_to_score'] = False
 
-        if current_user.id not in all_scorekeeper_ids:
+        if not session['is_editor']:
             taskform.submit = None
         if session['external']:
             '''External Event'''
@@ -898,14 +899,9 @@ def track_admin(taskid: int):
 
     formats = frontendUtils.get_igc_filename_formats_list()
 
-    _, _, all_scorekeeper_ids = frontendUtils.get_comp_scorekeeper(taskid, task_id=True)
-    if current_user.id in all_scorekeeper_ids:
-        user_is_scorekeeper = True
-    else:
-        user_is_scorekeeper = None
     return render_template('users/track_admin.html', taskid=taskid, compid=compid, filename_formats=formats,
-                           user_is_scorekeeper=user_is_scorekeeper, production=frontendUtils.production(),
-                           task_name=task_name, task_num=task_num, track_source=track_source, telegram=TELEGRAM)
+                           production=frontendUtils.production(), task_name=task_name, task_num=task_num,
+                           track_source=track_source, telegram=TELEGRAM)
 
 
 @blueprint.route('/_set_result/<int:taskid>', methods=['POST'])

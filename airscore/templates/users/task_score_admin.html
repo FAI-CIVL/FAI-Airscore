@@ -43,7 +43,7 @@ Task Scoring Admin
       <section class="tab-row column-wrap form" id="process_task_section">
         <h4 class='tab-title font-weight-bold'>Process Task:</h4>
         <section class="panel-row row-wrap button">
-          {% if not user_is_scorekeeper %}
+          {% if not session.is_editor %}
           <h4>You are not a scorekeeper of this competition, thus you cannot access most of functionalities in this page.</h4>
           {% else %}
           <button class='btn btn-primary' type='button' onclick='Score_modal();'>
@@ -64,7 +64,7 @@ Task Scoring Admin
               Download HTML
             </button>
         </section>
-        {% if user_is_scorekeeper %}
+        {% if session.is_editor %}
         {% from "macros.html" import render_field with context %}
         <section class="tab-row column-wrap button" id="scoring_runs_section">
             {{ render_field(fileform.task_result_file, disabled=readonly) }}
@@ -92,7 +92,7 @@ Task Scoring Admin
       <section class="tab-row column-wrap form" id="process_comp_section">
         <h4 class='tab-title font-weight-bold'>Process Event:</h4>
         <section class="panel-row column-wrap form">
-          {% if not user_is_scorekeeper %}
+          {% if not session.is_editor %}
           <h4>You are not a scorekeeper of this competition, thus you cannot access most of functionalities in this page.</h4>
           {% else %}
           <p class="description">Comp results are automatically computed each time task active result is created or changed. <br />You can just activate this <i class="font-weight-bold text-info">Auto Generated</i> file to have always updated event results each time a new task is scored and activated, or create and manage your own result files.</p>
@@ -114,7 +114,7 @@ Task Scoring Admin
               Download HTML
             </button>
         </section>
-        {% if user_is_scorekeeper %}
+        {% if session.is_editor %}
         <section class="tab-row column-wrap button" id="comp_scoring_runs_section">
             {{ render_field(fileform.comp_result_file, disabled=readonly) }}
             <section class="row-wrap">
@@ -167,7 +167,7 @@ Task Scoring Admin
   </div>
 </div>
 
-{% if user_is_scorekeeper %}
+{% if session.is_editor %}
 <!---status-modal starts here--->
 <div id='statusmodal' class='modal fade' tabindex='-1' role='dialog'>
   <div class='modal-dialog' role='document'>
@@ -371,7 +371,7 @@ Task Scoring Admin
 {% endblock %}
 
 {% block js %}
-{% if user_is_scorekeeper %}
+{% if session.is_editor %}
 <script type='text/javascript' src="{{ static_url_for('static', filename='js/pop_task_score_admin.js') }}"></script>
 <script type='text/javascript' src="{{ static_url_for('static', filename='js/mindmup-editabletable.js') }}"></script>
 <script type='text/javascript'>

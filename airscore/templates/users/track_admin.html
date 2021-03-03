@@ -26,7 +26,7 @@
 
 {% block content %}
 
-{% if not user_is_scorekeeper %}
+{% if not session.is_editor %}
 <h2>You are not authorised to access this page as you are not a scorekeeper of this competition</h2>
 
 {% else %}
@@ -162,7 +162,7 @@
 {% endif %}
 {% endblock %}
 
-{% if user_is_scorekeeper %}
+{% if session.is_editor %}
 {% block js %}
 <!--<script src="{{ static_url_for('static', filename='js/jquery.initialize.js') }}"></script>-->
 <script src="{{ static_url_for('static', filename='js/utils.js') }}"></script>

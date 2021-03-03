@@ -137,8 +137,8 @@ function get_tasks() {
         columns.push({data: 'task_id', render: function ( data ) { return '<button class="btn btn-info ml-3" type="button" onclick="window.location.href = \'/users/track_admin/' + data + '\'">Tracks</button>'}});
       }
       columns.push({data: 'task_id', render: function ( data ) { return '<button class="btn btn-info ml-3" type="button" onclick="window.location.href = \'/users/task_score_admin/' + data + '\'">Scores</button>'}});
-      if (!external){
-        columns.push({data: 'task_id', render: function ( data, type, row ) { return '<button class="btn btn-danger" type="button" onclick="confirm_delete( ' + row.task_num + ', ' + data + ' )" data-toggle="confirmation" data-popout="true">Delete</button>'}});
+      if (!external && is_editor){
+        columns.push({data: 'task_id', render: function ( data, type, row ) { return '<button type="button" class="btn btn-danger" onclick="confirm_delete( ' + row.task_num + ', ' + data + ' )" data-toggle="confirmation" data-popout="true">Delete</button>'}});
       }
 
       $('#tasks').DataTable( {
@@ -333,8 +333,14 @@ function update_rankings() {
         {data: 'attr_id', name: 'Attr ID', visible: false, defaultContent: ''},
         {data: 'attr_value', name: 'Attr Value', visible: false, defaultContent: ''},
         {data: 'description', name: 'Description'},
-        {data: 'rank_id', orderable: false, searchable: false, render: function ( data ) { return '<td  class ="value" ><button type="button" class="btn btn-primary" onclick="edit_ranking(' +  data + ')" data-toggle="confirmation" data-popout="true">Edit</button></td>'}},
-        {data: 'rank_id', orderable: false, searchable: false, render: function ( data ) { return '<td  class ="value" ><button type="button" class="btn btn-danger" onclick="delete_ranking(' +  data + ')" data-toggle="confirmation" data-popout="true">Delete</button></td>'}}
+        {data: 'rank_id', orderable: false, searchable: false, render: function ( data ) {
+                                                                        let appearence = 'class="btn btn-primary" ';
+                                                                        if (!is_editor) appearence = 'class="btn btn-secondary" disabled ';
+                                                                        return '<td  class ="value" ><button type="button" ' + appearence + ' onclick="edit_ranking(' +  data + ')" data-toggle="confirmation" data-popout="true">Edit</button></td>'}},
+        {data: 'rank_id', orderable: false, searchable: false, render: function ( data ) {
+                                                                        let appearence = 'class="btn btn-danger" ';
+                                                                        if (!is_editor) appearence = 'class="btn btn-secondary" disabled ';
+                                                                        return '<td  class ="value" ><button type="button" ' + appearence + ' onclick="delete_ranking(' +  data + ')" data-toggle="confirmation" data-popout="true">Delete</button></td>'}}
     ],
     rowId: function(data) {
           return 'id_' + data.rank_id;

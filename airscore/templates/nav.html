@@ -8,7 +8,7 @@
     <span class='navbar-toggler-icon'></span>
   </button>
   <div class='collapse navbar-collapse' id='navbarSupportedContent'>
-    {% if current_user and current_user.is_authenticated and (session.is_scorekeeper or session.is_admin) %}
+    {% if current_user and current_user.is_authenticated and (current_user.is_scorekeeper or current_user.is_admin) %}
     <ul class='navbar-nav my-auto'>
       <li class='nav-item'>
         <a class='nav-link' href="{{ url_for('user.comp_admin') }}">Admin Area
@@ -31,7 +31,7 @@
         <span class='navbar-text pre-wrap'>Logged in as </span>
       </li>
       <li class='nav-item'>
-        <span class='navbar-text'>{% if session.is_admin %} Admin: {% elif session.is_scorekeeper %} Scorekeeper: {% endif %}</span>
+        <span class='navbar-text'>{% if current_user.is_admin %} Admin: {% elif current_user.is_scorekeeper %} Scorekeeper: {% endif %}</span>
       </li>
       <li class='nav-item active'>
         <a class='nav-link' href="{{ url_for('user.members') }}">{{ current_user.username }}</a>

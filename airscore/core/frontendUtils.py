@@ -949,6 +949,15 @@ def get_comp_scorekeeper(compid_or_taskid: int, task_id=False):
     return owner, scorekeepers, all_ids
 
 
+def check_comp_editor(compid: int, user) -> bool:
+    """ check if user is a scorer for the event"""
+    if user.is_admin:
+        return True
+    else:
+        _, _, scorekeeper_ids = get_comp_scorekeeper(compid)
+        return user.id in scorekeeper_ids
+
+
 def set_comp_scorekeeper(compid: int, userid, owner=False):
     from db.tables import TblCompAuth as CA
 

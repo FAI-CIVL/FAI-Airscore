@@ -90,6 +90,7 @@ Pilot Admin
       <div class='container'>
         <h4 style='float:left'>Registered {% if pilotdb %}External {% endif %}Pilots:</h4>
         <h4 id='total_external_pilots'></h4>
+        {% if session.is_editor %}
         <button id='manual_add_pilot_button' class='btn btn-success ml-4' onclick="add_participant()">
           Add a pilot
         </button>
@@ -102,6 +103,7 @@ Pilot Admin
         <button id='delete_external' data-toggle='modal' data-target='#delete_modal' class='btn btn-danger ml-4'>Remove
           All
         </button>
+        {% endif %}
       </div>
     </div>
   {% if pilotdb %}
@@ -147,9 +149,11 @@ Pilot Admin
       <h3 class='font-weight-bold'>Participants Custom Attributes</h3>
       <h4 id='total_attributes'></h4>
       <h6 class='text-danger font-weight-bold mt-3' id='attribute_messages'></h6>
+      {% if session.is_editor %}
       <button id='add_attr_button' class='btn btn-success' onclick="new_attribute()">
           Add
       </button>
+      {% endif %}
       <table id='attributes_table' class='row-border table-hover compact' cellspacing='0' width='100%'>
         <thead class="thead-dark">
         </thead>
@@ -158,6 +162,7 @@ Pilot Admin
   </div>
 </div>
 
+{% if session.is_editor %}
 <!--- add-edit-participant details modal starts here--->
 <div id='mod_modal' class='modal fade' role='dialog'>
   <div class='modal-dialog'>
@@ -370,7 +375,7 @@ Pilot Admin
   </div>
 </div>
 <!--- upload excel file Modal ends here--->
-
+{% endif %}
 {% endblock %}
 
 {% block js %}
@@ -385,6 +390,7 @@ Pilot Admin
 var pilotdb = {{ pilotdb|tojson }};
 var compid = {{ session.compid|tojson }};
 var external_comp = {{ session.external|tojson }};
+var is_editor = {{ session.is_editor|tojson }};
 var attributes = {{ attributes|tojson }};
 var track_source = {{ session.track_source|tojson }};
 var unregister_participant_url = "{{ url_for('user._unregister_participant', compid=session.compid) }}";
