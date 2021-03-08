@@ -69,7 +69,7 @@ def check_editor(func):
         if session['compid'] and 'is_editor' not in session.keys():
             '''should never be here'''
             session['is_editor'] = frontendUtils.check_comp_editor(session['compid'], current_user)
-        if not current_user.is_admin or session['is_editor']:
+        if not (current_user.is_admin or session['is_editor']):
             flash(f"You are not a scorekeeper for this event. You won't be able to modify settings.",
                   category='warning')
         return func(*args, **kwargs)
@@ -619,10 +619,10 @@ def task_admin(taskid: int):
             task.formula.no_goal_penalty = (taskform.no_goal_penalty.data or 0) / 100
             task.formula.arr_alt_bonus = taskform.arr_alt_bonus.data
             task.to_db()
-            for session_task in session['tasks']:
-                if session_task['task_id'] == taskid:
-                    if task.ready_to_score:
-                        session_task['ready_to_score'] = True
+
+            t = next(el for el in session['tasks'] if el['task_id'] == taskid)
+            t['ready_to_score'] = True if task.ready_to_score else False
+            t['needs_new_scoring'], t['needs_recheck'], t['needs_full_rescore'] = frontendUtils.check_task(taskid)
             flash("Task Saved", category='info')
 
         else:
@@ -671,18 +671,21 @@ def task_admin(taskid: int):
         taskform.no_goal_penalty.data = round((task.formula.no_goal_penalty or 0) * 100)
         taskform.arr_alt_bonus.data = task.formula.arr_alt_bonus
 
-        if not task.ready_to_score:
-            flash("Task is not ready to be scored as it is missing one or more of the following: a route with goal, "
-                  "window open/close, start/close and deadline times", category='warning')
-            for session_task in session['tasks']:
-                if session_task['task_id'] == taskid:
-                    session_task['ready_to_score'] = False
-
-        if not session['is_editor']:
+        if session['external'] or not session['is_editor']:
             taskform.submit = None
-        if session['external']:
-            '''External Event'''
-            flash(f"This is an External Event. Settings and Results are Read Only.", category='warning')
+            if session['external']:
+                '''External Event'''
+                flash(f"This is an External Event. Settings and Results are Read Only.",
+                      category='warning')
+        else:
+            t = next(el for el in session['tasks'] if el['task_id'] == taskid)
+            if not t['ready_to_score']:
+                flash("Task is not ready to be scored as it is missing one or more of the following: "
+                      "a route with goal,window open/close, start/close and deadline times", category='warning')
+            elif t['needs_recheck']:
+                flash("There are tracks evaluated before last changes. They need to be re-checked", category='warning')
+            elif t['needs_new_scoring']:
+                flash("A new scoring is needed to reflect last task changes.", category='warning')
 
     return render_template('users/task_admin.html', taskid=taskid, taskform=taskform, turnpointform=turnpointform,
                            modifyturnpointform=modifyturnpointform, compid=task.comp_id, error=error)
@@ -752,7 +755,7 @@ def _add_task(compid: int):
     task.check_launch = comp.check_launch
     task.igc_config_file = comp.igc_config_file
     task.to_db()
-    tasks = frontendUtils.get_task_list(comp)
+    tasks = frontendUtils.get_task_list(compid)
     session['tasks'] = tasks['tasks']
     return tasks
 
@@ -769,10 +772,9 @@ def _del_task(taskid: int):
 @blueprint.route('/_get_tasks/<int:compid>', methods=['GET'])
 @login_required
 def _get_tasks(compid: int):
-    comp = Comp()
-    comp.comp_id = compid
-    tasks = frontendUtils.get_task_list(comp)
-    return tasks
+    task_list = frontendUtils.get_task_list(compid)
+    session['tasks'] = task_list['tasks']
+    return task_list
 
 
 @blueprint.route('/_get_adv_settings', methods=['GET', 'POST'])
@@ -893,7 +895,12 @@ def _del_all_turnpoints(taskid: int):
 @blueprint.route('/_get_tracks_admin/<int:taskid>', methods=['GET'])
 @login_required
 def _get_tracks_admin(taskid: int):
-    return {'data': frontendUtils.get_pilot_list_for_track_management(taskid)}
+    task = next((t for t in session['tasks'] if t['task_id'] == taskid), None)
+    data = frontendUtils.get_pilot_list_for_track_management(taskid, task['needs_recheck'])
+    if task['needs_recheck'] and all(not el['outdated'] for el in data):
+        '''update task recheck status'''
+        task['needs_recheck'] = False
+    return jsonify(data=data)
 
 
 @blueprint.route('/_get_tracks_processed/<int:taskid>', methods=['GET'])
@@ -910,20 +917,15 @@ def _get_tracks_processed(taskid: int):
 def track_admin(taskid: int):
     from Defines import TELEGRAM
     task = next((t for t in session['tasks'] if t['task_id'] == taskid), None)
-    task_num = task['task_num']
-    task_name = task['task_name']
-    task_ready_to_score = task['ready_to_score']
-    track_source = task['track_source']
     compid = int(session['compid'])
 
-    if not task_ready_to_score:
+    if not task['ready_to_score']:
         return render_template('task_not_ready_to_score.html')
 
     formats = frontendUtils.get_igc_filename_formats_list()
 
     return render_template('users/track_admin.html', taskid=taskid, compid=compid, filename_formats=formats,
-                           production=frontendUtils.production(), task_name=task_name, task_num=task_num,
-                           track_source=track_source, telegram=TELEGRAM)
+                           production=frontendUtils.production(), task=task, telegram=TELEGRAM)
 
 
 @blueprint.route('/_set_result/<int:taskid>', methods=['POST'])
@@ -1057,6 +1059,25 @@ def _upload_track_zip(taskid: int):
                                               grecord=session['check_g_record'])
         return resp
 
+
+@blueprint.route('/_recheck_task_tracks/<int:taskid>', methods=['POST'])
+@login_required
+def _recheck_task_tracks(taskid: int):
+    if not session['external'] and request.method == "POST":
+        resp = frontendUtils.recheck_tracks(task_id=taskid, username=current_user.username)
+        return jsonify(success=resp)
+    return jsonify(success=False)
+
+
+@blueprint.route('/_recheck_track/<int:trackid>', methods=['POST'])
+@login_required
+def _recheck_track(trackid: int):
+    if not session['external'] and request.method == "POST" and request.json:
+        taskid, parid = request.json.get('taskid'), request.json.get('parid')
+
+        resp, error = frontendUtils.recheck_track(task_id=taskid, par_id=parid, user=current_user.username)
+        return jsonify(success=resp, error=error)
+    return jsonify(success=False, error='There was an error trying to check track.')
 
 
 @blueprint.route('/_get_task_result_files/<int:taskid>', methods=['POST'])
