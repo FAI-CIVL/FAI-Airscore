@@ -46,7 +46,7 @@ $('#user_form').submit( function (e) {
 });
 
 function cleanup_errors() {
-  $("#flashed_messages").empty();
+  clear_flashed_messages();
   $('#user_form [name]').each( ( i, el ) => $(el).removeAttr('style') );
 }
 
