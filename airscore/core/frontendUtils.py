@@ -391,8 +391,11 @@ def get_admin_comps(current_userid, current_user_access=None):
     return jsonify({'data': all_comps})
 
 
-def get_task_list(comp):
-    tasks = comp.get_tasks_details()
+def get_task_list(comp_id: int) -> dict:
+    """returns a dict of tasks info"""
+    from compUtils import get_tasks_details
+
+    tasks = get_tasks_details(comp_id)
     max_task_num = 0
     last_region = 0
     for task in tasks:
