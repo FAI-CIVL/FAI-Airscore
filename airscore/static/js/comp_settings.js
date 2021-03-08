@@ -9,7 +9,7 @@ var dropdown = {
 };
 
 $(document).ready(function() {
-  get_tasks( compid );
+  populate_tasks( tasks_info );
   get_scorekeepers( compid );
 
   // populate_rankings( dropdown.category.val() );
@@ -125,58 +125,68 @@ function get_tasks() {
     contentType:"application/json",
     dataType: "json",
     success: function (json) {
-      var columns = [];
-      columns.push({data: 'task_num', title:'#', className: "text-right", defaultContent: ''});
-      columns.push({data: 'task_id', title:'ID', className: "text-right", defaultContent: '', visible: false});
-      columns.push({data: 'date', title:'Date', defaultContent: ''});
-      columns.push({data: 'region_name', title:'Region'});
-      columns.push({data: 'opt_dist', title:'Dist.', name:'dist', className: "text-right", defaultContent: ''});
-      columns.push({data: 'comment', title:'Comment', name:'comment', defaultContent: ''});
-      columns.push({data: 'task_id', render: function ( data ) { return '<button class="btn btn-info ml-3" type="button" onclick="window.location.href = \'/users/task_admin/' + data + '\'">Settings</button>'}});
-      if (!external){
-        columns.push({data: 'task_id', render: function ( data ) { return '<button class="btn btn-info ml-3" type="button" onclick="window.location.href = \'/users/track_admin/' + data + '\'">Tracks</button>'}});
-      }
-      columns.push({data: 'task_id', render: function ( data ) { return '<button class="btn btn-info ml-3" type="button" onclick="window.location.href = \'/users/task_score_admin/' + data + '\'">Scores</button>'}});
-      if (!external && is_editor){
-        columns.push({data: 'task_id', render: function ( data, type, row ) { return '<button type="button" class="btn btn-danger" onclick="confirm_delete( ' + row.task_num + ', ' + data + ' )" data-toggle="confirmation" data-popout="true">Delete</button>'}});
-      }
-
-      $('#tasks').DataTable( {
-        data: json.tasks,
-        destroy: true,
-        paging: false,
-        responsive: true,
-        saveState: true,
-        info: false,
-        dom: 'lrtip',
-        columns: columns,
-        rowId: function(data) {
-          return 'id_' + data.task_id;
-        },
-        initComplete: function(settings) {
-          var table = $('#tasks');
-          var rows = $("tr", table).length-1;
-          // Get number of all columns
-          var numCols = $('#tasks').DataTable().columns().nodes().length;
-          console.log('numCols='+numCols);
-          for ( var col=1; col<numCols; col++ ) {
-            var empty = true;
-            table.DataTable().column(col).data().each( val => {
-              if (val != "") {
-                empty = false;
-                return false;
-              }
-            });
-            if (empty) {
-              table.DataTable().column( col ).visible( false );
-            }
-          }
-        }
-      });
-      $('#task_number').val(json['next_task']);
-      $('#task_region').val(json['last_region']);
+      populate_tasks(json);
     }
   });
+}
+
+function populate_tasks(json) {
+  let columns = [
+    {data: 'task_num', title:'#', className: "text-right", defaultContent: ''},
+    {data: 'task_id', title:'ID', className: "text-right", defaultContent: '', visible: false},
+    {data: 'date', title:'Date', defaultContent: ''},
+    {data: 'region_name', title:'Region'},
+    {data: 'opt_dist', title:'Dist.', name:'dist', className: "text-right", defaultContent: ''},
+    {data: 'comment', title:'Comment', name:'comment', defaultContent: ''},
+    {data: 'task_id', title:'Notes', name:'notes', defaultContent: '', render: function ( data, type, row ) {
+                                                                                  if ( row.cancelled ) return '<span class="text-danger font-weight-bold">Cancelled</span>'
+                                                                                  else if ( row.locked ) return '<span class="text-info font-weight-bold">Official Results</span>'
+                                                                                  else if ( row.needs_full_rescore || row.needs_new_scoring || row.needs_recheck ) return '<span class="text-warning font-weight-bold">Check</span>'
+                                                                                  else return ''}},
+    {data: 'task_id', render: function ( data ) { return '<button class="btn btn-info ml-3" type="button" onclick="window.location.href = \'/users/task_admin/' + data + '\'">Settings</button>'}}
+  ];
+  if (!external){
+    columns.push({data: 'task_id', render: function ( data ) { return '<button class="btn btn-info ml-3" type="button" onclick="window.location.href = \'/users/track_admin/' + data + '\'">Tracks</button>'}});
+  }
+  columns.push({data: 'task_id', render: function ( data ) { return '<button class="btn btn-info ml-3" type="button" onclick="window.location.href = \'/users/task_score_admin/' + data + '\'">Scores</button>'}});
+  if (!external && is_editor){
+    columns.push({data: 'task_id', render: function ( data, type, row ) { return '<button type="button" class="btn btn-danger" onclick="confirm_delete( ' + row.task_num + ', ' + data + ' )" data-toggle="confirmation" data-popout="true">Delete</button>'}});
+  }
+
+  $('#tasks').DataTable( {
+    data: json.tasks,
+    destroy: true,
+    paging: false,
+    responsive: true,
+    saveState: true,
+    info: false,
+    dom: 'lrtip',
+    columns: columns,
+    rowId: function(data) {
+      return 'id_' + data.task_id;
+    },
+    initComplete: function(settings) {
+      var table = $('#tasks');
+      var rows = $("tr", table).length-1;
+      // Get number of all columns
+      var numCols = $('#tasks').DataTable().columns().nodes().length;
+      console.log('numCols='+numCols);
+      for ( var col=1; col<numCols; col++ ) {
+        var empty = true;
+        table.DataTable().column(col).data().each( val => {
+          if (val != "") {
+            empty = false;
+            return false;
+          }
+        });
+        if (empty) {
+          table.DataTable().column( col ).visible( false );
+        }
+      }
+    }
+  });
+  $('#task_number').val(json['next_task']);
+  $('#task_region').val(json['last_region']);
 }
 
 function add_scorekeeper(){

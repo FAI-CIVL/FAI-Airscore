@@ -475,9 +475,9 @@ def comp_settings_admin(compid: int):
     else:
         ladderform = None
 
-    tasks = frontendUtils.get_task_list(comp)
+    tasks_info = frontendUtils.get_task_list(comp.comp_id)
 
-    session['tasks'] = tasks['tasks']
+    session['tasks'] = tasks_info['tasks']
     session['check_g_record'] = comp.check_g_record
     session['track_source'] = comp.track_source
 
@@ -487,9 +487,12 @@ def comp_settings_admin(compid: int):
     if comp.external:
         '''External Event'''
         flash(f"This is an External Event. Settings and Results are Read Only.", category='warning')
+    if any(t['needs_full_rescore'] or t['needs_new_scoring'] or t['needs_recheck'] for t in session['tasks']):
+        '''there are tasks that do not have final results yet and seem to need to be checked'''
+        flash(f"There are tasks that need to be verified.", category='warning')
     return render_template('users/comp_settings.html', compid=compid, compform=compform,
                            taskform=newtaskform, scorekeeperform=newScorekeeperform, ladderform=ladderform,
-                           rankingform=rankingform, certifications=certifications, error=error,
+                           rankingform=rankingform, certifications=certifications, tasks_info=tasks_info, error=error,
                            allow_open_event=OPEN_EVENT, self_register=(SELF_REG_DEFAULT and PILOT_DB))
 
 
