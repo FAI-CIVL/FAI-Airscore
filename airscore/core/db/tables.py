@@ -2,6 +2,7 @@
 from sqlalchemy import (
     CHAR,
     TIMESTAMP,
+    func,
     Boolean,
     Column,
     Date,
@@ -286,7 +287,7 @@ class TaskObjectView(BaseModel):
         Column('locked', TINYINT(3), server_default=text("'0'")),
         Column('airspace_check', TINYINT(1)),
         Column('openair_file', String(40)),
-        Column('cancelled', TINYINT(1), server_default=text("'1'")),
+        Column('cancelled', TINYINT(1), server_default=text("'0'")),
         Column('track_source', String(40)),
         Column('task_path', String(40)),
         Column('comp_path', String(40)),
@@ -381,9 +382,8 @@ class TblForComp(BaseModel):
     __tablename__ = 'tblForComp'
 
     comp_id = Column(INTEGER(11), ForeignKey('tblCompetition.comp_id'), primary_key=True)
-    formula_last_update = Column(
-        TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
-    )
+    last_update = Column(TIMESTAMP, nullable=False,
+                         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
     formula_name = Column(String(20))
     overall_validity = Column(Enum('ftv', 'all', 'round'), nullable=False, server_default=text("'ftv'"))
     validity_param = Column(Float, nullable=False, server_default=text("'0.75'"))
@@ -531,7 +531,7 @@ class TblCompetition(BaseModel):
     comp_name = Column(String(100), nullable=False)
     comp_code = Column(String(8))
     comp_class = Column(Enum('PG', 'HG', 'mixed'), server_default=text("'PG'"))
-    comp_last_update = Column(
+    last_update = Column(
         TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
     )
     comp_site = Column(String(100), nullable=False)
@@ -708,7 +708,7 @@ class TblTask(BaseModel):
 
     task_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
     comp_id = Column(ForeignKey('tblCompetition.comp_id'), index=True)
-    task_last_update = Column(
+    last_update = Column(
         TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
     )
     task_num = Column(TINYINT(4), nullable=False)
@@ -767,9 +767,7 @@ class TblTaskResult(BaseModel):
     track_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
     task_id = Column(ForeignKey('tblTask.task_id', ondelete='SET NULL'), index=True)
     par_id = Column(INTEGER(11), ForeignKey('tblParticipant.par_id'), index=True)
-    track_last_update = Column(
-        TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
-    )
+    last_update = Column(TIMESTAMP, server_default=func.current_timestamp(), onupdate=func.current_timestamp())
     track_file = Column(String(255))
     g_record = Column(TINYINT(4), server_default=text("'1'"))
     distance_flown = Column(Float)
@@ -954,6 +952,8 @@ class TblTaskWaypoint(BaseModel):
 
     wpt_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
     task_id = Column(ForeignKey('tblTask.task_id', ondelete='SET NULL'), index=True)
+    last_update = Column(TIMESTAMP, nullable=False,
+                         server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
     num = Column(TINYINT(4), nullable=False)
     name = Column(CHAR(6), nullable=False)
     rwp_id = Column(INTEGER(11))
