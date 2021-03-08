@@ -353,7 +353,7 @@ CREATE TABLE `tblCompetition` (
   `comp_name` varchar(100) NOT NULL,
   `comp_code` varchar(10) DEFAULT NULL,
   `comp_class` enum('PG','HG','mixed') DEFAULT 'PG',
-  `comp_last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `comp_site` varchar(100) NOT NULL,
   `date_from` date NOT NULL,
   `date_to` date NOT NULL,
@@ -416,7 +416,7 @@ CREATE TABLE `tblCompRanking` (
 
 CREATE TABLE `tblForComp` (
   `comp_id` int(11) NOT NULL,
-  `formula_last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `formula_name` varchar(20) DEFAULT NULL,
   `overall_validity` enum('ftv','all','round') NOT NULL DEFAULT 'ftv',
   `validity_param` float(4,3) NOT NULL DEFAULT '0.750',
@@ -920,7 +920,7 @@ CREATE TABLE `tblResultFile` (
 CREATE TABLE `tblTask` (
   `task_id` int(11) NOT NULL,
   `comp_id` int(11) DEFAULT NULL,
-  `task_last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `task_num` tinyint(4) NOT NULL,
   `task_name` varchar(100) DEFAULT NULL,
   `date` date NOT NULL,
@@ -969,7 +969,7 @@ CREATE TABLE `tblTaskResult` (
   `track_id` int(11) NOT NULL,
   `task_id` int(11) DEFAULT NULL,
   `par_id` int(11) DEFAULT NULL,
-  `track_last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `track_file` varchar(255) DEFAULT NULL,
   `g_record` tinyint(4) DEFAULT '1',
   `distance_flown` double DEFAULT NULL,
@@ -1013,6 +1013,7 @@ CREATE TABLE `tblTaskResult` (
 CREATE TABLE `tblTaskWaypoint` (
   `wpt_id` int(11) NOT NULL,
   `task_id` int(11) DEFAULT NULL,
+  `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `num` tinyint(4) NOT NULL,
   `name` varchar(12) NOT NULL,
   `rwp_id` int(11) DEFAULT NULL,

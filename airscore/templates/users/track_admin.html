@@ -21,7 +21,7 @@
 {% endblock %}
 
 {% block header %}
-{{session.comp_name}} - Task {{task_num}}
+{{session.comp_name}} - Task {{task.task_num}}
 {% endblock %}
 
 {% block content %}
@@ -35,22 +35,25 @@
     Bulk Import Tracks
   </button>
 
-  {% if track_source %}
-  <button id='{{ track_source }}_button' class='btn btn-primary ml-2' onclick='get_{{ track_source }}_tracks()'>
-    {{ track_source|title }}
+  {% if task.track_source %}
+  <button id='{{ track_source }}_button' class='btn btn-primary ml-2' onclick='get_{{ task.track_source }}_tracks()'>
+    {{ task.track_source|title }}
   </button>
   <button id='livetracking_button' class='btn btn-primary ml-2'>
     Live Tracking
   </button>
   {% endif %}
-
   {% if telegram %}
   <button id='telegram_button' class='btn btn-primary ml-2' onclick='send_telegram({{ taskid }});'>
     Send Telegram Update
   </button>
   {% endif %}
-
-  <button type='button' id='log_button' class='hideatstart btn btn-success ml-2' data-toggle='modal'
+  {% if task.needs_recheck %}
+  <button id='recheck_button' class='btn btn-warning ml-2' onclick='recheck_tracks();'>
+    Check Tracks with Outdated Result
+  </button>
+  {% endif %}
+  <button type='button' id='log_button' class='btn btn-success ml-2' data-toggle='modal'
           data-target='#ProcessModal'>
     Processing log
   </button>
@@ -175,6 +178,7 @@
 <script>
   var production = {{ production|tojson }};
   var taskid = {{ taskid|tojson }};
+  var task = {{ task|tojson }};
   var url_set_result = "{{ url_for('user._set_result', taskid=taskid)}}";
   var url_get_tracks_processed = "{{ url_for('user._get_tracks_processed', taskid=taskid)}}";
   var url_get_xcontest_tracks = "{{ url_for('user._get_xcontest_tracks', taskid=taskid)}}";

@@ -288,3 +288,34 @@ def is_shortcode_unique(shortcode: str, date: datetime.date):
     if Path(Defines.TRACKDIR, str(date.year), shortcode).is_dir():
         return False
     return True
+
+
+def get_tasks_details(comp_id: int) -> list:
+    from db.tables import TaskObjectView as T
+
+    with db_session() as db:
+        results = (
+            db.query(
+                T.task_id,
+                T.reg_id,
+                T.region_name,
+                T.task_num,
+                T.task_name,
+                T.date,
+                T.opt_dist,
+                T.comment,
+                T.window_open_time,
+                T.task_deadline,
+                T.window_close_time,
+                T.start_time,
+                T.start_close_time,
+                T.track_source,
+                T.locked,
+                T.cancelled
+            )
+            .filter_by(comp_id=comp_id)
+            .all()
+        )
+
+        return [row._asdict() for row in results] if results else []
+

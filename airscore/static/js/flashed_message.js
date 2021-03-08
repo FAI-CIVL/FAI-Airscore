@@ -15,3 +15,7 @@ function create_flashed_message(text, category){
     $('#flashed_messages').append(newdiv);
   }
 }
+
+function clear_flashed_messages() {
+  $('#flashed_messages').empty();
+}

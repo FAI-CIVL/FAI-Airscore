@@ -152,90 +152,90 @@ Task Settings
     </div>
     {% endif %}
   </div>
-
-  <!-- Task Waypoints Section -->
-  <div class="panel-content column-wrap">
-    <div class="panel-switch">
-      <button class='btn btn-primary ml-4' type='button' data-toggle='collapse' data-target='#task_waypoints'
-              aria-expanded='true' aria-controls='task_waypoints'>
-        Task Waypoints
-      </button>
-    </div>
-    <div class='panel collapse show' id='task_waypoints'>
-      <h4 class='tab-title font-weight-bold'>Task Waypoints:</h4>
-      {% if taskform.submit and not readonly %}
-      <section class="panel-row row-wrap button">
-        <button id='delete_all_btn' class='btn btn-danger ml-5 ' onclick='confirm_delete_all();' type='button'>
-          Clear Task
-        </button>
-        <button id='import_task_btn' class='btn btn-secondary ml-5 ' type='button' data-toggle='collapse' data-target='#import_task'
-                aria-expanded='false' aria-controls='import_task'>
-          Import
-        </button>
-        <div class='panel collapse' id='import_task'>
-          <section class="panel-row row-wrap button">
-            <button id='XCTrack_button' class='btn btn-success ml-4 '>Import XCTrack Task File...</button>
-            <input id='XCTrack_fileupload' type='file' size='chars' class='custom-file-input'
-                   oninput='filesize(this);' data-url='/users/_upload_XCTrack/{{ taskid }}' name='track_file'>
-          </section>
-        </div>
-      </section>
-      {% endif%}
-      <section class="panel-row row-wrap form">
-        <div class='panel' id='wpt_list'>
-          {% if taskform.submit and not readonly %}
-          {% if taskform.region.data %}
-          <section class="tab-row row-wrap form">
-            {{ render_field(turnpointform.name, 8, tooltip=True) }}
-          </section>
-          <section class="tab-row row-wrap form" id="new_waypoint_form">
-            {{ render_field(turnpointform.number, 2, tooltip=True) }}
-            {{ render_field(turnpointform.type, tooltip=True) }}
-            <div class='display-if' data-target_name='type' data-target_type='select'
-                           data-target_value='speed'>
-            {{ render_field(turnpointform.how, tooltip=True) }}
-            </div>
-            <div class='display-if' data-target_name='type' data-target_type='select'
-                           data-target_value='goal'>
-            {{ render_field(turnpointform.shape, tooltip=True) }}
-            </div>
-            {% if taskform.check_launch == 1 %}
-            <div class='display-if' data-target_name='type' data-target_type='select'
-                           data-target_value='launch'>
-            {{ render_field(turnpointform.radius, 5, tooltip=True) }}
-            </div>
-            {% endif%}
-            <div class='display-if' data-target_name='type' data-target_type='select'
-                           data-target_value_not='launch'>
-            {{ render_field(turnpointform.radius, 5, tooltip=True) }}
-            </div>
-          </section>
-          <section class="panel-row row-wrap button">
-            <button id='add_waypoint_button' class='btn btn-success' type='button' onclick='save_turnpoint()'>
-              Add
-            </button>
-            <p id='add_tp_spinner'></p>
-          </section>
-          {% else %}
-          <section class="panel-row row-wrap form">
-            <p class="p-2 description">Select an existing Region or create a new one for the task to display a waypoint list.</p>
-          </section>
-          {% endif %}
-          {% endif %}
-        </div>
-        <div class='panel' id="task_wpt">
-          <table class='table' id='task_wpt_table'>
-          </table>
-        </div>
-      </section>
-      <!--- map --->
-      <section class="panel-row row-wrap form">
-        <div class='task-map embed-responsive' id="map_container" hidden>
-        </div>
-      </section>
-    </div>
-  </div>
 </form>
+
+<!-- Task Waypoints Section -->
+<div class="panel-content column-wrap">
+  <div class="panel-switch">
+    <button class='btn btn-primary ml-4' type='button' data-toggle='collapse' data-target='#task_waypoints'
+            aria-expanded='true' aria-controls='task_waypoints'>
+      Task Waypoints
+    </button>
+  </div>
+  <div class='panel collapse show' id='task_waypoints'>
+    <h4 class='tab-title font-weight-bold'>Task Waypoints:</h4>
+    {% if taskform.submit and not readonly %}
+    <section class="panel-row row-wrap button">
+      <button id='delete_all_btn' class='btn btn-danger ml-5 ' onclick='confirm_delete_all();' type='button'>
+        Clear Task
+      </button>
+      <button id='import_task_btn' class='btn btn-secondary ml-5 ' type='button' data-toggle='collapse' data-target='#import_task'
+              aria-expanded='false' aria-controls='import_task'>
+        Import
+      </button>
+      <div class='panel collapse' id='import_task'>
+        <section class="panel-row row-wrap button">
+          <button id='XCTrack_button' class='btn btn-success ml-4 '>Import XCTrack Task File...</button>
+          <input id='XCTrack_fileupload' type='file' size='chars' class='custom-file-input'
+                 oninput='filesize(this);' data-url='/users/_upload_XCTrack/{{ taskid }}' name='track_file'>
+        </section>
+      </div>
+    </section>
+    {% endif%}
+    <section class="panel-row row-wrap form">
+      <div class='panel' id='wpt_list'>
+        {% if taskform.submit and not readonly %}
+        {% if taskform.region.data %}
+        <section class="tab-row row-wrap form p-2">
+          {{ render_field(turnpointform.name, 8, tooltip=True) }}
+        </section>
+        <section class="tab-row row-wrap form p-2" id="new_waypoint_form">
+          {{ render_field(turnpointform.number, 2, tooltip=True) }}
+          {{ render_field(turnpointform.type, tooltip=True) }}
+          <div class='display-if' data-target_name='type' data-target_type='select'
+                         data-target_value='speed'>
+          {{ render_field(turnpointform.how, tooltip=True) }}
+          </div>
+          <div class='display-if' data-target_name='type' data-target_type='select'
+                         data-target_value='goal'>
+          {{ render_field(turnpointform.shape, tooltip=True) }}
+          </div>
+          {% if taskform.check_launch == 1 %}
+          <div class='display-if' data-target_name='type' data-target_type='select'
+                         data-target_value='launch'>
+          {{ render_field(turnpointform.radius, 5, tooltip=True) }}
+          </div>
+          {% endif%}
+          <div class='display-if' data-target_name='type' data-target_type='select'
+                         data-target_value_not='launch'>
+          {{ render_field(turnpointform.radius, 5, tooltip=True) }}
+          </div>
+        </section>
+        <section class="panel-row row-wrap button">
+          <button id='add_waypoint_button' class='btn btn-success' type='button' onclick='save_turnpoint()'>
+            Add
+          </button>
+          <p id='add_tp_spinner'></p>
+        </section>
+        {% else %}
+        <section class="panel-row row-wrap form">
+          <p class="p-2 description">Select an existing Region or create a new one for the task to display a waypoint list.</p>
+        </section>
+        {% endif %}
+        {% endif %}
+      </div>
+      <div class='panel' id="task_wpt">
+        <table class='table' id='task_wpt_table'>
+        </table>
+      </div>
+    </section>
+    <!--- map --->
+    <section class="panel-row row-wrap form">
+      <div class='task-map embed-responsive' id="map_container" hidden>
+      </div>
+    </section>
+  </div>
+</div>
 
 {% if taskform.submit and not readonly %}
 <!--- delete-modal starts here--->

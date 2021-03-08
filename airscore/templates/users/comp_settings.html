@@ -453,6 +453,7 @@ Competition Settings
   var external = {{ session.external|tojson }};
   var is_editor = {{ session.is_editor|tojson }};
   var link_get_tasks = "{{ url_for('user._get_tasks', compid=compid)}}";
+  var tasks_info = {{ tasks_info|tojson }};
   var link_add_task = "{{ url_for('user._add_task', compid=compid)}}";
   var link_get_scorekeepers = "{{ url_for('user._get_scorekeepers', compid=compid)}}";
   var link_add_scorekeeper = "{{ url_for('user._add_scorekeeper', compid=compid)}}";

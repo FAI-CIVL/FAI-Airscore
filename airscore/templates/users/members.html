@@ -1,14 +1,26 @@
-{% extends "base.html"%}
+{% extends "base_admin.html"%}
 
 {% block page_title %}
 Members
 {% endblock %}
 
+{% block back %}
+<a href="{{ url_for('user.comp_admin')}}" class='btn btn-info'>
+  Admin Section
+</a>
+<a class='btn btn-info ml-4' href="{{ url_for('public.home') }}">
+  Public Website
+</a>
+{% endblock %}
+
+{% block header %}
+Registered Members
+{% endblock %}
+
 {% block content %}
 <div class='container'>
-  <h1>Welcome {{ current_user.username }}</h1>
-  <h3>This is the members-only page.</h3>
-  <h3>your user ID is {{current_user.id}} </h3>
+  <h3>Welcome {{ current_user.first_name|title }}.</h3>
+  <h4>Your access level is <span class="text-info font-weight-bold">{{current_user.access|title}}</span></h4>
 </div>
 {% endblock %}
 

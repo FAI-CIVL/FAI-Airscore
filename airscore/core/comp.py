@@ -12,6 +12,7 @@ Stuart Mackintosh Antonio Golfari - 2019
 """
 
 import json
+import compUtils
 from pathlib import Path
 
 from calcUtils import c_round, get_date
@@ -324,32 +325,7 @@ class Comp(object):
 
     def get_tasks_details(self):
         """gets tasks details from database. They could be different from JSON data for scored tasks"""
-        from db.tables import TaskObjectView as T
-
-        with db_session() as db:
-            results = (
-                db.query(
-                    T.task_id,
-                    T.reg_id,
-                    T.region_name,
-                    T.task_num,
-                    T.task_name,
-                    T.date,
-                    T.opt_dist,
-                    T.comment,
-                    T.window_open_time,
-                    T.task_deadline,
-                    T.window_close_time,
-                    T.start_time,
-                    T.start_close_time,
-                    T.track_source,
-                )
-                .filter_by(comp_id=self.comp_id)
-                .all()
-            )
-            if results:
-                results = [row._asdict() for row in results]
-            return results
+        return compUtils.get_tasks_details(self.comp_id)
 
     @staticmethod
     def from_json(comp_id: int, ref_id=None):

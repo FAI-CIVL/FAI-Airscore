@@ -1,4 +1,4 @@
-function populate_track_admin(task_id){
+function populate_track_admin(task_id) {
     $('#tracks').DataTable({
         destroy: true,
         ajax: '/users/_get_tracks_admin/'+task_id,
@@ -38,12 +38,24 @@ function populate_track_admin(task_id){
                     return data['file']
                 }
                 else {
-                    return '<button class="btn btn-danger mt-3" type="button" onclick="delete_track('+ data.track_id +','+ data.par_id +')">Delete Track</button> ';
+                    let column = '<button class="btn btn-danger mt-3" type="button" onclick="delete_track('+ data.track_id +','+ data.par_id +')">Delete Track</button> ';
+                    if ( !['ABS', 'DNF', 'Min Dist'].includes(data.Result) ) {
+                      if (data.outdated) column += '<button class="btn btn-warning mt-3" id="button_check_'+data.par_id+'" type="button" onclick="recheck_track('+ data.track_id +','+ data.par_id +')">Recheck Track</button> ';
+                    }
+                    return column;
                 }
             }
         }],
-        initComplete: function() {
-            $(".hideatstart").hide();
+        initComplete: function(response) {
+          console.log(response.json.data);
+          let rows = response.json.data;
+          $(".hideatstart").hide();
+          $('#recheck_button').hide();
+          clear_flashed_messages();
+          if ( rows.some( el => el.outdated ) ) {
+            $('#recheck_button').prop('disabled', false).show();
+            create_flashed_message('There are tracks that need to be checked again, task has changed meanwhile.', 'warning');
+          }
         },
     });
 }
@@ -63,6 +75,8 @@ function update_row(new_data){
     new_data.name = $('#tracks').DataTable().row( $('tr#id_'+ new_data.par_id)).data()['name'];
     table.fnUpdate(new_data, $('tr#id_'+ new_data.par_id), undefined, false);
     $(".hideatstart").hide();
+    clear_flashed_messages();
+    create_flashed_message(new_data.ID+' '+new_data.name+': Track result updated.', 'success');
 }
 
 function delete_track(track_id, par_id){
@@ -77,9 +91,50 @@ function delete_track(track_id, par_id){
         dataType: "json",
         success: function (response, par_id) {
             update_row(response);
-            update_track_pilot_stats();
         }
     });
+}
+
+function recheck_track(trackid, parid) {
+  $('#button_check_'+parid).prop('disabled', true);
+  let mydata = new Object();
+  mydata.parid = parid;
+  mydata.taskid = taskid;
+
+  $.ajax({
+    type: "POST",
+    url: '/users/_recheck_track/'+trackid,
+    contentType:"application/json",
+    data : JSON.stringify(mydata),
+    dataType: "json",
+    success: function (response) {
+      if (response.success && !production) {
+        update_row(response);
+        create_flashed_message('Track result updated.', 'success');
+      }
+      else if (response.error) {
+        $('#button_check_'+parid).prop('disabled', false);
+        create_flashed_message('Track updating failed.', 'danger');
+      }
+    }
+  });
+}
+
+function recheck_tracks() {
+  $('#recheck_button').prop('disabled', true);
+  $.ajax({
+    type: "POST",
+    url: '/users/_recheck_task_tracks/'+taskid,
+    contentType:"application/json",
+    dataType: "json",
+    success: function (response) {
+      if (!production) {
+        $('#recheck_button').prop('disabled', false);
+        populate_track_admin( taskid );
+        update_track_pilot_stats();
+      }
+    }
+  });
 }
 
 function send_telegram(task_id){
@@ -108,7 +163,7 @@ function send_telegram(task_id){
 }
 
 function set_result(par_id, status){
-  var mydata = new Object();
+  let mydata = new Object();
   mydata.par_id = par_id;
   mydata.Result = status;
 
@@ -120,7 +175,6 @@ function set_result(par_id, status){
     dataType: "json",
     success: function (response, par_id) {
       update_row(response);
-      update_track_pilot_stats();
     }
   });
 }
@@ -329,7 +383,7 @@ function choose_file_test(par_id){
       $('#spinner' + par_id).html('<div class="spinner-border" role="status"><span class="sr-only"></span></div>');
     },
     success: function (response) {
-      if(response.error){
+      if (response.error){
         $('#ABS'+ par_id).show();
         $('#MD'+ par_id).show();
         $('#DNF'+ par_id).show();
@@ -341,8 +395,8 @@ function choose_file_test(par_id){
           position: ['center', [-0.42, 0]],
           autoClose: false
         });
-    }
-    update_row(response);
+      }
+      update_row(response);
     },
     progress: function (e, data) {
       var progress = parseInt(data.loaded / data.total * 100, 10);
@@ -360,7 +414,6 @@ function choose_file(par_id, g_overide=false, v_overide=false) {
 }
 
 $(document).ready(function(){
-
   populate_track_admin(taskid);
   update_track_pilot_stats();
 
@@ -458,6 +511,9 @@ $(document).ready(function(){
       es.addEventListener('reload', function(event) {
         populate_track_admin(taskid);
         update_track_pilot_stats();
+      }, false);
+      es.addEventListener('page_reload', function(event) {
+        window.location.reload(true);
       }, false);
     }
   }

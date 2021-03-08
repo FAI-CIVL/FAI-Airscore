@@ -391,8 +391,11 @@ def get_admin_comps(current_userid, current_user_access=None):
     return jsonify({'data': all_comps})
 
 
-def get_task_list(comp):
-    tasks = comp.get_tasks_details()
+def get_task_list(comp_id: int) -> dict:
+    """returns a dict of tasks info"""
+    from compUtils import get_tasks_details
+
+    tasks = get_tasks_details(comp_id)
     max_task_num = 0
     last_region = 0
     for task in tasks:
@@ -400,17 +403,8 @@ def get_task_list(comp):
         if int(tasknum) > max_task_num:
             max_task_num = int(tasknum)
             last_region = task['reg_id']
-        task['num'] = f"Task {tasknum}"
-        # check if we have all we need to be able to accept tracks and score:
-        task['ready_to_score'] = (
-            task['opt_dist']
-            and task['window_open_time']
-            and task['window_close_time']
-            and task['start_time']
-            and task['start_close_time']
-            and task['task_deadline']
-        ) is not None
 
+        task['num'] = f"Task {tasknum}"
         task['opt_dist'] = 0 if not task['opt_dist'] else c_round(task['opt_dist'] / 1000, 2)
         task['opt_dist'] = f"{task['opt_dist']} km"
         if task['comment'] is None:
@@ -418,6 +412,25 @@ def get_task_list(comp):
         if not task['track_source']:
             task['track_source'] = ''
         task['date'] = task['date'].strftime('%d/%m/%y')
+
+        task['needs_full_rescore'] = False
+        task['needs_new_scoring'] = False
+        task['needs_recheck'] = False
+        task['ready_to_score'] = False
+
+        if not (task['locked'] or task['cancelled']):
+            '''check if task needs tracks recheck or rescoring'''
+            task['needs_new_scoring'], task['needs_recheck'], task['needs_full_rescore'] = check_task(task['task_id'])
+            '''check if we have all we need to be able to accept tracks and score'''
+            task['ready_to_score'] = (
+                                         task['opt_dist']
+                                         and task['window_open_time']
+                                         and task['window_close_time']
+                                         and task['start_time']
+                                         and task['start_close_time']
+                                         and task['task_deadline']
+                                     ) is not None
+
     return {'next_task': max_task_num + 1, 'last_region': last_region, 'tasks': tasks}
 
 
@@ -490,6 +503,54 @@ def get_task_turnpoints(task) -> dict:
     }
 
 
+def check_task(task_id: int) -> tuple:
+    """check all conditions for task"""
+    from calcUtils import epoch_to_datetime
+    from db.tables import TblResultFile as RF
+    from db.tables import TblTaskResult as R
+    from db.tables import TblForComp as F
+    from db.tables import TblTask as T
+
+    need_full_rescore = False
+    need_new_scoring = False
+    need_older_tracks_recheck = False
+
+    with db_session() as db:
+        '''get last track creation'''
+        query = db.query(R.last_update).filter_by(task_id=task_id).filter(R.track_file.isnot(None))
+        if query.count() > 0:
+            last_track = query.order_by(R.last_update.desc()).first()
+            first_track = query.order_by(R.last_update).first()
+            last_file = db.query(RF).filter_by(task_id=task_id).order_by(RF.created.desc()).first()
+            task = db.query(T).get(task_id)
+            comp_id = task.comp_id
+            formula_updated = db.query(F.last_update).filter_by(comp_id=comp_id).scalar()
+            task_updated = max(formula_updated, task.last_update)
+            last_file_created = None if not last_file else epoch_to_datetime(last_file.created)
+            if last_file_created and last_file_created < max(last_track.last_update, task_updated):
+                '''last results were calculated before last track or last formula changing'''
+                need_new_scoring = True
+            if task_updated > first_track.last_update:
+                '''formula or task has changed after first track was evaluated'''
+                need_older_tracks_recheck = True
+            # todo logic to see if we need a full rescore, probably only if task was canceled and we have more tracks,
+            #  or stopped and elapsed time / multistart with newer tracks started later than previous last
+    return need_new_scoring, need_older_tracks_recheck, need_full_rescore
+
+
+def get_outdated_tracks(task_id: int) -> list:
+    from db.tables import TblTaskResult as R
+    from db.tables import TblForComp as F
+    from db.tables import TblTask as T
+    with db_session() as db:
+        task = db.query(T).get(task_id)
+        comp_id = task.comp_id
+        formula_updated = db.query(F.last_update).filter_by(comp_id=comp_id).scalar()
+        task_updated = max(formula_updated, task.last_update)
+        query = db.query(R.par_id).filter_by(task_id=task_id).filter(R.track_file.isnot(None))
+        return [row.par_id for row in query.filter(R.last_update < task_updated).all()]
+
+
 def get_comp_regions(compid: int):
     """Gets a list of dicts of: if defines.yaml waypoint library function is on - all regions
     otherwise only the regions with their comp_id field set the the compid parameter"""
@@ -535,15 +596,16 @@ def get_waypoint_choices(reg_id: int):
     return choices, wpts
 
 
-def get_pilot_list_for_track_management(taskid: int):
+def get_pilot_list_for_track_management(taskid: int, recheck: bool) -> list:
     from pilot.flightresult import get_task_results
 
     pilots = get_task_results(taskid)
-
+    outdated = [] if not recheck else get_outdated_tracks(taskid)
     all_data = []
     for pilot in pilots:
         data = {e: getattr(pilot, e) for e in ('ID', 'name')}
         data.update(track_result_output(pilot, task_id=taskid))
+        data['outdated'] = data['par_id'] in outdated
         all_data.append(data)
 
     return all_data
@@ -1992,3 +2054,154 @@ def create_new_comp(comp, user_id: int) -> dict:
         create_check_parameters(comp.comp_id)
         return {'success': True}
     return {'success': False, 'errors': {'Error': ['There was an error trying to save new Competition']}}
+
+
+def recheck_track(task_id: int, par_id: int, user) -> tuple:
+    from airspace import AirspaceCheck
+    from pilot.flightresult import FlightResult, save_track
+    from trackUtils import check_flight, igc_parsing_config_from_yaml, import_igc_file
+    from task import Task
+
+    if production():
+        job = current_app.task_queue.enqueue(recheck_track_background,
+                                             task_id, par_id, user)
+        return True, None
+
+    pilot = FlightResult.read(par_id=par_id, task_id=task_id)
+    task = Task.read(task_id)
+
+    """import track"""
+    file = Path(task.file_path, pilot.track_file)
+    FlightParsingConfig = igc_parsing_config_from_yaml('_overide')
+    flight, error = import_igc_file(file, task, FlightParsingConfig)
+    if error:
+        return False, error['text']
+
+    '''recheck track'''
+    airspace = None if not task.airspace_check else AirspaceCheck.from_task(task)
+    check_flight(pilot, flight, task, airspace, print=print)
+    '''save to database'''
+    save_track(pilot, task.id)
+
+    print(f"track verified with task {task.task_id}\n")
+
+    data = track_result_output(pilot, task_id)
+    return data, None
+
+
+def recheck_track_background(task_id: int, par_id: int, user):
+    from trackUtils import import_igc_file, igc_parsing_config_from_yaml, check_flight
+    import json
+    from airspace import AirspaceCheck
+    from pilot.flightresult import FlightResult, save_track
+    from task import Task
+
+    print = partial(print_to_sse, id=par_id, channel=user)
+    print('|open_modal')
+
+    pilot = FlightResult.read(par_id, task_id)
+    task = Task.read(task_id)
+    data = {'par_id': pilot.par_id, 'track_id': pilot.track_id}
+
+    """import track"""
+    file = Path(task.file_path, pilot.track_file)
+    FlightParsingConfig = igc_parsing_config_from_yaml('_overide')
+    flight, error = import_igc_file(file, task, FlightParsingConfig)
+    if error:
+        '''error importing igc file'''
+        print(f"Error: {error['text']}")
+        print(f"{json.dumps(data)}|{error['code']}")
+        return None
+
+    '''recheck track'''
+    airspace = None if not task.airspace_check else AirspaceCheck.from_task(task)
+    print('***************START*******************')
+    check_flight(pilot, flight, task, airspace, print=print)
+    '''save to database'''
+    save_track(pilot, task.id)
+
+    data = track_result_output(pilot, task.task_id)
+    data['outdated'] = False
+
+    print(json.dumps(data) + '|result')
+    print('***************END****************')
+
+    return True
+
+
+def recheck_tracks(task_id: int, username: str):
+    """get list of tracks that need to be evaluated, and process them"""
+    from pilot.flightresult import FlightResult, update_all_results
+    from task import Task
+    from airspace import AirspaceCheck
+    from trackUtils import igc_parsing_config_from_yaml, check_flight
+    from igc_lib import Flight
+
+    if production():
+        job = current_app.task_queue.enqueue(recheck_tracks_background,
+                                             task_id=task_id,
+                                             user=username,
+                                             job_timeout=2000)
+        return True
+
+    par_ids = get_outdated_tracks(task_id)
+    pilots_to_save = []
+    task = Task.read(task_id)
+    track_path = task.file_path
+    FlightParsingConfig = igc_parsing_config_from_yaml(task.igc_config_file)
+    airspace = None if not task.airspace_check else AirspaceCheck.from_task(task)
+
+    for par in par_ids:
+        pilot = FlightResult.read(par_id=par, task_id=task_id)
+        file = Path(track_path, pilot.track_file)
+        flight = Flight.create_from_file(file, config_class=FlightParsingConfig)
+        check_flight(pilot, flight, task, airspace=airspace)
+        pilots_to_save.append(pilot)
+    '''save all succesfully processed pilots to database'''
+    update_all_results([p for p in pilots_to_save], task_id)
+    return True
+
+
+def recheck_tracks_background(task_id: int, user: str):
+    from task import Task
+    from airspace import AirspaceCheck
+    from trackUtils import igc_parsing_config_from_yaml, check_flight
+    from pilot.flightresult import update_all_results
+    from igc_lib import Flight
+
+    pilots_to_save = []
+    print = partial(print_to_sse, id=None, channel=user)
+    print('|open_modal')
+    task = Task.read(task_id)
+    track_path = task.file_path
+    task.get_pilots()
+    par_ids = get_outdated_tracks(task_id)
+    outdated_results = filter(lambda x: x.par_id in par_ids, task.results)
+    FlightParsingConfig = igc_parsing_config_from_yaml(task.igc_config_file)
+    airspace = None if not task.airspace_check else AirspaceCheck.from_task(task)
+    for pilot in outdated_results:
+        # pilot = FlightResult.read(par_id=par, task_id=task_id)
+        file = Path(track_path, pilot.track_file)
+        flight = Flight.create_from_file(file, config_class=FlightParsingConfig)
+        print(f"processing {pilot.ID} {pilot.name}:")
+        pilot_print = partial(print_to_sse, id=pilot.par_id, channel=user)
+        print('***************START*******************')
+        check_flight(pilot, flight, task, airspace, print=pilot_print)
+        if pilot.notifications:
+            print(f"NOTES:<br /> {'<br />'.join(n.comment for n in pilot.notifications)}")
+
+        pilots_to_save.append(pilot)
+        data = track_result_output(pilot, task.task_id)
+        pilot_print(f'{json.dumps(data)}|result')
+        print('***************END****************')
+    print("*****************re-processed all tracks********************")
+
+    '''save all succesfully processed pilots to database'''
+    update_all_results([p for p in pilots_to_save], task_id)
+    print('|page_reload')
+
+
+def recheck_needed(task_id: int):
+    from task import task_need_recheck
+    return task_need_recheck(task_id)
+
