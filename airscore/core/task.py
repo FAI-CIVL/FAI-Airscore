@@ -1790,10 +1790,10 @@ def need_full_rescore(task_id: int):
     with db_session() as db:
         task = db.query(T).filter_by(task_id=task_id).one_or_none()
         if task:
-            formula_last_update = db.query(F.formula_last_update).filter_by(comp_id=task.comp_id).scalar()
-            tracks = db.query(R.track_last_update, R.result_type).filter_by(task_id=task_id).all()
-            min_track_update = min(t.track_last_update for t in tracks if t.result_type not in ['nyp', 'abs', 'dnf'])
-            if min_track_update < max(formula_last_update, task.task_last_update):
+            formula_last_update = db.query(F.last_update).filter_by(comp_id=task.comp_id).scalar()
+            tracks = db.query(R.last_update, R.result_type).filter_by(task_id=task_id).all()
+            min_track_update = min(t.last_update for t in tracks if t.result_type not in ['nyp', 'abs', 'dnf'])
+            if min_track_update < max(formula_last_update, task.last_update):
                 return True
     return False
 
@@ -1808,8 +1808,8 @@ def need_new_scoring(task_id: int):
     with db_session() as db:
         last_file = db.query(F.created).filter_by(task_id=task_id).order_by(F.created.desc()).first()
         if last_file:
-            tracks = db.query(R.track_last_update, R.result_type).filter_by(task_id=task_id).all()
-            max_track_update = max(t.track_last_update for t in tracks)
+            tracks = db.query(R.last_update, R.result_type).filter_by(task_id=task_id).all()
+            max_track_update = max(t.last_update for t in tracks)
             if max_track_update > epoch_to_datetime(last_file.created):
                 return True
     return False
