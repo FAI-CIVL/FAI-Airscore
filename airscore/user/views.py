@@ -34,8 +34,39 @@ def admin_required(func):
 
     @wraps(func)
     def decorated_view(*args, **kwargs):
-        if not session['is_admin']:
+        if not current_user.is_admin:
             return current_app.login_manager.unauthorized()
+        return func(*args, **kwargs)
+
+    return decorated_view
+
+
+def editor_required(func):
+    """
+    If you decorate a view with this, it will ensure that the current user is
+    authorised to edit the present even, i.e. is admin or scorekeeper in it.
+    """
+
+    @wraps(func)
+    def decorated_view(*args, **kwargs):
+        if not session['is_editor']:
+            flash(f"You are not authorised to see that page.", category='danger')
+            return redirect(url_for('user.comp_settings_admin', compid=session.get('compid')))
+        return func(*args, **kwargs)
+
+    return decorated_view
+
+
+def internal_required(func):
+    """
+    If you decorate a view with this, it will ensure that the event is not imported.
+    """
+
+    @wraps(func)
+    def decorated_view(*args, **kwargs):
+        if session['external']:
+            flash(f"Event is imported, you cannot access that page.", category='danger')
+            return redirect(url_for('user.comp_settings_admin', compid=session.get('compid')))
         return func(*args, **kwargs)
 
     return decorated_view
@@ -58,6 +89,55 @@ def check_coherence(func):
     return decorated_function
 
 
+def session_task(func):
+    """
+    Checks task info dict is loaded in session and coherent
+    """
+    @wraps(func)
+    def decorated_function(*args, **kwargs):
+        try:
+            taskid = kwargs.get('taskid') if 'taskid' in kwargs.keys() else request.args.get('taskid')
+            if 'task' not in session.keys() or not session['task']['task_id'] == taskid:
+                session['task'] = next(el for el in session['tasks'] if el['task_id'] == taskid)
+        except (KeyError, AttributeError, Exception):
+            flash("No task info found", category='danger')
+            return render_template('users/comp_admin.html',
+                                   today=datetime.today().strftime('%Y-%m-%d'), new_comp_form=NewCompForm())
+        return func(*args, **kwargs)
+
+    return decorated_function
+
+
+def ready_to_score(func):
+    """
+    Checks if task has all info to be scored, else returns to task settings page
+    """
+    @wraps(func)
+    def decorated_function(*args, **kwargs):
+        if not session['task']['ready_to_score'] and not session['task']['locked']:
+            flash("Task is not ready to be scored as it is missing one or more of the following: "
+                  "a route with goal,window open/close, start/close and deadline times", category='warning')
+            return redirect(url_for('user.task_admin', taskid=session['task'].get('task_id')))
+        return func(*args, **kwargs)
+
+    return decorated_function
+
+
+def valid_results(func):
+    """
+    Checks if task has all info to be scored, else returns to task settings page
+    """
+
+    @wraps(func)
+    def decorated_function(*args, **kwargs):
+        if not frontendUtils.task_has_valid_results(session['task']['task_id']):
+            flash(message='Task has no valid tracks. Scoring is not possible yet.', category='warning')
+            return redirect(url_for('user.task_admin', taskid=session['task'].get('task_id')))
+        return func(*args, **kwargs)
+
+    return decorated_function
+
+
 def check_editor(func):
     """
     If you decorate a view with this, it will add a flashed message notifying editing restrictions
@@ -72,6 +152,43 @@ def check_editor(func):
         if not (current_user.is_admin or session['is_editor']):
             flash(f"You are not a scorekeeper for this event. You won't be able to modify settings.",
                   category='warning')
+        return func(*args, **kwargs)
+
+    return decorated_view
+
+
+def state_messages(func):
+    """
+    If you decorate a view with this, it will add a flashed message notifying task state:
+    - external event
+    - cancelled
+    - locked (official results)
+    - not ready to score
+    - recheck needed
+    - new scoring run needed
+    """
+
+    @wraps(func)
+    def decorated_view(*args, **kwargs):
+        if session['external']:
+            '''External Event'''
+            flash(f"This is an External Event. Most of Settings and Results are Read Only.", category='warning')
+        if not (current_user.is_admin or session['is_editor']):
+            flash(f"You are not a scorekeeper for this event. You won't be able to modify settings.",
+                  category='warning')
+        elif not session['external']:
+            task_info = session.get('task')
+            if task_info.get('cancelled'):
+                flash(f"Task has been cancelled.", category='danger')
+            elif task_info.get('locked'):
+                flash(f"Task has been locked and results are official.", category='info')
+            elif not task_info['ready_to_score']:
+                flash("Task is not ready to be scored as it is missing one or more of the following: "
+                      "a route with goal,window open/close, start/close and deadline times", category='warning')
+            elif task_info['needs_recheck']:
+                flash("There are tracks evaluated before last changes. They need to be re-checked", category='warning')
+            elif task_info['needs_new_scoring']:
+                flash("A new scoring is needed to reflect last task changes.", category='warning')
         return func(*args, **kwargs)
 
     return decorated_view
@@ -140,7 +257,8 @@ def airspace_edit(filename: str):
 @blueprint.route('/airspace_check_admin', methods=['GET', 'POST'])
 @login_required
 @check_coherence
-@check_editor
+@internal_required
+@state_messages
 def airspace_check_admin():
     from airspace import get_airspace_check_parameters
     compid = request.args.get('compid')
@@ -461,7 +579,6 @@ def comp_settings_admin(compid: int):
         if (current_user.id not in scorekeeper_ids) and (current_user.access != 'admin'):
             session['is_editor'] = False
             compform.submit = None
-            flash(f"You are not a scorekeeper for this comp. You won't be able to modify settings.", category='warning')
         else:
             session['is_editor'] = True
 
@@ -481,15 +598,19 @@ def comp_settings_admin(compid: int):
     session['check_g_record'] = comp.check_g_record
     session['track_source'] = comp.track_source
 
-    if not compform.formula.data:
-        '''Comp has not been initialised yet'''
-        flash(f"Comp has not been properly set yet. Check all parameters and save.", category='warning')
     if comp.external:
         '''External Event'''
         flash(f"This is an External Event. Settings and Results are Read Only.", category='warning')
-    if any(t['needs_full_rescore'] or t['needs_new_scoring'] or t['needs_recheck'] for t in session['tasks']):
-        '''there are tasks that do not have final results yet and seem to need to be checked'''
-        flash(f"There are tasks that need to be verified.", category='warning')
+    if not session['is_editor']:
+        flash(f"You are not a scorekeeper for this comp. You won't be able to modify settings.", category='warning')
+    elif not comp.external:
+        if not compform.formula.data:
+            '''Comp has not been initialised yet'''
+            flash(f"Comp has not been properly set yet. Check all parameters and save.", category='warning')
+        elif any(t['needs_full_rescore'] or t['needs_new_scoring'] or t['needs_recheck'] for t in session['tasks']):
+            '''there are tasks that do not have final results yet and seem to need to be checked'''
+            flash(f"There are tasks that need to be verified.", category='warning')
+
     return render_template('users/comp_settings.html', compid=compid, compform=compform,
                            taskform=newtaskform, scorekeeperform=newScorekeeperform, ladderform=ladderform,
                            rankingform=rankingform, certifications=certifications, tasks_info=tasks_info, error=error,
@@ -565,7 +686,8 @@ def _add_scorekeeper(compid: int):
 @blueprint.route('/task_admin/<int:taskid>', methods=['GET', 'POST'])
 @login_required
 @check_coherence
-@check_editor
+@session_task
+@state_messages
 def task_admin(taskid: int):
     from calcUtils import sec_to_time, time_to_seconds
     from region import get_openair
@@ -579,6 +701,7 @@ def task_admin(taskid: int):
     waypoints, _ = frontendUtils.get_waypoint_choices(task.reg_id)
     turnpointform.name.choices = waypoints
     modifyturnpointform.mod_name.choices = waypoints
+    task_info = session['task']
 
     if request.method == 'POST':
         if session['external']:
@@ -671,21 +794,8 @@ def task_admin(taskid: int):
         taskform.no_goal_penalty.data = round((task.formula.no_goal_penalty or 0) * 100)
         taskform.arr_alt_bonus.data = task.formula.arr_alt_bonus
 
-        if session['external'] or not session['is_editor']:
+        if task_info['cancelled'] or task_info['locked'] or not session['is_editor']:
             taskform.submit = None
-            if session['external']:
-                '''External Event'''
-                flash(f"This is an External Event. Settings and Results are Read Only.",
-                      category='warning')
-        else:
-            t = next(el for el in session['tasks'] if el['task_id'] == taskid)
-            if not t['ready_to_score']:
-                flash("Task is not ready to be scored as it is missing one or more of the following: "
-                      "a route with goal,window open/close, start/close and deadline times", category='warning')
-            elif t['needs_recheck']:
-                flash("There are tracks evaluated before last changes. They need to be re-checked", category='warning')
-            elif t['needs_new_scoring']:
-                flash("A new scoring is needed to reflect last task changes.", category='warning')
 
     return render_template('users/task_admin.html', taskid=taskid, taskform=taskform, turnpointform=turnpointform,
                            modifyturnpointform=modifyturnpointform, compid=task.comp_id, error=error)
@@ -913,14 +1023,14 @@ def _get_tracks_processed(taskid: int):
 @blueprint.route('/track_admin/<int:taskid>', methods=['GET'])
 @login_required
 @check_coherence
-@check_editor
+@internal_required
+@editor_required
+@session_task
+@state_messages
 def track_admin(taskid: int):
     from Defines import TELEGRAM
     task = next((t for t in session['tasks'] if t['task_id'] == taskid), None)
     compid = int(session['compid'])
-
-    if not task['ready_to_score']:
-        return render_template('task_not_ready_to_score.html')
 
     formats = frontendUtils.get_igc_filename_formats_list()
 
@@ -1163,27 +1273,15 @@ def _get_task_score_from_file(taskid: int, filename: str):
 
 @blueprint.route('/task_score_admin/<int:taskid>', methods=['GET'])
 @login_required
+@editor_required
 @check_coherence
-@check_editor
+@session_task
+@ready_to_score
+@valid_results
+@state_messages
 def task_score_admin(taskid: int):
-    task = next((el for el in session['tasks'] if el['task_id'] == taskid), None)
-    task_num = task['task_num']
-    task_name = task['task_name']
-    task_ready_to_score = task['ready_to_score']
-    valid_results = frontendUtils.task_has_valid_results(taskid)
+    task_info = session['task']
     compid = int(session['compid'])
-
-    score_active = False
-    if session['external']:
-        '''External Event'''
-        flash(f"This is an External Event. Settings and Results are Read Only.", category='warning')
-    elif not task_ready_to_score:
-        flash(message='Task has not all the parameters necessary to score. Please complete setup and save settings.',
-              category='warning')
-    elif not valid_results:
-        flash(message='Task has no valid tracks. Scoring is not possible yet.', category='warning')
-    else:
-        score_active = True
 
     fileform = ResultAdminForm()
     editform = EditScoreForm()
@@ -1191,11 +1289,7 @@ def task_score_admin(taskid: int):
     fileform.task_result_file.choices = choices
     fileform.comp_result_file.choices = choices
 
-    # _, _, all_scorekeeper_ids = frontendUtils.get_comp_scorekeeper(taskid, task_id=True)
-    # if current_user.id in all_scorekeeper_ids:
-    #     user_is_scorekeeper = True
-    # else:
-    #     user_is_scorekeeper = None
+    score_active = not (task_info['cancelled'] or session['external'])
 
     return render_template('users/task_score_admin.html', fileform=fileform, taskid=taskid, compid=compid,
                            task_name=task_name, score_active=score_active, task_num=task_num, editform=editform,
