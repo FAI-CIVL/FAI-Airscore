@@ -1,67 +1,68 @@
 function populate_track_admin(task_id) {
-    $('#tracks').DataTable({
-        destroy: true,
-        ajax: '/users/_get_tracks_admin/'+task_id,
-        paging: true,
-        order: [[ 1, 'asc' ]],
-        lengthMenu: [60, 150 ],
-        searching: true,
-        info: false,
-        columns: [
-            {data: 'ID', name:'ID'},
-            {data: 'name', name:'Name'},
-            {data: 'Result', name:'Result'},
-            {data: null}
-        ],
-        rowId: function(data) {
-                return 'id_' + data.par_id;
-        },
-        columnDefs:[{
-            targets: [-1],  render: function (a, b, data, d) {
-                if(data['Result']=='Not Yet Processed' | data['Result'].indexOf("G record") >= 0){
-                    var buttons;
-                    buttons =
-                     '<button id="ABS' + data.par_id  +'" class="btn btn-primary mt-3" type="button" onclick="set_result(' + data.par_id +',\'abs\')">Set ABS</button> '
-                     +'<button id="MD' + data.par_id  +'" class="btn btn-primary mt-3" type="button" onclick="set_result(' + data.par_id +',\'mindist\')">Set Min Dist</button> '
-                     +'<button id="DNF' + data.par_id  +'" class="btn btn-primary mt-3" type="button" onclick="set_result(' + data.par_id +',\'dnf\')">Set DNF</button> '
-                     +'<button id="TrackUp' + data.par_id  +'" class="btnupload btn btn-primary mt-3" onclick="choose_file(' + data.par_id +');">Upload Track</button>'
-        //             +'<button id="TrackUp_overide_check' + data.par_id  +'" class="hideatstart btnupload btn btn-warning mt-3" onclick="choose_file(' + data.par_id +', false, true);">Upload Track - Overide quality check</button>'
-                     +'<div class = "hideatstart"  id="progress_percentage'+ data.par_id+ '" ><p id="progress_percentage _text'+data.par_id +'"></p></div>'
-                     +' <div id="filediv' + data.par_id  +'" class = "hideatstart" > <input id="fileupload' + data.par_id +'" type="file" size="chars" class="custom-file-input"  oninput="filesize(this);" data-url="/users/_upload_track/'+ task_id + '/' + data.par_id + '" name="tracklog" >'
-                     + ' <div id="filediv' + data.par_id  +'" class = "hideatstart" > <input id="fileupload_NO_G' + data.par_id +'" type="file" size="chars" class="custom-file-input"  oninput="filesize(this);" data-url="/users/_upload_track/'+ task_id + '/' + data.par_id + '" name="tracklog_NO_G" >'
-                     + ' <div id="filediv' + data.par_id  +'" class = "hideatstart" > <input id="fileupload_NO_V' + data.par_id +'" type="file" size="chars" class="custom-file-input"  oninput="filesize(this);" data-url="/users/_upload_track/'+ task_id + '/' + data.par_id + '" name="tracklog_NO_V" >'
-        //             +'<div id="progress'+ data.par_id+ '" ><div class="bar" style="width: 0%;"><p id="spinner'+ data.par_id + '"></p><p id="progress_text'+data.par_id +'"></p></div></div>'
-                     +'</div>';
-                    return buttons;
-                }
-                else if (data['Result']=='Processing..') {
-                    return data['file']
-                }
-                else {
-                    let column = '<button class="btn btn-danger mt-3" type="button" onclick="delete_track('+ data.track_id +','+ data.par_id +')">Delete Track</button> ';
-                    if ( !['ABS', 'DNF', 'Min Dist'].includes(data.Result) ) {
-                      if (data.outdated) column += '<button class="btn btn-warning mt-3" id="button_check_'+data.par_id+'" type="button" onclick="recheck_track('+ data.track_id +','+ data.par_id +')">Recheck Track</button> ';
-                    }
-                    return column;
-                }
-            }
-        }],
-        initComplete: function(response) {
-          console.log(response.json.data);
-          let rows = response.json.data;
-          $(".hideatstart").hide();
-          $('#recheck_button').hide();
-          clear_flashed_messages();
-          if ( rows.some( el => el.outdated ) ) {
-            $('#recheck_button').prop('disabled', false).show();
-            create_flashed_message('There are tracks that need to be checked again, task has changed meanwhile.', 'warning');
+  $('#tracks').DataTable({
+    destroy: true,
+    ajax: '/users/_get_tracks_admin/'+task_id,
+    paging: true,
+    order: [[ 1, 'asc' ]],
+    lengthMenu: [60, 150 ],
+    searching: true,
+    info: false,
+    columns: [
+      {data: 'ID', name:'ID'},
+      {data: 'name', name:'Name'},
+      {data: 'Result', name:'Result'},
+      {data: null}
+    ],
+    rowId: function(data) {
+            return 'id_' + data.par_id;
+    },
+    columnDefs:[{
+      targets: [-1],  render: function (a, b, data, d) {
+        if ( task_info.cancelled || task_info.locked ) {
+          return '<span class="btn btn-info">locked<span>';
+        }
+        else if(data['Result']=='Not Yet Processed' | data['Result'].indexOf("G record") >= 0){
+          var buttons;
+          buttons =
+           '<button id="ABS' + data.par_id  +'" class="btn btn-primary mt-3" type="button" onclick="set_result(' + data.par_id +',\'abs\')">Set ABS</button> '
+           +'<button id="MD' + data.par_id  +'" class="btn btn-primary mt-3" type="button" onclick="set_result(' + data.par_id +',\'mindist\')">Set Min Dist</button> '
+           +'<button id="DNF' + data.par_id  +'" class="btn btn-primary mt-3" type="button" onclick="set_result(' + data.par_id +',\'dnf\')">Set DNF</button> '
+           +'<button id="TrackUp' + data.par_id  +'" class="btnupload btn btn-primary mt-3" onclick="choose_file(' + data.par_id +');">Upload Track</button>'
+//             +'<button id="TrackUp_overide_check' + data.par_id  +'" class="hideatstart btnupload btn btn-warning mt-3" onclick="choose_file(' + data.par_id +', false, true);">Upload Track - Overide quality check</button>'
+           +'<div class = "hideatstart"  id="progress_percentage'+ data.par_id+ '" ><p id="progress_percentage _text'+data.par_id +'"></p></div>'
+           +' <div id="filediv' + data.par_id  +'" class = "hideatstart" > <input id="fileupload' + data.par_id +'" type="file" size="chars" class="custom-file-input"  oninput="filesize(this);" data-url="/users/_upload_track/'+ task_id + '/' + data.par_id + '" name="tracklog" >'
+           + ' <div id="filediv' + data.par_id  +'" class = "hideatstart" > <input id="fileupload_NO_G' + data.par_id +'" type="file" size="chars" class="custom-file-input"  oninput="filesize(this);" data-url="/users/_upload_track/'+ task_id + '/' + data.par_id + '" name="tracklog_NO_G" >'
+           + ' <div id="filediv' + data.par_id  +'" class = "hideatstart" > <input id="fileupload_NO_V' + data.par_id +'" type="file" size="chars" class="custom-file-input"  oninput="filesize(this);" data-url="/users/_upload_track/'+ task_id + '/' + data.par_id + '" name="tracklog_NO_V" >'
+//             +'<div id="progress'+ data.par_id+ '" ><div class="bar" style="width: 0%;"><p id="spinner'+ data.par_id + '"></p><p id="progress_text'+data.par_id +'"></p></div></div>'
+           +'</div>';
+          return buttons;
+        }
+        else if (data['Result']=='Processing..') {
+          return data['file']
+        }
+        else {
+          let column = '<button class="btn btn-danger mt-3" type="button" onclick="delete_track('+ data.track_id +','+ data.par_id +')">Delete Track</button> ';
+          if ( !['ABS', 'DNF', 'Min Dist'].includes(data.Result) ) {
+            if (data.outdated) column += '<button class="btn btn-warning mt-3" id="button_check_'+data.par_id+'" type="button" onclick="recheck_track('+ data.track_id +','+ data.par_id +')">Recheck Track</button> ';
           }
-        },
-    });
+          return column;
+        }
+      }
+    }],
+    initComplete: function(response) {
+      console.log(response.json.data);
+      let rows = response.json.data;
+      $(".hideatstart").hide();
+      $('#recheck_button').hide();
+      if ( rows.some( el => el.outdated ) ) {
+        $('#recheck_button').prop('disabled', false).show();
+      }
+    },
+  });
 }
 
 function open_bulk_modal() {
-    $('#bulkmodal').modal('show');
+  $('#bulkmodal').modal('show');
 }
 
 function filesize(elem){
@@ -69,30 +70,30 @@ function filesize(elem){
 }
 
 function update_row(new_data){
-    update_track_pilot_stats();
-    var table = $('#tracks').dataTable();
-    new_data.ID = $('#tracks').DataTable().row( $('tr#id_'+ new_data.par_id)).data()['ID'];
-    new_data.name = $('#tracks').DataTable().row( $('tr#id_'+ new_data.par_id)).data()['name'];
-    table.fnUpdate(new_data, $('tr#id_'+ new_data.par_id), undefined, false);
-    $(".hideatstart").hide();
-    clear_flashed_messages();
-    create_flashed_message(new_data.ID+' '+new_data.name+': Track result updated.', 'success');
+  update_track_pilot_stats();
+  var table = $('#tracks').dataTable();
+  new_data.ID = $('#tracks').DataTable().row( $('tr#id_'+ new_data.par_id)).data()['ID'];
+  new_data.name = $('#tracks').DataTable().row( $('tr#id_'+ new_data.par_id)).data()['name'];
+  table.fnUpdate(new_data, $('tr#id_'+ new_data.par_id), undefined, false);
+  $(".hideatstart").hide();
+  clear_flashed_messages();
+  create_flashed_message(new_data.ID+' '+new_data.name+': Track result updated.', 'success');
 }
 
 function delete_track(track_id, par_id){
-    var mydata = new Object();
-    mydata.track_id = track_id;
-    mydata.par_id = par_id;
-    $.ajax({
-        type: "POST",
-        url: "/users/_delete_track/" + track_id,
-        contentType:"application/json",
-        data : JSON.stringify(mydata),
-        dataType: "json",
-        success: function (response, par_id) {
-            update_row(response);
-        }
-    });
+  var mydata = new Object();
+  mydata.track_id = track_id;
+  mydata.par_id = par_id;
+  $.ajax({
+    type: "POST",
+    url: "/users/_delete_track/" + track_id,
+    contentType:"application/json",
+    data : JSON.stringify(mydata),
+    dataType: "json",
+    success: function (response, par_id) {
+        update_row(response);
+    }
+  });
 }
 
 function recheck_track(trackid, parid) {
@@ -138,28 +139,28 @@ function recheck_tracks() {
 }
 
 function send_telegram(task_id){
-    document.getElementById("telegram_button").innerHTML="Sending...";
-    document.getElementById("telegram_button").className = "btn btn-warning ml-4";
-    $.ajax({
-        type: "POST",
-        url: "/users/_send_telegram_update/" + task_id,
-        contentType:"application/json",
-        dataType: "json",
-        success: function (response) {
-            if (response.success == true) {
-                document.getElementById("telegram_button").innerHTML="Success";
-                document.getElementById("telegram_button").className = "btn btn-success ml-4";
-            }
-            else {
-                document.getElementById("telegram_button").innerHTML="Failed";
-                document.getElementById("telegram_button").className = "btn btn-danger ml-4";
-            }
-            setTimeout(function(){
-                document.getElementById("telegram_button").innerHTML="Update Telegram";
-                document.getElementById("telegram_button").className = "btn btn-primary ml-4";
-            }, 3000);
-        }
-    });
+  document.getElementById("telegram_button").innerHTML="Sending...";
+  document.getElementById("telegram_button").className = "btn btn-warning ml-4";
+  $.ajax({
+    type: "POST",
+    url: "/users/_send_telegram_update/" + task_id,
+    contentType:"application/json",
+    dataType: "json",
+    success: function (response) {
+      if (response.success == true) {
+        document.getElementById("telegram_button").innerHTML="Success";
+        document.getElementById("telegram_button").className = "btn btn-success ml-4";
+      }
+      else {
+        document.getElementById("telegram_button").innerHTML="Failed";
+        document.getElementById("telegram_button").className = "btn btn-danger ml-4";
+      }
+      setTimeout(function(){
+        document.getElementById("telegram_button").innerHTML="Update Telegram";
+        document.getElementById("telegram_button").className = "btn btn-primary ml-4";
+      }, 3000);
+    }
+  });
 }
 
 function set_result(par_id, status){
@@ -414,6 +415,7 @@ function choose_file(par_id, g_overide=false, v_overide=false) {
 }
 
 $(document).ready(function(){
+  $('#log_button').hide();
   populate_track_admin(taskid);
   update_track_pilot_stats();
 
@@ -509,6 +511,7 @@ $(document).ready(function(){
         update_row(data.message);
       }, false);
       es.addEventListener('reload', function(event) {
+        clear_flashed_messages();
         populate_track_admin(taskid);
         update_track_pilot_stats();
       }, false);

@@ -15,15 +15,20 @@ Task Scoring Admin
 <a href="{{ url_for('user.task_admin', taskid=taskid)}}" class='btn btn-info ml-2'>
   Task Settings
 </a>
-{% if not session.external %}
+{% if not session.external and session.is_editor %}
 <a href="{{ url_for('user.track_admin', taskid=taskid)}}" class='btn btn-info ml-2'>
   Tracks
+</a>
+{% endif %}
+{% if session.is_editor %}
+<a href="#" class='btn btn-secondary ml-2'>
+  Task Scores
 </a>
 {% endif %}
 {% endblock %}
 
 {% block header %}
-{{session.comp_name}} - Task {{task_num}}
+{{session.comp_name}} - Task {{task_info.task_num}}
 {% endblock %}
 
 {% block content %}
@@ -42,21 +47,26 @@ Task Scoring Admin
       {% if score_active %}
       <section class="tab-row column-wrap form" id="process_task_section">
         <h4 class='tab-title font-weight-bold'>Process Task:</h4>
-        <section class="panel-row row-wrap button">
+        <section class="row-wrap button">
           {% if not session.is_editor %}
           <h4>You are not a scorekeeper of this competition, thus you cannot access most of functionalities in this page.</h4>
-          {% else %}
+          {% elif not (task_info.cancelled or task_info.locked) %}
           <button class='btn btn-primary' type='button' onclick='Score_modal();'>
             Score Task
           </button>
-          <button class='btn btn-warning ml-2' type='button' data-toggle='modal' data-target='#fullscoremodal'>
+          <button class='btn btn-warning ml-3' type='button' data-toggle='modal' data-target='#fullscoremodal'>
             Full Rescore
           </button>
+          {% else %}
+          <span class="btn btn-info">Locked</span>
           {% endif %}
         </section>
       </section>
       {% endif %}
       <section class="tab-row column-wrap form" id="task_results_section">
+        {% if task_info.cancelled %}
+        <h4 class='tab-title font-weight-bold'>Task is Cancelled</h4>
+        {% else %}
         <h4 class='tab-title font-weight-bold'>Task Results:</h4>
         <section class="tab-row row-wrap form">
             <h5 class="mt-2" id='task_result_header'></h5>
@@ -83,7 +93,8 @@ Task Scoring Admin
               </button>
             </section>
         </section>
-        {% endif %}
+        {% endif %}   <!-- is editor -->
+        {% endif %}   <!-- task cancelled -->
       </section>
     </div>
 
@@ -377,6 +388,7 @@ Task Scoring Admin
 <script type='text/javascript'>
   var production = {{ production|tojson }};
   var taskid = {{ taskid|tojson }};
+  var task_info = {{ task_info|tojson }};
   var compid = {{ session.compid|tojson }};
   var external = {{ session.external|tojson }};
   var url_publish_result = "{{ url_for('user._publish_result', taskid=taskid)}}";

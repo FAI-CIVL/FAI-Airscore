@@ -15,13 +15,20 @@
 <a href="{{ url_for('user.task_admin', taskid=taskid)}}" class='btn btn-info ml-2'>
   Task Settings
 </a>
+{% if not session.external and session.is_editor %}
+<a href="#" class='btn btn-secondary ml-2'>
+  Tracks
+</a>
+{% endif %}
+{% if session.is_editor and (task_info.ready_to_score or task_info.locked) %}
 <a href="{{ url_for('user.task_score_admin', taskid=taskid)}}" class='btn btn-info ml-2'>
   Task Scores
 </a>
+{% endif %}
 {% endblock %}
 
 {% block header %}
-{{session.comp_name}} - Task {{task.task_num}}
+{{session.comp_name}} - Task {{task_info.task_num}}
 {% endblock %}
 
 {% block content %}
@@ -30,14 +37,15 @@
 <h2>You are not authorised to access this page as you are not a scorekeeper of this competition</h2>
 
 {% else %}
+{% if not (task_info.cancelled or task_info.locked) and task_info.ready_to_score %}
 <div class='form-group col-md-12' id='bulk'>
   <button id='bulk_button' class='btn btn-primary' onclick='open_bulk_modal();'>
     Bulk Import Tracks
   </button>
 
-  {% if task.track_source %}
-  <button id='{{ track_source }}_button' class='btn btn-primary ml-2' onclick='get_{{ task.track_source }}_tracks()'>
-    {{ task.track_source|title }}
+  {% if task_info.track_source %}
+  <button id='{{ track_source }}_button' class='btn btn-primary ml-2' onclick='get_{{ task_info.track_source }}_tracks()'>
+    {{ task_info.track_source|title }}
   </button>
   <button id='livetracking_button' class='btn btn-primary ml-2'>
     Live Tracking
@@ -48,7 +56,7 @@
     Send Telegram Update
   </button>
   {% endif %}
-  {% if task.needs_recheck %}
+  {% if task_info.needs_recheck %}
   <button id='recheck_button' class='btn btn-warning ml-2' onclick='recheck_tracks();'>
     Check Tracks with Outdated Result
   </button>
@@ -58,6 +66,7 @@
     Processing log
   </button>
 </div>
+{% endif %}
 
 <div class='text-center'>
   <h3 id='TracksProcessed'></h3>
@@ -178,7 +187,7 @@
 <script>
   var production = {{ production|tojson }};
   var taskid = {{ taskid|tojson }};
-  var task = {{ task|tojson }};
+  var task_info = {{ task_info|tojson }};
   var url_set_result = "{{ url_for('user._set_result', taskid=taskid)}}";
   var url_get_tracks_processed = "{{ url_for('user._get_tracks_processed', taskid=taskid)}}";
   var url_get_xcontest_tracks = "{{ url_for('user._get_xcontest_tracks', taskid=taskid)}}";

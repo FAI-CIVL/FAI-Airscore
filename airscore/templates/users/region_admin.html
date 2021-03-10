@@ -4,9 +4,15 @@
 Region Admin
 {% endblock %}
 
-{% block head %}
+{% block css %}
 <!-- CSS -->
 <link href='https://cdn.datatables.net/rowgroup/1.1.1/css/rowGroup.dataTables.min.css' rel='stylesheet'>
+{% endblock %}
+
+{% block back %}
+<a href="{{ url_for('user.comp_settings_admin', compid=compid)}}" class='btn btn-info'>
+  Back to Competition Settings
+</a>
 {% endblock %}
 
 {% block header %} Flying Area Details {% endblock %}

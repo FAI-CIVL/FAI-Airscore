@@ -797,8 +797,9 @@ def task_admin(taskid: int):
         if task_info['cancelled'] or task_info['locked'] or not session['is_editor']:
             taskform.submit = None
 
-    return render_template('users/task_admin.html', taskid=taskid, taskform=taskform, turnpointform=turnpointform,
-                           modifyturnpointform=modifyturnpointform, compid=task.comp_id, error=error)
+    return render_template('users/task_admin.html', taskid=taskid, task_info=task_info,  taskform=taskform,
+                           turnpointform=turnpointform, modifyturnpointform=modifyturnpointform, compid=task.comp_id,
+                           error=error)
 
 
 @blueprint.route('/_get_admin_comps', methods=['GET'])
@@ -1035,7 +1036,7 @@ def track_admin(taskid: int):
     formats = frontendUtils.get_igc_filename_formats_list()
 
     return render_template('users/track_admin.html', taskid=taskid, compid=compid, filename_formats=formats,
-                           production=frontendUtils.production(), task=task, telegram=TELEGRAM)
+                           production=frontendUtils.production(), task_info=task, telegram=TELEGRAM)
 
 
 @blueprint.route('/_set_result/<int:taskid>', methods=['POST'])
@@ -1291,9 +1292,9 @@ def task_score_admin(taskid: int):
 
     score_active = not (task_info['cancelled'] or session['external'])
 
-    return render_template('users/task_score_admin.html', fileform=fileform, taskid=taskid, compid=compid,
-                           task_name=task_name, score_active=score_active, task_num=task_num, editform=editform,
-                           production=frontendUtils.production())
+    return render_template('users/task_score_admin.html',
+                           fileform=fileform, taskid=taskid, compid=compid, task_info=task_info,
+                           score_active=score_active, editform=editform, production=frontendUtils.production())
 
 
 @blueprint.route('/_score_task/<int:taskid>', methods=['POST'])
@@ -1490,15 +1491,15 @@ def region_admin():
                     '''file has not a valid extension'''
                     flash(f"Waypoint file extension not supported ({', '.join(ALLOWED_WPT_EXTENSIONS)} ",
                           category='danger')
-                    return render_template('users/region_admin.html', region_select=region_select,
-                                           new_region_form=new_region)
+                    return render_template('users/region_admin.html',
+                                           compid=compid, region_select=region_select, new_region_form=new_region)
 
                 wpt_format, wpts = get_turnpoints_from_file_storage(waypoint_file)
 
                 if not wpts:
                     flash("Waypoint file format not supported or file is not a waypoint file", category='danger')
-                    return render_template('users/region_admin.html', region_select=region_select,
-                                           new_region_form=new_region)
+                    return render_template('users/region_admin.html',
+                                           compid=compid, region_select=region_select, new_region_form=new_region)
 
                 '''save file'''
                 wpt_filename = unique_filename(waypoint_file.filename, WAYPOINTDIR)
@@ -1527,7 +1528,8 @@ def region_admin():
                 flash(f"Waypoint file format: {wpt_format}, {len(wpts)} waypoints. ", category='info')
                 flash(f"Region {new_region.name.data} added", category='info')
 
-    return render_template('users/region_admin.html', region_select=region_select, new_region_form=new_region)
+    return render_template('users/region_admin.html',
+                           compid=compid, region_select=region_select, new_region_form=new_region)
 
 
 @blueprint.route('/_delete_region/<int:regid>', methods=['POST'])

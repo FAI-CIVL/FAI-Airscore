@@ -54,7 +54,7 @@ function populate_task_scores(){
       }},
       {
       targets: [-1],  render: function (a, b, data, d) {
-      if (!external){
+      if ( !external && !task_info.locked ){
         return ('<td  class ="value" ><button type="button" class="btn btn-primary" onclick="adjust('
           + data.par_id + ')" data-toggle="confirmation" data-popout="true">Edit</button></td>');
       }
@@ -470,7 +470,17 @@ function update_buttons(iscomp=false) {
   let data = task;
   if (iscomp) data = comp;
 
-  if (ismissing(data.status)) {
+  if ( task_info.locked ) {
+    data.publish.text('Locked');
+    data.publish.addClass('btn-secondary').removeClass('btn-success').removeClass('btn-warning');
+    data.publish.prop('disabled', true);
+    data.change_status.removeClass('btn-secondary').addClass('btn-primary');
+    data.change_status.prop('disabled', false);
+    data.preview.removeClass('btn-secondary').addClass('btn-primary');
+    data.preview.attr('onclick', "window.open('"+ get_preview_url(iscomp)+"','preview')");
+    data.preview.prop('disabled', false);
+  }
+  else if (ismissing(data.status)) {
     data.publish.text('Publish results');
     data.publish.addClass('btn-secondary').removeClass('btn-success').removeClass('btn-warning');
     data.publish.prop('disabled', true);
@@ -513,6 +523,7 @@ var task = {
   header: $("#task_result_header"),
   scoring_section: $('#scoring_runs_section'),
   results_panel: $('#task_results_panel'),
+  lock_switch: $('#lock_task_button'),
   active_file: '',
   selected: '',
   latest: '',

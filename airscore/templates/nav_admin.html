@@ -57,10 +57,10 @@
             <ul class='dropdown-menu' aria-labelledby='compDropdown{{task.task_num}}'>
               <li><a class='dropdown-item' href="{{ url_for('user.task_admin', taskid=task.task_id) }}">Settings</a>
               </li>
-              {% if session.is_editor and task.ready_to_score %}
-              {% if not session.external %}
+              {% if session.is_editor and not session.external %}
               <li><a class='dropdown-item' href="{{ url_for('user.track_admin', taskid=task.task_id) }}">Tracks</a></li>
               {% endif %}
+              {% if session.is_editor and (task.ready_to_score or task.locked) %}
               <li><a class='dropdown-item' href="{{ url_for('user.task_score_admin', taskid=task.task_id) }}">Scores</a>
               </li>
               {% endif %}
