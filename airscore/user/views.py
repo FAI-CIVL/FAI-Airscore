@@ -1400,6 +1400,20 @@ def _publish_result(taskid: int):
     return render_template('500.html')
 
 
+@blueprint.route('/_task_lock_switch/<int:taskid>', methods=['POST'])
+@login_required
+def _task_lock_switch(taskid: int):
+    if request.method == "POST":
+        data = request.json
+        old_value = bool(data.get('locked'))
+        resp = frontendUtils.switch_task_lock(taskid, old_value)
+        if resp:
+            session['tasks'] = frontendUtils.get_task_list(session['compid'])['tasks']
+            session['task'] = next(el for el in session['tasks'] if el['task_id'] == taskid)
+            return jsonify(success=resp)
+    return jsonify(success=False)
+
+
 @blueprint.route('/_calculate_comp_result/<int:compid>', methods=['POST'])
 @login_required
 def _calculate_comp_result(compid: int):

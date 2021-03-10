@@ -564,6 +564,22 @@ $(document).ready(function() {
     update_buttons(iscomp=true);
   });
 
+  task.lock_switch.click( function() {
+    let mydata = {
+      locked: task_info.locked
+    }
+    $.ajax({
+      type: "POST",
+      url:  '/users/_task_lock_switch/'+taskid,
+      contentType: "application/json",
+      data: JSON.stringify(mydata),
+      dataType: "json",
+      success: function(response) {
+        window.location.reload(true);
+      }
+    });
+  });
+
   function initES() {
     if (es == null || es.readyState == 2) { // this is probably not necessary.
       es = new EventSource(url_sse_stream);

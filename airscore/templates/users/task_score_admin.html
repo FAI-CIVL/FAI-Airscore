@@ -68,6 +68,14 @@ Task Scoring Admin
         <h4 class='tab-title font-weight-bold'>Task is Cancelled</h4>
         {% else %}
         <h4 class='tab-title font-weight-bold'>Task Results:</h4>
+        {% if score_active %}
+        <section class="row-wrap button" id="lock_task_section">
+          <button id='lock_task_button' class='btn {% if task_info.locked %} btn-warning {% else %} btn-info {% endif %}' onclick="" type='button'>
+            {% if task_info.locked %} Unlock Task {% else %} Make Official {% endif %}
+          </button>
+          <h5 class="mt-2 ml-3 {% if task_info.locked %} text-warning {% else %} text-info {% endif %}">{% if task_info.locked %} Results will become Provisional. {% else %} This will lock task, avoiding changes is settings, tracks and results. {% endif %}</h5>
+        </section>
+        {% endif %}
         <section class="tab-row row-wrap form">
             <h5 class="mt-2" id='task_result_header'></h5>
             <button id='download_task_html' class='btn btn-primary ml-5' onclick="" type='button'>

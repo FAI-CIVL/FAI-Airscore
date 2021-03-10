@@ -434,6 +434,14 @@ def get_task_list(comp_id: int) -> dict:
     return {'next_task': max_task_num + 1, 'last_region': last_region, 'tasks': tasks}
 
 
+def switch_task_lock(task_id: int, old_value: bool) -> bool:
+    from db.tables import TblTask
+    value = not old_value
+    task = TblTask.get_by_id(task_id)
+    task.update(locked=value)
+    return True
+
+
 def get_task_turnpoints(task) -> dict:
     from airspaceUtils import read_airspace_map_file
     from task import get_map_json
