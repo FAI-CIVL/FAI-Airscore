@@ -352,7 +352,7 @@ def competition(compid: int):
             task_map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
                                 goal_line=goal_line, margin=tolerance)
             task['opt_dist'] = '{:0.2f}'.format(task['opt_dist'] / 1000) + ' km'
-            task['tasQuality'] = '{:0.2f}'.format(task['day_quality'])
+            task['day_quality'] = '{:0.2f}'.format(task['day_quality'])
             task.update({'map': task_map._repr_html_()})
             all_tasks.append(task)
 
@@ -366,27 +366,31 @@ def competition(compid: int):
         return render_template('public/future_competition.html', comp=comp)
 
     if non_scored_tasks:
-        for t in non_scored_tasks:
-            task = t._asdict()
-            if not t.opt_dist or t.opt_dist == 0:
-                task['status'] = "Task not set"
-                task['opt_dist'] = '0 km'
+        for task in non_scored_tasks:
+            task['day_quality'] = ''
+            task['date'] = task['date'].strftime("%Y-%m-%d")
+
+            if not task['opt_dist'] or task['opt_dist'] == 0:
+                task['status'] = 'Task not set'
+                task['opt_dist'] = ''
+                task['task_type'] = ''
             else:
-                task['status'] = "Not yet scored"
                 wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox, _, _ = get_map_json(task['id'])
                 layer['geojson'] = None
                 layer['bbox'] = bbox
                 task_map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
                                     goal_line=goal_line, margin=tolerance)
-                task['opt_dist'] = '{:0.2f}'.format(task['opt_dist'] / 1000) + ' km'
+                task['opt_dist'] = f"{'{:0.2f}'.format(task['opt_dist'] / 1000)} km"
                 task.update({'map': task_map._repr_html_()})
-                '''livetracking availability'''
-                task['live'] = Path(LIVETRACKDIR, str(task['id'])).is_file()
-                '''tracks download status'''
-                task['tracks_status'] = frontendUtils.task_has_valid_results(task['id'])
+                if not task['cancelled']:
+                    task['status'] = "Not yet scored"
+                    '''livetracking availability'''
+                    task['live'] = Path(LIVETRACKDIR, str(task['id'])).is_file()
+                    '''tracks download status'''
+                    task['tracks_status'] = frontendUtils.task_has_valid_results(task['id'])
+            if task['cancelled']:
+                task['status'] = "CANCELLED"
 
-            task['tasQuality'] = "-"
-            task['date'] = task['date'].strftime("%Y-%m-%d")
             all_tasks.append(task)
     all_tasks.sort(key=lambda k: k['date'], reverse=True)
 
@@ -421,8 +425,8 @@ def ext_competition(compid: int):
             layer['bbox'] = bbox
             task_map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
                                 goal_line=goal_line, margin=tolerance)
-            task['opt_dist'] = '{:0.2f}'.format(task['opt_dist'] / 1000) + ' km'
-            task['tasQuality'] = '{:0.2f}'.format(task['day_quality'])
+            task['opt_dist'] = f"{'{:0.2f}'.format(task['opt_dist'] / 1000)} km"
+            task['day_quality'] = '{:0.2f}'.format(task['day_quality'])
             task.update({'map': task_map._repr_html_()})
             all_tasks.append(task)
 
@@ -436,23 +440,27 @@ def ext_competition(compid: int):
         return render_template('public/future_competition.html', comp=comp)
 
     if non_scored_tasks:
-        for t in non_scored_tasks:
-            task = t._asdict()
-            if not t.opt_dist or t.opt_dist == 0:
-                task['status'] = "Task not set"
-                task['opt_dist'] = '0 km'
+        for task in non_scored_tasks:
+            task['day_quality'] = ''
+            task['date'] = task['date'].strftime("%Y-%m-%d")
+
+            if not task['opt_dist'] or task['opt_dist'] == 0:
+                task['status'] = 'Task not set'
+                task['opt_dist'] = ''
+                task['task_type'] = ''
             else:
-                task['status'] = "Not yet scored"
                 wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox, _, _ = get_map_json(task['id'])
                 layer['geojson'] = None
                 layer['bbox'] = bbox
                 task_map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
                                     goal_line=goal_line, margin=tolerance)
-                task['opt_dist'] = '{:0.2f}'.format(task['opt_dist'] / 1000) + ' km'
+                task['opt_dist'] = f"{'{:0.2f}'.format(task['opt_dist'] / 1000)} km"
                 task.update({'map': task_map._repr_html_()})
+                if not task['cancelled']:
+                    task['status'] = "Not yet scored"
+            if task['cancelled']:
+                task['status'] = "CANCELLED"
 
-            task['tasQuality'] = "-"
-            task['date'] = task['date'].strftime("%Y-%m-%d")
             all_tasks.append(task)
     all_tasks.sort(key=lambda k: k['date'], reverse=True)
 

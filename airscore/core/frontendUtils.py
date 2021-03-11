@@ -1195,7 +1195,7 @@ def get_comp_info(compid: int, task_ids=None):
 
     with db_session() as db:
         non_scored_tasks = (
-            db.query(t.task_id.label('id'), t.task_name, t.date, t.task_type, t.opt_dist, t.comment)
+            db.query(t.task_id.label('id'), t.task_name, t.date, t.task_type, t.opt_dist, t.comment, t.cancelled)
             .filter(t.comp_id == compid, t.task_id.notin_(task_ids))
             .order_by(t.date.desc())
             .all()
@@ -1206,9 +1206,9 @@ def get_comp_info(compid: int, task_ids=None):
             .filter(c.comp_id == compid)
             .one()
         )
-    comp = competition_info._asdict()
+        comp = competition_info._asdict()
 
-    return comp, non_scored_tasks
+        return comp, [row._asdict() for row in non_scored_tasks]
 
 
 def get_participants(compid: int, source='all'):

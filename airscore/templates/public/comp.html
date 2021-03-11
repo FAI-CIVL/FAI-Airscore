@@ -7,14 +7,14 @@
 {% block content %}
 <br>
 <div class='container' id='main'>
-  <h1 class='my-2' id='comp_name'>{{comp['comp_name']}} - <small>{{comp['comp_site']}}</small></h1>
+  <h1 class='my-2' id='comp_name'>{{ comp.comp_name }} - <small>{{ comp.comp_site }}</small></h1>
   <div class='row'>
-    <div class='col-md-6'><h5>{{comp['date_from']}} - {{comp['date_to']}}</h5></div>
+    <div class='col-md-6'><h5>{{ comp.date_from }} - {{ comp.date_to }}</h5></div>
     {% if regids %}
       {% if regids|count == 1 %}
-        <a href="{{ url_for('public.region_map', regid=regids[0], compid=comp['comp_id']) }}" class='btn btn-info'>Area Map | Downloads</a>
+        <a href="{{ url_for('public.region_map', regid=regids[0], compid=comp.comp_id) }}" class='btn btn-info'>Area Map | Downloads</a>
       {% else %}
-        {% set args = {'regids': regids|join(','), 'compid': comp['comp_id'], 'compname': comp['comp_name']} %}
+        {% set args = {'regids': regids|join(','), 'compid': comp.comp_id, 'compname': comp.comp_name} %}
         <a href="{{ url_for('public.regions', **args) }}" class='btn btn-info'>Flying Areas</a>
       {% endif %}
     {% endif %}
@@ -23,9 +23,9 @@
   {% if overall_available %}
   <div class='row'>
     <div class='col-md-6'><h5>Overall Results:</h5></div>
-    <a href="{{ url_for('public.comp_result', compid=comp['comp_id']) }}" class='btn btn-primary'>Individual</a>
+    <a href="{{ url_for('public.comp_result', compid=comp.comp_id) }}" class='btn btn-primary'>Individual</a>
     {% if country_scores %}
-    <a href="{{ url_for('public.country_overall', compid=comp['comp_id']) }}" class='btn btn-primary ml-3'>Nations</a>
+    <a href="{{ url_for('public.country_overall', compid=comp.comp_id) }}" class='btn btn-primary ml-3'>Nations</a>
     {% endif %}
   </div>
   {% endif %}
@@ -33,62 +33,75 @@
     {% if comp.website %}
     Official website:<a href='http://{{comp.website}}' target='_blank'>http://{{comp.website}}</a>
     {% endif %}
-    {%if not tasks%}
+    {% if not tasks %}
     <h1> No task has been set yet</h1>
     {% endif %}
   </div>
   <br><br>
-  {%for task in tasks%}
+  {% for task in tasks %}
   <div class='container'>
     <div class='row'>
       <div class='col'>
-        {{task['map']|safe}}
+        {{ task.map|safe }}
       </div>
       <div class='col'>
-        <h3 id='task_hd'>{{task['task_name']}}</h3>
-        <h4>{{task['date']}}</h4>
+        <h3 id='task_hd'>{{ task.task_name }}</h3>
+        <h4>{{ task.date }}</h4>
+        {% if task.status == 'CANCELLED' %}
+        {%  set class = 'text-danger' %}
+        {% elif task.status is in ['Not yet scored', 'Task not set'] %}
+        {%  set class = 'text-warning' %}
+        {% else %}
+        {%  set class = 'text-info' %}
+        {% endif %}
+        <h6 class="font-weight-bold {{ class }}">{{ task.status }}</h6>
         {% if task.comment %}
-        {{task['comment']}}<br>
+        <h5>{{ task.comment }}</h5>
         {% endif %}
         <table class='taskinfo'>
           <tbody>
+          {% if task.task_type %}
           <tr>
             <td>Task Type:</td>
-            <td>{{task['task_type']}}</td>
+            <td>{{ task.task_type|title }}</td>
           </tr>
+          {% endif %}
+          {% if task.opt_dist %}
           <tr>
             <td>Task Distance:</td>
-            <td>{{task['opt_dist']}}</td>
+            <td>{{ task.opt_dist }}</td>
           </tr>
+          {% endif %}
+          {% if task.day_quality %}
           <tr>
             <td>Day Quality:</td>
-            <td>{{task['tasQuality']}}</td>
+            <td>{{ task.day_quality }}</td>
           </tr>
+          {% endif %}
           </tbody>
         </table>
         <br>
-        {% if task['status'] != "Task not set" %}
-        {% if task['status'] == "Not yet scored" %}
-        {% if task['live'] %}
+        {% if task.status == "Not yet scored" %}
+        {%  if task.live %}
         <p>
-          <a href="{{ url_for('public.livetracking', taskid=task['id']) }}" class='btn btn-primary'>Live Leaderboard</a>
+          <a href="{{ url_for('public.livetracking', taskid=task.id) }}" class='btn btn-primary'>Live Leaderboard</a>
         </p>
-        {% elif task['tracks_status'] %}
+        {%  elif task.tracks_status %}
         <p>
-          <a href="{{ url_for('public.tracks', taskid=task['id']) }}" class='btn btn-primary'>Tracks Status</a>
+          <a href="{{ url_for('public.tracks', taskid=task.id) }}" class='btn btn-primary'>Tracks Status</a>
         </p>
-        {% endif %}
-        {% else %}
+        {%  endif %}
+        {% elif task.status is not in ["Task not set", "CANCELLED"] %}
         <p>
-          <a href="{{ url_for('public.download_file', filetype='igc_zip', filename=task['id']) }}">IGC</a>
+          <a href="{{ url_for('public.download_file', filetype='igc_zip', filename=task.id) }}">IGC Zip File</a>
         </p>
-        <a href="{{ url_for('public.task_result', taskid=task['id']) }}" class='btn btn-primary'>Task Scores</a>
-        {% if country_scores %}
-        <a href="{{ url_for('public.country_task', taskid=task['id']) }}" class='btn btn-primary'>Nations</a>
+        <p>
+        <a href="{{ url_for('public.task_result', taskid=task.id) }}" class='btn btn-primary'>Task Scores</a>
+        {%  if country_scores %}
+        <a href="{{ url_for('public.country_task', taskid=task.id) }}" class='btn btn-primary'>Nations</a>
+        </p>
+        {%  endif %}
         {% endif %}
-        {% endif %}
-        {% endif %}
-        <td><strong>{{task['status']}}</strong></td>
       </div>
     </div>
     <br>
