@@ -71,6 +71,10 @@ Task Settings
         <section class="tab-row row-wrap form">
             {{ render_field(taskform.task_num, 2, disabled=readonly) }}
             {{ render_field(taskform.task_name, 20, disabled=readonly) }}
+            {% if session.is_editor and (not task_info.locked or task_info.cancelled) %}
+            <button class="btn {% if not task_info.cancelled %} btn-outline-danger {% else %} btn-success {% endif %} ml-2 mt-4" type='button' data-toggle='modal' data-target='#cancel_task_modal'>
+              {% if not task_info.cancelled %} Declare Cancelled {% else %} Turn Task Active {% endif %}</button>
+            {% endif %}
         </section>
         {% if not readonly %}
         <section class="tab-row row-wrap form">
@@ -244,6 +248,32 @@ Task Settings
   </div>
 </div>
 
+{% if session.is_editor %}
+<!--- cancel_task_modal starts here--->
+<div id='cancel_task_modal' class='modal fade' role='dialog'>
+  <div class='modal-dialog'>
+    <div class='modal-content'>
+      <div class='modal-header'>
+        <h4 class='modal-title'>Confirm Task is {% if task_info.cancelled %}ACTIVE{% else %}CANCELLED{% endif %}:</h4>
+      </div>
+      <div class='modal-body' id='cancel_task_modal-body'>
+        {% if task_info.cancelled %}
+        <p>This will also update active Event Results to reflect the changing.</p>
+        {% else %}
+        <p>This will hide any track or result scored for this task, and ignore it in Event Results.</p>
+        {% endif %}
+      </div>
+      <div class='modal-footer'>
+        <button type='button' class='btn btn-secondary' data-dismiss='modal'>Cancel</button>
+        <button id='cancel_task_confirmed' type='button' {% if task_info.cancelled %}class='btn btn-info'>Declare Task ACTIVE{%else %}class='btn btn-danger'>Declare Task Cancelled{% endif %}</button>
+        <p id='cancel_task_modal_spinner'></p>
+      </div>
+    </div>
+  </div>
+</div>
+<!--- cancel_task_modal ends here --->
+{% endif %}
+
 {% if taskform.submit and not readonly %}
 <!--- delete-modal starts here--->
 <div id='delmodal' class='modal fade' role='dialog'>
@@ -336,6 +366,7 @@ Task Settings
   var compid = {{ compid|tojson }};
   var external = {{ session.external|tojson }};
   var taskid = {{ taskid|tojson }};
+  var task_info = {{ task_info|tojson }};
   var task_admin = {{ taskform.submit|tojson }};
   var url_get_task_turnpoints = "{{ url_for('user._get_task_turnpoints', taskid=taskid)}}";
   var url_add_turnpoint = "{{ url_for('user._add_turnpoint', taskid=taskid)}}";

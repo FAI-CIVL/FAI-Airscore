@@ -182,113 +182,128 @@ function save_turnpoint(){
 }
 
 function delete_tp(tpid, partial_d){
-    var mydata = new Object();
-    mydata.partial_distance = partial_d ? partial_d : "";
-    mydata.taskid = taskid;
-    $('#delete_confirmed').hide();
-    $('#delete_spinner').html('<div class="spinner-border" role="status"><span class="sr-only"></span></div>');
-    $.ajax({
-        type: "POST",
-        url: '/users/_del_turnpoint/'+ tpid,
-        contentType:"application/json",
-        data : JSON.stringify(mydata),
-        dataType: "json",
-        success: function (response) {
-          if(task.isset != null && response.task_set != task.isset) {
-            console.log('js: '+task.isset+', response: '+response.task_set)
-            location.reload(true);
-            return;
-          }
-          $('#delmodal').modal('hide');
-          $('#delete_confirmed').show();
-          $('#delete_spinner').html('');
-          $('#map_container').html('');
-          update_turnpoints(response);
-        }
-    });
+  var mydata = new Object();
+  mydata.partial_distance = partial_d ? partial_d : "";
+  mydata.taskid = taskid;
+  $('#delete_confirmed').hide();
+  $('#delete_spinner').html('<div class="spinner-border" role="status"><span class="sr-only"></span></div>');
+  $.ajax({
+    type: "POST",
+    url: '/users/_del_turnpoint/'+ tpid,
+    contentType:"application/json",
+    data : JSON.stringify(mydata),
+    dataType: "json",
+    success: function (response) {
+      if(task.isset != null && response.task_set != task.isset) {
+        console.log('js: '+task.isset+', response: '+response.task_set)
+        location.reload(true);
+        return;
+      }
+      $('#delmodal').modal('hide');
+      $('#delete_confirmed').show();
+      $('#delete_spinner').html('');
+      $('#map_container').html('');
+      update_turnpoints(response);
+    }
+  });
 }
 
 function delete_all_tp(){
-    $.ajax({
-        type: "POST",
-        url: '/users/_del_all_turnpoints/'+ taskid,
-        contentType:"application/json",
-        dataType: "json",
-        success: function () {
-            get_turnpoints();
-            $('#map_container').html('');
-        }
-    });
+  $.ajax({
+    type: "POST",
+    url: '/users/_del_all_turnpoints/'+ taskid,
+    contentType:"application/json",
+    dataType: "json",
+    success: function () {
+      get_turnpoints();
+      $('#map_container').html('');
+    }
+  });
 }
 
 function confirm_delete(tp_num, tpid, partial_distance) {
-    var x = tp_num;
-    var myHeading = "<p>Are you sure you want to delete Turnpoint ";
-    $("#delmodal-body").html(myHeading + x + '?</p>');
-    $('#delete_confirmed').attr("onclick","delete_tp("+tpid+", "+ partial_distance+")");
-    $('#delmodal').modal('show');
+  var x = tp_num;
+  var myHeading = "<p>Are you sure you want to delete Turnpoint ";
+  $("#delmodal-body").html(myHeading + x + '?</p>');
+  $('#delete_confirmed').attr("onclick","delete_tp("+tpid+", "+ partial_distance+")");
+  $('#delmodal').modal('show');
 }
 
 function confirm_delete_all() {
-    var myHeading = "<p>Are you sure you want to delete ALL Turnpoints";
-    $("#delmodal-body").html(myHeading + '?</p>');
-    $('#delete_confirmed').attr("onclick","delete_all_tp()");
-    $('#delmodal').modal('show');
+  var myHeading = "<p>Are you sure you want to delete ALL Turnpoints";
+  $("#delmodal-body").html(myHeading + '?</p>');
+  $('#delete_confirmed').attr("onclick","delete_all_tp()");
+  $('#delmodal').modal('show');
 }
 
 function modify_tp(tpid) {
-    var found = turnpoints.find( el => el.wpt_id == tpid)
-    console.log('found='+found.wpt_id+', '+found.name+', '+found.original_type)
-    var original_num = found.num
-    var myHeading = "<p>Modify turnpoint ";
+  var found = turnpoints.find( el => el.wpt_id == tpid)
+  console.log('found='+found.wpt_id+', '+found.name+', '+found.original_type)
+  var original_num = found.num
+  var myHeading = "<p>Modify turnpoint ";
 
-    $('#mod_tp_number').val(found.num).change();
-    $('#mod_tp_type').val(found.original_type).change();
-    $('#mod_tp_name').val(found.rwp_id).change();
-    $('#mod_tp_how').val(found.how).change();
-    $('#mod_tp_shape').val(found.shape).change();
-    $('#mod_tp_radius').val(found.radius).change();
-    $("#delmodal-body").html(myHeading + original_num + '?</p>');
-    $('#modify_confirmed').attr("onclick","save_modified_turnpoint('"+ tpid +"')");
-    $('#modmodal').modal('show');
+  $('#mod_tp_number').val(found.num).change();
+  $('#mod_tp_type').val(found.original_type).change();
+  $('#mod_tp_name').val(found.rwp_id).change();
+  $('#mod_tp_how').val(found.how).change();
+  $('#mod_tp_shape').val(found.shape).change();
+  $('#mod_tp_radius').val(found.radius).change();
+  $("#delmodal-body").html(myHeading + original_num + '?</p>');
+  $('#modify_confirmed').attr("onclick","save_modified_turnpoint('"+ tpid +"')");
+  $('#modmodal').modal('show');
 }
 
 function save_modified_turnpoint(id){
-   var radius =$('#mod_tp_radius').val();
-   if($('#mod_tp_type').val() == 'launch' ){
-       radius = 400;
-       if($('#check_launch').val()=='y' ){
-           radius = $('#mod_tp_launch_radius').val();
-       }
-   }
-   var mydata = new Object();
-   mydata.number = $('#mod_tp_number').val();
-   mydata.type = $('#mod_tp_type').val();
-   mydata.rwp_id = $('#mod_tp_name').val();
-   mydata.direction = $('#mod_tp_how').val();
-   mydata.shape = $('#mod_tp_shape').val();
-   mydata.radius = radius;
-   mydata.wpt_id = id
+  var radius =$('#mod_tp_radius').val();
+  if($('#mod_tp_type').val() == 'launch' ){
+    radius = 400;
+    if($('#check_launch').val()=='y' ){
+       radius = $('#mod_tp_launch_radius').val();
+    }
+  }
+  var mydata = new Object();
+  mydata.number = $('#mod_tp_number').val();
+  mydata.type = $('#mod_tp_type').val();
+  mydata.rwp_id = $('#mod_tp_name').val();
+  mydata.direction = $('#mod_tp_how').val();
+  mydata.shape = $('#mod_tp_shape').val();
+  mydata.radius = radius;
+  mydata.wpt_id = id
 
-   $.ajax({
-       type: "POST",
-       url: url_add_turnpoint,
-       contentType:"application/json",
-       data : JSON.stringify(mydata),
-       dataType: "json",
-       success: function (response) {
-         if(task.isset != null && response.task_set != task.isset) {
-           console.log('js: '+task.isset+', response: '+response.task_set)
-           location.reload(true);
-           return;
-         }
-         update_turnpoints(response);
-       }
-   });
+  $.ajax({
+    type: "POST",
+    url: url_add_turnpoint,
+    data : JSON.stringify(mydata),
+    contentType:"application/json",
+    dataType: "json",
+    success: function (response) {
+      if(task.isset != null && response.task_set != task.isset) {
+        console.log('js: '+task.isset+', response: '+response.task_set)
+        location.reload(true);
+        return;
+      }
+      update_turnpoints(response);
+    }
+  });
 }
 
+$('#cancel_task_confirmed').click(function(){
+  let mydata = { cancelled: task_info.cancelled };
+  $.ajax({
+    type: "POST",
+    url: '/users/_declare_task_cancelled/'+ taskid,
+    data : JSON.stringify(mydata),
+    contentType:"application/json",
+    dataType: "json",
+    success: function (response) {
+      if ( response.success ) window.location.reload(true);
+      else create_flashed_message('Error trying to declare this task cancelled.', 'danger');
+    }
+  });
+});
+
 $('#XCTrack_button').click(function(){
-    $('#XCTrack_fileupload').click();
+  $('#XCTrack_fileupload').click();
 });
 
 $(function () {

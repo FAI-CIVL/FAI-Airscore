@@ -873,11 +873,33 @@ def _add_task(compid: int):
 
 @blueprint.route('/_del_task/<int:taskid>', methods=['POST'])
 @login_required
+@editor_required
 def _del_task(taskid: int):
     from task import delete_task
-    delete_task(taskid)
-    resp = jsonify(success=True)
-    return resp
+    if request.method == "POST":
+        delete_task(taskid)
+        resp = jsonify(success=True)
+        return resp
+    return jsonify(success=False)
+
+
+@blueprint.route('/_declare_task_cancelled/<int:taskid>', methods=['POST'])
+@login_required
+@editor_required
+def _declare_task_cancelled(taskid: int):
+    if request.method == "POST":
+        data = request.json
+        old_value = bool(data.get('cancelled'))
+        resp = frontendUtils.switch_task_cancelled(taskid, old_value)
+        if resp:
+            frontendUtils.unpublish_task_result(taskid)
+            if not old_value:
+                '''update comp results'''
+                frontendUtils.update_comp_result(session['compid'], name_suffix='Overview')
+            session['tasks'] = frontendUtils.get_task_list(session['compid'])['tasks']
+            session['task'] = next(el for el in session['tasks'] if el['task_id'] == taskid)
+            return jsonify(success=resp)
+    return jsonify(success=False)
 
 
 @blueprint.route('/_get_tasks/<int:compid>', methods=['GET'])

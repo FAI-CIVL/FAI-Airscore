@@ -442,6 +442,15 @@ def switch_task_lock(task_id: int, old_value: bool) -> bool:
     return True
 
 
+def switch_task_cancelled(task_id: int, old_value: bool) -> bool:
+    """Declares a task Cancelled (and locked) if it is active, and vice versa"""
+    from db.tables import TblTask
+    value = not old_value
+    task = TblTask.get_by_id(task_id)
+    task.update(cancelled=value, locked=value)
+    return True
+
+
 def get_task_turnpoints(task) -> dict:
     from airspaceUtils import read_airspace_map_file
     from task import get_map_json
