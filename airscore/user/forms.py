@@ -272,7 +272,8 @@ class TaskForm(FlaskForm):
     comment = StringField('Comment', description='Sometimes you may wish to make a comment that will show up'
                                                  ' in the competition overview page. e.g. "task stopped at 14:34"')
     date = DateField('Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
-    task_type = SelectField('Type', choices=[('race', 'Race'), ('elapsed time', 'Elapsed time')])
+    task_type = SelectField('Type', choices=[('race', 'Race'), ('elapsed time', 'Elapsed time')],
+                            validators=[DataRequired()], default='race')
     region = SelectField('Region', id='select_region', choices=[(0, ' -')], default=0, coerce=int,
                          validators=[Optional()], description='Determines the Waypoint listed, and the airspace used')
 
