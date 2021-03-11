@@ -724,7 +724,6 @@ class TblTask(BaseModel):
     start_iteration = Column(TINYINT(4))
     task_deadline = Column(MEDIUMINT(9))
     stopped_time = Column(MEDIUMINT(9))
-    tasResultsType = Column(String(20))
     task_type = Column(
         Enum('race', 'elapsed time', 'free distance', 'distance with bearing'), server_default=text("'race'")
     )

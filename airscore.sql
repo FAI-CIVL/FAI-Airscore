@@ -934,7 +934,6 @@ CREATE TABLE `tblTask` (
   `start_iteration` tinyint(4) DEFAULT NULL,
   `task_deadline` mediumint(9) DEFAULT NULL,
   `stopped_time` mediumint(9) DEFAULT NULL,
-  `tasResultsType` varchar(20) DEFAULT NULL,
   `task_type` enum('race','elapsed time','free distance','distance with bearing') DEFAULT 'race',
   `distance` float DEFAULT NULL,
   `opt_dist` float DEFAULT NULL,
