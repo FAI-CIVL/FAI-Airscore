@@ -61,10 +61,10 @@
 {% endmacro %}
 
 
-{% macro render_input(id, label, size, value=None, class=None) %}
+{% macro render_input(id, label, size, value=None, class=None, placeholder=None) %}
 <div class="form-element">
   <div class="form-label"><label for="{{ id }}">{{ label }}:</label></div>
-  <div class="form-input"><input type="text" class="form-control form-control-sm {% if class %} {{ class }} {% endif %}" id="{{ id }}" name="{{ id }}" size="{{ size }}"></div>
+  <div class="form-input"><input type="text" class="form-control form-control-sm {% if class %} {{ class }} {% endif %}" id="{{ id }}" name="{{ id }}" size="{{ size }}" placeholder="{{ placeholder }}"></div>
 </div>
 {% endmacro %}
 
