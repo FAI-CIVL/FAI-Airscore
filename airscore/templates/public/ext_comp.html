@@ -36,7 +36,7 @@
       </div>
       <div class='col'>
         <h3 id='task_hd'>{{ task.task_name }}</h3>
-        <h4>{{ task.date }}</h4>
+        <h5>{{ task.date }}</h5>
         {% if task.status == 'CANCELLED' %}
         {%  set class = 'text-danger' %}
         {% elif task.status is in ['Not yet scored', 'Task not set'] %}
@@ -44,9 +44,9 @@
         {% else %}
         {%  set class = 'text-info' %}
         {% endif %}
-        <h6 class="font-weight-bold {{ class }}">{{ task.status }}</h6>
+        <h5 class="font-weight-bold {{ class }}">{{ task.status }}</h5>
         {% if task.comment %}
-        <h5>{{ task.comment }}</h5>
+        <h6>{{ task.comment }}</h6>
         {% endif %}
         <table class='taskinfo'>
           <tbody>

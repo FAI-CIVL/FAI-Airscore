@@ -2,19 +2,17 @@
 {% block content %}
 <br>
 <div class="container" id="main">
-<h1 class="my-4" id="comp_name">{{comp['comp_name']}} - <small>{{comp['comp_site']}}</small>
+<h1 class="my-4" id="comp_name">{{ comp.comp_name }} - <small>{{ comp.comp_site }}</small>
   <div class="row">
-    <div class="col-md-6"><h5>{{comp['date_from']}} - {{comp['date_to']}}</h5></div>
+    <div class="col-md-6"><h5>{{ comp.date_from }} - {{ comp.date_to }}</h5></div>
   </div>
 </h1>
 
 <br><br>
 <h1>This competition has not started yet</h1>
-  <a href='/registered_pilots/{{comp['comp_id']}}' class="btn btn-primary" >Registered Pilots</a>
+  <a href='/registered_pilots/{{ comp.comp_id }}' class="btn btn-primary" >Registered Pilots</a>
 {% if comp.website %}
-
 Official website:<a href='http://{{comp.website}}' target="_blank" >http://{{comp.website}}</a>
-
 {% endif %}
 
 </div>
