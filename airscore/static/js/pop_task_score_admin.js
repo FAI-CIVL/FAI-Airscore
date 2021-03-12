@@ -75,6 +75,26 @@ function populate_task_scores(){
   });
 }
 
+function get_tracks_processed(){
+  $.ajax({
+    type: "GET",
+    url: '/users/_get_tracks_processed/'+taskid,
+    contentType:"application/json",
+    dataType: "json",
+    success: function (response) {
+      if (response.tracks == response.pilots) {
+        create_flashed_message('All pilots have a valid result for the task', 'success');
+        suggested_status = 'Provisional Results';
+      }
+      else {
+        create_flashed_message((response.pilots - response.tracks)+' pilots do not have a valid result for the task', 'warning');
+        suggested_status = 'Partial Results ('+response.tracks+'/'+response.pilots+' Pilots)';
+      }
+      $('#TracksProcessed').text('Tracks Collected: ' + response.tracks + '/' + response.pilots)
+    }
+  });
+}
+
 function updateFiles(load_latest=false) {
   var mydata = new Object();
   mydata.offset = new Date().getTimezoneOffset();
@@ -178,6 +198,7 @@ function toggle_publish(iscomp=false) {
 
 // Scores
 function Score_modal() {
+  $('#status_comment').val(suggested_status);
   $('#scoremodal').modal('show');
 }
 
@@ -547,8 +568,16 @@ var comp = {
   status: ''
 };
 
+var suggested_status = '';
+
 $(document).ready(function() {
+  if (task_info.locked) {
+    suggested_status = 'Official Results';
+  }
+  else get_tracks_processed();
+
   updateFiles();
+
 
   // Event listener to the file picker to redraw on input
   task.dropdown.change(function() {

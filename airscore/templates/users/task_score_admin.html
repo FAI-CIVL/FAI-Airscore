@@ -54,7 +54,7 @@ Task Scoring Admin
           <button class='btn btn-primary' type='button' onclick='Score_modal();'>
             Score Task
           </button>
-          <button class='btn btn-warning ml-3' type='button' data-toggle='modal' data-target='#fullscoremodal'>
+          <button class='btn btn-outline-warning ml-3' type='button' data-toggle='modal' data-target='#fullscoremodal'>
             Full Rescore
           </button>
           {% else %}
@@ -224,9 +224,6 @@ Task Scoring Admin
     <div class='modal-content'>
       <div class='modal-header'>
         <h4 class='modal-title'>Score Task</h4>
-        <button type='button' class='close' data-dismiss='modal' aria-label='Close'>
-          <span aria-hidden='true'>&times;</span>
-        </button>
       </div>
       <div class='modal-body' id='scoremodal-body'>
         <div class='container-fluid'>
@@ -238,7 +235,7 @@ Task Scoring Admin
             <label for='autopublish'>Status:</label>
             <input type='text' id='status_comment' class='form-control' placeholder='partial/provisional/official etc.'>
 
-            <small id='helptxt' class='form-text text-muted'>This can be done later also.</small>
+            <small id='helptxt' class='form-text text-muted'>This can be changed later also.</small>
           </div>
         </div>
         <div class='modal-footer'>
@@ -257,21 +254,19 @@ Task Scoring Admin
   <div class='modal-dialog' role='document'>
     <div class='modal-content'>
       <div class='modal-header'>
-        <h4 class='modal-title'>Full Rescore Task - reprocess all tracks and score</h4>
-        <button type='button' class='close' data-dismiss='modal' aria-label='Close'>
-          <span aria-hidden='true'>&times;</span>
-        </button>
+        <h4 class='modal-title'>Full Rescore Task</h4>
       </div>
       <div class='modal-body' id='fullscoremodal-body'>
-
         <div class='container-fluid'>
           <div class='col-md-12'>
+            <p class="text-info">This will reprocess all tracks and score.<br />
+            Usually this is not necessary.</p>
             <input type='checkbox' class='form-check-input' id='fullautopublish' name='autopublish' value='1'>
             <label class='form-check-label' for='autopublish'>publish results after scoring</label>
             <br>
             <br>
             <label for='autopublish'>Status:</label>
-            <input type='text' id='fullstatus_comment' class='form-control'
+            <input type='text' class="form-control form-control-sm" id='fullstatus_comment'
                    placeholder='partial/provisional/official etc.'>
 
             <small id='fullhelptxt' class='form-text text-muted'>This can be done later also.</small>
@@ -393,6 +388,7 @@ Task Scoring Admin
 {% if session.is_editor %}
 <script type='text/javascript' src="{{ static_url_for('static', filename='js/pop_task_score_admin.js') }}"></script>
 <script type='text/javascript' src="{{ static_url_for('static', filename='js/mindmup-editabletable.js') }}"></script>
+<script src="{{ static_url_for('static', filename='js/flashed_message.js') }}"></script>
 <script type='text/javascript'>
   var production = {{ production|tojson }};
   var taskid = {{ taskid|tojson }};
