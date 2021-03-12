@@ -1456,11 +1456,12 @@ def _calculate_comp_result(compid: int):
 @login_required
 def _change_result_status(taskid: int):
     if request.method == "POST":
-        from result import update_result_status
+        from result import update_result_status, update_tasks_status_in_comp_result
         data = request.json
         filename = data['filename']
         status = data['status']
         update_result_status(filename, status)
+        update_tasks_status_in_comp_result(session['compid'])
         # frontendUtils.update_comp_result(session['compid'], status=data['status'], name_suffix='Overview')
         resp = jsonify(success=True)
         return resp

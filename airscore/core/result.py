@@ -613,6 +613,25 @@ def update_result_status(filename: str, status: str):
             result.status = status
 
 
+def update_tasks_status_in_comp_result(comp_id: int) -> bool:
+    """gets status for active tasks result files and writes them in active comp result file"""
+    from compUtils import get_comp_json_filename
+    from task import get_task_json
+    try:
+        file = Path(RESULTDIR, get_comp_json_filename(comp_id))
+        with open(file, 'r+') as f:
+            d = json.load(f)
+            for t in d.get('tasks'):
+                file = get_task_json(t['id'])
+                t['status'] = file['file_stats']['status']
+            f.seek(0)
+            f.write(json.dumps(d))
+            f.truncate()
+        return True
+    except Exception:
+        return False
+
+
 def update_result_file(filename: str, par_id: int, notification: dict):
     """gets result filename, pilot's par_id, and notification as dict
     notification = {'not_id': notification id if existing, can be omitted

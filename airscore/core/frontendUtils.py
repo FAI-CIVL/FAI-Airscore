@@ -435,11 +435,27 @@ def get_task_list(comp_id: int) -> dict:
 
 
 def switch_task_lock(task_id: int, old_value: bool) -> bool:
+    """Locks a task (making results official) if it is open, and vice versa"""
     from db.tables import TblTask
+    from task import get_task_json_filename
+    from result import update_result_status, update_tasks_status_in_comp_result
     value = not old_value
-    task = TblTask.get_by_id(task_id)
-    task.update(locked=value)
-    return True
+    try:
+        '''check task has a valid active result'''
+        result = get_task_json_filename(task_id)
+        if value and not result:
+            '''cannot lock task'''
+            return False
+        task = TblTask.get_by_id(task_id)
+        comp_ud = task.comp_id
+        task.update(locked=value)
+        '''change status'''
+        status = 'Official Result' if value else 'Provisional Results'
+        update_result_status(result, status=status)
+        update_tasks_status_in_comp_result(comp_ud)
+        return True
+    except Exception:
+        return False
 
 
 def switch_task_cancelled(task_id: int, old_value: bool) -> bool:
