@@ -288,7 +288,10 @@ function save_modified_turnpoint(id){
 }
 
 $('#cancel_task_confirmed').click(function(){
-  let mydata = { cancelled: task_info.cancelled };
+  let mydata = {
+    cancelled: task_info.cancelled,
+    comment: $('#cancel_task_reason').val()
+  };
   $.ajax({
     type: "POST",
     url: '/users/_declare_task_cancelled/'+ taskid,

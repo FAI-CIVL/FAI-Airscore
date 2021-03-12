@@ -254,13 +254,16 @@ Task Settings
   <div class='modal-dialog'>
     <div class='modal-content'>
       <div class='modal-header'>
-        <h4 class='modal-title'>Confirm Task is {% if task_info.cancelled %}ACTIVE{% else %}CANCELLED{% endif %}:</h4>
+        <h4 class='modal-title {% if task_info.cancelled %}text-info{% else %}text-danger{% endif %}'>Confirm Task is {% if task_info.cancelled %}ACTIVE{% else %}CANCELLED{% endif %}:</h4>
       </div>
       <div class='modal-body' id='cancel_task_modal-body'>
         {% if task_info.cancelled %}
-        <p>This will also update active Event Results to reflect the changing.</p>
+        <p class="alert alert-info">This will also update active Event Results to reflect the changing.</p>
         {% else %}
-        <p>This will hide any track or result scored for this task, and ignore it in Event Results.</p>
+        <p class="alert alert-warning">This will hide any track or result scored for this task, and ignore it in Event Results.</p>
+        {% from "macros.html" import render_input with context %}
+        {{ render_input(id='cancel_task_reason', label='Cancellation reason', size=30, placeholder='Rain on course, Strong Wind Gusts, Thunderstorm, ...') }}
+        <small id='cancel_task_reason_help' class='text-muted'>Goes in Task Comment, cannot be modified unless task is unlocked again .</small>
         {% endif %}
       </div>
       <div class='modal-footer'>

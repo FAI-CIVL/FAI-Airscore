@@ -890,7 +890,8 @@ def _declare_task_cancelled(taskid: int):
     if request.method == "POST":
         data = request.json
         old_value = bool(data.get('cancelled'))
-        resp = frontendUtils.switch_task_cancelled(taskid, old_value)
+        comment = data.get('comment')
+        resp = frontendUtils.switch_task_cancelled(taskid, old_value, comment)
         if resp:
             frontendUtils.unpublish_task_result(taskid)
             if not old_value:
