@@ -458,12 +458,12 @@ def switch_task_lock(task_id: int, old_value: bool) -> bool:
         return False
 
 
-def switch_task_cancelled(task_id: int, old_value: bool) -> bool:
+def switch_task_cancelled(task_id: int, old_value: bool, comment: str = None) -> bool:
     """Declares a task Cancelled (and locked) if it is active, and vice versa"""
     from db.tables import TblTask
     value = not old_value
     task = TblTask.get_by_id(task_id)
-    task.update(cancelled=value, locked=value)
+    task.update(cancelled=value, locked=value, comment=comment)
     return True
 
 
