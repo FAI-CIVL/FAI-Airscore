@@ -445,6 +445,7 @@ def calculate_time_points_reduction(t):
     p = FlightResult(ID=0, name='dummy time_points_reduction')
     p.distance_flown = t.opt_dist
     # rules state max start time among all pilot but will be corrected
+    # at the moment (S7F 2021 v0.3) uses p.goal_time, but should be corrected
     p.SSS_time = max(p.SSS_time for p in t.valid_results if p.ESS_time)
     p.ESS_time = t.stop_time
     return pilot_speed(t, p)
@@ -534,7 +535,11 @@ def points_allocation(task):
         ''' Total score'''
         score = res.distance_score + res.time_score + res.arrival_score + res.departure_score
 
-        ''' Apply Penalty'''
+        ''' 12.4 Penalties
+        If a pilot incurs multiple penalties or bonuses, these are applied in the following order:
+        1. “Jump the Gun”-Penalty
+        2. Percentage penalty or bonus
+        3. Absolute points penalty or bonus'''
         if res.jtg_penalty or res.flat_penalty or res.percentage_penalty:
             """Jump the Gun Penalty:
             totalScore p = max(totalScore p − jumpTheGunPenalty p , scoreForMinDistance)"""
