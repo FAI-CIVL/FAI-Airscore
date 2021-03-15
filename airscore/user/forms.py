@@ -290,9 +290,6 @@ class TaskForm(FlaskForm):
     start_iteration = IntegerField('Number of gates', description='number of start iterations: 0 is indefinite up to '
                                                                   'start close time',
                                    validators=[Optional(strip_whitespace=True)])
-    # time_offset = DecimalField('GMT offset', validators=[InputRequired()], places=1, render_kw=dict(maxlength=5),
-    #                            description='The time offset for the task. Default value taken from the competition '
-    #                                        'time offset')
 
     timezones = list_gmt_offset()
     time_offset = SelectField('GMT Offset', choices=timezones, id='select_time_offset', coerce=int, default=0,
@@ -301,7 +298,6 @@ class TaskForm(FlaskForm):
 
     check_launch = BooleanField('Check launch', description='If we check pilots leaving launch - i.e. launch is like '
                                                             'an exit cylinder')
-    # region = SelectField('Waypoint file', choices=[(1,'1'), (2,'2')])
 
     # airspace
     airspace_check = BooleanField('Airspace checking')
