@@ -1,7 +1,7 @@
 """
 Scoring Formula Script
     Defines a Scoring formula. Gets Parameters and jobs from Formula Libraries in libs folder or contains new ones.
-    Name of primary functions has to be mantained:
+    Name of primary functions has to be maintained:
         - process_result : jobs done of FlightResult obj. before scoring
         - points_allocation : main function called to calculate scoring
     Defines which classes formula applies

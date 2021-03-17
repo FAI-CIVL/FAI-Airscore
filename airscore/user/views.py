@@ -482,7 +482,7 @@ def comp_settings_admin(compid: int):
             formula.arr_max_height = compform.arr_max_height.data
             formula.arr_min_height = compform.arr_min_height.data
             formula.validity_min_time = int((compform.validity_min_time.data or 0) * 60)
-            formula.score_back_time = int((compform.scoreback_time.data or 0) * 60)
+            formula.score_back_time = int((compform.score_back_time.data or 0) * 60)
             formula.JTG_penalty_per_sec = compform.JTG_penalty_per_sec.data
             formula.scoring_altitude = compform.scoring_altitude.data
             formula.team_scoring = compform.team_scoring.data
@@ -551,7 +551,7 @@ def comp_settings_admin(compid: int):
         compform.arr_max_height.data = formula.arr_max_height
         compform.arr_min_height.data = formula.arr_min_height
         compform.validity_min_time.data = int((formula.validity_min_time or 0) / 60)
-        compform.scoreback_time.data = int((formula.score_back_time or 0) / 60)
+        compform.score_back_time.data = int((formula.score_back_time or 0) / 60)
         compform.max_JTG.data = formula.max_JTG
         compform.JTG_penalty_per_sec.data = formula.JTG_penalty_per_sec
         compform.scoring_altitude.data = formula.scoring_altitude

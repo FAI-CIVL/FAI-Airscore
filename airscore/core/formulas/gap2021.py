@@ -14,7 +14,7 @@ from formulas import lclib
 
 ''' Formula Info'''
 # Formula Name: usually the filename in capital letters
-formula_name = 'GAP2020'
+formula_name = 'GAP2021'
 # Comp Class: PG, HG, BOTH
 formula_class = 'BOTH'
 

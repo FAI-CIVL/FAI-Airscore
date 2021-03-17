@@ -1,5 +1,5 @@
 
-{% macro render_field(field, width=None, tooltip=False, id=None, disabled=false, autocomplete=None, class=None) %}
+{% macro render_field(field, width=None, tooltip=false, id=None, disabled=false, autocomplete=None, class=None) %}
 {% set args = dict() %}
 {% if width %}
 {%  set _ = args.update({'size': width}) %}

@@ -1,7 +1,7 @@
 """
 Scoring Formula Script
     Defines a Scoring formula. Gets Parameters and jobs from Formula Libraries in libs folder or contains new ones.
-    Name of primary functions has to be mantained:
+    Name of primary functions has to be maintained:
         - process_result : jobs done of FlightResult obj. before scoring
         - points_allocation : main function called to calculate scoring
     Defines which classes formula applies
@@ -111,7 +111,7 @@ hg_preset = FormulaPreset(
     # Type of Total Validity: ftv, all
     overall_validity=Preset(value='all', visible=True, editable=True),
     # FTV Parameter
-    validity_param=Preset(value=None, visible=True, editable=True),
+    validity_param=Preset(value=1, visible=True, editable=True),
     # FTV Parameter Reference: day_quality, max_score
     validity_ref=Preset(value='day_quality', visible=True, editable=True),
     # Penalty when ESS but not Goal: default is 1 for PG and 0.2 for HG

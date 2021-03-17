@@ -222,19 +222,20 @@ class CompForm(FlaskForm):
     formula_time = SelectField('Time points', choices=[('on', 'On'), ('off', 'Off')])
 
     scoring_altitude = SelectField('Scoring Altitude', choices=[('GPS', 'GPS'), ('QNH', 'QNH')])
-    lead_factor = DecimalField('Leadfactor', default=1)
+    lead_factor = DecimalField('Leadfactor', places=1, default=1)
     no_goal_penalty = IntegerField('No goal penalty (%)', validators=[NumberRange(min=0, max=100)], default=100)
 
     tolerance = DecimalField('Turnpoint radius tolerance %', places=1, default=0.1)
     min_tolerance = IntegerField('Minimum turnpoint tolerance (m)')
-    glide_bonus = DecimalField('Glide bonus', validators=[InputRequired()], default=0)
+    glide_bonus = DecimalField('Glide bonus', validators=[InputRequired()], places=1, default=0)
     arr_alt_bonus = DecimalField('Height bonus', validators=[InputRequired()], default=0)
     arr_max_height = IntegerField('ESS height limit - upper', validators=[Optional(strip_whitespace=True)])
     arr_min_height = IntegerField('ESS height limit - lower', validators=[Optional(strip_whitespace=True)])
     validity_min_time = IntegerField('Minimum time (mins)')
-    scoreback_time = IntegerField('Scoreback time (mins)', description=help_score_back)
+    score_back_time = IntegerField('Scoreback time (mins)', description=help_score_back)
     max_JTG = IntegerField("Max Jump the gun (sec)", default=0)
-    JTG_penalty_per_sec = DecimalField('Jump the gun penalty per second', validators=[Optional(strip_whitespace=True)])
+    JTG_penalty_per_sec = DecimalField('Jump the gun penalty per second',
+                                       validators=[Optional(strip_whitespace=True)], places=2, default=0)
     check_launch = BooleanField('Check launch', description='If we check pilots leaving launch - i.e. launch is like '
                                                             'an exit cylinder. Individual tasks will have this '
                                                             'as a default but can be overridden.')
