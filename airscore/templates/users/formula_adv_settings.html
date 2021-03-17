@@ -1,0 +1,37 @@
+{% from "macros.html" import render_formula_field with context %}
+{% set readonly = (session.external or not session.is_editor) %}
+  <section class="panel-row row-wrap form">
+    {{ render_formula_field(compform.formula_distance, tooltip=true, preset=formula_preset.formula_distance, readonly=readonly) }}
+    {{ render_formula_field(compform.formula_time, tooltip=true, preset=formula_preset.formula_time, readonly=readonly) }}
+    {{ render_formula_field(compform.formula_departure, tooltip=true, preset=formula_preset.formula_departure, readonly=readonly) }}
+    {{ render_formula_field(compform.formula_arrival, tooltip=true, preset=formula_preset.formula_arrival, readonly=readonly) }}
+  </section>
+  <section class="panel-row row-wrap form">
+    {{ render_formula_field(compform.lead_factor, 10, tooltip=true, preset=formula_preset.lead_factor, readonly=readonly) }}
+  </section>
+  <section class="panel-row row-wrap form">
+    {{ render_formula_field(compform.no_goal_penalty, 10, tooltip=true, preset=formula_preset.no_goal_penalty, readonly=readonly) }}
+    {{ render_formula_field(compform.tolerance, 10, tooltip=true, preset=formula_preset.tolerance, readonly=readonly) }}
+    {{ render_formula_field(compform.min_tolerance, 10, tooltip=true, preset=formula_preset.min_tolerance, readonly=readonly) }}
+  </section>
+  <section class="panel-row row-wrap form">
+    {{ render_formula_field(compform.validity_min_time, 10, tooltip=true, preset=formula_preset.validity_min_time, readonly=readonly) }}
+    {{ render_formula_field(compform.score_back_time, 10, tooltip=true, preset=formula_preset.score_back_time, readonly=readonly) }}
+    {{ render_formula_field(compform.glide_bonus, tooltip=true, preset=formula_preset.glide_bonus, readonly=readonly) }}
+  </section>
+  <section class="panel-row row-wrap form">
+    {{ render_formula_field(compform.arr_alt_bonus, 10, tooltip=true, preset=formula_preset.arr_alt_bonus, readonly=readonly) }}
+    {{ render_formula_field(compform.arr_min_height, 10, tooltip=true, preset=formula_preset.arr_min_height, readonly=readonly) }}
+    {{ render_formula_field(compform.arr_max_height, 10, tooltip=true, preset=formula_preset.arr_max_height, readonly=readonly) }}
+  </section>
+  <section class="panel-row row-wrap form">
+    {{ render_formula_field(compform.max_JTG, 10, tooltip=true, preset=formula_preset.max_JTG, readonly=readonly) }}
+    {{ render_formula_field(compform.JTG_penalty_per_sec, 10, tooltip=true, preset=formula_preset.JTG_penalty_per_sec, readonly=readonly) }}
+  </section>
+  {% if compform.submit and not readonly %}
+  <section class="panel-row row-wrap button">
+        <button class='btn btn-warning' type='button' onclick='update_formula_adv_settings()'>
+          Reset Advanced Parameters
+        </button>
+  </section>
+  {% endif %}

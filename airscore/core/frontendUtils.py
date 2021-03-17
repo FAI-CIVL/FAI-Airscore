@@ -1053,6 +1053,37 @@ def check_comp_editor(compid: int, user) -> bool:
         return user.id in scorekeeper_ids
 
 
+def change_comp_category(comp_id: int, new: str, formula_name: str) -> bool:
+    from db.tables import TblCompRanking, TblForComp
+    from formula import list_formulas
+    try:
+        with db_session() as db:
+            comp = db.query(TblCompetition).get(comp_id)
+            comp.comp_class = new
+            db.query(TblCompRanking).filter_by(comp_id=comp_id, rank_type='cert').delete(synchronize_session=False)
+            db.flush()
+            formulas = list_formulas().get(new)
+            if formula_name not in formulas:
+                formula_name = formulas[0]
+            formula, preset = get_comp_formula_preset(comp_id, formula_name, new)
+            row = db.query(TblForComp).get(comp_id)
+            row.from_obj(formula)
+            db.flush()
+        return True
+    except:
+        raise
+        return False
+
+
+def get_comp_formula_preset(comp_id: int, formula_name: str, comp_class: str) -> tuple:
+    from formula import Formula
+    formula = Formula.read(comp_id)
+    formula.reset(comp_class, formula_name)
+    lib = formula.get_lib()
+    preset = lib.pg_preset if comp_class == 'PG' else lib.hg_preset
+    return formula, preset
+
+
 def set_comp_scorekeeper(compid: int, userid, owner=False):
     from db.tables import TblCompAuth as CA
 

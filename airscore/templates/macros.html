@@ -37,6 +37,53 @@
 </div>
 {% endmacro %}
 
+{% macro render_formula_field(field, width=None, tooltip=false, id=None, preset=None, readonly=false, autocomplete=None, class=None) %}
+{% if preset and preset.visible == false %}
+  {% if not id %}
+  {% set id = field.name %}
+  {% endif %}
+  {% set value = field.data|safe if field.data is not none %}
+  <input type="hidden" id="{{ id }}" name="{{ field.name }}" value="{{ value }}">
+{% else %}
+  {% set args = dict() %}
+  {% if id %}
+  {%  set _ = args.update({'id': id}) %}
+  {% endif %}
+  {% if width %}
+  {%  set _ = args.update({'size': width}) %}
+  {% endif %}
+  {% if tooltip %}
+  {%  set _ = args.update({'data-toggle': 'tooltip'}) %}
+  {%  set _ = args.update({'title': field.description}) %}
+  {% endif %}
+  {% if readonly %}
+  {%  set _ = args.update({'readonly': disabled}) %}
+  {% elif preset %}
+  {%  set _ = args.update({'readonly': not preset.editable}) %}
+  {% endif %}
+  {% if autocomplete %}
+  {%  set _ = args.update({'autocomplete': autocomplete}) %}
+  {% endif %}
+  {% if class %}
+  {%  set _ = args.update({'class': class}) %}
+  {% else %}
+  {%  set _ = args.update({'class': 'form-control form-control-sm'}) %}
+  {% endif %}
+  <div class="form-element">
+    <div class="form-label">{{ field.label }}:</div>
+    <div class="form-input">
+      {{ field(**args)|safe }}
+      {% if field.errors %}
+        <ul class=errors>
+        {% for error in field.errors %}
+          <li>{{ error }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
+{% endmacro %}
 
 {% macro render_disabled(field) %}
 <div class="form-element">

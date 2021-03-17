@@ -8,9 +8,15 @@ var dropdown = {
     ranking_type: $('#rank_type')
 };
 
+var comp_class = dropdown.category.val();
+
 $(document).ready(function() {
   populate_tasks( tasks_info );
   get_scorekeepers( compid );
+  console.log(formula_preset);
+
+  // hide form rows if all elements are hidden
+  hide_unused_rows();
 
   // populate_rankings( dropdown.category.val() );
   document.getElementById("link_igc_config").setAttribute("href", "/users/igc_parsing_config/" + dropdown.igc_config.val());
@@ -27,8 +33,8 @@ $(document).ready(function() {
       data.forEach(function(item) {
         dropdown.formula.append(
           $('<option>', {
-             value: item[0],
-             text: item[1]
+            value: item[0],
+            text: item[1]
           })
         );
       });
@@ -38,10 +44,18 @@ $(document).ready(function() {
 
   // event listener to category dropdown change
   dropdown.category.on('change', function() {
-    populate_rankings(dropdown.category.val())
-    updateFormulas();
-    ask_update('category');
+    $('#confirm_modal .modal-title').html('Change category to '+dropdown.category.val());
+    $('#confirm_modal-body p').html('This will reset formula settings and delete all category related sub rankings.<br />'+
+                                    '<span class="text-danger"> Any other unsaved setting will be lost.</span>');
+    $('#confirm_cancel').attr("onclick","reset_category();");
+    $('#confirm_success').attr("onclick","change_category();");
+    $('#confirm_modal').modal('show');
   });
+//  dropdown.category.on('change', function() {
+//    populate_rankings(dropdown.category.val())
+//    updateFormulas();
+//    ask_update('category');
+//  });
 
   // event listener to formula dropdown change
   dropdown.formula.on('change', function() {
@@ -80,6 +94,36 @@ $(document).ready(function() {
 
 });
 
+function reset_category() {
+  dropdown.category.val(comp_class);
+}
+
+function change_category() {
+  let mydata = {
+    old_category: comp_class,
+    new_category: dropdown.category.val(),
+    formula: dropdown.formula.val(),
+    compid: compid
+  };
+  $.ajax({
+    type: "POST",
+    url: '/users/_change_comp_category',
+    contentType:"application/json",
+    data : JSON.stringify(mydata),
+    dataType: "json",
+    success: function (data) {
+      if ( data.success ) window.location.reload(true);
+      else create_flashed_message('Error trying to change category.', 'danger');
+    }
+  });
+}
+
+function hide_unused_rows() {
+  $.each($('#adv_params section'), (idx, el) => {
+    if ( $(el).children('input[type=hidden]').length > 0 && $(el).children('div').length === 0 ) $(el).hide();
+  });
+}
+
 function ask_update(change) {
   var formula = $('#select_formula').val();
   var field = formula;
@@ -92,7 +136,7 @@ function ask_update(change) {
   var heading1 = "<p>Changing to ";
   var heading2 = ". Do you also want to update the advanced parameters to the standard for ";
   $("#formula_modal-body").html(heading1 + field + heading2 + formula +'?</p>');
-  $('#formula_confirmed').attr("onclick","get_adv_settings()");
+  $('#formula_confirmed').attr("onclick","update_formula_adv_settings()");
   $('#formula_modal').modal('show');
 }
 
@@ -290,35 +334,27 @@ function get_scorekeepers(){
   });
 }
 
-function get_adv_settings(){
-  var formula = new Object();
+function update_formula_adv_settings(){
+  let formula = new Object();
   formula.formula = $('#select_formula').val();
   formula.category = $('#select_category').val();
   formula.compid = compid;
   console.log(formula);
   $.ajax({
     type: "POST",
-    url: link_get_adv_settings,
+    url: '/users/_update_formula_adv_settings',
     contentType:"application/json",
     data : JSON.stringify(formula),
     dataType: "json",
     success: function (data) {
-      $('#formula_distance').val(data.formula_distance);
-      $('#formula_time').val(data.formula_time);
-      $('#formula_arrival').val(data.formula_arrival);
-      $('#formula_departure').val(data.formula_departure);
-      $('#lead_factor').val(data.lead_factor);
-      $('#no_goal_penalty').val(data.no_goal_penalty);
-      $('#tolerance').val(data.tolerance);
-      $('#min_tolerance').val(data.min_tolerance);
-      $('#glide_bonus').val(data.glide_bonus);
-      $('#arr_alt_bonus').val(data.arr_alt_bonus);
-      $('#arr_max_height').val(data.arr_max_height);
-      $('#arr_min_height').val(data.arr_min_height);
-      $('#validity_min_time').val(data.validity_min_time);
-      $('#scoreback_time').val(data.scoreback_time);
-      $('#max_JTG').val(data.max_JTG);
-      $('#JTG_penalty_per_sec').val(data.JTG_penalty_per_sec);
+     if ( data.success ) {
+      console.log(data.render);
+      $('#adv_params').empty().html(data.render);
+      formula_preset = data.formula_preset;
+      hide_unused_rows();
+      console.log($('#main_comp_settings_form').serialize());
+     }
+     else create_flashed_message('Error trying to reset advanced formula parameters', 'danger');
     }
   });
 }

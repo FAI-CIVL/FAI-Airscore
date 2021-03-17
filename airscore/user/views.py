@@ -598,6 +598,7 @@ def comp_settings_admin(compid: int):
     session['check_g_record'] = comp.check_g_record
     session['track_source'] = comp.track_source
 
+    formula_preset = None
     if comp.external:
         '''External Event'''
         flash(f"This is an External Event. Settings and Results are Read Only.", category='warning')
@@ -610,11 +611,14 @@ def comp_settings_admin(compid: int):
         elif any(t['needs_full_rescore'] or t['needs_new_scoring'] or t['needs_recheck'] for t in session['tasks']):
             '''there are tasks that do not have final results yet and seem to need to be checked'''
             flash(f"There are tasks that need to be verified.", category='warning')
+        lib = comp.formula.get_lib()
+        formula_preset = lib.pg_preset if comp.comp_class == 'PG' else lib.hg_preset
 
     return render_template('users/comp_settings.html', compid=compid, compform=compform,
                            taskform=newtaskform, scorekeeperform=newScorekeeperform, ladderform=ladderform,
                            rankingform=rankingform, certifications=certifications, tasks_info=tasks_info, error=error,
-                           allow_open_event=OPEN_EVENT, self_register=(SELF_REG_DEFAULT and PILOT_DB))
+                           allow_open_event=OPEN_EVENT, self_register=(SELF_REG_DEFAULT and PILOT_DB),
+                           formula_preset=formula_preset)
 
 
 @blueprint.route('/_convert_external_comp/<int:compid>', methods=['GET', 'POST'])
@@ -755,7 +759,7 @@ def task_admin(taskid: int):
 
         return redirect(url_for('user.task_admin', taskid=taskid))
 
-    if request.method == 'GET':
+    elif request.method == 'GET':
         offset = task.time_offset if task.time_offset else 0
         taskform.comp_name = task.comp_name
         taskform.task_name.data = task.task_name
@@ -794,12 +798,16 @@ def task_admin(taskid: int):
         taskform.no_goal_penalty.data = round((task.formula.no_goal_penalty or 0) * 100)
         taskform.arr_alt_bonus.data = task.formula.arr_alt_bonus
 
+        formula_preset = None
         if task_info['cancelled'] or task_info['locked'] or not session['is_editor']:
             taskform.submit = None
+        elif not session['external']:
+            lib = task.formula.get_lib()
+            formula_preset = lib.pg_preset if session['comp_class'] == 'PG' else lib.hg_preset
 
-    return render_template('users/task_admin.html', taskid=taskid, task_info=task_info,  taskform=taskform,
-                           turnpointform=turnpointform, modifyturnpointform=modifyturnpointform, compid=task.comp_id,
-                           error=error)
+        return render_template('users/task_admin.html', taskid=taskid, compid=task.comp_id, task_info=task_info,
+                               taskform=taskform, turnpointform=turnpointform, modifyturnpointform=modifyturnpointform,
+                               formula_preset=formula_preset, error=error)
 
 
 @blueprint.route('/_get_admin_comps', methods=['GET'])
@@ -911,25 +919,31 @@ def _get_tasks(compid: int):
     return task_list
 
 
-@blueprint.route('/_get_adv_settings', methods=['GET', 'POST'])
+@blueprint.route('/_change_comp_category', methods=['GET', 'POST'])
 @login_required
-def _get_adv_settings():
+def _change_comp_category():
     data = request.json
-    formula = Formula.read(data.get('compid'))
-    formula.reset(data.get('category'), data.get('formula'))
-    formula.to_db()
+    resp = frontendUtils.change_comp_category(data['compid'], data['new_category'], data['formula'])
+    if resp:
+        flash('Event Category successfully changed.', 'success')
+    return jsonify(success=resp)
 
-    settings = {'formula_distance': formula.formula_distance, 'formula_arrival': formula.formula_arrival,
-                'formula_departure': formula.formula_departure, 'lead_factor': formula.lead_factor,
-                'formula_time': formula.formula_time, 'no_goal_penalty': formula.no_goal_penalty * 100,
-                'glide_bonus': formula.glide_bonus, 'tolerance': formula.tolerance * 100,
-                'min_tolerance': formula.min_tolerance, 'arr_alt_bonus': formula.height_bonus,
-                'arr_max_height': formula.arr_max_height, 'arr_min_height': formula.arr_min_height,
-                'validity_min_time': int(formula.validity_min_time / 60),
-                'scoreback_time': int(formula.score_back_time / 60),
-                'max_JTG': formula.max_JTG, 'JTG_penalty_per_sec': formula.JTG_penalty_per_sec}
 
-    return settings
+@blueprint.route('/_update_formula_adv_settings', methods=['GET', 'POST'])
+@login_required
+def _update_formula_adv_settings():
+    data = request.json
+    formula, preset = frontendUtils.get_comp_formula_preset(data['compid'], data['formula'], data['category'])
+    form = CompForm(obj=formula)
+    form.lead_factor.data = 1 if formula.lead_factor is None else formula.lead_factor  # should not be None
+    form.no_goal_penalty.data = int(formula.no_goal_penalty * 100)
+    form.tolerance.data = formula.tolerance * 100
+    form.validity_min_time.data = int((formula.validity_min_time or 0) / 60)
+    form.score_back_time.data = int((formula.score_back_time or 0) / 60)
+    return jsonify(success=True,
+                   formula_preset=preset,
+                   render=render_template('users/formula_adv_settings.html',
+                                          compid=data['compid'], compform=form, formula_preset=preset))
 
 
 @blueprint.route('/_get_task_turnpoints/<int:taskid>', methods=['GET'])

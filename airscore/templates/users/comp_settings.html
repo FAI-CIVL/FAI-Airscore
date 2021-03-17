@@ -40,6 +40,7 @@ Competition Settings
     <div class="tab-content">
       <!-- Tab panes -->
       {% from "macros.html" import render_field with context %}
+      {% from "macros.html" import render_formula_field with context %}
       {% set readonly = (session.external or not session.is_editor) %}
       {% set not_allowed = not session.is_editor %}
       <div role="tabpanel" class="tab-pane column-wrap fade show active" id="details">
@@ -115,41 +116,7 @@ Competition Settings
           </button>
         </section>
         <section class="tab-row column-wrap collapse" id='adv_params'>
-          <section class="panel-row row-wrap form">
-            {{ render_field(compform.formula_distance, tooltip=True, disabled=readonly) }}
-            {{ render_field(compform.formula_time, tooltip=True, disabled=readonly) }}
-            {{ render_field(compform.formula_departure, tooltip=True, disabled=readonly) }}
-            {{ render_field(compform.formula_arrival, tooltip=True, disabled=readonly) }}
-          </section>
-          <section class="panel-row row-wrap form">
-            {{ render_field(compform.lead_factor, 10, tooltip=True, disabled=readonly) }}
-          </section>
-          <section class="panel-row row-wrap form">
-            {{ render_field(compform.no_goal_penalty, 10, tooltip=True, disabled=readonly) }}
-            {{ render_field(compform.tolerance, 10, tooltip=True, disabled=readonly) }}
-            {{ render_field(compform.min_tolerance, 10, tooltip=True, disabled=readonly) }}
-          </section>
-          <section class="panel-row row-wrap form">
-            {{ render_field(compform.validity_min_time, 10, tooltip=True, disabled=readonly) }}
-            {{ render_field(compform.scoreback_time, 10, tooltip=True, disabled=readonly) }}
-            {{ render_field(compform.glide_bonus, tooltip=True, disabled=readonly) }}
-          </section>
-          <section class="panel-row row-wrap form">
-            {{ render_field(compform.arr_alt_bonus, 10, tooltip=True, disabled=readonly) }}
-            {{ render_field(compform.arr_min_height, 10, tooltip=True, disabled=readonly) }}
-            {{ render_field(compform.arr_max_height, 10, tooltip=True, disabled=readonly) }}
-          </section>
-          <section class="panel-row row-wrap form">
-            {{ render_field(compform.max_JTG, 10, tooltip=True, disabled=readonly) }}
-            {{ render_field(compform.JTG_penalty_per_sec, 10, tooltip=True, disabled=readonly) }}
-          </section>
-          {% if compform.submit and not readonly %}
-          <section class="panel-row row-wrap button">
-                <button class='btn btn-warning' type='button' onclick='get_adv_settings()'>
-                  Reset Advanced Parameters
-                </button>
-          </section>
-          {% endif %}
+        {% include "users/formula_adv_settings.html" %}
         </section>
       </div>
       <div role="tabpanel" class="tab-pane column-wrap fade" id="tracks">
@@ -350,6 +317,25 @@ Competition Settings
 </div>
 <!--Modal ends here--->
 
+<!----confirm update modal starts here--->
+<div id='confirm_modal' class='modal fade' role='dialog'>
+  <div class='modal-dialog'>
+    <div class='modal-content'>
+      <div class='modal-header'>
+        <h4 class='modal-title'>Please confirm</h4>
+      </div>
+      <div class='modal-body' id='confirm_modal-body'>
+        <p class="text-info">Here the description starts here........</p>
+      </div>
+      <div class='modal-footer'>
+        <button id='confirm_cancel' type='button' class='btn btn-secondary' data-dismiss='modal'>No</button>
+        <button id='confirm_success' type='button' class='btn btn-danger' data-dismiss='modal'>Yes update</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!--Modal ends here--->
+
 <!----formula update modal starts here--->
 <div id='formula_modal' class='modal fade' role='dialog'>
   <div class='modal-dialog'>
@@ -365,7 +351,6 @@ Competition Settings
         <button type='button' class='btn btn-success' data-dismiss='modal'>No</button>
         <button id='formula_confirmed' type='button' class='btn btn-danger' data-dismiss='modal'>Yes update</button>
       </div>
-      task_name
     </div>
   </div>
 </div>
@@ -453,11 +438,11 @@ Competition Settings
   var external = {{ session.external|tojson }};
   var is_editor = {{ session.is_editor|tojson }};
   var link_get_tasks = "{{ url_for('user._get_tasks', compid=compid)}}";
+  var formula_preset = {{ formula_preset|tojson }};
   var tasks_info = {{ tasks_info|tojson }};
   var link_add_task = "{{ url_for('user._add_task', compid=compid)}}";
   var link_get_scorekeepers = "{{ url_for('user._get_scorekeepers', compid=compid)}}";
   var link_add_scorekeeper = "{{ url_for('user._add_scorekeeper', compid=compid)}}";
-  var link_get_adv_settings = "{{ url_for('user._get_adv_settings')}}"
   {% if ladderform %}
   var link_save_comp_ladders = "{{ url_for('user._save_comp_ladders', compid=compid)}}";
   {% endif %}
