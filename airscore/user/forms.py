@@ -16,6 +16,19 @@ from .models import User
 percentage_choices = [(0.1, '10%'), (0.2, '20%'), (0.3, '30%'), (0.4, '40%'), (0.5, '50%'),
                       (0.6, '60%'), (0.7, '70%'), (0.8, '80%'), (0.9, '90%'), (1.0, '100%')]
 
+time_zones = [(-43200, '-12:00'), (-41400, '-11:30'), (-39600, '-11:00'), (-37800, '-10:30'), (-36000, '-10:00'),
+              (-34200, '-9:30'), (-32400, '-9:00'), (-30600, '-8:30'), (-28800, '-8:00'), (-27000, '-7:30'),
+              (-25200, '-7:00'), (-23400, '-6:30'), (-21600, '-6:00'), (-19800, '-5:30'), (-18000, '-5:00'),
+              (-16200, '-4:30'), (-14400, '-4:00'), (-12600, '-3:30'), (-10800, '-3:00'), (-9000, '-2:30'),
+              (-7200, '-2:00'), (-5400, '-1:30'), (-3600, '-1:00'), (-1800, '-0:30'), (0, '+0:00'),
+              (1800, '+0:30'), (3600, '+1:00'), (5400, '+1:30'), (7200, '+2:00'), (9000, '+2:30'),
+              (10800, '+3:00'), (12600, '+3:30'), (14400, '+4:00'), (16200, '+4:30'), (18000, '+5:00'),
+              (19800, '+5:30'), (20700, '+5:45'), (21600, '+6:00'), (23400, '+6:30'), (25200, '+7:00'),
+              (27000, '+7:30'), (28800, '+8:00'), (30600, '+8:30'), (31500, '+8:45'), (32400, '+9:00'),
+              (34200, '+9:30'), (36000, '+10:00'), (37800, '+10:30'), (39600, '+11:00'), (41400, '+11:30'),
+              (43200, '+12:00'), (45000, '+12:30'), (45900, '+12:45'), (46800, '+13:00'), (48600, '+13:30'),
+              (50400, '+14:00')]
+
 
 class RegisterForm(FlaskForm):
     """Register form."""
@@ -124,7 +137,7 @@ class NewCompForm(FlaskForm):
 
 class CompForm(FlaskForm):
     from formula import list_formulas
-    from frontendUtils import list_track_sources, list_gmt_offset
+    from frontendUtils import list_track_sources
 
     help_nom_launch = "When pilots do not take off for safety reasons, to avoid difficult launch conditions or bad " \
                       "conditions in the air, Launch Validity is reduced.. Nominal Launch defines a threshold as a " \
@@ -170,8 +183,7 @@ class CompForm(FlaskForm):
     date_to = DateField('End Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
     MD_name = StringField('Race Director')
 
-    timezones = list_gmt_offset()
-    time_offset = SelectField('GMT Offset', choices=timezones, id='select_time_offset', coerce=int, default=0,
+    time_offset = SelectField('GMT Offset', choices=time_zones, id='select_time_offset', coerce=int, default=0,
                               description='The default time offset for the comp. Individual tasks will have this '
                               'as a default but can be overridden if your comp spans multiple time zones'
                               ' or over change in daylight savings')
@@ -263,7 +275,6 @@ class CompForm(FlaskForm):
 
 
 class TaskForm(FlaskForm):
-    from frontendUtils import list_gmt_offset
     # general
     comp_name = ""
     task_name = StringField("Task Name", description='optional. If you want to give the task a name. '
@@ -292,8 +303,7 @@ class TaskForm(FlaskForm):
                                                                   'start close time',
                                    validators=[Optional(strip_whitespace=True)])
 
-    timezones = list_gmt_offset()
-    time_offset = SelectField('GMT Offset', choices=timezones, id='select_time_offset', coerce=int, default=0,
+    time_offset = SelectField('GMT Offset', choices=time_zones, id='select_time_offset', coerce=int, default=0,
                               description='The time offset for the task. Default value taken from the competition '
                               'time offset')
 
