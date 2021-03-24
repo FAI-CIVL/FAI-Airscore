@@ -2105,14 +2105,17 @@ def run_livetracking_background(task_id: int):
 
 def create_new_comp(comp, user_id: int) -> dict:
     from compUtils import create_comp_path
-    from formula import Formula
+    from formula import Formula, list_formulas
     from ranking import create_overall_ranking
     from airspace import create_check_parameters
 
     comp.comp_path = create_comp_path(comp.date_from, comp.comp_code)
     output = comp.to_db()
     if isinstance(output, int):
-        Formula(comp_id=comp.comp_id).to_db()
+        formulas = list_formulas().get(comp.comp_class)
+        formula = Formula.from_preset(comp.comp_class, formulas[-1])
+        formula.comp_id = comp.comp_id
+        formula.to_db()
         set_comp_scorekeeper(comp.comp_id, user_id, owner=True)
         create_overall_ranking(comp.comp_id)
         create_check_parameters(comp.comp_id)
