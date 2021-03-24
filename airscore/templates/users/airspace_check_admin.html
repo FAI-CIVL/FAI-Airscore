@@ -60,7 +60,7 @@ Airspace Check Settings
           </div>
         </section>
         <section class="tab-row row-wrap form">
-            {{ render_field(checkform.notification_distance, 5, disabled=readonly) }}
+            {{ render_field(checkform.notification_distance, size=5, disabled=readonly) }}
         </section>
         <section class="tab-row row-wrap form">
             {{ render_field(checkform.function, disabled=readonly) }}
@@ -70,15 +70,15 @@ Airspace Check Settings
         </section>
         <section class="tab-row column-wrap form" id="h_limits">
           <section class="row-wrap">
-            {{ render_field(checkform.h_outer_limit, 5, disabled=readonly) }}
+            {{ render_field(checkform.h_outer_limit, size=5, disabled=readonly) }}
           </section>
           <section class="row-wrap" id="h_boundary_section">
-            {{ render_field(checkform.h_boundary, 5, tooltip=True, disabled=readonly) }}
-            {{ render_field(checkform.h_boundary_penalty, tooltip=True, disabled=readonly) }}
+            {{ render_field(checkform.h_boundary, size=5, disabled=readonly) }}
+            {{ render_field(checkform.h_boundary_penalty, disabled=readonly) }}
           </section>
           <section class="row-wrap">
-            {{ render_field(checkform.h_inner_limit, 5, tooltip=True, disabled=readonly) }}
-            {{ render_field(checkform.h_max_penalty, tooltip=True, disabled=readonly) }}
+            {{ render_field(checkform.h_inner_limit, size=5, disabled=readonly) }}
+            {{ render_field(checkform.h_max_penalty, disabled=readonly) }}
           </section>
         </section>
         <section class="tab-row row-wrap form">
@@ -86,15 +86,15 @@ Airspace Check Settings
         </section>
         <section class="tab-row column-wrap form" id="v_limits">
           <section class="row-wrap">
-            {{ render_field(checkform.v_outer_limit, 5, disabled=readonly) }}
+            {{ render_field(checkform.v_outer_limit, size=5, disabled=readonly) }}
           </section>
           <section class="row-wrap" id="v_boundary_section">
-            {{ render_field(checkform.v_boundary, 5, tooltip=True, disabled=readonly) }}
-            {{ render_field(checkform.v_boundary_penalty, tooltip=True, disabled=readonly) }}
+            {{ render_field(checkform.v_boundary, size=5, disabled=readonly) }}
+            {{ render_field(checkform.v_boundary_penalty, disabled=readonly) }}
           </section>
           <section class="row-wrap">
-            {{ render_field(checkform.v_inner_limit, 5, tooltip=True, disabled=readonly) }}
-            {{ render_field(checkform.v_max_penalty, tooltip=True, disabled=readonly) }}
+            {{ render_field(checkform.v_inner_limit, size=5, disabled=readonly) }}
+            {{ render_field(checkform.v_max_penalty, disabled=readonly) }}
           </section>
         </section>
       </div>

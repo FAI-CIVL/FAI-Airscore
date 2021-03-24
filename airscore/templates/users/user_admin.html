@@ -46,17 +46,17 @@
         <div class="form-row">
           <section class="pl-1 column-wrap panel-row" id="username_section">
             <input type="hidden" id="user_id" name="user_id" value="">
-            {{ render_field(user_form.username, width=40, disabled=True) }}
+            {{ render_field(user_form.username, size=40, disabled=True) }}
           </section>
           <section class="pl-1 column-wrap panel-row">
             {{ render_field(user_form.access) }}
           </section>
           <section class="pl-1 row-wrap panel-row">
-            {{ render_field(user_form.first_name, width=40) }}
-            {{ render_field(user_form.last_name, width=40) }}
+            {{ render_field(user_form.first_name, size=40) }}
+            {{ render_field(user_form.last_name, size=40) }}
           </section>
           <section class="pl-1 column-wrap panel-row">
-            {{ render_field(user_form.email, width=40) }}
+            {{ render_field(user_form.email, size=40) }}
           </section>
           <section class="pl-1 row-wrap panel-row">
             {{ render_field(user_form.nat) }}

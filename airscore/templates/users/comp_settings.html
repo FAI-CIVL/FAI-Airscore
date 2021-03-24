@@ -5,7 +5,7 @@ Competition Settings
 {% endblock %}
 
 {% block back %}
-<a href="{{ url_for('user.pilot_admin', compid=compid)}}" class='btn btn-info'>
+<a href="{{ url_for('user.pilot_admin', compid=compid) }}" class='btn btn-info'>
   Registered Pilots
 </a>
 {% endblock %}
@@ -40,7 +40,6 @@ Competition Settings
     <div class="tab-content">
       <!-- Tab panes -->
       {% from "macros.html" import render_field with context %}
-      {% from "macros.html" import render_formula_field with context %}
       {% set readonly = (session.external or not session.is_editor) %}
       {% set not_allowed = not session.is_editor %}
       <div role="tabpanel" class="tab-pane column-wrap fade show active" id="details">
@@ -63,29 +62,29 @@ Competition Settings
         </section>
         {% endif %}
         <section class="tab-row row-wrap form">
-            {{ render_field(compform.comp_name, 40, disabled=readonly) }}
-            {{ render_field(compform.comp_code, 20, tooltip=True, disabled=not_allowed) }}
-            {{ render_field(compform.sanction, tooltip=True, disabled=not_allowed) }}
+            {{ render_field(compform.comp_name, size=40, disabled=readonly) }}
+            {{ render_field(compform.comp_code, size=20, disabled=not_allowed) }}
+            {{ render_field(compform.sanction, disabled=not_allowed) }}
             {{ render_field(compform.comp_class, disabled=readonly) }}
         </section>
         <section class="tab-row row-wrap form">
-            {{ render_field(compform.comp_site, 40, disabled=readonly) }}
-            {{ render_field(compform.date_from, 15, disabled=readonly) }}
-            {{ render_field(compform.date_to, 15, disabled=readonly) }}
-            {{ render_field(compform.time_offset, tooltip=True, disabled=readonly) }}
+            {{ render_field(compform.comp_site, size=40, disabled=readonly) }}
+            {{ render_field(compform.date_from, size=15, disabled=readonly) }}
+            {{ render_field(compform.date_to, size=15, disabled=readonly) }}
+            {{ render_field(compform.time_offset, disabled=readonly) }}
         </section>
         <section class="tab-row row-wrap form">
-            {{ render_field(compform.MD_name, 40, disabled=not_allowed) }}
-            {{ render_field(compform.website, 20, disabled=not_allowed) }}
-            {{ render_field(compform.comp_type, disabled=readonly) }}
+            {{ render_field(compform.MD_name, size=40, disabled=not_allowed) }}
+            {{ render_field(compform.website, size=20, disabled=not_allowed) }}
+            {{ render_field(compform.comp_type, disabled=True) }}
         </section>
         {% if allow_open_event or self_register %}
         <section class="tab-row row-wrap form">
             {% if allow_open_event %}
-            {{ render_field(compform.pilot_registration, tooltip=True, disabled=readonly) }}
+            {{ render_field(compform.pilot_registration, disabled=readonly) }}
             {% endif %}
             {% if self_register %}
-            {{ render_field(compform.self_register, tooltip=True, disabled=readonly) }}
+            {{ render_field(compform.self_register, disabled=readonly) }}
             {% endif %}
         </section>
         {% endif %}
@@ -93,21 +92,21 @@ Competition Settings
       <div role="tabpanel" class="tab-pane column-wrap fade" id="formula">
         <h4 class='tab-title font-weight-bold'>Formula Parameters:</h4>
         <section class="tab-row row-wrap form">
-            {{ render_field(compform.formula, tooltip=True, disabled=readonly) }}
-            {{ render_field(compform.overall_validity, tooltip=True, disabled=readonly) }}
-            <div id="validity_param_div" {% if compform.overall_validity.data == 'all' %}style="display:none"{% endif %}>
-            {{ render_field(compform.validity_param, 5, tooltip=True, disabled=readonly) }}
+            {{ render_field(compform.formula, disabled=readonly) }}
+            {{ render_field(compform.overall_validity, disabled=readonly) }}
+            <div id="validity_param_div" style="{% if compform.overall_validity.data == 'all' %}display:none{% endif %}">
+            {{ render_field(compform.validity_param, size=5, disabled=readonly) }}
             </div>
         </section>
         <section class="tab-row row-wrap form">
-            {{ render_field(compform.min_dist, 5, tooltip=True, disabled=readonly) }}
-            {{ render_field(compform.nom_dist, 5, tooltip=True, disabled=readonly) }}
-            {{ render_field(compform.nom_time, 5, tooltip=True, disabled=readonly) }}
-            {{ render_field(compform.nom_launch, 5, tooltip=True, disabled=readonly) }}
-            {{ render_field(compform.nom_goal, 5, tooltip=True, disabled=readonly) }}
+            {{ render_field(compform.min_dist, size=5, disabled=readonly) }}
+            {{ render_field(compform.nom_dist, size=5, disabled=readonly) }}
+            {{ render_field(compform.nom_time, size=5, disabled=readonly) }}
+            {{ render_field(compform.nom_launch, size=5, disabled=readonly) }}
+            {{ render_field(compform.nom_goal, size=5, disabled=readonly) }}
         </section>
         <section class="tab-row row-wrap form">
-            {{ render_field(compform.scoring_altitude, tooltip=True, disabled=readonly) }}
+            {{ render_field(compform.scoring_altitude, disabled=readonly) }}
         </section>
         <section class="tab-row row-wrap button">
           <button class='btn btn-primary' type='button' data-toggle='collapse' data-target='#adv_params'
@@ -122,17 +121,17 @@ Competition Settings
       <div role="tabpanel" class="tab-pane column-wrap fade" id="tracks">
         <h4 class='tab-title font-weight-bold'>Track Management:</h4>
         <section class="tab-row row-wrap form">
-          {{ render_field(compform.track_source, tooltip=True, disabled=readonly) }}
+          {{ render_field(compform.track_source, disabled=readonly) }}
         </section>
         <section class="tab-row row-wrap form">
           <div>
-            {{ render_field(compform.igc_parsing_file, tooltip=True, disabled=readonly) }}
+            {{ render_field(compform.igc_parsing_file, disabled=readonly) }}
             <a class="form-link" id='link_igc_config'>view/edit</a>
           </div>
-          {{ render_field(compform.check_launch, tooltip=True, disabled=readonly) }}
-          {{ render_field(compform.check_g_record, tooltip=True, disabled=readonly) }}
+          {{ render_field(compform.check_launch, disabled=readonly) }}
+          {{ render_field(compform.check_g_record, disabled=readonly) }}
           <div class="row-wrap">
-            {{ render_field(compform.airspace_check, tooltip=True, disabled=readonly) }}
+            {{ render_field(compform.airspace_check, disabled=readonly) }}
             {% if compform.airspace_check.data %}
             <a href="{{ url_for('user.airspace_check_admin', compid=compid) }}" class='btn btn-info ml-2'>
               Parameters
@@ -155,17 +154,17 @@ Competition Settings
           {% endif %}
         </section>
         <section class="tab-row row-wrap form">
-          {{ render_field(compform.country_scoring, tooltip=True, disabled=not_allowed) }}
+          {{ render_field(compform.country_scoring, disabled=not_allowed) }}
           <div class='display-if' id='country_details' data-target_name='country_scoring'
              data-target_type='checkbox' data-target_value='true'>
-            {{ render_field(compform.max_country_size, 10, tooltip=True, disabled=not_allowed) }}
-            {{ render_field(compform.country_size, 10, tooltip=True, disabled=not_allowed) }}
+            {{ render_field(compform.max_country_size, size=10, disabled=not_allowed) }}
+            {{ render_field(compform.country_size, size=10, disabled=not_allowed) }}
           </div>
-          {{ render_field(compform.team_scoring, tooltip=True, disabled=not_allowed) }}
+          {{ render_field(compform.team_scoring, disabled=not_allowed) }}
           <div class='display-if' id='team_details' data-target_name='team_scoring'
              data-target_type='checkbox' data-target_value='true'>
-            {{ render_field(compform.max_team_size, 10, tooltip=True, disabled=not_allowed) }}
-            {{ render_field(compform.team_size, 10, tooltip=True, disabled=not_allowed) }}
+            {{ render_field(compform.max_team_size, size=10, disabled=not_allowed) }}
+            {{ render_field(compform.team_size, size=10, disabled=not_allowed) }}
           </div>
         </section>
       </div>
@@ -251,7 +250,7 @@ Competition Settings
       <div class="panel-content column-wrap">
         <div class='panel collapse' id='add_sk'>
           <section class="panel-row row-wrap form">
-            {{ render_field(scorekeeperform.scorekeeper, tooltip=True) }}
+            {{ render_field(scorekeeperform.scorekeeper) }}
           </section>
           <section class="panel-row row-wrap button">
             <button id='save_scorekeeper_button' class='btn btn-success' type='button' onclick='add_scorekeeper()'>
@@ -278,13 +277,13 @@ Competition Settings
       </div>
       <div class='modal-body'>
         <section class="panel-row row-wrap form">
-            {{ render_field(taskform.task_number, 2, tooltip=True) }}
+            {{ render_field(taskform.task_number, size=2) }}
             {{ render_field(taskform.task_date) }}
             {{ render_field(taskform.task_region) }}
         </section>
         <section class="panel-row row-wrap form">
-            {{ render_field(taskform.task_name, 10, tooltip=True) }}
-            {{ render_field(taskform.task_comment, 20, tooltip=True) }}
+            {{ render_field(taskform.task_name, size=10) }}
+            {{ render_field(taskform.task_comment, size=20) }}
         </section>
        </div>
       <div class='modal-footer'>
@@ -389,22 +388,22 @@ Competition Settings
           <div class='form-row'>
             <section class="pl-1 row-wrap panel-row">
               <input type="hidden" id="rank_id" name="rank_id" value="">
-              {{ render_field(rankingform.rank_name, width=30) }}
+              {{ render_field(rankingform.rank_name, size=30) }}
               {{ render_field(rankingform.rank_type) }}
             </section>
             <section class="pl-1 row-wrap panel-row" id="rank_cert">
               {{ render_field(rankingform.cert_id) }}
             </section>
             <section class="pl-1 row-wrap panel-row" id="rank_date">
-              {{ render_field(rankingform.min_date, 15) }}
-              {{ render_field(rankingform.max_date, 15) }}
+              {{ render_field(rankingform.min_date, size=15) }}
+              {{ render_field(rankingform.max_date, size=15) }}
             </section>
             <section class="pl-1 row-wrap panel-row" id="rank_attr">
               {{ render_field(rankingform.attr_id) }}
             </section>
             <section class="pl-1 row-wrap panel-row" id="rank_key_value">
               <p id="rank_value_comment"></p>
-              {{ render_field(rankingform.rank_value, 30) }}
+              {{ render_field(rankingform.rank_value, size=30) }}
             </section>
             <section class="pl-1 row-wrap panel-row" id="custom_link">
               <a href="{{ url_for('user.pilot_admin', compid=compid)}}" class='btn btn-info'>

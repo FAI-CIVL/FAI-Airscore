@@ -535,7 +535,7 @@ table_data = [];
 
 // jQuery selection for the file select box
 var task = {
-  dropdown: $('#task_result_file'),
+  dropdown: $('select[name="task_result_file"]'),
   delete_file: $('#delete_result'),
   publish: $('#publish'),
   change_status: $('#change_status'),
@@ -553,7 +553,7 @@ var task = {
 };
 
 var comp = {
-  dropdown: $('#comp_result_file'),
+  dropdown: $('select[name="comp_result_file"]'),
   delete_file: $('#delete_comp_result'),
   publish: $('#comp_publish'),
   change_status: $('#change_comp_status'),

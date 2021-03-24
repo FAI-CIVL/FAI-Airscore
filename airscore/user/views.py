@@ -598,7 +598,9 @@ def comp_settings_admin(compid: int):
     session['check_g_record'] = comp.check_g_record
     session['track_source'] = comp.track_source
 
-    formula_preset = None
+    lib = comp.formula.get_lib()
+    formula_preset = None if not lib else lib.pg_preset if comp.comp_class == 'PG' else lib.hg_preset
+
     if comp.external:
         '''External Event'''
         flash(f"This is an External Event. Settings and Results are Read Only.", category='warning')
@@ -611,8 +613,6 @@ def comp_settings_admin(compid: int):
         elif any(t['needs_full_rescore'] or t['needs_new_scoring'] or t['needs_recheck'] for t in session['tasks']):
             '''there are tasks that do not have final results yet and seem to need to be checked'''
             flash(f"There are tasks that need to be verified.", category='warning')
-        lib = comp.formula.get_lib()
-        formula_preset = lib.pg_preset if comp.comp_class == 'PG' else lib.hg_preset
 
     return render_template('users/comp_settings.html', compid=compid, compform=compform,
                            taskform=newtaskform, scorekeeperform=newScorekeeperform, ladderform=ladderform,

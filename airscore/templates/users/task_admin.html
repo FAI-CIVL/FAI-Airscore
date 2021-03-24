@@ -69,8 +69,8 @@ Task Settings
       <div role="tabpanel" class="tab-pane column-wrap fade show active" id="details">
         <h4 class='tab-title font-weight-bold'>Task Details:</h4>
         <section class="tab-row row-wrap form">
-            {{ render_field(taskform.task_num, 2, disabled=readonly) }}
-            {{ render_field(taskform.task_name, 20, disabled=readonly) }}
+            {{ render_field(taskform.task_num, size=2, readonly=readonly) }}
+            {{ render_field(taskform.task_name, size=20, readonly=readonly) }}
             {% if session.is_editor and (not task_info.locked or task_info.cancelled) %}
             <button class="btn {% if not task_info.cancelled %} btn-outline-danger {% else %} btn-success {% endif %} ml-2 mt-4" type='button' data-toggle='modal' data-target='#cancel_task_modal'>
               {% if not task_info.cancelled %} Declare Cancelled {% else %} Turn Task Active {% endif %}</button>
@@ -78,17 +78,17 @@ Task Settings
         </section>
         {% if not readonly %}
         <section class="tab-row row-wrap form">
-            {{ render_field(taskform.region, tooltip=True) }}
+            {{ render_field(taskform.region) }}
             <a class="btn btn-primary mt-4" href="{{ url_for('user.region_admin', compid=session.compid) }}">Add / Edit Comp regions</a>
         </section>
         {% endif %}
         <section class="tab-row row-wrap form">
-            {{ render_field(taskform.date, 15, disabled=readonly) }}
-            {{ render_field(taskform.time_offset, tooltip=True, disabled=readonly) }}
+            {{ render_field(taskform.date, size=15, readonly=readonly) }}
+            {{ render_field(taskform.time_offset, readonly=readonly) }}
         </section>
         <section class="tab-row row-wrap form">
-            {{ render_field(taskform.task_type, tooltip=True, disabled=readonly) }}
-            {{ render_field(taskform.comment, 40, tooltip=True, disabled=locked) }}
+            {{ render_field(taskform.task_type, readonly=readonly) }}
+            {{ render_field(taskform.comment, size=40, disabled=locked) }}
         </section>
       </div>
       <div role="tabpanel" class="tab-pane column-wrap fade" id="formula">
@@ -100,26 +100,26 @@ Task Settings
           </div>
         </section>
         <section class="tab-row row-wrap form">
-            {{ render_field(taskform.formula_distance, tooltip=True, disabled=readonly) }}
-            {{ render_field(taskform.formula_departure, tooltip=True, disabled=readonly) }}
-            {{ render_field(taskform.formula_time, tooltip=True, disabled=readonly) }}
-            {{ render_field(taskform.formula_arrival, tooltip=True, disabled=readonly) }}
+            {{ render_field(taskform.formula_distance, readonly=readonly) }}
+            {{ render_field(taskform.formula_departure, readonly=readonly) }}
+            {{ render_field(taskform.formula_time, readonly=readonly) }}
+            {{ render_field(taskform.formula_arrival, readonly=readonly) }}
         </section>
         <section class="tab-row row-wrap form">
-            {{ render_field(taskform.tolerance, 3, tooltip=True, disabled=readonly) }}
-            {{ render_field(taskform.no_goal_penalty, 4, tooltip=True, disabled=readonly) }}
+            {{ render_field(taskform.tolerance, size=3, readonly=readonly) }}
+            {{ render_field(taskform.no_goal_penalty, size=4, readonly=readonly) }}
         </section>
         <section class="tab-row row-wrap form">
-            {{ render_field(taskform.max_JTG, 4, tooltip=True, disabled=readonly) }}
-            {{ render_field(taskform.arr_alt_bonus, 4, tooltip=True, disabled=readonly) }}
+            {{ render_field(taskform.max_JTG, size=4, readonly=readonly) }}
+            {{ render_field(taskform.arr_alt_bonus, size=4, readonly=readonly) }}
         </section>
       </div>
       <div role="tabpanel" class="tab-pane column-wrap fade" id="checking">
         <h4 class='tab-title font-weight-bold'>Tracks Checking Parameters:</h4>
         <section class="tab-row row-wrap form">
-            {{ render_field(taskform.check_launch, tooltip=True, disabled=readonly) }}
-            {{ render_field(taskform.QNH, 7, tooltip=True, disabled=readonly) }}
-            {{ render_field(taskform.airspace_check, tooltip=True, disabled=readonly) }}
+            {{ render_field(taskform.check_launch, readonly=readonly) }}
+            {{ render_field(taskform.QNH, size=7, readonly=readonly) }}
+            {{ render_field(taskform.airspace_check, readonly=readonly) }}
             {% if taskform.airspace_check.data %}
             <a href="{{ url_for('user.airspace_check_admin', compid=compid) }}" class='btn btn-info ml-2'>
               Parameters
@@ -130,13 +130,13 @@ Task Settings
       <div role="tabpanel" class="tab-pane column-wrap fade" id="timing">
         <h4 class='tab-title font-weight-bold'>Task Timing:</h4>
         <section class="tab-row row-wrap form">
-            {{ render_field(taskform.window_open_time, 3, tooltip=True, disabled=readonly) }}
-            {{ render_field(taskform.window_close_time, 3, tooltip=True, disabled=readonly) }}
-            {{ render_field(taskform.task_deadline, 3, tooltip=True, disabled=readonly) }}
+            {{ render_field(taskform.window_open_time, size=3, readonly=readonly) }}
+            {{ render_field(taskform.window_close_time, size=3, readonly=readonly) }}
+            {{ render_field(taskform.task_deadline, size=3, readonly=readonly) }}
         </section>
         <section class="tab-row row-wrap form">
-            {{ render_field(taskform.start_time, 3, tooltip=True, disabled=readonly) }}
-            {{ render_field(taskform.start_close_time, 3, tooltip=True, disabled=readonly) }}
+            {{ render_field(taskform.start_time, size=3, readonly=readonly) }}
+            {{ render_field(taskform.start_close_time, size=3, readonly=readonly) }}
           <button class='btn btn-primary ml-4 collapsed' type='button' data-toggle='collapse' data-target='#multi_start'
                     aria-expanded='false' aria-controls='multi_start'>
               Multi Start Settings
@@ -144,8 +144,8 @@ Task Settings
         </section>
         <section class="tab-row row-wrap collapse" id='multi_start'>
             <section class="panel-row row-wrap form">
-            {{ render_field(taskform.SS_interval, 3, tooltip=True, disabled=readonly) }}
-            {{ render_field(taskform.start_iteration, 2, tooltip=True, disabled=readonly) }}
+            {{ render_field(taskform.SS_interval, size=3, readonly=readonly) }}
+            {{ render_field(taskform.start_iteration, size=2, readonly=readonly) }}
             </section>
         </section>
         <section class="tab-row row-wrap button">
@@ -156,7 +156,7 @@ Task Settings
         </section>
         <section class="tab-row row-wrap form collapse" id='stopped'>
             <section class="panel-row row-wrap">
-            {{ render_field(taskform.stopped_time, 3, tooltip=True, disabled=readonly) }}
+            {{ render_field(taskform.stopped_time, size=3, readonly=readonly) }}
             </section>
         </section>
       </div>
@@ -198,28 +198,28 @@ Task Settings
         {% if taskform.submit and not readonly %}
         {% if taskform.region.data %}
         <section class="tab-row row-wrap form p-2">
-          {{ render_field(turnpointform.name, 8, tooltip=True) }}
+          {{ render_field(turnpointform.name, size=8) }}
         </section>
         <section class="tab-row row-wrap form p-2" id="new_waypoint_form">
-          {{ render_field(turnpointform.number, 2, tooltip=True) }}
-          {{ render_field(turnpointform.type, tooltip=True) }}
+          {{ render_field(turnpointform.number, size=2) }}
+          {{ render_field(turnpointform.type) }}
           <div class='display-if' data-target_name='type' data-target_type='select'
                          data-target_value='speed'>
-          {{ render_field(turnpointform.how, tooltip=True) }}
+          {{ render_field(turnpointform.how) }}
           </div>
           <div class='display-if' data-target_name='type' data-target_type='select'
                          data-target_value='goal'>
-          {{ render_field(turnpointform.shape, tooltip=True) }}
+          {{ render_field(turnpointform.shape) }}
           </div>
           {% if taskform.check_launch == 1 %}
           <div class='display-if' data-target_name='type' data-target_type='select'
                          data-target_value='launch'>
-          {{ render_field(turnpointform.radius, 5, tooltip=True) }}
+          {{ render_field(turnpointform.radius, size=5) }}
           </div>
           {% endif%}
           <div class='display-if' data-target_name='type' data-target_type='select'
                          data-target_value_not='launch'>
-          {{ render_field(turnpointform.radius, 5, tooltip=True) }}
+          {{ render_field(turnpointform.radius, size=5) }}
           </div>
         </section>
         <section class="panel-row row-wrap button">

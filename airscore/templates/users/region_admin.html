@@ -36,7 +36,7 @@ Region Admin
     <form id='upload-form' action='' method='POST' enctype='multipart/form-data'>
       {{new_region_form.hidden_tag()}}
       <section class="panel-row row-wrap form">
-        {{ render_field(new_region_form.name, 20, tooltip=True) }}
+        {{ render_field(new_region_form.name, size=20) }}
       </section>
       <section class="panel-row row-wrap form">
         {{ render_field(new_region_form.waypoint_file) }}
