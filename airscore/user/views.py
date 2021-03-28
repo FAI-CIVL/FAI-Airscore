@@ -678,6 +678,7 @@ def user_admin():
 
 @blueprint.route('/_add_scorekeeper/<int:compid>', methods=['POST'])
 @login_required
+@editor_required
 def _add_scorekeeper(compid: int):
     data = request.json
     if frontendUtils.set_comp_scorekeeper(compid, data['id']):
@@ -857,6 +858,7 @@ def _register_pilots(compid: int):
 
 @blueprint.route('/_add_task/<int:compid>', methods=['POST'])
 @login_required
+@editor_required
 def _add_task(compid: int):
     from region import get_openair
     comp = Comp.read(compid)
@@ -959,6 +961,7 @@ def _get_task_turnpoints(taskid: int):
 
 @blueprint.route('/_add_turnpoint/<int:taskid>', methods=['POST'])
 @login_required
+@editor_required
 def _add_turnpoint(taskid: int):
     """add turnpoint to the task,if rwp_id is not null then update instead of insert (add)
     if turnpoint is goal or we are updating and goal exists then calculate opt dist and dist."""
@@ -1002,6 +1005,7 @@ def _add_turnpoint(taskid: int):
 
 @blueprint.route('/_del_turnpoint/<tpid>', methods=['POST'])
 @login_required
+@editor_required
 def _del_turnpoint(tpid):
     """delete a turnpoint from the task"""
     from route import delete_turnpoint
@@ -1022,6 +1026,7 @@ def _del_turnpoint(tpid):
 
 @blueprint.route('/_del_all_turnpoints/<int:taskid>', methods=['POST'])
 @login_required
+@editor_required
 def _del_all_turnpoints(taskid: int):
     """delete a turnpoint from the task"""
     from route import delete_all_turnpoints
@@ -1146,6 +1151,7 @@ def _upload_track(taskid: int, parid: int):
 
 @blueprint.route('/_get_xcontest_tracks/<int:taskid>', methods=['POST'])
 @login_required
+@editor_required
 def _get_xcontest_tracks(taskid: int):
     from sources.xcontest import get_zipfile
     if request.method == "POST":
@@ -1187,6 +1193,7 @@ def _upload_XCTrack(taskid: int):
 
 @blueprint.route('/_upload_track_zip/<int:taskid>', methods=['POST'])
 @login_required
+@editor_required
 def _upload_track_zip(taskid: int):
     from Defines import track_formats
     if request.method == "POST":
@@ -1210,6 +1217,7 @@ def _upload_track_zip(taskid: int):
 
 @blueprint.route('/_recheck_task_tracks/<int:taskid>', methods=['POST'])
 @login_required
+@editor_required
 def _recheck_task_tracks(taskid: int):
     if not session['external'] and request.method == "POST":
         resp = frontendUtils.recheck_tracks(task_id=taskid, username=current_user.username)
@@ -1439,6 +1447,7 @@ def _publish_result(taskid: int):
 
 @blueprint.route('/_task_lock_switch/<int:taskid>', methods=['POST'])
 @login_required
+@editor_required
 def _task_lock_switch(taskid: int):
     if request.method == "POST":
         data = request.json
@@ -1453,6 +1462,7 @@ def _task_lock_switch(taskid: int):
 
 @blueprint.route('/_calculate_comp_result/<int:compid>', methods=['POST'])
 @login_required
+@editor_required
 def _calculate_comp_result(compid: int):
     if request.method == "POST":
         data = request.json
@@ -1586,6 +1596,7 @@ def region_admin():
 
 @blueprint.route('/_delete_region/<int:regid>', methods=['POST'])
 @login_required
+@editor_required
 def _delete_region(regid: int):
     from region import delete_region
     delete_region(regid)
@@ -1715,6 +1726,7 @@ def pilot_admin(compid: int):
 
 @blueprint.route('/_modify_participant_details/<int:parid>', methods=['POST'])
 @login_required
+@editor_required
 def _modify_participant_details(parid: int):
     from pilot.participant import Participant, abbreviate
 
@@ -1749,6 +1761,7 @@ def _modify_participant_details(parid: int):
 
 @blueprint.route('/_add_participant/<int:compid>', methods=['POST'])
 @login_required
+@editor_required
 def _add_participant(compid: int):
     from pilot.participant import Participant, assign_id, abbreviate
 
@@ -1786,6 +1799,7 @@ def _add_participant(compid: int):
 
 @blueprint.route('/_upload_participants_excel/<int:compid>', methods=['POST'])
 @login_required
+@editor_required
 def _upload_participants_excel(compid: int):
     import tempfile
 
@@ -1805,6 +1819,7 @@ def _upload_participants_excel(compid: int):
 
 @blueprint.route('/_upload_participants_fsdb/<int:compid>', methods=['POST'])
 @login_required
+@editor_required
 def _upload_participants_fsdb(compid: int):
     import tempfile
 
@@ -1841,6 +1856,7 @@ def _self_register(compid: int):
 
 @blueprint.route('/_unregister_participant/<int:compid>', methods=['POST'])
 @login_required
+@editor_required
 def _unregister_participant(compid: int):
     """unregister participant from a comp"""
     from pilot.participant import unregister_participant
@@ -1852,6 +1868,7 @@ def _unregister_participant(compid: int):
 
 @blueprint.route('/_unregister_all_external_participants/<int:compid>', methods=['POST'])
 @login_required
+@editor_required
 def _unregister_all_external_participants(compid: int):
     """unregister participant from a comp"""
     from pilot.participant import unregister_all_external_participants
@@ -2031,6 +2048,7 @@ def _modify_comp_ranking(cranid: int):
 
 @blueprint.route('/_add_comp_ranking/<int:compid>', methods=['POST'])
 @login_required
+@editor_required
 def _add_comp_ranking(compid: int):
     from ranking import CompRanking
     from result import update_results_rankings
@@ -2062,6 +2080,7 @@ def _get_custom_attributes(compid: int):
 
 @blueprint.route('/_add_custom_attribute/<int:compid>', methods=['GET', 'POST'])
 @login_required
+@editor_required
 def _add_custom_attribute(compid: int):
     from ranking import CompAttribute
     data = request.json
@@ -2082,12 +2101,14 @@ def _edit_custom_attribute(attrid: int):
 
 @blueprint.route('/_remove_custom_attribute/<int:attrid>', methods=['GET', 'POST'])
 @login_required
+@editor_required
 def _remove_custom_attribute(attrid: int):
     return jsonify(success=bool(frontendUtils.delete_comp_attribute(attrid)))
 
 
 @blueprint.route('/_delete_ranking/<int:rankid>', methods=['GET', 'POST'])
 @login_required
+@editor_required
 def _delete_ranking(rankid: int):
     from ranking import delete_ranking
     return jsonify(success=delete_ranking(session['compid'], rankid))
