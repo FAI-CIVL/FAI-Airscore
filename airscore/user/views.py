@@ -1933,10 +1933,7 @@ def _adjust_task_result(taskid: int):
                                 comment=change['comment'])
             update_result_file(filename=data['filename'], par_id=int(data['par_id']), notification=notification)
     if data['new']:
-        if data['new']['sign'] == 'penalty':
-            points = data['new']['penalty'] * -1
-        else:
-            points = data['new']['penalty']
+        points = data['new']['penalty'] * int(data['new']['sign'])
         notification = dict(flat_penalty=points, comment=data['new']['comment'])
         update_result_file(filename=data['filename'], par_id=int(data['par_id']), notification=notification)
 
