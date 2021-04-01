@@ -47,6 +47,14 @@
           <li>
             <a class='dropdown-item' href="{{ url_for('user.pilot_admin', compid=session.compid) }}">Registered Pilots</a>
           </li>
+          <li>
+            <a class='dropdown-item' href="{{ url_for('user.region_admin') }}">Flying Areas</a>
+          </li>
+          {% if session.is_editor %}
+          <li>
+            <a class='dropdown-item' href="{{ url_for('user.comp_score_admin', compid=session.compid) }}">Event Results</a>
+          </li>
+          {% endif %}
           {% for task in session.tasks %}
           <li class='nav-item dropdown'>
             <a class='dropdown-item dropdown-toggle' href='#' id='compDropdown{{task.task_num}}' role='button'

@@ -1236,6 +1236,15 @@ def _recheck_track(trackid: int):
     return jsonify(success=False, error='There was an error trying to check track.')
 
 
+@blueprint.route('/_get_comp_result_files/<int:compid>', methods=['POST'])
+@login_required
+def _get_comp_result_files(compid: int):
+    data = request.json
+    offset = ((int(data['offset']) / 60 * -1) * 3600)
+
+    return frontendUtils.get_comp_result_files(compid, int(offset))
+
+
 @blueprint.route('/_get_task_result_files/<int:taskid>', methods=['POST'])
 @login_required
 def _get_task_result_files(taskid: int):
@@ -1396,13 +1405,15 @@ def _full_rescore_task(taskid: int):
         return resp
 
 
-@blueprint.route('/_unpublish_result/<int:taskid>', methods=['POST'])
+@blueprint.route('/_unpublish_result', methods=['POST'])
 @login_required
-def _unpublish_result(taskid: int):
+@editor_required
+def _unpublish_result():
     if request.method == "POST":
         data = request.json
         iscomp = data['iscomp']
         compid = session['compid']
+        taskid = None if iscomp else data['taskid']
         if iscomp:
             '''unpublish comp results'''
             frontendUtils.unpublish_comp_result(compid)
@@ -1411,18 +1422,19 @@ def _unpublish_result(taskid: int):
             frontendUtils.unpublish_task_result(taskid)
             frontendUtils.update_comp_result(compid, name_suffix='Overview')
         header = "No published results"
-        resp = jsonify(filename='', header=header)
-        return resp
+        return jsonify(filename='', header=header)
     return render_template('500.html')
 
 
-@blueprint.route('/_publish_result/<int:taskid>', methods=['POST'])
+@blueprint.route('/_publish_result', methods=['POST'])
 @login_required
-def _publish_result(taskid: int):
+@editor_required
+def _publish_result():
     if request.method == "POST":
         data = request.json
         iscomp = data['iscomp']
         compid = session['compid']
+        taskid = None if iscomp else data['taskid']
         if iscomp:
             '''publish comp results'''
             success = frontendUtils.publish_comp_result(compid, data['filename'])
@@ -1460,26 +1472,47 @@ def _task_lock_switch(taskid: int):
     return jsonify(success=False)
 
 
+@blueprint.route('/comp_score_admin/<int:compid>', methods=['GET'])
+@login_required
+@editor_required
+@check_coherence
+def comp_score_admin(compid: int):
+
+    fileform = ResultAdminForm()
+    editform = EditScoreForm()
+    choices = [(1, 1), (2, 2)]
+    tasks = session['tasks']
+    fileform.task_result_file.choices = choices
+    fileform.comp_result_file.choices = choices
+
+    score_active = not session['external']
+
+    return render_template('users/comp_score_admin.html',
+                           compid=compid, tasks=tasks, score_active=score_active, fileform=fileform, editform=editform)
+
+
 @blueprint.route('/_calculate_comp_result/<int:compid>', methods=['POST'])
 @login_required
 @editor_required
 def _calculate_comp_result(compid: int):
     if request.method == "POST":
         data = request.json
-        offset = (int(data['offset']) / 60 * -1) * 3600
-        refid, _, timestamp = frontendUtils.update_comp_result(compid)
+        status = data['status']
+        refid, filename, timestamp = frontendUtils.update_comp_result(compid, status=status)
         if refid:
-            comp_published = time.ctime(timestamp + offset)
-            comp_header = f"Overall competition results published: {comp_published}"
-            resp = jsonify(comp_header=comp_header)
+            if data['autopublish']:
+                success = frontendUtils.publish_comp_result(compid, filename)
+            resp = jsonify(success=True, message='Event Results Calculated. You can check using Preview.')
             return resp
-        return jsonify(comp_header='There was a problem creating comp result: do we miss some task results files?')
+        return jsonify(success=False,
+                       message='There was a problem creating comp result: do we miss some task results files?')
     return render_template('500.html')
 
 
-@blueprint.route('/_change_result_status/<int:taskid>', methods=['POST'])
+@blueprint.route('/_change_result_status', methods=['POST'])
 @login_required
-def _change_result_status(taskid: int):
+@editor_required
+def _change_result_status():
     if request.method == "POST":
         from result import update_result_status, update_tasks_status_in_comp_result
         data = request.json
@@ -1493,9 +1526,10 @@ def _change_result_status(taskid: int):
     return render_template('500.html')
 
 
-@blueprint.route('/_delete_task_result/<int:taskid>', methods=['POST'])
+@blueprint.route('/_delete_task_result', methods=['POST'])
 @login_required
-def _delete_task_result(taskid: int):
+@editor_required
+def _delete_task_result():
     if request.method == "POST":
         from result import delete_result
         data = request.json

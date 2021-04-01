@@ -451,7 +451,7 @@ def switch_task_lock(task_id: int, old_value: bool) -> bool:
         task.update(locked=value)
         '''change status'''
         status = 'Official Result' if value else 'Provisional Results'
-        update_result_status(result, status=status)
+        update_result_status(result, status=status, locked=value)
         update_tasks_status_in_comp_result(comp_ud)
         return True
     except Exception:
@@ -1766,6 +1766,50 @@ def save_comp_ladders(comp_id: int, ladder_ids: list or None) -> bool:
     except Exception:
         # raise
         return False
+
+
+def get_comp_result_files(comp_id: int, offset: int = None) -> dict:
+    import time
+    from Defines import RESULTDIR
+    from db.tables import TblResultFile as R, TblCompetition as C
+    from result import open_json_file
+
+    with db_session() as db:
+        query = (
+            db.query(R.created, R.filename, R.status, R.active, R.ref_id)
+            .filter(R.comp_id == comp_id, R.task_id.is_(None))
+            .all()
+        )
+        comp_results = [row._asdict() for row in query]
+        if not offset:
+            offset = db.query(C).get(comp_id).time_offset
+
+    comp_header, comp_active = get_score_header(comp_results, offset)
+    comp_choices = []
+
+    for file in comp_results:
+        published = time.ctime(file['created'] + offset)
+        if not Path(RESULTDIR, file['filename']).is_file():
+            status = f"FILE NOT FOUND"
+            tasks = []
+        else:
+            status = '' if file['status'] in [None, 'None'] else file['status']
+            if 'Overview' in file['filename']:
+                status = 'Auto Generated ' + status
+            data = open_json_file(Path(RESULTDIR, file['filename']))
+            tasks = data.get('tasks')
+        comp_choices.append(dict(filename=file['filename'],
+                                 text=f'{published} - {status}' if status else f'{published}',
+                                 status=status,
+                                 timestamp=published,
+                                 tasks=tasks))
+    comp_choices.reverse()
+
+    return {
+        'comp_choices': comp_choices,
+        'comp_header': comp_header,
+        'comp_active': comp_active,
+    }
 
 
 def get_task_result_files(task_id: int, comp_id: int = None, offset: int = None) -> dict:

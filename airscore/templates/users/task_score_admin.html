@@ -9,7 +9,7 @@ Task Scoring Admin
 {% endblock %}
 
 {% block back %}
-<a href="{{ url_for('user.comp_settings_admin', compid=compid)}}" class='btn btn-info'>
+<a href="{{ url_for('user.comp_settings_admin', compid=compid) }}" class='btn btn-info'>
   Back to Competition Settings
 </a>
 <a href="{{ url_for('user.task_admin', taskid=taskid)}}" class='btn btn-info ml-2'>
@@ -24,6 +24,9 @@ Task Scoring Admin
 <a href="#" class='btn btn-secondary ml-2'>
   Task Scores
 </a>
+<a href="{{ url_for('user.comp_score_admin', compid=compid) }}" class='btn btn-primary'>
+  Event Results
+</a>
 {% endif %}
 {% endblock %}
 
@@ -35,125 +38,67 @@ Task Scoring Admin
 {% set readonly = session.external %}
 <!-- Settings Tab Section -->
 <div role="tabpanel" class="tab-panel">
-  <!-- Nav tabs -->
-  <ul role="tablist" id="tab-list" class="nav nav-tabs">
-    <li role="presentation" class="nav-item"><a role="tab" data-toggle="tab" class="nav-link active" id="task_result_tab" href="#task_results" aria-controls="task_results">Task Results</a></li>
-    <li role="presentation" class="nav-item"><a role="tab" data-toggle="tab" class="nav-link" id="comp_result_tab" href="#comp_result" aria-controls="comp_result">Comp Results</a></li>
-  </ul>
-
-  <!-- Tab panes -->
-  <div class="tab-content">
-    <div role="tabpanel" class="tab-pane column-wrap fade show active" id="task_results">
-      {% if score_active %}
-      <section class="tab-row column-wrap form" id="process_task_section">
-        <h4 class='tab-title font-weight-bold'>Process Task:</h4>
-        <section class="row-wrap button">
-          {% if not session.is_editor %}
-          <h4>You are not a scorekeeper of this competition, thus you cannot access most of functionalities in this page.</h4>
-          {% elif not (task_info.cancelled or task_info.locked) %}
-          <button class='btn btn-primary' type='button' onclick='Score_modal();'>
-            Score Task
-          </button>
-          <button class='btn btn-outline-warning ml-3' type='button' data-toggle='modal' data-target='#fullscoremodal'>
-            Full Rescore
-          </button>
-          {% else %}
-          <span class="btn btn-info">Locked</span>
-          {% endif %}
-        </section>
-      </section>
-      {% endif %}
-      <section class="tab-row column-wrap form" id="task_results_section">
-        {% if task_info.cancelled %}
-        <h4 class='tab-title font-weight-bold'>Task is Cancelled</h4>
+  <div role="tabpanel" class="tab-pane column-wrap fade show active" id="task_results">
+    {% if score_active %}
+    <section class="tab-row column-wrap form" id="process_task_section">
+      <h4 class='tab-title font-weight-bold'>Process Task:</h4>
+      <section class="row-wrap button">
+        {% if not session.is_editor %}
+        <h4>You are not a scorekeeper of this competition, thus you cannot access most of functionalities in this page.</h4>
+        {% elif not (task_info.cancelled or task_info.locked) %}
+        <button class='btn btn-primary' type='button' onclick='Score_modal();'>
+          Score Task
+        </button>
+        <button class='btn btn-outline-warning ml-3' type='button' data-toggle='modal' data-target='#fullscoremodal'>
+          Full Rescore
+        </button>
         {% else %}
-        <h4 class='tab-title font-weight-bold'>Task Results:</h4>
-        {% if score_active %}
-        <section class="row-wrap button" id="lock_task_section">
-          <button id='lock_task_button' class='btn {% if task_info.locked %} btn-warning {% else %} btn-info {% endif %}' onclick="" type='button'>
-            {% if task_info.locked %} Unlock Task {% else %} Make Official {% endif %}
-          </button>
-          <h5 class="mt-2 ml-3 {% if task_info.locked %} text-warning {% else %} text-info {% endif %}">{% if task_info.locked %} Results will become Provisional. {% else %} This will lock task, avoiding changes is settings, tracks and results. {% endif %}</h5>
-        </section>
+        <span class="btn btn-info">Locked</span>
         {% endif %}
-        <section class="tab-row row-wrap form">
-            <h5 class="mt-2" id='task_result_header'></h5>
-            <button id='download_task_html' class='btn btn-primary ml-5' onclick="" type='button'>
-              Download HTML
-            </button>
-        </section>
-        {% if session.is_editor %}
-        {% from "macros.html" import render_field with context %}
-        <section class="tab-row column-wrap button" id="scoring_runs_section">
-            {{ render_field(fileform.task_result_file, disabled=readonly) }}
-            <section class="row-wrap">
-              <button id='publish' class='btn btn-warning mt-3' type='button' onclick='toggle_publish();'>
-                Un-publish results
-              </button>
-              <button id='change_status' class='btn btn-primary ml-2 mt-3' type='button' onclick='open_status_modal();'>
-                Edit Status
-              </button>
-              <button id='task_preview' class='btn btn-primary ml-2 mt-3' onclick="" type='button'>
-                Preview
-              </button>
-              <button id='delete_result' class='btn btn-danger ml-2 mt-3' type='button' onclick='delete_result_modal();' disabled>
-                Delete Result
-              </button>
-            </section>
-        </section>
-        {% endif %}   <!-- is editor -->
-        {% endif %}   <!-- task cancelled -->
       </section>
-    </div>
-
-    <div role="tabpanel" class="tab-pane column-wrap fade" id="comp_result">
+    </section>
+    {% endif %}
+    <section class="tab-row column-wrap form" id="task_results_section">
+      {% if task_info.cancelled %}
+      <h4 class='tab-title font-weight-bold'>Task is Cancelled</h4>
+      {% else %}
+      <h4 class='tab-title font-weight-bold'>Task Results:</h4>
       {% if score_active %}
-      <section class="tab-row column-wrap form" id="process_comp_section">
-        <h4 class='tab-title font-weight-bold'>Process Event:</h4>
-        <section class="panel-row column-wrap form">
-          {% if not session.is_editor %}
-          <h4>You are not a scorekeeper of this competition, thus you cannot access most of functionalities in this page.</h4>
-          {% else %}
-          <p class="alert alert-primary">Comp results are automatically computed each time task active result is created or changed. <br />You can just activate this <i class="font-weight-bold text-primary">Auto Generated</i> file to have always updated event results each time a new task is scored and activated, or create and manage your own result files.</p>
-          <section class="panel-row row-wrap button">
-            <button id='comp_calculate_button' class='btn btn-danger' type='button' onclick='comp_calculate();'>
-              Calculate Event result
-            </button>
-            <p id='comp_calculate_spinner' style="width: 8rem; min-width: 8rem"></p>
-          </section>
-          {% endif %}
-        </section>
+      <section class="row-wrap button" id="lock_task_section">
+        <button id='lock_task_button' class='btn {% if task_info.locked %} btn-warning {% else %} btn-info {% endif %}' onclick="" type='button'>
+          {% if task_info.locked %} Unlock Task {% else %} Make Official {% endif %}
+        </button>
+        <h5 class="mt-2 ml-3 {% if task_info.locked %} text-warning {% else %} text-info {% endif %}">{% if task_info.locked %} Results will become Provisional. {% else %} This will lock task, avoiding changes is settings, tracks and results. {% endif %}</h5>
       </section>
       {% endif %}
-      <section class="tab-row column-wrap form" id="comp_results_section">
-        <h4 class='tab-title font-weight-bold'>Comp Results:</h4>
-        <section class="tab-row row-wrap form">
-            <h5 class="mt-2" id='comp_header'></h5>
-            <button id='download_comp_html' class='btn btn-primary ml-5' onclick="location.href='/users/_download/comp_html/{{session.compid}}'" type='button'>
-              Download HTML
-            </button>
-        </section>
-        {% if session.is_editor %}
-        <section class="tab-row column-wrap button" id="comp_scoring_runs_section">
-            {{ render_field(fileform.comp_result_file, disabled=readonly) }}
-            <section class="row-wrap">
-              <button id='comp_publish' class='btn btn-warning mt-3' type='button' onclick='toggle_publish(iscomp=true);'>
-                Un-publish
-              </button>
-              <button id='change_comp_status' class='btn btn-primary ml-2 mt-3' type='button' onclick='open_status_modal(iscomp=true);'>
-                Edit Status
-              </button>
-              <button id='comp_preview' class='btn btn-primary ml-2 mt-3' onclick="" type='button'>
-                Preview
-              </button>
-              <button id='delete_comp_result' class='btn btn-danger ml-2 mt-3' type='button' onclick='delete_result_modal(iscomp=true);' disabled>
-                Delete Result
-              </button>
-            </section>
-        </section>
-        {% endif %}
+      <section class="tab-row row-wrap form">
+          <h5 class="mt-2" id='task_result_header'></h5>
+          <button id='download_task_html' class='btn btn-primary ml-5' onclick="" type='button'>
+            Download HTML
+          </button>
       </section>
-    </div>
+      {% if session.is_editor %}
+      {% from "macros.html" import render_field with context %}
+      <section class="tab-row column-wrap button" id="scoring_runs_section">
+          {{ render_field(fileform.task_result_file, readonly=readonly) }}
+          <section class="row-wrap">
+            <button id='publish' class='btn btn-warning mt-3' type='button' onclick='toggle_publish();'>
+              Un-publish results
+            </button>
+            <button id='change_status' class='btn btn-primary ml-2 mt-3' type='button' onclick='open_status_modal();'>
+              Edit Status
+            </button>
+            <button id='task_preview' class='btn btn-primary ml-2 mt-3' onclick="" type='button'>
+              Preview
+            </button>
+            <button id='delete_result' class='btn btn-danger ml-2 mt-3' type='button' onclick='delete_result_modal();' disabled>
+              Delete Result
+            </button>
+          </section>
+      </section>
+      {% endif %}   <!-- is editor -->
+      {% endif %}   <!-- task cancelled -->
+    </section>
   </div>
 </div>
 
@@ -395,15 +340,15 @@ Task Scoring Admin
   var task_info = {{ task_info|tojson }};
   var compid = {{ session.compid|tojson }};
   var external = {{ session.external|tojson }};
-  var url_publish_result = "{{ url_for('user._publish_result', taskid=taskid)}}";
-  var url_unpublish_result = "{{ url_for('user._unpublish_result', taskid=taskid)}}";
-  var url_get_task_result_files = "{{ url_for('user._get_task_result_files', taskid=taskid)}}";
-  var url_score_task = "{{ url_for('user._score_task', taskid=taskid)}}";
-  var url_full_rescore_task = "{{ url_for('user._full_rescore_task', taskid=taskid)}}";
-  var url_change_result_status = "{{ url_for('user._change_result_status', taskid=taskid)}}";
-  var url_calculate_comp_result = "{{ url_for('user._calculate_comp_result', compid=session.compid)}}";
-  var url_adjust_task_result = "{{ url_for('user._adjust_task_result', taskid=taskid)}}";
-  var url_sse_stream = "{{ url_for('sse.stream', channel=current_user.username)}}";
+  var url_publish_result = "{{ url_for('user._publish_result') }}";
+  var url_unpublish_result = "{{ url_for('user._unpublish_result') }}";
+  var url_get_task_result_files = "{{ url_for('user._get_task_result_files', taskid=taskid) }}";
+  var url_score_task = "{{ url_for('user._score_task', taskid=taskid) }}";
+  var url_full_rescore_task = "{{ url_for('user._full_rescore_task', taskid=taskid) }}";
+  var url_change_result_status = "{{ url_for('user._change_result_status') }}";
+  var url_calculate_comp_result = "{{ url_for('user._calculate_comp_result', compid=session.compid) }}";
+  var url_adjust_task_result = "{{ url_for('user._adjust_task_result', taskid=taskid) }}";
+  var url_sse_stream = "{{ url_for('sse.stream', channel=current_user.username) }}";
 </script>
 {% endif %}
 {% endblock %}

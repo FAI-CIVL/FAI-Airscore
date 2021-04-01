@@ -58,6 +58,7 @@ class TaskResult:
         'SS_distance',
         'stopped_time',
         'goal_altitude',
+        'locked'
     ]
 
     route_list = ['name', 'description', 'how', 'radius', 'shape', 'type', 'lat', 'lon', 'altitude']
@@ -418,6 +419,7 @@ class CompResult(object):
         'ftv_validity',
         'max_score',
         'task_type',
+        'locked'
     ]
 
     ''' result_list comes from Participant obj, and RegisteredPilotView
@@ -590,7 +592,7 @@ def publish_result(filename_or_refid, ref_id=False):
     return 1
 
 
-def update_result_status(filename: str, status: str):
+def update_result_status(filename: str, status: str, locked: bool = None):
     import time
 
     '''check if json file exists, and updates it'''
@@ -603,6 +605,8 @@ def update_result_status(filename: str, status: str):
         d = json.load(f)
         d['file_stats']['status'] = status
         d['file_stats']['last_update'] = int(time.time())
+        if locked is not None:
+            d['info']['locked'] = int(locked)
         f.seek(0)
         f.write(json.dumps(d))
         f.truncate()
@@ -624,6 +628,7 @@ def update_tasks_status_in_comp_result(comp_id: int) -> bool:
             for t in d.get('tasks'):
                 file = get_task_json(t['id'])
                 t['status'] = file['file_stats']['status']
+                t['locked'] = file['info'].get('locked') or 0
             f.seek(0)
             f.write(json.dumps(d))
             f.truncate()

@@ -99,7 +99,6 @@ function updateFiles(load_latest=false) {
   var mydata = new Object();
   mydata.offset = new Date().getTimezoneOffset();
   task.dropdown.empty().attr('disabled', 'disabled');
-  comp.dropdown.empty().attr('disabled', 'disabled');
 
   $.ajax({
     type: "POST",
@@ -108,54 +107,40 @@ function updateFiles(load_latest=false) {
     data: JSON.stringify(mydata),
     dataType: "json",
     success: function(response) {
-      let sections = [ task, comp ];
-      sections.forEach( el => {
-        let active = response.task_active;
-        let header = response.task_header;
-        let choices = response.task_choices;
-        let iscomp = false;
-        if (el == comp) {
-          console.log('COMP: ');
-          active = response.comp_active;
-          header = response.comp_header;
-          choices = response.comp_choices;
-          iscomp = true;
-        }
-        el.dropdown.empty().attr('disabled', 'disabled');
-        el.header.html(header)
-        if (choices.length == 0) {
-          el.scoring_section.hide();
-        }
-        else {
-          el.scoring_section.show();
-          choices.forEach(function(item) {
-            el.dropdown.append(
-              $('<option>', {
-                value: item[0],
-                text: item[1]
-              })
-            );
-          });
-          if (!external) el.dropdown.removeAttr('disabled');
-          if (active) el.active_file = active;
-          el.latest = el.dropdown.find('option:first').val();
-          if (load_latest || !active) el.dropdown.val(el.latest);
-          else el.dropdown.val(active);
-          el.selected = el.dropdown.find('option:selected').val();
-          array = el.dropdown.find('option:selected').text().split(' - ');
-          el.timestamp = array[0];
-          el.status = array[1];
-          if (el.status && el.status.includes('Auto Generated' )) {
-            el.status = el.status.replace('Auto Generated ', '');
-          }
-          update_buttons(iscomp);
-          console.log('active: '+el.active_file);
-          console.log('selected: '+el.selected);
-          console.log('latest: '+el.latest);
-          console.log('status: '+el.status);
-          console.log('timestamp: '+el.timestamp);
-        }
-      });
+      let active = response.task_active;
+      let header = response.task_header;
+      let choices = response.task_choices;
+      task.dropdown.empty().attr('disabled', 'disabled');
+      task.header.html(header)
+      if (choices.length == 0) {
+        task.scoring_section.hide();
+      }
+      else {
+        task.scoring_section.show();
+        choices.forEach(function(item) {
+          task.dropdown.append(
+            $('<option>', {
+              value: item[0],
+              text: item[1]
+            })
+          );
+        });
+        if (!external) task.dropdown.removeAttr('disabled');
+        if (active) task.active_file = active;
+        task.latest = task.dropdown.find('option:first').val();
+        if (load_latest || !active) task.dropdown.val(task.latest);
+        else task.dropdown.val(active);
+        task.selected = task.dropdown.find('option:selected').val();
+        array = task.dropdown.find('option:selected').text().split(' - ');
+        task.timestamp = array[0];
+        task.status = array[1];
+        update_buttons();
+        console.log('active: '+task.active_file);
+        console.log('selected: '+task.selected);
+        console.log('latest: '+task.latest);
+        console.log('status: '+task.status);
+        console.log('timestamp: '+task.timestamp);
+      };
       if (!task.selected) task.results_panel.hide();
       else {
         task.results_panel.show();
@@ -166,21 +151,20 @@ function updateFiles(load_latest=false) {
 }
 
 // Toggle Publish
-function toggle_publish(iscomp=false) {
-  let data = task;
-  if (iscomp) data = comp;
+function toggle_publish() {
   let mydata = {
-    filetext: data.dropdown.find('option:selected').text(),
-    filename: data.dropdown.find('option:selected').val(),
-    iscomp: iscomp,
-    compid: compid
+    filetext: task.dropdown.find('option:selected').text(),
+    filename: task.dropdown.find('option:selected').val(),
+    iscomp: false,
+    compid: compid,
+    taskid: taskid
   }
   let url = '';
-  if (mydata.filename == data.active_file) {
-    url = url_unpublish_result;
+  if (mydata.filename == task.active_file) {
+    url = '/users/_unpublish_result';
   }
   else {
-    url = url_publish_result;
+    url = '/users/_publish_result';
   }
   $.ajax({
     type: "POST",
@@ -189,9 +173,9 @@ function toggle_publish(iscomp=false) {
     data: JSON.stringify(mydata),
     dataType: "json",
     success: function(response) {
-      data.active_file = response.filename;
-      update_buttons(iscomp);
-      data.header.text(response.header);
+      task.active_file = response.filename;
+      update_buttons();
+      task.header.text(response.header);
     }
   });
 }
@@ -247,33 +231,10 @@ function FullRescore() {
   });
 }
 
-function comp_calculate() {
-  var mydata = new Object();
-  mydata.offset = new Date().getTimezoneOffset();
-  $('#comp_calculate').hide();
-  $('#comp_calculate_spinner').html('<div class="spinner-border" role="status"><span class="sr-only">Scoring...</span></div>');
-  $.ajax({
-    type: "POST",
-    url:  url_calculate_comp_result,
-    contentType: "application/json",
-    data: JSON.stringify(mydata),
-    dataType: "json",
-    success: function(response) {
-      updateFiles();
-      $('#comp_calculate_spinner').html('')
-      $('#comp_calculate').show();
-    }
-  });
-}
-
 // Change Status
-function open_status_modal(iscomp=false) {
-  let data = task;
-  if (iscomp) {
-    data = comp;
-  }
-  $('#status_modal_filename').val(data.selected);
-  $('#status_modal_comment').val(data.status);
+function open_status_modal() {
+  $('#status_modal_filename').val(task.selected);
+  $('#status_modal_comment').val(task.status);
   $('#statusmodal').modal('show');
 }
 
@@ -379,7 +340,6 @@ function save_adjustment(par_id){
       data: JSON.stringify(mydata),
       dataType: "json",
       success: function(response) {
-        comp.header.text(response.comp_header)
         populate_task_scores();
         $('#editmodal').modal('hide');
       }
@@ -388,16 +348,11 @@ function save_adjustment(par_id){
 }
 
 // Delete Result
-function delete_result_modal(iscomp=false) {
-  let data = task;
+function delete_result_modal() {
   let title = 'Delete Task Result';
-  if (iscomp) {
-    data = comp;
-    title = 'Delete Comp Result';
-  }
 
-  $('#delete_modal_filename').val(data.selected);
-  let selected = data.dropdown.find('option:selected').text().split(' - ');
+  $('#delete_modal_filename').val(task.selected);
+  let selected = task.dropdown.find('option:selected').text().split(' - ');
   let ran = selected[0];
   let status = selected[1];
   if (!status) status = '<span class="text-secondary">No status</span>';
@@ -407,13 +362,13 @@ function delete_result_modal(iscomp=false) {
   $('#deletemodal').modal('show');
 }
 
-function delete_result(iscomp=false){
+function delete_result(){
   var mydata = new Object();
   mydata.deletefile = $("#deletefile").is(':checked');
   mydata.filename = $('#delete_modal_filename').val();
   $.ajax({
     type: "POST",
-    url:  '/users/_delete_task_result/'+taskid,
+    url:  '/users/_delete_task_result',
     contentType: "application/json",
     data: JSON.stringify(mydata),
     dataType: "json",
@@ -425,107 +380,89 @@ function delete_result(iscomp=false){
 }
 
 // Functions
-function get_preview_url(iscomp=false) {
+function get_preview_url() {
   let file = task.selected;
   let url = '/task_result/'+taskid;
-  if (iscomp) {
-    file = comp.selected;
-    url = '/comp_result/'+compid;
-  }
   url += '?file='+file;
   return url
 }
 
-function get_status(data){
-  let array = data.dropdown.find('option:selected').text().split(' - ');
-  data.timestamp = array[0];
-  data.status = array[1];
-  if (data.status && data.status.includes('Auto Generated' )) {
-    data.status = data.status.replace('Auto Generated ', '');
-  }
+function get_status(){
+  let array = task.dropdown.find('option:selected').text().split(' - ');
+  task.timestamp = array[0];
+  task.status = array[1];
 }
 
 function ismissing(status){
   if (status == 'FILE NOT FOUND') return true; else return false;
 }
 
-function update_publish_button(iscomp=false) {
-  let data = task;
-  if (iscomp) data = comp;
-
-  if (data.selected == data.active_file) {
-    data.publish.text('Un-Publish results');
-    data.publish.addClass('btn-warning').removeClass('btn-success');
+function update_publish_button() {
+  if (task.selected == task.active_file) {
+    task.publish.text('Un-Publish results');
+    task.publish.addClass('btn-warning').removeClass('btn-success');
   }
   else {
-    data.publish.text('Publish results');
-    data.publish.addClass('btn-success').removeClass('btn-warning');
+    task.publish.text('Publish results');
+    task.publish.addClass('btn-success').removeClass('btn-warning');
   }
 }
 
-function check_active(iscomp=false) {
-  let data = task;
+function check_active() {
   let html = 'task_html';
-  let filename = data.active_file;
-  if (iscomp) {
-    data = comp;
-    html = 'comp_html';
-    filename = compid;
-    }
-  if (data.active_file) {
-    data.download_html.attr('onclick', "location.href='/users/_download/"+html+"/"+filename+"'");
-    data.download_html.show();
+  let filename = task.active_file;
+
+  if (task.active_file) {
+    task.download_html.attr('onclick', "location.href='/users/_download/"+html+"/"+filename+"'");
+    task.download_html.show();
     // check file exists
-    if (data.dropdown.find('option[value="'+data.active_file+'"]').text().includes('FILE NOT FOUND')){
-      data.download_html.prop('disabled', true);
+    if (task.dropdown.find('option[value="'+task.active_file+'"]').text().includes('FILE NOT FOUND')){
+      task.download_html.prop('disabled', true);
     }
-    else data.download_html.prop('disabled', false);
+    else task.download_html.prop('disabled', false);
   }
   else {
-    data.download_html.attr('onclick', "");
-    data.download_html.hide();
+    task.download_html.attr('onclick', "");
+    task.download_html.hide();
   }
 }
 
-function update_buttons(iscomp=false) {
-  let data = task;
-  if (iscomp) data = comp;
-
+function update_buttons() {
   if ( task_info.locked ) {
-    data.publish.text('Locked');
-    data.publish.addClass('btn-secondary').removeClass('btn-success').removeClass('btn-warning');
-    data.publish.prop('disabled', true);
-    data.change_status.removeClass('btn-secondary').addClass('btn-primary');
-    data.change_status.prop('disabled', false);
-    data.preview.removeClass('btn-secondary').addClass('btn-primary');
-    data.preview.attr('onclick', "window.open('"+ get_preview_url(iscomp)+"','preview')");
-    data.preview.prop('disabled', false);
+    task.publish.text('Locked');
+    task.publish.addClass('btn-secondary').removeClass('btn-success').removeClass('btn-warning');
+    task.publish.prop('disabled', true);
+    task.change_status.removeClass('btn-secondary').addClass('btn-primary');
+    task.change_status.prop('disabled', false);
+    task.preview.removeClass('btn-secondary').addClass('btn-primary');
+    task.preview.attr('onclick', "window.open('"+ get_preview_url()+"','preview')");
+    task.preview.prop('disabled', false);
   }
-  else if (ismissing(data.status)) {
-    data.publish.text('Publish results');
-    data.publish.addClass('btn-secondary').removeClass('btn-success').removeClass('btn-warning');
-    data.publish.prop('disabled', true);
-    data.change_status.addClass('btn-secondary').removeClass('btn-primary');
-    data.change_status.prop('disabled', true);
-    data.preview.addClass('btn-secondary').removeClass('btn-primary');
-    data.preview.removeAttr('onclick');
-    data.preview.prop('disabled', true);
+  else if (ismissing(task.status)) {
+    task.publish.text('Publish results');
+    task.publish.addClass('btn-secondary').removeClass('btn-success').removeClass('btn-warning');
+    task.publish.prop('disabled', true);
+    task.change_status.addClass('btn-secondary').removeClass('btn-primary');
+    task.change_status.prop('disabled', true);
+    task.preview.addClass('btn-secondary').removeClass('btn-primary');
+    task.preview.removeAttr('onclick');
+    task.preview.prop('disabled', true);
   }
   else {
-    data.publish.removeClass('btn-secondary');
-    data.publish.prop('disabled', false);
-    update_publish_button(iscomp);
-    data.change_status.removeClass('btn-secondary').addClass('btn-primary');
-    data.change_status.prop('disabled', false);
-    data.preview.removeClass('btn-secondary').addClass('btn-primary');
-    data.preview.attr('onclick', "window.open('"+ get_preview_url(iscomp)+"','preview')");
-    data.preview.prop('disabled', false);
+    task.publish.removeClass('btn-secondary');
+    task.publish.prop('disabled', false);
+    update_publish_button();
+    task.change_status.removeClass('btn-secondary').addClass('btn-primary');
+    task.change_status.prop('disabled', false);
+    task.preview.removeClass('btn-secondary').addClass('btn-primary');
+    task.preview.attr('onclick', "window.open('"+ get_preview_url()+"','preview')");
+    task.preview.prop('disabled', false);
   }
-  if (external || (data.selected == data.active_file && !ismissing(data.status)) || data.selected.includes('Overview')){
-    data.delete_file.prop('disabled', true);
+  if (external || (task.selected == task.active_file && !ismissing(task.status)) || task.selected.includes('Overview')){
+    task.delete_file.prop('disabled', true);
   }
-  else data.delete_file.prop('disabled', false);
-  check_active(iscomp);
+  else task.delete_file.prop('disabled', false);
+  check_active();
 }
 
 
@@ -552,22 +489,6 @@ var task = {
   status: ''
 };
 
-var comp = {
-  dropdown: $('select[name="comp_result_file"]'),
-  delete_file: $('#delete_comp_result'),
-  publish: $('#comp_publish'),
-  change_status: $('#change_comp_status'),
-  download_html: $('#download_comp_html'),
-  preview: $('#comp_preview'),
-  header: $('#comp_header'),
-  scoring_section: $('#comp_scoring_runs_section'),
-  active_file: '',
-  selected: '',
-  latest: '',
-  timestamp: '',
-  status: ''
-};
-
 var suggested_status = '';
 
 $(document).ready(function() {
@@ -585,12 +506,6 @@ $(document).ready(function() {
     get_status(task);
     update_buttons();
     populate_task_scores();
-  });
-
-  comp.dropdown.change(function() {
-    comp.selected = comp.dropdown.find('option:selected').val();
-    get_status(comp);
-    update_buttons(iscomp=true);
   });
 
   task.lock_switch.click( function() {
