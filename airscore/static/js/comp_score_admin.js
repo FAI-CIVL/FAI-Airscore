@@ -18,8 +18,10 @@ function updateFiles(load_latest=false) {
       comp.dropdown.empty().attr('disabled', 'disabled');
       comp.header.html(header)
       if (choices.length == 0) {
+        comp.active_file = '';
         comp.scoring_section.hide();
         comp.info_section.hide();
+        comp.download_html.attr('onclick', "").hide();
       }
       else {
         comp.scoring_section.show();
@@ -240,10 +242,9 @@ function update_publish_button() {
 }
 
 function check_active() {
-  let html = 'comp_html';
-  let filename = compid;
+  console.log('active_file: '+comp.active_file);
   if (comp.active_file) {
-    comp.download_html.attr('onclick', "location.href='/users/_download/"+html+"/"+filename+"'");
+    comp.download_html.attr('onclick', "location.href='/users/_download/comp_html/"+compid+"'");
     comp.download_html.show();
     // check file exists
     if (comp.dropdown.find('option[value="'+comp.active_file+'"]').text().includes('FILE NOT FOUND')){
