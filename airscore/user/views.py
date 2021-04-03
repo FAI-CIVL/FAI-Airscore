@@ -1183,7 +1183,6 @@ def _upload_XCTrack(taskid: int):
             task.calculate_task_length()
             task.calculate_task_length()
             task.update_task_info()
-            task.turnpoints_to_db()
             task.to_db()
             write_map_json(taskid)
 
