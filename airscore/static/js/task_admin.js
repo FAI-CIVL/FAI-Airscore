@@ -49,7 +49,6 @@ function get_turnpoints(){
 }
 
 function update_turnpoints(json) {
-  $('#delete_all_btn').hide();
   turnpoints = json.turnpoints;
 
   if(json.map != null) {
@@ -59,36 +58,37 @@ function update_turnpoints(json) {
   else{
     $('#map_container').attr("hidden", true);
   }
-  if(turnpoints.length > 0) {
-    $('#import_task_btn').hide()
-  }
-  else {
-    $('#delete_all_btn').hide();
-    $('#import_task_btn').show()
-  }
   if (json.distance == 'Distance not yet calculated') {
     $('#task_distance').removeClass('text-info').addClass('text-warning').html(json.distance);
   }
   else {
     $('#task_distance').removeClass('text-warning').addClass('text-info').html('Task is set: Optimised distance is '+json.distance);
   }
+  if( turnpoints.length == 0 ) {
+    $('#delete_all_btn').hide();
+    $('#import_task_btn').show();
+  }
+  else {
+    $('#import_task_btn').hide();
+    $('#delete_all_btn').show();
+  }
 
-  var columns = [];
-
-  columns.push({data: 'num', title: '#', className: "text-right", defaultContent: ''});
-  columns.push({data: 'wpt_id', title: 'wpt_id', defaultContent: '', visible: false});
-  columns.push({data: 'name', title: 'ID', defaultContent: ''});
-  columns.push({data: 'type', title: '', name: 'type', render: function ( data, type, row ) {
-                                                                if ( data == 'Waypoint' ){return ''}
-                                                                else {return data}
-                                                               }});
-  columns.push({data: 'radius', title: 'Radius', name: 'radius', className: "text-right", defaultContent: ''});
-  columns.push({data: 'partial_distance', title: 'Dist.', name: 'dist', className: "text-right", defaultContent: ''});
+  let columns = [
+    {data: 'num', title: '#', className: "text-right", defaultContent: ''},
+    {data: 'wpt_id', title: 'wpt_id', defaultContent: '', visible: false},
+    {data: 'name', title: 'ID', defaultContent: ''},
+    {data: 'type', title: '', name: 'type', render: function ( data ) {
+                                                                  if ( data == 'Waypoint' ){return ''}
+                                                                  else {return data}
+                                                                 }},
+    {data: 'radius', title: 'Radius', name: 'radius', className: "text-right", defaultContent: ''},
+    {data: 'partial_distance', title: 'Dist.', name: 'dist', className: "text-right", defaultContent: ''}
+  ];
   if (!external){
     columns.push({data: 'wpt_id', render: function ( data, type, row ) { return '<button class="btn btn-warning ml-3" type="button" onclick="modify_tp(' + data + ')" data-toggle="confirmation" data-popout="true">Modify</button>'}});
     columns.push({data: 'wpt_id', render: function ( data, type, row ) { return '<button class="btn btn-danger ml-3" type="button" onclick="confirm_delete(' + row.num + ',' + data + ',' + row.partial_distance + ')" data-toggle="confirmation" data-popout="true">Delete</button>'}});
   }
-  $('#task_wpt_table').DataTable( {
+  $('#task_wpt_table').DataTable({
     data: turnpoints,
     destroy: true,
     paging: false,
@@ -100,48 +100,51 @@ function update_turnpoints(json) {
     rowId: function(data) {
       return 'id_' + data.wpt_id;
     },
+    language: {
+      emptyTable: "Task is empty"
+    },
     initComplete: function(settings) {
-      var table = $('#task_wpt_table').DataTable();
-      var rows = $("tr", $('#task_wpt_table')).length-1;
-
       // manage wpt type selector
+      $('#number').val(json.next_number);
       $("#type").children('option').hide();
       $("#new_waypoint_form").show();
       $("#type").prop('disabled', false).val('');
       $("#add_waypoint_button").prop('disabled', false);
-      let wpt_type = table
-                      .column('type:name')
-                      .data()
-                      .toArray();
-      if ( !wpt_type.find(a =>a.includes('Launch')) ) {
+      if ( json.next_number == 1 ) {
         $("#type option[value='launch']").show();
         $("#type").val('launch');
       }
-      else if ( !wpt_type.find(a =>a.includes('SSS')) ) {
-        $("#type option[value='speed']").show();
-        $("#type option[value='waypoint']").show();
-        $("#type").val('speed');
-      }
-      else if ( !wpt_type.find(a =>a.includes('ESS')) ) {
-        $("#type option[value='endspeed']").show();
-        $("#type option[value='waypoint']").show();
-        $("#type").val('waypoint');
-      }
-      else if ( !wpt_type.find(a =>a.includes('Goal')) ) {
-        $("#type option[value='goal']").show();
-        $("#type option[value='waypoint']").show();
-        $("#type").val('goal');
-      }
       else {
-        $("#add_waypoint_button").prop('disabled', true);
-        $("#type").prop('disabled', true).val('');
-        $("#new_waypoint_form").hide();
+        let table = $('#task_wpt_table').DataTable();
+        let rows = $("tr", $('#task_wpt_table')).length-1;
+        let wpt_type = table
+                        .column('type:name')
+                        .data()
+                        .toArray();
+        if ( !wpt_type.find(a =>a.includes('SSS')) ) {
+          $("#type option[value='speed']").show();
+          $("#type option[value='waypoint']").show();
+          $("#type").val('speed');
+        }
+        else if ( !wpt_type.find(a =>a.includes('ESS')) ) {
+          $("#type option[value='endspeed']").show();
+          $("#type option[value='waypoint']").show();
+          $("#type").val('waypoint');
+        }
+        else if ( !wpt_type.find(a =>a.includes('Goal')) ) {
+          $("#type option[value='goal']").show();
+          $("#type option[value='waypoint']").show();
+          $("#type").val('goal');
+        }
+        else {
+          $("#add_waypoint_button").prop('disabled', true);
+          $("#type").prop('disabled', true).val('');
+          $("#new_waypoint_form").hide();
+        }
       }
       $("#type").trigger('change');
     }
   });
-  $('#number').val(json.next_number);
-  $('#delete_all_btn').show();
 }
 
 function save_turnpoint(){

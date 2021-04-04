@@ -177,21 +177,21 @@ Task Settings
     <h4 class='tab-title font-weight-bold'>Task Waypoints:</h4>
     {% if taskform.submit and not readonly %}
     <section class="panel-row row-wrap button">
-      <button id='delete_all_btn' class='btn btn-danger ml-5 ' onclick='confirm_delete_all();' type='button'>
+      <button id='delete_all_btn' class='btn btn-danger mr-4 ' onclick='confirm_delete_all();' type='button'>
         Clear Task
       </button>
-      <button id='import_task_btn' class='btn btn-secondary ml-5 ' type='button' data-toggle='collapse' data-target='#import_task'
+      <button id='import_task_btn' class='btn btn-primary mr-4 ' type='button' data-toggle='collapse' data-target='#import_task'
               aria-expanded='false' aria-controls='import_task'>
         Import
       </button>
-      <div class='panel collapse' id='import_task'>
-        <section class="panel-row row-wrap button">
-          <button id='XCTrack_button' class='btn btn-success ml-4 '>Import XCTrack Task File...</button>
-          <input id='XCTrack_fileupload' type='file' size='chars' class='custom-file-input'
-                 oninput='filesize(this);' data-url='/users/_upload_XCTrack/{{ taskid }}' name='track_file'>
-        </section>
-      </div>
     </section>
+    <div class='panel collapse' id='import_task'>
+      <section class="row-wrap">
+        <button id='XCTrack_button' class='btn btn-success mr-4 '>Import XCTrack Task File...</button>
+        <input id='XCTrack_fileupload' type='file' size='chars' class='custom-file-input'
+               oninput='filesize(this);' data-url='/users/_upload_XCTrack/{{ taskid }}' name='track_file'>
+      </section>
+    </div>
     {% endif%}
     <section class="panel-row row-wrap form">
       <div class='panel' id='wpt_list'>
