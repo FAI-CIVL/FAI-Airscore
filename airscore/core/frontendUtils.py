@@ -827,7 +827,7 @@ def process_igc_background(task_id: int, par_id: int, file, user, check_g_record
 
 
 def track_result_output(pilot, task_id) -> dict:
-    data = {'par_id': pilot.par_id, 'track_id': pilot.track_id, 'Result': '', 'notifications': ''}
+    data = {'par_id': pilot.par_id, 'ID': pilot.ID, 'track_id': pilot.track_id, 'Result': '', 'notifications': ''}
 
     if not pilot.track_file:
         data['Result'] = ("Min Dist" if pilot.result_type == "mindist"
