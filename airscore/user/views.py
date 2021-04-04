@@ -1158,16 +1158,14 @@ def _get_xcontest_tracks(taskid: int):
         zip_file = get_zipfile(taskid)
 
         if not zip_file:
-            print("No filename")
-            flash("We could not find tracks on XContest for the event", category='danger')
-            return redirect(request.url)
+            return jsonify(success=False)
 
         resp = frontendUtils.process_zip_file(zip_file=zip_file,
                                               taskid=taskid,
                                               username=current_user.username,
                                               grecord=session['check_g_record'],
                                               track_source='xcontest')
-        return resp
+        return jsonify(success=True)
 
 
 @blueprint.route('/_upload_XCTrack/<int:taskid>', methods=['POST'])

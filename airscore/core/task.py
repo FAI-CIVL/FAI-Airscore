@@ -975,7 +975,7 @@ class Task(object):
             waytype = "waypoint"
             shape = "circle"
             how = "entry"  # default entry .. looks like xctrack doesn't support exit cylinders apart from SSS
-            wpID = waypoint_list[tp["waypoint"]["name"]]
+            wpID = waypoint_list.get(tp["waypoint"]["name"]) or None
             wpNum = i + 1
 
             if i < len(taskfile_data['turnpoints']) - 1:
@@ -997,7 +997,7 @@ class Task(object):
 
             turnpoint = Turnpoint(tp['waypoint']['lat'], tp['waypoint']['lon'], tp['radius'], waytype, shape, how)
             turnpoint.name = tp["waypoint"]["name"]
-            # turnpoint.rwp_id = wpID
+            turnpoint.rwp_id = wpID
             turnpoint.num = wpNum
             self.turnpoints.append(turnpoint)
 

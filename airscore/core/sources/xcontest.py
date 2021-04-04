@@ -63,16 +63,17 @@ def get_xc_parameters(task_id):
 
     with db_session() as db:
         q = (
-            db.query(R.xccSiteID, R.xccToID)
+            db.query(R.xccSiteID, R.xccToID, T.date)
             .join(W, W.rwp_id == R.rwp_id)
+            .join(T, T.task_id == W.task_id)
             .filter(W.task_id == task_id, W.type == 'launch')
-            .one()
+            .one_or_none()
         )
-        date = T.get_by_id(task_id).date
+        # date = T.get_by_id(task_id).date
         if q is not None:
             site_id = q.xccSiteID
             takeoff_id = q.xccToID
-            # date = q.tasDate
+            date = q.date
             logging.info("site_id:%s takeoff_id:%s date:%s", site_id, takeoff_id, date)
             datestr = date.strftime('%Y-%m-%d')  # convert from datetime to string
         else:
@@ -128,20 +129,19 @@ def get_zip(site_id, takeoff_id, date, login_name, password, zip_file):
 
 def get_zipfile(task_id):
     """"""
-    from pathlib import Path
-
     import Defines
 
     temp_folder = Defines.TEMPFILES
-    result = ''
-    # task_id = task.task_id
 
     """get zipfile from XContest server"""
     site_id, takeoff_id, date = get_xc_parameters(task_id)
+    if not site_id:
+        return None
+
     login_name = Defines.XC_LOGIN
     password = Defines.XC_password
     zip_name = f'xcontest-{task_id}.zip'
     zipfile = Path(temp_folder, zip_name)
-
     get_zip(site_id, takeoff_id, date, login_name, password, zipfile)
+
     return zipfile

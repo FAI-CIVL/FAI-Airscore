@@ -193,20 +193,23 @@ function update_track_pilot_stats(){
 }
 
 function get_xcontest_tracks(){
-  document.getElementById("xcontest_button").innerHTML = "Getting Tracks...";
-  document.getElementById("xcontest_button").className = "btn btn-warning ml-4";
+  $('#xcontest_button').addClass('btn-warning').removeClass('btn-primary').text("Getting Tracks...");
   $.ajax({
     type: "POST",
     url: url_get_xcontest_tracks,
     contentType:"application/json",
     dataType: "json",
-    success: function () {
-      if (production == false){
-        populate_track_admin(taskid);
-        update_track_pilot_stats();
+    success: function (response) {
+      if ( response.success ) {
+        if (production == false){
+          populate_track_admin(taskid);
+          update_track_pilot_stats();
+        }
       }
-      document.getElementById("xcontest_button").innerHTML = "Xcontest";
-      document.getElementById("xcontest_button").className = "btn btn-primary ml-4";
+      else {
+        create_flashed_message("We could not find tracks on XContest for the event", "danger");
+      }
+      $('#xcontest_button').removeClass('btn-warning').addClass('btn-primary').text("Xcontest");
     }
   });
 }
