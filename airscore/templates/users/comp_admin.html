@@ -4,11 +4,13 @@ Competition Admin
 {% endblock %}
 
 {% block head %}
-<!-- CSS -->
-<link href="{{ static_url_for('static', filename='css/task.css') }}" rel='stylesheet'>
 <!-- JS -->
 <script type='text/javascript' src='/static/js/utils.js'></script>
 <script type='text/javascript' src='/static/js/microajax.minified.js'></script>
+{% endblock %}
+
+{% block css %}
+<link href="{{ static_url_for('static', filename='css/task.css') }}" rel='stylesheet'>
 {% endblock %}
 
 {% block header %}Competitions:{% endblock %}
@@ -197,7 +199,6 @@ Competition Admin
 
 {% block js %}
 <script src="{{ static_url_for('static', filename='js/pop_admin_comps.js') }}"></script>
-<script src="{{ static_url_for('static', filename='js/utils.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.ui.widget.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.iframe-transport.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.fileupload.js') }}"></script>

@@ -4,10 +4,6 @@
 Airspace Check Settings
 {% endblock %}
 
-{% block css %}
-<link rel='stylesheet' type='text/css' href="{{ static_url_for('static', filename='build/main_css.bundle.css') }}"/>
-{% endblock %}
-
 {% block back %}
 {% if taskid %}
 <a href="{{ url_for('user.task_admin', taskid=taskid)}}" class='btn btn-info'>
