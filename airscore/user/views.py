@@ -176,18 +176,19 @@ def state_messages(func):
             flash(f"You are not a scorekeeper for this event. You won't be able to modify settings.",
                   category='warning')
         elif not session['external']:
-            task_info = session.get('task')
-            if task_info.get('cancelled'):
-                flash(f"Task has been cancelled.", category='danger')
-            elif task_info.get('locked'):
-                flash(f"Task has been locked and results are official.", category='info')
-            elif not task_info['ready_to_score']:
-                flash("Task is not ready to be scored as it is missing one or more of the following: "
-                      "a route with goal,window open/close, start/close and deadline times", category='warning')
-            elif task_info['needs_recheck']:
-                flash("There are tracks evaluated before last changes. They need to be re-checked", category='warning')
-            elif task_info['needs_new_scoring']:
-                flash("A new scoring is needed to reflect last task changes.", category='warning')
+            if not request.method == 'POST':
+                task_info = session.get('task')
+                if task_info.get('cancelled'):
+                    flash(f"Task has been cancelled.", category='danger')
+                elif task_info.get('locked'):
+                    flash(f"Task has been locked and results are official.", category='info')
+                elif not task_info['ready_to_score']:
+                    flash("Task is not ready to be scored as it is missing one or more of the following: "
+                          "a route with goal,window open/close, start/close and deadline times", category='warning')
+                elif task_info['needs_recheck']:
+                    flash("There are tracks evaluated before last changes. They need to be re-checked", category='warning')
+                elif task_info['needs_new_scoring']:
+                    flash("A new scoring is needed to reflect last task changes.", category='warning')
         return func(*args, **kwargs)
 
     return decorated_view
