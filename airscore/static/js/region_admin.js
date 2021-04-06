@@ -17,14 +17,12 @@ function updateRegions() {
       $("#select_region").val(data.choices[0][0]);
       update_details();
       $("#region_details").show();
-      $("#wpt_button_panel").show();
-      $("#wpt_list").show();
+      $("#wpt_button_panel").attr("aria-expanded","true").show();
     }
     else {
       $("#region_details").hide();
-      $("#wpt_button_panel").hide();
-      $("#wpt_list").hide();
-    }
+      $("#wpt_button_panel").attr("aria-expanded","false").hide();
+      $("#map_panel").empty();    }
   });
 }
 
