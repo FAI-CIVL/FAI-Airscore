@@ -333,7 +333,6 @@ Task Scoring Admin
 {% if session.is_editor %}
 <script type='text/javascript' src="{{ static_url_for('static', filename='js/pop_task_score_admin.js') }}"></script>
 <script type='text/javascript' src="{{ static_url_for('static', filename='js/mindmup-editabletable.js') }}"></script>
-<script src="{{ static_url_for('static', filename='js/flashed_message.js') }}"></script>
 <script type='text/javascript'>
   var production = {{ production|tojson }};
   var taskid = {{ taskid|tojson }};
