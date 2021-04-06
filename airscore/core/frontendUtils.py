@@ -715,6 +715,22 @@ def save_turnpoint(task_id: int, turnpoint: Turnpoint):
         return 1
 
 
+def copy_turnpoints_from_task(task_id: int, task_from: int) -> bool:
+    """Copy Task Turnpoints from another one"""
+    from db.tables import TblTaskWaypoint as W
+    objects = []
+    with db_session() as db:
+        origin = db.query(W.num, W.name, W.rwp_id, W.lat, W.lon,
+                          W.altitude, W.description, W.time, W.type, W.how,
+                          W.shape, W.angle, W.radius).filter_by(task_id=task_from).order_by(W.num).all()
+        for row in origin:
+            new = W(task_id=task_id, **row._asdict())
+            objects.append(new)
+
+        db.bulk_save_objects(objects=objects)
+    return True
+
+
 def allowed_tracklog(filename, extension=track_formats):
     ext = Path(filename).suffix
     if not ext:

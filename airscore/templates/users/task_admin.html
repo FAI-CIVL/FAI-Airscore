@@ -185,11 +185,17 @@ Task Settings
         Import
       </button>
     </section>
-    <div class='panel collapse' id='import_task'>
+    <div class='tab-row column-wrap collapse' id='import_task'>
       <section class="row-wrap">
-        <button id='XCTrack_button' class='btn btn-success mr-4 '>Import XCTrack Task File...</button>
+        <span class="col col-lg-3 font-weight-bold text-primary mr-3 mt-1 mb-1">Import XCTrack Task File: </span>
+        <button class='col col-lg-2 btn btn-primary mr-4 ' id='XCTrack_button'>Browse...</button>
         <input id='XCTrack_fileupload' type='file' size='chars' class='custom-file-input'
                oninput='filesize(this);' data-url='/users/_upload_XCTrack/{{ taskid }}' name='track_file'>
+      </section>
+      <section class="row-wrap" id="copy_wpts_section">
+        <span class="col col-lg-2 font-weight-bold text-primary mr-3 mt-1 mb-1">Get Route from: </span>
+        <select class="col col-lg-2 form-control form-control-sm mr-4 mt-1 mb-1" id="copy_task_select"><option value="5">Task 1 - 53.65 km</option></select>
+        <button class="col col-lg-1 btn btn-primary mr-4 mt-1 mb-1" id="copy_wpts_button" onclick="copy_turnpoints()">Copy</button>
       </section>
     </div>
     {% endif%}
@@ -370,6 +376,7 @@ Task Settings
   var external = {{ session.external|tojson }};
   var taskid = {{ taskid|tojson }};
   var task_info = {{ task_info|tojson }};
+  var tasks = {{ session.tasks|tojson }};
   var task_admin = {{ taskform.submit|tojson }};
   var url_get_task_turnpoints = "{{ url_for('user._get_task_turnpoints', taskid=taskid)}}";
   var url_add_turnpoint = "{{ url_for('user._add_turnpoint', taskid=taskid)}}";

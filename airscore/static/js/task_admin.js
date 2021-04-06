@@ -67,9 +67,25 @@ function update_turnpoints(json) {
   if( turnpoints.length == 0 ) {
     $('#delete_all_btn').hide();
     $('#import_task_btn').show();
+    $('#copy_wpts_section').hide();
+    if ( tasks.length > 1 ) {
+      $('#copy_task_select').empty();
+      tasks.forEach( t => {
+        if (t.task_id != taskid) {
+          $('#copy_task_select').append(
+            $('<option>', {
+              value: t.task_id,
+              text: 'Task '+t.task_num+' - '+ t.opt_dist
+            })
+          );
+        };
+      });
+      $('#copy_wpts_section').show();
+    }
   }
   else {
     $('#import_task_btn').hide();
+    $('#import_task').hide();
     $('#delete_all_btn').show();
   }
 
@@ -286,6 +302,36 @@ function save_modified_turnpoint(id){
         return;
       }
       update_turnpoints(response);
+    }
+  });
+}
+
+function copy_turnpoints() {
+  mydata = { task_from: $('#copy_task_select').val() };
+  $.ajax({
+    type: "POST",
+    url: '/users/_copy_turnpoints/'+taskid,
+    contentType:"application/json",
+    dataType: "json",
+    data : JSON.stringify(mydata),
+    success: function (response) {
+      if ( !response.success ) {
+        create_flashed_message('There was an Error trying to import Turnpoints', 'danger');
+        get_turnpoints();
+      }
+      else {
+        let data = response.data;
+        if(task.isset == null){
+          task.isset = data.task_set;
+        }
+        else if (task.isset != response.task_set) {
+          task.isset = data.task_set;
+//          location.reload(true);
+//          return;
+        }
+        create_flashed_message('Turnpoints successfully imported.', 'success');
+        update_turnpoints(response.data);
+      }
     }
   });
 }

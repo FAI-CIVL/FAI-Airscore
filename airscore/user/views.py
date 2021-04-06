@@ -1045,6 +1045,33 @@ def _del_all_turnpoints(taskid: int):
     return resp
 
 
+@blueprint.route('/_copy_turnpoints/<int:taskid>', methods=['POST'])
+@login_required
+@editor_required
+def _copy_turnpoints(taskid: int):
+    """copy turnpoints from another task"""
+    data = request.json
+    success = frontendUtils.copy_turnpoints_from_task(taskid, data.get('task_from'))
+    if not success:
+        return jsonify(success=False)
+
+    task = Task.read(taskid)
+    if task.turnpoints and any(tp.type == 'goal' for tp in task.turnpoints):
+        task.calculate_optimised_task_length()
+        task.calculate_task_length()
+        task.update_task_distance()
+        write_map_json(taskid)
+    else:
+        task.opt_dist = 0
+        task.distance = 0
+        task.SS_distance = 0
+        task.opt_dist_to_ESS = 0
+        task.opt_dist_to_SS = 0
+        task.update_task_distance()
+
+    return jsonify(success=True, data=frontendUtils.get_task_turnpoints(task))
+
+
 @blueprint.route('/_get_tracks_admin/<int:taskid>', methods=['GET'])
 @login_required
 def _get_tracks_admin(taskid: int):
@@ -1178,7 +1205,6 @@ def _upload_XCTrack(taskid: int):
             task = Task.read(taskid)
             task.update_from_xctrack_data(task_file)
             task.calculate_optimised_task_length()
-            task.calculate_task_length()
             task.calculate_task_length()
             task.update_task_info()
             task.to_db()
