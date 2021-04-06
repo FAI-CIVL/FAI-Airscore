@@ -97,8 +97,7 @@ def session_task(func):
     def decorated_function(*args, **kwargs):
         try:
             taskid = kwargs.get('taskid') if 'taskid' in kwargs.keys() else request.args.get('taskid')
-            if 'task' not in session.keys() or not session['task']['task_id'] == taskid:
-                session['task'] = next(el for el in session['tasks'] if el['task_id'] == taskid)
+            session['task'] = next(el for el in session['tasks'] if el['task_id'] == taskid)
         except (KeyError, AttributeError, Exception):
             flash("No task info found", category='danger')
             return render_template('users/comp_admin.html',
