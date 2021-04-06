@@ -134,13 +134,13 @@ function updateFiles(load_latest=false) {
         array = task.dropdown.find('option:selected').text().split(' - ');
         task.timestamp = array[0];
         task.status = array[1];
-        update_buttons();
         console.log('active: '+task.active_file);
         console.log('selected: '+task.selected);
         console.log('latest: '+task.latest);
         console.log('status: '+task.status);
         console.log('timestamp: '+task.timestamp);
       };
+      update_buttons();
       if (!task.selected) task.results_panel.hide();
       else {
         task.results_panel.show();
