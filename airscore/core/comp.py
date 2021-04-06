@@ -400,7 +400,7 @@ class Comp(object):
             r = task.ftv_validity * 1000
             '''get pilots result'''
             for p in comp.results:
-                s = next((res.score for res in task.pilots if res.par_id == p['par_id']), 0)
+                s = next((res.score or 0 for res in task.pilots if res.par_id == p['par_id']), 0)
                 perf = c_round(s / r, td + 3)
                 p['results'][task.task_code] = {'pre': c_round(s, td), 'perf': perf, 'score': c_round(s, td)}
 
