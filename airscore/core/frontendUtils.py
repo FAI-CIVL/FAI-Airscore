@@ -1434,7 +1434,7 @@ def get_pretty_data(content: dict, export=False) -> dict or str:
                 '''rankings'''
                 if result_type == 'comp' or r['result_type']:
                     d = cd if result_type == 'comp' else td
-                    r['score'] = c_round(r['score'], d)
+                    r['score'] = c_round(r['score'] or 0, d)
                     if not prev == r['score']:
                         rank, prev = idx, r['score']
                     r['rank'] = rank
