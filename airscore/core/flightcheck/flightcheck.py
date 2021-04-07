@@ -278,7 +278,8 @@ def check_fixes(
             '''stopped task
             ∀p : p ∈ PilotsLandedBeforeGoal :
                 bestDistance p = max(minimumDistance, 
-                                     taskDistance − min(∀trackp.pointi : shortestDistanceToGoal(trackp.pointi )−(trackp .pointi .altitude−GoalAltitude)*GlideRatio)) 
+                                     taskDistance − min(∀trackp.pointi : shortestDistanceToGoal(trackp.pointi )
+                                     − (trackp.pointi.altitude − GoalAltitude)*GlideRatio)) 
             ∀p :p ∈ PilotsReachedGoal : bestDistance p = taskDistance
             '''
             if task.stopped_time and glide_ratio and total_distance < task.opt_dist:

@@ -187,7 +187,6 @@ function save_turnpoint(){
     dataType: "json",
     success: function (response) {
       if(task.isset != null && response.task_set != task.isset) {
-        console.log('js: '+task.isset+', response: '+response.task_set)
         location.reload(true);
         return;
       }
@@ -214,7 +213,6 @@ function delete_tp(tpid, partial_d){
     dataType: "json",
     success: function (response) {
       if(task.isset != null && response.task_set != task.isset) {
-        console.log('js: '+task.isset+', response: '+response.task_set)
         location.reload(true);
         return;
       }
@@ -297,7 +295,6 @@ function save_modified_turnpoint(id){
     dataType: "json",
     success: function (response) {
       if(task.isset != null && response.task_set != task.isset) {
-        console.log('js: '+task.isset+', response: '+response.task_set)
         location.reload(true);
         return;
       }

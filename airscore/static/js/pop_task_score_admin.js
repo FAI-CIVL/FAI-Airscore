@@ -149,11 +149,11 @@ function updateFiles(load_latest=false) {
         array = task.dropdown.find('option:selected').text().split(' - ');
         task.timestamp = array[0];
         task.status = array[1];
-        console.log('active: '+task.active_file);
-        console.log('selected: '+task.selected);
-        console.log('latest: '+task.latest);
-        console.log('status: '+task.status);
-        console.log('timestamp: '+task.timestamp);
+//        console.log('active: '+task.active_file);
+//        console.log('selected: '+task.selected);
+//        console.log('latest: '+task.latest);
+//        console.log('status: '+task.status);
+//        console.log('timestamp: '+task.timestamp);
       };
       update_buttons();
       if (!task.selected) task.results_panel.hide();
@@ -523,7 +523,6 @@ $(document).ready(function() {
   else get_tracks_processed();
 
   updateFiles();
-
 
   // Event listener to the file picker to redraw on input
   task.dropdown.change(function() {

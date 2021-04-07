@@ -2,9 +2,8 @@ function populate_track_admin(task_id) {
   $('#tracks').DataTable({
     destroy: true,
     ajax: '/users/_get_tracks_admin/'+task_id,
-    paging: true,
-    order: [[ 1, 'asc' ]],
-    lengthMenu: [60, 150 ],
+    paging: false,
+    order: [[ 0, 'asc' ]],
     searching: true,
     info: false,
     columns: [
@@ -50,7 +49,6 @@ function populate_track_admin(task_id) {
       }
     }],
     initComplete: function(response) {
-      console.log(response.json.data);
       let rows = response.json.data;
       $(".hideatstart").hide();
       $('#recheck_button').hide();
@@ -243,8 +241,6 @@ function choose_zip_file(){
       $('#zip_spinner').html('<div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>');
     },
     success: function (response) {
-      console.log('success...');
-      console.log(response);
       if (response.success){
         $("bulk_button").text('Done');
         $("bulk_button").removeClass("btn-warning").addClass('btn-success');
@@ -441,8 +437,6 @@ $(document).ready(function(){
       $('#lt_modal').modal('show');
     });
   }
-
-  console.log('production='+production);
 
   function initES() {
     if (es == null || es.readyState == 2) { // this is probably not necessary.

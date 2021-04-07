@@ -11,7 +11,6 @@ function updateFiles(load_latest=false) {
     data: JSON.stringify(mydata),
     dataType: "json",
     success: function(response) {
-      console.log('COMP: ');
       active = response.comp_active;
       header = response.comp_header;
       choices = response.comp_choices;
@@ -43,11 +42,11 @@ function updateFiles(load_latest=false) {
         else comp.dropdown.val(active);
         get_status();
         update_buttons();
-        console.log('active: '+comp.active_file);
-        console.log('selected: '+comp.selected);
-        console.log('latest: '+comp.latest);
-        console.log('status: '+comp.status);
-        console.log('timestamp: '+comp.timestamp);
+//        console.log('active: '+comp.active_file);
+//        console.log('selected: '+comp.selected);
+//        console.log('latest: '+comp.latest);
+//        console.log('status: '+comp.status);
+//        console.log('timestamp: '+comp.timestamp);
       }
     }
   });
@@ -187,8 +186,6 @@ function get_preview_url() {
 function get_status(){
   comp.selected = comp.dropdown.find('option:selected').val();
   let info = comp_result_files_info.find(el => el.filename == comp.selected);
-  console.log(comp.selected);
-  console.log(info);
   comp.timestamp = info.timestamp;
   comp.status = info.status;
   if (comp.status && comp.status.includes('Auto Generated' )) {
@@ -242,7 +239,7 @@ function update_publish_button() {
 }
 
 function check_active() {
-  console.log('active_file: '+comp.active_file);
+//  console.log('active_file: '+comp.active_file);
   if (comp.active_file) {
     comp.download_html.attr('onclick', "location.href='/users/_download/comp_html/"+compid+"'");
     comp.download_html.show();

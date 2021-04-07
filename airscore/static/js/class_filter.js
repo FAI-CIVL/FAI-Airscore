@@ -25,7 +25,7 @@ $(document).ready(function() {
             }
             table.column(i).visible( v );
         }
-        console.log('flyclass='+flyclass);
+//        console.log('flyclass='+flyclass);
         table.search('').draw();
     } );
 } );

@@ -270,7 +270,6 @@ function populate_registered_pilot_details(compid, readonly=false){
         {data: 'live_id', title: 'Live ID', name: 'live_id', width: '2.5rem', visible: false, defaultContent: ''}
       ];
 //      $.each(json.data[0].custom, (key, value) => columns.push({data: 'custom.'+key, title: attributes.find(x => x.attr_id == key).attr_name, name: 'attr_'+key} ));
-      console.log(attributes);
       $.each(attributes, (idx, el) => columns.push({data: 'custom.'+el.attr_id, title: el.attr_value, name: 'attr_'+el.attr_id, defaultContent: ''} ));
       if (!external_comp) {
         if ( pilotdb ) {
@@ -465,7 +464,6 @@ function save_custom_attribute() {
     mydata.comp_id = compid;
     url = '/users/_edit_custom_attribute/' + mydata.attr_id;
   }
-  console.log('data='+ JSON.stringify(mydata));
   $.ajax({
     type: "POST",
     url: url,
@@ -532,7 +530,6 @@ $(document).ready(function() {
       },
       // Response received
       success: function (response) {
-        console.log(response);
         if (response.success) {
           if (pilotdb) get_internal_pilots();
 //          populate_registered_pilot_details(compid, external_comp);

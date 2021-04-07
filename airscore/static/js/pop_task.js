@@ -31,6 +31,7 @@ function populate_task(json){
     }
     columns.push({data: 'ss_time', title:' Time', defaultContent: ''});
     columns.push({data: 'speed', title: 'Kph', className: "text-right", defaultContent: ''});
+    //altitude column if task is stopped
     if(json.info.stopped_time) {
       columns.push({data: 'stopped_altitude', title: 'Alt', className: "text-right", defaultContent: ''});
     }

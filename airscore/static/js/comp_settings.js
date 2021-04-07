@@ -13,7 +13,6 @@ var comp_class = dropdown.category.val();
 $(document).ready(function() {
   populate_tasks( tasks_info );
   get_scorekeepers( compid );
-  console.log(formula_preset);
 
   // hide form rows if all elements are hidden
   hide_unused_rows();
@@ -64,8 +63,7 @@ $(document).ready(function() {
 
   // event listener to scoring dropdown change
   dropdown.scoring.on('change', function() {
-    console.log(dropdown.scoring.val());
-    if (dropdown.scoring.val() == 'all') $('#validity_param_div').hide(); else $('#validity_param_div').show();
+     if (dropdown.scoring.val() == 'all') $('#validity_param_div').hide(); else $('#validity_param_div').show();
 
   });
 
@@ -81,7 +79,6 @@ $(document).ready(function() {
   });
 
   $('#main_comp_settings_form :input').change(function(){
-    console.log('form changed');
     $('#main_comp_save_button').removeClass( "btn-outline-secondary" ).addClass( "btn-warning" );
     $('#save_button_warning_text').addClass('bg-warning').html('Competition needs to be saved');
   });
@@ -216,7 +213,6 @@ function populate_tasks(json) {
       var rows = $("tr", table).length-1;
       // Get number of all columns
       var numCols = $('#tasks').DataTable().columns().nodes().length;
-      console.log('numCols='+numCols);
       for ( var col=1; col<numCols; col++ ) {
         var empty = true;
         table.DataTable().column(col).data().each( val => {
@@ -241,7 +237,6 @@ function add_scorekeeper(){
   var mydata = new Object();
   var e = document.getElementById('scorekeeper');
   mydata.id = e.options[e.selectedIndex].value;
-  console.log('id='+mydata.id)
   $.ajax({
     type: "POST",
     url: link_add_scorekeeper,
@@ -265,10 +260,7 @@ function save_ladders(){
     if (el.checked){
       mydata.checked.push(el.value)
     }
-    console.log('val='+ el.value);
-    console.log('checked='+ el.checked);
   });
-  console.log('data='+ mydata);
   $.ajax({
     type: "POST",
     url: link_save_comp_ladders,
@@ -339,7 +331,6 @@ function update_formula_adv_settings(){
   formula.formula = $('#select_formula').val();
   formula.category = $('#select_category').val();
   formula.compid = compid;
-  console.log(formula);
   $.ajax({
     type: "POST",
     url: '/users/_update_formula_adv_settings',
@@ -347,14 +338,13 @@ function update_formula_adv_settings(){
     data : JSON.stringify(formula),
     dataType: "json",
     success: function (data) {
-     if ( data.success ) {
-      console.log(data.render);
-      $('#adv_params').empty().html(data.render);
-      formula_preset = data.formula_preset;
-      hide_unused_rows();
-      console.log($('#main_comp_settings_form').serialize());
-     }
-     else create_flashed_message('Error trying to reset advanced formula parameters', 'danger');
+      if ( data.success ) {
+        console.log(data.render);
+        $('#adv_params').empty().html(data.render);
+        formula_preset = data.formula_preset;
+        hide_unused_rows();
+      }
+      else create_flashed_message('Error trying to reset advanced formula parameters', 'danger');
     }
   });
 }
