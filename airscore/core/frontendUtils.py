@@ -1474,6 +1474,8 @@ def get_pretty_data(content: dict, export=False) -> dict or str:
                         r = pretty_format_results(r, timeoffset)
                     elif result_type == 'task':
                         task_id = content['info']['id']
+                        stopped = content['info']['stopped_time']
+                        goal_alt = content['info']['goal_altitude']
                         if export or not r['track_file']:
                             r['name'] = f"<span class='sex-{r['sex']}'><b>{r['name']}</b></span>"
                         else:
@@ -1491,6 +1493,8 @@ def get_pretty_data(content: dict, export=False) -> dict or str:
                         r['ESS_time'] = r['ESS_time'] if goal else f"<del>{r['ESS_time']}</del>"
                         r['speed'] = r['speed'] if goal else f"<del>{r['speed']}</del>"
                         r['ss_time'] = r['ss_time'] if goal else f"<del>{r['ss_time']}</del>"
+                        if stopped and r['stopped_altitude']:
+                            r['stopped_altitude'] = f"+{max(0, r['stopped_altitude'] - goal_alt)}"
                         # ab = ''  # alt bonus
                 results.append(r)
             pretty_content['results'] = results

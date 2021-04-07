@@ -1310,8 +1310,8 @@ def _get_task_score_from_file(taskid: int, filename: str):
         parid = r['par_id']
         name = r['name']
         status = r['result_type']
-        pilot = dict(par_id=parid, rank=rank, name=name, SSS='', ESS='', time='', altbonus='', distance='',
-                     speedP='', leadP='', arrivalP='', distanceP='', penalty='', score=status,
+        pilot = dict(par_id=parid, rank=rank, name=name, SSS='', ESS='', time='', altbonus='', realdist='',
+                     distance='', speedP='', leadP='', arrivalP='', distanceP='', penalty='', score=status,
                      notifications=r['notifications'])
         if status not in ['dnf', 'abs', 'nyp']:
             if not session['external']:
@@ -1327,8 +1327,9 @@ def _get_task_score_from_file(taskid: int, filename: str):
                 pilot['ESS'] = sec_to_time(r['ESS_time'] + result_file['info']['time_offset']).strftime("%H:%M:%S")
                 pilot['time'] = sec_to_time(r['ESS_time'] - r['SSS_time']).strftime("%H:%M:%S")
 
-            pilot['altbonus'] = ""  # altitude bonus
-            pilot['distance'] = round(r['distance'] / 1000, 2)
+            pilot['realdist'] = "" if not r['stopped_distance'] else c_round(r['stopped_distance'] / 1000, 2)
+            pilot['altbonus'] = "" if not r['stopped_altitude'] else round(r['stopped_altitude'])
+            pilot['distance'] = c_round(r['distance'] / 1000, 2)
             pilot['speedP'] = c_round(r['time_score'], 2)
             pilot['leadP'] = c_round(r['departure_score'], 2)
             pilot['arrivalP'] = c_round(r['arrival_score'], 2)  # arrival points

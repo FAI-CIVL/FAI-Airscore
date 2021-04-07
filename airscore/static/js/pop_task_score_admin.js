@@ -13,11 +13,12 @@ function populate_task_scores(){
       {data: 'SSS', title:'SS'},
       {data: 'ESS', title:'ES'},
       {data: 'time', title:'Time'},
-      {data: 'altbonus', title:'altbonus', id:'altbonus'},
+      {data: 'realdist', title:'real dist', id:'realdist', name:'realdist', visible: false},
+      {data: 'altbonus', title:'alt bonus', id:'altbonus', name:'altbonus', visible: false},
       {data: 'distance', title:'Kms'},
-      {data: 'speedP', title:'Spd'},
-      {data: 'leadP', title:'LO p', id:'leading'},
-      {data: 'arrivalP', title:'Arv'},
+      {data: 'speedP', title:'Spd', name:'spd'},
+      {data: 'leadP', title:'LO', id:'leading', name:'leading'},
+      {data: 'arrivalP', title:'Arv', id:'arv', name:'arv'},
       {data: 'distanceP', title:'Dst'},
       {data: 'penalty', title:'Pen'},
       {data: 'score', title:'Tot'},
@@ -66,6 +67,20 @@ function populate_task_scores(){
       "emptyTable":     "Error: result file not found"
     },
     "initComplete": function(settings, json) {
+      let table = $('#task_result').DataTable();
+      if ( !json.stats.avail_arr_points ){
+        table.column( 'arv:name' ).visible( false );
+      };
+      if ( !json.stats.avail_dep_points ){
+        table.column( 'leading:name' ).visible( false );
+      };
+      if ( !json.stats.avail_time_points ){
+        table.column( 'spd:name' ).visible( false );
+      };
+      if ( json.info.stopped_time ){
+        table.column( 'realdist:name' ).visible( true );
+        table.column( 'altbonus:name' ).visible( true );
+      };
       score_data = json;
       $('#taskinfo tbody').empty()
       $.each( json.stats, function( key, value ) {
