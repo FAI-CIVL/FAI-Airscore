@@ -31,6 +31,9 @@ function populate_task(json){
     }
     columns.push({data: 'ss_time', title:' Time', defaultContent: ''});
     columns.push({data: 'speed', title: 'Kph', className: "text-right", defaultContent: ''});
+    if(json.info.stopped_time) {
+      columns.push({data: 'stopped_altitude', title: 'Alt', className: "text-right", defaultContent: ''});
+    }
     columns.push({data: 'distance', title: 'Dist', className: "text-right", defaultContent: ''});
     columns.push({data: 'time_score', title: 'TimeP', className: "text-right", defaultContent: ''});
     columns.push({data: 'departure_score', title: 'LoP', className: "text-right", defaultContent: ''});

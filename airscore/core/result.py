@@ -886,6 +886,9 @@ def pretty_format_results(content, timeoffset=0, td=0, cd=0):
                         else:
                             '''name and description'''
                             formatted[key] = str(value)
+                    # Formatting Altitudes
+                    elif str(key).endswith('_altitude'):
+                        formatted[key] = '' if not value else int(value)
                     # Formatting Text
                     elif key in upper:
                         '''formatting uppercase text'''
