@@ -215,11 +215,16 @@ function Score() {
     data: JSON.stringify(mydata),
     dataType: "json",
     success: function(response) {
-      if (production) {
-        $('#scoremodal').modal('hide');
-      }
-      if (response.redirect) {
-        window.location.href = response.redirect;
+      clear_flashed_messages();
+      if ( response.success ){
+        if (production) {
+          $('#scoremodal').modal('hide');
+          create_flashed_message('New scoring file created.', 'success');
+          updateFiles(load_latest=true);
+        }
+        else if (response.redirect) {
+          window.location.href = response.redirect;
+        }
       }
     }
   });
@@ -239,8 +244,13 @@ function FullRescore() {
     data: JSON.stringify(mydata),
     dataType: "json",
     success: function(response) {
+      clear_flashed_messages();
       if (production == false) {
         $('#fullscoremodal').modal('hide');
+        create_flashed_message('All tracks have been processed. New scoring file created.', 'success');
+      }
+      else {
+        create_flashed_message('Processing tracks. Please wait...', 'warning');
       }
     }
   });
@@ -564,11 +574,15 @@ $(document).ready(function() {
 
       es.addEventListener('reload', function(event) {
         task.selected = task.dropdown.find('option:selected').val();
-        populate_task_scores();
+        clear_flashed_messages();
+        updateFiles();
+        create_flashed_message('All tracks have been processed. New scoring file created.', 'success');
       }, false);
 
       es.addEventListener('reload_select_latest', function(event) {
+        clear_flashed_messages();
         updateFiles(load_latest=true);
+        create_flashed_message('All tracks have been processed. New scoring file created.', 'success');
       }, false);
     }
   }

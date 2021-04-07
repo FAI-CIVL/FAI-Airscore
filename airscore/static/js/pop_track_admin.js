@@ -129,10 +129,19 @@ function recheck_tracks() {
     contentType:"application/json",
     dataType: "json",
     success: function (response) {
-      if (!production) {
-        $('#recheck_button').prop('disabled', false);
-        populate_track_admin( taskid );
-        update_track_pilot_stats();
+      if ( response.success ) {
+        console.log( response );
+        if (!production) {
+          $('#recheck_button').prop('disabled', false);
+          populate_track_admin( taskid );
+          update_track_pilot_stats();
+        }
+        else {
+          create_flashed_message('Processing tracks, please wait...', 'warning');
+        }
+      }
+      else {
+        create_flashed_message('ERROR processing tracks.', 'danger');
       }
     }
   });
@@ -519,7 +528,11 @@ $(document).ready(function(){
         update_track_pilot_stats();
       }, false);
       es.addEventListener('page_reload', function(event) {
-        window.location.reload(true);
+        clear_flashed_messages();
+        create_flashed_message('Process completed successfully', 'success');
+        populate_track_admin(taskid);
+        update_track_pilot_stats();
+//        window.location.reload(true);
       }, false);
     }
   }

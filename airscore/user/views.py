@@ -1244,7 +1244,9 @@ def _upload_track_zip(taskid: int):
 def _recheck_task_tracks(taskid: int):
     if not session['external'] and request.method == "POST":
         resp = frontendUtils.recheck_tracks(task_id=taskid, username=current_user.username)
-        return jsonify(success=resp)
+        if resp:
+            session['task']['needs_recheck'] = False
+        return jsonify(success=resp, session=session['task'])
     return jsonify(success=False)
 
 
@@ -1398,6 +1400,8 @@ def _score_task(taskid: int):
                 frontendUtils.full_rescore(taskid, status=data['status'], autopublish=data['autopublish'],
                                            compid=session['compid'])
                 resp = jsonify(success=True)
+            session['task']['needs_new_scoring'] = False
+            session['task']['needs_full_rescore'] = False
             return resp
 
         ref_id, filename = task.create_results(data['status'])
@@ -1405,7 +1409,9 @@ def _score_task(taskid: int):
             if data['autopublish']:
                 frontendUtils.publish_task_result(taskid, filename)
                 frontendUtils.update_comp_result(session['compid'], status=data['status'], name_suffix='Overview')
-            return dict(redirect='/users/task_score_admin/' + str(taskid))
+            session['task']['needs_new_scoring'] = False
+            return jsonify(success=True, redirect='/users/task_score_admin/' + str(taskid))
+        return jsonify(success=False)
     return render_template('500.html')
 
 
@@ -1421,12 +1427,14 @@ def _full_rescore_task(taskid: int):
 
         resp = jsonify(success=True, background=True)
         return resp
-
     else:
-        frontendUtils.full_rescore(taskid, status=data['status'], autopublish=data['autopublish'],
-                                   compid=session['compid'])
-        resp = jsonify(success=True)
-        return resp
+        ref_id = frontendUtils.full_rescore(taskid, status=data['status'], autopublish=data['autopublish'],
+                                            compid=session['compid'])
+        resp = jsonify(success=bool(ref_id))
+
+    session['task']['needs_new_scoring'] = False
+    session['task']['needs_full_rescore'] = False
+    return resp
 
 
 @blueprint.route('/_unpublish_result', methods=['POST'])
