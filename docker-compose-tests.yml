@@ -20,6 +20,7 @@ services:
       FLASK_DEBUG: 0
       FLASK_APP: autoapp.py
       SECRET_KEY: not-so-secret
+      SECURITY_PASSWORD_SALT: my_precious_two
       SEND_FILE_MAX_AGE_DEFAULT: 0
 #      PYTHONPATH: ${app}:src
       REDIS_URL: redis://redis:6379
