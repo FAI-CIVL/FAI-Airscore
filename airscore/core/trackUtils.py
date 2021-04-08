@@ -57,6 +57,7 @@ def get_tracks(directory):
     """check files in temporary directory, and get only tracks"""
     for el in listdir(directory):
         print(f"checking: {el}")
+
         file = Path(directory, el)
         if not file.name.startswith(tuple(['_', '.'])) and file.suffix.strip('.').lower() in track_formats:
             """file is a valid track"""
@@ -436,7 +437,7 @@ def import_igc_file(file, task, parsing_config, check_g_record=False) -> Flight 
                          f"or pilot already has a track"})
     elif not flight.valid:
         return (False,
-                {'code': 'track_error',
+                {'code': 'valid_fail',
                  'text': f"IGC does not meet quality standard set by igc parsing config. "
                          f"Notes: {'; '.join(flight.notes)}"})
 

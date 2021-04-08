@@ -823,6 +823,7 @@ def process_igc_background(task_id: int, par_id: int, file, user, check_g_record
     if error:
         '''error importing igc file'''
         print(f"Error: {error['text']}")
+        data['text'] = error['text']
         print(f"{json.dumps(data)}|{error['code']}")
         return None
 

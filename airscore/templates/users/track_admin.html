@@ -5,6 +5,7 @@
 {% endblock %}
 
 {% block css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet"/>
 <link href="{{ static_url_for('static', filename='css/task.css') }}" rel="stylesheet">
 {% endblock %}
 
@@ -177,6 +178,7 @@
 {% if session.is_editor %}
 {% block js %}
 <!--<script src="{{ static_url_for('static', filename='js/jquery.initialize.js') }}"></script>-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 <script src="{{ static_url_for('static', filename='js/utils.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/pop_track_admin.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.ui.widget.js') }}"></script>

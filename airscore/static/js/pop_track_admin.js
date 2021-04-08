@@ -15,37 +15,40 @@ function populate_track_admin(task_id) {
     rowId: function(data) {
             return 'id_' + data.par_id;
     },
-    columnDefs:[{
-      targets: [-1],  render: function (a, b, data, d) {
-        if ( task_info.cancelled || task_info.locked ) {
-          return '<span class="btn btn-info">locked<span>';
-        }
-        else if(data['Result']=='Not Yet Processed' | data['Result'].indexOf("G record") >= 0){
-          var buttons;
-          buttons =
-           '<button id="ABS' + data.par_id  +'" class="btn btn-primary mt-3" type="button" onclick="set_result(' + data.par_id +',\'abs\')">Set ABS</button> '
-           +'<button id="MD' + data.par_id  +'" class="btn btn-primary mt-3" type="button" onclick="set_result(' + data.par_id +',\'mindist\')">Set Min Dist</button> '
-           +'<button id="DNF' + data.par_id  +'" class="btn btn-primary mt-3" type="button" onclick="set_result(' + data.par_id +',\'dnf\')">Set DNF</button> '
-           +'<button id="TrackUp' + data.par_id  +'" class="btnupload btn btn-primary mt-3" onclick="choose_file(' + data.par_id +');">Upload Track</button>'
-//             +'<button id="TrackUp_overide_check' + data.par_id  +'" class="hideatstart btnupload btn btn-warning mt-3" onclick="choose_file(' + data.par_id +', false, true);">Upload Track - Overide quality check</button>'
-           +'<div class = "hideatstart"  id="progress_percentage'+ data.par_id+ '" ><p id="progress_percentage _text'+data.par_id +'"></p></div>'
-           +' <div id="filediv' + data.par_id  +'" class = "hideatstart" > <input id="fileupload' + data.par_id +'" type="file" size="chars" class="custom-file-input"  oninput="filesize(this);" data-url="/users/_upload_track/'+ task_id + '/' + data.par_id + '" name="tracklog" >'
-           + ' <div id="filediv' + data.par_id  +'" class = "hideatstart" > <input id="fileupload_NO_G' + data.par_id +'" type="file" size="chars" class="custom-file-input"  oninput="filesize(this);" data-url="/users/_upload_track/'+ task_id + '/' + data.par_id + '" name="tracklog_NO_G" >'
-           + ' <div id="filediv' + data.par_id  +'" class = "hideatstart" > <input id="fileupload_NO_V' + data.par_id +'" type="file" size="chars" class="custom-file-input"  oninput="filesize(this);" data-url="/users/_upload_track/'+ task_id + '/' + data.par_id + '" name="tracklog_NO_V" >'
-//             +'<div id="progress'+ data.par_id+ '" ><div class="bar" style="width: 0%;"><p id="spinner'+ data.par_id + '"></p><p id="progress_text'+data.par_id +'"></p></div></div>'
-           +'</div>';
-          return buttons;
-        }
-        else if (data['Result']=='Processing..') {
-          return data['file']
-        }
-        else {
-          let column = '<button class="btn btn-danger mt-3" type="button" onclick="delete_track('+ data.track_id +','+ data.par_id +')">Delete Track</button> ';
-          if ( !['ABS', 'DNF', 'Min Dist'].includes(data.Result) ) {
-            if (data.outdated) column += '<button class="btn btn-warning mt-3" id="button_check_'+data.par_id+'" type="button" onclick="recheck_track('+ data.track_id +','+ data.par_id +')">Recheck Track</button> ';
+    columnDefs:[
+      { targets: [0], width: '3rem' },
+      { targets: [1], width: '12rem' },
+      { targets: [2], width: '10rem' },
+      {
+        targets: [-1], render: function (a, b, data, d) {
+          if ( task_info.cancelled || task_info.locked ) {
+            return '<span class="btn btn-info">locked<span>';
           }
-          return column;
-        }
+          else if(data['Result']=='Not Yet Processed' | data['Result'].indexOf("G record") >= 0){
+            var buttons;
+            buttons =
+             '<button id="ABS' + data.par_id  +'" class="btn btn-primary mt-3" type="button" onclick="set_result(' + data.par_id +',\'abs\')">Set ABS</button> '
+             +'<button id="MD' + data.par_id  +'" class="btn btn-primary mt-3" type="button" onclick="set_result(' + data.par_id +',\'mindist\')">Set Min Dist</button> '
+             +'<button id="DNF' + data.par_id  +'" class="btn btn-primary mt-3" type="button" onclick="set_result(' + data.par_id +',\'dnf\')">Set DNF</button> '
+             +'<button id="TrackUp' + data.par_id  +'" class="btnupload btn btn-primary mt-3" onclick="choose_file(' + data.par_id +');">Upload Track</button>'
+             +'<div id="filediv' + data.par_id  +'" class = "hideatstart" > '
+             +'<input id="fileupload' + data.par_id +'" type="file" size="chars" class="custom-file-input"  oninput="filesize(this);" data-url="/users/_upload_track/'+ task_id + '/' + data.par_id + '" name="tracklog" >'
+             +'<input id="fileupload_NO_G' + data.par_id +'" type="file" size="chars" class="custom-file-input"  oninput="filesize(this);" data-url="/users/_upload_track/'+ task_id + '/' + data.par_id + '" name="tracklog_NO_G" >'
+             +'<input id="fileupload_NO_V' + data.par_id +'" type="file" size="chars" class="custom-file-input"  oninput="filesize(this);" data-url="/users/_upload_track/'+ task_id + '/' + data.par_id + '" name="tracklog_NO_V" >'
+             +'</div>'
+             +'<div class="hideatstart progress mt-3 mb-3" id="progress'+ data.par_id +'" ><div class="progress-bar text-left pl-2" style="width: 0%;"></div></div>';
+            return buttons;
+          }
+          else if (data['Result']=='Processing..') {
+            return data['file']
+          }
+          else {
+            let column = '<button class="btn btn-danger mt-3" type="button" onclick="delete_track('+ data.track_id +','+ data.par_id +')">Delete Track</button> ';
+            if ( !['ABS', 'DNF', 'Min Dist'].includes(data.Result) ) {
+              if (data.outdated) column += '<button class="btn btn-warning mt-3" id="button_check_'+data.par_id+'" type="button" onclick="recheck_track('+ data.track_id +','+ data.par_id +')">Recheck Track</button> ';
+            }
+            return column;
+          }
       }
     }],
     initComplete: function(response) {
@@ -69,13 +72,12 @@ function filesize(elem){
 
 function update_row(new_data){
   update_track_pilot_stats();
-  var table = $('#tracks').dataTable();
+  let table = $('#tracks').dataTable();
   new_data.ID = $('#tracks').DataTable().row( $('tr#id_'+ new_data.par_id)).data()['ID'];
   new_data.name = $('#tracks').DataTable().row( $('tr#id_'+ new_data.par_id)).data()['name'];
   table.fnUpdate(new_data, $('tr#id_'+ new_data.par_id), undefined, false);
   $(".hideatstart").hide();
-  clear_flashed_messages();
-  create_flashed_message(new_data.ID+' '+new_data.name+': Track result updated.', 'success');
+  console.log(new_data.ID+' '+new_data.name);
 }
 
 function delete_track(track_id, par_id){
@@ -363,10 +365,35 @@ function choose_file_prod(par_id, g_overide=false, v_overide=false){
       $('#DNF'+ par_id).hide();
       $('#TrackUp'+ par_id).hide();
       $('#upload_box'+ par_id).hide();
-      $('#progress_percentage'+ par_id).show();
-      $('#progress_percentage'+ par_id).text('uploading..');
-      $('#filediv'+ par_id).show();
+      $('#progress'+ par_id).show();
+      $('#filediv'+ par_id).hide();
     },
+    success: function (response) { // display success response
+      if ( response.success ) {
+        console.log('Success!');
+      }
+      else {
+        $('#ABS'+ par_id).show();
+        $('#MD'+ par_id).show();
+        $('#DNF'+ par_id).show();
+        $('#TrackUp'+ par_id).show();
+        $('#upload_box'+ par_id).show();
+        $('#filediv'+ par_id).hide();
+        $('#progress'+ par_id).hide();
+        toastr.error(response.error, 'Error', {timeOut: 5000});
+      }
+    },
+    error: function (response) {
+      $('#ABS'+ par_id).show();
+      $('#MD'+ par_id).show();
+      $('#DNF'+ par_id).show();
+      $('#TrackUp'+ par_id).show();
+      $('#upload_box'+ par_id).show();
+      $('#filediv'+ par_id).hide();
+      $('#progress'+ par_id).hide();
+      clear_flashed_messages();
+      create_flashed_message('System error. Please contact Administrators.', 'danger'); // display error response
+    }
   });
   $('#fileupload' + suffix + par_id).click();
 };
@@ -409,7 +436,7 @@ function choose_file_test(par_id){
     },
     progress: function (e, data) {
       var progress = parseInt(data.loaded / data.total * 100, 10);
-      $('#progress'+ par_id+' .bar').css(
+      $('#progress'+ par_id+' .progress-bar').css(
         'width',
         progress + '%'
       );
@@ -452,18 +479,27 @@ $(document).ready(function(){
       }, false);
       es.addEventListener('track_error', function(event) {
         var data = JSON.parse(event.data);
-        create_flashed_message(data.message, 'warning');
+        create_flashed_message(data.message.text, 'danger');
+        $('#ABS'+ data.id).show();
+        $('#MD'+ data.id).show();
+        $('#DNF'+ data.id).show();
+        $('#TrackUp'+ data.id).show();
+        $('#upload_box'+ data.id).show();
+        $('#filediv'+ data.id).hide();
+        $('#progress'+ data.id).hide();
+//        update_row(data.message);
       }, false);
       es.addEventListener('% complete', function(event) {
-        var data = JSON.parse(event.data);
-        $('#progress_percentage'+ data.id).text(data.message + ' % complete');
+        let data = JSON.parse(event.data);
+        $('#progress'+ data.id).show();
+        $('#progress'+ data.id + ' .progress-bar').css("width", data.message + "%").text(data.message + '%');
       }, false);
       es.addEventListener('counter', function(event) {
-        var data = JSON.parse(event.data);
+        let data = JSON.parse(event.data);
         $('#ProcessModalTitle').text('Tracklog Processing. ' + data.message);
       }, false);
       es.addEventListener('info', function(event) {
-        var data = JSON.parse(event.data);
+        let data = JSON.parse(event.data);
         $('#process_text').append(data.message + "<br/>");
       }, false);
       es.addEventListener('open_modal', function(event) {
@@ -471,7 +507,7 @@ $(document).ready(function(){
         $('#ProcessModal').modal('show');
       }, false);
       es.addEventListener('result', function(event) {
-        var data = JSON.parse(event.data);
+        let data = JSON.parse(event.data);
         if(data.message == 'error'){
           $('#ABS'+ data.id).show();
           $('#MD'+ data.id).show();
@@ -479,19 +515,16 @@ $(document).ready(function(){
           $('#TrackUp'+ data.id).show();
           $('#upload_box'+ data.id).show();
           $('#filediv'+ data.id).hide();
-          $.alert(response.error,{
-            type: 'danger',
-            position: ['center', [-0.42, 0]],
-            autoClose: false
-          });
           update_track_pilot_stats();
         }
         else if (data.id){
-          update_row($.parseJSON(data.message));
+          let info = $.parseJSON(data.message);
+          toastr.success('Result: '+info.Result, 'Pilot ID '+info.ID, {timeOut: 5000});
+          update_row(info);
         }
       }, false);
       es.addEventListener('valid_fail', function(event) {
-        var data = JSON.parse(event.data);
+        let data = JSON.parse(event.data);
         data.message = JSON.parse(data.message);
         $('#ABS'+ data.id).show();
         $('#MD'+ data.id).show();
@@ -499,12 +532,13 @@ $(document).ready(function(){
         $('#TrackUp'+ data.id).show();
         $('#upload_box'+ data.id).show();
         $('#filediv'+ data.id).hide();
-        $('#progress_percentage'+ data.id).hide();
-        data.message.Result = '<button id="TrackUp_noV' + data.id  +'" class="btnupload btn btn-warning mt-3" onclick="choose_file(' + data.id +', false, true);">Upload IGC ignoring quality check & G record</button>'
+        $('#progress'+ data.id).hide();
+        data.message.Result = '<button id="TrackUp_noV' + data.id  +'" class="btnupload btn btn-warning mt-3" onclick="choose_file(' + data.id +', false, true);">Upload IGC ignoring quality check & G record</button>';
         update_row(data.message);
+        toastr.warning(data.message.text, 'Track not Valid', {timeOut: 5000});
       }, false);
       es.addEventListener('g_record_fail', function(event) {
-        var data = JSON.parse(event.data);
+        let data = JSON.parse(event.data);
         data.message = JSON.parse(data.message);
         $('#ABS'+ data.id).show();
         $('#MD'+ data.id).show();
@@ -512,9 +546,10 @@ $(document).ready(function(){
         $('#TrackUp'+ data.id).show();
         $('#upload_box'+ data.id).show();
         $('#filediv'+ data.id).hide();
-        $('#progress_percentage'+ data.id).hide();
-        data.message.Result = '<button id="TrackUp_noG' + data.id  +'" class="btnupload btn btn-warning mt-3" onclick="choose_file(' + data.id +', true);">Upload IGC ignoring G record</button>'
+        $('#progress'+ data.id).hide();
+        data.message.Result = '<button id="TrackUp_noG' + data.id  +'" class="btnupload btn btn-warning mt-3" onclick="choose_file(' + data.id +', true);">Upload IGC ignoring G record</button>';
         update_row(data.message);
+        toastr.warning(data.message.text, 'G Record Fail', {timeOut: 5000});
       }, false);
       es.addEventListener('reload', function(event) {
         clear_flashed_messages();

@@ -1140,13 +1140,14 @@ def _delete_track(trackid):
 
 @blueprint.route('/_upload_track/<int:taskid>/<int:parid>', methods=['POST'])
 @login_required
+@editor_required
 def _upload_track(taskid: int, parid: int):
     if request.method == "POST":
         if request.files:
             if "filesize" in request.cookies:
                 if not frontendUtils.allowed_tracklog_filesize(request.cookies["filesize"]):
                     print("Filesize exceeded maximum limit")
-                    return redirect(request.url)
+                    return jsonify(success=False, error="Filesize exceeded maximum limit")
                 check_g_record = session['check_g_record']
                 check_validity = True
 
@@ -1159,21 +1160,21 @@ def _upload_track(taskid: int, parid: int):
                     check_g_record = False
                 else:
                     tracklog = request.files["tracklog"]
+
                 if tracklog.filename == "":
                     print("No filename")
-                    return redirect(request.url)
+                    return jsonify(success=False, error="File has no filename")
 
                 if frontendUtils.allowed_tracklog(tracklog.filename):
                     resp, error = frontendUtils.process_igc(taskid, parid, tracklog, current_user.username,
                                                             check_g_record, check_validity)
                     return jsonify(success=resp, error=error)
-                else:
-                    print("That file extension is not allowed")
-                    return redirect(request.url)
-            resp = {'error': 'filesize not sent'}
-            return resp
-        resp = {'error': 'request.files'}
-        return resp
+
+                print("That file extension is not allowed")
+                return jsonify(success=False, error="File extension not allowed")
+
+            return jsonify(success=False, error="filesize not sent or file has no size")
+        return jsonify(success=False, error="File not found")
 
 
 @blueprint.route('/_get_xcontest_tracks/<int:taskid>', methods=['POST'])
