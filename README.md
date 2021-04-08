@@ -9,13 +9,14 @@ Web middle layer & front end has been ported to flask/jquery using flask cookie 
 
 ### Features:
 GAP based Paragliding and Hang Gliding scoring from IGC files.
-- Formulas are defined in script files which makes implementing new variants easy. (current formulas are GAP 2016-2020 and PWC 2016, 17, 19)
+- Formulas are defined in script files which makes implementing new variants easy. (current formulas are GAP 2016-2021 and PWC 2016, 17, 19)
 - Scorekeeper access to setup competitions and score tasks.
 - Competition scoring with task scores and overall scores publishable to public area of website.
 - Airspace infringement detection and penalty application
 - Interactive tracklog and task maps
 - Ability to have an in house database of pilots, waypoints and airspaces for re-use in multiple competitions
 - Live leaderboard and scoring from live tracking servers. (e.g. Flymaster)
+- Tracks download status before results are published
 
 The GAP rules have changed over the years. Here are the features that
 airscore includes or not.
@@ -34,6 +35,7 @@ airscore includes or not.
         - [x] GAP2016
         - [x] GAP2018
         - [x] GAP2020
+        - [x] GAP2021
     - [ ] PWC (GAP variant)
         - [ ] PWC2007
         - [ ] PWC2008
