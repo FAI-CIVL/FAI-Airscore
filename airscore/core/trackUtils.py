@@ -460,9 +460,10 @@ def check_flight(result: FlightResult, track: Flight, task, airspace=None, print
 
 
 def save_igc_file(file, task_path: str, task_date, pilot_name, pid: int = None) -> str:
+    from shutil import copyfile
     fullname = create_igc_filename(task_path, task_date, pilot_name, pid)
     if isinstance(file, (Path, str)):
-        file.rename(fullname)
+        copyfile(file, fullname)
     else:
         file.save(fullname)
     return Path(fullname).name
