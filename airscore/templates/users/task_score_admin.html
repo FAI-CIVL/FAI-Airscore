@@ -64,7 +64,7 @@ Task Scoring Admin
         <button id='lock_task_button' class='btn {% if task_info.locked %} btn-warning {% else %} btn-info {% endif %}' onclick="" type='button'>
           {% if task_info.locked %} Unlock Task {% else %} Make Official {% endif %}
         </button>
-        <h5 class="mt-2 ml-3 {% if task_info.locked %} text-warning {% else %} text-info {% endif %}">{% if task_info.locked %} Results will become Provisional. {% else %} This will lock task, avoiding changes is settings, tracks and results. {% endif %}</h5>
+        <h5 class="mt-2 ml-3 {% if task_info.locked %} text-warning {% else %} text-info {% endif %}">{% if task_info.locked %} Results will become Provisional. {% else %} This will lock task settings, tracks and results. {% endif %}</h5>
       </section>
       {% endif %}
       <section class="tab-row row-wrap form">
