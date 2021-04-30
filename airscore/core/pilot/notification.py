@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 
 from db.conn import db_session
 from db.tables import TblNotification as N
@@ -15,6 +15,9 @@ class Notification:
     @staticmethod
     def from_dict(d: dict):
         return Notification(**d)
+
+    def as_dict(self) -> dict:
+        return asdict(self)
 
 
 def get_notifications(pilot):
