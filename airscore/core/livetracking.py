@@ -33,8 +33,10 @@ from task import Task
 
 '''parameters for livetracking'''
 config = igc_parsing_config_from_yaml('smartphone')
-config.max_flight_speed = 250  # Km/k
-config.max_still_seconds = 60  # max consecutive seconds under min speed not to be considered landed
+config.max_flight_speed = 250  # Km/h
+config.max_still_seconds = 30  # max consecutive seconds under min speed not to be considered landed
+config.time_after_deadline = 180  # (sec) time after deadline at which livetrack can be stopped
+config.min_distance = 100  # meters max distance from launch not to be considered airborne if fast enough
 config.min_alt_difference = 50  # meters min altitude difference not to be considered landed
 
 
