@@ -1590,11 +1590,15 @@ def import_participants_from_fsdb(comp_id: int, file: Path, from_CIVL=False) -> 
         return dict(success=False, error='Internal error trying to parse FSDB file.')
 
 
-def import_participants_from_excel_file(comp_id: int, excel_file: Path) -> dict:
+def import_participants_from_excel_file(comp_id: int, excel_file: Path, comp_class: str = None) -> dict:
     from pilot.participant import unregister_all, extract_participants_from_excel, mass_import_participants
     from ranking import delete_meta
+    from db.tables import TblCompetition as C
 
-    pilots, custom_attributes = extract_participants_from_excel(comp_id, excel_file)
+    if not comp_class:
+        comp_class = C.get_by_id(comp_id).comp_class
+    certs = [el['cert_name'] for el in get_certifications_details().get(comp_class)]
+    pilots, custom_attributes = extract_participants_from_excel(comp_id, excel_file, certs)
     if not pilots:
         return jsonify(success=False, error='Error: not a valid excel file or has no participants.')
     if custom_attributes:

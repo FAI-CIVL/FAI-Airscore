@@ -1877,8 +1877,9 @@ def _upload_participants_excel(compid: int):
                 return jsonify(success=False, error='Error: not a valid excel file.')
             with tempfile.TemporaryDirectory() as tmpdirname:
                 file_path = Path(tmpdirname, excel_file.filename)
+                comp_class = session['comp_class']
                 excel_file.save(file_path)
-                return jsonify(frontendUtils.import_participants_from_excel_file(compid, file_path))
+                return jsonify(frontendUtils.import_participants_from_excel_file(compid, file_path, comp_class))
         except (FileNotFoundError, TypeError, Exception):
             return jsonify(success=False, error='Internal error trying to parse excel file.')
     return jsonify(success=False, error='Error: no file was given.')
