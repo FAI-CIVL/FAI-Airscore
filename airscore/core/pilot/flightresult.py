@@ -516,11 +516,8 @@ class FlightResult(Participant):
         from result import TaskResult as R
 
         result = {x: getattr(self, x) for x in R.results_list if x in dir(self)}
-        result['notifications'] = [n.__dict__ for n in self.notifications]
-        result['waypoints_achieved'] = [
-            dict(name=w.name, lat=w.lat, lon=w.lon, rawtime=w.rawtime, altitude=w.altitude)
-            for w in self.waypoints_achieved
-        ]
+        result['notifications'] = [n.as_dict() for n in self.notifications]
+        result['waypoints_achieved'] = [w.as_dict() for w in self.waypoints_achieved]
         return result
 
 
