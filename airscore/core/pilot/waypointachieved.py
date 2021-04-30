@@ -35,6 +35,9 @@ class WaypointAchieved:
             d['wpt_id'] = None
         return WaypointAchieved(**{k: v for k, v in d.items() if k in keys})
 
+    def as_dict(self) -> dict:
+        return dict(name=self.name, lat=self.lat, lon=self.lon, rawtime=self.rawtime, altitude=self.altitude)
+
 
 def get_waypoints_achieved(track_id):
     """retrieves a WaypointAchieved obj list for track_id result"""
