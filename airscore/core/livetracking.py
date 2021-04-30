@@ -25,7 +25,10 @@ from pathlib import Path
 from airspace import AirspaceCheck
 from logger import Logger
 from pilot.flightresult import FlightResult
+from pilot.notification import Notification
+from pilot.waypointachieved import WaypointAchieved
 from trackUtils import create_igc_filename, igc_parsing_config_from_yaml
+from igc_lib import GNSSFix
 from task import Task
 
 '''parameters for livetracking'''
@@ -33,7 +36,78 @@ config = igc_parsing_config_from_yaml('smartphone')
 config.max_flight_speed = 250  # Km/k
 config.max_still_seconds = 60  # max consecutive seconds under min speed not to be considered landed
 config.min_alt_difference = 50  # meters min altitude difference not to be considered landed
-config.min_fixes = 5  # min number of fixes to be considered a valid livetrack chunk
+
+
+class LiveFix(GNSSFix):
+    """GNSSFix from igc_lib, a little easier to initialise, adding alt attribute as gps alt if not specified"""
+    def __init__(self, rawtime, lat, lon, press_alt, gnss_alt, alt=None, height=None, speed=None, index=None):
+        self.alt = alt or gnss_alt
+        self.height = height
+        self.speed = speed
+
+        super().__init__(rawtime=rawtime, lat=lat, lon=lon, validity='A',
+                         press_alt=press_alt, gnss_alt=gnss_alt, index=index, extras='')
+
+
+class LiveResult(FlightResult):
+    """FlightResult from pilot.flightresult, adding livetracking attributes and methods used in livetracking"""
+    def __init__(self, livetrack: list = None, suspect_landing_fix: LiveFix = None, live_comment: str = None, **kwargs):
+        super(LiveResult, self).__init__(**kwargs)
+        self.livetrack = livetrack or []
+        self.suspect_landing_fix = suspect_landing_fix
+        self.live_comment = live_comment
+
+    @staticmethod
+    def from_result(d: dict):
+        """ creates a LiveResult obj. from result dict in Livetracking json file"""
+
+        p = LiveResult()
+        p.as_dict().update(d)
+        p.waypoints_achieved = [WaypointAchieved.from_dict(d) for d in p.waypoints_achieved]
+        p.notifications = [Notification.from_dict(d) for d in p.notifications]
+        if isinstance(p.suspect_landing_fix, dict):
+            fix = p.suspect_landing_fix
+            p.suspect_landing_fix = LiveFix(**fix)
+
+    def update_from_result(self, d: dict):
+        """ creates a LiveResult obj. from result dict in Livetracking json file"""
+
+        self.as_dict().update(d)
+        self.waypoints_achieved = [WaypointAchieved.from_dict(d) for d in self.waypoints_achieved]
+        self.notifications = [Notification.from_dict(d) for d in self.notifications]
+        if isinstance(self.suspect_landing_fix, dict):
+            fix = self.suspect_landing_fix
+            self.suspect_landing_fix = LiveFix(**fix)
+
+    def create_result_dict(self):
+        """ creates dict() with all information"""
+
+        result = {x: getattr(self, x) for x in LiveTracking.results_list if x in dir(self)}
+        result['notifications'] = [n.as_dict() for n in self.notifications]
+        result['waypoints_achieved'] = [w.as_dict() for w in self.waypoints_achieved]
+        result['suspect_landing_fix'] = None
+        if self.suspect_landing_fix:
+            f = self.suspect_landing_fix
+            result['suspect_landing_fix'] = dict(rawtime=f.rawtime, lat=f.lat, lon=f.lon, press_alt=f.press_alt,
+                                                 gnss_alt=f.gnss_alt, alt=f.alt, speed=f.speed, index=f.index)
+
+        return result
+
+
+class LiveTask(Task):
+    """Task from task, with methods to get LiveResult Obj instead of FlightResult"""
+    def __init__(self, **kwargs):
+
+        super().__init__(**kwargs)
+
+    def get_results(self):
+        """ Loads all FlightResult obj. into Task obj."""
+
+        pilots = get_task_results(self.id)
+        if self.stopped_time:
+            for p in pilots:
+                p.still_flying_at_deadline = p.stopped_distance > 0
+        self.pilots = pilots
 
 
 class LiveTracking(object):
