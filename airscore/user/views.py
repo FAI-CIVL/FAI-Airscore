@@ -2216,6 +2216,19 @@ def _get_lt_info(taskid: int):
 
 @blueprint.route('/_start_task_livetracking/<int:taskid>', methods=['GET', 'POST'])
 @login_required
-def _start_task_livetracking(taskid: int):
-    job_id = frontendUtils.start_livetracking(taskid)
-    return jsonify(success=True, job_id=job_id)
+def start_task_livetracking(taskid: int):
+
+    job = frontendUtils.start_livetracking(taskid, username=current_user.username)
+    scheduled = False
+    error = None
+    status = None
+    resp = None
+    if job:
+        j = current_app.task_queue.fetch_job(job.id)
+        status = j.get_status()
+
+        if job.is_failed:
+            error = job.exc_info.strip().split('\n')[-1]
+    else:
+        error = f'Error trying to start LT service, job_id={job.id}'
+    return jsonify(success=bool(job.id and resp), job_id=job.id, error=error, status=status, status2=resp, scheduled=scheduled)

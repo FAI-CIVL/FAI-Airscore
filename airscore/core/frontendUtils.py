@@ -2162,20 +2162,147 @@ def save_airspace_check(comp_id: int, task_id: int, obj: dict) -> bool:
         return False
 
 
-def start_livetracking(task_id: int):
+def start_livetracking(task_id: int, username: str, interval: int = 60):
+    import rq
     if production():
-        job_id = f'job_livetracking_task_{task_id}'
-        job = current_app.task_queue.enqueue(run_livetracking_background,
-                                             task_id,
-                                             job_id=job_id,
-                                             job_timeout=36000)
-        return job.get_id()
+        q = current_app.task_queue
+        job_id = f'job_start_livetracking_task_{task_id}'
+        job = q.enqueue(
+            start_livetracking_background,
+            args=(
+                task_id,
+                username,
+                interval
+            ),
+            job_id=job_id,
+            retry=rq.Retry(max=3),
+            job_timeout=180
+        )
+        return job
+    return None
 
 
-def run_livetracking_background(task_id: int):
+def start_livetracking_background(task_id: int, username: str, interval: int):
     from livetracking import LiveTracking
+
+    print = partial(print_to_sse, id=task_id, channel=username)
+
     lt = LiveTracking.read(task_id)
-    lt.run()
+    if lt:
+        task_name = lt.task.task_name
+        if lt.filename.exists():
+            lt.run()
+            print(f'{task_name}: Livetracking Restored|livetracking')
+        else:
+            lt.create()
+            print(f'{task_name}: Livetracking Started|livetracking')
+        '''schedule livetracking after task window is open'''
+        if lt.opening_timestamp > lt.timestamp + interval:
+            delay = int(lt.opening_timestamp - lt.timestamp)
+            call_livetracking_scheduling_endpoint(task_id, username, interval, delay)
+        else:
+            call_livetracking_scheduling_endpoint(task_id, username, interval)
+    else:
+        print(f'Error creating Livetracking (task ID {task_id}|livetracking')
+
+
+def call_livetracking_scheduling_endpoint(task_id: int, username: str, interval: int, delay: int = 0):
+    import time
+
+    job_id = f'job_{int(time.time())}_livetracking_task_{task_id}'
+    data = {'taskid': task_id, 'job_id': job_id, 'username': username, 'interval': interval, 'delay': delay}
+    url = f"http://{environ.get('FLASK_CONTAINER')}:" f"{environ.get('FLASK_PORT')}/internal/_progress_livetrack"
+
+    try:
+        resp = requests.post(
+            url,
+            json=data,
+            timeout=2
+        )
+    except requests.exceptions.ReadTimeout:
+        return 'Timed Out'
+    return job_id, resp.content
+
+
+def call_livetracking_stopping_endpoint(task_id: int, username: str):
+
+    data = {'taskid': task_id, 'username': username}
+    url = f"http://{environ.get('FLASK_CONTAINER')}:" f"{environ.get('FLASK_PORT')}/internal/_stop_livetrack"
+
+    try:
+        resp = requests.post(
+            url,
+            json=data,
+            timeout=2
+        )
+    except requests.exceptions.ReadTimeout:
+        return 'Timed Out'
+    return resp.content
+
+
+def schedule_livetracking(task_id: int, job_id: str, username: str, interval: int = 60, delay: int = 0):
+    import rq
+    from datetime import timedelta
+    if production():
+        q = current_app.task_queue
+        job = q.enqueue_in(
+            timedelta(seconds=interval+delay),
+            process_livetracking_background,
+            args=(
+                task_id,
+                username,
+                interval
+            ),
+            job_id=job_id,
+            retry=rq.Retry(max=3),
+            job_timeout=180
+        )
+        return job
+
+
+def process_livetracking_background(task_id: int, username: str, interval: int):
+    from livetracking import LiveTracking
+    from rq import get_current_job
+    print = partial(print_to_sse, id=task_id, channel=username)
+    job_id = get_current_job().id
+    lt = LiveTracking.read(task_id)
+
+    if lt.properly_set:
+        results = lt.run(interval)
+        '''return final track results via sse'''
+        for data in results:
+            print(json.dumps(data) + '|result')
+
+    print(f"{lt.task.task_name}: {lt.status}|livetracking")
+    if lt.finished:
+        print(f"{lt.task.task_name}: Stopping Livetrack|livetracking")
+        lt.finalise()
+        '''cancel livetracking schedules. Should not be needed'''
+        call_livetracking_stopping_endpoint(task_id, username)
+    else:
+        '''schedule next livetracking run'''
+        call_livetracking_scheduling_endpoint(task_id, username, interval)
+
+
+def stop_livetracking(task_id: int, username: str):
+    """ To stop livetracking, we stop currently working job and cancel scheduled job from queue"""
+    from rq import cancel_job
+
+    if production():
+        q = current_app.task_queue
+        sched = q.scheduled_job_registry
+        failed = q.failed_job_registry
+        job_id = f'livetracking_task_{task_id}'
+        '''stopping running job'''
+        for el in (j for j in sched.get_job_ids() if j.endswith(job_id)):
+            cancel_job(el, current_app.redis)
+        '''removing job from failed registry to avoid retry'''
+        for el in (j for j in failed.get_job_ids() if j.endswith(job_id)):
+            failed.remove(el, delete_job=True)
+        '''removing job from scheduled registry and delete the job'''
+        for el in (j for j in sched.get_job_ids() if j.endswith(job_id)):
+            sched.remove(el, delete_job=True)
+        return True
 
 
 def create_new_comp(comp, user_id: int) -> dict:
