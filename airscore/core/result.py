@@ -161,7 +161,7 @@ class TaskResult:
         'SSS_time',
         'ESS_time',
         'ESS_rank',
-        'turnpoints_made',
+        'waypoints_made',
         'waypoints_achieved',
         'distance_score',
         'time_score',
@@ -789,7 +789,7 @@ def get_country_list(countries: set = None, iso: int = None) -> list:
     return CC.get_list(countries=countries, iso=iso)
 
 
-def open_json_file(filename: str):
+def open_json_file(filename: str or Path):
     import jsonpickle
 
     try:
