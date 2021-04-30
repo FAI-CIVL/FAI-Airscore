@@ -58,7 +58,7 @@ services:
     image: master-image
     depends_on:
       - redis
-    command: rqworker --name worker --url ${REDIS_CONTAINER}://${REDIS_CONTAINER}:6379/0 ${RQ_QUEUE}
+    command: rqworker --with-scheduler --name worker --url ${REDIS_CONTAINER}://${REDIS_CONTAINER}:6379/0 ${RQ_QUEUE}
     environment:
       FLASK_CONTAINER: ${FLASK_CONTAINER}
       FLASK_PORT: ${FLASK_PORT}

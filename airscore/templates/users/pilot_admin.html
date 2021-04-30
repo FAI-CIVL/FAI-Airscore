@@ -93,9 +93,13 @@ Pilot Admin
         <h4 style='float:left'>Registered {% if pilotdb %}External {% endif %}Pilots:</h4>
         <h4 id='total_external_pilots'></h4>
         {% if session.is_editor %}
+        {% if already_scored %}
+        <h5 class="alert alert-warning mt-2 mb-2">There are already pilots results, you cannot delete participants.</h5>
+        {% endif %}
         <button id='manual_add_pilot_button' class='btn btn-success ml-4' onclick="add_participant()">
           Add a pilot
         </button>
+        {% if not already_scored %}
         <button id='Excel_button' class='btn btn-success ml-4' data-toggle='modal' data-target='#excel_modal'>
           Upload Excel file
         </button>
@@ -105,6 +109,11 @@ Pilot Admin
         <button id='delete_external' data-toggle='modal' data-target='#delete_modal' class='btn btn-danger ml-4'>Remove
           All
         </button>
+        {% else %}
+        <button class='btn btn-secondary ml-4'>Upload Excel file</button>
+        <button class='btn btn-secondary ml-4'>Upload FSDB file</button>
+        <button class='btn btn-secondary ml-4'>Remove All </button>
+        {% endif %}
         {% endif %}
       </div>
     </div>

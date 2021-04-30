@@ -199,7 +199,7 @@ class Participant(Pilot):
                 return None
 
 
-def extract_participants_from_excel(comp_id: int, filename, from_CIVL=False):
+def extract_participants_from_excel(comp_id: int, filename, certs: list, from_CIVL=False):
     """Gets participants from external file (Airtribune Participants list in Excel format;
     Returns a list of Participant objects
     Input:
@@ -237,6 +237,11 @@ def extract_participants_from_excel(comp_id: int, filename, from_CIVL=False):
     '''custom attributes'''
     col = 15
     custom_attributes = []
+    '''check if class column has correct glider certification, otherwise add a class custom attribute'''
+    classes = set(r[0] for r in sheet.iter_rows(min_row=2, min_col=13, max_col=13, values_only=True) if r[0])
+    classes_are_certs = all(c in certs for c in classes)
+    if not classes_are_certs and len(classes) > 0:
+        custom_attributes.append(CompAttribute(comp_id=comp_id, attr_key='meta', attr_value='class'))
     while True:
         value = sheet.cell(1, col).value
         if not value:
@@ -255,11 +260,16 @@ def extract_participants_from_excel(comp_id: int, filename, from_CIVL=False):
             pil = create_participant_from_CIVLID(row[9])
         if pil is None:
             pil = Participant(civl_id=row[9], name=abbreviate(row[1]), nat=row[2], sex='F' if row[3] == 1 else 'M')
+        if custom_attributes:
+            pil.attributes = []
         pil.ID = row[0]
         pil.comp_id = comp_id
         pil.birthdate = None if row[4] is None else row[4].date()  # row[4] should be datetime
         pil.glider = abbreviate(row[5]) or None
-        pil.glider_cert = row[12]
+        if classes_are_certs:
+            pil.glider_cert = row[12]
+        elif len(classes) > 0:
+            pil.attributes.append({'attr_value': 'class', 'meta_value': row[12]})
         pil.sponsor = abbreviate(row[7]) or None
         pil.team = row[11]
         pil.fai_id = row[8]
@@ -267,8 +277,8 @@ def extract_participants_from_excel(comp_id: int, filename, from_CIVL=False):
         pil.live_id = row[13]
         '''custom attributes'''
         if custom_attributes:
-            pil.attributes = []
-            for idx, el in enumerate(custom_attributes):
+            # pil.attributes = []
+            for idx, el in enumerate(c for c in custom_attributes if not c.attr_value == 'class'):
                 pil.attributes.append({'attr_value': el.attr_value, 'meta_value': row[14+idx]})
         pilots.append(pil)
 

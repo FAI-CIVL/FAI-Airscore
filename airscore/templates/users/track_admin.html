@@ -1,12 +1,11 @@
 {% extends "base_admin.html"%}
 
 {% block page_title %}
-  Track Management
+Track Management
 {% endblock %}
 
 {% block css %}
 <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet"/>
-<link href="{{ static_url_for('static', filename='css/task.css') }}" rel="stylesheet">
 {% endblock %}
 
 {% block back %}
@@ -33,7 +32,6 @@
 {% endblock %}
 
 {% block content %}
-
 {% if not session.is_editor %}
 <h2>You are not authorised to access this page as you are not a scorekeeper of this competition</h2>
 
@@ -48,9 +46,11 @@
   <button id='{{ task_info.track_source }}_button' class='btn btn-primary ml-2' onclick='get_{{ task_info.track_source }}_tracks()'>
     {{ task_info.track_source|title }}
   </button>
+  {% if task_info.lt_active is defined %}
   <button id='livetracking_button' class='btn btn-primary ml-2'>
     Live Tracking
   </button>
+  {% endif %}
   {% endif %}
   {% if telegram %}
   <button id='telegram_button' class='btn btn-primary ml-2' onclick='send_telegram({{ taskid }});'>
@@ -74,13 +74,12 @@
 </div>
 
 <div class='container' id='main'>
-  <br>
+  <br />
   <table id='tracks' class='row-border stripe compact mb-1' cellspacing='0' width='100%'>
     <thead>
     <tr>
       <th>ID</th>
       <th>Name</th>
-      <!--            <th>Status</th>-->
       <th>Result</th>
       <th></th>
     </tr>
@@ -120,7 +119,7 @@
     </div>
   </div>
 </div>
-<!-bulk-Modal ends here--->
+<!-- bulk-Modal ends here--->
 
 <!-- process log Modal starts here -->
 <div class='modal fade' id='ProcessModal' tabindex='-1' role='dialog' aria-labelledby='ProcessModalTitle'
@@ -171,21 +170,18 @@
   </div>
 </div>
 <!--- livetracking details Modal ends here--->
-
 {% endif %}
 {% endblock %}
 
 {% if session.is_editor %}
 {% block js %}
-<!--<script src="{{ static_url_for('static', filename='js/jquery.initialize.js') }}"></script>-->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 <script src="{{ static_url_for('static', filename='js/utils.js') }}"></script>
-<script src="{{ static_url_for('static', filename='js/pop_track_admin.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.ui.widget.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.iframe-transport.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/jquery-file-upload/jquery.fileupload.js') }}"></script>
-<!--<script src="{{ static_url_for('static', filename='js/jquery-alert.js') }}"></script>-->
-<script>
+<script src="{{ static_url_for('static', filename='js/pop_track_admin.js') }}"></script>
+<script type=text/javascript>
   var production = {{ production|tojson }};
   var taskid = {{ taskid|tojson }};
   var task_info = {{ task_info|tojson }};
@@ -195,5 +191,4 @@
   var url_sse_stream = "{{ url_for('sse.stream', channel=current_user.username)}}";
 </script>
 {% endblock %}
-{% endif%}
-
+{% endif %}

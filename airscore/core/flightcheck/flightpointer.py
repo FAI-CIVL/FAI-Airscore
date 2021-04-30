@@ -57,6 +57,14 @@ class FlightPointer(object):
         return self.descriptions[self.pointer]
 
     @property
+    def launch(self):
+        return next((x for x in self.turnpoints if x.type == 'launch'), None)
+
+    @property
+    def goal(self):
+        return next((x for x in self.turnpoints if x.type == 'goal'), None)
+
+    @property
     def total_number(self):
         return len(self.turnpoints)
 

@@ -1098,14 +1098,19 @@ def _get_tracks_processed(taskid: int):
 @session_task
 @state_messages
 def track_admin(taskid: int):
-    from Defines import TELEGRAM
-    task = next((t for t in session['tasks'] if t['task_id'] == taskid), None)
+    from Defines import TELEGRAM, LIVETRACKDIR
     compid = int(session['compid'])
+
+    '''check livetracking availability'''
+    if session['task'].get('track_source') == 'flymaster':
+        session['task']['lt_active'] = False
+        if Path(LIVETRACKDIR, str(taskid)).is_file():
+            session['task']['lt_active'] = True
 
     formats = frontendUtils.get_igc_filename_formats_list()
 
     return render_template('users/track_admin.html', taskid=taskid, compid=compid, filename_formats=formats,
-                           production=frontendUtils.production(), task_info=task, telegram=TELEGRAM)
+                           production=frontendUtils.production(), task_info=session['task'], telegram=TELEGRAM)
 
 
 @blueprint.route('/_set_result/<int:taskid>', methods=['POST'])
@@ -1782,13 +1787,15 @@ def pilot_admin(compid: int):
                                               for x in frontendUtils.get_certifications_details()[comp.comp_class]]
 
     attributes = CompAttribute.read_meta(compid)
+    already_scored = frontendUtils.comp_has_taskresults(compid)
 
     if session['external']:
         '''External Event'''
         flash(f"This is an External Event. Settings and Results are Read Only.", category='warning')
 
     return render_template('users/pilot_admin.html', compid=compid, track_source=comp.track_source,
-                           participant_form=participant_form, pilotdb=PILOT_DB, attributes=attributes)
+                           participant_form=participant_form, pilotdb=PILOT_DB, attributes=attributes,
+                           already_scored=already_scored)
 
 
 @blueprint.route('/_modify_participant_details/<int:parid>', methods=['POST'])
@@ -1877,8 +1884,9 @@ def _upload_participants_excel(compid: int):
                 return jsonify(success=False, error='Error: not a valid excel file.')
             with tempfile.TemporaryDirectory() as tmpdirname:
                 file_path = Path(tmpdirname, excel_file.filename)
+                comp_class = session['comp_class']
                 excel_file.save(file_path)
-                return jsonify(frontendUtils.import_participants_from_excel_file(compid, file_path))
+                return jsonify(frontendUtils.import_participants_from_excel_file(compid, file_path, comp_class))
         except (FileNotFoundError, TypeError, Exception):
             return jsonify(success=False, error='Internal error trying to parse excel file.')
     return jsonify(success=False, error='Error: no file was given.')
@@ -2184,35 +2192,63 @@ def _get_lt_info(taskid: int):
     from Defines import LIVETRACKDIR
     from result import open_json_file
     from calcUtils import epoch_to_string
-    job_id = f'job_livetracking_task_{taskid}'
-    job = current_app.task_queue.fetch_job(job_id)
-    if job is None:
-        '''check if we have a lt file'''
-        if Path(LIVETRACKDIR, str(taskid)).is_file():
-            data = open_json_file(Path(LIVETRACKDIR, str(taskid)))
-            timestamp = epoch_to_string(data['file_stats']['timestamp'], data['info']['time_offset'])
-            resp = {
-                'success': True,
-                'status': 'ended',
-                'meta': {'timestamp': timestamp }
-            }
-        else:
-            resp = {'success': False, 'status': 'unknown'}
-    elif job.is_failed:
-        resp = {'success': False, 'error': job.exc_info.strip().split('\n')[-1]}
-    else:
-        resp = {
-            'success': True,
-            'status': job.get_status(),
-            'meta': job.meta,
-            'result': job.result,
+
+    started = False
+    timestamp = None
+    scheduled = False
+    finished = False
+    error = False
+    q = current_app.task_queue
+    sched = q.scheduled_job_registry
+    ended = q.finished_job_registry
+    failed = q.failed_job_registry
+    job_id = f'livetracking_task_{taskid}'
+
+    '''check if LT started'''
+    if Path(LIVETRACKDIR, f'{taskid}').is_file():
+        started = True
+        data = open_json_file(Path(LIVETRACKDIR, f'{taskid}'))
+        timestamp = epoch_to_string(data['file_stats']['timestamp'])
+        finished = 'terminated' in data['file_stats']['status']
+
+        '''check if LT is scheduled'''
+        if any(el.endswith(job_id) for el in sched.get_job_ids()):
+            # sjob = q.fetch(next(el.endswith(job_id) for el in sched.get_job_ids()))
+            sjob_id = next(el for el in sched.get_job_ids() if el.endswith(job_id))
+            scheduled = sched.get_scheduled_time(sjob_id)
+        elif any(el.endswith(job_id) for el in failed.get_job_ids()):
+            sjob = q.fetch(next(el for el in failed.get_job_ids() if el.endswith(job_id)))
+            error = sjob.exc_info.strip().split('\n')[-1]
+
+    resp = {
+        'success': started and (scheduled or finished),
+        'status': dict(updated=timestamp, scheduled=scheduled, finished=finished),
+        'error': error,
+        'registry': {
+            'finished': [el for el in ended.get_job_ids() if el.endswith(job_id)],
+            'failed': [el for el in failed.get_job_ids() if el.endswith(job_id)],
+            'scheduled': [f"{el}: {sched.get_scheduled_time(el)}" for el in sched.get_job_ids() if el.endswith(job_id)]
         }
+    }
 
     return jsonify(resp)
 
 
 @blueprint.route('/_start_task_livetracking/<int:taskid>', methods=['GET', 'POST'])
 @login_required
-def _start_task_livetracking(taskid: int):
-    job_id = frontendUtils.start_livetracking(taskid)
-    return jsonify(success=True, job_id=job_id)
+def start_task_livetracking(taskid: int):
+
+    job = frontendUtils.start_livetracking(taskid, username=current_user.username)
+    scheduled = False
+    error = None
+    status = None
+    resp = None
+    if job:
+        j = current_app.task_queue.fetch_job(job.id)
+        status = j.get_status()
+
+        if job.is_failed:
+            error = job.exc_info.strip().split('\n')[-1]
+    else:
+        error = f'Error trying to start LT service, job_id={job.id}'
+    return jsonify(success=bool(job.id and resp), job_id=job.id, error=error, status=status, status2=resp, scheduled=scheduled)

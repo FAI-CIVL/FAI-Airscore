@@ -4,6 +4,8 @@ from formulas.libs.leadcoeff import LeadCoeff
 from igc_lib import FlightParsingConfig
 from pilot.flightresult import FlightResult
 from pilot.waypointachieved import WaypointAchieved
+from livetracking import LiveResult, LiveFix, reset_igc_file
+from pathlib import Path
 from route import (
     distance,
     distance_flown,
@@ -19,7 +21,7 @@ from .flightpointer import FlightPointer
 
 
 def check_fixes(
-    result: FlightResult,
+    result: FlightResult or LiveResult,
     fixes: list,
     task: Task,
     tp: FlightPointer,
@@ -30,7 +32,9 @@ def check_fixes(
     deadline: int = None,
     print=print,
 ):
-    """"""
+    """ In normal track mode, checks an IGC track fixes against the Task route.
+        In livetracking mode, checks a list of fixes against the LiveTask route
+        """
     '''initialize'''
     total_fixes = len(fixes)
     tolerance = task.formula.tolerance or 0
@@ -89,38 +93,39 @@ def check_fixes(
             speed = next_fix.speed  # km/h
             if not result.first_time:
                 '''not launched yet'''
-                launch = next(x for x in tp.turnpoints if x.type == 'launch')
-                if (
-                    abs(launch.altitude - alt) > igc_parsing_config.min_alt_difference
-                    and speed > igc_parsing_config.min_gsp_flight
-                ):
+                if evaluate_launched(next_fix, tp.launch, igc_parsing_config):
                     '''pilot launched'''
                     result.first_time = next_fix.rawtime
                     result.live_comment = 'flying'
+                    print(f"{result.name}: LAUNCHED {next_fix.rawtime} first_time {result.first_time}")
                 else:
                     '''still on launch'''
                     continue
 
             else:
-                '''check if pilot landed'''
-                if speed < igc_parsing_config.min_gsp_flight:
-                    if not result.suspect_landing_fix:
-                        result.suspect_landing_fix = next_fix
-                        # suspect_landing_alt = alt
-                    else:
-                        time_diff = next_fix.rawtime - result.suspect_landing_fix.rawtime
-                        alt_diff = abs(alt - result.suspect_landing_fix.alt)
-                        if (
-                            time_diff > igc_parsing_config.max_still_seconds
-                            and alt_diff < igc_parsing_config.min_alt_difference
-                        ):
+                '''check if pilot landed
+                to avoid inconsistency with pilots landing on takeoff to address a problem, 
+                we reset pilot for restart if landed in takeoff aea before start opening'''
+                if evaluate_landed(result, next_fix, config=igc_parsing_config):
+                    print(f"{result.name}: SEEMS LANDED {next_fix}")
+                    '''checking track'''
+                    landing_fix = get_landing_fix(Path(task.file_path, result.track_file))
+                    if landing_fix:
+                        '''cope with top landing and restart'''
+                        if not tp.start_done and next_fix.distance_to(tp.launch) < 1:  # kilometers from launch
+                            result.first_time = None
+                            result.distance_flown = 0
+                            result.live_comment = 'top-landed'
+                            '''deleting previous fixes from track file'''
+                            reset_igc_file(result, task)
+                        else:
                             '''assuming pilot landed'''
                             result.landing_time = next_fix.rawtime
                             result.landing_altitude = alt
                             result.live_comment = 'landed'
-                            break
-                elif result.suspect_landing_fix is not None:
-                    result.suspect_landing_fix = None
+                        break
+                    else:
+                        result.suspect_landing_fix = None
         else:
             alt = next_fix.gnss_alt if alt_source == 'GPS' else next_fix.press_alt + alt_compensation
 
@@ -473,3 +478,43 @@ def evaluate_goal(result: FlightResult, task: Task):
             [(x.rawtime, x.altitude) for x in result.waypoints_achieved if x.name == 'Goal'], key=lambda t: t[0]
         )
         result.result_type = 'goal'
+
+
+def evaluate_launched(fix: LiveFix, launch, config: FlightParsingConfig) -> bool:
+    print(f"launch dist. h: {int(fix.distance_to(launch)*1000)} v: {abs(launch.altitude - fix.alt)}, s: {fix.speed}")
+    if (
+            (abs(launch.altitude - fix.alt) > config.min_alt_difference
+             or fix.distance_to(launch) * 1000 > config.min_distance)
+            and fix.speed > config.min_gsp_flight
+    ):
+        print(f"AIRBORNE")
+        return True
+    print(f"not launched")
+    return False
+
+
+def evaluate_landed(p: LiveResult, fix: LiveFix, config: FlightParsingConfig) -> bool:
+    if fix.speed < config.min_gsp_flight:
+        if p.suspect_landing_fix:
+            alt_diff = abs(p.suspect_landing_fix.alt - fix.alt)
+            if alt_diff < config.min_alt_difference:
+                time_diff = fix.rawtime - p.suspect_landing_fix.rawtime
+                print(f"{p.name}: ALT DIFF: {alt_diff} TIME DIFF: {time_diff}")
+                if time_diff > config.max_still_seconds:
+                    '''probably landed'''
+                    return True
+        else:
+            p.suspect_landing_fix = fix
+    elif p.suspect_landing_fix:
+        p.suspect_landing_fix = None
+    return False
+
+
+def get_landing_fix(track: Path, config: FlightParsingConfig = None):
+    from igc_lib import Flight
+    f = Flight.create_from_file(track, config)
+    if f.landing_fix and not f.landing_fix == f.fixes[-1]:
+        print(f"* Flight says pilot is LANDED! Flight landing fix: {f.landing_fix}")
+        return f.landing_fix
+    print(f"* Flight landing fix: Not valid")
+    return None

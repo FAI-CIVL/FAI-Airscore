@@ -215,3 +215,7 @@ function getCookie(cname) {
     }
     return "";
 }
+
+function refresh_popover() {
+    $('[data-toggle="popover"]').popover();
+}
