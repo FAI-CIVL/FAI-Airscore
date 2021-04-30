@@ -865,8 +865,10 @@ def track_result_output(pilot, task_id) -> dict:
             data['Result'] = f'<a href="/map/{pilot.par_id}-{task_id}?back_link=0" target="_blank">{result}</a>'
         if pilot.notifications:
             data['notifications'] = f"{'<br />'.join(n.comment for n in pilot.notifications)}"
-            data['Result'] += f'<a class="text-warning p-1 ml-4" data-toggle="tooltip" ' \
-                              f'title="{data["notifications"]}">[Notes]</a>'
+            data['Result'] += f'<a tabindex="0" class="p-1 ml-2" role="button" data-toggle="popover" ' \
+                              f'data-container="body" data-trigger="focus" data-html="true" data-placement="top" ' \
+                              f'title="Warning" data-content="{data["notifications"]}">' \
+                              f'<span class="fas fa-exclamation-circle text-warning"></span></a>'
 
     return data
 

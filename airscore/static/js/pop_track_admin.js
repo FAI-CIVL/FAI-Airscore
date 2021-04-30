@@ -25,12 +25,12 @@ function populate_track_admin(task_id) {
             return '<span class="btn btn-info">locked<span>';
           }
           else if(data['Result']=='Not Yet Processed' | data['Result'].indexOf("G record") >= 0){
-            var buttons;
+            let buttons;
             buttons =
-             '<button id="ABS' + data.par_id  +'" class="btn btn-primary mt-3" type="button" onclick="set_result(' + data.par_id +',\'abs\')">Set ABS</button> '
-             +'<button id="MD' + data.par_id  +'" class="btn btn-primary mt-3" type="button" onclick="set_result(' + data.par_id +',\'mindist\')">Set Min Dist</button> '
-             +'<button id="DNF' + data.par_id  +'" class="btn btn-primary mt-3" type="button" onclick="set_result(' + data.par_id +',\'dnf\')">Set DNF</button> '
-             +'<button id="TrackUp' + data.par_id  +'" class="btnupload btn btn-primary mt-3" onclick="choose_file(' + data.par_id +');">Upload Track</button>'
+             '<button id="ABS' + data.par_id  +'" class="btn btn-primary mt-1 mb-1" type="button" onclick="set_result(' + data.par_id +',\'abs\')">Set ABS</button> '
+             +'<button id="MD' + data.par_id  +'" class="btn btn-primary mt-1 mb-1" type="button" onclick="set_result(' + data.par_id +',\'mindist\')">Set Min Dist</button> '
+             +'<button id="DNF' + data.par_id  +'" class="btn btn-primary mt-1 mb-1" type="button" onclick="set_result(' + data.par_id +',\'dnf\')">Set DNF</button> '
+             +'<button id="TrackUp' + data.par_id  +'" class="btnupload btn btn-primary mt-1 mb-1" onclick="choose_file(' + data.par_id +');">Upload Track</button>'
              +'<div id="filediv' + data.par_id  +'" class = "hideatstart" > '
              +'<input id="fileupload' + data.par_id +'" type="file" size="chars" class="custom-file-input"  oninput="filesize(this);" data-url="/users/_upload_track/'+ task_id + '/' + data.par_id + '" name="tracklog" >'
              +'<input id="fileupload_NO_G' + data.par_id +'" type="file" size="chars" class="custom-file-input"  oninput="filesize(this);" data-url="/users/_upload_track/'+ task_id + '/' + data.par_id + '" name="tracklog_NO_G" >'
@@ -42,15 +42,20 @@ function populate_track_admin(task_id) {
           else if (data['Result']=='Processing..') {
             return data['file']
           }
-          else {
-            let column = '<button class="btn btn-danger mt-3" type="button" onclick="delete_track('+ data.track_id +','+ data.par_id +')">Delete Track</button> ';
-            if ( !['ABS', 'DNF', 'Min Dist'].includes(data.Result) ) {
-              if (data.outdated) column += '<button class="btn btn-warning mt-3" id="button_check_'+data.par_id+'" type="button" onclick="recheck_track('+ data.track_id +','+ data.par_id +')">Recheck Track</button> ';
-            }
-            return column;
+          else if ( ['ABS', 'DNF', 'Min Dist'].includes(data.Result) ){
+            return '<button class="btn btn-warning mt-1 mb-1" type="button" onclick="delete_track('+ data.track_id +','+ data.par_id +')">Set NYP</button> ';
           }
+          else {
+            let column = '<button class="btn btn-danger mt-1 mb-1" type="button" onclick="delete_track('+ data.track_id +','+ data.par_id +')">Delete Track</button> ';
+            if (data.outdated) column += '<button class="btn btn-warning mt-3" id="button_check_'+data.par_id+'" type="button" onclick="recheck_track('+ data.track_id +','+ data.par_id +')">Recheck Track</button> ';
+            return column
+          }
+        }
       }
-    }],
+    ],
+    drawCallback: function() {
+      refresh_popover()
+    },
     initComplete: function(response) {
       let rows = response.json.data;
       $(".hideatstart").hide();
@@ -77,6 +82,7 @@ function update_row(new_data){
   new_data.name = $('#tracks').DataTable().row( $('tr#id_'+ new_data.par_id)).data()['name'];
   table.fnUpdate(new_data, $('tr#id_'+ new_data.par_id), undefined, false);
   $(".hideatstart").hide();
+  refresh_popover();
   console.log(new_data.ID+' '+new_data.name);
 }
 
@@ -290,25 +296,29 @@ function get_lt_status() {
       $('#lt_modal_button').hide();
       console.log(response);
       if ( response.success ) {
-        $('#lt_details_main').html('STATUS: ' + response.status);
-        if (response.meta) {
-          let data = '';
-          $.each(response.meta, key => {
-            let title = key.replace(/_/g,' ');
-            let value = response.meta[key];
-            if (key == 'last_update') {
-              let time = parseInt(new Date().getTime() / 1000);
-              value = time - parseInt(response.meta[key]);
-            }
-            data += title + ':  <span class="font-weight-bold">' + value + '</span><br />';
-          });
-          $('#lt_details_secondary').html(data);
+        // Livetrack service is currently running for the task
+        let status = 'STATUS: ';
+        let details = 'Updated: ';
+        let info = '';
+        if ( response.status ) {
+          details += (response.status.updated ? response.status.updated + ' (UTC)' : 'Unknown') + '<br />';
+          if ( response.status.finished ) status += 'Terminated <br />'
+          else if ( response.status.scheduled ) {
+            status += 'Running <br />';
+            info = 'Next update schedule: ' + (response.registry.scheduled.length ? response.registry.scheduled[0] : 'Unknown');
+          }
+          else status += 'Unknown';
         }
+        else status += 'Unknown';
+        $('#lt_details_main').html(status + details);
+        $('#lt_details_secondary').html(info);
+
         $('#lt_modal_button').attr("onclick","window.open('/live/"+taskid+"', '_blank')").text('LIVE Rankings').show();
         $('#livetracking_button').removeClass( "btn-primary btn-warning" ).addClass( "btn-success" ).text('Live Tracking Info');
         update_track_pilot_stats();
       }
-      else if ( response.error) {
+      else if ( response.error ) {
+        // Livetrack service started but stopped with errors
         $('#lt_details_main').text('ERROR');
         $('#lt_details_secondary').text(response.error);
         $('#lt_modal_button').attr("onclick","start_livetracking()").text('TRY AGAIN').show();
@@ -316,8 +326,9 @@ function get_lt_status() {
         update_track_pilot_stats();
       }
       else {
+        // Livetrack has not run yet on this task
         $('#lt_details_main').text('Start Live Tracking');
-        $('#lt_details_secondary').text('');
+        $('#lt_details_secondary').html('To start livetrack service, retrieving tracks in real time from ' + task_info.track_source + ', click START');
         $('#lt_modal_button').attr("onclick","start_livetracking()").text('START').show();
         $('#livetracking_button').text('Live Tracking');
         $('#livetracking_button').removeClass( "btn-warning btn-success" ).addClass( "btn-primary" ).text('Live Tracking');
@@ -334,6 +345,7 @@ function start_livetracking() {
     dataType: "json",
     success: function ( response ) {
       $('#lt_modal_button').hide();
+      console.log(response);
       if ( response.success ) {
         $('#livetracking_button').text('Live Tracking Info');
       }
@@ -550,6 +562,12 @@ $(document).ready(function(){
         data.message.Result = '<button id="TrackUp_noG' + data.id  +'" class="btnupload btn btn-warning mt-3" onclick="choose_file(' + data.id +', true);">Upload IGC ignoring G record</button>';
         update_row(data.message);
         toastr.warning(data.message.text, 'G Record Fail', {timeOut: 5000});
+      }, false);
+      es.addEventListener('livetracking', function(event) {
+        let data = JSON.parse(event.data);
+        toastr.success(data.id + ': ' + data.message, 'Live Tracking', {timeOut: 5000});
+        console.log(data.id + ': ' + data.message, 'Live Tracking')
+        get_lt_status();
       }, false);
       es.addEventListener('reload', function(event) {
         clear_flashed_messages();

@@ -1098,14 +1098,19 @@ def _get_tracks_processed(taskid: int):
 @session_task
 @state_messages
 def track_admin(taskid: int):
-    from Defines import TELEGRAM
-    task = next((t for t in session['tasks'] if t['task_id'] == taskid), None)
+    from Defines import TELEGRAM, LIVETRACKDIR
     compid = int(session['compid'])
+
+    '''check livetracking availability'''
+    if session['task'].get('track_source') == 'flymaster':
+        session['task']['lt_active'] = False
+        if Path(LIVETRACKDIR, str(taskid)).is_file():
+            session['task']['lt_active'] = True
 
     formats = frontendUtils.get_igc_filename_formats_list()
 
     return render_template('users/track_admin.html', taskid=taskid, compid=compid, filename_formats=formats,
-                           production=frontendUtils.production(), task_info=task, telegram=TELEGRAM)
+                           production=frontendUtils.production(), task_info=session['task'], telegram=TELEGRAM)
 
 
 @blueprint.route('/_set_result/<int:taskid>', methods=['POST'])
@@ -2187,29 +2192,44 @@ def _get_lt_info(taskid: int):
     from Defines import LIVETRACKDIR
     from result import open_json_file
     from calcUtils import epoch_to_string
-    job_id = f'job_livetracking_task_{taskid}'
-    job = current_app.task_queue.fetch_job(job_id)
-    if job is None:
-        '''check if we have a lt file'''
-        if Path(LIVETRACKDIR, str(taskid)).is_file():
-            data = open_json_file(Path(LIVETRACKDIR, str(taskid)))
-            timestamp = epoch_to_string(data['file_stats']['timestamp'], data['info']['time_offset'])
-            resp = {
-                'success': True,
-                'status': 'ended',
-                'meta': {'timestamp': timestamp }
-            }
-        else:
-            resp = {'success': False, 'status': 'unknown'}
-    elif job.is_failed:
-        resp = {'success': False, 'error': job.exc_info.strip().split('\n')[-1]}
-    else:
-        resp = {
-            'success': True,
-            'status': job.get_status(),
-            'meta': job.meta,
-            'result': job.result,
+
+    started = False
+    timestamp = None
+    scheduled = False
+    finished = False
+    error = False
+    q = current_app.task_queue
+    sched = q.scheduled_job_registry
+    ended = q.finished_job_registry
+    failed = q.failed_job_registry
+    job_id = f'livetracking_task_{taskid}'
+
+    '''check if LT started'''
+    if Path(LIVETRACKDIR, f'{taskid}').is_file():
+        started = True
+        data = open_json_file(Path(LIVETRACKDIR, f'{taskid}'))
+        timestamp = epoch_to_string(data['file_stats']['timestamp'])
+        finished = 'terminated' in data['file_stats']['status']
+
+        '''check if LT is scheduled'''
+        if any(el.endswith(job_id) for el in sched.get_job_ids()):
+            # sjob = q.fetch(next(el.endswith(job_id) for el in sched.get_job_ids()))
+            sjob_id = next(el for el in sched.get_job_ids() if el.endswith(job_id))
+            scheduled = sched.get_scheduled_time(sjob_id)
+        elif any(el.endswith(job_id) for el in failed.get_job_ids()):
+            sjob = q.fetch(next(el for el in failed.get_job_ids() if el.endswith(job_id)))
+            error = sjob.exc_info.strip().split('\n')[-1]
+
+    resp = {
+        'success': started and (scheduled or finished),
+        'status': dict(updated=timestamp, scheduled=scheduled, finished=finished),
+        'error': error,
+        'registry': {
+            'finished': [el for el in ended.get_job_ids() if el.endswith(job_id)],
+            'failed': [el for el in failed.get_job_ids() if el.endswith(job_id)],
+            'scheduled': [f"{el}: {sched.get_scheduled_time(el)}" for el in sched.get_job_ids() if el.endswith(job_id)]
         }
+    }
 
     return jsonify(resp)
 
