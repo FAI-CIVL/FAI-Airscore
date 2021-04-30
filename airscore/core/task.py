@@ -558,8 +558,8 @@ class Task(object):
     def max_score(self):
         return max((p.score for p in self.valid_results if p.score is not None), default=None)
 
-    @staticmethod
-    def read(task_id: int):
+    @classmethod
+    def read(cls, task_id: int):
         """Reads Task from database
         takes task_id as argument"""
         from db.tables import TaskObjectView as T
@@ -569,7 +569,7 @@ class Task(object):
             print(f'Error: {task_id} is not a valid id')
             return f'Error: {task_id} is not a valid id'
         try:
-            task = Task(task_id=task_id)
+            task = cls(task_id=task_id)
             '''get task from db'''
             T.get_by_id(task_id).populate(task)
         except AttributeError:
