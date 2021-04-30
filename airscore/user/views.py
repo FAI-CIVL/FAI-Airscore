@@ -1782,13 +1782,15 @@ def pilot_admin(compid: int):
                                               for x in frontendUtils.get_certifications_details()[comp.comp_class]]
 
     attributes = CompAttribute.read_meta(compid)
+    already_scored = frontendUtils.comp_has_taskresults(compid)
 
     if session['external']:
         '''External Event'''
         flash(f"This is an External Event. Settings and Results are Read Only.", category='warning')
 
     return render_template('users/pilot_admin.html', compid=compid, track_source=comp.track_source,
-                           participant_form=participant_form, pilotdb=PILOT_DB, attributes=attributes)
+                           participant_form=participant_form, pilotdb=PILOT_DB, attributes=attributes,
+                           already_scored=already_scored)
 
 
 @blueprint.route('/_modify_participant_details/<int:parid>', methods=['POST'])

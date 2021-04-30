@@ -1617,6 +1617,12 @@ def import_participants_from_excel_file(comp_id: int, excel_file: Path, comp_cla
     return dict(success=False, error='Error: Participants were not imported correctly.')
 
 
+def comp_has_taskresults(comp_id: int) -> bool:
+    """check if participants have already been scored in any task"""
+    from db.tables import FlightResultView as F
+    return len(F.get_all(comp_id=comp_id)) > 0
+
+
 def create_participants_html(comp_id: int) -> (str, dict) or None:
     from comp import Comp
 
