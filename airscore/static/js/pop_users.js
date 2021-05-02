@@ -1,15 +1,14 @@
 var form_elements = ['first_name', 'last_name', 'nat', 'access', 'email', 'username', 'active'];
 
 function populate_users(editable){
-  console.log('editable='+editable);
-
+//  console.log('editable='+editable);
   $.ajax({
     type: "GET",
     url: '/users/_get_users',
     contentType:"application/json",
     dataType: "json",
-    success: function (json) {
-      var columns = [
+    success: function ( json ) {
+      let columns = [
         {data: 'id', title: 'id', name: 'id', visible: false, searchable: false, defaultContent: ''},
         {data: 'first_name', title:'Name', name: 'first_name', defaultContent: ''},
         {data: 'last_name', title:'Surname', name: 'last_name', defaultContent: ''},
@@ -18,11 +17,11 @@ function populate_users(editable){
         {data: 'email', title:'Email', name:'email', defaultContent: ''},
         {data: 'access', title:'Access Level', name:'access', defaultContent: ''},
         {data: 'active', title:'Enabled', name:'active', defaultContent: ''},
-        {data: 'id', title: '', render: function ( data ) { if (editable) {
-                                                              return '<button type="button" class="btn btn-primary" onclick="edit_user(' + data + ')">Edit</button>'
-                                                            }
-                                                            else { return '<span class="text-muted">External</span>'}
-                                                          }}
+        {data: 'id', title: '', render: function ( data, type, row ) {
+                                          if ( !editable ) return '<p class="text-muted mt-2 mb-2">External</p>'
+                                          else if ( !is_admin && ['admin', 'manager'].includes(row.access) ) return '<p class="text-muted mt-2 mb-2">&nbsp;</p>'
+                                          else return '<button type="button" class="btn btn-primary" onclick="edit_user(' + data + ')">Edit</button>'
+                                        }}
       ];
 
       $('#users').dataTable({
@@ -37,7 +36,7 @@ function populate_users(editable){
         filter: true,
         dom: '<"#search"f>rt<"bottom"lip><"clear">',
         columns: columns,
-        rowId: function(data) {
+        rowId: function( data ) {
           return 'id_' + data.id;
         }
       })
@@ -52,12 +51,11 @@ function edit_user( user_id ) {
     let row = '#id_'+user_id;
     let data = table.row( row ).data();
 
-    console.log('user_id='+data.id);
-    console.log('data='+JSON.stringify(data));
+//    console.log('user_id='+data.id);
     $('#user_id').val(user_id);
     $.each(form_elements, (idx, el) => { $("#"+el).is(':checkbox') ? $("#"+el).prop("checked", data[el] == true) : $("#"+el).val(data[el]) } );
     $('#active').checked = (data.active == true);
-    $('#username').prop('disabled');
+    $('#username_dummy').text(data.username);
     $('#username_section').show();
     $('#active_section').show();
     $('#email_copy_section').hide();
@@ -77,10 +75,10 @@ $('#user_form').submit( function (e) {
   let userid = $('#user_id').val();
   let url = "/users/_add_user/";
   $('#username').val($('#email').val());  // use email as username
-  console.log('username='+$('#username').val());
+  console.log('user id= '+ userid + ' username='+$('#username').val());
   if ( userid ) url = "/users/_modify_user/"+userid;
   let mydata = $('#user_form').serialize();
-  console.log(mydata);
+//  console.log(mydata);
 
   $.ajax({
     type: "POST",
