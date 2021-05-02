@@ -8,7 +8,7 @@ from flask_login import login_required, current_user
 import frontendUtils
 from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm, \
     ResultAdminForm, NewScorekeeperForm, RegionForm, NewRegionForm, IgcParsingConfigForm, ParticipantForm, \
-    EditScoreForm, ModifyUserForm, CompLaddersForm, NewCompForm, CompRankingForm, AirspaceCheckForm, UserForm
+    EditScoreForm, CompLaddersForm, NewCompForm, CompRankingForm, AirspaceCheckForm, UserForm
 from comp import Comp
 from formula import list_formulas, Formula
 from task import Task, write_map_json, get_task_json_by_filename
@@ -35,6 +35,22 @@ def admin_required(func):
     @wraps(func)
     def decorated_view(*args, **kwargs):
         if not current_user.is_admin:
+            return current_app.login_manager.unauthorized()
+        return func(*args, **kwargs)
+
+    return decorated_view
+
+
+def manager_required(func):
+    """
+    If you decorate a view with this, it will ensure that the current user is
+    a manager or an admin before calling the actual view. (If they are
+    not, it calls the :attr:`LoginManager.unauthorized` callback.)
+    """
+
+    @wraps(func)
+    def decorated_view(*args, **kwargs):
+        if not (current_user.is_admin or current_user.is_manager):
             return current_app.login_manager.unauthorized()
         return func(*args, **kwargs)
 
@@ -576,7 +592,7 @@ def comp_settings_admin(compid: int):
             formulas.append((value, text))
         compform.formula.choices = formulas
 
-        if (current_user.id not in scorekeeper_ids) and (current_user.access != 'admin'):
+        if (current_user.id not in scorekeeper_ids) and (current_user.access not in ('admin', 'manager')):
             session['is_editor'] = False
             compform.submit = None
         else:
@@ -659,21 +675,24 @@ def _save_comp_ladders(compid: int):
 
 @blueprint.route('/_get_users', methods=['GET'])
 @login_required
-@admin_required
+@manager_required
 def _get_users():
     return {'data': frontendUtils.get_all_users()}
 
 
 @blueprint.route('/user_admin', methods=['GET'])
 @login_required
-@admin_required
+@manager_required
 def user_admin():
     from Defines import ADMIN_DB
-    modify_user_form = ModifyUserForm()
+    # modify_user_form = ModifyUserForm()
     user_form = UserForm()
+    if current_user.is_manager:
+        '''will be able to add only scorekeepers or pilots'''
+        user_form.access.choices = [('pilot', 'Pilot'), ('pending', 'Pending'), ('scorekeeper', 'Scorekeeper')]
     user_form.nat.choices = [(x['code'], x['name']) for x in frontendUtils.list_countries()]
     return render_template('users/user_admin.html',
-                           user_form=user_form, modify_user_form=modify_user_form, editable=bool(ADMIN_DB))
+                           user_form=user_form, editable=bool(ADMIN_DB))
 
 
 @blueprint.route('/_add_scorekeeper/<int:compid>', methods=['POST'])
@@ -1908,7 +1927,7 @@ def _upload_participants_fsdb(compid: int):
                 fsdb_file.save(tmp_file)
                 return jsonify(frontendUtils.import_participants_from_fsdb(comp_id=compid, file=tmp_file))
         except (FileNotFoundError, TypeError, Exception):
-            raise
+            # raise
             return jsonify(success=False, error='Internal error trying to parse FSDB file.')
     return jsonify(success=False, error='Error: no file was given.')
 
@@ -2002,7 +2021,7 @@ def _export_fsdb(compid: int):
 
 @blueprint.route('/_add_user/', methods=['POST'])
 @login_required
-@admin_required
+@manager_required
 def add_user():
     """Register a new user (admin, scorekeeper."""
     # from email import send_email
@@ -2036,11 +2055,10 @@ def add_user():
 
 @blueprint.route('/_modify_user/<int:user_id>', methods=['POST'])
 @login_required
-@admin_required
+@manager_required
 def _modify_user(user_id: int):
     form = UserForm()
-
-    if request.method == 'POST' and form.validate_on_submit():
+    if request.method == 'POST' and form.validate_on_edit(user_id):
         user = User.query.filter_by(id=user_id).first()
         for x in user.__table__.columns.keys():
             if hasattr(form, x):

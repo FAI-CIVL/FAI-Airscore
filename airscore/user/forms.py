@@ -34,7 +34,7 @@ class RegisterForm(FlaskForm):
     """Register form."""
 
     username = StringField(
-        "Username", validators=[DataRequired(), Length(min=3, max=25)]
+        "Username", validators=[DataRequired(), Length(min=6, max=40)]
     )
     email = StringField(
         "Email", validators=[DataRequired(), Email(), Length(min=6, max=40)]
@@ -523,15 +523,16 @@ class UserForm(FlaskForm):
             return False
         return True
 
-
-class ModifyUserForm(FlaskForm):
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    access = SelectField('Access Level', choices=[('pilot', 'Pilot'), ('pending', 'Pending'),
-                                                  ('scorekeeper', 'Scorekeeper'), ('admin', 'Admin'), ],
-                         default='pilot')
-    active = BooleanField('Enabled', default=1)
-
-    submit = SubmitField('Save')
+    def validate_on_edit(self, user_id):
+        """Validate the form."""
+        initial_validation = super(UserForm, self).validate()
+        if not initial_validation:
+            return False
+        user = User.query.filter_by(email=self.email.data).one_or_none()
+        if user and not user.id == user_id:
+            self.email.errors.append("Email already in use.")
+            return False
+        return True
 
 
 class CompLaddersForm(FlaskForm):

@@ -87,6 +87,10 @@ class User(UserMixin, SurrogatePK, Model):
         """True if access is scorekeeper."""
         return bool(self.access == 'scorekeeper')
 
+    @property
+    def has_private_frontend_access(self):
+        return (self.is_scorekeeper or self.is_manager or self.is_admin) and self.active
+
     def __repr__(self):
         """Represent instance as a unique string."""
         return f"<User({self.username!r})>"

@@ -8,24 +8,23 @@
     <span class='navbar-toggler-icon'></span>
   </button>
   <div class='collapse navbar-collapse' id='navbarSupportedContent'>
-    {% if current_user and current_user.is_authenticated %}
     <ul class='navbar-nav my-auto'>
       <li class='nav-item'>
         <a class='nav-link' href="{{ url_for('public.home') }}">Public Website
         </a>
       </li>
     </ul>
-
+    {% if current_user and current_user.is_authenticated and current_user.has_private_frontend_access %}
     <ul class='navbar-nav my-auto'>
       <li class='nav-item'>
         <a class='nav-link main' href="{{ url_for('user.comp_admin') }}">Competitions</a>
       </li>
-      {% if current_user.is_scorekeeper or current_user.is_admin %}
+      {% if config.WAYPOINT_AIRSPACE_FILE_LIBRARY %}
       <li class='nav-item'>
         <a class='nav-link main' href="{{ url_for('user.region_admin') }}">Flying Areas</a>
       </li>
       {% endif %}
-      {% if current_user.is_admin %}
+      {% if current_user.is_admin or current_user.is_manager %}
       <li class='nav-item'>
         <a class="nav-link main" href="{{ url_for('user.user_admin') }}">Users</a>
       </li>
@@ -39,7 +38,6 @@
            aria-haspopup='true' aria-expanded='false'>
           {{session.comp_name }}
         </a>
-
         <ul class='dropdown-menu' aria-labelledby='compDropdown'>
           <li>
             <a class='dropdown-item' href="{{ url_for('user.comp_settings_admin', compid=session.compid) }}">Competition Settings</a>
@@ -86,10 +84,10 @@
         <span class='navbar-text pre-wrap'>Logged in as </span>
       </li>
       <li class='nav-item'>
-        <span class='navbar-text'>{% if current_user.is_admin %} Admin: {% elif current_user.is_scorekeeper %} Scorekeeper: {% endif %}</span>
+        <span class='navbar-text'>{{ current_user.access|capitalize }}: </span>
       </li>
       <li class='nav-item active'>
-        <a class='nav-link' href="{{ url_for('user.members') }}">{{ current_user.username }}</a>
+        <a class='nav-link' href="{{ url_for('user.members') }}">{% if current_user.first_name %} {{ current_user.first_name }} {% else %} {{ current_user.username }} {% endif %}</a>
       </li>
       <li class='nav-item active'>
         <a class='nav-link' href="{{ url_for('public.logout') }}">

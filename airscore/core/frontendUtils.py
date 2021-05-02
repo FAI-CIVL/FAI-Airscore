@@ -30,12 +30,9 @@ def create_menu(active: str = '') -> list:
     menu = [dict(title='Competitions', url='public.home', css='nav-item')]
     if Defines.LADDERS:
         menu.append(dict(title='Ladders', url='public.ladders', css='nav-item'))
-    menu.extend(
-        [
-            dict(title='Pilots', url='public.pilots', css='nav-item'),
-            dict(title='Flying Areas', url='public.regions', css='nav-item'),
-        ]
-    )
+    menu.append(dict(title='Pilots', url='public.pilots', css='nav-item'))
+    if Defines.WAYPOINT_AIRSPACE_FILE_LIBRARY:
+        menu.append(dict(title='Flying Areas', url='public.regions', css='nav-item'))
 
     return menu
 
@@ -383,7 +380,7 @@ def get_admin_comps(current_userid, current_user_access=None):
         comp[3] = comp[3].strftime("%Y-%m-%d")
         comp[4] = comp[4].strftime("%Y-%m-%d")
         comp[6] = 'Imported' if comp[6] else ''
-        if (int(comp[7]) == current_userid) or (current_user_access == 'admin'):
+        if (int(comp[7]) == current_userid) or (current_user_access in ('admin', 'manager')):
             comp[7] = 'delete'
         else:
             comp[7] = ''
@@ -1065,7 +1062,7 @@ def get_comp_scorekeeper(compid_or_taskid: int, task_id=False):
 
 def check_comp_editor(compid: int, user) -> bool:
     """ check if user is a scorer for the event"""
-    if user.is_admin:
+    if user.is_admin or user.is_manager:
         return True
     else:
         _, _, scorekeeper_ids = get_comp_scorekeeper(compid)
@@ -1121,7 +1118,7 @@ def get_all_scorekeepers():
     with db_session() as db:
         all_scorekeepers = (
             db.query(User.id, User.username, User.first_name, User.last_name)
-            .filter((User.access == 'scorekeeper') | (User.access == 'admin'))
+            .filter(User.access.in_(['scorekeeper', 'manager', 'admin']))
             .all()
         )
         if all_scorekeepers:
