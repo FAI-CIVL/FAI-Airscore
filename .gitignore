@@ -150,16 +150,24 @@ cython_debug/
 secret.yaml
 defines.yaml
 airscore/core/dreamhost*.*
+/dreamhost*
 /dreamhost*.*
 
 # data
+airscore/data/airspace/openair/*
+airscore/data/airspace/check_file/*
+airscore/data/json/*
+airscore/data/livetracking/
+airscore/data/log/*
 airscore/data/map-objects/*
 airscore/data/map-objects/tasks/*
 airscore/data/map-objects/tracks/*
 airscore/data/results/*
-airscore/data/log/*
+airscore/data/temp/
+airscore/data/temp/*
 airscore/data/tracks/*
-airscore/data/json/*
+airscore/data/waypoints/
+airscore/data/waypoints/*
 
 # Test files
 airscore/core/*.igc
@@ -192,24 +200,13 @@ airscore/core/test_files/*
 output/*.html
 output/*/index.html
 
-.webassets-cache
-
 # npm
 /node_modules/
 
+# other
 .idea/*
-
 !/airscore/templates/
-/airscore/data/airspace/openair/*
-/airscore/data/airspace/check_file/*
-/.env
-/airscore/data/livetracking/
 /temp_tracks/
 /temp_tracks/*
-/airscore/data/temp/
-/airscore/data/temp/*
-/airscore/data/waypoints/
-/airscore/data/waypoints/*
 /temp/
 /temp/*
-/dreamhost*
