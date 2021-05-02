@@ -1136,7 +1136,7 @@ CREATE TABLE `users` (
   `last_name` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `nat` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci,
   `active` int(1) NOT NULL DEFAULT '0',
-  `access` enum('pilot','scorekeeper','admin','pending') NOT NULL DEFAULT 'pilot'
+  `access` enum('pilot','scorekeeper','manager','admin','pending') NOT NULL DEFAULT 'pilot'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------

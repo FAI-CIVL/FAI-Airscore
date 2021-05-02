@@ -501,7 +501,8 @@ class UserForm(FlaskForm):
     username = StringField("Username")
     email = StringField('Email', validators=[DataRequired(), Email()])
     access = SelectField('Access Level', choices=[('pilot', 'Pilot'), ('pending', 'Pending'),
-                                                  ('scorekeeper', 'Scorekeeper'), ('admin', 'Admin'), ],
+                                                  ('scorekeeper', 'Scorekeeper'), ('manager', 'Manager'),
+                                                  ('admin', 'Admin')],
                          default='pilot')
     active = BooleanField('Enabled', default=1)
 

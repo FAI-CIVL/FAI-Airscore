@@ -233,7 +233,7 @@ class User(BaseModel):
         Column('phone', LONGTEXT),
         Column('sex', String(1)),
         Column('active', TINYINT(1)),
-        Column('access', Enum('pilot', 'scorekeeper', 'admin', 'pending')),
+        Column('access', Enum('pilot', 'scorekeeper', 'manager', 'admin', 'pending')),
     )
 
 

@@ -48,7 +48,7 @@ class User(UserMixin, SurrogatePK, Model):
     last_name = Column(db.String(30), nullable=True)
     nat = Column(db.String(10))
     active = Column(db.Boolean(), default=False)
-    access = Column(db.Enum('pilot', 'pending', 'scorekeeper', 'admin'),
+    access = Column(db.Enum('pilot', 'pending', 'scorekeeper', 'manager', 'admin'),
                     nullable=False, server_default=db.text("'pilot'"))
 
     def __init__(self, username, email, password=None, **kwargs):
@@ -76,6 +76,11 @@ class User(UserMixin, SurrogatePK, Model):
     def is_admin(self):
         """True if access is admin."""
         return bool(self.access == 'admin')
+
+    @property
+    def is_manager(self):
+        """True if access is manager."""
+        return bool(self.access == 'manager')
 
     @property
     def is_scorekeeper(self):
