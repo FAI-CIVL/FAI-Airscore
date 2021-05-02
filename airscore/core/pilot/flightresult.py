@@ -256,7 +256,7 @@ class FlightResult(Participant):
             result.last_altitude = int(fres.get('last_altitude_above_goal'))
             result.distance_score = float(fres.get('distance_points'))
             result.time_score = float(fres.get('time_points'))
-            result.penalty = 0  # fsdb score is already decreased by penalties
+            result.penalty = 0
             if not fres.get('penalty_reason_auto') == "":
                 notification = Notification(
                     notification_type='jtg',
@@ -271,16 +271,28 @@ class FlightResult(Participant):
             else:
                 result.departure_score = 0  # not necessary as it it initialized to 0
             result.arrival_score = float(fres.get('arrival_points')) if arr != 'off' else 0
-        if elem.find('FsResultPenalty') is not None:
+        if elem.find('FsResultPenalty') is not None or fres.get('penalty_reason'):
             '''reading penalties'''
-            pen = elem.find('FsResultPenalty')
+            if elem.find('FsResultPenalty') is not None:
+                pen = elem.find('FsResultPenalty')
+                percentage_penalty = float(pen.get('penalty'))
+                flat_penalty = float(pen.get('penalty_points'))
+                reason = pen.get('penalty_reason')
+            else:
+                percentage_penalty = float(fres.get('penalty'))
+                flat_penalty = float(fres.get('penalty_points'))
+                reason = fres.get('penalty_reason')
             notification = Notification(
                 notification_type='admin',
-                percentage_penalty=float(pen.get('penalty')),
-                flat_penalty=float(pen.get('penalty_points')),
-                comment=pen.get('penalty_reason'),
+                percentage_penalty=percentage_penalty,
+                flat_penalty=flat_penalty,
+                comment=reason,
             )
             result.notifications.append(notification)
+            '''calculate points'''
+            result.penalty = sum(
+                [result.distance_score, result.departure_score, result.arrival_score, result.time_score]
+            ) - result.score
 
         return result
 
