@@ -204,7 +204,7 @@ output/*/index.html
 /node_modules/
 
 # docker-compose files
-.docker-compose-server*.*
+docker-compose-server*.*
 
 # other
 .idea/*
