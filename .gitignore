@@ -203,6 +203,9 @@ output/*/index.html
 # npm
 /node_modules/
 
+# docker-compose files
+.docker-compose-server*.*
+
 # other
 .idea/*
 !/airscore/templates/
