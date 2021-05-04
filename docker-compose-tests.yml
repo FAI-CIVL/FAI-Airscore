@@ -31,6 +31,7 @@ services:
       MAIL_SERVER: dummy
       MAIL_PORT: 123
       MAIL_USE_TLS: dummy
+      MAIL_USE_SSL: dummy
       MAIL_USERNAME: dummy
       MAIL_PASSWORD: dummy
       ADMINS: dummy
