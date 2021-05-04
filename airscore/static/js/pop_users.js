@@ -94,7 +94,11 @@ $('#user_form').submit( function (e) {
         create_flashed_message(message, 'info');
       }
       else {
-        if (response.errors) {
+        if (response.mail_error) {
+          create_flashed_message('Failed to create a new user: Error trying to send registration email.', 'danger');
+          $('#user_modal').modal('toggle');
+        }
+        else if (response.errors) {
           let keys = Object.keys(response.errors);
           console.log('Error! ('+keys.length+')');
           keys.forEach( key => {

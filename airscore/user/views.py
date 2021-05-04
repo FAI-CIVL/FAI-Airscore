@@ -2039,7 +2039,7 @@ def add_user():
             last_name=form.last_name.data,
             nat=form.nat.data
         )
-        user.save()
+
         email_copy = bool(request.form.get('email_copy'))
         '''send registration email'''
         token = frontendUtils.generate_confirmation_token(user.email)
@@ -2048,8 +2048,12 @@ def add_user():
         body = render_template('email/register.txt', user=user, confirm_url=confirm_url)
         subject = "[AirScore Registration] Please confirm your email"
         recipients = [user.email] if not email_copy else [user.email, current_user.email]
-        frontendUtils.send_email(recipients=recipients, subject=subject, text_body=body, html_body=html)
-        return jsonify(success=True)
+        resp, error = frontendUtils.send_email(recipients=recipients, subject=subject, text_body=body, html_body=html)
+        if resp:
+            user.save()
+            return jsonify(success=True)
+        else:
+            return jsonify(success=False, mail_error=error)
     return jsonify(success=False, errors=form.errors)
 
 

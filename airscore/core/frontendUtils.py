@@ -1176,13 +1176,18 @@ def confirm_token(token, expiration=86400):
 def send_email(recipients, subject, text_body, html_body, sender=None):
     from airscore.extensions import mail
     from airscore.settings import ADMINS
-    mail.send_message(
-        recipients=recipients,
-        subject=subject,
-        body=text_body,
-        html=html_body,
-        sender=sender or ADMINS
-    )
+    try:
+        mail.send_message(
+            recipients=recipients,
+            subject=subject,
+            body=text_body,
+            html=html_body,
+            sender=sender or ADMINS
+        )
+        return True, None
+    except:
+        # raise
+        return False, f"Error trying to send mail."
 
 
 def update_airspace_file(old_filename, new_filename):
