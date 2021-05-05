@@ -189,7 +189,7 @@ airscore/core/test_files/*
 *.db
 
 # webpack-built files
-/airscore/static/build/
+#/airscore/static/build/
 
 # Mr Developer
 .mr.developer.cfg
