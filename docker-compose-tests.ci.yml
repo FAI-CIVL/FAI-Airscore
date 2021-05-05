@@ -19,8 +19,8 @@ services:
       FLASK_PORT: 3214
       MAIL_SERVER: dummy
       MAIL_PORT: 123
-      MAIL_USE_TLS: dummy
-      MAIL_USE_SSL: dummy
+      MAIL_USE_TLS:
+      MAIL_USE_SSL:
       MAIL_USERNAME: dummy
       MAIL_PASSWORD: dummy
       ADMINS: dummy
