@@ -111,6 +111,7 @@ function update_turnpoints(json) {
     responsive: true,
     saveState: true,
     info: false,
+    bSort: false,
     dom: 'lrtip',
     columns: columns,
     rowId: function(data) {

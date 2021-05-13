@@ -200,7 +200,7 @@ def get_task(parsed_task):
     has_waypoints = False
     task_coords = []
 
-    table_rows = '<table class="table"><tr>'
+    table_rows = '<table class="table row-border table-hover table-responsive"><tr>'
     for obj in parsed_task:
         if obj not in ['', [], [[]], None, False]:
             if type(obj) == type({}):
@@ -238,7 +238,7 @@ def get_task(parsed_task):
 # funciton to parse json task from file to formatted html
 def get_task_fromfile(jsontask):
 
-    table_rows = '<table class="table"><tr>'
+    table_rows = '<table class="table row-border table-hover table-responsive"><tr>'
     table_rows += '<tr><td><b>SSS</b></td><td>---</td></tr>'
     for k, val in jsontask['sss'].items():
         table_rows += '<tr><td>' + str(k) + '</td><td>' + str(val) + '</td></tr>'

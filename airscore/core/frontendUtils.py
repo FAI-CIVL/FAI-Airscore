@@ -1509,7 +1509,7 @@ def get_pretty_data(content: dict, export=False) -> dict or str:
 
         return pretty_content
     except Exception:
-        raise
+        # raise
         return 'error'
 
 
