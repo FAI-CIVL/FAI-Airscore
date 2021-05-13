@@ -152,24 +152,33 @@ class FlightResult(Participant):
 
     @property
     def flat_penalty(self):
+        """calculates flat_penalty for the pilot.
+            We exclude jtg_penalty entries and sum the others.
+            We should have just one anyway. It could be negative value (bonus)"""
         if (
             self.notifications
-            and sum(n.flat_penalty for n in self.notifications if not n.notification_type == 'jtg') > 0
+            and any(n.flat_penalty for n in self.notifications if not n.notification_type == 'jtg')
         ):
-            return next(n.flat_penalty for n in self.notifications if not n.notification_type == 'jtg')
+            return sum(n.flat_penalty for n in self.notifications if not n.notification_type == 'jtg')
         else:
             return 0
 
     @property
     def jtg_penalty(self):
-        if self.notifications and sum(n.flat_penalty for n in self.notifications if n.notification_type == 'jtg') > 0:
-            return next(n for n in self.notifications if n.notification_type == 'jtg').flat_penalty
+        """calculates penalty due to Jump the Gun for the pilot.
+            We take the min value.
+            We should have just one anyway."""
+        if self.notifications and any(n.flat_penalty > 0 for n in self.notifications if n.notification_type == 'jtg'):
+            return min(n.flat_penalty for n in self.notifications if n.notification_type == 'jtg')
         else:
             return 0
 
     @property
     def percentage_penalty(self):
-        if self.notifications and sum(n.percentage_penalty for n in self.notifications) > 0:
+        """calculates percentage_penalty for the pilot.
+            At the moment only automatic airspace infringements create percentage penalties, so we take the max value.
+            We should have just one anyway."""
+        if self.notifications and any(n.percentage_penalty > 0 for n in self.notifications):
             return max(n.percentage_penalty for n in self.notifications)
         else:
             return 0
