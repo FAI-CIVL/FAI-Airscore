@@ -431,6 +431,27 @@ def pilot_distance(task, pil):
         return task.avail_dist_points * (linear_fraction + diff_fraction)
 
 
+def pilot_penalty(task, res):
+    """ 12.4 Penalties
+    If a pilot incurs multiple penalties or bonuses, these are applied in the following order:
+    1. “Jump the Gun”-Penalty
+    2. Percentage penalty or bonus
+    3. Absolute points penalty or bonus"""
+
+    '''Jump the Gun Penalty:
+    totalScore p = max(totalScore p − jumpTheGunPenalty p , scoreForMinDistance)'''
+    score_before = res.before_penalty_score
+    score_after_jtg = score_before if res.jtg_penalty == 0 else max(task.min_dist_score, score_before - res.jtg_penalty)
+    '''Other penalties'''
+    # applying flat penalty after percentage ones
+    other_penalty = score_after_jtg * res.percentage_penalty + res.flat_penalty
+    '''check 0 < score_after_all_penalties < max_avail_points'''
+    max_avail_points = task.day_quality * 1000
+    score_after_all_penalties = min(max(0, score_after_jtg - other_penalty), max_avail_points)
+    actual_penalty = score_before - score_after_all_penalties
+    return actual_penalty, score_after_all_penalties
+
+
 def calculate_min_dist_score(t):
     from pilot.flightresult import FlightResult
 
@@ -532,24 +553,8 @@ def points_allocation(task):
                     res.time_score *= 1 - formula.no_goal_penalty
                     res.arrival_score *= 1 - formula.no_goal_penalty
 
-        ''' Total score'''
-        score = res.distance_score + res.time_score + res.arrival_score + res.departure_score
-
-        ''' 12.4 Penalties
-        If a pilot incurs multiple penalties or bonuses, these are applied in the following order:
-        1. “Jump the Gun”-Penalty
-        2. Percentage penalty or bonus
-        3. Absolute points penalty or bonus'''
+        ''' 12.4 Penalties'''
         if res.jtg_penalty or res.flat_penalty or res.percentage_penalty:
-            """Jump the Gun Penalty:
-            totalScore p = max(totalScore p − jumpTheGunPenalty p , scoreForMinDistance)"""
-            score_after_jtg = score if res.jtg_penalty == 0 else max(min_dist_score, score - res.jtg_penalty)
-            ''' Other penalties'''
-            # applying flat penalty after percentage ones
-            other_penalty = score_after_jtg * res.percentage_penalty + res.flat_penalty
-            res.score = max(0, score_after_jtg - other_penalty)
-            res.penalty = score - res.score
-            # print(f'jtg: {res.jtg_penalty}, flat: {res.flat_penalty}, perc: {res.percentage_penalty}')
-            # print(f'pre penalty: {score}, after jtg: {score_after_jtg}, penalty: {res.penalty}, score: {res.score}')
+            res.penalty, res.score = pilot_penalty(task, res)
         else:
-            res.score = score
+            res.score = res.before_penalty_score

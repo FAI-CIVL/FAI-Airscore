@@ -259,6 +259,18 @@ def pilot_distance(task, pil):
     return pil.distance / task.max_distance * task.avail_dist_points
 
 
+def pilot_penalty(task, res):
+
+    score_before = res.before_penalty_score
+    # applying flat penalty after percentage ones
+    penalty = score_before * res.percentage_penalty + res.flat_penalty
+    '''check 0 < score_after_all_penalties < max_avail_points'''
+    max_avail_points = task.day_quality * 1000
+    score_after_all_penalties = min(max(0, score_before - penalty), max_avail_points)
+    actual_penalty = score_before - score_after_all_penalties
+    return actual_penalty, score_after_all_penalties
+
+
 def calculate_min_dist_score(t):
     from pilot.flightresult import FlightResult
 
@@ -344,14 +356,8 @@ def points_allocation(task):
                     res.goal_time = 0
                     res.time_score *= 1 - formula.no_goal_penalty
 
-        ''' Total score'''
-        score = res.distance_score + res.time_score + res.arrival_score + res.departure_score
-
         ''' Apply Penalty'''
         if res.flat_penalty or res.percentage_penalty:
-            # applying flat penalty after percentage ones
-            penalty = score * res.percentage_penalty + res.flat_penalty
-            res.score = max(0, score - penalty)
-            res.penalty = score - res.score
+            res.penalty, res.score = pilot_penalty(task, res)
         else:
-            res.score = score
+            res.score = res.before_penalty_score
