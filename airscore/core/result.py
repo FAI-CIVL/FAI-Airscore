@@ -168,6 +168,7 @@ class TaskResult:
         'time_score',
         'departure_score',
         'arrival_score',
+        'before_penalty_score',
         'score',
         'penalty',
         'infringements',

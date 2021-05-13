@@ -181,6 +181,11 @@ class FlightResult(Participant):
         else:
             return 0
 
+    @property
+    def before_penalty_score(self):
+        """total score before any penalty is applied"""
+        return sum([self.distance_score or 0, self.time_score or 0, self.arrival_score or 0, self.departure_score or 0])
+
     @classmethod
     def from_participant(cls, participant: Participant):
         """Creates FlightResult obj from Participant obj."""

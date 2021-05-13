@@ -1361,6 +1361,11 @@ def _get_task_score_from_file(taskid: int, filename: str):
             pilot['leadP'] = c_round(r['departure_score'], 2)
             pilot['arrivalP'] = c_round(r['arrival_score'], 2)  # arrival points
             pilot['distanceP'] = c_round(r['distance_score'], 2)
+            if r.get('before_penalty_score'):  # compatibility older formats results
+                pilot['totalP'] = c_round(r['before_penalty_score'], 2)
+            else:
+                pilot['totalP'] = c_round(sum([pilot['speedP'] or 0, pilot['leadP'] or 0,
+                                               pilot['arrivalP'] or 0, pilot['distanceP'] or 0]), 2)
             pilot['penalty'] = c_round(r['penalty'], 2) if r['penalty'] else ""
             pilot['score'] = c_round(r['score'], 2)
 
