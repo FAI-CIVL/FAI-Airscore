@@ -127,6 +127,7 @@ class Task(object):
         self.dep_weight = 0
         self.arr_weight = 0
         self.time_weight = 0
+        self.min_dist_score = 0
         self.avail_dist_points = 0  # AvailDistPoints
         self.avail_dep_points = 0  # AvailLeadPoints
         self.avail_arr_points = 0  # AvailArrPoints

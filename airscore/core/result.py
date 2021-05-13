@@ -129,6 +129,7 @@ class TaskResult:
         'avail_dep_points',
         'avail_time_points',
         'avail_arr_points',
+        'min_dist_score',
         'max_score',
         'min_lead_coeff',
         'tot_flight_time',

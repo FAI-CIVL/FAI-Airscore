@@ -313,7 +313,7 @@ def points_allocation(task):
     formula = task.formula
 
     ''' Calculate Min Dist Score '''
-    min_dist_score = calculate_min_dist_score(task)
+    task.min_dist_score = calculate_min_dist_score(task)
 
     ''' Score each pilot now'''
     for res in results:
@@ -326,7 +326,7 @@ def points_allocation(task):
         res.penalty = 0
 
         if res.result_type == 'mindist':
-            res.distance_score = min_dist_score
+            res.distance_score = task.min_dist_score
         else:
             '''Pilot distance score'''
             res.distance_score = pilot_distance(task, res)
