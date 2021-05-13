@@ -1083,25 +1083,14 @@ class Task(object):
             filename    str: (opt.) json filename
         """
         from pilot.flightresult import FlightResult
+        from result import open_json_file
 
-        if not filename or not path.isfile(filename):
-            '''we get the active json file'''
-            filename = get_task_json_filename(task_id)
-            if not filename:
-                print(f"There's no active json file for task {task_id}, or given filename does not exists")
-                return None
+        t = open_json_file(filename or get_task_json_filename(task_id))
+        if not t:
+            print(f"There's no active json file for task {task_id}, or given filename does not exists")
+            return None
 
         print(f"task {task_id} json file: {filename}")
-
-        with open(path.join(RESULTDIR, filename), encoding='utf-8') as json_data:
-            # a bit more checking..
-            try:
-                t = jsonpickle.decode(json_data.read())
-            except:
-                print("file is not a valid JSON object")
-                return None
-
-        # pp(t)
 
         task = Task(task_id=task_id)
         # task.__dict__.update(t['info'])

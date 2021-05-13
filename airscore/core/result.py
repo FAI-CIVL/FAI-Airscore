@@ -534,11 +534,8 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None, name_su
         This is so we can overwrite comp results that are only used in front end to create competition
          page not display results
     """
-    import os
     from datetime import datetime
     from time import time
-
-    from calcUtils import CJsonEncoder
 
     timestamp = int(time())  # timestamp of generation
     dt = datetime.fromtimestamp(timestamp).strftime('%Y%m%d_%H%M%S')
@@ -552,13 +549,8 @@ def create_json_file(comp_id, code, elements, task_id=None, status=None, name_su
     result = {'file_stats': {'result_type': 'task' if task_id else 'comp', 'timestamp': timestamp, 'status': status}}
     result.update(elements)
 
-    '''creating json formatting'''
-    content = json.dumps(result, cls=CJsonEncoder)
-
     '''creating file'''
-    with open(RESULTDIR + filename, 'w') as f:
-        f.write(content)
-    os.chown(RESULTDIR + filename, 1000, 1000)
+    write_json_file(filename, result)
 
     '''create or update database entry'''
     row = TblResultFile.get_one(filename=filename)
@@ -592,6 +584,36 @@ def publish_result(filename_or_refid, ref_id=False):
         else:
             db.query(TblResultFile).filter_by(filename=filename_or_refid).update({'active': 1})
     return 1
+
+
+def open_json_file(filename: str or Path):
+    import jsonpickle
+
+    try:
+        with open(Path(RESULTDIR, filename), 'r') as f:
+            return jsonpickle.decode(f.read())
+    except TypeError:
+        print(f"error: {filename} is not a proper filename")
+    except FileNotFoundError:
+        print(f"error: file {filename} does not exist")
+    return None
+
+
+def write_json_file(filename: str, content: dict):
+    import os
+    from calcUtils import CJsonEncoder
+    file = Path(RESULTDIR, filename)
+    '''creating json formatting'''
+    content = json.dumps(content, cls=CJsonEncoder, sort_keys=True)
+
+    '''creating file'''
+    with open(file, 'w+') as f:
+        f.seek(0)
+        f.truncate()
+        f.write(content)
+
+    '''giving correct access permission'''
+    os.chown(file, 1000, 1000)
 
 
 def update_result_status(filename: str, status: str, locked: bool = None):
@@ -722,15 +744,8 @@ def update_result_file(filename: str, par_id: int, notification: dict):
                     )
                     - result['penalty'],
                 )
-                pil_list = sorted(
-                    [p for p in data['results'] if p['result_type'] not in ['dnf', 'abs', 'nyp']],
-                    key=lambda k: k['score'],
-                    reverse=True,
-                )
-                pil_list += [p for p in data['results'] if p['result_type'] == 'nyp']
-                pil_list += [p for p in data['results'] if p['result_type'] == 'dnf']
-                pil_list += [p for p in data['results'] if p['result_type'] == 'abs']
-                data['results'] = pil_list
+
+                data['results'] = order_task_results(data['results'])
             data['file_stats']['last_update'] = int(time.time())
             try:
                 f.seek(0)
@@ -742,6 +757,24 @@ def update_result_file(filename: str, par_id: int, notification: dict):
                 db.rollback()
                 db.close()
                 return error
+
+
+def order_task_results(results: list) -> list:
+    """Orders pilots list based on result:
+        - points, decr
+        - NYP
+        - DNF
+        - ABS
+    """
+    pil_list = sorted(
+        [p for p in results if p['result_type'] not in ['dnf', 'abs', 'nyp']],
+        key=lambda k: k['score'],
+        reverse=True,
+    )
+    pil_list += [p for p in results if p['result_type'] == 'nyp']
+    pil_list += [p for p in results if p['result_type'] == 'dnf']
+    pil_list += [p for p in results if p['result_type'] == 'abs']
+    return pil_list
 
 
 def update_results_rankings(comp_id: int, comp_class: str = None) -> bool:
@@ -789,19 +822,6 @@ def get_country_list(countries: set = None, iso: int = None) -> list:
     from db.tables import TblCountryCode as CC
 
     return CC.get_list(countries=countries, iso=iso)
-
-
-def open_json_file(filename: str or Path):
-    import jsonpickle
-
-    try:
-        with open(Path(RESULTDIR, filename), 'r') as f:
-            return jsonpickle.decode(f.read())
-    except TypeError:
-        print(f"error: {filename} is not a proper filename")
-    except FileNotFoundError:
-        print(f"error: file {filename} does not exist")
-    return None
 
 
 def pretty_format_results(content, timeoffset=0, td=0, cd=0):
