@@ -4,6 +4,10 @@
 Task Scoring Admin
 {% endblock %}
 
+{% block css %}
+<link href='https://cdn.datatables.net/buttons/1.7.0/css/buttons.bootstrap4.min.css' rel='stylesheet'>
+{% endblock %}
+
 {% block back %}
 <a href="{{ url_for('user.comp_settings_admin', compid=compid) }}" class='btn btn-info'>
   Back to Competition Settings
@@ -230,36 +234,25 @@ Task Scoring Admin
   <div class='modal-dialog modal-lg' role='document'>
     <div class='modal-content'>
       <div class='modal-header'>
-        <h4 class='modal-title'>comments and penalties/bonuses</h4>
-        <button type='button' class='close' data-dismiss='modal' aria-label='Close'>
-          <span aria-hidden='true'>&times;</span>
-        </button>
+        <h4 class='modal-title'>Comments and Penalties/Bonuses</h4>
       </div>
-      <h7 class='text-center'>edit existing admin rows or add a new one</h7>
       <div class='modal-body' id='editmodal-body'>
-        <div class='container-fluid'>
-          <div class='col-md-12'>
-            <table class='table table-striped ' id='edit_table'>
-              <thead>
-              <tr>
-                <th scope='col' style='display:none;'>ID</th>
-                <th scope='col'>Source</th>
-                <th scope='col'>Percentage Penalty</th>
-                <th scope='col'>Point Penalty</th>
-                <th scope='col'>Comment</th>
-              </tr>
-              </thead>
-              <tbody>
-              </tbody>
-            </table>
-          </div>
+        <h5 class='mb-2 text-secondary' id='editmodal-info'><span class='text-info' id="editmodal-pilot-name"></span>: <span class='text-secondary' id="editmodal-has-penalty">before pen. <span class='text-info' id="editmodal-before-penalty"></span>, penalty <span class='text-warning' id="editmodal-penalty"></span>, </span>SCORE <span class='text-primary' id="editmodal-score"></span></h5>
+        <div class='container-fluid pb-3'>
+          <p class="alert alert-primary">Automatic Penalty entries can be deleted, while custom entries can be also edited.<br />
+            Note that <strong>negative penalties are bonuses</strong>, so points that will be added to final score.<br />
+          A preview of the result is updated on top of this window. Final result is calculated using real scoring system
+          used by the competition so could be slightly different.</p>
           <div class='col-md-12'>
             {{ datatable('edit_table', striped=True) }}
           </div>
         </div>
         <div class='modal-footer'>
-          <button type='button' class='btn btn-secondary' data-dismiss='modal'>Close</button>
-          <button type='button' id='save_adjustment' class='btn btn-primary'>Save</button>
+          <div id="editmodal-buttons">
+            <button type='button' class='btn btn-secondary' data-dismiss='modal'>Cancel</button>
+            <button type='button' id='save_adjustment' class='btn btn-primary'>Save</button>
+          </div>
+          <span id="editmodal-spinner"></span>
         </div>
       </div>
     </div>
@@ -322,8 +315,11 @@ Task Scoring Admin
 
 {% block js %}
 {% if session.is_editor %}
+<script type='text/javascript' src="https://cdn.datatables.net/buttons/1.7.0/js/dataTables.buttons.min.js"></script>
+<script type='text/javascript' src="https://cdn.datatables.net/buttons/1.7.0/js/buttons.bootstrap4.min.js"></script>
 <script type='text/javascript' src="{{ static_url_for('static', filename='js/pop_task_score_admin.js') }}"></script>
-<script type='text/javascript' src="{{ static_url_for('static', filename='js/mindmup-editabletable.js') }}"></script>
+<!--<script type='text/javascript' src="{{ static_url_for('static', filename='js/mindmup-editabletable.js') }}"></script>-->
+<script type='text/javascript' src="{{ static_url_for('static', filename='js/ntable.js') }}"></script>
 <script type='text/javascript'>
   var production = {{ production|tojson }};
   var taskid = {{ taskid|tojson }};

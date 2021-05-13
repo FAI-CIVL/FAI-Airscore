@@ -1990,20 +1990,11 @@ def _check_team_size(compid: int):
 @blueprint.route('/_adjust_task_result/<int:taskid>', methods=['POST'])
 @login_required
 def _adjust_task_result(taskid: int):
-    from result import update_result_file
     data = request.json
-    if data['changes']:
-        for change in data['changes']:
-            notification = dict(not_id=change['not_id'], flat_penalty=change['penalty'],
-                                comment=change['comment'])
-            update_result_file(filename=data['filename'], par_id=int(data['par_id']), notification=notification)
-    if data['new']:
-        points = data['new']['penalty'] * int(data['new']['sign'])
-        notification = dict(flat_penalty=points, comment=data['new']['comment'])
-        update_result_file(filename=data['filename'], par_id=int(data['par_id']), notification=notification)
+    par_id = int(data['par_id'])
+    resp = frontendUtils.adjust_task_result(taskid, data['filename'], par_id, data['notifications'])
 
-    resp = jsonify(success=True)
-    return resp
+    return jsonify(success=resp)
 
 
 @blueprint.route('/_export_fsdb/<int:compid>', methods=['GET'])

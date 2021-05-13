@@ -1513,6 +1513,37 @@ def get_pretty_data(content: dict, export=False) -> dict or str:
         return 'error'
 
 
+def adjust_task_result(task_id: int, filename: str, par_id: int, notifications: list):
+    from pilot.flightresult import FlightResult
+    from pilot.notification import Notification
+    from formula import get_formula_lib_by_name
+    from result import open_json_file, order_task_results, write_json_file
+    from task import Task
+    data = open_json_file(filename)
+    result = next((p for p in data['results'] if p['par_id'] == par_id), None)
+    task = Task.create_from_json(task_id, filename)
+    lib = get_formula_lib_by_name(data['formula']['formula_name'])
+    if result and task and lib:
+        try:
+            '''create FlightResult obj'''
+            pilot = FlightResult.from_result(result)
+            pilot.notifications = [Notification.from_dict(d) for d in notifications]
+            '''calculate penalty and score'''
+            penalty, score = lib.pilot_penalty(task, pilot)
+            '''check against day_quality, max score = day_quality * 1000'''
+            result['penalty'] = penalty
+            result['score'] = score
+            result['notifications'] = [n.as_dict() for n in pilot.notifications]
+            result['comment'] = pilot.comment
+            data['results'] = order_task_results(data['results'])
+            write_json_file(filename, data)
+            return True
+        except:
+            # raise
+            print(f'Error trying to update result file {filename}: par_id {par_id}')
+    return False
+
+
 def full_rescore(taskid: int, background=False, status=None, autopublish=None, compid=None, user=None):
     from task import Task
 

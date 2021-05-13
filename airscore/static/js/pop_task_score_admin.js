@@ -62,30 +62,31 @@ function populate_task_scores(){
       else { return (""); }
       }}
     ],
-
-    "language": {
-      "emptyTable":     "Error: result file not found"
+    language: {
+      emptyTable:     "Error: result file not found"
     },
-    "initComplete": function(settings, json) {
-      let table = $('#task_result').DataTable();
-      if ( !json.stats.avail_arr_points ){
-        table.column( 'arv:name' ).visible( false );
-      };
-      if ( !json.stats.avail_dep_points ){
-        table.column( 'leading:name' ).visible( false );
-      };
-      if ( !json.stats.avail_time_points ){
-        table.column( 'spd:name' ).visible( false );
-      };
-      if ( json.info.stopped_time ){
-        table.column( 'realdist:name' ).visible( true );
-        table.column( 'altbonus:name' ).visible( true );
-      };
-      score_data = json;
+    initComplete: function(settings, json) {
       $('#taskinfo tbody').empty()
-      $.each( json.stats, function( key, value ) {
-        $('#taskinfo tbody').append('<tr><td>' + key + '</td><td>' + value + '</td></tr>');
-      });
+      if ( json.stats != undefined ) {
+        let table = $('#task_result').DataTable();
+        if ( !json.stats.avail_arr_points ){
+          table.column( 'arv:name' ).visible( false );
+        };
+        if ( !json.stats.avail_dep_points ){
+          table.column( 'leading:name' ).visible( false );
+        };
+        if ( !json.stats.avail_time_points ){
+          table.column( 'spd:name' ).visible( false );
+        };
+        if ( json.info.stopped_time ){
+          table.column( 'realdist:name' ).visible( true );
+          table.column( 'altbonus:name' ).visible( true );
+        };
+        score_data = json;
+        $.each( json.stats, function( key, value ) {
+          $('#taskinfo tbody').append('<tr><td>' + key + '</td><td>' + value + '</td></tr>');
+        });
+      }
     }
   });
 }
@@ -219,6 +220,9 @@ function Score() {
       if ( response.success ){
         if (production) {
           $('#scoremodal').modal('hide');
+          $('#score_btn').show();
+          $('#cancel_score_btn').show();
+          $('#score_spinner').html('');
           create_flashed_message('New scoring file created.', 'success');
           updateFiles(load_latest=true);
         }
@@ -287,89 +291,81 @@ function change_status() {
 
 // Result Adjustment
 function adjust(par_id){
-  $("#edit_table tbody").empty();
-  $.each( score_data.data, function(  key, value ) {
-    if(value.par_id==par_id){
-      $.each( this.notifications, function(  key, value ) {
-        var edit='false'
-        if(value.notification_type=='admin'){ edit='true'}
-        $('#edit_table tbody').append('<tr><td data-editable="false" style="display:none;" class ="value">'+ value.not_id +'</td>'
-          +'<td data-editable="false" class ="value">'+ value.notification_type +'</td>'
-          +'<td data-editable="false" class ="value">'+ value.percentage_penalty*100 +'%</td>'
-          +'<td data-editable='+ edit + ' class ="value">'+ value.flat_penalty +'</td>'
-          +'<td data-editable='+ edit + ' class ="value">'+ value.comment +'</td></tr>');
-    <!--          <td data-editable="false" class ="value"><button type="button" class="btn btn-primary">Delete</button></td>-->
-      });
-    }
-    $('#save_adjustment').attr("onclick","save_adjustment("+par_id+")");
-    $('#edit_table').editableTableWidget();
-    $('#editmodal').modal('show');
-  });
-}
+  $("#edit_table").empty();
+  let pilot = score_data.data.find( el => el.par_id == par_id );
+  let name = jQuery(pilot.name).text();
+  $("#editmodal-pilot-name").html(name);
+  update_scores(pilot.totalP, pilot.penalty, pilot.score);
 
-function get_table_data(){
-  table_data=[];
-  // loop over each table row (tr)
-  $("#edit_table tr").each(function(){
-    var currentRow=$(this);
-    var obj={};
-    obj.not_id=parseInt(currentRow.find("td:eq(0)").text());
-    obj.source=currentRow.find("td:eq(1)").text();
-    obj.penalty=parseInt(currentRow.find("td:eq(3)").text());
-    obj.comment=currentRow.find("td:eq(4)").text();
-    if(obj.source == "admin"){
-      table_data.push(obj);
+  let editableTable = new NotificationsTable('edit_table', pilot, {
+    editableColumns: '2,3',
+//    $addButton: $('#edit_table_new_row'),
+    onEdit: function(row) {
+      update_scores(editableTable.totalP, editableTable.penalty, editableTable.score)
+    },
+    onBeforeDelete: function(row) {
+
+    },
+    onDelete: function() {
+      update_scores(editableTable.totalP, editableTable.penalty, editableTable.score)
+    },
+    onAdd: function() {
     }
   });
+  editableTable.init();
+
+  $('#save_adjustment').off().click( () => {
+    save_adjustment(par_id, editableTable.data);
+  });
+
+  $('#editmodal').modal('show');
 }
 
-function save_adjustment(par_id){
-  var mydata = new Object();
-  mydata.filename = task.selected;
-  mydata.par_id = par_id;
-  mydata.changes = [];
-  mydata.new = {};
-  if($('#penalty').val()!=0 || $('#comment').val()!=''){
-    mydata.new.penalty = parseInt($('#penalty').val());
-    mydata.new.comment = $('#comment').val();
-    mydata.new.sign = $('#penalty_bonus').val();
+function update_scores(totalP, penalty, score) {
+  $("#editmodal-has-penalty").hide();
+  if ( penalty ) {
+    $("#editmodal-before-penalty").html(totalP);
+    $("#editmodal-penalty").html(Math.round(penalty * 100) / 100);
+    $("#editmodal-has-penalty").show();
   }
-  //get any admin rows
-  get_table_data();
-  if (table_data!=[]) {
-    //see if there are any changes to admin rows
-    $.each(score_data.data, function(  key, value ) {
-      //find original values
-      if(value.par_id==par_id){
-        $.each( this.notifications, function(  key, value ) {
-          if(value.notification_type == 'admin'){
-            table_data.forEach(function(element) {
-              if(element.not_id==value.not_id){
-                //we have a match
-                if((element.comment!=value.comment)||(element.penalty!=value.flat_penalty)) {
-                  mydata.changes.push(element);
-                }
-              }
-            });
-          }
-        });
-      }
-    });
+  $("#editmodal-score").html(Math.round(score * 100) / 100);
+}
+
+function save_adjustment(par_id, data){
+  $('#editmodal-buttons').hide();
+  $('#editmodal-spinner').html('<div class="spinner-border" role="status"><span class="sr-only">Saving...</span></div>');
+
+  console.log('save_adjustment: ' + par_id);
+  let mydata = {
+    filename: task.selected,
+    par_id: par_id,
+    notifications: data
   }
-  if ((mydata.new.penalty || mydata.new.comment) || mydata.changes){
-    //send the adjustment
-    $.ajax({
-      type: "POST",
-      url:  url_adjust_task_result,
-      contentType: "application/json",
-      data: JSON.stringify(mydata),
-      dataType: "json",
-      success: function(response) {
+
+  console.log(mydata);
+
+  $.ajax({
+    type: "POST",
+    url:  url_adjust_task_result,
+    contentType: "application/json",
+    data: JSON.stringify(mydata),
+    dataType: "json",
+    success: function(response) {
+      if ( response.success ) {
         populate_task_scores();
-        $('#editmodal').modal('hide');
+        create_flashed_message('Result updated','success')
       }
-    });
-  }
+      else if ( response.success === false) {
+        create_flashed_message('Error: result is not updated.','danger')
+      }
+      else {
+        create_flashed_message('No result to update.','warning')
+      }
+      $('#editmodal-buttons').show();
+      $('#editmodal-spinner').html('');
+      $('#editmodal').modal('hide');
+    }
+  });
 }
 
 // Delete Result
@@ -388,7 +384,7 @@ function delete_result_modal() {
 }
 
 function delete_result(){
-  var mydata = new Object();
+  let mydata = new Object();
   mydata.deletefile = $("#deletefile").is(':checked');
   mydata.filename = $('#delete_modal_filename').val();
   $.ajax({
@@ -493,7 +489,7 @@ function update_buttons() {
 
 // Main Section
 var score_data = new Object();
-table_data = [];
+var suggested_status = '';
 
 // jQuery selection for the file select box
 var task = {
@@ -513,8 +509,6 @@ var task = {
   timestamp: '',
   status: ''
 };
-
-var suggested_status = '';
 
 $(document).ready(function() {
   if (task_info.locked) {
