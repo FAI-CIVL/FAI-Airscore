@@ -318,7 +318,7 @@ class AirspaceCheck(object):
                 if pen > penalty:
                     penalty = pen
                     max_pen_fix = fix
-            notifications.append(Notification(notification_type='airspace', percentage_penalty=pen, comment=comment))
+            notifications.append(Notification(notification_type='auto', percentage_penalty=pen, comment=comment))
         notifications = sorted(notifications, key=lambda x: x.percentage_penalty, reverse=True)
         return infringements_per_space, notifications, penalty
 

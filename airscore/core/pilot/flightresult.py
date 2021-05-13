@@ -283,7 +283,7 @@ class FlightResult(Participant):
                 flat_penalty = float(fres.get('penalty_points'))
                 reason = fres.get('penalty_reason')
             notification = Notification(
-                notification_type='admin',
+                notification_type='custom',
                 percentage_penalty=percentage_penalty,
                 flat_penalty=flat_penalty,
                 comment=reason,
@@ -737,7 +737,7 @@ def update_all_results(pilots: list, task_id: int):
         db.query(N).filter(
             and_(
                 N.track_id.in_([r['track_id'] for r in update_mappings]),
-                N.notification_type.in_(['jtg', 'airspace', 'track']),
+                N.notification_type.in_(['jtg', 'auto', 'track']),
             )
         ).delete(synchronize_session=False)
         db.query(W).filter(W.track_id.in_([r['track_id'] for r in update_mappings])).delete(synchronize_session=False)
@@ -747,7 +747,7 @@ def update_all_results(pilots: list, task_id: int):
                 [
                     dict(track_id=pilot.track_id, **asdict(n))
                     for n in pilot.notifications
-                    if not n.notification_type == 'admin'
+                    if not n.notification_type == 'custom'
                 ]
             )
             achieved_mappings.extend([dict(track_id=pilot.track_id, **asdict(w)) for w in pilot.waypoints_achieved])
@@ -757,7 +757,7 @@ def update_all_results(pilots: list, task_id: int):
         if notif_mappings:
             db.bulk_insert_mappings(N, notif_mappings, return_defaults=True)
             db.flush()
-            notif_list = filter(lambda i: i['notification_type'] in ['jtg', 'airspace'], notif_mappings)
+            notif_list = filter(lambda i: i['notification_type'] in ['jtg', 'auto'], notif_mappings)
             trackIds = set([i['track_id'] for i in notif_list])
             for idx in trackIds:
                 pilot = next(p for p in pilots if p.track_id == idx)

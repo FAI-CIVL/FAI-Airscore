@@ -30,26 +30,26 @@ function populate_task_scores(){
     },
     columnDefs: [{
       targets: [-2],  render: function (a, b, data, d) {
-      if (data.notifications){
-        var airspace = '';
-        var track = '';
-        var JTG = '';
-        var admin = '';
+      if ( data.notifications.length ) {
+        let airspace = '';
+        let track = '';
+        let JTG = '';
+        let custom = '';
         $.each( data.notifications, function( key, value ) {
-          if (value.notification_type=="airspace"){
+          if (value.notification_type=="auto"){
             airspace = 'CTR ';
           }
           if (value.notification_type=="track"){
             track = 'IGC ';
           }
-          if (value.notification_type=="admin"){
-            admin = 'Admin ';
+          if (value.notification_type=="custom"){
+            custom = 'Custom ';
           }
           if (value.notification_type=="jtg"){
             JTG = 'JTG ';
           }
         });
-        return(airspace + track + JTG + admin);
+        return(airspace + track + JTG + custom);
       }
       else { return (""); }
       }},

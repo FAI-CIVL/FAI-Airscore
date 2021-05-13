@@ -274,7 +274,7 @@ class Pilot(object):
 #             '''notifications and waypoints achieved'''
 #             '''delete old entries'''
 #             db.query(N).filter(and_(N.track_id.in_([r['track_id'] for r in update_mappings]),
-#                                             N.notification_type.in_(['jtg', 'airspace', 'track']))).delete(
+#                                             N.notification_type.in_(['jtg', 'auto', 'track']))).delete(
 #                 synchronize_session=False)
 #             db.query(W).filter(W.track_id.in_([r['track_id'] for r in update_mappings])).delete(
 #                 synchronize_session=False)
@@ -290,7 +290,7 @@ class Pilot(object):
 #             if notif_mappings:
 #                 db.bulk_insert_mappings(N, notif_mappings, return_defaults=True)
 #                 db.flush()
-#                 res_not_list = [i for i in notif_mappings if i['notification_type'] in ['jtg', 'airspace']]
+#                 res_not_list = [i for i in notif_mappings if i['notification_type'] in ['jtg', 'auto']]
 #                 trackIds = set([i['track_id'] for i in res_not_list])
 #                 for idx in trackIds:
 #                     pilot = next(p for p in pilots if p.track_id == idx)

@@ -7,7 +7,7 @@ from db.tables import TblNotification as N
 @dataclass
 class Notification:
     not_id: int = None  # database id
-    notification_type: str = 'admin'  # track, airspace, jtg, admin
+    notification_type: str = 'custom'  # track, auto, jtg, custom
     flat_penalty: float = 0.0
     percentage_penalty: float = 0.0
     comment: str = None
@@ -27,7 +27,7 @@ def get_notifications(pilot):
     notifications = []
     with db_session() as db:
         results = db.query(N).filter(N.track_id == pilot.track_id).all()
-        for n in [el for el in results if el.notification_type in ['jtg', 'airspace']]:
+        for n in [el for el in results if el.notification_type in ['jtg', 'auto']]:
             notification = Notification()
             n.populate(notification)
             notifications.append(notification)

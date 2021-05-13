@@ -756,10 +756,10 @@ def clear_notifications(task, result):
             notifications.append(
                 min([n for n in result.notifications if n.notification_type == 'jtg'], key=lambda x: x.flat_penalty)
             )
-    if any(n for n in result.notifications if n.notification_type == 'airspace' and n.percentage_penalty > 0):
+    if any(n for n in result.notifications if n.notification_type == 'auto' and n.percentage_penalty > 0):
         notifications.append(
             max(
-                [n for n in result.notifications if n.notification_type == 'airspace' and n.percentage_penalty > 0],
+                [n for n in result.notifications if n.notification_type == 'auto' and n.percentage_penalty > 0],
                 key=lambda x: x.percentage_penalty,
             )
         )
@@ -769,8 +769,8 @@ def clear_notifications(task, result):
 def evaluate_infringements(result: LiveResult, notifications: list):
     """ check Notifications, and keeps only the relevant ones"""
     if len(notifications) > 0:
-        notifications.extend([n for n in result.notifications if n.notification_type == 'airspace'])
-        result.notifications = [n for n in result.notifications if not n.notification_type == 'airspace']
+        notifications.extend([n for n in result.notifications if n.notification_type == 'auto'])
+        result.notifications = [n for n in result.notifications if not n.notification_type == 'auto']
         result.notifications.append(max(notifications, key=lambda x: x.percentage_penalty))
 
 

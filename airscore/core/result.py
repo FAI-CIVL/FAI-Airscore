@@ -681,7 +681,7 @@ def update_result_file(filename: str, par_id: int, notification: dict):
                 entry = next(el for el in result['notifications'] if int(el['not_id']) == not_id)
                 entry['comment'] = comment
                 entry['flat_penalty'] = penalty
-                result['comment'].replace(' '.join(['[admin]', old_comment]), ' '.join(['[admin]', comment]))
+                result['comment'].replace(' '.join(['[custom]', old_comment]), ' '.join(['[custom]', comment]))
             else:
                 '''adding a new one'''
                 row = N(track_id=track_id, notification_type='admin', **notification)
@@ -699,7 +699,7 @@ def update_result_file(filename: str, par_id: int, notification: dict):
                     )
                 )
                 '''update comment'''
-                comment = '[admin] ' + comment
+                comment = '[custom] ' + comment
                 if not result['comment']:
                     result['comment'] = comment
                 else:

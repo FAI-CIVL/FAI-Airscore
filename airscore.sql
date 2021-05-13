@@ -798,7 +798,7 @@ CREATE TABLE `tblLadderSeason` (
 CREATE TABLE `tblNotification` (
   `not_id` int(11) NOT NULL,
   `track_id` int(11) NOT NULL,
-  `notification_type` enum('admin','track','jtg','airspace') NOT NULL DEFAULT 'admin',
+  `notification_type` enum('custom','track','jtg','auto') NOT NULL DEFAULT 'custom',
   `flat_penalty` float(8,4) NOT NULL DEFAULT '0.0000',
   `percentage_penalty` float(5,4) NOT NULL DEFAULT '0.0000',
   `comment` varchar(80) DEFAULT NULL

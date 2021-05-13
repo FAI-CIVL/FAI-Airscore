@@ -934,7 +934,7 @@ class TblNotification(BaseModel):
     not_id = Column(INTEGER(11), primary_key=True)
     track_id = Column(INTEGER(11), nullable=False, index=True)
     notification_type = Column(
-        Enum('admin', 'track', 'jtg', 'airspace'), nullable=False, server_default=text("'admin'")
+        Enum('custom', 'track', 'jtg', 'auto'), nullable=False, server_default=text("'custom'")
     )
     flat_penalty = Column(Float(8), nullable=False, server_default=text("'0.0000'"))
     percentage_penalty = Column(Float(5), nullable=False, server_default=text("'0.0000'"))
