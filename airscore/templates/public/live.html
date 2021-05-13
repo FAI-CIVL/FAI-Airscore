@@ -41,12 +41,8 @@ Live Task Leaderboard
   </div>
   <div class='row mb-3'>
     <div class='col w-100'>
-      <table id='results_table' class='row-border compact' cellspacing='0' width='100%'>
-        <thead>
-        <tr>
-        </tr>
-        </thead>
-      </table>
+      {% from "macros.html" import datatable with context %}
+      {{ datatable('results_table') }}
     </div>
   </div>
 </div>

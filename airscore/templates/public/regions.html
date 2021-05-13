@@ -24,9 +24,8 @@ Flying Areas
 <div class='container' id='main'>
   <div class='row'>
   </div>
-
-  <table id='regions' class='row-border stripe compact mb-1' cellspacing='0' width='100%'>
-  </table>
+  {% from "macros.html" import datatable with context %}
+  {{ datatable('regions', compact=True) }}
 </div>
 {% endblock %}
 

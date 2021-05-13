@@ -34,13 +34,8 @@ AirScore Competitions
       </table>
     </div>
   </div>
-
-  <table id='competitions' class='row-border stripe compact mb-1' cellspacing='0' width='100%'>
-    <thead>
-    <tr>
-    </tr>
-    </thead>
-  </table>
+  {% from "macros.html" import datatable with context %}
+  {{ datatable('competitions') }}
 </div>
 {% endblock %}
 

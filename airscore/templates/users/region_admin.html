@@ -84,12 +84,8 @@ Region Admin
     </section>
   </div>
   <div class='panel collapse' id='wpt_list'>
-    <table id='waypoints' class='row-border compact' cellspacing='0' width='100%'>
-      <thead>
-      <tr>
-      </tr>
-      </thead>
-    </table>
+    {% from "macros.html" import datatable with context %}
+    {{ datatable('waypoints') }}
   </div>
   <div class='panel' id='map_panel'>
     <section class='panel-row row-wrap form'>

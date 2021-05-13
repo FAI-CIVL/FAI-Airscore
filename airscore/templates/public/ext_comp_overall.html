@@ -45,12 +45,8 @@ Competition Results - Overall
       </table>
     </div>
   </div>
-  <table id='results_table' class='row-border compact' cellspacing='0' width='100%'>
-    <thead>
-    <tr>
-    </tr>
-    </thead>
-  </table>
+  {% from "macros.html" import datatable with context %}
+  {{ datatable('results_table') }}
   <p>
     <span id='created' class=''></span>
   </p>

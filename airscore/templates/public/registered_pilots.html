@@ -44,13 +44,8 @@ Official website:<a href='http://{{comp.website}}' target='_blank'>http://{{comp
 
   <div class='row mb-3'>
     <div class='col w-100'>
-      <table id='pilots' class='row-border compact' cellspacing='0' width='100%'>
-        <thead>
-        <tr>
-        </tr>
-        </thead>
-      </table>
-
+      {% from "macros.html" import datatable with context %}
+      {{ datatable('pilots', compact=True) }}
     </div>
   </div>
 </div>

@@ -201,3 +201,18 @@
   <div class="form-input"><input type="checkbox" {% if checked %} checked {% endif %} class="form-control form-control-sm {% if class %} {{ class }} {% endif %}" id="{{ id }}" name="{{ id }}"></div>
 </div>
 {% endmacro %}
+
+{% macro datatable( tableid,
+                    compact=False,
+                    hover=True,
+                    striped=False,
+                    border=True,
+                    responsive=True,
+                    thead='thead-light' ) %}
+{# edit just the value to associate to each style #}
+{% set class = 'table' + (' table-sm' if compact else '') + (' table-striped' if striped else '') + (' row-border' if border else '') + (' table-hover' if hover else '') + (' table-responsive-lg' if responsive else '') %}
+<table id='{{ tableid }}' class='{{ class }}' cellspacing='0' width='100%'>
+    <thead class="{{ thead }}">
+    </thead>
+</table>
+{% endmacro %}

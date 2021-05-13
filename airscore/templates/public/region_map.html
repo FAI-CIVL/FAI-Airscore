@@ -60,8 +60,8 @@ Flying Area Map
     </button>
 </div>
 <div class='container collapse' id='wpt_list'>
-  <table id='waypoints' class='row-border compact' cellspacing='0' width='100%'>
-  </table>
+  {% from "macros.html" import datatable with context %}
+  {{ datatable('waypoints') }}
 </div>
 
 {% if airspace %}
@@ -72,8 +72,10 @@ Flying Area Map
     </button>
 </div>
 <div class='container collapse' id='airspace_list'>
-  <table id='airspace' class='row-border compact' cellspacing='0' width='100%'>
-  </table>
+  {% from "macros.html" import datatable with context %}
+  {{ datatable('airspace') }}
+<!--  <table id='airspace' class='table table-sm row-border table-hover table-responsive' cellspacing='0' width='100%'>-->
+<!--  </table>-->
 </div>
 {% endif %}
 

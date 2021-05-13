@@ -75,16 +75,8 @@ Track Management
 
 <div class='container' id='main'>
   <br />
-  <table id='tracks' class='row-border stripe compact mb-1' cellspacing='0' width='100%'>
-    <thead>
-    <tr>
-      <th>ID</th>
-      <th>Name</th>
-      <th>Result</th>
-      <th></th>
-    </tr>
-    </thead>
-  </table>
+  {% from "macros.html" import datatable with context %}
+  {{ datatable('tracks', striped=True) }}
 </div>
 
 <!---bulk-modal starts here--->

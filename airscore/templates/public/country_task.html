@@ -32,12 +32,8 @@ Task Result - Country
       </table>
     </div>
   </div>
-  <table id='task_result' class='row-border compact' cellspacing='0' width='100%'>
-    <thead>
-    <tr>
-    </tr>
-    </thead>
-  </table>
+  {% from "macros.html" import datatable with context %}
+  {{ datatable('task_result') }}
 </div>
 {% endblock %}
 

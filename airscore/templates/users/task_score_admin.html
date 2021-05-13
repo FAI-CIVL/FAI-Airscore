@@ -109,8 +109,8 @@ Task Scoring Admin
   <!-- Tab panes -->
   <div class="tab-content">
     <div role="tabpanel" class="tab-pane column-wrap fade show active" id="task_table">
-      <table id='task_result' class='row-border stripe compact' cellspacing='0' width='100%'>
-      </table>
+      {% from "macros.html" import datatable with context %}
+      {{ datatable('task_result', striped=True, compact=True) }}
     </div>
     <div role="tabpanel" class="tab-pane column-wrap fade" id="task_stats">
       <table class='table table-sm form_param' id='taskinfo'>
@@ -254,12 +254,7 @@ Task Scoring Admin
             </table>
           </div>
           <div class='col-md-12'>
-            {{editform.penalty_bonus()}}
-            {{editform.flat_penalty.label}} {{editform.flat_penalty()}}
-          </div>
-          <div class='col-md-12'>
-            {{editform.comment.label}}
-            {{editform.comment}}
+            {{ datatable('edit_table', striped=True) }}
           </div>
         </div>
         <div class='modal-footer'>
