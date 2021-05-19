@@ -1925,12 +1925,19 @@ def get_task_result_files(task_id: int, comp_id: int = None, offset: int = None)
 
 def get_region_waypoints(reg_id: int, region=None, openair_file: str = None) -> tuple:
     from mapUtils import create_airspace_layer, create_waypoints_layer
+    from db.tables import TblRegion as R
 
     _, waypoints = get_waypoint_choices(reg_id)
     points_layer, bbox = create_waypoints_layer(reg_id)
-    openair_file, airspace_layer, airspace_list, _ = create_airspace_layer(
-        reg_id, region=region, openair_file=openair_file
-    )
+    airspace_layer = None
+    airspace_list = []
+    if not openair_file:
+        if region:
+            openair_file = region.openair_file
+        else:
+            openair_file = R.get_by_id(reg_id).openair_file
+    if openair_file:
+        airspace_layer, airspace_list, _ = create_airspace_layer(openair_file)
 
     region_map = make_map(
         points=points_layer, circles=points_layer, airspace_layer=airspace_layer, show_airspace=False, bbox=bbox

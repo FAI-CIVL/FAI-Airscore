@@ -419,27 +419,17 @@ def create_waypoints_layer(reg_id: int, region=None, radius: int = 250) -> (list
     return points, bbox
 
 
-def create_airspace_layer(reg_id: int, region=None, openair_file: str = None) -> (list, list):
+def create_airspace_layer(openair_file: str) -> tuple:
     from airspaceUtils import read_airspace_map_file
-    from db.tables import TblRegion as R
 
-    airspace_layer = []
-    airspace_list = []
-    bbox = []
-    if not openair_file:
-        if region:
-            openair_file = region.openair_file
-        else:
-            openair_file = R.get_by_id(reg_id).openair_file
-    if openair_file:
-        try:
-            data = read_airspace_map_file(openair_file)
-            airspace_layer = data['spaces']
-            airspace_list = data['airspace_list']
-            bbox = data['bbox']
-        except (TypeError, Exception):
-            print(f"Error creating airspace error. Is the file missing?")
-            airspace_layer = None
-            airspace_list = None
-            bbox = None
-    return openair_file, airspace_layer, airspace_list, bbox
+    try:
+        data = read_airspace_map_file(openair_file)
+        airspace_layer = data['spaces']
+        airspace_list = data['airspace_list']
+        bbox = data['bbox']
+    except (TypeError, Exception):
+        print(f"Error creating airspace error. Is the file missing?")
+        airspace_layer = None
+        airspace_list = None
+        bbox = None
+    return airspace_layer, airspace_list, bbox
