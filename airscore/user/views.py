@@ -274,7 +274,6 @@ def airspace_edit(filename: str):
 @login_required
 @check_coherence
 @internal_required
-@state_messages
 def airspace_check_admin():
     from airspace import get_airspace_check_parameters
     compid = request.args.get('compid')
@@ -288,7 +287,7 @@ def airspace_check_admin():
             checkform.h_boundary_penalty.data = checkform.h_max_penalty.data
             checkform.v_boundary.data = checkform.v_inner_limit.data
             checkform.v_boundary_penalty.data = checkform.v_max_penalty.data
-        if checkform.h_v.data:
+        if not checkform.h_v.data:
             params = ['outer_limit', 'boundary', 'inner_limit', 'boundary_penalty', 'max_penalty']
             for el in params:
                 getattr(checkform, f'v_{el}').data = getattr(checkform, f'h_{el}').data
