@@ -1,0 +1,82 @@
+{% extends "base.html"%}
+
+{% block page_title %}
+Active Forbidden Areas
+{% endblock %}
+
+{% block head %}
+{% if airspace %}
+<script type="text/javascript" language="javascript"
+        src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.2.0/chart.min.js"
+        integrity="sha512-VMsZqo0ar06BMtg0tPsdgRADvl0kDHpTbugCBBrL55KmucH6hP9zWdLIWY//OTfMnzz6xWQRxQqsUFefwHuHyg=="
+        crossorigin="anonymous" xmlns="http://www.w3.org/1999/html"></script>
+{% endif %}
+{% endblock %}
+
+{% block css %}
+{{map.header|safe}}
+<link href='https://cdn.jsdelivr.net/npm/@dashboardcode/bsmultiselect@0.6.0/dist/css/BsMultiSelect.min.css' rel='stylesheet'>
+<link href='https://cdn.datatables.net/rowgroup/1.1.1/css/rowGroup.dataTables.min.css' rel='stylesheet'>
+{% endblock %}
+
+{% block back %}
+{% if args and args.taskid %}
+<a href="{{ url_for('public.task_result', taskid=taskid) }}">Back to Task Results</a>
+{% elif args and args.compid %}
+<a href="{{ url_for('public.competition', compid=args.compid) }}">Back to Competition</a>
+{% endif %}
+{% endblock %}
+
+{% block header %}Active Forbidden Areas and Infringements Calculation: {% endblock %}
+
+{% block content %}
+
+{% if airspace %}
+<div class='container-fluid' id='airspace_div'>
+  <div class="row">
+    <section class="m-3 p-1 col-lg-6">
+    <h5 id='spaces_no'></h5>
+    {% from "macros.html" import datatable with context %}
+    {{ datatable('airspace', thead='thead-dark') }}
+    </section>
+    <section class="m-3 p-1 col-lg-5" id="h-chart-section">
+      <h5 id='penalty_parameters'>Penalty Calculation Parameters:</h5>
+      <div id="h-chart-div">
+        <canvas id="h-chart"></canvas>
+        {{ datatable('h-chart-list', thead='thead-dark') }}
+      </div>
+      <div id="v-chart-div">
+        <canvas id="v-chart"></canvas>
+        {{ datatable('v-chart-list', thead='thead-dark') }}
+      </div>
+    </section>
+  </div>
+  <div class="row" id='map' style='position: relative; width: 100%; height: 600px; margin: auto; border: none;'>
+  {{map.html|safe}}
+  </div>
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+{% block js %}
+<script type='text/javascript' src='https://cdn.datatables.net/rowgroup/1.1.1/js/dataTables.rowGroup.min.js'></script>
+<script type='text/javascript' src='https://cdn.jsdelivr.net/npm/@dashboardcode/bsmultiselect@0.6.0/dist/js/BsMultiSelect.min.js'></script>
+<script type='text/javascript' src='https://d3js.org/d3.v3.min.js' charset='utf-8'></script>
+{% if airspace %}
+<script type='text/javascript' src="{{ static_url_for('static', filename='js/pop_spaces.js') }}"></script>
+<script type='text/javascript' src="{{ static_url_for('static', filename='js/pop_charts.js') }}"></script>
+<script type='text/javascript'>
+var penalty ={{ penalty|tojson }};
+var airspace = {{ airspace|tojson }};
+$(document).ready(function() {
+  update_spaces(airspace);
+});
+</script>
+{% endif %}
+
+<script type='text/javascript'>
+  {{map.script|safe}}
+</script>
+{% endblock %}

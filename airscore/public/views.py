@@ -674,6 +674,24 @@ def region_map(regid: int):
                            waypoint_file=region.waypoint_file, openair_file=openair_file)
 
 
+@blueprint.route('/task_airspace/<int:taskid>', methods=["GET", "POST"])
+def task_airspace(taskid: int):
+    openair_file, airspace_map, airspace_list, penalty = frontendUtils.get_task_airspace(taskid)
+
+    if not airspace_list:
+        '''probably file is missing'''
+        flash('There are no Airspace informations available for this task', category='warning')
+
+    return render_template(
+        'public/task_airspace.html',
+        taskid=taskid,
+        openair_file=openair_file,
+        map=None if not airspace_map else get_map_render(airspace_map),
+        airspace=airspace_list,
+        penalty=penalty
+    )
+
+
 @blueprint.route('/_map/<int:trackid>/<extra_trackids>')
 def multimap(trackid: int, extra_trackids):
     trackids = []

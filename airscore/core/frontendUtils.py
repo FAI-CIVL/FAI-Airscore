@@ -1945,6 +1945,36 @@ def get_region_waypoints(reg_id: int, region=None, openair_file: str = None) -> 
     return waypoints, region_map, airspace_list, openair_file
 
 
+def get_task_airspace(task_id: int):
+    from db.tables import TblTask, TblAirspaceCheck
+    from task import get_map_json
+    from mapUtils import create_airspace_layer
+    task = TblTask.get_by_id(task_id)
+    openair_file = task.openair_file
+
+    if not openair_file:
+        return None, None, None, None
+
+    wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox, _, _ = get_map_json(task_id)
+    airspace_layer, airspace_list, _ = create_airspace_layer(openair_file)
+    airspace_map = make_map(
+        points=wpt_coords, circles=turnpoints, polyline=short_route, airspace_layer=airspace_layer,
+        goal_line=goal_line, show_airspace=True, bbox=bbox
+    )
+    query = TblAirspaceCheck.get_all(comp_id=task.comp_id)
+    if any(el.task_id == task_id for el in query):
+        result = next(el for el in query if el.task_id == task_id)
+    else:
+        result = next(el for el in query if el.task_id is None)
+    parameters = {
+        key: getattr(result, key) for key in (
+            'v_boundary_penalty', 'v_outer_limit', 'h_inner_limit', 'h_boundary_penalty', 'h_outer_limit',
+            'notification_distance', 'v_inner_limit', 'v_boundary', 'h_max_penalty', 'h_boundary', 'function',
+            'v_max_penalty')
+    }
+    return openair_file, airspace_map, airspace_list, parameters
+
+
 def unpublish_task_result(task_id: int):
     """Unpublish any active result"""
     from result import unpublish_result
