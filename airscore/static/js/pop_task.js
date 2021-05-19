@@ -1,12 +1,8 @@
 function populate_task(json){
     $('#comp_name').text('Loading Results ...');
     var columns = [];
-//    json.results.forEach( function(item, index) {
-//      console.log(item);
-//    });
     let other_types = ['abs', 'nyp', 'dnf'];
     let data = json.results.filter( el => !other_types.includes(el.result_type) );
-    console.log(data[0]);
     // Rankings
     json.rankings.forEach( function(item, index) {
       columns.push({data: 'rankings.'+item.rank_id.toString(), title: '#', name: item.rank_id.toString(), className: "text-right", defaultContent: '', visible: (index === 0) ? true : false});

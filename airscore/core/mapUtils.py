@@ -404,7 +404,7 @@ def get_points_and_bbox(waypoints: list, radius: int = 250) -> tuple:
     return points, bbox
 
 
-def create_waypoints_layer(reg_id: int, region=None, radius: int = 250) -> (list, list):
+def create_waypoints_layer(reg_id: int, region=None, radius: int = 250) -> tuple:
     from db.conn import db_session
     from db.tables import TblRegionWaypoint as R
 
