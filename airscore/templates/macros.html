@@ -35,7 +35,7 @@
             {% set value = field.data|safe if field.data is not none %}
             <div class="mr-4 form-group {%- if form_type == "horizontal" %} row{% endif -%} {%- if field.flags.required %} required{% endif -%}">
                 <input type="hidden" id="{{id}}" name="{{ field.name }}" value="{{ value }}">
-                {{ field.label(class="form-control-label")|safe }}: {% if field.description %} <a tabindex="0" role="button" data-toggle="popover" data-trigger="focus" title="{{ field.label.text|safe }}" data-content="{{ field.description|safe }}"><span class="far fa-question-circle text-info"></span></a>{% endif %}
+                {{ field.label(class="form-control-label")|safe }}: {% if field.description %} <a tabindex="0" role="button" data-toggle="popover" data-trigger="focus" data-html="true" title="{{ field.label.text|safe }}" data-content="{{ field.description|safe }}"><span class="far fa-question-circle text-info"></span></a>{% endif %}
                 {% set _ = kwargs.update({'disabled': True, 'id': id+'_dummy'}) %}
                 {% if field.choices is not undefined %}
                     {{ field(class="form-control form-control-sm%s" % extra_classes, **kwargs)|safe }}
@@ -46,7 +46,7 @@
 
         {% elif field.widget.input_type == 'checkbox' %}
             <div class="mr-4 form-group form-check{% if form_type == "inline" %} form-check-inline{% endif %}">
-                {{ field.label(class="form-control-label", for=field.id)|safe }}: {% if field.description %} <a tabindex="0" role="button" data-toggle="popover" data-trigger="focus" title="{{ field.label.text|safe }}" data-content="{{ field.description|safe }}"><span class="far fa-question-circle text-info"></span></a>{% endif %}
+                {{ field.label(class="form-control-label", for=field.id)|safe }}: {% if field.description %} <a tabindex="0" role="button" data-toggle="popover" data-trigger="focus" data-html="true" title="{{ field.label.text|safe }}" data-content="{{ field.description|safe }}"><span class="far fa-question-circle text-info"></span></a>{% endif %}
                 {%- if field.errors %}
                     {{ field(class_="form-control form-control-sm is-invalid%s" % extra_classes)|safe }}
                 {%- else -%}
@@ -70,13 +70,13 @@
                 {%- else -%}
                     {{ field.label(class="form-control-label")|safe }}
                 {% endif %}
-                : {% if field.description %} <a tabindex="0" role="button" data-toggle="popover" data-trigger="focus" title="{{ field.label.text|safe }}" data-content="{{ field.description|safe }}"><span class="far fa-question-circle text-info"></span></a>{% endif %}
+                : {% if field.description %} <a tabindex="0" role="button" data-toggle="popover" data-trigger="focus" data-html="true" title="{{ field.label.text|safe }}" data-content="{{ field.description|safe }}"><span class="far fa-question-circle text-info"></span></a>{% endif %}
                 {% if form_type == 'horizontal' %}
                   <div class=" col-{{ horizontal_columns[0] }}-{{ horizontal_columns[2] }}">
                 {% endif %}
                 {% for item in field -%}
                     <div class="form-check{% if form_type == "inline" %} form-check-inline{% endif %}">
-                        {{ item.label(class="form-check-label", for=item.id)|safe }}: {% if field.description %} <a tabindex="0" role="button" data-toggle="popover" data-trigger="focus" title="{{ field.label.text|safe }}" data-content="{{ field.description|safe }}"><span class="far fa-question-circle text-info"></span></a>{% endif %}
+                        {{ item.label(class="form-check-label", for=item.id)|safe }}: {% if field.description %} <a tabindex="0" role="button" data-toggle="popover" data-trigger="focus" data-html="true" title="{{ field.label.text|safe }}" data-content="{{ field.description|safe }}"><span class="far fa-question-circle text-info"></span></a>{% endif %}
                         {{ item(class_="form-check-input")|safe }}
                     </div>
                 {% endfor %}
@@ -113,7 +113,7 @@
         {% else -%}
             <div class="mr-4 form-group {%- if form_type == "horizontal" %} row{% endif -%} {%- if field.flags.required %} required{% endif -%}">
                 {%- if form_type == "inline" %}
-                    {{ field.label(class="sr-only")|safe }}: {% if field.description %} <a tabindex="0" role="button" data-toggle="popover" data-trigger="focus" title="{{ field.label.text|safe }}" data-content="{{ field.description|safe }}"><span class="far fa-question-circle text-info"></span></a>{% endif %}
+                    {{ field.label(class="sr-only")|safe }}: {% if field.description %} <a tabindex="0" role="button" data-toggle="popover" data-trigger="focus" data-html="true" title="{{ field.label.text|safe }}" data-content="{{ field.description|safe }}"><span class="far fa-question-circle text-info"></span></a>{% endif %}
                     {% if field.type == 'FileField' %}
                         {% if field.errors %}
                             {{ field(class="form-control-file is-invalid%s" % extra_classes, **kwargs)|safe }}
@@ -128,7 +128,7 @@
                         {% endif %}
                     {% endif %}
                 {% elif form_type == "horizontal" %}
-                    {{ field.label(class="form-control-label " + (" col-%s-%s" % horizontal_columns[0:2]))|safe }}: {% if field.description %} <a tabindex="0" role="button" data-toggle="popover" data-trigger="focus" title="{{ field.label.text|safe }}" data-content="{{ field.description|safe }}"><span class="far fa-question-circle text-info"></span></a>{% endif %}
+                    {{ field.label(class="form-control-label " + (" col-%s-%s" % horizontal_columns[0:2]))|safe }}: {% if field.description %} <a tabindex="0" role="button" data-toggle="popover" data-trigger="focus" data-html="true" title="{{ field.label.text|safe }}" data-content="{{ field.description|safe }}"><span class="far fa-question-circle text-info"></span></a>{% endif %}
                     <div class=" col-{{ horizontal_columns[0] }}-{{ horizontal_columns[2] }}">
                         {% if field.type == 'FileField' %}
                             {% if field.errors %}
@@ -150,7 +150,7 @@
                         {%- endfor %}
                     {%- endif %}
                 {%- else -%}
-                    {{ field.label(class="form-control-label")|safe }}: {% if field.description %} <a tabindex="0" role="button" data-toggle="popover" data-trigger="focus" title="{{ field.label.text|safe }}" data-content="{{ field.description|safe }}"><span class="far fa-question-circle text-info"></span></a>{% endif %}
+                    {{ field.label(class="form-control-label")|safe }}: {% if field.description %} <a tabindex="0" role="button" data-toggle="popover" data-trigger="focus" data-html="true" title="{{ field.label.text|safe }}" data-content="{{ field.description|safe }}"><span class="far fa-question-circle text-info"></span></a>{% endif %}
                     {% if field.type == 'FileField' %}
                         {% if field.errors %}
                             {{ field(class="form-control-file is-invalid%s" % extra_classes, **kwargs)|safe }}
