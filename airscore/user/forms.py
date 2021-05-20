@@ -139,8 +139,20 @@ class CompForm(FlaskForm):
     from formula import list_formulas
     from frontendUtils import list_track_sources
 
+    help_overall_validity = "Overall Results can be calculated using different formulas:" \
+                            "<li>ALL: score of each valid task will be used;</li>" \
+                            "<li>DROPPED TASKS: worst results can be discarded, based on the number of valid tasks " \
+                            "and the chosen parameter that indicates number of valid tasks every witch a result more " \
+                            "can be discarded;</li>" \
+                            "<li>FTV (Fixed Total Validity): a procedure to score pilots on their best task " \
+                            "performances, rather than all their tasks. Uses a percentage (selected as parameter, " \
+                            "default is 25%) of total validity and determines results used for each pilot based on " \
+                            "performance. Details are found in Section 7F of " \
+                            "<a href='https://www.fai.org/page/sporting-code-section-7' target='_blank'>FAI Sporting " \
+                            "Code</a>.</li>"
+
     help_nom_launch = "When pilots do not take off for safety reasons, to avoid difficult launch conditions or bad " \
-                      "conditions in the air, Launch Validity is reduced.. Nominal Launch defines a threshold as a " \
+                      "conditions in the air, Launch Validity is reduced. Nominal Launch defines a threshold as a " \
                       "percentage of the pilots in a competition. Launch Validity is only reduced if fewer pilots " \
                       "than defined by that threshold decide to launch. The recommended default value for Nominal" \
                       " Launch is 96%, which means that Launch Validity will only be reduced if fewer than 96% of" \
@@ -163,9 +175,9 @@ class CompForm(FlaskForm):
 
     help_nom_time = "Nominal time indicates the expected task duration, the amount of time required to fly the speed" \
                     " section. If the fastest pilot’s time is below nominal time, the task will be devalued. There is" \
-                    " no devaluation if the fastest pilot’s time is above nominal time. Nominal time should be set to " \
-                    "the expected “normal” task duration for the competition site, and nominal distance / nominal time " \
-                    "should be a bit higher than typical average speeds for the area."
+                    " no devaluation if the fastest pilot’s time is above nominal time. Nominal time should be set " \
+                    "to the expected “normal” task duration for the competition site, and nominal distance / nominal " \
+                    "time should be a bit higher than typical average speeds for the area."
 
     help_score_back = "In a stopped task, this value defines the amount of time before the task stop was announced" \
                       " that will not be considered for scoring. The default is 5 minutes, but depending on local " \
@@ -202,7 +214,8 @@ class CompForm(FlaskForm):
                           description="If locked, a rescore will not change displayed results")
 
     # formula object/table
-    overall_validity = SelectField('Scoring', choices=[('all', 'ALL'), ('ftv', 'FTV'), ('round', 'ROUND')])
+    overall_validity = SelectField('Scoring', choices=[('all', 'ALL'), ('ftv', 'FTV'), ('round', 'DROPPED TASKS')],
+                                   description=help_overall_validity)
     validity_param = IntegerField('FTV percentage', validators=[NumberRange(min=0, max=100)])
     nom_dist = IntegerField('Nominal Distance (km)', description=help_nom_distance)
     nom_goal = IntegerField('Nominal Goal (%)', description=help_nom_goal, validators=[NumberRange(min=0, max=100)])

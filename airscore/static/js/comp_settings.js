@@ -1,11 +1,11 @@
 // jQuery selection for the 2 select boxes
 var dropdown = {
-    category: $('#select_category'),
-    formula: $('#select_formula'),
-    scoring: $('#overall_validity'),
-    igc_config: $('#igc_parsing_file'),
-    classification: $('#select_classification'),
-    ranking_type: $('#rank_type')
+  category: $('#select_category'),
+  formula: $('#select_formula'),
+  scoring: $('#overall_validity'),
+  igc_config: $('#igc_parsing_file'),
+  classification: $('#select_classification'),
+  ranking_type: $('#rank_type')
 };
 
 var comp_class = dropdown.category.val();
@@ -50,11 +50,6 @@ $(document).ready(function() {
     $('#confirm_success').attr("onclick","change_category();");
     $('#confirm_modal').modal('show');
   });
-//  dropdown.category.on('change', function() {
-//    populate_rankings(dropdown.category.val())
-//    updateFormulas();
-//    ask_update('category');
-//  });
 
   // event listener to formula dropdown change
   dropdown.formula.on('change', function() {
@@ -63,8 +58,21 @@ $(document).ready(function() {
 
   // event listener to scoring dropdown change
   dropdown.scoring.on('change', function() {
-     if (dropdown.scoring.val() == 'all') $('#validity_param_div').hide(); else $('#validity_param_div').show();
-
+    if (dropdown.scoring.val() == 'all') {
+      $('#validity_param').val(0);
+      $('#validity_param_div').hide();
+    }
+    else {
+      if (dropdown.scoring.val() == 'ftv') {
+        $('#validity_param_div label').html('FTV percentage')
+        $('#validity_param').val(25)
+      }
+      else {
+        $('#validity_param_div label').html('Discard every')
+        $('#validity_param').val(4)
+      }
+      $('#validity_param_div').show();
+    }
   });
 
   // event listener to igc config dropdown change
