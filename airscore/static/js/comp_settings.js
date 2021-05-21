@@ -9,8 +9,10 @@ var dropdown = {
 };
 
 var comp_class = dropdown.category.val();
+var isSubmitting = false;
 
 $(document).ready(function() {
+  $('#main_comp_settings_form').data('initial-state', $('#main_comp_settings_form').serialize());
   populate_tasks( tasks_info );
   get_scorekeepers( compid );
 
@@ -87,8 +89,24 @@ $(document).ready(function() {
   });
 
   $('#main_comp_settings_form :input').change(function(){
-    $('#main_comp_save_button').removeClass( "btn-outline-secondary" ).addClass( "btn-warning" );
-    $('#save_button_warning_text').addClass('bg-warning').html('Competition needs to be saved');
+    if (!isSubmitting && $('#main_comp_settings_form').serialize() != $('#main_comp_settings_form').data('initial-state')) {
+      $('#main_comp_save_button').removeClass( "btn-outline-secondary" ).addClass( "btn-warning" );
+      $('#save_button_warning_text').addClass('bg-warning').html('Competition needs to be saved');
+    }
+    else {
+      $('#main_comp_save_button').removeClass( "btn-warning" ).addClass( "btn-outline-secondary" );
+      $('#save_button_warning_text').removeClass('bg-warning').html('');
+    }
+  });
+
+  $('#main_comp_settings_form').submit( function() {
+    isSubmitting = true
+  })
+
+  $(window).on('beforeunload', function() {
+    if (!isSubmitting && $('#main_comp_settings_form').serialize() != $('#main_comp_settings_form').data('initial-state')) {
+      return 'You have unsaved changes which will not be saved.'
+    }
   });
 
   // external event conversion

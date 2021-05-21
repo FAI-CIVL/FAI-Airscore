@@ -1,4 +1,5 @@
 var turnpoints;
+var isSubmitting = false;
 var task = {
   isset: null,
   ready_to_score: null
@@ -6,12 +7,28 @@ var task = {
 
 
 $(document).ready(function() {
+  $('#main_task_settings_form').data('initial-state', $('#main_task_settings_form').serialize());
   get_turnpoints();
 
   $('#main_task_settings_form :input').change(function(){
-    console.log('form changed');
-    $('#main_task_save_button').removeClass( "btn-outline-secondary" ).addClass( "btn-warning" );
-    $('#save_button_warning_text').addClass('bg-warning').html('Task needs to be saved');
+    if (!isSubmitting && $('form').serialize() != $('form').data('initial-state')) {
+      $('#main_task_save_button').removeClass( "btn-outline-secondary" ).addClass( "btn-warning" );
+      $('#save_button_warning_text').addClass('bg-warning').html('Task needs to be saved');
+    }
+    else {
+      $('#main_task_save_button').removeClass( "btn-warning" ).addClass( "btn-outline-secondary" );
+      $('#save_button_warning_text').removeClass('bg-warning').html('');
+    }
+  });
+
+  $('#main_task_settings_form').submit( function() {
+    isSubmitting = true
+  })
+
+  $(window).on('beforeunload', function() {
+    if (!isSubmitting && $('#main_task_settings_form').serialize() != $('#main_task_settings_form').data('initial-state')) {
+      return 'You have unsaved changes which will not be saved.'
+    }
   });
 
   let stopped = $('#stopped_time').val();

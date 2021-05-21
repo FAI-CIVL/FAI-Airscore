@@ -234,8 +234,10 @@ var charts = {
     object: new Object()
   }
 };
+var isSubmitting = false;
 
 $(document).ready(function() {
+  $('#airspace_check_form').data('initial-state', $('#airspace_check_form').serialize());
   show_boundary();
   show_v_limit();
   update_parameters();
@@ -262,10 +264,25 @@ $(document).ready(function() {
 
   // inform when saving changings is needed
   $('#airspace_check_form :input').change(function(){
-    console.log('form changed');
-    $('#airspace_check_save_button').removeClass( "btn-outline-secondary" ).addClass( "btn-warning" );
-    $('#save_button_warning_text').addClass('bg-warning').html('Parameters are changed and need to be saved');
+    if (!isSubmitting && $('#airspace_check_form').serialize() != $('#airspace_check_form').data('initial-state')) {
+      $('#airspace_check_save_button').removeClass( "btn-outline-secondary" ).addClass( "btn-warning" );
+      $('#save_button_warning_text').addClass('bg-warning').html('Parameters are changed and need to be saved');
+    }
+    else {
+      $('#airspace_check_save_button').removeClass( "btn-warning" ).addClass( "btn-outline-secondary" );
+      $('#save_button_warning_text').removeClass('bg-warning').html('');
+    }
     update_charts();
+  });
+
+  $('#airspace_check_form').submit( function() {
+    isSubmitting = true
+  });
+
+  $(window).on('beforeunload', function() {
+    if (!isSubmitting && $('#airspace_check_form').serialize() != $('#airspace_check_form').data('initial-state')) {
+      return 'You have unsaved changes which will not be saved.'
+    }
   });
 
 });
