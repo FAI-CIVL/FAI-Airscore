@@ -303,12 +303,13 @@ class TaskForm(FlaskForm):
                          validators=[Optional()], description='Determines the Waypoint listed, and the airspace used')
 
     # times
-    window_open_time = TimeField('Window open', format='%H:%M', validators=[DataRequired()])
-    start_time = TimeField('Start time', format='%H:%M', validators=[DataRequired()])
-    window_close_time = TimeField('Window close', format='%H:%M', validators=[DataRequired()])
-    start_close_time = TimeField('Start close', format='%H:%M', validators=[DataRequired()])
+    window_open_time = TimeField('Window open', format='%H:%M', render_kw={"step": "300"},
+                                 validators=[Optional(strip_whitespace=True)])
+    start_time = TimeField('Start time', format='%H:%M', validators=[Optional(strip_whitespace=True)])
+    window_close_time = TimeField('Window close', format='%H:%M', validators=[Optional(strip_whitespace=True)])
+    start_close_time = TimeField('Start close', format='%H:%M', validators=[Optional(strip_whitespace=True)])
     stopped_time = TimeField('Stopped time', format='%H:%M', validators=[Optional(strip_whitespace=True)])
-    task_deadline = TimeField('Deadline', format='%H:%M', validators=[DataRequired()])
+    task_deadline = TimeField('Deadline', format='%H:%M', validators=[Optional(strip_whitespace=True)])
 
     # other
     SS_interval = IntegerField('Gate interval (mins)', default=0)
@@ -345,20 +346,44 @@ class TaskForm(FlaskForm):
 
     def validate_on_submit(self):
         result = super(TaskForm, self).validate()
-        if self.window_close_time.data < self.window_open_time.data:
-            self.window_open_time.errors.append('window open time is after window close time')
+        if any(el.data is not None for el in [self.window_open_time, self.start_time]):
+            result = self.validate_timings()
+        return result
+
+    def validate_timings(self):
+        result = True
+        '''check window open time'''
+        if self.window_open_time.data is None:
+            self.window_open_time.errors.append(f'window open time must be set')
             result = False
-        if self.start_time.data < self.window_open_time.data:
-            self.start_time.errors.append('start time is before window open')
+        else:
+            for el in (self.window_close_time, self.start_time):
+                if el.data and self.window_open_time.data > el.data:
+                    el.errors.append(f'{el.label} is before window open time')
+                    result = False
+        '''check start time'''
+        if self.start_time.data is None:
+            self.start_time.errors.append(f'start time must be set')
             result = False
-        if self.start_close_time.data < self.start_time.data:
-            self.start_close_time.errors.append('start time is after start close time')
+        else:
+            if self.start_close_time.data and self.start_close_time.data < self.start_time.data:
+                self.start_close_time.errors.append(f'start close time is before start time')
+                result = False
+        '''check task deadline'''
+        if self.task_deadline.data is None:
+            self.task_deadline.errors.append(f'task deadline time must be set')
             result = False
-        if self.window_close_time.data > self.start_close_time.data:
-            self.window_close_time.errors.append('window close time is after start close time')
-            result = False
-        if self.task_deadline.data < self.start_close_time.data:
-            result = False
+        else:
+            for el in (self.window_open_time, self.start_time):
+                if el.data and self.task_deadline.data < el.data:
+                    el.errors.append(f'{el.label} is after task deadline')
+                    result = False
+            for el in (self.window_close_time, self.start_close_time):
+                if el.data is None:
+                    el.data = self.task_deadline.data
+                elif self.task_deadline.data < el.data:
+                    el.errors.append(f'{el.label} is after task deadline')
+                    result = False
         return result
 
 

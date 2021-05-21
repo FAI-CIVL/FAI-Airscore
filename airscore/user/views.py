@@ -740,15 +740,17 @@ def task_admin(taskid: int):
             task.date = taskform.date.data
             task.task_type = taskform.task_type.data
             task.reg_id = taskform.region.data if taskform.region.data not in (0, '', None) else None
-            task.window_open_time = time_to_seconds(taskform.window_open_time.data) - taskform.time_offset.data
-            task.window_close_time = time_to_seconds(taskform.window_close_time.data) - taskform.time_offset.data
-            task.start_time = time_to_seconds(taskform.start_time.data) - taskform.time_offset.data
-            task.start_close_time = time_to_seconds(taskform.start_close_time.data) - taskform.time_offset.data
-            task.stopped_time = None if taskform.stopped_time.data is None else \
-                time_to_seconds(taskform.stopped_time.data) - taskform.time_offset.data
-            task.task_deadline = time_to_seconds(taskform.task_deadline.data) - taskform.time_offset.data
-            task.SS_interval = taskform.SS_interval.data * 60  # (convert from min to sec)
-            task.start_iteration = taskform.start_iteration.data
+            if any(el.data is not None for el in (taskform.window_open_time, taskform.start_time)):
+                '''save timings only if set'''
+                task.window_open_time = time_to_seconds(taskform.window_open_time.data) - taskform.time_offset.data
+                task.window_close_time = time_to_seconds(taskform.window_close_time.data) - taskform.time_offset.data
+                task.start_time = time_to_seconds(taskform.start_time.data) - taskform.time_offset.data
+                task.start_close_time = time_to_seconds(taskform.start_close_time.data) - taskform.time_offset.data
+                task.stopped_time = None if taskform.stopped_time.data is None else \
+                    time_to_seconds(taskform.stopped_time.data) - taskform.time_offset.data
+                task.task_deadline = time_to_seconds(taskform.task_deadline.data) - taskform.time_offset.data
+                task.SS_interval = taskform.SS_interval.data * 60  # (convert from min to sec)
+                task.start_iteration = taskform.start_iteration.data
             task.time_offset = taskform.time_offset.data
             task.check_launch = 'on' if taskform.check_launch.data else 'off'
             task.airspace_check = taskform.airspace_check.data
