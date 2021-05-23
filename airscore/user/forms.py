@@ -513,9 +513,6 @@ class ParticipantForm(FlaskForm):
 
     submit = SubmitField('Save')
 
-    def validate_on_submit(self):
-        return super(ParticipantForm, self).validate()
-
 
 class EditScoreForm(FlaskForm):
     penalty_bonus = SelectField(choices=[(1, 'Penalty'), (-1, 'Bonus')], id='penalty_bonus', default=1)

@@ -163,7 +163,7 @@ function edit_participant(par_id) {
   $('#mod_modal').modal('show');
 }
 
-$('#participant_form').submit( function (e) {
+$('#participant_form').submit( function(e) {
   e.preventDefault(); // block the traditional submission of the form.
   $('#mod_modal .modal-errors').empty();  // delete all previous errors
   let mydata = $('#participant_form').serialize();
