@@ -517,18 +517,18 @@ def get_task_turnpoints(task) -> dict:
             total_dist = tp['partial_distance']
         if tp['type'] == 'speed':
             if tp['how'] == 'entry':
-                tp['type'] = 'SSS - Out/Enter'
+                tp['type_text'] = 'SSS - Out/Enter'
             else:
-                tp['type'] = 'SSS - In/Exit'
+                tp['type_text'] = 'SSS - In/Exit'
         elif tp['type'] == 'endspeed':
-            tp['type'] = 'ESS'
+            tp['type_text'] = 'ESS'
         elif tp['type'] == 'goal':
             if tp['shape'] == 'circle':
-                tp['type'] = 'Goal Cylinder'
+                tp['type_text'] = 'Goal Cylinder'
             else:
-                tp['type'] = 'Goal Line'
+                tp['type_text'] = 'Goal Line'
         else:
-            tp['type'] = tp['type'].capitalize()
+            tp['type_text'] = tp['type'].capitalize()
     if task.opt_dist is None or total_dist == '':
         total_dist = 'Distance not yet calculated'
     else:
@@ -747,7 +747,7 @@ def save_turnpoint(task_id: int, turnpoint: Turnpoint):
                     if hasattr(tp, k):
                         setattr(tp, k, v)
             db.flush()
-        return 1
+    return tp.wpt_id
 
 
 def copy_turnpoints_from_task(task_id: int, task_from: int) -> bool:
