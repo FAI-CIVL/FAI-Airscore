@@ -14,7 +14,7 @@
         {% set id = field.name if not id %}
         {% set value = field.data|safe if field.data is not none %}
         <input type="hidden" id="{{ id }}" name="{{ field.name }}" value="{{ value }}">
-    {% elif field.hidden %}
+    {% elif field.hidden or field.widget.input_type == 'hidden' %}
         {{ field(**kwargs)|safe }}
     {% else %}
         {% if preset %}
