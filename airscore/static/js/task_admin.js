@@ -43,6 +43,20 @@ $(document).ready(function() {
     $('#multi_start').addClass('show');;
   }
 
+  $('#mod-type').on('change', function() {
+    ['mod-how', 'mod-shape', 'mod-radius'].forEach( el => $('#'+el+'-div').hide() )
+    let val = $(this).val();
+    if ( val != 'launch' || $('#check_launch').is(':checked') ) $('#mod-radius-div').show();
+    if ( val == 'speed' ) $('#mod-how-div').show();
+    if ( val == 'goal' ) $('#mod-shape-div').show();
+  });
+  $('#type').on('change', function() {
+    ['how', 'shape', 'radius'].forEach( el => $('#'+el+'-div').hide() )
+    let val = $(this).val();
+    if ( val != 'launch' || $('#check_launch').is(':checked') ) $('#radius-div').show();
+    if ( val == 'speed' ) $('#how-div').show();
+    if ( val == 'goal' ) $('#shape-div').show();
+  });
 });
 
 function get_turnpoints(){
@@ -110,11 +124,14 @@ function update_turnpoints(json) {
     {data: 'num', title: '#', className: "text-right", defaultContent: ''},
     {data: 'wpt_id', title: 'wpt_id', defaultContent: '', visible: false},
     {data: 'name', title: 'ID', defaultContent: ''},
-    {data: 'type', title: '', name: 'type', render: function ( data ) {
-                                                                  if ( data == 'Waypoint' ){return ''}
+    {data: 'type_text', title: '', name: 'type', render: function ( data ) {
+                                                                  if ( data == 'waypoint' ){return ''}
                                                                   else {return data}
                                                                  }},
-    {data: 'radius', title: 'Radius', name: 'radius', className: "text-right", defaultContent: ''},
+    {data: 'radius', title: 'Radius', name: 'radius', className: "text-right", defaultContent: '', render: function ( data, type, row ) {
+                                                                  if ( row.type == 'launch' && !$('#check_launch').is(':checked') ){return ''}
+                                                                  else {return data}
+                                                                 }},
     {data: 'partial_distance', title: 'Dist.', name: 'dist', className: "text-right", defaultContent: ''}
   ];
   if (!external){
@@ -139,7 +156,7 @@ function update_turnpoints(json) {
     },
     initComplete: function(settings) {
       // manage wpt type selector
-      $('#number').val(json.next_number);
+      $('#num').val(json.next_number);
       $("#type").children('option').hide();
       $("#new_waypoint_form").show();
       $("#type").prop('disabled', false).val('');
@@ -181,31 +198,26 @@ function update_turnpoints(json) {
   });
 }
 
-function save_turnpoint(){
+$('#turnpoint_form').submit( function(e) {
+  e.preventDefault(); // block the traditional submission of the form.
+
   $('#add_waypoint_button').hide();
   $('#add_tp_spinner').html('<div class="spinner-border" role="status"><span class="sr-only"></span></div>');
-
-  var radius = $('#radius').val();
-  if( $('#type').val() == 'launch' && $('#check_launch').val() == 'n' ) {
-    radius = 400;
-  }
-  var mydata = new Object();
-  mydata.number = $('#number').val();
-  mydata.type = $('#type').val();
-  mydata.rwp_id = $('#name').val();
-  mydata.direction = $('#how').val();
-  mydata.shape = $('#shape').val();
-  mydata.radius = radius;
-  mydata.wpt_id = null
+  let mydata = $('#turnpoint_form').serialize();
   $.ajax({
     type: "POST",
-    url: url_add_turnpoint,
-    contentType:"application/json",
-    data : JSON.stringify(mydata),
-    dataType: "json",
+    url: url_save_turnpoint,
+    data : mydata,
     success: function (response) {
-      if(task.isset != null && response.task_set != task.isset) {
+      if ( response.errors ) {
+        response.errors.forEach( el => {
+          let text = el[1][0];
+          create_flashed_message(el[0]+': '+text, 'danger');
+        });
+      }
+      else if(task.isset != null && response.task_set != task.isset) {
         location.reload(true);
+        console.log('reload');
         return;
       }
       else {
@@ -215,7 +227,7 @@ function save_turnpoint(){
       }
     }
   });
-}
+});
 
 function delete_tp(tpid, partial_d){
   var mydata = new Object();
@@ -272,54 +284,51 @@ function confirm_delete_all() {
 }
 
 function modify_tp(tpid) {
-  var found = turnpoints.find( el => el.wpt_id == tpid)
-  console.log('found='+found.wpt_id+', '+found.name+', '+found.original_type)
-  var original_num = found.num
-  var myHeading = "<p>Modify turnpoint ";
+  let found = turnpoints.find( el => el.wpt_id == tpid)
+  let original_num = found.num;
+  let myHeading = "<p>Modify turnpoint ";
 
-  $('#mod_tp_number').val(found.num).change();
-  $('#mod_tp_type').val(found.original_type).change();
-  $('#mod_tp_name').val(found.rwp_id).change();
-  $('#mod_tp_how').val(found.how).change();
-  $('#mod_tp_shape').val(found.shape).change();
-  $('#mod_tp_radius').val(found.radius).change();
+  $('#mod-wpt_id').val(found.wpt_id).change();
+  $('#mod-num').val(found.num).change();
+  $('#mod-rwp_id').val(found.rwp_id).change();
+  $('#mod-type').val(found.type).change();
+  $('#mod-how').val(found.how).change();
+  $('#mod-shape').val(found.shape).change();
+  $('#mod-radius').val(found.radius).change();
+
   $("#delmodal-body").html(myHeading + original_num + '?</p>');
-  $('#modify_confirmed').attr("onclick","save_modified_turnpoint('"+ tpid +"')");
   $('#modmodal').modal('show');
 }
 
-function save_modified_turnpoint(id){
-  var radius =$('#mod_tp_radius').val();
-  if($('#mod_tp_type').val() == 'launch' ){
-    radius = 400;
-    if($('#check_launch').val()=='y' ){
-       radius = $('#mod_tp_launch_radius').val();
-    }
-  }
-  var mydata = new Object();
-  mydata.number = $('#mod_tp_number').val();
-  mydata.type = $('#mod_tp_type').val();
-  mydata.rwp_id = $('#mod_tp_name').val();
-  mydata.direction = $('#mod_tp_how').val();
-  mydata.shape = $('#mod_tp_shape').val();
-  mydata.radius = radius;
-  mydata.wpt_id = id
+$('#mod_turnpoint_form').submit( function(e) {
+  e.preventDefault(); // block the traditional submission of the form.
 
+  $('#mod_turnpoint_save_button').hide();
+  let mydata = $('#mod_turnpoint_form').serialize();
   $.ajax({
     type: "POST",
-    url: url_add_turnpoint,
-    data : JSON.stringify(mydata),
-    contentType:"application/json",
-    dataType: "json",
+    url: url_save_turnpoint,
+    data : mydata,
     success: function (response) {
-      if(task.isset != null && response.task_set != task.isset) {
+      if ( response.errors ) {
+        response.errors.forEach( el => {
+          let text = el[1][0];
+          create_flashed_message(el[0]+': '+text, 'danger');
+        });
+      }
+      else if(task.isset != null && response.task_set != task.isset) {
         location.reload(true);
+        console.log('reload');
         return;
       }
-      update_turnpoints(response);
+      else {
+        $('#mod_turnpoint_save_button').show();
+        update_turnpoints(response);
+        $('#modmodal').modal('hide');
+      }
     }
   });
-}
+});
 
 function copy_turnpoints() {
   mydata = { task_from: $('#copy_task_select').val() };
@@ -382,8 +391,7 @@ $(function () {
       });
     },
     submit: function (e, data){
-    $('#upload_box').hide();
-<!--         $('#progress_text').text(data.files[0].name);-->
+      $('#upload_box').hide();
     },
     success: function () {
       get_turnpoints();

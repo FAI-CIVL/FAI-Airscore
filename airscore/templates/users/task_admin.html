@@ -162,7 +162,7 @@ Task Settings
 </form>
 
 <!-- Task Waypoints Section -->
-<div class="panel-content column-wrap">
+<div class="column-wrap">
   <div class="panel-switch">
     <button class='btn btn-primary ml-4' type='button' data-toggle='collapse' data-target='#task_waypoints'
             aria-expanded='true' aria-controls='task_waypoints'>
@@ -195,41 +195,33 @@ Task Settings
       </section>
     </div>
     {% endif%}
-    <section class="panel-row row-wrap form">
-      <div class='panel' id='wpt_list'>
+    <section class="panel-row row-wrap form col-lg-12">
+      <div class='panel col-lg-5' id='wpt_list'>
         {% if taskform.submit and not readonly %}
         {% if taskform.region.data %}
-        <section class="tab-row row-wrap form p-2">
-          {{ render_field(turnpointform.name, size=8) }}
-        </section>
-        <section class="tab-row row-wrap form p-2" id="new_waypoint_form">
-          {{ render_field(turnpointform.number, size=2) }}
-          {{ render_field(turnpointform.type) }}
-          <div class='display-if' data-target_name='type' data-target_type='select'
-                         data-target_value='speed'>
-          {{ render_field(turnpointform.how) }}
-          </div>
-          <div class='display-if' data-target_name='type' data-target_type='select'
-                         data-target_value='goal'>
-          {{ render_field(turnpointform.shape) }}
-          </div>
-          {% if taskform.check_launch == 1 %}
-          <div class='display-if' data-target_name='type' data-target_type='select'
-                         data-target_value='launch'>
-          {{ render_field(turnpointform.radius, size=5) }}
-          </div>
-          {% endif%}
-          <div class='display-if' data-target_name='type' data-target_type='select'
-                         data-target_value_not='launch'>
-          {{ render_field(turnpointform.radius, size=5) }}
-          </div>
-        </section>
-        <section class="panel-row row-wrap button">
-          <button id='add_waypoint_button' class='btn btn-success' type='button' onclick='save_turnpoint()'>
-            Add
-          </button>
-          <p id='add_tp_spinner'></p>
-        </section>
+        <form method='post' id="turnpoint_form">
+          <section class="tab-row row-wrap form p-2">
+            {{ render_field(turnpointform.task_id) }}
+            {{ render_field(turnpointform.rwp_id, size=8) }}
+          </section>
+          <section class="tab-row row-wrap form p-2" id="new_waypoint_form">
+            {{ render_field(turnpointform.num, size=2) }}
+            {{ render_field(turnpointform.type) }}
+            <div id="how-div">
+            {{ render_field(turnpointform.how) }}
+            </div>
+            <div id="shape-div">
+            {{ render_field(turnpointform.shape) }}
+            </div>
+            <div id="radius-div">
+            {{ render_field(turnpointform.radius, size=5) }}
+            </div>
+          </section>
+          <section class="panel-row row-wrap button">
+            {{ turnpointform.submit(class="btn btn-success", id="turnpoint_save_button") }}
+            <p id='add_tp_spinner'></p>
+          </section>
+        </form>
         {% else %}
         <section class="panel-row row-wrap form">
           <p class="p-2 description">Select an existing Region or create a new one for the task to display a waypoint list.</p>
@@ -237,7 +229,7 @@ Task Settings
         {% endif %}
         {% endif %}
       </div>
-      <div class='panel' id="task_wpt">
+      <div class='panel col-lg-6' id="task_wpt">
         <table class='table' id='task_wpt_table'>
           <thead class="thead-light">
           </thead>
@@ -306,56 +298,35 @@ Task Settings
 <div id='modmodal' class='modal fade' role='dialog'>
   <div class='modal-dialog'>
     <div class='modal-content'>
-      <div class='modal-header'>
-        <h4 class='modal-title'></h4>
-      </div>
-      <div class='modal-body' id='modmodal-body'>
-        <div class='form-row'>
-          <div class='form-group width6'>
-            {{modifyturnpointform.mod_number.label}} {{modifyturnpointform.mod_number(size=2,
-            **{'id':"mod_tp_number",})}}
-            {{modifyturnpointform.mod_type.label}} {{modifyturnpointform.mod_type(**{'id':"mod_tp_type",})}}
-          </div>
+      <form method='post' id="mod_turnpoint_form">
+        <div class='modal-header'>
+          <h4 class='modal-title'></h4>
         </div>
-        <div class='form-row'>
-          <div class='form-group width12'>
-            {{modifyturnpointform.mod_name.label}} {{modifyturnpointform.mod_name(**{'id':"mod_tp_name", 'data-toggle':
-            'tooltip', 'title': modifyturnpointform.mod_name.description})}}
-          </div>
-        </div>
-        <div class='form-row'>
-          <div class='form-group col-md-12 display-if' data-target_name='mod_type' data-target_type='select'
-               data-target_value='speed'>
-            {{modifyturnpointform.mod_how.label}} {{modifyturnpointform.mod_how(**{'id':"mod_tp_how", 'data-toggle':
-            'tooltip', 'title': modifyturnpointform.mod_how.description})}}
-          </div>
-        </div>
-        <div class='form-row'>
-          <div class='form-group col-md-6 display-if' data-target_name='mod_type' data-target_type='select'
-               data-target_value='goal'>
-            {{modifyturnpointform.mod_shape.label}} {{modifyturnpointform.mod_shape(**{'id':"mod_tp_shape",
-            'data-toggle': 'tooltip', 'title': modifyturnpointform.mod_shape.description})}}
-          </div>
-          <div class='form-group col-md-6 display-if' data-target_name='check_launch' data-target_type='checkbox'
-               data-target_value='true'>
-            <div class='form-group col-md-6 display-if' data-target_name='mod_type' data-target_type='select'
-                 data-target_value='launch'>
-              {{modifyturnpointform.mod_radius.label}} {{modifyturnpointform.mod_radius(size=5 ,
-              **{'id':"mod_tp_launch_radius",'data-toggle': 'tooltip', 'title':
-              modifyturnpointform.mod_radius.description})}}
+        <div class='modal-body' id='modmodal-body'>
+          <section class="tab-row row-wrap form p-2">
+            {{ render_field(modifyturnpointform.task_id, id='mod-task_id') }}
+            {{ render_field(modifyturnpointform.wpt_id, id='mod-wpt_id') }}
+            {{ render_field(modifyturnpointform.num, id='mod-num', size=2) }}
+            {{ render_field(modifyturnpointform.rwp_id, id='mod-rwp_id') }}
+          </section>
+          <section class="tab-row row-wrap form p-2">
+            {{ render_field(modifyturnpointform.type, id='mod-type') }}
+            <div id="mod-how-div">
+              {{ render_field(modifyturnpointform.how, id='mod-how') }}
             </div>
-          </div>
-          <div class='form-group col-md-6 display-if' data-target_name='mod_type' data-target_type='select'
-               data-target_value_not='launch'>
-            {{modifyturnpointform.mod_radius.label}} {{modifyturnpointform.mod_radius(size=5 ,
-            **{'id':"mod_tp_radius",'data-toggle': 'tooltip', 'title': modifyturnpointform.mod_radius.description})}}
-          </div>
+            <div id="mod-shape-div">
+              {{ render_field(modifyturnpointform.shape, id='mod-shape') }}
+            </div>
+            <div id="mod-radius-div">
+              {{ render_field(modifyturnpointform.radius, id='mod-radius', size=10) }}
+            </div>
+          </section>
         </div>
-      </div>
-      <div class='modal-footer'>
-        <button type='button' class='btn btn-danger' data-dismiss='modal'>Cancel</button>
-        <button id='modify_confirmed' type='button' class='btn btn-success' data-dismiss='modal'>Save</button>
-      </div>
+        <div class='modal-footer'>
+          <button type='button' class='btn btn-danger' data-dismiss='modal'>Cancel</button>
+          {{modifyturnpointform.submit(class="btn btn-success", id="mod_turnpoint_save_button")}}
+        </div>
+      </form>
     </div>
   </div>
 </div>
@@ -377,7 +348,7 @@ Task Settings
   var tasks = {{ session.tasks|tojson }};
   var task_admin = {{ taskform.submit|tojson }};
   var url_get_task_turnpoints = "{{ url_for('user._get_task_turnpoints', taskid=taskid)}}";
-  var url_add_turnpoint = "{{ url_for('user._add_turnpoint', taskid=taskid)}}";
+  var url_save_turnpoint = "{{ url_for('user._save_turnpoint', taskid=taskid)}}";
 </script>
 
 {% endblock %}
