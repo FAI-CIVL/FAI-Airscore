@@ -359,7 +359,7 @@ class TaskForm(FlaskForm):
         else:
             for el in (self.window_close_time, self.start_time):
                 if el.data and self.window_open_time.data > el.data:
-                    el.errors.append(f'{el.label} is before window open time')
+                    el.errors.append(f'{el.short_name} is before window open time')
                     result = False
         '''check start time'''
         if self.start_time.data is None:
@@ -376,39 +376,29 @@ class TaskForm(FlaskForm):
         else:
             for el in (self.window_open_time, self.start_time):
                 if el.data and self.task_deadline.data < el.data:
-                    el.errors.append(f'{el.label} is after task deadline')
+                    el.errors.append(f'{el.short_name} is after task deadline')
                     result = False
             for el in (self.window_close_time, self.start_close_time):
                 if el.data is None:
                     el.data = self.task_deadline.data
                 elif self.task_deadline.data < el.data:
-                    el.errors.append(f'{el.label} is after task deadline')
+                    el.errors.append(f'{el.short_name} is after task deadline')
                     result = False
         return result
 
 
-class NewTurnpointForm(FlaskForm):
-    id = None
-    description = None
-    number = IntegerField('#')
-    name = SelectField('Waypoint')
-    radius = IntegerField('Radius (m)', default=400)
+class TurnpointForm(FlaskForm):
+    wpt_id = IntegerField('wpt_id', validators=[Optional(strip_whitespace=True)], widget=widgets.HiddenInput())
+    task_id = IntegerField('task_id', validators=[Optional(strip_whitespace=True)], widget=widgets.HiddenInput())
+    num = IntegerField('#', validators=[DataRequired()])
+    rwp_id = SelectField('Waypoint', validators=[DataRequired()], validate_choice=False)
+    radius = IntegerField('Radius (m)', validators=[InputRequired()], default=400)
     type = SelectField('Type', choices=[('launch', 'Launch'), ('speed', 'SSS'), ('waypoint', 'Waypoint'),
                                         ('endspeed', 'ESS'), ('goal', 'Goal')])
     shape = SelectField('Shape', choices=[('circle', 'Cylinder'), ('line', 'Line')])
     how = SelectField('SSS Direction', choices=[('entry', 'Out/Enter'), ('exit', 'In/Exit')])
 
-
-class ModifyTurnpointForm(FlaskForm):
-    id = None
-    description = None
-    mod_number = IntegerField('#')
-    mod_name = SelectField('Waypoint')
-    mod_radius = IntegerField('Radius (m)', default=400)
-    mod_type = SelectField('Type', choices=[('launch', 'Launch'), ('speed', 'SSS'), ('waypoint', 'Waypoint'),
-                                            ('endspeed', 'ESS'), ('goal', 'Goal')])
-    mod_shape = SelectField('Shape', choices=[('circle', 'Cylinder'), ('line', 'Line')])
-    mod_how = SelectField('SSS Direction', choices=[('entry', 'Out/Enter'), ('exit', 'In/Exit')])
+    submit = SubmitField('Add')
 
 
 class ResultAdminForm(FlaskForm):
@@ -504,7 +494,8 @@ class ParticipantForm(FlaskForm):
                         validators=[Optional(strip_whitespace=True), NumberRange(min=0, max=999999)])
     name = StringField('Name', validators=[DataRequired(), Length(min=1, max=100)], description=name_desc)
     birthdate = DateField('Birthdate', format='%Y-%m-%d', validators=[Optional(strip_whitespace=True)], default=None)
-    nat = SelectField('Nationality', coerce=str, validators=[DataRequired(), Length(min=3, max=3)], id='select_country')
+    nat = SelectField('Nationality', coerce=str, validators=[DataRequired(), Length(min=3, max=3)],
+                      id='select_country', validate_choice=False)
     sex = SelectField('Sex', choices=[('M', 'M'), ('F', 'F')], default='M')
     glider = StringField('Glider', validators=[Optional(strip_whitespace=True), Length(max=100)])
     certification = NonValidatingSelectField('Certification',

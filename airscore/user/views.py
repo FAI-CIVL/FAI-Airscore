@@ -6,9 +6,9 @@ from flask import Blueprint, render_template, request, jsonify, json, flash, red
     current_app, send_file, make_response
 from flask_login import login_required, current_user
 import frontendUtils
-from airscore.user.forms import NewTaskForm, CompForm, TaskForm, NewTurnpointForm, ModifyTurnpointForm, \
+from airscore.user.forms import NewTaskForm, CompForm, TaskForm, \
     ResultAdminForm, NewScorekeeperForm, RegionForm, NewRegionForm, IgcParsingConfigForm, ParticipantForm, \
-    EditScoreForm, CompLaddersForm, NewCompForm, CompRankingForm, AirspaceCheckForm, UserForm
+    EditScoreForm, CompLaddersForm, NewCompForm, CompRankingForm, AirspaceCheckForm, UserForm, TurnpointForm
 from comp import Comp
 from formula import list_formulas, Formula
 from task import Task, write_map_json, get_task_json_by_filename
@@ -716,14 +716,15 @@ def task_admin(taskid: int):
     from region import get_openair
     error = None
     taskform = TaskForm()
-    turnpointform = NewTurnpointForm()
-    modifyturnpointform = ModifyTurnpointForm()
+    turnpointform = TurnpointForm(task_id=taskid)
+    modifyturnpointform = TurnpointForm(task_id=taskid)
+    modifyturnpointform.submit.label.text = 'Save'
 
     task = Task.read(taskid)
     taskform.region.choices.extend(frontendUtils.get_region_choices(session['compid'])[0])
     waypoints, _ = frontendUtils.get_waypoint_choices(task.reg_id)
-    turnpointform.name.choices = waypoints
-    modifyturnpointform.mod_name.choices = waypoints
+    turnpointform.rwp_id.choices = waypoints
+    modifyturnpointform.rwp_id.choices = waypoints
     task_info = session['task']
 
     if request.method == 'POST':
@@ -979,48 +980,25 @@ def _get_task_turnpoints(taskid: int):
     return frontendUtils.get_task_turnpoints(task)
 
 
-@blueprint.route('/_add_turnpoint/<int:taskid>', methods=['POST'])
+@blueprint.route('/_save_turnpoint/<int:taskid>', methods=['POST'])
 @login_required
 @editor_required
-def _add_turnpoint(taskid: int):
+def _save_turnpoint(taskid: int):
     """add turnpoint to the task,if rwp_id is not null then update instead of insert (add)
     if turnpoint is goal or we are updating and goal exists then calculate opt dist and dist."""
     from frontendUtils import get_waypoint
-    data = request.json
-    rwp_id = None if not data['rwp_id'] else int(data['rwp_id'])
-    if data['wpt_id']:
-        '''modify waypoint'''
-        wpt_id = int(data['wpt_id'])
-        if rwp_id:
-            '''changing wpt'''
-            tp = get_waypoint(rwp_id=rwp_id)
-            tp.wpt_id = wpt_id
-            tp.task_id = taskid
-        else:
-            tp = get_waypoint(wpt_id=wpt_id)
-    else:
-        '''add waypoint'''
-        tp = get_waypoint(rwp_id=rwp_id)
-        tp.task_id = taskid
-    tp.num = int(data['number'])
-    tp.radius = int(data['radius'])
-    tp.type = data['type']
-    if data['direction'] is not None:
-        tp.how = data['direction']
-    if data['shape'] is not None:
-        if data['type'] != 'goal':
-            tp.shape = 'circle'
-        else:
-            tp.shape = data['shape']
-    if save_turnpoint(taskid, tp):
-        task = Task.read(taskid)
-        if task.opt_dist or data['type'] == 'goal':
-            task.calculate_optimised_task_length()
-            task.calculate_task_length()
-            task.update_task_distance()
-            write_map_json(taskid)
-        return frontendUtils.get_task_turnpoints(task)
-    return render_template('500.html')
+    form = TurnpointForm()
+
+    if form.validate_on_submit():
+        tp = get_waypoint(rwp_id=form.rwp_id.data)
+        form.populate_obj(tp)
+
+        tpid = save_turnpoint(taskid, tp)
+        if tpid:
+            turnpoints = frontendUtils.check_task_turnpoints(taskid, tpid)
+            return turnpoints
+
+    return jsonify(errors=list(form.errors.items()))
 
 
 @blueprint.route('/_del_turnpoint/<tpid>', methods=['POST'])
@@ -1830,7 +1808,6 @@ def _modify_participant_details(parid: int):
     from pilot.participant import Participant, abbreviate
 
     form = ParticipantForm()
-    form.nat.choices = [(x['code'], x['name']) for x in frontendUtils.list_countries()]
 
     if request.method == 'POST' and form.validate_on_submit():
         participant = Participant.read(parid)
@@ -1865,10 +1842,8 @@ def _add_participant(compid: int):
     from pilot.participant import Participant, assign_id, abbreviate
 
     form = ParticipantForm()
-    form.nat.choices = [(x['code'], x['name']) for x in frontendUtils.list_countries()]
 
-    if request.method == 'POST' and form.validate_on_submit():
-        # data = request.json
+    if form.validate_on_submit():
         participant = Participant()
         participant.comp_id = compid
         participant.ID = assign_id(compid, given_id=form.id_num.data)
