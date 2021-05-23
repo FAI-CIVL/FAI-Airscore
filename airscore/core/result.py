@@ -881,7 +881,8 @@ def pretty_format_results(content, timeoffset=0, td=0, cd=0):
                         if key == 'radius':
                             '''formatting wpt radius'''
                             formatted[key] = (
-                                f"{round(float(value) / 1000, 1):.1f} Km"
+                                '' if float(value) == 0
+                                else f"{round(float(value) / 1000, 1):.1f} Km"
                                 if float(value) > 1000
                                 else f"{round(float(value))} m &nbsp;"
                             )

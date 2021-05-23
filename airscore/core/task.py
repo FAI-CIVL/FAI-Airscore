@@ -690,6 +690,9 @@ class Task(object):
         for idx, tp in enumerate(self.turnpoints):
             wpt = {x: getattr(tp, x) for x in TaskResult.route_list if x in dir(tp)}
             wpt['cumulative_dist'] = self.partial_distance[idx]
+            '''launch radius to 0 if check_luanch is off'''
+            if self.check_launch == 'off' and tp.type == 'launch':
+                wpt['radius'] = 0
             route.append(wpt)
         results = []
         for pil in pil_list:
