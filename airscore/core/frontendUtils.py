@@ -464,6 +464,44 @@ def switch_task_cancelled(task_id: int, old_value: bool, comment: str = None) ->
     return True
 
 
+def check_task_turnpoints(task_id: int, wpt_id: int) -> dict:
+    from task import Task, write_map_json
+    task = Task.read(task_id)
+    tps = task.turnpoints
+    last_edited = next(tp for tp in tps if tp.wpt_id == wpt_id)
+    edited = False
+    '''check launch'''
+    if not tps[0].type == 'launch':
+        tps[0].type = 'launch'
+        edited = True
+    for tp in tps[1:]:
+        if tp.type == 'launch':
+            tp.type = 'waypoint'
+            edited = True
+        elif tp.type == 'speed' and last_edited.type == tp.type and not tp.wpt_id == last_edited.wpt_id:
+            '''SSS changed'''
+            tp.type = 'waypoint'
+            edited = True
+        elif ((tp.type == 'endspeed' and last_edited.type == tp.type and not tp.wpt_id == last_edited.wpt_id)
+              or (any(t.type == 'speed' for t in tps)
+                  and task.turnpoints.index(tp) < tps.index(next(t for t in tps if t.type == 'speed')))):
+            '''ESS changed or SSS is after this tp'''
+            tp.type = 'waypoint'
+            edited = True
+        elif tp.type == 'goal' and tps.index(tp) < tps.index(tps[-1]):
+            tp.type = 'waypoint'
+            tp.shape = 'circle'
+            edited = True
+    if edited:
+        task.update_waypoints()
+    if task.opt_dist or tps[-1].type == 'goal':
+        task.calculate_optimised_task_length()
+        task.calculate_task_length()
+        task.update_task_distance()
+        write_map_json(task_id)
+    return get_task_turnpoints(task)
+
+
 def get_task_turnpoints(task) -> dict:
     from airspaceUtils import read_airspace_map_file
     from task import get_map_json
