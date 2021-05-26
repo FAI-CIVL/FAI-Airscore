@@ -43,6 +43,9 @@ $(document).ready(function() {
     $('#multi_start').addClass('show');;
   }
 
+  // adding waypoint select filter
+  $('#rwp_id').before('<input class="form-control form-control-sm" type="text" id="rwp_filter" value="" placeholder="Filter..." size="3">');
+
   $('#mod-type').on('change', function() {
     ['mod-how', 'mod-shape', 'mod-radius'].forEach( el => $('#'+el+'-div').hide() )
     let val = $(this).val();
@@ -50,6 +53,7 @@ $(document).ready(function() {
     if ( val == 'speed' ) $('#mod-how-div').show();
     if ( val == 'goal' ) $('#mod-shape-div').show();
   });
+
   $('#type').on('change', function() {
     ['how', 'shape', 'radius'].forEach( el => $('#'+el+'-div').hide() )
     let val = $(this).val();
@@ -57,6 +61,21 @@ $(document).ready(function() {
     if ( val == 'speed' ) $('#how-div').show();
     if ( val == 'goal' ) $('#shape-div').show();
   });
+
+  $('#rwp_filter').keyup( function() {
+    let choices = $('#rwp_id option');
+    let filter = $(this).val().toLowerCase();
+    if( !filter ) {
+      choices.each( (idx, el) => $(el).show() );
+    }
+    else {
+      choices.each( (idx, el) => {
+        if ( $(el).text().toLowerCase().includes(filter) ) $(el).show();
+        else $(el).hide();
+      });
+    }
+  });
+
 });
 
 function get_turnpoints(){
