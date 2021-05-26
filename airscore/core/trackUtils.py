@@ -98,6 +98,7 @@ def assign_and_import_tracks(files, task, track_source=None, user=None, check_g_
 
     print(f"We have {len(pilot_list)} pilots to find tracks for, and {len(files)} tracks")
     track_counter = 0
+    number_of_pilots = len(pilot_list)
     FlightParsingConfig = igc_parsing_config_from_yaml(task.igc_config_file)
     airspace = None if not task.airspace_check else AirspaceCheck.from_task(task)
 
@@ -140,6 +141,7 @@ def assign_and_import_tracks(files, task, track_source=None, user=None, check_g_
         pilots_to_save.append(pilot)
         data = track_result_output(pilot, task.task_id)
         pilot_print(f'{json.dumps(data)}|result')
+        print(f"{track_counter}/{number_of_pilots}|track_counter")
         print('***************END****************')
     print("*******************processed all tracks**********************")
 

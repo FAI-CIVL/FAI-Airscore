@@ -550,10 +550,12 @@ $(document).ready(function() {
           setTimeout(initES, 5000);
         }
       };
+
       es.addEventListener('info', function(event) {
         var data = JSON.parse(event.data);
         $('#process_text').append(data.message + "<br/>");
       }, false);
+
       es.addEventListener('open_modal', function(event) {
         $('#log_button').show();
         $('#fullscoremodal').modal('hide');
@@ -561,8 +563,8 @@ $(document).ready(function() {
       }, false);
 
       es.addEventListener('track_counter', function(event) {
-        var data = JSON.parse(event.data);
-        $('#ProcessModalTitle').text('Tracklog Processing:'+ data.message);
+        let data = JSON.parse(event.data);
+        $('#ProcessModalTitle').text('Tracklog Processing: ' + data.message);
       }, false);
 
       es.addEventListener('reload', function(event) {

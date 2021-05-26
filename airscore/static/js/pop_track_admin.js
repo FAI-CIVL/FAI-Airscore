@@ -485,12 +485,14 @@ $(document).ready(function(){
           setTimeout(initES, 5000);
         }
       };
+
       es.addEventListener('flashed', function(event) {
-        var data = JSON.parse(event.data);
+        let data = JSON.parse(event.data);
         create_flashed_message(data.message, 'warning');
       }, false);
+
       es.addEventListener('track_error', function(event) {
-        var data = JSON.parse(event.data);
+        let data = JSON.parse(event.data);
         create_flashed_message(data.message.text, 'danger');
         $('#ABS'+ data.id).show();
         $('#MD'+ data.id).show();
@@ -501,23 +503,28 @@ $(document).ready(function(){
         $('#progress'+ data.id).hide();
 //        update_row(data.message);
       }, false);
+
       es.addEventListener('% complete', function(event) {
         let data = JSON.parse(event.data);
         $('#progress'+ data.id).show();
         $('#progress'+ data.id + ' .progress-bar').css("width", data.message + "%").text(data.message + '%');
       }, false);
-      es.addEventListener('counter', function(event) {
+
+      es.addEventListener('track_counter', function(event) {
         let data = JSON.parse(event.data);
-        $('#ProcessModalTitle').text('Tracklog Processing. ' + data.message);
+        $('#ProcessModalTitle').text('Tracklog Processing: ' + data.message);
       }, false);
+
       es.addEventListener('info', function(event) {
         let data = JSON.parse(event.data);
         $('#process_text').append(data.message + "<br/>");
       }, false);
+
       es.addEventListener('open_modal', function(event) {
         $('#log_button').show();
         $('#ProcessModal').modal('show');
       }, false);
+
       es.addEventListener('result', function(event) {
         let data = JSON.parse(event.data);
         if(data.message == 'error'){
@@ -535,6 +542,7 @@ $(document).ready(function(){
           update_row(info);
         }
       }, false);
+
       es.addEventListener('valid_fail', function(event) {
         let data = JSON.parse(event.data);
         data.message = JSON.parse(data.message);
@@ -549,6 +557,7 @@ $(document).ready(function(){
         update_row(data.message);
         toastr.warning(data.message.text, 'Track not Valid', {timeOut: 5000});
       }, false);
+
       es.addEventListener('g_record_fail', function(event) {
         let data = JSON.parse(event.data);
         data.message = JSON.parse(data.message);
@@ -563,17 +572,20 @@ $(document).ready(function(){
         update_row(data.message);
         toastr.warning(data.message.text, 'G Record Fail', {timeOut: 5000});
       }, false);
+
       es.addEventListener('livetracking', function(event) {
         let data = JSON.parse(event.data);
         toastr.success(data.id + ': ' + data.message, 'Live Tracking', {timeOut: 5000});
         console.log(data.id + ': ' + data.message, 'Live Tracking')
         get_lt_status();
       }, false);
+
       es.addEventListener('reload', function(event) {
         clear_flashed_messages();
         populate_track_admin(taskid);
         update_track_pilot_stats();
       }, false);
+
       es.addEventListener('page_reload', function(event) {
         clear_flashed_messages();
         create_flashed_message('Process completed successfully', 'success');
