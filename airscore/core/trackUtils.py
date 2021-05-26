@@ -96,9 +96,12 @@ def assign_and_import_tracks(files, task, track_source=None, user=None, check_g_
     else:
         lib = importlib.import_module('trackUtils')
 
-    print(f"We have {len(pilot_list)} pilots to find tracks for, and {len(files)} tracks")
-    track_counter = 0
+    tracks_processed = 0
+    number_of_tracks = len(files)
     number_of_pilots = len(pilot_list)
+
+    print(f"We have {number_of_pilots} pilots to find tracks for, and {number_of_tracks} tracks")
+
     FlightParsingConfig = igc_parsing_config_from_yaml(task.igc_config_file)
     airspace = None if not task.airspace_check else AirspaceCheck.from_task(task)
 
@@ -124,8 +127,8 @@ def assign_and_import_tracks(files, task, track_source=None, user=None, check_g_
 
         """pilot is registered and has no valid track yet
         moving file to correct folder and adding to the list of valid tracks"""
-        track_counter += 1
-        print(f"Track {track_counter}|counter")
+        tracks_processed += 1
+        print(f"Track {tracks_processed}|counter")
         pilot.track_file = save_igc_file(file, task.file_path, task.date, pilot.name, pilot.ID)
 
         print(f"processing {pilot.ID} {pilot.name}:")
@@ -141,11 +144,14 @@ def assign_and_import_tracks(files, task, track_source=None, user=None, check_g_
         pilots_to_save.append(pilot)
         data = track_result_output(pilot, task.task_id)
         pilot_print(f'{json.dumps(data)}|result')
-        print(f"{track_counter}/{number_of_pilots}|track_counter")
+        print(f"{tracks_processed}/{number_of_tracks}|track_counter")
         print('***************END****************')
+        if tracks_processed > number_of_pilots:
+            '''all pilots have a track'''
+            break
     print("*******************processed all tracks**********************")
 
-    '''save all succesfully processed pilots to database'''
+    '''save all successfully processed pilots to database'''
     update_all_results([p for p in pilots_to_save], task_id)
 
 
