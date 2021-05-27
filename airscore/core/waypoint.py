@@ -48,10 +48,10 @@ def get_UTM(lines):
     ['B00', '32T', '0468693', '5164352', '1440', 'B00144', 'ANDERMATT', 'LANDING']
     """
     from pyproj import Proj
-
+    import re
     wpts = []
     '''create UTM proj'''
-    map = lines[0].split()[1]
+    map = re.findall("\d+", lines[0].split()[1])[0]
     myProj = Proj(f"+proj=utm +zone={map} +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
     for line in lines:
         wp = line.split()
