@@ -2140,7 +2140,6 @@ def _add_comp_ranking(compid: int):
 @blueprint.route('/_get_custom_attributes/<int:compid>', methods=['GET', 'POST'])
 @login_required
 def _get_custom_attributes(compid: int):
-
     return jsonify(frontendUtils.get_comp_meta(compid))
 
 
@@ -2148,28 +2147,22 @@ def _get_custom_attributes(compid: int):
 @login_required
 @editor_required
 def _add_custom_attribute(compid: int):
-    from ranking import CompAttribute
     data = request.json
-    attribute = CompAttribute(attr_key='meta', attr_value=data['attr_value'], comp_id=compid)
-    attribute.to_db()
-    return jsonify(success=bool(attribute.attr_id))
+    return jsonify(success=bool(frontendUtils.add_custom_attribute(compid, data['attr_value'])))
 
 
 @blueprint.route('/_edit_custom_attribute/<int:attrid>', methods=['GET', 'POST'])
 @login_required
 def _edit_custom_attribute(attrid: int):
-    from ranking import CompAttribute
     data = request.json
-    attribute = CompAttribute(attr_key='meta', **data)
-    attribute.to_db()
-    return jsonify(success=bool(attribute.attr_id))
+    return jsonify(success=bool(frontendUtils.edit_custom_attribute(data)))
 
 
 @blueprint.route('/_remove_custom_attribute/<int:attrid>', methods=['GET', 'POST'])
 @login_required
 @editor_required
 def _remove_custom_attribute(attrid: int):
-    return jsonify(success=bool(frontendUtils.delete_comp_attribute(attrid)))
+    return jsonify(success=bool(frontendUtils.remove_custom_attribute(attrid)))
 
 
 @blueprint.route('/_delete_ranking/<int:rankid>', methods=['GET', 'POST'])

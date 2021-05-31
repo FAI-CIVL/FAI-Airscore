@@ -2247,7 +2247,24 @@ def get_comp_meta(comp_id: int) -> list:
                  'used': True if el.attr_id in ranks else False} for el in results]
 
 
-def delete_comp_attribute(attr_id: int) -> bool:
+def add_custom_attribute(comp_id: int, attr_value: str) -> int or None:
+    from ranking import CompAttribute
+    attribute = CompAttribute(attr_key='meta', attr_value=attr_value, comp_id=comp_id)
+    attribute.to_db()
+    return attribute.attr_id
+
+
+def edit_custom_attribute(data: dict) -> bool:
+    from ranking import CompAttribute
+    try:
+        attribute = CompAttribute(attr_key='meta', **data)
+        attribute.to_db()
+        return True
+    except Exception:
+        return False
+
+
+def remove_custom_attribute(attr_id: int) -> bool:
     from db.tables import TblCompAttribute as CA
     with db_session() as db:
         try:
