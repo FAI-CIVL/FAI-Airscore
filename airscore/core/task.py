@@ -844,7 +844,7 @@ class Task(object):
         """ Loads all FlightResult obj. into Task obj."""
         from pilot.flightresult import get_task_results
 
-        pilots = get_task_results(self.id)
+        pilots = get_task_results(task_id=self.id, comp_id=self.comp_id)
         if self.stopped_time:
             for p in pilots:
                 p.still_flying_at_deadline = p.stopped_distance > 0

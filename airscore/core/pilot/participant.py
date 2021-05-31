@@ -455,3 +455,8 @@ def get_attributes(par_id):
         p.custom[el.attr_id] = val
     return p
 
+
+def get_participants_meta(par_ids: list) -> list:
+    with db_session() as db:
+        custom_list = db.query(PA).filter(PA.par_id.in_(par_ids), PA.attr_id).order_by(PA.par_id).all()
+        return custom_list

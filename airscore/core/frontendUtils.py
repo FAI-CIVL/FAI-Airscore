@@ -1491,6 +1491,7 @@ def get_pretty_data(content: dict, export=False) -> dict or str:
                                 or (s['rank_type'] == 'female' and r['sex'] == 'F')
                                 or (s['rank_type'] == 'nat' and r['nat'] == s['nat'])
                                 or (s['rank_type'] == 'custom' and 'custom' in r.keys()
+                                    and str(s['attr_id']) in r['custom'].keys()
                                     and r['custom'][str(s['attr_id'])] == s['rank_value'])
                                 or (s['rank_type'] == 'birthdate' and 'birthdate' in r.keys()
                                     and isinstance(get_date(r['birthdate']), datetime.date)
