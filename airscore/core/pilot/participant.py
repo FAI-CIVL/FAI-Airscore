@@ -445,15 +445,16 @@ def abbreviate(string: str, length: int = 100) -> str:
     return string
 
 
-def get_attributes(par_id):
-    from db.tables import TblCompAttribute as CA
-    p = Participant.read(par_id)
-    attr_list = CA.get_all(comp_id=p.comp_id, attr_key='meta')
+def get_attributes(par_id, attr_list: list = None) -> dict:
+    if not attr_list:
+        comp_id = P.get_by_id(par_id).comp_id
+        attr_list = CA.get_all(comp_id=comp_id, attr_key='meta')
     rows = PA.get_all(par_id=par_id)
+    custom = {}
     for el in attr_list:
         val = next((x.meta_value for x in rows if x.attr_id == el.attr_id), None)
-        p.custom[el.attr_id] = val
-    return p
+        custom[el.attr_id] = val
+    return custom
 
 
 def get_participants_meta(par_ids: list) -> list:
