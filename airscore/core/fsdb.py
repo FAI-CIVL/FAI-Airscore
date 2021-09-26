@@ -69,8 +69,7 @@ class FSDB(object):
         comp = Comp.from_fsdb(fs_comp, short_name)
 
         """Formula"""
-        comp.formula = Formula.from_fsdb(fs_comp)
-        comp.formula.comp_class = comp.comp_class
+        comp.formula = Formula.from_fsdb(fs_comp, comp.comp_class)
 
         '''adding standard igc config'''
         comp.igc_config_file = 'standard'
@@ -95,7 +94,7 @@ class FSDB(object):
         if t is not None:
             for tas in t.iter('FsTask'):
                 '''create task obj'''
-                task = Task.from_fsdb(tas, comp.time_offset, keep_task_path)
+                task = Task.from_fsdb(tas, comp.formula, comp.time_offset, keep_task_path)
                 '''check if task was valid'''
                 if task is not None:
                     if not task.task_path:

@@ -133,6 +133,13 @@ class Formula(object):
         validity_ref='max_score',
         task_result_decimal=0,
         comp_result_decimal=0,
+        team_scoring=False,
+        team_size=0,
+        max_team_size=0,
+        country_scoring=False,
+        country_size=0,
+        max_country_size=0,
+        team_over=None
     ):
 
         self.comp_id = comp_id
@@ -165,13 +172,13 @@ class Formula(object):
         self.scoring_altitude = scoring_altitude  # 'GPS', 'QNH'
         self.task_result_decimal = task_result_decimal  # score decimals displayed in task result
         self.comp_result_decimal = comp_result_decimal  # score decimals displayed in comp result
-        self.team_scoring = False
-        self.team_size = 0
-        self.max_team_size = 0
-        self.country_scoring = False
-        self.country_size = 0
-        self.max_country_size = 0
-        self.team_over = None
+        self.team_scoring = team_scoring
+        self.team_size = team_size
+        self.max_team_size = max_team_size
+        self.country_scoring = country_scoring
+        self.country_size = country_size
+        self.max_country_size = max_country_size
+        self.team_over = team_over
 
     def __eq__(self, other):
         if not isinstance(other, Formula):
@@ -282,29 +289,29 @@ class Formula(object):
                 q.populate(formula)
         return formula
 
-    @staticmethod
-    def from_preset(comp_class: str, formula_name: str):
+    @classmethod
+    def from_preset(cls, comp_class: str, formula_name: str):
         """ Create Formula obj. from preset values in formula script"""
         lib = get_formula_lib_by_name(formula_name)
         preset = lib.pg_preset if comp_class in ('PG', 'mixed') else lib.hg_preset
-        return Formula(**preset.as_formula())
+        return cls(**preset.as_formula())
 
-    @staticmethod
-    def from_fsdb(fs_info):
+    @classmethod
+    def from_fsdb(cls, fs_info, comp_class):
         """Get formula info from FSDB file
         type can be 'comp' or 'task'
         """
         data = fs_info.find('FsScoreFormula')
         formula_name = data.get('id')
-        comp_class = fs_info.get('discipline').upper()
+        # comp_class = fs_info.get('discipline').upper()
         '''check if formula exists'''
         lib = get_formula_lib_by_name(formula_name)
         if lib:
             '''gets preset values'''
-            formula = Formula.from_preset(comp_class, formula_name)
+            formula = cls.from_preset(comp_class, formula_name)
         else:
-            formula = Formula()
-        formula = get_fsdb_info(formula, fs_info.find('FsScoreFormula'))
+            formula = cls()
+        formula = get_fsdb_info(formula, data)
         formula.comp_class = comp_class
         formula.validity_param = 1.0 - float(fs_info.get('ftv_factor'))
         if formula.validity_param < 1:
@@ -362,9 +369,9 @@ class TaskFormula(Formula):
         'tolerance',
     ]
 
-    def __init__(self, task_id=None):
+    def __init__(self, task_id=None, *args, **kwargs):
         self.task_id = task_id
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
     @staticmethod
     def from_dict(d):
@@ -384,12 +391,12 @@ class TaskFormula(Formula):
                 q.populate(formula)
         return formula
 
-    @staticmethod
-    def from_fsdb(fs_info):
+    @classmethod
+    def from_fsdb(cls, fs_info, f):
         """Get formula info from FSDB file
         type can be 'comp' or 'task'
         """
-        return get_fsdb_info(TaskFormula(), fs_info.find('FsScoreFormula'))
+        return get_fsdb_info(TaskFormula(**f.as_dict()), fs_info.find('FsScoreFormula'))
 
     @staticmethod
     def read(task_id: int):

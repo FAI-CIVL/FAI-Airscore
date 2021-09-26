@@ -1199,7 +1199,7 @@ class Task(object):
         return task
 
     @classmethod
-    def from_fsdb(cls, t, offset=0, keep_task_path=False):
+    def from_fsdb(cls, t, f, offset=0, keep_task_path=False):
         """Creates Task from FSDB FsTask element, which is in xml format.
         Unfortunately the fsdb format isn't published so much of this is simply an
         exercise in reverse engineering.
@@ -1216,6 +1216,7 @@ class Task(object):
 
         task.check_launch = 'off'
         task.task_name = t.get('name')
+        task.comp_class = f.comp_class
         task.task_num = int(t.get('id'))
         print(f"task {task.task_num} - name: {task.task_name}")
         task.time_offset = offset
@@ -1223,7 +1224,7 @@ class Task(object):
             task.task_path = get_fsdb_task_path(t.get('tracklog_folder'))
 
         """formula info"""
-        formula = TaskFormula.from_fsdb(t)
+        formula = TaskFormula.from_fsdb(t, f)
 
         """Task Status"""
         node = t.find('FsTaskState')
