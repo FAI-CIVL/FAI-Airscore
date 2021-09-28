@@ -8,7 +8,6 @@ from sqlalchemy import (
     Date,
     DateTime,
     Enum,
-    Float,
     ForeignKey,
     Index,
     String,
@@ -18,6 +17,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.mysql import (
     INTEGER,
+    NUMERIC,
+    FLOAT,
     LONGTEXT,
     MEDIUMINT,
     SMALLINT,
@@ -63,29 +64,29 @@ class CompObjectView(BaseModel):
         Column('track_source', String(40)),
         Column('formula_name', String(50)),
         Column('overall_validity', Enum('ftv', 'all', 'round'), server_default=text("'ftv'")),
-        Column('validity_param', Float(4), server_default=text("'0.750'")),
+        Column('validity_param', NUMERIC(precision=4, asdecimal=False), server_default=text("'0.750'")),
         Column('validity_ref', Enum('day_quality', 'max_score'), server_default=text("'max_score'")),
-        Column('nominal_goal', Float(3), server_default=text("'0.30'")),
+        Column('nominal_goal', NUMERIC(precision=3, asdecimal=False), server_default=text("'0.30'")),
         Column('min_dist', MEDIUMINT(9), server_default=text("'5000'")),
         Column('nominal_dist', MEDIUMINT(9), server_default=text("'45000'")),
         Column('nominal_time', SMALLINT(6), server_default=text("'5400'")),
-        Column('nominal_launch', Float(3), server_default=text("'0.96'")),
+        Column('nominal_launch', NUMERIC(precision=3, asdecimal=False), server_default=text("'0.96'")),
         Column('formula_distance', Enum('on', 'difficulty', 'off'), server_default=text("'on'")),
         Column('formula_arrival', Enum('position', 'time', 'off'), server_default=text("'off'")),
         Column('formula_departure', Enum('leadout', 'departure', 'off'), server_default=text("'leadout'")),
-        Column('lead_factor', Float(4)),
+        Column('lead_factor', NUMERIC(precision=4, asdecimal=False)),
         Column('formula_time', Enum('on', 'off'), server_default=text("'on'")),
-        Column('no_goal_penalty', Float(4), server_default=text("'1.000'")),
-        Column('glide_bonus', Float(4), server_default=text("'4.00'")),
-        Column('tolerance', Float(6), server_default=text("'0.10000'")),
+        Column('no_goal_penalty', NUMERIC(precision=4, asdecimal=False), server_default=text("'1.000'")),
+        Column('glide_bonus', NUMERIC(precision=4, asdecimal=False), server_default=text("'4.00'")),
+        Column('tolerance', NUMERIC(precision=6, asdecimal=False), server_default=text("'0.10000'")),
         Column('min_tolerance', INTEGER(4), server_default=text("'5'")),
-        Column('arr_alt_bonus', Float, server_default=text("'0'")),
+        Column('arr_alt_bonus', FLOAT, server_default=text("'0'")),
         Column('arr_min_height', SMALLINT(6)),
         Column('arr_max_height', SMALLINT(6)),
         Column('validity_min_time', SMALLINT(6)),
         Column('score_back_time', SMALLINT(6), server_default=text("'300'")),
         Column('max_JTG', SMALLINT(6), server_default=text("'0'")),
-        Column('JTG_penalty_per_sec', Float(4)),
+        Column('JTG_penalty_per_sec', NUMERIC(precision=4, asdecimal=False)),
         Column('scoring_altitude', Enum('GPS', 'QNH'), server_default=text("'GPS'")),
         Column('task_result_decimal', INTEGER(2), server_default=text("'0'")),
         Column('comp_result_decimal', INTEGER(2), server_default=text("'0'")),
@@ -108,29 +109,29 @@ class TaskFormulaView(BaseModel):
         Column('comp_id', INTEGER(11), index=True),
         Column('formula_name', String(50)),
         Column('overall_validity', Enum('ftv', 'all', 'round'), server_default=text("'ftv'")),
-        Column('validity_param', Float(4), server_default=text("'0.750'")),
+        Column('validity_param', NUMERIC(precision=4, asdecimal=False), server_default=text("'0.750'")),
         Column('validity_ref', Enum('day_quality', 'max_score'), server_default=text("'max_score'")),
-        Column('nominal_goal', Float(3), server_default=text("'0.30'")),
+        Column('nominal_goal', NUMERIC(precision=3, asdecimal=False), server_default=text("'0.30'")),
         Column('min_dist', MEDIUMINT(9), server_default=text("'5000'")),
         Column('nominal_dist', MEDIUMINT(9), server_default=text("'45000'")),
         Column('nominal_time', SMALLINT(6), server_default=text("'5400'")),
-        Column('nominal_launch', Float(3), server_default=text("'0.96'")),
+        Column('nominal_launch', NUMERIC(precision=3, asdecimal=False), server_default=text("'0.96'")),
         Column('formula_distance', Enum('on', 'difficulty', 'off')),
         Column('formula_departure', Enum('leadout', 'departure', 'off')),
         Column('formula_arrival', Enum('position', 'time', 'off')),
         Column('formula_time', Enum('on', 'off')),
-        Column('lead_factor', Float(4)),
-        Column('no_goal_penalty', Float(4)),
-        Column('glide_bonus', Float(4), server_default=text("'4.00'")),
-        Column('tolerance', Float(6)),
+        Column('lead_factor', NUMERIC(precision=4, asdecimal=False)),
+        Column('no_goal_penalty', NUMERIC(precision=4, asdecimal=False)),
+        Column('glide_bonus', NUMERIC(precision=4, asdecimal=False), server_default=text("'4.00'")),
+        Column('tolerance', NUMERIC(precision=6, asdecimal=False)),
         Column('min_tolerance', INTEGER(4), server_default=text("'5'")),
-        Column('arr_alt_bonus', Float),
+        Column('arr_alt_bonus', FLOAT),
         Column('arr_min_height', SMALLINT(6)),
         Column('arr_max_height', SMALLINT(6)),
         Column('validity_min_time', SMALLINT(6)),
         Column('score_back_time', SMALLINT(6), server_default=text("'300'")),
         Column('max_JTG', SMALLINT(6)),
-        Column('JTG_penalty_per_sec', Float(4)),
+        Column('JTG_penalty_per_sec', NUMERIC(precision=4, asdecimal=False)),
         Column('scoring_altitude', Enum('GPS', 'QNH'), server_default=text("'GPS'")),
         Column('task_result_decimal', INTEGER(4)),
         Column('team_scoring', TINYINT(1)),
@@ -163,12 +164,12 @@ class FlightResultView(BaseModel):
         Column('team', String(100)),
         Column('nat_team', TINYINT(4), server_default=text("'1'")),
         Column('live_id', MEDIUMINT(9)),
-        Column('distance_flown', Float),
+        Column('distance_flown', FLOAT),
         Column('best_distance_time', MEDIUMINT(9), nullable=False, server_default=text("'0'")),
-        Column('stopped_distance', Float),
+        Column('stopped_distance', FLOAT),
         Column('stopped_altitude', SMALLINT(6), server_default=text("'0'")),
-        Column('total_distance', Float),
-        Column('speed', Float),
+        Column('total_distance', FLOAT),
+        Column('speed', FLOAT),
         Column('first_time', MEDIUMINT(9)),
         Column('real_start_time', MEDIUMINT(9)),
         Column('goal_time', MEDIUMINT(9)),
@@ -177,9 +178,9 @@ class FlightResultView(BaseModel):
         Column('SSS_time', MEDIUMINT(9)),
         Column('ESS_time', MEDIUMINT(9)),
         Column('waypoints_made', INTEGER(11)),
-        Column('penalty', Float),
+        Column('penalty', FLOAT),
         Column('comment', Text),
-        Column('fixed_LC', Float),
+        Column('fixed_LC', FLOAT),
         Column('ESS_altitude', SMALLINT(6), server_default=text("'0'")),
         Column('goal_altitude', SMALLINT(6)),
         Column('max_altitude', SMALLINT(6), server_default=text("'0'")),
@@ -244,8 +245,8 @@ class RegionWaypointView(BaseModel):
         Column('rwp_id', INTEGER(11), primary_key=True),
         Column('region_id', INTEGER(11)),
         Column('name', String(12)),
-        Column('lat', Float),
-        Column('lon', Float),
+        Column('lat', NUMERIC(precision=8, asdecimal=False)),
+        Column('lon', NUMERIC(precision=9, asdecimal=False)),
         Column('altitude', SMALLINT(6)),
         Column('description', String(64)),
     )
@@ -277,12 +278,12 @@ class TaskObjectView(BaseModel):
         Column('start_close_time', MEDIUMINT(9)),
         Column('stopped_time', MEDIUMINT(9)),
         Column('task_type', String(21)),
-        Column('distance', Float),
-        Column('opt_dist', Float),
-        Column('opt_dist_to_SS', Float),
-        Column('opt_dist_to_ESS', Float),
-        Column('SS_distance', Float),
-        Column('QNH', Float(7), server_default=text("'1013.250'")),
+        Column('distance', FLOAT),
+        Column('opt_dist', FLOAT),
+        Column('opt_dist_to_SS', FLOAT),
+        Column('opt_dist_to_ESS', FLOAT),
+        Column('SS_distance', FLOAT),
+        Column('QNH', NUMERIC(precision=7, asdecimal=False), server_default=text("'1013.250'")),
         Column('comment', Text),
         Column('locked', TINYINT(3), server_default=text("'0'")),
         Column('airspace_check', TINYINT(1)),
@@ -386,29 +387,29 @@ class TblForComp(BaseModel):
                          server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
     formula_name = Column(String(20))
     overall_validity = Column(Enum('ftv', 'all', 'round'), nullable=False, server_default=text("'ftv'"))
-    validity_param = Column(Float, nullable=False, server_default=text("'0.75'"))
+    validity_param = Column(NUMERIC(precision=4, asdecimal=False), nullable=False, server_default=text("'0.75'"))
     validity_ref = Column(Enum('day_quality', 'max_score'), server_default=text("'max_score'"))
-    nominal_goal = Column(Float, nullable=False, server_default=text("'0.3'"))
+    nominal_goal = Column(NUMERIC(precision=3, asdecimal=False), nullable=False, server_default=text("'0.3'"))
     min_dist = Column(MEDIUMINT(9), nullable=False, server_default=text("'5000'"))
     nominal_dist = Column(MEDIUMINT(9), nullable=False, server_default=text("'45000'"))
     nominal_time = Column(SMALLINT(6), nullable=False, server_default=text("'5400'"))
-    nominal_launch = Column(Float, nullable=False, server_default=text("'0.96'"))
+    nominal_launch = Column(NUMERIC(precision=4, asdecimal=False), nullable=False, server_default=text("'0.96'"))
     formula_distance = Column(Enum('on', 'difficulty', 'off'), nullable=False, server_default=text("'on'"))
     formula_arrival = Column(Enum('position', 'time', 'off'), nullable=False, server_default=text("'off'"))
     formula_departure = Column(Enum('leadout', 'departure', 'off'), nullable=False, server_default=text("'leadout'"))
-    lead_factor = Column(Float)
+    lead_factor = Column(NUMERIC(precision=4, asdecimal=False))
     formula_time = Column(Enum('on', 'off'), nullable=False, server_default=text("'on'"))
-    no_goal_penalty = Column(Float, nullable=False, server_default=text("'1'"))
-    glide_bonus = Column(Float, nullable=False, server_default=text("'4'"))
-    tolerance = Column(Float, nullable=False, server_default=text("'0.1'"))
+    no_goal_penalty = Column(NUMERIC(precision=4, asdecimal=False), nullable=False, server_default=text("'1'"))
+    glide_bonus = Column(NUMERIC(precision=4, asdecimal=False), nullable=False, server_default=text("'4'"))
+    tolerance = Column(NUMERIC(precision=6, asdecimal=False), nullable=False, server_default=text("'0.1'"))
     min_tolerance = Column(INTEGER(4), nullable=False, server_default=text("'5'"))
-    arr_alt_bonus = Column(Float, nullable=False, server_default=text("'0'"))
+    arr_alt_bonus = Column(FLOAT, nullable=False, server_default=text("'0'"))
     arr_min_height = Column(SMALLINT(6))
     arr_max_height = Column(SMALLINT(6))
     validity_min_time = Column(SMALLINT(6))
     score_back_time = Column(SMALLINT(6), nullable=False, server_default=text("'300'"))
     max_JTG = Column(SMALLINT(6), nullable=False, server_default=text("'0'"))
-    JTG_penalty_per_sec = Column(Float)
+    JTG_penalty_per_sec = Column(NUMERIC(precision=4, asdecimal=False))
     scoring_altitude = Column(Enum('GPS', 'QNH'), nullable=False, server_default=text("'GPS'"))
     task_result_decimal = Column(INTEGER(2), nullable=False, server_default=text("'0'"))
     comp_result_decimal = Column(INTEGER(2), nullable=False, server_default=text("'0'"))
@@ -481,7 +482,7 @@ class TblRegion(BaseModel):
     reg_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
     comp_id = Column(INTEGER(11))
     centre = Column(INTEGER(11))
-    radius = Column(Float)
+    radius = Column(FLOAT)
     description = Column(String(64), nullable=False)
     waypoint_file = Column(String(50), nullable=False)
     openair_file = Column(String(50))
@@ -645,7 +646,7 @@ class TblLadderSeason(BaseModel):
     season = Column(INTEGER(6), nullable=False, index=True)
     active = Column(TINYINT(1), server_default=text("'1'"))
     overall_validity = Column(Enum('all', 'ftv', 'round'), nullable=False, server_default=text("'ftv'"))
-    validity_param = Column(Float, nullable=False)
+    validity_param = Column(NUMERIC(precision=4, asdecimal=False), nullable=False)
 
 
 TblRegionXCSites = Table(
@@ -666,14 +667,14 @@ class TblAirspaceCheck(BaseModel):
     function = Column(Enum('linear', 'non-linear'), nullable=False, server_default=text("'linear'"))
     h_outer_limit = Column(SMALLINT(4), nullable=False, server_default=text("'70'"))
     h_boundary = Column(SMALLINT(4), nullable=False, server_default=text("'0'"))
-    h_boundary_penalty = Column(Float(3), nullable=False, server_default=text("'0.1'"))
+    h_boundary_penalty = Column(NUMERIC(precision=3, asdecimal=False), nullable=False, server_default=text("'0.1'"))
     h_inner_limit = Column(SMALLINT(4), nullable=False, server_default=text("'-30'"))
-    h_max_penalty = Column(Float(3), nullable=False, server_default=text("'1'"))
+    h_max_penalty = Column(NUMERIC(precision=3, asdecimal=False), nullable=False, server_default=text("'1'"))
     v_outer_limit = Column(SMALLINT(4), nullable=False, server_default=text("'70'"))
     v_boundary = Column(SMALLINT(4), nullable=False, server_default=text("'0'"))
-    v_boundary_penalty = Column(Float(3), nullable=False, server_default=text("'0.1'"))
+    v_boundary_penalty = Column(NUMERIC(precision=3, asdecimal=False), nullable=False, server_default=text("'0.1'"))
     v_inner_limit = Column(SMALLINT(4), nullable=False, server_default=text("'-30'"))
-    v_max_penalty = Column(Float(3), nullable=False, server_default=text("'1'"))
+    v_max_penalty = Column(NUMERIC(precision=3, asdecimal=False), nullable=False, server_default=text("'1'"))
 
     parent_comp_check = relationship('TblCompetition', back_populates='child_comp_check')
     parent_task_check = relationship('TblTask', back_populates="child_task_check")
@@ -692,8 +693,8 @@ class TblRegionWaypoint(BaseModel):
     rwp_id = Column(INTEGER(11), primary_key=True, autoincrement=True)
     reg_id = Column(ForeignKey('tblRegion.reg_id'), index=True)
     name = Column(String(12), nullable=False)
-    lat = Column(Float, nullable=False)
-    lon = Column(Float, nullable=False)
+    lat = Column(NUMERIC(precision=8, asdecimal=False), nullable=False)
+    lon = Column(NUMERIC(precision=9, asdecimal=False), nullable=False)
     altitude = Column(SMALLINT(6), nullable=False)
     description = Column(String(64))
     old = Column(TINYINT(1), nullable=False, server_default=text("'0'"))
@@ -727,24 +728,24 @@ class TblTask(BaseModel):
     task_type = Column(
         Enum('race', 'elapsed time', 'free distance', 'distance with bearing'), server_default=text("'race'")
     )
-    distance = Column(Float)
-    opt_dist = Column(Float)
-    opt_dist_to_SS = Column(Float)
-    opt_dist_to_ESS = Column(Float)
-    SS_distance = Column(Float)
+    distance = Column(FLOAT)
+    opt_dist = Column(FLOAT)
+    opt_dist_to_SS = Column(FLOAT)
+    opt_dist_to_ESS = Column(FLOAT)
+    SS_distance = Column(FLOAT)
     cancelled = Column(TINYINT(1), server_default=text("'0'"))
     time_offset = Column(MEDIUMINT(9))
     formula_distance = Column(Enum('on', 'difficulty', 'off'))
     formula_departure = Column(Enum('leadout', 'departure', 'off'))
     formula_arrival = Column(Enum('position', 'time', 'off'))
     formula_time = Column(Enum('on', 'off'))
-    arr_alt_bonus = Column(Float)
+    arr_alt_bonus = Column(FLOAT)
     max_JTG = Column(SMALLINT(6))
-    no_goal_penalty = Column(Float)
-    tolerance = Column(Float)
+    no_goal_penalty = Column(NUMERIC(precision=4, asdecimal=False))
+    tolerance = Column(NUMERIC(precision=6, asdecimal=False))
     airspace_check = Column(TINYINT(1))
     openair_file = Column(String(40))
-    QNH = Column(Float, nullable=False, server_default=text("'1013.25'"))
+    QNH = Column(NUMERIC(precision=7, asdecimal=False), nullable=False, server_default=text("'1013.25'"))
     comment = Column(Text)
     locked = Column(TINYINT(3), nullable=False, server_default=text("'0'"))
     task_path = Column(String(40))
@@ -769,18 +770,18 @@ class TblTaskResult(BaseModel):
     last_update = Column(TIMESTAMP, server_default=func.current_timestamp(), onupdate=func.current_timestamp())
     track_file = Column(String(255))
     g_record = Column(TINYINT(4), server_default=text("'1'"))
-    distance_flown = Column(Float)
+    distance_flown = Column(FLOAT)
     best_distance_time = Column(MEDIUMINT(9), nullable=False, server_default=text("'0'"))
-    stopped_distance = Column(Float)
+    stopped_distance = Column(FLOAT)
     stopped_altitude = Column(SMALLINT(6), nullable=False, server_default=text("'0'"))
-    total_distance = Column(Float)
+    total_distance = Column(FLOAT)
     first_time = Column(MEDIUMINT(9), nullable=False, server_default=text("'0'"))
     real_start_time = Column(MEDIUMINT(9), nullable=False, server_default=text("'0'"))
     SSS_time = Column(MEDIUMINT(9), nullable=False, server_default=text("'0'"))
     ESS_time = Column(MEDIUMINT(9), nullable=False, server_default=text("'0'"))
     goal_time = Column(MEDIUMINT(9), nullable=False, server_default=text("'0'"))
     last_time = Column(MEDIUMINT(9), nullable=False, server_default=text("'0'"))
-    speed = Column(Float)
+    speed = Column(FLOAT)
     waypoints_made = Column(TINYINT(4))
     ESS_altitude = Column(SMALLINT(6), nullable=False, server_default=text("'0'"))
     goal_altitude = Column(SMALLINT(6), nullable=False, server_default=text("'0'"))
@@ -789,16 +790,16 @@ class TblTaskResult(BaseModel):
     landing_time = Column(MEDIUMINT(9), nullable=False, server_default=text("'0'"))
     landing_altitude = Column(SMALLINT(6), nullable=False, server_default=text("'0'"))
     result_type = Column(Enum('abs', 'dnf', 'lo', 'goal', 'mindist', 'nyp'), server_default=text("'nyp'"))
-    penalty = Column(Float)
+    penalty = Column(FLOAT)
     comment = Column(Text)
     place = Column(SMALLINT(6))
-    distance_score = Column(Float)
-    time_score = Column(Float)
-    arrival_score = Column(Float)
-    departure_score = Column(Float)
-    score = Column(Float)
-    lead_coeff = Column(Float)
-    fixed_LC = Column(Float)
+    distance_score = Column(FLOAT)
+    time_score = Column(FLOAT)
+    arrival_score = Column(FLOAT)
+    departure_score = Column(FLOAT)
+    score = Column(FLOAT)
+    lead_coeff = Column(FLOAT)
+    fixed_LC = Column(FLOAT)
 
     # Participants = relationship('TblParticipant', backref="taskresults", lazy="subquery")
     Participants = relationship('TblParticipant')
@@ -936,8 +937,8 @@ class TblNotification(BaseModel):
     notification_type = Column(
         Enum('custom', 'track', 'jtg', 'auto'), nullable=False, server_default=text("'custom'")
     )
-    flat_penalty = Column(Float(8), nullable=False, server_default=text("'0.0000'"))
-    percentage_penalty = Column(Float(5), nullable=False, server_default=text("'0.0000'"))
+    flat_penalty = Column(NUMERIC(precision=8, asdecimal=False), nullable=False, server_default=text("'0.0000'"))
+    percentage_penalty = Column(NUMERIC(precision=5, asdecimal=False), nullable=False, server_default=text("'0.0000'"))
     comment = Column(String(80))
 
     @classmethod
@@ -956,8 +957,8 @@ class TblTaskWaypoint(BaseModel):
     num = Column(TINYINT(4), nullable=False)
     name = Column(CHAR(6), nullable=False)
     rwp_id = Column(INTEGER(11))
-    lat = Column(Float, nullable=False)
-    lon = Column(Float, nullable=False)
+    lat = Column(NUMERIC(precision=8, asdecimal=False), nullable=False)
+    lon = Column(NUMERIC(precision=9, asdecimal=False), nullable=False)
     altitude = Column(SMALLINT(6), nullable=False, server_default=text("'0'"))
     description = Column(String(80))
     time = Column(MEDIUMINT(9))
@@ -968,9 +969,9 @@ class TblTaskWaypoint(BaseModel):
     shape = Column(Enum('circle', 'semicircle', 'line'), server_default=text("'circle'"))
     angle = Column(SMALLINT(6))
     radius = Column(MEDIUMINT(9))
-    ssr_lat = Column(Float)
-    ssr_lon = Column(Float)
-    partial_distance = Column(Float)
+    ssr_lat = Column(NUMERIC(precision=8, asdecimal=False))
+    ssr_lon = Column(NUMERIC(precision=9, asdecimal=False))
+    partial_distance = Column(FLOAT)
 
     task = relationship('TblTask')
 
@@ -992,8 +993,8 @@ class TblTrackWaypoint(BaseModel):
     wpt_id = Column(INTEGER(11))
     name = Column(String(10))
     rawtime = Column(MEDIUMINT(9), nullable=False)
-    lat = Column(Float, nullable=False)
-    lon = Column(Float, nullable=False)
+    lat = Column(NUMERIC(precision=8, asdecimal=False), nullable=False)
+    lon = Column(NUMERIC(precision=9, asdecimal=False), nullable=False)
     altitude = Column(SMALLINT(6), nullable=False)
 
     @classmethod

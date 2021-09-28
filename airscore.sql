@@ -45,21 +45,21 @@ CREATE TABLE `CompObjectView` (
 ,`track_source` varchar(40)
 ,`formula_name` varchar(50)
 ,`overall_validity` enum('ftv','all','round')
-,`validity_param` float(4,3)
+,`validity_param` decimal(4,3)
 ,`validity_ref` enum('day_quality','max_score')
-,`nominal_goal` float(3,2)
+,`nominal_goal` decimal(3,2)
 ,`min_dist` mediumint(9)
 ,`nominal_dist` mediumint(9)
 ,`nominal_time` smallint(6)
-,`nominal_launch` float(3,2)
+,`nominal_launch` decimal(3,2)
 ,`formula_distance` enum('on','difficulty','off')
 ,`formula_arrival` enum('position','time','off')
 ,`formula_departure` enum('leadout','departure','off')
-,`lead_factor` float(4,2)
+,`lead_factor` decimal(4,2)
 ,`formula_time` enum('on','off')
-,`no_goal_penalty` float(4,3)
-,`glide_bonus` float(4,2)
-,`tolerance` float(6,5)
+,`no_goal_penalty` decimal(4,3)
+,`glide_bonus` decimal(4,2)
+,`tolerance` decimal(6,5)
 ,`min_tolerance` int(4)
 ,`arr_alt_bonus` float
 ,`arr_min_height` smallint(6)
@@ -67,7 +67,7 @@ CREATE TABLE `CompObjectView` (
 ,`validity_min_time` smallint(6)
 ,`score_back_time` smallint(6)
 ,`max_JTG` smallint(6)
-,`JTG_penalty_per_sec` float(4,2)
+,`JTG_penalty_per_sec` decimal(4,2)
 ,`scoring_altitude` enum('GPS','QNH')
 ,`task_result_decimal` int(2)
 ,`comp_result_decimal` int(2)
@@ -176,8 +176,8 @@ CREATE TABLE `RegionWaypointView` (
 `rwp_id` int(11)
 ,`region_id` int(11)
 ,`name` varchar(12)
-,`lat` float(8,6)
-,`lon` float(9,6)
+,`lat` decimal(8,6)
+,`lon` decimal(9,6)
 ,`altitude` smallint(6)
 ,`description` varchar(64)
 );
@@ -205,21 +205,21 @@ CREATE TABLE `TaskFormulaView` (
 ,`task_id` int(11)
 ,`formula_name` varchar(50)
 ,`overall_validity` enum('ftv','all','round')
-,`validity_param` float(4,3)
+,`validity_param` decimal(4,3)
 ,`validity_ref` enum('day_quality','max_score')
-,`nominal_goal` float(3,2)
+,`nominal_goal` decimal(3,2)
 ,`min_dist` mediumint(9)
 ,`nominal_dist` mediumint(9)
 ,`nominal_time` smallint(6)
-,`nominal_launch` float(3,2)
+,`nominal_launch` decimal(3,2)
 ,`formula_distance` enum('on','difficulty','off')
 ,`formula_departure` enum('leadout','departure','off')
 ,`formula_arrival` enum('position','time','off')
 ,`formula_time` enum('on','off')
-,`lead_factor` float(4,2)
-,`no_goal_penalty` float(4,3)
-,`glide_bonus` float(4,2)
-,`tolerance` float(6,5)
+,`lead_factor` decimal(4,2)
+,`no_goal_penalty` decimal(4,3)
+,`glide_bonus` decimal(4,2)
+,`tolerance` decimal(6,5)
 ,`min_tolerance` int(4)
 ,`arr_alt_bonus` float
 ,`arr_min_height` smallint(6)
@@ -227,7 +227,7 @@ CREATE TABLE `TaskFormulaView` (
 ,`validity_min_time` smallint(6)
 ,`score_back_time` smallint(6)
 ,`max_JTG` smallint(6)
-,`JTG_penalty_per_sec` float(4,2)
+,`JTG_penalty_per_sec` decimal(4,2)
 ,`scoring_altitude` enum('GPS','QNH')
 ,`task_result_decimal` int(4)
 ,`team_scoring` tinyint(1)
@@ -272,7 +272,7 @@ CREATE TABLE `TaskObjectView` (
 ,`opt_dist_to_SS` float
 ,`opt_dist_to_ESS` float
 ,`SS_distance` float
-,`QNH` float(7,3)
+,`QNH` decimal(7,3)
 ,`comment` text
 ,`locked` tinyint(3)
 ,`airspace_check` tinyint(1)
@@ -320,14 +320,14 @@ CREATE TABLE `tblAirspaceCheck` (
   `function` enum('linear','non-linear') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'linear',
   `h_outer_limit` smallint NOT NULL DEFAULT '70',
   `h_boundary` smallint NOT NULL DEFAULT '0',
-  `h_boundary_penalty` float(3,2) NOT NULL DEFAULT '0.10',
+  `h_boundary_penalty` decimal(3,2) NOT NULL DEFAULT '0.10',
   `h_inner_limit` smallint NOT NULL DEFAULT '-30',
-  `h_max_penalty` float(3,2) NOT NULL DEFAULT '1.00',
+  `h_max_penalty` decimal(3,2) NOT NULL DEFAULT '1.00',
   `v_outer_limit` smallint NOT NULL DEFAULT '70',
   `v_boundary` smallint NOT NULL DEFAULT '0',
-  `v_boundary_penalty` float(3,2) NOT NULL DEFAULT '0.10',
+  `v_boundary_penalty` decimal(3,2) NOT NULL DEFAULT '0.10',
   `v_inner_limit` smallint NOT NULL DEFAULT '-30',
-  `v_max_penalty` float(3,2) NOT NULL DEFAULT '1.00'
+  `v_max_penalty` decimal(3,2) NOT NULL DEFAULT '1.00'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -419,21 +419,21 @@ CREATE TABLE `tblForComp` (
   `last_update` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `formula_name` varchar(20) DEFAULT NULL,
   `overall_validity` enum('ftv','all','round') NOT NULL DEFAULT 'ftv',
-  `validity_param` float(4,3) NOT NULL DEFAULT '0.750',
+  `validity_param` decimal(4,3) NOT NULL DEFAULT '0.750',
   `validity_ref` enum('day_quality','max_score') DEFAULT 'max_score',
-  `nominal_goal` float(3,2) NOT NULL DEFAULT '0.30',
+  `nominal_goal` decimal(3,2) NOT NULL DEFAULT '0.30',
   `min_dist` mediumint(9) NOT NULL DEFAULT '5000',
   `nominal_dist` mediumint(9) NOT NULL DEFAULT '45000',
   `nominal_time` smallint(6) NOT NULL DEFAULT '5400',
-  `nominal_launch` float(3,2) NOT NULL DEFAULT '0.96',
+  `nominal_launch` decimal(3,2) NOT NULL DEFAULT '0.96',
   `formula_distance` enum('on','difficulty','off') NOT NULL DEFAULT 'on',
   `formula_arrival` enum('position','time','off') NOT NULL DEFAULT 'off',
   `formula_departure` enum('leadout','departure','off') NOT NULL DEFAULT 'leadout',
-  `lead_factor` float(4,2) NOT NULL DEFAULT '1.00',
+  `lead_factor` decimal(4,2) NOT NULL DEFAULT '1.00',
   `formula_time` enum('on','off') NOT NULL DEFAULT 'on',
-  `no_goal_penalty` float(4,3) NOT NULL DEFAULT '1.000',
-  `glide_bonus` float(4,2) NOT NULL DEFAULT '4.00',
-  `tolerance` float(6,5) NOT NULL DEFAULT '0.10000',
+  `no_goal_penalty` decimal(4,3) NOT NULL DEFAULT '1.000',
+  `glide_bonus` decimal(4,2) NOT NULL DEFAULT '4.00',
+  `tolerance` decimal(6,5) NOT NULL DEFAULT '0.10000',
   `min_tolerance` int(4) NOT NULL DEFAULT '5',
   `arr_alt_bonus` float NOT NULL DEFAULT '0',
   `arr_min_height` smallint(6) DEFAULT NULL,
@@ -441,7 +441,7 @@ CREATE TABLE `tblForComp` (
   `validity_min_time` smallint(6) DEFAULT NULL,
   `score_back_time` smallint(6) NOT NULL DEFAULT '300',
   `max_JTG` smallint(6) NOT NULL DEFAULT '0',
-  `JTG_penalty_per_sec` float(4,2) DEFAULT NULL,
+  `JTG_penalty_per_sec` decimal(4,2) DEFAULT NULL,
   `scoring_altitude` enum('GPS','QNH') NOT NULL DEFAULT 'GPS',
   `task_result_decimal` int(2) DEFAULT '0',
   `comp_result_decimal` int(2) DEFAULT '0',
@@ -786,7 +786,7 @@ CREATE TABLE `tblLadderSeason` (
   `season` int(6) NOT NULL,
   `active` tinyint(1) DEFAULT '1',
   `overall_validity` enum('all','ftv','round') NOT NULL DEFAULT 'ftv',
-  `validity_param` float NOT NULL
+  `validity_param` decimal(4,3) NOT NULL DEFAULT '0.750'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -799,8 +799,8 @@ CREATE TABLE `tblNotification` (
   `not_id` int(11) NOT NULL,
   `track_id` int(11) NOT NULL,
   `notification_type` enum('custom','track','jtg','auto') NOT NULL DEFAULT 'custom',
-  `flat_penalty` float(8,4) NOT NULL DEFAULT '0.0000',
-  `percentage_penalty` float(5,4) NOT NULL DEFAULT '0.0000',
+  `flat_penalty` decimal(8,4) NOT NULL DEFAULT '0.0000',
+  `percentage_penalty` decimal(5,4) NOT NULL DEFAULT '0.0000',
   `comment` varchar(80) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -875,8 +875,8 @@ CREATE TABLE `tblRegionWaypoint` (
   `rwp_id` int(11) NOT NULL,
   `reg_id` int(11) DEFAULT NULL,
   `name` varchar(12) NOT NULL,
-  `lat` float(8,6) NOT NULL,
-  `lon` float(9,6) NOT NULL,
+  `lat` decimal(8,6) NOT NULL,
+  `lon` decimal(9,6) NOT NULL,
   `altitude` smallint(6) NOT NULL,
   `description` varchar(64) DEFAULT NULL,
   `old` tinyint(1) NOT NULL DEFAULT '0',
@@ -948,11 +948,11 @@ CREATE TABLE `tblTask` (
   `formula_time` enum('on','off') DEFAULT NULL,
   `arr_alt_bonus` float DEFAULT NULL,
   `max_JTG` smallint(6) DEFAULT NULL,
-  `no_goal_penalty` float(4,3) DEFAULT NULL,
-  `tolerance` float(6,5) DEFAULT NULL,
+  `no_goal_penalty` decimal(4,3) DEFAULT NULL,
+  `tolerance` decimal(6,5) DEFAULT NULL,
   `airspace_check` tinyint(1) DEFAULT NULL,
   `openair_file` varchar(40) DEFAULT NULL,
-  `QNH` float(7,3) NOT NULL DEFAULT '1013.250',
+  `QNH` decimal(7,3) NOT NULL DEFAULT '1013.250',
   `comment` text,
   `locked` tinyint(3) NOT NULL DEFAULT '0',
   `task_path` varchar(40) DEFAULT NULL
@@ -1016,8 +1016,8 @@ CREATE TABLE `tblTaskWaypoint` (
   `num` tinyint(4) NOT NULL,
   `name` varchar(12) NOT NULL,
   `rwp_id` int(11) DEFAULT NULL,
-  `lat` float(8,6) NOT NULL,
-  `lon` float(9,6) NOT NULL,
+  `lat` decimal(8,6) NOT NULL,
+  `lon` decimal(9,6) NOT NULL,
   `altitude` smallint(6) NOT NULL DEFAULT '0',
   `description` varchar(64) DEFAULT NULL,
   `time` mediumint(9) DEFAULT NULL,
@@ -1026,8 +1026,8 @@ CREATE TABLE `tblTaskWaypoint` (
   `shape` enum('circle','semicircle','line') DEFAULT 'circle',
   `angle` smallint(6) DEFAULT NULL,
   `radius` mediumint(9) DEFAULT NULL,
-  `ssr_lat` float DEFAULT NULL,
-  `ssr_lon` float DEFAULT NULL,
+  `ssr_lat` decimal(8,6) DEFAULT NULL,
+  `ssr_lon` decimal(9,6) DEFAULT NULL,
   `partial_distance` double DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -1043,8 +1043,8 @@ CREATE TABLE `tblTrackWaypoint` (
   `wpt_id` int(11) DEFAULT NULL,
   `name` varchar(10) NOT NULL,
   `rawtime` mediumint(9) NOT NULL,
-  `lat` float(8,6) NOT NULL,
-  `lon` float(9,6) NOT NULL,
+  `lat` decimal(8,6) NOT NULL,
+  `lon` decimal(9,6) NOT NULL,
   `altitude` smallint(6) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
