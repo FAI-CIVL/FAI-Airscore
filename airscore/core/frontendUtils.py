@@ -516,10 +516,12 @@ def get_task_turnpoints(task) -> dict:
             max_n = int(tp['num'])
             total_dist = tp['partial_distance']
         if tp['type'] == 'speed':
-            if tp['how'] == 'entry':
-                tp['type_text'] = 'SSS - Out/Enter'
-            else:
-                tp['type_text'] = 'SSS - In/Exit'
+            ''' using NO WPT DIRECTION for start as for other waypoints - FAI GAP RULES 2020 '''
+            # if tp['how'] == 'entry':
+            #     tp['type_text'] = 'SSS - Out/Enter'
+            # else:
+            #     tp['type_text'] = 'SSS - In/Exit'
+            tp['type_text'] = 'SSS'
         elif tp['type'] == 'endspeed':
             tp['type_text'] = 'ESS'
         elif tp['type'] == 'goal':

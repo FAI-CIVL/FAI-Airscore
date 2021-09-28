@@ -905,7 +905,8 @@ def pretty_format_results(content, timeoffset=0, td=0, cd=0):
                             formatted[key] = '' if str(value) == 'circle' else '(line)'
                         elif key == 'shape':
                             '''formatting wpt versus'''  # Not needed anymore?
-                            formatted[key] = '' if str(value) == 'entry' else '(exit)'
+                            # formatted[key] = '' if str(value) == 'entry' else '(exit)'
+                            formatted[key] = ''
                         else:
                             '''name and description'''
                             formatted[key] = str(value)

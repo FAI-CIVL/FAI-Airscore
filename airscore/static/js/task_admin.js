@@ -50,7 +50,7 @@ $(document).ready(function() {
     ['mod-how', 'mod-shape', 'mod-radius'].forEach( el => $('#'+el+'-div').hide() )
     let val = $(this).val();
     if ( val != 'launch' || $('#check_launch').is(':checked') ) $('#mod-radius-div').show();
-    if ( val == 'speed' ) $('#mod-how-div').show();
+    // if ( val == 'speed' ) $('#mod-how-div').show(); // not using Start direction anymore
     if ( val == 'goal' ) $('#mod-shape-div').show();
   });
 
@@ -58,7 +58,7 @@ $(document).ready(function() {
     ['how', 'shape', 'radius'].forEach( el => $('#'+el+'-div').hide() )
     let val = $(this).val();
     if ( val != 'launch' || $('#check_launch').is(':checked') ) $('#radius-div').show();
-    if ( val == 'speed' ) $('#how-div').show();
+    // if ( val == 'speed' ) $('#how-div').show(); // not using Start direction anymore
     if ( val == 'goal' ) $('#shape-div').show();
   });
 

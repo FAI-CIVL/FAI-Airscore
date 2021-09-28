@@ -434,7 +434,7 @@ def start_made_civl(fix, next, start, tolerance, min_tol_m):
     This version is following the FAI Rules / CIVL Gap Rules 2018 8.1.1
 
     CIVL rules do not make distinction between start and turnpoints, but this creates
-    problems in case of a tesk with enter cylinder and first turnpoint that differs from start wpt.
+    problems in case of a task with enter cylinder and first turnpoint that differs from start wpt.
     FS considers that a exit start.
     We prefer to use XCTrack approach.
     This version DOES USE a Entry/Exit flag (start only)
@@ -461,6 +461,8 @@ def tp_made_civl(fix, next, tp, tolerance, min_tol_m):
     (distance(center[i] , trackpoint[j+1] ) >= innerRadius[i] ∧ distance(center[i] , trackpoint[j] ) <= outerRadius[i] )
 
     This version DOES NOT USE a Entry/Exit flag
+
+    It is now used also for START cylinder following the FAI Rules / CIVL Gap Rules 2021 6.2.1
     """
 
     condition = (not (tp.in_radius(fix, -tolerance, -min_tol_m)) and (tp.in_radius(next, tolerance, min_tol_m))) or (

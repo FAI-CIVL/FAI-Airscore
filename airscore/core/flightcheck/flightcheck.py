@@ -205,7 +205,8 @@ def check_fixes(
         '''
         if pilot_can_start(task, tp, my_fix):
             # print(f'time: {my_fix.rawtime}, start: {task.start_time} | Interval: {task.SS_interval} | my start: {result.real_start_time} | better_start: {pilot_get_better_start(task, my_fix.rawtime, result.SSS_time)} | can start: {pilot_can_start(task, tp, my_fix)} can restart: {pilot_can_restart(task, tp, my_fix, result)} | tp: {tp.name}')
-            if start_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m):
+            ''' using NO WPT DIRECTION for start as for other waypoints - FAI GAP RULES 2020 '''
+            if tp_made_civl(my_fix, next_fix, tp.next, tolerance, min_tol_m):
                 time = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
                 result.waypoints_achieved.append(create_waypoint_achieved(my_fix, tp, time, alt))  # pilot has started
                 result.real_start_time = time
@@ -216,7 +217,8 @@ def check_fixes(
 
         elif pilot_can_restart(task, tp, my_fix, result):
             # print(f'time: {my_fix.rawtime}, start: {task.start_time} | Interval: {task.SS_interval} | my start: {result.real_start_time} | better_start: {pilot_get_better_start(task, my_fix.rawtime, result.SSS_time)} | can start: {pilot_can_start(task, tp, my_fix)} can restart: {pilot_can_restart(task, tp, my_fix, result)} | tp: {tp.name}')
-            if start_made_civl(my_fix, next_fix, tp.last_made, tolerance, min_tol_m):
+            ''' using NO WPT DIRECTION for start as for other waypoints - FAI GAP RULES 2020 '''
+            if tp_made_civl(my_fix, next_fix, tp.last_made, tolerance, min_tol_m):
                 tp.pointer -= 1
                 time = int(round(tp_time_civl(my_fix, next_fix, tp.next), 0))
                 result.waypoints_achieved.pop()
