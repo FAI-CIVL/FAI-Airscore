@@ -176,8 +176,8 @@ CREATE TABLE `RegionWaypointView` (
 `rwp_id` int(11)
 ,`region_id` int(11)
 ,`name` varchar(12)
-,`lat` float
-,`lon` float
+,`lat` float(8,6)
+,`lon` float(9,6)
 ,`altitude` smallint(6)
 ,`description` varchar(64)
 );
@@ -875,8 +875,8 @@ CREATE TABLE `tblRegionWaypoint` (
   `rwp_id` int(11) NOT NULL,
   `reg_id` int(11) DEFAULT NULL,
   `name` varchar(12) NOT NULL,
-  `lat` float NOT NULL,
-  `lon` float NOT NULL,
+  `lat` float(8,6) NOT NULL,
+  `lon` float(9,6) NOT NULL,
   `altitude` smallint(6) NOT NULL,
   `description` varchar(64) DEFAULT NULL,
   `old` tinyint(1) NOT NULL DEFAULT '0',
@@ -1016,8 +1016,8 @@ CREATE TABLE `tblTaskWaypoint` (
   `num` tinyint(4) NOT NULL,
   `name` varchar(12) NOT NULL,
   `rwp_id` int(11) DEFAULT NULL,
-  `lat` float NOT NULL,
-  `lon` float NOT NULL,
+  `lat` float(8,6) NOT NULL,
+  `lon` float(9,6) NOT NULL,
   `altitude` smallint(6) NOT NULL DEFAULT '0',
   `description` varchar(64) DEFAULT NULL,
   `time` mediumint(9) DEFAULT NULL,
@@ -1043,8 +1043,8 @@ CREATE TABLE `tblTrackWaypoint` (
   `wpt_id` int(11) DEFAULT NULL,
   `name` varchar(10) NOT NULL,
   `rawtime` mediumint(9) NOT NULL,
-  `lat` float NOT NULL,
-  `lon` float NOT NULL,
+  `lat` float(8,6) NOT NULL,
+  `lon` float(9,6) NOT NULL,
   `altitude` smallint(6) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
