@@ -408,16 +408,7 @@ def comp_settings_admin(compid: int):
     session['external'] = comp.external
 
     compform.igc_parsing_file.choices, _ = frontendUtils.get_igc_parsing_config_file_list()
-    owner, scorekeepers, scorekeeper_ids = frontendUtils.get_comp_scorekeeper(compid)
-    all_scorekeepers = frontendUtils.get_all_scorekeepers()
-    all_scorekeepers.remove(owner)
-    for scorekeeper in scorekeepers:
-        all_scorekeepers.remove(scorekeeper)
-    scorekeeper_choices = []
-    if all_scorekeepers:
-        for scorekeeper in all_scorekeepers:
-            scorekeeper_choices.append((scorekeeper['id'],
-                                        f"{scorekeeper['first_name']} {scorekeeper['last_name']} ({scorekeeper['username']})"))
+    ids = frontendUtils.get_comp_users_ids(compid)
 
     certifications = frontendUtils.get_certifications_details()
     rankingform.cert_id.choices = [(x['cert_id'], x['cert_name']) for x in certifications[comp.comp_class]]
@@ -578,7 +569,6 @@ def comp_settings_admin(compid: int):
         compform.website.data = comp.website
         compform.external.data = comp.external
         newtaskform.task_region.choices, _ = frontendUtils.get_region_choices(compid)
-        newScorekeeperform.scorekeeper.choices = scorekeeper_choices
         formulas = [(x, x.upper()) for x in list_formulas().get(comp.comp_class)]
         '''cope with external or converted events with invalid formulas'''
         if formula.formula_name not in (el[0] for el in formulas):
@@ -591,7 +581,7 @@ def comp_settings_admin(compid: int):
             formulas.append((value, text))
         compform.formula.choices = formulas
 
-        if (current_user.id not in scorekeeper_ids) and (current_user.access not in ('admin', 'manager')):
+        if (current_user.id not in ids) and (current_user.access not in ('admin', 'manager')):
             session['is_editor'] = False
             compform.submit = None
         else:
@@ -657,8 +647,28 @@ def convert_external_comp(compid: int):
 @blueprint.route('/_get_scorekeepers/<int:compid>', methods=['GET'])
 @login_required
 def _get_scorekeepers(compid: int):
-    owner, scorekeepers, _ = frontendUtils.get_comp_scorekeeper(compid)
-    return {'owner': owner, 'scorekeepers': scorekeepers}
+    owner, scorekeepers, available_users = frontendUtils.get_comp_scorekeepers(compid)
+    return {'owner': owner, 'scorekeepers': scorekeepers, 'dropdown': available_users}
+
+
+@blueprint.route('/_add_scorekeeper/<int:compid>', methods=['POST'])
+@login_required
+@editor_required
+def _add_scorekeeper(compid: int):
+    data = request.json
+    if request.method == "POST":
+        return jsonify(success=frontendUtils.set_comp_scorekeeper(compid, data['id']))
+    return render_template('500.html')
+
+
+@blueprint.route('/_delete_scorekeeper', methods=['POST'])
+@login_required
+@editor_required
+def _delete_scorekeeper():
+    if request.method == "POST":
+        data = request.json
+        return jsonify(success=frontendUtils.delete_comp_scorekeeper(data.get('compid'), data.get('id')))
+    return render_template('500.html')
 
 
 @blueprint.route('/_save_comp_ladders/<int:compid>', methods=['POST'])
@@ -692,18 +702,6 @@ def user_admin():
     user_form.nat.choices = [(x['code'], x['name']) for x in frontendUtils.list_countries()]
     return render_template('users/user_admin.html',
                            user_form=user_form, editable=bool(ADMIN_DB))
-
-
-@blueprint.route('/_add_scorekeeper/<int:compid>', methods=['POST'])
-@login_required
-@editor_required
-def _add_scorekeeper(compid: int):
-    data = request.json
-    if frontendUtils.set_comp_scorekeeper(compid, data['id']):
-        resp = jsonify(success=True)
-        return resp
-    else:
-        return render_template('500.html')
 
 
 @blueprint.route('/task_admin/<int:taskid>', methods=['GET', 'POST'])
@@ -842,7 +840,7 @@ def _get_admin_comps():
 @login_required
 def _delete_comp(compid: int):
     from comp import delete_comp
-    owner, _, _ = frontendUtils.get_comp_scorekeeper(compid)
+    owner, _, _ = frontendUtils.get_comp_scorekeepers(compid)
     if current_user.id == owner['id']:
         delete_comp(compid)
     else:

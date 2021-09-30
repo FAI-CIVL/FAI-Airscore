@@ -4,6 +4,10 @@
 Competition Settings
 {% endblock %}
 
+{% block css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet"/>
+{% endblock %}
+
 {% block back %}
 <a href="{{ url_for('user.pilot_admin', compid=compid) }}" class='btn btn-primary mr-2'>
   Registered Pilots
@@ -242,9 +246,9 @@ Competition Settings
         <h6 class='font-weight-bold'>Owner:</h6>
         <h6 id='owner'></h6>
         <h6 class='font-weight-bold'>Scorekeepers:</h6>
-        <table id='scorekeeper_table'>
-          <tr>
-          </tr>
+        <table class="table table-sm mb-3" id='scorekeeper_table'>
+          <tbody>
+          </tbody>
         </table>
         {% if compform.submit %}
         <button id='add_scorekeeper_switch' class='btn btn-secondary' type='button' data-toggle='collapse'
@@ -255,7 +259,11 @@ Competition Settings
       </div>
       <div class="panel-content column-wrap">
         <div class='panel collapse' id='add_sk'>
-          <section class="panel-row row-wrap form">
+          <p class="alert alert-primary small">
+            All <i>ADMIN</i> and <i>MANAGER</i> user have access to the competition settings and scoring.<br />
+            Only Scorekeepers need to be added to have access to the competition.
+          </p>
+          <section class="panel-row row-wrap form mb-3">
             {{ render_field(scorekeeperform.scorekeeper) }}
           </section>
           <section class="panel-row row-wrap button">
@@ -433,6 +441,7 @@ Competition Settings
 {% endblock %}
 
 {% block js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
 <script src="{{ static_url_for('static', filename='js/display-if.min.js') }}"></script>
 <script src="{{ static_url_for('static', filename='js/comp_settings.js') }}"></script>

@@ -1060,16 +1060,38 @@ def get_score_header(files, offset):
     return header, active
 
 
-def get_comp_scorekeeper(compid_or_taskid: int, task_id=False):
-    """returns owner and list of scorekeepers takes compid by default or taskid if taskid is True"""
+def get_comp_users_ids(comp_id: int) -> list:
+    """returns a list of ids for scorekeepers (and owner) of a competition"""
+    from airscore.user.models import User
     from db.tables import TblCompAuth as CA
 
+    all_ids = []
+    with db_session() as db:
+        result = (
+            db.query(User.id)
+            .join(CA, User.id == CA.user_id)
+            .filter(CA.comp_id == comp_id, CA.user_auth.in_(('owner', 'admin')))
+            .all()
+        )
+        if result:
+            all_ids = [row.id for row in result]
+        return all_ids
+
+
+def get_comp_scorekeepers(compid_or_taskid: int, task_id=False) -> tuple:
+    """returns owner and list of scorekeepers takes compid by default or taskid if taskid is True"""
+    from db.tables import TblCompAuth as CA
     from airscore.user.models import User
 
+    owner = None
+    comp_scorekeepers = []
+    available_scorekeepers = []
+
     with db_session() as db:
+        '''comp scorekeepers'''
         if task_id:
             taskid = compid_or_taskid
-            all_scorekeepers = (
+            q1 = (
                 db.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth)
                 .join(CA, User.id == CA.user_id)
                 .join(TblTask, CA.comp_id == TblTask.comp_id)
@@ -1078,26 +1100,42 @@ def get_comp_scorekeeper(compid_or_taskid: int, task_id=False):
             )
         else:
             compid = compid_or_taskid
-            all_scorekeepers = (
+            q1 = (
                 db.query(User.id, User.username, User.first_name, User.last_name, CA.user_auth)
                 .join(CA, User.id == CA.user_id)
                 .filter(CA.comp_id == compid, CA.user_auth.in_(('owner', 'admin')))
                 .all()
             )
-        if all_scorekeepers:
-            all_scorekeepers = [row._asdict() for row in all_scorekeepers]
-        scorekeepers = []
-        all_ids = []
-        owner = None
-        for admin in all_scorekeepers:
-            all_ids.append(admin['id'])
-            if admin['user_auth'] == 'owner':
-                del admin['user_auth']
-                owner = admin
-            else:
-                del admin['user_auth']
-                scorekeepers.append(admin)
-    return owner, scorekeepers, all_ids
+
+        '''available scorekeepers'''
+        q2 = (
+                db.query(User.id, User.first_name, User.last_name, User.username, User.access)
+                .filter(User.id.notin_([a.id for a in q1]),
+                        User.access.in_(['scorekeeper']),
+                        User.active == 1)
+                .all()
+        )
+
+        if q1:
+            comp_scorekeepers = [row._asdict() for row in q1]
+            '''owner'''
+            owner = next((p for p in comp_scorekeepers if p['user_auth'] == 'owner'), None)
+            if owner:
+                comp_scorekeepers.remove(owner)
+        if q2:
+            available_scorekeepers = [row._asdict() for row in q2]
+
+    return owner, comp_scorekeepers, available_scorekeepers
+
+
+def delete_comp_scorekeeper(comp_id: int, user_id: int) -> bool:
+    from db.tables import TblCompAuth as C
+    try:
+        C.get_one(comp_id=comp_id, user_id=user_id).delete()
+        return True
+    except Exception as e:
+        # raise
+        return False
 
 
 def check_comp_editor(compid: int, user) -> bool:
@@ -1105,7 +1143,7 @@ def check_comp_editor(compid: int, user) -> bool:
     if user.is_admin or user.is_manager:
         return True
     else:
-        _, _, scorekeeper_ids = get_comp_scorekeeper(compid)
+        scorekeeper_ids = get_comp_users_ids(compid)
         return user.id in scorekeeper_ids
 
 
@@ -1149,21 +1187,6 @@ def set_comp_scorekeeper(compid: int, userid, owner=False):
         db.add(admin)
         db.flush()
     return True
-
-
-def get_all_scorekeepers():
-    """returns a list of all scorekeepers in the system"""
-    from airscore.user.models import User
-
-    with db_session() as db:
-        all_scorekeepers = (
-            db.query(User.id, User.username, User.first_name, User.last_name)
-            .filter(User.access.in_(['scorekeeper', 'manager', 'admin']))
-            .all()
-        )
-        if all_scorekeepers:
-            all_scorekeepers = [row._asdict() for row in all_scorekeepers]
-        return all_scorekeepers
 
 
 def get_all_users():

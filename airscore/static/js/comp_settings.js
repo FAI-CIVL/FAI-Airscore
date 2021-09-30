@@ -257,25 +257,6 @@ function populate_tasks(json) {
   $('#task_region').val(json['last_region']);
 }
 
-function add_scorekeeper(){
-  document.getElementById("save_scorekeeper_button").innerHTML = "Adding...";
-  document.getElementById("save_scorekeeper_button").className = "btn btn-warning";
-  var mydata = new Object();
-  var e = document.getElementById('scorekeeper');
-  mydata.id = e.options[e.selectedIndex].value;
-  $.ajax({
-    type: "POST",
-    url: link_add_scorekeeper,
-    contentType:"application/json",
-    data : JSON.stringify(mydata),
-    dataType: "json",
-    success: function () {
-      get_scorekeepers()
-      document.getElementById("save_scorekeeper_button").innerHTML = "Save";
-      document.getElementById("save_scorekeeper_button").className = "btn btn-success";
-    }
-  });
-}
 
 function save_ladders(){
   document.getElementById("save_ladders_button").innerHTML = "Saving...";
@@ -337,18 +318,102 @@ function save_task(){
 
 function get_scorekeepers(){
   $.ajax({
-     type: "GET",
-     url: link_get_scorekeepers,
-     contentType:"application/json",
-     dataType: "json",
-     success: function (response) {
-       var content = '';
-       for (var i = 0; i < response['scorekeepers'].length; i++) {
-         content += '<tr><TD class="c3">'+ response['scorekeepers'][i]['first_name'] + ' '+ response['scorekeepers'][i]['last_name'] +'</TD></tr>'
-       }
-       $('#scorekeeper_table').append(content);
-       $('#owner').html(response['owner']['first_name'] + ' ' + response['owner']['last_name'] );
-     }
+    type: "GET",
+    url: link_get_scorekeepers,
+    contentType:"application/json",
+    dataType: "json",
+    success: function (response) {
+      // update scorekeepers list
+      $('#scorekeeper_table tbody').empty();
+      response['scorekeepers'].forEach( key => {
+        let row = '<tr>' +
+                        '<td class="">'+ key['first_name'] + ' ' + key['last_name'] +'</td>' +
+                        '<td><a class="btn btn-sm btn-danger ml-3" onclick="delete_scorekeeper('+key['id']+')">Remove</a></td>' +
+                      '</tr>';
+        $('#scorekeeper_table tbody').append(row);
+      });
+      $('#owner').html(response['owner']['first_name'] + ' ' + response['owner']['last_name'] );
+
+      // update select dropdown
+      $("#scorekeeper").empty();
+      if( response['dropdown'].length ) {
+        response['dropdown'].forEach( key => {
+          $("#scorekeeper").append($('<option>', {
+              value: key['id'],
+              text: key['first_name'] + ' ' + key['last_name'] + ' (' + key['username'] +')'
+            }
+          ))
+        });
+        $('#add_scorekeeper_switch').prop('disabled', false);
+      }
+      else {
+        // hide dropdown section
+        $('#add_sk').collapse('hide');
+        $('#add_scorekeeper_switch').prop('disabled', true);
+      }
+    },
+    error: function(result, status, error) {
+      create_flashed_message('System Error trying to get scorekeepers list', 'danger');
+    },
+    complete: function (result, status) {
+    }
+  });
+}
+
+function add_scorekeeper(){
+  $('#save_scorekeeper_button').removeClass('btn-success').addClass('btn-warning').text('Adding...');
+  let mydata = {
+    compid: compid,
+    id: $('#scorekeeper').val()
+  };
+  $.ajax({
+    type: "POST",
+    url: link_add_scorekeeper,
+    contentType:"application/json",
+    data : JSON.stringify(mydata),
+    dataType: "json",
+    success: function () {
+      //create_flashed_message('Scorekeeper added', 'success');
+      toastr.success('Scorekeeper added', {timeOut: 5000});
+    },
+    error: function(result, status, error) {
+      clear_flashed_messages();
+      create_flashed_message('System Error trying to add scorekeeper', 'danger');
+      console.log( 'something went wrong: add_scorekeepers()', status, error);
+    },
+    complete: function (result, status) {
+      $('#save_scorekeeper_button').removeClass('btn-warning').addClass('btn-success').text('Save');
+      get_scorekeepers();
+    }
+  });
+}
+
+function delete_scorekeeper( id ) {
+  let mydata = {
+    compid: compid,
+    id: id
+  };
+  $.ajax({
+    type: "POST",
+    url: '/users/_delete_scorekeeper',
+    contentType:"application/json",
+    data: JSON.stringify(mydata),
+    dataType: "json",
+    success: function (response) {
+      if ( response.success ) {
+        //create_flashed_message('Scorekeeper removed', 'success');
+        toastr.warning('Scorekeeper removed', {timeOut: 5000});
+      }
+      else create_flashed_message('Error trying to remove scorekeeper', 'danger');
+    },
+    error: function(result, status, error) {
+      clear_flashed_messages();
+      create_flashed_message('System Error trying to remove scorekeeper', 'danger');
+      console.log( 'something went wrong: delete_scorekeepers()', status, error);
+    },
+    complete: function (result, status) {
+      get_scorekeepers();
+    }
   });
 }
 
@@ -361,7 +426,7 @@ function update_formula_adv_settings(){
     type: "POST",
     url: '/users/_update_formula_adv_settings',
     contentType:"application/json",
-    data : JSON.stringify(formula),
+    data: JSON.stringify(formula),
     dataType: "json",
     success: function (data) {
       if ( data.success ) {
