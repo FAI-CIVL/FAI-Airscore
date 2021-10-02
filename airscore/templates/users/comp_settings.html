@@ -193,9 +193,15 @@ Competition Settings
   <div class='panel collapse' id='task_list'>
     <section class="panel-row row-wrap button">
       {% if compform.submit and not readonly %}
-      <button id='add_task_button' class='btn btn-secondary' type='button' onclick='add_task()'>
+      {% if not taskform.task_region.choices|count %}
+      <p class="alert alert-primary small" id="no_region_alert">
+          Tasks cannot be added until at least one <a href="{{ url_for('user.region_admin') }}">Flying Area</a> has been created.
+      </p>
+      {% else %}
+      <button id='add_task_modal_button' class='btn btn-secondary' type='button' onclick='add_task()'>
         Add task
       </button>
+      {% endif %}
       {% endif%}
     </section>
     <section class="panel-row row-wrap form">
@@ -286,25 +292,31 @@ Competition Settings
 <div id='add_task_modal' class='modal fade' role='dialog'>
   <div class='modal-dialog'>
     <div class='modal-content'>
-      <div class='modal-header'>
-        <h4 class='modal-title'>Add Task</h4>
-      </div>
-      <div class='modal-body'>
-        <section class="panel-row row-wrap form">
-            {{ render_field(taskform.task_number, size=2) }}
-            {{ render_field(taskform.task_date) }}
-            {{ render_field(taskform.task_region) }}
-        </section>
-        <section class="panel-row row-wrap form">
-            {{ render_field(taskform.task_name, size=10) }}
-            {{ render_field(taskform.task_comment, size=20) }}
-        </section>
-       </div>
-      <div class='modal-footer'>
-        <p id='add_task_spinner'></p>
-        <button type='button' class='btn btn-danger' data-dismiss='modal'>Cancel</button>
-        <button id='save_task_button' class='btn btn-success' type='button' onclick='save_task()'>Add Task</button>
-      </div>
+      <form method='post' id="new_task_form">
+        <div class='modal-header'>
+          <h4 class='modal-title'>Add Task</h4>
+        </div>
+        <div class='modal-body'>
+          <div class="form-row">
+            <section class="panel-row row-wrap form">
+                {{ render_field(taskform.task_number, size=2) }}
+                {{ render_field(taskform.task_date) }}
+                {{ render_field(taskform.task_region) }}
+            </section>
+            <section class="panel-row row-wrap form">
+                {{ render_field(taskform.task_name, size=10) }}
+                {{ render_field(taskform.task_comment, size=20) }}
+            </section>
+          </div>
+        </div>
+        <div class='modal-errors'>
+        </div>
+        <div class='modal-footer'>
+          <p id='add_task_spinner'></p>
+          <button type='button' class='btn btn-danger' data-dismiss='modal'>Cancel</button>
+          {{ taskform.submit(class="btn btn-success", id="add_task_button") }}
+        </div>
+      </form>
     </div>
   </div>
 </div>

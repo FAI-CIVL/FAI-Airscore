@@ -107,7 +107,11 @@ class NewTaskForm(FlaskForm):
     task_comment = StringField('Comment', description='Sometimes you may wish to make a comment that will show up'
                                                       ' in the competition overview page. e.g. "task stopped at 14:34"')
     task_date = DateField('Date', format='%Y-%m-%d', validators=[DataRequired()], default=date.today)
-    task_region = SelectField('Region', choices=[('1', '1'), ('2', '2')])
+    task_region = SelectField('Flying Area', choices=[('1', '1'), ('2', '2')], validators=[DataRequired()],
+                              description='If not done yet, please add at least one Flying Area to the event before '
+                                          'creating event tasks.',
+                              coerce=int, validate_choice=False)
+    submit = SubmitField('Add Task')
 
 
 class NewScorekeeperForm(FlaskForm):

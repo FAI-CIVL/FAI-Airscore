@@ -880,24 +880,27 @@ def _register_pilots(compid: int):
 @editor_required
 def _add_task(compid: int):
     from region import get_openair
-    comp = Comp.read(compid)
-    data = request.json
-    task = Task(comp_id=compid)
-    task.task_name = data['task_name']
-    task.task_num = int(data['task_num'])
-    task.date = datetime.strptime(data['task_date'], '%Y-%m-%d')
-    task.comment = data['task_comment']
-    task.reg_id = int(data['task_region'])
-    task.time_offset = comp.time_offset
-    task.airspace_check = comp.airspace_check
-    if task.airspace_check and task.reg_id:
-        task.openair_file = get_openair(reg_id=task.reg_id)
-    task.check_launch = comp.check_launch
-    task.igc_config_file = comp.igc_config_file
-    task.to_db()
-    tasks = frontendUtils.get_task_list(compid)
-    session['tasks'] = tasks['tasks']
-    return tasks
+
+    form = NewTaskForm()
+    if form.validate_on_submit():
+        '''create task entry in database'''
+        comp = Comp.read(compid)
+        task = Task(comp_id=compid)
+        task.task_num = form.task_number.data
+        task.task_name = form.task_name.data if form.task_name.data not in [None, ''] else f'Task {task.task_num}'
+        task.date = form.task_date.data
+        task.task_comment = form.task_comment.data
+        task.reg_id = form.task_region.data
+        task.time_offset = comp.time_offset
+        task.airspace_check = comp.airspace_check
+        if task.airspace_check and task.reg_id:
+            task.openair_file = get_openair(reg_id=task.reg_id)
+        task.check_launch = comp.check_launch
+        task.igc_config_file = comp.igc_config_file
+        task.to_db()
+        return jsonify(success=True)
+
+    return jsonify(success=False, errors=form.errors)
 
 
 @blueprint.route('/_del_task/<int:taskid>', methods=['POST'])

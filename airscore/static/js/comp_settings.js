@@ -164,6 +164,7 @@ function ask_update(change) {
 }
 
 function add_task() {
+  cleanup_modal('#new_task_form');
   $('#add_task_modal').modal('show');
 }
 
@@ -291,30 +292,47 @@ function save_ladders(){
   });
 }
 
-function save_task(){
-  $('#save_task_button').hide();
+$('#new_task_form').submit( function(e) {
+  e.preventDefault(); // block the traditional submission of the form.
+  cleanup_modal('#new_task_form');
+  $('#add_task_button').hide();
   $('#add_task_spinner').html('<div class="spinner-border" role="status"><span class="sr-only"></span></div>');
-  var mydata = new Object();
-  mydata.task_name = $('#task_name').val();
-  mydata.task_date = $('#task_date').val();
-  mydata.task_num = $('#task_number').val();
-  mydata.task_comment = $('#task_comment').val();
-  mydata.task_region = $('#task_region').val();
-
+  $('#new_task_form .modal-errors').empty();  // delete all previous errors
+  let mydata = $('#new_task_form').serialize();
   $.ajax({
     type: "POST",
     url: link_add_task,
-    contentType:"application/json",
-    data : JSON.stringify(mydata),
+    data : mydata,
     dataType: "json",
-    success: function () {
+    success: function (response) {
+      if ( response.errors ) {
+          let keys = Object.keys(response.errors);
+          console.log('Error! ('+keys.length+')');
+          keys.forEach( key => {
+            let text = response.errors[key][0];
+            $('#new_task_form .modal-body div').find("[name='"+key+"']").css('background-color', 'orange');
+            let message = document.createElement( "p" );
+            message.classList.add('alert', 'alert-danger');
+            message.innerText = key + ': ' + text;
+            $('#new_task_form .modal-errors').append(message);
+          })
+      }
+      else {
+        $('#add_task_modal').modal('hide');
+        toastr.success('Task added', {timeOut: 3000});
+        get_tasks();
+      }
+    },
+    error: function(result, status, error) {
+      create_flashed_message('System Error trying to create a new task', 'danger');
       get_tasks();
+    },
+    complete: function (result, status) {
+      $('#add_task_button').show();
       $('#add_task_spinner').html('');
-      $('#save_task_button').show();
-      $('#add_task_modal').modal('hide');
     }
   });
-}
+});
 
 function get_scorekeepers(){
   $.ajax({
@@ -373,8 +391,7 @@ function add_scorekeeper(){
     data : JSON.stringify(mydata),
     dataType: "json",
     success: function () {
-      //create_flashed_message('Scorekeeper added', 'success');
-      toastr.success('Scorekeeper added', {timeOut: 5000});
+      toastr.success('Scorekeeper added', {timeOut: 3000});
     },
     error: function(result, status, error) {
       clear_flashed_messages();
@@ -402,7 +419,7 @@ function delete_scorekeeper( id ) {
     success: function (response) {
       if ( response.success ) {
         //create_flashed_message('Scorekeeper removed', 'success');
-        toastr.warning('Scorekeeper removed', {timeOut: 5000});
+        toastr.warning('Scorekeeper removed', {timeOut: 3000});
       }
       else create_flashed_message('Error trying to remove scorekeeper', 'danger');
     },
@@ -480,14 +497,14 @@ function update_rankings() {
 }
 
 function add_ranking() {
-  cleanup_modal('rank_modal');
+  cleanup_modal('#rank_modal');
   $('#rank_type').val($('#rank_type option:first').val());
   update_ranking_modal($('#rank_type').val());
   $('#rank_modal').modal('show');
 }
 
 function edit_ranking(cranid) {
-  cleanup_modal('rank_modal')
+  cleanup_modal('#rank_modal')
   let table = $('#rankings_table').DataTable();
   let row = '#id_'+cranid;
   let data = table.row( row ).data();
@@ -525,13 +542,10 @@ function delete_ranking( cranid ) {
 }
 
 function cleanup_modal (modal) {
-  let body = modal + '-body';
-  let names = ['rank_id', 'rank_name', 'cert_id', 'min_date', 'max_date', 'attr_id', 'rank_value'];
-  $('#'+modal+' .modal-errors').empty();  // delete all previous errors
-  $('#'+body+' [name]').each( ( i, el ) => {
-    if ( names.includes($(el).attr('name')) ) $(el).val('');
-    $(el).removeAttr('style');
-  });
+  let body = modal + ' *';
+  let errors = modal + ' .modal-errors';
+  $(body).removeAttr('style');  // delete style added by error in form
+  $(errors).empty();  // remove errors text in modal
 }
 
 function update_ranking_modal(rank_type) {
