@@ -192,21 +192,21 @@ Competition Settings
   </div>
   <div class='panel collapse' id='task_list'>
     <section class="panel-row row-wrap button">
-      {% if compform.submit and not readonly %}
       {% if not taskform.task_region.choices|count %}
       <p class="alert alert-primary small" id="no_region_alert">
           Tasks cannot be added until at least one <a href="{{ url_for('user.region_admin') }}">Flying Area</a> has been created.
       </p>
       {% else %}
+      {% if compform.submit and not readonly %}
       <button id='add_task_modal_button' class='btn btn-secondary' type='button' onclick='add_task()'>
         Add task
       </button>
       {% endif %}
-      {% endif%}
     </section>
     <section class="panel-row row-wrap form">
       <table class='table' id='tasks'>
       </table>
+      {% endif %}
     </section>
   </div>
 </div>
