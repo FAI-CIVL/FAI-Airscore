@@ -109,7 +109,6 @@ Competition Admin
 <div class='modal fade' id='compmodal' tabindex='-1' role='dialog' aria-labelledby='exampleModalCenterTitle'
      aria-hidden='true'>
   <div class='modal-dialog modal-dialog-centered' role='document'>
-
     <div class='modal-content'>
       <form method='post' id="new_comp_form">
         {{ new_comp_form.hidden_tag() }}
@@ -135,48 +134,6 @@ Competition Admin
               {{ render_field(new_comp_form.date_to) }}
             </section>
           </div>
-    <!--        <form id='createcomp' action='javascript:void(0);' method='post'>-->
-    <!--          <div class='form-group'>-->
-    <!--            <div class='form-row' id='route'>-->
-    <!--              <label for='Name' class='col-2 col-form-label'>Name</label>-->
-    <!--              <div class='col-10'>-->
-    <!--                <input class='form-control required' type='text' value='' id='compname'>-->
-    <!--              </div>-->
-    <!--            </div>-->
-    <!--            <div class='form-row' id='route2'>-->
-    <!--              <label for='code' class='col-2 col-form-label'>Short name</label>-->
-    <!--              <div class='col-10'>-->
-    <!--                <input class='form-control required' type='text' value='' id='compcode'>-->
-    <!--              </div>-->
-    <!--            </div>-->
-    <!--            <div class='form-row' id='route3'>-->
-    <!--              <label for='class' class='col-2 col-form-label'>Class</label>-->
-    <!--              <div class='col-10'>-->
-    <!--                <select class='form-control required' type='select' value='' id='compclass'>-->
-    <!--                  <option value='HG'>HG</option>-->
-    <!--                  <option value='PG'>PG</option>-->
-    <!--                </select>-->
-    <!--              </div>-->
-    <!--            </div>-->
-    <!--            <div class='form-row' id='route4'>-->
-    <!--              <label for='location' class='col-2 col-form-label'>Location</label>-->
-    <!--              <div class='col-10'>-->
-    <!--                <input class='form-control required' type='text' value='' id='compsite'>-->
-    <!--              </div>-->
-    <!--            </div>-->
-
-    <!--            <div class='form-group row'>-->
-    <!--              <label for='date-from' class='col-2 1ol-form-label'>From</label>-->
-    <!--              <div class='col-10'>-->
-    <!--                <input class='form-control required' type='date' value='{{today}}' id='datefrom'>-->
-    <!--              </div>-->
-    <!--              <label for='date-to' class='col-2 col-form-label'>To</label>-->
-    <!--              <div class='col-10'>-->
-    <!--                <input class='form-control required' type='date' value='{{today}}' id='dateto'>-->
-    <!--              </div>-->
-    <!--            </div>-->
-    <!--          </div>-->
-    <!--        </form>-->
         </div>
         <div class='modal-errors'>
         </div>
@@ -184,10 +141,6 @@ Competition Admin
           <button type='button' class='btn btn-danger' data-dismiss='modal'>Cancel</button>
           {{new_comp_form.submit(class="btn btn-success", id="new_comp_submit")}}
         </div>
-<!--        <div class='modal-footer'>-->
-<!--          <button type='button' class='btn btn-primary' data-dismiss='modal' onclick='create_comp();'>Create</button>-->
-<!--          <button type='button' class='btn btn-danger' data-dismiss='modal'>Close</button>-->
-<!--        </div>-->
       </form>
     </div>
 
