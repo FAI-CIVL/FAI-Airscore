@@ -2179,11 +2179,17 @@ def check_openair_file(file) -> tuple:
         file.save(tempfile)
 
         filename = None
-        with open(tempfile, 'r+', encoding="utf-8") as fp:
-            try:
+        try:
+            with open(tempfile, 'r+', encoding="utf-8") as fp:
                 record_number, airspace_list, mapspaces, checkspaces, bbox = openair_content_to_data(fp)
-            except (TypeError, ValueError, Exception):
-                '''Try to correct content format'''
+        except UnicodeDecodeError:
+            '''try different encoding'''
+            with open(tempfile, 'r+', encoding="latin-1") as fp:
+                record_number, airspace_list, mapspaces, checkspaces, bbox = openair_content_to_data(fp)
+        except (TypeError, ValueError, Exception):
+            # raise
+            '''Try to correct content format'''
+            try:
                 fp.seek(0)
                 content = ''
                 for line in fp:
@@ -2195,14 +2201,13 @@ def check_openair_file(file) -> tuple:
                 fp.truncate()
                 fp.write(content)
                 fp.seek(0)
-                try:
-                    record_number, airspace_list, mapspaces, checkspaces, bbox = openair_content_to_data(fp)
-                    modified = True
-                except (TypeError, ValueError, Exception):
-                    '''Failure'''
-                    record_number = 0
-            finally:
-                fp.close()
+                record_number, airspace_list, mapspaces, checkspaces, bbox = openair_content_to_data(fp)
+                modified = True
+            except (TypeError, ValueError, Exception):
+                '''Failure'''
+                record_number = 0
+        finally:
+            fp.close()
 
         if record_number > 0:
             filename = unique_filename(file.filename, AIRSPACEDIR)
