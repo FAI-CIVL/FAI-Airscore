@@ -381,7 +381,8 @@ def mass_import_participants(comp_id: int, participants: list, check_ids=True):
             db.query(PA).filter(PA.par_id.in_([p.par_id for p in existing])).delete(synchronize_session=False)
             db.flush()
         for el in [p for p in par_attr_list]:
-            attr.extend([PA(par_id=el.par_id, attr_id=k, meta_value=v) for k, v in el.custom.items() if v is not None])
+            attr.extend([PA(par_id=el.par_id, attr_id=k, meta_value=v) for k, v in el.custom.items()
+                         if v is not None and k is not None])
         if attr:
             db.bulk_save_objects(objects=attr)
     return True
