@@ -335,13 +335,17 @@ def get_airspace_check_parameters(comp_id: int, task_id: int = None) -> CheckPar
         v_outer_band = q.v_outer_limit - q.v_boundary
         v_inner_band = q.v_boundary - q.v_inner_limit
         v_total_band = q.v_outer_limit - q.v_inner_limit
-        h_outer_penalty_per_m = 0 if not h_outer_band else q.h_boundary_penalty / h_outer_band
+        h_outer_penalty_per_m = (0 if not (h_outer_band and q.h_boundary_penalty)
+                                 else q.h_boundary_penalty / h_outer_band)
         h_inner_penalty_per_m = (
-            q.h_max_penalty if not h_inner_band else (q.h_max_penalty - q.h_boundary_penalty) / h_inner_band
+            q.h_max_penalty if not (h_inner_band and q.h_max_penalty and q.h_boundary_penalty)
+            else (q.h_max_penalty - q.h_boundary_penalty) / h_inner_band
         )
-        v_outer_penalty_per_m = 0 if not v_outer_band else q.v_boundary_penalty / v_outer_band
+        v_outer_penalty_per_m = (0 if not (v_outer_band and q.v_boundary_penalty)
+                                 else q.v_boundary_penalty / v_outer_band)
         v_inner_penalty_per_m = (
-            q.v_max_penalty if not v_inner_band else (q.v_max_penalty - q.v_boundary_penalty) / v_inner_band
+            q.v_max_penalty if not (v_inner_band and q.v_max_penalty and q.v_boundary_penalty)
+            else (q.v_max_penalty - q.v_boundary_penalty) / v_inner_band
         )
 
         return CheckParams(
