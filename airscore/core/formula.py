@@ -313,7 +313,7 @@ class Formula(object):
             formula = cls()
         formula = get_fsdb_info(formula, data)
         formula.comp_class = comp_class
-        formula.validity_param = 1.0 - float(fs_info.get('ftv_factor'))
+        formula.validity_param = 1.0 - float(fs_info.get('ftv_factor') or 0)
         if formula.validity_param < 1:
             formula.overall_validity = 'ftv'
         else:
