@@ -139,6 +139,11 @@ class AirspaceCheck(object):
         """Writes bbox and Polygon obj for each space"""
         if self.control_area:
             for space in self.spaces:
+                ''' avoid errors'''
+                if not space['floor']:
+                    space['floor'] = 0
+                if not space['ceiling']:
+                    space['ceiling'] = 0
                 ''' check if we have Flight Levels to convert using task QNH'''
                 if space['floor_unit'] == 'FL':
                     space['floor'] = fl_to_meters(space['floor'], qnh)
