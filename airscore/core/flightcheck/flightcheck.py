@@ -515,7 +515,7 @@ def evaluate_landed(p: LiveResult, fix: LiveFix, config: FlightParsingConfig) ->
 def get_landing_fix(track: Path, config: FlightParsingConfig = None):
     from igc_lib import Flight
     f = Flight.create_from_file(track, config)
-    if f.landing_fix and not f.landing_fix == f.fixes[-1]:
+    if hasattr(f, 'landing_fix') and f.landing_fix and not f.landing_fix == f.fixes[-1]:
         print(f"* Flight says pilot is LANDED! Flight landing fix: {f.landing_fix}")
         return f.landing_fix
     print(f"* Flight landing fix: Not valid")
