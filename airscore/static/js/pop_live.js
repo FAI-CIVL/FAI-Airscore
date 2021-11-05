@@ -7,7 +7,9 @@ function populate_live(taskid){
             contentType:"application/json",
             dataType: "json",
             success: function (json) {
-                var columns = [];
+                let columns = [];
+                let compid = json.info.comp_id;
+                $('#comp_link').attr("href", "/competition/"+compid);
                 columns.push({data: 'rank', title:'#'});
                 columns.push({data: 'id', title:'ID', defaultContent: ''});
                 columns.push({data: 'name', title:'Name'});
