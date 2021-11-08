@@ -259,7 +259,7 @@ def result_to_geojson(result, task, flight, second_interval=5):
     # if the pilot did not make goal, goal time will be None. set to after end of track to avoid issues.
     goal_time = flight.fixes[-1].rawtime + 1 if not result.goal_time else result.goal_time
     # if the pilot did not make SSS then it will be 0, set to task start time.
-    SSS_time = task.start_time if result.SSS_time == 0 else result.SSS_time
+    SSS_time = task.start_time if not result.SSS_time else result.SSS_time
 
     if len(result.waypoints_achieved) > 0:
         for idx, tp in enumerate(result.waypoints_achieved):
@@ -305,7 +305,7 @@ def result_to_geojson(result, task, flight, second_interval=5):
             keep = True
             lastfix = fix
 
-        if keep:
+        if keep and fix.rawtime:
             if fix.rawtime <= SSS_time:
                 pre_sss.append((fix.lon, fix.lat, fix.gnss_alt, fix.press_alt))
             if SSS_time <= fix.rawtime <= goal_time:
