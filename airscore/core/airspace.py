@@ -161,7 +161,7 @@ class AirspaceCheck(object):
                         clat = space['location'][0]
                         clon = space['location'][1]
                         radius = space['radius']
-                    dist = radius + self.params.notification_distance * sqrt(2)
+                    dist = (radius + self.params.notification_distance) * sqrt(2)
                     pmin = pmax = geopy.Point(clat, clon)
                     space['object'] = Turnpoint(lat=clat, lon=clon, radius=radius)
                 else:
