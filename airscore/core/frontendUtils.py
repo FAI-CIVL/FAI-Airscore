@@ -2562,7 +2562,7 @@ def recheck_tracks(task_id: int, username: str):
     from task import Task
     from airspace import AirspaceCheck
     from trackUtils import igc_parsing_config_from_yaml, check_flight
-    from igc_lib import Flight
+    from pilot.track import Track
 
     if production():
         job = current_app.task_queue.enqueue(recheck_tracks_background,
@@ -2581,7 +2581,7 @@ def recheck_tracks(task_id: int, username: str):
     for par in par_ids:
         pilot = FlightResult.read(par_id=par, task_id=task_id)
         file = Path(track_path, pilot.track_file)
-        flight = Flight.create_from_file(file, config_class=FlightParsingConfig)
+        flight = Track.process(file, task, config=FlightParsingConfig)
         check_flight(pilot, flight, task, airspace=airspace)
         pilots_to_save.append(pilot)
     '''save all succesfully processed pilots to database'''
@@ -2594,7 +2594,7 @@ def recheck_tracks_background(task_id: int, user: str):
     from airspace import AirspaceCheck
     from trackUtils import igc_parsing_config_from_yaml, check_flight
     from pilot.flightresult import update_all_results
-    from igc_lib import Flight
+    from pilot.track import Track
 
     pilots_to_save = []
     print = partial(print_to_sse, id=None, channel=user)
@@ -2609,7 +2609,7 @@ def recheck_tracks_background(task_id: int, user: str):
     for pilot in outdated_results:
         # pilot = FlightResult.read(par_id=par, task_id=task_id)
         file = Path(track_path, pilot.track_file)
-        flight = Flight.create_from_file(file, config_class=FlightParsingConfig)
+        flight = Track.process(file, task, config=FlightParsingConfig)
         print(f"processing {pilot.ID} {pilot.name}:")
         pilot_print = partial(print_to_sse, id=pilot.par_id, channel=user)
         print('***************START*******************')

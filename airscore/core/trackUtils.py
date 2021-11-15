@@ -13,7 +13,7 @@ from pathlib import Path
 from airspace import AirspaceCheck
 from db.conn import db_session
 from Defines import MAPOBJDIR, TRACKDIR, track_formats, track_sources, IGCPARSINGCONFIG
-from igc_lib import Flight
+from pilot.track import Track, FlightParsingConfig
 from pilot.flightresult import FlightResult, save_track
 from sqlalchemy import and_
 
@@ -231,9 +231,8 @@ def create_tracklog_map_result_file(par_id: int, task_id: int):
     pilot = flightresult.FlightResult.read(par_id, task_id)
     file = Path(task.file_path, pilot.track_file)
     '''load track file'''
-    flight = Flight.create_from_file(file)
-    pilot.check_flight(flight, task, airspace)
-    pilot.save_tracklog_map_file(task, flight)
+    flight = Track.process(file, task)
+    check_flight(pilot, flight, task, airspace)
 
 
 def get_task_fullpath(task_id: int):
@@ -366,7 +365,7 @@ def validate_G_record(igc_filename):
 def igc_parsing_config_from_yaml(yaml_filename):
     """reads the settings from a YAML file and creates a
     new FlightParsingConfig object for use when processing track files"""
-    from igc_lib import FlightParsingConfig
+
     if yaml_filename[:-5].lower != '.yaml':
         yaml_filename = yaml_filename + '.yaml'
     yaml_config = read_igc_config_yaml(yaml_filename)
@@ -425,7 +424,7 @@ def create_igc_filename(file_path: str, date, pilot_name: str, pilot_id: int = N
     return fullname
 
 
-def import_igc_file(file, task, parsing_config, check_g_record=False) -> Flight or str:
+def import_igc_file(file, task, parsing_config, check_g_record=False) -> Track or str:
     from calcUtils import epoch_to_date
     if check_g_record:
         print('Checking G-Record...')
@@ -435,7 +434,7 @@ def import_igc_file(file, task, parsing_config, check_g_record=False) -> Flight 
         elif validation == 'ERROR':
             return False, {'code': 'g_record_error', 'text': f'Error trying to validate G-Record'}
 
-    flight = Flight.create_from_file(filename=file, config_class=parsing_config)
+    flight = Track.process(filename=file, task=task, config=parsing_config)
 
     '''check flight'''
     if not flight:
@@ -455,7 +454,7 @@ def import_igc_file(file, task, parsing_config, check_g_record=False) -> Flight 
     return flight, None
 
 
-def check_flight(result: FlightResult, track: Flight, task, airspace=None, print=print):
+def check_flight(result: FlightResult, track: Track, task, airspace=None, print=print):
     if task.airspace_check and not airspace:
         print(f'should not be here')
         airspace = AirspaceCheck.from_task(task)

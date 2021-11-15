@@ -29,11 +29,12 @@ import datetime
 import math
 import re
 import xml.dom.minidom
+from pathlib2 import Path
+
 from collections import defaultdict
 
-import lib.geo as geo
 import lib.viterbi as viterbi
-from pathlib2 import Path
+import lib.geo as geo
 
 
 def _strip_non_printable_chars(string):
@@ -601,7 +602,7 @@ class Flight:
     """
 
     @staticmethod
-    def create_from_file(filename, config_class=None):
+    def create_from_file(filename, config_class=FlightParsingConfig):
         """Creates an instance of Flight from a given file.
 
         Args:
@@ -611,10 +612,7 @@ class Flight:
         Returns:
             An instance of Flight built from the supplied IGC file.
         """
-        if not config_class:
-            config = FlightParsingConfig()
-        else:
-            config = config_class
+        config = config_class()
         fixes = []
         a_records = []
         i_records = []

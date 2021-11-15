@@ -1,7 +1,7 @@
 from airspace import AirspaceCheck
 from calcUtils import sec_to_time
 from formulas.libs.leadcoeff import LeadCoeff
-from igc_lib import FlightParsingConfig
+from pilot.track import FlightParsingConfig
 from pilot.flightresult import FlightResult
 from pilot.waypointachieved import WaypointAchieved
 from livetracking import LiveResult, LiveFix, reset_igc_file
@@ -105,7 +105,7 @@ def check_fixes(
             else:
                 '''check if pilot landed
                 to avoid inconsistency with pilots landing on takeoff to address a problem, 
-                we reset pilot for restart if landed in takeoff aea before start opening'''
+                we reset pilot for restart if landed in takeoff area before start opening'''
                 if evaluate_landed(result, next_fix, config=igc_parsing_config):
                     print(f"{result.name}: SEEMS LANDED {next_fix}")
                     '''checking track'''
@@ -513,8 +513,8 @@ def evaluate_landed(p: LiveResult, fix: LiveFix, config: FlightParsingConfig) ->
 
 
 def get_landing_fix(track: Path, config: FlightParsingConfig = None):
-    from igc_lib import Flight
-    f = Flight.create_from_file(track, config)
+    from pilot.track import Track
+    f = Track.create_from_file(track, config)
     if hasattr(f, 'landing_fix') and f.landing_fix and not f.landing_fix == f.fixes[-1]:
         print(f"* Flight says pilot is LANDED! Flight landing fix: {f.landing_fix}")
         return f.landing_fix

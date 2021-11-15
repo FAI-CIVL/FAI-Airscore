@@ -1,7 +1,7 @@
 import airspaceUtils
 import pytest
 # from mock import patch
-from igc_lib import GNSSFix
+from pilot.track import GNSSFix
 
 
 # def test_read_openair():

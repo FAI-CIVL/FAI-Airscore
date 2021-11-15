@@ -490,7 +490,7 @@ class FlightResult(Participant):
         from pathlib import Path
 
         from Defines import MAPOBJDIR
-        from igc_lib import Flight
+        from pilot.track import Track
 
         if self.result_type not in ('abs', 'dnf', 'mindist', 'nyp'):
             ID = self.par_id if not self.ID else self.ID  # registration needs to check that all pilots
@@ -499,7 +499,7 @@ class FlightResult(Participant):
             if not flight:
                 filename = Path(task.file_path, self.track_file)
                 '''load track file'''
-                flight = Flight.create_from_file(filename)
+                flight = Track.process(filename, task)
             data = create_tracklog_map_file(self, task, flight, second_interval)
             res_path = Path(MAPOBJDIR, 'tracks', str(task.id))
             """check if directory already exists"""
@@ -552,8 +552,8 @@ def verify_all_tracks(task, lib, airspace=None, print=print):
     task:       Task object
     lib:        Formula library module"""
     from pathlib import Path
-    from trackUtils import igc_parsing_config_from_yaml
-    from igc_lib import Flight
+    from trackUtils import igc_parsing_config_from_yaml, check_flight
+    from pilot.track import Track
 
     pilots = [p for p in task.pilots if p.result_type not in ('abs', 'dnf', 'mindist') and p.track_file]
 
@@ -574,14 +574,12 @@ def verify_all_tracks(task, lib, airspace=None, print=print):
             print(f"{pilot.ID}. {pilot.name}: ({pilot.track_file})")
             filename = Path(task.file_path, pilot.track_file)
             '''load track file'''
-            flight = Flight.create_from_file(filename, config_class=FlightParsingConfig)
+            flight = Track.process(filename, task, config=FlightParsingConfig)
             if flight:
                 pilot.flight_notes = flight.notes
                 if flight.valid:
-                    '''check flight against task'''
-                    pilot.check_flight(flight, task, airspace_obj=airspace, print=print)
-                    '''create map file'''
-                    pilot.save_tracklog_map_file(task, flight)
+                    '''check flight against task and create map'''
+                    check_flight(pilot, flight, task, airspace=airspace, print=print)
                 elif flight:
                     print(f'Error in parsing track: {[x for x in flight.notes]}')
     lib.process_results(task)
@@ -590,7 +588,8 @@ def verify_all_tracks(task, lib, airspace=None, print=print):
 def adjust_flight_results(task, lib, airspace=None):
     """Called when multi-start or elapsed time task was stopped.
     We need to check again and adjust results of pilots that flew more than task duration"""
-    from igc_lib import Flight
+    from pilot.track import Track
+    from trackUtils import check_flight
 
     maxtime = task.duration
     for pilot in task.pilots:
@@ -602,11 +601,10 @@ def adjust_flight_results(task, lib, airspace=None):
                 '''need to adjust pilot result'''
                 filename = Path(task.file_path, pilot.track_file)
                 '''load track file'''
-                flight = Flight.create_from_file(filename)
-                pilot.check_flight(flight, task, airspace_obj=airspace, deadline=last_time)
-                # pilot.result_type = adjusted.result_type
-                '''create map file'''
-                pilot.save_tracklog_map_file(task, flight)
+                flight = Track.process(filename, task)
+                '''check flight against task and create map'''
+                check_flight(pilot, flight, task, airspace=airspace, print=print)
+
     lib.process_results(task)
 
 

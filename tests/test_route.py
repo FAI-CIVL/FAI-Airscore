@@ -1,7 +1,7 @@
 from route import in_goal_sector, cPoint, get_shortest_path, distance
 from obj_factories import TurnpointFactory, TaskFactory
 import math
-from igc_lib import GNSSFix
+from pilot.track import GNSSFix
 from geo import Geo
 import factory_objects
 

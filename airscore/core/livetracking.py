@@ -29,7 +29,7 @@ from pilot.flightresult import FlightResult
 from pilot.notification import Notification
 from pilot.waypointachieved import WaypointAchieved
 from trackUtils import create_igc_filename, igc_parsing_config_from_yaml
-from igc_lib import GNSSFix
+from pilot.track import GNSSFix
 from task import Task
 
 '''parameters for livetracking'''
@@ -907,10 +907,10 @@ def calculate_incremental_results(
 
 
 def save_livetrack_result(p: LiveResult, task: LiveTask, airspace: AirspaceCheck = None):
-    from igc_lib import Flight
+    from pilot.track import Track
     from pilot.flightresult import save_track
 
-    flight = Flight.create_from_file(Path(task.file_path, p.track_file))
+    flight = Track.process(Path(task.file_path, p.track_file), task)
     if flight.valid:
         print(f"flight valid. Livetracking LC: {p.fixed_LC} distance: {p.distance_flown} time: {p.ss_time}")
         p.check_flight(flight, task, airspace)
@@ -970,7 +970,7 @@ def possibly_landed(fixes: list) -> bool:
 
 
 def has_landing_fix(track: Path) -> bool:
-    from igc_lib import Flight
-    f = Flight.create_from_file(track, config)
+    from pilot.track import Track
+    f = Track.create_from_file(track, config)
 
     return bool(f.landing_fix and not f.landing_fix == f.fixes[-1])

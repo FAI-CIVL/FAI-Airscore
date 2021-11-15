@@ -350,10 +350,10 @@ def result_to_geojson(result, task, flight, second_interval=5):
 
 def create_trackpoints_layer(file: str, offset: int = 0) -> list:
     from calcUtils import sec_to_string
-    from igc_lib import Flight
+    from pilot.track import Track, Path
 
     try:
-        flight = Flight.create_from_file(file)
+        flight = Track.create_from_file(Path(file))
         points = []
         for fix in flight.fixes:
             points.append(
