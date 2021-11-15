@@ -3,26 +3,26 @@ from datetime import datetime, date
 from pilot.flightresult import FlightResult
 import factory_objects
 import math
+from pathlib import Path
 
 test_task = factory_objects.test_task()
 
 
 def test_track_read():
-    test_track = Track.read_file('/app/tests/data/test_igc_1.igc', par_id=1)
+    test_track = Track.create_from_file(Path('/app/tests/data/test_igc_1.igc'))
     assert len(test_track.fixes) == 13856
-    assert test_track.date == date(2019, 3, 9)
     assert test_track.gnss_alt_valid
     assert test_track.press_alt_valid is False
-    assert test_track.flight.valid
-    assert len(test_track.flight.fixes)
-    assert test_track.flight.glider_type == 'OZONE Zeno'
-    assert test_track.flight.date_timestamp == 1552089600.0
+    assert test_track.valid
+    assert len(test_track.fixes)
+    assert test_track.glider_type == 'OZONE Zeno'
+    assert test_track.date_timestamp == 1552089600.0
 
 
 def test_track_flight_check():
-    test_track = Track.read_file('/app/tests/data/test_igc_2.igc', par_id=1)
+    test_track = Track.create_from_file(Path('/app/tests/data/test_igc_2.igc'))
     test_result = FlightResult()
-    test_result.check_flight(flight=test_track.flight, task=test_task)
+    test_result.check_flight(flight=test_track, task=test_task)
     assert int(test_result.distance_flown) == 64360
     assert test_result.best_waypoint_achieved == 'Goal'
     assert len(test_result.waypoints_achieved) == test_result.waypoints_made
