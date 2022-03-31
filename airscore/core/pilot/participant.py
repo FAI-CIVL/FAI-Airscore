@@ -160,7 +160,7 @@ class Participant(Pilot):
             for el in childs:
                 if el.get('value') in (None, ''):
                     continue
-                elif el.get('name').lower() == 'live' and el.get('value').isdigit():
+                elif el.get('name').lower() == 'live' and len(el.get('value')) < 11 and el.get('value').isdigit():
                     pilot.live_id = int(el.get('value'))
                 elif el.get('name').lower() == 'team':
                     pilot.team = el.get('value')
