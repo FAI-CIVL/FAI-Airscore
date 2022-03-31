@@ -126,6 +126,11 @@ Task Settings
       <div role="tabpanel" class="tab-pane column-wrap fade" id="timing">
         <h4 class='tab-title font-weight-bold'>Task Timing:</h4>
         <section class="tab-row row-wrap form">
+          <div class='alert alert-warning' role='alert'>
+            <h4>Timings are in Local Time</h4>
+          </div>
+        </section>
+        <section class="tab-row row-wrap form">
             {{ render_field(taskform.window_open_time, size=3, readonly=readonly) }}
             {{ render_field(taskform.window_close_time, size=3, readonly=readonly) }}
             {{ render_field(taskform.task_deadline, size=3, readonly=readonly) }}
