@@ -187,6 +187,10 @@ class CompForm(FlaskForm):
                       " that will not be considered for scoring. The default is 5 minutes, but depending on local " \
                       "meteorological circumstances, it may be set to a longer period for a whole competition."
 
+    help_lead_factor = "this is a multiplier factor that influences the ratio between leading and time points. " \
+                       " Changing this parameter will affect considerably the results, so it is recommended " \
+                       " to leave the default value."
+
     comp_name = StringField('Competition Name')
     comp_code = StringField('Short name', render_kw=dict(maxlength=8), description='An abbreviated name (max 8 chars) '
                                                                                    'e.g. PGEuro20')
@@ -251,7 +255,7 @@ class CompForm(FlaskForm):
     formula_time = SelectField('Time points', choices=[('on', 'On'), ('off', 'Off')])
 
     scoring_altitude = SelectField('Scoring Altitude', choices=[('GPS', 'GPS'), ('QNH', 'QNH')])
-    lead_factor = DecimalField('Leadfactor', places=1, default=1)
+    lead_factor = DecimalField('Leadfactor', places=1, default=1, description=help_lead_factor)
     no_goal_penalty = IntegerField('No goal penalty (%)', validators=[NumberRange(min=0, max=100)], default=100)
 
     tolerance = DecimalField('Turnpoint radius tolerance %', places=1, default=0.1)
