@@ -100,7 +100,7 @@ CREATE TABLE `FlightResultView` (
 ,`sex` enum('M','F')
 ,`glider` varchar(100)
 ,`glider_cert` varchar(20)
-,`sponsor` varchar(100)
+,`sponsor` varchar(500)
 ,`team` varchar(100)
 ,`nat_team` tinyint(4)
 ,`live_id` varchar(10)
@@ -822,7 +822,7 @@ CREATE TABLE `tblParticipant` (
   `nat` char(10) DEFAULT NULL,
   `glider` varchar(100) DEFAULT NULL,
   `glider_cert` varchar(20) DEFAULT NULL,
-  `sponsor` varchar(100) DEFAULT NULL,
+  `sponsor` varchar(500) DEFAULT NULL,
   `fai_valid` tinyint(1) NOT NULL DEFAULT '1',
   `fai_id` varchar(20) DEFAULT NULL,
   `xcontest_id` varchar(20) DEFAULT NULL,
@@ -1113,7 +1113,7 @@ CREATE TABLE `UnscoredPilotView` (
 ,`nat` char(10)
 ,`glider` varchar(100)
 ,`glider_cert` varchar(20)
-,`sponsor` varchar(100)
+,`sponsor` varchar(500)
 ,`xcontest_id` varchar(20)
 ,`live_id` varchar(10)
 ,`team` varchar(100)

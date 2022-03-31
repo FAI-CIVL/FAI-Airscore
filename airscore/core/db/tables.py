@@ -160,10 +160,10 @@ class FlightResultView(BaseModel):
         Column('nat', CHAR(10)),
         Column('glider', String(100)),
         Column('glider_cert', String(20)),
-        Column('sponsor', String(100)),
+        Column('sponsor', String(500)),
         Column('team', String(100)),
         Column('nat_team', TINYINT(4), server_default=text("'1'")),
-        Column('live_id', MEDIUMINT(9)),
+        Column('live_id', String(10)),
         Column('distance_flown', FLOAT),
         Column('best_distance_time', MEDIUMINT(9), nullable=False, server_default=text("'0'")),
         Column('stopped_distance', FLOAT),
@@ -314,7 +314,7 @@ class UnscoredPilotView(BaseModel):
         Column('glider_cert', String(20)),
         Column('xcontest_id', String(20)),
         Column('live_id', String(10)),
-        Column('sponsor', String(100)),
+        Column('sponsor', String(500)),
         Column('team', String(100)),
         Column('nat_team', TINYINT(4), server_default=text("'1'")),
     )
@@ -449,7 +449,7 @@ class TblParticipant(BaseModel):
     nat = Column(CHAR(10))
     glider = Column(String(100))
     glider_cert = Column(String(20))
-    sponsor = Column(String(100))
+    sponsor = Column(String(500))
     fai_valid = Column(TINYINT(1), nullable=False, server_default=text("'1'"))
     fai_id = Column(String(20))
     xcontest_id = Column(String(20))
