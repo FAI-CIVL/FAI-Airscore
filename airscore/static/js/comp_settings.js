@@ -306,16 +306,16 @@ $('#new_task_form').submit( function(e) {
     dataType: "json",
     success: function (response) {
       if ( response.errors ) {
-          let keys = Object.keys(response.errors);
-          console.log('Error! ('+keys.length+')');
-          keys.forEach( key => {
-            let text = response.errors[key][0];
-            $('#new_task_form .modal-body div').find("[name='"+key+"']").css('background-color', 'orange');
-            let message = document.createElement( "p" );
-            message.classList.add('alert', 'alert-danger');
-            message.innerText = key + ': ' + text;
-            $('#new_task_form .modal-errors').append(message);
-          })
+        let keys = Object.keys(response.errors);
+        console.log('Error! ('+keys.length+')');
+        keys.forEach( key => {
+          let text = response.errors[key][0];
+          $('#new_task_form .modal-body div').find("[name='"+key+"']").css('background-color', 'orange');
+          let message = document.createElement( "p" );
+          message.classList.add('alert', 'alert-danger');
+          message.innerText = key + ': ' + text;
+          $('#new_task_form .modal-errors').append(message);
+        })
       }
       else {
         $('#add_task_modal').modal('hide');
