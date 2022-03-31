@@ -399,7 +399,7 @@ class TurnpointForm(FlaskForm):
     wpt_id = IntegerField('wpt_id', validators=[Optional(strip_whitespace=True)], widget=widgets.HiddenInput())
     task_id = IntegerField('task_id', validators=[Optional(strip_whitespace=True)], widget=widgets.HiddenInput())
     num = IntegerField('#', validators=[DataRequired()])
-    rwp_id = SelectField('Waypoint', validators=[DataRequired()], validate_choice=False)
+    rwp_id = SelectField('Waypoint', validators=[DataRequired()], choices=[], validate_choice=False)
     radius = IntegerField('Radius (m)', validators=[InputRequired()], default=400)
     type = SelectField('Type', choices=[('launch', 'Launch'), ('speed', 'SSS'), ('waypoint', 'Waypoint'),
                                         ('endspeed', 'ESS'), ('goal', 'Goal')])
@@ -503,7 +503,7 @@ class ParticipantForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired(), Length(min=1, max=100)], description=name_desc)
     birthdate = DateField('Birthdate', format='%Y-%m-%d', validators=[Optional(strip_whitespace=True)], default=None)
     nat = SelectField('Nationality', coerce=str, validators=[DataRequired(), Length(min=3, max=3)],
-                      id='select_country', validate_choice=False)
+                      id='select_country', choices=[], validate_choice=False)
     sex = SelectField('Sex', choices=[('M', 'M'), ('F', 'F')], default='M')
     glider = StringField('Glider', validators=[Optional(strip_whitespace=True), Length(max=100)])
     certification = NonValidatingSelectField('Certification',
