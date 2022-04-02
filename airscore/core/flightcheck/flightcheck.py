@@ -9,7 +9,7 @@ from pathlib import Path
 from route import (
     distance,
     distance_flown,
-    get_shortest_path,
+    get_fix_dist_to_goal,
     in_goal_sector,
     start_made_civl,
     tp_made_civl,
@@ -42,6 +42,7 @@ def check_fixes(
     max_jump_the_gun = task.formula.max_JTG or 0  # seconds
     jtg_penalty_per_sec = 0 if max_jump_the_gun == 0 else task.formula.JTG_penalty_per_sec
     distances2go = task.distances_to_go  # Total task Opt. Distance, in legs list
+    dist_to_ESS = task.SS_distance
 
     ''' Altitude Source: '''
     alt_source = 'GPS' if task.formula.scoring_altitude is None else task.formula.scoring_altitude
@@ -267,7 +268,8 @@ def check_fixes(
         if tp.pointer > 0:
             if tp.start_done and not tp.ess_done:
                 '''optimized distance calculation each fix'''
-                fix_dist_flown = task.opt_dist - get_shortest_path(task, next_fix, tp.pointer)
+                dist_to_goal, dist_to_ESS = get_fix_dist_to_goal(task, next_fix, tp.pointer)
+                fix_dist_flown = task.opt_dist - dist_to_goal
                 # print(f'time: {next_fix.rawtime} | fix: {tp.name} | Optimized Distance used')
             else:
                 '''simplified and faster distance calculation'''
@@ -301,7 +303,7 @@ def check_fixes(
         LC = taskTime(i)*(bestDistToESS(i-1)^2 - bestDistToESS(i)^2 )
         i : i ? TrackPoints In SS'''
         if lead_coeff and tp.start_done and not tp.ess_done:
-            lead_coeff.update(result, my_fix, next_fix)
+            lead_coeff.update(result, my_fix, next_fix, dist_to_ESS)
 
         '''Airspace Check'''
         if task.airspace_check and airspace:

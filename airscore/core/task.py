@@ -1430,6 +1430,7 @@ class Task(object):
         if self.geo is None:
             self.create_projection()
 
+        # 2022: opt_dist has to be calculated as min(launch to goal)
         optimised = get_shortest_path(self)
 
         '''updates all task attributes'''
@@ -1452,12 +1453,22 @@ class Task(object):
                 sss_wpt = wpt + 1
             if self.turnpoints[wpt].type == 'endspeed':
                 ess_wpt = wpt + 1
+                break
+
+        self.optimised_turnpoints = optimised
 
         # work out self.opt_dist_to_SS, self.opt_dist_to_ESS, self.SS_distance
-        self.opt_dist_to_SS = sum(self.optimised_legs[0:sss_wpt])
-        self.opt_dist_to_ESS = sum(self.optimised_legs[0:ess_wpt])
-        self.SS_distance = sum(self.optimised_legs[sss_wpt:ess_wpt])
-        self.optimised_turnpoints = optimised
+        # 2022: SS_distance has to be calculated as min(launch to ESS)
+        if any(tp.type == 'endspeed' for tp in self.turnpoints):
+            optimised = get_shortest_path(self, ss_distance=True)
+            optimised_legs = [0] + [distance(e, optimised[i+1], method) for i, e in enumerate(optimised[:-1])]
+            self.opt_dist_to_SS = sum(optimised_legs[0:sss_wpt])
+            self.opt_dist_to_ESS = sum(optimised_legs[0:ess_wpt])
+            self.SS_distance = sum(optimised_legs[sss_wpt:ess_wpt])
+        else:
+            self.opt_dist_to_SS = sum(self.optimised_legs[0:sss_wpt])
+            self.opt_dist_to_ESS = sum(self.optimised_legs[0:ess_wpt])
+            self.SS_distance = sum(self.optimised_legs[sss_wpt:ess_wpt])
 
     def clear_waypoints(self):
         from db.tables import TblTaskWaypoint as W

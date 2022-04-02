@@ -797,72 +797,68 @@ BEGIN HERE
 """
 
 
-def get_shortest_path(task, fix=None, pointer=None):
-    """Inputs:
-    task  - Obj: task object
+def get_shortest_path(task, ss_distance=False) -> list:
     """
-    import sys
+    Calculates the minimum distance along a path from launch to goal, through all turnpoints cylinders
+    Inputs:
+        task        - Obj: task object
+        ss_distance - Bool: if True, calculates the path from launch to goal, to be minimum from launch to ESS cylinder
+    """
 
-    last_dist = sys.maxsize  # inizialise to max integer
-    finished = False
-
-    if not task.projected_turnpoints:
+    if not task.projected_turnpoints:  # should never happen
         '''create a list of cPoint obj from turnpoint list'''
-        tol, min_tol = task.formula.tolerance, task.formula.min_tolerance
-        task.projected_turnpoints = convert_turnpoints(task.turnpoints, task.geo)
-        task.projected_line = convert_turnpoints(get_line(task.turnpoints, tol, min_tol), task.geo)
+        task.create_projection()
 
     points = task.projected_turnpoints
     line = task.projected_line
 
-    if fix and pointer:
-        '''create list of points to optimize distance to goal '''
-        x, y = task.geo.convert(fix.lon, fix.lat)
-        points = points[pointer:]
-        points.insert(0, cPoint(x=x, y=y))
-
-    count = len(points)  # number of waypoints
-    if any(p for p in points if p.type == 'endspeed'):
+    if ss_distance and any(p for p in points if p.type == 'endspeed'):
         ESS_index = points.index(next(p for p in points if p.type == 'endspeed'))
     else:
         ESS_index = None
-    # if not (turnpoints[-1].shape == 'line'):
-    #     line = []
-    #     # print(f'is line: {turnpoints[-1].shape}')
-    # else:
-    #     ends = get_line(turnpoints)
-    #     line = convert_turnpoints(ends, task.geo)
-    #     # print(f'line: {line[0].x}, {line[0].y} - {line[1].x}, {line[1].y}')
 
-    # print('***')
-    # print(f'WPT Count: {count}  |  ESS Index: {ESS_index}')
-    # for idx, tp in enumerate(turnpoints):
-    #     print(f'n. {idx}')
-    #     pt = points[idx]
-    #     print(f'tp:   lat {tp.lat} |  lon {tp.lon} |  radius {tp.radius} |  shape {tp.shape} |  type {tp.type}')
-    #     print(f'pt:   x {pt.x} |  y {pt.y} |  radius {pt.radius}')
-
-    ''' Settings'''
-    opsCount = count * 10  # number of operations allowed
-    tolerance = 1.0  # meters, difference between results under which iteration will stop
-
-    while not finished and opsCount > 0:
-        planar_dist = optimize_path(points, count, ESS_index, line)
-        ''' See if the difference between the last distance id
-            smaller than the tolerance'''
-        finished = last_dist - planar_dist < tolerance
-        last_dist = planar_dist
-        opsCount -= 1
-    # print(f'iterations made: {count * 10 - opsCount} | distance: {planar_dist}')
-
-    if fix:
-        '''return opt dist to goal'''
-        return planar_dist
+    planar_dist, points = calculate_optimised_path(points, ESS_index, line)
 
     '''create optimised points positions on earth model (lat, lon)'''
     optimised = revert_opt_points(points, task.geo)
 
     return optimised
+
+
+def get_fix_dist_to_goal(task, fix, pointer) -> tuple:
+    """
+    Calculates the minimum distance along a path from track fix to goal, through all turnpoints cylinders
+    Inputs:
+        task     - Obj: Task object
+        fix      - Obj: Fix object
+        pointer  - Obj: Pointer object
+    """
+
+    if not task.projected_turnpoints:  # this should never be needed
+        task.create_projection()
+
+    points = task.projected_turnpoints
+    line = task.projected_line
+    dist_to_ESS = None
+
+    '''create list of points to optimize distance to goal '''
+    x, y = task.geo.convert(fix.lon, fix.lat)
+    points = points[pointer:]
+    points.insert(0, cPoint(x=x, y=y))
+
+    if any(p for p in points if p.type == 'endspeed'):
+        ESS_index = points.index(next(p for p in points if p.type == 'endspeed'))
+    else:
+        ESS_index = None
+
+    planar_dist, points = calculate_optimised_path(points, ESS_index, line)
+
+    if ESS_index:
+        dist_to_ESS = sum(hypot(e.fx-points[i+1].fx, e.fy-points[i+1].fy) for i, e in enumerate(points[:ESS_index]))
+    # print(f'distance: {round(planar_dist)} | ESS: {round(dist_to_ESS)}')
+
+    '''return opt dist to goal'''
+    return planar_dist, dist_to_ESS
 
 
 def convert_turnpoints(turnpoints, geo):
@@ -891,6 +887,30 @@ def revert_opt_points(points, geo):
         result.append(Turnpoint(lat=lat, lon=lon, type='optimised', radius=0, shape='optimised', how='optimised'))
 
     return result
+
+
+def calculate_optimised_path(points: list, ESS_index: int or None, line: list) -> tuple:
+    import sys
+
+    last_dist = sys.maxsize  # inizialise to max integer
+    finished = False
+
+    count = len(points)  # number of waypoints
+
+    ''' Settings'''
+    opsCount = count * 10  # number of operations allowed
+    tolerance = 1.0  # meters, difference between results under which iteration will stop
+
+    while not finished and opsCount > 0:
+        planar_dist = optimize_path(points, count, ESS_index, line)
+        ''' See if the difference between the last distance is smaller than the tolerance'''
+        finished = last_dist - planar_dist < tolerance
+        last_dist = planar_dist
+        opsCount -= 1
+
+    # print(f"iterations made: {count}")
+
+    return last_dist, points
 
 
 def optimize_path(points, count, ESS_index, line):
