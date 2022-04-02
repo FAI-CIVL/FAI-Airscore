@@ -4,7 +4,7 @@ def lc_calculation(lc, result, fix, next_fix):
     LC = taskTime(i)*(bestDistToESS(i-1)^2 - bestDistToESS(i)^2 )
     i : i ? TrackPoints In SS"""
     # print(f'Classic LC Calculation')
-    if lc.best_dist_to_ess[0] == lc.best_dist_to_ess[1]:
+    if lc.best_dist_to_ess[0] <= lc.best_dist_to_ess[1]:
         return 0
     else:
         task_time = next_fix.rawtime - result.real_start_time

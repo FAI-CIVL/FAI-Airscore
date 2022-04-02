@@ -12,16 +12,15 @@ def lc_calculation(lc, result, fix, next_fix):
         This means that the graph never “goes back”: even if the pilot flies away from goal for a while,
         the corresponding points in the graph will use the previously reached best distance towards ESS.
     """
-    # print(f'Weighted Area LC Calculation')
-    weight = weight_calc(lc.best_dist_to_ess[1], lc.ss_distance)
-    # time_interval = next_fix.rawtime - fix.rawtime
-    time = next_fix.rawtime - lc.best_start_time
+
     progress = lc.best_dist_to_ess[0] - lc.best_dist_to_ess[1]
     # print(f'weight: {weight}, progress: {progress}, time: {time}')
-    if progress <= 0 or weight == 0:
+    if progress <= 0:
         return 0
     else:
-        return weight * progress * time
+        time = next_fix.rawtime - lc.best_start_time
+        weight = weight_calc(lc.best_dist_to_ess[1], lc.ss_distance)
+        return 0 if weight == 0 else weight * progress * time
 
 
 def tot_lc_calculation(res, t):
