@@ -358,7 +358,7 @@ function choose_file_prod(par_id, g_overide=false, v_overide=false){
   var filename;
   var suffix = '';
   if(g_overide){
-      suffix = '_NO_G'
+    suffix = '_NO_G'
   }
   if(v_overide){
     suffix = '_NO_V'

@@ -244,6 +244,9 @@ $('#turnpoint_form').submit( function(e) {
         $('#add_tp_spinner').html('');
         update_turnpoints(response);
       }
+    },
+    error: function(result, status, error) {
+      create_flashed_message('System Error trying to add a new waypoint', 'danger');
     }
   });
 });
