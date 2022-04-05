@@ -747,7 +747,7 @@ def opt_wp_enter(opt, t1, enter):
     return point
 
 
-def get_line(turnpoints, tol=0.001, min_t=5):
+def get_line(turnpoints: list, optimised_turnpoints: list = None, tol: float = 0.001, min_t: int = 5) -> list:
     """returns line segment extremes and bisecting segment extremes """
     if not (turnpoints[-1].shape == 'line'):
         return []
@@ -764,9 +764,15 @@ def get_line(turnpoints, tol=0.001, min_t=5):
             az1, az2, d = g.inv(clon, clat, flon, flat)
             lon1, lat1, az = g.fwd(clon, clat, az1 - 90, ln)
             lon2, lat2, az = g.fwd(clon, clat, az1 + 90, ln)
+            if optimised_turnpoints:
+                # get goal area side
+                alat, alon = optimised_turnpoints[-2].lat, optimised_turnpoints[-2].lon
+                blat, blon = optimised_turnpoints[-1].lat, optimised_turnpoints[-1].lon
+                opt_bearing = calcBearing(alat, alon, blat, blon)
+                if abs(opt_bearing - az2) > 90:
+                    az1, az2 = az2, az1
             lon3, lat3, az = g.fwd(clon, clat, az1, t)
             lon4, lat4, az = g.fwd(clon, clat, az2, ln + t)
-            # print(f'Line: {lat1}, {lon1} - {lat2}, {lon2}')
 
             return [
                 Turnpoint(lat1, lon1, 0, 'optimised', 'optimised', 'optimised'),

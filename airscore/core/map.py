@@ -10,6 +10,7 @@ import folium
 import folium.plugins
 from folium.features import CustomIcon
 from folium.map import FeatureGroup, Marker, Popup
+from folium.plugins import semicircle
 from mapUtils import bbox_centre
 
 
@@ -194,7 +195,45 @@ def make_map(
         folium.PolyLine(locations=polyline, weight=1.5, opacity=0.75, color='#2176bc').add_to(folium_map)
 
     if goal_line:
-        folium.PolyLine(locations=goal_line, weight=1.5, opacity=0.75, color='#800000').add_to(folium_map)
+        '''create line'''
+        folium.PolyLine(locations=goal_line[:2], weight=1.5, opacity=0.8, color='#800000').add_to(folium_map)
+        '''add semicircle'''
+        if len(goal_line) > 2:
+            p = (points[-1]['latitude'], points[-1]['longitude'])
+            r = goal_line[4]
+            col = '#3186cc'
+            angle = goal_line[5]
+            semicircle.SemiCircle(p, r,
+                                  direction=angle,
+                                  arc=180,
+                                  color=col,
+                                  weight=2,
+                                  opacity=0.8,
+                                  fill=True,
+                                  fill_opacity=0.2,
+                                  fill_color=col).add_to(folium_map)
+
+            if margin:
+                '''create tolerance area in front of goal line'''
+                d = max(r*margin, 5)
+                dlat, dlon = p[0] - goal_line[2][0], p[1] - goal_line[2][1]
+                poly = [
+                    goal_line[0],
+                    (goal_line[0][0] - dlat, goal_line[0][1] - dlon),
+                    (goal_line[1][0] - dlat, goal_line[1][1] - dlon),
+                    goal_line[1]
+                ]
+                col = "#44cc44"
+                folium.PolyLine(locations=poly, weight=0.75, opacity=0.8, color=col).add_to(folium_map)
+                '''create tolerance semicircle'''
+                r += d
+                semicircle.SemiCircle(p, r,
+                                      direction=angle,
+                                      arc=180,
+                                      color=col,
+                                      weight=0.75,
+                                      opacity=0.8,
+                                      fill=False).add_to(folium_map)
 
     if airspace_layer:
         airspace_group = FeatureGroup(name='Airspaces', show=show_airspace)

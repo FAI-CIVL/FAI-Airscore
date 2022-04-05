@@ -909,7 +909,10 @@ class Task(object):
         self.get_geo()
         tol, min_tol = self.formula.tolerance, self.formula.min_tolerance
         self.projected_turnpoints = convert_turnpoints(self.turnpoints, self.geo)
-        self.projected_line = convert_turnpoints(get_line(self.turnpoints, tol, min_tol), self.geo)
+        self.projected_line = convert_turnpoints(
+            get_line(self.turnpoints, self.optimised_turnpoints, tol, min_tol),
+            self.geo
+        )
 
     def to_db(self):
         """Inserts new task or updates existent one"""
@@ -1580,7 +1583,7 @@ class Task(object):
             if obj.shape == 'line':
                 '''manage goal line'''
                 goal_line = []
-                ends = get_line(self.turnpoints)
+                ends = get_line(self.turnpoints, self.optimised_turnpoints, self.tolerance, self.formula.min_tolerance)
                 goal_line.append(tuple([ends[0].lat, ends[0].lon]))
                 goal_line.append(tuple([ends[1].lat, ends[1].lon]))
 
@@ -1691,6 +1694,7 @@ def write_map_json(task_id):
     from Defines import AIRSPACEMAPDIR
     from geopy.distance import GreatCircleDistance as gdist
     from mapUtils import get_route_bbox
+    from route import calcBearing
 
     task_file = str(task_id) + '.task'
     file_path = Path(MAPOBJDIR, 'tasks')
@@ -1709,16 +1713,14 @@ def write_map_json(task_id):
     for idx, obj in enumerate(task.turnpoints):
         task_coords.append({'longitude': obj.lon, 'latitude': obj.lat, 'name': obj.name})
 
+        """create tp cylinder radius adjustment to correct projection error"""
         if obj.shape == 'line':
             '''manage goal line'''
-            goal_line = []
-            ends = get_line(task.turnpoints, tolerance, task.formula.min_tolerance)
-            goal_line.append(tuple([ends[0].lat, ends[0].lon]))
-            goal_line.append(tuple([ends[1].lat, ends[1].lon]))
-
+            ends = get_line(task.turnpoints, task.optimised_turnpoints, tolerance, min_tol)
+            goal_line = [tuple([e.lat, e.lon]) for e in ends]
+            goal_line.append(gdist((obj.lat, obj.lon), goal_line[0]).meters)
+            goal_line.append(calcBearing(goal_line[2][0], goal_line[2][1], goal_line[3][0], goal_line[3][1]))
         else:
-            """create tp cylinder
-            radius adjustment to correct projection error"""
             o = task.optimised_turnpoints[idx]
             r = gdist((obj.lat, obj.lon), (o.lat, o.lon)).meters
             turnpoints.append(
@@ -1727,7 +1729,6 @@ def write_map_json(task_id):
                     'radius': r,
                     'longitude': obj.lon,
                     'latitude': obj.lat,
-                    #         'altitude': obj.altitude,
                     'name': obj.name,
                     'type': obj.type,
                     'shape': obj.shape,
