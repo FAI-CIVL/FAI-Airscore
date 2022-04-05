@@ -540,7 +540,8 @@ def get_task_turnpoints(task) -> dict:
 
     if task.opt_dist:
         '''task map'''
-        task_coords, task_turnpoints, short_route, goal_line, tolerance, bbox, offset, airspace = get_map_json(task.id)
+        task_coords, task_turnpoints, short_route, goal_line, \
+            tol, min_tol, bbox, offset, airspace = get_map_json(task.id)
         layer = {'geojson': None, 'bbox': bbox}
         '''airspace'''
         show_airspace = False
@@ -555,7 +556,8 @@ def get_task_turnpoints(task) -> dict:
             circles=task_turnpoints,
             polyline=short_route,
             goal_line=goal_line,
-            margin=tolerance,
+            margin=tol,
+            min_margin=min_tol,
             waypoint_layer=True,
             airspace_layer=airspace_layer,
             show_airspace=show_airspace,
@@ -2019,7 +2021,7 @@ def get_task_airspace(task_id: int):
     if not openair_file:
         return None, None, None, None
 
-    wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox, _, _ = get_map_json(task_id)
+    wpt_coords, turnpoints, short_route, goal_line, _, _, bbox, _, _ = get_map_json(task_id)
     airspace_layer, airspace_list, _ = create_airspace_layer(openair_file)
     airspace_map = make_map(
         points=wpt_coords, circles=turnpoints, polyline=short_route, airspace_layer=airspace_layer,

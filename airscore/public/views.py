@@ -346,11 +346,11 @@ def competition(compid: int):
         overall_available = True if get_comp_json(compid) != 'error' else False
         for task in result_file['tasks']:
             task_ids.append(int(task['id']))
-            wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox, _, _ = get_map_json(task['id'])
+            wpt_coords, turnpoints, short_route, goal_line, tol, min_tol, bbox, _, _ = get_map_json(task['id'])
             layer['geojson'] = None
             layer['bbox'] = bbox
             task_map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
-                                goal_line=goal_line, margin=tolerance)
+                                goal_line=goal_line, margin=tol, min_margin=min_tol)
             task['opt_dist'] = '{:0.2f}'.format(task['opt_dist'] / 1000) + ' km'
             task['day_quality'] = '{:0.2f}'.format(task['day_quality'])
             task.update({'map': task_map._repr_html_()})
@@ -375,11 +375,11 @@ def competition(compid: int):
                 task['opt_dist'] = ''
                 task['task_type'] = ''
             else:
-                wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox, _, _ = get_map_json(task['id'])
+                wpt_coords, turnpoints, short_route, goal_line, tol, min_tol, bbox, _, _ = get_map_json(task['id'])
                 layer['geojson'] = None
                 layer['bbox'] = bbox
                 task_map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
-                                    goal_line=goal_line, margin=tolerance)
+                                    goal_line=goal_line, margin=tol, min_margin=min_tol)
                 task['opt_dist'] = f"{'{:0.2f}'.format(task['opt_dist'] / 1000)} km"
                 task.update({'map': task_map._repr_html_()})
                 if not task['cancelled']:
@@ -420,11 +420,11 @@ def ext_competition(compid: int):
         overall_available = True if get_comp_json(compid) != 'error' else False
         for task in result_file['tasks']:
             task_ids.append(int(task['id']))
-            wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox, _, _ = get_map_json(task['id'])
+            wpt_coords, turnpoints, short_route, goal_line, tol, min_tol, bbox, _, _ = get_map_json(task['id'])
             layer['geojson'] = None
             layer['bbox'] = bbox
             task_map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
-                                goal_line=goal_line, margin=tolerance)
+                                goal_line=goal_line, margin=tol, min_margin=min_tol)
             task['opt_dist'] = f"{'{:0.2f}'.format(task['opt_dist'] / 1000)} km"
             task['day_quality'] = '{:0.2f}'.format(task['day_quality'])
             task.update({'map': task_map._repr_html_()})
@@ -449,11 +449,11 @@ def ext_competition(compid: int):
                 task['opt_dist'] = ''
                 task['task_type'] = ''
             else:
-                wpt_coords, turnpoints, short_route, goal_line, tolerance, bbox, _, _ = get_map_json(task['id'])
+                wpt_coords, turnpoints, short_route, goal_line, tol, min_tol, bbox, _, _ = get_map_json(task['id'])
                 layer['geojson'] = None
                 layer['bbox'] = bbox
                 task_map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
-                                    goal_line=goal_line, margin=tolerance)
+                                    goal_line=goal_line, margin=tol, min_margin=min_tol)
                 task['opt_dist'] = f"{'{:0.2f}'.format(task['opt_dist'] / 1000)} km"
                 task.update({'map': task_map._repr_html_()})
                 if not task['cancelled']:
@@ -598,7 +598,7 @@ def map(paridtaskid):
     layer = {}
     trackpoints = None
     '''task map'''
-    wpt_coords, turnpoints, short_route, goal_line, tolerance, _, offset, airspace = get_map_json(taskid)
+    wpt_coords, turnpoints, short_route, goal_line, tol, min_tol, _, offset, airspace = get_map_json(taskid)
 
     '''tracklog'''
     layer['geojson'] = read_tracklog_map_result_file(parid, taskid)
@@ -622,7 +622,7 @@ def map(paridtaskid):
         infringements = None
 
     map = make_map(layer_geojson=layer, points=wpt_coords, circles=turnpoints, polyline=short_route,
-                   goal_line=goal_line, margin=tolerance, thermal_layer=True, waypoint_layer=True,
+                   goal_line=goal_line, margin=tol, min_margin=min_tol, thermal_layer=True, waypoint_layer=True,
                    airspace_layer=airspace_layer, show_airspace=show_airspace, infringements=infringements,
                    trackpoints=trackpoints)
     waypoint_achieved_list = list(w for w in layer['geojson']['waypoint_achieved'])

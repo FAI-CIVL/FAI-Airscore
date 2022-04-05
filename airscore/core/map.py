@@ -29,6 +29,7 @@ def make_map(
     polyline=None,
     goal_line=None,
     margin=0,
+    min_margin=5,
     thermal_layer=False,
     show_thermal=False,
     waypoint_layer=False,
@@ -149,7 +150,7 @@ def make_map(
             """create two circles based on tolerance value"""
             folium.Circle(
                 location=(c['latitude'], c['longitude']),
-                radius=0.0 + c['radius'] * (1 + margin),
+                radius=c['radius'] + max(c['radius'] * margin, min_margin),
                 popup=None,
                 color="#44cc44",
                 weight=0.75,
@@ -159,7 +160,7 @@ def make_map(
 
             folium.Circle(
                 location=(c['latitude'], c['longitude']),
-                radius=0.0 + c['radius'] * (1 - margin),
+                radius=c['radius'] - max(c['radius'] * margin, min_margin),
                 popup=None,
                 color="#44cc44",
                 weight=0.75,

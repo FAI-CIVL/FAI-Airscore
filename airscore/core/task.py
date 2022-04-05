@@ -1679,10 +1679,11 @@ def get_map_json(task_id):
         short_route = data['short_route']
         goal_line = data['goal_line']
         tolerance = data['tolerance']
+        min_tolerance = data.get('min_tolerance') or 5  # this could be missing in old files
         bbox = data['bbox']
         offset = None if 'offset' not in data.keys() else data['offset']
         airspace = None if 'airspace' not in data.keys() else data['airspace']
-    return task_coords, turnpoints, short_route, goal_line, tolerance, bbox, offset, airspace
+    return task_coords, turnpoints, short_route, goal_line, tolerance, min_tolerance, bbox, offset, airspace
 
 
 def write_map_json(task_id):
@@ -1702,6 +1703,7 @@ def write_map_json(task_id):
     goal_line = None
     task = Task.read(task_id)
     tolerance = task.tolerance
+    min_tol = task.formula.min_tolerance
     offset = task.time_offset
 
     for idx, obj in enumerate(task.turnpoints):
@@ -1750,6 +1752,7 @@ def write_map_json(task_id):
                     'short_route': short_route,
                     'goal_line': goal_line,
                     'tolerance': tolerance,
+                    'min_tolerance': min_tol,
                     'bbox': get_route_bbox(task),
                     'offset': offset,
                     'airspace': airspace_file,
