@@ -18,8 +18,8 @@ def test_turnpoints():
 
 
 def test_partial_distance():
-    return [0.0, 4121.5290048586, 18299.550792762, 32644.873379435, 43224.796706005, 50978.622027629,
-            61374.106444253, 64360.424222856]
+    return [0, 4121.529004858649, 18299.55035345333, 32644.918788988703, 43225.62379067396, 50867.84113215203,
+            61677.85795685787, 64214.06975756211]
 
 
 def test_formula():
@@ -77,11 +77,11 @@ def test_task():
     t.task_deadline = 57600
     t.stopped_time = None
     t.task_type = 'race'
-    t.distance = 101297.0
-    t.opt_dist = 64360.4
-    t.opt_dist_to_SS = 4121.53
-    t.opt_dist_to_ESS = 61374.1
-    t.SS_distance = 57252.6
+    t.distance = 101297.44092632033
+    t.opt_dist = 64214.06975756211
+    t.opt_dist_to_SS = 4119.982080328103
+    t.opt_dist_to_ESS = 61374.25619491667
+    t.SS_distance = 57254.27411458857
     t.time_offset = 7200
     t.tolerance = 0.001
     t.QNH = 1013.25

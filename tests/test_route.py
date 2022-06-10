@@ -48,11 +48,12 @@ def test_route_distance(task=test_task):
 
 def test_opt_route(task=test_task):
     task.calculate_optimised_task_length()
-    assert math.isclose(task.opt_dist, 81506.1, abs_tol=1)
+    assert math.isclose(task.opt_dist, 81504.6, abs_tol=1)
     assert math.isclose(task.opt_dist_to_SS, 4799.97, abs_tol=1)
     assert math.isclose(task.opt_dist_to_ESS, 78508.1, abs_tol=1)
     assert math.isclose(task.SS_distance, 73708.1, abs_tol=1)
-    partial_distances = [0, 4799.9737887617, 23075.284840766, 58796.04787950, 78508.057227873, 81506.139470692]
+    # partial_distances = [0, 4799.9737887617, 23075.284840766, 58796.04787950, 78508.057227873, 81506.139470692]
+    partial_distances = [0, 4799.97, 23075.285, 58794.26, 78509.5, 81504.7]
     for idx, d in enumerate(task.partial_distance):
         assert math.isclose(d, partial_distances[idx], abs_tol=1)
 
