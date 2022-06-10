@@ -458,14 +458,20 @@ class FSDB(object):
                                 'tracklog_filename': pil.track_file,
                                 'lc': pil.lead_coeff,
                                 'iv': pil.fixed_LC or '',
-                                'ts': get_isotime(t.date, pil.first_time, t.time_offset),
+                                'ts': ''
+                                if not pil.first_time
+                                else get_isotime(t.date, pil.first_time, t.time_offset),
                                 'alt': get_int(pil.last_altitude),  # ??
                                 'bonus_alt': '',  # ?? not implemented
                                 'max_alt': get_int(pil.max_altitude),
                                 'last_tracklog_point_distance': '',  # not implemented yet
                                 'bonus_last_tracklog_point_distance': '',  # ?? not implemented
-                                'last_tracklog_point_time': get_isotime(t.date, pil.landing_time, t.time_offset),
-                                'last_tracklog_point_alt': get_int(pil.landing_altitude),
+                                'last_tracklog_point_time': ''
+                                if not pil.landing_time
+                                else get_isotime(t.date, pil.landing_time, t.time_offset),
+                                'last_tracklog_point_alt': ''
+                                if not pil.landing_altitude
+                                else get_int(pil.landing_altitude),
                                 'landed_before_deadline': '1'
                                 if pil.landing_time < (t.task_deadline if not t.stopped_time else t.stopped_time)
                                 else '0',
