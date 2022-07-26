@@ -232,7 +232,8 @@ def create_tracklog_map_result_file(par_id: int, task_id: int):
     file = Path(task.file_path, pilot.track_file)
     '''load track file'''
     flight = Track.process(file, task)
-    check_flight(pilot, flight, task, airspace)
+    if flight:
+        check_flight(pilot, flight, task, airspace)
 
 
 def get_task_fullpath(task_id: int):

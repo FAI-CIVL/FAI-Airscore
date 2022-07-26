@@ -911,7 +911,7 @@ def save_livetrack_result(p: LiveResult, task: LiveTask, airspace: AirspaceCheck
     from pilot.flightresult import save_track
 
     flight = Track.process(Path(task.file_path, p.track_file), task)
-    if flight.valid:
+    if flight and flight.valid:
         print(f"flight valid. Livetracking LC: {p.fixed_LC} distance: {p.distance_flown} time: {p.ss_time}")
         p.check_flight(flight, task, airspace)
         # print(f"Calculated LC: {test.fixed_LC} distance: {test.distance_flown} time: {test.ss_time}")

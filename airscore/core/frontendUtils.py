@@ -2584,8 +2584,9 @@ def recheck_tracks(task_id: int, username: str):
         pilot = FlightResult.read(par_id=par, task_id=task_id)
         file = Path(track_path, pilot.track_file)
         flight = Track.process(file, task, config=FlightParsingConfig)
-        check_flight(pilot, flight, task, airspace=airspace)
-        pilots_to_save.append(pilot)
+        if flight:
+            check_flight(pilot, flight, task, airspace=airspace)
+            pilots_to_save.append(pilot)
     '''save all succesfully processed pilots to database'''
     update_all_results([p for p in pilots_to_save], task_id)
     return True
@@ -2613,16 +2614,19 @@ def recheck_tracks_background(task_id: int, user: str):
         file = Path(track_path, pilot.track_file)
         flight = Track.process(file, task, config=FlightParsingConfig)
         print(f"processing {pilot.ID} {pilot.name}:")
-        pilot_print = partial(print_to_sse, id=pilot.par_id, channel=user)
-        print('***************START*******************')
-        check_flight(pilot, flight, task, airspace, print=pilot_print)
-        if pilot.notifications:
-            print(f"NOTES:<br /> {'<br />'.join(n.comment for n in pilot.notifications)}")
+        if not flight:
+            print('Error: IGC file not readable')
+        else:
+            pilot_print = partial(print_to_sse, id=pilot.par_id, channel=user)
+            print('***************START*******************')
+            check_flight(pilot, flight, task, airspace, print=pilot_print)
+            if pilot.notifications:
+                print(f"NOTES:<br /> {'<br />'.join(n.comment for n in pilot.notifications)}")
 
-        pilots_to_save.append(pilot)
-        data = track_result_output(pilot, task.task_id)
-        pilot_print(f'{json.dumps(data)}|result')
-        print('***************END****************')
+            pilots_to_save.append(pilot)
+            data = track_result_output(pilot, task.task_id)
+            pilot_print(f'{json.dumps(data)}|result')
+            print('***************END****************')
     print("*****************re-processed all tracks********************")
 
     '''save all succesfully processed pilots to database'''

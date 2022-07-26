@@ -603,7 +603,8 @@ def adjust_flight_results(task, lib, airspace=None):
                 '''load track file'''
                 flight = Track.process(filename, task)
                 '''check flight against task and create map'''
-                check_flight(pilot, flight, task, airspace=airspace, print=print)
+                if flight:
+                    check_flight(pilot, flight, task, airspace=airspace, print=print)
 
     lib.process_results(task)
 

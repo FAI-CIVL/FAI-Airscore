@@ -116,6 +116,9 @@ class Track(Flight):
                 else:
                     # Do not parse any other types of IGC records
                     pass
-        flight = Flight(fixes, a_records, h_records, i_records, config)
-        return flight
+        try:
+            return Flight(fixes, a_records, h_records, i_records, config)
+        except IndexError:
+            return None
+        # return flight
 
