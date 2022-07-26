@@ -605,7 +605,7 @@ class Task(object):
         and store it in database"""
         if track_path:
             self.task_path = track_path
-        elif self.task_num and self.date:
+        elif self.task_num is not None and self.date:
             self.task_path = '_'.join([('t' + str(self.task_num)), self.date.strftime('%Y%m%d')])
         else:
             return
